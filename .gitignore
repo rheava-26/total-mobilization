@@ -1,0 +1,8 @@
+# Publish ONLY the game. Ignore everything else in this working folder
+# (the big PDFs/zips, backups, slide images, music, and local dev-only scripts
+#  like serve.ps1 / the launcher / .claude all stay off the public site).
+/*
+!.gitignore
+!index.html
+!title.html
+!README.md

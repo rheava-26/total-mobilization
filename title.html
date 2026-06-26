@@ -102,6 +102,10 @@
   .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px); background: var(--panel); border: 1px solid var(--term); color: var(--term); padding: 11px 20px; border-radius: 4px; letter-spacing: 1.5px; font-size: 12px; opacity: 0; transition: .3s; z-index: 16; pointer-events: none; text-align: center; } .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .grain { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.4) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0, rgba(255,255,255,.016) 1px, transparent 1px, transparent 3px); }
   #endScreen { position: fixed; inset: 0; z-index: 18; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(2,4,12,.82); color: #fff; } #endScreen h1 { font-size: 44px; letter-spacing: 4px; }
+  #endRank { font: 600 15px Consolas, monospace; letter-spacing: 2px; margin-top: -4px; }
+  #endStats { display: grid; grid-template-columns: auto auto; gap: 6px 26px; background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 16px 24px; font: 13px Consolas, monospace; min-width: 320px; }
+  #endStats .lbl { color: #7fa8d8; letter-spacing: 1px; }
+  #endStats .val { color: #d8ecff; text-align: right; font-weight: 600; }
   /* research — node graph */
   #resModal .modal { width: 98vw; max-width: 1500px; height: 95vh; max-height: 95vh; padding: 16px 20px; display: flex; flex-direction: column; }
   .resHead { display: flex; align-items: center; gap: 18px; font-size: 12px; letter-spacing: 1px; margin-bottom: 8px; flex-wrap: wrap; }
@@ -208,11 +212,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.12.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.13.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.13.0 — AFTER-ACTION REPORT</b><br>Polish pass: winning or losing now ends on a proper <b>battle summary</b> instead of a bare title. The victory/defeat screen tallies <b>drones destroyed, waves repelled, cities held, districts &amp; forces lost, and time in combat</b>, topped with a performance commendation (hold every city untouched for a ★★★ <i>Flawless Defense</i>). Gives each battle a real payoff and a score to beat.</p>
     <p><b>v3.12.0 — DEFLECTOR TECH PATH</b><br><b>Deflector Shields</b> is now a <b>combination of the Point Defense and Directed Energy upgrades</b> — it sits downstream of both on the research tree and requires you to have researched each before you can unlock the Shield Generator. A deflector field is the fusion of an interceptor's targeting and a beam weapon's projector tech, so the path now reflects that.</p>
     <p><b>v3.11.0 — CAMERA & UI</b><br>Two quality-of-life controls. <b>Zoom:</b> roll the mouse wheel (or use the +/−/⌂ buttons, bottom-right) to zoom in toward the cursor and back out — get right down on your units to watch them fight, or pull back to the full view. (Shift+wheel still pans the tall sky vertically.) <b>Minimize the build bar:</b> the ⚙ BUILD header now has a ▾ arrow that collapses the whole build panel down to a small tab so it's out of your way — click ▸ to bring it back.</p>
     <p><b>v3.10.0 — DEFENSE & DESTRUCTION</b><br><b>The rod apocalypse has answers now.</b> A new DEFENSE research line: <b>Point Defense</b> (Aegis Battery — rapid flak that swats incoming missiles & tungsten rods), <b>Microrockets</b> (rockets that split into several INDEPENDENTLY-homing submunitions — re-arms your strike aircraft & unlocks the Microrocket Battery), and <b>Deflector Shields</b> (Shield Generators that dome your forces — rods, missiles & bombs splash off them until battered down, then recharge). Plus <b>Particle Beams</b> off the energy line — Particle Cannons fire single hypervelocity bolts that punch through anything at any altitude. And <b>dispersed ballistic platforms</b> — a road-mobile Launcher (TEL), an offshore Arsenal Ship and a Ballistic Submarine — so your strike arsenal isn't all in one silo waiting to be glassed; plant them in important spots. <br><b>Enemies now break apart by what kills them:</b> lasers slag & drop them intact; guns leave them smoking & riddled before they fall; missiles pop and tumble out of the sky; plasma blows the body off the shot with spall trailing behind; railguns & particle bolts split them clean in half with a debris cloud. Explosions got a bright bloom and leave <b>black smoke rising to fill the sky</b>. <br><b>Fixes:</b> tungsten-rod bombardment now rains on cities & your infrastructure across the WHOLE map — no longer just wherever your camera is looking; and the Cluster MIRV now reliably splits at the top of its arc instead of occasionally fizzling. The Mass-Driver Railway moved down to Orbital Operations (earlier access).</p>
@@ -338,7 +343,7 @@
   <button class="back" id="backBtn">❮ ABANDON</button>
 </div>
 
-<div id="endScreen"><h1 id="endTitle"></h1><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
+<div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endStats"></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
 <div id="nowPlaying"></div>
@@ -1380,6 +1385,7 @@ function newGame(diff) {
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, blackout: 0, nextBlackout: 30, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
     speed: 1, paused: false, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],
+    kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
   };
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
@@ -2044,6 +2050,7 @@ function groundBurst(x, power) {   // shockwave kicks terrain into the air
 }
 function shrapnel(x, y, n, dmg) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 130 + Math.random() * 130; G.parts.push({ k: 'shrap', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .45 + Math.random() * .4, dmg }); } }
 function destroyUnit(u) {
+  if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
   const d = u.d, big = d.s >= 5 || d.hp >= 250, power = Math.min(30, d.s * 2.4 + (big ? 12 : 0));
   const frac = (u._lastHit || 0) / (u.maxHp || d.hp || 1);
   let style = pickStyle(u.killBy, d.domain, d.s, frac); if (d.domain === 'space' && (style === 'vapor' || style === 'deform' || style === 'gunned')) style = 'split';   // satellites SHATTER in the vacuum — they don't slump & fall
@@ -2058,6 +2065,7 @@ function destroyUnit(u) {
   if (big) { shake(11); groundBurst(u.x, 20); shrapnel(u.x, u.y, Math.round(d.s * 1.4), Math.max(4, d.s)); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 4, life: .18 }); craters.push({ x: u.x, r: 24 + d.s * 3, depth: .05 + d.s * .006 }); if (craters.length > 70) craters.shift(); SFX.boom(); }
 }
 function destroyEnemy(e) {
+  G.kills = (G.kills || 0) + 1;
   if (G.salvage) { const refund = Math.round(5 + (e.maxHp || 10) * .14); G.ic += refund; floatText(e.x, e.y, '+' + refund + ' IC', '#7cffb0'); }   // nanobots reclaim materiel from the wreck
   const s = e.s, big = e.kind === 'bomber' || e.anchored || s >= 5, dom = e.ground ? 'ground' : 'air';
   const frac = (e._lastHit || 0) / (e.maxHp || 1);
@@ -2977,7 +2985,34 @@ function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'scen') open
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); document.getElementById('footer').style.opacity = 0; newGame(pendingDiff); }
 function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenHelp'); localStorage.setItem('tm_seenHelp', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (mode === 'game') openModal('helpModal'); }, 500); }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
-function end(win, msg) { if (!G || G.over) return; G.over = win ? 'win' : 'lose'; const e = document.getElementById('endScreen'); e.style.display = 'flex'; const t = document.getElementById('endTitle'); t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)'; }
+function end(win, msg) {
+  if (!G || G.over) return; G.over = win ? 'win' : 'lose';
+  const e = document.getElementById('endScreen'); e.style.display = 'flex';
+  const t = document.getElementById('endTitle'); t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)';
+  // ── AFTER-ACTION SUMMARY ───────────────────────────────────────────────
+  const citiesAlive = G.cities ? G.cities.filter(c => c.hp > 0 && !c.held).length : 0, citiesTot = G.cities ? G.cities.length : 0;
+  const secs = Math.max(0, Math.round(G.invTime || 0)), dur = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+  const rows = [
+    ['DOCTRINE', G.diffName || '—'],
+    ['DRONES DESTROYED', (G.kills || 0).toLocaleString()],
+    ['WAVES REPELLED', G.waveN || 0],
+    ['CITIES HELD', citiesAlive + ' / ' + citiesTot],
+    ['DISTRICTS LOST', G.lostStructures || 0],
+    ['FORCES LOST', G.unitsLost || 0],
+    ['TIME IN COMBAT', dur],
+  ];
+  const st = document.getElementById('endStats');
+  if (st) st.innerHTML = rows.map(r => '<div class="lbl">' + r[0] + '</div><div class="val">' + r[1] + '</div>').join('');
+  // a light commendation based on how the defense went (cities are everything)
+  const held = citiesTot ? citiesAlive / citiesTot : 0;
+  let rank, col;
+  if (!win) { rank = (G.lostStructures || 0) > 0 ? '✦ A COSTLY STAND ✦' : '✦ THE LINE BROKE ✦'; col = 'var(--inf)'; }
+  else if (held >= 1 && (G.lostStructures || 0) === 0) { rank = '★★★ FLAWLESS DEFENSE — PLANETARY SAVIOUR ★★★'; col = '#ffd86b'; }
+  else if (held >= 0.7) { rank = '★★ WORLD SECURED ★★'; col = 'var(--mp)'; }
+  else if (held > 0) { rank = '★ PYRRHIC VICTORY ★'; col = '#ffb86b'; }
+  else { rank = 'VICTORY AT ANY COST'; col = '#ffb86b'; }
+  const rk = document.getElementById('endRank'); if (rk) { rk.textContent = rank; rk.style.color = col; }
+}
 
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));
 const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only testing your defenses, deciding whether a full invasion is worth it. Light & survivable.', officer: 'DECAPITATION — they mean to behead the leadership fast: a concentrated skyfall drop aimed at your CAPITAL.', general: 'FULL INVASION — a hard ground & air campaign: a mass SKYFALL drop after the opening bombardment, plus ground landings on every flank.', apocalypse: 'ANNIHILATION — the planet was written off. No landing at all: relentless orbital bombardment to GLASS it from orbit. Just survive.' };

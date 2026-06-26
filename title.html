@@ -212,11 +212,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.13.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.13.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.13.1 — BUG FIXES</b><br>Fixes from an independent code review: explosions near a city no longer damage it from high <i>altitude</i> (blast splash now respects vertical distance to city districts, like it already did for units); the research detail panel shows each building's real artwork instead of a generic factory box; and the research tech-tree time estimate now accounts for game speed.</p>
     <p><b>v3.13.0 — AFTER-ACTION REPORT</b><br>Polish pass: winning or losing now ends on a proper <b>battle summary</b> instead of a bare title. The victory/defeat screen tallies <b>drones destroyed, waves repelled, cities held, districts &amp; forces lost, and time in combat</b>, topped with a performance commendation (hold every city untouched for a ★★★ <i>Flawless Defense</i>). Gives each battle a real payoff and a score to beat.</p>
     <p><b>v3.12.0 — DEFLECTOR TECH PATH</b><br><b>Deflector Shields</b> is now a <b>combination of the Point Defense and Directed Energy upgrades</b> — it sits downstream of both on the research tree and requires you to have researched each before you can unlock the Shield Generator. A deflector field is the fusion of an interceptor's targeting and a beam weapon's projector tech, so the path now reflects that.</p>
     <p><b>v3.11.0 — CAMERA & UI</b><br>Two quality-of-life controls. <b>Zoom:</b> roll the mouse wheel (or use the +/−/⌂ buttons, bottom-right) to zoom in toward the cursor and back out — get right down on your units to watch them fight, or pull back to the full view. (Shift+wheel still pans the tall sky vertically.) <b>Minimize the build bar:</b> the ⚙ BUILD header now has a ▾ arrow that collapses the whole build panel down to a small tab so it's out of your way — click ▸ to bring it back.</p>
@@ -2211,7 +2212,7 @@ function splashDamage(x, y, r, dmg, friendly, kb) {
   else {
     for (const u of G.units) { if (u.d.builder || u.onRail) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
     for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); }
-    for (const ct of G.cities) { if (ct.hp <= 0) continue; for (const dst of ct.districts) { if (dst.dead) continue; const dd = (ct.x + dst.dx - x) ** 2; if (dd < r * r) { const e2 = dmg * .4 * fall(dd); damageDistrict(ct, dst, e2); G.stab = Math.max(0, G.stab - .012 * e2); } } }
+    for (const ct of G.cities) { if (ct.hp <= 0) continue; for (const dst of ct.districts) { if (dst.dead) continue; const ddx = ct.x + dst.dx; const dd = (ddx - x) ** 2 + (groundY(ddx) - y) ** 2; if (dd < r * r) { const e2 = dmg * .4 * fall(dd); damageDistrict(ct, dst, e2); G.stab = Math.max(0, G.stab - .012 * e2); } } }
   }
 }
 function plasmaBurst(x, y, r, dmg, friendly) {   // contained slug dumps its heat & SPALLS violently on contact — a hard, weighty kinetic impact
@@ -3165,7 +3166,7 @@ function buildResearch() {
     el.style.left = (r.x / 1200 * 100) + '%'; el.style.top = (r.y / 600 * 100) + '%'; el.dataset.key = key;
     const star = r.eff && r.eff.indexOf('★') >= 0;
     const tag = done ? '✓' : active ? '◣' : qpos >= 0 ? '#' + (qpos + 1) : star ? '★' : r.dang ? '!' : '';
-    el.innerHTML = `<span class="rn2n">${r.name}</span>` + (r.root ? `<span class="rn2c">your starting era</span>` : `<span class="rn2c">${resCostOf(r)} INF · ~${Math.round(resTimeOf(r) / 0.45)}s</span>`) + (active ? `<div class="rbar"><i style="width:${(1 - G.research.t / G.research.total) * 100}%"></i></div>` : '') + (tag ? `<span class="rtag">${tag}</span>` : '');
+    el.innerHTML = `<span class="rn2n">${r.name}</span>` + (r.root ? `<span class="rn2c">your starting era</span>` : `<span class="rn2c">${resCostOf(r)} INF · ~${Math.round(resTimeOf(r) / (0.45 * (G.speed || 1)))}s</span>`) + (active ? `<div class="rbar"><i style="width:${(1 - G.research.t / G.research.total) * 100}%"></i></div>` : '') + (tag ? `<span class="rtag">${tag}</span>` : '');
     el.onmouseenter = () => { whoom(); el.classList.add('focus'); const rr = RESEARCH[key]; stabPreview = rr && rr.sc ? { txt: '−' + rr.sc + ' unrest', col: '#ff8a6a' } : null; clearTimeout(resHoverT); resHoverT = setTimeout(() => { board.classList.add('scan'); resHighlight(key, true); showResDetail(key); }, 280); };
     el.onmouseleave = () => { clearTimeout(resHoverT); el.classList.remove('focus'); board.classList.remove('scan'); resHighlight(key, false); detail.classList.remove('show'); stabPreview = null; };
     if (active) el.onclick = () => cancelResearch();
@@ -3177,7 +3178,7 @@ function buildResearch() {
 function showResDetail(key) {
   const r = RESEARCH[key], detail = document.getElementById('resDetail'); if (!detail) return;
   const done = G.unlocked[key], reason = done ? null : resLocked(key);
-  const units = (r.units || []).map(u => UNIT_DEFS[u]).filter(Boolean), blds = (r.blds || []).map(b => BUILD_DEFS[b]).filter(Boolean);
+  const units = (r.units || []).map(u => UNIT_DEFS[u]).filter(Boolean), blds = (r.blds || []).map(b => BUILD_DEFS[b] && Object.assign({ key: b }, BUILD_DEFS[b])).filter(Boolean);
   let html = `<h3>${r.name}${r.dang ? ' <span style="color:var(--inf);font-size:10px;letter-spacing:1px">⚠ DANGEROUS</span>' : ''}</h3>`;
   html += `<div class="rdmeta">${r.branch.toUpperCase()} BRANCH · ${['', 'available now', 'requires Fusion Age', 'requires Space Age'][r.tier] || ''}</div>`;
   html += `<div class="rdeff">${r.eff}</div>`;

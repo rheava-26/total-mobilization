@@ -217,7 +217,7 @@
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
-    <p><b>v3.16.0 — GRAPHICS REWORK</b><br>A full visual pass over the whole theatre. <b>The world got deeper:</b> two hazy parallax mountain ranges now roll behind the front line, and the terrain itself grew biome scenery — conifer forests in the wetlands, leafy brush on the plains, dry scrub &amp; pebbles in the deserts, boulders on the rocky heights and glinting snowfields on the peaks (it all keeps clear of your cities). <b>Water is alive:</b> rolling swells, a bright surface crest, drifting sun glints and foam washing at every shoreline. <b>The sky got a ceiling worth scrolling to:</b> a cratered gibbous MOON, slow emerald AURORA curtains rippling through the upper atmosphere, occasional shooting stars through the exosphere, and an anamorphic lens streak on the sun. <b>Combat hits harder on the eyes:</b> explosions now throw glowing EMBERS that arc and gutter out, shockwave rings bloom additively, smoke puffs are lit with a bright crown over a dark body, and young fireballs burn white-hot at the core. The title-screen Earth was remastered too — night-side city lights glitter as continents roll into darkness, the ocean catches a specular sun glint, a sunlit rim wraps the day side, and tiny satellites blink along tilted orbits. A soft vignette frames it all. (Aurora, meteors &amp; planet spin respect the REDUCED MOTION option.)</p>
+    <p><b>v3.16.0 — GRAPHICS REWORK</b><br>A full visual pass over the whole theatre. <b>The world got deeper:</b> two hazy parallax mountain ranges now roll behind the front line, and the terrain itself grew biome scenery — conifer forests in the wetlands, leafy brush on the plains, dry scrub &amp; pebbles in the deserts, boulders on the rocky heights and glinting snowfields on the peaks (it all keeps clear of your cities). <b>Water is alive:</b> rolling swells, a bright surface crest, drifting sun glints and foam washing at every shoreline. <b>The sky got a ceiling worth scrolling to:</b> a cratered gibbous MOON, slow emerald AURORA curtains rippling through the upper atmosphere, occasional shooting stars through the exosphere, and an anamorphic lens streak on the sun. <b>Combat hits harder on the eyes:</b> explosions now throw glowing EMBERS that arc and gutter out, shockwave rings bloom additively, smoke puffs are lit with a bright crown over a dark body, and young fireballs burn white-hot at the core. The title-screen Earth was remastered too — night-side city lights glitter as continents roll into darkness, the ocean catches a specular sun glint, a sunlit rim wraps the day side, and tiny satellites blink along tilted orbits. A soft vignette frames it all. (Aurora, meteors &amp; planet spin respect the REDUCED MOTION option.) <b>Zoomed-in scrolling fixed:</b> the camera clamps are now zoom-aware, so while zoomed in you can finally pan all the way to the ground, the world's edges and the bottom of the subterranean layer; pan speed matches what the eye sees at any zoom, and the minimap's white viewport box tracks the true visible span.</p>
     <p><b>v3.15.0 — STABILITY ECONOMY REWORK</b><br>A big rebalance of the political economy to smooth the difficulty curve. <b>Influence now comes ONLY from Stability</b> — the higher your stability, the faster research &amp; army cap grow. Stability no longer ticks up freely; it climbs <b>slowly toward a STABILITY CAP</b> (shown as <i>cur / cap</i> up top). <b>Comms Towers, Propaganda Bureaus &amp; Radar now raise that CAP</b> instead of granting flat stability/influence. Dangerous-research <b>⚠ unrest now recovers on its own</b> over time, so you're never permanently walled out. <b>Fixes:</b> your own Mind-Forge plasma column no longer fries your own troops; Arsenal Ships / Ballistic Subs now build at the water surface instead of briefly appearing on the seabed. <b>Fire Control</b> got a full Field Manual entry (open <span class="clog" onclick="openModal('helpModal')">the manual</span>) — it works; it just needed explaining.</p>
     <p><b>v3.14.0 — GLOBAL PROJECTILES &amp; CLEARER GUNS</b><br>Projectiles now live <b>everywhere on the map</b>, not just near your camera — battles on a far front fully resolve even while you're watching somewhere else (shells, missiles, rail slugs and rockets used to be culled off-screen). Also clarified the <b>Fire Control</b> guns: select a heavy gun (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon), hit <b>⊕ ADD TO FIRE CONTROL</b>, then <b>click incoming enemies inside its radar to designate them</b> — the gun then fires only at what you mark (right-click / Esc releases). Stale "manual control" wording on a few guns was corrected to match.</p>
     <p><b>v3.13.1 — BUG FIXES</b><br>Fixes from an independent code review: explosions near a city no longer damage it from high <i>altitude</i> (blast splash now respects vertical distance to city districts, like it already did for units); the research detail panel shows each building's real artwork instead of a generic factory box; and the research tech-tree time estimate now accounts for game speed.</p>
@@ -628,7 +628,9 @@ const wyAt = py => py + cam.y;         // UNSCALED screen -> world Y (the world 
 const scrToWX = px => (px - W / 2) / (cam.z || 1) + W / 2 + cam.x;
 const scrToWY = py => (py - H / 2) / (cam.z || 1) + H / 2 + cam.y;
 const mwx = () => scrToWX(mouse.x), mwy = () => scrToWY(mouse.y);   // world point under the cursor
-const clampCamY = y => Math.max(0, Math.min(worldH() - H, y));
+// camera clamps are ZOOM-AWARE: the render scales around the viewport centre, so at z>1 only the central W/z × H/z of the
+// unscaled strip is visible — the clamps widen by the cropped margin so the world's edges (and the ground!) stay reachable
+const clampCamY = y => { const m = H / 2 - H / (2 * (cam.z || 1)); return Math.max(-m, Math.min(worldH() - H + m, y)); };
 function biome(e, m) { if (e < .30) return '#c9b787'; if (e > .82) return '#eef4fb'; if (e > .70) return '#928d86'; if (m > .62) return e > .5 ? '#2c5f2c' : '#347a35'; if (m < .36) return e > .5 ? '#b9a06a' : '#caa463'; return e > .5 ? '#4e8a3c' : '#5a9748'; }
 let G = null, soc = { sky: null, tint: null };
 
@@ -1521,7 +1523,7 @@ function newGame(diff) {
   for (let i = 0; i < nCity; i++) { let x = WORLD_W * (0.09 + 0.82 / (nCity - 1) * i) + (Math.random() - .5) * 300; x = flatLand(Math.max(220, Math.min(WORLD_W - 220, x))); G.cities.push(buildCity(x, i === capIdx, 150, 700, false)); }
   mergeCities();
   const cap = G.cities.find(ct => ct.capital) || G.cities[0];
-  cam.x = clampCam(cap.x - W / 2); cam.y = clampCamY(worldH()); cam.z = 1; cam.manualT = 0;   // start framed on the ground (bottom of the tall world)
+  cam.z = 1; cam.x = clampCam(cap.x - W / 2); cam.y = clampCamY(worldH()); cam.manualT = 0;   // start framed on the ground (bottom of the tall world) — zoom reset FIRST so the clamps use z=1
   // resource nodes
   const types = ['steel', 'oil', 'rare', 'uranium', 'steel', 'oil', 'rare', 'uranium'];
   for (let i = 0; i < types.length; i++) { let x = flatLand(WORLD_W * (0.07 + 0.84 / (types.length - 1) * i) + (Math.random() - .5) * 160); G.nodes.push({ x, type: types[i], used: false }); }
@@ -2111,15 +2113,16 @@ function updateGame(dt) {
   if (G.stab <= 0) return end(false, 'STABILITY COLLAPSED');
 }
 function updateCamera(dt) {   // runs every frame (even while paused) so scrolling always works
+  const cz = cam.z || 1;   // pan in SCREEN-space speed — while zoomed in, world-space panning slows down to match what the eye sees
   let pan = 0; if (keys['arrowleft'] || keys['a']) pan -= 1; if (keys['arrowright'] || keys['d']) pan += 1;
   if (edgeScroll && mouse.active) { if (mouse.x < 24) pan -= 1; if (mouse.x > W - 24) pan += 1; }
-  if (pan) cam.x = clampCam(cam.x + pan * 900 * dt);
+  if (pan) cam.x = clampCam(cam.x + pan * 900 * dt / cz);
   // VERTICAL scroll — the sky is taller than the screen. Manual control (W/S, ↑/↓, top/bottom edges) takes over for a few
   // seconds, then the camera eases back to auto-framing the action's altitude.
   let vpan = 0; if (keys['arrowup'] || keys['w']) vpan -= 1; if (keys['arrowdown'] || keys['s']) vpan += 1;
   if (edgeScroll && mouse.active) { if (mouse.y < 24) vpan -= 1; if (mouse.y > H - 24) vpan += 1; }
   if (cam.manualT > 0) cam.manualT -= dt;
-  if (vpan) { cam.y = clampCamY(cam.y + vpan * 850 * dt); cam.manualT = 3.5; }
+  if (vpan) { cam.y = clampCamY(cam.y + vpan * 850 * dt / cz); cam.manualT = 3.5; }
   else if (cam.manualT <= 0 && G && mode === 'game') { const tgt = autoCamY(); cam.y += (tgt - cam.y) * Math.min(1, dt * 1.6); cam.y = clampCamY(cam.y); }
 }
 // where the vertical camera wants to sit: framing the ground by default, rising to show high-altitude threats only when the
@@ -2130,7 +2133,7 @@ function autoCamY() {
   const x0 = cam.x - 40, x1 = cam.x + W + 40, lowBand = TROPO_Y(); let hi = null, lowThreat = false;
   for (const e of G.enemies) { if (e.reentry || e.x < x0 || e.x > x1) continue; if (e.y >= lowBand) lowThreat = true; if (hi == null || e.y < hi) hi = e.y; }
   if (lowThreat || hi == null) return restY;          // there's a fight near the ground → keep it framed
-  return clampCamY(hi - H * .28);                       // sky-only action → rise to it
+  return clampCamY(hi - H / 2 + H * .22 / (cam.z || 1));   // sky-only action → rise to it (framed 28% down the VISIBLE viewport at any zoom)
 }
 let shakeAmt = 0; function shake(a) { shakeAmt = Math.min(16, Math.max(shakeAmt, a)); }
 function nearCity(x) { let b = null, bd = 1e9; for (const ct of G.cities) if (ct.hp > 0) { const d = Math.abs(ct.x - x); if (d < bd) { bd = d; b = ct; } } return b; }
@@ -2978,9 +2981,9 @@ function drawMinimap() {
   let frontX = null, fd = 1e9; const capX = (G.cities.find(c => c.capital) || {}).x;
   for (const e of G.enemies) { const ground = e.ground || e.anchored; c.fillStyle = e.boss ? '#ff2a2a' : '#ff5a5a'; c.fillRect(MM.x + e.x * sc, ground ? gy - 3 : MM.y + 2 + (e.y / worldH()) * MM.h * .55, e.boss ? 3 : 1.5, e.boss ? 3 : 1.5); if (ground && capX != null) { const d = Math.abs(e.x - capX); if (d < fd) { fd = d; frontX = e.x; } } }
   if (frontX != null) { c.strokeStyle = 'rgba(255,80,80,.8)'; c.lineWidth = 1; c.setLineDash([2, 2]); c.beginPath(); c.moveTo(MM.x + frontX * sc, MM.y + 1); c.lineTo(MM.x + frontX * sc, MM.y + MM.h - 1); c.stroke(); c.setLineDash([]); }
-  c.strokeStyle = '#fff'; c.strokeRect(MM.x + cam.x * sc, MM.y + 1, (W / (cam.z || 1)) * sc, MM.h - 2);
+  c.strokeStyle = '#fff'; c.strokeRect(MM.x + (cam.x + W / 2 - W / (2 * (cam.z || 1))) * sc, MM.y + 1, (W / (cam.z || 1)) * sc, MM.h - 2);   // box tracks the VISIBLE span (zoom crops the strip around its centre)
 }
-function clampCam(x) { return Math.max(0, Math.min(WORLD_W - W, x)); }
+function clampCam(x) { const m = W / 2 - W / (2 * (cam.z || 1)); return Math.max(-m, Math.min(WORLD_W - W + m, x)); }   // zoom-aware (see clampCamY)
 
 /* =====================================================================
    SELECTION / INFO
@@ -3373,7 +3376,7 @@ cv.addEventListener('mousedown', e => {
 });
 addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); });
 addEventListener('mouseup', () => mmDrag = false);
-cv.addEventListener('wheel', e => { if (mode !== 'game' || !G) return; e.preventDefault(); if (e.shiftKey) { cam.y = clampCamY(cam.y + Math.sign(e.deltaY) * 90); cam.manualT = 3.5; } else { zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.14 : 1 / 1.14); } }, { passive: false });   // wheel = ZOOM toward the cursor; Shift+wheel = pan the tall skybox vertically
+cv.addEventListener('wheel', e => { if (mode !== 'game' || !G) return; e.preventDefault(); if (e.shiftKey) { cam.y = clampCamY(cam.y + Math.sign(e.deltaY) * 90 / (cam.z || 1)); cam.manualT = 3.5; } else { zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.14 : 1 / 1.14); } }, { passive: false });   // wheel = ZOOM toward the cursor; Shift+wheel = pan the tall skybox vertically (screen-space step at any zoom)
 // ZOOM — scale the world around the viewport centre; zoomAt keeps the world point under (px,py) fixed so it zooms toward the cursor
 function zoomAt(px, py, factor) {
   const z0 = cam.z || 1, z1 = Math.max(1, Math.min(3, z0 * factor)); if (z1 === z0) return;

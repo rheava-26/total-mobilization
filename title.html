@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>TOTAL MOBILIZATION</title>
 <style>
   :root { --ui-scale: 1; --ic: #4ea8ff; --mp: #5dff8d; --inf: #ff5a5a; --stab: #ffd23f; --res: #c89bff;
     --paper: #d7e2ee; --panel: rgba(10,16,26,0.88); --line: rgba(150,190,240,0.30); --term: #6dffb0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #02030a; font-family: "Consolas", ui-monospace, monospace; cursor: crosshair; }
-  #bg { position: fixed; inset: 0; display: block; z-index: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #02030a; font-family: "Consolas", ui-monospace, monospace; cursor: crosshair; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  #bg { position: fixed; inset: 0; display: block; z-index: 0; touch-action: none; }   /* the game canvas owns its gestures (drag-pan / pinch-zoom) */
 
   #ui { position: fixed; inset: 0; z-index: 2; transform: scale(var(--ui-scale)); transform-origin: center; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .4s; }
   #ui > * { pointer-events: auto; } #ui.hidden, #ui.hidden * { opacity: 0; pointer-events: none !important; }
@@ -56,6 +56,8 @@
   .cell.ic .l { color: var(--ic); } .cell.mp .l { color: var(--mp); } .cell.inf .l { color: var(--inf); } .cell.stab .l { color: var(--stab); } .cell.res .l { color: var(--res); }
   .hbtn { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 11px; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; font-family: inherit; color: var(--paper); }
   .hbtn:hover { border-color: var(--ic); } .hbtn.on { background: var(--ic); color: #05111f; }
+  .hbtn.attn { border-color: var(--term); color: var(--term); animation: attnPulse 1.5s ease-in-out infinite; }   /* onboarding: pulse a button the player hasn't discovered yet */
+  @keyframes attnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(109,255,176,0); } 50% { box-shadow: 0 0 14px 2px rgba(109,255,176,.6); } }
   .sbtn { min-width: 30px; justify-content: center; } .sbtn.act { background: var(--ic); color: #05111f; }
   .srbar { display: flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
   .srbar .sr { font-size: 11px; color: var(--res); letter-spacing: 1px; } .srbar .none { color: #5c7290; }
@@ -193,6 +195,36 @@
   #musicModal .maddrow input { flex: 1; background: #0a1322; border: 1px solid var(--line); border-radius: 4px; color: #eaf2ff; padding: 8px 10px; font-family: inherit; font-size: 12px; }
   #musicModal .maddrow .pill { white-space: nowrap; }
   #musicModal .mnote { font-size: 10.5px; color: #7c90ac; margin-top: 6px; line-height: 1.5; }
+
+  /* ===== MOBILE / SMALL SCREENS — compact HUD, touch-sized targets ===== */
+  @media (pointer: coarse) {
+    .hbtn { min-height: 40px; padding: 6px 13px; }               /* finger-sized buttons */
+    #zoomctl button { width: 42px; height: 42px; font-size: 20px; }
+    .bbmin { padding: 4px 10px; font-size: 15px; }
+    .toggle { width: 56px; height: 27px; } .toggle .knob { width: 21px; height: 21px; } .toggle.on .knob { left: 32px; }
+    .bcard { width: 86px; } .bcard canvas { width: 78px; }
+    .diff { padding: 11px 7px; }
+    .pill { padding: 12px 20px; }
+    .has-tip { text-decoration: none; }                          /* hover tooltips don't exist on touch */
+  }
+  @media (max-width: 900px) {
+    h1 { font-size: 42px; letter-spacing: 4px; }
+    .kicker { font-size: 10px; letter-spacing: 3px; }
+    .subtitle { font-size: 10px; letter-spacing: 1.5px; }
+    .menu { width: min(92vw, 340px); }
+    .topbar { gap: 3px; padding: 4px; }
+    .cell { min-width: 62px; padding: 2px 6px; } .cell .n { font-size: 12px; }
+    .srbar { display: none; }                                    /* special resources live in 📊 STATS on small screens */
+    .objwrap { padding: 3px 8px; } .objwrap .big { font-size: 11px; } .objwrap .sub { font-size: 8.5px; }
+    .buildbar { max-width: min(52vw, 300px); } .bbgrid { max-width: none; max-height: 32vh; overflow-y: auto; }
+    .produce { max-width: 96vw; } .pgrid { max-width: 94vw; max-height: 36vh; }
+    .info { width: 180px; top: 92px; }
+    .ghint { font-size: 10.5px; max-width: 94vw; top: 38%; background: rgba(6,12,24,.82); border: 1px solid rgba(109,255,176,.35); border-radius: 6px; padding: 9px 12px; line-height: 1.5; }   /* the wrapped topbar eats the top of the screen — drop the hint to mid-screen on its own panel */
+    .modal { padding: 14px; } input[type=range] { width: 140px; }
+    .toast { bottom: 130px; max-width: 92vw; font-size: 11px; }
+    #strikePanel { min-width: 0; width: 94vw; }
+    .footer { font-size: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -212,11 +244,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.17.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.18.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.18.0 — AIR COMMAND · MOBILE · ACCESSIBILITY</b><br><b>✈ AIR COMMAND fixes aircraft spam:</b> every crewed aircraft now needs a hangar slot — Airbases grant 6, Underground Airwings 3, Aero Works 4; carrier wings support themselves and disposable drones are exempt (swarming is their doctrine). Your air force is capped by real, bombable infrastructure instead of raw money — the PRODUCE header shows ✈ used/total, and it mirrors the orbital-LIFT rule the space fleet already lives by. <b>From the playtest doc:</b> the PRODUCE button now pulses until first use (with a reminder if your factories sit idle), and the moment your first silo finishes, ☢ STRIKE pulses and tells you it's ready — no more finishing a whole campaign without ever finding either. <b>📱 MOBILE:</b> full touch controls — tap to select/place/fire, one-finger drag to scroll the front, pinch to zoom, long-press to cancel, minimap scrubbing — plus a compact small-screen HUD with finger-sized buttons. <b>♿ ACCESSIBILITY:</b> the OPTIONS menu grew a dedicated section — Screen Shake toggle, Flash Reduction (dims nuke/muzzle strobes for photosensitivity), Colorblind-Friendly health bars (blue/orange), and a Film Grain &amp; Vignette toggle; all settings (plus UI scale) now SAVE on your device, and the game respects your system's reduced-motion preference out of the box.</p>
     <p><b>v3.17.0 — UNIT GRAPHICS REWORK</b><br>The army got a full art pass. Every core unit now carries a proper <b>three-tone paint job</b> — sun-struck upper facets, shaded skirts &amp; undersides, and a coloured <b>identification stripe</b> (cyan for your forces, ember-red on hostiles, applied automatically when drones seize your ground units' colours). Tanks grew commander cupolas, muzzle ends and lit road-wheel hubs; SAMs show their nose cones; the railgun's capacitor bank visibly charges. <b>Things move now:</b> helicopter main &amp; tail rotors actually spin (with a motion-blur disc), the AA track's search radar sweeps, combat-drone rotors whirl, and every jet trails a <b>flickering afterburner flame</b>. Canopies catch a white glint; warships and carriers churn a wake, flash deck markings and blink masthead beacons. The autodrone fleet reads meaner: faceted armour catching the skylight, <b>pulsing hunter-red cores</b>, glowing missile-tube mouths, breathing forge hearts and charged rail tips. Kinetic weapons — cannons, railguns, tank guns — now kick a proper <b>muzzle flash</b>. And the background got fixed too: the parallax ranges are now <b>real jagged mountains</b> (ridged-noise crests with V-cut valleys) wearing <b>snowcaps</b> above the snowline, instead of soft rolling swells.</p>
     <p><b>v3.16.0 — GRAPHICS REWORK</b><br>A full visual pass over the whole theatre. <b>The world got deeper:</b> two hazy parallax mountain ranges now roll behind the front line, and the terrain itself grew biome scenery — conifer forests in the wetlands, leafy brush on the plains, dry scrub &amp; pebbles in the deserts, boulders on the rocky heights and glinting snowfields on the peaks (it all keeps clear of your cities). <b>Water is alive:</b> rolling swells, a bright surface crest, drifting sun glints and foam washing at every shoreline. <b>The sky got a ceiling worth scrolling to:</b> a cratered gibbous MOON, slow emerald AURORA curtains rippling through the upper atmosphere, occasional shooting stars through the exosphere, and an anamorphic lens streak on the sun. <b>Combat hits harder on the eyes:</b> explosions now throw glowing EMBERS that arc and gutter out, shockwave rings bloom additively, smoke puffs are lit with a bright crown over a dark body, and young fireballs burn white-hot at the core. The title-screen Earth was remastered too — night-side city lights glitter as continents roll into darkness, the ocean catches a specular sun glint, a sunlit rim wraps the day side, and tiny satellites blink along tilted orbits. A soft vignette frames it all. (Aurora, meteors &amp; planet spin respect the REDUCED MOTION option.) <b>Zoomed-in scrolling fixed:</b> the camera clamps are now zoom-aware, so while zoomed in you can finally pan all the way to the ground, the world's edges and the bottom of the subterranean layer; pan speed matches what the eye sees at any zoom, and the minimap's white viewport box tracks the true visible span.</p>
     <p><b>v3.15.0 — STABILITY ECONOMY REWORK</b><br>A big rebalance of the political economy to smooth the difficulty curve. <b>Influence now comes ONLY from Stability</b> — the higher your stability, the faster research &amp; army cap grow. Stability no longer ticks up freely; it climbs <b>slowly toward a STABILITY CAP</b> (shown as <i>cur / cap</i> up top). <b>Comms Towers, Propaganda Bureaus &amp; Radar now raise that CAP</b> instead of granting flat stability/influence. Dangerous-research <b>⚠ unrest now recovers on its own</b> over time, so you're never permanently walled out. <b>Fixes:</b> your own Mind-Forge plasma column no longer fries your own troops; Arsenal Ships / Ballistic Subs now build at the water surface instead of briefly appearing on the seabed. <b>Fire Control</b> got a full Field Manual entry (open <span class="clog" onclick="openModal('helpModal')">the manual</span>) — it works; it just needed explaining.</p>
@@ -266,7 +299,13 @@
   <div class="row"><label>UI Scale</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="uiScale" min="60" max="140" value="100"><span class="v" id="uiScaleV">100%</span></div></div>
   <div class="row"><label>Star Density</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="starDen" min="40" max="240" value="150"><span class="v" id="starDenV">150</span></div></div>
   <div class="row"><label>Edge Scroll</label><div class="toggle on" id="tEdge"><div class="knob"></div></div></div>
-  <div class="row"><label>Reduced Motion</label><div class="toggle" id="tMotion"><div class="knob"></div></div></div>
+  <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>ACCESSIBILITY</b></div>
+  <div class="row"><label>Reduced Motion <span style="opacity:.55;font-size:10px">— stills the aurora, meteors &amp; planet spin</span></label><div class="toggle" id="tMotion"><div class="knob"></div></div></div>
+  <div class="row"><label>Screen Shake</label><div class="toggle on" id="tShake"><div class="knob"></div></div></div>
+  <div class="row"><label>Flash Reduction <span style="opacity:.55;font-size:10px">— dims nuke &amp; muzzle flashes (photosensitivity)</span></label><div class="toggle" id="tFlash"><div class="knob"></div></div></div>
+  <div class="row"><label>Colorblind-Friendly Bars <span style="opacity:.55;font-size:10px">— blue/orange instead of green/red</span></label><div class="toggle" id="tCb"><div class="knob"></div></div></div>
+  <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
+  <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
   <div class="actions"><button class="pill" onclick="closeModal('optsModal')">CLOSE</button></div>
 </div></div>
 
@@ -301,7 +340,7 @@
 <div class="modal-bg" id="helpModal"><div class="modal">
   <h2>FIELD MANUAL</h2><div class="hd">// HOW TO COMMAND — AND WHERE</div>
   <div class="helpsec"><h3>① ECONOMY</h3><p><b>IND. CAP</b> builds everything, <b>MANPOWER</b> crews it, <b>INFLUENCE</b> buys research &amp; caps your army — and influence comes <b>only from STABILITY</b> (see ⑦). First thing: open the <span class="k">ECON</span> tab (bottom-left build bar) and place a <b>Power Plant</b> + <b>Housing</b>, then a <b>Comms Tower</b> to lift your stability cap.</p></div>
-  <div class="helpsec"><h3>② PRODUCE UNITS</h3><p>Build a Factory / Airbase / Shipyard / Space Center (build bar), then click <span class="k">PRODUCE</span> (top bar) and pick a unit — it rolls out of the matching building. Anything you research appears here too.</p></div>
+  <div class="helpsec"><h3>② PRODUCE UNITS</h3><p>Build a Factory / Airbase / Shipyard / Space Center (build bar), then click <span class="k">PRODUCE</span> (top bar) and pick a unit — it rolls out of the matching building. Anything you research appears here too. <b>✈ AIR COMMAND:</b> every crewed aircraft needs a hangar slot — Airbases grant 6, Underground Airwings 3, Aero Works 4 (drones are exempt; carrier wings support themselves). A bigger air force means more air infrastructure to build — and defend.</p></div>
   <div class="helpsec"><h3>③ RESEARCH</h3><p>Click <span class="k">RESEARCH</span> and spend <b>INFLUENCE</b> on the tech tree. Doctrines unlock whole new armies — drones, androids, psionics, superhumans — and the ★ superweapons. Click several nodes to <b>queue</b> them; they auto-start as influence accrues.</p></div>
   <div class="helpsec"><h3>④ ☢ STRATEGIC STRIKES</h3><p>Build a <b>Missile Silo</b> (<span class="k">DEF</span> tab), then click <span class="k">☢ STRIKE</span> → choose a weapon → click the battlefield. Your launch sites are marked ▲. Strikes cost <b>STABILITY</b>, not a long reload — call them whenever the line breaks.</p></div>
   <div class="helpsec"><h3>⑤ SPECIAL RESOURCES</h3><p>Build <b>Extractors</b> on the glowing deposits. Owning Steel / Oil / Rare / Uranium permanently <b>cheapens</b> your units and softens the stability cost of strikes — they decide everything late-game.</p></div>
@@ -371,6 +410,7 @@ function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; buil
 addEventListener('resize', resize);
 
 let mode = 'title', zoomStart = 0, reducedMotion = false, edgeScroll = true;
+let shakeOn = true, flashRed = false, cbMode = false, grainOn = true;   // accessibility: screen shake · flash reduction (photosensitivity) · colorblind-safe bar colors · film grain+vignette
 const ZOOM_DUR = 2.0;
 const mouse = { x: -9999, y: -9999, active: false };
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; });
@@ -1504,12 +1544,12 @@ const BUILD_DEFS = {
   factory:  { name: 'Factory', cat: 'PROD', ic: 160, mp: 105, build: 10, hp: 280, w: 23, h: 18, prod: 'ground', garrison: { keys: ['tank', 'inf', 'aa'], n: 3 }, makes: { alloy: .35 }, ds: 'Produces GROUND units. Keeps a standing combined-arms garrison (tanks, infantry, AA). Also forges HEAVY ALLOY (spent on heavy armour). More factories = cheaper units.' },
   barracks: { name: 'Barracks', cat: 'PROD', ic: 70, mp: 40, build: 5, hp: 160, w: 16, h: 12, garrison: { keys: ['inf'], n: 3 }, ds: 'Cheap & quick — keeps a small standing garrison of infantry to hold ground.' },
   shipyard: { name: 'Shipyard', cat: 'PROD', ic: 180, mp: 105, build: 11, hp: 260, w: 23, h: 18, prod: 'naval', needWater: true, garrison: { key: 'destroyer', n: 1 }, ds: 'Coastal. Produces NAVAL units. Keeps a guard destroyer.' },
-  airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { keys: ['fighter', 'strikejet', 'heli'], n: 3 }, ds: 'Produces AIR units. Keeps a standing MIXED air patrol — interceptors, strike jets & helicopters (air superiority + close air support). More airbases = cheaper aircraft.' },
+  airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { keys: ['fighter', 'strikejet', 'heli'], n: 3 }, ds: 'Produces AIR units and grants ✈ +6 AIR COMMAND (hangar slots — every crewed aircraft needs one). Keeps a standing MIXED air patrol — interceptors, strike jets & helicopters. More airbases = cheaper aircraft AND a bigger air force.' },
   spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces ORBITAL units, launched to orbit by rocket (or railgun-tossed once Space Age). Builds ROCKET PARTS and provides 5 ORBITAL LIFT capacity — every orbital unit reserves lift, so a bigger space fleet needs more Centers. Keeps a guard satellite.' },
   // PRODUCTION LINES — a parts plant that adds a whole new unit type NATIVE to your factories with no research (an alternative to the tech tree)
   missileworks:{ name: 'Missile Works', cat: 'PROD', ic: 200, mp: 90, build: 11, hp: 240, w: 20, h: 14, ds: 'Guided-munitions plant. Adds a new factory unit: the "Hydra" rocket battery — long-range saturation salvos — with no research.' },
   heavyfoundry:{ name: 'Heavy Foundry', cat: 'PROD', ic: 340, mp: 150, build: 15, hp: 320, w: 22, h: 16, makes: { alloy: 1 }, ds: 'Heavy-armor foundry — pours HEAVY ALLOY fast (the parts heavy & super-heavy tanks are built from). Adds a new factory unit: the "Mammoth" super-heavy tank — colossal armor & cannon — with no research.' },
-  aeroworks:{ name: 'Aero Works', cat: 'PROD', ic: 320, mp: 130, build: 14, hp: 260, w: 24, h: 16, prodUnlock: ['laserplane'], ds: 'Advanced airframe plant. Adds a new airbase unit — the "Lancer" heavy bomber — AND lets you build Laser Planes natively (no Directed Energy research).' },
+  aeroworks:{ name: 'Aero Works', cat: 'PROD', ic: 320, mp: 130, build: 14, hp: 260, w: 24, h: 16, prodUnlock: ['laserplane'], ds: 'Advanced airframe plant granting ✈ +4 AIR COMMAND. Adds a new airbase unit — the "Lancer" heavy bomber — AND lets you build Laser Planes natively (no Directed Energy research).' },
   // DEFENSE
   bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .72, pd: true, plasmaable: true, manual: true, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned. Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'tracer', range: 560, dmg: 5, rate: .1, ceil: .4, pd: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon throwing a wall of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Cheap — screen your cities with them. No research needed.' },
@@ -1552,7 +1592,7 @@ const BUILD_DEFS = {
   plasmabastion:{ name: 'Plasma Bastion Works', cat: 'SPEC', ic: 360, mp: 95, build: 15, hp: 300, w: 20, h: 16, req: 'plasma', bDef: 2, ds: 'Upgrades every building & city defense to heavy PLASMA cannons — long reach, hard-hitting, fire high into the sky. Turns your whole civilisation into a fortress. (Plasma Weapons)' },
   superconductor:{ name: 'Superconductor Facility', cat: 'SPEC', ic: 260, mp: 90, build: 13, hp: 220, w: 18, h: 18, req: 'directedenergy', gmod: { costElec: .3, resCost: .1 }, ds: 'High-tech electronics (radars, lasers, railguns, satellites, dreadnoughts) cost −30% IC, and research costs −10% influence. (Directed Energy)' },
   mantleforge:{ name: 'Mantle Forge', cat: 'SPEC', ic: 320, mp: 110, build: 16, hp: 300, w: 20, h: 14, req: 'automation', autoBury: 2, econ: { ic: 10, stab: -0.5 }, gmod: { costMech: .3 }, ds: 'A deep lava forge (auto-buries itself to the deep layer): mechanical units −30% IC and a strong IC income — but the upheaval gnaws at stability. (Automation)' },
-  airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
+  airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
   tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. (Telekinesis)' },
   nanitefoundry:{ name: 'Nanite Foundry', cat: 'SPEC', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .2, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
 };
@@ -1714,6 +1754,12 @@ function srMult(d) { let m = 1; if (G.owned.steel && d.domain === 'ground') m *=
 function orbCap() { let c = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.orbcap) c += b.d.orbcap; return c; }
 function orbCapUsed() { let u = 0; for (const x of G.units) if (x.d.domain === 'space' && !x.d.builder) u += x.d.lift || 0; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'space') u += qd.lift || 0; } return u; }   // counts living + queued orbital units (a unit is in exactly one of the two)
 function orbCapFree() { return orbCap() - orbCapUsed(); }
+// ✈ AIR COMMAND — every CREWED aircraft needs hangar support (fuel, ordnance, ground crew), so an air armada is capped by
+// attackable infrastructure instead of raw money: Airbases, Underground Airwings & Aero Works grant slots. Carrier wings
+// support themselves (excluded), and disposable DRONES are exempt — swarming is their whole doctrine. Mirrors orbital LIFT.
+const AIR_SLOTS = { airbase: 6, airwing: 3, aeroworks: 4 };
+function airCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && AIR_SLOTS[b.key]) n += AIR_SLOTS[b.key]; return n; }
+function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone) n++; } return n; }   // living + queued crewed aircraft
 // returns null if the unit can be built, else a reason — the production CHAIN gates: a Special-Resource DEPOSIT, orbital LIFT capacity, and stockpiled COMPONENT PARTS
 function unitReqUnmet(d, grp) { grp = grp || d.grp || 1;
   if (d.srReq && !G.owned[d.srReq]) return 'NEEDS A ' + SR[d.srReq].name.toUpperCase() + ' DEPOSIT — claim one with an Extractor';
@@ -1783,6 +1829,7 @@ function finishSite(site) {
   if (site.d.onNode) { const n = nodeNear(site.x); if (n) { n.used = true; G.owned[n.type] = (G.owned[n.type] || 0) + 1; b.srtype = n.type; toast('CLAIMED ' + SR[n.type].name.toUpperCase()); } }
   if (site.d.garrison) { const g = site.d.garrison, keys = g.keys || [g.key]; if (UNIT_DEFS[keys[0]]) for (let i = 0; i < g.n; i++) spawnGarrison(keys[i % keys.length], site.x + (Math.random() - .5) * site.d.w * 1.6); }   // a combined-arms garrison forms around it
   recalcBuildings();   // a new special building may change global modifiers
+  if (b.d.strat && !G.hintStrike) { G.hintStrike = true; const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('attn'); toast('☢ ' + b.d.name.toUpperCase() + ' READY — press ☢ STRIKE (top bar) to call one down'); }   // playtest: nobody found the STRIKE button — point at it the moment it becomes useful
   if (mode === 'game') { buildProdMenu(); buildBuildBar(); }   // refresh menus so building-driven upgrades (e.g. Drone Assembly batch) show their green highlight immediately
 }
 function spawnUnit(key, x) {
@@ -1857,6 +1904,7 @@ function queueUnit(b, key) {
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) { const pb = prodUnlockBuildingFor(key); return toast('REQUIRES RESEARCH: ' + RESEARCH[d.req].name + (pb ? ' — or build a ' + pb.name : '')); }
   if (unitBReq(d)) return toast('NEEDS A ' + (BUILD_DEFS[d.bReq] ? BUILD_DEFS[d.bReq].name.toUpperCase() : d.bReq));
   if (combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / raise influence');
+  if (d.domain === 'air' && !d.drone) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed aircraft need hangar slots
   const reqUn = unitReqUnmet(d, grp); if (reqUn) return toast(reqUn);   // production-chain gate: SR deposit / orbital lift / component parts
   let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;   // Data Center frees drone manpower; Cloning/Munition/Droid facilities cut it
   const cost = unitCost(d) * grp, mp = mpEach * grp;
@@ -2246,7 +2294,7 @@ function autoCamY() {
   if (lowThreat || hi == null) return restY;          // there's a fight near the ground → keep it framed
   return clampCamY(hi - H / 2 + H * .22 / (cam.z || 1));   // sky-only action → rise to it (framed 28% down the VISIBLE viewport at any zoom)
 }
-let shakeAmt = 0; function shake(a) { shakeAmt = Math.min(16, Math.max(shakeAmt, a)); }
+let shakeAmt = 0; function shake(a) { if (!shakeOn) return; shakeAmt = Math.min(16, Math.max(shakeAmt, a)); }
 function nearCity(x) { let b = null, bd = 1e9; for (const ct of G.cities) if (ct.hp > 0) { const d = Math.abs(ct.x - x); if (d < bd) { bd = d; b = ct; } } return b; }
 function boomW(x, y, p) { boom(x, y, p); if (p >= 12) { craters.push({ x, r: 24 + p, depth: .04 + p * .003 }); if (craters.length > 70) craters.shift(); } }
 
@@ -2994,7 +3042,7 @@ function renderGame() {
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(109,255,176,.92)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('⊕ FIRE CONTROL — ' + G.manualGuns.length + ' gun' + (G.manualGuns.length > 1 ? 's' : '') + ' · ' + G.designated.length + ' target' + (G.designated.length !== 1 ? 's' : '') + ' · click enemies in radar to designate · Esc to release', W / 2, 96); c.textAlign = 'left'; c.restore();
   }
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
-  if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash})`; c.fillRect(0, 0, W, H); c.restore(); }
+  if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
 function renderProj(p, px) {
@@ -3064,11 +3112,11 @@ function neonBuilding(px, gy, w, h) {
 function glow(px, y, r, col, a) { if (a <= .01 || r <= 0) return; const g = c.createRadialGradient(px, y, 0, px, y, r); g.addColorStop(0, col); g.addColorStop(.32, col); g.addColorStop(.6, col.replace(/[\d.]+\)$/, '.45)')); g.addColorStop(1, 'rgba(0,0,0,0)'); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, a); c.fillStyle = g; c.beginPath(); c.arc(px, y, r, 0, 6.28); c.fill(); c.restore(); }
 function renderPart(pt, px) {
   if (pt.k === 'ring') { const la = Math.max(0, pt.life / .35); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .85; c.strokeStyle = '#ffd9a0'; c.lineWidth = 2; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.stroke(); c.globalAlpha = la * .4; c.strokeStyle = '#fff3da'; c.lineWidth = 4.5; c.beginPath(); c.arc(px, pt.y, pt.r * .82, 0, 6.28); c.stroke(); c.restore(); c.globalAlpha = 1; }
-  else if (pt.k === 'flash') { const lf = Math.max(0, pt.life / (pt.bloom ? .26 : .12)); if (pt.bloom) { glow(px, pt.y, pt.r * 3.2, 'rgba(255,228,168,1)', lf * .9); glow(px, pt.y, pt.r * 1.8, 'rgba(255,250,235,1)', lf); } else { glow(px, pt.y, pt.r * 3.6, 'rgba(255,242,210,1)', lf); glow(px, pt.y, pt.r * 1.7, 'rgba(255,255,255,1)', lf); c.globalAlpha = lf; c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; } }
+  else if (pt.k === 'flash') { const lf = Math.max(0, pt.life / (pt.bloom ? .26 : .12)) * (flashRed ? .4 : 1); if (pt.bloom) { glow(px, pt.y, pt.r * 3.2, 'rgba(255,228,168,1)', lf * .9); glow(px, pt.y, pt.r * 1.8, 'rgba(255,250,235,1)', lf); } else { glow(px, pt.y, pt.r * 3.6, 'rgba(255,242,210,1)', lf); glow(px, pt.y, pt.r * 1.7, 'rgba(255,255,255,1)', lf); c.globalAlpha = lf; c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; } }
   else if (pt.k === 'smoke') { const la = Math.max(0, pt.life); if (pt.dark) { c.globalAlpha = Math.min(.5, la * .42); c.fillStyle = '#14161a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = Math.min(.3, la * .25); c.fillStyle = '#2e3138'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .32, pt.r * .55, 0, 6.28); c.fill(); } else { c.globalAlpha = la * .32; c.fillStyle = '#8a8f98'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = la * .2; c.fillStyle = '#cfd4dc'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .35, pt.r * .55, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // shaded puff — lit crown over a darker body
   else if (pt.k === 'fire') { glow(px, pt.y, pt.r * 4, pt.life > .35 ? 'rgba(255,190,70,1)' : 'rgba(255,95,40,1)', Math.min(1, pt.life * 2) * .8); c.globalAlpha = Math.min(1, pt.life * 2) * .8; c.fillStyle = pt.life > .35 ? '#ffd24a' : '#ff5a2a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); if (pt.life > .3) { c.globalAlpha = Math.min(1, pt.life * 2) * .7; c.fillStyle = '#fff6d0'; c.beginPath(); c.arc(px, pt.y - pt.r * .15, pt.r * .45, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // white-hot core while young
   else if (pt.k === 'ember') { const fl = .55 + .45 * Math.sin(pt.tw), la = Math.min(1, pt.life * 1.8) * fl, hot = pt.life > .6; glow(px, pt.y, pt.r * 5, hot ? 'rgba(255,210,110,1)' : 'rgba(255,110,50,1)', la * .5); c.globalAlpha = la; c.fillStyle = hot ? '#ffe9a8' : '#ff8a4a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
-  else if (pt.k === 'muzzle') { const la = Math.max(0, pt.life / .06); c.save(); c.translate(px, pt.y); c.rotate(pt.ang); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .9; c.fillStyle = '#ffdf9a'; c.beginPath(); c.moveTo(pt.r * .4, 0); c.lineTo(pt.r * 2.0, -pt.r * .55); c.lineTo(pt.r * 3.1, 0); c.lineTo(pt.r * 2.0, pt.r * .55); c.closePath(); c.fill(); c.fillStyle = '#fff8e8'; c.beginPath(); c.arc(pt.r * .8, 0, pt.r * .5, 0, 6.28); c.fill(); c.restore(); c.globalAlpha = 1; }   // muzzle blast cone
+  else if (pt.k === 'muzzle') { const la = Math.max(0, pt.life / .06) * (flashRed ? .45 : 1); c.save(); c.translate(px, pt.y); c.rotate(pt.ang); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .9; c.fillStyle = '#ffdf9a'; c.beginPath(); c.moveTo(pt.r * .4, 0); c.lineTo(pt.r * 2.0, -pt.r * .55); c.lineTo(pt.r * 3.1, 0); c.lineTo(pt.r * 2.0, pt.r * .55); c.closePath(); c.fill(); c.fillStyle = '#fff8e8'; c.beginPath(); c.arc(pt.r * .8, 0, pt.r * .5, 0, 6.28); c.fill(); c.restore(); c.globalAlpha = 1; }   // muzzle blast cone
   else if (pt.k === 'plasma') { glow(px, pt.y, pt.r * 4.4, 'rgba(190,140,255,1)', Math.min(1, pt.life * 2.5) * .85); c.globalAlpha = Math.min(1, pt.life * 2.5) * .85; c.fillStyle = pt.life > .3 ? '#dff0ff' : '#c184ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   else if (pt.k === 'wreck') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.scale(pt.facing, 1); c.globalAlpha = Math.min(1, pt.life / 2.5) * .92; if (ART[pt.art]) ART[pt.art](c, pt.s, -.5); c.globalAlpha = .35; c.fillStyle = '#000'; c.fillRect(-pt.s * 2, -pt.s * .2, pt.s * 4, pt.s * .5); c.globalAlpha = 1; c.restore(); }
   else if (pt.k === 'deb') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.globalAlpha = Math.min(1, pt.life); c.fillStyle = '#2a2a2a'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }
@@ -3080,7 +3128,7 @@ function renderPart(pt, px) {
   else if (pt.k === 'shrap') { c.globalAlpha = Math.min(1, pt.life * 2.5); c.strokeStyle = '#ffe0a0'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(px, pt.y); c.lineTo(px - pt.vx * .02, pt.y - pt.vy * .02); c.stroke(); c.globalAlpha = 1; }
   else { glow(px, pt.y, pt.r * 3, 'rgba(255,236,150,1)', Math.min(1, pt.life / .25) * .4); c.globalAlpha = Math.min(1, pt.life / .25); c.fillStyle = '#fff2c0'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
 }
-function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? '#ff6b6b' : '#7cffb0'); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }
+function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? (cbMode ? '#ff9a00' : '#ff6b6b') : (cbMode ? '#37b6ff' : '#7cffb0')); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }   // colorblind mode: blue/orange bars instead of green/red
 const MM = { x: 0, y: 0, w: 240, h: 34 };
 function drawMinimap() {
   MM.w = Math.min(280, W * .26); MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
@@ -3118,7 +3166,7 @@ function produceGlobal(key) {
   queueUnit(facs[0], key);
 }
 function buildProdMenu() {
-  const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
+  const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ✈ ' + airUsed() + '/' + airCap() + ' air command   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
   const grid = document.getElementById('pgrid'); grid.innerHTML = '';
   const bm = bmod();
   for (const key in UNIT_DEFS) {
@@ -3129,9 +3177,10 @@ function buildProdMenu() {
     let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
     const baseGrp = base.grp || 1, baseMpEach = Math.round(base.mp * 1.7);
     const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null, chainBits = [];   // production-chain requirements (only meaningful once the unit is otherwise buildable)
-    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
+    const airGate = d.domain === 'air' && !d.drone && !locked && !noFac && airUsed() + grp > airCap();   // hangar slots exhausted
+    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone) chainBits.push('✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
     const upgraded = d !== base, batchUp = grp !== baseGrp, mpUp = mpEach !== baseMpEach, unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || mpUp || unlockedByBld) && !locked;
-    const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn ? ' cant' : '') + (changed ? ' up' : ''); card.dataset.key = key;
+    const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn || airGate ? ' cant' : '') + (changed && !airGate ? ' up' : ''); card.dataset.key = key;
     const nm = upgraded ? `<span class="gx">${d.name}</span>` : d.name;
     const batchTxt = grp > 1 ? ` ×<span class="${batchUp ? 'gx' : ''}">${grp}</span>` : '';
     const icTot = unitCost(d) * grp, mpTot = mpEach * grp;
@@ -3139,6 +3188,7 @@ function buildProdMenu() {
     let chg = '';
     if (changed) { const parts = []; if (upgraded) { parts.push('▲ ' + d.name); if (d.weapon !== base.weapon) parts.push((d.weapon || '').toUpperCase() + ' arms'); } if (unlockedByBld) { const ub = prodUnl ? prodUnlockBuildingFor(key) : (d.bReq ? BUILD_DEFS[d.bReq] : null); parts.push('via ' + (ub ? ub.name : 'production line')); } if (batchUp) parts.push('batch ' + baseGrp + '→' + grp); if (mpUp) parts.push(mpEach === 0 ? '0 MP' : 'MP ' + baseMpEach + '→' + mpEach + ' ea'); chg = `<div class="upchg">${parts.join(' · ')}</div>`; }
     else if (locked) { const hb = reqMissing ? pUnlock : (bReqLock ? BUILD_DEFS[bReqLock] : null); if (hb) chg = `<div class="upchg" style="color:#7fd4ff">🏭 build a ${hb.name}</div>`; }
+    if (airGate) chg = `<div class="upchg" style="color:#ffb86b">✈ air command full — add an Airbase / Airwing / Aero Works</div>`;
     const tag = changed ? `<div class="uptag">${unlockedByBld && !upgraded ? 'NEW' : '▲ UPG'}</div>` : '';
     const chainHtml = chainBits.length ? `<div class="upchg" style="color:${reqUn ? '#ff8a6a' : '#9cc4ff'}">${chainBits.join(' · ')}</div>` : '';
     card.innerHTML = `<canvas width="172" height="68"></canvas>${tag}<div class="un">${nm}${batchTxt}</div><div class="uc">${(d.domain || '').toUpperCase()} · ${icTot} IC · ${mpTxt}</div>${chg}${chainHtml}`;
@@ -3187,6 +3237,7 @@ function logErr(e) { console.error('[TM]', (e && (e.stack || e.message)) || e); 
 // VIGNETTE — a quiet darkening of the frame edges that pulls the eye to the action (cached per canvas size; screen-fixed)
 let vigG = null, vigKey = '';
 function drawVignette() {
+  if (!grainOn) return;   // the "Film Grain & Vignette" accessibility toggle disables both
   const key = W + 'x' + H;
   if (vigKey !== key) { vigKey = key; vigG = c.createRadialGradient(W * .5, H * .48, Math.min(W, H) * .52, W * .5, H * .5, Math.hypot(W, H) * .58); vigG.addColorStop(0, 'rgba(2,5,14,0)'); vigG.addColorStop(.65, 'rgba(2,5,14,.14)'); vigG.addColorStop(1, 'rgba(2,5,14,.4)'); }
   c.fillStyle = vigG; c.fillRect(0, 0, W, H);
@@ -3240,7 +3291,9 @@ function toast(m) { const t = document.getElementById('toast'); t.textContent = 
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); } function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); document.getElementById('footer').style.opacity = 0; newGame(pendingDiff); }
-function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenHelp'); localStorage.setItem('tm_seenHelp', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (mode === 'game') openModal('helpModal'); }, 500); }
+function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenHelp'); localStorage.setItem('tm_seenHelp', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (mode === 'game') openModal('helpModal'); }, 500);
+  document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
+  if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
 function end(win, msg) {
   if (!G || G.over) return; G.over = win ? 'win' : 'lose';
@@ -3277,9 +3330,9 @@ function setDiffDesc(d) { const el = document.getElementById('diffDesc'); if (el
 document.querySelectorAll('.diff').forEach(d => d.addEventListener('click', () => { document.querySelectorAll('.diff').forEach(x => x.classList.remove('sel')); d.classList.add('sel'); pendingDiff = d.dataset.d; setDiffDesc(pendingDiff); }));
 setDiffDesc(pendingDiff);
 document.getElementById('backBtn').addEventListener('click', backToTitle);
-document.getElementById('btnProd').addEventListener('click', () => { const p = document.getElementById('produce'); const showing = p.classList.toggle('show'); document.getElementById('btnProd').classList.toggle('on', showing); if (showing) buildProdMenu(); });
+document.getElementById('btnProd').addEventListener('click', () => { const p = document.getElementById('produce'); const showing = p.classList.toggle('show'); const bp = document.getElementById('btnProd'); bp.classList.toggle('on', showing); bp.classList.remove('attn'); if (G) G.hintProd = true; if (showing) buildProdMenu(); });
 document.getElementById('btnRes').addEventListener('click', () => { buildResearch(); openModal('resModal'); });
-document.getElementById('btnStrike').addEventListener('click', openStrike);
+document.getElementById('btnStrike').addEventListener('click', () => { document.getElementById('btnStrike').classList.remove('attn'); openStrike(); });
 document.getElementById('btnMus').addEventListener('click', musToggle);
 document.getElementById('btnHelp').addEventListener('click', () => { fillManualBuildings(); openModal('helpModal'); });
 // build the Field Manual's building cost table straight from the data + the real placement-cost formulas, so it never drifts
@@ -3360,7 +3413,7 @@ function openStats() {   // universal stat readout — every current modifier in
   const row = (a, b, col) => `<div class="st"><span>${a}</span><b${col ? ' style="color:' + col + '"' : ''}>${b}</b></div>`;
   let h = `<div class="modal"><h2>STATUS REPORT</h2><div class="hd">// EVERY CURRENT STAT &amp; MODIFIER</div><div class="clogbody">`;
   h += `<h3 style="margin:4px 0 4px;color:var(--term)">ECONOMY</h3>`;
-  h += row('Industrial Capacity', Math.round(G.ic) + ' (+' + (G.icR || 0).toFixed(1) + '/s)') + row('Manpower', Math.round(G.mp) + ' (+' + (G.mpR || 0).toFixed(1) + '/s)') + row('Influence', Math.round(G.inf) + ' (+' + (G.infR || 0).toFixed(1) + '/s)') + row('Stability', Math.round(effStab()) + '%' + (G.stabOffset > 1 ? ' (−' + Math.round(G.stabOffset) + ' research unrest, recovering)' : '')) + row('Antimatter', Math.round(G.antimatter || 0)) + row('Orbital lift', orbCapUsed() + ' / ' + orbCap() + ' used') + row('Heavy alloy', Math.floor(G.comp ? G.comp.alloy || 0 : 0)) + row('Rocket parts', Math.floor(G.comp ? G.comp.rocketpart || 0 : 0)) + row('Army', combatCount() + ' / ' + armyCap());
+  h += row('Industrial Capacity', Math.round(G.ic) + ' (+' + (G.icR || 0).toFixed(1) + '/s)') + row('Manpower', Math.round(G.mp) + ' (+' + (G.mpR || 0).toFixed(1) + '/s)') + row('Influence', Math.round(G.inf) + ' (+' + (G.infR || 0).toFixed(1) + '/s)') + row('Stability', Math.round(effStab()) + '%' + (G.stabOffset > 1 ? ' (−' + Math.round(G.stabOffset) + ' research unrest, recovering)' : '')) + row('Antimatter', Math.round(G.antimatter || 0)) + row('Orbital lift', orbCapUsed() + ' / ' + orbCap() + ' used') + row('✈ Air command', airUsed() + ' / ' + airCap() + ' hangar slots') + row('Heavy alloy', Math.floor(G.comp ? G.comp.alloy || 0 : 0)) + row('Rocket parts', Math.floor(G.comp ? G.comp.rocketpart || 0 : 0)) + row('Army', combatCount() + ' / ' + armyCap());
   h += `<h3 style="margin:10px 0 4px;color:var(--term)">CAMPAIGN</h3>` + row('Era', ['Information', 'Fusion', 'Space'][curEra()]) + row('Fleet intent', it ? it.label : '—', '#ff9a6a');
   const owned = Object.keys(G.owned || {}).filter(k => SR[k]); if (owned.length) h += row('Special resources', owned.map(k => SR[k].name).join(', '), 'var(--res)');
   const mults = []; for (const k in G.mult) if (G.mult[k]) mults.push([MULT_LABELS[k] || k, (k === 'capb' ? '+' + G.mult[k] : (G.mult[k] > 0 ? '+' : '') + Math.round(G.mult[k] * 100) + '%')]);
@@ -3474,18 +3527,20 @@ function tickResearchUI() {
 
 // canvas interaction
 let mmDrag = false;
-cv.addEventListener('mousedown', e => {
+function gameTap(px, py, button) {   // shared by mouse (mousedown) and touch (tap) — px/py are raw screen pixels
   if (mode !== 'game' || !G) return;
   // minimap click / drag (works even while paused)
-  if (e.clientX >= MM.x && e.clientX <= MM.x + MM.w && e.clientY >= MM.y && e.clientY <= MM.y + MM.h) { mmDrag = true; cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); return; }
-  const wx = scrToWX(e.clientX), wyc = scrToWY(e.clientY);
-  if (G.targeting) { if (e.button === 2) { G.targeting = null; closeStrike(); toast('strike cancelled'); return; } const ap = strikeAimPoint(); launchStrike(G.targeting.silo, G.targeting.type, ap.x, ap.y, ap.air); G.targeting = null; return; }
-  if (G.strikeMode) { if (e.button === 2) { closeStrike(); return; } }
-  if (G.terrainMode) { if (e.button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
-  if (G.place) { if (e.button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
-  if (manualActive()) { if (e.button === 2) { releaseAllManual(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an in-radar enemy to designate it; right-click releases. (falls through to normal selection if no enemy was clicked, so you can add more guns)
+  if (px >= MM.x && px <= MM.x + MM.w && py >= MM.y && py <= MM.y + MM.h) { mmDrag = true; cam.x = clampCam((px - MM.x) / MM.w * WORLD_W - W / 2); return; }
+  const wx = scrToWX(px), wyc = scrToWY(py);
+  if (G.targeting) { if (button === 2) { G.targeting = null; closeStrike(); toast('strike cancelled'); return; } const ap = strikeAimPoint(); launchStrike(G.targeting.silo, G.targeting.type, ap.x, ap.y, ap.air); G.targeting = null; return; }
+  if (G.strikeMode) { if (button === 2) { closeStrike(); return; } }
+  if (G.terrainMode) { if (button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
+  if (G.place) { if (button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
+  if (manualActive()) { if (button === 2) { releaseAllManual(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an in-radar enemy to designate it; right-click releases. (falls through to normal selection if no enemy was clicked, so you can add more guns)
   const hit = pickAt(wx, wyc); G.sel = hit ? hit.o : null; refreshSel();
-});
+}
+function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
+cv.addEventListener('mousedown', e => gameTap(e.clientX, e.clientY, e.button));
 addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); });
 addEventListener('mouseup', () => mmDrag = false);
 cv.addEventListener('wheel', e => { if (mode !== 'game' || !G) return; e.preventDefault(); if (e.shiftKey) { cam.y = clampCamY(cam.y + Math.sign(e.deltaY) * 90 / (cam.z || 1)); cam.manualT = 3.5; } else { zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.14 : 1 / 1.14); } }, { passive: false });   // wheel = ZOOM toward the cursor; Shift+wheel = pan the tall skybox vertically (screen-space step at any zoom)
@@ -3498,7 +3553,50 @@ function zoomAt(px, py, factor) {
 function zoomBtn(f) { if (G) zoomAt(W / 2, H / 2, f); }
 function zoomReset() { if (!G) return; cam.z = 1; cam.x = clampCam(cam.x); cam.y = clampCamY(cam.y); }
 function toggleBuildBar() { const bb = document.getElementById('buildbar'); if (!bb) return; const m = bb.classList.toggle('min'); const a = document.getElementById('bbmin'); if (a) a.textContent = m ? '▸' : '▾'; }
-cv.addEventListener('contextmenu', e => { e.preventDefault(); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); } });
+cv.addEventListener('contextmenu', e => { e.preventDefault(); gameCancel(); });
+
+/* ===== TOUCH CONTROLS — tap = select/act · one-finger drag = pan · pinch = zoom · long-press = cancel (right-click) ===== */
+const TCH = { id: null, x0: 0, y0: 0, sx: 0, sy: 0, drag: false, mm: false, lp: null, pinch: null };
+cv.addEventListener('touchstart', e => {
+  if (mode !== 'game' || !G) return;
+  e.preventDefault(); initAudio(); musKick();
+  if (e.touches.length >= 2) {   // pinch begins — cancel any pending tap/long-press
+    const a = e.touches[0], b = e.touches[1];
+    TCH.pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2 };
+    clearTimeout(TCH.lp); TCH.lp = null; TCH.id = null; return;
+  }
+  const t = e.touches[0];
+  TCH.id = t.identifier; TCH.x0 = TCH.sx = t.clientX; TCH.y0 = TCH.sy = t.clientY; TCH.drag = false;
+  mouse.x = t.clientX; mouse.y = t.clientY;   // placement ghost / strike reticle follows the finger
+  if (t.clientX >= MM.x && t.clientX <= MM.x + MM.w && t.clientY >= MM.y && t.clientY <= MM.y + MM.h) { TCH.mm = true; cam.x = clampCam((t.clientX - MM.x) / MM.w * WORLD_W - W / 2); return; }
+  TCH.mm = false;
+  clearTimeout(TCH.lp);
+  TCH.lp = setTimeout(() => { if (!TCH.drag && TCH.id !== null) { TCH.id = null; gameCancel(); toast('cancelled'); if (navigator.vibrate) try { navigator.vibrate(16); } catch (err) {} } }, 550);
+}, { passive: false });
+cv.addEventListener('touchmove', e => {
+  if (mode !== 'game' || !G) return;
+  e.preventDefault();
+  if (e.touches.length >= 2 && TCH.pinch) {   // pinch zoom + two-finger pan around the midpoint
+    const a = e.touches[0], b = e.touches[1], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2, z = cam.z || 1;
+    if (d > 24 && TCH.pinch.d > 24) zoomAt(mx, my, d / TCH.pinch.d);
+    cam.x = clampCam(cam.x - (mx - TCH.pinch.mx) / (cam.z || 1)); cam.y = clampCamY(cam.y - (my - TCH.pinch.my) / (cam.z || 1)); cam.manualT = 3.5;
+    TCH.pinch = { d, mx, my }; return;
+  }
+  const t = e.touches[0]; if (TCH.id === null || t.identifier !== TCH.id) return;
+  mouse.x = t.clientX; mouse.y = t.clientY;
+  if (TCH.mm) { cam.x = clampCam((t.clientX - MM.x) / MM.w * WORLD_W - W / 2); return; }
+  if (!TCH.drag && Math.hypot(t.clientX - TCH.x0, t.clientY - TCH.y0) > 9) { TCH.drag = true; clearTimeout(TCH.lp); TCH.lp = null; }
+  if (TCH.drag) { const z = cam.z || 1; cam.x = clampCam(cam.x - (t.clientX - TCH.sx) / z); cam.y = clampCamY(cam.y - (t.clientY - TCH.sy) / z); cam.manualT = 3.5; TCH.sx = t.clientX; TCH.sy = t.clientY; }
+}, { passive: false });
+cv.addEventListener('touchend', e => {
+  if (mode !== 'game' || !G) return;
+  e.preventDefault(); clearTimeout(TCH.lp); TCH.lp = null;
+  if (TCH.pinch) { if (e.touches.length < 2) TCH.pinch = null; return; }
+  if (TCH.id === null) return;
+  const wasDrag = TCH.drag || TCH.mm; TCH.id = null; TCH.mm = false; mmDrag = false;
+  if (!wasDrag) { mouse.x = TCH.x0; mouse.y = TCH.y0; gameTap(TCH.x0, TCH.y0, 0); }
+}, { passive: false });
+cv.addEventListener('touchcancel', () => { clearTimeout(TCH.lp); TCH.lp = null; TCH.id = null; TCH.pinch = null; TCH.mm = false; }, { passive: true });
 
 function syncHUD() {
   if (!G) return;
@@ -3516,6 +3614,7 @@ function syncHUD() {
   else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = G.blackout > 0 ? '⚠ GROUND CONTROL BLACKOUT' : (intentLbl || 'INVASION'); ob.style.color = G.blackout > 0 ? 'var(--inf)' : ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   document.getElementById('ghint').style.opacity = G.time < 10 ? 1 : 0;
+  if (!G.hintProd && G.time > 25) { G.hintProd = true; toast('🏭 Your factories are idle — press the pulsing PRODUCE button (top bar) to raise an army'); }   // playtest onboarding: point at PRODUCE if it's gone unused
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';
   tickResearchUI();
   if (G.sel) { if ((G.sel.hp !== undefined && G.sel.hp <= 0) || (G.units.indexOf(G.sel) < 0 && G.buildings.indexOf(G.sel) < 0 && G.cities.indexOf(G.sel) < 0)) { G.sel = null; refreshSel(); } else refreshSel(); }
@@ -3537,10 +3636,34 @@ addEventListener('mousemove', e => {
 });
 
 const root = document.documentElement;
-const uiScale = document.getElementById('uiScale'), uiScaleV = document.getElementById('uiScaleV'); uiScale.addEventListener('input', () => { root.style.setProperty('--ui-scale', uiScale.value / 100); uiScaleV.textContent = uiScale.value + '%'; });
-const starDen = document.getElementById('starDen'), starDenV = document.getElementById('starDenV'); starDen.addEventListener('input', () => { starTarget = +starDen.value; starDenV.textContent = starDen.value; buildStars(); });
-document.getElementById('tEdge').addEventListener('click', function () { this.classList.toggle('on'); edgeScroll = this.classList.contains('on'); });
-document.getElementById('tMotion').addEventListener('click', function () { this.classList.toggle('on'); reducedMotion = this.classList.contains('on'); });
+const uiScale = document.getElementById('uiScale'), uiScaleV = document.getElementById('uiScaleV'); uiScale.addEventListener('input', () => { root.style.setProperty('--ui-scale', uiScale.value / 100); uiScaleV.textContent = uiScale.value + '%'; saveOpts(); });
+const starDen = document.getElementById('starDen'), starDenV = document.getElementById('starDenV'); starDen.addEventListener('input', () => { starTarget = +starDen.value; starDenV.textContent = starDen.value; buildStars(); saveOpts(); });
+/* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
+const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn })); } catch (e) {} }
+function loadOpts() {
+  let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
+  if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) reducedMotion = true;
+    if (IS_TOUCH) edgeScroll = false;
+  } else {
+    if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
+    if (o.star) { starDen.value = o.star; starTarget = o.star; }
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false;
+  }
+  const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn);
+  applyGrain();
+}
+const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
+bindToggle('tEdge', v => edgeScroll = v);
+bindToggle('tMotion', v => reducedMotion = v);
+bindToggle('tShake', v => { shakeOn = v; if (!v) shakeAmt = 0; });
+bindToggle('tFlash', v => flashRed = v);
+bindToggle('tCb', v => cbMode = v);
+bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
+loadOpts();
 addEventListener('keydown', e => { if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);

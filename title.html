@@ -212,11 +212,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.16.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.17.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.17.0 — UNIT GRAPHICS REWORK</b><br>The army got a full art pass. Every core unit now carries a proper <b>three-tone paint job</b> — sun-struck upper facets, shaded skirts &amp; undersides, and a coloured <b>identification stripe</b> (cyan for your forces, ember-red on hostiles, applied automatically when drones seize your ground units' colours). Tanks grew commander cupolas, muzzle ends and lit road-wheel hubs; SAMs show their nose cones; the railgun's capacitor bank visibly charges. <b>Things move now:</b> helicopter main &amp; tail rotors actually spin (with a motion-blur disc), the AA track's search radar sweeps, combat-drone rotors whirl, and every jet trails a <b>flickering afterburner flame</b>. Canopies catch a white glint; warships and carriers churn a wake, flash deck markings and blink masthead beacons. The autodrone fleet reads meaner: faceted armour catching the skylight, <b>pulsing hunter-red cores</b>, glowing missile-tube mouths, breathing forge hearts and charged rail tips. Kinetic weapons — cannons, railguns, tank guns — now kick a proper <b>muzzle flash</b>. And the background got fixed too: the parallax ranges are now <b>real jagged mountains</b> (ridged-noise crests with V-cut valleys) wearing <b>snowcaps</b> above the snowline, instead of soft rolling swells.</p>
     <p><b>v3.16.0 — GRAPHICS REWORK</b><br>A full visual pass over the whole theatre. <b>The world got deeper:</b> two hazy parallax mountain ranges now roll behind the front line, and the terrain itself grew biome scenery — conifer forests in the wetlands, leafy brush on the plains, dry scrub &amp; pebbles in the deserts, boulders on the rocky heights and glinting snowfields on the peaks (it all keeps clear of your cities). <b>Water is alive:</b> rolling swells, a bright surface crest, drifting sun glints and foam washing at every shoreline. <b>The sky got a ceiling worth scrolling to:</b> a cratered gibbous MOON, slow emerald AURORA curtains rippling through the upper atmosphere, occasional shooting stars through the exosphere, and an anamorphic lens streak on the sun. <b>Combat hits harder on the eyes:</b> explosions now throw glowing EMBERS that arc and gutter out, shockwave rings bloom additively, smoke puffs are lit with a bright crown over a dark body, and young fireballs burn white-hot at the core. The title-screen Earth was remastered too — night-side city lights glitter as continents roll into darkness, the ocean catches a specular sun glint, a sunlit rim wraps the day side, and tiny satellites blink along tilted orbits. A soft vignette frames it all. (Aurora, meteors &amp; planet spin respect the REDUCED MOTION option.) <b>Zoomed-in scrolling fixed:</b> the camera clamps are now zoom-aware, so while zoomed in you can finally pan all the way to the ground, the world's edges and the bottom of the subterranean layer; pan speed matches what the eye sees at any zoom, and the minimap's white viewport box tracks the true visible span.</p>
     <p><b>v3.15.0 — STABILITY ECONOMY REWORK</b><br>A big rebalance of the political economy to smooth the difficulty curve. <b>Influence now comes ONLY from Stability</b> — the higher your stability, the faster research &amp; army cap grow. Stability no longer ticks up freely; it climbs <b>slowly toward a STABILITY CAP</b> (shown as <i>cur / cap</i> up top). <b>Comms Towers, Propaganda Bureaus &amp; Radar now raise that CAP</b> instead of granting flat stability/influence. Dangerous-research <b>⚠ unrest now recovers on its own</b> over time, so you're never permanently walled out. <b>Fixes:</b> your own Mind-Forge plasma column no longer fries your own troops; Arsenal Ships / Ballistic Subs now build at the water surface instead of briefly appearing on the seabed. <b>Fire Control</b> got a full Field Manual entry (open <span class="clog" onclick="openModal('helpModal')">the manual</span>) — it works; it just needed explaining.</p>
     <p><b>v3.14.0 — GLOBAL PROJECTILES &amp; CLEARER GUNS</b><br>Projectiles now live <b>everywhere on the map</b>, not just near your camera — battles on a far front fully resolve even while you're watching somewhere else (shells, missiles, rail slugs and rockets used to be culled off-screen). Also clarified the <b>Fire Control</b> guns: select a heavy gun (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon), hit <b>⊕ ADD TO FIRE CONTROL</b>, then <b>click incoming enemies inside its radar to designate them</b> — the gun then fires only at what you mark (right-click / Esc releases). Stale "manual control" wording on a few guns was corrected to match.</p>
@@ -594,8 +595,8 @@ function seedTerrain() {
   const mk = octs => octs.map(o => { const n = Math.ceil(1 / o.cpf) + 3, arr = []; for (let i = 0; i < n; i++) arr.push(Math.random()); return { cpf: o.cpf, amp: o.amp, arr }; });
   TSEED = mk([{ cpf: .14, amp: .58 }, { cpf: .06, amp: .28 }, { cpf: .026, amp: .14 }]);
   MSEED = mk([{ cpf: .10, amp: 1 }]);  // moisture for biomes
-  RSEED1 = mk([{ cpf: .085, amp: .68 }, { cpf: .03, amp: .32 }]);   // near ridge — jagged
-  RSEED2 = mk([{ cpf: .16, amp: .7 }, { cpf: .05, amp: .3 }]);      // far ridge — broader, hazier
+  RSEED1 = mk([{ cpf: .045, amp: .5 }, { cpf: .018, amp: .32 }, { cpf: .007, amp: .18 }]);   // near range — big massifs + rocky high-frequency detail
+  RSEED2 = mk([{ cpf: .09, amp: .55 }, { cpf: .03, amp: .3 }, { cpf: .012, amp: .15 }]);     // far range — broader, hazier
   craters = []; fills = []; levels = [];
   CLOUDLIST = []; for (let k = 0; k < 26; k++) CLOUDLIST.push({ wx: Math.random() * WORLD_W, ny: .50 + Math.random() * .28, w: 22 + Math.random() * 42, spd: .4 + Math.random() * .7, op: .32 + Math.random() * .4 });
 }
@@ -749,24 +750,31 @@ function drawHorizonGlow(a) { c.save(); c.lineCap = 'round'; const trace = () =>
   c.strokeStyle = `rgba(255,228,184,${.34 * a})`; c.shadowColor = `rgba(255,212,150,${.7 * a})`; c.shadowBlur = 15; c.lineWidth = 2; trace(); c.stroke();
   c.shadowBlur = 0; c.restore(); c.globalAlpha = a; }
 const h01 = n => { const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); };   // cheap deterministic hash → [0,1) — stable scenery per world position
-// PARALLAX MOUNTAIN RIDGES — two hazy silhouette ranges behind the playfield, scrolling at a fraction of camera speed for depth
+// PARALLAX MOUNTAIN RANGES — two hazy silhouette ranges behind the playfield, scrolling at a fraction of camera speed.
+// A RIDGED noise transform (1 - |2e-1|) folds the smooth value noise into sharp alpine crests with V-cut valleys,
+// and a snowline stroke clings to the highest peaks so they read as mountains, not rolling swells.
 function drawRidges(a) {
   if (!RSEED1) return;
   const ME = maxElev(), wrap = u => ((u % WORLD_W) + WORLD_W) % WORLD_W;
   const layers = [
-    { seed: RSEED2, par: .34, lift: .42, amp: .85, fill: 'rgba(70,104,142,.55)', crest: 'rgba(205,228,250,.14)', step: 9 },
-    { seed: RSEED1, par: .60, lift: .16, amp: 1.25, fill: 'rgba(42,66,96,.72)', crest: 'rgba(190,218,245,.20)', step: 6 },
+    { seed: RSEED2, par: .34, lift: .30, amp: 1.0, fill: 'rgba(70,104,142,.55)', snow: 'rgba(214,232,248,.30)', step: 7, snowAt: .66 },
+    { seed: RSEED1, par: .60, lift: .08, amp: 1.45, fill: 'rgba(42,66,96,.72)', snow: 'rgba(226,240,252,.45)', step: 5, snowAt: .72 },
   ];
   c.save(); c.globalAlpha = a;
   for (const L of layers) {
+    const pts = [];
+    for (let px = -4; px <= W + 4; px += L.step) {
+      const e = noiseAt(L.seed, wrap(cam.x * L.par + px)), r = 1 - Math.abs(2 * e - 1);   // ridged profile
+      pts.push([px, curveAt(wxAt(px)) - (L.lift + r * L.amp) * ME, r]);
+    }
     c.beginPath(); c.moveTo(-4, worldH());
-    for (let px = -4; px <= W + 4; px += L.step) { const e = noiseAt(L.seed, wrap(cam.x * L.par + px)); c.lineTo(px, curveAt(wxAt(px)) - (L.lift + e * L.amp) * ME); }
+    for (const p of pts) c.lineTo(p[0], p[1]);
     c.lineTo(W + 4, worldH()); c.closePath();
     c.fillStyle = L.fill; c.fill();
-    c.strokeStyle = L.crest; c.lineWidth = 1.2;
-    c.beginPath();
-    for (let px = -4; px <= W + 4; px += L.step) { const e = noiseAt(L.seed, wrap(cam.x * L.par + px)), y = curveAt(wxAt(px)) - (L.lift + e * L.amp) * ME; px <= -4 ? c.moveTo(px, y) : c.lineTo(px, y); }
-    c.stroke();
+    c.strokeStyle = L.snow; c.lineWidth = 1.7; c.lineCap = 'round'; c.beginPath();   // snowcaps above the snowline only
+    let pen = false;
+    for (const p of pts) { if (p[2] > L.snowAt) { pen ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); pen = true; } else pen = false; }
+    c.stroke(); c.lineCap = 'butt';
   }
   c.restore(); c.globalAlpha = a;
 }
@@ -807,89 +815,148 @@ let INK = '#c4cdd6', GLASS = '#5b86b0';   // units = light-grey for readability 
 const GLOW = '#ff3030';
 const INK_DEF = INK, GLASS_DEF = GLASS;                       // canonical (player) palette
 const ENEMY_INK = '#6e4848', ENEMY_GLASS = '#3a2630';        // hostile GROUND units paint up in a reddish dark-grey so they read as enemy at a glance
-function wheels(x, s, from, to, r) { x.fillStyle = '#000'; for (let i = from; i <= to; i += .42) { x.beginPath(); x.arc(i * s, -s * .1, r * s, 0, 6.28); x.fill(); } x.fillStyle = INK; }
+function wheels(x, s, from, to, r) { x.fillStyle = '#000'; for (let i = from; i <= to; i += .42) { x.beginPath(); x.arc(i * s, -s * .1, r * s, 0, 6.28); x.fill(); } x.fillStyle = '#3a4048'; for (let i = from; i <= to; i += .42) { x.beginPath(); x.arc(i * s - r * s * .25, -s * .1 - r * s * .25, r * s * .45, 0, 6.28); x.fill(); } x.fillStyle = INK; }   // road wheels + lit hubs
+// ---- SHADING KIT — highlight / shadow / accent tones derived from the ACTIVE palette (INK is swapped for hostile ground units) ----
+const HI = () => INK === ENEMY_INK ? '#96706a' : '#eef4fb';     // sun-struck upper facets
+const LO = () => INK === ENEMY_INK ? '#4a3134' : '#8e99a8';     // shaded undersides, skirts & recesses
+const TRIM = () => INK === ENEMY_INK ? '#d2643e' : '#3fc8f0';   // identification stripe / running lights
+const pulseA = (sp, ph) => .55 + .45 * Math.sin(animClock * sp + (ph || 0));   // slow glow pulse for hot cores & beacons
+function jetflame(x, nx, ny, len, w2) {   // flickering engine exhaust pointing -x (call inside the sprite's local space)
+  const f = len * (.7 + .55 * (.5 + .5 * Math.sin(animClock * .043 + nx * 7)));
+  x.save(); x.globalCompositeOperation = 'lighter';
+  x.fillStyle = 'rgba(255,178,80,.8)'; x.beginPath(); x.moveTo(nx, ny - w2); x.lineTo(nx - f, ny); x.lineTo(nx, ny + w2); x.closePath(); x.fill();
+  x.fillStyle = 'rgba(255,244,214,.9)'; x.beginPath(); x.moveTo(nx, ny - w2 * .5); x.lineTo(nx - f * .55, ny); x.lineTo(nx, ny + w2 * .5); x.closePath(); x.fill();
+  x.restore();
+}
 const ART = {
   // ---- GROUND ----
   tank(x, s, a) {
-    x.fillStyle = INK; rr(x, -s * 1.3, -s * .35, s * 2.6, s * .42, s * .12); x.fill();          // track run
+    x.fillStyle = LO(); rr(x, -s * 1.3, -s * .35, s * 2.6, s * .42, s * .12); x.fill();          // track run (shaded)
     wheels(x, s, -1.0, 1.0, .15);
     x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.25, -s * .35); x.lineTo(-s * 1.25, -s * .68); x.lineTo(s * .9, -s * .68); x.lineTo(s * 1.5, -s * .4); x.lineTo(s * 1.5, -s * .35); x.closePath(); x.fill();   // sloped hull
-    x.beginPath(); x.moveTo(-s * .65, -s * .68); x.lineTo(-s * .45, -s * 1.12); x.lineTo(s * .5, -s * 1.12); x.lineTo(s * .7, -s * .68); x.closePath(); x.fill();   // turret
-    x.save(); x.translate(s * .45, -s * .94); x.rotate(Math.max(-1.0, Math.min(.05, a))); x.fillRect(0, -s * .06, s * 1.8, s * .12); x.fillRect(s * 1.0, -s * .1, s * .26, s * .2); x.restore();   // gun + bore evacuator
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 1.25, -s * .68); x.lineTo(s * .9, -s * .68); x.lineTo(s * 1.04, -s * .61); x.lineTo(-s * 1.25, -s * .61); x.closePath(); x.fill();   // sunlit hull roof
+    x.fillStyle = LO(); x.fillRect(-s * 1.25, -s * .42, s * 2.62, s * .07);   // shaded skirt line
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .65, -s * .68); x.lineTo(-s * .45, -s * 1.12); x.lineTo(s * .5, -s * 1.12); x.lineTo(s * .7, -s * .68); x.closePath(); x.fill();   // turret
+    x.fillStyle = HI(); x.fillRect(-s * .4, -s * 1.12, s * .86, s * .07);   // turret roof glint
+    x.fillStyle = LO(); x.beginPath(); x.arc(s * .04, -s * 1.13, s * .15, Math.PI, 0); x.fill();   // commander cupola
+    x.fillStyle = TRIM(); x.fillRect(-s * .52, -s * .84, s * 1.1, s * .06);   // ID stripe
+    x.fillStyle = INK; x.save(); x.translate(s * .45, -s * .94); x.rotate(Math.max(-1.0, Math.min(.05, a)));
+    x.fillRect(0, -s * .06, s * 1.8, s * .12); x.fillStyle = LO(); x.fillRect(s * 1.0, -s * .1, s * .26, s * .2); x.fillStyle = '#14171c'; x.fillRect(s * 1.7, -s * .07, s * .12, s * .14); x.restore();   // gun + bore evacuator + muzzle
   },
   aa(x, s, a) {
-    x.fillStyle = INK; rr(x, -s * 1.1, -s * .32, s * 2.2, s * .4, s * .12); x.fill(); wheels(x, s, -.85, .85, .15);
+    x.fillStyle = LO(); rr(x, -s * 1.1, -s * .32, s * 2.2, s * .4, s * .12); x.fill(); wheels(x, s, -.85, .85, .15);
     x.fillStyle = INK; x.fillRect(-s * .6, -s * .92, s * 1.2, s * .58);    // turret
-    x.fillRect(-s * .72, -s * 1.32, s * .12, s * .42); x.fillRect(-s * .88, -s * 1.36, s * .5, s * .1);   // search radar
-    x.save(); x.translate(s * .25, -s * .85); x.rotate(Math.max(-1.5, Math.min(0, a))); x.fillRect(0, -s * .17, s * 1.4, s * .1); x.fillRect(0, -s * .02, s * 1.4, s * .1); x.restore();   // twin barrels
+    x.fillStyle = HI(); x.fillRect(-s * .6, -s * .92, s * 1.2, s * .08);   // lit roof
+    x.fillStyle = TRIM(); x.fillRect(-s * .6, -s * .58, s * 1.2, s * .06);   // ID stripe
+    x.fillStyle = INK; x.fillRect(-s * .72, -s * 1.32, s * .12, s * .42);
+    x.save(); x.translate(-s * .66, -s * 1.34); x.rotate(animClock * .0035); x.fillStyle = LO(); x.fillRect(-s * .28, -s * .05, s * .56, s * .1); x.fillStyle = HI(); x.fillRect(-s * .28, -s * .05, s * .56, s * .03); x.restore();   // SPINNING search radar
+    x.fillStyle = INK; x.save(); x.translate(s * .25, -s * .85); x.rotate(Math.max(-1.5, Math.min(0, a))); x.fillRect(0, -s * .17, s * 1.4, s * .1); x.fillRect(0, -s * .02, s * 1.4, s * .1); x.fillStyle = '#14171c'; x.fillRect(s * 1.28, -s * .19, s * .14, s * .3); x.restore();   // twin barrels + flash hiders
   },
   artillery(x, s, a) {
-    x.fillStyle = INK; rr(x, -s * 1.35, -s * .35, s * 2.7, s * .42, s * .1); x.fill(); wheels(x, s, -1.0, 1.0, .15);
+    x.fillStyle = LO(); rr(x, -s * 1.35, -s * .35, s * 2.7, s * .42, s * .1); x.fill(); wheels(x, s, -1.0, 1.0, .15);
     x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .85, -s * .35); x.lineTo(-s * .6, -s * 1.0); x.lineTo(s * .55, -s * 1.0); x.lineTo(s * .8, -s * .35); x.closePath(); x.fill();   // big casemate
-    x.save(); x.translate(-s * .35, -s * .82); x.rotate(-.62); x.fillRect(0, -s * .08, s * 2.7, s * .16); x.fillRect(s * 2.35, -s * .12, s * .35, s * .24); x.restore();   // long barrel + muzzle brake
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * .6, -s * 1.0); x.lineTo(s * .55, -s * 1.0); x.lineTo(s * .59, -s * .92); x.lineTo(-s * .64, -s * .92); x.closePath(); x.fill();   // lit casemate roof
+    x.fillStyle = TRIM(); x.fillRect(-s * .7, -s * .6, s * 1.44, s * .06);   // ID stripe
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(s * 1.05, -s * .35); x.lineTo(s * 1.35, -s * .12); x.lineTo(s * 1.35, -s * .35); x.closePath(); x.fill();   // recoil spade
+    x.fillStyle = INK; x.save(); x.translate(-s * .35, -s * .82); x.rotate(-.62); x.fillRect(0, -s * .08, s * 2.7, s * .16); x.fillStyle = LO(); x.fillRect(s * 2.35, -s * .12, s * .35, s * .24); x.fillStyle = '#14171c'; x.fillRect(s * 2.62, -s * .09, s * .1, s * .18); x.restore();   // long barrel + muzzle brake
   },
   mlrs(x, s) {
-    x.fillStyle = INK; rr(x, -s * 1.2, -s * .35, s * 2.4, s * .42, s * .1); x.fill(); wheels(x, s, -.95, .95, .15);
+    x.fillStyle = LO(); rr(x, -s * 1.2, -s * .35, s * 2.4, s * .42, s * .1); x.fill(); wheels(x, s, -.95, .95, .15);
     x.fillStyle = INK; x.fillRect(-s * .65, -s * .95, s * .55, s * .6);   // cab
+    x.fillStyle = GLASS; x.fillRect(-s * .6, -s * .9, s * .3, s * .2);   // cab glass
+    x.fillStyle = HI(); x.fillRect(-s * .65, -s * .95, s * .55, s * .07);   // cab roof
     x.save(); x.translate(s * .05, -s * .62); x.rotate(-.42); x.fillStyle = INK; x.fillRect(0, -s * .38, s * 1.55, s * .76);   // launch box
-    x.fillStyle = '#000'; for (let r = 0; r < 3; r++) for (let q = 0; q < 2; q++) x.fillRect(s * .12 + r * s * .46, -s * .3 + q * s * .34, s * .14, s * .14); x.restore();   // tubes
+    x.fillStyle = HI(); x.fillRect(0, -s * .38, s * 1.55, s * .08); x.fillStyle = TRIM(); x.fillRect(0, s * .3, s * 1.55, s * .06);   // lit top + stripe
+    x.fillStyle = '#000'; for (let r = 0; r < 3; r++) for (let q = 0; q < 2; q++) x.fillRect(s * .12 + r * s * .46, -s * .3 + q * s * .34, s * .14, s * .14);
+    x.fillStyle = '#ffb24a'; for (let r = 0; r < 3; r++) x.fillRect(s * .15 + r * s * .46, -s * .27, s * .08, s * .08); x.restore();   // tubes + loaded rocket tips
   },
   sam(x, s) {
-    x.fillStyle = INK; rr(x, -s * 1.1, -s * .35, s * 2.2, s * .42, s * .1); x.fill(); wheels(x, s, -.85, .85, .15);
+    x.fillStyle = LO(); rr(x, -s * 1.1, -s * .35, s * 2.2, s * .42, s * .1); x.fill(); wheels(x, s, -.85, .85, .15);
     x.fillStyle = INK; x.fillRect(-s * .75, -s * .82, s * .5, s * .47);   // cab
-    x.save(); x.translate(-s * .15, -s * .55); x.rotate(-1.05); for (let k = 0; k < 4; k++) x.fillRect(k * s * .16, -s * .2, s * 1.9, s * .1); x.restore();   // 4 raised SAM tubes
+    x.fillStyle = GLASS; x.fillRect(-s * .71, -s * .78, s * .26, s * .18);   // cab glass
+    x.fillStyle = HI(); x.fillRect(-s * .75, -s * .82, s * .5, s * .06);   // cab roof
+    x.fillStyle = INK; x.save(); x.translate(-s * .15, -s * .55); x.rotate(-1.05); for (let k = 0; k < 4; k++) x.fillRect(k * s * .16, -s * .2, s * 1.9, s * .1);
+    x.fillStyle = HI(); for (let k = 0; k < 4; k++) x.fillRect(k * s * .16 + s * 1.62, -s * .2, s * .28, s * .1);   // missile nose cones
+    x.restore();
+    x.fillStyle = TRIM(); x.fillRect(-s * .3, -s * .48, s * .5, s * .06);   // ID stripe
   },
   railgun(x, s, a) {
-    x.fillStyle = INK; rr(x, -s * 1.4, -s * .38, s * 2.8, s * .46, s * .1); x.fill(); wheels(x, s, -1.1, 1.1, .16);
+    x.fillStyle = LO(); rr(x, -s * 1.4, -s * .38, s * 2.8, s * .46, s * .1); x.fill(); wheels(x, s, -1.1, 1.1, .16);
     x.fillStyle = INK; x.fillRect(-s * .55, -s * 1.05, s * 1.0, s * .67);   // armoured mount
-    x.save(); x.translate(-s * .25, -s * .95); x.rotate(Math.max(-1.0, Math.min(.05, a))); x.fillRect(0, -s * .12, s * 3.2, s * .07); x.fillRect(0, s * .05, s * 3.2, s * .07); x.fillStyle = '#4ea8ff'; x.fillRect(s * 3.1, -s * .12, s * .12, s * .24); x.restore();   // twin rails + charged muzzle
+    x.fillStyle = HI(); x.fillRect(-s * .55, -s * 1.05, s * 1.0, s * .08);   // lit roof
+    x.fillStyle = '#3fc8f0'; x.globalAlpha = pulseA(.006); x.fillRect(-s * .4, -s * .78, s * .7, s * .08); x.globalAlpha = 1;   // charging capacitor bank
+    x.fillStyle = INK; x.save(); x.translate(-s * .25, -s * .95); x.rotate(Math.max(-1.0, Math.min(.05, a))); x.fillRect(0, -s * .12, s * 3.2, s * .07); x.fillRect(0, s * .05, s * 3.2, s * .07); x.fillStyle = LO(); for (let k = 0; k < 4; k++) x.fillRect(s * (.5 + k * .7), -s * .12, s * .09, s * .24); x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = 6; x.fillRect(s * 3.1, -s * .12, s * .12, s * .24); x.shadowBlur = 0; x.restore();   // twin rails + spacers + charged muzzle
   },
   inf(x, s) {
     x.fillStyle = INK; x.beginPath(); x.arc(0, -s * 1.35, s * .34, Math.PI, 0); x.fill(); x.fillRect(-s * .34, -s * 1.35, s * .68, s * .12);   // helmet
-    x.fillRect(-s * .24, -s * 1.2, s * .48, s * .72);   // torso w/ pack
-    x.fillRect(-s * .2, -s * .5, s * .16, s * .5); x.fillRect(s * .06, -s * .5, s * .16, s * .5);   // legs
-    x.save(); x.translate(s * .12, -s * 1.0); x.rotate(-.08); x.fillRect(0, -s * .045, s * .95, s * .09); x.restore();   // rifle
+    x.fillStyle = HI(); x.beginPath(); x.arc(-s * .06, -s * 1.38, s * .26, Math.PI * 1.15, Math.PI * 1.75); x.lineWidth = Math.max(.6, s * .07); x.strokeStyle = HI(); x.stroke();   // helmet glint
+    x.fillStyle = '#1a222c'; x.fillRect(-s * .26, -s * 1.28, s * .52, s * .1);   // visor slit
+    x.fillStyle = INK; x.fillRect(-s * .24, -s * 1.2, s * .48, s * .72);   // torso
+    x.fillStyle = LO(); x.fillRect(-s * .34, -s * 1.14, s * .12, s * .5);   // backpack
+    x.fillStyle = TRIM(); x.fillRect(-s * .24, -s * 1.06, s * .48, s * .07);   // chest strap
+    x.fillStyle = INK; x.fillRect(-s * .2, -s * .5, s * .16, s * .5); x.fillRect(s * .06, -s * .5, s * .16, s * .5);   // legs
+    x.fillStyle = LO(); x.fillRect(-s * .22, -s * .06, s * .2, s * .06); x.fillRect(s * .04, -s * .06, s * .2, s * .06);   // boots
+    x.fillStyle = '#2a323c'; x.save(); x.translate(s * .12, -s * 1.0); x.rotate(-.08); x.fillRect(0, -s * .045, s * .95, s * .09); x.fillRect(s * .3, -s * .13, s * .12, s * .1); x.restore();   // rifle + sight
   },
   constructor(x, s) { x.fillStyle = '#caa030'; rr(x, -s * 1.1, -s * .55, s * 2.2, s * .55, s * .15); x.fill(); x.fillStyle = INK; x.fillRect(-s * .5, -s * 1.1, s * .8, s * .55); x.save(); x.translate(s * .3, -s); x.rotate(-.6); x.fillStyle = '#caa030'; x.fillRect(0, -s * .06, s * 1.6, s * .12); x.restore(); },
   scout(x, s, a) {   // light fast recon buggy — low slung body, big tyres, small turret
     x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.0, -s * .3); x.lineTo(-s * .7, -s * .62); x.lineTo(s * .5, -s * .62); x.lineTo(s * 1.05, -s * .3); x.closePath(); x.fill();
     wheels(x, s, -.75, .75, .2);
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * .7, -s * .62); x.lineTo(s * .5, -s * .62); x.lineTo(s * .56, -s * .56); x.lineTo(-s * .74, -s * .56); x.closePath(); x.fill();   // lit hood line
     x.fillStyle = GLASS; x.fillRect(-s * .1, -s * .58, s * .42, s * .2);   // windshield
+    x.fillStyle = TRIM(); x.fillRect(-s * .95, -s * .44, s * .5, s * .07);   // recon flash
     x.fillStyle = INK; x.fillRect(-s * .35, -s * .92, s * .42, s * .32);   // small turret
-    x.save(); x.translate(s * .0, -s * .8); x.rotate(Math.max(-1.1, Math.min(.05, a || -.2))); x.fillRect(0, -s * .05, s * 1.1, s * .1); x.restore();   // autocannon
+    x.fillStyle = HI(); x.fillRect(-s * .35, -s * .92, s * .42, s * .06);
+    x.fillStyle = INK; x.save(); x.translate(s * .0, -s * .8); x.rotate(Math.max(-1.1, Math.min(.05, a || -.2))); x.fillRect(0, -s * .05, s * 1.1, s * .1); x.fillStyle = '#14171c'; x.fillRect(s * 1.02, -s * .07, s * .1, s * .14); x.restore();   // autocannon
   },
   // ---- AIR ----
   fighter(x, s) {
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.05, 0); x.lineTo(s * 1.4, -s * .17); x.lineTo(s * .1, -s * .25); x.lineTo(-s * 1.05, -s * .2); x.lineTo(-s * 1.75, -s * .04); x.lineTo(-s * 1.75, s * .1); x.lineTo(-s * 1.05, s * .2); x.lineTo(s * .9, s * .22); x.lineTo(s * 1.65, s * .1); x.closePath(); x.fill();   // fuselage
-    x.beginPath(); x.moveTo(s * .35, s * .05); x.lineTo(-s * .85, s * .95); x.lineTo(-s * .15, s * .95); x.lineTo(s * .75, s * .1); x.closePath(); x.fill();   // near delta wing
-    x.beginPath(); x.moveTo(s * .25, -s * .05); x.lineTo(-s * .75, -s * .82); x.lineTo(-s * .15, -s * .82); x.lineTo(s * .6, -s * .1); x.closePath(); x.fill();   // canard/far wing
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(s * .35, s * .05); x.lineTo(-s * .85, s * .95); x.lineTo(-s * .15, s * .95); x.lineTo(s * .75, s * .1); x.closePath(); x.fill();   // near delta wing (shaded underside)
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * .25, -s * .05); x.lineTo(-s * .75, -s * .82); x.lineTo(-s * .15, -s * .82); x.lineTo(s * .6, -s * .1); x.closePath(); x.fill();   // far wing
     x.beginPath(); x.moveTo(-s * 1.2, -s * .04); x.lineTo(-s * 1.7, -s * .62); x.lineTo(-s * 1.35, -s * .62); x.lineTo(-s * .95, -s * .04); x.closePath(); x.fill();   // tailfin
+    x.fillStyle = TRIM(); x.beginPath(); x.moveTo(-s * 1.63, -s * .62); x.lineTo(-s * 1.35, -s * .62); x.lineTo(-s * 1.44, -s * .48); x.lineTo(-s * 1.66, -s * .48); x.closePath(); x.fill();   // squadron tail flash
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.9, -s * .03); x.lineTo(s * .1, -s * .2); x.lineTo(-s * 1.5, -s * .07); x.lineTo(-s * 1.5, -s * .02); x.lineTo(s * 1.9, 0); x.closePath(); x.fill();   // sunlit spine
     x.fillStyle = '#080808'; x.fillRect(-s * 1.78, -s * .11, s * .16, s * .22);   // nozzle
+    jetflame(x, -s * 1.78, 0, s * .8, s * .11);   // afterburner
     x.fillStyle = GLASS; x.beginPath(); x.moveTo(s * 1.35, -s * .15); x.lineTo(s * .85, -s * .38); x.lineTo(s * .45, -s * .35); x.lineTo(s * .55, -s * .14); x.closePath(); x.fill();   // canopy
-    x.fillStyle = INK; x.fillRect(s * .4, s * .42, s * .85, s * .07); x.beginPath(); x.moveTo(s * 1.25, s * .455); x.lineTo(s * 1.42, s * .455); x.lineTo(s * 1.25, s * .42); x.closePath(); x.fill();   // underwing missile
+    x.fillStyle = 'rgba(255,255,255,.5)'; x.beginPath(); x.moveTo(s * 1.25, -s * .17); x.lineTo(s * .95, -s * .32); x.lineTo(s * .85, -s * .3); x.lineTo(s * 1.1, -s * .16); x.closePath(); x.fill();   // canopy glint
+    x.fillStyle = INK; x.fillRect(s * .4, s * .42, s * .85, s * .07); x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.25, s * .455); x.lineTo(s * 1.42, s * .455); x.lineTo(s * 1.25, s * .42); x.closePath(); x.fill();   // underwing missile
   },
   gunship(x, s) {
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.0, 0); x.lineTo(s * 1.5, -s * .32); x.lineTo(-s * 1.4, -s * .34); x.lineTo(-s * 1.95, -s * .08); x.lineTo(-s * 1.95, s * .18); x.lineTo(s * 1.6, s * .3); x.closePath(); x.fill();   // big fuselage
-    x.fillRect(-s * 1.3, -s * .8, s * 2.6, s * .12);   // high wing
-    x.fillRect(-s * .85, -s * .78, s * .34, s * .3); x.fillRect(s * .3, -s * .78, s * .34, s * .3);   // engines
-    x.beginPath(); x.moveTo(-s * 1.75, -s * .1); x.lineTo(-s * 2.15, -s * .8); x.lineTo(-s * 1.6, -s * .1); x.closePath(); x.fill();   // tail
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-s * 1.95, s * .18); x.lineTo(s * 1.6, s * .3); x.lineTo(s * 1.75, s * .16); x.lineTo(-s * 1.95, s * .06); x.closePath(); x.fill();   // shadowed belly
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.5, -s * .32); x.lineTo(-s * 1.4, -s * .34); x.lineTo(-s * 1.5, -s * .27); x.lineTo(s * 1.42, -s * .25); x.closePath(); x.fill();   // lit spine
+    x.fillStyle = INK; x.fillRect(-s * 1.3, -s * .8, s * 2.6, s * .12);   // high wing
+    x.fillStyle = LO(); x.fillRect(-s * .85, -s * .78, s * .34, s * .3); x.fillRect(s * .3, -s * .78, s * .34, s * .3);   // engines
+    jetflame(x, -s * .85, -s * .62, s * .4, s * .07); jetflame(x, s * .3, -s * .62, s * .4, s * .07);   // engine exhausts
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.75, -s * .1); x.lineTo(-s * 2.15, -s * .8); x.lineTo(-s * 1.6, -s * .1); x.closePath(); x.fill();   // tail
+    x.fillStyle = TRIM(); x.fillRect(-s * 1.5, -s * .2, s * 2.9, s * .07);   // fuselage cheat line
     x.fillStyle = '#000'; for (let i = -.8; i < .9; i += .38) x.fillRect(i * s, s * .26, s * .06, s * .32);   // side gun barrels
     x.fillStyle = GLASS; x.beginPath(); x.ellipse(s * 1.45, -s * .04, s * .32, s * .15, 0, 0, 6.28); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.ellipse(s * 1.5, -s * .09, s * .14, s * .05, -.3, 0, 6.28); x.fill();   // glint
   },
   heli(x, s) {
     x.fillStyle = INK;
     x.beginPath(); x.moveTo(-s * .5, -s * .12); x.lineTo(-s * 2.7, -s * .02); x.lineTo(-s * 2.7, s * .1); x.lineTo(-s * .5, s * .22); x.closePath(); x.fill();   // tail boom
     x.beginPath(); x.moveTo(-s * 2.4, 0); x.lineTo(-s * 2.95, -s * .55); x.lineTo(-s * 2.5, -s * .55); x.lineTo(-s * 2.2, 0); x.closePath(); x.fill();   // tailfin
-    x.fillRect(-s * 3.02, -s * .6, s * .1, s * 1.1);   // tail rotor
-    x.beginPath(); x.moveTo(s * 1.6, s * .05); x.lineTo(s * 1.25, -s * .42); x.lineTo(-s * .35, -s * .55); x.lineTo(-s * .65, -s * .08); x.lineTo(-s * .65, s * .34); x.lineTo(s * .95, s * .4); x.closePath(); x.fill();   // fuselage, nose down
+    x.fillStyle = TRIM(); x.beginPath(); x.moveTo(-s * 2.88, -s * .55); x.lineTo(-s * 2.5, -s * .55); x.lineTo(-s * 2.57, -s * .42); x.lineTo(-s * 2.83, -s * .42); x.closePath(); x.fill();   // tail flash
+    { const tr = animClock * .05; x.fillStyle = LO(); x.fillRect(-s * 3.02, -s * .6 - Math.sin(tr) * s * .18, s * .1, s * 1.1 * Math.abs(Math.cos(tr)) + s * .12); }   // SPINNING tail rotor
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.6, s * .05); x.lineTo(s * 1.25, -s * .42); x.lineTo(-s * .35, -s * .55); x.lineTo(-s * .65, -s * .08); x.lineTo(-s * .65, s * .34); x.lineTo(s * .95, s * .4); x.closePath(); x.fill();   // fuselage, nose down
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-s * .65, s * .34); x.lineTo(s * .95, s * .4); x.lineTo(s * 1.05, s * .3); x.lineTo(-s * .65, s * .2); x.closePath(); x.fill();   // shadowed belly
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.2, -s * .4); x.lineTo(-s * .35, -s * .53); x.lineTo(-s * .42, -s * .44); x.lineTo(s * 1.12, -s * .32); x.closePath(); x.fill();   // lit spine
     x.fillStyle = GLASS; x.beginPath(); x.moveTo(s * 1.5, -s * .02); x.lineTo(s * 1.05, -s * .38); x.lineTo(s * .55, -s * .4); x.lineTo(s * .65, -s * .02); x.closePath(); x.fill();   // stepped tandem canopy
     x.beginPath(); x.moveTo(s * .5, -s * .4); x.lineTo(s * .05, -s * .52); x.lineTo(s * .05, -s * .08); x.lineTo(s * .4, -s * .08); x.closePath(); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.moveTo(s * 1.38, -s * .08); x.lineTo(s * 1.05, -s * .32); x.lineTo(s * .95, -s * .3); x.lineTo(s * 1.24, -s * .07); x.closePath(); x.fill();   // canopy glint
     x.fillStyle = INK; x.save(); x.translate(s * 1.35, s * .36); x.rotate(.35); x.fillRect(0, -s * .05, s * .5, s * .1); x.restore();   // chin gun
     x.fillRect(-s * .15, s * .2, s * 1.0, s * .1);   // stub pylon
-    x.fillRect(s * .45, s * .28, s * .5, s * .3);   // rocket pod
-    x.fillRect(-s * .05, s * .3, s * .42, s * .2);   // missile rack
-    x.fillRect(-s * .02, -s * 1.0, s * .1, s * .5);   // rotor mast
-    x.fillRect(-s * 1.85, -s * 1.02, s * 3.8, s * .05);   // main rotor disc
+    x.fillStyle = LO(); x.fillRect(s * .45, s * .28, s * .5, s * .3);   // rocket pod
+    x.fillStyle = '#14171c'; for (let k = 0; k < 3; k++) x.fillRect(s * (.86 - k * .0), s * .3 + k * s * .09, s * .07, s * .07);   // pod tubes
+    x.fillStyle = LO(); x.fillRect(-s * .05, s * .3, s * .42, s * .2);   // missile rack
+    x.fillStyle = INK; x.fillRect(-s * .02, -s * 1.0, s * .1, s * .5);   // rotor mast
+    { const rt = animClock * .03;   // SPINNING main rotor — three blades foreshortened side-on + a faint blur disc
+      x.globalAlpha = .22; x.fillRect(-s * 1.85, -s * 1.02, s * 3.8, s * .05); x.globalAlpha = 1;
+      x.fillStyle = LO(); for (const ph of [0, 2.09, 4.19]) { const ext = Math.cos(rt + ph) * s * 1.82; x.fillRect(Math.min(s * .03, s * .03 + ext), -s * 1.04, Math.abs(ext), s * .07); } x.fillStyle = INK; }
   },
   // ---- NAVAL ----
   warship(x, s) {   // sleeker modern combatant — long low hull, raked clipper bow, faceted stealth superstructure
@@ -906,46 +973,70 @@ const ART = {
     x.fillStyle = INK; rr(x, s * 1.15, -s * .34, s * .6, s * .3, s * .1); x.fill();   // rounded forward main-gun turret
     x.fillStyle = '#1a232e'; x.fillRect(s * 1.65, -s * .24, s * .62, s * .08);   // gun barrel
     x.fillStyle = '#0e141c'; for (let i = 0; i < 4; i++) x.fillRect(s * (.2 + i * .22), -s * .12, s * .14, s * .12);   // flush VLS hatches
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 2.5, -s * .04); x.lineTo(s * 2.55, -s * .08); x.lineTo(s * 2.62, -s * .04); x.lineTo(-s * 2.5, s * .04); x.closePath(); x.fill();   // sunlit deck edge
+    x.fillStyle = TRIM(); x.fillRect(s * 2.0, -s * .02, s * .5, s * .07);   // bow ID flash
+    x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 2.9, s * .42, s * .45, s * .08); x.fillRect(s * 2.6, s * .3, s * .5, s * .07); x.globalAlpha = 1;   // stern & bow wake foam
+    x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.008); x.fillRect(s * .02, -s * 1.56, s * .06, s * .06); x.globalAlpha = 1;   // masthead beacon
   },
   carrier(x, s) {   // flat-deck carrier — long flight deck, island superstructure, parked aircraft
     x.fillStyle = INK;
     x.beginPath(); x.moveTo(-s * 3.0, s * .1); x.lineTo(-s * 2.6, s * .5); x.lineTo(s * 2.4, s * .5); x.lineTo(s * 3.2, s * .02); x.lineTo(s * 3.2, -s * .1); x.lineTo(-s * 2.9, -s * .1); x.closePath(); x.fill();   // hull
     x.fillRect(-s * 2.9, -s * .26, s * 6.0, s * .18);   // flight deck
+    x.fillStyle = HI(); x.fillRect(-s * 2.9, -s * .26, s * 6.0, s * .05);   // sunlit deck surface
     x.fillStyle = '#2c3e50'; x.fillRect(-s * 2.7, -s * .24, s * 5.6, s * .03);   // deck centerline
+    x.fillStyle = '#caa030'; for (let i = 0; i < 5; i++) x.fillRect(-s * 2.4 + i * s * 1.1, -s * .23, s * .3, s * .025);   // deck markings
     x.fillStyle = INK; x.fillRect(s * .9, -s * .72, s * .55, s * .48);   // island
-    x.fillRect(s * 1.05, -s * 1.18, s * .06, s * .48);   // mast
+    x.fillStyle = HI(); x.fillRect(s * .9, -s * .72, s * .55, s * .07);
+    x.fillStyle = INK; x.fillRect(s * 1.05, -s * 1.18, s * .06, s * .48);   // mast
+    x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.009, 2); x.fillRect(s * 1.02, -s * 1.24, s * .12, s * .07); x.globalAlpha = 1;   // mast beacon
     x.fillStyle = GLASS; x.fillRect(s * .98, -s * .64, s * .3, s * .14);
-    x.fillStyle = '#3a4a58'; for (let i = -2; i <= 0; i++) { x.save(); x.translate(i * s * .8 - s * .6, -s * .4); ART.fighter ? null : 0; x.fillRect(0, -s * .04, s * .5, s * .08); x.restore(); }   // parked jets (suggested)
+    x.fillStyle = '#3a4a58'; for (let i = -2; i <= 0; i++) { x.save(); x.translate(i * s * .8 - s * .6, -s * .4); x.fillRect(0, -s * .04, s * .5, s * .08); x.fillRect(s * .14, -s * .1, s * .16, s * .06); x.restore(); }   // parked jets (suggested)
+    x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 3.4, s * .42, s * .5, s * .08); x.fillRect(s * 3.0, s * .1, s * .55, s * .07); x.globalAlpha = 1;   // wake foam
+    x.fillStyle = TRIM(); x.fillRect(s * 2.6, -s * .06, s * .5, s * .07);   // bow flash
   },
   // ---- ORBITAL ----
   stealthjet(x, s) {   // angular stealth flying-wing — sharp chevron, faceted, no bright canopy
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.0, 0); x.lineTo(s * .2, -s * .55); x.lineTo(-s * 1.4, -s * .85); x.lineTo(-s * 1.1, -s * .12); x.lineTo(-s * 1.6, 0); x.lineTo(-s * 1.1, s * .12); x.lineTo(-s * 1.4, s * .85); x.lineTo(s * .2, s * .55); x.closePath(); x.fill();   // chevron wing
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(s * .2, s * .55); x.lineTo(-s * 1.4, s * .85); x.lineTo(-s * 1.16, s * .38); x.closePath(); x.fill();   // shaded near-wing facet
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 2.0, 0); x.lineTo(s * .2, -s * .55); x.lineTo(s * .05, -s * .42); x.lineTo(s * 1.75, 0); x.closePath(); x.fill();   // sunlit leading-edge facet
     x.fillStyle = '#1a1f26'; x.beginPath(); x.moveTo(s * .9, 0); x.lineTo(-s * .3, -s * .18); x.lineTo(-s * .3, s * .18); x.closePath(); x.fill();   // spine facet
     x.fillStyle = '#0a0a0a'; x.fillRect(-s * 1.6, -s * .08, s * .22, s * .16);   // exhaust slot
+    jetflame(x, -s * 1.6, 0, s * .5, s * .07);   // shrouded exhaust
     x.fillStyle = GLASS; x.beginPath(); x.moveTo(s * 1.3, -s * .04); x.lineTo(s * .7, -s * .14); x.lineTo(s * .55, 0); x.closePath(); x.fill();   // faceted canopy
   },
   laserjet(x, s) {   // directed-energy aircraft — slim body, dorsal laser emitter, blue glow
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.1, 0); x.lineTo(s * 1.0, -s * .18); x.lineTo(-s * 1.2, -s * .22); x.lineTo(-s * 1.8, -s * .05); x.lineTo(-s * 1.8, s * .1); x.lineTo(-s * 1.2, s * .22); x.lineTo(s * 1.0, s * .2); x.closePath(); x.fill();   // fuselage
     x.beginPath(); x.moveTo(s * .2, s * .05); x.lineTo(-s * .9, s * .8); x.lineTo(-s * .2, s * .8); x.lineTo(s * .55, s * .1); x.closePath(); x.fill();   // wing
     x.beginPath(); x.moveTo(s * .1, -s * .05); x.lineTo(-s * .8, -s * .72); x.lineTo(-s * .2, -s * .72); x.lineTo(s * .45, -s * .1); x.closePath(); x.fill();   // wing
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.9, -s * .02); x.lineTo(s * 1.0, -s * .15); x.lineTo(-s * 1.4, -s * .18); x.lineTo(-s * 1.4, -s * .12); x.lineTo(s * 1.9, 0); x.closePath(); x.fill();   // sunlit spine
     x.fillStyle = '#1a2733'; x.fillRect(-s * .2, -s * .42, s * .9, s * .16);   // dorsal emitter housing
-    x.fillStyle = '#7fd4ff'; x.shadowColor = '#7fd4ff'; x.shadowBlur = 7; x.beginPath(); x.arc(s * .7, -s * .34, s * .1, 0, 6.28); x.fill(); x.shadowBlur = 0;   // emitter glow
+    x.fillStyle = '#7fd4ff'; x.shadowColor = '#7fd4ff'; x.shadowBlur = 7; x.globalAlpha = pulseA(.012); x.beginPath(); x.arc(s * .7, -s * .34, s * .1, 0, 6.28); x.fill(); x.globalAlpha = 1; x.shadowBlur = 0;   // charging emitter glow
+    jetflame(x, -s * 1.8, s * .02, s * .6, s * .08);
     x.fillStyle = GLASS; x.beginPath(); x.arc(s * 1.3, -s * .04, s * .14, 0, 6.28); x.fill();
   },
   lancer(x, s) {   // heavy bomber — broad swept body, four engines, bomb bay
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.2, 0); x.lineTo(s * 1.5, -s * .26); x.lineTo(-s * 1.5, -s * .3); x.lineTo(-s * 2.0, -s * .06); x.lineTo(-s * 2.0, s * .18); x.lineTo(s * 1.6, s * .26); x.closePath(); x.fill();   // fuselage
     x.fillRect(-s * 1.2, -s * .72, s * 2.4, s * .14);   // broad high wing
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 2.05, -s * .04); x.lineTo(s * 1.5, -s * .22); x.lineTo(-s * 1.6, -s * .26); x.lineTo(-s * 1.6, -s * .19); x.lineTo(s * 2.05, 0); x.closePath(); x.fill();   // sunlit spine
     x.fillStyle = '#0c0c0c'; for (const ex of [-.7, -.2, .3, .8]) x.fillRect(ex * s, -s * .72, s * .22, s * .26);   // four engine nacelles
+    for (const ex of [-.7, -.2, .3, .8]) jetflame(x, ex * s, -s * .58, s * .35, s * .05);   // four exhausts
     x.fillStyle = '#1a1f26'; x.fillRect(-s * .5, s * .18, s * 1.0, s * .14);   // bomb bay
-    x.fillStyle = '#ffb24a'; x.beginPath(); x.arc(-s * .9, -s * .1, s * .12, 0, 6.28); x.fill();   // tail glow
+    x.fillStyle = TRIM(); x.fillRect(-s * 1.9, -s * .12, s * .45, s * .07);   // tail band
+    x.fillStyle = '#ffb24a'; x.globalAlpha = pulseA(.01, 1); x.beginPath(); x.arc(-s * .9, -s * .1, s * .12, 0, 6.28); x.fill(); x.globalAlpha = 1;   // tail glow
     x.fillStyle = GLASS; x.beginPath(); x.ellipse(s * 1.7, -s * .04, s * .26, s * .12, 0, 0, 6.28); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.4)'; x.beginPath(); x.ellipse(s * 1.76, -s * .08, s * .11, s * .04, -.3, 0, 6.28); x.fill();   // glint
   },
   warthog(x, s) {   // armoured CAS jet — stubby, straight wings, big nose autocannon, engine pods
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * 2.1, -s * .06); x.lineTo(s * 1.7, -s * .26); x.lineTo(-s * 1.3, -s * .3); x.lineTo(-s * 1.8, -s * .04); x.lineTo(-s * 1.8, s * .2); x.lineTo(-s * 1.3, s * .3); x.lineTo(s * 1.7, s * .24); x.lineTo(s * 2.1, s * .06); x.closePath(); x.fill();   // tubby fuselage
     x.fillRect(-s * .9, -s * .66, s * 1.9, s * .12); x.fillRect(-s * .9, s * .5, s * 1.9, s * .12);   // straight wings
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 2.0, -s * .1); x.lineTo(s * 1.7, -s * .22); x.lineTo(-s * 1.3, -s * .26); x.lineTo(-s * 1.3, -s * .18); x.lineTo(s * 2.0, -s * .04); x.closePath(); x.fill();   // lit spine
+    x.fillStyle = TRIM(); x.fillRect(-s * 1.7, -s * .02, s * .5, s * .08);   // tail band
     x.fillStyle = '#0a0a0a'; x.fillRect(s * 1.95, -s * .05, s * .5, s * .1);   // nose autocannon barrel
+    x.fillStyle = '#14171c'; x.fillRect(s * 2.38, -s * .08, s * .1, s * .16);   // muzzle
     x.fillStyle = '#2a3a48'; x.fillRect(-s * .5, -s * .62, s * .34, s * .3); x.fillRect(s * .1, -s * .62, s * .34, s * .3);   // engine pods
+    jetflame(x, -s * .5, -s * .47, s * .32, s * .06); jetflame(x, s * .1, -s * .47, s * .32, s * .06);   // pod exhausts
     x.fillStyle = GLASS; x.beginPath(); x.arc(s * 1.2, -s * .12, s * .16, 0, 6.28); x.fill();   // bubble canopy
+    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.arc(s * 1.25, -s * .17, s * .06, 0, 6.28); x.fill();
   },
   satlaser(x, s) {
     x.fillStyle = INK; x.fillRect(-s * .45, -s * .45, s * .9, s * .9);   // bus
@@ -979,13 +1070,18 @@ const ART = {
   mech(x, s, a) {
     x.fillStyle = INK;
     x.fillRect(-s * .55, -s * 1.7, s * 1.1, s * .9);   // torso
-    x.beginPath(); x.moveTo(-s * .55, -s * 1.55); x.lineTo(-s * 1.0, -s * 1.35); x.lineTo(-s * 1.0, -s * 1.05); x.lineTo(-s * .55, -s * 1.15); x.closePath(); x.fill();   // shoulder
-    x.fillRect(-s * .28, -s * 2.0, s * .56, s * .34);   // head
+    x.fillStyle = HI(); x.fillRect(-s * .55, -s * 1.7, s * 1.1, s * .1);   // lit torso plate
+    x.fillStyle = LO(); x.fillRect(-s * .55, -s * .92, s * 1.1, s * .12);   // pelvic shadow
+    x.fillStyle = TRIM(); x.fillRect(-s * .55, -s * 1.34, s * .18, s * .3);   // chest light bar
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .55, -s * 1.55); x.lineTo(-s * 1.0, -s * 1.35); x.lineTo(-s * 1.0, -s * 1.05); x.lineTo(-s * .55, -s * 1.15); x.closePath(); x.fill();   // shoulder
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * .55, -s * 1.55); x.lineTo(-s * 1.0, -s * 1.35); x.lineTo(-s * 1.0, -s * 1.28); x.lineTo(-s * .55, -s * 1.47); x.closePath(); x.fill();   // shoulder glint
+    x.fillStyle = INK; x.fillRect(-s * .28, -s * 2.0, s * .56, s * .34);   // head
     x.fillStyle = GLASS; x.fillRect(-s * .16, -s * 1.94, s * .32, s * .12);   // visor
     x.fillStyle = INK;
-    x.save(); x.translate(s * .55, -s * 1.45); x.rotate(Math.max(-1.1, Math.min(.1, (a || -.4)))); x.fillRect(0, -s * .12, s * 1.9, s * .2); x.fillRect(s * 1.85, -s * .16, s * .22, s * .32); x.restore();   // arm cannon
-    x.fillRect(-s * .5, -s * .85, s * .34, s * .85); x.fillRect(s * .16, -s * .85, s * .34, s * .85);   // upper legs
-    x.beginPath(); x.moveTo(-s * .5, 0); x.lineTo(-s * .9, 0); x.lineTo(-s * .55, -s * .5); x.closePath(); x.fill();
+    x.save(); x.translate(s * .55, -s * 1.45); x.rotate(Math.max(-1.1, Math.min(.1, (a || -.4)))); x.fillRect(0, -s * .12, s * 1.9, s * .2); x.fillStyle = LO(); x.fillRect(s * 1.85, -s * .16, s * .22, s * .32); x.fillStyle = '#14171c'; x.fillRect(s * 2.02, -s * .1, s * .1, s * .2); x.restore();   // arm cannon
+    x.fillStyle = INK; x.fillRect(-s * .5, -s * .85, s * .34, s * .85); x.fillRect(s * .16, -s * .85, s * .34, s * .85);   // upper legs
+    x.fillStyle = LO(); x.fillRect(-s * .5, -s * .5, s * .34, s * .1); x.fillRect(s * .16, -s * .5, s * .34, s * .1);   // knee joints
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .5, 0); x.lineTo(-s * .9, 0); x.lineTo(-s * .55, -s * .5); x.closePath(); x.fill();
     x.beginPath(); x.moveTo(s * .5, 0); x.lineTo(s * .9, 0); x.lineTo(s * .55, -s * .5); x.closePath(); x.fill();   // splayed feet
   },
   airship(x, s) {
@@ -1129,24 +1225,29 @@ const ART = {
   cdrone(x, s) {
     x.strokeStyle = INK; x.lineWidth = Math.max(1, s * .12);
     x.beginPath(); x.moveTo(-s * 1.1, -s * .5); x.lineTo(s * 1.1, s * .5); x.moveTo(-s * 1.1, s * .5); x.lineTo(s * 1.1, -s * .5); x.stroke();   // X arms
-    x.globalAlpha = .5; x.fillStyle = '#9fb0c0';
-    for (const p of [[-s * 1.1, -s * .5], [s * 1.1, -s * .5], [-s * 1.1, s * .5], [s * 1.1, s * .5]]) { x.beginPath(); x.ellipse(p[0], p[1], s * .5, s * .14, 0, 0, 6.28); x.fill(); }
-    x.globalAlpha = 1; x.fillStyle = INK; rr(x, -s * .42, -s * .28, s * .84, s * .56, s * .12); x.fill();   // body
+    { const spin = .3 + .5 * Math.abs(Math.sin(animClock * .06)); x.fillStyle = '#9fb0c0';   // WHIRLING rotor discs — width pulses with the blur
+      for (const p of [[-s * 1.1, -s * .5], [s * 1.1, -s * .5], [-s * 1.1, s * .5], [s * 1.1, s * .5]]) { x.globalAlpha = .35 + spin * .3; x.beginPath(); x.ellipse(p[0], p[1], s * (.3 + spin * .35), s * .13, 0, 0, 6.28); x.fill(); } x.globalAlpha = 1; }
+    x.fillStyle = INK; rr(x, -s * .42, -s * .28, s * .84, s * .56, s * .12); x.fill();   // body
+    x.fillStyle = HI(); rr(x, -s * .42, -s * .28, s * .84, s * .14, s * .1); x.fill();   // lit shell
     x.fillStyle = '#6c7682'; x.beginPath(); x.arc(s * .4, s * .12, s * .16, 0, 6.28); x.fill();
-    x.fillStyle = '#ff5a3a'; x.beginPath(); x.arc(s * .4, s * .12, s * .07, 0, 6.28); x.fill();   // camera eye
+    x.fillStyle = '#ff5a3a'; x.globalAlpha = pulseA(.015); x.beginPath(); x.arc(s * .4, s * .12, s * .07, 0, 6.28); x.fill(); x.globalAlpha = 1;   // camera eye
   },
   // ---- ENEMY (hostile, red-cored) ----
   drone(x, s) {
     x.fillStyle = '#1b1b1b'; x.beginPath(); x.ellipse(0, 0, s * .7, s * .42, 0, 0, 6.28); x.fill();   // disc body
-    x.beginPath(); x.moveTo(-s * .25, -s * .08); x.lineTo(-s * 1.7, -s * .5); x.lineTo(-s * 1.3, s * .05); x.closePath(); x.fill();
+    x.fillStyle = '#30343a'; x.beginPath(); x.ellipse(-s * .12, -s * .14, s * .44, s * .18, -.2, 0, 6.28); x.fill();   // top facet catching skylight
+    x.fillStyle = '#1b1b1b'; x.beginPath(); x.moveTo(-s * .25, -s * .08); x.lineTo(-s * 1.7, -s * .5); x.lineTo(-s * 1.3, s * .05); x.closePath(); x.fill();
     x.beginPath(); x.moveTo(s * .25, -s * .08); x.lineTo(s * 1.7, -s * .5); x.lineTo(s * 1.3, s * .05); x.closePath(); x.fill();   // swept arms
-    x.fillRect(-s * .14, s * .3, s * .28, s * .5);   // underslung weapon
-    x.fillStyle = GLOW; x.beginPath(); x.arc(0, -s * .04, s * .2, 0, 6.28); x.fill();
+    x.fillStyle = '#0d0d0d'; x.fillRect(-s * .14, s * .3, s * .28, s * .5);   // underslung weapon
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.014, s); x.shadowColor = GLOW; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .04, s * .2, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing hunter eye
+    x.fillStyle = '#ff8a6a'; x.fillRect(-s * 1.62, -s * .48, s * .12, s * .12); x.fillRect(s * 1.5, -s * .48, s * .12, s * .12);   // wingtip lights
   },
   bomber(x, s) {
     x.fillStyle = '#151515'; x.beginPath(); x.moveTo(0, -s * 1.0); x.lineTo(s * 1.85, s * .1); x.lineTo(s * .95, s * .7); x.lineTo(-s * .95, s * .7); x.lineTo(-s * 1.85, s * .1); x.closePath(); x.fill();   // dropship wing
-    x.fillRect(-s * 1.25, s * .02, s * .32, s * .44); x.fillRect(s * .93, s * .02, s * .32, s * .44);   // engine pods
-    x.fillStyle = GLOW; x.beginPath(); x.arc(0, -s * .12, s * .3, 0, 6.28); x.fill();
+    x.fillStyle = '#2a2e34'; x.beginPath(); x.moveTo(0, -s * 1.0); x.lineTo(s * 1.85, s * .1); x.lineTo(s * 1.5, s * .16); x.lineTo(0, -s * .78); x.closePath(); x.fill();   // leading-edge facet
+    x.fillStyle = '#0d0d0d'; x.fillRect(-s * 1.25, s * .02, s * .32, s * .44); x.fillRect(s * .93, s * .02, s * .32, s * .44);   // engine pods
+    x.fillStyle = '#ff7a30'; x.globalAlpha = .75; x.fillRect(-s * 1.2, s * .42, s * .22, s * .1); x.fillRect(s * .98, s * .42, s * .22, s * .1); x.globalAlpha = 1;   // hot engine exhausts
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.011, s * 2); x.shadowColor = GLOW; x.shadowBlur = s; x.beginPath(); x.arc(0, -s * .12, s * .3, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing core
   },
   bombpod(x, s) { x.fillStyle = '#1b1b1b'; x.beginPath(); x.moveTo(0, s * 1.1); x.lineTo(s * .6, -s * .3); x.lineTo(0, -s); x.lineTo(-s * .6, -s * .3); x.closePath(); x.fill(); x.fillStyle = '#ff7a30'; x.beginPath(); x.arc(0, -s * .15, s * .3, 0, 6.28); x.fill(); },
   eshield(x, s) {   // SHIELD CARRIER — a heavy hovering projector pod topped by a dome emitter
@@ -1160,37 +1261,46 @@ const ART = {
   // ---- NEW AUTODRONE FLEET (from the fleet sketches) ----
   egunship(x, s) {   // low-altitude gunship hovercraft — armored wedge, twin rotor bars, big autocannon
     x.fillStyle = '#181818'; x.beginPath(); x.moveTo(-s * 1.6, 0); x.lineTo(-s * 1.2, -s * .5); x.lineTo(s * 1.3, -s * .5); x.lineTo(s * 1.7, 0); x.lineTo(s * 1.2, s * .42); x.lineTo(-s * 1.2, s * .42); x.closePath(); x.fill();
-    x.fillStyle = '#0d0d0d'; x.fillRect(-s * 1.5, -s * .98, s * 1.25, s * .1); x.fillRect(s * .25, -s * .98, s * 1.25, s * .1);   // twin rotor discs (edge-on)
-    x.fillRect(-s * .04, -s * .9, s * .08, s * .42);
-    x.save(); x.translate(s * 1.0, s * .22); x.rotate(.32); x.fillStyle = '#1b1b1b'; x.fillRect(0, -s * .12, s * 1.15, s * .24); x.restore();   // autocannon
-    x.fillStyle = GLOW; x.beginPath(); x.arc(0, -s * .18, s * .22, 0, 6.28); x.fill();
+    x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(-s * 1.2, -s * .5); x.lineTo(s * 1.3, -s * .5); x.lineTo(s * 1.36, -s * .42); x.lineTo(-s * 1.26, -s * .42); x.closePath(); x.fill();   // armored deck facet
+    { const rb = .5 + .5 * Math.sin(animClock * .09); x.fillStyle = '#0d0d0d'; x.globalAlpha = .55 + rb * .45; x.fillRect(-s * 1.5, -s * .98, s * 1.25, s * .1); x.globalAlpha = .55 + (1 - rb) * .45; x.fillRect(s * .25, -s * .98, s * 1.25, s * .1); x.globalAlpha = 1; }   // WHIRLING twin rotor bars
+    x.fillStyle = '#0d0d0d'; x.fillRect(-s * .04, -s * .9, s * .08, s * .42);
+    x.save(); x.translate(s * 1.0, s * .22); x.rotate(.32); x.fillStyle = '#1b1b1b'; x.fillRect(0, -s * .12, s * 1.15, s * .24); x.fillStyle = '#000'; x.fillRect(s * 1.05, -s * .08, s * .14, s * .16); x.restore();   // autocannon + muzzle
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.013, s); x.shadowColor = GLOW; x.shadowBlur = s * .7; x.beginPath(); x.arc(0, -s * .18, s * .22, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
   },
   estrike(x, s) {   // ultralight strike-wing — sleek dart + spinal railgun (its energy shield is drawn live in the enemy pass)
     x.fillStyle = '#141414'; x.beginPath(); x.moveTo(s * 1.9, 0); x.lineTo(-s * .4, -s * .32); x.lineTo(-s * 1.3, -s * .12); x.lineTo(-s * 1.3, s * .12); x.lineTo(-s * .4, s * .32); x.closePath(); x.fill();   // dart body
-    x.beginPath(); x.moveTo(-s * .2, -s * .05); x.lineTo(-s * 1.05, -s * .92); x.lineTo(-s * .5, -s * .05); x.closePath(); x.fill();
+    x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(s * 1.9, 0); x.lineTo(-s * .4, -s * .32); x.lineTo(-s * .4, -s * .2); x.lineTo(s * 1.6, 0); x.closePath(); x.fill();   // upper facet
+    x.fillStyle = '#141414'; x.beginPath(); x.moveTo(-s * .2, -s * .05); x.lineTo(-s * 1.05, -s * .92); x.lineTo(-s * .5, -s * .05); x.closePath(); x.fill();
     x.beginPath(); x.moveTo(-s * .2, s * .05); x.lineTo(-s * 1.05, s * .92); x.lineTo(-s * .5, s * .05); x.closePath(); x.fill();   // swept wings
     x.fillStyle = '#0c0c0c'; x.fillRect(s * .1, -s * .05, s * 1.8, s * .1);   // spinal railgun
-    x.fillStyle = GLOW; x.beginPath(); x.arc(-s * .35, 0, s * .15, 0, 6.28); x.fill();
+    x.fillStyle = '#8ac8ff'; x.globalAlpha = pulseA(.02, s); x.fillRect(s * 1.78, -s * .07, s * .14, s * .14); x.globalAlpha = 1;   // charged rail tip
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.014, s * 3); x.shadowColor = GLOW; x.shadowBlur = s * .6; x.beginPath(); x.arc(-s * .35, 0, s * .15, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
   },
   efrigate(x, s) {   // upper-atmosphere missile frigate — long hull, tubes, hangar bay
     x.fillStyle = '#161616'; x.beginPath(); x.moveTo(-s * 2.2, s * .1); x.lineTo(-s * 1.8, -s * .32); x.lineTo(s * 1.8, -s * .32); x.lineTo(s * 2.4, s * .1); x.lineTo(s * 1.8, s * .46); x.lineTo(-s * 1.8, s * .46); x.closePath(); x.fill();
+    x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(-s * 1.8, -s * .32); x.lineTo(s * 1.8, -s * .32); x.lineTo(s * 1.86, -s * .24); x.lineTo(-s * 1.86, -s * .24); x.closePath(); x.fill();   // deck facet
     x.fillStyle = '#0c0c0c'; for (let i = 0; i < 5; i++) x.fillRect(-s * 1.5 + i * s * .64, -s * .62, s * .36, s * .34);   // missile tubes
+    x.fillStyle = '#ff8a5a'; x.globalAlpha = .7; for (let i = 0; i < 5; i++) x.fillRect(-s * 1.42 + i * s * .64, -s * .56, s * .2, s * .06); x.globalAlpha = 1;   // warm tube mouths
     x.fillStyle = '#242424'; x.fillRect(-s * 1.7, -s * .5, s * .55, s * .26);   // hangar bay
+    x.fillStyle = '#ff7a30'; x.globalAlpha = pulseA(.01, 1); x.fillRect(-s * 1.62, -s * .44, s * .38, s * .14); x.globalAlpha = 1;   // hangar glow
     x.fillStyle = '#0d0d0d'; x.fillRect(s * 1.0, -s * .14, s * .9, s * .12);   // dorsal gun
-    x.fillStyle = GLOW; x.beginPath(); x.arc(s * 1.5, s * .12, s * .18, 0, 6.28); x.fill();
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.012, s); x.shadowColor = GLOW; x.shadowBlur = s * .6; x.beginPath(); x.arc(s * 1.5, s * .12, s * .18, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
   },
   eharvester(x, s) {   // orbital-dropped harvester — heavy hull on repulsor legs, excavator intake, forge glow
     x.fillStyle = '#1a1a1a'; x.beginPath(); x.moveTo(-s * 1.4, -s * .2); x.lineTo(-s * 1.0, -s * 1.0); x.lineTo(s * 1.0, -s * 1.0); x.lineTo(s * 1.4, -s * .2); x.lineTo(s * 1.0, s * .2); x.lineTo(-s * 1.0, s * .2); x.closePath(); x.fill();
+    x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(-s * 1.0, -s * 1.0); x.lineTo(s * 1.0, -s * 1.0); x.lineTo(s * 1.06, -s * .9); x.lineTo(-s * 1.06, -s * .9); x.closePath(); x.fill();   // roof facet
     x.fillStyle = '#0d0d0d'; for (const gx of [-1, -.42, .42, 1]) x.fillRect(gx * s * .9, s * .1, s * .16, s * .55);   // repulsor legs
+    x.fillStyle = '#6aa0ff'; x.globalAlpha = pulseA(.018); for (const gx of [-1, -.42, .42, 1]) x.fillRect(gx * s * .9 + s * .01, s * .6, s * .14, s * .08); x.globalAlpha = 1;   // repulsor pads
     x.fillStyle = '#2a2a2a'; x.fillRect(-s * .42, -s * 1.4, s * .84, s * .42);   // intake tower
-    x.fillStyle = '#ff7a30'; x.beginPath(); x.arc(0, -s * .5, s * .3, 0, 6.28); x.fill();   // internal forge
+    x.fillStyle = '#ff7a30'; x.globalAlpha = pulseA(.009); x.shadowColor = '#ff7a30'; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .5, s * .3, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // breathing forge heart
     x.fillStyle = GLOW; x.beginPath(); x.arc(-s * .82, -s * .55, s * .12, 0, 6.28); x.arc(s * .82, -s * .55, s * .12, 0, 6.28); x.fill();
   },
   ewhistler(x, s) {   // high-altitude antimatter dart carrier — thin needle + glowing pellet
     x.fillStyle = '#141414'; x.beginPath(); x.moveTo(s * 1.6, 0); x.lineTo(-s * 1.0, -s * .24); x.lineTo(-s * 1.0, s * .24); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(-s * .6, 0); x.lineTo(-s * 1.1, -s * .6); x.lineTo(-s * .7, 0); x.closePath(); x.fill();
+    x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(s * 1.6, 0); x.lineTo(-s * 1.0, -s * .24); x.lineTo(-s * 1.0, -s * .15); x.lineTo(s * 1.35, 0); x.closePath(); x.fill();   // upper facet
+    x.fillStyle = '#141414'; x.beginPath(); x.moveTo(-s * .6, 0); x.lineTo(-s * 1.1, -s * .6); x.lineTo(-s * .7, 0); x.closePath(); x.fill();
     x.beginPath(); x.moveTo(-s * .6, 0); x.lineTo(-s * 1.1, s * .6); x.lineTo(-s * .7, 0); x.closePath(); x.fill();
-    x.fillStyle = '#c8a0ff'; x.shadowColor = '#c8a0ff'; x.shadowBlur = s * .9; x.beginPath(); x.arc(s * .55, 0, s * .16, 0, 6.28); x.fill(); x.shadowBlur = 0;   // antimatter pellet
+    x.fillStyle = '#c8a0ff'; x.shadowColor = '#c8a0ff'; x.shadowBlur = s * (.6 + .5 * pulseA(.02, s)); x.beginPath(); x.arc(s * .55, 0, s * .16, 0, 6.28); x.fill(); x.shadowBlur = 0;   // breathing antimatter pellet
   },
   ebombarder(x, s) {   // CAPITAL FABRICATOR — long heavy hull, forward missile tubes, mid hangar bay, ventral gun batteries, PD turret blips
     x.fillStyle = '#161616'; x.beginPath(); x.moveTo(s * 2.6, 0); x.lineTo(s * 1.6, -s * .5); x.lineTo(-s * 2.0, -s * .55); x.lineTo(-s * 2.6, -s * .15); x.lineTo(-s * 2.6, s * .25); x.lineTo(-s * 2.0, s * .55); x.lineTo(s * 1.6, s * .4); x.closePath(); x.fill();   // hull
@@ -1846,6 +1956,7 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg) {
   if (weapon === 'none') return;
   if (weapon === 'beam') { if (Math.random() < .3) blip(900, .1, 'sine', .1); } else if (weapon === 'particle') { if (Math.random() < .7) blip(1200, .14, 'sine', .22); } else if (weapon === 'plasma' || weapon === 'plasball' || weapon === 'plasarc') { if (Math.random() < .5) blip(weapon === 'plasarc' ? 230 : 400, .17, 'sawtooth', .16); } else if (weapon === 'rail' || weapon === 'rod') { if (Math.random() < .6) blip(150, .22, 'sawtooth', .28); } else if (weapon === 'missile' || weapon === 'rocket' || weapon === 'bomb' || weapon === 'microrkt') { SFX.cruise(); } else SFX.shoot();
   const ang = Math.atan2(ty - syy, tx - sxx);
+  if (weapon === 'shell' || weapon === 'rail' || weapon === 'rod' || (weapon !== 'beam' && weapon !== 'plasma' && weapon !== 'missile' && weapon !== 'bomb' && weapon !== 'rocket' && weapon !== 'microrkt' && weapon !== 'plasball' && weapon !== 'plasarc' && weapon !== 'smart' && weapon !== 'particle')) G.parts.push({ k: 'muzzle', x: sxx, y: syy, ang, r: weapon === 'shell' ? 6 : weapon === 'rail' || weapon === 'rod' ? 5 : 3.2, life: .06 });   // kinetic weapons kick a muzzle flash
   if (weapon === 'beam') { G.proj.push({ k: 'beam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .12, friendly, dmg }); beamHit(sxx, syy, tx, ty, dmg, friendly); }
   else if (weapon === 'plasma') { G.proj.push({ k: 'pbeam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .17, friendly, dmg }); beamHit(sxx, syy, tx, ty, dmg, friendly); for (let i = 0; i < 4; i++) { const t2 = Math.random(); G.parts.push({ k: 'plasma', x: sxx + (tx - sxx) * t2, y: syy + (ty - syy) * t2, vx: (Math.random() - .5) * 34, vy: (Math.random() - .5) * 34, r: 2 + Math.random() * 3, life: .25 + Math.random() * .35 }); } }
   else if (weapon === 'shell') { const v = 250; G.proj.push({ k: 'shell', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - v * .30, life: 9, friendly, dmg, tr: [] }); }
@@ -2734,7 +2845,7 @@ function updProj(dt) {
 function updParts(dt) {
   for (const pt of G.parts) {
     if (pt.k === 'ring' || pt.k === 'shock') { pt.r += (pt.max - pt.r) * (pt.k === 'shock' ? 8 : 9) * dt; pt.life -= dt; continue; }
-    if (pt.k === 'flash') { pt.life -= dt; continue; }
+    if (pt.k === 'flash' || pt.k === 'muzzle') { pt.life -= dt; continue; }
     if (pt.k === 'text') { pt.y += pt.vy * dt; pt.vy *= .9; pt.life -= dt; continue; }
     if (pt.k === 'smoke') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += (pt.dark ? -3 : 7) * dt; pt.vx *= .97; pt.r += (pt.dark ? 12 : 7) * dt; pt.life -= dt; continue; }   // black explosion smoke is buoyant — it billows UP and grows to fill the sky
     if (pt.k === 'fire') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 10 * dt; pt.r *= .965; pt.life -= dt; continue; }
@@ -2957,6 +3068,7 @@ function renderPart(pt, px) {
   else if (pt.k === 'smoke') { const la = Math.max(0, pt.life); if (pt.dark) { c.globalAlpha = Math.min(.5, la * .42); c.fillStyle = '#14161a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = Math.min(.3, la * .25); c.fillStyle = '#2e3138'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .32, pt.r * .55, 0, 6.28); c.fill(); } else { c.globalAlpha = la * .32; c.fillStyle = '#8a8f98'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = la * .2; c.fillStyle = '#cfd4dc'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .35, pt.r * .55, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // shaded puff — lit crown over a darker body
   else if (pt.k === 'fire') { glow(px, pt.y, pt.r * 4, pt.life > .35 ? 'rgba(255,190,70,1)' : 'rgba(255,95,40,1)', Math.min(1, pt.life * 2) * .8); c.globalAlpha = Math.min(1, pt.life * 2) * .8; c.fillStyle = pt.life > .35 ? '#ffd24a' : '#ff5a2a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); if (pt.life > .3) { c.globalAlpha = Math.min(1, pt.life * 2) * .7; c.fillStyle = '#fff6d0'; c.beginPath(); c.arc(px, pt.y - pt.r * .15, pt.r * .45, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // white-hot core while young
   else if (pt.k === 'ember') { const fl = .55 + .45 * Math.sin(pt.tw), la = Math.min(1, pt.life * 1.8) * fl, hot = pt.life > .6; glow(px, pt.y, pt.r * 5, hot ? 'rgba(255,210,110,1)' : 'rgba(255,110,50,1)', la * .5); c.globalAlpha = la; c.fillStyle = hot ? '#ffe9a8' : '#ff8a4a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
+  else if (pt.k === 'muzzle') { const la = Math.max(0, pt.life / .06); c.save(); c.translate(px, pt.y); c.rotate(pt.ang); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .9; c.fillStyle = '#ffdf9a'; c.beginPath(); c.moveTo(pt.r * .4, 0); c.lineTo(pt.r * 2.0, -pt.r * .55); c.lineTo(pt.r * 3.1, 0); c.lineTo(pt.r * 2.0, pt.r * .55); c.closePath(); c.fill(); c.fillStyle = '#fff8e8'; c.beginPath(); c.arc(pt.r * .8, 0, pt.r * .5, 0, 6.28); c.fill(); c.restore(); c.globalAlpha = 1; }   // muzzle blast cone
   else if (pt.k === 'plasma') { glow(px, pt.y, pt.r * 4.4, 'rgba(190,140,255,1)', Math.min(1, pt.life * 2.5) * .85); c.globalAlpha = Math.min(1, pt.life * 2.5) * .85; c.fillStyle = pt.life > .3 ? '#dff0ff' : '#c184ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   else if (pt.k === 'wreck') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.scale(pt.facing, 1); c.globalAlpha = Math.min(1, pt.life / 2.5) * .92; if (ART[pt.art]) ART[pt.art](c, pt.s, -.5); c.globalAlpha = .35; c.fillStyle = '#000'; c.fillRect(-pt.s * 2, -pt.s * .2, pt.s * 4, pt.s * .5); c.globalAlpha = 1; c.restore(); }
   else if (pt.k === 'deb') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.globalAlpha = Math.min(1, pt.life); c.fillStyle = '#2a2a2a'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }

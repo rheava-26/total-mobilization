@@ -102,6 +102,12 @@
   .tip { position: fixed; z-index: 30; display: none; max-width: 250px; background: var(--panel); border: 1px solid var(--ic); border-radius: 5px; padding: 8px 11px; font-size: 11px; color: var(--paper); pointer-events: none; line-height: 1.55; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
   .tip .tt { color: var(--ic); font-weight: 700; display: block; margin-bottom: 3px; } .tip .tr2 { color: #9fb6d4; display: block; margin: 2px 0 4px; }
   .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px); background: var(--panel); border: 1px solid var(--term); color: var(--term); padding: 11px 20px; border-radius: 4px; letter-spacing: 1.5px; font-size: 12px; opacity: 0; transition: .3s; z-index: 16; pointer-events: none; text-align: center; } .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* touch strike confirmation — a deliberate second tap so a stray finger can't launch a nuke */
+  #strikeConfirm { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 17; background: rgba(20,8,10,.96); border: 1px solid var(--inf); border-radius: 8px; padding: 12px 16px; display: none; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,.6), 0 0 20px rgba(255,90,90,.25); }
+  #strikeConfirm.show { display: block; }
+  #strikeConfirm .scq { font-size: 10px; letter-spacing: 1.5px; color: #ffb0a0; margin-bottom: 9px; }
+  #strikeConfirm .pill { margin: 0 4px; min-height: 42px; }
+  #strikeConfirm .pill.primary { background: var(--inf); border-color: var(--inf); color: #fff; }
   .grain { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.4) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0, rgba(255,255,255,.016) 1px, transparent 1px, transparent 3px); }
   #endScreen { position: fixed; inset: 0; z-index: 18; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(2,4,12,.82); color: #fff; } #endScreen h1 { font-size: 44px; letter-spacing: 4px; }
   #endRank { font: 600 15px Consolas, monospace; letter-spacing: 2px; margin-top: -4px; }
@@ -182,6 +188,15 @@
   .helpsec p { font-size: 12px; line-height: 1.55; color: #b8c6da; margin: 0; }
   .helpsec b { color: var(--term); }
   .helpsec .k { color: #ffd23f; font-weight: 700; }
+  /* collapsible manual sections — a scannable index instead of a wall of text */
+  details.helpsec { padding-bottom: 4px; }
+  details.helpsec > summary { cursor: pointer; list-style: none; font-size: 12.5px; letter-spacing: 2px; color: #eaf2ff; font-weight: 700; padding: 5px 0; user-select: none; }
+  details.helpsec > summary::-webkit-details-marker { display: none; }
+  details.helpsec > summary::before { content: '▸ '; color: var(--term); }
+  details.helpsec[open] > summary::before { content: '▾ '; }
+  details.helpsec > summary:hover { color: var(--term); }
+  details.helpsec > p, details.helpsec > div { margin-top: 4px; }
+  .helpsec .tip2 { display: block; margin-top: 6px; font-size: 11px; color: #8fa6c4; border-left: 2px solid rgba(255,210,63,.5); padding-left: 8px; }
   #musicModal .mcol { display: flex; gap: 14px; }
   #musicModal .mlist { flex: 1; min-width: 0; background: rgba(8,14,26,.5); border: 1px solid var(--line); border-radius: 5px; padding: 8px; min-height: 90px; }
   #musicModal .mlist h4 { font-size: 11px; letter-spacing: 2px; color: var(--term); margin: 0 0 8px; }
@@ -244,11 +259,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.18.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.19.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.19.0 — CONFIRMED LAUNCH &amp; A READABLE MANUAL</b><br><b>☢ Touch strike confirmation:</b> on touch devices a strategic strike now takes two deliberate taps — the first AIMS (the reticle pins where you tapped; tap again to re-aim), then a big <b>☢ CONFIRM STRIKE / ✕ ABORT</b> bar fires or stands down. No more fat-finger nukes. <b>📖 FIELD MANUAL reworked:</b> it now opens with a five-step QUICK START, adds a CONTROLS section covering desktop and touch, and every other chapter is a collapsible section you can scan instead of a wall of text — with the economy explained in one place (stability → influence), AIR COMMAND &amp; ORBITAL LIFT documented side by side, and up-to-date strike &amp; fire-control instructions.</p>
     <p><b>v3.18.0 — AIR COMMAND · MOBILE · ACCESSIBILITY</b><br><b>✈ AIR COMMAND fixes aircraft spam:</b> every crewed aircraft now needs a hangar slot — Airbases grant 6, Underground Airwings 3, Aero Works 4; carrier wings support themselves and disposable drones are exempt (swarming is their doctrine). Your air force is capped by real, bombable infrastructure instead of raw money — the PRODUCE header shows ✈ used/total, and it mirrors the orbital-LIFT rule the space fleet already lives by. <b>From the playtest doc:</b> the PRODUCE button now pulses until first use (with a reminder if your factories sit idle), and the moment your first silo finishes, ☢ STRIKE pulses and tells you it's ready — no more finishing a whole campaign without ever finding either. <b>📱 MOBILE:</b> full touch controls — tap to select/place/fire, one-finger drag to scroll the front, pinch to zoom, long-press to cancel, minimap scrubbing — plus a compact small-screen HUD with finger-sized buttons. <b>♿ ACCESSIBILITY:</b> the OPTIONS menu grew a dedicated section — Screen Shake toggle, Flash Reduction (dims nuke/muzzle strobes for photosensitivity), Colorblind-Friendly health bars (blue/orange), and a Film Grain &amp; Vignette toggle; all settings (plus UI scale) now SAVE on your device, and the game respects your system's reduced-motion preference out of the box.</p>
     <p><b>v3.17.0 — UNIT GRAPHICS REWORK</b><br>The army got a full art pass. Every core unit now carries a proper <b>three-tone paint job</b> — sun-struck upper facets, shaded skirts &amp; undersides, and a coloured <b>identification stripe</b> (cyan for your forces, ember-red on hostiles, applied automatically when drones seize your ground units' colours). Tanks grew commander cupolas, muzzle ends and lit road-wheel hubs; SAMs show their nose cones; the railgun's capacitor bank visibly charges. <b>Things move now:</b> helicopter main &amp; tail rotors actually spin (with a motion-blur disc), the AA track's search radar sweeps, combat-drone rotors whirl, and every jet trails a <b>flickering afterburner flame</b>. Canopies catch a white glint; warships and carriers churn a wake, flash deck markings and blink masthead beacons. The autodrone fleet reads meaner: faceted armour catching the skylight, <b>pulsing hunter-red cores</b>, glowing missile-tube mouths, breathing forge hearts and charged rail tips. Kinetic weapons — cannons, railguns, tank guns — now kick a proper <b>muzzle flash</b>. And the background got fixed too: the parallax ranges are now <b>real jagged mountains</b> (ridged-noise crests with V-cut valleys) wearing <b>snowcaps</b> above the snowline, instead of soft rolling swells.</p>
     <p><b>v3.16.0 — GRAPHICS REWORK</b><br>A full visual pass over the whole theatre. <b>The world got deeper:</b> two hazy parallax mountain ranges now roll behind the front line, and the terrain itself grew biome scenery — conifer forests in the wetlands, leafy brush on the plains, dry scrub &amp; pebbles in the deserts, boulders on the rocky heights and glinting snowfields on the peaks (it all keeps clear of your cities). <b>Water is alive:</b> rolling swells, a bright surface crest, drifting sun glints and foam washing at every shoreline. <b>The sky got a ceiling worth scrolling to:</b> a cratered gibbous MOON, slow emerald AURORA curtains rippling through the upper atmosphere, occasional shooting stars through the exosphere, and an anamorphic lens streak on the sun. <b>Combat hits harder on the eyes:</b> explosions now throw glowing EMBERS that arc and gutter out, shockwave rings bloom additively, smoke puffs are lit with a bright crown over a dark body, and young fireballs burn white-hot at the core. The title-screen Earth was remastered too — night-side city lights glitter as continents roll into darkness, the ocean catches a specular sun glint, a sunlit rim wraps the day side, and tiny satellites blink along tilted orbits. A soft vignette frames it all. (Aurora, meteors &amp; planet spin respect the REDUCED MOTION option.) <b>Zoomed-in scrolling fixed:</b> the camera clamps are now zoom-aware, so while zoomed in you can finally pan all the way to the ground, the world's edges and the bottom of the subterranean layer; pan speed matches what the eye sees at any zoom, and the minimap's white viewport box tracks the true visible span.</p>
@@ -338,17 +354,38 @@
 </div></div>
 
 <div class="modal-bg" id="helpModal"><div class="modal">
-  <h2>FIELD MANUAL</h2><div class="hd">// HOW TO COMMAND — AND WHERE</div>
-  <div class="helpsec"><h3>① ECONOMY</h3><p><b>IND. CAP</b> builds everything, <b>MANPOWER</b> crews it, <b>INFLUENCE</b> buys research &amp; caps your army — and influence comes <b>only from STABILITY</b> (see ⑦). First thing: open the <span class="k">ECON</span> tab (bottom-left build bar) and place a <b>Power Plant</b> + <b>Housing</b>, then a <b>Comms Tower</b> to lift your stability cap.</p></div>
-  <div class="helpsec"><h3>② PRODUCE UNITS</h3><p>Build a Factory / Airbase / Shipyard / Space Center (build bar), then click <span class="k">PRODUCE</span> (top bar) and pick a unit — it rolls out of the matching building. Anything you research appears here too. <b>✈ AIR COMMAND:</b> every crewed aircraft needs a hangar slot — Airbases grant 6, Underground Airwings 3, Aero Works 4 (drones are exempt; carrier wings support themselves). A bigger air force means more air infrastructure to build — and defend.</p></div>
-  <div class="helpsec"><h3>③ RESEARCH</h3><p>Click <span class="k">RESEARCH</span> and spend <b>INFLUENCE</b> on the tech tree. Doctrines unlock whole new armies — drones, androids, psionics, superhumans — and the ★ superweapons. Click several nodes to <b>queue</b> them; they auto-start as influence accrues.</p></div>
-  <div class="helpsec"><h3>④ ☢ STRATEGIC STRIKES</h3><p>Build a <b>Missile Silo</b> (<span class="k">DEF</span> tab), then click <span class="k">☢ STRIKE</span> → choose a weapon → click the battlefield. Your launch sites are marked ▲. Strikes cost <b>STABILITY</b>, not a long reload — call them whenever the line breaks.</p></div>
-  <div class="helpsec"><h3>⑤ SPECIAL RESOURCES</h3><p>Build <b>Extractors</b> on the glowing deposits. Owning Steel / Oil / Rare / Uranium permanently <b>cheapens</b> your units and softens the stability cost of strikes — they decide everything late-game.</p></div>
-  <div class="helpsec"><h3>⑥ ★ SUPERWEAPONS &amp; THE MIND-FORGE</h3><p>Superweapons (Colossus, Titan, Telekinetic Pylon, Dreadnought…) are built from <span class="k">PRODUCE</span> once researched. The <b>MIND-FORGE</b> plasma lance appears in <span class="k">☢ STRIKE</span> once you have <b>Antimatter</b> + <b>Telekinesis</b> researched and own <b>Uranium</b>.</p></div>
-  <div class="helpsec"><h3>⑦ STABILITY → INFLUENCE</h3><p>Stability is your political capital and the <b>only</b> source of <b>INFLUENCE</b> — the higher your stability, the faster influence (and thus research & army cap) flows. Stability climbs <b>slowly</b> toward your <b>STABILITY CAP</b>, shown as <span class="k">cur / cap</span> in the top bar. You don't gain stability directly from buildings — instead <b>Comms Towers, Propaganda Bureaus &amp; Radar raise the CAP</b> (the ceiling it can reach). Stability falls when cities are hit, you over-use strikes, or run dystopian/psionic doctrine; dangerous research adds a temporary <b>⚠ unrest</b> that now recovers on its own. If stability hits <b>0</b>, you lose.</p></div>
-  <div class="helpsec"><h3>⊕ FIRE CONTROL — HAND-AIM YOUR HEAVY GUNS</h3><p>Heavy emplacements (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon) can be <b>hand-directed</b>. <b>1)</b> Click the gun to select it → in its info panel press <span class="k">⊕ ADD TO FIRE CONTROL</span>. A radar ring + a top banner appear. <b>2)</b> <b>Click enemies inside the radar ring</b> to mark them (a ◎ TARGET reticle appears). <b>3)</b> The gun then fires ONLY at what you've marked — perfect for saving a railgun shot for a tungsten rod instead of wasting it on chaff. Add more guns to build a battery on one radar. <span style="color:#ffb86b">A gun in Fire Control holds its fire until you designate a target</span> — so if nothing happens, you just haven't marked an enemy yet (and there must be one in range). <b>Right-click</b> or <span class="k">Esc</span> releases.</p></div>
-  <div class="helpsec"><h3>⑧ BUILDINGS &amp; THEIR COSTS</h3><p>Every structure costs <b>IC</b> + <b>MANPOWER</b> and a small amount of <b>INFLUENCE</b> to authorize. <b>Research Labs</b> no longer make influence — instead each one makes research faster and cheaper. As you advance the ages, your buildings take on a <b>cyberpunk</b> neon look.</p>
-    <div id="manualBuildings" style="margin-top:8px"></div></div>
+  <h2>FIELD MANUAL</h2><div class="hd">// HOW TO COMMAND — AND WHERE · click a section to expand</div>
+  <div class="helpsec" style="border-left-color:var(--stab)"><h3 style="color:var(--stab)">⚡ QUICK START — YOUR FIRST FIVE MINUTES</h3><p>
+    <b>1.</b> Open the <span class="k">ECON</span> tab (bottom-left build bar): place a <b>Power Plant</b> + <b>Housing Block</b>, then a <b>Comms Tower</b> — stability feeds your INFLUENCE, and influence pays for everything political.<br>
+    <b>2.</b> <span class="k">PROD</span> tab: a <b>Factory</b> and an extra <b>Airbase</b>. Then press the pulsing <span class="k">PRODUCE</span> button (top bar) and queue tanks, AA &amp; interceptors.<br>
+    <b>3.</b> Press <span class="k">RESEARCH</span> and queue a few techs — they auto-start as influence accrues.<br>
+    <b>4.</b> <span class="k">DEF</span> tab: line your cities with turrets and plant a <b>Missile Silo</b> — fire it later via <span class="k">☢ STRIKE</span>.<br>
+    <b>5.</b> Watch the <b>T-timer</b> (top right). When the fleet hits, hold every city. Lose them all — or hit 0 stability — and it's over.</p></div>
+  <details class="helpsec"><summary>🕹 CONTROLS — DESKTOP &amp; TOUCH</summary><p>
+    <b>Desktop:</b> <span class="k">← → / A D</span> scroll the front · <span class="k">W S / ↑ ↓</span> or <span class="k">Shift+wheel</span> pan the tall sky · <span class="k">wheel</span> zooms toward the cursor (or the <span class="k">+ − ⌂</span> buttons) · <span class="k">click</span> selects · <span class="k">right-click / Esc</span> cancels anything · <span class="k">SPACE</span> pauses · <span class="k">M</span> toggles music · click or drag the <b>minimap</b> to jump the camera.<br>
+    <b>Touch:</b> <b>drag</b> to scroll · <b>pinch</b> to zoom · <b>tap</b> to select / place / designate · <b>long-press</b> to cancel · strategic strikes take a first tap to AIM, then a <span class="k">☢ CONFIRM</span> tap to fire — no fat-finger nukes.
+    <span class="tip2">Zoomed in? The camera can reach the whole world — pan speed matches what your eye sees at any zoom.</span></p></details>
+  <details class="helpsec"><summary>① ECONOMY — IC · MANPOWER · STABILITY → INFLUENCE</summary><p>
+    <b>IND. CAP</b> builds everything. <b>MANPOWER</b> crews it. <b>INFLUENCE</b> buys research &amp; raises your army cap — and it flows from <b>STABILITY alone</b>: the higher your stability, the faster influence accrues.<br><br>
+    Stability climbs <b>slowly</b> toward your <b>STABILITY CAP</b> (shown as <span class="k">cur / cap</span> up top). Buildings don't grant stability directly — <b>Comms Towers, Propaganda Bureaus &amp; Radar raise the CAP</b> it can reach. Stability falls when cities burn, you over-use strikes, or run dystopian/psionic doctrine; dangerous research adds a temporary <b>⚠ unrest</b> that recovers on its own. At <b>0 stability you lose</b> — watch it like a fuel gauge.</p></details>
+  <details class="helpsec"><summary>② PRODUCE UNITS &amp; ✈ AIR COMMAND</summary><p>
+    Build a <b>Factory / Airbase / Shipyard / Space Center</b>, then press <span class="k">PRODUCE</span> (top bar) — units roll out of the matching building. Researched doctrines add whole new rosters here.<br><br>
+    <b>✈ AIR COMMAND:</b> every crewed aircraft needs a hangar slot — <b>Airbase +6</b>, <b>Underground Airwing +3</b>, <b>Aero Works +4</b>. Drones are exempt (swarm away) and carrier wings support themselves. A bigger air force means more air infrastructure — which the enemy can bomb.<br>
+    <b>⬆ ORBITAL LIFT</b> works the same for space units: each Space Center / Station provides lift that your orbital fleet reserves.
+    <span class="tip2">Locked cards tell you exactly what they need — research, a production-line building, a resource deposit, lift or hangar space.</span></p></details>
+  <details class="helpsec"><summary>③ RESEARCH &amp; DOCTRINES</summary><p>
+    Press <span class="k">RESEARCH</span> and spend <b>INFLUENCE</b> on the tech tree. <b>Doctrines unlock whole armies</b> — drones, androids, psionics, superhumans — plus the ★ superweapons. Click several nodes to <b>queue</b> them; they auto-start as influence arrives. Research Labs make research faster &amp; cheaper. Hover a node to see the full prerequisite path light up.</p></details>
+  <details class="helpsec"><summary>④ ☢ STRATEGIC STRIKES</summary><p>
+    Build a <b>Missile Silo</b> (<span class="k">DEF</span> tab) — or later a road-mobile Launcher, Arsenal Ship or Ballistic Sub — then press <span class="k">☢ STRIKE</span>, choose a weapon and click the battlefield. Launch sites are marked ▲. Strikes cost <b>STABILITY</b>, not a long reload — call them the moment a line breaks. The reticle <b>snaps to air fleets</b> for airbursts; on touch, tap to aim then hit <span class="k">☢ CONFIRM</span>.</p></details>
+  <details class="helpsec"><summary>⑤ SPECIAL RESOURCES</summary><p>
+    Build <b>Extractors</b> on the glowing deposits. Owning Steel / Oil / Rare / Uranium permanently <b>cheapens</b> related units and softens the stability cost of strikes — they decide everything late-game. Some tech &amp; weapons (Nuclear, Mind-Forge) require specific deposits.</p></details>
+  <details class="helpsec"><summary>⑥ ★ SUPERWEAPONS &amp; THE MIND-FORGE</summary><p>
+    Superweapons (Colossus, Titan, Telekinetic Pylon, Dreadnought…) are built from <span class="k">PRODUCE</span> once researched. The <b>MIND-FORGE</b> plasma lance appears in <span class="k">☢ STRIKE</span> once you have <b>Antimatter</b> + <b>Telekinesis</b> researched and own <b>Uranium</b>.</p></details>
+  <details class="helpsec"><summary>⊕ FIRE CONTROL — HAND-AIM YOUR HEAVY GUNS</summary><p>
+    Heavy emplacements (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon) can be <b>hand-directed</b>. <b>1)</b> Select the gun → press <span class="k">⊕ ADD TO FIRE CONTROL</span> in its info panel. <b>2)</b> <b>Click enemies inside the radar ring</b> to mark them. <b>3)</b> The gun fires ONLY at your marks — save that railgun round for a tungsten rod, not chaff. Add more guns to build a battery on one radar. <span style="color:#ffb86b">A gun in Fire Control holds fire until you designate something in range.</span> <b>Right-click</b> / <span class="k">Esc</span> / long-press releases.</p></details>
+  <details class="helpsec"><summary>⑦ BUILDINGS &amp; THEIR COSTS</summary><p>
+    Every structure costs <b>IC</b> + <b>MANPOWER</b> plus a small <b>INFLUENCE</b> authorization. Burying a building costs more but shields it (deep tunnels resist assault). As the ages advance your buildings take on a <b>cyberpunk</b> neon look.</p>
+    <div id="manualBuildings" style="margin-top:8px"></div></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -391,6 +428,7 @@
 <div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endStats"></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
+<div id="strikeConfirm"><div class="scq">☢ STRIKE AIMED — tap the map to re-aim, or:</div><button class="pill primary" onclick="confirmStrike()">☢ CONFIRM STRIKE</button><button class="pill" onclick="gameCancel()">✕ ABORT</button></div>
 <div id="nowPlaying"></div>
 <div id="ytplayer" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></div>
 <div id="resPopup"></div>
@@ -2460,7 +2498,7 @@ function armStrike(type) {
   if (effStab() < stratStab(w) + 3) return toast('TOO UNSTABLE FOR THIS STRIKE');
   G.targeting = { silo, type };
   const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
-  toast('AIM ' + w.name.toUpperCase() + ' — click target · launches from the ▲ marked silo');
+  toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click target · launches from the ▲ marked silo'));
 }
 function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & HURLS the earth, flattens anything anchored where it lands
   G.parts.push({ k: 'flash', x, y: y - 32, r: 104, life: .35 });
@@ -2559,7 +2597,7 @@ function detonateAntimatter(x, y) {   // antimatter warhead — bigger than a nu
   areaDamage(x, y, R, 1100); shake(18); SFX.boom(); SFX.split(); G.nukeFlash = .8;
 }
 function detonateStrat(sub, x, y) { if (sub === 'fbomb') igniteFirestorm(x); else if (sub === 'he') detonateHE(x, y); else if (sub === 'am') detonateAntimatter(x, y); else detonateNuke(x, y); }
-function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — COSTS ' + stratStab(w) + '% STABILITY'); G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + ' — click a target (right-click to cancel)'); }
+function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — COSTS ' + stratStab(w) + '% STABILITY'); G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
 
 function updUnits(dt) {
   const railHubs = G.buildings.filter(b => b.d.rail && b.done !== false);
@@ -3023,7 +3061,7 @@ function renderGame() {
     if (G.strikeMode && !G.targeting) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(255,120,120,.85)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('STRATEGIC COMMAND — pick a strike above', W / 2, 78); c.textAlign = 'left'; c.restore(); }
   }
   // strategic targeting reticle — follows the AIR aim point (snaps to airborne enemies), so you can airburst
-  if (G.targeting) { const ap = strikeAimPoint(), px = sx(ap.x), gy = ap.y, w = STRAT[G.targeting.type]; const col = ap.air ? '#ff9a3a' : '#ff5a5a'; c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.arc(px, gy, 16, 0, 6.28); c.moveTo(px - 24, gy); c.lineTo(px + 24, gy); c.moveTo(px, gy - 24); c.lineTo(px, gy + 24); c.stroke(); c.setLineDash([3, 5]); c.beginPath(); c.arc(px, gy, 60, 0, 6.28); c.stroke(); c.setLineDash([]); if (ap.air) { c.setLineDash([4, 6]); c.beginPath(); c.moveTo(px, gy); c.lineTo(px, groundY(ap.x)); c.stroke(); c.setLineDash([]); } c.fillStyle = col; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('☢ ' + (w ? w.name.toUpperCase() : 'STRIKE') + (ap.air ? ' ✈ AIRBURST' : ''), px, gy - 28); c.textAlign = 'left'; }
+  if (G.targeting) { const ap = (G.pendingStrike && G.pendingStrike.ap) || strikeAimPoint(), px = sx(ap.x), gy = ap.y, w = STRAT[G.targeting.type]; const col = ap.air ? '#ff9a3a' : '#ff5a5a'; /* a touch-aimed strike PINS the reticle where you tapped until you confirm */ c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.arc(px, gy, 16, 0, 6.28); c.moveTo(px - 24, gy); c.lineTo(px + 24, gy); c.moveTo(px, gy - 24); c.lineTo(px, gy + 24); c.stroke(); c.setLineDash([3, 5]); c.beginPath(); c.arc(px, gy, 60, 0, 6.28); c.stroke(); c.setLineDash([]); if (ap.air) { c.setLineDash([4, 6]); c.beginPath(); c.moveTo(px, gy); c.lineTo(px, groundY(ap.x)); c.stroke(); c.setLineDash([]); } c.fillStyle = col; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('☢ ' + (w ? w.name.toUpperCase() : 'STRIKE') + (ap.air ? ' ✈ AIRBURST' : ''), px, gy - 28); c.textAlign = 'left'; }
   // FIRE CONTROL — radar coverage for the manual gun group (range rings + a rotating sweep) and a target reticle on every designated enemy
   if (manualActive()) {
     const sweep = animClock * .0013;
@@ -3532,14 +3570,18 @@ function gameTap(px, py, button) {   // shared by mouse (mousedown) and touch (t
   // minimap click / drag (works even while paused)
   if (px >= MM.x && px <= MM.x + MM.w && py >= MM.y && py <= MM.y + MM.h) { mmDrag = true; cam.x = clampCam((px - MM.x) / MM.w * WORLD_W - W / 2); return; }
   const wx = scrToWX(px), wyc = scrToWY(py);
-  if (G.targeting) { if (button === 2) { G.targeting = null; closeStrike(); toast('strike cancelled'); return; } const ap = strikeAimPoint(); launchStrike(G.targeting.silo, G.targeting.type, ap.x, ap.y, ap.air); G.targeting = null; return; }
+  if (G.targeting) { if (button === 2) { G.targeting = null; G.pendingStrike = null; closeStrike(); toast('strike cancelled'); return; }
+    const ap = strikeAimPoint();
+    if (IS_TOUCH) { G.pendingStrike = { silo: G.targeting.silo, type: G.targeting.type, ap }; return; }   // touch: first tap AIMS (re-tap to re-aim) — the ☢ CONFIRM button fires, so no fat-finger nukes
+    launchStrike(G.targeting.silo, G.targeting.type, ap.x, ap.y, ap.air); G.targeting = null; return; }
   if (G.strikeMode) { if (button === 2) { closeStrike(); return; } }
   if (G.terrainMode) { if (button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
   if (G.place) { if (button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
   if (manualActive()) { if (button === 2) { releaseAllManual(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an in-radar enemy to designate it; right-click releases. (falls through to normal selection if no enemy was clicked, so you can add more guns)
   const hit = pickAt(wx, wyc); G.sel = hit ? hit.o : null; refreshSel();
 }
-function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
+function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
+function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchStrike(p.silo, p.type, p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
 cv.addEventListener('mousedown', e => gameTap(e.clientX, e.clientY, e.button));
 addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); });
 addEventListener('mouseup', () => mmDrag = false);
@@ -3613,6 +3655,7 @@ function syncHUD() {
   if (G.phase === 'prep') { const tleft = Math.ceil(G.prepTimer / (0.45 * G.speed)); ob.textContent = 'PREP — ' + (intentLbl ? 'FLEET INTENT: ' + intentLbl : 'INVASION INBOUND'); ob.style.color = ''; os.textContent = 'T-' + tleft + 's · build & specialize · cities ' + alive + '/' + G.cities.length + resNote; }
   else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = G.blackout > 0 ? '⚠ GROUND CONTROL BLACKOUT' : (intentLbl || 'INVASION'); ob.style.color = G.blackout > 0 ? 'var(--inf)' : ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
+  if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state
   document.getElementById('ghint').style.opacity = G.time < 10 ? 1 : 0;
   if (!G.hintProd && G.time > 25) { G.hintProd = true; toast('🏭 Your factories are idle — press the pulsing PRODUCE button (top bar) to raise an army'); }   // playtest onboarding: point at PRODUCE if it's gone unused
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';

@@ -2281,8 +2281,12 @@ function updateGame(dt) {
   G.units = G.units.filter(u => u.hp > 0);
   for (const e of G.enemies) if (e.hp <= 0 && !e.deployed) destroyEnemy(e);   // a shield carrier that deployed its dome is consumed quietly (no death blast / kill credit)
   G.enemies = G.enemies.filter(e => e.hp > 0);
-  for (const b of G.buildings) if (b.hp > 0 && !b.ug && !b.d.needWater && elevAt(b.x) < SEA_E) { b.hp = 0; floatText(b.x, groundY(b.x) - 18, 'FLOODED', '#5fd0ff'); for (let i = 0; i < 6; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: groundY(b.x), vx: 0, vy: -10, r: 3, life: .8 }); }   // a building whose ground sinks below sea level is instantly drowned
-  for (const b of G.buildings) if (b.hp <= 0) { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); } if (G.sel === b) { G.sel = null; refreshSel(); } }
+  for (const b of G.buildings) if (b.hp > 0 && !b.ug && !b.d.needWater && elevAt(b.x) < SEA_E - .04) { b.hp = 0; b.flooded = true; floatText(b.x, groundY(b.x) - 18, 'FLOODED', '#5fd0ff'); }   // a building whose ground genuinely sinks below sea level (margin, so a shallow crater at the waterline doesn't drown it) is drowned — handled as a QUIET sink below, never a blast
+  for (const b of G.buildings) if (b.hp <= 0) {
+    if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
+    else { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
+    if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); } if (G.sel === b) { G.sel = null; refreshSel(); }
+  }
   G.buildings = G.buildings.filter(b => b.hp > 0);
   for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it

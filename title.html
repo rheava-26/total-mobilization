@@ -115,11 +115,13 @@
   #endStats .lbl { color: #7fa8d8; letter-spacing: 1px; }
   #endStats .val { color: #d8ecff; text-align: right; font-weight: 600; }
   /* research — node graph */
-  #resModal .modal { width: 98vw; max-width: 1500px; height: 95vh; max-height: 95vh; padding: 16px 20px; display: flex; flex-direction: column; }
+  #resModal .modal { width: 98vw; max-width: 1500px; height: 95vh; max-height: 95vh; padding: 16px 20px; display: flex; flex-direction: column; position: relative; }
   .resHead { display: flex; align-items: center; gap: 18px; font-size: 12px; letter-spacing: 1px; margin-bottom: 8px; flex-wrap: wrap; }
   .resHead b { color: #eaf2ff; } .resLegend { font-size: 10px; color: var(--term); letter-spacing: 1px; margin-left: auto; }
   .resActive { font-size: 11px; color: var(--res); }
-  .resBoard { position: relative; width: 100%; flex: 1; min-height: 0; margin: 0 auto; background: radial-gradient(circle at 50% 42%, rgba(20,34,58,.5), rgba(4,8,18,.5)); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .resBoard { position: relative; width: 100%; flex: 1; min-height: 0; margin: 0 auto; background: radial-gradient(circle at 50% 42%, rgba(20,34,58,.5), rgba(4,8,18,.5)); border: 1px solid var(--line); border-radius: 6px; overflow: auto; overscroll-behavior: contain; cursor: grab; }
+  .resBoard.grabbing { cursor: grabbing; }
+  .resCanvas { position: relative; }   /* the FULL-SIZE tree — bigger than the board, panned around inside it (size set in JS) */
   .resBoard.scan .rnode2:not(.focus):not(.need) { opacity: .18; filter: grayscale(.85); }   /* dim everything except the hovered node + the trees it needs */
   .resBoard.scan .rnode2.need { outline: 2px dashed var(--ic); outline-offset: 1px; box-shadow: 0 0 16px rgba(96,170,255,.45); }
   .resBoard svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -1535,7 +1537,7 @@ const UNIT_DEFS = {
   shock:    { name: 'Shock Troopers', art: 'shock', domain: 'ground', ic: 60, mp: 9, build: 3, hp: 70, armor: 4, range: 280, dmg: 9, rate: .42, weapon: 'tracer', speed: 20, s: 3.3, grp: 6, req: 'biotech', ds: 'Gene-boosted assault infantry. Fast & tough. (BIOTECH)' },
   cyborg:   { name: 'Cybernetic Legion', art: 'cyborg', domain: 'ground', ic: 200, mp: 8, build: 8, hp: 230, armor: 16, range: 400, dmg: 30, rate: 1.5, weapon: 'tracer', speed: 17, s: 4.3, grp: 2, req: 'transhuman', ds: 'Human minds, machine bodies. Elite. (TRANSHUMANISM)' },
   clone:    { name: 'Clone Battalion', art: 'clone', domain: 'ground', ic: 28, mp: 2, build: 2, hp: 34, armor: 2, range: 230, dmg: 4, rate: .5, weapon: 'tracer', speed: 16, s: 3, grp: 10, req: 'cloning', ds: 'Endless expendable clones. Almost no manpower. (CLONING)' },
-  superhuman:{ name: 'Superhuman Cadre', art: 'superhuman', domain: 'air', airOnly: true, ic: 70, mp: 4, build: 5, hp: 220, armor: 8, range: 600, dmg: 40, rate: 1.0, weapon: 'beam', speed: 460, s: 3.8, grp: 2, shield: 110, req: 'superhumans', ds: '★ FLYING demigods — blisteringly fast and dirt-cheap to field, with reflecting energy shields (only missiles overload them) and eye-beam LASERS. They scream across the sky intercepting air threats. (SUPERHUMANS)' },
+  superhuman:{ name: 'Superhuman Cadre', art: 'superhuman', domain: 'air', airOnly: true, ic: 70, mp: 4, build: 5, hp: 220, armor: 8, range: 600, dmg: 40, rate: 1.0, weapon: 'beam', speed: 460, s: 3.8, grp: 2, shield: 110, req: 'superhumans', ds: '★ FLYING demigods — blisteringly fast, with reflecting energy shields (only missiles overload them) and eye-beam LASERS. They scream across the sky intercepting air threats. UPKEEP: each fielded cadre CONSUMES 2 influence/s and lowers your max STABILITY 1% — cheap to build, but an immortal laser air-force has lasting political costs. (SUPERHUMANS)' },
   titan:    { name: 'Titan', art: 'titan', domain: 'ground', ic: 760, mp: 30, build: 26, hp: 1300, armor: 26, range: 480, dmg: 70, rate: 1.6, weapon: 'tracer', speed: 12, s: 9, grp: 1, req: 'titans', ds: '★ A living colossus of flesh and steel. (SUPERWEAPON)' },
   psitrooper:{ name: 'Psi-Troopers', art: 'psitrooper', domain: 'ground', ic: 150, mp: 10, build: 6, hp: 90, armor: 5, range: 520, dmg: 20, rate: 1.0, weapon: 'plasma', speed: 19, s: 3.4, grp: 3, ceil: 0, req: 'psionics', ds: 'Mind-warriors hurling psychic PLASMA into the sky — strikes air or ground at any altitude. (PSIONICS)' },
   psibeam:  { name: 'Telekinetic Pylon', art: 'pylon', domain: 'ground', ic: 560, mp: 14, build: 20, hp: 300, armor: 6, range: 1150, dmg: 70, rate: 2.0, weapon: 'plasma', speed: 0, s: 6, grp: 1, ceil: 0, req: 'telekinesis', ds: '★ Tears fleets apart with raw mind-force plasma — any altitude. (SUPERWEAPON)' },
@@ -2212,10 +2214,11 @@ function updateGame(dt) {
   if (G.dystopia) stabNeg += 1.4;
   G.icR = icR; G.mpR = mpR; G.resR = resR;
   G.ic += icR * dt; G.mp = Math.min(900, G.mp + mpR * dt); G.res += resR * dt;
-  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus + Math.max(0, G.mult.stab) * 30));   // STABILITY CEILING — raise it by building stability structures (Comms / Propaganda / Radar) & stability doctrine
+  G.superN = 0; for (const u of G.units) if (u.key === 'superhuman') G.superN++;   // Superhuman Cadres carry a standing upkeep — near-immortal flying laser demigods have lasting societal & political implications
+  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus + Math.max(0, G.mult.stab) * 30 - G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; EACH fielded Superhuman Cadre lowers the ceiling 1% (an uneasy populace)
   let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus) drifts back down
   G.stab = Math.max(0, Math.min(100, G.stab + (stabRegen - stabNeg) * dt));
-  G.infR = (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE now accrues PURELY from effective stability — the higher your stability, the faster research & army cap grow
+  G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) - 2 * (G.superN || 0)); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE accrues from effective stability; EACH fielded Superhuman Cadre CONSUMES 2 influence/s of that income (upkeep) — a couple is affordable, an immortal laser air-force strangles your research
   if (G.stabOffset > 0) G.stabOffset = Math.max(0, G.stabOffset - (0.5 + Math.max(0, G.mult.stab) * .1) * dt);   // dangerous-research unrest now RECOVERS on its own over time (no longer requires spamming stability buildings)
   if (G.research) { G.research.t -= dt; if (G.research.t <= 0) finishResearch(); } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
@@ -3502,13 +3505,22 @@ function buildResearch() {
   if (!m) {
     m = document.createElement('div'); m.className = 'modal-bg'; m.id = 'resModal';
     m.innerHTML = `<div class="modal"><h2>RESEARCH — DOCTRINE TREE</h2>
-      <div class="resHead"><span>Influence <b id="resInf">0</b></span><span>Income <b id="resIncome">+0/s</b></span><span>Era <b id="resEra">—</b></span><span class="resActive" id="resActive"></span><span class="resLegend">hover a node → its detail + the prerequisite trees light up (blue) · ★ superweapon · red = dangerous · ONE research at a time</span></div>
-      <div class="resBoard" id="resBoard"><svg id="resSvg" viewBox="0 0 1200 600" preserveAspectRatio="none"></svg><div id="resDetail" class="resDetail"></div></div>
+      <div class="resHead"><span>Influence <b id="resInf">0</b></span><span>Income <b id="resIncome">+0/s</b></span><span>Era <b id="resEra">—</b></span><span class="resActive" id="resActive"></span><span class="resLegend">hover a node → its detail + prerequisites light up (blue) · drag / scroll to pan the tree · ★ superweapon · red = dangerous · ONE research at a time</span></div>
+      <div class="resBoard" id="resBoard"><div class="resCanvas" id="resCanvas"><svg id="resSvg" viewBox="0 0 1200 600" preserveAspectRatio="none"></svg></div></div>
+      <div id="resDetail" class="resDetail"></div>
       <div class="actions"><button class="pill" onclick="closeModal('resModal')">CLOSE</button></div></div>`;
     document.body.appendChild(m);
+    // drag-to-pan (mouse): grab empty space to move the big tree around; touch uses native scroll; clicks on nodes still select
+    const bd = m.querySelector('#resBoard'); let pan = null;
+    bd.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.target.closest('.rnode2')) return; pan = { x: e.clientX, y: e.clientY, sl: bd.scrollLeft, st: bd.scrollTop }; bd.classList.add('grabbing'); });
+    bd.addEventListener('pointermove', e => { if (!pan) return; bd.scrollLeft = pan.sl - (e.clientX - pan.x); bd.scrollTop = pan.st - (e.clientY - pan.y); });
+    const endPan = () => { pan = null; bd.classList.remove('grabbing'); };
+    bd.addEventListener('pointerup', endPan); bd.addEventListener('pointercancel', endPan); window.addEventListener('pointerup', endPan);
   }
   if (!G) return;
-  const board = document.getElementById('resBoard'), detail = document.getElementById('resDetail');
+  const board = document.getElementById('resBoard'), detail = document.getElementById('resDetail'), canvas = document.getElementById('resCanvas');
+  const CW = 2560, CH = 1340;   // the FULL tree canvas — ~2.1× the 1200×600 layout space, so nodes spread out with real breathing room; the board scrolls/pans over it
+  canvas.style.width = CW + 'px'; canvas.style.height = CH + 'px';
   // connector lines (lit once both ends are researched)
   let lines = ''; for (const [a, b] of RES_EDGES) { const A = RESEARCH[a], B = RESEARCH[b]; lines += `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" data-a="${a}" data-b="${b}"${G.unlocked[a] && G.unlocked[b] ? ' class="lit"' : ''}/>`; }
   document.getElementById('resSvg').innerHTML = lines;
@@ -3526,9 +3538,11 @@ function buildResearch() {
     el.onmouseleave = () => { clearTimeout(resHoverT); el.classList.remove('focus'); board.classList.remove('scan'); resHighlight(key, false); detail.classList.remove('show'); stabPreview = null; };
     if (active) el.onclick = () => cancelResearch();
     else if (!r.root && !done) el.onclick = () => startResearch(key);
-    board.appendChild(el);
+    canvas.appendChild(el);
   }
   tickResearchUI();
+  // once the modal is actually on-screen, centre the view on the player's current era so they don't open onto a blank corner
+  requestAnimationFrame(() => { if (!board.clientWidth) return; const ek = G.unlocked.spaceage ? 'spaceage' : G.unlocked.fusion ? 'fusion' : 'info', en = RESEARCH[ek] || RESEARCH.info; board.scrollLeft = Math.max(0, en.x / 1200 * CW - board.clientWidth / 2); board.scrollTop = Math.max(0, en.y / 600 * CH - board.clientHeight / 2); });
 }
 function showResDetail(key) {
   const r = RESEARCH[key], detail = document.getElementById('resDetail'); if (!detail) return;

@@ -1,0 +1,17 @@
+{
+  "name": "Vertical Slice — Open Ground",
+  "tileSize": 32,
+  "width": 60,
+  "height": 40,
+  "terrain": {
+    "0": "grass",
+    "1": "water",
+    "2": "road",
+    "3": "rough"
+  },
+  "spawns": [
+    { "side": "player", "x": 8,  "y": 20 },
+    { "side": "enemy",  "x": 52, "y": 20 }
+  ],
+  "notes": "Grid cells default to grass (0). Terrain overrides are sparse: {x,y,t} triples. Empty means an all-grass field — enough to prove movement/combat before authoring real terrain art."
+}

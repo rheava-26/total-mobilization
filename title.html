@@ -1697,12 +1697,12 @@ function newGame(diff) {
   const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2 }[diff] || 1);
   const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
   G = {
-    ic: 320, mp: 180, inf: 50, infBonus: 0, stab: 65, stabCap: 65, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent,
+    ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent,
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
-    research: null,   // { key, t, total } — the active research
+    research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, blackout: 0, nextBlackout: 30, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
     speed: 1, paused: false, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],
@@ -1788,7 +1788,7 @@ function recalcBuildings() {
 function bmod() { return (G && G.bmod) || {}; }
 function auraAt(x, field) { let m = 1; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field]; return m; }   // local building auras (range / fire-rate)
 function auraHeal(x) { let h = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal); return h; }   // Nanite Foundry repair radius
-function armyCap() { let cap = 24 + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return cap; }
+function armyCap() { let cap = 12 + Math.floor((G.mp || 0) / 25) + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return cap; }   // driven by your MANPOWER pool — ~300 mp ≈ 24 cap (old baseline), ~900 mp ≈ 48 cap; mechanical units never touch this (see isMechanical)
 function srMult(d) { let m = 1; if (G.owned.steel && d.domain === 'ground') m *= .82; if (G.owned.oil && (d.domain === 'air' || d.domain === 'naval')) m *= .82; if (G.owned.rare && d.domain === 'space') m *= .85; return m; }
 // === ORBITAL LIFT CAPACITY === space units RESERVE lift while they exist (the slides' "needs N orbital capacity to lift"); more Space Centers / Stations = a bigger orbital fleet
 function orbCap() { let c = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.orbcap) c += b.d.orbcap; return c; }
@@ -1845,7 +1845,7 @@ function placeBuilding(key, wx) {
   const ugMul = ug && !native ? 1.5 + (ugLvl - 1) * .6 : 1;   // burying a SURFACE building costs extra; digging DEEP costs even more — native-underground buildings are exempt
   const icc = Math.round(d.ic * ugMul), mpc = Math.round(d.mp * (ug && !native ? 1.3 : 1) * ugMul), infc = infCostOf(d, ug && !native ? ugLvl : 0);
   if (G.ic < icc) return toast('NOT ENOUGH IC' + (ug ? ' (burying costs more)' : '')); if (G.mp < mpc) return toast('NOT ENOUGH MANPOWER'); if (G.inf < infc) return toast('NOT ENOUGH INFLUENCE');
-  G.ic -= icc; G.mp -= mpc; G.inf -= infc; SFX.build();
+  G.ic -= icc; G.mp -= mpc; G.inf -= infc; G.infSpent = true; SFX.build();
   let px = wx; if (!ug) { if (d.needWater) { const w = findWater(wx); px = w; } if (d.onNode) { const n = nodeNear(wx); px = n.x; } }
   const ct = nearCity(px);
   G.sites.push({ key, d, x: px, total: d.build, prog: 0, from: ct ? ct.x : px, ug, ugLvl });   // IC-funded; a work crew animates in
@@ -1944,7 +1944,7 @@ function queueUnit(b, key) {
   let grp = d.grp || 1; if (d.drone && bm.droneBatch) grp += bm.droneBatch;   // Drone Assembly enlarges the batch
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) { const pb = prodUnlockBuildingFor(key); return toast('REQUIRES RESEARCH: ' + RESEARCH[d.req].name + (pb ? ' — or build a ' + pb.name : '')); }
   if (unitBReq(d)) return toast('NEEDS A ' + (BUILD_DEFS[d.bReq] ? BUILD_DEFS[d.bReq].name.toUpperCase() : d.bReq));
-  if (combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / raise influence');
+  if (!isMechanical(d) && combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / grow your manpower pool');   // mechanical (mech/drone/elec/clone) units are exempt — see isMechanical
   if (d.domain === 'air' && !d.drone) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed aircraft need hangar slots
   const reqUn = unitReqUnmet(d, grp); if (reqUn) return toast(reqUn);   // production-chain gate: SR deposit / orbital lift / component parts
   let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;   // Data Center frees drone manpower; Cloning/Munition/Droid facilities cut it
@@ -2007,15 +2007,15 @@ function tryStartQueue() {
     const key = G.resQueue[i], r = RESEARCH[key];
     if (!r || G.unlocked[key]) { G.resQueue.splice(i, 1); i--; continue; }
     if (resLocked(key)) continue;                                   // still waiting on a prereq — let later items try
+    if (r.sc && effStab() < r.sc + 5) return;        // dangerous research still gates on stability — but NOT on having the full sum saved; it draws influence down gradually as it runs
     const cost = resCostOf(r), time = resTimeOf(r);
-    if (G.inf < cost || (r.sc && effStab() < r.sc + 5)) return;        // first eligible item gates the queue: wait for influence / stability
-    G.resQueue.splice(i, 1); G.inf -= cost; if (r.sc) G.stabOffset = (G.stabOffset || 0) + r.sc;   // dangerous research adds a RECOVERABLE unrest offset (decays back over time) instead of a permanent stability loss
-    G.research = { key, t: time, total: time, paid: cost }; SFX.build(); toast('◣ RESEARCHING: ' + r.name); buildResearch(); return;
+    G.resQueue.splice(i, 1); if (r.sc) G.stabOffset = (G.stabOffset || 0) + r.sc;   // dangerous research adds a RECOVERABLE unrest offset (decays back over time) instead of a permanent stability loss
+    G.research = { key, total: time, cost, payRate: cost / Math.max(.1, time), paid: 0 }; SFX.build(); toast('◣ RESEARCHING: ' + r.name); buildResearch(); return;
   }
 }
 function cancelResearch() {
   if (!G.research) return; const r = RESEARCH[G.research.key];
-  G.inf += (G.research.paid != null ? G.research.paid : r.cost); if (r.sc) G.stabOffset = Math.max(0, (G.stabOffset || 0) - r.sc);   // refund the unrest offset on cancel
+  G.inf = Math.min(600, G.inf + (G.research.paid || 0)); if (r.sc) G.stabOffset = Math.max(0, (G.stabOffset || 0) - r.sc);   // refund only what's actually been paid in so far; refund the unrest offset on cancel
   G.research = null; toast('RESEARCH CANCELLED — influence refunded'); tryStartQueue(); buildResearch();
 }
 function finishResearch() {
@@ -2218,9 +2218,21 @@ function updateGame(dt) {
   G.stabCap = Math.max(20, Math.min(100, 65 + capBonus + Math.max(0, G.mult.stab) * 30 - G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; EACH fielded Superhuman Cadre lowers the ceiling 1% (an uneasy populace)
   let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus) drifts back down
   G.stab = Math.max(0, Math.min(100, G.stab + (stabRegen - stabNeg) * dt));
-  G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) - 2 * (G.superN || 0)); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE accrues from effective stability; EACH fielded Superhuman Cadre CONSUMES 2 influence/s of that income (upkeep) — a couple is affordable, an immortal laser air-force strangles your research
+  // RESEARCH DRAW-DOWN — an active research no longer needs its full cost paid upfront; it siphons influence out of the
+  // pool gradually (up to cost/time per second, same pace as before IF you can keep up) and completes once fully PAID,
+  // not on a fixed timer. If income can't keep pace it just stretches out instead of stalling.
+  let infSpentThisFrame = !!G.infSpent; G.infSpent = false;   // carries forward any out-of-frame spend (building placement) since the last tick
+  if (G.research) {
+    const rs = G.research, pay = Math.min(G.inf, rs.payRate * dt, rs.cost - rs.paid);
+    if (pay > 0) { G.inf -= pay; rs.paid += pay; infSpentThisFrame = true; }
+    if (rs.paid >= rs.cost) finishResearch();
+  } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
+  // INFLUENCE MOMENTUM — patiently NOT spending ramps income up to 3× over ~75s of saving; any spend (research draw,
+  // building placement) snaps it straight back down to baseline. Rewards saving up, discourages influence-spam.
+  const MOM_CAP = 3.0, MOM_TAU = 25;   // exponential approach: ~95% of the way to the cap after ~75s (3×tau) of uninterrupted saving
+  G.infMomentum = infSpentThisFrame ? 1.0 : Math.min(MOM_CAP, (G.infMomentum || 1) + (MOM_CAP - (G.infMomentum || 1)) * dt / MOM_TAU);
+  G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) * G.infMomentum - 2 * (G.superN || 0)); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE accrues from effective stability, amplified by momentum; EACH fielded Superhuman Cadre CONSUMES 2 influence/s of that income (upkeep) — a couple is affordable, an immortal laser air-force strangles your research
   if (G.stabOffset > 0) G.stabOffset = Math.max(0, G.stabOffset - (0.5 + Math.max(0, G.mult.stab) * .1) * dt);   // dangerous-research unrest now RECOVERS on its own over time (no longer requires spamming stability buildings)
-  if (G.research) { G.research.t -= dt; if (G.research.t <= 0) finishResearch(); } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
   // lingering firestorms — cook anything on the ground inside them
   if (G.fires.length) for (let i = G.fires.length - 1; i >= 0; i--) {
@@ -2253,7 +2265,7 @@ function updateGame(dt) {
   // production buildings keep a standing garrison; autonomous plants trickle out troops
   for (const b of G.buildings) {
     if (b.done === false || b.captured) continue;
-    if (b.d.autospawn) { const deep = !!bmod().autoFast, fast = deep ? .3 : 1, key = deep ? 'android' : b.d.autospawn; b.aut = (b.aut || 0) + dt; if (b.aut >= b.d.spawnEvery * fast && combatCount() < armyCap()) { b.aut = 0; spawnUnit(key, b.x + (Math.random() - .5) * 30); } }   // Deep-Ore Excavator: autofactories crank out high-tier mechs 70% faster
+    if (b.d.autospawn) { const deep = !!bmod().autoFast, fast = deep ? .3 : 1, key = deep ? 'android' : b.d.autospawn; b.aut = (b.aut || 0) + dt; if (b.aut >= b.d.spawnEvery * fast && (isMechanical(UNIT_DEFS[key]) || combatCount() < armyCap())) { b.aut = 0; spawnUnit(key, b.x + (Math.random() - .5) * 30); } }   // Deep-Ore Excavator: autofactories crank out high-tier mechs 70% faster; mechanical output (e.g. android) is cap-exempt
     if (b.d.garrison) { const g = b.d.garrison, keys = g.keys || [g.key], cap = g.n + (bmod().garr | 0); if (UNIT_DEFS[keys[0]]) { b.gt = (b.gt || 0) + dt; if (b.gt >= 12) { b.gt = 0; let nearby = 0; for (const u of G.units) if (u.garr && keys.indexOf(u.key) >= 0 && Math.abs(u.x - b.x) < 220) nearby++; if (nearby < cap) spawnGarrison(keys[Math.floor(Math.random() * keys.length)], b.x + (Math.random() - .5) * b.d.w * 1.6); } } }
   }
   // production buildings
@@ -3533,7 +3545,7 @@ function buildResearch() {
     el.style.left = (r.x / 1200 * 100) + '%'; el.style.top = (r.y / 600 * 100) + '%'; el.dataset.key = key;
     const star = r.eff && r.eff.indexOf('★') >= 0;
     const tag = done ? '✓' : active ? '◣' : qpos >= 0 ? '#' + (qpos + 1) : star ? '★' : r.dang ? '!' : '';
-    el.innerHTML = `<span class="rn2n">${r.name}</span>` + (r.root ? `<span class="rn2c">your starting era</span>` : `<span class="rn2c">${resCostOf(r)} INF · ~${Math.round(resTimeOf(r) / (0.45 * (G.speed || 1)))}s</span>`) + (active ? `<div class="rbar"><i style="width:${(1 - G.research.t / G.research.total) * 100}%"></i></div>` : '') + (tag ? `<span class="rtag">${tag}</span>` : '');
+    el.innerHTML = `<span class="rn2n">${r.name}</span>` + (r.root ? `<span class="rn2c">your starting era</span>` : `<span class="rn2c">${resCostOf(r)} INF · ~${Math.round(resTimeOf(r) / (0.45 * (G.speed || 1)))}s</span>`) + (active ? `<div class="rbar"><i style="width:${Math.min(100, (G.research.paid / G.research.cost) * 100)}%"></i></div>` : '') + (tag ? `<span class="rtag">${tag}</span>` : '');
     el.onmouseenter = () => { whoom(); el.classList.add('focus'); const rr = RESEARCH[key]; stabPreview = rr && rr.sc ? { txt: '−' + rr.sc + ' unrest', col: '#ff8a6a' } : null; clearTimeout(resHoverT); resHoverT = setTimeout(() => { board.classList.add('scan'); resHighlight(key, true); showResDetail(key); }, 280); };
     el.onmouseleave = () => { clearTimeout(resHoverT); el.classList.remove('focus'); board.classList.remove('scan'); resHighlight(key, false); detail.classList.remove('show'); stabPreview = null; };
     if (active) el.onclick = () => cancelResearch();
@@ -3568,7 +3580,7 @@ function showResDetail(key) {
   else if (qpos >= 0) html += `<div class="rdhint" style="color:var(--stab)">▦ QUEUED #${qpos + 1} — click to remove from queue</div>`;
   else if (reason && !prereqPending(key)) html += `<div class="rdhint bad">🔒 ${reason}</div>`;
   else if (reason) html += `<div class="rdhint">▶ Click to QUEUE — starts once its prerequisite finishes</div>`;
-  else if (G.inf < r.cost) html += `<div class="rdhint" style="color:var(--stab)">▶ Click to QUEUE — starts when you have ${r.cost} influence</div>`;
+  else if (G.inf < resCostOf(r)) html += `<div class="rdhint" style="color:var(--stab)">▶ Click to ${G.research ? 'QUEUE' : 'begin'} — pays for itself gradually from your influence income</div>`;
   else html += `<div class="rdhint">▶ Click to ${G.research ? 'QUEUE' : 'begin researching'}</div>`;
   detail.innerHTML = html; detail.classList.add('show');
   const cans = detail.querySelectorAll('canvas'); let i = 0;
@@ -3581,8 +3593,8 @@ function tickResearchUI() {
   const inc = document.getElementById('resIncome'); if (inc) inc.textContent = '+' + (G.infR || 0).toFixed(1) + '/s';
   const era = document.getElementById('resEra'); if (era) { era.textContent = ['', 'INFORMATION', 'FUSION', 'SPACE'][curTier()] + ' AGE'; era.style.color = 'var(--ic)'; }
   const act = document.getElementById('resActive');
-  if (act) { const q = G.resQueue.length ? ' · QUEUE: ' + G.resQueue.map(k => RESEARCH[k].name).join(' → ') : ''; act.textContent = (G.research ? ('◣ RESEARCHING ' + RESEARCH[G.research.key].name + ' — ' + Math.ceil(G.research.t / (0.45 * G.speed)) + 's left') : (G.resQueue.length ? 'starting queue…' : 'no active research — click nodes to queue them')) + q; }
-  const bar = m.querySelector('.rnode2.active .rbar > i'); if (bar && G.research) bar.style.width = ((1 - G.research.t / G.research.total) * 100) + '%';
+  if (act) { const q = G.resQueue.length ? ' · QUEUE: ' + G.resQueue.map(k => RESEARCH[k].name).join(' → ') : ''; act.textContent = (G.research ? ('◣ RESEARCHING ' + RESEARCH[G.research.key].name + ' — ' + Math.round(G.research.paid / G.research.cost * 100) + '% funded') : (G.resQueue.length ? 'starting queue…' : 'no active research — click nodes to queue them')) + q; }
+  const bar = m.querySelector('.rnode2.active .rbar > i'); if (bar && G.research) bar.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%';
 }
 
 // canvas interaction
@@ -3672,7 +3684,7 @@ function syncHUD() {
   const sb = document.getElementById('srBar'); const owned = Object.keys(G.owned).filter(k => G.owned[k]); const am = (G.antimatter || 0) > 0 ? `<span class="sr" style="color:#c8a0ff" data-tip="Antimatter — produced by Antimatter Extractors. Fuels the Antimatter strike & Dreadnoughts.">☢ Antimatter ${Math.floor(G.antimatter)}</span>` : ''; const parts = owned.map(k => `<span class="sr" data-tip="${SR[k].name} — ${SR[k].ds}">◆ ${SR[k].name}×${G.owned[k]}</span>`); sb.innerHTML = (parts.length || am) ? parts.join('') + am : '<span class="none">no special resources</span>';
   const ob = document.getElementById('objBig'), os = document.getElementById('objSub');
   const alive = G.cities.filter(ct => ct.hp > 0 && !ct.held).length;
-  const resNote = G.research ? ' · ◣ ' + RESEARCH[G.research.key].name + ' ' + Math.ceil(G.research.t / (0.45 * G.speed)) + 's' : '';
+  const resNote = G.research ? ' · ◣ ' + RESEARCH[G.research.key].name + ' ' + Math.round(G.research.paid / G.research.cost * 100) + '%' : '';
   const intentLbl = (typeof INTENT !== 'undefined' && INTENT[G.intent]) ? INTENT[G.intent].label : '';
   if (G.phase === 'prep') { const tleft = Math.ceil(G.prepTimer / (0.45 * G.speed)); ob.textContent = 'PREP — ' + (intentLbl ? 'FLEET INTENT: ' + intentLbl : 'INVASION INBOUND'); ob.style.color = ''; os.textContent = 'T-' + tleft + 's · build & specialize · cities ' + alive + '/' + G.cities.length + resNote; }
   else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = G.blackout > 0 ? '⚠ GROUND CONTROL BLACKOUT' : (intentLbl || 'INVASION'); ob.style.color = G.blackout > 0 ? 'var(--inf)' : ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }

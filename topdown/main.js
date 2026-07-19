@@ -7,13 +7,14 @@ const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
 const card = createStatCard(document.getElementById('card'));
 
-const map = await loadMap('maps/slice-01.json');
+const map = await loadMap('maps/theater-01.json');
 const renderer = createRenderer(canvas);
 renderer.cam.x = map.worldW() / 2;
 renderer.cam.y = map.worldH() / 2;
-// frame the whole map on load (fit width, with a little breathing room) so both
-// spawn groups are actually visible instead of an arbitrary fixed zoom
-renderer.cam.zoom = Math.max(0.35, Math.min(2, (canvas.clientWidth / map.worldW()) * 0.85));
+// frame the whole map on load (fit width AND height, with a little breathing
+// room) so the whole island is visible instead of an arbitrary fixed zoom
+renderer.cam.zoom = Math.max(0.08, Math.min(2,
+  Math.min(canvas.clientWidth / map.worldW(), canvas.clientHeight / map.worldH()) * 0.9));
 
 const world = { units: [], projectiles: [], hits: [] };
 
@@ -83,7 +84,7 @@ function loop(now) {
   last = now;
 
   clearClaims();
-  updateUnits(world, dt);
+  updateUnits(world, dt, map);
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);

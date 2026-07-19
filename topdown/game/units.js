@@ -63,10 +63,22 @@ function pickTarget(world, u) {
   return best;
 }
 
-export function updateUnits(world, dt) {
+// Ground units respect terrain: moveMult scales top speed (forest/hills/marsh
+// slow you down), and a moveMult of 0 (water, mountain) is flat-out
+// impassable — they steer along it cheaply rather than crossing it. Air
+// units ignore terrain entirely. This is deliberately dumb pathing (no
+// actual pathfinding); it's enough to prove terrain matters for P1.5 — a
+// real path planner is later-phase work.
+function isPassable(map, wx, wy) {
+  const t = map.terrainAtWorld(wx, wy);
+  return !t || t.moveMult > 0; // off the edge of the map: don't block on it here
+}
+
+export function updateUnits(world, dt, map) {
   for (const u of world.units) {
     if (u.hp <= 0) continue;
     const def = u.def;
+    const grounded = map && def.domain === 'ground';
 
     // --- steering: accelerate toward an order point or an engage-range hover ---
     let goalX = u.x, goalY = u.y;
@@ -83,6 +95,12 @@ export function updateUnits(world, dt) {
       u.target = null;
     }
 
+    // current-tile terrain scales top speed (moveMult 1 = full speed, e.g.
+    // forest/hills/marsh are slower); impassable tiles are handled below by
+    // simply refusing to move onto them, so this multiplier never needs to
+    // reach exactly 0 here.
+    const moveMult = grounded ? Math.max(0, (map.terrainAtWorld(u.x, u.y)?.moveMult ?? 1)) : 1;
+
     const dx = goalX - u.x, dy = goalY - u.y, dist = Math.hypot(dx, dy);
     if (dist > 2) {
       const desiredAngle = Math.atan2(dy, dx);
@@ -92,13 +110,28 @@ export function updateUnits(world, dt) {
       while (da < -Math.PI) da += 2 * Math.PI;
       curAngle += Math.max(-def.turnRate * dt, Math.min(def.turnRate * dt, da));
       u.aim = curAngle;
-      const targetSpeed = Math.min(def.speed, dist * 3); // ease in near the goal
+      const targetSpeed = Math.min(def.speed * moveMult, dist * 3); // ease in near the goal
       u.vx += (Math.cos(curAngle) * targetSpeed - u.vx) * Math.min(1, dt * 4);
       u.vy += (Math.sin(curAngle) * targetSpeed - u.vy) * Math.min(1, dt * 4);
     } else {
       u.vx *= 0.85; u.vy *= 0.85;
     }
-    u.x += u.vx * dt; u.y += u.vy * dt;
+
+    let mdx = u.vx * dt, mdy = u.vy * dt;
+    if (grounded && (mdx || mdy)) {
+      const nx = u.x + mdx, ny = u.y + mdy;
+      if (!isPassable(map, nx, ny)) {
+        // cheap wall-slide: try each axis alone, otherwise just stop (no
+        // real pathfinding — good enough to keep ground units off water/
+        // mountain without them getting stuck buzzing at the border)
+        const okX = isPassable(map, u.x + mdx, u.y);
+        const okY = isPassable(map, u.x, u.y + mdy);
+        if (okX && !okY) mdy = 0;
+        else if (okY && !okX) mdx = 0;
+        else { mdx = 0; mdy = 0; u.vx = 0; u.vy = 0; }
+      }
+    }
+    u.x += mdx; u.y += mdy;
 
     // simple separation so a mass of units spreads into a formation instead of stacking
     for (const o of world.units) {

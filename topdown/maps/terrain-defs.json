@@ -1,0 +1,99 @@
+{
+  "_comment": "Shared terrain type library for map format v2. Each entry under 'types' is an EFFECT LIST — the full set of gameplay/visual effects a tile of that type carries. New terrain = a new entry here (plus a legend character in a map file); no code changes required. 'legend' is the DEFAULT char->type mapping maps can inherit; a map may override it locally with its own 'legend' object.",
+
+  "legend": {
+    ".": "grass",
+    "f": "forest",
+    "h": "hills",
+    "M": "mountain",
+    "~": "water",
+    "r": "river",
+    "m": "marsh",
+    "u": "urban",
+    "s": "sand"
+  },
+
+  "types": {
+    "grass": {
+      "label": "Plains",
+      "color": ["#33502f", "#3c5b37"],
+      "moveMult": 1.0,
+      "concealment": 0.05,
+      "cover": 0.0,
+      "buildable": true,
+      "water": false
+    },
+    "forest": {
+      "label": "Forest",
+      "color": ["#1c3320", "#254024"],
+      "moveMult": 0.55,
+      "concealment": 0.55,
+      "cover": 0.25,
+      "buildable": false,
+      "water": false
+    },
+    "hills": {
+      "label": "Hills",
+      "color": ["#5c5636", "#69613e"],
+      "moveMult": 0.7,
+      "concealment": 0.2,
+      "cover": 0.3,
+      "buildable": true,
+      "water": false
+    },
+    "mountain": {
+      "label": "Mountains",
+      "color": ["#57534c", "#6a6559"],
+      "moveMult": 0,
+      "concealment": 0.1,
+      "cover": 0.5,
+      "buildable": false,
+      "water": false
+    },
+    "water": {
+      "label": "Sea",
+      "color": ["#0f2c46", "#153a5c"],
+      "moveMult": 0,
+      "concealment": 0.0,
+      "cover": 0.0,
+      "buildable": false,
+      "water": true
+    },
+    "river": {
+      "label": "River",
+      "color": ["#1b4e6e", "#215d80"],
+      "moveMult": 0,
+      "concealment": 0.0,
+      "cover": 0.0,
+      "buildable": false,
+      "water": true
+    },
+    "marsh": {
+      "label": "Marsh",
+      "color": ["#3a4632", "#42503a"],
+      "moveMult": 0.4,
+      "concealment": 0.35,
+      "cover": 0.1,
+      "buildable": false,
+      "water": false
+    },
+    "urban": {
+      "label": "Urban",
+      "color": ["#48443d", "#57524a"],
+      "moveMult": 0.85,
+      "concealment": 0.15,
+      "cover": 0.45,
+      "buildable": true,
+      "water": false
+    },
+    "sand": {
+      "label": "Beach",
+      "color": ["#a89468", "#b8a679"],
+      "moveMult": 0.8,
+      "concealment": 0.0,
+      "cover": 0.0,
+      "buildable": true,
+      "water": false
+    }
+  }
+}

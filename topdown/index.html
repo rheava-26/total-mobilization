@@ -45,6 +45,25 @@
   }
   #buildbar button:hover { background: #1c3a5e; }
   #buildbar button.selected { background: #2f5f9c; color: #fff; }
+  /* P4 "choose what to produce" panel: pick a category, see its recipe,
+     then confirm to arm B-mode with the matching facility preselected.
+     Left side (buildbar owns bottom-center) so the two never overlap. */
+  #prodPanel, #importPanel {
+    position: fixed; left: 16px; top: 90px; width: 300px;
+    display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
+    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5); color: #eaf2ff; font: 12px Consolas, monospace;
+  }
+  #prodPanel.open, #importPanel.open { display: flex; }
+  #prodPanel .catRow, #importPanel .resRow { display: flex; gap: 6px; flex-wrap: wrap; }
+  #prodPanel button, #importPanel button {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
+    padding: 6px 10px; cursor: pointer; font: 12px Consolas, monospace;
+  }
+  #prodPanel button:hover, #importPanel button:hover { background: #1c3a5e; }
+  #prodPanel button.selected { background: #2f5f9c; color: #fff; }
+  #recipeInfo { white-space: pre-line; line-height: 1.5; color: #bfe9ff; }
+  #recipeInfo b { color: #6dffb0; }
 </style>
 </head>
 <body>
@@ -53,6 +72,15 @@
 <div id="econHud"></div>
 <div id="card"></div>
 <div id="buildbar"></div>
+<div id="prodPanel">
+  <b>Choose what to produce (P)</b>
+  <div class="catRow" id="prodCatRow"></div>
+  <div id="recipeInfo">Pick a category to see its recipe.</div>
+</div>
+<div id="importPanel">
+  <b>Import resources — spend influence + a bit of IC (I)</b>
+  <div class="resRow" id="importResRow"></div>
+</div>
 <script type="module" src="main.js"></script>
 </body>
 </html>

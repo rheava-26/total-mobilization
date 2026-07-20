@@ -55,6 +55,18 @@ export const ECONOMY_TUNABLES = {
   // later consume. Zero at mobilizationLevel 0 by construction (no faucet at
   // minute one), grows as the ramp climbs. ----
   MIL_OUTPUT_BASE_COEFF: 0.4, // fraction of current IC rate that "counts" toward military output at full mobilization
+
+  // ---- INFLUENCE (P4 follow-up — CONCEPT.md's settled "Production & supply
+  // chain" ledger: missing resources are importable "in exchange for
+  // INFLUENCE + a bit of IC"). A slow-accruing, stockpiled pool, same shape
+  // as IC/manpower but with no per-city source — it's the "diplomatic/
+  // political capital" pool the import fallback spends, not a production
+  // input in its own right. DESIGNER'S TO TUNE — placeholder sized only to
+  // make an import affordable within a short playtest without making it
+  // free.
+  STARTING_INFLUENCE: 30,
+  INFLUENCE_CAP_BASE: 150,
+  INFLUENCE_BASE_RATE: 0.15, // influence/sec, flat trickle (no connectivity/city dependency yet)
 };
 
 // Mobilization bands (0..100 scale) — CONCEPT.md: "volunteers → conscription
@@ -84,6 +96,9 @@ export function createEconomy() {
   return {
     ic: T.STARTING_IC, icRate: 0, icCap: T.IC_CAP_BASE,
     manpower: T.STARTING_MANPOWER, manpowerRate: 0, manpowerCap: T.MANPOWER_CAP_BASE,
+    // INFLUENCE (P4 follow-up, see ECONOMY_TUNABLES above): what the import
+    // fallback (game/production.js importResource) spends.
+    influence: T.STARTING_INFLUENCE, influenceRate: 0, influenceCap: T.INFLUENCE_CAP_BASE,
     mobilizationLevel: 0, mobilizationRate: 0, band: bandFor(0),
     armingQuality: 1, // multiplier from the "arm better" upgrade lever (factory econ.armingBonus)
     militaryOutput: 0, militaryOutputRate: 0,
@@ -215,6 +230,7 @@ export function updateEconomy(world, economy, map, dt) {
   // (game/buildings.js BUILDING_DEFS[key].econ; under-construction buildings
   // contribute nothing yet, same as their weapon/vision being gated) ----
   let armingBonus = 0, mobilizationRampBonus = 0, icCapBonus = 0, manpowerCapBonus = 0;
+  let influenceRateBonus = 0, influenceCapBonus = 0;
   for (const b of (world.buildings || [])) {
     if (b.side !== 'player' || b.status !== 'complete') continue;
     const econ = b.def.econ;
@@ -225,9 +241,17 @@ export function updateEconomy(world, economy, map, dt) {
     mobilizationRampBonus += econ.mobilizationRateBonus || 0;
     icCapBonus += econ.icCapBonus || 0;
     manpowerCapBonus += econ.manpowerCapBonus || 0;
+    // no building grants these yet (P4 first pass) — read generically anyway
+    // so a future "embassy"-style building can add the lever with zero
+    // engine changes, same pattern as every other econ field here.
+    influenceRateBonus += econ.influenceRateBonus || 0;
+    influenceCapBonus += econ.influenceCapBonus || 0;
   }
   economy.icCap = T.IC_CAP_BASE + icCapBonus;
   economy.manpowerCap = T.MANPOWER_CAP_BASE + manpowerCapBonus;
+  economy.influenceCap = T.INFLUENCE_CAP_BASE + influenceCapBonus;
+  economy.influenceRate = T.INFLUENCE_BASE_RATE + influenceRateBonus;
+  economy.influence = Math.min(economy.influenceCap, economy.influence + economy.influenceRate * dt);
 
   // ---- automatic mobilization ramp — THE load-bearing rule: this advances
   // with zero player input. mobilizationRampBonus is the ACCELERATOR upgrade

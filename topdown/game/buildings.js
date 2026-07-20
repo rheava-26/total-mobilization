@@ -112,6 +112,49 @@ export const BUILDING_DEFS = {
     cost: { ic: 60 }, buildTime: 16,
     requiresDeposit: true,
   },
+
+  // ---------------------------------------------------------------------
+  // PRODUCTION FACILITIES (P4 — CONCEPT.md's settled "Production & supply
+  // chain" ledger). Pure structural data, same as every other building
+  // here — footprint/hp/vision/cost/buildTime, sited and constructed
+  // through the exact same B-mode costed+timed pipeline as a factory or a
+  // mine. What makes these PRODUCTION facilities (auto-produce a unit
+  // category once complete, gated on a recipe of resources + prerequisite
+  // buildings) is entirely in game/production.js's PRODUCTION_DEFS table,
+  // which maps a category to one of these building keys by name — this
+  // file stays unaware that "tankFactory" means anything beyond its own
+  // footprint/cost/buildTime, same separation as mine not knowing what a
+  // resource recipe is. DESIGNER'S TO TUNE — footprints/hp/costs are
+  // first-pass placeholders sized only to be affordable within a short
+  // playtest, not balanced for a real campaign.
+  ammunitionPlant: {
+    // the prerequisite building CONCEPT.md's illustrative tank-line example
+    // names ("chromium + tungsten + steel + an ammunition plant") — gates
+    // production, does not itself consume resources or produce units.
+    name: 'Ammunition Plant', footprint: { w: 3, h: 2 }, hp: 220, vision: 100,
+    cost: { ic: 120 }, buildTime: 20,
+  },
+  tankFactory: {
+    name: 'Tank Factory', footprint: { w: 4, h: 3 }, hp: 380, vision: 120,
+    cost: { ic: 180, manpower: 10 }, buildTime: 28,
+  },
+  aircraftPlant: {
+    name: 'Aircraft Plant', footprint: { w: 4, h: 4 }, hp: 340, vision: 150,
+    cost: { ic: 200, manpower: 10 }, buildTime: 30,
+  },
+  shipyard: {
+    // no requiresDeposit-style siting rule yet (unlike mine) — a shipyard
+    // built far from open water will still complete and still try to
+    // produce, it'll just rally its ships a long way to reach the nearest
+    // water (game/production.js findSpawnPoint). Flagged as a follow-up for
+    // whoever tunes siting rules further, not treated as a bug here.
+    name: 'Shipyard', footprint: { w: 5, h: 3 }, hp: 360, vision: 130,
+    cost: { ic: 210, manpower: 12 }, buildTime: 32,
+  },
+  artilleryWorks: {
+    name: 'Artillery Works', footprint: { w: 3, h: 3 }, hp: 300, vision: 110,
+    cost: { ic: 150, manpower: 8 }, buildTime: 24,
+  },
 };
 
 // Generic vision-range accessor shared by game/fog.js for both units and

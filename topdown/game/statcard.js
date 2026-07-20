@@ -28,6 +28,14 @@ function buildingCardHtml(u, d) {
   if (u.status === 'constructing') {
     html += `<div class="row"><span>Status</span><span>Building ${Math.round((u.buildProgress || 0) * 100)}%</span></div>`;
   }
+  // P4: production facilities (game/production.js sets prodState/
+  // prodStallReason/producedCount on the building instance) surface their
+  // live state in the hover card too, not just the floating map label.
+  if (u.prodCategory) {
+    const stateTxt = u.prodState === 'producing' ? 'Producing' : `Stalled — ${u.prodStallReason}`;
+    html += `<div class="row"><span>Production</span><span>${stateTxt}</span></div>
+      <div class="row"><span>Units built</span><span>${u.producedCount || 0}</span></div>`;
+  }
   if (d.weapon) {
     html += `<div class="row"><span>Weapon</span><span>${weaponLabel(d.weapon)}</span></div>
       <div class="row"><span>Damage</span><span>${d.dmg}</span></div>

@@ -7,6 +7,10 @@ import {
   ECONOMY_TUNABLES, MOBILIZATION_BANDS,
 } from './game/economy.js';
 import { RESOURCE_DEFS, RESOURCE_LIST, MINE_TUNABLES } from './game/resources.js';
+import {
+  PRODUCTION_DEFS, updateProduction, categoryForFacility,
+  IMPORT_TUNABLES, importCost, canAffordImport, importResource,
+} from './game/production.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
@@ -416,17 +420,113 @@ canvas.addEventListener('click', e => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// "CHOOSE WHAT TO PRODUCE" PANEL (P4 — CONCEPT.md's settled "Production &
+// supply chain" ledger: "you pick a production category ... see its recipe
+// ... build the factory"). Press P to open; click a category button and (a)
+// its recipe/requirements are shown in #recipeInfo BEFORE anything is spent
+// or placed, so the player learns the supply chain they need to build, and
+// (b) B-mode is armed with that category's facility preselected — placing
+// it then goes through the EXACT SAME costed+timed construction pipeline
+// (isValidPlacement/sitePlacement/spawnBuilding) every other building uses;
+// this panel is purely a friendlier front door onto that same buildbar
+// entry, not a separate placement path.
+const prodPanel = document.getElementById('prodPanel');
+const prodCatRow = document.getElementById('prodCatRow');
+const recipeInfo = document.getElementById('recipeInfo');
+let selectedCategory = null;
+
+function resourceCostText(resourceCostPerUnit) {
+  return Object.entries(resourceCostPerUnit || {})
+    .map(([rid, amt]) => `${RESOURCE_DEFS[rid] ? RESOURCE_DEFS[rid].name : rid} ${amt}/unit`)
+    .join(', ') || 'none';
+}
+function recipeHtml(category) {
+  const prod = PRODUCTION_DEFS[category];
+  const facilityDef = BUILDING_DEFS[prod.facility];
+  const prereq = prod.recipe.prerequisiteBuildings.length
+    ? prod.recipe.prerequisiteBuildings.map(k => BUILDING_DEFS[k].name).join(', ')
+    : 'none';
+  const outputs = prod.outputs.map(k => UNIT_DEFS[k].name).join(', ');
+  const facCost = facilityDef.cost || {};
+  return `<b>${prod.name}</b> — produces: ${outputs}\n`
+    + `Facility: ${facilityDef.name} (${facCost.ic || 0} IC${facCost.manpower ? ` + ${facCost.manpower} manpower` : ''}, ${facilityDef.buildTime}s to build)\n`
+    + `Resources/unit: ${resourceCostText(prod.recipe.resourceCostPerUnit)}\n`
+    + `Prerequisite buildings: ${prereq}\n`
+    + `IC/unit: ${prod.recipe.icCostPerUnit}   Manpower/unit: ${prod.recipe.manpowerCostPerUnit}\n`
+    + `Rate at full supply: 1 unit / ${prod.recipe.buildTimePerUnit}s`;
+}
+for (const category of Object.keys(PRODUCTION_DEFS)) {
+  const btn = document.createElement('button');
+  btn.textContent = PRODUCTION_DEFS[category].name;
+  btn.dataset.category = category;
+  btn.addEventListener('click', () => selectCategory(category));
+  prodCatRow.appendChild(btn);
+}
+function updateProdPanelUI() {
+  for (const btn of prodCatRow.children) btn.classList.toggle('selected', btn.dataset.category === selectedCategory);
+}
+function selectCategory(category) {
+  selectedCategory = category;
+  updateProdPanelUI();
+  recipeInfo.innerHTML = recipeHtml(category);
+  // Arm B-mode with this category's facility preselected — same pipeline
+  // the buildbar's own per-building buttons use (selectBuildType), just
+  // reached from the recipe-first front door instead of a raw building list.
+  if (roadMode.active) exitRoadMode();
+  enterBuildMode();
+  selectBuildType(PRODUCTION_DEFS[category].facility);
+}
+function enterProdPanel() { prodPanel.classList.add('open'); }
+function exitProdPanel() { prodPanel.classList.remove('open'); }
+
+// ---------------------------------------------------------------------------
+// IMPORT PANEL (P4 — CONCEPT.md: missing resources are importable "in
+// exchange for INFLUENCE + a bit of IC — a pricier stopgap, not a
+// replacement for owning the deposit"). Press I to open; each button
+// imports one BATCH_SIZE of that resource immediately if affordable
+// (game/production.js importResource) — a single explicit spend per click,
+// no queue.
+const importPanel = document.getElementById('importPanel');
+const importResRow = document.getElementById('importResRow');
+function importButtonLabel(rid) {
+  const cost = importCost();
+  return `${RESOURCE_DEFS[rid].name} +${IMPORT_TUNABLES.BATCH_SIZE} (${cost.influence} infl + ${cost.ic} IC)`;
+}
+for (const r of RESOURCE_LIST) {
+  const btn = document.createElement('button');
+  btn.textContent = importButtonLabel(r.id);
+  btn.dataset.resource = r.id;
+  btn.addEventListener('click', () => {
+    const ok = importResource(economy, r.id);
+    flashMessage(ok
+      ? `Imported ${IMPORT_TUNABLES.BATCH_SIZE} ${RESOURCE_DEFS[r.id].name}.`
+      : `Can't afford to import ${RESOURCE_DEFS[r.id].name} — needs ${importCost().influence} influence + ${importCost().ic} IC.`);
+  });
+  importResRow.appendChild(btn);
+}
+function enterImportPanel() { importPanel.classList.add('open'); }
+function exitImportPanel() { importPanel.classList.remove('open'); }
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'r' || e.key === 'R') {
     if (buildMode.active) exitBuildMode();
+    if (prodPanel.classList.contains('open')) exitProdPanel();
     if (roadMode.active) exitRoadMode(); else enterRoadMode();
   } else if (e.key === 'b' || e.key === 'B') {
     if (roadMode.active) exitRoadMode();
+    if (prodPanel.classList.contains('open')) exitProdPanel();
     if (buildMode.active) exitBuildMode(); else enterBuildMode();
+  } else if (e.key === 'p' || e.key === 'P') {
+    if (prodPanel.classList.contains('open')) exitProdPanel(); else enterProdPanel();
+  } else if (e.key === 'i' || e.key === 'I') {
+    if (importPanel.classList.contains('open')) exitImportPanel(); else enterImportPanel();
   } else if (e.key === 'Escape') {
     if (roadMode.active) exitRoadMode();
     if (buildMode.active) exitBuildMode();
+    if (prodPanel.classList.contains('open')) exitProdPanel();
+    if (importPanel.classList.contains('open')) exitImportPanel();
   }
 });
 
@@ -534,6 +634,18 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
       ctx.textAlign = 'left';
     }
   }
+  // P4: production facilities show their live state right on the map —
+  // "producing" (green) or "STALLED — needs X" (amber) — same info the econ
+  // HUD's Production block repeats in text form, so it's readable at a
+  // glance without hunting the HUD for which specific building is stuck.
+  if (!constructing && b.prodCategory && cam.zoom > 0.2) {
+    const label = b.prodState === 'producing' ? `▶ producing (${b.producedCount} built)` : `⏸ STALLED — ${b.prodStallReason}`;
+    ctx.fillStyle = b.prodState === 'producing' ? '#8dffb0' : '#ffcf5c';
+    ctx.font = '10px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, (x0 + x1) / 2, y1 + 15);
+    ctx.textAlign = 'left';
+  }
   if (b === hovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 - 3, y0 - 3, (x1 - x0) + 6, (y1 - y0) + 6); }
 }
 
@@ -629,6 +741,34 @@ window.__debug = {
       t += step;
     }
   },
+  // production-chain hooks (P4 — game/production.js), for headless
+  // verification: PRODUCTION_DEFS is the recipe table itself;
+  // categoryForFacility mirrors the reverse lookup updateProduction uses;
+  // IMPORT_TUNABLES/importCost/canAffordImport/importResource let a test
+  // drive the import fallback directly without staging an #importPanel
+  // click; prodPanel/importPanel expose the UI open/selected state the same
+  // way buildMode/roadMode already do; enter/exit/select* drive the panels
+  // without needing real key/click events. fastForward advances
+  // construction + economy + production together in fixed dt steps WITHOUT
+  // touching units/projectiles/rendering — lets a test observe "stalled ->
+  // mines built -> producing -> N units at t" over simulated minutes in
+  // milliseconds of real time, using the EXACT SAME updateBuildings/
+  // updateEconomy/updateProduction calls the real per-frame loop below
+  // makes, so behavior never diverges between the fast-forwarded test path
+  // and normal play.
+  PRODUCTION_DEFS, categoryForFacility, IMPORT_TUNABLES, importCost, canAffordImport, importResource,
+  prodPanel, importPanel, selectCategory, enterProdPanel, exitProdPanel, enterImportPanel, exitImportPanel,
+  get selectedCategory() { return selectedCategory; },
+  fastForward(seconds, stepDt = 0.5) {
+    let t = 0;
+    while (t < seconds) {
+      const step = Math.min(stepDt, seconds - t);
+      updateBuildings(world, step, map);
+      updateEconomy(world, economy, map, step);
+      updateProduction(world, economy, map, step);
+      t += step;
+    }
+  },
 };
 
 let last = performance.now();
@@ -648,6 +788,12 @@ function loop(now) {
   // updateBuildings so a building that JUST completed construction this
   // frame already counts toward econ effects this same tick.
   updateEconomy(world, economy, map, dt);
+  // P4: production facilities (game/production.js) run AFTER the economy
+  // tick so they read this frame's freshly-accrued resource/IC/manpower
+  // pools, same ordering rationale as updateEconomy running after
+  // updateBuildings (a facility that just finished construction this frame
+  // already counts).
+  updateProduction(world, economy, map, dt);
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
@@ -707,14 +853,32 @@ function loop(now) {
   // P3 economy HUD — compact readout: pool/cap + current rate for IC and
   // manpower, mobilization % + its band label, military output + rate, and
   // (below) the resource stockpiles mines feed.
+  // P4: one status line per complete player production facility — "state
+  // (producing/stalled-needs-X) + rate + units made so far", generic over
+  // whatever's in world.buildings (no per-category branching here; a
+  // facility's own b.prodState/b.prodStallReason/b.producedCount, set by
+  // game/production.js's updateProduction, carry everything this needs).
+  const prodLines = [];
+  for (const b of world.buildings) {
+    if (b.side !== 'player' || !b.prodCategory) continue;
+    const prod = PRODUCTION_DEFS[b.prodCategory];
+    const stateTxt = b.prodState === 'producing'
+      ? `producing (${(1 / prod.recipe.buildTimePerUnit).toFixed(2)}/s)`
+      : `STALLED — ${b.prodStallReason}`;
+    prodLines.push(`${prod.name}: ${stateTxt} — ${b.producedCount} built`);
+  }
+  const prodBlock = prodLines.length ? `\n<b>Production</b>\n${prodLines.join('\n')}` : '';
+
   econHud.innerHTML =
     `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)}  (+${economy.icRate.toFixed(2)}/s)\n`
     + `<b>Manpower</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)}  (+${economy.manpowerRate.toFixed(2)}/s)\n`
+    + `<b>Influence</b> ${economy.influence.toFixed(0)}/${economy.influenceCap.toFixed(0)}  (+${economy.influenceRate.toFixed(2)}/s)\n`
     + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}%  (+${economy.mobilizationRate.toFixed(3)}/s)\n`
     + `${economy.band.label}\n`
     + `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)}  (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
     + `Arming quality x${economy.armingQuality.toFixed(2)}\n`
-    + `<b>Resources</b>\n${resourceLine}`;
+    + `<b>Resources</b>\n${resourceLine}`
+    + prodBlock;
 
   requestAnimationFrame(loop);
 }

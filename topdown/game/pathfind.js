@@ -239,8 +239,19 @@ export function findPathCached(map, moveClassName, moveClass, sx, sy, gx, gy) {
   const ggx = Math.max(0, Math.min(map.width - 1, Math.floor(gx / ts)));
   const ggy = Math.max(0, Math.min(map.height - 1, Math.floor(gy / ts)));
   const key = moveClassName + '|' + ggx + ',' + ggy;
-  const cached = pathCache.get(key);
-  if (cached) return cached;
+  // BUGFIX (found verifying P4): findPath returns `null` for a genuinely
+  // unreachable goal (e.g. an order whose destination a building now
+  // blocks off). `pathCache.get(key)` legitimately returns that `null` for
+  // an already-solved-and-failed goal, but `if (cached)` treated null as a
+  // cache MISS, not a cached failure — so every unit stuck on an
+  // unreachable order re-ran a full A* solve (several ms, thousands of
+  // node expansions) EVERY FRAME forever, since game/units.js's
+  // ensurePath() also always treats `!u.path` as stale and asks again.
+  // `has()` distinguishes "never solved" from "solved, no path exists" so a
+  // failed solve is cached exactly like a successful one — re-solved only
+  // when map.version actually changes (a road/building could open/close
+  // the route), not every call.
+  if (pathCache.has(key)) return pathCache.get(key);
   const path = findPath(map, moveClass, sx, sy, gx, gy);
   pathCache.set(key, path);
   if (pathCache.size > 128) pathCache.delete(pathCache.keys().next().value);

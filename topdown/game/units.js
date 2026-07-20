@@ -211,6 +211,20 @@ export const UNIT_DEFS = {
     vision: 260,
     dispositions: [],
   },
+  artillery: {
+    // P4 production-chain follow-up (CONCEPT.md's settled "Production &
+    // supply chain" ledger names "artillery" as one of the illustrative
+    // categories alongside tanks/aircraft/warships) — a tracked, long-range
+    // ground shell lobber. Reuses the same 'shell' ballistic weapon a tank
+    // carries (no new projectile physics needed) but trades the tank's
+    // armor/mobility for reach: much longer range and harder-hitting per
+    // shot, at less than half the tank's HP and a slower turret. holdGround
+    // like SAM/AA — it's a battery that reaches out, not a unit that closes.
+    name: 'Artillery "Culverin"', domain: 'ground', moveClass: 'tracked', weapon: 'shell',
+    hp: 65, armor: 3, speed: 40, range: 340, dmg: 26, rate: 1.1, turnRate: 2, radius: 9,
+    vision: 220,
+    dispositions: ['holdGround'],
+  },
   sam: {
     name: 'SAM Battery "Warden"', domain: 'ground', moveClass: 'tracked', weapon: 'sam',
     hp: 90, armor: 4, speed: 30, range: 480, dmg: 34, rate: 2.4, turnRate: 2, radius: 11,

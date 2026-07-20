@@ -214,19 +214,29 @@ function prerenderCityBlocks(octx, map) {
       }
 
       // nudge away from the nearest road so the block sits back off the
-      // street with a small gap, rather than centered on the tile
-      let ox = (hash2(gx, gy, 210) - 0.5) * ts * 0.3;
-      let oy = (hash2(gx, gy, 211) - 0.5) * ts * 0.3;
+      // street with a small gap, rather than centered on the tile. Wider
+      // than a first pass (was +-0.15 tile) — at close zoom that read as a
+      // grid of near-identical boxes each pinned to its own tile center;
+      // letting a block drift up to ~45% of a tile breaks the per-tile
+      // quantization into something closer to an actual uneven streetscape.
+      let ox = (hash2(gx, gy, 210) - 0.5) * ts * 0.44;
+      let oy = (hash2(gx, gy, 211) - 0.5) * ts * 0.44;
       if (roadDir) {
         ox -= roadDir.dx * ts * 0.16;
         oy -= roadDir.dy * ts * 0.16;
       }
       const cx = cx0 + ox, cy = cy0 + oy;
 
-      const sizeScale = 0.85 + density * 0.35; // bigger structures near city centers
-      const w = ts * (0.42 + hash2(gx, gy, 212) * 0.26) * sizeScale;
-      const h = ts * (0.42 + hash2(gx, gy, 213) * 0.26) * sizeScale;
-      const rot = (hash2(gx, gy, 214) - 0.5) * 0.3;
+      // size/rotation variance also widened for the same reason — the
+      // original ranges (0.26 size spread, 0.3 rad rotation) were subtle
+      // enough that same-size, near-axis-aligned boxes still dominated the
+      // read at max zoom. A wider spread (independent w/h draws, so aspect
+      // ratio genuinely varies block to block) and a full ~40-degree
+      // rotation swing reads as an organic block cluster instead of a grid.
+      const sizeScale = 0.8 + density * 0.4; // bigger structures near city centers
+      const w = ts * (0.36 + hash2(gx, gy, 212) * 0.42) * sizeScale;
+      const h = ts * (0.36 + hash2(gx, gy, 213) * 0.42) * sizeScale;
+      const rot = (hash2(gx, gy, 214) - 0.5) * 0.7;
 
       const palette = ROOF_PALETTES[Math.floor(hash2(gx, gy, 215) * ROOF_PALETTES.length) % ROOF_PALETTES.length];
       const roofRgb = lerpRgb(palette[0], palette[1], hash2(gx, gy, 216));

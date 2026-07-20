@@ -278,6 +278,36 @@ function flashMessage(text) {
   buildMode.messageUntil = performance.now() + 2400;
 }
 
+// Left-click while in B mode: DELEGATED placement (CONCEPT.md Pillar 1) —
+// the planner's spiral search (game/buildings.js sitePlacement) picks the
+// actual site near the click. Shift-click is the pin override: place
+// exactly at the hovered footprint tile (buildMode.previewGx/Gy, the same
+// tile the green/red preview is drawn from) or reject with a brief message
+// if that exact spot is invalid — no silent fallback to the planner.
+canvas.addEventListener('click', e => {
+  if (!buildMode.active || !buildMode.selectedType) return;
+  const key = buildMode.selectedType;
+  const def = BUILDING_DEFS[key];
+  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+  if (e.shiftKey) {
+    const gx = buildMode.previewGx, gy = buildMode.previewGy;
+    if (gx === undefined || !isValidPlacement(map, gx, gy, def)) {
+      flashMessage(`Can't pin ${def.name} there — invalid site.`);
+      return;
+    }
+    spawnBuilding(world, map, key, gx, gy, 'player');
+    flashMessage(`${def.name} pinned.`);
+  } else {
+    const site = sitePlacement(map, key, wx, wy);
+    if (!site) {
+      flashMessage(`No buildable site found near there for ${def.name}.`);
+      return;
+    }
+    spawnBuilding(world, map, key, site.x, site.y, 'player');
+    flashMessage(`${def.name} sited by the planners.`);
+  }
+});
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'r' || e.key === 'R') {
@@ -338,6 +368,45 @@ function drawRoadPreview(ctx, worldToScreen) {
   ctx.restore();
 }
 
+// B-mode footprint preview: green if isValidPlacement (what shift-click's
+// exact pin would do right now), red otherwise. Purely a preview — the
+// planner's normal (non-shift) click can still choose a different, better-
+// scored spot nearby; this just tells the player the literal rule at the
+// exact tile under the cursor.
+function drawBuildPreview(ctx, worldToScreen) {
+  if (!buildMode.active || !buildMode.selectedType || buildMode.previewGx === undefined) return;
+  const def = BUILDING_DEFS[buildMode.selectedType];
+  const ts = map.tileSize;
+  const [x0, y0] = worldToScreen(buildMode.previewGx * ts, buildMode.previewGy * ts);
+  const [x1, y1] = worldToScreen((buildMode.previewGx + def.footprint.w) * ts, (buildMode.previewGy + def.footprint.h) * ts);
+  ctx.save();
+  ctx.fillStyle = buildMode.previewValid ? 'rgba(90,255,140,0.28)' : 'rgba(255,90,90,0.28)';
+  ctx.strokeStyle = buildMode.previewValid ? 'rgba(120,255,160,0.9)' : 'rgba(255,120,120,0.9)';
+  ctx.lineWidth = 2;
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
+}
+
+function drawBuilding(ctx, worldToScreen, cam, b) {
+  const ts = map.tileSize;
+  const [x0, y0] = worldToScreen(b.gx * ts, b.gy * ts);
+  const [x1, y1] = worldToScreen((b.gx + b.def.footprint.w) * ts, (b.gy + b.def.footprint.h) * ts);
+  ctx.save();
+  ctx.fillStyle = b.side === 'player' ? 'rgba(70,120,170,0.92)' : 'rgba(150,60,60,0.92)';
+  ctx.strokeStyle = b.side === 'player' ? '#5fd0ff' : '#ff5a5a';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
+  if (b.hp < b.maxHp) {
+    const w = x1 - x0;
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x0, y0 - 8, w, 3);
+    ctx.fillStyle = '#6dffb0'; ctx.fillRect(x0, y0 - 8, w * (b.hp / b.maxHp), 3);
+  }
+  if (b === hovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 - 3, y0 - 3, (x1 - x0) + 6, (y1 - y0) + 6); }
+}
+
 function drawUnit(ctx, worldToScreen, cam, u) {
   const [sx, sy] = worldToScreen(u.x, u.y);
   const r = u.def.radius * cam.zoom * devicePixelRatio;
@@ -395,6 +464,14 @@ window.__debug = {
   // directly without needing real DOM input, enterRoadMode/exitRoadMode let
   // a test drive the mode without depending on exact key event shape.
   pathfindStats, roadMode, findPath, findRoadRoute, enterRoadMode, exitRoadMode, terrainSample, issueMoveOrder,
+  // buildings / B-mode hooks (P2 city layer), for headless verification:
+  // BUILDING_DEFS/spawnBuilding/isValidPlacement/sitePlacement let a test
+  // stage or query construction directly; buildMode exposes the UI state
+  // (selectedType/previewGx/previewGy/previewValid/message) the same way
+  // roadMode already does above; enter/exit/select drive the mode without
+  // needing real key/click events.
+  BUILDING_DEFS, spawnBuilding, isValidPlacement, sitePlacement, buildMode,
+  enterBuildMode, exitBuildMode, selectBuildType,
 };
 
 let last = performance.now();
@@ -408,12 +485,18 @@ function loop(now) {
 
   clearClaims();
   updateUnits(world, dt, map);
+  updateBuildings(world, dt, map);
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
 
   renderer.frame(map, (ctx, worldToScreen, cam) => {
     drawFogOverlay(ctx, worldToScreen, 'player', world, map);
+    for (const b of world.buildings) {
+      // fog: same rule as units — an undetected enemy building doesn't draw.
+      if (b.side !== 'player' && !detects('player', b)) continue;
+      drawBuilding(ctx, worldToScreen, cam, b);
+    }
     for (const p of world.projectiles) drawProjectile(ctx, worldToScreen, cam, p);
     for (const u of world.units) {
       // fog: only draw enemy units the player side currently detects. Own
@@ -428,6 +511,7 @@ function loop(now) {
       ctx.beginPath(); ctx.arc(sx, sy, (0.25 - h.life) * 60, 0, 6.28); ctx.stroke();
     }
     drawRoadPreview(ctx, worldToScreen);
+    drawBuildPreview(ctx, worldToScreen);
   });
 
   card.show(hovered, lastMouse.x, lastMouse.y);
@@ -436,7 +520,11 @@ function loop(now) {
   const roadHint = roadMode.active
     ? (roadMode.a ? 'road mode: click point B (Esc/right-click to cancel)' : 'road mode: click point A (Esc/right-click to exit)')
     : 'R: build road';
-  hud.textContent = `${map.name} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint}`;
+  const buildHint = buildMode.active
+    ? (buildMode.selectedType ? 'build mode: click a rough spot (shift-click to pin exact) — Esc to exit' : 'build mode: pick a building below — Esc to exit')
+    : 'B: build';
+  const flash = (buildMode.message && performance.now() < buildMode.messageUntil) ? `  |  ${buildMode.message}` : '';
+  hud.textContent = `${map.name} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
 
   requestAnimationFrame(loop);
 }

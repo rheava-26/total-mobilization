@@ -1,20 +1,35 @@
 // Player/enemy BUILDINGS — real entities (not scenery), CONCEPT.md Pillar 1
 // & 3: what you build is on the map, changes the map, blocks and gets shot
-// at like anything else. No economy yet (P3): construction is instant and
-// free — BUILDING_DEFS is pure data, same attribute philosophy as
-// game/units.js's UNIT_DEFS, so a new building type is a new entry here, not
-// new code.
+// at like anything else. P3 (game/economy.js): construction now COSTS IC
+// (+manpower for one type) and TAKES TIME — a building spawns in `status:
+// 'constructing'` and only starts doing its economic/combat job once it
+// reaches `status: 'complete'`. BUILDING_DEFS is still pure data, same
+// attribute philosophy as game/units.js's UNIT_DEFS — a new building type is
+// a new entry here (data + `cost`/`buildTime`/`econ`), not new code.
 //
 // A building entity looks like: { id, key, def, side, x, y, gx, gy, hp,
-// maxHp, aim, cd, target }. x/y are the WORLD-px footprint CENTER (what
-// pickTarget/fireProjectile/resolveHit in game/units.js expect from any
-// shooter/target shape); gx/gy is the footprint's top-left TILE. `def` is a
-// per-instance shallow clone of the BUILDING_DEFS entry with `radius` filled
-// in (derived from footprint x map.tileSize at spawn time, since footprint
-// is in tiles but a unit's def.radius is a world-px constant) — that's what
-// lets resolveHit/pickTarget treat a building exactly like a unit with no
+// maxHp, aim, cd, target, status, buildProgress, buildTime }. x/y are the
+// WORLD-px footprint CENTER (what pickTarget/fireProjectile/resolveHit in
+// game/units.js expect from any shooter/target shape); gx/gy is the
+// footprint's top-left TILE. `def` is a per-instance shallow clone of the
+// BUILDING_DEFS entry with `radius` filled in (derived from footprint x
+// map.tileSize at spawn time, since footprint is in tiles but a unit's
+// def.radius is a world-px constant) — that's what lets
+// resolveHit/pickTarget treat a building exactly like a unit with no
 // special-casing per entity kind.
 import { pickTarget, nearestEnemy, fireProjectile, claim, claimOf } from './units.js';
+
+// A building under construction starts at this fraction of its full HP (a
+// fragile scaffold, not a one-shot-killable paper target) and grows toward
+// full HP as buildProgress advances; damage taken mid-construction still
+// subtracts normally and is NOT healed back by construction progress.
+// DESIGNER'S TO TUNE.
+export const CONSTRUCTION_HP_FLOOR = 0.2;
+// Vision multiplier applied while a building is still under construction —
+// the scaffold doesn't have its finished sensor/vantage yet. DESIGNER'S TO
+// TUNE. Read by game/fog.js via entityVision() below so units and buildings
+// share one vision rule with no per-kind special-casing.
+export const CONSTRUCTION_VISION_MULT = 0.35;
 
 // ---------------------------------------------------------------------------
 // BUILDING ROSTER — pure data. footprint is in TILES (w x h); hp/vision are
@@ -22,29 +37,72 @@ import { pickTarget, nearestEnemy, fireProjectile, claim, claimOf } from './unit
 // range consumed by game/fog.js). Only gunEmplacement carries a `weapon` +
 // dmg/range/rate (same split as UNIT_DEFS: the weapon def owns projectile
 // physics/targeting scope, dmg/range/rate live on the shooter).
+//
+// `cost` (IC, optional manpower) and `buildTime` (seconds) are P3's
+// construction economy — DESIGNER'S TO TUNE, picked only to (a) let a fresh
+// game demo-afford at least one building immediately off the P3 starting IC
+// pool (game/economy.js STARTING_IC) and (b) make timed construction
+// actually observable within a short playtest.
+//
+// `econ` is the PATTERN this phase wires buildings into the economy with —
+// plain data read by game/economy.js's updateEconomy, only for buildings
+// with status 'complete'. Two of the five double as the designer-requested
+// upgrade levers: factory is the "arm better" lever (armingBonus raises
+// military output QUALITY), barracks is the "accelerate the ramp" lever
+// (mobilizationRateBonus steepens the automatic mobilization curve). Radar
+// and gunEmplacement carry no econ block — they keep their P2 vision/combat
+// roles unchanged. DESIGNER'S TO TUNE — the specific two levers and their
+// magnitudes are placeholders demonstrating the pattern, not canon.
 export const BUILDING_DEFS = {
   factory: {
     name: 'Factory', footprint: { w: 4, h: 3 }, hp: 420, vision: 130,
+    cost: { ic: 150 }, buildTime: 25,
+    // ARM-BETTER lever: +IC/sec (raises output QUANTITY via the IC feeding
+    // militaryOutputRate) and +armingBonus (raises output QUALITY directly).
+    econ: { icRate: 0.5, armingBonus: 0.15 },
   },
   barracks: {
     name: 'Barracks', footprint: { w: 3, h: 2 }, hp: 260, vision: 150,
+    cost: { ic: 90 }, buildTime: 18,
+    // ACCELERATE lever: +manpower/sec, and +mobilizationRateBonus steepens
+    // the automatic ramp itself (mobilizes faster than the default clock).
+    econ: { manpowerRate: 0.6, mobilizationRateBonus: 0.15 },
   },
   supplyDepot: {
     name: 'Supply Depot', footprint: { w: 2, h: 2 }, hp: 190, vision: 110,
+    cost: { ic: 70 }, buildTime: 14,
+    // raises the stockpile caps — pools can't exceed IC_CAP_BASE/
+    // MANPOWER_CAP_BASE (game/economy.js) without one of these.
+    econ: { icCapBonus: 200, manpowerCapBonus: 150 },
   },
   radar: {
     // the whole point of this building: vision far beyond anything a unit
     // carries, plugged straight into game/fog.js as just another viewer.
+    // No econ block — P3 doesn't touch radar's role.
     name: 'Radar Station', footprint: { w: 2, h: 2 }, hp: 150, vision: 780,
+    cost: { ic: 110 }, buildTime: 20,
   },
   gunEmplacement: {
     // static autocannon — reuses the exact unit weapon/fire-discipline
     // pipeline (game/units.js pickTarget/fireProjectile/claim) via
-    // updateBuildings below, it just never moves or chases.
+    // updateBuildings below, it just never moves or chases. No econ block —
+    // P3 doesn't touch its combat role. Costs a little manpower too (crew),
+    // demonstrating the manpower-cost path alongside the IC-only buildings.
     name: 'Gun Emplacement', footprint: { w: 1, h: 1 }, hp: 140, vision: 230,
     weapon: 'autocannon', dmg: 5, range: 210, rate: 0.32,
+    cost: { ic: 60, manpower: 10 }, buildTime: 12,
   },
 };
+
+// Generic vision-range accessor shared by game/fog.js for both units and
+// buildings: a unit has no `status` field so it always falls through to the
+// full def.vision branch; a building under construction reads its reduced
+// scaffold vision instead. Keeping this here (not duplicated in fog.js)
+// means CONSTRUCTION_VISION_MULT has exactly one definition.
+export function entityVision(e) {
+  const base = (e.def && e.def.vision) || 0;
+  return e.status === 'constructing' ? base * CONSTRUCTION_VISION_MULT : base;
+}
 
 export function footprintTiles(def, gx, gy) {
   const tiles = [];
@@ -127,6 +185,13 @@ export function sitePlacement(map, key, clickWx, clickWy, maxR = 30) {
 
 let nextBuildingId = 1;
 
+// Places a building's FOOTPRINT immediately (it blocks pathing and terrain
+// from the instant it's sited — a construction site is a real obstacle, not
+// a ghost) but starts it in `status: 'constructing'` at CONSTRUCTION_HP_FLOOR
+// of its full HP. game/economy.js's cost check/spend happens in the CALLER
+// (main.js's B-mode click handler) before this is invoked — this function
+// itself is unconditional, same as before P3 (a test harness or a future
+// scripted/free spawn can still call it directly).
 export function spawnBuilding(world, map, key, gx, gy, side) {
   const base = BUILDING_DEFS[key];
   if (!base) throw new Error(`unknown building type "${key}"`);
@@ -136,8 +201,9 @@ export function spawnBuilding(world, map, key, gx, gy, side) {
   const x = (gx + base.footprint.w / 2) * ts, y = (gy + base.footprint.h / 2) * ts;
   const b = {
     id: nextBuildingId++, key, def, side, x, y, gx, gy,
-    hp: def.hp, maxHp: def.hp, aim: 0, cd: Math.random() * (def.rate || 1),
-    target: null,
+    hp: Math.max(1, Math.round(def.hp * CONSTRUCTION_HP_FLOOR)), maxHp: def.hp,
+    aim: 0, cd: Math.random() * (def.rate || 1), target: null,
+    status: 'constructing', buildProgress: 0, buildTime: Math.max(0.1, def.buildTime || 10),
   };
   for (const t of footprintTiles(def, gx, gy)) map.setBlock(t.x, t.y, 1);
   world.buildings.push(b);
@@ -155,16 +221,35 @@ function removeBuilding(world, map, b) {
   if (i >= 0) world.buildings.splice(i, 1);
 }
 
-// Per-frame building update: weaponed buildings (gun emplacement) acquire
-// and fire on targets through the EXACT SAME pipeline a unit uses
-// (pickTarget/nearestEnemy/fireProjectile/claim from game/units.js) — static
-// disposition only, never chases (there is no movement code path for a
-// building at all). Then sweeps for destroyed buildings (hp<=0, set by
-// resolveHit during this frame's updateProjectiles call) and cleans them up.
-// Mirrors game/units.js's updateUnits: fire/act this frame, filter deaths
-// from LAST frame's hits — same one-frame lag as the unit roster already has.
+// Per-frame building update: FIRST advances construction (P3) — a
+// 'constructing' building gains HP proportional to how much progress it made
+// THIS frame (not recomputed from progress wholesale, so damage taken
+// mid-build stays subtracted instead of being healed back by the progress
+// formula), does nothing else (no weapon, no economic output — those read
+// `status === 'complete'` directly in game/economy.js and below) until
+// buildProgress reaches 1, at which point it flips to 'complete' at full HP.
+// THEN weaponed buildings (gun emplacement) acquire and fire on targets
+// through the EXACT SAME pipeline a unit uses (pickTarget/nearestEnemy/
+// fireProjectile/claim from game/units.js) — static disposition only, never
+// chases (there is no movement code path for a building at all). Finally
+// sweeps for destroyed buildings (hp<=0, set by resolveHit during this
+// frame's updateProjectiles call, or during construction by the same path)
+// and cleans them up — a building destroyed mid-construction reverts to
+// nothing + a scorch mark exactly like a finished one (removeBuilding below
+// doesn't distinguish). Mirrors game/units.js's updateUnits: fire/act this
+// frame, filter deaths from LAST frame's hits — same one-frame lag as the
+// unit roster already has.
 export function updateBuildings(world, dt, map) {
   for (const b of world.buildings) {
+    if (b.status === 'constructing') {
+      if (b.hp <= 0) continue; // already dead this frame; the sweep below removes it
+      const prevProgress = b.buildProgress;
+      b.buildProgress = Math.min(1, b.buildProgress + dt / b.buildTime);
+      const grown = (b.buildProgress - prevProgress) * b.maxHp * (1 - CONSTRUCTION_HP_FLOOR);
+      b.hp = Math.min(b.maxHp, b.hp + grown);
+      if (b.buildProgress >= 1) { b.status = 'complete'; b.hp = b.maxHp; }
+      continue; // no combat / economic activity while still under construction
+    }
     if (b.hp <= 0 || !b.def.weapon) continue;
     b.cd -= dt;
     const target = pickTarget(world, b) || nearestEnemy(world, b);

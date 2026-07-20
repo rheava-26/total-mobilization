@@ -2,12 +2,17 @@ import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement } from './game/buildings.js';
+import {
+  createEconomy, updateEconomy, canAffordBuilding, spendForBuilding, buildingCost,
+  ECONOMY_TUNABLES, MOBILIZATION_BANDS,
+} from './game/economy.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
+const econHud = document.getElementById('econHud');
 const buildbar = document.getElementById('buildbar');
 const card = createStatCard(document.getElementById('card'));
 
@@ -45,6 +50,13 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
   Math.min(canvas.clientWidth / map.worldW(), canvas.clientHeight / map.worldH()) * 0.9));
 
 const world = { units: [], projectiles: [], hits: [], buildings: [] };
+
+// MOBILIZATION ECONOMY CORE (P3 — game/economy.js). Created once at load,
+// ticked every frame in loop() below with ZERO player input required — a
+// fresh game's mobilizationLevel/IC/manpower/militaryOutput all advance on
+// their own from here. See game/economy.js's ECONOMY_TUNABLES for every
+// tunable number (designer's to set).
+const economy = createEconomy();
 
 // find the nearest water tile to a world point (spiral ring search over the
 // grid) — used both to place the demo gunboat offshore and to snap naval
@@ -346,6 +358,19 @@ function flashMessage(text) {
 // exactly at the hovered footprint tile (buildMode.previewGx/Gy, the same
 // tile the green/red preview is drawn from) or reject with a brief message
 // if that exact spot is invalid — no silent fallback to the planner.
+//
+// P3: construction now costs IC (+manpower for one building type) and takes
+// build time — checked/spent here via game/economy.js BEFORE spawnBuilding
+// is called; an unaffordable placement is rejected with a brief message and
+// nothing is spent or spawned, same shape as the existing "invalid site"
+// rejection above it.
+function affordabilityMessage(key, def) {
+  const cost = buildingCost(key);
+  const parts = [`${cost.ic || 0} IC`];
+  if (cost.manpower) parts.push(`${cost.manpower} manpower`);
+  return `Can't afford ${def.name} — needs ${parts.join(' + ')} `
+    + `(have ${Math.floor(economy.ic)} IC, ${Math.floor(economy.manpower)} manpower).`;
+}
 canvas.addEventListener('click', e => {
   if (!buildMode.active || !buildMode.selectedType) return;
   const key = buildMode.selectedType;
@@ -357,16 +382,26 @@ canvas.addEventListener('click', e => {
       flashMessage(`Can't pin ${def.name} there — invalid site.`);
       return;
     }
+    if (!canAffordBuilding(economy, key)) {
+      flashMessage(affordabilityMessage(key, def));
+      return;
+    }
+    spendForBuilding(economy, key);
     spawnBuilding(world, map, key, gx, gy, 'player');
-    flashMessage(`${def.name} pinned.`);
+    flashMessage(`${def.name} pinned — under construction.`);
   } else {
     const site = sitePlacement(map, key, wx, wy);
     if (!site) {
       flashMessage(`No buildable site found near there for ${def.name}.`);
       return;
     }
+    if (!canAffordBuilding(economy, key)) {
+      flashMessage(affordabilityMessage(key, def));
+      return;
+    }
+    spendForBuilding(economy, key);
     spawnBuilding(world, map, key, site.x, site.y, 'player');
-    flashMessage(`${def.name} sited by the planners.`);
+    flashMessage(`${def.name} sited by the planners — under construction.`);
   }
 });
 
@@ -454,17 +489,39 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
   const ts = map.tileSize;
   const [x0, y0] = worldToScreen(b.gx * ts, b.gy * ts);
   const [x1, y1] = worldToScreen((b.gx + b.def.footprint.w) * ts, (b.gy + b.def.footprint.h) * ts);
+  const constructing = b.status === 'constructing';
   ctx.save();
-  ctx.fillStyle = b.side === 'player' ? 'rgba(70,120,170,0.92)' : 'rgba(150,60,60,0.92)';
+  // P3: an in-progress footprint reads visually distinct — dashed outline,
+  // lower fill opacity — so "this isn't a real building yet" is legible at
+  // a glance, same information the buildbar/HUD progress readout repeats.
+  ctx.fillStyle = b.side === 'player'
+    ? (constructing ? 'rgba(70,120,170,0.42)' : 'rgba(70,120,170,0.92)')
+    : (constructing ? 'rgba(150,60,60,0.42)' : 'rgba(150,60,60,0.92)');
   ctx.strokeStyle = b.side === 'player' ? '#5fd0ff' : '#ff5a5a';
   ctx.lineWidth = 1.5;
+  if (constructing) ctx.setLineDash([5, 4]);
   ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.setLineDash([]);
   ctx.restore();
   if (b.hp < b.maxHp) {
     const w = x1 - x0;
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x0, y0 - 8, w, 3);
     ctx.fillStyle = '#6dffb0'; ctx.fillRect(x0, y0 - 8, w * (b.hp / b.maxHp), 3);
+  }
+  if (constructing) {
+    // build-progress bar, below the footprint (the HP bar above it already
+    // owns the top edge) — amber to read distinctly from the green HP bar.
+    const w = x1 - x0;
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x0, y1 + 3, w, 4);
+    ctx.fillStyle = '#ffcf5c'; ctx.fillRect(x0, y1 + 3, w * b.buildProgress, 4);
+    if (cam.zoom > 0.25) {
+      ctx.fillStyle = '#ffe9b0';
+      ctx.font = '10px Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(b.buildProgress * 100)}%`, (x0 + x1) / 2, y1 + 17);
+      ctx.textAlign = 'left';
+    }
   }
   if (b === hovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 - 3, y0 - 3, (x1 - x0) + 6, (y1 - y0) + 6); }
 }
@@ -534,6 +591,26 @@ window.__debug = {
   // needing real key/click events.
   BUILDING_DEFS, spawnBuilding, isValidPlacement, sitePlacement, buildMode,
   enterBuildMode, exitBuildMode, selectBuildType,
+  // economy hooks (P3 — game/economy.js), for headless verification:
+  // `economy` is the live state object the real loop mutates every frame
+  // (read it directly to observe the auto-ramp with real wall-clock time);
+  // ECONOMY_TUNABLES/MOBILIZATION_BANDS expose the tunable data block;
+  // canAffordBuilding/buildingCost mirror the B-mode cost check so a test
+  // can query affordability without staging a click. simulateEconomy fast-
+  // forwards the economy tick in fixed dt steps WITHOUT touching
+  // units/projectiles/rendering — a test-only convenience for comparing
+  // curves (e.g. "with vs without the accelerator lever") faster than
+  // waiting real wall-clock seconds; the real per-frame loop above is what
+  // actually proves "ramps on its own during normal play."
+  economy, ECONOMY_TUNABLES, MOBILIZATION_BANDS, canAffordBuilding, buildingCost,
+  simulateEconomy(seconds, stepDt = 0.5) {
+    let t = 0;
+    while (t < seconds) {
+      const step = Math.min(stepDt, seconds - t);
+      updateEconomy(world, economy, map, step);
+      t += step;
+    }
+  },
 };
 
 let last = performance.now();
@@ -548,6 +625,11 @@ function loop(now) {
   clearClaims();
   updateUnits(world, dt, map);
   updateBuildings(world, dt, map);
+  // P3: the mobilization economy ticks every frame, unconditionally — this
+  // is the "zero player input" ramp (game/economy.js). Runs after
+  // updateBuildings so a building that JUST completed construction this
+  // frame already counts toward econ effects this same tick.
+  updateEconomy(world, economy, map, dt);
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
@@ -592,6 +674,16 @@ function loop(now) {
   // share/reproduce a good island via ?seed=N.
   const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
   hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
+
+  // P3 economy HUD — compact readout: pool/cap + current rate for IC and
+  // manpower, mobilization % + its band label, military output + rate.
+  econHud.innerHTML =
+    `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)}  (+${economy.icRate.toFixed(2)}/s)\n`
+    + `<b>Manpower</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)}  (+${economy.manpowerRate.toFixed(2)}/s)\n`
+    + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}%  (+${economy.mobilizationRate.toFixed(3)}/s)\n`
+    + `${economy.band.label}\n`
+    + `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)}  (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
+    + `Arming quality x${economy.armingQuality.toFixed(2)}`;
 
   requestAnimationFrame(loop);
 }

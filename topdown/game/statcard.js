@@ -23,6 +23,11 @@ function buildingCardHtml(u, d) {
     <div class="row"><span>HP</span><span>${Math.max(0, Math.round(u.hp))} / ${d.maxHp || d.hp}</span></div>
     <div class="row"><span>Footprint</span><span>${d.footprint.w}×${d.footprint.h}</span></div>
     <div class="row"><span>Vision</span><span>${d.vision}</span></div>`;
+  // P3: a building mid-construction shows its progress right in the card —
+  // same status the footprint's dashed outline/progress bar already convey.
+  if (u.status === 'constructing') {
+    html += `<div class="row"><span>Status</span><span>Building ${Math.round((u.buildProgress || 0) * 100)}%</span></div>`;
+  }
   if (d.weapon) {
     html += `<div class="row"><span>Weapon</span><span>${weaponLabel(d.weapon)}</span></div>
       <div class="row"><span>Damage</span><span>${d.dmg}</span></div>

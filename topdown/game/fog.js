@@ -11,6 +11,8 @@
 // the identical rule against every other side — there is no special-casing
 // of "the player" in the detection math itself, only in what gets rendered.
 
+import { entityVision } from './buildings.js';
+
 export const fogState = { revealAll: false };
 
 // side -> Set<unit>, the enemies (any unit not on that side) that side
@@ -52,7 +54,11 @@ export function computeFog(world, map) {
     for (const target of targets) {
       const concealment = targetConcealment(map, target);
       for (const viewer of viewers) {
-        const visionRange = (viewer.def.vision || 0) * (1 - concealment);
+        // entityVision (game/buildings.js) is generic over units and
+        // buildings: a unit has no `status` field so it always reads its
+        // full def.vision; a building under construction (P3) reads a
+        // reduced scaffold vision instead — same rule, no per-kind branch.
+        const visionRange = entityVision(viewer) * (1 - concealment);
         const dd = (target.x - viewer.x) ** 2 + (target.y - viewer.y) ** 2;
         if (dd <= visionRange * visionRange) { detected.add(target); break; }
       }
@@ -121,13 +127,15 @@ export function drawFogOverlay(ctx, worldToScreen, side, world, map) {
   };
   for (const u of world.units) {
     if (u.side !== side || u.hp <= 0) continue;
-    punch(u.x, u.y, u.def.vision);
+    punch(u.x, u.y, entityVision(u));
   }
   // buildings (game/buildings.js) are vision sources too — a radar station's
   // whole reason to exist is punching a much bigger hole than any unit can.
+  // A building still under construction (P3) sees at its reduced scaffold
+  // vision via entityVision, same rule computeFog uses above.
   for (const b of (world.buildings || [])) {
     if (b.side !== side || b.hp <= 0) continue;
-    punch(b.x, b.y, b.def.vision);
+    punch(b.x, b.y, entityVision(b));
   }
   fogCtx.globalCompositeOperation = 'source-over';
 

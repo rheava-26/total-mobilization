@@ -105,3 +105,10 @@ Not civilizational eras — **R&D programs** scaled to one region's war:
 - How smart the construction-planner AI needs to be at v1 (simple scoring — near roads/power, away from coast — is probably enough to start; it can get taste later).
 
 *Settled since first draft:* map scale (one ~100×100 km theater, ~5 urban areas — not whole-planet); build placement (delegated by default, pin override); conversion model (automatic light / directed heavy); invader need not be alien.
+
+---
+
+## Art-Direction Notes (queued for the graphics-overhaul pass — designer-flagged, do not lose)
+- **Roads must read as part of the landscape, not an overlay decal.** They already render inside the same prerendered painterly canvas as terrain, but the strokes still sit visually ON the land rather than being OF it. Wanted: feathered/irregular edges, terrain color bleeding into road margins, wear/color variation along the run — a road that looks worn into the ground. (Data-wise roads stay a separate infra layer; this is purely about the paint.)
+- **Extreme close-zoom checkering**: the per-tile jitter (especially on water) reads as a faint checkerboard at max zoom. Fine at strategic zoom; needs a noise-scale rework up close.
+- Unit graphics: markers are intentional for now; per-type silhouettes deferred until the designer directs the pass.

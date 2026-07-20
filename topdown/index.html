@@ -64,11 +64,44 @@
   #prodPanel button.selected { background: #2f5f9c; color: #fff; }
   #recipeInfo { white-space: pre-line; line-height: 1.5; color: #bfe9ff; }
   #recipeInfo b { color: #6dffb0; }
+  /* PHASE HUD (prep/combat, CONCEPT.md's settled "Phases" line): a small
+     pill top-center so the current phase reads at a glance without hunting
+     the corner panels — blue for prep, red once combat begins. */
+  #phaseHud {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+    background: rgba(8,14,26,.88); border: 1px solid #2f5f9c; border-radius: 7px;
+    color: #eaf2ff; font: 12px Consolas, monospace; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  }
+  #phaseHud #phaseLabel { font-weight: bold; letter-spacing: 1px; color: #6dffb0; }
+  #phaseHud.combat #phaseLabel { color: #ff8a8a; }
+  #phaseHud #phaseHint { color: #9fb6c4; }
+  #phaseHud button {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
+    padding: 5px 10px; cursor: pointer; font: 11px Consolas, monospace;
+  }
+  #phaseHud button:hover { background: #1c3a5e; }
+  /* Phase-transition announcement: a transient center-screen banner (e.g.
+     "COMBAT PHASE BEGUN"), faded in/out by JS setting the .show class. */
+  #announcement {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+    padding: 10px 22px; background: rgba(20,6,6,.9); border: 1px solid #ff5a5a;
+    border-radius: 7px; color: #ffdede; font: bold 15px Consolas, monospace;
+    letter-spacing: 1px; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity .3s ease; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  }
+  #announcement.show { opacity: 1; }
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
 <div id="hud"></div>
+<div id="phaseHud">
+  <span id="phaseLabel">PREPARATION</span>
+  <span id="phaseHint"></span>
+  <button id="beginCombatBtn">BEGIN COMBAT</button>
+</div>
+<div id="announcement"></div>
 <div id="econHud"></div>
 <div id="card"></div>
 <div id="buildbar"></div>

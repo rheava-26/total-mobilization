@@ -14,6 +14,7 @@ import {
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
+import { PHASES, createPhaseState, applyPhaseFog, beginCombat } from './game/phase.js';
 
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
@@ -62,6 +63,42 @@ const world = { units: [], projectiles: [], hits: [], buildings: [] };
 // their own from here. See game/economy.js's ECONOMY_TUNABLES for every
 // tunable number (designer's to set).
 const economy = createEconomy();
+
+// GAME PHASES (P4 — game/phase.js; CONCEPT.md's settled "Phases" line). A
+// fresh game defaults to PREP, which the reconciliation call below drives
+// straight into fogState.revealAll = true — the whole theater visible while
+// building up, per Pillar 3's fog bullet. beginCombat() (wired to the C key
+// and the on-screen button below) is the only other writer of phaseState.
+const phaseState = createPhaseState();
+applyPhaseFog(phaseState.phase, fogState);
+// Transient center-screen banner for phase-transition announcements (and
+// nothing else) — set text + expiry, drawn in the HUD block down in loop().
+const announcement = { text: null, until: 0 };
+function showAnnouncement(text, ms = 3200) {
+  announcement.text = text;
+  announcement.until = performance.now() + ms;
+}
+const phaseHud = document.getElementById('phaseHud');
+const phaseLabel = document.getElementById('phaseLabel');
+const phaseHint = document.getElementById('phaseHint');
+const beginCombatBtn = document.getElementById('beginCombatBtn');
+const announcementDiv = document.getElementById('announcement');
+function updatePhaseHud() {
+  const inCombat = phaseState.phase === PHASES.COMBAT;
+  phaseHud.classList.toggle('combat', inCombat);
+  phaseLabel.textContent = inCombat ? 'COMBAT' : 'PREPARATION';
+  const fogTxt = fogState.revealAll ? 'fog OFF' : 'fog ON';
+  phaseHint.textContent = `${fogTxt} — F: toggle fog${inCombat ? '' : '  |  C / button: begin combat'}`;
+  beginCombatBtn.style.display = inCombat ? 'none' : '';
+}
+function triggerBeginCombat() {
+  if (beginCombat(phaseState, fogState)) {
+    showAnnouncement('COMBAT PHASE BEGUN — FOG OF WAR ACTIVE');
+    updatePhaseHud();
+  }
+}
+beginCombatBtn.addEventListener('click', triggerBeginCombat);
+updatePhaseHud();
 
 // find the nearest water tile to a world point (spiral ring search over the
 // grid) — used both to place the demo gunboat offshore and to snap naval
@@ -522,6 +559,19 @@ addEventListener('keydown', e => {
     if (prodPanel.classList.contains('open')) exitProdPanel(); else enterProdPanel();
   } else if (e.key === 'i' || e.key === 'I') {
     if (importPanel.classList.contains('open')) exitImportPanel(); else enterImportPanel();
+  } else if (e.key === 'f' || e.key === 'F') {
+    // MANUAL FOG TOGGLE (player override, CONCEPT.md Pillar 3: "player-
+    // toggleable on/off regardless of phase"). Writes fogState.revealAll
+    // directly; per game/phase.js's contract that's the ONLY other writer,
+    // so this choice sticks until the next actual phase change (which calls
+    // applyPhaseFog and overwrites it) — no separate override flag needed.
+    fogState.revealAll = !fogState.revealAll;
+    updatePhaseHud();
+  } else if (e.key === 'c' || e.key === 'C') {
+    // PHASE-TRANSITION CONTROL (key half; see also #beginCombatBtn below).
+    // One-way prep -> combat for now, per task scope; a scripted trigger
+    // (the later tutorial agent) can call the same triggerBeginCombat path.
+    triggerBeginCombat();
   } else if (e.key === 'Escape') {
     if (roadMode.active) exitRoadMode();
     if (buildMode.active) exitBuildMode();
@@ -759,6 +809,19 @@ window.__debug = {
   PRODUCTION_DEFS, categoryForFacility, IMPORT_TUNABLES, importCost, canAffordImport, importResource,
   prodPanel, importPanel, selectCategory, enterProdPanel, exitProdPanel, enterImportPanel, exitImportPanel,
   get selectedCategory() { return selectedCategory; },
+  // GAME PHASES (P4 — game/phase.js), for headless verification: phaseState
+  // is the live object (read .phase directly); PHASES is the enum;
+  // beginCombat drives the exact same one-way transition the C key/button
+  // use (fog reconciliation included); toggleFog mirrors the F key's manual
+  // override; fogState is already reachable via the `fog` entry above but
+  // re-exposed here too under a name that reads clearly next to phase state.
+  phaseState, PHASES, phase: {
+    get current() { return phaseState.phase; },
+    beginCombat: triggerBeginCombat,
+    toggleFog() { fogState.revealAll = !fogState.revealAll; updatePhaseHud(); },
+    get fogOn() { return !fogState.revealAll; },
+    get announcement() { return announcement.text && performance.now() < announcement.until ? announcement.text : null; },
+  },
   fastForward(seconds, stepDt = 0.5) {
     let t = 0;
     while (t < seconds) {
@@ -838,6 +901,15 @@ function loop(now) {
   // share/reproduce a good island via ?seed=N.
   const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
   hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
+
+  // PHASE HUD + announcement banner (game/phase.js). Refreshed every frame
+  // (cheap DOM writes) rather than only on the triggering events, so a
+  // headless test flipping fogState.revealAll directly via window.__debug
+  // still sees the HUD reflect it next frame.
+  updatePhaseHud();
+  const announcing = announcement.text && performance.now() < announcement.until;
+  announcementDiv.classList.toggle('show', !!announcing);
+  if (announcing) announcementDiv.textContent = announcement.text;
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

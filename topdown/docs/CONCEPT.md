@@ -13,13 +13,13 @@ This also fixes the arcadey feel at the root: the old game felt like a toy becau
 
 ---
 
-## The Target Experience (canonical playthrough)
+## The Target Experience (an ARCHETYPE, not a script)
 
-This narrative is the north star — every phase of the roadmap exists to make a beat of it real:
+This narrative conveys the *feel* the game must produce — it is one example of the kind of war the systems should generate, not a story to implement beat-for-beat. Every specific in it (the island, the city names, micromissiles, oil counts) is illustrative; the systems must produce *equivalents* of these beats from procedurally generated maps, names, threats, and resources, so each run tells its own version:
 
 > Start the game on a big island. Build a few factories; connect your cities with roads so industry actually flows. The threat is announced — an alien invasion, mostly air-based — so you research **micromissiles** and start converting civilian industry to military production. Build carriers (island nation), harvest the region's three oil deposits with offshore rigs (unlocking heavier ground vehicles), and put up an **ultralight-metal works** — which is what actually completes the microrocket program and lets you mass-produce them. Eighty bajillion fighter jets later, the invasion is inbound: militias muster themselves, the army pushes a mixed reinforcement battalion into the key regions, units dig into natural terrain, the fleet goes to high alert, spare stockpiles get shipped to the threatened coast, and the population moves underground while the military waits. The landing comes down through your SAM umbrella — 40% intercepted on descent. The survivors land on the road network outside the city; your micromissile fighters fly constant close air support and shred the unescorted drones. The **Battle of Syrograd** begins as their ground forces enter the city — militias, garrisons, and regulars break them decisively. The orbital bombardment ship overhead is continuously screened off by your air cover until someone nukes it. You won. Roll the after-action report: casualty counts, the named battles, interception rates, your favorite units.
 
-Named regions and cities everywhere. The war produces a **story**, and the game tells it back to you.
+Named regions and cities everywhere — **procedurally generated per run** (the names above were invented for this example; nothing about them is canon). The war produces a **story**, and the game tells it back to you, with names that belong to *that* run.
 
 ---
 
@@ -73,7 +73,7 @@ Not civilizational eras — **R&D programs** scaled to one region's war:
 
 ### 7. Wars Are Stories (names, battles, after-action)
 - Generated/authored maps carry **named regions and cities**.
-- Sustained combat in a place becomes a **named battle** ("Battle of Syrograd") tracked with casualties, duration, and outcome.
+- Sustained combat in a place becomes a **named battle** ("Battle of ⟨that run's city⟩") tracked with casualties, duration, and outcome.
 - An **event timeline** logs the war's key moments (interception percentages, battles, firsts, losses).
 - **After-action report / replay** at game end: casualty counts, the map of the war, biggest battles, your most effective units, your favorite moments. The demobilization *scenario* begins where this screen ends.
 - **Scenario framework**: threat types × doctrines × maps, all data-driven so scenarios are content, not code. The invader doesn't have to be alien — a **conventional human invasion** uses the exact same systems (descent interception becomes coastal/air interdiction), alongside aliens, monsters, zombies, and demobilization/civil collapse. Different doctrines genuinely perform differently per threat — that's the replayability engine, and (as far as we know) this coordinator-of-a-nation defense fantasy hasn't been properly executed anywhere; the scenario breadth is how we prove the concept generalizes.
@@ -104,7 +104,7 @@ Not civilizational eras — **R&D programs** scaled to one region's war:
 - How much of the *enemy* also runs on the autonomy layer (ideally: all of it — same systems, different doctrine).
 - How smart the construction-planner AI needs to be at v1 (simple scoring — near roads/power, away from coast — is probably enough to start; it can get taste later).
 
-*Settled since first draft:* map scale (one ~100×100 km theater, ~5 urban areas — not whole-planet); build placement (delegated by default, pin override); conversion model (automatic light / directed heavy); invader need not be alien.
+*Settled since first draft:* map scale (one ~100×100 km theater, ~5 urban areas — not whole-planet); build placement (delegated by default, pin override); conversion model (automatic light / directed heavy); invader need not be alien; **maps and all place names are procedurally generated per skirmish run** (fresh seed every game so each war has its own geography and its own names — the current fixed-seed island is a dev fixture, not canon; authored maps are reserved for scenarios that need specific geography).
 
 ---
 

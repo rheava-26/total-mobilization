@@ -2,6 +2,7 @@ import { loadMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS } from './game/units.js';
 import { createStatCard } from './game/statcard.js';
+import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
@@ -77,12 +78,35 @@ spawnUnit(world, 'aa', eBase.x + 20, eBase.y - 30, 'enemy');
 spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
 spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
 
+// FOG OF WAR CHANGES THIS: nearestEnemy's unbounded seek used to be enough on
+// its own to march both forces across the whole map into contact — it's now
+// gated on detection (game/fog.js), and pBase/eBase sit ~2200px apart, well
+// beyond any unit's vision. Nothing would ever meet without a nudge. Give
+// both sides a scripted opening order to close the gap — a legitimate order,
+// not autonomous seeking, so it doesn't defeat the "no beelining toward
+// hidden enemies" rule. holdGround batteries (SAM/AA) sit this out and
+// garrison the home base, same as their doctrine implies. Once the fastest
+// (highest-vision) unit on either side — the scout — gets close enough, it
+// reveals the enemy to its whole side and the fight breaks out organically.
+function orderAdvance(u, towardBase) {
+  if (u.def.dispositions.includes('holdGround')) return;
+  if (MOVE_CLASSES[u.def.moveClass].requiresWater) {
+    u.order = nearestWaterPoint(towardBase.x, towardBase.y);
+  } else {
+    u.order = { x: towardBase.x + (Math.random() - 0.5) * 120, y: towardBase.y + (Math.random() - 0.5) * 120 };
+  }
+}
+for (const u of world.units) orderAdvance(u, u.side === 'player' ? eBase : pBase);
+
 let hovered = null, lastMouse = { x: 0, y: 0 };
 canvas.addEventListener('mousemove', e => {
   lastMouse = { x: e.clientX, y: e.clientY };
   const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
   let best = null, bd = 20 * 20;
   for (const u of world.units) {
+    // fog: an undetected enemy can't be hovered/stat-carded — the player
+    // shouldn't be able to mouse-probe the fog for free intel.
+    if (u.side !== 'player' && !detects('player', u)) continue;
     const dd = (u.x - wx) ** 2 + (u.y - wy) ** 2;
     if (dd < bd) { bd = dd; best = u; }
   }
@@ -151,12 +175,22 @@ function drawProjectile(ctx, worldToScreen, cam, p) {
 // headless test hook — safe to leave, no gameplay effect. Exposes spawnUnit
 // and the attribute tables too, so a test harness can stage its own
 // scenarios (e.g. an isolated SAM-vs-tank standoff) beyond the shipped demo.
-window.__debug = { world, renderer, map, spawnUnit, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, nearestWaterPoint };
+// fog: exposes detects() directly and the revealAll flag so a test can flip
+// fog off (to compare drawn-vs-hidden positions) or query detection without
+// having to reverse-engineer it from rendered pixels.
+window.__debug = {
+  world, renderer, map, spawnUnit, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, nearestWaterPoint,
+  fog: Object.assign(fogState, { detects }),
+};
 
 let last = performance.now();
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+
+  // fog must be current BEFORE targeting runs (pickTarget/nearestEnemy read
+  // it) and before rendering reads it for draw-filtering/hover/overlay.
+  computeFog(world, map);
 
   clearClaims();
   updateUnits(world, dt, map);
@@ -165,8 +199,14 @@ function loop(now) {
   world.hits = world.hits.filter(h => h.life > 0);
 
   renderer.frame(map, (ctx, worldToScreen, cam) => {
+    drawFogOverlay(ctx, worldToScreen, 'player', world, map);
     for (const p of world.projectiles) drawProjectile(ctx, worldToScreen, cam, p);
-    for (const u of world.units) drawUnit(ctx, worldToScreen, cam, u);
+    for (const u of world.units) {
+      // fog: only draw enemy units the player side currently detects. Own
+      // units always draw regardless (you always see yourself).
+      if (u.side !== 'player' && !detects('player', u)) continue;
+      drawUnit(ctx, worldToScreen, cam, u);
+    }
     for (const h of world.hits) {
       const [sx, sy] = worldToScreen(h.x, h.y);
       ctx.strokeStyle = `rgba(255,200,120,${h.life * 4})`;

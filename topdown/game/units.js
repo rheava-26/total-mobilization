@@ -9,6 +9,8 @@
 // unit type is a new UNIT_DEFS entry; updateUnits/fireProjectile never
 // branch on a unit's *name*, only on the shape of its attributes.
 
+import { detects } from './fog.js';
+
 // ---------------------------------------------------------------------------
 // MOVEMENT CLASSES — how a unit's domain interacts with terrain.
 //
@@ -114,10 +116,17 @@ function weaponCanTarget(wdef, target) {
 // ---------------------------------------------------------------------------
 // UNIT ROSTER — pure data. Every field here is a composable attribute; there
 // is no per-unit-name branch anywhere in the update/fire code below.
+//
+// `vision`: sensor range in world px, consumed by game/fog.js — a unit's
+// SIDE detects an enemy within vision * (1 - target's terrain concealment).
+// Scout is the recon specialist (highest ground vision, its whole job);
+// air sees farthest of all; SAM carries real radar reach; infantry/militia
+// are modest (eyes and small optics, not sensors); naval sits in between.
 export const UNIT_DEFS = {
   infantry: {
     name: 'Infantry Squad', domain: 'ground', moveClass: 'foot', weapon: 'autocannon',
     hp: 70, armor: 2, speed: 40, range: 140, dmg: 4, rate: 0.22, turnRate: 6, radius: 6,
+    vision: 200,
     dispositions: ['aggressive'], // closes to point-blank instead of standing off
   },
   militia: {
@@ -127,41 +136,49 @@ export const UNIT_DEFS = {
     // rough-terrain edge infantry gets, just from a worse baseline).
     name: 'Militia Levy', domain: 'ground', moveClass: 'foot', weapon: 'autocannon',
     hp: 40, armor: 1, speed: 36, range: 90, dmg: 2, rate: 0.3, turnRate: 5, radius: 6,
+    vision: 180,
     dispositions: ['aggressive'],
   },
   scout: {
     name: 'Scout Car "Whippet"', domain: 'ground', moveClass: 'wheeled', weapon: 'autocannon',
     hp: 35, armor: 1, speed: 130, range: 100, dmg: 2, rate: 0.3, turnRate: 8, radius: 7,
+    vision: 380, // highest vision on the ground — recon is its whole job
     dispositions: ['recon'],
   },
   tank: {
     name: 'MBT "Aegis"', domain: 'ground', moveClass: 'tracked', weapon: 'shell',
     hp: 110, armor: 8, speed: 70, range: 220, dmg: 18, rate: 1.6, turnRate: 3, radius: 10,
+    vision: 260,
     dispositions: [],
   },
   sam: {
     name: 'SAM Battery "Warden"', domain: 'ground', moveClass: 'tracked', weapon: 'sam',
     hp: 90, armor: 4, speed: 30, range: 480, dmg: 34, rate: 2.4, turnRate: 2, radius: 11,
+    vision: 360, // decent radar reach
     dispositions: ['holdGround'], // a battery — never chases, just engages what enters its umbrella
   },
   aa: {
     name: 'AA Gun "Bristle"', domain: 'ground', moveClass: 'tracked', weapon: 'autocannon',
     hp: 85, armor: 5, speed: 55, range: 190, dmg: 6, rate: 0.35, turnRate: 4, radius: 10,
+    vision: 300,
     dispositions: ['holdGround'],
   },
   fighter: {
     name: 'Fighter "Kestrel"', domain: 'air', moveClass: 'air', weapon: 'aam',
     hp: 60, armor: 3, speed: 220, range: 260, dmg: 12, rate: 0.9, turnRate: 5, radius: 8,
+    vision: 420, // air sees farthest of all
     dispositions: [],
   },
   strikejet: {
     name: 'Strike Jet "Warthog"', domain: 'air', moveClass: 'air', weapon: 'rocket',
     hp: 70, armor: 4, speed: 190, range: 190, dmg: 20, rate: 1.3, turnRate: 4, radius: 9,
+    vision: 400,
     dispositions: ['aggressive'], // CAS run: gets in close instead of standing off
   },
   gunboat: {
     name: 'Gunboat "Osprey"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
     hp: 130, armor: 6, speed: 60, range: 240, dmg: 16, rate: 1.8, turnRate: 2.2, radius: 13,
+    vision: 300,
     dispositions: [],
   },
   destroyer: {
@@ -169,6 +186,7 @@ export const UNIT_DEFS = {
     // want screening the coast, not just harassing it.
     name: 'Destroyer "Marchioness"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
     hp: 220, armor: 10, speed: 50, range: 320, dmg: 22, rate: 2.0, turnRate: 1.6, radius: 16,
+    vision: 340,
     dispositions: [],
   },
 };
@@ -192,12 +210,18 @@ export function spawnUnit(world, key, x, y, side) {
 // Respects the unit's weapon targeting flags: a SAM never even considers a
 // tank a candidate, so with no valid-domain enemy on the field it falls
 // through to order/idle behavior instead of chasing something it can't hit.
+//
+// FOG: also gated on detection — a unit only seeks enemies its SIDE currently
+// detects (game/fog.js). No beelining toward hidden units; with nothing
+// visible this falls through to order/idle behavior, same as "no enemy at
+// all" used to.
 function nearestEnemy(world, u) {
   const wdef = WEAPON_DEFS[u.def.weapon];
   let best = null, bd = Infinity;
   for (const o of world.units) {
     if (o.side === u.side || o.hp <= 0) continue;
     if (!weaponCanTarget(wdef, o)) continue;
+    if (!detects(u.side, o)) continue;
     const dd = (o.x - u.x) ** 2 + (o.y - u.y) ** 2;
     if (dd < bd) { bd = dd; best = o; }
   }
@@ -219,6 +243,7 @@ function pickTarget(world, u) {
   for (const o of world.units) {
     if (o.side === u.side || o.hp <= 0) continue;
     if (!weaponCanTarget(wdef, o)) continue; // targeting attribute: e.g. SAM ignores ground entirely
+    if (!detects(u.side, o)) continue; // fog: can't target what your side hasn't detected
     const dd = (o.x - u.x) ** 2 + (o.y - u.y) ** 2;
     if (dd > u.def.range * u.def.range) continue;
     const overkill = claimOf(o) >= o.hp; // already dead from committed fire

@@ -1,11 +1,12 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
-import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement } from './game/buildings.js';
+import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit } from './game/buildings.js';
 import {
   createEconomy, updateEconomy, canAffordBuilding, spendForBuilding, buildingCost,
   ECONOMY_TUNABLES, MOBILIZATION_BANDS,
 } from './game/economy.js';
+import { RESOURCE_DEFS, RESOURCE_LIST, MINE_TUNABLES } from './game/resources.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
@@ -379,7 +380,15 @@ canvas.addEventListener('click', e => {
   if (e.shiftKey) {
     const gx = buildMode.previewGx, gy = buildMode.previewGy;
     if (gx === undefined || !isValidPlacement(map, gx, gy, def)) {
-      flashMessage(`Can't pin ${def.name} there — invalid site.`);
+      // Mines carry an extra siting rule (def.requiresDeposit — see
+      // game/buildings.js) on top of the generic buildable/no-overlap check:
+      // call it out specifically so "why was this rejected" is legible
+      // rather than folding into the same generic message every other
+      // building type gets.
+      const depositIssue = def.requiresDeposit && gx !== undefined && !footprintHasDeposit(map, gx, gy, def);
+      flashMessage(depositIssue
+        ? `Can't pin ${def.name} there — no resource deposit on/adjacent to that site.`
+        : `Can't pin ${def.name} there — invalid site.`);
       return;
     }
     if (!canAffordBuilding(economy, key)) {
@@ -392,7 +401,9 @@ canvas.addEventListener('click', e => {
   } else {
     const site = sitePlacement(map, key, wx, wy);
     if (!site) {
-      flashMessage(`No buildable site found near there for ${def.name}.`);
+      flashMessage(def.requiresDeposit
+        ? `No resource deposit found near there for ${def.name} — mines must site on/adjacent to a deposit.`
+        : `No buildable site found near there for ${def.name}.`);
       return;
     }
     if (!canAffordBuilding(economy, key)) {
@@ -603,6 +614,13 @@ window.__debug = {
   // waiting real wall-clock seconds; the real per-frame loop above is what
   // actually proves "ramps on its own during normal play."
   economy, ECONOMY_TUNABLES, MOBILIZATION_BANDS, canAffordBuilding, buildingCost,
+  // resource/deposit hooks (P3 follow-up — game/resources.js, map.deposits/
+  // depositAt from game/mapgen.js via engine/tilemap.js), for headless
+  // verification: RESOURCE_DEFS/RESOURCE_LIST/MINE_TUNABLES expose the
+  // tunable data block; footprintHasDeposit mirrors the siting check a mine
+  // placement goes through, so a test can query it without staging a click.
+  // map.deposits/map.depositAt are already reachable off `map` above.
+  RESOURCE_DEFS, RESOURCE_LIST, MINE_TUNABLES, footprintHasDeposit,
   simulateEconomy(seconds, stepDt = 0.5) {
     let t = 0;
     while (t < seconds) {
@@ -675,15 +693,28 @@ function loop(now) {
   const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
   hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
 
+  // Resource stockpile line (P3 follow-up — game/resources.js): compact,
+  // icons (colored glyph spans) + amount + current rate, one resource per
+  // line-item, joined with a couple of spaces so it wraps as a paragraph
+  // instead of forcing #econHud wider. Iterates RESOURCE_LIST generically —
+  // a new resource entry there shows up here with no HUD change.
+  const resourceLine = RESOURCE_LIST.map(r => {
+    const amt = economy.resources[r.id] || 0;
+    const rate = economy.resourceRates[r.id] || 0;
+    return `<span style="color:${r.color}">${r.glyph}</span> ${amt.toFixed(0)} (+${rate.toFixed(2)}/s)`;
+  }).join('&nbsp;&nbsp;');
+
   // P3 economy HUD — compact readout: pool/cap + current rate for IC and
-  // manpower, mobilization % + its band label, military output + rate.
+  // manpower, mobilization % + its band label, military output + rate, and
+  // (below) the resource stockpiles mines feed.
   econHud.innerHTML =
     `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)}  (+${economy.icRate.toFixed(2)}/s)\n`
     + `<b>Manpower</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)}  (+${economy.manpowerRate.toFixed(2)}/s)\n`
     + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}%  (+${economy.mobilizationRate.toFixed(3)}/s)\n`
     + `${economy.band.label}\n`
     + `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)}  (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
-    + `Arming quality x${economy.armingQuality.toFixed(2)}`;
+    + `Arming quality x${economy.armingQuality.toFixed(2)}\n`
+    + `<b>Resources</b>\n${resourceLine}`;
 
   requestAnimationFrame(loop);
 }

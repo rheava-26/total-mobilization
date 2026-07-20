@@ -1,4 +1,4 @@
-import { generateTheaterWithStats } from '../game/mapgen.js';
+import { generateTheaterWithStats, DEPOSIT_TUNABLES } from '../game/mapgen.js';
 
 // Map format v2: hand-authorable STRING-GRID terrain + data-driven terrain
 // types (effect lists) + named cities/regions. No sparse overrides, no
@@ -36,7 +36,7 @@ import { generateTheaterWithStats } from '../game/mapgen.js';
 // (loadMap) or straight out of game/mapgen.js's generateTheater (
 // loadGeneratedMap).
 export function buildMap(data, defsData) {
-  const { tileSize, width, height, spawns, cities, regions, grid: rows, roads: roadRows } = data;
+  const { tileSize, width, height, spawns, cities, regions, deposits, grid: rows, roads: roadRows } = data;
   const legend = data.legend || defsData.legend;
 
   // Ordered type table: index -> effect list (the def), used both for the
@@ -126,6 +126,24 @@ export function buildMap(data, defsData) {
     spawns: spawns || [],
     cities: cities || [],
     regions: regions || [],
+    // RESOURCE DEPOSITS (P3 follow-up — see game/resources.js/game/mapgen.js):
+    // optional per map JSON — a procedurally generated map always carries
+    // them (game/mapgen.js's placeDeposits), an authored map file may omit
+    // `deposits` entirely and just gets none.
+    deposits: deposits || [],
+    // Nearest deposit whose anchor is within DEPOSIT_TUNABLES.RADIUS tiles of
+    // (gx,gy), or null. This is the single rule both the mine-siting check
+    // (game/buildings.js isValidPlacement/spawnBuilding) and the map-quality
+    // headless checks read — "on/adjacent to a deposit" means within this
+    // shared radius, nothing bespoke per caller.
+    depositAt(gx, gy) {
+      let best = null, bestD = Infinity;
+      for (const d of (deposits || [])) {
+        const dd = (d.gx - gx) ** 2 + (d.gy - gy) ** 2;
+        if (dd <= DEPOSIT_TUNABLES.RADIUS * DEPOSIT_TUNABLES.RADIUS && dd < bestD) { bestD = dd; best = d; }
+      }
+      return best;
+    },
     tileAt(gx, gy) {
       if (gx < 0 || gy < 0 || gx >= width || gy >= height) return -1;
       return grid[gy * width + gx];

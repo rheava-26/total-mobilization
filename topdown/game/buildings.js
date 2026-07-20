@@ -92,6 +92,26 @@ export const BUILDING_DEFS = {
     weapon: 'autocannon', dmg: 5, range: 210, rate: 0.32,
     cost: { ic: 60, manpower: 10 }, buildTime: 12,
   },
+  // MINE — the resource-supply-substrate follow-up to P3 (game/resources.js,
+  // game/mapgen.js's map.deposits). ONE generic mine type that adapts to
+  // whatever deposit it's sited on, rather than a per-resource building
+  // roster — simpler, and there's nothing a per-resource mine would do
+  // differently yet (no recipes/tiers exist to distinguish them at this
+  // phase). `requiresDeposit: true` is the siting rule: isValidPlacement
+  // below rejects any site whose footprint isn't on/adjacent to a
+  // map.depositAt() hit, so a mine placed with no nearby deposit is refused
+  // at siting rather than silently built idle — the player never ends up
+  // with a mine quietly producing nothing without being told why. Once
+  // built, spawnBuilding binds it to the deposit it landed on
+  // (b.resourceType/b.richness); game/economy.js reads that binding each
+  // tick to feed the matching resource stockpile (see MINE_TUNABLES in
+  // game/resources.js for the extraction-rate formula). No econ block here —
+  // resource extraction is a separate accounting path from IC/manpower.
+  mine: {
+    name: 'Mine', footprint: { w: 2, h: 2 }, hp: 160, vision: 90,
+    cost: { ic: 60 }, buildTime: 16,
+    requiresDeposit: true,
+  },
 };
 
 // Generic vision-range accessor shared by game/fog.js for both units and
@@ -125,7 +145,22 @@ export function isValidPlacement(map, gx, gy, def) {
     if (map.roadAt(t.x, t.y) > 0) return false;
     if (map.blockAt(t.x, t.y)) return false;
   }
+  if (def.requiresDeposit && !footprintHasDeposit(map, gx, gy, def)) return false;
   return true;
+}
+
+// A building whose def sets `requiresDeposit` (currently just `mine`) may
+// only site where its footprint touches a map deposit — "touches" meaning
+// within map.depositAt's shared radius (engine/tilemap.js, sourced from
+// game/mapgen.js DEPOSIT_TUNABLES.RADIUS), checked per footprint tile so a
+// deposit anchored just off one corner of a multi-tile footprint still
+// counts as "adjacent."
+export function footprintHasDeposit(map, gx, gy, def) {
+  if (!map.depositAt) return false;
+  for (const t of footprintTiles(def, gx, gy)) {
+    if (map.depositAt(t.x, t.y)) return true;
+  }
+  return false;
 }
 
 function isNearRoad(map, gx, gy, def, r = 3) {
@@ -205,6 +240,23 @@ export function spawnBuilding(world, map, key, gx, gy, side) {
     aim: 0, cd: Math.random() * (def.rate || 1), target: null,
     status: 'constructing', buildProgress: 0, buildTime: Math.max(0.1, def.buildTime || 10),
   };
+  // DEPOSIT BINDING (mine): resolved once, here, at siting time — a
+  // building's footprint doesn't move, so whatever deposit it landed on is
+  // fixed for its lifetime. isValidPlacement is what normally guarantees
+  // this finds one for a `requiresDeposit` building (the caller checks it
+  // first); this still degrades gracefully to "no resource, no output"
+  // rather than throwing if something calls spawnBuilding directly without
+  // that check (a test harness, e.g.) — same defensive spirit as the rest of
+  // this function being unconditional.
+  if (base.requiresDeposit) {
+    let dep = null;
+    for (const t of footprintTiles(def, gx, gy)) {
+      dep = map.depositAt && map.depositAt(t.x, t.y);
+      if (dep) break;
+    }
+    b.resourceType = dep ? dep.type : null;
+    b.richness = dep ? dep.richness : 0;
+  }
   for (const t of footprintTiles(def, gx, gy)) map.setBlock(t.x, t.y, 1);
   world.buildings.push(b);
   // obstacle layer changed: re-prime the terrain prerender cache AND

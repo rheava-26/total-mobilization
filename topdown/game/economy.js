@@ -6,9 +6,12 @@
 // The player's only economic verbs are (a) what/where to build (main.js
 // B-mode, now costed+timed) and (b) which buildings/programs to build, which
 // changes the CURVE this module runs on (see the two upgrade levers below).
-// Unit production queues are P4 (not here) and named resource deposits /
-// extractors are a separate follow-up (not here) — this module only produces
-// the pools/rates those systems will later consume.
+// Unit production queues are P4 (not here). Named resource deposits /
+// extractors (mines) ARE wired in here now — see the RESOURCE STOCKPILES
+// block in createEconomy and the extraction loop at the end of
+// updateEconomy — but production RECIPES that consume those stockpiles
+// (factories gated on resources + prerequisite buildings, per CONCEPT.md's
+// settled "Production & supply chain" ledger) are still P4, not this file.
 //
 // ---------------------------------------------------------------------------
 // TUNABLE CONSTANTS — DESIGNER'S TO TUNE. Every number below is a first-pass
@@ -76,6 +79,8 @@ function bandFor(level) {
 
 export function createEconomy() {
   const T = ECONOMY_TUNABLES;
+  const resources = {}, resourceRates = {};
+  for (const r of RESOURCE_LIST) { resources[r.id] = 0; resourceRates[r.id] = 0; }
   return {
     ic: T.STARTING_IC, icRate: 0, icCap: T.IC_CAP_BASE,
     manpower: T.STARTING_MANPOWER, manpowerRate: 0, manpowerCap: T.MANPOWER_CAP_BASE,
@@ -86,6 +91,15 @@ export function createEconomy() {
     // 0..1-ish and it feeds the mobilization ramp via THREAT_RAMP_COEFF
     // above. Nothing in P3 writes to this — it stays 0.
     threatLevel: 0,
+    // RESOURCE STOCKPILES (P3 follow-up — game/resources.js RESOURCE_LIST,
+    // fed by mines' map.depositAt binding; see the extraction loop in
+    // updateEconomy below). One pool + one current rate per resource id,
+    // keyed generically off RESOURCE_LIST so a new resource entry there
+    // needs no change here. UNCAPPED for now — unlike ic/manpower there is
+    // no depot-style cap wired up yet; noted as a follow-up, not an
+    // oversight (a future supply-depot-style cap would slot in exactly like
+    // icCap/manpowerCap above).
+    resources, resourceRates,
     perCity: [], // debug/HUD breakdown: [{name, connected, icPerSec}, ...]
     _connCacheVersion: -1,
     _connSet: null,
@@ -243,6 +257,25 @@ export function updateEconomy(world, economy, map, dt) {
     * economy.band.outputMult * economy.armingQuality;
   economy.militaryOutputRate = outputRate;
   economy.militaryOutput += outputRate * dt;
+
+  // ---- resource stockpiles: every COMPLETE player mine (game/buildings.js
+  // BUILDING_DEFS.mine, requiresDeposit: true) was bound to a deposit at
+  // siting time (b.resourceType/b.richness — see spawnBuilding). Extraction
+  // rate scales linearly with that deposit's richness; a mine that somehow
+  // ended up with no binding (see spawnBuilding's defensive fallback)
+  // contributes nothing, same as "produces nothing" for an unsited mine.
+  // Rates are recomputed from scratch each tick (not accumulated) so a mine
+  // destroyed mid-game drops out of the rate immediately, same pattern as
+  // icRate/manpowerRate above.
+  for (const id of Object.keys(economy.resources)) economy.resourceRates[id] = 0;
+  for (const b of (world.buildings || [])) {
+    if (b.side !== 'player' || b.status !== 'complete' || !b.resourceType) continue;
+    const rate = MINE_TUNABLES.BASE_RATE_PER_RICHNESS * (b.richness || 0);
+    economy.resourceRates[b.resourceType] = (economy.resourceRates[b.resourceType] || 0) + rate;
+  }
+  for (const id of Object.keys(economy.resources)) {
+    economy.resources[id] += economy.resourceRates[id] * dt;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +284,7 @@ export function updateEconomy(world, economy, map, dt) {
 // BUILDING_DEFS' `cost`/`buildTime` are defined in game/buildings.js (kept
 // next to the rest of each building's data); these just read them.
 import { BUILDING_DEFS } from './buildings.js';
+import { RESOURCE_LIST, MINE_TUNABLES } from './resources.js';
 
 export function buildingCost(key) {
   const def = BUILDING_DEFS[key];

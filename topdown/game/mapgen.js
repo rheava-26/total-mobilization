@@ -31,11 +31,31 @@
 // MAX_ATTEMPTS times. The result is always a pure function of the ORIGINAL
 // requested seed — retries are internal and reproducible, never random.
 
+import { RESOURCE_LIST } from './resources.js';
+
 export const MAP_WIDTH = 220;
 export const MAP_HEIGHT = 150;
 export const TILE_SIZE = 32;
 
 const MAX_ATTEMPTS = 24;
+
+// ---------------------------------------------------------------------------
+// RESOURCE DEPOSIT PLACEMENT — DESIGNER'S TO TUNE. Every number below is a
+// first-pass placeholder sized to make deposits reliably show up (a handful
+// per resource per island) across a variety of seeds without crowding the
+// map, not balanced for a real campaign. `RADIUS` doubles as the mine-siting
+// rule's "on/adjacent" distance (game/buildings.js isValidPlacement reads it
+// via map.depositAt, engine/tilemap.js) — a mine anywhere within RADIUS tiles
+// of a deposit's anchor counts as sited on that deposit's resource-rich area.
+export const DEPOSIT_TUNABLES = {
+  MIN_PER_RESOURCE: 1,
+  MAX_PER_RESOURCE: 3,
+  MIN_SPACING: 14, // min tiles between any two deposit anchors, own or other resource
+  RADIUS: 3, // tiles a mine footprint may sit within to count as "on/adjacent"
+  RICHNESS_MIN: 0.6,
+  RICHNESS_MAX: 1.6,
+  COASTAL_MAX_DIST: 3, // for `coastal` resources, max tiles a water candidate may sit from the nearest land tile
+};
 
 // ---------------------------------------------------------------- rng ----
 // mulberry32: tiny, fast, deterministic PRNG. Good enough for terrain art
@@ -249,6 +269,12 @@ const LEGEND = {
   '~': 'water', 'r': 'river', 'm': 'marsh', 'u': 'urban', 's': 'sand',
 };
 
+// terrain type NAME -> char, the reverse of LEGEND — lets RESOURCE_DEFS'
+// terrainAffinity (game/resources.js, named by terrain type) look up which
+// raw terrain char to scan for, without either file hardcoding the other's
+// data.
+const TYPE_TO_CHAR = Object.fromEntries(Object.entries(LEGEND).map(([ch, name]) => [name, ch]));
+
 function terrainMoveMult(ch) {
   // mirrors maps/terrain-defs.json's moveMult per type
   switch (ch) {
@@ -414,6 +440,67 @@ function classifyRegionFlavor(terrain, W, x0, y0, x1, y1) {
   if (hills / total > 0.22) return 'hills';
   if (coastFrac > 0.18) return 'coast';
   return 'plains';
+}
+
+// ------------------------------------------------------------ deposits ----
+// Distance (in tiles, ring search) from a WATER tile to the nearest non-water
+// tile — the inverse of the cities section's distToWater above (that one
+// measures land-to-water; this measures water-to-land), used only to keep
+// `coastal` resources (game/resources.js) out of open ocean and confined to
+// genuine shallows/coastline. Returns 0 immediately for a tile that isn't
+// water to begin with.
+function distToNearestLand(terrain, W, H, x, y, maxR) {
+  if (terrain[y * W + x] !== T_WATER) return 0;
+  for (let r = 1; r <= maxR; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const ax = x + dx, ay = y + dy;
+      if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue;
+      if (terrain[ay * W + ax] !== T_WATER) return r;
+    }
+  }
+  return maxR + 1;
+}
+
+// Places a handful of named/typed resource deposits per RESOURCE_DEFS entry
+// (game/resources.js), each anchored on a tile whose terrain matches that
+// resource's `terrainAffinity` — fully data-driven, no resource id or
+// terrain name hardcoded here. Runs AFTER cities are stamped into `terrain`
+// (T_URBAN tiles are skipped as candidates) so deposits never land under a
+// city footprint. Deterministic: draws only from the attempt's own `rng`
+// stream, so the same seed always places the same deposits.
+function placeDeposits(terrain, W, H, rng) {
+  const D = DEPOSIT_TUNABLES;
+  const deposits = [];
+  for (const res of RESOURCE_LIST) {
+    const affinityChars = new Set(res.terrainAffinity.map(n => TYPE_TO_CHAR[n]).filter(Boolean));
+    if (!affinityChars.size) continue;
+    const candidates = [];
+    for (let y = 2; y < H - 2; y++) {
+      for (let x = 2; x < W - 2; x++) {
+        const ch = terrain[y * W + x];
+        if (ch === T_URBAN || !affinityChars.has(ch)) continue;
+        if (res.coastal && ch === T_WATER && distToNearestLand(terrain, W, H, x, y, D.COASTAL_MAX_DIST) > D.COASTAL_MAX_DIST) continue;
+        candidates.push({ x, y });
+      }
+    }
+    if (!candidates.length) continue; // this island just has none of this terrain — fine, not every resource is guaranteed every map
+    const count = D.MIN_PER_RESOURCE + Math.floor(rng() * (D.MAX_PER_RESOURCE - D.MIN_PER_RESOURCE + 1));
+    let placed = 0, tries = 0;
+    while (placed < count && tries < candidates.length * 4) {
+      tries++;
+      const c = candidates[Math.floor(rng() * candidates.length)];
+      let clear = true;
+      for (const d of deposits) {
+        if ((d.gx - c.x) ** 2 + (d.gy - c.y) ** 2 < D.MIN_SPACING ** 2) { clear = false; break; }
+      }
+      if (!clear) continue;
+      const richness = D.RICHNESS_MIN + hash2(c.x, c.y, 6151) * (D.RICHNESS_MAX - D.RICHNESS_MIN);
+      deposits.push({ type: res.id, gx: c.x, gy: c.y, richness: Math.round(richness * 100) / 100 });
+      placed++;
+    }
+  }
+  return deposits;
 }
 
 // --------------------------------------------------------- one attempt ----
@@ -698,6 +785,9 @@ function attemptGenerate(seed) {
     }
   }
 
+  // ------------------------------------------------------------ deposits ----
+  const deposits = placeDeposits(terrain, W, H, rng);
+
   // ------------------------------------------------------------- regions ----
   // A 2x3 grid of named regions with randomized cut lines (position varies
   // seed to seed) rather than fixed fractions — each cell's name/flavor
@@ -835,6 +925,7 @@ function attemptGenerate(seed) {
     cities,
     regions,
     spawns,
+    deposits,
     notes: `Procedurally generated by topdown/game/mapgen.js. Re-run with the same seed for the identical island.`,
   };
 
@@ -847,6 +938,7 @@ function attemptGenerate(seed) {
       cityCount: cities.length,
       roadTileCount,
       roadEdgeCount: mstEdges.length,
+      depositCount: deposits.length,
     },
   };
 }

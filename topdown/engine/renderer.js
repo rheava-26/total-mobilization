@@ -1,3 +1,5 @@
+import { RESOURCE_DEFS } from '../game/resources.js';
+
 // Canvas2D top-down renderer: camera (pan/zoom), a pre-rendered terrain
 // layer, and a draw-call hook the game layer feeds world-space draw
 // functions into every frame.
@@ -136,8 +138,45 @@ function prerenderTerrain(map) {
   prerenderRoads(octx, map);
   prerenderCityBlocks(octx, map);
   prerenderScorches(octx, map);
+  prerenderDeposits(octx, map);
 
   return off;
+}
+
+// RESOURCE DEPOSIT MARKERS (P3 follow-up — game/resources.js/game/mapgen.js
+// map.deposits). Baked into the terrain prerender same as roads/city blocks
+// above: deposits never move or change mid-game, so there's no reason to pay
+// a per-frame draw cost for them. A faint tinted glow marks the deposit's
+// whole "resource-rich area" (matches game/mapgen.js DEPOSIT_TUNABLES.RADIUS
+// loosely, just for legibility — not read back for gameplay), and a small
+// diamond glyph pins the exact anchor tile. Colors/labels are pulled
+// entirely from RESOURCE_DEFS (game/resources.js) so a new resource needs no
+// renderer change. The readable NAME label is drawn separately, in screen
+// space, by drawLabels below — zoom-reactive text doesn't belong baked into
+// a static bitmap.
+function prerenderDeposits(octx, map) {
+  const ts = map.tileSize;
+  for (const d of (map.deposits || [])) {
+    const res = RESOURCE_DEFS[d.type];
+    if (!res) continue;
+    const cx = (d.gx + 0.5) * ts, cy = (d.gy + 0.5) * ts;
+    const rgb = hexToRgb(res.color);
+    softBlob(octx, cx, cy, ts * 2.4, ts * 2.4, 0, rgb, 0.07 + Math.min(1.6, d.richness) * 0.04);
+    octx.save();
+    octx.translate(cx, cy);
+    octx.beginPath();
+    octx.moveTo(0, -ts * 0.46);
+    octx.lineTo(ts * 0.36, 0);
+    octx.lineTo(0, ts * 0.46);
+    octx.lineTo(-ts * 0.36, 0);
+    octx.closePath();
+    octx.fillStyle = rgba(rgb, 0.88);
+    octx.fill();
+    octx.strokeStyle = 'rgba(8,8,8,0.6)';
+    octx.lineWidth = Math.max(1, ts * 0.045);
+    octx.stroke();
+    octx.restore();
+  }
 }
 
 // DECORATIVE CITY BLOCKS (P2 city layer, CONCEPT.md Pillar 3: "what you
@@ -444,6 +483,28 @@ export function createRenderer(canvas) {
       ctx.strokeText(c.name, sx, sy - above);
       ctx.fillStyle = big ? `rgba(255,230,150,${alpha})` : `rgba(255,255,255,${alpha})`;
       ctx.fillText(c.name, sx, sy - above);
+    }
+    // Deposit labels (opposite sense from region labels below: readable only
+    // once zoomed IN — a deposit is a small, precise spot, not a sweeping
+    // area, so its name is clutter at strategic zoom and only earns its
+    // place on screen once the player is close enough to plausibly be
+    // siting a mine).
+    const DEPOSIT_LABEL_ZOOM_THRESHOLD = 0.45;
+    if (cam.zoom > DEPOSIT_LABEL_ZOOM_THRESHOLD) {
+      for (const d of map.deposits || []) {
+        const res = RESOURCE_DEFS[d.type];
+        if (!res) continue;
+        const [sx, sy] = worldToScreen((d.gx + 0.5) * map.tileSize, (d.gy + 0.5) * map.tileSize);
+        if (sx < -100 || sx > canvas.width + 100 || sy < -100 || sy > canvas.height + 100) continue;
+        const size = Math.max(9, Math.min(13, 11 * cam.zoom)) * dpr;
+        ctx.font = `${size}px Consolas, monospace`;
+        const ly = sy + map.tileSize * 0.6 * cam.zoom * dpr + 12 * dpr;
+        ctx.lineWidth = 2.5 * dpr;
+        ctx.strokeStyle = 'rgba(4,8,14,0.75)';
+        ctx.strokeText(res.name, sx, ly);
+        ctx.fillStyle = 'rgba(255,255,255,0.62)';
+        ctx.fillText(res.name, sx, ly);
+      }
     }
     if (cam.zoom < REGION_ZOOM_THRESHOLD) {
       const regionList = map.regions || [];

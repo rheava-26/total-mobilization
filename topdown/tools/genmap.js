@@ -369,6 +369,167 @@ const spawns = [
   { side: 'enemy', x: enemySpawn.x, y: enemySpawn.y },
 ];
 
+// -------------------------------------------------------------- roads ----
+// Starter highway network (P2): connect all five cities with a minimum
+// spanning tree over straight-line distance, then ROUTE each MST edge with
+// the same A*-style cost logic the in-game road planner uses (game/
+// pathfind.js's roadTileCost) — mountains and open sea are hard walls, a
+// river crossing is legal-but-costly (a bridge), and tiles that are already
+// road are heavily discounted so later edges branch off earlier ones instead
+// of laying redundant parallel routes. This is a deliberate duplication of
+// pathfind.js's cost function (not an import): genmap.js is a standalone
+// Node/CommonJS script with no browser ESM graph to join, same reason
+// hash2() above is already re-implemented here instead of imported from
+// engine/renderer.js.
+//
+// Crucially: this section only READS `terrain` (never writes to it) and
+// writes results into a brand new `roads` overlay array — regenerating the
+// map with this code added does not change a single terrain character.
+
+function terrainMoveMult(ch) {
+  // mirrors maps/terrain-defs.json's moveMult per type
+  switch (ch) {
+    case T_FOREST: return 0.55;
+    case T_HILLS: return 0.7;
+    case T_URBAN: return 0.85;
+    case T_SAND: return 0.8;
+    case T_MARSH: return 0.4;
+    default: return 1.0; // grass and anything unlisted
+  }
+}
+
+const roadFlags = new Uint8Array(WIDTH * HEIGHT);
+const ROAD_REUSE_COST = 0.12;
+
+function roadTileCost(x, y) {
+  const ch = terrain[y * WIDTH + x];
+  if (ch === T_MOUNTAIN) return Infinity;
+  if (ch === T_WATER) return Infinity; // open sea: unbridgeable
+  if (roadFlags[y * WIDTH + x]) return ROAD_REUSE_COST;
+  if (ch === T_RIVER) return 4; // bridge: legal but discouraged
+  return 1 / Math.max(0.15, terrainMoveMult(ch));
+}
+
+// Same binary-heap A* as game/pathfind.js's aStarGrid: 8-directional with
+// corner-cut prevention, octile-distance heuristic scaled by a lower-bound
+// cost so it stays admissible. Returns the dense per-tile grid path or null.
+function roadAStar(sx, sy, gx, gy) {
+  const SQRT2 = Math.SQRT2;
+  const NEI = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2]];
+  const n = WIDTH * HEIGHT;
+  const gScore = new Float64Array(n).fill(Infinity);
+  const cameFrom = new Int32Array(n).fill(-1);
+  const closed = new Uint8Array(n);
+  const startIdx = sy * WIDTH + sx;
+  gScore[startIdx] = 0;
+  const heap = []; // simple binary heap of [f, idx]
+  function push(node, f) {
+    heap.push([f, node]);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (heap[p][0] <= heap[i][0]) break;
+      [heap[p], heap[i]] = [heap[i], heap[p]]; i = p;
+    }
+  }
+  function pop() {
+    const top = heap[0], last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1, r = i * 2 + 2; let s = i;
+        if (l < heap.length && heap[l][0] < heap[s][0]) s = l;
+        if (r < heap.length && heap[r][0] < heap[s][0]) s = r;
+        if (s === i) break;
+        [heap[s], heap[i]] = [heap[i], heap[s]]; i = s;
+      }
+    }
+    return top[1];
+  }
+  const h = (x, y) => {
+    const dx = Math.abs(x - gx), dy = Math.abs(y - gy);
+    const dmin = Math.min(dx, dy), dmax = Math.max(dx, dy);
+    return (dmax - dmin + SQRT2 * dmin) * ROAD_REUSE_COST;
+  };
+  push(startIdx, h(sx, sy));
+  while (heap.length) {
+    const cur = pop();
+    if (closed[cur]) continue;
+    closed[cur] = 1;
+    const cx = cur % WIDTH, cy = (cur / WIDTH) | 0;
+    if (cx === gx && cy === gy) {
+      const path = [];
+      let n2 = cur;
+      while (n2 !== -1) { path.push({ x: n2 % WIDTH, y: (n2 / WIDTH) | 0 }); n2 = cameFrom[n2]; }
+      path.reverse();
+      return path;
+    }
+    for (const [dx, dy, dist] of NEI) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= WIDTH || ny >= HEIGHT) continue;
+      const nCost = roadTileCost(nx, ny);
+      if (!(nCost < Infinity)) continue;
+      if (dx !== 0 && dy !== 0) {
+        if (!(roadTileCost(cx + dx, cy) < Infinity) || !(roadTileCost(cx, cy + dy) < Infinity)) continue;
+      }
+      const ni = ny * WIDTH + nx;
+      if (closed[ni]) continue;
+      const tentative = gScore[cur] + dist * nCost;
+      if (tentative < gScore[ni]) {
+        gScore[ni] = tentative;
+        cameFrom[ni] = cur;
+        push(ni, tentative + h(nx, ny));
+      }
+    }
+  }
+  return null;
+}
+
+// Prim's MST over the 5 cities (straight-line distance — a fine proxy for
+// "which pairs to connect"; the actual route between each pair still bends
+// around terrain via A* above).
+const mstEdges = [];
+{
+  const inTree = [0];
+  const remaining = cities.map((c, i) => i).filter(i => i !== 0);
+  while (remaining.length) {
+    let best = null, bestD = Infinity, bestI = -1;
+    for (let ri = 0; ri < remaining.length; ri++) {
+      const j = remaining[ri];
+      for (const i of inTree) {
+        const d = (cities[i].x - cities[j].x) ** 2 + (cities[i].y - cities[j].y) ** 2;
+        if (d < bestD) { bestD = d; best = { a: i, b: j }; bestI = ri; }
+      }
+    }
+    mstEdges.push(best);
+    inTree.push(best.b);
+    remaining.splice(bestI, 1);
+  }
+}
+
+let roadTileCount = 0;
+for (const edge of mstEdges) {
+  const a = cities[edge.a], b = cities[edge.b];
+  const routePath = roadAStar(a.x, a.y, b.x, b.y);
+  if (!routePath) {
+    console.error(`roads: no route found between ${cities[edge.a].name} and ${cities[edge.b].name} — skipping edge`);
+    continue;
+  }
+  for (const { x, y } of routePath) {
+    const i = y * WIDTH + x;
+    if (!roadFlags[i]) { roadFlags[i] = 1; roadTileCount++; }
+  }
+}
+
+const roads = [];
+for (let y = 0; y < HEIGHT; y++) {
+  let row = '';
+  for (let x = 0; x < WIDTH; x++) row += roadFlags[y * WIDTH + x] ? 'r' : '.';
+  roads.push(row);
+}
+console.log('roads:', roadTileCount, 'tiles across', mstEdges.length, 'routed legs connecting', cities.length, 'cities');
+
 // --------------------------------------------------------------- write ----
 const grid = [];
 for (let y = 0; y < HEIGHT; y++) grid.push(terrain.slice(y * WIDTH, (y + 1) * WIDTH).join(''));
@@ -384,10 +545,11 @@ const mapData = {
     '~': 'water', 'r': 'river', 'm': 'marsh', 'u': 'urban', 's': 'sand',
   },
   grid,
+  roads,
   cities,
   regions,
   spawns,
-  notes: 'Generated by topdown/tools/genmap.js (seed ' + SEED + '). Re-run that script to regenerate after tweaking its parameters — do not hand-edit the grid.',
+  notes: 'Generated by topdown/tools/genmap.js (seed ' + SEED + '). Re-run that script to regenerate after tweaking its parameters — do not hand-edit the grid or roads.',
 };
 
 const outPath = path.join(__dirname, '..', 'maps', 'theater-01.json');

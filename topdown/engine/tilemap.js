@@ -5,16 +5,27 @@
 //
 // A map JSON looks like:
 //   { name, tileSize, width, height, terrainDefs?: "terrain-defs.json",
-//     legend?: {char: typeName}, grid: ["....", ...], spawns, cities, regions }
+//     legend?: {char: typeName}, grid: ["....", ...], spawns, cities, regions,
+//     roads?: ["....", "..r.", ...] }
 // `legend` is optional per-map; if omitted, the shared terrain-defs.json's
 // own `legend` is used. `terrainDefs` is a URL relative to the map file
 // (defaults to "terrain-defs.json" next to it) pointing at the shared
 // {legend, types} library — new terrain = a new entry there, no code change.
+//
+// ROADS (P2) are a parallel per-tile OVERLAY layer, not a terrain type: a
+// tile keeps its underlying terrain (grass/forest/river/...) and separately
+// carries infrastructure on top. Encoded in JSON as its own string grid,
+// same shape as `grid`: '.' = no infrastructure, 'r' = road, 'R' = rail
+// (reserved, unused until rail ships). Kept as a plain char grid rather than
+// run-length packed — theater-01.json is ~1.3MB either way and a flat grid
+// is trivial to diff/regenerate/hand-edit, which matters more at this scale
+// than a few KB of savings. `roads` is optional; a map with no roads field
+// gets an all-zero infra layer.
 export async function loadMap(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`failed to load map: ${url} (${res.status})`);
   const data = await res.json();
-  const { tileSize, width, height, spawns, cities, regions, grid: rows } = data;
+  const { tileSize, width, height, spawns, cities, regions, grid: rows, roads: roadRows } = data;
 
   const defsUrl = new URL(data.terrainDefs || 'terrain-defs.json', new URL(url, location.href)).href;
   const defsRes = await fetch(defsUrl);
@@ -52,9 +63,31 @@ export async function loadMap(url) {
     }
   }
 
-  // Bumped whenever terrain is mutated (future phases: roads, entrenchment,
-  // craters). The renderer's pre-render cache checks this to know it needs
-  // to redo the offscreen paint instead of trusting a stale bitmap.
+  // Road/rail overlay: 0 = none, 1 = road, 2 = rail (reserved). Independent
+  // of `grid` — mutating this never touches underlying terrain, so a road
+  // dropped on a river tile is a bridge rather than a terrain rewrite (see
+  // game/units.js terrainSample for how that gets consumed by movement).
+  const infra = new Uint8Array(width * height);
+  if (Array.isArray(roadRows)) {
+    if (roadRows.length !== height) {
+      throw new Error(`map "${data.name}" roads has ${roadRows.length} rows, expected height ${height}`);
+    }
+    for (let y = 0; y < height; y++) {
+      const row = roadRows[y];
+      if (row.length !== width) {
+        throw new Error(`map "${data.name}" roads row ${y} has length ${row.length}, expected width ${width}`);
+      }
+      for (let x = 0; x < width; x++) {
+        const ch = row[x];
+        infra[y * width + x] = ch === 'r' ? 1 : ch === 'R' ? 2 : 0;
+      }
+    }
+  }
+
+  // Bumped whenever terrain OR the road overlay is mutated. The renderer's
+  // pre-render cache checks this to know it needs to redo the offscreen
+  // paint instead of trusting a stale bitmap. Pathfinding also keys its
+  // path cache off this so a freshly-built road invalidates stale routes.
   let version = 0;
 
   const map = {
@@ -77,11 +110,28 @@ export async function loadMap(url) {
     terrainAtWorld(wx, wy) {
       return map.terrainAt(Math.floor(wx / tileSize), Math.floor(wy / tileSize));
     },
+    // 0 = none, 1 = road, 2 = rail (reserved). Out-of-bounds reads as 0.
+    roadAt(gx, gy) {
+      if (gx < 0 || gy < 0 || gx >= width || gy >= height) return 0;
+      return infra[gy * width + gx];
+    },
+    roadAtWorld(wx, wy) {
+      return map.roadAt(Math.floor(wx / tileSize), Math.floor(wy / tileSize));
+    },
+    // Mutates the overlay only — does NOT call dirty() itself, so callers
+    // laying many tiles in one action (road construction, genmap) can batch
+    // a whole route and bump the version once instead of re-prerendering
+    // per tile.
+    setRoad(gx, gy, v = 1) {
+      if (gx < 0 || gy < 0 || gx >= width || gy >= height) return;
+      infra[gy * width + gx] = v;
+    },
     worldW() { return width * tileSize; },
     worldH() { return height * tileSize; },
     get version() { return version; },
-    // Later phases (roads, fortification, craters) call this after mutating
-    // `grid` so the renderer knows its cached prerender is stale.
+    // Later phases (fortification, craters) and road construction call this
+    // after mutating `grid`/`infra` so the renderer knows its cached
+    // prerender is stale.
     dirty() { version++; },
   };
   return map;

@@ -1,8 +1,9 @@
 import { loadMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
-import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS } from './game/units.js';
+import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
+import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
@@ -111,6 +112,21 @@ canvas.addEventListener('mousemove', e => {
     if (dd < bd) { bd = dd; best = u; }
   }
   hovered = best;
+
+  // ROAD MODE: after point A is placed, re-route the preview live under the
+  // cursor so the player sees what the planner would actually build before
+  // committing with the second click. Only recomputes when the cursor moves
+  // to a new tile (not every pixel) — cheap enough not to matter at this
+  // grid size, but no reason to solve A* every mousemove either.
+  if (roadMode.active && roadMode.a) {
+    const ts = map.tileSize;
+    const gx = Math.floor(wx / ts), gy = Math.floor(wy / ts);
+    if (!roadMode.previewGoalTile || roadMode.previewGoalTile.x !== gx || roadMode.previewGoalTile.y !== gy) {
+      roadMode.previewGoalTile = { x: gx, y: gy };
+      const route = findRoadRoute(map, roadMode.a.x, roadMode.a.y, wx, wy);
+      roadMode.previewPath = route ? route.waypoints : null;
+    }
+  }
 });
 attachCameraControls(canvas, renderer.cam, { isEntityHit: () => !!hovered });
 
@@ -121,15 +137,124 @@ attachCameraControls(canvas, renderer.cam, { isEntityHit: () => !!hovered });
 // only ever accept a water point, so their order gets snapped to the
 // nearest water tile — ordering a gunboat onto a beach just parks it
 // offshore of where you clicked instead of doing nothing.
-canvas.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+//
+// While ROAD MODE is active, right-click means "cancel" instead (per spec:
+// Esc/right-click exits road mode) — it does not also issue a move order.
+// Extracted from the contextmenu handler so a headless test can drive the
+// exact same coalescing path without needing to fake mouse/camera math
+// (see window.__debug.issueMoveOrder below).
+function issueMoveOrder(wx, wy) {
+  // COALESCE: a mass order (say, 15 units at once) shouldn't trigger 15
+  // separate A* solves next frame just because per-unit jitter happens to
+  // spill a few of them into a neighboring goal tile. Pre-warm the path
+  // cache ONCE per ground move class actually present in this order,
+  // solved from that class's own centroid to the un-jittered click point —
+  // every unit of that class then hits the same cache entry in its own
+  // lazy ensurePath() call next frame (game/units.js), each picking its own
+  // nearest-waypoint entry point onto the shared route (the "per-unit
+  // offset" half of coalescing).
+  const groups = new Map(); // moveClassName -> {sumX, sumY, n, moveClass}
   for (const u of world.units) {
     if (u.side !== 'player') continue;
-    const jx = wx + (Math.random() - 0.5) * 30, jy = wy + (Math.random() - 0.5) * 30;
+    const mc = MOVE_CLASSES[u.def.moveClass];
+    if (!mc.ground) continue;
+    let g = groups.get(u.def.moveClass);
+    if (!g) { g = { sumX: 0, sumY: 0, n: 0, moveClass: mc }; groups.set(u.def.moveClass, g); }
+    g.sumX += u.x; g.sumY += u.y; g.n++;
+  }
+  for (const [moveClassName, g] of groups) {
+    findPathCached(map, moveClassName, g.moveClass, g.sumX / g.n, g.sumY / g.n, wx, wy);
+  }
+
+  for (const u of world.units) {
+    if (u.side !== 'player') continue;
+    const jx = wx + (Math.random() - 0.5) * 12, jy = wy + (Math.random() - 0.5) * 12;
     u.order = MOVE_CLASSES[u.def.moveClass].requiresWater ? nearestWaterPoint(jx, jy) : { x: jx, y: jy };
   }
+}
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (roadMode.active) { exitRoadMode(); return; }
+  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+  issueMoveOrder(wx, wy);
 });
+
+// ---------------------------------------------------------------------------
+// ROAD MODE (P2 — "The Map Is a Machine" / Pillar 1's delegated construction:
+// the player states intent — point A to point B — and the nation's planners
+// route the actual road via the same A* cost logic pathfinding uses, not a
+// straight line). Press R to enter/exit; while active, click point A, then
+// point B; Esc or right-click cancels a placement or exits the mode.
+const roadMode = { active: false, a: null, previewPath: null, previewGoalTile: null };
+
+function exitRoadMode() {
+  roadMode.active = false;
+  roadMode.a = null;
+  roadMode.previewPath = null;
+  roadMode.previewGoalTile = null;
+}
+function enterRoadMode() {
+  roadMode.active = true;
+  roadMode.a = null;
+  roadMode.previewPath = null;
+  roadMode.previewGoalTile = null;
+}
+
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.key === 'r' || e.key === 'R') {
+    if (roadMode.active) exitRoadMode(); else enterRoadMode();
+  } else if (e.key === 'Escape' && roadMode.active) {
+    exitRoadMode();
+  }
+});
+
+// Left-click places point A, then point B. Construction is instant (timed
+// construction is a P3/economy-phase concern per CONCEPT.md) — the planner
+// routes with findRoadRoute (game/pathfind.js) and lays every tile along the
+// dense route, then bumps map.dirty() ONCE so the renderer re-prerenders the
+// new road as a single repaint instead of once per tile.
+canvas.addEventListener('click', e => {
+  if (!roadMode.active) return;
+  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+  if (!roadMode.a) {
+    roadMode.a = { x: wx, y: wy };
+    roadMode.previewPath = null;
+    roadMode.previewGoalTile = null;
+    return;
+  }
+  const route = findRoadRoute(map, roadMode.a.x, roadMode.a.y, wx, wy);
+  if (route) {
+    for (const t of route.tiles) map.setRoad(t.x, t.y, 1);
+    map.dirty();
+  }
+  roadMode.a = null;
+  roadMode.previewPath = null;
+  roadMode.previewGoalTile = null;
+});
+
+function drawRoadPreview(ctx, worldToScreen) {
+  if (!roadMode.active || !roadMode.a) return;
+  ctx.save();
+  const [ax, ay] = worldToScreen(roadMode.a.x, roadMode.a.y);
+  ctx.fillStyle = 'rgba(255,230,150,0.9)';
+  ctx.beginPath(); ctx.arc(ax, ay, 5, 0, 6.28); ctx.fill();
+  if (roadMode.previewPath && roadMode.previewPath.length) {
+    ctx.strokeStyle = 'rgba(255,230,150,0.85)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    for (const p of roadMode.previewPath) {
+      const [sx, sy] = worldToScreen(p.x, p.y);
+      ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
 
 function drawUnit(ctx, worldToScreen, cam, u) {
   const [sx, sy] = worldToScreen(u.x, u.y);
@@ -181,6 +306,13 @@ function drawProjectile(ctx, worldToScreen, cam, p) {
 window.__debug = {
   world, renderer, map, spawnUnit, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, nearestWaterPoint,
   fog: Object.assign(fogState, { detects }),
+  // pathfinding + road-building hooks (P2), for headless verification:
+  // pathfindStats.solves carries {kind, ms, nodes, t} for every A* solve
+  // actually run (cache hits don't add entries), roadMode exposes the R-mode
+  // UI state, findPath/findRoadRoute let a test harness solve/time routes
+  // directly without needing real DOM input, enterRoadMode/exitRoadMode let
+  // a test drive the mode without depending on exact key event shape.
+  pathfindStats, roadMode, findPath, findRoadRoute, enterRoadMode, exitRoadMode, terrainSample, issueMoveOrder,
 };
 
 let last = performance.now();
@@ -213,12 +345,16 @@ function loop(now) {
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sx, sy, (0.25 - h.life) * 60, 0, 6.28); ctx.stroke();
     }
+    drawRoadPreview(ctx, worldToScreen);
   });
 
   card.show(hovered, lastMouse.x, lastMouse.y);
   const alive = { player: 0, enemy: 0 };
   for (const u of world.units) alive[u.side]++;
-  hud.textContent = `${map.name} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom`;
+  const roadHint = roadMode.active
+    ? (roadMode.a ? 'road mode: click point B (Esc/right-click to cancel)' : 'road mode: click point A (Esc/right-click to exit)')
+    : 'R: build road';
+  hud.textContent = `${map.name} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint}`;
 
   requestAnimationFrame(loop);
 }

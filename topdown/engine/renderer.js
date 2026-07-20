@@ -133,7 +133,72 @@ function prerenderTerrain(map) {
     }
   }
 
+  prerenderRoads(octx, map);
+
   return off;
+}
+
+// Roads (P2, engine/tilemap.js's infra overlay): painted as continuous
+// STROKES along road runs, not per-tile squares — a tile-center-to-
+// tile-center line segment per adjacent road pair reads as a connected
+// polyline once a whole run is drawn, because consecutive segments share
+// endpoints. Only the four "forward" neighbor directions are walked (right,
+// down, and both diagonals going down) so each adjacent pair is drawn
+// exactly once. Each segment is split at its midpoint into two halves so a
+// bridge (a road tile sitting on a water tile — see tilemap.js roadAt vs
+// terrainAt) gets its own tone without needing a separate bridge encoding.
+function prerenderRoads(octx, map) {
+  const ts = map.tileSize;
+  const roadColor = ['#8a744f', '#9c8760']; // dirt-tan
+  const bridgeColor = ['#6f7681', '#828a94']; // cooler grey-plank tone, reads as "over water"
+  const FORWARD = [[1, 0], [0, 1], [1, 1], [1, -1]];
+  const BACK = [[-1, 0], [0, -1], [-1, -1], [-1, 1]];
+
+  const isRoad = (gx, gy) => map.roadAt(gx, gy) > 0;
+  const isBridge = (gx, gy) => { const t = map.terrainAt(gx, gy); return !!(t && t.water); };
+  const tileCenter = (gx, gy) => [gx * ts + ts / 2, gy * ts + ts / 2];
+
+  // Half-segment from (cx,cy) to (mx,my), toned/widened by the tile it's
+  // attributed to (gx,gy) — irregular width via the same deterministic hash
+  // jitter the terrain texture pass uses, plus a darker, slightly wider
+  // stroke drawn first as edging so the road reads at both zoom levels.
+  function drawHalf(cx, cy, mx, my, gx, gy) {
+    const bridge = isBridge(gx, gy);
+    const base = bridge ? bridgeColor : roadColor;
+    const width = ts * (bridge ? 0.46 : 0.30 + hash2(gx, gy, 71) * 0.16);
+    const col = lerpColor(base[0], base[1], hash2(gx, gy, 72));
+    octx.lineCap = 'round';
+    octx.strokeStyle = bridge ? 'rgba(10,16,22,0.45)' : 'rgba(24,16,8,0.4)';
+    octx.lineWidth = width * 1.5;
+    octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(mx, my); octx.stroke();
+    octx.strokeStyle = col;
+    octx.lineWidth = width;
+    octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(mx, my); octx.stroke();
+  }
+
+  for (let gy = 0; gy < map.height; gy++) {
+    for (let gx = 0; gx < map.width; gx++) {
+      if (!isRoad(gx, gy)) continue;
+      const [cx, cy] = tileCenter(gx, gy);
+      let connected = false;
+      for (const [dx, dy] of FORWARD) {
+        const nx = gx + dx, ny = gy + dy;
+        if (nx < 0 || ny < 0 || nx >= map.width || ny >= map.height || !isRoad(nx, ny)) continue;
+        connected = true;
+        const [ncx, ncy] = tileCenter(nx, ny);
+        const mx = (cx + ncx) / 2, my = (cy + ncy) / 2;
+        drawHalf(cx, cy, mx, my, gx, gy);
+        drawHalf(ncx, ncy, mx, my, nx, ny);
+      }
+      if (!connected) {
+        for (const [dx, dy] of BACK) {
+          const nx = gx + dx, ny = gy + dy;
+          if (nx >= 0 && ny >= 0 && nx < map.width && ny < map.height && isRoad(nx, ny)) { connected = true; break; }
+        }
+      }
+      if (!connected) drawHalf(cx, cy, cx + 0.01, cy + 0.01, gx, gy); // isolated tile: still visible as a dab
+    }
+  }
 }
 
 export function createRenderer(canvas) {

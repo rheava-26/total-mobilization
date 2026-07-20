@@ -10,6 +10,7 @@
 // branch on a unit's *name*, only on the shape of its attributes.
 
 import { detects } from './fog.js';
+import { findPathCached } from './pathfind.js';
 
 // ---------------------------------------------------------------------------
 // MOVEMENT CLASSES — how a unit's domain interacts with terrain.
@@ -34,16 +35,31 @@ import { detects } from './fog.js';
 // moves at full def.speed while on water (the terrain's own moveMult, which
 // encodes "0 = impassable to ground movers", is not applied to naval at all
 // since water having moveMult 0 means something entirely different to a
-// boat than to a tank).
+// boat than to a tank). Naval ignores the road overlay entirely — it has no
+// bearing on a hull that's already in open water.
+//
+// `roadMult` (ground only, P2): a road tile OVERRIDES the terrain's own
+// moveMult + classMod outright — a paved road flattens whatever's under it,
+// including a river (that's a bridge). `ground: true` marks the three
+// classes pathfinding/road-building are allowed to route for; naval/air
+// don't path (see game/pathfind.js). Wheeled benefits most (that's the
+// point — roads exist for trucks), tracked next, foot least (legs don't
+// care much whether the ground is paved).
 export const MOVE_CLASSES = {
   foot: {
+    ground: true,
     terrainMods: { marsh: 1.3, forest: 1.55 },
+    roadMult: 1.15,
   },
   wheeled: {
+    ground: true,
     terrainMods: { marsh: 0.2, forest: 0.27, hills: 0.8, urban: 1.2, sand: 0.8 },
+    roadMult: 1.6,
   },
   tracked: {
+    ground: true,
     terrainMods: { marsh: 0.7, forest: 0.9, hills: 1.05 },
+    roadMult: 1.3,
   },
   air: {
     ignoresTerrain: true,
@@ -58,13 +74,30 @@ export const MOVE_CLASSES = {
 // may occupy that point at all (mult 0 does not necessarily mean impassable
 // for a ground class in principle, but in practice every terrain type with
 // moveMult 0 — water, mountain — is meant to be a hard wall for ground).
-function terrainSample(map, moveClass, wx, wy) {
+//
+// Exported so game/pathfind.js's A* cost function reuses this EXACT rule —
+// movement and pathfinding must never diverge, or units would route through
+// tiles they then can't actually walk (or vice versa: avoid tiles that were
+// really fine).
+export function terrainSample(map, moveClass, wx, wy) {
   if (!map || moveClass.ignoresTerrain) return { mult: 1, passable: true };
-  const t = map.terrainAtWorld(wx, wy);
-  if (!t) return { mult: 1, passable: true }; // off the edge of the map: don't block on it here
   if (moveClass.requiresWater) {
+    const t = map.terrainAtWorld(wx, wy);
+    if (!t) return { mult: 1, passable: true }; // off the edge of the map: don't block on it here
     const passable = !!t.water;
     return { mult: passable ? 1 : 0, passable };
+  }
+  const t = map.terrainAtWorld(wx, wy);
+  if (!t) return { mult: 1, passable: true };
+  // ROAD OVERRIDE: a road (or bridge, if the tile under it is a river) beats
+  // the terrain's own number entirely. Open sea can never legally carry a
+  // road (enforced at construction time in genmap.js and the R-mode router
+  // in main.js), but the water-that-isn't-a-river guard here is a cheap
+  // belt-and-braces check so a corrupt/hand-edited map can't produce a
+  // walk-on-water bug.
+  if (moveClass.roadMult && map.roadAtWorld && map.roadAtWorld(wx, wy)) {
+    const blockedWater = t.water && t.name !== 'river';
+    if (!blockedWater) return { mult: moveClass.roadMult, passable: true };
   }
   const base = Math.max(0, t.moveMult ?? 1);
   const classMod = moveClass.terrainMods?.[t.name] ?? 1;
@@ -199,9 +232,77 @@ export function spawnUnit(world, key, x, y, side) {
     id: nextId++, key, def, side, x, y, vx: 0, vy: 0,
     hp: def.hp, maxHp: def.hp, aim: 0, cd: Math.random() * def.rate,
     target: null, order: null, // order = {x,y} move destination, set by player input
+    // A* order-following state (ground move classes only — see ensurePath).
+    // pathPrevX/Y is the start of the CURRENT leg (the previous waypoint, or
+    // the unit's position when it joined the route) — used by advancePath's
+    // "passed the waypoint" projection check below.
+    path: null, pathIdx: 0, pathGoalTileX: undefined, pathGoalTileY: undefined, pathMapVersion: -1,
+    pathPrevX: x, pathPrevY: y,
   };
   world.units.push(u);
   return u;
+}
+
+// Fallback radius for advancing off a waypoint when the projection check
+// below doesn't apply (e.g. the final waypoint, or a near-zero-length leg).
+// Deliberately generous — see advancePath's comment for why a tight radius
+// causes fast/slow-turning units to orbit instead of converging.
+const WAYPOINT_RADIUS = 20;
+
+// Keep a ground unit's A* route current. Cheap staleness check every frame
+// (a few field comparisons) rather than repathing every frame: only
+// recomputes when the order's destination TILE changes (not on every pixel
+// of jitter) or when the map's road layer changed (map.version — a fresh
+// road can shorten an in-flight unit's route). findPathCached does the
+// actual coalescing across units sharing a goal; this function's own job is
+// just picking THIS unit's entry point onto whatever route comes back.
+function ensurePath(u, map, moveClassName, moveClass) {
+  const goalTileX = Math.floor(u.order.x / map.tileSize);
+  const goalTileY = Math.floor(u.order.y / map.tileSize);
+  const stale = !u.path || u.pathGoalTileX !== goalTileX || u.pathGoalTileY !== goalTileY || u.pathMapVersion !== map.version;
+  if (!stale) return;
+  const path = findPathCached(map, moveClassName, moveClass, u.x, u.y, u.order.x, u.order.y);
+  u.path = path;
+  u.pathGoalTileX = goalTileX; u.pathGoalTileY = goalTileY; u.pathMapVersion = map.version;
+  u.pathPrevX = u.x; u.pathPrevY = u.y; // this leg starts from wherever the unit is right now
+  if (path && path.length) {
+    // Merge onto the (possibly shared/cached) route at whichever waypoint
+    // is nearest to THIS unit rather than restarting from wherever the
+    // solving unit began — the "per-unit offset" half of path coalescing.
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < path.length; i++) {
+      const dd = (path[i].x - u.x) ** 2 + (path[i].y - u.y) ** 2;
+      if (dd < bd) { bd = dd; bi = i; }
+    }
+    u.pathIdx = bi;
+  } else {
+    u.pathIdx = 0;
+  }
+}
+
+// Should the unit advance from its current waypoint to the next? Proximity
+// alone (Math.hypot < radius) is NOT enough: a unit whose turning radius is
+// bigger than that proximity threshold (fast + slow-turning, e.g. the tank —
+// speed 70, turnRate 3) physically cannot converge onto the exact point and
+// instead sweeps past it forever, tracing a stable orbit around the
+// waypoint that never satisfies the radius check (verified empirically —
+// this was a real bug during development, not a hypothetical). The fix is
+// the standard pure-pursuit one: also advance once the unit's position has
+// PROJECTED past the waypoint along the leg's direction, regardless of how
+// far off to the side it is — this lets a fast unit cut the corner and
+// commit to the next leg's heading instead of trying to thread the needle.
+function advancePath(u, wp) {
+  const dx = u.x - u.pathPrevX, dy = u.y - u.pathPrevY;
+  const segX = wp.x - u.pathPrevX, segY = wp.y - u.pathPrevY;
+  const segLen2 = segX * segX + segY * segY;
+  const projectedPast = segLen2 > 1 && (dx * segX + dy * segY) >= segLen2;
+  const close = Math.hypot(wp.x - u.x, wp.y - u.y) < WAYPOINT_RADIUS;
+  if (projectedPast || close) {
+    u.pathPrevX = wp.x; u.pathPrevY = wp.y;
+    u.pathIdx++;
+    return true;
+  }
+  return false;
 }
 
 // unbounded seek: a unit needs to know the nearest enemy ANYWHERE on the map
@@ -275,8 +376,25 @@ export function updateUnits(world, dt, map) {
         if (d > standoff) { goalX = enemy.x; goalY = enemy.y; }
       }
     } else if (u.order) {
-      goalX = u.order.x; goalY = u.order.y;
-      if (Math.hypot(goalX - u.x, goalY - u.y) < 6) u.order = null;
+      // A* PATHING: ground move classes route around impassable terrain
+      // (mountains, marsh, rivers with no bridge) and prefer roads via the
+      // cost function, instead of steering straight at the order point and
+      // wall-sliding along whatever they hit. Air/naval keep the old direct
+      // steer — air ignores terrain entirely, naval's open-water routes
+      // rarely need routing around obstacles at this scope.
+      if (moveClass.ground && map) {
+        ensurePath(u, map, def.moveClass, moveClass);
+        const wp = u.path && u.path[u.pathIdx];
+        if (wp) {
+          goalX = wp.x; goalY = wp.y;
+          advancePath(u, wp);
+        } else {
+          goalX = u.order.x; goalY = u.order.y; // no route (or path exhausted): direct final approach
+        }
+      } else {
+        goalX = u.order.x; goalY = u.order.y;
+      }
+      if (Math.hypot(u.order.x - u.x, u.order.y - u.y) < 6) { u.order = null; u.path = null; }
     } else {
       u.target = null;
     }

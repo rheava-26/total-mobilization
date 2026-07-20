@@ -1,4 +1,4 @@
-import { loadMap } from './engine/tilemap.js';
+import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement } from './game/buildings.js';
@@ -11,7 +11,31 @@ const hud = document.getElementById('hud');
 const buildbar = document.getElementById('buildbar');
 const card = createStatCard(document.getElementById('card'));
 
-const map = await loadMap('maps/theater-01.json');
+// MAP SOURCE (docs/CONCEPT.md settled ledger: "maps and all place names are
+// procedurally generated per skirmish run" — a fresh seed every game by
+// default). Two optional URL params, either usable independently:
+//   ?map=maps/theater-01.json  — load a specific AUTHORED file (the
+//     scenario path; the map's own JSON is the source of truth, seed or no
+//     seed inside it).
+//   ?seed=1337                 — reproduce a specific GENERATED run.
+// With neither param, a fresh random seed is drawn every load so each
+// skirmish gets its own geography and its own names.
+function randomSeed() {
+  return Math.floor(Math.random() * 0xFFFFFFFF) >>> 0;
+}
+const urlParams = new URLSearchParams(location.search);
+let map;
+if (urlParams.has('map')) {
+  map = await loadMap(urlParams.get('map'));
+} else {
+  const seedParam = urlParams.get('seed');
+  const seed = seedParam !== null && seedParam !== '' && !Number.isNaN(Number(seedParam))
+    ? (Number(seedParam) >>> 0)
+    : randomSeed();
+  map = await loadGeneratedMap(seed);
+  console.log(`[mapgen] "${map.name}" (seed ${map.seed}) — ${map.genMs.toFixed(1)}ms, `
+    + `${map.genStats.attempts} attempt(s), ${map.genStats.roadTileCount} road tiles`);
+}
 const renderer = createRenderer(canvas);
 renderer.cam.x = map.worldW() / 2;
 renderer.cam.y = map.worldH() / 2;
@@ -40,23 +64,59 @@ function nearestWaterPoint(wx, wy, maxTiles = 40) {
   return { x: wx, y: wy }; // no water found within range: fall back to the raw point
 }
 
-// Combined-arms demo staged near the map's authored spawn points — exercises
-// the full attribute matrix at once: every move class (foot/wheeled/tracked/
-// air/naval), every weapon (shell/aam/sam/autocannon/rocket), and every
-// targeting combination (SAM/AA/fighter vs a mixed enemy force that includes
-// air) so the attribute system is observable, not just theoretical.
+// Inverse of nearestWaterPoint: nearest tile a GROUND unit could actually
+// stand on (not water, not impassable terrain like mountain — read off
+// t.moveMult generically rather than hardcoding a terrain-type name, since
+// the map's terrain and layout are procedural per run). The demo spawn
+// offsets below are chosen to land on land for a "typical" generated
+// coastline, but a run's actual geometry is never known ahead of time, so
+// every ground-unit demo spawn point is snapped through this — a no-op
+// when the raw point is already fine, a rescue when a tight beach/city
+// shape happens to put it a tile into the sea or up a mountainside.
+function nearestLandPoint(wx, wy, maxTiles = 40) {
+  const ts = map.tileSize;
+  const gx0 = Math.floor(wx / ts), gy0 = Math.floor(wy / ts);
+  for (let r = 0; r <= maxTiles; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const t = map.terrainAt(gx0 + dx, gy0 + dy);
+        if (t && !t.water && (t.moveMult ?? 1) > 0) return { x: (gx0 + dx + 0.5) * ts, y: (gy0 + dy + 0.5) * ts };
+      }
+    }
+  }
+  return { x: wx, y: wy };
+}
+// Convenience: spawn a ground unit at (wx,wy) rescued onto the nearest legal
+// land tile if needed. Air units don't go through this (moveClass ignores
+// terrain entirely, per units.js terrainSample), so callers below only wrap
+// the ground-class spawns.
+function spawnGroundUnit(key, wx, wy, side) {
+  const p = nearestLandPoint(wx, wy);
+  return spawnUnit(world, key, p.x, p.y, side);
+}
+
+// Combined-arms demo staged near the map's GENERATED spawn points (map.spawns
+// — see game/mapgen.js) — exercises the full attribute matrix at once: every
+// move class (foot/wheeled/tracked/air/naval), every weapon (shell/aam/sam/
+// autocannon/rocket), and every targeting combination (SAM/AA/fighter vs a
+// mixed enemy force that includes air) so the attribute system is
+// observable, not just theoretical. Nothing here assumes a specific island's
+// geometry: ground spawns are rescued onto legal land via spawnGroundUnit,
+// naval spawns are snapped onto water via nearestWaterPoint, and pBase/eBase
+// come straight from whatever map.spawns the generator produced this run.
 const [pSpawn, eSpawn] = map.spawns;
 const pBase = { x: pSpawn.x * map.tileSize, y: pSpawn.y * map.tileSize };
 const eBase = { x: eSpawn.x * map.tileSize, y: eSpawn.y * map.tileSize };
 
 // player: infantry + militia + tanks + AA on land, a SAM battery, a small air
 // wing, gunboat + destroyer offshore
-for (let i = 0; i < 3; i++) spawnUnit(world, 'infantry', pBase.x - 70 + i * 22, pBase.y + 50, 'player');
-for (let i = 0; i < 3; i++) spawnUnit(world, 'militia', pBase.x - 70 + i * 22, pBase.y + 74, 'player');
-for (let i = 0; i < 3; i++) spawnUnit(world, 'tank', pBase.x + i * 26, pBase.y + (i % 2) * 26, 'player');
-spawnUnit(world, 'scout', pBase.x + 90, pBase.y + 20, 'player');
-for (let i = 0; i < 2; i++) spawnUnit(world, 'aa', pBase.x - 90 + i * 26, pBase.y - 40, 'player');
-spawnUnit(world, 'sam', pBase.x - 130, pBase.y - 10, 'player');
+for (let i = 0; i < 3; i++) spawnGroundUnit('infantry', pBase.x - 70 + i * 22, pBase.y + 50, 'player');
+for (let i = 0; i < 3; i++) spawnGroundUnit('militia', pBase.x - 70 + i * 22, pBase.y + 74, 'player');
+for (let i = 0; i < 3; i++) spawnGroundUnit('tank', pBase.x + i * 26, pBase.y + (i % 2) * 26, 'player');
+spawnGroundUnit('scout', pBase.x + 90, pBase.y + 20, 'player');
+for (let i = 0; i < 2; i++) spawnGroundUnit('aa', pBase.x - 90 + i * 26, pBase.y - 40, 'player');
+spawnGroundUnit('sam', pBase.x - 130, pBase.y - 10, 'player');
 for (let i = 0; i < 2; i++) spawnUnit(world, 'fighter', pBase.x - 40 + i * 30, pBase.y - 100, 'player');
 spawnUnit(world, 'strikejet', pBase.x + 10, pBase.y - 110, 'player');
 {
@@ -69,15 +129,17 @@ spawnUnit(world, 'strikejet', pBase.x + 10, pBase.y - 110, 'player');
   spawnUnit(world, 'destroyer', dest.x, dest.y, 'player');
 }
 
-// enemy: mixed ground force PLUS air (fighter + strike jet) so SAM/AA/fighter targeting is actually exercised.
-// eBase sits on a coastal beach tile (Kastavia) with water immediately east/
-// south of it — offsets below are chosen (and checked against the map data)
-// to land every ground unit on grass/sand/urban, never in the sea; air units
-// don't care since their moveClass ignores terrain entirely.
-for (let i = 0; i < 3; i++) spawnUnit(world, 'tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
-for (let i = 0; i < 2; i++) spawnUnit(world, 'infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
-for (let i = 0; i < 2; i++) spawnUnit(world, 'militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
-spawnUnit(world, 'aa', eBase.x + 20, eBase.y - 30, 'enemy');
+// enemy: mixed ground force PLUS air (fighter + strike jet) so SAM/AA/fighter
+// targeting is actually exercised. eBase sits on a coastal beach tile near
+// the map's farthest-from-capital city, with water usually nearby (see
+// game/mapgen.js's enemySpawn/nearestBeach) — every ground spawn below goes
+// through spawnGroundUnit so it's rescued onto land regardless of exactly
+// how tight that particular run's beach/city shape turns out to be; air
+// units spawn plain since their moveClass ignores terrain entirely.
+for (let i = 0; i < 3; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
+for (let i = 0; i < 2; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
+for (let i = 0; i < 2; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
+spawnGroundUnit('aa', eBase.x + 20, eBase.y - 30, 'enemy');
 spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
 spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
 
@@ -524,7 +586,12 @@ function loop(now) {
     ? (buildMode.selectedType ? 'build mode: click a rough spot (shift-click to pin exact) — Esc to exit' : 'build mode: pick a building below — Esc to exit')
     : 'B: build';
   const flash = (buildMode.message && performance.now() < buildMode.messageUntil) ? `  |  ${buildMode.message}` : '';
-  hud.textContent = `${map.name} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
+  // Island name + seed shown subtly up front (map.seed is only set for a
+  // procedurally-generated map — see game/mapgen.js/loadGeneratedMap; an
+  // authored file loaded via ?map= just shows its name) so a player can
+  // share/reproduce a good island via ?seed=N.
+  const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
+  hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
 
   requestAnimationFrame(loop);
 }

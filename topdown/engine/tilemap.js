@@ -1,3 +1,5 @@
+import { generateTheaterWithStats } from '../game/mapgen.js';
+
 // Map format v2: hand-authorable STRING-GRID terrain + data-driven terrain
 // types (effect lists) + named cities/regions. No sparse overrides, no
 // backward compat with the v1 sparse-override format — the map format is
@@ -17,20 +19,24 @@
 // carries infrastructure on top. Encoded in JSON as its own string grid,
 // same shape as `grid`: '.' = no infrastructure, 'r' = road, 'R' = rail
 // (reserved, unused until rail ships). Kept as a plain char grid rather than
-// run-length packed — theater-01.json is ~1.3MB either way and a flat grid
-// is trivial to diff/regenerate/hand-edit, which matters more at this scale
-// than a few KB of savings. `roads` is optional; a map with no roads field
-// gets an all-zero infra layer.
-export async function loadMap(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`failed to load map: ${url} (${res.status})`);
-  const data = await res.json();
-  const { tileSize, width, height, spawns, cities, regions, grid: rows, roads: roadRows } = data;
+// run-length packed — a flat grid is trivial to diff/regenerate/hand-edit,
+// which matters more at this scale than a few KB of savings. `roads` is
+// optional; a map with no roads field gets an all-zero infra layer.
+//
+// Two map SOURCES share one construction path (buildMap below): an authored
+// JSON file fetched from disk (loadMap, the scenario path — e.g.
+// maps/theater-01.json) and a freshly procedurally-generated map (
+// loadGeneratedMap, the default skirmish path — see game/mapgen.js). Both
+// end up with byte-for-byte the same shaped `data` object; buildMap doesn't
+// care which produced it.
 
-  const defsUrl = new URL(data.terrainDefs || 'terrain-defs.json', new URL(url, location.href)).href;
-  const defsRes = await fetch(defsUrl);
-  if (!defsRes.ok) throw new Error(`failed to load terrain defs: ${defsUrl} (${defsRes.status})`);
-  const defsData = await defsRes.json();
+// Builds the live map object from already-parsed map JSON `data` and
+// already-parsed terrain-defs JSON `defsData`. Pure/synchronous — no
+// fetching here, so it works identically whether `data` came off the wire
+// (loadMap) or straight out of game/mapgen.js's generateTheater (
+// loadGeneratedMap).
+export function buildMap(data, defsData) {
+  const { tileSize, width, height, spawns, cities, regions, grid: rows, roads: roadRows } = data;
   const legend = data.legend || defsData.legend;
 
   // Ordered type table: index -> effect list (the def), used both for the
@@ -109,6 +115,11 @@ export async function loadMap(url) {
 
   const map = {
     name: data.name || 'untitled',
+    // Present only for procedurally-generated maps (game/mapgen.js stamps
+    // `seed` onto its output) — undefined for an authored map file that
+    // never had one. main.js's HUD shows it when present so a player can
+    // share/reproduce a good island via ?seed=.
+    seed: data.seed,
     tileSize, width, height,
     typeDefs, legend,
     grid,
@@ -170,5 +181,44 @@ export async function loadMap(url) {
     // path cache (keyed off map.version) invalidates stale routes.
     dirty() { version++; },
   };
+  return map;
+}
+
+// Fetches terrain-defs.json (the shared {legend, types} library) relative to
+// `defsUrl`. Shared by both loaders below.
+async function fetchDefs(defsUrl) {
+  const defsRes = await fetch(defsUrl);
+  if (!defsRes.ok) throw new Error(`failed to load terrain defs: ${defsUrl} (${defsRes.status})`);
+  return defsRes.json();
+}
+
+// AUTHORED MAP PATH (scenario/dev-fixture): fetch a map JSON file + its
+// terrain-defs, then hand off to buildMap. This is what `?map=file.json`
+// loads (see main.js) — e.g. maps/theater-01.json, the regenerable dev
+// fixture (tools/genmap.js).
+export async function loadMap(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`failed to load map: ${url} (${res.status})`);
+  const data = await res.json();
+  const defsUrl = new URL(data.terrainDefs || 'terrain-defs.json', new URL(url, location.href)).href;
+  const defsData = await fetchDefs(defsUrl);
+  return buildMap(data, defsData);
+}
+
+// GENERATED MAP PATH (the default skirmish path per docs/CONCEPT.md's
+// settled ledger: "maps and all place names are procedurally generated per
+// skirmish run"): run the shared generator (game/mapgen.js) for `seed`, then
+// hand its output to the exact same buildMap() an authored file goes
+// through. terrain-defs.json is still a shared static file (there's nothing
+// map-specific about terrain type effect lists), fetched relative to this
+// module rather than to any map URL since a generated map has none.
+export async function loadGeneratedMap(seed) {
+  const t0 = performance.now();
+  const { mapData, stats } = generateTheaterWithStats(seed);
+  const genMs = performance.now() - t0;
+  const defsData = await fetchDefs(new URL('../maps/terrain-defs.json', import.meta.url).href);
+  const map = buildMap(mapData, defsData);
+  map.genMs = genMs;
+  map.genStats = stats;
   return map;
 }

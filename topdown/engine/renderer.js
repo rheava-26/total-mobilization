@@ -150,9 +150,10 @@ function prerenderTerrain(map) {
 // Deterministic from hash2(gx,gy,seed) exactly like the terrain texture pass
 // above, so the same map always looks the same city. Density scales with
 // proximity to the nearest named city center (map.cities carries {x,y,r} in
-// TILE coords already, same as genmap.js authored them) so Syrograd (r=10,
-// the biggest by construction) reads as visibly denser/bigger than the
-// smaller towns without any special-casing by name. A tile within a couple
+// TILE coords already, same as game/mapgen.js generated them) so the capital
+// (r=10, the biggest by construction — see mapgen.js) reads as visibly
+// denser/bigger than the smaller towns without any special-casing by name.
+// A tile within a couple
 // rings of a road gets a placement-probability bump and is nudged away from
 // the road tile it's closest to, so blocks loosely "front the street"
 // instead of a uniform scatter ignoring the road network entirely.
@@ -424,12 +425,18 @@ export function createRenderer(canvas) {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
+    // The "capital" reads bold/gold — driven by which city actually has the
+    // largest radius (mapgen.js always makes the capital biggest by
+    // construction), never by matching a specific name. Ties all read as
+    // capital-style, which never happens in practice since mapgen.js only
+    // ever gives city index 0 r=10.
+    const maxCityR = (map.cities || []).reduce((m, c) => Math.max(m, c.r || 0), 0);
     for (const c of map.cities || []) {
       const [sx, sy] = worldToScreen(c.x * map.tileSize, c.y * map.tileSize);
       if (sx < -150 || sx > canvas.width + 150 || sy < -150 || sy > canvas.height + 150) continue;
       const size = Math.max(11, Math.min(24, 14 * cam.zoom)) * dpr;
       const alpha = Math.max(0.45, Math.min(1, cam.zoom * 1.3));
-      const big = c.name === 'Syrograd';
+      const big = (c.r || 0) === maxCityR;
       ctx.font = `${big ? 'bold ' : ''}${size}px Consolas, monospace`;
       const above = (c.r || 4) * map.tileSize * cam.zoom * dpr + 8 * dpr;
       ctx.lineWidth = 3 * dpr;
@@ -439,15 +446,23 @@ export function createRenderer(canvas) {
       ctx.fillText(c.name, sx, sy - above);
     }
     if (cam.zoom < REGION_ZOOM_THRESHOLD) {
-      for (const r of map.regions || []) {
+      const regionList = map.regions || [];
+      // game/mapgen.js lays regions out as a uniform row/column grid, so
+      // regions sharing a row land at nearly the same screen Y at this zoom
+      // — a small deterministic zigzag (by position within the list, not by
+      // name/content) keeps same-row labels from stacking directly on top
+      // of each other without needing any real collision layout.
+      regionList.forEach((r, i) => {
         const cx = (r.x0 + r.x1) / 2 * map.tileSize, cy = (r.y0 + r.y1) / 2 * map.tileSize;
-        const [sx, sy] = worldToScreen(cx, cy);
-        if (sx < -400 || sx > canvas.width + 400 || sy < -200 || sy > canvas.height + 200) continue;
-        const size = 44 * dpr;
+        const [sx, sy0] = worldToScreen(cx, cy);
+        const zigzag = ((i % 3) - 1) * 30 * dpr;
+        const sy = sy0 + zigzag;
+        if (sx < -400 || sx > canvas.width + 400 || sy < -200 || sy > canvas.height + 200) return;
+        const size = 40 * dpr;
         ctx.font = `${size}px Georgia, serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.09)';
         ctx.fillText(r.name.toUpperCase(), sx, sy);
-      }
+      });
     }
     ctx.restore();
   }

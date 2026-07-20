@@ -1,0 +1,6 @@
+{
+  "name": "total-mobilization-topdown",
+  "private": true,
+  "type": "module",
+  "description": "Scoped to topdown/ only — lets tools/genmap.js `import` the browser ES module game/mapgen.js directly under Node. Does not affect the unrelated repo-root title.html game (no code there is run via `node`, and this file lives one directory below it)."
+}

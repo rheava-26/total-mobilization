@@ -88,6 +88,7 @@ export function drawFogOverlay(ctx, worldToScreen, side, world, map) {
   ensureFogCanvas(map);
   const { cellPx, w, h } = fogMeta;
 
+  fogCtx.clearRect(0, 0, w, h);   // the canvas persists across frames — without this the 0.6-alpha dim re-composites over itself every frame and asymptotes to a full blackout within a second
   fogCtx.globalCompositeOperation = 'source-over';
   fogCtx.fillStyle = 'rgba(4,8,14,0.6)';
   fogCtx.fillRect(0, 0, w, h);

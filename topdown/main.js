@@ -45,9 +45,12 @@ const [pSpawn, eSpawn] = map.spawns;
 const pBase = { x: pSpawn.x * map.tileSize, y: pSpawn.y * map.tileSize };
 const eBase = { x: eSpawn.x * map.tileSize, y: eSpawn.y * map.tileSize };
 
-// player: infantry + tanks + AA on land, a SAM battery, a small air wing, one gunboat offshore
+// player: infantry + militia + tanks + AA on land, a SAM battery, a small air
+// wing, gunboat + destroyer offshore
 for (let i = 0; i < 3; i++) spawnUnit(world, 'infantry', pBase.x - 70 + i * 22, pBase.y + 50, 'player');
+for (let i = 0; i < 3; i++) spawnUnit(world, 'militia', pBase.x - 70 + i * 22, pBase.y + 74, 'player');
 for (let i = 0; i < 3; i++) spawnUnit(world, 'tank', pBase.x + i * 26, pBase.y + (i % 2) * 26, 'player');
+spawnUnit(world, 'scout', pBase.x + 90, pBase.y + 20, 'player');
 for (let i = 0; i < 2; i++) spawnUnit(world, 'aa', pBase.x - 90 + i * 26, pBase.y - 40, 'player');
 spawnUnit(world, 'sam', pBase.x - 130, pBase.y - 10, 'player');
 for (let i = 0; i < 2; i++) spawnUnit(world, 'fighter', pBase.x - 40 + i * 30, pBase.y - 100, 'player');
@@ -55,12 +58,22 @@ spawnUnit(world, 'strikejet', pBase.x + 10, pBase.y - 110, 'player');
 {
   const gb = nearestWaterPoint(pBase.x, pBase.y);
   spawnUnit(world, 'gunboat', gb.x, gb.y, 'player');
+  // offset further out to sea (not just nudged off the first water pixel
+  // found, which can sit right at the coastline) — re-snap through
+  // nearestWaterPoint so the destroyer never spawns straddling the beach
+  const dest = nearestWaterPoint(gb.x - 60, gb.y + 10);
+  spawnUnit(world, 'destroyer', dest.x, dest.y, 'player');
 }
 
-// enemy: mixed ground force PLUS air (fighter + strike jet) so SAM/AA/fighter targeting is actually exercised
+// enemy: mixed ground force PLUS air (fighter + strike jet) so SAM/AA/fighter targeting is actually exercised.
+// eBase sits on a coastal beach tile (Kastavia) with water immediately east/
+// south of it — offsets below are chosen (and checked against the map data)
+// to land every ground unit on grass/sand/urban, never in the sea; air units
+// don't care since their moveClass ignores terrain entirely.
 for (let i = 0; i < 3; i++) spawnUnit(world, 'tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
-for (let i = 0; i < 2; i++) spawnUnit(world, 'infantry', eBase.x + 40 - i * 22, eBase.y + 55, 'enemy');
-spawnUnit(world, 'aa', eBase.x + 75, eBase.y - 25, 'enemy');
+for (let i = 0; i < 2; i++) spawnUnit(world, 'infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
+for (let i = 0; i < 2; i++) spawnUnit(world, 'militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
+spawnUnit(world, 'aa', eBase.x + 20, eBase.y - 30, 'enemy');
 spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
 spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
 

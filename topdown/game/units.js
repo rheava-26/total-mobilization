@@ -120,6 +120,15 @@ export const UNIT_DEFS = {
     hp: 70, armor: 2, speed: 40, range: 140, dmg: 4, rate: 0.22, turnRate: 6, radius: 6,
     dispositions: ['aggressive'], // closes to point-blank instead of standing off
   },
+  militia: {
+    // deliberately weaker/cheaper/shorter-legged than infantry — later phases
+    // auto-muster this exact def as the garrison unit, so it stays a distinct
+    // entry rather than a reskin (foot moveClass still gives it the same
+    // rough-terrain edge infantry gets, just from a worse baseline).
+    name: 'Militia Levy', domain: 'ground', moveClass: 'foot', weapon: 'autocannon',
+    hp: 40, armor: 1, speed: 36, range: 90, dmg: 2, rate: 0.3, turnRate: 5, radius: 6,
+    dispositions: ['aggressive'],
+  },
   scout: {
     name: 'Scout Car "Whippet"', domain: 'ground', moveClass: 'wheeled', weapon: 'autocannon',
     hp: 35, armor: 1, speed: 130, range: 100, dmg: 2, rate: 0.3, turnRate: 8, radius: 7,
@@ -153,6 +162,13 @@ export const UNIT_DEFS = {
   gunboat: {
     name: 'Gunboat "Osprey"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
     hp: 130, armor: 6, speed: 60, range: 240, dmg: 16, rate: 1.8, turnRate: 2.2, radius: 13,
+    dispositions: [],
+  },
+  destroyer: {
+    // longer-legged gun and a lot more hull than the gunboat — the ship you
+    // want screening the coast, not just harassing it.
+    name: 'Destroyer "Marchioness"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
+    hp: 220, armor: 10, speed: 50, range: 320, dmg: 22, rate: 2.0, turnRate: 1.6, radius: 16,
     dispositions: [],
   },
 };
@@ -308,8 +324,16 @@ export function updateUnits(world, dt, map) {
     }
 
     // --- weapon ---
+    // u.target may have come from the unbounded-seek nearestEnemy() fallback
+    // above (used so units keep advancing toward the fight even when every
+    // in-range enemy is already claimed dead) rather than from pickTarget's
+    // overkill-filtered search — so the fire decision re-checks the claim
+    // itself. Without this re-check, fire discipline only ever affected
+    // target *preference*, not whether a shot actually goes out: once every
+    // enemy in range was already claimed lethal, units would still fall
+    // through to nearestEnemy and fire into an already-guaranteed kill.
     u.cd -= dt;
-    if (u.target && u.target.hp > 0 && u.cd <= 0) {
+    if (u.target && u.target.hp > 0 && u.cd <= 0 && claimOf(u.target) < u.target.hp) {
       const d = Math.hypot(u.target.x - u.x, u.target.y - u.y);
       if (d <= def.range) {
         u.cd = def.rate;

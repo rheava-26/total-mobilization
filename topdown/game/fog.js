@@ -28,13 +28,27 @@ function targetConcealment(map, target) {
 // both read the result via detects().
 export function computeFog(world, map) {
   detectedBySide = new Map();
+  const buildings = world.buildings || [];
   const sides = new Set();
   for (const u of world.units) if (u.hp > 0) sides.add(u.side);
+  for (const b of buildings) if (b.hp > 0) sides.add(b.side);
 
   for (const side of sides) {
     const detected = new Set();
-    const viewers = world.units.filter(u => u.side === side && u.hp > 0);
-    const targets = world.units.filter(u => u.side !== side && u.hp > 0);
+    // Buildings (game/buildings.js) are VISION SOURCES per their def, same
+    // as a unit — a radar station's huge vision radius plugs in here with no
+    // special case — and are themselves DETECTABLE-BUT-STATIC targets: an
+    // enemy factory sitting in the open is exactly as spottable as a tank,
+    // gated by the same terrain-concealment rule (targetConcealment below
+    // just doesn't special-case "is this a unit or a building").
+    const viewers = [
+      ...world.units.filter(u => u.side === side && u.hp > 0),
+      ...buildings.filter(b => b.side === side && b.hp > 0),
+    ];
+    const targets = [
+      ...world.units.filter(u => u.side !== side && u.hp > 0),
+      ...buildings.filter(b => b.side !== side && b.hp > 0),
+    ];
     for (const target of targets) {
       const concealment = targetConcealment(map, target);
       for (const viewer of viewers) {
@@ -93,10 +107,9 @@ export function drawFogOverlay(ctx, worldToScreen, side, world, map) {
   fogCtx.fillStyle = 'rgba(4,8,14,0.6)';
   fogCtx.fillRect(0, 0, w, h);
   fogCtx.globalCompositeOperation = 'destination-out';
-  for (const u of world.units) {
-    if (u.side !== side || u.hp <= 0) continue;
-    const cx = u.x / cellPx, cy = u.y / cellPx;
-    const r = Math.max(0.5, (u.def.vision || 0) / cellPx);
+  const punch = (x, y, vision) => {
+    const cx = x / cellPx, cy = y / cellPx;
+    const r = Math.max(0.5, (vision || 0) / cellPx);
     const grad = fogCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
     grad.addColorStop(0, 'rgba(0,0,0,1)');
     grad.addColorStop(0.75, 'rgba(0,0,0,0.85)');
@@ -105,6 +118,16 @@ export function drawFogOverlay(ctx, worldToScreen, side, world, map) {
     fogCtx.beginPath();
     fogCtx.arc(cx, cy, r, 0, Math.PI * 2);
     fogCtx.fill();
+  };
+  for (const u of world.units) {
+    if (u.side !== side || u.hp <= 0) continue;
+    punch(u.x, u.y, u.def.vision);
+  }
+  // buildings (game/buildings.js) are vision sources too — a radar station's
+  // whole reason to exist is punching a much bigger hole than any unit can.
+  for (const b of (world.buildings || [])) {
+    if (b.side !== side || b.hp <= 0) continue;
+    punch(b.x, b.y, b.def.vision);
   }
   fogCtx.globalCompositeOperation = 'source-over';
 

@@ -259,6 +259,7 @@ export function roadTileCost(map, gx, gy) {
   if (!t) return Infinity;
   if (t.name === 'mountain') return Infinity;
   if (t.water && t.name !== 'river') return Infinity; // open sea: unbridgeable
+  if (map.blockAt && map.blockAt(gx, gy)) return Infinity; // a building footprint (P2 city layer): can't pave through one
   if (map.roadAt(gx, gy) > 0) return 0.12; // reuse/extend the existing network cheaply
   if (t.name === 'river') return 4; // bridge: legal but discouraged, keeps crossings short
   return 1 / Math.max(0.15, t.moveMult ?? 1);

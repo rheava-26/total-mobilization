@@ -87,6 +87,14 @@ export function terrainSample(map, moveClass, wx, wy) {
     const passable = !!t.water;
     return { mult: passable ? 1 : 0, passable };
   }
+  // OBSTACLE LAYER (P2 city layer): a building footprint is a hard wall for
+  // every ground class, unconditionally — checked before the road override
+  // below so a (rules-forbidden but not code-enforced-elsewhere) building
+  // sitting on a road tile still blocks rather than inheriting the road's
+  // free-flow multiplier.
+  if (map.blockAt && map.blockAt(Math.floor(wx / map.tileSize), Math.floor(wy / map.tileSize))) {
+    return { mult: 0, passable: false };
+  }
   const t = map.terrainAtWorld(wx, wy);
   if (!t) return { mult: 1, passable: true };
   // ROAD OVERRIDE: a road (or bridge, if the tile under it is a river) beats
@@ -141,9 +149,28 @@ export const WEAPON_DEFS = {
 
 // naval counts as "ground" for targeting purposes for now (P1.5 scope) — a
 // weapon's canTargetGround flag governs anything that isn't domain 'air'.
+// Buildings (game/buildings.js) carry no `domain` at all, which falls
+// through to the same "ground" branch — a factory is exactly as much a
+// ground target as a tank is, never an air one.
 function weaponCanTarget(wdef, target) {
   if (!wdef) return false;
   return target.def.domain === 'air' ? !!wdef.canTargetAir : !!wdef.canTargetGround;
+}
+
+// Combined pool of everything on the OTHER side that a unit or building can
+// possibly shoot at or be shot by: live enemy units plus live enemy
+// buildings (game/buildings.js — pushed onto world.buildings, never
+// world.units, since buildings don't move/steer/path). Centralizing this
+// here means pickTarget/nearestEnemy/resolveHit — and by extension every
+// weapon in the game, including a gun emplacement's own fire loop in
+// game/buildings.js which calls pickTarget/nearestEnemy directly — treat a
+// building as just another target shape rather than needing a parallel
+// "or check world.buildings too" at every call site.
+function enemyEntities(world, side) {
+  const out = [];
+  for (const o of world.units) if (o.side !== side && o.hp > 0) out.push(o);
+  for (const b of (world.buildings || [])) if (b.side !== side && b.hp > 0) out.push(b);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -316,11 +343,10 @@ function advancePath(u, wp) {
 // detects (game/fog.js). No beelining toward hidden units; with nothing
 // visible this falls through to order/idle behavior, same as "no enemy at
 // all" used to.
-function nearestEnemy(world, u) {
+export function nearestEnemy(world, u) {
   const wdef = WEAPON_DEFS[u.def.weapon];
   let best = null, bd = Infinity;
-  for (const o of world.units) {
-    if (o.side === u.side || o.hp <= 0) continue;
+  for (const o of enemyEntities(world, u.side)) {
     if (!weaponCanTarget(wdef, o)) continue;
     if (!detects(u.side, o)) continue;
     const dd = (o.x - u.x) ** 2 + (o.y - u.y) ** 2;
@@ -334,15 +360,17 @@ function nearestEnemy(world, u) {
 // "everyone shoots one drone" problem. A unit whose target is already claimed
 // past its remaining HP holds fire / looks for another target instead.
 const claimed = new Map();
-function claim(target, dmg) { claimed.set(target, (claimed.get(target) || 0) + dmg); }
-function claimOf(target) { return claimed.get(target) || 0; }
+export function claim(target, dmg) { claimed.set(target, (claimed.get(target) || 0) + dmg); }
+export function claimOf(target) { return claimed.get(target) || 0; }
 export function clearClaims() { claimed.clear(); }
 
-function pickTarget(world, u) {
+// Generic — works for a unit OR a building shooter (anything with
+// .side/.x/.y/.def.weapon/.def.range): game/buildings.js's gun-emplacement
+// fire loop calls this directly instead of reimplementing target selection.
+export function pickTarget(world, u) {
   const wdef = WEAPON_DEFS[u.def.weapon];
   let best = null, bestScore = -Infinity;
-  for (const o of world.units) {
-    if (o.side === u.side || o.hp <= 0) continue;
+  for (const o of enemyEntities(world, u.side)) {
     if (!weaponCanTarget(wdef, o)) continue; // targeting attribute: e.g. SAM ignores ground entirely
     if (!detects(u.side, o)) continue; // fog: can't target what your side hasn't detected
     const dd = (o.x - u.x) ** 2 + (o.y - u.y) ** 2;
@@ -488,7 +516,10 @@ export function updateUnits(world, dt, map) {
   world.units = world.units.filter(u => u.hp > 0);
 }
 
-function fireProjectile(world, u, target) {
+// Exported so game/buildings.js's gun-emplacement fire loop launches the
+// exact same physical projectiles a unit would — `u` just needs the shape
+// {x,y,side,def:{weapon,dmg}}, which a building entity already has.
+export function fireProjectile(world, u, target) {
   const def = u.def;
   const wdef = WEAPON_DEFS[def.weapon];
   const dmg = def.dmg;
@@ -557,9 +588,12 @@ export function updateProjectiles(world, dt) {
   world.projectiles = world.projectiles.filter(p => !p.dead);
 }
 
+// Buildings included via enemyEntities: a building instance's def carries a
+// `radius` computed at spawn time (game/buildings.js) from its footprint, in
+// the same world-px units a unit's def.radius already is — so this hit
+// circle test needs no special-casing per entity kind.
 function resolveHit(world, p, x, y) {
-  for (const o of world.units) {
-    if (o.side === p.side || o.hp <= 0) continue;
+  for (const o of enemyEntities(world, p.side)) {
     if (Math.hypot(o.x - x, o.y - y) < o.def.radius + 10) {
       o.hp -= p.dmg;
       world.hits.push({ x, y, life: 0.25 });

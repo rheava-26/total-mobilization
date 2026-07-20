@@ -134,8 +134,163 @@ function prerenderTerrain(map) {
   }
 
   prerenderRoads(octx, map);
+  prerenderCityBlocks(octx, map);
+  prerenderScorches(octx, map);
 
   return off;
+}
+
+// DECORATIVE CITY BLOCKS (P2 city layer, CONCEPT.md Pillar 3: "what you
+// build is on the map"). Purely a render-layer treatment of tiles the map
+// already classifies as `urban` — never touches map.grid, so re-running this
+// against byte-identical map JSON produces byte-identical terrain data,
+// just a richer painted city on top. Scenery only: not entities, not
+// destructible (that's the plots/battle-phase districts, later).
+//
+// Deterministic from hash2(gx,gy,seed) exactly like the terrain texture pass
+// above, so the same map always looks the same city. Density scales with
+// proximity to the nearest named city center (map.cities carries {x,y,r} in
+// TILE coords already, same as genmap.js authored them) so Syrograd (r=10,
+// the biggest by construction) reads as visibly denser/bigger than the
+// smaller towns without any special-casing by name. A tile within a couple
+// rings of a road gets a placement-probability bump and is nudged away from
+// the road tile it's closest to, so blocks loosely "front the street"
+// instead of a uniform scatter ignoring the road network entirely.
+const ROOF_PALETTES = [
+  ['#6b4a34', '#8a6244'], // warm brick/tile
+  ['#585049', '#726a5f'], // grey slate
+  ['#75563a', '#93704c'], // sun-baked tan
+];
+
+function cityDensityAt(map, cities, gx, gy) {
+  let best = Infinity;
+  for (const c of cities) {
+    const d = Math.hypot(gx - c.x, gy - c.y) / Math.max(1, c.r || 6);
+    if (d < best) best = d;
+  }
+  return Math.max(0, 1 - best); // 1 at the very center, 0 at/beyond the city's nominal radius
+}
+
+// nearest road tile within a small ring, or null — used both to bias
+// placement probability and to nudge a block's offset away from the street
+// so it reads as "fronting" it rather than sitting on top of it.
+function nearestRoadDir(map, gx, gy, r = 2) {
+  for (let ring = 1; ring <= r; ring++) {
+    for (let dy = -ring; dy <= ring; dy++) {
+      for (let dx = -ring; dx <= ring; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== ring) continue;
+        if (map.roadAt(gx + dx, gy + dy) > 0) return { dx, dy };
+      }
+    }
+  }
+  return null;
+}
+
+function prerenderCityBlocks(octx, map) {
+  const cities = map.cities || [];
+  if (!cities.length) return;
+  const ts = map.tileSize;
+  for (let gy = 0; gy < map.height; gy++) {
+    for (let gx = 0; gx < map.width; gx++) {
+      const t = map.terrainAt(gx, gy);
+      if (!t || t.name !== 'urban') continue;
+      if (map.roadAt(gx, gy) > 0) continue; // leave road tiles clear for the road stroke
+      const density = cityDensityAt(map, cities, gx, gy);
+      const roadDir = nearestRoadDir(map, gx, gy);
+      const placeRoll = hash2(gx, gy, 201);
+      const placeChance = 0.5 + density * 0.35 + (roadDir ? 0.13 : 0);
+      if (placeRoll > placeChance) continue; // gap: courtyard/alley — keeps it from reading as a solid carpet
+
+      const cx0 = gx * ts + ts / 2, cy0 = gy * ts + ts / 2;
+
+      // small open plazas right at a city core instead of a building, for
+      // variety and so the very center doesn't read as maximally packed
+      if (density > 0.78 && hash2(gx, gy, 202) < 0.22) {
+        octx.fillStyle = 'rgba(140,128,104,0.28)';
+        octx.beginPath();
+        octx.ellipse(cx0, cy0, ts * 0.55, ts * 0.42, hash2(gx, gy, 203) * Math.PI, 0, Math.PI * 2);
+        octx.fill();
+        continue;
+      }
+
+      // nudge away from the nearest road so the block sits back off the
+      // street with a small gap, rather than centered on the tile
+      let ox = (hash2(gx, gy, 210) - 0.5) * ts * 0.3;
+      let oy = (hash2(gx, gy, 211) - 0.5) * ts * 0.3;
+      if (roadDir) {
+        ox -= roadDir.dx * ts * 0.16;
+        oy -= roadDir.dy * ts * 0.16;
+      }
+      const cx = cx0 + ox, cy = cy0 + oy;
+
+      const sizeScale = 0.85 + density * 0.35; // bigger structures near city centers
+      const w = ts * (0.42 + hash2(gx, gy, 212) * 0.26) * sizeScale;
+      const h = ts * (0.42 + hash2(gx, gy, 213) * 0.26) * sizeScale;
+      const rot = (hash2(gx, gy, 214) - 0.5) * 0.3;
+
+      const palette = ROOF_PALETTES[Math.floor(hash2(gx, gy, 215) * ROOF_PALETTES.length) % ROOF_PALETTES.length];
+      const roofRgb = lerpRgb(palette[0], palette[1], hash2(gx, gy, 216));
+
+      octx.save();
+      octx.translate(cx, cy);
+      octx.rotate(rot);
+
+      // subtle drop shadow, offset toward lower-right (a fixed light
+      // direction reads as more coherent than per-tile-random shadow angles)
+      octx.fillStyle = 'rgba(6,8,10,0.35)';
+      roundedRectPath(octx, -w / 2 + w * 0.1, -h / 2 + h * 0.14, w, h, Math.min(w, h) * 0.14);
+      octx.fill();
+
+      // body
+      octx.fillStyle = rgba(roofRgb, 0.94);
+      roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.14);
+      octx.fill();
+      octx.strokeStyle = 'rgba(20,16,12,0.4)';
+      octx.lineWidth = Math.max(0.6, ts * 0.02);
+      octx.stroke();
+
+      // soft highlight lick, painterly-consistent with the terrain blob
+      // language rather than a hard specular — reuses softBlob at low alpha
+      octx.restore();
+      softBlob(octx, cx - w * 0.18, cy - h * 0.22, Math.max(w, h) * 0.5, Math.max(w, h) * 0.36, rot,
+        [255, 240, 210], 0.10 + hash2(gx, gy, 217) * 0.08);
+    }
+  }
+}
+
+function roundedRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Building-destruction scorch decals (game/buildings.js removeBuilding),
+// baked permanently into the terrain prerender rather than drawn per-frame —
+// map.scorches persists across re-prerenders (triggered by any later
+// map.dirty(), e.g. a different building going up or down elsewhere), so an
+// old scorch mark doesn't vanish just because the bitmap got repainted.
+function prerenderScorches(octx, map) {
+  for (const s of (map.scorches || [])) {
+    const seed = (s.x * 131 + s.y * 977) | 0;
+    softBlob(octx, s.x, s.y, s.r * 1.35, s.r * 1.15, 0, [22, 19, 16], 0.55);
+    softBlob(octx, s.x, s.y, s.r * 0.7, s.r * 0.6, 0.5, [10, 9, 8], 0.6);
+    for (let i = 0; i < 6; i++) {
+      const h1 = hash2(seed, i, 301), h2 = hash2(seed, i, 302), h3 = hash2(seed, i, 303);
+      const ang = h1 * Math.PI * 2, dist = s.r * (0.3 + h2 * 0.7);
+      const rx = s.r * (0.12 + h3 * 0.14);
+      octx.save();
+      octx.translate(s.x + Math.cos(ang) * dist, s.y + Math.sin(ang) * dist);
+      octx.rotate(h1 * Math.PI);
+      octx.fillStyle = `rgba(15,13,11,${0.35 + h2 * 0.25})`;
+      octx.fillRect(-rx / 2, -rx * 0.3, rx, rx * 0.6);
+      octx.restore();
+    }
+  }
 }
 
 // Roads (P2, engine/tilemap.js's infra overlay): painted as continuous

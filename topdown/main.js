@@ -1,12 +1,14 @@
 import { loadMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
+import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement } from './game/buildings.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
+const buildbar = document.getElementById('buildbar');
 const card = createStatCard(document.getElementById('card'));
 
 const map = await loadMap('maps/theater-01.json');
@@ -18,7 +20,7 @@ renderer.cam.y = map.worldH() / 2;
 renderer.cam.zoom = Math.max(0.08, Math.min(2,
   Math.min(canvas.clientWidth / map.worldW(), canvas.clientHeight / map.worldH()) * 0.9));
 
-const world = { units: [], projectiles: [], hits: [] };
+const world = { units: [], projectiles: [], hits: [], buildings: [] };
 
 // find the nearest water tile to a world point (spiral ring search over the
 // grid) — used both to place the demo gunboat offshore and to snap naval
@@ -111,6 +113,15 @@ canvas.addEventListener('mousemove', e => {
     const dd = (u.x - wx) ** 2 + (u.y - wy) ** 2;
     if (dd < bd) { bd = dd; best = u; }
   }
+  // buildings are big — hover-test their whole footprint rect, not just a
+  // point-radius around their center, so a factory is hoverable across its
+  // whole body the way a unit is within its (much smaller) radius.
+  for (const b of world.buildings) {
+    if (b.side !== 'player' && !detects('player', b)) continue;
+    const ts = map.tileSize;
+    const x0 = b.gx * ts, y0 = b.gy * ts, x1 = x0 + b.def.footprint.w * ts, y1 = y0 + b.def.footprint.h * ts;
+    if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) best = b;
+  }
   hovered = best;
 
   // ROAD MODE: after point A is placed, re-route the preview live under the
@@ -126,6 +137,21 @@ canvas.addEventListener('mousemove', e => {
       const route = findRoadRoute(map, roadMode.a.x, roadMode.a.y, wx, wy);
       roadMode.previewPath = route ? route.waypoints : null;
     }
+  }
+
+  // B MODE: track the footprint tile under the cursor so the frame draw can
+  // paint a green/red preview — validity is the literal same isValidPlacement
+  // rule the pin-override (shift-click) enforces, so the preview never lies
+  // about what a pin would do (a planner-sited normal click may still move
+  // the building off this exact spot if it can find a better-scored one).
+  if (buildMode.active && buildMode.selectedType) {
+    const ts = map.tileSize;
+    const def = BUILDING_DEFS[buildMode.selectedType];
+    const gx = Math.round(wx / ts - def.footprint.w / 2);
+    const gy = Math.round(wy / ts - def.footprint.h / 2);
+    buildMode.previewGx = gx;
+    buildMode.previewGy = gy;
+    buildMode.previewValid = isValidPlacement(map, gx, gy, def);
   }
 });
 attachCameraControls(canvas, renderer.cam, { isEntityHit: () => !!hovered });
@@ -176,6 +202,7 @@ function issueMoveOrder(wx, wy) {
 canvas.addEventListener('contextmenu', e => {
   e.preventDefault();
   if (roadMode.active) { exitRoadMode(); return; }
+  if (buildMode.active) { exitBuildMode(); return; }
   const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
   issueMoveOrder(wx, wy);
 });
@@ -201,12 +228,67 @@ function enterRoadMode() {
   roadMode.previewGoalTile = null;
 }
 
+// ---------------------------------------------------------------------------
+// BUILD MODE (P2 city layer — CONCEPT.md Pillar 1's signature verb,
+// "delegated construction"): press B to open a minimal DOM strip of building
+// types, click a type, then click a rough location — the NATION'S PLANNERS
+// site the actual placement (game/buildings.js sitePlacement, spiral search
+// scored by buildable terrain + no overlap + a mild near-road/near-city
+// preference). Shift-click is the pressure-valve pin override: place exactly
+// at the clicked tile if valid, else reject with a brief on-screen message.
+// Construction is instant/free (no economy until P3, per CONCEPT.md).
+//
+// R and B are made mutually exclusive at the input level (entering one exits
+// the other first) so they never fight over clicks/Esc.
+const buildMode = {
+  active: false, selectedType: null,
+  previewGx: undefined, previewGy: undefined, previewValid: false,
+  message: null, messageUntil: 0,
+};
+
+for (const key of Object.keys(BUILDING_DEFS)) {
+  const btn = document.createElement('button');
+  btn.textContent = BUILDING_DEFS[key].name;
+  btn.dataset.key = key;
+  btn.addEventListener('click', () => selectBuildType(key));
+  buildbar.appendChild(btn);
+}
+
+function updateBuildBarUI() {
+  for (const btn of buildbar.children) btn.classList.toggle('selected', btn.dataset.key === buildMode.selectedType);
+}
+function selectBuildType(key) {
+  buildMode.selectedType = key;
+  buildMode.previewGx = undefined;
+  updateBuildBarUI();
+}
+function enterBuildMode() {
+  buildMode.active = true;
+  buildbar.classList.add('open');
+  updateBuildBarUI();
+}
+function exitBuildMode() {
+  buildMode.active = false;
+  buildMode.selectedType = null;
+  buildMode.previewGx = undefined;
+  buildbar.classList.remove('open');
+}
+function flashMessage(text) {
+  buildMode.message = text;
+  buildMode.messageUntil = performance.now() + 2400;
+}
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'r' || e.key === 'R') {
+    if (buildMode.active) exitBuildMode();
     if (roadMode.active) exitRoadMode(); else enterRoadMode();
-  } else if (e.key === 'Escape' && roadMode.active) {
-    exitRoadMode();
+  } else if (e.key === 'b' || e.key === 'B') {
+    if (roadMode.active) exitRoadMode();
+    if (buildMode.active) exitBuildMode(); else enterBuildMode();
+  } else if (e.key === 'Escape') {
+    if (roadMode.active) exitRoadMode();
+    if (buildMode.active) exitBuildMode();
   }
 });
 

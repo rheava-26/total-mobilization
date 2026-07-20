@@ -18,12 +18,28 @@
   #card b { font-size: 13px; letter-spacing: .5px; color: #6dffb0; display: block; margin-bottom: 6px; }
   #card .row { display: flex; justify-content: space-between; gap: 16px; color: #9fb6c4; }
   #card .row span:last-child { color: #eaf2ff; }
+  /* B-mode build strip (delegated construction, CONCEPT.md Pillar 1): a
+     minimal DOM list of building types, hidden until B is pressed. */
+  #buildbar {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+    display: none; gap: 8px; padding: 8px 10px;
+    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  }
+  #buildbar.open { display: flex; }
+  #buildbar button {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
+    padding: 7px 12px; cursor: pointer; font: 12px Consolas, monospace;
+  }
+  #buildbar button:hover { background: #1c3a5e; }
+  #buildbar button.selected { background: #2f5f9c; color: #fff; }
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
 <div id="hud"></div>
 <div id="card"></div>
+<div id="buildbar"></div>
 <script type="module" src="main.js"></script>
 </body>
 </html>

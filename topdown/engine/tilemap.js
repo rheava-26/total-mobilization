@@ -90,6 +90,23 @@ export async function loadMap(url) {
   // path cache off this so a freshly-built road invalidates stale routes.
   let version = 0;
 
+  // OBSTACLE LAYER (P2 city layer): 0 = clear, 1 = occupied by a player/enemy
+  // BUILDING footprint (game/buildings.js). Independent of `grid`/`infra` for
+  // the same reason roads are — a factory sitting on what was grass doesn't
+  // rewrite the terrain, it just adds a fact on top that ground movement
+  // (terrainSample, game/units.js) and the road planner (roadTileCost,
+  // game/pathfind.js) both consult. Buildings are never placed on roads (the
+  // construction planner's siting rules reject that), but the check is
+  // unconditional here regardless of what's under a blocked tile.
+  const blocked = new Uint8Array(width * height);
+
+  // Permanent decals baked into the prerendered terrain bitmap — currently
+  // just building-destruction scorch marks. Plain world-px circles; the
+  // renderer reads this array on every re-prerender (triggered by dirty()),
+  // so a decal survives any later full repaint instead of being a one-off
+  // draw that a subsequent version bump would erase.
+  const scorches = [];
+
   const map = {
     name: data.name || 'untitled',
     tileSize, width, height,
@@ -126,12 +143,31 @@ export async function loadMap(url) {
       if (gx < 0 || gy < 0 || gx >= width || gy >= height) return;
       infra[gy * width + gx] = v;
     },
+    // 0 = clear, 1 = a building footprint tile. Ground move classes treat
+    // this as a hard wall (terrainSample, game/units.js); air ignores it
+    // (buildings don't block the sky) same as it ignores terrain entirely.
+    blockAt(gx, gy) {
+      if (gx < 0 || gy < 0 || gx >= width || gy >= height) return 1; // off-map: treat as blocked, not free
+      return blocked[gy * width + gx];
+    },
+    setBlock(gx, gy, v = 1) {
+      if (gx < 0 || gy < 0 || gx >= width || gy >= height) return;
+      blocked[gy * width + gx] = v;
+    },
+    // Building destruction leaves a permanent scorch decal at (wx,wy) with
+    // world-px radius r. Read by the renderer's prerender pass; caller must
+    // still call dirty() to actually trigger a repaint.
+    addScorch(wx, wy, r) {
+      scorches.push({ x: wx, y: wy, r });
+    },
+    get scorches() { return scorches; },
     worldW() { return width * tileSize; },
     worldH() { return height * tileSize; },
     get version() { return version; },
-    // Later phases (fortification, craters) and road construction call this
-    // after mutating `grid`/`infra` so the renderer knows its cached
-    // prerender is stale.
+    // Later phases (fortification, craters) and road/building construction
+    // call this after mutating `grid`/`infra`/`blocked`/`scorches` so the
+    // renderer knows its cached prerender is stale, and so pathfind.js's
+    // path cache (keyed off map.version) invalidates stale routes.
     dirty() { version++; },
   };
   return map;

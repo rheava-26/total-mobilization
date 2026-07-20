@@ -52,7 +52,7 @@ No more starting with a huge IC faucet and going crazy in minute one. You start 
 - **Buildable networks**: roads, railroads, tunnels (tunnels = the underground layer's edges). Connected cities produce more; units move faster and stay supplied on the network; rail moves battalions and stockpiles in bulk.
 - **Terrain matters**: forest conceals, mountains channel and defend, rivers block, urban grinds. Terrain types carry effect lists (data-driven, same attribute philosophy as units).
 - **Fortification**: entrenchment over time, buildable forts/lines — ground forces become *impactful* because position matters.
-- **Fog of war**: you see your territory, your sensor ranges, your patrols; beyond that, intelligence *estimates* (which is also the autonomy fantasy — your intel service reports, it doesn't scry).
+- **Fog of war is a COMBAT-phase thing.** During the PREPARATION phase (building up, before the enemy arrives) fog is OFF — you can see your own theater freely while you organize it. When the COMBAT phase begins, fog turns ON (sensor ranges, patrols; beyond that, intelligence *estimates* — the autonomy fantasy: your intel reports, it doesn't scry). Also player-toggleable on/off regardless of phase.
 - **You reshape the world visibly**: what you build is on the map, changes the map, and the enemy interacts with it (they landed *on your road network* — that was a mistake they paid for).
 
 ### 4. Two Grains of Units (the recommendation on the units-vs-battalions conflict)
@@ -107,6 +107,14 @@ Not civilizational eras — **R&D programs** scaled to one region's war:
 - How smart the construction-planner AI needs to be at v1 (simple scoring — near roads/power, away from coast — is probably enough to start; it can get taste later).
 
 *Settled since first draft:* map scale (one ~100×100 km theater, ~5 urban areas — not whole-planet); build placement (delegated by default, pin override); conversion model (automatic light / directed heavy); invader need not be alien; **maps and all place names are procedurally generated per skirmish run** (fresh seed every game so each war has its own geography and its own names — the current fixed-seed island is a dev fixture, not canon; authored maps are reserved for scenarios that need specific geography).
+
+**Production & supply chain (settled — the concrete P4 model):**
+- **You direct WHAT, the nation makes it automatically.** You pick a production *category* (tanks / warships / aircraft / artillery / … — categories are data, "tanks" is just an example) and build the matching production facility; it then produces that unit class on its own, no click-to-queue micro. Directed-what, automatic-how — same shape as mobilization and construction.
+- **Every production category has a RECIPE (data): input RESOURCES + prerequisite BUILDINGS.** (Illustrative only, not canon: a tank line might need chromium + tungsten + steel + an ammunition plant; a shipyard would need something else.) A facility only produces while its recipe is satisfied.
+- **Resources come from a SUPPLY CHAIN.** Named resource DEPOSITS sit on the map in resource-rich areas (procedural). You build MINES/extractors on them to feed per-resource stockpiles, which flow (over the road/rail network) to your factories. Missing a resource you can also **import it in exchange for INFLUENCE + a bit of IC** — a pricier stopgap, not a replacement for owning the deposit.
+- **The loop the player actually runs:** war effort demands heavy industry → pick a category → see its recipe → build the factory (idle, unfed) → build the mines to supply it → production comes online and mass-produces → those forces win the engagement. This chain is also the game's **basic tutorial/demonstration**.
+
+**Phases (settled):** a run has a **PREPARATION** phase (build-up, fog off) and a **COMBAT** phase (fog on, the enemy arrives). The tutorial/demonstration walks the player from prep through the production chain into a first combat encounter.
 
 ---
 

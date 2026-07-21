@@ -801,12 +801,10 @@ graph TB
     IMU --> AVIONICS
     FPA --> AVIONICS
 
-    %% Mechanical subsystems use components & materials
-    ENGINE --> MECHANICAL["✓ Jet engine done"]
-    WING --> MECHANICAL
-    FUSE --> MECHANICAL
-    GEAR --> MECHANICAL
-    HYD --> MECHANICAL
+    %% Mechanical subsystems feed final subsystem install
+    ENGINE --> INSTALL
+    GEAR --> INSTALL
+    HYD --> INSTALL
 
     %% Assembly chain
     WING --> AIRFRAME
@@ -882,8 +880,8 @@ graph TB
     TIO --> TI
     CUO --> CU
     REO --> ND
-    OIL --> OIL["Diesel fuel"]
-    SIL --> SIL["Electronics"]
+    OIL --> ENGINE
+    SIL --> ELECTRONICS
 
     %% Smelted to Armor Materials
     STEEL --> ARMORSTEEL
@@ -962,7 +960,7 @@ graph TB
     SIL --> GANMMIC
     GAN --> GANMMIC
     CUO --> PCBMFG
-    TIO --> MECH
+    TIO --> ANTPOS
     REO --> TRMODULE
 
     %% Fab to Radar Components
@@ -1007,7 +1005,7 @@ graph TB
         MOTOR["Solid rocket motor<br/>(casing + propellant)"]
     end
 
-    subgraph WARHEAD["Warhead & Fusing"]
+    subgraph WARHEADSG["Warhead & Fusing"]
         WARHEAD["Warhead casing<br/>(steel)"]
         EXPFILL["Explosive fill<br/>(TNT/RDX cast)"]
         FUSE["Fuzing electronics<br/>(accelerometer IC)"]
@@ -1049,15 +1047,14 @@ graph TB
     AFRAME --> FUSEASM
     FINS --> FUSEASM
     NOZZLE --> MOTOR
-    WARHEAD --> WARHEAD
     EXPFILL --> WARHEAD
     FUSE --> WARHEAD
 
     %% Payload & flight systems
-    IMU --> GUIDANCE
-    FPASEEKER --> GUIDANCE
-    GPSOS --> GUIDANCE
-    FLIGHTCTRL --> GUIDANCE
+    IMU --> INTEGRATION
+    FPASEEKER --> INTEGRATION
+    GPSOS --> INTEGRATION
+    FLIGHTCTRL --> INTEGRATION
     WARHEAD --> PAYLOADASM
     MOTOR --> MOTORINT
 
@@ -1065,7 +1062,6 @@ graph TB
     FUSEASM --> INTEGRATION
     PAYLOADASM --> INTEGRATION
     MOTORINT --> INTEGRATION
-    GUIDANCE --> INTEGRATION
     INTEGRATION --> TEST
     TEST --> MISSILE
 ```

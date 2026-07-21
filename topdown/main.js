@@ -15,6 +15,7 @@ import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 import { PHASES, createPhaseState, applyPhaseFog, beginCombat } from './game/phase.js';
+import { showMainMenu, randomSeed, MENU_COPY, SCENARIO_DEFS } from './game/menu.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -59,12 +60,39 @@ const card = createStatCard(document.getElementById('card'));
 //   ?seed=1337                 — reproduce a specific GENERATED run.
 // With neither param, a fresh random seed is drawn every load so each
 // skirmish gets its own geography and its own names.
-function randomSeed() {
-  return Math.floor(Math.random() * 0xFFFFFFFF) >>> 0;
-}
+//
+// MAIN MENU (docs/CONCEPT.md "Design directions raised" — "Main-menu
+// map/scenario picker": game/menu.js owns the scenario data + DOM overlay).
+// The picker is the DEFAULT front door onto the exact map-boot code below —
+// it is shown whenever there's no deep link, resolves a scenario's
+// {seed|mapUrl, difficulty}, and this block then loads that map through the
+// SAME loadGeneratedMap/loadMap calls the deep-link branch below already
+// uses (no duplicated map-loading logic). ?seed=/?map= SKIP the menu
+// entirely and boot exactly as before this menu existed — deep links are
+// the dev/share path and must not regress. `scenarioDifficulty` defaults to
+// 1.0 (a no-op multiplier) on that skip branch, so spawnEnemyLandingForce()
+// below and the starting-economy nudge produce byte-identical numbers to
+// pre-menu behavior. ?menu forces the picker open even over a deep link (a
+// convenience for previewing the menu without editing the URL) — picking a
+// scenario there overrides the deep-link params for that load.
 const urlParams = new URLSearchParams(location.search);
+const hasDeepLink = urlParams.has('seed') || urlParams.has('map');
+let scenarioDifficulty = 1.0; // baseline enemy-force multiplier; see spawnEnemyLandingForce()
+let scenarioId = null;
 let map;
-if (urlParams.has('map')) {
+if (urlParams.has('menu') || !hasDeepLink) {
+  const picked = await showMainMenu();
+  scenarioDifficulty = picked.difficulty;
+  scenarioId = picked.scenarioId;
+  if (picked.mapUrl) {
+    map = await loadMap(picked.mapUrl);
+  } else {
+    map = await loadGeneratedMap(picked.seed);
+    console.log(`[mapgen] "${map.name}" (seed ${map.seed}) — ${map.genMs.toFixed(1)}ms, `
+      + `${map.genStats.attempts} attempt(s), ${map.genStats.roadTileCount} road tiles — `
+      + `scenario "${scenarioId}" (difficulty x${scenarioDifficulty})`);
+  }
+} else if (urlParams.has('map')) {
   map = await loadMap(urlParams.get('map'));
 } else {
   const seedParam = urlParams.get('seed');
@@ -91,6 +119,18 @@ const world = { units: [], projectiles: [], hits: [], buildings: [] };
 // their own from here. See game/economy.js's ECONOMY_TUNABLES for every
 // tunable number (designer's to set).
 const economy = createEconomy();
+// SCENARIO DIFFICULTY -> STARTING ECONOMY (secondary knob per CONCEPT.md's
+// menu bullet: "Difficulty scales concrete knobs (enemy landing size,
+// starting stockpile, etc.)"). The PRIMARY knob is the enemy landing force
+// (spawnEnemyLandingForce below); this is a small, clamped nudge so "Easy"
+// also opens with a slightly fatter civilian cushion and "Brutal" a
+// slightly leaner one. scenarioDifficulty defaults to 1.0 on every deep-
+// link boot (no menu shown) -> mult is exactly 1 -> Math.round(x*1) === x,
+// so ?seed=/?map= starting IC/manpower stay byte-identical to before this
+// menu existed.
+const startingEcoMult = Math.max(0.6, Math.min(1.3, 1 + (1 - scenarioDifficulty) * 0.4));
+economy.ic = Math.round(economy.ic * startingEcoMult);
+economy.manpower = Math.round(economy.manpower * startingEcoMult);
 
 // GAME PHASES (P4 — game/phase.js; CONCEPT.md's settled "Phases" line). A
 // fresh game defaults to PREP, which the reconciliation call below drives
@@ -254,13 +294,30 @@ for (let i = 0; i < 2; i++) spawnGroundUnit('tank', pBase.x + 20 + i * 26, pBase
 // enemySpawn/nearestBeach); every ground spawn goes through spawnGroundUnit
 // so it lands on legal terrain regardless of that run's exact beach/city
 // shape.
+//
+// DIFFICULTY -> LANDING FORCE SIZE (the PRIMARY knob per the menu-picker
+// task spec). ENEMY_LANDING_BASE holds the baseline (difficulty x1.0, i.e.
+// exactly the counts this function used before scenarioDifficulty existed)
+// per-unit-type count; scaledCount() multiplies by the chosen scenario's
+// difficulty and rounds, floored at 1 so even "Easy" still fields one of
+// every type (SAM/AA/fighter targeting stays exercised on every difficulty,
+// per the comment above) while "Brutal" fields visibly more of each. A
+// deep-link boot (?seed=/?map=, no menu shown) leaves scenarioDifficulty at
+// its 1.0 default, so scaledCount(base, 1) === base for every entry here —
+// identical spawn counts to before this menu existed.
+const ENEMY_LANDING_BASE = { tank: 3, infantry: 2, militia: 2, aa: 1, fighter: 1, strikejet: 1 };
+function scaledCount(key) {
+  return Math.max(1, Math.round(ENEMY_LANDING_BASE[key] * scenarioDifficulty));
+}
 function spawnEnemyLandingForce() {
-  for (let i = 0; i < 3; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
-  for (let i = 0; i < 2; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
-  for (let i = 0; i < 2; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
-  spawnGroundUnit('aa', eBase.x + 20, eBase.y - 30, 'enemy');
-  spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
-  spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
+  const nTank = scaledCount('tank'), nInf = scaledCount('infantry'), nMil = scaledCount('militia');
+  const nAa = scaledCount('aa'), nFighter = scaledCount('fighter'), nStrike = scaledCount('strikejet');
+  for (let i = 0; i < nTank; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
+  for (let i = 0; i < nInf; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
+  for (let i = 0; i < nMil; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
+  for (let i = 0; i < nAa; i++) spawnGroundUnit('aa', eBase.x + 20 + i * 24, eBase.y - 30, 'enemy');
+  for (let i = 0; i < nFighter; i++) spawnUnit(world, 'fighter', eBase.x - 20 - i * 30, eBase.y - 100, 'enemy');
+  for (let i = 0; i < nStrike; i++) spawnUnit(world, 'strikejet', eBase.x + 35 + i * 30, eBase.y - 115, 'enemy');
 
   // FOG OF WAR: nearestEnemy's seek is gated on detection (game/fog.js), and
   // pBase/eBase typically sit well beyond any unit's vision — nothing would
@@ -960,6 +1017,14 @@ window.__debug = {
   // COPY so a test (or the designer) can find every placeholder string from
   // one place without grepping the file.
   spawnEnemyLandingForce, COPY,
+  // MAIN MENU / SCENARIO hooks (game/menu.js), for headless verification: a
+  // test can read which scenario was picked (or confirm the deep-link
+  // default of null/1.0 when no menu was shown), and reach SCENARIO_DEFS/
+  // MENU_COPY without re-importing the module. ENEMY_LANDING_BASE +
+  // scaledCount let a test compute the expected spawn count for the active
+  // scenarioDifficulty without recounting world.units by hand.
+  scenario: { id: scenarioId, difficulty: scenarioDifficulty, startingEcoMult },
+  SCENARIO_DEFS, MENU_COPY, ENEMY_LANDING_BASE, scaledCount,
   guidance: {
     panel: guidancePanel,
     get visible() { return !guidancePanel.classList.contains('hidden'); },

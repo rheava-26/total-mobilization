@@ -118,10 +118,58 @@
      deliberately looks like a checked-off suggestion, not an unlocked step. */
   #guidancePanel li.done { color: #6dffb0; text-decoration: line-through; opacity: .7; }
   #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; line-height: 1.4; }
+  /* MAIN MENU (scenario picker — CONCEPT.md "Design directions raised" /
+     "Main-menu map/scenario picker" bullet; game/menu.js owns the content +
+     click wiring). Shown BEFORE the game boots by default, covering the
+     canvas full-screen so nothing underneath is interactive until a pick is
+     made — main.js's game-init code (renderer, spawns, the frame loop)
+     doesn't run until showMainMenu()'s promise resolves. Hidden by default
+     (no `open` class); a deep link (?seed=/?map=) skips it entirely, per
+     the task's "preserve deep-linking" requirement. z-index sits above
+     every other fixed panel in this file since it must occlude the whole
+     game, not just the canvas underneath it. */
+  #mainMenu {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #0d1826 0%, #05080e 100%);
+  }
+  #mainMenu.open { display: flex; }
+  #mainMenuPanel {
+    width: min(560px, 92vw); max-height: 86vh; overflow-y: auto;
+    padding: 28px 30px; background: rgba(8,14,26,.92); border: 1px solid #2f5f9c;
+    border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    color: #eaf2ff; font: 13px Consolas, monospace;
+  }
+  #menuTitle { margin: 0 0 4px; font-size: 22px; letter-spacing: 1px; color: #6dffb0; }
+  #menuSubtitle { margin: 0 0 20px; color: #9fb6c4; }
+  #menuScenarioList { display: flex; flex-direction: column; gap: 10px; }
+  .menuScenarioRow {
+    display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+    width: 100%; text-align: left; cursor: pointer; padding: 10px 14px;
+    background: #12233a; border: 1px solid #2f5f9c; border-radius: 7px;
+    color: #eaf2ff; font: 13px Consolas, monospace;
+  }
+  .menuScenarioRow:hover { background: #1c3a5e; border-color: #5fd0ff; }
+  .menuScenarioRow .msLabel { font-weight: bold; color: #eaf2ff; }
+  .menuScenarioRow .msDiff { font-size: 11px; color: #ffcf5c; }
+  .menuScenarioRow .msBlurb { font-size: 11px; color: #9fb6c4; }
+  #menuHint { margin-top: 16px; padding-top: 12px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; }
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
+<!-- MAIN MENU overlay — see the #mainMenu CSS comment above. Content
+     (title/subtitle/hint/scenario rows) is filled in and the click handling
+     wired by game/menu.js's showMainMenu(), same "static skeleton in HTML,
+     content+behavior from JS" split #guidancePanel below already uses. -->
+<div id="mainMenu">
+  <div id="mainMenuPanel">
+    <h1 id="menuTitle"></h1>
+    <p id="menuSubtitle"></p>
+    <div id="menuScenarioList"></div>
+    <p id="menuHint"></p>
+  </div>
+</div>
 <div id="hud"></div>
 <div id="phaseHud">
   <span id="phaseLabel">PREPARATION</span>

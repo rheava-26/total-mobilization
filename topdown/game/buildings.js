@@ -114,6 +114,26 @@ export const BUILDING_DEFS = {
   },
 
   // ---------------------------------------------------------------------
+  // RESEARCH BUREAU (P4 follow-up — game/research.js, CONCEPT.md's settled
+  // "Tech / research model" paragraph). The UNIVERSAL entry gate every
+  // advanced tech requires on top of its own category-specific facility
+  // (game/research.js TECH_DEFS' prerequisiteBuildings always lists this
+  // first) — "build a lab before you can research anything" is the clearest
+  // possible first tech step, and it means a fresh player who rushes
+  // straight for e.g. a Drone Works still can't skip the R&D step by
+  // accident; they need this too. Deliberately cheap/fast relative to the
+  // production facilities below (this unlocks nothing by itself — it only
+  // OPENS the possibility of researching — so it shouldn't compete on cost
+  // with the heavy industry it gates) but not free, so it's still a real
+  // build-order decision. No econ block: unlike factory/barracks this
+  // building's payoff is entirely through game/research.js, not the
+  // IC/manpower/mobilization pipeline.
+  researchBureau: {
+    name: 'Research Bureau', footprint: { w: 2, h: 2 }, hp: 170, vision: 100,
+    cost: { ic: 120, manpower: 5 }, buildTime: 18,
+  },
+
+  // ---------------------------------------------------------------------
   // PRODUCTION FACILITIES (P4 — CONCEPT.md's settled "Production & supply
   // chain" ledger). Pure structural data, same as every other building
   // here — footprint/hp/vision/cost/buildTime, sited and constructed

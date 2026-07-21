@@ -19,6 +19,15 @@
 import { BUILDING_DEFS } from './buildings.js';
 import { RESOURCE_DEFS } from './resources.js';
 import { UNIT_DEFS, MOVE_CLASSES, terrainSample, spawnUnit } from './units.js';
+// RESEARCH GATE (P4 follow-up — game/research.js, CONCEPT.md's settled "Tech
+// / research model" paragraph): "production is gated on a unit's tech being
+// unlocked." isCategoryUnlocked is the ONLY thing this file borrows from
+// research.js — a single yes/no query per facility per tick, read generically
+// off the category id exactly like every other gate below (prerequisite
+// buildings, resources, IC, manpower). research.js does not import anything
+// from this file, so there's no cycle: production.js depends on research.js,
+// never the other way around.
+import { isCategoryUnlocked } from './research.js';
 
 // ---------------------------------------------------------------------------
 // PRODUCTION_DEFS — DESIGNER'S TO TUNE. One entry per producible category.
@@ -370,6 +379,14 @@ function spawnProducedUnit(world, map, b, prod) {
 // MAIN TICK — called once per frame from the game loop (main.js), same
 // pattern as updateEconomy: zero player input required once a facility is
 // complete and fed. For every complete player facility this frame:
+//   0. RESEARCH GATE (P4 follow-up — game/research.js): if this category's
+//      tech isn't unlocked yet, stall with 'tech not researched' before even
+//      looking at buildings/resources — a locked category has nothing to
+//      report about its supply chain until the tech exists at all. A
+//      baseline category (no TECH_DEFS entry — tanks/aircraft/warships/
+//      artillery) always reads unlocked, so this step is a no-op for them,
+//      exactly matching CONCEPT.md's "baseline conventional gear is
+//      pre-unlocked."
 //   1. Check prerequisite buildings (recipe.prerequisiteBuildings) — first
 //      missing one stalls production with a legible reason.
 //   2. Compute what ONE TICK's worth of the recipe costs (dt / buildTimePerUnit
@@ -389,7 +406,7 @@ function spawnProducedUnit(world, map, b, prod) {
 // rather than a smoothed rate: the brief calls for a facility that "stalls
 // the instant an input runs out, resuming when it returns" — a smoothing
 // window would blur exactly that observable behavior.
-export function updateProduction(world, economy, map, dt) {
+export function updateProduction(world, economy, map, dt, researchState) {
   for (const b of world.buildings) {
     if (b.side !== 'player' || b.status !== 'complete') continue;
     const category = categoryForFacility(b.key);
@@ -403,6 +420,16 @@ export function updateProduction(world, economy, map, dt) {
       b.outputIdx = 0;
     }
     b.prodCategory = category;
+
+    // STEP 0 — research gate (see the MAIN TICK comment above). Checked
+    // first, ahead of every other stall reason: a locked category's facility
+    // has nothing more specific to report ("needs Chromium" would be
+    // misleading when the real blocker is that the tech doesn't exist yet).
+    if (!isCategoryUnlocked(researchState, category)) {
+      b.prodState = 'stalled';
+      b.prodStallReason = 'tech not researched';
+      continue;
+    }
 
     const missingPrereq = (prod.recipe.prerequisiteBuildings || [])
       .find(key => !hasCompleteBuilding(world, key));

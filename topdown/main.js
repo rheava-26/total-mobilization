@@ -11,6 +11,10 @@ import {
   PRODUCTION_DEFS, updateProduction, categoryForFacility,
   IMPORT_TUNABLES, importCost, canAffordImport, importResource,
 } from './game/production.js';
+import {
+  TECH_DEFS, RESEARCH_COPY, createResearchState, updateResearch, techStatus,
+  canAffordResearch, startResearch, isCategoryUnlocked,
+} from './game/research.js';
 import { createStatCard } from './game/statcard.js';
 import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
@@ -131,6 +135,15 @@ const economy = createEconomy();
 const startingEcoMult = Math.max(0.6, Math.min(1.3, 1 + (1 - scenarioDifficulty) * 0.4));
 economy.ic = Math.round(economy.ic * startingEcoMult);
 economy.manpower = Math.round(economy.manpower * startingEcoMult);
+
+// RESEARCH STATE (P4 follow-up — game/research.js, CONCEPT.md's settled
+// "Tech / research model" paragraph). Created once at load, ticked every
+// frame in loop() below alongside the economy/production ticks — see the
+// RESEARCH PANEL section further down for the UI that lets the player start
+// a project, and game/production.js's updateProduction for the consuming
+// side of the gate (a locked category's facility stalls with 'tech not
+// researched' until this state says otherwise).
+const researchState = createResearchState();
 
 // GAME PHASES (P4 — game/phase.js; CONCEPT.md's settled "Phases" line). A
 // fresh game defaults to PREP, which the reconciliation call below drives
@@ -669,6 +682,101 @@ function enterImportPanel() { importPanel.classList.add('open'); }
 function exitImportPanel() { importPanel.classList.remove('open'); }
 
 // ---------------------------------------------------------------------------
+// RESEARCH PANEL (P4 follow-up — game/research.js, CONCEPT.md's settled
+// "Tech / research model" paragraph). Press T to open; lists every gated
+// tech (game/research.js TECH_DEFS) with its full gate (prerequisite
+// buildings/techs + IC + resource cost + time), what production category it
+// unlocks, and its current state (locked / researchable / in-progress /
+// unlocked). Rows are built ONCE below (static structure — name/blurb/gate
+// text never change at runtime); updateTechPanelUI() then refreshes only the
+// dynamic bits (status text + Start button visibility/afford state) every
+// frame, same split main.js already uses for the econ HUD vs. the one-time
+// buildbar/prodCatRow/importResRow button construction above.
+const techPanel = document.getElementById('techPanel');
+const techPanelTitleEl = document.getElementById('techPanelTitle');
+const techListEl = document.getElementById('techList');
+techPanelTitleEl.textContent = RESEARCH_COPY.PANEL_TITLE;
+
+function resourceAmountsText(costObj) {
+  return Object.entries(costObj || {})
+    .map(([rid, amt]) => `${RESOURCE_DEFS[rid] ? RESOURCE_DEFS[rid].name : rid} ${amt}`)
+    .join(', ') || 'none';
+}
+function techGateText(techId) {
+  const def = TECH_DEFS[techId];
+  const buildings = (def.prerequisiteBuildings || []).map(k => BUILDING_DEFS[k].name).join(', ') || 'none';
+  const techs = (def.prerequisiteTechs || []).length
+    ? ` + tech: ${def.prerequisiteTechs.map(t => TECH_DEFS[t].name).join(', ')}`
+    : '';
+  return `Requires: ${buildings}${techs}\n`
+    + `Cost: ${def.icCost} IC + ${resourceAmountsText(def.resourceCost)}   Time: ${def.researchTime}s`;
+}
+const techRows = {};
+for (const techId of Object.keys(TECH_DEFS)) {
+  const def = TECH_DEFS[techId];
+  const row = document.createElement('div');
+  row.className = 'techRow';
+  const catName = PRODUCTION_DEFS[def.unlocksCategory] ? PRODUCTION_DEFS[def.unlocksCategory].name : def.unlocksCategory;
+  const header = document.createElement('div');
+  header.className = 'techHeader';
+  header.innerHTML = `<b>${def.name}</b> — unlocks: ${catName}`;
+  const blurb = document.createElement('div');
+  blurb.className = 'techBlurb';
+  blurb.textContent = def.blurb;
+  const gate = document.createElement('div');
+  gate.className = 'techGate';
+  gate.textContent = techGateText(techId);
+  const status = document.createElement('div');
+  status.className = 'techStatus';
+  const btn = document.createElement('button');
+  btn.textContent = RESEARCH_COPY.START_BUTTON;
+  btn.addEventListener('click', () => {
+    const ok = startResearch(world, economy, researchState, techId);
+    flashMessage(ok ? `Research started: ${def.name}.` : `Can't start ${def.name} yet.`);
+  });
+  row.append(header, blurb, gate, status, btn);
+  techListEl.appendChild(row);
+  techRows[techId] = { status, btn };
+}
+// Live status refresh — cheap enough (six rows) to call unconditionally
+// every frame from loop() below, same spirit as updateGuidanceProgress's
+// own "cheap enough to run unconditionally" comment. A locked row shows
+// exactly what's still missing (buildings AND/OR techs); a researchable row
+// shows the Start button, disabled (not hidden) when the gate is met but
+// the player can't currently afford it — so the player can see the tech is
+// within reach without it vanishing from the list.
+function updateTechPanelUI() {
+  for (const techId of Object.keys(TECH_DEFS)) {
+    const st = techStatus(world, researchState, techId);
+    const { status, btn } = techRows[techId];
+    if (st.state === 'unlocked') {
+      status.textContent = RESEARCH_COPY.UNLOCKED_LABEL;
+      btn.style.display = 'none';
+    } else if (st.state === 'active') {
+      status.textContent = `${RESEARCH_COPY.ACTIVE_PREFIX}${Math.round(st.progress * 100)}%`;
+      btn.style.display = 'none';
+    } else if (st.state === 'busy') {
+      status.textContent = RESEARCH_COPY.BUSY_HINT;
+      btn.style.display = 'none';
+    } else if (st.state === 'locked') {
+      const missing = [
+        ...st.missingBuildings.map(k => BUILDING_DEFS[k].name),
+        ...st.missingTechs.map(t => TECH_DEFS[t].name),
+      ].join(', ');
+      status.textContent = `${RESEARCH_COPY.LOCKED_PREFIX}${missing}`;
+      btn.style.display = 'none';
+    } else { // 'researchable'
+      const afford = canAffordResearch(economy, techId);
+      status.textContent = afford ? '' : RESEARCH_COPY.CANT_AFFORD_HINT;
+      btn.style.display = '';
+      btn.disabled = !afford;
+    }
+  }
+}
+function enterTechPanel() { techPanel.classList.add('open'); }
+function exitTechPanel() { techPanel.classList.remove('open'); }
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL (CONCEPT.md's settled "First-run / tutorial is OPEN, not
 // dictated" paragraph — read it before touching this block). This is
 // EXPLICITLY NOT a scripted walkthrough: it never disables a button, never
@@ -731,6 +839,11 @@ addEventListener('keydown', e => {
     if (prodPanel.classList.contains('open')) exitProdPanel(); else enterProdPanel();
   } else if (e.key === 'i' || e.key === 'I') {
     if (importPanel.classList.contains('open')) exitImportPanel(); else enterImportPanel();
+  } else if (e.key === 't' || e.key === 'T') {
+    // RESEARCH PANEL TOGGLE (P4 follow-up) — same independent-toggle shape
+    // as the I key above (importPanel): doesn't close/exclude any other
+    // panel, just shows/hides itself.
+    if (techPanel.classList.contains('open')) exitTechPanel(); else enterTechPanel();
   } else if (e.key === 'h' || e.key === 'H') {
     // GUIDANCE PANEL TOGGLE — dismiss/restore only, never gates anything
     // (see the GUIDANCE PANEL section above for the full rationale).
@@ -753,6 +866,7 @@ addEventListener('keydown', e => {
     if (buildMode.active) exitBuildMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
     if (importPanel.classList.contains('open')) exitImportPanel();
+    if (techPanel.classList.contains('open')) exitTechPanel();
   }
 });
 
@@ -985,6 +1099,18 @@ window.__debug = {
   PRODUCTION_DEFS, categoryForFacility, IMPORT_TUNABLES, importCost, canAffordImport, importResource,
   prodPanel, importPanel, selectCategory, enterProdPanel, exitProdPanel, enterImportPanel, exitImportPanel,
   get selectedCategory() { return selectedCategory; },
+  // RESEARCH hooks (P4 follow-up — game/research.js), for headless
+  // verification: TECH_DEFS/RESEARCH_COPY expose the data tables;
+  // researchState is the live object the real loop mutates every frame
+  // (read .completed/.active directly, or mutate it for a test shortcut);
+  // techStatus/canAffordResearch/startResearch/isCategoryUnlocked let a test
+  // drive/query the gate directly without staging a click; updateResearch
+  // lets a test advance JUST the research timer (fastForward above already
+  // includes it, this is for isolated timing tests); techPanel/enter/exit
+  // expose the panel's open state the same way prodPanel/importPanel do.
+  TECH_DEFS, RESEARCH_COPY, researchState, techStatus, canAffordResearch,
+  startResearch, isCategoryUnlocked, updateResearch,
+  techPanel, enterTechPanel, exitTechPanel,
   // GAME PHASES (P4 — game/phase.js), for headless verification: phaseState
   // is the live object (read .phase directly); PHASES is the enum;
   // beginCombat drives the exact same one-way transition the C key/button
@@ -1004,7 +1130,8 @@ window.__debug = {
       const step = Math.min(stepDt, seconds - t);
       updateBuildings(world, step, map);
       updateEconomy(world, economy, map, step);
-      updateProduction(world, economy, map, step);
+      updateResearch(researchState, step);
+      updateProduction(world, economy, map, step, researchState);
       t += step;
     }
   },
@@ -1051,12 +1178,21 @@ function loop(now) {
   // updateBuildings so a building that JUST completed construction this
   // frame already counts toward econ effects this same tick.
   updateEconomy(world, economy, map, dt);
+  // P4 follow-up: research (game/research.js) ticks right after the economy
+  // (a project's IC/resource cost was already charged up front at
+  // startResearch time, so this doesn't need to read this frame's pools —
+  // it only advances the active project's timer) and BEFORE production, so
+  // a tech that completes THIS frame already reads as unlocked when
+  // updateProduction checks it a few lines down — same "just-finished-this-
+  // frame already counts" ordering rule updateBuildings/updateEconomy/
+  // updateProduction already follow relative to each other.
+  updateResearch(researchState, dt);
   // P4: production facilities (game/production.js) run AFTER the economy
   // tick so they read this frame's freshly-accrued resource/IC/manpower
   // pools, same ordering rationale as updateEconomy running after
   // updateBuildings (a facility that just finished construction this frame
   // already counts).
-  updateProduction(world, economy, map, dt);
+  updateProduction(world, economy, map, dt, researchState);
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
@@ -1116,6 +1252,11 @@ function loop(now) {
   // update when the panel is dismissed (it's just hidden via CSS, not torn
   // down), so re-showing it later still reflects current progress.
   updateGuidanceProgress();
+
+  // RESEARCH PANEL live refresh (see the RESEARCH PANEL section above) —
+  // cheap (six static rows, text/visibility updates only), so unconditional
+  // every frame same as updateGuidanceProgress just above.
+  updateTechPanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

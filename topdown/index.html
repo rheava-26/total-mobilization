@@ -64,6 +64,38 @@
   #prodPanel button.selected { background: #2f5f9c; color: #fff; }
   #recipeInfo { white-space: pre-line; line-height: 1.5; color: #bfe9ff; }
   #recipeInfo b { color: #6dffb0; }
+  /* RESEARCH PANEL (P4 follow-up — game/research.js): same panel chrome as
+     #prodPanel/#importPanel (matching the task's "styled to match" ask),
+     positioned at the SAME top-left anchor — those two panels already share
+     one spot and are independently toggled (P/I don't exclude each other),
+     so T joining that same spot is consistent with the existing convention
+     rather than a special case. Taller/wider than the other two since it
+     needs to list up to six techs' full gate text at once, not one recipe
+     or one resource-button row. */
+  #techPanel {
+    position: fixed; left: 16px; top: 90px; width: 360px; max-height: 76vh;
+    overflow-y: auto;
+    display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
+    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5); color: #eaf2ff; font: 12px Consolas, monospace;
+  }
+  #techPanel.open { display: flex; }
+  #techPanel > b { color: #6dffb0; }
+  .techRow {
+    display: flex; flex-direction: column; gap: 3px; padding: 8px 9px;
+    background: #0e1c2f; border: 1px solid #234260; border-radius: 6px;
+  }
+  .techHeader { color: #eaf2ff; }
+  .techHeader b { color: #6dffb0; }
+  .techBlurb { color: #9fb6c4; font-size: 11px; }
+  .techGate { color: #bfe9ff; font-size: 11px; white-space: pre-line; line-height: 1.4; }
+  .techStatus { color: #ffcf5c; font-size: 11px; min-height: 14px; }
+  .techRow button {
+    align-self: flex-start; background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff;
+    border-radius: 5px; padding: 5px 10px; cursor: pointer; font: 12px Consolas, monospace;
+  }
+  .techRow button:hover:not(:disabled) { background: #1c3a5e; }
+  .techRow button:disabled { opacity: .45; cursor: not-allowed; }
   /* PHASE HUD (prep/combat, CONCEPT.md's settled "Phases" line): a small
      pill top-center so the current phase reads at a glance without hunting
      the corner panels — blue for prep, red once combat begins. */
@@ -188,6 +220,14 @@
 <div id="importPanel">
   <b>Import resources — spend influence + a bit of IC (I)</b>
   <div class="resRow" id="importResRow"></div>
+</div>
+<!-- RESEARCH PANEL — P4 follow-up (game/research.js), styled to match
+     #prodPanel/#importPanel above. Title text comes from RESEARCH_COPY
+     (game/research.js); the tech rows themselves are built entirely in
+     main.js's RESEARCH PANEL section (one .techRow per TECH_DEFS entry). -->
+<div id="techPanel">
+  <b id="techPanelTitle"></b>
+  <div id="techList"></div>
 </div>
 <!-- GUIDANCE PANEL — open by default, dismissable (× or H), never gates
      anything (see main.js's GUIDANCE PANEL section for the full rationale

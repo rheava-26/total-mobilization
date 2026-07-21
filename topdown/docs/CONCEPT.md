@@ -116,9 +116,14 @@ Not civilizational eras — **R&D programs** scaled to one region's war:
 
 **Phases (settled):** a run has a **PREPARATION** phase (build-up, fog off) and a **COMBAT** phase (fog on, the enemy arrives). The tutorial/demonstration walks the player from prep through the production chain into a first combat encounter.
 
+**First-run / tutorial is OPEN, not dictated (settled):** the first playthrough is *not* a linear scripted walkthrough that tells the player exactly what to click next. It's a normal run with the full set of options available from the start — every building, every production category, import, phases — and a **dismissable, optional** guidance layer that *offers* the intended path (heavy industry → pick a category → build the factory → supply it with mines → win the first encounter) without gating anything. The player is free to ignore it and explore. Games that dictate every step are annoying; this one surfaces the path and lets you off the rails. (Prompt/lore text for that guidance layer is authored later by the designer — the framework ships with clearly-marked placeholders.)
+
+**Player agency = a BUDGET you spend to direct, not hands you build with (settled direction):** the player should never be placing every brick by hand, but should also never be a passive spectator. The reconciliation: you get a **budget (industrial capacity / IC)** and spend it to *force or redirect* what the autonomous nation does — bias construction, prioritize a category, override a placement — rather than hand-authoring each unit and building. The existing IC-costed delegated construction and directed-what production already embody the first slice of this; a fuller "spend budget to push the nation's behavior" subsystem is a later design pass, not part of the current framework.
+
 ---
 
 ## Art-Direction Notes (queued for the graphics-overhaul pass — designer-flagged, do not lose)
 - **Roads must read as part of the landscape, not an overlay decal.** They already render inside the same prerendered painterly canvas as terrain, but the strokes still sit visually ON the land rather than being OF it. Wanted: feathered/irregular edges, terrain color bleeding into road margins, wear/color variation along the run — a road that looks worn into the ground. (Data-wise roads stay a separate infra layer; this is purely about the paint.)
 - **Extreme close-zoom checkering**: the per-tile jitter (especially on water) reads as a faint checkerboard at max zoom. Fine at strategic zoom; needs a noise-scale rework up close.
 - Unit graphics: markers are intentional for now; per-type silhouettes deferred until the designer directs the pass.
+- **Cities should be prettier.** The city-block rendering is functional but plain; the designer wants urban areas to read as richer, more characterful places in the graphics pass (deferred with the rest of the overhaul — flagged so it isn't lost).

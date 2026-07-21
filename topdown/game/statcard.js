@@ -45,15 +45,23 @@ function buildingCardHtml(u, d) {
 }
 
 function unitCardHtml(u, d) {
-  return `<b>${d.name}</b>
+  let html = `<b>${d.name}</b>
     <div class="row"><span>HP</span><span>${Math.max(0, Math.round(u.hp))} / ${d.maxHp || d.hp}</span></div>
     <div class="row"><span>Armor</span><span>${d.armor}</span></div>
     <div class="row"><span>Speed</span><span>${d.speed}</span></div>
-    <div class="row"><span>Damage</span><span>${d.dmg}</span></div>
-    <div class="row"><span>Range</span><span>${d.range}</span></div>
     <div class="row"><span>Domain</span><span>${d.domain}</span></div>
-    <div class="row"><span>Move class</span><span>${d.moveClass}</span></div>
+    <div class="row"><span>Move class</span><span>${d.moveClass}</span></div>`;
+  // Recon/support units (Recon UAV, EW Jammer) carry no `weapon` field at
+  // all — same "unarmed" shape a non-combat building like Radar Station
+  // already uses. Guard the weapon/damage/range rows the same way
+  // buildingCardHtml already guards its own weapon block below, rather than
+  // printing "undefined" for a unit that genuinely has no gun.
+  if (d.weapon) {
+    html += `<div class="row"><span>Damage</span><span>${d.dmg}</span></div>
+    <div class="row"><span>Range</span><span>${d.range}</span></div>
     <div class="row"><span>Weapon</span><span>${weaponLabel(d.weapon)}</span></div>`;
+  }
+  return html;
 }
 
 export function createStatCard(el) {

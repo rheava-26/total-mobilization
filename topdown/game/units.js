@@ -145,6 +145,93 @@ export const WEAPON_DEFS = {
     kind: 'homing', speed: 80, maxSpeed: 300, thrust: 500, turnRate: 3.5, life: 4,
     canTargetGround: true, canTargetAir: false,
   },
+
+  // -------------------------------------------------------------------------
+  // GROUNDED NEAR-FUTURE ARSENAL (CONCEPT.md's settled "Arsenal scope & the
+  // tech ceiling" paragraph — conventional through present-day/bleeding-edge
+  // real-world lineage, no sci-fi). Every entry below REUSES one of the three
+  // projectile physics kinds already implemented above (ballistic/homing/
+  // gun) — nothing here needed a fourth kind. What makes each of these a
+  // distinct real-world system is entirely in the numbers and the
+  // canTargetAir/canTargetGround flags, exactly per the file's cardinal rule.
+  cruise: {
+    // long-range land-attack cruise missile — CONCEPT.md names this
+    // explicitly ("precision cruise missiles (long-range strike)"). Same
+    // 'homing' physics as rocket/atgm/etc, just tuned for ENDURANCE over
+    // agility: a long `life` (it has to survive a long flight to a distant
+    // target) and a low turnRate (a cruise missile flies a route and makes a
+    // terminal correction, it doesn't dogfight). Ground-only.
+    kind: 'homing', speed: 90, maxSpeed: 260, thrust: 300, turnRate: 1.8, life: 12,
+    canTargetGround: true, canTargetAir: false,
+  },
+  ballisticMissile: {
+    // short/medium-range ballistic missile launcher. Reuses 'shell's exact
+    // 'ballistic' physics (straight-line flight timed by distance/speed,
+    // with a cosmetic lofted arc) rather than 'homing' — a real ballistic
+    // missile is unguided/unpowered after the boost phase, so the
+    // "straight line to a precomputed impact point" model fits it better
+    // than a missile that steers at its target every frame. Much faster
+    // than a shell (long real-world range covered in a short flight time).
+    kind: 'ballistic', speed: 480, arcVisual: true,
+    canTargetGround: true, canTargetAir: false,
+  },
+  hypersonic: {
+    // the bleeding-edge tier CONCEPT.md calls out by name ("up through the
+    // bleeding edge of real-world lineage — hypersonics"). Identical shape
+    // to ballisticMissile — same 'ballistic' physics kind — just drastically
+    // faster: the entire point of a hypersonic weapon is compressing the
+    // flight-time window an air-defense umbrella has to react in, which the
+    // ballistic kind's speed field already models directly (t = dist/speed).
+    kind: 'ballistic', speed: 900, arcVisual: true,
+    canTargetGround: true, canTargetAir: false,
+  },
+  atgm: {
+    // anti-tank guided missile (infantry ATGM team). Homing, ground-only,
+    // short range/life and a sharp turnRate with high thrust — a team
+    // engaging armor at a few hundred px, not a standoff strike weapon.
+    kind: 'homing', speed: 70, maxSpeed: 260, thrust: 550, turnRate: 4.2, life: 3,
+    canTargetGround: true, canTargetAir: false,
+  },
+  manpads: {
+    // MANPADS (shoulder-fired SAM team) — the infantry mirror of atgm above:
+    // homing, short-legged, sharp turn. THE flag that matters here is
+    // canTargetGround: false — a MANPADS physically cannot engage a ground
+    // target, and getting this flag wrong would let an infantry AA team
+    // shell tanks, defeating the entire point of modeling it as a distinct
+    // real-world system rather than a reskinned autocannon.
+    kind: 'homing', speed: 90, maxSpeed: 340, thrust: 600, turnRate: 4.8, life: 3,
+    canTargetGround: false, canTargetAir: true,
+  },
+  loitering: {
+    // loitering munition ("suicide drone"): homing, ground-only, with a much
+    // longer `life` than rocket/atgm — the real thing loiters over a search
+    // area before committing to its terminal dive. Modeled here simply as
+    // "stays airborne a long time before it must expire" rather than a real
+    // search/loiter state machine, which is out of scope for this pass.
+    kind: 'homing', speed: 55, maxSpeed: 200, thrust: 250, turnRate: 3, life: 9,
+    canTargetGround: true, canTargetAir: false,
+  },
+  antiship: {
+    // anti-ship missile. Flagged canTargetGround (not a new "canTargetNaval"
+    // flag) because enemyEntities/weaponCanTarget above already treat naval
+    // as "ground" for targeting purposes — so this legitimately threatens
+    // warships AND anything on land, same as a real anti-ship missile can be
+    // used in a land-attack role. Faster/longer-legged than an ATGM
+    // (sea-skimming standoff range), shorter-lived than a cruise missile
+    // (shorter real-world range class than a land-attack cruise missile).
+    kind: 'homing', speed: 100, maxSpeed: 360, thrust: 500, turnRate: 2.2, life: 6,
+    canTargetGround: true, canTargetAir: false,
+  },
+  directedEnergy: {
+    // early directed-energy point-defense. Reuses the 'gun' physics kind
+    // (straight-line burst, short life, no homing) at an extreme speed — a
+    // laser doesn't fly like a missile, it's effectively instantaneous at
+    // point-defense ranges, and 'gun's straight-line model already IS that
+    // shape with no new physics kind needed (per the task brief: "model as a
+    // fast gun-kind"). Air-only and deliberately NOT dual-purpose like
+    // autocannon — this is a specialist anti-air/anti-drone interceptor.
+    kind: 'gun', speed: 1400, canTargetGround: false, canTargetAir: true,
+  },
 };
 
 // naval counts as "ground" for targeting purposes for now (P1.5 scope) — a
@@ -262,6 +349,186 @@ export const UNIT_DEFS = {
     hp: 220, armor: 10, speed: 50, range: 320, dmg: 22, rate: 2.0, turnRate: 1.6, radius: 16,
     vision: 340,
     dispositions: [],
+  },
+
+  // ---------------------------------------------------------------------
+  // GROUNDED NEAR-FUTURE ROSTER (CONCEPT.md's settled "Arsenal scope & the
+  // tech ceiling" paragraph). Stats are picked to sit inside the SAME scale
+  // the roster above already uses (hp roughly 10-220, dmg roughly 2-40,
+  // range roughly 90-620) rather than inventing a new tier — the newest,
+  // priciest systems here (hypersonic launcher) sit at the top of that
+  // existing range, they don't blow past it. None of these are
+  // research-gated yet (that's explicitly the NEXT agent's job); they're
+  // plain UNIT_DEFS entries, producible like everything else already is.
+
+  // --- Drones (air domain, unarmed recon through armed/expendable types) ---
+  reconDrone: {
+    // pure recon UAV: no `weapon` at all (same "no weapon field" shape a
+    // building like Radar Station uses) — pickTarget/nearestEnemy both
+    // resolve WEAPON_DEFS[undefined] to nothing and simply never find a
+    // target for it, so it flies its orders and never fires, no special
+    // casing required anywhere in the update loop. Highest vision in the
+    // entire roster (a flying scout, its whole job) — beats even the
+    // Fighter's radar-assisted 420 and the Scout Car's ground-recon 380.
+    name: 'Recon UAV "Sentinel"', domain: 'air', moveClass: 'air',
+    hp: 20, armor: 0, speed: 150, range: 0, dmg: 0, rate: 1, turnRate: 6, radius: 5,
+    vision: 560,
+    dispositions: ['recon'],
+  },
+  ucav: {
+    // armed drone / UCAV: ground-attack, reuses the 'rocket' CAS weapon
+    // strikejet already carries — an armed drone and a manned strike jet
+    // fire the same kind of homing ground ordnance in the real world, so no
+    // new weapon behavior is needed, just a cheaper/frailer/slower airframe.
+    name: 'UCAV "Talon"', domain: 'air', moveClass: 'air', weapon: 'rocket',
+    hp: 45, armor: 2, speed: 175, range: 170, dmg: 14, rate: 1.1, turnRate: 4.5, radius: 8,
+    vision: 380,
+    dispositions: ['aggressive'], // gets in close for its strike run, like strikejet
+  },
+  loiteringMunition: {
+    // cheap, "one-shot-ish" loitering munition. There's no real per-unit
+    // "consumed on fire" mechanic in this pass (would need new state on the
+    // unit + a fire-time removal hook) — approximated instead with a very
+    // slow rate (it doesn't wait around to reload after committing) and low
+    // HP (a light expendable airframe, dies to almost anything that hits
+    // back), which reads the same in practice: it gets one real strike in
+    // before it's likely dead or has used its shot.
+    name: 'Loitering Munition "Wraith"', domain: 'air', moveClass: 'air', weapon: 'loitering',
+    hp: 14, armor: 0, speed: 130, range: 230, dmg: 26, rate: 2.6, turnRate: 3.5, radius: 5,
+    vision: 260,
+    dispositions: ['aggressive'],
+  },
+  droneSwarm: {
+    // drone swarm: the "edge of modern" bullet from CONCEPT.md's arsenal
+    // list. Modeled as a single very cheap, very weak airframe meant to be
+    // PRODUCED in bulk (see game/production.js's drones recipe) rather than
+    // a unit that spawns multiple bodies per build — lowest hp/dmg/radius in
+    // the roster, reusing autocannon (already dual air+ground) so a swarm
+    // can harass whatever it reaches.
+    name: 'Drone Swarm "Midge"', domain: 'air', moveClass: 'air', weapon: 'autocannon',
+    hp: 12, armor: 0, speed: 165, range: 100, dmg: 3, rate: 0.22, turnRate: 7, radius: 4,
+    vision: 200,
+    dispositions: ['aggressive'],
+  },
+
+  // --- Rocket & missile artillery (ground, long-reach bombardment) ---
+  mlrs: {
+    // MLRS / rocket artillery: area ground bombardment. Reuses the 'shell'
+    // ballistic weapon the tank/artillery/gunboat/destroyer already share
+    // (same precedent — a rocket salvo's flight-time-to-impact shape is the
+    // same "straight line, timed by distance/speed" as a tube shell) rather
+    // than adding a new weapon behavior purely for this. Wheeled (a truck-
+    // mounted launcher, not tracked like Culverin) — faster, thinner-skinned,
+    // fires quicker but hits softer per shot than tube artillery, and a
+    // battery doctrine (holdGround) exactly like Culverin and the SAM.
+    name: 'MLRS "Barrage"', domain: 'ground', moveClass: 'wheeled', weapon: 'shell',
+    hp: 55, armor: 1, speed: 85, range: 300, dmg: 20, rate: 0.5, turnRate: 3, radius: 9,
+    vision: 200,
+    dispositions: ['holdGround'],
+  },
+  srbmLauncher: {
+    // short/medium-range ballistic missile launcher (SRBM/MRBM lineage).
+    name: 'SRBM Launcher "Reach"', domain: 'ground', moveClass: 'wheeled', weapon: 'ballisticMissile',
+    hp: 60, armor: 2, speed: 60, range: 560, dmg: 45, rate: 3.5, turnRate: 2, radius: 10,
+    vision: 220,
+    dispositions: ['holdGround'],
+  },
+  cruiseLauncher: {
+    // long-range precision cruise missile launcher — v1's "strike systems"
+    // lineage per the task brief. Longest ground-attack range in the
+    // pre-hypersonic roster; slow reload reflects a real launcher's salvo
+    // size/rearm time, not a rapid-fire battery.
+    name: 'Cruise Missile Launcher "Longhand"', domain: 'ground', moveClass: 'wheeled', weapon: 'cruise',
+    hp: 58, armor: 2, speed: 55, range: 620, dmg: 42, rate: 4.0, turnRate: 2, radius: 10,
+    vision: 230,
+    dispositions: ['holdGround'],
+  },
+  hypersonicLauncher: {
+    // the bleeding-edge top of the whole roster: longest range, hardest hit,
+    // slowest reload of anything here — deliberately the most expensive
+    // thing to mass (see game/production.js's hypersonics recipe), matching
+    // CONCEPT.md's "big bonuses behind big gates" tech philosophy even
+    // though the actual gate isn't built yet (this agent's task explicitly
+    // leaves that to the next one; for now it's just a pricey unit to build).
+    name: 'Hypersonic Launcher "Zenith"', domain: 'ground', moveClass: 'wheeled', weapon: 'hypersonic',
+    hp: 65, armor: 3, speed: 50, range: 760, dmg: 70, rate: 6.0, turnRate: 1.5, radius: 11,
+    vision: 240,
+    dispositions: ['holdGround'],
+  },
+
+  // --- Guided infantry teams & modern air defense (ground) ---
+  atgmTeam: {
+    // ATGM team: foot infantry, holdGround (a prepared ambush position, not
+    // a unit that chases armor into the open) — anti-armor homing ground
+    // fire from a squad-sized footprint, much cheaper and shorter-legged
+    // than a vehicle-mounted line.
+    name: 'ATGM Team "Lance"', domain: 'ground', moveClass: 'foot', weapon: 'atgm',
+    hp: 50, armor: 1, speed: 36, range: 260, dmg: 30, rate: 1.7, turnRate: 5, radius: 6,
+    vision: 220,
+    dispositions: ['holdGround'],
+  },
+  manpadsTeam: {
+    // MANPADS team: the short-range, foot-mobile answer to air threats —
+    // sits between AA Gun (autocannon, dual air+ground, longer legs) and a
+    // full SAM battery in both role and cost, per the manpads weapon's
+    // air-only flag.
+    name: 'MANPADS Team "Bracer"', domain: 'ground', moveClass: 'foot', weapon: 'manpads',
+    hp: 45, armor: 1, speed: 36, range: 210, dmg: 22, rate: 1.9, turnRate: 5, radius: 6,
+    vision: 240,
+    dispositions: ['holdGround'],
+  },
+  samUpgrade: {
+    // modern layered SAM upgrade: reuses the EXISTING 'sam' weapon
+    // unchanged (CONCEPT.md's arsenal list doesn't call for a new SAM
+    // projectile behavior, just "longer reach") — the upgrade is entirely in
+    // this unit's own range/dmg/vision numbers being pushed past the
+    // original SAM Battery "Warden" (range 480, dmg 34, vision 360), the
+    // same way Artillery "Culverin" already out-ranges the tank on the same
+    // 'shell' weapon. A real layered-defense battery, not a new projectile.
+    name: 'SAM Battery "Palisade"', domain: 'ground', moveClass: 'tracked', weapon: 'sam',
+    hp: 100, armor: 5, speed: 28, range: 620, dmg: 40, rate: 2.6, turnRate: 2, radius: 11,
+    vision: 520,
+    dispositions: ['holdGround'],
+  },
+  antiShipBattery: {
+    // anti-ship missile battery: per the antiship weapon's comment, "ground"
+    // targeting already covers naval, so this threatens warships and land
+    // targets alike from a coastal battery position.
+    name: 'Anti-Ship Battery "Harrow"', domain: 'ground', moveClass: 'wheeled', weapon: 'antiship',
+    hp: 70, armor: 2, speed: 45, range: 520, dmg: 38, rate: 2.2, turnRate: 2.4, radius: 10,
+    vision: 280,
+    dispositions: ['holdGround'],
+  },
+  pointDefenseLaser: {
+    // early directed-energy point-defense: very short range but near-instant
+    // (see the directedEnergy weapon's huge `speed`) and a very fast rate —
+    // a last-ditch interceptor against drones/missiles/aircraft that get
+    // close, not a standoff weapon. Air-only.
+    name: 'Point-Defense Laser "Halo"', domain: 'ground', moveClass: 'tracked', weapon: 'directedEnergy',
+    hp: 75, armor: 4, speed: 45, range: 160, dmg: 8, rate: 0.12, turnRate: 5, radius: 9,
+    vision: 260,
+    dispositions: ['holdGround'],
+  },
+
+  // --- Support (ground) ---
+  ewJammer: {
+    // EW / jammer support unit: per the task brief, a real "reduce enemy
+    // detection" jamming EFFECT would be more than a small data field (it'd
+    // need a new per-side detection-modifier hook in game/fog.js), so this
+    // stays a plain recon/support unit with no weapon and very high vision —
+    // exactly the reconDrone pattern above, just ground-mobile instead of
+    // airborne, standing in for "signals/EW company" rather than a flying
+    // sensor.
+    //
+    // TODO(jamming): when game/fog.js grows a per-side "reduce ENEMY sensor
+    // range within radius" hook, wire it in here (e.g. a `jamRadius`/
+    // `jamPower` field read by detects()/computeFog alongside vision) — this
+    // unit is deliberately left as a clean, effect-free placeholder for that
+    // hook rather than a half-built jamming subsystem.
+    name: 'EW Jammer "Raven"', domain: 'ground', moveClass: 'wheeled',
+    hp: 50, armor: 1, speed: 70, range: 0, dmg: 0, rate: 1, turnRate: 4, radius: 8,
+    vision: 480,
+    dispositions: ['recon'],
   },
 };
 

@@ -91,12 +91,167 @@ export const PRODUCTION_DEFS = {
   artillery: {
     name: 'Artillery',
     facility: 'artilleryWorks',
-    outputs: ['artillery'],
+    outputs: [
+      'artillery',
+      // MLRS/rocket artillery slots into the SAME category as tube
+      // artillery rather than getting its own facility — it's the same
+      // real-world production niche (a battery that lobs ordnance from
+      // range), just a different UNIT_DEFS entry, so it round-robins with
+      // 'artillery' off the one Artillery Works exactly like fighter/
+      // strikejet already round-robin off one Aircraft Plant.
+      'mlrs',
+    ],
     recipe: {
       resourceCostPerUnit: { steel: 6, tungsten: 3 },
       prerequisiteBuildings: [],
       icCostPerUnit: 8,
       manpowerCostPerUnit: 3,
+      buildTimePerUnit: 5,
+    },
+  },
+
+  // ---------------------------------------------------------------------
+  // GROUNDED NEAR-FUTURE CATEGORIES (CONCEPT.md's settled "Arsenal scope &
+  // the tech ceiling" paragraph). Same recipe shape as the four categories
+  // above — resourceCostPerUnit only ever draws from the FOUR resources that
+  // already exist (steel/chromium/tungsten/oil) plus the IC/manpower/
+  // buildTime fields every recipe carries; no new resource types added in
+  // this pass (see the per-category TODOs below for where the reference
+  // doc's "really" wants titanium/electronics/rare-earths once that supply
+  // chain exists). Costs are deliberately DIFFERENTIATED against each
+  // other, per the task brief's explicit example: hypersonics (below) is
+  // by far the most expensive row in the whole production table, drones is
+  // by far the cheapest — the same "cheap swarm vs. priceless bleeding
+  // edge" contrast CONCEPT.md's arsenal list draws between a loitering
+  // munition and a hypersonic missile.
+  drones: {
+    name: 'Drones',
+    facility: 'droneWorks',
+    // recon UAV, armed UCAV, loitering munition, and the drone swarm
+    // airframe all round-robin off one Drone Works — they're all light,
+    // fast-to-build airframes sharing one light-industry-adjacent recipe,
+    // same multi-output pattern aircraft/artillery already use above. The
+    // DIFFERENTIATION CONCEPT.md's arsenal list wants between e.g. a cheap
+    // swarm drone and a pricier system lives in which CATEGORY a unit sits
+    // in (drones here is cheap; hypersonics below is not), not in a
+    // per-unit-within-a-category cost split — matching the precedent
+    // aircraft's category already set (fighter and strikejet share one
+    // recipe despite being different planes).
+    outputs: ['reconDrone', 'ucav', 'loiteringMunition', 'droneSwarm'],
+    recipe: {
+      // TODO: richer material (titanium/electronics) when the supply chain
+      // expands — real drone airframes lean on lightweight composites and
+      // avionics this resource roster doesn't have yet; approximated here
+      // with a small steel+oil bill (airframe + engine/fuel) instead.
+      resourceCostPerUnit: { steel: 2, oil: 1 },
+      prerequisiteBuildings: [],
+      icCostPerUnit: 5,
+      manpowerCostPerUnit: 1,
+      buildTimePerUnit: 3, // fast to build — the cheapest, quickest line in the table
+    },
+  },
+  missiles: {
+    name: 'Missiles',
+    facility: 'missileWorks',
+    // the SRBM and cruise-missile launchers — v1's "strike systems" lineage
+    // per the task brief — round-robin off one Missile Works. Sits a clear
+    // step above tanks/aircraft in cost (a standoff strike launcher is a
+    // bigger-ticket system than a line vehicle) and a clear step BELOW
+    // hypersonics (below), which is deliberately gated on this facility
+    // existing first.
+    outputs: ['srbmLauncher', 'cruiseLauncher'],
+    recipe: {
+      // TODO: richer material (titanium/electronics) when the supply chain
+      // expands — real guidance/airframe packages want exactly those;
+      // approximated with steel (launcher body) + tungsten (warhead/
+      // penetrator) + oil (propellant) using only the existing four.
+      resourceCostPerUnit: { steel: 6, tungsten: 4, oil: 3 },
+      // missiles need warhead/propellant production, the same real-world
+      // dependency CONCEPT.md's illustrative tank example already leans the
+      // ammunition plant on.
+      prerequisiteBuildings: ['ammunitionPlant'],
+      icCostPerUnit: 20,
+      manpowerCostPerUnit: 5,
+      buildTimePerUnit: 10,
+    },
+  },
+  hypersonics: {
+    name: 'Hypersonics',
+    facility: 'hypersonicWorks',
+    // the single priciest row in the whole table, by design — CONCEPT.md's
+    // "big bonuses behind big gates" tech philosophy applied even without
+    // the actual research gate (that's explicitly the NEXT agent's job):
+    // for now the "big gate" is just that hypersonicWorks itself requires
+    // Missile Works to ALSO exist (prerequisiteBuildings below) — the
+    // bleeding edge sits on top of the conventional missile industry, not
+    // standing alone, mirroring ammunitionPlant gating tanks/aircraft.
+    outputs: ['hypersonicLauncher'],
+    recipe: {
+      // TODO: richer material (titanium/electronics) when the supply chain
+      // expands — a real hypersonic vehicle leans hard on thermal-
+      // protection materials and advanced electronics this resource roster
+      // doesn't model yet; approximated with a heavy multi-resource bill
+      // across everything that DOES exist instead.
+      resourceCostPerUnit: { steel: 10, chromium: 6, tungsten: 8, oil: 6 },
+      prerequisiteBuildings: ['ammunitionPlant', 'missileWorks'],
+      icCostPerUnit: 45,
+      manpowerCostPerUnit: 10,
+      buildTimePerUnit: 20,
+    },
+  },
+  airDefense: {
+    name: 'Air Defense',
+    facility: 'airDefenseWorks',
+    // MANPADS team, the upgraded layered SAM battery, and early directed-
+    // energy point-defense round-robin off one Air Defense Works — three
+    // different real-world answers to "something is in the air," bucketed
+    // the same way tanks/artillery already bucket ground-combat variants.
+    outputs: ['manpadsTeam', 'samUpgrade', 'pointDefenseLaser'],
+    recipe: {
+      resourceCostPerUnit: { steel: 5, chromium: 3, tungsten: 2 },
+      // modern integrated air defense is cued off radar in reality; gating
+      // production on the existing Radar Station building is a cheap,
+      // grounded way to express that without inventing a new mechanic.
+      prerequisiteBuildings: ['radar'],
+      icCostPerUnit: 14,
+      manpowerCostPerUnit: 4,
+      buildTimePerUnit: 6,
+    },
+  },
+  guidedWeapons: {
+    name: 'Guided Weapons',
+    facility: 'guidedWeaponsWorks',
+    // ATGM team (anti-armor) and the anti-ship missile battery round-robin
+    // off one Guided Weapons Works — both are ground-launched guided
+    // munitions aimed at hard targets (tanks / warships) rather than air
+    // threats, which is what separates this category from airDefense above.
+    outputs: ['atgmTeam', 'antiShipBattery'],
+    recipe: {
+      resourceCostPerUnit: { steel: 4, chromium: 1, tungsten: 3 },
+      // shaped-charge/anti-armor and anti-ship warheads are exactly the
+      // kind of ordnance an ammunition plant produces, same dependency as
+      // the missiles category above.
+      prerequisiteBuildings: ['ammunitionPlant'],
+      icCostPerUnit: 10,
+      manpowerCostPerUnit: 3,
+      buildTimePerUnit: 5,
+    },
+  },
+  support: {
+    name: 'Support',
+    facility: 'signalsWorks',
+    // the EW/jammer unit — a single-output category (same pattern tanks/
+    // hypersonics/etc already use with one entry), cheap and fast since
+    // it's a support vehicle carrying sensors/comms rather than a weapon
+    // system.
+    outputs: ['ewJammer'],
+    recipe: {
+      resourceCostPerUnit: { steel: 3, oil: 1 },
+      // a signals/EW unit is built on the same sensor infrastructure a
+      // radar station represents, same grounding as airDefense's prereq.
+      prerequisiteBuildings: ['radar'],
+      icCostPerUnit: 9,
+      manpowerCostPerUnit: 2,
       buildTimePerUnit: 5,
     },
   },

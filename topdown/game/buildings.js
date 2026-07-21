@@ -155,6 +155,43 @@ export const BUILDING_DEFS = {
     name: 'Artillery Works', footprint: { w: 3, h: 3 }, hp: 300, vision: 110,
     cost: { ic: 150, manpower: 8 }, buildTime: 24,
   },
+
+  // -------------------------------------------------------------------------
+  // GROUNDED NEAR-FUTURE PRODUCTION FACILITIES — one new building per new
+  // game/production.js category (drones/missiles/hypersonics/airDefense/
+  // guidedWeapons/support). Same pure structural data as every facility
+  // above; footprint/hp/cost/buildTime scaled against the existing four
+  // (tankFactory/aircraftPlant/shipyard/artilleryWorks) rather than a fresh
+  // scale, and roughly ordered cheapest-to-priciest to mirror the recipe
+  // cost spread in production.js (drones cheapest/fastest, hypersonicWorks
+  // the priciest/slowest — the "bleeding edge" facility, deliberately
+  // gated behind ALSO having a missileWorks per its recipe's
+  // prerequisiteBuildings, same "buildings gate other buildings' output"
+  // shape ammunitionPlant already demonstrates for tanks/aircraft).
+  droneWorks: {
+    name: 'Drone Works', footprint: { w: 3, h: 2 }, hp: 200, vision: 110,
+    cost: { ic: 100, manpower: 4 }, buildTime: 16,
+  },
+  missileWorks: {
+    name: 'Missile Works', footprint: { w: 4, h: 3 }, hp: 340, vision: 130,
+    cost: { ic: 220, manpower: 12 }, buildTime: 30,
+  },
+  hypersonicWorks: {
+    name: 'Hypersonic Works', footprint: { w: 4, h: 4 }, hp: 400, vision: 160,
+    cost: { ic: 320, manpower: 18 }, buildTime: 42,
+  },
+  airDefenseWorks: {
+    name: 'Air Defense Works', footprint: { w: 3, h: 3 }, hp: 260, vision: 140,
+    cost: { ic: 160, manpower: 8 }, buildTime: 22,
+  },
+  guidedWeaponsWorks: {
+    name: 'Guided Weapons Works', footprint: { w: 3, h: 2 }, hp: 220, vision: 110,
+    cost: { ic: 130, manpower: 6 }, buildTime: 20,
+  },
+  signalsWorks: {
+    name: 'Signals Works', footprint: { w: 2, h: 2 }, hp: 170, vision: 120,
+    cost: { ic: 110, manpower: 4 }, buildTime: 16,
+  },
 };
 
 // Generic vision-range accessor shared by game/fog.js for both units and

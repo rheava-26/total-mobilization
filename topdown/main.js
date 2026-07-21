@@ -20,6 +20,8 @@ import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 import { PHASES, createPhaseState, applyPhaseFog, beginCombat } from './game/phase.js';
 import { showMainMenu, randomSeed, MENU_COPY, SCENARIO_DEFS } from './game/menu.js';
+import { getTechTreeGraph, computeNodeState } from './game/techtree.js';
+import { createTechTreeView } from './game/techtreeview.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -144,6 +146,31 @@ economy.manpower = Math.round(economy.manpower * startingEcoMult);
 // side of the gate (a locked category's facility stalls with 'tech not
 // researched' until this state says otherwise).
 const researchState = createResearchState();
+
+// ---------------------------------------------------------------------------
+// TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game tech/
+// production tree" direction — game/techtree.js builds the graph, game/
+// techtreeview.js draws it). Created once at load, toggled by the G key
+// (see the keydown handler below) — a dedicated full-screen canvas with its
+// own pan/zoom camera, entirely independent of the main renderer's camera.
+// getLiveCtx returns the SAME live world/economy/researchState objects the
+// real game loop mutates every frame, so every time the view draws it reads
+// current state — that's what makes the tree "fill out" as the player
+// builds/researches, per the task's explicit payoff requirement.
+const techTreeCanvas = document.getElementById('techTreeCanvas');
+const techTreeView = createTechTreeView(techTreeCanvas, () => ({ world, economy, researchState }));
+function toggleTechTree() {
+  if (techTreeView.isOpen) { techTreeView.hide(); return; }
+  // Full-screen exclusive overlay — close every other panel/mode first so
+  // G never leaves a build/road/prod/import/tech panel fighting underneath
+  // it, same "enter one mode, exit the others" convention R/B already use.
+  if (roadMode.active) exitRoadMode();
+  if (buildMode.active) exitBuildMode();
+  if (prodPanel.classList.contains('open')) exitProdPanel();
+  if (importPanel.classList.contains('open')) exitImportPanel();
+  if (techPanel.classList.contains('open')) exitTechPanel();
+  techTreeView.show();
+}
 
 // GAME PHASES (P4 — game/phase.js; CONCEPT.md's settled "Phases" line). A
 // fresh game defaults to PREP, which the reconciliation call below drives
@@ -827,6 +854,17 @@ function updateGuidanceProgress() {
 
 addEventListener('keydown', e => {
   if (e.repeat) return;
+  if (e.key === 'g' || e.key === 'G') {
+    // TECH/PRODUCTION TREE VIEW toggle (see the block above researchState's
+    // GAME PHASES comment). Checked first and returns early — while the
+    // tree is open it's a full-screen exclusive overlay (toggleTechTree
+    // already closed every other panel on the way in), so no other
+    // shortcut below should also fire on the same keypress. Escape still
+    // closes it too (see the Escape branch further down).
+    toggleTechTree();
+    return;
+  }
+  if (techTreeView.isOpen) return; // tree view owns input exclusively while open (drag/wheel handled by its own camera controls)
   if (e.key === 'r' || e.key === 'R') {
     if (buildMode.active) exitBuildMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
@@ -1159,6 +1197,25 @@ window.__debug = {
     show: () => setGuidanceVisible(true),
     hide: () => setGuidanceVisible(false),
   },
+  // TECH/PRODUCTION TREE VIEW hooks (game/techtree.js + game/techtreeview.js),
+  // for headless verification per the task's explicit requirement — a canvas
+  // overlay has no DOM nodes per graph node, so a test can't just querySelect
+  // its way to "is this node built." getTechTreeGraph() exposes the derived
+  // node/edge list (including each node's .x/.y in the view's own coordinate
+  // space); computeNodeState(node, {world, economy, researchState}) answers
+  // "what does this node's live state/detail read as RIGHT NOW" without
+  // needing the view open at all. techTreeView itself exposes show/hide/
+  // isOpen/cam (drive pan/zoom or read the camera directly) and, critically,
+  // nodeAtPoint(clientX, clientY) — the exact hit-test the real mousemove
+  // listener uses internally — so a test can confirm hover resolves to the
+  // right node using the SAME screen coordinates a real cursor would report,
+  // with no synthetic mouse events required.
+  techTree: {
+    getGraph: getTechTreeGraph,
+    computeNodeState: (node) => computeNodeState(node, { world, economy, researchState }),
+    view: techTreeView,
+    toggle: toggleTechTree,
+  },
 };
 
 let last = performance.now();
@@ -1221,7 +1278,17 @@ function loop(now) {
     drawBuildPreview(ctx, worldToScreen);
   });
 
-  card.show(hovered, lastMouse.x, lastMouse.y);
+  // TECH/PRODUCTION TREE VIEW — drawn on its own dedicated canvas, on top of
+  // (not instead of) the main game canvas above: the game keeps simulating
+  // underneath (economy/production/research all tick every frame regardless
+  // of which panels are open, per the loop's own ordering), so the view
+  // always reflects live state the instant it's opened, and closing it
+  // drops straight back into an unpaused game. render() itself is a no-op
+  // when the view isn't open (checked first thing inside it), so this call
+  // is cheap enough to leave unconditional here.
+  techTreeView.render();
+
+  card.show(techTreeView.isOpen ? null : hovered, lastMouse.x, lastMouse.y);
   const alive = { player: 0, enemy: 0 };
   for (const u of world.units) alive[u.side]++;
   const roadHint = roadMode.active

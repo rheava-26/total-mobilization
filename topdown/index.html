@@ -8,6 +8,15 @@
   html, body { margin: 0; height: 100%; background: #060a12; overflow: hidden; }
   #view { display: block; width: 100%; height: 100%; cursor: grab; }
   #view.grabbing { cursor: grabbing; }
+  /* TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game
+     tech/production tree" direction — game/techtree.js + game/techtreeview.js).
+     A dedicated full-screen canvas, its own independent pan/zoom camera, kept
+     hidden (display:none, toggled from JS not just a CSS class so it never
+     eats pointer events while closed) until the G key opens it. z-index above
+     every other HUD panel — it's meant to be a full, exclusive overlay, not
+     one more corner widget. */
+  #techTreeCanvas { display: none; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 500; cursor: grab; }
+  #techTreeCanvas.grabbing { cursor: grabbing; }
   /* max-width leaves room for #econHud's fixed top-right panel below, so a
      long flash message wraps onto its own line instead of running under it. */
   #hud { position: fixed; top: 10px; left: 10px; max-width: calc(100% - 240px); color: #bfe9ff; font: 12px Consolas, monospace; pointer-events: none; text-shadow: 0 1px 2px #000; }
@@ -190,6 +199,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
+<canvas id="techTreeCanvas"></canvas>
 <!-- MAIN MENU overlay — see the #mainMenu CSS comment above. Content
      (title/subtitle/hint/scenario rows) is filled in and the click handling
      wired by game/menu.js's showMainMenu(), same "static skeleton in HTML,

@@ -91,6 +91,33 @@
     opacity: 0; transition: opacity .3s ease; box-shadow: 0 8px 28px rgba(0,0,0,.5);
   }
   #announcement.show { opacity: 1; }
+  /* GUIDANCE PANEL (first-run framework — CONCEPT.md's settled "First-run /
+     tutorial is OPEN, not dictated" paragraph): an offered, dismissable path,
+     NOT a gate — every other panel/control on this page works identically
+     whether this is open or hidden. Anchored bottom-left, clear of
+     #buildbar (bottom-center) and #prodPanel/#importPanel (top-left, only
+     shown when their own key is pressed), so it never has to fight another
+     panel for space while all four can in principle be open at once. */
+  #guidancePanel {
+    position: fixed; left: 16px; bottom: 16px; width: 300px;
+    padding: 10px 12px; background: rgba(8,14,26,.94); border: 1px solid #2f5f9c;
+    border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    color: #eaf2ff; font: 12px Consolas, monospace;
+  }
+  #guidancePanel.hidden { display: none; }
+  #guidancePanel .gHeader { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  #guidancePanel .gHeader b { color: #6dffb0; font-size: 12px; }
+  #guidancePanel button.gClose {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
+    padding: 1px 9px; cursor: pointer; font: 13px Consolas, monospace; line-height: 1.4;
+  }
+  #guidancePanel button.gClose:hover { background: #1c3a5e; }
+  #guidancePanel ol { margin: 0; padding-left: 18px; line-height: 1.55; color: #bfe9ff; }
+  /* "done" is a passive, read-only reflection of real game state (see
+     updateGuidanceProgress in main.js) — cosmetic only, never a gate, so it
+     deliberately looks like a checked-off suggestion, not an unlocked step. */
+  #guidancePanel li.done { color: #6dffb0; text-decoration: line-through; opacity: .7; }
+  #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -113,6 +140,19 @@
 <div id="importPanel">
   <b>Import resources — spend influence + a bit of IC (I)</b>
   <div class="resRow" id="importResRow"></div>
+</div>
+<!-- GUIDANCE PANEL — open by default, dismissable (× or H), never gates
+     anything (see main.js's GUIDANCE PANEL section for the full rationale
+     and CONCEPT.md's settled "First-run / tutorial is OPEN, not dictated"
+     paragraph). Content (title/steps/footnote) is filled in by main.js from
+     the COPY placeholder block so there's exactly one place to edit copy. -->
+<div id="guidancePanel">
+  <div class="gHeader">
+    <b id="guidanceTitle"></b>
+    <button id="guidanceCloseBtn" class="gClose" title="Dismiss (H to toggle)">×</button>
+  </div>
+  <ol id="guidanceSteps"></ol>
+  <div class="gFootnote" id="guidanceFootnote"></div>
 </div>
 <script type="module" src="main.js"></script>
 </body>

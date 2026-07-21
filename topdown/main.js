@@ -16,6 +16,34 @@ import { computeFog, detects, fogState, drawFogOverlay } from './game/fog.js';
 import { findRoadRoute, findPath, findPathCached, pathfindStats } from './game/pathfind.js';
 import { PHASES, createPhaseState, applyPhaseFog, beginCombat } from './game/phase.js';
 
+// ---------------------------------------------------------------------------
+// PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
+// tutorial is OPEN, not dictated" paragraph: the framework below ships with
+// the STRUCTURE of the guidance layer and the phase-transition announcement,
+// but every word a player actually reads is a stand-in. Every string here is
+// functional/plain and marked [PLACEHOLDER] on purpose — find-and-replace
+// this one block when writing the real tutorial/lore prose; nothing else in
+// the file reads these values for gameplay logic, they're pure display text.
+const COPY = {
+  // Guidance panel (see the GUIDANCE PANEL section below, near the import
+  // panel) — header + the suggested-path list + the footnote reminding the
+  // player it's optional. Order matches the six loose progress checks in
+  // updateGuidanceProgress() below, but nothing enforces that order in play.
+  GUIDANCE_TITLE: '[PLACEHOLDER] Suggested path (optional)',
+  GUIDANCE_STEPS: [
+    '[PLACEHOLDER] Build heavy industry to supply your war effort',
+    '[PLACEHOLDER] Choose a production category (P)',
+    '[PLACEHOLDER] Build the matching factory',
+    '[PLACEHOLDER] Discover it’s unfed — build mines on deposits to supply it',
+    '[PLACEHOLDER] Watch production come online',
+    '[PLACEHOLDER] Begin combat (C) and repel the landing',
+  ],
+  GUIDANCE_DISMISS_HINT: '[PLACEHOLDER] A suggestion, not a script — dismiss any time (× or H). Nothing above is required or gated.',
+  // Shown in the center-screen announcement banner the instant the enemy
+  // landing force actually spawns (see triggerBeginCombat below).
+  COMBAT_BEGIN_ANNOUNCEMENT: '[PLACEHOLDER] COMBAT PHASE BEGUN — THE ENEMY HAS LANDED',
+};
+
 const canvas = document.getElementById('view');
 const hud = document.getElementById('hud');
 const econHud = document.getElementById('econHud');
@@ -88,12 +116,19 @@ function updatePhaseHud() {
   phaseHud.classList.toggle('combat', inCombat);
   phaseLabel.textContent = inCombat ? 'COMBAT' : 'PREPARATION';
   const fogTxt = fogState.revealAll ? 'fog OFF' : 'fog ON';
-  phaseHint.textContent = `${fogTxt} — F: toggle fog${inCombat ? '' : '  |  C / button: begin combat'}`;
+  phaseHint.textContent = `${fogTxt} — F: toggle fog  |  H: toggle guide${inCombat ? '' : '  |  C / button: begin combat'}`;
   beginCombatBtn.style.display = inCombat ? 'none' : '';
 }
 function triggerBeginCombat() {
+  // beginCombat() (game/phase.js) is a one-way PREP->COMBAT transition that
+  // returns true ONLY on the actual transition (false every time after,
+  // since it's a no-op once already in combat) — gating the enemy landing
+  // spawn on that same return value is what makes "the invasion force
+  // appears exactly once, the moment combat begins" fall out for free,
+  // with no separate "already spawned" flag needed here.
   if (beginCombat(phaseState, fogState)) {
-    showAnnouncement('COMBAT PHASE BEGUN — FOG OF WAR ACTIVE');
+    spawnEnemyLandingForce();
+    showAnnouncement(COPY.COMBAT_BEGIN_ANNOUNCEMENT);
     updatePhaseHud();
   }
 }
@@ -150,63 +185,95 @@ function spawnGroundUnit(key, wx, wy, side) {
   return spawnUnit(world, key, p.x, p.y, side);
 }
 
-// Combined-arms demo staged near the map's GENERATED spawn points (map.spawns
-// — see game/mapgen.js) — exercises the full attribute matrix at once: every
-// move class (foot/wheeled/tracked/air/naval), every weapon (shell/aam/sam/
-// autocannon/rocket), and every targeting combination (SAM/AA/fighter vs a
-// mixed enemy force that includes air) so the attribute system is
-// observable, not just theoretical. Nothing here assumes a specific island's
-// geometry: ground spawns are rescued onto legal land via spawnGroundUnit,
-// naval spawns are snapped onto water via nearestWaterPoint, and pBase/eBase
-// come straight from whatever map.spawns the generator produced this run.
+// pBase/eBase come straight from whatever map.spawns the generator produced
+// THIS run (game/mapgen.js) — nothing below assumes a specific island's
+// geometry, every spawn point is either land-snapped (spawnGroundUnit) or
+// water-snapped (nearestWaterPoint) before use.
 const [pSpawn, eSpawn] = map.spawns;
 const pBase = { x: pSpawn.x * map.tileSize, y: pSpawn.y * map.tileSize };
 const eBase = { x: eSpawn.x * map.tileSize, y: eSpawn.y * map.tileSize };
 
-// player: infantry + militia + tanks + AA on land, a SAM battery, a small air
-// wing, gunboat + destroyer offshore
-for (let i = 0; i < 3; i++) spawnGroundUnit('infantry', pBase.x - 70 + i * 22, pBase.y + 50, 'player');
-for (let i = 0; i < 3; i++) spawnGroundUnit('militia', pBase.x - 70 + i * 22, pBase.y + 74, 'player');
-for (let i = 0; i < 3; i++) spawnGroundUnit('tank', pBase.x + i * 26, pBase.y + (i % 2) * 26, 'player');
-spawnGroundUnit('scout', pBase.x + 90, pBase.y + 20, 'player');
-for (let i = 0; i < 2; i++) spawnGroundUnit('aa', pBase.x - 90 + i * 26, pBase.y - 40, 'player');
-spawnGroundUnit('sam', pBase.x - 130, pBase.y - 10, 'player');
-for (let i = 0; i < 2; i++) spawnUnit(world, 'fighter', pBase.x - 40 + i * 30, pBase.y - 100, 'player');
-spawnUnit(world, 'strikejet', pBase.x + 10, pBase.y - 110, 'player');
-{
-  const gb = nearestWaterPoint(pBase.x, pBase.y);
-  spawnUnit(world, 'gunboat', gb.x, gb.y, 'player');
-  // offset further out to sea (not just nudged off the first water pixel
-  // found, which can sit right at the coastline) — re-snap through
-  // nearestWaterPoint so the destroyer never spawns straddling the beach
-  const dest = nearestWaterPoint(gb.x - 60, gb.y + 10);
-  spawnUnit(world, 'destroyer', dest.x, dest.y, 'player');
+// ---------------------------------------------------------------------------
+// STARTING INDUSTRY (CONCEPT.md Pillar 2: "New military industry is
+// constructed alongside the old economy, not instead of it" — mobilization
+// converts AND builds onto an economy that already exists, it doesn't start
+// from a bare field). A fresh game opens with a SMALL slice of that
+// pre-existing civilian base already standing near the player's spawn: one
+// factory, one barracks. Sited through the exact same delegated-placement
+// planner the B-mode buildbar uses (sitePlacement — see game/buildings.js),
+// clicked (in effect) at map.spawns[0] instead of a real mouse click, so
+// this lands on legal, buildable ground on ANY generated map regardless of
+// that run's actual coastline/terrain. Force-completed right after spawning
+// (skip the constructing/HP-floor state a player-placed building goes
+// through) because this industry was already standing when the game opened
+// — it never went through a construction timer the player watched.
+function placeEstablishedBuilding(key, wx, wy) {
+  const site = sitePlacement(map, key, wx, wy);
+  if (!site) {
+    // Extremely unlikely (spawn tiles are chosen buildable by the
+    // generator) but not impossible on a pathological seed — degrade to "no
+    // starting building there" rather than throwing and blanking the game.
+    console.warn(`[startingIndustry] no legal site found for "${key}" near the player spawn — skipping`);
+    return null;
+  }
+  const b = spawnBuilding(world, map, key, site.x, site.y, 'player');
+  b.status = 'complete';
+  b.buildProgress = 1;
+  b.hp = b.maxHp;
+  return b;
 }
+placeEstablishedBuilding('factory', pBase.x, pBase.y);
+placeEstablishedBuilding('barracks', pBase.x, pBase.y);
 
-// enemy: mixed ground force PLUS air (fighter + strike jet) so SAM/AA/fighter
-// targeting is actually exercised. eBase sits on a coastal beach tile near
-// the map's farthest-from-capital city, with water usually nearby (see
-// game/mapgen.js's enemySpawn/nearestBeach) — every ground spawn below goes
-// through spawnGroundUnit so it's rescued onto land regardless of exactly
-// how tight that particular run's beach/city shape turns out to be; air
-// units spawn plain since their moveClass ignores terrain entirely.
-for (let i = 0; i < 3; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
-for (let i = 0; i < 2; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
-for (let i = 0; i < 2; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
-spawnGroundUnit('aa', eBase.x + 20, eBase.y - 30, 'enemy');
-spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
-spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
+// A modest starting GARRISON — CONCEPT.md's "first-run is open, not
+// dictated" paragraph: the player already commands a small defensive force
+// from minute one, not the former full combined-arms roster (that was a
+// system-exerciser, not an opening). Heavy industry, production, and the
+// enemy itself are all left for the run to develop, per the guidance panel
+// below.
+for (let i = 0; i < 2; i++) spawnGroundUnit('infantry', pBase.x - 50 + i * 22, pBase.y + 60, 'player');
+for (let i = 0; i < 2; i++) spawnGroundUnit('militia', pBase.x - 50 + i * 22, pBase.y + 84, 'player');
+for (let i = 0; i < 2; i++) spawnGroundUnit('tank', pBase.x + 20 + i * 26, pBase.y + 60, 'player');
 
-// FOG OF WAR CHANGES THIS: nearestEnemy's unbounded seek used to be enough on
-// its own to march both forces across the whole map into contact — it's now
-// gated on detection (game/fog.js), and pBase/eBase sit ~2200px apart, well
-// beyond any unit's vision. Nothing would ever meet without a nudge. Give
-// both sides a scripted opening order to close the gap — a legitimate order,
-// not autonomous seeking, so it doesn't defeat the "no beelining toward
-// hidden enemies" rule. holdGround batteries (SAM/AA) sit this out and
-// garrison the home base, same as their doctrine implies. Once the fastest
-// (highest-vision) unit on either side — the scout — gets close enough, it
-// reveals the enemy to its whole side and the fight breaks out organically.
+// ---------------------------------------------------------------------------
+// ENEMY LANDING FORCE — phase-gated (CONCEPT.md's settled "Phases" line: "a
+// run has a PREPARATION phase (build-up, fog off) and a COMBAT phase (fog
+// on, the enemy arrives)"). Deliberately NOT spawned here at load — the
+// whole point of the phase split is that PREP is a peaceful build-up with no
+// enemy on the map. This function is only ever invoked from
+// triggerBeginCombat above, itself gated on beginCombat()'s one-shot return
+// value, so the invasion force appears exactly once, the instant COMBAT
+// actually begins (C key / BEGIN COMBAT button / window.__debug.phase.beginCombat
+// — all three routes go through the same triggerBeginCombat).
+//
+// Composition mirrors the former combined-arms demo's enemy roster (mixed
+// ground + air, so SAM/AA/fighter targeting is exercised the moment the
+// player has anything built to exercise it against) — it just no longer
+// camps on the map for the whole prep phase first. eBase sits on a coastal
+// beach tile near the map's farthest-from-capital city (game/mapgen.js's
+// enemySpawn/nearestBeach); every ground spawn goes through spawnGroundUnit
+// so it lands on legal terrain regardless of that run's exact beach/city
+// shape.
+function spawnEnemyLandingForce() {
+  for (let i = 0; i < 3; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
+  for (let i = 0; i < 2; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
+  for (let i = 0; i < 2; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
+  spawnGroundUnit('aa', eBase.x + 20, eBase.y - 30, 'enemy');
+  spawnUnit(world, 'fighter', eBase.x - 20, eBase.y - 100, 'enemy');
+  spawnUnit(world, 'strikejet', eBase.x + 35, eBase.y - 115, 'enemy');
+
+  // FOG OF WAR: nearestEnemy's seek is gated on detection (game/fog.js), and
+  // pBase/eBase typically sit well beyond any unit's vision — nothing would
+  // ever meet without a nudge. Give ONLY the freshly-landed invaders a
+  // scripted opening order toward the player's base (a legitimate order, not
+  // autonomous seeking, so it doesn't defeat the "no beelining toward hidden
+  // enemies" rule) — the player's own garrison is the player's to command
+  // from here, it does not get an auto-order. holdGround batteries (the
+  // landing force's AA) sit this out and hold the beachhead, per doctrine.
+  for (const u of world.units) {
+    if (u.side === 'enemy') orderAdvance(u, pBase);
+  }
+}
 function orderAdvance(u, towardBase) {
   if (u.def.dispositions.includes('holdGround')) return;
   if (MOVE_CLASSES[u.def.moveClass].requiresWater) {
@@ -215,7 +282,6 @@ function orderAdvance(u, towardBase) {
     u.order = { x: towardBase.x + (Math.random() - 0.5) * 120, y: towardBase.y + (Math.random() - 0.5) * 120 };
   }
 }
-for (const u of world.units) orderAdvance(u, u.side === 'player' ? eBase : pBase);
 
 let hovered = null, lastMouse = { x: 0, y: 0 };
 canvas.addEventListener('mousemove', e => {
@@ -545,6 +611,55 @@ for (const r of RESOURCE_LIST) {
 function enterImportPanel() { importPanel.classList.add('open'); }
 function exitImportPanel() { importPanel.classList.remove('open'); }
 
+// ---------------------------------------------------------------------------
+// GUIDANCE PANEL (CONCEPT.md's settled "First-run / tutorial is OPEN, not
+// dictated" paragraph — read it before touching this block). This is
+// EXPLICITLY NOT a scripted walkthrough: it never disables a button, never
+// requires a step to be "completed" before some other system unlocks, and
+// every building/production/import/phase control keeps working identically
+// whether this panel is open or closed. It only ever DISPLAYS the suggested
+// path (COPY.GUIDANCE_STEPS) and, as a read-only nicety, checks a step off
+// once its real game-state condition becomes true — that checkmark is pure
+// feedback, never a gate on anything. Dismissable via the × button or the H
+// key; H toggles both ways, so dismissing is never a one-way door either.
+const guidancePanel = document.getElementById('guidancePanel');
+const guidanceTitleEl = document.getElementById('guidanceTitle');
+const guidanceStepsEl = document.getElementById('guidanceSteps');
+const guidanceFootnoteEl = document.getElementById('guidanceFootnote');
+const guidanceCloseBtn = document.getElementById('guidanceCloseBtn');
+
+guidanceTitleEl.textContent = COPY.GUIDANCE_TITLE;
+guidanceFootnoteEl.textContent = COPY.GUIDANCE_DISMISS_HINT;
+for (const step of COPY.GUIDANCE_STEPS) {
+  const li = document.createElement('li');
+  li.textContent = step;
+  guidanceStepsEl.appendChild(li);
+}
+function setGuidanceVisible(visible) { guidancePanel.classList.toggle('hidden', !visible); }
+function toggleGuidance() { setGuidanceVisible(guidancePanel.classList.contains('hidden')); }
+guidanceCloseBtn.addEventListener('click', () => setGuidanceVisible(false));
+
+// OPTIONAL passive-progress nicety (skip-if-costly per the task spec — this
+// stayed cheap so it shipped): loose pattern-matches on real game state,
+// generic over PRODUCTION_DEFS rather than any one hardcoded category/
+// building name, so it keeps working if the designer adds/renames categories
+// later. Purely cosmetic strike-through feedback — nothing here is read by
+// any gameplay system, and nothing gates on it.
+const PRODUCTION_FACILITY_KEYS = new Set(Object.values(PRODUCTION_DEFS).map(p => p.facility));
+function updateGuidanceProgress() {
+  const playerBuildings = world.buildings.filter(b => b.side === 'player');
+  const hasProductionFacility = playerBuildings.some(b => PRODUCTION_FACILITY_KEYS.has(b.key));
+  const hasChosenCategory = !!selectedCategory;
+  const hasCategoryFacility = !!selectedCategory
+    && playerBuildings.some(b => b.key === PRODUCTION_DEFS[selectedCategory].facility);
+  const hasMine = playerBuildings.some(b => b.key === 'mine');
+  const isProducing = playerBuildings.some(b => b.prodState === 'producing');
+  const inCombat = phaseState.phase === PHASES.COMBAT;
+  const done = [hasProductionFacility, hasChosenCategory, hasCategoryFacility, hasMine, isProducing, inCombat];
+  const items = guidanceStepsEl.children;
+  for (let i = 0; i < items.length && i < done.length; i++) items[i].classList.toggle('done', !!done[i]);
+}
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'r' || e.key === 'R') {
@@ -559,6 +674,10 @@ addEventListener('keydown', e => {
     if (prodPanel.classList.contains('open')) exitProdPanel(); else enterProdPanel();
   } else if (e.key === 'i' || e.key === 'I') {
     if (importPanel.classList.contains('open')) exitImportPanel(); else enterImportPanel();
+  } else if (e.key === 'h' || e.key === 'H') {
+    // GUIDANCE PANEL TOGGLE — dismiss/restore only, never gates anything
+    // (see the GUIDANCE PANEL section above for the full rationale).
+    toggleGuidance();
   } else if (e.key === 'f' || e.key === 'F') {
     // MANUAL FOG TOGGLE (player override, CONCEPT.md Pillar 3: "player-
     // toggleable on/off regardless of phase"). Writes fogState.revealAll
@@ -832,6 +951,22 @@ window.__debug = {
       t += step;
     }
   },
+  // FIRST-RUN FRAMEWORK hooks, for headless verification: spawnEnemyLandingForce
+  // is exposed directly too (in ADDITION to going through phase.beginCombat
+  // above) so a test can check it's idempotent — call it a second time
+  // in isolation and diff world.units.length, without needing to also flip
+  // phase state to do so. guidance exposes the panel's DOM + visibility +
+  // toggle so a test can confirm dismiss/restore without real key events, and
+  // COPY so a test (or the designer) can find every placeholder string from
+  // one place without grepping the file.
+  spawnEnemyLandingForce, COPY,
+  guidance: {
+    panel: guidancePanel,
+    get visible() { return !guidancePanel.classList.contains('hidden'); },
+    toggle: toggleGuidance,
+    show: () => setGuidanceVisible(true),
+    hide: () => setGuidanceVisible(false),
+  },
 };
 
 let last = performance.now();
@@ -910,6 +1045,12 @@ function loop(now) {
   const announcing = announcement.text && performance.now() < announcement.until;
   announcementDiv.classList.toggle('show', !!announcing);
   if (announcing) announcementDiv.textContent = announcement.text;
+
+  // GUIDANCE PANEL passive progress reflection (see updateGuidanceProgress
+  // above) — cheap enough to run unconditionally every frame; a no-op visual
+  // update when the panel is dismissed (it's just hidden via CSS, not torn
+  // down), so re-showing it later still reflects current progress.
+  updateGuidanceProgress();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

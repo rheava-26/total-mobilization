@@ -132,15 +132,18 @@
     opacity: 0; transition: opacity .3s ease; box-shadow: 0 8px 28px rgba(0,0,0,.5);
   }
   #announcement.show { opacity: 1; }
-  /* GUIDANCE PANEL (first-run framework — CONCEPT.md's settled "First-run /
-     tutorial is OPEN, not dictated" paragraph): an offered, dismissable path,
-     NOT a gate — every other panel/control on this page works identically
-     whether this is open or hidden. Anchored bottom-left, clear of
-     #buildbar (bottom-center) and #prodPanel/#importPanel (top-left, only
-     shown when their own key is pressed), so it never has to fight another
-     panel for space while all four can in principle be open at once. */
+  /* GUIDANCE PANEL — now the DYNAMIC, goal-driven CHECKLIST (Part A —
+     CONCEPT.md's settled "Onboarding / tutorial concept" paragraph: "an
+     ordered step list shown at the TOP of the screen"). Still an offered,
+     dismissable path, NOT a gate — every other panel/control on this page
+     works identically whether this is open or hidden (see the "First-run /
+     tutorial is OPEN, not dictated" paragraph). Repositioned from its old
+     bottom-left spot to top-center per the task's explicit placement;
+     #phaseHud already owns the very top-center strip (top:10px) so this
+     sits just below it rather than overlapping. */
   #guidancePanel {
-    position: fixed; left: 16px; bottom: 16px; width: 300px;
+    position: fixed; left: 50%; top: 66px; transform: translateX(-50%);
+    width: 400px; max-width: calc(100% - 24px); max-height: 42vh; overflow-y: auto;
     padding: 10px 12px; background: rgba(8,14,26,.94); border: 1px solid #2f5f9c;
     border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.5);
     color: #eaf2ff; font: 12px Consolas, monospace;
@@ -153,11 +156,29 @@
     padding: 1px 9px; cursor: pointer; font: 13px Consolas, monospace; line-height: 1.4;
   }
   #guidancePanel button.gClose:hover { background: #1c3a5e; }
+  /* GOALS row — one pill per player-selected goal (game/tutorialplan.js
+     goalState, set by clicking a unit/category in the tree view, G). Empty
+     (and collapses to nothing, margin-wise) until at least one goal exists. */
+  #guidanceGoals:not(:empty) { margin-bottom: 6px; }
+  #guidancePanel .goalTag {
+    display: inline-block; padding: 2px 9px; margin: 0 5px 4px 0; border-radius: 10px;
+    background: #12233a; border: 1px solid #2f5f9c; color: #bfe9ff; font-size: 11px;
+  }
+  /* a satisfied goal (its whole reverse-planned chain is complete — the
+     "we're making jets now" payoff) reads green/filled, same success-green
+     vocabulary as the tech tree's own 'built' state. */
+  #guidancePanel .goalTag.done { background: #123b2a; border-color: #3fae76; color: #6dffb0; }
   #guidancePanel ol { margin: 0; padding-left: 18px; line-height: 1.55; color: #bfe9ff; }
-  /* "done" is a passive, read-only reflection of real game state (see
-     updateGuidanceProgress in main.js) — cosmetic only, never a gate, so it
-     deliberately looks like a checked-off suggestion, not an unlocked step. */
+  /* "done" reflects LIVE game state (game/tutorialplan.js's per-step
+     satisfied check) — cosmetic only, never a gate, so it deliberately looks
+     like a checked-off suggestion, not an unlocked step. */
   #guidancePanel li.done { color: #6dffb0; text-decoration: line-through; opacity: .7; }
+  /* "next" — the current/next ACTIONABLE step (task's explicit highlight
+     requirement): the first not-yet-satisfied step in the reverse-planned
+     order, called out in amber so the player always has one obvious next
+     move even with a long merged plan. */
+  #guidancePanel li.next { color: #ffcf5c; font-weight: bold; }
+  #guidancePanel li.hint { list-style: none; margin-left: -18px; color: #9fb6c4; font-style: italic; }
   #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; line-height: 1.4; }
   /* MAIN MENU (scenario picker — CONCEPT.md "Design directions raised" /
      "Main-menu map/scenario picker" bullet; game/menu.js owns the content +
@@ -239,16 +260,21 @@
   <b id="techPanelTitle"></b>
   <div id="techList"></div>
 </div>
-<!-- GUIDANCE PANEL — open by default, dismissable (× or H), never gates
-     anything (see main.js's GUIDANCE PANEL section for the full rationale
-     and CONCEPT.md's settled "First-run / tutorial is OPEN, not dictated"
-     paragraph). Content (title/steps/footnote) is filled in by main.js from
-     the COPY placeholder block so there's exactly one place to edit copy. -->
+<!-- GUIDANCE PANEL — the dynamic, goal-driven CHECKLIST (Part A). Open by
+     default, dismissable (× or H), never gates anything (see main.js's
+     GUIDANCE PANEL section for the full rationale and CONCEPT.md's settled
+     "First-run / tutorial is OPEN, not dictated" paragraph). Content
+     (title/goals/steps/footnote) is filled in by main.js from
+     game/tutorialplan.js's TUTORIAL_COPY + the live computePlan() output —
+     #guidanceGoals lists the player's selected goals (pills, ✓ once each
+     one's whole reverse-planned chain is satisfied); #guidanceSteps is the
+     single merged/ordered/deduped step list itself. -->
 <div id="guidancePanel">
   <div class="gHeader">
     <b id="guidanceTitle"></b>
     <button id="guidanceCloseBtn" class="gClose" title="Dismiss (H to toggle)">×</button>
   </div>
+  <div id="guidanceGoals"></div>
   <ol id="guidanceSteps"></ol>
   <div class="gFootnote" id="guidanceFootnote"></div>
 </div>

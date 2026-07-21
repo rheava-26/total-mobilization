@@ -22,6 +22,12 @@ import { PHASES, createPhaseState, applyPhaseFog, beginCombat } from './game/pha
 import { showMainMenu, randomSeed, MENU_COPY, SCENARIO_DEFS } from './game/menu.js';
 import { getTechTreeGraph, computeNodeState } from './game/techtree.js';
 import { createTechTreeView } from './game/techtreeview.js';
+// GOAL-DRIVEN TUTORIAL (Part A — CONCEPT.md's settled "Onboarding / tutorial
+// concept" paragraph): game/tutorialplan.js owns goal-selection state and the
+// reverse-planner; this is the ONLY place the two live states it needs
+// (goalState, the plan derived from it) are created/threaded through, same
+// pattern as researchState/economy above.
+import { createGoalState, toggleGoal, isGoalNode, computePlan, TUTORIAL_COPY } from './game/tutorialplan.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -31,21 +37,14 @@ import { createTechTreeView } from './game/techtreeview.js';
 // functional/plain and marked [PLACEHOLDER] on purpose — find-and-replace
 // this one block when writing the real tutorial/lore prose; nothing else in
 // the file reads these values for gameplay logic, they're pure display text.
+// NOTE: the guidance panel's copy (title/steps/dismiss hint/payoff) now
+// lives in game/tutorialplan.js's TUTORIAL_COPY — its content is DYNAMIC
+// (goal-driven, see the GUIDANCE PANEL section below), so it moved next to
+// the planner that generates it rather than staying a static list here. The
+// reactive director's lines (off-track acknowledgement, the gag chain, the
+// "are you five" dialog) live in game/director.js's DIRECTOR_COPY for the
+// same reason.
 const COPY = {
-  // Guidance panel (see the GUIDANCE PANEL section below, near the import
-  // panel) — header + the suggested-path list + the footnote reminding the
-  // player it's optional. Order matches the six loose progress checks in
-  // updateGuidanceProgress() below, but nothing enforces that order in play.
-  GUIDANCE_TITLE: '[PLACEHOLDER] Suggested path (optional)',
-  GUIDANCE_STEPS: [
-    '[PLACEHOLDER] Build heavy industry to supply your war effort',
-    '[PLACEHOLDER] Choose a production category (P)',
-    '[PLACEHOLDER] Build the matching factory',
-    '[PLACEHOLDER] Discover it’s unfed — build mines on deposits to supply it',
-    '[PLACEHOLDER] Watch production come online',
-    '[PLACEHOLDER] Begin combat (C) and repel the landing',
-  ],
-  GUIDANCE_DISMISS_HINT: '[PLACEHOLDER] A suggestion, not a script — dismiss any time (× or H). Nothing above is required or gated.',
   // Shown in the center-screen announcement banner the instant the enemy
   // landing force actually spawns (see triggerBeginCombat below).
   COMBAT_BEGIN_ANNOUNCEMENT: '[PLACEHOLDER] COMBAT PHASE BEGUN — THE ENEMY HAS LANDED',
@@ -147,18 +146,39 @@ economy.manpower = Math.round(economy.manpower * startingEcoMult);
 // researched' until this state says otherwise).
 const researchState = createResearchState();
 
+// GOAL STATE (Part A — game/tutorialplan.js, CONCEPT.md's settled
+// "Onboarding / tutorial concept" paragraph beat 3: "the player ... selects
+// what they want to end up making"). Created once at load; mutated from
+// exactly one place — the tech tree view's click handler just below — and
+// read by the checklist UI (GUIDANCE PANEL section further down) and, once
+// Part B's director module lands, the off-track classifier.
+const goalState = createGoalState();
+
 // ---------------------------------------------------------------------------
 // TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game tech/
 // production tree" direction — game/techtree.js builds the graph, game/
 // techtreeview.js draws it). Created once at load, toggled by the G key
 // (see the keydown handler below) — a dedicated full-screen canvas with its
 // own pan/zoom camera, entirely independent of the main renderer's camera.
-// getLiveCtx returns the SAME live world/economy/researchState objects the
-// real game loop mutates every frame, so every time the view draws it reads
-// current state — that's what makes the tree "fill out" as the player
-// builds/researches, per the task's explicit payoff requirement.
+// getLiveCtx returns the SAME live world/economy/researchState/goalState
+// objects the real game loop mutates every frame, so every time the view
+// draws it reads current state — that's what makes the tree "fill out" as
+// the player builds/researches, per the task's explicit payoff requirement,
+// and what lets it draw goal markers on whatever's currently selected.
+//
+// onNodeClick is the GOAL-SELECTION half of the task ("click a finished-
+// product node to toggle it as an active GOAL"): the view itself only ever
+// reports "this node was clicked" (see techtreeview.js's own header comment
+// on staying graphics-only) — this callback is where that turns into an
+// actual goalState mutation, gated on isGoalNode so clicking a resource/
+// building/tech node (a PREREQUISITE, never a goal itself) is silently a
+// no-op rather than an error.
 const techTreeCanvas = document.getElementById('techTreeCanvas');
-const techTreeView = createTechTreeView(techTreeCanvas, () => ({ world, economy, researchState }));
+const techTreeView = createTechTreeView(techTreeCanvas, () => ({ world, economy, researchState, goalState }), {
+  onNodeClick(node) {
+    if (isGoalNode(node)) toggleGoal(goalState, node.id);
+  },
+});
 function toggleTechTree() {
   if (techTreeView.isOpen) { techTreeView.hide(); return; }
   // Full-screen exclusive overlay — close every other panel/mode first so
@@ -766,8 +786,8 @@ for (const techId of Object.keys(TECH_DEFS)) {
   techRows[techId] = { status, btn };
 }
 // Live status refresh — cheap enough (six rows) to call unconditionally
-// every frame from loop() below, same spirit as updateGuidanceProgress's
-// own "cheap enough to run unconditionally" comment. A locked row shows
+// every frame from loop() below, same spirit as updateGuidancePanel's own
+// "cheap enough to run unconditionally" comment. A locked row shows
 // exactly what's still missing (buildings AND/OR techs); a researchable row
 // shows the Start button, disabled (not hidden) when the gate is met but
 // the player can't currently afford it — so the player can see the tech is
@@ -804,52 +824,74 @@ function enterTechPanel() { techPanel.classList.add('open'); }
 function exitTechPanel() { techPanel.classList.remove('open'); }
 
 // ---------------------------------------------------------------------------
-// GUIDANCE PANEL (CONCEPT.md's settled "First-run / tutorial is OPEN, not
-// dictated" paragraph — read it before touching this block). This is
-// EXPLICITLY NOT a scripted walkthrough: it never disables a button, never
-// requires a step to be "completed" before some other system unlocks, and
-// every building/production/import/phase control keeps working identically
-// whether this panel is open or closed. It only ever DISPLAYS the suggested
-// path (COPY.GUIDANCE_STEPS) and, as a read-only nicety, checks a step off
-// once its real game-state condition becomes true — that checkmark is pure
-// feedback, never a gate on anything. Dismissable via the × button or the H
-// key; H toggles both ways, so dismissing is never a one-way door either.
+// GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
+// md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
+// player picks goals in the tree, "the game reverse-plans the how", "the
+// payoff is legible"). This EVOLVES the panel rather than replacing it —
+// same DOM ids, same dismiss/non-gating contract as before ("First-run /
+// tutorial is OPEN, not dictated": never disables a button, never requires a
+// step before some other system unlocks, every control keeps working
+// identically whether this is open or closed) — only its CONTENT changed,
+// from a fixed COPY.GUIDANCE_STEPS list to game/tutorialplan.js's
+// computePlan(goalState, ...) output, recomputed live every frame so it
+// always reflects the player's CURRENT goal selection and CURRENT progress.
+// Repositioned to the TOP of the screen per the task's explicit placement
+// (see index.html's #guidancePanel CSS) — previously bottom-left.
 const guidancePanel = document.getElementById('guidancePanel');
 const guidanceTitleEl = document.getElementById('guidanceTitle');
+const guidanceGoalsEl = document.getElementById('guidanceGoals');
 const guidanceStepsEl = document.getElementById('guidanceSteps');
 const guidanceFootnoteEl = document.getElementById('guidanceFootnote');
 const guidanceCloseBtn = document.getElementById('guidanceCloseBtn');
 
-guidanceTitleEl.textContent = COPY.GUIDANCE_TITLE;
-guidanceFootnoteEl.textContent = COPY.GUIDANCE_DISMISS_HINT;
-for (const step of COPY.GUIDANCE_STEPS) {
-  const li = document.createElement('li');
-  li.textContent = step;
-  guidanceStepsEl.appendChild(li);
-}
+guidanceTitleEl.textContent = TUTORIAL_COPY.CHECKLIST_TITLE;
+guidanceFootnoteEl.textContent = TUTORIAL_COPY.CHECKLIST_DISMISS_HINT;
 function setGuidanceVisible(visible) { guidancePanel.classList.toggle('hidden', !visible); }
 function toggleGuidance() { setGuidanceVisible(guidancePanel.classList.contains('hidden')); }
 guidanceCloseBtn.addEventListener('click', () => setGuidanceVisible(false));
 
-// OPTIONAL passive-progress nicety (skip-if-costly per the task spec — this
-// stayed cheap so it shipped): loose pattern-matches on real game state,
-// generic over PRODUCTION_DEFS rather than any one hardcoded category/
-// building name, so it keeps working if the designer adds/renames categories
-// later. Purely cosmetic strike-through feedback — nothing here is read by
-// any gameplay system, and nothing gates on it.
-const PRODUCTION_FACILITY_KEYS = new Set(Object.values(PRODUCTION_DEFS).map(p => p.facility));
-function updateGuidanceProgress() {
-  const playerBuildings = world.buildings.filter(b => b.side === 'player');
-  const hasProductionFacility = playerBuildings.some(b => PRODUCTION_FACILITY_KEYS.has(b.key));
-  const hasChosenCategory = !!selectedCategory;
-  const hasCategoryFacility = !!selectedCategory
-    && playerBuildings.some(b => b.key === PRODUCTION_DEFS[selectedCategory].facility);
-  const hasMine = playerBuildings.some(b => b.key === 'mine');
-  const isProducing = playerBuildings.some(b => b.prodState === 'producing');
-  const inCombat = phaseState.phase === PHASES.COMBAT;
-  const done = [hasProductionFacility, hasChosenCategory, hasCategoryFacility, hasMine, isProducing, inCombat];
-  const items = guidanceStepsEl.children;
-  for (let i = 0; i < items.length && i < done.length; i++) items[i].classList.toggle('done', !!done[i]);
+// Recomputed on demand (cheap: the whole techtree graph is ~50-60 nodes, see
+// game/techtree.js's own "cheap enough to run unconditionally" comments) —
+// this is the SAME plan object both the checklist render below and (once
+// wired) the reactive director's off-track classifier read, so the two
+// systems can never disagree about "what's the current plan."
+function getCurrentPlan() {
+  return computePlan(goalState, { world, economy, researchState });
+}
+
+// One-shot PAYOFF tracking ("we're making jets now" — CONCEPT.md: "gives
+// feedback"): fires exactly once per goal completion, not every frame while
+// it stays true. Keyed on goalId so toggling a goal off and back on later
+// re-arms its payoff line (a goal that's ALREADY satisfied the moment it's
+// re-selected reads as freshly "done," not silently skipped).
+const payoffAnnounced = new Set();
+function updateGuidancePanel() {
+  const plan = getCurrentPlan();
+  if (!plan.goals.length) {
+    guidanceGoalsEl.innerHTML = '';
+    guidanceStepsEl.innerHTML = `<li class="hint">${TUTORIAL_COPY.NO_GOALS_HINT}</li>`;
+    return plan;
+  }
+  guidanceGoalsEl.innerHTML = plan.goals.map(g =>
+    `<span class="goalTag${g.satisfied ? ' done' : ''}">${g.satisfied ? '✓ ' : ''}${g.node.name}</span>`
+  ).join('');
+  // "current/next actionable step" — the FIRST unsatisfied step in
+  // topological order, per the task's explicit highlight requirement.
+  const nextIdx = plan.steps.findIndex(s => !s.satisfied);
+  guidanceStepsEl.innerHTML = plan.steps.map((s, i) =>
+    `<li class="${s.satisfied ? 'done' : ''}${i === nextIdx ? ' next' : ''}">${s.label}</li>`
+  ).join('') || `<li class="hint">${TUTORIAL_COPY.NO_GOALS_HINT}</li>`;
+  for (const g of plan.goals) {
+    if (g.satisfied) {
+      if (!payoffAnnounced.has(g.goalId)) {
+        payoffAnnounced.add(g.goalId);
+        flashMessage(TUTORIAL_COPY.PAYOFF(g.node.name));
+      }
+    } else {
+      payoffAnnounced.delete(g.goalId);
+    }
+  }
+  return plan;
 }
 
 addEventListener('keydown', e => {
@@ -1223,6 +1265,20 @@ window.__debug = {
     view: techTreeView,
     toggle: toggleTechTree,
   },
+  // GOAL-DRIVEN TUTORIAL hooks (Part A — game/tutorialplan.js), for headless
+  // verification: goalState is the live Set-backed state (read .goals
+  // directly, or mutate via toggleGoal below without needing a real click on
+  // the tree canvas); getPlan() returns the SAME computePlan(...) output the
+  // checklist UI renders every frame, so a test can assert on step order/
+  // satisfaction directly; TUTORIAL_COPY exposes every placeholder string
+  // from one place, same convention as COPY/RESEARCH_COPY above.
+  tutorial: {
+    goalState,
+    toggleGoal: (nodeId) => toggleGoal(goalState, nodeId),
+    isGoalNode,
+    getPlan: getCurrentPlan,
+    TUTORIAL_COPY,
+  },
 };
 
 let last = performance.now();
@@ -1321,15 +1377,17 @@ function loop(now) {
   announcementDiv.classList.toggle('show', !!announcing);
   if (announcing) announcementDiv.textContent = announcement.text;
 
-  // GUIDANCE PANEL passive progress reflection (see updateGuidanceProgress
-  // above) — cheap enough to run unconditionally every frame; a no-op visual
-  // update when the panel is dismissed (it's just hidden via CSS, not torn
-  // down), so re-showing it later still reflects current progress.
-  updateGuidanceProgress();
+  // GUIDANCE PANEL — dynamic checklist refresh (see updateGuidancePanel
+  // above) — recomputes the reverse-planned step list from LIVE state every
+  // frame; cheap enough to run unconditionally (small graph, see
+  // game/tutorialplan.js). A no-op visual update when the panel is dismissed
+  // (it's just hidden via CSS, not torn down), so re-showing it later still
+  // reflects current progress.
+  updateGuidancePanel();
 
   // RESEARCH PANEL live refresh (see the RESEARCH PANEL section above) —
   // cheap (six static rows, text/visibility updates only), so unconditional
-  // every frame same as updateGuidanceProgress just above.
+  // every frame same as updateGuidancePanel just above.
   updateTechPanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,

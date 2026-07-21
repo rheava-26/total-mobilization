@@ -343,7 +343,28 @@ const FRAME_BY_KIND = {
 };
 
 // ---------------------------------------------------------------------------
-export function createTechTreeView(canvas, getLiveCtx) {
+// GOAL MARKER — the visual half of "click a finished-product node to toggle
+// it as a GOAL" (game/tutorialplan.js owns the goal STATE and the reverse
+// planner; this file only draws it). A dashed gold ring outside the node's
+// normal frame — deliberately a SEPARATE visual channel from the palette's
+// state ring (locked/researchable/built/...) so "this is a goal" reads
+// independently of whatever state the node happens to be in right now (a
+// LOCKED node can absolutely be a goal — that's the whole point of picking a
+// future target before you've built anything toward it).
+function drawGoalMarker(ctx, r) {
+  ctx.save();
+  ctx.strokeStyle = '#ffe066';
+  ctx.lineWidth = Math.max(2, r * 0.16);
+  ctx.setLineDash([r * 0.32, r * 0.22]);
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.32, 0, 6.28);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+export function createTechTreeView(canvas, getLiveCtx, opts = {}) {
   const ctx = canvas.getContext('2d');
   const cam = { x: 0, y: 0, zoom: 1 };
   let open = false;
@@ -396,6 +417,22 @@ export function createTechTreeView(canvas, getLiveCtx) {
   });
   attachCameraControls(canvas, cam, { isEntityHit: () => !!hovered, minZoom: 0.15, maxZoom: 3.5 });
 
+  // GOAL SELECTION (task: "click a finished-product node to toggle it as an
+  // active GOAL"). A plain 'click' listener rather than piggybacking on
+  // pointerdown/mousemove: attachCameraControls already refuses to START a
+  // pan-drag on top of a hovered node (isEntityHit above), so a genuine click
+  // (pointerdown+pointerup with no drag in between) still fires the browser's
+  // native 'click' event normally — this never fights panning. This view
+  // stays graphics-only per its own header comment: it doesn't own goal
+  // state, it just reports "this node was clicked" to whoever created it
+  // (main.js), which decides whether the node is goal-able and mutates
+  // game/tutorialplan.js's goalState.
+  canvas.addEventListener('click', e => {
+    if (!opts.onNodeClick) return;
+    const n = nodeAtPoint(e.clientX, e.clientY);
+    if (n) opts.onNodeClick(n);
+  });
+
   function fitToGraph() {
     const { nodes } = getTechTreeGraph();
     if (!nodes.length) return;
@@ -442,7 +479,7 @@ export function createTechTreeView(canvas, getLiveCtx) {
     ctx.restore();
   }
 
-  function drawNode(n, stateInfo, isHovered) {
+  function drawNode(n, stateInfo, isHovered, isGoal) {
     const [sx, sy] = worldToScreen(n.x, n.y);
     const r = NODE_RADIUS * cam.zoom * devicePixelRatio;
     if (sx < -r * 2 || sx > canvas.width + r * 2 || sy < -r * 2 || sy > canvas.height + r * 2) return false;
@@ -468,6 +505,7 @@ export function createTechTreeView(canvas, getLiveCtx) {
     (ICON_GLYPHS[glyphName] || ICON_GLYPHS.gear)(ctx, ICON_SIZE * iconScale);
 
     drawBadge(stateInfo.badge, pal, r);
+    if (isGoal) drawGoalMarker(ctx, r);
     ctx.restore();
 
     // label — screen space, clamped size, only drawn once icons are legibly
@@ -658,16 +696,22 @@ export function createTechTreeView(canvas, getLiveCtx) {
 
     const stateById = new Map();
     for (const n of nodes) stateById.set(n.id, computeNodeState(n, liveCtx));
+    // GOAL SET — see the GOAL MARKER comment above: this view only READS
+    // liveCtx.goalState (game/tutorialplan.js owns it), never mutates it
+    // directly. Guarded for callers that don't pass one (defensive — every
+    // real caller does) so the tree still renders with zero goal markers
+    // rather than throwing.
+    const goalIds = (liveCtx.goalState && liveCtx.goalState.goals) || new Set();
 
     drawTierHeaders();
     drawEdges(stateById, hovered);
-    for (const n of nodes) drawNode(n, stateById.get(n.id), n === hovered);
+    for (const n of nodes) drawNode(n, stateById.get(n.id), n === hovered, goalIds.has(n.id));
     if (hovered) drawTooltip(hovered, stateById.get(hovered.id));
 
     ctx.save();
     ctx.font = '11px Consolas, monospace';
     ctx.fillStyle = 'rgba(159,182,196,0.85)';
-    ctx.fillText('G: close tree view  —  drag: pan  —  wheel: zoom  —  hover a node for specifics', 14 * devicePixelRatio, canvas.height - 14 * devicePixelRatio);
+    ctx.fillText('G: close tree view  —  drag: pan  —  wheel: zoom  —  hover a node for specifics  —  click a unit/category to set it as a goal', 14 * devicePixelRatio, canvas.height - 14 * devicePixelRatio);
     ctx.restore();
   }
 

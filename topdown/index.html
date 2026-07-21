@@ -180,6 +180,56 @@
   #guidancePanel li.next { color: #ffcf5c; font-weight: bold; }
   #guidancePanel li.hint { list-style: none; margin-left: -18px; color: #9fb6c4; font-style: italic; }
   #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; line-height: 1.4; }
+  /* DIRECTOR CORNER BUBBLE (Part B — CONCEPT.md's settled "Corner
+     commentator" direction, part 1, the mechanic: "an event-driven corner
+     speech-bubble ... quips as designer-written placeholder text"). No
+     character art (deferred, per that paragraph) — just the bubble itself,
+     bottom-right so it never fights #guidancePanel (top-center) or
+     #buildbar (bottom-center) for space. Transient: main.js toggles the
+     .show class the same way #announcement's .show class already works. */
+  #directorBubble {
+    position: fixed; right: 16px; bottom: 16px; max-width: 300px;
+    padding: 10px 13px; background: rgba(8,14,26,.94); border: 1px solid #5b7fe6;
+    border-radius: 11px 11px 2px 11px; color: #eaf2ff; font: 12px Consolas, monospace;
+    line-height: 1.45; opacity: 0; transform: translateY(6px);
+    transition: opacity .25s ease, transform .25s ease; pointer-events: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5); z-index: 300;
+  }
+  #directorBubble.show { opacity: 1; transform: translateY(0); }
+  /* SILLY-MODE SELF-SABOTAGE GAG CHAIN — the "are you five" confirm dialog
+     and the two terminal screens (task point 6). Both are full-screen modal
+     overlays, above even the tech tree view (#techTreeCanvas z-index 500)
+     since they're meant to be an unmissable, deliberate escalation, not one
+     more panel. */
+  #areYouFiveDialog {
+    display: none; position: fixed; inset: 0; z-index: 2000;
+    align-items: center; justify-content: center; background: rgba(2,4,8,.72);
+  }
+  #areYouFiveDialog.open { display: flex; }
+  #areYouFiveDialog .modalPanel {
+    background: #0e1c2f; border: 1px solid #2f5f9c; border-radius: 10px;
+    padding: 24px 28px; max-width: 380px; color: #eaf2ff; font: 13px Consolas, monospace;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  #areYouFiveDialog .modalRow { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+  #areYouFiveDialog button {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 6px;
+    padding: 8px 22px; cursor: pointer; font: 13px Consolas, monospace;
+  }
+  #areYouFiveDialog button:hover { background: #1c3a5e; }
+  /* Mock "too young to play"/"fired" terminal takeover — approximates "the
+     game instantly closes" (a web page cannot force-close its own tab; see
+     main.js's window.close() bonus-attempt comment) with a black-screen
+     takeover instead, which works everywhere. */
+  #takeoverScreen {
+    display: none; position: fixed; inset: 0; z-index: 2100;
+    background: #000; align-items: center; justify-content: center;
+  }
+  #takeoverScreen.open { display: flex; }
+  #takeoverText {
+    color: #3fff6d; font: 16px Consolas, monospace; white-space: pre-line;
+    text-align: center; line-height: 1.9; text-shadow: 0 0 8px rgba(63,255,109,.5);
+  }
   /* MAIN MENU (scenario picker — CONCEPT.md "Design directions raised" /
      "Main-menu map/scenario picker" bullet; game/menu.js owns the content +
      click wiring). Shown BEFORE the game boots by default, covering the
@@ -277,6 +327,27 @@
   <div id="guidanceGoals"></div>
   <ol id="guidanceSteps"></ol>
   <div class="gFootnote" id="guidanceFootnote"></div>
+</div>
+<!-- DIRECTOR CORNER BUBBLE — Part B's reactive-line surface (off-track
+     acknowledgement + the gag chain's "confused, replaced" line). Content
+     set every frame from main.js's DIRECTOR section. -->
+<div id="directorBubble"></div>
+<!-- "ARE YOU FIVE" DIALOG — silly-mode self-sabotage gag chain, stage 2.
+     Hidden until game/director.js's handleBuildingSold reports the pity-
+     building itself was sold. -->
+<div id="areYouFiveDialog">
+  <div class="modalPanel">
+    <p id="areYouFiveText"></p>
+    <div class="modalRow">
+      <button id="areYouFiveYes"></button>
+      <button id="areYouFiveNo"></button>
+    </div>
+  </div>
+</div>
+<!-- TAKEOVER / FIRED SCREEN — gag chain stage 3. Text set per-outcome
+     (TAKEOVER_LINES for "Yes", FIRED_LINES for "No") by main.js. -->
+<div id="takeoverScreen">
+  <div id="takeoverText"></div>
 </div>
 <script type="module" src="main.js"></script>
 </body>

@@ -373,6 +373,27 @@ function removeBuilding(world, map, b) {
   if (i >= 0) world.buildings.splice(i, 1);
 }
 
+// ---------------------------------------------------------------------------
+// SELL / DEMOLISH — a MINIMAL player-initiated "a building goes away" action
+// (didn't exist before this pass; removeBuilding above was only ever reached
+// via hp<=0 destruction). Added because game/director.js's Part B reactive
+// system needs a real sell/delete action point to hook the self-sabotage gag
+// chain onto (CONCEPT.md's settled "Reactive / adaptive guidance"
+// paragraph), and because it's generally useful on its own — a player should
+// be able to reclaim a mis-sited or obsolete building rather than being
+// stuck with every placement forever. Refunds a flat FRACTION of the
+// building's IC cost (not the full price — a demolition isn't a free undo)
+// and otherwise goes through the exact same removeBuilding path a combat
+// kill does (same obstacle-clear, same scorch mark, same map.dirty()) so
+// there's only one "a building goes away" code path in this file.
+export const SELL_REFUND_FRACTION = 0.5; // DESIGNER'S TO TUNE
+export function sellBuilding(world, map, b, economy) {
+  const refund = Math.round(((b.def.cost && b.def.cost.ic) || 0) * SELL_REFUND_FRACTION);
+  if (economy) economy.ic = Math.min(economy.icCap ?? Infinity, economy.ic + refund);
+  removeBuilding(world, map, b);
+  return refund;
+}
+
 // Per-frame building update: FIRST advances construction (P3) — a
 // 'constructing' building gains HP proportional to how much progress it made
 // THIS frame (not recomputed from progress wholesale, so damage taken

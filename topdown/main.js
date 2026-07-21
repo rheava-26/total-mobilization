@@ -1,7 +1,7 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
-import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit } from './game/buildings.js';
+import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
 import {
   createEconomy, updateEconomy, canAffordBuilding, spendForBuilding, buildingCost,
   ECONOMY_TUNABLES, MOBILIZATION_BANDS,
@@ -28,6 +28,16 @@ import { createTechTreeView } from './game/techtreeview.js';
 // (goalState, the plan derived from it) are created/threaded through, same
 // pattern as researchState/economy above.
 import { createGoalState, toggleGoal, isGoalNode, computePlan, TUTORIAL_COPY } from './game/tutorialplan.js';
+// REACTIVE DIRECTOR (Part B — CONCEPT.md's settled "Reactive / adaptive
+// guidance" + "Serious / Silly tone mode" + "Corner commentator" paragraphs):
+// game/director.js owns off-track classification, the tone-mode flag, and
+// the silly-mode self-sabotage gag state machine. main.js's job is only to
+// call it at the real action points and reflect its state into the DOM (the
+// corner bubble, the "are you five" dialog, the takeover/fired screens).
+import {
+  createDirectorState, setToneMode, reactToAction, handleBuildingSold,
+  resolveAreYouFive, resetGag, DIRECTOR_COPY,
+} from './game/director.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -150,9 +160,15 @@ const researchState = createResearchState();
 // "Onboarding / tutorial concept" paragraph beat 3: "the player ... selects
 // what they want to end up making"). Created once at load; mutated from
 // exactly one place — the tech tree view's click handler just below — and
-// read by the checklist UI (GUIDANCE PANEL section further down) and, once
-// Part B's director module lands, the off-track classifier.
+// read by the checklist UI (GUIDANCE PANEL section further down) and Part
+// B's off-track classifier (DIRECTOR section further down).
 const goalState = createGoalState();
+
+// DIRECTOR STATE (Part B — game/director.js). Created once at load; its
+// toneMode/bubble/gag fields are all threaded through the DIRECTOR section
+// further down (sell action, off-track hooks, the corner bubble render,
+// the "are you five" dialog).
+const directorState = createDirectorState();
 
 // ---------------------------------------------------------------------------
 // TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game tech/
@@ -186,6 +202,7 @@ function toggleTechTree() {
   // it, same "enter one mode, exit the others" convention R/B already use.
   if (roadMode.active) exitRoadMode();
   if (buildMode.active) exitBuildMode();
+  if (sellMode.active) exitSellMode();
   if (prodPanel.classList.contains('open')) exitProdPanel();
   if (importPanel.classList.contains('open')) exitImportPanel();
   if (techPanel.classList.contains('open')) exitTechPanel();
@@ -521,6 +538,7 @@ function exitRoadMode() {
   roadMode.previewGoalTile = null;
 }
 function enterRoadMode() {
+  if (sellMode.active) exitSellMode();
   roadMode.active = true;
   roadMode.a = null;
   roadMode.previewPath = null;
@@ -562,6 +580,7 @@ function selectBuildType(key) {
   updateBuildBarUI();
 }
 function enterBuildMode() {
+  if (sellMode.active) exitSellMode();
   buildMode.active = true;
   buildbar.classList.add('open');
   updateBuildBarUI();
@@ -622,6 +641,9 @@ canvas.addEventListener('click', e => {
     spendForBuilding(economy, key);
     spawnBuilding(world, map, key, gx, gy, 'player');
     flashMessage(`${def.name} pinned — under construction.`);
+    // DIRECTOR ACTION POINT (Part B point 1 of 4: "a building placed") —
+    // classify against the current plan and surface an acknowledgement.
+    reactToAction(directorState, { kind: 'building', key }, getCurrentPlan());
   } else {
     const site = sitePlacement(map, key, wx, wy);
     if (!site) {
@@ -637,7 +659,69 @@ canvas.addEventListener('click', e => {
     spendForBuilding(economy, key);
     spawnBuilding(world, map, key, site.x, site.y, 'player');
     flashMessage(`${def.name} sited by the planners — under construction.`);
+    reactToAction(directorState, { kind: 'building', key }, getCurrentPlan());
   }
+});
+
+// ---------------------------------------------------------------------------
+// SELL / DEMOLISH MODE (Part B follow-up — game/buildings.js sellBuilding).
+// Press X to toggle; while active, click a PLAYER building to sell it for a
+// partial IC refund. Minimal on purpose (a mode + a click, same shape as
+// B/R above) — its main job is being a real action point Part B's reactive
+// director (and its silly-mode gag chain) can hook, but it's also just a
+// generically useful "reclaim a mis-sited building" tool on its own.
+const sellMode = { active: false };
+function enterSellMode() {
+  if (roadMode.active) exitRoadMode();
+  if (buildMode.active) exitBuildMode();
+  sellMode.active = true;
+}
+function exitSellMode() { sellMode.active = false; }
+
+// Same footprint hit-test shape as the mousemove hover handler above (world-
+// space rect, not a point-radius) so "click the building" feels consistent
+// with "hover the building" elsewhere on this canvas.
+function playerBuildingAt(wx, wy) {
+  const ts = map.tileSize;
+  for (const b of world.buildings) {
+    if (b.side !== 'player') continue;
+    const x0 = b.gx * ts, y0 = b.gy * ts, x1 = x0 + b.def.footprint.w * ts, y1 = y0 + b.def.footprint.h * ts;
+    if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return b;
+  }
+  return null;
+}
+
+// Sells `b` and routes the result through game/director.js's gag-chain
+// state machine (Part B point 6) — see handleBuildingSold's own header
+// comment for the tri-state contract this switches on. Reads b.key/def/x/y/
+// gx/gy/id BEFORE they'd matter for anything else: sellBuilding removes `b`
+// from world.buildings, but the JS object itself (and every field read
+// below) stays alive, so reading them AFTER the sell is safe — kept in this
+// order only because it reads naturally as "sell it, then react to having
+// sold it."
+function performSell(b) {
+  const name = b.def.name, key = b.key;
+  const refund = sellBuilding(world, map, b, economy);
+  const gagResult = handleBuildingSold(directorState, world, map, economy, b);
+  if (gagResult.type === 'dialog') {
+    showAreYouFiveDialog();
+  } else if (gagResult.type === 'pass') {
+    // DIRECTOR ACTION POINT (Part B point 4 of 4: "a building sold/deleted")
+    // — no gag-chain line already covered this sale, so give it the same
+    // plan-relevance treatment every other action gets.
+    reactToAction(directorState, { kind: 'sell', key }, getCurrentPlan());
+  }
+  // 'handled' -> handleBuildingSold already set the bubble line (the
+  // serious-mode neutral ack, or the silly-mode "confused, replaced" line).
+  flashMessage(`Sold ${name} (+${refund} IC).`);
+}
+
+canvas.addEventListener('click', e => {
+  if (!sellMode.active) return;
+  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+  const b = playerBuildingAt(wx, wy);
+  if (!b) { flashMessage('No building there to sell.'); return; }
+  performSell(b);
 });
 
 // ---------------------------------------------------------------------------
@@ -722,6 +806,8 @@ for (const r of RESOURCE_LIST) {
     flashMessage(ok
       ? `Imported ${IMPORT_TUNABLES.BATCH_SIZE} ${RESOURCE_DEFS[r.id].name}.`
       : `Can't afford to import ${RESOURCE_DEFS[r.id].name} — needs ${importCost().influence} influence + ${importCost().ic} IC.`);
+    // DIRECTOR ACTION POINT (Part B point 3 of 4: "a resource ... imported").
+    if (ok) reactToAction(directorState, { kind: 'import', key: r.id }, getCurrentPlan());
   });
   importResRow.appendChild(btn);
 }
@@ -894,6 +980,72 @@ function updateGuidancePanel() {
   return plan;
 }
 
+// ---------------------------------------------------------------------------
+// DIRECTOR — the reactive/adaptive layer (Part B — game/director.js owns the
+// state machine + classification logic; this section is purely the DOM
+// wiring: the corner bubble, the "are you five" confirm dialog, and the two
+// terminal screens the silly-mode gag chain can reach). CONCEPT.md's
+// "Corner commentator" direction, part (1): "an event-driven corner speech-
+// bubble ... quips as designer-written placeholder text" — no character art
+// (deferred, per that same paragraph), just the bubble + mechanic.
+const directorBubbleEl = document.getElementById('directorBubble');
+const areYouFiveDialogEl = document.getElementById('areYouFiveDialog');
+const areYouFiveTextEl = document.getElementById('areYouFiveText');
+const areYouFiveYesBtn = document.getElementById('areYouFiveYes');
+const areYouFiveNoBtn = document.getElementById('areYouFiveNo');
+const takeoverScreenEl = document.getElementById('takeoverScreen');
+const takeoverTextEl = document.getElementById('takeoverText');
+
+areYouFiveTextEl.textContent = DIRECTOR_COPY.ARE_YOU_FIVE_TITLE;
+areYouFiveYesBtn.textContent = DIRECTOR_COPY.ARE_YOU_FIVE_YES;
+areYouFiveNoBtn.textContent = DIRECTOR_COPY.ARE_YOU_FIVE_NO;
+function showAreYouFiveDialog() { areYouFiveDialogEl.classList.add('open'); }
+function hideAreYouFiveDialog() { areYouFiveDialogEl.classList.remove('open'); }
+
+// "Yes" -> mock takeover. A web page cannot force-close its own tab (only a
+// script-opened window can, and only in some browsers) — window.close() is
+// attempted as a harmless bonus (a no-op everywhere it isn't permitted), and
+// the REAL effect the task asks for is this full-screen black takeover,
+// which is achievable everywhere.
+areYouFiveYesBtn.addEventListener('click', () => {
+  hideAreYouFiveDialog();
+  resolveAreYouFive(directorState, true);
+  takeoverTextEl.textContent = DIRECTOR_COPY.TAKEOVER_LINES.join('\n');
+  takeoverScreenEl.classList.add('open');
+  window.close(); // harmless bonus attempt — see comment above
+});
+// "No" -> "fired for misappropriating funds" -> restart. Reload is the
+// simplest robust "reset the game state" (re-runs the whole boot sequence,
+// including the main-menu picker on a non-deep-link load) — a brief beat on
+// the same takeover screen first so "fired" actually reads before the page
+// goes away.
+areYouFiveNoBtn.addEventListener('click', () => {
+  hideAreYouFiveDialog();
+  resolveAreYouFive(directorState, false);
+  takeoverTextEl.textContent = DIRECTOR_COPY.FIRED_LINES.join('\n');
+  takeoverScreenEl.classList.add('open');
+  setTimeout(() => location.reload(), 1800);
+});
+
+// DIRECTOR ACTION POINT (Part B point 2 of 4: "a unit/category produced").
+// Production is automatic once a facility is fed (game/production.js), so
+// there's no single player CLICK to hook here the way building/import/sell
+// have — the real, non-spammy action point is the moment a facility
+// actually rolls its FIRST unit off the line (producedCount 0->1), read
+// straight off game/production.js's own per-building bookkeeping every
+// frame in loop() below. announcedProducing tracks which building ids have
+// already fired this once, so a facility producing its 50th unit doesn't
+// re-trigger it.
+const announcedProducing = new Set();
+function checkProductionMilestones() {
+  for (const b of world.buildings) {
+    if (b.side !== 'player' || !b.prodCategory || !b.producedCount) continue;
+    if (announcedProducing.has(b.id)) continue;
+    announcedProducing.add(b.id);
+    reactToAction(directorState, { kind: 'category', key: b.prodCategory }, getCurrentPlan());
+  }
+}
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'g' || e.key === 'G') {
@@ -916,12 +1068,21 @@ addEventListener('keydown', e => {
   }
   if (e.key === 'r' || e.key === 'R') {
     if (buildMode.active) exitBuildMode();
+    if (sellMode.active) exitSellMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
     if (roadMode.active) exitRoadMode(); else enterRoadMode();
   } else if (e.key === 'b' || e.key === 'B') {
     if (roadMode.active) exitRoadMode();
+    if (sellMode.active) exitSellMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
     if (buildMode.active) exitBuildMode(); else enterBuildMode();
+  } else if (e.key === 'x' || e.key === 'X') {
+    // SELL/DEMOLISH MODE TOGGLE (Part B follow-up — see the SELL/DEMOLISH
+    // MODE section above) — same "enter one mode, exit the others" shape as
+    // R/B.
+    if (roadMode.active) exitRoadMode();
+    if (buildMode.active) exitBuildMode();
+    if (sellMode.active) exitSellMode(); else enterSellMode();
   } else if (e.key === 'p' || e.key === 'P') {
     if (prodPanel.classList.contains('open')) exitProdPanel(); else enterProdPanel();
   } else if (e.key === 'i' || e.key === 'I') {
@@ -948,9 +1109,19 @@ addEventListener('keydown', e => {
     // One-way prep -> combat for now, per task scope; a scripted trigger
     // (the later tutorial agent) can call the same triggerBeginCombat path.
     triggerBeginCombat();
+  } else if (e.key === 'm' || e.key === 'M') {
+    // TONE MODE FLIP (Part B — game/director.js's DEFAULT_TONE_MODE is a
+    // TEST-ONLY 'silly' default; this key is the quickest way to flip it
+    // during a session without touching code/a debug console). Purely a
+    // flavor toggle — never affects gating, checklist logic, or the off-
+    // track acknowledgement itself, only whether the silly-mode gag chain
+    // can trigger (see game/director.js's handleBuildingSold).
+    setToneMode(directorState, directorState.toneMode === 'silly' ? 'serious' : 'silly');
+    flashMessage(`Tone mode: ${directorState.toneMode}.`);
   } else if (e.key === 'Escape') {
     if (roadMode.active) exitRoadMode();
     if (buildMode.active) exitBuildMode();
+    if (sellMode.active) exitSellMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
     if (importPanel.classList.contains('open')) exitImportPanel();
     if (techPanel.classList.contains('open')) exitTechPanel();
@@ -1279,6 +1450,37 @@ window.__debug = {
     getPlan: getCurrentPlan,
     TUTORIAL_COPY,
   },
+  // REACTIVE DIRECTOR hooks (Part B — game/director.js + this file's SELL
+  // MODE/DIRECTOR sections), for headless verification: `state` is the live
+  // directorState object (read .toneMode/.bubble/.gag directly);
+  // setToneMode/DIRECTOR_COPY mirror the module's own exports so a test
+  // doesn't need a separate import; sellBuilding/sellMode/enter/exitSellMode/
+  // performSell let a test drive the sell action (and, in silly mode, the
+  // whole self-sabotage gag chain) without staging real clicks;
+  // resolveAreYouFive/resetGag drive the dialog's two outcomes directly;
+  // the dialog/takeover DOM elements are exposed too so a test can assert on
+  // visibility (.open class) the same way it already does for
+  // #guidancePanel above.
+  director: {
+    state: directorState,
+    setToneMode: (mode) => setToneMode(directorState, mode),
+    get toneMode() { return directorState.toneMode; },
+    get gagStage() { return directorState.gag.stage; },
+    get bubbleText() {
+      return directorState.bubble.text && performance.now() < directorState.bubble.until ? directorState.bubble.text : null;
+    },
+    DIRECTOR_COPY,
+    reactToAction: (action) => reactToAction(directorState, action, getCurrentPlan()),
+    resolveAreYouFive: (answeredYes) => resolveAreYouFive(directorState, answeredYes),
+    resetGag: () => resetGag(directorState),
+    sellBuilding, sellMode, enterSellMode, exitSellMode, performSell, playerBuildingAt,
+    areYouFiveDialog: areYouFiveDialogEl,
+    takeoverScreen: takeoverScreenEl,
+    get areYouFiveOpen() { return areYouFiveDialogEl.classList.contains('open'); },
+    get takeoverOpen() { return takeoverScreenEl.classList.contains('open'); },
+    clickYes: () => areYouFiveYesBtn.click(),
+    clickNo: () => areYouFiveNoBtn.click(),
+  },
 };
 
 let last = performance.now();
@@ -1313,6 +1515,10 @@ function loop(now) {
   // updateBuildings (a facility that just finished construction this frame
   // already counts).
   updateProduction(world, economy, map, dt, researchState);
+  // DIRECTOR: first-production milestone check (see checkProductionMilestones
+  // above) — cheap (linear scan over world.buildings, same cost class as the
+  // HUD's own per-facility production readout below), so unconditional here.
+  checkProductionMilestones();
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
@@ -1384,6 +1590,14 @@ function loop(now) {
   // (it's just hidden via CSS, not torn down), so re-showing it later still
   // reflects current progress.
   updateGuidancePanel();
+
+  // DIRECTOR corner bubble (Part B) — same transient-text pattern as the
+  // phase `announcement` object just above, own DOM element/corner though
+  // (this one never occludes anything else and is meant to feel like a
+  // running commentary, not a big banner event).
+  const bubbleActive = directorState.bubble.text && performance.now() < directorState.bubble.until;
+  directorBubbleEl.classList.toggle('show', !!bubbleActive);
+  if (bubbleActive) directorBubbleEl.textContent = directorState.bubble.text;
 
   // RESEARCH PANEL live refresh (see the RESEARCH PANEL section above) —
   // cheap (six static rows, text/visibility updates only), so unconditional

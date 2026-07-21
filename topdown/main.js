@@ -864,7 +864,14 @@ addEventListener('keydown', e => {
     toggleTechTree();
     return;
   }
-  if (techTreeView.isOpen) return; // tree view owns input exclusively while open (drag/wheel handled by its own camera controls)
+  if (techTreeView.isOpen) {
+    // Escape closes the tree like every other overlay (the G-handler comment
+    // above promises this). It has to be handled HERE rather than in the
+    // Escape branch below, because that branch sits past this exclusive-input
+    // return and would otherwise never run while the tree is open.
+    if (e.key === 'Escape') techTreeView.hide();
+    return; // otherwise the tree owns input exclusively (drag/wheel handled by its own camera controls)
+  }
   if (e.key === 'r' || e.key === 'R') {
     if (buildMode.active) exitBuildMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();

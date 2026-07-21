@@ -27,25 +27,38 @@ import { PRODUCTION_DEFS } from './production.js';
 // every node kind, mapped onto the game's existing HUD colors (cyan/green/
 // amber/muted — see index.html's #econHud/#techPanel rules) so this view
 // reads as part of the same game, not a bolted-on tool.
-//   locked        — muted grey (gate not met; the task's "locked").
-//   researchable  — cyan (gate satisfiable now — tech ready to start, OR a
-//                   building never yet placed but buildable any time).
+//
+// POLISH FIX (unlocked vs built were near-indistinguishable at a glance —
+// both landed in the same teal/green hue band): the four player-facing
+// states are now pulled apart on TWO axes at once, not just hue, so the
+// distinction survives both a quick glance and color-blindness:
+//   locked        — muted grey, thin ring, low-alpha fill (gate not met).
+//   researchable  — cyan, filled solid (gate satisfiable now — draws the
+//                   eye the way index.html's cyan accents do elsewhere).
 //   available      — same cyan bucket as researchable (see the
 //                   'available' comment on game/techtree.js's buildingState);
 //                   kept as a distinct KEY only so a future palette split is
 //                   a one-line change, not a re-plumb.
-//   active         — amber (a research project or construction in progress).
-//   unlocked       — teal/mint (gate satisfied / tech done, but nothing
-//                   built off the back of it yet — the task's "unlocked").
-//   built          — green (the task's "built/active": standing and, for a
-//                   production facility, currently live).
+//   active         — amber, filled (a research project or construction in
+//                   progress — matches #techPanel's .techStatus amber).
+//   unlocked       — a distinct PERIWINKLE BLUE (hue pulled well away from
+//                   built's green, not just a lighter shade of it), drawn
+//                   mostly HOLLOW (low fill alpha, thicker ring) — an
+//                   "outline" reads as *pending* on sight, independent of
+//                   color, so this doesn't rely on hue alone (colorblind-
+//                   friendly form cue, per the task's suggestion).
+//   built          — the game's established success-green (#6dffb0, same
+//                   as #econHud b / #card b / .techHeader b everywhere
+//                   else in the HUD), drawn SOLID/filled at high alpha —
+//                   filled-in reads as *done*, the opposite form cue from
+//                   unlocked's outline.
 const PALETTE = {
-  locked:       { icon: '#5b7086', ring: '#3a4d61', fill: 'rgba(30,42,56,0.55)', edge: 'rgba(90,110,130,0.20)' },
-  researchable: { icon: '#5fd0ff', ring: '#2f5f9c', fill: 'rgba(20,45,66,0.62)', edge: 'rgba(95,208,255,0.42)' },
-  available:    { icon: '#5fd0ff', ring: '#2f5f9c', fill: 'rgba(20,45,66,0.62)', edge: 'rgba(95,208,255,0.42)' },
-  active:       { icon: '#ffcf5c', ring: '#c99a3a', fill: 'rgba(66,52,20,0.62)', edge: 'rgba(255,207,92,0.58)' },
-  unlocked:     { icon: '#7fe0cf', ring: '#3f8f7d', fill: 'rgba(18,55,50,0.62)', edge: 'rgba(127,224,207,0.5)' },
-  built:        { icon: '#6dffb0', ring: '#3fae76', fill: 'rgba(16,55,38,0.68)', edge: 'rgba(109,255,176,0.75)' },
+  locked:       { icon: '#5b7086', ring: '#3a4d61', fill: 'rgba(30,42,56,0.45)',  edge: 'rgba(90,110,130,0.14)' },
+  researchable: { icon: '#5fd0ff', ring: '#3a8fd0', fill: 'rgba(20,45,66,0.60)',  edge: 'rgba(95,208,255,0.30)' },
+  available:    { icon: '#5fd0ff', ring: '#3a8fd0', fill: 'rgba(20,45,66,0.60)',  edge: 'rgba(95,208,255,0.30)' },
+  active:       { icon: '#ffcf5c', ring: '#c99a3a', fill: 'rgba(66,52,20,0.60)',  edge: 'rgba(255,207,92,0.40)' },
+  unlocked:     { icon: '#8fb0ff', ring: '#5b7fe6', fill: 'rgba(24,30,58,0.20)',  edge: 'rgba(143,176,255,0.32)', ringWidth: 2.4 },
+  built:        { icon: '#6dffb0', ring: '#3fae76', fill: 'rgba(16,55,38,0.80)', edge: 'rgba(109,255,176,0.52)' },
 };
 
 // Logical (pre-camera-scale) sizes — same coordinate space as
@@ -441,7 +454,10 @@ export function createTechTreeView(canvas, getLiveCtx) {
     ctx.fillStyle = pal.fill;
     ctx.fill();
     ctx.strokeStyle = isHovered ? '#ffffff' : pal.ring;
-    ctx.lineWidth = isHovered ? 2.4 : 1.6;
+    // unlocked's PALETTE entry sets a wider ringWidth (see the PALETTE
+    // comment above) so its near-hollow fill still reads as a deliberate
+    // "outline" state rather than a thin, faint circle.
+    ctx.lineWidth = isHovered ? 2.4 : (pal.ringWidth || 1.6);
     ctx.stroke();
 
     const iconScale = r / NODE_RADIUS; // convert the fixed ICON_SIZE coordinate space to this node's on-screen radius
@@ -477,8 +493,34 @@ export function createTechTreeView(canvas, getLiveCtx) {
     return true;
   }
 
-  function drawEdges(stateById) {
-    const { edges, nodesById } = getTechTreeGraph();
+  // POLISH FIX (the Resources->Facilities hairball): with 4 resource nodes
+  // each fanning edges out to every facility that consumes them, drawing
+  // every edge at equal, always-on weight produces a dense tangle on the
+  // left no amount of curving alone fixes — the player only ever needs to
+  // read ONE node's connections at a time anyway. So edges default to
+  // faint/thin (a big cut from the old always-on alphas baked into
+  // PALETTE[...].edge above), and hovering a node brightens just its own
+  // incident edges while dimming everything else near-invisible. This is
+  // the highest-value declutter per the task brief; the barycenter reorder
+  // pass in techtree.js's layoutGraph is the complementary structural fix
+  // (fewer crossings to begin with), and the bezier curve below (already
+  // in place from the prior pass) keeps even the emphasized edges legible.
+  const EDGE_DIM_ALPHA = 0.10; // near-invisible but still technically present, not a hard cut (helps "where does this even go" scans)
+  const EDGE_EMPHASIS_ALPHA = 1;
+  const EDGE_DEFAULT_ALPHA = 0.62; // faint-but-present baseline when nothing is hovered
+
+  function drawEdges(stateById, hoveredNode) {
+    const { edges, nodesById, outgoing, incoming } = getTechTreeGraph();
+    // Precompute the hovered node's own incident edges (both directions) —
+    // techtree.js already builds outgoing/incoming adjacency indices for
+    // exactly this "what touches this node" question, so no per-frame scan
+    // of the flat edge list is needed to answer it.
+    let hoveredEdges = null;
+    if (hoveredNode) {
+      hoveredEdges = new Set();
+      for (const e of outgoing.get(hoveredNode.id) || []) hoveredEdges.add(e);
+      for (const e of incoming.get(hoveredNode.id) || []) hoveredEdges.add(e);
+    }
     for (const e of edges) {
       const from = nodesById.get(e.from), to = nodesById.get(e.to);
       const toState = stateById.get(e.to);
@@ -486,8 +528,11 @@ export function createTechTreeView(canvas, getLiveCtx) {
       const [sx1, sy1] = worldToScreen(from.x, from.y);
       const [sx2, sy2] = worldToScreen(to.x, to.y);
       if (Math.max(sx1, sx2) < 0 || Math.min(sx1, sx2) > canvas.width) continue;
+      const emphasized = hoveredEdges && hoveredEdges.has(e);
+      const dimmed = hoveredEdges && !emphasized;
       ctx.strokeStyle = pal.edge;
-      ctx.lineWidth = (toState.state === 'locked' ? 1 : 1.7) * Math.max(0.5, Math.min(1.6, cam.zoom));
+      ctx.globalAlpha = dimmed ? EDGE_DIM_ALPHA : (emphasized ? EDGE_EMPHASIS_ALPHA : EDGE_DEFAULT_ALPHA);
+      ctx.lineWidth = (toState.state === 'locked' ? 1 : 1.7) * (emphasized ? 1.7 : 1) * Math.max(0.5, Math.min(1.6, cam.zoom));
       ctx.beginPath();
       // gentle S-curve (single control-point bezier) rather than a straight
       // line — with several edges converging on one node from a scattered
@@ -498,6 +543,7 @@ export function createTechTreeView(canvas, getLiveCtx) {
       ctx.bezierCurveTo(mx, sy1, mx, sy2, sx2, sy2);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1; // reset — drawNode/drawTierHeaders/drawTooltip below all assume opaque default
   }
 
   function drawTierHeaders() {
@@ -614,7 +660,7 @@ export function createTechTreeView(canvas, getLiveCtx) {
     for (const n of nodes) stateById.set(n.id, computeNodeState(n, liveCtx));
 
     drawTierHeaders();
-    drawEdges(stateById);
+    drawEdges(stateById, hovered);
     for (const n of nodes) drawNode(n, stateById.get(n.id), n === hovered);
     if (hovered) drawTooltip(hovered, stateById.get(hovered.id));
 

@@ -162,7 +162,7 @@ function buildGraph() {
     addEdge(techNodeId, `category:${def.unlocksCategory}`, 'unlocks');
   }
 
-  layoutGraph(nodesById);
+  layoutGraph(nodesById, edges);
 
   const nodes = [...nodesById.values()];
   // adjacency, built once for hover/edge-highlighting use (techtreeview.js
@@ -179,19 +179,22 @@ function buildGraph() {
 // Deterministic layered layout: nodes bucket by tier (their column), then
 // sort within the column and stack them evenly spaced, centered vertically
 // on the tallest column so tiers line up around a shared horizontal axis
-// instead of all hugging the top. This is intentionally NOT a barycenter/
-// crossing-minimization layout (no edge-crossing optimization pass) — it
-// guarantees zero node-on-node OVERLAP, which is the hard requirement the
-// task states, at the cost of some avoidable edge crossings within a
-// column's own neighborhood (see the honest note in the PR report).
-function layoutGraph(nodesById) {
+// instead of all hugging the top. Row spacing/count per column never
+// changes past this point, which is what guarantees zero node-on-node
+// OVERLAP (the hard requirement) regardless of what order barycenterPasses
+// below puts the rows in — it only ever PERMUTES a column's existing rows,
+// never adds/removes/resizes them.
+function layoutGraph(nodesById, edges) {
   const byTier = [[], [], [], [], []];
   for (const n of nodesById.values()) byTier[n.tier].push(n);
 
   // Sort key per tier: units group by their category (so a category's whole
   // output cluster sits together rather than interleaved alphabetically),
   // everything else sorts by display name — cheap, stable, fully derived
-  // from data already on the node (no hardcoded ordering table).
+  // from data already on the node (no hardcoded ordering table). This is
+  // the deterministic STARTING order the barycenter passes below refine —
+  // starting from a stable, name-derived order (rather than Map iteration
+  // order) means two runs always converge on the identical final layout.
   for (let tier = 0; tier < byTier.length; tier++) {
     byTier[tier].sort((a, b) => {
       if (tier === TIER.UNIT) {
@@ -201,6 +204,8 @@ function layoutGraph(nodesById) {
       return (a.name || a.key).localeCompare(b.name || b.key);
     });
   }
+
+  barycenterPasses(byTier, edges);
 
   const tallest = Math.max(...byTier.map(col => col.length));
   const totalHeight = (tallest - 1) * LAYOUT.ROW_HEIGHT;
@@ -212,6 +217,78 @@ function layoutGraph(nodesById) {
       n.x = tier * LAYOUT.COL_WIDTH;
       n.y = i * LAYOUT.ROW_HEIGHT + yOffset;
     });
+  }
+}
+
+// CROSSING-REDUCTION PASS (polish fix — the Resources→Facilities fan-out is
+// the worst offender: 4 resource nodes wiring into ~15 facility nodes with
+// no ordering discipline produces a dense hairball). This is the classic
+// Sugiyama-style layered-graph heuristic: repeatedly re-sort each column by
+// the average row-position ("barycenter") of its neighbors in the column
+// the sweep is currently reading FROM, alternating left-to-right and
+// right-to-left so information about far-column structure propagates back
+// through the middle tiers too. It is NOT a true crossing-minimization
+// solver (that's NP-hard) — it's a cheap, fully deterministic approximation
+// that measurably untangles the common case (mostly-local, mostly-adjacent-
+// tier edges) without any new dependency. A fixed, small pass count keeps
+// it deterministic and bounded-cost regardless of graph size.
+const BARYCENTER_PASSES = 3;
+function barycenterPasses(byTier, edges) {
+  // nodeTier: node id -> which column it lives in (fixed for the whole
+  // pass — a node never changes tier here, only its row within one).
+  const nodeTier = new Map();
+  for (let tier = 0; tier < byTier.length; tier++) {
+    for (const n of byTier[tier]) nodeTier.set(n.id, tier);
+  }
+  // neighborIds: nodeId -> every OTHER node id it has an edge to/from,
+  // regardless of direction — a barycenter sort filters this down to the
+  // subset that happens to sit in the tier it's currently reading from.
+  const neighborIds = new Map();
+  for (const id of nodeTier.keys()) neighborIds.set(id, []);
+  for (const e of edges) {
+    neighborIds.get(e.from).push(e.to);
+    neighborIds.get(e.to).push(e.from);
+  }
+  const ordOf = new Map(); // node id -> current row index within its own column
+  function reindex(col) { col.forEach((n, i) => ordOf.set(n.id, i)); }
+  for (const col of byTier) reindex(col);
+
+  // Re-sort `col` by each node's average row index among neighbors that
+  // live in `fromTier`. A node with no neighbors there keeps its current
+  // row (falls back to its own ordinal) so isolated nodes don't all
+  // collapse to the top, and ties break on that same fallback — keeping
+  // the sort stable and deterministic run-to-run.
+  function sortColumnByBarycenter(col, fromTier) {
+    const scored = col.map(n => {
+      const neighborOrds = [];
+      for (const nbId of neighborIds.get(n.id)) {
+        if (nodeTier.get(nbId) === fromTier) neighborOrds.push(ordOf.get(nbId));
+      }
+      const bary = neighborOrds.length
+        ? neighborOrds.reduce((s, v) => s + v, 0) / neighborOrds.length
+        : ordOf.get(n.id); // no neighbors in that tier: hold current position
+      return { n, bary, fallback: ordOf.get(n.id) };
+    });
+    scored.sort((a, b) => a.bary - b.bary || a.fallback - b.fallback);
+    col.length = 0;
+    for (const s of scored) col.push(s.n);
+  }
+
+  for (let pass = 0; pass < BARYCENTER_PASSES; pass++) {
+    // left-to-right sweep: each tier (after the first) re-sorts by its
+    // neighbors' rows in the tier immediately to its LEFT.
+    for (let tier = 1; tier < byTier.length; tier++) {
+      sortColumnByBarycenter(byTier[tier], tier - 1);
+      reindex(byTier[tier]);
+    }
+    // right-to-left sweep: mirror image, reading from the tier to the RIGHT
+    // — this is what lets a resource node (tier 0) settle near the
+    // vertical center of the facilities it actually feeds, not just the
+    // reverse.
+    for (let tier = byTier.length - 2; tier >= 0; tier--) {
+      sortColumnByBarycenter(byTier[tier], tier + 1);
+      reindex(byTier[tier]);
+    }
   }
 }
 

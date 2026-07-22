@@ -138,10 +138,19 @@
     padding: 5px 10px; cursor: pointer; font: 11px Consolas, monospace;
   }
   #phaseHud button:hover { background: #1c3a5e; }
-  /* Phase-transition announcement: a transient center-screen banner (e.g.
-     "COMBAT PHASE BEGUN"), faded in/out by JS setting the .show class. */
+  /* Phase-transition announcement: a transient banner (e.g. "COMBAT PHASE
+     BEGUN"/"ENEMY LANDED"), faded in/out by JS setting the .show class.
+     Deliberately anchored at true vertical center rather than up near
+     #phaseHud's top-10px strip: #guidancePanel (the goal-driven plan
+     checklist) already occupies that whole top-center column from top:66px
+     down to as much as 42vh tall, and combat's first announcement fires the
+     instant the plan panel can still be open — a top-anchored banner would
+     sit right on top of it. True center is clear of every other fixed panel
+     (#econHud top-right, #objectiveHud bottom-left, #buildbar bottom-center,
+     #directorBubble bottom-right, #phaseHud/#guidancePanel top-center) and
+     reads at least as dramatically for a "the enemy has landed" moment. */
   #announcement {
-    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
     padding: 10px 22px; background: rgba(20,6,6,.9); border: 1px solid #ff5a5a;
     border-radius: 7px; color: #ffdede; font: bold 15px Consolas, monospace;
     letter-spacing: 1px; text-align: center; pointer-events: none;

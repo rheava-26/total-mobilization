@@ -46,7 +46,7 @@ import {
 // below). Both are COMBAT-phase-only per the hard constraint that PREP
 // stays peaceful/open — see the `combatActive` gate in loop().
 import { initCityOwnership, updateObjectives, evaluateOutcome, CAPTURE_TIME_S } from './game/objectives.js';
-import { updateEnemyAI } from './game/enemyai.js';
+import { updateEnemyAI, debugEnemyGroups, debugAiStateSize } from './game/enemyai.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -1492,6 +1492,15 @@ window.__debug = {
   objectives: {
     updateObjectives, evaluateOutcome, CAPTURE_TIME_S,
     updateEnemyAI,
+    // Assault-group coordination hooks (game/enemyai.js), for headless
+    // verification: aiGroups() snapshots every live group's phase/rally
+    // point/target/membership so a test can watch a group mass then commit
+    // together without reverse-engineering it from raw unit positions;
+    // aiStateSize() exposes the per-unit scratch Map's size so a test can
+    // confirm it's actually pruned for dead units rather than growing
+    // unbounded (the v1 report's flagged cleanup gap).
+    aiGroups: debugEnemyGroups,
+    aiStateSize: debugAiStateSize,
     get outcome() { return gameOutcome; },
     showOutcomeScreen,
     outcomeScreen: outcomeScreenEl,

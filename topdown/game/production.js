@@ -189,15 +189,22 @@ export const PRODUCTION_DEFS = {
     // existing first.
     outputs: ['srbmLauncher', 'cruiseLauncher'],
     recipe: {
-      // TODO: richer material (titanium/electronics) when the supply chain
-      // expands — real guidance/airframe packages want exactly those;
-      // approximated with steel (launcher body) + tungsten (warhead/
-      // penetrator) + oil (propellant) using only the existing four.
-      resourceCostPerUnit: { steel: 6, tungsten: 4, oil: 3 },
-      // missiles need warhead/propellant production, the same real-world
-      // dependency CONCEPT.md's illustrative tank example already leans the
-      // ammunition plant on.
-      prerequisiteBuildings: ['ammunitionPlant'],
+      // DEEPENED CHAIN PART B (cashes in the old TODO below, which read:
+      // "richer material (titanium/electronics) when the supply chain
+      // expands — real guidance/airframe packages want exactly those").
+      // Steel (launcher body) + tungsten (warhead penetrator) + oil
+      // (propellant) kept for the airframe/warhead/propellant share that's
+      // genuinely still those three; rareEarths + electronics newly added
+      // for the GUIDANCE package (seeker/INS per
+      // reference-electronics-and-chains.md section 2) — the first recipe
+      // in this table to reach into the new component tier, not just the
+      // new raw tier. DESIGNER'S TO TUNE.
+      resourceCostPerUnit: { steel: 4, tungsten: 2, oil: 3, rareEarths: 2, electronics: 2 },
+      // missiles need warhead/propellant production (ammunitionPlant, same
+      // real-world dependency CONCEPT.md's illustrative tank example already
+      // leans on) AND now the guidance-electronics chain (electronicsPlant)
+      // — "buildings gate other buildings' output" extended one link deeper.
+      prerequisiteBuildings: ['ammunitionPlant', 'electronicsPlant'],
       icCostPerUnit: 20,
       manpowerCostPerUnit: 5,
       buildTimePerUnit: 10,
@@ -215,13 +222,25 @@ export const PRODUCTION_DEFS = {
     // standing alone, mirroring ammunitionPlant gating tanks/aircraft.
     outputs: ['hypersonicLauncher'],
     recipe: {
-      // TODO: richer material (titanium/electronics) when the supply chain
+      // DEEPENED CHAIN PART B (cashes in the old TODO below, which read:
+      // "richer material (titanium/electronics) when the supply chain
       // expands — a real hypersonic vehicle leans hard on thermal-
       // protection materials and advanced electronics this resource roster
-      // doesn't model yet; approximated with a heavy multi-resource bill
-      // across everything that DOES exist instead.
-      resourceCostPerUnit: { steel: 10, chromium: 6, tungsten: 8, oil: 6 },
-      prerequisiteBuildings: ['ammunitionPlant', 'missileWorks'],
+      // doesn't model yet"). The single deepest recipe in the table by
+      // design, mirroring TECH_DEFS' own "hypersonics is the biggest gate"
+      // framing: advanced ALLOY (thermal-protection/airframe stock —
+      // reference section 3.1's single-crystal superalloy + Ti-6Al-4V
+      // forging) is the priciest line item, backed by titanium (raw
+      // structure) and rareEarths+electronics (seeker/guidance/avionics) —
+      // every raw AND both component tiers this pass added, all in one
+      // recipe. Oil kept for propellant. No steel/chromium/tungsten at all
+      // anymore — a hypersonic vehicle isn't built like a WWII tank.
+      // DESIGNER'S TO TUNE.
+      resourceCostPerUnit: { advancedAlloy: 4, titanium: 3, electronics: 3, rareEarths: 3, oil: 4 },
+      // now also gated on BOTH component facilities existing, on top of the
+      // conventional missile/ammunition industry it already sat on — the
+      // bleeding edge draws from every upstream link in the chain.
+      prerequisiteBuildings: ['ammunitionPlant', 'missileWorks', 'electronicsPlant', 'alloyForge'],
       icCostPerUnit: 45,
       manpowerCostPerUnit: 10,
       buildTimePerUnit: 20,
@@ -236,11 +255,17 @@ export const PRODUCTION_DEFS = {
     // the same way tanks/artillery already bucket ground-combat variants.
     outputs: ['manpadsTeam', 'samUpgrade', 'pointDefenseLaser'],
     recipe: {
-      resourceCostPerUnit: { steel: 5, chromium: 3, tungsten: 2 },
+      // DEEPENED CHAIN PART B: air defense is fundamentally a radar+
+      // guidance problem (reference-electronics-and-chains.md section
+      // 2.1's AESA T/R-module chain) — rareEarths + electronics now carry
+      // that share, steel/chromium trimmed down (still there for the
+      // launcher/housing) but no longer the whole bill. DESIGNER'S TO TUNE.
+      resourceCostPerUnit: { steel: 3, chromium: 2, rareEarths: 2, electronics: 2 },
       // modern integrated air defense is cued off radar in reality; gating
       // production on the existing Radar Station building is a cheap,
-      // grounded way to express that without inventing a new mechanic.
-      prerequisiteBuildings: ['radar'],
+      // grounded way to express that without inventing a new mechanic. Now
+      // also needs the electronics chain that actually builds its guidance.
+      prerequisiteBuildings: ['radar', 'electronicsPlant'],
       icCostPerUnit: 14,
       manpowerCostPerUnit: 4,
       buildTimePerUnit: 6,
@@ -255,11 +280,16 @@ export const PRODUCTION_DEFS = {
     // threats, which is what separates this category from airDefense above.
     outputs: ['atgmTeam', 'antiShipBattery'],
     recipe: {
-      resourceCostPerUnit: { steel: 4, chromium: 1, tungsten: 3 },
+      // DEEPENED CHAIN PART B: kept tungsten (shaped-charge/anti-armor
+      // penetrator is genuinely a tungsten part) but chromium dropped in
+      // favor of the rareEarths+electronics guidance package a real
+      // ATGM/anti-ship missile needs (reference section 2.3/2.4's
+      // IMU+seeker chain). DESIGNER'S TO TUNE.
+      resourceCostPerUnit: { steel: 3, tungsten: 2, rareEarths: 1, electronics: 1 },
       // shaped-charge/anti-armor and anti-ship warheads are exactly the
       // kind of ordnance an ammunition plant produces, same dependency as
-      // the missiles category above.
-      prerequisiteBuildings: ['ammunitionPlant'],
+      // the missiles category above; now also needs the guidance chain.
+      prerequisiteBuildings: ['ammunitionPlant', 'electronicsPlant'],
       icCostPerUnit: 10,
       manpowerCostPerUnit: 3,
       buildTimePerUnit: 5,
@@ -274,13 +304,70 @@ export const PRODUCTION_DEFS = {
     // system.
     outputs: ['ewJammer'],
     recipe: {
-      resourceCostPerUnit: { steel: 3, oil: 1 },
+      // DEEPENED CHAIN PART B: an EW/jammer rig is, physically, mostly
+      // electronics (signal-processing/RF hardware) — a small electronics
+      // draw on top of the original steel+oil chassis bill. DESIGNER'S TO
+      // TUNE.
+      resourceCostPerUnit: { steel: 2, oil: 1, electronics: 1 },
       // a signals/EW unit is built on the same sensor infrastructure a
-      // radar station represents, same grounding as airDefense's prereq.
-      prerequisiteBuildings: ['radar'],
+      // radar station represents, same grounding as airDefense's prereq;
+      // now also needs the electronics chain that builds its own guts.
+      prerequisiteBuildings: ['radar', 'electronicsPlant'],
       icCostPerUnit: 9,
       manpowerCostPerUnit: 2,
       buildTimePerUnit: 5,
+    },
+  },
+
+  // ---------------------------------------------------------------------
+  // PART B — INTERMEDIATE-COMPONENT CATEGORIES (the raw->component->system
+  // chain the reference docs describe). These two categories don't produce
+  // a UNIT_DEFS entry at all — `outputs` is empty — they instead produce a
+  // RESOURCE via the new `producesResource: { resourceId, amountPerCycle }`
+  // field, read generically by updateProduction below (see the "RESOURCE
+  // OUTPUT MODE" comment there) and by game/techtree.js (a `producesResource`
+  // edge from the category node to the resource node, alongside the
+  // existing recipe/prereq/enables edges every category already gets) —
+  // zero new mechanism beyond "a category can point its output at a
+  // resource id instead of a unit list." Deliberately UNGATED (no TECH_DEFS
+  // entry — see buildings.js's electronicsPlant/alloyForge comment for why)
+  // so the electronics hub in particular stays reachable early: five other
+  // categories (missiles/hypersonics/airDefense/guidedWeapons/support) all
+  // draw on its output.
+  electronics: {
+    name: 'Electronics',
+    facility: 'electronicsPlant',
+    outputs: [], // produces a resource, not a unit — see producesResource below
+    producesResource: { resourceId: 'electronics', amountPerCycle: 4 }, // DESIGNER'S TO TUNE
+    recipe: {
+      // rare earths (GaN/magnet feedstock) + steel (standing in for
+      // copper wiring/PCB substrate per reference-electronics-and-chains.md
+      // section 1/2's PCBA and T/R-module chains) — the proof-of-pattern
+      // component recipe.
+      resourceCostPerUnit: { rareEarths: 3, steel: 2 },
+      prerequisiteBuildings: [],
+      icCostPerUnit: 10,
+      manpowerCostPerUnit: 2,
+      buildTimePerUnit: 6, // seconds per BATCH (yields amountPerCycle electronics), not per single unit
+    },
+  },
+  advancedAlloy: {
+    name: 'Advanced Alloys',
+    facility: 'alloyForge',
+    outputs: [], // produces a resource, not a unit — see producesResource below
+    producesResource: { resourceId: 'advancedAlloy', amountPerCycle: 4 }, // DESIGNER'S TO TUNE
+    recipe: {
+      // titanium (structure) + steel + chromium (hardening) — the Ti-6Al-4V-
+      // forging / nickel-superalloy stand-in per reference section 3.1/4.1.
+      // Currently only hypersonics draws on this — kept as its own category
+      // rather than folded into electronics so the tech tree shows the two
+      // component chains as genuinely separate branches, matching the
+      // reference's own "Refined Materials" vs "Components" tiers.
+      resourceCostPerUnit: { titanium: 2, steel: 3, chromium: 1 },
+      prerequisiteBuildings: [],
+      icCostPerUnit: 12,
+      manpowerCostPerUnit: 2,
+      buildTimePerUnit: 7,
     },
   },
 };
@@ -481,9 +568,33 @@ export function updateProduction(world, economy, map, dt, researchState) {
     b.prodState = 'producing';
     b.prodStallReason = '';
 
+    // RESOURCE OUTPUT MODE (PART B): a category whose PRODUCTION_DEFS entry
+    // sets `producesResource` feeds a stockpile instead of spawning a unit —
+    // this is what turns an "advanced unit" recipe reaching for e.g.
+    // `electronics` into a REAL chain (mine rareEarths -> Electronics Plant
+    // -> electronics stockpile -> missile/hypersonics/etc recipe) rather
+    // than one more flat ore. Surfaced on economy.resourceRates the same way
+    // icRate/manpowerRate report a live rate elsewhere in this codebase (ADD
+    // rather than overwrite: game/economy.js's updateEconomy already reset
+    // every resource's rate to 0 and summed mines' contributions THIS same
+    // frame, before updateProduction runs — see main.js's call order — so a
+    // resource fed by both a mine binding AND a component facility, if that
+    // ever happens, reports their combined rate correctly instead of one
+    // clobbering the other).
+    if (prod.producesResource) {
+      const { amountPerCycle } = prod.producesResource;
+      economy.resourceRates[prod.producesResource.resourceId] =
+        (economy.resourceRates[prod.producesResource.resourceId] || 0) + amountPerCycle / prod.recipe.buildTimePerUnit;
+    }
+
     while (b.prodProgress >= 1) {
       b.prodProgress -= 1;
-      spawnProducedUnit(world, map, b, prod);
+      if (prod.producesResource) {
+        const { resourceId, amountPerCycle } = prod.producesResource;
+        economy.resources[resourceId] = (economy.resources[resourceId] || 0) + amountPerCycle;
+      } else {
+        spawnProducedUnit(world, map, b, prod);
+      }
       b.producedCount++;
     }
   }

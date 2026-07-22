@@ -838,9 +838,9 @@ const prodCatRow = document.getElementById('prodCatRow');
 const recipeInfo = document.getElementById('recipeInfo');
 let selectedCategory = null;
 
-function resourceCostText(resourceCostPerUnit) {
+function resourceCostText(resourceCostPerUnit, unitNoun = 'unit') {
   return Object.entries(resourceCostPerUnit || {})
-    .map(([rid, amt]) => `${RESOURCE_DEFS[rid] ? RESOURCE_DEFS[rid].name : rid} ${amt}/unit`)
+    .map(([rid, amt]) => `${RESOURCE_DEFS[rid] ? RESOURCE_DEFS[rid].name : rid} ${amt}/${unitNoun}`)
     .join(', ') || 'none';
 }
 function recipeHtml(category) {
@@ -849,14 +849,32 @@ function recipeHtml(category) {
   const prereq = prod.recipe.prerequisiteBuildings.length
     ? prod.recipe.prerequisiteBuildings.map(k => BUILDING_DEFS[k].name).join(', ')
     : 'none';
-  const outputs = prod.outputs.map(k => UNIT_DEFS[k].name).join(', ');
+  // Part B: a component category (electronics/advancedAlloy) produces a
+  // RESOURCE into the stockpile rather than a unit — read that generically
+  // off producesResource so this panel doesn't need a per-category branch,
+  // same "outputs" concept, different destination.
+  const outputs = prod.producesResource
+    ? `${RESOURCE_DEFS[prod.producesResource.resourceId].name} (+${prod.producesResource.amountPerCycle}/cycle)`
+    : prod.outputs.map(k => UNIT_DEFS[k].name).join(', ');
+  const unitNoun = prod.producesResource ? 'cycle' : 'unit';
   const facCost = facilityDef.cost || {};
   return `<b>${prod.name}</b> — produces: ${outputs}\n`
     + `Facility: ${facilityDef.name} (${facCost.ic || 0} IC${facCost.manpower ? ` + ${facCost.manpower} manpower` : ''}, ${facilityDef.buildTime}s to build)\n`
-    + `Resources/unit: ${resourceCostText(prod.recipe.resourceCostPerUnit)}\n`
+    + `Resources/${unitNoun}: ${resourceCostText(prod.recipe.resourceCostPerUnit, unitNoun)}\n`
     + `Prerequisite buildings: ${prereq}\n`
-    + `IC/unit: ${prod.recipe.icCostPerUnit}   Manpower/unit: ${prod.recipe.manpowerCostPerUnit}\n`
-    + `Rate at full supply: 1 unit / ${prod.recipe.buildTimePerUnit}s`;
+    + `IC/${unitNoun}: ${prod.recipe.icCostPerUnit}   Manpower/${unitNoun}: ${prod.recipe.manpowerCostPerUnit}\n`
+    + `Rate at full supply: 1 ${unitNoun} / ${prod.recipe.buildTimePerUnit}s`;
+}
+// Shared by the econ HUD's Production block and the on-map facility label
+// (game/production.js's per-building state) — "N built" reads fine for a
+// unit-producing facility, but a Part B component facility's b.producedCount
+// counts CYCLES, not finished units, so it needs its own wording; this is
+// the one place both call sites branch on producesResource so they can't
+// drift out of sync with each other.
+function productionCountLabel(prod, b) {
+  if (!prod.producesResource) return `${b.producedCount} built`;
+  const { resourceId, amountPerCycle } = prod.producesResource;
+  return `${b.producedCount} cycles (${(b.producedCount * amountPerCycle).toFixed(0)} ${RESOURCE_DEFS[resourceId].name})`;
 }
 for (const category of Object.keys(PRODUCTION_DEFS)) {
   const btn = document.createElement('button');
@@ -1335,7 +1353,9 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
   // HUD's Production block repeats in text form, so it's readable at a
   // glance without hunting the HUD for which specific building is stuck.
   if (!constructing && b.prodCategory && cam.zoom > 0.2) {
-    const label = b.prodState === 'producing' ? `▶ producing (${b.producedCount} built)` : `⏸ STALLED — ${b.prodStallReason}`;
+    const label = b.prodState === 'producing'
+      ? `▶ producing (${productionCountLabel(PRODUCTION_DEFS[b.prodCategory], b)})`
+      : `⏸ STALLED — ${b.prodStallReason}`;
     ctx.fillStyle = b.prodState === 'producing' ? '#8dffb0' : '#ffcf5c';
     ctx.font = '10px Consolas, monospace';
     ctx.textAlign = 'center';
@@ -1784,7 +1804,7 @@ function loop(now) {
     const stateTxt = b.prodState === 'producing'
       ? `producing (${(1 / prod.recipe.buildTimePerUnit).toFixed(2)}/s)`
       : `STALLED — ${b.prodStallReason}`;
-    prodLines.push(`${prod.name}: ${stateTxt} — ${b.producedCount} built`);
+    prodLines.push(`${prod.name}: ${stateTxt} — ${productionCountLabel(prod, b)}`);
   }
   const prodBlock = prodLines.length ? `\n<b>Production</b>\n${prodLines.join('\n')}` : '';
 

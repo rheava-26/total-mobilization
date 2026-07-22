@@ -212,6 +212,32 @@ export const BUILDING_DEFS = {
     name: 'Signals Works', footprint: { w: 2, h: 2 }, hp: 170, vision: 120,
     cost: { ic: 110, manpower: 4 }, buildTime: 16,
   },
+
+  // -------------------------------------------------------------------------
+  // INTERMEDIATE-COMPONENT FACILITIES (Part B — game/production.js's new
+  // `producesResource` mode). Structurally these are ORDINARY production
+  // facilities — same footprint/hp/cost/buildTime shape as every building
+  // above, sited/constructed through the identical costed+timed pipeline —
+  // the only thing distinguishing them is that game/production.js's
+  // PRODUCTION_DEFS points their category at a RESOURCE output instead of a
+  // UNIT_DEFS list, so this file (same as with `mine`) stays unaware of
+  // what a "component" even is. Deliberately left UNGATED (no TECH_DEFS
+  // entry, no prerequisiteBuildings) — they sit upstream of several other
+  // categories' recipes now (missiles/hypersonics/airDefense/guidedWeapons/
+  // support all draw on Electronics Plant's output; hypersonics also draws
+  // on Alloy Forge's), so gating either behind research would gate five
+  // categories transitively through one lock, which is more "over-gating"
+  // than this pass wants — a fresh player can build either any time they
+  // can afford it and have the raw feedstock, per the task's "don't
+  // over-gate" instruction.
+  electronicsPlant: {
+    name: 'Electronics Plant', footprint: { w: 3, h: 2 }, hp: 200, vision: 110,
+    cost: { ic: 130, manpower: 5 }, buildTime: 20,
+  },
+  alloyForge: {
+    name: 'Alloy Forge', footprint: { w: 3, h: 2 }, hp: 240, vision: 100,
+    cost: { ic: 150, manpower: 6 }, buildTime: 22,
+  },
 };
 
 // Generic vision-range accessor shared by game/fog.js for both units and

@@ -45,6 +45,15 @@
 //   'techPrereq'     tech            -> tech                  TECH_DEFS prerequisiteTechs
 //   'unlocks'        tech            -> category               TECH_DEFS unlocksCategory
 //   'produces'       category        -> unit                  PRODUCTION_DEFS outputs
+//   'producesResource' category      -> resource               PRODUCTION_DEFS producesResource
+//     (Part B — intermediate components: a category whose facility outputs
+//     a RESOURCE instead of a unit, e.g. Electronics Plant -> electronics.
+//     Walking this edge backward from a downstream recipe's resource input
+//     is exactly how the reverse-planner, game/tutorialplan.js, discovers
+//     "you need to get the Electronics category running" as a step toward
+//     a goal that needs electronics — no planner change required, it's the
+//     same backward BFS over `incoming` it already does for every other
+//     edge kind.)
 import { RESOURCE_LIST } from './resources.js';
 import { BUILDING_DEFS } from './buildings.js';
 import { PRODUCTION_DEFS } from './production.js';
@@ -150,6 +159,13 @@ function buildGraph() {
     }
     addEdge(facilityId, `category:${catId}`, 'enables');
     for (const uKey of prod.outputs) addEdge(`category:${catId}`, `unit:${uKey}`, 'produces');
+    // Part B: a component category (electronics/advancedAlloy) outputs a
+    // RESOURCE instead of units — wire that as its own edge kind so the
+    // resource node's `incoming` includes the category that fills it,
+    // which is what lets the reverse-planner (tutorialplan.js) and the
+    // tree view both discover the facility a downstream recipe's resource
+    // input actually depends on, with zero code of their own.
+    if (prod.producesResource) addEdge(`category:${catId}`, `resource:${prod.producesResource.resourceId}`, 'producesResource');
   }
 
   // --- edges driven off TECH_DEFS: the research gate (buildings + techs +

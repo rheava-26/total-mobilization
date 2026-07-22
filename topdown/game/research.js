@@ -84,11 +84,14 @@ export const TECH_DEFS = {
     blurb: '[PLACEHOLDER] Unlocks short-range ballistic and cruise missile launchers.',
     unlocksCategory: 'missiles',
     // mirrors production.js's missiles recipe.prerequisiteBuildings
-    // (ammunitionPlant) plus the category's own facility + the universal gate.
-    prerequisiteBuildings: ['researchBureau', 'missileWorks', 'ammunitionPlant'],
+    // (ammunitionPlant + electronicsPlant, now the guidance package lives
+    // there too) plus the category's own facility + the universal gate.
+    prerequisiteBuildings: ['researchBureau', 'missileWorks', 'ammunitionPlant', 'electronicsPlant'],
     prerequisiteTechs: [],
     icCost: 150,
-    resourceCost: { steel: 40, tungsten: 25, oil: 15 },
+    // DEEPENED CHAIN PART B: rareEarths added for the guidance-package R&D,
+    // mirroring production.js's missiles recipe now drawing on it.
+    resourceCost: { steel: 25, tungsten: 15, oil: 15, rareEarths: 10 },
     researchTime: 60,
   },
   hypersonicTech: {
@@ -98,24 +101,35 @@ export const TECH_DEFS = {
     // THE most gated entry in the table, by design (CONCEPT.md: "big
     // bonuses behind big gates" — hypersonics is the paragraph's own
     // canonical "biggest payoff" example): needs its own facility AND the
-    // missile program's facility (mirroring production.js's
-    // hypersonicWorks recipe prereq) AND the missile tech itself DONE
-    // first, on top of the universal Research Bureau gate.
-    prerequisiteBuildings: ['researchBureau', 'hypersonicWorks', 'missileWorks', 'ammunitionPlant'],
+    // missile program's facility AND BOTH new component facilities
+    // (mirroring production.js's hypersonicWorks recipe prereq, which now
+    // draws on electronics AND advancedAlloy) AND the missile tech itself
+    // DONE first, on top of the universal Research Bureau gate.
+    prerequisiteBuildings: [
+      'researchBureau', 'hypersonicWorks', 'missileWorks', 'ammunitionPlant',
+      'electronicsPlant', 'alloyForge',
+    ],
     prerequisiteTechs: ['missileTech'],
     icCost: 400,
-    resourceCost: { steel: 60, chromium: 50, tungsten: 60, oil: 40 },
+    // DEEPENED CHAIN PART B: titanium/rareEarths/advancedAlloy replace
+    // chromium/tungsten here, mirroring production.js's hypersonics recipe
+    // reaching into both new component tiers for its thermal-protection/
+    // guidance R&D.
+    resourceCost: { steel: 20, titanium: 25, rareEarths: 20, advancedAlloy: 10, oil: 15 },
     researchTime: 150, // by far the longest — the "big gate" the CONCEPT.md paragraph names explicitly
   },
   airDefenseTech: {
     name: '[PLACEHOLDER] Integrated Air Defense Program',
     blurb: '[PLACEHOLDER] Unlocks MANPADS, the upgraded SAM battery, and point-defense lasers.',
     unlocksCategory: 'airDefense',
-    // mirrors production.js's airDefense recipe.prerequisiteBuildings (radar)
-    prerequisiteBuildings: ['researchBureau', 'airDefenseWorks', 'radar'],
+    // mirrors production.js's airDefense recipe.prerequisiteBuildings
+    // (radar + electronicsPlant, now the radar-guidance package lives there)
+    prerequisiteBuildings: ['researchBureau', 'airDefenseWorks', 'radar', 'electronicsPlant'],
     prerequisiteTechs: [],
     icCost: 110,
-    resourceCost: { steel: 30, chromium: 15, tungsten: 10 },
+    // DEEPENED CHAIN PART B: rareEarths added for the AESA/T-R-module R&D,
+    // mirroring production.js's airDefense recipe.
+    resourceCost: { steel: 20, chromium: 10, rareEarths: 15 },
     researchTime: 45,
   },
   guidedWeaponsTech: {
@@ -123,22 +137,26 @@ export const TECH_DEFS = {
     blurb: '[PLACEHOLDER] Unlocks ATGM teams and anti-ship missile batteries.',
     unlocksCategory: 'guidedWeapons',
     // mirrors production.js's guidedWeapons recipe.prerequisiteBuildings
-    // (ammunitionPlant)
-    prerequisiteBuildings: ['researchBureau', 'guidedWeaponsWorks', 'ammunitionPlant'],
+    // (ammunitionPlant + electronicsPlant, now the guidance package lives
+    // there too)
+    prerequisiteBuildings: ['researchBureau', 'guidedWeaponsWorks', 'ammunitionPlant', 'electronicsPlant'],
     prerequisiteTechs: [],
     icCost: 90,
-    resourceCost: { steel: 25, chromium: 8, tungsten: 15 },
+    // DEEPENED CHAIN PART B: rareEarths added, mirroring production.js's
+    // guidedWeapons recipe reaching into the guidance-electronics chain.
+    resourceCost: { steel: 20, tungsten: 10, rareEarths: 8 },
     researchTime: 40,
   },
   supportTech: {
     name: '[PLACEHOLDER] Electronic Warfare Program',
     blurb: '[PLACEHOLDER] Unlocks the EW/jammer support vehicle.',
     unlocksCategory: 'support',
-    // mirrors production.js's support recipe.prerequisiteBuildings (radar)
-    prerequisiteBuildings: ['researchBureau', 'signalsWorks', 'radar'],
+    // mirrors production.js's support recipe.prerequisiteBuildings (radar +
+    // electronicsPlant — an EW/jammer rig is, physically, mostly electronics)
+    prerequisiteBuildings: ['researchBureau', 'signalsWorks', 'radar', 'electronicsPlant'],
     prerequisiteTechs: [],
     icCost: 70,
-    resourceCost: { steel: 15, oil: 8 },
+    resourceCost: { steel: 10, oil: 6, electronics: 5 },
     researchTime: 30,
   },
 

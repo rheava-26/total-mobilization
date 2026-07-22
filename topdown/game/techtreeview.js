@@ -646,7 +646,12 @@ export function createTechTreeView(canvas, getLiveCtx, opts = {}) {
       lines.push(`Recipe/unit:`, ...resourceCostLines(d.recipe.resourceCostPerUnit));
       lines.push(`IC/unit: ${d.recipe.icCostPerUnit}   Manpower/unit: ${d.recipe.manpowerCostPerUnit}   Time/unit: ${d.recipe.buildTimePerUnit}s`);
       if ((d.recipe.prerequisiteBuildings || []).length) lines.push(`Also needs: ${d.recipe.prerequisiteBuildings.map(k => BUILDING_DEFS[k].name).join(', ')}`);
-      lines.push(`Produces: ${d.outputs.map(k => k).join(', ')}`);
+      // Part B: a component category produces a RESOURCE, not units — read
+      // generically off `producesResource` rather than assuming `outputs`
+      // is always a unit list (it's empty for these categories).
+      lines.push(d.producesResource
+        ? `Produces: ${RESOURCE_DEFS[d.producesResource.resourceId].name} (+${d.producesResource.amountPerCycle}/cycle)`
+        : `Produces: ${d.outputs.join(', ')}`);
     } else if (n.kind === 'unit') {
       const d = n.def;
       lines.push(`Kind: Unit — ${PRODUCTION_DEFS[n.category] ? PRODUCTION_DEFS[n.category].name : n.category}`);

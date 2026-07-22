@@ -91,6 +91,37 @@ export const RESOURCE_DEFS = {
     // its own resource so it doesn't silently piggyback on an existing ore.
     terrainAffinity: ['hills', 'mountain'],
   },
+
+  // -------------------------------------------------------------------
+  // INTERMEDIATE COMPONENTS (PART B — the raw->component->system chain).
+  // These are still ordinary RESOURCE_DEFS entries (same stockpile in
+  // economy.js, same HUD line in main.js, same import-fallback eligibility
+  // in production.js's importResource, same node kind in the tech tree) —
+  // the ONLY thing that makes them "components" rather than "ores" is an
+  // EMPTY terrainAffinity: mapgen.js's placeDeposits skips any resource
+  // whose terrainAffinity has no matching terrain chars (see its own
+  // `if (!affinityChars.size) continue` guard), so no deposit for these is
+  // EVER scattered on the map and no mine can ever bind to one — the only
+  // way to fill this stockpile is game/production.js's new
+  // `producesResource` facility mode (see electronics/advancedAlloy in
+  // PRODUCTION_DEFS) or the import fallback. That's the whole trick: reuse
+  // every existing resource-shaped mechanism, opt out of exactly one
+  // (deposit placement) with one empty array, rather than forking a second
+  // "component" system alongside the resource system.
+  electronics: {
+    id: 'electronics', name: 'Electronics', color: '#5fe07a', glyph: 'PCB',
+    // no terrainAffinity: never mined, only produced (Electronics Plant) or
+    // imported. Reference: GaN T/R modules, avionics computers, guidance
+    // ICs — section 1-2 of reference-electronics-and-chains.md.
+    terrainAffinity: [],
+  },
+  advancedAlloy: {
+    id: 'advancedAlloy', name: 'Advanced Alloy', color: '#e0955f', glyph: 'AA',
+    // no terrainAffinity: never mined, only produced (Alloy Forge) or
+    // imported. Reference: Ti-6Al-4V forgings / nickel-superalloy turbine
+    // stock — reference-electronics-and-chains.md section 3.1/4.1.
+    terrainAffinity: [],
+  },
 };
 
 export const RESOURCE_LIST = Object.values(RESOURCE_DEFS);

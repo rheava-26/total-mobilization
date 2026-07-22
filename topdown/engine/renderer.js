@@ -1,4 +1,11 @@
 import { RESOURCE_DEFS } from '../game/resources.js';
+// WEAPON_DEFS is a pure DATA table (kind/targeting flags) — importing it here
+// is the same one-directional "renderer reads game/*.js data" relationship
+// RESOURCE_DEFS above already has, not a mechanics dependency: everything
+// below only ever READS .kind/.canTargetAir/.canTargetGround off it to pick
+// a look, never touches unit/projectile update logic (that stays entirely in
+// game/units.js).
+import { WEAPON_DEFS } from '../game/units.js';
 
 // City-ownership ring colors — pulled out to a named export so main.js's
 // map-legend panel (Operations Map chunk C) can swap in the exact same
@@ -692,6 +699,473 @@ function prerenderRoads(octx, map) {
   octx.restore();
 
   for (const [cx, cy, mx, my, gx, gy] of segments) drawHalfCore(cx, cy, mx, my, gx, gy);
+}
+
+// ---------------------------------------------------------------------------
+// UNITS, PROJECTILES, MUZZLE FLASH/RECOIL, IMPACT FX (playtest feedback:
+// "combat feels arcadey" — the VISUAL half of that fix; a sibling pass fixed
+// the underlying MECHANICS in game/units.js and left three hooks for this
+// file to read: u.aim (hull facing), u.turretAim (gun facing, decoupled from
+// the hull so a stopped tank still tracks its target), and u.muzzleFlash
+// ({t, angle} — set the instant a unit fires, aged out automatically). This
+// whole section used to live in main.js as a plain triangle marker + a round
+// projectile dot ("weird blob projectiles"); it moved here so all real
+// battlefield DRAWING sits with the terrain/label draw code above, same
+// data-doesn't-live-with-drawing split this file already keeps with
+// game/*.js. main.js just calls drawUnit/drawProjectile/drawImpacts per frame.
+// ---------------------------------------------------------------------------
+
+// SILHOUETTE CLASS — a small fixed vocabulary of code-drawn shapes, chosen
+// ENTIRELY from a unit def's attributes (domain / moveClass / weapon
+// targeting flags / dispositions) — never its name or key. Exactly the same
+// discipline game/techtreeview.js's glyphForBuilding already applies to
+// building icons (see that file's comment); this is the map-unit equivalent
+// of that same attribute chain, and the shapes below are stylistically
+// matched to techtreeview.js's ICON_GLYPHS vocabulary (tank/aircraft/ship/
+// drone/missile) so the game reads as one visual system, tank-turret-through-
+// tech-tree-icon. Cached per UNIT DEF (a WeakMap keyed on the def object
+// itself, which every unit of one UNIT_DEFS entry shares by reference) since
+// the classification can never change and there are only ~25 defs total —
+// this is a one-time lookup per unit type, not a per-unit-per-frame cost.
+const silhouetteCache = new WeakMap();
+function classifyUnit(def) {
+  let cls = silhouetteCache.get(def);
+  if (!cls) { cls = computeSilhouetteClass(def); silhouetteCache.set(def, cls); }
+  return cls;
+}
+function computeSilhouetteClass(def) {
+  const wdef = WEAPON_DEFS[def.weapon];
+  if (def.domain === 'air') {
+    // Manned airframes (fighter/strikejet: hp 60-70) vs small UAVs (recon
+    // drone/UCAV/loitering munition/swarm: hp 12-45) — hp is the one number
+    // in the roster that cleanly splits "aircraft" from "drone" with no name
+    // check (see game/units.js UNIT_DEFS for the actual figures).
+    return def.hp >= 50 ? 'aircraft' : 'drone';
+  }
+  if (def.domain === 'naval') return 'ship'; // only shape in the naval domain today; scales with def.radius already
+  if (!wdef) return 'support'; // unweaponed ground vehicle: EW/recon support (e.g. the jammer)
+  if (def.moveClass === 'foot') return 'infantry'; // dismounted team — ATGM/MANPADS teams included, armed or not
+  const holdGround = (def.dispositions || []).includes('holdGround');
+  // air-only weapon (SAM/MANPADS/laser lineage): reads as an AA/SAM mount,
+  // never a tank, regardless of how it moves
+  if (wdef.canTargetAir && !wdef.canTargetGround) return 'airdefense';
+  // a dual-purpose gun fired from a parked TRACKED mount (the AA Gun) reads
+  // the same way even though its weapon can also hit ground targets
+  if (wdef.kind === 'gun' && holdGround && def.moveClass === 'tracked') return 'airdefense';
+  if (wdef.kind === 'ballistic' || wdef.kind === 'homing') {
+    // truck-mounted (wheeled) + never chases = a rocket/missile launcher TEL
+    if (holdGround && def.moveClass === 'wheeled') return 'launcher';
+    if (holdGround) return 'artillery'; // tracked tube/rocket battery that holds ground
+    return 'tank'; // direct-fire, closes to a standoff — the roster's tank shape
+  }
+  return 'scout'; // remaining case: wheeled dual-purpose gun that doesn't hold ground — light recon car
+}
+
+// TURRETED shapes get the hull(aim) + gun(turretAim) two-part treatment (the
+// task's "bonus that really sells tanks" — extended to every other turreted
+// ground vehicle and to ships' deck guns, since the mechanics pass computes
+// turretAim generically for any unit with a target, not just the tank).
+// Everything else (infantry/aircraft/drone/support) draws as one shape
+// oriented on u.aim alone — a rifle squad or a strike jet doesn't have an
+// independently-slewing turret in this game.
+const TURRETED_SHAPES = new Set(['tank', 'artillery', 'launcher', 'airdefense', 'scout', 'ship']);
+// Muzzle length (in units of the unit's own def.radius) the flash/recoil
+// hooks anchor to, per shape — a tank's gun reaches further out front than a
+// squat AA turret's twin barrels, etc.
+const BARREL_REACH = { tank: 1.5, artillery: 2.0, launcher: 1.1, airdefense: 1.0, scout: 1.0, ship: 1.3 };
+const MUZZLE_REACH = { infantry: 0.8, aircraft: 1.15, drone: 0.55 }; // non-turreted shapes' equivalent reach
+
+// --- turreted hulls (local space: forward = +x, caller has already
+// translated to the unit's screen position and rotated by u.aim; fillStyle/
+// strokeStyle/lineWidth are already set by the caller, same convention
+// game/techtreeview.js's ICON_GLYPHS use) ---
+function hullTank(ctx, s) {
+  // tracked hull: tapered nose, flat stern, tread-tick hint along both edges
+  ctx.beginPath();
+  ctx.moveTo(s * 1.05, 0);
+  ctx.lineTo(s * 0.7, s * 0.62); ctx.lineTo(-s * 0.9, s * 0.62); ctx.lineTo(-s * 1.0, 0);
+  ctx.lineTo(-s * 0.9, -s * 0.62); ctx.lineTo(s * 0.7, -s * 0.62);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (s > 5) { // tread ticks only worth the extra draw calls once the hull is actually visible
+    ctx.beginPath();
+    for (let i = -2; i <= 2; i++) {
+      ctx.moveTo(i * s * 0.32, s * 0.62); ctx.lineTo(i * s * 0.32, s * 0.8);
+      ctx.moveTo(i * s * 0.32, -s * 0.62); ctx.lineTo(i * s * 0.32, -s * 0.8);
+    }
+    ctx.stroke();
+  }
+}
+function hullArtillery(ctx, s) {
+  // low flatbed hull on two big road wheels — the long barrel is the
+  // separately-rotated "turret" half, drawn by drawTurret below
+  ctx.beginPath();
+  ctx.moveTo(s * 0.7, -s * 0.35); ctx.lineTo(s * 0.7, s * 0.35); ctx.lineTo(-s * 0.85, s * 0.35); ctx.lineTo(-s * 0.85, -s * 0.35);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(-s * 0.5, s * 0.45, s * 0.3, 0, 6.28);
+  ctx.moveTo((s * 0.35) + s * 0.3, s * 0.45); ctx.arc(s * 0.35, s * 0.45, s * 0.3, 0, 6.28);
+  ctx.fill(); ctx.stroke();
+}
+function hullLauncher(ctx, s) {
+  // wheeled TEL: long narrow truck bed, small road wheels along the bottom edge
+  ctx.beginPath();
+  ctx.moveTo(s * 0.95, -s * 0.3); ctx.lineTo(s * 0.95, s * 0.3); ctx.lineTo(-s * 0.95, s * 0.3); ctx.lineTo(-s * 0.95, -s * 0.3);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (s > 5) {
+    ctx.beginPath();
+    for (const wx of [-0.7, -0.25, 0.25, 0.7]) { ctx.moveTo((wx + 0.16) * s, s * 0.42); ctx.arc(wx * s, s * 0.42, s * 0.16, 0, 6.28); }
+    ctx.fill();
+  }
+}
+function hullAirdefense(ctx, s) {
+  // squat box base — mount for the twin-gun or missile-canister turret
+  ctx.beginPath();
+  ctx.moveTo(s * 0.6, -s * 0.5); ctx.lineTo(s * 0.6, s * 0.5); ctx.lineTo(-s * 0.6, s * 0.5); ctx.lineTo(-s * 0.6, -s * 0.5);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function hullScout(ctx, s) {
+  // small, light wheeled hull — same tapered-nose language as the tank, just narrower/shorter
+  ctx.beginPath();
+  ctx.moveTo(s * 0.95, 0); ctx.lineTo(s * 0.55, s * 0.45); ctx.lineTo(-s * 0.8, s * 0.45);
+  ctx.lineTo(-s * 0.8, -s * 0.45); ctx.lineTo(s * 0.55, -s * 0.45);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function hullShip(ctx, s) {
+  // pointed bow, curved flanks, flat transom stern, small bridge block amidships
+  ctx.beginPath();
+  ctx.moveTo(s * 1.3, 0); ctx.quadraticCurveTo(s * 0.4, -s * 0.5, -s * 1.1, -s * 0.42);
+  ctx.lineTo(-s * 1.1, s * 0.42); ctx.quadraticCurveTo(s * 0.4, s * 0.5, s * 1.3, 0);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (s > 5) {
+    ctx.fillRect(-s * 0.25, -s * 0.3, s * 0.55, s * 0.6);
+    ctx.strokeRect(-s * 0.25, -s * 0.3, s * 0.55, s * 0.6);
+  }
+}
+const SILHOUETTE_HULLS = { tank: hullTank, artillery: hullArtillery, launcher: hullLauncher, airdefense: hullAirdefense, scout: hullScout, ship: hullShip };
+
+function drawTurret(ctx, s, cls, wdef) {
+  const reach = BARREL_REACH[cls] || 1.2;
+  // Missile-canister style for a launcher TEL or a non-gun (homing) air-
+  // defense mount — echoes the diamond missile BODY drawProjectile draws in
+  // flight below, so a launcher visibly carries the same ordnance it fires.
+  if (cls === 'launcher' || (cls === 'airdefense' && wdef && wdef.kind !== 'gun')) {
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.32, 0, 6.28); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(s * reach, 0); ctx.lineTo(s * (reach - 0.45), s * 0.16); ctx.lineTo(s * 0.15, s * 0.16);
+    ctx.lineTo(s * 0.15, -s * 0.16); ctx.lineTo(s * (reach - 0.45), -s * 0.16);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    return;
+  }
+  if (cls === 'airdefense') {
+    // twin-barrel AA gun mount
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.3, 0, 6.28); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.14); ctx.lineTo(s * reach, -s * 0.14);
+    ctx.moveTo(0, s * 0.14); ctx.lineTo(s * reach, s * 0.14);
+    ctx.stroke();
+    return;
+  }
+  // default single-barrel turret — tank/artillery/scout/ship deck gun
+  ctx.beginPath(); ctx.arc(0, 0, s * 0.42, 0, 6.28); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * reach, 0); ctx.stroke();
+}
+
+// --- non-turreted whole-body shapes (also local space, forward = +x) ---
+function drawInfantry(ctx, s) {
+  // a small fireteam wedge — three troopers, point toward facing. Reads as
+  // "personnel" at any zoom without needing per-limb detail at close range.
+  const dot = Math.max(1.1, s * 0.34);
+  ctx.beginPath();
+  ctx.arc(s * 0.55, 0, dot, 0, 6.28);
+  ctx.moveTo(-s * 0.35 + dot, s * 0.5); ctx.arc(-s * 0.35, s * 0.5, dot, 0, 6.28);
+  ctx.moveTo(-s * 0.35 + dot, -s * 0.5); ctx.arc(-s * 0.35, -s * 0.5, dot, 0, 6.28);
+  ctx.fill(); ctx.stroke();
+}
+function drawAircraft(ctx, s) {
+  // swept-wing dart silhouette
+  ctx.beginPath();
+  ctx.moveTo(s * 1.3, 0);
+  ctx.lineTo(s * 0.15, s * 0.22); ctx.lineTo(-s * 0.2, s * 0.95); ctx.lineTo(-s * 0.5, s * 0.7);
+  ctx.lineTo(-s * 0.35, s * 0.18); ctx.lineTo(-s * 1.15, s * 0.28); ctx.lineTo(-s * 1.15, -s * 0.28);
+  ctx.lineTo(-s * 0.35, -s * 0.18); ctx.lineTo(-s * 0.5, -s * 0.7); ctx.lineTo(-s * 0.2, -s * 0.95);
+  ctx.lineTo(s * 0.15, -s * 0.22);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function drawDrone(ctx, s) {
+  // small quad-rotor body — central hub + 4 splayed arms with rotor rings
+  ctx.beginPath();
+  ctx.moveTo(s * 0.4, 0); ctx.lineTo(0, s * 0.4); ctx.lineTo(-s * 0.4, 0); ctx.lineTo(0, -s * 0.4);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  const arms = [[0.75, 0.75], [0.75, -0.75], [-0.75, 0.75], [-0.75, -0.75]];
+  if (s > 3) {
+    ctx.beginPath();
+    for (const [ax, ay] of arms) { ctx.moveTo(0, 0); ctx.lineTo(ax * s, ay * s); }
+    ctx.stroke();
+    for (const [ax, ay] of arms) { ctx.beginPath(); ctx.arc(ax * s, ay * s, s * 0.22, 0, 6.28); ctx.stroke(); }
+  }
+}
+function drawSupport(ctx, s) {
+  // boxy support hull + a small jammer/antenna mast with two signal arcs
+  ctx.beginPath();
+  ctx.moveTo(s * 0.7, -s * 0.45); ctx.lineTo(s * 0.7, s * 0.45); ctx.lineTo(-s * 0.7, s * 0.45); ctx.lineTo(-s * 0.7, -s * 0.45);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (s > 4) {
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.45); ctx.lineTo(0, -s * 1.1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -s * 1.1, s * 0.35, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  }
+}
+function drawFallback(ctx, s) {
+  // defensive catch-all (mirrors glyphForBuilding's own default branch) —
+  // never hit by the current roster, keeps a future UNIT_DEFS entry with an
+  // unusual attribute combo visible instead of invisible
+  ctx.beginPath();
+  ctx.moveTo(s * 1.3, 0); ctx.lineTo(-s, s * 0.8); ctx.lineTo(-s, -s * 0.8);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+const SILHOUETTE_FULL = { infantry: drawInfantry, aircraft: drawAircraft, drone: drawDrone, support: drawSupport };
+
+// Mirrors game/units.js's own MUZZLE_FLASH_LIFE (0.3s) — that file owns the
+// fire-event's actual timing (ages u.muzzleFlash.t up, clears it at this
+// duration); this constant only needs to match it so the flash's fade-out
+// finishes exactly as the event itself expires, not drive any timing itself.
+const MUZZLE_FLASH_LIFE_MIRROR = 0.3;
+const RECOIL_DURATION = 0.12; // seconds — the kick itself, well inside the flash's fade window
+const RECOIL_KICK = 3.2; // world px at peak recoil, scaled by zoom/DPR like every other on-screen size here
+
+function drawMuzzleFlash(ctx, sx, sy, r, cls, flash) {
+  const fade = Math.max(0, 1 - flash.t / MUZZLE_FLASH_LIFE_MIRROR);
+  if (fade <= 0) return;
+  const reach = (BARREL_REACH[cls] ?? MUZZLE_REACH[cls] ?? 1) * r;
+  const tipX = sx + Math.cos(flash.angle) * reach, tipY = sy + Math.sin(flash.angle) * reach;
+  ctx.save();
+  ctx.translate(tipX, tipY);
+  ctx.rotate(flash.angle);
+  ctx.globalAlpha = fade;
+  const flen = r * (0.5 + fade * 0.4); // sized to the muzzle tip, not the whole hull — a flash, not a fireball
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, flen);
+  grad.addColorStop(0, 'rgba(255,250,220,0.95)');
+  grad.addColorStop(0.4, 'rgba(255,190,90,0.75)');
+  grad.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.ellipse(flen * 0.3, 0, flen, flen * 0.55, 0, 0, 6.28); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,235,180,0.9)';
+  ctx.lineWidth = Math.max(0.6, r * 0.1);
+  for (const a of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * flen * 1.1, Math.sin(a) * flen * 1.1); ctx.stroke(); }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+// Exported: main.js's render loop calls this once per LIVE, currently-
+// visible unit (fog-filtering happens at the call site, same as before this
+// pass). `isHovered` replaces the old `u === hovered` check done inline —
+// main.js still owns what "hovered" means, this file just draws the result.
+export function drawUnit(ctx, worldToScreen, cam, u, isHovered) {
+  const [sx, sy] = worldToScreen(u.x, u.y);
+  const r = u.def.radius * cam.zoom * devicePixelRatio;
+
+  // domain read-at-a-glance: air units cast a small drop shadow (hints
+  // altitude), naval units get a wake ring (hints hull-in-water) — unchanged
+  // from the pre-silhouette version, purely cosmetic, off the same `domain`
+  // attribute as everything else.
+  if (u.def.domain === 'air') {
+    ctx.beginPath(); ctx.ellipse(sx, sy + r * 0.7, r * 0.75, r * 0.32, 0, 0, 6.28);
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fill();
+  } else if (u.def.domain === 'naval') {
+    ctx.beginPath(); ctx.arc(sx, sy, r * 1.7, 0, 6.28);
+    ctx.strokeStyle = 'rgba(190,225,255,.4)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  const cls = classifyUnit(u.def);
+  const wdef = WEAPON_DEFS[u.def.weapon];
+  const side = u.side === 'player' ? '#5fd0ff' : '#ff5a5a'; // matches OWNERSHIP_COLORS above — one side-color vocabulary for the whole map
+  const sideLight = u.side === 'player' ? '#bfeeff' : '#ffc3b0';
+  const flash = u.muzzleFlash;
+  const kick = flash && flash.t < RECOIL_DURATION
+    ? (1 - flash.t / RECOIL_DURATION) * RECOIL_KICK * cam.zoom * devicePixelRatio : 0;
+  const kx = flash ? -Math.cos(flash.angle) * kick : 0, ky = flash ? -Math.sin(flash.angle) * kick : 0;
+
+  ctx.strokeStyle = 'rgba(8,10,14,0.55)';
+  ctx.lineWidth = Math.max(0.6, r * 0.06);
+
+  if (TURRETED_SHAPES.has(cls)) {
+    // HULL — oriented to movement facing (u.aim), independent of where the
+    // gun is currently pointed
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(u.aim || 0);
+    ctx.fillStyle = side;
+    (SILHOUETTE_HULLS[cls] || drawFallback)(ctx, r);
+    ctx.restore();
+
+    // TURRET — oriented to u.turretAim (tracks the live target independent
+    // of hull facing — see game/units.js's TURRET AIM comment), kicked back
+    // a couple px along the fire angle while a muzzle flash is fresh
+    ctx.save();
+    ctx.translate(sx + kx, sy + ky);
+    ctx.rotate(u.turretAim ?? u.aim ?? 0);
+    ctx.fillStyle = sideLight;
+    drawTurret(ctx, r, cls, wdef);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.translate(sx + kx, sy + ky);
+    ctx.rotate(u.aim || 0);
+    ctx.fillStyle = side;
+    (SILHOUETTE_FULL[cls] || drawFallback)(ctx, r);
+    ctx.restore();
+  }
+
+  if (flash) drawMuzzleFlash(ctx, sx, sy, r, cls, flash);
+
+  if (u.hp < u.def.hp) {
+    const w = r * 2.4;
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(sx - w / 2, sy - r - 8, w, 3);
+    ctx.fillStyle = '#6dffb0'; ctx.fillRect(sx - w / 2, sy - r - 8, w * (u.hp / u.def.hp), 3);
+  }
+  if (isHovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx, sy, r + 5, 0, 6.28); ctx.stroke(); }
+}
+
+// ---------------------------------------------------------------------------
+// PROJECTILES — real ordnance in flight, keyed off WEAPON_DEFS[...].kind
+// (never a weapon or unit NAME), replacing the old flat "round blob" marker:
+//   ballistic (shells — tank/artillery/MLRS/SRBM/hypersonic/…): an elongated
+//     shell body with a short fading motion-trail, oriented along its flight
+//     line (constant for the whole flight — see game/units.js's fireProjectile).
+//   gun (autocannon/directed-energy point-defense): a fast, thin, bright
+//     tracer streak — a glow pass plus a hot core line plus a small flare
+//     at the leading tip.
+//   homing (missiles — AAM/SAM/ATGM/cruise/anti-ship/rocket/loitering): a
+//     small finned missile body with a warm exhaust trail, oriented on its
+//     live velocity vector (it steers, so this direction changes in flight).
+// `p.physics` on the projectile object already mirrors `kind` 1:1 (see
+// fireProjectile) so it's used as the fallback if a weapon somehow has no
+// WEAPON_DEFS entry — this never actually diverges from wdef.kind in
+// practice, it's just defensive.
+export function drawProjectile(ctx, worldToScreen, cam, p) {
+  const wdef = WEAPON_DEFS[p.weapon];
+  const kind = wdef ? wdef.kind : p.physics;
+  const y = p.physics === 'ballistic' ? p.y - (p.lofted || 0) : p.y; // lofted arc height stays a pure visual offset, unchanged from before
+  const [sx, sy] = worldToScreen(p.x, y);
+  const scale = cam.zoom * devicePixelRatio;
+  const bodyColor = p.side === 'player' ? '#eaf6ff' : '#ffe3d0';
+  const rimColor = p.side === 'player' ? '#5fd0ff' : '#ff5a5a';
+  // Ballistic flight is a straight line for its whole duration (x0,y0 -> tx,
+  // ty — see fireProjectile), so its heading is fixed rather than read off a
+  // per-frame velocity the way homing/gun projectiles are.
+  const angle = p.physics === 'ballistic' ? Math.atan2(p.ty - p.y0, p.tx - p.x0) : Math.atan2(p.vy, p.vx);
+
+  if (kind === 'gun') drawTracer(ctx, sx, sy, angle, scale, bodyColor, rimColor);
+  else if (kind === 'homing') drawMissile(ctx, sx, sy, angle, scale, bodyColor, rimColor);
+  else drawShell(ctx, sx, sy, angle, scale, bodyColor, rimColor);
+}
+
+function drawShell(ctx, sx, sy, angle, scale, bodyColor, rimColor) {
+  const len = Math.max(6, 9 * scale), wid = Math.max(2, 2.6 * scale);
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(angle);
+  const trail = len * 2.4;
+  const g = ctx.createLinearGradient(-trail, 0, -len * 0.4, 0);
+  g.addColorStop(0, 'rgba(255,200,120,0)');
+  g.addColorStop(1, 'rgba(255,220,150,0.55)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-len * 0.4, -wid * 0.35); ctx.lineTo(-trail, 0); ctx.lineTo(-len * 0.4, wid * 0.35);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(len * 0.5, 0); ctx.lineTo(len * 0.1, -wid * 0.5); ctx.lineTo(-len * 0.4, -wid * 0.5);
+  ctx.lineTo(-len * 0.4, wid * 0.5); ctx.lineTo(len * 0.1, wid * 0.5);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rimColor; ctx.lineWidth = Math.max(0.5, scale * 0.5); ctx.stroke();
+  ctx.restore();
+}
+
+function drawTracer(ctx, sx, sy, angle, scale, bodyColor, rimColor) {
+  const len = Math.max(8, 14 * scale);
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(angle);
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = rimColor;
+  ctx.lineWidth = Math.max(1.5, scale * 2.2);
+  ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(len * 0.3, 0); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = Math.max(0.8, scale * 0.9);
+  ctx.beginPath(); ctx.moveTo(-len * 0.7, 0); ctx.lineTo(len * 0.3, 0); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(len * 0.3, 0, Math.max(0.8, scale * 0.7), 0, 6.28); ctx.fill();
+  ctx.restore();
+}
+
+function drawMissile(ctx, sx, sy, angle, scale, bodyColor, rimColor) {
+  const len = Math.max(6, 8 * scale), wid = Math.max(1.6, 2.2 * scale);
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(angle);
+  const trail = len * 3;
+  const g = ctx.createLinearGradient(-trail, 0, -len * 0.3, 0);
+  g.addColorStop(0, 'rgba(255,140,40,0)');
+  g.addColorStop(0.6, 'rgba(255,170,60,0.45)');
+  g.addColorStop(1, 'rgba(255,235,160,0.85)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-len * 0.3, -wid * 0.28); ctx.lineTo(-trail, 0); ctx.lineTo(-len * 0.3, wid * 0.28);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rimColor; ctx.lineWidth = Math.max(0.6, scale * 0.6);
+  ctx.beginPath();
+  ctx.moveTo(-len * 0.25, 0); ctx.lineTo(-len * 0.55, -wid * 0.9);
+  ctx.moveTo(-len * 0.25, 0); ctx.lineTo(-len * 0.55, wid * 0.9);
+  ctx.stroke();
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(len * 0.55, 0); ctx.lineTo(len * 0.05, -wid * 0.45); ctx.lineTo(-len * 0.3, -wid * 0.45);
+  ctx.lineTo(-len * 0.3, wid * 0.45); ctx.lineTo(len * 0.05, wid * 0.45);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// IMPACT FX — replaces the old plain fading-ring "hit marker" with a proper
+// flash/spark/debris burst, sized off whether the hit came from a shell/
+// missile or a gun-kind tracer (game/units.js's resolveHit now carries the
+// firing weapon's name through onto the hit record purely for this — see the
+// comment there). `0.25` below mirrors that same file's fixed hit life.
+const HIT_LIFE_MIRROR = 0.25;
+export function drawImpacts(ctx, worldToScreen, cam, hits) {
+  const scale = cam.zoom * devicePixelRatio;
+  for (const h of hits) {
+    const [sx, sy] = worldToScreen(h.x, h.y);
+    const wdef = WEAPON_DEFS[h.weapon];
+    const big = !wdef || wdef.kind !== 'gun'; // shells/missiles hit harder than a fast tracer round
+    const t = 1 - Math.max(0, Math.min(1, h.life / HIT_LIFE_MIRROR)); // 0 at impact -> 1 as it fades
+    const maxR = (big ? 24 : 11) * scale * (0.4 + t * 0.9);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - t) * (big ? 1 : 0.85);
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, maxR);
+    g.addColorStop(0, 'rgba(255,250,225,0.95)');
+    g.addColorStop(0.35, big ? 'rgba(255,190,90,0.75)' : 'rgba(255,225,150,0.6)');
+    g.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(sx, sy, maxR, 0, 6.28); ctx.fill();
+    if (big) {
+      // expanding ring sells "shockwave"; a few deterministic debris specks
+      // (hashed off the impact point, not Math.random — stable if redrawn)
+      ctx.globalAlpha = Math.max(0, 1 - t) * 0.8;
+      ctx.strokeStyle = 'rgba(255,210,150,0.9)';
+      ctx.lineWidth = Math.max(1, 1.6 * scale);
+      ctx.beginPath(); ctx.arc(sx, sy, maxR * 0.75, 0, 6.28); ctx.stroke();
+      const seed = (h.x * 131 + h.y * 977) | 0;
+      ctx.fillStyle = 'rgba(60,50,40,0.6)';
+      for (let i = 0; i < 4; i++) {
+        const a = ((seed >> (i * 5)) & 0x3ff) / 1024 * 6.28;
+        const d = maxR * (0.5 + 0.4 * (((seed >> (i * 3 + 2)) & 0xff) / 255));
+        ctx.beginPath(); ctx.arc(sx + Math.cos(a) * d, sy + Math.sin(a) * d, Math.max(0.6, scale * 0.9), 0, 6.28); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
 }
 
 export function createRenderer(canvas) {

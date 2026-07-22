@@ -1028,7 +1028,13 @@ function resolveHit(world, p, x, y) {
   for (const o of enemyEntities(world, p.side)) {
     if (Math.hypot(o.x - x, o.y - y) < o.def.radius + 10) {
       o.hp -= p.dmg;
-      world.hits.push({ x, y, life: 0.25 });
+      // `weapon`/`side` are carried purely for the render pass's impact FX
+      // (a shell/missile hit should flash bigger/brighter than a gun-kind
+      // tracer's spark — see engine/renderer.js's drawImpacts, which reads
+      // WEAPON_DEFS[weapon].kind the same data-driven way projectile flight
+      // itself already does). Never read back by any gameplay code — {x,y,
+      // life} remain the only fields anything in THIS file consumes.
+      world.hits.push({ x, y, life: 0.25, weapon: p.weapon, side: p.side });
       return true;
     }
   }

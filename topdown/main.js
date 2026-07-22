@@ -1,5 +1,5 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
-import { createRenderer, attachCameraControls, OWNERSHIP_COLORS } from './engine/renderer.js';
+import { createRenderer, attachCameraControls, OWNERSHIP_COLORS, drawUnit, drawProjectile, drawImpacts } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
 // BUILDBAR CATEGORY MAP (playtest: "group buildings... you can't scroll
@@ -1800,46 +1800,12 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
   if (b === hovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 - 3, y0 - 3, (x1 - x0) + 6, (y1 - y0) + 6); }
 }
 
-function drawUnit(ctx, worldToScreen, cam, u) {
-  const [sx, sy] = worldToScreen(u.x, u.y);
-  const r = u.def.radius * cam.zoom * devicePixelRatio;
-  // domain read-at-a-glance: air units cast a small drop shadow (hints
-  // altitude), naval units get a wake ring (hints they're hull-in-water) —
-  // purely cosmetic, driven off the same `domain` attribute as everything else.
-  if (u.def.domain === 'air') {
-    ctx.beginPath(); ctx.ellipse(sx, sy + r * 0.7, r * 0.75, r * 0.32, 0, 0, 6.28);
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fill();
-  } else if (u.def.domain === 'naval') {
-    ctx.beginPath(); ctx.arc(sx, sy, r * 1.7, 0, 6.28);
-    ctx.strokeStyle = 'rgba(190,225,255,.4)'; ctx.lineWidth = 1; ctx.stroke();
-  }
-  ctx.save();
-  ctx.translate(sx, sy);
-  ctx.rotate(u.aim || 0);
-  ctx.fillStyle = u.side === 'player' ? '#5fd0ff' : '#ff5a5a';
-  ctx.beginPath();
-  ctx.moveTo(r * 1.3, 0);
-  ctx.lineTo(-r, r * 0.8);
-  ctx.lineTo(-r, -r * 0.8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-  if (u.hp < u.def.hp) {
-    const w = r * 2.4;
-    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(sx - w / 2, sy - r - 8, w, 3);
-    ctx.fillStyle = '#6dffb0'; ctx.fillRect(sx - w / 2, sy - r - 8, w * (u.hp / u.def.hp), 3);
-  }
-  if (u === hovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx, sy, r + 5, 0, 6.28); ctx.stroke(); }
-}
-
-function drawProjectile(ctx, worldToScreen, cam, p) {
-  const y = p.physics === 'ballistic' ? p.y - (p.lofted || 0) : p.y;
-  const [sx, sy] = worldToScreen(p.x, y);
-  ctx.fillStyle = p.side === 'player' ? '#fff0a0' : '#ffb27a';
-  ctx.beginPath();
-  ctx.arc(sx, sy, Math.max(2, 3 * cam.zoom), 0, 6.28);
-  ctx.fill();
-}
+// drawUnit/drawProjectile/drawImpacts (per-type silhouettes, real ordnance
+// in flight, muzzle flash/recoil, impact FX) now live in engine/renderer.js
+// alongside the rest of the battlefield draw code — see that file's "UNITS,
+// PROJECTILES, MUZZLE FLASH/RECOIL, IMPACT FX" section header for the full
+// rationale. Imported at the top of this file; this used to be two plain
+// local functions (a rotated triangle marker + a round projectile dot).
 
 // headless test hook — safe to leave, no gameplay effect. Exposes spawnUnit
 // and the attribute tables too, so a test harness can stage its own
@@ -2199,14 +2165,9 @@ function loop(now) {
       // fog: only draw enemy units the player side currently detects. Own
       // units always draw regardless (you always see yourself).
       if (u.side !== 'player' && !detects('player', u)) continue;
-      drawUnit(ctx, worldToScreen, cam, u);
+      drawUnit(ctx, worldToScreen, cam, u, u === hovered);
     }
-    for (const h of world.hits) {
-      const [sx, sy] = worldToScreen(h.x, h.y);
-      ctx.strokeStyle = `rgba(255,200,120,${h.life * 4})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(sx, sy, (0.25 - h.life) * 60, 0, 6.28); ctx.stroke();
-    }
+    drawImpacts(ctx, worldToScreen, cam, world.hits);
     drawRoadPreview(ctx, worldToScreen);
     drawBuildPreview(ctx, worldToScreen);
   });

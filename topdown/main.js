@@ -47,6 +47,11 @@ import {
 // stays peaceful/open — see the `combatActive` gate in loop().
 import { initCityOwnership, updateObjectives, evaluateOutcome, initInvasion, CAPTURE_TIME_S } from './game/objectives.js';
 import { updateEnemyAI, debugEnemyGroups, debugAiStateSize } from './game/enemyai.js';
+// AMBIENT LIFE (playtest feedback: "the game is too still" — game/ambient.js
+// owns road traffic, factory smoke, coastal shimmer, city light flicker, and
+// the capital's flag). Purely visual, read-only over map/world — see that
+// file's header for the full "never touches gameplay" contract.
+import { initAmbient, updateAmbient, drawAmbientGround, drawAmbientSmoke } from './game/ambient.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -169,6 +174,13 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
   Math.min(canvas.clientWidth / map.worldW(), canvas.clientHeight / map.worldH()) * 0.9));
 
 const world = { units: [], projectiles: [], hits: [], buildings: [] };
+
+// AMBIENT LIFE (game/ambient.js) — created once right alongside `world`,
+// since it's precomputed off the same `map` (road network, cities/towns)
+// this whole boot sequence already has in hand. See loop() below for the
+// per-frame update/draw hooks; see that file's header for why this can
+// never affect gameplay.
+const ambient = initAmbient(map);
 
 // MOBILIZATION ECONOMY CORE (P3 — game/economy.js). Created once at load,
 // ticked every frame in loop() below with ZERO player input required — a
@@ -1522,6 +1534,11 @@ window.__debug = {
   TECH_DEFS, RESEARCH_COPY, researchState, techStatus, canAffordResearch,
   startResearch, isCategoryUnlocked, updateResearch,
   techPanel, enterTechPanel, exitTechPanel,
+  // AMBIENT LIFE hooks (game/ambient.js), for headless verification: `ambient`
+  // is the live state object updateAmbient mutates every frame — a test can
+  // read vehicle/smoke/shimmer/flicker counts and positions directly (e.g.
+  // to confirm motion between two snapshots) without parsing rendered pixels.
+  ambient,
   // GAME PHASES (P4 — game/phase.js), for headless verification: phaseState
   // is the live object (read .phase directly); PHASES is the enum;
   // beginCombat drives the exact same one-way transition the C key/button
@@ -1729,13 +1746,26 @@ function loop(now) {
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
 
+  // AMBIENT LIFE (game/ambient.js) — updated every frame, unconditional on
+  // phase (PREP or COMBAT): the whole point is the world doesn't go still
+  // just because you're still in the build-up. Purely visual — see that
+  // file's header for the "never touches gameplay" contract.
+  updateAmbient(ambient, world, map, dt);
+
   renderer.frame(map, (ctx, worldToScreen, cam) => {
     drawFogOverlay(ctx, worldToScreen, 'player', world, map);
+    // ground-level ambient life (traffic/shimmer/flicker/flag) BEFORE
+    // buildings/units so it reads as part of the ground, not floating on
+    // top of the things that actually matter
+    drawAmbientGround(ambient, ctx, worldToScreen, cam);
     for (const b of world.buildings) {
       // fog: same rule as units — an undetected enemy building doesn't draw.
       if (b.side !== 'player' && !detects('player', b)) continue;
       drawBuilding(ctx, worldToScreen, cam, b);
     }
+    // factory smoke drawn AFTER buildings so plumes visibly rise above
+    // rooftops instead of sitting under them
+    drawAmbientSmoke(ambient, ctx, worldToScreen, cam);
     for (const p of world.projectiles) drawProjectile(ctx, worldToScreen, cam, p);
     for (const u of world.units) {
       // fog: only draw enemy units the player side currently detects. Own

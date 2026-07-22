@@ -256,6 +256,32 @@ function makeCityName(rng, used, usedSuffixes) {
   return `${root}${suffix.toLowerCase()}`; // merged compound, e.g. root "Naenov" + "cross" -> "Naenovcross"
 }
 
+// Short procedural name for a small town/village (SMALL TOWNS follow-up —
+// playtest feedback: "small towns aside from the major cities would be
+// nice"). Deliberately a single syllable (rarely two) with no forced
+// suffix compound, so a town's NAME reads as plainer/shorter than a city's
+// even before you see its much smaller footprint on the map — a village is
+// "Dun", a city is "Naenovcross". Falls back to a couple of retries on a
+// same-run name collision (cheap and the syllable space is large relative
+// to a handful of towns) rather than the city path's full extra-syllable
+// fallback, which would blur the length distinction this function exists
+// to create.
+function makeTownName(rng, used, usedSuffixes) {
+  let word = '';
+  for (let tries = 0; tries < 8; tries++) {
+    word = makeSyllable(rng, true, false).text;
+    if (rng() < 0.3) word += makeSyllable(rng, false, false).text;
+    word = word.charAt(0).toUpperCase() + word.slice(1);
+    if (!used.has(word.toLowerCase())) break;
+  }
+  used.add(word.toLowerCase());
+  if (rng() < 0.3) {
+    const suffix = pickFresh(rng, SETTLEMENT_WORDS, usedSuffixes);
+    return `${word} ${suffix}`;
+  }
+  return word;
+}
+
 function makeRegionName(rng, used, usedSuffixes, flavor) {
   const root = makeUniqueRoot(rng, used);
   const suffix = pickFresh(rng, REGION_SUFFIXES[flavor] || REGION_SUFFIXES.plains, usedSuffixes);
@@ -918,6 +944,124 @@ function attemptGenerate(seed) {
     }
   }
 
+  // ------------------------------------------------------- small towns ----
+  // SMALL TOWNS / VILLAGES — playtest feedback: "the map looks a bit
+  // stale — maybe adding small towns aside from the major cities would be
+  // nice." Purely map RICHNESS: deliberately kept OUT of `cities` and given
+  // their own `towns` array, so game/objectives.js and game/enemyai.js
+  // (which only ever read map.cities) never see them at all — v1's "the 5
+  // cities are the only objectives" stays exactly true with zero guard code
+  // needed here. Placed AFTER the road network is finalized (this section
+  // sits right after acceptance gate 2 above) so siting can actually score
+  // real proximity to a road, and so each town's optional connector spur
+  // below can hug the existing network instead of laying a whole new route.
+  //
+  // Candidate scan uses a coarse stride (not every tile) purely to keep the
+  // one-time generation cost flat — towns don't need single-tile placement
+  // precision the way the 5 hand-picked city sites did.
+  const TOWN_STRIDE = 2;
+  const TOWN_CITY_MARGIN = 12; // min tiles from any of the 5 real cities' edge
+  const TOWN_SPACING = 14; // min tiles between two towns
+  const TOWN_COUNT = 6 + Math.floor(rng() * 5); // 6..10 — enough to feel like a populated island without crowding it
+
+  function distToRoadFlags(x, y, maxR) {
+    for (let r = 1; r <= maxR; r++) {
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const ax = x + dx, ay = y + dy;
+        if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue;
+        if (roadFlags[ay * W + ax]) return r;
+      }
+    }
+    return maxR + 1;
+  }
+
+  const townCandidates = [];
+  for (let y = 4; y < H - 4; y += TOWN_STRIDE) {
+    for (let x = 4; x < W - 4; x += TOWN_STRIDE) {
+      // reuses buildableAt/distToWater from the cities section above (same
+      // function scope) — "not in the sea, not on a mountain peak" is
+      // already exactly what buildableAt enforces (grass/hills/sand only)
+      if (!buildableAt(x, y)) continue;
+      let tooCloseToCity = false;
+      for (const c of cities) {
+        if ((x - c.x) ** 2 + (y - c.y) ** 2 < (c.r + TOWN_CITY_MARGIN) ** 2) { tooCloseToCity = true; break; }
+      }
+      if (tooCloseToCity) continue;
+      // score once here (not inside the selection loop below) — a ring
+      // search per candidate is the expensive part, and it doesn't depend
+      // on which OTHER towns end up chosen, so it only needs computing once
+      // per candidate rather than once per (candidate x town) pair
+      const roadD = distToRoadFlags(x, y, 9);
+      const coastD = distToWater(x, y, 8);
+      const score = (roadD <= 9 ? (9 - roadD) : 0) * 0.5 + (coastD <= 8 ? (8 - coastD) : 0) * 0.15;
+      townCandidates.push({ x, y, score });
+    }
+  }
+
+  const towns = [];
+  let townPool = townCandidates;
+  for (let i = 0; i < TOWN_COUNT && townPool.length; i++) {
+    let best = null, bestScore = -Infinity;
+    for (const c of townPool) {
+      const s = c.score + hash2(c.x, c.y, 8123 + i) * 3; // jitter so towns don't all clump on the single best-scoring spot
+      if (s > bestScore) { bestScore = s; best = c; }
+    }
+    if (!best) break;
+    const r = 2 + Math.floor(hash2(best.x, best.y, 8124) * 3); // 2..4 tiles — clearly smaller than any of the 5 cities (r>=6)
+    towns.push({ x: best.x, y: best.y, r });
+    townPool = townPool.filter(c => (c.x - best.x) ** 2 + (c.y - best.y) ** 2 >= TOWN_SPACING * TOWN_SPACING);
+  }
+
+  // stamp T_URBAN tiles for each town — same organic-blob approach the 5
+  // cities use just above (irregular hash-jittered edge, not a hard
+  // circle), just at a much smaller radius so it visibly reads as "lesser"
+  // even before the renderer's density-based city-block painter (engine/
+  // renderer.js) gets a look at it.
+  for (const t of towns) {
+    const r = t.r;
+    for (let dy = -r - 1; dy <= r + 1; dy++) for (let dx = -r - 1; dx <= r + 1; dx++) {
+      const x = t.x + dx, y = t.y + dy;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const d = Math.hypot(dx, dy) + (hash2(x, y, 41) - 0.5) * 2.0;
+      if (d > r) continue;
+      const i = y * W + x;
+      if (terrain[i] === T_WATER || terrain[i] === T_RIVER || terrain[i] === T_MOUNTAIN) continue;
+      terrain[i] = T_URBAN;
+    }
+  }
+
+  // Connect some towns to the road network "if cheap" (task wording).
+  // roadAStar's cost function makes reusing an existing road tile ~8x
+  // cheaper than laying fresh road (ROAD_REUSE_COST vs terrain cost), so
+  // aiming at the nearest CITY (not literally the nearest road tile) still
+  // makes the search hug whatever road segment is closest along the way —
+  // it only pays real cost for the genuinely new spur into town. A spur
+  // that turns out to need a lot of brand-new tiles (rare — a town stranded
+  // far from the network) is simply skipped rather than forced; the town
+  // still exists as a settlement, just an unconnected one.
+  const TOWN_SPUR_MAX_NEW_TILES = 22;
+  for (const t of towns) {
+    if (distToRoadFlags(t.x, t.y, 3) <= 3) continue; // already road-adjacent (sits near a city's sprawl) — nothing to add
+    let nearestCity = cities[0], bestD = Infinity;
+    for (const c of cities) {
+      const d = (c.x - t.x) ** 2 + (c.y - t.y) ** 2;
+      if (d < bestD) { bestD = d; nearestCity = c; }
+    }
+    const spur = roadAStar(W, H, terrain, roadFlags, t.x, t.y, nearestCity.x, nearestCity.y);
+    if (!spur) continue;
+    let newTiles = 0;
+    for (const { x, y } of spur) if (!roadFlags[y * W + x]) newTiles++;
+    if (newTiles > TOWN_SPUR_MAX_NEW_TILES) continue; // too far from the network to be "cheap" — leave it unconnected
+    for (const { x, y } of spur) {
+      const i = y * W + x;
+      if (!roadFlags[i]) { roadFlags[i] = 1; roadTileCount++; }
+    }
+  }
+
+  const usedTownSuffixes = new Set();
+  for (const t of towns) t.name = makeTownName(rng, usedNames, usedTownSuffixes);
+
   const roads = [];
   for (let y = 0; y < H; y++) {
     let row = '';
@@ -940,6 +1084,12 @@ function attemptGenerate(seed) {
     grid,
     roads,
     cities,
+    // SMALL TOWNS (map-richness follow-up, see the section above) — plain
+    // {x,y,r,name} shape, same as `cities`, deliberately a SEPARATE array so
+    // nothing that reads map.cities (objectives, enemy AI) is even aware
+    // towns exist. An authored map file may omit this entirely (buildMap
+    // below defaults it to []), same convention as `deposits`.
+    towns,
     regions,
     spawns,
     deposits,
@@ -953,6 +1103,7 @@ function attemptGenerate(seed) {
       landFraction: landOfMap,
       mainLandmassFraction: landFraction,
       cityCount: cities.length,
+      townCount: towns.length,
       roadTileCount,
       roadEdgeCount: mstEdges.length,
       depositCount: deposits.length,

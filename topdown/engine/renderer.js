@@ -188,27 +188,35 @@ function prerenderDeposits(octx, map) {
 //
 // Deterministic from hash2(gx,gy,seed) exactly like the terrain texture pass
 // above, so the same map always looks the same city. Density scales with
-// proximity to the nearest named city center (map.cities carries {x,y,r} in
-// TILE coords already, same as game/mapgen.js generated them) so the capital
-// (r=10, the biggest by construction — see mapgen.js) reads as visibly
-// denser/bigger than the smaller towns without any special-casing by name.
-// A tile within a couple
-// rings of a road gets a placement-probability bump and is nudged away from
-// the road tile it's closest to, so blocks loosely "front the street"
-// instead of a uniform scatter ignoring the road network entirely.
+// proximity to the nearest SETTLEMENT center — map.cities (the 5 objective
+// cities) AND map.towns (small, non-objective villages — game/mapgen.js)
+// both carry {x,y,r} in TILE coords, and both feed the same density/lane
+// logic below with zero special-casing by name — so the capital (r=10, the
+// biggest by construction — see mapgen.js) reads as visibly denser/bigger
+// than a lesser city, which in turn dwarfs any small town (r=2..4). A tile
+// within a couple rings of a road gets a placement-probability bump and is
+// nudged away from the road tile it's closest to, so blocks loosely "front
+// the street" instead of a uniform scatter ignoring the road network
+// entirely.
 const ROOF_PALETTES = [
   ['#6b4a34', '#8a6244'], // warm brick/tile
   ['#585049', '#726a5f'], // grey slate
   ['#75563a', '#93704c'], // sun-baked tan
 ];
 
-function cityDensityAt(map, cities, gx, gy) {
-  let best = Infinity;
-  for (const c of cities) {
-    const d = Math.hypot(gx - c.x, gy - c.y) / Math.max(1, c.r || 6);
-    if (d < best) best = d;
+// Nearest SETTLEMENT (a city or a small town — see below) to a world-px
+// point, plus a normalized 0..1 "how deep into its core" density. Operating
+// in world-px (not tile coords) is what lets the per-city rotated
+// street-lane grid below use ordinary trig against the settlement's exact
+// center instead of fighting tile-grid quantization.
+function nearestSettlementAt(settlements, wx, wy, ts) {
+  let best = null, bestNorm = Infinity;
+  for (const c of settlements) {
+    const dx = wx - (c.x + 0.5) * ts, dy = wy - (c.y + 0.5) * ts;
+    const norm = Math.hypot(dx, dy) / Math.max(1, (c.r || 6) * ts);
+    if (norm < bestNorm) { bestNorm = norm; best = c; }
   }
-  return Math.max(0, 1 - best); // 1 at the very center, 0 at/beyond the city's nominal radius
+  return best ? { c: best, density: Math.max(0, 1 - bestNorm) } : null;
 }
 
 // nearest road tile within a small ring, or null — used both to bias
@@ -226,22 +234,109 @@ function nearestRoadDir(map, gx, gy, r = 2) {
   return null;
 }
 
+// RICHER CITIES (playtest feedback: "the city-block rendering ... reads as
+// a checkerboard of squares" — CONCEPT.md's Art-Direction Notes flagged the
+// same thing: "Cities should be prettier"). The single biggest reason the
+// old pass read as a grid was that every tile placed its block independent
+// of its neighbors, so the WORLD's own axis-aligned tile grid always showed
+// through no matter how much per-block jitter got added. The fix: each
+// settlement (city OR small town — see nearestSettlementAt above) gets its
+// own randomly-ROTATED internal street/lane grid, carved BEFORE
+// buildings are placed. A tile that lands on a lane gets a thin worn-path
+// treatment instead of a building; a tile between lanes gets one. Because
+// the rotation angle differs settlement to settlement, no two cities' block
+// structure lines up with the map's world axes (or with each other), which
+// is what actually breaks the "checkerboard" read — the lanes ARE the
+// "internal street/lane structure" the task asked for, not a cosmetic
+// add-on drawn on top.
+// Draws the internal street/lane grid for one settlement as real ROTATED
+// VECTOR STROKES (clipped to the settlement's core), not per-tile fills.
+// This is the fix for an early version of this pass that painted lane tiles
+// with fillRect — at 32px tile granularity that just recreated a NEW,
+// bigger checkerboard (clean tile-aligned rectangles), the exact "reads as
+// squares" complaint this whole feature exists to fix. A stroked line has
+// no such quantization: its edges are smooth at any angle, so the lane
+// genuinely reads as a diagonal street cutting across the block instead of
+// a grid cell toggling on/off.
+function drawSettlementLanes(octx, c, ts) {
+  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
+  const rot = (hash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
+  const spacing = ts * (2.2 + hash2(seedX, seedY, 9002) * 1.3);
+  const width = ts * (0.14 + hash2(seedX, seedY, 9003) * 0.08);
+  // slightly SMALLER than the settlement's nominal radius (not larger) —
+  // the stamped urban footprint (game/mapgen.js) is an organic blob that
+  // roughly fills `r` but never perfectly circular, so clipping at exactly
+  // `r` (let alone beyond it) let faint lines bleed out over open
+  // water/terrain past the actual city edge. Staying a bit inside `r`
+  // trades a few uncovered corner tiles (already the sparsest, lowest-
+  // density part of the city) for never painting a street over the sea.
+  const R = (c.r || 6) * ts * 0.88;
+  const cx = (c.x + 0.5) * ts, cy = (c.y + 0.5) * ts;
+
+  octx.save();
+  octx.beginPath();
+  octx.arc(cx, cy, R, 0, Math.PI * 2);
+  octx.clip(); // keep lanes inside this settlement's own core — never bleeds onto open terrain
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.strokeStyle = 'rgba(150,138,114,0.18)';
+  octx.lineWidth = width;
+  const n = Math.ceil(R / spacing) + 1;
+  for (let i = -n; i <= n; i++) {
+    const off = i * spacing;
+    octx.beginPath(); octx.moveTo(-R, off); octx.lineTo(R, off); octx.stroke();
+    octx.beginPath(); octx.moveTo(off, -R); octx.lineTo(off, R); octx.stroke();
+  }
+  octx.restore();
+}
+
+// Same rotated-grid test as drawSettlementLanes above, evaluated at one
+// world-px point — used only to decide "does a building belong here," so a
+// building never straddles a lane the stroke pass just painted.
+function onSettlementLane(c, wx, wy, ts) {
+  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
+  const rot = (hash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
+  const spacing = ts * (2.2 + hash2(seedX, seedY, 9002) * 1.3);
+  const width = ts * (0.14 + hash2(seedX, seedY, 9003) * 0.08);
+  const relx = wx - (c.x + 0.5) * ts, rely = wy - (c.y + 0.5) * ts;
+  const lx = relx * Math.cos(rot) + rely * Math.sin(rot);
+  const ly = -relx * Math.sin(rot) + rely * Math.cos(rot);
+  const halfW = width / 2;
+  const laneX = ((lx + halfW) % spacing + spacing) % spacing;
+  const laneY = ((ly + halfW) % spacing + spacing) % spacing;
+  return laneX < width || laneY < width;
+}
+
 function prerenderCityBlocks(octx, map) {
-  const cities = map.cities || [];
-  if (!cities.length) return;
+  // towns (game/mapgen.js's small-settlements pass) join cities for this
+  // render-only pass so a village gets the exact same organic
+  // block-and-lane treatment, just scaled down by its much smaller `r` —
+  // no separate code path, no special-casing by name.
+  const settlements = (map.cities || []).concat(map.towns || []);
+  if (!settlements.length) return;
   const ts = map.tileSize;
+
+  // vector lane strokes first (once per settlement — cheap, a few dozen
+  // lines total), so buildings drawn afterward sit visually on top of them
+  for (const c of settlements) drawSettlementLanes(octx, c, ts);
+
   for (let gy = 0; gy < map.height; gy++) {
     for (let gx = 0; gx < map.width; gx++) {
       const t = map.terrainAt(gx, gy);
       if (!t || t.name !== 'urban') continue;
       if (map.roadAt(gx, gy) > 0) continue; // leave road tiles clear for the road stroke
-      const density = cityDensityAt(map, cities, gx, gy);
+
+      const cx0 = gx * ts + ts / 2, cy0 = gy * ts + ts / 2;
+      const settle = nearestSettlementAt(settlements, cx0, cy0, ts);
+      if (!settle) continue; // shouldn't happen (terrain is only 'urban' inside a stamped settlement), but stay defensive
+      const { c, density } = settle;
+
+      if (onSettlementLane(c, cx0, cy0, ts)) continue; // no building on a lane tile — the street stays clear
+
       const roadDir = nearestRoadDir(map, gx, gy);
       const placeRoll = hash2(gx, gy, 201);
       const placeChance = 0.5 + density * 0.35 + (roadDir ? 0.13 : 0);
       if (placeRoll > placeChance) continue; // gap: courtyard/alley — keeps it from reading as a solid carpet
-
-      const cx0 = gx * ts + ts / 2, cy0 = gy * ts + ts / 2;
 
       // small open plazas right at a city core instead of a building, for
       // variety and so the very center doesn't read as maximally packed

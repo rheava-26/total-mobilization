@@ -36,7 +36,7 @@ import { generateTheaterWithStats, DEPOSIT_TUNABLES } from '../game/mapgen.js';
 // (loadMap) or straight out of game/mapgen.js's generateTheater (
 // loadGeneratedMap).
 export function buildMap(data, defsData) {
-  const { tileSize, width, height, spawns, cities, regions, deposits, grid: rows, roads: roadRows } = data;
+  const { tileSize, width, height, spawns, cities, towns, regions, deposits, grid: rows, roads: roadRows } = data;
   const legend = data.legend || defsData.legend;
 
   // Ordered type table: index -> effect list (the def), used both for the
@@ -125,6 +125,13 @@ export function buildMap(data, defsData) {
     grid,
     spawns: spawns || [],
     cities: cities || [],
+    // SMALL TOWNS (game/mapgen.js's placeTowns-equivalent section, map
+    // richness only — see docs/CONCEPT.md's cities-prettier note and the
+    // playtest feedback that prompted this). Plain {x,y,r,name} like
+    // `cities`, but NEVER read by game/objectives.js or game/enemyai.js —
+    // an authored map file that omits `towns` entirely just gets none,
+    // same convention as `deposits`.
+    towns: towns || [],
     regions: regions || [],
     // RESOURCE DEPOSITS (P3 follow-up — see game/resources.js/game/mapgen.js):
     // optional per map JSON — a procedurally generated map always carries

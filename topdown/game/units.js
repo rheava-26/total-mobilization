@@ -540,6 +540,13 @@ export function spawnUnit(world, key, x, y, side) {
     id: nextId++, key, def, side, x, y, vx: 0, vy: 0,
     hp: def.hp, maxHp: def.hp, aim: 0, cd: Math.random() * def.rate,
     target: null, order: null, // order = {x,y} move destination, set by player input
+    // turretAim is the weapon's own facing (see updateUnits), decoupled
+    // from u.aim (hull/movement facing) so a stopped unit still swings its
+    // gun onto target. muzzleFlash is the fire-event hook a visual pass
+    // reads for muzzle flash/recoil — {t: seconds since this shot, angle:
+    // turretAim at the moment of firing} — and is aged out / cleared
+    // automatically below.
+    turretAim: 0, muzzleFlash: null,
     // A* order-following state (ground move classes only — see ensurePath).
     // pathPrevX/Y is the start of the CURRENT leg (the previous waypoint, or
     // the unit's position when it joined the route) — used by advancePath's
@@ -664,6 +671,26 @@ export function pickTarget(world, u) {
   return best;
 }
 
+// ---------------------------------------------------------------------------
+// ENGAGEMENT TUNABLES — the designer's to feel-tune. Replaces the old crude
+// `aggressive ? 0 : range*0.7` standoff (point-blank knife-fighting for half
+// the roster) with a disposition-driven fraction of the unit's OWN weapon
+// range: ranged/heavy units hold near the outer edge of their envelope and
+// shell from there; only short-range/assault-doctrine units (marked
+// `aggressive` — CAS jets, drone swarms, infantry autocannon teams) close
+// further, and even they stop well short of stacking on the target.
+const RANGED_STANDOFF_FRAC = 0.85; // tank (range 220) holds ~187px — "shelling from range", not hugging
+const AGGRESSIVE_STANDOFF_FRAC = 0.32; // still a real gap, not literal point-blank
+// Aim tolerance (radians) heavy direct-fire weapons need before they'll pull
+// the trigger — see the ballistic-kind gate in the fire block below.
+const FIRE_AIM_TOLERANCE = 0.22; // ~12.5 degrees off the target's bearing
+// How long a fire-event stays flagged on the unit for the visual pass to
+// pick up (muzzle flash / recoil) before this file clears it back out.
+const MUZZLE_FLASH_LIFE = 0.3;
+// Separation tunables (anti-cluster formation) — see the push loop below.
+const SEPARATION_GAP_PX = 4; // clearance added on top of the two radii
+const SEPARATION_FORCE = 90; // px/s at maximum overlap; falls off to 0 at the gap boundary
+
 export function updateUnits(world, dt, map) {
   for (const u of world.units) {
     if (u.hp <= 0) continue;
@@ -676,13 +703,65 @@ export function updateUnits(world, dt, map) {
     const enemy = pickTarget(world, u) || nearestEnemy(world, u);
     if (enemy) {
       u.target = enemy;
-      // AI DISPOSITIONS: holdGround batteries never chase (they just wait
-      // for something to enter their umbrella); aggressive units close to
-      // point-blank instead of hovering at 70% of their own range.
+      // AI DISPOSITIONS: holdGround batteries never chase — they just wait
+      // for something to enter their umbrella, unchanged from before.
+      // Everything else holds at a STANDOFF DISTANCE from the target (not
+      // "walk to the target's exact xy", which is what used to put every
+      // attacker's nose on the enemy's hull) — a ranged/heavy unit sits near
+      // the outer edge of its own weapon range and shells from there; only
+      // short-range/assault-doctrine units (`aggressive`) close further, and
+      // even they stop well short of stacking on the target. If the unit is
+      // already INSIDE its standoff (enemy closed the gap), the same check
+      // sends it backing off to reopen the range instead of just holding —
+      // a tank reversing to keep its distance, not getting run up on.
       if (!def.dispositions.includes('holdGround')) {
-        const d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
-        const standoff = def.dispositions.includes('aggressive') ? 0 : def.range * 0.7;
-        if (d > standoff) { goalX = enemy.x; goalY = enemy.y; }
+        const standoffFrac = def.dispositions.includes('aggressive') ? AGGRESSIVE_STANDOFF_FRAC : RANGED_STANDOFF_FRAC;
+        const standoff = def.range * standoffFrac;
+        const rx = u.x - enemy.x, ry = u.y - enemy.y;
+        const d = Math.hypot(rx, ry);
+        // Dead-zone band around the standoff distance: once inside it, the
+        // unit just holds current position (goalX/Y stay at u.x/u.y, set
+        // above) instead of continuing to chase the target's exact spot.
+        // This band existing at all is what makes two units that have each
+        // targeted the other actually stop, rather than each perpetually
+        // re-chasing a moving reference point and never bleeding off
+        // velocity — verified during this pass to matter in practice: a
+        // pair of tanks with a too-tight band never stopped closing/
+        // opening, coasted across the map together indefinitely, and in
+        // the process consistently outran their own shells' flight time
+        // (the ballistic 'shell' kind fire-and-forgets at the target's
+        // position AT THE MOMENT OF FIRING — a target that's still moving
+        // when the shell arrives just isn't there anymore).
+        const band = Math.max(15, standoff * 0.08);
+        if (Math.abs(d - standoff) > band) {
+          // RADIAL-ONLY correction — walk straight down the CURRENT line to
+          // the target until back inside the band, no fixed angular/
+          // formation offset baked into this goal. That's deliberate: a
+          // goal that's a constant angle away from a bearing recomputed
+          // fresh every frame keeps adding that same angular offset again
+          // each frame relative to wherever the unit now is, which is a
+          // rotational bias — it reads as the unit slowly orbiting the
+          // target instead of holding station (verified empirically).
+          // Radial-only can't do that: moving straight along the existing
+          // bearing never introduces a tangential component, so there's no
+          // drift to accumulate. It's also naturally self-consistent for a
+          // MUTUAL engagement (two units that have each targeted the
+          // other) with no extra bookkeeping — each side's target point
+          // sits exactly on the line between them by construction, so
+          // there's no "wrong offset" for the two to disagree about the
+          // way a fixed angular fan could (also verified: a fixed fan that
+          // wasn't precisely antiparallel between two mutual targets left
+          // their two goals with no shared stationary point at all, and
+          // the pair provably drifted at a constant velocity forever).
+          // Lateral spread between several units sharing one target — the
+          // actual anti-cluster/formation ask — is handled by the
+          // separation pass below instead, which doesn't reopen either
+          // failure mode.
+          const ux = d > 0.5 ? rx / d : Math.cos(u.aim || 0);
+          const uy = d > 0.5 ? ry / d : Math.sin(u.aim || 0);
+          goalX = enemy.x + ux * standoff;
+          goalY = enemy.y + uy * standoff;
+        }
       }
     } else if (u.order) {
       // A* PATHING: ground move classes route around impassable terrain
@@ -746,21 +825,41 @@ export function updateUnits(world, dt, map) {
     }
     u.x += mdx; u.y += mdy;
 
-    // simple separation so a mass of units spreads into a formation instead
-    // of stacking. BUG FIX: the push used to be applied blindly, so on a
-    // packed coastline it could nudge a ground unit a pixel into water (or a
-    // naval unit a pixel onto a beach) because passability was never
-    // re-checked after the displacement. Re-check the same way the main
-    // move step does — wall-slide the push along one axis, or drop it
-    // entirely if both axes land on impassable terrain for this unit's
-    // move class.
+    // ANTI-CLUSTER SEPARATION so a mass of units given the same order (or
+    // fanning around the same engagement target above) actually spreads into
+    // a formation instead of stacking on one pixel — the push force here was
+    // strengthened (SEPARATION_FORCE, up from a barely-there 40) specifically
+    // because the old value was too weak to un-stack a mass converging on a
+    // shared order point before this pass's engagement-fan fix existed; the
+    // fan now does most of the work of NOT converging in the first place, but
+    // this still needs to be strong enough to resolve march-order stacking
+    // and any residual overlap without noticeably fighting a unit's own
+    // steering toward its goal. BUG FIX (pre-existing, kept): the push used
+    // to be applied blindly, so on a packed coastline it could nudge a
+    // ground unit a pixel into water (or a naval unit a pixel onto a beach)
+    // because passability was never re-checked after the displacement.
+    // Re-check the same way the main move step does — wall-slide the push
+    // along one axis, or drop it entirely if both axes land on impassable
+    // terrain for this unit's move class.
     for (const o of world.units) {
       if (o === u || o.hp <= 0) continue;
       const ox = u.x - o.x, oy = u.y - o.y, od = Math.hypot(ox, oy);
-      const min = def.radius + o.def.radius + 4;
-      if (od > 0 && od < min) {
-        const push = (min - od) / min * 40 * dt;
-        let pdx = (ox / od) * push, pdy = (oy / od) * push;
+      const min = def.radius + o.def.radius + SEPARATION_GAP_PX;
+      if (od < min) {
+        // EXACT-OVERLAP FALLBACK: two units spawned (or pushed) onto the
+        // identical point have no direction to push apart — ox/oy is (0,0)
+        // and od is 0, so the old `od > 0` guard just left them stacked
+        // forever. A stable per-PAIR hash (not Math.random(), so it doesn't
+        // jitter frame to frame) gives them a deterministic direction to
+        // separate along instead.
+        let ux, uy;
+        if (od > 0.001) { ux = ox / od; uy = oy / od; }
+        else {
+          const a = (((u.id * 7919 + o.id * 104729) >>> 0) % 6283) / 1000; // ~[0, 2*PI)
+          ux = Math.cos(a); uy = Math.sin(a);
+        }
+        const push = (min - od) / min * SEPARATION_FORCE * dt;
+        let pdx = ux * push, pdy = uy * push;
         if (terrainConstrained) {
           const nx = u.x + pdx, ny = u.y + pdy;
           if (!isPassable(map, moveClass, nx, ny)) {
@@ -775,6 +874,34 @@ export function updateUnits(world, dt, map) {
       }
     }
 
+    // TURRET AIM: decoupled from u.aim (hull/movement facing, only updated
+    // while actually driving somewhere — see the steering block above). A
+    // unit stopped at its standoff hold point has u.aim frozen on whatever
+    // heading it walked in on, which is NOT necessarily pointed at the
+    // target it's holding station on; turretAim tracks the target's live
+    // bearing independently, turning at the same def.turnRate (a real
+    // turret usually slews faster than the hull steers, but reusing one
+    // existing tunable keeps this data-driven without adding a second
+    // per-unit turn-rate field the roster doesn't have yet). This is what
+    // "tanks fire like tanks" is gated on below, and what a visual pass
+    // should read to draw the gun/turret orientation.
+    if (u.target) {
+      const bearing = Math.atan2(u.target.y - u.y, u.target.x - u.x);
+      let tda = bearing - u.turretAim;
+      while (tda > Math.PI) tda -= 2 * Math.PI;
+      while (tda < -Math.PI) tda += 2 * Math.PI;
+      u.turretAim += Math.max(-def.turnRate * dt, Math.min(def.turnRate * dt, tda));
+    } else {
+      u.turretAim = u.aim;
+    }
+
+    // age out the fire-event hook (see spawnUnit's comment) so it reads as
+    // "recently fired" for a bounded window rather than staying set forever
+    if (u.muzzleFlash) {
+      u.muzzleFlash.t += dt;
+      if (u.muzzleFlash.t >= MUZZLE_FLASH_LIFE) u.muzzleFlash = null;
+    }
+
     // --- weapon ---
     // u.target may have come from the unbounded-seek nearestEnemy() fallback
     // above (used so units keep advancing toward the fight even when every
@@ -787,10 +914,34 @@ export function updateUnits(world, dt, map) {
     u.cd -= dt;
     if (u.target && u.target.hp > 0 && u.cd <= 0 && claimOf(u.target) < u.target.hp) {
       const d = Math.hypot(u.target.x - u.x, u.target.y - u.y);
-      if (d <= def.range) {
+      // HEAVY DIRECT FIRE READS AS AIMED, NOT SPRAYED: a ballistic-kind
+      // weapon (tank/artillery/MLRS/SRBM/cruise/hypersonic — every tube- or
+      // rail-launched shell in the roster) needs its turret roughly on
+      // target before it fires; a homing weapon steers itself after launch
+      // so hull/turret alignment at the moment of firing doesn't matter the
+      // same way, and 'gun'-kind autocannon/laser fire is already a fast
+      // stream closer to a spray than a single aimed shot. Gating this on
+      // wdef.kind (not a unit name) is what keeps "tanks fire like tanks"
+      // an ATTRIBUTE rule instead of a tank-shaped special case.
+      const wdef = WEAPON_DEFS[def.weapon];
+      let aimed = true;
+      if (wdef && wdef.kind === 'ballistic') {
+        const bearing = Math.atan2(u.target.y - u.y, u.target.x - u.x);
+        let aimErr = bearing - u.turretAim;
+        while (aimErr > Math.PI) aimErr -= 2 * Math.PI;
+        while (aimErr < -Math.PI) aimErr += 2 * Math.PI;
+        aimed = Math.abs(aimErr) <= FIRE_AIM_TOLERANCE;
+      }
+      if (d <= def.range && aimed) {
         u.cd = def.rate;
         fireProjectile(world, u, u.target);
         claim(u.target, def.dmg);
+        // FIRE EVENT HOOK for the visual pass: muzzle flash / recoil should
+        // render off THIS, not off the render code re-deriving "did it fire
+        // this frame" from cooldown deltas. Shape: { t: 0 (seconds since
+        // the shot, counts up, aged out above), angle: the turret facing
+        // the shot went out on }.
+        u.muzzleFlash = { t: 0, angle: u.turretAim };
       }
     }
   }

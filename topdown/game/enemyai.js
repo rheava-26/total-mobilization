@@ -129,7 +129,17 @@ function pickObjectiveCity(world, map, side, wx, wy) {
     const { x: cx, y: cy } = cityCenterWorld(map, c);
     const dist = Math.hypot(cx - wx, cy - wy);
     const capitalBias = i === 0 ? CAPITAL_BIAS_PX : 0; // cities[0] is always the capital (game/mapgen.js's convention)
-    const defenseBias = cityDefenseCount(world, map, side, c) * DEFENSE_WEIGHT_PX;
+    // The capital is the DECISIVE objective — the only city whose loss ends
+    // the war — so a competent invasion presses it EVEN THOUGH it's the best-
+    // defended: the garrison is exactly what it landed to break. Only LESSER
+    // cities get the "avoid defenders, pick the soft target" penalty. Applying
+    // that penalty to the capital too made the AI cede the whole war — it fled
+    // the garrisoned capital for undefended backwaters and never threatened
+    // the one city that matters, which the balance harness caught as an
+    // UNPREPARED player "winning" on normal just by turtling the capital while
+    // ceding soft cities. Now the main effort goes at the capital, so keeping
+    // it means actually reinforcing it — i.e. prep decides the outcome.
+    const defenseBias = i === 0 ? 0 : cityDefenseCount(world, map, side, c) * DEFENSE_WEIGHT_PX;
     const score = -(dist - capitalBias + defenseBias);
     if (score > bestScore) { bestScore = score; best = c; }
   }

@@ -510,7 +510,14 @@ for (let i = 0; i < 2; i++) spawnGroundUnit('tank', pBase.x + 20 + i * 26, pBase
 // deep-link boot (?seed=/?map=, no menu shown) leaves scenarioDifficulty at
 // its 1.0 default, so scaledCount(base, 1) === base for every entry here —
 // identical spawn counts to before this menu existed.
-const ENEMY_LANDING_BASE = { tank: 3, infantry: 2, militia: 2, aa: 1, fighter: 1, strikejet: 1 };
+// BALANCE-TUNED (Playability v1 balance pass): the ground assault was raised
+// (tank 3->6, infantry/militia 2->3) because the balance harness showed the
+// bare starting garrison out-fought the old landing force and held the capital
+// untouched — so an UNPREPARED player could "win" by turtling, which kills the
+// whole "prep decides the outcome" bet. These counts are the difficulty-1.0
+// baseline; scaledCount() multiplies by the scenario's difficulty. Still the
+// designer's to fine-tune by feel against real play across seeds.
+const ENEMY_LANDING_BASE = { tank: 6, infantry: 3, militia: 3, aa: 1, fighter: 1, strikejet: 1 };
 function scaledCount(key) {
   return Math.max(1, Math.round(ENEMY_LANDING_BASE[key] * scenarioDifficulty));
 }

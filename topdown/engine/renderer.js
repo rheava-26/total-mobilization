@@ -526,6 +526,38 @@ function prerenderScorches(octx, map) {
 // exactly once. Each segment is split at its midpoint into two halves so a
 // bridge (a road tile sitting on a water tile — see tilemap.js roadAt vs
 // terrainAt) gets its own tone without needing a separate bridge encoding.
+//
+// "Worn into the ground, not a decal on top of it" (CONCEPT.md art-direction
+// notes) means the road can't have a crisp, uniform-width, hard-edged
+// outline the way the old single-stroke version did — that reads as a
+// sticker no matter how good the fill color is. Two changes get it there:
+//
+//  1. Two-layer paint, same trick a real gouache/watercolor road does: a
+//     wide, soft, low-alpha HALO laid down first (tinted toward the local
+//     terrain color, so the margin looks like dirt-worn ground rather than a
+//     paved edge) and blurred as a single image after all halo strokes are
+//     drawn — a canvas filter blur over the whole halo layer in one pass
+//     feathers every stroke's edge AND lets neighboring strokes melt into
+//     each other, at a fraction of the cost of hand-computing per-pixel
+//     gradients along every run. A crisp, narrow CORE stroke then goes on
+//     top, unblurred, so the road stays legible as a network at any zoom —
+//     "worn in" softens the edges, it doesn't remove the road.
+//  2. Wear/color variation along the run is driven by the same continuous
+//     sub-tile noise lattice prerenderTerrain's base fill uses (see
+//     buildNoiseLattice/sampleLattice above), sampled in WORLD space rather
+//     than once per tile — so a road's lightness drifts smoothly along its
+//     length (packed-earth patches vs. rutted/darker stretches) instead of
+//     jumping at every tile boundary, and it never re-introduces a tile
+//     grid. Two thin, low-alpha "wheel rut" lines paired either side of the
+//     centerline sell the worn-in read further — traffic pressing a real
+//     dirt road over time leaves exactly this double-groove.
+//
+// The halo layer (and the noise lattices driving it) is sized to the road
+// network's own bounding box, not the whole map — most maps are mostly NOT
+// road, so this keeps the extra cost roughly proportional to road coverage
+// instead of map area. Bridges skip the terrain-color bleed (there's no
+// "ground" under a bridge to bleed from) and keep a tighter, plainer core so
+// a crossing still reads as a distinct structure rather than more worn dirt.
 function prerenderRoads(octx, map) {
   const ts = map.tileSize;
   const roadColor = ['#8a744f', '#9c8760']; // dirt-tan
@@ -537,26 +569,95 @@ function prerenderRoads(octx, map) {
   const isBridge = (gx, gy) => { const t = map.terrainAt(gx, gy); return !!(t && t.water); };
   const tileCenter = (gx, gy) => [gx * ts + ts / 2, gy * ts + ts / 2];
 
-  // Half-segment from (cx,cy) to (mx,my), toned/widened by the tile it's
-  // attributed to (gx,gy) — irregular width via the same deterministic hash
-  // jitter the terrain texture pass uses, plus a darker, slightly wider
-  // stroke drawn first as edging so the road reads at both zoom levels.
-  function drawHalf(cx, cy, mx, my, gx, gy) {
+  // Bounding box (in tiles, padded so the blur/feather has room to fall off)
+  // of every road tile — lets the halo canvas and its noise lattices scale
+  // with the size of the road network instead of the whole map.
+  let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity, any = false;
+  for (let gy = 0; gy < map.height; gy++) {
+    for (let gx = 0; gx < map.width; gx++) {
+      if (!isRoad(gx, gy)) continue;
+      any = true;
+      if (gx < minGX) minGX = gx; if (gx > maxGX) maxGX = gx;
+      if (gy < minGY) minGY = gy; if (gy > maxGY) maxGY = gy;
+    }
+  }
+  if (!any) return; // no infra layer on this map — nothing to paint
+
+  const pad = 3;
+  minGX = Math.max(0, minGX - pad); minGY = Math.max(0, minGY - pad);
+  maxGX = Math.min(map.width - 1, maxGX + pad); maxGY = Math.min(map.height - 1, maxGY + pad);
+  const originX = minGX * ts, originY = minGY * ts;
+  const haloW = (maxGX - minGX + 1) * ts, haloH = (maxGY - minGY + 1) * ts;
+
+  const halo = document.createElement('canvas');
+  halo.width = haloW; halo.height = haloH;
+  const hctx = halo.getContext('2d');
+
+  // Wear lattice drives lightness drift along a run (packed-earth vs. rutted
+  // patches); edge lattice is finer and drives the irregular width jitter —
+  // both continuous, both offset into the halo's local pixel space.
+  const wearLat = buildNoiseLattice(haloW, haloH, ts * 1.8, 900);
+  const edgeLat = buildNoiseLattice(haloW, haloH, ts * 0.55, 950);
+  const sampleWear = (wx, wy) => sampleLattice(wearLat, wx - originX, wy - originY);
+  const sampleEdge = (wx, wy) => sampleLattice(edgeLat, wx - originX, wy - originY);
+
+  // Wide, soft, low-alpha layer — drawn onto the small `halo` canvas (plain
+  // strokes, no blur yet; blurring is done once, below, over the whole
+  // layer). Tinted toward the local terrain color so the feathered margin
+  // reads as ground bleeding in rather than a second, differently-colored
+  // decal sitting next to the first.
+  function drawHalfHalo(cx, cy, mx, my, gx, gy) {
     const bridge = isBridge(gx, gy);
     const base = bridge ? bridgeColor : roadColor;
-    const width = ts * (bridge ? 0.46 : 0.30 + hash2(gx, gy, 71) * 0.16);
-    const col = lerpColor(base[0], base[1], hash2(gx, gy, 72));
+    const wear = sampleWear(cx, cy), jitter = sampleEdge(cx, cy);
+    const width = ts * (bridge ? 0.52 : 0.36 + jitter * 0.22 + wear * 0.10);
+    let rgb = lerpRgb(base[0], base[1], wear);
+    if (!bridge) {
+      const t = map.terrainAt(gx, gy);
+      const trgb = lerpRgb(t.color[0], t.color[1], 0.5);
+      rgb = [rgb[0] + (trgb[0] - rgb[0]) * 0.4, rgb[1] + (trgb[1] - rgb[1]) * 0.4, rgb[2] + (trgb[2] - rgb[2]) * 0.4];
+    }
+    hctx.lineCap = 'round';
+    hctx.strokeStyle = rgba(rgb, bridge ? 0.55 : 0.48);
+    hctx.lineWidth = width;
+    hctx.beginPath(); hctx.moveTo(cx - originX, cy - originY); hctx.lineTo(mx - originX, my - originY); hctx.stroke();
+  }
+
+  // Narrow, crisp layer drawn straight onto the real terrain canvas, on top
+  // of the (already-blurred, by the time this runs) halo — keeps the road
+  // legible as a connective network at any zoom no matter how soft the
+  // margin got. Wear-lattice-driven color variation runs down the CORE too
+  // (blended with a little per-tile grain, hash2, so it isn't perfectly
+  // smooth), plus a pair of thin darker "wheel rut" strokes either side of
+  // centerline — skipped on bridges, where a plain plank deck reads better.
+  function drawHalfCore(cx, cy, mx, my, gx, gy) {
+    const bridge = isBridge(gx, gy);
+    const base = bridge ? bridgeColor : roadColor;
+    const wear = sampleWear(cx, cy), jitter = sampleEdge(cx, cy);
+    const width = ts * (bridge ? 0.42 : 0.20 + jitter * 0.10);
+    const col = lerpColor(base[0], base[1], wear * 0.7 + hash2(gx, gy, 72) * 0.3);
     octx.lineCap = 'round';
-    octx.strokeStyle = bridge ? 'rgba(10,16,22,0.45)' : 'rgba(24,16,8,0.4)';
-    octx.lineWidth = width * 1.5;
-    octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(mx, my); octx.stroke();
     octx.strokeStyle = col;
     octx.lineWidth = width;
     octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(mx, my); octx.stroke();
+
+    if (!bridge) {
+      const dx = mx - cx, dy = my - cy, len = Math.hypot(dx, dy) || 1;
+      const px = -dy / len, py = dx / len; // unit vector perpendicular to the run
+      const rutOff = width * 0.34;
+      octx.strokeStyle = `rgba(38,28,16,${(0.14 + wear * 0.14).toFixed(3)})`;
+      octx.lineWidth = Math.max(1, width * 0.14);
+      octx.beginPath(); octx.moveTo(cx + px * rutOff, cy + py * rutOff); octx.lineTo(mx + px * rutOff, my + py * rutOff); octx.stroke();
+      octx.beginPath(); octx.moveTo(cx - px * rutOff, cy - py * rutOff); octx.lineTo(mx - px * rutOff, my - py * rutOff); octx.stroke();
+    }
   }
 
-  for (let gy = 0; gy < map.height; gy++) {
-    for (let gx = 0; gx < map.width; gx++) {
+  // Walk the grid ONCE to build the segment list (same forward/back
+  // adjacency scheme as before), then paint it in two passes — halo, blur,
+  // core — so the blur step only ever runs once over the whole layer.
+  const segments = [];
+  for (let gy = minGY; gy <= maxGY; gy++) {
+    for (let gx = minGX; gx <= maxGX; gx++) {
       if (!isRoad(gx, gy)) continue;
       const [cx, cy] = tileCenter(gx, gy);
       let connected = false;
@@ -566,8 +667,8 @@ function prerenderRoads(octx, map) {
         connected = true;
         const [ncx, ncy] = tileCenter(nx, ny);
         const mx = (cx + ncx) / 2, my = (cy + ncy) / 2;
-        drawHalf(cx, cy, mx, my, gx, gy);
-        drawHalf(ncx, ncy, mx, my, nx, ny);
+        segments.push([cx, cy, mx, my, gx, gy]);
+        segments.push([ncx, ncy, mx, my, nx, ny]);
       }
       if (!connected) {
         for (const [dx, dy] of BACK) {
@@ -575,9 +676,22 @@ function prerenderRoads(octx, map) {
           if (nx >= 0 && ny >= 0 && nx < map.width && ny < map.height && isRoad(nx, ny)) { connected = true; break; }
         }
       }
-      if (!connected) drawHalf(cx, cy, cx + 0.01, cy + 0.01, gx, gy); // isolated tile: still visible as a dab
+      if (!connected) segments.push([cx, cy, cx + 0.01, cy + 0.01, gx, gy]); // isolated tile: still visible as a dab
     }
   }
+
+  for (const [cx, cy, mx, my, gx, gy] of segments) drawHalfHalo(cx, cy, mx, my, gx, gy);
+
+  // Single blur pass over the whole halo layer, composited onto the real
+  // terrain canvas in one drawImage — this is what actually feathers every
+  // stroke's edge and melts overlapping strokes together, for the cost of
+  // one filtered blit instead of per-segment gradient math.
+  octx.save();
+  octx.filter = `blur(${(ts * 0.26).toFixed(2)}px)`;
+  octx.drawImage(halo, originX, originY);
+  octx.restore();
+
+  for (const [cx, cy, mx, my, gx, gy] of segments) drawHalfCore(cx, cy, mx, my, gx, gy);
 }
 
 export function createRenderer(canvas) {

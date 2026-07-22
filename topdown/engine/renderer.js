@@ -473,6 +473,43 @@ export function createRenderer(canvas) {
     for (const c of map.cities || []) {
       const [sx, sy] = worldToScreen(c.x * map.tileSize, c.y * map.tileSize);
       if (sx < -150 || sx > canvas.width + 150 || sy < -150 || sy > canvas.height + 150) continue;
+
+      // OWNERSHIP RING (Playability v1 — game/objectives.js sets
+      // c.owner/.captureProgress/.contested on the exact same city objects
+      // this loop already reads; drawn dynamically here every frame rather
+      // than baked into the static terrain prerender above, since ownership
+      // changes mid-game). Reads sensibly even for a map that never called
+      // initCityOwnership (c.owner undefined falls through to a neutral
+      // grey) so this never breaks a bare/authored map that skips
+      // objectives entirely. A CONTESTED city (both sides holding ground
+      // units inside it this frame) gets a dashed ring instead of solid;
+      // an in-progress capture draws a partial arc in the CHALLENGING
+      // side's color so a capture-in-progress reads at a glance without
+      // opening the HUD.
+      {
+        const ownerColor = c.owner === 'player' ? '#5fd0ff' : c.owner === 'enemy' ? '#ff5a5a' : '#8fa0ac';
+        const ringR = (c.r || 6) * map.tileSize * cam.zoom * dpr;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(sx, sy, ringR, 0, Math.PI * 2);
+        ctx.lineWidth = (c.contested ? 2.6 : 2) * dpr;
+        ctx.strokeStyle = ownerColor;
+        ctx.globalAlpha = 0.85;
+        if (c.contested) ctx.setLineDash([6 * dpr, 5 * dpr]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (c.captureProgress > 0.001) {
+          const challengerColor = c.owner === 'player' ? '#ff5a5a' : '#5fd0ff';
+          ctx.beginPath();
+          ctx.arc(sx, sy, ringR, -Math.PI / 2, -Math.PI / 2 + c.captureProgress * Math.PI * 2);
+          ctx.lineWidth = 4 * dpr;
+          ctx.strokeStyle = challengerColor;
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       const size = Math.max(11, Math.min(24, 14 * cam.zoom)) * dpr;
       const alpha = Math.max(0.45, Math.min(1, cam.zoom * 1.3));
       const big = (c.r || 0) === maxCityR;

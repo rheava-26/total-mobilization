@@ -36,8 +36,16 @@ import { createGoalState, toggleGoal, isGoalNode, computePlan, TUTORIAL_COPY } f
 // corner bubble, the "are you five" dialog, the takeover/fired screens).
 import {
   createDirectorState, setToneMode, reactToAction, handleBuildingSold,
-  resolveAreYouFive, resetGag, DIRECTOR_COPY,
+  resolveAreYouFive, resetGag, DIRECTOR_COPY, announceCityEvent,
 } from './game/director.js';
+// PLAYABILITY v1 PART A (CONCEPT.md's settled "Playability v1 — closing the
+// game loop" section): game/objectives.js owns city ownership/capture and
+// the win/lose evaluation. COMBAT-phase-only per the hard constraint that
+// PREP stays peaceful/open — see the `combatActive` gate in loop(). (Part B
+// — game/enemyai.js's functional-aggressor objective-seeking — lands in a
+// follow-up commit that replaces spawnEnemyLandingForce's scripted order
+// below with real objective assignment.)
+import { initCityOwnership, updateObjectives, evaluateOutcome, CAPTURE_TIME_S } from './game/objectives.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -58,6 +66,21 @@ const COPY = {
   // Shown in the center-screen announcement banner the instant the enemy
   // landing force actually spawns (see triggerBeginCombat below).
   COMBAT_BEGIN_ANNOUNCEMENT: '[PLACEHOLDER] COMBAT PHASE BEGUN — THE ENEMY HAS LANDED',
+  // PLAYABILITY v1 (CONCEPT.md's settled "Playability v1" section) — the
+  // director's corner bubble on a capture event (game/objectives.js's
+  // updateObjectives return value; see loop() below), and the victory/
+  // defeat end-screen copy (#outcomeScreen in index.html, wired further
+  // down in this file). Every string here is a plain functional stand-in,
+  // same convention as COMBAT_BEGIN_ANNOUNCEMENT above — designer's to
+  // rewrite the actual voice.
+  CITY_CAPTURED_BY_ENEMY: name => `[PLACEHOLDER] ${name} has fallen to the enemy.`,
+  CITY_RECAPTURED_BY_PLAYER: name => `[PLACEHOLDER] ${name} recaptured!`,
+  VICTORY_TITLE: '[PLACEHOLDER] VICTORY',
+  VICTORY_SUBTITLE: '[PLACEHOLDER] The landing force has been wiped out. The invasion is over.',
+  DEFEAT_TITLE: '[PLACEHOLDER] DEFEAT',
+  DEFEAT_SUBTITLE: '[PLACEHOLDER] The capital has fallen. The war is lost.',
+  OUTCOME_RESTART_BUTTON: '[PLACEHOLDER] Play Again',
+  OUTCOME_MENU_BUTTON: '[PLACEHOLDER] Main Menu',
 };
 
 const canvas = document.getElementById('view');
@@ -118,6 +141,11 @@ if (urlParams.has('menu') || !hasDeepLink) {
   console.log(`[mapgen] "${map.name}" (seed ${map.seed}) — ${map.genMs.toFixed(1)}ms, `
     + `${map.genStats.attempts} attempt(s), ${map.genStats.roadTileCount} road tiles`);
 }
+// PLAYABILITY v1 — every city starts player-owned regardless of map source
+// (generated or ?map= authored), set once right after the map object
+// exists and before anything else reads map.cities. See game/objectives.js.
+initCityOwnership(map);
+
 const renderer = createRenderer(canvas);
 renderer.cam.x = map.worldW() / 2;
 renderer.cam.y = map.worldH() / 2;
@@ -251,6 +279,84 @@ function triggerBeginCombat() {
 }
 beginCombatBtn.addEventListener('click', triggerBeginCombat);
 updatePhaseHud();
+
+// ---------------------------------------------------------------------------
+// PLAYABILITY v1 — OBJECTIVE HUD + VICTORY/DEFEAT END SCREEN (CONCEPT.md's
+// settled "Playability v1 — closing the game loop" section). `gameOutcome`
+// is null until game/objectives.js's evaluateOutcome fires once (see
+// loop()'s `combatActive` block below), at which point it's 'victory' or
+// 'defeat' PERMANENTLY for the rest of this run — the one-shot "the run
+// ENDS" the task calls for, not a condition that could un-fire.
+let gameOutcome = null;
+
+const objectiveHud = document.getElementById('objectiveHud');
+// Compact readout matching #econHud's own style/format (see index.html) —
+// "am I winning / what's threatened" at a glance: which cities are held vs
+// lost, the capital called out by name with its own status, and win
+// progress as the enemy's remaining unit count. Hidden outside COMBAT
+// (nothing to report before the invasion exists) — reused by loop() every
+// frame same as updatePhaseHud/updateTechPanelUI already are.
+function updateObjectiveHud() {
+  const inCombat = phaseState.phase === PHASES.COMBAT;
+  objectiveHud.classList.toggle('show', inCombat);
+  if (!inCombat) return;
+  const cities = map.cities || [];
+  const held = cities.filter(c => c.owner === 'player').length;
+  const lost = cities.filter(c => c.owner === 'enemy').length;
+  const capital = cities[0];
+  const capitalStatus = !capital ? 'n/a'
+    : capital.owner === 'enemy' ? 'LOST'
+    : capital.contested ? 'CONTESTED'
+    : 'held';
+  let enemyAlive = 0;
+  for (const u of world.units) if (u.side === 'enemy' && u.hp > 0) enemyAlive++;
+  objectiveHud.innerHTML =
+    `<b>Objectives</b>\n`
+    + `Capital (${capital ? capital.name : 'n/a'}): ${capitalStatus}\n`
+    + `Cities held: ${held}/${cities.length}  (lost: ${lost})\n`
+    + `Enemy remaining: ${enemyAlive}`;
+}
+
+const outcomeScreenEl = document.getElementById('outcomeScreen');
+const outcomeTitleEl = document.getElementById('outcomeTitle');
+const outcomeSubtitleEl = document.getElementById('outcomeSubtitle');
+const outcomeStatsEl = document.getElementById('outcomeStats');
+const outcomeRestartBtn = document.getElementById('outcomeRestartBtn');
+const outcomeMenuBtn = document.getElementById('outcomeMenuBtn');
+outcomeRestartBtn.textContent = COPY.OUTCOME_RESTART_BUTTON;
+outcomeMenuBtn.textContent = COPY.OUTCOME_MENU_BUTTON;
+// PLAY AGAIN: reload exactly as-is (same seed/map/difficulty deep link, or
+// the same menu-picked scenario re-rolled through a fresh boot) — the
+// simplest robust "reset the run" available, same shortcut the director's
+// own "fired -> restart" gag-chain path already uses (location.reload()).
+outcomeRestartBtn.addEventListener('click', () => location.reload());
+// MAIN MENU: force the scenario picker open on the next load regardless of
+// whether this run was a deep link — `?menu` is the exact override
+// main.js's own MAP SOURCE section already honors ("forces the picker open
+// even over a deep link"), so this is just navigating to that same URL
+// shape rather than a second menu-opening code path.
+outcomeMenuBtn.addEventListener('click', () => { location.href = `${location.pathname}?menu`; });
+
+// Shown exactly once (gameOutcome flips from null to a value exactly once —
+// see loop()) — fills in the title/subtitle for whichever outcome fired and
+// a small stats readout (cities held, capital fate) so the end screen
+// summarizes the war, not just its verdict.
+function showOutcomeScreen(outcome) {
+  outcomeScreenEl.classList.remove('victory', 'defeat');
+  outcomeScreenEl.classList.add(outcome); // 'victory' | 'defeat' — drives title color via CSS
+  outcomeTitleEl.textContent = outcome === 'victory' ? COPY.VICTORY_TITLE : COPY.DEFEAT_TITLE;
+  outcomeSubtitleEl.textContent = outcome === 'victory' ? COPY.VICTORY_SUBTITLE : COPY.DEFEAT_SUBTITLE;
+  const cities = map.cities || [];
+  const held = cities.filter(c => c.owner === 'player').length;
+  const capital = cities[0];
+  let enemyAlive = 0;
+  for (const u of world.units) if (u.side === 'enemy' && u.hp > 0) enemyAlive++;
+  outcomeStatsEl.innerHTML =
+    `Cities held: ${held}/${cities.length}<br>`
+    + `Capital: ${capital ? (capital.owner === 'player' ? 'held' : 'lost') : 'n/a'}<br>`
+    + `Enemy units remaining: ${enemyAlive}`;
+  outcomeScreenEl.classList.add('open');
+}
 
 // find the nearest water tile to a world point (spiral ring search over the
 // grid) — used both to place the demo gunboat offshore and to snap naval
@@ -404,6 +510,11 @@ function spawnEnemyLandingForce() {
   // enemies" rule) — the player's own garrison is the player's to command
   // from here, it does not get an auto-order. holdGround batteries (the
   // landing force's AA) sit this out and hold the beachhead, per doctrine.
+  //
+  // PART A NOTE: this is deliberately still the OLD scripted order — Part A
+  // closes the win/lose loop around whatever enemy exists, dumb or not, so
+  // it can be verified independently. Part B (a follow-up commit) replaces
+  // this whole block with game/enemyai.js's real objective-seeking.
   for (const u of world.units) {
     if (u.side === 'enemy') orderAdvance(u, pBase);
   }
@@ -1382,6 +1493,22 @@ window.__debug = {
     get fogOn() { return !fogState.revealAll; },
     get announcement() { return announcement.text && performance.now() < announcement.until ? announcement.text : null; },
   },
+  // PLAYABILITY v1 PART A hooks (game/objectives.js), for headless
+  // verification: updateObjectives/evaluateOutcome/CAPTURE_TIME_S let a
+  // test fast-forward capture (e.g. `for (let i=0;i<40;i++)
+  // objectives.updateObjectives(world, map, 1)` beats waiting out
+  // CAPTURE_TIME_S real seconds) and query win/lose directly; `outcome`
+  // reads the live one-shot gameOutcome value ('victory'|'defeat'|null);
+  // showOutcomeScreen/outcomeScreen expose the end-screen DOM/trigger the
+  // same way director.areYouFiveDialog/takeoverScreen already do above.
+  objectives: {
+    updateObjectives, evaluateOutcome, CAPTURE_TIME_S,
+    get outcome() { return gameOutcome; },
+    showOutcomeScreen,
+    outcomeScreen: outcomeScreenEl,
+    get outcomeOpen() { return outcomeScreenEl.classList.contains('open'); },
+    objectiveHud,
+  },
   fastForward(seconds, stepDt = 0.5) {
     let t = 0;
     while (t < seconds) {
@@ -1493,7 +1620,32 @@ function loop(now) {
   computeFog(world, map);
 
   clearClaims();
+
+  // PLAYABILITY v1 PART A (CONCEPT.md's settled "Playability v1" section) —
+  // city capture and win/lose. COMBAT-phase only, and frozen the instant an
+  // outcome fires: PREP stays peaceful/open per the hard constraint (no
+  // invasion, no win/lose, no forced actions during build-up), and once
+  // gameOutcome is set the war state freezes at the moment of victory/
+  // defeat instead of continuing to capture/re-capture cities behind the
+  // end screen. (Part B, a follow-up commit, adds an enemy-AI objective
+  // update here too — see game/enemyai.js.)
+  const combatActive = phaseState.phase === PHASES.COMBAT && !gameOutcome;
+
   updateUnits(world, dt, map);
+
+  if (combatActive) {
+    const captureEvents = updateObjectives(world, map, dt);
+    for (const ev of captureEvents) {
+      // Optional low-priority director hook (CONCEPT.md: "may announce a
+      // city captured/lost via its existing bubble — only if trivial").
+      announceCityEvent(directorState, ev.to === 'player'
+        ? COPY.CITY_RECAPTURED_BY_PLAYER(ev.city.name)
+        : COPY.CITY_CAPTURED_BY_ENEMY(ev.city.name));
+    }
+    const outcome = evaluateOutcome(world, map);
+    if (outcome) { gameOutcome = outcome; showOutcomeScreen(outcome); }
+  }
+
   updateBuildings(world, dt, map);
   // P3: the mobilization economy ticks every frame, unconditionally — this
   // is the "zero player input" ramp (game/economy.js). Runs after
@@ -1582,6 +1734,10 @@ function loop(now) {
   const announcing = announcement.text && performance.now() < announcement.until;
   announcementDiv.classList.toggle('show', !!announcing);
   if (announcing) announcementDiv.textContent = announcement.text;
+
+  // PLAYABILITY v1 — objective HUD refresh (see updateObjectiveHud above),
+  // same "cheap, unconditional every frame" treatment as updatePhaseHud.
+  updateObjectiveHud();
 
   // GUIDANCE PANEL — dynamic checklist refresh (see updateGuidancePanel
   // above) — recomputes the reverse-planned step list from LIVE state every

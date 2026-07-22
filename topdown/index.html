@@ -30,6 +30,22 @@
     text-shadow: 0 1px 2px #000;
   }
   #econHud b { color: #6dffb0; }
+  /* OBJECTIVE HUD (Playability v1 — CONCEPT.md's settled "Playability v1"
+     section: "cities held vs lost, the capital marked and its status, and
+     win progress"). Same compact-panel family as #econHud, bottom-left so
+     it never collides with #econHud (top-right), #phaseHud/#guidancePanel
+     (top-center), #buildbar (bottom-center), or #directorBubble
+     (bottom-right). Hidden outside COMBAT — see main.js's
+     updateObjectiveHud. */
+  #objectiveHud {
+    display: none; position: fixed; left: 10px; bottom: 10px; min-width: 210px;
+    padding: 8px 12px; background: rgba(8,14,26,.82); border: 1px solid #6a3030;
+    border-radius: 6px; color: #ffd9d9; font: 11px Consolas, monospace;
+    line-height: 1.55; white-space: pre-line; pointer-events: none;
+    text-shadow: 0 1px 2px #000;
+  }
+  #objectiveHud.show { display: block; }
+  #objectiveHud b { color: #ff8a8a; }
   #card {
     position: fixed; display: none; padding: 10px 14px; min-width: 150px;
     background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 6px;
@@ -268,6 +284,41 @@
   .menuScenarioRow .msDiff { font-size: 11px; color: #ffcf5c; }
   .menuScenarioRow .msBlurb { font-size: 11px; color: #9fb6c4; }
   #menuHint { margin-top: 16px; padding-top: 12px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; }
+  /* VICTORY/DEFEAT END SCREEN (Playability v1 — CONCEPT.md's settled
+     "Playability v1" section: "The run ENDS. A victory/defeat screen
+     resolves it — the thing a sandbox never does."). Same full-screen
+     modal-overlay shape as #areYouFiveDialog/#takeoverScreen/#mainMenu,
+     z-index above all of them since this is the one overlay that can never
+     be dismissed by a game-state change underneath it (game/objectives.js's
+     evaluateOutcome only ever fires once per run — see main.js's
+     gameOutcome). Shown by main.js's showOutcomeScreen(), never by CSS
+     alone. */
+  #outcomeScreen {
+    display: none; position: fixed; inset: 0; z-index: 2200;
+    align-items: center; justify-content: center; background: rgba(2,4,8,.86);
+  }
+  #outcomeScreen.open { display: flex; }
+  #outcomePanel {
+    width: min(460px, 92vw); padding: 34px 36px; text-align: center;
+    background: rgba(8,14,26,.96); border: 1px solid #2f5f9c; border-radius: 12px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.65); color: #eaf2ff; font: 13px Consolas, monospace;
+  }
+  #outcomeTitle { margin: 0 0 10px; font-size: 30px; letter-spacing: 2px; }
+  #outcomeScreen.victory #outcomeTitle { color: #6dffb0; }
+  #outcomeScreen.defeat #outcomeTitle { color: #ff5a5a; }
+  #outcomeScreen.victory #outcomePanel { border-color: #3fae76; }
+  #outcomeScreen.defeat #outcomePanel { border-color: #a34040; }
+  #outcomeSubtitle { margin: 0 0 18px; color: #9fb6c4; line-height: 1.5; }
+  #outcomeStats {
+    margin: 0 0 24px; padding: 12px 14px; background: #0e1c2f; border: 1px solid #234260;
+    border-radius: 8px; line-height: 1.7; text-align: left; color: #bfe9ff;
+  }
+  .outcomeButtons { display: flex; gap: 12px; justify-content: center; }
+  #outcomeScreen button {
+    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 6px;
+    padding: 9px 20px; cursor: pointer; font: 13px Consolas, monospace;
+  }
+  #outcomeScreen button:hover { background: #1c3a5e; }
 </style>
 </head>
 <body>
@@ -293,6 +344,9 @@
 </div>
 <div id="announcement"></div>
 <div id="econHud"></div>
+<!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's
+     updateObjectiveHud() every frame; hidden outside COMBAT. -->
+<div id="objectiveHud"></div>
 <div id="card"></div>
 <div id="buildbar"></div>
 <div id="prodPanel">
@@ -350,6 +404,21 @@
      (TAKEOVER_LINES for "Yes", FIRED_LINES for "No") by main.js. -->
 <div id="takeoverScreen">
   <div id="takeoverText"></div>
+</div>
+<!-- VICTORY/DEFEAT END SCREEN (Playability v1) — shown once by main.js's
+     showOutcomeScreen() when game/objectives.js's evaluateOutcome fires.
+     Title/subtitle/stats content filled in per-outcome; button labels come
+     from main.js's COPY.OUTCOME_RESTART_BUTTON/OUTCOME_MENU_BUTTON. -->
+<div id="outcomeScreen">
+  <div id="outcomePanel">
+    <h1 id="outcomeTitle"></h1>
+    <p id="outcomeSubtitle"></p>
+    <div id="outcomeStats"></div>
+    <div class="outcomeButtons">
+      <button id="outcomeRestartBtn"></button>
+      <button id="outcomeMenuBtn"></button>
+    </div>
+  </div>
 </div>
 <script type="module" src="main.js"></script>
 </body>

@@ -109,6 +109,18 @@ function announce(directorState, text, ms = 4200) {
   directorState.bubble.until = performance.now() + ms;
 }
 
+// PLAYABILITY v1 hook (CONCEPT.md's settled "Playability v1" section's
+// low-priority optional note: "the reactive director may announce a city
+// captured/lost via its existing bubble — only if trivial"). Thin exported
+// wrapper around the same transient-bubble mechanism reactToAction already
+// uses — main.js calls this directly with a game/objectives.js capture
+// event's already-formatted copy (see main.js's COPY.CITY_CAPTURED_BY_ENEMY/
+// CITY_RECAPTURED_BY_PLAYER), so this file doesn't need to know anything
+// about cities/capture itself, just how to put a line in the bubble.
+export function announceCityEvent(directorState, text, ms = 4200) {
+  announce(directorState, text, ms);
+}
+
 // ---------------------------------------------------------------------------
 // KEY ECONOMIC BUILDING — generalized by ROLE (data), NOT by name (the task
 // is explicit: "do NOT hardcode a building literally named 'port'; pick it

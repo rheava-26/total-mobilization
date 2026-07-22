@@ -63,6 +63,12 @@ import {
 // stays peaceful/open — see the `combatActive` gate in loop().
 import { initCityOwnership, updateObjectives, evaluateOutcome, initInvasion, CAPTURE_TIME_S } from './game/objectives.js';
 import { updateEnemyAI, debugEnemyGroups, debugAiStateSize } from './game/enemyai.js';
+// PLAYER-SIDE DEFENSIVE DOCTRINE (CONCEPT.md Pillar 1, "The Nation Acts") —
+// the defensive mirror of updateEnemyAI above: garrisons/disperses idle
+// player units onto held cities (weighted toward the capital and whichever
+// city is most threatened) instead of leaving them stacked wherever they
+// spawned/were placed. See game/doctrine.js's header for the full contract.
+import { updatePlayerDoctrine, debugDoctrineState, debugForceAssignTick } from './game/doctrine.js';
 // AMBIENT LIFE (playtest feedback: "the game is too still" — game/ambient.js
 // owns road traffic, factory smoke, coastal shimmer, city light flicker, and
 // the capital's flag). Purely visual, read-only over map/world — see that
@@ -1814,7 +1820,7 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
 // fog off (to compare drawn-vs-hidden positions) or query detection without
 // having to reverse-engineer it from rendered pixels.
 window.__debug = {
-  world, renderer, map, spawnUnit, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, nearestWaterPoint,
+  world, renderer, map, spawnUnit, updateUnits, updateProjectiles, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, nearestWaterPoint,
   fog: Object.assign(fogState, { detects }),
   // pathfinding + road-building hooks (P2), for headless verification:
   // pathfindStats.solves carries {kind, ms, nodes, t} for every A* solve
@@ -1936,6 +1942,13 @@ window.__debug = {
     aiStateSize: debugAiStateSize,
     get outcome() { return gameOutcome; },
     showOutcomeScreen,
+    // PLAYER DOCTRINE hooks (game/doctrine.js), for headless verification:
+    // updatePlayerDoctrine drives the assignment pass directly (in case a
+    // test wants to call it outside the main loop); state() snapshots every
+    // live player unit's current post {mapIdx,x,y}; forceAssignTick() skips
+    // the real ASSIGN_INTERVAL_S throttle so a test doesn't have to simulate
+    // several real seconds of frames just to observe one assignment.
+    doctrine: { update: updatePlayerDoctrine, state: debugDoctrineState, forceAssignTick: debugForceAssignTick },
     outcomeScreen: outcomeScreenEl,
     get outcomeOpen() { return outcomeScreenEl.classList.contains('open'); },
     objectiveHud,
@@ -2083,6 +2096,13 @@ function loop(now) {
   // continuing to capture/re-capture cities behind the end screen.
   const combatActive = phaseState.phase === PHASES.COMBAT && !gameOutcome;
   if (combatActive) updateEnemyAI(world, map, dt); // sets u.order toward each unit's objective BEFORE updateUnits consumes it this frame
+  // PLAYER DOCTRINE runs every frame in BOTH phases (unlike updateEnemyAI,
+  // which only matters once the invasion lands) — a freshly built/placed
+  // unit should start dispersing to a sensible garrison post during PREP
+  // already, not just once combat begins. Also sets u.order (or leaves it
+  // alone — see doctrine.js's arbitration rules) BEFORE updateUnits
+  // consumes it this frame, same ordering contract as updateEnemyAI.
+  updatePlayerDoctrine(world, map, dt);
 
   updateUnits(world, dt, map);
 

@@ -1470,6 +1470,13 @@ introSkipBtn.textContent = INTRO_COPY.SKIP;
 // don't diff" reason updatePhaseHud/updateGuidancePanel already do.
 function updateIntroUI() {
   introSkipBtn.classList.toggle('show', introState.active);
+  // Focus the intro: hide the game's corner HUD while it runs so the welcome/
+  // handoff beats read as "just you and the map, nothing else matters yet"
+  // (the CSS hides the ledger/legend/plan/objective/phase panels; the #hud
+  // controls ticker stays, since the welcome beat is teaching pan/zoom). The
+  // instant the intro ends this class drops and every panel reverts to its
+  // own state. See body.intro-active in index.html.
+  document.body.classList.toggle('intro-active', introState.active);
   if (!introState.active) { introPanelEl.classList.add('hidden'); return; }
   // 'discard' is the flourish playing on the tech-tree canvas itself (see
   // loop() below) — hiding the panel for its ~1s keeps the burn the sole

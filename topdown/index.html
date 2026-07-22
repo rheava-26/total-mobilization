@@ -93,6 +93,17 @@
   .opsBtn:hover:not(:disabled) { background: var(--paper); border-color: var(--ink); }
   .opsBtn:disabled { opacity: .45; cursor: not-allowed; }
   .opsBtn.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  /* INTRO FOCUS — while the intro sequence runs (main.js toggles body.intro-active),
+     hide the game's corner HUD so the welcome/handoff beats aren't cluttered by
+     the ledger/legend/plan panels ("nothing else matters yet"). The intro's own
+     panel + skip button and the #hud controls ticker stay visible. Everything
+     reverts the instant the intro ends. !important to beat each panel's own
+     display rule (flex/block/.show) uniformly. */
+  body.intro-active #econHud,
+  body.intro-active #legendPanel,
+  body.intro-active #guidancePanel,
+  body.intro-active #objectiveHud,
+  body.intro-active #phaseHud { display: none !important; }
   /* FIRST-BOOT DISCOVERABILITY NUDGE — the econ ledger + field-manual panels
      collapse by default (the de-occlusion fix), but a first-time player may
      not notice the tab is expandable. Until they first open it, its toggle

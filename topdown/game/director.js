@@ -61,11 +61,13 @@ export const DIRECTOR_COPY = {
   ARE_YOU_FIVE_TITLE: '[PLACEHOLDER] Are you five years old?',
   ARE_YOU_FIVE_YES: '[PLACEHOLDER] Yes',
   ARE_YOU_FIVE_NO: '[PLACEHOLDER] No',
-  // Gag chain, stage 3a: "Yes" -> mock takeover (approximates "the game
-  // instantly closes" — a web page cannot force-close its own tab).
+  // Gag chain, stage 3a: "Yes" -> instant black takeover. Deliberately
+  // nonchalant/deadpan — one flat line, no drama (designer-authored, not a
+  // placeholder). Approximates "the game instantly closes": a web page can't
+  // force-close its own tab, so we hard-cut to black instantly (no fade) and
+  // attempt window.close() as a bonus (see main.js).
   TAKEOVER_LINES: [
-    '[PLACEHOLDER] TOO YOUNG TO PLAY THIS GAME.',
-    '[PLACEHOLDER] Session terminated.',
+    "you're too young to play this game",
   ],
   // Gag chain, stage 3b: "No" -> fired -> restart.
   FIRED_LINES: [

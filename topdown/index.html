@@ -226,9 +226,11 @@
     background: #000; align-items: center; justify-content: center;
   }
   #takeoverScreen.open { display: flex; }
+  /* Deliberately flat/deadpan — no glow, muted plain text — so the line reads
+     nonchalant rather than dramatic (designer note: "make it more nonchalant"). */
   #takeoverText {
-    color: #3fff6d; font: 16px Consolas, monospace; white-space: pre-line;
-    text-align: center; line-height: 1.9; text-shadow: 0 0 8px rgba(63,255,109,.5);
+    color: #9aa4ad; font: 15px Consolas, monospace; white-space: pre-line;
+    text-align: center; line-height: 1.9;
   }
   /* MAIN MENU (scenario picker — CONCEPT.md "Design directions raised" /
      "Main-menu map/scenario picker" bullet; game/menu.js owns the content +

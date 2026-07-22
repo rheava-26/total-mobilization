@@ -99,6 +99,17 @@ const card = createStatCard(document.getElementById('card'));
 //   ?seed=1337                 — reproduce a specific GENERATED run.
 // With neither param, a fresh random seed is drawn every load so each
 // skirmish gets its own geography and its own names.
+//   ?difficulty=1.75            — OPTIONAL, only meaningful alongside a deep
+//     link (?seed=/?map=): sets scenarioDifficulty directly instead of
+//     leaving it at the 1.0 no-op default, so a deep link can reproduce a
+//     SPECIFIC {seed, difficulty} pair without going through the menu
+//     click UI. Exists for the headless balance harness (topdown/tools/
+//     balance-harness.mjs) — driving hundreds of runs across seeds x
+//     difficulties by clicking a menu row per run would work but is slower
+//     and more brittle than a URL param; this is the exact same knob
+//     game/menu.js's SCENARIO_DEFS rows already set, just reachable without
+//     the menu. Omitted (the common case): scenarioDifficulty stays 1.0,
+//     byte-identical to pre-existing deep-link behavior.
 //
 // MAIN MENU (docs/CONCEPT.md "Design directions raised" — "Main-menu
 // map/scenario picker": game/menu.js owns the scenario data + DOM overlay).
@@ -133,11 +144,13 @@ if (urlParams.has('menu') || !hasDeepLink) {
   }
 } else if (urlParams.has('map')) {
   map = await loadMap(urlParams.get('map'));
+  if (urlParams.has('difficulty')) scenarioDifficulty = Number(urlParams.get('difficulty')) || 1.0;
 } else {
   const seedParam = urlParams.get('seed');
   const seed = seedParam !== null && seedParam !== '' && !Number.isNaN(Number(seedParam))
     ? (Number(seedParam) >>> 0)
     : randomSeed();
+  if (urlParams.has('difficulty')) scenarioDifficulty = Number(urlParams.get('difficulty')) || 1.0;
   map = await loadGeneratedMap(seed);
   console.log(`[mapgen] "${map.name}" (seed ${map.seed}) — ${map.genMs.toFixed(1)}ms, `
     + `${map.genStats.attempts} attempt(s), ${map.genStats.roadTileCount} road tiles`);
@@ -1435,13 +1448,20 @@ window.__debug = {
   // (read it directly to observe the auto-ramp with real wall-clock time);
   // ECONOMY_TUNABLES/MOBILIZATION_BANDS expose the tunable data block;
   // canAffordBuilding/buildingCost mirror the B-mode cost check so a test
-  // can query affordability without staging a click. simulateEconomy fast-
+  // can query affordability without staging a click; spendForBuilding is the
+  // matching spend step (same function the B-mode click handler calls right
+  // before spawnBuilding — see the canvas 'click' listener above) so a test
+  // can place a costed building exactly the way a real click does
+  // (afford-check -> spend -> spawn) instead of spawning one for free via
+  // spawnBuilding alone, which would silently skip the economy. Exists
+  // primarily for topdown/tools/balance-harness.mjs, which drives whole
+  // build orders headlessly. simulateEconomy fast-
   // forwards the economy tick in fixed dt steps WITHOUT touching
   // units/projectiles/rendering — a test-only convenience for comparing
   // curves (e.g. "with vs without the accelerator lever") faster than
   // waiting real wall-clock seconds; the real per-frame loop above is what
   // actually proves "ramps on its own during normal play."
-  economy, ECONOMY_TUNABLES, MOBILIZATION_BANDS, canAffordBuilding, buildingCost,
+  economy, ECONOMY_TUNABLES, MOBILIZATION_BANDS, canAffordBuilding, buildingCost, spendForBuilding,
   // resource/deposit hooks (P3 follow-up — game/resources.js, map.deposits/
   // depositAt from game/mapgen.js via engine/tilemap.js), for headless
   // verification: RESOURCE_DEFS/RESOURCE_LIST/MINE_TUNABLES expose the

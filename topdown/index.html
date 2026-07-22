@@ -383,6 +383,42 @@
   #guidancePanel li.next::before { content: "▸ "; }
   #guidancePanel li.hint { list-style: none; margin-left: -18px; color: var(--ink-soft); font-style: italic; }
   #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--rule-soft); color: var(--ink-faint); font-size: 10.5px; line-height: 1.4; }
+  /* FIRST-RUN INTRO SEQUENCE (game/intro.js — CONCEPT.md's settled
+     "Onboarding / tutorial concept" paragraph, beats 1-2: the ONE light
+     scripted stretch). Same "ORDERS clipboard" paper-panel family as
+     #guidancePanel, deliberately placed LOW (bottom-center) rather than
+     top-center so it never fights #phaseHud/#guidancePanel/#econHud for the
+     same real estate, and so it stays clear of the tech tree's own on-canvas
+     hint text (bottom-left) during the 'graph'/'discard' beats when
+     #techTreeCanvas (z-index 500) is showing underneath it — hence the
+     higher z-index here. It is NOT full-screen/blocking: beat 1 (controls)
+     needs the real map still draggable/zoomable behind it, so this is sized
+     to its content, not an inset:0 overlay like #mainMenu. */
+  #introPanel {
+    left: 50%; bottom: 22px; transform: translateX(-50%);
+    width: min(480px, 92vw); z-index: 600;
+    padding: 12px 16px 14px;
+  }
+  #introPanel.hidden { display: none; }
+  #introPanel h2 {
+    margin: 0 0 7px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--red); font-weight: 800;
+  }
+  #introPanel p { margin: 0 0 12px; line-height: 1.5; color: var(--ink); }
+  #introPanel .iRow { display: flex; justify-content: flex-end; }
+  /* PERSISTENT SKIP AFFORDANCE — the task's hard requirement: skippable at
+     ANY point in the sequence, including mid-flourish (see game/intro.js's
+     header comment). Kept as its own always-present element rather than a
+     button inside #introPanel so it never disappears when the panel itself
+     is hidden (the 'discard' beat hides #introPanel on purpose so the burn
+     reads clean — see main.js's updateIntroUI). Bottom-left is the one
+     corner nothing else claims before COMBAT starts (#objectiveHud lives
+     there too, but only shows once combat begins, which the intro never
+     reaches). */
+  #introSkipBtn {
+    display: none; position: fixed; left: 16px; bottom: 16px; z-index: 650;
+  }
+  #introSkipBtn.show { display: inline-block; }
   /* DIRECTOR CORNER BUBBLE — the reactive commentary line, styled as a
      hand-scrawled sticky note taped bottom-right at a slight tilt (this is
      the one panel deliberately NOT ruler-straight — it's meant to read as
@@ -625,6 +661,20 @@
   <ol id="guidanceSteps"></ol>
   <div class="gFootnote" id="guidanceFootnote"></div>
 </div>
+<!-- FIRST-RUN INTRO SEQUENCE (game/intro.js) — the front-half onboarding
+     beats (controls -> show the full tree -> discard it with a flourish ->
+     hand off to the goal system). Content per-beat is filled in by main.js's
+     INTRO SEQUENCE section from game/intro.js's INTRO_COPY; hidden entirely
+     once the sequence is skipped/completed (main.js never re-shows it after
+     that within the same load). #introSkipBtn is the persistent skip
+     affordance — visible for the whole sequence, independent of #introPanel
+     so it survives the 'discard' beat hiding the panel during its flourish. -->
+<div id="introPanel" class="opsPanel hidden">
+  <h2 id="introTitle"></h2>
+  <p id="introBody"></p>
+  <div class="iRow"><button id="introContinueBtn" class="opsBtn"></button></div>
+</div>
+<button id="introSkipBtn" class="opsBtn" type="button"></button>
 <!-- DIRECTOR CORNER BUBBLE — Part B's reactive-line surface (off-track
      acknowledgement + the gag chain's "confused, replaced" line). Content
      set every frame from main.js's DIRECTOR section. -->

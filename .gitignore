@@ -12,3 +12,4 @@
 # original side-view game rather than replacing it)
 !/topdown/
 !/topdown/**
+topdown/tools/balance-harness-results.json

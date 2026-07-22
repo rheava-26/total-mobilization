@@ -1,5 +1,5 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
-import { createRenderer, attachCameraControls } from './engine/renderer.js';
+import { createRenderer, attachCameraControls, OWNERSHIP_COLORS } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
 // BUILDBAR CATEGORY MAP (playtest: "group buildings... you can't scroll
@@ -829,6 +829,15 @@ function updateBuildBarPlanUI(plan) {
     btn.classList.toggle('next', key === nextKey);
   }
 }
+// The RESOURCE id the plan's first unsatisfied step needs mined, or null —
+// feeds drawDepositFocus's "NEEDED" ring on the map (the on-map half of
+// "highlight what you currently need"; nextNeededBuildingKey above is the
+// menu half). Only meaningful when the next step is actually a 'resource'
+// step; a building/category/tech next-step has no single deposit to ring.
+function nextNeededResourceType(plan) {
+  const next = plan.steps.find(s => !s.satisfied);
+  return next && next.kind === 'resource' ? stepKey(next) : null;
+}
 function selectBuildType(key) {
   buildMode.selectedType = key;
   buildMode.previewGx = undefined;
@@ -1192,6 +1201,70 @@ function enterTechPanel() { techPanel.classList.add('open'); }
 function exitTechPanel() { techPanel.classList.remove('open'); }
 
 // ---------------------------------------------------------------------------
+// MAP LEGEND & RESOURCE FILTER (playtest: "filter for resources", "clearer
+// ... where things are") — a collapsible key (deposit glyphs, ownership ring
+// colors, a compact keybind cheat-sheet) plus one FILTER button per
+// RESOURCE_LIST entry. Clicking a filter button lights up every deposit of
+// that type on the map (drawDepositFocus, defined above near the other
+// draw* helpers) — click the active one again to clear it. Pure finder, never
+// gates anything; content is built generically off RESOURCE_LIST/
+// OWNERSHIP_COLORS so a new resource or a renderer color change shows up
+// here with no template rewrite.
+const legendPanel = document.getElementById('legendPanel');
+const legendToggle = document.getElementById('legendToggle');
+const legendToggleIcon = document.getElementById('legendToggleIcon');
+const legendBodyInner = document.getElementById('legendBodyInner');
+let legendExpanded = false;
+function setLegendExpanded(v) {
+  legendExpanded = v;
+  legendPanel.classList.toggle('expanded', v);
+  legendToggleIcon.textContent = v ? '▾' : '▸';
+}
+legendToggle.addEventListener('click', () => setLegendExpanded(!legendExpanded));
+setLegendExpanded(false);
+
+let resourceFilterType = null;
+const filterBtns = {};
+function updateFilterBtnsUI() {
+  for (const id of Object.keys(filterBtns)) filterBtns[id].classList.toggle('active', id === resourceFilterType);
+}
+function setResourceFilter(id) {
+  resourceFilterType = (resourceFilterType === id) ? null : id; // click active -> clear
+  updateFilterBtnsUI();
+}
+
+{
+  const ownerRows = [
+    ['player', 'Your cities/units'],
+    ['enemy', 'Enemy cities/units'],
+    ['neutral', 'Uncontested city'],
+  ].map(([id, label]) =>
+    `<div class="legendRow"><span class="legendSwatch" style="background:${OWNERSHIP_COLORS[id]}"></span>${label}</div>`
+  ).join('');
+
+  const filterRowsHtml = RESOURCE_LIST.map(r =>
+    `<button type="button" class="filterBtn" data-res="${r.id}">`
+    + `<span class="legendGlyph" style="color:${r.color}">${r.glyph}</span>${r.name}</button>`
+  ).join('');
+
+  legendBodyInner.innerHTML =
+    `<div class="legendSection"><span class="legendSectionLabel">Ownership rings</span>${ownerRows}</div>`
+    + `<div class="legendSection"><span class="legendSectionLabel">Resource finder — click to highlight</span><div id="legendFilterRow"></div></div>`
+    + `<div class="legendSection"><span class="legendSectionLabel">Controls</span>`
+    + `<div class="legendKeyRow"><b>B</b> build &nbsp; <b>P</b> produce &nbsp; <b>I</b> import</div>`
+    + `<div class="legendKeyRow"><b>T</b> research &nbsp; <b>R</b> road &nbsp; <b>X</b> sell</div>`
+    + `<div class="legendKeyRow"><b>G</b> tree &nbsp; <b>H</b> guide &nbsp; <b>F</b> fog</div>`
+    + `<div class="legendKeyRow"><b>C</b> begin combat &nbsp; <b>M</b> tone &nbsp; <b>Esc</b> cancel</div>`
+    + `</div>`;
+  const filterRowEl = document.getElementById('legendFilterRow');
+  filterRowEl.innerHTML = filterRowsHtml;
+  for (const btn of filterRowEl.children) {
+    filterBtns[btn.dataset.res] = btn;
+    btn.addEventListener('click', () => setResourceFilter(btn.dataset.res));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
 // md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
 // player picks goals in the tree, "the game reverse-plans the how", "the
@@ -1233,8 +1306,7 @@ function getCurrentPlan() {
 // re-arms its payoff line (a goal that's ALREADY satisfied the moment it's
 // re-selected reads as freshly "done," not silently skipped).
 const payoffAnnounced = new Set();
-function updateGuidancePanel() {
-  const plan = getCurrentPlan();
+function updateGuidancePanel(plan = getCurrentPlan()) {
   // Buildbar grey-out/next-highlight reads this SAME plan object (see
   // updateBuildBarPlanUI's own comment) — refreshed here, once per frame,
   // right alongside the checklist it must never disagree with, rather than
@@ -1479,6 +1551,64 @@ function drawBuildPreview(ctx, worldToScreen) {
   ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
   ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// DEPOSIT FOCUS — the RESOURCE FILTER (playtest: "filter for resources") +
+// the goal-driven NEXT-NEEDED highlight (playtest: "highlight what you
+// currently need", "ON THE MAP") drawn together, since they're the same
+// draw pass over map.deposits and can legitimately both be lit at once (a
+// player filtering for tungsten while the plan separately needs titanium
+// should see BOTH rings — they're visually distinct so they don't read as
+// one confused thing). `focus.filterType` comes from the map-legend panel's
+// filter buttons (resourceFilterType below); `focus.needType` comes from the
+// live plan's first unsatisfied 'resource' step (nextNeededResourceType) —
+// same "read the SAME plan the checklist/ledger already computed" contract
+// as updateBuildBarPlanUI. Grease-pencil-styled rings (dashed/hand-marked)
+// to stay in the Operations Map idiom rather than a generic glow.
+function drawDepositFocus(ctx, worldToScreen, cam, focus) {
+  if (!focus || (!focus.filterType && !focus.needType)) return;
+  const dpr = devicePixelRatio;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+  for (const d of map.deposits || []) {
+    const isFiltered = focus.filterType && d.type === focus.filterType;
+    const isNeeded = focus.needType && d.type === focus.needType;
+    if (!isFiltered && !isNeeded) continue;
+    const [sx, sy] = worldToScreen((d.gx + 0.5) * map.tileSize, (d.gy + 0.5) * map.tileSize);
+    if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) continue;
+    const baseR = map.tileSize * cam.zoom * dpr * 1.7;
+    ctx.save();
+    if (isFiltered) {
+      // the manual filter: a bold pulsing amber ring, "you asked for this."
+      ctx.beginPath();
+      ctx.arc(sx, sy, baseR * (1 + pulse * 0.22), 0, Math.PI * 2);
+      ctx.setLineDash([baseR * 0.35, baseR * 0.18]);
+      ctx.strokeStyle = `rgba(184, 65, 42, ${0.55 + 0.35 * pulse})`;
+      ctx.lineWidth = 3 * dpr;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (isNeeded) {
+      // the plan's own ask: a tighter dashed ring + a small stamped tag,
+      // same red/"NEXT" vocabulary the buildbar's next-needed tag uses.
+      ctx.beginPath();
+      ctx.arc(sx, sy, baseR * 0.82, 0, Math.PI * 2);
+      ctx.setLineDash([5 * dpr, 4 * dpr]);
+      ctx.strokeStyle = 'rgba(255, 207, 92, 0.92)';
+      ctx.lineWidth = 2.4 * dpr;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = `bold ${10 * dpr}px Consolas, monospace`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 2.5 * dpr;
+      ctx.strokeStyle = 'rgba(4,8,14,0.75)';
+      ctx.strokeText('NEEDED', sx, sy - baseR - 6 * dpr);
+      ctx.fillStyle = 'rgba(255, 207, 92, 0.95)';
+      ctx.fillText('NEEDED', sx, sy - baseR - 6 * dpr);
+    }
+    ctx.restore();
+  }
 }
 
 function drawBuilding(ctx, worldToScreen, cam, b) {
@@ -1885,8 +2015,19 @@ function loop(now) {
   // file's header for the "never touches gameplay" contract.
   updateAmbient(ambient, world, map, dt);
 
+  // Computed once per frame and threaded into BOTH the map's deposit-focus
+  // overlay (right below) and updateGuidancePanel further down, so the
+  // ledger/checklist/map "what does the plan need right now" answer can
+  // never disagree with itself within a single frame.
+  const framePlan = getCurrentPlan();
+
   renderer.frame(map, (ctx, worldToScreen, cam) => {
     drawFogOverlay(ctx, worldToScreen, 'player', world, map);
+    // RESOURCE FILTER + NEXT-NEEDED (playtest: "filter for resources",
+    // "highlight what you currently need"). Drawn early, right on top of
+    // fog/terrain and under buildings/units, so a highlighted deposit still
+    // reads clearly even under a cluster of unit markers.
+    drawDepositFocus(ctx, worldToScreen, cam, { filterType: resourceFilterType, needType: nextNeededResourceType(framePlan) });
     // ground-level ambient life (traffic/shimmer/flicker/flag) BEFORE
     // buildings/units so it reads as part of the ground, not floating on
     // top of the things that actually matter
@@ -1962,7 +2103,7 @@ function loop(now) {
   // game/tutorialplan.js). A no-op visual update when the panel is dismissed
   // (it's just hidden via CSS, not torn down), so re-showing it later still
   // reflects current progress.
-  updateGuidancePanel();
+  updateGuidancePanel(framePlan);
 
   // DIRECTOR corner bubble (Part B) — same transient-text pattern as the
   // phase `announcement` object just above, own DOM element/corner though

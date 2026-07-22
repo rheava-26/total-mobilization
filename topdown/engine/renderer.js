@@ -1,5 +1,11 @@
 import { RESOURCE_DEFS } from '../game/resources.js';
 
+// City-ownership ring colors — pulled out to a named export so main.js's
+// map-legend panel (Operations Map chunk C) can swap in the exact same
+// swatches instead of hardcoding a second copy of these hex values; the
+// ownership-ring draw code below (drawLabels) reads this same table.
+export const OWNERSHIP_COLORS = { player: '#5fd0ff', enemy: '#ff5a5a', neutral: '#8fa0ac' };
+
 // Canvas2D top-down renderer: camera (pan/zoom), a pre-rendered terrain
 // layer, and a draw-call hook the game layer feeds world-space draw
 // functions into every frame.
@@ -582,7 +588,7 @@ export function createRenderer(canvas) {
       // side's color so a capture-in-progress reads at a glance without
       // opening the HUD.
       {
-        const ownerColor = c.owner === 'player' ? '#5fd0ff' : c.owner === 'enemy' ? '#ff5a5a' : '#8fa0ac';
+        const ownerColor = c.owner === 'player' ? OWNERSHIP_COLORS.player : c.owner === 'enemy' ? OWNERSHIP_COLORS.enemy : OWNERSHIP_COLORS.neutral;
         const ringR = (c.r || 6) * map.tileSize * cam.zoom * dpr;
         ctx.save();
         ctx.beginPath();

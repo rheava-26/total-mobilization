@@ -61,7 +61,7 @@ import {
 // toward the player base" order (Part B — see spawnEnemyLandingForce
 // below). Both are COMBAT-phase-only per the hard constraint that PREP
 // stays peaceful/open — see the `combatActive` gate in loop().
-import { initCityOwnership, updateObjectives, evaluateOutcome, initInvasion, CAPTURE_TIME_S } from './game/objectives.js';
+import { initCityOwnership, updateObjectives, evaluateOutcome, initInvasion, CAPTURE_TIME_S, cityCenterWorld } from './game/objectives.js';
 import { updateEnemyAI, debugEnemyGroups, debugAiStateSize } from './game/enemyai.js';
 // PLAYER-SIDE DEFENSIVE DOCTRINE (CONCEPT.md Pillar 1, "The Nation Acts") —
 // the defensive mirror of updateEnemyAI above: garrisons/disperses idle
@@ -91,6 +91,18 @@ import { createImpactFx, spawnImpactFx, updateImpactFx, drawScorch, drawSmoke } 
 // wiring main.js needs is creating `world.battalions`, running the light
 // per-frame prune pass, and exposing headless test hooks below.
 import { spawnBattalion, updateBattalions, BATTALION_TEMPLATES, battalionStrength } from './game/battalions.js';
+// BATTALION-LEVEL DOCTRINE (B3 of the 6-phase battalion rework — "Self-
+// deploy + sectors + stance"). game/battalionDoctrine.js owns the formation-
+// level analogue of game/doctrine.js's per-unit garrison AI — see that
+// module's header for the full sector-pick/stance/arbitration contract.
+// doctrine.js itself now skips any unit tagged `u.battalion` (see its one-
+// line handoff comment), so this is the ONLY thing issuing those units
+// orders; main.js's job is just calling it once per frame alongside
+// updatePlayerDoctrine and wiring the Battalions panel + debug hooks below.
+import {
+  updateBattalionDoctrine, assignSector, setStance, cycleStance,
+  debugBattalionDoctrineState, debugForceTick as debugForceBattalionDoctrineTick,
+} from './game/battalionDoctrine.js';
 // REINFORCEMENTS (B2 of the 6-phase battalion rework — CONCEPT.md's "three
 // sources of battalions": Factory Elite / Army-Sent Standard / Local
 // Militia). game/reinforcements.js is a NEW, purely ADDITIVE module — see
@@ -840,6 +852,7 @@ canvas.addEventListener('contextmenu', e => {
   e.preventDefault();
   if (roadMode.active) { exitRoadMode(); return; }
   if (buildMode.active) { exitBuildMode(); return; }
+  if (battalionAssignMode.active) { exitBattalionAssignMode(); return; }
   const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
   issueMoveOrder(wx, wy);
 });
@@ -860,6 +873,7 @@ function exitRoadMode() {
 }
 function enterRoadMode() {
   if (sellMode.active) exitSellMode();
+  if (battalionAssignMode.active) exitBattalionAssignMode();
   roadMode.active = true;
   roadMode.a = null;
   roadMode.previewPath = null;
@@ -1004,6 +1018,7 @@ function selectBuildType(key) {
 }
 function enterBuildMode() {
   if (sellMode.active) exitSellMode();
+  if (battalionAssignMode.active) exitBattalionAssignMode();
   buildMode.active = true;
   buildbar.classList.add('open');
   updateBuildBarUI();
@@ -1097,6 +1112,7 @@ const sellMode = { active: false };
 function enterSellMode() {
   if (roadMode.active) exitRoadMode();
   if (buildMode.active) exitBuildMode();
+  if (battalionAssignMode.active) exitBattalionAssignMode();
   sellMode.active = true;
 }
 function exitSellMode() { sellMode.active = false; }
@@ -1521,6 +1537,135 @@ function updateReinforcePanelUI() {
 }
 
 // ---------------------------------------------------------------------------
+// BATTALIONS PANEL — B3 (game/battalionDoctrine.js, "self-deploy + sectors +
+// stance"), the player's window onto/control surface over every battalion
+// world.battalions currently holds. Same collapsible-tab shape as
+// #reinforcePanel just above (parked directly below it on the right edge,
+// same column) — a slim always-visible tab plus a click-to-expand body. Row
+// list is fully REBUILT every refresh (not diffed) rather than the static-
+// shell-plus-live-fields split #reinforcePanel uses for its three fixed
+// routes: battalions come and go at runtime (spawned by reinforcements,
+// wiped out in combat), so there's no fixed row count to build once — same
+// "just re-render the whole dynamic list" shape #reinforceQueue already uses
+// for its own runtime-length job queue, one level up.
+const battalionPanel = document.getElementById('battalionPanel');
+const battalionToggle = document.getElementById('battalionToggle');
+const battalionToggleIcon = document.getElementById('battalionToggleIcon');
+const battalionBodyInner = document.getElementById('battalionBodyInner');
+let battalionExpanded = false;
+function setBattalionExpanded(v) {
+  battalionExpanded = v;
+  battalionPanel.classList.toggle('expanded', v);
+  battalionToggleIcon.textContent = v ? '▾' : '▸';
+  if (v) battalionPanel.classList.remove('nudge');
+}
+battalionToggle.addEventListener('click', () => setBattalionExpanded(!battalionExpanded));
+setBattalionExpanded(false);
+
+// ASSIGN-SECTOR MODE — "click a city to rally this battalion," same one-shot
+// input-mode shape as roadMode/buildMode (see those sections above): press
+// the row's "Assign sector" button to arm it, then the next canvas click
+// that lands on a city owned by the player sets that battalion's
+// bn.homeSector (via game/battalionDoctrine.js's assignSector — the SAME
+// function the debug hook wraps, not a reimplementation). Esc/right-click
+// cancels without assigning anything, exactly like R/B mode.
+const battalionAssignMode = { active: false, bnId: null };
+function enterBattalionAssignMode(bnId) {
+  if (roadMode.active) exitRoadMode();
+  if (buildMode.active) exitBuildMode();
+  if (sellMode.active) exitSellMode();
+  battalionAssignMode.active = true;
+  battalionAssignMode.bnId = bnId;
+}
+function exitBattalionAssignMode() {
+  battalionAssignMode.active = false;
+  battalionAssignMode.bnId = null;
+}
+
+// City hit-test for assign-sector clicks — a generous click radius (1.6x the
+// city's own capture radius) rather than an exact-pixel target, since a city
+// icon on the rendered map is small and this is a deliberate one-shot
+// "point at roughly the right place" action, not precision placement (same
+// forgiving-target spirit as sitePlacement's own spiral search for B-mode).
+function cityAtWorldPoint(wx, wy) {
+  const ts = map.tileSize;
+  let bestIdx = null, bestD2 = Infinity;
+  for (let i = 0; i < (map.cities || []).length; i++) {
+    const c = map.cities[i];
+    const { x: cx, y: cy } = cityCenterWorld(map, c);
+    const tol = (c.r || 6) * ts * 1.6;
+    const dd = (wx - cx) ** 2 + (wy - cy) ** 2;
+    if (dd <= tol * tol && dd < bestD2) { bestD2 = dd; bestIdx = i; }
+  }
+  return bestIdx;
+}
+
+canvas.addEventListener('click', e => {
+  if (!battalionAssignMode.active) return;
+  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+  const cityIdx = cityAtWorldPoint(wx, wy);
+  const bnId = battalionAssignMode.bnId;
+  const bn = world.battalions.find(b => b.id === bnId);
+  if (cityIdx === null) { flashMessage('Click a city to assign that sector — Esc/right-click to cancel.'); return; }
+  const city = map.cities[cityIdx];
+  if (city.owner !== 'player') { flashMessage(`Can't rally to ${city.name} — not under player control.`); return; }
+  assignSector(world, bnId, cityIdx);
+  flashMessage(bn ? `${bn.name} rallied to ${city.name}.` : `Battalion rallied to ${city.name}.`);
+  exitBattalionAssignMode();
+});
+
+// Effective sector NAME for a battalion right now — mirrors
+// game/battalionDoctrine.js's own sector-pick logic (explicit homeSector if
+// still owned, else its last AUTO-pick) read-only, purely for display; never
+// duplicates the scoring itself, just the two-branch "which one's active"
+// check the module already resolves each assignment tick.
+function battalionSectorLabel(bn) {
+  if (bn.homeSector != null) {
+    const c = map.cities[bn.homeSector];
+    if (c && c.owner === 'player') return c.name;
+  }
+  const auto = debugBattalionDoctrineState().find(s => s.id === bn.id);
+  if (auto) {
+    const c = map.cities[auto.mapIdx];
+    if (c) return c.name;
+  }
+  return '—';
+}
+
+// Live refresh — rebuilds the row list every call (see this section's header
+// for why), called unconditionally every frame from loop() near
+// updateReinforcePanelUI(), same "cheap enough to run unconditionally" spirit
+// every other Ops panel already follows.
+function updateBattalionPanelUI() {
+  const battalions = world.battalions.filter(bn => bn.side === 'player');
+  if (!battalions.length) {
+    battalionBodyInner.innerHTML = `<span id="battalionEmpty">No battalions in the field yet.</span>`;
+    return;
+  }
+  battalionBodyInner.innerHTML = battalions.map(bn => {
+    const { alive, total } = battalionStrength(bn);
+    const sector = battalionSectorLabel(bn);
+    const stance = bn.stance || 'balanced';
+    const assigning = battalionAssignMode.active && battalionAssignMode.bnId === bn.id;
+    return `<div class="battalionRow${assigning ? ' assigning' : ''}" data-bn="${bn.id}">`
+      + `<div class="battalionRowHead"><b>${bn.name}</b><span class="battalionType">${bn.type}</span></div>`
+      + `<div class="battalionRowStats">Strength: <b>${alive}/${total}</b> — Sector: <b>${sector}</b></div>`
+      + `<div class="battalionRowBtns">`
+      + `<button type="button" class="opsBtn" data-stance-cycle>Stance: ${stance} ▸</button>`
+      + `<button type="button" class="opsBtn" data-assign>${assigning ? 'Click a city…' : 'Assign sector'}</button>`
+      + `</div></div>`;
+  }).join('');
+  for (const row of battalionBodyInner.querySelectorAll('.battalionRow')) {
+    const bnId = Number(row.dataset.bn);
+    row.querySelector('[data-stance-cycle]').addEventListener('click', () => cycleStance(world, bnId));
+    row.querySelector('[data-assign]').addEventListener('click', () => {
+      if (battalionAssignMode.active && battalionAssignMode.bnId === bnId) exitBattalionAssignMode();
+      else enterBattalionAssignMode(bnId);
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
 // md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
 // player picks goals in the tree, "the game reverse-plans the how", "the
@@ -1830,6 +1975,7 @@ addEventListener('keydown', e => {
     if (roadMode.active) exitRoadMode();
     if (buildMode.active) exitBuildMode();
     if (sellMode.active) exitSellMode();
+    if (battalionAssignMode.active) exitBattalionAssignMode();
     if (prodPanel.classList.contains('open')) exitProdPanel();
     if (importPanel.classList.contains('open')) exitImportPanel();
     if (techPanel.classList.contains('open')) exitTechPanel();
@@ -2292,6 +2438,23 @@ window.__debug = {
     updateBattalions, BATTALION_TEMPLATES, battalionStrength,
     list: () => world.battalions,
   },
+  // BATTALION DOCTRINE hooks (B3 — game/battalionDoctrine.js), for headless
+  // verification: updateBattalionDoctrine drives the assignment pass
+  // directly; assignSector/setStance/cycleStance are the real functions the
+  // Battalions panel wires in below (mirrored here, not reimplemented) —
+  // world is bound internally so a test calls e.g.
+  // battalionDoctrine.assignSector(bnId, cityIdx) with only the battalion's
+  // own args, same binding convention every other __debug sub-object here
+  // uses; debugForceTick bypasses ASSIGN_INTERVAL_S's real-time throttle for
+  // a test, same escape hatch as doctrine.debugForceAssignTick above.
+  battalionDoctrine: {
+    updateBattalionDoctrine: (dt) => updateBattalionDoctrine(world, map, dt),
+    assignSector: (bnId, cityIdx) => assignSector(world, bnId, cityIdx),
+    setStance: (bnId, stance) => setStance(world, bnId, stance),
+    cycleStance: (bnId) => cycleStance(world, bnId),
+    state: debugBattalionDoctrineState,
+    debugForceTick: debugForceBattalionDoctrineTick,
+  },
   // REINFORCEMENTS hooks (B2 — game/reinforcements.js), for headless
   // verification: request* are the real request functions the loop/UI wire
   // in above (mirrored here, not reimplemented); REINFORCEMENT_DEFS exposes
@@ -2350,6 +2513,11 @@ function loop(now) {
   // alone — see doctrine.js's arbitration rules) BEFORE updateUnits
   // consumes it this frame, same ordering contract as updateEnemyAI.
   updatePlayerDoctrine(world, map, dt);
+  // B3: the battalion-level analogue of the doctrine call just above — sets
+  // u.order for battalion-tagged sub-units toward their formation's shared
+  // sector/stance hold-point (see game/battalionDoctrine.js's header). Also
+  // runs in both phases, same reasoning, and also BEFORE updateUnits.
+  updateBattalionDoctrine(world, map, dt);
 
   updateUnits(world, dt, map);
   // B1 battalion bookkeeping: prune dead/removed sub-units from each
@@ -2533,13 +2701,16 @@ function loop(now) {
   const buildHint = buildMode.active
     ? (buildMode.selectedType ? 'build mode: click a rough spot (shift-click to pin exact) — Esc to exit' : 'build mode: pick a building below — Esc to exit')
     : 'B: build';
+  const battalionHint = battalionAssignMode.active
+    ? '  |  assign sector: click a city to rally this battalion (Esc/right-click to cancel)'
+    : '';
   const flash = (buildMode.message && performance.now() < buildMode.messageUntil) ? `  |  ${buildMode.message}` : '';
   // Island name + seed shown subtly up front (map.seed is only set for a
   // procedurally-generated map — see game/mapgen.js/loadGeneratedMap; an
   // authored file loaded via ?map= just shows its name) so a player can
   // share/reproduce a good island via ?seed=N.
   const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
-  hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${flash}`;
+  hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${battalionHint}${flash}`;
 
   // PHASE HUD + announcement banner (game/phase.js). Refreshed every frame
   // (cheap DOM writes) rather than only on the triggering events, so a
@@ -2583,6 +2754,7 @@ function loop(now) {
   // section above) — cheap (three static rows + a short queue list), same
   // "unconditional every frame" spirit as updateTechPanelUI just above.
   updateReinforcePanelUI();
+  updateBattalionPanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

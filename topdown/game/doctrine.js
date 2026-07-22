@@ -211,6 +211,7 @@ export function updatePlayerDoctrine(world, map, dt, side = 'player') {
 
   for (const u of world.units) {
     if (u.side !== side || u.hp <= 0) continue;
+    if (u.battalion != null) continue; // B3 handoff: a unit tagged with a battalion is governed by game/battalionDoctrine.js's formation-level assignment instead — both writing u.order here would fight over the same field
     if (u.order && !u.order.doctrine) continue; // a live PLAYER order — never touched, never even scored (hard rule: explicit orders always win)
     if (u.target && u.target.hp > 0) continue;  // actively engaged with (or chasing) a live enemy — let units.js's own combat/pursuit logic run; doctrine only governs the IDLE goal
 

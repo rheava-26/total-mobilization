@@ -41,6 +41,19 @@ import {
   createDirectorState, setToneMode, reactToAction, handleBuildingSold,
   resolveAreYouFive, resetGag, DIRECTOR_COPY, announceCityEvent,
 } from './game/director.js';
+// FIRST-RUN INTRO SEQUENCE (the FRONT HALF of the onboarding concept —
+// CONCEPT.md's settled "Onboarding / tutorial concept" paragraph, beats 1-2:
+// "the only scripted stretch is the intro framing"). game/intro.js owns the
+// beat state machine + the discard-flourish's pure draw function; this file
+// wires it to the DOM and to the two ALREADY-BUILT systems it reuses
+// end-to-end — the tech tree view (toggleTechTree, defined below) and the
+// goal-driven checklist (#guidancePanel/game/tutorialplan.js) — see the
+// INTRO SEQUENCE section further down for the actual wiring.
+import {
+  INTRO_COPY, createIntroState, shouldShowIntro, startIntro, skipIntro,
+  beginGraphBeat, beginDiscard, discardProgress, finishDiscard, beginHandoff,
+  completeIntro, drawDiscardFlourish,
+} from './game/intro.js';
 // PLAYABILITY v1 (CONCEPT.md's settled "Playability v1 — closing the game
 // loop" section): game/objectives.js owns city ownership/capture and the
 // win/lose evaluation (Part A); game/enemyai.js owns the functional-
@@ -191,6 +204,21 @@ if (urlParams.has('menu') || !hasDeepLink) {
 // exists and before anything else reads map.cities. See game/objectives.js.
 initCityOwnership(map);
 
+// FIRST-RUN INTRO (game/intro.js) — decided from the exact same
+// urlParams/hasDeepLink the MAP SOURCE block above already computed: a deep
+// link skips the intro for the same reason it skips the main menu (that's
+// the dev/share path — land straight in the game), `?intro` forces it back
+// on for testing/QA regardless of storage state. shouldShowIntro also
+// checks a localStorage flag so a normal player only ever sees this once
+// per browser, not on every load (see that function's own comment for the
+// full "don't re-nag" rationale). Created here (state only, "should we run
+// at all") so the decision is made right alongside the deep-link check it
+// depends on; the actual sequence (opening the tech tree, the flourish, the
+// handoff) is wired in the INTRO SEQUENCE section further down, once the
+// systems it reuses exist.
+const introState = createIntroState();
+if (shouldShowIntro(urlParams, hasDeepLink)) startIntro(introState);
+
 const renderer = createRenderer(canvas);
 renderer.cam.x = map.worldW() / 2;
 renderer.cam.y = map.worldH() / 2;
@@ -317,6 +345,15 @@ function updatePhaseHud() {
   beginCombatBtn.style.display = inCombat ? 'none' : '';
 }
 function triggerBeginCombat() {
+  // The intro's beats assume PREP the whole way through (the tech tree/
+  // flourish/handoff all play out over a peaceful map) — a no-op guard here
+  // means an eager click on the always-visible #beginCombatBtn during
+  // 'welcome'/'handoff' (the two beats where it's actually reachable — it's
+  // physically covered by the full-screen tech tree canvas during
+  // 'graph'/'discard') can't launch the invasion out from under the
+  // sequence. Once introState.active goes false (Skip or the handoff's own
+  // Continue), this is back to a normal no-op guard doing nothing.
+  if (introState.active) return;
   // beginCombat() (game/phase.js) is a one-way PREP->COMBAT transition that
   // returns true ONLY on the actual transition (false every time after,
   // since it's a no-op once already in combat) — gating the enemy landing
@@ -1409,8 +1446,94 @@ function checkProductionMilestones() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// INTRO SEQUENCE — DOM wiring for game/intro.js's front-half onboarding
+// beats. Deliberately reuses two systems end to end rather than building new
+// ones (per the task's "don't rebuild the tree or the plan" instruction):
+// the 'graph'/'discard' beats drive the SAME techTreeView the G key opens
+// (toggleTechTree, defined above in the TECH/PRODUCTION TREE VIEW section),
+// and 'handoff' just points the player at it plus the goal-driven checklist
+// (#guidancePanel/game/tutorialplan.js, already live and updating every
+// frame regardless of the intro) — nothing here creates a second tree or a
+// second plan.
+const introPanelEl = document.getElementById('introPanel');
+const introTitleEl = document.getElementById('introTitle');
+const introBodyEl = document.getElementById('introBody');
+const introContinueBtn = document.getElementById('introContinueBtn');
+const introSkipBtn = document.getElementById('introSkipBtn');
+introSkipBtn.textContent = INTRO_COPY.SKIP;
+
+// Renders whatever the CURRENT beat needs into #introPanel, plus the
+// persistent Skip button's visibility, off introState alone. Called once on
+// every transition below (so the very next frame already reflects the new
+// beat) and once more per frame from loop() for the same "just refresh it,
+// don't diff" reason updatePhaseHud/updateGuidancePanel already do.
+function updateIntroUI() {
+  introSkipBtn.classList.toggle('show', introState.active);
+  if (!introState.active) { introPanelEl.classList.add('hidden'); return; }
+  // 'discard' is the flourish playing on the tech-tree canvas itself (see
+  // loop() below) — hiding the panel for its ~1s keeps the burn the sole
+  // focus (per the task's "a bit of flourish"); there's no player action to
+  // offer mid-flourish anyway, it auto-advances to 'handoff' on its own.
+  if (introState.beat === 'discard') { introPanelEl.classList.add('hidden'); return; }
+  introPanelEl.classList.remove('hidden');
+  if (introState.beat === 'welcome') {
+    introTitleEl.textContent = INTRO_COPY.WELCOME_TITLE;
+    introBodyEl.textContent = INTRO_COPY.WELCOME_BODY;
+    introContinueBtn.textContent = INTRO_COPY.WELCOME_CONTINUE;
+  } else if (introState.beat === 'graph') {
+    introTitleEl.textContent = INTRO_COPY.GRAPH_TITLE;
+    introBodyEl.textContent = INTRO_COPY.GRAPH_BODY;
+    introContinueBtn.textContent = INTRO_COPY.GRAPH_CONTINUE;
+  } else if (introState.beat === 'handoff') {
+    introTitleEl.textContent = INTRO_COPY.HANDOFF_TITLE;
+    introBodyEl.textContent = INTRO_COPY.HANDOFF_BODY;
+    introContinueBtn.textContent = INTRO_COPY.HANDOFF_CONTINUE;
+  }
+}
+
+// One Continue button serves all three beats that have a player action
+// (welcome/graph/handoff — 'discard' has none, see above) — dispatches on
+// the CURRENT beat rather than needing three separate buttons, since
+// #introPanel only ever shows one beat's content at a time anyway.
+introContinueBtn.addEventListener('click', () => {
+  if (introState.beat === 'welcome') {
+    beginGraphBeat(introState);
+    if (!techTreeView.isOpen) toggleTechTree(); // the REAL G-key tree — see this block's header comment
+  } else if (introState.beat === 'graph') {
+    // This click IS "discard it" (CONCEPT.md's memorable beat, folded into
+    // GRAPH_BODY's copy) — starts the flourish immediately; see loop()
+    // below for where it actually plays and auto-advances to 'handoff'.
+    beginDiscard(introState);
+  } else if (introState.beat === 'handoff') {
+    completeIntro(introState);
+    if (techTreeView.isOpen) techTreeView.hide(); // defensive — the flourish's own completion should have already closed it
+  }
+  updateIntroUI();
+});
+
+// SKIP — the task's hard "skippable at any point" requirement. Tears down
+// whatever the sequence happened to be doing (closes the tree if it's open,
+// stops a mid-flight flourish so loop() falls back to its normal
+// techTreeView.render() call next frame) and lands in the exact same open,
+// non-gated state completeIntro would have, just without waiting out the
+// remaining beats.
+introSkipBtn.addEventListener('click', () => {
+  skipIntro(introState);
+  if (techTreeView.isOpen) techTreeView.hide();
+  updateIntroUI();
+});
+
+updateIntroUI(); // reflect the boot-time decision (shown or not) on the very first frame, before loop() ever runs
+
 addEventListener('keydown', e => {
   if (e.repeat) return;
+  // The intro owns input exclusively while it's running (see game/intro.js's
+  // header comment) — every mode toggle below (B/R/X/P/I/T/G/...) stays
+  // inert until the sequence ends. Skip is a deliberate on-screen BUTTON,
+  // not a key, per the task's "persistent Skip affordance" framing — a
+  // first-time player shouldn't need to already know a shortcut to get out.
+  if (introState.active) return;
   if (e.key === 'g' || e.key === 'G') {
     // TECH/PRODUCTION TREE VIEW toggle (see the block above researchState's
     // GAME PHASES comment). Checked first and returns early — while the
@@ -1943,6 +2066,26 @@ window.__debug = {
     clickYes: () => areYouFiveYesBtn.click(),
     clickNo: () => areYouFiveNoBtn.click(),
   },
+  // FIRST-RUN INTRO SEQUENCE hooks (game/intro.js), for headless
+  // verification: `state` is the live introState object (read
+  // .active/.beat/.dissolve directly); `panel`/`skipBtn` are the DOM
+  // elements so a test can assert visibility the same way it already does
+  // for #guidancePanel/#areYouFiveDialog above; `continueClick`/`skipClick`
+  // drive the two real buttons (not the underlying transition functions
+  // directly) so a test exercises the exact same path a real player click
+  // does, including the updateIntroUI() refresh; INTRO_COPY exposes every
+  // placeholder string from one place, same convention as
+  // COPY/TUTORIAL_COPY/DIRECTOR_COPY above.
+  intro: {
+    state: introState,
+    panel: introPanelEl,
+    skipBtn: introSkipBtn,
+    get visible() { return !introPanelEl.classList.contains('hidden'); },
+    get skipVisible() { return introSkipBtn.classList.contains('show'); },
+    continueClick: () => introContinueBtn.click(),
+    skipClick: () => introSkipBtn.click(),
+    INTRO_COPY,
+  },
 };
 
 let last = performance.now();
@@ -2069,7 +2212,27 @@ function loop(now) {
   // drops straight back into an unpaused game. render() itself is a no-op
   // when the view isn't open (checked first thing inside it), so this call
   // is cheap enough to leave unconditional here.
-  techTreeView.render();
+  //
+  // INTRO SEQUENCE's 'discard' beat takes over this exact canvas for its
+  // short flourish instead of the tree's own render() — see
+  // game/intro.js's drawDiscardFlourish header comment for why drawing on
+  // top of the tree's last real frame (rather than calling render() again,
+  // which would just redraw the full graph underneath the burn every frame)
+  // is what makes the burnt area reveal the live map below it. Every other
+  // beat/state falls through to the unchanged render() call.
+  if (introState.dissolve.running) {
+    const introProgress = discardProgress(introState);
+    const introCtx = techTreeCanvas.getContext('2d');
+    drawDiscardFlourish(introCtx, techTreeCanvas.width, techTreeCanvas.height, introProgress);
+    if (introProgress >= 1) {
+      finishDiscard(introState);
+      techTreeView.hide();
+      beginHandoff(introState);
+      updateIntroUI();
+    }
+  } else {
+    techTreeView.render();
+  }
 
   card.show(techTreeView.isOpen ? null : hovered, lastMouse.x, lastMouse.y);
   const alive = { player: 0, enemy: 0 };
@@ -2093,6 +2256,10 @@ function loop(now) {
   // headless test flipping fogState.revealAll directly via window.__debug
   // still sees the HUD reflect it next frame.
   updatePhaseHud();
+  // INTRO SEQUENCE — same "cheap, unconditional, just refresh it" refresh as
+  // updatePhaseHud just above (every transition already calls this too, so
+  // this is a defensive no-op most frames, not the only place it's called).
+  updateIntroUI();
   const announcing = announcement.text && performance.now() < announcement.until;
   announcementDiv.classList.toggle('show', !!announcing);
   if (announcing) announcementDiv.textContent = announcement.text;

@@ -84,6 +84,13 @@ import { initAmbient, updateAmbient, drawAmbientGround, drawAmbientSmoke } from 
 // two files since it touches renderer.cam directly.
 import { initAudio, resumeAudio, playSfx } from './game/audio.js';
 import { createImpactFx, spawnImpactFx, updateImpactFx, drawScorch, drawSmoke } from './game/impactfx.js';
+// BATTALION ENTITY + GROUPING LAYER (B1 of the 6-phase battalion rework —
+// CONCEPT.md's "Ground combat model: BATTALIONS, not singular units").
+// game/battalions.js owns the composition templates + the battalion record
+// shape; this phase is purely additive (see that file's header) — the only
+// wiring main.js needs is creating `world.battalions`, running the light
+// per-frame prune pass, and exposing headless test hooks below.
+import { spawnBattalion, updateBattalions, BATTALION_TEMPLATES, battalionStrength } from './game/battalions.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -253,7 +260,11 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
 // than a separate module-level array) is what lets game/buildings.js's gun
 // emplacements — which call the exact same fireProjectile/resolveHit code
 // path a unit does — get sound/shake/vfx for free with no separate wiring.
-const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [] };
+// world.battalions: B1 grouping layer (game/battalions.js) — formation
+// records that own refs into world.units. Additive only this phase: nothing
+// yet spawns through it (that's B2), see that file's header for the full
+// contract.
+const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [], battalions: [] };
 
 // AMBIENT LIFE (game/ambient.js) — created once right alongside `world`,
 // since it's precomputed off the same `map` (road network, cities/towns)
@@ -2160,6 +2171,17 @@ window.__debug = {
     skipClick: () => introSkipBtn.click(),
     INTRO_COPY,
   },
+  // BATTALION ENTITY + GROUPING LAYER hooks (B1 — game/battalions.js), for
+  // headless verification: spawnBattalion/updateBattalions are the real
+  // functions the loop wires in above (mirrored here, not reimplemented);
+  // BATTALION_TEMPLATES/battalionStrength expose the data + read-only helper;
+  // `list` reads the live world.battalions array the same way other __debug
+  // sub-objects expose their own live state.
+  battalions: {
+    spawnBattalion: (opts) => spawnBattalion(world, map, opts),
+    updateBattalions, BATTALION_TEMPLATES, battalionStrength,
+    list: () => world.battalions,
+  },
 };
 
 let last = performance.now();
@@ -2203,6 +2225,11 @@ function loop(now) {
   updatePlayerDoctrine(world, map, dt);
 
   updateUnits(world, dt, map);
+  // B1 battalion bookkeeping: prune dead/removed sub-units from each
+  // battalion's roster against the unit state updateUnits just resolved
+  // this frame. Pure maintenance — never gates or alters combat; see
+  // game/battalions.js's header for the additive-only contract.
+  updateBattalions(world, dt);
 
   if (combatActive) {
     const captureEvents = updateObjectives(world, map, dt);

@@ -93,6 +93,28 @@
   .opsBtn:hover:not(:disabled) { background: var(--paper); border-color: var(--ink); }
   .opsBtn:disabled { opacity: .45; cursor: not-allowed; }
   .opsBtn.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  /* FIRST-BOOT DISCOVERABILITY NUDGE — the econ ledger + field-manual panels
+     collapse by default (the de-occlusion fix), but a first-time player may
+     not notice the tab is expandable. Until they first open it, its toggle
+     gently pulses (a soft inked outline + a nudging ▸) to draw the eye. The
+     `.nudge` class is added on load and removed the moment the panel is
+     opened (main.js). Motion is dropped under reduced-motion — a static red
+     affordance remains, so the hint survives without animation. */
+  .opsPanel.nudge > button[id$="Toggle"] { animation: opsTabPulse 1.7s ease-in-out infinite; }
+  /* ID selectors here (not .opsPanel.nudge span[...]) so this beats the plain
+     #econHudToggleIcon/#legendToggleIcon color rules above on specificity. */
+  .nudge #econHudToggleIcon, .nudge #legendToggleIcon {
+    color: var(--red-bright); display: inline-block; animation: opsArrowNudge 1.7s ease-in-out infinite;
+  }
+  @keyframes opsTabPulse {
+    0%, 100% { box-shadow: inset 0 0 0 0 rgba(184,65,42,0); }
+    50% { box-shadow: inset 0 0 0 2px rgba(184,65,42,.6); }
+  }
+  @keyframes opsArrowNudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .opsPanel.nudge > button[id$="Toggle"] { animation: none; box-shadow: inset 0 0 0 2px rgba(184,65,42,.5); }
+    .nudge #econHudToggleIcon, .nudge #legendToggleIcon { animation: none; }
+  }
   /* TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game
      tech/production tree" direction — game/techtree.js + game/techtreeview.js).
      A dedicated full-screen canvas, its own independent pan/zoom camera, kept

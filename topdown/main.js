@@ -115,9 +115,11 @@ function setEconHudExpanded(v) {
   econHudExpanded = v;
   econHud.classList.toggle('expanded', v);
   econHudToggleIcon.textContent = v ? '▾' : '▸';
+  if (v) econHud.classList.remove('nudge'); // opened once → stop the discoverability pulse
 }
 econHudToggle.addEventListener('click', () => setEconHudExpanded(!econHudExpanded));
 setEconHudExpanded(false);
+econHud.classList.add('nudge'); // pulse the collapsed tab until the player first opens it (see setEconHudExpanded)
 
 // MAP SOURCE (docs/CONCEPT.md settled ledger: "maps and all place names are
 // procedurally generated per skirmish run" — a fresh seed every game by
@@ -1219,9 +1221,11 @@ function setLegendExpanded(v) {
   legendExpanded = v;
   legendPanel.classList.toggle('expanded', v);
   legendToggleIcon.textContent = v ? '▾' : '▸';
+  if (v) legendPanel.classList.remove('nudge'); // opened once → stop the discoverability pulse
 }
 legendToggle.addEventListener('click', () => setLegendExpanded(!legendExpanded));
 setLegendExpanded(false);
+legendPanel.classList.add('nudge'); // pulse the collapsed tab until the player first opens it (see setLegendExpanded)
 
 let resourceFilterType = null;
 const filterBtns = {};

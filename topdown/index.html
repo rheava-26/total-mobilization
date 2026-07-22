@@ -5,9 +5,94 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TOTAL MOBILIZATION — Topdown Slice</title>
 <style>
+  /* ===========================================================================
+     "OPERATIONS MAP" UI IDENTITY — CONCEPT.md's settled "Presentation & UI
+     overhaul" section (playtest feedback: the old UI "feels really AI-ey").
+     The fiction: every panel is a piece of paper pinned/taped to a command-
+     post map table — legend blocks, rubber-stamp headers, grease-pencil
+     rings, typed ledger data — sitting ON TOP of the dark tactical map (the
+     canvas stays the dark "sea" the chart overlays read against; only the
+     UI CHROME goes paper). One committed visual world on purpose: the fastest
+     cure for "generic AI panel" is picking a specific, textured place this
+     UI physically is, and never breaking from it.
+
+     Deliberately built with SYSTEM fonts only (monospace for typed/ledger
+     text, heavy uppercase + letter-spacing for stamps) and CSS gradients/an
+     inline SVG noise filter for paper grain — no external fonts, no image
+     assets, no new dependencies (this is a static-HTTP game, not a build).
+     ========================================================================= */
+  :root {
+    --paper: #e7dcbd;
+    --paper-2: #ddcfa4;      /* deeper parchment shade, used for stamp/header bands */
+    --paper-strong: #efe6cd; /* lighter card stock, e.g. the unit stat card */
+    --ink: #241d10;
+    --ink-soft: #5c4f34;
+    --ink-faint: #8a7a58;
+    --rule: rgba(36, 29, 16, .45);
+    --rule-soft: rgba(36, 29, 16, .22);
+    --red: #8a2a1c;
+    --red-bright: #b8412a;
+    --green: #2e5c3c;
+    --amber: #8a5a10;
+    --blue-ink: #1f4a63;
+    --paper-shadow: 0 10px 26px rgba(4, 6, 10, .55);
+    /* Subtle fibrous paper grain (feTurbulence noise, alpha-only) — layered
+       under the parchment gradient on every .opsPanel so panels read as
+       actual paper stock, not a flat color chip. Tileable, ~cheap: computed
+       once by the browser and reused as a repeating background-image. */
+    --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
   html, body { margin: 0; height: 100%; background: #060a12; overflow: hidden; }
   #view { display: block; width: 100%; height: 100%; cursor: grab; }
   #view.grabbing { cursor: grabbing; }
+  /* Shared "paper panel" base — every chart-overlay panel opts in with this
+     class. Grain + parchment gradient background, a hairline rule border,
+     and two diagonal corner "registration ticks" (surveyor's crop marks —
+     drawn with plain border-only pseudo-elements, no extra DOM/images) so
+     even a plain rectangle reads as a clipped map-table document rather
+     than a generic rounded card. */
+  .opsPanel {
+    position: fixed;
+    background-image: var(--paper-grain), linear-gradient(175deg, var(--paper) 0%, var(--paper-2) 100%);
+    background-blend-mode: multiply, normal;
+    border: 1px solid var(--rule);
+    box-shadow: var(--paper-shadow);
+    color: var(--ink);
+    font: 12px Consolas, 'SF Mono', 'Courier New', monospace;
+  }
+  .opsPanel::before, .opsPanel::after {
+    content: ""; position: absolute; width: 13px; height: 13px; pointer-events: none;
+  }
+  .opsPanel::before { top: -1px; left: -1px; border-top: 2px solid var(--ink-soft); border-left: 2px solid var(--ink-soft); }
+  .opsPanel::after  { bottom: -1px; right: -1px; border-bottom: 2px solid var(--ink-soft); border-right: 2px solid var(--ink-soft); }
+  /* Rubber-stamp section header — the recurring "SECTION TITLE" motif used
+     across every panel in place of the old plain <b> label. Slightly
+     rotated + double-bordered + a faint multiply blend so it reads inked
+     rather than printed. */
+  .opsStamp {
+    display: inline-block; text-transform: uppercase; font-weight: 800;
+    letter-spacing: 1.6px; font-size: 10.5px; color: var(--red);
+    border: 2px solid var(--red); border-radius: 2px; padding: 2px 7px;
+    transform: rotate(-1.4deg); background: rgba(138, 42, 28, .07);
+    mix-blend-mode: multiply; white-space: nowrap;
+  }
+  .opsStamp.green { color: var(--green); border-color: var(--green); background: rgba(46, 92, 60, .08); }
+  .opsStamp.ink { color: var(--ink-soft); border-color: var(--ink-soft); background: rgba(36, 29, 16, .06); }
+  /* Thin ink-toned scrollbars (webkit) — a full-fat default scrollbar is one
+     of the "generic app" tells this pass exists to remove. Firefox falls
+     back to its own thin/auto styling via scrollbar-width below. */
+  .opsPanel { scrollbar-width: thin; scrollbar-color: var(--ink-soft) transparent; }
+  .opsPanel::-webkit-scrollbar { width: 8px; height: 8px; }
+  .opsPanel::-webkit-scrollbar-thumb { background: var(--ink-soft); border-radius: 0; }
+  .opsPanel::-webkit-scrollbar-track { background: transparent; }
+  .opsBtn {
+    background: var(--paper-strong); border: 1px solid var(--ink-soft); color: var(--ink);
+    border-radius: 2px; padding: 6px 11px; cursor: pointer;
+    font: 11px Consolas, 'SF Mono', 'Courier New', monospace; letter-spacing: .3px;
+  }
+  .opsBtn:hover:not(:disabled) { background: var(--paper); border-color: var(--ink); }
+  .opsBtn:disabled { opacity: .45; cursor: not-allowed; }
+  .opsBtn.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   /* TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game
      tech/production tree" direction — game/techtree.js + game/techtreeview.js).
      A dedicated full-screen canvas, its own independent pan/zoom camera, kept
@@ -17,44 +102,75 @@
      one more corner widget. */
   #techTreeCanvas { display: none; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 500; cursor: grab; }
   #techTreeCanvas.grabbing { cursor: grabbing; }
-  /* max-width leaves room for #econHud's fixed top-right panel below, so a
-     long flash message wraps onto its own line instead of running under it. */
-  #hud { position: fixed; top: 10px; left: 10px; max-width: calc(100% - 240px); color: #bfe9ff; font: 12px Consolas, monospace; pointer-events: none; text-shadow: 0 1px 2px #000; }
-  /* Economy readout (P3 — game/economy.js): compact, top-right, same family
-     as #hud so it reads as one HUD system rather than a bolted-on panel. */
-  #econHud {
-    position: fixed; top: 10px; right: 10px; min-width: 208px;
-    padding: 8px 12px; background: rgba(8,14,26,.82); border: 1px solid #2f5f9c;
-    border-radius: 6px; color: #bfe9ff; font: 11px Consolas, monospace;
-    line-height: 1.55; white-space: pre-line; pointer-events: none;
-    text-shadow: 0 1px 2px #000;
+  /* Top-left "field slip" — a torn strip of paper tacked to the corner of
+     the map table carrying the transient camera/mode/flash text. Deliberately
+     THIN (one line, no card chrome) since it's a live status ticker, not a
+     panel with content to protect — a big boxed panel here would just be
+     more of the "blocks the screen" problem the econ ledger had. max-width
+     still leaves room for #econHud's tab on the right. */
+  #hud {
+    position: fixed; top: 10px; left: 10px; max-width: min(460px, calc(50% - 200px));
+    padding: 4px 10px 4px 8px; background: rgba(231, 220, 189, .88);
+    border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule);
+    color: var(--ink-soft); font: 11px Consolas, monospace; letter-spacing: .2px;
+    pointer-events: none; box-shadow: 0 3px 10px rgba(0,0,0,.35);
   }
-  #econHud b { color: #6dffb0; }
-  /* OBJECTIVE HUD (Playability v1 — CONCEPT.md's settled "Playability v1"
-     section: "cities held vs lost, the capital marked and its status, and
-     win progress"). Same compact-panel family as #econHud, bottom-left so
-     it never collides with #econHud (top-right), #phaseHud/#guidancePanel
-     (top-center), #buildbar (bottom-center), or #directorBubble
-     (bottom-right). Hidden outside COMBAT — see main.js's
-     updateObjectiveHud. */
+  /* ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD blocks
+     the screen"). Restructured from one big always-expanded text block into
+     a COLLAPSIBLE ledger: a slim always-visible summary strip (IC/manpower/
+     influence/mobilization, one line) plus a tab you click to unfold the
+     full resource/production breakdown as a capped, scrollable sheet below
+     it — collapsed by default on boot (main.js), so the very first thing a
+     player sees is a compact tab, not a wall of stats over the map. Top-
+     right, capped max-height so even fully expanded it can never grow past
+     the visible viewport, let alone reach #buildbar (bottom-center) or
+     #guidancePanel (top-center). */
+  #econHud {
+    top: 10px; right: 10px; width: 236px; max-height: calc(100vh - 24px);
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  #econHudToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; background: var(--paper-2); border: none;
+    border-bottom: 1px solid var(--rule-soft); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #econHudToggle:hover { background: var(--paper); }
+  #econHudToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #econHudSummary {
+    padding: 7px 10px; font: 11px Consolas, monospace; line-height: 1.6;
+    white-space: pre-line; color: var(--ink);
+  }
+  #econHudSummary b { color: var(--blue-ink); }
+  #econHudDetail {
+    max-height: 0; overflow: hidden; transition: max-height .2s ease;
+  }
+  #econHud.expanded #econHudDetail { max-height: calc(100vh - 90px); overflow-y: auto; }
+  #econHudDetailInner {
+    padding: 2px 10px 10px; border-top: 1px dashed var(--rule-soft);
+    font: 11px Consolas, monospace; line-height: 1.6; white-space: pre-line; color: var(--ink);
+  }
+  #econHudDetailInner b { color: var(--green); }
+  /* OBJECTIVE HUD (Playability v1) — bottom-left "SITREP" slip, red grease-
+     pencil accent (urgency: this is the win/lose scoreboard). Same compact-
+     panel family, hidden outside COMBAT — see main.js's updateObjectiveHud. */
   #objectiveHud {
-    display: none; position: fixed; left: 10px; bottom: 10px; min-width: 210px;
-    padding: 8px 12px; background: rgba(8,14,26,.82); border: 1px solid #6a3030;
-    border-radius: 6px; color: #ffd9d9; font: 11px Consolas, monospace;
-    line-height: 1.55; white-space: pre-line; pointer-events: none;
-    text-shadow: 0 1px 2px #000;
+    display: none; left: 10px; bottom: 10px; min-width: 210px;
+    padding: 8px 12px; line-height: 1.6; white-space: pre-line;
   }
   #objectiveHud.show { display: block; }
-  #objectiveHud b { color: #ff8a8a; }
+  #objectiveHud b { color: var(--red); }
+  /* Unit/building hover card — an index card taped near the cursor, lighter
+     "card stock" parchment than the ledger panels so it pops as its own
+     small artifact rather than blending into the map chrome underneath it. */
   #card {
-    position: fixed; display: none; padding: 10px 14px; min-width: 150px;
-    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 6px;
-    color: #eaf2ff; font: 12px Consolas, monospace; pointer-events: none;
-    box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    display: none; padding: 9px 13px; min-width: 150px;
+    background-image: var(--paper-grain), linear-gradient(175deg, var(--paper-strong) 0%, var(--paper) 100%);
+    pointer-events: none;
   }
-  #card b { font-size: 13px; letter-spacing: .5px; color: #6dffb0; display: block; margin-bottom: 6px; }
-  #card .row { display: flex; justify-content: space-between; gap: 16px; color: #9fb6c4; }
-  #card .row span:last-child { color: #eaf2ff; }
+  #card b { font-size: 12.5px; letter-spacing: .6px; text-transform: uppercase; color: var(--red); display: block; margin-bottom: 6px; }
+  #card .row { display: flex; justify-content: space-between; gap: 16px; color: var(--ink-soft); }
+  #card .row span:last-child { color: var(--ink); font-weight: 600; }
   /* B-mode build strip (delegated construction, CONCEPT.md Pillar 1): a
      minimal DOM list of building types, hidden until B is pressed. */
   #buildbar {
@@ -70,157 +186,131 @@
   }
   #buildbar button:hover { background: #1c3a5e; }
   #buildbar button.selected { background: #2f5f9c; color: #fff; }
-  /* P4 "choose what to produce" panel: pick a category, see its recipe,
-     then confirm to arm B-mode with the matching facility preselected.
-     Left side (buildbar owns bottom-center) so the two never overlap. */
+  /* P4 "choose what to produce" panel — now a "REQUISITION FORM": pick a
+     category, see its recipe, then confirm to arm B-mode with the matching
+     facility preselected. Left side (buildbar owns bottom-center) so the
+     two never overlap. */
   #prodPanel, #importPanel {
-    position: fixed; left: 16px; top: 90px; width: 300px;
+    left: 16px; top: 90px; width: 300px;
     display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
-    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
-    box-shadow: 0 8px 28px rgba(0,0,0,.5); color: #eaf2ff; font: 12px Consolas, monospace;
   }
   #prodPanel.open, #importPanel.open { display: flex; }
   #prodPanel .catRow, #importPanel .resRow { display: flex; gap: 6px; flex-wrap: wrap; }
-  #prodPanel button, #importPanel button {
-    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
-    padding: 6px 10px; cursor: pointer; font: 12px Consolas, monospace;
-  }
-  #prodPanel button:hover, #importPanel button:hover { background: #1c3a5e; }
-  #prodPanel button.selected { background: #2f5f9c; color: #fff; }
-  #recipeInfo { white-space: pre-line; line-height: 1.5; color: #bfe9ff; }
-  #recipeInfo b { color: #6dffb0; }
-  /* RESEARCH PANEL (P4 follow-up — game/research.js): same panel chrome as
-     #prodPanel/#importPanel (matching the task's "styled to match" ask),
-     positioned at the SAME top-left anchor — those two panels already share
-     one spot and are independently toggled (P/I don't exclude each other),
-     so T joining that same spot is consistent with the existing convention
-     rather than a special case. Taller/wider than the other two since it
-     needs to list up to six techs' full gate text at once, not one recipe
-     or one resource-button row. */
+  #recipeInfo { white-space: pre-line; line-height: 1.5; color: var(--ink); }
+  #recipeInfo b { color: var(--green); }
+  #importPanelSub { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; margin-top: -4px; }
+  /* RESEARCH PANEL (P4 follow-up) — same requisition-form chrome as
+     #prodPanel/#importPanel, same top-left anchor (P/I/T are independently
+     toggled, not exclusive, so they've always shared this spot). Taller/
+     wider since it lists up to six techs' full gate text at once. */
   #techPanel {
-    position: fixed; left: 16px; top: 90px; width: 360px; max-height: 76vh;
+    left: 16px; top: 90px; width: 360px; max-height: 76vh;
     overflow-y: auto;
     display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
-    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
-    box-shadow: 0 8px 28px rgba(0,0,0,.5); color: #eaf2ff; font: 12px Consolas, monospace;
   }
   #techPanel.open { display: flex; }
-  #techPanel > b { color: #6dffb0; }
   .techRow {
     display: flex; flex-direction: column; gap: 3px; padding: 8px 9px;
-    background: #0e1c2f; border: 1px solid #234260; border-radius: 6px;
+    background: rgba(255,255,255,.28); border: 1px solid var(--rule-soft); border-left: 3px solid var(--ink-soft);
   }
-  .techHeader { color: #eaf2ff; }
-  .techHeader b { color: #6dffb0; }
-  .techBlurb { color: #9fb6c4; font-size: 11px; }
-  .techGate { color: #bfe9ff; font-size: 11px; white-space: pre-line; line-height: 1.4; }
-  .techStatus { color: #ffcf5c; font-size: 11px; min-height: 14px; }
+  .techHeader { color: var(--ink); }
+  .techHeader b { color: var(--blue-ink); }
+  .techBlurb { color: var(--ink-soft); font-size: 11px; }
+  .techGate { color: var(--ink-soft); font-size: 11px; white-space: pre-line; line-height: 1.4; }
+  .techStatus { color: var(--amber); font-size: 11px; min-height: 14px; font-weight: 600; }
+  .techRow.researchable { border-left-color: var(--green); }
+  .techRow.done { border-left-color: var(--blue-ink); opacity: .82; }
   .techRow button {
-    align-self: flex-start; background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff;
-    border-radius: 5px; padding: 5px 10px; cursor: pointer; font: 12px Consolas, monospace;
+    align-self: flex-start;
   }
-  .techRow button:hover:not(:disabled) { background: #1c3a5e; }
-  .techRow button:disabled { opacity: .45; cursor: not-allowed; }
-  /* PHASE HUD (prep/combat, CONCEPT.md's settled "Phases" line): a small
-     pill top-center so the current phase reads at a glance without hunting
-     the corner panels — blue for prep, red once combat begins. */
+  /* PHASE HUD (prep/combat) — a small stamped tag top-center: "PREPARATION"
+     in ink, restamped "COMBAT" in red once the enemy lands. */
   #phaseHud {
-    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    top: 10px; left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: 10px; padding: 6px 12px;
-    background: rgba(8,14,26,.88); border: 1px solid #2f5f9c; border-radius: 7px;
-    color: #eaf2ff; font: 12px Consolas, monospace; box-shadow: 0 8px 28px rgba(0,0,0,.5);
   }
-  #phaseHud #phaseLabel { font-weight: bold; letter-spacing: 1px; color: #6dffb0; }
-  #phaseHud.combat #phaseLabel { color: #ff8a8a; }
-  #phaseHud #phaseHint { color: #9fb6c4; }
-  #phaseHud button {
-    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
-    padding: 5px 10px; cursor: pointer; font: 11px Consolas, monospace;
+  #phaseHud #phaseLabel {
+    font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; font-size: 11px;
+    color: var(--blue-ink); border: 2px solid var(--blue-ink); border-radius: 2px;
+    padding: 1px 6px; transform: rotate(-1deg);
   }
-  #phaseHud button:hover { background: #1c3a5e; }
-  /* Phase-transition announcement: a transient banner (e.g. "COMBAT PHASE
-     BEGUN"/"ENEMY LANDED"), faded in/out by JS setting the .show class.
-     Deliberately anchored at true vertical center rather than up near
-     #phaseHud's top-10px strip: #guidancePanel (the goal-driven plan
-     checklist) already occupies that whole top-center column from top:66px
-     down to as much as 42vh tall, and combat's first announcement fires the
-     instant the plan panel can still be open — a top-anchored banner would
-     sit right on top of it. True center is clear of every other fixed panel
-     (#econHud top-right, #objectiveHud bottom-left, #buildbar bottom-center,
-     #directorBubble bottom-right, #phaseHud/#guidancePanel top-center) and
-     reads at least as dramatically for a "the enemy has landed" moment. */
+  #phaseHud.combat #phaseLabel { color: var(--red); border-color: var(--red); }
+  #phaseHud #phaseHint { color: var(--ink-soft); }
+  /* Phase-transition announcement: a transient "FIELD BULLETIN" torn-paper
+     notice, faded in/out by JS setting the .show class. Anchored at true
+     vertical center (not up near #phaseHud's strip) since #guidancePanel
+     already occupies the top-center column when open — see that panel's own
+     comment for the full "why center" rationale, unchanged from before this
+     pass, just resurfaced with the new paper skin. */
   #announcement {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    padding: 10px 22px; background: rgba(20,6,6,.9); border: 1px solid #ff5a5a;
-    border-radius: 7px; color: #ffdede; font: bold 15px Consolas, monospace;
+    top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-1deg);
+    padding: 12px 26px; border-color: var(--red);
+    background-image: var(--paper-grain), linear-gradient(175deg, var(--paper-strong) 0%, var(--paper) 100%);
+    color: var(--red); font: bold 15px Consolas, monospace;
     letter-spacing: 1px; text-align: center; pointer-events: none;
-    opacity: 0; transition: opacity .3s ease; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    opacity: 0; transition: opacity .3s ease;
   }
   #announcement.show { opacity: 1; }
-  /* GUIDANCE PANEL — now the DYNAMIC, goal-driven CHECKLIST (Part A —
-     CONCEPT.md's settled "Onboarding / tutorial concept" paragraph: "an
-     ordered step list shown at the TOP of the screen"). Still an offered,
-     dismissable path, NOT a gate — every other panel/control on this page
-     works identically whether this is open or hidden (see the "First-run /
-     tutorial is OPEN, not dictated" paragraph). Repositioned from its old
-     bottom-left spot to top-center per the task's explicit placement;
-     #phaseHud already owns the very top-center strip (top:10px) so this
-     sits just below it rather than overlapping. */
+  /* GUIDANCE PANEL — the DYNAMIC, goal-driven CHECKLIST, now an "ORDERS"
+     clipboard pinned top-center. Still an offered, dismissable path, NOT a
+     gate — every other panel/control works identically whether this is
+     open or hidden. #phaseHud owns the very top strip so this sits just
+     below it. */
   #guidancePanel {
-    position: fixed; left: 50%; top: 66px; transform: translateX(-50%);
+    left: 50%; top: 66px; transform: translateX(-50%);
     width: 400px; max-width: calc(100% - 24px); max-height: 42vh; overflow-y: auto;
-    padding: 10px 12px; background: rgba(8,14,26,.94); border: 1px solid #2f5f9c;
-    border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.5);
-    color: #eaf2ff; font: 12px Consolas, monospace;
+    padding: 10px 12px;
   }
   #guidancePanel.hidden { display: none; }
   #guidancePanel .gHeader { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
-  #guidancePanel .gHeader b { color: #6dffb0; font-size: 12px; }
   #guidancePanel button.gClose {
-    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
-    padding: 1px 9px; cursor: pointer; font: 13px Consolas, monospace; line-height: 1.4;
+    background: transparent; border: 1px solid var(--ink-soft); color: var(--ink-soft); border-radius: 2px;
+    padding: 0px 8px; cursor: pointer; font: 13px Consolas, monospace; line-height: 1.5;
   }
-  #guidancePanel button.gClose:hover { background: #1c3a5e; }
+  #guidancePanel button.gClose:hover { background: var(--paper-2); color: var(--ink); }
   /* GOALS row — one pill per player-selected goal (game/tutorialplan.js
      goalState, set by clicking a unit/category in the tree view, G). Empty
      (and collapses to nothing, margin-wise) until at least one goal exists. */
   #guidanceGoals:not(:empty) { margin-bottom: 6px; }
   #guidancePanel .goalTag {
-    display: inline-block; padding: 2px 9px; margin: 0 5px 4px 0; border-radius: 10px;
-    background: #12233a; border: 1px solid #2f5f9c; color: #bfe9ff; font-size: 11px;
+    display: inline-block; padding: 2px 9px; margin: 0 5px 4px 0; border-radius: 9px;
+    background: rgba(255,255,255,.35); border: 1px solid var(--ink-soft); color: var(--ink); font-size: 11px;
   }
   /* a satisfied goal (its whole reverse-planned chain is complete — the
      "we're making jets now" payoff) reads green/filled, same success-green
      vocabulary as the tech tree's own 'built' state. */
-  #guidancePanel .goalTag.done { background: #123b2a; border-color: #3fae76; color: #6dffb0; }
-  #guidancePanel ol { margin: 0; padding-left: 18px; line-height: 1.55; color: #bfe9ff; }
-  /* "done" reflects LIVE game state (game/tutorialplan.js's per-step
-     satisfied check) — cosmetic only, never a gate, so it deliberately looks
-     like a checked-off suggestion, not an unlocked step. */
-  #guidancePanel li.done { color: #6dffb0; text-decoration: line-through; opacity: .7; }
-  /* "next" — the current/next ACTIONABLE step (task's explicit highlight
-     requirement): the first not-yet-satisfied step in the reverse-planned
-     order, called out in amber so the player always has one obvious next
-     move even with a long merged plan. */
-  #guidancePanel li.next { color: #ffcf5c; font-weight: bold; }
-  #guidancePanel li.hint { list-style: none; margin-left: -18px; color: #9fb6c4; font-style: italic; }
-  #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid #234260; color: #9fb6c4; font-size: 10.5px; line-height: 1.4; }
-  /* DIRECTOR CORNER BUBBLE (Part B — CONCEPT.md's settled "Corner
-     commentator" direction, part 1, the mechanic: "an event-driven corner
-     speech-bubble ... quips as designer-written placeholder text"). No
-     character art (deferred, per that paragraph) — just the bubble itself,
-     bottom-right so it never fights #guidancePanel (top-center) or
-     #buildbar (bottom-center) for space. Transient: main.js toggles the
-     .show class the same way #announcement's .show class already works. */
+  #guidancePanel .goalTag.done { background: rgba(46,92,60,.18); border-color: var(--green); color: var(--green); }
+  #guidancePanel ol { margin: 0; padding-left: 18px; line-height: 1.6; color: var(--ink); }
+  /* "done" reflects LIVE game state — cosmetic only, never a gate, so it
+     deliberately looks like a hand-ticked checklist item, not an unlocked
+     step: a small grease-pencil strike rather than a system checkbox. */
+  #guidancePanel li.done { color: var(--ink-faint); text-decoration: line-through; opacity: .75; }
+  /* "next" — the current/next ACTIONABLE step, stamped/flagged in red so
+     the player always has one obvious next move even with a long plan. */
+  #guidancePanel li.next { color: var(--red); font-weight: bold; }
+  #guidancePanel li.next::before { content: "▸ "; }
+  #guidancePanel li.hint { list-style: none; margin-left: -18px; color: var(--ink-soft); font-style: italic; }
+  #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--rule-soft); color: var(--ink-faint); font-size: 10.5px; line-height: 1.4; }
+  /* DIRECTOR CORNER BUBBLE — the reactive commentary line, styled as a
+     hand-scrawled sticky note taped bottom-right at a slight tilt (this is
+     the one panel deliberately NOT ruler-straight — it's meant to read as
+     an aside, not an official ledger). No character art (deferred) — just
+     the note itself. */
   #directorBubble {
-    position: fixed; right: 16px; bottom: 16px; max-width: 300px;
-    padding: 10px 13px; background: rgba(8,14,26,.94); border: 1px solid #5b7fe6;
-    border-radius: 11px 11px 2px 11px; color: #eaf2ff; font: 12px Consolas, monospace;
-    line-height: 1.45; opacity: 0; transform: translateY(6px);
+    right: 16px; bottom: 16px; max-width: 300px;
+    padding: 10px 13px; font: 12px Consolas, monospace;
+    line-height: 1.45; opacity: 0; transform: translateY(6px) rotate(-1.3deg);
     transition: opacity .25s ease, transform .25s ease; pointer-events: none;
-    box-shadow: 0 8px 28px rgba(0,0,0,.5); z-index: 300;
+    z-index: 300; color: var(--ink);
+    background-image: var(--paper-grain), linear-gradient(175deg, var(--paper-strong) 0%, var(--paper) 100%);
   }
-  #directorBubble.show { opacity: 1; transform: translateY(0); }
+  /* taped-corner effect: a little strip of "tape" at the top */
+  #directorBubble::before {
+    content: ""; position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+    width: 46px; height: 16px; background: rgba(255,255,255,.35); border: 1px solid rgba(255,255,255,.5);
+  }
+  #directorBubble::after { display: none; } /* corner tick would clash with the tape motif here */
+  #directorBubble.show { opacity: 1; transform: translateY(0) rotate(-1.3deg); }
   /* SILLY-MODE SELF-SABOTAGE GAG CHAIN — the "are you five" confirm dialog
      and the two terminal screens (task point 6). Both are full-screen modal
      overlays, above even the tech tree view (#techTreeCanvas z-index 500)
@@ -346,33 +436,46 @@
   </div>
 </div>
 <div id="hud"></div>
-<div id="phaseHud">
+<div id="phaseHud" class="opsPanel">
   <span id="phaseLabel">PREPARATION</span>
   <span id="phaseHint"></span>
-  <button id="beginCombatBtn">BEGIN COMBAT</button>
+  <button id="beginCombatBtn" class="opsBtn">BEGIN COMBAT</button>
 </div>
-<div id="announcement"></div>
-<div id="econHud"></div>
+<div id="announcement" class="opsPanel"></div>
+<!-- ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD
+     blocks the screen"). Collapsed by default (main.js) so the first thing
+     a player sees is a slim tab, not a wall of stats; econHudSummary always
+     shows the top-line totals, econHudDetail unfolds the full resource/
+     production breakdown only once the player asks for it. -->
+<div id="econHud" class="opsPanel">
+  <button id="econHudToggle" type="button" title="Expand/collapse the ledger">
+    <span class="opsStamp">LEDGER</span>
+    <span id="econHudToggleIcon">▸</span>
+  </button>
+  <div id="econHudSummary"></div>
+  <div id="econHudDetail"><div id="econHudDetailInner"></div></div>
+</div>
 <!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's
      updateObjectiveHud() every frame; hidden outside COMBAT. -->
-<div id="objectiveHud"></div>
-<div id="card"></div>
+<div id="objectiveHud" class="opsPanel"></div>
+<div id="card" class="opsPanel"></div>
 <div id="buildbar"></div>
-<div id="prodPanel">
-  <b>Choose what to produce (P)</b>
+<div id="prodPanel" class="opsPanel">
+  <span class="opsStamp">Production Order (P)</span>
   <div class="catRow" id="prodCatRow"></div>
   <div id="recipeInfo">Pick a category to see its recipe.</div>
 </div>
-<div id="importPanel">
-  <b>Import resources — spend influence + a bit of IC (I)</b>
+<div id="importPanel" class="opsPanel">
+  <span class="opsStamp">Import Requisition (I)</span>
+  <div id="importPanelSub">Spend influence + a bit of IC to brute-force a shortfall.</div>
   <div class="resRow" id="importResRow"></div>
 </div>
 <!-- RESEARCH PANEL — P4 follow-up (game/research.js), styled to match
      #prodPanel/#importPanel above. Title text comes from RESEARCH_COPY
      (game/research.js); the tech rows themselves are built entirely in
      main.js's RESEARCH PANEL section (one .techRow per TECH_DEFS entry). -->
-<div id="techPanel">
-  <b id="techPanelTitle"></b>
+<div id="techPanel" class="opsPanel">
+  <span class="opsStamp" id="techPanelTitle"></span>
   <div id="techList"></div>
 </div>
 <!-- GUIDANCE PANEL — the dynamic, goal-driven CHECKLIST (Part A). Open by
@@ -384,9 +487,9 @@
      #guidanceGoals lists the player's selected goals (pills, ✓ once each
      one's whole reverse-planned chain is satisfied); #guidanceSteps is the
      single merged/ordered/deduped step list itself. -->
-<div id="guidancePanel">
+<div id="guidancePanel" class="opsPanel">
   <div class="gHeader">
-    <b id="guidanceTitle"></b>
+    <span class="opsStamp" id="guidanceTitle"></span>
     <button id="guidanceCloseBtn" class="gClose" title="Dismiss (H to toggle)">×</button>
   </div>
   <div id="guidanceGoals"></div>
@@ -396,7 +499,7 @@
 <!-- DIRECTOR CORNER BUBBLE — Part B's reactive-line surface (off-track
      acknowledgement + the gag chain's "confused, replaced" line). Content
      set every frame from main.js's DIRECTOR section. -->
-<div id="directorBubble"></div>
+<div id="directorBubble" class="opsPanel"></div>
 <!-- "ARE YOU FIVE" DIALOG — silly-mode self-sabotage gag chain, stage 2.
      Hidden until game/director.js's handleBuildingSold reports the pity-
      building itself was sold. -->

@@ -95,6 +95,27 @@ const econHud = document.getElementById('econHud');
 const buildbar = document.getElementById('buildbar');
 const card = createStatCard(document.getElementById('card'));
 
+// ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD blocks
+// the screen and menus"). #econHud is now a COLLAPSIBLE panel: a slim
+// always-visible summary line (IC/manpower/influence/mobilization) plus a
+// click-to-expand detail sheet (resources + per-facility production, the
+// part that used to grow tall and eat map real estate). Collapsed by
+// default on boot so the very first frame the player sees is a compact tab,
+// never a wall of stats — see loop()'s HUD refresh below for what fills
+// each half every frame.
+const econHudToggle = document.getElementById('econHudToggle');
+const econHudToggleIcon = document.getElementById('econHudToggleIcon');
+const econHudSummaryEl = document.getElementById('econHudSummary');
+const econHudDetailInnerEl = document.getElementById('econHudDetailInner');
+let econHudExpanded = false;
+function setEconHudExpanded(v) {
+  econHudExpanded = v;
+  econHud.classList.toggle('expanded', v);
+  econHudToggleIcon.textContent = v ? '▾' : '▸';
+}
+econHudToggle.addEventListener('click', () => setEconHudExpanded(!econHudExpanded));
+setEconHudExpanded(false);
+
 // MAP SOURCE (docs/CONCEPT.md settled ledger: "maps and all place names are
 // procedurally generated per skirmish run" — a fresh seed every game by
 // default). Two optional URL params, either usable independently:
@@ -918,6 +939,7 @@ function productionCountLabel(prod, b) {
 }
 for (const category of Object.keys(PRODUCTION_DEFS)) {
   const btn = document.createElement('button');
+  btn.className = 'opsBtn'; // Operations Map shared button skin — see index.html .opsBtn
   btn.textContent = PRODUCTION_DEFS[category].name;
   btn.dataset.category = category;
   btn.addEventListener('click', () => selectCategory(category));
@@ -955,6 +977,7 @@ function importButtonLabel(rid) {
 }
 for (const r of RESOURCE_LIST) {
   const btn = document.createElement('button');
+  btn.className = 'opsBtn';
   btn.textContent = importButtonLabel(r.id);
   btn.dataset.resource = r.id;
   btn.addEventListener('click', () => {
@@ -1018,6 +1041,7 @@ for (const techId of Object.keys(TECH_DEFS)) {
   const status = document.createElement('div');
   status.className = 'techStatus';
   const btn = document.createElement('button');
+  btn.className = 'opsBtn';
   btn.textContent = RESEARCH_COPY.START_BUTTON;
   btn.addEventListener('click', () => {
     const ok = startResearch(world, economy, researchState, techId);
@@ -1025,7 +1049,7 @@ for (const techId of Object.keys(TECH_DEFS)) {
   });
   row.append(header, blurb, gate, status, btn);
   techListEl.appendChild(row);
-  techRows[techId] = { status, btn };
+  techRows[techId] = { status, btn, row };
 }
 // Live status refresh — cheap enough (six rows) to call unconditionally
 // every frame from loop() below, same spirit as updateGuidancePanel's own
@@ -1037,7 +1061,13 @@ for (const techId of Object.keys(TECH_DEFS)) {
 function updateTechPanelUI() {
   for (const techId of Object.keys(TECH_DEFS)) {
     const st = techStatus(world, researchState, techId);
-    const { status, btn } = techRows[techId];
+    const { status, btn, row } = techRows[techId];
+    // Operations Map cue: the row's left-edge "tab" colors by state (green
+    // once researchable/active, ink-blue once unlocked) so the ledger of
+    // techs reads at a glance without needing to read every status line —
+    // purely a border-color toggle, no gating logic here.
+    row.classList.toggle('researchable', st.state === 'researchable' || st.state === 'active');
+    row.classList.toggle('done', st.state === 'unlocked');
     if (st.state === 'unlocked') {
       status.textContent = RESEARCH_COPY.UNLOCKED_LABEL;
       btn.style.display = 'none';
@@ -1874,18 +1904,25 @@ function loop(now) {
       : `STALLED — ${b.prodStallReason}`;
     prodLines.push(`${prod.name}: ${stateTxt} — ${productionCountLabel(prod, b)}`);
   }
-  const prodBlock = prodLines.length ? `\n<b>Production</b>\n${prodLines.join('\n')}` : '';
+  const prodBlock = prodLines.length ? `<b>Production</b>\n${prodLines.join('\n')}` : '';
 
-  econHud.innerHTML =
-    `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)}  (+${economy.icRate.toFixed(2)}/s)\n`
-    + `<b>Manpower</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)}  (+${economy.manpowerRate.toFixed(2)}/s)\n`
-    + `<b>Influence</b> ${economy.influence.toFixed(0)}/${economy.influenceCap.toFixed(0)}  (+${economy.influenceRate.toFixed(2)}/s)\n`
-    + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}%  (+${economy.mobilizationRate.toFixed(3)}/s)\n`
-    + `${economy.band.label}\n`
-    + `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)}  (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
+  // SUMMARY (always visible, collapsed-tab default) — the four top-line
+  // totals a player needs at a glance, one compact line each. Everything
+  // that used to make this panel tall (per-resource stockpile line +
+  // per-facility production status) moved to the DETAIL sheet below, which
+  // only renders visibly once the player expands the ledger — see
+  // setEconHudExpanded above for the de-occlusion fix this implements.
+  econHudSummaryEl.innerHTML =
+    `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)} (+${economy.icRate.toFixed(2)}/s)  `
+    + `<b>MP</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)} (+${economy.manpowerRate.toFixed(2)}/s)\n`
+    + `<b>Infl</b> ${economy.influence.toFixed(0)}/${economy.influenceCap.toFixed(0)} (+${economy.influenceRate.toFixed(2)}/s)\n`
+    + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}% (+${economy.mobilizationRate.toFixed(3)}/s) — ${economy.band.label}`;
+
+  econHudDetailInnerEl.innerHTML =
+    `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)} (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
     + `Arming quality x${economy.armingQuality.toFixed(2)}\n`
     + `<b>Resources</b>\n${resourceLine}`
-    + prodBlock;
+    + (prodBlock ? `\n${prodBlock}` : '');
 
   } catch (err) {
     // A single throwing frame must not brick the session: an uncaught throw

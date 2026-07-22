@@ -171,21 +171,44 @@
   #card b { font-size: 12.5px; letter-spacing: .6px; text-transform: uppercase; color: var(--red); display: block; margin-bottom: 6px; }
   #card .row { display: flex; justify-content: space-between; gap: 16px; color: var(--ink-soft); }
   #card .row span:last-child { color: var(--ink); font-weight: 600; }
-  /* B-mode build strip (delegated construction, CONCEPT.md Pillar 1): a
-     minimal DOM list of building types, hidden until B is pressed. */
+  /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)
+     — playtest feedback: "the build menu is really ugly, you can't scroll
+     down on it." Was a flat, unscrollable strip of ~20 buttons; now a
+     bounded-height panel with one labeled SECTION per
+     game/buildingCategories.js category, the whole thing scrolling as one
+     "ledger" rather than running off the edge of the screen. Bottom-center,
+     same anchor as before, wide enough to read as a document, capped
+     max-height so it can never grow to cover #guidancePanel (top-center). */
   #buildbar {
-    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
-    display: none; gap: 8px; padding: 8px 10px;
-    background: rgba(8,14,26,.94); border: 1px solid #2f5f9c; border-radius: 8px;
-    box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    left: 50%; bottom: 16px; transform: translateX(-50%);
+    display: none; flex-direction: column; gap: 4px;
+    width: min(780px, 94vw); max-height: 46vh;
+    padding: 9px 12px 8px;
   }
   #buildbar.open { display: flex; }
-  #buildbar button {
-    background: #12233a; border: 1px solid #2f5f9c; color: #eaf2ff; border-radius: 5px;
-    padding: 7px 12px; cursor: pointer; font: 12px Consolas, monospace;
+  .buildbarHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+  .buildbarHint { color: var(--ink-soft); font-size: 10px; }
+  #buildbarBody { overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 9px; }
+  .buildCatLabel {
+    display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--ink-soft); border-bottom: 1px dashed var(--rule-soft); padding-bottom: 3px; margin-bottom: 5px;
   }
-  #buildbar button:hover { background: #1c3a5e; }
-  #buildbar button.selected { background: #2f5f9c; color: #fff; }
+  .buildCatRow { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* GREY-OUT / NEXT-NEEDED (playtest: "grey out things you aren't building",
+     "highlight what you currently need") — driven by main.js's
+     updateBuildBarPlanUI reading the live goal-driven plan; NEVER hard-gates
+     (dimmed buttons stay fully clickable), per the open-principle
+     constraint. .next gets a small red "NEXT" tag stamped on its corner,
+     tilted like a grease-pencil flag rather than a system badge. */
+  .buildBtn { position: relative; }
+  .buildBtn.dim { opacity: .42; filter: grayscale(65%); }
+  .buildBtn.next { border-color: var(--red); box-shadow: 0 0 0 2px rgba(138,42,28,.22) inset; }
+  .buildBtn.next::after {
+    content: "NEXT"; position: absolute; top: -9px; right: -7px;
+    background: var(--red); color: var(--paper-strong); font-size: 8px; font-weight: 800;
+    letter-spacing: .8px; padding: 1px 4px; border-radius: 2px; transform: rotate(-7deg);
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
   /* P4 "choose what to produce" panel — now a "REQUISITION FORM": pick a
      category, see its recipe, then confirm to arm B-mode with the matching
      facility preselected. Left side (buildbar owns bottom-center) so the
@@ -459,7 +482,17 @@
      updateObjectiveHud() every frame; hidden outside COMBAT. -->
 <div id="objectiveHud" class="opsPanel"></div>
 <div id="card" class="opsPanel"></div>
-<div id="buildbar"></div>
+<!-- CONSTRUCTION LEDGER — grouped/scrollable buildbar (chunk B). Section
+     groups + buttons are built entirely in main.js's BUILDBAR section from
+     game/buildingCategories.js's BUILD_CATEGORIES; #buildbarBody is the
+     scrollable ledger body, #buildbarHead a static label row above it. -->
+<div id="buildbar" class="opsPanel">
+  <div class="buildbarHead">
+    <span class="opsStamp">Construction Ledger (B)</span>
+    <span class="buildbarHint">shift-click to pin an exact site</span>
+  </div>
+  <div id="buildbarBody"></div>
+</div>
 <div id="prodPanel" class="opsPanel">
   <span class="opsStamp">Production Order (P)</span>
   <div class="catRow" id="prodCatRow"></div>

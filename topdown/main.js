@@ -2,6 +2,9 @@ import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
+// BUILDBAR CATEGORY MAP (playtest: "group buildings... you can't scroll
+// down on it") — pure data, see that file's header for the full rationale.
+import { BUILD_CATEGORIES } from './game/buildingCategories.js';
 import {
   createEconomy, updateEconomy, canAffordBuilding, spendForBuilding, buildingCost,
   ECONOMY_TUNABLES, MOBILIZATION_BANDS,
@@ -722,16 +725,109 @@ const buildMode = {
   message: null, messageUntil: 0,
 };
 
+// CONSTRUCTION LEDGER — playtest feedback ("the build menu is really ugly,
+// you can't scroll down on it... group buildings"). Buildings are grouped
+// into game/buildingCategories.js's BUILD_CATEGORIES (pure data — see that
+// file's header) into one labeled "ledger section" per category inside a
+// single scrollable body, instead of one flat unscrollable strip of ~20
+// buttons. buildBtns maps key -> button so selection/grey-out/next-needed
+// state can be refreshed without re-scanning the DOM by className.
+const buildbarBody = document.getElementById('buildbarBody');
+const buildBtns = {};
+for (const cat of BUILD_CATEGORIES) {
+  const group = document.createElement('div');
+  group.className = 'buildCatGroup';
+  const label = document.createElement('span');
+  label.className = 'buildCatLabel';
+  label.textContent = cat.label;
+  const row = document.createElement('div');
+  row.className = 'buildCatRow';
+  for (const key of cat.keys) {
+    const def = BUILDING_DEFS[key];
+    if (!def) continue; // defensive: a stale category entry shouldn't crash the ledger
+    const btn = document.createElement('button');
+    btn.className = 'opsBtn buildBtn';
+    btn.textContent = def.name;
+    btn.dataset.key = key;
+    btn.addEventListener('click', () => selectBuildType(key));
+    row.appendChild(btn);
+    buildBtns[key] = btn;
+  }
+  group.append(label, row);
+  buildbarBody.appendChild(group);
+}
+// Defensive dev-time check (console only, never blocks play): every
+// BUILDING_DEFS entry should appear in exactly one category, so a future
+// building added to buildings.js without a matching buildingCategories.js
+// entry doesn't just silently vanish from the ledger.
 for (const key of Object.keys(BUILDING_DEFS)) {
-  const btn = document.createElement('button');
-  btn.textContent = BUILDING_DEFS[key].name;
-  btn.dataset.key = key;
-  btn.addEventListener('click', () => selectBuildType(key));
-  buildbar.appendChild(btn);
+  if (!buildBtns[key]) console.warn(`[buildbar] "${key}" has no BUILD_CATEGORIES entry — it won't appear in the construction ledger.`);
 }
 
 function updateBuildBarUI() {
-  for (const btn of buildbar.children) btn.classList.toggle('selected', btn.dataset.key === buildMode.selectedType);
+  for (const key of Object.keys(buildBtns)) buildBtns[key].classList.toggle('selected', key === buildMode.selectedType);
+}
+
+// ---------------------------------------------------------------------------
+// PLAN-DRIVEN GREY-OUT + NEXT-NEEDED HIGHLIGHT (playtest feedback: "grey out
+// things you aren't building" / "highlight what you currently need"). Reads
+// the SAME live plan game/tutorialplan.js's computePlan() already produces
+// for the guidance checklist — no separate notion of "relevant" is invented
+// here, so the ledger and the checklist can never disagree about what the
+// plan wants. A step's nodeId is `${kind}:${key}` (see game/techtree.js) so
+// the key is recovered generically by stripping the kind prefix — no
+// per-building-name branching anywhere in this logic.
+function stepKey(step) { return step.nodeId.slice(step.kind.length + 1); }
+// Which building KEYS the current plan touches, directly or indirectly:
+//   - a 'building' step names its key directly.
+//   - a 'category' step (e.g. "get Missiles production online") is
+//     satisfied by building that category's FACILITY (PRODUCTION_DEFS'
+//     data), so the facility reads as plan-relevant too.
+//   - a 'resource' step (e.g. "secure titanium") is satisfied by mining a
+//     deposit, which always goes through the one generic `mine` building
+//     (game/buildings.js) — so `mine` reads as relevant whenever ANY
+//     resource step is outstanding.
+function planBuildingKeys(plan) {
+  const relevant = new Set();
+  for (const s of plan.steps) {
+    if (s.kind === 'building') relevant.add(stepKey(s));
+    else if (s.kind === 'category') {
+      const facility = PRODUCTION_DEFS[stepKey(s)]?.facility;
+      if (facility) relevant.add(facility);
+    } else if (s.kind === 'resource') {
+      relevant.add('mine');
+    }
+  }
+  return relevant;
+}
+// The single building key the FIRST unsatisfied step in the plan's order
+// implies — the "highlight what the goal currently needs" requirement, tied
+// (per the task) to the plan's first unsatisfied step specifically, not just
+// "anything relevant." Returns null if the plan is empty/fully satisfied, or
+// if the next step is a 'tech' (no single building represents "research
+// this" — the research panel already surfaces that).
+function nextNeededBuildingKey(plan) {
+  const next = plan.steps.find(s => !s.satisfied);
+  if (!next) return null;
+  if (next.kind === 'building') return stepKey(next);
+  if (next.kind === 'category') return PRODUCTION_DEFS[stepKey(next)]?.facility || null;
+  if (next.kind === 'resource') return 'mine';
+  return null; // 'tech' — no single building stands in for "go research this"
+}
+// Refreshed every frame from the SAME plan object updateGuidancePanel just
+// computed (see loop() below) — cheap (20 class toggles), and guarantees the
+// ledger and the checklist are always looking at identical plan state. With
+// NO active goal (plan.goals.length === 0) every button reads normal, per
+// the task's explicit "with no active goal, everything reads normal."
+function updateBuildBarPlanUI(plan) {
+  const hasGoals = plan.goals.length > 0;
+  const relevant = hasGoals ? planBuildingKeys(plan) : null;
+  const nextKey = hasGoals ? nextNeededBuildingKey(plan) : null;
+  for (const key of Object.keys(buildBtns)) {
+    const btn = buildBtns[key];
+    btn.classList.toggle('dim', hasGoals && !relevant.has(key));
+    btn.classList.toggle('next', key === nextKey);
+  }
 }
 function selectBuildType(key) {
   buildMode.selectedType = key;
@@ -1139,6 +1235,11 @@ function getCurrentPlan() {
 const payoffAnnounced = new Set();
 function updateGuidancePanel() {
   const plan = getCurrentPlan();
+  // Buildbar grey-out/next-highlight reads this SAME plan object (see
+  // updateBuildBarPlanUI's own comment) — refreshed here, once per frame,
+  // right alongside the checklist it must never disagree with, rather than
+  // recomputing the plan a second time in loop().
+  updateBuildBarPlanUI(plan);
   if (!plan.goals.length) {
     guidanceGoalsEl.innerHTML = '';
     guidanceStepsEl.innerHTML = `<li class="hint">${TUTORIAL_COPY.NO_GOALS_HINT}</li>`;

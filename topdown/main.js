@@ -38,14 +38,15 @@ import {
   createDirectorState, setToneMode, reactToAction, handleBuildingSold,
   resolveAreYouFive, resetGag, DIRECTOR_COPY, announceCityEvent,
 } from './game/director.js';
-// PLAYABILITY v1 PART A (CONCEPT.md's settled "Playability v1 — closing the
-// game loop" section): game/objectives.js owns city ownership/capture and
-// the win/lose evaluation. COMBAT-phase-only per the hard constraint that
-// PREP stays peaceful/open — see the `combatActive` gate in loop(). (Part B
-// — game/enemyai.js's functional-aggressor objective-seeking — lands in a
-// follow-up commit that replaces spawnEnemyLandingForce's scripted order
-// below with real objective assignment.)
+// PLAYABILITY v1 (CONCEPT.md's settled "Playability v1 — closing the game
+// loop" section): game/objectives.js owns city ownership/capture and the
+// win/lose evaluation (Part A); game/enemyai.js owns the functional-
+// aggressor objective-seeking that REPLACES the old scripted "advance
+// toward the player base" order (Part B — see spawnEnemyLandingForce
+// below). Both are COMBAT-phase-only per the hard constraint that PREP
+// stays peaceful/open — see the `combatActive` gate in loop().
 import { initCityOwnership, updateObjectives, evaluateOutcome, CAPTURE_TIME_S } from './game/objectives.js';
+import { updateEnemyAI } from './game/enemyai.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -502,30 +503,16 @@ function spawnEnemyLandingForce() {
   for (let i = 0; i < nFighter; i++) spawnUnit(world, 'fighter', eBase.x - 20 - i * 30, eBase.y - 100, 'enemy');
   for (let i = 0; i < nStrike; i++) spawnUnit(world, 'strikejet', eBase.x + 35 + i * 30, eBase.y - 115, 'enemy');
 
-  // FOG OF WAR: nearestEnemy's seek is gated on detection (game/fog.js), and
-  // pBase/eBase typically sit well beyond any unit's vision — nothing would
-  // ever meet without a nudge. Give ONLY the freshly-landed invaders a
-  // scripted opening order toward the player's base (a legitimate order, not
-  // autonomous seeking, so it doesn't defeat the "no beelining toward hidden
-  // enemies" rule) — the player's own garrison is the player's to command
-  // from here, it does not get an auto-order. holdGround batteries (the
-  // landing force's AA) sit this out and hold the beachhead, per doctrine.
-  //
-  // PART A NOTE: this is deliberately still the OLD scripted order — Part A
-  // closes the win/lose loop around whatever enemy exists, dumb or not, so
-  // it can be verified independently. Part B (a follow-up commit) replaces
-  // this whole block with game/enemyai.js's real objective-seeking.
-  for (const u of world.units) {
-    if (u.side === 'enemy') orderAdvance(u, pBase);
-  }
-}
-function orderAdvance(u, towardBase) {
-  if (u.def.dispositions.includes('holdGround')) return;
-  if (MOVE_CLASSES[u.def.moveClass].requiresWater) {
-    u.order = nearestWaterPoint(towardBase.x, towardBase.y);
-  } else {
-    u.order = { x: towardBase.x + (Math.random() - 0.5) * 120, y: towardBase.y + (Math.random() - 0.5) * 120 };
-  }
+  // PLAYABILITY v1 PART B — the landing force is now a FUNCTIONAL AGGRESSOR
+  // (CONCEPT.md's settled "Playability v1" section), not a one-shot
+  // scripted order toward the player's spawn point. game/enemyai.js's
+  // updateEnemyAI runs every frame during combat (see loop()'s
+  // `combatActive` block below) and assigns each landed unit a real
+  // objective — the nearest uncaptured city, biased toward the capital —
+  // using the exact same order/pathfinding/targeting machinery a player
+  // order already goes through. No per-frame scripted order is issued here
+  // at spawn time; the AI takes over from the unit's landing position on
+  // its very first update tick.
 }
 
 let hovered = null, lastMouse = { x: 0, y: 0 };
@@ -1493,16 +1480,18 @@ window.__debug = {
     get fogOn() { return !fogState.revealAll; },
     get announcement() { return announcement.text && performance.now() < announcement.until ? announcement.text : null; },
   },
-  // PLAYABILITY v1 PART A hooks (game/objectives.js), for headless
-  // verification: updateObjectives/evaluateOutcome/CAPTURE_TIME_S let a
-  // test fast-forward capture (e.g. `for (let i=0;i<40;i++)
+  // PLAYABILITY v1 hooks (game/objectives.js + game/enemyai.js), for
+  // headless verification: updateObjectives/evaluateOutcome/CAPTURE_TIME_S
+  // let a test fast-forward capture (e.g. `for (let i=0;i<40;i++)
   // objectives.updateObjectives(world, map, 1)` beats waiting out
-  // CAPTURE_TIME_S real seconds) and query win/lose directly; `outcome`
+  // CAPTURE_TIME_S real seconds) and query win/lose directly; updateEnemyAI
+  // lets a test drive Part B's objective-seeking in isolation; `outcome`
   // reads the live one-shot gameOutcome value ('victory'|'defeat'|null);
   // showOutcomeScreen/outcomeScreen expose the end-screen DOM/trigger the
   // same way director.areYouFiveDialog/takeoverScreen already do above.
   objectives: {
     updateObjectives, evaluateOutcome, CAPTURE_TIME_S,
+    updateEnemyAI,
     get outcome() { return gameOutcome; },
     showOutcomeScreen,
     outcomeScreen: outcomeScreenEl,
@@ -1621,15 +1610,15 @@ function loop(now) {
 
   clearClaims();
 
-  // PLAYABILITY v1 PART A (CONCEPT.md's settled "Playability v1" section) —
-  // city capture and win/lose. COMBAT-phase only, and frozen the instant an
-  // outcome fires: PREP stays peaceful/open per the hard constraint (no
-  // invasion, no win/lose, no forced actions during build-up), and once
-  // gameOutcome is set the war state freezes at the moment of victory/
-  // defeat instead of continuing to capture/re-capture cities behind the
-  // end screen. (Part B, a follow-up commit, adds an enemy-AI objective
-  // update here too — see game/enemyai.js.)
+  // PLAYABILITY v1 (CONCEPT.md's settled "Playability v1" section) —
+  // enemy-AI objective assignment (Part B), city capture, and win/lose
+  // (Part A). COMBAT-phase only, and frozen the instant an outcome fires:
+  // PREP stays peaceful/open per the hard constraint (no invasion, no
+  // win/lose, no forced actions during build-up), and once gameOutcome is
+  // set the war state freezes at the moment of victory/defeat instead of
+  // continuing to capture/re-capture cities behind the end screen.
   const combatActive = phaseState.phase === PHASES.COMBAT && !gameOutcome;
+  if (combatActive) updateEnemyAI(world, map, dt); // sets u.order toward each unit's objective BEFORE updateUnits consumes it this frame
 
   updateUnits(world, dt, map);
 

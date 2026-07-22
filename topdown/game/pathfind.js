@@ -85,7 +85,13 @@ function recordSolve(kind, ms, nodes) {
 // cost the grid can produce, used to keep the octile-distance heuristic
 // admissible (never overestimates -> A* stays optimal).
 function aStarGrid(width, height, sx, sy, gx, gy, costFn, minCost) {
-  if (sx === gx && sy === gy) return [{ x: sx, y: sy }];
+  // start tile IS the goal tile: return the {path, expansions} shape both
+  // callers (findPath / the road solver) expect — they read result.path and
+  // result.expansions after a `!result` guard. Returning a bare array here
+  // (the original bug) left result.path undefined -> simplifyPath(undefined)
+  // threw. Surfaces routinely now that battalion rout/garrison orders can
+  // target the exact tile a unit already stands on.
+  if (sx === gx && sy === gy) return { path: [{ x: sx, y: sy }], expansions: 0 };
   const n = width * height;
   const gScore = new Float64Array(n).fill(Infinity);
   const cameFrom = new Int32Array(n).fill(-1);

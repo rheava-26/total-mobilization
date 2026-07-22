@@ -78,7 +78,15 @@ export const PRODUCTION_DEFS = {
     facility: 'aircraftPlant',
     outputs: ['fighter', 'strikejet'],
     recipe: {
-      resourceCostPerUnit: { steel: 5, tungsten: 4, oil: 6 },
+      // DEEPENED CHAIN PART A (cashes in the old TODO below): a real
+      // airframe leans on aluminum skin + titanium engine/high-heat
+      // structure per reference-electronics-and-chains.md's aluminum-alloy
+      // and titanium sections — steel/oil kept for the smaller share
+      // (mounts/fuel/hydraulics) that's genuinely still steel-and-oil.
+      // Deliberately kept off the PART B component chain (electronics) —
+      // aircraft is a BASELINE category (no TECH_DEFS gate), so it stays
+      // reachable off just the two new raw mines. DESIGNER'S TO TUNE.
+      resourceCostPerUnit: { aluminum: 5, titanium: 2, steel: 3, oil: 4 },
       prerequisiteBuildings: ['ammunitionPlant'],
       icCostPerUnit: 15,
       manpowerCostPerUnit: 3,
@@ -122,17 +130,19 @@ export const PRODUCTION_DEFS = {
   // ---------------------------------------------------------------------
   // GROUNDED NEAR-FUTURE CATEGORIES (CONCEPT.md's settled "Arsenal scope &
   // the tech ceiling" paragraph). Same recipe shape as the four categories
-  // above — resourceCostPerUnit only ever draws from the FOUR resources that
-  // already exist (steel/chromium/tungsten/oil) plus the IC/manpower/
-  // buildTime fields every recipe carries; no new resource types added in
-  // this pass (see the per-category TODOs below for where the reference
-  // doc's "really" wants titanium/electronics/rare-earths once that supply
-  // chain exists). Costs are deliberately DIFFERENTIATED against each
-  // other, per the task brief's explicit example: hypersonics (below) is
-  // by far the most expensive row in the whole production table, drones is
-  // by far the cheapest — the same "cheap swarm vs. priceless bleeding
-  // edge" contrast CONCEPT.md's arsenal list draws between a loitering
-  // munition and a hypersonic missile.
+  // above, but — as of the DEEPENED SUPPLY CHAIN pass (game/resources.js's
+  // aluminum/titanium/rareEarths PART A; a PART B follow-up layers an
+  // electronics/advancedAlloy COMPONENT tier on top of that for the
+  // guidance-heavy categories below) — each recipe now genuinely reaches
+  // into the richer material tier the original pass's `// TODO: richer
+  // material (titanium/electronics)...` comments called out; those TODOs
+  // are gone, cashed in per-category below. Costs are deliberately
+  // DIFFERENTIATED against each other, per the task brief's explicit
+  // example: hypersonics (below) is by far the most expensive row in the
+  // whole production table, drones is by far the cheapest — the same
+  // "cheap swarm vs. priceless bleeding edge" contrast CONCEPT.md's
+  // arsenal list draws between a loitering munition and a hypersonic
+  // missile.
   drones: {
     name: 'Drones',
     facility: 'droneWorks',
@@ -148,11 +158,20 @@ export const PRODUCTION_DEFS = {
     // recipe despite being different planes).
     outputs: ['reconDrone', 'ucav', 'loiteringMunition', 'droneSwarm'],
     recipe: {
-      // TODO: richer material (titanium/electronics) when the supply chain
+      // DEEPENED CHAIN PART A (cashes in the old TODO below, which read:
+      // "richer material (titanium/electronics) when the supply chain
       // expands — real drone airframes lean on lightweight composites and
-      // avionics this resource roster doesn't have yet; approximated here
-      // with a small steel+oil bill (airframe + engine/fuel) instead.
-      resourceCostPerUnit: { steel: 2, oil: 1 },
+      // avionics this resource roster doesn't have yet; approximated with
+      // a small steel+oil bill instead"). Now genuinely lightweight-
+      // composite-coded: aluminum airframe + a little titanium
+      // reinforcement + oil for the engine — no steel at all now (a drone
+      // isn't built like a manned airframe). Deliberately NOT drawing on
+      // the PART B electronics component (kept off droneWorks'
+      // prerequisiteBuildings too) so drones stay the cheap, fast,
+      // low-barrier entry point into the gated tier CONCEPT.md's "cheap
+      // swarm vs. priceless bleeding edge" contrast wants. DESIGNER'S TO
+      // TUNE.
+      resourceCostPerUnit: { aluminum: 3, titanium: 1, oil: 1 },
       prerequisiteBuildings: [],
       icCostPerUnit: 5,
       manpowerCostPerUnit: 1,

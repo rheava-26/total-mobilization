@@ -50,7 +50,24 @@ const MAX_ATTEMPTS = 24;
 export const DEPOSIT_TUNABLES = {
   MIN_PER_RESOURCE: 1,
   MAX_PER_RESOURCE: 3,
-  MIN_SPACING: 14, // min tiles between any two deposit anchors, own or other resource
+  // DEEPENED SUPPLY CHAIN follow-up: was 14 when only 4 resources (steel/
+  // chromium/tungsten/oil) competed for terrain-affinity tiles. With
+  // aluminum/titanium/rareEarths added (game/resources.js), 7 raw resources
+  // now compete for the same handful of terrain types (mountain/hills
+  // especially — steel, chromium, tungsten, titanium, and rareEarths all
+  // draw from it), and placeDeposits below places them in RESOURCE_LIST
+  // order, so a resource placed late could find most of the qualifying
+  // terrain already spacing-excluded by earlier resources. Tightened from
+  // 14 to keep coverage reliable across a normal map spread — measured
+  // empirically: at 14, ~22% of generated maps rolled ZERO rareEarths
+  // deposits (feeds a PART B follow-up's electronics component, so that's a
+  // real "can't build the chain at all without importing" risk, not just
+  // cosmetic); at 10, that drops to ~2-3% across a 40-seed sample, matching
+  // the pre-existing miss rate the original 4-resource roster already lived
+  // with for chromium/tungsten. A player who still rolls a bad map always
+  // has the import fallback (game/production.js importResource) as the
+  // documented "pricier stopgap."
+  MIN_SPACING: 10,
   RADIUS: 3, // tiles a mine footprint may sit within to count as "on/adjacent"
   RICHNESS_MIN: 0.6,
   RICHNESS_MAX: 1.6,

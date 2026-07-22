@@ -72,7 +72,11 @@ export const TECH_DEFS = {
     prerequisiteBuildings: ['researchBureau', 'droneWorks'],
     prerequisiteTechs: [],
     icCost: 60,
-    resourceCost: { steel: 15, oil: 8 },
+    // DEEPENED CHAIN PART A: mirrors production.js's drones recipe now
+    // leaning on aluminum/titanium airframes rather than steel — R&D
+    // prototypes want the same lightweight material the production line
+    // will actually use.
+    resourceCost: { aluminum: 10, titanium: 4, oil: 8 },
     researchTime: 25, // cheapest/fastest — mirrors drones being the cheapest production row
   },
   missileTech: {

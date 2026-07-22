@@ -1035,7 +1035,11 @@ export function updateProjectiles(world, dt) {
 function resolveHit(world, p, x, y) {
   for (const o of enemyEntities(world, p.side)) {
     if (Math.hypot(o.x - x, o.y - y) < o.def.radius + 10) {
-      o.hp -= p.dmg;
+      // B4 (game/battalionMorale.js): a battalion sub-unit carries
+      // `defenseMult` derived from its formation's morale state (fresh
+      // tougher, broken more fragile) — default 1 leaves every non-
+      // battalion unit, and any unit before morale's first tick, unaffected.
+      o.hp -= p.dmg * (o.defenseMult || 1);
       // `weapon`/`side` are carried purely for the render pass's impact FX
       // (a shell/missile hit should flash bigger/brighter than a gun-kind
       // tracer's spark — see engine/renderer.js's drawImpacts, which reads

@@ -103,6 +103,13 @@ import {
   updateBattalionDoctrine, assignSector, setStance, cycleStance,
   debugBattalionDoctrineState, debugForceTick as debugForceBattalionDoctrineTick,
 } from './game/battalionDoctrine.js';
+// BATTALION MORALE / COHESION (B4 of the 6-phase battalion rework — "Morale
+// / cohesion"). game/battalionMorale.js owns bn.morale/bn.cohesion and the
+// per-unit defenseMult it feeds units.js's resolveHit; battalionDoctrine.js
+// reads isRouting()/bn.morale itself for the rout branch (see that file) —
+// this file's job is just calling updateBattalionMorale once per frame,
+// coloring the Battalions panel rows by state, and exposing debug hooks.
+import { updateBattalionMorale, moraleState, setMorale as setBattalionMorale } from './game/battalionMorale.js';
 // REINFORCEMENTS (B2 of the 6-phase battalion rework — CONCEPT.md's "three
 // sources of battalions": Factory Elite / Army-Sent Standard / Local
 // Militia). game/reinforcements.js is a NEW, purely ADDITIVE module — see
@@ -1647,9 +1654,18 @@ function updateBattalionPanelUI() {
     const sector = battalionSectorLabel(bn);
     const stance = bn.stance || 'balanced';
     const assigning = battalionAssignMode.active && battalionAssignMode.bnId === bn.id;
-    return `<div class="battalionRow${assigning ? ' assigning' : ''}" data-bn="${bn.id}">`
+    // B4: morale state label + color (fresh/steady/shaken/broken — see
+    // game/battalionMorale.js's moraleState/STATE_THRESHOLDS). A `broken`
+    // battalion is routing — battalionDoctrine.js's rout branch is what's
+    // actually moving it; this is purely the read-only display of that.
+    const mState = moraleState(bn);
+    const routTag = mState === 'broken' ? ' (routing)' : '';
+    const rowStateClass = mState === 'broken' ? ' morale-broken' : mState === 'shaken' ? ' morale-shaken' : '';
+    return `<div class="battalionRow${assigning ? ' assigning' : rowStateClass}" data-bn="${bn.id}">`
       + `<div class="battalionRowHead"><b>${bn.name}</b><span class="battalionType">${bn.type}</span></div>`
       + `<div class="battalionRowStats">Strength: <b>${alive}/${total}</b> — Sector: <b>${sector}</b></div>`
+      + `<div class="battalionRowStats">Morale: <span class="battalionMorale ${mState}">${mState}${routTag}</span> `
+      + `(${Math.round(bn.morale)}) — Cohesion: <b>${Math.round(bn.cohesion)}</b></div>`
       + `<div class="battalionRowBtns">`
       + `<button type="button" class="opsBtn" data-stance-cycle>Stance: ${stance} ▸</button>`
       + `<button type="button" class="opsBtn" data-assign>${assigning ? 'Click a city…' : 'Assign sector'}</button>`
@@ -2455,6 +2471,19 @@ window.__debug = {
     state: debugBattalionDoctrineState,
     debugForceTick: debugForceBattalionDoctrineTick,
   },
+  // BATTALION MORALE hooks (B4 — game/battalionMorale.js), for headless
+  // verification: updateBattalionMorale drives the real per-frame morale/
+  // cohesion pass directly (world/map bound internally, same convention as
+  // battalionDoctrine above — call with just `dt`); moraleState reads a
+  // battalion record's current fresh/steady/shaken/broken label;
+  // setMorale(bnId, v) is the test-only escape hatch to force a battalion
+  // straight to a given morale value (e.g. into `broken` to exercise the
+  // rout path without waiting out the real decay rates).
+  battalionMorale: {
+    updateBattalionMorale: (dt) => updateBattalionMorale(world, map, dt),
+    moraleState,
+    setMorale: (bnId, v) => setBattalionMorale(world, bnId, v),
+  },
   // REINFORCEMENTS hooks (B2 — game/reinforcements.js), for headless
   // verification: request* are the real request functions the loop/UI wire
   // in above (mirrored here, not reimplemented); REINFORCEMENT_DEFS exposes
@@ -2525,6 +2554,13 @@ function loop(now) {
   // this frame. Pure maintenance — never gates or alters combat; see
   // game/battalions.js's header for the additive-only contract.
   updateBattalions(world, dt);
+  // B4: morale/cohesion update (game/battalionMorale.js) — reads this
+  // frame's freshly-pruned battalion rosters (hence AFTER updateBattalions
+  // above) and writes bn.morale/bn.cohesion + each sub-unit's defenseMult.
+  // Runs in both phases like the other battalion passes above: a battalion
+  // sitting in friendly territory during PREP should already be trending
+  // toward `fresh`, not starting its clock only once combat begins.
+  updateBattalionMorale(world, map, dt);
   // B2: tick the reinforcement queue (game/reinforcements.js) — resolves
   // completed elite/standard/militia jobs into real spawnBattalion() calls.
   // Runs in BOTH phases (like updatePlayerDoctrine above), not gated on

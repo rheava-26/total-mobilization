@@ -319,6 +319,19 @@
   .battalionRowHead .battalionType { color: var(--ink-soft); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; }
   .battalionRowStats { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; }
   .battalionRowStats b { color: var(--blue-ink); }
+  /* B4 (game/battalionMorale.js) morale-state pill — fresh green / steady
+     neutral (ink-soft) / shaken amber / broken red, mirroring the same
+     palette the rest of the Ops UI already uses for good/warn/bad. Also
+     tints the row's own left-rule so a broken formation reads as "in
+     trouble" even collapsed at a glance, same idea as .assigning's red rule
+     above (assigning wins if both are somehow true — declared after it). */
+  .battalionMorale { font-weight: 700; padding: 0 4px; border-radius: 2px; }
+  .battalionMorale.fresh { color: var(--green); }
+  .battalionMorale.steady { color: var(--ink-soft); }
+  .battalionMorale.shaken { color: var(--amber); }
+  .battalionMorale.broken { color: var(--red); }
+  .battalionRow.morale-broken { border-left-color: var(--red); }
+  .battalionRow.morale-shaken { border-left-color: var(--amber); }
   .battalionRowBtns { display: flex; gap: 6px; flex-wrap: wrap; }
   .battalionRowBtns button { font-size: 10.5px; padding: 3px 7px; }
   /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)

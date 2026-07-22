@@ -47,6 +47,11 @@
 import { MOVE_CLASSES, terrainSample } from './units.js';
 import { detects } from './fog.js';
 import { cityCenterWorld } from './objectives.js';
+// B4 (game/battalionMorale.js): morale OWNS bn.morale/bn.cohesion — this
+// module only ever READS `isRouting(bn)` to decide garrison-vs-flee, per
+// that file's header ("battalionMorale owns morale; battalionDoctrine reads
+// it to choose garrison-vs-flee"). Never writes morale/cohesion itself.
+import { isRouting } from './battalionMorale.js';
 
 // ---------------------------------------------------------------------------
 // TUNABLES — same scoring shape/values as doctrine.js's own (kept identical
@@ -80,6 +85,12 @@ const STANCE_RING_MUL = {
 };
 const AGGRESSIVE_SHIFT_FRAC = 0.55;
 const DEFAULT_STANCE = 'balanced';
+
+// ROUT knobs (B4 — see isRouting import above). A routing battalion huddles
+// tight around the nearest friendly city's own center — smaller than even
+// the defensive stance ring (STANCE_RING_MUL.defensive) since this reads as
+// "fleeing men bunching up at the gate," not an organized dig-in.
+const ROUT_RING_MUL = { base: 0.25, max: 0.35 };
 
 // Per-battalion assignment memory, keyed by battalion id (mirrors doctrine.
 // js's postState, one level up) — holds { mapIdx } for the AUTO-picked
@@ -193,6 +204,13 @@ function ringForStance(def, sectorInfo, stance) {
   return { base: base.base * mul.base, max: base.max * mul.max };
 }
 
+// Same shape as ringForStance but for the ROUT branch below — no stance
+// input, always the tight panic-huddle multiplier.
+function ringForRout(def, sectorInfo) {
+  const base = holdRingFor(def, sectorInfo.capRWorld);
+  return { base: base.base * ROUT_RING_MUL.base, max: base.max * ROUT_RING_MUL.max };
+}
+
 // ---------------------------------------------------------------------------
 // PLAYER CONTROL API — called both from main.js's Battalions panel directly
 // and mirrored into window.__debug.battalionDoctrine for headless tests (see
@@ -273,6 +291,50 @@ export function updateBattalionDoctrine(world, map, dt, side = 'player') {
     let sumX = 0, sumY = 0;
     for (const u of aliveUnits) { sumX += u.x; sumY += u.y; }
     const bx = sumX / aliveUnits.length, by = sumY / aliveUnits.length;
+
+    // ROUT (B4 — game/battalionMorale.js owns the morale math; this is the
+    // ONLY place battalionDoctrine reads it, per that file's header). A
+    // `broken` battalion flees toward the nearest FRIENDLY city instead of
+    // holding its assigned sector — bypasses homeSector/stance entirely for
+    // as long as it stays broken. Once it sits in that city and stops
+    // taking fire, battalionMorale's territory-recovery rule lifts its
+    // morale back out of `broken` on its own, and this branch simply stops
+    // firing next tick — the battalion falls through to normal garrison
+    // doctrine below with no separate "regroup" bookkeeping needed here.
+    if (isRouting(bn)) {
+      let nearest = null, nearestD2 = Infinity;
+      for (const info of cityInfos) {
+        const dd = (bx - info.cx) ** 2 + (by - info.cy) ** 2;
+        if (dd < nearestD2) { nearestD2 = dd; nearest = info; }
+      }
+      if (nearest) {
+        let idx = 0;
+        for (const u of aliveUnits) {
+          if (u.order && !u.order.doctrine) continue; // live player order — never touched, even mid-rout
+          if (u.target && u.target.hp > 0) continue;   // actively engaged — let combat run (see this file's header: routing doesn't force units to stop firing)
+          const def = u.def;
+          const moveClass = MOVE_CLASSES[def.moveClass];
+          const naval = !!moveClass.requiresWater;
+          const isAir = def.domain === 'air';
+          const ring = ringForRout(def, nearest);
+          let pt;
+          if (naval) {
+            const water = nearestWaterTile(map, nearest.cx, nearest.cy);
+            pt = water
+              ? spiralAround(water.x, water.y, NAVAL_RING.base, NAVAL_RING.step, idx, NAVAL_RING.max)
+              : { x: nearest.cx, y: nearest.cy };
+          } else if (isAir) {
+            pt = spiralAround(nearest.cx, nearest.cy, ring.base, SLOT_RADIUS_STEP, idx, ring.max);
+          } else {
+            const raw = spiralAround(nearest.cx, nearest.cy, ring.base, SLOT_RADIUS_STEP, idx, ring.max);
+            pt = safeGroundPoint(map, moveClass, nearest.cx, nearest.cy, raw.x, raw.y);
+          }
+          idx++;
+          u.order = { x: pt.x, y: pt.y, doctrine: true };
+        }
+      }
+      continue; // skip normal sector-pick/garrison logic entirely while routing
+    }
 
     // SECTOR PICK: an explicit homeSector wins outright as long as it's
     // still an owned city (see this file's header). Otherwise AUTO-pick.

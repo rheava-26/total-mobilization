@@ -251,6 +251,39 @@
   .filterBtn.active { background: rgba(184,65,42,.14); border-color: var(--red); color: var(--red); font-weight: 700; }
   .legendKeyRow { color: var(--ink-soft); font-size: 10.5px; margin-bottom: 2px; }
   .legendKeyRow b { color: var(--ink); }
+  /* REINFORCEMENTS PANEL (B2 — game/reinforcements.js, CONCEPT.md's "three
+     sources of battalions": Factory Elite / Army-Sent Standard / Local
+     Militia). Same collapsible-tab shape as #econHud/#legendPanel — a slim
+     always-visible tab plus a click-to-expand body — parked below #econHud
+     on the right edge (the one column #econHud doesn't fully claim), so it
+     never competes with the build/production/research column on the left. */
+  #reinforcePanel {
+    top: 260px; right: 10px; width: 236px; max-height: calc(100vh - 280px);
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  #reinforceToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; background: var(--paper-2); border: none;
+    border-bottom: 1px solid var(--rule-soft); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #reinforceToggle:hover { background: var(--paper); }
+  #reinforceToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #reinforceBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #reinforcePanel.expanded #reinforceBody { max-height: calc(100vh - 320px); overflow-y: auto; }
+  #reinforceBodyInner { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .reinforceRoute {
+    display: flex; flex-direction: column; gap: 3px; padding: 7px 8px;
+    background: rgba(255,255,255,.28); border: 1px solid var(--rule-soft); border-left: 3px solid var(--ink-soft);
+  }
+  .reinforceRoute.ready { border-left-color: var(--green); }
+  .reinforceRoute button { align-self: flex-start; }
+  .reinforceRouteName { color: var(--ink); font-weight: 700; }
+  .reinforceRouteCost { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; }
+  .reinforceRouteGate { color: var(--red); font-size: 10.5px; }
+  #reinforceQueue { font-size: 10.5px; color: var(--ink-soft); border-top: 1px dashed var(--rule-soft); padding-top: 6px; line-height: 1.6; }
+  #reinforceQueue .rqRow b { color: var(--blue-ink); }
+  #reinforceQueue .rqEmpty { font-style: italic; }
   /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)
      — playtest feedback: "the build menu is really ugly, you can't scroll
      down on it." Was a flat, unscrollable strip of ~20 buttons; now a
@@ -624,6 +657,19 @@
     <span id="legendToggleIcon">▸</span>
   </button>
   <div id="legendBody"><div id="legendBodyInner"></div></div>
+</div>
+<!-- REINFORCEMENTS PANEL — B2 (game/reinforcements.js). The three route
+     buttons (Elite/Standard/Militia) + the in-flight queue are built and
+     refreshed entirely in main.js's REINFORCEMENTS PANEL section; the DOM
+     skeleton here is static, same "static shell, JS fills content" split
+     every other Ops panel uses. Collapsed by default, matching
+     #econHud/#legendPanel. -->
+<div id="reinforcePanel" class="opsPanel">
+  <button id="reinforceToggle" type="button" title="Expand/collapse reinforcements">
+    <span class="opsStamp ink">Reinforcements</span>
+    <span id="reinforceToggleIcon">▸</span>
+  </button>
+  <div id="reinforceBody"><div id="reinforceBodyInner"></div></div>
 </div>
 <!-- CONSTRUCTION LEDGER — grouped/scrollable buildbar (chunk B). Section
      groups + buttons are built entirely in main.js's BUILDBAR section from

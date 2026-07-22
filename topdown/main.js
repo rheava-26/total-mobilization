@@ -91,6 +91,17 @@ import { createImpactFx, spawnImpactFx, updateImpactFx, drawScorch, drawSmoke } 
 // wiring main.js needs is creating `world.battalions`, running the light
 // per-frame prune pass, and exposing headless test hooks below.
 import { spawnBattalion, updateBattalions, BATTALION_TEMPLATES, battalionStrength } from './game/battalions.js';
+// REINFORCEMENTS (B2 of the 6-phase battalion rework — CONCEPT.md's "three
+// sources of battalions": Factory Elite / Army-Sent Standard / Local
+// Militia). game/reinforcements.js is a NEW, purely ADDITIVE module — see
+// its header for the full "does not touch production.js" contract; this
+// file's job is just creating `world.reinforcements`, ticking the queue once
+// per frame near updateBattalions, wiring the Reinforcements panel (below),
+// and exposing headless test hooks.
+import {
+  REINFORCEMENT_DEFS, requestElite, requestStandard, raiseMilitia,
+  updateReinforcements, canAfford, playerCapital,
+} from './game/reinforcements.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -264,7 +275,11 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
 // records that own refs into world.units. Additive only this phase: nothing
 // yet spawns through it (that's B2), see that file's header for the full
 // contract.
-const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [], battalions: [] };
+// world.reinforcements: B2 queue (game/reinforcements.js) — in-flight
+// {route, battalionType, timeLeft, totalTime, target} jobs from a
+// requestElite/requestStandard/raiseMilitia call, ticked down by
+// updateReinforcements() in loop() below until they spawn a real battalion.
+const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [], battalions: [], reinforcements: [] };
 
 // AMBIENT LIFE (game/ambient.js) — created once right alongside `world`,
 // since it's precomputed off the same `map` (road network, cities/towns)
@@ -1411,6 +1426,101 @@ function setResourceFilter(id) {
 }
 
 // ---------------------------------------------------------------------------
+// REINFORCEMENTS PANEL — B2 (game/reinforcements.js, CONCEPT.md's "three
+// sources of battalions"). Same collapsible-tab shape + static-shell/
+// JS-fills-content split as #legendPanel just above: three route rows built
+// ONCE below (name/cost/button never change at runtime), refreshed every
+// frame by updateReinforcePanelUI() for the parts that DO change — affordable
+// vs. not (button disabled, same convention #techPanel's Start button uses),
+// the elite gate met/unmet, and the in-flight queue's live countdown.
+const reinforcePanel = document.getElementById('reinforcePanel');
+const reinforceToggle = document.getElementById('reinforceToggle');
+const reinforceToggleIcon = document.getElementById('reinforceToggleIcon');
+const reinforceBodyInner = document.getElementById('reinforceBodyInner');
+let reinforceExpanded = false;
+function setReinforceExpanded(v) {
+  reinforceExpanded = v;
+  reinforcePanel.classList.toggle('expanded', v);
+  reinforceToggleIcon.textContent = v ? '▾' : '▸';
+  if (v) reinforcePanel.classList.remove('nudge');
+}
+reinforceToggle.addEventListener('click', () => setReinforceExpanded(!reinforceExpanded));
+setReinforceExpanded(false);
+reinforcePanel.classList.add('nudge'); // pulse the collapsed tab until first opened, same as econHud/legendPanel
+
+function reinforceCostText(cost) {
+  const parts = [];
+  if (cost.ic) parts.push(`${cost.ic} IC`);
+  if (cost.manpower) parts.push(`${cost.manpower} manpower`);
+  for (const [rid, amt] of Object.entries(cost.resources || {})) {
+    parts.push(`${amt} ${RESOURCE_DEFS[rid] ? RESOURCE_DEFS[rid].name : rid}`);
+  }
+  return parts.join(', ');
+}
+
+const REINFORCE_ROUTES = [
+  { id: 'elite', request: () => requestElite(world, economy, map) },
+  { id: 'standard', request: () => requestStandard(world, economy, map) },
+  { id: 'militia', request: () => raiseMilitia(world, economy, map) },
+];
+const reinforceRouteEls = {};
+{
+  const routesHtml = REINFORCE_ROUTES.map(({ id }) => {
+    const def = REINFORCEMENT_DEFS[id];
+    return `<div class="reinforceRoute" data-route="${id}">`
+      + `<span class="reinforceRouteName">${def.name}</span>`
+      + `<span class="reinforceRouteCost">${reinforceCostText(def.cost)} — ${def.leadTime}s</span>`
+      + `<span class="reinforceRouteGate" data-gate></span>`
+      + `<button type="button" class="opsBtn" data-req>Requisition</button>`
+      + `</div>`;
+  }).join('');
+  const queueHtml = `<div id="reinforceQueue"></div>`;
+  reinforceBodyInner.innerHTML = `<div id="reinforceRoutes">${routesHtml}</div>${queueHtml}`;
+  for (const el of reinforceBodyInner.querySelectorAll('.reinforceRoute')) {
+    reinforceRouteEls[el.dataset.route] = { row: el, gate: el.querySelector('[data-gate]'), btn: el.querySelector('[data-req]') };
+  }
+  for (const { id, request } of REINFORCE_ROUTES) {
+    reinforceRouteEls[id].btn.addEventListener('click', () => {
+      const res = request();
+      flashMessage(res.ok
+        ? `Requisitioned: ${REINFORCEMENT_DEFS[id].name}.`
+        : `Can't requisition ${REINFORCEMENT_DEFS[id].name} — ${res.reason}.`);
+      if (res.ok) reactToAction(directorState, { kind: 'reinforce', key: id }, getCurrentPlan());
+    });
+  }
+}
+const reinforceQueueEl = document.getElementById('reinforceQueue');
+
+// Live refresh — cheap (three static rows + a short queue list), so called
+// unconditionally every frame from loop() near updateTechPanelUI(), same
+// spirit as every other Ops panel's own "cheap enough to run unconditionally"
+// comment.
+function updateReinforcePanelUI() {
+  for (const { id } of REINFORCE_ROUTES) {
+    const def = REINFORCEMENT_DEFS[id];
+    const { row, gate, btn } = reinforceRouteEls[id];
+    let gateOk = true, gateText = '';
+    if (def.requiresFactory) {
+      gateOk = world.buildings.some(b => b.side === 'player' && b.key === def.requiresFactory && b.status === 'complete');
+      if (!gateOk) gateText = `Requires: ${BUILDING_DEFS[def.requiresFactory].name}`;
+    }
+    const affordable = canAfford(economy, def.cost);
+    row.classList.toggle('ready', gateOk && affordable);
+    gate.textContent = gateText;
+    btn.disabled = !gateOk || !affordable;
+    btn.title = !gateOk ? gateText : (!affordable ? 'Cannot afford yet' : '');
+  }
+  if (!world.reinforcements.length) {
+    reinforceQueueEl.innerHTML = `<span class="rqEmpty">No reinforcements in transit.</span>`;
+  } else {
+    reinforceQueueEl.innerHTML = world.reinforcements.map(job => {
+      const name = REINFORCEMENT_DEFS[job.route].name;
+      return `<div class="rqRow"><b>${name}</b> — arrives in ${Math.max(0, job.timeLeft).toFixed(1)}s</div>`;
+    }).join('');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
 // md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
 // player picks goals in the tree, "the game reverse-plans the how", "the
@@ -2182,6 +2292,23 @@ window.__debug = {
     updateBattalions, BATTALION_TEMPLATES, battalionStrength,
     list: () => world.battalions,
   },
+  // REINFORCEMENTS hooks (B2 — game/reinforcements.js), for headless
+  // verification: request* are the real request functions the loop/UI wire
+  // in above (mirrored here, not reimplemented); REINFORCEMENT_DEFS exposes
+  // the tunable cost/leadtime data block; queue() reads the live
+  // world.reinforcements array the same way battalions.list() above reads
+  // world.battalions; updateReinforcements/playerCapital let a test drive
+  // completion and capital-resolution directly without waiting on real
+  // wall-clock frames.
+  reinforcements: {
+    requestElite: () => requestElite(world, economy, map),
+    requestStandard: () => requestStandard(world, economy, map),
+    raiseMilitia: (city) => raiseMilitia(world, economy, map, city),
+    updateReinforcements: (dt) => updateReinforcements(world, economy, map, dt),
+    REINFORCEMENT_DEFS,
+    queue: () => world.reinforcements,
+    playerCapital: () => playerCapital(map),
+  },
 };
 
 let last = performance.now();
@@ -2230,6 +2357,12 @@ function loop(now) {
   // this frame. Pure maintenance — never gates or alters combat; see
   // game/battalions.js's header for the additive-only contract.
   updateBattalions(world, dt);
+  // B2: tick the reinforcement queue (game/reinforcements.js) — resolves
+  // completed elite/standard/militia jobs into real spawnBattalion() calls.
+  // Runs in BOTH phases (like updatePlayerDoctrine above), not gated on
+  // combatActive: a player should be able to requisition/queue battalions
+  // during PREP too, same as any other build/production action.
+  updateReinforcements(world, economy, map, dt);
 
   if (combatActive) {
     const captureEvents = updateObjectives(world, map, dt);
@@ -2445,6 +2578,11 @@ function loop(now) {
   // cheap (six static rows, text/visibility updates only), so unconditional
   // every frame same as updateGuidancePanel just above.
   updateTechPanelUI();
+
+  // REINFORCEMENTS PANEL live refresh (B2 — see the REINFORCEMENTS PANEL
+  // section above) — cheap (three static rows + a short queue list), same
+  // "unconditional every frame" spirit as updateTechPanelUI just above.
+  updateReinforcePanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

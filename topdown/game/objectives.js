@@ -28,6 +28,30 @@ import { MOVE_CLASSES } from './units.js';
 
 export const CAPTURE_TIME_S = 18; // seconds an uncontested holder needs to flip a city — designer's to retune
 
+// THE INVASION IS FINITE (CONCEPT.md "Playability v1": win = the landing force
+// "eliminated/SPENT"). Outright elimination is one win; the more common one is
+// REPELLING it — you break the assault and the survivors can no longer press.
+// Once the living landing force is whittled below ROUT_FRACTION of its size at
+// landing with the capital still held, the invasion is spent → victory.
+// INVASION_DURATION_S is the hold-out backstop: hold the capital that long and
+// the invasion has culminated on its own (the book's "it fizzles anticlimactically"
+// beat) — this ALSO guarantees a run always RESOLVES instead of grinding into a
+// stalemate where a defender holds forever but a few stray attackers never die
+// (the "undecided" the balance harness surfaced). All three are the designer's
+// to retune by feel.
+export const ROUT_FRACTION = 0.2;      // invasion "broken" when living enemy ≤ this fraction of the landing force
+export const INVASION_DURATION_S = 210; // hold the capital this long and the invasion culminates (< the harness's 300s combat cap so it actually fires)
+
+// Snapshot the landing force the instant combat begins — main.js calls this
+// from beginCombat and threads the returned object into evaluateOutcome each
+// frame (ticking .elapsed itself). Kept as caller-owned state (not a module
+// global) so a Play-Again reload starts a clean invasion, same reasoning the
+// rest of the codebase creates per-run state objects rather than singletons.
+export function initInvasion(world) {
+  const landingSize = world.units.filter(u => u.side === 'enemy' && u.hp > 0).length;
+  return { landingSize, elapsed: 0 };
+}
+
 function isGroundUnit(u) {
   const mc = MOVE_CLASSES[u.def.moveClass];
   return !!mc && !!mc.ground;
@@ -109,10 +133,18 @@ export function updateObjectives(world, map, dt) {
 //     city is a setback (reflected in the HUD/end-screen stats) but never
 //     ends the run on its own.
 //   null      — game continues.
-export function evaluateOutcome(world, map) {
+export function evaluateOutcome(world, map, invasion) {
   const capital = (map.cities || [])[0];
   if (capital && capital.owner === 'enemy') return 'defeat';
-  const anyEnemyAlive = world.units.some(u => u.side === 'enemy' && u.hp > 0);
-  if (!anyEnemyAlive) return 'victory';
+  const enemyAlive = world.units.reduce((n, u) => n + (u.side === 'enemy' && u.hp > 0 ? 1 : 0), 0);
+  if (enemyAlive === 0) return 'victory'; // wiped out — the cleanest win
+  // Capital still held (checked above) and some enemy remains: is the invasion
+  // SPENT? Either broken below the rout floor, or it has culminated by holding
+  // out. Without `invasion` (defensive: pre-init frame) fall through to null.
+  if (invasion) {
+    const routFloor = Math.max(1, Math.round(invasion.landingSize * ROUT_FRACTION));
+    if (enemyAlive <= routFloor) return 'victory';                 // broken — too few left to press the assault
+    if (invasion.elapsed >= INVASION_DURATION_S) return 'victory'; // culminated — held the capital until it fizzled
+  }
   return null;
 }

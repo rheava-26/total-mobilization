@@ -393,7 +393,17 @@ async function main() {
     console.log(`[harness] running ${jobs.length} playthroughs (concurrency ${CONCURRENCY})...`);
     let done = 0;
     const results = await mapLimit(jobs, CONCURRENCY, async (job) => {
-      const r = await runOne(browser, job);
+      // Isolate a single run's failure (e.g. a chromium page/context closing
+      // mid-evaluate under concurrency) so it degrades to one 'error' row
+      // instead of rejecting Promise.all and aborting the whole matrix — the
+      // original harness had no guard here, so one flaky page killed the run.
+      let r;
+      try {
+        r = await runOne(browser, job);
+      } catch (e) {
+        r = { label: job.label, difficulty: job.difficulty, seed: job.seed, strategy: job.strategy,
+              outcome: 'error', resolvedAtS: null, prepInfo: null, finalStats: null, pageErrors: [String(e && e.message || e)] };
+      }
       done++;
       console.log(`[harness] (${done}/${jobs.length}) ${job.label} seed=${job.seed} ${job.strategy} -> ${r.outcome}`
         + (r.resolvedAtS ? ` @${r.resolvedAtS}s` : '') + (r.pageErrors.length ? ` [${r.pageErrors.length} pageerror(s)]` : ''));

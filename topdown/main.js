@@ -45,7 +45,7 @@ import {
 // toward the player base" order (Part B — see spawnEnemyLandingForce
 // below). Both are COMBAT-phase-only per the hard constraint that PREP
 // stays peaceful/open — see the `combatActive` gate in loop().
-import { initCityOwnership, updateObjectives, evaluateOutcome, CAPTURE_TIME_S } from './game/objectives.js';
+import { initCityOwnership, updateObjectives, evaluateOutcome, initInvasion, CAPTURE_TIME_S } from './game/objectives.js';
 import { updateEnemyAI, debugEnemyGroups, debugAiStateSize } from './game/enemyai.js';
 
 // ---------------------------------------------------------------------------
@@ -287,6 +287,10 @@ function triggerBeginCombat() {
   // with no separate "already spawned" flag needed here.
   if (beginCombat(phaseState, fogState)) {
     spawnEnemyLandingForce();
+    // Snapshot the invasion the instant it lands (AFTER the spawn) so the
+    // "spent/routed" win condition (game/objectives.js) measures against the
+    // real landing-force size for this run/difficulty.
+    invasionState = initInvasion(world);
     showAnnouncement(COPY.COMBAT_BEGIN_ANNOUNCEMENT);
     updatePhaseHud();
   }
@@ -302,6 +306,10 @@ updatePhaseHud();
 // 'defeat' PERMANENTLY for the rest of this run — the one-shot "the run
 // ENDS" the task calls for, not a condition that could un-fire.
 let gameOutcome = null;
+// Per-run landing-force snapshot for the "invasion spent" win condition,
+// created by triggerBeginCombat's initInvasion(world) and ticked each combat
+// frame below. null until combat begins.
+let invasionState = null;
 
 const objectiveHud = document.getElementById('objectiveHud');
 // Compact readout matching #econHud's own style/format (see index.html) —
@@ -1680,7 +1688,8 @@ function loop(now) {
         ? COPY.CITY_RECAPTURED_BY_PLAYER(ev.city.name)
         : COPY.CITY_CAPTURED_BY_ENEMY(ev.city.name));
     }
-    const outcome = evaluateOutcome(world, map);
+    if (invasionState) invasionState.elapsed += dt; // drives the hold-out backstop in evaluateOutcome
+    const outcome = evaluateOutcome(world, map, invasionState);
     if (outcome) { gameOutcome = outcome; showOutcomeScreen(outcome); }
   }
 

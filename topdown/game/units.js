@@ -942,6 +942,14 @@ export function updateUnits(world, dt, map) {
         // the shot, counts up, aged out above), angle: the turret facing
         // the shot went out on }.
         u.muzzleFlash = { t: 0, angle: u.turretAim };
+        // COMBAT-FEEL/AUDIO EVENT QUEUE: push plain data, never call into
+        // game/audio.js directly — this file has ZERO import of it on
+        // purpose, so the sim layer never depends on Web Audio (and stays
+        // testable/headless). main.js drains world.sfx once per frame and
+        // turns each entry into sound + screen shake, then clears the array.
+        // Same shape convention as world.hits just above: {x,y,weapon} only,
+        // never read back by any gameplay code.
+        if (world.sfx) world.sfx.push({ kind: 'fire', weapon: def.weapon, x: u.x, y: u.y });
       }
     }
   }
@@ -1035,6 +1043,9 @@ function resolveHit(world, p, x, y) {
       // itself already does). Never read back by any gameplay code — {x,y,
       // life} remain the only fields anything in THIS file consumes.
       world.hits.push({ x, y, life: 0.25, weapon: p.weapon, side: p.side });
+      // same event-queue hook as the fire site above — an impact event for
+      // main.js to turn into sound + screen shake + lingering smoke/scorch.
+      if (world.sfx) world.sfx.push({ kind: 'impact', weapon: p.weapon, x, y });
       return true;
     }
   }

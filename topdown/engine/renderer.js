@@ -1170,7 +1170,15 @@ export function drawImpacts(ctx, worldToScreen, cam, hits) {
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
-  const cam = { x: 0, y: 0, zoom: 1 };
+  // shakeX/shakeY: RENDER-ONLY screen-shake offset (main.js's trauma model
+  // writes these every frame — see COMBAT-FEEL/AUDIO pass). Deliberately NOT
+  // folded into cam.x/cam.y: worldToScreen/screenToWorld below must stay
+  // byte-identical to before shake existed, or every mouse-driven system
+  // (unit selection, move orders, build placement) would jitter along with
+  // the screen. frame() applies the offset as a whole-canvas ctx.translate
+  // wrapped in its own save/restore instead, so it visually shakes
+  // everything drawn without perturbing a single world<->screen coordinate.
+  const cam = { x: 0, y: 0, zoom: 1, shakeX: 0, shakeY: 0 };
   const terrainCache = { map: null, version: -1, canvas: null };
 
   function resize() {
@@ -1334,9 +1342,16 @@ export function createRenderer(canvas) {
 
   function frame(map, drawWorld) {
     clear();
+    // whole-canvas render-only translate for screen shake — see the cam
+    // comment above. worldToScreen/screenToWorld are untouched by this, so
+    // anything computing where the mouse is over the world (build/move
+    // targeting) reads the un-shaken coordinate space, exactly as required.
+    ctx.save();
+    ctx.translate(cam.shakeX || 0, cam.shakeY || 0);
     drawTilemap(map);
     drawWorld(ctx, worldToScreen, cam);
     drawLabels(map);
+    ctx.restore();
   }
 
   return { ctx, cam, canvas, resize, worldToScreen, screenToWorld, frame };

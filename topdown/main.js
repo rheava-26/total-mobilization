@@ -74,6 +74,16 @@ import { updatePlayerDoctrine, debugDoctrineState, debugForceAssignTick } from '
 // the capital's flag). Purely visual, read-only over map/world — see that
 // file's header for the full "never touches gameplay" contract.
 import { initAmbient, updateAmbient, drawAmbientGround, drawAmbientSmoke } from './game/ambient.js';
+// COMBAT FEEL & AUDIO PASS — game/audio.js plays combat sound off world.sfx
+// events (file assets under assets/audio/ when present, procedural synth
+// fallback otherwise — see that file's header for the swap contract);
+// game/impactfx.js owns the lingering smoke/scorch decal pools. Both are
+// purely reactive to events main.js drains every frame — see the loop()
+// section further down for the actual event-queue drain + screen-shake
+// trauma model, which lives here in main.js rather than in either of those
+// two files since it touches renderer.cam directly.
+import { initAudio, resumeAudio, playSfx } from './game/audio.js';
+import { createImpactFx, spawnImpactFx, updateImpactFx, drawScorch, drawSmoke } from './game/impactfx.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -233,7 +243,17 @@ renderer.cam.y = map.worldH() / 2;
 renderer.cam.zoom = Math.max(0.08, Math.min(2,
   Math.min(canvas.clientWidth / map.worldW(), canvas.clientHeight / map.worldH()) * 0.9));
 
-const world = { units: [], projectiles: [], hits: [], buildings: [] };
+// world.sfx: COMBAT-FEEL/AUDIO EVENT QUEUE — plain-data records pushed by
+// game/units.js at its fire and resolveHit sites ({kind:'fire'|'impact',
+// weapon, x, y}), same shape convention as world.hits. Deliberately NOT
+// consumed inside units.js itself (that file has zero import of game/audio.js
+// or game/impactfx.js) — loop() below drains this array once per frame into
+// sound (game/audio.js), lingering smoke/scorch (game/impactfx.js), and
+// screen-shake trauma, then clears it. Keeping the queue on `world` (rather
+// than a separate module-level array) is what lets game/buildings.js's gun
+// emplacements — which call the exact same fireProjectile/resolveHit code
+// path a unit does — get sound/shake/vfx for free with no separate wiring.
+const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [] };
 
 // AMBIENT LIFE (game/ambient.js) — created once right alongside `world`,
 // since it's precomputed off the same `map` (road network, cities/towns)
@@ -241,6 +261,74 @@ const world = { units: [], projectiles: [], hits: [], buildings: [] };
 // per-frame update/draw hooks; see that file's header for why this can
 // never affect gameplay.
 const ambient = initAmbient(map);
+
+// LINGERING BATTLE VFX (game/impactfx.js) — smoke/scorch pools, spawned off
+// world.sfx impact events in loop() below. Purely visual, see that file's
+// header for the "never touches gameplay" contract.
+const impactFx = createImpactFx();
+
+// COMBAT AUDIO (game/audio.js) — kicks off the (best-effort, may 404 until
+// the designer drops real files into assets/audio/) buffer loads now so
+// they're ready well before the player's first click; actually hearing
+// anything still waits on the browser's user-gesture unlock wired just below.
+initAudio();
+addEventListener('pointerdown', resumeAudio, { once: true });
+addEventListener('keydown', resumeAudio, { once: true });
+
+// SCREEN SHAKE — a small "trauma" model (Vlambeer's own term for this
+// pattern): trauma accumulates on significant nearby impacts (see loop()'s
+// world.sfx drain) and decays every frame; the camera offset is trauma
+// SQUARED so small trauma reads as barely-there and only a real pile-up of
+// nearby impacts pushes it toward the hard pixel cap below. Render-only —
+// see engine/renderer.js's cam.shakeX/shakeY comment for why this can never
+// perturb worldToScreen/screenToWorld (mouse/build placement math).
+const shake = { trauma: 0 };
+const SHAKE_MAX_PX = 6; // hard cap in CSS px before dpr scaling — "single-digit pixels," per the task brief, never more
+const SHAKE_DECAY_PER_SEC = 8; // exponential decay rate; ~0.87 per 1/60s frame, close to the reference doc's "0.85/frame" figure
+function addTrauma(amount) {
+  shake.trauma = Math.min(1, shake.trauma + amount);
+}
+// Returns 1 at screen center, fading to 0 a bit past the corner — used to
+// scale both shake trauma and (optionally) hit-stop triggering by how
+// visible an event actually is, without duplicating game/audio.js's own
+// world-space falloff math (screen space already bakes in cam.zoom for us).
+function screenProximity(x, y) {
+  const [sx, sy] = renderer.worldToScreen(x, y);
+  const cx = renderer.canvas.width / 2, cy = renderer.canvas.height / 2;
+  const maxR = Math.hypot(cx, cy) * 1.15; // a little past the corner so edge-of-screen impacts still register faintly
+  if (maxR <= 0) return 0;
+  const d = Math.hypot(sx - cx, sy - cy);
+  return Math.max(0, 1 - d / maxR);
+}
+// Called every frame from loop() with the REAL (unscaled) frame delta —
+// shake must keep moving at real cadence even if hit-stop is ever enabled
+// and slows the sim's own dt (see HITSTOP_ENABLED below).
+function updateShake(rawDt) {
+  shake.trauma *= Math.exp(-SHAKE_DECAY_PER_SEC * rawDt);
+  if (shake.trauma < 0.002) shake.trauma = 0;
+  const shaped = shake.trauma * shake.trauma; // squared response — small trauma barely visible, per the "never arcadey" brief
+  const mag = shaped * SHAKE_MAX_PX * devicePixelRatio;
+  const ang = Math.random() * Math.PI * 2;
+  renderer.cam.shakeX = Math.cos(ang) * mag;
+  renderer.cam.shakeY = Math.sin(ang) * mag;
+}
+
+// HIT-STOP — brief real-time dt scale-down on a big, close explosion, per
+// docs/reference-combat-feel-audio.md's #1 highest-ROI game-feel item. LEFT
+// OFF BY DEFAULT: the mechanism scales the SAME `dt` every other system in
+// loop() reads (economy/production/research/AI — not just combat draw code),
+// and in a busy multi-front battle with several simultaneous big impacts
+// that's a real risk of reading as a stutter bug rather than a weighty pause
+// — exactly what the designer has repeatedly rejected as "arcadey." The
+// mechanism below is fully implemented and rate-limited, so flipping this
+// flag to true is a one-line, already-working change if the designer wants
+// to try it; screen shake + audio + smoke/scorch already carry the
+// "impact feels heavy" load on their own without it.
+const HITSTOP_ENABLED = false;
+const HITSTOP_SCALE = 0.15;    // sim runs at 15% speed while active — slowed, never fully frozen
+const HITSTOP_DURATION = 0.055; // ~55ms of real time
+const HITSTOP_COOLDOWN = 0.28;  // never re-trigger faster than this, however many impacts land in one frame
+const hitstop = { timer: 0, cooldown: 0 };
 
 // MOBILIZATION ECONOMY CORE (P3 — game/economy.js). Created once at load,
 // ticked every frame in loop() below with ZERO player input required — a
@@ -2076,8 +2164,18 @@ window.__debug = {
 
 let last = performance.now();
 function loop(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const rawDt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  // HIT-STOP (see HITSTOP_ENABLED above, default OFF): while active, `dt` —
+  // which every gameplay system below (units/economy/production/AI) reads —
+  // runs at a fraction of real time. rawDt is preserved for the render-only
+  // effects (shake, ambient, impact vfx) further down so those never
+  // themselves appear to freeze.
+  let dt = rawDt;
+  if (HITSTOP_ENABLED) {
+    if (hitstop.timer > 0) { hitstop.timer -= rawDt; dt = rawDt * HITSTOP_SCALE; }
+    hitstop.cooldown = Math.max(0, hitstop.cooldown - rawDt);
+  }
 
   try {  // CRASH RESILIENCE — a throwing frame must not kill the rAF chain; see catch/finally at the end of loop()
 
@@ -2149,6 +2247,42 @@ function loop(now) {
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);
 
+  // COMBAT-FEEL/AUDIO EVENT QUEUE DRAIN (see world.sfx's own comment up near
+  // its creation) — updateUnits/updateProjectiles above just pushed this
+  // frame's fire/impact events; turn each into sound (game/audio.js),
+  // screen-shake trauma, and lingering smoke/scorch (game/impactfx.js), then
+  // clear the queue so next frame starts empty. Wrapped defensively per-event
+  // (never let a bad weapon key or an audio hiccup break the sim loop) even
+  // though the CRASH RESILIENCE try/catch around all of loop() already backs
+  // this up.
+  for (const evt of world.sfx) {
+    try {
+      playSfx(evt, renderer.cam);
+      const wdef = WEAPON_DEFS[evt.weapon];
+      const kind = wdef && wdef.kind;
+      if (evt.kind === 'fire') {
+        // only heavy tube/rail-launched fire shakes the camera at all — an
+        // MG/autocannon burst or a missile launch is comparatively gentle,
+        // matching the reference doc's own "MG light / cannon heavy" split
+        // and the task brief's "significant sfx events" scoping
+        if (kind === 'ballistic') addTrauma(0.10 * screenProximity(evt.x, evt.y));
+      } else if (evt.kind === 'impact') {
+        spawnImpactFx(impactFx, evt.x, evt.y, evt.weapon);
+        if (kind !== 'gun') {
+          const prox = screenProximity(evt.x, evt.y);
+          addTrauma(0.24 * prox);
+          if (HITSTOP_ENABLED && prox > 0.5 && hitstop.cooldown <= 0) {
+            hitstop.timer = HITSTOP_DURATION;
+            hitstop.cooldown = HITSTOP_COOLDOWN;
+          }
+        }
+      }
+    } catch (e) { /* one bad sfx event must not break the frame */ }
+  }
+  world.sfx.length = 0;
+  updateImpactFx(impactFx, rawDt); // real cadence, not the (possibly hit-stopped) sim dt — see updateShake's comment
+  updateShake(rawDt);
+
   // AMBIENT LIFE (game/ambient.js) — updated every frame, unconditional on
   // phase (PREP or COMBAT): the whole point is the world doesn't go still
   // just because you're still in the build-up. Purely visual — see that
@@ -2172,6 +2306,10 @@ function loop(now) {
     // buildings/units so it reads as part of the ground, not floating on
     // top of the things that actually matter
     drawAmbientGround(ambient, ctx, worldToScreen, cam);
+    // scorch decals: ground layer, same ordering rationale as ambient life
+    // above — a battle-worn patch of ground reads as part of the terrain,
+    // not floating on top of the units standing near it
+    drawScorch(impactFx, ctx, worldToScreen, cam);
     for (const b of world.buildings) {
       // fog: same rule as units — an undetected enemy building doesn't draw.
       if (b.side !== 'player' && !detects('player', b)) continue;
@@ -2187,6 +2325,10 @@ function loop(now) {
       if (u.side !== 'player' && !detects('player', u)) continue;
       drawUnit(ctx, worldToScreen, cam, u, u === hovered);
     }
+    // impact smoke wisps drawn ABOVE units — same ordering as ambient.js's
+    // own factory smoke above, so drifting wisps read as sitting over the
+    // battlefield instead of tucked under a unit marker
+    drawSmoke(impactFx, ctx, worldToScreen, cam);
     drawImpacts(ctx, worldToScreen, cam, world.hits);
     drawRoadPreview(ctx, worldToScreen);
     drawBuildPreview(ctx, worldToScreen);

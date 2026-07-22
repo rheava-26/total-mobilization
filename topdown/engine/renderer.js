@@ -339,6 +339,21 @@ function nearestRoadDir(map, gx, gy, r = 2) {
 // is what actually breaks the "checkerboard" read — the lanes ARE the
 // "internal street/lane structure" the task asked for, not a cosmetic
 // add-on drawn on top.
+// One settlement's own local street-grid parameters — rotation, lane
+// spacing, lane width — factored out to a single source of truth (used to
+// live duplicated in drawSettlementLanes AND onSettlementLane). B5b adds a
+// THIRD consumer: the building-placement pass below reads `.rot` directly so
+// every building can sit SQUARE to its settlement's own rotated grid instead
+// of getting an independent random spin — see the building-placement loop's
+// comment for why that's the actual fix for "random blocks tossed in".
+function settlementGrid(c, ts) {
+  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
+  const rot = (hash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
+  const spacing = ts * (2.2 + hash2(seedX, seedY, 9002) * 1.3);
+  const width = ts * (0.14 + hash2(seedX, seedY, 9003) * 0.08);
+  return { rot, spacing, width, seedX, seedY };
+}
+
 // Draws the internal street/lane grid for one settlement as real ROTATED
 // VECTOR STROKES (clipped to the settlement's core), not per-tile fills.
 // This is the fix for an early version of this pass that painted lane tiles
@@ -348,11 +363,19 @@ function nearestRoadDir(map, gx, gy, r = 2) {
 // no such quantization: its edges are smooth at any angle, so the lane
 // genuinely reads as a diagonal street cutting across the block instead of
 // a grid cell toggling on/off.
+//
+// B5b: two-layer (soft warm wash + slightly lighter worn core) instead of
+// the old single near-invisible thin stroke — designer feedback called the
+// grey space between buildings "the most problematic" part of the city, and
+// a lane you can barely see is exactly what let flat ground dominate the
+// read instead of it looking like a paved street network. Same halo+core
+// language prerenderRoads/drawArterials already use, just lighter-weight
+// since a settlement has many dense in-city lanes rather than a handful of
+// avenues (no separate blur pass — these are numerous, short, straight
+// strokes, so a second unblurred wash layer gets the same "worn in" softness
+// far more cheaply than a filter pass would per lane).
 function drawSettlementLanes(octx, c, ts) {
-  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
-  const rot = (hash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
-  const spacing = ts * (2.2 + hash2(seedX, seedY, 9002) * 1.3);
-  const width = ts * (0.14 + hash2(seedX, seedY, 9003) * 0.08);
+  const { rot, spacing, width } = settlementGrid(c, ts);
   // slightly SMALLER than the settlement's nominal radius (not larger) —
   // the stamped urban footprint (game/mapgen.js) is an organic blob that
   // roughly fills `r` but never perfectly circular, so clipping at exactly
@@ -369,11 +392,15 @@ function drawSettlementLanes(octx, c, ts) {
   octx.clip(); // keep lanes inside this settlement's own core — never bleeds onto open terrain
   octx.translate(cx, cy);
   octx.rotate(rot);
-  octx.strokeStyle = 'rgba(150,138,114,0.18)';
-  octx.lineWidth = width;
   const n = Math.ceil(R / spacing) + 1;
   for (let i = -n; i <= n; i++) {
     const off = i * spacing;
+    octx.strokeStyle = 'rgba(150,134,100,0.16)';
+    octx.lineWidth = width * 2.1;
+    octx.beginPath(); octx.moveTo(-R, off); octx.lineTo(R, off); octx.stroke();
+    octx.beginPath(); octx.moveTo(off, -R); octx.lineTo(off, R); octx.stroke();
+    octx.strokeStyle = 'rgba(196,178,138,0.30)';
+    octx.lineWidth = width;
     octx.beginPath(); octx.moveTo(-R, off); octx.lineTo(R, off); octx.stroke();
     octx.beginPath(); octx.moveTo(off, -R); octx.lineTo(off, R); octx.stroke();
   }
@@ -382,12 +409,12 @@ function drawSettlementLanes(octx, c, ts) {
 
 // Same rotated-grid test as drawSettlementLanes above, evaluated at one
 // world-px point — used only to decide "does a building belong here," so a
-// building never straddles a lane the stroke pass just painted.
+// building never straddles a lane the stroke pass just painted. Hit-test
+// width intentionally stays the narrow COLLISION width even though the
+// stroke drawn above is visually wider — same convention roads already use
+// (a soft halo wider than what actually blocks placement).
 function onSettlementLane(c, wx, wy, ts) {
-  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
-  const rot = (hash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
-  const spacing = ts * (2.2 + hash2(seedX, seedY, 9002) * 1.3);
-  const width = ts * (0.14 + hash2(seedX, seedY, 9003) * 0.08);
+  const { rot, spacing, width } = settlementGrid(c, ts);
   const relx = wx - (c.x + 0.5) * ts, rely = wy - (c.y + 0.5) * ts;
   const lx = relx * Math.cos(rot) + rely * Math.sin(rot);
   const ly = -relx * Math.sin(rot) + rely * Math.cos(rot);
@@ -464,12 +491,28 @@ function computeArterials(map, c, ts) {
       const ang = Math.atan2(dy, dx);
       const bin = Math.round(((ang + Math.PI) / (Math.PI * 2)) * BIN_COUNT) % BIN_COUNT;
       const cur = bins.get(bin);
-      if (!cur || dist > cur.dist) bins.set(bin, { dist, wx, wy }); // farthest-out tile per bin = the actual entry point
+      // track both the farthest-out sample (the actual entry point) AND how
+      // many road tiles fed this direction — `count` is what lets the cap
+      // below keep only genuinely-established roads, not every lone stub
+      if (cur) { cur.count++; if (dist > cur.dist) { cur.dist = dist; cur.wx = wx; cur.wy = wy; } }
+      else bins.set(bin, { dist, wx, wy, count: 1 });
     }
   }
+  // Cap to a handful of the STRONGEST entries (designer feedback: smaller
+  // cities "starburst" — every compass direction with even one road tile
+  // near the boundary got its own full avenue, radiating like sun-rays
+  // instead of reading as "a couple of main roads into town"). Ranking by
+  // tile count (a real thoroughfare feeds many road tiles into the same
+  // direction bin; a stray stub feeds one) and taking the top few, with
+  // distance as a tiebreak, keeps only the avenues an actual road justifies.
+  const MAX_ARTERIALS = 3;
+  const ranked = [...bins.values()].sort((a, b) => b.count - a.count || b.dist - a.dist);
+  const chosen = ranked.slice(0, MAX_ARTERIALS);
   const segs = [];
-  const halfWidth = ts * (0.36 + Math.min(1, (c.r || 6) / 10) * 0.22);
-  for (const { wx, wy } of bins.values()) {
+  // narrower than before (was 0.36..0.58 half-width) — "less starburst" also
+  // means each individual avenue reads as a street, not a wide bright band
+  const halfWidth = ts * (0.20 + Math.min(1, (c.r || 6) / 10) * 0.13);
+  for (const { wx, wy } of chosen) {
     const dx = wx - cx, dy = wy - cy;
     const dist = Math.hypot(dx, dy) || 1;
     const clamped = Math.min(dist, R * 0.98); // stop just inside the settlement edge; the real road stroke carries on from there
@@ -487,13 +530,17 @@ function computeArterials(map, c, ts) {
 function drawArterials(octx, segs) {
   for (const s of segs) {
     octx.lineCap = 'round';
-    octx.strokeStyle = 'rgba(120,108,86,0.22)';
+    // toned down across the board (was 0.22/0.55/0.30 alpha) — narrower AND
+    // dimmer, so the capped ~3 avenues read as a couple of main roads
+    // instead of bright rays even on a small city where they dominate more
+    // of the visible footprint
+    octx.strokeStyle = 'rgba(120,108,86,0.14)';
     octx.lineWidth = s.halfWidth * 2.1;
     octx.beginPath(); octx.moveTo(s.x1, s.y1); octx.lineTo(s.x2, s.y2); octx.stroke();
-    octx.strokeStyle = 'rgba(198,184,152,0.55)';
+    octx.strokeStyle = 'rgba(198,184,152,0.40)';
     octx.lineWidth = s.halfWidth * 1.4;
     octx.beginPath(); octx.moveTo(s.x1, s.y1); octx.lineTo(s.x2, s.y2); octx.stroke();
-    octx.strokeStyle = 'rgba(92,80,62,0.30)';
+    octx.strokeStyle = 'rgba(92,80,62,0.22)';
     octx.lineWidth = Math.max(0.6, s.halfWidth * 0.16);
     octx.beginPath(); octx.moveTo(s.x1, s.y1); octx.lineTo(s.x2, s.y2); octx.stroke();
   }
@@ -611,108 +658,255 @@ function prerenderCityBlocks(octx, map) {
     if (isCity && c.r >= 7) drawOldTownWall(octx, c, ts);
   }
 
-  for (let gy = 0; gy < map.height; gy++) {
-    for (let gx = 0; gx < map.width; gx++) {
-      const t = map.terrainAt(gx, gy);
-      if (!t || t.name !== 'urban') continue;
-      if (map.roadAt(gx, gy) > 0) continue; // leave road tiles clear for the road stroke
+  // Deterministic hash for a LOT (a settlement-local block-grid cell, not a
+  // raw world tile — see the placement loop below) — same hash2 primitive,
+  // just fed the lot's own integer (i,j) address plus the settlement's own
+  // seed so every lot gets a stable, settlement-unique roll.
+  const cellHash = (seedX, seedY, i, j, salt) => hash2(seedX + i * 92821, seedY + j * 68909, salt);
 
-      const cx0 = gx * ts + ts / 2, cy0 = gy * ts + ts / 2;
-      const settle = nearestSettlementAt(settlements, cx0, cy0, ts);
-      if (!settle) continue; // shouldn't happen (terrain is only 'urban' inside a stamped settlement), but stay defensive
-      const { c, density } = settle; // density: 1 at dead center, fading to 0 at the settlement's nominal radius
+  // Building placement runs in each settlement's own LOCAL, ROTATED
+  // block-grid space (u = local "east", v = local "north", both along
+  // grid.rot) — NOT a raw world-tile scan. This is the actual fix for
+  // "random blocks tossed into the mix": an earlier pass kept placing
+  // buildings at ordinary WORLD-tile centers and only changed their
+  // rotation to match the settlement grid — uniformly rotating a bunch of
+  // shapes that still sit on an unrotated world position grid just turns a
+  // checkerboard into a diamond/argyle lattice (still reads as "shapes
+  // tossed down," just now all tossed at the same angle). Working in local
+  // (u,v) space — the exact same rotated coordinate frame
+  // drawSettlementLanes strokes its lane lines in — makes a building's LOT
+  // one cell of a grid that is ITSELF rotated with the streets, so
+  // buildings land in genuine straight rows fronting the lanes on both
+  // axes, the way an actual city block is laid out.
+  for (const c of settlements) {
+    const { rot, spacing, seedX, seedY } = settlementGrid(c, ts);
+    const cx = (c.x + 0.5) * ts, cy = (c.y + 0.5) * ts;
+    const R = (c.r || 6) * ts * 0.88;
+    const isCity = (c.r || 0) >= 6;
+    const isCapital = isCity && c.r === maxCityR;
+    const clearR = landmarkClearRadius(c, ts, isCity, isCapital);
+    const arterialSegs = arterialsBySettlement.get(c);
+    const cosR = Math.cos(rot), sinR = Math.sin(rot);
 
-      if (onSettlementLane(c, cx0, cy0, ts)) continue; // no building on a lane tile — the street stays clear
-      const arterialSegs = arterialsBySettlement.get(c);
-      if (arterialSegs && arterialSegs.length && onArterial(arterialSegs, cx0, cy0)) continue;
+    // Lot size: a fraction of the lane spacing, so 2-3 building lots fit
+    // between one lane and the next on each axis — enough for a genuine
+    // ROW of buildings fronting the street, not so many that lots shrink
+    // back into confetti-sized slivers.
+    const lots = spacing > ts * 3.1 ? 3 : 2;
+    const cell = spacing / lots;
+    const n = Math.ceil(R / cell) + 1;
+    const claimed = new Set(); // lots already consumed as the "far half" of a merged row block
 
-      // reserve clear ground around the settlement's own landmark so it
-      // reads as a standalone centerpiece rather than getting swallowed by
-      // ordinary blocks pressed right up against it
-      const isCity = (c.r || 0) >= 6;
-      const isCapital = isCity && c.r === maxCityR;
-      const clearR = landmarkClearRadius(c, ts, isCity, isCapital);
-      if (Math.hypot(cx0 - (c.x + 0.5) * ts, cy0 - (c.y + 0.5) * ts) < clearR) continue;
+    for (let i = -n; i <= n; i++) {
+      for (let j = -n; j <= n; j++) {
+        const key = i + ',' + j;
+        if (claimed.has(key)) continue;
+        const u = (i + 0.5) * cell, v = (j + 0.5) * cell;
+        if (u * u + v * v > R * R) continue; // stay inside the settlement's own footprint
 
-      const roadDir = nearestRoadDir(map, gx, gy);
-      const placeRoll = hash2(gx, gy, 201);
-      // smooth (not stepped) density curve, deliberately continuous rather
-      // than three discrete ring bands — a stepped placeChance would paint
-      // a visible seam where the band boundary falls; this instead reads as
-      // a genuine gradual thinning from packed core to sparse edge, exactly
-      // the "fading into countryside, not a hard circle" ask.
-      const placeChance = Math.max(0.12, Math.min(0.97, 0.22 + density * 0.72 + (roadDir ? 0.13 : 0)));
-      if (placeRoll > placeChance) continue; // gap: courtyard/alley/paddock — keeps it from reading as a solid carpet
+        const wx = cx + u * cosR - v * sinR, wy = cy + u * sinR + v * cosR;
+        const gx = Math.floor(wx / ts), gy = Math.floor(wy / ts);
+        const t = map.terrainAt(gx, gy);
+        if (!t || t.name !== 'urban') continue;
+        if (map.roadAt(gx, gy) > 0) continue; // leave real infrastructure road tiles clear
 
-      // small open plazas right at a city core instead of a building, for
-      // variety and so the very center doesn't read as maximally packed
-      if (density > 0.78 && hash2(gx, gy, 202) < 0.22) { drawPlazaOrPark(octx, cx0, cy0, gx, gy, ts, false); continue; }
-      // pocket parks scattered through the rest of the city — rarer than
-      // the core plazas above, green instead of paved
-      if (density <= 0.78 && hash2(gx, gy, 250) < 0.045) { drawPlazaOrPark(octx, cx0, cy0, gx, gy, ts, true); continue; }
+        const settle = nearestSettlementAt(settlements, wx, wy, ts);
+        if (!settle || settle.c !== c) continue; // a neighboring settlement's turf claims this point instead
+        const density = settle.density; // 1 at dead center, fading to 0 at the settlement's nominal radius
 
-      // nudge away from the nearest road so the block sits back off the
-      // street with a small gap, rather than centered on the tile. Wider
-      // than a first pass (was +-0.15 tile) — at close zoom that read as a
-      // grid of near-identical boxes each pinned to its own tile center;
-      // letting a block drift up to ~45% of a tile breaks the per-tile
-      // quantization into something closer to an actual uneven streetscape.
-      let ox = (hash2(gx, gy, 210) - 0.5) * ts * 0.44;
-      let oy = (hash2(gx, gy, 211) - 0.5) * ts * 0.44;
-      if (roadDir) {
-        ox -= roadDir.dx * ts * 0.16;
-        oy -= roadDir.dy * ts * 0.16;
+        if (onSettlementLane(c, wx, wy, ts)) continue; // no building on a lane — the street stays clear
+        if (arterialSegs && arterialSegs.length && onArterial(arterialSegs, wx, wy)) continue;
+        // reserve clear ground around the settlement's own landmark so it
+        // reads as a standalone centerpiece rather than getting swallowed
+        // by ordinary blocks pressed right up against it
+        if (Math.hypot(wx - cx, wy - cy) < clearR) continue;
+
+        const roadDir = nearestRoadDir(map, gx, gy);
+        // smooth (not stepped) density curve, deliberately continuous
+        // rather than three discrete ring bands — a stepped placeChance
+        // would paint a visible seam where the band boundary falls; this
+        // instead reads as a genuine gradual thinning from packed core to
+        // sparse edge. B5b raises the whole curve (was 0.22 base / 0.72
+        // density mult / 0.13 road bonus / 0.12 floor) — designer feedback
+        // ("more buildings???") was that the old pass was too sparse; a
+        // city should read as built-up, with only small gaps for
+        // yards/alleys, not a scatter with lots of open ground showing
+        // through (which is also part of what read as "grey").
+        const placeChance = Math.max(0.22, Math.min(0.97, 0.34 + density * 0.78 + (roadDir ? 0.15 : 0)));
+        if (cellHash(seedX, seedY, i, j, 201) > placeChance) continue; // gap: courtyard/alley/paddock
+
+        // small open plazas right at a city core instead of a building, for
+        // variety and so the very center doesn't read as maximally packed
+        if (density > 0.78 && cellHash(seedX, seedY, i, j, 202) < 0.22) { drawPlazaOrPark(octx, wx, wy, i, j, ts, false); continue; }
+        // pocket parks scattered through the rest of the city — rarer than
+        // the core plazas above, green instead of paved
+        if (density <= 0.78 && cellHash(seedX, seedY, i, j, 250) < 0.045) { drawPlazaOrPark(octx, wx, wy, i, j, ts, true); continue; }
+
+        // occasional larger civic/industrial structure in the mid-density
+        // band — a little "not every block is a house" variety
+        const civic = density > 0.3 && density <= 0.7 && cellHash(seedX, seedY, i, j, 260) < 0.05;
+        // occasional larger ROW BLOCK — a real merge with the adjacent lot
+        // along whichever local axis the hash picks (u or v), safe/exact
+        // here (unlike a world-tile-grid merge) because both lots share
+        // the EXACT same settlement rotation and sit precisely `cell` apart
+        // along that axis. This is the "spanning 2+ tiles" ask: two lots
+        // fuse into one longer footprint, subdivided below into a
+        // terraced row rather than one shapeless mega-blob.
+        let mergeAxis = null;
+        if (!civic && density > 0.2 && cellHash(seedX, seedY, i, j, 261) < (0.16 + density * 0.18)) {
+          const axis = cellHash(seedX, seedY, i, j, 262) < 0.5 ? 'u' : 'v';
+          const ni = axis === 'u' ? i + 1 : i, nj = axis === 'v' ? j + 1 : j;
+          const nu = (ni + 0.5) * cell, nv = (nj + 0.5) * cell;
+          if (nu * nu + nv * nv <= R * R && !claimed.has(ni + ',' + nj)) {
+            const nwx = cx + nu * cosR - nv * sinR, nwy = cy + nu * sinR + nv * cosR;
+            const ngx = Math.floor(nwx / ts), ngy = Math.floor(nwy / ts);
+            const nt = map.terrainAt(ngx, ngy);
+            const nSettle = nearestSettlementAt(settlements, nwx, nwy, ts);
+            const neighborOk = nt && nt.name === 'urban' && map.roadAt(ngx, ngy) <= 0 &&
+              nSettle && nSettle.c === c && !onSettlementLane(c, nwx, nwy, ts) &&
+              !(arterialSegs && arterialSegs.length && onArterial(arterialSegs, nwx, nwy)) &&
+              Math.hypot(nwx - cx, nwy - cy) >= clearR;
+            if (neighborOk) { claimed.add(ni + ',' + nj); mergeAxis = axis; }
+          }
+        }
+
+        // small in-LOT jitter, applied in LOCAL (u,v) space rather than
+        // world x/y — nudging along the settlement's own axes keeps the
+        // building inside its lot while still respecting the grid's
+        // rotation; a world-space offset would drag it sideways relative
+        // to that rotated grid and reintroduce the misalignment this whole
+        // restructure exists to fix. Kept small (was 0.16 of a lot) so
+        // neighboring lots' buildings sit close enough to read as a
+        // continuous facade along the row, not separated boxes.
+        const ju = (cellHash(seedX, seedY, i, j, 210) - 0.5) * cell * 0.05;
+        const jv = (cellHash(seedX, seedY, i, j, 211) - 0.5) * cell * 0.05;
+        const bu = u + ju + (mergeAxis === 'u' ? cell / 2 : 0);
+        const bv = v + jv + (mergeAxis === 'v' ? cell / 2 : 0);
+        const bx = cx + bu * cosR - bv * sinR, by = cy + bu * sinR + bv * cosR;
+
+        // FORM FIX (designer: "the city looks weird because it looks like
+        // random blocks tossed into the mix" / "larger and straighter").
+        // Every building shares its settlement's `rot` (the exact angle
+        // drawSettlementLanes/onSettlementLane already carve the street
+        // network at) with only a TINY few-degree jitter left for life —
+        // deliberately NOT world-axis-aligned (that's the pre-B5a
+        // "checkerboard of squares" complaint) and deliberately NOT
+        // independently-random per building (that's "tossed in") — square
+        // to the LOCAL, already-rotated street grid, like a real block.
+        const bRot = rot + (cellHash(seedX, seedY, i, j, 214) - 0.5) * 0.14; // +-4 degrees, not +-20
+
+        // BIGGER, straighter footprints (designer: "larger and straighter"),
+        // sized off the LOT itself (was off a fixed ts fraction) so
+        // buildings scale with however many lots actually fit between the
+        // lanes, and pulled tight to the lot (0.90-0.98, was 0.58-0.80 of a
+        // whole tile) so adjacent lots' buildings sit close enough to read
+        // as a continuous facade/row instead of scattered islands with
+        // visible gaps between every single structure.
+        const sizeScale = 0.62 + density * 0.85;
+        const fitScale = Math.min(1.15, sizeScale);
+        let w = cell * (0.90 + cellHash(seedX, seedY, i, j, 212) * 0.08) * fitScale;
+        let h = cell * (0.90 + cellHash(seedX, seedY, i, j, 213) * 0.08) * fitScale;
+        // aspect-ratio variety — a real building footprint is rarely a
+        // perfect square; skew one axis narrower on roughly two-thirds of
+        // ordinary lots so the block reads as a mix of wide-frontage and
+        // deep-footprint buildings rather than a field of same-shaped tiles
+        // (the "diamond quilt" a uniform near-square footprint produces no
+        // matter how well-aligned its rotation is).
+        if (!mergeAxis && !civic) {
+          const skew = cellHash(seedX, seedY, i, j, 219);
+          if (skew < 0.38) w *= 0.58 + cellHash(seedX, seedY, i, j, 220) * 0.2;
+          else if (skew > 0.62) h *= 0.58 + cellHash(seedX, seedY, i, j, 221) * 0.2;
+        }
+        if (mergeAxis === 'u') w = cell * 2 * (0.92 + cellHash(seedX, seedY, i, j, 212) * 0.05) * fitScale;
+        if (mergeAxis === 'v') h = cell * 2 * (0.92 + cellHash(seedX, seedY, i, j, 213) * 0.05) * fitScale;
+        if (civic) { w *= 1.55; h *= 1.4; }
+
+        const palette = civic ? CIVIC_PALETTE : ROOF_PALETTES[Math.floor(cellHash(seedX, seedY, i, j, 215) * ROOF_PALETTES.length) % ROOF_PALETTES.length];
+        const roofRgb = lerpRgb(palette[0], palette[1], cellHash(seedX, seedY, i, j, 216));
+
+        octx.save();
+        octx.translate(bx, by);
+        octx.rotate(bRot);
+
+        // corner radius kept small — a real building has near-sharp
+        // corners; the old pass's heavier rounding (0.12-0.14 of the short
+        // side) is what made every block read as a soft rounded pebble/die
+        // rather than a rectilinear structure, undercutting "straighter"
+        // no matter how well the rotation/packing lined up.
+        const cr = Math.min(w, h) * 0.05;
+
+        // subtle drop shadow, offset toward lower-right (a fixed light
+        // direction reads as more coherent than per-tile-random shadow angles)
+        octx.fillStyle = 'rgba(6,8,10,0.35)';
+        roundedRectPath(octx, -w / 2 + w * 0.06, -h / 2 + h * 0.09, w, h, cr);
+        octx.fill();
+
+        // WALL bands — thin darker strips along the bottom and right edges
+        // of the footprint, reusing the same fixed lower-right light
+        // direction as the drop shadow. This is the actual fix for "flat
+        // blob, not a building": a single flat-fill rect has no sense of
+        // mass no matter how nice its color is; a lighter ROOF top-face
+        // plus a darker WALL catching shadow on two sides is the cheapest
+        // fake-extrusion cue that reads as "this has height" at top-down
+        // angle (same 2.5-tier language drawTowerBlock already uses for
+        // landmarks, simplified to one band).
+        const wallRgb = [roofRgb[0] * 0.5, roofRgb[1] * 0.5, roofRgb[2] * 0.5];
+        const wallDepth = Math.min(w, h) * 0.16;
+        octx.fillStyle = rgba(wallRgb, 0.9);
+        roundedRectPath(octx, -w / 2, h / 2 - wallDepth, w, wallDepth, cr * 0.6);
+        octx.fill();
+        roundedRectPath(octx, w / 2 - wallDepth, -h / 2, wallDepth, h, cr * 0.6);
+        octx.fill();
+
+        // ROOF top-face — inset slightly off the wall bands so both remain
+        // visible, giving the roof a crisp edge rather than bleeding into
+        // the wall color
+        octx.fillStyle = rgba(roofRgb, 0.96);
+        roundedRectPath(octx, -w / 2, -h / 2, w - wallDepth * 0.55, h - wallDepth * 0.55, cr);
+        octx.fill();
+
+        // crisp dark building outline around the FULL footprint — the other
+        // half of the "reads as built, not painted" fix; the old stroke was
+        // thin/low-alpha enough to nearly disappear at anything but max zoom
+        octx.strokeStyle = 'rgba(14,11,8,0.6)';
+        octx.lineWidth = Math.max(0.9, ts * 0.032);
+        roundedRectPath(octx, -w / 2, -h / 2, w, h, cr);
+        octx.stroke();
+
+        // roof ridge / row-house division lines — a merged row block or
+        // civic structure (or anything that simply rolled big) gets 1-2
+        // internal lines along its long axis so a big footprint reads as a
+        // TERRACE OF ATTACHED BUILDINGS or a ridged civic roof, not one
+        // shapeless mega-blob — the thing that would otherwise undercut
+        // "actual building-looking buildings" the bigger this pass makes them
+        if (mergeAxis || civic || Math.max(w, h) > ts * 1.05) {
+          const longIsW = w >= h;
+          const span = longIsW ? w : h;
+          const divisions = civic ? 1 : mergeAxis ? 1 : 1;
+          octx.strokeStyle = 'rgba(14,11,8,0.28)';
+          octx.lineWidth = Math.max(0.6, ts * 0.02);
+          for (let d = 1; d < divisions + 1; d++) {
+            const at = -span / 2 + (span / (divisions + 1)) * d;
+            octx.beginPath();
+            if (longIsW) { octx.moveTo(at, -h / 2); octx.lineTo(at, h / 2); }
+            else { octx.moveTo(-w / 2, at); octx.lineTo(w / 2, at); }
+            octx.stroke();
+          }
+        }
+
+        // small corner highlight lick — kept modest and tucked into the
+        // roof's upper-left corner (was a large soft round glow spanning
+        // most of the roof, which fought the crisp-rectangle read this pass
+        // is going for by putting a fuzzy circular patch over a sharp box)
+        octx.restore();
+        softBlob(octx, bx - w * 0.28, by - h * 0.3, Math.min(w, h) * 0.34, Math.min(w, h) * 0.24, bRot,
+          [255, 240, 210], 0.06 + cellHash(seedX, seedY, i, j, 217) * 0.05);
+
+        // outer-density "yard" hint: a faint fence outline around a
+        // detached structure, selling "edge of town" instead of "block ran
+        // out of room"
+        if (density < 0.3) drawYardFence(octx, wx, wy, w, h, ts, i, j);
       }
-      const cx = cx0 + ox, cy = cy0 + oy;
-
-      // size/rotation variance also widened for the same reason — the
-      // original ranges (0.26 size spread, 0.3 rad rotation) were subtle
-      // enough that same-size, near-axis-aligned boxes still dominated the
-      // read at max zoom. A wider spread (independent w/h draws, so aspect
-      // ratio genuinely varies block to block) and a full ~40-degree
-      // rotation swing reads as an organic block cluster instead of a grid.
-      // sizeScale is also now a smooth density curve (0.55 at the edge up
-      // to 1.4 at dead center) for the same "no seam" reason as placeChance.
-      const sizeScale = 0.55 + density * 0.85;
-      let w = ts * (0.36 + hash2(gx, gy, 212) * 0.42) * sizeScale;
-      let h = ts * (0.36 + hash2(gx, gy, 213) * 0.42) * sizeScale;
-      const rot = (hash2(gx, gy, 214) - 0.5) * 0.7;
-
-      // occasional larger civic/industrial structure in the mid-density
-      // band — a little "not every block is a house" variety
-      const civic = density > 0.3 && density <= 0.7 && hash2(gx, gy, 260) < 0.045;
-      if (civic) { w *= 1.7; h *= 1.6; }
-
-      const palette = civic ? CIVIC_PALETTE : ROOF_PALETTES[Math.floor(hash2(gx, gy, 215) * ROOF_PALETTES.length) % ROOF_PALETTES.length];
-      const roofRgb = lerpRgb(palette[0], palette[1], hash2(gx, gy, 216));
-
-      octx.save();
-      octx.translate(cx, cy);
-      octx.rotate(rot);
-
-      // subtle drop shadow, offset toward lower-right (a fixed light
-      // direction reads as more coherent than per-tile-random shadow angles)
-      octx.fillStyle = 'rgba(6,8,10,0.35)';
-      roundedRectPath(octx, -w / 2 + w * 0.1, -h / 2 + h * 0.14, w, h, Math.min(w, h) * 0.14);
-      octx.fill();
-
-      // body
-      octx.fillStyle = rgba(roofRgb, 0.94);
-      roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.14);
-      octx.fill();
-      octx.strokeStyle = 'rgba(20,16,12,0.4)';
-      octx.lineWidth = Math.max(0.6, ts * 0.02);
-      octx.stroke();
-
-      // soft highlight lick, painterly-consistent with the terrain blob
-      // language rather than a hard specular — reuses softBlob at low alpha
-      octx.restore();
-      softBlob(octx, cx - w * 0.18, cy - h * 0.22, Math.max(w, h) * 0.5, Math.max(w, h) * 0.36, rot,
-        [255, 240, 210], 0.10 + hash2(gx, gy, 217) * 0.08);
-
-      // outer-density "yard" hint: a faint fence outline around a detached
-      // structure, selling "edge of town" instead of "block ran out of room"
-      if (density < 0.3) drawYardFence(octx, cx0, cy0, w, h, ts, gx, gy);
     }
   }
 
@@ -724,6 +918,12 @@ function prerenderCityBlocks(octx, map) {
     const isCapital = isCity && c.r === maxCityR;
     drawLandmark(octx, c, ts, isCity, isCapital);
     if (isCity) drawWaterfront(octx, map, c, ts);
+    // SPECIAL/CIVIC BUILDINGS (designer: "special buildings" — landmarks
+    // beyond just the exact center). Cities only (towns keep their single
+    // small plaza+monument landmark from drawLandmark above); drawn last, on
+    // top of ordinary blocks, same "centerpiece always reads clearly" reason
+    // the main landmark is drawn last.
+    if (isCity) drawSpecialBuildings(octx, map, c, ts, isCapital);
   }
 }
 
@@ -936,6 +1136,171 @@ function drawWaterfront(octx, map, c, ts) {
       octx.stroke();
     }
     octx.restore();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// B5b SPECIAL/CIVIC BUILDINGS — designer feedback: "them being larger and
+// straighter with special buildings". drawLandmark above already gives every
+// city its central citadel/town-hall; this adds a SPARSE handful of
+// additional, visually distinct structures scattered through the rest of a
+// larger city, so it has recognizable landmarks throughout rather than just
+// one at dead center. Hash-placed off the settlement's own seed exactly like
+// everything else in this file — deterministic, no Math.random.
+// ---------------------------------------------------------------------------
+
+// Church/temple: a low nave with a tall corner tower and a peaked steeple —
+// the tallest, narrowest silhouette of the three special kinds, meant to
+// read as a spire poking up out of the roofline from across the city.
+function drawChurch(octx, x, y, ts, rot) {
+  octx.save();
+  octx.translate(x, y);
+  octx.rotate(rot);
+  const s = ts * 0.9;
+  octx.fillStyle = 'rgba(6,8,10,0.35)';
+  roundedRectPath(octx, -s * 0.5 + s * 0.08, -s * 0.32 + s * 0.12, s, s * 0.64, s * 0.06);
+  octx.fill();
+
+  octx.fillStyle = '#b7ab8c';
+  roundedRectPath(octx, -s * 0.5, -s * 0.32, s, s * 0.64, s * 0.06);
+  octx.fill();
+  octx.strokeStyle = 'rgba(16,13,10,0.55)';
+  octx.lineWidth = Math.max(0.8, ts * 0.03);
+  octx.stroke();
+  // pitched-roof ridge running the length of the nave
+  octx.beginPath(); octx.moveTo(-s * 0.5, 0); octx.lineTo(s * 0.5, 0); octx.stroke();
+
+  // corner tower + steeple, at the "front" end
+  const towerS = s * 0.48;
+  const tx = s * 0.5 - towerS * 0.15, ty = 0;
+  octx.fillStyle = '#a89a78';
+  roundedRectPath(octx, tx - towerS / 2, ty - towerS / 2, towerS, towerS, towerS * 0.08);
+  octx.fill();
+  octx.strokeStyle = 'rgba(16,13,10,0.55)';
+  octx.stroke();
+  octx.beginPath();
+  octx.moveTo(tx - towerS / 2, ty - towerS / 2);
+  octx.lineTo(tx, ty - towerS * 1.35);
+  octx.lineTo(tx + towerS / 2, ty - towerS / 2);
+  octx.closePath();
+  octx.fillStyle = '#8a7c5e';
+  octx.fill();
+  octx.stroke();
+  octx.restore();
+  softBlob(octx, x - s * 0.08, y - s * 0.2, s * 0.95, s * 0.65, rot, [255, 246, 222], 0.10);
+}
+
+// Market/civic hall: a wide rectangular hall with a colonnaded front (a row
+// of column ticks) and a small clock-tower bump — the widest, most
+// low-slung of the three, meant to anchor a plaza the way a real town hall
+// or market house would.
+function drawMarketHall(octx, x, y, ts, rot) {
+  octx.save();
+  octx.translate(x, y);
+  octx.rotate(rot);
+  const w = ts * 1.75, h = ts * 1.15;
+  octx.fillStyle = 'rgba(6,8,10,0.35)';
+  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.1, w, h, Math.min(w, h) * 0.1);
+  octx.fill();
+
+  const roofRgb = lerpRgb(CIVIC_PALETTE[0], CIVIC_PALETTE[1], 0.4);
+  octx.fillStyle = rgba(roofRgb, 0.96);
+  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.1);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)';
+  octx.lineWidth = Math.max(0.9, ts * 0.032);
+  octx.stroke();
+
+  // portico columns along the front edge
+  octx.strokeStyle = 'rgba(14,11,8,0.4)';
+  octx.lineWidth = Math.max(0.6, ts * 0.02);
+  const cols = 5;
+  for (let i = 0; i < cols; i++) {
+    const cx2 = -w / 2 + (w / (cols - 1)) * i;
+    octx.beginPath(); octx.moveTo(cx2, h / 2); octx.lineTo(cx2, h / 2 - h * 0.22); octx.stroke();
+  }
+
+  // small central clock-tower bump
+  const bs = Math.min(w, h) * 0.36;
+  const towerRgb = lerpRgb(CIVIC_PALETTE[0], CIVIC_PALETTE[1], 0.7);
+  octx.fillStyle = rgba(towerRgb, 0.96);
+  roundedRectPath(octx, -bs / 2, -h / 2 - bs * 0.55, bs, bs * 0.55, bs * 0.08);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.5)';
+  octx.stroke();
+  octx.restore();
+  softBlob(octx, x, y - h * 0.12, Math.max(w, h) * 0.55, Math.max(w, h) * 0.38, rot, [255, 246, 222], 0.08);
+}
+
+// Industrial shed: a long low shed with sawtooth roof-line divisions and a
+// small smokestack — a distinct grey-green working-building silhouette,
+// meant to read as depot/workshop rather than housing or civic grandeur.
+function drawIndustrialShed(octx, x, y, ts, rot) {
+  octx.save();
+  octx.translate(x, y);
+  octx.rotate(rot);
+  const w = ts * 1.6, h = ts * 0.78;
+  octx.fillStyle = 'rgba(6,8,10,0.35)';
+  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.14, w, h, Math.min(w, h) * 0.08);
+  octx.fill();
+
+  octx.fillStyle = '#565a52';
+  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.08);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)';
+  octx.lineWidth = Math.max(0.8, ts * 0.03);
+  octx.stroke();
+
+  // sawtooth roof divisions
+  octx.strokeStyle = 'rgba(14,11,8,0.32)';
+  octx.lineWidth = Math.max(0.6, ts * 0.018);
+  const teeth = 4;
+  for (let i = 1; i < teeth; i++) {
+    const lx = -w / 2 + (w / teeth) * i;
+    octx.beginPath(); octx.moveTo(lx, -h / 2); octx.lineTo(lx, h / 2); octx.stroke();
+  }
+
+  // small smokestack
+  octx.fillStyle = '#3f4440';
+  roundedRectPath(octx, -w * 0.36, -h / 2 - h * 0.5, w * 0.09, h * 0.5, w * 0.02);
+  octx.fill();
+  octx.restore();
+}
+
+const SPECIAL_BUILDING_KINDS = [drawChurch, drawMarketHall, drawIndustrialShed];
+
+// Scatters a few special/civic buildings through a city (r >= 6), clear of
+// the reserved landmark footprint at its exact center. Count scales gently
+// with the city's own `r` (bigger city, more landmarks) and stays sparse —
+// "a few per city", not a second layer of ordinary blocks. Each candidate
+// spot is tried a handful of times against the real terrain/road data so a
+// special building never lands on water or a road; a spot that never finds
+// valid ground after a few tries is just skipped (rather than forced),
+// keeping the whole pass a pure read of existing map data.
+function drawSpecialBuildings(octx, map, c, ts, isCapital) {
+  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
+  const h = (salt) => hash2(seedX, seedY, salt);
+  const cx = (c.x + 0.5) * ts, cy = (c.y + 0.5) * ts;
+  const R = (c.r || 6) * ts * 0.88;
+  const clearR = landmarkClearRadius(c, ts, true, isCapital);
+  const count = Math.min(4, Math.max(1, Math.round(((c.r || 6) - 4) * 0.8)));
+  const rot = settlementGrid(c, ts).rot;
+
+  for (let i = 0; i < count; i++) {
+    let spot = null;
+    for (let attempt = 0; attempt < 5 && !spot; attempt++) {
+      const salt = 840 + i * 17 + attempt * 3;
+      const ang = h(salt + 1) * Math.PI * 2;
+      const dist = clearR * 1.35 + h(salt + 2) * Math.max(ts, R * 0.8 - clearR * 1.35);
+      const x = cx + Math.cos(ang) * dist, y = cy + Math.sin(ang) * dist;
+      const gx = Math.floor(x / ts), gy = Math.floor(y / ts);
+      const t = map.terrainAt(gx, gy);
+      if (t && t.name === 'urban' && map.roadAt(gx, gy) <= 0) spot = { x, y };
+    }
+    if (!spot) continue;
+    const kind = SPECIAL_BUILDING_KINDS[Math.floor(h(900 + i) * SPECIAL_BUILDING_KINDS.length) % SPECIAL_BUILDING_KINDS.length];
+    const jitterRot = rot + (h(910 + i) - 0.5) * 0.12;
+    kind(octx, spot.x, spot.y, ts, jitterRot);
   }
 }
 

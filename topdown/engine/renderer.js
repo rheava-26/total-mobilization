@@ -40,6 +40,42 @@ function lerpColor(hexA, hexB, t) {
 }
 function rgba(rgb, a) { return `rgba(${rgb[0] | 0},${rgb[1] | 0},${rgb[2] | 0},${a})`; }
 
+// Continuous (non-tile-aligned) value-noise lattice, used to replace the old
+// "one random jitter value per whole tile" base-color pass — see
+// prerenderTerrain's pass 1 below for why that read as a checkerboard.
+// Instead of hashing per-tile, we hash a grid of points spaced `cellPx`
+// world-pixels apart (deliberately NOT a multiple of tileSize, so the noise
+// grid never lines up with the tile grid) and bilinearly interpolate between
+// the four surrounding points with a smoothstep ease. The result is a value
+// that varies continuously across the whole map, including across tile
+// boundaries — two adjacent same-type tiles blend into each other instead of
+// jumping between two independently-rolled constants. Precomputing the
+// lattice once (instead of hashing on every pixel sample) keeps the whole
+// map-wide per-pixel pass cheap.
+function buildNoiseLattice(worldW, worldH, cellPx, salt) {
+  const cols = Math.ceil(worldW / cellPx) + 2;
+  const rows = Math.ceil(worldH / cellPx) + 2;
+  const g = new Float32Array(cols * rows);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) g[y * cols + x] = hash2(x, y, salt);
+  }
+  return { g, cols, cellPx };
+}
+function sampleLattice(lat, wx, wy) {
+  const gx = wx / lat.cellPx, gy = wy / lat.cellPx;
+  // gx/gy are always >= 0 here (world-pixel coords), so a bitwise truncate
+  // is a cheap equivalent to Math.floor — this runs once per octave per
+  // pixel of the whole map (millions of times), so the constant-factor win
+  // is worth the (safe, in-range) micro-optimization.
+  const x0 = gx | 0, y0 = gy | 0;
+  const fx = gx - x0, fy = gy - y0;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy); // smoothstep — avoids visible creases at lattice cell edges
+  const i00 = y0 * lat.cols + x0, i10 = i00 + 1, i01 = i00 + lat.cols, i11 = i01 + 1;
+  const n00 = lat.g[i00], n10 = lat.g[i10], n01 = lat.g[i01], n11 = lat.g[i11];
+  const nx0 = n00 + (n10 - n00) * ux, nx1 = n01 + (n11 - n01) * ux;
+  return nx0 + (nx1 - nx0) * uy;
+}
+
 // A feathered blob (radial gradient, full alpha at center fading smoothly to
 // 0 at the edge) — the actual fix for "reads as hard tiles": solid
 // ellipses/rects have a crisp boundary no matter how low their opacity is,
@@ -61,13 +97,15 @@ function softBlob(octx, cx, cy, rx, ry, rot, rgb, peakAlpha) {
 }
 
 // Paint the whole map once, in map-pixel space, onto an offscreen canvas.
-// Soft/painterly look: a solid per-tile base pass (full coverage, subtle
-// color jitter) followed by scattered semi-transparent blobs that bleed
-// across tile boundaries — including toward a differing neighbor's color,
-// which is what dithers a hard edge into an organic transition. Water skips
-// the texture pass (it should read calm) and instead gets a lightened band
-// near the coast. All of this runs once at load; per-frame cost is a single
-// drawImage.
+// Soft/painterly look: a solid full-coverage base pass (continuous, sub-tile
+// noise-driven color jitter — see pass 1 below) followed by scattered
+// semi-transparent blobs that bleed across tile boundaries — including
+// toward a differing neighbor's color, which is what dithers a hard edge
+// into an organic transition. Water skips the blob pass (it should read
+// calm) and instead gets a lightened band near the coast, but still gets the
+// continuous noise base — it's the only thing standing between open ocean
+// and a flat/checkered fill. All of this runs once at load; per-frame cost
+// is a single drawImage.
 function prerenderTerrain(map) {
   const ts = map.tileSize;
   const off = document.createElement('canvas');
@@ -75,14 +113,49 @@ function prerenderTerrain(map) {
   off.height = map.height * ts;
   const octx = off.getContext('2d');
 
-  // pass 1: solid, full-coverage base fill with subtle per-tile color jitter
+  // pass 1: solid, full-coverage base fill with color jitter. Used to be one
+  // hash2() draw per tile — a single random value held constant across the
+  // whole tile, then jumping to a new random value at the next tile — which
+  // is exactly a checkerboard: invisible at strategic zoom where a tile is a
+  // couple of screen pixels, but at max zoom each tile is a big flat square
+  // with a hard-edged neighbor, and water (which skips the painterly blob
+  // pass below entirely) had nothing else to hide it. Fixed by sampling two
+  // octaves of the continuous noise lattice above (a coarse layer for the
+  // broad color drift, a finer half-amplitude layer so close zoom still has
+  // grain to look at instead of a flat gradient) at every pixel instead of
+  // every tile. Neither lattice's cell size is a multiple of tileSize, so
+  // the noise seams never land on a tile edge — adjacent tiles of the same
+  // terrain blend into each other with no visible boundary at any zoom.
+  // Written via ImageData/putImageData rather than per-pixel fillRect calls,
+  // since this pass now touches every pixel of the map (millions, not the
+  // ~33k tile-fills it used to be) and per-call canvas draw overhead would
+  // dominate at that count.
+  const noiseLat = buildNoiseLattice(off.width, off.height, ts * 0.6, 1);
+  const detailLat = buildNoiseLattice(off.width, off.height, ts * 0.22, 501);
+  const img = octx.createImageData(off.width, off.height);
+  const data = img.data;
   for (let gy = 0; gy < map.height; gy++) {
     for (let gx = 0; gx < map.width; gx++) {
       const t = map.terrainAt(gx, gy);
-      octx.fillStyle = lerpColor(t.color[0], t.color[1], hash2(gx, gy, 1));
-      octx.fillRect(gx * ts, gy * ts, ts, ts);
+      const [r0, g0, b0] = hexToRgb(t.color[0]);
+      const [r1, g1, b1] = hexToRgb(t.color[1]);
+      const dr = r1 - r0, dg = g1 - g0, db = b1 - b0;
+      for (let ly = 0; ly < ts; ly++) {
+        const wy = gy * ts + ly;
+        const rowBase = wy * off.width;
+        for (let lx = 0; lx < ts; lx++) {
+          const wx = gx * ts + lx;
+          const n = sampleLattice(noiseLat, wx, wy) * 0.72 + sampleLattice(detailLat, wx, wy) * 0.28;
+          const idx = (rowBase + wx) * 4;
+          data[idx] = r0 + dr * n;
+          data[idx + 1] = g0 + dg * n;
+          data[idx + 2] = b0 + db * n;
+          data[idx + 3] = 255;
+        }
+      }
     }
   }
+  octx.putImageData(img, 0, 0);
 
   // pass 2: painterly texture — feathered blobs per land tile (radial
   // gradients, not solid shapes, so they melt into their neighbors instead

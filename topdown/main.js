@@ -1685,6 +1685,8 @@ function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
 
+  try {  // CRASH RESILIENCE — a throwing frame must not kill the rAF chain; see catch/finally at the end of loop()
+
   // fog must be current BEFORE targeting runs (pickTarget/nearestEnemy read
   // it) and before rendering reads it for draw-filtering/hover/overlay.
   computeFog(world, map);
@@ -1885,6 +1887,20 @@ function loop(now) {
     + `<b>Resources</b>\n${resourceLine}`
     + prodBlock;
 
-  requestAnimationFrame(loop);
+  } catch (err) {
+    // A single throwing frame must not brick the session: an uncaught throw
+    // here would stop the requestAnimationFrame chain and freeze the whole
+    // game (what "the game crashed" looks like to a player). Log it — throttled
+    // so a persistent per-frame error doesn't flood the console — and keep the
+    // loop alive so the game degrades to a recoverable glitch, not a dead
+    // canvas. (This is a safety net, NOT a substitute for fixing a real bug the
+    // log surfaces.)
+    if (!loop._lastErrAt || performance.now() - loop._lastErrAt > 2000) {
+      console.error('[loop] recovered from a frame error:', err);
+      loop._lastErrAt = performance.now();
+    }
+  } finally {
+    requestAnimationFrame(loop);
+  }
 }
 requestAnimationFrame(loop);

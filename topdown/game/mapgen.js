@@ -546,6 +546,249 @@ function placeDeposits(terrain, W, H, rng) {
   return deposits;
 }
 
+// ------------------------------------------------------ infrastructure ----
+// NATURALLY-SPAWNING CIVILIAN INFRASTRUCTURE — see docs/reference-city-and-
+// mobilization.md Section 1 (real-city spatial logic: heavy industry/rail/
+// ports at city EDGES near roads/water, airports on open periphery) and
+// Section 4 (real factory/infrastructure footprints this generator's sibling
+// in engine/renderer.js draws). PURELY SCENERY this pass: sites are stored in
+// their own `map.infrastructure` array, never written into `terrain`/
+// `roadFlags` — nothing here can move a road, block a tile, or feed
+// production/economy (see engine/tilemap.js buildMap, which never wires this
+// array into blockAt/depositAt-style gameplay lookups). Each site gets a
+// stable `id` + `converted: false` field as the hook a LATER mobilization
+// pass can flip; this pass never reads or acts on it.
+//
+// Deterministic: every candidate draw comes from the attempt's own `rng`
+// stream (same seed -> same sites), in a fixed per-city type order so two
+// runs of the same seed always walk the same search sequence.
+
+// Fixed footprint (tile half-extent along the site's LOCAL "length" axis is
+// w/2, "width" axis is h/2 — the renderer rotates by `rot` around this
+// footprint, same local-space convention prerenderCityBlocks' buildings use)
+// per archetype, plus how far from its parent city's edge it may site
+// (ringMin/ringMax, multiples of the city's own `r`) and which real-world
+// siting rule (Section 1) it needs satisfied. `tries` is a search budget, not
+// a guarantee — a city with no qualifying ground for a type (e.g. an inland
+// city and `port`) simply ends up without one; nothing here forces a bad fit.
+const INFRA_ORDER = ['airport', 'port', 'railYard', 'powerStation', 'industrialZone', 'refinery', 'steelMill', 'warehouseDistrict'];
+const INFRA_DEFS = {
+  // long clear runway + apron on flat open periphery ground (Section 1: "need
+  // long, clear runways... land is available, cheaper" on the edge of town).
+  // Smaller footprint + a wide ring + a big try budget (this is the single
+  // hardest site to satisfy — a fully clear ~13x6 tile rectangle is a tall
+  // ask on a mid-sized island) rather than forcing a real-world-accurate but
+  // rarely-satisfiable full-scale footprint.
+  airport: { w: 13, h: 6, ringMin: 1.2, ringMax: 3.6, tries: 70 },
+  // MUST be coastal, close to the city (Section 1: ports/harbors if
+  // coastal/riverside, major labor concentration close to town)
+  port: { w: 5, h: 4, ringMin: 0.85, ringMax: 1.8, tries: 50, coastal: true, coastSearch: 6 },
+  // biased toward the real road network (Section 1: "transition hub between
+  // city and hinterland", fed by the same road/rail corridor)
+  railYard: { w: 7.5, h: 4, ringMin: 0.95, ringMax: 2.3, tries: 56, roadBias: true },
+  // soft preference for water (cooling/coal-barge access), city-adjacent
+  powerStation: { w: 6, h: 5, ringMin: 1.0, ringMax: 2.5, tries: 48, preferWater: true },
+  // ordinary edge-of-city heavy/light industry, road-fed
+  industrialZone: { w: 7, h: 5.5, ringMin: 1.0, ringMax: 2.6, tries: 56, roadBias: true },
+  // biased toward a real oil deposit if this island rolled one nearby,
+  // otherwise falls back to whatever coastal/road ground it can find
+  refinery: { w: 6, h: 6, ringMin: 1.0, ringMax: 2.6, tries: 42, preferOil: true },
+  // biased toward steel/chromium/tungsten ore (Section 1: "bulk rail access"
+  // for ore/coal), road-fed like a real mill's rail sidings
+  steelMill: { w: 7, h: 5.5, ringMin: 1.1, ringMax: 2.6, tries: 56, preferOre: true, roadBias: true },
+  warehouseDistrict: { w: 6, h: 4, ringMin: 0.9, ringMax: 2.3, tries: 48, roadBias: true },
+};
+
+// Ring search from (x,y) for the nearest WATER tile, returning both distance
+// and the ANGLE toward it — used both as port's hard "must be coastal"
+// gate and to orient a coastal/waterfront site so its piers/intake actually
+// point at the water instead of at a random heading.
+function nearestWaterDir(terrain, W, H, x, y, maxR) {
+  for (let r = 1; r <= maxR; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const ax = x + dx, ay = y + dy;
+      if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue;
+      if (terrain[ay * W + ax] === T_WATER) return { angle: Math.atan2(dy, dx), dist: r };
+    }
+  }
+  return null;
+}
+
+// Same idea, but toward the nearest ROAD tile — orients road-fed sites
+// (rail yard, industrial zone, steel mill, warehouse district) so their
+// siding/loading-dock side faces the real road network instead of an
+// arbitrary heading.
+function nearestRoadDirAt(roadFlags, W, H, x, y, maxR) {
+  for (let r = 1; r <= maxR; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const ax = x + dx, ay = y + dy;
+      if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue;
+      if (roadFlags[ay * W + ax]) return Math.atan2(dy, dx);
+    }
+  }
+  return null;
+}
+
+// Closest deposit of any of `types` to `city`, within `maxDist` tiles, or
+// null — feeds refinery's oil bias / steel mill's ore bias (Section 1: heavy
+// industry sited near the raw material it consumes in bulk).
+function nearestDepositOfType(deposits, city, types, maxDist) {
+  let best = null, bestD = Infinity;
+  for (const d of deposits) {
+    if (!types.includes(d.type)) continue;
+    const dd = Math.hypot(d.gx - city.x, d.gy - city.y);
+    if (dd <= maxDist && dd < bestD) { bestD = dd; best = d; }
+  }
+  return best;
+}
+
+// A candidate footprint is "clear" if every sampled point across its
+// rotated w x h rectangle (in tiles) lands on ordinary buildable land — no
+// water/river/mountain/marsh, no existing urban blob, and no real road tile
+// (this is what keeps a site from ever being stamped over the road network
+// the acceptance gates already validated — nothing here mutates roadFlags,
+// this purely REFUSES to place on top of it). Sample density scales with the
+// footprint size rather than a fixed grid, so a big airport gets a fine
+// enough scan to actually catch a stray mountain/water tile poking into it.
+function infraFootprintClear(terrain, roadFlags, W, H, cx, cy, rot, halfW, halfH) {
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  const su = Math.max(2, Math.round(halfW)), sv = Math.max(1, Math.round(halfH));
+  for (let iu = -su; iu <= su; iu++) {
+    for (let iv = -sv; iv <= sv; iv++) {
+      const u = (iu / su) * halfW, v = (iv / sv) * halfH;
+      const wx = cx + u * cos - v * sin, wy = cy + u * sin + v * cos;
+      const gx = Math.round(wx), gy = Math.round(wy);
+      if (gx < 1 || gy < 1 || gx >= W - 1 || gy >= H - 1) return false;
+      const ch = terrain[gy * W + gx];
+      if (ch === T_WATER || ch === T_RIVER || ch === T_MOUNTAIN || ch === T_URBAN || ch === T_MARSH) return false;
+      if (roadFlags[gy * W + gx]) return false;
+    }
+  }
+  return true;
+}
+
+// A candidate ANCHOR point is clear of every other named map feature — kept
+// separate from infraFootprintClear (which only ever samples raw terrain/
+// road data) because this needs the actual city/town/deposit/already-placed
+// site LISTS, not just the grid. Guards: never sits inside its own city's
+// urban core (redundant with ringMin in practice, but cheap insurance),
+// never overlaps a DIFFERENT settlement's footprint, never sits on top of a
+// resource deposit's marked area, never overlaps an already-placed
+// infrastructure site.
+function infraSiteClear(cities, towns, deposits, placed, city, cx, cy, clearR) {
+  for (const cc of cities) {
+    const dd = Math.hypot(cx - cc.x, cy - cc.y);
+    if (cc === city) { if (dd < city.r * 0.82) return false; }
+    else if (dd < cc.r + clearR + 2) return false;
+  }
+  for (const t of towns) if (Math.hypot(cx - t.x, cy - t.y) < t.r + clearR + 1) return false;
+  for (const d of deposits) if (Math.hypot(cx - d.gx, cy - d.gy) < clearR + 2) return false;
+  for (const p of placed) if (Math.hypot(cx - p.gx, cy - p.gy) < clearR + p.clearR) return false;
+  return true;
+}
+
+// Searches for ONE valid site of `typeId` near `city`, trying up to
+// def.tries deterministic candidates before giving up (returns null — the
+// city just doesn't get this type, never forced onto bad ground). The first
+// ~70% of tries are "strict" (apply the type's real-world siting bias: bias
+// the search angle toward a matching ore/oil deposit, require a coastal
+// heading for a port, require nearby road for road-fed types); the
+// remaining tries relax that bias so a city that almost-but-not-quite
+// qualifies (e.g. an oil deposit just out of range) can still land an
+// ordinary edge-of-town site instead of getting nothing.
+function tryPlaceOneInfra(env, city, typeId, def) {
+  const { terrain, roadFlags, W, H, cities, towns, deposits, placed, rng } = env;
+  const halfW = def.w / 2, halfH = def.h / 2;
+  const clearR = Math.max(halfW, halfH) * 1.05 + 1.2;
+  const minD = def.ringMin * city.r, maxD = def.ringMax * city.r;
+
+  let biasDeposit = null;
+  if (def.preferOil) biasDeposit = nearestDepositOfType(deposits, city, ['oil'], city.r * 4.5);
+  else if (def.preferOre) biasDeposit = nearestDepositOfType(deposits, city, ['steel', 'chromium', 'tungsten'], city.r * 4.5);
+
+  for (let attempt = 0; attempt < def.tries; attempt++) {
+    const strict = attempt < def.tries * 0.7;
+    let angle;
+    if (biasDeposit && strict) angle = Math.atan2(biasDeposit.gy - city.y, biasDeposit.gx - city.x) + (rng() - 0.5) * 1.0;
+    else angle = rng() * Math.PI * 2;
+    const dist = minD + rng() * (maxD - minD);
+    const cx = city.x + Math.cos(angle) * dist, cy = city.y + Math.sin(angle) * dist;
+    if (cx < halfW + 2 || cy < halfH + 2 || cx > W - halfW - 2 || cy > H - halfH - 2) continue;
+    if (!infraSiteClear(cities, towns, deposits, placed, city, cx, cy, clearR)) continue;
+
+    const rgx = Math.round(cx), rgy = Math.round(cy);
+    let rot = hash2(rgx, rgy, 7100) * Math.PI * 2;
+    if (def.coastal) {
+      const wd = nearestWaterDir(terrain, W, H, rgx, rgy, def.coastSearch || 5);
+      if (!wd) continue; // hard requirement: a port with no nearby water isn't a port
+      rot = wd.angle;
+    } else if (def.preferWater) {
+      const wd = nearestWaterDir(terrain, W, H, rgx, rgy, 6);
+      if (wd) rot = wd.angle; else if (strict) continue;
+    }
+    if (def.roadBias) {
+      const rd = nearestRoadDirAt(roadFlags, W, H, rgx, rgy, 7);
+      if (rd != null) rot = rd; else if (strict) continue;
+    }
+
+    if (!infraFootprintClear(terrain, roadFlags, W, H, cx, cy, rot, halfW, halfH)) continue;
+    return { gx: cx, gy: cy, rot, clearR };
+  }
+  return null;
+}
+
+// Orchestrates the whole pass: the CAPITAL (biggest city, always coastal by
+// construction — see the capital-selection code above) tries every
+// archetype, since it's the island's one guaranteed industrial anchor;
+// every other city gets a smaller, per-city-rotated slice of the type list
+// (deterministic hash offset, so different cities favor different
+// archetypes rather than every lesser city rolling the identical set) sized
+// 3-5 by a per-city hash roll — "scale with city size" in practice, since
+// every non-capital city on this generator's `r` formula is the same
+// modest size (see the cities section above), so the real lever for variety
+// across a run is WHICH types a city gets, not a numeric size scale.
+// Towns (r 2..4) never get a site — keeps this "a nation's worth of
+// landmarks", not wall-to-wall industrial sprawl on every hamlet.
+function placeInfrastructure(terrain, roadFlags, W, H, rng, cities, towns, deposits) {
+  const placed = [];
+  const maxCityR = cities.reduce((m, c) => Math.max(m, c.r || 0), 0);
+  let counter = 0;
+  for (const city of cities) {
+    const isCapital = (city.r || 0) === maxCityR;
+    const seedX = Math.floor(city.x), seedY = Math.floor(city.y);
+    const budget = isCapital ? INFRA_ORDER.length : 3 + Math.floor(hash2(seedX, seedY, 7011) * 3);
+    const offset = Math.floor(hash2(seedX, seedY, 7010) * INFRA_ORDER.length);
+    const order = [];
+    for (let k = 0; k < budget && k < INFRA_ORDER.length; k++) order.push(INFRA_ORDER[(offset + k) % INFRA_ORDER.length]);
+    for (const typeId of order) {
+      const def = INFRA_DEFS[typeId];
+      const site = tryPlaceOneInfra({ terrain, roadFlags, W, H, cities, towns, deposits, placed, rng }, city, typeId, def);
+      if (!site) continue;
+      counter++;
+      const gx = Math.round(site.gx), gy = Math.round(site.gy);
+      placed.push({
+        id: `infra_${typeId}_${counter}`,
+        type: typeId,
+        gx, gy,
+        x: (gx + 0.5) * TILE_SIZE, y: (gy + 0.5) * TILE_SIZE, // world-px center, matching gx/gy — tile+world coords like other map features
+        rot: site.rot,
+        w: def.w, h: def.h, // footprint extent in tiles, for the renderer
+        clearR: site.clearR,
+        nearCity: city.name,
+        // MOBILIZATION HOOK (design only — see task): a later pass converts
+        // civilian infrastructure to military production as the nation
+        // mobilizes. This generation/rendering pass never reads or flips
+        // this field; it exists purely so that later pass has somewhere to
+        // write.
+        converted: false,
+      });
+    }
+  }
+  return placed;
+}
+
 // --------------------------------------------------------- one attempt ----
 // Generates a full candidate map for a concrete (already-derived) seed.
 // Returns { ok: false, reason } on any acceptance-gate failure, or
@@ -1074,6 +1317,18 @@ function attemptGenerate(seed) {
 
   const islandName = makeIslandName(rng, usedNames, cities[0].name);
 
+  // ------------------------------------------------------ infrastructure ----
+  // Runs AFTER the road network (incl. town spurs) is fully finalized so
+  // road-biased siting (rail yard, industrial zone, steel mill, warehouse
+  // district) reads the real network, and AFTER deposits/cities/towns so it
+  // can avoid overlapping any of them. Deliberately placed AFTER islandName
+  // (rather than right after town naming, where it's used below) so this
+  // NEW pass's rng draws land strictly after every pre-existing feature's —
+  // adding infrastructure never reshuffles which name/region/town an
+  // unrelated earlier rng draw would have produced for a given seed. See
+  // placeInfrastructure above.
+  const infrastructure = placeInfrastructure(terrain, roadFlags, W, H, rng, cities, towns, deposits);
+
   const mapData = {
     name: islandName,
     tileSize: TILE_SIZE,
@@ -1093,6 +1348,11 @@ function attemptGenerate(seed) {
     regions,
     spawns,
     deposits,
+    // NATURALLY-SPAWNING CIVILIAN INFRASTRUCTURE (see placeInfrastructure
+    // above) — landmarks only, SCENERY this pass: not read by
+    // objectives/enemyai/production, same convention as `towns`/`deposits`.
+    // An authored map file may omit this entirely; buildMap defaults it to [].
+    infrastructure,
     notes: `Procedurally generated by topdown/game/mapgen.js. Re-run with the same seed for the identical island.`,
   };
 
@@ -1104,6 +1364,7 @@ function attemptGenerate(seed) {
       mainLandmassFraction: landFraction,
       cityCount: cities.length,
       townCount: towns.length,
+      infrastructureCount: infrastructure.length,
       roadTileCount,
       roadEdgeCount: mstEdges.length,
       depositCount: deposits.length,

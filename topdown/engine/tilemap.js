@@ -36,7 +36,7 @@ import { generateTheaterWithStats, DEPOSIT_TUNABLES } from '../game/mapgen.js';
 // (loadMap) or straight out of game/mapgen.js's generateTheater (
 // loadGeneratedMap).
 export function buildMap(data, defsData) {
-  const { tileSize, width, height, spawns, cities, towns, regions, deposits, grid: rows, roads: roadRows } = data;
+  const { tileSize, width, height, spawns, cities, towns, regions, deposits, infrastructure, grid: rows, roads: roadRows } = data;
   const legend = data.legend || defsData.legend;
 
   // Ordered type table: index -> effect list (the def), used both for the
@@ -138,6 +138,14 @@ export function buildMap(data, defsData) {
     // them (game/mapgen.js's placeDeposits), an authored map file may omit
     // `deposits` entirely and just gets none.
     deposits: deposits || [],
+    // NATURALLY-SPAWNING CIVILIAN INFRASTRUCTURE (game/mapgen.js's
+    // placeInfrastructure — see docs/reference-city-and-mobilization.md
+    // Sections 1 & 4). Plain {id,type,gx,gy,x,y,rot,w,h,converted,...} records,
+    // SCENERY ONLY: never read by game/objectives.js, game/enemyai.js, or
+    // any production/economy code — a later pass may read/flip `converted`
+    // but this array carries no gameplay effect on its own. Same "authored
+    // map may omit it entirely" convention as `towns`/`deposits`.
+    infrastructure: infrastructure || [],
     // Nearest deposit whose anchor is within DEPOSIT_TUNABLES.RADIUS tiles of
     // (gx,gy), or null. This is the single rule both the mine-siting check
     // (game/buildings.js isValidPlacement/spawnBuilding) and the map-quality

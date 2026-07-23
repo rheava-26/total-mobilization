@@ -271,6 +271,7 @@ function prerenderTerrain(map) {
 
   prerenderRoads(octx, map);
   prerenderCityBlocks(octx, map);
+  prerenderInfrastructure(octx, map);
   prerenderScorches(octx, map);
   prerenderDeposits(octx, map);
 
@@ -1662,6 +1663,449 @@ function prerenderScorches(octx, map) {
       octx.fillRect(-rx / 2, -rx * 0.3, rx, rx * 0.6);
       octx.restore();
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// NATURALLY-SPAWNING CIVILIAN INFRASTRUCTURE (game/mapgen.js's
+// placeInfrastructure -> map.infrastructure). Each site is drawn as a
+// recognizable REAL-WORLD ARCHETYPE per docs/reference-city-and-
+// mobilization.md Section 4 — an airport reads as runway+terminal+hangars,
+// a refinery as tank-farm+cracking-towers+flare-stack, etc. — rather than
+// as a bigger version of an ordinary building. Baked into the same one-time
+// terrain prerender as roads/city blocks (see prerenderTerrain above) for
+// the same reason: these sites never move mid-game, so there's no reason to
+// pay a per-frame draw cost for them.
+//
+// Every draw function shares one calling convention: (octx, cx, cy, rot,
+// ts, wTiles, hTiles) where (cx,cy) is the site's WORLD-PX center, `rot` is
+// mapgen's chosen orientation (already pointed at water/road where that
+// mattered — see game/mapgen.js tryPlaceOneInfra), and wTiles/hTiles are
+// the site's tile footprint (mapgen.js INFRA_DEFS). Local space after
+// translate+rotate: +u (local "east", i.e. the site's own long axis) is
+// where mapgen pointed `rot` — a port's +u faces water, a road-fed site's
+// +u faces the nearest road. Muted/desaturated industrial tones, in the
+// same family as CONCRETE_PALETTES/CIVIC_PALETTE above, so a site reads as
+// part of this city's skyline rather than a clashing sticker dropped on it.
+// Deterministic and Math.random-free (any per-site jitter below reads off
+// hash2(...) keyed on the site's own rounded world position).
+// ---------------------------------------------------------------------------
+
+// Archetype 11 (reference doc): long runway + taxiway + terminal + hangar
+// row + apron, on open peripheral ground.
+function drawAirport(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+
+  // faint paved-ground wash over the whole footprint so the site reads as
+  // one industrial zone even at a distance, before any detail resolves
+  octx.fillStyle = 'rgba(54,56,54,0.14)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.3);
+  octx.fill();
+
+  // runway: dark asphalt strip along the long (u) axis with a dashed
+  // centerline — the single most identifying mark of an airfield from above
+  const rwLen = W * 0.86, rwWidth = Math.min(H * 0.24, ts * 1.3);
+  octx.fillStyle = '#2e3134';
+  roundedRectPath(octx, -rwLen / 2, -rwWidth / 2, rwLen, rwWidth, rwWidth * 0.1);
+  octx.fill();
+  octx.strokeStyle = 'rgba(10,10,10,0.5)';
+  octx.lineWidth = Math.max(1, ts * 0.03);
+  roundedRectPath(octx, -rwLen / 2, -rwWidth / 2, rwLen, rwWidth, rwWidth * 0.1);
+  octx.stroke();
+  octx.strokeStyle = 'rgba(226,226,214,0.7)';
+  octx.lineWidth = Math.max(0.8, ts * 0.025);
+  octx.setLineDash([ts * 0.5, ts * 0.35]);
+  octx.beginPath(); octx.moveTo(-rwLen / 2 + ts * 0.3, 0); octx.lineTo(rwLen / 2 - ts * 0.3, 0); octx.stroke();
+  octx.setLineDash([]);
+
+  // taxiway linking the runway to the apron/terminal side
+  const twOffset = H * 0.30;
+  octx.fillStyle = '#33373a';
+  roundedRectPath(octx, -rwLen * 0.42, twOffset - rwWidth * 0.16, rwLen * 0.84, rwWidth * 0.32, rwWidth * 0.1);
+  octx.fill();
+
+  // terminal building, offset toward one long edge, with a small control
+  // tower nub — the "central HQ-scale building" cue from the reference doc
+  const termW = W * 0.16, termH = H * 0.34;
+  octx.save();
+  octx.translate(-W * 0.28, H * 0.36);
+  const roofRgb = lerpRgb(CONCRETE_PALETTES[1][0], CONCRETE_PALETTES[1][1], 0.5);
+  octx.fillStyle = 'rgba(6,8,10,0.3)';
+  roundedRectPath(octx, -termW / 2 + termW * 0.08, -termH / 2 + termH * 0.1, termW, termH, termW * 0.12);
+  octx.fill();
+  octx.fillStyle = rgba(roofRgb, 0.96);
+  roundedRectPath(octx, -termW / 2, -termH / 2, termW, termH, termW * 0.12);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)';
+  octx.lineWidth = Math.max(0.8, ts * 0.03);
+  octx.stroke();
+  octx.fillStyle = 'rgba(70,86,92,0.95)';
+  octx.beginPath(); octx.arc(termW * 0.32, -termH * 0.1, termW * 0.14, 0, Math.PI * 2); octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.5)'; octx.lineWidth = Math.max(0.6, ts * 0.02); octx.stroke();
+  octx.restore();
+
+  // hangar row along the opposite edge — arched-roof reads via heavy corner
+  // rounding, distinct silhouette from the flat terminal block
+  const hangarCount = 3, hw = W * 0.13, hh = H * 0.22, rowY = -H * 0.36;
+  for (let k = 0; k < hangarCount; k++) {
+    octx.save();
+    octx.translate(-W * 0.3 + k * (hw * 1.25), rowY);
+    octx.fillStyle = 'rgba(6,8,10,0.3)';
+    roundedRectPath(octx, -hw / 2 + hw * 0.08, -hh / 2 + hh * 0.12, hw, hh, hh * 0.4);
+    octx.fill();
+    octx.fillStyle = '#565f62';
+    roundedRectPath(octx, -hw / 2, -hh / 2, hw, hh, hh * 0.42);
+    octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.5)'; octx.lineWidth = Math.max(0.7, ts * 0.026); octx.stroke();
+    octx.restore();
+  }
+  octx.restore();
+}
+
+// Archetype 5: cracking towers + circular tank farm + flare stack +
+// low pipe-rack lattice connecting them.
+function drawRefinery(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(58,54,46,0.14)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.3);
+  octx.fill();
+
+  // tank farm: grid of round storage tanks — the single most distinctive
+  // refinery mark from above (Section 4)
+  const tankR = Math.min(W, H) * 0.11;
+  for (let ry = 0; ry < 2; ry++) for (let rx = 0; rx < 3; rx++) {
+    const px = -W * 0.34 + rx * (tankR * 2.3), py = H * 0.05 + ry * (tankR * 2.3) - H * 0.14;
+    octx.beginPath(); octx.ellipse(px + tankR * 0.12, py + tankR * 0.18, tankR, tankR * 0.94, 0, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(6,8,10,0.25)'; octx.fill();
+    octx.beginPath(); octx.ellipse(px, py, tankR, tankR * 0.94, 0, 0, Math.PI * 2);
+    octx.fillStyle = '#7c8890'; octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.5)'; octx.lineWidth = Math.max(0.6, ts * 0.02); octx.stroke();
+    octx.beginPath(); octx.arc(px, py, tankR * 0.6, 0, Math.PI * 2);
+    octx.strokeStyle = 'rgba(255,255,255,0.14)'; octx.lineWidth = Math.max(0.5, ts * 0.012); octx.stroke();
+  }
+
+  // cracking/fractionation towers — a couple of tall narrow cylinders
+  const towerR = Math.min(W, H) * 0.075;
+  for (let k = 0; k < 2; k++) {
+    const px = W * 0.22 + k * towerR * 2.6, py = -H * 0.12;
+    octx.beginPath(); octx.ellipse(px + towerR * 0.15, py + towerR * 0.2, towerR, towerR, 0, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(6,8,10,0.28)'; octx.fill();
+    octx.beginPath(); octx.ellipse(px, py, towerR, towerR, 0, 0, Math.PI * 2);
+    octx.fillStyle = '#454d52'; octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.6, ts * 0.022); octx.stroke();
+  }
+
+  // flare stack — thin tall mast with a small always-lit flame, the
+  // "visible from miles away" cue from the reference doc
+  const flareX = W * 0.34, flareY = H * 0.28, flareH = Math.min(W, H) * 0.28;
+  octx.strokeStyle = '#3a3e40'; octx.lineWidth = Math.max(0.8, ts * 0.03);
+  octx.beginPath(); octx.moveTo(flareX, flareY); octx.lineTo(flareX, flareY - flareH); octx.stroke();
+  octx.beginPath(); octx.arc(flareX, flareY - flareH, ts * 0.09, 0, Math.PI * 2);
+  octx.fillStyle = 'rgba(255,140,60,0.85)'; octx.fill();
+  softBlob(octx, flareX, flareY - flareH, ts * 0.55, ts * 0.55, 0, [255, 150, 70], 0.16);
+
+  // low pipe-rack lattice linking tank farm and towers
+  octx.strokeStyle = 'rgba(70,70,66,0.35)'; octx.lineWidth = Math.max(0.6, ts * 0.016);
+  for (let i = 0; i < 3; i++) {
+    const yy = -H * 0.02 + i * ts * 0.12;
+    octx.beginPath(); octx.moveTo(-W * 0.1, yy); octx.lineTo(W * 0.18, yy); octx.stroke();
+  }
+  octx.restore();
+}
+
+// Archetype 4: 2-3 blast furnaces + long sawtooth rolling-mill sheds +
+// ore/coal yard piles.
+function drawSteelMill(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(54,50,44,0.16)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.3);
+  octx.fill();
+
+  // long parallel rolling-mill sheds with a sawtooth-roof hint
+  const shedW = W * 0.72, shedH = H * 0.16;
+  for (let k = 0; k < 2; k++) {
+    octx.save();
+    octx.translate(-W * 0.05, -H * 0.28 + k * (shedH * 1.5));
+    octx.fillStyle = 'rgba(6,8,10,0.3)';
+    roundedRectPath(octx, -shedW / 2 + shedW * 0.03, -shedH / 2 + shedH * 0.14, shedW, shedH, shedH * 0.15);
+    octx.fill();
+    octx.fillStyle = '#5c6165';
+    roundedRectPath(octx, -shedW / 2, -shedH / 2, shedW, shedH, shedH * 0.15);
+    octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.7, ts * 0.026); octx.stroke();
+    octx.strokeStyle = 'rgba(255,255,255,0.08)'; octx.lineWidth = Math.max(0.5, ts * 0.012);
+    const teeth = 6;
+    for (let t = 0; t < teeth; t++) {
+      const tx = -shedW / 2 + (t + 0.5) * (shedW / teeth);
+      octx.beginPath(); octx.moveTo(tx - shedW / teeth * 0.3, -shedH / 2); octx.lineTo(tx + shedW / teeth * 0.3, shedH / 2); octx.stroke();
+    }
+    octx.restore();
+  }
+
+  // blast furnaces: 3 dark cylinders clustered at one end, the mill's
+  // "immediately recognizable" skyline mark (Section 4)
+  const fr = Math.min(W, H) * 0.09;
+  for (let k = 0; k < 3; k++) {
+    const px = -W * 0.34 + k * (fr * 2.4), py = H * 0.34;
+    octx.beginPath(); octx.ellipse(px + fr * 0.15, py + fr * 0.2, fr, fr, 0, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(6,8,10,0.3)'; octx.fill();
+    octx.beginPath(); octx.ellipse(px, py, fr, fr, 0, 0, Math.PI * 2);
+    octx.fillStyle = '#4a4540'; octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.6)'; octx.lineWidth = Math.max(0.7, ts * 0.026); octx.stroke();
+    octx.beginPath(); octx.arc(px, py, fr * 0.55, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(88,64,46,0.5)'; octx.fill();
+  }
+
+  // ore (brown) / coal (near-black) yard piles
+  for (let k = 0; k < 4; k++) {
+    const px = W * 0.22 + (k % 2) * ts * 0.7, py = -H * 0.30 + Math.floor(k / 2) * ts * 0.6;
+    octx.beginPath(); octx.ellipse(px, py, ts * 0.32, ts * 0.22, 0.3, 0, Math.PI * 2);
+    octx.fillStyle = k % 2 === 0 ? 'rgba(50,42,34,0.7)' : 'rgba(30,28,26,0.75)';
+    octx.fill();
+  }
+  octx.restore();
+}
+
+// Archetype 10: warehouse block on the land side + piers with gantry
+// cranes extending toward the water (mapgen.js orients `rot` at the
+// nearest water tile, so local +u always faces the sea here).
+function drawPort(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+
+  const whW = W * 0.5, whH = H * 0.55;
+  octx.save();
+  octx.translate(-W * 0.32, 0);
+  octx.fillStyle = 'rgba(6,8,10,0.3)';
+  roundedRectPath(octx, -whW / 2 + whW * 0.06, -whH / 2 + whH * 0.12, whW, whH, whH * 0.1);
+  octx.fill();
+  octx.fillStyle = '#6a6f72';
+  roundedRectPath(octx, -whW / 2, -whH / 2, whW, whH, whH * 0.1);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.8, ts * 0.03); octx.stroke();
+  octx.restore();
+
+  const pierLen = W * 0.62, pierW = Math.min(H * 0.16, ts * 0.6);
+  for (let k = 0; k < 2; k++) {
+    octx.save();
+    octx.translate(0, -H * 0.22 + k * (H * 0.44));
+    octx.fillStyle = '#5a4632';
+    roundedRectPath(octx, 0, -pierW / 2, pierLen, pierW, pierW * 0.2);
+    octx.fill();
+    octx.strokeStyle = 'rgba(30,20,12,0.5)'; octx.lineWidth = Math.max(0.6, ts * 0.024); octx.stroke();
+    // gantry crane at the pier tip — vertical span + a boom, the reference
+    // doc's "massive lattice structures" simplified to a legible silhouette
+    octx.strokeStyle = 'rgba(40,42,44,0.85)'; octx.lineWidth = Math.max(1, ts * 0.035);
+    octx.beginPath();
+    octx.moveTo(pierLen * 0.78, -pierW * 1.4); octx.lineTo(pierLen * 0.78, pierW * 1.4);
+    octx.moveTo(pierLen * 0.6, 0); octx.lineTo(pierLen * 0.96, 0);
+    octx.stroke();
+    octx.restore();
+  }
+  octx.restore();
+}
+
+// Archetype 7: fan of parallel siding tracks converging toward the road
+// network (mapgen.js orients `rot` at the nearest road), plus a small yard
+// shed at the converging end.
+function drawRailYard(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(56,52,44,0.14)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.25);
+  octx.fill();
+
+  const tracks = 6;
+  for (let k = 0; k < tracks; k++) {
+    const spread = (k - (tracks - 1) / 2) * (H * 0.13);
+    octx.strokeStyle = '#6f6558';
+    octx.lineWidth = Math.max(1, ts * 0.035);
+    octx.beginPath();
+    octx.moveTo(-W * 0.46, spread * 0.25);
+    octx.lineTo(W * 0.4, spread);
+    octx.stroke();
+    // sparse sleeper ticks along the run
+    octx.strokeStyle = 'rgba(30,26,20,0.4)'; octx.lineWidth = Math.max(0.5, ts * 0.012);
+    const steps = 6;
+    for (let s = 1; s < steps; s++) {
+      const t = s / steps;
+      const x = -W * 0.46 + t * (W * 0.86), y = spread * 0.25 + t * (spread - spread * 0.25);
+      octx.beginPath(); octx.moveTo(x - 2, y - ts * 0.1); octx.lineTo(x + 2, y + ts * 0.1); octx.stroke();
+    }
+  }
+
+  const shW = W * 0.16, shH = H * 0.24;
+  octx.save();
+  octx.translate(-W * 0.36, 0);
+  octx.fillStyle = 'rgba(6,8,10,0.3)';
+  roundedRectPath(octx, -shW / 2 + shW * 0.08, -shH / 2 + shH * 0.12, shW, shH, shH * 0.15);
+  octx.fill();
+  octx.fillStyle = '#565b52';
+  roundedRectPath(octx, -shW / 2, -shH / 2, shW, shH, shH * 0.15);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.7, ts * 0.026); octx.stroke();
+  octx.restore();
+  octx.restore();
+}
+
+// Archetype 12: boiler/turbine hall + a pair of stacks + coal yard piles +
+// a small switchyard.
+function drawPowerStation(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(52,54,56,0.15)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.28);
+  octx.fill();
+
+  const hw = W * 0.5, hh = H * 0.42;
+  octx.fillStyle = 'rgba(6,8,10,0.3)';
+  roundedRectPath(octx, -hw / 2 + hw * 0.05, -hh / 2 + hh * 0.1, hw, hh, hh * 0.1);
+  octx.fill();
+  octx.fillStyle = '#5d6266';
+  roundedRectPath(octx, -hw / 2, -hh / 2, hw, hh, hh * 0.1);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.8, ts * 0.03); octx.stroke();
+
+  const stackR = Math.min(W, H) * 0.075;
+  for (let k = 0; k < 2; k++) {
+    const px = -hw * 0.2 + k * (stackR * 2.6), py = -hh * 0.55;
+    octx.beginPath(); octx.ellipse(px, py, stackR, stackR, 0, 0, Math.PI * 2);
+    octx.fillStyle = '#3d4144'; octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.6, ts * 0.02); octx.stroke();
+  }
+
+  for (let k = 0; k < 3; k++) {
+    const px = hw * 0.55 + k * ts * 0.55, py = hh * 0.15;
+    octx.beginPath(); octx.ellipse(px, py, ts * 0.3, ts * 0.2, 0.2, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(26,24,22,0.75)'; octx.fill();
+  }
+
+  // switchyard: a few pylon markers strung with wire, opposite the coal yard
+  octx.strokeStyle = 'rgba(70,66,58,0.5)'; octx.lineWidth = Math.max(0.6, ts * 0.02);
+  for (let k = 0; k < 3; k++) {
+    const px = -hw * 0.1 + k * ts * 0.6, py = hh * 0.75;
+    octx.beginPath(); octx.moveTo(px, py - ts * 0.3); octx.lineTo(px, py + ts * 0.15); octx.stroke();
+    octx.beginPath(); octx.moveTo(px - ts * 0.15, py - ts * 0.15); octx.lineTo(px + ts * 0.15, py - ts * 0.15); octx.stroke();
+  }
+  octx.restore();
+}
+
+// Archetype 1: 2 big flat-roofed assembly halls + a parking-stall strip +
+// a couple of small vent stacks.
+function drawIndustrialZone(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(54,56,54,0.14)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.28);
+  octx.fill();
+
+  const hw = W * 0.42, hh = H * 0.3;
+  for (let k = 0; k < 2; k++) {
+    octx.save();
+    octx.translate(-W * 0.18 + k * (hw * 1.1), -H * 0.12);
+    octx.fillStyle = 'rgba(6,8,10,0.28)';
+    roundedRectPath(octx, -hw / 2 + hw * 0.04, -hh / 2 + hh * 0.1, hw, hh, hh * 0.08);
+    octx.fill();
+    const roofRgb = lerpRgb(CONCRETE_PALETTES[0][0], CONCRETE_PALETTES[0][1], 0.4 + k * 0.2);
+    octx.fillStyle = rgba(roofRgb, 0.95);
+    roundedRectPath(octx, -hw / 2, -hh / 2, hw, hh, hh * 0.08);
+    octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.55)'; octx.lineWidth = Math.max(0.8, ts * 0.03); octx.stroke();
+    octx.fillStyle = 'rgba(190,215,222,0.35)';
+    for (let s = 0; s < 3; s++) {
+      const sy = -hh * 0.28 + s * hh * 0.28;
+      roundedRectPath(octx, -hw * 0.4, sy, hw * 0.8, hh * 0.06, hh * 0.02);
+      octx.fill();
+    }
+    octx.restore();
+  }
+
+  // parking-stall strip along one edge — the reference doc's "1000+ space"
+  // lots, simplified to a legible row of stall ticks
+  octx.strokeStyle = 'rgba(200,196,186,0.28)'; octx.lineWidth = Math.max(0.5, ts * 0.012);
+  const stalls = 10;
+  for (let s = 0; s < stalls; s++) {
+    const px = -W * 0.42 + s * (W * 0.84 / stalls), py = H * 0.3;
+    octx.beginPath(); octx.moveTo(px, py - ts * 0.25); octx.lineTo(px, py + ts * 0.25); octx.stroke();
+  }
+
+  for (let k = 0; k < 2; k++) {
+    const px = W * 0.3 + k * ts * 0.5, py = -H * 0.32;
+    octx.beginPath(); octx.arc(px, py, ts * 0.11, 0, Math.PI * 2);
+    octx.fillStyle = '#454a48'; octx.fill();
+  }
+  octx.restore();
+}
+
+// A small cluster of long low sheds with loading-dock notches — logistics/
+// distribution, the lightest-weight archetype of the set (deliberately
+// closer to ordinary scale than the heavy-industry types above).
+function drawWarehouseDistrict(octx, cx, cy, rot, ts, wTiles, hTiles) {
+  const W = wTiles * ts, H = hTiles * ts;
+  octx.save();
+  octx.translate(cx, cy);
+  octx.rotate(rot);
+  octx.fillStyle = 'rgba(54,56,54,0.12)';
+  roundedRectPath(octx, -W / 2, -H / 2, W, H, ts * 0.25);
+  octx.fill();
+
+  const bw = W * 0.42, bh = H * 0.36;
+  for (let ry = 0; ry < 2; ry++) for (let rxk = 0; rxk < 2; rxk++) {
+    if (ry === 1 && rxk === 1 && hash2(Math.round(cx) + rxk, Math.round(cy) + ry, 8300) < 0.35) continue; // occasional gap
+    octx.save();
+    octx.translate(-W * 0.22 + rxk * bw * 1.05, -H * 0.18 + ry * bh * 1.05);
+    octx.fillStyle = 'rgba(6,8,10,0.28)';
+    roundedRectPath(octx, -bw / 2 + bw * 0.05, -bh / 2 + bh * 0.12, bw, bh, bh * 0.08);
+    octx.fill();
+    octx.fillStyle = '#666b6e';
+    roundedRectPath(octx, -bw / 2, -bh / 2, bw, bh, bh * 0.08);
+    octx.fill();
+    octx.strokeStyle = 'rgba(14,11,8,0.5)'; octx.lineWidth = Math.max(0.7, ts * 0.026); octx.stroke();
+    octx.fillStyle = 'rgba(30,32,34,0.55)';
+    for (let d = 0; d < 3; d++) {
+      const dx = -bw / 2 + (d + 0.5) * (bw / 3);
+      roundedRectPath(octx, dx - bw * 0.06, bh / 2 - bh * 0.1, bw * 0.12, bh * 0.1, bh * 0.02);
+      octx.fill();
+    }
+    octx.restore();
+  }
+  octx.restore();
+}
+
+const INFRA_DRAWERS = {
+  airport: drawAirport,
+  port: drawPort,
+  railYard: drawRailYard,
+  powerStation: drawPowerStation,
+  industrialZone: drawIndustrialZone,
+  refinery: drawRefinery,
+  steelMill: drawSteelMill,
+  warehouseDistrict: drawWarehouseDistrict,
+};
+
+function prerenderInfrastructure(octx, map) {
+  const ts = map.tileSize;
+  for (const site of (map.infrastructure || [])) {
+    const draw = INFRA_DRAWERS[site.type];
+    if (!draw) continue;
+    draw(octx, site.x, site.y, site.rot, ts, site.w, site.h);
   }
 }
 

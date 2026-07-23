@@ -159,6 +159,17 @@ const COPY = {
 };
 
 const canvas = document.getElementById('view');
+// LOADING OVERLAY (bug fix — see index.html's #loadingOverlay CSS comment).
+// The element is visible by default from the very first paint (plain static
+// markup, no JS needed to show it); this file's only job is hiding it once
+// a real frame is actually on screen — see the loop()/renderer.frame() call
+// below — and, since the one-time terrain pre-render this whole thing exists
+// to cover for is a single long synchronous call, forcing an explicit
+// browser paint (via requestAnimationFrame) right before kicking off the
+// render loop for the first time, so the overlay is guaranteed to have
+// actually been painted before that block starts rather than relying on
+// the browser happening to find a gap on its own.
+const loadingOverlay = document.getElementById('loadingOverlay');
 const hud = document.getElementById('hud');
 const econHud = document.getElementById('econHud');
 const buildbar = document.getElementById('buildbar');
@@ -1189,13 +1200,25 @@ canvas.addEventListener('click', e => {
 // director (and its silly-mode gag chain) can hook, but it's also just a
 // generically useful "reclaim a mis-sited building" tool on its own.
 const sellMode = { active: false };
+// BUG FIX: entering sell mode used to flip `sellMode.active` and nothing
+// else visible — no instruction-bar text change, no cursor, no panel — so a
+// player could land in it (X is a quiet toggle key) and have no idea why
+// their next click sold a building, or how to tell they were even in the
+// mode. Mirrors build mode's own two-part signal one section up: a
+// `body.sell-mode` class (index.html's #view.cursor + a soft red screen-edge
+// tint, the same "obviously armed" language build mode's buildbar panel
+// gives) plus a hud.textContent hint every frame (see the sellHint variable
+// in loop()'s HUD refresh below) — no new UI language invented, just the
+// existing build-mode pattern applied to the other delegated-action mode
+// that was missing it.
 function enterSellMode() {
   if (roadMode.active) exitRoadMode();
   if (buildMode.active) exitBuildMode();
   if (battalionAssignMode.active) exitBattalionAssignMode();
   sellMode.active = true;
+  document.body.classList.add('sell-mode');
 }
-function exitSellMode() { sellMode.active = false; }
+function exitSellMode() { sellMode.active = false; document.body.classList.remove('sell-mode'); }
 
 // Same footprint hit-test shape as the mousemove hover handler above (world-
 // space rect, not a point-radius) so "click the building" feels consistent
@@ -2845,6 +2868,19 @@ function loop(now) {
     drawRoadPreview(ctx, worldToScreen);
     drawBuildPreview(ctx, worldToScreen);
   });
+  // LOADING OVERLAY (bug fix — see index.html's #loadingOverlay comment and
+  // the yield-before-first-loop() call at the bottom of this file). The
+  // very first call to renderer.frame() above is exactly the one that pays
+  // the one-time terrain pre-render cost (engine/renderer.js's ensureTerrain
+  // -> prerenderTerrain, gated on map.version and cached after) — by the
+  // time this line runs the first time, that cost has already been paid and
+  // a real frame is actually on screen, so this is the right moment to hide
+  // the overlay. Guarded to fire exactly once; cheap to leave unconditional
+  // otherwise (classList.remove on an already-hidden element is a no-op).
+  if (!loop._overlayHidden) {
+    loop._overlayHidden = true;
+    loadingOverlay.classList.add('hide');
+  }
 
   // TECH/PRODUCTION TREE VIEW — drawn on its own dedicated canvas, on top of
   // (not instead of) the main game canvas above: the game keeps simulating
@@ -2885,6 +2921,14 @@ function loop(now) {
   const buildHint = buildMode.active
     ? (buildMode.selectedType ? 'build mode: click a rough spot (shift-click to pin exact) — Esc to exit' : 'build mode: pick a building below — Esc to exit')
     : 'B: build';
+  // BUG FIX (sell mode had no visible signal — see enterSellMode above):
+  // same shape as roadHint/buildHint immediately above — SELL MODE gets an
+  // unmissable all-caps instruction while active, same convention
+  // build/road mode already use for "you are in a delegated-action mode
+  // right now," falling back to the quiet "X: sell" key hint otherwise.
+  const sellHint = sellMode.active
+    ? 'SELL MODE — click a building to sell it — Esc to exit'
+    : 'X: sell';
   const battalionHint = battalionAssignMode.active
     ? '  |  assign sector: click a city to rally this battalion (Esc/right-click to cancel)'
     : '';
@@ -2894,7 +2938,7 @@ function loop(now) {
   // authored file loaded via ?map= just shows its name) so a player can
   // share/reproduce a good island via ?seed=N.
   const seedTag = map.seed !== undefined ? ` (seed ${map.seed})` : '';
-  hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint}${battalionHint}${flash}`;
+  hud.textContent = `${map.name}${seedTag} — player ${alive.player} vs enemy ${alive.enemy} — right-click: move order — drag: pan — wheel: zoom — ${roadHint} — ${buildHint} — ${sellHint}${battalionHint}${flash}`;
 
   // PHASE HUD + announcement banner (game/phase.js). Refreshed every frame
   // (cheap DOM writes) rather than only on the triggering events, so a
@@ -3004,4 +3048,20 @@ function loop(now) {
     requestAnimationFrame(loop);
   }
 }
+// Two rAF round-trips before the very first loop() call: the browser only
+// actually paints between animation frames, and loop()'s first invocation
+// is exactly the one that pays the (possibly multi-second, fully
+// synchronous) one-time terrain pre-render cost — see ensureTerrain in
+// engine/renderer.js. Without an explicit yield here, everything from this
+// module's top-level execution straight through that first blocking loop()
+// call can run as one uninterrupted JS turn with zero browser paints in
+// between, so the loading overlay above (already in the DOM, already
+// `display`-visible) never actually reaches the screen before the freeze —
+// exactly what read as "the game hung" in the original bug report. One rAF
+// callback fires right before a paint but doesn't guarantee that paint has
+// been PRESENTED by the time it resolves on every engine, so this waits for
+// a second one — by the time that second callback fires, the first frame
+// (with the overlay) is guaranteed to have made it to the screen.
+await new Promise(r => requestAnimationFrame(r));
+await new Promise(r => requestAnimationFrame(r));
 requestAnimationFrame(loop);

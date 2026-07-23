@@ -127,6 +127,16 @@
   .opsBtn:hover:not(:disabled) { background: var(--paper); border-color: var(--ink); }
   .opsBtn:disabled { opacity: .45; cursor: not-allowed; }
   .opsBtn.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  /* BUG FIX: .opsBtn:hover below is MORE specific in practice (three simple
+     selectors — .opsBtn + :hover + :not(:disabled) — vs. .selected's two)
+     so hovering a selected button let the plain hover rule win the cascade,
+     resetting background back to the light paper tone while .selected's
+     color:var(--paper) (light text) stayed in effect — light text on a
+     light background, i.e. the label going fully invisible for as long as
+     the mouse sat over it (which it always does right after the click that
+     selected it). Re-asserting both background AND color here at equal-or-
+     higher specificity keeps a selected button legible while hovered. */
+  .opsBtn.selected:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   /* INTRO FOCUS — while the intro sequence runs (main.js toggles body.intro-active),
      hide the game's corner HUD so the welcome/handoff beats aren't cluttered by
      the ledger/legend/plan panels ("nothing else matters yet"). The intro's own

@@ -240,6 +240,84 @@ export const BUILDING_DEFS = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// BUILDING VISUALS — pure data, additive to BUILDING_DEFS above (QA: "every
+// structure renders as the same rotated brown/tan blob"). Each entry is a
+// small DESCRIPTOR, not a drawing routine: main.js's drawBuilding composes
+// the actual procedural shapes (smokestacks, dishes, headframes, gantry
+// cranes, etc.) from these fields via a shared part vocabulary, so this stays
+// a lookup table (new building type = new data row) instead of a 20-way
+// if/else of bespoke drawing code. Grouped into the seven READABLE FAMILIES
+// the art brief asks for — `family` is what main.js switches on to pick the
+// part vocabulary, everything else fine-tunes that family's look per type so
+// e.g. a tankFactory and an aircraftPlant both clearly read "industry" but
+// are never confusable with each other.
+//   family:  'industry' | 'sensors' | 'extraction' | 'naval' | 'defensive' |
+//            'civic' | 'bleeding'
+//   palette: key into VISUAL_PALETTES below (roof/wall base hue)
+//   roof:    'saw' | 'gable' | 'panels' | 'flat' — the roof-surface texture
+//            pattern drawn across the top face (independent of `family`, so
+//            e.g. two industry types can share a family but differ in roof
+//            silhouette the way the art brief's "different roof profile"
+//            ask wants)
+//   feature: the ONE distinguishing set-piece prop for this type (a hangar
+//            door, a dish, a headframe, a launch rail, ...) — the thing a
+//            player's eye actually lands on to tell this building apart from
+//            its family-mates at a glance
+//   stacks/vents/mastCount/tubes/rows/quonset/cranes: small integer knobs a
+//            handful of family drawers read to vary count/scale
+//   glow/glowStrong/dishAccent/tallStack: boolean accents layered on top
+// Deliberately NOT positions/angles/sizes in world units — main.js derives
+// all of that from the building's own screen-space footprint box
+// (cam.zoom x dpr already baked in by worldToScreen) plus a deterministic
+// hash off the building's own gx/gy for any per-instance variety, so this
+// table stays pure "what kind of building is this," same separation
+// BUILDING_DEFS above already keeps from the systems that consume it.
+export const VISUAL_PALETTES = {
+  rust:  ['#7d5a3c', '#9c7850'], // warm rust — the archetypal factory/forge
+  steel: ['#5b6167', '#747d84'], // grey steel — big hangars, naval, bleeding-edge
+  soot:  ['#433a33', '#584c42'], // dark sooty — the hottest heavy industry
+  olive: ['#4c5642', '#67735a'], // military olive-drab — defensive works
+  clean: ['#6d7972', '#8b978f'], // pale institutional grey-green — sensors/research
+  tan:   ['#7c6b4c', '#9a8560'], // warm tan — civic/dormitory
+  earth: ['#5f4d34', '#7a6446'], // dirt/spoil — extraction
+};
+export const BUILDING_VISUALS = {
+  // --- heavy industry: sheds, smokestacks, sootier palette -----------------
+  factory:         { family: 'industry', palette: 'rust',  roof: 'saw',    stacks: 2, vents: 1 },
+  tankFactory:     { family: 'industry', palette: 'steel', roof: 'gable',  stacks: 1, feature: 'doorRoll' },
+  aircraftPlant:   { family: 'industry', palette: 'steel', roof: 'panels', stacks: 0, vents: 2, feature: 'doorArch' },
+  ammunitionPlant: { family: 'industry', palette: 'olive', roof: 'saw',    stacks: 1, feature: 'silos' },
+  artilleryWorks:  { family: 'industry', palette: 'rust',  roof: 'saw',    stacks: 1, glow: true },
+  alloyForge:      { family: 'industry', palette: 'soot',  roof: 'gable',  stacks: 1, tallStack: true, glowStrong: true },
+  electronicsPlant:{ family: 'industry', palette: 'clean', roof: 'panels', stacks: 0, vents: 2, feature: 'mast' },
+  droneWorks:      { family: 'industry', palette: 'clean', roof: 'flat',   stacks: 0, feature: 'pad' },
+
+  // --- sensors/comms: dish/dome + antenna masts on a blockhouse ------------
+  radar:        { family: 'sensors', palette: 'clean', roof: 'flat', feature: 'dish', mastCount: 1 },
+  signalsWorks: { family: 'sensors', palette: 'clean', roof: 'flat', mastCount: 3 },
+
+  // --- extraction: headframe + spoil heap -----------------------------------
+  mine: { family: 'extraction', palette: 'earth', roof: 'flat' },
+
+  // --- naval: gantry cranes + slipway ---------------------------------------
+  shipyard: { family: 'naval', palette: 'steel', roof: 'flat', cranes: 2 },
+
+  // --- defensive: bunker/revetment, lower and squarer -----------------------
+  gunEmplacement:     { family: 'defensive', palette: 'olive', roof: 'flat', feature: 'barrel' },
+  airDefenseWorks:    { family: 'defensive', palette: 'olive', roof: 'flat', feature: 'tubes', tubes: 4 },
+  guidedWeaponsWorks: { family: 'defensive', palette: 'olive', roof: 'flat', feature: 'rail', dishAccent: true },
+
+  // --- civic/support: dormitory rows, warehouses+crates, institutional -----
+  barracks:      { family: 'civic', palette: 'tan',   roof: 'flat', feature: 'rows', rows: 3 },
+  supplyDepot:   { family: 'civic', palette: 'tan',   roof: 'flat', feature: 'quonset', quonset: 2 },
+  researchBureau:{ family: 'civic', palette: 'clean', roof: 'flat', feature: 'dome' },
+
+  // --- bleeding-edge: vertical test gantry / launch rail --------------------
+  missileWorks:    { family: 'bleeding', palette: 'steel', roof: 'panels', stacks: 0, feature: 'gantry' },
+  hypersonicWorks: { family: 'bleeding', palette: 'steel', roof: 'panels', stacks: 0, feature: 'railGlow' },
+};
+
 // Generic vision-range accessor shared by game/fog.js for both units and
 // buildings: a unit has no `status` field so it always falls through to the
 // full def.vision branch; a building under construction reads its reduced

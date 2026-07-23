@@ -1,7 +1,7 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
 import { createRenderer, attachCameraControls, OWNERSHIP_COLORS, drawUnit, drawProjectile, drawImpacts, drawBattalionMarker } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
-import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
+import { BUILDING_DEFS, BUILDING_VISUALS, VISUAL_PALETTES, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
 // BUILDBAR CATEGORY MAP (playtest: "group buildings... you can't scroll
 // down on it") — pure data, see that file's header for the full rationale.
 import { BUILD_CATEGORIES } from './game/buildingCategories.js';
@@ -2222,25 +2222,541 @@ function drawDepositFocus(ctx, worldToScreen, cam, focus) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// BUILDING BODY RENDERING (QA: "every structure renders as the same rotated
+// brown/tan blob — no way to visually distinguish a factory from a house").
+// This section composes each COMPLETE building's body from BUILDING_VISUALS
+// (game/buildings.js — the type -> family/roof/feature descriptor table)
+// using a small shared PART VOCABULARY (smokestack/mast/dish/headframe/
+// crane/bunker/dome/...) rather than 20 bespoke drawing functions. A
+// building's screen-space box (x0,y0,x1,y1, already worldToScreen'd — see
+// drawBuilding below) already bakes in footprint size x cam.zoom x dpr, so
+// every part below is sized as a FRACTION of that box and scales correctly
+// with both footprint and zoom with no extra math. Deterministic per-
+// building variety (dish tilt, stack offset, ...) comes from bHash() below,
+// seeded off the building's own (gx,gy) — never Math.random, so the same map
+// always paints the same buildings.
+//
+// Shared light convention with engine/renderer.js's B5a city buildings: a
+// fixed light from the upper-left, so a WALL band along the bottom+right
+// edges (darker) plus a ROOF top-face (lighter) is enough fake-extrusion to
+// read as "this has height" without real 3D — same 2.5-tier language the
+// city painter already established, so player-built buildings and the
+// procedural city around them feel like one coherent world.
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function lerpRgb3(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function rgbaStr(rgb, a) { return `rgba(${rgb[0] | 0},${rgb[1] | 0},${rgb[2] | 0},${a})`; }
+// Cheap deterministic integer hash off a building's own tile position + a
+// salt (so multiple distinct rolls per building don't collide) — the ONLY
+// source of "per-instance variety" (dish tilt, stack offset) in this whole
+// section; never Math.random, so re-rendering is pixel-stable and a headless
+// test can assert on exact output.
+function bHash(b, salt) {
+  let h = (((b.gx | 0) * 374761393) ^ ((b.gy | 0) * 668265263) ^ (salt * 2246822519)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967295;
+}
+function roundRectPathLocal(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (r <= 0.5) { ctx.rect(x, y, w, h); return; }
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+const FALLBACK_VISUAL = { family: 'industry', palette: 'steel', roof: 'panels', stacks: 1, vents: 0 };
+
+// Resolved per-(type,side) paint styles — a handful of ready-to-assign
+// fillStyle/strokeStyle STRINGS, computed once per type+side combo and
+// cached, never recomputed per frame/per building (guardrail: "keep the
+// per-building draw cheap; precompute the descriptor lookup, not heavy
+// per-frame math"). Ownership shows up as a SUBTLE hue cast blended into the
+// type's own palette (14%/10%) plus a small saturated rim stroke + corner
+// beacon drawn separately — legible at a glance without recoloring the whole
+// building the way the old flat player-blue/enemy-red fill did (the exact
+// thing that made every type indistinguishable).
+const bodyStyleCache = new Map();
+function getBodyStyle(key, side, visual) {
+  const cacheKey = key + '|' + side;
+  let s = bodyStyleCache.get(cacheKey);
+  if (s) return s;
+  const pal = VISUAL_PALETTES[visual.palette] || VISUAL_PALETTES.steel;
+  const sideColor = side === 'player' ? [95, 208, 255] : [255, 90, 90];
+  const wallRgb = lerpRgb3(hexToRgb(pal[0]), sideColor, 0.10);
+  const roofRgb = lerpRgb3(hexToRgb(pal[1]), sideColor, 0.14);
+  s = {
+    roofFill: rgbaStr(roofRgb, 0.97),
+    roofFillLight: rgbaStr(lerpRgb3(roofRgb, [255, 255, 255], 0.20), 0.97),
+    wallFill: rgbaStr(wallRgb, 0.95),
+    wallFillDark: rgbaStr(wallRgb.map(c => c * 0.68), 0.95),
+    outline: 'rgba(12,10,8,0.68)',
+    sideStroke: `rgba(${sideColor[0]},${sideColor[1]},${sideColor[2]},0.65)`,
+    sideFill: `rgba(${sideColor[0]},${sideColor[1]},${sideColor[2]},0.92)`,
+    detailDark: rgbaStr(wallRgb.map(c => c * 0.42), 0.92),
+    detailLight: rgbaStr(lerpRgb3(roofRgb, [255, 255, 255], 0.4), 0.92),
+  };
+  bodyStyleCache.set(cacheKey, s);
+  return s;
+}
+
+// Lattice antenna mast: a thin vertical stroke + 1-2 crossbars + a small
+// side-colored light at the tip. Shared by industry's `mast`/`pad` features,
+// sensors' mastCount array, and used as radar's dish pedestal.
+function drawMast(ctx, x, baseY, height, style) {
+  ctx.strokeStyle = style.detailDark;
+  ctx.lineWidth = Math.max(0.8, height * 0.05);
+  ctx.beginPath(); ctx.moveTo(x, baseY); ctx.lineTo(x, baseY - height); ctx.stroke();
+  for (let i = 1; i <= 2; i++) {
+    const yy = baseY - height * (i / 3);
+    const bw = height * 0.12 * (1 - (i / 3) * 0.4);
+    ctx.beginPath(); ctx.moveTo(x - bw, yy); ctx.lineTo(x + bw, yy); ctx.stroke();
+  }
+  ctx.fillStyle = style.sideFill;
+  ctx.beginPath(); ctx.arc(x, baseY - height, Math.max(0.8, height * 0.06), 0, 6.283); ctx.fill();
+}
+
+// ROOF SURFACE PATTERNS — the "not a flat fill" texture cue drawn across the
+// roof top-face, independent of family so two industry types can share a
+// silhouette but read as different roof profiles (art brief's "vary detail
+// so a tankFactory != an aircraftPlant at a glance").
+function roofSaw(ctx, x0, y0, x1, y1, style) {
+  const rw = x1 - x0, rh = y1 - y0;
+  const teeth = Math.max(2, Math.min(6, Math.round(rw / Math.max(1, rh * 0.85))));
+  const tw = rw / teeth;
+  for (let i = 0; i < teeth; i++) {
+    ctx.fillStyle = i % 2 === 0 ? style.roofFillLight : style.roofFill;
+    ctx.fillRect(x0 + i * tw, y0, tw, rh);
+  }
+  ctx.strokeStyle = style.detailDark;
+  ctx.lineWidth = Math.max(1, rh * 0.05);
+  for (let i = 1; i < teeth; i++) {
+    const sx = x0 + i * tw;
+    ctx.beginPath(); ctx.moveTo(sx, y0); ctx.lineTo(sx - tw * 0.35, y0 + rh * 0.3); ctx.stroke();
+  }
+}
+function roofGable(ctx, x0, y0, x1, y1, style) {
+  const midX = (x0 + x1) / 2;
+  ctx.fillStyle = style.roofFillLight;
+  ctx.fillRect(x0, y0, midX - x0, y1 - y0);
+  ctx.strokeStyle = style.detailDark;
+  ctx.lineWidth = Math.max(1, (y1 - y0) * 0.05);
+  ctx.beginPath(); ctx.moveTo(midX, y0); ctx.lineTo(midX, y1); ctx.stroke();
+}
+function roofPanels(ctx, x0, y0, x1, y1, style) {
+  const rw = x1 - x0, rh = y1 - y0;
+  const cols = Math.max(2, Math.min(5, Math.round(rw / Math.max(1, rh * 0.55))));
+  ctx.strokeStyle = style.detailDark;
+  ctx.lineWidth = Math.max(0.6, rh * 0.02);
+  for (let i = 1; i < cols; i++) {
+    const x = x0 + (rw / cols) * i;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(x0, (y0 + y1) / 2); ctx.lineTo(x1, (y0 + y1) / 2); ctx.stroke();
+}
+
+// --- FAMILY FEATURE DRAWERS — the one distinguishing set-piece per type ----
+
+function drawIndustryFeatures(ctx, hw, hh, rx0, ry0, rx1, ry1, visual, style, b) {
+  const h1 = bHash(b, 41);
+  const short = Math.min(hw, hh);
+  const stacks = visual.stacks || 0;
+  for (let i = 0; i < stacks; i++) {
+    const t = stacks === 1 ? 0.5 : i / (stacks - 1);
+    const sx = rx0 + (rx1 - rx0) * (0.18 + t * 0.28) + (h1 - 0.5) * (rx1 - rx0) * 0.06;
+    const sw = short * 0.16;
+    const stackH = short * (visual.tallStack ? 0.95 : 0.62);
+    const baseY = ry0 + (ry1 - ry0) * 0.32;
+    ctx.fillStyle = style.wallFillDark;
+    ctx.fillRect(sx - sw / 2, baseY - stackH, sw, stackH);
+    ctx.fillStyle = style.detailDark;
+    ctx.fillRect(sx - sw / 2, baseY - stackH, sw, stackH * 0.14);
+    if (visual.glow || visual.glowStrong) {
+      ctx.fillStyle = visual.glowStrong ? 'rgba(255,150,60,0.9)' : 'rgba(255,150,60,0.5)';
+      ctx.fillRect(sx - sw * 0.32, baseY - stackH, sw * 0.64, stackH * 0.1);
+    }
+  }
+  const vents = visual.vents || 0;
+  for (let i = 0; i < vents; i++) {
+    const vx = rx1 - (rx1 - rx0) * (0.15 + i * 0.18);
+    const vy = ry0 + (ry1 - ry0) * 0.22;
+    ctx.fillStyle = style.detailDark;
+    ctx.beginPath(); ctx.arc(vx, vy, short * 0.075, 0, 6.283); ctx.fill();
+  }
+  if (visual.feature === 'doorRoll') {
+    const dw = hw * 1.05, dh = short * 0.42, dx = -dw / 2, dy = hh - dh;
+    ctx.fillStyle = style.detailDark;
+    ctx.fillRect(dx, dy, dw, dh);
+    ctx.strokeStyle = style.roofFillLight;
+    ctx.lineWidth = Math.max(0.6, hh * 0.02);
+    for (let i = 1; i < 4; i++) {
+      const yy = dy + (dh / 4) * i;
+      ctx.beginPath(); ctx.moveTo(dx, yy); ctx.lineTo(dx + dw, yy); ctx.stroke();
+    }
+  } else if (visual.feature === 'doorArch') {
+    const dw = hw * 1.3;
+    ctx.fillStyle = style.detailDark;
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2, hh);
+    ctx.lineTo(-dw / 2, hh - hh * 0.55);
+    ctx.quadraticCurveTo(0, hh - hh * 0.92, dw / 2, hh - hh * 0.55);
+    ctx.lineTo(dw / 2, hh);
+    ctx.closePath(); ctx.fill();
+  } else if (visual.feature === 'silos') {
+    for (let i = 0; i < 2; i++) {
+      const sx = rx0 + (rx1 - rx0) * (0.6 + i * 0.2);
+      const sw = short * 0.22, sh = short * 0.5;
+      const sy = ry0 + (ry1 - ry0) * 0.55;
+      ctx.fillStyle = style.roofFillLight;
+      ctx.fillRect(sx - sw / 2, sy - sh, sw, sh);
+      ctx.fillStyle = style.detailDark;
+      ctx.fillRect(sx - sw / 2, sy - sh, sw, sh * 0.12);
+    }
+    ctx.fillStyle = 'rgba(210,170,50,0.55)';
+    ctx.fillRect(-hw, hh - short * 0.06, hw * 2, short * 0.045);
+  } else if (visual.feature === 'mast') {
+    drawMast(ctx, rx1 - (rx1 - rx0) * 0.15, ry0 + (ry1 - ry0) * 0.25, short * 0.55, style);
+  } else if (visual.feature === 'pad') {
+    const pr = short * 0.4;
+    ctx.strokeStyle = style.sideStroke; ctx.lineWidth = Math.max(1, pr * 0.12);
+    ctx.beginPath(); ctx.arc(0, 0, pr, 0, 6.283); ctx.stroke();
+    ctx.fillStyle = style.detailDark;
+    ctx.beginPath(); ctx.arc(0, 0, pr * 0.28, 0, 6.283); ctx.fill();
+    drawMast(ctx, hw * 0.6, -hh * 0.3, short * 0.4, style);
+  }
+}
+
+function drawSensorFeatures(ctx, hw, hh, visual, style, b) {
+  const h1 = bHash(b, 51);
+  const short = Math.min(hw, hh);
+  if (visual.feature === 'dish') {
+    const px = -hw * 0.15, pedH = short * 0.35;
+    drawMast(ctx, px, hh * 0.15, pedH, style);
+    const dr = short * 0.62, tilt = -0.35 + h1 * 0.3;
+    ctx.save();
+    ctx.translate(px, hh * 0.15 - pedH);
+    ctx.fillStyle = style.roofFillLight;
+    ctx.beginPath(); ctx.ellipse(0, 0, dr, dr * 0.42, tilt, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.8, dr * 0.06);
+    ctx.beginPath(); ctx.ellipse(0, 0, dr, dr * 0.42, tilt, 0, 6.283); ctx.stroke();
+    ctx.restore();
+  }
+  if (visual.mastCount) {
+    for (let i = 0; i < visual.mastCount; i++) {
+      const t = visual.mastCount === 1 ? 0.5 : i / (visual.mastCount - 1);
+      const x = -hw * 0.7 + t * hw * 1.4;
+      drawMast(ctx, x, hh * 0.4, short * (0.55 + bHash(b, 60 + i) * 0.3), style);
+    }
+  }
+}
+
+function drawExtractionFeatures(ctx, hw, hh, visual, style, b) {
+  const short = Math.min(hw, hh);
+  const baseX = -hw * 0.25, baseY = hh * 0.3;
+  const legSpread = short * 0.55, towerH = short * 1.05;
+  ctx.strokeStyle = style.detailDark;
+  ctx.lineWidth = Math.max(1, towerH * 0.045);
+  ctx.beginPath();
+  ctx.moveTo(baseX - legSpread, baseY); ctx.lineTo(baseX, baseY - towerH);
+  ctx.moveTo(baseX + legSpread, baseY); ctx.lineTo(baseX, baseY - towerH);
+  ctx.stroke();
+  for (let i = 1; i <= 2; i++) {
+    const t = i / 3, yy = baseY - towerH * t;
+    ctx.beginPath();
+    ctx.moveTo(baseX - legSpread * (1 - t), yy); ctx.lineTo(baseX + legSpread * (1 - t), yy); ctx.stroke();
+  }
+  ctx.fillStyle = style.sideFill;
+  ctx.beginPath(); ctx.arc(baseX, baseY - towerH, towerH * 0.09, 0, 6.283); ctx.fill();
+  // spoil heap — a mound of tailings beside the headframe, the "sits on a
+  // resource deposit" extraction read the art brief asks for
+  const hpx = hw * 0.45, hpy = hh * 0.42, hr = short * 0.5;
+  ctx.fillStyle = style.wallFillDark;
+  ctx.beginPath();
+  ctx.moveTo(hpx - hr, hpy); ctx.quadraticCurveTo(hpx, hpy - hr * 1.1, hpx + hr, hpy); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.6, hr * 0.04);
+  ctx.stroke();
+}
+
+function drawNavalFeatures(ctx, hw, hh, visual, style, b) {
+  const short = Math.min(hw, hh);
+  const cranes = visual.cranes || 2;
+  for (let i = 0; i < cranes; i++) {
+    const t = cranes === 1 ? 0.5 : i / (cranes - 1);
+    const x = -hw * 0.7 + t * hw * 1.4;
+    const legH = short * 0.9;
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(1, legH * 0.05);
+    ctx.beginPath(); ctx.moveTo(x - hw * 0.08, hh * 0.2); ctx.lineTo(x - hw * 0.08, hh * 0.2 - legH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + hw * 0.08, hh * 0.2); ctx.lineTo(x + hw * 0.08, hh * 0.2 - legH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - hw * 0.32, hh * 0.2 - legH); ctx.lineTo(x + hw * 0.32, hh * 0.2 - legH); ctx.stroke();
+  }
+  // slipway — a pale ramp toward the waterfront edge, "reads as waterfront
+  // industry" per the art brief
+  ctx.fillStyle = 'rgba(140,175,200,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(-hw * 0.15, hh); ctx.lineTo(hw * 0.15, hh); ctx.lineTo(hw * 0.04, -hh * 0.1); ctx.lineTo(-hw * 0.04, -hh * 0.1);
+  ctx.closePath(); ctx.fill();
+}
+
+function drawDefensiveFeatures(ctx, hw, hh, visual, style, b) {
+  const short = Math.min(hw, hh);
+  // scalloped sandbag/revetment rim along the top edge — a bunker, not a shed
+  ctx.fillStyle = style.wallFillDark;
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    const x = -hw + (2 * hw / n) * (i + 0.5);
+    ctx.beginPath(); ctx.arc(x, -hh, short * 0.14, Math.PI, 0); ctx.fill();
+  }
+  if (visual.feature === 'barrel') {
+    const ang = b.aim || 0;
+    const len = Math.max(hw, hh) * 1.3, bw = short * 0.22;
+    ctx.save(); ctx.rotate(ang);
+    ctx.fillStyle = style.detailDark;
+    ctx.fillRect(0, -bw / 2, len, bw);
+    ctx.fillStyle = style.sideFill;
+    ctx.fillRect(len * 0.85, -bw * 0.6, len * 0.12, bw * 1.2);
+    ctx.restore();
+  } else if (visual.feature === 'tubes') {
+    const tubes = visual.tubes || 4;
+    for (let i = 0; i < tubes; i++) {
+      const t = (i + 0.5) / tubes;
+      const x = -hw * 0.7 + t * hw * 1.4;
+      const th = short * 0.7;
+      ctx.fillStyle = style.detailDark;
+      ctx.fillRect(x - short * 0.09, -th, short * 0.18, th);
+      ctx.fillStyle = style.sideFill;
+      ctx.fillRect(x - short * 0.06, -th, short * 0.12, th * 0.1);
+    }
+  } else if (visual.feature === 'rail') {
+    const ang = -0.55;
+    ctx.save(); ctx.rotate(ang);
+    const len = Math.max(hw, hh) * 1.4, rw = short * 0.3;
+    ctx.fillStyle = style.detailDark;
+    ctx.fillRect(-len * 0.15, -rw / 2, len, rw);
+    ctx.strokeStyle = style.roofFillLight; ctx.lineWidth = Math.max(0.6, rw * 0.1);
+    for (let i = 0; i < 5; i++) {
+      const x = -len * 0.1 + i * (len * 0.85 / 5);
+      ctx.beginPath(); ctx.moveTo(x, -rw / 2); ctx.lineTo(x, rw / 2); ctx.stroke();
+    }
+    ctx.restore();
+    if (visual.dishAccent) {
+      ctx.fillStyle = style.roofFillLight;
+      ctx.beginPath(); ctx.ellipse(-hw * 0.4, -hh * 0.35, short * 0.28, short * 0.14, -0.3, 0, 6.283); ctx.fill();
+    }
+  }
+}
+
+function drawCivicFeatures(ctx, hw, hh, rx0, ry0, rx1, ry1, visual, style, b) {
+  const short = Math.min(hw, hh);
+  if (visual.feature === 'rows') {
+    const rows = visual.rows || 3;
+    const rh = (ry1 - ry0) / rows;
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.6, rh * 0.08);
+    for (let i = 1; i < rows; i++) {
+      const y = ry0 + rh * i;
+      ctx.beginPath(); ctx.moveTo(rx0, y); ctx.lineTo(rx1, y); ctx.stroke();
+    }
+    ctx.fillStyle = style.detailLight;
+    for (let r = 0; r < rows; r++) {
+      const y = ry0 + rh * (r + 0.5);
+      for (let c = 0; c < 3; c++) {
+        const x = rx0 + (rx1 - rx0) * ((c + 0.5) / 3);
+        ctx.beginPath(); ctx.arc(x, y, short * 0.035, 0, 6.283); ctx.fill();
+      }
+    }
+    const fx = rx1 - (rx1 - rx0) * 0.08, fy = ry0, fh = short * 0.5;
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.6, fh * 0.06);
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - fh); ctx.stroke();
+    ctx.fillStyle = style.sideFill;
+    ctx.fillRect(fx, fy - fh, fh * 0.4, fh * 0.22);
+  } else if (visual.feature === 'quonset') {
+    const n = visual.quonset || 2;
+    const segW = (rx1 - rx0) / n;
+    for (let i = 0; i < n; i++) {
+      const cxp = rx0 + segW * (i + 0.5);
+      const rw2 = segW * 0.42, rh2 = short * 0.5;
+      ctx.fillStyle = style.roofFillLight;
+      ctx.beginPath(); ctx.ellipse(cxp, ry0 + rh2 * 0.15, rw2, rh2, 0, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.6, rh2 * 0.05);
+      ctx.beginPath(); ctx.ellipse(cxp, ry0 + rh2 * 0.15, rw2, rh2, 0, Math.PI, 0); ctx.stroke();
+    }
+    const crateY = ry1 - short * 0.22;
+    for (let i = 0; i < 3; i++) {
+      const cxp = rx0 + (rx1 - rx0) * (0.15 + i * 0.28);
+      const cs = short * 0.16;
+      ctx.fillStyle = style.wallFillDark;
+      ctx.fillRect(cxp - cs / 2, crateY - cs / 2, cs, cs);
+      ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.5, cs * 0.06);
+      ctx.strokeRect(cxp - cs / 2, crateY - cs / 2, cs, cs);
+    }
+  } else if (visual.feature === 'dome') {
+    const dr = short * 0.4;
+    ctx.fillStyle = style.roofFillLight;
+    ctx.beginPath(); ctx.arc(0, -dr * 0.15, dr, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(0.6, dr * 0.06);
+    ctx.beginPath(); ctx.arc(0, -dr * 0.15, dr, Math.PI, 0); ctx.stroke();
+    ctx.strokeStyle = style.detailLight; ctx.lineWidth = Math.max(0.5, dr * 0.04);
+    ctx.beginPath(); ctx.moveTo(0, -dr * 1.1); ctx.lineTo(0, -dr * 0.15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-dr * 0.7, -dr * 0.15); ctx.lineTo(dr * 0.7, -dr * 0.15); ctx.stroke();
+  }
+}
+
+function drawBleedingFeatures(ctx, hw, hh, visual, style, b) {
+  const short = Math.min(hw, hh);
+  if (visual.feature === 'gantry') {
+    const x = hw * 0.15, towerH = short * 1.3;
+    ctx.strokeStyle = style.detailDark; ctx.lineWidth = Math.max(1, towerH * 0.04);
+    ctx.beginPath(); ctx.moveTo(x - hw * 0.06, hh * 0.2); ctx.lineTo(x - hw * 0.06, hh * 0.2 - towerH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + hw * 0.06, hh * 0.2); ctx.lineTo(x + hw * 0.06, hh * 0.2 - towerH); ctx.stroke();
+    for (let i = 1; i <= 3; i++) {
+      const yy = hh * 0.2 - towerH * (i / 4);
+      ctx.beginPath(); ctx.moveTo(x - hw * 0.06, yy); ctx.lineTo(x + hw * 0.06, yy); ctx.stroke();
+    }
+    const capW = hw * 0.14, capH = towerH * 0.55;
+    ctx.fillStyle = style.roofFillLight;
+    ctx.fillRect(x - capW / 2, hh * 0.15 - capH, capW, capH);
+    ctx.fillStyle = style.sideFill;
+    ctx.beginPath();
+    ctx.moveTo(x - capW / 2, hh * 0.15 - capH); ctx.lineTo(x, hh * 0.15 - capH - capH * 0.18); ctx.lineTo(x + capW / 2, hh * 0.15 - capH);
+    ctx.closePath(); ctx.fill();
+  } else if (visual.feature === 'railGlow') {
+    const ang = -0.42;
+    ctx.save(); ctx.rotate(ang);
+    const len = Math.max(hw, hh) * 1.6, rw = short * 0.26;
+    ctx.fillStyle = style.detailDark;
+    ctx.fillRect(-len * 0.2, -rw / 2, len, rw);
+    ctx.strokeStyle = 'rgba(255,150,70,0.85)';
+    ctx.lineWidth = Math.max(0.6, rw * 0.16);
+    ctx.beginPath(); ctx.moveTo(-len * 0.15, 0); ctx.lineTo(len * 0.75, 0); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawOwnershipBeacon(ctx, x, y, style, dpr) {
+  ctx.fillStyle = style.sideFill;
+  ctx.beginPath(); ctx.arc(x, y, Math.max(1.4 * dpr, 2 * dpr), 0, 6.283); ctx.fill();
+}
+
+// Composes ONE complete building body: shadow -> wall bands -> roof top-face
+// -> roof surface pattern -> crisp structural outline -> thin ownership rim
+// -> the family's distinguishing set-piece feature -> a small ownership
+// beacon. This is the function that replaces the old flat single-color
+// fillRect/strokeRect blob for any COMPLETE (non-constructing) building —
+// see drawBuilding below, which still owns the scaffold look for buildings
+// still under construction.
+function drawBuildingBody(ctx, x0, y0, x1, y1, b, cam) {
+  const w = x1 - x0, h = y1 - y0;
+  const hw = w / 2, hh = h / 2;
+  const cx = x0 + hw, cy = y0 + hh;
+  const visual = BUILDING_VISUALS[b.key] || FALLBACK_VISUAL;
+  const style = getBodyStyle(b.key, b.side, visual);
+  const dpr = devicePixelRatio;
+  const outlineW = Math.max(1 * dpr, Math.min(w, h) * 0.045);
+  const wallDepth = Math.min(w, h) * 0.16;
+  const cr = Math.min(w, h) * (visual.family === 'civic' || visual.family === 'sensors' ? 0.05 : 0.015);
+  // below this screen size the family's fine detail would just be noise —
+  // draw the readable shaded box only (still NOT a flat single-color blob:
+  // still gets the roof/wall extrusion + outline + ownership rim) and skip
+  // the per-feature draw calls, both for legibility and per-frame cost at
+  // strategic zoom where dozens of buildings may be on screen at once
+  const tiny = Math.min(w, h) < 12;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // grounded drop shadow — offset toward lower-right, same fixed light
+  // direction engine/renderer.js's city blocks use, so it isn't "the only
+  // thing giving it form" (the wall/roof extrusion below does that) but
+  // still grounds the building on the terrain under it
+  ctx.fillStyle = 'rgba(6,8,10,0.4)';
+  roundRectPathLocal(ctx, -hw + w * 0.045, -hh + h * 0.06, w, h, cr);
+  ctx.fill();
+
+  // WALL bands (bottom + right, darker) — fake-extrusion height cue
+  ctx.fillStyle = style.wallFill;
+  roundRectPathLocal(ctx, -hw, hh - wallDepth, w, wallDepth, cr * 0.6); ctx.fill();
+  roundRectPathLocal(ctx, hw - wallDepth, -hh, wallDepth, h, cr * 0.6); ctx.fill();
+
+  // ROOF top-face
+  const rx0 = -hw, ry0 = -hh, rx1 = hw - wallDepth * 0.55, ry1 = hh - wallDepth * 0.55;
+  ctx.fillStyle = style.roofFill;
+  roundRectPathLocal(ctx, rx0, ry0, rx1 - rx0, ry1 - ry0, cr);
+  ctx.fill();
+
+  if (!tiny) {
+    ctx.save();
+    roundRectPathLocal(ctx, rx0, ry0, rx1 - rx0, ry1 - ry0, cr);
+    ctx.clip();
+    if (visual.roof === 'saw') roofSaw(ctx, rx0, ry0, rx1, ry1, style);
+    else if (visual.roof === 'gable') roofGable(ctx, rx0, ry0, rx1, ry1, style);
+    else if (visual.roof === 'panels') roofPanels(ctx, rx0, ry0, rx1, ry1, style);
+    ctx.restore();
+  }
+
+  // crisp structural outline — the other half of "reads as built, not
+  // painted"; a thin low-alpha stroke is what let the old blob nearly
+  // disappear at anything but max zoom
+  ctx.strokeStyle = style.outline;
+  ctx.lineWidth = outlineW;
+  roundRectPathLocal(ctx, -hw, -hh, w, h, cr);
+  ctx.stroke();
+
+  // thin OWNERSHIP rim just inside the structural outline — legible "whose
+  // building is this" without recoloring the whole body the way the old
+  // flat player-blue/enemy-red fill did (the actual thing that made every
+  // type indistinguishable)
+  ctx.strokeStyle = style.sideStroke;
+  ctx.lineWidth = Math.max(0.75 * dpr, outlineW * 0.55);
+  roundRectPathLocal(ctx, -hw + outlineW, -hh + outlineW, w - outlineW * 2, h - outlineW * 2, Math.max(0, cr - outlineW * 0.5));
+  ctx.stroke();
+
+  if (!tiny) {
+    switch (visual.family) {
+      case 'industry': drawIndustryFeatures(ctx, hw, hh, rx0, ry0, rx1, ry1, visual, style, b); break;
+      case 'sensors': drawSensorFeatures(ctx, hw, hh, visual, style, b); break;
+      case 'extraction': drawExtractionFeatures(ctx, hw, hh, visual, style, b); break;
+      case 'naval': drawNavalFeatures(ctx, hw, hh, visual, style, b); break;
+      case 'defensive': drawDefensiveFeatures(ctx, hw, hh, visual, style, b); break;
+      case 'civic': drawCivicFeatures(ctx, hw, hh, rx0, ry0, rx1, ry1, visual, style, b); break;
+      case 'bleeding': drawBleedingFeatures(ctx, hw, hh, visual, style, b); break;
+    }
+  }
+  ctx.restore();
+
+  drawOwnershipBeacon(ctx, cx - hw + w * 0.1, cy - hh + h * 0.08, style, dpr);
+}
+
 function drawBuilding(ctx, worldToScreen, cam, b) {
   const ts = map.tileSize;
   const [x0, y0] = worldToScreen(b.gx * ts, b.gy * ts);
   const [x1, y1] = worldToScreen((b.gx + b.def.footprint.w) * ts, (b.gy + b.def.footprint.h) * ts);
   const constructing = b.status === 'constructing';
-  ctx.save();
-  // P3: an in-progress footprint reads visually distinct — dashed outline,
-  // lower fill opacity — so "this isn't a real building yet" is legible at
-  // a glance, same information the buildbar/HUD progress readout repeats.
-  ctx.fillStyle = b.side === 'player'
-    ? (constructing ? 'rgba(70,120,170,0.42)' : 'rgba(70,120,170,0.92)')
-    : (constructing ? 'rgba(150,60,60,0.42)' : 'rgba(150,60,60,0.92)');
-  ctx.strokeStyle = b.side === 'player' ? '#5fd0ff' : '#ff5a5a';
-  ctx.lineWidth = 1.5;
-  if (constructing) ctx.setLineDash([5, 4]);
-  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-  ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-  ctx.setLineDash([]);
-  ctx.restore();
+  if (constructing) {
+    // P3: an in-progress footprint reads visually distinct — dashed
+    // outline, lower fill opacity, a plain tinted rect — so "this isn't a
+    // real building yet" is legible at a glance, same information the
+    // buildbar/HUD progress readout repeats. Deliberately NOT the textured
+    // body below: a scaffold shouldn't yet read as "this is a factory," only
+    // as "something is being built here."
+    ctx.save();
+    ctx.fillStyle = b.side === 'player' ? 'rgba(70,120,170,0.42)' : 'rgba(150,60,60,0.42)';
+    ctx.strokeStyle = b.side === 'player' ? '#5fd0ff' : '#ff5a5a';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.setLineDash([]);
+    ctx.restore();
+  } else {
+    // QA fix: distinct, textured, family-specific body instead of the old
+    // flat rotated brown/tan blob — see drawBuildingBody above.
+    drawBuildingBody(ctx, x0, y0, x1, y1, b, cam);
+  }
   if (b.hp < b.maxHp) {
     const w = x1 - x0;
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x0, y0 - 8, w, 3);

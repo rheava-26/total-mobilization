@@ -371,7 +371,18 @@ export function updateBattalionMorale(world, map, dt) {
       // intended "invasion crumbles" payoff), never harder to touch while
       // it's still fighting fit. Enemy battalions never get the garrison
       // stack either (GARRISON_DEFENSE_MULT is a player-only defender perk).
-      mult = Math.max(1.0, baseMult);
+      //
+      // B7 BALANCE FIX: pinned to a FLAT 1.0, not max(1.0, baseMult). An
+      // attacking invasion owns no territory, so its battalions' morale can
+      // only ever FALL (no friendly-city recovery, constant isolation/under-
+      // fire) — they sit shaken/broken almost the whole invasion, which under
+      // max(1.0, baseMult) made the enemy 1.15–1.35× more fragile for most of
+      // the fight and collapsed the difficulty (the balance harness showed
+      // unprepared winning on every difficulty). Enemy morale now drives ONLY
+      // the marker tint + the (strength-gated) rout in enemyai.js, never
+      // combat survivability, so a fighting enemy battalion is exactly as
+      // tough as the pre-battalion loose landing force was (1.0).
+      mult = 1.0;
     }
     for (const u of bn.units) u.defenseMult = mult;
   }

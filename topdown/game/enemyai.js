@@ -39,7 +39,7 @@ import { cityCenterWorld } from './objectives.js';
 // bn.units/morale/cohesion for anything else, and never writes to a
 // battalion record itself (that stays battalionMorale.js's job); this module
 // only ever writes u.order, exactly as it always has.
-import { moraleState } from './battalionMorale.js';
+import { battalionStrength } from './battalions.js';
 
 // ---------------------------------------------------------------------------
 // LANDING-FORCE DOCTRINE TUNABLES — designer's to retune; nothing below is
@@ -57,18 +57,21 @@ const RALLY_FRACTION = 0.6; // fraction of a group's LIVING members that must be
 const RALLY_TIMEOUT_S = 25; // safety valve: commit anyway once a group has spent this long trying to mass, even if the fraction was never hit (e.g. a straggler stuck on bad terrain, or losses during rally) — a group that can never quite finish massing must still eventually fight, not idle forever
 const DISBAND_FRACTION = 0.34; // a group whose LIVING headcount has fallen to this fraction (or less) of its size at commit time is "largely destroyed" — its survivors look to fold into another still-active group rather than solo-push (or found a fresh assault alone) with too little force to matter
 
-// B7 ROUT — a unit belonging to a BROKEN battalion (game/battalionMorale.js's
-// moraleState()) disengages entirely: it's excluded from assault-group
-// commit math (rally-fraction/disband checks below only ever see
-// maneuverUnits, and routed units are filtered out of that list before any
-// group bookkeeping runs) and given a straight flee order away from the
-// nearest city instead of its group's assault/rally order. This is what
-// makes a mauled invasion visibly fall apart rather than keep pressing a
-// city with a formation that's already broken — the "invasion routs" payoff
-// the morale/cohesion pass (B4) exists to set up. Named constant purely so
-// the comparison below reads as an intentional state check, not a magic
-// string; mirrors battalionMorale.js's own 'broken' literal exactly.
-const BROKEN = 'broken';
+// B7 ROUT — a unit belonging to a GUTTED battalion disengages entirely: it's
+// excluded from assault-group commit math (rally-fraction/disband checks below
+// only ever see maneuverUnits, and routed units are filtered out of that list
+// before any group bookkeeping runs) and given a straight flee order away from
+// the nearest city instead of its group's assault/rally order. This is what
+// makes a shattered invasion formation visibly fall apart rather than keep
+// pressing a city with a remnant — the "invasion routs" payoff the morale/
+// cohesion pass (B4) exists to set up.
+//
+// ROUT_STRENGTH_FRAC (see isUnitRouted's own comment): rout is gated on
+// battalion STRENGTH, not morale — an attacking invasion owns no territory so
+// its morale can only ever fall, which made a morale gate rout the whole
+// invasion at full strength and hand the game away. A battalion only routs once
+// its live strength drops below this fraction of its original size.
+const ROUT_STRENGTH_FRAC = 0.2;
 // How far a routed unit's flee order reaches, in world px — comfortably past
 // CLUSTER_RADIUS_PX/RALLY_RADIUS_PX above so a routed unit visibly disengages
 // the fight instead of shuffling a few steps and re-triggering combat with
@@ -181,7 +184,19 @@ function pickObjectiveCity(world, map, side, wx, wy) {
 function isUnitRouted(world, u) {
   if (u.battalion == null) return false;
   const bn = world.battalions.find(b => b.id === u.battalion);
-  return !!bn && moraleState(bn) === BROKEN;
+  if (!bn) return false;
+  // B7 BALANCE FIX: gate rout on STRENGTH, not morale. An attacking invasion
+  // owns no territory, so its battalions' morale can only ever fall (no
+  // friendly-city recovery) — under a morale-broken gate every enemy battalion
+  // inevitably fled at ~full strength, so the whole invasion routed off the map
+  // without pressing the assault and the player won on the hold-out timer with
+  // the enemy still ~fully alive (the balance harness showed unprepared winning
+  // on every difficulty). A battalion now routs only once GENUINELY GUTTED —
+  // its live strength has fallen below ROUT_STRENGTH_FRAC — so a fighting-fit
+  // enemy battalion presses its objective exactly as the pre-battalion loose
+  // landing force did, and only the shattered remnant flees (the "invasion
+  // crumbles" payoff, without gifting the game away).
+  return battalionStrength(bn).hpFrac < ROUT_STRENGTH_FRAC;
 }
 
 // Nearest city (any owner) to a world point — the routed unit flees AWAY

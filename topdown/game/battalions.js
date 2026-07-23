@@ -170,6 +170,80 @@ export function spawnBattalion(world, map, { type, x, y, side, name }) {
 }
 
 // ---------------------------------------------------------------------------
+// groupUnitsIntoBattalions — B7 ("ENEMY FIELDS BATTALIONS too", CONCEPT.md
+// B6 follow-up: "adapt enemyai.js + objectives.js to think in battalions").
+// Wraps a set of ALREADY-SPAWNED units (any spawn path — main.js's
+// spawnGroundUnit for the enemy landing force is the first caller) into 2-3
+// battalion records purely by PROXIMITY CLUSTERING, WITHOUT spawning
+// anything new and WITHOUT changing the total unit count of any type — pure
+// grouping-only bookkeeping, matching B1's "sub-units are the EXISTING
+// roster, just tagged" contract, just applied to units a caller spawned
+// itself instead of through spawnBattalion's own template-driven spawn loop.
+//
+// WHY NOT spawnBattalion/BATTALION_TEMPLATES: the enemy landing force's
+// per-type counts are difficulty-SCALED (main.js's scaledCount(), off
+// ENEMY_LANDING_BASE) and need to land EXACTLY those totals unchanged from
+// pre-B7 behavior (raw invasion strength must not shift — see main.js's
+// spawnEnemyLandingForce comment) — an arbitrary scaled count essentially
+// never sums to one of the three fixed templates. Grouping post-spawn sidesteps
+// that entirely: whatever got spawned is exactly what ends up in these
+// battalions, just labeled and bucketed.
+//
+// CLUSTERING: greedy nearest-existing-cluster, same technique enemyai.js's
+// own FORM phase already uses to build assault groups (see that file's
+// CLUSTER_RADIUS_PX) — but capped at maxBattalions so a big landing (Brutal
+// difficulty) still reads as "a few formations," not one per unit. Once the
+// cap is hit, every further unit just joins whichever existing cluster's
+// running centroid is nearest, so the split stays roughly spatial even past
+// the cap. This is ORTHOGONAL to enemyai.js's own assault-group clustering
+// (separate Maps, separate purpose — one drives movement, this one is
+// morale/rendering bookkeeping) — see that file's header for why they don't
+// need to agree.
+export function groupUnitsIntoBattalions(world, units, side, { maxBattalions = 3, clusterRadius = 260, namePrefix = 'Landing', type = 'standard' } = {}) {
+  if (!units || !units.length) return [];
+  const clusters = []; // { x, y, n, units: [] } — x/y is a running mean, updated incrementally as units join
+  for (const u of units) {
+    let best = null, bd = Infinity;
+    for (const c of clusters) {
+      const d = Math.hypot(u.x - c.x, u.y - c.y);
+      if (d < bd) { bd = d; best = c; }
+    }
+    if (best && (bd <= clusterRadius || clusters.length >= maxBattalions)) {
+      best.units.push(u);
+      best.x = (best.x * best.n + u.x) / (best.n + 1);
+      best.y = (best.y * best.n + u.y) / (best.n + 1);
+      best.n++;
+    } else {
+      clusters.push({ x: u.x, y: u.y, n: 1, units: [u] });
+    }
+  }
+
+  const battalions = [];
+  clusters.forEach((c, i) => {
+    const bn = {
+      id: nextBattalionId++,
+      name: `${ordinal(i + 1)} ${namePrefix}`,
+      type,
+      side,
+      units: c.units,
+      // B3 fields (inert for this grouping path — enemy battalions don't
+      // self-deploy via battalionDoctrine.js, which stays player-only; see
+      // that file's header):
+      homeSector: null,
+      stance: 'balanced',
+      // B4 fields — live from the first tick; updateBattalionMorale is
+      // side-agnostic and will pick these battalions up like any other:
+      morale: 100,
+      cohesion: 100,
+    };
+    for (const u of c.units) u.battalion = bn.id;
+    world.battalions.push(bn);
+    battalions.push(bn);
+  });
+  return battalions;
+}
+
+// ---------------------------------------------------------------------------
 // battalionStrength — read-only summary for later phases/UI (B4's morale
 // display, B6's operational-map icon tint, etc). Never mutates anything.
 export function battalionStrength(bn) {

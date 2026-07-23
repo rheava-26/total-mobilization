@@ -90,7 +90,7 @@ import { createImpactFx, spawnImpactFx, updateImpactFx, drawScorch, drawSmoke } 
 // shape; this phase is purely additive (see that file's header) — the only
 // wiring main.js needs is creating `world.battalions`, running the light
 // per-frame prune pass, and exposing headless test hooks below.
-import { spawnBattalion, updateBattalions, BATTALION_TEMPLATES, battalionStrength } from './game/battalions.js';
+import { spawnBattalion, updateBattalions, BATTALION_TEMPLATES, battalionStrength, groupUnitsIntoBattalions } from './game/battalions.js';
 // BATTALION-LEVEL DOCTRINE (B3 of the 6-phase battalion rework — "Self-
 // deploy + sectors + stance"). game/battalionDoctrine.js owns the formation-
 // level analogue of game/doctrine.js's per-unit garrison AI — see that
@@ -767,12 +767,33 @@ function scaledCount(key) {
 function spawnEnemyLandingForce() {
   const nTank = scaledCount('tank'), nInf = scaledCount('infantry'), nMil = scaledCount('militia');
   const nAa = scaledCount('aa'), nFighter = scaledCount('fighter'), nStrike = scaledCount('strikejet');
-  for (let i = 0; i < nTank; i++) spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy');
-  for (let i = 0; i < nInf; i++) spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy');
-  for (let i = 0; i < nMil; i++) spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy');
-  for (let i = 0; i < nAa; i++) spawnGroundUnit('aa', eBase.x + 20 + i * 24, eBase.y - 30, 'enemy');
+  // B7 (ENEMY FIELDS BATTALIONS TOO): GROUND units are collected here and
+  // grouped into 2-3 enemy battalion records below via
+  // groupUnitsIntoBattalions — but the spawn calls themselves, and the exact
+  // per-type counts spawned, are BYTE-IDENTICAL to pre-B7 (same
+  // scaledCount()-derived totals, same positions/offsets). This is what
+  // keeps raw invasion strength provably unchanged: whatever used to spawn
+  // still spawns, one-for-one, just also gets tagged into a battalion
+  // afterward. AIR (fighter/strikejet) is untouched — stays individual craft,
+  // never grouped, per this phase's scope.
+  const groundUnits = [];
+  for (let i = 0; i < nTank; i++) groundUnits.push(spawnGroundUnit('tank', eBase.x - i * 26, eBase.y + (i % 2) * 26, 'enemy'));
+  for (let i = 0; i < nInf; i++) groundUnits.push(spawnGroundUnit('infantry', eBase.x - 60 - i * 22, eBase.y + 10, 'enemy'));
+  for (let i = 0; i < nMil; i++) groundUnits.push(spawnGroundUnit('militia', eBase.x - 60 - i * 22, eBase.y + 34, 'enemy'));
+  for (let i = 0; i < nAa; i++) groundUnits.push(spawnGroundUnit('aa', eBase.x + 20 + i * 24, eBase.y - 30, 'enemy'));
   for (let i = 0; i < nFighter; i++) spawnUnit(world, 'fighter', eBase.x - 20 - i * 30, eBase.y - 100, 'enemy');
   for (let i = 0; i < nStrike; i++) spawnUnit(world, 'strikejet', eBase.x + 35 + i * 30, eBase.y - 115, 'enemy');
+
+  // GROUP (not re-spawn) the just-landed ground units into a handful of
+  // enemy battalion records, purely by proximity — see
+  // game/battalions.js's groupUnitsIntoBattalions for why this is a
+  // post-spawn grouping pass rather than a spawnBattalion/template call
+  // (the scaled per-type counts don't sum to BATTALION_TEMPLATES' fixed
+  // rosters). This gives the enemy landing force real morale/cohesion
+  // (game/battalionMorale.js's updateBattalionMorale is side-agnostic
+  // already — B4) and B6 operational-map formation markers, without
+  // touching how many of what spawned above.
+  groupUnitsIntoBattalions(world, groundUnits, 'enemy', { namePrefix: 'Landing' });
 
   // PLAYABILITY v1 PART B — the landing force is now a FUNCTIONAL AGGRESSOR
   // (CONCEPT.md's settled "Playability v1" section), not a one-shot
@@ -783,7 +804,10 @@ function spawnEnemyLandingForce() {
   // using the exact same order/pathfinding/targeting machinery a player
   // order already goes through. No per-frame scripted order is issued here
   // at spawn time; the AI takes over from the unit's landing position on
-  // its very first update tick.
+  // its very first update tick. `u.battalion` tags above are read purely by
+  // morale (B4) and rendering (B6) — enemyai.js's own movement/assault-group
+  // logic is unchanged and doesn't look at `u.battalion` at all (see that
+  // file's header: "ORTHOGONAL layers").
 }
 
 let hovered = null, lastMouse = { x: 0, y: 0 };
@@ -2697,18 +2721,33 @@ function loop(now) {
   // this frame agrees on the exact same marker/unit balance. See this
   // constant's own block comment above `world` for the threshold contract.
   const { markerAlpha: bnMarkerAlpha, unitAlpha: bnUnitAlpha } = battalionCrossfade(renderer.cam.zoom);
-  // Player battalions currently showing ANY marker weight this frame (>=1
-  // live sub-unit — updateBattalions already prunes dead ones/empty
-  // battalions every frame, see loop() above — and markerAlpha above the
-  // near-zero no-op floor drawBattalionMarker itself uses). Sub-units
-  // belonging to one of these draw at `bnUnitAlpha` instead of full opacity
-  // (0 below Z_MARKER_ONLY = fully suppressed, exactly per spec) so the two
+  // Battalions currently showing ANY marker weight this frame (>=1 live
+  // sub-unit — updateBattalions already prunes dead ones/empty battalions
+  // every frame, see loop() above — and markerAlpha above the near-zero
+  // no-op floor drawBattalionMarker itself uses). Sub-units belonging to one
+  // of these draw at `bnUnitAlpha` instead of full opacity (0 below
+  // Z_MARKER_ONLY = fully suppressed, exactly per spec) so the two
   // representations never both draw at full strength at once. A battalion
   // NOT in this set (marker fully faded out, i.e. zoom >= Z_UNITS_ONLY) never
   // touches this — its sub-units take the normal drawUnit(...) path with no
   // alpha argument at all, byte-for-byte the pre-B6 call.
+  //
+  // B7 (ENEMY FIELDS BATTALIONS TOO): player battalions are always eligible
+  // (own units, no fog gate — "you always see yourself," same rule the
+  // sub-unit fog check below already applies). Enemy battalions are ONLY
+  // eligible if the player currently detects at least one of their live
+  // sub-units — same detects('player', u) fog gate the sub-unit draw loop
+  // below already applies per-unit. An enemy battalion with zero detected
+  // sub-units draws NOTHING this frame: not in this set (no marker) and its
+  // sub-units are separately filtered out by that same per-unit fog check —
+  // no fog cheating, the marker never reveals a battalion the player
+  // couldn't otherwise see any part of.
   const bnMarkerIds = bnMarkerAlpha > 0.002
-    ? new Set(world.battalions.filter(bn => bn.side === 'player' && bn.units.length > 0).map(bn => bn.id))
+    ? new Set(world.battalions.filter(bn => {
+        if (bn.units.length === 0) return false;
+        if (bn.side === 'player') return true;
+        return bn.units.some(u => u.hp > 0 && detects('player', u));
+      }).map(bn => bn.id))
     : null;
 
   renderer.frame(map, (ctx, worldToScreen, cam) => {
@@ -2756,10 +2795,26 @@ function loop(now) {
     // during the crossfade band rather than getting buried under one. Player
     // battalions are always fully visible (they're the player's own — no fog
     // gate needed, matching the "own units always draw" rule right above).
+    //
+    // B7: enemy battalions in bnMarkerIds (fog-gated above) draw too, in the
+    // same pass, using drawBattalionMarker's existing side-color branch
+    // (OWNERSHIP_COLORS.enemy) — no renderer change needed there. To avoid
+    // leaking an undetected sub-unit's position/existence through the
+    // marker's centroid/strength bar, the marker is drawn off a FILTERED
+    // view containing only currently-detected live sub-units (`{ ...bn,
+    // units: detectedUnits }`) rather than the real record's full roster —
+    // same fog contract as the sub-unit loop above, just applied to what the
+    // marker itself summarizes instead of per-unit visibility.
     if (bnMarkerIds) {
       for (const bn of world.battalions) {
         if (!bnMarkerIds.has(bn.id)) continue;
-        drawBattalionMarker(ctx, worldToScreen, cam, bn, bnMarkerAlpha, false);
+        if (bn.side === 'player') {
+          drawBattalionMarker(ctx, worldToScreen, cam, bn, bnMarkerAlpha, false);
+        } else {
+          const detectedUnits = bn.units.filter(u => u.hp > 0 && detects('player', u));
+          if (!detectedUnits.length) continue; // defensive; bnMarkerIds' own filter above should already guarantee this
+          drawBattalionMarker(ctx, worldToScreen, cam, { ...bn, units: detectedUnits }, bnMarkerAlpha, false);
+        }
       }
     }
     // impact smoke wisps drawn ABOVE units — same ordering as ambient.js's

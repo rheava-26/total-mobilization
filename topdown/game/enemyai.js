@@ -34,6 +34,12 @@
 
 import { MOVE_CLASSES } from './units.js';
 import { cityCenterWorld } from './objectives.js';
+// B7 (ENEMY FIELDS BATTALIONS TOO): the only battalion-aware thing this
+// module reads is moraleState — see the ROUT branch below. It never reads
+// bn.units/morale/cohesion for anything else, and never writes to a
+// battalion record itself (that stays battalionMorale.js's job); this module
+// only ever writes u.order, exactly as it always has.
+import { moraleState } from './battalionMorale.js';
 
 // ---------------------------------------------------------------------------
 // LANDING-FORCE DOCTRINE TUNABLES — designer's to retune; nothing below is
@@ -50,6 +56,24 @@ const RALLY_RADIUS_PX = 130; // how close to the group's rally point counts as "
 const RALLY_FRACTION = 0.6; // fraction of a group's LIVING members that must be massed within RALLY_RADIUS_PX before the group commits to its objective together, rather than pushing off piecemeal as each unit happens to arrive
 const RALLY_TIMEOUT_S = 25; // safety valve: commit anyway once a group has spent this long trying to mass, even if the fraction was never hit (e.g. a straggler stuck on bad terrain, or losses during rally) — a group that can never quite finish massing must still eventually fight, not idle forever
 const DISBAND_FRACTION = 0.34; // a group whose LIVING headcount has fallen to this fraction (or less) of its size at commit time is "largely destroyed" — its survivors look to fold into another still-active group rather than solo-push (or found a fresh assault alone) with too little force to matter
+
+// B7 ROUT — a unit belonging to a BROKEN battalion (game/battalionMorale.js's
+// moraleState()) disengages entirely: it's excluded from assault-group
+// commit math (rally-fraction/disband checks below only ever see
+// maneuverUnits, and routed units are filtered out of that list before any
+// group bookkeeping runs) and given a straight flee order away from the
+// nearest city instead of its group's assault/rally order. This is what
+// makes a mauled invasion visibly fall apart rather than keep pressing a
+// city with a formation that's already broken — the "invasion routs" payoff
+// the morale/cohesion pass (B4) exists to set up. Named constant purely so
+// the comparison below reads as an intentional state check, not a magic
+// string; mirrors battalionMorale.js's own 'broken' literal exactly.
+const BROKEN = 'broken';
+// How far a routed unit's flee order reaches, in world px — comfortably past
+// CLUSTER_RADIUS_PX/RALLY_RADIUS_PX above so a routed unit visibly disengages
+// the fight instead of shuffling a few steps and re-triggering combat with
+// whatever it was just fighting.
+const RETREAT_DISTANCE_PX = 900;
 
 // Nearest WATER tile to a world point — naval movement can't be ordered
 // onto dry land (see units.js terrainSample's requiresWater branch), so a
@@ -144,6 +168,47 @@ function pickObjectiveCity(world, map, side, wx, wy) {
     if (score > bestScore) { bestScore = score; best = c; }
   }
   return best;
+}
+
+// B7 ROUT helpers ------------------------------------------------------------
+// True once a unit's own battalion (if any — loose, unbattalioned units,
+// e.g. holdGround batteries or anything spawned outside a battalion, never
+// rout by this mechanic and always return false) has broken. O(1) lookup
+// isn't worth the bookkeeping at this game's unit counts (a landing force
+// tops out in the dozens even on Brutal), so this is a plain linear find
+// against world.battalions, same cost class as this file's other per-unit
+// per-frame scans.
+function isUnitRouted(world, u) {
+  if (u.battalion == null) return false;
+  const bn = world.battalions.find(b => b.id === u.battalion);
+  return !!bn && moraleState(bn) === BROKEN;
+}
+
+// Nearest city (any owner) to a world point — the routed unit flees AWAY
+// from whichever city is closest, i.e. away from wherever the fight is
+// happening, back toward the beachhead it landed on. Deliberately ignores
+// ownership (unlike pickObjectiveCity): a broken unit isn't looking for a
+// weak objective, it's fleeing the nearest source of fire, period.
+function nearestCityWorld(map, wx, wy) {
+  let best = null, bd = Infinity;
+  for (const c of (map.cities || [])) {
+    const { x: cx, y: cy } = cityCenterWorld(map, c);
+    const d = Math.hypot(cx - wx, cy - wy);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+
+// Order `u` to flee directly away from (fromX,fromY) by RETREAT_DISTANCE_PX,
+// through the same orderToward() water-snapping path every other order in
+// this module goes through (so a routed naval/amphibious unit still gets a
+// legal destination instead of an order that silently never resolves).
+function orderRetreat(u, map, fromX, fromY) {
+  const dx = u.x - fromX, dy = u.y - fromY;
+  const dist = Math.hypot(dx, dy) || 1; // guard the degenerate "standing exactly on the city center" case
+  const tx = u.x + (dx / dist) * RETREAT_DISTANCE_PX;
+  const ty = u.y + (dy / dist) * RETREAT_DISTANCE_PX;
+  orderToward(u, map, tx, ty);
 }
 
 // Nearest OTHER active group to fold survivors into — "nearest" measured
@@ -255,10 +320,31 @@ export function updateEnemyAI(world, map, dt, side = 'enemy') {
   // old scripted landing force already did. They never join a group and
   // never get an aiState entry.
   const maneuverUnits = [];
+  // B7 ROUT: units whose battalion is BROKEN peel off here, before any group
+  // FORM/RALLY/ASSAULT bookkeeping ever sees them — they never join
+  // `maneuverUnits`, so they can't count toward a group's living headcount,
+  // RALLY_FRACTION massing, or DISBAND_FRACTION "largely destroyed" checks.
+  // They're ordered to flee in a separate pass right below instead.
+  const routedUnits = [];
   for (const u of world.units) {
     if (u.side !== side || u.hp <= 0) continue;
     if (u.def.dispositions.includes('holdGround')) continue;
+    if (isUnitRouted(world, u)) { routedUnits.push(u); continue; }
     maneuverUnits.push(u);
+  }
+
+  // Flee order for every routed unit this frame: away from the nearest city
+  // (any owner — see nearestCityWorld), i.e. away from the fight, back
+  // toward the beachhead. This REPLACES whatever assault/rally order the
+  // unit had; it does not touch aiState/groups at all, so if the battalion
+  // later recovers (morale climbs back out of 'broken'), the unit simply
+  // resumes being picked up by the FORM loop below next tick, same as any
+  // other unlisted maneuver unit.
+  for (const u of routedUnits) {
+    const nearest = nearestCityWorld(map, u.x, u.y);
+    if (!nearest) { u.order = null; continue; } // no cities on the map at all (degenerate/test map) — nothing to flee from
+    const { x: cx, y: cy } = cityCenterWorld(map, nearest);
+    orderRetreat(u, map, cx, cy);
   }
 
   // FORM: any maneuver unit without a live group joins (or founds) one,

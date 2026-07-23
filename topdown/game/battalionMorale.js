@@ -29,9 +29,13 @@
 // frame) in main.js's actual wiring.
 //
 // SIDE-AGNOSTIC BY DESIGN: loops every battalion in world.battalions
-// regardless of `bn.side` (today that's player-only — enemy ground forces
-// are still loose enemyai.js units, not battalions; B6 adapts enemy AI to
-// battalions and this module needs no changes when that lands).
+// regardless of `bn.side`. Since B7 ("ENEMY FIELDS BATTALIONS too") that
+// includes the enemy landing force's own battalions (main.js groups them via
+// game/battalions.js's groupUnitsIntoBattalions) alongside player ones — same
+// morale/cohesion math, same rout mechanics. The ONE side-conditional bit is
+// the defenseMult floor in Effect A below (a BALANCE GUARD, not a mechanics
+// difference): enemy battalions never get tougher than an un-battalioned
+// enemy unit always was, only more fragile as they break.
 
 import { battalionStrength } from './battalions.js';
 import { cityCenterWorld } from './objectives.js';
@@ -347,9 +351,28 @@ export function updateBattalionMorale(world, map, dt) {
     // tests can all read the same one flag rather than re-deriving it.
     bn.garrisoned = home && moraleState(bn) !== 'broken';
     const baseMult = defenseMultFor(bn);
-    const mult = bn.garrisoned
-      ? Math.max(GARRISON_DEFENSE_FLOOR, baseMult * GARRISON_DEFENSE_MULT)
-      : baseMult;
+    let mult;
+    if (bn.side === 'player') {
+      mult = bn.garrisoned
+        ? Math.max(GARRISON_DEFENSE_FLOOR, baseMult * GARRISON_DEFENSE_MULT)
+        : baseMult;
+    } else {
+      // BALANCE GUARD (B7 — "ENEMY FIELDS BATTALIONS too"): the fresh/steady
+      // defenseMult (0.85/1.0) is a DEFENDER toughness bonus — dug-in,
+      // coordinated return fire. Before B7 the enemy landing force was loose
+      // individual units with no defenseMult at all (resolveHit's `|| 1`
+      // fallback), i.e. an effective 1.0. Grouping the enemy into battalions
+      // must not silently make the invasion tougher than that baseline, so
+      // enemy-side defenseMult is FLOORED at 1.0 here — fresh/steady enemy
+      // battalions stay exactly as fragile as an un-battalioned enemy unit
+      // always was, and the ONLY new effect is on the fragile side: shaken
+      // (1.15) and broken (1.35) still apply above the floor, so a mauled
+      // invasion battalion gets EASIER to finish off as it breaks (the
+      // intended "invasion crumbles" payoff), never harder to touch while
+      // it's still fighting fit. Enemy battalions never get the garrison
+      // stack either (GARRISON_DEFENSE_MULT is a player-only defender perk).
+      mult = Math.max(1.0, baseMult);
+    }
     for (const u of bn.units) u.defenseMult = mult;
   }
 }

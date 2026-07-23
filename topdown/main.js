@@ -511,6 +511,26 @@ function updatePhaseHud() {
   const fogTxt = fogState.revealAll ? 'fog OFF' : 'fog ON';
   phaseHint.textContent = `${fogTxt} — F: toggle fog  |  H: toggle guide${inCombat ? '' : '  |  C / button: begin combat'}`;
   beginCombatBtn.style.display = inCombat ? 'none' : '';
+  // BUG FIX (top bar collision — #guidancePanel used to sit at a hand-picked
+  // fixed `top` in index.html's CSS that assumed #phaseHud was always a
+  // single, short line). #phaseHud's own hint text length varies (PREP vs
+  // COMBAT, per the ternary above) and CSS now lets it WRAP onto a second
+  // line on a narrower viewport (index.html's #phaseHud max-width) rather
+  // than running under its neighbors — either of those can grow its real
+  // height past what the CSS's static guess assumed, clipping into
+  // #guidancePanel below it. Reading #phaseHud's ACTUAL rendered bottom edge
+  // every frame and placing #guidancePanel just under it is the same
+  // "measure, don't guess" fix as the right-edge panel stack a few sections
+  // up — cheap (one getBoundingClientRect call) and correct at any content
+  // length or viewport width, unlike a second static pixel guess would be.
+  // NOTE: looked up fresh via getElementById rather than closing over the
+  // module-level `guidancePanel` const further down this file — this
+  // function is also called once at module top-level (right below its own
+  // definition, before that later `const` has initialized), and closing
+  // over it here would throw a temporal-dead-zone ReferenceError on that
+  // first call.
+  const phaseHudBottom = phaseHud.getBoundingClientRect().bottom;
+  document.getElementById('guidancePanel').style.top = `${Math.round(phaseHudBottom + 8)}px`;
 }
 function triggerBeginCombat() {
   // The intro's beats assume PREP the whole way through (the tech tree/

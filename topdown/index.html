@@ -186,7 +186,15 @@
      more of the "blocks the screen" problem the econ ledger had. max-width
      still leaves room for #econHud's tab on the right. */
   #hud {
-    position: fixed; top: 10px; left: 10px; max-width: min(460px, calc(50% - 200px));
+    /* BUG FIX (top bar collision): this reserved a flat 200px half-width for
+       #phaseHud next door, but #phaseHud's actual content (phase badge +
+       the fog/guide/combat hint line + the BEGIN COMBAT button, all in one
+       unwrapped row) regularly measures 300-350px of half-width on its own
+       — this box's old max-width let it grow right up against, and at some
+       viewports past, #phaseHud's real left edge. Reserving more room here
+       (260px) AND letting #phaseHud wrap/cap its own width (see #phaseHud
+       below) closes the gap from both sides instead of just one guess. */
+    position: fixed; top: 10px; left: 10px; max-width: min(360px, calc(100vw - 650px));
     padding: 4px 10px 4px 8px; background: rgba(231, 220, 189, .88);
     border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule);
     color: var(--ink-soft); font: 11px Consolas, monospace; letter-spacing: .2px;
@@ -202,8 +210,41 @@
      right, capped max-height so even fully expanded it can never grow past
      the visible viewport, let alone reach #buildbar (bottom-center) or
      #guidancePanel (top-center). */
+  /* RIGHT-EDGE PANEL STACK (bug fix — see the HTML comment above #rightStack
+     for the "why" of this wrapper). A plain flex column: each panel below
+     just flows after whichever panel above it actually rendered at,
+     collapsed or expanded, instead of every panel guessing a fixed `top` in
+     px that only stayed correct while everything above it was collapsed.
+     Capped to the viewport height (minus the same 10px margin every panel
+     used individually before) and scrollable as a last resort so even
+     "every panel expanded at once" degrades to a scrollbar instead of
+     spilling past the bottom edge or, worse, back up over the top bar. */
+  #rightStack {
+    position: fixed; top: 10px; right: 10px; z-index: 50;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    max-height: calc(100vh - 20px); overflow-y: auto; overflow-x: visible;
+    scrollbar-width: thin; scrollbar-color: var(--ink-soft) transparent;
+    /* The container's own box is only as tall as its (collapsed, usually)
+       children — no `bottom` anchor forcing it to span the full viewport —
+       but belt-and-suspenders it anyway: pointer-events:none on the empty
+       flex gaps/container itself so it can never eat clicks meant for the
+       map underneath, with each real panel opting back into pointer-events
+       for its own actual chrome. */
+    pointer-events: none;
+  }
+  #rightStack > .opsPanel { pointer-events: auto; }
+  #rightStack::-webkit-scrollbar { width: 8px; }
+  #rightStack::-webkit-scrollbar-thumb { background: var(--ink-soft); border-radius: 0; }
+  #rightStack::-webkit-scrollbar-track { background: transparent; }
+  /* Panels inside the stack are no longer individually `position: fixed` —
+     they're ordinary flex children now, so their old top/right anchors are
+     dropped in favor of `flex: none` (don't stretch/shrink) + a shared
+     width. Each panel keeps its OWN max-height as a per-panel scroll cap
+     (so one giant panel can't push the others fully off-screen even inside
+     the stack's own scroll region), just no longer viewport-offset-relative
+     since that math assumed a specific fixed `top`. */
+  #rightStack > .opsPanel { position: relative; flex: none; width: 236px; max-height: 46vh; }
   #econHud {
-    top: 10px; right: 10px; width: 236px; max-height: calc(100vh - 24px);
     padding: 0; overflow: hidden; display: flex; flex-direction: column;
   }
   #econHudToggle {
@@ -222,7 +263,7 @@
   #econHudDetail {
     max-height: 0; overflow: hidden; transition: max-height .2s ease;
   }
-  #econHud.expanded #econHudDetail { max-height: calc(100vh - 90px); overflow-y: auto; }
+  #econHud.expanded #econHudDetail { max-height: 36vh; overflow-y: auto; }
   #econHudDetailInner {
     padding: 2px 10px 10px; border-top: 1px dashed var(--rule-soft);
     font: 11px Consolas, monospace; line-height: 1.6; white-space: pre-line; color: var(--ink);
@@ -302,7 +343,6 @@
      on the right edge (the one column #econHud doesn't fully claim), so it
      never competes with the build/production/research column on the left. */
   #reinforcePanel {
-    top: 260px; right: 10px; width: 236px; max-height: calc(100vh - 280px);
     padding: 0; overflow: hidden; display: flex; flex-direction: column;
   }
   #reinforceToggle {
@@ -314,7 +354,7 @@
   #reinforceToggle:hover { background: var(--paper); }
   #reinforceToggleIcon { font-size: 10px; color: var(--ink-soft); }
   #reinforceBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
-  #reinforcePanel.expanded #reinforceBody { max-height: calc(100vh - 320px); overflow-y: auto; }
+  #reinforcePanel.expanded #reinforceBody { max-height: 36vh; overflow-y: auto; }
   #reinforceBodyInner { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
   .reinforceRoute {
     display: flex; flex-direction: column; gap: 3px; padding: 7px 8px;
@@ -335,7 +375,6 @@
      dynamically avoiding overlap when #reinforcePanel is expanded, same
      simplification every other stacked Ops panel here already accepts. */
   #battalionPanel {
-    top: 310px; right: 10px; width: 236px; max-height: calc(100vh - 330px);
     padding: 0; overflow: hidden; display: flex; flex-direction: column;
   }
   #battalionToggle {
@@ -347,7 +386,7 @@
   #battalionToggle:hover { background: var(--paper); }
   #battalionToggleIcon { font-size: 10px; color: var(--ink-soft); }
   #battalionBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
-  #battalionPanel.expanded #battalionBody { max-height: calc(100vh - 370px); overflow-y: auto; }
+  #battalionPanel.expanded #battalionBody { max-height: 36vh; overflow-y: auto; }
   #battalionBodyInner { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
   #battalionEmpty { font-style: italic; color: var(--ink-soft); font-size: 10.5px; }
   .battalionRow {
@@ -461,6 +500,16 @@
   #phaseHud {
     top: 10px; left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+    /* BUG FIX (top bar collision): this used to have no width cap at all, so
+       its live-generated hint text (fog state + key hints, longer once
+       combat starts) could grow wide enough to run under #econHud/#hud on
+       the sides. Bounded + wrapping (instead of one ever-widening row) so it
+       degrades to two centered lines on a narrower viewport rather than
+       spilling into either neighbor — paired with #hud's own tightened
+       max-width above and the right stack's fixed 236px column, this keeps
+       a guaranteed gap on both sides at any reasonable viewport width. */
+    max-width: min(700px, calc(100vw - 830px));
+    flex-wrap: wrap; justify-content: center; row-gap: 4px;
   }
   #phaseHud #phaseLabel {
     font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; font-size: 11px;
@@ -490,7 +539,7 @@
      open or hidden. #phaseHud owns the very top strip so this sits just
      below it. */
   #guidancePanel {
-    left: 50%; top: 66px; transform: translateX(-50%);
+    left: 50%; top: 74px; transform: translateX(-50%);
     width: 400px; max-width: calc(100% - 24px); max-height: 42vh; overflow-y: auto;
     padding: 10px 12px;
   }
@@ -709,6 +758,15 @@
 <body>
 <canvas id="view"></canvas>
 <canvas id="techTreeCanvas"></canvas>
+<!-- LOADING OVERLAY — see the CSS comment above. Static markup, visible on
+     the very first paint with no JS required; main.js adds the `hide` class
+     once the first real frame is on screen. -->
+<div id="loadingOverlay">
+  <div class="loadingBox">
+    <div class="loadingSpinner"></div>
+    <div id="loadingText">Loading map…</div>
+  </div>
+</div>
 <!-- MAIN MENU overlay — see the #mainMenu CSS comment above. Content
      (title/subtitle/hint/scenario rows) is filled in and the click handling
      wired by game/menu.js's showMainMenu(), same "static skeleton in HTML,
@@ -728,6 +786,18 @@
   <button id="beginCombatBtn" class="opsBtn">BEGIN COMBAT</button>
 </div>
 <div id="announcement" class="opsPanel"></div>
+<!-- RIGHT-EDGE PANEL STACK (bug fix: Ledger/Reinforcements/Battalions used to
+     each carry their own hand-guessed fixed `top` offset — see each panel's
+     old comment — which only worked while every panel ABOVE it stayed
+     collapsed; expanding one panel grew past the next one's fixed offset and
+     clipped/overlapped it, and none of them ever accounted for the top bar.
+     Wrapping all three in one flex column container fixes this structurally:
+     they simply flow one after another (a `gap` between them, no per-panel
+     offset guesswork), so an expanded panel's real height always pushes the
+     next one down instead of covering it. The wrapper itself is capped to
+     the viewport height and scrolls (rather than spilling under/over the top
+     bar) if every panel is expanded at once. -->
+<div id="rightStack">
 <!-- ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD
      blocks the screen"). Collapsed by default (main.js) so the first thing
      a player sees is a slim tab, not a wall of stats; econHudSummary always
@@ -740,20 +810,6 @@
   </button>
   <div id="econHudSummary"></div>
   <div id="econHudDetail"><div id="econHudDetailInner"></div></div>
-</div>
-<!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's
-     updateObjectiveHud() every frame; hidden outside COMBAT. -->
-<div id="objectiveHud" class="opsPanel"></div>
-<div id="card" class="opsPanel"></div>
-<!-- MAP LEGEND & RESOURCE FILTER — chunk C. Content (legend rows + one
-     filter button per resource) is built entirely in main.js's MAP LEGEND
-     section; collapsed by default like #econHud. -->
-<div id="legendPanel" class="opsPanel">
-  <button id="legendToggle" type="button" title="Expand/collapse the legend">
-    <span class="opsStamp ink">Field Manual</span>
-    <span id="legendToggleIcon">▸</span>
-  </button>
-  <div id="legendBody"><div id="legendBodyInner"></div></div>
 </div>
 <!-- REINFORCEMENTS PANEL — B2 (game/reinforcements.js). The three route
      buttons (Elite/Standard/Militia) + the in-flight queue are built and
@@ -773,16 +829,31 @@
      stance + the stance-cycle and assign-sector controls), fully built and
      refreshed every frame in main.js's BATTALIONS PANEL section; the DOM
      skeleton here is static, same "static shell, JS fills content" split
-     every other Ops panel uses. Parked directly below #reinforcePanel on the
-     same right-edge column (battalions are downstream of reinforcements —
-     this is where a battalion that route just produced shows up). Collapsed
-     by default, matching #econHud/#legendPanel/#reinforcePanel. -->
+     every other Ops panel uses. Parked directly below #reinforcePanel in the
+     same flex stack (battalions are downstream of reinforcements — this is
+     where a battalion that route just produced shows up). Collapsed by
+     default, matching #econHud/#legendPanel/#reinforcePanel. -->
 <div id="battalionPanel" class="opsPanel">
   <button id="battalionToggle" type="button" title="Expand/collapse battalions">
     <span class="opsStamp ink">Battalions</span>
     <span id="battalionToggleIcon">▸</span>
   </button>
   <div id="battalionBody"><div id="battalionBodyInner"></div></div>
+</div>
+</div>
+<!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's
+     updateObjectiveHud() every frame; hidden outside COMBAT. -->
+<div id="objectiveHud" class="opsPanel"></div>
+<div id="card" class="opsPanel"></div>
+<!-- MAP LEGEND & RESOURCE FILTER — chunk C. Content (legend rows + one
+     filter button per resource) is built entirely in main.js's MAP LEGEND
+     section; collapsed by default like #econHud. -->
+<div id="legendPanel" class="opsPanel">
+  <button id="legendToggle" type="button" title="Expand/collapse the legend">
+    <span class="opsStamp ink">Field Manual</span>
+    <span id="legendToggleIcon">▸</span>
+  </button>
+  <div id="legendBody"><div id="legendBodyInner"></div></div>
 </div>
 <!-- CONSTRUCTION LEDGER — grouped/scrollable buildbar (chunk B). Section
      groups + buttons are built entirely in main.js's BUILDBAR section from

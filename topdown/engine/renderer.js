@@ -211,7 +211,36 @@ function prerenderTerrain(map) {
   // water treatment: lighten a shallow band near the coast (cheap distance
   // check over a small ring, not a real depth field) using the same
   // feathered blobs so the band fades smoothly out to sea instead of
-  // stepping in hard rings
+  // stepping in hard rings.
+  //
+  // BUG FIX (inland water rendering as flat, hard-edged rectangles): the
+  // original version here drew exactly ONE blob, dead-centered on the tile,
+  // whose peak alpha was a pure step function of an INTEGER ring-distance
+  // (1/2/3/4 tiles from the nearest land) — no per-tile jitter, no offset,
+  // same tile-aligned center every time. That's precisely the "one value
+  // held constant across the whole tile, jumping to a new value at the next
+  // tile" checkerboard bug pass 1's continuous noise lattice above exists to
+  // fix for LAND; water's own painterly pass 2 (the jittered/offset land
+  // blobs a few dozen lines up) explicitly skips water tiles entirely
+  // ("water skips the blob pass, it should read calm"), so this single-blob
+  // shallow band was the ONLY texture water ever got beyond pass 1's very
+  // subtle base noise (water/river's two color-def endpoints are close
+  // hexes, so that base noise barely shows). A big ocean's coastline dilutes
+  // the artifact — most of the ocean is plain deep water far outside the
+  // 3-tile band, and the coastline itself is long/irregular so a bit of
+  // per-tile banding along it reads as "texture." A small INLAND pond,
+  // though, is small enough that EVERY tile in it (or nearly every tile)
+  // falls inside the same 3-tile shallow band, so the whole pond is nothing
+  // but this per-tile step function — which is exactly the "flat rectangles
+  // with hard edges sitting on the grass" the bug report describes.
+  //
+  // Fix: give water the same "several small jittered, offset, overlapping
+  // blobs" treatment pass 2 already uses for land, instead of one centered
+  // disc. Jittering the blob CENTER off the tile's exact center (not just
+  // its alpha) is what actually breaks the tile-grid alignment that read as
+  // hard seams — neighboring tiles' blobs now overlap unevenly and blend,
+  // the same way overlapping offset land blobs melt into their neighbors
+  // instead of reading as polka dots.
   const shallow = [191, 230, 242];
   for (let gy = 0; gy < map.height; gy++) {
     for (let gx = 0; gx < map.width; gx++) {
@@ -228,8 +257,15 @@ function prerenderTerrain(map) {
       }
       if (dist > 3) continue;
       const cx = gx * ts + ts / 2, cy = gy * ts + ts / 2;
-      const peak = (4 - dist) / 4 * 0.30 + hash2(gx, gy, 60) * 0.05;
-      softBlob(octx, cx, cy, ts * 1.1, ts * 1.1, 0, shallow, peak);
+      const basePeak = (4 - dist) / 4 * 0.30;
+      const blobs = 3;
+      for (let b = 0; b < blobs; b++) {
+        const h1 = hash2(gx, gy, 61 + b), h2 = hash2(gx, gy, 71 + b), h3 = hash2(gx, gy, 81 + b);
+        const ox = (h1 - 0.5) * ts * 1.3, oy = (h2 - 0.5) * ts * 1.3;
+        const peak = basePeak * (0.5 + h3 * 0.7) + hash2(gx, gy, 90 + b) * 0.05;
+        const rad = ts * (0.85 + h3 * 0.7);
+        softBlob(octx, cx + ox, cy + oy, rad, rad * (0.75 + h3 * 0.4), h1 * Math.PI, shallow, Math.max(0, peak));
+      }
     }
   }
 

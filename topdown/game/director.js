@@ -41,7 +41,7 @@ import { RESOURCE_DEFS } from './resources.js';
 // the quiet default for normal play — either edit this constant, or call
 // setToneMode(directorState, 'serious') at boot (main.js also exposes a key
 // binding and a window.__debug hook, see main.js's director section).
-export const DEFAULT_TONE_MODE = 'silly'; // <-- FLIP HERE for the quiet default; TEST-ONLY value for now
+export const DEFAULT_TONE_MODE = 'serious'; // quiet default for normal play; player toggles to 'silly' via the M key (see main.js tone toggle)
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — same convention as main.js's own

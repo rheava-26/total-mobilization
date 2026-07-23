@@ -60,8 +60,17 @@ export const REINFORCEMENT_DEFS = {
     name: 'Local Militia',
     battalionType: 'militia',
     requiresFactory: null,
-    cost: { ic: 15, manpower: 35, resources: {} },
-    leadTime: 5, // fast — cheap, numerous, raised on the spot
+    // FIRST-PASS REBALANCE (two independent design reviews flagged militia as
+    // trivially spammable — 14 bodies for near-nothing on a 5s timer dominated
+    // the three-source choice). Militia is now clearly cheap-in-INDUSTRY but
+    // expensive-in-POPULATION (manpower-heavy) and no longer instant, so
+    // spamming it genuinely drains the manpower pool that everything else also
+    // needs, and Standard/Elite become worth their cost for real striking
+    // power. Still the cheap/fast/fragile option, just not free. NEEDS PLAYTEST
+    // — the self-play balance harness drives the PRODUCTION path, not the
+    // reinforcement panel, so these numbers are reasoned, not yet play-verified.
+    cost: { ic: 20, manpower: 55, resources: {} },
+    leadTime: 9, // still the fastest source, but not an instant army-in-a-click
   },
 };
 

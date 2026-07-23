@@ -3217,6 +3217,11 @@ function loop(now) {
   }
 
   updateBuildings(world, dt, map);
+  // THREAT-DRIVEN MOBILIZATION: tell the economy whether the nation is under
+  // attack, so its ramp accelerates once the invasion lands ("the nation wakes
+  // up") instead of climbing on a flat idle clock. economy.js eases
+  // threatLevel toward this target — 1 in combat, 0 in peacetime.
+  economy.threatTarget = combatActive ? 1 : 0;
   // P3: the mobilization economy ticks every frame, unconditionally — this
   // is the "zero player input" ramp (game/economy.js). Runs after
   // updateBuildings so a building that JUST completed construction this

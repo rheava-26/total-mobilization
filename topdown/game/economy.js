@@ -49,7 +49,17 @@ export const ECONOMY_TUNABLES = {
   // is time-only; THREAT_RAMP_COEFF is a clearly-marked SEAM for a future
   // threat system (see threatLevel below) — not implemented here. ----
   MOBILIZATION_BASE_RATE: 100 / 900, // %/sec: reaches 100 in 15min of pure idle time at baseline
-  THREAT_RAMP_COEFF: 0.02, // %/sec added per unit of threatLevel (0..1-ish) — SEAM, threatLevel is 0 until a threat system exists
+  // THREAT-DRIVEN MOBILIZATION (the "nation wakes up when attacked" fantasy —
+  // wired now; was a dead seam). threatLevel eases toward economy.threatTarget
+  // (main.js's loop sets it: 1 while combat is active, 0 in peacetime) at
+  // THREAT_EASE_RATE, so mobilization visibly ACCELERATES once the invasion
+  // lands instead of climbing on a flat idle clock. At threatLevel 1 the ramp
+  // gains THREAT_RAMP_COEFF on top of the base — sized to a meaningful boost
+  // (~+55% ramp speed) without doubling it, so the invasion feels like a
+  // mobilization moment without trivializing the difficulty gradient (balance-
+  // harness-checked). DESIGNER'S TO TUNE.
+  THREAT_RAMP_COEFF: 0.06, // %/sec added per unit of threatLevel (0..1) while threatened
+  THREAT_EASE_RATE: 0.14,  // per-sec rate threatLevel eases toward threatTarget (~7s to fully "wake up")
 
   // ---- military output: capacity that accrues for P4 (unit production) to
   // later consume. Zero at mobilizationLevel 0 by construction (no faucet at
@@ -256,7 +266,12 @@ export function updateEconomy(world, economy, map, dt) {
   // ---- automatic mobilization ramp — THE load-bearing rule: this advances
   // with zero player input. mobilizationRampBonus is the ACCELERATOR upgrade
   // lever (barracks econ.mobilizationRateBonus); economy.threatLevel is the
-  // seam for a future threat-driven ramp (0 today). ----
+  // THREAT-DRIVEN term (now live): it eases toward economy.threatTarget (set
+  // by main.js's loop — 1 while combat is active, 0 in peacetime; undefined in
+  // the prep/fastForward sim paths, which read as 0 = peacetime) so the ramp
+  // accelerates once the invasion actually lands. ----
+  const threatTarget = economy.threatTarget || 0;
+  economy.threatLevel += (threatTarget - economy.threatLevel) * Math.min(1, T.THREAT_EASE_RATE * dt);
   const rampRate = T.MOBILIZATION_BASE_RATE + economy.threatLevel * T.THREAT_RAMP_COEFF + mobilizationRampBonus;
   economy.mobilizationLevel = Math.min(100, economy.mobilizationLevel + rampRate * dt);
   economy.mobilizationRate = rampRate;

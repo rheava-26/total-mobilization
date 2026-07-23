@@ -6,6 +6,18 @@ import { RESOURCE_DEFS } from '../game/resources.js';
 // a look, never touches unit/projectile update logic (that stays entirely in
 // game/units.js).
 import { WEAPON_DEFS } from '../game/units.js';
+// B6 (operational-map battalion presentation, CONCEPT.md's "BATTALIONS, not
+// singular units" -> §3.3 hybrid representation) — same one-directional
+// "renderer reads game/*.js data" relationship as RESOURCE_DEFS/WEAPON_DEFS
+// above: drawBattalionMarker below only ever READS these two pure
+// summarizers (battalionStrength: alive/total/hpFrac off bn.units;
+// moraleState: the fresh/steady/shaken/broken bucket off bn.morale), never
+// mutates a battalion or unit. No circular import risk — game/battalions.js
+// only imports game/units.js, game/battalionMorale.js only imports
+// game/battalions.js + game/objectives.js (which only imports
+// game/units.js); neither imports this file.
+import { battalionStrength } from '../game/battalions.js';
+import { moraleState } from '../game/battalionMorale.js';
 
 // City-ownership ring colors — pulled out to a named export so main.js's
 // map-legend panel (Operations Map chunk C) can swap in the exact same
@@ -1755,17 +1767,26 @@ function drawMuzzleFlash(ctx, sx, sy, r, cls, flash) {
   ctx.strokeStyle = 'rgba(255,235,180,0.9)';
   ctx.lineWidth = Math.max(0.6, r * 0.1);
   for (const a of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * flen * 1.1, Math.sin(a) * flen * 1.1); ctx.stroke(); }
-  ctx.restore();
-  ctx.globalAlpha = 1;
+  ctx.restore(); // pops back to whatever globalAlpha the caller (drawUnit) had set — see that function's B6 alpha param
 }
 
 // Exported: main.js's render loop calls this once per LIVE, currently-
 // visible unit (fog-filtering happens at the call site, same as before this
 // pass). `isHovered` replaces the old `u === hovered` check done inline —
 // main.js still owns what "hovered" means, this file just draws the result.
-export function drawUnit(ctx, worldToScreen, cam, u, isHovered) {
+// `alpha` (B6, operational-map battalion presentation) is an OPTIONAL 0..1
+// fade, defaulting to 1 — every pre-existing call site that doesn't pass it
+// draws exactly as before this phase. main.js's crossfade wiring passes a
+// fractional value ONLY for a player battalion's sub-units mid-crossfade
+// between the sub-unit view and the B6 formation marker (drawBattalionMarker
+// below); loose units and enemy units are never called with anything but
+// the default.
+export function drawUnit(ctx, worldToScreen, cam, u, isHovered, alpha = 1) {
+  if (alpha <= 0.002) return;
   const [sx, sy] = worldToScreen(u.x, u.y);
   const r = u.def.radius * cam.zoom * devicePixelRatio;
+  ctx.save();
+  if (alpha < 1) ctx.globalAlpha = alpha;
 
   // domain read-at-a-glance: air units cast a small drop shadow (hints
   // altitude), naval units get a wake ring (hints hull-in-water) — unchanged
@@ -1827,6 +1848,192 @@ export function drawUnit(ctx, worldToScreen, cam, u, isHovered) {
     ctx.fillStyle = '#6dffb0'; ctx.fillRect(sx - w / 2, sy - r - 8, w * (u.hp / u.def.hp), 3);
   }
   if (isHovered) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx, sy, r + 5, 0, 6.28); ctx.stroke(); }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// BATTALION MARKERS — B6 (operational-map battalion presentation; CONCEPT.md
+// "BATTALIONS, not singular units" -> docs/reference-battalion-design.md
+// §3.3's "Hybrid (Recommended)": single formation icon at strategic zoom,
+// expand to sub-units at tactical zoom). At strategic zoom a player
+// battalion draws as ONE compact marker at its live-sub-unit centroid
+// instead of N separate drawUnit() calls; main.js suppresses those sub-units
+// while a marker is visible (see that file's render-loop crossfade wiring)
+// and owns the zoom thresholds (Z_MARKER_ONLY/Z_UNITS_ONLY) — this function
+// only draws at whatever `alpha` it's handed, it never reads cam.zoom to
+// decide WHETHER to draw, only to size/scale what it draws once told to.
+//
+// Deliberately assetless/procedural + fully deterministic: every visual
+// choice below is a pure function of the battalion record itself
+// (type/side/morale/strength/garrisoned), never Math.random() — redrawing
+// the same battalion state twice always produces pixel-identical output.
+const BATTALION_MARKER_MIN_PX = 20; // floor so a marker never shrinks to an unreadable speck fully zoomed out
+const BATTALION_MARKER_MAX_PX = 34; // ceiling so it doesn't balloon partway through the crossfade band
+// Same fresh/steady/shaken/broken semantics as #battalionPanel's
+// .battalionMorale.* CSS (index.html) — different literal hex values because
+// the panel is paper-themed (light background, --green/--amber/--red) and
+// the canvas is this game's dark neon vocabulary (fresh reuses drawUnit's
+// own HP-bar green just above; broken/shaken reuse the existing enemy-red/
+// warm-amber already in use elsewhere on this map) — same four-way mapping,
+// so "green/grey/amber/red" reads identically in both places.
+const MORALE_MARKER_COLOR = { fresh: '#6dffb0', steady: '#cfd8e3', shaken: '#ffb84d', broken: '#ff5a5a' };
+
+function liveBattalionCentroid(bn) {
+  let sx = 0, sy = 0, n = 0;
+  for (const u of bn.units) {
+    if (u.hp <= 0) continue;
+    sx += u.x; sy += u.y; n++;
+  }
+  return n ? { x: sx / n, y: sy / n } : null;
+}
+// Exported so main.js's render loop can build its per-frame marker/
+// suppression bookkeeping off the EXACT same alive-unit centroid this
+// function itself draws at, rather than duplicating the alive-filter loop
+// and risking the two drifting apart.
+export function battalionMarkerCentroid(bn) { return liveBattalionCentroid(bn); }
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// main.js calls this once per player battalion with >=1 live sub-unit, in a
+// second pass AFTER the main unit-draw loop (so markers sit on top of any
+// still-fading-in sub-units during the crossfade band rather than under
+// them). `alpha` is the crossfade weight (0..1) main.js computed off
+// cam.zoom; `isHovered` is a plain boolean, same contract as drawUnit's own
+// isHovered param.
+export function drawBattalionMarker(ctx, worldToScreen, cam, bn, alpha, isHovered) {
+  if (alpha <= 0.002) return;
+  const centroid = liveBattalionCentroid(bn);
+  if (!centroid) return;
+  const [sx, sy] = worldToScreen(centroid.x, centroid.y);
+  const dpr = devicePixelRatio;
+  const w = Math.max(BATTALION_MARKER_MIN_PX, Math.min(BATTALION_MARKER_MAX_PX, 26 * cam.zoom)) * dpr;
+  const h = w * 0.66;
+  const side = bn.side === 'player' ? OWNERSHIP_COLORS.player : bn.side === 'enemy' ? OWNERSHIP_COLORS.enemy : OWNERSHIP_COLORS.neutral;
+  const state = moraleState(bn);
+  const frameColor = MORALE_MARKER_COLOR[state] || MORALE_MARKER_COLOR.steady;
+  const { hpFrac } = battalionStrength(bn);
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // FRAME — rounded rect filled with faction color, bordered by the morale-
+  // state color above (mirrors #battalionPanel's morale-state left-border
+  // rule with the same fresh/steady/shaken/broken vocabulary).
+  const rx = Math.max(2, w * 0.14);
+  ctx.beginPath();
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, rx);
+  ctx.globalAlpha = alpha * 0.92;
+  ctx.fillStyle = side;
+  ctx.fill();
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = Math.max(1.4, w * 0.07);
+  ctx.strokeStyle = frameColor;
+  ctx.stroke();
+
+  // TYPE GLYPH — elite: filled diamond (armor-heavy, the "ace" formation);
+  // standard: bold X (the classic NATO infantry glyph, matching this
+  // template's infantry-heavy roster); militia: a single hollow ring
+  // (nothing filled — the "lighter/hollow mark" the brief calls for, reading
+  // as irregular/light next to the other two's solid glyphs). Dark ink tone
+  // so it reads against the bright faction fill regardless of side color.
+  ctx.fillStyle = 'rgba(6,10,18,0.85)';
+  ctx.strokeStyle = 'rgba(6,10,18,0.85)';
+  const gr = h * 0.32; // glyph half-size, off marker height so it always fits inside the frame
+  if (bn.type === 'elite') {
+    ctx.beginPath();
+    ctx.moveTo(0, -gr); ctx.lineTo(gr, 0); ctx.lineTo(0, gr); ctx.lineTo(-gr, 0);
+    ctx.closePath();
+    ctx.fill();
+  } else if (bn.type === 'militia') {
+    ctx.lineWidth = Math.max(1.1, w * 0.05);
+    ctx.beginPath();
+    ctx.arc(0, 0, gr * 0.72, 0, 6.28);
+    ctx.stroke();
+  } else { // 'standard', and any future/unknown type falls through to this default
+    ctx.lineWidth = Math.max(1.3, w * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(-gr, -gr); ctx.lineTo(gr, gr);
+    ctx.moveTo(gr, -gr); ctx.lineTo(-gr, gr);
+    ctx.stroke();
+  }
+
+  // STRENGTH BAR — same visual language as drawUnit's own HP bar just above
+  // (black backing + green fill scaled to a live fraction) so a chewed-up
+  // battalion reads exactly the way a chewed-up single unit already does
+  // elsewhere on this map, just anchored under the frame instead of over a
+  // unit and scaled off battalionStrength()'s hpFrac instead of one unit's
+  // own hp/maxHp.
+  const barH = Math.max(2, w * 0.09);
+  const barY = h / 2 + Math.max(3, w * 0.16);
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  ctx.fillRect(-w / 2, barY, w, barH);
+  ctx.fillStyle = '#6dffb0';
+  ctx.fillRect(-w / 2, barY, w * Math.max(0, Math.min(1, hpFrac)), barH);
+  ctx.globalAlpha = alpha;
+
+  // GARRISON BADGE — small house glyph pinned to the frame's top-right
+  // corner when bn.garrisoned (game/battalionMorale.js's field — same
+  // condition #battalionPanel's "⛨ garrisoned" tag reads, just a shape
+  // instead of text since this is a strategic-glance icon, not a panel row).
+  if (bn.garrisoned) {
+    const bx = w / 2, by = -h / 2;
+    const bs = w * 0.36;
+    ctx.fillStyle = '#0d1420';
+    ctx.beginPath();
+    ctx.arc(bx, by, bs * 0.62, 0, 6.28);
+    ctx.fill();
+    ctx.fillStyle = MORALE_MARKER_COLOR.fresh;
+    ctx.beginPath(); // house glyph: a triangular roof over a small square body
+    ctx.moveTo(bx, by - bs * 0.34); ctx.lineTo(bx + bs * 0.3, by); ctx.lineTo(bx - bs * 0.3, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(bx - bs * 0.22, by, bs * 0.44, bs * 0.28);
+  }
+
+  ctx.restore();
+
+  if (isHovered) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(sx, sy, Math.max(w, h) * 0.72, 0, 6.28);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // NAME — only once zoomed past the marker range's own more-zoomed-in end
+  // (fades in over a small band so it doesn't pop), same "earn your place on
+  // screen" rule the city/deposit labels below already follow in this file —
+  // skips entirely at wide zoom-out where N adjacent battalion names would
+  // collide into label soup.
+  const nameT = Math.max(0, Math.min(1, (cam.zoom - 0.5) / 0.15));
+  if (nameT > 0) {
+    ctx.save();
+    ctx.globalAlpha = alpha * nameT;
+    ctx.textAlign = 'center';
+    ctx.font = `${Math.max(9, Math.min(12, w * 0.34))}px Consolas, monospace`;
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(4,8,14,0.75)';
+    const ny = sy + barY + barH + 11;
+    ctx.strokeText(bn.name, sx, ny);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(bn.name, sx, ny);
+    ctx.restore();
+  }
 }
 
 // ---------------------------------------------------------------------------

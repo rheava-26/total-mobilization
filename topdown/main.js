@@ -1,5 +1,5 @@
 import { loadMap, loadGeneratedMap } from './engine/tilemap.js';
-import { createRenderer, attachCameraControls, OWNERSHIP_COLORS, drawUnit, drawProjectile, drawImpacts } from './engine/renderer.js';
+import { createRenderer, attachCameraControls, OWNERSHIP_COLORS, drawUnit, drawProjectile, drawImpacts, drawBattalionMarker } from './engine/renderer.js';
 import { spawnUnit, updateUnits, updateProjectiles, clearClaims, UNIT_DEFS, MOVE_CLASSES, WEAPON_DEFS, terrainSample } from './game/units.js';
 import { BUILDING_DEFS, spawnBuilding, updateBuildings, isValidPlacement, sitePlacement, footprintHasDeposit, sellBuilding } from './game/buildings.js';
 // BUILDBAR CATEGORY MAP (playtest: "group buildings... you can't scroll
@@ -299,6 +299,35 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
 // requestElite/requestStandard/raiseMilitia call, ticked down by
 // updateReinforcements() in loop() below until they spawn a real battalion.
 const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [], battalions: [], reinforcements: [] };
+
+// B6 — OPERATIONAL-MAP BATTALION PRESENTATION (CONCEPT.md's "BATTALIONS, not
+// singular units" -> docs/reference-battalion-design.md §3.3's "Hybrid
+// (Recommended)": formation icon at strategic zoom, expand to sub-units at
+// tactical zoom). This is the ONLY new state B6 adds to main.js: a pure
+// function of `renderer.cam.zoom` that the render loop below reads once per
+// frame to decide, for each PLAYER battalion, how much of each of its two
+// representations (drawBattalionMarker's formation icon vs. drawUnit's
+// individual sub-units) to draw this frame. `markerAlpha`/`unitAlpha` are
+// independent 0..1 weights (NOT complementary by construction, but the
+// thresholds below happen to make them sum to 1 in the crossfade band) —
+// drawUnit/drawBattalionMarker each already no-op under ~0.002 alpha, so the
+// "SUPPRESS drawing" requirement falls straight out of passing these through
+// rather than needing a separate boolean gate.
+//   zoom <= Z_MARKER_ONLY : marker only, sub-units fully suppressed.
+//   zoom >= Z_UNITS_ONLY  : sub-units only (today's exact look), no marker.
+//   in between            : linear crossfade, so neither pops.
+// Enemy battalions don't exist yet (B6's other half, adapting enemyai.js to
+// battalions, is future work per CONCEPT.md's phase list) and loose units
+// (no u.battalion) are never touched by this at all — see the render loop's
+// suppression-set construction below.
+const Z_MARKER_ONLY = 0.42;
+const Z_UNITS_ONLY = 0.68;
+function battalionCrossfade(zoom) {
+  if (zoom <= Z_MARKER_ONLY) return { markerAlpha: 1, unitAlpha: 0 };
+  if (zoom >= Z_UNITS_ONLY) return { markerAlpha: 0, unitAlpha: 1 };
+  const t = (zoom - Z_MARKER_ONLY) / (Z_UNITS_ONLY - Z_MARKER_ONLY);
+  return { markerAlpha: 1 - t, unitAlpha: t };
+}
 
 // AMBIENT LIFE (game/ambient.js) — created once right alongside `world`,
 // since it's precomputed off the same `map` (road network, cities/towns)
@@ -2663,6 +2692,25 @@ function loop(now) {
   // never disagree with itself within a single frame.
   const framePlan = getCurrentPlan();
 
+  // B6 crossfade weights for THIS frame, off the live camera zoom — computed
+  // once here (not per-unit/per-battalion) so every battalion/sub-unit drawn
+  // this frame agrees on the exact same marker/unit balance. See this
+  // constant's own block comment above `world` for the threshold contract.
+  const { markerAlpha: bnMarkerAlpha, unitAlpha: bnUnitAlpha } = battalionCrossfade(renderer.cam.zoom);
+  // Player battalions currently showing ANY marker weight this frame (>=1
+  // live sub-unit — updateBattalions already prunes dead ones/empty
+  // battalions every frame, see loop() above — and markerAlpha above the
+  // near-zero no-op floor drawBattalionMarker itself uses). Sub-units
+  // belonging to one of these draw at `bnUnitAlpha` instead of full opacity
+  // (0 below Z_MARKER_ONLY = fully suppressed, exactly per spec) so the two
+  // representations never both draw at full strength at once. A battalion
+  // NOT in this set (marker fully faded out, i.e. zoom >= Z_UNITS_ONLY) never
+  // touches this — its sub-units take the normal drawUnit(...) path with no
+  // alpha argument at all, byte-for-byte the pre-B6 call.
+  const bnMarkerIds = bnMarkerAlpha > 0.002
+    ? new Set(world.battalions.filter(bn => bn.side === 'player' && bn.units.length > 0).map(bn => bn.id))
+    : null;
+
   renderer.frame(map, (ctx, worldToScreen, cam) => {
     drawFogOverlay(ctx, worldToScreen, 'player', world, map);
     // RESOURCE FILTER + NEXT-NEEDED (playtest: "filter for resources",
@@ -2691,7 +2739,28 @@ function loop(now) {
       // fog: only draw enemy units the player side currently detects. Own
       // units always draw regardless (you always see yourself).
       if (u.side !== 'player' && !detects('player', u)) continue;
-      drawUnit(ctx, worldToScreen, cam, u, u === hovered);
+      // B6: a sub-unit of a player battalion currently showing a marker
+      // draws at the crossfade's unit-alpha (0 = fully suppressed) instead
+      // of full opacity — loose units (u.battalion undefined) and enemy
+      // units (no battalions this phase) always fall through to the
+      // unchanged full-opacity call below, so tactical-zoom/non-battalion
+      // rendering is byte-for-byte what it was before B6.
+      if (bnMarkerIds && u.battalion != null && bnMarkerIds.has(u.battalion)) {
+        drawUnit(ctx, worldToScreen, cam, u, u === hovered, bnUnitAlpha);
+      } else {
+        drawUnit(ctx, worldToScreen, cam, u, u === hovered);
+      }
+    }
+    // B6 formation markers — SECOND pass, after sub-units/projectiles so a
+    // marker sits visually on top of any still-fading-in sub-unit beneath it
+    // during the crossfade band rather than getting buried under one. Player
+    // battalions are always fully visible (they're the player's own — no fog
+    // gate needed, matching the "own units always draw" rule right above).
+    if (bnMarkerIds) {
+      for (const bn of world.battalions) {
+        if (!bnMarkerIds.has(bn.id)) continue;
+        drawBattalionMarker(ctx, worldToScreen, cam, bn, bnMarkerAlpha, false);
+      }
     }
     // impact smoke wisps drawn ABOVE units — same ordering as ambient.js's
     // own factory smoke above, so drifting wisps read as sitting over the

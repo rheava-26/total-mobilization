@@ -332,15 +332,33 @@ function prerenderDeposits(octx, map) {
 // nudged away from the road tile it's closest to, so blocks loosely "front
 // the street" instead of a uniform scatter ignoring the road network
 // entirely.
-const ROOF_PALETTES = [
-  ['#6b4a34', '#8a6244'], // warm brick/tile
-  ['#585049', '#726a5f'], // grey slate
-  ['#75563a', '#93704c'], // sun-baked tan
+// MODERNIZATION (designer: "buildings look like they're from 1196 ... make
+// them look more modern"). Two material families instead of one all-brown
+// medieval set, picked per-building by HEIGHT TIER below (see the
+// building-placement loop): CONCRETE_PALETTES for low/mid-rise residential —
+// concrete grey, off-white precast/stucco, a muted sage-grey, and ONE warm
+// stone/brick accent kept sparse so the city has a little warmth without
+// reading as a field of brown — and GLASS_PALETTES for taller commercial
+// towers — cool steel/glass blue-green/blue-violet tones that pair with the
+// curtain-wall sheen drawn on tall buildings below. Muted/desaturated on
+// purpose (not neon) to stay harmonious with the parchment map.
+const CONCRETE_PALETTES = [
+  ['#84898c', '#aeb4b7'], // concrete grey
+  ['#c7c1b0', '#e7e1cf'], // off-white precast/stucco
+  ['#6f6a5d', '#948d7a'], // warm stone/brick accent (sparse, not dominant)
+  ['#5b6660', '#7c8981'], // muted sage-grey low-rise
 ];
-// Distinct from the residential palettes above — used only for the rare
-// larger civic/industrial structure the middle ring occasionally rolls (a
-// warehouse/depot/guildhall silhouette breaking up a street of houses).
-const CIVIC_PALETTE = ['#4f5c54', '#6f8177'];
+const GLASS_PALETTES = [
+  ['#2d3d46', '#5c8ea0'], // steel/glass blue-teal curtain wall
+  ['#334349', '#6c9298'], // cooler slate glass
+  ['#3a3f4a', '#6d7690'], // blue-violet glass tower
+];
+const ROOF_PALETTES = CONCRETE_PALETTES; // kept name: default low/mid-rise family
+// Larger office/industrial complexes (mid ring AND core now — see the civic
+// condition below) — steel-toned, distinct from ordinary residential
+// concrete, reads as a modern business park / office block rather than a
+// medieval guildhall.
+const CIVIC_PALETTE = ['#546670', '#83a0ab'];
 
 // Nearest SETTLEMENT (a city or a small town — see below) to a world-px
 // point, plus a normalized 0..1 "how deep into its core" density. Operating
@@ -676,6 +694,86 @@ function drawYardFence(octx, cx0, cy0, w, h, ts, gx, gy) {
   octx.restore();
 }
 
+// Modern flat-roof detailing — HVAC/AC condenser units, a rooftop water
+// tank, reflective skylight strips, a solar-panel grid, or (rare, tallest
+// towers only) a rooftop helipad. Drawn in the building's own LOCAL space
+// (caller must already be translated+rotated to the building/roof center),
+// so it rotates for free with the building. `rolls` is a handful of
+// deterministic 0..1 values (cellHash(...) with distinct salts, computed by
+// the caller) passed in as plain numbers rather than threading the hash
+// closure through, so this stays a pure drawing function.
+function drawRoofDetail(octx, w, h, kind, rolls) {
+  const pad = Math.min(w, h) * 0.16;
+  const rw = Math.max(0, w - pad * 2), rh = Math.max(0, h - pad * 2);
+  if (rw < 2 || rh < 2) return;
+  switch (kind) {
+    case 0: { // HVAC / AC condenser units — small grey boxes with a dark vent stroke
+      const count = 2 + Math.floor(rolls[0] * 3);
+      for (let k = 0; k < count; k++) {
+        const ux = (rolls[(k * 2 + 1) % rolls.length] - 0.5) * rw * 0.8;
+        const uy = (rolls[(k * 2 + 2) % rolls.length] - 0.5) * rh * 0.8;
+        const us = Math.min(w, h) * (0.09 + rolls[(k + 3) % rolls.length] * 0.05);
+        octx.fillStyle = 'rgba(58,62,64,0.85)';
+        roundedRectPath(octx, ux - us / 2, uy - us / 2, us, us, us * 0.15);
+        octx.fill();
+        octx.strokeStyle = 'rgba(18,18,18,0.4)';
+        octx.lineWidth = Math.max(0.5, us * 0.06);
+        octx.stroke();
+      }
+      break;
+    }
+    case 1: { // rooftop water tank — squat cylinder, off-center
+      const tr = Math.min(w, h) * 0.16;
+      const tx = (rolls[0] - 0.5) * rw * 0.5, ty = (rolls[1] - 0.5) * rh * 0.5;
+      octx.fillStyle = 'rgba(72,68,60,0.85)';
+      octx.beginPath(); octx.ellipse(tx, ty, tr, tr * 0.85, 0, 0, Math.PI * 2); octx.fill();
+      octx.strokeStyle = 'rgba(20,18,14,0.5)';
+      octx.lineWidth = Math.max(0.5, tr * 0.08);
+      octx.stroke();
+      break;
+    }
+    case 2: { // reflective skylight strips
+      octx.fillStyle = 'rgba(190,215,222,0.5)';
+      for (let k = 0; k < 2; k++) {
+        const sy = -rh * 0.22 + k * rh * 0.44;
+        roundedRectPath(octx, -rw * 0.32, sy - rh * 0.05, rw * 0.64, rh * 0.1, rh * 0.03);
+        octx.fill();
+      }
+      break;
+    }
+    case 3: { // solar panel grid — dark blue rows, thin cool grid lines
+      const cols = 3, rows = 2;
+      const pw = rw / cols * 0.82, ph = rh / rows * 0.7;
+      octx.fillStyle = 'rgba(28,40,56,0.8)';
+      for (let ry = 0; ry < rows; ry++) for (let rx = 0; rx < cols; rx++) {
+        const px = -rw / 2 + (rx + 0.5) * (rw / cols), py = -rh / 2 + (ry + 0.5) * (rh / rows);
+        roundedRectPath(octx, px - pw / 2, py - ph / 2, pw, ph, 1);
+        octx.fill();
+      }
+      octx.strokeStyle = 'rgba(120,150,180,0.35)';
+      octx.lineWidth = 0.6;
+      for (let ry = 0; ry < rows; ry++) for (let rx = 0; rx < cols; rx++) {
+        const px = -rw / 2 + (rx + 0.5) * (rw / cols), py = -rh / 2 + (ry + 0.5) * (rh / rows);
+        roundedRectPath(octx, px - pw / 2, py - ph / 2, pw, ph, 1);
+        octx.stroke();
+      }
+      break;
+    }
+    case 4: { // rooftop helipad — tallest towers only
+      const hr = Math.min(rw, rh) * 0.3;
+      octx.beginPath(); octx.arc(0, 0, hr, 0, Math.PI * 2);
+      octx.fillStyle = 'rgba(28,30,32,0.75)'; octx.fill();
+      octx.strokeStyle = 'rgba(228,228,228,0.75)'; octx.lineWidth = Math.max(0.6, hr * 0.12); octx.stroke();
+      octx.strokeStyle = 'rgba(228,228,228,0.8)';
+      octx.lineWidth = Math.max(0.8, hr * 0.18);
+      octx.beginPath(); octx.moveTo(-hr * 0.32, -hr * 0.45); octx.lineTo(-hr * 0.32, hr * 0.45); octx.stroke();
+      octx.beginPath(); octx.moveTo(hr * 0.32, -hr * 0.45); octx.lineTo(hr * 0.32, hr * 0.45); octx.stroke();
+      octx.beginPath(); octx.moveTo(-hr * 0.32, 0); octx.lineTo(hr * 0.32, 0); octx.stroke();
+      break;
+    }
+  }
+}
+
 function prerenderCityBlocks(octx, map) {
   // towns (game/mapgen.js's small-settlements pass) join cities for this
   // render-only pass so a village gets the exact same organic
@@ -790,9 +888,26 @@ function prerenderCityBlocks(octx, map) {
         // the core plazas above, green instead of paved
         if (density <= 0.78 && cellHash(seedX, seedY, i, j, 250) < 0.045) { drawPlazaOrPark(octx, wx, wy, i, j, ts, true); continue; }
 
-        // occasional larger civic/industrial structure in the mid-density
-        // band — a little "not every block is a house" variety
-        const civic = density > 0.3 && density <= 0.7 && cellHash(seedX, seedY, i, j, 260) < 0.05;
+        // HEIGHT TIER (designer: "make them look more modern" — real
+        // high-rises in the core, stepping down to mid-rise then low-rise at
+        // the edge, is the single biggest lever for "modern city" vs.
+        // "medieval village": right now everything was the same low height).
+        // Continuous with `density`, same smooth-not-stepped philosophy as
+        // placeChance above, so the skyline thins gradually instead of a
+        // hard ring where towers stop. 1 = low-rise, 4 = high-rise/tower.
+        const heightRoll = cellHash(seedX, seedY, i, j, 230);
+        let tier = 1;
+        if (density > 0.6) tier = heightRoll < 0.30 ? 4 : heightRoll < 0.62 ? 3 : 2;
+        else if (density > 0.32) tier = heightRoll < 0.22 ? 3 : heightRoll < 0.55 ? 2 : 1;
+        else tier = heightRoll < 0.10 ? 2 : 1;
+
+        // occasional larger office/industrial complex — no longer capped to
+        // the mid-density band (designer: "large flat commercial/industrial
+        // roofs in the core") so downtown itself can roll one of these too,
+        // reading as a modern business-park block rather than a medieval
+        // guildhall.
+        const civic = density > 0.28 && cellHash(seedX, seedY, i, j, 260) < 0.05;
+        if (civic) tier = Math.max(tier, 2); // a civic/office complex always reads at least mid-rise
         // occasional larger ROW BLOCK — a real merge with the adjacent lot
         // along whichever local axis the hash picks (u or v), safe/exact
         // here (unlike a world-tile-grid merge) because both lots share
@@ -817,6 +932,7 @@ function prerenderCityBlocks(octx, map) {
             if (neighborOk) { claimed.add(ni + ',' + nj); mergeAxis = axis; }
           }
         }
+        if (mergeAxis) tier = Math.max(tier, 2); // a merged row/office block reads at least mid-rise too
 
         // small in-LOT jitter, applied in LOCAL (u,v) space rather than
         // world x/y — nudging along the settlement's own axes keeps the
@@ -867,9 +983,18 @@ function prerenderCityBlocks(octx, map) {
         }
         if (mergeAxis === 'u') w = cell * 2 * (0.92 + cellHash(seedX, seedY, i, j, 212) * 0.05) * fitScale;
         if (mergeAxis === 'v') h = cell * 2 * (0.92 + cellHash(seedX, seedY, i, j, 213) * 0.05) * fitScale;
-        if (civic) { w *= 1.55; h *= 1.4; }
+        if (civic) { w *= density > 0.6 ? 1.9 : 1.55; h *= density > 0.6 ? 1.7 : 1.4; }
 
-        const palette = civic ? CIVIC_PALETTE : ROOF_PALETTES[Math.floor(cellHash(seedX, seedY, i, j, 215) * ROOF_PALETTES.length) % ROOF_PALETTES.length];
+        // Palette family follows HEIGHT TIER, not just civic/ordinary — tall
+        // (tier >= 3) non-civic buildings pull from the cool glass/steel
+        // family (curtain-wall towers), everything else from the concrete/
+        // off-white/stone family. This is what makes the skyline read as
+        // coherent glass-and-steel downtown vs. concrete/stucco mid-and-low
+        // rise, instead of one flat brown palette everywhere.
+        const isGlass = !civic && tier >= 3;
+        const palette = civic ? CIVIC_PALETTE
+          : isGlass ? GLASS_PALETTES[Math.floor(cellHash(seedX, seedY, i, j, 215) * GLASS_PALETTES.length) % GLASS_PALETTES.length]
+          : CONCRETE_PALETTES[Math.floor(cellHash(seedX, seedY, i, j, 215) * CONCRETE_PALETTES.length) % CONCRETE_PALETTES.length];
         const roofRgb = lerpRgb(palette[0], palette[1], cellHash(seedX, seedY, i, j, 216));
 
         octx.save();
@@ -884,9 +1009,13 @@ function prerenderCityBlocks(octx, map) {
         const cr = Math.min(w, h) * 0.05;
 
         // subtle drop shadow, offset toward lower-right (a fixed light
-        // direction reads as more coherent than per-tile-random shadow angles)
+        // direction reads as more coherent than per-tile-random shadow
+        // angles) — HEIGHT TIER stretches the offset further for taller
+        // buildings, the classic "long cast shadow implies a tall building"
+        // top-down cue.
+        const heightBoost = ts * (tier - 1) * 0.09;
         octx.fillStyle = 'rgba(6,8,10,0.35)';
-        roundedRectPath(octx, -w / 2 + w * 0.06, -h / 2 + h * 0.09, w, h, cr);
+        roundedRectPath(octx, -w / 2 + w * 0.06 + heightBoost * 0.5, -h / 2 + h * 0.09 + heightBoost, w, h, cr);
         octx.fill();
 
         // WALL bands — thin darker strips along the bottom and right edges
@@ -897,9 +1026,10 @@ function prerenderCityBlocks(octx, map) {
         // plus a darker WALL catching shadow on two sides is the cheapest
         // fake-extrusion cue that reads as "this has height" at top-down
         // angle (same 2.5-tier language drawTowerBlock already uses for
-        // landmarks, simplified to one band).
+        // landmarks, simplified to one band). Deeper for taller tiers — a
+        // taller building shows more of its own side face.
         const wallRgb = [roofRgb[0] * 0.5, roofRgb[1] * 0.5, roofRgb[2] * 0.5];
-        const wallDepth = Math.min(w, h) * 0.16;
+        const wallDepth = Math.min(w, h) * (0.14 + (tier - 1) * 0.035);
         octx.fillStyle = rgba(wallRgb, 0.9);
         roundedRectPath(octx, -w / 2, h / 2 - wallDepth, w, wallDepth, cr * 0.6);
         octx.fill();
@@ -908,10 +1038,34 @@ function prerenderCityBlocks(octx, map) {
 
         // ROOF top-face — inset slightly off the wall bands so both remain
         // visible, giving the roof a crisp edge rather than bleeding into
-        // the wall color
+        // the wall color. Flat modern roof, not a medieval pitched/gabled
+        // one — the ridge-line treatment further down stays a thin division
+        // stroke, never a peaked/gabled silhouette.
         octx.fillStyle = rgba(roofRgb, 0.96);
-        roundedRectPath(octx, -w / 2, -h / 2, w - wallDepth * 0.55, h - wallDepth * 0.55, cr);
+        const roofW = w - wallDepth * 0.55, roofH = h - wallDepth * 0.55;
+        roundedRectPath(octx, -w / 2, -h / 2, roofW, roofH, cr);
         octx.fill();
+
+        // glass curtain-wall sheen — a soft diagonal reflection streak,
+        // clipped to the roof, on tall glass-family towers only. This is
+        // the "cool sheen/glint that sells modern skyscraper" cue; concrete/
+        // off-white low-and-mid-rise buildings skip it (they get a plain
+        // warm corner highlight instead, drawn after restore() below).
+        if (isGlass) {
+          octx.save();
+          roundedRectPath(octx, -w / 2, -h / 2, roofW, roofH, cr);
+          octx.clip();
+          const gx0 = -w / 2, gy0 = -h / 2, gx1 = w / 2, gy1 = h / 2;
+          const sheen = octx.createLinearGradient(gx0, gy0, gx1, gy1);
+          sheen.addColorStop(0, 'rgba(255,255,255,0)');
+          sheen.addColorStop(0.4, 'rgba(255,255,255,0)');
+          sheen.addColorStop(0.5, 'rgba(226,242,246,0.4)');
+          sheen.addColorStop(0.6, 'rgba(255,255,255,0)');
+          sheen.addColorStop(1, 'rgba(255,255,255,0)');
+          octx.fillStyle = sheen;
+          octx.fillRect(gx0, gy0, w, h);
+          octx.restore();
+        }
 
         // crisp dark building outline around the FULL footprint — the other
         // half of the "reads as built, not painted" fix; the old stroke was
@@ -921,34 +1075,96 @@ function prerenderCityBlocks(octx, map) {
         roundedRectPath(octx, -w / 2, -h / 2, w, h, cr);
         octx.stroke();
 
+        // parapet trim — a thin light inset line just inside the roof edge,
+        // the modern flat-roof equivalent of the old pitched-roof ridge:
+        // sells "poured/capped roof edge" rather than a bare flat fill.
+        const parapetPad = Math.min(w, h) * 0.07;
+        octx.strokeStyle = 'rgba(255,255,255,0.16)';
+        octx.lineWidth = Math.max(0.5, ts * 0.014);
+        roundedRectPath(octx, -w / 2 + parapetPad, -h / 2 + parapetPad,
+          Math.max(1, roofW - parapetPad * 2), Math.max(1, roofH - parapetPad * 2), Math.max(0, cr - parapetPad * 0.3));
+        octx.stroke();
+
         // roof ridge / row-house division lines — a merged row block or
-        // civic structure (or anything that simply rolled big) gets 1-2
-        // internal lines along its long axis so a big footprint reads as a
-        // TERRACE OF ATTACHED BUILDINGS or a ridged civic roof, not one
-        // shapeless mega-blob — the thing that would otherwise undercut
-        // "actual building-looking buildings" the bigger this pass makes them
-        if (mergeAxis || civic || Math.max(w, h) > ts * 1.05) {
+        // civic structure (or anything that simply rolled big) gets an
+        // internal line along its long axis so a big footprint reads as a
+        // TERRACE OF ATTACHED BUILDINGS/offices, not one shapeless
+        // mega-blob. Skipped on tier >= 3 towers — the stepped upper massing
+        // drawn below already carries that job for high-rises.
+        if (tier < 3 && (mergeAxis || civic || Math.max(w, h) > ts * 1.05)) {
           const longIsW = w >= h;
           const span = longIsW ? w : h;
-          const divisions = civic ? 1 : mergeAxis ? 1 : 1;
           octx.strokeStyle = 'rgba(14,11,8,0.28)';
           octx.lineWidth = Math.max(0.6, ts * 0.02);
-          for (let d = 1; d < divisions + 1; d++) {
-            const at = -span / 2 + (span / (divisions + 1)) * d;
-            octx.beginPath();
-            if (longIsW) { octx.moveTo(at, -h / 2); octx.lineTo(at, h / 2); }
-            else { octx.moveTo(-w / 2, at); octx.lineTo(w / 2, at); }
-            octx.stroke();
-          }
+          const at = -span / 2 + span / 2;
+          octx.beginPath();
+          if (longIsW) { octx.moveTo(at, -h / 2); octx.lineTo(at, h / 2); }
+          else { octx.moveTo(-w / 2, at); octx.lineTo(w / 2, at); }
+          octx.stroke();
         }
 
-        // small corner highlight lick — kept modest and tucked into the
-        // roof's upper-left corner (was a large soft round glow spanning
-        // most of the roof, which fought the crisp-rectangle read this pass
-        // is going for by putting a fuzzy circular patch over a sharp box)
+        // deterministic rooftop-detail rolls, shared by both the plain roof
+        // and (for tier >= 3) the stepped upper-massing block below
+        const rolls = [
+          cellHash(seedX, seedY, i, j, 241), cellHash(seedX, seedY, i, j, 242),
+          cellHash(seedX, seedY, i, j, 243), cellHash(seedX, seedY, i, j, 244),
+          cellHash(seedX, seedY, i, j, 245), cellHash(seedX, seedY, i, j, 246),
+        ];
+        const detailRoll = cellHash(seedX, seedY, i, j, 240);
+        let detailKind = -1;
+        if (civic || tier >= 3) {
+          if (tier === 4 && detailRoll < 0.12) detailKind = 4; // helipad — tallest towers only
+          else if (detailRoll < 0.85) detailKind = detailRoll < 0.32 ? 0 : detailRoll < 0.5 ? 1 : detailRoll < 0.7 ? 2 : 3;
+        } else if (tier === 2) {
+          if (detailRoll < 0.55) detailKind = detailRoll < 0.3 ? 0 : detailRoll < 0.45 ? 1 : 2;
+        } else if (detailRoll < 0.12) {
+          detailKind = 0; // rare single AC unit on an ordinary low-rise house
+        }
+
+        // STEPPED UPPER MASSING for high-rise towers (tier >= 3) — a second,
+        // smaller block set toward the light-opposite (upper-left) corner
+        // with its own mini drop-shadow, same fake-extrusion language
+        // drawTowerBlock uses for the central landmark. This is what turns
+        // "tall drop shadow + deep wall band" into an actual stepped-tower
+        // silhouette instead of just a bigger flat rectangle — the real
+        // "skyline" read. Rooftop detail (HVAC/tank/skylights/solar/
+        // helipad) is drawn on TOP of this upper block for towers, since
+        // that's the roof an aerial view would actually see.
+        if (tier >= 3) {
+          const insetScale = tier === 4 ? 0.6 : 0.78;
+          const iw = roofW * insetScale, ih = roofH * insetScale;
+          const iox = -w * 0.07, ioy = -h * 0.09;
+          octx.fillStyle = 'rgba(4,6,8,0.3)';
+          roundedRectPath(octx, iox - iw / 2 + iw * 0.05, ioy - ih / 2 + ih * 0.07, iw, ih, cr * 0.8);
+          octx.fill();
+          const upperRgb = lerpRgb(palette[0], palette[1], Math.min(1, cellHash(seedX, seedY, i, j, 231) * 0.5 + 0.45));
+          octx.fillStyle = rgba(upperRgb, 0.98);
+          roundedRectPath(octx, iox - iw / 2, ioy - ih / 2, iw, ih, cr * 0.8);
+          octx.fill();
+          octx.strokeStyle = 'rgba(14,11,8,0.55)';
+          octx.lineWidth = Math.max(0.7, ts * 0.026);
+          roundedRectPath(octx, iox - iw / 2, ioy - ih / 2, iw, ih, cr * 0.8);
+          octx.stroke();
+          if (detailKind >= 0) {
+            octx.save();
+            octx.translate(iox, ioy);
+            drawRoofDetail(octx, iw, ih, detailKind, rolls);
+            octx.restore();
+          }
+        } else if (detailKind >= 0) {
+          drawRoofDetail(octx, roofW, roofH, detailKind, rolls);
+        }
+
         octx.restore();
-        softBlob(octx, bx - w * 0.28, by - h * 0.3, Math.min(w, h) * 0.34, Math.min(w, h) * 0.24, bRot,
-          [255, 240, 210], 0.06 + cellHash(seedX, seedY, i, j, 217) * 0.05);
+
+        // corner highlight lick for non-glass buildings only (glass towers
+        // already got their diagonal sheen above) — cool neutral tint, not
+        // the old warm sunlit-stone tone, so concrete/off-white low-rise
+        // reads modern rather than sun-baked medieval.
+        if (!isGlass) {
+          softBlob(octx, bx - w * 0.28, by - h * 0.3, Math.min(w, h) * 0.34, Math.min(w, h) * 0.24, bRot,
+            [232, 236, 236], 0.05 + cellHash(seedX, seedY, i, j, 217) * 0.045);
+        }
 
         // outer-density "yard" hint: a faint fence outline around a
         // detached structure, selling "edge of town" instead of "block ran
@@ -988,56 +1204,85 @@ function roundedRectPath(ctx, x, y, w, h, r) {
 
 // A single "tall" structure: a base tier (with an extra-long drop shadow,
 // the same height cue ordinary blocks use but exaggerated) topped by a
-// smaller tier offset up-and-left — a cheap top-down fake extrusion that
-// reads as "this is taller than everything around it" without needing real
-// 3D. `spire` adds a peaked roof on the upper tier for the tallest landmark
-// (the central keep/tower), giving it a genuinely distinct silhouette
-// against the flat-roofed residential blocks.
-function drawTowerBlock(octx, x, y, size, dark, light, spire) {
+// smaller set-back tier offset up-and-left, both with a glass sheen — a
+// cheap top-down fake extrusion that reads as "this is taller than
+// everything around it" without needing real 3D. `crown` adds a lit
+// rooftop penthouse block plus a thin antenna mast with a beacon light on
+// the tallest landmark (the central skyscraper), giving it a genuinely
+// distinct, MODERN silhouette — a glass tower with a lit crown, not a
+// medieval spired keep.
+function drawTowerBlock(octx, x, y, size, dark, light, crown) {
   octx.save();
   octx.fillStyle = 'rgba(4,6,8,0.45)';
-  roundedRectPath(octx, x - size / 2 + size * 0.22, y - size / 2 + size * 0.3, size, size, size * 0.12);
+  roundedRectPath(octx, x - size / 2 + size * 0.22, y - size / 2 + size * 0.3, size, size, size * 0.1);
   octx.fill();
 
   octx.fillStyle = dark;
-  roundedRectPath(octx, x - size / 2, y - size / 2, size, size, size * 0.12);
+  roundedRectPath(octx, x - size / 2, y - size / 2, size, size, size * 0.1);
   octx.fill();
-  octx.strokeStyle = 'rgba(20,16,12,0.5)';
-  octx.lineWidth = Math.max(0.8, size * 0.05);
+  octx.strokeStyle = 'rgba(14,16,18,0.5)';
+  octx.lineWidth = Math.max(0.8, size * 0.045);
   octx.stroke();
+
+  // glass curtain-wall sheen across the base tier
+  octx.save();
+  roundedRectPath(octx, x - size / 2, y - size / 2, size, size, size * 0.1);
+  octx.clip();
+  const sheen = octx.createLinearGradient(x - size / 2, y - size / 2, x + size / 2, y + size / 2);
+  sheen.addColorStop(0, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0.42, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0.5, 'rgba(226,242,246,0.3)');
+  sheen.addColorStop(0.58, 'rgba(255,255,255,0)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  octx.fillStyle = sheen;
+  octx.fillRect(x - size / 2, y - size / 2, size, size);
+  octx.restore();
 
   const off = size * 0.3;
   octx.fillStyle = light;
-  roundedRectPath(octx, x - size * 0.34 - off * 0.25, y - size * 0.34 - off, size * 0.68, size * 0.68, size * 0.1);
+  roundedRectPath(octx, x - size * 0.34 - off * 0.25, y - size * 0.34 - off, size * 0.68, size * 0.68, size * 0.09);
   octx.fill();
-  octx.strokeStyle = 'rgba(20,16,12,0.4)';
-  octx.lineWidth = Math.max(0.6, size * 0.04);
+  octx.strokeStyle = 'rgba(14,16,18,0.45)';
+  octx.lineWidth = Math.max(0.6, size * 0.035);
   octx.stroke();
 
-  if (spire) {
-    octx.beginPath();
-    octx.moveTo(x - off * 0.25, y - size * 0.34 - off);
-    octx.lineTo(x - off * 0.25 + size * 0.34, y - size * 1.05 - off);
-    octx.lineTo(x - off * 0.25 + size * 0.68, y - size * 0.34 - off);
-    octx.closePath();
+  if (crown) {
+    // lit rooftop penthouse block + antenna mast with a beacon — the modern
+    // "capital skyscraper" silhouette, replacing the old pitched spire
+    const cw = size * 0.34, ch = size * 0.28;
+    const ccx = x - off * 0.25, ccy = y - size * 0.34 - off - ch * 0.62;
     octx.fillStyle = light;
+    roundedRectPath(octx, ccx - cw / 2, ccy - ch / 2, cw, ch, cw * 0.18);
     octx.fill();
-    octx.strokeStyle = 'rgba(20,16,12,0.4)';
+    octx.strokeStyle = 'rgba(232,246,248,0.85)';
+    octx.lineWidth = Math.max(0.7, size * 0.028);
     octx.stroke();
+    octx.strokeStyle = 'rgba(40,44,46,0.85)';
+    octx.lineWidth = Math.max(0.6, size * 0.022);
+    octx.beginPath();
+    octx.moveTo(ccx, ccy - ch / 2);
+    octx.lineTo(ccx, ccy - ch / 2 - size * 0.36);
+    octx.stroke();
+    octx.beginPath();
+    octx.arc(ccx, ccy - ch / 2 - size * 0.36, size * 0.045, 0, Math.PI * 2);
+    octx.fillStyle = 'rgba(255,92,70,0.92)';
+    octx.fill();
   }
   octx.restore();
-  softBlob(octx, x - size * 0.15 - off * 0.25, y - size * 0.15 - off, size * 0.75, size * 0.55, 0, [255, 240, 210], 0.12);
+  softBlob(octx, x - size * 0.15 - off * 0.25, y - size * 0.15 - off, size * 0.75, size * 0.55, 0, [222, 236, 238], 0.11);
 }
 
-// THE central landmark — B5a's single biggest "these are real cities with a
-// heart" lever. A city (r >= 6) gets a walled compound with a tall central
-// keep (spired, distinctly colored from every ordinary roof palette); the
-// capital additionally gets four corner towers and a grander gold-toned keep
-// (scaled further by its own `r`, which mapgen.js already guarantees is the
-// largest — no new "is capital" field needed, same trick drawLabels already
-// uses for the bold/gold city name). A town (r < 6) gets a much smaller
-// plaza-and-monument version — present, but never competing with a real
-// city's landmark for visual weight.
+// THE central landmark — the single biggest "this is a real, MODERN city
+// with a heart" lever. A city (r >= 6) gets a civic plaza around a tall
+// central glass skyscraper (crowned with a lit penthouse + antenna beacon,
+// distinctly colored from every ordinary roof palette); the capital
+// additionally gets a small cluster of secondary glass towers around it —
+// a downtown skyline cluster, not defensive citadel bastions — and a
+// grander crowned centerpiece (scaled further by its own `r`, which
+// mapgen.js already guarantees is the largest — no new "is capital" field
+// needed, same trick drawLabels already uses for the bold/gold city name).
+// A town (r < 6) gets a much smaller modern civic-plaza version — present,
+// but never competing with a real city's landmark for visual weight.
 function drawLandmark(octx, c, ts, isCity, isCapital) {
   const cx = (c.x + 0.5) * ts, cy = (c.y + 0.5) * ts;
   const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
@@ -1047,23 +1292,25 @@ function drawLandmark(octx, c, ts, isCity, isCapital) {
     const R = ts * 0.62;
     octx.beginPath();
     octx.ellipse(cx, cy, R, R * 0.82, h(720) * Math.PI, 0, Math.PI * 2);
-    octx.fillStyle = 'rgba(150,138,110,0.30)';
+    octx.fillStyle = 'rgba(148,150,146,0.30)';
     octx.fill();
-    drawTowerBlock(octx, cx + ts * 0.02, cy - ts * 0.02, ts * 0.5, '#6b5a48', '#8a7460', false);
+    drawTowerBlock(octx, cx + ts * 0.02, cy - ts * 0.02, ts * 0.5, '#6f7478', '#a7b1b4', false);
     return;
   }
 
   const scale = isCapital ? 1.5 : 1.0;
   const compoundR = ts * (1.3 + (c.r / 10) * 1.1) * scale;
 
-  // plaza fronting the compound
+  // civic plaza fronting the tower — cool paved-concrete tone (was a warm
+  // tan "walled compound" wash)
   octx.beginPath();
   octx.ellipse(cx, cy, compoundR * 1.2, compoundR * 1.05, h(721) * 0.3, 0, Math.PI * 2);
-  octx.fillStyle = 'rgba(150,138,110,0.28)';
+  octx.fillStyle = 'rgba(146,148,144,0.26)';
   octx.fill();
 
-  // compound wall — an irregular octagon rather than a perfect circle, so
-  // it doesn't read as a UI-drawn ring sitting on top of the city
+  // plaza edge — a dashed landscaped ring (paths/planters around the
+  // square), NOT a fortified perimeter wall: a modern civic square, not a
+  // medieval citadel curtain wall
   octx.save();
   octx.translate(cx, cy);
   octx.rotate(h(722) * Math.PI * 0.4);
@@ -1076,28 +1323,29 @@ function drawLandmark(octx, c, ts, isCity, isCapital) {
     if (i === 0) octx.moveTo(px, py); else octx.lineTo(px, py);
   }
   octx.closePath();
-  octx.fillStyle = 'rgba(96,88,74,0.28)';
-  octx.fill();
-  octx.strokeStyle = 'rgba(60,52,40,0.55)';
-  octx.lineWidth = Math.max(1, ts * 0.05);
+  octx.strokeStyle = 'rgba(108,124,116,0.42)';
+  octx.lineWidth = Math.max(1, ts * 0.028);
+  octx.setLineDash([ts * 0.1, ts * 0.08]);
   octx.stroke();
+  octx.setLineDash([]);
   octx.restore();
 
-  // capital only: four corner towers, turning the compound into a citadel
+  // capital only: a small cluster of secondary glass towers around the
+  // centerpiece — reads as a downtown skyline cluster
   if (isCapital) {
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2 + h(723) * Math.PI * 0.2;
       const tx = cx + Math.cos(a) * compoundR * 0.82, ty = cy + Math.sin(a) * compoundR * 0.82;
-      drawTowerBlock(octx, tx, ty, ts * 0.42, '#5c5346', '#847b68', false);
+      drawTowerBlock(octx, tx, ty, ts * 0.46, '#33434b', '#6f97a1', false);
     }
   }
 
-  // central keep — the tallest, most distinctly colored silhouette in the
-  // whole city (gold-toned for the capital's citadel, plain stone for a
-  // lesser city's town hall)
-  const bodyDark = isCapital ? '#9c7a3c' : '#6b5a48';
-  const bodyLight = isCapital ? '#d8bd7c' : '#8a7460';
-  drawTowerBlock(octx, cx, cy, ts * (isCapital ? 1.0 : 0.7), bodyDark, bodyLight, true);
+  // central tower — the tallest, most distinctly colored silhouette in the
+  // whole city: a glass skyscraper with a lit crown for the capital, a
+  // smaller modern civic/office tower for a lesser city
+  const bodyDark = isCapital ? '#233039' : '#3a454c';
+  const bodyLight = isCapital ? '#6fb4c4' : '#82949a';
+  drawTowerBlock(octx, cx, cy, ts * (isCapital ? 1.05 : 0.75), bodyDark, bodyLight, true);
 }
 
 // Circular run-finder over a boolean ring array — starts the linear scan
@@ -1197,125 +1445,166 @@ function drawWaterfront(octx, map, c, ts) {
 // everything else in this file — deterministic, no Math.random.
 // ---------------------------------------------------------------------------
 
-// Church/temple: a low nave with a tall corner tower and a peaked steeple —
-// the tallest, narrowest silhouette of the three special kinds, meant to
-// read as a spire poking up out of the roofline from across the city.
-function drawChurch(octx, x, y, ts, rot) {
+// Slim glass communications/observation tower — the tallest, narrowest
+// silhouette of the three special kinds (replaces the old church + steeple),
+// meant to read as a tower poking up out of the roofline from across the
+// city: a glass shaft with a stepped setback and an antenna + beacon light.
+function drawCommsTower(octx, x, y, ts, rot) {
   octx.save();
   octx.translate(x, y);
   octx.rotate(rot);
-  const s = ts * 0.9;
-  octx.fillStyle = 'rgba(6,8,10,0.35)';
-  roundedRectPath(octx, -s * 0.5 + s * 0.08, -s * 0.32 + s * 0.12, s, s * 0.64, s * 0.06);
+  const s = ts * 0.85;
+  octx.fillStyle = 'rgba(6,8,10,0.4)';
+  roundedRectPath(octx, -s * 0.28 + s * 0.1, -s * 0.28 + s * 0.14, s * 0.56, s * 0.56, s * 0.08);
   octx.fill();
 
-  octx.fillStyle = '#b7ab8c';
-  roundedRectPath(octx, -s * 0.5, -s * 0.32, s, s * 0.64, s * 0.06);
+  octx.fillStyle = '#33434b';
+  roundedRectPath(octx, -s * 0.28, -s * 0.28, s * 0.56, s * 0.56, s * 0.08);
   octx.fill();
-  octx.strokeStyle = 'rgba(16,13,10,0.55)';
+  octx.strokeStyle = 'rgba(14,16,18,0.55)';
   octx.lineWidth = Math.max(0.8, ts * 0.03);
   octx.stroke();
-  // pitched-roof ridge running the length of the nave
-  octx.beginPath(); octx.moveTo(-s * 0.5, 0); octx.lineTo(s * 0.5, 0); octx.stroke();
 
-  // corner tower + steeple, at the "front" end
-  const towerS = s * 0.48;
-  const tx = s * 0.5 - towerS * 0.15, ty = 0;
-  octx.fillStyle = '#a89a78';
-  roundedRectPath(octx, tx - towerS / 2, ty - towerS / 2, towerS, towerS, towerS * 0.08);
-  octx.fill();
-  octx.strokeStyle = 'rgba(16,13,10,0.55)';
-  octx.stroke();
-  octx.beginPath();
-  octx.moveTo(tx - towerS / 2, ty - towerS / 2);
-  octx.lineTo(tx, ty - towerS * 1.35);
-  octx.lineTo(tx + towerS / 2, ty - towerS / 2);
-  octx.closePath();
-  octx.fillStyle = '#8a7c5e';
-  octx.fill();
-  octx.stroke();
+  // glass curtain-wall sheen
+  octx.save();
+  roundedRectPath(octx, -s * 0.28, -s * 0.28, s * 0.56, s * 0.56, s * 0.08);
+  octx.clip();
+  const sheen = octx.createLinearGradient(-s * 0.28, -s * 0.28, s * 0.28, s * 0.28);
+  sheen.addColorStop(0, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0.45, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0.55, 'rgba(224,242,246,0.35)');
+  sheen.addColorStop(0.65, 'rgba(255,255,255,0)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  octx.fillStyle = sheen;
+  octx.fillRect(-s * 0.28, -s * 0.28, s * 0.56, s * 0.56);
   octx.restore();
-  softBlob(octx, x - s * 0.08, y - s * 0.2, s * 0.95, s * 0.65, rot, [255, 246, 222], 0.10);
+
+  // stepped setback upper shaft
+  const uw = s * 0.34;
+  octx.fillStyle = '#6f97a1';
+  roundedRectPath(octx, -uw / 2, -s * 0.5, uw, s * 0.34, uw * 0.15);
+  octx.fill();
+  octx.strokeStyle = 'rgba(14,16,18,0.5)';
+  octx.lineWidth = Math.max(0.6, ts * 0.022);
+  octx.stroke();
+
+  // antenna mast + beacon
+  octx.strokeStyle = 'rgba(40,44,46,0.85)';
+  octx.lineWidth = Math.max(0.6, ts * 0.02);
+  octx.beginPath(); octx.moveTo(0, -s * 0.5); octx.lineTo(0, -s * 0.98); octx.stroke();
+  octx.beginPath();
+  octx.arc(0, -s * 0.98, s * 0.04, 0, Math.PI * 2);
+  octx.fillStyle = 'rgba(255,92,70,0.9)';
+  octx.fill();
+  octx.restore();
+  softBlob(octx, x, y - s * 0.15, s * 0.85, s * 0.6, rot, [212, 232, 236], 0.09);
 }
 
-// Market/civic hall: a wide rectangular hall with a colonnaded front (a row
-// of column ticks) and a small clock-tower bump — the widest, most
-// low-slung of the three, meant to anchor a plaza the way a real town hall
-// or market house would.
-function drawMarketHall(octx, x, y, ts, rot) {
+// Civic/commercial complex — a wide flat-roofed modern building (mall,
+// convention center, or office block): a glass entrance canopy along the
+// front edge, rooftop skylight strips, and a small rooftop sign pylon —
+// replaces the old colonnade + clock-tower town hall for a contemporary
+// anchor building. The widest, most low-slung of the three special kinds,
+// meant to anchor a plaza the way a real civic/commercial complex would.
+function drawCivicComplex(octx, x, y, ts, rot) {
   octx.save();
   octx.translate(x, y);
   octx.rotate(rot);
-  const w = ts * 1.75, h = ts * 1.15;
+  const w = ts * 1.85, h = ts * 1.2;
   octx.fillStyle = 'rgba(6,8,10,0.35)';
-  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.1, w, h, Math.min(w, h) * 0.1);
+  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.1, w, h, Math.min(w, h) * 0.08);
   octx.fill();
 
   const roofRgb = lerpRgb(CIVIC_PALETTE[0], CIVIC_PALETTE[1], 0.4);
   octx.fillStyle = rgba(roofRgb, 0.96);
-  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.1);
+  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.08);
   octx.fill();
   octx.strokeStyle = 'rgba(14,11,8,0.55)';
-  octx.lineWidth = Math.max(0.9, ts * 0.032);
+  octx.lineWidth = Math.max(0.9, ts * 0.03);
   octx.stroke();
 
-  // portico columns along the front edge
-  octx.strokeStyle = 'rgba(14,11,8,0.4)';
-  octx.lineWidth = Math.max(0.6, ts * 0.02);
-  const cols = 5;
-  for (let i = 0; i < cols; i++) {
-    const cx2 = -w / 2 + (w / (cols - 1)) * i;
-    octx.beginPath(); octx.moveTo(cx2, h / 2); octx.lineTo(cx2, h / 2 - h * 0.22); octx.stroke();
+  // parapet trim
+  octx.strokeStyle = 'rgba(255,255,255,0.16)';
+  octx.lineWidth = Math.max(0.5, ts * 0.012);
+  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.06, w * 0.9, h * 0.88, Math.min(w, h) * 0.06);
+  octx.stroke();
+
+  // glass entrance canopy along the front edge
+  octx.fillStyle = 'rgba(206,228,232,0.5)';
+  roundedRectPath(octx, -w * 0.42, h / 2 - h * 0.16, w * 0.84, h * 0.1, h * 0.04);
+  octx.fill();
+
+  // rooftop skylight strips
+  octx.fillStyle = 'rgba(190,215,222,0.42)';
+  for (let k = 0; k < 2; k++) {
+    const sy = -h * 0.2 + k * h * 0.32;
+    roundedRectPath(octx, -w * 0.34, sy, w * 0.68, h * 0.08, h * 0.02);
+    octx.fill();
   }
 
-  // small central clock-tower bump
-  const bs = Math.min(w, h) * 0.36;
-  const towerRgb = lerpRgb(CIVIC_PALETTE[0], CIVIC_PALETTE[1], 0.7);
-  octx.fillStyle = rgba(towerRgb, 0.96);
-  roundedRectPath(octx, -bs / 2, -h / 2 - bs * 0.55, bs, bs * 0.55, bs * 0.08);
+  // small rooftop sign pylon
+  const bs = Math.min(w, h) * 0.3;
+  const towerRgb = lerpRgb(CIVIC_PALETTE[0], CIVIC_PALETTE[1], 0.75);
+  octx.fillStyle = rgba(towerRgb, 0.95);
+  roundedRectPath(octx, -bs * 0.18, -h / 2 - bs * 0.5, bs * 0.36, bs * 0.5, bs * 0.06);
   octx.fill();
   octx.strokeStyle = 'rgba(14,11,8,0.5)';
+  octx.lineWidth = Math.max(0.6, ts * 0.02);
   octx.stroke();
   octx.restore();
-  softBlob(octx, x, y - h * 0.12, Math.max(w, h) * 0.55, Math.max(w, h) * 0.38, rot, [255, 246, 222], 0.08);
+  softBlob(octx, x, y - h * 0.1, Math.max(w, h) * 0.5, Math.max(w, h) * 0.34, rot, [216, 232, 234], 0.07);
 }
 
-// Industrial shed: a long low shed with sawtooth roof-line divisions and a
-// small smokestack — a distinct grey-green working-building silhouette,
-// meant to read as depot/workshop rather than housing or civic grandeur.
-function drawIndustrialShed(octx, x, y, ts, rot) {
+// Modern logistics depot/warehouse — a long low flat-roofed shed with
+// loading-dock door notches along the front edge and rooftop solar panels +
+// vent stacks (replaces the old sawtooth-roof + smokestack factory look) —
+// a distinct steel-grey working-building silhouette, reading as depot/
+// logistics rather than housing or civic grandeur.
+function drawLogisticsDepot(octx, x, y, ts, rot) {
   octx.save();
   octx.translate(x, y);
   octx.rotate(rot);
-  const w = ts * 1.6, h = ts * 0.78;
+  const w = ts * 1.7, h = ts * 0.82;
   octx.fillStyle = 'rgba(6,8,10,0.35)';
-  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.14, w, h, Math.min(w, h) * 0.08);
+  roundedRectPath(octx, -w / 2 + w * 0.05, -h / 2 + h * 0.14, w, h, Math.min(w, h) * 0.06);
   octx.fill();
 
-  octx.fillStyle = '#565a52';
-  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.08);
+  octx.fillStyle = '#61666a';
+  roundedRectPath(octx, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.06);
   octx.fill();
   octx.strokeStyle = 'rgba(14,11,8,0.55)';
   octx.lineWidth = Math.max(0.8, ts * 0.03);
   octx.stroke();
 
-  // sawtooth roof divisions
-  octx.strokeStyle = 'rgba(14,11,8,0.32)';
-  octx.lineWidth = Math.max(0.6, ts * 0.018);
-  const teeth = 4;
-  for (let i = 1; i < teeth; i++) {
-    const lx = -w / 2 + (w / teeth) * i;
-    octx.beginPath(); octx.moveTo(lx, -h / 2); octx.lineTo(lx, h / 2); octx.stroke();
+  // loading-dock door notches along the front edge
+  octx.fillStyle = 'rgba(30,32,34,0.6)';
+  const doors = 4;
+  for (let i = 0; i < doors; i++) {
+    const dx = -w / 2 + (w / doors) * (i + 0.5);
+    roundedRectPath(octx, dx - w * 0.06, h / 2 - h * 0.12, w * 0.12, h * 0.12, h * 0.02);
+    octx.fill();
   }
 
-  // small smokestack
+  // rooftop solar panel grid
+  const cols = 4, rows = 2;
+  const pw = w / cols * 0.78, ph = h / rows * 0.62;
+  octx.fillStyle = 'rgba(28,40,56,0.75)';
+  for (let ry = 0; ry < rows; ry++) for (let rx = 0; rx < cols; rx++) {
+    const px = -w / 2 + (rx + 0.5) * (w / cols), py = -h / 2 + (ry + 0.5) * (h / rows) - h * 0.06;
+    roundedRectPath(octx, px - pw / 2, py - ph / 2, pw, ph, 1);
+    octx.fill();
+  }
+
+  // two small rooftop vent stacks (replaces the single factory smokestack)
   octx.fillStyle = '#3f4440';
-  roundedRectPath(octx, -w * 0.36, -h / 2 - h * 0.5, w * 0.09, h * 0.5, w * 0.02);
+  roundedRectPath(octx, -w * 0.36, -h / 2 - h * 0.22, w * 0.045, h * 0.22, w * 0.01);
+  octx.fill();
+  roundedRectPath(octx, -w * 0.28, -h / 2 - h * 0.16, w * 0.045, h * 0.16, w * 0.01);
   octx.fill();
   octx.restore();
 }
 
-const SPECIAL_BUILDING_KINDS = [drawChurch, drawMarketHall, drawIndustrialShed];
+const SPECIAL_BUILDING_KINDS = [drawCommsTower, drawCivicComplex, drawLogisticsDepot];
 
 // Scatters a few special/civic buildings through a city (r >= 6), clear of
 // the reserved landmark footprint at its exact center. Count scales gently

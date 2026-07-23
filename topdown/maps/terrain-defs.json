@@ -79,7 +79,7 @@
     },
     "urban": {
       "label": "Urban",
-      "color": ["#7d735a", "#948a6e"],
+      "color": ["#79766b", "#8d8a7c"],
       "moveMult": 0.85,
       "concealment": 0.15,
       "cover": 0.45,

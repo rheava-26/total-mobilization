@@ -332,6 +332,9 @@
   .battalionMorale.broken { color: var(--red); }
   .battalionRow.morale-broken { border-left-color: var(--red); }
   .battalionRow.morale-shaken { border-left-color: var(--amber); }
+  /* B5b (game/battalionMorale.js bn.garrisoned) — small tag on the row so
+     the player can see the garrison defense bonus is actually active. */
+  .battalionGarrisoned { color: var(--green); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border: 1px solid var(--green); border-radius: 3px; padding: 1px 4px; }
   .battalionRowBtns { display: flex; gap: 6px; flex-wrap: wrap; }
   .battalionRowBtns button { font-size: 10.5px; padding: 3px 7px; }
   /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)

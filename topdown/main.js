@@ -1661,8 +1661,12 @@ function updateBattalionPanelUI() {
     const mState = moraleState(bn);
     const routTag = mState === 'broken' ? ' (routing)' : '';
     const rowStateClass = mState === 'broken' ? ' morale-broken' : mState === 'shaken' ? ' morale-shaken' : '';
+    // B5b (game/battalionMorale.js writes bn.garrisoned each tick — see that
+    // file's Effect A): a small tag so the player can see the defense bonus
+    // is actually active, not just inferred from being "in a city."
+    const garrisonTag = bn.garrisoned ? `<span class="battalionGarrisoned" title="Garrisoned: extra defense bonus active">⛨ garrisoned</span>` : '';
     return `<div class="battalionRow${assigning ? ' assigning' : rowStateClass}" data-bn="${bn.id}">`
-      + `<div class="battalionRowHead"><b>${bn.name}</b><span class="battalionType">${bn.type}</span></div>`
+      + `<div class="battalionRowHead"><b>${bn.name}</b><span class="battalionType">${bn.type}</span>${garrisonTag}</div>`
       + `<div class="battalionRowStats">Strength: <b>${alive}/${total}</b> — Sector: <b>${sector}</b></div>`
       + `<div class="battalionRowStats">Morale: <span class="battalionMorale ${mState}">${mState}${routTag}</span> `
       + `(${Math.round(bn.morale)}) — Cohesion: <b>${Math.round(bn.cohesion)}</b></div>`

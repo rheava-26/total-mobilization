@@ -43,6 +43,13 @@
 // rather than imported — doctrine.js doesn't export them, and per that
 // module's own precedent (it duplicates enemyai.js's nearestWaterTile rather
 // than importing it), this file stays a separate, self-contained module.
+//
+// B5b adds a second kind of duplication in the same spirit: onSettlementLane
+// (+ its settlementLaneParams helper) replicates engine/renderer.js's
+// street-grid hit test verbatim (same hash2(seedX,seedY,9001/9002/9003)
+// formula) so garrison hold-points can be biased onto/off the SAME lanes the
+// renderer actually draws — see garrisonBiasPoint below for the full
+// rationale.
 
 import { MOVE_CLASSES, terrainSample } from './units.js';
 import { detects } from './fog.js';
@@ -151,6 +158,77 @@ function holdRingFor(def, capRWorld) {
 function safeGroundPoint(map, moveClass, cx, cy, x, y) {
   if (terrainSample(map, moveClass, x, y).passable) return { x, y };
   return { x: cx, y: cy };
+}
+
+// ---------------------------------------------------------------------------
+// GARRISON PLACEMENT — B5b (docs/reference-battalion-design.md §4: "Infantry
+// in Cities & Urban Garrisoning"). When a battalion is garrisoning its own
+// city, its ground sub-units should sit PLAUSIBLY in that city instead of a
+// bare spiral ring on open ground: infantry biased into the buildings/blocks
+// (off the streets — "holed up," hard to root out), armor/vehicles biased
+// onto the street network (the only place a tank/AA/scout car could actually
+// stand in a built-up block).
+//
+// To know street-vs-building at a world point this REPLICATES engine/
+// renderer.js's settlement lane test (settlementGrid + onSettlementLane) —
+// same hash2(seedX,seedY,9001/9002/9003) rotation/spacing/width formula,
+// copied rather than imported (renderer.js doesn't export it, and per this
+// file's header, this module stays self-contained the same way it already
+// duplicates spiralAround/holdRingFor/nearestWaterTile from doctrine.js
+// rather than importing them) — so a unit ordered here to "stand in a
+// building" or "stand on a street" actually matches what B5a's renderer
+// draws at that point. If this formula and the renderer's ever drift apart,
+// update both together.
+function laneHash2(x, y, seed) {
+  let h = (x * 374761393 + y * 668265263 + seed * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967296;
+}
+
+function settlementLaneParams(c, ts) {
+  const seedX = Math.floor(c.x), seedY = Math.floor(c.y);
+  const rot = (laneHash2(seedX, seedY, 9001) - 0.5) * Math.PI * 0.9;
+  const spacing = ts * (2.2 + laneHash2(seedX, seedY, 9002) * 1.3);
+  const width = ts * (0.14 + laneHash2(seedX, seedY, 9003) * 0.08);
+  return { rot, spacing, width };
+}
+
+// Same rotated-grid test as renderer.js's onSettlementLane, evaluated at one
+// world-px point.
+function onSettlementLane(c, ts, wx, wy) {
+  const { rot, spacing, width } = settlementLaneParams(c, ts);
+  const relx = wx - (c.x + 0.5) * ts, rely = wy - (c.y + 0.5) * ts;
+  const lx = relx * Math.cos(rot) + rely * Math.sin(rot);
+  const ly = -relx * Math.sin(rot) + rely * Math.cos(rot);
+  const halfW = width / 2;
+  const laneX = ((lx + halfW) % spacing + spacing) % spacing;
+  const laneY = ((ly + halfW) % spacing + spacing) % spacing;
+  return laneX < width || laneY < width;
+}
+
+// Nudges a candidate ground hold-point toward (wantLane=true) or away from
+// (wantLane=false) the settlement's street network — tries a handful of
+// small spiral offsets around the candidate (own golden-angle spiral, offset
+// by `idx` so different sub-units searching from similar starting points
+// fan out to different offsets rather than piling onto the same nudge) until
+// one lands on the right side of the lane test AND is still legal ground for
+// this move class; if nothing found within the search budget, keeps the
+// original (terrain-clamped) point — never leaves a unit with no order.
+const GARRISON_SNAP_TRIES = 18;
+const GARRISON_SNAP_STEP = 12; // px of extra search radius per try — a settlement's lane spacing (70-112px @ TILE_SIZE 32) is comfortably covered within the try budget
+function garrisonBiasPoint(map, city, moveClass, cx, cy, x, y, wantLane, idx) {
+  const ts = map.tileSize;
+  if (onSettlementLane(city, ts, x, y) === wantLane) return safeGroundPoint(map, moveClass, cx, cy, x, y);
+  for (let t = 1; t <= GARRISON_SNAP_TRIES; t++) {
+    const angle = idx * GOLDEN_ANGLE + t * 1.31;
+    const r = t * GARRISON_SNAP_STEP;
+    const nx = x + Math.cos(angle) * r, ny = y + Math.sin(angle) * r;
+    if (onSettlementLane(city, ts, nx, ny) !== wantLane) continue;
+    const safe = safeGroundPoint(map, moveClass, cx, cy, nx, ny);
+    if (safe.x === nx && safe.y === ny) return safe; // only accept if it actually kept the biased point (not the impassable-fallback)
+  }
+  return safeGroundPoint(map, moveClass, cx, cy, x, y); // search exhausted — fall back to the plain spiral slot rather than leave the unit stranded
 }
 
 // How many living enemy units (fog-gated) sit within THREAT_RADIUS_PX of a
@@ -357,6 +435,19 @@ export function updateBattalionDoctrine(world, map, dt, side = 'player') {
     const stance = bn.stance || DEFAULT_STANCE;
     const center = formationCenterFor(world, side, sectorInfo, stance);
 
+    // GARRISON PLACEMENT (B5b) — "is this a garrison": sectorInfo is ALWAYS
+    // an owned city (cityInfos above is built exclusively from `c.owner ===
+    // side`), so the only extra check needed is "is the formation center
+    // actually sitting at/near that city" (the normal deployed case) rather
+    // than, say, an aggressive-stance shift that happened to land outside
+    // the city's own capture radius. Gates the building/street bias below —
+    // routing/in-transit battalions never reach this branch at all (see the
+    // `continue` at the end of the rout branch above), so they're never
+    // treated as garrisoned here either, matching game/battalionMorale.js's
+    // own bn.garrisoned definition (home AND not routing).
+    const isGarrisonDeploy = Math.hypot(center.x - sectorInfo.cx, center.y - sectorInfo.cy) <= sectorInfo.capRWorld;
+    const garrisonCity = isGarrisonDeploy ? map.cities[sectorInfo.mapIdx] : null;
+
     // Issue each idle/doctrine sub-unit a slot in the cluster, same
     // arbitration as doctrine.js: a live PLAYER order or an actively
     // engaged unit is left completely alone. `idx` (the spiral slot) only
@@ -392,7 +483,18 @@ export function updateBattalionDoctrine(world, map, dt, side = 'player') {
         pt = spiralAround(center.x, center.y, ring.base, SLOT_RADIUS_STEP, idx, ring.max);
       } else {
         const raw = spiralAround(center.x, center.y, ring.base, SLOT_RADIUS_STEP, idx, ring.max);
-        pt = safeGroundPoint(map, moveClass, sectorInfo.cx, sectorInfo.cy, raw.x, raw.y);
+        const safe = safeGroundPoint(map, moveClass, sectorInfo.cx, sectorInfo.cy, raw.x, raw.y);
+        if (garrisonCity) {
+          // Classify by moveClass, not by name (data-driven, per the task
+          // brief): 'foot' (infantry/militia) biases OFF the street network
+          // into the buildings/blocks; any other ground move class (armor's
+          // 'tracked', a scout car's 'wheeled', etc — the vehicles) biases
+          // ONTO it, since a tank has no business parked inside a block.
+          const wantLane = def.moveClass !== 'foot';
+          pt = garrisonBiasPoint(map, garrisonCity, moveClass, sectorInfo.cx, sectorInfo.cy, safe.x, safe.y, wantLane, idx);
+        } else {
+          pt = safe;
+        }
       }
 
       idx++;

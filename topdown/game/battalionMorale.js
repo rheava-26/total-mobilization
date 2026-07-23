@@ -119,6 +119,20 @@ const DEFENSE_MULT_BY_STATE = {
   broken: 1.35,
 };
 
+// GARRISON BONUS — B5b (docs/reference-battalion-design.md §4, "Infantry in
+// Cities & Urban Garrisoning": cover bonus, costly assault). A battalion dug
+// into its OWN city (centroid inside an OWNED city's capture radius — the
+// exact same `home` test this file already computes for the territory
+// morale/cohesion bonus above — AND not routing, see bn.garrisoned below)
+// gets an EXTRA multiplicative discount stacked ON TOP of its morale-state
+// defenseMult, so a fresh garrison holding its own city is markedly harder
+// to kill than the same battalion caught in the open — the "assault a held
+// city and bleed for it" read the reference calls for, achieved with zero
+// new combat code: this still feeds the exact same single `defenseMult`
+// field/hook (game/units.js's resolveHit). DESIGNER'S TO TUNE.
+const GARRISON_DEFENSE_MULT = 0.75; // extra multiplier stacked on the morale-state defenseMult when garrisoned
+const GARRISON_DEFENSE_FLOOR = 0.5; // combined mult never drops below this — never trivializes an assault entirely
+
 // ---------------------------------------------------------------------------
 export function moraleState(bn) {
   const m = bn.morale;
@@ -134,6 +148,14 @@ export function defenseMultFor(bn) {
 // than duplicated) since morale is this module's own concern.
 export function isRouting(bn) {
   return moraleState(bn) === 'broken';
+}
+
+// Convenience read of the garrison flag this module writes each tick (see
+// updateBattalionMorale's Effect A below) — `bn.garrisoned || false` so a
+// battalion that hasn't been ticked yet (fresh spawn, first frame) reads as
+// not-garrisoned rather than undefined.
+export function isGarrisoned(bn) {
+  return !!bn.garrisoned;
 }
 
 function clamp01to100(v) { return Math.max(0, Math.min(100, v)); }
@@ -256,7 +278,10 @@ export function updateBattalionMorale(world, map, dt) {
     let moraleDelta = 0, cohesionDelta = 0;
     if (!centroid) {
       // No live sub-units left this frame — updateBattalions will prune it
-      // shortly; nothing more to do for this battalion this tick.
+      // shortly; nothing more to do for this battalion this tick. Clear the
+      // garrison flag too so a about-to-be-pruned record never reads stale
+      // "garrisoned" from a previous tick.
+      bn.garrisoned = false;
       continue;
     }
 
@@ -313,7 +338,18 @@ export function updateBattalionMorale(world, map, dt) {
     bn.cohesion = clamp01to100(bn.cohesion + cohesionDelta * dt);
 
     // --- Effect A: write the defensive modifier onto every sub-unit ------
-    const mult = defenseMultFor(bn);
+    // GARRISONED = dug in at home (`home`, computed above) AND not routing
+    // — a battalion fleeing THROUGH its own city's capture radius mid-rout
+    // doesn't get the "defending its post" bonus, only one that's actually
+    // holding there while combat-capable (per B5b's spec: "a battalion
+    // moving to a sector or routing is NOT treated as garrisoned"). Exposed
+    // on the record itself so battalionDoctrine.js/main.js's panel/headless
+    // tests can all read the same one flag rather than re-deriving it.
+    bn.garrisoned = home && moraleState(bn) !== 'broken';
+    const baseMult = defenseMultFor(bn);
+    const mult = bn.garrisoned
+      ? Math.max(GARRISON_DEFENSE_FLOOR, baseMult * GARRISON_DEFENSE_MULT)
+      : baseMult;
     for (const u of bn.units) u.defenseMult = mult;
   }
 }

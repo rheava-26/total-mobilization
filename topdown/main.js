@@ -74,6 +74,12 @@ import { updatePlayerDoctrine, debugDoctrineState, debugForceAssignTick } from '
 // the capital's flag). Purely visual, read-only over map/world — see that
 // file's header for the full "never touches gameplay" contract.
 import { initAmbient, updateAmbient, drawAmbientGround, drawAmbientSmoke } from './game/ambient.js';
+// SUPPLY CONVOYS (game/supply.js) — sibling ambient layer: cargo trucks that
+// actually drive real player mines/factories to real consumers along real
+// road routes, so the logistics network reads as visibly alive. Same
+// purely-visual, read-only-over-world/map contract as ambient.js above —
+// see that file's header for the full guarantee.
+import { initSupply, updateSupply, drawSupply } from './game/supply.js';
 // COMBAT FEEL & AUDIO PASS — game/audio.js plays combat sound off world.sfx
 // events (file assets under assets/audio/ when present, procedural synth
 // fallback otherwise — see that file's header for the swap contract);
@@ -346,6 +352,13 @@ function battalionCrossfade(zoom) {
 // per-frame update/draw hooks; see that file's header for why this can
 // never affect gameplay.
 const ambient = initAmbient(map);
+
+// SUPPLY CONVOYS (game/supply.js) — created once right alongside `ambient`;
+// see loop() below for the per-frame update/draw hooks and that file's
+// header for why this can never affect gameplay. Unlike `ambient` there's no
+// one-time precompute here (the economy it visualizes doesn't exist yet at
+// map load) — it just starts empty and fills in as mines/factories go up.
+const supply = initSupply();
 
 // LINGERING BATTLE VFX (game/impactfx.js) — smoke/scorch pools, spawned off
 // world.sfx impact events in loop() below. Purely visual, see that file's
@@ -2893,6 +2906,11 @@ window.__debug = {
   // read vehicle/smoke/shimmer/flicker counts and positions directly (e.g.
   // to confirm motion between two snapshots) without parsing rendered pixels.
   ambient,
+  // SUPPLY CONVOYS hooks (game/supply.js), for headless verification: `supply`
+  // is the live state object updateSupply mutates every frame — a test can
+  // read supply.convoys directly (positions/cargoColor/waypoints) to confirm
+  // convoys spawn, follow real road routes, and despawn on arrival.
+  supply,
   // GAME PHASES (P4 — game/phase.js), for headless verification: phaseState
   // is the live object (read .phase directly); PHASES is the enum;
   // beginCombat drives the exact same one-way transition the C key/button
@@ -3268,6 +3286,10 @@ function loop(now) {
   // just because you're still in the build-up. Purely visual — see that
   // file's header for the "never touches gameplay" contract.
   updateAmbient(ambient, world, map, dt);
+  // SUPPLY CONVOYS (game/supply.js) — same unconditional-on-phase, purely
+  // visual update as ambient life just above; see that file's header for the
+  // "never touches gameplay" contract.
+  updateSupply(supply, world, map, dt);
 
   // Computed once per frame and threaded into BOTH the map's deposit-focus
   // overlay (right below) and updateGuidancePanel further down, so the
@@ -3320,6 +3342,10 @@ function loop(now) {
     // buildings/units so it reads as part of the ground, not floating on
     // top of the things that actually matter
     drawAmbientGround(ambient, ctx, worldToScreen, cam);
+    // supply convoys: same ground/traffic layer as ambient life just above,
+    // drawn right after it so cargo trucks read as part of the same
+    // road-life pass — still well below buildings/units
+    drawSupply(supply, ctx, worldToScreen, cam);
     // scorch decals: ground layer, same ordering rationale as ambient life
     // above — a battle-worn patch of ground reads as part of the terrain,
     // not floating on top of the units standing near it

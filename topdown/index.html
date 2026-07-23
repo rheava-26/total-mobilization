@@ -437,6 +437,52 @@
   #homeDefenseStatus { padding: 6px 10px 8px; font-size: 10.5px; color: var(--ink-soft); line-height: 1.5; border-top: 1px solid var(--rule-soft); }
   .hdRow b { color: var(--ink); }
   .hdEmpty { font-style: italic; }
+  /* NEWS TICKER / DISPATCHES PANEL — game/news.js. "A nation at war should
+     have a VOICE" (docs/reference-city-and-mobilization.md §5): a rolling
+     wartime-bulletin feed generated from live game state. Same collapsible-
+     tab chrome as #reinforcePanel/#battalionPanel above it in the right-edge
+     stack, PLUS an always-visible one-line strip (#newsLatest, same idea as
+     #econHudSummary) so the newest headline stays legible even collapsed —
+     it marquee-scrolls (.scroll) when too long to fit, a plain static line
+     otherwise. Expanding the tab reveals the recent-headlines list
+     (#newsBodyInner). .urgent (toggled by main.js off economy.threatLevel/
+     mobilizationLevel) redlines the chrome as the war intensifies — the same
+     "louder as it escalates" idea the cadence itself already follows in
+     game/news.js. */
+  #newsPanel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #newsToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; background: var(--paper-2); border: none;
+    border-bottom: 1px solid var(--rule-soft); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #newsToggle:hover { background: var(--paper); }
+  #newsToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #newsLatest {
+    position: relative; overflow: hidden; white-space: nowrap;
+    padding: 7px 10px; border-bottom: 1px solid var(--rule-soft);
+    background: rgba(255,255,255,.22); font-size: 11px; color: var(--ink);
+  }
+  #newsLatestText { display: inline-block; }
+  #newsLatestText b { color: var(--red); text-transform: uppercase; letter-spacing: .4px; font-size: 10px; margin-right: 6px; }
+  #newsLatest.scroll #newsLatestText { padding-left: 100%; animation: newsMarquee 15s linear infinite; }
+  @keyframes newsMarquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+  @media (prefers-reduced-motion: reduce) { #newsLatest.scroll #newsLatestText { animation: none; padding-left: 0; } }
+  #newsBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #newsPanel.expanded #newsBody { max-height: 34vh; overflow-y: auto; }
+  #newsBodyInner { padding: 7px 10px 9px; display: flex; flex-direction: column; gap: 7px; font-size: 10.5px; }
+  .newsRow { padding: 5px 7px; background: rgba(255,255,255,.24); border: 1px solid var(--rule-soft); border-left: 3px solid var(--ink-soft); line-height: 1.4; }
+  .newsRowText { display: block; color: var(--ink); }
+  .newsRowSource { display: block; color: var(--ink-soft); font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .newsEmpty { font-style: italic; color: var(--ink-soft); font-size: 10.5px; }
+  /* Urgency escalation — mirrors .battalionRow.morale-broken's red-accent
+     idea: as mobilization/threat climbs, the whole panel's border-left tint
+     shifts from ink-soft to red, and the stamp reads brighter, without any
+     new DOM. */
+  #newsPanel.urgent { border-color: var(--red); }
+  #newsPanel.urgent #newsToggle { background: rgba(138,42,28,.14); }
+  #newsPanel.urgent .newsRow { border-left-color: var(--red); }
+  #newsPanel.urgent #newsLatest { background: rgba(138,42,28,.10); }
   /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)
      — playtest feedback: "the build menu is really ugly, you can't scroll
      down on it." Was a flat, unscrollable strip of ~20 buttons; now a
@@ -871,6 +917,24 @@
     <span id="homeDefenseState">ON</span>
   </button>
   <div id="homeDefenseStatus"></div>
+</div>
+<!-- NEWS TICKER / DISPATCHES PANEL — game/news.js. A wartime-bulletin feed
+     generated from live game state (mobilization phase changes, combat
+     beginning, city capture/recapture, battalion musters, production
+     milestones — plus periodic ambient bulletins between events). Same
+     collapsible-tab chrome as #reinforcePanel/#battalionPanel above, PLUS an
+     always-visible one-line "latest headline" strip (#newsLatest) so the
+     newest bulletin is legible even while the tab stays collapsed — content
+     and refresh entirely in main.js's NEWS PANEL section. Parked at the
+     bottom of the right-edge stack (downstream of everything else that can
+     make news). Collapsed by default, matching every other Ops tab. -->
+<div id="newsPanel" class="opsPanel">
+  <button id="newsToggle" type="button" title="Expand/collapse dispatches">
+    <span class="opsStamp">Dispatches</span>
+    <span id="newsToggleIcon">▸</span>
+  </button>
+  <div id="newsLatest"><span id="newsLatestText"></span></div>
+  <div id="newsBody"><div id="newsBodyInner"></div></div>
 </div>
 </div>
 <!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's

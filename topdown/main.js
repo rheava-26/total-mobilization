@@ -140,6 +140,15 @@ import {
   updateHomeDefense, isHomeDefenseEnabled, setHomeDefenseEnabled, toggleHomeDefense,
   homeDefenseStatus, homeGuardTarget, HOME_DEFENSE_TUNABLES,
 } from './game/homedefense.js';
+// IN-GAME NEWS — "a nation at war should have a VOICE reporting on itself"
+// (docs/reference-city-and-mobilization.md §5). game/news.js is a NEW,
+// PURELY NARRATIVE/READ-ONLY module (same additive shape as game/ambient.js/
+// game/supply.js): it never writes to world/economy/map, only observes them
+// to generate a rolling wartime-bulletin feed. This file's job is creating
+// the news state once alongside ambient/supply, ticking it once per frame
+// near updateEconomy/updateHomeDefense, wiring the Dispatches ticker panel
+// (below), and exposing headless test hooks.
+import { initNews, updateNews, newsFeed, pushNews } from './game/news.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -372,6 +381,11 @@ const ambient = initAmbient(map);
 // one-time precompute here (the economy it visualizes doesn't exist yet at
 // map load) — it just starts empty and fills in as mines/factories go up.
 const supply = initSupply();
+
+// IN-GAME NEWS (game/news.js) — created once right alongside `ambient`/
+// `supply`; see loop() below for the per-frame update hook and that file's
+// header for the "purely narrative, never touches gameplay" contract.
+const news = initNews();
 
 // LINGERING BATTLE VFX (game/impactfx.js) — smoke/scorch pools, spawned off
 // world.sfx impact events in loop() below. Purely visual, see that file's
@@ -1842,6 +1856,68 @@ function updateHomeDefensePanelUI() {
 }
 
 // ---------------------------------------------------------------------------
+// NEWS / DISPATCHES PANEL — game/news.js. Same collapsible-tab shape as
+// #reinforcePanel/#battalionPanel just above it in the right-edge stack, PLUS
+// an always-visible "latest headline" strip (#newsLatest) so the newest
+// bulletin reads even while the tab stays collapsed — the whole point of a
+// ticker is that you don't have to open a panel to catch the news. The
+// expanded body (#newsBodyInner) is fully REBUILT every refresh off
+// newsFeed(news) (same "just re-render the whole dynamic list" shape
+// #battalionBodyInner already uses — the feed's length/contents change at
+// runtime, no fixed row count to build once).
+const newsPanel = document.getElementById('newsPanel');
+const newsToggle = document.getElementById('newsToggle');
+const newsToggleIcon = document.getElementById('newsToggleIcon');
+const newsLatestEl = document.getElementById('newsLatest');
+const newsLatestTextEl = document.getElementById('newsLatestText');
+const newsBodyInnerEl = document.getElementById('newsBodyInner');
+let newsExpanded = false;
+function setNewsExpanded(v) {
+  newsExpanded = v;
+  newsPanel.classList.toggle('expanded', v);
+  newsToggleIcon.textContent = v ? '▾' : '▸';
+  if (v) newsPanel.classList.remove('nudge');
+}
+newsToggle.addEventListener('click', () => setNewsExpanded(!newsExpanded));
+setNewsExpanded(false);
+newsPanel.classList.add('nudge'); // pulse the collapsed tab until first opened, same as econHud/legendPanel
+
+// Live refresh — called unconditionally every frame from loop() near
+// updateHomeDefensePanelUI(), same "cheap enough to run unconditionally"
+// spirit as every other Ops panel here. Only touches the DOM when the
+// newest headline actually changed (tracked by news.items[0].id) so the
+// marquee doesn't restart/flicker every single frame for no reason.
+let newsLastShownId = -1;
+function updateNewsPanelUI() {
+  const feed = newsFeed(news);
+  const latest = feed[0];
+  if (latest && latest.id !== newsLastShownId) {
+    newsLastShownId = latest.id;
+    newsLatestTextEl.innerHTML = `<b>${latest.source}</b>${latest.text}`;
+    // Restart the marquee (class toggle off/on forces a reflow) and only
+    // scroll at all if the line is actually too long to read collapsed —
+    // a short headline just sits still, left-aligned.
+    newsLatestEl.classList.remove('scroll');
+    void newsLatestEl.offsetWidth; // force reflow so re-adding the class restarts the CSS animation
+    if (newsLatestTextEl.textContent.length > 58) newsLatestEl.classList.add('scroll');
+  } else if (!latest) {
+    newsLatestTextEl.textContent = 'Awaiting first dispatches from the front...';
+    newsLatestEl.classList.remove('scroll');
+  }
+  // Urgency escalation — same read economy.js's own threat/mobilization
+  // signals already drive the ambient cadence with (see game/news.js), just
+  // reflected as a CSS class here rather than a second computation.
+  const urgent = (economy.threatLevel || 0) > 0.4 || (economy.mobilizationLevel || 0) >= 45;
+  newsPanel.classList.toggle('urgent', urgent);
+  if (!newsExpanded) return; // body content is hidden (max-height:0) — skip the rebuild while collapsed
+  newsBodyInnerEl.innerHTML = feed.length
+    ? feed.map(item =>
+        `<div class="newsRow"><span class="newsRowText">${item.text}</span><span class="newsRowSource">— ${item.source}</span></div>`
+      ).join('')
+    : `<span class="newsEmpty">No dispatches yet.</span>`;
+}
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
 // md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
 // player picks goals in the tree, "the game reverse-plans the how", "the
@@ -3211,6 +3287,21 @@ window.__debug = {
     toggle: () => toggleHomeDefense(),
     TUNABLES: HOME_DEFENSE_TUNABLES,
   },
+  // IN-GAME NEWS hooks (game/news.js), for headless verification: `news` is
+  // the live state object the real loop mutates every frame (read
+  // .items directly, or mutate .elapsed/scratch fields for a test shortcut);
+  // update drives the real per-frame generation pass directly (world/
+  // economy/map bound internally, same convention as homeDefense.update
+  // above — call with just `dt`); feed() returns the newest-first slice the
+  // UI itself reads; push(text, source) injects an arbitrary headline
+  // (bypassing event/ambient detection entirely) so a test can poke the
+  // ticker UI without waiting out a real trigger.
+  news: {
+    state: news,
+    update: (dt) => updateNews(news, world, economy, map, dt),
+    feed: (count) => newsFeed(news, count),
+    push: (text, source) => pushNews(news, text, source),
+  },
 };
 
 let last = performance.now();
@@ -3312,6 +3403,14 @@ function loop(now) {
   // that held cities are already filling with a Home Guard DURING prep, not
   // just once the invasion lands.
   updateHomeDefense(world, economy, map, dt);
+  // IN-GAME NEWS (game/news.js) — runs right after updateHomeDefense so it
+  // reads THIS frame's freshly-advanced mobilizationLevel/threatLevel/city
+  // ownership (same "just-updated-this-frame already counts" ordering rule
+  // as the calls right above), unconditionally of combatActive: the home
+  // front keeps filing bulletins during PREP too, not just once the invasion
+  // lands. Purely observational — see that file's header for the
+  // "never touches gameplay" contract.
+  updateNews(news, world, economy, map, dt);
   // P4 follow-up: research (game/research.js) ticks right after the economy
   // (a project's IC/resource cost was already charged up front at
   // startResearch time, so this doesn't need to read this frame's pools —
@@ -3616,6 +3715,10 @@ function loop(now) {
   updateReinforcePanelUI();
   updateBattalionPanelUI();
   updateHomeDefensePanelUI();
+  // DISPATCHES TICKER live refresh (game/news.js — see the NEWS / DISPATCHES
+  // PANEL section above), same "cheap, unconditional every frame" spirit as
+  // the other Ops panel refreshes right above it.
+  updateNewsPanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

@@ -125,6 +125,23 @@ let nextBattalionId = 1;
 // itself doesn't need it — the scatter offsets here are small enough that
 // callers are expected to hand this a point already known to be legal
 // ground, same responsibility a caller of spawnUnit already has today.
+// Shared scatter geometry (sunflower-style spiral, golden-angle step) so
+// successive slots spread out without any bookkeeping about which offsets
+// are "taken" — same technique game/doctrine.js already uses for garrison
+// slot placement (see that file's GOLDEN_ANGLE), reused here purely as
+// scatter geometry with no behavioral tie to doctrine itself. Factored out
+// so spawnBattalion's all-at-once spawn and addUnitsToBattalion's
+// incremental spawn (below — game/homedefense.js's "grow one militia at a
+// time" mechanic) scatter identically, as one coherent formation, regardless
+// of which call built it up.
+const GOLDEN_ANGLE = 2.399963;
+const RING_STEP = 14; // px of extra radius per further-out slot
+function scatterSlotPoint(x, y, slot) {
+  const angle = slot * GOLDEN_ANGLE;
+  const radius = RING_STEP * Math.sqrt(slot + 1);
+  return { x: x + Math.cos(angle) * radius, y: y + Math.sin(angle) * radius };
+}
+
 export function spawnBattalion(world, map, { type, x, y, side, name }) {
   const template = BATTALION_TEMPLATES[type];
   if (!template) throw new Error(`[battalions] unknown battalion type "${type}"`);
@@ -143,21 +160,10 @@ export function spawnBattalion(world, map, { type, x, y, side, name }) {
     cohesion: 100,
   };
 
-  // Scatter constituents in a small cluster around (x,y): a simple
-  // sunflower-style spiral (golden-angle step) so successive slots spread
-  // out without any bookkeeping about which offsets are "taken" — same
-  // technique game/doctrine.js already uses for garrison slot placement
-  // (see that file's GOLDEN_ANGLE), reused here purely as scatter geometry
-  // with no behavioral tie to doctrine itself.
-  const GOLDEN_ANGLE = 2.399963;
-  const RING_STEP = 14; // px of extra radius per further-out slot
   let slot = 0;
   for (const { unit: key, count } of template) {
     for (let i = 0; i < count; i++) {
-      const angle = slot * GOLDEN_ANGLE;
-      const radius = RING_STEP * Math.sqrt(slot + 1);
-      const sx = x + Math.cos(angle) * radius;
-      const sy = y + Math.sin(angle) * radius;
+      const { x: sx, y: sy } = scatterSlotPoint(x, y, slot);
       const u = spawnUnit(world, key, sx, sy, side);
       u.battalion = bn.id;
       bn.units.push(u);
@@ -167,6 +173,59 @@ export function spawnBattalion(world, map, { type, x, y, side, name }) {
 
   world.battalions.push(bn);
   return bn;
+}
+
+// ---------------------------------------------------------------------------
+// createEmptyBattalion / addUnitsToBattalion — the incremental-build half of
+// this file's API, additive for game/homedefense.js's "Home Guard musters
+// gradually, one militia at a time" mechanic (CONCEPT.md Pillar 1, "The
+// Nation Acts"). spawnBattalion above is a single all-at-once,
+// template-driven spawn; these two instead let a caller create an EMPTY
+// battalion record up front and grow it incrementally over many separate
+// calls, on its own schedule — this file doesn't know or care why/when a
+// unit gets added, same separation of concerns spawnBattalion already keeps
+// from doctrine/combat/economy.
+
+// Empty battalion record, same shape as spawnBattalion's own `bn` object
+// (B1-B4 fields included) but with `units: []` — nothing spawned yet.
+// `stance` defaults to 'balanced' like spawnBattalion's battalions, but
+// callers (e.g. a defensive home guard) can pass their own.
+export function createEmptyBattalion(world, { type, side, name, homeSector = null, stance = 'balanced' } = {}) {
+  const bn = {
+    id: nextBattalionId++,
+    name: name || nextBattalionName(side, type),
+    type,
+    side,
+    units: [],
+    homeSector,
+    stance,
+    morale: 100,
+    cohesion: 100,
+  };
+  world.battalions.push(bn);
+  return bn;
+}
+
+// Spawns `count` more of `unit` (a real UNIT_DEFS key) at/around (x,y),
+// tagged into an EXISTING battalion `bn` — same spawnUnit()+u.battalion
+// tagging+bn.units.push as spawnBattalion's own loop, and the same scatter
+// geometry, continuing the slot index from wherever `bn.units.length`
+// already is so a battalion grown one call at a time still scatters as one
+// coherent formation instead of restacking every new arrival on the same
+// point. `map` is accepted (unused today) for the same future-proofing
+// reason spawnBattalion accepts it — see that function's own comment.
+export function addUnitsToBattalion(world, map, bn, { unit, count = 1, x, y }) {
+  const spawned = [];
+  let slot = bn.units.length;
+  for (let i = 0; i < count; i++) {
+    const { x: sx, y: sy } = scatterSlotPoint(x, y, slot);
+    const u = spawnUnit(world, unit, sx, sy, bn.side);
+    u.battalion = bn.id;
+    bn.units.push(u);
+    spawned.push(u);
+    slot++;
+  }
+  return spawned;
 }
 
 // ---------------------------------------------------------------------------

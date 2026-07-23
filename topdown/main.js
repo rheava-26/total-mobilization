@@ -127,6 +127,19 @@ import {
   REINFORCEMENT_DEFS, requestElite, requestStandard, raiseMilitia,
   updateReinforcements, canAfford, playerCapital,
 } from './game/reinforcements.js';
+// AUTONOMOUS HOME DEFENSE (CONCEPT.md Pillar 1, "The Nation Acts": "Militias
+// raise themselves in threatened population centers — a posture you enable,
+// not units you click out"). game/homedefense.js is a NEW, purely ADDITIVE
+// module built entirely on top of the battalion layer above (a Home Guard is
+// just an ordinary player battalion with bn.homeSector pinned to its city —
+// battalionDoctrine.js/battalionMorale.js already do the rest); this file's
+// job is calling updateHomeDefense once per frame near the other economy/
+// battalion updates, a keybind + tiny status panel for the posture toggle,
+// and headless test hooks.
+import {
+  updateHomeDefense, isHomeDefenseEnabled, setHomeDefenseEnabled, toggleHomeDefense,
+  homeDefenseStatus, homeGuardTarget, HOME_DEFENSE_TUNABLES,
+} from './game/homedefense.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -1795,6 +1808,40 @@ function updateBattalionPanelUI() {
 }
 
 // ---------------------------------------------------------------------------
+// HOME DEFENSE PANEL — game/homedefense.js, CONCEPT.md Pillar 1 ("The Nation
+// Acts"). Deliberately the smallest panel here: a single toggle button (the
+// posture on/off — same action as the D key, see the keydown handler above)
+// plus a tiny status line, no expand/collapse chrome, per the task's own
+// "keep the UI minimal" instruction — this is a status readout, not a
+// control surface (there is nothing to configure per-city; the mechanic is
+// "a posture you enable, not units you click out").
+const homeDefenseToggleBtn = document.getElementById('homeDefenseToggle');
+const homeDefenseStateEl = document.getElementById('homeDefenseState');
+const homeDefenseStatusEl = document.getElementById('homeDefenseStatus');
+homeDefenseToggleBtn.addEventListener('click', () => {
+  const on = toggleHomeDefense();
+  updateHomeDefensePanelUI();
+  flashMessage(`Home Defense posture: ${on ? 'ON' : 'OFF'}.`);
+});
+
+// Live refresh — cheap (one small per-owned-city list), called unconditionally
+// every frame from loop() near updateBattalionPanelUI(), same spirit as every
+// other Ops panel's own "cheap enough to run unconditionally" comment.
+function updateHomeDefensePanelUI() {
+  const on = isHomeDefenseEnabled();
+  homeDefenseToggleBtn.classList.toggle('active', on);
+  homeDefenseStateEl.textContent = on ? 'ON' : 'OFF';
+  const rows = homeDefenseStatus(world, economy, map);
+  if (!rows.length) {
+    homeDefenseStatusEl.innerHTML = `<span class="hdEmpty">No cities held yet.</span>`;
+    return;
+  }
+  homeDefenseStatusEl.innerHTML = rows.map(r =>
+    `<div class="hdRow"><b>${r.name}</b>: ${r.current}/${r.target}${r.garrisoned ? ' ⛨' : ''}</div>`
+  ).join('');
+}
+
+// ---------------------------------------------------------------------------
 // GUIDANCE PANEL — now the DYNAMIC, goal-driven checklist (Part A — CONCEPT.
 // md's settled "Onboarding / tutorial concept" paragraph, beats 3-5: the
 // player picks goals in the tree, "the game reverse-plans the how", "the
@@ -2091,6 +2138,16 @@ addEventListener('keydown', e => {
     // One-way prep -> combat for now, per task scope; a scripted trigger
     // (the later tutorial agent) can call the same triggerBeginCombat path.
     triggerBeginCombat();
+  } else if (e.key === 'd' || e.key === 'D') {
+    // HOME DEFENSE POSTURE TOGGLE (game/homedefense.js, CONCEPT.md Pillar 1)
+    // — default ON; flips whether held cities keep auto-mustering a Home
+    // Guard. Purely a mustering on/off switch: an already-raised Home Guard
+    // battalion keeps fighting/garrisoning either way (battalionDoctrine/
+    // battalionMorale don't know or care about this flag), only NEW
+    // musters stop while it's off.
+    const on = toggleHomeDefense();
+    updateHomeDefensePanelUI();
+    flashMessage(`Home Defense posture: ${on ? 'ON' : 'OFF'}.`);
   } else if (e.key === 'm' || e.key === 'M') {
     // TONE MODE FLIP (Part B — game/director.js's DEFAULT_TONE_MODE is a
     // TEST-ONLY 'silly' default; this key is the quickest way to flip it
@@ -3135,6 +3192,25 @@ window.__debug = {
     queue: () => world.reinforcements,
     playerCapital: () => playerCapital(map),
   },
+  // AUTONOMOUS HOME DEFENSE hooks (game/homedefense.js, CONCEPT.md Pillar 1),
+  // for headless verification: updateHomeDefense drives the real per-frame
+  // muster pass directly (world/economy/map bound internally, same
+  // convention as battalionDoctrine/battalionMorale above — call with just
+  // `dt`); status() reads the live per-city current/target snapshot;
+  // enabled/setEnabled/toggle mirror the D-key posture control; target(city)
+  // exposes the exact scaling formula so a test can assert it against a
+  // given mobilizationLevel without re-deriving it; TUNABLES exposes every
+  // knob (target formula inputs, cap, manpower cost, muster intervals) for a
+  // balance-harness pass to read/tune against.
+  homeDefense: {
+    updateHomeDefense: (dt) => updateHomeDefense(world, economy, map, dt),
+    status: () => homeDefenseStatus(world, economy, map),
+    target: (city) => homeGuardTarget(economy, city),
+    isEnabled: () => isHomeDefenseEnabled(),
+    setEnabled: (v) => setHomeDefenseEnabled(v),
+    toggle: () => toggleHomeDefense(),
+    TUNABLES: HOME_DEFENSE_TUNABLES,
+  },
 };
 
 let last = performance.now();
@@ -3227,6 +3303,15 @@ function loop(now) {
   // updateBuildings so a building that JUST completed construction this
   // frame already counts toward econ effects this same tick.
   updateEconomy(world, economy, map, dt);
+  // AUTONOMOUS HOME DEFENSE (game/homedefense.js, CONCEPT.md Pillar 1) — runs
+  // right after updateEconomy so it reads THIS frame's freshly-advanced
+  // mobilizationLevel, not last frame's (same "just-updated-this-frame
+  // already counts" ordering rule as the research/production calls right
+  // below). Runs in BOTH phases, unconditionally of combatActive, same as
+  // updateBattalionDoctrine/updateReinforcements above — the whole point is
+  // that held cities are already filling with a Home Guard DURING prep, not
+  // just once the invasion lands.
+  updateHomeDefense(world, economy, map, dt);
   // P4 follow-up: research (game/research.js) ticks right after the economy
   // (a project's IC/resource cost was already charged up front at
   // startResearch time, so this doesn't need to read this frame's pools —
@@ -3530,6 +3615,7 @@ function loop(now) {
   // "unconditional every frame" spirit as updateTechPanelUI just above.
   updateReinforcePanelUI();
   updateBattalionPanelUI();
+  updateHomeDefensePanelUI();
 
   // Resource stockpile line (P3 follow-up — game/resources.js): compact,
   // icons (colored glyph spans) + amount + current rate, one resource per

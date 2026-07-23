@@ -420,6 +420,23 @@
   .battalionGarrisoned { color: var(--green); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border: 1px solid var(--green); border-radius: 3px; padding: 1px 4px; }
   .battalionRowBtns { display: flex; gap: 6px; flex-wrap: wrap; }
   .battalionRowBtns button { font-size: 10.5px; padding: 3px 7px; }
+  /* HOME DEFENSE PANEL (game/homedefense.js, CONCEPT.md Pillar 1) — the
+     smallest Ops panel here on purpose (see index.html's markup comment):
+     no expand/collapse, just a one-line posture toggle button + a compact
+     per-city status list underneath. Parked directly below #battalionPanel
+     in the same right-edge stack. */
+  #homeDefensePanel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #homeDefenseToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; background: var(--paper-2); border: none;
+    cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+  }
+  #homeDefenseToggle:hover { background: var(--paper); }
+  #homeDefenseState { font-size: 10.5px; font-weight: 700; letter-spacing: .5px; color: var(--ink-soft); }
+  #homeDefenseToggle.active #homeDefenseState { color: var(--green); }
+  #homeDefenseStatus { padding: 6px 10px 8px; font-size: 10.5px; color: var(--ink-soft); line-height: 1.5; border-top: 1px solid var(--rule-soft); }
+  .hdRow b { color: var(--ink); }
+  .hdEmpty { font-style: italic; }
   /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)
      — playtest feedback: "the build menu is really ugly, you can't scroll
      down on it." Was a flat, unscrollable strip of ~20 buttons; now a
@@ -839,6 +856,21 @@
     <span id="battalionToggleIcon">▸</span>
   </button>
   <div id="battalionBody"><div id="battalionBodyInner"></div></div>
+</div>
+<!-- HOME DEFENSE PANEL — game/homedefense.js (CONCEPT.md Pillar 1, "The
+     Nation Acts"). Deliberately NOT a collapsible tab like the panels above
+     — just a one-line posture toggle + a tiny per-city status readout, built
+     and refreshed in main.js's HOME DEFENSE PANEL section. Parked directly
+     below #battalionPanel in the same right-edge stack (a Home Guard is an
+     ordinary player battalion, so this reads as "downstream of Battalions,"
+     same placement logic #battalionPanel itself uses relative to
+     #reinforcePanel). -->
+<div id="homeDefensePanel" class="opsPanel">
+  <button id="homeDefenseToggle" type="button" title="Toggle Home Defense posture (key: D)">
+    <span class="opsStamp ink">Home Defense</span>
+    <span id="homeDefenseState">ON</span>
+  </button>
+  <div id="homeDefenseStatus"></div>
 </div>
 </div>
 <!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's

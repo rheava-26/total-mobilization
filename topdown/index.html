@@ -45,6 +45,40 @@
   html, body { margin: 0; height: 100%; background: #060a12; overflow: hidden; }
   #view { display: block; width: 100%; height: 100%; cursor: grab; }
   #view.grabbing { cursor: grabbing; }
+  /* SELL MODE (X) — bug fix: entering sell mode used to change no visible
+     state at all beyond an internal flag, so a player could be stuck in it
+     not knowing why clicks were selling buildings. Mirrors build mode's own
+     "the top instruction bar changes" signal (main.js sets #hud's text) with
+     a cursor + screen-edge tint main.js toggles via body.sell-mode so the
+     mode reads as active even before the player looks at the ticker text. */
+  body.sell-mode #view { cursor: crosshair; }
+  body.sell-mode::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    box-shadow: inset 0 0 0 4px rgba(184, 65, 42, .55), inset 0 0 40px rgba(184, 65, 42, .12);
+  }
+  /* LOADING OVERLAY (bug fix: the one-time terrain pre-render can block the
+     main thread for several seconds on a big generated map with no visible
+     progress — see engine/renderer.js's prerenderTerrain/ensureTerrain and
+     main.js's boot sequence — which read as a hang to a first-time player.
+     Visible from the very first paint (plain static markup, no JS needed to
+     show it) and covers the canvas completely; main.js removes the `show`
+     class the instant the first real frame has actually been drawn. Plain
+     functional copy only, per the task constraint — this is not lore. */
+  #loadingOverlay {
+    position: fixed; inset: 0; z-index: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: #060a12; color: #bcd0dc; font: 13px Consolas, 'SF Mono', 'Courier New', monospace;
+    letter-spacing: .4px; opacity: 1; transition: opacity .35s ease;
+  }
+  #loadingOverlay.hide { opacity: 0; pointer-events: none; }
+  #loadingOverlay .loadingBox { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  #loadingOverlay .loadingSpinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid rgba(188, 208, 220, .18); border-top-color: rgba(188, 208, 220, .75);
+    animation: loadingSpin .9s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { #loadingOverlay .loadingSpinner { animation: none; } }
+  @keyframes loadingSpin { to { transform: rotate(360deg); } }
   /* Shared "paper panel" base — every chart-overlay panel opts in with this
      class. Grain + parchment gradient background, a hairline rule border,
      and two diagonal corner "registration ticks" (surveyor's crop marks —

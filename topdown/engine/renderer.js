@@ -2362,29 +2362,75 @@ export function createRenderer(canvas) {
     }
     if (cam.zoom < REGION_ZOOM_THRESHOLD) {
       const regionList = map.regions || [];
-      // game/mapgen.js lays regions out as a uniform row/column grid, so
-      // regions sharing a row land at nearly the same screen Y at this zoom
-      // — a small deterministic zigzag (by position within the list, not by
-      // name/content) keeps same-row labels from stacking directly on top
-      // of each other without needing any real collision layout.
+      const size = 40 * dpr;
+      ctx.font = `${size}px Georgia, serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.09)';
+      // BUG FIX (region/ocean labels overlapping illegibly): the zigzag
+      // below only ever separates labels within the same 3-row bucket by a
+      // fixed 30px vertical nudge — it says nothing about horizontal
+      // overlap, or about two regions in DIFFERENT row buckets that still
+      // land close together on screen once panned/zoomed, so two names
+      // routinely rendered on top of each other (this was the actual
+      // playtest complaint, e.g. "DOAMKRIVSTEIR SOUND" over "KRIRNOTHVAV
+      // BAY"). Simple greedy collision avoidance on top of the existing
+      // zigzag (kept as-is — it's still a cheap first pass that helps the
+      // common same-row case): measure each label's actual screen-space
+      // bounding box and skip drawing it if that box overlaps any label
+      // already placed this frame. `map.regions`' own list order is the
+      // priority (same "earlier wins" convention the capital-city bold/gold
+      // check above uses via list index 0) — deterministic per map, no
+      // per-frame sort needed. Dropping the loser is a deliberate,
+      // acknowledged simplification (task: "don't over-engineer") — a
+      // dropped region's name just doesn't show at this zoom; panning or
+      // zooming in enough moves it out of `REGION_ZOOM_THRESHOLD` order and
+      // it can win a spot once its neighbor's label leaves screen space.
+      const placedBoxes = [];
       regionList.forEach((r, i) => {
         const cx = (r.x0 + r.x1) / 2 * map.tileSize, cy = (r.y0 + r.y1) / 2 * map.tileSize;
         const [sx, sy0] = worldToScreen(cx, cy);
         const zigzag = ((i % 3) - 1) * 30 * dpr;
         const sy = sy0 + zigzag;
         if (sx < -400 || sx > canvas.width + 400 || sy < -200 || sy > canvas.height + 200) return;
-        const size = 40 * dpr;
-        ctx.font = `${size}px Georgia, serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.09)';
-        ctx.fillText(r.name.toUpperCase(), sx, sy);
+        const label = r.name.toUpperCase();
+        const halfW = ctx.measureText(label).width / 2;
+        // approximate text bounding box: ctx.textBaseline is 'alphabetic'
+        // (set once at the top of drawLabels), so most of the glyph height
+        // sits ABOVE sy with a small descender allowance below it.
+        const box = { x0: sx - halfW, x1: sx + halfW, y0: sy - size * 0.8, y1: sy + size * 0.25 };
+        for (const p of placedBoxes) {
+          if (box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0) return; // collides with an already-placed label — drop this one
+        }
+        placedBoxes.push(box);
+        ctx.fillText(label, sx, sy);
       });
     }
     ctx.restore();
   }
 
+  // BUG FIX (flat black void at max zoom-out): this used to be a single flat
+  // fillRect — fine while the map fills the screen, but at/near the min-zoom
+  // camera limit (attachCameraControls' minZoom) the map's own drawImage
+  // only covers a small island in the middle of the canvas, leaving a huge
+  // perfectly-flat black rectangle around it that reads as unfinished/
+  // missing content rather than "open space." A cheap radial gradient
+  // (viewport-space, not world-space — it's a fixed vignette around the
+  // canvas center regardless of where the camera is looking, not a real
+  // depth/distance-to-map effect) gives that space a soft dark-to-darker
+  // falloff instead of one dead-flat tone. One gradient fill per frame is a
+  // trivial cost next to everything else frame() already does.
+  let clearGrad = null, clearGradW = -1, clearGradH = -1;
   function clear() {
-    ctx.fillStyle = '#060a12';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const w = canvas.width, h = canvas.height;
+    if (clearGrad === null || clearGradW !== w || clearGradH !== h) {
+      const cx = w / 2, cy = h / 2, r = Math.max(w, h) * 0.75;
+      clearGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      clearGrad.addColorStop(0, '#0b1520');
+      clearGrad.addColorStop(0.55, '#070f18');
+      clearGrad.addColorStop(1, '#02050a');
+      clearGradW = w; clearGradH = h;
+    }
+    ctx.fillStyle = clearGrad;
+    ctx.fillRect(0, 0, w, h);
   }
 
   function frame(map, drawWorld) {

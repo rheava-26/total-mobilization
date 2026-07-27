@@ -336,19 +336,52 @@ export const UNIT_DEFS = {
     vision: 400,
     dispositions: ['aggressive'], // CAS run: gets in close instead of standing off
   },
+  // -------------------------------------------------------------------------
+  // NAVAL ROSTER (docs/reference-naval-warfare.md — the "warships act like
+  // tanks in disguise" fix). Three real principles drive every number below,
+  // none of them a per-unit special case anywhere in updateUnits:
+  //   1. RANGE: naval weapons reach far past ground weapons (real destroyers
+  //      outrange a tank by 2.5-5x — gun vs missile). vision is raised to
+  //      roughly match range so fog doesn't strand a ship that can shoot
+  //      further than it can see.
+  //   2. MOVEMENT: turnRate is dropped hard (0.8-1.3 rad/s vs a tank's 3) and
+  //      radius is raised a lot (16-28 vs a tank's 10) — see updateUnits'
+  //      naval-only momentum branch (isNaval) for the accel/decel + speed-
+  //      coupled turning that makes these numbers actually feel like a hull
+  //      committing to a heading, not just a slow tank.
+  //   3. DOCTRINE: none of the three carry 'aggressive' — a warship that
+  //      closes to point-blank defeats the entire range fix. gunboat/frigate
+  //      hold at NAVAL_STANDOFF_FRAC (see updateUnits); destroyer is
+  //      holdGround outright (a capital ship anchors a position, it doesn't
+  //      chase).
   gunboat: {
+    // fast attack craft: shortest-legged of the three (still ~1.8x a tank's
+    // range) and the only one still on the gun-kind 'shell' weapon — quick
+    // rate of fire, light per-shot damage, the roster's cheap/expendable hull.
     name: 'Gunboat "Osprey"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
-    hp: 130, armor: 6, speed: 60, range: 240, dmg: 16, rate: 1.8, turnRate: 2.2, radius: 13,
-    vision: 300,
+    hp: 120, armor: 6, speed: 55, range: 400, dmg: 14, rate: 1.6, turnRate: 1.3, radius: 16,
+    vision: 420,
+    dispositions: [],
+  },
+  frigate: {
+    // general-purpose escort: sits between gunboat and destroyer in every
+    // stat. Missile-armed (antiship, homing) for real standoff reach — a gun
+    // frigate would just be a slower gunboat, the missile is what earns it a
+    // distinct tactical role.
+    name: 'Frigate "Sentinel"', domain: 'naval', moveClass: 'naval', weapon: 'antiship',
+    hp: 190, armor: 8, speed: 44, range: 760, dmg: 28, rate: 1.0, turnRate: 1.0, radius: 22,
+    vision: 780,
     dispositions: [],
   },
   destroyer: {
-    // longer-legged gun and a lot more hull than the gunboat — the ship you
-    // want screening the coast, not just harassing it.
-    name: 'Destroyer "Marchioness"', domain: 'naval', moveClass: 'naval', weapon: 'shell',
-    hp: 220, armor: 10, speed: 50, range: 320, dmg: 22, rate: 2.0, turnRate: 1.6, radius: 16,
-    vision: 340,
-    dispositions: [],
+    // capital ship: longest-legged gun-line unit in the game (missile range
+    // ~4.5x a tank's), slowest and heaviest naval hull, holdGround so it
+    // anchors a screen/chokepoint instead of chasing — the ship you want
+    // guarding the coast, not roaming after every contact.
+    name: 'Destroyer "Marchioness"', domain: 'naval', moveClass: 'naval', weapon: 'antiship',
+    hp: 250, armor: 12, speed: 34, range: 980, dmg: 48, rate: 0.75, turnRate: 0.8, radius: 28,
+    vision: 1000,
+    dispositions: ['holdGround'],
   },
 
   // ---------------------------------------------------------------------
@@ -681,6 +714,13 @@ export function pickTarget(world, u) {
 // further, and even they stop well short of stacking on the target.
 const RANGED_STANDOFF_FRAC = 0.85; // tank (range 220) holds ~187px — "shelling from range", not hugging
 const AGGRESSIVE_STANDOFF_FRAC = 0.32; // still a real gap, not literal point-blank
+// NAVAL STANDOFF (docs/reference-naval-warfare.md §5): ships hold much
+// closer to the OUTER edge of their envelope than a tank does — a warship's
+// whole doctrine is "shoot from as far out as possible", not "close to a
+// comfortable shelling distance". Applied only to domain:'naval' units below
+// (ground's RANGED_STANDOFF_FRAC is untouched) — the destroyer never even
+// reaches this, it's holdGround and skips standoff-chasing entirely.
+const NAVAL_STANDOFF_FRAC = 0.92;
 // Aim tolerance (radians) heavy direct-fire weapons need before they'll pull
 // the trigger — see the ballistic-kind gate in the fire block below.
 const FIRE_AIM_TOLERANCE = 0.22; // ~12.5 degrees off the target's bearing
@@ -715,7 +755,9 @@ export function updateUnits(world, dt, map) {
       // sends it backing off to reopen the range instead of just holding —
       // a tank reversing to keep its distance, not getting run up on.
       if (!def.dispositions.includes('holdGround')) {
-        const standoffFrac = def.dispositions.includes('aggressive') ? AGGRESSIVE_STANDOFF_FRAC : RANGED_STANDOFF_FRAC;
+        const standoffFrac = def.dispositions.includes('aggressive') ? AGGRESSIVE_STANDOFF_FRAC
+          : def.domain === 'naval' ? NAVAL_STANDOFF_FRAC
+          : RANGED_STANDOFF_FRAC;
         const standoff = def.range * standoffFrac;
         const rx = u.x - enemy.x, ry = u.y - enemy.y;
         const d = Math.hypot(rx, ry);
@@ -792,18 +834,74 @@ export function updateUnits(world, dt, map) {
     // full speed on water and 0 anywhere else).
     const moveMult = terrainSample(map, moveClass, u.x, u.y).mult;
 
+    // NAVAL MOMENTUM (docs/reference-naval-warfare.md §2 — the "acts like a
+    // tank" fix): keyed purely off the move class's requiresWater flag, so
+    // this branch can NEVER fire for foot/wheeled/tracked/air — ground and
+    // air movement below is byte-for-byte the pre-existing exponential
+    // velocity blend. Naval gets two things ground doesn't: (a) turnRate
+    // itself narrows as the hull picks up speed (a ship at full sprint is
+    // committed to its heading — real destroyers turn tighter near a stop
+    // than at flank speed), and (b) speed changes at a bounded acceleration
+    // instead of snapping toward the target speed, so a ship takes real
+    // seconds to work up to (or bleed off) speed. Combined with the low
+    // turnRate in UNIT_DEFS, a ship physically cannot pivot in place: it has
+    // to keep moving forward while its heading slowly comes around, i.e. it
+    // arcs. Speed is also never allowed negative, so there's no instant
+    // reverse — a ship that needs to open range has to come about, not slam
+    // into reverse.
+    const isNaval = !!moveClass.requiresWater;
     const dx = goalX - u.x, dy = goalY - u.y, dist = Math.hypot(dx, dy);
     if (dist > 2) {
       const desiredAngle = Math.atan2(dy, dx);
-      let curAngle = Math.atan2(u.vy, u.vx) || desiredAngle;
+      // NAVAL: source the turn from the hull's own persisted heading (u.aim)
+      // rather than re-deriving it from the velocity vector every frame.
+      // Math.atan2(u.vy, u.vx) is exactly 0 whenever a ship is travelling
+      // due east (vy exactly 0) — which the ground/air fallback below
+      // coincidentally treats as falsy and skips straight to desiredAngle,
+      // i.e. an instant snap-to-heading on ANY cardinal-direction reversal,
+      // defeating the whole "ships arc, they don't pivot" fix for what is a
+      // completely ordinary order (a player clicking due east/west/north/
+      // south is not an edge case). Ground/air keep the EXACT pre-existing
+      // line below, byte for byte — this fork only ever executes for naval.
+      let curAngle;
+      if (isNaval) {
+        curAngle = typeof u.aim === 'number' ? u.aim : desiredAngle;
+      } else {
+        curAngle = Math.atan2(u.vy, u.vx) || desiredAngle;
+      }
       let da = desiredAngle - curAngle;
       while (da > Math.PI) da -= 2 * Math.PI;
       while (da < -Math.PI) da += 2 * Math.PI;
-      curAngle += Math.max(-def.turnRate * dt, Math.min(def.turnRate * dt, da));
+      let turnRate = def.turnRate;
+      if (isNaval) {
+        const speedFrac = def.speed > 0 ? Math.min(1, Math.hypot(u.vx, u.vy) / def.speed) : 0;
+        turnRate = def.turnRate * (1 - 0.4 * speedFrac); // up to 40% slower turn at flank speed
+      }
+      curAngle += Math.max(-turnRate * dt, Math.min(turnRate * dt, da));
       u.aim = curAngle;
       const targetSpeed = Math.min(def.speed * moveMult, dist * 3); // ease in near the goal
-      u.vx += (Math.cos(curAngle) * targetSpeed - u.vx) * Math.min(1, dt * 4);
-      u.vy += (Math.sin(curAngle) * targetSpeed - u.vy) * Math.min(1, dt * 4);
+      if (isNaval) {
+        const curSpeed = Math.hypot(u.vx, u.vy);
+        const accel = def.speed / 2.5; // ~2.5s from a dead stop to flank speed
+        const newSpeed = targetSpeed > curSpeed
+          ? Math.min(targetSpeed, curSpeed + accel * dt)
+          : Math.max(targetSpeed, curSpeed - accel * dt); // targetSpeed is always >= 0
+        u.vx = Math.cos(curAngle) * newSpeed;
+        u.vy = Math.sin(curAngle) * newSpeed;
+      } else {
+        u.vx += (Math.cos(curAngle) * targetSpeed - u.vx) * Math.min(1, dt * 4);
+        u.vy += (Math.sin(curAngle) * targetSpeed - u.vy) * Math.min(1, dt * 4);
+      }
+    } else if (isNaval) {
+      // holding station (e.g. a holdGround destroyer, or any ship inside its
+      // standoff dead-zone): bleed off speed at the same bounded rate rather
+      // than the ground/air instant *0.85 pull — a ship coasts to a stop.
+      const curSpeed = Math.hypot(u.vx, u.vy);
+      const decel = def.speed / 2.5;
+      const newSpeed = Math.max(0, curSpeed - decel * dt);
+      const ang = curSpeed > 0.01 ? Math.atan2(u.vy, u.vx) : (u.aim || 0);
+      u.vx = Math.cos(ang) * newSpeed;
+      u.vy = Math.sin(ang) * newSpeed;
     } else {
       u.vx *= 0.85; u.vy *= 0.85;
     }

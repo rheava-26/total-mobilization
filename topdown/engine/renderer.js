@@ -2327,7 +2327,15 @@ function computeSilhouetteClass(def) {
     // check (see game/units.js UNIT_DEFS for the actual figures).
     return def.hp >= 50 ? 'aircraft' : 'drone';
   }
-  if (def.domain === 'naval') return 'ship'; // only shape in the naval domain today; scales with def.radius already
+  if (def.domain === 'naval') {
+    // Three size tiers purely from def.radius (game/units.js's naval roster
+    // lands gunboat/frigate/destroyer in three clearly separated radius
+    // bands — 16/22/28) — the same attribute-driven split the air domain's
+    // aircraft/drone hp check above already uses, never a name/key check.
+    if (def.radius < 19) return 'shipS';
+    if (def.radius < 25) return 'shipM';
+    return 'shipL';
+  }
   if (!wdef) return 'support'; // unweaponed ground vehicle: EW/recon support (e.g. the jammer)
   if (def.moveClass === 'foot') return 'infantry'; // dismounted team — ATGM/MANPADS teams included, armed or not
   const holdGround = (def.dispositions || []).includes('holdGround');
@@ -2353,11 +2361,12 @@ function computeSilhouetteClass(def) {
 // Everything else (infantry/aircraft/drone/support) draws as one shape
 // oriented on u.aim alone — a rifle squad or a strike jet doesn't have an
 // independently-slewing turret in this game.
-const TURRETED_SHAPES = new Set(['tank', 'artillery', 'launcher', 'airdefense', 'scout', 'ship']);
+const TURRETED_SHAPES = new Set(['tank', 'artillery', 'launcher', 'airdefense', 'scout', 'shipS', 'shipM', 'shipL']);
 // Muzzle length (in units of the unit's own def.radius) the flash/recoil
 // hooks anchor to, per shape — a tank's gun reaches further out front than a
-// squat AA turret's twin barrels, etc.
-const BARREL_REACH = { tank: 1.5, artillery: 2.0, launcher: 1.1, airdefense: 1.0, scout: 1.0, ship: 1.3 };
+// squat AA turret's twin barrels, etc. Ship reach grows with hull size (the
+// turret visually sits further toward the bow on a bigger hull).
+const BARREL_REACH = { tank: 1.5, artillery: 2.0, launcher: 1.1, airdefense: 1.0, scout: 1.0, shipS: 1.5, shipM: 1.75, shipL: 2.0 };
 const MUZZLE_REACH = { infantry: 0.8, aircraft: 1.15, drone: 0.55 }; // non-turreted shapes' equivalent reach
 
 // --- turreted hulls (local space: forward = +x, caller has already
@@ -2415,18 +2424,75 @@ function hullScout(ctx, s) {
   ctx.lineTo(-s * 0.8, -s * 0.45); ctx.lineTo(s * 0.55, -s * 0.45);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 }
-function hullShip(ctx, s) {
-  // pointed bow, curved flanks, flat transom stern, small bridge block amidships
+// -----------------------------------------------------------------------
+// NAVAL HULLS (docs/reference-naval-warfare.md §4 — "read as a large vessel
+// at a glance"). Shared outline helper draws the pointed-bow/flat-transom-
+// stern shape every class uses; only the length/beam and deck clutter change
+// per tier, growing more elongated AND more cluttered from gunboat through
+// destroyer so the three read as a real size progression, not just three
+// copies of one shape. Deck details are drawn in a neutral dark steel tone
+// (reads over either faction color) rather than the hull's own fill, so
+// turrets/superstructure/VLS visually separate from the hull plate — the
+// caller has already set fillStyle to the faction color and fills the main
+// hull path with it before these functions touch DECK_COLOR.
+const DECK_COLOR = 'rgba(18,24,32,0.88)';
+function hullShipOutline(ctx, s, bow, stern, beam) {
   ctx.beginPath();
-  ctx.moveTo(s * 1.3, 0); ctx.quadraticCurveTo(s * 0.4, -s * 0.5, -s * 1.1, -s * 0.42);
-  ctx.lineTo(-s * 1.1, s * 0.42); ctx.quadraticCurveTo(s * 0.4, s * 0.5, s * 1.3, 0);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  if (s > 5) {
-    ctx.fillRect(-s * 0.25, -s * 0.3, s * 0.55, s * 0.6);
-    ctx.strokeRect(-s * 0.25, -s * 0.3, s * 0.55, s * 0.6);
+  ctx.moveTo(s * bow, 0);
+  ctx.quadraticCurveTo(s * bow * 0.32, -s * beam, -s * stern * 0.72, -s * beam);
+  ctx.lineTo(-s * stern, -s * beam * 0.62);
+  ctx.lineTo(-s * stern, s * beam * 0.62);
+  ctx.lineTo(-s * stern * 0.72, s * beam);
+  ctx.quadraticCurveTo(s * bow * 0.32, s * beam, s * bow, 0);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+}
+function hullShipSmall(ctx, s) {
+  // Gunboat "Osprey": lean fast-attack hull (~5:1 length:beam) — just a
+  // small bridge block and mast, the roster's cheapest/least cluttered deck.
+  hullShipOutline(ctx, s, 1.65, 1.5, 0.32);
+  if (s > 4) {
+    ctx.fillStyle = DECK_COLOR;
+    ctx.fillRect(-s * 0.15, -s * 0.16, s * 0.4, s * 0.32);
+    ctx.strokeRect(-s * 0.15, -s * 0.16, s * 0.4, s * 0.32);
+    ctx.beginPath(); ctx.moveTo(-s * 0.05, -s * 0.16); ctx.lineTo(-s * 0.05, -s * 0.6); ctx.stroke();
   }
 }
-const SILHOUETTE_HULLS = { tank: hullTank, artillery: hullArtillery, launcher: hullLauncher, airdefense: hullAirdefense, scout: hullScout, ship: hullShip };
+function hullShipMed(ctx, s) {
+  // Frigate "Sentinel": longer hull, a real superstructure block + funnel,
+  // and a forward missile-cell row (linear VLS) — visibly a step up from the gunboat.
+  hullShipOutline(ctx, s, 1.95, 1.75, 0.34);
+  if (s > 4) {
+    ctx.fillStyle = DECK_COLOR;
+    ctx.fillRect(-s * 0.35, -s * 0.22, s * 0.6, s * 0.44);
+    ctx.strokeRect(-s * 0.35, -s * 0.22, s * 0.6, s * 0.44);
+    ctx.fillRect(-s * 0.58, -s * 0.14, s * 0.16, s * 0.28); // funnel
+    for (let i = 0; i < 4; i++) { // forward VLS row
+      const cx = s * (0.45 + i * 0.14);
+      ctx.fillRect(cx - s * 0.045, -s * 0.06, s * 0.09, s * 0.12);
+    }
+    ctx.beginPath(); ctx.moveTo(-s * 0.05, -s * 0.22); ctx.lineTo(-s * 0.05, -s * 0.72); ctx.stroke();
+  }
+}
+function hullShipLarge(ctx, s) {
+  // Destroyer "Marchioness": longest/widest hull, biggest superstructure +
+  // funnel, an 8-cell VLS grid forward of the bridge — the most cluttered,
+  // most imposing silhouette in the roster, matching its capital-ship role.
+  hullShipOutline(ctx, s, 2.25, 2.05, 0.36);
+  if (s > 4) {
+    ctx.fillStyle = DECK_COLOR;
+    ctx.fillRect(-s * 0.45, -s * 0.26, s * 0.75, s * 0.52);
+    ctx.strokeRect(-s * 0.45, -s * 0.26, s * 0.75, s * 0.52);
+    ctx.fillRect(-s * 0.75, -s * 0.16, s * 0.2, s * 0.32); // funnel
+    for (let i = 0; i < 8; i++) { // 4x2 VLS grid forward of the bridge
+      const cx = s * (0.35 + (i % 4) * 0.14);
+      const cy = (i < 4) ? -s * 0.09 : s * 0.09;
+      ctx.fillRect(cx - s * 0.045, cy - s * 0.045, s * 0.09, s * 0.09);
+    }
+    ctx.beginPath(); ctx.moveTo(-s * 0.1, -s * 0.26); ctx.lineTo(-s * 0.1, -s * 0.88); ctx.stroke();
+  }
+}
+const SILHOUETTE_HULLS = { tank: hullTank, artillery: hullArtillery, launcher: hullLauncher, airdefense: hullAirdefense, scout: hullScout, shipS: hullShipSmall, shipM: hullShipMed, shipL: hullShipLarge };
 
 function drawTurret(ctx, s, cls, wdef) {
   const reach = BARREL_REACH[cls] || 1.2;
@@ -2539,6 +2605,56 @@ function drawMuzzleFlash(ctx, sx, sy, r, cls, flash) {
   ctx.restore(); // pops back to whatever globalAlpha the caller (drawUnit) had set — see that function's B6 alpha param
 }
 
+// WAKE TRAIL (docs/reference-naval-warfare.md §4 — "the single biggest
+// 'this is a moving ship' cue"). Deliberately lightweight: a small capped
+// array of {x,y,t} points stashed directly on the unit object, the same
+// renderer-owned-visual-state pattern u.muzzleFlash already uses (never read
+// by game/units.js) — except this one isn't aged out by the sim, it's purely
+// drawn/pruned here. Points are recorded in WORLD space (stable across
+// camera pan/zoom) at the hull's stern and only converted to screen space
+// when drawn. Deterministic — spacing/fade is purely a function of elapsed
+// time and the unit's own speed/heading, never Math.random().
+const WAKE_LIFE = 2.2; // seconds a wake point stays visible
+const WAKE_MIN_GAP = 0.1; // seconds between spawned points — bounds history length
+const WAKE_MAX_POINTS = 18;
+function nowSeconds() {
+  return (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+}
+function drawShipWake(ctx, worldToScreen, u, r) {
+  const def = u.def;
+  const now = nowSeconds();
+  let wake = u._wake;
+  if (!wake) wake = u._wake = [];
+  if (wake.length) wake = u._wake = wake.filter(wp => now - wp.t < WAKE_LIFE);
+  const speed = Math.hypot(u.vx, u.vy);
+  if (speed > 4) {
+    const last = wake[wake.length - 1];
+    if (!last || now - last.t > WAKE_MIN_GAP) {
+      const aim = u.aim || 0;
+      wake.push({
+        x: u.x - Math.cos(aim) * def.radius * 1.05,
+        y: u.y - Math.sin(aim) * def.radius * 1.05,
+        t: now,
+        speedFrac: def.speed > 0 ? Math.min(1, speed / def.speed) : 0,
+      });
+      if (wake.length > WAKE_MAX_POINTS) wake.shift();
+    }
+  }
+  if (!wake.length) return;
+  ctx.save();
+  for (const wp of wake) {
+    const fade = 1 - (now - wp.t) / WAKE_LIFE;
+    if (fade <= 0) continue;
+    const [wx, wy] = worldToScreen(wp.x, wp.y);
+    const size = Math.max(0.6, r * (0.22 + 0.3 * wp.speedFrac) * (0.5 + 0.5 * fade));
+    ctx.beginPath();
+    ctx.arc(wx, wy, size, 0, 6.28);
+    ctx.fillStyle = `rgba(225,240,255,${(0.4 * fade).toFixed(3)})`;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 // Exported: main.js's render loop calls this once per LIVE, currently-
 // visible unit (fog-filtering happens at the call site, same as before this
 // pass). `isHovered` replaces the old `u === hovered` check done inline —
@@ -2565,8 +2681,7 @@ export function drawUnit(ctx, worldToScreen, cam, u, isHovered, alpha = 1) {
     ctx.beginPath(); ctx.ellipse(sx, sy + r * 0.7, r * 0.75, r * 0.32, 0, 0, 6.28);
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fill();
   } else if (u.def.domain === 'naval') {
-    ctx.beginPath(); ctx.arc(sx, sy, r * 1.7, 0, 6.28);
-    ctx.strokeStyle = 'rgba(190,225,255,.4)'; ctx.lineWidth = 1; ctx.stroke();
+    drawShipWake(ctx, worldToScreen, u, r);
   }
 
   const cls = classifyUnit(u.def);

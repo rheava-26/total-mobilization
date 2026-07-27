@@ -96,7 +96,11 @@ export const PRODUCTION_DEFS = {
   warships: {
     name: 'Warships',
     facility: 'shipyard',
-    outputs: ['gunboat', 'destroyer'],
+    // NAVAL REWORK (docs/reference-naval-warfare.md): frigate slots into the
+    // round-robin between gunboat and destroyer — a real 3-class roster
+    // (fast/cheap screen, balanced GP escort, slow/long-range capital)
+    // instead of the old two-unit "small gun / big gun" pair.
+    outputs: ['gunboat', 'frigate', 'destroyer'],
     recipe: {
       resourceCostPerUnit: { steel: 12, chromium: 2, oil: 5 },
       prerequisiteBuildings: [],

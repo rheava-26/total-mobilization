@@ -23,7 +23,25 @@ import { moraleState } from '../game/battalionMorale.js';
 // map-legend panel (Operations Map chunk C) can swap in the exact same
 // swatches instead of hardcoding a second copy of these hex values; the
 // ownership-ring draw code below (drawLabels) reads this same table.
-export const OWNERSHIP_COLORS = { player: '#5fd0ff', enemy: '#ff5a5a', neutral: '#8fa0ac' };
+//
+// PLAYER COLOR (designer feedback: "the blue looks kinda weird" — the old
+// bright cyan #5fd0ff read as a UI-accent color, not a faction on a map).
+// Replaced with a muted steel/gunmetal grey — cool-toned (leans slightly
+// blue-grey, NOT the warm tan/khaki family maps/terrain-defs.json's urban
+// (#79766b/#8d8a7c) and sand (#a89468/#b8a679) tiles use) so player units
+// stay legible sitting on top of those terrains instead of blending into
+// them, while still reading clearly over dark water (#0f2c46/#153a5c) and
+// dark grass/forest. `neutral` is bumped in the opposite direction (warm
+// khaki/tan) specifically so it's no longer a near-miss of this new grey —
+// the old neutral #8fa0ac and the old player blue #5fd0ff were already both
+// cool blue-greys sharing a hue family; putting player grey in that same
+// family would have made player-vs-neutral the hard-to-read pair instead.
+export const OWNERSHIP_COLORS = { player: '#8a9199', enemy: '#ff5a5a', neutral: '#b3a58a' };
+// Lighter tint of the player grey (turret/highlight layer, mirrors how
+// enemy's own sideLight below is a lighter tint of enemy red) — kept as a
+// sibling constant rather than computed at draw time since it's referenced
+// by name in a couple of spots.
+const PLAYER_GREY_LIGHT = '#d6dade';
 
 // Canvas2D top-down renderer: camera (pan/zoom), a pre-rendered terrain
 // layer, and a draw-call hook the game layer feeds world-space draw
@@ -2373,56 +2391,113 @@ const MUZZLE_REACH = { infantry: 0.8, aircraft: 1.15, drone: 0.55 }; // non-turr
 // translated to the unit's screen position and rotated by u.aim; fillStyle/
 // strokeStyle/lineWidth are already set by the caller, same convention
 // game/techtreeview.js's ICON_GLYPHS use) ---
+//
+// REAL-VEHICLE PASS: every hull below now differentiates two things a real
+// silhouette reads off instantly — MOBILITY (tracks = two continuous dark
+// bands running the hull's full length with tread ticks; wheels = discrete
+// dark circles poking past the hull edge at 2-3 axle stations) and BULK
+// (an MBT's hull is a thick hexagonal plate; an APC/scout's is a slimmer
+// tapered wedge; a self-propelled gun's is a low flat tracked deck). Detail
+// fills use a fixed dark neutral tone (TRACK_COLOR/WHEEL_COLOR) the same way
+// the naval hulls below already use DECK_COLOR for superstructure — reads
+// over either faction color, drawn AFTER the caller's own side-color fill
+// so it never gets stepped on.
+const TRACK_COLOR = 'rgba(9,11,15,0.62)';
+const WHEEL_COLOR = 'rgba(9,11,15,0.7)';
+
+// Two dark bands along the hull's long flanks (local ±y) with perpendicular
+// tread ticks — the "unmistakably tracked" cue for tank/artillery/airdefense
+// hulls. `hw` = hull half-width at its widest (the band sits just inside the
+// outer edge), `len` = how far along x the band runs.
+function drawTracks(ctx, s, hw, len) {
+  if (s <= 4) return;
+  const bandW = Math.max(1, hw * 0.34);
+  ctx.fillStyle = TRACK_COLOR;
+  ctx.fillRect(-len, hw - bandW, len * 2, bandW);
+  ctx.fillRect(-len, -hw, len * 2, bandW);
+  ctx.strokeStyle = TRACK_COLOR;
+  ctx.lineWidth = Math.max(0.5, s * 0.045);
+  ctx.beginPath();
+  const ticks = s > 7 ? 5 : 3;
+  for (let i = 0; i < ticks; i++) {
+    const tx = -len + (len * 2) * ((i + 0.5) / ticks);
+    ctx.moveTo(tx, hw - bandW); ctx.lineTo(tx, hw);
+    ctx.moveTo(tx, -hw); ctx.lineTo(tx, -hw + bandW);
+  }
+  ctx.stroke();
+}
+// Discrete road wheels along both flanks — the "wheeled, not tracked" cue
+// for scout/launcher hulls (a real APC/truck's wheels visibly bulge past the
+// hull's own side panel when seen from directly above).
+function drawWheels(ctx, s, hw, xs) {
+  if (s <= 4) return;
+  ctx.fillStyle = WHEEL_COLOR;
+  const wr = Math.max(0.8, hw * 0.32);
+  ctx.beginPath();
+  for (const wx of xs) {
+    ctx.moveTo(wx * s + wr, hw); ctx.arc(wx * s, hw, wr, 0, 6.28);
+    ctx.moveTo(wx * s + wr, -hw); ctx.arc(wx * s, -hw, wr, 0, 6.28);
+  }
+  ctx.fill();
+}
+
 function hullTank(ctx, s) {
-  // tracked hull: tapered nose, flat stern, tread-tick hint along both edges
+  // MBT: thick hexagonal plate — blunt glacis nose, flat stern, the widest/
+  // heaviest-looking hull in the roster (matches the tank's own def.radius
+  // being the largest non-artillery ground unit) — plus continuous tracks
+  // down both sides so it unmistakably reads "tank", not just "vehicle".
   ctx.beginPath();
   ctx.moveTo(s * 1.05, 0);
-  ctx.lineTo(s * 0.7, s * 0.62); ctx.lineTo(-s * 0.9, s * 0.62); ctx.lineTo(-s * 1.0, 0);
-  ctx.lineTo(-s * 0.9, -s * 0.62); ctx.lineTo(s * 0.7, -s * 0.62);
+  ctx.lineTo(s * 0.68, s * 0.58); ctx.lineTo(-s * 0.85, s * 0.58); ctx.lineTo(-s * 0.98, 0);
+  ctx.lineTo(-s * 0.85, -s * 0.58); ctx.lineTo(s * 0.68, -s * 0.58);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  if (s > 5) { // tread ticks only worth the extra draw calls once the hull is actually visible
-    ctx.beginPath();
-    for (let i = -2; i <= 2; i++) {
-      ctx.moveTo(i * s * 0.32, s * 0.62); ctx.lineTo(i * s * 0.32, s * 0.8);
-      ctx.moveTo(i * s * 0.32, -s * 0.62); ctx.lineTo(i * s * 0.32, -s * 0.8);
-    }
-    ctx.stroke();
-  }
+  drawTracks(ctx, s, s * 0.58, s * 0.95);
 }
 function hullArtillery(ctx, s) {
-  // low flatbed hull on two big road wheels — the long barrel is the
-  // separately-rotated "turret" half, drawn by drawTurret below
+  // Self-propelled gun: a LOW, FLAT tracked deck (visibly thinner/longer
+  // than the tank's bulky hexagon) plus a rear travel-lock spade flange —
+  // the turret+long gun half (drawn separately by drawTurret, biased toward
+  // the rear) is what actually sells "artillery"; this hull just needs to
+  // read as a tracked carrier underneath it.
   ctx.beginPath();
-  ctx.moveTo(s * 0.7, -s * 0.35); ctx.lineTo(s * 0.7, s * 0.35); ctx.lineTo(-s * 0.85, s * 0.35); ctx.lineTo(-s * 0.85, -s * 0.35);
+  ctx.moveTo(s * 0.75, -s * 0.4); ctx.lineTo(s * 0.75, s * 0.4); ctx.lineTo(-s * 0.9, s * 0.4); ctx.lineTo(-s * 0.9, -s * 0.4);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(-s * 0.5, s * 0.45, s * 0.3, 0, 6.28);
-  ctx.moveTo((s * 0.35) + s * 0.3, s * 0.45); ctx.arc(s * 0.35, s * 0.45, s * 0.3, 0, 6.28);
-  ctx.fill(); ctx.stroke();
+  drawTracks(ctx, s, s * 0.4, s * 0.8);
+  if (s > 4) {
+    // travel-lock / recoil spade — a small flange braced against the ground
+    // behind the hull, the "about to fire a big gun" tell
+    ctx.fillStyle = TRACK_COLOR;
+    ctx.fillRect(-s * 1.05, -s * 0.22, s * 0.15, s * 0.44);
+  }
 }
 function hullLauncher(ctx, s) {
-  // wheeled TEL: long narrow truck bed, small road wheels along the bottom edge
+  // TEL / MLRS chassis: a long multi-axle TRUCK bed — wheels on both flanks
+  // at 3 axle stations (not tracks) is the single biggest "this is a wheeled
+  // launcher truck, not an armored fighting vehicle" cue.
   ctx.beginPath();
   ctx.moveTo(s * 0.95, -s * 0.3); ctx.lineTo(s * 0.95, s * 0.3); ctx.lineTo(-s * 0.95, s * 0.3); ctx.lineTo(-s * 0.95, -s * 0.3);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  if (s > 5) {
-    ctx.beginPath();
-    for (const wx of [-0.7, -0.25, 0.25, 0.7]) { ctx.moveTo((wx + 0.16) * s, s * 0.42); ctx.arc(wx * s, s * 0.42, s * 0.16, 0, 6.28); }
-    ctx.fill();
-  }
+  drawWheels(ctx, s, s * 0.3, [-0.68, -0.15, 0.42]);
 }
 function hullAirdefense(ctx, s) {
-  // squat box base — mount for the twin-gun or missile-canister turret
+  // SAM/AA/laser mount: squat tracked box base carrying the radar-panel/
+  // multi-barrel turret drawn separately — tracks match the roster's actual
+  // moveClass for this whole class (sam/aa/samUpgrade/pointDefenseLaser are
+  // all tracked, per game/units.js UNIT_DEFS).
   ctx.beginPath();
   ctx.moveTo(s * 0.6, -s * 0.5); ctx.lineTo(s * 0.6, s * 0.5); ctx.lineTo(-s * 0.6, s * 0.5); ctx.lineTo(-s * 0.6, -s * 0.5);
   ctx.closePath(); ctx.fill(); ctx.stroke();
+  drawTracks(ctx, s, s * 0.5, s * 0.55);
 }
 function hullScout(ctx, s) {
-  // small, light wheeled hull — same tapered-nose language as the tank, just narrower/shorter
+  // IFV/scout car: a slimmer, shorter tapered wedge than the tank's thick
+  // hexagon (clearly lighter-bodied) with 2 pairs of road wheels bulging
+  // past the flanks — WHEELED, not tracked, the scout/recon-vehicle tell.
   ctx.beginPath();
-  ctx.moveTo(s * 0.95, 0); ctx.lineTo(s * 0.55, s * 0.45); ctx.lineTo(-s * 0.8, s * 0.45);
-  ctx.lineTo(-s * 0.8, -s * 0.45); ctx.lineTo(s * 0.55, -s * 0.45);
+  ctx.moveTo(s * 0.95, 0); ctx.lineTo(s * 0.55, s * 0.4); ctx.lineTo(-s * 0.8, s * 0.4);
+  ctx.lineTo(-s * 0.8, -s * 0.4); ctx.lineTo(s * 0.55, -s * 0.4);
   ctx.closePath(); ctx.fill(); ctx.stroke();
+  drawWheels(ctx, s, s * 0.4, [-0.45, 0.3]);
 }
 // -----------------------------------------------------------------------
 // NAVAL HULLS (docs/reference-naval-warfare.md §4 — "read as a large vessel
@@ -2494,46 +2569,162 @@ function hullShipLarge(ctx, s) {
 }
 const SILHOUETTE_HULLS = { tank: hullTank, artillery: hullArtillery, launcher: hullLauncher, airdefense: hullAirdefense, scout: hullScout, shipS: hullShipSmall, shipM: hullShipMed, shipL: hullShipLarge };
 
+// Thick tapered gun barrel (a filled quad, not a stroked line) — the "long
+// main gun" cue tank/artillery/scout all need, just at different lengths/
+// widths. Drawn from the turret ring's own edge out to `reach`, tapering
+// slightly toward the muzzle the way a real barrel's fume extractor/muzzle
+// brake reads as a step down in width.
+function drawBarrel(ctx, s, reach, baseW, tipW) {
+  ctx.beginPath();
+  ctx.moveTo(s * 0.1, -baseW * s); ctx.lineTo(s * (reach * 0.7), -tipW * s);
+  ctx.lineTo(s * reach, -tipW * s * 0.7); ctx.lineTo(s * reach, tipW * s * 0.7);
+  ctx.lineTo(s * (reach * 0.7), tipW * s); ctx.lineTo(s * 0.1, baseW * s);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
 function drawTurret(ctx, s, cls, wdef) {
   const reach = BARREL_REACH[cls] || 1.2;
-  // Missile-canister style for a launcher TEL or a non-gun (homing) air-
-  // defense mount — echoes the diamond missile BODY drawProjectile draws in
-  // flight below, so a launcher visibly carries the same ordnance it fires.
-  if (cls === 'launcher' || (cls === 'airdefense' && wdef && wdef.kind !== 'gun')) {
-    ctx.beginPath(); ctx.arc(0, 0, s * 0.32, 0, 6.28); ctx.fill(); ctx.stroke();
+
+  if (cls === 'tank') {
+    // MBT turret: faceted body with a front MANTLET bulge and a rear BUSTLE
+    // box (stowage/ammo bustle), plus a THICK tapered barrel reaching well
+    // out front — the single biggest "unmistakably a tank" cue the brief
+    // asks for.
     ctx.beginPath();
-    ctx.moveTo(s * reach, 0); ctx.lineTo(s * (reach - 0.45), s * 0.16); ctx.lineTo(s * 0.15, s * 0.16);
-    ctx.lineTo(s * 0.15, -s * 0.16); ctx.lineTo(s * (reach - 0.45), -s * 0.16);
+    ctx.moveTo(s * 0.5, 0); ctx.lineTo(s * 0.3, s * 0.34); ctx.lineTo(-s * 0.25, s * 0.34);
+    ctx.lineTo(-s * 0.42, s * 0.2); ctx.lineTo(-s * 0.42, -s * 0.2); ctx.lineTo(-s * 0.25, -s * 0.34);
+    ctx.lineTo(s * 0.3, -s * 0.34);
     ctx.closePath(); ctx.fill(); ctx.stroke();
+    drawBarrel(ctx, s, reach, 0.09, 0.045);
+    return;
+  }
+  if (cls === 'artillery') {
+    // Self-propelled gun turret: biased toward the hull's REAR (real SPGs
+    // mount the gun house well aft of center) with a boxy counterweight
+    // bustle and a very long thin gun — reads as "artillery", not "tank".
+    ctx.save();
+    ctx.translate(-s * 0.22, 0);
+    ctx.beginPath();
+    ctx.moveTo(s * 0.4, -s * 0.32); ctx.lineTo(s * 0.4, s * 0.32); ctx.lineTo(-s * 0.35, s * 0.32); ctx.lineTo(-s * 0.35, -s * 0.32);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    drawBarrel(ctx, s, reach + 0.22, 0.065, 0.03);
+    ctx.restore();
+    return;
+  }
+  if (cls === 'scout') {
+    // Light RWS (remote weapon station) — a small pintle mount and a thin
+    // barrel, deliberately smaller/lighter than the tank's turret so a
+    // scout/IFV never reads as heavy armor.
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.24, 0, 6.28); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = Math.max(0.5, s * 0.09);
+    ctx.beginPath(); ctx.moveTo(s * 0.15, 0); ctx.lineTo(s * reach, 0); ctx.stroke();
+    return;
+  }
+  if (cls === 'launcher') {
+    if (wdef === WEAPON_DEFS.shell) {
+      // MLRS: a rack of tubes — a box housing with a 2x3 grid of small tube
+      // mouths, angled slightly up-range — clearly a POD, not a gun barrel.
+      const bw = s * 0.5, bh = s * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(s * 0.15, -bh / 2); ctx.lineTo(s * 0.15 + bw, -bh * 0.32);
+      ctx.lineTo(s * 0.15 + bw, bh * 0.32); ctx.lineTo(s * 0.15, bh / 2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = TRACK_COLOR;
+      ctx.beginPath();
+      for (let row = 0; row < 2; row++) {
+        for (let col = 0; col < 3; col++) {
+          const tx = s * 0.15 + bw * (0.22 + col * 0.28);
+          const ty = (row === 0 ? -1 : 1) * bh * 0.2;
+          const tr = Math.max(0.6, bh * 0.13);
+          ctx.moveTo(tx + tr, ty); ctx.arc(tx, ty, tr, 0, 6.28);
+        }
+      }
+      ctx.fill();
+    } else {
+      // SRBM/cruise/hypersonic/anti-ship TEL: ONE big canister/erector on a
+      // support cradle — a single fat tube, not a rack, echoing the diamond
+      // missile body drawProjectile draws in flight so a launcher visibly
+      // carries the same ordnance it fires.
+      ctx.beginPath(); ctx.arc(-s * 0.1, 0, s * 0.26, 0, 6.28); ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(s * (reach + 0.1), 0); ctx.lineTo(s * reach, s * 0.22); ctx.lineTo(-s * 0.15, s * 0.22);
+      ctx.lineTo(-s * 0.15, -s * 0.22); ctx.lineTo(s * reach, -s * 0.22);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
     return;
   }
   if (cls === 'airdefense') {
-    // twin-barrel AA gun mount
-    ctx.beginPath(); ctx.arc(0, 0, s * 0.3, 0, 6.28); ctx.fill(); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 0.14); ctx.lineTo(s * reach, -s * 0.14);
-    ctx.moveTo(0, s * 0.14); ctx.lineTo(s * reach, s * 0.14);
-    ctx.stroke();
+    if (wdef && wdef.kind !== 'gun') {
+      // SAM mount: a raised launcher rail (a slim canister angled skyward-
+      // relative, i.e. offset off the main axis) PLUS a flat radar panel —
+      // "radar + rails", not a gun, is the brief's own air-defense cue.
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.28, 0, 6.28); ctx.fill(); ctx.stroke();
+      // launcher rail
+      ctx.beginPath();
+      ctx.moveTo(s * reach, -s * 0.1); ctx.lineTo(s * (reach - 0.4), s * 0.14); ctx.lineTo(s * 0.1, s * 0.14);
+      ctx.lineTo(s * 0.1, -s * 0.02); ctx.lineTo(s * (reach - 0.4), -s * 0.24);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // radar panel — a flat tilted rectangle on the OPPOSITE side of the
+      // pivot from the rail, in the same dark neutral tone the tracked
+      // hulls use for their tread bands (TRACK_COLOR) rather than the
+      // turret's own faction fill — reads as a distinct SENSOR FACE, not
+      // just "more rail", the same way naval's DECK_COLOR separates
+      // superstructure from hull plate.
+      ctx.save();
+      ctx.rotate(-2.4);
+      ctx.fillStyle = TRACK_COLOR;
+      ctx.fillRect(-s * 0.05, -s * 0.22, s * 0.5, s * 0.1);
+      ctx.strokeRect(-s * 0.05, -s * 0.22, s * 0.5, s * 0.1);
+      ctx.restore();
+    } else {
+      // Autocannon mount: a tight 3-barrel cluster (Gatling-ish) on a round
+      // turret ring — unmistakably a gun, not a missile rail.
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.3, 0, 6.28); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = Math.max(0.6, s * 0.075);
+      ctx.beginPath();
+      for (const oy of [-0.16, 0, 0.16]) { ctx.moveTo(0, oy * s); ctx.lineTo(s * reach, oy * s); }
+      ctx.stroke();
+    }
     return;
   }
-  // default single-barrel turret — tank/artillery/scout/ship deck gun
+  // default single-barrel turret — ship deck gun / fallback
   ctx.beginPath(); ctx.arc(0, 0, s * 0.42, 0, 6.28); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * reach, 0); ctx.stroke();
 }
 
 // --- non-turreted whole-body shapes (also local space, forward = +x) ---
 function drawInfantry(ctx, s) {
-  // a small fireteam wedge — three troopers, point toward facing. Reads as
-  // "personnel" at any zoom without needing per-limb detail at close range.
-  const dot = Math.max(1.1, s * 0.34);
+  // a small fireteam wedge — three troopers, point toward facing. Each
+  // trooper is now an elongated capsule (body) + a small head nub at its
+  // front instead of a plain dot — reads as PERSONNEL, not a blob, once
+  // close enough to make out (the head nub only draws past s>5, same
+  // "not worth it below this size" gate every other detail pass in this
+  // file uses), while staying just as cheap as the old 3-arc version at
+  // the strategic zoom where infantry is most commonly seen.
+  const bodyLen = Math.max(1.6, s * 0.62), bodyWid = Math.max(0.9, s * 0.3);
+  const pos = [[0.5, 0], [-0.35, 0.48], [-0.35, -0.48]];
   ctx.beginPath();
-  ctx.arc(s * 0.55, 0, dot, 0, 6.28);
-  ctx.moveTo(-s * 0.35 + dot, s * 0.5); ctx.arc(-s * 0.35, s * 0.5, dot, 0, 6.28);
-  ctx.moveTo(-s * 0.35 + dot, -s * 0.5); ctx.arc(-s * 0.35, -s * 0.5, dot, 0, 6.28);
+  for (const [px, py] of pos) {
+    const cx = px * s, cy = py * s;
+    ctx.moveTo(cx + bodyLen * 0.5, cy);
+    ctx.ellipse(cx, cy, bodyLen * 0.5, bodyWid * 0.5, 0, 0, 6.28);
+  }
   ctx.fill(); ctx.stroke();
+  if (s > 5) {
+    const hr = bodyWid * 0.26;
+    ctx.beginPath();
+    for (const [px, py] of pos) {
+      const hx = px * s + bodyLen * 0.42, hy = py * s;
+      ctx.moveTo(hx + hr, hy); ctx.arc(hx, hy, hr, 0, 6.28);
+    }
+    ctx.fill();
+  }
 }
 function drawAircraft(ctx, s) {
-  // swept-wing dart silhouette
+  // swept-wing dart silhouette (fighter/strike jet) — plus a small tail
+  // cross (vertical fin + horizontal stabilizer nub, the way a top-down
+  // photo of a jet still shows a thin fin sliver at the tail) so it doesn't
+  // read as a bare arrowhead.
   ctx.beginPath();
   ctx.moveTo(s * 1.3, 0);
   ctx.lineTo(s * 0.15, s * 0.22); ctx.lineTo(-s * 0.2, s * 0.95); ctx.lineTo(-s * 0.5, s * 0.7);
@@ -2541,25 +2732,40 @@ function drawAircraft(ctx, s) {
   ctx.lineTo(-s * 0.35, -s * 0.18); ctx.lineTo(-s * 0.5, -s * 0.7); ctx.lineTo(-s * 0.2, -s * 0.95);
   ctx.lineTo(s * 0.15, -s * 0.22);
   ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (s > 4) {
+    ctx.beginPath();
+    ctx.moveTo(-s * 1.15, -s * 0.16); ctx.lineTo(-s * 1.45, 0); ctx.lineTo(-s * 1.15, s * 0.16);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
 }
 function drawDrone(ctx, s) {
-  // small quad-rotor body — central hub + 4 splayed arms with rotor rings
+  // Slim FIXED-WING UAV — thin tapered fuselage + STRAIGHT (unswept) wings
+  // + a small tail fin, distinctly smaller/thinner than drawAircraft's
+  // swept-wing manned airframe above rather than the old quad-rotor toy —
+  // matches the real UCAV/loitering-munition/recon-UAV silhouette shape the
+  // roster's drone-tier units (reconDrone/ucav/loiteringMunition/
+  // droneSwarm) are actually meant to depict.
+  const len = s * 0.95, w = s * 0.16;
   ctx.beginPath();
-  ctx.moveTo(s * 0.4, 0); ctx.lineTo(0, s * 0.4); ctx.lineTo(-s * 0.4, 0); ctx.lineTo(0, -s * 0.4);
+  ctx.moveTo(len, 0); ctx.lineTo(w * 1.4, w); ctx.lineTo(-len * 0.72, w * 0.6);
+  ctx.lineTo(-len, 0); ctx.lineTo(-len * 0.72, -w * 0.6); ctx.lineTo(w * 1.4, -w);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  const arms = [[0.75, 0.75], [0.75, -0.75], [-0.75, 0.75], [-0.75, -0.75]];
   if (s > 3) {
-    ctx.beginPath();
-    for (const [ax, ay] of arms) { ctx.moveTo(0, 0); ctx.lineTo(ax * s, ay * s); }
-    ctx.stroke();
-    for (const [ax, ay] of arms) { ctx.beginPath(); ctx.arc(ax * s, ay * s, s * 0.22, 0, 6.28); ctx.stroke(); }
+    const span = s * 1.5, chord = s * 0.18;
+    ctx.fillRect(-chord * 0.5, -span / 2, chord, span);
+    ctx.strokeRect(-chord * 0.5, -span / 2, chord, span);
+    ctx.beginPath(); // small tail fin
+    ctx.moveTo(-len * 0.6, -w * 1.7); ctx.lineTo(-len * 0.9, 0); ctx.lineTo(-len * 0.6, w * 1.7);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
   }
 }
 function drawSupport(ctx, s) {
-  // boxy support hull + a small jammer/antenna mast with two signal arcs
+  // boxy support hull (EW Jammer — wheeled per its moveClass) with visible
+  // road wheels + a small jammer/antenna mast with two signal arcs
   ctx.beginPath();
   ctx.moveTo(s * 0.7, -s * 0.45); ctx.lineTo(s * 0.7, s * 0.45); ctx.lineTo(-s * 0.7, s * 0.45); ctx.lineTo(-s * 0.7, -s * 0.45);
   ctx.closePath(); ctx.fill(); ctx.stroke();
+  drawWheels(ctx, s, s * 0.45, [-0.4, 0.35]);
   if (s > 4) {
     ctx.beginPath(); ctx.moveTo(0, -s * 0.45); ctx.lineTo(0, -s * 1.1); ctx.stroke();
     ctx.beginPath(); ctx.arc(0, -s * 1.1, s * 0.35, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
@@ -2686,8 +2892,8 @@ export function drawUnit(ctx, worldToScreen, cam, u, isHovered, alpha = 1) {
 
   const cls = classifyUnit(u.def);
   const wdef = WEAPON_DEFS[u.def.weapon];
-  const side = u.side === 'player' ? '#5fd0ff' : '#ff5a5a'; // matches OWNERSHIP_COLORS above — one side-color vocabulary for the whole map
-  const sideLight = u.side === 'player' ? '#bfeeff' : '#ffc3b0';
+  const side = u.side === 'player' ? OWNERSHIP_COLORS.player : OWNERSHIP_COLORS.enemy; // one side-color vocabulary for the whole map
+  const sideLight = u.side === 'player' ? PLAYER_GREY_LIGHT : '#ffc3b0';
   const flash = u.muzzleFlash;
   const kick = flash && flash.t < RECOIL_DURATION
     ? (1 - flash.t / RECOIL_DURATION) * RECOIL_KICK * cam.zoom * devicePixelRatio : 0;
@@ -2762,6 +2968,87 @@ const BATTALION_MARKER_MAX_PX = 34; // ceiling so it doesn't balloon partway thr
 // so "green/grey/amber/red" reads identically in both places.
 const MORALE_MARKER_COLOR = { fresh: '#6dffb0', steady: '#cfd8e3', shaken: '#ffb84d', broken: '#ff5a5a' };
 
+// ---------------------------------------------------------------------------
+// NATO / APP-6(D)-style BRANCH classification for a battalion marker's icon
+// (Task C: "real division/brigade symbology"). Attribute-driven off the
+// SAME classifyUnit() every vehicle silhouette above already uses — tallies
+// each live-or-dead unit in bn.units by silhouette class and picks a real
+// NATO branch off the MIX, never off bn.type/name — so this automatically
+// tracks whatever BATTALION_TEMPLATES (game/battalions.js) actually field:
+//   tank+infantry, tank-heavy (ratio >= 0.5)  -> mechanized infantry (today's
+//     "elite" template: 4 tank / 6 infantry, ratio 0.67)
+//   tank+infantry, infantry-heavy (ratio < 0.5) -> infantry ("standard": 2
+//     tank / 8 infantry, ratio 0.25 — and "militia": 0 tank, falls through
+//     to the infantry-only branch below)
+//   tank only, no infantry                    -> armor
+//   infantry only, no tank                    -> infantry
+//   otherwise, in priority order               -> artillery / missile /
+//     air defense / recon off whichever fire-support class dominates
+//   nothing that matches any of the above       -> hq (bare command element)
+function classifyBattalionBranch(bn) {
+  const counts = { tank: 0, infantry: 0, artillery: 0, launcher: 0, airdefense: 0, scout: 0 };
+  for (const u of bn.units) {
+    const cls = classifyUnit(u.def);
+    if (counts[cls] !== undefined) counts[cls]++;
+  }
+  const { tank, infantry, artillery, launcher, airdefense, scout } = counts;
+  if (tank > 0 && infantry > 0) return (tank / infantry) >= 0.5 ? 'mechanized' : 'infantry';
+  if (tank > 0) return 'armor';
+  if (infantry > 0) return 'infantry';
+  if (artillery > 0) return 'artillery';
+  if (launcher > 0) return 'missile';
+  if (airdefense > 0) return 'airdefense';
+  if (scout > 0) return 'recon';
+  return 'hq';
+}
+
+// Draws the actual APP-6 branch glyph, centered on the current origin, sized
+// off `gr` (glyph half-size — same "off marker height so it always fits
+// inside the frame" budget the old elite/standard/militia glyphs used).
+// fillStyle/strokeStyle are already set by the caller (dark ink, reads
+// against the bright faction fill regardless of side color).
+function drawBranchGlyph(ctx, branch, gr, lw) {
+  ctx.lineWidth = lw;
+  switch (branch) {
+    case 'mechanized': // mechanized infantry: X inside an oval — combined-arms task force
+      ctx.beginPath(); ctx.ellipse(0, 0, gr * 1.05, gr * 0.62, 0, 0, 6.28); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-gr * 0.58, -gr * 0.38); ctx.lineTo(gr * 0.58, gr * 0.38);
+      ctx.moveTo(gr * 0.58, -gr * 0.38); ctx.lineTo(-gr * 0.58, gr * 0.38);
+      ctx.stroke();
+      break;
+    case 'armor': // armor: a bare horizontal oval — the classic NATO tank-branch frame
+      ctx.beginPath(); ctx.ellipse(0, 0, gr * 1.05, gr * 0.62, 0, 0, 6.28); ctx.stroke();
+      break;
+    case 'artillery': // artillery: a filled dot
+      ctx.beginPath(); ctx.arc(0, 0, gr * 0.42, 0, 6.28); ctx.fill();
+      break;
+    case 'missile': // missile/rocket: an upward arrow
+      ctx.beginPath();
+      ctx.moveTo(0, gr * 0.85); ctx.lineTo(0, -gr * 0.75);
+      ctx.moveTo(-gr * 0.42, -gr * 0.28); ctx.lineTo(0, -gr * 0.85); ctx.lineTo(gr * 0.42, -gr * 0.28);
+      ctx.stroke();
+      break;
+    case 'airdefense': // air defense: an arc/dome over the position
+      ctx.beginPath(); ctx.arc(0, gr * 0.5, gr * 0.85, Math.PI * 1.08, -Math.PI * 0.08); ctx.stroke();
+      break;
+    case 'recon': // recon: a single diagonal slash
+      ctx.beginPath(); ctx.moveTo(-gr * 0.75, -gr * 0.75); ctx.lineTo(gr * 0.75, gr * 0.75); ctx.stroke();
+      break;
+    case 'hq': // HQ: a flagstaff (staff + small pennant)
+      ctx.beginPath(); ctx.moveTo(-gr * 0.5, gr * 0.85); ctx.lineTo(-gr * 0.5, -gr * 0.85); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-gr * 0.5, -gr * 0.85); ctx.lineTo(gr * 0.62, -gr * 0.48); ctx.lineTo(-gr * 0.5, -gr * 0.1);
+      ctx.closePath(); ctx.fill();
+      break;
+    default: // 'infantry' — the classic NATO crossed-diagonals X
+      ctx.beginPath();
+      ctx.moveTo(-gr, -gr); ctx.lineTo(gr, gr);
+      ctx.moveTo(gr, -gr); ctx.lineTo(-gr, gr);
+      ctx.stroke();
+  }
+}
+
 function liveBattalionCentroid(bn) {
   let sx = 0, sy = 0, n = 0;
   for (const u of bn.units) {
@@ -2811,10 +3098,16 @@ export function drawBattalionMarker(ctx, worldToScreen, cam, bn, alpha, isHovere
   ctx.save();
   ctx.translate(sx, sy);
 
-  // FRAME — rounded rect filled with faction color, bordered by the morale-
-  // state color above (mirrors #battalionPanel's morale-state left-border
-  // rule with the same fresh/steady/shaken/broken vocabulary).
+  // FRAME — the APP-6 friendly-force frame (rounded rect stands in for the
+  // real rectangle, per the brief's "you may keep the rounded rect"), filled
+  // with faction color and bordered by the morale-state color (mirrors
+  // #battalionPanel's morale-state left-border rule, same fresh/steady/
+  // shaken/broken vocabulary). IRREGULAR FORCES (bn.type === 'militia') get
+  // the real APP-6 "irregular military forces" modifier — a DASHED frame
+  // outline instead of solid — the "lighter/less-formal formation" cue that
+  // used to be a bespoke hollow-ring glyph is now a real symbology element.
   const rx = Math.max(2, w * 0.14);
+  const irregular = bn.type === 'militia';
   ctx.beginPath();
   roundRectPath(ctx, -w / 2, -h / 2, w, h, rx);
   ctx.globalAlpha = alpha * 0.92;
@@ -2823,33 +3116,38 @@ export function drawBattalionMarker(ctx, worldToScreen, cam, bn, alpha, isHovere
   ctx.globalAlpha = alpha;
   ctx.lineWidth = Math.max(1.4, w * 0.07);
   ctx.strokeStyle = frameColor;
+  if (irregular) ctx.setLineDash([Math.max(2, w * 0.1), Math.max(1.5, w * 0.08)]);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  // TYPE GLYPH — elite: filled diamond (armor-heavy, the "ace" formation);
-  // standard: bold X (the classic NATO infantry glyph, matching this
-  // template's infantry-heavy roster); militia: a single hollow ring
-  // (nothing filled — the "lighter/hollow mark" the brief calls for, reading
-  // as irregular/light next to the other two's solid glyphs). Dark ink tone
-  // so it reads against the bright faction fill regardless of side color.
+  // BRANCH ICON — the real APP-6 unit-type glyph (infantry X / armor oval /
+  // mechanized X-in-oval / artillery dot / recon slash / air-defense dome /
+  // missile arrow / HQ flagstaff), picked off the battalion's actual unit
+  // MIX by classifyBattalionBranch above rather than a bespoke elite/
+  // standard/militia glyph — dark ink tone so it reads against the bright
+  // faction fill regardless of side color.
   ctx.fillStyle = 'rgba(6,10,18,0.85)';
   ctx.strokeStyle = 'rgba(6,10,18,0.85)';
   const gr = h * 0.32; // glyph half-size, off marker height so it always fits inside the frame
-  if (bn.type === 'elite') {
-    ctx.beginPath();
-    ctx.moveTo(0, -gr); ctx.lineTo(gr, 0); ctx.lineTo(0, gr); ctx.lineTo(-gr, 0);
-    ctx.closePath();
-    ctx.fill();
-  } else if (bn.type === 'militia') {
-    ctx.lineWidth = Math.max(1.1, w * 0.05);
-    ctx.beginPath();
-    ctx.arc(0, 0, gr * 0.72, 0, 6.28);
-    ctx.stroke();
-  } else { // 'standard', and any future/unknown type falls through to this default
-    ctx.lineWidth = Math.max(1.3, w * 0.06);
-    ctx.beginPath();
-    ctx.moveTo(-gr, -gr); ctx.lineTo(gr, gr);
-    ctx.moveTo(gr, -gr); ctx.lineTo(-gr, gr);
-    ctx.stroke();
+  drawBranchGlyph(ctx, classifyBattalionBranch(bn), gr, Math.max(1.3, w * 0.06));
+
+  // ECHELON MARK — the "division/brigade symbol" the designer actually
+  // means: APP-6 size indicators drawn ABOVE the frame, not inside it. Every
+  // battalion this game fields draws "II" (two short vertical bars) — the
+  // real NATO battalion echelon — per the task brief ("Use II for the
+  // battalions the game fields"). Dark-outlined light fill so it stays
+  // legible sitting directly on the map background above the frame, the
+  // same halo technique the NAME label below uses.
+  {
+    const tickH = Math.max(4, w * 0.24), tickW = Math.max(1.3, w * 0.055), tickGap = Math.max(1.5, w * 0.06);
+    const tickBottom = -h / 2 - Math.max(3, w * 0.1);
+    ctx.lineWidth = Math.max(0.8, w * 0.03);
+    ctx.strokeStyle = 'rgba(4,8,14,0.85)';
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    for (const dx of [-tickGap / 2 - tickW / 2, tickGap / 2 + tickW / 2]) {
+      ctx.fillRect(dx - tickW / 2, tickBottom - tickH, tickW, tickH);
+      ctx.strokeRect(dx - tickW / 2, tickBottom - tickH, tickW, tickH);
+    }
   }
 
   // STRENGTH BAR — same visual language as drawUnit's own HP bar just above
@@ -2942,8 +3240,8 @@ export function drawProjectile(ctx, worldToScreen, cam, p) {
   const y = p.physics === 'ballistic' ? p.y - (p.lofted || 0) : p.y; // lofted arc height stays a pure visual offset, unchanged from before
   const [sx, sy] = worldToScreen(p.x, y);
   const scale = cam.zoom * devicePixelRatio;
-  const bodyColor = p.side === 'player' ? '#eaf6ff' : '#ffe3d0';
-  const rimColor = p.side === 'player' ? '#5fd0ff' : '#ff5a5a';
+  const bodyColor = p.side === 'player' ? '#eef1f3' : '#ffe3d0'; // near-white, cool-neutral instead of the old cyan-tinted white
+  const rimColor = p.side === 'player' ? OWNERSHIP_COLORS.player : OWNERSHIP_COLORS.enemy;
   // Ballistic flight is a straight line for its whole duration (x0,y0 -> tx,
   // ty — see fireProjectile), so its heading is fixed rather than read off a
   // per-frame velocity the way homing/gun projectiles are.
@@ -3164,7 +3462,7 @@ export function createRenderer(canvas) {
         ctx.stroke();
         ctx.setLineDash([]);
         if (c.captureProgress > 0.001) {
-          const challengerColor = c.owner === 'player' ? '#ff5a5a' : '#5fd0ff';
+          const challengerColor = c.owner === 'player' ? OWNERSHIP_COLORS.enemy : OWNERSHIP_COLORS.player;
           ctx.beginPath();
           ctx.arc(sx, sy, ringR, -Math.PI / 2, -Math.PI / 2 + c.captureProgress * Math.PI * 2);
           ctx.lineWidth = 4 * dpr;

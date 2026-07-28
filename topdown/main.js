@@ -2434,7 +2434,7 @@ function getBodyStyle(key, side, visual) {
   let s = bodyStyleCache.get(cacheKey);
   if (s) return s;
   const pal = VISUAL_PALETTES[visual.palette] || VISUAL_PALETTES.steel;
-  const sideColor = side === 'player' ? [95, 208, 255] : [255, 90, 90];
+  const sideColor = side === 'player' ? hexToRgb(OWNERSHIP_COLORS.player) : hexToRgb(OWNERSHIP_COLORS.enemy);
   const wallRgb = lerpRgb3(hexToRgb(pal[0]), sideColor, 0.10);
   const roofRgb = lerpRgb3(hexToRgb(pal[1]), sideColor, 0.14);
   s = {
@@ -2890,8 +2890,8 @@ function drawBuilding(ctx, worldToScreen, cam, b) {
     // body below: a scaffold shouldn't yet read as "this is a factory," only
     // as "something is being built here."
     ctx.save();
-    ctx.fillStyle = b.side === 'player' ? 'rgba(70,120,170,0.42)' : 'rgba(150,60,60,0.42)';
-    ctx.strokeStyle = b.side === 'player' ? '#5fd0ff' : '#ff5a5a';
+    ctx.fillStyle = b.side === 'player' ? 'rgba(110,118,128,0.42)' : 'rgba(150,60,60,0.42)';
+    ctx.strokeStyle = b.side === 'player' ? OWNERSHIP_COLORS.player : OWNERSHIP_COLORS.enemy;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);

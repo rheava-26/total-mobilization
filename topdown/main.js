@@ -159,6 +159,21 @@ import {
 // near updateEconomy/updateHomeDefense, wiring the Dispatches ticker panel
 // (below), and exposing headless test hooks.
 import { initNews, updateNews, newsFeed, pushNews } from './game/news.js';
+// AFTER-ACTION REPORT ("i love looking at my player stats after a mission
+// hehe" — the designer). game/afteraction.js is a NEW, OBSERVATION-ONLY
+// module (same additive shape as game/news.js/game/ambient.js just above):
+// it never writes to world/economy/map/battalions/units, only records what
+// other systems already did into a private log, then turns that log into a
+// structured report + a plain-text paste format once, at outcome time. This
+// file's job is creating the log once alongside news/ambient/supply, calling
+// recordCombatBegin/recordCityCapture at the exact spots those events
+// already fire, ticking updateAfterAction once per frame, and rendering
+// buildReport's output onto the victory/defeat screen (see showOutcomeScreen
+// below) with a COPY REPORT button wired to reportToText's output.
+import {
+  initAfterAction, recordEvent, recordCombatBegin, recordCityCapture,
+  updateAfterAction, buildReport, reportToText,
+} from './game/afteraction.js';
 
 // ---------------------------------------------------------------------------
 // PLACEHOLDER COPY (designer to rewrite) — CONCEPT.md's settled "First-run /
@@ -348,6 +363,15 @@ renderer.cam.zoom = Math.max(0.08, Math.min(2,
 // requestElite/requestStandard/raiseMilitia call, ticked down by
 // updateReinforcements() in loop() below until they spawn a real battalion.
 const world = { units: [], projectiles: [], hits: [], buildings: [], sfx: [], battalions: [], reinforcements: [] };
+
+// AFTER-ACTION LOG (see the game/afteraction.js import above) — created once
+// here, alongside world, and ticked every frame in loop() below via
+// updateAfterAction(). Its own first updateAfterAction() call bootstraps a
+// baseline off whatever's already on `world` at that point (this run's
+// starting industry/garrison, placed further down this file, will already
+// exist by the time the first animation frame runs loop()) so those don't
+// misread as in-run "events" — see that file's initAfterAction() comment.
+const afterAction = initAfterAction();
 
 // B6 — OPERATIONAL-MAP BATTALION PRESENTATION (CONCEPT.md's "BATTALIONS, not
 // singular units" -> docs/reference-battalion-design.md §3.3's "Hybrid
@@ -615,6 +639,10 @@ function triggerBeginCombat() {
     // "spent/routed" win condition (game/objectives.js) measures against the
     // real landing-force size for this run/difficulty.
     invasionState = initInvasion(world);
+    // AFTER-ACTION: the landing IS "combat begin" for report purposes — one
+    // call records the timeline entry AND snapshots banked IC/manpower/
+    // influence at the literal instant of contact (game/afteraction.js).
+    recordCombatBegin(afterAction, world, economy);
     showAnnouncement(COPY.COMBAT_BEGIN_ANNOUNCEMENT);
     updatePhaseHud();
   }
@@ -668,9 +696,10 @@ function updateObjectiveHud() {
 const outcomeScreenEl = document.getElementById('outcomeScreen');
 const outcomeTitleEl = document.getElementById('outcomeTitle');
 const outcomeSubtitleEl = document.getElementById('outcomeSubtitle');
-const outcomeStatsEl = document.getElementById('outcomeStats');
+const outcomeReportEl = document.getElementById('outcomeReport');
 const outcomeRestartBtn = document.getElementById('outcomeRestartBtn');
 const outcomeMenuBtn = document.getElementById('outcomeMenuBtn');
+const outcomeCopyBtn = document.getElementById('outcomeCopyBtn');
 outcomeRestartBtn.textContent = COPY.OUTCOME_RESTART_BUTTON;
 outcomeMenuBtn.textContent = COPY.OUTCOME_MENU_BUTTON;
 // PLAY AGAIN: reload exactly as-is (same seed/map/difficulty deep link, or
@@ -685,26 +714,128 @@ outcomeRestartBtn.addEventListener('click', () => location.reload());
 // shape rather than a second menu-opening code path.
 outcomeMenuBtn.addEventListener('click', () => { location.href = `${location.pathname}?menu`; });
 
+// AFTER-ACTION REPORT RENDERING (game/afteraction.js) — pure function of a
+// buildReport() return value, no state of its own; kept separate from
+// showOutcomeScreen() below purely for readability. Reuses this file's
+// EXISTING C2 vocabulary verbatim: .statLine/.statLabel/.statVal (the same
+// classes #objectiveHud/#econHud already use), .opsStamp section headers,
+// and a left-accent-row idiom matching .accentRow/.newsRow elsewhere — see
+// index.html's AFTER-ACTION REPORT CSS block for the few report-only
+// classes (.aarTimelineRow etc.) layered on top of that shared vocabulary.
+function statRow(label, val) {
+  return `<div class="statLine"><span class="statLabel">${label}</span><span class="statVal">${val}</span></div>`;
+}
+function oobRow(label, val) {
+  return `<div class="aarOobRow"><span class="aarOobLabel">${label}</span><span class="aarOobVal">${val}</span></div>`;
+}
+function renderAfterActionReport(report) {
+  const eco = report.economy, oob = report.orderOfBattle, bb = report.butchersBill, cities = report.cities;
+
+  const topline = `<div class="aarTopline">`
+    + `<span><b>Duration</b> ${report.durationLabel}</span>`
+    + `<span><b>Cities Held</b> ${cities.held}/${cities.total}</span>`
+    + `<span><b>Capital (${cities.capitalName || 'n/a'})</b> ${cities.capitalStatus}</span>`
+    + `<span><b>Player Remaining</b> ${bb.playerRemaining}</span>`
+    + `<span><b>Enemy Remaining</b> ${bb.enemyRemaining}</span>`
+    + `</div>`;
+
+  const verdict = report.verdicts.length
+    ? `<div class="aarVerdict">` + report.verdicts.map(v => `<div class="aarVerdictLine">${v}</div>`).join('') + `</div>`
+    : '';
+
+  const timelineRows = report.timeline.length
+    ? report.timeline.map(e => `<div class="aarTimelineRow ${e.tone}">`
+        + `<span class="aarT">${e.tLabel}</span><span class="aarPhase">${e.phase}</span><span class="aarText">${e.text}</span>`
+        + `</div>`).join('')
+    : `<div class="aarEmpty">No recorded events.</div>`;
+
+  const economySection = `<div class="aarSection">`
+    + `<div class="aarSectionTitle"><svg class="ic ic-sm"><use href="#ic-mobilization"/></svg>Economy</div>`
+    + statRow('Peak IC', `${eco.peak.ic}<small> / final ${eco.final.ic}</small>`)
+    + statRow('Peak Manpower', `${eco.peak.manpower}<small> / final ${eco.final.manpower}</small>`)
+    + statRow('Peak Influence', `${eco.peak.influence}<small> / final ${eco.final.influence}</small>`)
+    + statRow('Mobilization', `${eco.final.mobilizationLevel}%<small> ${eco.final.band}</small>`)
+    + (eco.atLanding ? statRow(`Banked at Contact [${eco.atLanding.tLabel}]`, `${eco.atLanding.ic} IC<small> / ${eco.atLanding.manpower} MP</small>`) : '')
+    + (eco.atFirstCityLoss ? statRow(`Banked at ${eco.atFirstCityLoss.city} Loss [${eco.atFirstCityLoss.tLabel}]`, `${eco.atFirstCityLoss.ic} IC<small> / ${eco.atFirstCityLoss.manpower} MP</small>`) : '')
+    + `</div>`;
+
+  const oobBySourceRows = oob.bySource.length
+    ? oob.bySource.map(s => oobRow(s.label, `${s.raised} raised <small>(${s.subUnits} sub-units)</small>`)).join('')
+    : `<div class="aarEmpty">No battalions raised.</div>`;
+  const oobSection = `<div class="aarSection">`
+    + `<div class="aarSectionTitle"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>Order of Battle</div>`
+    + oobBySourceRows
+    + (oob.homeGuardMustered ? oobRow('Home Guard Mustered (total)', oob.homeGuardMustered) : '')
+    + oobRow('Peak Fielded', `${oob.peakFielded} battalion${oob.peakFielded === 1 ? '' : 's'}`)
+    + oobRow('Routed / Destroyed / Survived', `${oob.routed} / ${oob.destroyed} / ${oob.survived} of ${oob.raised}`)
+    + `</div>`;
+
+  const worst = bb.worstEngagement;
+  const bbSection = `<div class="aarSection">`
+    + `<div class="aarSectionTitle"><svg class="ic ic-sm"><use href="#status-warn"/></svg>Butcher's Bill</div>`
+    + statRow('Player Units Lost', bb.playerLosses)
+    + statRow('Enemy Units Killed', bb.enemyKills)
+    + statRow('Enemy Remaining', bb.enemyRemaining)
+    + (worst ? statRow('Worst Engagement', `${worst.tStartLabel}–${worst.tEndLabel}<small>${worst.city ? ` near ${worst.city}` : ''}, ${worst.total} losses</small>`) : '')
+    + `</div>`;
+
+  const timelineSection = `<div class="aarSection" style="margin-bottom:0">`
+    + `<div class="aarSectionTitle"><svg class="ic ic-sm"><use href="#ic-map"/></svg>Timeline</div>`
+    + `<div class="aarTimeline">${timelineRows}</div>`
+    + `</div>`;
+
+  outcomeReportEl.innerHTML = topline + verdict
+    + `<hr class="aarRule">`
+    + `<div class="aarGrid">${timelineSection}<div>${economySection}${oobSection}${bbSection}</div></div>`;
+}
+
 // Shown exactly once (gameOutcome flips from null to a value exactly once —
-// see loop()) — fills in the title/subtitle for whichever outcome fired and
-// a small stats readout (cities held, capital fate) so the end screen
-// summarizes the war, not just its verdict.
+// see loop()) — fills in the title/subtitle for whichever outcome fired,
+// builds the full after-action report off the live afterAction log
+// (game/afteraction.js's buildReport()), and renders it so the end screen
+// is a readable account of the war, not just its verdict. `report` is
+// stashed for the COPY REPORT button and for headless verification (see
+// window.__debug.afterAction.report below).
+let lastAfterActionReport = null;
 function showOutcomeScreen(outcome) {
   outcomeScreenEl.classList.remove('victory', 'defeat');
   outcomeScreenEl.classList.add(outcome); // 'victory' | 'defeat' — drives title color via CSS
   outcomeTitleEl.textContent = outcome === 'victory' ? COPY.VICTORY_TITLE : COPY.DEFEAT_TITLE;
   outcomeSubtitleEl.textContent = outcome === 'victory' ? COPY.VICTORY_SUBTITLE : COPY.DEFEAT_SUBTITLE;
-  const cities = map.cities || [];
-  const held = cities.filter(c => c.owner === 'player').length;
-  const capital = cities[0];
-  let enemyAlive = 0;
-  for (const u of world.units) if (u.side === 'enemy' && u.hp > 0) enemyAlive++;
-  outcomeStatsEl.innerHTML =
-    `<div class="statLine"><span class="statLabel">Cities Held</span><span class="statVal">${held}<small>/${cities.length}</small></span></div>`
-    + `<div class="statLine"><span class="statLabel">Capital</span><span class="statVal">${(capital ? (capital.owner === 'player' ? 'held' : 'lost') : 'n/a').toUpperCase()}</span></div>`
-    + `<div class="statLine" style="border-bottom:none"><span class="statLabel">Enemy Remaining</span><span class="statVal">${enemyAlive}</span></div>`;
+  lastAfterActionReport = buildReport(afterAction, world, economy, map, outcome);
+  renderAfterActionReport(lastAfterActionReport);
   outcomeScreenEl.classList.add('open');
 }
+// COPY REPORT — plain-text paste format (game/afteraction.js's
+// reportToText()) onto the clipboard, with a legacy textarea fallback for a
+// browser/context that refuses the async Clipboard API (insecure origin,
+// missing permission, etc.) so the button still does SOMETHING everywhere.
+// Brief "COPIED" confirmation via a CSS class, same transient-feedback
+// pattern the rest of this UI doesn't otherwise need but is cheap to add.
+outcomeCopyBtn.addEventListener('click', async () => {
+  if (!lastAfterActionReport) return;
+  const text = reportToText(lastAfterActionReport);
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch (e) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e2) { ok = false; }
+  }
+  const original = 'COPY REPORT';
+  outcomeCopyBtn.textContent = ok ? 'COPIED' : 'COPY FAILED';
+  outcomeCopyBtn.classList.toggle('copied', ok);
+  setTimeout(() => { outcomeCopyBtn.textContent = original; outcomeCopyBtn.classList.remove('copied'); }, 1400);
+});
 
 // find the nearest water tile to a world point (spiral ring search over the
 // grid) — used both to place the demo gunboat offshore and to snap naval
@@ -3330,6 +3461,24 @@ window.__debug = {
     feed: (count) => newsFeed(news, count),
     push: (text, source) => pushNews(news, text, source),
   },
+  // AFTER-ACTION REPORT hooks (game/afteraction.js), for headless
+  // verification per the task's explicit requirement: `log` is the live
+  // state object the real loop mutates every frame (read .timeline/.curve/
+  // .battalionInfo/.unitLosses directly); recordEvent/recordCombatBegin/
+  // recordCityCapture/updateAfterAction are the real functions the loop/
+  // triggerBeginCombat/captureEvents wire in above (mirrored here, not
+  // reimplemented) so a test can force an event without waiting out real
+  // wall-clock frames; buildReport(log, world, economy, map, outcome) and
+  // reportToText(report) are the real serializer pair — callable directly
+  // to preview a report before an outcome has actually fired; `report`
+  // reads back whatever the last real showOutcomeScreen() call rendered
+  // (null before the run ends).
+  afterAction: {
+    log: afterAction,
+    recordEvent, recordCombatBegin, recordCityCapture, updateAfterAction,
+    buildReport, reportToText,
+    get report() { return lastAfterActionReport; },
+  },
 };
 
 let last = performance.now();
@@ -3405,6 +3554,10 @@ function loop(now) {
       announceCityEvent(directorState, ev.to === 'player'
         ? COPY.CITY_RECAPTURED_BY_PLAYER(ev.city.name)
         : COPY.CITY_CAPTURED_BY_ENEMY(ev.city.name));
+      // AFTER-ACTION: same capture-event array driving the director bubble
+      // above also drives the report timeline + the "banked at first city
+      // loss" snapshot (game/afteraction.js).
+      recordCityCapture(afterAction, economy, ev);
     }
     if (invasionState) invasionState.elapsed += dt; // drives the hold-out backstop in evaluateOutcome
     const outcome = evaluateOutcome(world, map, invasionState);
@@ -3458,6 +3611,17 @@ function loop(now) {
   // above) — cheap (linear scan over world.buildings, same cost class as the
   // HUD's own per-facility production readout below), so unconditional here.
   checkProductionMilestones();
+  // AFTER-ACTION LOG (game/afteraction.js) — runs after buildings/economy/
+  // research/production/battalions/objectives have all advanced THIS frame
+  // (same "just-updated-this-frame already counts" ordering rule every
+  // other pass above already follows), unconditional on combatActive/phase:
+  // buildings/tech/mobilization/battalions are all worth recording during
+  // PREP too, not just once the invasion lands. Frozen implicitly once
+  // gameOutcome fires the same way the rest of the sim effectively is —
+  // showOutcomeScreen calls buildReport() exactly once off whatever this
+  // log holds at that moment, and nothing here gates on gameOutcome itself
+  // (a stray extra tick or two before the screen paints is harmless).
+  updateAfterAction(afterAction, world, economy, map, dt, { researchState });
   updateProjectiles(world, dt);
   for (const h of world.hits) h.life -= dt;
   world.hits = world.hits.filter(h => h.life > 0);

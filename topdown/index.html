@@ -793,26 +793,34 @@
   .menuScenarioRow .msDiff { font-size: 10.5px; color: var(--amber); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; font-family: var(--mono); }
   .menuScenarioRow .msBlurb { font-size: 11px; color: var(--ink-soft); }
   #menuHint { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hairline); color: var(--ink-faint); font-size: 10.5px; font-family: var(--mono); }
-  /* VICTORY/DEFEAT END SCREEN (Playability v1) — an AFTER-ACTION REPORT:
-     cyan "MISSION COMPLETE" for victory, red "MISSION FAILED" for defeat,
-     same condensed-caps vocabulary as every other panel title but scaled up
-     since this is the one screen meant to land with real weight. z-index
-     above every other overlay since evaluateOutcome only ever fires once
-     per run and must never be hidden underneath something else. Shown by
-     main.js's showOutcomeScreen(), never by CSS alone. */
+  /* VICTORY/DEFEAT END SCREEN (Playability v1) — an AFTER-ACTION REPORT
+     (game/afteraction.js): cyan "MISSION COMPLETE" for victory, red "MISSION
+     FAILED" for defeat, same condensed-caps vocabulary as every other panel
+     title but scaled up since this is the one screen meant to land with real
+     weight. Below the header sits the full report — a TIMELINE column plus
+     stacked stat blocks reusing this file's own .statLine/.statLabel/
+     .statVal/.opsStamp vocabulary verbatim (no new visual language), and a
+     VERDICT block using the same left-accent-row idiom as .accentRow/
+     .newsRow elsewhere in this UI. z-index above every other overlay since
+     evaluateOutcome only ever fires once per run and must never be hidden
+     underneath something else. Shown by main.js's showOutcomeScreen(), never
+     by CSS alone. */
   #outcomeScreen {
     display: none; position: fixed; inset: 0; z-index: 2200;
     align-items: center; justify-content: center; background: rgba(2,4,8,.86);
+    padding: 24px;
   }
   #outcomeScreen.open { display: flex; }
   #outcomePanel {
     position: relative;
-    width: min(460px, 92vw); padding: 36px 38px; text-align: center;
+    width: min(1080px, 96vw); max-height: calc(100vh - 48px); overflow-y: auto;
+    padding: 30px 34px 26px; text-align: left;
     color: var(--ink); font: 13px var(--sans);
     background: var(--panel); border-radius: 3px;
     border-top: 3px solid var(--cyan); box-shadow: var(--panel-shadow), 0 24px 70px rgba(0,0,0,.65);
   }
   #outcomePanel::before, #outcomePanel::after { content: none; }
+  .aarHeader { text-align: center; margin-bottom: 8px; }
   #outcomeTitle {
     margin: 0 0 10px; font-size: 28px; letter-spacing: 3px; font-weight: 800;
     display: inline-block; text-transform: uppercase;
@@ -821,13 +829,50 @@
   #outcomeScreen.defeat #outcomeTitle { color: var(--red); }
   #outcomeScreen.victory #outcomePanel { border-top-color: var(--cyan); }
   #outcomeScreen.defeat #outcomePanel { border-top-color: var(--red); }
-  #outcomeSubtitle { margin: 18px 0 18px; color: var(--ink-soft); line-height: 1.5; }
-  #outcomeStats {
-    margin: 0 0 24px; padding: 12px 14px; background: var(--panel-head); border-radius: 2px;
-    line-height: 1.7; text-align: left; color: var(--ink); font-family: var(--mono); font-variant-numeric: tabular-nums;
-  }
-  .outcomeButtons { display: flex; gap: 12px; justify-content: center; }
+  #outcomeSubtitle { margin: 0 0 16px; color: var(--ink-soft); line-height: 1.5; }
+  .outcomeButtons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
   #outcomeScreen button { padding: 9px 20px; }
+  #outcomeCopyBtn.copied { background: var(--green); color: #06110b; border-color: var(--green); }
+  /* Report body — main.js's renderAfterActionReport() fills this in once,
+     at outcome time, from game/afteraction.js's buildReport() output. */
+  #outcomeReport { margin-top: 18px; }
+  .aarRule { height: 1px; background: var(--hairline-strong); border: none; margin: 0 0 18px; }
+  .aarTopline { display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center; margin-bottom: 18px; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 12px; }
+  .aarTopline b { color: var(--ink); font-family: var(--sans); font-weight: 600; }
+  /* VERDICT — amber left-accent rows, same idiom as .accentRow/.newsRow
+     elsewhere, deliberately distinct from the cyan-default timeline rows
+     below so the "here's what actually mattered" lines pop out first. */
+  .aarVerdict { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+  .aarVerdictLine {
+    padding: 9px 11px; background: var(--panel-head); border-left: 2px solid var(--amber);
+    border-radius: 0 2px 2px 0; font-size: 12.5px; line-height: 1.45; color: var(--ink);
+  }
+  .aarSectionTitle {
+    display: flex; align-items: center; gap: 6px; text-transform: uppercase; font-weight: 800;
+    letter-spacing: 1.4px; font-size: 10.5px; color: var(--cyan); margin: 0 0 8px;
+    font-family: var(--sans);
+  }
+  .aarGrid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .aarGrid { grid-template-columns: 1fr; } }
+  .aarSection { background: var(--panel-head); border-radius: 3px; padding: 11px 13px; margin-bottom: 14px; }
+  .aarSection:last-child { margin-bottom: 0; }
+  .aarTimeline { max-height: 560px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+  .aarTimelineRow {
+    display: flex; align-items: baseline; gap: 8px; padding: 5px 8px;
+    border-left: 2px solid var(--cyan-dim); background: var(--panel-strong);
+    border-radius: 0 2px 2px 0; font-size: 11.5px; line-height: 1.4;
+  }
+  .aarTimelineRow.ok { border-left-color: var(--green); }
+  .aarTimelineRow.warn { border-left-color: var(--amber); }
+  .aarTimelineRow.bad { border-left-color: var(--red); }
+  .aarTimelineRow .aarT { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-soft); flex: none; width: 40px; }
+  .aarTimelineRow .aarPhase { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .4px; flex: none; width: 46px; }
+  .aarTimelineRow .aarText { color: var(--ink); }
+  .aarEmpty { font-style: italic; color: var(--ink-soft); font-size: 11px; padding: 4px 0; }
+  .aarOobRow { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-size: 11.5px; border-bottom: 1px solid var(--hairline); }
+  .aarOobRow:last-child { border-bottom: none; }
+  .aarOobRow .aarOobLabel { color: var(--ink-soft); }
+  .aarOobRow .aarOobVal { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1080,17 +1125,24 @@
 </div>
 <!-- VICTORY/DEFEAT END SCREEN (Playability v1) — shown once by main.js's
      showOutcomeScreen() when game/objectives.js's evaluateOutcome fires.
-     Title/subtitle/stats content filled in per-outcome; button labels come
-     from main.js's COPY.OUTCOME_RESTART_BUTTON/OUTCOME_MENU_BUTTON. -->
+     Title/subtitle filled in per-outcome; button labels come from main.js's
+     COPY.OUTCOME_RESTART_BUTTON/OUTCOME_MENU_BUTTON. #outcomeReport is the
+     full after-action report (game/afteraction.js's buildReport()), built
+     and injected once by main.js's renderAfterActionReport() — see that
+     file's showOutcomeScreen(). #outcomeCopyBtn copies
+     game/afteraction.js's reportToText() output to the clipboard. -->
 <div id="outcomeScreen">
   <div id="outcomePanel">
-    <h1 id="outcomeTitle"></h1>
-    <p id="outcomeSubtitle"></p>
-    <div id="outcomeStats"></div>
-    <div class="outcomeButtons">
-      <button id="outcomeRestartBtn" class="opsBtn"></button>
-      <button id="outcomeMenuBtn" class="opsBtn"></button>
+    <div class="aarHeader">
+      <h1 id="outcomeTitle"></h1>
+      <p id="outcomeSubtitle"></p>
+      <div class="outcomeButtons">
+        <button id="outcomeRestartBtn" class="opsBtn"></button>
+        <button id="outcomeMenuBtn" class="opsBtn"></button>
+        <button id="outcomeCopyBtn" class="opsBtn">COPY REPORT</button>
+      </div>
     </div>
+    <div id="outcomeReport"></div>
   </div>
 </div>
 <script type="module" src="main.js"></script>

@@ -10,6 +10,16 @@ import {
   ECONOMY_TUNABLES, MOBILIZATION_BANDS,
 } from './game/economy.js';
 import { RESOURCE_DEFS, RESOURCE_LIST, MINE_TUNABLES } from './game/resources.js';
+// PRESENTATION-ONLY icon lookup for the C2 UI's icon-led resource chips
+// (index.html's #icSprite, ported from docs/ui-options.html Option 1) —
+// maps each RESOURCE_DEFS id to its sprite <symbol> id. Pure display data,
+// not read by any gameplay system; kept here (rather than inside
+// resources.js) so game/resources.js stays UI-agnostic data.
+const RESOURCE_ICON_ID = {
+  steel: 'res-steel', chromium: 'res-chromium', tungsten: 'res-tungsten', oil: 'res-oil',
+  aluminum: 'res-aluminum', titanium: 'res-titanium', rareEarths: 'res-rareearths',
+  electronics: 'res-electronics', advancedAlloy: 'res-alloy',
+};
 import {
   PRODUCTION_DEFS, updateProduction, categoryForFacility,
   IMPORT_TUNABLES, importCost, canAffordImport, importResource,
@@ -646,11 +656,13 @@ function updateObjectiveHud() {
     : 'held';
   let enemyAlive = 0;
   for (const u of world.units) if (u.side === 'enemy' && u.hp > 0) enemyAlive++;
+  const capitalWarn = capitalStatus !== 'held';
   objectiveHud.innerHTML =
-    `<b>Objectives</b>\n`
-    + `Capital (${capital ? capital.name : 'n/a'}): ${capitalStatus}\n`
-    + `Cities held: ${held}/${cities.length}  (lost: ${lost})\n`
-    + `Enemy remaining: ${enemyAlive}`;
+    `<span class="opsStamp"><svg class="ic ic-sm"><use href="#ic-map"/></svg>Objectives</span>`
+    + `<div class="statLine" style="margin-top:6px"><span class="statLabel">Capital (${capital ? capital.name : 'n/a'})</span>`
+    + `<span class="statVal" style="${capitalWarn ? 'color:var(--red)' : 'color:var(--green)'}">${capitalStatus.toUpperCase()}</span></div>`
+    + `<div class="statLine"><span class="statLabel">Cities Held</span><span class="statVal">${held}<small>/${cities.length}</small><span class="statRate warn">${lost} lost</span></span></div>`
+    + `<div class="statLine" style="border-bottom:none"><span class="statLabel">Enemy Remaining</span><span class="statVal">${enemyAlive}</span></div>`;
 }
 
 const outcomeScreenEl = document.getElementById('outcomeScreen');
@@ -688,9 +700,9 @@ function showOutcomeScreen(outcome) {
   let enemyAlive = 0;
   for (const u of world.units) if (u.side === 'enemy' && u.hp > 0) enemyAlive++;
   outcomeStatsEl.innerHTML =
-    `Cities held: ${held}/${cities.length}<br>`
-    + `Capital: ${capital ? (capital.owner === 'player' ? 'held' : 'lost') : 'n/a'}<br>`
-    + `Enemy units remaining: ${enemyAlive}`;
+    `<div class="statLine"><span class="statLabel">Cities Held</span><span class="statVal">${held}<small>/${cities.length}</small></span></div>`
+    + `<div class="statLine"><span class="statLabel">Capital</span><span class="statVal">${(capital ? (capital.owner === 'player' ? 'held' : 'lost') : 'n/a').toUpperCase()}</span></div>`
+    + `<div class="statLine" style="border-bottom:none"><span class="statLabel">Enemy Remaining</span><span class="statVal">${enemyAlive}</span></div>`;
   outcomeScreenEl.classList.add('open');
 }
 
@@ -1430,7 +1442,10 @@ function exitImportPanel() { importPanel.classList.remove('open'); }
 const techPanel = document.getElementById('techPanel');
 const techPanelTitleEl = document.getElementById('techPanelTitle');
 const techListEl = document.getElementById('techList');
-techPanelTitleEl.textContent = RESEARCH_COPY.PANEL_TITLE;
+// Icon-prefixed via innerHTML (not textContent) so the C2 panel-title glyph
+// convention (svg <use> against the shared #icSprite) applies here too —
+// presentation only, RESEARCH_COPY.PANEL_TITLE itself is untouched.
+techPanelTitleEl.innerHTML = `<svg class="ic"><use href="#ic-research"/></svg>${RESEARCH_COPY.PANEL_TITLE}`;
 
 function resourceAmountsText(costObj) {
   return Object.entries(costObj || {})
@@ -1450,7 +1465,7 @@ const techRows = {};
 for (const techId of Object.keys(TECH_DEFS)) {
   const def = TECH_DEFS[techId];
   const row = document.createElement('div');
-  row.className = 'techRow';
+  row.className = 'techRow accentRow';
   const catName = PRODUCTION_DEFS[def.unlocksCategory] ? PRODUCTION_DEFS[def.unlocksCategory].name : def.unlocksCategory;
   const header = document.createElement('div');
   header.className = 'techHeader';
@@ -1562,10 +1577,12 @@ function setResourceFilter(id) {
     `<div class="legendRow"><span class="legendSwatch" style="background:${OWNERSHIP_COLORS[id]}"></span>${label}</div>`
   ).join('');
 
-  const filterRowsHtml = RESOURCE_LIST.map(r =>
-    `<button type="button" class="filterBtn" data-res="${r.id}">`
-    + `<span class="legendGlyph" style="color:${r.color}">${r.glyph}</span>${r.name}</button>`
-  ).join('');
+  const filterRowsHtml = RESOURCE_LIST.map(r => {
+    const iconId = RESOURCE_ICON_ID[r.id];
+    const icon = iconId ? `<svg class="ic ic-sm" style="color:${r.color}"><use href="#${iconId}"/></svg>` : '';
+    return `<button type="button" class="filterBtn" data-res="${r.id}">`
+    + `<span class="legendGlyph">${icon}</span>${r.name}</button>`;
+  }).join('');
 
   legendBodyInner.innerHTML =
     `<div class="legendSection"><span class="legendSectionLabel">Ownership rings</span>${ownerRows}</div>`
@@ -1623,11 +1640,15 @@ const REINFORCE_ROUTES = [
   { id: 'militia', request: () => raiseMilitia(world, economy, map) },
 ];
 const reinforceRouteEls = {};
+// Icon-led route names (C2 UI) — elite armor / standard+militia infantry,
+// matching index.html's shared #icSprite unit-type glyphs.
+const REINFORCE_ROUTE_ICON = { elite: 'unit-armor', standard: 'unit-infantry', militia: 'unit-infantry' };
 {
   const routesHtml = REINFORCE_ROUTES.map(({ id }) => {
     const def = REINFORCEMENT_DEFS[id];
-    return `<div class="reinforceRoute" data-route="${id}">`
-      + `<span class="reinforceRouteName">${def.name}</span>`
+    const iconId = REINFORCE_ROUTE_ICON[id] || 'unit-infantry';
+    return `<div class="reinforceRoute accentRow" data-route="${id}">`
+      + `<span class="reinforceRouteName"><svg class="ic ic-sm"><use href="#${iconId}"/></svg>${def.name}</span>`
       + `<span class="reinforceRouteCost">${reinforceCostText(def.cost)} — ${def.leadTime}s</span>`
       + `<span class="reinforceRouteGate" data-gate></span>`
       + `<button type="button" class="opsBtn" data-req>Requisition</button>`
@@ -1665,6 +1686,11 @@ function updateReinforcePanelUI() {
     }
     const affordable = canAfford(economy, def.cost);
     row.classList.toggle('ready', gateOk && affordable);
+    // C2 UI: a gate the player hasn't met yet reads as "blocked" (red-tinted
+    // left accent) rather than just "not ready" (plain grey) — matches
+    // docs/ui-options.html Option 1's mockup row states. Purely visual: the
+    // button's own disabled/title logic below is unchanged.
+    row.classList.toggle('blocked', !gateOk);
     gate.textContent = gateText;
     btn.disabled = !gateOk || !affordable;
     btn.title = !gateOk ? gateText : (!affordable ? 'Cannot afford yet' : '');
@@ -1800,9 +1826,10 @@ function updateBattalionPanelUI() {
     // B5b (game/battalionMorale.js writes bn.garrisoned each tick — see that
     // file's Effect A): a small tag so the player can see the defense bonus
     // is actually active, not just inferred from being "in a city."
-    const garrisonTag = bn.garrisoned ? `<span class="battalionGarrisoned" title="Garrisoned: extra defense bonus active">⛨ garrisoned</span>` : '';
-    return `<div class="battalionRow${assigning ? ' assigning' : rowStateClass}" data-bn="${bn.id}">`
-      + `<div class="battalionRowHead"><b>${bn.name}</b><span class="battalionType">${bn.type}</span>${garrisonTag}</div>`
+    const garrisonTag = bn.garrisoned ? `<span class="battalionGarrisoned"><svg class="ic ic-sm"><use href="#status-garrison"/></svg>Garrisoned</span>` : '';
+    const bnIconId = REINFORCE_ROUTE_ICON[bn.type] || 'unit-infantry';
+    return `<div class="battalionRow accentRow${assigning ? ' assigning' : rowStateClass}" data-bn="${bn.id}">`
+      + `<div class="battalionRowHead"><b><svg class="ic ic-sm"><use href="#${bnIconId}"/></svg>${bn.name}</b><span class="battalionType">${bn.type}</span>${garrisonTag}</div>`
       + `<div class="battalionRowStats">Strength: <b>${alive}/${total}</b> — Sector: <b>${sector}</b></div>`
       + `<div class="battalionRowStats">Morale: <span class="battalionMorale ${mState}">${mState}${routTag}</span> `
       + `(${Math.round(bn.morale)}) — Cohesion: <b>${Math.round(bn.cohesion)}</b></div>`
@@ -1851,7 +1878,7 @@ function updateHomeDefensePanelUI() {
     return;
   }
   homeDefenseStatusEl.innerHTML = rows.map(r =>
-    `<div class="hdRow"><b>${r.name}</b>: ${r.current}/${r.target}${r.garrisoned ? ' ⛨' : ''}</div>`
+    `<div class="hdRow">${r.garrisoned ? `<svg class="ic ic-sm" style="color:var(--green)"><use href="#status-garrison"/></svg>` : ''}<b>${r.name}</b>: ${r.current}/${r.target}</div>`
   ).join('');
 }
 
@@ -1912,7 +1939,7 @@ function updateNewsPanelUI() {
   if (!newsExpanded) return; // body content is hidden (max-height:0) — skip the rebuild while collapsed
   newsBodyInnerEl.innerHTML = feed.length
     ? feed.map(item =>
-        `<div class="newsRow"><span class="newsRowText">${item.text}</span><span class="newsRowSource">— ${item.source}</span></div>`
+        `<div class="newsRow accentRow"><span class="newsRowText">${item.text}</span><span class="newsRowSource">— ${item.source}</span></div>`
       ).join('')
     : `<span class="newsEmpty">No dispatches yet.</span>`;
 }
@@ -1938,7 +1965,8 @@ const guidanceStepsEl = document.getElementById('guidanceSteps');
 const guidanceFootnoteEl = document.getElementById('guidanceFootnote');
 const guidanceCloseBtn = document.getElementById('guidanceCloseBtn');
 
-guidanceTitleEl.textContent = TUTORIAL_COPY.CHECKLIST_TITLE;
+// Icon-prefixed via innerHTML, same convention as techPanelTitleEl above.
+guidanceTitleEl.innerHTML = `<svg class="ic"><use href="#ic-map"/></svg>${TUTORIAL_COPY.CHECKLIST_TITLE}`;
 guidanceFootnoteEl.textContent = TUTORIAL_COPY.CHECKLIST_DISMISS_HINT;
 function setGuidanceVisible(visible) { guidancePanel.classList.toggle('hidden', !visible); }
 function toggleGuidance() { setGuidanceVisible(guidancePanel.classList.contains('hidden')); }
@@ -3720,16 +3748,21 @@ function loop(now) {
   // the other Ops panel refreshes right above it.
   updateNewsPanelUI();
 
-  // Resource stockpile line (P3 follow-up — game/resources.js): compact,
-  // icons (colored glyph spans) + amount + current rate, one resource per
-  // line-item, joined with a couple of spaces so it wraps as a paragraph
-  // instead of forcing #econHud wider. Iterates RESOURCE_LIST generically —
-  // a new resource entry there shows up here with no HUD change.
-  const resourceLine = RESOURCE_LIST.map(r => {
+  // Resource stockpile — ICON-LED CHIPS (C2 UI direction, ported from
+  // docs/ui-options.html Option 1's "iconization pass": the old plain-text
+  // wall `Fe 40 (+0.62/s)  Cr 12 (+0.18/s) ...` becomes one chip per
+  // resource, glyph + amount, with the rate as a small dim suffix — same
+  // .chip primitive index.html declares once and reuses everywhere a
+  // resource is shown. Iterates RESOURCE_LIST generically — a new resource
+  // entry shows up here with no HUD change.
+  const resourceChips = RESOURCE_LIST.map(r => {
     const amt = economy.resources[r.id] || 0;
     const rate = economy.resourceRates[r.id] || 0;
-    return `<span style="color:${r.color}">${r.glyph}</span> ${amt.toFixed(0)} (+${rate.toFixed(2)}/s)`;
-  }).join('&nbsp;&nbsp;');
+    const iconId = RESOURCE_ICON_ID[r.id];
+    const icon = iconId ? `<svg class="ic ic-sm"><use href="#${iconId}"/></svg>` : '';
+    return `<span class="chip" title="${r.name}">${icon}${amt.toFixed(0)}`
+      + (rate ? ` <small>+${rate.toFixed(2)}/s</small>` : '') + `</span>`;
+  }).join('');
 
   // P3 economy HUD — compact readout: pool/cap + current rate for IC and
   // manpower, mobilization % + its band label, military output + rate, and
@@ -3739,34 +3772,45 @@ function loop(now) {
   // whatever's in world.buildings (no per-category branching here; a
   // facility's own b.prodState/b.prodStallReason/b.producedCount, set by
   // game/production.js's updateProduction, carry everything this needs).
-  const prodLines = [];
+  const prodRows = [];
   for (const b of world.buildings) {
     if (b.side !== 'player' || !b.prodCategory) continue;
     const prod = PRODUCTION_DEFS[b.prodCategory];
-    const stateTxt = b.prodState === 'producing'
-      ? `producing (${(1 / prod.recipe.buildTimePerUnit).toFixed(2)}/s)`
-      : `STALLED — ${b.prodStallReason}`;
-    prodLines.push(`${prod.name}: ${stateTxt} — ${productionCountLabel(prod, b)}`);
+    const stalled = b.prodState !== 'producing';
+    const stateTxt = stalled ? `STALLED — ${b.prodStallReason}` : `+${(1 / prod.recipe.buildTimePerUnit).toFixed(2)}/s`;
+    prodRows.push(`<div class="statLine"><span class="statLabel">${prod.name}</span>`
+      + `<span class="statVal${stalled ? '' : ''}" style="${stalled ? 'color:var(--amber)' : ''}">${stateTxt}</span></div>`
+      + `<div class="statLine" style="border-bottom:none;padding-top:0"><span class="statLabel" style="opacity:.7">${productionCountLabel(prod, b)}</span></div>`);
   }
-  const prodBlock = prodLines.length ? `<b>Production</b>\n${prodLines.join('\n')}` : '';
+  const prodBlock = prodRows.length
+    ? `<span class="sectionLabel">Production</span>${prodRows.join('')}`
+    : '';
 
   // SUMMARY (always visible, collapsed-tab default) — the four top-line
-  // totals a player needs at a glance, one compact line each. Everything
-  // that used to make this panel tall (per-resource stockpile line +
-  // per-facility production status) moved to the DETAIL sheet below, which
-  // only renders visibly once the player expands the ledger — see
-  // setEconHudExpanded above for the de-occlusion fix this implements.
+  // totals a player needs at a glance, as tabular-monospace label/value
+  // stat rows (index.html's .statLine/.statLabel/.statVal/.statRate, the
+  // shared C2 ledger primitive). Everything that used to make this panel
+  // tall (per-resource stockpile line + per-facility production status)
+  // moved to the DETAIL sheet below, which only renders visibly once the
+  // player expands the ledger — see setEconHudExpanded above for the
+  // de-occlusion fix this implements.
   econHudSummaryEl.innerHTML =
-    `<b>IC</b> ${economy.ic.toFixed(0)}/${economy.icCap.toFixed(0)} (+${economy.icRate.toFixed(2)}/s)  `
-    + `<b>MP</b> ${economy.manpower.toFixed(0)}/${economy.manpowerCap.toFixed(0)} (+${economy.manpowerRate.toFixed(2)}/s)\n`
-    + `<b>Infl</b> ${economy.influence.toFixed(0)}/${economy.influenceCap.toFixed(0)} (+${economy.influenceRate.toFixed(2)}/s)\n`
-    + `<b>Mobilization</b> ${economy.mobilizationLevel.toFixed(1)}% (+${economy.mobilizationRate.toFixed(3)}/s) — ${economy.band.label}`;
+    `<div class="statLine"><span class="statLabel"><svg class="ic ic-sm"><use href="#ic-factory"/></svg>IC</span>`
+    + `<span class="statVal">${economy.ic.toFixed(0)}<small>/${economy.icCap.toFixed(0)}</small><span class="statRate">+${economy.icRate.toFixed(2)}/s</span></span></div>`
+    + `<div class="statLine"><span class="statLabel"><svg class="ic ic-sm"><use href="#ic-manpower"/></svg>Manpower</span>`
+    + `<span class="statVal">${economy.manpower.toFixed(0)}<small>/${economy.manpowerCap.toFixed(0)}</small><span class="statRate">+${economy.manpowerRate.toFixed(2)}/s</span></span></div>`
+    + `<div class="statLine"><span class="statLabel"><svg class="ic ic-sm"><use href="#ic-influence"/></svg>Influence</span>`
+    + `<span class="statVal">${economy.influence.toFixed(0)}<small>/${economy.influenceCap.toFixed(0)}</small><span class="statRate">+${economy.influenceRate.toFixed(2)}/s</span></span></div>`
+    + `<div class="statLine"><span class="statLabel"><svg class="ic ic-sm"><use href="#ic-mobilization"/></svg>Mobilization</span>`
+    + `<span class="statVal">${economy.mobilizationLevel.toFixed(1)}%<span class="statRate">${economy.band.label}</span></span></div>`;
 
   econHudDetailInnerEl.innerHTML =
-    `<b>Military Output</b> ${economy.militaryOutput.toFixed(1)} (+${economy.militaryOutputRate.toFixed(2)}/s)\n`
-    + `Arming quality x${economy.armingQuality.toFixed(2)}\n`
-    + `<b>Resources</b>\n${resourceLine}`
-    + (prodBlock ? `\n${prodBlock}` : '');
+    `<div class="statLine"><span class="statLabel">Military Output</span>`
+    + `<span class="statVal">${economy.militaryOutput.toFixed(1)}<span class="statRate">+${economy.militaryOutputRate.toFixed(2)}/s</span></span></div>`
+    + `<div class="statLine"><span class="statLabel">Arming Quality</span><span class="statVal">x${economy.armingQuality.toFixed(2)}</span></div>`
+    + `<span class="sectionLabel">Resources</span>`
+    + `<div class="chipRow" style="margin-top:0">${resourceChips}</div>`
+    + prodBlock;
 
   } catch (err) {
     // A single throwing frame must not brick the session: an uncaught throw

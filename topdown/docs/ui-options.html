@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Direction Comparison — Total Mobilization</title>
+<style>
+  /* =========================================================================
+     UI DIRECTION COMPARISON — standalone mockup, not wired to the game.
+     Four genuinely distinct visual directions rendering the SAME
+     representative widget set (top bar, resource ledger, reinforcements
+     panel w/ an affordable + a disabled row, a battalion roster w/ two
+     status states, a dispatch line, and buttons in normal/hover/disabled/
+     selected states) so they are directly comparable. System fonts only,
+     no external requests, no build step — this is a plain static file.
+     ========================================================================= */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #14161a; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+
+  /* ---- shared icon plumbing --------------------------------------------- */
+  .ic { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.6;
+        stroke-linecap: round; stroke-linejoin: round; vertical-align: -2.5px; flex: none; }
+  .ic-sm { width: 11px; height: 11px; }
+  .ic-lg { width: 20px; height: 20px; }
+
+  /* ---- page chrome (not part of any option — just this comparison doc) - */
+  .pageHead {
+    max-width: 1240px; margin: 0 auto; padding: 36px 28px 18px;
+    color: #dfe3e8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .pageHead h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .2px; }
+  .pageHead p { margin: 4px 0; color: #9aa4ae; font-size: 13.5px; line-height: 1.6; max-width: 900px; }
+  .pageHead .tag {
+    display: inline-block; background: #232830; color: #8fd8ff; border-radius: 3px;
+    padding: 2px 8px; font-size: 11px; letter-spacing: .4px; margin-right: 6px;
+  }
+
+  /* ---- iconization demo strip (the required "before vs after," shown once) */
+  .iconDemo {
+    max-width: 1240px; margin: 0 auto 34px; padding: 18px 24px;
+    background: #1b1f25; border-radius: 8px; color: #cfd6dd;
+  }
+  .iconDemo h2 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #8fd8ff; }
+  .iconDemo .sub { margin: 0 0 14px; font-size: 12px; color: #838d97; }
+  .iconRow { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+  .iconRow .col { flex: 1 1 380px; }
+  .iconRow .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #6b7480; margin-bottom: 6px; }
+  .wallText {
+    font-family: Menlo, Consolas, "SF Mono", monospace; font-size: 11.5px; line-height: 1.8;
+    color: #b9c85a; background: #0e1013; padding: 10px 12px; border-radius: 4px;
+    white-space: pre-wrap;
+  }
+  .chipRow { display: flex; flex-wrap: wrap; gap: 6px; background: #0e1013; padding: 10px 12px; border-radius: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; background: #1f242b;
+    border-radius: 3px; padding: 3px 7px; font-family: Menlo, Consolas, "SF Mono", monospace;
+    font-size: 11px; color: #dfe3e8; font-variant-numeric: tabular-nums;
+  }
+  .chip .ic { color: #8fd8ff; }
+
+  /* ---- option section shell ---------------------------------------------- */
+  .option { padding: 40px 0 56px; }
+  .optionInner { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+  .optionHead { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+  .optionNum {
+    font-size: 12px; font-weight: 800; letter-spacing: 1px; padding: 3px 9px; border-radius: 3px;
+  }
+  .optionTitle { font-size: 20px; font-weight: 700; margin: 0; }
+  .rationale { max-width: 880px; font-size: 13px; line-height: 1.65; margin: 10px 0 26px; }
+
+  /* ---- shared widget-grid layout (identical markup shape per option) ---- */
+  .grid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; margin-bottom: 18px; }
+  .gridRight { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .grid, .gridRight { grid-template-columns: 1fr; } }
+
+  .mp-topbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 16px; margin-bottom: 18px; }
+  .mp-phase { font-weight: 800; letter-spacing: 1.4px; font-size: 11px; padding: 3px 10px; }
+  .mp-hint { font-size: 11.5px; opacity: .8; }
+  .mp-objectives { margin-left: auto; font-size: 11px; font-variant-numeric: tabular-nums; opacity: .85; }
+
+  .mp-panel { padding: 0; }
+  .mp-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; }
+  .mp-panel-title { font-weight: 800; letter-spacing: 1px; font-size: 11.5px; text-transform: uppercase; }
+  .mp-panel-body { padding: 12px 14px 14px; }
+
+  .mp-stat-line { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; font-size: 12px; }
+  .mp-stat-label { display: flex; align-items: center; gap: 6px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; opacity: .78; }
+  .mp-stat-val { font-family: Menlo, Consolas, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; }
+  .mp-stat-rate { font-size: 10px; opacity: .6; margin-left: 4px; }
+
+  .mp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .mp-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 3px; font-family: Menlo, Consolas, "SF Mono", monospace; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+
+  .mp-row { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; margin-bottom: 8px; }
+  .mp-row:last-child { margin-bottom: 0; }
+  .mp-row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .mp-row-name { font-weight: 700; font-size: 12.5px; }
+  .mp-row-cost { font-family: Menlo, Consolas, "SF Mono", monospace; font-size: 10.5px; font-variant-numeric: tabular-nums; opacity: .82; }
+  .mp-row-gate { font-size: 10px; opacity: .75; }
+  .mp-row-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+
+  .mp-bn-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .mp-bn-name { font-weight: 700; font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+  .mp-bn-type { font-size: 9.5px; text-transform: uppercase; letter-spacing: .6px; opacity: .65; }
+  .mp-bn-stats { font-family: Menlo, Consolas, "SF Mono", monospace; font-size: 10.5px; font-variant-numeric: tabular-nums; opacity: .85; margin-top: 3px; }
+  .mp-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 1px 6px; border-radius: 3px; }
+
+  .mp-news { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 11.5px; }
+
+  .mp-btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  .mp-btn-group { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .mp-btn-group .cap { font-size: 9.5px; opacity: .55; letter-spacing: .3px; }
+  .mp-btn { cursor: pointer; font-weight: 600; font-size: 11px; padding: 7px 14px; }
+  .mp-btn.is-disabled { opacity: .4; cursor: not-allowed; }
+
+  /* =========================================================================
+     OPTION 1 — MODERN MILITARY C2 / TACTICAL DISPLAY
+     Dark slate glass console, cyan/amber data accents, condensed technical
+     caps, hairline rules (not boxes), tabular monospace everywhere numbers
+     appear. What an actual battle-management console looks like: glowing,
+     precise, zero warmth. Ties directly to the game's own near-future
+     arsenal (drones/hypersonics/NATO symbology) and its grey/steel unit
+     palette (#8a9199) rather than fighting it with parchment.
+     ========================================================================= */
+  .option1 {
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(79,216,255,.05), transparent 55%),
+      linear-gradient(180deg, #0c1015 0%, #0a0d11 100%);
+    color: #c7d1da;
+  }
+  .option1 .optionNum { background: #16222b; color: #4fd8ff; }
+  .option1 h1.optionTitle, .option1 .rationale { color: #c7d1da; }
+  .option1 .rationale { color: #8b98a3; }
+  .option1 .ic { stroke: #4fd8ff; }
+
+  .option1 .mp-topbar { background: #10151b; border-bottom: 1px solid rgba(79,216,255,.18); }
+  .option1 .mp-phase { background: rgba(255,90,90,.14); color: #ff5a5a; border: 1px solid rgba(255,90,90,.4); }
+  .option1 .mp-hint { color: #7c8894; font-family: Menlo, Consolas, "SF Mono", monospace; }
+  .option1 .mp-objectives { color: #4fd8ff; font-family: Menlo, Consolas, "SF Mono", monospace; }
+
+  .option1 .mp-panel { background: #10151b; box-shadow: 0 0 0 1px rgba(79,216,255,.08), 0 10px 26px rgba(0,0,0,.45); }
+  .option1 .mp-panel-head { background: #141a21; border-bottom: 1px solid rgba(79,216,255,.14); }
+  .option1 .mp-panel-title { color: #4fd8ff; font-family: -apple-system, "Segoe UI", sans-serif; letter-spacing: 1.6px; }
+  .option1 .mp-panel-title .ic { color: #4fd8ff; }
+
+  .option1 .mp-stat-line { border-bottom: 1px solid rgba(255,255,255,.045); }
+  .option1 .mp-stat-label { color: #7c8894; }
+  .option1 .mp-stat-val { color: #e7edf2; }
+  .option1 .mp-stat-rate { color: #4fd8ff; }
+  .option1 .mp-chip { background: #171d24; color: #cfd8df; border: 1px solid rgba(255,255,255,.05); }
+  .option1 .mp-chip .ic { color: #ffb020; }
+
+  .option1 .mp-row { background: #141a21; border-left: 2px solid #2a3742; }
+  .option1 .mp-row.ready { border-left-color: #4fd8ff; }
+  .option1 .mp-row.blocked { border-left-color: #ff5a5a; background: linear-gradient(90deg, rgba(255,90,90,.06), #141a21 60px); }
+  .option1 .mp-row-name { color: #e7edf2; font-family: -apple-system, "Segoe UI", sans-serif; letter-spacing: .2px; }
+  .option1 .mp-row-cost { color: #8b98a3; }
+  .option1 .mp-row-gate { color: #ffb020; }
+
+  .option1 .mp-bn-name { color: #e7edf2; }
+  .option1 .mp-bn-type { color: #7c8894; }
+  .option1 .mp-bn-stats { color: #8b98a3; }
+  .option1 .mp-bn-row { padding: 9px 10px; background: #141a21; border-left: 2px solid #2a3742; margin-bottom: 8px; }
+  .option1 .mp-bn-row.state-ok { border-left-color: #57d68d; }
+  .option1 .mp-bn-row.state-warn { border-left-color: #ffb020; }
+  .option1 .mp-tag.ok { background: rgba(87,214,141,.14); color: #57d68d; }
+  .option1 .mp-tag.warn { background: rgba(255,176,32,.14); color: #ffb020; }
+
+  .option1 .mp-news { background: #10151b; border-left: 2px solid #4fd8ff; color: #c7d1da; }
+  .option1 .mp-news .ic { color: #4fd8ff; }
+
+  .option1 .mp-btn { background: #17232c; color: #4fd8ff; border: 1px solid rgba(79,216,255,.35); border-radius: 2px; text-transform: uppercase; letter-spacing: .8px; font-size: 10.5px; transition: all .12s; }
+  .option1 .mp-btn.state-hover { background: #1c303c; border-color: #4fd8ff; box-shadow: 0 0 0 1px rgba(79,216,255,.3), 0 0 14px rgba(79,216,255,.25); }
+  .option1 .mp-btn.is-disabled { background: #12161b; color: #4a545d; border-color: rgba(255,255,255,.06); }
+  .option1 .mp-btn.state-selected { background: #4fd8ff; color: #0a0d11; border-color: #4fd8ff; }
+
+  /* =========================================================================
+     OPTION 2 — CLEAN OPERATIONAL MINIMAL
+     Near-flat, near-monochrome greys, one accent (amber), generous
+     whitespace, strong type-weight hierarchy, separation entirely by tone +
+     space rather than borders. The "expensive modern SaaS ops dashboard"
+     read — restrained, calm, still reads as a serious command tool without
+     any of the parchment/rubber-stamp pastiche.
+     ========================================================================= */
+  .option2 { background: #f3f4f6; color: #1c2024; }
+  .option2 .optionNum { background: #1c2024; color: #f3f4f6; }
+  .option2 .rationale { color: #5b6470; }
+  .option2 .ic { stroke: #b8790a; }
+
+  .option2 .mp-topbar { background: #ffffff; border-radius: 10px; box-shadow: 0 1px 2px rgba(20,22,26,.05), 0 8px 20px rgba(20,22,26,.06); }
+  .option2 .mp-phase { background: #fbe9cf; color: #8a4e05; border-radius: 5px; }
+  .option2 .mp-hint { color: #7b838d; }
+  .option2 .mp-objectives { color: #1c2024; font-weight: 600; }
+
+  .option2 .mp-panel { background: #ffffff; border-radius: 12px; box-shadow: 0 1px 2px rgba(20,22,26,.04), 0 10px 24px rgba(20,22,26,.06); }
+  .option2 .mp-panel-head { padding: 14px 18px 4px; }
+  .option2 .mp-panel-body { padding: 6px 18px 18px; }
+  .option2 .mp-panel-title { color: #1c2024; letter-spacing: .3px; text-transform: none; font-size: 13px; font-weight: 800; }
+  .option2 .mp-panel-title .ic { color: #b8790a; }
+
+  .option2 .mp-stat-line { border-bottom: 1px solid #eef0f2; padding: 8px 0; }
+  .option2 .mp-stat-label { color: #7b838d; font-weight: 600; letter-spacing: .2px; }
+  .option2 .mp-stat-val { color: #1c2024; font-weight: 700; font-size: 14px; }
+  .option2 .mp-stat-rate { color: #2f8f5b; font-weight: 600; }
+  .option2 .mp-chip { background: #f3f4f6; color: #3a4048; }
+  .option2 .mp-chip .ic { color: #9aa2ab; }
+
+  .option2 .mp-row { background: #f8f9fa; border-radius: 9px; padding: 12px 14px; }
+  .option2 .mp-row.ready::before { content: "●"; color: #2f8f5b; margin-right: 6px; font-size: 8px; }
+  .option2 .mp-row.blocked { background: #fbf1ef; }
+  .option2 .mp-row-name { color: #1c2024; }
+  .option2 .mp-row-cost { color: #7b838d; }
+  .option2 .mp-row-gate { color: #b8452f; font-weight: 600; }
+
+  .option2 .mp-bn-row { background: #f8f9fa; border-radius: 9px; padding: 12px 14px; margin-bottom: 10px; }
+  .option2 .mp-bn-name { color: #1c2024; }
+  .option2 .mp-bn-type { color: #9aa2ab; }
+  .option2 .mp-bn-stats { color: #5b6470; }
+  .option2 .mp-tag.ok { background: #e4f4ea; color: #2f8f5b; border-radius: 5px; }
+  .option2 .mp-tag.warn { background: #fdf1de; color: #b8790a; border-radius: 5px; }
+
+  .option2 .mp-news { background: #ffffff; border-radius: 10px; box-shadow: 0 1px 2px rgba(20,22,26,.04), 0 6px 16px rgba(20,22,26,.05); color: #3a4048; }
+  .option2 .mp-news .ic { color: #b8790a; }
+
+  .option2 .mp-btn { background: #1c2024; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; transition: all .12s; }
+  .option2 .mp-btn.state-hover { background: #34383e; box-shadow: 0 4px 12px rgba(20,22,26,.25); }
+  .option2 .mp-btn.is-disabled { background: #e3e5e8; color: #aab0b7; }
+  .option2 .mp-btn.state-selected { background: #b8790a; color: #fff; }
+  .option2 .mp-btn.ghost { background: transparent; color: #1c2024; box-shadow: inset 0 0 0 1.5px #d7dade; }
+  .option2 .mp-btn.ghost.state-hover { box-shadow: inset 0 0 0 1.5px #1c2024; background: #fff; }
+
+  /* =========================================================================
+     OPTION 3 — REFINED WAR-ROOM PAPER
+     The existing concept, done properly per docs/reference-ui-style.md: the
+     outline-soup removed, a real sans/mono type split, tonal + left-rule
+     separation instead of boxes, shadow-tiered hierarchy. Shown sitting on
+     the actual dark map-table background so its "paper pinned to a table"
+     framing reads honestly — the tradeoff flagged up front: it is a
+     deliberate period pastiche (1940s ops room) next to a near-future
+     arsenal, so it will always read a bit more "WWII war film" than
+     "modern C2," however cleanly it's executed.
+     ========================================================================= */
+  .option3 { background: radial-gradient(ellipse at 50% -20%, #0f1622, #060a12 60%); color: #241d10; }
+  .option3 .optionNum { background: #8a2a1c; color: #efe6cd; }
+  .option3 h1.optionTitle { color: #efe6cd; }
+  .option3 .rationale { color: #9aa4ae; }
+  .option3 .ic { stroke: #5c4f34; }
+
+  .option3 .paperGrain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      linear-gradient(175deg, #e7dcbd 0%, #ddcfa4 100%);
+    background-blend-mode: multiply, normal;
+  }
+  .option3 .mp-topbar { padding: 8px 14px; box-shadow: 0 8px 18px rgba(4,6,10,.4); }
+  .option3 .mp-phase { color: #8a2a1c; border: 2px solid #8a2a1c; border-radius: 2px; transform: rotate(-1deg); background: rgba(138,42,28,.06); }
+  .option3 .mp-hint { color: #5c4f34; font-family: Menlo, Consolas, "SF Mono", monospace; }
+  .option3 .mp-objectives { color: #241d10; font-family: Menlo, Consolas, "SF Mono", monospace; }
+
+  .option3 .mp-panel { box-shadow: 0 14px 32px rgba(4,6,10,.5); position: relative; }
+  .option3 .mp-panel::before, .option3 .mp-panel::after { content: ""; position: absolute; width: 12px; height: 12px; opacity: .6; }
+  .option3 .mp-panel::before { top: -1px; left: -1px; border-top: 2px solid #5c4f34; border-left: 2px solid #5c4f34; }
+  .option3 .mp-panel::after { bottom: -1px; right: -1px; border-bottom: 2px solid #5c4f34; border-right: 2px solid #5c4f34; }
+  .option3 .mp-panel-head { background: #ddcfa4; }
+  .option3 .mp-panel-title {
+    display: inline-block; color: #8a2a1c; border: 2px solid #8a2a1c; border-radius: 2px; padding: 2px 8px;
+    transform: rotate(-1.2deg); background: rgba(138,42,28,.07); mix-blend-mode: multiply; letter-spacing: 1.4px;
+  }
+  .option3 .mp-panel-title .ic { color: #8a2a1c; }
+
+  .option3 .mp-stat-line { padding: 4px 0; }
+  .option3 .mp-stat-label { color: #5c4f34; font-family: -apple-system, "Segoe UI", sans-serif; }
+  .option3 .mp-stat-val { color: #241d10; }
+  .option3 .mp-stat-rate { color: #1f4a63; }
+  .option3 .mp-chip { background: rgba(255,255,255,.35); color: #241d10; }
+  .option3 .mp-chip .ic { filter: saturate(.6); }
+
+  .option3 .mp-row { background: rgba(255,255,255,.3); border-left: 3px solid #5c4f34; }
+  .option3 .mp-row.ready { border-left-color: #2e5c3c; }
+  .option3 .mp-row.blocked { border-left-color: #8a2a1c; }
+  .option3 .mp-row-name { color: #241d10; font-family: -apple-system, "Segoe UI", sans-serif; }
+  .option3 .mp-row-cost { color: #5c4f34; }
+  .option3 .mp-row-gate { color: #8a2a1c; }
+
+  .option3 .mp-bn-row { background: rgba(255,255,255,.3); border-left: 3px solid #5c4f34; padding: 9px 10px; margin-bottom: 8px; }
+  .option3 .mp-bn-row.state-ok { border-left-color: #2e5c3c; }
+  .option3 .mp-bn-row.state-warn { border-left-color: #8a5a10; }
+  .option3 .mp-bn-name { color: #241d10; font-family: -apple-system, "Segoe UI", sans-serif; }
+  .option3 .mp-bn-type { color: #5c4f34; }
+  .option3 .mp-bn-stats { color: #5c4f34; }
+  .option3 .mp-tag.ok { color: #2e5c3c; background: rgba(46,92,60,.12); }
+  .option3 .mp-tag.warn { color: #8a5a10; background: rgba(138,90,16,.12); }
+
+  .option3 .mp-news { background: rgba(255,255,255,.28); border-left: 3px solid #8a2a1c; color: #241d10; }
+  .option3 .mp-news .ic { color: #8a2a1c; }
+
+  .option3 .mp-btn { background: #efe6cd; color: #241d10; border: none; border-radius: 2px; font-family: -apple-system, "Segoe UI", sans-serif; box-shadow: 0 2px 6px rgba(4,6,10,.18); transition: all .12s; }
+  .option3 .mp-btn.state-hover { background: #e7dcbd; box-shadow: 0 4px 10px rgba(4,6,10,.28); }
+  .option3 .mp-btn.is-disabled { background: #ddd3ba; color: #8a7a58; box-shadow: none; }
+  .option3 .mp-btn.state-selected { background: #241d10; color: #e7dcbd; box-shadow: 0 2px 6px rgba(4,6,10,.3); }
+
+  /* =========================================================================
+     OPTION 4 — BRUTALIST / TECHNICAL READOUT
+     High-contrast monochrome, one monospace face throughout, hard 1-2px
+     rules used deliberately (this direction's whole identity IS the ruled
+     table — the "flat + ruled / structural office document" depth language
+     from docs/reference-ui-style.md §3.1 Option C), zero rounding, zero
+     color except a single stamp-red for alerts. Reads like an actual
+     dot-matrix wargame printout — closer to Command: Modern Operations /
+     Unity of Command than to a game menu.
+     ========================================================================= */
+  .option4 { background: #e9e7df; color: #111; }
+  .option4 * { font-family: Menlo, Consolas, "SF Mono", "Courier New", monospace !important; }
+  .option4 .optionNum { background: #111; color: #e9e7df; border-radius: 0; }
+  .option4 .rationale { color: #4a4a45; }
+  .option4 .ic { stroke: #111; stroke-width: 1.8; }
+
+  .option4 .mp-topbar { background: #111; color: #e9e7df; border-radius: 0; padding: 9px 14px; }
+  .option4 .mp-topbar .ic { stroke: #e9e7df; }
+  .option4 .mp-phase { background: #b8412a; color: #fff; border-radius: 0; }
+  .option4 .mp-hint { color: #9aa08f; }
+  .option4 .mp-objectives { color: #e9e7df; }
+
+  .option4 .mp-panel { background: #f6f4ec; border: 2px solid #111; border-radius: 0; box-shadow: none; }
+  .option4 .mp-panel-head { border-bottom: 2px solid #111; padding: 8px 12px; }
+  .option4 .mp-panel-title { letter-spacing: 1px; }
+  .option4 .mp-panel-body { padding: 0; }
+
+  .option4 .mp-stat-line { padding: 6px 12px; border-bottom: 1px solid #b8b6ac; }
+  .option4 .mp-stat-label { opacity: 1; color: #111; }
+  .option4 .mp-stat-val { font-weight: 700; }
+  .option4 .mp-stat-rate { color: #3d5c3d; }
+  .option4 .mp-chips { padding: 0 12px 10px; margin-top: 0; }
+  .option4 .mp-chip { background: transparent; border: 1px solid #111; border-radius: 0; }
+
+  .option4 .mp-panel-body-pad { padding: 0 0 4px; }
+  .option4 .mp-row { border-top: 1px solid #111; border-radius: 0; padding: 8px 12px; margin-bottom: 0; background: transparent; }
+  .option4 .mp-row:first-child { border-top: none; }
+  .option4 .mp-row.blocked { background: repeating-linear-gradient(135deg, #f6f4ec, #f6f4ec 5px, #ece9de 5px, #ece9de 10px); }
+  .option4 .mp-row-name::before { content: "▸ "; }
+  .option4 .mp-row-cost { opacity: 1; }
+  .option4 .mp-row-gate { color: #b8412a; font-weight: 700; }
+  .option4 .mp-row-gate::before { content: "! "; }
+
+  .option4 .mp-bn-row { border-top: 1px solid #111; border-radius: 0; padding: 8px 12px; margin-bottom: 0; }
+  .option4 .mp-bn-row:first-child { border-top: none; }
+  .option4 .mp-bn-stats { opacity: 1; }
+  .option4 .mp-tag { border-radius: 0; border: 1px solid #111; }
+  .option4 .mp-tag.ok { background: #111; color: #e9e7df; }
+  .option4 .mp-tag.warn { background: #fff; color: #b8412a; border-color: #b8412a; }
+
+  .option4 .mp-news { border: 1px dashed #111; border-radius: 0; }
+  .option4 .mp-news::before { content: "> "; font-weight: 700; }
+
+  .option4 .mp-btn { background: #f6f4ec; color: #111; border: 2px solid #111; border-radius: 0; transition: none; }
+  .option4 .mp-btn.state-hover { background: #111; color: #f6f4ec; }
+  .option4 .mp-btn.is-disabled { background: #e9e7df; color: #9c998f; border-color: #9c998f; }
+  .option4 .mp-btn.state-selected { background: #111; color: #f6f4ec; box-shadow: inset 0 0 0 2px #f6f4ec, inset 0 0 0 4px #111; }
+
+  footer { text-align: center; color: #6b7480; font-size: 11.5px; padding: 30px 0 50px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================= ICON SPRITE
+     One shared library of small stroke-based glyphs (matches the game's own
+     "simple monochrome vector glyph, tinted by state" approach already used
+     for the tech-tree nodes) — reused via <use> in every option below so all
+     four render identical iconography, just recolored per theme. -->
+<svg style="display:none">
+  <symbol id="ic-factory" viewBox="0 0 24 24"><path d="M3 21V11l4-2v2l4-2v2l4-2v2l4-2v10H3z"/><path d="M7 21v-5h3v5"/><path d="M15 21v-4h2v4"/></symbol>
+  <symbol id="ic-manpower" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3"/></symbol>
+  <symbol id="ic-influence" viewBox="0 0 24 24"><path d="M3 10v4h3l5 4V6l-5 4H3z"/><path d="M14 9a4 4 0 0 1 0 6"/><path d="M17 7a8 8 0 0 1 0 10"/></symbol>
+  <symbol id="ic-mobilization" viewBox="0 0 24 24"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="res-steel" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="6" rx="1"/><path d="M4 9l3-3h10l3 3"/></symbol>
+  <symbol id="res-chromium" viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7z"/></symbol>
+  <symbol id="res-tungsten" viewBox="0 0 24 24"><path d="M4 9h16l-8 11z"/><path d="M4 9l3-5h10l3 5"/></symbol>
+  <symbol id="res-oil" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="res-aluminum" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="4" rx="1"/><path d="M5 10l2-3h10l2 3"/></symbol>
+  <symbol id="res-titanium" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6z"/></symbol>
+  <symbol id="res-rareearths" viewBox="0 0 24 24"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/></symbol>
+  <symbol id="res-electronics" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 4v3M12 4v3M15 4v3M9 17v3M12 17v3M15 17v3M4 9h3M4 12h3M4 15h3M17 9h3M17 12h3M17 15h3"/></symbol>
+  <symbol id="res-alloy" viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="unit-infantry" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><path d="M4 6l16 12M20 6L4 18"/></symbol>
+  <symbol id="unit-armor" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><ellipse cx="12" cy="12" rx="6" ry="4"/></symbol>
+  <symbol id="unit-artillery" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="unit-drone" viewBox="0 0 24 24"><path d="M12 3l6 9-6 9-6-9z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="status-garrison" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="status-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-dispatch" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="M5 7a9 9 0 0 1 14 0"/><circle cx="12" cy="21" r="1" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<div class="pageHead">
+  <span class="tag">Total Mobilization</span><span class="tag">UI direction review</span>
+  <h1>Four UI Directions — Pick One Before We Touch <code>index.html</code></h1>
+  <p>The current chrome (parchment, rubber stamps, grease-pencil rings) is a 1940s paper-map-room pastiche sitting on top of a
+  near-future arsenal — hypersonics, armed drones, cruise/ballistic missiles, NATO battalion symbology, grey-steel vehicles.
+  The designer flagged both problems at once: the UI "feels blatantly AI" (outline soup, one font, uniform spacing — see
+  <code>docs/reference-ui-style.md</code> and <code>docs/reference-ui-typography.md</code>) <em>and</em> the paper skin itself
+  doesn't match what the game is actually about (see <code>docs/reference-ui-strategy-games.md</code>). The four options below
+  render the <strong>exact same widget set</strong> — a live-looking resource ledger, a reinforcements panel with an affordable
+  row and a disabled/unaffordable row, a two-battalion roster with a healthy and a shaken status, a dispatch line, and buttons
+  in normal / hover / disabled / selected states — so they're a fair side-by-side. Two directions are modern/near-future
+  (①②), one is the existing paper concept done properly (③), one is a fully different brutalist printout language (④).</p>
+</div>
+
+<div class="iconDemo">
+  <h2>Iconization pass (applies inside every option below)</h2>
+  <p class="sub">Designer note: "iconize things — a wall of text is boring." Same resource stockpile line, before vs. after:</p>
+  <div class="iconRow">
+    <div class="col">
+      <div class="lbl">Before — text wall (current game)</div>
+      <div class="wallText">Fe 40 (+0.62/s)  Cr 12 (+0.18/s)  W 4 (+0.05/s)  Oil 118 (+1.20/s)
+Al 26 (+0.30/s)  Ti 0 (+0.00/s)  REE 2 (+0.03/s)  PCB 9 (+0.11/s)  AA 0 (+0.00/s)</div>
+    </div>
+    <div class="col">
+      <div class="lbl">After — icon-led chips</div>
+      <div class="chipRow">
+        <span class="chip"><svg class="ic"><use href="#res-steel"/></svg>40 <small style="opacity:.6">+.62/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-chromium"/></svg>12 <small style="opacity:.6">+.18/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-tungsten"/></svg>4 <small style="opacity:.6">+.05/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-oil"/></svg>118 <small style="opacity:.6">+1.20/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-aluminum"/></svg>26 <small style="opacity:.6">+.30/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-titanium"/></svg>0</span>
+        <span class="chip"><svg class="ic"><use href="#res-rareearths"/></svg>2 <small style="opacity:.6">+.03/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-electronics"/></svg>9 <small style="opacity:.6">+.11/s</small></span>
+        <span class="chip"><svg class="ic"><use href="#res-alloy"/></svg>0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================== OPTION 1 -->
+<section class="option option1">
+  <div class="optionInner">
+    <div class="optionHead">
+      <span class="optionNum">OPTION 1</span>
+      <h2 class="optionTitle">Modern Military C2 / Tactical Display</h2>
+    </div>
+    <p class="rationale">Dark slate command console — thin precise hairline rules (never boxes), cyan data accents with an
+      amber secondary and red alert, condensed uppercase technical labels, tabular monospace for every number. Evokes an
+      actual battle-management console (Command: Modern Operations, WARNO). Matches the game's own grey-steel unit palette
+      and near-future arsenal directly. Tradeoff: dark UI needs contrast discipline to stay legible over a dark map — accent
+      colors are reserved for state (cyan=neutral-ready, amber=caution, red=alert) so they don't turn into noise.</p>
+
+    <div class="mp-topbar">
+      <span class="mp-phase">COMBAT</span>
+      <span class="mp-hint">FOG OFF — F: TOGGLE FOG — H: GUIDE</span>
+      <span class="mp-objectives">CITIES 5/5 · ENEMY 15</span>
+    </div>
+
+    <div class="grid">
+      <div class="mp-panel">
+        <div class="mp-panel-head">
+          <span class="mp-panel-title"><svg class="ic"><use href="#ic-factory"/></svg> LEDGER</span>
+        </div>
+        <div class="mp-panel-body">
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-factory"/></svg>IC</span><span class="mp-stat-val">206<small style="opacity:.5">/250</small><span class="mp-stat-rate">+3.46/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-manpower"/></svg>MANPOWER</span><span class="mp-stat-val">56<small style="opacity:.5">/120</small><span class="mp-stat-rate">+2.45/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-influence"/></svg>INFLUENCE</span><span class="mp-stat-val">30<small style="opacity:.5">/150</small><span class="mp-stat-rate">+0.15/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-mobilization"/></svg>MOBILIZATION</span><span class="mp-stat-val">0.7%<span class="mp-stat-rate">Peacetime</span></span></div>
+          <div class="mp-chips">
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-steel"/></svg>40</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-chromium"/></svg>12</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-tungsten"/></svg>4</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-oil"/></svg>118</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-electronics"/></svg>9</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gridRight">
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">REINFORCEMENTS</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-row ready">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg> FACTORY ELITE</span></div>
+              <div class="mp-row-cost">200 IC · 40 MP · 70 STEEL · 25 CR · 15 W — 45s · REQ TANK FACTORY</div>
+              <div class="mp-row-foot"><div class="mp-btn-group"><button class="mp-btn">REQUISITION</button></div></div>
+            </div>
+            <div class="mp-row blocked">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg> LOCAL MILITIA</span></div>
+              <div class="mp-row-cost">20 IC · 55 MP — 9s</div>
+              <div class="mp-row-gate">INSUFFICIENT MANPOWER</div>
+              <div class="mp-row-foot"><div class="mp-btn-group"><button class="mp-btn is-disabled" disabled>REQUISITION</button></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">BATTALIONS</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-bn-row state-ok">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg>1ST RIFLE <span class="mp-bn-type">INFANTRY</span></span>
+                <span class="mp-tag ok"><svg class="ic ic-sm"><use href="#status-garrison"/></svg>GARRISONED</span>
+              </div>
+              <div class="mp-bn-stats">STR 92% · MORALE FRESH · STANCE DEFEND · SECTOR DETNUZDEIN</div>
+            </div>
+            <div class="mp-bn-row state-warn">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>5TH ARMOR <span class="mp-bn-type">ARMOR</span></span>
+                <span class="mp-tag warn"><svg class="ic ic-sm"><use href="#status-warn"/></svg>SHAKEN</span>
+              </div>
+              <div class="mp-bn-stats">STR 61% · MORALE SHAKEN · STANCE HOLD · SECTOR SKAETRAET</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-news"><svg class="ic"><use href="#icon-dispatch"/></svg> FRONTLINE — Militia mustered at Detnuzdein; landing craft spotted 40km off Skaetraet coast.</div>
+
+    <div class="mp-btnrow">
+      <div class="mp-btn-group"><button class="mp-btn">REQUISITION</button><span class="cap">normal</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-hover">REQUISITION</button><span class="cap">hover</span></div>
+      <div class="mp-btn-group"><button class="mp-btn is-disabled" disabled>REQUISITION</button><span class="cap">disabled</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-selected">DEFEND</button><span class="cap">selected (stance)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== OPTION 2 -->
+<section class="option option2">
+  <div class="optionInner">
+    <div class="optionHead">
+      <span class="optionNum">OPTION 2</span>
+      <h2 class="optionTitle">Clean Operational Minimal</h2>
+    </div>
+    <p class="rationale">Near-flat, near-monochrome grey UI with a single amber accent, generous whitespace, and hierarchy
+      built from type weight/size rather than boxes or borders — separation comes entirely from tone and space (soft
+      shadows + rounded 8–12px cards used consistently, not the "uniform 2px everywhere" tell). Reads modern and calm —
+      closer to a premium ops dashboard than a game skin. Tradeoff: the most "generic modern app" of the four if not paired
+      with strong iconography and a confident accent color; the icon-led rows here are load-bearing, not decoration.</p>
+
+    <div class="mp-topbar">
+      <span class="mp-phase">COMBAT</span>
+      <span class="mp-hint">Fog off · F to toggle · H for guide</span>
+      <span class="mp-objectives">Cities 5/5 — Enemy 15</span>
+    </div>
+
+    <div class="grid">
+      <div class="mp-panel">
+        <div class="mp-panel-head"><span class="mp-panel-title"><svg class="ic"><use href="#ic-factory"/></svg> Ledger</span></div>
+        <div class="mp-panel-body">
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-factory"/></svg>IC</span><span class="mp-stat-val">206<small style="font-weight:400;opacity:.5">/250</small> <span class="mp-stat-rate">+3.46/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-manpower"/></svg>Manpower</span><span class="mp-stat-val">56<small style="font-weight:400;opacity:.5">/120</small> <span class="mp-stat-rate">+2.45/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-influence"/></svg>Influence</span><span class="mp-stat-val">30<small style="font-weight:400;opacity:.5">/150</small> <span class="mp-stat-rate">+0.15/s</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-mobilization"/></svg>Mobilization</span><span class="mp-stat-val">0.7% <span class="mp-stat-rate" style="color:#b8790a">Peacetime</span></span></div>
+          <div class="mp-chips">
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-steel"/></svg>40</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-chromium"/></svg>12</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-tungsten"/></svg>4</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-oil"/></svg>118</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-electronics"/></svg>9</span>
+          </div>
+        </div>
+      </div>
+      <div class="gridRight">
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">Reinforcements</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-row ready" style="margin-bottom:10px;">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg> Factory Elite</span></div>
+              <div class="mp-row-cost">200 IC · 40 MP · 70 Steel · 25 Cr · 15 W — 45s · req. Tank Factory</div>
+              <div class="mp-row-foot"><button class="mp-btn">Requisition</button></div>
+            </div>
+            <div class="mp-row blocked">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg> Local Militia</span></div>
+              <div class="mp-row-cost">20 IC · 55 MP — 9s</div>
+              <div class="mp-row-gate">Insufficient manpower</div>
+              <div class="mp-row-foot"><button class="mp-btn is-disabled" disabled>Requisition</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">Battalions</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-bn-row">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg>1st Rifle <span class="mp-bn-type">Infantry</span></span>
+                <span class="mp-tag ok"><svg class="ic ic-sm"><use href="#status-garrison"/></svg>Garrisoned</span>
+              </div>
+              <div class="mp-bn-stats">Str 92% · Morale Fresh · Stance Defend · Sector Detnuzdein</div>
+            </div>
+            <div class="mp-bn-row" style="margin-bottom:0;">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>5th Armor <span class="mp-bn-type">Armor</span></span>
+                <span class="mp-tag warn"><svg class="ic ic-sm"><use href="#status-warn"/></svg>Shaken</span>
+              </div>
+              <div class="mp-bn-stats">Str 61% · Morale Shaken · Stance Hold · Sector Skaetraet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-news"><svg class="ic"><use href="#icon-dispatch"/></svg> Frontline — Militia mustered at Detnuzdein; landing craft spotted 40km off Skaetraet coast.</div>
+
+    <div class="mp-btnrow">
+      <div class="mp-btn-group"><button class="mp-btn">Requisition</button><span class="cap">normal</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-hover">Requisition</button><span class="cap">hover</span></div>
+      <div class="mp-btn-group"><button class="mp-btn is-disabled" disabled>Requisition</button><span class="cap">disabled</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-selected">Defend</button><span class="cap">selected</span></div>
+      <div class="mp-btn-group"><button class="mp-btn ghost">Attack</button><span class="cap">ghost (unselected)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== OPTION 3 -->
+<section class="option option3">
+  <div class="optionInner">
+    <div class="optionHead">
+      <span class="optionNum">OPTION 3</span>
+      <h2 class="optionTitle">Refined War-Room Paper</h2>
+    </div>
+    <p class="rationale">The existing "paper pinned to a map table" concept, executed to the letter of
+      <code>docs/reference-ui-style.md</code>: the universal 1px outline is gone (grain + shadow define every edge instead),
+      rows separate by tint + a colored left-rule instead of a full border, and labels/values now split sans-serif caps vs.
+      monospace tabular data. Warm, period-appropriate, still legible and dense. Tradeoff — stated up front — this is
+      deliberately a 1940s pastiche sitting next to hypersonics and armed drones; however well it's built, it will always
+      read more "war film" than "modern C2." Best fit only if the fiction ("you're literally a desk officer at a map table")
+      is meant to be foregrounded over the hardware's own modernity.</p>
+
+    <div class="mp-topbar paperGrain">
+      <span class="mp-phase">COMBAT</span>
+      <span class="mp-hint">fog OFF — F: toggle fog — H: guide</span>
+      <span class="mp-objectives">Cities held 5/5 — Enemy 15</span>
+    </div>
+
+    <div class="grid">
+      <div class="mp-panel paperGrain">
+        <div class="mp-panel-head"><span class="mp-panel-title"><svg class="ic"><use href="#ic-factory"/></svg> Ledger</span></div>
+        <div class="mp-panel-body">
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-factory"/></svg>IC</span><span class="mp-stat-val">206/250 <span class="mp-stat-rate">(+3.46/s)</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-manpower"/></svg>MP</span><span class="mp-stat-val">56/120 <span class="mp-stat-rate">(+2.45/s)</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-influence"/></svg>Infl</span><span class="mp-stat-val">30/150 <span class="mp-stat-rate">(+0.15/s)</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-mobilization"/></svg>Mobilization</span><span class="mp-stat-val">0.7% <span class="mp-stat-rate">Peacetime</span></span></div>
+          <div class="mp-chips">
+            <span class="mp-chip"><svg class="ic ic-sm" style="color:#a7b3bd"><use href="#res-steel"/></svg>40</span>
+            <span class="mp-chip"><svg class="ic ic-sm" style="color:#7fe0cf"><use href="#res-chromium"/></svg>12</span>
+            <span class="mp-chip"><svg class="ic ic-sm" style="color:#c99ee8"><use href="#res-tungsten"/></svg>4</span>
+            <span class="mp-chip"><svg class="ic ic-sm" style="color:#caa24a"><use href="#res-oil"/></svg>118</span>
+            <span class="mp-chip"><svg class="ic ic-sm" style="color:#5fe07a"><use href="#res-electronics"/></svg>9</span>
+          </div>
+        </div>
+      </div>
+      <div class="gridRight">
+        <div class="mp-panel paperGrain">
+          <div class="mp-panel-head"><span class="mp-panel-title">Reinforcements</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-row ready" style="margin-bottom:8px;">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg> Factory Elite</span></div>
+              <div class="mp-row-cost">200 IC, 40 manpower, 70 Steel, 25 Cr, 15 W — 45s. Requires Tank Factory</div>
+              <div class="mp-row-foot"><button class="mp-btn">Requisition</button></div>
+            </div>
+            <div class="mp-row blocked">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg> Local Militia</span></div>
+              <div class="mp-row-cost">20 IC, 55 manpower — 9s</div>
+              <div class="mp-row-gate">Insufficient manpower</div>
+              <div class="mp-row-foot"><button class="mp-btn is-disabled" disabled>Requisition</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-panel paperGrain">
+          <div class="mp-panel-head"><span class="mp-panel-title">Battalions</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-bn-row state-ok">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg>1st Rifle <span class="mp-bn-type">Infantry</span></span>
+                <span class="mp-tag ok"><svg class="ic ic-sm"><use href="#status-garrison"/></svg>Garrisoned</span>
+              </div>
+              <div class="mp-bn-stats">Str 92% · Morale Fresh · Stance Defend · Sector Detnuzdein</div>
+            </div>
+            <div class="mp-bn-row state-warn" style="margin-bottom:0;">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>5th Armor <span class="mp-bn-type">Armor</span></span>
+                <span class="mp-tag warn"><svg class="ic ic-sm"><use href="#status-warn"/></svg>Shaken</span>
+              </div>
+              <div class="mp-bn-stats">Str 61% · Morale Shaken · Stance Hold · Sector Skaetraet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-news paperGrain"><svg class="ic"><use href="#icon-dispatch"/></svg> Frontline — Militia mustered at Detnuzdein; landing craft spotted 40km off Skaetraet coast.</div>
+
+    <div class="mp-btnrow">
+      <div class="mp-btn-group"><button class="mp-btn">Requisition</button><span class="cap">normal</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-hover">Requisition</button><span class="cap">hover</span></div>
+      <div class="mp-btn-group"><button class="mp-btn is-disabled" disabled>Requisition</button><span class="cap">disabled</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-selected">Defend</button><span class="cap">selected</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== OPTION 4 -->
+<section class="option option4">
+  <div class="optionInner">
+    <div class="optionHead">
+      <span class="optionNum">OPTION 4</span>
+      <h2 class="optionTitle">Brutalist / Technical Readout</h2>
+    </div>
+    <p class="rationale">One monospace face, everywhere, no exceptions. High-contrast black-on-off-white, hard 1–2px rules
+      used deliberately as a real ruled table (this is the one direction where "rules everywhere" is correct, not an AI
+      tell — see <code>docs/reference-ui-style.md</code> §3.1 "Option C: Flat + Ruled"), zero corner rounding, a single
+      stamp-red reserved for alerts only. Reads like an actual dot-matrix wargame printout (Command: Modern Operations,
+      Unity of Command). Tradeoff: the least "designed" looking of the four at a glance — its whole appeal is austerity, so
+      it lives or dies on whether the density stays genuinely scannable rather than just stark.</p>
+
+    <div class="mp-topbar">
+      <span class="mp-phase">COMBAT</span>
+      <span class="mp-hint">FOG OFF / F=TOGGLE FOG / H=GUIDE</span>
+      <span class="mp-objectives">CITIES 5/5 · ENEMY 15</span>
+    </div>
+
+    <div class="grid">
+      <div class="mp-panel">
+        <div class="mp-panel-head"><span class="mp-panel-title"><svg class="ic"><use href="#ic-factory"/></svg> LEDGER</span></div>
+        <div class="mp-panel-body">
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-factory"/></svg>IC</span><span class="mp-stat-val">206/250 <span class="mp-stat-rate">+3.46/S</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-manpower"/></svg>MP</span><span class="mp-stat-val">56/120 <span class="mp-stat-rate">+2.45/S</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-influence"/></svg>INFL</span><span class="mp-stat-val">30/150 <span class="mp-stat-rate">+0.15/S</span></span></div>
+          <div class="mp-stat-line"><span class="mp-stat-label"><svg class="ic"><use href="#ic-mobilization"/></svg>MOB</span><span class="mp-stat-val">0.7% <span class="mp-stat-rate">PEACETIME</span></span></div>
+          <div class="mp-chips">
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-steel"/></svg>40</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-chromium"/></svg>12</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-tungsten"/></svg>4</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-oil"/></svg>118</span>
+            <span class="mp-chip"><svg class="ic ic-sm"><use href="#res-electronics"/></svg>9</span>
+          </div>
+        </div>
+      </div>
+      <div class="gridRight">
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">REINFORCEMENTS</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-row ready">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>FACTORY ELITE</span></div>
+              <div class="mp-row-cost">200 IC / 40 MP / 70 STEEL / 25 CR / 15 W — 45S — REQ TANK FACTORY</div>
+              <div class="mp-row-foot"><button class="mp-btn">REQUISITION</button></div>
+            </div>
+            <div class="mp-row blocked">
+              <div class="mp-row-head"><span class="mp-row-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg>LOCAL MILITIA</span></div>
+              <div class="mp-row-cost">20 IC / 55 MP — 9S</div>
+              <div class="mp-row-gate">INSUFFICIENT MANPOWER</div>
+              <div class="mp-row-foot"><button class="mp-btn is-disabled" disabled>REQUISITION</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-panel">
+          <div class="mp-panel-head"><span class="mp-panel-title">BATTALIONS</span></div>
+          <div class="mp-panel-body">
+            <div class="mp-bn-row">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-infantry"/></svg>1ST RIFLE <span class="mp-bn-type">INF</span></span>
+                <span class="mp-tag ok"><svg class="ic ic-sm"><use href="#status-garrison"/></svg>GARRISON</span>
+              </div>
+              <div class="mp-bn-stats">STR 92% / MORALE FRESH / STANCE DEFEND / SECTOR DETNUZDEIN</div>
+            </div>
+            <div class="mp-bn-row">
+              <div class="mp-bn-head">
+                <span class="mp-bn-name"><svg class="ic ic-sm"><use href="#unit-armor"/></svg>5TH ARMOR <span class="mp-bn-type">ARM</span></span>
+                <span class="mp-tag warn"><svg class="ic ic-sm"><use href="#status-warn"/></svg>SHAKEN</span>
+              </div>
+              <div class="mp-bn-stats">STR 61% / MORALE SHAKEN / STANCE HOLD / SECTOR SKAETRAET</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-news"><svg class="ic"><use href="#icon-dispatch"/></svg> FRONTLINE — MILITIA MUSTERED AT DETNUZDEIN. LANDING CRAFT SPOTTED 40KM OFF SKAETRAET COAST.</div>
+
+    <div class="mp-btnrow">
+      <div class="mp-btn-group"><button class="mp-btn">REQUISITION</button><span class="cap">normal</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-hover">REQUISITION</button><span class="cap">hover</span></div>
+      <div class="mp-btn-group"><button class="mp-btn is-disabled" disabled>REQUISITION</button><span class="cap">disabled</span></div>
+      <div class="mp-btn-group"><button class="mp-btn state-selected">DEFEND</button><span class="cap">selected</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>docs/ui-options.html — mockup only, not wired to the game. See docs/reference-ui-style.md, docs/reference-ui-typography.md, docs/reference-ui-strategy-games.md for the full research behind each direction.</footer>
+
+</body>
+</html>

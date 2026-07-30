@@ -1,8 +1,18 @@
-# Publish ONLY the game. Ignore everything else in this working folder
+# Publish ONLY the game(s). Ignore everything else in this working folder
 # (the big PDFs/zips, backups, slide images, music, and local dev-only scripts
 #  like serve.ps1 / the launcher / .claude all stay off the public site).
+# Root-level rules are anchored (leading /) so they don't accidentally reach
+# into subfolders like topdown/ that have their own files of the same name.
 /*
-!.gitignore
-!index.html
-!title.html
-!README.md
+!/.gitignore
+!/index.html
+!/title.html
+!/README.md
+# project instructions for Claude Code — must be tracked so a fresh session
+# (or a fresh clone) picks it up automatically
+!/CLAUDE.md
+# topdown/ = the fresh top-down rebuild (in progress, lives alongside the
+# original side-view game rather than replacing it)
+!/topdown/
+!/topdown/**
+topdown/tools/balance-harness-results.json

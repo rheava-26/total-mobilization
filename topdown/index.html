@@ -1,0 +1,1150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOTAL MOBILIZATION — Topdown Slice</title>
+<style>
+  /* ===========================================================================
+     "MODERN MILITARY C2 / TACTICAL DISPLAY" UI IDENTITY — ported verbatim
+     from docs/ui-options.html OPTION 1, the direction the designer picked
+     after reviewing four mockups (playtest feedback the old parchment skin
+     was answering: "feels blatantly AI" [outline soup / one font / uniform
+     spacing] AND "the paper skin doesn't match what the game is actually
+     about" [near-future arsenal, not a 1940s war room]).
+
+     The fiction: a dark slate battle-management console (Command: Modern
+     Operations / WARNO) laid directly over the tactical map — glowing,
+     precise, zero warmth. Separation comes from HAIRLINE RULES and LEFT-
+     ACCENT BARS, never from boxes/outlines (that outline-soup was the
+     designer's specific complaint) — panels read as glass consoles via a
+     faint cyan ring-shadow, not a border. Cyan is the neutral/ready state
+     accent, amber is caution, red is alert; condensed uppercase technical
+     labels; tabular monospace numerals everywhere a live number appears.
+
+     Deliberately SYSTEM fonts only (a sans stack for labels/prose, a
+     monospace stack for every number/ledger value) — no external fonts, no
+     image assets, no new dependencies (this is a static-HTTP game, not a
+     build). Icons are the inline SVG sprite declared once near the top of
+     <body> (id="ic-sprite") and referenced via <use> everywhere a glyph is
+     needed — no icon font, matches the game's own "simple monochrome vector
+     glyph" tech-tree convention.
+     ========================================================================= */
+  :root {
+    --bg-deep: #0a0d11;
+    --panel: #10151b;             /* panel body */
+    --panel-head: #141a21;        /* header strip / row background */
+    --panel-strong: #171d24;      /* chip / raised-row background */
+    --panel-ring: rgba(79, 216, 255, .08);   /* glass-console ring shadow, replaces borders */
+    --panel-ring-soft: rgba(79, 216, 255, .14);
+    --hairline: rgba(255, 255, 255, .045);   /* row separators, replaces .opsPanel borders */
+    --hairline-strong: rgba(255, 255, 255, .09);
+    --cyan: #4fd8ff;
+    --cyan-dim: rgba(79, 216, 255, .35);
+    --amber: #ffb020;
+    --red: #ff5a5a;
+    --red-dim: rgba(255, 90, 90, .4);
+    --green: #57d68d;
+    /* Kept as aliases so every pre-existing --ink-soft/--red/--green/--amber/
+       --blue-ink reference below still resolves to a C2-appropriate color
+       without a second find-and-replace pass through every rule that used
+       the old parchment names. */
+    --ink: #e7edf2;
+    --ink-soft: #7c8894;
+    --ink-faint: #4a545d;
+    --rule: var(--hairline-strong);
+    --rule-soft: var(--hairline);
+    --red-bright: var(--red);
+    --blue-ink: var(--cyan);
+    --panel-shadow: 0 0 0 1px var(--panel-ring), 0 10px 26px rgba(0, 0, 0, .45);
+    --mono: Menlo, Consolas, "SF Mono", "Courier New", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  html, body { margin: 0; height: 100%; background: #060a12; overflow: hidden; }
+  body { font-family: var(--sans); }
+  /* Tabular monospace numerals everywhere a live figure appears (design
+     requirement: "tabular monospace numerals for all live numbers") — set
+     once at the panel root rather than tagging every individual value span. */
+  .opsPanel, #hud { font-variant-numeric: tabular-nums; }
+  /* Shared icon plumbing for the <use>-referenced sprite glyphs. */
+  .ic {
+    width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round; vertical-align: -2.5px; flex: none; color: var(--cyan);
+  }
+  .ic-sm { width: 11px; height: 11px; }
+  .ic-lg { width: 18px; height: 18px; }
+  #view { display: block; width: 100%; height: 100%; cursor: grab; }
+  #view.grabbing { cursor: grabbing; }
+  /* SELL MODE (X) — bug fix: entering sell mode used to change no visible
+     state at all beyond an internal flag, so a player could be stuck in it
+     not knowing why clicks were selling buildings. Mirrors build mode's own
+     "the top instruction bar changes" signal (main.js sets #hud's text) with
+     a cursor + screen-edge tint main.js toggles via body.sell-mode so the
+     mode reads as active even before the player looks at the ticker text. */
+  body.sell-mode #view { cursor: crosshair; }
+  body.sell-mode::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    box-shadow: inset 0 0 0 4px rgba(255, 90, 90, .55), inset 0 0 40px rgba(255, 90, 90, .12);
+  }
+  /* LOADING OVERLAY (bug fix: the one-time terrain pre-render can block the
+     main thread for several seconds on a big generated map with no visible
+     progress — see engine/renderer.js's prerenderTerrain/ensureTerrain and
+     main.js's boot sequence — which read as a hang to a first-time player.
+     Visible from the very first paint (plain static markup, no JS needed to
+     show it) and covers the canvas completely; main.js removes the `show`
+     class the instant the first real frame has actually been drawn. Plain
+     functional copy only, per the task constraint — this is not lore. */
+  #loadingOverlay {
+    position: fixed; inset: 0; z-index: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-deep); color: #9fb4c0; font: 13px Consolas, 'SF Mono', 'Courier New', monospace;
+    letter-spacing: .4px; opacity: 1; transition: opacity .35s ease;
+  }
+  #loadingOverlay.hide { opacity: 0; pointer-events: none; }
+  #loadingOverlay .loadingBox { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  #loadingOverlay .loadingSpinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid rgba(79, 216, 255, .16); border-top-color: var(--cyan);
+    animation: loadingSpin .9s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { #loadingOverlay .loadingSpinner { animation: none; } }
+  @keyframes loadingSpin { to { transform: rotate(360deg); } }
+  /* Shared "C2 console panel" base — every chart-overlay panel opts in with
+     this class. Dark slate fill + a faint cyan RING SHADOW (no border) reads
+     as a glass console sitting above the map; separation inside a panel
+     comes from hairline rules + left-accent bars on individual rows (below),
+     never from a boxed outline — the designer's specific "outlining looks
+     kinda weird" complaint about the old skin. */
+  .opsPanel {
+    position: fixed;
+    background: var(--panel);
+    border: none;
+    border-radius: 3px;
+    box-shadow: var(--panel-shadow);
+    color: var(--ink);
+    font: 12px var(--sans);
+  }
+  .opsPanel::before, .opsPanel::after { content: none; } /* no corner registration ticks in this direction */
+  /* Section header label — condensed uppercase cyan caps, no box/rotation/
+     stamp treatment (replaces the old rubber-stamp motif). `.ink`/`.green`
+     kept as no-op modifiers (still referenced by index.html/main.js markup)
+     so every panel title reads the same restrained cyan label, matching
+     Option 1's mockup where every .mp-panel-title is cyan regardless of
+     panel. */
+  .opsStamp {
+    display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; font-weight: 800;
+    letter-spacing: 1.6px; font-size: 11px; color: var(--cyan);
+    white-space: nowrap; font-family: var(--sans);
+  }
+  .opsStamp.green, .opsStamp.ink { color: var(--cyan); }
+  /* Thin cyan-toned scrollbars (webkit) — a full-fat default scrollbar is
+     one of the "generic app" tells this pass exists to remove. Firefox
+     falls back to its own thin/auto styling via scrollbar-width below. */
+  .opsPanel { scrollbar-width: thin; scrollbar-color: rgba(79,216,255,.3) transparent; }
+  .opsPanel::-webkit-scrollbar { width: 8px; height: 8px; }
+  .opsPanel::-webkit-scrollbar-thumb { background: rgba(79,216,255,.3); border-radius: 4px; }
+  .opsPanel::-webkit-scrollbar-track { background: transparent; }
+  .opsBtn {
+    background: #17232c; border: 1px solid var(--cyan-dim); color: var(--cyan);
+    border-radius: 2px; padding: 6px 11px; cursor: pointer;
+    font: 11px var(--sans); font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
+    transition: background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
+  }
+  .opsBtn:hover:not(:disabled) {
+    background: #1c303c; border-color: var(--cyan);
+    box-shadow: 0 0 0 1px rgba(79,216,255,.3), 0 0 14px rgba(79,216,255,.25);
+  }
+  .opsBtn:disabled { background: #12161b; color: var(--ink-faint); border-color: var(--hairline-strong); cursor: not-allowed; }
+  .opsBtn.selected { background: var(--cyan); color: #0a0d11; border-color: var(--cyan); }
+  /* BUG FIX (kept from the original skin): .opsBtn:hover below is MORE
+     specific in practice than .selected alone, so hovering a selected
+     button let the plain hover rule win the cascade and reset it back to
+     the unselected look. Re-asserting background+color at equal-or-higher
+     specificity keeps a selected button legible (and still visibly
+     "selected") while hovered. */
+  .opsBtn.selected:hover:not(:disabled) { background: var(--cyan); color: #0a0d11; border-color: var(--cyan); box-shadow: 0 0 14px rgba(79,216,255,.4); }
+  /* ---- SHARED C2 "LEDGER" PRIMITIVES ------------------------------------
+     Reusable label/value stat rows + icon-led chips, lifted from Option 1's
+     mockup (.mp-stat-line/.mp-chip) — used across the econ ledger, objective
+     HUD, home defense status, and outcome stats so every live number in the
+     game shares one look: a condensed uppercase label on the left, a
+     tabular-monospace value (+ a dim rate suffix) on the right, hairline-
+     separated rows instead of a boxed table. Chips are the "icon + number"
+     replacement for the old plain resource text wall. */
+  .statLine { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; padding: 3px 0; font-size: 12px; border-bottom: 1px solid var(--hairline); }
+  .statLine:last-child { border-bottom: none; }
+  .statLabel { display: flex; align-items: center; gap: 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-soft); font-family: var(--sans); white-space: nowrap; }
+  .statVal { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; color: #e7edf2; text-align: right; max-width: 100%; }
+  .statVal small { opacity: .55; font-weight: 400; }
+  .statRate { font-size: 10px; color: var(--cyan); margin-left: 5px; font-weight: 500; white-space: nowrap; }
+  .statRate.warn { color: var(--amber); }
+  .chipRow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--panel-strong); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 3px 7px; font-family: var(--mono); font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .chip .ic { color: var(--amber); }
+  .chip small { opacity: .6; margin-left: 2px; }
+  .sectionLabel { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1.3px; color: var(--ink-soft); border-bottom: 1px solid var(--hairline); padding-bottom: 4px; margin: 10px 0 6px; font-family: var(--sans); }
+  .sectionLabel:first-child { margin-top: 0; }
+  /* Left-accent "row" shape — the replacement for every old bordered
+     `.reinforceRoute`/`.battalionRow`/`.newsRow`/`.techRow` card: a tonal
+     background + a 2px LEFT rule (not a full border box) that recolors by
+     state (default steel-grey, ready/ok cyan or green, blocked/warn amber
+     or red). This is the single shared "row" primitive every dynamic list
+     panel below opts into. */
+  .accentRow { display: flex; flex-direction: column; gap: 4px; padding: 8px 9px; background: var(--panel-head); border-left: 2px solid #2a3742; border-radius: 0 2px 2px 0; }
+  .accentRow.ready, .accentRow.state-ok { border-left-color: var(--cyan); }
+  .accentRow.blocked, .accentRow.state-bad { border-left-color: var(--red); background: linear-gradient(90deg, rgba(255,90,90,.07), var(--panel-head) 70px); }
+  .accentRow.state-warn { border-left-color: var(--amber); }
+  /* INTRO FOCUS — while the intro sequence runs (main.js toggles body.intro-active),
+     hide the game's corner HUD so the welcome/handoff beats aren't cluttered by
+     the ledger/legend/plan panels ("nothing else matters yet"). The intro's own
+     panel + skip button and the #hud controls ticker stay visible. Everything
+     reverts the instant the intro ends. !important to beat each panel's own
+     display rule (flex/block/.show) uniformly. */
+  body.intro-active #econHud,
+  body.intro-active #legendPanel,
+  body.intro-active #guidancePanel,
+  body.intro-active #objectiveHud,
+  body.intro-active #phaseHud { display: none !important; }
+  /* FIRST-BOOT DISCOVERABILITY NUDGE — the econ ledger + field-manual panels
+     collapse by default (the de-occlusion fix), but a first-time player may
+     not notice the tab is expandable. Until they first open it, its toggle
+     gently pulses (a soft inked outline + a nudging ▸) to draw the eye. The
+     `.nudge` class is added on load and removed the moment the panel is
+     opened (main.js). Motion is dropped under reduced-motion — a static red
+     affordance remains, so the hint survives without animation. */
+  .opsPanel.nudge > button[id$="Toggle"] { animation: opsTabPulse 1.7s ease-in-out infinite; }
+  /* ID selectors here (not .opsPanel.nudge span[...]) so this beats the plain
+     #econHudToggleIcon/#legendToggleIcon color rules above on specificity. */
+  .nudge #econHudToggleIcon, .nudge #legendToggleIcon {
+    color: var(--amber); display: inline-block; animation: opsArrowNudge 1.7s ease-in-out infinite;
+  }
+  @keyframes opsTabPulse {
+    0%, 100% { box-shadow: inset 0 0 0 0 rgba(255,176,32,0); }
+    50% { box-shadow: inset 0 0 0 2px rgba(255,176,32,.55); }
+  }
+  @keyframes opsArrowNudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .opsPanel.nudge > button[id$="Toggle"] { animation: none; box-shadow: inset 0 0 0 2px rgba(255,176,32,.5); }
+    .nudge #econHudToggleIcon, .nudge #legendToggleIcon { animation: none; }
+  }
+  /* TECH/PRODUCTION TREE VIEW (CONCEPT.md's settled "Interactive in-game
+     tech/production tree" direction — game/techtree.js + game/techtreeview.js).
+     A dedicated full-screen canvas, its own independent pan/zoom camera, kept
+     hidden (display:none, toggled from JS not just a CSS class so it never
+     eats pointer events while closed) until the G key opens it. z-index above
+     every other HUD panel — it's meant to be a full, exclusive overlay, not
+     one more corner widget. */
+  #techTreeCanvas { display: none; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 500; cursor: grab; }
+  #techTreeCanvas.grabbing { cursor: grabbing; }
+  /* Top-left status strip — a live camera/mode/flash-message ticker.
+     Deliberately THIN (one line, no card chrome) since it's a status line,
+     not a panel with content to protect — a big boxed panel here would just
+     be more of the "blocks the screen" problem the econ ledger had.
+     max-width still leaves room for #econHud's tab on the right. */
+  #hud {
+    /* BUG FIX (top bar collision): this reserved a flat 200px half-width for
+       #phaseHud next door, but #phaseHud's actual content (phase badge +
+       the fog/guide/combat hint line + the BEGIN COMBAT button, all in one
+       unwrapped row) regularly measures 300-350px of half-width on its own
+       — this box's old max-width let it grow right up against, and at some
+       viewports past, #phaseHud's real left edge. Reserving more room here
+       (260px) AND letting #phaseHud wrap/cap its own width (see #phaseHud
+       below) closes the gap from both sides instead of just one guess. */
+    position: fixed; top: 10px; left: 10px; max-width: min(360px, calc(100vw - 650px));
+    padding: 4px 10px 4px 8px; background: rgba(16, 21, 27, .88); border-radius: 2px;
+    border-left: 2px solid var(--cyan-dim);
+    color: var(--ink-soft); font: 11px var(--mono); letter-spacing: .2px;
+    pointer-events: none; box-shadow: 0 0 0 1px var(--panel-ring), 0 3px 10px rgba(0,0,0,.4);
+  }
+  /* ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD blocks
+     the screen"). Restructured from one big always-expanded text block into
+     a COLLAPSIBLE ledger: a slim always-visible summary strip (IC/manpower/
+     influence/mobilization, one line) plus a tab you click to unfold the
+     full resource/production breakdown as a capped, scrollable sheet below
+     it — collapsed by default on boot (main.js), so the very first thing a
+     player sees is a compact tab, not a wall of stats over the map. Top-
+     right, capped max-height so even fully expanded it can never grow past
+     the visible viewport, let alone reach #buildbar (bottom-center) or
+     #guidancePanel (top-center). */
+  /* RIGHT-EDGE PANEL STACK (bug fix — see the HTML comment above #rightStack
+     for the "why" of this wrapper). A plain flex column: each panel below
+     just flows after whichever panel above it actually rendered at,
+     collapsed or expanded, instead of every panel guessing a fixed `top` in
+     px that only stayed correct while everything above it was collapsed.
+     Capped to the viewport height (minus the same 10px margin every panel
+     used individually before) and scrollable as a last resort so even
+     "every panel expanded at once" degrades to a scrollbar instead of
+     spilling past the bottom edge or, worse, back up over the top bar. */
+  #rightStack {
+    position: fixed; top: 10px; right: 10px; z-index: 50;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    max-height: calc(100vh - 20px); overflow-y: auto; overflow-x: visible;
+    scrollbar-width: thin; scrollbar-color: rgba(79,216,255,.3) transparent;
+    /* The container's own box is only as tall as its (collapsed, usually)
+       children — no `bottom` anchor forcing it to span the full viewport —
+       but belt-and-suspenders it anyway: pointer-events:none on the empty
+       flex gaps/container itself so it can never eat clicks meant for the
+       map underneath, with each real panel opting back into pointer-events
+       for its own actual chrome. */
+    pointer-events: none;
+  }
+  #rightStack > .opsPanel { pointer-events: auto; }
+  #rightStack::-webkit-scrollbar { width: 8px; }
+  #rightStack::-webkit-scrollbar-thumb { background: rgba(79,216,255,.3); border-radius: 4px; }
+  #rightStack::-webkit-scrollbar-track { background: transparent; }
+  /* Panels inside the stack are no longer individually `position: fixed` —
+     they're ordinary flex children now, so their old top/right anchors are
+     dropped in favor of `flex: none` (don't stretch/shrink) + a shared
+     width. Each panel keeps its OWN max-height as a per-panel scroll cap
+     (so one giant panel can't push the others fully off-screen even inside
+     the stack's own scroll region), just no longer viewport-offset-relative
+     since that math assumed a specific fixed `top`. */
+  #rightStack > .opsPanel { position: relative; flex: none; width: 236px; max-height: 46vh; }
+  #econHud {
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  #econHudToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    border-bottom: 1px solid var(--hairline); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #econHudToggle:hover { background: #182029; }
+  #econHudToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #econHudSummary {
+    padding: 6px 10px 2px; font: 12px var(--sans); color: var(--ink);
+  }
+  #econHudDetail {
+    max-height: 0; overflow: hidden; transition: max-height .2s ease;
+  }
+  #econHud.expanded #econHudDetail { max-height: 36vh; overflow-y: auto; }
+  #econHudDetailInner {
+    padding: 6px 10px 10px; border-top: 1px solid var(--hairline);
+    font: 12px var(--sans); color: var(--ink);
+  }
+  /* OBJECTIVE HUD (Playability v1) — bottom-left SITREP strip, red accent
+     (urgency: this is the win/lose scoreboard). Same compact-panel family,
+     hidden outside COMBAT — see main.js's updateObjectiveHud. */
+  #objectiveHud {
+    display: none; left: 10px; bottom: 10px; min-width: 210px;
+    padding: 8px 12px; border-left: 2px solid var(--red);
+  }
+  #objectiveHud.show { display: block; }
+  /* Unit/building hover card — a compact console readout near the cursor. */
+  #card {
+    display: none; padding: 9px 13px; min-width: 150px;
+    background: var(--panel-strong); border-left: 2px solid var(--cyan);
+    pointer-events: none;
+  }
+  #card b { font-size: 11.5px; letter-spacing: .8px; text-transform: uppercase; color: var(--cyan); font-weight: 800; display: block; margin-bottom: 6px; font-family: var(--sans); }
+  #card .row { display: flex; justify-content: space-between; gap: 16px; color: var(--ink-soft); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  #card .row span:last-child { color: var(--ink); font-weight: 600; }
+  /* MAP LEGEND & RESOURCE FILTER (playtest: "filter for resources", "a more
+     unique UI" + CONCEPT.md's UX fix #6 "clearer how to build / where
+     things are"). Middle-left — the one screen edge every OTHER panel
+     leaves clear (top-left #hud, top-center #phaseHud/#guidancePanel,
+     top-right #econHud, bottom-center #buildbar, bottom-left
+     #objectiveHud [combat-only], bottom-right #directorBubble). Same
+     collapsible-tab shape as #econHud (collapsed by default so it never
+     competes for space), unfolding into a legend key + one filter button
+     per RESOURCE_LIST entry + a compact controls cheat-sheet. */
+  #legendPanel {
+    left: 10px; top: 50%; transform: translateY(-50%);
+    width: 210px; max-height: 80vh; padding: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #legendToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    border-bottom: 1px solid var(--hairline); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #legendToggle:hover { background: #182029; }
+  #legendToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #legendBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #legendPanel.expanded #legendBody { max-height: 74vh; overflow-y: auto; }
+  #legendBodyInner { padding: 8px 10px 10px; font-size: 11px; line-height: 1.5; font-family: var(--sans); }
+  .legendSection { margin-bottom: 9px; }
+  .legendSection:last-child { margin-bottom: 0; }
+  .legendSectionLabel {
+    display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--ink-soft); border-bottom: 1px solid var(--hairline); padding-bottom: 4px; margin-bottom: 5px;
+  }
+  .legendRow { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; color: var(--ink); }
+  .legendSwatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,.25); flex: none; }
+  .legendGlyph { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; }
+  /* Resource FILTER buttons — click to light up that resource's deposits on
+     the map (drawDepositFocus, engine/renderer-side draw in main.js); click
+     the active one again to clear. Never gates anything, purely a finder. */
+  .filterBtn {
+    display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+    background: transparent; border: none; border-left: 2px solid transparent; border-radius: 0 2px 2px 0;
+    padding: 3px 6px; margin-bottom: 1px; cursor: pointer; color: var(--ink);
+    font: 11px var(--sans);
+  }
+  .filterBtn:hover { background: rgba(255,255,255,.05); }
+  .filterBtn.active { background: rgba(79,216,255,.1); border-left-color: var(--cyan); color: var(--cyan); font-weight: 700; }
+  .legendKeyRow { color: var(--ink-soft); font-size: 10.5px; margin-bottom: 2px; font-family: var(--mono); }
+  .legendKeyRow b { color: var(--cyan); font-family: var(--sans); }
+  /* REINFORCEMENTS PANEL (B2 — game/reinforcements.js, CONCEPT.md's "three
+     sources of battalions": Factory Elite / Army-Sent Standard / Local
+     Militia). Same collapsible-tab shape as #econHud/#legendPanel — a slim
+     always-visible tab plus a click-to-expand body — parked below #econHud
+     on the right edge (the one column #econHud doesn't fully claim), so it
+     never competes with the build/production/research column on the left. */
+  #reinforcePanel {
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  #reinforceToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    border-bottom: 1px solid var(--hairline); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #reinforceToggle:hover { background: #182029; }
+  #reinforceToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #reinforceBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #reinforcePanel.expanded #reinforceBody { max-height: 36vh; overflow-y: auto; }
+  #reinforceBodyInner { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .reinforceRoute { gap: 5px; }
+  .reinforceRoute button { align-self: flex-start; }
+  .reinforceRouteName { color: var(--ink); font-weight: 700; font-size: 12.5px; font-family: var(--sans); display: flex; align-items: center; gap: 6px; }
+  .reinforceRouteCost { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .reinforceRouteGate { color: var(--amber); font-size: 10px; text-transform: uppercase; letter-spacing: .3px; font-weight: 700; }
+  #reinforceQueue { font-size: 10.5px; color: var(--ink-soft); border-top: 1px solid var(--hairline); padding-top: 7px; line-height: 1.6; font-family: var(--mono); }
+  #reinforceQueue .rqRow b { color: var(--cyan); font-family: var(--sans); }
+  #reinforceQueue .rqEmpty { font-style: italic; }
+  /* BATTALIONS PANEL (B3 — game/battalionDoctrine.js). Same collapsible-tab
+     chrome as #reinforcePanel directly above it, parked right underneath in
+     the same right-edge column (see that panel's own CSS comment for the
+     "why this column" rationale) — a fixed offset below it rather than
+     dynamically avoiding overlap when #reinforcePanel is expanded, same
+     simplification every other stacked Ops panel here already accepts. */
+  #battalionPanel {
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  #battalionToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    border-bottom: 1px solid var(--hairline); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #battalionToggle:hover { background: #182029; }
+  #battalionToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #battalionBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #battalionPanel.expanded #battalionBody { max-height: 36vh; overflow-y: auto; }
+  #battalionBodyInner { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
+  #battalionEmpty { font-style: italic; color: var(--ink-soft); font-size: 10.5px; }
+  .battalionRow { gap: 5px; }
+  /* red left-rule while this row's "Assign sector" click-to-rally mode is
+     armed — same urgency accent roadMode/buildMode previews use elsewhere,
+     so the one row currently waiting on a map click is obvious at a glance. */
+  .battalionRow.assigning { border-left-color: var(--red); }
+  .battalionRowHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--ink); font-family: var(--sans); }
+  .battalionRowHead b { color: var(--ink); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+  .battalionRowHead .battalionType { color: var(--ink-soft); font-size: 9.5px; text-transform: uppercase; letter-spacing: .6px; }
+  .battalionRowStats { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .battalionRowStats b { color: var(--cyan); font-family: var(--sans); }
+  /* B4 (game/battalionMorale.js) morale-state pill — fresh green / steady
+     neutral (ink-soft) / shaken amber / broken red, mirroring the same
+     palette the rest of the Ops UI already uses for good/warn/bad. Also
+     tints the row's own left-rule so a broken formation reads as "in
+     trouble" even collapsed at a glance, same idea as .assigning's red rule
+     above (assigning wins if both are somehow true — declared after it). */
+  .battalionMorale { font-weight: 700; padding: 0 4px; border-radius: 2px; text-transform: uppercase; letter-spacing: .3px; font-size: 10px; }
+  .battalionMorale.fresh { color: var(--green); }
+  .battalionMorale.steady { color: var(--ink-soft); }
+  .battalionMorale.shaken { color: var(--amber); }
+  .battalionMorale.broken { color: var(--red); }
+  .battalionRow.morale-broken { border-left-color: var(--red); }
+  .battalionRow.morale-shaken { border-left-color: var(--amber); }
+  /* B5b (game/battalionMorale.js bn.garrisoned) — small tag on the row so
+     the player can see the garrison defense bonus is actually active. */
+  .battalionGarrisoned { color: var(--green); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; background: rgba(87,214,141,.14); border-radius: 3px; padding: 1px 5px; font-family: var(--sans); }
+  .battalionRowBtns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .battalionRowBtns button { font-size: 10px; padding: 4px 8px; }
+  /* HOME DEFENSE PANEL (game/homedefense.js, CONCEPT.md Pillar 1) — the
+     smallest Ops panel here on purpose (see index.html's markup comment):
+     no expand/collapse, just a one-line posture toggle button + a compact
+     per-city status list underneath. Parked directly below #battalionPanel
+     in the same right-edge stack. */
+  #homeDefensePanel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #homeDefenseToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+  }
+  #homeDefenseToggle:hover { background: #182029; }
+  #homeDefenseState { font-size: 10.5px; font-weight: 700; letter-spacing: .5px; color: var(--ink-soft); font-family: var(--mono); }
+  #homeDefenseToggle.active #homeDefenseState { color: var(--green); }
+  #homeDefenseStatus { padding: 7px 10px 9px; font-size: 10.5px; color: var(--ink-soft); line-height: 1.5; border-top: 1px solid var(--hairline); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .hdRow { display: flex; align-items: center; gap: 5px; }
+  .hdRow b { color: var(--ink); font-family: var(--sans); }
+  .hdEmpty { font-style: italic; }
+  /* NEWS TICKER / DISPATCHES PANEL — game/news.js. "A nation at war should
+     have a VOICE" (docs/reference-city-and-mobilization.md §5): a rolling
+     wartime-bulletin feed generated from live game state. Same collapsible-
+     tab chrome as #reinforcePanel/#battalionPanel above it in the right-edge
+     stack, PLUS an always-visible one-line strip (#newsLatest, same idea as
+     #econHudSummary) so the newest headline stays legible even collapsed —
+     it marquee-scrolls (.scroll) when too long to fit, a plain static line
+     otherwise. Expanding the tab reveals the recent-headlines list
+     (#newsBodyInner). .urgent (toggled by main.js off economy.threatLevel/
+     mobilizationLevel) redlines the chrome as the war intensifies — the same
+     "louder as it escalates" idea the cadence itself already follows in
+     game/news.js. */
+  #newsPanel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #newsToggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 8px 10px; background: var(--panel-head); border: none;
+    border-bottom: 1px solid var(--hairline); cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink);
+  }
+  #newsToggle:hover { background: #182029; }
+  #newsToggleIcon { font-size: 10px; color: var(--ink-soft); }
+  #newsLatest {
+    position: relative; overflow: hidden; white-space: nowrap;
+    padding: 7px 10px; border-bottom: 1px solid var(--hairline); border-left: 2px solid var(--cyan-dim);
+    background: rgba(79,216,255,.04); font-size: 11px; color: var(--ink); font-family: var(--sans);
+  }
+  #newsLatestText { display: inline-block; }
+  #newsLatestText b { color: var(--cyan); text-transform: uppercase; letter-spacing: .4px; font-size: 10px; margin-right: 6px; }
+  #newsLatest.scroll #newsLatestText { padding-left: 100%; animation: newsMarquee 15s linear infinite; }
+  @keyframes newsMarquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+  @media (prefers-reduced-motion: reduce) { #newsLatest.scroll #newsLatestText { animation: none; padding-left: 0; } }
+  #newsBody { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  #newsPanel.expanded #newsBody { max-height: 34vh; overflow-y: auto; }
+  #newsBodyInner { padding: 7px 10px 9px; display: flex; flex-direction: column; gap: 7px; font-size: 10.5px; }
+  .newsRow { padding: 5px 8px; line-height: 1.4; gap: 2px; font-family: var(--sans); border-left-color: var(--cyan-dim); }
+  .newsRowText { display: block; color: var(--ink); }
+  .newsRowSource { display: block; color: var(--ink-soft); font-size: 9px; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-family: var(--mono); }
+  .newsEmpty { font-style: italic; color: var(--ink-soft); font-size: 10.5px; }
+  /* Urgency escalation — mirrors .battalionRow.morale-broken's red-accent
+     idea: as mobilization/threat climbs, the whole panel reads redder/
+     brighter, without any new DOM. */
+  #newsPanel.urgent { box-shadow: 0 0 0 1px rgba(255,90,90,.3), 0 10px 26px rgba(0,0,0,.45); }
+  #newsPanel.urgent #newsToggle { background: rgba(255,90,90,.1); }
+  #newsPanel.urgent .newsRow { border-left-color: var(--red); }
+  #newsPanel.urgent #newsLatest { background: rgba(255,90,90,.08); border-left-color: var(--red); }
+  /* B-mode CONSTRUCTION LEDGER (delegated construction, CONCEPT.md Pillar 1)
+     — playtest feedback: "the build menu is really ugly, you can't scroll
+     down on it." Was a flat, unscrollable strip of ~20 buttons; now a
+     bounded-height panel with one labeled SECTION per
+     game/buildingCategories.js category, the whole thing scrolling as one
+     "ledger" rather than running off the edge of the screen. Bottom-center,
+     same anchor as before, wide enough to read as a document, capped
+     max-height so it can never grow to cover #guidancePanel (top-center). */
+  #buildbar {
+    left: 50%; bottom: 16px; transform: translateX(-50%);
+    display: none; flex-direction: column; gap: 4px;
+    width: min(780px, 94vw); max-height: 46vh;
+    padding: 9px 12px 8px;
+  }
+  #buildbar.open { display: flex; }
+  .buildbarHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+  .buildbarHint { color: var(--ink-soft); font-size: 10px; font-family: var(--mono); }
+  #buildbarBody { overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 9px; }
+  .buildCatLabel {
+    display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--ink-soft); border-bottom: 1px solid var(--hairline); padding-bottom: 4px; margin-bottom: 5px; font-family: var(--sans);
+  }
+  .buildCatRow { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* GREY-OUT / NEXT-NEEDED (playtest: "grey out things you aren't building",
+     "highlight what you currently need") — driven by main.js's
+     updateBuildBarPlanUI reading the live goal-driven plan; NEVER hard-gates
+     (dimmed buttons stay fully clickable), per the open-principle
+     constraint. .next gets a small amber "NEXT" tag on its corner — flat,
+     no rotation, matching this direction's precise/technical register. */
+  .buildBtn { position: relative; }
+  .buildBtn.dim { opacity: .38; filter: grayscale(70%); }
+  .buildBtn.next { border-color: var(--amber); box-shadow: 0 0 0 1px rgba(255,176,32,.35), 0 0 10px rgba(255,176,32,.2); color: var(--amber); }
+  .buildBtn.next::after {
+    content: "NEXT"; position: absolute; top: -8px; right: -6px;
+    background: var(--amber); color: #0a0d11; font-size: 8px; font-weight: 800;
+    letter-spacing: .6px; padding: 1px 4px; border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  /* P4 "choose what to produce" panel — pick a category, see its recipe,
+     then confirm to arm B-mode with the matching facility preselected. Left
+     side (buildbar owns bottom-center) so the two never overlap. */
+  #prodPanel, #importPanel {
+    left: 16px; top: 90px; width: 300px;
+    display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
+  }
+  #prodPanel.open, #importPanel.open { display: flex; }
+  #prodPanel .catRow, #importPanel .resRow { display: flex; gap: 6px; flex-wrap: wrap; }
+  #recipeInfo { white-space: pre-line; line-height: 1.55; color: var(--ink); font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+  #recipeInfo b { color: var(--cyan); font-family: var(--sans); }
+  #importPanelSub { color: var(--ink-soft); font-size: 10.5px; line-height: 1.4; margin-top: -4px; }
+  /* RESEARCH PANEL (P4 follow-up) — same requisition-form chrome as
+     #prodPanel/#importPanel, same top-left anchor (P/I/T are independently
+     toggled, not exclusive, so they've always shared this spot). Taller/
+     wider since it lists up to six techs' full gate text at once. */
+  #techPanel {
+    left: 16px; top: 90px; width: 360px; max-height: 76vh;
+    overflow-y: auto;
+    display: none; flex-direction: column; gap: 8px; padding: 10px 12px;
+  }
+  #techPanel.open { display: flex; }
+  .techRow { gap: 4px; }
+  .techHeader { color: var(--ink); font-family: var(--sans); font-size: 12.5px; }
+  .techHeader b { color: var(--cyan); }
+  .techBlurb { color: var(--ink-soft); font-size: 11px; font-family: var(--sans); }
+  .techGate { color: var(--ink-soft); font-size: 10.5px; white-space: pre-line; line-height: 1.4; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .techStatus { color: var(--amber); font-size: 11px; min-height: 14px; font-weight: 600; font-family: var(--sans); }
+  .techRow.researchable { border-left-color: var(--green); }
+  .techRow.done { border-left-color: var(--cyan); opacity: .75; }
+  .techRow button {
+    align-self: flex-start;
+  }
+  /* PHASE HUD (prep/combat) — a small stamped tag top-center: "PREPARATION"
+     in ink, restamped "COMBAT" in red once the enemy lands. */
+  #phaseHud {
+    top: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+    /* BUG FIX (top bar collision): this used to have no width cap at all, so
+       its live-generated hint text (fog state + key hints, longer once
+       combat starts) could grow wide enough to run under #econHud/#hud on
+       the sides. Bounded + wrapping (instead of one ever-widening row) so it
+       degrades to two centered lines on a narrower viewport rather than
+       spilling into either neighbor — paired with #hud's own tightened
+       max-width above and the right stack's fixed 236px column, this keeps
+       a guaranteed gap on both sides at any reasonable viewport width. */
+    max-width: min(700px, calc(100vw - 830px));
+    flex-wrap: wrap; justify-content: center; row-gap: 4px;
+  }
+  #phaseHud #phaseLabel {
+    font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; font-size: 11px;
+    color: var(--cyan); background: rgba(79,216,255,.12); border-radius: 2px;
+    padding: 3px 10px; font-family: var(--sans);
+  }
+  #phaseHud.combat #phaseLabel { color: var(--red); background: rgba(255,90,90,.14); }
+  #phaseHud #phaseHint { color: var(--ink-soft); font-family: var(--mono); }
+  /* Phase-transition announcement: a transient center-screen banner, faded
+     in/out by JS setting the .show class. Anchored at true vertical center
+     (not up near #phaseHud's strip) since #guidancePanel already occupies
+     the top-center column when open. */
+  #announcement {
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    padding: 12px 26px; box-shadow: 0 0 0 1px var(--red-dim), 0 20px 50px rgba(0,0,0,.5);
+    background: var(--panel-head); border-left: 3px solid var(--red);
+    color: var(--red); font: bold 15px var(--sans);
+    letter-spacing: 1px; text-align: center; pointer-events: none; text-transform: uppercase;
+    opacity: 0; transition: opacity .3s ease;
+  }
+  #announcement.show { opacity: 1; }
+  /* GUIDANCE PANEL — the DYNAMIC, goal-driven CHECKLIST, pinned top-center.
+     Still an offered, dismissable path, NOT a gate — every other panel/
+     control works identically whether this is open or hidden. #phaseHud
+     owns the very top strip so this sits just below it. */
+  #guidancePanel {
+    left: 50%; top: 74px; transform: translateX(-50%);
+    width: 400px; max-width: calc(100% - 24px); max-height: 42vh; overflow-y: auto;
+    padding: 10px 12px;
+  }
+  #guidancePanel.hidden { display: none; }
+  #guidancePanel .gHeader { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--hairline); }
+  #guidancePanel button.gClose {
+    background: transparent; border: 1px solid var(--hairline-strong); color: var(--ink-soft); border-radius: 2px;
+    padding: 0px 8px; cursor: pointer; font: 13px var(--mono); line-height: 1.5;
+  }
+  #guidancePanel button.gClose:hover { background: var(--panel-head); color: var(--ink); }
+  /* GOALS row — one pill per player-selected goal (game/tutorialplan.js
+     goalState, set by clicking a unit/category in the tree view, G). Empty
+     (and collapses to nothing, margin-wise) until at least one goal exists. */
+  #guidanceGoals:not(:empty) { margin-bottom: 6px; }
+  #guidancePanel .goalTag {
+    display: inline-block; padding: 2px 9px; margin: 0 5px 4px 0; border-radius: 9px;
+    background: var(--panel-strong); border: 1px solid var(--hairline-strong); color: var(--ink); font-size: 11px; font-family: var(--sans);
+  }
+  /* a satisfied goal (its whole reverse-planned chain is complete — the
+     "we're making jets now" payoff) reads cyan/filled, matching the tech
+     tree's own 'built' state vocabulary. */
+  #guidancePanel .goalTag.done { background: rgba(79,216,255,.14); border-color: var(--cyan); color: var(--cyan); }
+  #guidancePanel ol { margin: 0; padding-left: 18px; line-height: 1.6; color: var(--ink); font-family: var(--sans); }
+  /* "done" reflects LIVE game state — cosmetic only, never a gate. */
+  #guidancePanel li.done { color: var(--ink-faint); text-decoration: line-through; opacity: .75; }
+  /* "next" — the current/next ACTIONABLE step, flagged in amber so the
+     player always has one obvious next move even with a long plan. */
+  #guidancePanel li.next { color: var(--amber); font-weight: bold; }
+  #guidancePanel li.next::before { content: "▸ "; }
+  #guidancePanel li.hint { list-style: none; margin-left: -18px; color: var(--ink-soft); font-style: italic; }
+  #guidancePanel .gFootnote { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--hairline); color: var(--ink-faint); font-size: 10.5px; line-height: 1.4; }
+  /* FIRST-RUN INTRO SEQUENCE (game/intro.js — CONCEPT.md's settled
+     "Onboarding / tutorial concept" paragraph, beats 1-2: the ONE light
+     scripted stretch). Same C2 console-panel family as
+     #guidancePanel, deliberately placed LOW (bottom-center) rather than
+     top-center so it never fights #phaseHud/#guidancePanel/#econHud for the
+     same real estate, and so it stays clear of the tech tree's own on-canvas
+     hint text (bottom-left) during the 'graph'/'discard' beats when
+     #techTreeCanvas (z-index 500) is showing underneath it — hence the
+     higher z-index here. It is NOT full-screen/blocking: beat 1 (controls)
+     needs the real map still draggable/zoomable behind it, so this is sized
+     to its content, not an inset:0 overlay like #mainMenu. */
+  #introPanel {
+    left: 50%; bottom: 22px; transform: translateX(-50%);
+    width: min(480px, 92vw); z-index: 600;
+    padding: 12px 16px 14px;
+  }
+  #introPanel.hidden { display: none; }
+  #introPanel h2 {
+    margin: 0 0 7px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--cyan); font-weight: 800;
+  }
+  #introPanel p { margin: 0 0 12px; line-height: 1.5; color: var(--ink); font-family: var(--sans); }
+  #introPanel .iRow { display: flex; justify-content: flex-end; }
+  /* PERSISTENT SKIP AFFORDANCE — the task's hard requirement: skippable at
+     ANY point in the sequence, including mid-flourish (see game/intro.js's
+     header comment). Kept as its own always-present element rather than a
+     button inside #introPanel so it never disappears when the panel itself
+     is hidden (the 'discard' beat hides #introPanel on purpose so the burn
+     reads clean — see main.js's updateIntroUI). Bottom-left is the one
+     corner nothing else claims before COMBAT starts (#objectiveHud lives
+     there too, but only shows once combat begins, which the intro never
+     reaches). */
+  #introSkipBtn {
+    display: none; position: fixed; left: 16px; bottom: 16px; z-index: 650;
+  }
+  #introSkipBtn.show { display: inline-block; }
+  /* DIRECTOR CORNER BUBBLE — the reactive commentary line, bottom-right.
+     Kept as a distinct, slightly-detached readout (a live intercepted
+     transmission, not a ledger row) via a cyan left-accent rather than the
+     old taped-note tilt — this direction has zero hand-drawn affordances. */
+  #directorBubble {
+    right: 16px; bottom: 16px; max-width: 300px;
+    padding: 10px 13px; font: 12px var(--sans); border-left: 2px solid var(--cyan);
+    line-height: 1.45; opacity: 0; transform: translateY(6px);
+    transition: opacity .25s ease, transform .25s ease; pointer-events: none;
+    z-index: 300; color: var(--ink); background: var(--panel-strong);
+  }
+  #directorBubble::before, #directorBubble::after { display: none; }
+  #directorBubble.show { opacity: 1; transform: translateY(0); }
+  /* SILLY-MODE SELF-SABOTAGE GAG CHAIN — the "are you five" confirm dialog
+     and the two terminal screens (task point 6). Both are full-screen modal
+     overlays, above even the tech tree view (#techTreeCanvas z-index 500)
+     since they're meant to be an unmissable, deliberate escalation, not one
+     more panel. */
+  #areYouFiveDialog {
+    display: none; position: fixed; inset: 0; z-index: 2000;
+    align-items: center; justify-content: center; background: rgba(2,4,8,.72);
+  }
+  #areYouFiveDialog.open { display: flex; }
+  #areYouFiveDialog .modalPanel {
+    position: relative;
+    background: var(--panel); box-shadow: var(--panel-shadow), 0 20px 60px rgba(0,0,0,.6);
+    border-radius: 3px; border-top: 2px solid var(--cyan);
+    padding: 26px 30px; max-width: 380px; color: var(--ink); font: 13px var(--sans);
+    text-align: center;
+  }
+  #areYouFiveDialog .modalPanel::before, #areYouFiveDialog .modalPanel::after { content: none; }
+  #areYouFiveDialog .modalRow { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+  #areYouFiveDialog button { padding: 8px 22px; }
+  /* Mock "too young to play"/"fired" terminal takeover — approximates "the
+     game instantly closes" (a web page cannot force-close its own tab; see
+     main.js's window.close() bonus-attempt comment) with a black-screen
+     takeover instead, which works everywhere. */
+  #takeoverScreen {
+    display: none; position: fixed; inset: 0; z-index: 2100;
+    background: #000; align-items: center; justify-content: center;
+  }
+  #takeoverScreen.open { display: flex; }
+  /* Deliberately flat/deadpan — no glow, muted plain text — so the line reads
+     nonchalant rather than dramatic (designer note: "make it more nonchalant"). */
+  #takeoverText {
+    color: #9aa4ad; font: 15px Consolas, monospace; white-space: pre-line;
+    text-align: center; line-height: 1.9;
+  }
+  /* MAIN MENU (scenario picker — CONCEPT.md "Design directions raised" /
+     "Main-menu map/scenario picker" bullet; game/menu.js owns the content +
+     click wiring). A dark C2 briefing sheet — one requisition row per
+     scenario, cyan left-accent, no boxes. Shown BEFORE the game boots by
+     default, covering the canvas full-screen so nothing underneath is
+     interactive until a pick is made; hidden by default (no `open` class),
+     a deep link (?seed=/?map=) skips it entirely. z-index sits above every
+     other fixed panel since it must occlude the whole game. */
+  #mainMenu {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 20% -10%, rgba(79,216,255,.06), transparent 55%), var(--bg-deep);
+  }
+  #mainMenu.open { display: flex; }
+  #mainMenuPanel {
+    position: relative;
+    width: min(560px, 92vw); max-height: 86vh; overflow-y: auto;
+    padding: 30px 32px; color: var(--ink); font: 13px var(--sans);
+    background: var(--panel);
+    border-radius: 3px; box-shadow: var(--panel-shadow), 0 20px 60px rgba(0,0,0,.6);
+  }
+  #mainMenuPanel::before, #mainMenuPanel::after { content: none; }
+  #menuTitle {
+    margin: 0 0 6px; font-size: 22px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--cyan); font-weight: 800; display: inline-block; font-family: var(--sans);
+  }
+  #menuSubtitle { margin: 0 0 20px; color: var(--ink-soft); }
+  #menuScenarioList { display: flex; flex-direction: column; gap: 10px; }
+  .menuScenarioRow {
+    display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+    width: 100%; text-align: left; cursor: pointer; padding: 10px 14px;
+    background: var(--panel-head); border: none; border-left: 2px solid #2a3742; border-radius: 0 2px 2px 0;
+    color: var(--ink); font: 13px var(--sans); transition: border-color .12s ease, background .12s ease;
+  }
+  .menuScenarioRow:hover { background: #182029; border-left-color: var(--cyan); }
+  .menuScenarioRow .msLabel { font-weight: bold; color: var(--ink); text-transform: uppercase; letter-spacing: .4px; }
+  .menuScenarioRow .msDiff { font-size: 10.5px; color: var(--amber); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; font-family: var(--mono); }
+  .menuScenarioRow .msBlurb { font-size: 11px; color: var(--ink-soft); }
+  #menuHint { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hairline); color: var(--ink-faint); font-size: 10.5px; font-family: var(--mono); }
+  /* VICTORY/DEFEAT END SCREEN (Playability v1) — an AFTER-ACTION REPORT
+     (game/afteraction.js): cyan "MISSION COMPLETE" for victory, red "MISSION
+     FAILED" for defeat, same condensed-caps vocabulary as every other panel
+     title but scaled up since this is the one screen meant to land with real
+     weight. Below the header sits the full report — a TIMELINE column plus
+     stacked stat blocks reusing this file's own .statLine/.statLabel/
+     .statVal/.opsStamp vocabulary verbatim (no new visual language), and a
+     VERDICT block using the same left-accent-row idiom as .accentRow/
+     .newsRow elsewhere in this UI. z-index above every other overlay since
+     evaluateOutcome only ever fires once per run and must never be hidden
+     underneath something else. Shown by main.js's showOutcomeScreen(), never
+     by CSS alone. */
+  #outcomeScreen {
+    display: none; position: fixed; inset: 0; z-index: 2200;
+    align-items: center; justify-content: center; background: rgba(2,4,8,.86);
+    padding: 24px;
+  }
+  #outcomeScreen.open { display: flex; }
+  #outcomePanel {
+    position: relative;
+    width: min(1080px, 96vw); max-height: calc(100vh - 48px); overflow-y: auto;
+    padding: 30px 34px 26px; text-align: left;
+    color: var(--ink); font: 13px var(--sans);
+    background: var(--panel); border-radius: 3px;
+    border-top: 3px solid var(--cyan); box-shadow: var(--panel-shadow), 0 24px 70px rgba(0,0,0,.65);
+  }
+  #outcomePanel::before, #outcomePanel::after { content: none; }
+  .aarHeader { text-align: center; margin-bottom: 8px; }
+  #outcomeTitle {
+    margin: 0 0 10px; font-size: 28px; letter-spacing: 3px; font-weight: 800;
+    display: inline-block; text-transform: uppercase;
+  }
+  #outcomeScreen.victory #outcomeTitle { color: var(--cyan); }
+  #outcomeScreen.defeat #outcomeTitle { color: var(--red); }
+  #outcomeScreen.victory #outcomePanel { border-top-color: var(--cyan); }
+  #outcomeScreen.defeat #outcomePanel { border-top-color: var(--red); }
+  #outcomeSubtitle { margin: 0 0 16px; color: var(--ink-soft); line-height: 1.5; }
+  .outcomeButtons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
+  #outcomeScreen button { padding: 9px 20px; }
+  #outcomeCopyBtn.copied { background: var(--green); color: #06110b; border-color: var(--green); }
+  /* Report body — main.js's renderAfterActionReport() fills this in once,
+     at outcome time, from game/afteraction.js's buildReport() output. */
+  #outcomeReport { margin-top: 18px; }
+  .aarRule { height: 1px; background: var(--hairline-strong); border: none; margin: 0 0 18px; }
+  .aarTopline { display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center; margin-bottom: 18px; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 12px; }
+  .aarTopline b { color: var(--ink); font-family: var(--sans); font-weight: 600; }
+  /* VERDICT — amber left-accent rows, same idiom as .accentRow/.newsRow
+     elsewhere, deliberately distinct from the cyan-default timeline rows
+     below so the "here's what actually mattered" lines pop out first. */
+  .aarVerdict { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+  .aarVerdictLine {
+    padding: 9px 11px; background: var(--panel-head); border-left: 2px solid var(--amber);
+    border-radius: 0 2px 2px 0; font-size: 12.5px; line-height: 1.45; color: var(--ink);
+  }
+  .aarSectionTitle {
+    display: flex; align-items: center; gap: 6px; text-transform: uppercase; font-weight: 800;
+    letter-spacing: 1.4px; font-size: 10.5px; color: var(--cyan); margin: 0 0 8px;
+    font-family: var(--sans);
+  }
+  .aarGrid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .aarGrid { grid-template-columns: 1fr; } }
+  .aarSection { background: var(--panel-head); border-radius: 3px; padding: 11px 13px; margin-bottom: 14px; }
+  .aarSection:last-child { margin-bottom: 0; }
+  .aarTimeline { max-height: 560px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+  .aarTimelineRow {
+    display: flex; align-items: baseline; gap: 8px; padding: 5px 8px;
+    border-left: 2px solid var(--cyan-dim); background: var(--panel-strong);
+    border-radius: 0 2px 2px 0; font-size: 11.5px; line-height: 1.4;
+  }
+  .aarTimelineRow.ok { border-left-color: var(--green); }
+  .aarTimelineRow.warn { border-left-color: var(--amber); }
+  .aarTimelineRow.bad { border-left-color: var(--red); }
+  .aarTimelineRow .aarT { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-soft); flex: none; width: 40px; }
+  .aarTimelineRow .aarPhase { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .4px; flex: none; width: 46px; }
+  .aarTimelineRow .aarText { color: var(--ink); }
+  .aarEmpty { font-style: italic; color: var(--ink-soft); font-size: 11px; padding: 4px 0; }
+  .aarOobRow { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-size: 11.5px; border-bottom: 1px solid var(--hairline); }
+  .aarOobRow:last-child { border-bottom: none; }
+  .aarOobRow .aarOobLabel { color: var(--ink-soft); }
+  .aarOobRow .aarOobVal { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<canvas id="techTreeCanvas"></canvas>
+<!-- C2 ICON SPRITE — one shared library of small stroke-based glyphs (ported
+     verbatim from docs/ui-options.html's Option 1 mockup), referenced via
+     <use href="#..."> everywhere a resource/unit-type/status glyph is
+     needed, matching the game's own tech-tree "simple monochrome vector
+     glyph, tinted by state" convention. No icon font, no external request —
+     inline SVG only. -->
+<svg style="display:none" id="icSprite">
+  <symbol id="ic-factory" viewBox="0 0 24 24"><path d="M3 21V11l4-2v2l4-2v2l4-2v2l4-2v10H3z"/><path d="M7 21v-5h3v5"/><path d="M15 21v-4h2v4"/></symbol>
+  <symbol id="ic-manpower" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3"/></symbol>
+  <symbol id="ic-influence" viewBox="0 0 24 24"><path d="M3 10v4h3l5 4V6l-5 4H3z"/><path d="M14 9a4 4 0 0 1 0 6"/><path d="M17 7a8 8 0 0 1 0 10"/></symbol>
+  <symbol id="ic-mobilization" viewBox="0 0 24 24"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="res-steel" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="6" rx="1"/><path d="M4 9l3-3h10l3 3"/></symbol>
+  <symbol id="res-chromium" viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7z"/></symbol>
+  <symbol id="res-tungsten" viewBox="0 0 24 24"><path d="M4 9h16l-8 11z"/><path d="M4 9l3-5h10l3 5"/></symbol>
+  <symbol id="res-oil" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="res-aluminum" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="4" rx="1"/><path d="M5 10l2-3h10l2 3"/></symbol>
+  <symbol id="res-titanium" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6z"/></symbol>
+  <symbol id="res-rareearths" viewBox="0 0 24 24"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/></symbol>
+  <symbol id="res-electronics" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 4v3M12 4v3M15 4v3M9 17v3M12 17v3M15 17v3M4 9h3M4 12h3M4 15h3M17 9h3M17 12h3M17 15h3"/></symbol>
+  <symbol id="res-alloy" viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="unit-infantry" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><path d="M4 6l16 12M20 6L4 18"/></symbol>
+  <symbol id="unit-armor" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><ellipse cx="12" cy="12" rx="6" ry="4"/></symbol>
+  <symbol id="unit-artillery" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="unit-drone" viewBox="0 0 24 24"><path d="M12 3l6 9-6 9-6-9z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="status-garrison" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="status-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-dispatch" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="M5 7a9 9 0 0 1 14 0"/><circle cx="12" cy="21" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></symbol>
+  <symbol id="ic-build" viewBox="0 0 24 24"><path d="M14 6l4 4-9 9H5v-4z"/><path d="M13 7l4 4"/></symbol>
+  <symbol id="ic-import" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></symbol>
+  <symbol id="ic-research" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-5-5"/></symbol>
+  <symbol id="ic-map" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></symbol>
+</svg>
+<!-- LOADING OVERLAY — see the CSS comment above. Static markup, visible on
+     the very first paint with no JS required; main.js adds the `hide` class
+     once the first real frame is on screen. -->
+<div id="loadingOverlay">
+  <div class="loadingBox">
+    <div class="loadingSpinner"></div>
+    <div id="loadingText">Loading map…</div>
+  </div>
+</div>
+<!-- MAIN MENU overlay — see the #mainMenu CSS comment above. Content
+     (title/subtitle/hint/scenario rows) is filled in and the click handling
+     wired by game/menu.js's showMainMenu(), same "static skeleton in HTML,
+     content+behavior from JS" split #guidancePanel below already uses. -->
+<div id="mainMenu">
+  <div id="mainMenuPanel">
+    <h1 id="menuTitle"></h1>
+    <p id="menuSubtitle"></p>
+    <div id="menuScenarioList"></div>
+    <p id="menuHint"></p>
+  </div>
+</div>
+<div id="hud"></div>
+<div id="phaseHud" class="opsPanel">
+  <span id="phaseLabel">PREPARATION</span>
+  <span id="phaseHint"></span>
+  <button id="beginCombatBtn" class="opsBtn">BEGIN COMBAT</button>
+</div>
+<div id="announcement" class="opsPanel"></div>
+<!-- RIGHT-EDGE PANEL STACK (bug fix: Ledger/Reinforcements/Battalions used to
+     each carry their own hand-guessed fixed `top` offset — see each panel's
+     old comment — which only worked while every panel ABOVE it stayed
+     collapsed; expanding one panel grew past the next one's fixed offset and
+     clipped/overlapped it, and none of them ever accounted for the top bar.
+     Wrapping all three in one flex column container fixes this structurally:
+     they simply flow one after another (a `gap` between them, no per-panel
+     offset guesswork), so an expanded panel's real height always pushes the
+     next one down instead of covering it. The wrapper itself is capped to
+     the viewport height and scrolls (rather than spilling under/over the top
+     bar) if every panel is expanded at once. -->
+<div id="rightStack">
+<!-- ECON/RESOURCE LEDGER — de-occlusion fix (playtest: "the econ HUD
+     blocks the screen"). Collapsed by default (main.js) so the first thing
+     a player sees is a slim tab, not a wall of stats; econHudSummary always
+     shows the top-line totals, econHudDetail unfolds the full resource/
+     production breakdown only once the player asks for it. -->
+<div id="econHud" class="opsPanel">
+  <button id="econHudToggle" type="button" title="Expand/collapse the ledger">
+    <span class="opsStamp"><svg class="ic"><use href="#ic-factory"/></svg>Ledger</span>
+    <span id="econHudToggleIcon">▸</span>
+  </button>
+  <div id="econHudSummary"></div>
+  <div id="econHudDetail"><div id="econHudDetailInner"></div></div>
+</div>
+<!-- REINFORCEMENTS PANEL — B2 (game/reinforcements.js). The three route
+     buttons (Elite/Standard/Militia) + the in-flight queue are built and
+     refreshed entirely in main.js's REINFORCEMENTS PANEL section; the DOM
+     skeleton here is static, same "static shell, JS fills content" split
+     every other Ops panel uses. Collapsed by default, matching
+     #econHud/#legendPanel. -->
+<div id="reinforcePanel" class="opsPanel">
+  <button id="reinforceToggle" type="button" title="Expand/collapse reinforcements">
+    <span class="opsStamp ink"><svg class="ic"><use href="#ic-manpower"/></svg>Reinforcements</span>
+    <span id="reinforceToggleIcon">▸</span>
+  </button>
+  <div id="reinforceBody"><div id="reinforceBodyInner"></div></div>
+</div>
+<!-- BATTALIONS PANEL — B3 (game/battalionDoctrine.js, "self-deploy + sectors
+     + stance"). One row per player battalion (name/type/strength/sector/
+     stance + the stance-cycle and assign-sector controls), fully built and
+     refreshed every frame in main.js's BATTALIONS PANEL section; the DOM
+     skeleton here is static, same "static shell, JS fills content" split
+     every other Ops panel uses. Parked directly below #reinforcePanel in the
+     same flex stack (battalions are downstream of reinforcements — this is
+     where a battalion that route just produced shows up). Collapsed by
+     default, matching #econHud/#legendPanel/#reinforcePanel. -->
+<div id="battalionPanel" class="opsPanel">
+  <button id="battalionToggle" type="button" title="Expand/collapse battalions">
+    <span class="opsStamp ink"><svg class="ic"><use href="#unit-armor"/></svg>Battalions</span>
+    <span id="battalionToggleIcon">▸</span>
+  </button>
+  <div id="battalionBody"><div id="battalionBodyInner"></div></div>
+</div>
+<!-- HOME DEFENSE PANEL — game/homedefense.js (CONCEPT.md Pillar 1, "The
+     Nation Acts"). Deliberately NOT a collapsible tab like the panels above
+     — just a one-line posture toggle + a tiny per-city status readout, built
+     and refreshed in main.js's HOME DEFENSE PANEL section. Parked directly
+     below #battalionPanel in the same right-edge stack (a Home Guard is an
+     ordinary player battalion, so this reads as "downstream of Battalions,"
+     same placement logic #battalionPanel itself uses relative to
+     #reinforcePanel). -->
+<div id="homeDefensePanel" class="opsPanel">
+  <button id="homeDefenseToggle" type="button" title="Toggle Home Defense posture (key: D)">
+    <span class="opsStamp ink"><svg class="ic"><use href="#ic-home"/></svg>Home Defense</span>
+    <span id="homeDefenseState">ON</span>
+  </button>
+  <div id="homeDefenseStatus"></div>
+</div>
+<!-- NEWS TICKER / DISPATCHES PANEL — game/news.js. A wartime-bulletin feed
+     generated from live game state (mobilization phase changes, combat
+     beginning, city capture/recapture, battalion musters, production
+     milestones — plus periodic ambient bulletins between events). Same
+     collapsible-tab chrome as #reinforcePanel/#battalionPanel above, PLUS an
+     always-visible one-line "latest headline" strip (#newsLatest) so the
+     newest bulletin is legible even while the tab stays collapsed — content
+     and refresh entirely in main.js's NEWS PANEL section. Parked at the
+     bottom of the right-edge stack (downstream of everything else that can
+     make news). Collapsed by default, matching every other Ops tab. -->
+<div id="newsPanel" class="opsPanel">
+  <button id="newsToggle" type="button" title="Expand/collapse dispatches">
+    <span class="opsStamp"><svg class="ic"><use href="#icon-dispatch"/></svg>Dispatches</span>
+    <span id="newsToggleIcon">▸</span>
+  </button>
+  <div id="newsLatest"><span id="newsLatestText"></span></div>
+  <div id="newsBody"><div id="newsBodyInner"></div></div>
+</div>
+</div>
+<!-- OBJECTIVE HUD (Playability v1) — filled in by main.js's
+     updateObjectiveHud() every frame; hidden outside COMBAT. -->
+<div id="objectiveHud" class="opsPanel"></div>
+<div id="card" class="opsPanel"></div>
+<!-- MAP LEGEND & RESOURCE FILTER — chunk C. Content (legend rows + one
+     filter button per resource) is built entirely in main.js's MAP LEGEND
+     section; collapsed by default like #econHud. -->
+<div id="legendPanel" class="opsPanel">
+  <button id="legendToggle" type="button" title="Expand/collapse the legend">
+    <span class="opsStamp ink"><svg class="ic"><use href="#ic-map"/></svg>Field Manual</span>
+    <span id="legendToggleIcon">▸</span>
+  </button>
+  <div id="legendBody"><div id="legendBodyInner"></div></div>
+</div>
+<!-- CONSTRUCTION LEDGER — grouped/scrollable buildbar (chunk B). Section
+     groups + buttons are built entirely in main.js's BUILDBAR section from
+     game/buildingCategories.js's BUILD_CATEGORIES; #buildbarBody is the
+     scrollable ledger body, #buildbarHead a static label row above it. -->
+<div id="buildbar" class="opsPanel">
+  <div class="buildbarHead">
+    <span class="opsStamp"><svg class="ic"><use href="#ic-build"/></svg>Construction Ledger (B)</span>
+    <span class="buildbarHint">shift-click to pin an exact site</span>
+  </div>
+  <div id="buildbarBody"></div>
+</div>
+<div id="prodPanel" class="opsPanel">
+  <span class="opsStamp"><svg class="ic"><use href="#ic-factory"/></svg>Production Order (P)</span>
+  <div class="catRow" id="prodCatRow"></div>
+  <div id="recipeInfo">Pick a category to see its recipe.</div>
+</div>
+<div id="importPanel" class="opsPanel">
+  <span class="opsStamp"><svg class="ic"><use href="#ic-import"/></svg>Import Requisition (I)</span>
+  <div id="importPanelSub">Spend influence + a bit of IC to brute-force a shortfall.</div>
+  <div class="resRow" id="importResRow"></div>
+</div>
+<!-- RESEARCH PANEL — P4 follow-up (game/research.js), styled to match
+     #prodPanel/#importPanel above. Title text comes from RESEARCH_COPY
+     (game/research.js); the tech rows themselves are built entirely in
+     main.js's RESEARCH PANEL section (one .techRow per TECH_DEFS entry). -->
+<div id="techPanel" class="opsPanel">
+  <span class="opsStamp" id="techPanelTitle"></span>
+  <div id="techList"></div>
+</div>
+<!-- GUIDANCE PANEL — the dynamic, goal-driven CHECKLIST (Part A). Open by
+     default, dismissable (× or H), never gates anything (see main.js's
+     GUIDANCE PANEL section for the full rationale and CONCEPT.md's settled
+     "First-run / tutorial is OPEN, not dictated" paragraph). Content
+     (title/goals/steps/footnote) is filled in by main.js from
+     game/tutorialplan.js's TUTORIAL_COPY + the live computePlan() output —
+     #guidanceGoals lists the player's selected goals (pills, ✓ once each
+     one's whole reverse-planned chain is satisfied); #guidanceSteps is the
+     single merged/ordered/deduped step list itself. -->
+<div id="guidancePanel" class="opsPanel">
+  <div class="gHeader">
+    <span class="opsStamp" id="guidanceTitle"></span>
+    <button id="guidanceCloseBtn" class="gClose" title="Dismiss (H to toggle)">×</button>
+  </div>
+  <div id="guidanceGoals"></div>
+  <ol id="guidanceSteps"></ol>
+  <div class="gFootnote" id="guidanceFootnote"></div>
+</div>
+<!-- FIRST-RUN INTRO SEQUENCE (game/intro.js) — the front-half onboarding
+     beats (controls -> show the full tree -> discard it with a flourish ->
+     hand off to the goal system). Content per-beat is filled in by main.js's
+     INTRO SEQUENCE section from game/intro.js's INTRO_COPY; hidden entirely
+     once the sequence is skipped/completed (main.js never re-shows it after
+     that within the same load). #introSkipBtn is the persistent skip
+     affordance — visible for the whole sequence, independent of #introPanel
+     so it survives the 'discard' beat hiding the panel during its flourish. -->
+<div id="introPanel" class="opsPanel hidden">
+  <h2 id="introTitle"></h2>
+  <p id="introBody"></p>
+  <div class="iRow"><button id="introContinueBtn" class="opsBtn"></button></div>
+</div>
+<button id="introSkipBtn" class="opsBtn" type="button"></button>
+<!-- DIRECTOR CORNER BUBBLE — Part B's reactive-line surface (off-track
+     acknowledgement + the gag chain's "confused, replaced" line). Content
+     set every frame from main.js's DIRECTOR section. -->
+<div id="directorBubble" class="opsPanel"></div>
+<!-- "ARE YOU FIVE" DIALOG — silly-mode self-sabotage gag chain, stage 2.
+     Hidden until game/director.js's handleBuildingSold reports the pity-
+     building itself was sold. -->
+<div id="areYouFiveDialog">
+  <div class="modalPanel">
+    <p id="areYouFiveText"></p>
+    <div class="modalRow">
+      <button id="areYouFiveYes" class="opsBtn"></button>
+      <button id="areYouFiveNo" class="opsBtn"></button>
+    </div>
+  </div>
+</div>
+<!-- TAKEOVER / FIRED SCREEN — gag chain stage 3. Text set per-outcome
+     (TAKEOVER_LINES for "Yes", FIRED_LINES for "No") by main.js. -->
+<div id="takeoverScreen">
+  <div id="takeoverText"></div>
+</div>
+<!-- VICTORY/DEFEAT END SCREEN (Playability v1) — shown once by main.js's
+     showOutcomeScreen() when game/objectives.js's evaluateOutcome fires.
+     Title/subtitle filled in per-outcome; button labels come from main.js's
+     COPY.OUTCOME_RESTART_BUTTON/OUTCOME_MENU_BUTTON. #outcomeReport is the
+     full after-action report (game/afteraction.js's buildReport()), built
+     and injected once by main.js's renderAfterActionReport() — see that
+     file's showOutcomeScreen(). #outcomeCopyBtn copies
+     game/afteraction.js's reportToText() output to the clipboard. -->
+<div id="outcomeScreen">
+  <div id="outcomePanel">
+    <div class="aarHeader">
+      <h1 id="outcomeTitle"></h1>
+      <p id="outcomeSubtitle"></p>
+      <div class="outcomeButtons">
+        <button id="outcomeRestartBtn" class="opsBtn"></button>
+        <button id="outcomeMenuBtn" class="opsBtn"></button>
+        <button id="outcomeCopyBtn" class="opsBtn">COPY REPORT</button>
+      </div>
+    </div>
+    <div id="outcomeReport"></div>
+  </div>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>

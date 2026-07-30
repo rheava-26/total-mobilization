@@ -8,6 +8,9 @@
 !/index.html
 !/title.html
 !/README.md
+# project instructions for Claude Code — must be tracked so a fresh session
+# (or a fresh clone) picks it up automatically
+!/CLAUDE.md
 # topdown/ = the fresh top-down rebuild (in progress, lives alongside the
 # original side-view game rather than replacing it)
 !/topdown/

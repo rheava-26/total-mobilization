@@ -60,6 +60,14 @@
   #boot .b2{color:var(--dim); letter-spacing:3px; font-size:11px}
   #boot.hide{opacity:0; pointer-events:none; transition:.6s}
   .selbox{position:absolute; border:1px solid var(--accent); background:rgba(87,184,255,.12); display:none; z-index:3}
+  #reticle{position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; pointer-events:none; display:none; z-index:3}
+  #reticle.show{display:block}
+  #reticle::before,#reticle::after{content:''; position:absolute; background:var(--recCol,#ff5d5d)}
+  #reticle::before{left:50%; top:-8px; bottom:-8px; width:2px; margin-left:-1px}
+  #reticle::after{top:50%; left:-8px; right:-8px; height:2px; margin-top:-1px}
+  #reticle .ring{position:absolute; inset:0; border:2px solid var(--recCol,#ff5d5d); border-radius:50%; opacity:.9}
+  #possBar{position:absolute; left:50%; top:70px; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:7px 14px; font-size:12px; letter-spacing:1px; display:none; color:var(--good)}
+  #possBar.show{display:block}
 </style>
 
 <canvas id="bg"></canvas>
@@ -77,6 +85,8 @@
   </div>
   <div id="nowPlaying"></div>
   <div id="toast"></div>
+  <div id="reticle"><div class="ring"></div></div>
+  <div id="possBar"></div>
   <div class="selbox" id="selbox"></div>
 </div>
 <div id="tip"></div>
@@ -177,6 +187,33 @@ function musTick(dt){ if(!MUS.yt||!MUS.fade) return;
   else MUS.curVol+=Math.sign(diff)*mv;
   try{ MUS.yt.setVolume(Math.max(0,Math.min(100,MUS.curVol))); }catch(e){} }
 
+/* ============================ §D SOUND ============================
+   Policy (OPERATION §1): layered CC0 SAMPLES, never synthesized. Real
+   gunfire = transient crack + sub-bass body + tail, decoded once. Drop a
+   pack into SND.buf via SND.load(name,url). Until a pack is wired we keep a
+   clearly-marked WebAudio PLACEHOLDER so the feel loop is audible — the user
+   prefers real samples, so this is scaffolding to be swapped, not the goal. */
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+const SND={ ctx:null, buf:{}, master:null, ready:false, placeholder:true,
+  init(){ if(this.ctx||!AudioCtx) return; this.ctx=new AudioCtx(); this.master=this.ctx.createGain(); this.master.gain.value=.75; this.master.connect(this.ctx.destination); this.ready=true; },
+  unlock(){ if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
+  async load(name,url){ this.init(); try{ const r=await fetch(url); const a=await r.arrayBuffer(); this.buf[name]=await this.ctx.decodeAudioData(a); }catch(e){ logErr(e); } },
+  play(name,{gain=1,rate=1,delay=0}={}){ if(!this.ready) return; const b=this.buf[name]; if(!b) return;
+    const s=this.ctx.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; const g=this.ctx.createGain(); g.gain.value=gain; s.connect(g).connect(this.master); s.start(this.ctx.currentTime+delay); },
+  gunshot(cal){ this.init(); if(!this.ready) return;
+    if(this.buf.gun){ const r=cal==='small'?1.5:cal==='medium'?1:.82; this.play('gun',{rate:r}); if(this.buf.gunBody) this.play('gunBody',{rate:r*.9,gain:.9}); return; }
+    if(this.placeholder) this._ph(cal); },
+  impact(){ this.init(); if(!this.ready) return; if(this.buf.impact){ this.play('impact'); return; } if(this.placeholder) this._ph('hit'); },
+  // ---- PLACEHOLDER ONLY — replace with a CC0 sample pack ----
+  _ph(kind){ const c=this.ctx,t=c.currentTime, big=kind!=='small'&&kind!=='hit';
+    const len=Math.floor(c.sampleRate*(big?.34:.13)); const ab=c.createBuffer(1,len,c.sampleRate); const d=ab.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,big?2.2:3.4);
+    const n=c.createBufferSource(); n.buffer=ab; const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=kind==='hit'?2800:big?900:2000;
+    const g=c.createGain(); g.gain.value=big?.85:.5; n.connect(lp).connect(g).connect(this.master); n.start(t);
+    if(big){ const o=c.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(42,t+.26);
+      const og=c.createGain(); og.gain.setValueAtTime(.9,t); og.gain.exponentialRampToValueAtTime(.001,t+.3); o.connect(og).connect(this.master); o.start(t); o.stop(t+.32); } },
+};
+
 /* ============================ §E DATA ============================
    Content = data. A unit is a bag of attributes (DESIGN §11). Numbers
    are placeholder-for-tuning. Models are procedural (MODELS[def.model]). */
@@ -227,7 +264,11 @@ function buildRenderRec(e){
   const d=UNIT_DEFS[e.def];
   const rec=MODELS[d.model](d);      // {group, turrets, pick}
   rec.group.userData.entId=e.id;
-  if(rec.pick){ rec.pick.userData.entId=e.id; PICKABLE.push(rec.pick); }
+  if(rec.pick){ rec.pick.userData={entId:e.id, weaponIdx:null}; PICKABLE.push(rec.pick); }
+  // per-turret pick spheres (child of pivot) so turrets are individually take-overable
+  rec.turrets.forEach((tg,i)=>{ if(!e.weapons[i]||!e.weapons[i].takeoverable) return;
+    const s=new THREE.Mesh(new THREE.SphereGeometry(2.2,8,8), new THREE.MeshBasicMaterial({visible:false}));
+    s.position.y=1.0; s.userData={entId:e.id, weaponIdx:i}; tg.pivot.add(s); PICKABLE.push(s); });
   scene.add(rec.group);
   RENDER.set(e.id, rec);
 }
@@ -364,7 +405,7 @@ function initThreeScene(){
   camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.5,60000);
   scene.add(new THREE.HemisphereLight(0xbfd6ea,0x24303a,0.9));
   sun=new THREE.DirectionalLight(0xfff2dc,1.15); sun.position.set(120,200,60); scene.add(sun);
-  initMats(); buildOcean();
+  initMats(); buildOcean(); initFX();
   resize(); addEventListener('resize',resize);
 }
 function resize(){ if(!renderer) return; renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
@@ -376,7 +417,19 @@ let _tmpTarget=null;
 
 // ---- camera rig: reads G.cam ; zoom 1 = strategic top-down, 0 = deck ----
 const SYS_camera={ update(){}, render(){
-  const c=G.cam; const tgt=c.target;
+  const c=G.cam;
+  // possession gun-cam: over-the-barrel view (Gunnery asks Camera; Camera owns the move)
+  if(G.possess){ const e=G.ents.find(x=>x.id===G.possess.entId);
+    if(e&&e.alive){ const tg=RENDER.get(e.id).turrets[G.possess.weaponIdx];
+      const mp=new THREE.Vector3(); tg.muzzle.getWorldPosition(mp);
+      const q=tg.barrel.getWorldQuaternion(new THREE.Quaternion()); const fwd=new THREE.Vector3(0,0,1).applyQuaternion(q);
+      const camPos=mp.clone().addScaledVector(fwd,-7); camPos.y+=4.2;
+      camera.position.set(camPos.x+c.kick[0], camPos.y, camPos.z+c.kick[1]);
+      camera.lookAt(mp.clone().addScaledVector(fwd,140).setY(mp.y+fwd.y*140-1.5));
+      c.kick[0]*=0.8; c.kick[1]*=0.8; return;
+    } else { exitPossess(); }
+  }
+  const tgt=c.target;
   const elev=lerp(0.18,1.28,c.zoom);           // radians above horizon
   const dist=lerp(24,760,Math.pow(c.zoom,1.45));
   const ch=Math.cos(elev)*dist, cy=Math.sin(elev)*dist;
@@ -426,29 +479,129 @@ const SYS_hud={ update(){}, render(){
         <div class="kv"><span>MASS</span><b>${e.mass} t</b></div>`;
     } else { info.classList.remove('show'); G.selected=[]; }
   } else info.classList.remove('show');
+  // possession reticle + banner (red -> green when a valid enemy is under the crosshair)
+  const ret=el('reticle'), pb=el('possBar');
+  if(G.possess){ const pe=G.ents.find(x=>x.id===G.possess.entId);
+    ret.classList.add('show'); let green=false;
+    if(!RAY) RAY=new THREE.Raycaster(); RAY.setFromCamera({x:0,y:0},camera);
+    const hits=RAY.intersectObjects(PICKABLE,false);
+    if(hits.length){ const te=G.ents.find(x=>x.id===hits[0].object.userData.entId); if(te&&te.side!=='player') green=true; }
+    ret.style.setProperty('--recCol', green?'#54e08a':'#ff5d5d');
+    pb.classList.add('show'); pb.textContent='▸ MANUAL CONTROL · '+(pe?WEAPON_DEFS[pe.weapons[G.possess.weaponIdx].w].name:'')+' · ESC to release';
+  } else { ret.classList.remove('show'); pb.classList.remove('show'); }
 }};
 
-SYSTEMS.push(SYS_movement, SYS_camera, SYS_hud);
+/* ---- FX assets (built after THREE loads) ---- */
+let FX=null, TEX_GLOW=null, TEX_STREAK=null, TRACER_GEO=null, TRACER_MAT=null, FLASH_MAT=null, UP=null;
+const PROJVIS=new Map(); const FXLIST=[];
+function canvasTex(w,h,paint){ const c=document.createElement('canvas'); c.width=w; c.height=h; paint(c.getContext('2d')); return new THREE.CanvasTexture(c); }
+function initFX(){
+  UP=new THREE.Vector3(0,1,0); FX=new THREE.Group(); scene.add(FX);
+  TEX_GLOW=canvasTex(64,64,x=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.35,'rgba(255,228,168,.85)'); g.addColorStop(1,'rgba(255,170,70,0)'); x.fillStyle=g; x.fillRect(0,0,64,64); });
+  TEX_STREAK=canvasTex(16,64,x=>{ const g=x.createLinearGradient(0,0,0,64); g.addColorStop(0,'rgba(255,240,205,0)'); g.addColorStop(.5,'rgba(255,244,210,1)'); g.addColorStop(1,'rgba(255,176,90,0)'); x.fillStyle=g; x.fillRect(0,0,16,64); });
+  TRACER_GEO=new THREE.PlaneGeometry(1,1);
+  TRACER_MAT=new THREE.MeshBasicMaterial({map:TEX_STREAK,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  FLASH_MAT=new THREE.SpriteMaterial({map:TEX_GLOW,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,color:0xffd9a0});
+  // gameplay systems EMIT; juice OWNS all fx + sound (decoupling seam)
+  BUS.on('fire',e=>{ SND.gunshot(e.caliber); addFlash(e.pos, e.caliber==='medium'?4.2:2.4, 0xffe0a0);
+    if(G.possess){ G.cam.kick[0]+=(Math.random()-.5)*1.4; G.cam.kick[1]+=(Math.random()-.5)*1.4; } });
+  BUS.on('hit',e=>{ SND.impact(); addSpark(e.pos); G.hitStop=Math.max(G.hitStop,0.065); });
+  BUS.on('kill',e=>{ const ent=G.ents.find(x=>x.id===e.entId); if(ent) addFlash(ent.pos,8,0xff8a3a); });
+  BUS.on('splash',e=>{ addFlash([e.pos[0],0.2,e.pos[2]],3,0x9fc2d6); });
+}
+function addFlash(pos,scale,color){ if(!FX) return; const m=new THREE.Sprite(FLASH_MAT.clone()); if(color) m.material.color.setHex(color);
+  m.position.set(pos[0],pos[1],pos[2]); m.scale.setScalar(scale); FX.add(m); FXLIST.push({mesh:m,life:.10,max:.10,kind:'flash'}); }
+function addSpark(pos){ addFlash(pos,3.2,0xfff2c0); for(let i=0;i<7;i++){ const m=new THREE.Sprite(FLASH_MAT.clone()); m.position.set(pos[0],pos[1],pos[2]); m.scale.setScalar(1.1); FX.add(m);
+  FXLIST.push({mesh:m,life:.34,max:.34,kind:'spark',vel:[(Math.random()-.5)*26,Math.random()*20,(Math.random()-.5)*26]}); } }
+
+/* ---- Combat Math (shared): one applyDamage; two hit modes (ballistic live, statistical stub) ---- */
+const CMBT={
+  modifiers(shooterId,target,weapon,cond){ return 1; },        // armor/vuln/fort/terrain/supply (Phase 2)
+  applyDamage(target,amount,hitPos){ if(!target||!target.alive) return; target.hp-=amount;
+    BUS.emit('hit',{pos:hitPos,targetId:target.id,dmg:amount});
+    if(target.hp<=0){ target.alive=false; BUS.emit('kill',{entId:target.id}); } },
+  resolveBallisticHit(p,target){ this.applyDamage(target, p.dmg*this.modifiers(p.srcId,target,p.w), p.pos.slice()); },
+  hitChance(shooter,target,weapon,cond){ return 0; },          // Phase 2
+  resolveStatistical(shooterId,targetId,weaponId,cond){ return null; }, // Phase 2
+};
+
+/* ---- gunnery / projectiles ---- */
+function segSphere(a,b,c,r){ const bx=b[0]-a[0],by=b[1]-a[1],bz=b[2]-a[2]; const cx=c[0]-a[0],cy=c[1]-a[1],cz=c[2]-a[2];
+  const L2=bx*bx+by*by+bz*bz||1e-6; let t=clamp((cx*bx+cy*by+cz*bz)/L2,0,1);
+  const dx=cx-bx*t,dy=cy-by*t,dz=cz-bz*t; return dx*dx+dy*dy+dz*dz<=r*r; }
+function tryFire(e,wi){ const w=e.weapons[wi]; if(!w||w.cooldown>0||!e.alive) return; const wd=WEAPON_DEFS[w.w];
+  const tg=RENDER.get(e.id).turrets[wi]; const mp=new THREE.Vector3(); tg.muzzle.getWorldPosition(mp);
+  const q=tg.barrel.getWorldQuaternion(new THREE.Quaternion()); const dir=new THREE.Vector3(0,0,1).applyQuaternion(q).normalize();
+  dir.x+=(Math.random()-.5)*wd.spread; dir.y+=(Math.random()-.5)*wd.spread; dir.z+=(Math.random()-.5)*wd.spread; dir.normalize();
+  const id='p'+(G.nextId++);
+  G.projectiles.push({ id, w:w.w, srcId:e.id, side:e.side, pos:[mp.x,mp.y,mp.z], prev:[mp.x,mp.y,mp.z],
+    vel:[dir.x*wd.muzzle,dir.y*wd.muzzle,dir.z*wd.muzzle], life:3.2, dmg:wd.dmg, caliber:wd.caliber, grav:9.8 });
+  w.cooldown=wd.reload; w.recoil=wd.caliber==='medium'?0.85:0.35;
+  BUS.emit('fire',{pos:[mp.x,mp.y,mp.z],caliber:wd.caliber});
+}
+const SYS_gunnery={ update(dt){ for(const e of G.ents){ if(!e.alive) continue; for(const w of e.weapons){ if(w.cooldown>0) w.cooldown-=dt; w.recoil=lerp(w.recoil,0,0.16); } } }, render(){} };
+const SYS_projectiles={ update(dt){ const arr=G.projectiles;
+  for(let i=arr.length-1;i>=0;i--){ const p=arr[i]; p.prev=[p.pos[0],p.pos[1],p.pos[2]];
+    p.vel[1]-=p.grav*dt; p.pos[0]+=p.vel[0]*dt; p.pos[1]+=p.vel[1]*dt; p.pos[2]+=p.vel[2]*dt; p.life-=dt;
+    let hit=null; for(const e of G.ents){ if(!e.alive||e.side===p.side) continue; if(segSphere(p.prev,p.pos,e.pos,e.hit.r)){ hit=e; break; } }
+    if(hit){ CMBT.resolveBallisticHit(p,hit); arr.splice(i,1); continue; }
+    if(p.pos[1]<0){ BUS.emit('splash',{pos:[p.pos[0],0,p.pos[2]]}); arr.splice(i,1); continue; }
+    if(p.life<=0) arr.splice(i,1); } }, render(){} };
+
+/* ---- dead-entity cleanup (deferred; keeps G tidy) ---- */
+const pendingRemove=[];
+function removeEnt(id){ const idx=G.ents.findIndex(e=>e.id===id); if(idx<0) return; const rec=RENDER.get(id);
+  if(rec){ scene.remove(rec.group); }
+  for(let i=PICKABLE.length-1;i>=0;i--){ if(PICKABLE[i].userData&&PICKABLE[i].userData.entId===id) PICKABLE.splice(i,1); }
+  RENDER.delete(id); G.ents.splice(idx,1);
+  G.selected=G.selected.filter(s=>s!==id); if(G.possess&&G.possess.entId===id) exitPossess(); }
+function processRemovals(){ while(pendingRemove.length) removeEnt(pendingRemove.shift()); }
+BUS.on('kill',e=>{ if(!pendingRemove.includes(e.entId)) pendingRemove.push(e.entId); });
+
+/* ---- juice render: tracers (stretched trails, never boxes) + transient fx ---- */
+const SYS_juice={ update(){}, render(dt){
+  for(const p of G.projectiles){ let m=PROJVIS.get(p.id); if(!m){ m=new THREE.Mesh(TRACER_GEO,TRACER_MAT); m.matrixAutoUpdate=false; FX.add(m); PROJVIS.set(p.id,m); }
+    const bx=p.pos[0],by=p.pos[1],bz=p.pos[2]; const dx=bx-p.prev[0],dy=by-p.prev[1],dz=bz-p.prev[2]; const seg=Math.hypot(dx,dy,dz)||1;
+    const yA=new THREE.Vector3(dx/seg,dy/seg,dz/seg);                                   // long axis = velocity
+    const toCam=new THREE.Vector3(camera.position.x-bx,camera.position.y-by,camera.position.z-bz).normalize();
+    let xA=new THREE.Vector3().crossVectors(yA,toCam); if(xA.lengthSq()<1e-5) xA.set(1,0,0); xA.normalize();
+    const zA=new THREE.Vector3().crossVectors(xA,yA).normalize();                       // face the camera
+    const len=Math.max(12,seg*4);
+    m.matrix.makeBasis(xA.multiplyScalar(1.15), yA.multiplyScalar(len), zA); m.matrix.setPosition(bx,by,bz); }
+  const live=new Set(G.projectiles.map(p=>p.id)); for(const [id,m] of PROJVIS){ if(!live.has(id)){ FX.remove(m); PROJVIS.delete(id); } }
+  for(let i=FXLIST.length-1;i>=0;i--){ const f=FXLIST[i]; f.life-=dt;
+    if(f.vel){ f.mesh.position.x+=f.vel[0]*dt; f.mesh.position.y+=f.vel[1]*dt; f.mesh.position.z+=f.vel[2]*dt; f.vel[1]-=32*dt; }
+    f.mesh.material.opacity=Math.max(0,f.life/f.max); if(f.kind==='flash') f.mesh.scale.multiplyScalar(1+dt*5);
+    if(f.life<=0){ FX.remove(f.mesh); FXLIST.splice(i,1); } }
+}};
+
+SYSTEMS.push(SYS_movement, SYS_gunnery, SYS_projectiles, SYS_camera, SYS_juice, SYS_hud);
 
 /* ============================ §H INPUT (arbiter + mode stack) ============================ */
-const raycaster=THREE?null:null; let RAY=null;
-const ndc=new (window.DOMPoint||function(){})();
-let drag=null;
+let RAY=null, drag=null, _mx=0, _my=0;
 function screenNDC(px,py){ return {x:(px/innerWidth)*2-1, y:-(py/innerHeight)*2+1}; }
 function pickAt(px,py){ if(!RAY) RAY=new THREE.Raycaster(); const n=screenNDC(px,py);
   RAY.setFromCamera(n,camera); const hits=RAY.intersectObjects(PICKABLE,false);
-  return hits.length? hits[0].object.userData.entId : null; }
+  return hits.length? hits[0].object.userData : null; }   // {entId, weaponIdx} | null
+function enterPossess(entId,wi){ G.possess={entId,weaponIdx:wi}; if(G.modeStack[G.modeStack.length-1]!=='possess') G.modeStack.push('possess'); }
+function exitPossess(){ G.possess=null; const i=G.modeStack.lastIndexOf('possess'); if(i>0) G.modeStack.splice(i,1); }
 function oceanPointAt(px,py){ if(!RAY) RAY=new THREE.Raycaster(); const n=screenNDC(px,py); RAY.setFromCamera(n,camera);
   const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0); const p=new THREE.Vector3();
   return RAY.ray.intersectPlane(plane,p)? p : null; }
 
 function bindInput(){
   const cv=el('bg');
-  cv.addEventListener('pointerdown',e=>{ musKick();
-    drag={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,btn:e.button,moved:false}; cv.setPointerCapture(e.pointerId);
+  cv.addEventListener('pointerdown',e=>{ musKick(); SND.init(); SND.unlock();
     if(!MUS.started&&MUS.on) musPlay('prep',2.0);
+    if(G.possess){ if(e.button===2) exitPossess(); else { const pe=G.ents.find(x=>x.id===G.possess.entId); if(pe) tryFire(pe,G.possess.weaponIdx); } return; }
+    drag={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,btn:e.button,moved:false}; cv.setPointerCapture(e.pointerId);
   });
-  cv.addEventListener('pointermove',e=>{ if(!drag) return;
+  cv.addEventListener('pointermove',e=>{
+    if(G.possess){ const pe=G.ents.find(x=>x.id===G.possess.entId);
+      if(pe){ const w=pe.weapons[G.possess.weaponIdx]; const dx=e.clientX-_mx, dy=e.clientY-_my;
+        if(Math.abs(dx)<80&&Math.abs(dy)<80){ w.yaw-=dx*0.004; w.pitch=clamp(w.pitch-dy*0.003,-0.15,0.95); } }
+      _mx=e.clientX; _my=e.clientY; return; }
+    _mx=e.clientX; _my=e.clientY; if(!drag) return;
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
     if(Math.abs(e.clientX-drag.x0)+Math.abs(e.clientY-drag.y0)>4) drag.moved=true;
     if(drag.btn===2){ G.cam.yaw+=dx*0.005; }                          // right-drag orbit
@@ -456,8 +609,9 @@ function bindInput(){
       G.cam.target[0]-= (dx*Math.cos(a)+dy*Math.sin(a))*sc;
       G.cam.target[2]-= (-dx*Math.sin(a)+dy*Math.cos(a))*sc; }
   });
-  cv.addEventListener('pointerup',e=>{ if(drag&&!drag.moved){ const id=pickAt(e.clientX,e.clientY);
-      G.selected = id? [id] : []; } drag=null; });
+  cv.addEventListener('pointerup',e=>{ if(drag&&!drag.moved){ const h=pickAt(e.clientX,e.clientY);
+      if(h && h.weaponIdx!=null) enterPossess(h.entId,h.weaponIdx);
+      else G.selected = h? [h.entId] : []; } drag=null; });
   cv.addEventListener('wheel',e=>{ e.preventDefault();
     const before=oceanPointAt(e.clientX,e.clientY);
     G.cam.zoom=clamp(G.cam.zoom + Math.sign(e.deltaY)*0.06, 0, 1);
@@ -466,8 +620,9 @@ function bindInput(){
   },{passive:false});
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
-    if(k==='m') musToggle(); if(k===' ') G.paused=!G.paused;
-    if(k==='escape') G.selected=[];
+    if(k==='m') musToggle();
+    if(k==='escape'){ if(G.possess) exitPossess(); else G.selected=[]; }
+    if(k===' '){ e.preventDefault(); if(G.possess){ const pe=G.ents.find(x=>x.id===G.possess.entId); if(pe) tryFire(pe,G.possess.weaponIdx); } else G.paused=!G.paused; }
   });
   // simple touch: one-finger pan, pinch zoom
   let tch=null;
@@ -483,13 +638,17 @@ function bindInput(){
     else if(e.touches.length===2&&tch.pinch!=null){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
       G.cam.zoom=clamp(G.cam.zoom-(d-tch.pinch)*0.002,0,1); tch.pinch=d; }
   },{passive:false});
-  cv.addEventListener('touchend',e=>{ if(tch&&tch.moved===false&&tch.x0!=null){ const id=pickAt(tch.x0,tch.y0); G.selected=id?[id]:[]; } tch=null; },{passive:false});
+  cv.addEventListener('touchend',e=>{ if(tch&&tch.moved===false&&tch.x0!=null){
+      if(G.possess){ const pe=G.ents.find(x=>x.id===G.possess.entId); if(pe) tryFire(pe,G.possess.weaponIdx); }
+      else { const h=pickAt(tch.x0,tch.y0); if(h&&h.weaponIdx!=null) enterPossess(h.entId,h.weaponIdx); else G.selected=h?[h.entId]:[]; } }
+    tch=null; },{passive:false});
 }
 
 /* ============================ §I LOOP ============================ */
 let last=performance.now(), acc=0, animClock=0; const STEP=1/60;
 function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
   for(const s of SYSTEMS) if(s.update) s.update(dt);
+  processRemovals();
 }
 function frame(now){
   let dt=Math.min(.05,(now-last)/1000); last=now;
@@ -500,7 +659,7 @@ function frame(now){
       else { acc+=dt*G.speed; let guard=0; while(acc>=STEP && guard++<6){ stepSim(STEP); acc-=STEP; } }
     }
     if(ocean) ocean.material.uniforms.uTime.value=G.ocean.t;
-    for(const s of SYSTEMS) if(s.render) s.render();
+    for(const s of SYSTEMS) if(s.render) s.render(dt);
     syncRender();
     renderer.render(scene,camera);
     musTick(dt);
@@ -538,6 +697,7 @@ async function boot(){
   addEnt('scoutheli','enemy',[30,34,80],Math.PI);
   G.cam.target=[6,1,6]; G.selected=[1];
   bindInput(); initHUD();
+  if(DEV) window.__nd={ G:()=>G, possess:(id,wi)=>enterPossess(id,wi), fire:(id,wi)=>{ const e=G.ents.find(x=>x.id===id); if(e) tryFire(e,wi); } };
   el('boot').classList.add('hide'); setTimeout(()=>{ const b=el('boot'); if(b) b.remove(); },700);
   if(MUS.on){ /* music starts on first user gesture (autoplay policy) */ }
   last=performance.now(); requestAnimationFrame(frame);

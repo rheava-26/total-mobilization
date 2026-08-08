@@ -1,0 +1,547 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>NAVAL DOMINANCE</title>
+<style>
+  /* ===== reset / base ===== */
+  :root{
+    --ink:#dfeaf2; --dim:#8ba0b0; --panel:rgba(10,18,26,.82); --panel2:rgba(14,26,36,.9);
+    --line:rgba(120,160,190,.22); --accent:#57b8ff; --good:#54e08a; --bad:#ff5d5d; --warn:#ffcf5d;
+    --ui:1;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; height:100%; overflow:hidden; background:#05080c; color:var(--ink);
+    font-family:"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif; user-select:none}
+  #bg{position:fixed; inset:0; z-index:0; display:block; width:100%; height:100%; touch-action:none; cursor:crosshair}
+  /* ===== HUD overlay: none by default, children opt back in ===== */
+  #hud{position:fixed; inset:0; z-index:4; pointer-events:none; font-size:calc(14px*var(--ui))}
+  #hud>*{pointer-events:auto}
+  .topbar{position:absolute; top:10px; left:12px; right:12px; display:flex; align-items:center; gap:10px}
+  .brand{font-weight:800; letter-spacing:2px; font-size:16px; color:#eaf4ff; text-shadow:0 2px 10px #000}
+  .brand small{display:block; font-weight:600; letter-spacing:3px; font-size:9px; color:var(--dim)}
+  .spacer{flex:1}
+  .btn{pointer-events:auto; background:var(--panel); border:1px solid var(--line); color:var(--ink);
+    padding:7px 11px; border-radius:8px; font-size:12px; cursor:pointer; backdrop-filter:blur(6px)}
+  .btn:hover{border-color:var(--accent); color:#fff}
+  .btn.on{border-color:var(--good); color:var(--good)}
+  /* selection info panel */
+  .info{position:absolute; left:12px; bottom:12px; width:250px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; backdrop-filter:blur(8px); box-shadow:0 10px 30px rgba(0,0,0,.4);
+    display:none}
+  .info.show{display:block}
+  .info h3{margin:0 0 2px; font-size:14px; letter-spacing:1px}
+  .info .cls{color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:9px}
+  .bar{height:8px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden; margin:5px 0}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--good),#9fe)}
+  .kv{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin:3px 0}
+  .kv b{color:var(--ink); font-weight:600}
+  /* hint / help */
+  .hint{position:absolute; right:12px; bottom:12px; width:230px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:10px 12px; font-size:11px; color:var(--dim); backdrop-filter:blur(8px); line-height:1.6}
+  .hint b{color:var(--ink)}
+  .hint kbd{background:rgba(255,255,255,.09); border:1px solid var(--line); border-radius:4px; padding:0 5px; color:var(--ink)}
+  /* now playing */
+  #nowPlaying{position:absolute; top:52px; right:12px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:10px; padding:8px 12px; font-size:11px; opacity:0; transform:translateY(-6px); transition:.4s; max-width:280px}
+  #nowPlaying.show{opacity:1; transform:none}
+  #nowPlaying .npq{display:block; color:var(--accent); letter-spacing:2px; font-size:9px}
+  #nowPlaying .npt{display:block; font-weight:700; color:#fff}
+  #nowPlaying .npa{display:block; color:var(--dim)}
+  /* toast + tooltip */
+  #toast{position:absolute; left:50%; top:64px; transform:translateX(-50%); background:var(--panel2);
+    border:1px solid var(--line); border-radius:9px; padding:8px 14px; font-size:12px; opacity:0; transition:.3s; letter-spacing:1px}
+  #toast.show{opacity:1}
+  #tip{position:fixed; z-index:30; pointer-events:none; background:#0b1620; border:1px solid var(--line);
+    border-radius:7px; padding:5px 9px; font-size:11px; color:var(--ink); opacity:0; transition:.12s; max-width:240px}
+  #tip.show{opacity:1}
+  /* boot / loading */
+  #boot{position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(60% 60% at 50% 40%,#0a1622,#05080c); gap:14px}
+  #boot .b1{font-weight:800; letter-spacing:6px; font-size:26px; color:#eaf4ff}
+  #boot .b2{color:var(--dim); letter-spacing:3px; font-size:11px}
+  #boot.hide{opacity:0; pointer-events:none; transition:.6s}
+  .selbox{position:absolute; border:1px solid var(--accent); background:rgba(87,184,255,.12); display:none; z-index:3}
+</style>
+
+<canvas id="bg"></canvas>
+<div id="hud">
+  <div class="topbar">
+    <div class="brand">NAVAL DOMINANCE<small>PHASE 0 · FOUNDATION</small></div>
+    <div class="spacer"></div>
+    <button class="btn on" id="btnMus" data-action="mus" data-tip="Toggle soundtrack (M)">♫ MUSIC</button>
+    <button class="btn" id="btnPlaylist" data-action="playlist" data-tip="Edit playlists">≣</button>
+  </div>
+  <div class="info" id="info"></div>
+  <div class="hint">
+    <b>DRAG</b> pan · <b>RIGHT-DRAG</b> orbit · <b>WHEEL</b> zoom map↔deck<br>
+    <b>CLICK</b> a ship to select · watch the small boat rock harder than the destroyer.
+  </div>
+  <div id="nowPlaying"></div>
+  <div id="toast"></div>
+  <div class="selbox" id="selbox"></div>
+</div>
+<div id="tip"></div>
+<div id="ytplayer" style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none"></div>
+<div id="boot"><div class="b1">NAVAL DOMINANCE</div><div class="b2" id="bootMsg">LOADING ENGINE…</div></div>
+
+<script type="module">
+/* =====================================================================
+   NAVAL DOMINANCE — single-file 3D engine (Phase 0: Foundation)
+   One 3D world; the camera is the UI. Sim state (G) is pure JSON-clean
+   data; all Three.js objects live in the parallel RENDER registry so
+   campaign saves stay trivial. Engine skeleton (loop, music, tm_* saves,
+   G-architecture) is ported from Total Mobilization (title.html).
+   ===================================================================== */
+
+/* ---------- how Three.js loads (see FRAMEWORK_PLAN / plan) ------------
+   Three.js is ESM-only. DEV imports from a CDN so we don't re-paste
+   ~600KB per edit; the SHIP build will inline three.module.min.js as a
+   blob (offline-safe). Toggle DEV=false + set THREE_INLINE for release. */
+const DEV = true;
+// Three.js (ESM) is vendored as a sibling file so the game works offline, on GitHub Pages,
+// and with no CDN dependency. Ship-time option: inline it as a blob for a true single file.
+const THREE_URL = './three.module.js';
+let THREE = null;
+
+/* ============================ §B CORE ============================ */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const TAU=Math.PI*2, DEG=Math.PI/180;
+const el=id=>document.getElementById(id);
+function logErr(e){ if(DEV) console.error(e); }
+function toast(m){ const t=el('toast'); if(!t) return; t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
+// namespaced localStorage (title.html tm_* convention)
+function lsGet(k,def){ try{ const s=localStorage.getItem(k); if(s) return JSON.parse(s); }catch(e){} return def; }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+// event bus — gameplay systems EMIT; juice/hud subscribe. Decoupling seam.
+const BUS=(()=>{ const m=new Map();
+  return { on(t,fn){ (m.get(t)||m.set(t,[]).get(t)).push(fn); },
+    emit(t,p){ const a=m.get(t); if(a) for(const fn of a){ try{ fn(p); }catch(e){ logErr(e); } } } };
+})();
+
+/* ============================ §C MUSIC ============================
+   Streamed from YouTube (no audio files bundled). Ported verbatim from
+   title.html; two phase playlists (prep -> combat) with a software
+   crossfade ticked each frame. Editable in-game; persists to tm_nd_pl. */
+const YT_DEFAULT={
+  prep:[
+    {id:'iMPEY9q7iAQ', t:'Third Degree', a:'WARNO OST'},
+    {id:'hiqzO9KRBug', t:'Timelessness', a:'Weightlessness'},
+    {id:'BL2Q8p2iZo4', t:'Mysteries', a:'Richard Lacy'},
+  ],
+  combat:[
+    {id:'bAFFhW73xRU', t:'Hostile Fleet Detected', a:'Andreas Waldetoft'},
+    {id:'4T9rxNNpyIc', t:'Get Together', a:'WARNO OST'},
+  ],
+};
+function loadPlaylists(){ const p=lsGet('tm_nd_pl',null); if(p&&Array.isArray(p.prep)&&Array.isArray(p.combat)) return p; return JSON.parse(JSON.stringify(YT_DEFAULT)); }
+function savePlaylists(){ lsSet('tm_nd_pl',MUSIC); }
+function ytId(u){ u=(u||'').trim(); if(!u) return null; const m=u.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/|music\.youtube\.com\/watch\?v=)([\w-]{11})/); if(m) return m[1]; if(/^[\w-]{11}$/.test(u)) return u; return null; }
+let MUSIC=loadPlaylists();
+const MUS={on:true,vol:52,phase:null,idx:{prep:0,combat:0},yt:null,ready:false,started:false,curVol:0,fade:null,pending:false,track:null,apiAsked:false,warned:false,fails:0};
+function loadYTApi(){ if(MUS.apiAsked) return; MUS.apiAsked=true;
+  const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api';
+  s.onerror=()=>{ if(!MUS.warned){ MUS.warned=true; toast('♫ could not reach YouTube'); } };
+  document.head.appendChild(s); }
+window.onYouTubeIframeAPIReady=function(){
+  try{
+    MUS.yt=new YT.Player('ytplayer',{ height:'1',width:'1',
+      playerVars:Object.assign({autoplay:0,controls:0,disablekb:1,playsinline:1,fs:0},/^https?:/.test(location.origin||'')?{origin:location.origin}:{}),
+      events:{
+        onReady:()=>{ MUS.ready=true; try{ MUS.yt.setVolume(0); }catch(e){} if(MUS.pending){ MUS.pending=false; musPlay(MUS.phase||'prep',2.5); } },
+        onStateChange:(e)=>{ if(e.data===YT.PlayerState.ENDED) musNext(); else if(e.data===YT.PlayerState.PLAYING){ MUS.fails=0; let title=null; try{ const vd=MUS.yt.getVideoData(); title=vd&&vd.title; }catch(x){} musBanner(MUS.track,title); } },
+        onError:()=>musSkip(),
+      } });
+  }catch(e){ logErr(e); }
+};
+function musBanner(track,realTitle){ const b=el('nowPlaying'); if(!b) return;
+  const t=(realTitle&&realTitle.trim())||(track&&track.t)||'Unknown', a=(track&&track.a)||'YouTube';
+  b.innerHTML=`<span class="npq">♫ NOW PLAYING</span><span class="npt">${t}</span><span class="npa">${a}</span>`;
+  b.classList.add('show'); clearTimeout(b._t); b._t=setTimeout(()=>b.classList.remove('show'),5200); }
+function musPlay(phase,fadeDur){ if(!MUS.on) return; MUS.phase=phase;
+  const list=MUSIC[phase]; if(!list||!list.length) return;
+  const track=list[MUS.idx[phase]%list.length]; MUS.track=track;
+  if(!MUS.ready||!MUS.yt){ MUS.pending=true; loadYTApi(); return; }
+  try{ MUS.yt.loadVideoById(track.id); MUS.yt.setVolume(0); MUS.curVol=0; MUS.yt.playVideo(); }catch(e){}
+  MUS.started=true; MUS.fade={to:MUS.vol,dur:fadeDur||2.5}; }
+function musNext(){ const ph=MUS.phase; if(!ph||!MUSIC[ph]||!MUSIC[ph].length) return; MUS.idx[ph]=(MUS.idx[ph]+1)%MUSIC[ph].length; musPlay(ph,1.2); }
+function musSkip(){ MUS.fails++; if(MUS.fails>((MUSIC[MUS.phase]||[]).length+1)){ if(!MUS.warned){ MUS.warned=true; toast('♫ playlist empty/unplayable — add links via ≣'); } return; } musNext(); }
+function musDuck(){ if(MUS.started) MUS.fade={to:MUS.vol*.28,dur:9}; }
+function musStop(){ MUS.fade=null; MUS.curVol=0; MUS.started=false; MUS.phase=null; if(MUS.yt) try{ MUS.yt.pauseVideo(); MUS.yt.setVolume(0); }catch(e){} }
+function musToggle(){ MUS.on=!MUS.on; const mb=el('btnMus'); if(mb) mb.classList.toggle('on',MUS.on);
+  if(!MUS.on) musStop(); else { MUS.fails=0; musPlay('prep',1.5); } toast(MUS.on?'♫ SOUNDTRACK ON':'♫ SOUNDTRACK OFF'); }
+function musKick(){ if(MUS.on&&MUS.started&&MUS.yt&&MUS.ready){ try{ const st=MUS.yt.getPlayerState(); if(st!==1&&st!==3) MUS.yt.playVideo(); }catch(e){} } }
+function musTick(dt){ if(!MUS.yt||!MUS.fade) return;
+  const f=MUS.fade, diff=f.to-MUS.curVol, mv=(100/Math.max(.2,f.dur))*dt;
+  if(Math.abs(diff)<=mv){ MUS.curVol=f.to; MUS.fade=null; if(f.to===0){ try{ MUS.yt.pauseVideo(); }catch(e){} } }
+  else MUS.curVol+=Math.sign(diff)*mv;
+  try{ MUS.yt.setVolume(Math.max(0,Math.min(100,MUS.curVol))); }catch(e){} }
+
+/* ============================ §E DATA ============================
+   Content = data. A unit is a bag of attributes (DESIGN §11). Numbers
+   are placeholder-for-tuning. Models are procedural (MODELS[def.model]). */
+const WEAPON_DEFS={
+  mainGun:{ name:'127mm Main Gun', kind:'gun', reload:2.6, muzzle:520, dmg:26, spread:.012, caliber:'medium' },
+  aaGun:{ name:'40mm AA', kind:'aa', reload:.11, muzzle:900, dmg:5, spread:.03, caliber:'small' },
+  lightMG:{ name:'Light MG', kind:'mg', reload:.09, muzzle:700, dmg:3, spread:.05, caliber:'small' },
+};
+const UNIT_DEFS={
+  destroyer:{ name:'DD-32 Destroyer', cls:'DESTROYER', model:'destroyer', domain:'sea',
+    len:64, beam:8, mass:2600, hp:220,
+    turrets:[  // pos = local [x(side),y(up),z(fore+)]; each is take-overable
+      {w:'mainGun', pos:[0, 3.1, 20], barrel:6.4},
+      {w:'mainGun', pos:[0, 2.7, 11], barrel:6.4},
+      {w:'aaGun',   pos:[0, 4.2, -6], barrel:2.6},
+      {w:'aaGun',   pos:[0, 3.4, -20], barrel:2.6},
+    ] },
+  patrolboat:{ name:'PT Patrol Boat', cls:'PATROL BOAT', model:'patrol', domain:'sea',
+    len:22, beam:5, mass:60, hp:60,
+    turrets:[ {w:'lightMG', pos:[0,1.9,3], barrel:1.6} ] },
+  scoutheli:{ name:'Scout Helicopter', cls:'HELI', model:'heli', domain:'air',
+    len:14, beam:3, mass:40, hp:38,
+    turrets:[ {w:'lightMG', pos:[0,-.4,2], barrel:1.2} ] },
+};
+
+/* ============================ §F STATE (G is JSON-clean) ============================ */
+let G=null, mode='battle';
+function newBattle(){
+  G={ ver:1, phase:'battle', over:null, paused:false, speed:1, t:0, nextId:1, hitStop:0,
+      ents:[], projectiles:[], selected:[], designated:{}, modeStack:['strategic'], possess:null,
+      cam:{ target:[0,0,0], zoom:.72, yaw:.5, kick:[0,0] },
+      ocean:{ t:0 },
+      encounter:{ sideA:['destroyer'], sideB:['scoutheli','scoutheli'], location:'openwater', playerControlled:true } };
+}
+function addEnt(def, side, pos, heading){
+  const d=UNIT_DEFS[def]; const id=G.nextId++;
+  const e={ id, def, side, domain:d.domain, pos:pos.slice(), vel:[0,0,0], heading:heading||0, throttle:0,
+    roll:0, pitchAng:0, hp:d.hp, maxHp:d.hp, mass:d.mass, alive:true,
+    hit:{r:Math.max(4,d.len*0.16)},
+    weapons:d.turrets.map((t,i)=>({ idx:i, w:t.w, yaw:0, pitch:0, cooldown:0, recoil:0, takeoverable:true, targetId:null })) };
+  G.ents.push(e); buildRenderRec(e); return e;
+}
+
+/* ---------- RENDER registry: all THREE objects, keyed by id, NEVER in G ---------- */
+const RENDER=new Map();   // id -> {group, turrets:[{pivot,barrel,muzzle}], pick}
+const PICKABLE=[];        // invisible colliders for raycast selection
+function buildRenderRec(e){
+  const d=UNIT_DEFS[e.def];
+  const rec=MODELS[d.model](d);      // {group, turrets, pick}
+  rec.group.userData.entId=e.id;
+  if(rec.pick){ rec.pick.userData.entId=e.id; PICKABLE.push(rec.pick); }
+  scene.add(rec.group);
+  RENDER.set(e.id, rec);
+}
+
+/* ============================ §G MODELS (procedural / synthetic) ============================ */
+let MAT=null;
+function initMats(){ MAT={
+  hull:new THREE.MeshStandardMaterial({color:0x53606b,roughness:.75,metalness:.35}),
+  hull2:new THREE.MeshStandardMaterial({color:0x3d4750,roughness:.8,metalness:.3}),
+  deck:new THREE.MeshStandardMaterial({color:0x6b6256,roughness:.9,metalness:.1}),
+  steel:new THREE.MeshStandardMaterial({color:0x8a949c,roughness:.55,metalness:.6}),
+  dark:new THREE.MeshStandardMaterial({color:0x2a3138,roughness:.7,metalness:.4}),
+  glass:new THREE.MeshStandardMaterial({color:0x223, roughness:.2,metalness:.1}),
+  heli:new THREE.MeshStandardMaterial({color:0x3a4a3f,roughness:.7,metalness:.3}),
+}; }
+function box(w,h,l,mat,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),mat); m.position.set(x||0,y||0,z||0); m.castShadow=m.receiveShadow=false; return m; }
+function cyl(r1,r2,h,mat,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg||14),mat); return m; }
+function turretGroup(t){
+  // pivot (yaw) -> mount + barrel(pitch child). muzzle empty at barrel tip.
+  const pivot=new THREE.Group(); pivot.position.set(t.pos[0],t.pos[1],t.pos[2]);
+  const base=cyl(1.5,1.7,1.1,MAT.steel); base.position.y=-.2; pivot.add(base);
+  const dome=box(2.6,1.5,3.0,MAT.steel,0,.9,.3); pivot.add(dome);
+  const barrel=new THREE.Group(); barrel.position.set(0,1.0,1.0); pivot.add(barrel);
+  const bl=t.barrel||4;
+  const tube=cyl(.22,.22,bl,MAT.dark,10); tube.rotation.x=Math.PI/2; tube.position.z=bl/2; barrel.add(tube);
+  const muzzle=new THREE.Object3D(); muzzle.position.set(0,0,bl); barrel.add(muzzle);
+  return {pivot,barrel,muzzle};
+}
+const MODELS={
+  destroyer(d){
+    const g=new THREE.Group();
+    // hull: long tapered box (wedge bow)
+    const hull=box(d.beam,4.4,d.len,MAT.hull,0,-1.0,0); g.add(hull);
+    const bow=new THREE.Mesh(new THREE.CylinderGeometry(0.05,d.beam*.52,10,4,1), MAT.hull);
+    bow.rotation.x=Math.PI/2; bow.rotation.z=Math.PI/4; bow.scale.set(1,1,.5); bow.position.set(0,-1.0,d.len/2+2); g.add(bow);
+    const deck=box(d.beam*.9,.5,d.len*.94,MAT.deck,0,1.1,0); g.add(deck);
+    // superstructure + bridge + funnel
+    g.add(box(d.beam*.7,3.2,14,MAT.hull2,0,3.0,-1));
+    g.add(box(d.beam*.5,2.0,5,MAT.hull2,0,5.2,2));
+    g.add(box(3.2,1.0,3.0,MAT.glass,0,5.9,3.4));
+    const funnel=cyl(1.2,1.5,4.0,MAT.dark); funnel.position.set(0,5.4,-6); g.add(funnel);
+    g.add(box(.4,10,.4,MAT.steel,0,10,-1)); // mast
+    const turrets=d.turrets.map(t=>{ const tg=turretGroup(t); g.add(tg.pivot); return tg; });
+    const pick=new THREE.Mesh(new THREE.BoxGeometry(d.beam*1.6,10,d.len*1.05), new THREE.MeshBasicMaterial({visible:false}));
+    pick.position.y=2; g.add(pick);
+    return {group:g,turrets,pick};
+  },
+  patrol(d){
+    const g=new THREE.Group();
+    g.add(box(d.beam,2.2,d.len,MAT.hull,0,-.4,0));
+    g.add(box(d.beam*.85,.4,d.len*.9,MAT.deck,0,.8,0));
+    g.add(box(d.beam*.6,1.4,4,MAT.hull2,0,1.7,-1));
+    g.add(box(2,.8,1.6,MAT.glass,0,2.4,.2));
+    const turrets=d.turrets.map(t=>{ const tg=turretGroup(t); g.add(tg.pivot); return tg; });
+    const pick=new THREE.Mesh(new THREE.BoxGeometry(d.beam*1.7,6,d.len*1.1), new THREE.MeshBasicMaterial({visible:false}));
+    pick.position.y=1.5; g.add(pick);
+    return {group:g,turrets,pick};
+  },
+  heli(d){
+    const g=new THREE.Group();
+    g.add(box(2.4,2.2,7,MAT.heli,0,0,0));               // body
+    g.add(box(1.0,1.0,6,MAT.heli,0,.3,-5.5));           // tail boom
+    g.add(box(1.8,1.2,1.6,MAT.glass,0,.2,3.2));         // cockpit
+    const rotor=new THREE.Group(); rotor.position.y=2.0;
+    rotor.add(box(.3,.12,12,MAT.dark)); rotor.add(box(12,.12,.3,MAT.dark)); g.add(rotor); g.userData.rotor=rotor;
+    g.add(box(3,.1,.3,MAT.dark,0,.6,-8)); // tail rotor-ish
+    const turrets=d.turrets.map(t=>{ const tg=turretGroup(t); tg.pivot.scale.setScalar(.5); g.add(tg.pivot); return tg; });
+    const pick=new THREE.Mesh(new THREE.BoxGeometry(4,4,12), new THREE.MeshBasicMaterial({visible:false}));
+    g.add(pick);
+    return {group:g,turrets,pick};
+  },
+};
+
+/* ============================ §H OCEAN ============================
+   Sum-of-sines wave field. The SAME 3 waves live in the shader (visual)
+   and in oceanSample() (physics: ships rock from the local slope). */
+const WAVES=[  // dir normalized, amp, len, spd
+  {dx:0.95,dz:0.31,amp:0.75,len:55,spd:0.8},
+  {dx:-0.51,dz:0.86,amp:0.5,len:34,spd:1.15},
+  {dx:0.2,dz:-0.98,amp:0.32,len:20,spd:1.7},
+];
+function oceanSample(x,z,t){ // returns {h, sx, sz} height + slope
+  let h=0,sx=0,sz=0;
+  for(const w of WAVES){ const k=TAU/w.len; const ph=(w.dx*x+w.dz*z)*k + t*w.spd; const s=Math.sin(ph), c=Math.cos(ph);
+    h+=w.amp*s; sx+=w.amp*k*w.dx*c; sz+=w.amp*k*w.dz*c; }
+  return {h,sx,sz};
+}
+let ocean=null;
+function buildOcean(){
+  const geo=new THREE.PlaneGeometry(2400,2400,300,300); geo.rotateX(-Math.PI/2);
+  // unroll each wave into plain GLSL (GLSL ES 1.00 safe — no array constructors)
+  const waveGLSL=WAVES.map(w=>{ const k=(TAU/w.len);
+    return `{ float ph=(${w.dx.toFixed(4)}*wx+${w.dz.toFixed(4)}*wz)*${k.toFixed(5)}+uTime*${w.spd.toFixed(3)};
+      h+=${w.amp.toFixed(3)}*sin(ph); float c=cos(ph);
+      sx+=${w.amp.toFixed(3)}*${k.toFixed(5)}*${w.dx.toFixed(4)}*c; sz+=${w.amp.toFixed(3)}*${k.toFixed(5)}*${w.dz.toFixed(4)}*c; }`;
+  }).join('\n');
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{ uTime:{value:0} },
+    vertexShader:`
+      uniform float uTime; varying vec3 vN; varying vec3 vW; varying float vFog;
+      void main(){
+        vec3 p=position; float wx=p.x, wz=p.z; float h=0.0,sx=0.0,sz=0.0;
+        ${waveGLSL}
+        p.y+=h; vN=normalize(vec3(-sx,1.0,-sz));
+        vec4 world=modelMatrix*vec4(p,1.0); vW=world.xyz;
+        vFog=clamp(length(world.xyz-cameraPosition)/1600.0,0.0,1.0);
+        gl_Position=projectionMatrix*viewMatrix*world;
+      }`,
+    fragmentShader:`
+      varying vec3 vN; varying vec3 vW; varying float vFog;
+      void main(){
+        vec3 sun=normalize(vec3(0.55,0.8,0.28));
+        vec3 V=normalize(cameraPosition-vW);
+        float diff=max(dot(vN,sun),0.0);
+        float fres=pow(1.0-max(dot(vN,V),0.0),3.0);
+        vec3 R=reflect(-sun,vN); float spec=pow(max(dot(R,V),0.0),80.0);
+        vec3 deep=vec3(0.015,0.07,0.13), shallow=vec3(0.05,0.20,0.30), sky=vec3(0.55,0.68,0.82);
+        vec3 col=mix(deep,shallow,diff)+fres*sky*0.7+spec*vec3(1.0,0.96,0.85)*0.9;
+        col=mix(col,sky,vFog);
+        gl_FragColor=vec4(col,1.0);
+      }`,
+  });
+  ocean=new THREE.Mesh(geo,mat); scene.add(ocean);
+}
+
+/* ============================ §A BOOT: renderer/scene/camera ============================ */
+let renderer,scene,camera,sun;
+function initThreeScene(){
+  const cv=el('bg');
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,logarithmicDepthBuffer:true});
+  renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+  scene=new THREE.Scene();
+  const sky=new THREE.Color(0x8fb0c8); scene.background=sky;
+  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.5,60000);
+  scene.add(new THREE.HemisphereLight(0xbfd6ea,0x24303a,0.9));
+  sun=new THREE.DirectionalLight(0xfff2dc,1.15); sun.position.set(120,200,60); scene.add(sun);
+  initMats(); buildOcean();
+  resize(); addEventListener('resize',resize);
+}
+function resize(){ if(!renderer) return; renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+
+/* ============================ §H SYSTEMS ============================ */
+const SYSTEMS=[];
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+let _tmpTarget=null;
+
+// ---- camera rig: reads G.cam ; zoom 1 = strategic top-down, 0 = deck ----
+const SYS_camera={ update(){}, render(){
+  const c=G.cam; const tgt=c.target;
+  const elev=lerp(0.18,1.28,c.zoom);           // radians above horizon
+  const dist=lerp(24,760,Math.pow(c.zoom,1.45));
+  const ch=Math.cos(elev)*dist, cy=Math.sin(elev)*dist;
+  const px=tgt[0]+Math.sin(c.yaw)*ch, pz=tgt[2]+Math.cos(c.yaw)*ch, py=tgt[1]+cy;
+  camera.position.set(px+c.kick[0], py, pz+c.kick[1]);
+  camera.lookAt(tgt[0],tgt[1]+lerp(1.5,0,c.zoom),tgt[2]);
+  c.kick[0]*=0.86; c.kick[1]*=0.86;
+}};
+
+// ---- movement: domain dispatch; ships get wave-rock scaled by 1/mass ----
+const ROLL_K=1400, PITCH_K=900;
+const SYS_movement={ update(dt){
+  for(const e of G.ents){ if(!e.alive) continue;
+    if(e.domain==='sea'){
+      const s=oceanSample(e.pos[0],e.pos[2],G.ocean.t);
+      e.pos[1]=lerp(e.pos[1], s.h*0.6, 0.15);                 // ride the surface
+      const tr=clamp(-s.sx*ROLL_K/e.mass,-.5,.5);             // bigger mass => less roll (locked req)
+      const tp=clamp( s.sz*PITCH_K/e.mass,-.4,.4);
+      e.roll=lerp(e.roll,tr,0.08); e.pitchAng=lerp(e.pitchAng,tp,0.08);
+    } else if(e.domain==='air'){
+      e.pos[1]=lerp(e.pos[1], 34+Math.sin(G.ocean.t*1.3+e.id)*1.2, 0.05);  // hover bob
+      e.roll=lerp(e.roll,Math.sin(G.ocean.t*0.7+e.id)*0.08,0.05);
+    }
+  }
+}, render(){} };
+
+// ---- render sync: G (data) -> THREE meshes ----
+function syncRender(){
+  for(const e of G.ents){ const rec=RENDER.get(e.id); if(!rec) continue;
+    rec.group.position.set(e.pos[0],e.pos[1],e.pos[2]);
+    rec.group.rotation.set(e.pitchAng, e.heading, e.roll);
+    if(rec.group.userData.rotor) rec.group.userData.rotor.rotation.y+=0.6;
+    for(let i=0;i<rec.turrets.length;i++){ const w=e.weapons[i], tg=rec.turrets[i]; if(!w||!tg) continue;
+      tg.pivot.rotation.y=w.yaw; tg.barrel.rotation.x=-w.pitch; tg.barrel.position.z=1.0 - (w.recoil||0); }
+  }
+}
+
+// ---- HUD sync (render only) ----
+const SYS_hud={ update(){}, render(){
+  const info=el('info');
+  if(G.selected.length){ const e=G.ents.find(x=>x.id===G.selected[0]);
+    if(e){ const d=UNIT_DEFS[e.def]; const hpp=Math.max(0,Math.round(100*e.hp/e.maxHp));
+      info.classList.add('show');
+      info.innerHTML=`<h3>${d.name}</h3><div class="cls">${d.cls} · ${e.domain.toUpperCase()}</div>
+        <div class="kv"><span>HULL</span><b>${hpp}%</b></div><div class="bar"><i style="width:${hpp}%"></i></div>
+        <div class="kv"><span>WEAPONS</span><b>${e.weapons.length}</b></div>
+        <div class="kv"><span>MASS</span><b>${e.mass} t</b></div>`;
+    } else { info.classList.remove('show'); G.selected=[]; }
+  } else info.classList.remove('show');
+}};
+
+SYSTEMS.push(SYS_movement, SYS_camera, SYS_hud);
+
+/* ============================ §H INPUT (arbiter + mode stack) ============================ */
+const raycaster=THREE?null:null; let RAY=null;
+const ndc=new (window.DOMPoint||function(){})();
+let drag=null;
+function screenNDC(px,py){ return {x:(px/innerWidth)*2-1, y:-(py/innerHeight)*2+1}; }
+function pickAt(px,py){ if(!RAY) RAY=new THREE.Raycaster(); const n=screenNDC(px,py);
+  RAY.setFromCamera(n,camera); const hits=RAY.intersectObjects(PICKABLE,false);
+  return hits.length? hits[0].object.userData.entId : null; }
+function oceanPointAt(px,py){ if(!RAY) RAY=new THREE.Raycaster(); const n=screenNDC(px,py); RAY.setFromCamera(n,camera);
+  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0); const p=new THREE.Vector3();
+  return RAY.ray.intersectPlane(plane,p)? p : null; }
+
+function bindInput(){
+  const cv=el('bg');
+  cv.addEventListener('pointerdown',e=>{ musKick();
+    drag={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,btn:e.button,moved:false}; cv.setPointerCapture(e.pointerId);
+    if(!MUS.started&&MUS.on) musPlay('prep',2.0);
+  });
+  cv.addEventListener('pointermove',e=>{ if(!drag) return;
+    const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
+    if(Math.abs(e.clientX-drag.x0)+Math.abs(e.clientY-drag.y0)>4) drag.moved=true;
+    if(drag.btn===2){ G.cam.yaw+=dx*0.005; }                          // right-drag orbit
+    else { const sc=lerp(0.02,0.9,G.cam.zoom); const a=G.cam.yaw;      // left-drag pan (screen-aligned)
+      G.cam.target[0]-= (dx*Math.cos(a)+dy*Math.sin(a))*sc;
+      G.cam.target[2]-= (-dx*Math.sin(a)+dy*Math.cos(a))*sc; }
+  });
+  cv.addEventListener('pointerup',e=>{ if(drag&&!drag.moved){ const id=pickAt(e.clientX,e.clientY);
+      G.selected = id? [id] : []; } drag=null; });
+  cv.addEventListener('wheel',e=>{ e.preventDefault();
+    const before=oceanPointAt(e.clientX,e.clientY);
+    G.cam.zoom=clamp(G.cam.zoom + Math.sign(e.deltaY)*0.06, 0, 1);
+    // gentle zoom-toward-cursor
+    if(before && e.deltaY<0){ G.cam.target[0]=lerp(G.cam.target[0],before.x,0.18); G.cam.target[2]=lerp(G.cam.target[2],before.z,0.18); }
+  },{passive:false});
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
+    if(k==='m') musToggle(); if(k===' ') G.paused=!G.paused;
+    if(k==='escape') G.selected=[];
+  });
+  // simple touch: one-finger pan, pinch zoom
+  let tch=null;
+  cv.addEventListener('touchstart',e=>{ musKick(); if(!MUS.started&&MUS.on) musPlay('prep',2.0);
+    if(e.touches.length===1){ tch={x:e.touches[0].clientX,y:e.touches[0].clientY,moved:false,x0:e.touches[0].clientX,y0:e.touches[0].clientY}; }
+    else if(e.touches.length===2){ tch={pinch:Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)}; }
+  },{passive:false});
+  cv.addEventListener('touchmove',e=>{ e.preventDefault(); if(!tch) return;
+    if(e.touches.length===1&&tch.x!=null){ const dx=e.touches[0].clientX-tch.x, dy=e.touches[0].clientY-tch.y; tch.x=e.touches[0].clientX; tch.y=e.touches[0].clientY;
+      if(Math.abs(e.touches[0].clientX-tch.x0)+Math.abs(e.touches[0].clientY-tch.y0)>6) tch.moved=true;
+      const sc=lerp(0.02,0.9,G.cam.zoom); const a=G.cam.yaw;
+      G.cam.target[0]-=(dx*Math.cos(a)+dy*Math.sin(a))*sc; G.cam.target[2]-=(-dx*Math.sin(a)+dy*Math.cos(a))*sc; }
+    else if(e.touches.length===2&&tch.pinch!=null){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      G.cam.zoom=clamp(G.cam.zoom-(d-tch.pinch)*0.002,0,1); tch.pinch=d; }
+  },{passive:false});
+  cv.addEventListener('touchend',e=>{ if(tch&&tch.moved===false&&tch.x0!=null){ const id=pickAt(tch.x0,tch.y0); G.selected=id?[id]:[]; } tch=null; },{passive:false});
+}
+
+/* ============================ §I LOOP ============================ */
+let last=performance.now(), acc=0, animClock=0; const STEP=1/60;
+function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
+  for(const s of SYSTEMS) if(s.update) s.update(dt);
+}
+function frame(now){
+  let dt=Math.min(.05,(now-last)/1000); last=now;
+  try{
+    if(!(G && G.paused)){
+      animClock+=dt*1000;
+      if(G.hitStop>0){ G.hitStop=Math.max(0,G.hitStop-dt); }
+      else { acc+=dt*G.speed; let guard=0; while(acc>=STEP && guard++<6){ stepSim(STEP); acc-=STEP; } }
+    }
+    if(ocean) ocean.material.uniforms.uTime.value=G.ocean.t;
+    for(const s of SYSTEMS) if(s.render) s.render();
+    syncRender();
+    renderer.render(scene,camera);
+    musTick(dt);
+  }catch(e){ logErr(e); }
+  finally{ requestAnimationFrame(frame); }
+}
+
+/* ============================ §J HUD wiring (data-action, no inline onclick) ============================ */
+function initHUD(){
+  document.querySelectorAll('[data-action]').forEach(n=>{
+    n.addEventListener('click',()=>{ const a=n.dataset.action;
+      if(a==='mus') musToggle();
+      if(a==='playlist') toast('playlist editor lands with the campaign build');
+    });
+  });
+  // data-tip tooltips (delegated)
+  const tip=el('tip');
+  addEventListener('mousemove',e=>{ const t=e.target.closest&&e.target.closest('[data-tip]');
+    if(!t){ tip.classList.remove('show'); return; }
+    tip.textContent=t.dataset.tip; tip.classList.add('show');
+    let x=e.clientX+14,y=e.clientY+14; if(x+tip.offsetWidth>innerWidth-8) x=e.clientX-tip.offsetWidth-14;
+    tip.style.left=x+'px'; tip.style.top=y+'px'; });
+}
+
+/* ============================ §K ENTRY ============================ */
+async function boot(){
+  try{ el('bootMsg').textContent='LOADING RENDERER…'; THREE=await import(THREE_URL); }
+  catch(err){ el('bootMsg').textContent='could not load Three.js (network). Check connection.'; logErr(err); return; }
+  initThreeScene();
+  newBattle();
+  // a destroyer flanked by a little patrol boat — the boat rocks visibly harder (mass demo)
+  addEnt('destroyer','player',[0,0,0],0.2);
+  addEnt('patrolboat','player',[24,0,10],-0.3);
+  addEnt('scoutheli','enemy',[-40,34,60],Math.PI);
+  addEnt('scoutheli','enemy',[30,34,80],Math.PI);
+  G.cam.target=[6,1,6]; G.selected=[1];
+  bindInput(); initHUD();
+  el('boot').classList.add('hide'); setTimeout(()=>{ const b=el('boot'); if(b) b.remove(); },700);
+  if(MUS.on){ /* music starts on first user gesture (autoplay policy) */ }
+  last=performance.now(); requestAnimationFrame(frame);
+  if(DEV){ setInterval(()=>{ try{ JSON.stringify(G); }catch(e){ console.error('G NOT JSON-CLEAN — mesh leaked into G',e); } },1000); }
+}
+boot();
+</script>

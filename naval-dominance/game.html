@@ -235,6 +235,8 @@ const WEAPON_DEFS={
   mainGun:{ name:'127mm Main Gun', kind:'gun', reload:2.4, muzzle:520, dmg:26, spread:.010, caliber:'medium', rangeMax:1600 },
   aaGun:{ name:'40mm AA', kind:'aa', reload:.12, muzzle:900, dmg:5, spread:.028, caliber:'small', rangeMax:820 },
   lightMG:{ name:'Light MG', kind:'mg', reload:.10, muzzle:700, dmg:3.2, spread:.045, caliber:'small', rangeMax:560 },
+  rocket:{ name:'Rocket Pod', kind:'rocket', reload:1.6, muzzle:340, dmg:14, spread:.02, caliber:'medium', rangeMax:900 },
+  autocannon:{ name:'Autocannon', kind:'autocannon', reload:.22, muzzle:820, dmg:7, spread:.03, caliber:'small', rangeMax:700 },
 };
 const UNIT_DEFS={
   // Light craft first (per design). Turret pos = local [x(side), y(up from deck~0), z(fore+)].
@@ -257,12 +259,29 @@ const UNIT_DEFS={
   scoutheli:{ name:'Scout Helicopter', cls:'HELI', model:'heli', domain:'air',
     len:14, beam:3, mass:40, hp:140,   // helis are tough (Navy-Sim-style) — resist many shots
     turrets:[ {w:'lightMG', pos:[0,-0.4,2], barrel:1.2} ] },
+  gunboat:{ name:'FAC-7 Gunboat', cls:'GUNBOAT', model:'gunboat', domain:'sea',
+    len:26, beam:5.5, mass:240, hp:110,
+    turrets:[
+      {w:'autocannon', pos:[0,0.6,7], barrel:2.2, twin:true},
+      {w:'lightMG',    pos:[0,0.6,-7], barrel:1.8, scale:0.9} ] },
+  missileboat:{ name:'MB-4 Missile Boat', cls:'MISSILE BOAT', model:'missileboat', domain:'sea',
+    len:28, beam:5.5, mass:300, hp:100,
+    turrets:[
+      {w:'rocket',     pos:[-1.4,0.6,-2], barrel:1.6},
+      {w:'rocket',     pos:[ 1.4,0.6,-2], barrel:1.6},
+      {w:'autocannon', pos:[0,0.7,9], barrel:2.2} ] },
+  gunship:{ name:'Attack Helicopter', cls:'GUNSHIP', model:'gunship', domain:'air',
+    len:15, beam:3, mass:55, hp:200,   // tougher attack heli
+    turrets:[
+      {w:'rocket',  pos:[0,-0.4,2], barrel:1.4},
+      {w:'lightMG', pos:[0,-0.4,1], barrel:1.2} ] },
 };
 
 /* ============================ §F STATE (G is JSON-clean) ============================ */
 let G=null, mode='battle';
 function newBattle(){
   G={ ver:1, phase:'battle', over:null, paused:false, speed:1, t:0, nextId:1, hitStop:0,
+      wave:0, waveTimer:0,
       ents:[], projectiles:[], selected:[], designated:{}, modeStack:['strategic'], possess:null,
       cam:{ target:[0,0,0], zoom:.72, yaw:.5, kick:[0,0] },
       ocean:{ t:0 },
@@ -275,6 +294,18 @@ function addEnt(def, side, pos, heading){
     hit:{r:Math.max(4,d.len*0.16)},
     weapons:d.turrets.map((t,i)=>({ idx:i, w:t.w, yaw:0, pitch:0, cooldown:0, recoil:0, takeoverable:true, targetId:null })) };
   G.ents.push(e); buildRenderRec(e); return e;
+}
+
+/* ---------- wave-based combat: enemies arrive in scripted waves ---------- */
+// NOTE: named ENEMY_WAVES (not WAVES) — the ocean already owns `const WAVES`.
+const ENEMY_WAVES = [ ['scoutheli','scoutheli'], ['gunship','scoutheli'], ['gunship','gunship','scoutheli'] ];
+function spawnWave(i){ const wv=ENEMY_WAVES[i]; if(!wv) return;
+  wv.forEach((key,n)=>{ const d=UNIT_DEFS[key]; const air=d.domain==='air';
+    const x = -45 + n*45 + (Math.random()-0.5)*30;
+    const z = 80 + Math.random()*50;                 // ~80-130 units out in +Z
+    const y = air ? 34 : 0;
+    addEnt(key,'enemy',[x,y,z],Math.PI); });         // heading toward the player
+  toast('WAVE '+(i+1));
 }
 
 /* ---------- RENDER registry: all THREE objects, keyed by id, NEVER in G ---------- */
@@ -366,6 +397,21 @@ const MODELS={
     const turrets=d.turrets.map(t=>{ const tg=turretGroup(t); tg.pivot.scale.setScalar(0.45); g.add(tg.pivot); return tg; });
     const pick=new THREE.Mesh(new THREE.BoxGeometry(4,3.6,11), new THREE.MeshBasicMaterial({visible:false})); g.add(pick);
     return {group:g,turrets,pick}; },
+  gunboat(d){ const g=buildHull(d), B=d.beam, L=d.len;
+    g.add(box(B*0.6,1.2,L*0.24, MAT.sup, 0,0.8,-L*0.02));      // modest bridge box
+    g.add(box(B*0.45,0.7,1.2, MAT.glass, 0,1.6,L*0.02));       // windows
+    g.add(box(0.12,3.0,0.12,MAT.steel,0,2.2,-L*0.06));         // short mast
+    return finishShip(g,d); },
+  missileboat(d){ const g=buildHull(d), B=d.beam, L=d.len;
+    g.add(box(B*0.6,1.2,L*0.22, MAT.sup, 0,0.8,L*0.03));       // bridge forward
+    g.add(box(B*0.45,0.7,1.2, MAT.glass, 0,1.6,L*0.08));       // windows
+    g.add(box(0.12,2.8,0.12,MAT.steel,0,2.1,L*0.0));           // mast
+    [-1,1].forEach(s=> g.add(box(1.1,0.9,2.4, MAT.dark, s*1.35,0.75,-L*0.06)));  // launcher boxes on deck
+    return finishShip(g,d); },
+  gunship(d){ const rec=MODELS.heli(d);                        // reuse heli model (keeps g.userData.rotor)
+    rec.group.add(box(4.4,0.3,1.3, MAT.dark, 0,-0.4,0.4));     // stub weapon wings
+    rec.group.add(box(1.0,0.5,1.0, MAT.accent, 0,0.9,1.2));    // sensor/armor lump
+    return rec; },
 };
 
 /* ============================ §H OCEAN ============================
@@ -737,7 +783,11 @@ function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
   for(const s of SYSTEMS) if(s.update) s.update(dt);
   processRemovals();
   if(!G.over){ const en=G.ents.some(e=>e.side==='enemy'&&e.alive), pl=G.ents.some(e=>e.side==='player'&&e.domain==='sea'&&e.alive);
-    if(!en) endBattle('win'); else if(!pl) endBattle('lose'); }
+    if(!pl){ endBattle('lose'); }
+    else if(en){ G.waveTimer=2.5; }                                   // foes remain — hold the countdown
+    else if(G.wave < ENEMY_WAVES.length){ G.waveTimer-=dt; if(G.waveTimer<=0) spawnWave(G.wave++); }  // sector clear — next wave after a short pause
+    else { endBattle('win'); }                                        // all waves cleared
+  }
 }
 function frame(now){
   let dt=Math.min(.05,(now-last)/1000); last=now;
@@ -787,9 +837,7 @@ async function boot(){
   // a destroyer flanked by a little patrol boat — the boat rocks visibly harder (mass demo)
   addEnt('corvette','player',[0,0,0],0.15);
   addEnt('patrolboat','player',[20,0,-6],-0.2);
-  addEnt('scoutheli','enemy',[-45,34,70],Math.PI);
-  addEnt('scoutheli','enemy',[35,34,85],Math.PI);
-  addEnt('scoutheli','enemy',[-5,34,110],Math.PI);
+  spawnWave(0); G.wave=1;                 // first wave in; wave system drives the rest
   G.cam.target=[4,1,10]; G.selected=[1];
   bindInput(); initHUD();
   if(DEV) window.__nd={ G:()=>G, possess:(id,wi)=>enterPossess(id,wi), fire:(id,wi)=>{ const e=G.ents.find(x=>x.id===id); if(e) tryFire(e,wi); } };

@@ -68,6 +68,13 @@
   #reticle .ring{position:absolute; inset:0; border:2px solid var(--recCol,#ff5d5d); border-radius:50%; opacity:.9}
   #possBar{position:absolute; left:50%; top:70px; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:7px 14px; font-size:12px; letter-spacing:1px; display:none; color:var(--good)}
   #possBar.show{display:block}
+  #prompt{position:absolute; left:50%; bottom:78px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:7px 16px; font-size:12px; color:var(--ink); display:none; letter-spacing:1px; backdrop-filter:blur(6px)}
+  #prompt.show{display:block}
+  #endBanner{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); text-align:center; background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:22px 44px; display:none; box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #endBanner.show{display:block}
+  #endBanner h2{margin:0 0 5px; font-size:30px; letter-spacing:4px}
+  #endBanner p{margin:0; color:var(--dim); font-size:12px}
+  #endBanner.win h2{color:var(--good)} #endBanner.lose h2{color:var(--bad)}
 </style>
 
 <canvas id="bg"></canvas>
@@ -87,6 +94,8 @@
   <div id="toast"></div>
   <div id="reticle"><div class="ring"></div></div>
   <div id="possBar"></div>
+  <div id="prompt">▸ CLICK A TURRET TO TAKE MANUAL CONTROL</div>
+  <div id="endBanner"></div>
   <div class="selbox" id="selbox"></div>
 </div>
 <div id="tip"></div>
@@ -218,9 +227,9 @@ const SND={ ctx:null, buf:{}, master:null, ready:false, placeholder:true,
    Content = data. A unit is a bag of attributes (DESIGN §11). Numbers
    are placeholder-for-tuning. Models are procedural (MODELS[def.model]). */
 const WEAPON_DEFS={
-  mainGun:{ name:'127mm Main Gun', kind:'gun', reload:2.6, muzzle:520, dmg:26, spread:.012, caliber:'medium' },
-  aaGun:{ name:'40mm AA', kind:'aa', reload:.11, muzzle:900, dmg:5, spread:.03, caliber:'small' },
-  lightMG:{ name:'Light MG', kind:'mg', reload:.09, muzzle:700, dmg:3, spread:.05, caliber:'small' },
+  mainGun:{ name:'127mm Main Gun', kind:'gun', reload:2.4, muzzle:520, dmg:26, spread:.010, caliber:'medium', rangeMax:1600 },
+  aaGun:{ name:'40mm AA', kind:'aa', reload:.12, muzzle:900, dmg:5, spread:.028, caliber:'small', rangeMax:820 },
+  lightMG:{ name:'Light MG', kind:'mg', reload:.10, muzzle:700, dmg:3.2, spread:.045, caliber:'small', rangeMax:560 },
 };
 const UNIT_DEFS={
   destroyer:{ name:'DD-32 Destroyer', cls:'DESTROYER', model:'destroyer', domain:'sea',
@@ -489,6 +498,8 @@ const SYS_hud={ update(){}, render(){
     ret.style.setProperty('--recCol', green?'#54e08a':'#ff5d5d');
     pb.classList.add('show'); pb.textContent='▸ MANUAL CONTROL · '+(pe?WEAPON_DEFS[pe.weapons[G.possess.weaponIdx].w].name:'')+' · ESC to release';
   } else { ret.classList.remove('show'); pb.classList.remove('show'); }
+  const pr=el('prompt');
+  if(!G.over && !G.possess && G.selected.length && G.ents.some(x=>x.id===G.selected[0]&&x.domain==='sea')) pr.classList.add('show'); else pr.classList.remove('show');
 }};
 
 /* ---- FX assets (built after THREE loads) ---- */
@@ -525,6 +536,30 @@ const CMBT={
   resolveStatistical(shooterId,targetId,weaponId,cond){ return null; }, // Phase 2
 };
 
+/* ---- vector/angle helpers + targeting + enemy AI ---- */
+function dist(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]); }
+function angDiff(a,b){ let d=(b-a)%TAU; if(d>Math.PI)d-=TAU; if(d<-Math.PI)d+=TAU; return d; }
+function angLerp(a,b,t){ return a+angDiff(a,b)*t; }
+function nearestFoe(e){ let best=null,bd=1e9; for(const t of G.ents){ if(!t.alive||t.side===e.side) continue; const d=dist(e.pos,t.pos); if(d<bd){bd=d;best=t;} } return best; }
+const TGT={ // final signatures; LOS/radar/fog come in Phase 2
+  visibleTargets(e){ const out=[]; for(const t of G.ents){ if(!t.alive||t.side===e.side) continue; out.push({t,d:dist(e.pos,t.pos)}); } out.sort((a,b)=>a.d-b.d); return out; },
+  canEngage(shooter,weapon,target){ return dist(shooter.pos,target.pos) < (WEAPON_DEFS[weapon.w].rangeMax||1200); },
+};
+// enemy heli AI: approach -> strafe -> evade, emitting heading+move (Phase 2: damage-reservation/threat-priority)
+const SYS_ai={ update(dt){ for(const e of G.ents){ if(!e.alive||e.side!=='enemy'||e.domain!=='air') continue;
+    const foe=nearestFoe(e); if(!foe) continue; const d=dist(e.pos,foe.pos);
+    if(!e.ai) e.ai={state:'approach',t:0}; e.ai.t-=dt;
+    if(e.ai.state==='approach'&&d<170){ e.ai.state='strafe'; e.ai.t=3.2; }
+    else if(e.ai.state==='strafe'&&e.ai.t<=0){ e.ai.state='evade'; e.ai.t=2.4; }
+    else if(e.ai.state==='evade'&&e.ai.t<=0){ e.ai.state='approach'; }
+    const dx=foe.pos[0]-e.pos[0], dz=foe.pos[2]-e.pos[2]; let want=Math.atan2(dx,dz), spd=24;
+    if(e.ai.state==='evade'){ want+=Math.PI*0.72; spd=32; }
+    else if(e.ai.state==='strafe'){ want+=Math.PI*0.5*Math.sin(G.t*1.4+e.id); spd=27; }
+    e.heading=angLerp(e.heading,want,0.035);
+    e.vel[0]=Math.sin(e.heading)*spd; e.vel[2]=Math.cos(e.heading)*spd;
+    e.pos[0]+=e.vel[0]*dt; e.pos[2]+=e.vel[2]*dt;
+  } }, render(){} };
+
 /* ---- gunnery / projectiles ---- */
 function segSphere(a,b,c,r){ const bx=b[0]-a[0],by=b[1]-a[1],bz=b[2]-a[2]; const cx=c[0]-a[0],cy=c[1]-a[1],cz=c[2]-a[2];
   const L2=bx*bx+by*by+bz*bz||1e-6; let t=clamp((cx*bx+cy*by+cz*bz)/L2,0,1);
@@ -539,7 +574,23 @@ function tryFire(e,wi){ const w=e.weapons[wi]; if(!w||w.cooldown>0||!e.alive) re
   w.cooldown=wd.reload; w.recoil=wd.caliber==='medium'?0.85:0.35;
   BUS.emit('fire',{pos:[mp.x,mp.y,mp.z],caliber:wd.caliber});
 }
-const SYS_gunnery={ update(dt){ for(const e of G.ents){ if(!e.alive) continue; for(const w of e.weapons){ if(w.cooldown>0) w.cooldown-=dt; w.recoil=lerp(w.recoil,0,0.16); } } }, render(){} };
+// gunnery: AI turrets auto-aim+fire; a possessed turret is driven by the player (same fire path)
+const SYS_gunnery={ update(dt){ for(const e of G.ents){ if(!e.alive) continue;
+  const targets=TGT.visibleTargets(e);
+  for(let wi=0; wi<e.weapons.length; wi++){ const w=e.weapons[wi];
+    if(w.cooldown>0) w.cooldown-=dt; w.recoil=lerp(w.recoil,0,0.16);
+    if(G.possess && G.possess.entId===e.id && G.possess.weaponIdx===wi) continue;   // player aims/fires
+    const wd=WEAPON_DEFS[w.w]; let tgt=null;
+    for(const o of targets){ if(o.d<wd.rangeMax){ tgt=o.t; break; } }
+    if(!tgt){ w.targetId=null; continue; } w.targetId=tgt.id;
+    const tof=dist(e.pos,tgt.pos)/wd.muzzle;                       // lead the target
+    const px=tgt.pos[0]+tgt.vel[0]*tof, py=tgt.pos[1]+tgt.vel[1]*tof, pz=tgt.pos[2]+tgt.vel[2]*tof;
+    const tg=RENDER.get(e.id).turrets[wi]; const mp=new THREE.Vector3(); tg.muzzle.getWorldPosition(mp);
+    const dx=px-mp.x, dy=py-mp.y, dz=pz-mp.z; const horiz=Math.hypot(dx,dz);
+    const wantYaw=Math.atan2(dx,dz)-e.heading, wantPitch=clamp(Math.atan2(dy,horiz),-0.15,1.0);
+    w.yaw=angLerp(w.yaw,wantYaw,0.14); w.pitch=lerp(w.pitch,wantPitch,0.14);
+    if(w.cooldown<=0 && Math.abs(angDiff(w.yaw,wantYaw))<0.07 && Math.abs(w.pitch-wantPitch)<0.07) tryFire(e,wi);
+  } } }, render(){} };
 const SYS_projectiles={ update(dt){ const arr=G.projectiles;
   for(let i=arr.length-1;i>=0;i--){ const p=arr[i]; p.prev=[p.pos[0],p.pos[1],p.pos[2]];
     p.vel[1]-=p.grav*dt; p.pos[0]+=p.vel[0]*dt; p.pos[1]+=p.vel[1]*dt; p.pos[2]+=p.vel[2]*dt; p.life-=dt;
@@ -575,10 +626,10 @@ const SYS_juice={ update(){}, render(dt){
     if(f.life<=0){ FX.remove(f.mesh); FXLIST.splice(i,1); } }
 }};
 
-SYSTEMS.push(SYS_movement, SYS_gunnery, SYS_projectiles, SYS_camera, SYS_juice, SYS_hud);
+SYSTEMS.push(SYS_ai, SYS_movement, SYS_gunnery, SYS_projectiles, SYS_camera, SYS_juice, SYS_hud);
 
 /* ============================ §H INPUT (arbiter + mode stack) ============================ */
-let RAY=null, drag=null, _mx=0, _my=0;
+let RAY=null, drag=null, _mx=0, _my=0, boxSel=null;
 function screenNDC(px,py){ return {x:(px/innerWidth)*2-1, y:-(py/innerHeight)*2+1}; }
 function pickAt(px,py){ if(!RAY) RAY=new THREE.Raycaster(); const n=screenNDC(px,py);
   RAY.setFromCamera(n,camera); const hits=RAY.intersectObjects(PICKABLE,false);
@@ -594,9 +645,13 @@ function bindInput(){
   cv.addEventListener('pointerdown',e=>{ musKick(); SND.init(); SND.unlock();
     if(!MUS.started&&MUS.on) musPlay('prep',2.0);
     if(G.possess){ if(e.button===2) exitPossess(); else { const pe=G.ents.find(x=>x.id===G.possess.entId); if(pe) tryFire(pe,G.possess.weaponIdx); } return; }
+    if(e.button===0 && e.shiftKey){ boxSel={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY}; return; }   // shift-drag = box-select
     drag={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,btn:e.button,moved:false}; cv.setPointerCapture(e.pointerId);
   });
   cv.addEventListener('pointermove',e=>{
+    if(boxSel){ boxSel.x1=e.clientX; boxSel.y1=e.clientY; const sb=el('selbox');
+      sb.style.display='block'; sb.style.left=Math.min(boxSel.x0,boxSel.x1)+'px'; sb.style.top=Math.min(boxSel.y0,boxSel.y1)+'px';
+      sb.style.width=Math.abs(boxSel.x1-boxSel.x0)+'px'; sb.style.height=Math.abs(boxSel.y1-boxSel.y0)+'px'; return; }
     if(G.possess){ const pe=G.ents.find(x=>x.id===G.possess.entId);
       if(pe){ const w=pe.weapons[G.possess.weaponIdx]; const dx=e.clientX-_mx, dy=e.clientY-_my;
         if(Math.abs(dx)<80&&Math.abs(dy)<80){ w.yaw-=dx*0.004; w.pitch=clamp(w.pitch-dy*0.003,-0.15,0.95); } }
@@ -609,7 +664,14 @@ function bindInput(){
       G.cam.target[0]-= (dx*Math.cos(a)+dy*Math.sin(a))*sc;
       G.cam.target[2]-= (-dx*Math.sin(a)+dy*Math.cos(a))*sc; }
   });
-  cv.addEventListener('pointerup',e=>{ if(drag&&!drag.moved){ const h=pickAt(e.clientX,e.clientY);
+  cv.addEventListener('pointerup',e=>{
+    if(boxSel){ const x0=Math.min(boxSel.x0,boxSel.x1),x1=Math.max(boxSel.x0,boxSel.x1),y0=Math.min(boxSel.y0,boxSel.y1),y1=Math.max(boxSel.y0,boxSel.y1);
+      const sel=[], v=new THREE.Vector3();
+      for(const en of G.ents){ if(en.side!=='player'||!en.alive) continue; v.set(en.pos[0],en.pos[1],en.pos[2]).project(camera);
+        const sx=(v.x*.5+.5)*innerWidth, sy=(-v.y*.5+.5)*innerHeight;
+        if(v.z<1 && sx>=x0&&sx<=x1&&sy>=y0&&sy<=y1) sel.push(en.id); }
+      G.selected=sel; el('selbox').style.display='none'; boxSel=null; return; }
+    if(drag&&!drag.moved){ const h=pickAt(e.clientX,e.clientY);
       if(h && h.weaponIdx!=null) enterPossess(h.entId,h.weaponIdx);
       else G.selected = h? [h.entId] : []; } drag=null; });
   cv.addEventListener('wheel',e=>{ e.preventDefault();
@@ -646,9 +708,16 @@ function bindInput(){
 
 /* ============================ §I LOOP ============================ */
 let last=performance.now(), acc=0, animClock=0; const STEP=1/60;
+function endBattle(r){ G.over=r; if(G.possess) exitPossess();
+  const b=el('endBanner'); if(b){ b.className='show '+r;
+    b.innerHTML = r==='win' ? '<h2>VICTORY</h2><p>Hostile aircraft downed — sector clear.</p>'
+                            : '<h2>SHIP LOST</h2><p>The destroyer went down.</p>'; }
+  try{ musDuck(); }catch(e){} }
 function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
   for(const s of SYSTEMS) if(s.update) s.update(dt);
   processRemovals();
+  if(!G.over){ const en=G.ents.some(e=>e.side==='enemy'&&e.alive), pl=G.ents.some(e=>e.side==='player'&&e.domain==='sea'&&e.alive);
+    if(!en) endBattle('win'); else if(!pl) endBattle('lose'); }
 }
 function frame(now){
   let dt=Math.min(.05,(now-last)/1000); last=now;

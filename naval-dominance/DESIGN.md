@@ -1,11 +1,11 @@
 # NAVAL DOMINANCE — Design Document
 
-**Status:** v0.5 — living document. Nothing here is game code yet. This is the plan.
+**Status:** v0.6 — living document. Nothing here is game code yet. This is the plan.
 **Working title:** Naval Dominance (name-checked: no shipping game uses it; only a HOI4 mechanic).
 
 > ✅ **Render style resolved (§15):** ONE 3D world (Three.js/WebGL). Top-down camera = the
-> strategic map (reads flat/clean); zoom in = 3D combat. From-the-Depths-style. The camera
-> *is* the UI.
+> strategic map; zoom in = 3D combat. From-the-Depths-style. The camera *is* the UI.
+> **Build plan:** see `FRAMEWORK_PLAN.md`.
 
 ---
 
@@ -39,7 +39,8 @@ Every decision serves that 30 seconds. If a feature doesn't make that moment bet
 3. **Juice first — sound & music are load-bearing.** Weighty guns, explosions you *hear*.
    Non-negotiable satisfying sound (recreate the *quality* of Navy Tycoon's audio, our own
    assets), plus **built-in streamed music** (YouTube-style, like Total Mobilization). Required.
-4. **Territory is the economy.** Conquer the drydock, don't grind for it. No tycoon, no timers.
+4. **Territory is the economy.** Hold islands → earn industrial capacity → build. No grind,
+   no idle timers, no buoys. (Currency is fine; the *grind* was the enemy.)
 5. **Content is data.** One engine; every unit/scenario/era is a data file bolted on.
 6. **Smart AI is a feature.** Imperfect, trainable crews + competent fleet AI = big battles
    that are fun to command.
@@ -64,13 +65,14 @@ The strategic and tactical layers are the **same 3D world at different camera he
 
 - **A flat top-down 3D world (From-the-Depths style).** Not a rotating globe — the "map" is
   the same 3D world viewed from straight above, so it reads like a clean 2D strategy map.
-- **Panelized zones** tessellate the world (per the sketch). Logically a **small adjacency
-  graph** (Zone A borders Zone B…) — scales cleanly (bigger maps = finer subdivision = more
-  nodes).
+- **Panelized zones** tessellate the world. Logically a **small adjacency graph** — scales
+  cleanly (bigger maps = finer subdivision = more nodes).
 - **Zones** are contested territory; each holds open water + **islands**.
 - **Islands are captured individually for their resources / capabilities:** shipyards,
   repair yards, gun foundries, resource nodes, radar, airfields. Take the island → gain the
-  capability. Progression is a **map, not a bank balance.**
+  capability.
+- **Holding territory requires a garrison.** Control = presence. A zone/island you leave
+  undefended can be retaken. (Ties directly into the garrison system, §8.)
 - **Junction nodes** (where zone edges meet) = **chokepoints / ports / supply lanes** —
   where you cut enemy supply and fortify. Serves the preparation pillar.
 - **Art direction:** From-the-Depths-adjacent but *less technical* — readable, stylized.
@@ -79,16 +81,15 @@ The strategic and tactical layers are the **same 3D world at different camera he
 
 ## 6. Camera, controls & the tactical HUD
 
-**Zoom is the core verb — and it's literally the camera moving through one 3D world**, from
-top-down strategic markers → a single ship's deck → a single gun.
+**Zoom is the core verb — the camera moving through one 3D world**, from top-down strategic
+markers → a single ship's deck → a single gun.
 
 **Selecting a ship** shows an info panel (per the sketch): name, **class**, type, **damage
 state**, **current orders**, **ammo %**. The ship is drawn with its **parts as ringed icons**.
 
 **Direct manipulation of orders:**
 - Drag the **heading arrow** → a **dotted line previews** the new move order before you commit.
-- **Direct specific guns** at specific targets/locations (select gun, then target; easier
-  zoomed out for the wider view).
+- **Direct specific guns** at specific targets/locations (easier zoomed out for the wider view).
 
 **Everything is clickable:**
 - **Hover a part** → **colored by health/status.**
@@ -96,43 +97,43 @@ state**, **current orders**, **ammo %**. The ship is drawn with its **parts as r
 - **Click a turret** → take manual control of it.
 
 **Weapon-type icons:** at-a-glance icons for weapon type (the Navy Tycoon *convention*,
-drawn in our own stylized art so they're ours). Readable > realistic.
+drawn in our own stylized art). Readable > realistic.
 
 ---
 
 ## 7. Difficulty = a realism spectrum
 
-Not "more enemy HP." Difficulty is **how much the game aims for you**:
-- **Hyper-simple:** click a target, guns **auto-aim and fire.**
-- **Mid:** auto-aim, but you manage priorities/positioning.
-- **Realism:** less UI, manual lead and ranging.
-
-Same sim, different amount of help on top.
+Not "more enemy HP." Difficulty is **how much the game aims for you**: hyper-simple
+(click target → auto-aim & fire) → mid (auto-aim, you manage priorities) → realism (less
+UI, manual lead & ranging). Same sim, different amount of help.
 
 ---
 
-## 8. Production & Garrisons (the resolved model)
+## 8. Production & Garrisons
 
 Stolen — proudly — from Total Mobilization.
 
 - **Every building (built or captured) carries a unit garrison** and produces a **baseline
   of units per turn, automatically.** Capture a drydock → it *immediately* yields its
-  garrison floor (e.g. ~5 patrol boats/turn). No money-grind, no instant-magic.
-- **Capable buildings also queue bigger/special units over turns** — invest the same dock
-  toward one destroyer per turn; build an airfield to man heavy bombers over time.
+  garrison floor (e.g. ~5 patrol boats/turn).
+- **Garrisons also hold territory** (§5) — the standing presence that keeps a zone yours.
+- **Bigger/special units are queued with Industrial Capacity** (§9): capable buildings
+  (docks, airfields) spend per-turn capacity to build a cruiser / heavy bomber over turns.
 - **Why it's right:** a **fall-back baseline** so experimenting never bricks a run,
-  encourages **player freedom**, keeps combat rewarding (always rebuild and push again).
-  Freedom *with* a floor.
-
-Open sub-question: big-unit build times (turn-queued vs resource-gated) on top of the floor.
+  encourages **player freedom**, keeps combat rewarding. Freedom *with* a floor.
 
 ---
 
-## 9. Economy (how we killed the tycoon)
+## 9. Economy — Industrial Capacity (the tycoon stays dead, currency is fine)
 
-Territory + garrisons *are* the economy. Combat **pays** (requisition from wins) so battles
-are never "too expensive to bother." "Small ships now vs. capital ship later" is an
-**instant** composition choice, not a wait.
+The disease was the *grind and the idle timer*, not currency. So:
+- **Industrial Capacity (IC):** a per-turn build resource, **driven by territory** (islands,
+  foundries, resource nodes). You don't grind or idle for it — you *hold ground* for it.
+- **Spend IC** queuing big units at capable buildings; garrisons stay free on top.
+- Combat **pays** (winning yields IC / requisition) so battles are never "too expensive."
+- "Many small vs. one capital ship" = an **instant** allocation of your IC and build slots.
+
+No shop-grind, no offline idle income. Territory → capacity → fleet.
 
 ---
 
@@ -149,9 +150,10 @@ are never "too expensive to bother." "Small ships now vs. capital ship later" is
 
 Build the left once and well. The right side's size is a feature — it's data.
 
-**FRAMEWORK (build once):** 3D world + camera/zoom system · battle engine · **unit = data** ·
-campaign graph · auto-resolve math · juice + sound + **streamed music** · crew-reaction
-system · **garrison / turn-production** · click-anything UI shell · save/load · content pipeline.
+**FRAMEWORK (build once):** 3D world + camera/zoom · battle engine (dual-fidelity, §12) ·
+**unit = data** · campaign graph · auto-resolve math · juice + sound + **streamed music** ·
+crew-reaction system · **garrison / Industrial-Capacity production** · click-anything UI
+shell · save/load · content pipeline.
 
 **CONTENT (slap on forever — nothing cut, just deferred):** every ship/sub/tank/plane/heli/
 **airship**/fantasy vessel · every scenario/era/campaign · ground & air domains · **fantasy
@@ -169,21 +171,27 @@ Unit = {
   sensors, capabilities: [ radar, mineLayer, supplyCut, ... ]
 }
 ```
-A destroyer-with-helicopters and a fantasy airship are the same object, different values.
 
 ---
 
-## 12. Physics model (performance-driven)
+## 12. Combat resolution — dual fidelity (performance-driven)
 
-Flat penalties everywhere (cheap); real terrain bumpiness / swell / physical downsides
-**only in the tactical close-up.** **No full War-Thunder component/damage sim** — deliberately
-scoped out. Parts are *readable* (hover-health, click-stats), not individually simulated.
+Two levels of the same fight, chosen by how close the player is looking:
+- **Statistical (zoomed out / auto-resolve):** compute hit chance from **crew skill +
+  range + weapon type + conditions**. If hit → draw tracer gun→target + damage; if miss →
+  miss tracer, no damage indicator. Cheap, runs for many ships.
+- **Ballistic (close combat, zoomed in):** **real projectile physics + actual hit
+  registration** — guns must genuinely hit. Full drama where the player is.
+
+Physics generally: flat penalties everywhere; real terrain bumpiness / swell only in the
+close-up. **No full War-Thunder component/damage sim** — deliberately scoped out. Parts are
+*readable* (hover-health, click-stats), not individually simulated.
 
 ---
 
 ## 13. Starter roster (base content — small & simple)
 
-Modern-ish baseline (era is flexible per scenario; Z-32-style real class names welcome).
+Modern-ish baseline (era flexible per scenario; Z-32-style real class names welcome).
 - **Patrol boats** — heavy machine guns, bombardment grenades, small rockets.
 - **Small helicopters.**
 - **Tanks / ground vehicles.**
@@ -197,43 +205,39 @@ Multi-domain from day one (proves "unit = data"), each unit kept simple.
 
 One player ship with **2–3 take-overable turrets**, a couple of enemy aircraft, **real
 sound + streamed music**, the **click-anything HUD** (info panel, hover-health, drag-arrow
-orders), and the **zoom** working in the single 3D world. Win when the enemy is gone; lose
-if you sink. If that 60 seconds feels good, the game exists.
+orders), and the **zoom** working in the single 3D world, with **ballistic close combat**.
+Win when the enemy is gone; lose if you sink. If that 60 seconds feels good, the game exists.
 
 ---
 
 ## 15. Render style — RESOLVED
 
-**One 3D world (Three.js/WebGL). The camera is the whole UI.**
-- **Strategic map** = top-down camera, pulled far out → reads as a clean flat map.
-- **Combat** = same world, camera zoomed in → full 3D drama.
-- **Zoom** moves seamlessly between them. Reference: **From the Depths.**
-- **No rotating globe** (a globe isn't a top-down view); the world is flat, zones lie on it.
-- Combat 3D + map "2D-feeling" satisfies both the drama need and the stylized-top-down taste.
+**One 3D world (Three.js/WebGL). The camera is the whole UI.** Strategic = top-down camera
+(reads flat); combat = same world zoomed in (full 3D). Zoom moves seamlessly between them.
+Reference: **From the Depths.** No rotating globe (flat top-down world; zones lie on it).
 
 ---
 
 ## 16. Locked decisions
 
-Single-player first · turn-based strategic campaign + real-time battles · **one 3D world,
-Three.js/WebGL, camera-as-UI, flat top-down map (no globe), From-the-Depths reference** ·
-panelized adjacency graph · islands captured individually for resources · junction-node
-chokepoints · **garrison / per-turn production** · territory economy (no tycoon/timers) ·
+Single-player first · turn-based campaign + real-time battles · **one 3D world, Three.js/
+WebGL, camera-as-UI, flat top-down map, From-the-Depths reference** · panelized adjacency
+graph · islands captured individually · **holding territory requires a garrison** ·
+junction-node chokepoints · **garrison floor + Industrial-Capacity production (currency is
+fine, grind is not)** · **dual-fidelity combat (statistical far / ballistic close)** ·
 click-anything & zoom-centric UI · difficulty = realism spectrum · our-own weapon-type
 icons · **no deep War-Thunder sim** · required streamed music · player starts from a single
-ship · dev starts modern + small.
+ship · dev starts modern + small · ~12–16 zones for the first campaign · turn loop =
+Production → Orders → Resolution.
 
-## 17. Open questions
+## 17. Open questions (minor — settle during the build)
 
-- **Transition model:** fully seamless zoom (one continuous space, FtD) vs. zoom-then-spawn
-  the battle at that spot. Lean: seamless at small scale, revisit if perf bites.
-- Big-unit build times (turn-queued vs resource-gated) on top of the garrison floor.
-- Zone count & exact turn loop (move → resolve → build?).
-- Crew visualization budget in WebGL.
+- Exact IC numbers / build times per unit class (tuning, not architecture).
+- Precise zone adjacency & first-campaign layout.
+- Crew visualization budget in WebGL (zoom-gated, instanced — tune to perf).
 
 ## 18. Parked (deliberately)
 
-Multiplayer · Roblox port · rotating globe (shelved for flat top-down; zones survive) ·
-semi-open-world quadrant movement · fantasy setting · ISOT scenarios · **deep War-Thunder
-component sim** · full simulated-soul crew · much larger maps (design already scales). None
-cut — revisited after the slice is fun.
+Multiplayer · Roblox port · rotating globe · semi-open-world quadrant movement · fantasy
+setting · ISOT scenarios · **deep War-Thunder component sim** · full simulated-soul crew ·
+much larger maps (design already scales). None cut — revisited after the slice is fun.

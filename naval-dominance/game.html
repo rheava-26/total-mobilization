@@ -107,12 +107,19 @@
   #campchoice.show{display:block}
   #campchoice h4{margin:0 0 10px; letter-spacing:1px; font-size:15px}
   #campchoice .btn{margin:4px}
+  /* campaign end screen (reuses the campchoice panel look) */
+  #campend{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); background:var(--panel2);
+    border:1px solid var(--line); border-radius:14px; padding:24px 34px; text-align:center; z-index:7;
+    box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #campend h2{margin:0 0 6px; font-size:26px; letter-spacing:4px}
+  #campend p{margin:0; color:var(--dim); font-size:12px; letter-spacing:1px}
+  #campend.win h2{color:var(--good)} #campend.lose h2{color:var(--bad)}
 </style>
 
 <canvas id="bg"></canvas>
 <div id="hud">
   <div class="topbar">
-    <div class="brand">NAVAL DOMINANCE<small>PHASE 0 · FOUNDATION</small></div>
+    <div class="brand">NAVAL DOMINANCE<small>NAVAL THEATER</small></div>
     <div class="spacer"></div>
     <button class="btn" id="btnDmg" data-action="dmg" data-tip="Weapon damage (difficulty)">DMG: NORMAL</button>
     <button class="btn on" id="btnAim" data-action="aim" data-tip="Aim assist (auto-lock) vs manual gun elevation">AIM: ASSIST</button>
@@ -336,7 +343,28 @@ function addEnt(def, side, pos, heading){
 /* ---------- wave-based combat: enemies arrive in scripted waves ---------- */
 // NOTE: named ENEMY_WAVES (not WAVES) — the ocean already owns `const WAVES`.
 const ENEMY_WAVES = [ ['scoutheli','scoutheli'], ['gunship','scoutheli'], ['gunship','gunship','scoutheli'] ];
-function spawnWave(i){ const wv=ENEMY_WAVES[i]; if(!wv) return;
+// campaign-scaled roster: a defending zone's `strength` drives BOTH how many waves and how tough the
+// mix is. Roster is ordered light->heavy so higher strength & later waves lean toward tougher units,
+// with jitter to keep the fleet varied. Returns plain string arrays (JSON-clean, save-safe).
+function buildEnemyWaves(strength){
+  const s=clamp(Math.round(strength||4),1,20);
+  const roster=['scoutheli','gunboat','gunship','missileboat'];   // light -> heavy
+  const nWaves=clamp(2+Math.floor(s/4),2,4);
+  const waves=[];
+  for(let w=0; w<nWaves; w++){
+    const size=clamp(1+Math.floor(s/6)+w,1,4);                    // bigger, later waves for stronger zones
+    const wave=[];
+    for(let k=0;k<size;k++){
+      const t=clamp(s/8 + w*0.5 + (Math.random()-0.5)*1.5, 0, roster.length-1);
+      wave.push(roster[Math.round(t)]);
+    }
+    waves.push(wave);
+  }
+  return waves;
+}
+// the battle's active wave plan lives on G (G.waves); default to the fixed ENEMY_WAVES for a non-campaign fight.
+function activeWaves(){ return (G&&G.waves)||ENEMY_WAVES; }
+function spawnWave(i){ const wv=activeWaves()[i]; if(!wv) return;
   wv.forEach((key,n)=>{ const d=UNIT_DEFS[key]; const air=d.domain==='air';
     const x = -45 + n*45 + (Math.random()-0.5)*30;
     const z = 80 + Math.random()*50;                 // ~80-130 units out in +Z
@@ -825,7 +853,7 @@ function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
   if(!G.over){ const en=G.ents.some(e=>e.side==='enemy'&&e.alive), pl=G.ents.some(e=>e.side==='player'&&e.domain==='sea'&&e.alive);
     if(!pl){ endBattle('lose'); }
     else if(en){ G.waveTimer=2.5; }                                   // foes remain — hold the countdown
-    else if(G.wave < ENEMY_WAVES.length){ G.waveTimer-=dt; if(G.waveTimer<=0) spawnWave(G.wave++); }  // sector clear — next wave after a short pause
+    else if(G.wave < activeWaves().length){ G.waveTimer-=dt; if(G.waveTimer<=0) spawnWave(G.wave++); }  // sector clear — next wave after a short pause
     else { endBattle('win'); }                                        // all waves cleared
   }
 }
@@ -877,11 +905,19 @@ function initHUD(){
 function setScreen(s){ SCREEN=s; const c=el('campaign'); if(c) c.classList.toggle('show', s==='campaign'); }
 
 // re-usable battle setup (mirrors boot's original spawns) so campaign can (re)launch fights.
-function setupBattleScene(){
+// opts (campaign): {defStrength} scales+varies the enemy roster; {ownedZones} grows the player fleet.
+// No opts => a plain non-campaign fight with the fixed ENEMY_WAVES and the base 2-ship player force.
+function setupBattleScene(opts){
+  opts=opts||{};
   if(G && G.ents){ for(const e of G.ents.slice()) removeEnt(e.id); }   // clear prior battle meshes on relaunch
   newBattle();
+  // enemy force reflects the defending zone's strength (varied mix); default to the fixed script.
+  G.waves = opts.defStrength!=null ? buildEnemyWaves(opts.defStrength) : ENEMY_WAVES;
+  // player fleet: base corvette + patrol boat, plus one gunboat per 3 owned zones (territory = firepower).
   addEnt('corvette','player',[0,0,0],0.15);
   addEnt('patrolboat','player',[20,0,-6],-0.2);
+  const extra=Math.floor((opts.ownedZones||0)/3);
+  for(let i=0;i<extra;i++){ addEnt('gunboat','player',[-18-i*14, 0, -4-i*8], 0.1); }
   spawnWave(0); G.wave=1;                 // first wave in; the wave system drives the rest
   G.cam.target=[4,1,10]; G.selected=[1];
 }
@@ -914,7 +950,9 @@ function autoResolve(atk,def){
 
 // launch the 3D battle for a chosen attack; endBattle's hook returns us to the map.
 function launchBattle(atk,def){ CAMP.pending={atk:atk.id, def:def.id}; CAMP.launched=true;
-  setupBattleScene(); setScreen('battle'); el('endBanner').classList.remove('show'); toast('BATTLE FOR '+def.name); }
+  const owned=CAMP.zones.filter(z=>z.owner==='player').length;
+  setupBattleScene({defStrength:def.strength, ownedZones:owned});   // enemy scales to defender; fleet grows with territory
+  setScreen('battle'); el('endBanner').classList.remove('show'); toast('BATTLE FOR '+def.name); }
 
 // come back from a launched battle; apply capture-on-win to the target zone.
 function returnFromBattle(){
@@ -994,9 +1032,13 @@ function renderCampaign(){ const host=el('campaign'); if(!host||!CAMP) return;
       `<button class="btn" data-action="camp-auto">AUTO-RESOLVE</button>`+
       `<button class="btn" data-action="camp-fight">BATTLE</button>`+
       `<button class="btn" data-action="camp-cancel">CANCEL</button></div>`; }
+  // campaign end screen: own every zone -> victory; own none -> defeat (reuses the panel look).
+  let endScreen='';
+  if(CAMP.over==='win') endScreen=`<div id="campend" class="win"><h2>THEATER SECURED</h2><p>VICTORY — every zone flies your colors.</p></div>`;
+  else if(CAMP.over==='lose') endScreen=`<div id="campend" class="lose"><h2>THEATER LOST</h2><p>The enemy controls the entire theater.</p></div>`;
   host.innerHTML=`
     <div class="camptop">
-      <div class="brand">NAVAL DOMINANCE</div>
+      <div class="brand">NAVAL DOMINANCE<small>NAVAL THEATER</small></div>
       <div class="stat">TURN <b>${CAMP.turn}</b></div>
       <div class="stat">IC <b>${CAMP.ic}</b></div>
       <div class="spacer"></div>
@@ -1005,7 +1047,7 @@ function renderCampaign(){ const host=el('campaign'); if(!host||!CAMP) return;
     <svg id="campsvg" xmlns="http://www.w3.org/2000/svg">${lines}${nodes}</svg>
     <div id="camppanel">${panel}</div>
     <div id="camphint"><b>CAMPAIGN</b> · capture every zone to win.<br>Green = you · Red = enemy · Grey = neutral.<br>AUTO-RESOLVE settles by strength; BATTLE drops you into the 3D fight.</div>
-    ${choice}`;
+    ${choice}${endScreen}`;
 }
 
 // one delegated click listener for all campaign + return actions (no inline onclick, per file convention)

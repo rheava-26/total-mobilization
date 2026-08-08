@@ -1,14 +1,14 @@
 # NAVAL DOMINANCE — Design Document
 
-**Status:** v0.2 — living document. Nothing here is code yet. This is the plan.
+**Status:** v0.3 — living document. Nothing here is code yet. This is the plan.
 **Working title:** Naval Dominance (name-checked: no shipping game uses it; only a HOI4 mechanic).
 
 ---
 
 ## 1. One-line pitch
 
-A single-player **naval Total War**: conquer a grid of islands turn-by-turn to build a
-fleet and an empire, then fight the battles in **real time, in 3D** — zooming from a
+A single-player **naval Total War**: conquer a **panelized planet** of islands turn-by-turn
+to build a fleet and an empire, then fight the battles in **real time, in 3D** — zooming from a
 strategic map down onto the deck, taking manual control of any gun while a living crew
 fights around you — or auto-resolving them if your preparation earned it.
 
@@ -51,11 +51,22 @@ better, it waits.
 ## 4. Structure — two layers
 
 ### Campaign layer (turn-based, strategic)
-- A grid map of islands / segmented zones. Conquer, hold, build up.
-- Units shown as **markers with colored outlines**. Buildings on islands.
-- Islands grant *capabilities*, not cash: shipyards (unlock ship classes), repair yards,
-  gun foundries, resource nodes, radar, etc. Progression is a **map, not a bank balance.**
+- **A stylized panelized planet** — a globe tessellated into ~12–20 zones (soccer-ball /
+  geodesic subdivision, per the v0.3 sketch). Rotatable in 3D, but **logically just a
+  small adjacency graph** (Zone A borders Zone B…), so it's cheap to compute even though
+  it reads as a world. Presentation = planet; logic = boardgame. (Fits the studio's
+  existing "slice of Earth" identity from Total Mobilization.)
+- **Zones** are the contested territory; each holds open water + **islands**.
+- **Islands are the capturable assets:** shipyards (unlock ship classes), repair yards,
+  gun foundries, resource nodes, radar. Take the island → gain the capability.
+  Progression is a **map, not a bank balance.**
+- **Panel-junction nodes** (where zone edges meet) = **chokepoints / ports / supply
+  lanes** — the natural place to cut enemy supply and stage fortifications. (Directly
+  serves the preparation pillar.)
+- Units shown as **markers / tokens** sitting on zones; fleets move between adjacent zones.
 - Between turns you prepare: reposition fleets, fortify coasts, lay mines, cut supply.
+- **Art direction:** From-the-Depths-adjacent but *less technical* — readable, stylized,
+  functional-friendly rather than CAD-detailed. Less art to make, easier to read.
 
 ### Battle layer (real-time, 3D, tactical)
 - **Double-click a unit marker → zoom from strategic down to the tactical layer:** the
@@ -174,8 +185,13 @@ If that 60 seconds feels good, the game exists. Everything else is built outward
 
 ## 12. Open questions (next to resolve)
 
-- **UI/HUD layout** — waiting on the user's sketch (highest priority: the feel of the UI).
-- **Campaign map granularity** — size, island count, how a turn plays.
+- **Tactical-view & HUD layout** — waiting on the user's next sketches (highest priority:
+  the feel of the UI and the battle map). Campaign-map shape is now settled (panelized planet).
+- **Conquest granularity** — do you capture whole zones, or individual islands within a
+  zone (and controlling a zone's islands = controlling the zone)? Leaning: islands are the
+  unit of capture; the zone flips when its key island(s)/port node is held.
+- **Zone count & turn mechanics** — how many zones for a first campaign, what a turn
+  actually consists of (move → resolve → build?).
 - **Crew visualization budget** — how much on-deck animation we can afford in WebGL.
 
 ## 13. Parked (deliberately, so scope survives)

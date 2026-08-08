@@ -245,7 +245,7 @@ const UNIT_DEFS={
     len:34, beam:6, mass:900, hp:150,
     turrets:[
       {w:'mainGun', pos:[0,0.7,11], barrel:4.4},
-      {w:'aaGun',   pos:[0,2.7,-2], barrel:2.4, scale:0.9},
+      {w:'aaGun',   pos:[0,2.7,-2], barrel:2.4, scale:0.9, twin:true},
       {w:'lightMG', pos:[0,0.7,-12], barrel:1.8, scale:0.8} ] },
   destroyer:{ name:'DD-32 Destroyer', cls:'DESTROYER', model:'destroyer', domain:'sea',
     len:64, beam:8, mass:2600, hp:320,
@@ -303,16 +303,22 @@ function initMats(){ const S=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,ro
 function box(w,h,l,mat,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),mat); m.position.set(x||0,y||0,z||0); m.castShadow=m.receiveShadow=false; return m; }
 function cyl(r1,r2,h,mat,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg||14),mat); return m; }
 // ---- extruded hull helpers (real ship silhouette: pointed bow, flat stern) ----
-function hullShape(L,B){ const s=new THREE.Shape(), hb=B/2;
-  s.moveTo(-hb*0.72,-L/2); s.lineTo(-hb,-L*0.34); s.lineTo(-hb,L*0.2);
-  s.quadraticCurveTo(-hb,L*0.5, 0,L*0.5); s.quadraticCurveTo(hb,L*0.5, hb,L*0.2);
-  s.lineTo(hb,-L*0.34); s.lineTo(hb*0.72,-L/2); s.closePath(); return s; }
+function hullShape(L,B){ const s=new THREE.Shape(), hb=B/2;   // sleeker: fine bow, tapered transom
+  s.moveTo(-hb*0.5,-L*0.5); s.lineTo(-hb*0.98,-L*0.36); s.lineTo(-hb,L*0.05);
+  s.quadraticCurveTo(-hb*0.92,L*0.36, -hb*0.32,L*0.48);
+  s.quadraticCurveTo(0,L*0.54, 0,L*0.54);
+  s.quadraticCurveTo(hb*0.32,L*0.48, hb*0.92,L*0.36);
+  s.lineTo(hb,L*0.05); s.lineTo(hb*0.98,-L*0.36); s.lineTo(hb*0.5,-L*0.5); s.closePath(); return s; }
 function hullMesh(L,B,H,mat){ const g=new THREE.ExtrudeGeometry(hullShape(L,B),{depth:H,bevelEnabled:true,bevelThickness:H*0.35,bevelSize:B*0.16,bevelSegments:2,steps:1}); g.rotateX(Math.PI/2); return new THREE.Mesh(g,mat); }
 function deckMesh(L,B){ const g=new THREE.ExtrudeGeometry(hullShape(L*0.97,B*0.9),{depth:0.35,bevelEnabled:false}); g.rotateX(Math.PI/2); const m=new THREE.Mesh(g,MAT.deck); m.position.y=0.12; return m; }
 function rails(L,B){ const g=new THREE.Group(), h=0.5; [-1,1].forEach(s=>g.add(box(0.07,h,L*0.72,MAT.rail, s*B*0.42, 0.12+h/2, 0))); return g; }
-function buildHull(d){ const g=new THREE.Group();
-  const low=hullMesh(d.len*0.99,d.beam*0.99,d.beam*0.42,MAT.hullLo); low.position.y=-d.beam*0.18; g.add(low);
-  g.add(hullMesh(d.len,d.beam,d.beam*0.34,MAT.hull)); g.add(deckMesh(d.len,d.beam)); g.add(rails(d.len,d.beam)); return g; }
+function buildHull(d){ const g=new THREE.Group(), L=d.len, B=d.beam;
+  const low=hullMesh(L*0.99,B*0.99,B*0.42,MAT.hullLo); low.position.y=-B*0.18; g.add(low);
+  g.add(hullMesh(L,B,B*0.34,MAT.hull)); g.add(deckMesh(L,B));
+  // dark sheer strake along the hull sides + raised forecastle deck forward (two-level look)
+  [-1,1].forEach(s=> g.add(box(0.1,0.3,L*0.72, MAT.dark, s*B*0.49, 0.06, 0)));
+  g.add(box(B*0.7,0.45,L*0.3, MAT.deck, 0, 0.34, L*0.26));
+  g.add(rails(L,B)); return g; }
 function finishShip(g,d){ const turrets=d.turrets.map(t=>{ const tg=turretGroup(t); g.add(tg.pivot); return tg; });
   const pick=new THREE.Mesh(new THREE.BoxGeometry(d.beam*1.5, Math.max(4,d.beam*1.2), d.len*1.02), new THREE.MeshBasicMaterial({visible:false})); pick.position.y=1.0; g.add(pick);
   return {group:g,turrets,pick}; }
@@ -322,7 +328,8 @@ function turretGroup(t){
   const house=box(1.9,1.0,2.1,MAT.supHi,0,0.5,0); pivot.add(house);
   const slope=box(1.9,1.0,0.7,MAT.supHi,0,0.5,1.25); slope.rotation.x=-0.32; pivot.add(slope);
   const barrel=new THREE.Group(); barrel.position.set(0,0.7,0.9); pivot.add(barrel);
-  const bl=t.barrel||4; const tube=cyl(0.14,0.18,bl,MAT.dark,10); tube.rotation.x=Math.PI/2; tube.position.z=bl/2; barrel.add(tube);
+  const bl=t.barrel||4; const mk=x=>{ const tb=cyl(0.13,0.17,bl,MAT.dark,10); tb.rotation.x=Math.PI/2; tb.position.set(x,0,bl/2); barrel.add(tb); };
+  if(t.twin){ mk(-0.22); mk(0.22); } else mk(0);
   const muzzle=new THREE.Object3D(); muzzle.position.set(0,0,bl); barrel.add(muzzle);
   return {pivot,barrel,muzzle};
 }

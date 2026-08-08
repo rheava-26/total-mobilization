@@ -75,6 +75,38 @@
   #endBanner h2{margin:0 0 5px; font-size:30px; letter-spacing:4px}
   #endBanner p{margin:0; color:var(--dim); font-size:12px}
   #endBanner.win h2{color:var(--good)} #endBanner.lose h2{color:var(--bad)}
+  /* ===== CAMPAIGN overlay (strategic map) ===== */
+  #campaign{position:fixed; inset:0; z-index:6; display:none; overflow:hidden; color:var(--ink);
+    background:radial-gradient(70% 70% at 50% 38%,#0a1826,#05080c)}
+  #campaign.show{display:block}
+  .camptop{position:absolute; top:10px; left:12px; right:12px; display:flex; align-items:center; gap:10px; z-index:2}
+  .camptop .brand{font-weight:800; letter-spacing:2px; font-size:16px; color:#eaf4ff; text-shadow:0 2px 10px #000}
+  .camptop .stat{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 12px; font-size:12px; letter-spacing:1px; backdrop-filter:blur(6px)}
+  .camptop .stat b{color:var(--accent); font-weight:700}
+  #campsvg{position:absolute; inset:0; width:100%; height:100%; z-index:1}
+  .zlink{stroke:rgba(120,160,190,.28); stroke-width:2}
+  .znode{cursor:pointer}
+  .znode circle{stroke:#0a0f14; stroke-width:2; transition:.15s}
+  .znode:hover circle{stroke:var(--accent)}
+  .znode.sel circle{stroke:#fff; stroke-width:3}
+  .znode.atk circle{stroke:var(--warn); stroke-width:3; stroke-dasharray:5 3}
+  .znode text{fill:var(--ink); text-anchor:middle; pointer-events:none; font-family:inherit; text-shadow:0 1px 4px #000}
+  .znode .zs{font-size:13px; font-weight:800}
+  .znode .zn{font-size:11px; fill:var(--dim)}
+  #camppanel{position:absolute; left:12px; bottom:12px; width:252px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; backdrop-filter:blur(8px); box-shadow:0 10px 30px rgba(0,0,0,.4); z-index:2}
+  #camppanel h3{margin:0 0 6px; font-size:14px; letter-spacing:1px}
+  #camppanel .kv{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin:3px 0; gap:8px}
+  #camppanel .kv b{color:var(--ink); font-weight:600}
+  #camphint{position:absolute; right:12px; bottom:12px; width:236px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:10px 12px; font-size:11px; color:var(--dim); line-height:1.6; backdrop-filter:blur(8px); z-index:2}
+  #camphint b{color:var(--ink)}
+  #campchoice{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); background:var(--panel2);
+    border:1px solid var(--line); border-radius:14px; padding:18px 22px; text-align:center; z-index:5;
+    box-shadow:0 20px 60px rgba(0,0,0,.5); display:none}
+  #campchoice.show{display:block}
+  #campchoice h4{margin:0 0 10px; letter-spacing:1px; font-size:15px}
+  #campchoice .btn{margin:4px}
 </style>
 
 <canvas id="bg"></canvas>
@@ -100,6 +132,7 @@
   <div id="endBanner"></div>
   <div class="selbox" id="selbox"></div>
 </div>
+<div id="campaign"></div>
 <div id="tip"></div>
 <div id="ytplayer" style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none"></div>
 <div id="boot"><div class="b1">NAVAL DOMINANCE</div><div class="b2" id="bootMsg">LOADING ENGINE…</div></div>
@@ -279,6 +312,10 @@ const UNIT_DEFS={
 
 /* ============================ §F STATE (G is JSON-clean) ============================ */
 let G=null, mode='battle';
+// Campaign layer (additive/isolated): SCREEN gates which "screen" is live; CAMP holds
+// pure-data strategic state (NO Three.js objects) so it stays JSON-clean like G.
+let SCREEN='campaign';   // 'campaign' | 'battle'
+let CAMP=null;
 function newBattle(){
   G={ ver:1, phase:'battle', over:null, paused:false, speed:1, t:0, nextId:1, hitStop:0,
       wave:0, waveTimer:0,
@@ -777,7 +814,10 @@ let last=performance.now(), acc=0, animClock=0; const STEP=1/60;
 function endBattle(r){ G.over=r; if(G.possess) exitPossess();
   const b=el('endBanner'); if(b){ b.className='show '+r;
     b.innerHTML = r==='win' ? '<h2>VICTORY</h2><p>Hostile aircraft downed — sector clear.</p>'
-                            : '<h2>SHIP LOST</h2><p>The destroyer went down.</p>'; }
+                            : '<h2>SHIP LOST</h2><p>The destroyer went down.</p>';
+    // campaign-launched battles get a return-to-map button (capture-on-win applied there)
+    if(CAMP && CAMP.launched){ b.innerHTML += '<div style="margin-top:14px"><button class="btn" data-action="camp-return">◂ RETURN TO MAP</button></div>'; }
+  }
   try{ musDuck(); }catch(e){} }
 function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
   for(const s of SYSTEMS) if(s.update) s.update(dt);
@@ -792,7 +832,7 @@ function stepSim(dt){ G.t+=dt; G.ocean.t+=dt;
 function frame(now){
   let dt=Math.min(.05,(now-last)/1000); last=now;
   try{
-    if(!(G && G.paused)){
+    if(!(G && G.paused) && SCREEN==='battle'){   // campaign screen freezes the sim (3D idles underneath)
       animClock+=dt*1000;
       if(G.hitStop>0){ G.hitStop=Math.max(0,G.hitStop-dt); }
       else { acc+=dt*G.speed; let guard=0; while(acc>=STEP && guard++<6){ stepSim(STEP); acc-=STEP; } }
@@ -828,18 +868,172 @@ function initHUD(){
     tip.style.left=x+'px'; tip.style.top=y+'px'; });
 }
 
+/* ============================ §CAMP CAMPAIGN (additive strategic layer) ============================
+   A turn-based map over the existing battle. State (CAMP) is pure data — zones, owners, garrison
+   strength, IC economy — with NO Three.js in it. The map is an HTML/SVG overlay rebuilt on every
+   state change (renderCampaign). Battles launch from here and return via endBattle's hook. */
+
+// screen switch: show/hide the campaign overlay; the 3D canvas stays under it.
+function setScreen(s){ SCREEN=s; const c=el('campaign'); if(c) c.classList.toggle('show', s==='campaign'); }
+
+// re-usable battle setup (mirrors boot's original spawns) so campaign can (re)launch fights.
+function setupBattleScene(){
+  if(G && G.ents){ for(const e of G.ents.slice()) removeEnt(e.id); }   // clear prior battle meshes on relaunch
+  newBattle();
+  addEnt('corvette','player',[0,0,0],0.15);
+  addEnt('patrolboat','player',[20,0,-6],-0.2);
+  spawnWave(0); G.wave=1;                 // first wave in; the wave system drives the rest
+  G.cam.target=[4,1,10]; G.selected=[1];
+}
+
+// ~11 zones with %-layout + an adjacency graph. Player owns 2 (bottom), enemy owns 2 (top).
+function genZones(){
+  const defs=[   // name, x%, y%, owner
+    ['Ironmouth',   25,12,'enemy'],  ['Blackreef',   70,14,'enemy'],
+    ['Cold Harbor', 48,25,'neutral'],['Gale Point',  17,36,'neutral'],
+    ['Kraken Deep', 82,37,'neutral'],['Siren Bay',   50,49,'neutral'],
+    ['Storm Isle',  29,60,'neutral'],['Mist Channel',73,61,'neutral'],
+    ['Reef Pass',   51,73,'neutral'],['Port Haven',  26,86,'player'],
+    ['Fort Tide',   74,87,'player'],
+  ];
+  const edges=[[0,2],[0,3],[1,2],[1,4],[2,5],[3,5],[3,6],[4,5],[4,7],[5,6],[5,7],[6,8],[6,9],[7,8],[7,10],[8,9],[8,10],[9,10]];
+  const zones=defs.map((d,i)=>({ id:i, name:d[0], x:d[1], y:d[2], owner:d[3],
+    strength: d[3]==='player'?9 : d[3]==='enemy'?8 : 4+Math.floor(Math.random()*4),
+    income:   d[3]==='neutral'?2:3, adj:[] }));
+  for(const [a,b] of edges){ zones[a].adj.push(b); zones[b].adj.push(a); }
+  return zones;
+}
+
+// ---- simple strength combat (parallels the battle's Combat Math, kept purely numeric here) ----
+function autoResolve(atk,def){
+  const ap=atk.strength*(0.70+Math.random()*0.60), dp=def.strength*(0.70+Math.random()*0.60);
+  if(ap>dp){ def.owner='player'; const half=Math.max(1,Math.round(atk.strength/2));
+    atk.strength=Math.max(1,atk.strength-half); def.strength=half; toast('AUTO-RESOLVE · CAPTURED '+def.name); }
+  else { atk.strength=Math.max(1,Math.round(atk.strength*0.60)); toast('AUTO-RESOLVE · REPELLED at '+def.name); }
+}
+
+// launch the 3D battle for a chosen attack; endBattle's hook returns us to the map.
+function launchBattle(atk,def){ CAMP.pending={atk:atk.id, def:def.id}; CAMP.launched=true;
+  setupBattleScene(); setScreen('battle'); el('endBanner').classList.remove('show'); toast('BATTLE FOR '+def.name); }
+
+// come back from a launched battle; apply capture-on-win to the target zone.
+function returnFromBattle(){
+  const b=el('endBanner'); if(b){ b.classList.remove('show'); b.className=''; }
+  const a=CAMP.pending?CAMP.zones[CAMP.pending.atk]:null, d=CAMP.pending?CAMP.zones[CAMP.pending.def]:null;
+  if(G.over==='win' && d){ d.owner='player'; const half=Math.max(1,Math.round((a?a.strength:6)/2));
+      if(a) a.strength=Math.max(1,a.strength-half); d.strength=half; toast('CAPTURED '+d.name); }
+  else { if(a) a.strength=Math.max(1,Math.round(a.strength*0.60)); toast('ASSAULT FAILED'); }
+  CAMP.launched=false; CAMP.pending=null;
+  setScreen('campaign'); checkCampEnd(); renderCampaign();
+}
+
+// END TURN: player income + garrison growth, then a light enemy AI turn.
+function endTurn(){ if(CAMP.over) return;
+  for(const z of CAMP.zones) if(z.owner==='player'){ CAMP.ic+=z.income; z.strength+=2; }
+  enemyTurn();
+  CAMP.turn++; checkCampEnd(); renderCampaign(); if(!CAMP.over) toast('TURN '+CAMP.turn);
+}
+function enemyTurn(){
+  for(const z of CAMP.zones) if(z.owner==='enemy') z.strength+=1;                 // reinforce a little
+  for(const z of CAMP.zones){ if(z.owner!=='enemy') continue;
+    for(const nid of z.adj){ const n=CAMP.zones[nid];
+      if(n.owner==='player' && z.strength > n.strength+1){                        // attack a weaker neighbor
+        const ap=z.strength*(0.70+Math.random()*0.50), dp=n.strength*(0.80+Math.random()*0.50);
+        if(ap>dp){ n.owner='enemy'; const half=Math.max(1,Math.round(z.strength/2));
+            z.strength=Math.max(1,z.strength-half); n.strength=half; toast('ENEMY TOOK '+n.name); }
+        else z.strength=Math.max(1,Math.round(z.strength*0.70));
+        break;   // one assault per enemy zone per turn
+      }
+    }
+  }
+}
+function reinforce(){ const z=CAMP.sel!=null?CAMP.zones[CAMP.sel]:null; if(!z||z.owner!=='player') return;
+  const cost=5; if(CAMP.ic<cost){ toast('NOT ENOUGH IC'); return; }
+  CAMP.ic-=cost; z.strength+=3; toast('REINFORCED '+z.name); renderCampaign(); }
+function checkCampEnd(){ const pl=CAMP.zones.filter(z=>z.owner==='player').length, tot=CAMP.zones.length;
+  if(pl===tot){ CAMP.over='win'; toast('CAMPAIGN WON'); } else if(pl===0){ CAMP.over='lose'; toast('CAMPAIGN LOST'); } }
+
+// click arbiter for the map
+function onZoneClick(id){ if(CAMP.over) return; const z=CAMP.zones[id];
+  if(z.owner==='player'){ CAMP.sel=id; CAMP.choice=null; renderCampaign(); return; }
+  const sel=CAMP.sel!=null?CAMP.zones[CAMP.sel]:null;
+  if(sel && sel.owner==='player' && sel.adj.includes(id)){ CAMP.choice={def:id}; renderCampaign(); }   // attack an adjacent foe/neutral
+}
+
+// rebuild the whole SVG/HTML overlay from CAMP (called on every state change)
+function renderCampaign(){ const host=el('campaign'); if(!host||!CAMP) return;
+  const col=o=>o==='player'?'var(--good)':o==='enemy'?'var(--bad)':'#6b7884';
+  const sel=CAMP.sel!=null?CAMP.zones[CAMP.sel]:null;
+  const atk=new Set(); if(sel&&sel.owner==='player') for(const nid of sel.adj){ if(CAMP.zones[nid].owner!=='player') atk.add(nid); }
+  // adjacency lines (dedup)
+  let lines='', seen=new Set();
+  for(const z of CAMP.zones) for(const nid of z.adj){ const k=z.id<nid?z.id+'_'+nid:nid+'_'+z.id; if(seen.has(k)) continue; seen.add(k);
+    const n=CAMP.zones[nid]; lines+=`<line class="zlink" x1="${z.x}%" y1="${z.y}%" x2="${n.x}%" y2="${n.y}%"/>`; }
+  // zone nodes
+  let nodes='';
+  for(const z of CAMP.zones){ const cls='znode'+(CAMP.sel===z.id?' sel':'')+(atk.has(z.id)?' atk':'');
+    nodes+=`<g class="${cls}" data-action="zone" data-zone="${z.id}">`+
+      `<circle cx="${z.x}%" cy="${z.y}%" r="20" fill="${col(z.owner)}" fill-opacity="0.88"/>`+
+      `<text class="zs" x="${z.x}%" y="${z.y}%" dy="0.35em">${z.strength}</text>`+
+      `<text class="zn" x="${z.x}%" y="${z.y}%" dy="2.9em">${z.name}</text></g>`; }
+  // info panel
+  let panel;
+  if(CAMP.over){ panel=`<h3 style="color:${CAMP.over==='win'?'var(--good)':'var(--bad)'}">CAMPAIGN ${CAMP.over==='win'?'WON':'LOST'}</h3>`+
+      `<div class="kv"><span>The war is decided.</span></div>`; }
+  else if(sel){ panel=`<h3>${sel.name}</h3>`+
+      `<div class="kv"><span>OWNER</span><b style="color:${col(sel.owner)}">${sel.owner.toUpperCase()}</b></div>`+
+      `<div class="kv"><span>GARRISON</span><b>${sel.strength}</b></div>`+
+      `<div class="kv"><span>INCOME</span><b>${sel.income} IC/turn</b></div>`+
+      (sel.owner==='player'?`<button class="btn" data-action="reinforce" style="margin-top:8px; width:100%">REINFORCE (5 IC → +3)</button>`:``); }
+  else panel=`<h3>NAVAL THEATER</h3><div class="kv"><span>Select one of your zones, then click an adjacent grey/red zone to attack it.</span></div>`;
+  // attack choice popup
+  let choice=`<div id="campchoice"></div>`;
+  if(CAMP.choice){ const d=CAMP.zones[CAMP.choice.def], a=CAMP.zones[CAMP.sel];
+    choice=`<div id="campchoice" class="show"><h4>ATTACK ${d.name.toUpperCase()}</h4>`+
+      `<div class="kv" style="justify-content:center; color:var(--dim); font-size:12px; margin-bottom:10px">YOUR ${a.strength} &nbsp;vs&nbsp; DEF ${d.strength}</div>`+
+      `<button class="btn" data-action="camp-auto">AUTO-RESOLVE</button>`+
+      `<button class="btn" data-action="camp-fight">BATTLE</button>`+
+      `<button class="btn" data-action="camp-cancel">CANCEL</button></div>`; }
+  host.innerHTML=`
+    <div class="camptop">
+      <div class="brand">NAVAL DOMINANCE</div>
+      <div class="stat">TURN <b>${CAMP.turn}</b></div>
+      <div class="stat">IC <b>${CAMP.ic}</b></div>
+      <div class="spacer"></div>
+      <button class="btn" data-action="end-turn"${CAMP.over?' disabled':''}>END TURN ▸</button>
+    </div>
+    <svg id="campsvg" xmlns="http://www.w3.org/2000/svg">${lines}${nodes}</svg>
+    <div id="camppanel">${panel}</div>
+    <div id="camphint"><b>CAMPAIGN</b> · capture every zone to win.<br>Green = you · Red = enemy · Grey = neutral.<br>AUTO-RESOLVE settles by strength; BATTLE drops you into the 3D fight.</div>
+    ${choice}`;
+}
+
+// one delegated click listener for all campaign + return actions (no inline onclick, per file convention)
+function initCampaign(){
+  CAMP={ turn:1, ic:20, sel:null, choice:null, over:null, launched:false, pending:null, zones:genZones() };
+  document.addEventListener('click',e=>{
+    const t=e.target.closest && e.target.closest('[data-action]'); if(!t) return;
+    const a=t.getAttribute('data-action');
+    if(a==='camp-return'){ returnFromBattle(); return; }
+    if(SCREEN!=='campaign') return;
+    if(a==='end-turn') endTurn();
+    else if(a==='reinforce') reinforce();
+    else if(a==='zone') onZoneClick(+t.getAttribute('data-zone'));
+    else if(a==='camp-auto'){ if(CAMP.choice){ autoResolve(CAMP.zones[CAMP.sel],CAMP.zones[CAMP.choice.def]); CAMP.choice=null; checkCampEnd(); renderCampaign(); } }
+    else if(a==='camp-fight'){ if(CAMP.choice){ const d=CAMP.zones[CAMP.choice.def]; CAMP.choice=null; launchBattle(CAMP.zones[CAMP.sel],d); } }
+    else if(a==='camp-cancel'){ CAMP.choice=null; renderCampaign(); }
+  });
+}
+
 /* ============================ §K ENTRY ============================ */
 async function boot(){
   try{ el('bootMsg').textContent='LOADING RENDERER…'; THREE=await import(THREE_URL); }
   catch(err){ el('bootMsg').textContent='could not load Three.js (network). Check connection.'; logErr(err); return; }
   initThreeScene();
-  newBattle();
-  // a destroyer flanked by a little patrol boat — the boat rocks visibly harder (mass demo)
-  addEnt('corvette','player',[0,0,0],0.15);
-  addEnt('patrolboat','player',[20,0,-6],-0.2);
-  spawnWave(0); G.wave=1;                 // first wave in; wave system drives the rest
-  G.cam.target=[4,1,10]; G.selected=[1];
+  setupBattleScene();                      // build the battle world once (campaign relaunches reuse it)
   bindInput(); initHUD();
+  // campaign layer: generate the map and land the player on it first (battles launch from here)
+  initCampaign(); setScreen('campaign'); renderCampaign();
   if(DEV) window.__nd={ G:()=>G, possess:(id,wi)=>enterPossess(id,wi), fire:(id,wi)=>{ const e=G.ents.find(x=>x.id===id); if(e) tryFire(e,wi); } };
   el('boot').classList.add('hide'); setTimeout(()=>{ const b=el('boot'); if(b) b.remove(); },700);
   if(MUS.on){ /* music starts on first user gesture (autoplay policy) */ }

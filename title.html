@@ -256,9 +256,10 @@
   </div>
   <div class="menu" id="menu">
     <button class="mbtn" style="--accent:var(--mp)"  data-act="play"><span class="idx">01</span>BEGIN MOBILIZATION<span class="sweep"></span></button>
-    <button class="mbtn" style="--accent:var(--stab)" data-act="scen"><span class="idx">02</span>SCENARIOS<span class="sweep"></span></button>
-    <button class="mbtn" style="--accent:var(--ic)"  data-act="opts"><span class="idx">03</span>OPTIONS<span class="sweep"></span></button>
-    <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">04</span>STAND DOWN<span class="sweep"></span></button>
+    <button class="mbtn" style="--accent:var(--res)" data-act="tutorial"><span class="idx">02</span>HOW TO PLAY<span class="sweep"></span></button>
+    <button class="mbtn" style="--accent:var(--stab)" data-act="scen"><span class="idx">03</span>SCENARIOS<span class="sweep"></span></button>
+    <button class="mbtn" style="--accent:var(--ic)"  data-act="opts"><span class="idx">04</span>OPTIONS<span class="sweep"></span></button>
+    <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
 <div class="footer" id="footer">TOTAL MOBILIZATION · v3.19.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
@@ -3375,9 +3376,9 @@ function launchCustomScenario() {
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); toastT = 1.6; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1700); }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
-function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
+function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); document.getElementById('footer').style.opacity = 0; newGame(pendingDiff); }
-function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenHelp'); localStorage.setItem('tm_seenHelp', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (mode === 'game') openModal('helpModal'); }, 500);
+function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
   document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
@@ -3801,6 +3802,120 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     };
     tick(); iv = setInterval(tick, 1500);
   } catch (e) {}
+})();
+/* ============================================================================
+   HOW TO PLAY — a stepped spotlight tutorial. Runs in-game during PREP and
+   points at the REAL HUD (resource cells + the PRODUCE / RESEARCH / STRIKE
+   buttons + the countdown), so a first-time player is shown what each control
+   actually is rather than handed a wall-of-text manual. Auto-runs the first
+   time you ever enter a game; replayable from the HOW TO PLAY menu button
+   (which starts a RECRUIT game and forces it). Deliberately a click-through
+   explainer, not an interactive gated flow — functional first.
+   ========================================================================== */
+(function () {
+  const CSS = `
+  #tutOverlay{position:fixed;inset:0;z-index:9000;font-family:Consolas,"SF Mono",Menlo,monospace}
+  #tutOverlay .tut-dim{position:absolute;inset:0;background:rgba(3,7,14,.62)}
+  #tutOverlay .tut-ring{position:absolute;border:2px solid var(--res,#c89bff);border-radius:8px;background:rgba(200,155,255,.06);box-shadow:0 0 0 3px rgba(200,155,255,.22),0 0 22px 4px rgba(200,155,255,.45);pointer-events:none;transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease,opacity .18s ease}
+  #tutOverlay .tut-card{position:absolute;width:340px;max-width:86vw;background:rgba(9,15,26,.97);border:1px solid rgba(140,175,225,.45);border-radius:10px;padding:15px 18px 13px;box-shadow:0 10px 40px rgba(0,0,0,.6);color:#dbe6f2}
+  #tutOverlay .tut-step{font-size:11px;letter-spacing:.14em;color:#7f93ad;margin-bottom:6px}
+  #tutOverlay .tut-title{font-size:16px;font-weight:700;letter-spacing:.03em;color:#fff;margin-bottom:8px}
+  #tutOverlay .tut-body{font-size:13px;line-height:1.5;color:#c2d0e0;margin-bottom:14px}
+  #tutOverlay .tut-body b{color:#fff}
+  #tutOverlay .tut-row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  #tutOverlay .tut-skip{font-size:11px;letter-spacing:.08em;color:#7f93ad;cursor:pointer;background:none;border:none;padding:4px 0}
+  #tutOverlay .tut-skip:hover{color:#c2d0e0}
+  #tutOverlay .tut-nav{display:flex;gap:8px}
+  #tutOverlay .tut-btn{font-family:inherit;font-size:12px;letter-spacing:.1em;padding:7px 14px;border-radius:6px;border:1px solid rgba(140,175,225,.4);background:rgba(30,44,66,.7);color:#dbe6f2;cursor:pointer}
+  #tutOverlay .tut-btn:hover{background:rgba(50,72,104,.85)}
+  #tutOverlay .tut-btn.primary{background:var(--res,#c89bff);border-color:var(--res,#c89bff);color:#160a26;font-weight:700}
+  #tutOverlay .tut-btn[disabled]{opacity:.35;cursor:default}`;
+  const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+
+  const STEPS = [
+    { sel: null, title: 'HOLD THE LINE', body: 'An orbital autofleet is inbound. During <b>PREP</b> you build your economy and army; when the countdown hits zero the invasion begins and never stops. Here’s how you fight it.' },
+    { sel: '.cell.stab', title: 'STABILITY', body: 'Your society’s cohesion. It climbs slowly toward a <b>cap</b> you raise with Comms Towers & Propaganda. Everything flows from it — and if it hits zero, you lose.' },
+    { sel: '.cell.inf', title: 'INFLUENCE', body: 'Generated entirely by Stability. It buys <b>research</b> and caps your army size. Saving it up ramps your income to <b>3×</b> — don’t spend it in dribbles.' },
+    { sel: '.cell.ic', title: 'INDUSTRIAL CAPACITY', body: 'Your main build currency — spent on every building and unit. <b>Power Plants</b> raise the rate. This is what you scale.' },
+    { sel: '.cell.mp', title: 'MANPOWER', body: 'The population that crews your forces. <b>Housing Blocks</b> raise it, and it sets your army cap.' },
+    { sel: '#btnProd', title: 'PRODUCE', body: 'Build here. Start with Power & Housing, then <b>Factories, Airbases, Shipyards</b> — then roll units out of them. Cover the whole map.' },
+    { sel: '#btnRes', title: 'RESEARCH', body: 'The heart of the game. Escalating doctrines — <b>fusion, plasma, robotics, psionics</b> — that transform your civilization. Bought with Influence.' },
+    { sel: '#btnStrike', title: 'STRATEGIC STRIKES', body: 'Once you’ve built a <b>Silo</b>, call down nukes, orbital rods and worse. Devastating — but every strike costs Stability.' },
+    { sel: '.objwrap', title: 'THE COUNTDOWN', body: 'Watch this. When PREP ends the fleet <b>re-enters</b> — waves that never stop and grow stronger the longer you survive. Destroy the fleet to win.' },
+    { sel: null, title: 'DO WHAT YOU MUST', body: 'Build. Research. Fortify every inch. Hold the line, Commander.', last: true },
+  ];
+
+  let idx = 0, ov = null, onKey = null, onResize = null;
+
+  function endTutorial() {
+    if (onKey) window.removeEventListener('keydown', onKey, true), onKey = null;
+    if (onResize) window.removeEventListener('resize', onResize), onResize = null;
+    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    ov = null;
+  }
+
+  function place() {
+    if (!ov) return;
+    const s = STEPS[idx], ring = ov.querySelector('.tut-ring'), card = ov.querySelector('.tut-card');
+    const el = s.sel ? document.querySelector(s.sel) : null;
+    const vw = window.innerWidth, vh = window.innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
+    if (el) {
+      const r = el.getBoundingClientRect(), pad = 6;
+      ring.style.opacity = '1';
+      ring.style.left = (r.left - pad) + 'px'; ring.style.top = (r.top - pad) + 'px';
+      ring.style.width = (r.width + pad * 2) + 'px'; ring.style.height = (r.height + pad * 2) + 'px';
+      let top = r.bottom + gap;
+      if (top + ch > vh - 8) top = Math.max(8, r.top - ch - gap);   // no room below -> above
+      let left = r.left + r.width / 2 - cw / 2;
+      left = Math.max(8, Math.min(vw - cw - 8, left));
+      card.style.left = left + 'px'; card.style.top = Math.max(8, top) + 'px';
+    } else {
+      ring.style.opacity = '0';
+      card.style.left = (vw / 2 - cw / 2) + 'px'; card.style.top = (vh / 2 - ch / 2) + 'px';
+    }
+  }
+
+  function render() {
+    const s = STEPS[idx];
+    ov.querySelector('.tut-step').textContent = 'STEP ' + (idx + 1) + ' / ' + STEPS.length;
+    ov.querySelector('.tut-title').textContent = s.title;
+    ov.querySelector('.tut-body').innerHTML = s.body;
+    ov.querySelector('.tut-back').disabled = idx === 0;
+    ov.querySelector('.tut-next').textContent = s.last ? 'BEGIN' : 'NEXT ›';
+    place();
+  }
+
+  function go(d) {
+    const n = idx + d;
+    if (n < 0) return;
+    if (n >= STEPS.length) { endTutorial(); return; }
+    idx = n; render();
+  }
+
+  window.startTutorial = function () {
+    if (ov) return;
+    idx = 0;
+    ov = document.createElement('div'); ov.id = 'tutOverlay';
+    ov.innerHTML =
+      '<div class="tut-dim"></div><div class="tut-ring"></div>' +
+      '<div class="tut-card"><div class="tut-step"></div><div class="tut-title"></div>' +
+      '<div class="tut-body"></div><div class="tut-row">' +
+      '<button class="tut-skip">SKIP</button><div class="tut-nav">' +
+      '<button class="tut-btn tut-back">‹ BACK</button>' +
+      '<button class="tut-btn primary tut-next">NEXT ›</button></div></div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('.tut-skip').addEventListener('click', endTutorial);
+    ov.querySelector('.tut-back').addEventListener('click', () => go(-1));
+    ov.querySelector('.tut-next').addEventListener('click', () => go(1));
+    onKey = function (e) {
+      if (e.key === 'Escape') { endTutorial(); e.preventDefault(); e.stopPropagation(); }
+      else if (e.key === 'Enter' || e.key === 'ArrowRight') { go(1); e.preventDefault(); e.stopPropagation(); }
+      else if (e.key === 'ArrowLeft') { go(-1); e.preventDefault(); e.stopPropagation(); }
+    };
+    window.addEventListener('keydown', onKey, true);
+    onResize = place; window.addEventListener('resize', onResize);
+    render();
+  };
 })();
 </script>
 </body>

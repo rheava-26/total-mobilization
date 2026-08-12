@@ -465,7 +465,50 @@ addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
    Unlocks persist in localStorage, toast on unlock, and `checkAchievements()` (called ~1/s in-game) auto-evaluates any test().
    ===================================================================== */
 let stabPreview = null;   // {txt,col} — a stability-impact preview shown on the STABILITY readout while hovering a research node / special building
-const ACHIEVEMENTS = [];
+const ACHIEVEMENTS = [
+  // ---- scenario outcomes ----
+  { id:'win_recon', name:"That can't have been it…", desc:'Win against the Probing Attack (Recruit).', test:g=>g.ach.won&&g.intent==='recon' },
+  { id:'win_decap', name:'I need ammo, not a ride!', desc:'Win against the Decapitation Strike (Officer).', test:g=>g.ach.won&&g.intent==='decap' },
+  { id:'win_invasion', name:'Independence Day', desc:'Win against the Full Invasion (General).', test:g=>g.ach.won&&g.intent==='invasion' },
+  { id:'win_glass', name:'Against the Glass', desc:'Survive and win Orbital Annihilation (Apocalypse).', test:g=>g.ach.won&&g.intent==='glass' },
+  { id:'win_all', name:'Our Finest Hour', desc:'Win on all four difficulties (across separate rounds).', test:()=>{const w=everGet('win');return w.recon&&w.decap&&w.invasion&&w.glass;} },
+  { id:'lose_stab', name:'Deorganized', desc:'Lose the game to a stability collapse.', test:g=>/STAB/.test(g.ach.lostReason||'') },
+  { id:'lose_city', name:'Dismantled', desc:'Lose the game with every city destroyed or occupied.', test:g=>/CIT/.test(g.ach.lostReason||'') },
+  { id:'barely', name:'Barely Holding On', desc:'Drop to 1% stability at some point — and still win.', test:g=>g.ach.won&&g.ach.minStab<=1 },
+  { id:'nounits', name:'Did you know you can make units?', desc:'Win a round without producing a single unit from the recruit menu.', test:g=>g.ach.won&&!g.ach.prodAny },
+  { id:'stonewall', name:'Stone Wall', desc:'Win having built only economy & defensive structures — and produced no units.', test:g=>g.ach.won&&!g.ach.prodAny&&g.ach.onlyDefEcon },
+  { id:'onlyair', name:'Air force won!', desc:'Win a round producing nothing but air units.', test:g=>g.ach.won&&g.ach.prodAny&&g.ach.dom.air>0&&g.ach.dom.ground===0&&g.ach.dom.naval===0&&g.ach.dom.space===0 },
+  { id:'onlynaval', name:'World of Warships', desc:'Win a round producing nothing but warships.', test:g=>g.ach.won&&g.ach.prodAny&&g.ach.dom.naval>0&&g.ach.dom.ground===0&&g.ach.dom.air===0&&g.ach.dom.space===0 },
+  // ---- production & scale ----
+  { id:'fire_drones', name:'Fire with Fire', desc:'Produce over 400 drones in a single round.', test:g=>g.ach.drones>400 },
+  { id:'lore_super', name:'Lore Accuracy', desc:'Go down the superhuman path and field 40+ Superhuman Cadres & Shapeshifters.', test:g=>g.ach.superShift>=40 },
+  { id:'space40', name:'Space Age', desc:'Have 40+ space units active at once.', test:g=>g.units.filter(u=>u.d&&u.d.domain==='space').length>=40 },
+  { id:'totalmob', name:'Total Mobilization', desc:'Have 1,000+ units in the field at once.', test:g=>g.units.length>=1000 },
+  // ---- buildings & research ----
+  { id:'mantle5', name:'Running on Dry', desc:'Build 5+ Mantle Forges in a single round.', test:g=>g.buildings.filter(b=>b.key==='mantleforge').length>=5 },
+  { id:'data10', name:'Nvidia', desc:'Build 10+ Data Centers in a single round.', test:g=>g.buildings.filter(b=>b.key==='datacenter').length>=10 },
+  { id:'prop1984', name:'Literally 1984', desc:'Build 20+ Propaganda Bureaus under a dystopian society.', test:g=>(g.society==='dystopia'||g.dystopia)&&g.buildings.filter(b=>b.key==='propaganda').length>=20 },
+  { id:'tech8', name:'Your setting feels a bit directionless, don’t you think?', desc:'Research 8+ different technologies.', test:g=>Object.keys(RESEARCH).filter(k=>!RESEARCH[k].root&&g.unlocked[k]).length>=8 },
+  { id:'starwars', name:'Star Wars', desc:'Research Directed Energy, Superhumans, Deflector Shields and the Space Age.', test:g=>g.unlocked.directedenergy&&g.unlocked.superhumans&&g.unlocked.shieldtech&&g.unlocked.spaceage },
+  { id:'wellrounded', name:'Well Rounded', desc:'Research every technology (across separate rounds).', test:()=>everCount('res')>=Object.keys(RESEARCH).filter(k=>!RESEARCH[k].root).length },
+  { id:'infra', name:'Infrastructure', desc:'Build one of every building (across separate rounds).', test:()=>everCount('bld')>=Object.keys(BUILD_DEFS).length },
+  { id:'marvel', name:'Engineering Marvel', desc:'Produce one of every unit (across separate rounds).', test:()=>everCount('prod')>=Object.keys(UNIT_DEFS).length },
+  // ---- strikes & bosses ----
+  { id:'deadman', name:"Dead Man's Switch", desc:'Have 10+ strategic strikes in flight at once.', test:g=>g.proj.filter(p=>p.strat).length>=10 },
+  { id:'kaiju', name:'Kaiju Hunter', desc:'Destroy all four autodrone superweapons (across separate rounds).', test:()=>{const k=everGet('boss');return k.hive&&k.leviathan&&k.annihilator&&k.bombarder;} },
+  // ---- meta & gags ----
+  { id:'faketime', name:'Fake Time Strategy', desc:'Change the game speed 30 times in one round.', test:g=>g.ach.speedChg>=30 },
+  { id:'paused10', name:'You done yet?', desc:'Stay paused for over 10 minutes in one match.', test:g=>g.ach.pausedT>=600 },
+  { id:'brute30', name:'No means no!', desc:'Try to build something you can’t afford 30 times.', test:g=>g.ach.failBuild>=30 },
+  { id:'brute60', name:'Stop it!', desc:'Try to build something you can’t afford 60 times.', test:g=>g.ach.failBuild>=60 },
+  { id:'brute90', name:'I’m warning you.', desc:'Try to build something you can’t afford 90 times.', test:g=>g.ach.failBuild>=90 },
+  { id:'brute150', name:'Fine, are you happy?!', desc:'Try 150 times… it finally builds anyway — and costs you 20% stability.', test:g=>g.ach.forcedPlace },
+  { id:'everything', name:'Now what?', desc:'Earn every other achievement.', test:()=>ACHIEVEMENTS.every(a=>a.id==='everything'||achUnlocked[a.id]) },
+];
+// cross-round unlock progress (research/buildings/units/bosses/wins ever seen), persisted separately from the medals themselves
+function everGet(cat){ try{ return JSON.parse(localStorage.getItem('tm_ever_'+cat)||'{}'); }catch(e){ return {}; } }
+function markEver(cat,key){ try{ const s=everGet(cat); if(!s[key]){ s[key]=1; localStorage.setItem('tm_ever_'+cat, JSON.stringify(s)); } }catch(e){} }
+function everCount(cat){ return Object.keys(everGet(cat)).length; }
 let achUnlocked = {};
 function loadAchievements() { try { achUnlocked = JSON.parse(localStorage.getItem('tm_ach') || '{}'); } catch (e) { achUnlocked = {}; } }
 function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = Date.now(); try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
@@ -1708,6 +1751,8 @@ function newGame(diff) {
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, blackout: 0, nextBlackout: 30, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
     speed: 1, paused: false, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
+    // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
+    ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true },
   };
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
@@ -1845,8 +1890,20 @@ function placeBuilding(key, wx) {
   if (!canPlace(key, wx, ug)) return toast(ug ? 'CANNOT TUNNEL HERE' : 'CANNOT BUILD HERE');
   const ugMul = ug && !native ? 1.5 + (ugLvl - 1) * .6 : 1;   // burying a SURFACE building costs extra; digging DEEP costs even more — native-underground buildings are exempt
   const icc = Math.round(d.ic * ugMul), mpc = Math.round(d.mp * (ug && !native ? 1.3 : 1) * ugMul), infc = infCostOf(d, ug && !native ? ugLvl : 0);
-  if (G.ic < icc) return toast('NOT ENOUGH IC' + (ug ? ' (burying costs more)' : '')); if (G.mp < mpc) return toast('NOT ENOUGH MANPOWER'); if (G.inf < infc) return toast('NOT ENOUGH INFLUENCE');
-  G.ic -= icc; G.mp -= mpc; G.inf -= infc; G.infSpent = true; SFX.build();
+  const canAff = G.ic >= icc && G.mp >= mpc && G.inf >= infc;
+  if (!canAff) {
+    // ACHIEVEMENT: the brute-force gag chain. Failed-affordability attempts accrue (30/60/90 = escalating
+    // "No means no!" medals); the 150th relents — it builds anyway, free, but costs 20% stability.
+    G.ach.failBuild = (G.ach.failBuild || 0) + 1;
+    if (G.ach.failBuild >= 150 && !G.ach.forcedPlace) {
+      G.ach.forcedPlace = true; G.stab = Math.max(0, G.stab - 20); toast('FINE. TAKE IT. — 20% STABILITY');
+    } else {
+      return toast(G.ic < icc ? ('NOT ENOUGH IC' + (ug ? ' (burying costs more)' : '')) : G.mp < mpc ? 'NOT ENOUGH MANPOWER' : 'NOT ENOUGH INFLUENCE');
+    }
+  } else { G.ic -= icc; G.mp -= mpc; G.inf -= infc; }
+  G.infSpent = true; SFX.build();
+  if (d.cat !== 'ECON' && d.cat !== 'DEF') G.ach.onlyDefEcon = false;   // Stone Wall watches for any non-econ/defensive build
+  markEver('bld', key);
   let px = wx; if (!ug) { if (d.needWater) { const w = findWater(wx); px = w; } if (d.onNode) { const n = nodeNear(wx); px = n.x; } }
   const ct = nearCity(px);
   G.sites.push({ key, d, x: px, total: d.build, prog: 0, from: ct ? ct.x : px, ug, ugLvl });   // IC-funded; a work crew animates in
@@ -2032,6 +2089,7 @@ function cancelResearch() {
 }
 function finishResearch() {
   const r = RESEARCH[G.research.key], key = G.research.key; G.research = null;
+  markEver('res', key);   // ACHIEVEMENT: cross-round "researched every tech" progress
   G.unlocked[key] = true; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf;
   applyEraUpgrades();   // re-arm fielded units if this unlock advanced the age
   if (key === 'plasma') toast('⚡ PLASMA ARMS ONLINE — your ground & air units re-arm with plasma');
@@ -2230,6 +2288,7 @@ function updateGame(dt) {
   G.stabCap = Math.max(20, Math.min(100, 65 + capBonus + Math.max(0, G.mult.stab) * 30 - G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; EACH fielded Superhuman Cadre lowers the ceiling 1% (an uneasy populace)
   let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus) drifts back down
   G.stab = Math.max(0, Math.min(100, G.stab + (stabRegen - stabNeg) * dt));
+  if (G.ach) G.ach.minStab = Math.min(G.ach.minStab, effStab());   // ACHIEVEMENT: lowest effective stability reached this round (Barely Holding On)
   // RESEARCH DRAW-DOWN — an active research no longer needs its full cost paid upfront; it siphons influence out of the
   // pool gradually (up to cost/time per second, same pace as before IF you can keep up) and completes once fully PAID,
   // not on a fixed timer. If income can't keep pace it just stretches out instead of stalling.
@@ -2448,6 +2507,7 @@ function destroyEnemy(e) {
     for (let i = 0; i < 6; i++) boom(e.x + (Math.random() - .5) * s * 5, e.y + (Math.random() - .5) * s * 2.5, 16);
     G.parts.push({ k: 'flash', x: e.x, y: e.y, r: s * 6, life: .32 }); shake(17); shrapnel(e.x, e.y, Math.round(s * 2.2), s); G.nukeFlash = Math.max(G.nukeFlash || 0, .5); SFX.split();
     G.stab = Math.min(100, G.stab + 10); floatText(e.x, e.y - s * 2, (e.bossName || 'SUPERWEAPON') + ' DOWN', '#7cffb0'); toast('✅ ' + (e.bossName || 'SUPERWEAPON') + ' DESTROYED — +10% STABILITY');
+    if (e.kind) markEver('boss', e.kind);   // ACHIEVEMENT: Kaiju Hunter — destroy all four superweapon types across rounds
   }
 }
 /* ===== STRATEGIC ARSENAL (player-aimed superweapons — showcase the destruction physics) ===== */
@@ -3250,6 +3310,15 @@ function produceGlobal(key) {
   if (!facs.length) return toast('BUILD A ' + factoryNameFor(d.domain).toUpperCase() + ' FIRST');
   facs.sort((a, b) => a.queue.length - b.queue.length);
   queueUnit(facs[0], key);
+  // ACHIEVEMENT TRACKING — record production (by group size) the moment it's queued from the recruit menu
+  try {
+    const grp = (effDef(key).grp || 1);
+    G.ach.prodAny = true;
+    if (G.ach.dom[d.domain] != null) G.ach.dom[d.domain] += grp;
+    if (d.drone) G.ach.drones += grp;
+    if (key === 'superhuman' || key === 'shifter') G.ach.superShift += grp;
+    markEver('prod', key);
+  } catch (e) {}
 }
 function buildProdMenu() {
   const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ✈ ' + airUsed() + '/' + airCap() + ' air command   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
@@ -3331,6 +3400,7 @@ function drawVignette() {
 function frame(now) {
   let dt = Math.min(.05, (now - last) / 1000); last = now;
   const paused = mode === 'game' && G && G.paused; if (!paused) animClock += dt * 1000;
+  if (paused && G.ach && !G.over) G.ach.pausedT += dt;   // ACHIEVEMENT: "You done yet?" — accumulate real seconds spent paused
   try {
     c.clearRect(0, 0, W, H);
     const bgg = c.createRadialGradient(W * .5, H * .42, 0, W * .5, H * .42, Math.max(W, H) * .75); bgg.addColorStop(0, '#0a1430'); bgg.addColorStop(.5, '#060a1c'); bgg.addColorStop(1, '#02030a'); c.fillStyle = bgg; c.fillRect(0, 0, W, H);
@@ -3384,6 +3454,9 @@ function enterGame() { if (mode === 'game') return; mode = 'game'; document.getE
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
 function end(win, msg) {
   if (!G || G.over) return; G.over = win ? 'win' : 'lose';
+  // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set.
+  if (G.ach) { if (win) { G.ach.won = true; markEver('win', G.intent); } else { G.ach.lostReason = msg || ''; } }
+  try { checkAchievements(); } catch (er) {}
   const e = document.getElementById('endScreen'); e.style.display = 'flex';
   const t = document.getElementById('endTitle'); t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)';
   // ── AFTER-ACTION SUMMARY ───────────────────────────────────────────────
@@ -3485,7 +3558,7 @@ document.getElementById('addPrep').addEventListener('click', () => addTrackFromI
 document.getElementById('addCombat').addEventListener('click', () => addTrackFromInput('combat'));
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') addTrackFromInput('prep'); });
 document.getElementById('endReturn').addEventListener('click', backToTitle);
-document.querySelectorAll('.sbtn').forEach(b => b.addEventListener('click', () => { if (!G) return; G.speed = +b.dataset.spd; document.querySelectorAll('.sbtn').forEach(x => x.classList.toggle('act', x === b)); }));
+document.querySelectorAll('.sbtn').forEach(b => b.addEventListener('click', () => { if (!G) return; G.speed = +b.dataset.spd; if (G.ach) G.ach.speedChg = (G.ach.speedChg || 0) + 1; document.querySelectorAll('.sbtn').forEach(x => x.classList.toggle('act', x === b)); }));
 
 // build bar
 let curBcat = 'ECON';

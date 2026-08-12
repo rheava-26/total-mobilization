@@ -624,16 +624,18 @@ function musPlay(phase, fadeDur) {
   const track = list[MUS.idx[phase] % list.length]; MUS.track = track;
   if (!MUS.ready || !MUS.yt) { MUS.pending = true; loadYTApi(); return; }
   try { MUS.yt.loadVideoById(track.id); MUS.yt.setVolume(0); MUS.curVol = 0; MUS.yt.playVideo(); } catch (e) {}
-  MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 };
+  MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 }; MUS.duckRestore = 0;   // a fresh track cancels any pending duck-restore
 }
 function musNext() { const ph = MUS.phase; if (!ph || !MUSIC[ph] || !MUSIC[ph].length) return; MUS.idx[ph] = (MUS.idx[ph] + 1) % MUSIC[ph].length; musPlay(ph, 1.2); }
 function musSkip() { MUS.fails++; if (MUS.fails > ((MUSIC[MUS.phase] || []).length + 1)) { if (!MUS.warned) { MUS.warned = true; toast('♫ playlist empty or unplayable — add YouTube links via the ≣ button'); } return; } musNext(); }
-function musDuck() { if (MUS.started) MUS.fade = { to: MUS.vol * .28, dur: 9 }; }   // tone the prep track down as the fleet closes in, before the combat crossfade
-function musStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
+function musDuck() { if (MUS.started) { MUS.fade = { to: MUS.vol * .28, dur: 2 }; MUS.duckRestore = 8; } }   // BUGFIX: duck the music sharply then AUTO-RESTORE after a hold. It used to set a one-way fade to 28% with no way back, so a boss-spawn duck (updEnemies) left the combat music permanently quiet.
+function musStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
 function musToggle() { MUS.on = !MUS.on; const mb = document.getElementById('btnMus'); if (mb) mb.classList.toggle('on', MUS.on); if (!MUS.on) musStop(); else { MUS.fails = 0; if (G && mode === 'game') musPlay(G.phase === 'prep' ? 'prep' : 'combat', 1.5); } toast(MUS.on ? '♫ SOUNDTRACK ON' : '♫ SOUNDTRACK OFF'); }
 function musKick() { if (MUS.on && MUS.started && MUS.yt && MUS.ready) { try { const st = MUS.yt.getPlayerState(); if (st !== 1 && st !== 3) MUS.yt.playVideo(); } catch (e) {} } }   // nudge playback to resume after a user gesture (autoplay policy)
 function musTick(dt) {
-  if (!MUS.yt || !MUS.fade) return;
+  if (!MUS.yt) return;
+  if (MUS.duckRestore > 0 && MUS.started) { MUS.duckRestore -= dt; if (MUS.duckRestore <= 0 && !MUS.fade) MUS.fade = { to: MUS.vol, dur: 5 }; }   // a duck's hold has expired → swell the music back up to full
+  if (!MUS.fade) return;
   const f = MUS.fade, diff = f.to - MUS.curVol, mv = (100 / Math.max(.2, f.dur)) * dt;
   if (Math.abs(diff) <= mv) { MUS.curVol = f.to; MUS.fade = null; if (f.to === 0) { try { MUS.yt.pauseVideo(); } catch (e) {} } }
   else MUS.curVol += Math.sign(diff) * mv;
@@ -2598,7 +2600,7 @@ function armStrike(type) {
   for (const b of G.buildings) if (b.d && b.d.strat && b.done !== false && b.silocd <= 0) { const dd = Math.abs(b.x - cx); if (dd < bd) { bd = dd; silo = b; } }
   if (!silo) return toast('NO SILO READY — they are reloading');
   if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC');
-  if (effStab() < stratStab(w) + 3) return toast('TOO UNSTABLE FOR THIS STRIKE');
+  if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — NEED ' + (stratStab(w) + 3) + '% STABILITY');   // BUGFIX: gate on RAW stability like the panel display, armSilo, launchStrike and the loss condition all do — armStrike was the lone check using effStab(), so it silently blocked strikes the panel said you could afford (panel showed 15% but this blocked on the effective 4%)
   G.targeting = { silo, type };
   const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
   toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click target · launches from the ▲ marked silo'));

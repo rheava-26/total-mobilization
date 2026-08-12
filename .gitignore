@@ -7,3 +7,9 @@
 !title.html
 !README.md
 !CLAUDE.md
+# PWA app files — installable/offline support (see title.html head + sw.js)
+!manifest.webmanifest
+!sw.js
+!icon-192.png
+!icon-512.png
+!apple-touch-icon.png

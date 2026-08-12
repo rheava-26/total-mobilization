@@ -4,6 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>TOTAL MOBILIZATION</title>
+<!-- PWA: installable, fullscreen, offline-capable. All paths relative so it works under any host/base path. -->
+<meta name="theme-color" content="#02030a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Total Mob" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 <style>
   :root { --ui-scale: 1; --ic: #4ea8ff; --mp: #5dff8d; --inf: #ff5a5a; --stab: #ffd23f; --res: #c89bff;
     --paper: #d7e2ee; --panel: rgba(10,16,26,0.88); --line: rgba(150,190,240,0.30); --term: #6dffb0; }

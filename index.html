@@ -8,6 +8,14 @@
      bare site URL works. title.html stays the single source of truth (edited in place). -->
 <meta http-equiv="refresh" content="0; url=title.html">
 <link rel="canonical" href="title.html">
+<!-- PWA metadata mirrored here so installing from the bare site URL works; the game (title.html) registers the service worker after this redirect. -->
+<meta name="theme-color" content="#02030a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Total Mob">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>html,body{margin:0;height:100%;background:#01030c;color:#bfe9ff;font:14px Consolas,monospace}
 a{color:#6dffb0}.w{display:flex;height:100%;align-items:center;justify-content:center}</style>
 </head>

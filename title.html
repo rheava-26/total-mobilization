@@ -1983,11 +1983,10 @@ function currentBase(u) {   // resolves — and RE-resolves every call — the a
 }
 function rearmAircraft(u, d, spd, dt) {   // fly home, land on a carrier deck / airbase, reload the magazine + refuel, relaunch — generalised from the carrier wing
   const base = currentBase(u);
-  if (!base) {   // no carrier or airbase anywhere — ammo-only aircraft improvise a mid-air reload so the wing isn't grounded forever; FUEL-bearing aircraft get no such mercy (they keep burning and will crash — you need airfields to sustain an air force)
+  if (!base) {   // no carrier or airbase anywhere — the wing improvises a slow FIELD resupply (rearm AND refuel) so it's never permanently grounded/frozen. It's much slower than a proper landing, so airfields still matter, but a wing whose airbases were all destroyed keeps fighting instead of hovering dead in the sky.
     u.vx *= .9; u.vy += (u.patrol - u.y) * 2 * dt; u.vy *= .9; u.x += u.vx * dt; u.y += u.vy * dt;
-    if (u.maxFuel) return;   // fuel keeps ticking down in the caller (u.docked stays unset) until it either finds a base or runs dry and crashes
     u.reload = (u.reload || 0) + dt; if (Math.random() < .25) spark(u.x, u.y, 1);
-    if (u.reload >= 3.5) { u.reload = 0; u.rtb = false; u.ammo = u.maxAmmo; } return;
+    if (u.reload >= 3.5) { u.reload = 0; u.rtb = false; if (u.maxAmmo) u.ammo = u.maxAmmo; if (u.maxFuel) u.fuel = u.maxFuel; } return;
   }
   const bx = base.x, deckY = (u.carrFrom ? seaLevelY(bx) : groundY(bx)) - 5, dx = bx - u.x;
   if (!u.docked) { const adx = Math.abs(dx); if (adx > 50) u.vx += Math.sign(dx) * spd * 6 * dt; else u.vx += (dx * 9 - u.vx) * dt; u.vy += (deckY - u.y) * 5 * dt; const vm = spd * AIR_RTB_SPD_MULT; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .94; u.vy *= .88; u.x += u.vx * dt; u.y += u.vy * dt; u.facing = u.vx >= 0 ? 1 : -1; if (adx < 32 && Math.abs(u.y - deckY) < 28) { u.docked = u.maxFuel ? 3 + Math.random() * 2 : .7; u.vx = u.vy = 0; } }   // sprint home fast; fuel-bearing aircraft take a real turnaround (spool-up) on the pad, ammo-only drones a quick one

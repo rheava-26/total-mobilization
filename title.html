@@ -1758,8 +1758,8 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, blackout: 0, nextBlackout: 30, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
-    speed: 1, paused: false, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],
+    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
+    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true },
@@ -2354,7 +2354,7 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust
   for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ RE-ENTRY DETECTED — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); } }
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); } }
   else if (G.phase === 'invasion') {
     const it = curIntent();
     G.invTime += dt; if (G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .5 : .75; spawnEnemy('bombpod'); } }
@@ -2369,7 +2369,6 @@ function updateGame(dt) {
     if (!it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 13 + Math.random() * 6; } }
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
     if (done) return end(true, it.glass ? 'THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
-    if (G.blackout > 0) G.blackout -= dt; else { G.nextBlackout -= dt; if (G.nextBlackout <= 0) { G.blackout = 6; G.nextBlackout = 26 + Math.random() * 14; } }
   }
   updUnits(dt); updBuildings(dt); updEnemies(dt); updProj(dt); updParts(dt);
   // deaths
@@ -2721,7 +2720,7 @@ function updUnits(dt) {
     if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng);   // point-defense: swat falling orbital lances (spreads across multiple rods)
     if (d.domain === 'air') {   // aircraft scream across the map to INTERCEPT the nearest threat (beyond visual range), then weave & strafe — fast & agile
       if (u.spool > 0) { u.spool -= dt; continue; }   // scrambling from the pad — freshly built/refuelled aircraft sit parked for a few seconds before they're combat-ready
-      if (u.maxFuel != null && !u.docked) {   // FUEL: burns while airborne; forces RTB once only enough remains to reach a base + a 5% reserve; crashes if it runs dry short of one
+      if (u.maxFuel != null && !u.docked) {   // FUEL: burns while airborne; forces RTB once only enough remains to reach a base + a 5% reserve. Running dry NO LONGER crashes — the aircraft just commits to landing.
         u.fuel -= AIR_FUEL_BURN * dt;
         if (!u.rtb) {
           const base = currentBase(u);
@@ -2730,9 +2729,11 @@ function updUnits(dt) {
             const dist = Math.hypot(base.x - u.x, baseY - u.y);
             const needed = dist / (spd * AIR_RTB_EST_SPD_MULT) * AIR_FUEL_BURN;
             if (u.fuel <= needed * 1.05) u.rtb = true;   // commit to returning while there's still just enough reserve to make it
-          }   // no base anywhere → can't RTB; it keeps flying until it runs dry and crashes (you need airfields to sustain an air force)
+          }
         }
-        if (u.fuel <= 0) { u.killBy = 'fuel'; u.hp = 0; floatText(u.x, u.y - d.s - 4, '⛽ OUT OF FUEL', '#ff8a4a'); boom(u.x, u.y, 3); smoke(u.x, u.y, 2); continue; }
+        // OUT OF FUEL: no crash. Floor the tank at empty and force a landing — the aircraft glides home to a base and refuels
+        // (if every airfield is gone it simply loiters until one exists again). Aircraft are never destroyed by fuel.
+        if (u.fuel <= 0) { u.fuel = 0; if (!u.rtb) { u.rtb = true; floatText(u.x, u.y - d.s - 4, '⛽ BINGO FUEL — RTB', '#ffd23f'); } }
       }
       if ((u.maxAmmo || u.maxFuel) && (u.rtb || u.docked)) { rearmAircraft(u, d, spd, dt); continue; }   // out of ordnance and/or fuel → land at a friendly carrier/airbase, rearm/refuel, relaunch
       u.wob = (u.wob || Math.random() * 6.28) + dt * 2.4;
@@ -2795,7 +2796,7 @@ function updUnits(dt) {
     if (tgt) {
       if (u.lastTgt !== tgt) { u.lastTgt = tgt; u.cd = Math.max(u.cd, .2 + Math.random() * .12); }   // ~0.2s acquisition delay so a formation doesn't all fire on the same frame
       u.aim = Math.atan2(tgt.y - u.y, tgt.x - u.x); if (d.domain !== 'air') u.facing = tgt.x >= u.x ? 1 : -1;
-      if (u.cd <= 0 && !(d.domain === 'ground' && G.blackout > 0)) { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); const sy = u.y - (d.domain === 'ground' ? d.s : 0), sp = d.domain === 'air' ? 30 : 12, lt = leadTime(d.weapon, u.x, sy, tgt), ex = tgt.x + (tgt.vx || 0) * lt + (Math.random() - .5) * sp, ey = tgt.y + (tgt.vy || 0) * lt + (Math.random() - .5) * sp, sdmg = d.dmg * (1 + G.mult.dmg);   // plasma/missile/arc shots lead a moving target by its velocity × time-to-impact; natural aim spread; Ammo Depot / Psionic Relay speed up nearby fire
+      if (u.cd <= 0) { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); const sy = u.y - (d.domain === 'ground' ? d.s : 0), sp = d.domain === 'air' ? 30 : 12, lt = leadTime(d.weapon, u.x, sy, tgt), ex = tgt.x + (tgt.vx || 0) * lt + (Math.random() - .5) * sp, ey = tgt.y + (tgt.vy || 0) * lt + (Math.random() - .5) * sp, sdmg = d.dmg * (1 + G.mult.dmg);   // plasma/missile/arc shots lead a moving target by its velocity × time-to-impact; natural aim spread; Ammo Depot / Psionic Relay speed up nearby fire
         if (tgt.interceptable || tgt.pdable) { flakHit(tgt, sdmg); SFX.shoot(); } else { fire(u.x, sy, d.weapon, ex, ey, true, sdmg); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } } claimDmg(tgt, sdmg);   // PD shoots down interceptable lances AND incoming enemy missiles; aircraft burn their magazine then rearm; committed damage is booked so other shooters re-aim
       }
     }
@@ -3160,8 +3161,6 @@ function renderGame() {
   for (const bm of G.beams) { const px = sx(bm.x); if (px < -bm.r || px > W + bm.r) continue; const gy = groundY(bm.x); const a = Math.min(1, bm.life / .35) * (.7 + .3 * Math.sin(animClock * .05)); const ho = bm.hostile; const grad = c.createLinearGradient(px, 0, px, gy); if (ho) { grad.addColorStop(0, 'rgba(255,90,60,0)'); grad.addColorStop(.45, `rgba(255,110,80,${a * .5})`); grad.addColorStop(1, `rgba(255,200,120,${a * .75})`); } else { grad.addColorStop(0, 'rgba(180,120,255,0)'); grad.addColorStop(.45, `rgba(196,132,255,${a * .45})`); grad.addColorStop(1, `rgba(130,230,255,${a * .7})`); } c.fillStyle = grad; c.fillRect(px - bm.r, 0, bm.r * 2, gy); c.globalAlpha = a; c.fillStyle = ho ? '#fff0e0' : '#eef6ff'; c.fillRect(px - 5, 0, 10, gy); c.shadowColor = ho ? '#ff5a3a' : '#b478ff'; c.shadowBlur = 22; c.fillStyle = ho ? '#ffd0b0' : '#dff0ff'; c.fillRect(px - 2, 0, 4, gy); c.shadowBlur = 0; c.globalAlpha = a * .5; c.fillStyle = ho ? '#ff8a5a' : '#c896ff'; c.beginPath(); c.ellipse(px, gy, bm.r, 15, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   // particles
   for (const pt of G.parts) { const px = sx(pt.x); if (px < -40 || px > W + 40) continue; renderPart(pt, px); }
-  // blackout overlay — screen-fixed (identity space) so it covers the viewport at any scroll
-  if (G.blackout > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); const fl = .5 + .5 * Math.sin(animClock * .02); c.fillStyle = `rgba(90,160,255,${.05 + fl * .04})`; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(180,220,255,.4)'; c.lineWidth = 1; for (let i = 0; i < 9; i++) { const x = ((i * 151 + animClock * .35) % (W + 60)) - 30; c.beginPath(); c.moveTo(x, 0); c.lineTo(x - 28, H * .42); c.stroke(); } c.restore(); }
   // placement ghost
   if (G.place) { const d = BUILD_DEFS[G.place], wx = mwx(), px = sx(wx), ug = placeUg(G.place), oy = ug ? UG_DEPTH * digLevel(G.place) : 0, gy = (d.needWater ? seaLevelY(wx) : groundY(wx)) + oy; const ok = canPlace(G.place, wx, ug) && G.ic >= d.ic && G.mp >= d.mp; c.globalAlpha = .55; if (ug) { c.strokeStyle = 'rgba(202,160,48,.5)'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, groundY(wx)); c.lineTo(px, gy - d.h * .5); c.stroke(); } if (!ug && !d.needWater) drawFoundation(wx, px, gy, d.w * .55); c.save(); c.translate(px, gy); (BART[G.place] || BART.factory)(c, d.w, d.h); c.restore(); c.strokeStyle = ok ? '#6dffb0' : '#ff5a5a'; c.lineWidth = 1.5; c.strokeRect(px - d.w / 2, gy - d.h, d.w, d.h); c.globalAlpha = 1; }
   // land-fill cursor
@@ -3425,7 +3424,7 @@ function frame(now) {
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate
-      if (paused) { c.fillStyle = 'rgba(4,8,18,.45)'; c.fillRect(0, 0, W, H); c.fillStyle = '#cfe0ff'; c.font = 'bold 30px Consolas'; c.textAlign = 'center'; c.fillText('❚❚  PAUSED', W / 2, H / 2); c.textAlign = 'left'; }
+      if (paused) { c.fillStyle = 'rgba(4,8,18,.45)'; c.fillRect(0, 0, W, H); c.fillStyle = '#cfe0ff'; c.font = 'bold 30px Consolas'; c.textAlign = 'center'; c.fillText('❚❚  PAUSED', W / 2, H / 2); c.font = '15px Consolas'; c.fillStyle = '#9fb6d4'; c.fillText('press SPACE to resume', W / 2, H / 2 + 30); c.textAlign = 'left'; }
       syncHUD();
     }
     if (mode !== 'game') drawVignette();
@@ -3796,7 +3795,7 @@ function syncHUD() {
   const resNote = G.research ? ' · ◣ ' + RESEARCH[G.research.key].name + ' ' + Math.round(G.research.paid / G.research.cost * 100) + '%' : '';
   const intentLbl = (typeof INTENT !== 'undefined' && INTENT[G.intent]) ? INTENT[G.intent].label : '';
   if (G.phase === 'prep') { const tleft = Math.ceil(G.prepTimer / (0.45 * G.speed)); ob.textContent = 'PREP — ' + (intentLbl ? 'FLEET INTENT: ' + intentLbl : 'INVASION INBOUND'); ob.style.color = ''; os.textContent = 'T-' + tleft + 's · build & specialize · cities ' + alive + '/' + G.cities.length + resNote; }
-  else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = G.blackout > 0 ? '⚠ GROUND CONTROL BLACKOUT' : (intentLbl || 'INVASION'); ob.style.color = G.blackout > 0 ? 'var(--inf)' : ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
+  else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = (intentLbl || 'INVASION'); ob.style.color = ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state
   document.getElementById('ghint').style.opacity = G.time < 10 ? 1 : 0;

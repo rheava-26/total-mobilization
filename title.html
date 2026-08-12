@@ -3292,6 +3292,10 @@ function drawMinimap() {
   c.strokeStyle = 'rgba(120,150,120,.5)'; c.beginPath(); for (let wx = 0; wx <= WORLD_W; wx += 60) { const e = elevAt(wx); c.lineTo(MM.x + wx * sc, gy - e * MM.h * .4); } c.stroke();
   for (const n of G.nodes) { c.fillStyle = n.used ? '#666' : SR[n.type].col; c.fillRect(MM.x + n.x * sc - 1, gy - 2, 2, 4); }
   for (const ct of G.cities) { c.fillStyle = ct.hp <= 0 ? '#555' : ct.held ? '#ff5a5a' : (ct.capital ? '#ffd23f' : '#7fd4ff'); const ww = Math.max(3, ct.w * sc); c.fillRect(MM.x + ct.x * sc - ww * .5, gy - 5, ww, 5); if (ct.capture > 1 && ct.hp > 0 && !ct.held) { c.fillStyle = '#ff9a3a'; c.fillRect(MM.x + ct.x * sc - ww * .5, gy - 7, ww * ct.capture / 100, 1.5); } }
+  // PLAYER UNITS — your forces on the minimap (grey-blue): ground/naval sit on the coastline, air/space plot by altitude.
+  // Redrawn every frame from live positions, so they visibly move; fillStyle is set once so it stays cheap with a huge army.
+  c.fillStyle = '#9fb6d4';
+  for (const u of G.units) { const air = u.d.domain === 'air' || u.d.domain === 'space'; c.fillRect(MM.x + u.x * sc, air ? MM.y + 2 + (u.y / worldH()) * MM.h * .55 : gy - 2, 1.5, 1.5); }
   // GROUND FRONTLINE — mark enemy ground forces (red ticks at ground level) + the deepest incursion line
   let frontX = null, fd = 1e9; const capX = (G.cities.find(c => c.capital) || {}).x;
   for (const e of G.enemies) { const ground = e.ground || e.anchored; c.fillStyle = e.boss ? '#ff2a2a' : '#ff5a5a'; c.fillRect(MM.x + e.x * sc, ground ? gy - 3 : MM.y + 2 + (e.y / worldH()) * MM.h * .55, e.boss ? 3 : 1.5, e.boss ? 3 : 1.5); if (ground && capX != null) { const d = Math.abs(e.x - capX); if (d < fd) { fd = d; frontX = e.x; } } }

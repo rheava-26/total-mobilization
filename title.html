@@ -2795,7 +2795,8 @@ function updUnits(dt) {
       else { const rate = u.fort ? .26 : .11; u.entr = Math.min(1, (u.entr || 0) + dt * rate); }   // any held position fully digs in (cap 1); a building footprint just digs in FASTER + gives deeper cover (see hurt())
       // a fully dug-in unit raises an AUTO-EMPLACEMENT — its position grows into a mini-fort (MG nests / flak / field guns), making infantry lines genuinely strong
       if (u.empl && (u.empl.hp <= 0 || G.buildings.indexOf(u.empl) < 0)) u.empl = null;
-      if (!u.empl && (u.entr || 0) >= .9 && G.buildings.length < 170) { const er = Math.random(), et = er < .5 ? 'mgnest' : er < .8 ? 'flaknest' : 'artnest'; u.empl = deployEmplacement(et, Math.max(30, Math.min(WORLD_W - 30, u.x + (Math.random() < .5 ? -1 : 1) * (d.s * 2 + 6))), u); floatText(u.x, u.y - d.s * 2, '⛏ FORTIFIED', '#9cff9c'); }
+      if (!u.empl && (u.entr || 0) >= .9 && G.buildings.length < 170) { const ex2 = Math.max(30, Math.min(WORLD_W - 30, u.x + (Math.random() < .5 ? -1 : 1) * (d.s * 2 + 6)));
+        if (elevAt(ex2) >= SEA_E - .04) { const er = Math.random(), et = er < .5 ? 'mgnest' : er < .8 ? 'flaknest' : 'artnest'; u.empl = deployEmplacement(et, ex2, u); floatText(u.x, u.y - d.s * 2, '⛏ FORTIFIED', '#9cff9c'); } }   // BUGFIX: never emplace onto ground that would instantly flood — a drowned emplacement is removed, clears u.empl, and gets redeployed next frame, spamming FORTIFIED/FLOODED + a hiss every frame (a continuous roar). Guarding the deploy site breaks the loop.
     }
     u.cd -= dt;
     if (!tgt) u.lastTgt = null;

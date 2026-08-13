@@ -395,7 +395,7 @@
   <details class="helpsec"><summary>⑥ ★ SUPERWEAPONS &amp; THE MIND-FORGE</summary><p>
     Superweapons (Colossus, Titan, Telekinetic Pylon, Dreadnought…) are built from <span class="k">PRODUCE</span> once researched. The <b>MIND-FORGE</b> plasma lance appears in <span class="k">☢ STRIKE</span> once you have <b>Antimatter</b> + <b>Telekinesis</b> researched and own <b>Uranium</b>.</p></details>
   <details class="helpsec"><summary>⊕ FIRE CONTROL — HAND-AIM YOUR HEAVY GUNS</summary><p>
-    Heavy emplacements (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon) can be <b>hand-directed</b>. <b>1)</b> Select the gun → press <span class="k">⊕ ADD TO FIRE CONTROL</span> in its info panel. <b>2)</b> <b>Click enemies inside the radar ring</b> to mark them. <b>3)</b> The gun fires ONLY at your marks — save that railgun round for a tungsten rod, not chaff. Add more guns to build a battery on one radar. <span style="color:#ffb86b">A gun in Fire Control holds fire until you designate something in range.</span> <b>Right-click</b> / <span class="k">Esc</span> / long-press releases.</p></details>
+    Heavy emplacements (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon) can be <b>hand-directed</b>. <b>1)</b> Select the gun → press <span class="k">⊕ ADD TO FIRE CONTROL</span> in its info panel. <b>2)</b> <b>Click enemies inside the radar ring</b> to mark them. <b>3)</b> The gun PRIORITIZES your marks — save that railgun round for a tungsten rod, not chaff. Add more guns to build a battery on one radar. <span style="color:#ffb86b">A gun in Fire Control always hits what you designate first; with nothing marked in reach it still defends on its own, so it's never idle.</span> <b>Right-click</b> / <span class="k">Esc</span> / long-press releases.</p></details>
   <details class="helpsec"><summary>⑦ BUILDINGS &amp; THEIR COSTS</summary><p>
     Every structure costs <b>IC</b> + <b>MANPOWER</b> plus a small <b>INFLUENCE</b> authorization. Burying a building costs more but shields it (deep tunnels resist assault). As the ages advance your buildings take on a <b>cyberpunk</b> neon look.</p>
     <div id="manualBuildings" style="margin-top:8px"></div></details>
@@ -2826,7 +2826,7 @@ function updBuildings(dt) {
   for (const ct of G.cities) cityDefend(ct, dt);   // cities are fortified — their populace fires back at nearby threats
   for (const b of G.buildings) {
     if (b.done === false || b.captured) continue;   // a captured building no longer answers to you (it works for the enemy — see the capture loop)
-    if (b.d.shieldR) { if (b.shieldHp == null) b.shieldHp = b.d.shieldHp; else if (b.shieldHp < b.d.shieldHp) b.shieldHp = Math.min(b.d.shieldHp, b.shieldHp + 28 * dt); }   // shield generators recharge their dome
+    if (b.d.shieldR) { if (b.shieldHp == null) b.shieldHp = b.d.shieldHp; else if (b.shieldHp < b.d.shieldHp) b.shieldHp = Math.min(b.d.shieldHp, b.shieldHp + 28 * dt); if (b.shieldHits && b.shieldHits.length) { for (const h of b.shieldHits) h.t += dt; if (b.shieldHits.some(h => h.t >= .5)) b.shieldHits = b.shieldHits.filter(h => h.t < .5); } }   // shield generators recharge their dome & age off spent impact ripples
     if (b.emplace && (!b.owner || b.owner.hp <= 0 || G.units.indexOf(b.owner) < 0 || Math.abs(b.owner.x - b.x) > 150)) { b.hp -= 16 * dt; if (b.hp <= 0) continue; }   // an emplacement crumbles once its dug-in unit dies or marches off
     if (b.d.strat && b.silocd > 0) b.silocd = Math.max(0, b.silocd - dt);
     if (!b.d.weapon) { if (!b.ug) populaceDefend(b, dt); continue; }   // every non-turret building defends itself at close range — the armed populace inside (rifles by default; CIWS/plasma once you build the upgrade works)
@@ -2836,12 +2836,13 @@ function updBuildings(dt) {
       const baseCfM = b.d.ceil != null ? b.d.ceil : .78, cfM = plasmaM ? Math.min(.30, baseCfM) : baseCfM, ceilM = cfM ? cfM * worldH() : -1e9;
       const brngM = b.d.range * radarBoost(b.x) * (plasmaM ? 1.5 : 1), r2M = brngM * brngM, myM = b.y - b.d.h * .5;
       let tM = null, bdM = r2M; for (const e of G.designated) { if (e.y < ceilM) continue; const dd = (e.x - b.x) ** 2 + (e.y - myM) ** 2; if (dd < bdM) { bdM = dd; tM = e; } }
+      if (!tM) { tM = acquireEnemy(b.x, myM, brngM, cfM, b.d.noGround ? notNearGround : null); if (!tM && b.d.pd) tM = acquireIncoming(b.x, myM, brngM); }   // FALLBACK: with none of your marks in reach, the gun still defends on its own — fire control PRIORITIZES targets, it never leaves a gun sitting idle
       if (tM && b.cd <= 0) {
         b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof'));
         let dmgMulM = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMulM = 1 + .6 * segs; }
         const sdmgM = b.d.dmg * (1 + G.mult.dmg) * (plasmaM ? 1.6 : 1) * dmgMulM;
-        const ltM = leadTime(wpnM, b.x, myM, tM); fire(b.x, myM, wpnM, tM.x + (tM.vx || 0) * ltM, tM.y + (tM.vy || 0) * ltM, true, sdmgM);
-        if (b.d.heavy || b.key === 'massrail') { boom(b.x, myM - b.d.h * .5, 5); smoke(b.x, myM - b.d.h * .4, 3); shake(3); }
+        if (tM.interceptable || tM.pdable) { flakHit(tM, sdmgM); SFX.shoot(); }
+        else { const ltM = leadTime(wpnM, b.x, myM, tM); fire(b.x, myM, wpnM, tM.x + (tM.vx || 0) * ltM, tM.y + (tM.vy || 0) * ltM, true, sdmgM); if (b.d.heavy || b.key === 'massrail') { boom(b.x, myM - b.d.h * .5, 5); smoke(b.x, myM - b.d.h * .4, 3); shake(3); } }
         claimDmg(tM, sdmgM);
       }
       continue;
@@ -2873,8 +2874,8 @@ function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = 
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
 function designateAt(wx, wy) {
   if (!manualActive()) return false;
-  let best = null, bd = 2500;   // must click within ~50px of an enemy
-  for (const e of G.enemies) { const dc = (e.x - wx) ** 2 + (e.y - wy) ** 2; if (dc >= bd) continue;
+  let best = null, bd = 1e9;   // forgiving, zoom-aware pick radius — scales up when zoomed out and with the enemy's own size, so tiny fast movers are still easy to mark
+  for (const e of G.enemies) { const thr = 52 / (cam.z || 1) + (e.s || 6), dc = (e.x - wx) ** 2 + (e.y - wy) ** 2; if (dc >= thr * thr || dc >= bd) continue;
     let covered = false; for (const b of G.manualGuns) { if (G.buildings.indexOf(b) < 0) continue; const rr = gunRadar(b); if ((e.x - b.x) ** 2 + (e.y - (b.y - b.d.h * .5)) ** 2 <= rr * rr) { covered = true; break; } }
     if (!covered) continue; bd = dc; best = e; }
   if (!best) return false;
@@ -2939,15 +2940,15 @@ function updEnemies(dt) {
     if (e.dives && e.y >= groundY(e.x) - 6) { const h = near(e.x, e.y, friendliesList(), e.pod ? 90 : 70); if (h) hurt(h, e.pod ? 95 : e.dmg * 4); G.stab = Math.max(0, G.stab - (e.pod ? 2.5 : 1.2)); e.hp = 0; boomW(e.x, groundY(e.x) - 6, e.pod ? 18 : 7); }
   }
 }
-function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOME (upper hemisphere over a live Shield Generator)?
-  for (const b of G.buildings) { if (b.key !== 'shieldgen' || b.done === false || b.captured || (b.shieldHp || 0) <= 0) continue; const base = groundY(b.x), r = b.d.shieldR; if (y <= base && (x - b.x) ** 2 + (y - base) ** 2 < r * r) return b; }
+function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOME? — now a FULL bubble around a live Shield Generator, so it also reaches BELOW the surface and covers ships / the water, not just the air above
+  for (const b of G.buildings) { if (b.key !== 'shieldgen' || b.done === false || b.captured || (b.shieldHp || 0) <= 0) continue; const base = groundY(b.x), r = b.d.shieldR; if ((x - b.x) ** 2 + (y - base) ** 2 < r * r) return b; }
   return null;
 }
 function updProj(dt) {
   const incList = incomingList();   // orbital lances the player's fire can shoot down
   for (const p of G.proj) {
     if (p.k === 'beam' || p.k === 'pbeam') { p.life -= dt; continue; }
-    if (!p.friendly && p.life > 0 && p.k !== 'krodfx') { const sh = shieldBlocks(p.x, p.y); if (sh) { sh.shieldHp -= (p.dmg || 0) + (p.k === 'krod' ? 90 : p.k === 'subbomb' ? 50 : 30); spark(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 9, life: .14 }); if (p.k === 'krod' || p.k === 'subbomb') boom(p.x, p.y, 5); p.life = 0; continue; } }   // DEFLECTOR DOME soaks incoming rods/missiles/bombs until it's battered down
+    if (!p.friendly && p.life > 0 && p.k !== 'krodfx') { const sh = shieldBlocks(p.x, p.y); if (sh) { sh.shieldHp -= (p.dmg || 0) + (p.k === 'krod' ? 90 : p.k === 'subbomb' ? 50 : 30); spark(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 9, life: .14 }); (sh.shieldHits || (sh.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(sh.x), p.x - sh.x), t: 0 }); if (p.k === 'krod' || p.k === 'subbomb') boom(p.x, p.y, 5); p.life = 0; continue; } }   // DEFLECTOR DOME soaks incoming rods/missiles/bombs until it's battered down — each hit spawns a surface ripple at its impact angle
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
       if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
@@ -3153,8 +3154,12 @@ function renderGame() {
   for (const e of G.enemies) { const px = sx(e.x); if (px < -30 || px > W + 30) continue; if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
   // beachhead shield domes — a translucent hemisphere over the landing; brightness fades as it's battered down
   for (const dm of G.domes) { const px = sx(dm.x); if (px < -dm.r || px > W + dm.r) continue; const gy = groundY(dm.x), a = Math.max(.18, dm.hp / dm.maxHp); c.save(); c.beginPath(); c.arc(px, gy, dm.r, Math.PI, 0); c.globalAlpha = .08 + .06 * Math.sin(animClock * .01); c.fillStyle = '#5a8cff'; c.fill(); c.globalAlpha = .3 + .4 * a; c.strokeStyle = '#9cc4ff'; c.lineWidth = 2; c.shadowColor = '#9cc4ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }
-  // FRIENDLY deflector shields — green domes over your Shield Generators
-  for (const b of G.buildings) { if (b.key !== 'shieldgen' || b.done === false || b.captured) continue; const px = sx(b.x); if (px < -b.d.shieldR || px > W + b.d.shieldR) continue; const gy = groundY(b.x), a = Math.max(0, (b.shieldHp || 0) / b.d.shieldHp); if (a <= 0) continue; c.save(); c.beginPath(); c.arc(px, gy, b.d.shieldR, Math.PI, 0); c.globalAlpha = (.06 + .05 * Math.sin(animClock * .008)) * a; c.fillStyle = '#5affb0'; c.fill(); c.globalAlpha = .25 + .45 * a; c.strokeStyle = '#9cffd0'; c.lineWidth = 2; c.shadowColor = '#6dffb0'; c.shadowBlur = 10; c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }
+  // FRIENDLY deflector shields — green domes over your Shield Generators; the field also continues DOWN INTO THE WATER, and each hit sends a ripple spreading across the shell
+  for (const b of G.buildings) { if (b.key !== 'shieldgen' || b.done === false || b.captured) continue; const px = sx(b.x); if (px < -b.d.shieldR || px > W + b.d.shieldR) continue; const gy = groundY(b.x), r = b.d.shieldR, a = Math.max(0, (b.shieldHp || 0) / b.d.shieldHp); if (a <= 0) continue; c.save();
+    c.beginPath(); c.arc(px, gy, r, Math.PI, 0); c.globalAlpha = (.06 + .05 * Math.sin(animClock * .008)) * a; c.fillStyle = '#5affb0'; c.fill(); c.globalAlpha = .25 + .45 * a; c.strokeStyle = '#9cffd0'; c.lineWidth = 2; c.shadowColor = '#6dffb0'; c.shadowBlur = 10; c.stroke(); c.shadowBlur = 0;   // upper dome (air side)
+    const ssy = seaLevelY(b.x); if (ssy < gy + r) { c.save(); c.beginPath(); c.rect(px - r, ssy, r * 2, gy - ssy + r + 4); c.clip(); c.beginPath(); c.arc(px, gy, r, 0, Math.PI); c.globalAlpha = (.05 + .04 * Math.sin(animClock * .008)) * a; c.fillStyle = '#3fd0ff'; c.fill(); c.globalAlpha = .16 + .3 * a; c.strokeStyle = '#8fe4ff'; c.lineWidth = 1.6; c.shadowColor = '#3fd0ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0; c.restore(); }   // submerged half — only the part below the sea surface shows, so it reads as projecting underwater
+    if (b.shieldHits) for (const h of b.shieldHits) { const f = 1 - h.t / .5; if (f <= 0) continue; const spread = .12 + (1 - f) * .85; c.globalCompositeOperation = 'lighter'; c.globalAlpha = f * .85; c.strokeStyle = '#e8fff6'; c.lineWidth = 3.2 * f + .8; c.shadowColor = '#9cffd0'; c.shadowBlur = 10; c.beginPath(); c.arc(px, gy, r, h.ang - spread, h.ang + spread); c.stroke(); c.shadowBlur = 0; c.globalCompositeOperation = 'source-over'; }   // impact ripple: a bright arc that widens across the shell as it fades
+    c.globalAlpha = 1; c.restore(); }
   // projectiles
   for (const p of G.proj) { const px = sx(p.x); if (px < -60 || px > W + 60) continue; renderProj(p, px); }
   // firestorm ground glow (under the flames)
@@ -3262,10 +3267,11 @@ function renderProj(p, px) {
   else if (p.k === 'krod') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .6; c.strokeStyle = '#cfeaff'; c.lineWidth = 1 + a2 * 3; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i].x), p.tr[i].y + 10); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.fillStyle = '#fff'; c.shadowColor = '#bfe9ff'; c.shadowBlur = 14; c.fillRect(-2, -16, 4, 22); c.shadowBlur = 0; c.restore(); }
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
-  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff0a0'), hot = !p.friendly ? '#ffd6bc' : '#fff6d6';   // aimed tracer — a crisp bolt with a bright core, not a fat scattered ember
+  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff2b0'), hot = !p.friendly ? '#ffe0cc' : '#fffbe8';   // a THIN bullet + tracer trail — tapered streak fading to nothing behind a bright point round
     c.globalCompositeOperation = 'lighter';
-    c.strokeStyle = col; c.lineWidth = 1.3; c.shadowColor = col; c.shadowBlur = 6; c.beginPath(); c.moveTo(-7, 0); c.lineTo(2.5, 0); c.stroke();   // motion streak
-    c.strokeStyle = hot; c.lineWidth = .7; c.shadowBlur = 0; c.beginPath(); c.moveTo(-2, 0); c.lineTo(3, 0); c.stroke();   // hot core tip
+    const g = c.createLinearGradient(-11, 0, 2, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col);
+    c.strokeStyle = g; c.lineWidth = 1; c.beginPath(); c.moveTo(-11, 0); c.lineTo(2, 0); c.stroke();   // tapered tracer trail
+    c.fillStyle = hot; c.shadowColor = col; c.shadowBlur = 5; c.beginPath(); c.arc(2, 0, .9, 0, 6.28); c.fill(); c.shadowBlur = 0;   // bright bullet head
     c.globalCompositeOperation = 'source-over'; c.restore(); }
 }
 // cyberpunk overlay for buildings in advanced eras: neon edge + glowing strip lights + a soft top glow

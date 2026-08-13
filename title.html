@@ -252,6 +252,8 @@
     #strikePanel { min-width: 0; width: 94vw; }
     .footer { font-size: 10px; }
   }
+  /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
+  body.hud-hidden .topbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying { display: none !important; }
 </style>
 </head>
 <body>
@@ -272,11 +274,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.19.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.20.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.20.0 — BUG FIXES &amp; COMBAT FEEL</b><br><b>⊕ Fire Control actually works:</b> the ADD TO FIRE CONTROL button did nothing because the info panel was rebuilt every frame, eating the click — fixed, and a fire-control gun now PRIORITIZES your designated targets while still defending on its own when nothing you've marked is in reach (it's never idle). Designating is more forgiving to click. <b>☄ Weapons:</b> gunfire is now a thin aimed tracer trail instead of a fat scattered ember; artillery shells read as real spun rounds; every weapon kicks a muzzle flash tinted to its type; plasma bolts fly dead straight and AIRBURST next to their target (no more whiffing on movers). <b>🛡 Shield Generators:</b> the dome ripples across its shell where it's hit and now projects DOWN INTO THE WATER, covering ships. <b>🔊 Feel:</b> big ground blasts carry a deep sub-bass rumble. <b>🖥 Hide-HUD:</b> press <b>H</b> for a clean, HUD-free view (movement still works; a hint shows how to bring it back). <b>◎ Coverage zones:</b> press <b>V</b> or the ◎ button to see radar / fire-rate / repair radii. Plus fixes from playtesting: aircraft no longer explode on empty tanks, music no longer goes quiet in combat, strikes launch when you have the stability for them, and raised terrain no longer strands boats.</p>
     <p><b>v3.19.0 — CONFIRMED LAUNCH &amp; A READABLE MANUAL</b><br><b>☢ Touch strike confirmation:</b> on touch devices a strategic strike now takes two deliberate taps — the first AIMS (the reticle pins where you tapped; tap again to re-aim), then a big <b>☢ CONFIRM STRIKE / ✕ ABORT</b> bar fires or stands down. No more fat-finger nukes. <b>📖 FIELD MANUAL reworked:</b> it now opens with a five-step QUICK START, adds a CONTROLS section covering desktop and touch, and every other chapter is a collapsible section you can scan instead of a wall of text — with the economy explained in one place (stability → influence), AIR COMMAND &amp; ORBITAL LIFT documented side by side, and up-to-date strike &amp; fire-control instructions.</p>
     <p><b>v3.18.0 — AIR COMMAND · MOBILE · ACCESSIBILITY</b><br><b>✈ AIR COMMAND fixes aircraft spam:</b> every crewed aircraft now needs a hangar slot — Airbases grant 6, Underground Airwings 3, Aero Works 4; carrier wings support themselves and disposable drones are exempt (swarming is their doctrine). Your air force is capped by real, bombable infrastructure instead of raw money — the PRODUCE header shows ✈ used/total, and it mirrors the orbital-LIFT rule the space fleet already lives by. <b>From the playtest doc:</b> the PRODUCE button now pulses until first use (with a reminder if your factories sit idle), and the moment your first silo finishes, ☢ STRIKE pulses and tells you it's ready — no more finishing a whole campaign without ever finding either. <b>📱 MOBILE:</b> full touch controls — tap to select/place/fire, one-finger drag to scroll the front, pinch to zoom, long-press to cancel, minimap scrubbing — plus a compact small-screen HUD with finger-sized buttons. <b>♿ ACCESSIBILITY:</b> the OPTIONS menu grew a dedicated section — Screen Shake toggle, Flash Reduction (dims nuke/muzzle strobes for photosensitivity), Colorblind-Friendly health bars (blue/orange), and a Film Grain &amp; Vignette toggle; all settings (plus UI scale) now SAVE on your device, and the game respects your system's reduced-motion preference out of the box.</p>
     <p><b>v3.17.0 — UNIT GRAPHICS REWORK</b><br>The army got a full art pass. Every core unit now carries a proper <b>three-tone paint job</b> — sun-struck upper facets, shaded skirts &amp; undersides, and a coloured <b>identification stripe</b> (cyan for your forces, ember-red on hostiles, applied automatically when drones seize your ground units' colours). Tanks grew commander cupolas, muzzle ends and lit road-wheel hubs; SAMs show their nose cones; the railgun's capacitor bank visibly charges. <b>Things move now:</b> helicopter main &amp; tail rotors actually spin (with a motion-blur disc), the AA track's search radar sweeps, combat-drone rotors whirl, and every jet trails a <b>flickering afterburner flame</b>. Canopies catch a white glint; warships and carriers churn a wake, flash deck markings and blink masthead beacons. The autodrone fleet reads meaner: faceted armour catching the skylight, <b>pulsing hunter-red cores</b>, glowing missile-tube mouths, breathing forge hearts and charged rail tips. Kinetic weapons — cannons, railguns, tank guns — now kick a proper <b>muzzle flash</b>. And the background got fixed too: the parallax ranges are now <b>real jagged mountains</b> (ridged-noise crests with V-cut valleys) wearing <b>snowcaps</b> above the snowline, instead of soft rolling swells.</p>
@@ -424,6 +427,7 @@
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
     <div class="hbtn has-tip" id="btnRes" data-tip="Open the research tree — General (cheap) & Dangerous (society-shifting) tech.">RESEARCH</div>
     <div class="hbtn has-tip" id="btnStrike" data-tip="Strategic strike — opens the launch overview, marks your silos, and lets you call a nuclear/orbital strike. Strikes cost STABILITY.">☢ STRIKE</div>
+    <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
     <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣</div>
@@ -2881,6 +2885,7 @@ function toggleManual() {   // add / remove the selected gun from the fire-contr
   refreshSel();
 }
 function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = []; toast('fire control released'); refreshSel(); }
+function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
 function designateAt(wx, wy) {
   if (!manualActive()) return false;
@@ -3111,6 +3116,14 @@ function drawOrbitalStation(px, gy) {   // a Space Station puts an actual platfo
   if ((animClock % 1200) < 600) { c.fillStyle = '#ff6a6a'; c.shadowColor = '#ff6a6a'; c.shadowBlur = 6; c.beginPath(); c.arc(px, oy - 5, 1.3, 0, 6.28); c.fill(); c.shadowBlur = 0; }
 }
 function renderGame() {
+  // COVERAGE ZONES — buff/aura radii (radar range, fire-rate, repair). Toggle with V or the ◎ button; a selected aura building always shows its own ring.
+  if (G.showZones || (G.sel && G.sel.d && G.sel.d.aura)) {
+    for (const b of G.buildings) { if (b.done === false || !b.d.aura) continue; if (!G.showZones && b !== G.sel) continue;
+      const r = b.d.aura.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
+      const col = b.d.aura.heal ? '109,255,176' : b.d.aura.rof ? '255,178,74' : '63,200,240';   // heal=green · fire-rate=amber · range=cyan
+      c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
+    }
+  }
   // resource nodes
   for (const n of G.nodes) { const px = sx(n.x); if (px < -20 || px > W + 20) continue; const y = groundY(n.x); const col = n.used ? 'rgba(120,120,120,.5)' : SR[n.type].col;
     // ore VEIN descending into the soil — flecks of the resource colour, glinting when unmined
@@ -3457,7 +3470,7 @@ function frame(now) {
       let ox = 0, oy = 0; if (shakeAmt > .2) { ox = (Math.random() - .5) * shakeAmt; oy = (Math.random() - .5) * shakeAmt; shakeAmt = Math.max(0, shakeAmt - dt * 22); } else shakeAmt = 0;
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
-      if (G) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate
+      if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
       if (paused) { c.fillStyle = 'rgba(4,8,18,.45)'; c.fillRect(0, 0, W, H); c.fillStyle = '#cfe0ff'; c.font = 'bold 30px Consolas'; c.textAlign = 'center'; c.fillText('❚❚  PAUSED', W / 2, H / 2); c.font = '15px Consolas'; c.fillStyle = '#9fb6d4'; c.fillText('press SPACE to resume', W / 2, H / 2 + 30); c.textAlign = 'left'; }
       syncHUD();
     }
@@ -3491,7 +3504,7 @@ function openModal(id) { const m = document.getElementById(id); if (m) m.classLi
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); document.getElementById('footer').style.opacity = 0; newGame(pendingDiff); }
-function enterGame() { if (mode === 'game') return; mode = 'game'; document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
+function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
   document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
@@ -3886,7 +3899,15 @@ bindToggle('tFlash', v => flashRed = v);
 bindToggle('tCb', v => cbMode = v);
 bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
 loadOpts();
-addEventListener('keydown', e => { if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+addEventListener('keydown', e => {
+  // HIDE-HUD toggle (H). While hidden, any non-navigation keypress flashes a reminder of how to bring it back.
+  if (mode === 'game' && G && !e.repeat && !/^(input|textarea)$/i.test((e.target && e.target.tagName) || '')) {
+    const kk = (e.key || '').toLowerCase();
+    if (kk === 'h') { G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }
+    else if (kk === 'v') { toggleZones(); }
+    else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
+  }
+  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);
 // ── LIVE RELOAD (dev convenience) ──────────────────────────────────────────────

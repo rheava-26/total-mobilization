@@ -1432,6 +1432,19 @@ const ART = {
     x.fillStyle = '#0d0d0d'; x.fillRect(s * 1.0, -s * .14, s * .9, s * .12);   // dorsal gun
     x.fillStyle = GLOW; x.globalAlpha = pulseA(.012, s); x.shadowColor = GLOW; x.shadowBlur = s * .6; x.beginPath(); x.arc(s * 1.5, s * .12, s * .18, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
   },
+  ejammer(x, s) {   // ELECTRONIC-WARFARE jammer drone — dark pod on repulsors, a swivelling dish spitting jamming static that blinds your homing missiles
+    x.fillStyle = '#161616'; x.beginPath(); x.moveTo(-s * 1.4, s * .05); x.lineTo(-s * 1.0, -s * .4); x.lineTo(s * 1.0, -s * .4); x.lineTo(s * 1.4, s * .05); x.lineTo(s * .9, s * .42); x.lineTo(-s * .9, s * .42); x.closePath(); x.fill();   // hull
+    x.fillStyle = '#2c3036'; x.fillRect(-s * 1.0, -s * .4, s * 2.0, s * .1);   // deck facet
+    x.fillStyle = '#0d0d0d'; for (const gx of [-.7, 0, .7]) x.fillRect(gx * s - s * .06, s * .3, s * .12, s * .34);   // repulsor stalks
+    x.fillStyle = '#6aa0ff'; x.globalAlpha = pulseA(.02); for (const gx of [-.7, 0, .7]) x.fillRect(gx * s - s * .05, s * .6, s * .1, s * .06); x.globalAlpha = 1;   // repulsor pads
+    x.fillStyle = '#242424'; x.fillRect(-s * .08, -s * 1.0, s * .16, s * .62);   // mast
+    x.save(); x.translate(0, -s * 1.0); x.rotate(Math.sin(animClock * .004) * .5);
+    x.fillStyle = '#33393f'; x.beginPath(); x.arc(0, 0, s * .5, Math.PI * 1.05, Math.PI * 1.95); x.fill();   // dish
+    x.fillStyle = '#c184ff'; x.shadowColor = '#c184ff'; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .32, s * .1, 0, 6.28); x.fill(); x.shadowBlur = 0; x.restore();   // dish feed horn
+    x.strokeStyle = 'rgba(193,132,255,' + (.28 + .3 * pulseA(.02)) + ')'; x.lineWidth = Math.max(.6, s * .05);   // jamming static arcs radiating up
+    for (let k = 1; k <= 3; k++) { x.beginPath(); x.arc(0, -s * 1.0, s * (.5 + k * .34), Math.PI * 1.15, Math.PI * 1.85); x.stroke(); }
+    x.fillStyle = GLOW; x.beginPath(); x.arc(-s * .95, -s * .28, s * .1, 0, 6.28); x.arc(s * .95, -s * .28, s * .1, 0, 6.28); x.fill();   // hostile beacons
+  },
   eharvester(x, s) {   // orbital-dropped harvester — heavy hull on repulsor legs, excavator intake, forge glow
     x.fillStyle = '#1a1a1a'; x.beginPath(); x.moveTo(-s * 1.4, -s * .2); x.lineTo(-s * 1.0, -s * 1.0); x.lineTo(s * 1.0, -s * 1.0); x.lineTo(s * 1.4, -s * .2); x.lineTo(s * 1.0, s * .2); x.lineTo(-s * 1.0, s * .2); x.closePath(); x.fill();
     x.fillStyle = '#2c3036'; x.beginPath(); x.moveTo(-s * 1.0, -s * 1.0); x.lineTo(s * 1.0, -s * 1.0); x.lineTo(s * 1.06, -s * .9); x.lineTo(-s * 1.06, -s * .9); x.closePath(); x.fill();   // roof facet
@@ -1579,7 +1592,7 @@ const UNIT_DEFS = {
   battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'warship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', ds: 'Huge long-range missile arsenal ship — saturates the whole sky from the safety of the sea. (req Naval Power)' },
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'warship', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, ds: 'Sea-going railgun battlecruiser — hammers any altitude with hypervelocity slugs, with laser PD. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, pd: true, req: 'navalpwr', ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
-  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, ic: 150, mp: 12, build: 7, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 2, pd: true, ammo: 8, fuel: 38, ds: 'Stealth MULTIROLE fighter — a single crewed 6th-generation jet doing what three separate airframes used to. Beyond-visual-range AAMs + laser PD for air superiority, and the same missiles strike GROUND & naval targets, all while it quarterbacks a swarm of loyal-wingman drones. Burns its missile load, then lands at an airbase to rearm. Carries limited FUEL.' },
+  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 150, mp: 12, build: 7, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 2, pd: true, ammo: 8, fuel: 38, ds: 'Stealth MULTIROLE fighter — a single crewed 6th-generation jet doing what three separate airframes used to. Beyond-visual-range AAMs + laser PD for air superiority, and the same missiles strike GROUND & naval targets, all while it quarterbacks a swarm of loyal-wingman drones. Burns its missile load, then lands at an airbase to rearm. Carries limited FUEL.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
   missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital LIFT + a ROCKET PART. (req Orbital Ops)' },
@@ -1968,7 +1981,7 @@ function claimDmg(t, dmg) { CLAIM.set(t, (CLAIM.get(t) || 0) + dmg); }
 function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d < bd && claimOf(e) < e.hp + (e.shield || 0)) { bd = d; b = e; } } return b || bAny; }   // nearest target not yet saturated by committed fire (falls back to nearest if all are)
 function acquireIncoming(x, y, range) { const r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const p of G.proj) { if (!(p.interceptable || p.pdable) || p.life <= 0) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = p; } if (d < bd && claimOf(p) < (p.hp || 1)) { bd = d; b = p; } } return b || bAny; }   // point-defence: falling orbital lances AND incoming enemy missiles/rockets/bombs — spreads interceptors across multiple threats
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
-function airFilter(d) { return d.airOnly ? (e => !e.ground) : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }
+function airFilter(d) { return d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // MULTIROLE jets (the Falcon) engage ground AND all air (capped only by the orbit ceiling); dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
 const AIR_FUEL_BURN = 1;   // fuel units burned per second airborne — aircraft `fuel` values are chosen so this reads directly as flight-seconds of endurance
@@ -2155,6 +2168,7 @@ function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to 
 function beamHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'beam'; const fade = Math.max(.5, 1 - Math.max(0, (TROPO_Y() - t.y) / TROPO_Y()) * .5); hurt(t, dmg * fade); } }   // a laser loses bite the higher it has to reach
 function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
 function near(x, y, list, range) { let b = null, bd = range * range; for (const t of list) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }
+function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
 function hurt(t, dmg) {
   if (t.kind && !t.boss && !t._b && !t._city) { const dm = enemyDome(t); if (dm) { dm.hp -= dmg; spark(t.x, t.y, 1); G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 4, life: .07 }); return; } }   // a deployed beachhead dome soaks the hit for everything under it (bosses excepted)
   if (t.shield > 0 && (t.kind || t.key)) {   // energy shield (strike-wings, flying superhumans): reflects energy/gun fire; only missiles overload & rip it apart
@@ -2218,6 +2232,7 @@ function waveAirKind() {   // the air contingent of a landing — variety widens
   const r = Math.random();
   if (G.invTime > 85 && r > .94) return 'bulwark';   // late-war exosphere heavy armour
   if (G.invTime > 70 && r > .92) return 'harvester';
+  if (G.invTime > 40 && r > .87) return 'jammer';   // EW support drone — blinds your homing missiles until you gun it down
   if (G.invTime > 55 && r > .84) return 'frigate';
   if (G.invTime > 45 && r > .76) return 'whistler';
   if (G.invTime > 30 && r > .64) return 'strikewing';
@@ -2265,6 +2280,7 @@ function spawnEnemy(kind, atX) {
   else if (kind === 'shieldgen') Object.assign(e, { hp: 60 * t, s: 6, armor: 4, spd: 0, hold: landY(wxw) - 6, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, shieldgen: true, art: 'eshield' });   // SHIELD STRIKER droppod — descends WITH the wave (vulnerable the whole way down); only raises the beachhead dome & disgorges ground units once it LANDS, so you can down it first
   else if (kind === 'pelter') Object.assign(e, { hp: 55 * t, s: 4, armor: 4, spd: 6, hold: landY(wxw) - 4, weapon: 'plasarc', dmg: 30, rate: 3.2, dives: false, ground: true, art: 'epelter' });   // PELTER — ground plasma artillery turret, lobs deforming plasma; a constant pressure on cities (dropped in swarms)
   else if (kind === 'earthbreaker') Object.assign(e, { hp: 620 * t, s: 10, armor: 20, spd: 4, hold: landY(wxw) - 10, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, quake: true, art: 'eearthbreaker' });   // EARTHBREAKER PRESS — heavy seismic siege unit; its energy field triggers earthquakes that rattle morale (stability) & damage nearby ground forces/buildings
+  else if (kind === 'jammer') Object.assign(e, { hp: 44 * t, s: 4, armor: 2, spd: 12, hold: MESO_Y() + 20 + Math.random() * 50, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, jammer: true, jamR: 360, art: 'ejammer' });   // ELECTRONIC-WARFARE drone — no guns, but projects a field that blinds your homing missiles; kill it with GUNS/LASERS/KINETICS (missiles go dumb inside it) to restore lock
   // ===== AUTODRONE SUPERWEAPONS (boss-tier) =====
   else if (kind === 'hive') Object.assign(e, { hp: 1100 * t, s: 13, armor: 14, spd: 8, hold: STRATO_Y() - 18, weapon: 'bomb', dmg: 26, rate: 2.0, dives: false, air: true, producer: true, prodCd: 4, boss: true, bossName: 'SKYFORTRESS "HIVE"', art: 'airship' });   // flying drone-carrier fortress — rains bombs & births a swarm
   else if (kind === 'leviathan') Object.assign(e, { hp: 1700 * t, s: 12, armor: 22, spd: 11, hold: landY(wxw) - 12, weapon: 'plasarc', dmg: 66, rate: 2.6, dives: false, ground: true, boss: true, bossName: 'LAND LEVIATHAN', art: 'colossus' });   // siege crawler that grinds toward your cities
@@ -2722,7 +2738,7 @@ function updUnits(dt) {
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
-    const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .78) : 0;   // ground weapons can't reach high layers; air/space hit anything
+    const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .78) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .13) : 0;   // ground guns reach only the low layers; AIRCRAFT reach up to (but NOT into) the space band — orbital ships need railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
     let tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);
     if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng);   // point-defense: swat falling orbital lances (spreads across multiple rods)
@@ -3047,7 +3063,7 @@ function updProj(dt) {
     if (p.k === 'smart') {   // homes, then latches onto an enemy and seeds disassembler nanites
       let cur = Math.atan2(p.vy, p.vx);
       const t = near(p.x, p.y, p.friendly ? G.enemies.filter(e => !e.reentry) : friendliesList(), 640);
-      if (t) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; cur += Math.max(-4 * dt, Math.min(4 * dt, da)); }
+      if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; cur += Math.max(-4 * dt, Math.min(4 * dt, da)); }
       p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 10) p.tr.shift();
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; const rad = (e.s || 10) + 6; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < rad * rad) { e.smartDot = Math.max(e.smartDot || 0, 22 + (p.dmg || 0)); floatText(e.x, e.y - e.s, 'NANITES', '#7cffb0'); p.life = 0; break; } }
@@ -3061,7 +3077,7 @@ function updProj(dt) {
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * dt;
         let cur = Math.atan2(p.vy, p.vx);
         const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? (incList.length ? G.enemies.concat(incList) : G.enemies) : friendliesList(), 640);   // microrocket submunitions lock their own assigned target
-        if (t) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }
+        if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }   // a hostile EW field blinds the seeker — it stops steering and flies straight until it clears the jam
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 20) p.tr.shift();
@@ -3139,6 +3155,11 @@ function renderGame() {
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
     }
   }
+  // HOSTILE JAMMER FIELDS — a violet static bubble where your homing missiles go blind; kill the drone to clear it
+  for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const px = sx(e.x), r = e.jamR || 360; if (px < -r || px > W + r) continue;
+    c.save(); c.beginPath(); c.arc(px, e.y, r, 0, 6.28); c.fillStyle = 'rgba(150,90,220,.06)'; c.fill();
+    c.strokeStyle = 'rgba(193,132,255,' + (.2 + .18 * pulseA(.02)) + ')'; c.lineWidth = 1.4; c.setLineDash([5, 7]); c.stroke(); c.setLineDash([]);
+    for (let k = 0; k < 6; k++) { const a2 = animClock * .01 + k * 1.7, rr = r * (.25 + (k / 6) * .65); c.globalAlpha = .35 * pulseA(.03, k); c.fillStyle = '#c184ff'; c.fillRect(px + Math.cos(a2) * rr, e.y + Math.sin(a2) * rr, 2, 2); } c.globalAlpha = 1; c.restore(); }
   // resource nodes
   for (const n of G.nodes) { const px = sx(n.x); if (px < -20 || px > W + 20) continue; const y = groundY(n.x); const col = n.used ? 'rgba(120,120,120,.5)' : SR[n.type].col;
     // ore VEIN descending into the soil — flecks of the resource colour, glinting when unmined
@@ -3518,11 +3539,11 @@ function toast(m) { const t = document.getElementById('toast'); t.textContent = 
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
-function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); document.getElementById('footer').style.opacity = 0; newGame(pendingDiff); }
+function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); const f = document.getElementById('footer'); f.style.opacity = 0; f.style.display = 'none'; newGame(pendingDiff); }   // display:none, not just opacity:0 — the footer's CHANGELOG/ACHIEVEMENTS links keep pointer-events:auto, so an invisible footer was still catching clicks mid-game
 function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
   document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
-function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); document.getElementById('footer').style.opacity = ''; }
+function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; }
 function end(win, msg) {
   if (!G || G.over) return; G.over = win ? 'win' : 'lose';
   // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set.

@@ -2125,8 +2125,8 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg) {
   else if (weapon === 'amslug') { const v = 640; G.proj.push({ k: 'amslug', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, tr: [] }); }   // WHISTLER's microscopic antimatter slug — fast, DEAD STRAIGHT, no homing (fixes the old homing missile that snapped onto the nearest friendly and detonated a few feet out)
   else if (weapon === 'particle') { const v = 1500; G.proj.push({ k: 'particle', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 2.2, friendly, dmg, pierce: 2, tr: [] }); }   // single hypervelocity particle bolt — penetrates a couple of targets
   else if (weapon === 'microrkt') { const slow = 30; G.proj.push({ k: 'microrkt', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 60, spd: slow, t: 0, splitT: .45, n: 4, life: 6, friendly, dmg, tr: [] }); }   // carrier rocket → splits into homing submunitions
-  else if (weapon === 'rotary') { for (let n = 0; n < 4; n++) { const aa = ang + (Math.random() - .5) * .055, v = 540 + Math.random() * 150; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.25, friendly, dmg: dmg * .5, fire: true, stream: true }); } }   // ROTARY CANNON — hoses out a dense STREAM of tiny fast rounds (a continuous wall of flak) rather than a few fat tracers; fast + long-lived enough to cover the gun's full range
-  else { for (let n = 0; n < 2; n++) { const aa = ang + (Math.random() - .5) * .12, v = 300 + Math.random() * 60; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.4, friendly, dmg, fire: true }); } }
+  else if (weapon === 'rotary') { for (let n = 0; n < 4; n++) { const aa = ang + (Math.random() - .5) * .04, v = 560 + Math.random() * 140; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.25, friendly, dmg: dmg * .5, fire: true, stream: true }); } }   // ROTARY CANNON — hoses out a tight STREAM of tiny fast rounds (a continuous jet of flak) rather than a few fat tracers; fast + long-lived enough to cover the gun's full range
+  else { for (let n = 0; n < 2; n++) { const aa = ang + (Math.random() - .5) * .045, v = 320 + Math.random() * 50; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.4, friendly, dmg, fire: true }); } }   // aimed gun burst — tight spread so it reads as directed fire, not a shotgun scatter
 }
 // estimate how far ahead to aim so a shot meets a moving target — plasma bolts & missiles especially try to lead
 function leadTime(weapon, sx, sy, tgt) {
@@ -3003,8 +3003,9 @@ function updProj(dt) {
         p.life = 0;
       } continue; }
     if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 8) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9); groundBurst(p.x, 8); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
-    if (p.k === 'plasball') {   // PLASMA kinetic slug — flies dead straight (heavy arty variant arcs); no homing, it's a gun round
+    if (p.k === 'plasball') {   // PLASMA bolt — the heavy arty variant (grav) arcs dumbly; the flat gun bolt gently STEERS onto its target (magnetic-bottle plasma, "no overshoot") so it stops whiffing on moving aircraft
       if (p.grav) p.vy += p.grav * dt;
+      else { const tl = p.friendly ? G.enemies.filter(e => !e.reentry) : friendliesList(); const t = near(p.x, p.y, tl, 520); if (t) { const spd = Math.hypot(p.vx, p.vy) || 900; let cur = Math.atan2(p.vy, p.vx); const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = 3.0 * dt; cur += Math.max(-turn, Math.min(turn, da)); p.vx = Math.cos(cur) * spd; p.vy = Math.sin(cur) * spd; } }   // soft-lock steering: enough to correct onto a mover, gentle enough not to loop
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (p.big ? 5 : 4)) p.tr.shift();
       let hit = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5;   // fast slugs get a swept radius so they don't tunnel through small targets
@@ -3230,7 +3231,14 @@ function renderProj(p, px) {
     c.shadowBlur = 11; c.fillStyle = hot; const hw = p.big ? 2.2 : 1.5, hl = p.big ? 7 : 5; c.beginPath(); c.moveTo(1, -hw); c.lineTo(hl, 0); c.lineTo(1, hw); c.closePath(); c.fill();   // glowing slug head
     c.shadowBlur = 0; c.restore();
   }
-  else if (p.k === 'shell') { for (let i = 0; i < p.tr.length; i++) { c.globalAlpha = i / p.tr.length * .25; c.fillStyle = '#aaa'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, 1.6, 0, 6.28); c.fill(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#111'; c.beginPath(); c.ellipse(0, 0, 4, 2, 0, 0, 6.28); c.fill(); c.restore(); }
+  else if (p.k === 'shell') {   // spun-up artillery round — ogive body, brass band, hot base + thin smoke wake
+    for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .2; c.fillStyle = '#c4ccd4'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, .8 + a2 * 1.6, 0, 6.28); c.fill(); }
+    c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    c.fillStyle = '#14181e'; c.beginPath(); c.moveTo(-4.5, -1.7); c.lineTo(2.6, -1.7); c.lineTo(5, 0); c.lineTo(2.6, 1.7); c.lineTo(-4.5, 1.7); c.closePath(); c.fill();   // body + ogive nose
+    c.fillStyle = '#48535e'; c.fillRect(-4.5, -1.7, 7.1, .7);   // top metallic highlight
+    c.fillStyle = '#b0801e'; c.fillRect(-3.2, -1.7, 1.0, 3.4);   // brass driving band
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,150,60,.7)'; c.beginPath(); c.arc(-4.9, 0, 1.6, 0, 6.28); c.fill(); c.globalCompositeOperation = 'source-over';   // hot base
+    c.restore(); }
   else if (p.k === 'rail') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = p.big ? '#fff' : '#bfe9ff'; c.strokeStyle = col; c.lineWidth = p.big ? 3 : 2; c.shadowColor = col; c.shadowBlur = 12; c.beginPath(); c.moveTo(-(p.big ? 28 : 18), 0); c.lineTo(4, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }
   else if (p.k === 'amslug') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.strokeStyle = 'rgba(200,150,255,.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-14, 0); c.lineTo(2, 0); c.stroke(); c.fillStyle = '#ecd9ff'; c.shadowColor = '#c8a0ff'; c.shadowBlur = 10; c.beginPath(); c.arc(2, 0, 2.2, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // antimatter slug — a short violet streak tipped with a glowing pellet
   else if (p.k === 'particle') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); glow(0, 0, 16, 'rgba(150,240,255,1)', .8); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#dffaff'; c.lineWidth = 3.4; c.shadowColor = '#7ce0ff'; c.shadowBlur = 18; c.beginPath(); c.moveTo(-40, 0); c.lineTo(8, 0); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-30, 0); c.lineTo(8, 0); c.stroke(); c.shadowBlur = 0; c.restore(); c.globalAlpha = 1; }
@@ -3254,7 +3262,11 @@ function renderProj(p, px) {
   else if (p.k === 'krod') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .6; c.strokeStyle = '#cfeaff'; c.lineWidth = 1 + a2 * 3; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i].x), p.tr[i].y + 10); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.fillStyle = '#fff'; c.shadowColor = '#bfe9ff'; c.shadowBlur = 14; c.fillRect(-2, -16, 4, 22); c.shadowBlur = 0; c.restore(); }
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
-  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const fire = p.fire; const col = !p.friendly ? '#ff9a6b' : (fire ? '#ffb24a' : '#fff0a0'); c.strokeStyle = col; c.lineWidth = fire ? 1.9 : 1.4; c.shadowColor = fire ? '#ff7a30' : col; c.shadowBlur = fire ? 8 : 4; c.beginPath(); c.moveTo(fire ? -6 : -3, 0); c.lineTo(2, 0); c.stroke(); if (fire) { c.fillStyle = 'rgba(255,110,40,.55)'; c.beginPath(); c.arc(-7, 0, 1.6, 0, 6.28); c.fill(); } c.shadowBlur = 0; c.restore(); }
+  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff0a0'), hot = !p.friendly ? '#ffd6bc' : '#fff6d6';   // aimed tracer — a crisp bolt with a bright core, not a fat scattered ember
+    c.globalCompositeOperation = 'lighter';
+    c.strokeStyle = col; c.lineWidth = 1.3; c.shadowColor = col; c.shadowBlur = 6; c.beginPath(); c.moveTo(-7, 0); c.lineTo(2.5, 0); c.stroke();   // motion streak
+    c.strokeStyle = hot; c.lineWidth = .7; c.shadowBlur = 0; c.beginPath(); c.moveTo(-2, 0); c.lineTo(3, 0); c.stroke();   // hot core tip
+    c.globalCompositeOperation = 'source-over'; c.restore(); }
 }
 // cyberpunk overlay for buildings in advanced eras: neon edge + glowing strip lights + a soft top glow
 function neonBuilding(px, gy, w, h) {

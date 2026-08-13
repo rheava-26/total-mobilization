@@ -431,6 +431,7 @@
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
     <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣</div>
+    <div class="hbtn has-tip" id="btnPause" data-tip="Pause / resume (or press SPACE)." onclick="togglePause()">❚❚</div>
     <div class="hbtn sbtn" data-spd="0.5">½x</div><div class="hbtn sbtn act" data-spd="1">1x</div><div class="hbtn sbtn" data-spd="2">2x</div><div class="hbtn sbtn" data-spd="3">3x</div>
     <div class="objwrap"><div class="big" id="objBig">—</div><div class="sub" id="objSub"></div></div>
   </div>
@@ -2906,6 +2907,7 @@ function toggleManual() {   // add / remove the selected gun from the fire-contr
 }
 function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = []; toast('fire control released'); refreshSel(); }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
+function togglePause() { if (!G || mode !== 'game' || G.over) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
 function designateAt(wx, wy) {
   if (!manualActive()) return false;
@@ -3887,6 +3889,7 @@ function syncHUD() {
   document.getElementById('ghint').style.opacity = G.time < 10 ? 1 : 0;
   if (!G.hintProd && G.time > 25) { G.hintProd = true; toast('🏭 Your factories are idle — press the pulsing PRODUCE button (top bar) to raise an army'); }   // playtest onboarding: point at PRODUCE if it's gone unused
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';
+  { const pb = document.getElementById('btnPause'); if (pb) { pb.textContent = G.paused ? '▶' : '❚❚'; pb.classList.toggle('on', G.paused); pb.title = G.paused ? 'Resume (or press SPACE).' : 'Pause (or press SPACE).'; } }
   tickResearchUI();
   if (G.sel) { if ((G.sel.hp !== undefined && G.sel.hp <= 0) || (G.units.indexOf(G.sel) < 0 && G.buildings.indexOf(G.sel) < 0 && G.cities.indexOf(G.sel) < 0)) { G.sel = null; refreshSel(); } else refreshSel(); }
 }

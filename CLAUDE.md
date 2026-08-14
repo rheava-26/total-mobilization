@@ -1,5 +1,18 @@
 # TOTAL MOBILIZATION (v1) — complete reference
 
+## WORKING STYLE (standing instruction from the designer)
+
+**Delegate the coding. Always implement game changes by dispatching a Sonnet subagent (in an
+isolated git worktree), not by hand-editing `title.html` yourself.** Because the whole game is
+one file, run parallel subagents only on non-overlapping regions, then merge each worktree back.
+Reserve your own turns for the part the designer actually wants from you: **talk about the DESIGN
+— the ideas, the mechanics, the feasibility and trade-offs, and the plan** — while the subagent
+builds. Give real opinions, not "big change, nice." Don't narrate coding logistics (merges,
+git, harness) unless asked. Keep the honest verification bar (headless boot, zero pageerrors)
+on whatever the subagent produces before it ships.
+
+---
+
 Everything known about the **original** Total Mobilization, the single-file game in this
 branch. Written 2026-08-05 by reading `title.html` end to end. This is a reference document,
 not instructions — it exists so another session (or another tool) can understand the game

@@ -3458,7 +3458,7 @@ function renderProj(p, px) {
     c.restore();
   }
   else if (p.k === 'krod') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .6; c.strokeStyle = '#cfeaff'; c.lineWidth = 1 + a2 * 3; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i].x), p.tr[i].y + 10); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.fillStyle = '#fff'; c.shadowColor = '#bfe9ff'; c.shadowBlur = 14; c.fillRect(-2, -16, 4, 22); c.shadowBlur = 0; c.restore(); }
-  else if (p.k === 'buster') { for (let i = 1; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .5; c.strokeStyle = '#ffd9a0'; c.lineWidth = 1 + a2 * 3.5; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i - 1].x), p.tr[i - 1].y); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const L = p.s * 3.6, Wd = p.s * .9; c.fillStyle = '#20242a'; c.beginPath(); c.moveTo(L, 0); c.lineTo(L * .5, -Wd); c.lineTo(-L * .6, -Wd); c.lineTo(-L * .72, 0); c.lineTo(-L * .6, Wd); c.lineTo(L * .5, Wd); c.closePath(); c.fill(); c.fillStyle = '#15181c'; c.beginPath(); c.moveTo(-L * .55, -Wd); c.lineTo(-L * .84, -Wd * 2.1); c.lineTo(-L * .48, -Wd * .3); c.closePath(); c.moveTo(-L * .55, Wd); c.lineTo(-L * .84, Wd * 2.1); c.lineTo(-L * .48, Wd * .3); c.closePath(); c.fill(); c.fillStyle = '#3a4048'; c.fillRect(-L * .05, -Wd, L * .16, Wd * 2); c.fillStyle = '#ffcaa0'; c.shadowColor = '#ff7a30'; c.shadowBlur = 13; c.beginPath(); c.arc(L * .8, 0, Wd * .82, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // heat-shielded bunker-buster: finned heavy body, glowing re-entry nose, amber contrail
+  else if (p.k === 'buster') { for (let i = 1; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .5; c.strokeStyle = '#ffd9a0'; c.lineWidth = 1 + a2 * 3.5; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i - 1].x), p.tr[i - 1].y); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const L = p.s * 5.4, Wd = p.s * .5; c.fillStyle = '#20242a'; c.beginPath(); c.moveTo(L, 0); c.lineTo(L * .5, -Wd); c.lineTo(-L * .6, -Wd); c.lineTo(-L * .72, 0); c.lineTo(-L * .6, Wd); c.lineTo(L * .5, Wd); c.closePath(); c.fill(); c.strokeStyle = '#ff2626'; c.lineWidth = 1.2; c.shadowColor = '#ff2626'; c.shadowBlur = 4; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#15181c'; c.beginPath(); c.moveTo(-L * .55, -Wd); c.lineTo(-L * .84, -Wd * 2.1); c.lineTo(-L * .48, -Wd * .3); c.closePath(); c.moveTo(-L * .55, Wd); c.lineTo(-L * .84, Wd * 2.1); c.lineTo(-L * .48, Wd * .3); c.closePath(); c.fill(); c.fillStyle = '#3a4048'; c.fillRect(-L * .05, -Wd, L * .16, Wd * 2); c.fillStyle = '#ffcaa0'; c.shadowColor = '#ff7a30'; c.shadowBlur = 13; c.beginPath(); c.arc(L * .8, 0, Wd * .82, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // heat-shielded bunker-buster: finned heavy body, glowing re-entry nose, amber contrail
   else if (p.k === 'decoy') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.globalAlpha = .85; c.strokeStyle = '#ffcaa0'; c.lineWidth = 1.5; c.shadowColor = '#ff7a30'; c.shadowBlur = 6; c.beginPath(); c.moveTo(-p.s * 1.7, 0); c.lineTo(p.s * 1.2, 0); c.stroke(); c.fillStyle = '#ffe0b0'; c.beginPath(); c.arc(p.s * 1.1, 0, p.s * .34, 0, 6.28); c.fill(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // decoy — a thin, fainter flare-missile than the real penetrator
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
@@ -3499,9 +3499,9 @@ function renderPart(pt, px) {
   else { glow(px, pt.y, pt.r * 3, 'rgba(255,236,150,1)', Math.min(1, pt.life / .25) * .4); c.globalAlpha = Math.min(1, pt.life / .25); c.fillStyle = '#fff2c0'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
 }
 function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? (cbMode ? '#ff9a00' : '#ff6b6b') : (cbMode ? '#37b6ff' : '#7cffb0')); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }   // colorblind mode: blue/orange bars instead of green/red
-const MM = { x: 0, y: 0, w: 240, h: 34 };
+const MM = { x: 0, y: 0, w: 150, h: 120 };
 function drawMinimap() {
-  MM.w = Math.min(280, W * .26); MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
+  MM.w = Math.min(170, W * .17); MM.h = Math.min(150, H * .32); MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
   c.fillStyle = 'rgba(8,12,20,.85)'; c.strokeStyle = 'rgba(150,190,240,.3)'; c.lineWidth = 1; c.fillRect(MM.x, MM.y, MM.w, MM.h); c.strokeRect(MM.x, MM.y, MM.w, MM.h);
   const sc = MM.w / WORLD_W, gy = MM.y + MM.h * .7;
   c.strokeStyle = 'rgba(120,150,120,.5)'; c.beginPath(); for (let wx = 0; wx <= WORLD_W; wx += 60) { const e = elevAt(wx); c.lineTo(MM.x + wx * sc, gy - e * MM.h * .4); } c.stroke();
@@ -3515,6 +3515,18 @@ function drawMinimap() {
   let frontX = null, fd = 1e9; const capX = (G.cities.find(c => c.capital) || {}).x;
   for (const e of G.enemies) { const ground = e.ground || e.anchored; c.fillStyle = e.boss ? '#ff2a2a' : '#ff5a5a'; c.fillRect(MM.x + e.x * sc, ground ? gy - 3 : MM.y + 2 + (e.y / worldH()) * MM.h * .55, e.boss ? 3 : 1.5, e.boss ? 3 : 1.5); if (ground && capX != null) { const d = Math.abs(e.x - capX); if (d < fd) { fd = d; frontX = e.x; } } }
   if (frontX != null) { c.strokeStyle = 'rgba(255,80,80,.8)'; c.lineWidth = 1; c.setLineDash([2, 2]); c.beginPath(); c.moveTo(MM.x + frontX * sc, MM.y + 1); c.lineTo(MM.x + frontX * sc, MM.y + MM.h - 1); c.stroke(); c.setLineDash([]); }
+  // INCOMING ORDNANCE — hostile falling missiles plotted by true altitude (worldH()), so the barrage descending on the world reads on the minimap too.
+  for (const p of G.proj) {
+    if (p.friendly || p.x == null || p.y == null) continue;
+    let col = null, sz = 1.6;
+    if (p.k === 'buster') { col = '#ff2020'; sz = 2.6; }
+    else if (p.k === 'decoy') { col = 'rgba(255,140,70,.6)'; sz = 1.4; }
+    else if (p.k === 'krod') { col = '#ffffff'; sz = 2; }
+    else if (p.k === 'nuke' || p.k === 'fbomb' || p.k === 'mirv' || p.k === 'stratmis' || p.k === 'micromis') { col = '#ff6a3a'; sz = 2; }
+    if (!col) continue;
+    const my = MM.y + Math.max(1, Math.min(MM.h - 1, (p.y / worldH()) * MM.h));
+    c.fillStyle = col; c.fillRect(MM.x + p.x * sc - sz * .5, my - sz * .5, sz, sz);
+  }
   c.strokeStyle = '#fff'; c.strokeRect(MM.x + (cam.x + W / 2 - W / (2 * (cam.z || 1))) * sc, MM.y + 1, (W / (cam.z || 1)) * sc, MM.h - 2);   // box tracks the VISIBLE span (zoom crops the strip around its centre)
 }
 function clampCam(x) { const m = W / 2 - W / (2 * (cam.z || 1)); return Math.max(-m, Math.min(WORLD_W - W + m, x)); }   // zoom-aware (see clampCamY)

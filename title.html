@@ -112,6 +112,12 @@
   .tip { position: fixed; z-index: 30; display: none; max-width: 250px; background: var(--panel); border: 1px solid var(--ic); border-radius: 5px; padding: 8px 11px; font-size: 11px; color: var(--paper); pointer-events: none; line-height: 1.55; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
   .tip .tt { color: var(--ic); font-weight: 700; display: block; margin-bottom: 3px; } .tip .tr2 { color: #9fb6d4; display: block; margin: 2px 0 4px; }
   .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px); background: var(--panel); border: 1px solid var(--term); color: var(--term); padding: 11px 20px; border-radius: 4px; letter-spacing: 1.5px; font-size: 12px; opacity: 0; transition: .3s; z-index: 16; pointer-events: none; text-align: center; } .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* ALERT BANNER — a big, un-missable centre-screen klaxon for major events (fleet acquisition / missile launch). Deliberately SEPARATE from .toast so routine build messages can never bury it. */
+  .alertbanner { position: fixed; left: 50%; top: 21%; transform: translateX(-50%) scale(.92); width: 94%; max-width: 780px; text-align: center; z-index: 40; pointer-events: none; opacity: 0; transition: opacity .3s, transform .3s; }
+  .alertbanner.show { opacity: 1; transform: translateX(-50%) scale(1); }
+  .alertbanner .ab-main { font-size: clamp(20px, 4.2vw, 34px); font-weight: 800; letter-spacing: 3px; color: #ff5252; text-shadow: 0 0 16px rgba(255,40,40,.9), 0 2px 6px rgba(0,0,0,.85); animation: abpulse 1s ease-in-out infinite; }
+  .alertbanner .ab-sub { font-size: clamp(11px, 1.7vw, 15px); letter-spacing: 2px; color: #ffd6d6; margin-top: 9px; text-shadow: 0 2px 6px rgba(0,0,0,.85); }
+  @keyframes abpulse { 0%,100%{opacity:1} 50%{opacity:.5} }
   /* touch strike confirmation — a deliberate second tap so a stray finger can't launch a nuke */
   #strikeConfirm { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 17; background: rgba(20,8,10,.96); border: 1px solid var(--inf); border-radius: 8px; padding: 12px 16px; display: none; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,.6), 0 0 20px rgba(255,90,90,.25); }
   #strikeConfirm.show { display: block; }
@@ -451,6 +457,7 @@
 <div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endStats"></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
+<div class="alertbanner" id="alertBanner"></div>
 <div id="strikeConfirm"><div class="scq">☢ STRIKE AIMED — tap the map to re-aim, or:</div><button class="pill primary" onclick="confirmStrike()">☢ CONFIRM STRIKE</button><button class="pill" onclick="gameCancel()">✕ ABORT</button></div>
 <div id="nowPlaying"></div>
 <div id="ytplayer" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></div>
@@ -2366,6 +2373,7 @@ function updateGame(dt) {
   G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) * G.infMomentum - 2 * (G.superN || 0)); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE accrues from effective stability, amplified by momentum; EACH fielded Superhuman Cadre CONSUMES 2 influence/s of that income (upkeep) — a couple is affordable, an immortal laser air-force strangles your research
   if (G.stabOffset > 0) G.stabOffset = Math.max(0, G.stabOffset - (0.5 + Math.max(0, G.mult.stab) * .1) * dt);   // dangerous-research unrest now RECOVERS on its own over time (no longer requires spamming stability buildings)
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
+  if (G.hitFlash) G.hitFlash = Math.max(0, G.hitFlash - dt * 2.6);   // red impact flicker decays fast
   // lingering firestorms — cook anything on the ground inside them
   if (G.fires.length) for (let i = G.fires.length - 1; i >= 0; i--) {
     const f = G.fires[i]; f.life -= dt; const gy = groundY(f.x);
@@ -2405,14 +2413,20 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust
   for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); } }
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); } } }
   else if (G.phase === 'invasion') {
     const it = curIntent();
-    G.invTime += dt; if (G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
+    // TARGET-ACQUISITION telegraph — before the first strike the fleet spends ~15s LOCKING your priority targets (red reticles crawl across your base) behind a klaxon banner. Nothing attacks yet — this is your window to brace — then: MISSILES LAUNCHED.
+    if (G.acqPhase) { G.acqT -= dt;
+      if (!G.acqOrder) G.acqOrder = G.buildings.filter(b => b.done !== false && !b.captured && b.hp > 0).sort((a, b) => busterScore(b) - busterScore(a)).slice(0, 24);
+      G.acqLockT -= dt; if (G.acqLockT <= 0) { const nb = G.acqOrder.find(b => !b._acqLock && b.hp > 0); if (nb) { nb._acqLock = 1; if (SFX.click) SFX.click(); } G.acqLockT = Math.max(.2, 13 / (G.acqOrder.length + 1)); }
+      if (G.acqT <= 0) { G.acqPhase = false; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
+    if (!G.acqPhase) G.invTime += dt;
+    if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
-    if (G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
+    if (!G.acqPhase && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
     // BUNKER-BUSTER PENETRATORS — the fleet slams heat-shielded plane-sized missiles onto your highest-value structures by PRIORITY. It opens with a few SCREENING shots to gauge your defences, then scales each salvo: 1 if rounds punch straight through, up to 3-4 against a competent air-defence net.
-    if (G.busterN > 0) { G.busterCd -= dt; if (G.busterCd <= 0) {
+    if (!G.acqPhase && G.busterN > 0) { G.busterCd -= dt; if (G.busterCd <= 0) {
       if (G.busterFired < 3) {   // RANGING SHOTS — a quick 3-shot telegraph, then the whole magazine commits (down the probes and it comes anyway)
         const tb = busterTarget(); if (tb) { spawnBuster(tb.x + (Math.random() - .5) * 34, groundY(tb.x)); G.busterN--; G.busterFired++; if (G.busterFired === 1) { toast('⚠ ORBITAL PENETRATORS — RANGING SHOTS'); musDuck(); } }
         G.busterCd = .45 + Math.random() * .35;
@@ -2424,12 +2438,12 @@ function updateGame(dt) {
       }
     } }
     // MASS SKYFALL — the giant drop right after the opening bombardment (+ flank ground landings)
-    if (G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
+    if (!G.acqPhase && G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
     // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule
     const sups = it.supers || []; G.superI = G.superI || 0;
-    if (G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
+    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
-    if (!it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 13 + Math.random() * 6; } }
+    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 13 + Math.random() * 6; } }
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
     if (done) return end(true, it.glass ? 'THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
@@ -2690,6 +2704,7 @@ function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
 function detonateBuster(x, y) {   // heat-shielded penetrator impact — a plane-sized round that throws up a WALL of earth and guts its target (incl. shallow-buried bunkers)
   const gy = groundY(x);
+  G.hitFlash = Math.max(G.hitFlash || 0, .2);   // a penetrator that GOT THROUGH punches a red flicker across the screen
   G.parts.push({ k: 'flash', x, y: gy - 40, r: 120, life: .4 });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 52, gy, 16);
   boomW(x, gy - 14, 30); groundBurst(x, 44); shake(17); SFX.boom(); if (SFX.rumble) SFX.rumble();
@@ -3321,6 +3336,7 @@ function renderGame() {
     c.save(); c.translate(px, u.y); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } c.restore(); if (u.shield > 0) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, u.y - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, u.y - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, u.y - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } }
   // enemies
   for (const e of G.enemies) { const px = sx(e.x); if (px < -30 || px > W + 30) continue; if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  for (const b of G.buildings) { if (!b._acqLock || b.hp <= 0) continue; const px = sx(b.x); if (px < -60 || px > W + 60) continue; const cy = groundY(b.x) - (b.d.h || 12) * .5, rr = (b.d.w || 16) * .7 + 8, rot = -animClock * .07; c.save(); c.globalAlpha = .55 + .35 * Math.sin(animClock * .02); c.strokeStyle = '#ff2323'; c.lineWidth = 2; c.shadowColor = '#ff3030'; c.shadowBlur = 8; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, cy, rr, ba - .42, ba + .42); c.stroke(); } c.beginPath(); c.moveTo(px - rr, cy); c.lineTo(px - rr * .55, cy); c.moveTo(px + rr * .55, cy); c.lineTo(px + rr, cy); c.moveTo(px, cy - rr); c.lineTo(px, cy - rr * .55); c.moveTo(px, cy + rr * .55); c.lineTo(px, cy + rr); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // ◎ RED enemy-acquisition reticle — the autofleet has locked this structure as a bunker-buster target
   // beachhead shield domes — a translucent hemisphere over the landing; brightness fades as it's battered down
   for (const dm of G.domes) { const px = sx(dm.x); if (px < -dm.r || px > W + dm.r) continue; const gy = groundY(dm.x), a = Math.max(.18, dm.hp / dm.maxHp); c.save(); c.beginPath(); c.arc(px, gy, dm.r, Math.PI, 0); c.globalAlpha = .08 + .06 * Math.sin(animClock * .01); c.fillStyle = '#5a8cff'; c.fill(); c.globalAlpha = .3 + .4 * a; c.strokeStyle = '#9cc4ff'; c.lineWidth = 2; c.shadowColor = '#9cc4ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }
   for (const e of G.enemies) { if (!e.breacher || !e.fieldOn || (e.fieldHp || 0) <= 0) continue; const px = sx(e.x); if (px < -e.fieldR || px > W + e.fieldR) continue; const a = Math.max(.12, e.fieldHp / (e.fieldMax || e.fieldHp)); c.save(); c.globalAlpha = .05 + .05 * Math.sin(animClock * .014); c.fillStyle = '#a072ff'; c.beginPath(); c.arc(px, e.y, e.fieldR, 0, 6.28); c.fill(); c.globalAlpha = .22 + .4 * a; c.strokeStyle = '#c9a6ff'; c.lineWidth = 1.6; c.shadowColor = '#c9a6ff'; c.shadowBlur = 7; c.beginPath(); c.arc(px, e.y, e.fieldR, 0, 6.28); c.stroke(); c.shadowBlur = 0; if (e.fieldHits) for (const h of e.fieldHits) { const hx = px + Math.cos(h.ang) * e.fieldR, hy = e.y + Math.sin(h.ang) * e.fieldR; c.globalAlpha = Math.max(0, .6 - h.t * 1.2); c.fillStyle = '#eadcff'; c.beginPath(); c.arc(hx, hy, 3, 0, 6.28); c.fill(); } c.globalAlpha = 1; c.restore(); }   // BEACHHEAD ANCHOR deflector field — violet projectile-scrub bubble, brightens where your rounds are being scrubbed, fades as it's battered down
@@ -3374,6 +3390,7 @@ function renderGame() {
   }
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
   if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
+  if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
 function renderProj(p, px) {
@@ -3651,6 +3668,8 @@ function launchCustomScenario() {
   pendingDiff = 'custom'; closeModal('scenEditModal'); startDeploy();
 }
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); toastT = 1.6; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1700); }
+function banner(main, sub, dur) { const el = document.getElementById('alertBanner'); if (!el) return; el.innerHTML = `<div class="ab-main">${main}</div>` + (sub ? `<div class="ab-sub">${sub}</div>` : ''); el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), (dur || 4) * 1000); }   // BIG centre-screen alert, independent of the toast so major events can't be buried by build messages
+function hideBanner() { const el = document.getElementById('alertBanner'); if (el) { el.classList.remove('show'); clearTimeout(el._t); } }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } if (id === 'resModal') { const RC = window.__resCam; if (RC) { RC.pts.clear(); RC.drag = null; RC.pinch = null; RC.moved = false; RC.centered = false; } const d = document.getElementById('resDetail'); if (d) d.classList.remove('show'); const bd = document.getElementById('resBoard'); if (bd) bd.classList.remove('scan', 'grabbing'); clearTimeout(resHoverT); } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }

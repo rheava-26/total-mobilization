@@ -1702,7 +1702,7 @@ const BUILD_DEFS = {
   silo:     { name: 'Missile Silo', cat: 'DEF', ic: 420, mp: 130, build: 20, hp: 320, armor: 6, w: 18, h: 15, strat: true, ds: 'STRATEGIC: enables the ☢ STRIKE button. Call nuclear/orbital strikes that cost STABILITY (not a long reload). Bury it to keep it safe.' },
   aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'rotary', range: 700, dmg: 7, rate: .07, ceil: .60, noGround: true, pd: true, req: 'pointdefense', ds: 'Rapid-fire interceptor — hoses a STREAM of flak to swat down incoming MISSILES and tungsten RODS. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (POINT DEFENSE)' },
   microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, pd: true, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
-  shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 210, shieldHp: 900, req: 'shieldtech', ds: 'Projects a PROJECTILE SHIELD DOME over everything nearby — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Your real answer to orbital bombardment. (DEFLECTOR SHIELDS)' },
+  shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 130, shieldHp: 900, upkeep: 2, req: 'shieldtech', ds: 'Projects a tight PROJECTILE SHIELD DOME over what is right beside it — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Draws heavy power: 2 IC/s upkeep. Cover a base with several, not one. (DEFLECTOR SHIELDS)' },
   particlecannon:{ name: 'Particle Cannon', cat: 'DEF', ic: 440, mp: 80, build: 16, hp: 380, armor: 12, w: 22, h: 16, weapon: 'particle', range: 1600, dmg: 130, rate: 4.5, ceil: 0, pd: true, manual: true, heavy: true, req: 'particlebeam', ds: 'Single-shot hypervelocity PARTICLE bolt — near-instant, punches clean through anything at any altitude. Add it to ⊕ FIRE CONTROL to aim it. (PARTICLE BEAMS)' },
   // DISPERSED BALLISTIC PLATFORMS — placeable alternatives to the central silo; plant them wherever you need strike coverage. All enable the ☢ STRIKE button from their own position.
   missiletel:{ name: 'Mobile Launcher (TEL)', cat: 'DEF', ic: 240, mp: 70, build: 9, hp: 160, armor: 4, w: 20, h: 11, strat: true, ds: 'A road-mobile transporter-erector-launcher — a cheap, DISPERSED strike site you can plant anywhere on land. Spread several around so one orbital hit can\'t take out your whole arsenal.' },
@@ -2353,7 +2353,7 @@ function updateGame(dt) {
   if (bmod().amR) G.antimatter = Math.min(300, (G.antimatter || 0) + bmod().amR * dt);   // Antimatter Extractors slowly accrue antimatter
   const em = 1 + G.mult.econ;
   icR *= em; mpR *= (1 + G.mult.mp) * em; resR *= (1 + G.mult.res);
-  let upkeep = 0; for (const u of G.units) if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep;   // fielded units with a standing UPKEEP (carriers etc.) drain IC/s flat — this is what caps how many you can keep running at once late-game
+  let upkeep = 0; for (const u of G.units) if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once
   icR -= upkeep; G.upkeep = upkeep;
   if (G.dystopia) stabNeg += 1.4;
   G.icR = icR; G.mpR = mpR; G.resR = resR;
@@ -2426,7 +2426,7 @@ function updateGame(dt) {
     if (G.acqPhase) { G.acqT -= dt;
       if (!G.acqOrder) G.acqOrder = G.buildings.filter(b => b.done !== false && !b.captured && b.hp > 0).sort((a, b) => busterScore(b) - busterScore(a)).slice(0, 24);
       G.acqLockT -= dt; if (G.acqLockT <= 0) { const nb = G.acqOrder.find(b => !b._acqLock && b.hp > 0); if (nb) { nb._acqLock = 1; if (SFX.click) SFX.click(); } G.acqLockT = Math.max(.2, 13 / (G.acqOrder.length + 1)); }
-      if (G.acqT <= 0) { G.acqPhase = false; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
+      if (G.acqT <= 0) { G.acqPhase = false; for (const b of G.buildings) b._acqLock = 0; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
     if (!G.acqPhase) G.invTime += dt;
     if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
@@ -3208,7 +3208,7 @@ function updProj(dt) {
       else {   // 3: ignition — the motor never quits, it just keeps accelerating, with a limited turn rate (sharp/fast targets can be overshot)
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * dt;
         let cur = Math.atan2(p.vy, p.vx);
-        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? (incList.length ? G.enemies.concat(incList) : G.enemies).filter(e => !p.micro || e.y >= SPACE_Y()) : friendliesList(), 640);   // microrocket submunitions lock their own assigned target; micro-missiles never re-acquire an ORBITAL ship
+        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? (incList.length ? G.enemies.concat(incList) : G.enemies).filter(e => e.y >= MESO_TOP()) : friendliesList(), 640);   // your guided missiles can NEVER re-acquire a target above the mesosphere — no more pitching up into orbit to snipe bombardiers (orbit belongs to kinetics / space weapons)
         if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }   // a hostile EW field blinds the seeker — it stops steering and flies straight until it clears the jam
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }

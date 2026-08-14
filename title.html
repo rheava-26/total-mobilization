@@ -164,6 +164,8 @@
   .resDetail .rdunit canvas { background: rgba(255,255,255,.03); border-radius: 4px; }
   .resDetail .rdhint { font-size: 10px; letter-spacing: 1px; margin-top: 8px; color: var(--res); }
   .resDetail .rdhint.bad { color: var(--inf); }
+  .resDetail .rdclose { position: absolute; top: 3px; right: 5px; pointer-events: auto; cursor: pointer; background: none; border: none; color: #8fa6c4; font-size: 15px; line-height: 1; padding: 3px 6px; }
+  .resDetail .rdclose:hover { color: #eaf2ff; }
   /* now-playing banner */
   #nowPlaying { position: fixed; left: 18px; bottom: 64px; z-index: 17; background: linear-gradient(90deg, rgba(8,14,26,.95), rgba(8,14,26,.7)); border: 1px solid var(--line); border-left: 3px solid var(--term); border-radius: 5px; padding: 8px 18px 8px 13px; color: var(--paper); pointer-events: none; opacity: 0; transform: translateX(-26px); transition: opacity .5s, transform .5s; box-shadow: 0 8px 30px rgba(0,0,0,.5); max-width: 340px; }
   #nowPlaying.show { opacity: 1; transform: translateX(0); }
@@ -3548,7 +3550,7 @@ function launchCustomScenario() {
 }
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); toastT = 1.6; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1700); }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
-function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
+function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } if (id === 'resModal') { const RC = window.__resCam; if (RC) { RC.pts.clear(); RC.drag = null; RC.pinch = null; RC.moved = false; RC.centered = false; } const d = document.getElementById('resDetail'); if (d) d.classList.remove('show'); const bd = document.getElementById('resBoard'); if (bd) bd.classList.remove('scan', 'grabbing'); clearTimeout(resHoverT); } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); const f = document.getElementById('footer'); f.style.opacity = 0; f.style.display = 'none'; newGame(pendingDiff); }   // display:none, not just opacity:0 — the footer's CHANGELOG/ACHIEVEMENTS links keep pointer-events:auto, so an invisible footer was still catching clicks mid-game
 function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
@@ -3750,6 +3752,10 @@ function buildResearch() {
   let lines = ''; for (const [a, b] of RES_EDGES) { const A = RESEARCH[a], B = RESEARCH[b]; lines += `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" data-a="${a}" data-b="${b}"${G.unlocked[a] && G.unlocked[b] ? ' class="lit"' : ''}/>`; }
   document.getElementById('resSvg').innerHTML = lines;
   board.querySelectorAll('.rnode2').forEach(n => n.remove());
+  // starting/queuing a research rebuilds every node MID-GESTURE: the node you clicked is torn out,
+  // so its onmouseleave never fires (stranding #resDetail.show + .scan) and its captured pointer's
+  // pointerup can be dropped (leaking a stale RC.pts entry → pan reads as pinch). Reset both here.
+  { const RCr = window.__resCam; if (RCr) { RCr.pts.clear(); RCr.drag = null; RCr.pinch = null; RCr.moved = false; } clearTimeout(resHoverT); board.classList.remove('scan', 'grabbing'); if (detail) detail.classList.remove('show'); }
   for (const key in RESEARCH) {
     const r = RESEARCH[key], done = G.unlocked[key], active = G.research && G.research.key === key, qpos = G.resQueue.indexOf(key);
     const reason = done ? null : resLocked(key), locked = !!reason && !(qpos >= 0 || prereqPending(key)), afford = G.inf >= resCostOf(r);
@@ -3759,16 +3765,17 @@ function buildResearch() {
     const star = r.eff && r.eff.indexOf('★') >= 0;
     const tag = done ? '✓' : active ? '◣' : qpos >= 0 ? '#' + (qpos + 1) : star ? '★' : r.dang ? '!' : '';
     el.innerHTML = `<span class="rn2n">${r.name}</span>` + (r.root ? `<span class="rn2c">your starting era</span>` : `<span class="rn2c">${resCostOf(r)} INF · ~${Math.round(resTimeOf(r) / (0.45 * (G.speed || 1)))}s</span>`) + (active ? `<div class="rbar"><i style="width:${Math.min(100, (G.research.paid / G.research.cost) * 100)}%"></i></div>` : '') + (tag ? `<span class="rtag">${tag}</span>` : '');
-    el.onmouseenter = () => { whoom(); el.classList.add('focus'); const rr = RESEARCH[key]; stabPreview = rr && rr.sc ? { txt: '−' + rr.sc + ' unrest', col: '#ff8a6a' } : null; clearTimeout(resHoverT); resHoverT = setTimeout(() => { board.classList.add('scan'); resHighlight(key, true); showResDetail(key); }, 280); };
+    el.onmouseenter = () => { whoom(); el.classList.add('focus'); const rr = RESEARCH[key]; stabPreview = rr && rr.sc ? { txt: '−' + rr.sc + ' unrest', col: '#ff8a6a' } : null; clearTimeout(resHoverT); resHoverT = setTimeout(() => { if (!el.isConnected || !el.classList.contains('focus')) return; board.classList.add('scan'); resHighlight(key, true); showResDetail(key); }, 280); };
     el.onmouseleave = () => { clearTimeout(resHoverT); el.classList.remove('focus'); board.classList.remove('scan'); resHighlight(key, false); detail.classList.remove('show'); stabPreview = null; };
     if (active) el.onclick = () => cancelResearch();
     else if (!r.root && !done) el.onclick = () => startResearch(key);
     canvas.appendChild(el);
   }
   tickResearchUI();
-  // once the modal is actually on-screen, centre the view on the player's current era so they don't open onto a blank corner
-  requestAnimationFrame(() => { if (!board.clientWidth) return; const ek = G.unlocked.spaceage ? 'spaceage' : G.unlocked.fusion ? 'fusion' : 'info', en = RESEARCH[ek] || RESEARCH.info, RC = window.__resCam;
-    if (RC) { RC.z = Math.max(.4, Math.min(1, board.clientWidth / CW * 1.7)); RC.x = board.clientWidth / 2 - (en.x / 1200 * CW) * RC.z; RC.y = board.clientHeight / 2 - (en.y / 600 * CH) * RC.z; window.__resApplyCam(); }   // center the camera on your current era, zoomed to a readable fit (phones open zoomed-out enough to see the tree)
+  // centre the view on the player's current era ONCE per open — buildResearch also re-runs on every
+  // queue/start/cancel, and re-centring on those would yank the camera out from under the player mid-pan
+  requestAnimationFrame(() => { if (!board.clientWidth) return; const RC = window.__resCam; if (!RC || RC.centered) return; const ek = G.unlocked.spaceage ? 'spaceage' : G.unlocked.fusion ? 'fusion' : 'info', en = RESEARCH[ek] || RESEARCH.info;
+    RC.z = Math.max(.4, Math.min(1, board.clientWidth / CW * 1.7)); RC.x = board.clientWidth / 2 - (en.x / 1200 * CW) * RC.z; RC.y = board.clientHeight / 2 - (en.y / 600 * CH) * RC.z; RC.centered = true; window.__resApplyCam();   // center on your current era, zoomed to a readable fit (phones open zoomed-out enough to see the tree)
   });
 }
 function showResDetail(key) {
@@ -3798,6 +3805,9 @@ function showResDetail(key) {
   else if (G.inf < resCostOf(r)) html += `<div class="rdhint" style="color:var(--stab)">▶ Click to ${G.research ? 'QUEUE' : 'begin'} — pays for itself gradually from your influence income</div>`;
   else html += `<div class="rdhint">▶ Click to ${G.research ? 'QUEUE' : 'begin researching'}</div>`;
   detail.innerHTML = html; detail.classList.add('show');
+  // explicit × so touch users (no mouseleave) can dismiss the overview — the panel itself stays
+  // pointer-events:none so it never blocks a node click behind it; only this button is clickable
+  const cb = document.createElement('button'); cb.className = 'rdclose'; cb.textContent = '✕'; cb.title = 'close'; cb.onclick = e => { e.stopPropagation(); detail.classList.remove('show'); }; detail.appendChild(cb);
   const cans = detail.querySelectorAll('canvas'); let i = 0;
   for (const d of units) { const x = cans[i++].getContext('2d'); x.translate(32, 26); x.scale(1.5, 1.5); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 7, -.6); } catch (e) {} }
   for (const d of blds) { const x = cans[i++].getContext('2d'); x.translate(32, 35); x.scale(.7, .7); try { (BART[d.key] || BART.factory)(x, d.w, d.h); } catch (e) {} }

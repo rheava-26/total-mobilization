@@ -2935,6 +2935,17 @@ function designateAt(wx, wy) {
   return true;
 }
 function updEnemies(dt) {
+  // SEPARATION — enemies all steer at the nearest target, so a wave used to collapse into a single
+  // overlapping column on a city. Nudge them apart so a group reads as a loose handful with space
+  // between craft, not a stack. Bucketed by x (each enemy only checks its own + the next column) so
+  // it stays ~linear even with a large fleet. Plunging / anchored / orbital / boss units are exempt.
+  { const BS = 150, buckets = new Map();
+    for (const e of G.enemies) { if (e.reentry || e.anchored || e.orbital || e.boss) continue; const k = Math.round(e.x / BS); let a = buckets.get(k); if (!a) buckets.set(k, a = []); a.push(e); }
+    const sepE = (u, o) => { const sep = (u.s + o.s) * 2.2 + 12, s2 = sep * sep; let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy;
+      if (dd > s2) return; if (dd < .01) { dx = (u.x > o.x ? 1 : -1) * .5 || .5; dy = 0; dd = .25; }
+      const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.4 * dt; u.x += dx * inv * f; o.x -= dx * inv * f; if (!u.ground && !o.ground) { u.y += dy * inv * f; o.y -= dy * inv * f; } };
+    for (const [k, arr] of buckets) { const nxt = buckets.get(k + 1) || [];
+      for (let i = 0; i < arr.length; i++) { const u = arr[i]; for (let j = i + 1; j < arr.length; j++) sepE(u, arr[j]); for (let j = 0; j < nxt.length; j++) sepE(u, nxt[j]); } } }
   for (const e of G.enemies) {
     if (e.smartDot) { e.killBy = 'beam'; e.hp -= e.smartDot * dt; if (Math.random() < .4) spark(e.x + (Math.random() - .5) * e.s, e.y + (Math.random() - .5) * e.s, 1); }   // disassembler nanites eat the hull
     if (e.reentry) {   // a long, vulnerable plunge: starts very slow high in the exosphere (giving your railguns / lasers / orbital sats time to whittle it) and GRADUALLY accelerates as it bites into thicker air. Can't fire yet.

@@ -767,10 +767,13 @@ const seaLevelY = wx => curveAt(wx) - SEA_E * maxElev();
 const isWater = wx => elevAt(wx) < SEA_E;                                  // below sea level → open water
 const landY = wx => isWater(wx) ? seaLevelY(wx) : groundY(wx);            // the solid TOP surface — sea SURFACE over water, so air/units don't dip into the seabed
 const passable = wx => elevAt(wx) >= SEA_E - .02;                          // ground units can't wade across open water (orbital drops can still land in it)
-// atmosphere bands as fractions of the TALL world (v3.4 — a big vertical skybox you scroll through)
-const SPACE_Y = () => worldH() * .12, MESO_Y = () => worldH() * .40, STRATO_Y = () => worldH() * .58, TROPO_Y = () => worldH() * .74;
-// aircraft operating ceiling climbs with the ages (lower Y = higher altitude): Info→mesosphere, Fusion→upper meso, Space→exosphere
-function airTopY() { return (G && G.unlocked && G.unlocked.spaceage) ? SPACE_Y() + 8 : (G && G.unlocked && G.unlocked.fusion) ? MESO_Y() - 36 : MESO_Y(); }
+// atmosphere bands as fractions of the TALL world (lower Y = higher altitude). The EXOSPHERE — all of
+// space — now fills the top HALF of the world (0 .. .50); the thermosphere is its own band below it.
+// SPACE/THERMO/MESO/STRATO/TROPO_Y are the CRUISE lines inside each band; MESO_TOP is the mesosphere's
+// upper edge = the hard ceiling for aircraft (they're aircraft, not spacecraft — nothing flies past it).
+const SPACE_Y = () => worldH() * .22, THERMO_Y = () => worldH() * .56, MESO_TOP = () => worldH() * .62, MESO_Y = () => worldH() * .67, STRATO_Y = () => worldH() * .76, TROPO_Y = () => worldH() * .82;
+// aircraft operating ceiling climbs with the ages but NEVER leaves the mesosphere: Info→mid-meso, Fusion→upper meso, Space→meso top
+function airTopY() { return (G && G.unlocked && G.unlocked.spaceage) ? MESO_TOP() : (G && G.unlocked && G.unlocked.fusion) ? worldH() * .645 : MESO_Y(); }
 function curEra() { return (G && G.unlocked && G.unlocked.spaceage) ? 2 : (G && G.unlocked && G.unlocked.fusion) ? 1 : 0; }   // 0 info · 1 fusion · 2 space — drives sleeker aircraft & cyberpunk buildings
 function plasmaArmed() { return !!(G && G.unlocked && G.unlocked.plasma); }   // plasma-capable turrets switch to plasma rounds once PLASMA WEAPONS is researched (not just the Fusion Age)
 const sx = wx => wx - cam.x;          // world -> UNSCALED screen X (the zoom transform scales this around the viewport centre)
@@ -793,12 +796,13 @@ function drawWorld(alpha) {
   // === SKY — banded, glowing atmosphere spanning the whole TALL world: deep space at the top → horizon glow near the ground ===
   const g = c.createLinearGradient(0, 0, 0, VH);
   const top = soc.sky || ['#01030c', '#060f2c', '#0e2f63', '#1f5aa0', '#3f8acb', '#79bce4'];
-  g.addColorStop(0, top[0]); g.addColorStop(.16, top[0]); g.addColorStop(.32, top[1]); g.addColorStop(.50, top[2]); g.addColorStop(.66, top[3]); g.addColorStop(.80, top[4]); g.addColorStop(.90, top[5]);
+  // deep-space black fills the top HALF (the vast exosphere), then the atmosphere colours compress below .50
+  g.addColorStop(0, top[0]); g.addColorStop(.40, top[0]); g.addColorStop(.50, top[1]); g.addColorStop(.62, top[2]); g.addColorStop(.72, top[3]); g.addColorStop(.80, top[4]); g.addColorStop(.87, top[5]);
   c.fillStyle = g; c.fillRect(0, 0, W, VH);
   drawNebula(alpha); drawSkyStars(alpha * .9); drawMoon(alpha); drawSun(alpha); drawAurora(alpha); drawMeteors(alpha); c.globalAlpha = alpha;
-  // faint layer guides
+  // faint layer guides — exosphere & thermosphere are now distinct bands (labels at each band's midpoint)
   c.font = '10px Consolas'; c.textAlign = 'right';
-  for (const [yy, lab] of [[VH * .22, 'EXOSPHERE / THERMOSPHERE'], [VH * .44, 'MESOSPHERE'], [VH * .60, 'STRATOSPHERE'], [VH * .76, 'TROPOSPHERE']]) { c.strokeStyle = 'rgba(180,210,255,.07)'; c.setLineDash([5, 9]); c.beginPath(); c.moveTo(0, yy); c.lineTo(W, yy); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(200,220,255,.4)'; c.fillText(lab, W - 16, yy + 12); }
+  for (const [yy, lab] of [[VH * .25, 'EXOSPHERE'], [VH * .56, 'THERMOSPHERE'], [VH * .66, 'MESOSPHERE'], [VH * .76, 'STRATOSPHERE'], [VH * .83, 'TROPOSPHERE']]) { c.strokeStyle = 'rgba(180,210,255,.07)'; c.setLineDash([5, 9]); c.beginPath(); c.moveTo(0, yy); c.lineTo(W, yy); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(200,220,255,.4)'; c.fillText(lab, W - 16, yy + 12); }
   c.textAlign = 'left';
   drawCloudLayer(alpha);
   drawRidges(alpha);        // distant parallax mountain ranges — behind the rim glow & playfield terrain
@@ -1587,10 +1591,10 @@ const UNIT_DEFS = {
   scout:    { name: 'Scout "Lynx"', art: 'scout', domain: 'ground', ic: 60, mp: 6, build: 3, hp: 40, armor: 2, range: 360, dmg: 4, rate: .35, weapon: 'tracer', speed: 22, s: 3.5, grp: 3, ds: 'Fast recon buggy w/ light autocannon.' },
   tank:     { name: 'MBT "Aegis"', art: 'tank', domain: 'ground', ic: 120, mp: 14, build: 6, hp: 110, armor: 8, range: 300, dmg: 18, rate: 2.2, weapon: 'shell', speed: 11, s: 4, grp: 3, ds: 'Main battle tank battery. Arcing cannon.' },
   heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 32, rate: 2.8, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tanks. Enormous armor. Each one is forged from HEAVY ALLOY (built by Factories / the Heavy Foundry). (req Heavy Alloys)' },
-  aa:       { name: 'AA "Hailstorm"', art: 'aa', domain: 'ground', ic: 100, mp: 10, build: 5, hp: 65, armor: 3, range: 440, dmg: 7, rate: .28, weapon: 'rotary', speed: 0, s: 4, grp: 2, ceil: .54, pd: true, ds: 'Rapid flak — a rotary autocannon hosing a STREAM of tracer. Shreds low/mid-altitude aircraft (up to the mesosphere). Can swat falling lances.' },
+  aa:       { name: 'AA "Hailstorm"', art: 'aa', domain: 'ground', ic: 100, mp: 10, build: 5, hp: 65, armor: 3, range: 440, dmg: 7, rate: .28, weapon: 'rotary', speed: 0, s: 4, grp: 2, ceil: .64, pd: true, ds: 'Rapid flak — a rotary autocannon hosing a STREAM of tracer. Shreds low/mid-altitude aircraft (up to the mesosphere). Can swat falling lances.' },
   arty:     { name: 'SPG "Thunder"', art: 'artillery', domain: 'ground', ic: 170, mp: 12, build: 9, hp: 55, armor: 2, range: 780, dmg: 44, rate: 4.2, weapon: 'shell', speed: 4, s: 4, grp: 2, ds: 'Long-range barrage. Slow.' },
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 30, rate: 3, weapon: 'rocket', speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery. (req Rocketry)' },
-  sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .46, pd: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
+  sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .60, pd: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
   railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit. (req Kinetic Weapons)' },
   destroyer:{ name: 'Destroyer "Squall"', art: 'warship', domain: 'naval', ic: 200, mp: 18, build: 10, hp: 180, armor: 8, range: 560, dmg: 11, rate: .45, weapon: 'tracer', speed: 10, s: 6, grp: 1, pd: true, ds: 'Gun destroyer with laser point-defense. Sea-based AA.' },
   cruiser:  { name: 'Missile Cruiser', art: 'warship', domain: 'naval', ic: 290, mp: 20, build: 13, hp: 210, armor: 10, range: 900, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 8, s: 5.5, grp: 1, req: 'navalpwr', ds: 'Naval missile platform. (req Naval Power)' },
@@ -1629,7 +1633,7 @@ const UPGRADES = {
   inf:       { era: 'plasma', name: 'Plasma Infantry', art: 'inf', weapon: 'plasball', dmg: 9, rate: .42, range: 280, hp: 64, ds: 'Riflemen re-armed with plasma carbines. (Plasma Weapons)' },
   tank:      { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank', weapon: 'plasball', dmg: 30, rate: 2.4, range: 560, hp: 150, ds: 'MBT re-armed with fast flat plasma bolts that AIRBURST right next to the target (no pinpoint hit needed), out-ranging guns. (Plasma Weapons)' },
   heavytank: { era: 'plasma', name: 'Plasma Goliath', art: 'tank', weapon: 'plasball', dmg: 52, rate: 2.8, range: 600, hp: 300, ds: 'Breakthrough plasma battery. Walks through fleets. (Plasma Weapons)' },
-  aa:        { era: 'plasma', name: 'Plasma Rotator', art: 'aa', weapon: 'plasball', dmg: 12, rate: .22, range: 500, ceil: .46, hp: 80, ds: 'Flak rotator re-armed — a storm of plasma bolts up into the mesosphere. (Plasma Weapons)' },
+  aa:        { era: 'plasma', name: 'Plasma Rotator', art: 'aa', weapon: 'plasball', dmg: 12, rate: .22, range: 500, ceil: .60, hp: 80, ds: 'Flak rotator re-armed — a storm of plasma bolts up into the mesosphere. (Plasma Weapons)' },
   arty:      { era: 'plasma', name: 'Plasma Pelter "Thunder-P"', art: 'artillery', weapon: 'plasarc', dmg: 66, rate: 4.0, range: 860, hp: 70, ds: 'Long-range plasma artillery — saturates a position in deforming plasma. (Plasma Weapons)' },
   // MICROROCKETS — a broad re-arm (like plasma) for the strike/CAS aircraft that keep missiles: their pods now split into independently-homing submunitions
   strikejet: { era: 'microrockets', name: 'Microrocket Warthog', weapon: 'microrkt', dmg: 16, rate: 2.0, range: 580, ds: 'CAS jet re-armed with MICROROCKET pods — every salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
@@ -1662,13 +1666,13 @@ const BUILD_DEFS = {
   airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { keys: ['fighter', 'strikejet'], n: 3 }, ds: 'Produces AIR units and grants ✈ +6 AIR COMMAND (hangar slots — every crewed aircraft needs one). Keeps a standing MIXED air patrol — multirole fighters & strike jets. More airbases = cheaper aircraft AND a bigger air force.' },
   spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces ORBITAL units, launched to orbit by rocket (or railgun-tossed once Space Age). Builds ROCKET PARTS and provides 5 ORBITAL LIFT capacity — every orbital unit reserves lift, so a bigger space fleet needs more Centers. Keeps a guard satellite.' },
   // DEFENSE
-  bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .72, pd: true, plasmaable: true, manual: true, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned. Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
+  bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, pd: true, plasmaable: true, manual: true, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned. Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'rotary', range: 560, dmg: 5, rate: .1, ceil: .4, noGround: true, pd: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon hosing a STREAM of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Fires ONLY at aircraft & ordnance — it will NOT depress onto ground units or targets hugging the deck. Cheap — screen your cities with them. No research needed.' },
-  samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .46, pd: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances.' },
+  samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .60, pd: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances.' },
   radar:    { name: 'Radar', cat: 'DEF', ic: 100, mp: 40, build: 7, hp: 140, w: 13, h: 18, econ: { stab: 0.3 }, aura: { range: 1.12 }, ds: 'Boosts nearby unit range +12%; slightly raises your stability cap.' },
   silo:     { name: 'Missile Silo', cat: 'DEF', ic: 420, mp: 130, build: 20, hp: 320, armor: 6, w: 18, h: 15, strat: true, ds: 'STRATEGIC: enables the ☢ STRIKE button. Call nuclear/orbital strikes that cost STABILITY (not a long reload). Bury it to keep it safe.' },
-  aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'rotary', range: 700, dmg: 7, rate: .07, ceil: .55, noGround: true, pd: true, req: 'pointdefense', ds: 'Rapid-fire interceptor — hoses a STREAM of flak to swat down incoming MISSILES and tungsten RODS. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (POINT DEFENSE)' },
-  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .15, pd: true, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
+  aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'rotary', range: 700, dmg: 7, rate: .07, ceil: .60, noGround: true, pd: true, req: 'pointdefense', ds: 'Rapid-fire interceptor — hoses a STREAM of flak to swat down incoming MISSILES and tungsten RODS. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (POINT DEFENSE)' },
+  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, pd: true, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
   shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 210, shieldHp: 900, req: 'shieldtech', ds: 'Projects a PROJECTILE SHIELD DOME over everything nearby — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Your real answer to orbital bombardment. (DEFLECTOR SHIELDS)' },
   particlecannon:{ name: 'Particle Cannon', cat: 'DEF', ic: 440, mp: 80, build: 16, hp: 380, armor: 12, w: 22, h: 16, weapon: 'particle', range: 1600, dmg: 130, rate: 4.5, ceil: 0, pd: true, manual: true, heavy: true, req: 'particlebeam', ds: 'Single-shot hypervelocity PARTICLE bolt — near-instant, punches clean through anything at any altitude. Add it to ⊕ FIRE CONTROL to aim it. (PARTICLE BEAMS)' },
   // DISPERSED BALLISTIC PLATFORMS — placeable alternatives to the central silo; plant them wherever you need strike coverage. All enable the ☢ STRIKE button from their own position.
@@ -1683,8 +1687,8 @@ const BUILD_DEFS = {
   // EXOTIC (research-unlocked)
   lasertower:{ name: 'Laser Tower', cat: 'DEF', ic: 150, mp: 30, build: 8, hp: 240, armor: 8, w: 14, h: 18, weapon: 'beam', range: 760, dmg: 18, rate: 1.1, ceil: 0, pd: true, manual: true, req: 'directedenergy', ds: 'Hardened directed-energy turret — fires its beam straight into the sky, hitting ANY altitude incl. orbit. Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it. (DIRECTED ENERGY)' },
   autofactory:{ name: 'Autonomous Plant', cat: 'PROD', ic: 260, mp: 40, build: 14, hp: 320, w: 24, h: 19, econ: { ic: 6 }, autospawn: 'shock', spawnEvery: 16, req: 'nanotech', ds: 'Self-runs: passively makes IC and garrison troops on its own. (NANOTECH)' },
-  plasmaturret:{ name: 'Plasma Turret', cat: 'DEF', ic: 220, mp: 50, build: 9, hp: 260, armor: 10, w: 16, h: 16, weapon: 'plasball', range: 640, dmg: 34, rate: .6, ceil: .15, pd: true, req: 'plasma', ds: 'Hardened plasma battery — fast self-steering plasma bolts that out-range & out-hit guns and reach high into the sky. (PLASMA WEAPONS)' },
-  naniteturret:{ name: 'Nanite Turret', cat: 'DEF', ic: 170, mp: 45, build: 8, hp: 220, armor: 6, w: 14, h: 16, weapon: 'smart', range: 660, dmg: 8, rate: 1.1, ceil: .2, pd: true, req: 'nanotech', ds: 'Fires NANOBOT ROUNDS — smart munitions that latch onto a target and rapidly DISASSEMBLE it (chews through heavy armour & shields where lasers/plasma struggle). A strong, cheap defensive line straight off the Nanotech path — no Nanite Foundry required. (NANOTECHNOLOGY)' },
+  plasmaturret:{ name: 'Plasma Turret', cat: 'DEF', ic: 220, mp: 50, build: 9, hp: 260, armor: 10, w: 16, h: 16, weapon: 'plasball', range: 640, dmg: 34, rate: .6, ceil: .56, pd: true, req: 'plasma', ds: 'Hardened plasma battery — fast self-steering plasma bolts that out-range & out-hit guns and reach high into the sky. (PLASMA WEAPONS)' },
+  naniteturret:{ name: 'Nanite Turret', cat: 'DEF', ic: 170, mp: 45, build: 8, hp: 220, armor: 6, w: 14, h: 16, weapon: 'smart', range: 660, dmg: 8, rate: 1.1, ceil: .58, pd: true, req: 'nanotech', ds: 'Fires NANOBOT ROUNDS — smart munitions that latch onto a target and rapidly DISASSEMBLE it (chews through heavy armour & shields where lasers/plasma struggle). A strong, cheap defensive line straight off the Nanotech path — no Nanite Foundry required. (NANOTECHNOLOGY)' },
   // ===== SPECIAL-RESOURCE / REQUIREMENT BUILDINGS (cat SPEC) — most of your power now comes from BUILDING these, not from raw research =====
   psionicrelay:{ name: 'Psionic Relay', cat: 'SPEC', ic: 180, mp: 60, build: 9, hp: 160, w: 14, h: 22, req: 'psistudies', econ: { stab: -0.3, inf: -2 }, aura: { rof: 1.18, range: 1.08, r: 280 }, ds: 'Projects local fire-rate & range like a radar, but bleeds stability and a trickle of influence. The mind-static is what lets your psions reach Applied Psionics.' },
   cloningfac:{ name: 'Cloning Facility', cat: 'SPEC', ic: 220, mp: 80, build: 11, hp: 200, w: 18, h: 16, req: 'cloning', econ: { mp: 2 }, garrison: { keys: ['clone'], n: 2 }, gmod: { costClone: .5, mpAll: .1, cloneFast: 1, capb: 8 }, ds: 'Clone units cost −50% IC and grow TWICE as fast; all units use −10% manpower; +8 army cap and a steady manpower trickle. Decants a standing guard of clones.' },
@@ -1705,7 +1709,7 @@ const BUILD_DEFS = {
   mantleforge:{ name: 'Mantle Forge', cat: 'SPEC', ic: 320, mp: 110, build: 16, hp: 300, w: 20, h: 14, req: 'automation', autoBury: 2, econ: { ic: 10, stab: -0.5 }, gmod: { costMech: .3 }, ds: 'A deep lava forge (auto-buries itself to the deep layer): mechanical units −30% IC and a strong IC income — but the upheaval gnaws at stability. (Automation)' },
   airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
   tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. (Telekinesis)' },
-  nanitefoundry:{ name: 'Nanite Foundry', cat: 'SPEC', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .2, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
+  nanitefoundry:{ name: 'Nanite Foundry', cat: 'SPEC', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .58, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
 };
 /* RESEARCH — a node graph. Conventional arms (rifles→railguns→nukes→orbital) are ALREADY
    unlocked at game start; research is purely the exotic, escalating doctrines. The 3 AGES are
@@ -2018,9 +2022,9 @@ function cityStabPenalty() { let p = (G.lostStructures || 0) * 2.5; if (G.cities
 function effStab() { return Math.max(0, G.stab - (G.stabOffset || 0) - cityStabPenalty()); }   // EFFECTIVE stability = base minus PERMANENT research "unrest" minus city losses; feeds influence & gates strikes/research
 // AUTO-EMPLACEMENTS — small free fortifications a dug-in ground unit raises around itself (a mini-fort with mixed weapons). Stored as lightweight buildings so they fire, get targeted & render via the normal pipelines.
 const EMPLACE = {
-  mgnest:  { name: 'MG Nest', cat: 'DEF', hp: 70, w: 13, h: 7, armor: 5, weapon: 'tracer', range: 400, dmg: 7, rate: .26, ceil: .58, pd: true },
-  flaknest:{ name: 'Flak Nest', cat: 'DEF', hp: 70, w: 13, h: 9, armor: 3, weapon: 'tracer', range: 480, dmg: 6, rate: .2, ceil: .42, pd: true },
-  artnest: { name: 'Field Gun', cat: 'DEF', hp: 85, w: 14, h: 8, armor: 5, weapon: 'shell', range: 740, dmg: 30, rate: 3.4, ceil: .82 },
+  mgnest:  { name: 'MG Nest', cat: 'DEF', hp: 70, w: 13, h: 7, armor: 5, weapon: 'tracer', range: 400, dmg: 7, rate: .26, ceil: .72, pd: true },
+  flaknest:{ name: 'Flak Nest', cat: 'DEF', hp: 70, w: 13, h: 9, armor: 3, weapon: 'tracer', range: 480, dmg: 6, rate: .2, ceil: .64, pd: true },
+  artnest: { name: 'Field Gun', cat: 'DEF', hp: 85, w: 14, h: 8, armor: 5, weapon: 'shell', range: 740, dmg: 30, rate: 3.4, ceil: .84 },
 };
 function deployEmplacement(type, x, owner) {
   const d = EMPLACE[type], gy = groundY(x);
@@ -2744,7 +2748,7 @@ function updUnits(dt) {
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
-    const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .78) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .13) : 0;   // ground guns reach only the low layers; AIRCRAFT reach up to (but NOT into) the space band — orbital ships need railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
+    const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .62) : 0;   // ground guns reach only the low layers; AIRCRAFT reach up to (but NOT past) the mesosphere — the thermosphere & exosphere need railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
     let tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);
     if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng);   // point-defense: swat falling orbital lances (spreads across multiple rods)
@@ -2849,7 +2853,7 @@ function updUnits(dt) {
 }
 function radarBoost(x) { return auraAt(x, 'range'); }
 // BUILDING & CITY SELF-DEFENSE — the armed populace. Tier 0 = rifles (default, EVERY building — always). Tiers 1 (Rotary Cannon Works — CIWS-class flak stream + missile interception) & 2 (Plasma Bastion — heavy plasma) upgrade CITIES ONLY; ordinary placed buildings stay on rifles.
-const BDEF = [{ w: 'tracer', rng: 210, dmg: 4, rate: .5, ceil: .8, pd: false }, { w: 'rotary', rng: 540, dmg: 6, rate: .12, ceil: .5, pd: true }, { w: 'plasball', rng: 640, dmg: 30, rate: .7, ceil: .3, pd: true }];
+const BDEF = [{ w: 'tracer', rng: 210, dmg: 4, rate: .5, ceil: .82, pd: false }, { w: 'rotary', rng: 540, dmg: 6, rate: .12, ceil: .68, pd: true }, { w: 'plasball', rng: 640, dmg: 30, rate: .7, ceil: .58, pd: true }];
 function populaceDefend(b, dt) {
   const cfg = BDEF[0], my = b.y - b.d.h * .5;   // ordinary buildings keep their default rifle militia — the Rotary/Plasma upgrade works now arm CITIES ONLY (see cityDefend), not every structure on the map
   b.dcd = (b.dcd == null ? Math.random() : b.dcd) - dt; if (b.dcd > 0) return;
@@ -2861,7 +2865,7 @@ function populaceDefend(b, dt) {
 function cityDefend(ct, dt) {
   if (ct.hp <= 0 || ct.held) return; const cfg = BDEF[G.bDefTier || 0], cx = ct.x, cy = groundY(cx) - 22, guns = 1 + Math.round((ct.w || 150) / 150);
   ct.dcd = (ct.dcd == null ? Math.random() : ct.dcd) - dt; if (ct.dcd > 0) return;
-  let t = acquireEnemy(cx, cy, (cfg.rng + 120) * radarBoost(cx), Math.min(.82, cfg.ceil + .12)); if (!t && cfg.pd) t = acquireIncoming(cx, cy, cfg.rng + 120);
+  let t = acquireEnemy(cx, cy, (cfg.rng + 120) * radarBoost(cx), Math.min(.84, cfg.ceil + .12)); if (!t && cfg.pd) t = acquireIncoming(cx, cy, cfg.rng + 120);
   if (!t) { ct.dcd = .3; return; }
   ct.dcd = jitterCd(cfg.rate / guns); const sdmg = (cfg.dmg + 2) * (1 + G.mult.dmg);   // a fortified city is several emplacements — fires harder & faster than one building
   if (t.interceptable || t.pdable) flakHit(t, sdmg); else { const sxx = cx + (Math.random() - .5) * (ct.w || 100), lt = leadTime(cfg.w, sxx, cy, t); fire(sxx, cy, cfg.w, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); } claimDmg(t, sdmg);
@@ -2878,7 +2882,7 @@ function updBuildings(dt) {
     if (G.manualGuns && G.manualGuns.indexOf(b) >= 0) {   // FIRE CONTROL — autonomy suspended; this gun engages ONLY the enemies the player has designated (and only those within its range & ceiling)
       b.cd -= dt;
       const plasmaM = b.d.plasmaable && plasmaArmed(), wpnM = plasmaM ? 'plasball' : b.d.weapon;
-      const baseCfM = b.d.ceil != null ? b.d.ceil : .78, cfM = plasmaM ? Math.min(.30, baseCfM) : baseCfM, ceilM = cfM ? cfM * worldH() : -1e9;
+      const baseCfM = b.d.ceil != null ? b.d.ceil : .80, cfM = plasmaM ? Math.min(.56, baseCfM) : baseCfM, ceilM = cfM ? cfM * worldH() : -1e9;
       const brngM = b.d.range * radarBoost(b.x) * (plasmaM ? 1.5 : 1), r2M = brngM * brngM, myM = b.y - b.d.h * .5;
       let tM = null, bdM = r2M; for (const e of G.designated) { if (e.y < ceilM) continue; const dd = (e.x - b.x) ** 2 + (e.y - myM) ** 2; if (dd < bdM) { bdM = dd; tM = e; } }
       if (!tM) { tM = acquireEnemy(b.x, myM, brngM, cfM, b.d.noGround ? notNearGround : null); if (!tM && b.d.pd) tM = acquireIncoming(b.x, myM, brngM); }   // FALLBACK: with none of your marks in reach, the gun still defends on its own — fire control PRIORITIZES targets, it never leaves a gun sitting idle
@@ -2899,7 +2903,7 @@ function updBuildings(dt) {
       continue;
     }
     const plasma = b.d.plasmaable && plasmaArmed();   // bunkers (etc.) re-arm with plasma — longer reach, more punch, fires higher
-    const baseCf = b.d.ceil != null ? b.d.ceil : .78, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.30, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
+    const baseCf = b.d.ceil != null ? b.d.ceil : .80, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.56, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
     const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1); let t = acquireEnemy(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null); if (!t && b.d.pd) t = acquireIncoming(b.x, b.y - b.d.h * .5, brng); if (t && b.cd <= 0) { /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
   }

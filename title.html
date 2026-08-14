@@ -766,9 +766,10 @@ function seedTerrain() {
 }
 function noiseAt(seed, wx) { const nx = wx / WORLD_W; let e = 0; for (const o of seed) { const t = nx / o.cpf, i = Math.floor(t), f = t - i, s = f * f * (3 - 2 * f); const a = o.arr[i] || 0, b = o.arr[i + 1] || 0; e += (a + (b - a) * s) * o.amp; } return e; }
 function craterAt(wx) { let d = 0; for (const cr of craters) { const dx = Math.abs(wx - cr.x); if (dx < cr.r) d += cr.depth * (1 - dx / cr.r); } for (const f of fills) { const dx = Math.abs(wx - f.x); if (dx < f.r) d -= f.amt * (1 - dx / f.r); } return d; }   // fills raise terrain (artificial land)
-function elevAt(wx) { if (!TSEED) seedTerrain(); let e = noiseAt(TSEED, wx) - craterAt(wx);
+function elevAt(wx) { if (!TSEED) seedTerrain(); const base = noiseAt(TSEED, wx), cr = craterAt(wx); let e = base - cr;
+  if (cr > 0 && base >= SEA_E) e = Math.max(e, SEA_E + 0.03);   // craters SCAR the ground — they never sink dry land into open water, no matter how many stack up (a blasted flat, not a new sea)
   if (levels.length) for (const L of levels) { const dx = Math.abs(wx - L.x); if (dx < L.r) { const t = 1 - dx / L.r, w = t * t * (3 - 2 * t); e = e * (1 - w) + L.e * w; } }   // smooth feathered terrain edits (raise/level/sink) — no jagged carves
-  if (e < SEA_E) e = SEA_E - (SEA_E - e) * 2.6; return Math.max(-0.45, e); }   // deepen seas
+  if (e < SEA_E) e = SEA_E - (SEA_E - e) * 2.6; return Math.max(-0.45, e); }   // deepen seas (natural/edited water only — craters are excluded above)
 // ===== VERTICAL WORLD — the sky is taller than the viewport, so units climb through real altitude and the camera pans up/down =====
 const SKY_MULT = 1.9;                        // world height = 1.9× the viewport — a big skybox to scroll through
 const worldH = () => H * SKY_MULT;
@@ -2400,7 +2401,7 @@ function updateGame(dt) {
       for (const e of G.enemies) if (Math.abs(e.x - bm.x) < bm.r) { e.killBy = 'beam'; e.hp -= 240 * dt; }
     }
     for (let n = 0; n < 3; n++) { const fx = bm.x + (Math.random() - .5) * bm.r * 1.7, fy = Math.random() * groundY(bm.x); G.parts.push({ k: 'plasma', x: fx, y: fy, vx: (Math.random() - .5) * 16, vy: (Math.random() - .5) * 36, r: 2 + Math.random() * 4, life: .3 + Math.random() * .4, hostile: bm.hostile }); }
-    if (bm.life <= 0) { craters.push({ x: bm.x, r: 84, depth: .2 }); if (craters.length > 70) craters.shift(); groundBurst(bm.x, 20); G.beams.splice(i, 1); }
+    if (bm.life <= 0) { craters.push({ x: bm.x, r: 84, depth: .067 }); if (craters.length > 70) craters.shift(); groundBurst(bm.x, 20); G.beams.splice(i, 1); }
   }
   // beachhead shield domes — protect a landing until your fire batters them down, then they collapse (and time out on their own)
   if (G.domes.length) for (let i = G.domes.length - 1; i >= 0; i--) { const dm = G.domes[i]; dm.life -= dt;
@@ -2520,7 +2521,7 @@ function autoCamY() {
 }
 let shakeAmt = 0; function shake(a) { if (!shakeOn) return; shakeAmt = Math.min(16, Math.max(shakeAmt, a)); }
 function nearCity(x) { let b = null, bd = 1e9; for (const ct of G.cities) if (ct.hp > 0) { const d = Math.abs(ct.x - x); if (d < bd) { bd = d; b = ct; } } return b; }
-function boomW(x, y, p) { boom(x, y, p); if (p >= 12) { craters.push({ x, r: 24 + p, depth: .04 + p * .003 }); if (craters.length > 70) craters.shift(); } }
+function boomW(x, y, p) { boom(x, y, p); if (p >= 12) { craters.push({ x, r: 24 + p, depth: .013 + p * .001 }); if (craters.length > 70) craters.shift(); } }
 
 /* ===== PHYSICS-BASED DESTRUCTION ===== units break apart by damage type & domain ===== */
 function pickStyle(k, dom, s, frac) {
@@ -2579,7 +2580,7 @@ function destroyUnit(u) {
   else { frags(u.x, u.y, d.art, d.s, u.facing || 1, d.domain, style, dir, power); shrapnel(u.x, u.y, Math.max(2, Math.round(d.s * (style === 'blast' ? 1.1 : .7))), Math.max(2, d.s * .7)); if (style === 'split' || style === 'spall') SFX.split(); else SFX.rip(); }   // every wreck throws shrapnel now
   if (d.domain === 'ground') groundBurst(u.x, Math.min(20, d.s * 2.4));
   shake(Math.min(7, d.s * .9));   // every kill kicks the screen
-  if (big) { shake(11); groundBurst(u.x, 20); shrapnel(u.x, u.y, Math.round(d.s * 1.4), Math.max(4, d.s)); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 4, life: .18 }); craters.push({ x: u.x, r: 24 + d.s * 3, depth: .05 + d.s * .006 }); if (craters.length > 70) craters.shift(); SFX.boom(); }
+  if (big) { shake(11); groundBurst(u.x, 20); shrapnel(u.x, u.y, Math.round(d.s * 1.4), Math.max(4, d.s)); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 4, life: .18 }); craters.push({ x: u.x, r: 24 + d.s * 3, depth: .017 + d.s * .002 }); if (craters.length > 70) craters.shift(); SFX.boom(); }
 }
 function destroyEnemy(e) {
   G.kills = (G.kills || 0) + 1;
@@ -2693,7 +2694,7 @@ function armStrike(type) {
 function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & HURLS the earth, flattens anything anchored where it lands
   G.parts.push({ k: 'flash', x, y: y - 32, r: 104, life: .35 });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 64, y, 15);
-  craters.push({ x, r: 72 + Math.random() * 44, depth: .32 }); if (craters.length > 70) craters.shift();
+  craters.push({ x, r: 72 + Math.random() * 44, depth: .11 }); if (craters.length > 70) craters.shift();
   groundBurst(x, 34); molten(x, groundY(x), 10); shrapnel(x, y, 22, 13);   // a huge gout of earth + molten debris thrown skyward
   for (const b of G.buildings) if (!b.ug && Math.abs(b.x - x) < 58) b.hp -= 460;   // anything anchored at ground-zero is gutted (bury your base to survive a barrage)
   areaDamage(x, y, 140, 520, 'rod'); shake(9);
@@ -2714,7 +2715,7 @@ function detonateBuster(x, y) {   // heat-shielded penetrator impact — a plane
   G.parts.push({ k: 'flash', x, y: gy - 40, r: 120, life: .4 });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 52, gy, 16);
   boomW(x, gy - 14, 30); groundBurst(x, 44); shake(17); SFX.boom(); if (SFX.rumble) SFX.rumble();
-  craters.push({ x, r: 62 + Math.random() * 42, depth: .3 }); if (craters.length > 70) craters.shift();
+  craters.push({ x, r: 62 + Math.random() * 42, depth: .1 }); if (craters.length > 70) craters.shift();
   for (let i = 0; i < 34; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.0, sp = 100 + Math.random() * 300; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * 46, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.6 + Math.random() * 3.4, rot: Math.random() * 6, vr: (Math.random() - .5) * 11, grav: 150, gy, dom: 'ground', settled: false, life: .9 + Math.random() * 1.3 }); }   // the signature DIRT KICK — a wall of earth over the fireball
   smoke(x, gy, 8); blacksmoke(x, gy, 6);
   for (const b of G.buildings) { if (b.captured) continue; const dd = Math.abs(b.x - x); if (b.ug) { if (dd < 62) b.hp -= (b.ugLvl >= 2 ? 520 : 1400); } else if (dd < b.d.w * .6 + 26) b.hp -= 1600; }   // PENETRATOR: one/two-shots the target, and bunker-busts SHALLOW buried structures too
@@ -2776,14 +2777,14 @@ function detonateNuke(x, y) {
   } else {
     groundBurst(x, 30); shrapnel(x, y, 26, 18);
     for (let i = 0; i < 42; i++) { const a = (Math.random() - .5) * 1.4; G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 70, y: y - Math.random() * 130, vx: Math.cos(a - 1.57) * 18, vy: -28 - Math.random() * 44, r: 6 + Math.random() * 9, life: 1.6 + Math.random() * 1.8 }); }   // mushroom column
-    craters.push({ x, r: 130, depth: .24 }); if (craters.length > 70) craters.shift();
+    craters.push({ x, r: 130, depth: .08 }); if (craters.length > 70) craters.shift();
   }
   areaDamage(x, y, R, 720); shake(16); SFX.boom(); G.nukeFlash = .65;
 }
 function detonateKinetic(x, y) {
   for (let i = 0; i < 2; i++) boom(x, y, 13);
   G.parts.push({ k: 'flash', x, y: y - 40, r: 70, life: .3 });
-  craters.push({ x, r: 52, depth: .32 }); if (craters.length > 70) craters.shift();
+  craters.push({ x, r: 52, depth: .11 }); if (craters.length > 70) craters.shift();
   groundBurst(x, 18); shrapnel(x, y, 16, 14);
   areaDamage(x, y, 118, 620, 'rod');   // pure kinetic — splits whatever it touches, clean through
   shake(13); SFX.split(); SFX.boom();
@@ -2796,7 +2797,7 @@ function detonateHE(x, y) {   // conventional ballistic warhead — strong, smal
   const R = 150;
   G.parts.push({ k: 'flash', x, y: y - 12, r: R * .7, life: .28 });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 80, y - Math.random() * 30, 14);
-  groundBurst(x, 18); shrapnel(x, y, 18, 14); craters.push({ x, r: 70, depth: .14 }); if (craters.length > 70) craters.shift();
+  groundBurst(x, 18); shrapnel(x, y, 18, 14); craters.push({ x, r: 70, depth: .047 }); if (craters.length > 70) craters.shift();
   areaDamage(x, y, R, 360); shake(11); SFX.boom();
 }
 function detonateAntimatter(x, y) {   // antimatter warhead — bigger than a nuke, with a plasma-violet flash
@@ -2804,7 +2805,7 @@ function detonateAntimatter(x, y) {   // antimatter warhead — bigger than a nu
   G.parts.push({ k: 'flash', x, y: y - 24, r: R, life: .5 });
   for (let i = 0; i < 5; i++) boom(x + (Math.random() - .5) * 150, y - Math.random() * 60, 20);
   for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 160; G.parts.push({ k: 'plasma', x, y: y - 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20, r: 3 + Math.random() * 5, life: .4 + Math.random() * .6 }); }
-  groundBurst(x, 38); shrapnel(x, y, 30, 22); craters.push({ x, r: 160, depth: .3 }); if (craters.length > 70) craters.shift();
+  groundBurst(x, 38); shrapnel(x, y, 30, 22); craters.push({ x, r: 160, depth: .1 }); if (craters.length > 70) craters.shift();
   areaDamage(x, y, R, 1100); shake(18); SFX.boom(); SFX.split(); G.nukeFlash = .8;
 }
 function detonateStrat(sub, x, y) { if (sub === 'fbomb') igniteFirestorm(x); else if (sub === 'he') detonateHE(x, y); else if (sub === 'am') detonateAntimatter(x, y); else detonateNuke(x, y); }
@@ -2909,6 +2910,13 @@ function updUnits(dt) {
       if (u.empl && (u.empl.hp <= 0 || G.buildings.indexOf(u.empl) < 0)) u.empl = null;
       if (!u.empl && (u.entr || 0) >= .9 && G.buildings.length < 170) { const ex2 = Math.max(30, Math.min(WORLD_W - 30, u.x + (Math.random() < .5 ? -1 : 1) * (d.s * 2 + 6)));
         if (elevAt(ex2) >= SEA_E - .04) { const er = Math.random(), et = er < .5 ? 'mgnest' : er < .8 ? 'flaknest' : 'artnest'; u.empl = deployEmplacement(et, ex2, u); floatText(u.x, u.y - d.s * 2, '⛏ FORTIFIED', '#9cff9c'); } }   // BUGFIX: never emplace onto ground that would instantly flood — a drowned emplacement is removed, clears u.empl, and gets redeployed next frame, spamming FORTIFIED/FLOODED + a hiss every frame (a continuous roar). Guarding the deploy site breaks the loop.
+      // DROWNING — a non-amphibious ground unit that ends up over open water (terrain cratered/sunk out from under it) no longer rides the sea surface unharmed: a short grace period, then it takes on water fast and goes under
+      if (!d.amph && !d.amphibious) {
+        if (isWater(u.x)) {
+          u.drownT = (u.drownT || 0) + dt;
+          if (u.drownT > .4) { u.hp -= u.maxHp * .6 * dt; if (Math.random() < .5) smoke(u.x, seaLevelY(u.x), 1); }
+        } else u.drownT = 0;
+      }
     }
     u.cd -= dt;
     if (!tgt) u.lastTgt = null;

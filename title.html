@@ -1388,14 +1388,21 @@ const ART = {
     x.fillStyle = '#ff5a3a'; x.globalAlpha = pulseA(.015); x.beginPath(); x.arc(s * .4, s * .12, s * .07, 0, 6.28); x.fill(); x.globalAlpha = 1;   // camera eye
   },
   // ---- ENEMY (hostile, red-cored) ----
-  drone(x, s) {
-    x.fillStyle = '#1b1b1b'; x.beginPath(); x.ellipse(0, 0, s * .7, s * .42, 0, 0, 6.28); x.fill();   // disc body
-    x.fillStyle = '#30343a'; x.beginPath(); x.ellipse(-s * .12, -s * .14, s * .44, s * .18, -.2, 0, 6.28); x.fill();   // top facet catching skylight
-    x.fillStyle = '#1b1b1b'; x.beginPath(); x.moveTo(-s * .25, -s * .08); x.lineTo(-s * 1.7, -s * .5); x.lineTo(-s * 1.3, s * .05); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(s * .25, -s * .08); x.lineTo(s * 1.7, -s * .5); x.lineTo(s * 1.3, s * .05); x.closePath(); x.fill();   // swept arms
-    x.fillStyle = '#0d0d0d'; x.fillRect(-s * .14, s * .3, s * .28, s * .5);   // underslung weapon
-    x.fillStyle = GLOW; x.globalAlpha = pulseA(.014, s); x.shadowColor = GLOW; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .04, s * .2, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing hunter eye
-    x.fillStyle = '#ff8a6a'; x.fillRect(-s * 1.62, -s * .48, s * .12, s * .12); x.fillRect(s * 1.5, -s * .48, s * .12, s * .12);   // wingtip lights
+  drone(x, s) {   // top-down combat DRONE — a small delta-wing UAV (nose up), not a UFO disc
+    x.fillStyle = '#171717'; x.beginPath(); x.moveTo(0, -s * .2); x.lineTo(s * 1.35, s * .5); x.lineTo(s * .2, s * .42); x.lineTo(0, s * .55); x.lineTo(-s * .2, s * .42); x.lineTo(-s * 1.35, s * .5); x.closePath(); x.fill();   // swept delta wing
+    x.fillStyle = '#20242a'; x.beginPath(); x.moveTo(0, -s * 1.15); x.lineTo(s * .24, -s * .1); x.lineTo(s * .18, s * .72); x.lineTo(-s * .18, s * .72); x.lineTo(-s * .24, -s * .1); x.closePath(); x.fill();   // fuselage
+    x.fillStyle = '#343a42'; x.beginPath(); x.moveTo(0, -s * 1.05); x.lineTo(s * .1, -s * .1); x.lineTo(-s * .1, -s * .1); x.closePath(); x.fill();   // lit dorsal spine
+    x.fillStyle = '#131313'; x.beginPath(); x.moveTo(0, s * .34); x.lineTo(s * .55, s * .72); x.lineTo(0, s * .6); x.closePath(); x.fill(); x.beginPath(); x.moveTo(0, s * .34); x.lineTo(-s * .55, s * .72); x.lineTo(0, s * .6); x.closePath(); x.fill();   // tail stabilizers
+    x.fillStyle = '#ff7a30'; x.globalAlpha = .8; x.fillRect(-s * .12, s * .66, s * .24, s * .12); x.globalAlpha = 1;   // engine exhaust
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.014, s); x.shadowColor = GLOW; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .05, s * .16, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing sensor eye
+    x.fillStyle = '#ff8a6a'; x.fillRect(s * 1.24, s * .42, s * .12, s * .12); x.fillRect(-s * 1.36, s * .42, s * .12, s * .12);   // wingtip lights
+  },
+  einterceptor(x, s) {   // sleeker air-superiority interceptor — a needle-fuselage canard fighter (nose up), distinct from the bulk drone
+    x.fillStyle = '#151515'; x.beginPath(); x.moveTo(0, s * .1); x.lineTo(s * 1.55, s * .62); x.lineTo(s * .12, s * .34); x.lineTo(0, s * .46); x.lineTo(-s * .12, s * .34); x.lineTo(-s * 1.55, s * .62); x.closePath(); x.fill();   // sharply swept wing
+    x.fillStyle = '#1f242b'; x.beginPath(); x.moveTo(0, -s * 1.4); x.lineTo(s * .2, -s * .2); x.lineTo(s * .14, s * .82); x.lineTo(-s * .14, s * .82); x.lineTo(-s * .2, -s * .2); x.closePath(); x.fill();   // long needle fuselage
+    x.fillStyle = '#121212'; x.beginPath(); x.moveTo(0, -s * .5); x.lineTo(s * .62, -s * .12); x.lineTo(0, -s * .26); x.closePath(); x.fill(); x.beginPath(); x.moveTo(0, -s * .5); x.lineTo(-s * .62, -s * .12); x.lineTo(0, -s * .26); x.closePath(); x.fill();   // forward canards
+    x.fillStyle = '#ff8a3a'; x.globalAlpha = .85; x.fillRect(-s * .17, s * .76, s * .1, s * .16); x.fillRect(s * .07, s * .76, s * .1, s * .16); x.globalAlpha = 1;   // twin afterburners
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.018, s); x.shadowColor = GLOW; x.shadowBlur = s * .7; x.beginPath(); x.arc(0, -s * .55, s * .12, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // cockpit eye
   },
   bomber(x, s) {
     x.fillStyle = '#151515'; x.beginPath(); x.moveTo(0, -s * 1.0); x.lineTo(s * 1.85, s * .1); x.lineTo(s * .95, s * .7); x.lineTo(-s * .95, s * .7); x.lineTo(-s * 1.85, s * .1); x.closePath(); x.fill();   // dropship wing
@@ -2278,7 +2285,7 @@ function spawnEnemy(kind, atX) {
   const e = { x: wxw, y: -50, vx: (Math.random() - .5) * 8, vy: 6 + Math.random() * 8, aim: 1.57, cd: .5 + Math.random() * 1.1, kind, reentry: true };   // re-entry now BEGINS very slow (a long vulnerable high-altitude descent) and gradually accelerates — see updEnemies
   if (kind === 'drone') Object.assign(e, { hp: 16 * t, s: 3, armor: 1, spd: 26, hold: TROPO_Y() + Math.random() * 40, weapon: 'tracer', dmg: 7, rate: .8, dives: true, art: 'drone' });
   else if (kind === 'bombpod') Object.assign(e, { hp: 10 + 4 * t, s: 4, armor: 0, spd: 70, vy: 200, hold: groundY(wxw) - 4, weapon: 'none', dmg: 0, dives: true, pod: true, art: 'bombpod' });   // bombardment munition — keeps its fast plunge (not the slow unit re-entry)
-  else if (kind === 'interceptor') Object.assign(e, { hp: 22 * t, s: 3.2, armor: 1, spd: 24, hold: MESO_Y() + 30 + Math.random() * 70, weapon: 'rocket', dmg: 11, rate: 1.5, dives: false, air: true, art: 'drone' });   // hunts your aircraft — air duels
+  else if (kind === 'interceptor') Object.assign(e, { hp: 22 * t, s: 3.2, armor: 1, spd: 24, hold: MESO_Y() + 30 + Math.random() * 70, weapon: 'rocket', dmg: 11, rate: 1.5, dives: false, air: true, art: 'einterceptor' });   // hunts your aircraft — air duels
   else if (kind === 'bomber') Object.assign(e, { hp: 52 * t, s: 4.5, armor: 5, spd: 18, hold: STRATO_Y() - 30, weapon: 'bomb', dmg: 22, rate: 2.4, dives: false, art: 'bomber' });   // sits high in the stratosphere, only aircraft/railguns reach it
   else if (kind === 'gunship') Object.assign(e, { hp: 30 * t, s: 4, armor: 2, spd: 18, hold: TROPO_Y() + 30 + Math.random() * 30, weapon: 'tracer', dmg: 8, rate: .5, dives: false, art: 'egunship' });   // cheap low-altitude close air support
   else if (kind === 'strikewing') Object.assign(e, { hp: 26 * t, s: 3.4, armor: 2, spd: 32, hold: MESO_Y() + 20 + Math.random() * 60, weapon: 'rail', dmg: 16, rate: 2.2, dives: false, air: true, shield: Math.round(34 * t), art: 'estrike' });   // shield soaks guns/lasers; only missiles overload it

@@ -82,6 +82,9 @@
   #zoomctl { position: absolute; right: 8px; bottom: 50px; pointer-events: auto; display: flex; flex-direction: column; gap: 4px; }
   #zoomctl button { width: 26px; height: 26px; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; color: #cfe0ff; font-size: 16px; line-height: 1; cursor: pointer; }
   #zoomctl button:hover { background: var(--ic); color: #05111f; }
+  /* bottom-right pull-out tab — reaches ACHIEVEMENTS mid-game, since the footer link (which normally opens it) is hidden during gameplay. Sits ABOVE #zoomctl, flush to the right edge, so it never overlaps the +/-/reset buttons. */
+  #achTab { position: fixed; right: 0; bottom: 150px; z-index: 5; pointer-events: auto; writing-mode: vertical-rl; background: rgba(14,23,38,.5); border: 1px solid var(--line); border-right: none; border-radius: 6px 0 0 6px; color: #cfe0ff; font-size: 12px; letter-spacing: 1px; padding: 9px 5px; cursor: pointer; opacity: .5; transition: opacity .15s, transform .15s, background .15s; }
+  #achTab:hover { opacity: 1; background: rgba(22,36,58,.88); transform: translateX(-4px); }
   .bbtabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .bbtab { padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; font-size: 9px; letter-spacing: 1px; cursor: pointer; color: #9fb6d4; white-space: nowrap; } .bbtab.sel { background: var(--ic); color: #05111f; }
   .bbgrid { display: flex; flex-wrap: wrap; gap: 5px; max-width: 326px; }
   .bcard { width: 76px; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; padding: 4px; cursor: pointer; transition: .1s; }
@@ -230,6 +233,7 @@
   @media (pointer: coarse) {
     .hbtn { min-height: 40px; padding: 6px 13px; }               /* finger-sized buttons */
     #zoomctl button { width: 42px; height: 42px; font-size: 20px; }
+    #achTab { bottom: 200px; font-size: 14px; padding: 12px 7px; opacity: .65; }   /* zoomctl grows on touch, so the tab needs to sit higher to stay clear of it */
     .bbmin { padding: 4px 10px; font-size: 15px; }
     .toggle { width: 56px; height: 27px; } .toggle .knob { width: 21px; height: 21px; } .toggle.on .knob { left: 32px; }
     .bcard { width: 86px; } .bcard canvas { width: 78px; }
@@ -256,7 +260,7 @@
     .footer { font-size: 10px; }
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
-  body.hud-hidden .topbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying { display: none !important; }
+  body.hud-hidden .topbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying, body.hud-hidden #achTab { display: none !important; }
 </style>
 </head>
 <body>
@@ -443,6 +447,7 @@
   <div class="ghint" id="ghint">PREP PHASE — build Power/Housing, then Factories/Airbases/Shipyards. Scroll with arrows / screen edges; pan the TALL sky with W/S, ↑/↓ or Shift+wheel; ZOOM with the mouse wheel or the +/− buttons. SPACE = pause.</div>
   <div class="buildbar" id="buildbar"><div class="bbhdr"><span>⚙ BUILD</span><span class="bbmin" id="bbmin" onclick="toggleBuildBar()" title="Minimize / expand the build bar">▾</span></div><div class="bbtabs" id="bbtabs"></div><div class="bbgrid" id="bbgrid"></div></div>
   <div id="zoomctl"><button onclick="zoomBtn(1.25)" title="Zoom in">+</button><button onclick="zoomBtn(0.8)" title="Zoom out">−</button><button onclick="zoomReset()" title="Reset zoom" style="font-size:9px">⌂</button></div>
+  <div id="achTab" title="Achievements" onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
   <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="pgrid" id="pgrid"></div></div>
   <div class="info" id="info"></div>
   <button class="back" id="backBtn">❮ ABANDON</button>
@@ -760,6 +765,7 @@ function elevAt(wx) { if (!TSEED) seedTerrain(); let e = noiseAt(TSEED, wx) - cr
 // ===== VERTICAL WORLD — the sky is taller than the viewport, so units climb through real altitude and the camera pans up/down =====
 const SKY_MULT = 1.9;                        // world height = 1.9× the viewport — a big skybox to scroll through
 const worldH = () => H * SKY_MULT;
+const UG_VIEW_PAD = 260;   // uniform buffer BELOW the world's nominal floor (worldH()) rendered as extra dirt & reachable by camera pan — guarantees the deep-dig layer (buried buildings sit ~UG_DEPTH*2 down) stays visible everywhere, not just under tall terrain where the soil band is naturally thicker
 const seaBaseY = () => worldH() - H * .14;   // ground curve baseline sits near the world's bottom (a slice of ground + subterranean below it)
 const maxElev = () => H * .17;
 const curveAt = wx => seaBaseY() + CURVE_AMT * Math.pow((wx - WORLD_W / 2) / (WORLD_W / 2), 2);
@@ -786,7 +792,7 @@ const scrToWY = py => (py - H / 2) / (cam.z || 1) + H / 2 + cam.y;
 const mwx = () => scrToWX(mouse.x), mwy = () => scrToWY(mouse.y);   // world point under the cursor
 // camera clamps are ZOOM-AWARE: the render scales around the viewport centre, so at z>1 only the central W/z × H/z of the
 // unscaled strip is visible — the clamps widen by the cropped margin so the world's edges (and the ground!) stay reachable
-const clampCamY = y => { const m = H / 2 - H / (2 * (cam.z || 1)); return Math.max(-m, Math.min(worldH() - H + m, y)); };
+const clampCamY = y => { const m = H / 2 - H / (2 * (cam.z || 1)); return Math.max(-m, Math.min(worldH() - H + m + UG_VIEW_PAD, y)); };   // +UG_VIEW_PAD lets the camera pan past the nominal floor into the extended dirt band so the deep-dig layer is reachable everywhere
 function biome(e, m) { if (e < .30) return '#c9b787'; if (e > .82) return '#eef4fb'; if (e > .70) return '#928d86'; if (m > .62) return e > .5 ? '#2c5f2c' : '#347a35'; if (m < .36) return e > .5 ? '#b9a06a' : '#caa463'; return e > .5 ? '#4e8a3c' : '#5a9748'; }
 let G = null, soc = { sky: null, tint: null };
 
@@ -811,8 +817,8 @@ function drawWorld(alpha) {
   // === TERRAIN body (visible slice) ===
   c.beginPath(); c.moveTo(0, groundY(x0));
   for (let px = 0; px <= W; px += 3) c.lineTo(px, groundY(wxAt(px)));
-  c.lineTo(W, VH); c.lineTo(0, VH); c.closePath();
-  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
+  c.lineTo(W, VH + UG_VIEW_PAD); c.lineTo(0, VH + UG_VIEW_PAD); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space
+  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + UG_VIEW_PAD); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
   drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body
   for (let px = 0; px < W; px += 3) { const wx = wxAt(px), y = groundY(wx), y2 = groundY(wx + 3); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
   c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = 0; px <= W; px += 4) { const y = groundY(wxAt(px)); px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight
@@ -3952,7 +3958,7 @@ addEventListener('mouseup', () => mmDrag = false);
 cv.addEventListener('wheel', e => { if (mode !== 'game' || !G) return; e.preventDefault(); if (e.shiftKey) { cam.y = clampCamY(cam.y + Math.sign(e.deltaY) * 90 / (cam.z || 1)); cam.manualT = 3.5; } else { zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.14 : 1 / 1.14); } }, { passive: false });   // wheel = ZOOM toward the cursor; Shift+wheel = pan the tall skybox vertically (screen-space step at any zoom)
 // ZOOM — scale the world around the viewport centre; zoomAt keeps the world point under (px,py) fixed so it zooms toward the cursor
 function zoomAt(px, py, factor) {
-  const z0 = cam.z || 1, z1 = Math.max(1, Math.min(3, z0 * factor)); if (z1 === z0) return;
+  const z0 = cam.z || 1, z1 = Math.max(0.83, Math.min(3, z0 * factor)); if (z1 === z0) return;   // min zoom widened from 1 -> 0.83 (~20% more zoom-out) so more of the battlefield — and more of the underground band — fits on screen at once
   const wx = (px - W / 2) / z0 + W / 2 + cam.x, wy = (py - H / 2) / z0 + H / 2 + cam.y;   // world point under the cursor
   cam.z = z1; cam.x = clampCam(wx - W / 2 - (px - W / 2) / z1); cam.y = clampCamY(wy - H / 2 - (py - H / 2) / z1); cam.manualT = 3.5;
 }

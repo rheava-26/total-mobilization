@@ -2374,16 +2374,25 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg) {
   else if (weapon === 'smart') { const v = 280; G.proj.push({ k: 'smart', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, spd: v, life: 5, friendly, dmg, tr: [] }); blip(720, .08, 'square', .12); }   // smart round — homes, latches & disassembles
   else if (weapon === 'rail' || weapon === 'rod') { const v = weapon === 'rod' ? 380 : 520; G.proj.push({ k: 'rail', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, big: weapon === 'rod' }); }
   else if (weapon === 'amslug') { const v = 640; G.proj.push({ k: 'amslug', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, tr: [] }); }   // WHISTLER's microscopic antimatter slug — fast, DEAD STRAIGHT, no homing (fixes the old homing missile that snapped onto the nearest friendly and detonated a few feet out)
-  else if (weapon === 'particle') { const v = 6000; G.proj.push({ k: 'particle', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: .6, friendly, dmg, pierce: 2, tr: [] }); }   // near-lightspeed particle bolt — crosses the field almost instantly, so it doesn't lead-miss fast movers; penetrates a couple of targets
+  else if (weapon === 'particle') { G.proj.push({ k: 'particlebeam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .14, friendly, dmg }); particleHit(sxx, syy, tx, ty, dmg, friendly); }   // TRUE HITSCAN — single-shot hypervelocity bolt resolves its hit the SAME TICK it fires (no flight time to whiff a fast mover); drawn as an instant beam, not a projectile
   else if (weapon === 'microrkt') { const slow = 30; G.proj.push({ k: 'microrkt', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 60, spd: slow, t: 0, splitT: .45, n: 4, life: 6, friendly, dmg, tr: [] }); }   // carrier rocket → splits into homing submunitions
   else if (weapon === 'rotary') { for (let n = 0; n < 4; n++) { const aa = ang + (Math.random() - .5) * .04, v = 560 + Math.random() * 140; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.25, friendly, dmg: dmg * .5, fire: true, stream: true }); } }   // ROTARY CANNON — hoses out a tight STREAM of tiny fast rounds (a continuous jet of flak) rather than a few fat tracers; fast + long-lived enough to cover the gun's full range
   else { for (let n = 0; n < 2; n++) { const aa = ang + (Math.random() - .5) * .045, v = 320 + Math.random() * 50; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.4, friendly, dmg, fire: true }); } }   // aimed gun burst — tight spread so it reads as directed fire, not a shotgun scatter
 }
-// estimate how far ahead to aim so a shot meets a moving target — plasma bolts & missiles especially try to lead
+// estimate how far ahead to aim so a shot meets a moving target — EVERY projectile-firing weapon leads by its own muzzle velocity;
+// only true hitscan/instant weapons (beam, particle, tractor) are absent from PS and return 0 (they need no lead — they resolve on the same tick)
 function leadTime(weapon, sx, sy, tgt) {
-  const PS = { plasma: 1100, plasball: 900, plasarc: 540, shell: 250, rocket: 360, missile: 320, rail: 540, rod: 400, amslug: 640 };
+  const PS = { plasma: 1100, plasball: 900, plasarc: 540, shell: 250, rocket: 360, missile: 320, bomb: 320, rail: 540, rod: 400, amslug: 640, tracer: 345, rotary: 630, smart: 280, microrkt: 260 };
   const spd = PS[weapon]; if (!spd) return 0;   // hitscan beams / fast guns don't lead
-  return Math.min(1.4, Math.hypot(tgt.x - sx, tgt.y - sy) / spd);
+  const CAP = 1.1;   // capped so guns don't over-predict on erratically-jinking targets at long range
+  const vx = tgt.vx || 0, vy = tgt.vy || 0;
+  let t = Math.min(CAP, Math.hypot(tgt.x - sx, tgt.y - sy) / spd);
+  // refine: a shot aimed at where the target WILL be flies FARTHER than the target's current
+  // distance, so a single dist/spd pass under-estimates flight time (esp. once target speed gets
+  // close to muzzle velocity) — a couple of fixed-point iterations on the intercept point converge
+  // to the correct constant-velocity intercept without a full quadratic solve
+  for (let i = 0; i < 3; i++) t = Math.min(CAP, Math.hypot(tgt.x + vx * t - sx, tgt.y + vy * t - sy) / spd);
+  return t;
 }
 function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to a line segment (beam hit-test)
   const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;
@@ -2391,6 +2400,7 @@ function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to 
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 function beamHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'beam'; const fade = Math.max(.5, 1 - Math.max(0, (TROPO_Y() - t.y) / TROPO_Y()) * .5); hurt(t, dmg * fade); } }   // a laser loses bite the higher it has to reach
+function particleHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) { if (fr && t.reentry) continue; if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'particle'; t.killX = x1; t.killY = y1; hurt(t, dmg); spark(t.x, t.y, 3); } } }   // PARTICLE CANNON — true hitscan: resolves instantly along the beam, punches through EVERYTHING on the line (no falloff at altitude — that's the whole point of it), no flight time to whiff a fast mover
 function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
 function near(x, y, list, range) { let b = null, bd = range * range; for (const t of list) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }
 function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
@@ -3421,7 +3431,7 @@ function updEnemies(dt) {
       if (e.aimCity != null && e.chargeT <= 2 && e.chargeT > 0) { const cx = e.aimCity; if (Math.random() < .7) G.parts.push({ k: 'spark', x: cx + (Math.random() - .5) * 30, y: groundY(cx) - Math.random() * 220, vx: (Math.random() - .5) * 16, vy: -30 - Math.random() * 50, r: 1.4, life: .4 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.3, life: .1 }); }
       if (e.chargeT <= 0) { fireHostileColumn(e.aimCity != null ? e.aimCity : e.x); e.chargeT = 8 + Math.random() * 4; e.aimCity = null; }
       e.pdCd = (e.pdCd == null ? .5 : e.pdCd) - dt;   // POINT DEFENCE — same pattern as the bombarder's, so the annihilator isn't trivially missiled down while it's charging its beam
-      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       continue;
     }
     const tgt = near(e.x, e.y, e.air ? airTargetsList() : friendliesList(), 1e9) || { x: e.x, y: groundY(e.x) };
@@ -3434,7 +3444,7 @@ function updEnemies(dt) {
     }
     if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + point-defence swats your shots + hunts your aircraft + pins escorts near its orbit
       e.dropCd = (e.dropCd == null ? 5 : e.dropCd) - dt; if (e.dropCd <= 0) { e.dropCd = 5 + Math.random() * 4; orbitalBarrage(e.x + (Math.random() - .5) * 520); if (Math.random() < .5 && G.enemies.length < 70) spawnEnemy('bombpod', e.x + (Math.random() - .5) * 380); }
-      e.pdCd = (e.pdCd == null ? .4 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .35; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE: a red PD beam lances one of your incoming rounds each tick, so you can SEE it swatting your fire (it's why missiles alone bounce off it)
+      e.pdCd = (e.pdCd == null ? .4 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .35; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE: a red PD beam lances one of your incoming rounds each tick, so you can SEE it swatting your fire (it's why missiles alone bounce off it)
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, airOnlyList(), 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13); } else e.aaCd = 1.2; }
       if (!e.escorted) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once
@@ -3492,9 +3502,9 @@ function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOM
 function updProj(dt) {
   const incList = incomingList();   // orbital lances the player's fire can shoot down
   for (const p of G.proj) {
-    if (p.k === 'beam' || p.k === 'pbeam') { p.life -= dt; continue; }
+    if (p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam') { p.life -= dt; continue; }
     if (!p.friendly && p.life > 0 && p.k !== 'krodfx') { const sh = shieldBlocks(p.x, p.y); if (sh) { sh.shieldHp -= (p.dmg || 0) + (p.k === 'krod' ? 90 : p.k === 'subbomb' ? 50 : 30); spark(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 9, life: .14 }); (sh.shieldHits || (sh.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(sh.x), p.x - sh.x), t: 0 }); if (p.k === 'krod' || p.k === 'subbomb') boom(p.x, p.y, 5); p.life = 0; continue; } }   // DEFLECTOR DOME soaks incoming rods/missiles/bombs until it's battered down — each hit spawns a surface ripple at its impact angle
-    if (p.friendly && p.life > 0 && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'krodfx' && !p.strat) { const fld = enemyField(p.x, p.y); if (fld) { fld.fieldHp -= (p.dmg || 10) + (p.big ? 30 : 12); spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .12 }); (fld.fieldHits || (fld.fieldHits = [])).push({ ang: Math.atan2(p.y - fld.y, p.x - fld.x), t: 0 }); p.life = 0; continue; } }   // ENEMY DEFLECTOR FIELD scrubs YOUR incoming rounds (incl. the AoE that bypasses armour) until it's battered down; beams & strategic strikes punch straight through it
+    if (p.friendly && p.life > 0 && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const fld = enemyField(p.x, p.y); if (fld) { fld.fieldHp -= (p.dmg || 10) + (p.big ? 30 : 12); spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .12 }); (fld.fieldHits || (fld.fieldHits = [])).push({ ang: Math.atan2(p.y - fld.y, p.x - fld.x), t: 0 }); p.life = 0; continue; } }   // ENEMY DEFLECTOR FIELD scrubs YOUR incoming rounds (incl. the AoE that bypasses armour) until it's battered down; beams & strategic strikes punch straight through it
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
       if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
@@ -3540,16 +3550,7 @@ function updProj(dt) {
       }
       continue;
     }
-    if (p.k === 'particle') {   // hypervelocity particle bolt — substepped so it doesn't tunnel; punches through a couple of targets
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 6) p.tr.shift();
-      const steps = Math.max(3, Math.ceil(Math.hypot(p.vx, p.vy) * dt / 14));   // sub-step count scales with speed so a near-lightspeed bolt never tunnels past a target
-      for (let sgn = 0; sgn < steps && p.life > 0; sgn++) { p.x += p.vx * dt / steps; p.y += p.vy * dt / steps;
-        const list = p.friendly ? G.enemies : friendliesList();
-        for (const t of list) { if (t._pierced === p || (p.friendly && t.reentry)) continue; const rad = (t.s || t.r || 16) + 6; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = 'particle'; t.killX = p.x - p.vx * .01; t.killY = p.y - p.vy * .01; hurt(t, p.dmg, p.x, p.y); spark(p.x, p.y, 3); t._pierced = p; if (--p.pierce <= 0) { p.life = 0; break; } } }
-      }
-      p.life -= dt; if (p.y >= groundY(p.x)) { boomW(p.x, groundY(p.x), 5); p.life = 0; }
-      continue;
-    }
+    // NOTE: 'particle' is no longer a flying projectile kind — the Particle Cannon is now a true hitscan (see fire() + particleHit()); its visual is the 'particlebeam' instant-beam handled above with 'beam'/'pbeam'.
     if (p.k === 'stratmis') {   // surface ICBM: climbs slowly off the pad, then accelerates downrange (not constant-velocity)
       p.t += dt; p.spd = Math.min(p.maxspd, p.spd + p.thrust * dt);
       const aimUp = p.t < p.climb, ax = aimUp ? p.x : p.tx, ay = aimUp ? p.y - 360 : p.ty;
@@ -3624,7 +3625,7 @@ function updProj(dt) {
     for (const t of list) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg, p.x, p.y); boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } }   // bombs & heavy rounds also cave in shallow tunnels
     if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
   }
-  G.proj = G.proj.filter(p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.y > -240));   // keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
+  G.proj = G.proj.filter(p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
   if (G.proj.length > 1400) G.proj.splice(0, G.proj.length - 1400);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
 }
 function updParts(dt) {
@@ -3864,7 +3865,16 @@ function renderProj(p, px) {
     c.restore(); }
   else if (p.k === 'rail') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = p.big ? '#fff' : '#bfe9ff'; c.strokeStyle = col; c.lineWidth = p.big ? 3 : 2; c.shadowColor = col; c.shadowBlur = 12; c.beginPath(); c.moveTo(-(p.big ? 28 : 18), 0); c.lineTo(4, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }
   else if (p.k === 'amslug') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.strokeStyle = 'rgba(200,150,255,.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-14, 0); c.lineTo(2, 0); c.stroke(); c.fillStyle = '#ecd9ff'; c.shadowColor = '#c8a0ff'; c.shadowBlur = 10; c.beginPath(); c.arc(2, 0, 2.2, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // antimatter slug — a short violet streak tipped with a glowing pellet
-  else if (p.k === 'particle') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); glow(0, 0, 16, 'rgba(150,240,255,1)', .8); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#dffaff'; c.lineWidth = 3.4; c.shadowColor = '#7ce0ff'; c.shadowBlur = 18; c.beginPath(); c.moveTo(-40, 0); c.lineTo(8, 0); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-30, 0); c.lineTo(8, 0); c.stroke(); c.shadowBlur = 0; c.restore(); c.globalAlpha = 1; }
+  else if (p.k === 'particlebeam') {   // PARTICLE CANNON — instant hitscan bolt: a razor-thin, ultra-bright beam that snaps on then vanishes fast (crisper & shorter-lived than the plasma lance — this reads as ONE hit, not a sustained lance)
+    const a = Math.max(0, p.life / .14), x1 = sx(p.x1), x2 = sx(p.x2), col = p.friendly ? '#a8ecff' : '#ff9ad0';
+    c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+    c.globalAlpha = a * .5; c.strokeStyle = col; c.lineWidth = 5; c.shadowColor = col; c.shadowBlur = 16; c.beginPath(); c.moveTo(x1, p.y1); c.lineTo(x2, p.y2); c.stroke();
+    c.globalAlpha = a; c.strokeStyle = '#ffffff'; c.lineWidth = 1.6; c.shadowBlur = 0; c.beginPath(); c.moveTo(x1, p.y1); c.lineTo(x2, p.y2); c.stroke();
+    c.restore(); c.lineCap = 'butt'; c.globalAlpha = 1;
+    const glowCol = p.friendly ? 'rgba(168,236,255,1)' : 'rgba(255,154,208,1)';
+    glow(x2, p.y2, 14, glowCol, a * .85);   // impact flare
+    glow(x1, p.y1, 7, glowCol, a * .5);     // muzzle flare
+  }
   else if (p.k === 'microrkt') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .4; c.fillStyle = '#cfd6de'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, 1 + a2 * 2, 0, 6.28); c.fill(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#dfe6ee'; rr(c, -6, -2, 12, 4, 1.4); c.fill(); c.fillStyle = '#ff9a4a'; c.beginPath(); c.arc(6, 0, 1.8, 0, 6.28); c.fill(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,180,60,.9)'; c.beginPath(); c.moveTo(-6, 0); c.lineTo(-12, -1.6); c.lineTo(-12, 1.6); c.closePath(); c.fill(); c.restore(); c.globalAlpha = 1; }
   else if (p.k === 'nuke' || p.k === 'fbomb' || p.k === 'mirv' || p.k === 'stratmis' || p.k === 'micromis') {
     const warhead = (p.k === 'fbomb' || p.sub === 'fbomb') ? '#ff8a2a' : p.k === 'mirv' ? '#5fd0ff' : p.k === 'micromis' ? '#7cffb0' : '#ff5a3a';

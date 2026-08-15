@@ -1685,7 +1685,7 @@ const COMP = {
   rocketpart: { name: 'Rocket Parts', col: '#9cc4ff', ds: 'Built by Space Centers & Space Stations. Spent to assemble orbital units before they launch.' },
 };
 const UNIT_DEFS = {
-  inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 30, mp: 8, build: 2.5, hp: 46, armor: 2, range: 260, dmg: 5, rate: .45, weapon: 'tracer', speed: 14, s: 9, grp: 6, ds: 'Rifle SQUADS — several bodies sharing one entity: riflemen burst-fire while a dedicated AT/AA trooper independently engages armor or aircraft. Tougher-hitting now, and when they DIG IN they raise their own auto-emplacements (MG nests, flak, field guns) — hold a line and it grows into a fort.' },
+  inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 100, mp: 28, build: 4.2, hp: 46, armor: 2, range: 260, dmg: 5, rate: .45, weapon: 'tracer', speed: 14, s: 9, grp: 1, ds: 'A rifle SQUAD — ONE produced unit, ONE army-cap slot, several bodies sharing that one entity: riflemen burst-fire while a dedicated AT/AA trooper independently engages armor or aircraft. When they DIG IN they raise their own auto-emplacements (MG nests, flak, field guns) — hold a line and it grows into a fort.' },
   scout:    { name: 'Scout "Lynx"', art: 'scout', domain: 'ground', ic: 60, mp: 6, build: 3, hp: 40, armor: 2, range: 360, dmg: 4, rate: .35, weapon: 'tracer', speed: 22, s: 3.5, grp: 3, ds: 'Fast recon buggy w/ light autocannon.' },
   tank:     { name: 'MBT "Aegis"', art: 'tank', domain: 'ground', ic: 120, mp: 14, build: 6, hp: 110, armor: 8, range: 300, dmg: 18, rate: 2.2, weapon: 'shell', speed: 11, s: 4, grp: 3, ds: 'Main battle tank battery. Arcing cannon.' },
   heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 32, rate: 2.8, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tanks. Enormous armor. Each one is forged from HEAVY ALLOY (built by Factories / the Heavy Foundry). (req Heavy Alloys)' },
@@ -1699,7 +1699,7 @@ const UNIT_DEFS = {
   battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', ds: 'Huge long-range missile arsenal ship — the longest hull in the fleet, deck saturated with launch cells, saturates the whole sky from the safety of the sea. (req Naval Power)' },
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, with laser PD. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, pd: true, req: 'navalpwr', ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
-  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 150, mp: 12, build: 7, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 2, pd: true, ammo: 8, fuel: 38, ds: 'Stealth MULTIROLE fighter — a single crewed 6th-generation jet doing what three separate airframes used to. Beyond-visual-range AAMs + laser PD for air superiority, and the same missiles strike GROUND & naval targets. Pairs well with Loyal-Wingman drones (built separately once you research AUTOMATION). Burns its missile load, then lands at an airbase to rearm. Carries limited FUEL.' },
+  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, pd: true, ammo: 14, fuel: 38, ds: 'Stealth MULTIROLE fighter FLIGHT — ONE produced unit, ONE hangar/army-cap slot: the crewed Falcon leads two LOYAL-WINGMAN escort drones flying formation with it, each carrying its own missiles. Beyond-visual-range AAMs + laser PD for air superiority, and the same missiles strike GROUND & naval targets. The whole flight shares one magazine and burns fuel together, then lands at an airbase to rearm/refuel.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
   missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital LIFT + a ROCKET PART. (req Orbital Ops)' },
@@ -1708,8 +1708,8 @@ const UNIT_DEFS = {
   ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 28, rate: 1.2, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns — duels the autodrone strike-wings high above. Needs orbital LIFT + a ROCKET PART. Built from a SPACE STATION.' },
   bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 420, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, ds: 'Heavy bomber — carpet-bombs GROUND & naval targets from altitude, then returns to an airbase to reload its bays. Longest-endurance fuel tank in the fleet. Built straight from any Airbase.' },
   // ---- EXOTIC (unlocked by research branches) ----
-  cdrone:   { name: 'Loyal-Wingman Drone', art: 'cdrone', domain: 'air', ammo: 6, ic: 90, mp: 4, build: 4, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 3, req: 'automation', ds: 'Cheap, mass, semi-autonomous CCA drone — teams up with the crewed fighter and hunts air & ground on its own missiles. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds them in bigger, faster batches.' },
-  kdrone:   { name: 'Kamikaze Drones', art: 'cdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
+  cdrone:   { name: 'Combat Drone Squadron', art: 'cdrone', domain: 'air', ammo: 10, ic: 230, mp: 12, build: 6, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 1, req: 'automation', ds: 'A SWARM of 3 pilotless combat drones flying as ONE unit — ONE army-cap-exempt slot, several missile-armed bodies. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds squadrons in bigger, faster batches.' },
+  kdrone:   { name: 'Kamikaze Drones', art: 'kdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
   android:  { name: 'Combat Androids', art: 'android', domain: 'ground', ic: 180, mp: 5, build: 7, hp: 150, armor: 12, range: 360, dmg: 24, rate: 1.6, weapon: 'tracer', speed: 16, s: 4, grp: 2, req: 'robotics', ds: 'Tireless machine infantry. Barely any manpower. (ROBOTICS)' },
   colossus: { name: 'Colossus Walker', art: 'colossus', domain: 'ground', ic: 620, mp: 14, build: 22, hp: 900, armor: 30, range: 680, dmg: 90, rate: 3.0, weapon: 'beam', speed: 7, s: 10, grp: 1, ceil: .67, pd: true, req: 'colossus', ds: '★ Towering battle-walker — a giant contiguous LASER cannon that reaches into the mesosphere (lasers can\'t punch into orbit), plus point-defense guns. Walks through fleets. (SUPERWEAPON)' },
   airship:  { name: 'Nanofortress Airship', art: 'airship', domain: 'air', ic: 700, mp: 10, build: 24, hp: 820, armor: 22, range: 620, dmg: 30, rate: .6, weapon: 'rocket', speed: 22, s: 7, grp: 1, req: 'airfortress', ds: '★ Self-repairing flying fortress, raining fire. (SUPERWEAPON)' },
@@ -1726,7 +1726,7 @@ const UNIT_DEFS = {
 // Past the FUSION AGE your conventional line is re-armed with plasma — base units become more effective versions of themselves.
 // Each entry overrides fields of the base def; everything else (domain, ic, mp, build, s, grp, req) is inherited.
 const UPGRADES = {
-  cdrone:    { era: 'fusion', name: 'Heavy Drone "Hornet"', art: 'cdrone', weapon: 'rocket', dmg: 14, rate: 1.2, range: 540, hp: 60, s: 3.4, grp: 3, kamikaze: false, ds: 'Fusion-era heavy combat drone — car-sized, missile-armed (no longer a one-shot kamikaze; far less swarm-lag).' },
+  cdrone:    { era: 'fusion', name: 'Heavy Drone "Hornet"', art: 'cdrone', weapon: 'rocket', dmg: 14, rate: 1.2, range: 540, hp: 60, s: 3.4, grp: 1, kamikaze: false, ds: 'Fusion-era heavy combat drone squadron — car-sized, missile-armed bodies (no longer one-shot kamikazes; far less swarm-lag).' },
   // ALL plasma re-arms are gated behind PLASMA WEAPONS research now (not the Fusion Age) — ground AND aircraft
   inf:       { era: 'plasma', name: 'Plasma Infantry', art: 'inf', weapon: 'plasball', dmg: 9, rate: .42, range: 280, hp: 64, ds: 'Riflemen re-armed with plasma carbines. (Plasma Weapons)' },
   tank:      { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank', weapon: 'plasball', dmg: 30, rate: 2.4, range: 560, hp: 150, ds: 'MBT re-armed with fast flat plasma bolts that AIRBURST right next to the target (no pinpoint hit needed), out-ranging guns. (Plasma Weapons)' },
@@ -2078,30 +2078,74 @@ function finishSite(site) {
 // than a homing 'rocket' — a homing round re-targets the NEAREST valid target every frame as it flies (see
 // updProj), which would let it get hijacked mid-flight onto whatever the riflemen are shooting at; a straight
 // stream reliably lands on the target the trooper actually acquired.
+// Two squad shapes are supported:
+//  - HOMOGENEOUS (inf, cdrone): `n` identical bodies sharing d.art/d.weapon; optionally the LAST slot is a
+//    dedicated AT/AA specialist (only when `atRate` is set) that independently hunts air threats with its own
+//    higher-ceiling weapon, same as before. cdrone omits atRate — a drone swarm is just N identical drones.
+//  - MIXED (fighter): an explicit `roles` array, one entry per body, each with its OWN art/size/hp-share/dmg-&-
+//    rate multipliers — this is how the Falcon's WINGMAN DRONES actually appear in formation with the jet,
+//    instead of being a separate unit nobody ever fields alongside it.
 const SQUAD_LOADOUT = {
-  inf: { n: 4, spread: 8, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
+  inf:   { n: 4, bodyS: 3, spread: 8, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
+  cdrone:{ n: 3, bodyS: 2.4, spread: 13, burst: 1, burstGap: 0, lerp: 7 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical
+  fighter:{ spread: 15, burst: 1, burstGap: 0, lerp: 8, roles: [
+    { art: 'fighter', bodyS: 4.0, hpShare: .5,  dmgMul: 1,   rateMul: 1,    oy: 0 },    // the crewed 6th-gen Falcon — leads the flight
+    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: 6 },    // loyal-wingman escort drones — finally actually appear
+    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: -6 },
+  ] },
 };
-const INF_BODY_S = 3;   // individual rifleman render/collision size — kept at the ORIGINAL single-unit scale; UNIT_DEFS.inf.s is bumped instead to describe the squad's FOOTPRINT (collision/selection/formation radius)
+const INF_BODY_S = 3;   // legacy alias kept for readability at call sites that only ever meant infantry
+function defaultCeil(d) { return d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .62) : (d.ceil != null ? d.ceil : 0); }
 function spawnSquad(key, d, x) {
-  const cfg = SQUAD_LOADOUT[key], y = groundY(x) - INF_BODY_S;
-  const hp0 = Math.max(8, Math.round(d.hp * 0.66)), n = cfg.n;
+  const cfg = SQUAD_LOADOUT[key];
+  const bodyS0 = cfg.bodyS || INF_BODY_S;
+  const y = d.domain === 'air' ? groundY(x) - 80 : groundY(x) - bodyS0;
+  const hp0 = Math.max(8, Math.round(d.hp * 0.66));
   const members = [];
-  for (let i = 0; i < n; i++) {
-    const isAt = i === n - 1;   // last slot in the squad is the dedicated AA/AT specialist — everyone else is a rifleman
-    const mhp = Math.max(4, Math.round(hp0 / n * (isAt ? 1.25 : 1)));
-    const ox = (i - (n - 1) / 2) * cfg.spread;
-    members.push({
-      isAt, ox, oy: 0, cx: ox, cy: 0, aim: 0, facing: 1,
-      hp: mhp, maxHp: mhp,
-      weapon: isAt ? 'rotary' : d.weapon,
-      dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
-      rate: isAt ? cfg.atRate : d.rate,
-      range: d.range * (isAt ? cfg.atRangeMul : 1),
-      ceil: isAt ? cfg.atCeil : (d.ceil != null ? d.ceil : .80),
-      pd: isAt, cd: Math.random() * (isAt ? cfg.atRate : d.rate), burstLeft: 0, burstT: 0, tgt: null, alive: true,
+  if (cfg.roles) {   // MIXED squad — a leader body plus escort bodies, each with its own art & power share (see fighter above)
+    const n = cfg.roles.length;
+    cfg.roles.forEach((role, i) => {
+      const mhp = Math.max(4, Math.round(hp0 * (role.hpShare != null ? role.hpShare : 1 / n)));
+      const ox = (i - (n - 1) / 2) * cfg.spread;
+      members.push({
+        art: role.art || d.art, bodyS: role.bodyS || bodyS0,
+        isAt: !!role.isAt, ox, oy: role.oy || 0, cx: ox, cy: role.oy || 0, aim: 0, facing: 1,
+        hp: mhp, maxHp: mhp,
+        weapon: role.weapon || d.weapon,
+        dmg: d.dmg * (role.dmgMul != null ? role.dmgMul : 1),
+        rate: d.rate / (role.rateMul != null ? role.rateMul : 1),
+        range: d.range * (role.rangeMul != null ? role.rangeMul : 1),
+        ceil: defaultCeil(d) * (role.ceilMul != null ? role.ceilMul : 1),
+        pd: role.pd != null ? role.pd : !!d.pd,
+        cd: Math.random() * d.rate, burstLeft: 0, burstT: 0, tgt: null, alive: true,
+      });
     });
+  } else {   // HOMOGENEOUS squad — n identical bodies, optionally with one AT/AA specialist in the last slot
+    const n = cfg.n;
+    for (let i = 0; i < n; i++) {
+      const isAt = cfg.atRate != null && i === n - 1;   // last slot is the dedicated AA/AT specialist — everyone else is identical
+      const mhp = Math.max(4, Math.round(hp0 / n * (isAt ? 1.25 : 1)));
+      const ox = (i - (n - 1) / 2) * cfg.spread;
+      members.push({
+        art: d.art, bodyS: bodyS0,
+        isAt, ox, oy: 0, cx: ox, cy: 0, aim: 0, facing: 1,
+        hp: mhp, maxHp: mhp,
+        weapon: isAt ? 'rotary' : d.weapon,
+        dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
+        rate: isAt ? cfg.atRate : d.rate,
+        range: d.range * (isAt ? cfg.atRangeMul : 1),
+        ceil: isAt ? cfg.atCeil : defaultCeil(d),
+        pd: isAt || !!d.pd, cd: Math.random() * (isAt ? cfg.atRate : d.rate), burstLeft: 0, burstT: 0, tgt: null, alive: true,
+      });
+    }
   }
-  const u = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0: 0, wx1: 0, patrol: 0, job: null,
+  const isAir = d.domain === 'air';
+  const patrol = isAir ? (d.lowAir ? groundY(x) - 90 - Math.random() * 40 : airTopY() + 30 + Math.random() * 70) : 0;
+  const limitAmmo = isAir && (d.weapon === 'rocket' || d.weapon === 'missile' || d.weapon === 'bomb'), ammo0 = limitAmmo ? (d.ammo || 8) : null;
+  const hasFuel = isAir && d.fuel != null, fuel0 = hasFuel ? d.fuel : null;
+  const spool = hasFuel ? 3 + Math.random() * 2 : 0;
+  const u = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0: 0, wx1: 0, patrol, job: null,
+    ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool,
     squad: true, members, squadCfg: cfg };
   G.units.push(u);
   return u;
@@ -3222,7 +3266,7 @@ function updSquadMembers(u, dt) {
         const live = m.tgt && m.tgt.hp > 0;
         if (live) {
           const lt = leadTime(m.weapon, mx, my, m.tgt), ex = m.tgt.x + (m.tgt.vx || 0) * lt, ey = m.tgt.y + (m.tgt.vy || 0) * lt, sdmg = m.dmg * (1 + G.mult.dmg);
-          if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else fire(mx, my, m.weapon, ex, ey, true, sdmg);
+          if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else { fire(mx, my, m.weapon, ex, ey, true, sdmg); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } }   // aircraft SQUADS share one magazine across the flight — mirrors the single-body RTB rule
           claimDmg(m.tgt, sdmg);
           m.burstLeft--;
         } else m.burstLeft = 0;   // target died/vanished mid-burst — abort the rest of the volley instead of firing blind
@@ -3746,24 +3790,28 @@ function renderGame() {
   if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
-// SQUAD render — draws each LIVING member body at its own lerped formation offset (own weapon aim, own healthbar),
-// instead of one sprite for the whole entity. The AT/AA specialist gets a small cyan marker so it reads apart
-// from the riflemen at a glance.
+// SQUAD render — draws each LIVING member body at its own lerped formation offset (own art, own weapon aim, own
+// healthbar), instead of one sprite for the whole entity. Ground squads (infantry) get a per-body contact shadow;
+// air squads (drone swarms, fighter+wingmen flights) don't touch the ground so they skip it. The AT/AA specialist
+// (or a mixed squad's escort bodies) get a small cyan marker so they read apart from the rest at a glance.
 function drawSquadUnit(u, px) {
-  const d = u.d, s = INF_BODY_S;
+  const d = u.d, ground = d.domain === 'ground';
   for (const m of u.members) {
     if (!m.alive) continue;
-    const mpx = px + m.cx, my = u.y + (m.cy || 0);
-    c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, my + s * .9, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore();   // per-body ground contact shadow
+    const s = m.bodyS || INF_BODY_S, mpx = px + m.cx, my = u.y + (m.cy || 0);
+    if (ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, my + s * .9, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // per-body ground contact shadow
     c.save(); c.translate(mpx, my); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4;
     const facing = m.facing || u.facing || 1; c.scale(facing, 1);
-    ART[d.art](c, s, facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0));
+    const art = m.art || d.art;
+    ART[art](c, s, ground ? (facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0)) : 0);
     c.restore();
-    if (m.isAt) { c.fillStyle = '#5fd0ff'; c.beginPath(); c.arc(mpx, my - s * 2.7, 1.6, 0, 6.28); c.fill(); }   // marks the AA/AT specialist apart from the riflemen
+    if (m.isAt) { c.fillStyle = '#5fd0ff'; c.beginPath(); c.arc(mpx, my - s * 2.7, 1.6, 0, 6.28); c.fill(); }   // marks the AA/AT specialist / escort apart from the leader
     if (m.hp < m.maxHp) bar(mpx, my - s * 2.2, s * 2, Math.max(0, m.hp) / m.maxHp);
   }
   if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, u.y - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); }
   if (u.hp < u.maxHp) bar(px, u.y - d.s * 1.6 - 8, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');   // aggregate squad-strength bar over the whole formation
+  if (u.maxAmmo) bar(px, u.y - d.s * 1.6 - (u.hp < u.maxHp ? 13 : 8), d.s * 2.2, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a');
+  if (u.maxFuel) bar(px, u.y - d.s * 1.6 - (u.hp < u.maxHp ? 17 : 12) - (u.maxAmmo ? 4 : 0), d.s * 2.2, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0');
 }
 function renderProj(p, px) {
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = p.tractor ? 14 : 10; c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet

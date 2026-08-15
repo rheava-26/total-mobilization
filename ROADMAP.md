@@ -30,11 +30,9 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.30.1** (on `main`).
-- **In-flight Sonnet agents (as of this writing):**
-  1. **Particle-cannon hitscan + universal gun leading** — particle cannon → true instant-hit beam (it was a fast projectile that missed everything); all projectile guns lead moving targets.
-  2. **Squad art + perf (LOD) + drowning/water** — infantry squads look ugly & tank FPS in bulk (90 garrison squads = ~360 bodies); fix via cheaper render/LOD/fewer bodies-per-squad (NOT by capping army size); make ground units avoid water and stop drown-exploding.
-- Merge/verify/deploy each when it lands, then update this file.
+- **Live version: v3.31.0** (on `main`).
+- **In-flight Sonnet agents:** none — both landed and shipped (particle hitscan + universal leading; squad perf/art/water).
+- **Next:** the designer is handing the big framework builds (see The Big Vision / Backlog) to **Fable 5**. This file is the send-off.
 
 ---
 
@@ -103,4 +101,4 @@ The unifying insight: **the war is VERTICAL. The enemy is UP (orbital siege), no
 ---
 
 ## ✅ SHIPPED THIS SESSION (on `main`)
-Emplacement-crumble fix · intro cinematic (plays every load, skip after first watch) · minimap (true world aspect, legible units) · camera auto-pull removed · **General** default · adaptive decapitation busters · persistent (killable) beachhead Shield Generator · super-units made proactive & multi-weapon (no HP inflation) · **Garrison economy v1** (weight budget, upkeep, HUD cell) · **infantry squads** · distinct **drone & warship textures** · **drone & fighter (with wingmen) squads** + grp:6 exploit fix · **Bombardment counterplay** (slow orbital buster descent, predictive interception, pinpoint damage) · **Stability overhaul** (drains→cap reductions, 0-stab = recoverable Capitulation Crisis not instant loss, stability reserve, demolition) · dispersed launcher buildings removed (TEL/Arsenal Ship/Ballistic Sub) · garrison orbital-lift exemption · mobile strike menu · demolition costs stability · buildings can slightly overlap · **Comms = reserve / Propaganda = cap** split + radar-stacking surfaced. Versions v3.20.1 → v3.30.1, each with a changelog entry.
+Emplacement-crumble fix · intro cinematic (plays every load, skip after first watch) · minimap (true world aspect, legible units) · camera auto-pull removed · **General** default · adaptive decapitation busters · persistent (killable) beachhead Shield Generator · super-units made proactive & multi-weapon (no HP inflation) · **Garrison economy v1** (weight budget, upkeep, HUD cell) · **infantry squads** · distinct **drone & warship textures** · **drone & fighter (with wingmen) squads** + grp:6 exploit fix · **Bombardment counterplay** (slow orbital buster descent, predictive interception, pinpoint damage) · **Stability overhaul** (drains→cap reductions, 0-stab = recoverable Capitulation Crisis not instant loss, stability reserve, demolition) · dispersed launcher buildings removed (TEL/Arsenal Ship/Ballistic Sub) · garrison orbital-lift exemption · mobile strike menu · demolition costs stability · buildings can slightly overlap · **Comms = reserve / Propaganda = cap** split + radar-stacking surfaced · **Particle Cannon → true hitscan** + **every projectile gun now LEADS** its shots (corrected intercept solve, 0%→100% hit rate on fast movers) · **squad perf** (4→3 bodies + render LOD, no phone-melt at scale) + **cleaner squad art** (staggered fireteam) + **water/drowning fix** (units never shoved into the sea; drowned units sink quietly, no explosion). Versions v3.20.1 → v3.31.0, each with a changelog entry.

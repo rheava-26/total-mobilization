@@ -32,8 +32,8 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.32.0** (on `main`); **unit buff panel** merging now → ships as v3.32.1. Buff panel: selecting a unit shows a live "⚡ ACTIVE BUFFS" readout (stacked auras with sources + "STACKED N×", global `G.mult` bonuses, era-upgrade status, production discounts) — read-only.
-- **In-flight agents:** enemy landing/super-unit overhaul (running). Next: the **COMBAT WAVE** (lethality 1–2 hit deaths + working threshold-shields + airship multi-weapon + CIWS invisible-bullets/no-explosion-spam + free-auto-emplacement nerf) — queued behind the enemy agent to avoid `hurt()`/projectile conflicts.
+- **Live version: v3.33.0** (on `main`). Enemy landing/super-unit overhaul SHIPPED.
+- **In-flight agents (THE COMBAT WAVE, 2 lanes):** (1) lethality 1–2 hit deaths + fixed threshold-shields + shields-on-big-units + airship→capital-ship + remove-fighter-PD-laser→dedicated aircraft; (2) CIWS invisible-bullets/no-explosion-spam + free-auto-emplacement nerf. Disjoint regions (`hurt()`/defs/shields vs render-FX/emplacement-defs). **This is a big FEEL change (everything glass, shields = survival) — verify carefully; designer may want tuning after playtest.**
 - **RESOLVED (emplacement question):** nerf the FREE auto-emplacements only (not built guns, no whiffing); CIWS's per-round explosion spam is the real perf killer. Side-vignette fixed (v3.31.1). Hidden `nightMode` flag awaiting the designer's verdict.
 - **Fable 5 has the organizer seat.**
 
@@ -84,7 +84,7 @@ The designer's combat philosophy: **glass cannons everywhere.** Most units (even
 - **Airship → capital ship:** shield + 6+ machine guns + anti-tank guns + MLRS (multi-weapon; Battleships vision).
 - **Remove PD lasers from the Fighter** (a fighter carrying anti-missile lasers is a stretch) → make anti-missile lasers a **dedicated aircraft**.
 
-### 🛰 ENEMY LANDINGS & SUPER-UNIT OVERHAUL — from the latest playtest (enemy-side; being dispatched)
+### 🛰 ENEMY LANDINGS & SUPER-UNIT OVERHAUL — ✅ SHIPPED v3.33.0 (kept here for reference)
 - **Every landing includes a super unit; super units come in GROUPS.** Each reinforces if not killed in ~30s (extends existing `BOSS_REINFORCE_T`).
 - **Each super unit acts like a CARRIER** — spawns a small group of units.
 - **Bombardier kit:** 2× PD fire rate · on arrival deploys **10 railgun sats + 10 laser-defense sats** · arrives with a **support ship that repairs in a radius** · gains a **plasma cannon that snipes GROUND units from space** (oppressive to ground; canNOT snipe air).

@@ -32,7 +32,8 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.31.1** (on `main`). Side-vignette bug fixed (was a min(W,H)-circle canvas vignette stacked under a CSS ellipse → heavy left/right curtains on wide screens; now ONE aspect-true soft ellipse). A hidden **`nightMode` prototype flag** (default off, console: `nightMode = true; vigKey = '';`) leans into the deep-framed look — **awaiting the designer's verdict on promoting it to a real settings toggle.**
+- **Live version: v3.32.0** (on `main`).
+- **In-flight agents:** unit buff panel + enemy landing/super-unit overhaul (running). Next combat wave (lethality + shields + airship + CIWS invisible-bullets) queued behind the enemy agent to avoid `hurt()`/projectile conflicts. **OPEN DESIGN Q for the designer:** emplacement nerf — "10% fire rate + miss" (their idea, they flagged caution) vs. Fable's counter-proposal: keep guns satisfying, make enemies OVERWHELM via undefended-flank landings + tankier/bigger waves. Awaiting verdict. Side-vignette bug fixed (was a min(W,H)-circle canvas vignette stacked under a CSS ellipse → heavy left/right curtains on wide screens; now ONE aspect-true soft ellipse). A hidden **`nightMode` prototype flag** (default off, console: `nightMode = true; vigKey = '';`) leans into the deep-framed look — **awaiting the designer's verdict on promoting it to a real settings toggle.**
 - **In-flight Sonnet agents:** none.
 - **Fable 5 has taken the organizer seat** (this file was the send-off; it worked).
 
@@ -113,7 +114,7 @@ Designer asked to offload targeting math to a worker so the main thread just ren
 12. **Inherited-nation start:** cities begin with a few garrison stockpiles/factories + 2–3 pre-placed missile silos, so you inherit a country instead of an empty map.
 13. **Influence "hire allies" sink:** buy a Carrier Strike Group for ~200 influence + IC + MP, like a strike, especially pre-invasion. Late-game influence sink.
 14. **Naval identity:** differentiate Missile Cruiser (AA/point-missile escort) from Arsenal Ship "Leviathan" (VLS saturation); untangle the name clash with the (now-removed) Arsenal Ship building. Distinct warship hulls already shipped.
-15. **Achievements + coup screen** (specced, agent died twice, NEVER shipped): pre-invasion stability collapse reframed as a **COUP/OVERTHROWN** defeat; 4 achievements — `couped` "Regime Change", `nukehappy` "This Will Have No Long-Term Consequences" (10 nukes/game), `oops` "Oops" (nuke in peacetime), `forgotresearch` "I Forgot to Research" (20 ballistic strikes/game); unlock notifications. System already exists (`ACHIEVEMENTS` array, `G.ach`).
+15. ~~**Achievements + coup screen**~~ ✅ SHIPPED v3.32.0 — coup defeat reframe + 5 medals (`couped` "Regime Change", `nukehappy`, `oops`, `forgotresearch`, `pacifist` "Who Needs Science?" = win with zero research) + unlock toasts.
 
 ### SMALL / QoL (new from latest playtest)
 16. **Unit buff panel:** click a unit → see all active buffs affecting it (nearby-building auras, research mults, resource discounts). Also surfaces stacking to the player.

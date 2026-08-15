@@ -1157,6 +1157,44 @@ const ART = {
     x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 2.9, s * .42, s * .45, s * .08); x.fillRect(s * 2.6, s * .3, s * .5, s * .07); x.globalAlpha = 1;   // stern & bow wake foam
     x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.008); x.fillRect(s * .02, -s * 1.56, s * .06, s * .06); x.globalAlpha = 1;   // masthead beacon
   },
+  cruiser(x, s) {   // MISSILE CRUISER — broader beam than the destroyer, deck dominated by dense VLS cell grids fore & aft
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 2.7, -s * .02); x.lineTo(s * 2.6, -s * .06); x.lineTo(s * 3.0, s * .18); x.lineTo(s * 2.25, s * .5); x.lineTo(-s * 2.5, s * .5); x.lineTo(-s * 2.7, s * .2); x.closePath(); x.fill();   // beamy hull
+    x.fillStyle = '#2c3e50'; x.fillRect(-s * 2.65, s * .34, s * 5.3, s * .16);   // boot-topping waterline
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .55, -s * .06); x.lineTo(-s * .32, -s * .8); x.lineTo(s * .5, -s * .8); x.lineTo(s * .65, -s * .06); x.closePath(); x.fill();   // blocky central deckhouse
+    x.fillStyle = GLASS; x.fillRect(-s * .2, -s * .7, s * .42, s * .14);   // bridge windows
+    x.fillStyle = INK; x.fillRect(-s * .06, -s * .8, s * .12, s * .5); x.fillStyle = GLASS; x.fillRect(-s * .02, -s * 1.28, s * .1, s * .32);   // mast + flat-panel AESA
+    x.fillStyle = '#0e141c'; for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) x.fillRect(s * (-2.35 + i * .3), s * (-.08 + r * .17), s * .21, s * .13);   // forward VLS grid (8 cells)
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) x.fillRect(s * (.95 + i * .3), s * (-.08 + r * .17), s * .21, s * .13);   // aft VLS grid (8 cells)
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 2.7, -s * .02); x.lineTo(s * 2.6, -s * .06); x.lineTo(s * 2.66, -s * .01); x.lineTo(-s * 2.7, s * .05); x.closePath(); x.fill();   // sunlit deck edge
+    x.fillStyle = TRIM(); x.fillRect(s * 2.05, 0, s * .5, s * .07);   // bow ID flash
+    x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 3.1, s * .42, s * .45, s * .08); x.fillRect(s * 2.85, s * .28, s * .5, s * .07); x.globalAlpha = 1;   // wake foam
+  },
+  battleship(x, s) {   // ARSENAL SHIP "LEVIATHAN" — the longest hull in the fleet; deck saturated edge-to-edge with missile cells
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 3.4, -s * .02); x.lineTo(s * 3.3, -s * .06); x.lineTo(s * 3.75, s * .16); x.lineTo(s * 2.9, s * .5); x.lineTo(-s * 3.1, s * .5); x.lineTo(-s * 3.4, s * .2); x.closePath(); x.fill();   // very long low hull
+    x.fillStyle = '#2c3e50'; x.fillRect(-s * 3.35, s * .34, s * 6.7, s * .16);   // waterline
+    x.fillStyle = '#0e141c'; for (let i = 0; i < 11; i++) x.fillRect(s * (-2.9 + i * .58), -s * .1, s * .4, s * .3);   // deck SATURATED with missile-cell hatches, bow to stern
+    x.fillStyle = LO(); for (let i = 0; i < 11; i++) x.fillRect(s * (-2.9 + i * .58), -s * .1, s * .4, s * .06);   // hatch rims
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.7, -s * .1); x.lineTo(s * 1.85, -s * .68); x.lineTo(s * 2.55, -s * .68); x.lineTo(s * 2.65, -s * .1); x.closePath(); x.fill();   // small aft-set deckhouse — mostly missile barge, little else
+    x.fillStyle = GLASS; x.fillRect(s * 1.98, -s * .6, s * .4, s * .13);
+    x.fillStyle = INK; x.fillRect(s * 2.14, -s * .68, s * .1, s * .5); x.fillStyle = GLASS; x.fillRect(s * 2.17, -s * 1.16, s * .09, s * .3);   // tall mast at the rear
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 3.4, -s * .02); x.lineTo(s * 3.3, -s * .06); x.lineTo(s * 3.36, 0); x.lineTo(-s * 3.4, s * .06); x.closePath(); x.fill();   // sunlit deck edge
+    x.fillStyle = TRIM(); x.fillRect(s * 2.75, -s * .04, s * .5, s * .07);
+    x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 3.8, s * .42, s * .48, s * .08); x.fillRect(s * 3.5, s * .3, s * .5, s * .07); x.globalAlpha = 1;   // wake foam
+  },
+  battlecruiser(x, s) {   // RAILGUN BATTLECRUISER "TEMPEST" — the spinal hypervelocity rail-gun IS the ship; light on VLS, heavy on the gun
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 2.8, -s * .02); x.lineTo(s * 2.7, -s * .05); x.lineTo(s * 3.15, s * .18); x.lineTo(s * 2.35, s * .5); x.lineTo(-s * 2.6, s * .5); x.lineTo(-s * 2.8, s * .2); x.closePath(); x.fill();
+    x.fillStyle = '#2c3e50'; x.fillRect(-s * 2.75, s * .34, s * 5.5, s * .16);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.0, -s * .05); x.lineTo(-s * .8, -s * .72); x.lineTo(s * .1, -s * .72); x.lineTo(s * .28, -s * .05); x.closePath(); x.fill();   // armored deckhouse aft of the gun
+    x.fillStyle = GLASS; x.fillRect(-s * .68, -s * .64, s * .4, s * .13);
+    x.fillStyle = INK; x.fillRect(-s * .48, -s * .72, s * .1, s * .46); x.fillStyle = GLASS; x.fillRect(-s * .45, -s * 1.14, s * .09, s * .28);   // mast + radar
+    x.fillStyle = '#3fc8f0'; x.globalAlpha = pulseA(.007); x.fillRect(-s * .95, -s * .5, s * .5, s * .12); x.globalAlpha = 1;   // charging capacitor bank behind the gun
+    x.save(); x.translate(s * .35, -s * .18); x.rotate(-.03); x.fillStyle = INK; x.fillRect(0, -s * .09, s * 3.15, s * .06); x.fillRect(0, s * .04, s * 3.15, s * .06);   // twin spinal rails running the length of the foredeck
+    x.fillStyle = LO(); for (let k = 0; k < 4; k++) x.fillRect(s * (.55 + k * .68), -s * .09, s * .08, s * .19);
+    x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = s * .8; x.fillRect(s * 3.05, -s * .1, s * .12, s * .21); x.shadowBlur = 0; x.restore();   // charged rail tip glow
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 2.8, -s * .02); x.lineTo(s * 2.7, -s * .05); x.lineTo(s * 2.76, 0); x.lineTo(-s * 2.8, s * .06); x.closePath(); x.fill();
+    x.fillStyle = TRIM(); x.fillRect(s * 2.1, -s * .02, s * .5, s * .07);
+    x.globalAlpha = .5; x.fillStyle = '#eaf6ff'; x.fillRect(-s * 3.2, s * .42, s * .46, s * .08); x.fillRect(s * 2.9, s * .28, s * .5, s * .07); x.globalAlpha = 1;
+  },
   carrier(x, s) {   // flat-deck carrier — long flight deck, island superstructure, parked aircraft
     x.fillStyle = INK;
     x.beginPath(); x.moveTo(-s * 3.0, s * .1); x.lineTo(-s * 2.6, s * .5); x.lineTo(s * 2.4, s * .5); x.lineTo(s * 3.2, s * .02); x.lineTo(s * 3.2, -s * .1); x.lineTo(-s * 2.9, -s * .1); x.closePath(); x.fill();   // hull
@@ -1401,15 +1439,36 @@ const ART = {
     x.shadowColor = '#b079ff'; x.shadowBlur = s * .7; x.fillStyle = '#e0c8ff'; x.beginPath(); x.arc(s * 2.0, s * .42, s * .18, 0, 6.28); x.fill(); x.shadowBlur = 0;   // antimatter lance
     x.fillStyle = '#7dd0ff'; x.beginPath(); x.arc(-s * 2.15, s * .1, s * .2, 0, 6.28); x.fill();   // engine
   },
-  cdrone(x, s) {
-    x.strokeStyle = INK; x.lineWidth = Math.max(1, s * .12);
-    x.beginPath(); x.moveTo(-s * 1.1, -s * .5); x.lineTo(s * 1.1, s * .5); x.moveTo(-s * 1.1, s * .5); x.lineTo(s * 1.1, -s * .5); x.stroke();   // X arms
-    { const spin = .3 + .5 * Math.abs(Math.sin(animClock * .06)); x.fillStyle = '#9fb0c0';   // WHIRLING rotor discs — width pulses with the blur
-      for (const p of [[-s * 1.1, -s * .5], [s * 1.1, -s * .5], [-s * 1.1, s * .5], [s * 1.1, s * .5]]) { x.globalAlpha = .35 + spin * .3; x.beginPath(); x.ellipse(p[0], p[1], s * (.3 + spin * .35), s * .13, 0, 0, 6.28); x.fill(); } x.globalAlpha = 1; }
-    x.fillStyle = INK; rr(x, -s * .42, -s * .28, s * .84, s * .56, s * .12); x.fill();   // body
-    x.fillStyle = HI(); rr(x, -s * .42, -s * .28, s * .84, s * .14, s * .1); x.fill();   // lit shell
-    x.fillStyle = '#6c7682'; x.beginPath(); x.arc(s * .4, s * .12, s * .16, 0, 6.28); x.fill();
-    x.fillStyle = '#ff5a3a'; x.globalAlpha = pulseA(.015); x.beginPath(); x.arc(s * .4, s * .12, s * .07, 0, 6.28); x.fill(); x.globalAlpha = 1;   // camera eye
+  cdrone(x, s) {   // COMBAT DRONE — pilotless blended-wing UAV. NOT a quadcopter: no rotors, no props — a lifting-body
+    // airframe with a belly sensor ball where a canopy would be. Distinct from kdrone's needle dart and wingman's twin-tail jet.
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.5, 0); x.lineTo(s * .5, -s * .34); x.lineTo(-s * .6, -s * .3); x.lineTo(-s * 1.3, -s * .06); x.lineTo(-s * 1.3, s * .1); x.lineTo(-s * .6, s * .3); x.lineTo(s * .5, s * .3); x.closePath(); x.fill();   // blended lifting-body fuselage
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.4, -s * .02); x.lineTo(s * .5, -s * .3); x.lineTo(-s * 1.2, -s * .08); x.lineTo(-s * 1.2, -s * .02); x.lineTo(s * 1.4, s * .04); x.closePath(); x.fill();   // sunlit spine
+    x.fillStyle = '#1a1f26'; x.beginPath(); x.moveTo(-s * .3, -s * .1); x.lineTo(-s * .95, -s * .58); x.lineTo(-s * .55, -s * .1); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(-s * .3, s * .1); x.lineTo(-s * .95, s * .58); x.lineTo(-s * .55, s * .1); x.closePath(); x.fill();   // small canted tail fins
+    x.fillStyle = '#0a0a0a'; x.fillRect(-s * 1.32, -s * .1, s * .16, s * .2); jetflame(x, -s * 1.32, 0, s * .5, s * .1);   // exhaust
+    x.fillStyle = '#232a32'; x.beginPath(); x.ellipse(s * .2, s * .22, s * .22, s * .13, 0, 0, 6.28); x.fill();   // belly sensor ball — NO canopy, it's pilotless
+    x.fillStyle = '#5fd0ff'; x.globalAlpha = pulseA(.016, s); x.shadowColor = '#5fd0ff'; x.shadowBlur = s * .7; x.beginPath(); x.arc(s * .2, s * .22, s * .08, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing camera eye
+    x.fillStyle = LO(); x.fillRect(s * .35, s * .18, s * .7, s * .1); x.fillStyle = '#ffb24a'; x.fillRect(s * .95, s * .19, s * .1, s * .08);   // slung missile
+  },
+  kdrone(x, s) {   // KAMIKAZE DRONE — cheap expendable loitering munition: thin needle dart + tiny X-cross fins + a glowing
+    // warhead nose (it IS the payload). Deliberately spare next to the cdrone's proper lifting-body airframe.
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.3, 0); x.lineTo(-s * .9, -s * .16); x.lineTo(-s * .9, s * .16); x.closePath(); x.fill();   // thin needle body
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.2, -s * .02); x.lineTo(-s * .8, -s * .14); x.lineTo(-s * .8, -s * .05); x.lineTo(s * 1.2, s * .02); x.closePath(); x.fill();
+    x.fillStyle = '#1a1f26'; x.save(); x.translate(-s * .55, 0); x.rotate(.55); x.fillRect(-s * .05, -s * .5, s * .1, s * 1.0); x.restore();
+    x.save(); x.translate(-s * .55, 0); x.rotate(-.55); x.fillRect(-s * .05, -s * .5, s * .1, s * 1.0); x.restore();   // tiny X-cross tail fins — cheap, no real wings
+    x.fillStyle = '#ff8a3a'; x.shadowColor = '#ff8a3a'; x.shadowBlur = s * (.6 + .5 * pulseA(.03, s)); x.beginPath(); x.arc(s * 1.15, 0, s * .16, 0, 6.28); x.fill(); x.shadowBlur = 0;   // breathing warhead glow
+  },
+  wingman(x, s) {   // LOYAL-WINGMAN ESCORT — small stealthy TWIN-TAIL CCA jet that flies formation with the crewed Falcon
+    // in a fighter squad. Chined sensor nose (no canopy — pilotless), distinct from both drone silhouettes above.
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.5, 0); x.lineTo(s * .7, -s * .16); x.lineTo(-s * .2, -s * .22); x.lineTo(-s * 1.15, -s * .05); x.lineTo(-s * 1.15, s * .09); x.lineTo(-s * .2, s * .22); x.lineTo(s * .65, s * .18); x.closePath(); x.fill();   // chined stealth fuselage
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(s * .1, s * .05); x.lineTo(-s * .7, s * .62); x.lineTo(-s * .15, s * .62); x.lineTo(s * .4, s * .1); x.closePath(); x.fill();   // near wing (shaded)
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * .05, -s * .05); x.lineTo(-s * .65, -s * .55); x.lineTo(-s * .15, -s * .55); x.lineTo(s * .35, -s * .1); x.closePath(); x.fill();   // far wing
+    x.beginPath(); x.moveTo(-s * .85, -s * .04); x.lineTo(-s * 1.2, -s * .5); x.lineTo(-s * .95, -s * .5); x.lineTo(-s * .65, -s * .04); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(-s * .85, s * .04); x.lineTo(-s * 1.2, s * .5); x.lineTo(-s * .95, s * .5); x.lineTo(-s * .65, s * .04); x.closePath(); x.fill();   // canted TWIN tailfins — unlike the Falcon's single fin
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.4, -s * .02); x.lineTo(s * .7, -s * .14); x.lineTo(-s * 1.1, -s * .05); x.lineTo(-s * 1.1, 0); x.lineTo(s * 1.4, s * .02); x.closePath(); x.fill();   // sunlit spine
+    x.fillStyle = '#0a0a0a'; x.fillRect(-s * 1.18, -s * .06, s * .13, s * .12); jetflame(x, -s * 1.18, 0, s * .45, s * .06);
+    x.fillStyle = '#1a2733'; x.beginPath(); x.ellipse(s * .55, 0, s * .18, s * .09, 0, 0, 6.28); x.fill();   // sensor chin blister — no canopy, pilotless
+    x.fillStyle = '#5fd0ff'; x.globalAlpha = pulseA(.017, s); x.shadowColor = '#5fd0ff'; x.shadowBlur = s * .6; x.beginPath(); x.arc(s * .55, 0, s * .06, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
   },
   // ---- ENEMY (hostile, red-cored) ----
   drone(x, s) {   // top-down combat DRONE — a small delta-wing UAV (nose up), not a UFO disc
@@ -1636,9 +1695,9 @@ const UNIT_DEFS = {
   sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .60, pd: true, noGround: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
   railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit. (req Kinetic Weapons)' },
   destroyer:{ name: 'Destroyer "Squall"', art: 'warship', domain: 'naval', ic: 200, mp: 18, build: 10, hp: 180, armor: 8, range: 560, dmg: 11, rate: .45, weapon: 'tracer', speed: 10, s: 6, grp: 1, pd: true, ds: 'Gun destroyer with laser point-defense. Sea-based AA.' },
-  cruiser:  { name: 'Missile Cruiser', art: 'warship', domain: 'naval', ic: 290, mp: 20, build: 13, hp: 210, armor: 10, range: 900, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 8, s: 5.5, grp: 1, req: 'navalpwr', ds: 'Naval missile platform. (req Naval Power)' },
-  battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'warship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', ds: 'Huge long-range missile arsenal ship — saturates the whole sky from the safety of the sea. (req Naval Power)' },
-  battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'warship', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, ds: 'Sea-going railgun battlecruiser — hammers any altitude with hypervelocity slugs, with laser PD. (req Kinetic Weapons)' },
+  cruiser:  { name: 'Missile Cruiser', art: 'cruiser', domain: 'naval', ic: 290, mp: 20, build: 13, hp: 210, armor: 10, range: 900, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 8, s: 5.5, grp: 1, req: 'navalpwr', ds: 'Naval missile platform, hull bristling with VLS cells fore and aft. (req Naval Power)' },
+  battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', ds: 'Huge long-range missile arsenal ship — the longest hull in the fleet, deck saturated with launch cells, saturates the whole sky from the safety of the sea. (req Naval Power)' },
+  battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, with laser PD. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, pd: true, req: 'navalpwr', ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
   fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 150, mp: 12, build: 7, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 2, pd: true, ammo: 8, fuel: 38, ds: 'Stealth MULTIROLE fighter — a single crewed 6th-generation jet doing what three separate airframes used to. Beyond-visual-range AAMs + laser PD for air superiority, and the same missiles strike GROUND & naval targets. Pairs well with Loyal-Wingman drones (built separately once you research AUTOMATION). Burns its missile load, then lands at an airbase to rearm. Carries limited FUEL.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },

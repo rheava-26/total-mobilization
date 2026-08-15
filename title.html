@@ -526,6 +526,8 @@ const ACHIEVEMENTS = [
   { id:'win_all', name:'Our Finest Hour', desc:'Win on all four difficulties (across separate rounds).', test:()=>{const w=everGet('win');return w.recon&&w.decap&&w.invasion&&w.glass;} },
   { id:'lose_stab', name:'Deorganized', desc:'Lose the game to a stability collapse.', test:g=>/STAB/.test(g.ach.lostReason||'') },
   { id:'lose_city', name:'Dismantled', desc:'Lose the game with every city destroyed or occupied.', test:g=>/CIT/.test(g.ach.lostReason||'') },
+  { id:'couped', name:'Regime Change', desc:'Lose to a COUP — a stability collapse during PREP, before the fleet ever arrived.', test:g=>g.ach.couped },
+  { id:'pacifist', name:'Who Needs Science?', desc:'Win a round having completed ZERO research.', test:g=>g.ach.won&&!g.ach.researchedAnything },
   { id:'barely', name:'Barely Holding On', desc:'Drop to 1% stability at some point — and still win.', test:g=>g.ach.won&&g.ach.minStab<=1 },
   { id:'nounits', name:'Did you know you can make units?', desc:'Win a round without producing a single unit from the recruit menu.', test:g=>g.ach.won&&!g.ach.prodAny },
   { id:'stonewall', name:'Stone Wall', desc:'Win having built only economy & defensive structures — and produced no units.', test:g=>g.ach.won&&!g.ach.prodAny&&g.ach.onlyDefEcon },
@@ -548,6 +550,9 @@ const ACHIEVEMENTS = [
   // ---- strikes & bosses ----
   { id:'deadman', name:"Dead Man's Switch", desc:'Have 10+ strategic strikes in flight at once.', test:g=>g.proj.filter(p=>p.strat).length>=10 },
   { id:'kaiju', name:'Kaiju Hunter', desc:'Destroy all four autodrone superweapons (across separate rounds).', test:()=>{const k=everGet('boss');return k.hive&&k.leviathan&&k.annihilator&&k.bombarder;} },
+  { id:'nukehappy', name:'This Will Have No Long-Term Consequences', desc:'Launch 10 Nuclear Strikes in a single round.', test:g=>(g.ach.nukeCount||0)>=10 },
+  { id:'oops', name:'Oops', desc:'Launch a Nuclear Strike during PREP — before the fleet ever arrived.', test:g=>g.ach.prepNuke },
+  { id:'forgotresearch', name:'I Forgot to Research', desc:'Launch 20 Ballistic Missiles in a single round.', test:g=>(g.ach.ballisticCount||0)>=20 },
   // ---- meta & gags ----
   { id:'faketime', name:'Fake Time Strategy', desc:'Change the game speed 30 times in one round.', test:g=>g.ach.speedChg>=30 },
   { id:'paused10', name:'You done yet?', desc:'Stay paused for over 10 minutes in one match.', test:g=>g.ach.pausedT>=600 },
@@ -1894,7 +1899,8 @@ function newGame(diff) {
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
-    ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true },
+    ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
+      couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game)
   };
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
@@ -2349,6 +2355,7 @@ function cancelResearch() {
 function finishResearch() {
   const r = RESEARCH[G.research.key], key = G.research.key; G.research = null;
   markEver('res', key);   // ACHIEVEMENT: cross-round "researched every tech" progress
+  if (G.ach) G.ach.researchedAnything = true;   // ACHIEVEMENT: pacifist-win tracking — any completed non-root research disqualifies it
   G.unlocked[key] = true; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf;
   applyEraUpgrades();   // re-arm fielded units if this unlock advanced the age
   if (key === 'plasma') toast('⚡ PLASMA ARMS ONLINE — your ground & air units re-arm with plasma');
@@ -2979,6 +2986,11 @@ function launchStrike(silo, type, tx, ty, air) {
   if (G.stab < sc + 3) return toast('TOO UNSTABLE — ' + w.name.toUpperCase() + ' COSTS ' + sc + '% STABILITY');
   G.ic -= cost; G.stab = Math.max(1, G.stab - sc); silo.silocd = w.cd;
   if (w.amCost) G.antimatter = Math.max(0, (G.antimatter || 0) - w.amCost);
+  // ACHIEVEMENT TRACKING — strike-type counters (nuke spam, peacetime nuke, ballistic spam), reset each new game via G.ach
+  if (G.ach) {
+    if (type === 'nuke') { G.ach.nukeCount = (G.ach.nukeCount || 0) + 1; if (G.phase === 'prep') G.ach.prepNuke = true; }
+    else if (type === 'ballistic') { G.ach.ballisticCount = (G.ach.ballisticCount || 0) + 1; }
+  }
   if (ty == null) ty = groundY(tx); if (air == null) air = ty < groundY(tx) - 30;
   const sx0 = silo.x, sy0 = bldSurfaceY(silo) - silo.d.h - 4, g = 240;   // launch from the surface above the launcher (even if buried; sea level for naval platforms)
   if (w.drop) {   // COMBAT DROP — deploy YOUR OWN troops at the target (era-scaled: paratroopers → drop-pods → orbital landing)
@@ -4244,7 +4256,7 @@ function backToTitle() { musStop(); closeStrike(); document.getElementById('endS
 function end(win, msg) {
   if (!G || G.over) return; G.over = win ? 'win' : 'lose';
   // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set.
-  if (G.ach) { if (win) { G.ach.won = true; markEver('win', G.intent); } else { G.ach.lostReason = msg || ''; } }
+  if (G.ach) { if (win) { G.ach.won = true; markEver('win', G.intent); } else { G.ach.lostReason = msg || ''; if (G.phase === 'prep') G.ach.couped = true; } }   // ACHIEVEMENT: a stability collapse that ends the game before the invasion phase begins is a COUP, not a battlefield loss
   try { checkAchievements(); } catch (er) {}
   const e = document.getElementById('endScreen'); e.style.display = 'flex';
   const t = document.getElementById('endTitle'); t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)';
@@ -4265,7 +4277,7 @@ function end(win, msg) {
   // a light commendation based on how the defense went (cities are everything)
   const held = citiesTot ? citiesAlive / citiesTot : 0;
   let rank, col;
-  if (!win) { rank = (G.lostStructures || 0) > 0 ? '✦ A COSTLY STAND ✦' : '✦ THE LINE BROKE ✦'; col = 'var(--inf)'; }
+  if (!win) { rank = (G.ach && G.ach.couped) ? '✦ A COUP — YOUR OWN STATE REMOVED YOU BEFORE THE ENEMY EVER ARRIVED ✦' : (G.lostStructures || 0) > 0 ? '✦ A COSTLY STAND ✦' : '✦ THE LINE BROKE ✦'; col = 'var(--inf)'; }
   else if (held >= 1 && (G.lostStructures || 0) === 0) { rank = '★★★ FLAWLESS DEFENSE — PLANETARY SAVIOUR ★★★'; col = '#ffd86b'; }
   else if (held >= 0.7) { rank = '★★ WORLD SECURED ★★'; col = 'var(--mp)'; }
   else if (held > 0) { rank = '★ PYRRHIC VICTORY ★'; col = '#ffb86b'; }

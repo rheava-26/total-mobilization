@@ -1906,6 +1906,12 @@ function bmod() { return (G && G.bmod) || {}; }
 function auraAt(x, field) { let m = 1; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field]; return m; }   // local building auras (range / fire-rate)
 function auraHeal(x) { let h = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal); return h; }   // Nanite Foundry repair radius
 function armyCap() { let cap = 12 + Math.floor((G.mp || 0) / 25) + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return cap; }   // driven by your MANPOWER pool — ~300 mp ≈ 24 cap (old baseline), ~900 mp ≈ 48 cap; mechanical units never touch this (see isMechanical)
+// === GARRISON ECONOMY === a SEPARATE, free auto-defense track from the manual army above. garrisonCap() is the hard
+// GLOBAL WEIGHT BUDGET (set by Garrison Stockpiles); garrisonUsed() sums the weight of every currently-live garrisoner
+// (tagged u.garrison — see spawnGarrison() and the fill loop in updateGame()). Total live weight may never exceed the cap.
+const GARRISON_UPKEEP_PER_WEIGHT = 0.12;   // small flat IC/s drain per weight-point of standing garrison — the economy's brake
+function garrisonCap() { let c = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.garrisonCap) c += b.d.garrisonCap; return c; }
+function garrisonUsed() { let w = 0; if (G && G.units) for (const u of G.units) if (u.garrison && u.hp > 0) w += u.garrWeight || 1; return w; }
 function srMult(d) { let m = 1; if (G.owned.steel && d.domain === 'ground') m *= .82; if (G.owned.oil && (d.domain === 'air' || d.domain === 'naval')) m *= .82; if (G.owned.rare && d.domain === 'space') m *= .85; return m; }
 // === ORBITAL LIFT CAPACITY === space units RESERVE lift while they exist (the slides' "needs N orbital capacity to lift"); more Space Centers / Stations = a bigger orbital fleet
 function orbCap() { let c = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.orbcap) c += b.d.orbcap; return c; }
@@ -1996,7 +2002,7 @@ function nearestIdleConstructor(x) { let best = null, bd = 1e9; for (const u of 
 function finishSite(site) {
   const b = mkBuilding(site.key, site.x); b.done = true; b.ug = site.ug; b.ugLvl = site.ugLvl || (site.ug ? 1 : 0); if (b.ug) b.y = groundY(b.x) + UG_DEPTH * b.ugLvl; G.buildings.push(b);
   if (site.d.onNode) { const n = nodeNear(site.x); if (n) { n.used = true; G.owned[n.type] = (G.owned[n.type] || 0) + 1; b.srtype = n.type; toast('CLAIMED ' + SR[n.type].name.toUpperCase()); } }
-  if (site.d.garrison) { const g = site.d.garrison, keys = g.keys || [g.key]; if (UNIT_DEFS[keys[0]]) for (let i = 0; i < g.n; i++) spawnGarrison(keys[i % keys.length], site.x + (Math.random() - .5) * site.d.w * 1.6); }   // a combined-arms garrison forms around it
+  if (site.d.garrison) { const g = site.d.garrison, keys = g.keys || (g.unit ? [g.unit] : [g.key]), gw = g.weight || 1; if (UNIT_DEFS[keys[0]]) { let room = garrisonCap() - garrisonUsed(); for (let i = 0; i < g.n && room >= gw; i++) { spawnGarrison(keys[i % keys.length], site.x + (Math.random() - .5) * site.d.w * 1.6, b, gw); room -= gw; } } }   // a combined-arms garrison forms around it, capped by the GLOBAL GARRISON weight budget — any slots that don't fit yet are picked up later by the tick fill loop as the budget grows
   recalcBuildings();   // a new special building may change global modifiers
   if (b.d.strat && !G.hintStrike) { G.hintStrike = true; const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('attn'); toast('☢ ' + b.d.name.toUpperCase() + ' READY — press ☢ STRIKE (top bar) to call one down'); }   // playtest: nobody found the STRIKE button — point at it the moment it becomes useful
   if (mode === 'game') { buildProdMenu(); buildBuildBar(); }   // refresh menus so building-driven upgrades (e.g. Drone Assembly batch) show their green highlight immediately
@@ -2077,7 +2083,7 @@ function deployEmplacement(type, x, owner) {
   return b;
 }
 function combatCount() { let n = 0; for (const u of G.units) if (!u.d.builder && !u.garr && !isMechanical(u.d)) n++; return n; }   // garrison units = free local defense; mechanical units don't count vs cap
-function spawnGarrison(key, x) { spawnUnit(key, x); const u = G.units[G.units.length - 1]; if (u) u.garr = true; }
+function spawnGarrison(key, x, home, weight) { spawnUnit(key, x); const u = G.units[G.units.length - 1]; if (u) { u.garr = true; u.garrison = true; u.garrHome = home || null; u.garrWeight = weight || 1; } return u; }   // u.garrison + u.garrWeight/garrHome feed the GARRISON ECONOMY's global weight budget; u.garr alone keeps the older army-cap/upkeep exclusions working unchanged
 function unitBReq(d) { return d.bReq && !G.buildings.some(x => x.key === d.bReq && x.done !== false) ? d.bReq : null; }
 function unitProdUnlocked(key) { if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.prodUnlock && b.d.prodUnlock.indexOf(key) >= 0) return true; return false; }   // a Production-Line building makes this research-gated unit buildable natively
 function prodUnlockBuildingFor(key) { for (const k in BUILD_DEFS) { const pu = BUILD_DEFS[k].prodUnlock; if (pu && pu.indexOf(key) >= 0) return BUILD_DEFS[k]; } return null; }
@@ -2389,8 +2395,8 @@ function updateGame(dt) {
   if (bmod().amR) G.antimatter = Math.min(300, (G.antimatter || 0) + bmod().amR * dt);   // Antimatter Extractors slowly accrue antimatter
   const em = 1 + G.mult.econ;
   icR *= em; mpR *= (1 + G.mult.mp) * em; resR *= (1 + G.mult.res);
-  let upkeep = 0; for (const u of G.units) if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once
-  icR -= upkeep; G.upkeep = upkeep;
+  let upkeep = 0, garrUpkeep = 0; for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
+  icR -= upkeep; G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;
   if (G.dystopia) stabNeg += 1.4;
   G.icR = icR; G.mpR = mpR; G.resR = resR;
   G.ic = Math.max(0, G.ic + icR * dt); G.mp = Math.min(900, G.mp + mpR * dt); G.res += resR * dt;
@@ -2445,11 +2451,25 @@ function updateGame(dt) {
   }
   if (G.regen) for (const b of G.buildings) if (b.hp < b.maxHp) b.hp = Math.min(b.maxHp, b.hp + 5 * dt);   // repair nanobots
   // production buildings keep a standing garrison; autonomous plants trickle out troops
+  // GARRISON ECONOMY fill pass — a running weight ledger (garrLive) is checked/updated as we go, so several buildings
+  // filling in the same tick still can't collectively blow past the global garrisonCap() budget.
+  G.garrCap = garrisonCap(); let garrLive = garrisonUsed();
   for (const b of G.buildings) {
     if (b.done === false || b.captured) continue;
     if (b.d.autospawn) { const deep = !!bmod().autoFast, fast = deep ? .3 : 1, key = deep ? 'android' : b.d.autospawn; b.aut = (b.aut || 0) + dt; if (b.aut >= b.d.spawnEvery * fast && (isMechanical(UNIT_DEFS[key]) || combatCount() < armyCap())) { b.aut = 0; spawnUnit(key, b.x + (Math.random() - .5) * 30); } }   // Deep-Ore Excavator: autofactories crank out high-tier mechs 70% faster; mechanical output (e.g. android) is cap-exempt
-    if (b.d.garrison) { const g = b.d.garrison, keys = g.keys || [g.key], cap = g.n + (bmod().garr | 0); if (UNIT_DEFS[keys[0]]) { b.gt = (b.gt || 0) + dt; if (b.gt >= 22) { b.gt = 0; let nearby = 0; for (const u of G.units) if (u.garr && keys.indexOf(u.key) >= 0 && Math.abs(u.x - b.x) < 220) nearby++; if (nearby < cap) spawnGarrison(keys[Math.floor(Math.random() * keys.length)], b.x + (Math.random() - .5) * b.d.w * 1.6); } } }
+    if (b.d.garrison) {
+      const g = b.d.garrison, keys = g.keys || (g.unit ? [g.unit] : [g.key]), gw = g.weight || 1, cap = g.n + (bmod().garr | 0);
+      if (UNIT_DEFS[keys[0]]) {
+        const fillT = 22 / Math.max(.4, auraAt(b.x, 'garrSpd'));   // Garrison Factories / Mobilization Hubs speed nearby fill via their aura
+        b.gt = (b.gt || 0) + dt;
+        if (b.gt >= fillT) { b.gt = 0;
+          let nearby = 0; for (const u of G.units) if (u.garr && keys.indexOf(u.key) >= 0 && Math.abs(u.x - b.x) < 220) nearby++;
+          if (nearby < cap && garrLive + gw <= G.garrCap) { spawnGarrison(keys[Math.floor(Math.random() * keys.length)], b.x + (Math.random() - .5) * b.d.w * 1.6, b, gw); garrLive += gw; }   // ANTI-SPAM WALL — hard-blocked once the global weight budget (Garrison Stockpiles) is exhausted, even if the building's own local slot is still open
+        }
+      }
+    }
   }
+  G.garrUsed = garrLive;
   // production buildings
   for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust
@@ -4110,6 +4130,8 @@ function syncHUD() {
   if (!G) return;
   document.getElementById('hIc').textContent = Math.floor(G.ic); document.getElementById('icR').textContent = '+' + Math.round(G.icR) + '/s';
   document.getElementById('hMp').textContent = Math.floor(G.mp); document.getElementById('mpR').textContent = '+' + Math.round(G.mpR) + '/s';
+  { const hg = document.getElementById('hGarr'), gr = document.getElementById('garrR'); if (hg) hg.textContent = Math.round(G.garrUsed || 0) + '/' + Math.round(G.garrCap || 0); if (gr) gr.textContent = '-' + (G.garrUpkeepIC || 0).toFixed(1) + '/s'; }   // GARRISON ECONOMY — separate free auto-defense track: live weight / global Stockpile-set budget, and its IC/s upkeep drain
+  { const ha = document.getElementById('hArmy'), ar = document.getElementById('armyR'); if (ha) ha.textContent = combatCount() + '/' + armyCap(); if (ar) ar.textContent = '+' + Math.max(0, (G.mpR || 0) / 25).toFixed(2) + '/s'; }   // ARMY — the unchanged MANUAL production track; rate shown is how fast MANPOWER income is currently growing the cap
   document.getElementById('hInf').textContent = Math.floor(G.inf) + ' (' + combatCount() + '/' + armyCap() + ')';
   { const ir = document.getElementById('infR'); if (ir) ir.textContent = '+' + (G.infR || 0).toFixed(1) + '/s'; }   // what your CURRENT stability is generating (stability × momentum − superhuman upkeep)
   document.getElementById('hStab').innerHTML = Math.round(effStab()) + ' / ' + Math.round(G.stabCap || 100) + (G.stabOffset > 1 ? ' <span style="color:#ff8a6a">⚠−' + Math.round(G.stabOffset) + '</span>' : '') + (stabPreview ? ' <span style="color:' + stabPreview.col + '">' + stabPreview.txt + '</span>' : '');   // EFFECTIVE stability / CAP; ⚠ flags research-unrest; hover a research/special building to preview its stability impact here

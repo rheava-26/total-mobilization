@@ -32,9 +32,9 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.31.0** (on `main`).
-- **In-flight Sonnet agents:** none — both landed and shipped (particle hitscan + universal leading; squad perf/art/water).
-- **Next:** the designer is handing the big framework builds (see The Big Vision / Backlog) to **Fable 5**. This file is the send-off.
+- **Live version: v3.31.1** (on `main`). Side-vignette bug fixed (was a min(W,H)-circle canvas vignette stacked under a CSS ellipse → heavy left/right curtains on wide screens; now ONE aspect-true soft ellipse). A hidden **`nightMode` prototype flag** (default off, console: `nightMode = true; vigKey = '';`) leans into the deep-framed look — **awaiting the designer's verdict on promoting it to a real settings toggle.**
+- **In-flight Sonnet agents:** none.
+- **Fable 5 has taken the organizer seat** (this file was the send-off; it worked).
 
 ---
 

@@ -444,7 +444,7 @@
     <div class="cell garr" data-tip="Garrison — the SEPARATE auto-defense track. Bunkers, Barracks, Garrison Factories & Airbases passively spawn free defenders up to this WEIGHT budget, set by your Garrison Stockpiles. Each live garrisoner drains a little IC/s upkeep (shown here)."><div class="l has-tip">GARRISON</div><div class="n" id="hGarr">0/0</div><div class="r" id="garrR">-0.0/s</div></div>
     <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
-    <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar. Falls when cities are hit or you over-use strikes. 0 = defeat."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
+    <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar (they also bank a small RESERVE — ⛊ — that auto-refills lost stability). Falls when cities are hit or you over-use strikes. Pinned at 0 for too long triggers a recoverable CAPITULATION CRISIS, not instant defeat."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
     <div class="cell res" data-tip="Tech Era — research is bought with INFLUENCE in the RESEARCH tree. Advancing to Fusion/Space age unlocks higher tiers."><div class="l has-tip">TECH ERA</div><div class="n" id="hRes">I</div><div class="r" id="resR">INFO AGE</div></div>
     <div class="srbar" id="srBar" data-tip="Special Resources — extracted from deposits. Owning one permanently cheapens/unlocks related units."><span class="none">no special resources</span></div>
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
@@ -1694,8 +1694,8 @@ const BUILD_DEFS = {
   // ECON
   powerplant:{ name: 'Power Plant', cat: 'ECON', ic: 120, mp: 55, build: 8, hp: 240, w: 19, h: 15, econ: { ic: 7 }, ds: '+7 Industrial Capacity / sec. Needs a workforce.' },
   housing:  { name: 'Housing Block', cat: 'ECON', ic: 100, mp: 26, build: 7, hp: 200, w: 18, h: 18, econ: { mp: 3, cap: 4 }, ds: '+3 Manpower/sec, +4 army cap. Settles a district.' },
-  comms:    { name: 'Comms Tower', cat: 'ECON', ic: 130, mp: 48, build: 8, hp: 160, w: 15, h: 21, econ: { stab: 0.5 }, ds: 'Raises your STABILITY CAP — the ceiling your stability (and therefore your INFLUENCE) can climb to. Influence now flows only from stability, so build these to lift the ceiling.' },
-  propaganda:{ name: 'Propaganda Bureau', cat: 'ECON', ic: 140, mp: 50, build: 8, hp: 180, w: 16, h: 20, econ: { stab: 1.1 }, ds: 'Hammers out the party line — STRONGLY raises your STABILITY CAP. The backbone of a high-influence late game: a higher cap means more stability, and more stability means faster research & a bigger army.' },
+  comms:    { name: 'Comms Tower', cat: 'ECON', ic: 130, mp: 48, build: 8, hp: 160, w: 15, h: 21, econ: { stab: 0.5 }, stabRes: 3, ds: 'Raises your STABILITY CAP — the ceiling your stability (and therefore your INFLUENCE) can climb to. Influence now flows only from stability, so build these to lift the ceiling. Also banks a small STABILITY RESERVE — a shock-absorber that auto-refills stability you\'ve lost.' },
+  propaganda:{ name: 'Propaganda Bureau', cat: 'ECON', ic: 140, mp: 50, build: 8, hp: 180, w: 16, h: 20, econ: { stab: 1.1 }, stabRes: 5, ds: 'Hammers out the party line — STRONGLY raises your STABILITY CAP. The backbone of a high-influence late game: a higher cap means more stability, and more stability means faster research & a bigger army. Also banks the largest STABILITY RESERVE of any structure — a shock-absorber against sudden shocks.' },
   extractor:{ name: 'Extractor', cat: 'ECON', ic: 90, mp: 65, build: 7, hp: 180, w: 16, h: 18, onNode: true, econ: { ic: 4 }, ds: 'Build on a deposit to claim a Special Resource + IC.' },
   // PROD
   factory:  { name: 'Factory', cat: 'PROD', ic: 160, mp: 105, build: 10, hp: 280, w: 23, h: 18, prod: 'ground', garrison: { keys: ['tank', 'inf', 'aa'], n: 3 }, makes: { alloy: .35 }, ds: 'Produces GROUND units. Keeps a standing combined-arms garrison (tanks, infantry, AA). Also forges HEAVY ALLOY (spent on heavy armour). More factories = cheaper units.' },
@@ -1707,7 +1707,7 @@ const BUILD_DEFS = {
   bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, pd: true, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget). Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'rotary', range: 560, dmg: 5, rate: .1, ceil: .4, noGround: true, pd: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon hosing a STREAM of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Fires ONLY at aircraft & ordnance — it will NOT depress onto ground units or targets hugging the deck. Cheap — screen your cities with them. No research needed.' },
   samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .60, pd: true, noGround: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances.' },
-  radar:    { name: 'Radar', cat: 'DEF', ic: 100, mp: 40, build: 7, hp: 140, w: 13, h: 18, econ: { stab: 0.3 }, aura: { range: 1.12 }, ds: 'Boosts nearby unit range +12%; slightly raises your stability cap.' },
+  radar:    { name: 'Radar', cat: 'DEF', ic: 100, mp: 40, build: 7, hp: 140, w: 13, h: 18, econ: { stab: 0.3 }, stabRes: 2, aura: { range: 1.12 }, ds: 'Boosts nearby unit range +12%; slightly raises your stability cap. Also banks a small STABILITY RESERVE that auto-refills lost stability over time.' },
   silo:     { name: 'Missile Silo', cat: 'DEF', ic: 420, mp: 130, build: 20, hp: 320, armor: 6, w: 18, h: 15, strat: true, ds: 'STRATEGIC: enables the ☢ STRIKE button. Call nuclear/orbital strikes that cost STABILITY (not a long reload). Bury it to keep it safe.' },
   aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'rotary', range: 700, dmg: 7, rate: .07, ceil: .60, noGround: true, pd: true, req: 'pointdefense', ds: 'Rapid-fire interceptor — hoses a STREAM of flak to swat down incoming MISSILES and tungsten RODS. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (POINT DEFENSE)' },
   microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, pd: true, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
@@ -1730,7 +1730,7 @@ const BUILD_DEFS = {
   plasmaturret:{ name: 'Plasma Turret', cat: 'DEF', ic: 220, mp: 50, build: 9, hp: 260, armor: 10, w: 16, h: 16, weapon: 'plasball', range: 640, dmg: 34, rate: .6, ceil: .56, pd: true, req: 'plasma', ds: 'Hardened plasma battery — fast self-steering plasma bolts that out-range & out-hit guns and reach high into the sky. (PLASMA WEAPONS)' },
   naniteturret:{ name: 'Nanite Turret', cat: 'DEF', ic: 170, mp: 45, build: 8, hp: 220, armor: 6, w: 14, h: 16, weapon: 'smart', range: 660, dmg: 8, rate: 1.1, ceil: .58, pd: true, req: 'nanotech', ds: 'Fires NANOBOT ROUNDS — smart munitions that latch onto a target and rapidly DISASSEMBLE it (chews through heavy armour & shields where lasers/plasma struggle). A strong, cheap defensive line straight off the Nanotech path — no Nanite Foundry required. (NANOTECHNOLOGY)' },
   // ===== SPECIAL-RESOURCE / REQUIREMENT BUILDINGS (cat SPEC) — most of your power now comes from BUILDING these, not from raw research =====
-  psionicrelay:{ name: 'Psionic Relay', cat: 'SPEC', ic: 180, mp: 60, build: 9, hp: 160, w: 14, h: 22, req: 'psistudies', econ: { stab: -0.3, inf: -2 }, aura: { rof: 1.18, range: 1.08, r: 280 }, ds: 'Projects local fire-rate & range like a radar, but bleeds stability and a trickle of influence. The mind-static is what lets your psions reach Applied Psionics.' },
+  psionicrelay:{ name: 'Psionic Relay', cat: 'SPEC', ic: 180, mp: 60, build: 9, hp: 160, w: 14, h: 22, req: 'psistudies', econ: { stab: -0.3, inf: -2 }, aura: { rof: 1.18, range: 1.08, r: 280 }, ds: 'Projects local fire-rate & range like a radar, but the mind-static LOWERS your stability cap and trickles away influence. Not a drain on banked stability — just a lower ceiling you can build back up with Comms/Propaganda. The mind-static is what lets your psions reach Applied Psionics.' },
   cloningfac:{ name: 'Cloning Facility', cat: 'SPEC', ic: 220, mp: 80, build: 11, hp: 200, w: 18, h: 16, req: 'cloning', econ: { mp: 2 }, garrison: { keys: ['clone'], n: 2 }, gmod: { costClone: .5, mpAll: .1, cloneFast: 1, capb: 8 }, ds: 'Clone units cost −50% IC and grow TWICE as fast; all units use −10% manpower; +8 army cap and a steady manpower trickle. Decants a standing guard of clones.' },
   deepore:  { name: 'Deep-Ore Excavator', cat: 'SPEC', ic: 360, mp: 130, build: 17, hp: 320, w: 22, h: 16, reqs: ['spaceage', 'automation'], econ: { ic: 14 }, gmod: { autoFast: 1, costMech: .15 }, ds: 'Massive IC boost. Autonomous Plants nanofabricate 70% faster AND switch to high-tier MECHS (android droids) — build droid armies. (Space Age + Automation)' },
   genefac:  { name: 'Gene Facility', cat: 'SPEC', ic: 200, mp: 90, build: 11, hp: 220, w: 18, h: 16, req: 'biotech', garrison: { keys: ['shock'], n: 1 }, gmod: { bioQual: .35, costBio: .15 }, ds: 'Biological units +35% quality (HP) and −15% IC. Build several — each one stacks the bonus. Keeps a gene-boosted shock-trooper guard. (Bioengineering)' },
@@ -1746,7 +1746,7 @@ const BUILD_DEFS = {
   rotaryworks:{ name: 'Rotary Cannon Works', cat: 'INFRA', ic: 240, mp: 70, build: 12, hp: 240, w: 20, h: 14, bDef: 1, ds: 'Arms the armed populace in EVERY CITY with a CIWS-class rotary cannon — a rapid STREAM of flak that shreds low-flying enemies AND shoots down incoming missiles. Your cities become point-defence hubs. No research needed.' },
   plasmabastion:{ name: 'Plasma Bastion Works', cat: 'INFRA', ic: 360, mp: 95, build: 15, hp: 300, w: 20, h: 16, req: 'plasma', bDef: 2, ds: 'Upgrades every CITY\'s defense to heavy PLASMA cannons — long reach, hard-hitting, fire high into the sky. Turns your cities into fortresses. (Plasma Weapons)' },
   superconductor:{ name: 'Superconductor Facility', cat: 'SPEC', ic: 260, mp: 90, build: 13, hp: 220, w: 18, h: 18, req: 'directedenergy', gmod: { costElec: .3, resCost: .1 }, ds: 'High-tech electronics (radars, lasers, railguns, satellites, dreadnoughts) cost −30% IC, and research costs −10% influence. (Directed Energy)' },
-  mantleforge:{ name: 'Mantle Forge', cat: 'SPEC', ic: 320, mp: 110, build: 16, hp: 300, w: 20, h: 14, req: 'automation', autoBury: 2, econ: { ic: 10, stab: -0.5 }, gmod: { costMech: .3 }, ds: 'A deep lava forge (auto-buries itself to the deep layer): mechanical units −30% IC and a strong IC income — but the upheaval gnaws at stability. (Automation)' },
+  mantleforge:{ name: 'Mantle Forge', cat: 'SPEC', ic: 320, mp: 110, build: 16, hp: 300, w: 20, h: 14, req: 'automation', autoBury: 2, econ: { ic: 10, stab: -0.5 }, gmod: { costMech: .3 }, ds: 'A deep lava forge (auto-buries itself to the deep layer): mechanical units −30% IC and a strong IC income — but the upheaval LOWERS your stability cap (not a drain on stability you\'ve already banked). (Automation)' },
   airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
   tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. (Telekinesis)' },
   nanitefoundry:{ name: 'Nanite Foundry', cat: 'SPEC', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .58, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
@@ -1812,14 +1812,14 @@ function newGame(diff) {
   const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2 }[diff] || 1);
   const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
   G = {
-    ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent,
+    ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, stabReserve: 0, stabReserveMax: 0, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent,
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0,
+    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
@@ -1939,6 +1939,8 @@ function unitCost(d) {
 }
 
 const UG_DEPTH = 50;   // how far below the surface buried buildings & rail tunnels sit
+const CRISIS_LOSS_T = 25;   // seconds stability must sit PINNED at ~0, continuously, before a capitulation crisis becomes a loss — a dip is a recoverable setback, only a SUSTAINED collapse ends the run
+const CRISIS_MUTINY_FRAC = 0.3;   // fraction of the standing army that mutinies (goes inert) for the duration of a crisis
 function ugAllowed(d) { return !!d.rail || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't
 function digLevel(key) { const d = BUILD_DEFS[key]; if (d.rail) return 1; if (d.autoBury) return Math.min(2, d.autoBury); if (G && G.dig && ugAllowed(d)) return Math.min(2, G.dig | 0); return 0; }   // 0 surface · 1 shallow · 2 deep — rail hubs & autoBury buildings always sink
 function placeUg(key) { return digLevel(key) > 0; }
@@ -1961,6 +1963,7 @@ function bldLocked(d) {   // returns a reason string if this building can't be b
   return null;
 }
 function placeBuilding(key, wx) {
+  if (G.crisis) return toast('⚠ CAPITULATION CRISIS — construction frozen until stability recovers');
   const d = BUILD_DEFS[key];
   const lock = bldLocked(d); if (lock) return toast(lock);
   const ug = placeUg(key), ugLvl = digLevel(key), native = ug && (d.rail || d.autoBury);   // buildings DESIGNED to live underground (rail hubs, auto-bury forges, buried hangars) pay NO burial surcharge
@@ -2138,6 +2141,7 @@ function unitBReq(d) { return d.bReq && !G.buildings.some(x => x.key === d.bReq 
 function unitProdUnlocked(key) { if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.prodUnlock && b.d.prodUnlock.indexOf(key) >= 0) return true; return false; }   // a Production-Line building makes this research-gated unit buildable natively
 function prodUnlockBuildingFor(key) { for (const k in BUILD_DEFS) { const pu = BUILD_DEFS[k].prodUnlock; if (pu && pu.indexOf(key) >= 0) return BUILD_DEFS[k]; } return null; }
 function queueUnit(b, key) {
+  if (G.crisis) return toast('⚠ CAPITULATION CRISIS — production frozen until stability recovers');
   const d = effDef(key), bm = bmod();
   let grp = d.grp || 1; if (d.drone && bm.droneBatch) grp += bm.droneBatch;   // Drone Assembly enlarges the batch
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) { const pb = prodUnlockBuildingFor(key); return toast('REQUIRES RESEARCH: ' + RESEARCH[d.req].name + (pb ? ' — or build a ' + pb.name : '')); }
@@ -2478,21 +2482,33 @@ function updateGame(dt) {
   // economy from buildings
   recalcBuildings();   // refresh special-building modifiers
   const ppB = 1 + (bmod().ppBonus || 0);   // Uranium Enrichment boosts Power Plant output
-  let icR = 6, mpR = 4, resR = 1, stabNeg = 0, capBonus = 0, bDef = 0;
-  for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (b.d.bDef) bDef = Math.max(bDef, b.d.bDef); if (b.d.makes) for (const k in b.d.makes) G.comp[k] = Math.min(60, (G.comp[k] || 0) + b.d.makes[k] * dt); const e = b.d.econ; if (!e) continue; icR += (e.ic || 0) * (b.key === 'powerplant' ? ppB : 1); mpR += e.mp || 0; resR += e.res || 0; const es = e.stab || 0; if (es > 0) capBonus += es * 14; else if (es < 0) stabNeg += -es; }   // POSITIVE stability output now RAISES your STABILITY CAP (the ceiling); negative output is an ongoing drain. Buildings NO LONGER grant influence directly — influence comes only from stability.
+  let icR = 6, mpR = 4, resR = 1, capPenalty = 0, capBonus = 0, bDef = 0, resMax = 0;
+  for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (b.d.bDef) bDef = Math.max(bDef, b.d.bDef); if (b.d.makes) for (const k in b.d.makes) G.comp[k] = Math.min(60, (G.comp[k] || 0) + b.d.makes[k] * dt); if (b.d.stabRes) resMax += b.d.stabRes; const e = b.d.econ; if (!e) continue; icR += (e.ic || 0) * (b.key === 'powerplant' ? ppB : 1); mpR += e.mp || 0; resR += e.res || 0; const es = e.stab || 0; if (es > 0) capBonus += es * 14; else if (es < 0) capPenalty += -es * 14; }   // stability output RAISES/LOWERS your STABILITY CAP (the ceiling) — it is NEVER an ongoing drain on banked stability. Instability makes a society FRAGILE (a lower max to rebuild toward with Comms/Propaganda/Radar), never a runaway bleed with no counterplay. Buildings NO LONGER grant influence directly — influence comes only from stability.
   G.bDefTier = bDef;   // 0 rifles · 1 rotary/CIWS · 2 plasma — the Rotary/Plasma works upgrade CITY self-defense only (ordinary buildings keep rifles)
   if (bmod().amR) G.antimatter = Math.min(300, (G.antimatter || 0) + bmod().amR * dt);   // Antimatter Extractors slowly accrue antimatter
   const em = 1 + G.mult.econ;
   icR *= em; mpR *= (1 + G.mult.mp) * em; resR *= (1 + G.mult.res);
   let upkeep = 0, garrUpkeep = 0; for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
   icR -= upkeep; G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;
-  if (G.dystopia) stabNeg += 1.4;
+  if (G.dystopia) capPenalty += 20;   // a dystopian society is FRAGILE, not a bottomless pit — it lowers the ceiling stability can climb to rather than bleeding banked stability toward zero with no counterplay
   G.icR = icR; G.mpR = mpR; G.resR = resR;
   G.ic = Math.max(0, G.ic + icR * dt); G.mp = Math.min(900, G.mp + mpR * dt); G.res += resR * dt;
   G.superN = 0; for (const u of G.units) if (u.key === 'superhuman') G.superN++;   // Superhuman Cadres carry a standing upkeep — near-immortal flying laser demigods have lasting societal & political implications
-  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus + Math.max(0, G.mult.stab) * 30 - G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; EACH fielded Superhuman Cadre lowers the ceiling 1% (an uneasy populace)
-  let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus) drifts back down
-  G.stab = Math.max(0, Math.min(100, G.stab + (stabRegen - stabNeg) * dt));
+  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus - capPenalty + Math.max(0, G.mult.stab) * 30 - G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; dystopia, unrest buildings & EACH fielded Superhuman Cadre LOWER the ceiling instead of draining current stability — a smaller maximum you can rebuild toward, never a runaway bleed
+  let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus, or the reserve below) drifts back down; a cap DROP pulls stability toward the new, lower ceiling at this same gentle pace — never an instant hit
+  G.stab = Math.max(0, Math.min(100, G.stab + stabRegen * dt));
+  // STABILITY RESERVE — Comms Towers / Propaganda Bureaus / Radar quietly bank a small reserve (capped hard at 100 total,
+  // independent of the cap-chase above) that auto-refills LOST stability on its own — a shock-absorber against sudden
+  // shocks (a city falling, a costly strike). LATCHED so it can't just fritter itself away one tick at a time: once spent
+  // to empty it locks out and must recharge all the way back to full before it's allowed to give again — so it always
+  // banks a real buffer to release in a burst, not a token trickle that cancels its own recharge every frame.
+  if (G.stabReserve == null) G.stabReserve = 0;
+  G.stabReserveMax = resMax; G.stabReserve = Math.min(resMax, G.stabReserve);
+  if (resMax > 0) {
+    if (G.stabReserve <= 0) G.stabReserveLatch = true; else if (G.stabReserve >= resMax) G.stabReserveLatch = false;
+    if (!G.stabReserveLatch && G.stab < 100 && G.stabReserve > 0) { const xfer = Math.min(G.stabReserve, 1.6 * dt, 100 - G.stab); G.stab = Math.min(100, G.stab + xfer); G.stabReserve -= xfer; }
+    else if (G.stabReserve < resMax) G.stabReserve = Math.min(resMax, G.stabReserve + 0.15 * dt);
+  }
   if (G.ach) G.ach.minStab = Math.min(G.ach.minStab, effStab());   // ACHIEVEMENT: lowest effective stability reached this round (Barely Holding On)
   // RESEARCH DRAW-DOWN — an active research no longer needs its full cost paid upfront; it siphons influence out of the
   // pool gradually (up to cost/time per second, same pace as before IF you can keep up) and completes once fully PAID,
@@ -2564,10 +2580,10 @@ function updateGame(dt) {
     }
   }
   G.garrUsed = garrLive;
-  // production buildings
-  for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }
-  // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust
-  for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
+  // production buildings — frozen during a CAPITULATION CRISIS (queues just wait; nothing is lost)
+  if (!G.crisis) for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }
+  // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
+  if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); } } }
   else if (G.phase === 'invasion') {
@@ -2643,7 +2659,31 @@ function updateGame(dt) {
   // TUNNEL ASSAULT — once enemy ground forces reach a buried structure's surface position they breach the tunnels (shallow caves in fast; deep resists). Underground is safer, not invincible.
   for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
   if (G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
-  if (G.stab <= 0) return end(false, 'STABILITY COLLAPSED');
+  // ── CAPITULATION CRISIS ───────────────────────────────────────────────────────────────────
+  // Hitting 0 stability is no longer an instant "gotcha" defeat — it triggers a recoverable crisis:
+  // construction & production freeze (see placeBuilding/queueUnit/the site+queue ticks below), a slice
+  // of the standing army mutinies (goes inert — see updUnits), and stability keeps trending toward its
+  // cap the whole time, same as ever. Only a SUSTAINED pin at ~0 for CRISIS_LOSS_T seconds straight ends
+  // the run — a dip is a major, recoverable setback; a total, prolonged collapse still loses.
+  if (G.stab <= 0.5) {
+    if (!G.crisis) {
+      G.crisis = true; G.crisisT = 0;
+      const pool = G.units.filter(u => !u.d.builder);
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+      const n = Math.round(pool.length * CRISIS_MUTINY_FRAC);
+      for (let i = 0; i < n; i++) pool[i].mutiny = true;
+      toast('⚠ CAPITULATION CRISIS — government paralyzed, ' + n + ' unit(s) mutiny; production frozen until stability recovers');
+      shake(10); SFX.boom();
+    }
+    G.crisisT += dt;
+    if (G.crisisT >= CRISIS_LOSS_T) {
+      return end(false, G.phase === 'prep' ? 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED' : 'CAPITULATION — STABILITY STAYED COLLAPSED TOO LONG');
+    }
+  } else if (G.crisis) {
+    G.crisis = false; G.crisisT = 0;
+    for (const u of G.units) u.mutiny = false;
+    toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes');
+  }
 }
 function updateCamera(dt) {   // runs every frame (even while paused) so scrolling always works
   const cz = cam.z || 1;   // pan in SCREEN-space speed — while zoomed in, world-space panning slows down to match what the eye sees
@@ -2984,6 +3024,7 @@ function updUnits(dt) {
       const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt; u.x += dx * inv * f; o.x -= dx * inv * f; if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } } } }
   for (const u of G.units) {
     if (u.d.builder) continue;
+    if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
     if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen
     if (u.d.carrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0; let n = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) n++; if (n < (u.d.carrierN || 3)) { spawnUnit('fighter', u.x + (Math.random() - .5) * 80); const f = G.units[G.units.length - 1]; if (f) { f.garr = true; f.carrFrom = u; f.ammo = 8; } } } }   // carrier continuously launches a free fighter wing that lands & rearms
@@ -3208,6 +3249,17 @@ function toggleManual() {   // add / remove the selected gun from the fire-contr
   refreshSel();
 }
 function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = []; toast('fire control released'); refreshSel(); }
+function demolishSelected() {   // DEMOLITION — undo an overbuild without waiting for the enemy to do it for you. Reclaims a slice of the IC spent; never a way to farm IC (well under 100% back).
+  if (!G || !G.sel || !G.buildings) return;
+  const b = G.sel; const idx = G.buildings.indexOf(b); if (idx < 0) return;   // only a real, placed building (not a city/unit) can be selected here
+  const refund = Math.round((b.d.ic || 0) * .4);
+  G.ic = Math.min(1e9, G.ic + refund);
+  G.buildings.splice(idx, 1);
+  if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); }
+  smoke(b.x, b.ug ? groundY(b.x) : groundY(b.x) - b.d.h * .5, 6); SFX.build();
+  toast('⛏ DEMOLISHED ' + b.d.name.toUpperCase() + ' — +' + refund + ' IC reclaimed');
+  G.sel = null; refreshSel(); buildBuildBar && buildBuildBar();
+}
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
 function togglePause() { if (!G || mode !== 'game' || G.over) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
@@ -3868,7 +3920,8 @@ function refreshSel() {
   const d = s.d || {};
   let html = `<canvas width="200" height="60"></canvas><div class="in">${s._cityName || (s.capital !== undefined ? (s.capital ? 'CAPITAL' : 'CITY') : d.name)}</div>`;
   if (s.capital !== undefined) { const tot = s.districts ? s.districts.length : 0, alive = s.districts ? s.districts.filter(q => !q.dead).length : 0; html += `<div class="id">${s.mega ? 'A fused MEGACITY. ' : ''}Victory point — a sprawl of ${tot} districts (${alive} standing). Defend it; losing every city ends the campaign.</div><div class="ibar"><div class="ifill" style="width:${Math.max(0, s.hp / s.maxHp * 100)}%;background:#7cffb0"></div></div>`; }
-  else if (s.queue !== undefined) { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>Integrity</span><b>${Math.max(0, Math.round(s.hp))}/${s.maxHp}</b></div>`; if (d.weapon) html += `<div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>`; if (s.srtype) html += `<div class="st"><span>Yields</span><b style="color:var(--res)">${SR[s.srtype].name}</b></div><div class="id" style="color:var(--res);margin-top:2px">${SR[s.srtype].ds}</div>`; if (s.queue.length) html += `<div class="st"><span>Building</span><b>${UNIT_DEFS[s.queue[0].key].name}</b></div>`; if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost && G.stab > sc + 3; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC · −${sc}% stab${av ? ' 🔒 ' + av : ''}</button>`; } } }
+  else if (s.queue !== undefined) { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>Integrity</span><b>${Math.max(0, Math.round(s.hp))}/${s.maxHp}</b></div>`; if (d.weapon) html += `<div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>`; if (s.srtype) html += `<div class="st"><span>Yields</span><b style="color:var(--res)">${SR[s.srtype].name}</b></div><div class="id" style="color:var(--res);margin-top:2px">${SR[s.srtype].ds}</div>`; if (s.queue.length) html += `<div class="st"><span>Building</span><b>${UNIT_DEFS[s.queue[0].key].name}</b></div>`; if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost && G.stab > sc + 3; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC · −${sc}% stab${av ? ' 🔒 ' + av : ''}</button>`; } }
+    html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div><div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>`; }
   if (html === info._html) return;   // only rebuild the panel when its content actually changed — avoids destroying the buttons ~60×/s (which ate every click) and re-drawing the preview each frame
   info._html = html; info.innerHTML = html;
@@ -3925,6 +3978,13 @@ function frame(now) {
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
+      if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the sustained-collapse countdown so the player knows exactly how much runway they have to claw stability back
+        const remain = Math.max(0, CRISIS_LOSS_T - (G.crisisT || 0)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
+        c.save(); c.fillStyle = 'rgba(120,10,10,' + (0.30 * pulse).toFixed(2) + ')'; c.fillRect(0, 0, W, 54);
+        c.textAlign = 'center'; c.font = 'bold 18px Consolas'; c.fillStyle = '#ff6a6a'; c.fillText('⚠ CAPITULATION CRISIS — PRODUCTION FROZEN · TROOPS MUTINYING', W / 2, 24);
+        c.font = '13px Consolas'; c.fillStyle = '#ffb0b0'; c.fillText('stability pinned at 0 — recovers on its own, but the government falls in ' + Math.ceil(remain) + 's if it stays there', W / 2, 44);
+        c.textAlign = 'left'; c.restore();
+      }
       if (paused) { c.fillStyle = 'rgba(4,8,18,.45)'; c.fillRect(0, 0, W, H); c.fillStyle = '#cfe0ff'; c.font = 'bold 30px Consolas'; c.textAlign = 'center'; c.fillText('❚❚  PAUSED', W / 2, H / 2); c.font = '15px Consolas'; c.fillStyle = '#9fb6d4'; c.fillText('press SPACE to resume', W / 2, H / 2 + 30); c.textAlign = 'left'; }
       syncHUD();
     }
@@ -4251,7 +4311,7 @@ function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pe
 function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchStrike(p.silo, p.type, p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
 // DELEGATED clicks for the selection panel — one listener on the persistent #info element, so the
 // buttons keep working even though the panel's innerHTML is rebuilt as the selection's stats change
-document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'toggleManual') toggleManual(); else if (act === 'releaseManual') releaseAllManual(); else if (act === 'armSilo') armSilo(el.dataset.arg); });
+document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'toggleManual') toggleManual(); else if (act === 'releaseManual') releaseAllManual(); else if (act === 'armSilo') armSilo(el.dataset.arg); else if (act === 'demolish') demolishSelected(); });
 cv.addEventListener('mousedown', e => gameTap(e.clientX, e.clientY, e.button));
 addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); });
 addEventListener('mouseup', () => mmDrag = false);
@@ -4318,7 +4378,7 @@ function syncHUD() {
   { const ha = document.getElementById('hArmy'), ar = document.getElementById('armyR'); if (ha) ha.textContent = combatCount() + '/' + armyCap(); if (ar) ar.textContent = '+' + Math.max(0, (G.mpR || 0) / 25).toFixed(2) + '/s'; }   // ARMY — the unchanged MANUAL production track; rate shown is how fast MANPOWER income is currently growing the cap
   document.getElementById('hInf').textContent = Math.floor(G.inf) + ' (' + combatCount() + '/' + armyCap() + ')';
   { const ir = document.getElementById('infR'); if (ir) ir.textContent = '+' + (G.infR || 0).toFixed(1) + '/s'; }   // what your CURRENT stability is generating (stability × momentum − superhuman upkeep)
-  document.getElementById('hStab').innerHTML = Math.round(effStab()) + ' / ' + Math.round(G.stabCap || 100) + (G.stabOffset > 1 ? ' <span style="color:#ff8a6a">⚠−' + Math.round(G.stabOffset) + '</span>' : '') + (stabPreview ? ' <span style="color:' + stabPreview.col + '">' + stabPreview.txt + '</span>' : '');   // EFFECTIVE stability / CAP; ⚠ flags research-unrest; hover a research/special building to preview its stability impact here
+  document.getElementById('hStab').innerHTML = Math.round(effStab()) + ' / ' + Math.round(G.stabCap || 100) + (G.stabOffset > 1 ? ' <span style="color:#ff8a6a">⚠−' + Math.round(G.stabOffset) + '</span>' : '') + ((G.stabReserve || 0) > 0.5 ? ' <span style="color:#7cffb0" title="Stability reserve — auto-refills lost stability">⛊' + Math.round(G.stabReserve) + '</span>' : '') + (G.crisis ? ' <span style="color:#ff6a6a">⚠ CRISIS</span>' : '') + (stabPreview ? ' <span style="color:' + stabPreview.col + '">' + stabPreview.txt + '</span>' : '');   // EFFECTIVE stability / CAP; ⚠ flags research-unrest; ⛊ shows the banked stability RESERVE; CRISIS flags an active capitulation crisis; hover a research/special building to preview its stability impact here
   document.getElementById('hRes').textContent = ['', 'I', 'II', 'III'][curTier()]; document.getElementById('resR').textContent = ['', 'INFO', 'FUSION', 'SPACE'][curTier()] + ' AGE';
   const sb = document.getElementById('srBar'); const owned = Object.keys(G.owned).filter(k => G.owned[k]); const am = (G.antimatter || 0) > 0 ? `<span class="sr" style="color:#c8a0ff" data-tip="Antimatter — produced by Antimatter Extractors. Fuels the Antimatter strike & Dreadnoughts.">☢ Antimatter ${Math.floor(G.antimatter)}</span>` : ''; const parts = owned.map(k => `<span class="sr" data-tip="${SR[k].name} — ${SR[k].ds}">◆ ${SR[k].name}×${G.owned[k]}</span>`); sb.innerHTML = (parts.length || am) ? parts.join('') + am : '<span class="none">no special resources</span>';
   const ob = document.getElementById('objBig'), os = document.getElementById('objSub');

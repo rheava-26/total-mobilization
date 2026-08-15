@@ -103,7 +103,7 @@
   .ucard .upchg { font-size: 8px; line-height: 1.3; color: #7cffb0; margin-top: 2px; }
   .ucard canvas { width: 86px; height: 34px; display: block; } .ucard .un { font-size: 9px; font-weight: 700; color: #eaf2ff; } .ucard .uc { font-size: 8px; color: #8fa6c4; }
 
-  .info { position: absolute; right: 8px; top: 70px; width: 210px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: none; }
+  .info { position: absolute; right: 8px; top: 70px; width: 210px; max-height: calc(100vh - 90px); overflow-y: auto; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: none; }
   .info.show { display: block; } .info canvas { width: 100%; height: 60px; background: linear-gradient(180deg,#0a1830,#0e2236); border-radius: 4px; }
   .info .in { font-size: 13px; font-weight: 700; color: #eaf2ff; letter-spacing: 1px; margin-top: 6px; } .info .id { font-size: 10px; color: #9fb6d4; margin: 3px 0 6px; line-height: 1.4; }
   .info .st { font-size: 10px; color: #c4d4e8; display: flex; justify-content: space-between; padding: 2px 0; } .info .st b { color: var(--ic); }
@@ -4103,6 +4103,53 @@ function buildProdMenu() {
     card.onclick = () => { const br = unitBReq(d); if (br) return toast('NEEDS A ' + (BUILD_DEFS[br] ? BUILD_DEFS[br].name.toUpperCase() : br)); if (d.req && !G.unlocked[d.req] && !prodUnl) { const pb = prodUnlockBuildingFor(key); return toast('Requires ' + (RESEARCH[d.req] ? RESEARCH[d.req].name : d.req) + (pb ? ' — or build a ' + pb.name : '')); } produceGlobal(key); };
   }
 }
+// ---- UNIT BUFF PANEL — read-only readout of every LIVE effect currently touching a selected unit, with its
+// source, so a player can see (and learn) that nearby-building auras STACK. Pure display: recomputed fresh
+// every refreshSel() call from the same systems combat already uses (auraAt/auraHeal, G.mult, bmod, SR, UPGRADES)
+// — it never itself changes a stat.
+function auraSources(x, field) {   // which buildings' aura[field] currently reach x — mirrors auraAt()/auraHeal()'s own per-field radius default exactly, so the readout can never disagree with the real effect
+  const out = [];
+  if (G && G.buildings) for (const b of G.buildings) { if (b.done === false) continue; const a = b.d.aura; if (!a || !a[field]) continue; const r = a.r || (field === 'heal' ? 240 : 300); if (Math.abs(b.x - x) < r) out.push(b); }
+  return out;
+}
+function buffSrcNames(list) {   // "2× Ammunition Depot, Radar" — collapses repeats so stacking is legible at a glance
+  const counts = {}; for (const b of list) counts[b.d.name] = (counts[b.d.name] || 0) + 1;
+  return Object.keys(counts).map(n => (counts[n] > 1 ? counts[n] + '× ' : '') + n).join(', ');
+}
+function buffRow(label, val, col, src) { return `<div class="st"><span>${label}</span><b style="color:${col || '#7cffb0'}">${val}</b></div>` + (src ? `<div class="id" style="margin:-3px 0 5px;font-size:9px;color:#9fb6d4">from ${src}</div>` : ''); }
+function unitBuffHtml(s) {
+  const d = s.d, dom = d.domain, base = UNIT_DEFS[s.key]; let rows = '';
+  // --- nearby-building AURAS (range/rof multiply — they STACK; repair uses the strongest single source) ---
+  const rngSrc = auraSources(s.x, 'range'), rofSrc = auraSources(s.x, 'rof'), healSrc = auraSources(s.x, 'heal');
+  if (rngSrc.length) { const m = rngSrc.reduce((a, b) => a * b.d.aura.range, 1); rows += buffRow('📡 Range', '×' + m.toFixed(2) + (rngSrc.length > 1 ? ' — STACKED ' + rngSrc.length + '×' : ''), '#bfe9ff', buffSrcNames(rngSrc)); }
+  if (rofSrc.length) { const m = rofSrc.reduce((a, b) => a * b.d.aura.rof, 1); rows += buffRow('⚡ Fire rate', '×' + m.toFixed(2) + (rofSrc.length > 1 ? ' — STACKED ' + rofSrc.length + '×' : ''), '#bfe9ff', buffSrcNames(rofSrc)); }
+  if (healSrc.length) { const v = Math.max(...healSrc.map(b => b.d.aura.heal)); rows += buffRow('⛨ Repair aura', '+' + v + '/s HP', '#7cffb0', buffSrcNames(healSrc)); }
+  if (G.allRegen) rows += buffRow('⛨ Self-regen', '+' + (s.maxHp * .045).toFixed(1) + '/s HP', '#7cffb0', 'Shapeshifters research');
+  if (dom === 'ground' && G.infFast) rows += buffRow('👟 Move speed', '×1.6', '#bfe9ff', 'Shapeshifters research');
+  // --- global RESEARCH multipliers that touch this unit's domain ---
+  const rm = [];
+  if (G.mult.dmg) rm.push(['Damage', G.mult.dmg]); if (G.mult.armor) rm.push(['Armor', G.mult.armor]);
+  if (G.mult.rof) rm.push(['Fire rate', G.mult.rof]); if (G.mult.range) rm.push(['Range', G.mult.range]);
+  if (dom === 'naval' && G.mult.navalrng) rm.push(['Naval range', G.mult.navalrng]);
+  if (dom === 'air' && G.mult.airspd) rm.push(['Air speed', G.mult.airspd]);
+  if (rm.length) { rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">RESEARCH DOCTRINE (global)</div>`; for (const [l, v] of rm) rows += buffRow(l, (v > 0 ? '+' : '') + Math.round(v * 100) + '%', '#7cffb0'); }
+  // --- ERA UPGRADE — is this unit currently the re-armed variant? ---
+  const up = UPGRADES[s.key];
+  if (up && d !== base) { const era = RESEARCH[up.era]; rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">ERA UPGRADE</div>` + buffRow('▲ ' + d.name, era ? era.name : up.era, '#ffd86b'); }
+  // --- special-resource / family PRODUCTION discounts (cheaper to build MORE of this type — not retroactive on this unit's own stats) ---
+  const pd = [], bm = bmod();
+  if (dom === 'ground' && G.owned.steel) pd.push(['Steel deposit', .18]);
+  if ((dom === 'air' || dom === 'naval') && G.owned.oil) pd.push(['Oil deposit', .18]);
+  if (dom === 'space' && G.owned.rare) pd.push(['Rare Earth deposit', .15]);
+  if (bm.cost) pd.push(['All-unit buildings', bm.cost]);
+  if (dom === 'ground' && bm.costGround) pd.push(['Ground-unit buildings', bm.costGround]); if (dom === 'air' && bm.costAir) pd.push(['Air-unit buildings', bm.costAir]);
+  if (dom === 'naval' && bm.costNaval) pd.push(['Naval-unit buildings', bm.costNaval]); if (dom === 'space' && bm.costSpace) pd.push(['Space-unit buildings', bm.costSpace]);
+  if (d.drone && bm.costDrone) pd.push(['Drone family', bm.costDrone]); if (d.mech && bm.costMech) pd.push(['Mech family', bm.costMech]);
+  if (d.elec && bm.costElec) pd.push(['Electronics family', bm.costElec]); if (d.bio && bm.costBio) pd.push(['Bio family', bm.costBio]); if (d.clone && bm.costClone) pd.push(['Clone family', bm.costClone]);
+  if (pd.length) { rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">CHEAPER TO BUILD MORE</div>`; for (const [l, v] of pd) rows += buffRow(l, '−' + Math.round(v * 100) + '% IC', 'var(--res)'); }
+  if (!rows) return `<div class="id" style="margin-top:6px;color:#9fb6d4">No active buffs — base stats only. A nearby Radar or Ammunition Depot would boost this unit.</div>`;
+  return `<div class="id" style="margin-top:8px;color:var(--term);font-size:10px;letter-spacing:1.5px">⚡ ACTIVE BUFFS</div>` + rows;
+}
 function refreshSel() {
   const info = document.getElementById('info');
   if (!G || !G.sel) { info.classList.remove('show'); return; }
@@ -4113,7 +4160,7 @@ function refreshSel() {
   if (s.capital !== undefined) { const tot = s.districts ? s.districts.length : 0, alive = s.districts ? s.districts.filter(q => !q.dead).length : 0; html += `<div class="id">${s.mega ? 'A fused MEGACITY. ' : ''}Victory point — a sprawl of ${tot} districts (${alive} standing). Defend it; losing every city ends the campaign.</div><div class="ibar"><div class="ifill" style="width:${Math.max(0, s.hp / s.maxHp * 100)}%;background:#7cffb0"></div></div>`; }
   else if (s.queue !== undefined) { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>Integrity</span><b>${Math.max(0, Math.round(s.hp))}/${s.maxHp}</b></div>`; if (d.weapon) html += `<div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>`; if (s.srtype) html += `<div class="st"><span>Yields</span><b style="color:var(--res)">${SR[s.srtype].name}</b></div><div class="id" style="color:var(--res);margin-top:2px">${SR[s.srtype].ds}</div>`; if (s.queue.length) html += `<div class="st"><span>Building</span><b>${UNIT_DEFS[s.queue[0].key].name}</b></div>`; if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost && G.stab > sc + 3; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC · −${sc}% stab${av ? ' 🔒 ' + av : ''}</button>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
-  else { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div><div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>`; }
+  else { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div><div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s); }
   if (html === info._html) return;   // only rebuild the panel when its content actually changed — avoids destroying the buttons ~60×/s (which ate every click) and re-drawing the preview each frame
   info._html = html; info.innerHTML = html;
   const ic = info.querySelector('canvas').getContext('2d'); ic.translate(100, 42); ic.scale(2.6, 2.6);

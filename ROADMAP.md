@@ -33,7 +33,7 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 ## 📍 CURRENT STATE
 
 - **Live version: v3.31.1** (on `main`). Side-vignette bug fixed (was a min(W,H)-circle canvas vignette stacked under a CSS ellipse → heavy left/right curtains on wide screens; now ONE aspect-true soft ellipse). A hidden **`nightMode` prototype flag** (default off, console: `nightMode = true; vigKey = '';`) leans into the deep-framed look — **awaiting the designer's verdict on promoting it to a real settings toggle.**
-- **In-flight Sonnet agents:** none.
+- **In-flight Sonnet agents:** none. One just landed **item 16, Unit buff panel** in worktree `.claude/worktrees/agent-af40217fffdfdcc6d` (committed there, NOT pushed to main yet — awaiting merge): selecting a unit's info panel now lists an "⚡ ACTIVE BUFFS" readout — nearby-building auras (Radar range, Ammo Depot fire-rate, Nanite Foundry heal) with source names and explicit "STACKED N×" callouts, global research `G.mult` bonuses relevant to the unit's domain, its era-upgrade status (e.g. "Plasma Infantry ← Plasma Weapons"), Shapeshifter self-regen/speed, and SR/family production-cost discounts. Pure read-only computation off existing systems — no combat/aura/economy values touched. Headless-verified, zero pageerrors.
 - **Fable 5 has taken the organizer seat** (this file was the send-off; it worked).
 
 ---
@@ -116,7 +116,6 @@ Designer asked to offload targeting math to a worker so the main thread just ren
 15. **Achievements + coup screen** (specced, agent died twice, NEVER shipped): pre-invasion stability collapse reframed as a **COUP/OVERTHROWN** defeat; 4 achievements — `couped` "Regime Change", `nukehappy` "This Will Have No Long-Term Consequences" (10 nukes/game), `oops` "Oops" (nuke in peacetime), `forgotresearch` "I Forgot to Research" (20 ballistic strikes/game); unlock notifications. System already exists (`ACHIEVEMENTS` array, `G.ach`).
 
 ### SMALL / QoL (new from latest playtest)
-16. **Unit buff panel:** click a unit → see all active buffs affecting it (nearby-building auras, research mults, resource discounts). Also surfaces stacking to the player.
 17. **Fortified/dug-in units should NOT block building placement** (currently you can't build where units have fortified).
 18. **Click-through occluded buildings:** if a unit is in front of a building, clicking should let you reach/see the building behind it (selection cycling / building priority in `pickAt`).
 19. **End-screen post-game graphs** ("the 9000 graphs") — rich after-action charts.

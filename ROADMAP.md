@@ -77,12 +77,19 @@ The original game's biggest missed opportunity, per the designer: **research com
 
 ### 🔥 COMBAT REWORK — from the latest playtest (a big coherent vision; sequence carefully — shared `hurt()`/projectile hot path)
 The designer's combat philosophy: **glass cannons everywhere.** Most units (even large ones) die in 1–2 hits; combined defensive fire instantly deletes enemies (satisfying); **SHIELDS are the ONE survivability layer.** Pieces:
-- **Lethality:** most units die in 1–2 hits, large included. Touches `hurt()` / effective-HP.
-- **Deflector shields are BROKEN right now (don't work at all) — fix + rework:** a shielded unit is IMMUNE to any hit below a damage THRESHOLD (X) — chip damage bounces off — but a big enough hit (a "microgram antiparticle shell") still wears it. So shields = survive the swarm, fear the capital weapon. Apply shields to units bigger than a jet (Battleships keystone).
+- ~~**Lethality: most units die in 1–2 hits.**~~ **❌ REVERSED by the designer (do NOT build).** Reason (their insight): fast deaths favor the side with MORE guns = the PLAYER, so it makes the game EASIER, not harder — and it kills the prolonged sieges that are the whole point. The real problem was never durability, it was the free auto-emplacement wall (see CIWS/emplacement item). Leave `hurt()` durability AS-IS.
+- **PLAYER shields work fine — it's ENEMY shields that are broken.** (Fable misread this.) The player's Shield Generator dome blocks correctly. The fix: make ENEMY shields (beachhead domes / shielded enemy units) BLOCK incoming player fire the SAME WAY the player's shield does. Do NOT rework player shields; do NOT add threshold immunity; do NOT auto-shield big units (that's a later Battleships piece, deferred).
 - **The FREE auto-emplacements are the real problem** (RESOLVED framing): the MG nests / flak / field guns that spawn AUTOMATICALLY when infantry dig in are an unstoppable "wall of bullets" that shreds everything — and they're free + absurdly scalable, so they trivialize the game. NERF THESE SPECIFICALLY (fire rate + damage) so a wall is strong-but-beatable and the tankier/saturating enemy can push through. This is NOT a tenet violation — a free auto-win-wall isn't a "toy," it's the game not being a game. **Do NOT make built guns miss/whiff** (whiffing feels broken, not hard) — Fable's counter-proposal accepted by designer's clarification.
 - **CIWS perf — the explosion spam is the killer (designer confirmed):** every connecting CIWS round spawns an impact explosion → thousands/sec of pure-cosmetic FX = the lag. Fix: **invisible bullets + a few visible tracers, and KILL the per-round explosion** (sparse spark at most). Also make CIWS read as the anti-ordnance/anti-air SPECIALIST, not the one-true-answer (the lethality change normalizes much of this on its own).
 - **Airship → capital ship:** shield + 6+ machine guns + anti-tank guns + MLRS (multi-weapon; Battleships vision).
 - **Remove PD lasers from the Fighter** (a fighter carrying anti-missile lasers is a stretch) → make anti-missile lasers a **dedicated aircraft**.
+
+### 🌊 ENEMY ESCALATION v2 — from the lethality-reversal playtest (NEXT enemy build; the *right* way to make it hard)
+Instead of nerfing the player, make each landing GROW and blanket the map:
+- **Drops ESCALATE:** a drop that starts as ~3 airships can balloon into ~9 airships + a ground landing drop + leviathans, etc. — each landing has the potential to snowball if not answered.
+- **Groundfall WARNING banner for ALL super-unit types** (currently only the Land Leviathan gets the "⚠ HAS MADE GROUNDFALL" alert) — give the same warning to bombarders, hives, harvesters, etc.
+- **Open the invasion with ~5 bombarders spread across the whole map** (covering every stretch of ground) right AFTER the first missile barrage — so orbital-plasma pressure blankets the ground from the start.
+- This is the "difficulty from an overwhelming, escalating enemy" path — the correct alternative to the reversed lethality change.
 
 ### 🛰 ENEMY LANDINGS & SUPER-UNIT OVERHAUL — ✅ SHIPPED v3.33.0 (kept here for reference)
 - **Every landing includes a super unit; super units come in GROUPS.** Each reinforces if not killed in ~30s (extends existing `BOSS_REINFORCE_T`).

@@ -74,6 +74,28 @@ The original game's biggest missed opportunity, per the designer: **research com
 
 ## 📋 BACKLOG (prioritized; move to Shipped as done)
 
+### 🔥 COMBAT REWORK — from the latest playtest (a big coherent vision; sequence carefully — shared `hurt()`/projectile hot path)
+The designer's combat philosophy: **glass cannons everywhere.** Most units (even large ones) die in 1–2 hits; combined defensive fire instantly deletes enemies (satisfying); **SHIELDS are the ONE survivability layer.** Pieces:
+- **Lethality:** most units die in 1–2 hits, large included. Touches `hurt()` / effective-HP.
+- **Deflector shields are BROKEN right now (don't work at all) — fix + rework:** a shielded unit is IMMUNE to any hit below a damage THRESHOLD (X) — chip damage bounces off — but a big enough hit (a "microgram antiparticle shell") still wears it. So shields = survive the swarm, fear the capital weapon. Apply shields to units bigger than a jet (Battleships keystone).
+- **Emplacements/fortifications fire at ~10% normal rate AND can MISS** — deliberately so static defenses stop being an auto-win wall and enemies actually LAND. (Tension with the tenet noted — but this is difficulty-from-enemy, and active/built guns still shine. Designer-directed.)
+- **CIWS perf:** the beautiful CIWS stream is very laggy. Fix via **invisible bullets + visible tracers** (draw only a fraction as tracers; the rest resolve without a rendered projectile). This is the real perf fix.
+- **Airship → capital ship:** shield + 6+ machine guns + anti-tank guns + MLRS (multi-weapon; Battleships vision).
+- **Remove PD lasers from the Fighter** (a fighter carrying anti-missile lasers is a stretch) → make anti-missile lasers a **dedicated aircraft**.
+
+### 🛰 ENEMY LANDINGS & SUPER-UNIT OVERHAUL — from the latest playtest (enemy-side; being dispatched)
+- **Every landing includes a super unit; super units come in GROUPS.** Each reinforces if not killed in ~30s (extends existing `BOSS_REINFORCE_T`).
+- **Each super unit acts like a CARRIER** — spawns a small group of units.
+- **Bombardier kit:** 2× PD fire rate · on arrival deploys **10 railgun sats + 10 laser-defense sats** · arrives with a **support ship that repairs in a radius** · gains a **plasma cannon that snipes GROUND units from space** (oppressive to ground; canNOT snipe air).
+- **Bombardment missiles get DURABLE decoys** (take a few hits before breaking apart; current buster decoys are hp:1 — bump them).
+- **Ships: fewer drops, ~2× units per drop, targeting the LEAST-defended areas.** Generally units land more in undefended areas and are stronger.
+
+### 🧩 SQUADS — collision rework (designer's revised model; re-touches recent squad work)
+Current model = one entity + footprint collision (reads as a blob). Designer wants: **separate collision + separate hitboxes per body, but a shared "brain" (targeting/AI) + a cohesion "pull force"** keeping the bodies clustered. Tightly linked, mostly independent. NOTE: separate collision reintroduces per-body cost — mitigate by keeping the AI/targeting shared (the expensive part stays single) + the existing render LOD.
+
+### 🧵 MULTICORE / WORKERS — Fable's honest verdict: probably NOT worth it
+Designer asked to offload targeting math to a worker so the main thread just renders. Reality: Workers can't touch the live object graph — you'd `postMessage`-copy all entity positions out and results back every frame; for thousands of entities that serialization usually costs ~what it saves and adds a frame of targeting latency. Profiling says **RENDERING is the bottleneck, not targeting math** — so the high-value fix is render-side (invisible bullets/tracers, LOD, glow cheapening), not multicore. Revisit only if targeting math ever becomes the profiled hot spot.
+
 ### NEXT BIG BUILDS
 1. **Sky/Sea/Space Battleships** (above) — shields-on-big-units keystone first, then multi-weapon capital ships + weapon-swap upgrades.
 2. **Garrison v2 — supply chain (emergent cap, no hard wall):** upkeep-heavy **Factories** → nearest **Depots** → nearest **buildings** (proximity logistics). Remove per-unit upkeep (upkeep lives on factories). Limits are economic + logistical only. (Current garrison is v1: passive per-building auto-fill + per-unit upkeep + a hard global Stockpile weight cap.)

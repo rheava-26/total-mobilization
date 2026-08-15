@@ -2086,7 +2086,7 @@ function claimDmg(t, dmg) { CLAIM.set(t, (CLAIM.get(t) || 0) + dmg); }
 function engOf(t) { return ENG.get(t) || 0; }
 const ENG_CAP = 6;   // TARGET LIMITER — at most this many weapons will LOCK one enemy per frame; excess shooters spread onto other targets instead, so a wall of guns can't instantly dogpile a single landed unit (lets a beachhead actually form). Falls back to firing anyway only if NOTHING else is in range.
 function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d < bd && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { bd = d; b = e; } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // nearest target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle.
-function acquireIncoming(x, y, range) { const r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const p of G.proj) { if (!(p.interceptable || p.pdable) || p.life <= 0) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = p; } if (d < bd && claimOf(p) < (p.hp || 1)) { bd = d; b = p; } } return b || bAny; }   // point-defence: falling orbital lances AND incoming enemy missiles/rockets/bombs — spreads interceptors across multiple threats
+function acquireIncoming(x, y, range, ceilFrac) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const p of G.proj) { if (!(p.interceptable || p.pdable) || p.life <= 0) continue; if (p.y < ceil) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = p; } if (d < bd && claimOf(p) < (p.hp || 1)) { bd = d; b = p; } } return b || bAny; }   // point-defence: falling orbital lances, incoming enemy missiles/rockets/bombs, AND orbital bunker-busters — acquires within RANGE+CEILING same as acquireEnemy (a low-reach gun can't snipe a penetrator still high in orbit), spreads interceptors across multiple threats. ceilFrac optional for legacy callers that pass none (keeps old unlimited-height behavior).
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
 function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
@@ -2872,21 +2872,21 @@ function playerAirDefenseScore() {
 function decapBusterBudget() { return Math.round(Math.min(20, 10 + playerAirDefenseScore() * .4)); }
 function busterTarget() { let best = null, bs = 8; for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; let s = busterScore(b); if (s <= 0) continue; if (b.d.cat === 'DEF' && G.lastLZ != null && Math.abs(b.x - G.lastLZ) < 320) s += 46; if (b.ug) s -= 14; s -= busterClaims(b) * 26; s += Math.random() * 7; if (s > bs) { bs = s; best = b; } } return best; }
 function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
-  for (let d = 0; d < 8; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 1, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 150 + Math.random() * 120, ay: 1300 + Math.random() * 500, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 8, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a screen of DECOY missiles falls with each penetrator — cheap 1-HP flares that soak your interceptors so the real round gets through to impact
-  G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: -440, vx: 0, vy: 170, ay: 1750, tx, ty: gy, life: 7, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [] });   // 200 HP → survives ~3 interceptor hits; crosses from orbit to the ground in ~1.5s
+  for (let d = 0; d < 8; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 1, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a screen of DECOY missiles falls with each penetrator — cheap 1-HP flares that soak your interceptors so the real round gets through to impact; now mirrors the buster's slow-start orbital descent so the screen reads consistently
+  G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: -440, vx: 0, vy: 8 + Math.random() * 6, ay: 62, vyCap: 420, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [] });   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — mirrors the enemy re-entry profile (near-stationary start, gradual accel, capped terminal speed, see updProj) instead of slamming down in ~1.5s, so a layered defense grid gets several real seconds of engagement window before it lands
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
-function detonateBuster(x, y) {   // heat-shielded penetrator impact — a plane-sized round that throws up a WALL of earth and guts its target (incl. shallow-buried bunkers)
+function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOINT: one plane-sized round guts its SINGLE designated target with a small, sharp blast (incl. shallow-buried bunkers) — a sniper round, not an area nuke
   const gy = groundY(x);
   G.hitFlash = Math.max(G.hitFlash || 0, .2);   // a penetrator that GOT THROUGH punches a red flicker across the screen
-  G.parts.push({ k: 'flash', x, y: gy - 40, r: 120, life: .4 });
-  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 52, gy, 16);
-  boomW(x, gy - 14, 30); groundBurst(x, 44); shake(17); SFX.boom(); if (SFX.rumble) SFX.rumble();
-  craters.push({ x, r: 62 + Math.random() * 42, depth: .1 }); if (craters.length > 70) craters.shift();
-  for (let i = 0; i < 34; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.0, sp = 100 + Math.random() * 300; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * 46, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.6 + Math.random() * 3.4, rot: Math.random() * 6, vr: (Math.random() - .5) * 11, grav: 150, gy, dom: 'ground', settled: false, life: .9 + Math.random() * 1.3 }); }   // the signature DIRT KICK — a wall of earth over the fireball
-  smoke(x, gy, 8); blacksmoke(x, gy, 6);
-  for (const b of G.buildings) { if (b.captured) continue; const dd = Math.abs(b.x - x); if (b.ug) { if (dd < 62) b.hp -= (b.ugLvl >= 2 ? 520 : 1400); } else if (dd < b.d.w * .6 + 26) b.hp -= 1600; }   // PENETRATOR: one/two-shots the target, and bunker-busts SHALLOW buried structures too
-  areaDamage(x, gy, 150, 540, 'buster'); shallowUgHit(x, 92, 480);
-  for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - x) < 120) damageDistrict(ct, dst, 300); }
+  G.parts.push({ k: 'flash', x, y: gy - 40, r: 70, life: .35 });
+  for (let i = 0; i < 2; i++) boom(x + (Math.random() - .5) * 26, gy, 12);
+  boomW(x, gy - 14, 18); groundBurst(x, 24); shake(11); SFX.boom(); if (SFX.rumble) SFX.rumble();
+  craters.push({ x, r: 36 + Math.random() * 20, depth: .1 }); if (craters.length > 70) craters.shift();
+  for (let i = 0; i < 20; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.0, sp = 90 + Math.random() * 260; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * 28, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.4 + Math.random() * 3, rot: Math.random() * 6, vr: (Math.random() - .5) * 11, grav: 150, gy, dom: 'ground', settled: false, life: .8 + Math.random() * 1.1 }); }   // a tighter DIRT KICK over the fireball — still visceral, no longer wide enough to swallow the whole base
+  smoke(x, gy, 5); blacksmoke(x, gy, 4);
+  for (const b of G.buildings) { if (b.captured) continue; const dd = Math.abs(b.x - x); if (b.ug) { if (dd < 44) b.hp -= (b.ugLvl >= 2 ? 520 : 1400); } else if (dd < b.d.w * .6 + 20) b.hp -= 1600; }   // PENETRATOR: one/two-shots the SINGLE target it was aimed at, and bunker-busts it even shallow-buried — unchanged, this was already effectively single-target
+  areaDamage(x, gy, 46, 220, 'buster'); shallowUgHit(x, 40, 220);   // collateral splash cut to a small radius — the target dies, its immediate neighbours don't
+  for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - x) < 46) damageDistrict(ct, dst, 260); }
 }
 // where an orbital barrage round falls — STRATEGIC targets (cities + your surface infrastructure) spread across the WHOLE world, never keyed to the camera (rods used to only rain on whatever you were looking at)
 function barrageTarget() {
@@ -2993,7 +2993,7 @@ function updUnits(dt) {
     const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .62) : 0;   // ground guns reach only the low layers; AIRCRAFT reach up to (but NOT past) the mesosphere — the thermosphere & exosphere need railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
     let tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);
-    if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng);   // point-defense: swat falling orbital lances (spreads across multiple rods)
+    if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng, ceilF);   // point-defense: swat falling orbital lances & bunker-busters within this unit's own reach (spreads across multiple rods)
     if (d.domain === 'air' && d.pd && !u.docked && (u.spool || 0) <= 0) {   // JET LASER CIWS — a short VISIBLE beam that swats an enemy missile chasing the jet, so you actually see the point-defence work (defensive only, low-rate — not a durability crutch)
       u.pdcd = (u.pdcd || 0) - dt;
       if (u.pdcd <= 0) { let best = null, bd = 95 * 95; for (const q of G.proj) { if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - u.x) ** 2 + (q.y - u.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
@@ -3134,7 +3134,7 @@ function updSquadMembers(u, dt) {
     let tgt = null;
     if (m.isAt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   // AA/AT trooper prioritizes airborne threats within its higher ceiling
     if (!tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
-    if (!tgt && m.pd) tgt = acquireIncoming(mx, my, m.range * rangeMod);
+    if (!tgt && m.pd) tgt = acquireIncoming(mx, my, m.range * rangeMod, m.ceil);
     if (!tgt) continue;
     m.tgt = tgt; m.burstLeft = m.isAt ? 1 : (cfg.burst || 1); m.burstT = .04 + Math.random() * .08;
   }
@@ -3145,7 +3145,7 @@ const BDEF = [{ w: 'tracer', rng: 210, dmg: 4, rate: .5, ceil: .82, pd: false },
 function populaceDefend(b, dt) {
   const cfg = BDEF[0], my = b.y - b.d.h * .5;   // ordinary buildings keep their default rifle militia — the Rotary/Plasma upgrade works now arm CITIES ONLY (see cityDefend), not every structure on the map
   b.dcd = (b.dcd == null ? Math.random() : b.dcd) - dt; if (b.dcd > 0) return;
-  let t = acquireEnemy(b.x, my, cfg.rng * radarBoost(b.x), cfg.ceil); if (!t && cfg.pd) t = acquireIncoming(b.x, my, cfg.rng);
+  let t = acquireEnemy(b.x, my, cfg.rng * radarBoost(b.x), cfg.ceil); if (!t && cfg.pd) t = acquireIncoming(b.x, my, cfg.rng, cfg.ceil);
   if (!t) { b.dcd = .3; return; }
   b.dcd = jitterCd(cfg.rate); const sdmg = cfg.dmg * (1 + G.mult.dmg);
   if (t.interceptable || t.pdable) flakHit(t, sdmg); else { const lt = leadTime(cfg.w, b.x, my, t); fire(b.x, my, cfg.w, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); } claimDmg(t, sdmg);
@@ -3153,7 +3153,7 @@ function populaceDefend(b, dt) {
 function cityDefend(ct, dt) {
   if (ct.hp <= 0 || ct.held) return; const cfg = BDEF[G.bDefTier || 0], cx = ct.x, cy = groundY(cx) - 22, guns = 1 + Math.round((ct.w || 150) / 150);
   ct.dcd = (ct.dcd == null ? Math.random() : ct.dcd) - dt; if (ct.dcd > 0) return;
-  let t = acquireEnemy(cx, cy, (cfg.rng + 120) * radarBoost(cx), Math.min(.84, cfg.ceil + .12)); if (!t && cfg.pd) t = acquireIncoming(cx, cy, cfg.rng + 120);
+  let t = acquireEnemy(cx, cy, (cfg.rng + 120) * radarBoost(cx), Math.min(.84, cfg.ceil + .12)); if (!t && cfg.pd) t = acquireIncoming(cx, cy, cfg.rng + 120, Math.min(.84, cfg.ceil + .12));
   if (!t) { ct.dcd = .3; return; }
   ct.dcd = jitterCd(cfg.rate / guns); const sdmg = (cfg.dmg + 2) * (1 + G.mult.dmg);   // a fortified city is several emplacements — fires harder & faster than one building
   if (t.interceptable || t.pdable) flakHit(t, sdmg); else { const sxx = cx + (Math.random() - .5) * (ct.w || 100), lt = leadTime(cfg.w, sxx, cy, t); fire(sxx, cy, cfg.w, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); } claimDmg(t, sdmg);
@@ -3173,7 +3173,7 @@ function updBuildings(dt) {
       const baseCfM = b.d.ceil != null ? b.d.ceil : .80, cfM = plasmaM ? Math.min(.56, baseCfM) : baseCfM, ceilM = cfM ? cfM * worldH() : -1e9;
       const brngM = b.d.range * radarBoost(b.x) * (plasmaM ? 1.5 : 1), r2M = brngM * brngM, myM = b.y - b.d.h * .5;
       let tM = null, bdM = r2M; for (const e of G.designated) { if (e.y < ceilM) continue; const dd = (e.x - b.x) ** 2 + (e.y - myM) ** 2; if (dd < bdM) { bdM = dd; tM = e; } }
-      if (!tM) { tM = acquireEnemy(b.x, myM, brngM, cfM, b.d.noGround ? notNearGround : null); if (!tM && b.d.pd) tM = acquireIncoming(b.x, myM, brngM); }   // FALLBACK: with none of your marks in reach, the gun still defends on its own — fire control PRIORITIZES targets, it never leaves a gun sitting idle
+      if (!tM) { tM = acquireEnemy(b.x, myM, brngM, cfM, b.d.noGround ? notNearGround : null); if (!tM && b.d.pd) tM = acquireIncoming(b.x, myM, brngM, cfM); }   // FALLBACK: with none of your marks in reach, the gun still defends on its own — fire control PRIORITIZES targets, it never leaves a gun sitting idle
       if (tM && b.cd <= 0) {
         b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof'));
         let dmgMulM = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMulM = 1 + .6 * segs; }
@@ -3193,7 +3193,7 @@ function updBuildings(dt) {
     const plasma = b.d.plasmaable && plasmaArmed();   // bunkers (etc.) re-arm with plasma — longer reach, more punch, fires higher
     const baseCf = b.d.ceil != null ? b.d.ceil : .80, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.56, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
-    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1); let t = acquireEnemy(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null); if (!t && b.d.pd) t = acquireIncoming(b.x, b.y - b.d.h * .5, brng); if (t && b.cd <= 0) { /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
+    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1); let t = acquireEnemy(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null); if (!t && b.d.pd) t = acquireIncoming(b.x, b.y - b.d.h * .5, brng, cf); if (t && b.cd <= 0) { /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
   }
 }
 // FIRE CONTROL — add multiple heavy guns to a control group; a radar covers their combined range and you DESIGNATE incoming
@@ -3336,9 +3336,9 @@ function updProj(dt) {
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
       continue;
     }
-    if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — accelerates HARD onto a target, jinks + spams flares to shake interceptors; only sustained flak brings it down before it lands
+    if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — launched from orbit: starts nearly stationary and gradually accelerates (mirrors enemy re-entry, see updEnemies), jinks + spams flares to shake interceptors; a real several-second engagement window before it lands
       if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
-      p.vy = Math.min(p.vy + p.ay * dt, 1850);   // slammed down — accelerates very fast (orbit→ground in ~1.5s)
+      p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1850);   // gradual accel to a capped terminal speed — orbit→ground now takes several seconds, not ~1.5s
       const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target + evasive jink
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 18) p.tr.shift();
@@ -3349,7 +3349,7 @@ function updProj(dt) {
     }
     if (p.k === 'decoy') {   // DECOY MISSILE — falls like a penetrator to bait your point-defence, then fizzles harmlessly; 1 HP so a single interceptor kills it (that's the point — it soaks a shot the real round would've eaten)
       if (p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .1 }); p.life = 0; continue; }
-      p.vy = Math.min(p.vy + p.ay * dt, 1700);
+      p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1700);
       const dx = p.tx - p.x; p.vx += (dx * 1.5 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .05) * 70 * dt; p.vx = Math.max(-340, Math.min(340, p.vx));
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 12) p.tr.shift();

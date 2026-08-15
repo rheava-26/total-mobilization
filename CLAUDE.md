@@ -2,6 +2,16 @@
 
 ## WORKING STYLE (standing instruction from the designer)
 
+**⭐ THE DESIGN TENET (tenet #1, governs every call):** *The game says YES to the player's power
+fantasy. Difficulty comes from the enemy being overwhelming — NEVER from capping, nerfing, or
+denying the player their toys.* When something is too strong, the answer is a scarier enemy or a
+real cost (upkeep/logistics), not a hard cap or diminishing returns. Fix perf and bugs, never the
+fantasy. (The designer: *"you say 'I could place 100 of those and it'd be OP?' and the game says
+'errr no.' We say yes."*)
+
+**Keep `ROADMAP.md` current and commit it EVERY turn** — it is the living backlog + model handoff
+so nothing is forgotten. Read it at the start of a session.
+
 **Delegate the coding. Always implement game changes by dispatching a Sonnet subagent (in an
 isolated git worktree), not by hand-editing `title.html` yourself.** Because the whole game is
 one file, run parallel subagents only on non-overlapping regions, then merge each worktree back.

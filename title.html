@@ -2384,7 +2384,15 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg) {
 function leadTime(weapon, sx, sy, tgt) {
   const PS = { plasma: 1100, plasball: 900, plasarc: 540, shell: 250, rocket: 360, missile: 320, bomb: 320, rail: 540, rod: 400, amslug: 640, tracer: 345, rotary: 630, smart: 280, microrkt: 260 };
   const spd = PS[weapon]; if (!spd) return 0;   // hitscan beams / fast guns don't lead
-  return Math.min(1.1, Math.hypot(tgt.x - sx, tgt.y - sy) / spd);   // capped so guns don't over-predict on erratically-jinking targets at long range
+  const CAP = 1.1;   // capped so guns don't over-predict on erratically-jinking targets at long range
+  const vx = tgt.vx || 0, vy = tgt.vy || 0;
+  let t = Math.min(CAP, Math.hypot(tgt.x - sx, tgt.y - sy) / spd);
+  // refine: a shot aimed at where the target WILL be flies FARTHER than the target's current
+  // distance, so a single dist/spd pass under-estimates flight time (esp. once target speed gets
+  // close to muzzle velocity) — a couple of fixed-point iterations on the intercept point converge
+  // to the correct constant-velocity intercept without a full quadratic solve
+  for (let i = 0; i < 3; i++) t = Math.min(CAP, Math.hypot(tgt.x + vx * t - sx, tgt.y + vy * t - sy) / spd);
+  return t;
 }
 function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to a line segment (beam hit-test)
   const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;

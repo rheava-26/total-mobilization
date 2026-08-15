@@ -2,6 +2,8 @@
 
 **This file is the single source of truth for the ongoing work. Update it EVERY turn and commit it, so nothing is ever forgotten.** It also serves as the send-off / onboarding doc for the next model taking over (the designer is moving the expensive framework builds to **Fable 5**).
 
+**Bank DESIGN DISCUSSIONS and concepts here, not just task lists.** Conversation memory gets compacted; ideas that were discussed but not written here have been lost before. If the designer talks through a concept — even a rejected or someday one — it gets a line in this file.
+
 ---
 
 ## ⭐ THE DESIGN TENET (read this first, it governs every decision)
@@ -44,6 +46,29 @@ The unifying insight: **the war is VERTICAL. The enemy is UP (orbital siege), no
 - **Multi-weapon capital ships:** sea battleships, airships (flying AA dreadnoughts — power is compact in the air), and city-sized spacecraft all mount **mixed weapons firing at once** — railguns + lasers + missile cells. Apartment-block gunships with long-range plasma.
 - **Weapon-swap upgrades:** planes carry autocannons AND missiles; research swaps autocannon→plasma and missiles→micromissiles per-slot. Reuses the existing `UPGRADES`/`effDef` plasma-re-arm machinery.
 - Sea battleships explicitly wanted alongside sky/space — capital ships in all three theaters.
+
+---
+
+## 👾 THE ENEMY OVERHAUL — full design bank (build AFTER 4.0, but the design lives HERE so it's never lost)
+
+**The fantasy:** an invader with orbital supremacy massing a VAST armada you can WATCH assemble in deep orbit during PREP — stationed ships, lit hangars, a countdown — before it descends. Build DREAD. **Phased doctrine:** First Strike (orbital saturation degrades your exposed force) → Suppression (bombardment + jammers ground your air) → Overwhelming simultaneous multi-front landings (burst waves, not a trickle).
+
+- **THE CAPITAL FABRICATOR (the true boss & WIN TARGET):** a dreadnought the WIDTH OF THE SCREEN anchored deep in the exosphere, with **destructible subsystems** — dozens of hangars (endless fighters), AA batteries (PD that downs your aircraft AND rounds), missile launchers. You DISMANTLE it subsystem by subsystem, not chip an HP bar. Deploys **~40 passive laser satellites** the moment the invasion starts. *(Designer is drawing the hull art themselves — transcribe to canvas when it exists.)*
+- **Counter-systems** (each hard-counters one dominant player strat; each has a counter-counter): **AA-Missile Fairing "Flak Barge"** (mass-dropped pods that pop into homing-AA batteries — punishes cheap-fighter spam) · **Orbital Laser-Interceptor Grid "Aegis-Net"** (sat grid that auto-lasers your missiles/strikes — punishes missile-only play) · **Orbital Rail-Lance "Skyhook"** (hypervelocity ground strikes, near-uninterceptable — answered by anti-orbital fire/shields/dispersal) · **Air-Superiority Swarm "Reaver wing"** (dogfighters that hunt YOUR fighters) · massed antimatter-slug whistlers + EW jammers.
+- **More concepted weapons:** Antimatter Flash Cannon (telegraphed zone-vaporizing ray / kiloton airburst bomblets) · Scalable Plasma (drone-mounted up to building-sized capital plasma mortars) · Antimatter Flak Curtain (airburst WALL across flight lanes) · Smart Rod-Storm (rod saturation aimed at your densest cluster — punishes turtling) · Mag-Tether Grappler (yanks your sats/aircraft UP into a kill zone) · **Adaptive Fabricator** (scouts your composition, builds the counter) · Shutdown Pulse EMP (briefly disables a fraction of electronic units).
+- **Flavor concepts (Claude's):** The Eclipse (a ship so vast it casts a moving SHADOW debuff) · Harvesters eat wreckage to fabricate on-site (punishes attrition) · Mimics (late-game copies of YOUR best units) · The Choir (synchronized antimatter emitters, "kill them before the note lands") · The Peeling Sky (temporarily strips your air ceiling).
+- **Opening-bombardment arsenal still unbuilt:** nuclear atmospheric EMP · antimatter airbursts (shooting them down still detonates them) · hostile fighter swarms · microrocket drop pods · asteroids (~2500 HP — break them up or catastrophe) · **sun blocker** (deploys if the siege stalls; sits atop the exosphere; tanks stability; space-weapons-only) · centrifugal drone-flinger · constant light bursts · tungsten **cluster-munition buster** variant · flare decoys that actually BREAK missile lock · **relativistic planet-cracker** hard-loss (top intensity tiers only).
+- **Bosses → fortresses, not sponges:** lower raw HP, real countermeasures (PD, spawning, hard-to-reach), screen-scale.
+- **Scale & perf strategy:** fleet reads as 1000+, but simulate BATTLEGROUP entities (HOI4-style — one entity = a brigade with a count/HP pool, rendered as a cluster). Designer verdict: ~equal numbers + SMART enemies, not literal thousands (phones melt). The **mobilization preview / order-of-battle manifest** ("127 antimatter-slug drones · 339 air-dominance fighters…") sells the true scale in text — it also fixes "the invasion's scale and attack plan was never explained to the player." **Planetary approach view** (cinematic fleet-closing-on-Earth shot) = later dread-polish.
+- **Enemy roster consolidation audit** (several ships too similar). **Escalation:** Invasion & Annihilation escalate if you keep surviving with the mothership alive.
+
+## 🗞 THE DECISION & SOCIETY LAYER (the "decision tab" concept — needs its own design pass with the designer)
+
+The original game's biggest missed opportunity, per the designer: **research combos only ever unlocked a unit — they should trigger DECISION CHAINS and NEWS POPUPS with genuinely large impacts on the world and policy.** A decisions/events layer:
+- Combo research (Transhumanism, Shapeshifters, Hive Mind territory) presents **choices** with world-scale consequences, announced via news popups — policy shifts, society transformation, not "+1 unit type".
+- **Society states must become REAL:** dystopia/verdant/machine are currently just a sky tint + one stability modifier. The societal transformation implied by "total mobilization" should be visible and mechanical (what your civilization becomes).
+- **Bioengineering is the designer's chosen axis** for society-level shifts (flagged repeatedly as the interesting tree for this).
+- Ties into: Superhuman political costs, dangerous-research unrest, the coup/Capitulation-Crisis framing, and the stability-cap model.
 
 ---
 
@@ -93,10 +118,14 @@ The unifying insight: **the war is VERTICAL. The enemy is UP (orbital siege), no
 - Possible spin-off: an **FPS in the same setting** (soldier's-eye view of the orbital siege; Helldivers-style co-op or extraction-under-bombardment).
 
 ## 🔒 DEFERRED DECISIONS (locked, apply later)
-- Enemy-competence overhaul — **after 4.0** (make the enemy far smarter before touching the player further).
-- Scenario menu rework — make the 4 intents feel like **equal choices**, not a difficulty ladder.
-- Difficulty as **×1 / ×2.5 / ×5 intensity tiers** decoupled from the 4 scenarios (the home for the brutal-vs-humane split).
-- Perf: it's **RENDERING**, not unit math, that's the bottleneck — optimize rendering (LOD/batching); web-workers/multicore can't touch Canvas2D (must stay on the main thread), so they're NOT the fix.
+- Enemy-competence overhaul — **after 4.0** (make the enemy far smarter before touching the player further). Full design banked above in THE ENEMY OVERHAUL.
+- Scenario menu rework — make the 4 intents feel like **equal choices**, not a difficulty ladder. Every cell of scenario×tier should be genuinely threatening (even Probe/Decap slam every capital hard in their short window).
+- Difficulty as **×1 / ×2.5 / ×5 intensity tiers** decoupled from the 4 scenarios (the home for the brutal-vs-humane split). Escalation + planet-cracker only at top tiers of Invasion/Annihilation.
+- Perf: it's **RENDERING**, not unit math, that's the bottleneck — optimize rendering (LOD/batching); web-workers/multicore can't touch Canvas2D (must stay on the main thread), so they're NOT the fix. Squad LOD shipped; general projectile/glow render cheapening still open (the old "9 FPS at 800 units" issue).
+- **Strategic resources should grant BONUSES, not act as hard REQUIREMENTS** (the original design doc's intended fix — SRs ended up barely used vs. their intended role).
+- **Graphical direction:** shape/outline reworks over tonal detail; the designer dislikes "jets become spaceships" at Space Age.
+- **Redundancy consolidation audit (old list):** ground bombardment ×3, heavy tanks ×2, 1-item TECH tab; Comms-vs-Propaganda now RESOLVED (split roles); Scout CUT; Tractor Beam / Rail Hub on trial.
+- **Musings banked:** optional ads + ~30 trivia pieces; a custom scenario editor already exists (`SCEN`).
 
 ---
 

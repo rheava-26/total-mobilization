@@ -129,7 +129,8 @@
   #strikeConfirm .scq { font-size: 10px; letter-spacing: 1.5px; color: #ffb0a0; margin-bottom: 9px; }
   #strikeConfirm .pill { margin: 0 4px; min-height: 42px; }
   #strikeConfirm .pill.primary { background: var(--inf); border-color: var(--inf); color: #fff; }
-  .grain { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.4) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0, rgba(255,255,255,.016) 1px, transparent 1px, transparent 3px); }
+  /* film-grain scanline texture only — the vignette (edge darkening) lives SOLELY in the canvas drawVignette(), so the two layers can't stack into a lopsided double-dark zone on wide screens */
+  .grain { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0, rgba(255,255,255,.016) 1px, transparent 1px, transparent 3px); }
   #endScreen { position: fixed; inset: 0; z-index: 18; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(2,4,12,.82); color: #fff; } #endScreen h1 { font-size: 44px; letter-spacing: 4px; }
   #endRank { font: 600 15px Consolas, monospace; letter-spacing: 2px; margin-top: -4px; }
   #endStats { display: grid; grid-template-columns: auto auto; gap: 6px 26px; background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 16px 24px; font: 13px Consolas, monospace; min-width: 320px; }
@@ -4142,12 +4143,38 @@ document.getElementById('dbgCopy').addEventListener('click', () => { const txt =
 let last = performance.now(), animClock = 0, errShown = false;
 function logErr(e) { console.error('[TM]', (e && (e.stack || e.message)) || e); if (!errShown) { errShown = true; toast('ENGINE ERROR — press Shift+Alt+D for the console'); } }
 // VIGNETTE — a quiet darkening of the frame edges that pulls the eye to the action (cached per canvas size; screen-fixed)
+// Fixed 2026-08-15: the old version used a CIRCULAR gradient sized off Math.min(W,H), so on a wide
+// landscape screen the "safe" transparent zone only covered the short (vertical) dimension — the
+// left/right edges sat almost entirely outside it and got hit with near-max darkening top-to-bottom,
+// while the top/bottom edges were nearly untouched. That lopsided "dark zone" was the reported bug.
+// Fix: draw in a space normalized by (W/2,H/2) so the vignette is a true ELLIPSE matching the
+// screen's own aspect ratio — every edge reaches the same relative falloff, evenly, at any aspect
+// ratio. Also de-duplicated: this is now the ONLY vignette layer (the CSS .grain ellipse used to
+// stack a second, independently-lopsided radial gradient on top of this one).
 let vigG = null, vigKey = '';
+let nightMode = false;   // PROTOTYPE toggle (console: nightMode = true) — leans INTO the framed/dark-edge look for a deliberate night mood. Defaults OFF; does not affect normal play.
 function drawVignette() {
   if (!grainOn) return;   // the "Film Grain & Vignette" accessibility toggle disables both
-  const key = W + 'x' + H;
-  if (vigKey !== key) { vigKey = key; vigG = c.createRadialGradient(W * .5, H * .48, Math.min(W, H) * .52, W * .5, H * .5, Math.hypot(W, H) * .58); vigG.addColorStop(0, 'rgba(2,5,14,0)'); vigG.addColorStop(.65, 'rgba(2,5,14,.14)'); vigG.addColorStop(1, 'rgba(2,5,14,.4)'); }
-  c.fillStyle = vigG; c.fillRect(0, 0, W, H);
+  const key = W + 'x' + H + (nightMode ? 'n' : 'd');
+  if (vigKey !== key) {
+    vigKey = key;
+    // inner/outer are radii in NORMALIZED space where 1.0 = exactly the mid-edge of the screen
+    // (a screen corner sits at ~1.41). inner = where darkening starts; outer = where it's maxed.
+    const inner = nightMode ? .50 : .62, outer = nightMode ? 1.05 : 1.24;
+    const midA = nightMode ? .22 : .07, maxA = nightMode ? .48 : .20;
+    const col = nightMode ? '3,8,24' : '2,5,14';   // night leans cooler/deeper than the daytime navy-black
+    vigG = c.createRadialGradient(0, 0, 0, 0, 0, outer);
+    vigG.addColorStop(0, `rgba(${col},0)`);
+    vigG.addColorStop(inner / outer, `rgba(${col},0)`);
+    vigG.addColorStop((inner + outer) / 2 / outer, `rgba(${col},${midA})`);
+    vigG.addColorStop(1, `rgba(${col},${maxA})`);
+  }
+  c.save();
+  c.translate(W * .5, H * .5);
+  c.scale(W * .5, H * .5);   // normalizes the gradient to the screen's own aspect ratio — evenly framed on every side, at any aspect
+  c.fillStyle = vigG;
+  c.fillRect(-2, -2, 4, 4);   // overcovers; beyond the gradient's last stop it just clamps to maxA, so corners never exceed it
+  c.restore();
 }
 function frame(now) {
   let dt = Math.min(.05, (now - last) / 1000); last = now;

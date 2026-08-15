@@ -16,7 +16,8 @@
 <script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 <style>
   :root { --ui-scale: 1; --ic: #4ea8ff; --mp: #5dff8d; --inf: #ff5a5a; --stab: #ffd23f; --res: #c89bff;
-    --paper: #d7e2ee; --panel: rgba(10,16,26,0.88); --line: rgba(150,190,240,0.30); --term: #6dffb0; }
+    --paper: #d7e2ee; --panel: rgba(10,16,26,0.88); --line: rgba(150,190,240,0.30); --term: #6dffb0;
+    --garr: #ffb04d; --army: #8fd6ff; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #02030a; font-family: "Consolas", ui-monospace, monospace; cursor: crosshair; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   #bg { position: fixed; inset: 0; display: block; z-index: 0; touch-action: none; }   /* the game canvas owns its gestures (drag-pan / pinch-zoom) */
@@ -64,6 +65,7 @@
   .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; min-width: 84px; }
   .cell .l { font-size: 8px; letter-spacing: 1.2px; opacity: .7; } .cell .n { font-size: 15px; font-weight: 700; } .cell .r { font-size: 8px; opacity: .6; color: var(--term); }
   .cell.ic .l { color: var(--ic); } .cell.mp .l { color: var(--mp); } .cell.inf .l { color: var(--inf); } .cell.stab .l { color: var(--stab); } .cell.res .l { color: var(--res); }
+  .cell.garr .l { color: var(--garr); } .cell.army .l { color: var(--army); } .cell.garr .r, .cell.army .r { color: inherit; opacity: .55; }
   .hbtn { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 11px; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; font-family: inherit; color: var(--paper); }
   .hbtn:hover { border-color: var(--ic); } .hbtn.on { background: var(--ic); color: #05111f; }
   .hbtn.attn { border-color: var(--term); color: var(--term); animation: attnPulse 1.5s ease-in-out infinite; }   /* onboarding: pulse a button the player hasn't discovered yet */
@@ -435,6 +437,8 @@
   <div class="topbar">
     <div class="cell ic" data-tip="Industrial Capacity — production base. Build buildings & units. Power Plants raise the rate."><div class="l has-tip">IND. CAP</div><div class="n" id="hIc">0</div><div class="r" id="icR">+0/s</div></div>
     <div class="cell mp" data-tip="Manpower — population to crew units & establish new zones. Housing raises it."><div class="l has-tip">MANPOWER</div><div class="n" id="hMp">0</div><div class="r" id="mpR">+0/s</div></div>
+    <div class="cell garr" data-tip="Garrison — the SEPARATE auto-defense track. Bunkers, Barracks, Garrison Factories & Airbases passively spawn free defenders up to this WEIGHT budget, set by your Garrison Stockpiles. Each live garrisoner drains a little IC/s upkeep (shown here)."><div class="l has-tip">GARRISON</div><div class="n" id="hGarr">0/0</div><div class="r" id="garrR">-0.0/s</div></div>
+    <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
     <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar. Falls when cities are hit or you over-use strikes. 0 = defeat."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
     <div class="cell res" data-tip="Tech Era — research is bought with INFLUENCE in the RESEARCH tree. Advancing to Fusion/Space age unlocks higher tiers."><div class="l has-tip">TECH ERA</div><div class="n" id="hRes">I</div><div class="r" id="resR">INFO AGE</div></div>

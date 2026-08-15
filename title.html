@@ -2505,13 +2505,41 @@ function doSkyfall(it) {   // a GIANT mass-drop right after the opening bombardm
   }
   // ground landings on the normally-neglected edges, marching inward
   for (let i = 0; i < it.flank; i++) { const left = Math.random() < .5; const x = left ? 70 + Math.random() * 260 : WORLD_W - 70 - Math.random() * 260; spawnEnemy(Math.random() < .55 ? 'gtank' : 'gmech', x); }
+  // EVERY mass drop brings a SUPER-UNIT GROUP down with it — the sky doesn't just fall, something huge falls in it
+  if (it.skyfall > 0 && G.enemies.length < 90) spawnSuper(it.capital ? 'leviathan' : (Math.random() < .5 ? 'hive' : 'bombarder'), it.capital);
 }
-function spawnSuper(kind, atCapital) {   // a boss-tier autodrone superweapon enters the theatre
+// DEFENSE SCORE — how well-covered a stretch of the map is: static AA/DEF emplacements weigh heaviest (a real
+// grid), other buildings a little, fielded PD-capable units more than plain ones. Used to pick landing zones.
+function defenseScoreAt(x, r) {
+  r = r || 480; let s = 0;
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; if (Math.abs(b.x - x) > r) continue; s += (b.d.cat === 'DEF' || b.d.pd) ? 2.2 : .4; }
+  for (const u of G.units) { if (u.d.builder || u.onRail) continue; if (Math.abs(u.x - x) > r) continue; s += u.d.pd ? 1.8 : 1; }
+  return s;
+}
+// LANDING-ZONE INTELLIGENCE — the fleet scouts several candidate stretches (near your cities + a few open
+// stretches) and picks whichever is LEAST defended, so undefended flanks eat the worst of it instead of every
+// wave dog-piling your strongest position. Decapitation strikes ignore this — they always go for the capital.
+function pickLandingZone(it, cap, live) {
+  if (it.capital && cap && cap.hp > 0) return cap.x + (Math.random() - .5) * 480;
+  const cands = [];
+  for (const ct of live) cands.push(ct.x + (Math.random() - .5) * 520);
+  for (let i = 0; i < 4; i++) cands.push(180 + Math.random() * (WORLD_W - 360));
+  if (!cands.length) return 220 + Math.random() * (WORLD_W - 440);
+  let best = cands[0], bs = 1e9;
+  for (const c of cands) { const s = defenseScoreAt(c) + Math.random() * 1.5; if (s < bs) { bs = s; best = c; } }   // small jitter so it's not perfectly deterministic
+  return best;
+}
+function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superweapon enters the theatre — arrives in a small GROUP, never alone. atX: drop the group at this exact x (e.g. a wave's chosen landing zone) instead of picking its own spot.
+  n = n || (2 + (Math.random() < .3 ? 1 : 0));
   const cap = G.cities.find(c => c.capital);
-  const x = atCapital && cap ? Math.max(160, Math.min(WORLD_W - 160, cap.x + (Math.random() - .5) * 220)) : 220 + Math.random() * (WORLD_W - 440);
-  spawnEnemy(kind, x); const e = G.enemies[G.enemies.length - 1];
-  toast('⚠⚠ AUTODRONE SUPERWEAPON — ' + ((e && e.bossName) || 'INBOUND')); shake(11); SFX.boom(); if (typeof musDuck === 'function') musDuck();
-  return e;
+  const baseX = atX != null ? Math.max(160, Math.min(WORLD_W - 160, atX)) : (atCapital && cap ? Math.max(160, Math.min(WORLD_W - 160, cap.x + (Math.random() - .5) * 220)) : 220 + Math.random() * (WORLD_W - 440));
+  let first = null, spawned = 0;
+  for (let i = 0; i < n && G.enemies.length < 100; i++) {
+    const x = Math.max(160, Math.min(WORLD_W - 160, baseX + (i - (n - 1) / 2) * 240 + (Math.random() - .5) * 60));
+    spawnEnemy(kind, x); const e = G.enemies[G.enemies.length - 1]; if (!first) first = e; spawned++;
+  }
+  toast('⚠⚠ AUTODRONE SUPERWEAPON' + (spawned > 1 ? 'S' : '') + ' — ' + ((first && first.bossName) || 'INBOUND') + (spawned > 1 ? ' ×' + spawned : '')); shake(11); SFX.boom(); if (typeof musDuck === 'function') musDuck();
+  return first;
 }
 function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam — a hostile full-height plasma column dropped on a city
   G.beams.push({ x, r: 64, life: 1.5, total: 1.5, hostile: true });
@@ -2534,13 +2562,11 @@ function waveAirKind() {   // the air contingent of a landing — variety widens
 function doWave(it) {   // a single CONCENTRATED LANDING — the fleet drops a whole battlegroup together (no more scattered random re-entries), then shields the beachhead
   G.waveN = (G.waveN || 0) + 1;
   const cap = G.cities.find(c => c.capital), live = G.cities.filter(c => c.hp > 0 && !c.held);
-  let lz;
-  if (it.capital && cap && cap.hp > 0) lz = cap.x + (Math.random() - .5) * 480;            // decapitation → keep hammering the capital
-  else if (live.length && Math.random() < .7) { const t = live[Math.floor(Math.random() * live.length)]; lz = t.x + (Math.random() - .5) * 380; }   // mostly land near a city to threaten capture
-  else lz = 220 + Math.random() * (WORLD_W - 440);
+  let lz = pickLandingZone(it, cap, live);   // LANDING-ZONE INTELLIGENCE — scouts several stretches, drops on whichever is least defended (decap always hits the capital)
   lz = avoidCityCenter(Math.max(160, Math.min(WORLD_W - 160, lz)));   // land on the outskirts, not dead-centre in the city
   G.lastLZ = lz;   // remember the freshest landing zone so bunker-busters can pre-soften its defenders
-  const size = Math.max(5, Math.round((6 + G.waveN * 1.4 + G.invTime / 28) * it.fleetMul));
+  // FEWER, HEAVIER DROPS — roughly DOUBLE the old per-wave headcount (the scheduler also spaces waves further apart now)
+  const size = Math.max(9, Math.round((6 + G.waveN * 1.4 + G.invTime / 28) * it.fleetMul * 2));
   const groundFrac = Math.min(.75, (it.ground != null ? it.ground : .3) + .15);
   let grd = 0;
   for (let i = 0; i < size && G.fleet > 0; i++) {
@@ -2549,7 +2575,10 @@ function doWave(it) {   // a single CONCENTRATED LANDING — the fleet drops a w
     spawnEnemy(kind, x); G.fleet = Math.max(0, G.fleet - 1);
   }
   if (grd > 0) { if (G.waveN >= 2 && Math.random() < .6) spawnEnemy('breacher', lz); else spawnEnemy('shieldgen', lz); G.fleet = Math.max(0, G.fleet - 1); }   // a SHIELD CARRIER (early waves) or a persistent BEACHHEAD ANCHOR (later waves) drops with the group to hold the landing zone — down it in the sky before it deploys
-  toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '')); shake(10); SFX.boom();
+  // EVERY LANDING HAS A SUPER UNIT — arrives as part of the group (spawnSuper always clusters them), throttled only by the perf-safety enemy cap
+  let sup = false;
+  if (G.enemies.length < 78) { const pool = it.ground > .4 ? ['leviathan', 'hive', 'bombarder'] : ['hive', 'bombarder', 'leviathan']; spawnSuper(pool[Math.floor(Math.random() * pool.length)], false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
+  toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '') + (sup ? ' + SUPERWEAPON GROUP' : '')); shake(10); SFX.boom();
 }
 function spawnShieldDome(x, gen) {   // gen: the Shield Generator enemy this dome is tied to (if any) — while it lives the dome persists & recharges;
   // the instant the generator falls, the dome collapses. dpsCap caps how much HP the dome can lose in a single frame, so a
@@ -2580,17 +2609,21 @@ function spawnEnemy(kind, atX) {
   else if (kind === 'earthbreaker') Object.assign(e, { hp: 620 * t, s: 10, armor: 20, spd: 4, hold: landY(wxw) - 10, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, quake: true, art: 'eearthbreaker' });   // EARTHBREAKER PRESS — heavy seismic siege unit; its energy field triggers earthquakes that rattle morale (stability) & damage nearby ground forces/buildings
   else if (kind === 'jammer') Object.assign(e, { hp: 44 * t, s: 4, armor: 2, spd: 12, hold: MESO_Y() + 20 + Math.random() * 50, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, jammer: true, jamR: 360, art: 'ejammer' });   // ELECTRONIC-WARFARE drone — no guns, but projects a field that blinds your homing missiles; kill it with GUNS/LASERS/KINETICS (missiles go dumb inside it) to restore lock
   // ===== AUTODRONE SUPERWEAPONS (boss-tier) =====
-  else if (kind === 'hive') Object.assign(e, { hp: 1100 * t, s: 13, armor: 14, spd: 8, hold: STRATO_Y() - 18, weapon: 'bomb', dmg: 26, rate: 2.0, dives: false, air: true, producer: true, prodCd: 3, fastProd: true, weapon2: 'plasarc', dmg2: 34, rate2: 3.4, boss: true, bossName: 'SKYFORTRESS "HIVE"', art: 'airship' });   // flying drone-carrier fortress — rains bombs, births a swarm at a much faster clip, and now keeps a second plasma volley going alongside its bombs
-  else if (kind === 'leviathan') Object.assign(e, { hp: 1700 * t, s: 12, armor: 22, spd: 11, hold: landY(wxw) - 12, weapon: 'plasarc', dmg: 66, rate: 2.6, dives: false, ground: true, boss: true, bossName: 'LAND LEVIATHAN', art: 'colossus', weapon2: 'rotary', dmg2: 10, rate2: .5, wpn2Air: true, wpn2Range: 1300, airSupport: true, airSupportLeft: 3, airSupportCd: 9 + Math.random() * 4, reinforceEligible: true });   // siege crawler that grinds toward your cities — its main plasma cannon hammers ground/low targets while a rapid rotary AA gun (air-ONLY target list) keeps aircraft from freely swarming it, and it periodically calls in interceptor escorts for local air cover
+  else if (kind === 'hive') Object.assign(e, { hp: 1100 * t, s: 13, armor: 14, spd: 8, hold: STRATO_Y() - 18, weapon: 'bomb', dmg: 26, rate: 2.0, dives: false, air: true, producer: true, prodCd: 3, fastProd: true, prodGroup: 2, prodKinds: ['drone', 'interceptor'], weapon2: 'plasarc', dmg2: 34, rate2: 3.4, boss: true, bossName: 'SKYFORTRESS "HIVE"', art: 'airship', reinforceEligible: true });   // flying drone-carrier fortress — rains bombs, births a SQUAD at a much faster clip (not a lone drone), and now keeps a second plasma volley going alongside its bombs
+  else if (kind === 'leviathan') Object.assign(e, { hp: 1700 * t, s: 12, armor: 22, spd: 11, hold: landY(wxw) - 12, weapon: 'plasarc', dmg: 66, rate: 2.6, dives: false, ground: true, boss: true, bossName: 'LAND LEVIATHAN', art: 'colossus', weapon2: 'rotary', dmg2: 10, rate2: .5, wpn2Air: true, wpn2Range: 1300, airSupport: true, airSupportLeft: 3, airSupportCd: 9 + Math.random() * 4, producer: true, prodCd: 10, prodGroup: 2, prodKinds: ['gtank', 'gmech'], reinforceEligible: true });   // siege crawler that grinds toward your cities — its main plasma cannon hammers ground/low targets while a rapid rotary AA gun (air-ONLY target list) keeps aircraft from freely swarming it; periodically calls in interceptor escorts AND fabricates a small armor squad, a true mobile carrier
   else if (kind === 'annihilator') Object.assign(e, { hp: 950 * t, s: 11, armor: 8, spd: 0, hold: SPACE_Y() * .5, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, orbital: true, chargeT: 6, boss: true, bossName: 'ORBITAL ANNIHILATOR', art: 'dreadnought' });   // hangs in orbit & drops a glassing column on your cities — only high-reach weapons can kill it (now also runs its own PD tick, see the orbital block in updEnemies)
-  else if (kind === 'bombarder') Object.assign(e, { hp: 1500 * t, s: 14, armor: 16, spd: 0, hold: SPACE_Y() * .7, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, producer: true, prodCd: 6, bombarder: true, boss: true, bossName: 'AUTODRONE BOMBARDER', art: 'ebombarder', reinforceEligible: true });   // high-orbit CAPITAL FABRICATOR — drops drone reinforcements & orbital ordnance, swats your shots with point-defence, spreads anti-air micro-missiles at your aircraft, and pins a couple of escorts near its orbit on arrival; only space-reaching weapons touch it
+  else if (kind === 'bombarder') Object.assign(e, { hp: 1500 * t, s: 14, armor: 16, spd: 0, hold: SPACE_Y() * .7, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, producer: true, prodCd: 6, prodGroup: 2, prodKinds: ['drone', 'bombpod'], bombarder: true, boss: true, bossName: 'AUTODRONE BOMBARDER', art: 'ebombarder', reinforceEligible: true });   // high-orbit CAPITAL FABRICATOR — drops drone reinforcements & orbital ordnance, swats your shots with DOUBLE-RATE point-defence, spreads anti-air micro-missiles at your aircraft, snipes your ground units with an orbital plasma cannon, and on arrival deploys a full orbital defense grid (10 railgun sats + 10 laser sats + a repair support ship); only space-reaching weapons touch it
   else if (kind === 'bulwark') Object.assign(e, { hp: 360 * t, s: 8, armor: 20, spd: 7, hold: SPACE_Y() * .92, weapon: 'plasarc', dmg: 72, rate: 5.5, dives: false, art: 'ebulwark' });   // CONSTANT THREAT — exosphere heavy-armour platform lobbing nuke-calibre plasma DOWN at the ground (no air flag → it bombards cities/units, not aircraft); ground missiles can't even reach it, only space weapons / orbital guns / tractor-deorbit
   else if (kind === 'breacher') Object.assign(e, { hp: 300 * t, s: 7, armor: 12, spd: 0, hold: landY(wxw) - 7, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, anchored: true, breacher: true, fieldR: 190, fieldHp: Math.round((360 + (G.invTime || 0) * 4) * G.diff), art: 'ebreacher' });   // BEACHHEAD ANCHOR — lands, throws up a DEFLECTOR FIELD that scrubs your incoming projectiles (incl. the AoE rounds that bypass shields), and FABRICATES ground reinforcements while it holds. Beams / strategic strikes punch through; sustained fire collapses the field, then you can kill it.
+  // ===== BOMBARDER'S ORBITAL DEFENSE GRID (deployed on arrival — see the bombarder block in updEnemies) =====
+  else if (kind === 'railsat') Object.assign(e, { hp: 20 * t, s: 3, armor: 2, spd: 0, hold: SPACE_Y() * .68, weapon: 'rail', dmg: 17, rate: 2.4, dives: false, air: true, anchored: true, art: 'rods' });   // orbital railgun satellite — cheap, numerous, hits hard at range
+  else if (kind === 'lasersat') Object.assign(e, { hp: 15 * t, s: 3, armor: 1, spd: 0, hold: SPACE_Y() * .68, weapon: 'beam', dmg: 9, rate: 1.1, dives: false, air: true, anchored: true, art: 'satlaser' });   // orbital laser-defense satellite — a picket line of constant-fire lasers
+  else if (kind === 'mender') Object.assign(e, { hp: 110 * t, s: 5, armor: 6, spd: 0, hold: SPACE_Y() * .68, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, mender: true, healR: 320, healRate: 22, art: 'eshield' });   // SUPPORT SHIP — no guns of its own; projects a repair field that mends every hostile it can reach
   else Object.assign(e, { hp: 200 * t, s: 7, armor: 10, spd: 0, hold: landY(wxw) - 7, weapon: 'rocket', dmg: 10, rate: 1.6, dives: false, anchored: true, producer: true, prodCd: 7, harvester: true, reinforceEligible: true, art: 'eharvester' });   // harvester — lands, anchors, keeps dropping reinforcements, and (like the other anchored superweapons) calls in one support group if it survives long enough
   e.hp = Math.round(e.hp); e.maxHp = e.hp; if (e.shield) e.maxShield = e.shield; G.enemies.push(e);
 }
-// THE BEACHHEAD CLOCK — a landed/anchored superweapon (leviathan, bombarder, harvester) that survives BOSS_REINFORCE_T
-// seconds after going active calls in ONE support group, then never again (e.reinforced latches). Tunable here.
+// THE BEACHHEAD CLOCK — a landed/anchored superweapon (hive, leviathan, bombarder, harvester) that survives
+// BOSS_REINFORCE_T seconds after going active calls in ONE support group, then never again (e.reinforced latches).
 const BOSS_REINFORCE_T = 28;
 function reinforceBoss(e) {
   banner('⚠ THE ' + (e.bossName || 'SUPERWEAPON') + ' IS ENTRENCHING', 'Reinforcements inbound — kill it fast', 4);
@@ -2611,6 +2644,9 @@ function reinforceBoss(e) {
       spawnEnemy(Math.random() < .5 ? 'gtank' : 'gmech', e.x + (Math.random() - .5) * 260);
       const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; }
     }
+  } else if (e.kind === 'hive') {   // SKYFORTRESS — calls down a fresh escort wing to screen it
+    const n = 4;
+    for (let i = 0; i < n && G.enemies.length < 74; i++) { spawnEnemy(Math.random() < .5 ? 'interceptor' : 'gunship', e.x + (Math.random() - .5) * 300); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 60; ne.y = ne.hold; } }
   }
 }
 
@@ -2760,7 +2796,7 @@ function updateGame(dt) {
     const sups = it.supers || []; G.superI = G.superI || 0;
     if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
-    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 13 + Math.random() * 6; } }
+    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
     if (done) return end(true, it.glass ? 'THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
@@ -3053,6 +3089,19 @@ function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & 
   for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - x) < 130) damageDistrict(ct, dst, 320); }   // a lance landing in a city levels its districts
 }
 function orbitalBarrage(x) { G.proj.push({ k: 'krod', orb: true, interceptable: true, hp: Math.round(16 * G.diff), s: 4, strat: true, x, y: -320, vx: 0, vy: 560, tx: x, ty: groundY(x), life: 9, friendly: false, tr: [] }); }
+// BOMBARDER'S ORBITAL PLASMA CANNON — snipes a single player GROUND unit from orbit. GROUND-ONLY by design (never
+// targets air) — a deliberate anti-armor/anti-artillery pressure so turtling ground forces under the bombarder isn't safe.
+function bombarderGroundSnipe(e) {
+  const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.d.domain !== 'ground') continue; grd.push(u); }
+  if (!grd.length) return;
+  const t = grd[Math.floor(Math.random() * grd.length)];
+  const dmg = Math.round((55 + (G.invTime || 0) * .35) * G.diff);
+  G.proj.push({ k: 'beam', x1: t.x, y1: -60, x2: t.x, y2: t.y, life: .26, friendly: false, dmg: 0 });   // purely visual — the hit itself is applied directly below so it can never land on an air unit
+  G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 18, life: .22 });
+  boom(t.x, t.y, 7); shake(5);
+  hurt(t, dmg);
+  floatText(t.x, t.y - (t.s || t.d.s || 12) - 8, '☄ ORBITAL PLASMA SNIPE', '#ff8a5a');
+}
 // BUNKER-BUSTER TARGET PRIORITY — the autofleet ranks your structures by how much killing them hurts you: air power first, then your economy of war, then anything fragile-and-catastrophic, then the defences shielding a landing, then general infrastructure.
 function busterScore(b) { const d = b.d, k = b.key; if (k === 'airbase' || k === 'aeroworks' || k === 'ugairwing') return 100; if (d.fallout || k === 'amextractor') return 92; if (k === 'extractor' || k === 'deepore') return 84; if (d.strat || k === 'uranenrich' || k === 'droidfoundry' || k === 'genefac' || k === 'cloningfac' || k === 'spacestation' || k === 'spacecenter' || k === 'massrail') return 72; if (d.cat === 'DEF') return 52; if (k === 'radar' || k === 'powerplant' || k === 'ammodepot' || k === 'munition' || k === 'factory' || k === 'shipyard' || k === 'housing') return 26; return 12; }
 function busterClaims(b) { let n = 0; for (const p of G.proj) if (p.k === 'buster' && p.life > 0 && Math.abs(p.tx - b.x) < 44) n++; return n; }   // how many penetrators are already inbound on this target (so a salvo spreads rather than over-killing one thing)
@@ -3072,7 +3121,7 @@ function playerAirDefenseScore() {
 function decapBusterBudget() { return Math.round(Math.min(20, 10 + playerAirDefenseScore() * .4)); }
 function busterTarget() { let best = null, bs = 8; for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; let s = busterScore(b); if (s <= 0) continue; if (b.d.cat === 'DEF' && G.lastLZ != null && Math.abs(b.x - G.lastLZ) < 320) s += 46; if (b.ug) s -= 14; s -= busterClaims(b) * 26; s += Math.random() * 7; if (s > bs) { bs = s; best = b; } } return best; }
 function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
-  for (let d = 0; d < 8; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 1, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a screen of DECOY missiles falls with each penetrator — cheap 1-HP flares that soak your interceptors so the real round gets through to impact; now mirrors the buster's slow-start orbital descent so the screen reads consistently
+  for (let d = 0; d < 8; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a screen of DECOY missiles falls with each penetrator — DURABLE flares (a few hits, not one) that soak your interceptors so the real round gets through to impact; hard to pick the real buster out of the screen on a single shot. Mirrors the buster's slow-start orbital descent so the screen reads consistently
   G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: -440, vx: 0, vy: 8 + Math.random() * 6, ay: 62, vyCap: 420, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [] });   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — mirrors the enemy re-entry profile (near-stationary start, gradual accel, capped terminal speed, see updProj) instead of slamming down in ~1.5s, so a layered defense grid gets several real seconds of engagement window before it lands
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
 function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOINT: one plane-sized round guts its SINGLE designated target with a small, sharp blast (incl. shallow-buried bunkers) — a sniper round, not an area nuke
@@ -3482,16 +3531,20 @@ function updEnemies(dt) {
       continue;
     }
     const tgt = near(e.x, e.y, e.air ? airTargetsList() : friendliesList(), 1e9) || { x: e.x, y: groundY(e.x) };
-    if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 60) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); spawnEnemy('drone', e.x + (Math.random() - .5) * 90); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); } }   // harvester / hive keep dropping reinforcements — the HIVE's rate is boosted (fastProd)
+    if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 70) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); const pn = e.prodGroup || 1, pk = e.prodKinds; for (let i = 0; i < pn && G.enemies.length < 74; i++) spawnEnemy(pk ? pk[Math.floor(Math.random() * pk.length)] : 'drone', e.x + (Math.random() - .5) * 100 + i * 34); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); floatText(e.x, e.y - e.s - 6, '⚙ CARRIER FABRICATED', '#c9a6ff'); } }   // harvester / hive / bombarder / leviathan act as CARRIERS — periodically birth a small GROUP of normal units, not a lone drone (prodGroup/prodKinds); the HIVE's cadence is boosted (fastProd)
+    if (e.mender) {   // SUPPORT SHIP — mends every damaged hostile within its radius, every tick (mirrors the player's Nanite Foundry repair aura, but for the fleet)
+      for (const o of G.enemies) { if (o === e || o.reentry || o.hp <= 0 || o.hp >= o.maxHp) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd < (e.healR || 320) * (e.healR || 320)) { o.hp = Math.min(o.maxHp, o.hp + (e.healRate || 22) * dt); if (Math.random() < .1) spark(o.x, o.y, 1); } }
+      if (Math.random() < .05) G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: e.healR || 320, life: .8 });
+    }
     if (e.breacher) {   // BEACHHEAD ANCHOR — fabricates ground reinforcements under the cover of its deflector field
       e.facCd = (e.facCd == null ? 4 : e.facCd) - dt;
       if (e.facCd <= 0 && G.enemies.length < 74) { e.facCd = 5 + Math.random() * 3; const gk = Math.random() < .5 ? 'gtank' : Math.random() < .82 ? 'gmech' : 'pelter'; spawnEnemy(gk, e.x + (Math.random() - .5) * 120); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; } G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 7, life: .14 }); floatText(e.x, e.y - e.s - 6, '⚙ FABRICATED', '#c9a6ff'); }
       if (e.fieldOn && e.fieldHp <= 0) { e.fieldOn = false; floatText(e.x, e.y - e.s, '⛨ DEFLECTOR FIELD COLLAPSED', '#ff8a6a'); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .3, max: e.fieldR * 1.3, life: .5 }); }
       if (e.fieldHits && e.fieldHits.length) { for (const h of e.fieldHits) h.t += dt; if (e.fieldHits.some(h => h.t >= .5)) e.fieldHits = e.fieldHits.filter(h => h.t < .5); }
     }
-    if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + point-defence swats your shots + hunts your aircraft + pins escorts near its orbit
+    if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + DOUBLE-RATE point-defence swats your shots + hunts your aircraft + pins escorts near its orbit + snipes your ground units from orbit
       e.dropCd = (e.dropCd == null ? 5 : e.dropCd) - dt; if (e.dropCd <= 0) { e.dropCd = 5 + Math.random() * 4; orbitalBarrage(e.x + (Math.random() - .5) * 520); if (Math.random() < .5 && G.enemies.length < 70) spawnEnemy('bombpod', e.x + (Math.random() - .5) * 380); }
-      e.pdCd = (e.pdCd == null ? .4 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .35; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE: a red PD beam lances one of your incoming rounds each tick, so you can SEE it swatting your fire (it's why missiles alone bounce off it)
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .175; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE at DOUBLE the old fire rate: a red PD beam lances one of your incoming rounds twice as often, so you can SEE it swatting your fire (it's why missiles alone bounce off it)
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, airOnlyList(), 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13); } else e.aaCd = 1.2; }
       if (!e.escorted) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once
@@ -3499,6 +3552,15 @@ function updEnemies(dt) {
         for (let i = 0; i < n && G.enemies.length < 74; i++) { spawnEnemy(Math.random() < .5 ? 'frigate' : 'strikewing', e.x + (i - (n - 1) / 2) * 170); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 90; ne.y = ne.hold; } }
         floatText(e.x, e.y - e.s - 12, '🛰 ESCORTS DEPLOYED', '#9cc4ff');
       }
+      if (!e.satDeployed) {   // FULL ORBITAL DEFENSE GRID — on arrival, ONCE: 10 railgun sats + 10 laser-defense sats + a repair support ship, ringed around it
+        e.satDeployed = true;
+        for (let i = 0; i < 10 && G.enemies.length < 130; i++) { spawnEnemy('railsat', e.x + (i - 4.5) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
+        for (let i = 0; i < 10 && G.enemies.length < 130; i++) { spawnEnemy('lasersat', e.x + (i - 4.5) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
+        spawnEnemy('mender', e.x + (Math.random() - .5) * 160); { const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 100; ne.y = ne.hold; } }
+        banner('🛰 ORBITAL DEFENSE GRID ONLINE', '10 railgun sats · 10 laser sats · a support ship — the CAPITAL FABRICATOR is dug in', 4.5); shake(9); SFX.boom();
+      }
+      e.snipeCd = (e.snipeCd == null ? 4 + Math.random() * 3 : e.snipeCd) - dt;   // GROUND-SNIPE PLASMA CANNON — picks a player GROUND unit (never air) and drops an orbital plasma bolt on it
+      if (e.snipeCd <= 0) { e.snipeCd = 7 + Math.random() * 4; bombarderGroundSnipe(e); }
     }
     if (e.airSupport && e.airSupportLeft > 0) {   // LAND LEVIATHAN — calls in a fighter every so often for local air cover, a few times over its lifetime
       e.airSupportCd -= dt;

@@ -3583,7 +3583,12 @@ function renderPart(pt, px) {
 function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? (cbMode ? '#ff9a00' : '#ff6b6b') : (cbMode ? '#37b6ff' : '#7cffb0')); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }   // colorblind mode: blue/orange bars instead of green/red
 const MM = { x: 0, y: 0, w: 150, h: 120 };
 function drawMinimap() {
-  MM.w = Math.min(200, W * .24); MM.h = Math.min(110, H * .2); MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;   // a moderately balanced rectangle (wider than tall) rather than the old tall/narrow strip
+  // Proportion the minimap to the TRUE world aspect ratio (WORLD_W : worldH(), ~4-4.5:1 — a wide, short strip) instead of
+  // independently-capped width/height fractions, which used to squish it tall & narrow and distort where units plot.
+  // Cap the width to fit the corner, then DERIVE the height from that same ratio (re-deriving width if a height cap binds
+  // first on a very tall viewport) so horizontal and vertical scale always match and unit positions plot faithfully.
+  { let mw = Math.min(240, W * .26), mh = mw * (worldH() / WORLD_W); const maxH = H * .3; if (mh > maxH) { mh = maxH; mw = mh * (WORLD_W / worldH()); } MM.w = mw; MM.h = mh; }
+  MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
   c.fillStyle = 'rgba(8,12,20,.85)'; c.strokeStyle = 'rgba(150,190,240,.3)'; c.lineWidth = 1; c.fillRect(MM.x, MM.y, MM.w, MM.h); c.strokeRect(MM.x, MM.y, MM.w, MM.h);
   const sc = MM.w / WORLD_W, gy = MM.y + MM.h * .7;
   c.strokeStyle = 'rgba(120,150,120,.5)'; c.beginPath(); for (let wx = 0; wx <= WORLD_W; wx += 60) { const e = elevAt(wx); c.lineTo(MM.x + wx * sc, gy - e * MM.h * .4); } c.stroke();

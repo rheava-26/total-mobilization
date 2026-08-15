@@ -264,7 +264,10 @@
     .ghint { font-size: 10.5px; max-width: 94vw; top: 38%; background: rgba(6,12,24,.82); border: 1px solid rgba(109,255,176,.35); border-radius: 6px; padding: 9px 12px; line-height: 1.5; }   /* the wrapped topbar eats the top of the screen — drop the hint to mid-screen on its own panel */
     .modal { padding: 14px; } input[type=range] { width: 140px; }
     .toast { bottom: 130px; max-width: 92vw; font-size: 11px; }
-    #strikePanel { min-width: 0; width: 94vw; }
+    #strikePanel { min-width: 0; width: 94vw; top: 8px; max-height: 82vh; overflow-y: auto; padding: 8px 9px; }
+    #strikePanel .sph { font-size: 9.5px; margin-bottom: 5px; }
+    #strikePanel .sopt { padding: 5px 8px; margin-top: 4px; font-size: 10px; }
+    #strikePanel .spc { font-size: 8px; margin-top: 6px; }
     .footer { font-size: 10px; }
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
@@ -1945,14 +1948,15 @@ const CRISIS_MUTINY_FRAC = 0.3;   // fraction of the standing army that mutinies
 function ugAllowed(d) { return !!d.rail || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't
 function digLevel(key) { const d = BUILD_DEFS[key]; if (d.rail) return 1; if (d.autoBury) return Math.min(2, d.autoBury); if (G && G.dig && ugAllowed(d)) return Math.min(2, G.dig | 0); return 0; }   // 0 surface · 1 shallow · 2 deep — rail hubs & autoBury buildings always sink
 function placeUg(key) { return digLevel(key) > 0; }
+const OVERLAP_FRAC = .32;   // was .5 (full footprint spacing, +4px gap) — relaxed so buildings may pack in with a modest footprint overlap instead of needing full clearance; still >0 so two buildings can never occupy the exact same spot
 function canPlace(key, wx, ug) {
   const d = BUILD_DEFS[key];
-  if (ug) { const lvl = digLevel(key); if (wx < 60 || wx > WORLD_W - 60) return false; for (const b of G.buildings) if (b.ug && (b.ugLvl || 1) === lvl && Math.abs(b.x - wx) < (b.d.w + d.w) * .5 + 4) return false; for (const s of G.sites) if (s.ug && (s.ugLvl || 1) === lvl && Math.abs(s.x - wx) < (s.d.w + d.w) * .5 + 4) return false; return true; }   // different depths don't collide
+  if (ug) { const lvl = digLevel(key); if (wx < 60 || wx > WORLD_W - 60) return false; for (const b of G.buildings) if (b.ug && (b.ugLvl || 1) === lvl && Math.abs(b.x - wx) < (b.d.w + d.w) * OVERLAP_FRAC + 2) return false; for (const s of G.sites) if (s.ug && (s.ugLvl || 1) === lvl && Math.abs(s.x - wx) < (s.d.w + d.w) * OVERLAP_FRAC + 2) return false; return true; }   // different depths don't collide
   if (d.onNode) { const n = nodeNear(wx); return n && !n.used; }
   if (d.needWater) return findWater(wx) !== null && Math.abs(findWater(wx) - wx) < 120;
   if (elevAt(wx) < SEA_E + .02) return false;  // not in water (unless dock/shipyard)
-  for (const b of G.buildings) if (!b.ug && Math.abs(b.x - wx) < (b.d.w + d.w) * .5 + 4) return false;
-  for (const s of G.sites) if (!s.ug && Math.abs(s.x - wx) < (s.d.w + d.w) * .5 + 4) return false;
+  for (const b of G.buildings) if (!b.ug && Math.abs(b.x - wx) < (b.d.w + d.w) * OVERLAP_FRAC + 2) return false;
+  for (const s of G.sites) if (!s.ug && Math.abs(s.x - wx) < (s.d.w + d.w) * OVERLAP_FRAC + 2) return false;
   return true;
 }
 function nodeNear(wx) { for (const n of G.nodes) if (Math.abs(n.x - wx) < 40) return n; return null; }
@@ -3250,15 +3254,17 @@ function toggleManual() {   // add / remove the selected gun from the fire-contr
   refreshSel();
 }
 function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = []; toast('fire control released'); refreshSel(); }
-function demolishSelected() {   // DEMOLITION — undo an overbuild without waiting for the enemy to do it for you. Reclaims a slice of the IC spent; never a way to farm IC (well under 100% back).
+const DEMOLISH_STAB_COST = 10;   // tunable — demolition must sting (a real decision, not free space-reclamation), not just be a discounted refund
+function demolishSelected() {   // DEMOLITION — undo an overbuild without waiting for the enemy to do it for you. Reclaims a slice of the IC spent, but costs STABILITY — tearing down what you built rattles the public.
   if (!G || !G.sel || !G.buildings) return;
   const b = G.sel; const idx = G.buildings.indexOf(b); if (idx < 0) return;   // only a real, placed building (not a city/unit) can be selected here
   const refund = Math.round((b.d.ic || 0) * .4);
   G.ic = Math.min(1e9, G.ic + refund);
+  G.stab = Math.max(0, G.stab - DEMOLISH_STAB_COST);
   G.buildings.splice(idx, 1);
   if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); }
   smoke(b.x, b.ug ? groundY(b.x) : groundY(b.x) - b.d.h * .5, 6); SFX.build();
-  toast('⛏ DEMOLISHED ' + b.d.name.toUpperCase() + ' — +' + refund + ' IC reclaimed');
+  toast('⛏ DEMOLISHED ' + b.d.name.toUpperCase() + ' — +' + refund + ' IC reclaimed, −' + DEMOLISH_STAB_COST + '% STABILITY');
   G.sel = null; refreshSel(); buildBuildBar && buildBuildBar();
 }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }

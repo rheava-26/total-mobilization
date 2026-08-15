@@ -289,11 +289,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.23.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.24.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.24.0 — INFANTRY SQUADS</b><br>Light infantry is no longer a lone soldier — it now deploys as a 4-body <b>SQUAD</b> that moves and thinks as one unit but fights as several. <b>👥 Four bodies, one brain:</b> three riflemen plus a dedicated AT/AA specialist, each with its own health, weapon and altitude reach — hits land on individual troopers, and the squad fights on (survivors reforming tighter) until the last member falls. <b>🔫 Burst fire:</b> riflemen fire in short bursts instead of one shot at a time. <b>🚀 Two layers at once:</b> the specialist independently engages ARMOR and AIRCRAFT while the riflemen handle ground — so a single squad can be shooting a tank and a strike jet in the same breath. <b>⚡ Lighter on your phone:</b> a squad is ONE simulated entity instead of five, so massed infantry costs a fraction of the performance. Garrisoned infantry become squads automatically.</p>
     <p><b>v3.23.0 — THE GARRISON ECONOMY</b><br>A standing homeland-defense force that runs ALONGSIDE your hand-built army — a separate track with its own cap. <b>🪖 Buildings raise their own garrison:</b> bunkers, barracks, airbases, factories and more now passively fill with standing garrison troops for FREE — you only pay a small IC/s upkeep on what's fielded. <b>🧱 But mass has a wall:</b> your TOTAL garrison is hard-capped by <b>Garrison Stockpiles</b> (+20 capacity each) — you physically can't garrison past your stockpile budget, so a big standing force costs construction, not just clicks. No more map-filling spam. <b>🏭 New Infrastructure buildings:</b> Garrison Stockpile (sets the cap), Garrison Factory (adds its own garrison AND speeds nearby buildings' fill), and a cheap Mobilization Hub (fill-speed aura). <b>📊 New readouts:</b> the top bar now shows your GARRISON and ARMY capacity, each with a live rate. <b>🗂 Tidying:</b> Rotary Cannon Works and Plasma Bastion Works moved to the Infrastructure tab. Your manually-built army and army cap are completely unchanged — garrison is wholly separate.</p>
     <p><b>v3.22.0 — FIRST CONTACT &amp; A FIERCER FLEET</b><br><b>🎬 Opening cinematic:</b> the game now opens on a typed-out transmission that sets the stakes before the first shot — it plays every launch, and a SKIP appears once you've watched it through once. <b>💥 Superweapons fight back:</b> the enemy's boss units are no longer passive HP sponges. The <b>LAND LEVIATHAN</b> announces its groundfall with a warning banner and fights with a main plasma gun, a secondary AA turret AND its own air support; the <b>BOMBARDER</b> throws AA micro-missiles and escort sats; the <b>HIVE</b> builds faster and fires a second volley; the <b>ANNIHILATOR</b> gained point-defense; and any boss that survives on the ground long enough calls in one reinforcement wave. (No extra HP or invulnerability — smarter and better-armed, not spongier.) <b>🛡 Beachhead Shield Generator fixed:</b> it used to self-destruct the instant it landed — now it touches down as a durable, KILLABLE structure that projects its shield dome while it lives; destroy the generator to drop the bubble, and massed fire can no longer delete the dome in a single frame. <b>🎯 Kinder first matches:</b> the Decapitation bunker-buster barrage now scales to how much air defense you've actually built (a light salvo if you have none, a heavier one if you can shoot them down) instead of a flat wipe. <b>🗺 Readable minimap:</b> resized to the true proportions of the map — a wide, short strip — so your units finally plot where they really are, in clear color-coded ground / naval / air layers. <b>📷 Camera stays put:</b> it no longer auto-pans toward threats — the view holds exactly where you leave it. <b>🎚 New default:</b> BEGIN MOBILIZATION now starts on GENERAL, the most balanced scenario.</p>
     <p><b>v3.21.0 — ATMOSPHERE &amp; FOUNDATIONS</b><br>Groundwork for the coming autofleet overhaul. <b>🌌 The sky is now a real column:</b> the EXOSPHERE — all of space — fills the top HALF of the world, and the THERMOSPHERE is finally its own distinct band beneath it (they used to be one crammed label). <b>✈ Aircraft are aircraft, not spacecraft:</b> your air force is now hard-capped at the mesosphere. Anything higher — the thermosphere and the vast exosphere — can only be reached by railguns, orbital guns, particle beams, or your own space fleet. Every weapon's altitude reach was re-tuned to the new bands (SAMs still top out in the mesosphere, bunkers in the troposphere, and so on). <b>🛸 The bulk drones are actual aircraft:</b> the generic combat drone is now a swept delta-wing UAV and the interceptor its own sleek canard fighter, instead of two identical saucers. <b>⊛ Enemies stop cramming:</b> a wave that used to collapse into a single overlapping stack on a city now spreads into loose groups of distinct craft. <b>🔧 Research menu fixed:</b> starting a research no longer strands the node overview on-screen with no way to close it (there's now an ✕), and it no longer kills panning on phone (you were left only able to zoom) — plus the view stops yanking back to your era every time you queue something.</p>
@@ -1623,7 +1624,7 @@ const COMP = {
   rocketpart: { name: 'Rocket Parts', col: '#9cc4ff', ds: 'Built by Space Centers & Space Stations. Spent to assemble orbital units before they launch.' },
 };
 const UNIT_DEFS = {
-  inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 30, mp: 8, build: 2.5, hp: 46, armor: 2, range: 260, dmg: 5, rate: .45, weapon: 'tracer', speed: 14, s: 3, grp: 6, ds: 'Rifle squads, built cheap & in numbers. Tougher-hitting now, and when they DIG IN they raise their own auto-emplacements (MG nests, flak, field guns) — hold a line and it grows into a fort.' },
+  inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 30, mp: 8, build: 2.5, hp: 46, armor: 2, range: 260, dmg: 5, rate: .45, weapon: 'tracer', speed: 14, s: 9, grp: 6, ds: 'Rifle SQUADS — several bodies sharing one entity: riflemen burst-fire while a dedicated AT/AA trooper independently engages armor or aircraft. Tougher-hitting now, and when they DIG IN they raise their own auto-emplacements (MG nests, flak, field guns) — hold a line and it grows into a fort.' },
   scout:    { name: 'Scout "Lynx"', art: 'scout', domain: 'ground', ic: 60, mp: 6, build: 3, hp: 40, armor: 2, range: 360, dmg: 4, rate: .35, weapon: 'tracer', speed: 22, s: 3.5, grp: 3, ds: 'Fast recon buggy w/ light autocannon.' },
   tank:     { name: 'MBT "Aegis"', art: 'tank', domain: 'ground', ic: 120, mp: 14, build: 6, hp: 110, armor: 8, range: 300, dmg: 18, rate: 2.2, weapon: 'shell', speed: 11, s: 4, grp: 3, ds: 'Main battle tank battery. Arcing cannon.' },
   heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 32, rate: 2.8, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tanks. Enormous armor. Each one is forged from HEAVY ALLOY (built by Factories / the Heavy Foundry). (req Heavy Alloys)' },
@@ -2009,7 +2010,44 @@ function finishSite(site) {
   if (b.d.strat && !G.hintStrike) { G.hintStrike = true; const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('attn'); toast('☢ ' + b.d.name.toUpperCase() + ' READY — press ☢ STRIKE (top bar) to call one down'); }   // playtest: nobody found the STRIKE button — point at it the moment it becomes useful
   if (mode === 'game') { buildProdMenu(); buildBuildBar(); }   // refresh menus so building-driven upgrades (e.g. Drone Assembly batch) show their green highlight immediately
 }
+// ===== SQUAD ENTITY MODEL — light infantry is simulated as ONE entity with MANY bodies (the perf win: one
+// AI/path/target-seeking brain, not N separate riflemen), but each body carries its own formation offset, HP
+// and weapon. Riflemen fire in short BURSTS; a lone ATGM/MANPAD member holds a separate, higher-ceiling weapon
+// that acquires & fires INDEPENDENTLY of the riflemen, so one squad can engage a tank AND a strike jet at once.
+// the AT/AA specialist fires 'rotary' (the same non-homing flak stream the game's own AA/SAM turrets use) rather
+// than a homing 'rocket' — a homing round re-targets the NEAREST valid target every frame as it flies (see
+// updProj), which would let it get hijacked mid-flight onto whatever the riflemen are shooting at; a straight
+// stream reliably lands on the target the trooper actually acquired.
+const SQUAD_LOADOUT = {
+  inf: { n: 4, spread: 8, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
+};
+const INF_BODY_S = 3;   // individual rifleman render/collision size — kept at the ORIGINAL single-unit scale; UNIT_DEFS.inf.s is bumped instead to describe the squad's FOOTPRINT (collision/selection/formation radius)
+function spawnSquad(key, d, x) {
+  const cfg = SQUAD_LOADOUT[key], y = groundY(x) - INF_BODY_S;
+  const hp0 = Math.max(8, Math.round(d.hp * 0.66)), n = cfg.n;
+  const members = [];
+  for (let i = 0; i < n; i++) {
+    const isAt = i === n - 1;   // last slot in the squad is the dedicated AA/AT specialist — everyone else is a rifleman
+    const mhp = Math.max(4, Math.round(hp0 / n * (isAt ? 1.25 : 1)));
+    const ox = (i - (n - 1) / 2) * cfg.spread;
+    members.push({
+      isAt, ox, oy: 0, cx: ox, cy: 0, aim: 0, facing: 1,
+      hp: mhp, maxHp: mhp,
+      weapon: isAt ? 'rotary' : d.weapon,
+      dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
+      rate: isAt ? cfg.atRate : d.rate,
+      range: d.range * (isAt ? cfg.atRangeMul : 1),
+      ceil: isAt ? cfg.atCeil : (d.ceil != null ? d.ceil : .80),
+      pd: isAt, cd: Math.random() * (isAt ? cfg.atRate : d.rate), burstLeft: 0, burstT: 0, tgt: null, alive: true,
+    });
+  }
+  const u = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0: 0, wx1: 0, patrol: 0, job: null,
+    squad: true, members, squadCfg: cfg };
+  G.units.push(u);
+  return u;
+}
 function spawnUnit(key, x) {
+  if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x);
   const d = effDef(key); let y, wx0 = 0, wx1 = 0;
   if (d.domain === 'ground') y = groundY(x) - d.s;
   else if (d.domain === 'air') y = groundY(x) - 80;
@@ -2026,7 +2064,20 @@ function spawnUnit(key, x) {
 }
 // when a new age unlocks, re-arm units already in the field with their upgraded loadout (keeps their current HP fraction)
 function applyEraUpgrades() {
-  for (const u of G.units) { const up = UPGRADES[u.key]; if (up && G.unlocked[up.era] && u.d === UNIT_DEFS[u.key]) { const nd = effDef(u.key), frac = u.maxHp ? u.hp / u.maxHp : 1; u.d = nd; u.maxHp = Math.max(8, Math.round(nd.hp * .66)); u.hp = Math.max(1, Math.round(u.maxHp * frac)); } }
+  for (const u of G.units) { const up = UPGRADES[u.key]; if (up && G.unlocked[up.era] && u.d === UNIT_DEFS[u.key]) { const nd = effDef(u.key), frac = u.maxHp ? u.hp / u.maxHp : 1; u.d = nd; u.maxHp = Math.max(8, Math.round(nd.hp * .66)); u.hp = Math.max(1, Math.round(u.maxHp * frac)); if (u.squad) upgradeSquadLoadout(u, nd); } }
+}
+// re-arm a fielded squad's RIFLEMEN with the new era weapon (tracer→plasball etc.) — the AT/AA specialist keeps its
+// own missile loadout untouched, matching the game-wide rule that plasma only re-arms gun/kinetic platforms.
+function upgradeSquadLoadout(u, nd) {
+  const n = u.members.length, baseHp0 = Math.max(8, Math.round(nd.hp * .66));
+  for (const m of u.members) {
+    if (m.isAt) continue;
+    const frac = m.maxHp ? Math.max(0, m.hp) / m.maxHp : 1;
+    m.weapon = nd.weapon; m.dmg = nd.dmg; m.rate = nd.rate; m.range = nd.range;
+    m.maxHp = Math.max(4, Math.round(baseHp0 / n)); m.hp = Math.max(0, Math.round(m.maxHp * frac));
+  }
+  let sum = 0; for (const m of u.members) if (m.alive) sum += Math.max(0, m.hp);
+  u.hp = sum; u.maxHp = baseHp0;
 }
 // ground/air defenses can only reach so high — enemies in a layer above your weapon's ceiling are untouchable until they descend (atmosphere-layer combat)
 // FIRE DE-CONFLICTION — every shot a unit/turret commits this frame is "claimed" against its target; shooters then
@@ -2229,7 +2280,7 @@ function beamHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.conc
 function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
 function near(x, y, list, range) { let b = null, bd = range * range; for (const t of list) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }
 function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
-function hurt(t, dmg) {
+function hurt(t, dmg, ix, iy) {
   if (t.kind && !t.boss && !t._b && !t._city) { const dm = enemyDome(t); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min(dmg, room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(t.x, t.y, 1); G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 4, life: .07 }); return; } }   // a deployed beachhead dome soaks the hit for everything under it (bosses excepted) — capped at dm.frameCap dmg/frame so massed fire can't delete it in one tick
   if (t.shield > 0 && (t.kind || t.key)) {   // energy shield (strike-wings, flying superhumans): reflects energy/gun fire; only missiles overload & rip it apart
     if (t.killBy === 'missile' || t.killBy === 'rocket' || t.killBy === 'bomb') { t.shield = 0; floatText(t.x, t.y, 'SHIELD DOWN', '#7fd4ff'); G.parts.push({ k: 'ring', x: t.x, y: t.y, r: 3, max: t.s * 6, life: .3 }); }   // overloaded — this hit's damage carries through below
@@ -2240,7 +2291,40 @@ function hurt(t, dmg) {
   // ENERGY SHIELD RULE: only an active shield resists hits. Without one, units get DUMPSTERED — and the less armor, the worse: unarmored (esp. aircraft) die in a couple of hits.
   const fragile = !(t._b || t._city), rawArmor = (t.d && t.d.armor) || t.armor || 0;
   const eff = Math.max(1, dmg * (fragile ? HIT_BUFF * (rawArmor < 4 ? 2.7 : 1.9) : 1) - armor);
-  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t.hp -= ev; t._lastHit = ev; spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack)
+  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t.hp -= ev; t._lastHit = ev; if (t.squad) hitSquadMember(t, ev, ix, iy); spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack)
+// SQUAD FOOTPRINT DAMAGE — a round landing anywhere inside the squad's collision radius (see hurt() above) is
+// routed here and assigned to the NEAREST LIVING MEMBER to the actual impact point (ix,iy, defaulting to the
+// squad's own position when a caller doesn't know exactly where the round landed). t.hp already took the SAME
+// hit as any ordinary unit (above) — this only decides which individual body carries it, so a squad still dies
+// correctly to area-of-effect code that hits G.units' aggregate .hp directly and never touches .members at all.
+function hitSquadMember(t, ev, ix, iy) {
+  const alive = t.members.filter(m => m.alive); if (!alive.length) return;
+  ix = ix == null ? t.x : ix; iy = iy == null ? t.y : iy;
+  let best = alive[0], bd = Infinity;
+  for (const m of alive) { const mx = t.x + m.cx, my = t.y + (m.cy || 0), dd = (mx - ix) ** 2 + (my - iy) ** 2; if (dd < bd) { bd = dd; best = m; } }
+  best.hp -= ev; best._lastHit = ev;
+  if (best.hp <= 0) { squadMemberDied(t, best); if (!t.members.some(m => m.alive)) t.hp = 0; }   // last body down → force the aggregate to 0 so the normal G.units cleanup removes the (now empty) squad entity this frame
+}
+function squadMemberDied(t, m) {
+  m.alive = false;
+  const mx = t.x + m.cx, my = t.y + (m.cy || 0);
+  spark(mx, my, 3); smoke(mx, my, 2); G.parts.push({ k: 'flash', x: mx, y: my, r: 4, life: .1 });
+  reformSquad(t);
+}
+// remaining members close ranks — recompute their formation slots so the squad visibly shrinks/tightens as it takes losses
+function reformSquad(t) {
+  const alive = t.members.filter(m => m.alive), n = alive.length; if (!n) return;
+  const spread = t.squadCfg.spread;
+  alive.forEach((m, i) => { m.ox = (i - (n - 1) / 2) * spread; });
+}
+// heal-over-time (repair aura / self-regen): the aggregate pool heals exactly like any ordinary unit, and the
+// same amount is ALSO spread across whichever living members are actually short of HP, so wounded bodies visibly recover
+function healSquad(t, amt) {
+  t.hp = Math.min(t.maxHp, t.hp + amt);
+  const hurt = t.members.filter(m => m.alive && m.hp < m.maxHp); if (!hurt.length) return;
+  const share = amt / hurt.length;
+  for (const m of hurt) m.hp = Math.min(m.maxHp, m.hp + share);
+}
 function blacksmoke(x, y, n) { for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: 1.7 + Math.random() * 2.4 }); }   // sooty trails that rise & fill the atmosphere
 function boom(x, y, p) {
   G.parts.push({ k: 'ring', x, y, r: 2, max: p * 6, life: .5 });
@@ -2904,7 +2988,7 @@ function updUnits(dt) {
   for (const u of G.units) {
     if (u.d.builder) continue;
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
-    if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (h) u.hp = Math.min(u.maxHp, u.hp + h * dt); }   // Nanite Foundry repair aura + shapeshifter self-regen
+    if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen
     if (u.d.carrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0; let n = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) n++; if (n < (u.d.carrierN || 3)) { spawnUnit('fighter', u.x + (Math.random() - .5) * 80); const f = G.units[G.units.length - 1]; if (f) { f.garr = true; f.carrFrom = u; f.ammo = 8; } } } }   // carrier continuously launches a free fighter wing that lands & rearms
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
@@ -3010,13 +3094,52 @@ function updUnits(dt) {
       let myHub = null, md = 150; for (const h of railHubs) { const dd = Math.abs(h.x - u.x); if (dd < md) { md = dd; myHub = h; } }
       if (myHub) { let frontHub = null, fd = 1e9; for (const h of railHubs) { let nd = 1e9; for (const e of G.enemies) nd = Math.min(nd, Math.abs(e.x - h.x)); if (nd < fd) { fd = nd; frontHub = h; } } if (frontHub && frontHub !== myHub && Math.abs(frontHub.x - u.x) > 500 && fd < 700) { u.onRail = true; u.railTo = frontHub.x + (Math.random() - .5) * 40; u.railT = 1.4 + Math.abs(frontHub.x - u.x) / 1500; } }
     }
-    if (tgt) {
+    if (u.squad) { updSquadMembers(u, dt); }   // SQUAD — each member acquires & fires its OWN weapon independently (see updSquadMembers); the shared single-shot path below is for ordinary single-body units only
+    else if (tgt) {
       if (u.lastTgt !== tgt) { u.lastTgt = tgt; u.cd = Math.max(u.cd, .2 + Math.random() * .12); }   // ~0.2s acquisition delay so a formation doesn't all fire on the same frame
       u.aim = Math.atan2(tgt.y - u.y, tgt.x - u.x); if (d.domain !== 'air') u.facing = tgt.x >= u.x ? 1 : -1;
       if (u.cd <= 0) { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); const sy = u.y - (d.domain === 'ground' ? d.s : 0), sp = d.domain === 'air' ? 30 : 12, lt = leadTime(d.weapon, u.x, sy, tgt), ex = tgt.x + (tgt.vx || 0) * lt + (Math.random() - .5) * sp, ey = tgt.y + (tgt.vy || 0) * lt + (Math.random() - .5) * sp, sdmg = d.dmg * (1 + G.mult.dmg);   // plasma/missile/arc shots lead a moving target by its velocity × time-to-impact; natural aim spread; Ammo Depot / Psionic Relay speed up nearby fire
         if (tgt.interceptable || tgt.pdable) { flakHit(tgt, sdmg); SFX.shoot(); } else { fire(u.x, sy, d.weapon, ex, ey, true, sdmg); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } } claimDmg(tgt, sdmg);   // PD shoots down interceptable lances AND incoming enemy missiles; aircraft burn their magazine then rearm; committed damage is booked so other shooters re-aim
       }
     }
+  }
+}
+// SQUAD MULTI-WEAPON FIRE — runs once per living member per frame. Members lerp toward their formation slot
+// (reforming tighter as losses shrink the squad), then independently acquire & fire their OWN weapon: riflemen
+// burst 3 rounds at a time against ground/low targets, while the AT/AA specialist (m.isAt) separately hunts
+// airborne threats first (falling back to whatever's in reach) with its own longer-ceiling weapon & cooldown —
+// so one squad can be plinking a tank with rifles while its trooper simultaneously downs a strike jet.
+function updSquadMembers(u, dt) {
+  const cfg = u.squadCfg, rangeMod = (1 + G.mult.range) * radarBoost(u.x);
+  for (const m of u.members) {
+    if (!m.alive) continue;
+    m.cx += (m.ox - m.cx) * Math.min(1, cfg.lerp * dt);
+    m.cy += (m.oy - m.cy) * Math.min(1, cfg.lerp * dt);
+    const mx = u.x + m.cx, my = u.y + m.cy;
+    if (m.tgt && m.tgt.hp > 0) { m.aim = Math.atan2(m.tgt.y - my, m.tgt.x - mx); m.facing = m.tgt.x >= mx ? 1 : -1; u.facing = m.facing; u.aim = m.aim; }
+    m.cd -= dt;
+    if (m.burstLeft > 0) {
+      m.burstT -= dt;
+      if (m.burstT <= 0) {
+        const live = m.tgt && m.tgt.hp > 0;
+        if (live) {
+          const lt = leadTime(m.weapon, mx, my, m.tgt), ex = m.tgt.x + (m.tgt.vx || 0) * lt, ey = m.tgt.y + (m.tgt.vy || 0) * lt, sdmg = m.dmg * (1 + G.mult.dmg);
+          if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else fire(mx, my, m.weapon, ex, ey, true, sdmg);
+          claimDmg(m.tgt, sdmg);
+          m.burstLeft--;
+        } else m.burstLeft = 0;   // target died/vanished mid-burst — abort the rest of the volley instead of firing blind
+        m.burstT = cfg.burstGap;
+        if (m.burstLeft <= 0) m.cd = jitterCd(m.rate / auraAt(u.x, 'rof'));
+      }
+      continue;
+    }
+    if (m.cd > 0) continue;
+    let tgt = null;
+    if (m.isAt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   // AA/AT trooper prioritizes airborne threats within its higher ceiling
+    if (!tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
+    if (!tgt && m.pd) tgt = acquireIncoming(mx, my, m.range * rangeMod);
+    if (!tgt) continue;
+    m.tgt = tgt; m.burstLeft = m.isAt ? 1 : (cfg.burst || 1); m.burstT = .04 + Math.random() * .08;
   }
 }
 function radarBoost(x) { return auraAt(x, 'range'); }
@@ -3258,7 +3381,7 @@ function updProj(dt) {
       const steps = Math.max(3, Math.ceil(Math.hypot(p.vx, p.vy) * dt / 14));   // sub-step count scales with speed so a near-lightspeed bolt never tunnels past a target
       for (let sgn = 0; sgn < steps && p.life > 0; sgn++) { p.x += p.vx * dt / steps; p.y += p.vy * dt / steps;
         const list = p.friendly ? G.enemies : friendliesList();
-        for (const t of list) { if (t._pierced === p || (p.friendly && t.reentry)) continue; const rad = (t.s || t.r || 16) + 6; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = 'particle'; t.killX = p.x - p.vx * .01; t.killY = p.y - p.vy * .01; hurt(t, p.dmg); spark(p.x, p.y, 3); t._pierced = p; if (--p.pierce <= 0) { p.life = 0; break; } } }
+        for (const t of list) { if (t._pierced === p || (p.friendly && t.reentry)) continue; const rad = (t.s || t.r || 16) + 6; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = 'particle'; t.killX = p.x - p.vx * .01; t.killY = p.y - p.vy * .01; hurt(t, p.dmg, p.x, p.y); spark(p.x, p.y, 3); t._pierced = p; if (--p.pierce <= 0) { p.life = 0; break; } } }
       }
       p.life -= dt; if (p.y >= groundY(p.x)) { boomW(p.x, groundY(p.x), 5); p.life = 0; }
       continue;
@@ -3334,7 +3457,7 @@ function updProj(dt) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     const list = p.friendly ? (incList.length ? G.enemies.concat(incList) : G.enemies) : friendliesList();
     const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   // fast relentless missiles get a swept hit-radius so they don't tunnel through targets
-    for (const t of list) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg); boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } }   // bombs & heavy rounds also cave in shallow tunnels
+    for (const t of list) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg, p.x, p.y); boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } }   // bombs & heavy rounds also cave in shallow tunnels
     if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
   }
   G.proj = G.proj.filter(p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.y > -240));   // keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
@@ -3349,7 +3472,7 @@ function updParts(dt) {
     if (pt.k === 'fire') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 10 * dt; pt.r *= .965; pt.life -= dt; continue; }
     if (pt.k === 'ember') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 95 * dt; pt.vx *= .985; pt.tw += dt * 22; pt.life -= dt; continue; }   // embers arc softly & flicker
     if (pt.k === 'plasma') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= .95; pt.vy *= .95; pt.life -= dt; continue; }
-    if (pt.k === 'shrap') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 120 * dt; pt.life -= dt; let h = null; for (const t of G.enemies) if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.s + 3) ** 2) { h = t; break; } if (!h) for (const t of G.units) { if (t.d.builder) continue; if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.d.s * 2 + 3) ** 2) { h = t; break; } } if (h) { h.killBy = h.killBy || 'shell'; hurt(h, pt.dmg); spark(pt.x, pt.y, 2); pt.life = 0; } continue; }
+    if (pt.k === 'shrap') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 120 * dt; pt.life -= dt; let h = null; for (const t of G.enemies) if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.s + 3) ** 2) { h = t; break; } if (!h) for (const t of G.units) { if (t.d.builder) continue; if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.d.s * 2 + 3) ** 2) { h = t; break; } } if (h) { h.killBy = h.killBy || 'shell'; hurt(h, pt.dmg, pt.x, pt.y); spark(pt.x, pt.y, 2); pt.life = 0; } continue; }
     if (pt.k === 'chunk' || pt.k === 'clod' || pt.k === 'molten') {
       if (pt.hot) pt.hot = Math.max(0, pt.hot - dt);
       if (!pt.settled) {
@@ -3451,6 +3574,7 @@ function renderGame() {
     if (b.hp < b.maxHp) bar(px, gy - b.d.h - 6, b.d.w, b.hp / b.maxHp); if (b.queue && b.queue.length) bar(px, gy - b.d.h - 11, b.d.w, 1 - b.queue[0].t / b.queue[0].total, false, '#5dff8d'); }
   // units
   for (const u of G.units) { const px = sx(u.x); if (px < -30 || px > W + 30) continue; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
+    if (u.squad) { drawSquadUnit(u, px); continue; }   // SQUAD — several bodies at their own formation offsets; see drawSquadUnit
     if (d.domain === 'ground' && (u.entr || 0) > .25) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building)
     if (d.domain === 'ground' || d.domain === 'naval') { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow
     c.save(); c.translate(px, u.y); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } c.restore(); if (u.shield > 0) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, u.y - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, u.y - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, u.y - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } }
@@ -3513,6 +3637,25 @@ function renderGame() {
   if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
+// SQUAD render — draws each LIVING member body at its own lerped formation offset (own weapon aim, own healthbar),
+// instead of one sprite for the whole entity. The AT/AA specialist gets a small cyan marker so it reads apart
+// from the riflemen at a glance.
+function drawSquadUnit(u, px) {
+  const d = u.d, s = INF_BODY_S;
+  for (const m of u.members) {
+    if (!m.alive) continue;
+    const mpx = px + m.cx, my = u.y + (m.cy || 0);
+    c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, my + s * .9, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore();   // per-body ground contact shadow
+    c.save(); c.translate(mpx, my); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4;
+    const facing = m.facing || u.facing || 1; c.scale(facing, 1);
+    ART[d.art](c, s, facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0));
+    c.restore();
+    if (m.isAt) { c.fillStyle = '#5fd0ff'; c.beginPath(); c.arc(mpx, my - s * 2.7, 1.6, 0, 6.28); c.fill(); }   // marks the AA/AT specialist apart from the riflemen
+    if (m.hp < m.maxHp) bar(mpx, my - s * 2.2, s * 2, Math.max(0, m.hp) / m.maxHp);
+  }
+  if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, u.y - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); }
+  if (u.hp < u.maxHp) bar(px, u.y - d.s * 1.6 - 8, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');   // aggregate squad-strength bar over the whole formation
+}
 function renderProj(p, px) {
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = p.tractor ? 14 : 10; c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet
   else if (p.k === 'pbeam') {   // PLASMA lance — thick additive bolt of superheated matter (psionic / antimatter)

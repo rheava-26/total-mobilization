@@ -2094,8 +2094,13 @@ function finishSite(site) {
 //  - MIXED (fighter): an explicit `roles` array, one entry per body, each with its OWN art/size/hp-share/dmg-&-
 //    rate multipliers — this is how the Falcon's WINGMAN DRONES actually appear in formation with the jet,
 //    instead of being a separate unit nobody ever fields alongside it.
+// PERF: body count per squad is deliberately small — infantry is the unit players garrison by the DOZEN (every
+// Barracks/Bunker/Factory/Ammo Depot keeps a standing 'inf' squad), so each body here is a rendered+simulated
+// multiplier on top of however many squads get fielded. 3 bodies (2 riflemen + 1 AT/AA specialist) reads as a
+// fireteam just as well as 4 did, for 25% fewer bodies at the SAME squad (and army-cap) count — see drawSquadUnit's
+// LOD path for how a big garrison stays smooth well past that.
 const SQUAD_LOADOUT = {
-  inf:   { n: 4, bodyS: 3, spread: 8, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
+  inf:   { n: 3, bodyS: 3, spread: 9, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
   cdrone:{ n: 3, bodyS: 2.4, spread: 13, burst: 1, burstGap: 0, lerp: 7 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical
   fighter:{ spread: 15, burst: 1, burstGap: 0, lerp: 8, roles: [
     { art: 'fighter', bodyS: 4.0, hpShare: .5,  dmgMul: 1,   rateMul: 1,    oy: 0 },    // the crewed 6th-gen Falcon — leads the flight
@@ -2104,6 +2109,10 @@ const SQUAD_LOADOUT = {
   ] },
 };
 const INF_BODY_S = 3;   // legacy alias kept for readability at call sites that only ever meant infantry
+// SQUAD RENDER LOD thresholds — see the "SQUAD LOD" comment above the units draw loop. Past this many LIVE squads
+// on the field (a big garrison economy easily fields 60-100+), or once the camera is zoomed out enough that a body
+// would draw at a couple of px anyway, every squad renders as one cheap cluster glyph instead of N shadowed bodies.
+const SQUAD_LOD_N = 45, SQUAD_LOD_ZOOM = 0.9;
 function defaultCeil(d) { return d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .62) : (d.ceil != null ? d.ceil : 0); }
 function spawnSquad(key, d, x) {
   const cfg = SQUAD_LOADOUT[key];
@@ -2135,9 +2144,10 @@ function spawnSquad(key, d, x) {
       const isAt = cfg.atRate != null && i === n - 1;   // last slot is the dedicated AA/AT specialist — everyone else is identical
       const mhp = Math.max(4, Math.round(hp0 / n * (isAt ? 1.25 : 1)));
       const ox = (i - (n - 1) / 2) * cfg.spread;
+      const oy = isAt ? -cfg.spread * .18 : (i % 2 === 0 ? -cfg.spread * .3 : cfg.spread * .3);   // a light zigzag "wedge" so a line of identical riflemen reads as a tight fireteam of distinct soldiers, not a flat overlapping row
       members.push({
         art: d.art, bodyS: bodyS0,
-        isAt, ox, oy: 0, cx: ox, cy: 0, aim: 0, facing: 1,
+        isAt, ox, oy, cx: ox, cy: oy, aim: 0, facing: 1,
         hp: mhp, maxHp: mhp,
         weapon: isAt ? 'rotary' : d.weapon,
         dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
@@ -2734,7 +2744,7 @@ function updateGame(dt) {
   }
   updUnits(dt); updBuildings(dt); updEnemies(dt); updProj(dt); updParts(dt);
   // deaths
-  for (const u of G.units) if (u.hp <= 0) destroyUnit(u);
+  for (const u of G.units) if (u.hp <= 0) { if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
   G.units = G.units.filter(u => u.hp > 0);
   for (const e of G.enemies) if (e.hp <= 0 && !e.deployed) destroyEnemy(e);   // e.deployed is legacy (nothing currently sets it — the Shield Generator now dies like any other structure, full blast + kill credit); kept so a future "consumed quietly" enemy type can opt in
   G.enemies = G.enemies.filter(e => e.hp > 0);
@@ -2872,6 +2882,16 @@ function groundBurst(x, power) {   // shockwave kicks terrain into the air
   for (let i = 0; i < power; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.7, sp = 40 + Math.random() * power * 9; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * power, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2.3, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, life: .8 + Math.random(), grav: 150, gy, dom: 'ground', settled: false }); }
 }
 function shrapnel(x, y, n, dmg) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 130 + Math.random() * 130; G.parts.push({ k: 'shrap', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .45 + Math.random() * .4, dmg }); } }
+// DROWNED unit — a non-amphibious ground unit that went under (see the DROWNING block in updUnits) sinks QUIETLY:
+// a hiss of steam/bubbles off the sea surface, no blast, no shrapnel, no crater, no screen shake. Mirrors the
+// flooded-BUILDING path (see the death-cleanup loop in updateGame) — going under water is a sink, not an explosion.
+function drownUnitQuiet(u) {
+  if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
+  const gy = seaLevelY(u.x), w = (u.d && u.d.w) || (u.d ? u.d.s * 2.4 : 8);
+  for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: u.x + (Math.random() - .5) * w, y: gy - Math.random() * 3, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 9, r: 1.6 + Math.random() * 2, life: .6 + Math.random() * .5 });   // rising steam
+  for (let i = 0; i < 6; i++) G.parts.push({ k: 'spark', x: u.x + (Math.random() - .5) * w, y: gy, vx: (Math.random() - .5) * 22, vy: -6 - Math.random() * 12, r: .8, life: .22 + Math.random() * .15 });   // a few bubbles/droplets flicking up, not shrapnel
+  noise(.16, .18);
+}
 function destroyUnit(u) {
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
   const d = u.d, big = d.s >= 5 || d.hp >= 250, power = Math.min(30, d.s * 2.4 + (big ? 12 : 0));
@@ -3133,8 +3153,15 @@ function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.
 function updUnits(dt) {
   const railHubs = G.buildings.filter(b => b.d.rail && b.done !== false);
   // spread out — units keep a body-width of space between each other so a formation reads as a dispersed line, not a stack (#27)
+  // GROUND units are exempt from ever being nudged INTO open water by this — a shove that would drop a tank/rifleman
+  // off a crowded shoreline into the sea used to just drown it (see the DROWNING block below); each side of the
+  // push is applied only if it keeps (or already has) that unit on passable ground, so the OTHER unit absorbs the
+  // full separation instead and a packed coastline never spawns a drowning-and-exploding death spiral.
   for (let i = 0; i < G.units.length; i++) { const u = G.units[i]; if (u.onRail) continue; for (let j = i + 1; j < G.units.length; j++) { const o = G.units[j]; if (o.onRail || o.d.domain !== u.d.domain) continue; const sep = (u.d.s + o.d.s) * 2.4 + 10, s2 = sep * sep; let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy; if (dd < s2) { if (dd < .01) { dx = (i % 2 ? 1 : -1) * .5; dy = 0; dd = .25; }   // perfectly stacked → nudge apart deterministically
-      const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt; u.x += dx * inv * f; o.x -= dx * inv * f; if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } } } }
+      const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt, ux2 = u.x + dx * inv * f, ox2 = o.x - dx * inv * f;
+      if (u.d.domain !== 'ground' || !isWater(ux2) || isWater(u.x)) u.x = ux2;   // never shove a ground unit off dry land into the sea (a unit that's ALREADY in the water — a legitimate terrain-sink drown — is still free to keep drifting; checked against isWater(), the SAME predicate the drowning code below uses, not the slightly more permissive passable(), so this can never leave a unit in the strip that reads as "water" for drowning purposes)
+      if (o.d.domain !== 'ground' || !isWater(ox2) || isWater(o.x)) o.x = ox2;
+      if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } } } }
   for (const u of G.units) {
     if (u.d.builder) continue;
     if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
@@ -3219,7 +3246,7 @@ function updUnits(dt) {
         const tx = best ? best.x : (anyE ? anyE.x : null), gap = best ? bd : ad, stop = best ? rng * .7 : 70;   // march to engage a reachable foe, else reposition under/toward the nearest threat (never idle)
         if (tx != null && gap > stop) u.x += Math.sign(tx - u.x) * Math.min(spd * 1.3 * dt, gap - stop);
       }
-      if (!passable(u.x) && passable(pX)) u.x = pX;   // ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea)
+      if (isWater(u.x) && !isWater(pX)) u.x = pX;   // ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); isWater() is the SAME predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
       u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = groundY(u.x) - d.s;
       // ENTRENCHMENT — a ground unit that holds position digs in for a fortification (damage-reduction) bonus; standing in a building's footprint GARRISONS it, digging in faster & deeper (an economic block = the best mini-fort)
       const moved = Math.abs(u.x - pX) > spd * dt * .35;
@@ -3230,12 +3257,15 @@ function updUnits(dt) {
       if (u.empl && (u.empl.hp <= 0 || G.buildings.indexOf(u.empl) < 0)) u.empl = null;
       if (!u.empl && (u.entr || 0) >= .9 && G.buildings.length < 170) { const ex2 = Math.max(30, Math.min(WORLD_W - 30, u.x + (Math.random() < .5 ? -1 : 1) * (d.s * 2 + 6)));
         if (elevAt(ex2) >= SEA_E - .04) { const er = Math.random(), et = er < .5 ? 'mgnest' : er < .8 ? 'flaknest' : 'artnest'; u.empl = deployEmplacement(et, ex2, u); floatText(u.x, u.y - d.s * 2, '⛏ FORTIFIED', '#9cff9c'); } }   // BUGFIX: never emplace onto ground that would instantly flood — a drowned emplacement is removed, clears u.empl, and gets redeployed next frame, spamming FORTIFIED/FLOODED + a hiss every frame (a continuous roar). Guarding the deploy site breaks the loop.
-      // DROWNING — a non-amphibious ground unit that ends up over open water (terrain cratered/sunk out from under it) no longer rides the sea surface unharmed: a short grace period, then it takes on water fast and goes under
+      // DROWNING — a non-amphibious ground unit that ends up over open water (terrain cratered/sunk out from under it — the
+      // separation nudge above can no longer be the CAUSE) no longer rides the sea surface unharmed: a short grace period,
+      // then it takes on water fast and goes under. u.drowned marks the death as a QUIET sink (see the death-cleanup loop
+      // in updateGame) — mirrors the flooded-BUILDING path: a unit going under is a sink, never an ammo cook-off.
       if (!d.amph && !d.amphibious) {
         if (isWater(u.x)) {
           u.drownT = (u.drownT || 0) + dt;
-          if (u.drownT > .4) { u.hp -= u.maxHp * .6 * dt; if (Math.random() < .5) smoke(u.x, seaLevelY(u.x), 1); }
-        } else u.drownT = 0;
+          if (u.drownT > .4) { u.hp -= u.maxHp * .6 * dt; u.drowned = true; if (Math.random() < .5) smoke(u.x, seaLevelY(u.x), 1); }
+        } else { u.drownT = 0; u.drowned = false; }
       }
     }
     u.cd -= dt;
@@ -3737,8 +3767,14 @@ function renderGame() {
     if (G.sel === b) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.5; c.strokeRect(px - b.d.w / 2 - 3, gy - b.d.h - 5, b.d.w + 6, b.d.h + 8); if (b.d.range) ring(px, gy - b.d.h * .5, b.d.range); }
     if (b.hp < b.maxHp) bar(px, gy - b.d.h - 6, b.d.w, b.hp / b.maxHp); if (b.queue && b.queue.length) bar(px, gy - b.d.h - 11, b.d.w, 1 - b.queue[0].t / b.queue[0].total, false, '#5dff8d'); }
   // units
+  // SQUAD LOD — a big standing garrison can field DOZENS of squads (each with several bodies); at full detail every
+  // body pays for its own shadowed art draw + healthbar, which is the actual perf cost (not the cheap per-frame JS
+  // update). Past a live-squad threshold, or once a squad reads as tiny on screen, drawSquadUnit switches every
+  // squad to a single cheap cluster glyph instead of N fully-detailed bodies — see drawSquadUnit/drawSquadCluster.
+  let liveSquadN = 0; for (const su of G.units) if (su.squad && su.hp > 0) liveSquadN++;
+  const squadLOD = liveSquadN > SQUAD_LOD_N || (cam.z || 1) < SQUAD_LOD_ZOOM;
   for (const u of G.units) { const px = sx(u.x); if (px < -30 || px > W + 30) continue; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
-    if (u.squad) { drawSquadUnit(u, px); continue; }   // SQUAD — several bodies at their own formation offsets; see drawSquadUnit
+    if (u.squad) { drawSquadUnit(u, px, squadLOD); continue; }   // SQUAD — several bodies at their own formation offsets (or one cluster glyph under LOD); see drawSquadUnit
     if (d.domain === 'ground' && (u.entr || 0) > .25) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building)
     if (d.domain === 'ground' || d.domain === 'naval') { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow
     c.save(); c.translate(px, u.y); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } c.restore(); if (u.shield > 0) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, u.y - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, u.y - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, u.y - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, u.y - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } }
@@ -3802,16 +3838,22 @@ function renderGame() {
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
 // SQUAD render — draws each LIVING member body at its own lerped formation offset (own art, own weapon aim, own
-// healthbar), instead of one sprite for the whole entity. Ground squads (infantry) get a per-body contact shadow;
-// air squads (drone swarms, fighter+wingmen flights) don't touch the ground so they skip it. The AT/AA specialist
-// (or a mixed squad's escort bodies) get a small cyan marker so they read apart from the rest at a glance.
-function drawSquadUnit(u, px) {
+// healthbar) so a fireteam reads as distinct soldiers, not one smeared sprite. Ground squads (infantry) get a
+// per-body contact shadow; air squads (drone swarms, fighter+wingmen flights) don't touch the ground so they skip
+// it. The AT/AA specialist (or a mixed squad's escort bodies) get a small cyan marker so they read apart from the
+// rest at a glance. Bodies are drawn as FLAT silhouettes — no per-body shadowBlur, which used to both cost the
+// most (a soft blur pass per body, per frame) AND read the worst (overlapping soldiers blurred into one smear
+// instead of staying legible); the shared flat ground-shadow ellipse under each pair of boots is enough grounding.
+// Under SQUAD LOD (see the units draw loop) this whole per-body pass is skipped for drawSquadCluster's one-draw
+// glyph — see there for the big-garrison performance path.
+function drawSquadUnit(u, px, lod) {
   const d = u.d, ground = d.domain === 'ground';
+  if (lod) { drawSquadCluster(u, px, d, ground); return; }
   for (const m of u.members) {
     if (!m.alive) continue;
     const s = m.bodyS || INF_BODY_S, mpx = px + m.cx, my = u.y + (m.cy || 0);
     if (ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, my + s * .9, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // per-body ground contact shadow
-    c.save(); c.translate(mpx, my); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4;
+    c.save(); c.translate(mpx, my);
     const facing = m.facing || u.facing || 1; c.scale(facing, 1);
     const art = m.art || d.art;
     ART[art](c, s, ground ? (facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0)) : 0);
@@ -3823,6 +3865,23 @@ function drawSquadUnit(u, px) {
   if (u.hp < u.maxHp) bar(px, u.y - d.s * 1.6 - 8, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');   // aggregate squad-strength bar over the whole formation
   if (u.maxAmmo) bar(px, u.y - d.s * 1.6 - (u.hp < u.maxHp ? 13 : 8), d.s * 2.2, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a');
   if (u.maxFuel) bar(px, u.y - d.s * 1.6 - (u.hp < u.maxHp ? 17 : 12) - (u.maxAmmo ? 4 : 0), d.s * 2.2, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0');
+}
+// SQUAD LOD CLUSTER — the cheap path for a big standing garrison (see SQUAD_LOD_N/SQUAD_LOD_ZOOM): ONE flat
+// silhouette draw (no per-member shadow, aim recompute, or healthbar) plus a short row of "more than one" pips and
+// the squad's existing aggregate bars, so a formation still visibly reads as a SQUAD, not a lone soldier — it just
+// stops paying for N fully-detailed bodies once there are dozens of squads on the field at once.
+function drawSquadCluster(u, px, d, ground) {
+  const alive = u.members.filter(m => m.alive), n = alive.length; if (!n) return;
+  const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y;
+  if (ground) { c.save(); c.globalAlpha = .26; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, my + s * 1.05, s * 2.3, s * .55, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }
+  c.save(); c.translate(px, my); const facing = u.facing || 1; c.scale(facing, 1);
+  ART[d.art](c, s * 1.08, ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0);   // one representative body stands in for the whole formation
+  c.restore();
+  const pipN = Math.min(n, 4), pw = s * .5, gap = s * .3, total = pipN * pw + (pipN - 1) * gap;
+  c.fillStyle = 'rgba(225,238,255,.85)';
+  for (let i = 0; i < pipN; i++) c.fillRect(px - total / 2 + i * (pw + gap), my - s * 2.6, pw, s * .4);   // strength pips — reads as "a squad", costs 1 fillRect per body instead of a full art draw
+  if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, u.y - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, u.y, d.range * radarBoost(u.x)); }
+  if (u.hp < u.maxHp) bar(px, my - s * 2.6 - 5, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');
 }
 function renderProj(p, px) {
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = p.tractor ? 14 : 10; c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet

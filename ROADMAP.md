@@ -32,10 +32,10 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.32.0** (on `main`).
-- **In-flight agents:** unit buff panel + enemy landing/super-unit overhaul (running). Next combat wave (lethality + shields + airship + CIWS invisible-bullets) queued behind the enemy agent to avoid `hurt()`/projectile conflicts. **OPEN DESIGN Q for the designer:** emplacement nerf — "10% fire rate + miss" (their idea, they flagged caution) vs. Fable's counter-proposal: keep guns satisfying, make enemies OVERWHELM via undefended-flank landings + tankier/bigger waves. Awaiting verdict. Side-vignette bug fixed (was a min(W,H)-circle canvas vignette stacked under a CSS ellipse → heavy left/right curtains on wide screens; now ONE aspect-true soft ellipse). A hidden **`nightMode` prototype flag** (default off, console: `nightMode = true; vigKey = '';`) leans into the deep-framed look — **awaiting the designer's verdict on promoting it to a real settings toggle.**
-- **In-flight Sonnet agents:** none.
-- **Fable 5 has taken the organizer seat** (this file was the send-off; it worked).
+- **Live version: v3.32.0** (on `main`); **unit buff panel** merging now → ships as v3.32.1. Buff panel: selecting a unit shows a live "⚡ ACTIVE BUFFS" readout (stacked auras with sources + "STACKED N×", global `G.mult` bonuses, era-upgrade status, production discounts) — read-only.
+- **In-flight agents:** enemy landing/super-unit overhaul (running). Next: the **COMBAT WAVE** (lethality 1–2 hit deaths + working threshold-shields + airship multi-weapon + CIWS invisible-bullets/no-explosion-spam + free-auto-emplacement nerf) — queued behind the enemy agent to avoid `hurt()`/projectile conflicts.
+- **RESOLVED (emplacement question):** nerf the FREE auto-emplacements only (not built guns, no whiffing); CIWS's per-round explosion spam is the real perf killer. Side-vignette fixed (v3.31.1). Hidden `nightMode` flag awaiting the designer's verdict.
+- **Fable 5 has the organizer seat.**
 
 ---
 
@@ -117,7 +117,6 @@ Designer asked to offload targeting math to a worker so the main thread just ren
 15. ~~**Achievements + coup screen**~~ ✅ SHIPPED v3.32.0 — coup defeat reframe + 5 medals (`couped` "Regime Change", `nukehappy`, `oops`, `forgotresearch`, `pacifist` "Who Needs Science?" = win with zero research) + unlock toasts.
 
 ### SMALL / QoL (new from latest playtest)
-16. **Unit buff panel:** click a unit → see all active buffs affecting it (nearby-building auras, research mults, resource discounts). Also surfaces stacking to the player.
 17. **Fortified/dug-in units should NOT block building placement** (currently you can't build where units have fortified).
 18. **Click-through occluded buildings:** if a unit is in front of a building, clicking should let you reach/see the building behind it (selection cycling / building priority in `pickAt`).
 19. **End-screen post-game graphs** ("the 9000 graphs") — rich after-action charts.

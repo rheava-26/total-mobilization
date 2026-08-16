@@ -1997,7 +1997,7 @@ function newGame(diff) {
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
     firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state
     // PHASED ONBOARDING — inert by default (off:true → normal game does nothing); window.startTutorial flips it on. phase: orient→industry→doctrine→strikes→done
-    tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null }, advT: 0, — firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
+    tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null }, advT: 0,   // firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
@@ -4969,7 +4969,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   .tut-locked{opacity:.42;filter:grayscale(.55);position:relative}
   .tut-locked::after{content:'🔒';position:absolute;top:-7px;right:-3px;font-size:9px;opacity:.85;pointer-events:none;text-shadow:0 0 3px #000}
   /* ADVISOR — the adaptive corner coach; distinct from the spotlight card */
-  #tutAdvisor{position:fixed;left:12px;top:78px;z-index:8500;width:302px;max-width:82vw;background:linear-gradient(92deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-left:3px solid var(--term,#6dffb0);border-radius:6px;padding:9px 30px 10px 12px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;pointer-events:auto}
+  #tutAdvisor{position:fixed;left:12px;top:104px;z-index:8500;width:302px;max-width:82vw;background:linear-gradient(92deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-left:3px solid var(--term,#6dffb0);border-radius:6px;padding:9px 30px 10px 12px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;pointer-events:auto}
   #tutAdvisor.show{display:block}
   #tutAdvisor .adv-h{font-size:9px;letter-spacing:2.5px;color:var(--term,#6dffb0);opacity:.9;margin-bottom:4px}
   #tutAdvisor .adv-b{font-size:12px;line-height:1.45;color:#c8d6e6}

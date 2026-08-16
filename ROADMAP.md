@@ -96,6 +96,20 @@ Make stability VISCERAL on the ground. A unit-level **morale/organization** stat
 - `once` (one-shot) vs repeatable.
 The best events carry a real CHOICE that shifts what your society BECOMES at a genuine cost (that's the "what does total mobilization turn you into" theme, made interactive). Engine = trigger scan + popup UI (respecting the "major beats only" rule) + effect application. Independent of content — buildable in parallel while the designer writes. **STATUS: awaiting the designer's first batch of written events + a go on the engine.**
 
+### 📜 EVENT #1 — "THE IMMINENT ARRIVAL OF THE AUTOFLEET" (designer-written; seeds the engine)
+TRIGGER: late PREP (autofleet inbound, bunker-buster weapons confirmed). BODY (designer's, verbatim in-game): the autofleet is en route with bunker-busters designed to hit civilian housing deep underground; people are fleeing housing blocks into the wilderness, risking abduction & panic (housing blocks keep people fed + in real-time contact with family — losing them causes panic). CHOICES (only unlocked ones show — the tech-gate is the whole point):
+- **Reassure them the bunkers are safe** (base): if many housing blocks are later destroyed → MASSIVE stability loss; cap unchanged.
+- **Refuse to address it** (base): −~10% stability + reduced influence gain.
+- **[Deflector Shields]** personal shield generators in housing blocks: all housing +1 IC/s upkeep, each gains a shield.
+- **[Dystopia doctrine]** strict guidelines + prison for leaving + suppress info: lose stability MAX (cap).
+- **[Transhumanism]** free data-link bionics (stay updated / call for help): lose a lot of IC, but much less stability/influence loss.
+- **[Applied Psionics]** persuade them to stay: lose less cap than dystopia, but still some stability max.
+- **[Robotics]** guard drones escort + grid-link the dispersed: like Transhumanism (IC cost, low stability loss).
+- (designer will write more tree paths — see the tree→hook map Fable provided.)
+
+### 🎓 TREE → RESPONSE HOOKS for Event #1 (Fable's mechanical angles; designer writes the flavor)
+Automation → drone logistics keep the dispersed fed & tracked (IC upkeep, low stab loss) · Nanotech → nanite self-building hidden shelters + comms-dust (IC, keep stab) · Biotech → survival gene-therapy/kits so they endure the wild & panic less (MP/IC, retain morale) · Cloning → grim: "the population is replaceable" (cheap, dark humanity/cap cost) OR clone shepherds guard them · Superhumans → demigod guardians watch over them (influence upkeep, big stab retention) · Directed Energy → laser-comms relays keep them grid-linked far out (IC, keep stab) · Point Defense → mobile PD umbrellas over dispersal zones (IC, real protection + stab) · Orbital/Space Age → orbital overwatch early-warns them of strikes (keep stab) · Telekinesis → fold the earth into instant shelters (keep stab) · Colossus/Titans → a giant walking guardian among the people = raw morale (stab boost, unit tied up) · Plasma/Antimatter/Particle → public show of overwhelming force to reassure (stab boost, may provoke escalation).
+
 ## 🗞 THE DECISION & SOCIETY LAYER (the "decision tab" concept — needs its own design pass with the designer)
 
 The original game's biggest missed opportunity, per the designer: **research combos only ever unlocked a unit — they should trigger DECISION CHAINS and NEWS POPUPS with genuinely large impacts on the world and policy.** A decisions/events layer:

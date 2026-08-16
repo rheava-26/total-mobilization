@@ -118,6 +118,20 @@ TRIGGER: late PREP (autofleet inbound, bunker-buster weapons confirmed). BODY (d
 - **Colossus/Titans** → "look at what we built — *they* should be afraid" — confidence through visible overwhelming force (the population can SEE the giant).
 - Fold plasma/antimatter/particle into ONE "defiance" option at most, or drop — belligerence reads as fear, not calm.
 
+### 🧬 DANGEROUS-TECH EVENTS (the next vein — designer's idea: dramatize WHY each dangerous tech is dangerous)
+**THE HOOK (already half-built):** every `dang:true` research already injects `sc` **unrest** into `stabOffset` on completion — today a SILENT number. Fire a completion event that turns that unrest into a *scene + a fork*: **double down** (full power, full unrest, slide toward a darker society) vs **restrain** (dial the tech back, less unrest, less payoff). This is where dystopia/verdant/machine get CHOSEN, not just tinted. Two chosen as the template (best setting + mechanics already wired): **Cloning** and **Superhumans**.
+
+#### 📜 EVENT #2 (DRAFT) — CLONING / "How should we treat them" (designer-written, 1/2 — MORE COMING; do NOT ship until batch)
+TRIGGER: on completing `cloning` research. BODY (designer's, verbatim draft): *"Human cloning. It turns out that unlimited budget, tossing restrictions on national security, state of the art laboratories, and the threat of annihilation can get things done. Despite this, the concerns for such a massive movement are very very real. There was already a major countermovement to human cloning, and they have only intensified as we've finalized our designs. There have been widespread protests at the potential application of these policies and (quite warranted) concerns and discussion around the rights of these clones. We have not made any sort of decision so far as to how exactly we plan to train these clones, the scale of integration or how we want to respond publicly. How should we treat them?"*
+CHOICES (draft, 1/2):
+- **Like humans.** — less stability loss but slower production.
+- **Indoctrination within reason.** We need them prepared; a fundamentally different way to educate them. *(DEFAULT)*
+- … (designer writing more)
+MECH NOTES (Fable, tunable): the axis is stability/humanity ⇄ production/expendability. "Like humans" = smaller `stabOffset` unrest + a manpower/production throttle; "Indoctrination" = the neutral middle; the coming darker option = cheap/fast clones, bigger unrest, dystopia pull. Ties straight into the existing cloning +60% manpower payoff.
+
+#### 📜 EVENT #3 (TODO) — SUPERHUMANS / "do the demigods obey you?" (designer to write)
+Setting: flying near-immortal laser-demigods that ALREADY carry the game's upkeep (−1 stab cap + 2 influence/s each). Fork: worshipped saviors (verdant, but they answer to no one — bigger unrest/independence) vs a leashed asset (you keep control, they resent it). Mechanics already sitting there (upkeep, cap, verdant society).
+
 ## 🗞 THE DECISION & SOCIETY LAYER (the "decision tab" concept — needs its own design pass with the designer)
 
 The original game's biggest missed opportunity, per the designer: **research combos only ever unlocked a unit — they should trigger DECISION CHAINS and NEWS POPUPS with genuinely large impacts on the world and policy.** A decisions/events layer:

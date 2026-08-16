@@ -2363,11 +2363,20 @@ function fortBonusAt(x) { let f = 0; for (const b of G.buildings) { if (b.done =
 function cityStabPenalty() { let p = (G.lostStructures || 0) * 2.5; if (G.cities) for (const ct of G.cities) if (ct.hp > 0 && ct.held) p += 6; return p; }   // OCCUPIED cities each bleed stability while held (recovered on retake); every city STRUCTURE destroyed is a PERMANENT loss
 function effStab() { return Math.max(0, G.stab - (G.stabOffset || 0) - cityStabPenalty()); }   // EFFECTIVE stability = base minus PERMANENT research "unrest" minus city losses; feeds influence & gates strikes/research
 // AUTO-EMPLACEMENTS — small free fortifications a dug-in ground unit raises around itself (a mini-fort with mixed weapons). Stored as lightweight buildings so they fire, get targeted & render via the normal pipelines.
+// ── AUTO-EMPLACEMENT NERF (tunable) ──────────────────────────────────────────────────────────────────
+// These forts are FREE and infinitely scalable (a fortified infantry line raises hundreds of them), so at
+// full strength they form an unbeatable "wall of bullets" — the one authorized exception to the power-fantasy
+// tenet. These two multipliers cut ONLY the auto-spawned emplacements' output so a wall stays strong-but-beatable
+// (a tanky/saturating enemy can push through). They touch NOTHING the player pays to build — placed guns (Bunker,
+// CIWS, SAM, Aegis, etc.) keep their full stats. Raise toward 1.0 to make the free wall stronger again.
+const EMPLACE_DMG_MUL = 0.5;       // per-shot damage KEPT (0.5 = half damage)
+const EMPLACE_FIRERATE_MUL = 0.5;  // fire rate KEPT (0.5 = half as many shots/sec; cooldown is divided by this)
 const EMPLACE = {
   mgnest:  { name: 'MG Nest', cat: 'DEF', hp: 70, w: 13, h: 7, armor: 5, weapon: 'tracer', range: 400, dmg: 7, rate: .26, ceil: .72, pd: true },
   flaknest:{ name: 'Flak Nest', cat: 'DEF', hp: 70, w: 13, h: 9, armor: 3, weapon: 'tracer', range: 480, dmg: 6, rate: .2, ceil: .64, pd: true },
   artnest: { name: 'Field Gun', cat: 'DEF', hp: 85, w: 14, h: 8, armor: 5, weapon: 'shell', range: 740, dmg: 30, rate: 3.4, ceil: .84 },
 };
+for (const _k in EMPLACE) { EMPLACE[_k].dmg *= EMPLACE_DMG_MUL; EMPLACE[_k].rate /= EMPLACE_FIRERATE_MUL; }   // bake the nerf in one place — halves damage & doubles the cooldown of the FREE dug-in forts only
 function deployEmplacement(type, x, owner) {
   const d = EMPLACE[type], gy = groundY(x);
   const b = { key: type, d, x, y: gy, hp: d.hp, maxHp: d.hp, queue: [], cd: Math.random(), silocd: 0, done: true, emplace: true, owner };
@@ -3843,7 +3852,7 @@ function updProj(dt) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     const list = p.friendly ? (incList.length ? G.enemies.concat(incList) : G.enemies) : friendliesList();
     const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   // fast relentless missiles get a swept hit-radius so they don't tunnel through targets
-    for (const t of list) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg, p.x, p.y); boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } }   // bombs & heavy rounds also cave in shallow tunnels
+    for (const t of list) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg, p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit.
     if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
   }
   G.proj = G.proj.filter(p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
@@ -4151,9 +4160,9 @@ function renderProj(p, px) {
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
   else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff2b0'), hot = !p.friendly ? '#ffe0cc' : '#fffbe8';   // a THIN bullet + tracer trail — tapered streak fading to nothing behind a bright point round
     c.globalCompositeOperation = 'lighter';
-    const g = c.createLinearGradient(-11, 0, 2, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col);
-    c.strokeStyle = g; c.lineWidth = 1; c.beginPath(); c.moveTo(-11, 0); c.lineTo(2, 0); c.stroke();   // tapered tracer trail
-    c.fillStyle = hot; c.shadowColor = col; c.shadowBlur = 5; c.beginPath(); c.arc(2, 0, .9, 0, 6.28); c.fill(); c.shadowBlur = 0;   // bright bullet head
+    const g = c.createLinearGradient(-6, 0, 1.5, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col);
+    c.strokeStyle = g; c.lineWidth = .6; c.beginPath(); c.moveTo(-6, 0); c.lineTo(1.5, 0); c.stroke();   // tapered tracer trail — SHORT, THIN & bright (a real tracer streak, not a fat blob); shorter length + lower shadowBlur also cut per-round render cost
+    c.fillStyle = hot; c.shadowColor = col; c.shadowBlur = 2; c.beginPath(); c.arc(1.5, 0, .5, 0, 6.28); c.fill(); c.shadowBlur = 0;   // small bright bullet head
     c.globalCompositeOperation = 'source-over'; c.restore(); }
 }
 // cyberpunk overlay for buildings in advanced eras: neon edge + glowing strip lights + a soft top glow

@@ -2245,7 +2245,7 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0,
+    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
@@ -2376,8 +2376,14 @@ function unitCost(d) {
 }
 
 const UG_DEPTH = 50;   // how far below the surface buried buildings & rail tunnels sit
-const CRISIS_LOSS_T = 25;   // seconds stability must sit PINNED at ~0, continuously, before a capitulation crisis becomes a loss — a dip is a recoverable setback, only a SUSTAINED collapse ends the run
-const CRISIS_MUTINY_FRAC = 0.3;   // fraction of the standing army that mutinies (goes inert) for the duration of a crisis
+// ── CAPITULATION CRISIS — a RECOVERABLE emergency, never a permanent 0-stability pin (all tunable) ──
+const CRISIS_TRIGGER    = 0.5;   // EFFECTIVE stability at/below this fires a crisis (only if not already in one and not in the post-recovery grace)
+const CRISIS_MUTINY_FRAC = 0.3;  // fraction of the standing army that mutinies (goes inert) once, at the moment a crisis begins
+const CRISIS_RECOVER_RATE = 8;   // stability points/sec the emergency government FORCIBLY restores during recovery — a GUARANTEED climb; from ~0 to the safe floor takes a few frozen seconds
+const CRISIS_SAFE_FLOOR = 40;    // recovery completes once stability reaches this (capped at the current cap if the cap is lower) — well clear of 0 so you emerge in fighting shape, never oscillating around the trigger
+const CRISIS_GRACE_T    = 20;    // seconds of immunity AFTER recovery: the crisis cannot re-trigger, giving you a real window to fix the root cause (retake cities, raise the cap) before it can happen again — kills the per-frame flip-flop
+const CRISIS_LOSS_COUNT = 4;     // reaching this many stacked-up crises ends the run — the loss now comes from SUSTAINED inability to hold the nation together across MULTIPLE collapses, not a per-frame dip
+const CRISIS_COUNT_FORGIVE = 60; // seconds to forgive ONE crisis off the running count once you're stable again — survive and space them out and you never hit the loss; collapse repeatedly in quick succession and you do
 function ugAllowed(d) { return !!d.rail || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't
 function digLevel(key) { const d = BUILD_DEFS[key]; if (d.rail) return 1; if (d.autoBury) return Math.min(2, d.autoBury); if (G && G.dig && ugAllowed(d)) return Math.min(2, G.dig | 0); return 0; }   // 0 surface · 1 shallow · 2 deep — rail hubs & autoBury buildings always sink
 function placeUg(key) { return digLevel(key) > 0; }
@@ -2620,7 +2626,7 @@ function incomingList() { const a = []; for (const p of G.proj) if (p.intercepta
 function isMechanical(d) { return !!(d.mech || d.drone || d.elec || d.clone); }   // synthetic/mechanical & vat-grown units — no people to muster, so they DON'T eat the army cap (only manpower-crewed units do)
 function fortBonusAt(x) { let f = 0; for (const b of G.buildings) { if (b.done === false || b.ug) continue; if (Math.abs(b.x - x) < b.d.w * .6 + 10) f = Math.max(f, (b.d.cat === 'ECON' || b.key === 'bunker') ? 2 : 1); } return f; }   // a ground unit standing in a building's footprint GARRISONS it for cover — 2 = an economic block / bunker (deepest fortification), 1 = any other building
 function cityStabPenalty() { let p = (G.lostStructures || 0) * 2.5; if (G.cities) for (const ct of G.cities) if (ct.hp > 0 && ct.held) p += 6; return p; }   // OCCUPIED cities each bleed stability while held (recovered on retake); every city STRUCTURE destroyed is a PERMANENT loss
-function effStab() { return Math.max(0, G.stab - (G.stabOffset || 0) - cityStabPenalty()); }   // EFFECTIVE stability = base minus PERMANENT research "unrest" minus city losses; feeds influence & gates strikes/research
+function effStab() { if (G.crisis) return Math.max(0, G.stab); return Math.max(0, G.stab - (G.stabOffset || 0) - cityStabPenalty()); }   // EFFECTIVE stability = base minus PERMANENT research "unrest" minus city losses; feeds influence & gates strikes/research. DURING a capitulation crisis the emergency government SUSPENDS those drains (returns raw stab) so the guaranteed recovery ramp actually lands instead of being eaten by the very −penalty that caused the collapse
 // AUTO-EMPLACEMENTS — small free fortifications a dug-in ground unit raises around itself (a mini-fort with mixed weapons). Stored as lightweight buildings so they fire, get targeted & render via the normal pipelines.
 // ── AUTO-EMPLACEMENT NERF (tunable) ──────────────────────────────────────────────────────────────────
 // These forts are FREE and infinitely scalable (a fortified infantry line raises hundreds of them), so at

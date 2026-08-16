@@ -1329,6 +1329,45 @@ const ART = {
       x.globalAlpha = .22; x.fillRect(-s * 1.85, -s * 1.02, s * 3.8, s * .05); x.globalAlpha = 1;
       x.fillStyle = LO(); for (const ph of [0, 2.09, 4.19]) { const ext = Math.cos(rt + ph) * s * 1.82; x.fillRect(Math.min(s * .03, s * .03 + ext), -s * 1.04, Math.abs(ext), s * .07); } x.fillStyle = INK; }
   },
+  heliscout(x, s) {   // SCOUT/INTERCEPT HELI "Kestrel" — LIGHT air-to-air rotorcraft: slim body, bubble canopy, a stub wing carrying short-range AA missile tubes (Stinger-style), single rotor. Deliberately reads SMALL & sleek next to the Kite.
+    x.fillStyle = INK;
+    x.beginPath(); x.moveTo(-s * .4, -s * .1); x.lineTo(-s * 2.5, s * .0); x.lineTo(-s * 2.5, s * .1); x.lineTo(-s * .4, s * .2); x.closePath(); x.fill();   // slim tail boom
+    x.beginPath(); x.moveTo(-s * 2.2, s * .02); x.lineTo(-s * 2.7, -s * .45); x.lineTo(-s * 2.35, -s * .45); x.lineTo(-s * 2.05, s * .02); x.closePath(); x.fill();   // tailfin
+    x.fillStyle = TRIM(); x.beginPath(); x.moveTo(-s * 2.64, -s * .45); x.lineTo(-s * 2.35, -s * .45); x.lineTo(-s * 2.42, -s * .33); x.lineTo(-s * 2.57, -s * .33); x.closePath(); x.fill();   // tail flash
+    { const tr = animClock * .06; x.fillStyle = LO(); x.fillRect(-s * 2.78, -s * .48 - Math.sin(tr) * s * .15, s * .09, s * .9 * Math.abs(Math.cos(tr)) + s * .1); }   // SPINNING tail rotor (fast)
+    x.fillStyle = INK; x.beginPath(); x.moveTo(s * 1.4, s * .0); x.lineTo(s * 1.05, -s * .34); x.lineTo(-s * .3, -s * .42); x.lineTo(-s * .55, s * .0); x.lineTo(-s * .5, s * .28); x.lineTo(s * .85, s * .32); x.closePath(); x.fill();   // compact fuselage, nose down
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-s * .5, s * .28); x.lineTo(s * .85, s * .32); x.lineTo(s * .92, s * .22); x.lineTo(-s * .5, s * .16); x.closePath(); x.fill();   // shadowed belly
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.0, -s * .32); x.lineTo(-s * .3, -s * .4); x.lineTo(-s * .36, -s * .3); x.lineTo(s * .95, -s * .24); x.closePath(); x.fill();   // lit spine
+    x.fillStyle = GLASS; x.beginPath(); x.moveTo(s * 1.32, -s * .02); x.lineTo(s * .9, -s * .3); x.lineTo(s * .5, -s * .3); x.lineTo(s * .6, -s * .02); x.closePath(); x.fill();   // bubble canopy
+    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.moveTo(s * 1.2, -s * .06); x.lineTo(s * .95, -s * .26); x.lineTo(s * .86, -s * .24); x.lineTo(s * 1.08, -s * .05); x.closePath(); x.fill();   // canopy glint
+    x.fillStyle = INK; x.fillRect(s * .05, s * .1, s * .55, s * .07);   // stub pylon
+    for (const my of [s * .18, s * .28]) { x.fillStyle = LO(); x.fillRect(s * .12, my, s * .66, s * .06); }   // two short-range AA missile tubes
+    gArc(x, TRIM(), 5, s * .82, s * .21, s * .05); gArc(x, TRIM(), 5, s * .82, s * .31, s * .05);   // glowing IR seeker heads
+    x.fillStyle = INK; x.fillRect(-s * .02, -s * .9, s * .09, s * .5);   // rotor mast
+    { const rt = animClock * .035;   // SPINNING main rotor — three blades foreshortened side-on + faint blur disc
+      x.globalAlpha = .2; x.fillRect(-s * 1.6, -s * .92, s * 3.3, s * .05); x.globalAlpha = 1;
+      x.fillStyle = LO(); for (const ph of [0, 2.09, 4.19]) { const ext = Math.cos(rt + ph) * s * 1.6; x.fillRect(Math.min(s * .03, s * .03 + ext), -s * .94, Math.abs(ext), s * .06); } x.fillStyle = INK; }
+  },
+  heligunship(x, s) {   // HEAVY GUNSHIP "Mastodon" — BIG tandem-rotor assault rotorcraft: fat armored hull, twin overlapping rotor discs, sponson weapon pods (rockets + a multi-barrel gun rack) and a chin turret. Drawn deliberately larger/deeper than every other rotor unit.
+    x.fillStyle = INK; x.fillRect(-s * 1.5, -s * 1.15, s * .14, s * .62); x.fillRect(s * 1.12, -s * 1.15, s * .14, s * .62);   // fore & aft rotor masts (tandem)
+    x.beginPath(); x.moveTo(-s * 2.35, -s * .2); x.lineTo(-s * 2.78, s * .58); x.lineTo(-s * 2.4, s * .58); x.lineTo(-s * 2.05, -s * .2); x.closePath(); x.fill();   // aft ramp / rear fin
+    x.beginPath(); x.moveTo(s * 2.2, s * .0); x.lineTo(s * 1.9, -s * .55); x.lineTo(-s * 2.2, -s * .5); x.lineTo(-s * 2.4, s * .1); x.lineTo(-s * 2.3, s * .62); x.lineTo(s * 1.7, s * .68); x.closePath(); x.fill();   // fat armored fuselage
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-s * 2.3, s * .62); x.lineTo(s * 1.7, s * .68); x.lineTo(s * 1.8, s * .5); x.lineTo(-s * 2.3, s * .44); x.closePath(); x.fill();   // shadowed belly
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(s * 1.9, -s * .5); x.lineTo(-s * 2.2, -s * .45); x.lineTo(-s * 2.25, -s * .32); x.lineTo(s * 1.85, -s * .37); x.closePath(); x.fill();   // lit armored spine
+    x.fillStyle = GLASS; x.beginPath(); x.moveTo(s * 2.1, -s * .05); x.lineTo(s * 1.7, -s * .5); x.lineTo(s * 1.2, -s * .5); x.lineTo(s * 1.35, -s * .05); x.closePath(); x.fill();   // stepped cockpit
+    x.fillStyle = 'rgba(255,255,255,.4)'; x.beginPath(); x.moveTo(s * 1.95, -s * .12); x.lineTo(s * 1.68, -s * .44); x.lineTo(s * 1.58, -s * .42); x.lineTo(s * 1.82, -s * .1); x.closePath(); x.fill();   // canopy glint
+    x.fillStyle = LO(); x.beginPath(); x.arc(s * 1.9, s * .3, s * .22, 0, Math.PI); x.fill(); gArc(x, TRIM(), 5, s * 1.9, s * .28, s * .07);   // chin sensor turret
+    x.fillStyle = INK; x.save(); x.translate(s * 1.95, s * .36); x.rotate(.4); x.fillRect(0, -s * .05, s * .55, s * .1); x.restore();   // chin gun
+    x.fillStyle = INK; x.fillRect(-s * .1, s * .5, s * 1.05, s * .18);   // sponson stub
+    x.fillStyle = LO(); x.fillRect(s * .12, s * .52, s * .74, s * .36);   // big rocket-pod block
+    x.fillStyle = '#14171c'; for (let r = 0; r < 3; r++) for (let cn = 0; cn < 2; cn++) x.fillRect(s * (.28 + cn * .3), s * (.58 + r * .1), s * .1, s * .07);   // pod tube grid
+    x.fillStyle = INK; for (let g = 0; g < 3; g++) x.fillRect(-s * .05, s * .36 + g * s * .06, s * .82, s * .035);   // multi-barrel gun rack
+    gRect(x, TRIM(), 4, s * .4, -s * .4, s * 1.0, s * .045);   // hull ID line
+    for (const mx of [-s * 1.43, s * 1.19]) { const rt = animClock * .028 + (mx < 0 ? 0 : 1.0);   // TWIN spinning rotor discs (tandem lift), overlapping
+      x.globalAlpha = .18; x.fillStyle = LO(); x.fillRect(mx - s * 1.9, -s * 1.16, s * 3.8, s * .06); x.globalAlpha = 1;
+      for (const ph of [0, 2.09, 4.19]) { const ext = Math.cos(rt + ph) * s * 1.85; x.fillRect(Math.min(mx, mx + ext), -s * 1.18, Math.abs(ext), s * .07); } }
+    x.fillStyle = INK;
+  },
   // ---- NAVAL ----
   warship(x, s) {   // sleeker modern combatant — long low hull, raked clipper bow, faceted stealth superstructure
     x.fillStyle = INK;
@@ -2061,6 +2100,10 @@ const UNIT_DEFS = {
   // 🚁 HELICOPTER — its own arm. rotor:true → draws ROTOR COMMAND (not hangar slots); lowAir:true → hugs the deck; groundAtk:true → CAS role (ground + low air);
   // ceil .78 (tropo band) → physically CANNOT reach the stratosphere/space, keeping helis out of the high-air-spam meta. Needs no runway — rearms at cities/heli-depots.
   heli:     { name: 'Attack Heli "Kite"', art: 'heli', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 120, mp: 10, build: 7, hp: 95, armor: 4, range: 430, dmg: 20, rate: 1.3, weapon: 'rocket', speed: 120, s: 4.2, grp: 1, ammo: 10, fuel: 42, ceil: .78, ds: 'CLOSE-AIR-SUPPORT gunship helicopter — hovers low over its target and pounds it with rocket pods & a chin gun, drifting with it. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Hugs the deck — it cannot climb to high-altitude enemies, so it lives or dies on ground & low-air work.' },
+  // 🚁 SCOUT/INTERCEPT HELI — the ROTOR arm's air-to-air element. airOnly:true → engages ONLY airborne foes (never ground), the mirror of the Kite's ground-attack role. Same rotor system (ROTOR COMMAND, hover-CAS AI, tropo ceil .78, rearm at cities/heli-depots) but tuned LIGHT & fast with short-range AA missiles — a low-altitude air picket that swats enemy aircraft hugging the deck. Balance: cheap, fragile (low HP/armor), high fire-rate missiles. (tunable)
+  heliscout:{ name: 'Scout Heli "Kestrel"', art: 'heliscout', domain: 'air', rotor: true, lowAir: true, airOnly: true, ic: 110, mp: 8, build: 6, hp: 70, armor: 2, range: 470, dmg: 16, rate: 1.1, weapon: 'missile', speed: 150, s: 3.6, grp: 1, ammo: 14, fuel: 40, ceil: .78, ds: 'AIR-TO-AIR scout helicopter — a light, fast rotor interceptor slaved to hunting enemy AIRCRAFT at low altitude with short-range heat-seeking missiles. NEVER strafes the ground: it is your rotor-arm air picket. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Tropo-ceilinged — it cannot climb to high-altitude threats, so it screens the deck against low-flying attackers.' },
+  // 🚁 HEAVY GUNSHIP — the ROTOR arm's capital-weight CAS platform. groundAtk:true (like the Kite) but BIG, tanky and slow, with heavy rocket pods + a multi-barrel gun rack. A serious investment: high IC/MP, standing IC/s upkeep, and rotorW:3 (draws THREE ROTOR COMMAND slots, not one). Same rotor system (hover-CAS AI, tropo ceil, rearm at cities/heli-depots). Balance is deliberately conservative — power comes from being strong-but-COSTLY, never a cap. (tunable)
+  heligunship:{ name: 'Heavy Gunship "Mastodon"', art: 'heligunship', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 340, mp: 24, build: 14, hp: 380, armor: 12, range: 480, dmg: 40, rate: 2.2, weapon: 'rocket', speed: 85, s: 6.5, grp: 1, ammo: 18, fuel: 46, ceil: .78, rotorW: 3, upkeep: 3, ds: '★ HEAVY assault gunship — a huge tandem-rotor hull that wades into the fight and hovers over its target hammering it with heavy rocket pods, a multi-barrel gun rack and a chin gun. Tanky and slow. A serious commitment: costs 3 🚁 ROTOR COMMAND slots and 3 IC/s standing upkeep. Needs NO runway: rearms at any CITY, HELI-DEPOT or airbase. Tropo-ceilinged like all rotorcraft — it dominates the ground & low air, not the high sky.' },
   // ---- EXOTIC (unlocked by research branches) ----
   cdrone:   { name: 'Combat Drone Squadron', art: 'cdrone', domain: 'air', ammo: 10, ic: 230, mp: 12, build: 6, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 1, req: 'automation', ds: 'A SWARM of 3 pilotless combat drones flying as ONE unit — ONE army-cap-exempt slot, several missile-armed bodies. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds squadrons in bigger, faster batches.' },
   kdrone:   { name: 'Kamikaze Drones', art: 'kdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
@@ -2361,7 +2404,7 @@ function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air
 const ROTOR_SLOTS = { helidepot: 6 };   // tunable — a heli-depot fields six rotorcraft (airbases grant NONE; they're fixed-wing infra)
 const CITY_ROTOR = 3;                    // tunable — every surviving, un-occupied city fields a small standing rotor pad
 function rotorCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && ROTOR_SLOTS[b.key]) n += ROTOR_SLOTS[b.key]; if (G.cities) for (const ct of G.cities) if (ct.hp > 0 && !ct.held) n += CITY_ROTOR; return n; }
-function rotorUsed() { let n = 0; for (const u of G.units) if (u.d.rotor && !u.d.drone && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.rotor && !qd.drone) n++; } return n; }   // living + queued helicopters (carrier-launched helis support themselves, excluded)
+function rotorUsed() { let n = 0; for (const u of G.units) if (u.d.rotor && !u.d.drone && !u.carrFrom && !u.d.builder) n += (u.d.rotorW || 1); for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.rotor && !qd.drone) n += (qd.rotorW || 1); } return n; }   // living + queued helicopters, each weighted by rotorW (heavy rotorcraft cost more ROTOR COMMAND; carrier-launched helis support themselves, excluded)
 // returns null if the unit can be built, else a reason — the production CHAIN gates: a Special-Resource DEPOSIT, orbital LIFT capacity, and stockpiled COMPONENT PARTS
 function unitReqUnmet(d, grp) { grp = grp || d.grp || 1;
   if (d.srReq && !G.owned[d.srReq]) return 'NEEDS A ' + SR[d.srReq].name.toUpperCase() + ' DEPOSIT — claim one with an Extractor';
@@ -2673,7 +2716,7 @@ function queueUnit(b, key) {
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) { const pb = prodUnlockBuildingFor(key); return toast('REQUIRES RESEARCH: ' + RESEARCH[d.req].name + (pb ? ' — or build a ' + pb.name : '')); }
   if (unitBReq(d)) return toast('NEEDS A ' + (BUILD_DEFS[d.bReq] ? BUILD_DEFS[d.bReq].name.toUpperCase() : d.bReq));
   if (!isMechanical(d) && combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / grow your manpower pool');   // mechanical (mech/drone/elec/clone) units are exempt — see isMechanical
-  if (d.domain === 'air' && !d.drone && d.rotor) { const cap = rotorCap(), used = rotorUsed(); if (used + grp > cap) return toast('🚁 ROTOR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build a Heli-Depot (cities give a little baseline)'); }   // helicopters draw ROTOR command, not hangar slots
+  if (d.domain === 'air' && !d.drone && d.rotor) { const cap = rotorCap(), used = rotorUsed(); if (used + grp * (d.rotorW || 1) > cap) return toast('🚁 ROTOR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build a Heli-Depot (cities give a little baseline)'); }   // helicopters draw ROTOR command, not hangar slots (heavy rotorcraft weigh rotorW each)
   else if (d.domain === 'air' && !d.drone && !d.capital) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed FIXED-WING aircraft need hangar slots (SKY WARSHIPS are capital ships — exempt)
   const reqUn = unitReqUnmet(d, grp); if (reqUn) return toast(reqUn);   // production-chain gate: SR deposit / orbital lift / component parts
   let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;   // Data Center frees drone manpower; Cloning/Munition/Droid facilities cut it
@@ -4765,8 +4808,8 @@ function buildProdMenu() {
     let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
     const baseGrp = base.grp || 1, baseMpEach = Math.round(base.mp * 1.7);
     const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null, chainBits = [];   // production-chain requirements (only meaningful once the unit is otherwise buildable)
-    const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted — SKY WARSHIPS (capital) draw neither
-    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone && !d.capital) chainBits.push(d.rotor ? '🚁 ' + grp + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
+    const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp * (d.rotorW || 1) > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted — SKY WARSHIPS (capital) draw neither
+    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone && !d.capital) chainBits.push(d.rotor ? '🚁 ' + (grp * (d.rotorW || 1)) + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
     const upgraded = d !== base, batchUp = grp !== baseGrp, mpUp = mpEach !== baseMpEach, unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || mpUp || unlockedByBld) && !locked;
     const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn || airGate ? ' cant' : '') + (changed && !airGate ? ' up' : ''); card.dataset.key = key;
     const nm = upgraded ? `<span class="gx">${d.name}</span>` : d.name;
@@ -4776,7 +4819,7 @@ function buildProdMenu() {
     let chg = '';
     if (changed) { const parts = []; if (upgraded) { parts.push('▲ ' + d.name); if (d.weapon !== base.weapon) parts.push((d.weapon || '').toUpperCase() + ' arms'); } if (unlockedByBld) { const ub = prodUnl ? prodUnlockBuildingFor(key) : (d.bReq ? BUILD_DEFS[d.bReq] : null); parts.push('via ' + (ub ? ub.name : 'production line')); } if (batchUp) parts.push('batch ' + baseGrp + '→' + grp); if (mpUp) parts.push(mpEach === 0 ? '0 MP' : 'MP ' + baseMpEach + '→' + mpEach + ' ea'); chg = `<div class="upchg">${parts.join(' · ')}</div>`; }
     else if (locked) { const hb = reqMissing ? pUnlock : (bReqLock ? BUILD_DEFS[bReqLock] : null); if (hb) chg = `<div class="upchg" style="color:#7fd4ff">🏭 build a ${hb.name}</div>`; }
-    if (airGate) chg = `<div class="upchg" style="color:#ffb86b">✈ air command full — add an Airbase / Airwing / Aero Works</div>`;
+    if (airGate) chg = d.rotor ? `<div class="upchg" style="color:#ffb86b">🚁 rotor command full — add a Heli-Depot</div>` : `<div class="upchg" style="color:#ffb86b">✈ air command full — add an Airbase / Airwing / Aero Works</div>`;
     const tag = changed ? `<div class="uptag">${unlockedByBld && !upgraded ? 'NEW' : '▲ UPG'}</div>` : '';
     const chainHtml = chainBits.length ? `<div class="upchg" style="color:${reqUn ? '#ff8a6a' : '#9cc4ff'}">${chainBits.join(' · ')}</div>` : '';
     const upkeepTxt = d.upkeep ? ` · <span style="color:#ff8a6a" title="ongoing IC/s to keep it running">⛽ ${d.upkeep}/s</span>` : '';

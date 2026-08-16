@@ -1995,7 +1995,9 @@ function newGame(diff) {
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
-    firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state — firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
+    firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state
+    // PHASED ONBOARDING — inert by default (off:true → normal game does nothing); window.startTutorial flips it on. phase: orient→industry→doctrine→strikes→done
+    tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null }, advT: 0, — firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
@@ -2006,6 +2008,7 @@ function newGame(diff) {
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
       couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game)
   };
+  if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
   for (let i = 0; i < nCity; i++) { let x = WORLD_W * (0.09 + 0.82 / (nCity - 1) * i) + (Math.random() - .5) * 300; x = flatLand(Math.max(220, Math.min(WORLD_W - 220, x))); G.cities.push(buildCity(x, i === capIdx, 150, 700, false)); }
@@ -2763,6 +2766,7 @@ function updateGame(dt) {
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
+  G.advT = (G.advT || 0) + dt; if (G.advT >= 1) { const adt = G.advT; G.advT = 0; if (window.tutAdvTick) window.tutAdvTick(adt); }   // PHASED ONBOARDING — adaptive Advisor + milestone unlock checks ~1/s (no-op unless a tutorial session is active)
   // economy from buildings
   recalcBuildings();   // refresh special-building modifiers
   const ppB = 1 + (bmod().ppBonus || 0);   // Uranium Enrichment boosts Power Plant output
@@ -4960,34 +4964,70 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   #tutOverlay .tut-btn{font-family:inherit;font-size:12px;letter-spacing:.1em;padding:7px 14px;border-radius:6px;border:1px solid rgba(140,175,225,.4);background:rgba(30,44,66,.7);color:#dbe6f2;cursor:pointer}
   #tutOverlay .tut-btn:hover{background:rgba(50,72,104,.85)}
   #tutOverlay .tut-btn.primary{background:var(--res,#c89bff);border-color:var(--res,#c89bff);color:#160a26;font-weight:700}
-  #tutOverlay .tut-btn[disabled]{opacity:.35;cursor:default}`;
+  #tutOverlay .tut-btn[disabled]{opacity:.35;cursor:default}
+  /* GREYING — the anti-overwhelm lever: layers not yet earned read as dimmed & locked */
+  .tut-locked{opacity:.42;filter:grayscale(.55);position:relative}
+  .tut-locked::after{content:'🔒';position:absolute;top:-7px;right:-3px;font-size:9px;opacity:.85;pointer-events:none;text-shadow:0 0 3px #000}
+  /* ADVISOR — the adaptive corner coach; distinct from the spotlight card */
+  #tutAdvisor{position:fixed;left:12px;top:78px;z-index:8500;width:302px;max-width:82vw;background:linear-gradient(92deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-left:3px solid var(--term,#6dffb0);border-radius:6px;padding:9px 30px 10px 12px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;pointer-events:auto}
+  #tutAdvisor.show{display:block}
+  #tutAdvisor .adv-h{font-size:9px;letter-spacing:2.5px;color:var(--term,#6dffb0);opacity:.9;margin-bottom:4px}
+  #tutAdvisor .adv-b{font-size:12px;line-height:1.45;color:#c8d6e6}
+  #tutAdvisor .adv-b b{color:#fff}
+  #tutAdvisor .adv-x{position:absolute;top:4px;right:8px;cursor:pointer;color:#7f93ad;font-size:15px;line-height:1;background:none;border:none;font-family:inherit}
+  #tutAdvisor .adv-x:hover{color:#fff}`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
-  const STEPS = [
-    { sel: null, title: 'HOLD THE LINE', body: 'An orbital autofleet is inbound. During <b>PREP</b> you build your economy and army; when the countdown hits zero the invasion begins and never stops. Here’s how you fight it.' },
-    { sel: '.cell.stab', title: 'STABILITY', body: 'Your society’s cohesion. It climbs slowly toward a <b>cap</b> you raise with Comms Towers & Propaganda. Everything flows from it — and if it hits zero, you lose.' },
-    { sel: '.cell.inf', title: 'INFLUENCE', body: 'Generated entirely by Stability. It buys <b>research</b> and caps your army size. Saving it up ramps your income to <b>3×</b> — don’t spend it in dribbles.' },
-    { sel: '.cell.ic', title: 'INDUSTRIAL CAPACITY', body: 'Your main build currency — spent on every building and unit. <b>Power Plants</b> raise the rate. This is what you scale.' },
-    { sel: '.cell.mp', title: 'MANPOWER', body: 'The population that crews your forces. <b>Housing Blocks</b> raise it, and it sets your army cap.' },
-    { sel: '#btnProd', title: 'PRODUCE', body: 'Build here. Start with Power & Housing, then <b>Factories, Airbases, Shipyards</b> — then roll units out of them. Cover the whole map.' },
-    { sel: '#btnRes', title: 'RESEARCH', body: 'The heart of the game. Escalating doctrines — <b>fusion, plasma, robotics, psionics</b> — that transform your civilization. Bought with Influence.' },
-    { sel: '#btnStrike', title: 'STRATEGIC STRIKES', body: 'Once you’ve built a <b>Silo</b>, call down nukes, orbital rods and worse. Devastating — but every strike costs Stability.' },
-    { sel: '.objwrap', title: 'THE COUNTDOWN', body: 'Watch this. When PREP ends the fleet <b>re-enters</b> — waves that never stop and grow stronger the longer you survive. Destroy the fleet to win.' },
-    { sel: null, title: 'DO WHAT YOU MUST', body: 'Build. Research. Fortify every inch. Hold the line, Commander.', last: true },
+  // ============================================================================
+  // TUNING — every threshold the phased tutorial & Advisor reads, in ONE block.
+  // ============================================================================
+  const TUNE = {
+    BASELINE_ICR:      13,    // the natural starting IC/s (base 6 + the pre-built Power Plant's +7); used if the game is paused when industry begins so the milestone can't trivially fire on a 0 rate
+    MILESTONE_IC_MULT: 2.0,   // IC income must climb to ~this × the starting rate…
+    MILESTONE_ECON_N:  4,     // …AND at least this many econ buildings standing…
+    MILESTONE_TREND:   -0.5,  // …AND the IC reserve must not be actively falling (Δ over the trend window ≥ this)
+    STRIKE_PREP_S:     60,    // strikes phase unlocks when the PREP countdown (game-seconds) drops to/below this, or a Silo is up
+    ADV_THROTTLE_S:    12,    // minimum game-seconds between two Advisor tips
+    TREND_N:           6,     // IC / stability samples kept for the rising/falling trend (~6 game-seconds)
+    INF_CAP:           600,   // influence cap (matches the economy clamp)
+    MP_CAP:            900,   // manpower cap
+    INF_GLUT_FRAC:     0.65,  // influence ≥ this × cap → hoarding
+    INF_LOW_FRAC:      0.15,  // influence < this × cap → starved
+    IC_GLUT_ABS:       900,   // IC banked ≥ this counts as a "large reserve" for the icGlut tip
+    MP_LOW:            60,    // manpower this low is a real bottleneck
+    STAB_LOW:          35,    // effective stability below this is dangerous
+    STAB_TREND:        -5,    // a stability drop of this much over the window (while still < 55) also counts as slipping
+  };
+
+  // ---- ORIENTATION: the phase-0 spotlight click-through (first-ever game / replay) ----
+  const ORIENT = [
+    { sel: null, title: 'HOLD THE LINE', body: 'An orbital autofleet is inbound. During <b>PREP</b> you build; when the countdown hits zero the invasion begins and never stops. This is a lot of game — so I’ll teach it a piece at a time. Nothing here is graded. Go at your own pace.' },
+    { sel: '.cell.ic', title: 'THIS IS WHAT YOU SPEND', body: '<b>Industrial Capacity</b> — your main build currency, spent on every building and unit. Everything starts here: more IC means more of everything else. <b>Power Plants</b> raise the rate.' },
+    { sel: '#btnRes', title: 'SEE ALL THIS? IGNORE IT.', body: 'Research, strikes, doctrines — it’s all here, and it’s <b>greyed out on purpose</b>. It’s not going anywhere. Trying to learn it all at once is why this game feels impossible. Forget it for one minute.' },
+    { sel: '#btnProd', title: 'YOUR ONE JOB: GET RICH', body: 'Right now you do <b>one</b> thing — build industry. <b>Power Plants</b> for income, and <b>Extractors</b> dropped on the glowing resource nodes on the map. Cover the ground in them. A bigger economy makes everything else possible.' },
+    { sel: null, title: 'I’LL SPEAK UP WHEN IT MATTERS', body: 'That’s all you need for now. Build your economy — I’ll surface a tip when your situation calls for one, and I’ll unlock the next layer once your industry can carry it. Go.', last: true },
   ];
 
-  let idx = 0, ov = null, onKey = null, onResize = null;
+  let idx = 0, ov = null, onKey = null, onResize = null, curSteps = ORIENT, curOpts = {};
 
-  function endTutorial() {
+  // ---- GREYING helpers (idempotent; always safe to clear) ----
+  function lock(sel)   { const e = document.querySelector(sel); if (e) e.classList.add('tut-locked'); }
+  function unlock(sel) { const e = document.querySelector(sel); if (e) e.classList.remove('tut-locked'); }
+  function clearGrey() { unlock('#btnRes'); unlock('#btnStrike'); }
+
+  // ---- SPOTLIGHT overlay (reused for orientation AND the one-off milestone beats) ----
+  function teardown() {
     if (onKey) window.removeEventListener('keydown', onKey, true), onKey = null;
     if (onResize) window.removeEventListener('resize', onResize), onResize = null;
     if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
     ov = null;
   }
+  function finishSteps() { const cb = curOpts.onComplete; teardown(); if (cb) cb(); }
+  function skipSteps()   { const cb = curOpts.onSkip || curOpts.onComplete; teardown(); if (cb) cb(); }
 
   function place() {
     if (!ov) return;
-    const s = STEPS[idx], ring = ov.querySelector('.tut-ring'), card = ov.querySelector('.tut-card');
+    const s = curSteps[idx], ring = ov.querySelector('.tut-ring'), card = ov.querySelector('.tut-card');
     const el = s.sel ? document.querySelector(s.sel) : null;
     const vw = window.innerWidth, vh = window.innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
     if (el) {
@@ -5007,25 +5047,26 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   }
 
   function render() {
-    const s = STEPS[idx];
-    ov.querySelector('.tut-step').textContent = 'STEP ' + (idx + 1) + ' / ' + STEPS.length;
+    const s = curSteps[idx];
+    ov.querySelector('.tut-step').textContent = curSteps.length > 1 ? ('STEP ' + (idx + 1) + ' / ' + curSteps.length) : 'ADVISORY';
     ov.querySelector('.tut-title').textContent = s.title;
     ov.querySelector('.tut-body').innerHTML = s.body;
     ov.querySelector('.tut-back').disabled = idx === 0;
-    ov.querySelector('.tut-next').textContent = s.last ? 'BEGIN' : 'NEXT ›';
+    ov.querySelector('.tut-next').textContent = s.last ? (curSteps === ORIENT ? 'BEGIN' : 'GOT IT') : 'NEXT ›';
     place();
   }
 
   function go(d) {
     const n = idx + d;
     if (n < 0) return;
-    if (n >= STEPS.length) { endTutorial(); return; }
+    if (n >= curSteps.length) { finishSteps(); return; }
     idx = n; render();
   }
 
-  window.startTutorial = function () {
-    if (ov) return;
-    idx = 0;
+  // open a spotlight sequence. opts.onComplete fires on finishing; opts.onSkip on SKIP/Esc (defaults to onComplete)
+  function openSpotlight(steps, opts) {
+    if (ov) return false;
+    curSteps = steps; curOpts = opts || {}; idx = 0;
     ov = document.createElement('div'); ov.id = 'tutOverlay';
     ov.innerHTML =
       '<div class="tut-dim"></div><div class="tut-ring"></div>' +
@@ -5035,18 +5076,140 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       '<button class="tut-btn tut-back">‹ BACK</button>' +
       '<button class="tut-btn primary tut-next">NEXT ›</button></div></div></div>';
     document.body.appendChild(ov);
-    ov.querySelector('.tut-skip').addEventListener('click', endTutorial);
+    ov.querySelector('.tut-skip').addEventListener('click', skipSteps);
     ov.querySelector('.tut-back').addEventListener('click', () => go(-1));
     ov.querySelector('.tut-next').addEventListener('click', () => go(1));
     onKey = function (e) {
-      if (e.key === 'Escape') { endTutorial(); e.preventDefault(); e.stopPropagation(); }
+      if (e.key === 'Escape') { skipSteps(); e.preventDefault(); e.stopPropagation(); }
       else if (e.key === 'Enter' || e.key === 'ArrowRight') { go(1); e.preventDefault(); e.stopPropagation(); }
       else if (e.key === 'ArrowLeft') { go(-1); e.preventDefault(); e.stopPropagation(); }
     };
     window.addEventListener('keydown', onKey, true);
     onResize = place; window.addEventListener('resize', onResize);
     render();
+    return true;
+  }
+
+  // ---- ADVISOR corner card ----
+  let advEl = null;
+  function advNode() {
+    if (advEl) return advEl;
+    advEl = document.createElement('div'); advEl.id = 'tutAdvisor';
+    advEl.innerHTML = '<button class="adv-x" title="dismiss">×</button><div class="adv-h">⚑ ADVISOR</div><div class="adv-b"></div>';
+    advEl.querySelector('.adv-x').addEventListener('click', () => { hideTip(); if (G && G.tut) G.tut.curTip = null; });
+    document.body.appendChild(advEl);
+    return advEl;
+  }
+  function showTip(id, html) { const n = advNode(); n.querySelector('.adv-b').innerHTML = html; n.classList.add('show'); }
+  function hideTip() { if (advEl) advEl.classList.remove('show'); }
+
+  // ---- PHASE TRANSITIONS ----
+  function enterIndustry() {
+    if (!G || !G.tut) return;
+    G.tut.phase = 'industry';
+    // freeze the starting IC rate NOW so the milestone measures growth from here (fallback if paused → rate reads 0)
+    G.tut.icR0 = (G.icR > 0 ? G.icR : TUNE.BASELINE_ICR);
+    lock('#btnRes'); lock('#btnStrike');
+  }
+  function skipAll() {
+    if (G && G.tut) { G.tut.off = true; G.tut.phase = 'done'; G.tut.curTip = null; }
+    clearGrey(); hideTip();
+  }
+
+  // ---- read helpers bound to the REAL game state ----
+  function econCount() {
+    let n = 0; for (const b of G.buildings) { if (b.done === false || b.captured) continue; const k = b.key; if (k === 'powerplant' || k === 'housing' || k === 'extractor' || k === 'factory') n++; } return n;
+  }
+  function hasSilo() {
+    for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (b.key === 'silo' || (b.d && b.d.strat)) return true; } return false;
+  }
+  function isResearching() { return !!(G.research || (G.resQueue && G.resQueue.length)); }
+  function effS() { return (typeof effStab === 'function') ? effStab() : G.stab; }
+
+  // pick the single dominant Advisor tip (priority: stabLow > noMP > infGlut > icGlut > industry)
+  function pickTip(icTrend, stabTrend) {
+    const T = G.tut, eff = effS();
+    const infCap = TUNE.INF_CAP, mpCap = TUNE.MP_CAP;
+    // stabLow — stability danger, highest priority
+    if (eff < TUNE.STAB_LOW || (stabTrend <= TUNE.STAB_TREND && eff < 55))
+      return { id: 'stabLow', body: '▸ <b>Stability</b>’s slipping. Ease off dangerous research, and raise your cap with <b>Comms Towers / Propaganda</b> — if it hits zero your own people finish you.' };
+    // noMP — army bottlenecked on bodies
+    if (G.mp < TUNE.MP_LOW || (combatCount() >= armyCap() && G.mp < 200))
+      return { id: 'noMP', body: '▸ Out of <b>Manpower</b>? It caps your army. Build <b>Housing</b> for more — or lean on what doesn’t need bodies: <b>planes, drones, buildings</b>.' };
+    // infGlut — hoarding the one thing that buys doctrine
+    if (G.inf >= TUNE.INF_GLUT_FRAC * infCap && !isResearching() && G.ic < TUNE.IC_GLUT_ABS)
+      return { id: 'infGlut', body: '▸ You’re hoarding <b>Influence</b> — the one thing that buys doctrine. Open <b>Research</b> and put it to work before it caps. (Build a couple of <b>Labs</b> first so it doesn’t crawl.)' };
+    // icGlut — rich on IC, starved on influence: spend it on an army (units cost no influence)
+    if (G.ic >= TUNE.IC_GLUT_ABS && G.inf < TUNE.INF_LOW_FRAC * infCap)
+      return { id: 'icGlut', body: '▸ Loaded on <b>IC</b>, short on Influence? Good news: <b>units cost no influence</b>. Pour it into an army — mass is always allowed.' };
+    // industry — the weak-economy nudge (only meaningful in the industry phase)
+    if (T.phase === 'industry' && (G.icR < T.icR0 * 1.5 || econCount() < TUNE.MILESTONE_ECON_N))
+      return { id: 'industry', body: '▸ Build your base: <b>Power Plants</b> for income, <b>Extractors</b> on the glowing resource nodes. Everything else waits on this.' };
+    return null;
+  }
+
+  // ---- THE ~1/s ADVISOR + MILESTONE TICK (called from updateGame via the G.advT accumulator) ----
+  window.tutAdvTick = function (dt) {
+    const T = G && G.tut; if (!T || T.off) return;
+    // trailing IC + stability trends
+    T.icHist = T.icHist || []; T.stabHist = T.stabHist || [];
+    T.icHist.push(G.ic); if (T.icHist.length > TUNE.TREND_N) T.icHist.shift();
+    T.stabHist.push(effS()); if (T.stabHist.length > TUNE.TREND_N) T.stabHist.shift();
+    const icTrend = T.icHist.length >= 2 ? (G.ic - T.icHist[0]) : 0;
+    const stabTrend = T.stabHist.length >= 2 ? (effS() - T.stabHist[0]) : 0;
+
+    // MILESTONE → DOCTRINE: a stable base that can carry a war
+    if (T.phase === 'industry' && !T.doctrineFired && !ov) {
+      if (G.icR >= (T.icR0 || TUNE.BASELINE_ICR) * TUNE.MILESTONE_IC_MULT && econCount() >= TUNE.MILESTONE_ECON_N && icTrend >= TUNE.MILESTONE_TREND) {
+        T.doctrineFired = true; T.phase = 'doctrine'; unlock('#btnRes');
+        openSpotlight([{ sel: '#btnRes', title: 'STABLE FOOTING', body: 'Your economy can carry a war now — time to spend it. <b>Research</b> buys the doctrines that transform your civilization, paid with <b>Influence</b>. One tip: stand up a couple of <b>Research Labs</b> first, or it’ll crawl.', last: true }]);
+        return;
+      }
+    }
+    // MILESTONE → STRIKES: re-entry nears, or a Silo is standing
+    if ((T.phase === 'industry' || T.phase === 'doctrine') && !T.strikesFired && !ov) {
+      const nearReentry = (G.phase === 'prep' && G.prepTimer <= TUNE.STRIKE_PREP_S);
+      if (nearReentry || hasSilo()) {
+        T.strikesFired = true; T.phase = 'strikes'; unlock('#btnRes'); unlock('#btnStrike');
+        openSpotlight([
+          { sel: '#btnStrike', title: 'THE UNTHINKABLE IS AVAILABLE', body: 'Build a <b>Silo</b> and you can call down nukes, orbital rods and worse. Devastating — but every strike costs <b>Stability</b>, so spend them like they matter.' },
+          { sel: '.objwrap', title: 'THEY’RE ALMOST HERE', body: 'When the countdown hits zero the fleet <b>re-enters</b> — waves that never stop and grow stronger the longer you survive. Destroy the fleet to win. Hold the line, Commander.', last: true },
+        ], { onComplete: () => { if (G && G.tut) G.tut.phase = 'done'; } });
+        return;
+      }
+    }
+
+    // ADVISOR tips — throttled, non-repeating, only when a condition clearly dominates
+    T.advCd = Math.max(0, (T.advCd || 0) - dt);
+    if (ov) return;             // don't stack a corner tip under a spotlight beat
+    if (T.advCd > 0) return;
+    const tip = pickTip(icTrend, stabTrend);
+    if (tip && tip.id !== T.lastTip) { showTip(tip.id, tip.body); T.lastTip = tip.id; T.curTip = tip.id; T.advCd = TUNE.ADV_THROTTLE_S; }
   };
+
+  // clear any tutorial overlay state on a fresh game (called from newGame)
+  window.tutClear = function () { teardown(); clearGrey(); hideTip(); };
+
+  // orientation entry — the ONLY public start; flips the adaptive system on and greys the locked layers
+  window.startTutorial = function () {
+    if (ov) return;
+    if (G && G.tut) { G.tut.off = false; G.tut.phase = 'orient'; }
+    lock('#btnRes'); lock('#btnStrike');
+    openSpotlight(ORIENT, { onComplete: enterIndustry, onSkip: skipAll });
+  };
+
+  // ---- LOCKED-TAB click guard: a greyed tab must NOT open; it explains why instead ----
+  ['#btnRes', '#btnStrike'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.addEventListener('click', e => {
+      if (!el.classList.contains('tut-locked')) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (typeof toast === 'function') toast(sel === '#btnRes'
+        ? 'Not yet — get your economy going first. This unlocks once your industry can carry it.'
+        : 'Build up first. Strikes come online as re-entry nears.');
+    }, true);
+  });
 })();
 /* ============================================================================
    INTRO CINEMATIC — a typed-out, terminal-style story beat shown once, before

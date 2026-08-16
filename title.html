@@ -889,7 +889,9 @@ function eblobs(list, rot, R, cx, cy, cols, aMul) { for (const b of list) { cons
    WORLD — wide scrolling terrain (world coords; camera pans)
    ===================================================================== */
 const WORLD_W = 6000, CURVE_AMT = 92, SEA_E = 0.45;   // wider front (v1.9.8 — bigger map)
-let TSEED = null, MSEED = null, CLOUDLIST = [], craters = [], fills = [], levels = [], NEB = [];   // fills = legacy mounds; levels = smooth feathered RAISE/LEVEL/SINK terrain edits; NEB = deep-space nebula clouds
+const MIN_LAND_FRAC = 0.35;   // guarantee at least this fraction of the strip is dry, buildable land — clamps pathological "waterworld" rolls (only a few tiny dry spots → one forced gigacity) WITHOUT flattening coastline variety; only ever RAISES a too-wet map, never lowers a good one
+const MIN_CITY_SPACING = 360;   // minimum gap between seeded city centres — cities that OVERLAP still fuse into a megacity (a feature), but they shouldn't ALL fuse just because they snapped onto the same scrap of land; > the ~290px merge threshold so spread seeds stay distinct
+let TSEED = null, MSEED = null, CLOUDLIST = [], craters = [], fills = [], levels = [], NEB = [], TBIAS = 0;   // fills = legacy mounds; levels = smooth feathered RAISE/LEVEL/SINK terrain edits; NEB = deep-space nebula clouds; TBIAS = uniform elevation lift applied to the base heightfield to enforce MIN_LAND_FRAC (preserves shape/variety, just raises the whole coastline)
 let RSEED1 = null, RSEED2 = null, METEORS = [], meteorClock = 0;   // RSEED = distant parallax mountain ridges; METEORS = shooting stars streaking through the space band
 const cam = { x: 0, y: 0, z: 1, manualT: 0 };   // y = vertical scroll (the world is taller than the viewport); z = zoom (1 = default, up to 3× in); manualT = seconds the player has manual vertical control before auto-follow resumes
 function seedTerrain() {
@@ -899,11 +901,16 @@ function seedTerrain() {
   RSEED1 = mk([{ cpf: .045, amp: .5 }, { cpf: .018, amp: .32 }, { cpf: .007, amp: .18 }]);   // near range — big massifs + rocky high-frequency detail
   RSEED2 = mk([{ cpf: .09, amp: .55 }, { cpf: .03, amp: .3 }, { cpf: .012, amp: .15 }]);     // far range — broader, hazier
   craters = []; fills = []; levels = [];
+  // MIN-LAND CLAMP — measure the raw heightfield and, if this roll is nearly all ocean, lift the whole
+  // coastline uniformly until at least MIN_LAND_FRAC of the strip clears sea level. Deterministic single
+  // pass, shape-preserving (varies exactly as before, just higher); never lowers an already-landy map.
+  TBIAS = 0;
+  { const N = 400, s = []; for (let i = 0; i < N; i++) s.push(noiseAt(TSEED, WORLD_W * (i + .5) / N)); s.sort((a, b) => a - b); const q = s[Math.floor((1 - MIN_LAND_FRAC) * N)]; if (q < SEA_E) TBIAS = SEA_E - q; }
   CLOUDLIST = []; for (let k = 0; k < 26; k++) CLOUDLIST.push({ wx: Math.random() * WORLD_W, ny: .50 + Math.random() * .28, w: 22 + Math.random() * 42, spd: .4 + Math.random() * .7, op: .32 + Math.random() * .4 });
 }
 function noiseAt(seed, wx) { const nx = wx / WORLD_W; let e = 0; for (const o of seed) { const t = nx / o.cpf, i = Math.floor(t), f = t - i, s = f * f * (3 - 2 * f); const a = o.arr[i] || 0, b = o.arr[i + 1] || 0; e += (a + (b - a) * s) * o.amp; } return e; }
 function craterAt(wx) { let d = 0; for (const cr of craters) { const dx = Math.abs(wx - cr.x); if (dx < cr.r) d += cr.depth * (1 - dx / cr.r); } for (const f of fills) { const dx = Math.abs(wx - f.x); if (dx < f.r) d -= f.amt * (1 - dx / f.r); } return d; }   // fills raise terrain (artificial land)
-function elevAt(wx) { if (!TSEED) seedTerrain(); const base = noiseAt(TSEED, wx), cr = craterAt(wx); let e = base - cr;
+function elevAt(wx) { if (!TSEED) seedTerrain(); const base = noiseAt(TSEED, wx) + TBIAS, cr = craterAt(wx); let e = base - cr;
   if (cr > 0 && base >= SEA_E) e = Math.max(e, SEA_E + 0.03);   // craters SCAR the ground — they never sink dry land into open water, no matter how many stack up (a blasted flat, not a new sea)
   if (levels.length) for (const L of levels) { const dx = Math.abs(wx - L.x); if (dx < L.r) { const t = 1 - dx / L.r, w = t * t * (3 - 2 * t); e = e * (1 - w) + L.e * w; } }   // smooth feathered terrain edits (raise/level/sink) — no jagged carves
   if (e < SEA_E) e = SEA_E - (SEA_E - e) * 2.6; return Math.max(-0.45, e); }   // deepen seas (natural/edited water only — craters are excluded above)
@@ -2259,7 +2266,8 @@ function newGame(diff) {
   if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
-  for (let i = 0; i < nCity; i++) { let x = WORLD_W * (0.09 + 0.82 / (nCity - 1) * i) + (Math.random() - .5) * 300; x = flatLand(Math.max(220, Math.min(WORLD_W - 220, x))); G.cities.push(buildCity(x, i === capIdx, 150, 700, false)); }
+  const cityXs = [];
+  for (let i = 0; i < nCity; i++) { let x = WORLD_W * (0.09 + 0.82 / (nCity - 1) * i) + (Math.random() - .5) * 300; x = flatLandSpread(Math.max(220, Math.min(WORLD_W - 220, x)), cityXs, MIN_CITY_SPACING); cityXs.push(x); G.cities.push(buildCity(x, i === capIdx, 150, 700, false)); }
   mergeCities();
   const cap = G.cities.find(ct => ct.capital) || G.cities[0];
   cam.z = 1; cam.x = clampCam(cap.x - W / 2); cam.y = clampCamY(worldH()); cam.manualT = 0;   // start framed on the ground (bottom of the tall world) — zoom reset FIRST so the clamps use z=1
@@ -2275,6 +2283,14 @@ function newGame(diff) {
   recalcBuildings(); buildBuildBar();
 }
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
+// snap to flat land like flatLand(), but keep at least `gap` from every already-placed city centre so
+// cities SPREAD across the available coast instead of all snapping onto one scrap of dry land and fusing
+function flatLandSpread(x, placed, gap) {
+  const clear = c => { for (const p of placed) if (Math.abs(p - c) < gap) return false; return true; };
+  const base = flatLand(x); if (clear(base)) return base;
+  for (let d = 40; d <= WORLD_W; d += 40) for (const cx of [x + d, x - d]) { if (cx < 220 || cx > WORLD_W - 220) continue; const c = flatLand(cx); if (clear(c)) return c; }   // walk outward for flat land that clears the spacing
+  return base;   // no room found — fall back to the nearest flat land (it may fuse; still better than a crash)
+}
 function flatLand(x) { x = landNear(x); let best = x, bf = 1e9; for (let dx = -160; dx <= 160; dx += 14) { const xx = x + dx; if (xx < 60 || xx > WORLD_W - 60 || elevAt(xx) <= SEA_E + .05) continue; const fl = Math.abs(elevAt(xx - 20) - elevAt(xx + 20)); if (fl < bf) { bf = fl; best = xx; } } return best; }
 function preBuild(x, key, city) { if (city) return; const d = BUILD_DEFS[key]; if (!d) return; const px = d.needWater ? (findWater(x) ?? x) : landNear(x); G.buildings.push(mkBuilding(key, px)); }
 function mkBuilding(key, x) { const d = BUILD_DEFS[key]; const b = { key, d, x, y: d.needWater ? seaLevelY(x) : groundY(x), hp: d.hp, maxHp: d.hp, queue: [], qtimer: 0, cd: Math.random(), silocd: 0 }; if (key === 'housing' && G && G.evt && G.evt.housingShielded) { b.maxHp += EVT1.shieldHpBonus; b.hp += EVT1.shieldHpBonus; } return b; }   // EVENT #1 "Deflector Shields" choice covers Housing Blocks built AFTER the decision too, not just the ones standing at the time; silos arm READY — strikes are gated by stability, not a long reload

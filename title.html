@@ -491,7 +491,7 @@
     <div class="cell garr" data-tip="Garrison — the SEPARATE auto-defense track. Bunkers, Barracks, Garrison Factories & Airbases passively spawn free defenders up to this WEIGHT budget, set by your Garrison Stockpiles. Each live garrisoner drains a little IC/s upkeep (shown here)."><div class="l has-tip">GARRISON</div><div class="n" id="hGarr">0/0</div><div class="r" id="garrR">-0.0/s</div></div>
     <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
-    <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar (they also bank a small RESERVE — ⛊ — that auto-refills lost stability). Falls when cities are hit or you over-use strikes. Pinned at 0 for too long triggers a recoverable CAPITULATION CRISIS, not instant defeat."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
+    <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar (they also bank a small RESERVE — ⛊ — that auto-refills lost stability). Falls when cities are hit or you over-use strikes. Hitting 0 triggers a recoverable CAPITULATION CRISIS — production freezes and troops mutiny while the state forcibly stabilizes, then a grace period keeps it from flip-flopping. Not instant defeat; only repeated collapses lose the run."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
     <div class="cell res" data-tip="Tech Era — research is bought with INFLUENCE in the RESEARCH tree. Advancing to Fusion/Space age unlocks higher tiers."><div class="l has-tip">TECH ERA</div><div class="n" id="hRes">I</div><div class="r" id="resR">INFO AGE</div></div>
     <div class="srbar" id="srBar" data-tip="Special Resources — extracted from deposits. Owning one permanently cheapens/unlocks related units."><span class="none">no special resources</span></div>
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
@@ -3323,29 +3323,44 @@ function updateGame(dt) {
   for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
   if (G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
   // ── CAPITULATION CRISIS ───────────────────────────────────────────────────────────────────
-  // Hitting 0 stability is no longer an instant "gotcha" defeat — it triggers a recoverable crisis:
-  // construction & production freeze (see placeBuilding/queueUnit/the site+queue ticks below), a slice
-  // of the standing army mutinies (goes inert — see updUnits), and stability keeps trending toward its
-  // cap the whole time, same as ever. Only a SUSTAINED pin at ~0 for CRISIS_LOSS_T seconds straight ends
-  // the run — a dip is a major, recoverable setback; a total, prolonged collapse still loses.
-  if (G.stab <= 0.5) {
-    if (!G.crisis) {
-      G.crisis = true; G.crisisT = 0;
-      const pool = G.units.filter(u => !u.d.builder);
-      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-      const n = Math.round(pool.length * CRISIS_MUTINY_FRAC);
-      for (let i = 0; i < n; i++) pool[i].mutiny = true;
-      toast('⚠ CAPITULATION CRISIS — government paralyzed, ' + n + ' unit(s) mutiny; production frozen until stability recovers');
-      shake(10); SFX.boom();
-    }
+  // Effective stability hitting 0 is no longer an instant "gotcha" defeat, NOR a permanent 0-pin you
+  // oscillate against every frame. It triggers a BOUNDED, RECOVERABLE emergency that runs as a small
+  // state machine:
+  //   TRIGGER  (effStab ≤ CRISIS_TRIGGER, and not already in a crisis/grace): fire the cost ONCE —
+  //            a slice of the army mutinies (goes inert, see updUnits) and construction/production
+  //            FREEZE (see placeBuilding/queueUnit + the site & queue ticks). The freeze is the real
+  //            price: lost tempo, not a lost run.
+  //   RECOVERY (G.crisis): drains are SUSPENDED (see effStab) and stability is FORCIBLY ramped up at
+  //            CRISIS_RECOVER_RATE toward the safe floor — a guaranteed climb the −penalty can't eat.
+  //            Production stays frozen the whole time.
+  //   GRACE    (after recovery): production resumes, mutineers stand down, and the crisis CANNOT
+  //            re-trigger for CRISIS_GRACE_T seconds even if effStab dips — this is what kills the
+  //            per-frame flip-flop and hands the player a window to fix the root cause.
+  // The LOSS now comes from SUSTAINED failure across MULTIPLE crises: each crisis bumps G.crisisCount,
+  // which slowly forgives itself while you're stable; stacking CRISIS_LOSS_COUNT of them close together
+  // ends the run. One collapse is a scary setback; a nation that keeps collapsing has capitulated.
+  if (G.crisisGrace > 0) G.crisisGrace = Math.max(0, G.crisisGrace - dt);
+  if (!G.crisis && G.crisisCount > 0) G.crisisCount = Math.max(0, G.crisisCount - dt / CRISIS_COUNT_FORGIVE);   // survived crises are forgiven over time — only crises stacked close together push you toward the loss
+  if (G.crisis) {
     G.crisisT += dt;
-    if (G.crisisT >= CRISIS_LOSS_T) {
-      return end(false, G.phase === 'prep' ? 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED' : 'CAPITULATION — STABILITY STAYED COLLAPSED TOO LONG');
+    const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR);   // recover to the safe floor, or all the way to the cap if the cap itself sits below it — either way well clear of the trigger
+    G.stab = Math.min(100, G.stab + CRISIS_RECOVER_RATE * dt);      // GUARANTEED climb — this is the whole fix: you always claw back out; the cost was the frozen tempo, never a permanent pin
+    if (G.stab >= target) {
+      G.crisis = false; G.crisisT = 0; G.crisisGrace = CRISIS_GRACE_T;
+      for (const u of G.units) u.mutiny = false;
+      toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes · ' + Math.round(CRISIS_GRACE_T) + 's emergency grace before another collapse can hit');
     }
-  } else if (G.crisis) {
-    G.crisis = false; G.crisisT = 0;
-    for (const u of G.units) u.mutiny = false;
-    toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes');
+  } else if (effStab() <= CRISIS_TRIGGER && G.crisisGrace <= 0) {
+    G.crisis = true; G.crisisT = 0; G.crisisCount += 1;
+    if (G.crisisCount >= CRISIS_LOSS_COUNT) {
+      return end(false, G.phase === 'prep' ? 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED' : 'CAPITULATION — THE NATION COLLAPSED ONE TIME TOO MANY');
+    }
+    const pool = G.units.filter(u => !u.d.builder);   // fire the crisis cost exactly ONCE per crisis (guarded by !G.crisis above — it can't re-run frame after frame)
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    const n = Math.round(pool.length * CRISIS_MUTINY_FRAC);
+    for (let i = 0; i < n; i++) pool[i].mutiny = true;
+    toast('⚠ CAPITULATION CRISIS (' + G.crisisCount + '/' + CRISIS_LOSS_COUNT + ') — government paralyzed, ' + n + ' unit(s) mutiny; production frozen while the state stabilizes');
+    shake(10); SFX.boom();
   }
 }
 function updateCamera(dt) {   // runs every frame (even while paused) so scrolling always works
@@ -4876,11 +4891,12 @@ function frame(now) {
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
-      if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the sustained-collapse countdown so the player knows exactly how much runway they have to claw stability back
-        const remain = Math.max(0, CRISIS_LOSS_T - (G.crisisT || 0)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
+      if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the guaranteed recovery ramping stability back up so the player can see they're being clawed out of it
+        const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR), frac = Math.max(0, Math.min(1, G.stab / target)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
         c.save(); c.fillStyle = 'rgba(120,10,10,' + (0.30 * pulse).toFixed(2) + ')'; c.fillRect(0, 0, W, 54);
-        c.textAlign = 'center'; c.font = 'bold 18px Consolas'; c.fillStyle = '#ff6a6a'; c.fillText('⚠ CAPITULATION CRISIS — PRODUCTION FROZEN · TROOPS MUTINYING', W / 2, 24);
-        c.font = '13px Consolas'; c.fillStyle = '#ffb0b0'; c.fillText('stability pinned at 0 — recovers on its own, but the government falls in ' + Math.ceil(remain) + 's if it stays there', W / 2, 44);
+        c.textAlign = 'center'; c.font = 'bold 18px Consolas'; c.fillStyle = '#ff6a6a'; c.fillText('⚠ CAPITULATION CRISIS (' + (G.crisisCount || 1) + '/' + CRISIS_LOSS_COUNT + ') — PRODUCTION FROZEN · TROOPS MUTINYING', W / 2, 24);
+        c.font = '13px Consolas'; c.fillStyle = '#ffb0b0'; c.fillText('emergency stabilization — recovering to fighting shape (' + Math.round(frac * 100) + '%) · repeated collapses lose the run', W / 2, 44);
+        c.fillStyle = 'rgba(255,90,90,.35)'; c.fillRect(W / 2 - 150, 50, 300, 3); c.fillStyle = '#ff8a8a'; c.fillRect(W / 2 - 150, 50, 300 * frac, 3);
         c.textAlign = 'left'; c.restore();
       }
       if (paused) { c.fillStyle = 'rgba(4,8,18,.45)'; c.fillRect(0, 0, W, H); c.fillStyle = '#cfe0ff'; c.font = 'bold 30px Consolas'; c.textAlign = 'center'; c.fillText('❚❚  PAUSED', W / 2, H / 2); c.font = '15px Consolas'; c.fillStyle = '#9fb6d4'; c.fillText('press SPACE to resume', W / 2, H / 2 + 30); c.textAlign = 'left'; }

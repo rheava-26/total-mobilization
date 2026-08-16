@@ -204,13 +204,17 @@
   #resPopup .rpt { font-size: 19px; font-weight: 800; letter-spacing: 2px; color: #eaf2ff; margin: 3px 0; }
   #resPopup .rpu { font-size: 11px; color: var(--mp); letter-spacing: 1px; }
   /* strike panel */
-  #strikePanel { position: fixed; left: 50%; top: 40px; transform: translateX(-50%); z-index: 16; background: rgba(8,14,26,.96); border: 1px solid var(--inf); border-radius: 7px; padding: 10px 12px; display: none; min-width: 330px; box-shadow: 0 14px 44px rgba(0,0,0,.6); }
-  #strikePanel.show { display: block; }
-  #strikePanel .sph { font-size: 11px; letter-spacing: 2px; color: var(--inf); margin-bottom: 7px; text-align: center; }
-  #strikePanel .sopt { display: block; width: 100%; text-align: left; background: #16101a; border: 1px solid var(--line); border-left: 3px solid var(--inf); color: var(--paper); padding: 7px 10px; border-radius: 4px; margin-top: 5px; cursor: pointer; font-family: inherit; font-size: 11px; letter-spacing: .4px; }
-  #strikePanel .sopt:hover { background: #221620; border-color: var(--inf); } #strikePanel .sopt.cant { opacity: .42; cursor: not-allowed; }
-  #strikePanel .sopt b { color: #eaf2ff; } #strikePanel .sopt .sx { color: var(--stab); float: right; }
-  #strikePanel .spc { text-align: center; margin-top: 8px; font-size: 9px; color: #8fa6c4; letter-spacing: 1px; }
+  .cmdpanel { position: fixed; left: 50%; top: 40px; transform: translateX(-50%); z-index: 16; background: rgba(8,14,26,.96); border: 1px solid var(--inf); border-radius: 7px; padding: 10px 12px; display: none; min-width: 330px; box-shadow: 0 14px 44px rgba(0,0,0,.6); }
+  .cmdpanel.show { display: block; }
+  .cmdpanel .sph { font-size: 11px; letter-spacing: 2px; color: var(--inf); margin-bottom: 7px; text-align: center; }
+  .cmdpanel .sopt { display: block; width: 100%; text-align: left; background: #16101a; border: 1px solid var(--line); border-left: 3px solid var(--inf); color: var(--paper); padding: 7px 10px; border-radius: 4px; margin-top: 5px; cursor: pointer; font-family: inherit; font-size: 11px; letter-spacing: .4px; }
+  .cmdpanel .sopt:hover { background: #221620; border-color: var(--inf); } .cmdpanel .sopt.cant { opacity: .42; cursor: not-allowed; }
+  .cmdpanel .sopt b { color: #eaf2ff; } .cmdpanel .sopt .sx { color: var(--stab); float: right; }
+  .cmdpanel .spc { text-align: center; margin-top: 8px; font-size: 9px; color: #8fa6c4; letter-spacing: 1px; }
+  /* ⚑ HIRE ALLIES panel — reuses the strike-panel layout (.cmdpanel) but wears an "allied blue" accent so it never reads as the ☢ nuke panel; the .sx cost badge shows INFLUENCE, not a stability hit */
+  #alliesPanel { border-color: #4a9fe0; background: rgba(8,16,26,.96); }
+  #alliesPanel .sph { color: #7fc4ff; } #alliesPanel .sopt { border-left-color: #4a9fe0; background: #10161f; }
+  #alliesPanel .sopt:hover { background: #16202c; border-color: #4a9fe0; } #alliesPanel .sopt .sx { color: #7fc4ff; }
   /* in-game debug console (Shift+Alt+D) */
   #debugConsole { position: fixed; left: 0; right: 0; bottom: 0; max-height: 44vh; z-index: 40; background: rgba(3,6,12,.96); border-top: 2px solid var(--inf); display: none; flex-direction: column; font-size: 11px; }
   #debugConsole.show { display: flex; }
@@ -278,10 +282,10 @@
     .ghint { font-size: 10.5px; max-width: 94vw; top: 38%; background: rgba(6,12,24,.82); border: 1px solid rgba(109,255,176,.35); border-radius: 6px; padding: 9px 12px; line-height: 1.5; }   /* the wrapped topbar eats the top of the screen — drop the hint to mid-screen on its own panel */
     .modal { padding: 14px; } input[type=range] { width: 140px; }
     .toast { bottom: 130px; max-width: 92vw; font-size: 11px; }
-    #strikePanel { min-width: 0; width: 94vw; top: 8px; max-height: 82vh; overflow-y: auto; padding: 8px 9px; }
-    #strikePanel .sph { font-size: 9.5px; margin-bottom: 5px; }
-    #strikePanel .sopt { padding: 5px 8px; margin-top: 4px; font-size: 10px; }
-    #strikePanel .spc { font-size: 8px; margin-top: 6px; }
+    .cmdpanel { min-width: 0; width: 94vw; top: 8px; max-height: 82vh; overflow-y: auto; padding: 8px 9px; }
+    .cmdpanel .sph { font-size: 9.5px; margin-bottom: 5px; }
+    .cmdpanel .sopt { padding: 5px 8px; margin-top: 4px; font-size: 10px; }
+    .cmdpanel .spc { font-size: 8px; margin-top: 6px; }
     .footer { font-size: 10px; }
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
@@ -500,6 +504,7 @@
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
     <div class="hbtn has-tip" id="btnRes" data-tip="Open the research tree — General (cheap) & Dangerous (society-shifting) tech.">RESEARCH</div>
     <div class="hbtn has-tip" id="btnStrike" data-tip="Strategic strike — opens the launch overview, marks your silos, and lets you call a nuclear/orbital strike. Strikes cost STABILITY.">☢ STRIKE</div>
+    <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
     <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
@@ -525,7 +530,8 @@
 <div id="nowPlaying"></div>
 <div id="ytplayer" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></div>
 <div id="resPopup"></div>
-<div id="strikePanel"></div>
+<div id="strikePanel" class="cmdpanel"></div>
+<div id="alliesPanel" class="cmdpanel"></div>
 <div id="debugConsole"><div class="dbgHead"><b>⚙ DEBUG CONSOLE</b><span>Shift+Alt+D toggles · engine errors are captured here</span><span class="dbgx first" id="dbgCopy">COPY</span><span class="dbgx" id="dbgClear">CLEAR</span><span class="dbgx" id="dbgClose">✕</span></div><div class="dbgBody" id="dbgBody"></div></div>
 
 <script>
@@ -2288,7 +2294,7 @@ function newGame(diff) {
   const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2 }[diff] || 1);
   const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
   G = {
-    ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, stabReserve: 0, stabReserveMax: 0, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent,
+    ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, stabReserve: 0, stabReserveMax: 0, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent, allyCd: 0,
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
@@ -3269,6 +3275,7 @@ function updateGame(dt) {
   G.infMomentum = infSpentThisFrame ? 1.0 : Math.min(MOM_CAP, (G.infMomentum || 1) + (MOM_CAP - (G.infMomentum || 1)) * dt / MOM_TAU);
   G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) * G.infMomentum - 2 * (G.superN || 0)); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   // INFLUENCE accrues from effective stability, amplified by momentum; EACH fielded Superhuman Cadre CONSUMES 2 influence/s of that income (upkeep) — a couple is affordable, an immortal laser air-force strangles your research
   if (G.stabOffset > 0) G.stabOffset = Math.max(0, G.stabOffset - (0.5 + Math.max(0, G.mult.stab) * .1) * dt);   // dangerous-research unrest now RECOVERS on its own over time (no longer requires spamming stability buildings)
+  if (G.allyCd > 0) G.allyCd = Math.max(0, G.allyCd - dt);   // ⚑ HIRE ALLIES reinforcement cooldown — a single shared timer so allied packages are a paced safety valve, not a spammable win button (see ALLIES / hireAllies)
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
   if (G.hitFlash) G.hitFlash = Math.max(0, G.hitFlash - dt * 2.6);   // red impact flicker decays fast
   // lingering firestorms — cook anything on the ground inside them
@@ -3634,6 +3641,7 @@ function openStrike() {
   if (G.strikeMode) return closeStrike();
   const silos = G.buildings.filter(b => b.d && b.d.strat && b.done !== false);
   if (!silos.length) return toast('BUILD A MISSILE SILO (DEF tab) TO CALL STRIKES');
+  closeAllies();   // the two command panels share the top-center slot — never show both at once
   G.strikeMode = true; G.targeting = null; G.place = null; G.sel = null; refreshSel(); buildBuildBar();
   buildStrikePanel();
 }
@@ -3660,6 +3668,76 @@ function armStrike(type) {
   G.targeting = { silo, type };
   const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
   toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click target · launches from the ▲ marked silo'));
+}
+/* ===== ⚑ HIRE ALLIES — an INFLUENCE SINK & safety valve =====
+   Late-game influence tends to pile up with nothing large to spend it on. Calling in a favour from
+   the world's other powers lets you dump a big slug of INFLUENCE (+ IC & manpower) for an instant
+   package of allied forces spawned as YOUR OWN units near your capital. Mirrors the ☢ STRIKE UX (a
+   top-bar button + a panel of options) but needs no aiming — the favour just arrives. Gated by a
+   single shared cooldown (G.allyCd) so it's a paced valve, not a spammable win button. Everything
+   below is deliberately CONSERVATIVE and TUNABLE — bump the numbers, don't add caps. */
+const ALLIES = {
+  // units: EXISTING friendly unit keys (see UNIT_DEFS). Carrier auto-launches its own free deck wing (carrierN),
+  // so the strike group brings its own fighters organically. inf = the primary sink; ic/mp are secondary costs; cd in game-seconds.
+  csg:    { name: 'Carrier Strike Group', short: 'Strike Group', inf: 200, ic: 280, mp: 90, cd: 100,
+            units: ['carrier', 'destroyer', 'destroyer', 'cruiser'],
+            ds: 'Allied CARRIER STRIKE GROUP — a fleet carrier (launches its own free fighter wing off the deck), two destroyer escorts and a missile cruiser, sailed in from a friendly power and deployed off your coast. The heavyweight influence dump. (needs water near your capital)' },
+  armor:  { name: 'Armored Battalion', short: 'Battalion', inf: 110, ic: 170, mp: 70, cd: 70,
+            units: ['heavytank', 'tank', 'tank', 'tank', 'aa'],
+            ds: 'Allied ARMORED BATTALION — a heavy "Goliath", three main battle tanks and a flak vehicle, landed by your capital. The cheap, fast reinforcement when a flank is caving in.' },
+  airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 150, ic: 200, mp: 60, cd: 85,
+            units: ['fighter', 'fighter', 'strikejet', 'strikejet'],
+            ds: 'Allied EXPEDITIONARY AIR WING — two multirole "Falcon" fighters and two "Warthog" strike jets, scrambled from an allied base. Instant air power (they rearm at your airbases once their ordnance is spent).' },
+};
+function allyAvail(a) {   // null = hireable; otherwise a short reason string (shown on the button / as a toast)
+  if ((G.allyCd || 0) > 0) return 'regrouping — ' + Math.ceil(G.allyCd) + 's';
+  if (G.inf < a.inf) return 'needs ' + a.inf + ' influence';
+  if (G.ic < a.ic) return 'needs ' + a.ic + ' IC';
+  if (G.mp < a.mp) return 'needs ' + a.mp + ' manpower';
+  return null;
+}
+function allyLandingX() {   // deploy near a surviving city (prefer the capital); fall back to mid-map
+  const live = (G.cities || []).filter(c => c.hp > 0 && !c.held);
+  const c = live.find(c => c.capital) || live[0];
+  return Math.max(120, Math.min(WORLD_W - 120, c ? c.x : WORLD_W / 2));
+}
+function hireAllies(type) {
+  const a = ALLIES[type]; if (!a || !G || mode !== 'game' || G.over) return;
+  const av = allyAvail(a); if (av) return toast(av.toUpperCase());
+  G.inf -= a.inf; G.ic -= a.ic; G.mp -= a.mp; G.infSpent = true;   // spending INFLUENCE snaps momentum back to baseline, exactly like a research draw or a building placement
+  G.allyCd = a.cd;
+  const base = allyLandingX();
+  let n = 0;
+  for (let i = 0; i < a.units.length; i++) {
+    const k = a.units[i];
+    const dx = Math.max(80, Math.min(WORLD_W - 80, base + (i - (a.units.length - 1) / 2) * 72));   // fan the package out around the landing point
+    spawnUnit(k, dx); const u = G.units[G.units.length - 1];
+    if (u) { u.ally = true; n++; if (u.d.domain === 'ground') { u.x = dx; u.y = groundY(dx) - u.d.s; } }   // ground pieces land exactly where fanned; spawnUnit already snaps naval hulls to the nearest water & air units to a patrol altitude
+  }
+  const gy = groundY(base);
+  G.parts.push({ k: 'flash', x: base, y: gy - 30, r: 40, life: .3 }); boom(base, gy - 6, 6); shake(3);
+  floatText(base, gy - 46, '⚑ ALLIED ' + a.short.toUpperCase() + ' ARRIVES', '#7fc4ff');
+  toast('⚑ ' + a.name.toUpperCase() + ' DEPLOYED — ' + n + ' UNITS'); if (SFX.build) SFX.build();
+  buildAlliesPanel();   // refresh the panel so the cooldown / affordability updates immediately
+}
+function openAllies() {
+  if (!G || mode !== 'game' || G.over) return;
+  const ap = document.getElementById('alliesPanel');
+  if (ap && ap.classList.contains('show')) return closeAllies();   // toggle
+  if (G.strikeMode) closeStrike();   // the two command panels share the same top-center slot — never show both at once
+  buildAlliesPanel();
+}
+function closeAllies() { const ap = document.getElementById('alliesPanel'); if (ap) ap.classList.remove('show'); const bA = document.getElementById('btnAllies'); if (bA) bA.classList.remove('on'); }
+function buildAlliesPanel() {
+  const ap = document.getElementById('alliesPanel'); if (!ap || !G) return;
+  const cd = G.allyCd || 0;
+  let html = `<div class="sph">⚑ HIRE ALLIES · ${Math.floor(G.inf)} INFLUENCE · ${cd > 0 ? 'REGROUPING ' + Math.ceil(cd) + 's' : 'READY'}</div>`;
+  for (const t in ALLIES) { const a = ALLIES[t], av = allyAvail(a), can = !av;
+    html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic} IC · ${a.mp} MP · ${a.cd}s cooldown${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
+  html += `<div class="spc">a favour from the world's other powers — allied forces deploy by your capital · an influence sink, not a win button</div>`;
+  ap.innerHTML = html; ap.classList.add('show');
+  ap.querySelectorAll('.sopt').forEach(b => b.onclick = () => hireAllies(b.dataset.al));
+  const bA = document.getElementById('btnAllies'); if (bA) bA.classList.add('on');
 }
 function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & HURLS the earth, flattens anything anchored where it lands
   G.parts.push({ k: 'flash', x, y: y - 32, r: 104, life: .35 });
@@ -5204,6 +5282,7 @@ document.getElementById('backBtn').addEventListener('click', backToTitle);
 document.getElementById('btnProd').addEventListener('click', () => { const p = document.getElementById('produce'); const showing = p.classList.toggle('show'); const bp = document.getElementById('btnProd'); bp.classList.toggle('on', showing); bp.classList.remove('attn'); if (G) G.hintProd = true; if (showing) buildProdMenu(); });
 document.getElementById('btnRes').addEventListener('click', () => { buildResearch(); openModal('resModal'); });
 document.getElementById('btnStrike').addEventListener('click', () => { document.getElementById('btnStrike').classList.remove('attn'); openStrike(); });
+document.getElementById('btnAllies').addEventListener('click', () => { document.getElementById('btnAllies').classList.remove('attn'); openAllies(); });
 document.getElementById('btnMus').addEventListener('click', musToggle);
 document.getElementById('btnHelp').addEventListener('click', () => { fillManualBuildings(); openModal('helpModal'); });
 // build the Field Manual's building cost table straight from the data + the real placement-cost formulas, so it never drifts

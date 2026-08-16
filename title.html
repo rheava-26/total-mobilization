@@ -2413,7 +2413,7 @@ function bldSurfaceY(b) { return b.d.needWater ? seaLevelY(b.x) : groundY(b.x); 
 function bldBaseY(b) { return b.ug ? groundY(b.x) + UG_DEPTH * (b.ugLvl || 1) : bldSurfaceY(b); }   // where the building actually sits (buried → underground)
 /* ===== CITIES — a sprawl of individually-destructible districts; nearby cities fuse into a MEGACITY ===== */
 function buildCity(x, capital, w, totalHp, mega) {
-  const ct = { x, w, capital, mega, _cityName: mega ? 'MEGACITY' : (capital ? 'CAPITAL' : 'CITY'), districts: [], hp: 0, maxHp: 0, capture: 0, held: false };
+  const ct = { x, w, capital, mega, _cityName: mega ? 'MEGACITY' : (capital ? 'CAPITAL' : 'CITY'), districts: [], hp: 0, maxHp: 0, capture: 0, held: false, siegeT: 0, troopT: 0 };   // siegeT: seconds of "no recruiting" left after being shelled · troopT: progress toward the next free militia (see CITY AUTO-RECRUIT)
   const n = Math.max(3, Math.round(w / 42)), perHp = Math.round(totalHp / n);
   for (let i = 0; i < n; i++) {
     const dx = n === 1 ? 0 : -w / 2 + w * (i / (n - 1));
@@ -2441,17 +2441,55 @@ function mergeCities() {   // any two cities whose footprints overlap merge into
 }
 function recomputeCityHp(ct) { let h = 0; for (const d of ct.districts) h += Math.max(0, d.hp); ct.hp = h; }
 function damageDistrict(ct, dist, dmg) {
-  if (!ct) return; if (!dist || dist.dead) return hurtCity(ct, dist ? ct.x + dist.dx : ct.x, dmg);
+  if (!ct) return; if (dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN;   // a city that is being shelled stops mustering troops for a while (see CITY AUTO-RECRUIT)
+  if (!dist || dist.dead) return hurtCity(ct, dist ? ct.x + dist.dx : ct.x, dmg);
   dist.hp -= dmg;
   if (dist.hp <= 0 && !dist.dead) { dist.dead = true; G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9); groundBurst(dx, 7); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
   recomputeCityHp(ct);
 }
-function hurtCity(ct, x, dmg) { let best = null, bd = 1e9; for (const d of ct.districts) { if (d.dead) continue; const dd = Math.abs(ct.x + d.dx - x); if (dd < bd) { bd = dd; best = d; } } if (best) damageDistrict(ct, best, dmg); else recomputeCityHp(ct); }
+function hurtCity(ct, x, dmg) { if (ct && dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN; let best = null, bd = 1e9; for (const d of ct.districts) { if (d.dead) continue; const dd = Math.abs(ct.x + d.dx - x); if (dd < bd) { bd = dd; best = d; } } if (best) damageDistrict(ct, best, dmg); else recomputeCityHp(ct); }
 // when a city falls/is retaken, flip ownership of the productive structures inside its footprint — factories, industry &
 // power all stop serving you and start being run by the autodrones (and vice-versa on retake)
 function setCityCaptured(ct, on) { const half = ct.w * .5 + 60;
   for (const b of G.buildings) { if (b.ug || b.emplace) continue; const d = b.d; if (!(d.prod || d.autospawn || d.garrison || (d.econ && (d.econ.ic || d.econ.mp)))) continue;   // only productive/industrial blocks are worth seizing — not bare turrets/silos
     if (Math.abs(b.x - ct.x) < half) { if (on) { b.captured = true; b.capT = 3 + Math.random() * 2; } else b.captured = false; } }
+}
+
+// ===== CITY AUTO-RECRUIT — a LIVING HOMELAND ===========================================
+// A surviving, UN-BESIEGED city musters its populace over time: a slow MANPOWER trickle scaled
+// by the city's size (health), plus the OCCASIONAL free garrison defender (a militia). This is a
+// deliberately gentle passive reward for HOLDING your cities — a homeland that develops while it
+// survives — NOT an economic engine. It shuts off the instant a city is shelled, contested on the
+// ground, or occupied (a city under siege doesn't recruit). Everything is tunable below; per-city
+// timers live on the city object (siegeT / troopT) and reset every newGame because cities are
+// rebuilt from scratch. The free militia draws on the SAME global GARRISON weight budget as every
+// other standing defender, so it self-limits and can never flood the map. =================
+const CITY_RECRUIT_MP       = 0.5;   // base manpower/sec a FULL-HEALTH ordinary city musters (before size/mega scaling) — a modest trickle vs. the 4/s base income
+const CITY_RECRUIT_MEGA     = 1.7;   // megacity multiplier on the manpower trickle (a metropolis raises more)
+const CITY_SIEGE_COOLDOWN   = 6;     // seconds of "no recruiting" after a city takes ANY damage — a shelled city doesn't muster
+const CITY_TROOP_EVERY      = 28;    // seconds between free militia defenders an ordinary healthy city can muster
+const CITY_TROOP_MEGA_EVERY = 18;    // a megacity musters free defenders faster
+const CITY_TROOP_MINHP      = 0.55;  // a city must be at least this fraction of full health to muster a free defender at all
+function citySieged(ct) { return ct.held || ct.capture > 0 || (ct.siegeT || 0) > 0; }   // occupied, being ground-captured, or freshly shelled → no growth
+// Called from updateGame AFTER the garrison-fill pass (so G.garrCap/G.garrUsed are current). Returns
+// the total manpower/sec the nation's cities are mustering this tick; the caller folds it into income.
+function cityRecruit(dt) {
+  let mpR = 0;
+  if (!G.cities) return 0;
+  for (const ct of G.cities) {
+    if (ct.siegeT > 0) ct.siegeT = Math.max(0, ct.siegeT - dt);   // the shelling cooldown always ticks down
+    if (ct.hp <= 0 || citySieged(ct)) { ct.troopT = 0; continue; }   // dead / besieged cities muster nothing and bank no progress toward a free troop
+    const hpFrac = ct.maxHp > 0 ? Math.max(0, Math.min(1, ct.hp / ct.maxHp)) : 0;   // a half-wrecked city raises proportionally fewer troops
+    mpR += CITY_RECRUIT_MP * (ct.mega ? CITY_RECRUIT_MEGA : 1) * hpFrac;
+    // OCCASIONAL free militia — only from a healthy city, and only if the global garrison weight budget allows one more
+    if (hpFrac >= CITY_TROOP_MINHP) {
+      ct.troopT = (ct.troopT || 0) + dt;
+      if (ct.troopT >= (ct.mega ? CITY_TROOP_MEGA_EVERY : CITY_TROOP_EVERY)) { ct.troopT = 0;
+        if ((G.garrUsed || 0) + 1 <= (G.garrCap || 0)) { spawnGarrison('inf', ct.x + (Math.random() - .5) * (ct.w || 120), null, 1); G.garrUsed = (G.garrUsed || 0) + 1; floatText(ct.x, groundY(ct.x) - 26, '＋ MILITIA MUSTERED', '#8fd6a0'); }
+      }
+    }
+  }
+  return mpR;
 }
 
 /* =====================================================================
@@ -3442,6 +3480,10 @@ function updateGame(dt) {
     }
   }
   G.garrUsed = garrLive;
+  // CITY AUTO-RECRUIT — surviving, un-besieged cities muster a modest manpower trickle (and the odd free
+  // militia). Folded into income here, AFTER the garrison ledger is known, so the militia respects the budget.
+  const cityMpR = cityRecruit(dt);
+  G.cityMpR = cityMpR; G.mpR += cityMpR; G.mp = Math.min(900, G.mp + cityMpR * dt);
   // production buildings — frozen during a CAPITULATION CRISIS (queues just wait; nothing is lost)
   if (!G.crisis) for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.

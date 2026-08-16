@@ -448,7 +448,8 @@
     Stability climbs <b>slowly</b> toward your <b>STABILITY CAP</b> (shown as <span class="k">cur / cap</span> up top). Buildings don't grant stability directly — <b>Comms Towers, Propaganda Bureaus &amp; Radar raise the CAP</b> it can reach. Stability falls when cities burn, you over-use strikes, or run dystopian/psionic doctrine; dangerous research adds a temporary <b>⚠ unrest</b> that recovers on its own. At <b>0 stability you lose</b> — watch it like a fuel gauge.</p></details>
   <details class="helpsec"><summary>② PRODUCE UNITS &amp; ✈ AIR COMMAND</summary><p>
     Build a <b>Factory / Airbase / Shipyard / Space Center</b>, then press <span class="k">PRODUCE</span> (top bar) — units roll out of the matching building. Researched doctrines add whole new rosters here.<br><br>
-    <b>✈ AIR COMMAND:</b> every crewed aircraft needs a hangar slot — <b>Airbase +6</b>, <b>Underground Airwing +3</b>, <b>Aero Works +4</b>. Drones are exempt (swarm away) and carrier wings support themselves. A bigger air force means more air infrastructure — which the enemy can bomb.<br>
+    <b>✈ AIR COMMAND:</b> every crewed FIXED-WING aircraft needs a hangar slot — <b>Airbase +6</b>, <b>Underground Airwing +3</b>, <b>Aero Works +4</b>. Drones are exempt (swarm away) and carrier wings support themselves. A bigger air force means more air infrastructure — which the enemy can bomb.<br>
+    <b>🚁 ROTOR COMMAND:</b> HELICOPTERS are their own arm — they draw a SEPARATE pool (not hangar slots), need no runway, and base out of <b>Heli-Depots +6</b> and every CITY (+3 each). They hug the deck: a heli hovers over its target pounding it with rockets, but physically cannot climb to high-altitude enemies — pure close air support. Rearm at any city, heli-depot, airbase, or carrier deck.<br>
     <b>⬆ ORBITAL LIFT</b> works the same for space units: each Space Center / Station provides lift that your orbital fleet reserves.
     <span class="tip2">Locked cards tell you exactly what they need — research, a production-line building, a resource deposit, lift or hangar space.</span></p></details>
   <details class="helpsec"><summary>③ RESEARCH &amp; DOCTRINES</summary><p>
@@ -1840,6 +1841,9 @@ const UNIT_DEFS = {
   spacefrigate:{ name: 'Orbital Frigate', art: 'spacefrig', domain: 'space', ic: 200, mp: 6, build: 9, hp: 60, armor: 2, range: 1000, dmg: 18, rate: 1.4, weapon: 'beam', speed: 16, s: 4, grp: 2, req: 'orbital', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Cheap general-purpose space warship — an angular armoured orbital hull, fielded in numbers as the backbone of a Space-Age fleet. Each needs orbital LIFT + a ROCKET PART.' },
   ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 28, rate: 1.2, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns — duels the autodrone strike-wings high above. Needs orbital LIFT + a ROCKET PART. Built from a SPACE STATION.' },
   bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 420, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, ds: 'Heavy bomber — carpet-bombs GROUND & naval targets from altitude, then returns to an airbase to reload its bays. Longest-endurance fuel tank in the fleet. Built straight from any Airbase.' },
+  // 🚁 HELICOPTER — its own arm. rotor:true → draws ROTOR COMMAND (not hangar slots); lowAir:true → hugs the deck; groundAtk:true → CAS role (ground + low air);
+  // ceil .78 (tropo band) → physically CANNOT reach the stratosphere/space, keeping helis out of the high-air-spam meta. Needs no runway — rearms at cities/heli-depots.
+  heli:     { name: 'Attack Heli "Kite"', art: 'heli', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 120, mp: 10, build: 7, hp: 95, armor: 4, range: 430, dmg: 20, rate: 1.3, weapon: 'rocket', speed: 120, s: 4.2, grp: 1, ammo: 10, fuel: 42, ceil: .78, ds: 'CLOSE-AIR-SUPPORT gunship helicopter — hovers low over its target and pounds it with rocket pods & a chin gun, drifting with it. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Hugs the deck — it cannot climb to high-altitude enemies, so it lives or dies on ground & low-air work.' },
   // ---- EXOTIC (unlocked by research branches) ----
   cdrone:   { name: 'Combat Drone Squadron', art: 'cdrone', domain: 'air', ammo: 10, ic: 230, mp: 12, build: 6, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 1, req: 'automation', ds: 'A SWARM of 3 pilotless combat drones flying as ONE unit — ONE army-cap-exempt slot, several missile-armed bodies. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds squadrons in bigger, faster batches.' },
   kdrone:   { name: 'Kamikaze Drones', art: 'kdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
@@ -1870,6 +1874,7 @@ const UPGRADES = {
   // MICROROCKETS — a broad re-arm (like plasma) for the strike/CAS aircraft that keep missiles: their pods now split into independently-homing submunitions
   strikejet: { era: 'microrockets', name: 'Microrocket Warthog', weapon: 'microrkt', dmg: 16, rate: 2.0, range: 580, ds: 'CAS jet re-armed with MICROROCKET pods — every salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
   bomber:    { era: 'microrockets', name: 'Microrocket Lancer', weapon: 'microrkt', dmg: 18, rate: 2.8, range: 640, ds: 'Heavy bomber re-armed with microrocket clusters that scatter onto independent targets. (Microrockets)' },
+  heli:      { era: 'microrockets', name: 'Microrocket Kite', weapon: 'microrkt', dmg: 14, rate: 1.7, range: 500, ds: 'CAS helicopter re-armed with MICROROCKET pods — every hovering salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
 };
 // NOTE: missile-armed units (the fighter, SAMs) keep their MISSILES — plasma only re-arms GUN/kinetic units (tanks, infantry, AA flak, artillery).
 function effDef(key) {   // returns the era-upgraded def if its age is unlocked, else the base def (identity-stable via cache)
@@ -1896,6 +1901,7 @@ const BUILD_DEFS = {
   barracks: { name: 'Barracks', cat: 'PROD', ic: 70, mp: 40, build: 5, hp: 160, w: 16, h: 12, garrison: { unit: 'inf', n: 3, weight: 1 }, ds: 'Cheap & quick — keeps a small standing garrison of infantry to hold ground (bounded by your GARRISON weight budget).' },
   shipyard: { name: 'Shipyard', cat: 'PROD', ic: 180, mp: 105, build: 11, hp: 260, w: 23, h: 18, prod: 'naval', needWater: true, garrison: { key: 'destroyer', n: 1 }, ds: 'Coastal. Produces NAVAL units. Keeps a guard destroyer.' },
   airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { unit: 'fighter', n: 3, weight: 3 }, ds: 'Produces AIR units and grants ✈ +6 AIR COMMAND (hangar slots — every crewed aircraft needs one). Keeps a standing garrison of multirole fighters (bounded by your GARRISON weight budget — air garrisoners weigh 3×). More airbases = cheaper aircraft AND a bigger air force.' },
+  helidepot:{ name: 'Heli-Depot', cat: 'PROD', ic: 140, mp: 70, build: 9, hp: 220, w: 22, h: 14, prod: 'air', rotorBase: true, garrison: { unit: 'heli', n: 1, weight: 2 }, ds: 'Rotorcraft base — no runway needed. Produces HELICOPTERS and grants 🚁 +6 ROTOR COMMAND (the parallel pool crewed helis draw on, SEPARATE from Air Command). Helis rearm & refuel here (and at any city). Keeps a standing gunship-heli on patrol. Cheaper than an airbase.' },
   spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces ORBITAL units, launched to orbit by rocket (or railgun-tossed once Space Age). Builds ROCKET PARTS and provides 5 ORBITAL LIFT capacity — every orbital unit reserves lift, so a bigger space fleet needs more Centers. Keeps a guard satellite.' },
   // DEFENSE
   bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, pd: true, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget). Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
@@ -2124,7 +2130,14 @@ function orbCapFree() { return orbCap() - orbCapUsed(); }
 // support themselves (excluded), and disposable DRONES are exempt — swarming is their whole doctrine. Mirrors orbital LIFT.
 const AIR_SLOTS = { airbase: 6, airwing: 3 };
 function airCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && AIR_SLOTS[b.key]) n += AIR_SLOTS[b.key]; return n; }
-function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone) n++; } return n; }   // living + queued crewed aircraft
+function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.d.rotor && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone && !qd.rotor) n++; } return n; }   // living + queued crewed FIXED-WING aircraft — HELICOPTERS are excluded (they draw ROTOR COMMAND instead, below)
+// 🚁 ROTOR COMMAND — the PARALLEL capacity pool for HELICOPTERS. A cheap heli and an expensive jet are different logistics, so helis do
+// NOT eat Air Command hangar slots; they need no runway and base out of CITIES, HELI-DEPOTS and airbases. Rotor slots come from
+// heli-depots (ROTOR_SLOTS) plus a baseline from every surviving city (CITY_ROTOR) so helis are usable from the opening minutes.
+const ROTOR_SLOTS = { helidepot: 6 };   // tunable — a heli-depot fields six rotorcraft (airbases grant NONE; they're fixed-wing infra)
+const CITY_ROTOR = 3;                    // tunable — every surviving, un-occupied city fields a small standing rotor pad
+function rotorCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && ROTOR_SLOTS[b.key]) n += ROTOR_SLOTS[b.key]; if (G.cities) for (const ct of G.cities) if (ct.hp > 0 && !ct.held) n += CITY_ROTOR; return n; }
+function rotorUsed() { let n = 0; for (const u of G.units) if (u.d.rotor && !u.d.drone && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.rotor && !qd.drone) n++; } return n; }   // living + queued helicopters (carrier-launched helis support themselves, excluded)
 // returns null if the unit can be built, else a reason — the production CHAIN gates: a Special-Resource DEPOSIT, orbital LIFT capacity, and stockpiled COMPONENT PARTS
 function unitReqUnmet(d, grp) { grp = grp || d.grp || 1;
   if (d.srReq && !G.owned[d.srReq]) return 'NEEDS A ' + SR[d.srReq].name.toUpperCase() + ' DEPOSIT — claim one with an Extractor';
@@ -2351,12 +2364,19 @@ function acquireIncoming(x, y, range, ceilFrac) { const ceil = ceilFrac ? ceilFr
 function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
+// HELICOPTERS need no runway — they rearm/refuel at ANY heli-depot, airbase, or building flagged rotorBase, AND at any surviving city.
+// Cities aren't in G.buildings, so a fresh lightweight {x,hp} wrapper stands in for them (resolved every call — currentBase never caches a heli's base).
+function nearestHeliBase(x) { let b = null, bd = 1e9;
+  for (const o of G.buildings) { if (o.done === false || o.hp <= 0 || o.captured) continue; if (ROTOR_SLOTS[o.key] || o.d.rotorBase || o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } }
+  if (G.cities) for (const ct of G.cities) { if (ct.hp <= 0 || ct.held) continue; const dd = Math.abs(ct.x - x); if (dd < bd) { bd = dd; b = { x: ct.x, hp: ct.hp, _cityBase: ct }; } }
+  return b; }
 const AIR_FUEL_BURN = 1;   // fuel units burned per second airborne — aircraft `fuel` values are chosen so this reads directly as flight-seconds of endurance
 const AIR_RTB_SPD_MULT = 2.4;   // the ACTUAL cruise speed cap rearmAircraft flies home at (spd * this)
 const AIR_RTB_EST_SPD_MULT = 1.5;   // a deliberately PESSIMISTIC speed used only to ESTIMATE the fuel needed to get home — real transit never averages the full 2.4x cap (it ramps up from whatever direction the unit was already flying, then has to slow into the docking approach), so the RTB trigger must assume a slower trip or its 5% reserve gets silently eaten and the aircraft crashes short of the runway
 function currentBase(u) {   // resolves — and RE-resolves every call — the aircraft's home: its carrier if still afloat, else the nearest surviving airbase. Never caches a dead target (a destroyed carrier/airbase is dropped immediately and the next-closest is picked up)
   if (u.carrFrom && (u.carrFrom.hp <= 0 || G.units.indexOf(u.carrFrom) < 0)) u.carrFrom = null;   // carrier lost → fall back to an airbase
   if (u.carrFrom) return u.carrFrom;
+  if (u.d.rotor) return nearestHeliBase(u.x);   // helis land at cities / heli-depots / airbases — resolved fresh each call (cities live outside G.buildings, so no caching)
   if (!u.homeBase || u.homeBase.hp <= 0 || G.buildings.indexOf(u.homeBase) < 0) u.homeBase = nearestAirbase(u.x);
   return u.homeBase;
 }
@@ -2413,7 +2433,8 @@ function queueUnit(b, key) {
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) { const pb = prodUnlockBuildingFor(key); return toast('REQUIRES RESEARCH: ' + RESEARCH[d.req].name + (pb ? ' — or build a ' + pb.name : '')); }
   if (unitBReq(d)) return toast('NEEDS A ' + (BUILD_DEFS[d.bReq] ? BUILD_DEFS[d.bReq].name.toUpperCase() : d.bReq));
   if (!isMechanical(d) && combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / grow your manpower pool');   // mechanical (mech/drone/elec/clone) units are exempt — see isMechanical
-  if (d.domain === 'air' && !d.drone) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed aircraft need hangar slots
+  if (d.domain === 'air' && !d.drone && d.rotor) { const cap = rotorCap(), used = rotorUsed(); if (used + grp > cap) return toast('🚁 ROTOR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build a Heli-Depot (cities give a little baseline)'); }   // helicopters draw ROTOR command, not hangar slots
+  else if (d.domain === 'air' && !d.drone) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed FIXED-WING aircraft need hangar slots
   const reqUn = unitReqUnmet(d, grp); if (reqUn) return toast(reqUn);   // production-chain gate: SR deposit / orbital lift / component parts
   let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;   // Data Center frees drone manpower; Cloning/Munition/Droid facilities cut it
   const cost = unitCost(d) * grp, mp = mpEach * grp;
@@ -3466,7 +3487,11 @@ function updUnits(dt) {
     if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
     if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen
-    if (u.d.carrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0; let n = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) n++; if (n < (u.d.carrierN || 3)) { spawnUnit('fighter', u.x + (Math.random() - .5) * 80); const f = G.units[G.units.length - 1]; if (f) { f.garr = true; f.carrFrom = u; f.ammo = 8; } } } }   // carrier continuously launches a free fighter wing that lands & rearms
+    if (u.d.carrier || u.d.heliCarrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0;   // carriers field a FREE deck wing that lands & rearms on the deck; a Carrier keeps at least one gunship HELICOPTER aboard, and a future sky Nanoforge Carrier can set heliCarrier for an all-heli deck
+      let nF = 0, nH = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) { if (o.d.rotor) nH++; else nF++; }
+      const capH = u.d.heliCarrier ? (u.d.carrierN || 2) : 1, capF = u.d.carrier ? (u.d.carrierN || 3) : 0;   // dedicated heli-carrier → a full rotor deck; a normal fixed-wing carrier → ONE gunship heli + its fighters
+      const key = nH < capH ? 'heli' : (nF < capF ? 'fighter' : null);   // keep the heli slot filled first so "helicopter carrier" always works
+      if (key) { spawnUnit(key, u.x + (Math.random() - .5) * 80); const f = G.units[G.units.length - 1]; if (f) { f.garr = true; f.carrFrom = u; f.ammo = f.maxAmmo || 8; if (f.maxFuel) f.fuel = f.maxFuel; } } } }
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
@@ -3497,6 +3522,28 @@ function updUnits(dt) {
         if (u.fuel <= 0) { u.fuel = 0; if (!u.rtb) { u.rtb = true; floatText(u.x, u.y - d.s - 4, '⛽ BINGO FUEL — RTB', '#ffd23f'); } }
       }
       if ((u.maxAmmo || u.maxFuel) && (u.rtb || u.docked)) { rearmAircraft(u, d, spd, dt); continue; }   // out of ordnance and/or fuel → land at a friendly carrier/airbase, rearm/refuel, relaunch
+      if (d.rotor) {   // 🚁 HELICOPTER CAS — DISTINCT from the fixed-wing weave below: hug the deck, cruise to the fight, then HOVER/LOITER over the target sustaining fire, drifting WITH it (no fast strafing passes). Firing is handled by the shared block below via the range-limited tgt.
+        u.wob = (u.wob || Math.random() * 6.28) + dt * 3.4;   // fast rotor bob
+        let hcur = tgt;   // in-range target the shared block will fire on
+        if (!hcur) {   // no in-range foe → CRUISE toward the nearest CAS-valid (ground/low, non-reentry) target so helis actually deploy to the fight, the way ground units advance — the tropo ceilF + CAS filter keep them off high enemies
+          let best = null, bd = 1e9; const cy = ceilF * worldH();
+          for (const e of G.enemies) { if (e.reentry || e.y < cy || (aF && !aF(e))) continue; const dd = (e.x - u.x) ** 2 + (e.y - u.y) ** 2; if (dd < bd) { bd = dd; best = e; } }
+          hcur = best;
+        }
+        let ty;
+        if (hcur) {
+          const dx = hcur.x - u.x, standoff = Math.min(rng * .6, 170), hx = hcur.x - standoff * Math.sign(dx || 1);   // hold at gun range on the approach side (tunable 170px)
+          u.vx += ((hx - u.x) * 3 - u.vx * 2) * dt;   // ease to a hover offset beside the target & DRIFT with it (hx tracks the target every frame)
+          const tAlt = hcur.ground ? landY(hcur.x) - 60 : hcur.y - 8;   // hover just above the target
+          ty = Math.max(airTopY() + 8, Math.min(landY(u.x) - 20, tAlt));
+        } else { u.vx += (Math.sin(u.wob * .3) * spd * .5 - u.vx * 1.6) * dt; ty = landY(u.x) - 74; }   // slow terrain-hugging loiter when no enemies at all
+        ty += Math.sin(u.wob) * 3;   // rotor bob
+        u.vy += (ty - u.y) * 3.6 * dt;
+        const vmax = spd; u.vx = Math.max(-vmax, Math.min(vmax, u.vx)); u.vx *= .84; u.vy *= .82;   // helis are SLOW — capped at base speed (no 1.5x jet dash)
+        u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x));
+        u.y = Math.max(airTopY() + 6, Math.min(landY(u.x) - 14, u.y));   // pinned below the tropopause — physically cannot climb to high-altitude enemies
+        u.facing = hcur ? (hcur.x >= u.x ? 1 : -1) : (u.vx >= 0 ? 1 : -1);   // face the target while hovering over / cruising to it
+      } else {
       u.wob = (u.wob || Math.random() * 6.28) + dt * 2.4;
       const hunt = u.lowAir ? tgt : near(u.x, u.y, G.enemies.filter(e => !e.reentry && (!aF || aF(e))), 1e9);   // jets hunt anywhere (BVR), within their role; helis stay local
       let dy;
@@ -3510,6 +3557,7 @@ function updUnits(dt) {
       const vmax = spd * 1.5; u.vx = Math.max(-vmax, Math.min(vmax, u.vx)); u.vx *= .96; u.vy *= .9;
       u.x += u.vx * dt; u.y += u.vy * dt; u.y = Math.max(airTopY(), Math.min(landY(u.x) - 16, u.y)); u.facing = u.vx >= 0 ? 1 : -1;
       if (d.kamikaze && hunt) { const dd = (hunt.x - u.x) ** 2 + (hunt.y - u.y) ** 2, rr2 = u.d.s + (hunt.s || 8) + 8; if (dd < rr2 * rr2) { hunt.killBy = 'bomb'; hurt(hunt, d.dmg * 4); boom(u.x, u.y, 6); spark(u.x, u.y, 5); u.hp = 0; continue; } }   // dive-bomb: ram the target & detonate
+      }
     }
     else if (d.domain === 'space') {
       if (u.launching) {   // ascent to orbit — rocket plume below; railgun launch is near-instant
@@ -4398,7 +4446,7 @@ function produceGlobal(key) {
   } catch (e) {}
 }
 function buildProdMenu() {
-  const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ✈ ' + airUsed() + '/' + airCap() + ' air command   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
+  const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ✈ ' + airUsed() + '/' + airCap() + ' air command   ·   🚁 ' + rotorUsed() + '/' + rotorCap() + ' rotor command   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
   const grid = document.getElementById('pgrid'); grid.innerHTML = '';
   const bm = bmod();
   for (const key in UNIT_DEFS) {
@@ -4409,8 +4457,8 @@ function buildProdMenu() {
     let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
     const baseGrp = base.grp || 1, baseMpEach = Math.round(base.mp * 1.7);
     const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null, chainBits = [];   // production-chain requirements (only meaningful once the unit is otherwise buildable)
-    const airGate = d.domain === 'air' && !d.drone && !locked && !noFac && airUsed() + grp > airCap();   // hangar slots exhausted
-    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone) chainBits.push('✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
+    const airGate = d.domain === 'air' && !d.drone && !locked && !noFac && (d.rotor ? rotorUsed() + grp > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted
+    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone) chainBits.push(d.rotor ? '🚁 ' + grp + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
     const upgraded = d !== base, batchUp = grp !== baseGrp, mpUp = mpEach !== baseMpEach, unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || mpUp || unlockedByBld) && !locked;
     const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn || airGate ? ' cant' : '') + (changed && !airGate ? ' up' : ''); card.dataset.key = key;
     const nm = upgraded ? `<span class="gx">${d.name}</span>` : d.name;

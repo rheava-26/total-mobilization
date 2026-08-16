@@ -97,15 +97,40 @@
   .bcard:hover { border-color: var(--ic); } .bcard.sel { border-color: var(--stab); background: #1a2740; } .bcard.cant { opacity: .4; }
   .bcard canvas { width: 68px; height: 30px; display: block; } .bcard .bn { font-size: 8.5px; font-weight: 700; color: #eaf2ff; letter-spacing: .3px; line-height: 1.1; margin-top: 2px; } .bcard .bc { font-size: 8px; color: #8fa6c4; }
 
-  .produce { position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px; display: none; max-width: 60vw; }
-  .produce.show { display: block; } .produce .pt { font-size: 10px; letter-spacing: 1px; color: var(--term); margin-bottom: 5px; }
-  .pgrid { display: flex; gap: 5px; flex-wrap: wrap; max-width: 58vw; max-height: 30vh; overflow-y: auto; }
-  .ucard { width: 96px; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; padding: 5px; cursor: pointer; transition: .1s; position: relative; } .ucard:hover { border-color: var(--ic); } .ucard.cant { opacity: .42; }
-  .ucard.up { border-color: #5dff8d; box-shadow: 0 0 0 1px #5dff8d, 0 0 10px rgba(93,255,141,.22); }
+  .produce { position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: none; max-width: 640px; }
+  .produce.show { display: block; } .produce .pt { font-size: 9.5px; letter-spacing: .5px; color: var(--term); margin-bottom: 6px; line-height: 1.4; }
+  /* CATEGORY TABS — one horizontal row; scrolls sideways on a narrow phone */
+  .ptabs { display: flex; gap: 4px; margin-bottom: 7px; overflow-x: auto; scrollbar-width: thin; }
+  .ptab { flex: 0 0 auto; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; color: #9fb6d4; padding: 5px 9px; font-size: 10px; letter-spacing: .3px; cursor: pointer; white-space: nowrap; font-family: inherit; transition: .1s; }
+  .ptab:hover { border-color: var(--ic); color: #cfe0f5; } .ptab.on { background: #1a2740; border-color: var(--ic); color: #eaf2ff; font-weight: 700; }
+  .ptab .pcount { color: #6f86a4; font-size: 8px; margin-left: 4px; }
+  .pbody { display: flex; gap: 8px; align-items: flex-start; }
+  .pgrid { display: flex; gap: 5px; flex-wrap: wrap; width: 344px; max-height: 33vh; overflow-y: auto; align-content: flex-start; }
+  .ucard { width: 80px; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; padding: 4px; cursor: pointer; transition: .1s; position: relative; } .ucard:hover { border-color: var(--ic); } .ucard.cant { opacity: .42; }
+  .ucard.up { border-color: #5dff8d; box-shadow: 0 0 0 1px #5dff8d, 0 0 8px rgba(93,255,141,.22); }
+  .ucard.sel { border-color: var(--stab); background: #16243c; box-shadow: 0 0 0 1px var(--stab); }
   .ucard .gx { color: #7cffb0; font-weight: 700; }
-  .ucard .uptag { position: absolute; top: 3px; right: 3px; font-size: 7px; letter-spacing: .5px; color: #0c1a0c; background: #5dff8d; border-radius: 3px; padding: 1px 4px; }
-  .ucard .upchg { font-size: 8px; line-height: 1.3; color: #7cffb0; margin-top: 2px; }
-  .ucard canvas { width: 86px; height: 34px; display: block; } .ucard .un { font-size: 9px; font-weight: 700; color: #eaf2ff; } .ucard .uc { font-size: 8px; color: #8fa6c4; }
+  .ucard .uptag { position: absolute; top: 2px; right: 2px; font-size: 7px; letter-spacing: .5px; color: #0c1a0c; background: #5dff8d; border-radius: 3px; padding: 1px 3px; }
+  .ucard .ulock { position: absolute; top: 2px; left: 3px; font-size: 10px; text-shadow: 0 0 4px #000; }
+  .ucard canvas { width: 72px; height: 30px; display: block; } .ucard .un { font-size: 8.5px; font-weight: 700; color: #eaf2ff; line-height: 1.15; margin-top: 1px; } .ucard .uc { font-size: 8px; color: #8fa6c4; margin-top: 1px; }
+  /* SIDE DESCRIPTION / LOADOUT PANEL */
+  .pdetail { width: 224px; flex: 0 0 auto; background: #0b1421; border: 1px solid var(--line); border-radius: 6px; padding: 9px; max-height: 44vh; overflow-y: auto; }
+  .pdetail .pdempty { color: #7f97b4; font-size: 10px; line-height: 1.5; text-align: center; padding: 24px 8px; }
+  .pdetail canvas { width: 100%; height: 50px; background: linear-gradient(180deg,#0a1830,#0e2236); border-radius: 4px; display: block; }
+  .pdetail .pdname { font-size: 12px; font-weight: 700; color: #eaf2ff; letter-spacing: .3px; margin-top: 6px; line-height: 1.2; }
+  .pdetail .pdtags { font-size: 8px; letter-spacing: .5px; color: var(--term); margin-top: 3px; }
+  .pdetail .pdds { font-size: 9.5px; color: #9fb6d4; line-height: 1.45; margin: 6px 0; }
+  .pdetail .pdh { font-size: 8.5px; letter-spacing: 1px; color: var(--term); margin: 8px 0 3px; border-top: 1px solid var(--line); padding-top: 6px; }
+  .pdetail .st { font-size: 9.5px; color: #c4d4e8; display: flex; justify-content: space-between; padding: 1.5px 0; } .pdetail .st b { color: var(--ic); }
+  .pdetail .wpn { font-size: 9px; color: #cfe0f5; padding: 2px 0; line-height: 1.35; } .pdetail .wpn b { color: #ffd86b; }
+  .pdetail .pdlock { font-size: 9.5px; color: #ff9a6a; line-height: 1.4; margin: 7px 0 0; }
+  /* QUANTITY STEPPER + BUILD BUTTON */
+  .qrow { display: flex; align-items: center; gap: 6px; margin: 9px 0 6px; }
+  .qbtn { width: 28px; height: 28px; background: #16243c; border: 1px solid var(--line); border-radius: 4px; color: var(--paper); font-size: 16px; cursor: pointer; font-family: inherit; line-height: 1; padding: 0; } .qbtn:hover { border-color: var(--ic); }
+  .qval { flex: 1; text-align: center; font-size: 14px; font-weight: 700; color: #eaf2ff; }
+  .pbuild { width: 100%; background: var(--ic); border: 1px solid var(--ic); color: #05111f; font-weight: 700; padding: 8px; border-radius: 4px; cursor: pointer; font-family: inherit; letter-spacing: .5px; font-size: 11px; text-align: center; } .pbuild:hover { filter: brightness(1.1); }
+  .pbuild.cant { background: #1a2436; color: #7f97b4; border-color: var(--line); cursor: not-allowed; font-weight: 400; }
+  .pbuild .pbsub { display: block; font-size: 8.5px; font-weight: 400; margin-top: 2px; letter-spacing: 0; opacity: .85; }
 
   .info { position: absolute; right: 8px; top: 70px; width: 210px; max-height: calc(100vh - 90px); overflow-y: auto; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: none; }
   .info.show { display: block; } .info canvas { width: 100%; height: 60px; background: linear-gradient(180deg,#0a1830,#0e2236); border-radius: 4px; }
@@ -277,7 +302,7 @@
     .srbar { display: none; }                                    /* special resources live in 📊 STATS on small screens */
     .objwrap { padding: 3px 8px; } .objwrap .big { font-size: 11px; } .objwrap .sub { font-size: 8.5px; }
     .buildbar { max-width: min(52vw, 300px); } .bbgrid { max-width: none; max-height: 32vh; overflow-y: auto; }
-    .produce { max-width: 96vw; } .pgrid { max-width: 94vw; max-height: 36vh; }
+    .produce { max-width: 96vw; } .pbody { flex-direction: column; } .pgrid { width: auto; max-width: 94vw; max-height: 28vh; } .pdetail { width: auto; align-self: stretch; max-height: 34vh; }
     .info { width: 180px; top: 92px; }
     .ghint { font-size: 10.5px; max-width: 94vw; top: 38%; background: rgba(6,12,24,.82); border: 1px solid rgba(109,255,176,.35); border-radius: 6px; padding: 9px 12px; line-height: 1.5; }   /* the wrapped topbar eats the top of the screen — drop the hint to mid-screen on its own panel */
     .modal { padding: 14px; } input[type=range] { width: 140px; }
@@ -518,7 +543,7 @@
   <div class="buildbar" id="buildbar"><div class="bbhdr"><span>⚙ BUILD</span><span class="bbmin" id="bbmin" onclick="toggleBuildBar()" title="Minimize / expand the build bar">▾</span></div><div class="bbtabs" id="bbtabs"></div><div class="bbgrid" id="bbgrid"></div></div>
   <div id="zoomctl"><button onclick="zoomBtn(1.25)" title="Zoom in">+</button><button onclick="zoomBtn(0.8)" title="Zoom out">−</button><button onclick="zoomReset()" title="Reset zoom" style="font-size:9px">⌂</button></div>
   <div id="achTab" title="Achievements" onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
-  <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="pgrid" id="pgrid"></div></div>
+  <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="ptabs" id="ptabs"></div><div class="pbody"><div class="pgrid" id="pgrid"></div><div class="pdetail" id="pdetail"></div></div></div>
   <div class="info" id="info"></div>
   <button class="back" id="backBtn">❮ ABANDON</button>
 </div>
@@ -5080,37 +5105,120 @@ function produceGlobal(key) {
     markEver('prod', key);
   } catch (e) {}
 }
+// ---- PRODUCTION MENU (v2) — grouped by domain into TABS, with a side loadout/description panel and a quantity stepper.
+// The list is split into categories so only one group's cards show at once (far smaller footprint); clicking a card
+// SELECTS it (fills the side panel) rather than queuing instantly, and a ×N stepper + BUILD button queues the chosen
+// quantity. All gating (research/bReq/factory/production-chain/air-command) is unchanged — produceGlobal() still does
+// every check; produceGlobalN() just calls it N times and stops the moment one is blocked (so no toast spam).
+const PROD_GROUPS = [
+  { id: 'ground',  label: '⚙ Ground',  match: d => d.domain === 'ground' },
+  { id: 'air',     label: '✈ Air',     match: d => d.domain === 'air' && !d.rotor && !d.capital },
+  { id: 'rotor',   label: '🚁 Rotor',   match: d => d.domain === 'air' && d.rotor },
+  { id: 'capital', label: '☁ Sky Caps', match: d => d.domain === 'air' && d.capital },
+  { id: 'naval',   label: '⚓ Naval',   match: d => d.domain === 'naval' },
+  { id: 'space',   label: '🛰 Space',   match: d => d.domain === 'space' },
+];
+function unitGroupId(key) { const d = UNIT_DEFS[key]; for (const g of PROD_GROUPS) if (g.match(d)) return g.id; return 'ground'; }
+const WPN_LABEL = { tracer: 'Autocannon (tracer)', shell: 'Cannon shells', rotary: 'Rotary flak cannon', rocket: 'Guided rockets', rail: 'Railgun slugs', beam: 'Directed-energy beam', bomb: 'Gravity bombs', plasma: 'Plasma lance', plasball: 'Plasma bolts', plasarc: 'Arcing plasma siege slug', microrkt: 'Microrocket cluster (homing submunitions)', rod: 'Kinetic bombardment rods', missile: 'Homing missiles', particle: 'Particle cannon', smart: 'Smart munitions', aegismsl: 'Aegis interceptor missiles', amslug: 'Antimatter slug', tractor: 'Tractor beam', none: 'Ramming / suicide charge' };
+function wpnLabel(w) { return w ? (WPN_LABEL[w] || w) : '—'; }
+function totalQueuedLen() { let n = 0; if (G && G.buildings) for (const b of G.buildings) if (b.queue) n += b.queue.length; return n; }
+// queue N batches of a unit, reusing produceGlobal()'s full gate/cost logic; stop early the instant one is blocked
+function produceGlobalN(key, n) {
+  n = Math.max(1, n | 0); let made = 0;
+  for (let i = 0; i < n; i++) { const before = totalQueuedLen(); produceGlobal(key); if (totalQueuedLen() === before) break; made++; }
+  if (made > 1) toast('QUEUED ×' + made + ' ' + effDef(key).name);
+  buildProdMenu();   // refresh caps / highlights; keeps the same selection + qty
+}
 function buildProdMenu() {
-  const p = document.getElementById('produce'); document.getElementById('pt').textContent = 'PRODUCTION — units roll out of your factories   ·   ✈ ' + airUsed() + '/' + airCap() + ' air command   ·   🚁 ' + rotorUsed() + '/' + rotorCap() + ' rotor command   ·   ⬆ ' + orbCapUsed() + '/' + orbCap() + ' orbital lift   ·   ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' rocket parts';
+  if (!G) return;
+  if (!G.prodTab) G.prodTab = 'ground';
+  if (!G.prodQty || G.prodQty < 1) G.prodQty = 1;
+  document.getElementById('pt').innerHTML = 'PRODUCTION &nbsp;·&nbsp; ✈ ' + airUsed() + '/' + airCap() + ' air &nbsp;·&nbsp; 🚁 ' + rotorUsed() + '/' + rotorCap() + ' rotor &nbsp;·&nbsp; ⬆ ' + orbCapUsed() + '/' + orbCap() + ' lift &nbsp;·&nbsp; ⛓ ' + Math.floor(G.comp.alloy || 0) + ' alloy · ' + Math.floor(G.comp.rocketpart || 0) + ' parts';
+  // -- category tabs --
+  const counts = {}; for (const g of PROD_GROUPS) counts[g.id] = 0; for (const key in UNIT_DEFS) counts[unitGroupId(key)]++;
+  const tabs = document.getElementById('ptabs'); tabs.innerHTML = '';
+  for (const g of PROD_GROUPS) {
+    const t = document.createElement('button'); t.className = 'ptab' + (G.prodTab === g.id ? ' on' : ''); t.innerHTML = g.label + '<span class="pcount">' + counts[g.id] + '</span>';
+    t.onclick = () => { G.prodTab = g.id; buildProdMenu(); };
+    tabs.appendChild(t);
+  }
+  // -- grid of the active group only --
   const grid = document.getElementById('pgrid'); grid.innerHTML = '';
-  const bm = bmod();
+  const bm = bmod(); let firstKey = null, selInGroup = false;
   for (const key in UNIT_DEFS) {
-    const base = UNIT_DEFS[key], d = effDef(key); const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsForUnit(d).length;
-    const pUnlock = (d.req && !G.unlocked[d.req]) ? prodUnlockBuildingFor(key) : null;   // a Production-Line building you could build instead of researching
-    // effective production numbers — fold in the active building/research effects so the card shows what you'll actually get
+    if (unitGroupId(key) !== G.prodTab) continue;
+    if (firstKey === null) firstKey = key;
+    if (key === G.prodSel) selInGroup = true;
+    const base = UNIT_DEFS[key], d = effDef(key);
+    const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsForUnit(d).length;
     let grp = d.grp || 1; if (d.drone && bm.droneBatch) grp += bm.droneBatch;
-    let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
-    const baseGrp = base.grp || 1, baseMpEach = Math.round(base.mp * 1.7);
-    const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null, chainBits = [];   // production-chain requirements (only meaningful once the unit is otherwise buildable)
-    const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp * (d.rotorW || 1) > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted — SKY WARSHIPS (capital) draw neither
-    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone && !d.capital) chainBits.push(d.rotor ? '🚁 ' + (grp * (d.rotorW || 1)) + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
-    const upgraded = d !== base, batchUp = grp !== baseGrp, mpUp = mpEach !== baseMpEach, unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || mpUp || unlockedByBld) && !locked;
-    const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn || airGate ? ' cant' : '') + (changed && !airGate ? ' up' : ''); card.dataset.key = key;
+    const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null;
+    const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp * (d.rotorW || 1) > rotorCap() : airUsed() + grp > airCap());
+    const upgraded = d !== base, batchUp = grp !== (base.grp || 1), unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || unlockedByBld) && !locked;
+    const cant = locked || noFac || !!reqUn || airGate;
+    const card = document.createElement('div'); card.className = 'ucard' + (cant ? ' cant' : '') + (changed && !airGate ? ' up' : '') + (key === G.prodSel ? ' sel' : ''); card.dataset.key = key;
     const nm = upgraded ? `<span class="gx">${d.name}</span>` : d.name;
     const batchTxt = grp > 1 ? ` ×<span class="${batchUp ? 'gx' : ''}">${grp}</span>` : '';
-    const icTot = unitCost(d) * grp, mpTot = mpEach * grp;
-    const mpTxt = `<span class="${mpUp ? 'gx' : ''}">${mpTot} MP</span>`;
-    let chg = '';
-    if (changed) { const parts = []; if (upgraded) { parts.push('▲ ' + d.name); if (d.weapon !== base.weapon) parts.push((d.weapon || '').toUpperCase() + ' arms'); } if (unlockedByBld) { const ub = prodUnl ? prodUnlockBuildingFor(key) : (d.bReq ? BUILD_DEFS[d.bReq] : null); parts.push('via ' + (ub ? ub.name : 'production line')); } if (batchUp) parts.push('batch ' + baseGrp + '→' + grp); if (mpUp) parts.push(mpEach === 0 ? '0 MP' : 'MP ' + baseMpEach + '→' + mpEach + ' ea'); chg = `<div class="upchg">${parts.join(' · ')}</div>`; }
-    else if (locked) { const hb = reqMissing ? pUnlock : (bReqLock ? BUILD_DEFS[bReqLock] : null); if (hb) chg = `<div class="upchg" style="color:#7fd4ff">🏭 build a ${hb.name}</div>`; }
-    if (airGate) chg = d.rotor ? `<div class="upchg" style="color:#ffb86b">🚁 rotor command full — add a Heli-Depot</div>` : `<div class="upchg" style="color:#ffb86b">✈ air command full — add an Airbase / Airwing / Aero Works</div>`;
-    const tag = changed ? `<div class="uptag">${unlockedByBld && !upgraded ? 'NEW' : '▲ UPG'}</div>` : '';
-    const chainHtml = chainBits.length ? `<div class="upchg" style="color:${reqUn ? '#ff8a6a' : '#9cc4ff'}">${chainBits.join(' · ')}</div>` : '';
-    const upkeepTxt = d.upkeep ? ` · <span style="color:#ff8a6a" title="ongoing IC/s to keep it running">⛽ ${d.upkeep}/s</span>` : '';
-    card.innerHTML = `<canvas width="172" height="68"></canvas>${tag}<div class="un">${nm}${batchTxt}</div><div class="uc">${(d.domain || '').toUpperCase()} · ${icTot} IC · ${mpTxt}${upkeepTxt}</div>${chg}${chainHtml}`;
-    grid.appendChild(card); const cc = card.querySelector('canvas').getContext('2d'); cc.translate(86, 46); cc.scale(2, 2); if (d.domain === 'air' || d.domain === 'naval') cc.scale(-1, 1); ART[d.art](cc, 13, -.6);
-    card.onclick = () => { const br = unitBReq(d); if (br) return toast('NEEDS A ' + (BUILD_DEFS[br] ? BUILD_DEFS[br].name.toUpperCase() : br)); if (d.req && !G.unlocked[d.req] && !prodUnl) { const pb = prodUnlockBuildingFor(key); return toast('Requires ' + (RESEARCH[d.req] ? RESEARCH[d.req].name : d.req) + (pb ? ' — or build a ' + pb.name : '')); } produceGlobal(key); };
+    const icTot = unitCost(d) * grp;
+    const tag = changed ? `<div class="uptag">${unlockedByBld && !upgraded ? 'NEW' : '▲'}</div>` : '';
+    const lockIco = locked ? '🔒' : (noFac ? '🏭' : (cant ? '⚠' : ''));
+    card.innerHTML = `<canvas width="144" height="60"></canvas>${tag}${lockIco ? `<div class="ulock">${lockIco}</div>` : ''}<div class="un">${nm}${batchTxt}</div><div class="uc">${icTot} IC</div>`;
+    grid.appendChild(card); const cc = card.querySelector('canvas').getContext('2d'); cc.translate(72, 42); cc.scale(1.7, 1.7); if (d.domain === 'air' || d.domain === 'naval') cc.scale(-1, 1); ART[d.art](cc, 13, -.6);
+    card.onclick = () => { G.prodSel = key; for (const c of grid.children) c.classList.toggle('sel', c.dataset.key === key); renderProdDetail(); };
   }
+  if (!selInGroup) G.prodSel = firstKey;   // default to the first unit of the group so the panel is never blank
+  renderProdDetail();
+}
+// side panel: full loadout — art, description, armament (incl. era-upgraded weapon), stats, cost, and the ×N build control
+function renderProdDetail() {
+  const pd = document.getElementById('pdetail'); if (!pd) return;
+  const key = G.prodSel;
+  if (!key || !UNIT_DEFS[key]) { pd.innerHTML = '<div class="pdempty">Select a unit to see its loadout, cost and stats.</div>'; return; }
+  const base = UNIT_DEFS[key], d = effDef(key), bm = bmod(), upgraded = d !== base;
+  const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsForUnit(d).length;
+  let grp = d.grp || 1; if (d.drone && bm.droneBatch) grp += bm.droneBatch;
+  let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
+  const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null;
+  const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp * (d.rotorW || 1) > rotorCap() : airUsed() + grp > airCap());
+  const icEach = unitCost(d) * grp, mpTot = mpEach * grp, qty = G.prodQty;
+  // ---- armament (weapon varieties, incl. secondary + research re-arm) ----
+  let wpnHtml = `<div class="wpn"><b>Primary:</b> ${wpnLabel(d.weapon)} — ${d.dmg} dmg · ${d.range} rng · ${(1 / d.rate).toFixed(1)}/s</div>`;
+  if (d.weapon2) wpnHtml += `<div class="wpn"><b>Secondary:</b> ${wpnLabel(d.weapon2)} — ${d.dmg2} dmg · ${d.range2} rng${d.wpn2Air ? ' · anti-air' : ''}</div>`;
+  if (upgraded && d.weapon !== base.weapon) wpnHtml += `<div class="wpn" style="color:#7cffb0">▲ Re-armed from ${wpnLabel(base.weapon)} by research</div>`;
+  if (d.pd) wpnHtml += `<div class="wpn">＋ Point-defense — swats missiles &amp; falling ordnance</div>`;
+  if (d.carrier) wpnHtml += `<div class="wpn">＋ Launches a free wing of aircraft${d.heliCarrier ? ' &amp; helicopters' : ''}</div>`;
+  if (d.shield) wpnHtml += `<div class="wpn">＋ Energy shield (${d.shield})</div>`;
+  // ---- cost breakdown ----
+  let costLines = `<div class="st"><span>IC${grp > 1 ? ' (batch of ' + grp + ')' : ''}</span><b>${icEach}</b></div>`;
+  if (mpTot) costLines += `<div class="st"><span>Manpower</span><b>${mpTot}</b></div>`;
+  if (d.comp) for (const k in d.comp) costLines += `<div class="st"><span>${COMP[k].name}</span><b>${d.comp[k] * grp}</b></div>`;
+  if (d.lift) costLines += `<div class="st"><span>Orbital lift</span><b>${d.lift * grp}</b></div>`;
+  if (d.domain === 'air' && !d.drone && !d.capital) costLines += `<div class="st"><span>${d.rotor ? 'Rotor command' : 'Hangar slots'}</span><b>${d.rotor ? grp * (d.rotorW || 1) : grp}</b></div>`;
+  if (d.srReq) costLines += `<div class="st"><span>Needs deposit</span><b style="color:var(--res)">${SR[d.srReq].name}</b></div>`;
+  if (key === 'dreadnought') costLines += `<div class="st"><span>Antimatter</span><b>40</b></div>`;
+  if (d.upkeep) costLines += `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>`;
+  // ---- lock / block reason ----
+  let lockHtml = '';
+  if (reqMissing) { const pb = prodUnlockBuildingFor(key); lockHtml = `🔒 Requires ${RESEARCH[d.req] ? RESEARCH[d.req].name : d.req}${pb ? ' — or build a ' + pb.name : ''}`; }
+  else if (bReqLock) { lockHtml = `🔒 Needs a ${BUILD_DEFS[bReqLock] ? BUILD_DEFS[bReqLock].name : bReqLock}`; }
+  else if (noFac) { lockHtml = `🏭 Build a ${d.facKey && BUILD_DEFS[d.facKey] ? BUILD_DEFS[d.facKey].name : factoryNameFor(d.domain)} first`; }
+  else if (reqUn) { lockHtml = `⚠ ${reqUn}`; }
+  else if (airGate) { lockHtml = d.rotor ? '⚠ Rotor command full — add a Heli-Depot' : '⚠ Air command full — add an Airbase / Airwing / Aero Works'; }
+  const canBuild = !locked && !noFac && !reqUn && !airGate;
+  const domTag = (d.domain || '').toUpperCase() + (d.rotor ? ' · ROTOR' : '') + (d.capital ? ' · CAPITAL' : '') + (d.drone ? ' · DRONE' : '');
+  const totIC = icEach * qty, totUnits = grp * qty, totMP = mpTot * qty;
+  pd.innerHTML =
+    `<canvas width="220" height="50"></canvas>` +
+    `<div class="pdname">${upgraded ? `<span style="color:#7cffb0">${d.name}</span>` : d.name}${grp > 1 ? ` · batch ×${grp}` : ''}</div>` +
+    `<div class="pdtags">${domTag}</div>` +
+    `<div class="pdds">${d.ds || ''}</div>` +
+    `<div class="pdh">⚔ ARMAMENT</div>${wpnHtml}` +
+    `<div class="pdh">📊 STATS</div><div class="st"><span>HP / Armor</span><b>${d.hp} / ${d.armor || 0}</b></div><div class="st"><span>Speed</span><b>${d.speed}</b></div>` +
+    `<div class="pdh">💲 COST</div>${costLines}` +
+    (lockHtml ? `<div class="pdlock">${lockHtml}</div>` : '') +
+    `<div class="qrow"><button class="qbtn" data-q="-1">−</button><div class="qval">×${qty}</div><button class="qbtn" data-q="1">+</button></div>` +
+    `<button class="pbuild${canBuild ? '' : ' cant'}" data-build="${key}">${canBuild ? `BUILD ×${qty}` : 'CANNOT BUILD'}<span class="pbsub">${canBuild ? `${totUnits} unit${totUnits > 1 ? 's' : ''} · ${totIC} IC${totMP ? ` · ${totMP} MP` : ''}` : 'see requirement above'}</span></button>`;
+  const ic = pd.querySelector('canvas').getContext('2d'); ic.translate(110, 40); ic.scale(2.4, 2.4); if (d.domain === 'air' || d.domain === 'naval') ic.scale(-1, 1); ART[d.art](ic, 13, -.6);
 }
 // ---- UNIT BUFF PANEL — read-only readout of every LIVE effect currently touching a selected unit, with its
 // source, so a player can see (and learn) that nearby-building auras STACK. Pure display: recomputed fresh
@@ -5654,6 +5762,13 @@ function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targetin
 // DELEGATED clicks for the selection panel — one listener on the persistent #info element, so the
 // buttons keep working even though the panel's innerHTML is rebuilt as the selection's stats change
 document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'toggleManual') toggleManual(); else if (act === 'releaseManual') releaseAllManual(); else if (act === 'armSilo') armSilo(el.dataset.arg); else if (act === 'demolish') demolishSelected(); });
+// DELEGATED clicks for the PRODUCTION side panel — quantity stepper + BUILD. One listener on the persistent #pdetail
+// element so the buttons survive its innerHTML being rebuilt on every selection / cap change.
+document.getElementById('pdetail').addEventListener('click', e => {
+  if (!G) return;
+  const q = e.target.closest('[data-q]'); if (q) { G.prodQty = Math.max(1, Math.min(50, (G.prodQty || 1) + (+q.dataset.q))); renderProdDetail(); return; }
+  const b = e.target.closest('[data-build]'); if (b) { if (b.classList.contains('cant')) { produceGlobal(b.dataset.build); return; } produceGlobalN(b.dataset.build, G.prodQty || 1); }
+});
 cv.addEventListener('mousedown', e => gameTap(e.clientX, e.clientY, e.button));
 addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.clientX - MM.x) / MM.w * WORLD_W - W / 2); });
 addEventListener('mouseup', () => mmDrag = false);

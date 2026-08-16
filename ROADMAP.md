@@ -94,7 +94,7 @@ Make stability VISCERAL on the ground. A unit-level **morale/organization** stat
 - `title` + `body` — flavor/voice (the designer's).
 - `choices` (optional, 1–3): `{ label, effect }` — effect applies a consequence: ±stability, morale surge/shock, society shift (dystopia/verdant/machine), unlock/lose, doctrine change. Some events are pure DREAD BEATS (no choice, just land + fade).
 - `once` (one-shot) vs repeatable.
-The best events carry a real CHOICE that shifts what your society BECOMES at a genuine cost (that's the "what does total mobilization turn you into" theme, made interactive). Engine = trigger scan + popup UI (respecting the "major beats only" rule) + effect application. Independent of content — buildable in parallel while the designer writes. **STATUS: awaiting the designer's first batch of written events + a go on the engine.**
+The best events carry a real CHOICE that shifts what your society BECOMES at a genuine cost (that's the "what does total mobilization turn you into" theme, made interactive). Engine = trigger scan + popup UI (respecting the "major beats only" rule) + effect application. Independent of content — buildable in parallel while the designer writes. **STATUS: ✅ ENGINE + EVENT #1 SHIPPED (v3.35.0, on `main`).** Adding an event = push one `{id,title,body,once,trigger,choices}` object onto `EVENTS` (doc comment in-code shows how). `evtReqMet` gates choices on `{research}`/`{society}`/`{building}`/predicate. Next: the designer writes more choices/events; Fable wires the effects.
 
 ### 📜 EVENT #1 — "THE IMMINENT ARRIVAL OF THE AUTOFLEET" (designer-written; seeds the engine)
 TRIGGER: late PREP (autofleet inbound, bunker-buster weapons confirmed). BODY (designer's, verbatim in-game): the autofleet is en route with bunker-busters designed to hit civilian housing deep underground; people are fleeing housing blocks into the wilderness, risking abduction & panic (housing blocks keep people fed + in real-time contact with family — losing them causes panic). CHOICES (only unlocked ones show — the tech-gate is the whole point):
@@ -107,8 +107,16 @@ TRIGGER: late PREP (autofleet inbound, bunker-buster weapons confirmed). BODY (d
 - **[Robotics]** guard drones escort + grid-link the dispersed: like Transhumanism (IC cost, low stability loss).
 - (designer will write more tree paths — see the tree→hook map Fable provided.)
 
-### 🎓 TREE → RESPONSE HOOKS for Event #1 (Fable's mechanical angles; designer writes the flavor)
-Automation → drone logistics keep the dispersed fed & tracked (IC upkeep, low stab loss) · Nanotech → nanite self-building hidden shelters + comms-dust (IC, keep stab) · Biotech → survival gene-therapy/kits so they endure the wild & panic less (MP/IC, retain morale) · Cloning → grim: "the population is replaceable" (cheap, dark humanity/cap cost) OR clone shepherds guard them · Superhumans → demigod guardians watch over them (influence upkeep, big stab retention) · Directed Energy → laser-comms relays keep them grid-linked far out (IC, keep stab) · Point Defense → mobile PD umbrellas over dispersal zones (IC, real protection + stab) · Orbital/Space Age → orbital overwatch early-warns them of strikes (keep stab) · Telekinesis → fold the earth into instant shelters (keep stab) · Colossus/Titans → a giant walking guardian among the people = raw morale (stab boost, unit tied up) · Plasma/Antimatter/Particle → public show of overwhelming force to reassure (stab boost, may provoke escalation).
+### 🎓 TREE → RESPONSE HOOKS for Event #1 (CORRECTED framing — designer set Fable straight)
+**THE AXIS (get this right):** this event is *the news breaking that the autofleet is coming and the population starting to panic.* Every choice answers ONE question — **how do you keep a frightened nation from falling apart?** The tech-gate is not flavor: **having a tech is what makes a particular promise BELIEVABLE.** Anyone can say "you're safe"; only a nation that built the shield dome can say it and be believed. Choices that are military actions (contest orbit, strike first) or empty threats do NOT belong here — an empty threat COSTS credibility (designer's point); those are a *different* event (a "wait vs pre-empt" military beat = Event #2 material). Coherent hooks, each a different honest-or-dishonest way to make a scared population believe it'll live:
+- **Robotics** → "the machines fight, not your children" — credible only because you have the android army to point at (stab holds, doctrine → machine). *(designer already wrote this one)*
+- **Deflector Shields** → "stay under the dome" — true because you built it (real durable calm). *(written)*
+- **Dystopia** → arrest the panic-mongers, martial law — order through fear not credibility (stab up now, resentment/cap cost later). *(written)*
+- **Nanotech** → "every city is a bunker by morning" — the tech makes an impossible shelter-promise real overnight.
+- **Biotech** → steady the population (med/chem morale floor; faintly unsettling it's chemical).
+- **Applied Psionics** → broadcast calm — the literal anti-panic tool (fits "every tree secretly manages composure" best). *(written)*
+- **Colossus/Titans** → "look at what we built — *they* should be afraid" — confidence through visible overwhelming force (the population can SEE the giant).
+- Fold plasma/antimatter/particle into ONE "defiance" option at most, or drop — belligerence reads as fear, not calm.
 
 ## 🗞 THE DECISION & SOCIETY LAYER (the "decision tab" concept — needs its own design pass with the designer)
 

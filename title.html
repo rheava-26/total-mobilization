@@ -211,6 +211,10 @@
   .cmdpanel .sopt:hover { background: #221620; border-color: var(--inf); } .cmdpanel .sopt.cant { opacity: .42; cursor: not-allowed; }
   .cmdpanel .sopt b { color: #eaf2ff; } .cmdpanel .sopt .sx { color: var(--stab); float: right; }
   .cmdpanel .spc { text-align: center; margin-top: 8px; font-size: 9px; color: #8fa6c4; letter-spacing: 1px; }
+  /* × CLOSE button — shared by BOTH .cmdpanel panels (☢ STRIKE + ⚑ ALLIES) so either can be dismissed; sits in the top-right corner, clear of the centered .sph header */
+  .cmdpanel .cmdx { position: absolute; top: 5px; right: 7px; width: 20px; height: 20px; line-height: 18px; text-align: center; border: 1px solid var(--line); border-radius: 4px; background: #16101a; color: #cdd8ea; font-size: 14px; cursor: pointer; padding: 0; font-family: inherit; z-index: 2; }
+  .cmdpanel .cmdx:hover { background: #2a1620; border-color: var(--inf); color: #fff; }
+  #alliesPanel .cmdx { background: #10161f; } #alliesPanel .cmdx:hover { background: #16202c; border-color: #4a9fe0; }
   /* ⚑ HIRE ALLIES panel — reuses the strike-panel layout (.cmdpanel) but wears an "allied blue" accent so it never reads as the ☢ nuke panel; the .sx cost badge shows INFLUENCE, not a stability hit */
   #alliesPanel { border-color: #4a9fe0; background: rgba(8,16,26,.96); }
   #alliesPanel .sph { color: #7fc4ff; } #alliesPanel .sopt { border-left-color: #4a9fe0; background: #10161f; }
@@ -508,6 +512,7 @@
     <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
     <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
+    <div class="hbtn has-tip" id="btnTip" data-tip="Ask for a tip — a random piece of strategy advice. New here? Tap it a few times.">💡 TIP</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
     <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣</div>
     <div class="hbtn has-tip" id="btnPause" data-tip="Pause / resume (or press SPACE)." onclick="togglePause()">❚❚</div>
@@ -3744,6 +3749,8 @@ const STRAT = {
 };
 function stratCost(w) { return Math.round(w.ic * (G.owned.uranium ? .7 : 1)); }    // Uranium cheapens the IC of strategic strikes
 function stratStab(w) { return Math.max(2, Math.round(w.stab * (G.owned.uranium ? .6 : 1))); }   // ...and softens the stability hit — special resources matter
+// ☢ DESPERATION LAUNCH (tunable) — strikes used to be HARD-BLOCKED when stab < cost + 3. But in an endless slog your stability is pinned near 0 / in Capitulation Crisis — which is EXACTLY when you most need to call a nuke down — so the strike became unavailable precisely when it mattered. Now strikes are ALWAYS launchable (given IC + a ready silo); the stability cost simply drains what it can down to this floor instead of blocking. It still HURTS — spending your last few points can tip you straight into a Capitulation Crisis — but it is never impossible. Raise STRIKE_STAB_FLOOR to leave a sliver (e.g. 1); set it to 0 to allow a strike to bottom you out into crisis on purpose.
+const STRIKE_STAB_FLOOR = 0;
 function stratAvail(w) { if (w.req) for (const r of w.req) if (!G.unlocked[r]) return 'needs ' + RESEARCH[r].name; if (w.srReq && !G.owned[w.srReq]) return 'needs ' + SR[w.srReq].name; if (w.bReq && !G.buildings.some(b => b.key === w.bReq && b.done !== false)) return 'needs ' + (BUILD_DEFS[w.bReq] ? BUILD_DEFS[w.bReq].name : w.bReq); if (w.unitReq && !G.units.some(u => u.key === w.unitReq)) return 'needs a ' + (UNIT_DEFS[w.unitReq] ? UNIT_DEFS[w.unitReq].name : w.unitReq) + ' in orbit'; if (w.amCost && (G.antimatter || 0) < w.amCost) return 'needs ' + w.amCost + ' antimatter'; return null; }
 // where a strike will hit: snap to an airborne enemy near the cursor, else burst at the cursor's altitude if it's well off the ground, else the ground
 function strikeAimPoint() {
@@ -3761,8 +3768,8 @@ function launchStrike(silo, type, tx, ty, air) {
   const av = stratAvail(w); if (av) return toast(av.toUpperCase());
   const cost = stratCost(w), sc = stratStab(w);
   if (G.ic < cost) return toast('NOT ENOUGH IC FOR ' + w.name.toUpperCase());
-  if (G.stab < sc + 3) return toast('TOO UNSTABLE — ' + w.name.toUpperCase() + ' COSTS ' + sc + '% STABILITY');
-  G.ic -= cost; G.stab = Math.max(1, G.stab - sc); silo.silocd = w.cd;
+  const desperate = G.stab < sc + 3;   // launching while too unstable to "afford" the full hit — allowed (see STRIKE_STAB_FLOOR), but it bottoms out your stability
+  G.ic -= cost; G.stab = Math.max(STRIKE_STAB_FLOOR, G.stab - sc); silo.silocd = w.cd;
   if (w.amCost) G.antimatter = Math.max(0, (G.antimatter || 0) - w.amCost);
   // ACHIEVEMENT TRACKING — strike-type counters (nuke spam, peacetime nuke, ballistic spam), reset each new game via G.ach
   if (G.ach) {
@@ -3785,7 +3792,7 @@ function launchStrike(silo, type, tx, ty, air) {
   else if (type === 'mirv') { const vy = -440, apexT = 440 / 240, vx = (tx - sx0) / apexT; G.proj.push({ k: 'mirv', strat: true, x: sx0, y: sy0, vx, vy, tx, ty, air, life: 9, friendly: true, dmg: 0, tr: [] }); }   // strong fixed lob → reliably reaches a high apex roughly above the target, then deploys there
   else if (type === 'micromissile') { const nC = 3; for (let i = 0; i < nC; i++) { const aimX = Math.max(60, Math.min(WORLD_W - 60, tx + (i - (nC - 1) / 2) * 90)), vy = -440, apexT = 440 / 240, vx = (aimX - sx0) / apexT; G.proj.push({ k: 'micromis', strat: true, x: sx0, y: sy0, vx, vy, tx: aimX, ty, air, split: 6, dmg: 16, life: 9, friendly: true, tr: [] }); } }   // a few carriers fan across the strip, each bursting into a swarm of homing micro-missiles
   else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, t: 0, tx, ty, air, life: 9, friendly: true, tr: [] }); }
-  SFX.missile(); toast('☢ ' + w.name.toUpperCase() + (air ? ' — AIRBURST' : '') + ' LAUNCHED'); shake(3);
+  SFX.missile(); toast('☢ ' + w.name.toUpperCase() + (air ? ' — AIRBURST' : '') + (desperate ? ' — DESPERATION LAUNCH' : '') + ' LAUNCHED'); shake(3);
   if (G.strikeMode) closeStrike();
 }
 /* ===== dedicated STRIKE command — a button that marks your launch sites & calls a strike ===== */
@@ -3802,11 +3809,12 @@ function closeStrike() { if (G) G.strikeMode = false; const sp = document.getEle
 function buildStrikePanel() {
   const sp = document.getElementById('strikePanel'); if (!sp || !G) return;
   const silos = G.buildings.filter(b => b.d && b.d.strat && b.done !== false), ready = silos.filter(b => b.silocd <= 0).length;
-  let html = `<div class="sph">☢ STRATEGIC STRIKE COMMAND · ${ready}/${silos.length} silo${silos.length !== 1 ? 's' : ''} ready · STAB ${Math.round(G.stab)}%</div>`;
-  for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready > 0 && !av && G.ic >= cost && effStab() > sc + 3;
-    html += `<button class="sopt${can ? '' : ' cant'}" data-st="${t}" title="${w.ds}"><b>${w.name}</b><span class="sx">−${sc}% STAB</span><br><span style="font-size:9px;color:#9fb6d4">${cost} IC · ${w.cd}s cooldown${av ? ' · 🔒 ' + av : ''}</span></button>`; }
+  let html = `<button class="cmdx" title="Close (Esc)">×</button><div class="sph">☢ STRATEGIC STRIKE COMMAND · ${ready}/${silos.length} silo${silos.length !== 1 ? 's' : ''} ready · STAB ${Math.round(G.stab)}%</div>`;
+  for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), lowStab = effStab() <= sc + 3, can = ready > 0 && !av && G.ic >= cost;   // stability is NO LONGER a gate — a strike stays selectable at low stab (desperation launch); the ⚠ just warns it will bottom you out
+    html += `<button class="sopt${can ? '' : ' cant'}" data-st="${t}" title="${w.ds}"><b>${w.name}</b><span class="sx">${lowStab ? '⚠ ' : ''}−${sc}% STAB</span><br><span style="font-size:9px;color:#9fb6d4">${cost} IC · ${w.cd}s cooldown${av ? ' · 🔒 ' + av : ''}</span></button>`; }
   html += `<div class="spc">pick a strike → click the battlefield · ▲ marks your launch sites · right-click cancels</div>`;
   sp.innerHTML = html; sp.classList.add('show');
+  const xb = sp.querySelector('.cmdx'); if (xb) xb.onclick = closeStrike;   // × closes the panel (the panel had no dismiss before)
   sp.querySelectorAll('.sopt').forEach(b => b.onclick = () => armStrike(b.dataset.st));
   const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('on');
 }
@@ -3817,7 +3825,8 @@ function armStrike(type) {
   for (const b of G.buildings) if (b.d && b.d.strat && b.done !== false && b.silocd <= 0) { const dd = Math.abs(b.x - cx); if (dd < bd) { bd = dd; silo = b; } }
   if (!silo) return toast('NO SILO READY — they are reloading');
   if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC');
-  if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — NEED ' + (stratStab(w) + 3) + '% STABILITY');   // BUGFIX: gate on RAW stability like the panel display, armSilo, launchStrike and the loss condition all do — armStrike was the lone check using effStab(), so it silently blocked strikes the panel said you could afford (panel showed 15% but this blocked on the effective 4%)
+  // NO STABILITY GATE HERE ANYMORE — a desperation launch is always allowed to aim; launchStrike drains stability down to STRIKE_STAB_FLOOR when you fire (was: hard-block when stab < cost + 3, which locked you out during the exact slog when you need a strike most).
+  if (G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — this will be a DESPERATION LAUNCH');
   G.targeting = { silo, type };
   const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
   toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click target · launches from the ▲ marked silo'));
@@ -3841,6 +3850,22 @@ const ALLIES = {
   airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 150, ic: 200, mp: 60, cd: 85,
             units: ['fighter', 'fighter', 'strikejet', 'strikejet'],
             ds: 'Allied EXPEDITIONARY AIR WING — two multirole "Falcon" fighters and two "Warthog" strike jets, scrambled from an allied base. Instant air power (they rearm at your airbases once their ordnance is spent).' },
+  // ── extra packages — same shared-cooldown + INFLUENCE(+IC+MP) model, spread across cheap fast-fixes → heavyweight buys. All use EXISTING friendly unit keys (see UNIT_DEFS) and spawn as YOUR OWN units. Tune freely; add packages, don't cap. ──
+  interc: { name: 'Interceptor Screen', short: 'Interceptor Screen', inf: 80, ic: 120, mp: 35, cd: 55,
+            units: ['fighter', 'fighter', 'fighter'],
+            ds: 'Allied INTERCEPTOR SCREEN — a flight of three "Falcon" fighters put up as a combat air patrol. The cheapest, fastest call — pure air-to-air to clear a sky that\'s getting away from you.' },
+  arty:   { name: 'Artillery Battery', short: 'Artillery Battery', inf: 95, ic: 150, mp: 55, cd: 60,
+            units: ['mlrs', 'mlrs', 'arty', 'arty'],
+            ds: 'Allied ARTILLERY BATTERY — two "Tempest" MLRS and two "Thunder" SPGs, trucked in to your capital. Long-range ground suppression to break up a landing before it reaches your lines.' },
+  helo:   { name: 'Helicopter Wing', short: 'Helicopter Wing', inf: 125, ic: 170, mp: 50, cd: 75,
+            units: ['heli', 'heli', 'heligunship'],
+            ds: 'Allied HELICOPTER WING — two "Kite" attack helis and a heavy "Mastodon" gunship, flown in low. Fast-responding close air support that loiters over the flank that\'s caving.' },
+  bombers:{ name: 'Bomber Wing', short: 'Bomber Wing', inf: 175, ic: 250, mp: 65, cd: 95,
+            units: ['bomber', 'bomber', 'fighter', 'fighter'],
+            ds: 'Allied BOMBER WING — two "Lancer" heavy bombers with a two-"Falcon" fighter escort. Heavyweight air ordnance to flatten a massed skyfall or a grounded harvester.' },
+  column: { name: 'Heavy Armor Column', short: 'Armor Column', inf: 165, ic: 260, mp: 110, cd: 95,
+            units: ['heavytank', 'heavytank', 'tank', 'tank', 'tank', 'aa'],
+            ds: 'Allied HEAVY ARMOR COLUMN — two "Goliath" heavies, three "Aegis" MBTs and a flak track: a full armored fist landed by your capital. The big ground buy when a whole flank has collapsed.' },
 };
 function allyAvail(a) {   // null = hireable; otherwise a short reason string (shown on the button / as a toast)
   if ((G.allyCd || 0) > 0) return 'regrouping — ' + Math.ceil(G.allyCd) + 's';
@@ -3884,11 +3909,12 @@ function closeAllies() { const ap = document.getElementById('alliesPanel'); if (
 function buildAlliesPanel() {
   const ap = document.getElementById('alliesPanel'); if (!ap || !G) return;
   const cd = G.allyCd || 0;
-  let html = `<div class="sph">⚑ HIRE ALLIES · ${Math.floor(G.inf)} INFLUENCE · ${cd > 0 ? 'REGROUPING ' + Math.ceil(cd) + 's' : 'READY'}</div>`;
+  let html = `<button class="cmdx" title="Close (Esc)">×</button><div class="sph">⚑ HIRE ALLIES · ${Math.floor(G.inf)} INFLUENCE · ${cd > 0 ? 'REGROUPING ' + Math.ceil(cd) + 's' : 'READY'}</div>`;
   for (const t in ALLIES) { const a = ALLIES[t], av = allyAvail(a), can = !av;
     html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic} IC · ${a.mp} MP · ${a.cd}s cooldown${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
   html += `<div class="spc">a favour from the world's other powers — allied forces deploy by your capital · an influence sink, not a win button</div>`;
   ap.innerHTML = html; ap.classList.add('show');
+  const xb = ap.querySelector('.cmdx'); if (xb) xb.onclick = closeAllies;   // × closes the panel
   ap.querySelectorAll('.sopt').forEach(b => b.onclick = () => hireAllies(b.dataset.al));
   const bA = document.getElementById('btnAllies'); if (bA) bA.classList.add('on');
 }
@@ -4089,7 +4115,7 @@ function ww3Victory() {
   closeModal('eventModal');
   end(true, 'THE AUTOFLEET DIVERTS (there is nothing left to invade)');   // technically you stopped them
 }
-function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — COSTS ' + stratStab(w) + '% STABILITY'); G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
+function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — DESPERATION LAUNCH');   /* no hard stability block — a strike is always launchable; launchStrike drains stability to STRIKE_STAB_FLOOR */ G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
 
 function updUnits(dt) {
   const railHubs = G.buildings.filter(b => b.d.rail && b.done !== false);
@@ -5214,7 +5240,7 @@ function refreshSel() {
     if (d.makes) { const mk = []; for (const k in d.makes) mk.push('+' + d.makes[k] + '/s ' + (COMP[k] ? COMP[k].name : k)); html += `<div class="st"><span>Forges</span><b style="color:var(--res)">${mk.join(' · ')}</b></div>`; }
     if (d.autospawn) { const deep = !!bmod().autoFast, akey = deep ? 'android' : d.autospawn, every = d.spawnEvery * (deep ? .3 : 1), eta2 = Math.ceil(Math.max(0, every - (s.aut || 0)) / (0.45 * G.speed)); html += `<div class="st"><span>Auto-builds</span><b>${UNIT_DEFS[akey] ? UNIT_DEFS[akey].name : akey}</b></div><div class="st"><span>Next in</span><b>${eta2}s</b></div>`; }
     if (d.garrison) { const g = d.garrison, gk = g.keys || (g.unit ? [g.unit] : (g.key ? [g.key] : [])), gn = gk.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' / '); if (gn) html += `<div class="st"><span>Garrison</span><b>${g.n || 1} × ${gn}</b></div>`; }
-    if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost && G.stab > sc + 3; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC · −${sc}% stab${av ? ' 🔒 ' + av : ''}</button>`; } }
+    if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC · ${G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab${av ? ' 🔒 ' + av : ''}</button>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div><div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s); }
   if (html === info._html) return;   // only rebuild the panel when its content actually changed — avoids destroying the buttons ~60×/s (which ate every click) and re-drawing the preview each frame
@@ -5335,6 +5361,26 @@ function launchCustomScenario() {
   pendingDiff = 'custom'; closeModal('scenEditModal'); startDeploy();
 }
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); toastT = 1.6; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1700); }
+/* ===== 💡 GAMEPLAY TIPS — the game has almost no loading screens to teach on, so the 💡 TIP button hands out one random piece of advice on demand. Add freely; keep the helpful, plainspoken voice. ===== */
+const TIPS = [
+  'Build a couple of Research Labs before you even think about researching — it makes every tech cheaper and faster.',
+  "You don't need to research everything. Pick a specialization and go tall — a focused doctrine beats a shallow one.",
+  'Defensive bonuses STACK. Multiple Radars and Ammunition Depots each scale up your guns — pile them near your line.',
+  'Strikes cost STABILITY, not just IC. Uranium Enrichment makes every strike cheaper in both — grab a uranium node early.',
+  'Mechanical units (drones, walkers, titans) do NOT count against your army cap. When manpower is tight, go robotic.',
+  'Influence income ramps up to 3× the longer you DON\'T spend it. Bank it, then buy a big tech in one go.',
+  'Raise your stability CAP with Comms Towers, Propaganda Bureaus and Radar — they also bank a reserve that auto-refills losses.',
+  'Enemies drop from orbit slow and vulnerable on re-entry. Reach up and kill them high with railguns and aircraft before they go active.',
+  'A weapon\'s ceiling limits how high it shoots. A bomber parked in the stratosphere can only be touched by aircraft and railguns.',
+  'Air units burn fuel and ammo and must return to base to rearm. Keep airbases behind your line so they have somewhere to land.',
+  'Hitting 0 stability is a recoverable CRISIS now, not instant defeat — but production freezes and troops mutiny. Don\'t live on the edge.',
+  'Bury your key buildings underground and they survive an orbital barrage. Anything anchored at ground zero gets gutted.',
+  'The ⚑ ALLIES button turns spare Influence into instant units by your capital — a safety valve when a flank caves in.',
+  'Entrenched, dug-in ground units soak up to 60% of incoming damage. Let them hold a position instead of shuffling them around.',
+  'Killing a boss superweapon gives you back +10 stability. Prioritize the big ones — they\'re also spawning the smaller waves.',
+  'Space out your launch sites — TELs, Arsenal Ships and Ballistic Subs all fire strikes, so one hit can\'t knock out your whole arsenal.',
+];
+function showTip() { const t = document.getElementById('toast'); if (!t) return; const msg = TIPS[Math.floor(Math.random() * TIPS.length)]; t.textContent = '💡 ' + msg; t.classList.add('show'); toastT = 7; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 7000); }
 function banner(main, sub, dur) { const el = document.getElementById('alertBanner'); if (!el) return; el.innerHTML = `<div class="ab-main">${main}</div>` + (sub ? `<div class="ab-sub">${sub}</div>` : ''); el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), (dur || 4) * 1000); }   // BIG centre-screen alert, independent of the toast so major events can't be buried by build messages
 function hideBanner() { const el = document.getElementById('alertBanner'); if (el) { el.classList.remove('show'); clearTimeout(el._t); } }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
@@ -5449,6 +5495,7 @@ document.getElementById('btnStrike').addEventListener('click', () => { document.
 document.getElementById('btnAllies').addEventListener('click', () => { document.getElementById('btnAllies').classList.remove('attn'); openAllies(); });
 document.getElementById('btnMus').addEventListener('click', musToggle);
 document.getElementById('btnHelp').addEventListener('click', () => { fillManualBuildings(); openModal('helpModal'); });
+document.getElementById('btnTip').addEventListener('click', showTip);   // 💡 TIP — random gameplay advice via the toast
 // build the Field Manual's building cost table straight from the data + the real placement-cost formulas, so it never drifts
 function fillManualBuildings() {
   const el = document.getElementById('manualBuildings'); if (!el) return;

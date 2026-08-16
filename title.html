@@ -53,6 +53,10 @@
   .modal .actions { margin-top: 18px; display: flex; gap: 10px; justify-content: flex-end; }
   .pill { background: #16243c; border: 1px solid var(--line); color: var(--paper); padding: 9px 18px; border-radius: 4px; cursor: pointer; font-family: inherit; letter-spacing: 1px; font-size: 13px; }
   .pill:hover { background: #21344f; border-color: var(--ic); } .pill.primary { background: var(--ic); color: #05111f; border-color: var(--ic); font-weight: 700; }
+  #eventModal .modal { width: 640px; border-color: var(--stab); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,210,63,.15); }
+  #eventModal h2 { color: var(--stab); }
+  #eventChoices { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 18px; }
+  .evtChoice { text-align: left; padding: 11px 14px; }
   .scen { border: 1px solid var(--line); border-left: 3px solid var(--stab); border-radius: 4px; padding: 14px; margin-bottom: 12px; background: rgba(8,14,24,.6); }
   .scen .nm { font-size: 15px; letter-spacing: 2px; color: #eaf2ff; } .scen .ds { font-size: 12px; color: #9fb6d4; margin: 6px 0 10px; line-height: 1.5; }
   .diffs { display: flex; gap: 6px; margin-top: 8px; } .diff { flex: 1; text-align: center; padding: 7px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; letter-spacing: 1px; cursor: pointer; color: #c4d4e8; }
@@ -363,6 +367,13 @@
   <div class="actions"><button class="pill" onclick="closeModal('achModal')">CLOSE</button></div>
 </div></div>
 
+<!-- SUPER EVENTS — HOI4-style decision popup. No close/cancel button: a command decision must be made (see checkEvents()/fireEvent() in the SUPER EVENTS engine). -->
+<div class="modal-bg" id="eventModal"><div class="modal">
+  <h2 id="eventTitle"></h2><div class="hd">// COMMAND DECISION — the game is paused until you choose</div>
+  <div class="clogbody" id="eventBody" style="max-height:none;font-size:12.5px;line-height:1.65;color:#cfe0ff"></div>
+  <div id="eventChoices"></div>
+</div></div>
+
 <div class="modal-bg" id="optsModal"><div class="modal">
   <h2>OPTIONS</h2><div class="hd">// SYSTEM CONFIGURATION</div>
   <div class="row"><label>UI Scale</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="uiScale" min="60" max="140" value="100"><span class="v" id="uiScaleV">100%</span></div></div>
@@ -575,6 +586,80 @@ function loadAchievements() { try { achUnlocked = JSON.parse(localStorage.getIte
 function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = Date.now(); try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
 function checkAchievements() { if (!G) return; for (const a of ACHIEVEMENTS) { if (!achUnlocked[a.id] && typeof a.test === 'function') { try { if (a.test(G)) unlockAchievement(a.id); } catch (e) {} } } }
 function openAchievements() { const body = document.getElementById('achBody'); if (body) { body.innerHTML = ACHIEVEMENTS.length ? ACHIEVEMENTS.map(a => { const got = !!achUnlocked[a.id]; return `<p style="opacity:${got ? 1 : .5}"><b>${got ? '🏆' : '🔒'} ${a.name}</b><br>${a.desc || ''}</p>`; }).join('') : '<p style="opacity:.7">No achievements defined yet — the framework is in place; medals will appear here as they\'re added.</p>'; } openModal('achModal'); }
+
+/* =====================================================================
+   SUPER EVENTS — HOI4-style decision popups (see ROADMAP.md "🎭 SUPER EVENTS").
+   Each entry: { id, title, body, once, trigger(g)=>bool, choices:[{label, req?, effect(g)}] }
+     - trigger(g) is a game-state predicate, scanned ~1/s during a live game (checkEvents(),
+       called from updateGame() next to checkAchievements()). When it flips true — and, if
+       `once`, hasn't fired before (tracked in G.firedEvents, reset every newGame()) — the event
+       pops up and PAUSES the game (same auto-pause pattern openModal() already uses for the
+       research tree). Only one popup at a time; the scan stops as soon as something fires.
+     - a choice's `req` GATES whether it's even shown — omit req entirely for a choice that's
+       always available (EVERY event needs at least one un-gated choice). Supported req shapes:
+         { research: 'key' }   -> checks G.unlocked[key]
+         { society: 'dystopia' } -> checks G.society (dystopia/verdant/machine)
+         { building: 'key' }   -> checks a standing, non-captured building of that key exists
+         function(g) => bool   -> escape hatch for anything else
+     - effect(g) applies the consequence when that choice is clicked, then the popup closes and
+       the game unpauses (chooseEvent()).
+   TO ADD AN EVENT: push another { id, title, body, once, trigger, choices } object onto EVENTS
+   below — nothing else needs to change, the engine is generic.
+   ===================================================================== */
+function evtReqMet(req, g) {
+  if (!req) return true;   // no req = always shown
+  if (typeof req === 'function') return !!req(g);
+  if (req.research) return !!g.unlocked[req.research];
+  if (req.society) return g.society === req.society;
+  if (req.building) return g.buildings.some(b => b.key === req.building && b.done !== false && !b.captured);
+  return true;
+}
+// ---- EVENT #1 tuning knobs — every number below is easy to retune from one place ----
+const EVT1 = {
+  refuseStabLoss: 10, refuseInfBonusLoss: 1.2,                                // "Refuse to address it" — immediate stability hit + a LASTING influence-income cut (see G.infBonus)
+  reassureAmplify: 2.5,                                                       // "Reassure" — multiplies the existing -5 housing-loss stability hit (see the housing-death handler in updateGame) if it happens later
+  shieldHpBonus: 150, shieldUpkeepPerHousing: 1,                              // "Deflector Shields" choice — +1 IC/s upkeep per Housing Block (folded into the upkeep total in updateGame) + a flat HP buffer standing in for the dome
+  dystopiaCapLoss: 15,                                                       // "Strict guidelines" — the biggest stability-CAP hit; no offsetting research cost, so it should sting the most
+  transhumanIcCost: 260, transhumanStabLoss: 3, transhumanInfBonusLoss: .4,   // "Free data-link bionics" — big one-off IC spend buys a SMALL stability/influence hit
+  psionicsCapLoss: 6,                                                        // "Persuade them to stay" — a real but smaller cap hit than Dystopia's
+  roboticsIcCost: 200, roboticsStabLoss: 3,                                  // "Guard drones escort" — IC cost + small stability loss, same shape as Transhumanism
+};
+const EVENTS = [
+  {
+    id: 'autofleet_arrival', once: true,
+    title: '⚠ THE IMMINENT ARRIVAL OF THE AUTOFLEET',
+    body: "Fleet telemetry is confirmed: the autofleet's heaviest ordnance is BUNKER-BUSTERS, purpose-built to punch deep underground — and every trajectory model points them at our HOUSING BLOCKS. Word is already spreading, and families are streaming out of the blocks into the open wilderness. Out there they lose the food, shelter, and real-time contact with family that keeps a population fed and accounted for — it primes them for abduction, and if the blocks actually fall it isn't a setback, it's mass panic. This is a command crisis. How do we respond?",
+    trigger: g => g.phase === 'prep' && g.prepTimer <= 35 && g.prepTimer > 12,   // fires late in PREP, but strictly before the ~12s re-entry warning
+    choices: [
+      { label: 'Reassure them the bunkers are safe', effect: g => { g.evt.reassured = true; } },
+      { label: 'Refuse to address it', effect: g => { g.stab = Math.max(0, g.stab - EVT1.refuseStabLoss); g.infBonus = (g.infBonus || 0) - EVT1.refuseInfBonusLoss; g.evt.refused = true; } },
+      { label: 'Personal shield generators for the housing blocks', req: { research: 'shieldtech' }, effect: g => { g.evt.housingShielded = true; for (const b of g.buildings) if (b.key === 'housing' && !b.captured) { b.maxHp = (b.maxHp || b.d.hp) + EVT1.shieldHpBonus; b.hp += EVT1.shieldHpBonus; } } },
+      { label: 'Strict guidelines, prison for leaving, suppress the news', req: { society: 'dystopia' }, effect: g => { g.evt.capPenalty = (g.evt.capPenalty || 0) + EVT1.dystopiaCapLoss; } },
+      { label: 'Free data-link bionics', req: { research: 'transhuman' }, effect: g => { g.ic = Math.max(0, g.ic - EVT1.transhumanIcCost); g.stab = Math.max(0, g.stab - EVT1.transhumanStabLoss); g.infBonus = (g.infBonus || 0) - EVT1.transhumanInfBonusLoss; } },
+      { label: 'Persuade them to stay', req: { research: 'psionics' }, effect: g => { g.evt.capPenalty = (g.evt.capPenalty || 0) + EVT1.psionicsCapLoss; } },
+      { label: 'Guard drones escort & grid-link the dispersed', req: { research: 'robotics' }, effect: g => { g.ic = Math.max(0, g.ic - EVT1.roboticsIcCost); g.stab = Math.max(0, g.stab - EVT1.roboticsStabLoss); } },
+    ],
+  },
+  // ---- to add another event: push another { id, title, body, once, trigger, choices } object here ----
+];
+function checkEvents() { if (!G || G._eventOpen) return; for (const e of EVENTS) { if (e.once && G.firedEvents[e.id]) continue; let hit = false; try { hit = !!e.trigger(G); } catch (err) {} if (hit) { fireEvent(e); return; } } }   // one popup at a time; mirrors checkAchievements()'s per-second scan
+function fireEvent(e) {
+  G.firedEvents[e.id] = true; G._eventOpen = e;
+  const shown = e.choices.filter(c => evtReqMet(c.req, G));
+  const titleEl = document.getElementById('eventTitle'), bodyEl = document.getElementById('eventBody'), chEl = document.getElementById('eventChoices');
+  if (titleEl) titleEl.textContent = e.title;
+  if (bodyEl) bodyEl.textContent = e.body;
+  if (chEl) { chEl.innerHTML = shown.map((c, i) => `<button class="pill evtChoice" data-i="${i}"></button>`).join(''); chEl.querySelectorAll('.evtChoice').forEach((btn, i) => { btn.textContent = shown[i].label; btn.onclick = () => chooseEvent(e, shown[i]); }); }
+  if (!G.paused) { G.paused = true; G._evtAutoPause = true; }   // PAUSE — a command decision demands attention (same pattern as the research-tree auto-pause in openModal)
+  openModal('eventModal');
+  try { SFX.research(); } catch (er) {}
+}
+function chooseEvent(e, choice) {
+  if (!choice) return;
+  try { choice.effect(G); } catch (err) {}
+  closeModal('eventModal'); G._eventOpen = null;
+  if (G._evtAutoPause) { G.paused = false; G._evtAutoPause = false; }
+}
 /* ---- sound (WebAudio synth, no files) ---- */
 let actx, mvol, lastShot = 0;
 function initAudio() { if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); mvol = actx.createGain(); mvol.gain.value = .22; mvol.connect(actx.destination); } catch (e) {} }
@@ -1909,6 +1994,7 @@ function newGame(diff) {
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
+    firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state — firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
@@ -1939,7 +2025,7 @@ function newGame(diff) {
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
 function flatLand(x) { x = landNear(x); let best = x, bf = 1e9; for (let dx = -160; dx <= 160; dx += 14) { const xx = x + dx; if (xx < 60 || xx > WORLD_W - 60 || elevAt(xx) <= SEA_E + .05) continue; const fl = Math.abs(elevAt(xx - 20) - elevAt(xx + 20)); if (fl < bf) { bf = fl; best = xx; } } return best; }
 function preBuild(x, key, city) { if (city) return; const d = BUILD_DEFS[key]; if (!d) return; const px = d.needWater ? (findWater(x) ?? x) : landNear(x); G.buildings.push(mkBuilding(key, px)); }
-function mkBuilding(key, x) { const d = BUILD_DEFS[key]; const b = { key, d, x, y: d.needWater ? seaLevelY(x) : groundY(x), hp: d.hp, maxHp: d.hp, queue: [], qtimer: 0, cd: Math.random(), silocd: 0 }; return b; }   // silos arm READY — strikes are gated by stability, not a long reload
+function mkBuilding(key, x) { const d = BUILD_DEFS[key]; const b = { key, d, x, y: d.needWater ? seaLevelY(x) : groundY(x), hp: d.hp, maxHp: d.hp, queue: [], qtimer: 0, cd: Math.random(), silocd: 0 }; if (key === 'housing' && G && G.evt && G.evt.housingShielded) { b.maxHp += EVT1.shieldHpBonus; b.hp += EVT1.shieldHpBonus; } return b; }   // EVENT #1 "Deflector Shields" choice covers Housing Blocks built AFTER the decision too, not just the ones standing at the time; silos arm READY — strikes are gated by stability, not a long reload
 function bldSurfaceY(b) { return b.d.needWater ? seaLevelY(b.x) : groundY(b.x); }   // a building's surface line (sea level for naval platforms, ground otherwise)
 function bldBaseY(b) { return b.ug ? groundY(b.x) + UG_DEPTH * (b.ugLvl || 1) : bldSurfaceY(b); }   // where the building actually sits (buried → underground)
 /* ===== CITIES — a sprawl of individually-destructible districts; nearby cities fuse into a MEGACITY ===== */
@@ -2675,6 +2761,7 @@ function updateGame(dt) {
   if (G.over) return; G.time += dt;
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
+  G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
   // economy from buildings
   recalcBuildings();   // refresh special-building modifiers
   const ppB = 1 + (bmod().ppBonus || 0);   // Uranium Enrichment boosts Power Plant output
@@ -2685,8 +2772,10 @@ function updateGame(dt) {
   const em = 1 + G.mult.econ;
   icR *= em; mpR *= (1 + G.mult.mp) * em; resR *= (1 + G.mult.res);
   let upkeep = 0, garrUpkeep = 0; for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
+  if (G.evt && G.evt.housingShielded) for (const b of G.buildings) if (b.key === 'housing' && b.done !== false && !b.captured) upkeep += EVT1.shieldUpkeepPerHousing;   // EVENT #1 "Deflector Shields" choice — every standing Housing Block draws extra power for its dome, existing ones and any built later
   icR -= upkeep; G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;
   if (G.dystopia) capPenalty += 20;   // a dystopian society is FRAGILE, not a bottomless pit — it lowers the ceiling stability can climb to rather than bleeding banked stability toward zero with no counterplay
+  if (G.evt && G.evt.capPenalty) capPenalty += G.evt.capPenalty;   // running total of SUPER EVENT choices that cost stability CAP (see EVENTS' effect fns) — same "lower ceiling, not a bleed" treatment as everything else here
   G.icR = icR; G.mpR = mpR; G.resR = resR;
   G.ic = Math.max(0, G.ic + icR * dt); G.mp = Math.min(900, G.mp + mpR * dt); G.res += resR * dt;
   G.superN = 0; for (const u of G.units) if (u.key === 'superhuman') G.superN++;   // Superhuman Cadres carry a standing upkeep — near-immortal flying laser demigods have lasting societal & political implications
@@ -2824,7 +2913,7 @@ function updateGame(dt) {
   G.enemies = G.enemies.filter(e => e.hp > 0);
   for (const b of G.buildings) if (b.hp > 0 && !b.ug && !b.d.needWater && elevAt(b.x) < SEA_E - .04) { b.hp = 0; b.flooded = true; floatText(b.x, groundY(b.x) - 18, 'FLOODED', '#5fd0ff'); }   // a building whose ground genuinely sinks below sea level (margin, so a shallow crater at the waterline doesn't drown it) is drowned — handled as a QUIET sink below, never a blast
   for (const b of G.buildings) if (b.hp <= 0) {
-    if (b.key === 'housing' && !b.captured) { G.stab = Math.max(0, G.stab - 5); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY
+    if (b.key === 'housing' && !b.captured) { const housingLossHit = 5 * (G.evt && G.evt.reassured ? EVT1.reassureAmplify : 1); G.stab = Math.max(0, G.stab - housingLossHit); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY. EVENT #1: if you reassured people the bunkers were safe, losing a block for real hits MUCH harder (EVT1.reassureAmplify)
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
     else { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }

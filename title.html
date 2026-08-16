@@ -1142,6 +1142,14 @@ function aburn(x, bx, by, len, w) {   // cool teal exotic afterburner plume (the
   x.shadowBlur = len * .4; x.fillStyle = HI();
   x.beginPath(); x.arc(bx - len * .15, by, w * .6, 0, 6.28); x.fill(); x.restore();
 }
+// ---- SKY WARSHIP kit (nanotech lifting-body) — extra glow palette + draw helpers ported from the approved concept sheets.
+//      NB: the game's INK/GLASS are constants and HI()/LO()/TRIM() are functions (the concept sheet used them as plain constants); GLOWC/GLOWH/NANO have no game equivalent, so they live here. Helpers are `sky`-prefixed to avoid clashing with the map-space glow() helper. ----
+const SKY_GLOWC = '#7fd4ff', SKY_GLOWH = '#9ad8ff', SKY_NANO = '#2c3e50';
+function skyGlow(x, col, blur, fn) { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.fillStyle = col; fn(); x.restore(); }
+function skyLift(x, pts, col) { x.save(); x.strokeStyle = col; x.lineWidth = 3; x.lineCap = 'round'; x.shadowColor = col; x.shadowBlur = 12; x.globalAlpha = pulseA(.02); x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); x.restore(); }   // glowing underside anti-grav lift line
+function skyBlister(x, s, bx, by, r, ang) { x.save(); x.translate(bx, by); x.rotate(ang || 0); x.fillStyle = INK; x.beginPath(); x.arc(0, 0, r, Math.PI, 0); x.fill(); x.fillStyle = LO(); x.beginPath(); x.arc(0, 0, r, Math.PI, Math.PI * 1.15); x.lineTo(0, 0); x.fill(); x.fillStyle = SKY_NANO; x.fillRect(-r * .55, -r * .28, r * 1.1, r * .12); x.fillStyle = '#0e141c'; x.fillRect(r * .15, -r * .9, r * .18, r * .9); x.fillRect(-r * .33, -r * .9, r * .18, r * .9); skyGlow(x, SKY_GLOWH, 6, () => { x.beginPath(); x.arc(0, -r * .08, r * .22, 0, 6.28); x.fill(); }); x.restore(); }   // embedded weapon blister: hull dome + twin barrels + hot core
+function skyDeckJet(x, s, dx, dy, sc) { x.save(); x.translate(dx, dy); x.scale(sc, sc); x.fillStyle = '#3a4a58'; x.beginPath(); x.moveTo(s * .55, 0); x.lineTo(-s * .1, -s * .14); x.lineTo(-s * .42, -s * .24); x.lineTo(-s * .34, -s * .05); x.lineTo(-s * .5, 0); x.lineTo(-s * .34, s * .05); x.lineTo(-s * .42, s * .24); x.lineTo(-s * .1, s * .14); x.closePath(); x.fill(); skyGlow(x, SKY_GLOWC, 3, () => { x.fillRect(s * .46, -s * .02, s * .1, .04 * s); }); x.restore(); }   // tiny parked mini-jet on the carrier deck
+function skyDeckHeli(x, s, dx, dy, sc) { x.save(); x.translate(dx, dy); x.scale(sc, sc); x.fillStyle = '#3a4a58'; x.beginPath(); x.ellipse(0, 0, s * .32, s * .14, 0, 0, 6.28); x.fill(); x.fillRect(-s * .6, -s * .03, s * .35, s * .06); x.fillStyle = SKY_NANO; x.fillRect(-s * .68, -s * .13, s * .05, s * .2); x.strokeStyle = 'rgba(154,216,255,.85)'; x.lineWidth = Math.max(1.2, s * .045); x.beginPath(); x.ellipse(-s * .02, -s * .05, s * .58, s * .08, 0, 0, 6.28); x.stroke(); x.fillStyle = INK; x.fillRect(-s * .05, -s * .1, s * .06, s * .08); x.restore(); }   // tiny parked heli (rotor disc) on the carrier deck
 const ART = {
   // ---- GROUND ----
   tank(x, s, a) {
@@ -1534,6 +1542,117 @@ const ART = {
     x.beginPath(); x.arc(-s * .77, s * .72, s * .26, 0, 6.28); x.fill(); x.beginPath(); x.arc(s * .77, s * .72, s * .26, 0, 6.28); x.fill();   // gun pods
     x.beginPath(); x.moveTo(s * 2.7, -s * 1.4); x.lineTo(s * 3.5, -s * 1.7); x.lineTo(s * 3.5, -s * .8); x.lineTo(s * 2.7, -s * .9); x.closePath(); x.fill();   // tailfin
   },
+  // ---- SKY WARSHIPS (nanotech lifting-body capital ships — ported from the approved concept sheets; nose +x, y=0 centerline) ----
+  skydestroyer(x, s) {   // SKY DESTROYER — fast escort / anti-air; sleek wedge with rapid weapon blisters along the spine
+    skyLift(x, [[-2.5 * s, .34 * s], [-1.2 * s, .42 * s], [.6 * s, .4 * s], [2.2 * s, .24 * s]], SKY_GLOWC);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(3.25 * s, 0); x.lineTo(1.4 * s, -.52 * s); x.lineTo(-.6 * s, -.6 * s); x.lineTo(-2.2 * s, -.42 * s); x.lineTo(-2.75 * s, -.12 * s); x.lineTo(-2.5 * s, .18 * s); x.lineTo(.9 * s, .34 * s); x.lineTo(2.4 * s, .2 * s); x.closePath(); x.fill();
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(3.25 * s, 0); x.lineTo(1.4 * s, -.52 * s); x.lineTo(-.6 * s, -.6 * s); x.lineTo(-.6 * s, -.5 * s); x.lineTo(1.35 * s, -.42 * s); x.lineTo(3.0 * s, -.02 * s); x.closePath(); x.fill();
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-2.5 * s, .18 * s); x.lineTo(.9 * s, .34 * s); x.lineTo(2.4 * s, .2 * s); x.lineTo(2.3 * s, .12 * s); x.lineTo(-2.4 * s, .1 * s); x.closePath(); x.fill();
+    x.strokeStyle = SKY_NANO; x.lineWidth = Math.max(1, s * .03); x.globalAlpha = .7;
+    x.beginPath(); x.moveTo(2.9 * s, -.04 * s); x.lineTo(1.2 * s, -.34 * s); x.lineTo(-.6 * s, -.4 * s); x.lineTo(-2.4 * s, -.22 * s); x.stroke();
+    x.beginPath(); x.moveTo(2.6 * s, .06 * s); x.lineTo(0, .16 * s); x.lineTo(-2.2 * s, .02 * s); x.stroke(); x.globalAlpha = 1;
+    x.fillStyle = INK; x.beginPath(); x.moveTo(1.5 * s, -.5 * s); x.lineTo(1.75 * s, -.95 * s); x.lineTo(2.15 * s, -.9 * s); x.lineTo(2.05 * s, -.42 * s); x.closePath(); x.fill();
+    x.fillStyle = GLASS; x.fillRect(1.7 * s, -.82 * s, .34 * s, .12 * s);
+    skyGlow(x, SKY_GLOWC, 5, () => { x.fillRect(1.78 * s, -.98 * s, .1 * s, .06 * s); });
+    skyBlister(x, s, .5 * s, -.5 * s, .34 * s, 0); skyBlister(x, s, -.7 * s, -.48 * s, .34 * s, 0); skyBlister(x, s, -1.7 * s, -.3 * s, .3 * s, -.15); skyBlister(x, s, 2.0 * s, .16 * s, .26 * s, 3.14);
+    x.fillStyle = TRIM(); x.fillRect(-2.3 * s, -.16 * s, .5 * s, .07 * s);
+    skyGlow(x, TRIM(), 6, () => { x.fillRect(2.7 * s, -.02 * s, .45 * s, .06 * s); });
+    skyGlow(x, SKY_GLOWH, 10, () => { x.beginPath(); x.arc(-2.7 * s, -.02 * s, .13 * s, 0, 6.28); x.arc(-2.65 * s, .12 * s, .11 * s, 0, 6.28); x.fill(); });
+  },
+  skycruiser(x, s) {   // SKY MISSILE CRUISER — broad lifting body; dorsal glowing VLS deck + flank missile blisters
+    skyLift(x, [[-2.9 * s, .4 * s], [-1.4 * s, .5 * s], [.4 * s, .5 * s], [2.3 * s, .3 * s]], SKY_GLOWC);
+    skyLift(x, [[-2.4 * s, .5 * s], [0, .6 * s], [2.0 * s, .42 * s]], SKY_GLOWC);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(3.5 * s, .02 * s); x.lineTo(1.6 * s, -.62 * s); x.lineTo(-.9 * s, -.72 * s); x.lineTo(-2.6 * s, -.5 * s); x.lineTo(-3.05 * s, -.15 * s); x.lineTo(-2.8 * s, .28 * s); x.lineTo(1.0 * s, .46 * s); x.lineTo(2.7 * s, .26 * s); x.closePath(); x.fill();
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(3.5 * s, .02 * s); x.lineTo(1.6 * s, -.62 * s); x.lineTo(-.9 * s, -.72 * s); x.lineTo(-.9 * s, -.6 * s); x.lineTo(1.55 * s, -.5 * s); x.lineTo(3.2 * s, 0); x.closePath(); x.fill();
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-2.8 * s, .28 * s); x.lineTo(1.0 * s, .46 * s); x.lineTo(2.7 * s, .26 * s); x.lineTo(2.6 * s, .18 * s); x.lineTo(-2.7 * s, .18 * s); x.closePath(); x.fill();
+    x.strokeStyle = SKY_NANO; x.lineWidth = Math.max(1, s * .03); x.globalAlpha = .7;
+    x.beginPath(); x.moveTo(3.2 * s, -.02 * s); x.lineTo(1.3 * s, -.42 * s); x.lineTo(-.9 * s, -.5 * s); x.lineTo(-2.7 * s, -.28 * s); x.stroke();
+    x.beginPath(); x.moveTo(2.9 * s, .1 * s); x.lineTo(0, .22 * s); x.lineTo(-2.6 * s, .06 * s); x.stroke(); x.globalAlpha = 1;
+    x.fillStyle = SKY_NANO; x.beginPath(); x.moveTo(-1.9 * s, -.5 * s); x.lineTo(-1.7 * s, -.78 * s); x.lineTo(1.0 * s, -.82 * s); x.lineTo(1.2 * s, -.56 * s); x.closePath(); x.fill();   // dorsal VLS deck
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 7; i++) { const px = (-1.6 + i * .4) * s, py = (-.74 + r * .14) * s; skyGlow(x, SKY_GLOWH, 5, () => { x.fillRect(px, py, .16 * s, .09 * s); }); }
+    x.fillStyle = INK; x.beginPath(); x.moveTo(1.35 * s, -.6 * s); x.lineTo(1.55 * s, -1.05 * s); x.lineTo(1.95 * s, -1.0 * s); x.lineTo(1.85 * s, -.55 * s); x.closePath(); x.fill();
+    x.fillStyle = GLASS; x.fillRect(1.5 * s, -.92 * s, .34 * s, .12 * s);
+    x.fillStyle = INK; x.fillRect(1.66 * s, -1.3 * s, .08 * s, .28 * s);
+    skyGlow(x, SKY_GLOWC, 5, () => { x.fillRect(1.62 * s, -1.36 * s, .1 * s, .06 * s); });
+    x.fillStyle = INK; rr(x, -2.4 * s, -.28 * s, .8 * s, .34 * s, .1 * s); x.fill();
+    for (let i = 0; i < 3; i++) skyGlow(x, '#ff7a3a', 5, () => { x.fillRect((-2.25 + i * .24) * s, -.2 * s, .14 * s, .16 * s); });
+    skyBlister(x, s, 2.35 * s, .2 * s, .28 * s, 3.14);
+    x.fillStyle = TRIM(); x.fillRect(-2.6 * s, -.2 * s, .55 * s, .07 * s);
+    skyGlow(x, TRIM(), 6, () => { x.fillRect(2.95 * s, 0, .5 * s, .06 * s); });
+    skyGlow(x, SKY_GLOWH, 11, () => { x.beginPath(); x.arc(-3.0 * s, -.06 * s, .14 * s, 0, 6.28); x.arc(-2.95 * s, .1 * s, .12 * s, 0, 6.28); x.arc(-2.85 * s, .24 * s, .1 * s, 0, 6.28); x.fill(); });
+  },
+  skypatrol(x, s) {   // SKY PATROL SHIP — cheap light picket / scout; clean wedge, dorsal scanner dome, one modest blister
+    skyLift(x, [[-1.7 * s, .28 * s], [-.4 * s, .34 * s], [1.2 * s, .28 * s], [2.0 * s, .14 * s]], SKY_GLOWC);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(2.7 * s, 0); x.lineTo(1.1 * s, -.4 * s); x.lineTo(-.6 * s, -.44 * s); x.lineTo(-1.9 * s, -.28 * s); x.lineTo(-2.1 * s, -.02 * s); x.lineTo(-1.85 * s, .16 * s); x.lineTo(.8 * s, .26 * s); x.lineTo(1.9 * s, .14 * s); x.closePath(); x.fill();
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(2.7 * s, 0); x.lineTo(1.1 * s, -.4 * s); x.lineTo(-.6 * s, -.44 * s); x.lineTo(-.6 * s, -.35 * s); x.lineTo(1.05 * s, -.32 * s); x.lineTo(2.5 * s, -.02 * s); x.closePath(); x.fill();
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-1.85 * s, .16 * s); x.lineTo(.8 * s, .26 * s); x.lineTo(1.9 * s, .14 * s); x.lineTo(1.8 * s, .08 * s); x.lineTo(-1.8 * s, .06 * s); x.closePath(); x.fill();
+    x.strokeStyle = SKY_NANO; x.lineWidth = Math.max(1, s * .03); x.globalAlpha = .7;
+    x.beginPath(); x.moveTo(2.4 * s, -.02 * s); x.lineTo(.8 * s, -.28 * s); x.lineTo(-1.7 * s, -.14 * s); x.stroke(); x.globalAlpha = 1;
+    x.fillStyle = INK; x.beginPath(); x.arc(.3 * s, -.42 * s, .28 * s, Math.PI, 0); x.fill();
+    x.fillStyle = GLASS; x.beginPath(); x.arc(.3 * s, -.42 * s, .16 * s, Math.PI, 0); x.fill();
+    skyGlow(x, SKY_GLOWC, 6, () => { x.beginPath(); x.arc(.3 * s, -.42 * s, .06 * s, 0, 6.28); x.fill(); });
+    x.fillStyle = INK; x.fillRect(.26 * s, -.78 * s, .06 * s, .34 * s);
+    skyGlow(x, TRIM(), 5, () => { x.fillRect(.23 * s, -.84 * s, .09 * s, .05 * s); });
+    skyBlister(x, s, -.9 * s, -.34 * s, .26 * s, 0);
+    x.fillStyle = TRIM(); x.fillRect(-1.8 * s, -.1 * s, .4 * s, .06 * s);
+    skyGlow(x, TRIM(), 5, () => { x.fillRect(2.3 * s, -.02 * s, .35 * s, .05 * s); });
+    skyGlow(x, SKY_GLOWH, 9, () => { x.beginPath(); x.arc(-2.05 * s, .02 * s, .11 * s, 0, 6.28); x.fill(); });
+  },
+  skyrailgun(x, s) {   // SKY RAILGUN SHIP — heavy artillery/sniper; the hull is dominated by ONE long spinal railgun angled up toward orbit
+    skyLift(x, [[-2.8 * s, .42 * s], [-1.3 * s, .5 * s], [.5 * s, .48 * s], [2.4 * s, .28 * s]], SKY_GLOWC);
+    skyLift(x, [[-2.3 * s, .52 * s], [0, .6 * s], [2.0 * s, .42 * s]], SKY_GLOWC);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(3.4 * s, .04 * s); x.lineTo(1.5 * s, -.5 * s); x.lineTo(-.8 * s, -.58 * s); x.lineTo(-2.5 * s, -.44 * s); x.lineTo(-3.0 * s, -.12 * s); x.lineTo(-2.75 * s, .3 * s); x.lineTo(1.0 * s, .48 * s); x.lineTo(2.65 * s, .28 * s); x.closePath(); x.fill();
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(3.4 * s, .04 * s); x.lineTo(1.5 * s, -.5 * s); x.lineTo(-.8 * s, -.58 * s); x.lineTo(-.8 * s, -.46 * s); x.lineTo(1.45 * s, -.38 * s); x.lineTo(3.1 * s, .02 * s); x.closePath(); x.fill();
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-2.75 * s, .3 * s); x.lineTo(1.0 * s, .48 * s); x.lineTo(2.65 * s, .28 * s); x.lineTo(2.55 * s, .2 * s); x.lineTo(-2.65 * s, .2 * s); x.closePath(); x.fill();
+    x.strokeStyle = SKY_NANO; x.lineWidth = Math.max(1, s * .03); x.globalAlpha = .7;
+    x.beginPath(); x.moveTo(3.1 * s, 0); x.lineTo(1.2 * s, -.36 * s); x.lineTo(-.8 * s, -.42 * s); x.lineTo(-2.6 * s, -.26 * s); x.stroke();
+    x.beginPath(); x.moveTo(2.8 * s, .12 * s); x.lineTo(0, .24 * s); x.lineTo(-2.55 * s, .08 * s); x.stroke(); x.globalAlpha = 1;
+    x.fillStyle = SKY_NANO; x.beginPath(); x.moveTo(-1.9 * s, -.5 * s); x.lineTo(-1.75 * s, -.86 * s); x.lineTo(-.5 * s, -.9 * s); x.lineTo(-.3 * s, -.56 * s); x.closePath(); x.fill();   // gun-well / capacitor bank
+    skyGlow(x, TRIM(), 7, () => { x.globalAlpha = pulseA(.02); x.fillRect(-1.7 * s, -.78 * s, 1.0 * s, .16 * s); x.globalAlpha = 1; });
+    x.save(); x.translate(-1.0 * s, -.68 * s); x.rotate(-.16);   // spinal railgun, angled UP toward orbit
+    x.fillStyle = LO(); x.fillRect(-.15 * s, -.16 * s, .7 * s, .32 * s);
+    x.fillStyle = INK; x.fillRect(0, -.15 * s, 5.4 * s, .1 * s); x.fillRect(0, .06 * s, 5.4 * s, .1 * s);
+    x.fillStyle = SKY_NANO; x.fillRect(0, -.05 * s, 5.0 * s, .1 * s);
+    x.fillStyle = LO(); for (let k = 0; k < 7; k++) x.fillRect((.5 + k * .68) * s, -.2 * s, .1 * s, .42 * s);
+    skyGlow(x, '#4ea8ff', 14, () => { x.fillRect(5.25 * s, -.14 * s, .18 * s, .3 * s); });
+    skyGlow(x, HI(), 8, () => { x.beginPath(); x.arc(5.5 * s, 0, .1 * s, 0, 6.28); x.fill(); });
+    x.restore();
+    x.fillStyle = INK; x.beginPath(); x.moveTo(.2 * s, -.5 * s); x.lineTo(.4 * s, -.82 * s); x.lineTo(.85 * s, -.78 * s); x.lineTo(.75 * s, -.46 * s); x.closePath(); x.fill();
+    x.fillStyle = GLASS; x.fillRect(.36 * s, -.72 * s, .34 * s, .12 * s);
+    skyGlow(x, SKY_GLOWC, 5, () => { x.fillRect(.44 * s, -.86 * s, .1 * s, .06 * s); });
+    skyBlister(x, s, -1.9 * s, -.34 * s, .28 * s, 0); skyBlister(x, s, 2.15 * s, .2 * s, .26 * s, 3.14);
+    x.fillStyle = TRIM(); x.fillRect(-2.55 * s, -.18 * s, .55 * s, .07 * s);
+    skyGlow(x, TRIM(), 6, () => { x.fillRect(-2.95 * s, -.06 * s, .4 * s, .06 * s); });
+    skyGlow(x, SKY_GLOWH, 12, () => { x.beginPath(); x.arc(-2.95 * s, -.04 * s, .15 * s, 0, 6.28); x.arc(-2.9 * s, .12 * s, .13 * s, 0, 6.28); x.arc(-2.78 * s, .26 * s, .11 * s, 0, 6.28); x.arc(-2.72 * s, -.18 * s, .1 * s, 0, 6.28); x.fill(); });
+  },
+  nanoforge(x, s) {   // NANOFORGE CARRIER — the FLAGSHIP; broad lifting body with an angled flight deck, parked jets + heli, self-repairing nano-seams
+    skyLift(x, [[-3.5 * s, .44 * s], [-1.8 * s, .56 * s], [.4 * s, .56 * s], [2.8 * s, .34 * s]], SKY_GLOWC);
+    skyLift(x, [[-3.0 * s, .56 * s], [0, .66 * s], [2.4 * s, .48 * s]], SKY_GLOWC);
+    skyLift(x, [[-2.4 * s, .66 * s], [.2 * s, .72 * s], [2.0 * s, .58 * s]], SKY_GLOWC);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(4.1 * s, .04 * s); x.lineTo(1.9 * s, -.5 * s); x.lineTo(-1.2 * s, -.62 * s); x.lineTo(-3.2 * s, -.5 * s); x.lineTo(-3.75 * s, -.12 * s); x.lineTo(-3.5 * s, .34 * s); x.lineTo(1.2 * s, .52 * s); x.lineTo(3.2 * s, .3 * s); x.closePath(); x.fill();
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(4.1 * s, .04 * s); x.lineTo(1.9 * s, -.5 * s); x.lineTo(-1.2 * s, -.62 * s); x.lineTo(-1.2 * s, -.5 * s); x.lineTo(1.85 * s, -.38 * s); x.lineTo(3.8 * s, .02 * s); x.closePath(); x.fill();
+    x.fillStyle = LO(); x.beginPath(); x.moveTo(-3.5 * s, .34 * s); x.lineTo(1.2 * s, .52 * s); x.lineTo(3.2 * s, .3 * s); x.lineTo(3.1 * s, .22 * s); x.lineTo(-3.4 * s, .22 * s); x.closePath(); x.fill();
+    x.fillStyle = SKY_NANO; x.beginPath(); x.moveTo(-3.0 * s, -.48 * s); x.lineTo(-3.1 * s, -.2 * s); x.lineTo(2.6 * s, -.34 * s); x.lineTo(2.5 * s, -.6 * s); x.closePath(); x.fill();   // flight deck recess
+    x.fillStyle = '#3a4a58'; x.beginPath(); x.moveTo(-2.9 * s, -.44 * s); x.lineTo(-2.98 * s, -.26 * s); x.lineTo(2.5 * s, -.38 * s); x.lineTo(2.42 * s, -.54 * s); x.closePath(); x.fill();
+    x.fillStyle = '#caa030'; for (let i = 0; i < 7; i++) { x.save(); x.translate((-2.5 + i * .78) * s, -.42 * s); x.fillRect(0, 0, .34 * s, .03 * s); x.restore(); }
+    skyGlow(x, SKY_GLOWC, 8, () => { x.fillRect(2.0 * s, -.5 * s, .36 * s, .14 * s); x.fillRect(1.5 * s, -.46 * s, .32 * s, .13 * s); });   // launch-bay mouths
+    skyDeckJet(x, s, -2.35 * s, -.5 * s, 1.0); skyDeckJet(x, s, -1.35 * s, -.52 * s, 1.0); skyDeckHeli(x, s, 1.35 * s, -.5 * s, 1.05);   // carries aircraft AND a helicopter
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-.5 * s, -.6 * s); x.lineTo(-.35 * s, -1.12 * s); x.lineTo(.35 * s, -1.14 * s); x.lineTo(.5 * s, -.62 * s); x.closePath(); x.fill();   // command island
+    x.fillStyle = GLASS; x.fillRect(-.28 * s, -1.02 * s, .5 * s, .14 * s);
+    x.fillStyle = INK; x.fillRect(-.06 * s, -1.5 * s, .1 * s, .38 * s);
+    x.fillStyle = GLASS; x.fillRect(-.02 * s, -1.62 * s, .08 * s, .16 * s);
+    skyGlow(x, SKY_GLOWC, 6, () => { x.fillRect(-.07 * s, -1.66 * s, .12 * s, .06 * s); });
+    x.strokeStyle = SKY_NANO; x.lineWidth = Math.max(1, s * .03); x.globalAlpha = .7;
+    x.beginPath(); x.moveTo(3.7 * s, 0); x.lineTo(1.6 * s, -.4 * s); x.lineTo(-1.2 * s, -.48 * s); x.lineTo(-3.3 * s, -.32 * s); x.stroke();
+    x.beginPath(); x.moveTo(3.3 * s, .14 * s); x.lineTo(0, .28 * s); x.lineTo(-3.2 * s, .1 * s); x.stroke(); x.globalAlpha = 1;
+    skyGlow(x, SKY_GLOWH, 6, () => { x.globalAlpha = pulseA(.03); x.fillRect(2.6 * s, -.22 * s, .6 * s, .03 * s); x.fillRect(-2.0 * s, .06 * s, .7 * s, .03 * s); x.fillRect(3.2 * s, -.02 * s, .4 * s, .03 * s); x.globalAlpha = 1; });   // live self-repairing forge-seams
+    x.fillStyle = SKY_NANO; rr(x, -2.6 * s, -.24 * s, .7 * s, .3 * s, .08 * s); x.fill();
+    skyGlow(x, SKY_GLOWC, 5, () => { for (let i = 0; i < 3; i++) x.fillRect((-2.45 + i * .22) * s, -.16 * s, .12 * s, .14 * s); });
+    skyBlister(x, s, 2.7 * s, .22 * s, .28 * s, 3.14); skyBlister(x, s, -2.7 * s, -.36 * s, .28 * s, 0);
+    x.fillStyle = TRIM(); x.fillRect(-3.3 * s, -.2 * s, .6 * s, .07 * s);
+    skyGlow(x, TRIM(), 6, () => { x.fillRect(3.55 * s, .02 * s, .5 * s, .06 * s); });
+    skyGlow(x, SKY_GLOWH, 13, () => { x.beginPath(); x.arc(-3.7 * s, -.04 * s, .15 * s, 0, 6.28); x.arc(-3.66 * s, .12 * s, .13 * s, 0, 6.28); x.arc(-3.56 * s, .26 * s, .11 * s, 0, 6.28); x.arc(-3.62 * s, -.2 * s, .12 * s, 0, 6.28); x.arc(-3.5 * s, -.34 * s, .1 * s, 0, 6.28); x.arc(-3.48 * s, .38 * s, .09 * s, 0, 6.28); x.fill(); });
+  },
   // ---- EXOTIC GROUND: machine line (robotics / transhuman) ----
   android(x, s, a) {
     x.fillStyle = INK;
@@ -1845,6 +1964,11 @@ const BART = {
   missilesub(x, w, h) { x.fillStyle = '#161e26'; rr(x, -w * .5, -h * .3, w, h * .5, h * .25); x.fill(); x.fillStyle = '#222e38'; rr(x, -w * .12, -h * .72, w * .24, h * .44, h * .05); x.fill(); x.fillStyle = '#0a0e14'; for (let i = 0; i < 3; i++) x.fillRect(-w * .2 + i * w * .18, -h * .38, w * .06, h * .1); },
   shipyard(x, w, h) { x.fillStyle = '#18222e'; x.fillRect(-w * .5, -h * .5, w * .7, h * .5); x.strokeStyle = '#3a5068'; x.lineWidth = 2; x.beginPath(); x.moveTo(w * .1, -h * .5); x.lineTo(w * .1, -h); x.lineTo(w * .5, -h * .8); x.stroke(); },
   airbase(x, w, h) { x.fillStyle = '#18222e'; x.beginPath(); x.moveTo(-w * .5, 0); x.lineTo(-w * .4, -h * .8); x.lineTo(w * .1, -h * .8); x.lineTo(w * .2, 0); x.closePath(); x.fill(); x.fillStyle = '#2c3e50'; x.fillRect(w * .2, -h * .12, w * .3, h * .12); },
+  skydock(x, w, h) { x.fillStyle = '#18222e'; x.fillRect(-w * .5, -h * .42, w, h * .42);   // apron
+    x.strokeStyle = '#3a5068'; x.lineWidth = 2; for (let i = -1; i <= 1; i++) { x.beginPath(); x.moveTo(i * w * .38 - w * .06, -h * .42); x.lineTo(i * w * .38, -h * 1.05); x.lineTo(i * w * .38 + w * .06, -h * .42); x.stroke(); }   // launch gantries
+    x.fillStyle = '#26323e'; x.fillRect(-w * .3, -h * .82, w * .6, h * .22);   // cradled sky-ship hull on the gantry
+    x.fillStyle = SKY_GLOWC; x.shadowColor = SKY_GLOWC; x.shadowBlur = 7; x.fillRect(-w * .26, -h * .74, w * .52, h * .04); x.shadowBlur = 0;   // anti-grav lift glow
+    x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.01); x.fillRect(w * .3, -h * 1.08, w * .06, h * .06); x.globalAlpha = 1; },   // gantry beacon
   spaceport(x, w, h) { x.fillStyle = '#18222e'; x.fillRect(-w * .25, -h * .5, w * .5, h * .5); x.strokeStyle = '#3a5068'; x.lineWidth = 2; x.strokeRect(-w * .18, -h, w * .36, h); x.fillStyle = '#c89bff'; x.beginPath(); x.moveTo(0, -h); x.lineTo(-w * .1, -h * .7); x.lineTo(w * .1, -h * .7); x.closePath(); x.fill(); },
   bunker(x, w, h) { x.fillStyle = '#26303a'; x.beginPath(); x.arc(0, 0, w * .5, Math.PI, 0); x.fill(); x.fillStyle = '#111'; x.fillRect(-w * .08, -h * .5, w * .5, h * .1); },
   samsite(x, w, h) { x.fillStyle = '#1b2a38'; x.fillRect(-w * .5, -h * .35, w, h * .35); x.save(); x.translate(0, -h * .35); x.rotate(-1); x.fillStyle = '#111'; x.fillRect(-w * .1, -h * .12, w * .8, h * .22); x.restore(); },
@@ -1940,6 +2064,12 @@ const UNIT_DEFS = {
   android:  { name: 'Combat Androids', art: 'android', domain: 'ground', ic: 180, mp: 5, build: 7, hp: 150, armor: 12, range: 360, dmg: 24, rate: 1.6, weapon: 'tracer', speed: 16, s: 4, grp: 2, req: 'robotics', ds: 'Tireless machine infantry. Barely any manpower. (ROBOTICS)' },
   colossus: { name: 'Colossus Walker', art: 'colossus', domain: 'ground', ic: 620, mp: 14, build: 22, hp: 900, armor: 30, range: 680, dmg: 90, rate: 3.0, weapon: 'beam', speed: 7, s: 10, grp: 1, ceil: .67, pd: true, req: 'colossus', ds: '★ Towering battle-walker — a giant contiguous LASER cannon that reaches into the mesosphere (lasers can\'t punch into orbit), plus point-defense guns. Walks through fleets. (SUPERWEAPON)' },
   airship:  { name: 'Nanofortress Airship', art: 'airship', domain: 'air', ic: 700, mp: 10, build: 24, hp: 820, armor: 22, range: 620, dmg: 30, rate: .6, weapon: 'rocket', speed: 22, s: 7, grp: 1, req: 'airfortress', ds: '★ Self-repairing flying fortress, raining fire. (SUPERWEAPON)' },
+  // ===== SKY WARSHIPS — atmospheric CAPITAL ships (a class beyond aircraft). d.capital:true keeps them OFF Air Command / Rotor Command (like naval ships aren't hangar-gated); they cruise the upper atmosphere (domain 'air' caps them at airTopY — they FIRE up but never OCCUPY orbit), cost MP + army cap + a standing IC/s UPKEEP, and build ONLY from the SKY DOCK (facKey). Gated behind the Sky Fortress research line. Balance is deliberately conservative & tunable — power comes from being strong-but-COSTLY, never a cap. (Phase 1: fixed loadouts; modular mounts/shield upgrade are Phase 2.) =====
+  skypatrol:   { name: 'Sky Patrol Ship', art: 'skypatrol', domain: 'air', capital: true, facKey: 'skydock', ic: 300, mp: 14, build: 10, hp: 240, armor: 6, range: 560, dmg: 10, rate: .5, weapon: 'tracer', speed: 30, s: 5, grp: 1, pd: true, upkeep: 2, req: 'airfortress', ds: 'Cheap light PICKET / scout sky-ship — fast, minimal armament, an early set of eyes and a screen for the heavier hulls. A capital ship: draws NO hangar slot, but costs 2 IC/s upkeep. (SKY FORTRESSES → Sky Dock)' },
+  skydestroyer:{ name: 'Sky Destroyer', art: 'skydestroyer', domain: 'air', capital: true, facKey: 'skydock', ic: 460, mp: 22, build: 13, hp: 420, armor: 10, range: 640, dmg: 13, rate: .4, weapon: 'tracer', speed: 26, s: 6, grp: 1, pd: true, upkeep: 4, req: 'airfortress', ds: 'Fast ESCORT / anti-air sky-ship — several rapid weapon blisters hose down aircraft and incoming ordnance (laser PD). Screens the fleet. A capital ship (no hangar slot); 4 IC/s upkeep. (SKY FORTRESSES → Sky Dock)' },
+  skycruiser:  { name: 'Sky Missile Cruiser', art: 'skycruiser', domain: 'air', capital: true, facKey: 'skydock', ic: 640, mp: 30, build: 15, hp: 480, armor: 12, range: 1020, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 20, s: 6.5, grp: 1, upkeep: 6, req: 'airfortress', ds: 'STANDOFF missile cruiser — a dorsal VLS deck and flank launch bays saturate a wide arc from long range, the airborne echo of the naval missile cruiser. A capital ship (no hangar slot); 6 IC/s upkeep. (SKY FORTRESSES → Sky Dock)' },
+  skyrailgun:  { name: 'Sky Railgun Ship', art: 'skyrailgun', domain: 'air', capital: true, facKey: 'skydock', ic: 820, mp: 34, build: 20, hp: 560, armor: 14, range: 1400, dmg: 95, rate: 4.5, weapon: 'rail', speed: 14, s: 7.5, grp: 1, ceil: 0, pd: true, upkeep: 8, req: 'airfortress', ds: '★ Heavy long-range ARTILLERY sky-ship — a spinal hypervelocity railgun elevated to reach clear into ORBIT (hits any altitude), plus close-in PD. Slow; needs a screen. A capital ship (no hangar slot); 8 IC/s upkeep. (SKY FORTRESSES → Sky Dock)' },
+  nanoforge:   { name: 'Nanoforge Carrier', art: 'nanoforge', domain: 'air', capital: true, facKey: 'skydock', ic: 1050, mp: 40, build: 26, hp: 820, armor: 16, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 14, s: 9, grp: 1, carrier: true, heliCarrier: true, carrierN: 2, regen: true, pd: true, upkeep: 12, req: 'airfortress', ds: '★ FLAGSHIP — the largest hull in the sky fleet. A mobile airbase whose deck launches a free wing of AIRCRAFT and HELICOPTERS (off army-cap) that fly out, spend their ordnance and land back on deck to rearm. Its self-repairing nanoforge hull slowly re-knits battle damage. A capital ship (no hangar slot); 12 IC/s upkeep — a serious drain. (SKY FORTRESSES → Sky Dock)' },
   shock:    { name: 'Shock Troopers', art: 'shock', domain: 'ground', ic: 60, mp: 9, build: 3, hp: 70, armor: 4, range: 280, dmg: 9, rate: .42, weapon: 'tracer', speed: 20, s: 3.3, grp: 6, req: 'biotech', ds: 'Gene-boosted assault infantry. Fast & tough. (BIOTECH)' },
   cyborg:   { name: 'Cybernetic Legion', art: 'cyborg', domain: 'ground', ic: 200, mp: 8, build: 8, hp: 230, armor: 16, range: 400, dmg: 30, rate: 1.5, weapon: 'tracer', speed: 17, s: 4.3, grp: 2, req: 'transhuman', ds: 'Human minds, machine bodies. Elite. (TRANSHUMANISM)' },
   clone:    { name: 'Clone Battalion', art: 'clone', domain: 'ground', ic: 28, mp: 2, build: 2, hp: 34, armor: 2, range: 230, dmg: 4, rate: .5, weapon: 'tracer', speed: 16, s: 3, grp: 10, req: 'cloning', ds: 'Endless expendable clones. Almost no manpower. (CLONING)' },
@@ -1993,6 +2123,7 @@ const BUILD_DEFS = {
   airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { unit: 'fighter', n: 3, weight: 3 }, ds: 'Produces AIR units and grants ✈ +6 AIR COMMAND (hangar slots — every crewed aircraft needs one). Keeps a standing garrison of multirole fighters (bounded by your GARRISON weight budget — air garrisoners weigh 3×). More airbases = cheaper aircraft AND a bigger air force.' },
   helidepot:{ name: 'Heli-Depot', cat: 'PROD', ic: 140, mp: 70, build: 9, hp: 220, w: 22, h: 14, prod: 'air', rotorBase: true, garrison: { unit: 'heli', n: 1, weight: 2 }, ds: 'Rotorcraft base — no runway needed. Produces HELICOPTERS and grants 🚁 +6 ROTOR COMMAND (the parallel pool crewed helis draw on, SEPARATE from Air Command). Helis rearm & refuel here (and at any city). Keeps a standing gunship-heli on patrol. Cheaper than an airbase.' },
   spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces ORBITAL units, launched to orbit by rocket (or railgun-tossed once Space Age). Builds ROCKET PARTS and provides 5 ORBITAL LIFT capacity — every orbital unit reserves lift, so a bigger space fleet needs more Centers. Keeps a guard satellite.' },
+  skydock:  { name: 'Sky Dock', cat: 'PROD', ic: 440, mp: 170, build: 16, hp: 320, w: 26, h: 22, req: 'airfortress', prodList: ['skypatrol', 'skydestroyer', 'skycruiser', 'skyrailgun', 'nanoforge'], makes: { alloy: .4 }, ds: 'Aerial capital SHIPYARD — the only place the SKY WARSHIPS are assembled (Nanoforge Carrier, Sky Railgun Ship, Sky Missile Cruiser, Sky Destroyer, Sky Patrol Ship). Forges Heavy Alloy alongside. Sky warships are a class beyond aircraft: they draw NO Air Command, but each carries a standing IC/s upkeep. (SKY FORTRESSES)' },
   // DEFENSE
   bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, pd: true, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget). Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'rotary', range: 560, dmg: 5, rate: .1, ceil: .4, noGround: true, pd: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon hosing a STREAM of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Fires ONLY at aircraft & ordnance — it will NOT depress onto ground units or targets hugging the deck. Cheap — screen your cities with them. No research needed.' },
@@ -2064,7 +2195,7 @@ const RESEARCH = {
   robotics: { name: 'Robotics', tier: 2, branch: 'auto', x: 470, y: 80, pre: ['automation'], cost: 150, time: 18, eff: '+15% damage, +12% armor. Unlocks Combat Androids and the BATTLE-DROID FOUNDRY.', units: ['android'], blds: ['droidfoundry'], apply: g => { g.mult.dmg += .15; g.mult.armor += .12; } },
   nanotech: { name: 'Nanotechnology', tier: 2, branch: 'auto', dang: true, x: 610, y: 115, pre: ['automation'], cost: 160, time: 20, sc: 5, eff: 'Self-replicating nanobots: +50% CONSTRUCTION SPEED, buildings self-repair, and you SALVAGE IC from every enemy you destroy. Unlocks the Autonomous Plant, the NANITE TURRET (cheap nanobot-round defense) and the NANITE FOUNDRY (repair aura + smart rounds + faster building).', blds: ['autofactory', 'naniteturret', 'nanitefoundry'], apply: g => { g.regen = true; g.mult.armor += .08; g.mult.conspd += .5; g.salvage = true; } },
   colossus: { name: 'War Walkers', tier: 3, branch: 'auto', x: 760, y: 70, pre: ['robotics'], cost: 300, time: 30, eff: '★ Unlocks the COLOSSUS WALKER superweapon. +20% armor, +12% damage.', units: ['colossus'], apply: g => { g.mult.armor += .2; g.mult.dmg += .12; } },
-  airfortress:{ name: 'Sky Fortresses', tier: 3, branch: 'auto', dang: true, x: 880, y: 60, pre: ['nanotech'], cost: 320, time: 32, sc: 6, eff: '★ Unlocks the NANOFORTRESS AIRSHIP. +30% IC, faster repairs.', units: ['airship'], apply: g => { g.regen = true; g.mult.econ += .3; } },
+  airfortress:{ name: 'Sky Fortresses', tier: 3, branch: 'auto', dang: true, x: 880, y: 60, pre: ['nanotech'], cost: 380, time: 36, sc: 6, eff: '★ THE SKY FLEET. Unlocks the SKY DOCK — build atmospheric CAPITAL SHIPS there: the Nanoforge Carrier, Sky Railgun Ship, Sky Missile Cruiser, Sky Destroyer & Sky Patrol Ship — plus the classic Nanofortress Airship. +30% IC, faster repairs.', units: ['nanoforge', 'skyrailgun', 'skycruiser', 'skydestroyer', 'skypatrol', 'airship'], blds: ['skydock'], apply: g => { g.regen = true; g.mult.econ += .3; } },
   // ===== BIOENGINEERING (bottom — superhumans / transhuman / clones) =====
   biotech:  { name: 'Biotechnology', tier: 1, branch: 'bio', x: 270, y: 400, pre: ['info'], cost: 60, time: 12, eff: '+30% Manpower, +stability. Unlocks Shock Troopers and the GENE FACILITY (where bio quality really comes from).', units: ['shock'], blds: ['genefac'], apply: g => { g.mult.mp += .3; g.mult.stab += .2; } },
   transhuman:{ name: 'Transhumanism', tier: 2, branch: 'bio', x: 470, y: 415, pre: ['biotech', 'robotics'], cost: 180, time: 22, eff: '★ Bio + Robotics. +20% armor & damage. Unlocks the Cybernetic Legion.', units: ['cyborg'], apply: g => { g.mult.armor += .2; g.mult.dmg += .2; } },
@@ -2220,7 +2351,7 @@ function orbCapFree() { return orbCap() - orbCapUsed(); }
 // support themselves (excluded), and disposable DRONES are exempt — swarming is their whole doctrine. Mirrors orbital LIFT.
 const AIR_SLOTS = { airbase: 6, airwing: 3 };
 function airCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && AIR_SLOTS[b.key]) n += AIR_SLOTS[b.key]; return n; }
-function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.d.rotor && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone && !qd.rotor) n++; } return n; }   // living + queued crewed FIXED-WING aircraft — HELICOPTERS are excluded (they draw ROTOR COMMAND instead, below)
+function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.d.rotor && !u.d.capital && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone && !qd.rotor && !qd.capital) n++; } return n; }   // living + queued crewed FIXED-WING aircraft — HELICOPTERS (rotor) and SKY WARSHIPS (capital) are excluded (they draw ROTOR COMMAND / no slot at all)
 // 🚁 ROTOR COMMAND — the PARALLEL capacity pool for HELICOPTERS. A cheap heli and an expensive jet are different logistics, so helis do
 // NOT eat Air Command hangar slots; they need no runway and base out of CITIES, HELI-DEPOTS and airbases. Rotor slots come from
 // heli-depots (ROTOR_SLOTS) plus a baseline from every surviving city (CITY_ROTOR) so helis are usable from the opening minutes.
@@ -2417,7 +2548,7 @@ function spawnUnit(key, x) {
   let hp0 = Math.max(8, Math.round(d.hp * 0.66));   // friendly HP was absurdly bloated — combat should be decisive, not attrition (#7)
   if (d.bio && bmod().bioQual) hp0 = Math.round(hp0 * (1 + bmod().bioQual));   // Gene Facility raises bio-unit quality
   const launching = d.domain === 'space' && !bmod().noLaunch;   // satellites rocket/railgun to orbit — unless a Space Station is up
-  const limitAmmo = d.domain === 'air' && (d.weapon === 'rocket' || d.weapon === 'missile' || d.weapon === 'bomb'), ammo0 = limitAmmo ? (d.ammo || 8) : null;   // missile/bomb aircraft carry a finite magazine and must land to rearm
+  const limitAmmo = d.domain === 'air' && !d.capital && (d.weapon === 'rocket' || d.weapon === 'missile' || d.weapon === 'bomb'), ammo0 = limitAmmo ? (d.ammo || 8) : null;   // missile/bomb aircraft carry a finite magazine and must land to rearm — SKY WARSHIPS (capital) fire freely like naval ships, no sortie cycle
   const hasFuel = d.domain === 'air' && d.fuel != null, fuel0 = hasFuel ? d.fuel : null;   // conventional crewed aircraft are SORTIE-based — limited fuel, must return to base (excludes Superhumans, enemy air, and disposable drone swarms, none of which set d.fuel)
   const spool = hasFuel ? 3 + Math.random() * 2 : 0;   // scrambling from the pad takes a few seconds before a freshly-built wing is actually airborne & combat-ready
   G.units.push({ key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0, wx1, patrol, job: null, launching, railLaunch: launching && !!(G.unlocked && G.unlocked.spaceage), shield: d.shield || 0, maxShield: d.shield || 0, ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool });
@@ -2477,7 +2608,7 @@ function rearmAircraft(u, d, spd, dt) {   // fly home, land on a carrier deck / 
     u.reload = (u.reload || 0) + dt; if (Math.random() < .25) spark(u.x, u.y, 1);
     if (u.reload >= 3.5) { u.reload = 0; u.rtb = false; if (u.maxAmmo) u.ammo = u.maxAmmo; if (u.maxFuel) u.fuel = u.maxFuel; } return;
   }
-  const bx = base.x, deckY = (u.carrFrom ? seaLevelY(bx) : groundY(bx)) - 5, dx = bx - u.x;
+  const bx = base.x, deckY = (u.carrFrom ? (u.carrFrom.d.domain === 'air' ? u.carrFrom.y : seaLevelY(bx)) : groundY(bx)) - 5, dx = bx - u.x;   // a SKY (airborne) carrier's deck is at the carrier's own altitude; a naval carrier's is at sea level
   if (!u.docked) { const adx = Math.abs(dx); if (adx > 50) u.vx += Math.sign(dx) * spd * 6 * dt; else u.vx += (dx * 9 - u.vx) * dt; u.vy += (deckY - u.y) * 5 * dt; const vm = spd * AIR_RTB_SPD_MULT; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .94; u.vy *= .88; u.x += u.vx * dt; u.y += u.vy * dt; u.facing = u.vx >= 0 ? 1 : -1; if (adx < 32 && Math.abs(u.y - deckY) < 28) { u.docked = u.maxFuel ? 3 + Math.random() * 2 : .7; u.vx = u.vy = 0; } }   // sprint home fast; fuel-bearing aircraft take a real turnaround (spool-up) on the pad, ammo-only drones a quick one
   else { u.docked -= dt; u.x += (bx - u.x) * Math.min(1, dt * 8); u.y = deckY; if (u.docked <= 0) { u.docked = 0; u.rtb = false; u.ammo = u.maxAmmo; if (u.maxFuel) u.fuel = u.maxFuel; spark(u.x, u.y - 4, 3); } }   // quick turnaround on the pad — full rearm + refuel
 }
@@ -2524,7 +2655,7 @@ function queueUnit(b, key) {
   if (unitBReq(d)) return toast('NEEDS A ' + (BUILD_DEFS[d.bReq] ? BUILD_DEFS[d.bReq].name.toUpperCase() : d.bReq));
   if (!isMechanical(d) && combatCount() + countQueued() + grp > armyCap()) return toast('ARMY CAP REACHED — build Housing / grow your manpower pool');   // mechanical (mech/drone/elec/clone) units are exempt — see isMechanical
   if (d.domain === 'air' && !d.drone && d.rotor) { const cap = rotorCap(), used = rotorUsed(); if (used + grp > cap) return toast('🚁 ROTOR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build a Heli-Depot (cities give a little baseline)'); }   // helicopters draw ROTOR command, not hangar slots
-  else if (d.domain === 'air' && !d.drone) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed FIXED-WING aircraft need hangar slots
+  else if (d.domain === 'air' && !d.drone && !d.capital) { const cap = airCap(), used = airUsed(); if (used + grp > cap) return toast('✈ AIR COMMAND AT CAPACITY (' + used + '/' + cap + ') — build another Airbase / Underground Airwing / Aero Works'); }   // crewed FIXED-WING aircraft need hangar slots (SKY WARSHIPS are capital ships — exempt)
   const reqUn = unitReqUnmet(d, grp); if (reqUn) return toast(reqUn);   // production-chain gate: SR deposit / orbital lift / component parts
   let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;   // Data Center frees drone manpower; Cloning/Munition/Droid facilities cut it
   const cost = unitCost(d) * grp, mp = mpEach * grp;
@@ -3586,7 +3717,7 @@ function updUnits(dt) {
     if (u.d.builder) continue;
     if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
-    if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen
+    if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (u.d.regen) h = Math.max(h, u.maxHp * .03); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen + self-repairing hulls (Nanoforge Carrier)
     if (u.d.carrier || u.d.heliCarrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0;   // carriers field a FREE deck wing that lands & rearms on the deck; a Carrier keeps at least one gunship HELICOPTER aboard, and a future sky Nanoforge Carrier can set heliCarrier for an all-heli deck
       let nF = 0, nH = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) { if (o.d.rotor) nH++; else nF++; }
       const capH = u.d.heliCarrier ? (u.d.carrierN || 2) : 1, capF = u.d.carrier ? (u.d.carrierN || 3) : 0;   // dedicated heli-carrier → a full rotor deck; a normal fixed-wing carrier → ONE gunship heli + its fighters
@@ -4543,11 +4674,13 @@ function pickAt(wx, sy) {
 // single global PRODUCE tab — routes each unit to one of your factories
 function factoryNameFor(dom) { return { ground: 'Factory', air: 'Airbase', naval: 'Shipyard', space: 'Space Center' }[dom] || 'factory'; }
 function facsFor(dom) { return G.buildings.filter(b => b.d.prod === dom); }
+// a unit with an explicit facKey (e.g. SKY WARSHIPS → 'skydock') builds ONLY at that building type, not at any facility of its domain
+function facsForUnit(d) { return d.facKey ? G.buildings.filter(b => b.key === d.facKey && b.done !== false && !b.captured) : facsFor(d.domain); }
 function produceGlobal(key) {
   const d = UNIT_DEFS[key];
   if (d.req && !G.unlocked[d.req] && !unitProdUnlocked(key)) return toast('REQUIRES RESEARCH: ' + (RESEARCH[d.req] ? RESEARCH[d.req].name : d.req));
-  const facs = facsFor(d.domain);
-  if (!facs.length) return toast('BUILD A ' + factoryNameFor(d.domain).toUpperCase() + ' FIRST');
+  const facs = facsForUnit(d);
+  if (!facs.length) return toast('BUILD A ' + (d.facKey && BUILD_DEFS[d.facKey] ? BUILD_DEFS[d.facKey].name.toUpperCase() : factoryNameFor(d.domain).toUpperCase()) + ' FIRST');
   facs.sort((a, b) => a.queue.length - b.queue.length);
   queueUnit(facs[0], key);
   // ACHIEVEMENT TRACKING — record production (by group size) the moment it's queued from the recruit menu
@@ -4565,15 +4698,15 @@ function buildProdMenu() {
   const grid = document.getElementById('pgrid'); grid.innerHTML = '';
   const bm = bmod();
   for (const key in UNIT_DEFS) {
-    const base = UNIT_DEFS[key], d = effDef(key); const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsFor(d.domain).length;
+    const base = UNIT_DEFS[key], d = effDef(key); const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsForUnit(d).length;
     const pUnlock = (d.req && !G.unlocked[d.req]) ? prodUnlockBuildingFor(key) : null;   // a Production-Line building you could build instead of researching
     // effective production numbers — fold in the active building/research effects so the card shows what you'll actually get
     let grp = d.grp || 1; if (d.drone && bm.droneBatch) grp += bm.droneBatch;
     let mpEach = Math.round(d.mp * 1.7 * Math.max(.1, 1 - (bm.mpAll || 0))); if (d.drone && bm.droneNoMp) mpEach = 0;
     const baseGrp = base.grp || 1, baseMpEach = Math.round(base.mp * 1.7);
     const reqUn = (!locked && !noFac) ? unitReqUnmet(d, grp) : null, chainBits = [];   // production-chain requirements (only meaningful once the unit is otherwise buildable)
-    const airGate = d.domain === 'air' && !d.drone && !locked && !noFac && (d.rotor ? rotorUsed() + grp > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted
-    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone) chainBits.push(d.rotor ? '🚁 ' + grp + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
+    const airGate = d.domain === 'air' && !d.drone && !d.capital && !locked && !noFac && (d.rotor ? rotorUsed() + grp > rotorCap() : airUsed() + grp > airCap());   // hangar slots (or, for helis, ROTOR command) exhausted — SKY WARSHIPS (capital) draw neither
+    if (d.srReq) chainBits.push('◆ ' + SR[d.srReq].name); if (d.lift) chainBits.push('⬆ ' + (d.lift * grp) + ' lift'); if (d.domain === 'air' && !d.drone && !d.capital) chainBits.push(d.rotor ? '🚁 ' + grp + ' rotor' : '✈ ' + grp + ' hangar'); if (d.comp) for (const k in d.comp) chainBits.push('⛓ ' + (d.comp[k] * grp) + ' ' + COMP[k].name);
     const upgraded = d !== base, batchUp = grp !== baseGrp, mpUp = mpEach !== baseMpEach, unlockedByBld = (prodUnl && !!d.req) || (!!d.bReq && !bReqLock), changed = (upgraded || batchUp || mpUp || unlockedByBld) && !locked;
     const card = document.createElement('div'); card.className = 'ucard' + (locked || noFac || reqUn || airGate ? ' cant' : '') + (changed && !airGate ? ' up' : ''); card.dataset.key = key;
     const nm = upgraded ? `<span class="gx">${d.name}</span>` : d.name;

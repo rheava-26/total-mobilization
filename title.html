@@ -2607,6 +2607,42 @@ const INTENT = {
   invasion: { label: 'FULL INVASION',       tip: 'A full ground & air invasion to take the planet — mass skyfall drops and ground landings on every flank.', fleetMul: 1.3, bombard: 12, orbital: 7,  buster: 52, skyfall: 24, flank: 8, glass: false, capital: false, ground: .5, supers: [{ t: 34, kind: 'hive' }, { t: 60, kind: 'bombarder' }, { t: 90, kind: 'leviathan' }] },
   glass:    { label: 'ORBITAL ANNIHILATION',tip: 'Deemed not worth capturing. No landing — they will simply GLASS the planet from orbit. Survive the bombardment.', fleetMul: .5, bombard: 55, orbital: 55, buster: 60, skyfall: 0, flank: 0, glass: true, capital: false, ground: 0, supers: [{ t: 3, kind: 'annihilator' }, { t: 18, kind: 'bombarder' }, { t: 30, kind: 'annihilator' }] },
 };
+// ═════════════════════════════════════════════════════════════════════════════════════════════
+// ESC — INVASION ESCALATION TUNING (playtest-tunable)
+// GOVERNING TENET: difficulty is an OVERWHELMING, ESCALATING ENEMY — never a nerf to the player.
+// These knobs make the invasion SNOWBALL and blanket the map. Values are deliberately CONSERVATIVE
+// starting points — the designer playtests and tunes UP. Better slightly-too-easy than unwinnable.
+const ESC = {
+  // ── OPENING ORBITAL SPREAD ──────────────────────────────────────────────────────────────
+  // As the invasion opens, a rank of bombarders drops strung EVENLY across the whole map so
+  // orbital-plasma ground pressure blankets every stretch from t=0 (not one hotspot). Only intents
+  // that actually bombard from orbit open this way — a recon PROBE / decap precision strike stay
+  // true to their advertised "no orbital ordnance" flavor.
+  OPEN_BOMBARDERS: 5,          // how many bombarders seed the opening
+  OPEN_MARGIN: 0.08,           // keep them off the extreme edges: x in [margin*W, (1-margin)*W]
+  OPEN_JITTER: 200,            // +/- px so the rank isn't a perfect ruler-line
+  OPEN_BOMBARDERS_GRID: false, // opening bombarders SKIP the 21-unit orbital-defense grid + escorts so
+                               //   5 of them at once don't vomit 100+ sats (perf + beatability). Flip
+                               //   true to restore the full wall. Their core kit (ground-snipe +
+                               //   orbital barrage + point-defence) is untouched either way.
+
+  // ── LANDING-ZONE SNOWBALL ───────────────────────────────────────────────────────────────
+  // A landing the player DOESN'T answer sends BIGGER reinforcements to that same flank next time.
+  // A "flank" is a stretch of map; a new drop within FLANK_MERGE px of a tracked flank reinforces
+  // it. Judged at reinforcement time (the ~22-32s inter-wave gap IS the answer window): if the
+  // player killed < ANSWER_FRAC of that flank's last line-group, the flank's size multiplier grows
+  // by STEP (+ a late-game bonus from invTime), capped at MAX_MULT. Answering it shrinks it back.
+  // it.fleetMul feeds the base drop size, so a heavier intent snowballs from a bigger base.
+  FLANK_MERGE: 520,            // px — a drop this close to a tracked flank reinforces it
+  SNOWBALL_ANSWER_FRAC: 0.6,   // must kill >= this fraction of the flank's last line-group to "answer" it
+  SNOWBALL_STEP: 0.5,          // each unanswered wave adds this to the flank's size multiplier
+  SNOWBALL_INVTIME_DIV: 200,   // late-game: + invTime/DIV extra growth per unanswered wave (bigger late)
+  SNOWBALL_MAX_MULT: 2.5,      // hard cap on a flank's size multiplier (keeps it beatable + perf-safe)
+  FLANK_TRACK_MAX: 8,          // how many flanks to remember (prunes oldest)
+
+  // ── POPULATION CEILING ──────────────────────────────────────────────────────────────────
+  POP_CEIL: 92,                // modest raise from 80 so an escalated wave has room to land (perf ceiling)
+};
 function curIntent() { return INTENT[G.intent] || INTENT.invasion; }
 // nudge a landing zone OUT of a city's inner footprint to its outskirts — the autodrones assault from the edges, they don't drop dead-centre on a city
 function avoidCityCenter(x, pad) { pad = pad == null ? 70 : pad; for (const ct of G.cities) { if (ct.hp <= 0) continue; const edge = ct.w * .5 + pad, d = x - ct.x; if (Math.abs(d) < edge) { x = ct.x + (d >= 0 ? 1 : -1) * edge; break; } } return Math.max(120, Math.min(WORLD_W - 120, x)); }
@@ -2656,6 +2692,23 @@ function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superw
   toast('⚠⚠ AUTODRONE SUPERWEAPON' + (spawned > 1 ? 'S' : '') + ' — ' + ((first && first.bossName) || 'INBOUND') + (spawned > 1 ? ' ×' + spawned : '')); shake(11); SFX.boom(); if (typeof musDuck === 'function') musDuck();
   return first;
 }
+// OPENING ORBITAL SPREAD — the invasion opens with a rank of bombarders strung EVENLY across the
+// whole map, so orbital-plasma pressure blankets every stretch of ground from t=0 instead of one
+// hotspot. Reuses the existing bombarder spawn/def; only orbital-bombardment intents open this way.
+// (See ESC.OPEN_* for tuning.) Their core kit — ground-snipe + orbital barrage + PD — is unchanged.
+function openingBombarders(it) {
+  if (!(it.bombard > 0 || it.orbital > 0 || it.glass)) return;   // a recon PROBE / decap precision strike stay a light feeler — no opening orbital wall
+  const n = ESC.OPEN_BOMBARDERS; if (n <= 0) return;
+  const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
+  for (let i = 0; i < n; i++) {
+    const frac = n === 1 ? .5 : i / (n - 1);
+    const x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
+    spawnEnemy('bombarder', x);
+    const e = G.enemies[G.enemies.length - 1];
+    if (e && !ESC.OPEN_BOMBARDERS_GRID) e.openBomb = true;   // a whole rank shouldn't each deploy a 21-unit sat grid — keep the opening beatable & perf-safe
+  }
+  toast('☄☄ ORBITAL BOMBARDERS ON STATION — the whole sky is theirs'); shake(10); if (typeof musDuck === 'function') musDuck();
+}
 function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam — a hostile full-height plasma column dropped on a city
   G.beams.push({ x, r: 64, life: 1.5, total: 1.5, hostile: true });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13);
@@ -2674,26 +2727,43 @@ function waveAirKind() {   // the air contingent of a landing — variety widens
   if (r > .14) return 'gunship';
   return 'drone';
 }
-function doWave(it) {   // a single CONCENTRATED LANDING — the fleet drops a whole battlegroup together (no more scattered random re-entries), then shields the beachhead
+function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank the player leaves unanswered (see ESC)
   G.waveN = (G.waveN || 0) + 1;
   const cap = G.cities.find(c => c.capital), live = G.cities.filter(c => c.hp > 0 && !c.held);
   let lz = pickLandingZone(it, cap, live);   // LANDING-ZONE INTELLIGENCE — scouts several stretches, drops on whichever is least defended (decap always hits the capital)
   lz = avoidCityCenter(Math.max(160, Math.min(WORLD_W - 160, lz)));   // land on the outskirts, not dead-centre in the city
   G.lastLZ = lz;   // remember the freshest landing zone so bunker-busters can pre-soften its defenders
-  // FEWER, HEAVIER DROPS — roughly DOUBLE the old per-wave headcount (the scheduler also spaces waves further apart now)
-  const size = Math.max(9, Math.round((6 + G.waveN * 1.4 + G.invTime / 28) * it.fleetMul * 2));
+  // ── SNOWBALL BOOKKEEPING — find (or open) the flank this drop lands on, then judge whether the
+  //    player answered its LAST drop. Unanswered flank → this reinforcement is BIGGER; answered → smaller.
+  G.flanks = G.flanks || []; G.flankSeq = G.flankSeq || 0;
+  let flank = null; for (const f of G.flanks) if (Math.abs(f.x - lz) < ESC.FLANK_MERGE) { flank = f; break; }
+  if (flank) {
+    let alive = 0; for (const e of G.enemies) if (e.flankId === flank.id && e.hp > 0) alive++;
+    const answered = flank.spawned > 0 && alive <= flank.spawned * (1 - ESC.SNOWBALL_ANSWER_FRAC);
+    if (answered) flank.esc = Math.max(1, flank.esc - ESC.SNOWBALL_STEP);   // pushed back — the next drop here eases off
+    else flank.esc = Math.min(ESC.SNOWBALL_MAX_MULT, flank.esc + ESC.SNOWBALL_STEP + (G.invTime || 0) / ESC.SNOWBALL_INVTIME_DIV);   // ignored — it grows (faster late-game)
+    flank.x = lz;
+  } else {
+    flank = { id: ++G.flankSeq, x: lz, esc: 1, spawned: 0 }; G.flanks.push(flank);
+    while (G.flanks.length > ESC.FLANK_TRACK_MAX) G.flanks.shift();   // prune oldest so the ledger can't grow without bound
+  }
+  const escMul = flank.esc;   // 1.0 for a fresh/answered flank, up to ESC.SNOWBALL_MAX_MULT for a neglected one
+  // FEWER, HEAVIER DROPS (~2x the old headcount) that then SNOWBALL by escMul on unanswered flanks; it.fleetMul + invTime keep late/harder drops bigger
+  const size = Math.max(9, Math.round((6 + G.waveN * 1.4 + G.invTime / 28) * it.fleetMul * 2 * escMul));
   const groundFrac = Math.min(.75, (it.ground != null ? it.ground : .3) + .15);
-  let grd = 0;
+  let grd = 0, lineSpawned = 0;
   for (let i = 0; i < size && G.fleet > 0; i++) {
     const x = Math.max(70, Math.min(WORLD_W - 70, lz + (Math.random() - .5) * 280));
     let kind; if (Math.random() < groundFrac) { const gr = Math.random(); kind = gr < .45 ? 'gtank' : gr < .75 ? 'gmech' : gr < .93 ? 'pelter' : 'earthbreaker'; grd++; } else kind = waveAirKind();
-    spawnEnemy(kind, x); G.fleet = Math.max(0, G.fleet - 1);
+    spawnEnemy(kind, x); const ne = G.enemies[G.enemies.length - 1]; if (ne) ne.flankId = flank.id; lineSpawned++; G.fleet = Math.max(0, G.fleet - 1);
   }
+  flank.spawned = lineSpawned;   // this line-group's size is the yardstick for "answered?" at the next reinforcement (super/anchor deliberately NOT counted — they're too tanky to fairly gate escalation)
   if (grd > 0) { if (G.waveN >= 2 && Math.random() < .6) spawnEnemy('breacher', lz); else spawnEnemy('shieldgen', lz); G.fleet = Math.max(0, G.fleet - 1); }   // a SHIELD CARRIER (early waves) or a persistent BEACHHEAD ANCHOR (later waves) drops with the group to hold the landing zone — down it in the sky before it deploys
   // EVERY LANDING HAS A SUPER UNIT — arrives as part of the group (spawnSuper always clusters them), throttled only by the perf-safety enemy cap
   let sup = false;
   if (G.enemies.length < 78) { const pool = it.ground > .4 ? ['leviathan', 'hive', 'bombarder'] : ['hive', 'bombarder', 'leviathan']; spawnSuper(pool[Math.floor(Math.random() * pool.length)], false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
-  toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '') + (sup ? ' + SUPERWEAPON GROUP' : '')); shake(10); SFX.boom();
+  const escNote = escMul > 1.05 ? ' ×' + escMul.toFixed(1) + ' UNANSWERED FLANK' : '';
+  toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + escNote + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '') + (sup ? ' + SUPERWEAPON GROUP' : '')); shake(10); SFX.boom();
 }
 function spawnShieldDome(x, gen) {   // gen: the Shield Generator enemy this dome is tied to (if any) — while it lives the dome persists & recharges;
   // the instant the generator falls, the dome collapses. dpsCap caps how much HP the dome can lose in a single frame, so a
@@ -2886,7 +2956,8 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); } } }
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
+      if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); } } }
   else if (G.phase === 'invasion') {
     const it = curIntent();
     // TARGET-ACQUISITION telegraph — before the first strike the fleet spends ~15s LOCKING your priority targets (red reticles crawl across your base) behind a klaxon banner. Nothing attacks yet — this is your window to brace — then: MISSILES LAUNCHED.
@@ -2916,7 +2987,7 @@ function updateGame(dt) {
     const sups = it.supers || []; G.superI = G.superI || 0;
     if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
-    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < 80) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
+    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
     if (done) return end(true, it.glass ? 'THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
@@ -3633,7 +3704,7 @@ function updEnemies(dt) {
     if (e.reentry) {   // a long, vulnerable plunge: starts very slow high in the exosphere (giving your railguns / lasers / orbital sats time to whittle it) and GRADUALLY accelerates as it bites into thicker air. Can't fire yet.
       e.x += (e.vx || 0) * dt; e.vy = Math.min((e.vy || 6) + (e.pod ? 130 : 30) * dt, e.pod ? 760 : 440); e.y += e.vy * dt;   // accel/cap scaled up for the taller sky so the (still slow & vulnerable) descent doesn't drag
       if (Math.random() < .2 + e.vy / 600) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s * 1.6, y: e.y - e.s, vx: (Math.random() - .5) * 8, vy: -16 - Math.random() * 22, r: 1.4 + Math.random() * 2.4, life: .22 + Math.random() * .3 });   // only really glows hot once it's moving fast
-      if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if (e.kind === 'leviathan') { banner('⚠ WARNING — ENEMY LAND TITAN HAS MADE GROUNDFALL', 'It will fortify and call reinforcements — destroy it fast', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; a LAND LEVIATHAN's groundfall gets its own big alert + on-map flash so it can't sneak in unnoticed
+      if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
       continue;
     }
     if (e.reinforceEligible) {   // THE BEACHHEAD CLOCK — a landed/anchored superweapon that survives long enough calls in ONE support group (see reinforceBoss / BOSS_REINFORCE_T)
@@ -3667,12 +3738,12 @@ function updEnemies(dt) {
       e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .175; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE at DOUBLE the old fire rate: a red PD beam lances one of your incoming rounds twice as often, so you can SEE it swatting your fire (it's why missiles alone bounce off it)
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, airOnlyList(), 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13); } else e.aaCd = 1.2; }
-      if (!e.escorted) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once
+      if (!e.escorted && !e.openBomb) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once (opening-spread bombarders skip this — see ESC.OPEN_BOMBARDERS_GRID)
         e.escorted = true; const n = 2 + (Math.random() < .5 ? 1 : 0);
         for (let i = 0; i < n && G.enemies.length < 74; i++) { spawnEnemy(Math.random() < .5 ? 'frigate' : 'strikewing', e.x + (i - (n - 1) / 2) * 170); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 90; ne.y = ne.hold; } }
         floatText(e.x, e.y - e.s - 12, '🛰 ESCORTS DEPLOYED', '#9cc4ff');
       }
-      if (!e.satDeployed) {   // FULL ORBITAL DEFENSE GRID — on arrival, ONCE: 10 railgun sats + 10 laser-defense sats + a repair support ship, ringed around it
+      if (!e.satDeployed && !e.openBomb) {   // FULL ORBITAL DEFENSE GRID — on arrival, ONCE: 10 railgun sats + 10 laser-defense sats + a repair support ship, ringed around it (opening-spread bombarders skip this so a 5-wide rank doesn't spawn 100+ sats — see ESC.OPEN_BOMBARDERS_GRID)
         e.satDeployed = true;
         for (let i = 0; i < 10 && G.enemies.length < 130; i++) { spawnEnemy('railsat', e.x + (i - 4.5) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
         for (let i = 0; i < 10 && G.enemies.length < 130; i++) { spawnEnemy('lasersat', e.x + (i - 4.5) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }

@@ -2283,6 +2283,27 @@ function society(kind) {
 /* =====================================================================
    SCENARIO / NEW GAME
    ===================================================================== */
+// ── INHERITED NATION (all tunable) — you take command of an existing country, not bare dirt. Every city
+//    opens with a modest standing base: Garrison Stockpiles (raise the standing-defense ceiling), a factory
+//    or two (which keep their own combined-arms garrison and pour Heavy Alloy), and a few Missile Silos seeded
+//    across the strongest cities so you have opening strategic-strike capability. A head start, NOT a fortress. ──
+const START_STOCKPILES_PER_CITY = 2;   // Garrison Stockpiles pre-placed at each city (a megacity gets +1)
+const START_FACTORY_PER_CITY    = 1;   // Factories pre-placed at each city (a megacity gets +1)
+const START_SILOS_TOTAL         = 3;   // Missile Silos seeded nation-wide, biggest cities first (megacities can take a 2nd)
+function seedInheritedNation() {
+  // seed the strongest cities first — the capital & any megacities earn the scarce silos
+  const order = G.cities.slice().sort((a, b) => ((b.capital ? 1e7 : 0) + b.maxHp) - ((a.capital ? 1e7 : 0) + a.maxHp));
+  let silosLeft = START_SILOS_TOTAL;
+  for (const ct of order) {
+    const mega = !!ct.mega, half = ct.w * .5 + 50;
+    const nStock = START_STOCKPILES_PER_CITY + (mega ? 1 : 0);
+    for (let i = 0; i < nStock; i++) preBuild(ct.x + (i - (nStock - 1) / 2) * 44, 'garrstock');   // spread the stockpiles across the footprint
+    const nFac = START_FACTORY_PER_CITY + (mega ? 1 : 0);
+    for (let i = 0; i < nFac; i++) preBuild(ct.x + (i % 2 ? half * .55 : -half * .55) - i * 22, 'factory');   // factories bring their own tank/inf/AA garrison + alloy
+    if (silosLeft > 0) { preBuild(ct.x - half - 40, 'silo'); silosLeft--; }
+    if (silosLeft > 0 && mega) { preBuild(ct.x + half + 40, 'silo'); silosLeft--; }   // a megacity can host a second launcher
+  }
+}
 function newGame(diff) {
   seedTerrain(); soc.sky = null; soc.tint = null;
   const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2 }[diff] || 1);
@@ -2298,7 +2319,7 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
+    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
@@ -2324,6 +2345,7 @@ function newGame(diff) {
   for (const ct of G.cities) { if (ct !== cap) { preBuild(ct.x + ct.w * .4 + 30, 'samsite'); preBuild(ct.x - ct.w * .4 - 30, 'housing'); } }
   // a couple of old bunkers along the line
   preBuild(cap.x - 240, 'bunker'); preBuild(cap.x + 320, 'bunker');
+  seedInheritedNation();   // INHERITED NATION — every city opens with a modest standing base (stockpiles + factories + a few silos)
   recalcBuildings(); buildBuildBar();
 }
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
@@ -2723,6 +2745,48 @@ function deployEmplacement(type, x, owner) {
 }
 function combatCount() { let n = 0; for (const u of G.units) if (!u.d.builder && !u.garr && !isMechanical(u.d)) n++; return n; }   // garrison units = free local defense; mechanical units don't count vs cap
 function spawnGarrison(key, x, home, weight) { spawnUnit(key, x); const u = G.units[G.units.length - 1]; if (u) { u.garr = true; u.garrison = true; u.garrHome = home || null; u.garrWeight = weight || 1; } return u; }   // u.garrison + u.garrWeight/garrHome feed the GARRISON ECONOMY's global weight budget; u.garr alone keeps the older army-cap/upkeep exclusions working unchanged
+// ── ALLIED REINFORCEMENTS (all tunable) — "you are not alone." When the invasion lands, allied conventional
+//    forces surge in near your cities as YOUR OWN units so they just join the fight. It's a SAFETY NET: a woefully
+//    weak opening isn't an instant loss, but it's never a free win — everyone gets a token baseline, the underprepared
+//    get more (scaled to how far short they fell), and the whole surge is hard-capped. Fires ONCE (G.reinforced latches). ──
+const REINFORCE_ENABLED          = true;
+const REINFORCE_TARGET_STRENGTH  = 26;    // the "prepared" bar — expected player defense strength, scaled by diff × fleetMul below
+const REINFORCE_BASELINE         = 4;     // token aid always sent, even to a well-prepared player (some help regardless)
+const REINFORCE_DEFICIT_TO_UNITS = 0.6;   // extra ground/air units per point you fall short of the bar
+const REINFORCE_MAX              = 22;    // hard ceiling on the total surge — keeps it a net, not a win button
+const REINFORCE_AIR_MAX          = 5;     // at most this many of the surge are aircraft; the rest are armor/infantry
+// rough standing-defense score: the manual army counts most, garrison troopers half, and any defensive/armed/strategic building a point
+function playerDefStrength() {
+  let s = 0;
+  for (const u of G.units) { if (u.d.builder || u.hp <= 0) continue; s += u.garr ? 0.5 : 1.4; }
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || b.emplace) continue; const d = b.d; if (d.weapon || d.strat || d.garrison || d.cat === 'DEF') s += 1; }
+  return s;
+}
+function maybeReinforce(it) {
+  if (!REINFORCE_ENABLED || G.reinforced) return;   // latch — fires at most once per game
+  G.reinforced = true;
+  const need = REINFORCE_TARGET_STRENGTH * G.diff * (it.fleetMul || 1);   // a bigger / more aggressive fleet expects a bigger defense
+  const deficit = Math.max(0, need - playerDefStrength());
+  let surge = Math.min(REINFORCE_MAX, REINFORCE_BASELINE + Math.round(deficit * REINFORCE_DEFICIT_TO_UNITS));
+  if (surge <= 0) return;
+  const cities = G.cities.filter(ct => ct.hp > 0);
+  if (!cities.length) return;
+  let air = 0;
+  for (let i = 0; i < surge; i++) {
+    const ct = cities[i % cities.length];
+    let x = ct.x + (Math.random() - .5) * (ct.w + 140); x = Math.max(80, Math.min(WORLD_W - 80, x));
+    const r = Math.random();
+    let key;
+    if (r < .55) key = 'tank';                                    // armored battalions — the bulk of the relief force
+    else if (r < .8) key = 'inf';                                 // infantry to hold the line
+    else if (air < REINFORCE_AIR_MAX) { key = Math.random() < .5 ? 'fighter' : 'strikejet'; air++; }   // a little air support
+    else key = 'tank';
+    spawnUnit(key, key === 'fighter' || key === 'strikejet' ? x : landNear(x));
+    smoke(x, groundY(x), 2);   // dust of arrival
+  }
+  banner('⚑ ALLIED REINFORCEMENTS', 'You are not alone — allied armor and air are joining your defense', 6);
+  toast('⚑ ALLIED REINFORCEMENTS INBOUND'); musDuck();
+}
 function unitBReq(d) { return d.bReq && !G.buildings.some(x => x.key === d.bReq && x.done !== false) ? d.bReq : null; }
 function unitProdUnlocked(key) { if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.prodUnlock && b.d.prodUnlock.indexOf(key) >= 0) return true; return false; }   // a Production-Line building makes this research-gated unit buildable natively
 function prodUnlockBuildingFor(key) { for (const k in BUILD_DEFS) { const pu = BUILD_DEFS[k].prodUnlock; if (pu && pu.indexOf(key) >= 0) return BUILD_DEFS[k]; } return null; }
@@ -3331,7 +3395,8 @@ function updateGame(dt) {
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
-      if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); } } }
+      if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
+      maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
   else if (G.phase === 'invasion') {
     const it = curIntent();
     // TARGET-ACQUISITION telegraph — before the first strike the fleet spends ~15s LOCKING your priority targets (red reticles crawl across your base) behind a klaxon banner. Nothing attacks yet — this is your window to brace — then: MISSILES LAUNCHED.

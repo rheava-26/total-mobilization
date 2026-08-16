@@ -88,6 +88,14 @@ Make stability VISCERAL on the ground. A unit-level **morale/organization** stat
 - **Legibility is make-or-break:** the player MUST see why units falter — shaken-unit visual (tremble/hunker/scatter), a morale HUD readout, a "⚠ SHOCK — [district] LOST" jolt notification.
 - OPEN Qs: global-baseline + local-spikes (Fable's vote) vs pure-local? how harsh at the bottom (Fable: sloppy/slow, never frozen)?
 
+## 🎭 SUPER EVENTS (HOI4-style event popups — the delivery mechanism for the Decision/Society layer)
+**Designer writes the events; Fable builds the engine.** Fire ONLY on major beats (never spam — see the popup rule). Each event schema:
+- `trigger` — a game-state condition (first city lost · research combo completes · stability < X · invasion begins · super-unit groundfall · etc.). Earned, not random.
+- `title` + `body` — flavor/voice (the designer's).
+- `choices` (optional, 1–3): `{ label, effect }` — effect applies a consequence: ±stability, morale surge/shock, society shift (dystopia/verdant/machine), unlock/lose, doctrine change. Some events are pure DREAD BEATS (no choice, just land + fade).
+- `once` (one-shot) vs repeatable.
+The best events carry a real CHOICE that shifts what your society BECOMES at a genuine cost (that's the "what does total mobilization turn you into" theme, made interactive). Engine = trigger scan + popup UI (respecting the "major beats only" rule) + effect application. Independent of content — buildable in parallel while the designer writes. **STATUS: awaiting the designer's first batch of written events + a go on the engine.**
+
 ## 🗞 THE DECISION & SOCIETY LAYER (the "decision tab" concept — needs its own design pass with the designer)
 
 The original game's biggest missed opportunity, per the designer: **research combos only ever unlocked a unit — they should trigger DECISION CHAINS and NEWS POPUPS with genuinely large impacts on the world and policy.** A decisions/events layer:

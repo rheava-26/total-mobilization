@@ -3548,6 +3548,8 @@ function launchStrike(silo, type, tx, ty, air) {
     if (type === 'nuke') { G.ach.nukeCount = (G.ach.nukeCount || 0) + 1; if (G.phase === 'prep') G.ach.prepNuke = true; }
     else if (type === 'ballistic') { G.ach.ballisticCount = (G.ach.ballisticCount || 0) + 1; }
   }
+  // ☢ EASTER EGG — WORLD WAR THREE: a NUCLEAR strike launched DURING PEACETIME (before the fleet arrives) triggers the joke "you win by losing" ending. Fires exactly once (G.ww3 guard). The player's own nuke still flies — the world just answers it.
+  if (type === 'nuke' && G.phase === 'prep' && !G.ww3) triggerWW3(silo);
   if (ty == null) ty = groundY(tx); if (air == null) air = ty < groundY(tx) - 30;
   const sx0 = silo.x, sy0 = bldSurfaceY(silo) - silo.d.h - 4, g = 240;   // launch from the surface above the launcher (even if buried; sea level for naval platforms)
   if (w.drop) {   // COMBAT DROP — deploy YOUR OWN troops at the target (era-scaled: paratroopers → drop-pods → orbital landing)
@@ -3743,6 +3745,58 @@ function detonateAntimatter(x, y) {   // antimatter warhead — bigger than a nu
   areaDamage(x, y, R, 1100); shake(18); SFX.boom(); SFX.split(); G.nukeFlash = .8;
 }
 function detonateStrat(sub, x, y) { if (sub === 'fbomb') igniteFirestorm(x); else if (sub === 'he') detonateHE(x, y); else if (sub === 'am') detonateAntimatter(x, y); else detonateNuke(x, y); }
+/* ═══════════ ☢ EASTER EGG — WORLD WAR THREE ("you win by losing") ═══════════
+   Launching a NUCLEAR strike during PEACETIME (phase==='prep', before the fleet lands) ends the
+   world in dark comedy: −90% stability, every other silo + the world's powers salvo nukes back at
+   your own cities & military targets (a global exchange), then a popup and a joke VICTORY — the
+   autofleet diverts because there's nothing left to invade. Fires once, guarded by G.ww3. */
+function triggerWW3(playerSilo) {
+  if (!G || G.ww3) return;
+  G.ww3 = true;
+  G.stab = Math.max(0, G.stab * 0.1);   // 1. INSTANT −90% STABILITY — the state is gutted the instant the first warhead flies
+  ww3Retaliation(playerSilo);           // 2. the other powers retaliate through their own stockpiles
+  banner('☢ NUCLEAR LAUNCH DETECTED', 'THE WORLD\'S POWERS ARE RETALIATING — GLOBAL EXCHANGE UNDERWAY', 4);
+  G.nukeFlash = Math.max(G.nukeFlash || 0, 1); shake(16); if (SFX.boom) SFX.boom(); try { musDuck && musDuck(); } catch (e) {}
+  // 3+4. after the exchange plays out for a couple seconds, the popup, then the joke victory ending
+  setTimeout(() => { if (G && !G.over && G.ww3) showWW3Popup(); }, 2800);
+}
+// every OTHER missile silo (naturally-spawning + player-built) plus the world's other nuclear powers salvo warheads
+// at your cities + military/industrial targets — reuses the barrage target-picking spirit and the self-descending
+// k:'nuke' projectile so it reads as a full global nuclear exchange. Staggered over ~2.4s for spectacle.
+function ww3Retaliation(playerSilo) {
+  const targets = [];
+  for (const ct of G.cities) if (ct.hp > 0) targets.push(ct.x);
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || b.ug) continue; const d = b.d; if (d && (d.strat || d.cat === 'DEF' || d.cat === 'PROD' || d.cat === 'SPEC' || d.econ)) targets.push(b.x); }
+  const otherSilos = G.buildings.filter(b => b.d && b.d.strat && b.done !== false && b !== playerSilo);
+  // 3 warheads per rival silo, but the OTHER POWERS ensure a real exchange even if you built only the one silo
+  let warheads = otherSilos.length * 3;
+  warheads = Math.max(warheads, Math.min(30, Math.max(16, targets.length)));
+  for (let i = 0; i < warheads; i++) {
+    let tx = targets.length ? targets[(Math.random() * targets.length) | 0] + (Math.random() - .5) * 70 : Math.random() * WORLD_W;
+    tx = Math.max(60, Math.min(WORLD_W - 60, tx));
+    setTimeout(() => { if (G && !G.over) incomingRetaliationNuke(tx); }, 40 + Math.random() * 2400);
+  }
+}
+function incomingRetaliationNuke(tx) {
+  if (!G) return;
+  // strat:true keeps it alive through the high-altitude cull during the long re-entry (same as the orbital lance/buster)
+  G.proj.push({ k: 'nuke', strat: true, x: tx + (Math.random() - .5) * 40, y: -300, vx: (Math.random() - .5) * 30, vy: 240, tx, ty: groundY(tx), life: 12, friendly: false, tr: [] });
+  if (SFX.missile) SFX.missile();
+}
+// the popup — shown DIRECTLY (EVENTS_LIVE is false, so the normal event scan never fires); reuses #eventModal styling.
+function showWW3Popup() {
+  const titleEl = document.getElementById('eventTitle'), bodyEl = document.getElementById('eventBody'), chEl = document.getElementById('eventChoices');
+  const hd = document.querySelector('#eventModal .hd'); if (hd) hd.textContent = '// GLOBAL THERMONUCLEAR EXCHANGE — the exchange is already underway';
+  if (titleEl) titleEl.textContent = '☢ WORLD WAR THREE';
+  if (bodyEl) bodyEl.textContent = "Well, you fired a nuclear bomb. The other powers retaliated through their own stockpile. Congratulations, the autofleet is now diverting course! You've won in stopping the autofleet! You just needed to turn humanity into a crater to do it!";
+  if (chEl) { chEl.innerHTML = '<button class="pill" id="ww3Btn">…SO BE IT</button>'; const b = document.getElementById('ww3Btn'); if (b) b.onclick = ww3Victory; }
+  openModal('eventModal');
+  try { if (SFX.boom) SFX.boom(); } catch (e) {}
+}
+function ww3Victory() {
+  closeModal('eventModal');
+  end(true, 'THE AUTOFLEET DIVERTS (there is nothing left to invade)');   // technically you stopped them
+}
 function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (G.stab < stratStab(w) + 3) return toast('TOO UNSTABLE — COSTS ' + stratStab(w) + '% STABILITY'); G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
 
 function updUnits(dt) {

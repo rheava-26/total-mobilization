@@ -140,6 +140,15 @@
   #endStats { display: grid; grid-template-columns: auto auto; gap: 6px 26px; background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 16px 24px; font: 13px Consolas, monospace; min-width: 320px; }
   #endStats .lbl { color: #7fa8d8; letter-spacing: 1px; }
   #endStats .val { color: #d8ecff; text-align: right; font-weight: 600; }
+  #endScroll { display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(860px, 94vw); max-height: 62vh; overflow-y: auto; padding: 2px 6px; }
+  #endCharts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; width: 100%; }
+  .aar-chart { background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 10px 12px 8px; }
+  .aar-chart h4 { margin: 0 0 6px; font: 600 10px Consolas, monospace; letter-spacing: 1.5px; color: #6dffb0; }
+  .aar-chart svg { display: block; width: 100%; height: auto; }
+  .aar-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; font: 10px Consolas, monospace; color: #9fb6d4; }
+  .aar-leg span { display: inline-flex; align-items: center; gap: 4px; }
+  .aar-leg i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+  .aar-empty { grid-column: 1 / -1; text-align: center; color: #7fa8d8; font: 12px Consolas, monospace; padding: 18px; }
   /* research — node graph */
   #resModal .modal { width: 98vw; max-width: 1500px; height: 95vh; max-height: 95vh; padding: 16px 20px; display: flex; flex-direction: column; position: relative; }
   .resHead { display: flex; align-items: center; gap: 18px; font-size: 12px; letter-spacing: 1px; margin-bottom: 8px; flex-wrap: wrap; }
@@ -497,7 +506,7 @@
   <button class="back" id="backBtn">❮ ABANDON</button>
 </div>
 
-<div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endStats"></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
+<div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endScroll"><div id="endStats"></div><div id="endCharts"></div></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
 <div class="alertbanner" id="alertBanner"></div>
@@ -1803,13 +1812,13 @@ const SR = {
 };
 // COMPONENT PARTS — intermediate goods your industry produces over time, then SPENDS to assemble bigger units (the slides' "units are components for bigger units" production chains). Stockpiled on G.comp.
 const COMP = {
-  alloy:      { name: 'Heavy Alloy', col: '#cbb48a', ds: 'Forged by Factories & the Heavy Foundry. Spent to assemble heavy & super-heavy armour.' },
+  alloy:      { name: 'Heavy Alloy', col: '#cbb48a', ds: 'Forged by your Factories. Spent to assemble heavy armour.' },
   rocketpart: { name: 'Rocket Parts', col: '#9cc4ff', ds: 'Built by Space Centers & Space Stations. Spent to assemble orbital units before they launch.' },
 };
 const UNIT_DEFS = {
   inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 100, mp: 28, build: 4.2, hp: 46, armor: 2, range: 260, dmg: 5, rate: .45, weapon: 'tracer', speed: 14, s: 9, grp: 1, ds: 'A rifle SQUAD — ONE produced unit, ONE army-cap slot, several bodies sharing that one entity: riflemen burst-fire while a dedicated AT/AA trooper independently engages armor or aircraft. When they DIG IN they raise their own auto-emplacements (MG nests, flak, field guns) — hold a line and it grows into a fort.' },
   tank:     { name: 'MBT "Aegis"', art: 'tank', domain: 'ground', ic: 120, mp: 14, build: 6, hp: 110, armor: 8, range: 300, dmg: 18, rate: 2.2, weapon: 'shell', speed: 11, s: 4, grp: 3, ds: 'Main battle tank battery. Arcing cannon.' },
-  heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 32, rate: 2.8, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tanks. Enormous armor. Each one is forged from HEAVY ALLOY (built by Factories / the Heavy Foundry). (req Heavy Alloys)' },
+  heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 32, rate: 2.8, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tanks. Enormous armor. Each one is forged from HEAVY ALLOY (poured by your Factories). (req Heavy Alloys)' },
   aa:       { name: 'AA "Hailstorm"', art: 'aa', domain: 'ground', ic: 100, mp: 10, build: 5, hp: 65, armor: 3, range: 440, dmg: 7, rate: .28, weapon: 'rotary', speed: 0, s: 4, grp: 2, ceil: .64, pd: true, noGround: true, ds: 'Rapid flak — a rotary autocannon hosing a STREAM of tracer. Shreds low/mid-altitude aircraft (up to the mesosphere). Can swat falling lances.' },
   arty:     { name: 'SPG "Thunder"', art: 'artillery', domain: 'ground', ic: 170, mp: 12, build: 9, hp: 55, armor: 2, range: 780, dmg: 44, rate: 4.2, weapon: 'shell', speed: 4, s: 4, grp: 2, ds: 'Long-range barrage. Slow.' },
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 30, rate: 3, weapon: 'rocket', speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery. (req Rocketry)' },
@@ -1949,7 +1958,7 @@ const RESEARCH = {
   orbitalcmd:  { name: 'Orbital Command', tier: 2, branch: 'space', x: 660, y: 410, pre: ['fusion'], cost: 240, time: 24, eff: '★ Seize orbit in the Fusion Age. +12 army cap (orbital slots), +12% range. Unlocks the ORBITAL GUN.', blds: ['siegegun'], apply: g => { g.mult.capb += 12; g.mult.range += .12; } },
   // CUT: massdrivers (pure +35% dmg) and voidengine (pure +80% IC/+20% dmg) removed — invisible stat-stick leaves that never touched the world. Neither was a prerequisite for anything, so the clean cut orphans nothing (rods stay available via the pre-unlocked 'kinetics').
   // ===== ENERGY (top-spine, conventional→exotic) =====
-  directedenergy:{ name: 'Directed Energy', tier: 1, branch: 'energy', x: 300, y: 210, pre: ['info'], cost: 55, time: 11, eff: '+10% weapon damage. Unlocks the Laser Tower and the SUPERCONDUCTOR FACILITY (cheap electronics + research).', blds: ['lasertower', 'superconductor'], apply: g => g.mult.dmg += .1 },
+  directedenergy:{ name: 'Directed Energy', tier: 1, branch: 'energy', x: 300, y: 210, pre: ['info'], cost: 55, time: 11, eff: '+10% weapon damage. Unlocks the Laser Tower, the Laser Interceptor "Warden" (a beam-armed air-superiority jet), and the SUPERCONDUCTOR FACILITY (cheap electronics + research).', blds: ['lasertower', 'superconductor'], apply: g => g.mult.dmg += .1 },
   plasma:   { name: 'Plasma Weapons', tier: 2, branch: 'energy', x: 640, y: 205, pre: ['directedenergy'], cost: 150, time: 18, eff: '+18% damage, +10% range. ★ RE-ARMS your whole conventional line with PLASMA — tanks→Plasma Pelters, AA→Plasma Rotators, infantry, artillery AND aircraft all swap to plasma. Unlocks the buildable PLASMA TURRET; your Bunkers start firing plasma rounds.', blds: ['plasmaturret'], apply: g => { g.mult.dmg += .18; g.mult.range += .1; } },
   antimatter:{ name: 'Antimatter', tier: 3, branch: 'energy', dang: true, x: 900, y: 150, pre: ['plasma'], cost: 300, time: 30, sc: 10, srReq: 'rare', eff: '★ Unlocks the Antimatter Dreadnought + the ANTIMATTER EXTRACTOR (which actually fuels them). +40% damage, +10% range. (needs Rare Earth)', units: ['dreadnought'], blds: ['antimatterex'], apply: g => { g.mult.dmg += .4; g.mult.range += .1; } },
   // ===== AUTOMATION (top — drones / robots / nanotech) =====
@@ -2009,6 +2018,8 @@ function newGame(diff) {
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
+    hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
+
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
       couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game)
@@ -2845,12 +2856,27 @@ function reinforceBoss(e) {
 // per-shot timing jitter so a formation doesn't fire in robotic lock-step — up to ±0.3s, scaled down for already-rapid
 // weapons so point-defence stays effective; floored so nothing ends up with a zero/negative reload
 function jitterCd(base) { return Math.max(.03, base + (Math.random() * .6 - .3) * Math.min(1, base / .6)); }
+// AFTER-ACTION TIME-SERIES — one bounded snapshot of the war's key stats, taken ~every 2 game-seconds (see updateGame's histT tick). Feeds the end-screen graphs. Capped so a marathon match can't grow the arrays without bound.
+function sampleHist() {
+  const h = G && G.hist; if (!h) return;
+  if (h.t.length >= 1200) return;   // ~40 min of sim at 2s cadence — a hard ceiling; matches never run this long, but never leak memory if they do
+  h.t.push(G.time || 0);
+  h.ic.push(Math.max(0, G.ic || 0));
+  h.mp.push(Math.max(0, G.mp || 0));
+  h.inf.push(Math.max(0, G.inf || 0));
+  h.stab.push(Math.max(0, effStab()));
+  h.army.push(G.units ? G.units.length : 0);
+  h.enemies.push(G.enemies ? G.enemies.length : 0);
+  h.fleet.push(Math.max(0, G.fleet || 0));
+  if ((G.fleetMax || 0) > h.fleetMax) h.fleetMax = G.fleetMax;
+}
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
   G.advT = (G.advT || 0) + dt; if (G.advT >= 1) { const adt = G.advT; G.advT = 0; if (window.tutAdvTick) window.tutAdvTick(adt); }   // PHASED ONBOARDING — adaptive Advisor + milestone unlock checks ~1/s (no-op unless a tutorial session is active)
+  G.histT = (G.histT || 0) + dt; if (G.histT >= 2) { G.histT = 0; sampleHist(); }   // AFTER-ACTION GRAPHS — snapshot key stats every ~2 game-seconds into bounded G.hist arrays
   // economy from buildings
   recalcBuildings();   // refresh special-building modifiers
   const ppB = 1 + (bmod().ppBonus || 0);   // Uranium Enrichment boosts Power Plant output
@@ -4621,6 +4647,66 @@ function end(win, msg) {
   else if (held > 0) { rank = '★ PYRRHIC VICTORY ★'; col = '#ffb86b'; }
   else { rank = 'VICTORY AT ANY COST'; col = '#ffb86b'; }
   const rk = document.getElementById('endRank'); if (rk) { rk.textContent = rank; rk.style.color = col; }
+  try { renderAARCharts(); } catch (er) { logErr && logErr(er); }
+}
+// ── AFTER-ACTION GRAPHS — small-multiple line charts drawn as inline SVG from the per-match G.hist time-series ──
+function aarFmt(v) { v = Math.round(v); if (v >= 10000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k'; if (v >= 1000) return (v / 1000).toFixed(1) + 'k'; return '' + v; }
+function aarMMSS(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+// one panel: title + SVG plotting one or more series. seriesList = [{name,color,data,scale?}]. Each series is scaled by its own `scale` (defaults to the panel's shared max of all series) so mixed-magnitude lines co-plot.
+function aarChart(title, seriesList, tArr, opts) {
+  opts = opts || {};
+  const VW = 244, VH = 116, PX0 = 8, PX1 = 236, PY0 = 10, PY1 = 92;   // viewBox + plot inset (room below baseline for time labels)
+  const n = tArr.length;
+  const xAt = i => PX0 + (PX1 - PX0) * (n > 1 ? i / (n - 1) : 0.5);
+  const yAt = (val, mx) => PY1 - (PY1 - PY0) * (mx > 0 ? Math.min(1, val / mx) : 0);
+  let svg = '<svg viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="none" role="img">';
+  // faint horizontal gridlines
+  for (let g = 0; g <= 3; g++) { const gy = PY0 + (PY1 - PY0) * g / 3; svg += '<line x1="' + PX0 + '" y1="' + gy.toFixed(1) + '" x2="' + PX1 + '" y2="' + gy.toFixed(1) + '" stroke="rgba(150,190,240,.12)" stroke-width="0.6"/>'; }
+  svg += '<line x1="' + PX0 + '" y1="' + PY1 + '" x2="' + PX1 + '" y2="' + PY1 + '" stroke="rgba(150,190,240,.35)" stroke-width="0.8"/>';   // baseline
+  for (const s of seriesList) {
+    const mx = s.scale != null ? s.scale : opts.sharedMax;
+    if (n === 1) { const cx = xAt(0), cy = yAt(s.data[0], mx); svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="2.4" fill="' + s.color + '"/>'; continue; }
+    let pts = '';
+    for (let i = 0; i < n; i++) pts += xAt(i).toFixed(1) + ',' + yAt(s.data[i], mx).toFixed(1) + ' ';
+    if (s.fill) svg += '<polygon points="' + PX0.toFixed(1) + ',' + PY1 + ' ' + pts + PX1.toFixed(1) + ',' + PY1 + '" fill="' + s.color + '" opacity="0.10"/>';
+    svg += '<polyline points="' + pts.trim() + '" fill="none" stroke="' + s.color + '" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  // x-axis time ticks
+  svg += '<text x="' + PX0 + '" y="' + (PY1 + 13) + '" fill="#7fa8d8" font-size="7" font-family="Consolas,monospace">0:00</text>';
+  svg += '<text x="' + PX1 + '" y="' + (PY1 + 13) + '" fill="#7fa8d8" font-size="7" font-family="Consolas,monospace" text-anchor="end">' + aarMMSS(tArr[n - 1] || 0) + '</text>';
+  svg += '</svg>';
+  let leg = '';
+  if (seriesList.length > 1 || opts.legend) { leg = '<div class="aar-leg">' + seriesList.map(s => '<span><i style="background:' + s.color + '"></i>' + s.name + (s.peak != null ? ' · ' + aarFmt(s.peak) : '') + '</span>').join('') + '</div>'; }
+  return '<div class="aar-chart"><h4>' + title + '</h4>' + svg + leg + '</div>';
+}
+function renderAARCharts() {
+  const host = document.getElementById('endCharts'); if (!host) return;
+  const h = G && G.hist;
+  if (!h || !h.t || h.t.length < 1) { host.innerHTML = '<div class="aar-empty">// no telemetry — the engagement ended before the first reading</div>'; return; }
+  const t = h.t, mx = a => a.reduce((m, v) => v > m ? v : m, 0);
+  const C = { ic: '#4ea8ff', mp: '#5dff8d', inf: '#ff5a5a', stab: '#ffd23f', army: '#5dff8d', enemy: '#ff5a5a', fleet: '#c89bff' };
+  let html = '';
+  // 1) ECONOMY — IC / MP / Influence, each on its own scale (magnitudes differ by orders), peaks shown in legend
+  html += aarChart('ECONOMY', [
+    { name: 'IC', color: C.ic, data: h.ic, scale: mx(h.ic) || 1, peak: mx(h.ic) },
+    { name: 'MP', color: C.mp, data: h.mp, scale: mx(h.mp) || 1, peak: mx(h.mp) },
+    { name: 'INF', color: C.inf, data: h.inf, scale: mx(h.inf) || 1, peak: mx(h.inf) },
+  ], t, { legend: true });
+  // 2) STABILITY — fixed 0..100 scale
+  html += aarChart('STABILITY %', [{ name: 'stability', color: C.stab, data: h.stab, scale: 100, fill: true }], t, {});
+  // 3) FORCES — your units vs hostiles, shared scale
+  const fMax = Math.max(mx(h.army), mx(h.enemies), 1);
+  html += aarChart('FORCES — YOURS vs HOSTILE', [
+    { name: 'your units', color: C.army, data: h.army, scale: fMax, peak: mx(h.army) },
+    { name: 'hostiles', color: C.enemy, data: h.enemies, scale: fMax, peak: mx(h.enemies) },
+  ], t, { legend: true });
+  // 4) FLEET REMAINING — progress toward the win (fleet destroyed = victory)
+  if (h.fleetMax > 0) {
+    html += aarChart('AUTOFLEET REMAINING', [{ name: 'fleet', color: C.fleet, data: h.fleet, scale: h.fleetMax, fill: true }], t, {});
+  } else {
+    html += '<div class="aar-chart"><h4>AUTOFLEET REMAINING</h4><div class="aar-empty" style="padding:24px 8px">// the invasion never made landfall</div></div>';
+  }
+  host.innerHTML = html;
 }
 
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));

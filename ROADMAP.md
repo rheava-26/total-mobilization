@@ -32,8 +32,9 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ## 📍 CURRENT STATE
 
-- **Live version: v3.33.0** (on `main`). Enemy landing/super-unit overhaul SHIPPED.
-- **In-flight agents (THE COMBAT WAVE, 2 lanes):** (1) lethality 1–2 hit deaths + fixed threshold-shields + shields-on-big-units + airship→capital-ship + remove-fighter-PD-laser→dedicated aircraft; (2) CIWS invisible-bullets/no-explosion-spam + free-auto-emplacement nerf. Disjoint regions (`hurt()`/defs/shields vs render-FX/emplacement-defs). **This is a big FEEL change (everything glass, shields = survival) — verify carefully; designer may want tuning after playtest.**
+- **Live version: v3.34.0** (on `main`). Enemy shields now block player fire (incl. splash); PD laser moved off the Fighter to a new "Laser Interceptor Warden".
+- **In-flight agents:** none.
+- **AWAITING DESIGNER:** (a) **CIWS-perf + auto-emplacement nerf** — its agent was interrupt-killed twice with nothing saved; still wanted (live lag + unstoppable free wall) — re-fire on the designer's go. (b) **MORALE/ORGANIZATION** design pass (global vs local shock? how harsh?). (c) Enemy-escalation v2 (snowballing drops, groundfall warnings for all supers, 5 opening bombarders). Lethality = REVERSED, do not build.
 - **RESOLVED (emplacement question):** nerf the FREE auto-emplacements only (not built guns, no whiffing); CIWS's per-round explosion spam is the real perf killer. Side-vignette fixed (v3.31.1). Hidden `nightMode` flag awaiting the designer's verdict.
 - **Fable 5 has the organizer seat.**
 

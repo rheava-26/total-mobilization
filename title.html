@@ -306,11 +306,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.40.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.40.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.40.1 — CLEAN SIDES</b><br>The screen-edge vignette was made even earlier but never actually made <i>subtle</i> — on wide screens you could still see the sides darkening. Now the darkening only touches the far corners as a faint frame, and the side edges stay clear (measured: ~9.6% side-darkening → ~1.4%). Still fully removable via the Film Grain &amp; Vignette toggle in Options.</p>
     <p><b>v3.40.0 — NEW WINGS</b><br><b>✈ The whole player jet roster got redrawn.</b> The Falcon, Wraith, Solaris, Warthog, Reaper and Warden are all new sprites now — sleeker near-future silhouettes with clean <b>symmetric wings</b> (no more lopsided planes), edge glow, and a distinct outline each so you can tell them apart at a glance. First step of a broader art glow-up bringing the older units up to the standard of the new capital-ship designs.</p>
     <p><b>v3.39.0 — ROTORS UP</b><br><b>🚁 Helicopters are their own arm now.</b> They don't compete with your jets for hangar space — they run on a separate <b>ROTOR COMMAND</b> pool, filled by cities and the new <b>Heli-Depot</b> building, so a cheap chopper and an expensive fighter no longer fight over the same slot. They need <b>no runways</b> — they base and rearm at cities, depots, or any carrier deck. They fly a totally different way: <b>low-altitude close air support</b> — they close on a target, <b>hover over it and hose it down</b>, drifting along with it, instead of making fast strafing passes like jets. They're deliberately capped to low altitude (they can't reach high-flying enemies — that's what your railguns and interceptors are for). <b>🛥 And your carriers now launch a gunship helicopter</b> alongside their fighter wing — "helicopter carrier" is real, and the future sky flagships will lean into it hard.</p>
     <p><b>v3.38.1 — AIRCRAFT FIRE UP, DON'T FLY UP</b><br>Correction to the last update: aircraft now <b>reach into the thermosphere with their weapons</b> but <b>physically cruise no higher than the mesosphere</b> — they engage the band above them without climbing into it. (The exosphere is still space-weapons-only.)</p>
@@ -4675,8 +4676,8 @@ function drawVignette() {
     vigKey = key;
     // inner/outer are radii in NORMALIZED space where 1.0 = exactly the mid-edge of the screen
     // (a screen corner sits at ~1.41). inner = where darkening starts; outer = where it's maxed.
-    const inner = nightMode ? .50 : .62, outer = nightMode ? 1.05 : 1.24;
-    const midA = nightMode ? .22 : .07, maxA = nightMode ? .48 : .20;
+    const inner = nightMode ? .50 : .90, outer = nightMode ? 1.05 : 1.30;   // daytime: darkening starts near the CORNERS (.90), so side mid-edges stay clear — no more "dark sides" on wide screens
+    const midA = nightMode ? .22 : .04, maxA = nightMode ? .48 : .12;   // daytime: much gentler — a faint corner frame, not a heavy border
     const col = nightMode ? '3,8,24' : '2,5,14';   // night leans cooler/deeper than the daytime navy-black
     vigG = c.createRadialGradient(0, 0, 0, 0, 0, outer);
     vigG.addColorStop(0, `rgba(${col},0)`);

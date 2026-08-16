@@ -2091,11 +2091,16 @@ const UNIT_DEFS = {
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 30, rate: 3, weapon: 'rocket', speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery. (req Rocketry)' },
   sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .60, pd: true, noGround: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
   railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit. (req Kinetic Weapons)' },
-  destroyer:{ name: 'Destroyer "Squall"', art: 'warship', domain: 'naval', ic: 200, mp: 18, build: 10, hp: 180, armor: 8, range: 560, dmg: 11, rate: .45, weapon: 'tracer', speed: 10, s: 6, grp: 1, pd: true, ds: 'Gun destroyer with laser point-defense. Sea-based AA.' },
-  cruiser:  { name: 'Missile Cruiser', art: 'cruiser', domain: 'naval', ic: 290, mp: 20, build: 13, hp: 210, armor: 10, range: 900, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 8, s: 5.5, grp: 1, req: 'navalpwr', ds: 'Naval missile platform, hull bristling with VLS cells fore and aft. (req Naval Power)' },
-  battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', ds: 'Huge long-range missile arsenal ship — the longest hull in the fleet, deck saturated with launch cells, saturates the whole sky from the safety of the sea. (req Naval Power)' },
-  battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, with laser PD. (req Kinetic Weapons)' },
-  carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, pd: true, req: 'navalpwr', ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
+  // NAVAL WARSHIPS are MULTI-TURRETED (Phase 2a) — every hull mounts a main battery PLUS a dedicated secondary AA/PD turret
+  // (weapon2/dmg2/rate2/range2, air-only via wpn2Air, ceil2 = its firing ceiling), fired on an independent cooldown just like
+  // the Land Leviathan's second gun — so a warship can duel surface/main targets with its main battery while its AA turret
+  // simultaneously swats aircraft. All secondary numbers are conservative & tunable. (This is SEPARATE from the shared
+  // capital/naval CIWS anti-ordnance turrets added in v3.44, which stay untouched — that's dumb-flak point defense; this is a real second gun.)
+  destroyer:{ name: 'Destroyer "Squall"', art: 'warship', domain: 'naval', ic: 200, mp: 18, build: 10, hp: 180, armor: 8, range: 560, dmg: 11, rate: .45, weapon: 'tracer', speed: 10, s: 6, grp: 1, pd: true, weapon2: 'rocket', dmg2: 14, rate2: 1.3, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Gun destroyer with laser point-defense plus a secondary SAM turret for airborne threats. Sea-based AA.' },
+  cruiser:  { name: 'Missile Cruiser', art: 'cruiser', domain: 'naval', ic: 290, mp: 20, build: 13, hp: 210, armor: 10, range: 900, dmg: 34, rate: 2.8, weapon: 'rocket', speed: 8, s: 5.5, grp: 1, req: 'navalpwr', weapon2: 'rotary', dmg2: 5, rate2: .28, range2: 480, wpn2Air: true, ceil2: .5, ds: 'Naval missile platform, hull bristling with VLS cells fore and aft, with a close-in rotary flak turret for self-defense. (req Naval Power)' },
+  battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1240, dmg: 40, rate: 2.4, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', weapon2: 'rotary', dmg2: 6, rate2: .3, range2: 500, wpn2Air: true, ceil2: .5, ds: 'Huge long-range missile arsenal ship — the longest hull in the fleet, deck saturated with launch cells and rotary flak batteries screening its own airspace. Saturates the whole sky from the safety of the sea. (req Naval Power)' },
+  battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, pd: true, req: 'kinetics', elec: true, weapon2: 'rocket', dmg2: 16, rate2: 1.4, range2: 560, wpn2Air: true, ceil2: .56, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, backed by laser PD and a secondary SAM turret. (req Kinetic Weapons)' },
+  carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, pd: true, weapon2: 'rocket', dmg2: 12, rate2: 1.1, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA and a secondary SAM turret. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
   fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, ds: 'Stealth MULTIROLE fighter FLIGHT — ONE produced unit, ONE hangar/army-cap slot: the crewed Falcon leads two LOYAL-WINGMAN escort drones flying formation with it, each carrying its own missiles. Beyond-visual-range AAMs for air superiority, and the same missiles strike GROUND & naval targets. The whole flight shares one magazine and burns fuel together, then lands at an airbase to rearm/refuel.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 45, armor: 1, range: 620, dmg: 16, rate: 1.1, weapon: 'beam', speed: 300, s: 3.6, grp: 2, pd: true, fuel: 34, req: 'directedenergy', ds: 'Dedicated air-superiority interceptor built around a nose-mounted POINT-DEFENSE LASER — it duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
@@ -2149,11 +2154,42 @@ const UPGRADES = {
   strikejet: { era: 'microrockets', name: 'Microrocket Warthog', weapon: 'microrkt', dmg: 16, rate: 2.0, range: 580, ds: 'CAS jet re-armed with MICROROCKET pods — every salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
   bomber:    { era: 'microrockets', name: 'Microrocket Lancer', weapon: 'microrkt', dmg: 18, rate: 2.8, range: 640, ds: 'Heavy bomber re-armed with microrocket clusters that scatter onto independent targets. (Microrockets)' },
   heli:      { era: 'microrockets', name: 'Microrocket Kite', weapon: 'microrkt', dmg: 14, rate: 1.7, range: 500, ds: 'CAS helicopter re-armed with MICROROCKET pods — every hovering salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
+  // ===== CAPITAL-SHIP & NAVAL MAIN-WEAPON LADDER (Phase 2a) — each warship's main battery upgrades as you research, so a hull
+  // reads as a live snapshot of your tech tree. These entries are an ARRAY of modifiers: EVERY listed tier whose era is unlocked
+  // layers on in order (low→high), so the weapon LADDER (plasma → particle) and the independent MINIATURIZED SHIELDING mod
+  // compose cleanly on the same hull. ⚠ PHYSICS RULE (do NOT violate): particle beams are the ATMOSPHERIC/naval APEX — there is
+  // NO antimatter mount anywhere here. Antimatter direct-fire annihilates with air; it stays SPACE-ONLY (the Antimatter
+  // Dreadnought). All numbers are deliberately CONSERVATIVE bumps over the base gun and fully tunable.
+  // -- GUN-BATTERY ships: gun (tracer) → PLASMA batteries at Plasma Weapons (mirrors the ground plasma re-arm) --
+  destroyer:   [ { era: 'plasma', name: 'Destroyer "Squall-P"', weapon: 'plasball', dmg: 16, rate: .5, range: 600, ds: 'Gun destroyer re-armed with PLASMA batteries + laser PD + a secondary SAM turret. Sea-based AA. (Plasma Weapons)' }, { era: 'minishield', shield: 90 } ],
+  skypatrol:   [ { era: 'plasma', name: 'Sky Patrol Ship "Plasma"', weapon: 'plasball', dmg: 15, rate: .5, range: 600, ds: 'Light picket sky-ship re-armed with PLASMA blisters — an early set of eyes with a real bolt. A capital ship (no hangar slot); 2 IC/s upkeep. (Plasma Weapons)' }, { era: 'minishield', shield: 90 } ],
+  skydestroyer:[ { era: 'plasma', name: 'Sky Destroyer "Plasma"', weapon: 'plasball', dmg: 19, rate: .42, range: 680, ds: 'Escort sky-ship — rapid PLASMA blisters hose down aircraft & ordnance (laser PD). Screens the fleet. A capital ship; 4 IC/s upkeep. (Plasma Weapons)' }, { era: 'minishield', shield: 140 } ],
+  // -- RAIL/KINETIC HEAVY mounts: railgun (rail) → PARTICLE cannon at Particle Beams (the atmospheric apex — no antimatter) --
+  battlecruiser:[ { era: 'particlebeam', name: 'Railgun Battlecruiser "Tempest-Pb"', weapon: 'particle', dmg: 115, rate: 4.5, range: 1500, ds: 'Spinal mount upgraded to a near-hitscan PARTICLE cannon that punches any altitude, backed by laser PD + a secondary SAM turret. (Particle Beams)' }, { era: 'minishield', shield: 150 } ],
+  skyrailgun:  [ { era: 'particlebeam', name: 'Sky Particle Ship', weapon: 'particle', dmg: 120, rate: 4.5, range: 1500, ds: '★ Heavy long-range artillery sky-ship — its spinal mount is now a near-hitscan PARTICLE cannon reaching clear into ORBIT, plus close-in PD. Slow; needs a screen. A capital ship; 8 IC/s upkeep. (Particle Beams)' }, { era: 'minishield', shield: 180 } ],
+  // -- MISSILE / CARRIER hulls: main weapon STAYS missiles/deck (plasma only re-arms gun/kinetic platforms) — they still gain the deflector shield --
+  cruiser:     [ { era: 'minishield', shield: 130 } ],
+  battleship:  [ { era: 'minishield', shield: 160 } ],
+  carrier:     [ { era: 'minishield', shield: 170 } ],
+  skycruiser:  [ { era: 'minishield', shield: 160 } ],
+  nanoforge:   [ { era: 'minishield', shield: 240 } ],
 };
 // NOTE: missile-armed units (the fighter, SAMs) keep their MISSILES — plasma only re-arms GUN/kinetic units (tanks, infantry, AA flak, artillery).
-function effDef(key) {   // returns the era-upgraded def if its age is unlocked, else the base def (identity-stable via cache)
+// Capital & naval warships climb the plasma→particle LADDER above (never antimatter — that stays space-only) and gain a deflector shield from Miniaturized Shielding.
+function effDef(key) {   // returns the era-upgraded def if its unlock(s) apply, else the base def (identity-stable via cache)
   const base = UNIT_DEFS[key], up = UPGRADES[key];
-  if (up && typeof G !== 'undefined' && G && G.unlocked && G.unlocked[up.era]) return base._up || (base._up = Object.assign({}, base, up));
+  if (!up || typeof G === 'undefined' || !G || !G.unlocked) return base;
+  if (Array.isArray(up)) {   // MODIFIER STACK — every listed tier whose era is unlocked layers on in order (low→high); a per-combination cache keeps the returned object identity-stable across frames
+    let sig = '';
+    for (let i = 0; i < up.length; i++) if (G.unlocked[up[i].era]) sig += i + '.';
+    if (!sig) return base;
+    base._upc || (base._upc = {});
+    if (base._upc[sig]) return base._upc[sig];
+    let d = Object.assign({}, base);
+    for (let i = 0; i < up.length; i++) if (G.unlocked[up[i].era]) d = Object.assign(d, up[i]);
+    return base._upc[sig] = d;
+  }
+  if (G.unlocked[up.era]) return base._up || (base._up = Object.assign({}, base, up));
   return base;
 }
 // unit FAMILIES — special-resource buildings discount/boost units by family (drone / mech / elec / bio / clone)
@@ -2266,7 +2302,13 @@ const RESEARCH = {
   pointdefense: { name: 'Point Defense', tier: 1, branch: 'def', x: 380, y: 300, pre: ['info'], cost: 110, time: 14, eff: 'A dedicated anti-bombardment doctrine. +10% range. Unlocks the AEGIS BATTERY — a rapid-fire interceptor that swats incoming MISSILES and tungsten RODS out of the sky. Your first real counter to orbital strikes.', blds: ['aegisbattery'], apply: g => { g.mult.range += .1; } },
   microrockets: { name: 'Microrockets', tier: 2, branch: 'def', x: 560, y: 335, pre: ['pointdefense'], cost: 200, time: 20, eff: '★ Rockets that split into several INDEPENDENTLY-HOMING submunitions — each chases its own target, devastating swarms & incoming ordnance. RE-ARMS your strike aircraft with microrockets and unlocks the MICROROCKET BATTERY.', blds: ['microbattery'], apply: g => { g.microrkt = true; applyEraUpgrades(); } },
   shieldtech: { name: 'Deflector Shields', tier: 2, branch: 'def', x: 760, y: 335, pre: ['pointdefense', 'directedenergy'], cost: 240, time: 24, eff: '★ POINT DEFENSE + DIRECTED ENERGY combined into projector-shield technology. Unlocks the SHIELD GENERATOR — a building that domes everything nearby against incoming fire (rods, missiles, bombs splash off it until battered down, then it recharges). The decisive defense against orbital glassing.', blds: ['shieldgen'], apply: g => { g.shields = true; } },
-  particlebeam: { name: 'Particle Beams', tier: 3, branch: 'energy', x: 1080, y: 205, pre: ['plasma'], cost: 340, time: 32, eff: '★ PARTICLE CANNONS — single-shot hypervelocity particle bolts that punch clean through anything at any altitude. Unlocks the buildable PARTICLE CANNON. +25% weapon damage.', blds: ['particlecannon'], apply: g => { g.mult.dmg += .25; } },
+  particlebeam: { name: 'Particle Beams', tier: 3, branch: 'energy', x: 1080, y: 205, pre: ['plasma'], cost: 340, time: 32, eff: '★ PARTICLE CANNONS — single-shot hypervelocity particle bolts that punch clean through anything at any altitude. Unlocks the buildable PARTICLE CANNON. +25% weapon damage. ★ Also upgrades your CAPITAL & NAVAL rail warships (Sky Railgun Ship, Railgun Battlecruiser) to near-hitscan PARTICLE spinal cannons — the atmospheric apex.', blds: ['particlecannon'], apply: g => { g.mult.dmg += .25; applyEraUpgrades(); } },
+  // MINIATURIZED SHIELDING — the shared CAPITAL-SHIP shield root. Combines Deflector Shields (the dome tech) with SPACE-AGE
+  // miniaturization to fit a deflector projector inside a mobile hull. Effect: every CAPITAL SHIP (d.capital) and NAVAL warship
+  // gains a personal deflector SHIELD pool (reuses the existing unit-shield mechanic — soaks gun/energy fire, overloaded by a
+  // missile hit, then recharges). No new building/unit; applyEraUpgrades() re-shields hulls already in the field. Gated on
+  // shieldtech + spaceage, both reachable, so it orphans nothing.
+  minishield: { name: 'Miniaturized Shielding', tier: 3, branch: 'def', x: 980, y: 300, pre: ['shieldtech', 'spaceage'], cost: 300, time: 30, eff: '★ DEFLECTOR SHIELDS + SPACE-AGE miniaturization — fits a deflector projector into a mobile hull. Every CAPITAL SHIP and NAVAL warship gains a personal SHIELD that soaks incoming fire until battered down, then recharges (a missile hit overloads it in one shot). (Deflector Shields + Space Age)', apply: g => { g.minishield = true; applyEraUpgrades(); } },
 };
 // influence is precious — research is a real strategic commitment, not a trickle of cheap upgrades
 for (const k in RESEARCH) { const r = RESEARCH[k]; if (!r.root) r.cost = Math.round(r.cost * 1.6); }
@@ -2634,7 +2676,10 @@ function carrierLaunch(u, key) {
 }
 // when a new age unlocks, re-arm units already in the field with their upgraded loadout (keeps their current HP fraction)
 function applyEraUpgrades() {
-  for (const u of G.units) { const up = UPGRADES[u.key]; if (up && G.unlocked[up.era] && u.d === UNIT_DEFS[u.key]) { const nd = effDef(u.key), frac = u.maxHp ? u.hp / u.maxHp : 1; u.d = nd; u.maxHp = Math.max(8, Math.round(nd.hp * .66)); u.hp = Math.max(1, Math.round(u.maxHp * frac)); if (u.squad) upgradeSquadLoadout(u, nd); } }
+  for (const u of G.units) { if (!u.key || !UNIT_DEFS[u.key]) continue; const nd = effDef(u.key); if (nd === u.d) continue;   // re-arm whenever the EFFECTIVE def advances — handles multi-rung LADDERS too (base→plasma→particle), not only base→up once
+    const frac = u.maxHp ? u.hp / u.maxHp : 1; u.d = nd; u.maxHp = Math.max(8, Math.round(nd.hp * .66)); u.hp = Math.max(1, Math.round(u.maxHp * frac));
+    if (nd.shield && !u.maxShield) { u.shield = nd.shield; u.maxShield = nd.shield; }   // MINIATURIZED SHIELDING just unlocked → give an already-fielded hull its deflector pool
+    if (u.squad) upgradeSquadLoadout(u, nd); }
 }
 // re-arm a fielded squad's RIFLEMEN with the new era weapon (tracer→plasball etc.) — the AT/AA specialist keeps its
 // own missile loadout untouched, matching the game-wide rule that plasma only re-arms gun/kinetic platforms.
@@ -4037,6 +4082,17 @@ function updUnits(dt) {
         if (tgt.interceptable || tgt.pdable) { flakHit(tgt, sdmg); SFX.shoot(); } else { fire(u.x, sy, d.weapon, ex, ey, true, sdmg, airMsl ? tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } } claimDmg(tgt, sdmg);   // PD shoots down interceptable lances AND incoming enemy missiles; aircraft burn their magazine then rearm; committed damage is booked so other shooters re-aim
       }
     }
+    // ⊕ SECONDARY TURRET (Phase 2a) — a multi-turreted warship's SECOND gun fires on its OWN cooldown at its OWN acquired
+    // target (mirrors the Land Leviathan's independent second weapon), so a hull can engage its main-battery target while a
+    // secondary AA/SAM turret simultaneously swats aircraft. wpn2Air restricts the secondary to airborne foes (never ground).
+    if (d.weapon2 && (u.spool || 0) <= 0 && !u.docked && !u.launching) {
+      const rng2 = (d.range2 || d.range) * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range);
+      const t2 = acquireEnemy(u.x, u.y, rng2, d.ceil2 != null ? d.ceil2 : .56, d.wpn2Air ? (e => !e.ground) : airFilter(d));
+      u.wCd2 = (u.wCd2 == null ? Math.random() * (d.rate2 || 1) : u.wCd2) - dt;
+      if (t2 && u.wCd2 <= 0) { u.wCd2 = jitterCd((d.rate2 || 1) / (1 + G.mult.rof) / auraAt(u.x, 'rof'));
+        const sy2 = u.y, lt2 = leadTime(d.weapon2, u.x, sy2, t2), ex2 = t2.x + (t2.vx || 0) * lt2 + (Math.random() - .5) * 14, ey2 = t2.y + (t2.vy || 0) * lt2, sdmg2 = (d.dmg2 != null ? d.dmg2 : d.dmg) * (1 + G.mult.dmg), homing = d.weapon2 === 'rocket' || d.weapon2 === 'missile';
+        if (t2.interceptable || t2.pdable) { flakHit(t2, sdmg2); SFX.shoot(); } else fire(u.x, sy2, d.weapon2, ex2, ey2, true, sdmg2, homing ? t2 : null, false); claimDmg(t2, sdmg2); }
+    }
   }
 }
 // SQUAD MULTI-WEAPON FIRE — runs once per living member per frame. Members lerp toward their formation slot
@@ -4944,7 +5000,7 @@ function unitBuffHtml(s) {
   if (rm.length) { rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">RESEARCH DOCTRINE (global)</div>`; for (const [l, v] of rm) rows += buffRow(l, (v > 0 ? '+' : '') + Math.round(v * 100) + '%', '#7cffb0'); }
   // --- ERA UPGRADE — is this unit currently the re-armed variant? ---
   const up = UPGRADES[s.key];
-  if (up && d !== base) { const era = RESEARCH[up.era]; rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">ERA UPGRADE</div>` + buffRow('▲ ' + d.name, era ? era.name : up.era, '#ffd86b'); }
+  if (up && d !== base) { let eraKey = null; if (Array.isArray(up)) { for (const m of up) if (G.unlocked[m.era]) eraKey = m.era; } else eraKey = up.era; const era = eraKey ? RESEARCH[eraKey] : null; rows += `<div class="id" style="margin:6px 0 2px;color:var(--term);font-size:9px;letter-spacing:1px">ERA UPGRADE</div>` + buffRow('▲ ' + d.name, era ? era.name : (eraKey || ''), '#ffd86b'); }
   // --- special-resource / family PRODUCTION discounts (cheaper to build MORE of this type — not retroactive on this unit's own stats) ---
   const pd = [], bm = bmod();
   if (dom === 'ground' && G.owned.steel) pd.push(['Steel deposit', .18]);

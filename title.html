@@ -2554,6 +2554,16 @@ function spawnUnit(key, x) {
   const spool = hasFuel ? 3 + Math.random() * 2 : 0;   // scrambling from the pad takes a few seconds before a freshly-built wing is actually airborne & combat-ready
   G.units.push({ key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0, wx1, patrol, job: null, launching, railLaunch: launching && !!(G.unlocked && G.unlocked.spaceage), shield: d.shield || 0, maxShield: d.shield || 0, ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool });
 }
+// launch one FREE deck craft belonging to carrier u (off army-cap/air-command, tied to the deck for rearm). An AIRBORNE
+// carrier (Nanoforge) launches its wing from its OWN altitude and gets it combat-ready fast, so the deck is never a slow
+// ground-scramble the enemy kills on the climb.
+function carrierLaunch(u, key) {
+  spawnUnit(key, u.x + (Math.random() - .5) * 80);
+  const f = G.units[G.units.length - 1];
+  if (!f) return;
+  f.garr = true; f.carrFrom = u; f.ammo = f.maxAmmo || 8; if (f.maxFuel) f.fuel = f.maxFuel;
+  if (u.d.domain === 'air') { f.y = u.y + 6; f.patrol = u.y; f.spool = Math.min(f.spool || 0, .5); }
+}
 // when a new age unlocks, re-arm units already in the field with their upgraded loadout (keeps their current HP fraction)
 function applyEraUpgrades() {
   for (const u of G.units) { const up = UPGRADES[u.key]; if (up && G.unlocked[up.era] && u.d === UNIT_DEFS[u.key]) { const nd = effDef(u.key), frac = u.maxHp ? u.hp / u.maxHp : 1; u.d = nd; u.maxHp = Math.max(8, Math.round(nd.hp * .66)); u.hp = Math.max(1, Math.round(u.maxHp * frac)); if (u.squad) upgradeSquadLoadout(u, nd); } }
@@ -2764,6 +2774,16 @@ const FIGHTER_MSL_PROX = 30;     // proximity-fuse trigger radius (px) — insid
 const FIGHTER_MSL_SPLASH = 42;   // airburst splash radius (px)
 const FIGHTER_MSL_TURN = 2.8;    // seeker turn rate (rad/s) for prox missiles — up from the base 1.6 so they actually track a mover
 const AIR_SEP_MUL = 1.9;         // extra separation multiplier applied to FRIENDLY aircraft only, so a wing fans out instead of clumping
+// ── AIRCRAFT STANDOFF (tunable) — missile/rocket jets KITE from near max range instead of diving into the enemy PD bubble ──
+const AIR_STANDOFF_FRAC = 0.85;  // ranged aircraft hold at this fraction of weapon range (inside firing range, outside the fortress point-defence envelope)
+const AIR_STANDOFF_BAND = 110;   // px over which the "approach vs ease-back-out" correction ramps to full — smaller = tighter hold on the range line
+// ── CARRIER DECK (tunable) — a carrier SEEDS its whole wing the instant it exists, then replaces losses fast so the deck never reads empty ──
+const CARRIER_RELAUNCH = 3.5;    // game-seconds between replacing ONE lost deck craft (the initial wing is launched all at once, on spawn)
+// ── CAPITAL-SHIP CIWS (tunable) — every sky/naval warship auto-swats incoming ordnance, SEPARATE from its main gun (~2 turrets) ──
+const SHIP_CIWS_INTERVAL = 0.3;  // game-seconds between CIWS bursts
+const SHIP_CIWS_SHOTS = 2;       // intercepts per burst — "2 CIWS turrets" worth of anti-ordnance fire
+const SHIP_CIWS_R = 150;         // px reach of the self-defence turrets
+const SHIP_CIWS_DMG = 6;         // damage per intercept (enemy missiles/rockets carry hp 5, micro-missiles hp 4 → a clean one-shot)
 function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox) {
   if (weapon === 'none') return;
   if (weapon === 'beam') { if (Math.random() < .3) blip(900, .1, 'sine', .1); } else if (weapon === 'particle') { if (Math.random() < .7) blip(1200, .14, 'sine', .22); } else if (weapon === 'amslug') { if (Math.random() < .5) blip(560, .09, 'sawtooth', .11); }
@@ -3719,11 +3739,15 @@ function updUnits(dt) {
     if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
     if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (u.d.regen) h = Math.max(h, u.maxHp * .03); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen + self-repairing hulls (Nanoforge Carrier)
-    if (u.d.carrier || u.d.heliCarrier) { u.ct = (u.ct || 0) + dt; if (u.ct >= 10) { u.ct = 0;   // carriers field a FREE deck wing that lands & rearms on the deck; a Carrier keeps at least one gunship HELICOPTER aboard, and a future sky Nanoforge Carrier can set heliCarrier for an all-heli deck
-      let nF = 0, nH = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) { if (o.d.rotor) nH++; else nF++; }
+    if (u.d.carrier || u.d.heliCarrier) {   // carriers field a FREE deck wing that lands & rearms on the deck; a Carrier keeps a gunship HELICOPTER aboard, the sky Nanoforge sets heliCarrier for a rotor-heavy deck
       const capH = u.d.heliCarrier ? (u.d.carrierN || 2) : 1, capF = u.d.carrier ? (u.d.carrierN || 3) : 0;   // dedicated heli-carrier → a full rotor deck; a normal fixed-wing carrier → ONE gunship heli + its fighters
-      const key = nH < capH ? 'heli' : (nF < capF ? 'fighter' : null);   // keep the heli slot filled first so "helicopter carrier" always works
-      if (key) { spawnUnit(key, u.x + (Math.random() - .5) * 80); const f = G.units[G.units.length - 1]; if (f) { f.garr = true; f.carrFrom = u; f.ammo = f.maxAmmo || 8; if (f.maxFuel) f.fuel = f.maxFuel; } } } }
+      let nF = 0, nH = 0; for (const o of G.units) if (o.carrFrom === u && o.hp > 0) { if (o.d.rotor) nH++; else nF++; }
+      if (u.ct == null) {   // SEED the whole wing the instant the carrier exists, so the deck is NEVER empty (the old 10s-per-craft trickle read as "carriers field no aircraft")
+        u.ct = 0;
+        while (nH < capH) { carrierLaunch(u, 'heli'); nH++; }
+        while (nF < capF) { carrierLaunch(u, 'fighter'); nF++; }
+      } else { u.ct += dt; if (u.ct >= CARRIER_RELAUNCH) { u.ct = 0; if (nH < capH) carrierLaunch(u, 'heli'); else if (nF < capF) carrierLaunch(u, 'fighter'); } }   // then replace ONE battle loss per cycle — a wiped deck refills quickly, but not instantly
+    }
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
@@ -3735,6 +3759,12 @@ function updUnits(dt) {
       u.pdcd = (u.pdcd || 0) - dt;
       if (u.pdcd <= 0) { let best = null, bd = 95 * 95; for (const q of G.proj) { if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - u.x) ** 2 + (q.y - u.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
         if (best) { u.pdcd = .6; G.proj.push({ k: 'beam', x1: u.x, y1: u.y - u.d.s * .3, x2: best.x, y2: best.y, life: .09, friendly: true, dmg: 0 }); best.hp = (best.hp || 1) - 6; if (best.hp <= 0) { best.life = 0; boom(best.x, best.y, 3); } spark(best.x, best.y, 2); } }
+    }
+    if ((d.capital || d.domain === 'naval') && !u.onRail) {   // ⊕ CAPITAL-SHIP CIWS — every sky-warship & naval warship mounts dedicated anti-ordnance turrets SEPARATE from its main gun: each burst swats a couple of nearby incoming rounds. Cheap (one bounded allocation-free scan on a cooldown) and sparsely VISIBLE (a short flak beam per intercept — no CIWS boom-spam)
+      u.ciwsCd = (u.ciwsCd || 0) - dt;
+      if (u.ciwsCd <= 0) { u.ciwsCd = SHIP_CIWS_INTERVAL; let shots = SHIP_CIWS_SHOTS; const r2 = SHIP_CIWS_R * SHIP_CIWS_R, np = G.proj.length, sy0 = u.y - u.d.s * .4;
+        for (let qi = 0; qi < np && shots > 0; qi++) { const q = G.proj[qi]; if (q.friendly || q.life <= 0 || !q.pdable) continue; const qx = q.x - u.x, qy = q.y - u.y; if (qx * qx + qy * qy > r2) continue;
+          q.hp = (q.hp || 1) - SHIP_CIWS_DMG; G.proj.push({ k: 'beam', x1: u.x, y1: sy0, x2: q.x, y2: q.y, life: .06, friendly: true, dmg: 0 }); if (q.hp <= 0) { q.life = 0; spark(q.x, q.y, 2); } shots--; } }
     }
     if (d.domain === 'air') {   // aircraft scream across the map to INTERCEPT the nearest threat (beyond visual range), then weave & strafe — fast & agile
       if (u.spool > 0) { u.spool -= dt; continue; }   // scrambling from the pad — freshly built/refuelled aircraft sit parked for a few seconds before they're combat-ready
@@ -3780,8 +3810,14 @@ function updUnits(dt) {
       const hunt = u.lowAir ? tgt : near(u.x, u.y, G.enemies.filter(e => !e.reentry && (!aF || aF(e))), 1e9);   // jets hunt anywhere (BVR), within their role; helis stay local
       let dy;
       if (hunt) {
-        const dx = hunt.x - u.x, dist = Math.abs(dx);
-        if (dist > rng * .8) u.vx += Math.sign(dx) * spd * 4 * dt;                              // sprint into engagement range
+        const dx = hunt.x - u.x, dist = Math.abs(dx), sdir = Math.sign(dx || 1);
+        const ranged = d.weapon === 'rocket' || d.weapon === 'missile' || d.weapon === 'microrkt';   // missile/rocket jets STAND OFF — kite from near max range, never dive into the fortress point-defence bubble
+        if (ranged) {
+          const stand = rng * AIR_STANDOFF_FRAC, err = dist - stand;                          // err>0 too far → close in; err<0 too deep in the PD envelope → ease BACK OUT
+          u.vx += sdir * Math.max(-1, Math.min(1, err / AIR_STANDOFF_BAND)) * spd * 5 * dt;     // proportional: settle on the range line and hold it, retreating when the enemy closes inside it
+          if (err < 0 && Math.sign(u.vx) === sdir) u.vx *= .55;                                // inside the line & STILL closing → kill inward momentum so a fast jet can't coast on into the fortress PD
+          u.vx += Math.cos(u.wob) * spd * .22 * dt;                                            // gentle lateral weave so a standing flight isn't a static dot
+        } else if (dist > rng * .8) u.vx += sdir * spd * 4 * dt;                               // GUN / short-range craft still sprint in and strafe
         else { const orbit = Math.min(rng * .5, 240); const tx = hunt.x + Math.cos(u.wob) * orbit; u.vx += (tx - u.x) * 2.4 * dt; }   // weave around it
         dy = Math.max(airTopY(), Math.min(landY(u.x) - 28, hunt.y - 22 + Math.sin(u.wob) * 30));
       } else { dy = u.patrol + Math.sin(u.wob * .7) * 24; u.vx += (Math.sin(u.wob * .5) * spd - u.vx * .3) * dt; }

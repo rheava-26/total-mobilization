@@ -1030,7 +1030,9 @@ function drawWorld(alpha) {
   for (const [yy, lab] of [[VH * .25, 'EXOSPHERE'], [VH * .56, 'THERMOSPHERE'], [VH * .66, 'MESOSPHERE'], [VH * .76, 'STRATOSPHERE'], [VH * .83, 'TROPOSPHERE']]) { c.strokeStyle = 'rgba(180,210,255,.07)'; c.setLineDash([5, 9]); c.beginPath(); c.moveTo(0, yy); c.lineTo(W, yy); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(200,220,255,.4)'; c.fillText(lab, W - 16, yy + 12); }
   c.textAlign = 'left';
   drawCloudLayer(alpha);
+  drawAmbientPlanes(alpha); // 🛩 distant civilian airliners crossing the high sky — cosmetic, see AMBIENT LIFE
   drawRidges(alpha);        // distant parallax mountain ranges — behind the rim glow & playfield terrain
+  drawAmbientHorizon(alpha);// distant background skyline (+ invasion-only drop-pod streaks & horizon muzzle-flashes) — cosmetic, see AMBIENT LIFE
   drawHorizonGlow(alpha);   // atmospheric scattering hugging the curved limb (before terrain, so the ground covers its lower half)
   // === TERRAIN body (visible slice) ===
   c.beginPath(); c.moveTo(0, groundY(x0));
@@ -1048,6 +1050,7 @@ function drawWorld(alpha) {
   for (let px = 0; px <= W + 3; px += 3) { const wx = wxAt(px), below = px <= W && groundY(wx) > seaLevelY(wx) + .5; if (below && !inW) { inW = true; sxs = px; } else if (!below && inW) { drawWaterRegion(sxs, px - 3, alpha); inW = false; } }
   c.strokeStyle = 'rgba(15,25,15,.4)'; c.lineWidth = 1.3; c.beginPath(); for (let px = 0; px <= W; px += 3) c.lineTo(px, groundY(wxAt(px))); c.stroke();
   if (G) drawRoads();
+  if (G) drawAmbientGround(alpha);   // 🚗🚤 civilian cars on the roads + boats on the water — cosmetic, see AMBIENT LIFE
   c.fillStyle = 'rgba(230,240,255,.55)'; c.textAlign = 'right'; c.fillText('GROUND LEVEL', W - 16, seaLevelY(x1) - 4); c.fillText('SUBTERRANEAN', W - 16, (seaBaseY() + worldH()) / 2 + 30); c.textAlign = 'left';
   c.restore();
 }
@@ -1186,6 +1189,136 @@ function drawTerrainDetail(a) {
 function drawStrata(x0) { c.save(); for (const off of [42, 96, 168, 260]) { c.strokeStyle = off < 120 ? 'rgba(22,14,7,.4)' : 'rgba(14,9,4,.5)'; c.lineWidth = off < 120 ? 1.4 : 2; c.beginPath(); for (let px = 0; px <= W; px += 8) { const y = groundY(wxAt(px)) + off; px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke(); }
   c.fillStyle = 'rgba(150,128,96,.22)'; const step = W / 42; for (let wx = Math.floor(x0 / step) * step; wx < x0 + W; wx += step) { const gy = groundY(wx), d = 30 + (Math.abs(Math.sin(wx * 12.9898) * 43758.5) % 1) * 230; c.fillRect(sx(wx), gy + d, 1.6, 1.6); } c.restore(); }
 function drawRoads() { c.strokeStyle = 'rgba(40,40,46,.85)'; c.lineWidth = 3; c.setLineDash([]); for (let i = 0; i < G.cities.length - 1; i++) { const a = G.cities[i], b = G.cities[i + 1]; const ax = sx(a.x), bx = sx(b.x); if (bx < -20 || ax > W + 20) continue; c.beginPath(); for (let wx = a.x; wx <= b.x; wx += 12) c.lineTo(sx(wx), groundY(wx) + 2); c.stroke(); } c.lineWidth = 1; c.strokeStyle = 'rgba(180,180,150,.25)'; for (let i = 0; i < G.cities.length - 1; i++) { const a = G.cities[i], b = G.cities[i + 1]; if (sx(b.x) < -20 || sx(a.x) > W + 20) continue; c.setLineDash([6, 6]); c.beginPath(); for (let wx = a.x; wx <= b.x; wx += 12) c.lineTo(sx(wx), groundY(wx) + 2); c.stroke(); c.setLineDash([]); } }
+
+/* =====================================================================
+   AMBIENT LIFE — 100% COSMETIC atmosphere. A small FIXED POOL of civilian scenery living entirely in
+   G.ambient (NEVER G.units/enemies/buildings/proj — nothing here is targetable, damageable, or read by
+   any gameplay/combat code). Cheap: fixed pool sizes (tens, not hundreds), simple flat-shape silhouettes,
+   off-screen culled just like everything else in drawWorld/renderGame.
+   - towns: a distant background skyline (parallax-wrapped, like the stars/sun/moon — no real per-tile
+     terrain alignment needed since it's meant to read as "far away", not literally on the visible ground)
+   - cars: a handful of civilian vehicles driving the roads between cities, back and forth
+   - boats: a handful of civilian boats bobbing/drifting on open water
+   - planes: the odd high-altitude civilian airliner crossing the sky with a thin contrail (slow, straight,
+     way above the combat bands — distinct from any military aircraft)
+   - pods / flashes: BACKGROUND INVASION DEPTH — once the fleet arrives, tiny far-off drop-pod streaks and
+     defensive muzzle-flash blips along the horizon sell a battle bigger than the visible slice
+   ★ THE WORLD REACTS: civilian cars/boats/planes are calm & present during PREP, then FLEE the instant the
+   12s re-entry warning fires (same G.warned trigger as the "⚠ FLEET INBOUND" toast) or invasion begins —
+   they scatter/speed off and vanish for good; nothing wanders back out once the fleet is actually here.
+   ===================================================================== */
+const AMB_TOWN_N = 8, AMB_CAR_N = 9, AMB_BOAT_N = 6, AMB_PLANE_N = 3, AMB_POD_N = 5, AMB_FLASH_N = 9;
+const AMB_HORIZON_PAR = .40;   // parallax factor for the far background layer (towns/pods/flashes) — between the two mountain-ridge layers (.34/.60), so the skyline sits with the ridgeline
+function ambientFleeing() { return !!G && (G.phase === 'invasion' || (G.phase === 'prep' && G.warned)); }   // shared "is the population running yet?" check — mirrors the 12s ⚠ RE-ENTRY DETECTED trigger
+function initAmbient() {
+  if (!G) return;
+  const towns = [];
+  for (let i = 0; i < AMB_TOWN_N; i++) {
+    const nx = ((i + .5) / AMB_TOWN_N + (Math.random() - .5) * .07 + 1) % 1, bw = 22 + Math.random() * 30, n = 3 + Math.floor(Math.random() * 4), bld = [];
+    for (let k = 0; k < n; k++) bld.push({ dx: (Math.random() - .5) * bw, w: 2.6 + Math.random() * 4.4, h: 4 + Math.random() * 11, lit: Math.random() < .55 });
+    towns.push({ nx, bld, lift: .035 + Math.random() * .045 });
+  }
+  const cs = G.cities.slice().sort((a, b) => a.x - b.x), cars = [];
+  if (cs.length >= 2) for (let i = 0; i < AMB_CAR_N; i++) {
+    const seg = i % (cs.length - 1), a = cs[seg], b = cs[seg + 1];
+    cars.push({ ax: a.x, bx: b.x, t: Math.random(), dir: Math.random() < .5 ? 1 : -1, spd: 9 + Math.random() * 13, color: ['#d8c840', '#7fb0ff', '#dcdcdc', '#ff8a5a', '#8fd0a0'][i % 5], state: 'calm', gone: false });
+  }
+  const boats = [];
+  for (let i = 0; i < AMB_BOAT_N; i++) {
+    const wx = findWater(Math.random() * WORLD_W); if (wx == null) continue;
+    const [a, b] = waterBounds(wx); if (b - a < 46) continue;
+    boats.push({ a: a + 12, b: b - 12, t: Math.random(), dir: Math.random() < .5 ? 1 : -1, spd: 5 + Math.random() * 7, bob: Math.random() * 6.28, state: 'calm', gone: false });
+  }
+  const planes = [];
+  for (let i = 0; i < AMB_PLANE_N; i++) { const dir = Math.random() < .5 ? 1 : -1;
+    planes.push({ x: Math.random() * WORLD_W, y: worldH() * (.69 + Math.random() * .05), vx: dir * (26 + Math.random() * 12), state: 'calm', gone: false });
+  }
+  const pods = []; for (let i = 0; i < AMB_POD_N; i++) pods.push({ active: false, nx: 0, t: 0 });
+  const flashes = []; for (let i = 0; i < AMB_FLASH_N; i++) flashes.push({ nx: (i + .5) / AMB_FLASH_N, a: 0 });
+  G.ambient = { towns, cars, boats, planes, pods, flashes, podPtr: 0, podT: 1.5, flashT: .4 };
+}
+function updAmbient(dt) {
+  if (!G || !G.ambient) return;
+  const A = G.ambient, fleeing = ambientFleeing();
+  for (const cr of A.cars) { if (cr.gone) continue;
+    if (fleeing && cr.state === 'calm') { cr.state = 'fleeing'; cr.spd *= 3.4; }   // ★ world reacts — floors it
+    const segLen = Math.max(1, Math.abs(cr.bx - cr.ax)); cr.t += cr.dir * cr.spd * dt / segLen;
+    if (cr.t >= 1 || cr.t <= 0) { if (cr.state === 'fleeing') cr.gone = true; else { cr.dir *= -1; cr.t = Math.max(0, Math.min(1, cr.t)); } }
+  }
+  for (const bt of A.boats) { if (bt.gone) continue;
+    if (fleeing && bt.state === 'calm') { bt.state = 'fleeing'; bt.dir = bt.t > .5 ? 1 : -1; bt.spd *= 2.8; }   // ★ world reacts — runs for the nearest shore
+    const rangeLen = Math.max(1, bt.b - bt.a); bt.t += bt.dir * bt.spd * dt / rangeLen;
+    if (bt.t >= 1 || bt.t <= 0) { bt.t = Math.max(0, Math.min(1, bt.t)); if (bt.state === 'fleeing') bt.gone = true; else bt.dir *= -1; }
+  }
+  for (const pl of A.planes) { if (pl.gone) continue;
+    if (fleeing && pl.state === 'calm') { pl.state = 'fleeing'; pl.vx *= 3.2; }   // ★ world reacts — banks away and climbs out at speed
+    pl.x += pl.vx * dt;
+    if (pl.state === 'calm') { if (pl.x < -400) pl.x = WORLD_W + 380; else if (pl.x > WORLD_W + 400) pl.x = -380; }   // calm airliners loop the whole strip
+    else if (pl.x < -700 || pl.x > WORLD_W + 700) pl.gone = true;   // fled clean off-world — gone for the rest of the match
+  }
+  if (G.phase === 'invasion') {   // BACKGROUND INVASION DEPTH — only once the fleet is actually here
+    A.podT -= dt; if (A.podT <= 0) { A.podT = .9 + Math.random() * 1.7; A.podPtr = (A.podPtr + 1) % A.pods.length; const p = A.pods[A.podPtr]; p.active = true; p.t = 0; p.nx = Math.random(); }
+    for (const p of A.pods) if (p.active) { p.t += dt * 1.1; if (p.t >= 1) p.active = false; }
+    A.flashT -= dt; if (A.flashT <= 0) { A.flashT = .12 + Math.random() * .5; A.flashes[(Math.random() * A.flashes.length) | 0].a = 1; }
+    for (const f of A.flashes) if (f.a > 0) f.a = Math.max(0, f.a - dt * 3.4);
+  }
+}
+// far background skyline + (invasion only) distant drop-pod streaks & horizon defense muzzle-flashes — all on the same wrapped parallax layer as the stars/sun/moon
+function drawAmbientHorizon(a) {
+  if (!G || !G.ambient) return;
+  const A = G.ambient, ME = maxElev(), dim = ambientFleeing() ? .5 : 1;   // the skyline visibly dims as the population goes dark/to ground
+  c.save();
+  for (const t of A.towns) {
+    const px = (((t.nx * W - cam.x * AMB_HORIZON_PAR) % W) + W) % W, gy = curveAt(wxAt(px)) - t.lift * ME;
+    c.globalAlpha = a * .5 * dim; c.fillStyle = '#232838';
+    for (const b of t.bld) c.fillRect(px + b.dx - b.w * .5, gy - b.h, b.w, b.h + 3);
+    if (!ambientFleeing()) { c.globalAlpha = a * .75; c.fillStyle = '#ffd27a'; for (const b of t.bld) if (b.lit) c.fillRect(px + b.dx - .6, gy - b.h * .5, 1.2, 1.2); }   // lit windows go dark the instant the population flees
+  }
+  if (G.phase === 'invasion') {
+    for (const p of A.pods) { if (!p.active) continue;
+      const px = (((p.nx * W - cam.x * AMB_HORIZON_PAR) % W) + W) % W, gy = curveAt(wxAt(px)), y0 = gy - ME * 1.7, y1 = gy - ME * .12, y = y0 + (y1 - y0) * p.t;
+      c.globalAlpha = a * (.35 + .65 * p.t); c.strokeStyle = '#ff9a5a'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(px, y - 8); c.lineTo(px, y); c.stroke();
+      c.fillStyle = '#ffcf9a'; c.beginPath(); c.arc(px, y, 1.2, 0, 6.28); c.fill();
+    }
+    for (const f of A.flashes) { if (f.a <= 0) continue;
+      const px = (((f.nx * W - cam.x * AMB_HORIZON_PAR) % W) + W) % W, gy = curveAt(wxAt(px)) - ME * .05;
+      c.globalAlpha = a * f.a * .85; c.fillStyle = '#bfe0ff'; c.beginPath(); c.arc(px, gy, 1.5, 0, 6.28); c.fill();
+    }
+  }
+  c.globalAlpha = a; c.restore();
+}
+// the odd high-altitude civilian airliner crossing the sky, thin contrail behind — slow & straight, well clear of any combat band
+function drawAmbientPlanes(a) {
+  if (!G || !G.ambient) return;
+  for (const pl of G.ambient.planes) { if (pl.gone) continue;
+    const px = sx(pl.x); if (px < -260 || px > W + 260) continue;
+    const dir = pl.vx >= 0 ? 1 : -1;
+    c.globalAlpha = a * .26; c.strokeStyle = '#dfe8f5'; c.lineWidth = 1; c.beginPath(); c.moveTo(px - dir * 44, pl.y + .8); c.lineTo(px - dir * 6, pl.y + .3); c.stroke();
+    c.globalAlpha = a * .85; c.fillStyle = '#b9c4d6'; c.save(); c.translate(px, pl.y); c.scale(dir, 1);
+    c.beginPath(); c.moveTo(-7, 0); c.lineTo(6, -.6); c.lineTo(7, 0); c.lineTo(6, .6); c.closePath(); c.fill(); c.fillRect(-2, -3.2, 1, 6.4);
+    c.restore();
+  }
+  c.globalAlpha = a;
+}
+// civilian cars on the roads between cities + civilian boats drifting the open water — drawn on the real playfield (culled off-screen), REAL world coordinates
+function drawAmbientGround(a) {
+  if (!G || !G.ambient) return;
+  const A = G.ambient;
+  for (const cr of A.cars) { if (cr.gone) continue;
+    const wx = cr.ax + (cr.bx - cr.ax) * Math.max(0, Math.min(1, cr.t)), px = sx(wx); if (px < -20 || px > W + 20) continue;
+    const gy = groundY(wx), dir = cr.dir >= 0 ? 1 : -1;
+    c.globalAlpha = a * .9; c.save(); c.translate(px, gy - 1.4); c.scale(dir, 1);
+    c.fillStyle = cr.color; c.fillRect(-3.4, -2.6, 6.8, 2.6); c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(-1.5, -2.5, 2.2, 1.3);
+    c.restore();
+  }
+  for (const bt of A.boats) { if (bt.gone) continue;
+    const wx = bt.a + (bt.b - bt.a) * Math.max(0, Math.min(1, bt.t)), px = sx(wx); if (px < -20 || px > W + 20) continue;
+    const gy = seaLevelY(wx) + Math.sin(animClock * .003 + bt.bob) * 1.1;
+    c.globalAlpha = a * .85; c.fillStyle = '#e8e2d0'; c.beginPath(); c.moveTo(px - 5, gy); c.lineTo(px + 5, gy); c.lineTo(px + 3, gy - 2.4); c.lineTo(px - 3, gy - 2.4); c.closePath(); c.fill();
+    c.strokeStyle = '#6a625a'; c.lineWidth = 1; c.beginPath(); c.moveTo(px, gy - 2.2); c.lineTo(px, gy - 6); c.stroke();
+  }
+  c.globalAlpha = a;
+}
 
 /* =====================================================================
    ART — unit silhouettes (ctx, scale, aim)
@@ -2556,6 +2689,7 @@ function newGame(diff) {
   preBuild(cap.x - 240, 'bunker'); preBuild(cap.x + 320, 'bunker');
   seedInheritedNation();   // INHERITED NATION — every city opens with a modest standing base (stockpiles + factories + a few silos)
   recalcBuildings(); buildBuildBar();
+  initAmbient();   // 🚗✈🚤 cosmetic ambient life pool — see AMBIENT LIFE
 }
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
 // snap to flat land like flatLand(), but keep at least `gap` from every already-placed city centre so
@@ -3634,6 +3768,7 @@ function sampleHist() {
 }
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
+  updAmbient(dt);   // 🚗✈🚤 cosmetic ambient life tick — see AMBIENT LIFE (never touches gameplay state)
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)

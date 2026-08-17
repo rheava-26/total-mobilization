@@ -11,6 +11,18 @@ Maintained by: Claude (auto-appends any new idea the dev raises). Last updated: 
 
 ## 💡 Idea log (newest first)
 
+### 2026-08-17 (later — the parallel fleet batch)
+- **Synth-generated sounds APPROVED** (dev reversed the earlier packs-only rule): "fuck it, we
+  can have synth generated sounds." `sfx.js` is now a layered procedural WebAudio bank.
+- **Parallel agent batch delivered:** 18 new real warship classes across `fleet-heavy.js`
+  (Fletcher, Gearing, Iowa, Ticonderoga, Perry, Atlanta, Essex carrier, oiler) and
+  `fleet-light.js` (PT boat, LCS, minesweeper, missile corvette, landing craft, submarine,
+  Seahawk, Cobra, seaplane, patrol bomber) → 25 spawnable unit types total.
+- **24-zone theater map** (enemy northern reach → contested archipelago → player home waters,
+  fortress zones + rich harbors).
+- **`NavalDominance.html` standalone build** (`node build.mjs`): one double-clickable file that
+  works from file:// via blob-URL module embedding. Rebuild it after any game.html/module edit.
+
 ### 2026-08-17
 - **"This plays like Risk."** The campaign layer is genuinely Risk-shaped: a graph of
   territories, each zone garrisons/produces units every turn, you move + attack across a big

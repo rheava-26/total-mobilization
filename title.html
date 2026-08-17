@@ -3381,6 +3381,19 @@ const AMI_MSL_THRUST = 2400;     // motor accel (px/s²) — ~3.3× a normal mis
 const AMI_MSL_MAXSPD = 1500;     // top speed cap (px/s), Mach-5 feel — a normal missile's is 320 (and uncapped/slow to build)
 const AMI_MSL_TURN = 4.8;        // seeker turn rate (rad/s) — tighter than the fighter missile (2.8) so it tracks jinking/falling rounds
 const AMI_MSL_PROX = 46;         // proximity-fuse radius (px) — a near miss still KILLS the incoming round (these threats are small)
+// ── MISSILE MOTOR BURN TIME (tunable) — FINITE powered flight. Once ignited (t >= pop), a missile's motor
+// stays lit for only `burn` seconds; after that it CUTS OUT — no more thrust, no more exhaust plume — and
+// the round coasts ballistically (gravity + drag), only barely nudging its heading (a dead seeker without
+// thrust doesn't out-turn a live target). Stops missiles chasing forever & burning frame budget, and a round
+// that can't reach its target arcs over and falls instead of climbing to infinity. AMI/AEGIS interceptors get
+// a burn that outlasts their whole (short) flight, so they stay hot-lit the entire intercept as before.
+const MSL_BURN_DEFAULT = 2.2;    // stock guided missile / ground-fired SAM etc.
+const MSL_BURN_ROCKET = 1.0;     // dumbfire rocket — short hot burn, mostly ballistic after
+const MSL_BURN_BOMB = 1.6;       // powered glide bomb — modest correction burn
+const MSL_BURN_FIGHTER = 1.3;    // aircraft air-to-air/CAS missile (prox-fused) — short, snappy intercept burn
+const MSL_BURN_MICRO = .9;       // microrocket/micromissile submunition — tiny motor, brief kick then coast
+const MSL_BURN_AMI = 8;          // Anti-Missile Interceptor — stays lit its whole hypervelocity run (spawns with t:1 as a head-start, so this must clear t_max = 1 + life = 7, with margin)
+const MSL_BURN_AEGIS = 5;        // AEGIS guided interceptor — stays lit its whole short intercept run (spawns with t:1, so this must clear t_max = 1 + life = 4.4, with margin)
 const AIR_SEP_MUL = 1.9;         // extra separation multiplier applied to FRIENDLY aircraft only, so a wing fans out instead of clumping
 // ── AIRCRAFT STANDOFF (tunable) — missile/rocket jets KITE from near max range instead of diving into the enemy PD bubble ──
 const AIR_STANDOFF_FRAC = 0.85;  // ranged aircraft hold at this fraction of weapon range (inside firing range, outside the fortress point-defence envelope)
@@ -3468,15 +3481,15 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox, ami) {
   else if (weapon === 'plasma') { G.proj.push({ k: 'pbeam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .17, friendly, dmg }); beamHit(sxx, syy, tx, ty, dmg, friendly); for (let i = 0; i < 4; i++) { const t2 = Math.random(); G.parts.push({ k: 'plasma', x: sxx + (tx - sxx) * t2, y: syy + (ty - syy) * t2, vx: (Math.random() - .5) * 34, vy: (Math.random() - .5) * 34, r: 2 + Math.random() * 3, life: .25 + Math.random() * .35 }); } }
   else if (weapon === 'shell') { const v = 250; G.proj.push({ k: 'shell', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - v * .30, life: 9, friendly, dmg, tr: [] }); }
   else if (ami && weapon === 'missile') {   // ANTI-MISSILE INTERCEPTOR round — a big HYPERVELOCITY hit-to-kill dart: NO cold pop-up (motor lit at t≥pop=0), leaps hot off the rail at AMI_MSL_LAUNCH, then hard-boosts to AMI_MSL_MAXSPD. Tagged ami:true so the sim clamps its top speed and the renderer draws it large with a bright plume. Hard-locks homeTgt (chases HIGH orbital rounds into space) and proximity-fuses on a near miss.
-    const mp = { k: 'missile', ami: true, x: sxx, y: syy, vx: Math.cos(ang) * AMI_MSL_LAUNCH, vy: Math.sin(ang) * AMI_MSL_LAUNCH, spd: AMI_MSL_LAUNCH, maxspd: AMI_MSL_MAXSPD, thrust: AMI_MSL_THRUST, turn: AMI_MSL_TURN, t: 1, pop: 0, life: 6, friendly, dmg, tr: [] };
+    const mp = { k: 'missile', ami: true, x: sxx, y: syy, vx: Math.cos(ang) * AMI_MSL_LAUNCH, vy: Math.sin(ang) * AMI_MSL_LAUNCH, spd: AMI_MSL_LAUNCH, maxspd: AMI_MSL_MAXSPD, thrust: AMI_MSL_THRUST, turn: AMI_MSL_TURN, t: 1, pop: 0, burn: MSL_BURN_AMI, life: 6, friendly, dmg, tr: [] };
     if (homeTgt) mp.homeTgt = homeTgt; G.proj.push(mp);
     boom(sxx, syy, 4); smoke(sxx, syy, 3); G.parts.push({ k: 'flash', x: sxx, y: syy, r: 12, life: .16 }); SFX.launch();   // unmistakable hard boost off the rail: bright launch flash + smoke puff + rail SFX
     return;
   }
-  else if (weapon === 'missile' || weapon === 'bomb' || weapon === 'rocket') { const slow = 22, mp = { k: 'missile', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 26, spd: slow, maxspd: weapon === 'rocket' ? 380 : 320, thrust: 720, turn: 1.6, t: 0, pop: .24, life: 9, friendly, dmg, tr: [], rocket: weapon === 'rocket' }; if (!friendly) { mp.pdable = true; mp.hp = 5; } if (weapon === 'bomb') mp.bomb = true; if (homeTgt) mp.homeTgt = homeTgt; if (prox) { mp.prox = true; mp.turn = FIGHTER_MSL_TURN; } G.proj.push(mp); }   // cold launch: pops up slow, then ignites & accelerates. ENEMY missiles can be shot down by point-defence (CIWS/AA/SAM/bunkers); BOMBS also crack shallow tunnels on impact. homeTgt hard-locks a specific target (Anti-Missile Interceptor uses this to chase HIGH orbital rounds the normal re-acquire path won't touch)
+  else if (weapon === 'missile' || weapon === 'bomb' || weapon === 'rocket') { const slow = 22, burn0 = weapon === 'rocket' ? MSL_BURN_ROCKET : weapon === 'bomb' ? MSL_BURN_BOMB : MSL_BURN_DEFAULT, mp = { k: 'missile', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 26, spd: slow, maxspd: weapon === 'rocket' ? 380 : 320, thrust: 720, turn: 1.6, t: 0, pop: .24, burn: burn0, life: 9, friendly, dmg, tr: [], rocket: weapon === 'rocket' }; if (!friendly) { mp.pdable = true; mp.hp = 5; } if (weapon === 'bomb') mp.bomb = true; if (homeTgt) mp.homeTgt = homeTgt; if (prox) { mp.prox = true; mp.turn = FIGHTER_MSL_TURN; mp.burn = MSL_BURN_FIGHTER; } G.proj.push(mp); }   // cold launch: pops up slow, then ignites & accelerates for `burn` seconds, then the motor cuts out and it coasts. ENEMY missiles can be shot down by point-defence (CIWS/AA/SAM/bunkers); BOMBS also crack shallow tunnels on impact. homeTgt hard-locks a specific target (Anti-Missile Interceptor uses this to chase HIGH orbital rounds the normal re-acquire path won't touch)
   else if (weapon === 'plasball' || weapon === 'plasarc') { const arc = weapon === 'plasarc', v = arc ? 540 : 900; G.proj.push({ k: 'plasball', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - (arc ? v * .30 : 0), grav: arc ? 150 : 0, spd: v, life: 4, friendly, dmg, big: arc, tr: [] }); }   // PLASMA = a contained kinetic slug fired DEAD STRAIGHT & fast (low power = quick light bolt, high power = heavy arcing tank/arty slug); dumps its heat & spalls violently on contact — NOT a homing bolt
   else if (weapon === 'smart') { const v = 280; G.proj.push({ k: 'smart', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, spd: v, life: 5, friendly, dmg, tr: [] }); blip(720, .08, 'square', .12); }   // smart round — homes, latches & disassembles
-  else if (weapon === 'aegismsl') { const v = 150, mp = { k: 'missile', aegis: true, x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, spd: v, maxspd: 640, thrust: 900, turn: 4.4, t: 1, pop: 0, life: 3.4, friendly, dmg, tr: [] }; if (homeTgt) mp.homeTgt = homeTgt; G.proj.push(mp); blip(1500, .05, 'square', .1); }   // AEGIS guided interceptor — reuses the homing-missile sim (hard-locks its target via homeTgt, so it chases pdable rounds like the Anti-Missile Interceptor) but flies hot-off-the-rail with NO cold pop-up, a much tighter turn rate and a sleek CYAN dart body — a smart tracking round, visually & mechanically distinct from the CIWS's dumb flak stream
+  else if (weapon === 'aegismsl') { const v = 150, mp = { k: 'missile', aegis: true, x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, spd: v, maxspd: 640, thrust: 900, turn: 4.4, t: 1, pop: 0, burn: MSL_BURN_AEGIS, life: 3.4, friendly, dmg, tr: [] }; if (homeTgt) mp.homeTgt = homeTgt; G.proj.push(mp); blip(1500, .05, 'square', .1); }   // AEGIS guided interceptor — reuses the homing-missile sim (hard-locks its target via homeTgt, so it chases pdable rounds like the Anti-Missile Interceptor) but flies hot-off-the-rail with NO cold pop-up, a much tighter turn rate and a sleek CYAN dart body — a smart tracking round, visually & mechanically distinct from the CIWS's dumb flak stream
   else if (weapon === 'rail' || weapon === 'rod') { const v = weapon === 'rod' ? 380 : 520; G.proj.push({ k: 'rail', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, big: weapon === 'rod' }); }
   else if (weapon === 'amslug') { const v = 640; G.proj.push({ k: 'amslug', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, tr: [] }); }   // WHISTLER's microscopic antimatter slug — fast, DEAD STRAIGHT, no homing (fixes the old homing missile that snapped onto the nearest friendly and detonated a few feet out)
   else if (weapon === 'particle') { G.proj.push({ k: 'particlebeam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .14, friendly, dmg }); particleHit(sxx, syy, tx, ty, dmg, friendly); }   // TRUE HITSCAN — single-shot hypervelocity bolt resolves its hit the SAME TICK it fires (no flight time to whiff a fast mover); drawn as an instant beam, not a projectile
@@ -5407,7 +5420,14 @@ function updProj(dt) {
       if ((p.t >= p.splitT && cluster) || p.t > 1.6 || p.life <= 0 || p.y >= groundY(p.x)) {
         boom(p.x, p.y, 3); spark(p.x, p.y, 5);
         const pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.n).map(o => o[1]);
-        for (let i = 0; i < p.n; i++) { const a = -1.4 + (i / Math.max(1, p.n - 1)) * 2.8 + (Math.random() - .5) * .4, sub = { k: 'missile', x: p.x, y: p.y, vx: Math.cos(a) * 130, vy: Math.sin(a) * 130 - 16, spd: 130, maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: 0, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null }; if (!p.friendly) { sub.pdable = true; sub.hp = 4; } G.proj.push(sub); }
+        for (let i = 0; i < p.n; i++) {
+          const a = -1.4 + (i / Math.max(1, p.n - 1)) * 2.8 + (Math.random() - .5) * .4;
+          let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
+          if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — a fan angle that would launch this sub already heading groundward instead gets a brief upward/outward kick, so it clears the burst point and acquires before it ever starts descending (was: augered straight into the dirt on detach)
+          const sub = { k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null };
+          if (!p.friendly) { sub.pdable = true; sub.hp = 4; }
+          G.proj.push(sub);
+        }
         p.life = 0;
       }
       continue;
@@ -5440,7 +5460,12 @@ function updProj(dt) {
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target
         boom(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
         const tlist = enemiesLive.filter(e => e.y >= SPACE_Y()), pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.split).map(o => o[1]);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle)
-        for (let i = 0; i < p.split; i++) { const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4; G.proj.push({ k: 'missile', x: p.x, y: p.y, vx: Math.cos(a) * 130, vy: Math.sin(a) * 130 - 16, spd: 130, maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: 0, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null }); }
+        for (let i = 0; i < p.split; i++) {
+          const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4;
+          let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
+          if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — same fix as the microrocket split: never deploy a submunition already heading groundward (this carrier explicitly bursts AT ground level when its target isn't airborne, so this was diving straight in on detach)
+          G.proj.push({ k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null });
+        }
         p.life = 0;
       }
       continue;
@@ -5468,8 +5493,10 @@ function updProj(dt) {
     if (p.k === 'missile') {
       if (p.pdable && p.hp <= 0) { boom(p.x, p.y, 4); spark(p.x, p.y, 3); p.life = 0; continue; }   // shot out of the air by point-defence
       p.t = (p.t || 0) + dt;
+      const burnEnd = (p.pop || 0) + (p.burn != null ? p.burn : MSL_BURN_DEFAULT);   // motor stays lit from ignition (t>=pop) for `burn` seconds, then cuts out
+      p.lit = p.t >= (p.pop || 0) && p.t < burnEnd;   // FUEL STATE — used here for accel/homing AND by the renderer to gate the exhaust plume
       if (p.t < (p.pop || 0)) { p.vy += 70 * dt; p.spd = Math.hypot(p.vx, p.vy); }   // 1+2: cold pop-up — motor unlit, drifts out & up as gravity slows it
-      else {   // 3: ignition — the motor never quits, it just keeps accelerating, with a limited turn rate (sharp/fast targets can be overshot)
+      else if (p.lit) {   // 3: ignition — motor lit, accelerates & steers hard, with a limited turn rate (sharp/fast targets can be overshot)
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * dt;
         if (p.ami && p.spd > p.maxspd) p.spd = p.maxspd;   // ONLY the Anti-Missile Interceptor round honors its top-speed cap (normal missiles stay uncapped as before) — keeps the hypervelocity boost from running away
         let cur = Math.atan2(p.vy, p.vx);
@@ -5477,8 +5504,20 @@ function updProj(dt) {
         if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }   // a hostile EW field blinds the seeker — it stops steering and flies straight until it clears the jam
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }
+      else {   // 4: BURNOUT — fuel's spent, engine's cold: no more thrust, no more plume. Coasts ballistically (gravity + drag) until it hits or its life runs out;
+        p.vy += 220 * dt;                                     // gravity arcs it over and back down
+        p.vx *= (1 - .25 * dt); p.vy *= (1 - .1 * dt);         // drag bleeds speed — it does NOT keep accelerating
+        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : null;   // a spent seeker can still see its hard-locked target, it just can't chase down a new one
+        if (t && !(p.friendly && jammed(p.x, p.y))) {   // a dead motor barely steers — token residual nudge only, well short of a live burn's turn rate
+          let cur = Math.atan2(p.vy, p.vx); const spd0 = Math.hypot(p.vx, p.vy);
+          const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28;
+          const turn = (p.turn || 1.6) * .15 * dt; cur += Math.max(-turn, Math.min(turn, da));
+          p.vx = Math.cos(cur) * spd0; p.vy = Math.sin(cur) * spd0;
+        }
+        p.spd = Math.hypot(p.vx, p.vy);
+      }
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 20) p.tr.shift();
-      if (!p.aegis && p.t >= (p.pop || 0) && Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 9, vy: (Math.random() - .5) * 9 - 3, r: 1.5 + Math.random() * 2.2, life: .4 + Math.random() * .55 });   // billowing cloud contrail (the sleek AEGIS interceptor leaves a clean cyan streak instead — no smoke)
+      if (!p.aegis && p.lit && Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 9, vy: (Math.random() - .5) * 9 - 3, r: 1.5 + Math.random() * 2.2, life: .4 + Math.random() * .55 });   // billowing cloud contrail — ONLY while the motor's lit (the sleek AEGIS interceptor leaves a clean cyan streak instead — no smoke either way)
     }
     else if (p.k === 'shell') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 6) p.tr.shift(); }
     else if (p.k === 'amslug') { p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 5) p.tr.shift(); }   // antimatter slug: dead straight, no gravity, no homing — falls through to the shared move + collision below
@@ -5803,7 +5842,7 @@ function renderProj(p, px) {
     for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .55; c.fillStyle = '#7fe9ff'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, .5 + a2 * 1.7, 0, 6.28); c.fill(); }
     c.restore(); c.globalAlpha = 1;
     c.save(); c.translate(px, p.y); c.rotate(ang);
-    const fl = 4 + Math.random() * 4; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(150,240,255,.95)'; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4 - fl, -1.1); c.lineTo(-4 - fl * 1.8, 0); c.lineTo(-4 - fl, 1.1); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over';   // cyan exhaust plume
+    if (p.lit !== false) { const fl = 4 + Math.random() * 4; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(150,240,255,.95)'; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4 - fl, -1.1); c.lineTo(-4 - fl * 1.8, 0); c.lineTo(-4 - fl, 1.1); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over'; }   // cyan exhaust plume — only while the motor's still lit
     c.fillStyle = '#5aa9c4'; c.beginPath(); c.moveTo(-2.4, -.9); c.lineTo(-4.6, -2.3); c.lineTo(-2.7, -.9); c.closePath(); c.fill(); c.beginPath(); c.moveTo(-2.4, .9); c.lineTo(-4.6, 2.3); c.lineTo(-2.7, .9); c.closePath(); c.fill();   // swept fins
     c.fillStyle = '#e8f8ff'; rr(c, -4, -1.1, 8, 2.2, .9); c.fill();   // slim body
     c.fillStyle = '#26e0ff'; c.shadowColor = '#26e0ff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(4, -1.1); c.lineTo(8, 0); c.lineTo(4, 1.1); c.closePath(); c.fill(); c.shadowBlur = 0;   // glowing cyan seeker nose
@@ -5813,7 +5852,7 @@ function renderProj(p, px) {
     const ang = Math.atan2(p.vy, p.vx);
     for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .5; c.fillStyle = '#ffd9a0'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, 1.4 + a2 * 3.4, 0, 6.28); c.fill(); }   // hot exhaust contrail
     c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(ang);
-    const fl = 8 + Math.random() * 8; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,224,150,.98)'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(-8 - fl, -2.4); c.lineTo(-8 - fl * 1.8, 0); c.lineTo(-8 - fl, 2.4); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(-8 - fl * .7, -1.1); c.lineTo(-8 - fl * 1.1, 0); c.lineTo(-8 - fl * .7, 1.1); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over';   // big white-hot motor plume
+    if (p.lit !== false) { const fl = 8 + Math.random() * 8; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,224,150,.98)'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(-8 - fl, -2.4); c.lineTo(-8 - fl * 1.8, 0); c.lineTo(-8 - fl, 2.4); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(-8 - fl * .7, -1.1); c.lineTo(-8 - fl * 1.1, 0); c.lineTo(-8 - fl * .7, 1.1); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over'; }   // big white-hot motor plume — only while the motor's still lit
     c.fillStyle = '#6b7480'; c.beginPath(); c.moveTo(-5, -2.3); c.lineTo(-9.5, -5); c.lineTo(-5.8, -2.3); c.closePath(); c.fill(); c.beginPath(); c.moveTo(-5, 2.3); c.lineTo(-9.5, 5); c.lineTo(-5.8, 2.3); c.closePath(); c.fill();   // big swept fins
     c.fillStyle = '#eef3f9'; rr(c, -8, -2.4, 15, 4.8, 1.8); c.fill();   // heavy body
     c.fillStyle = '#ffbf5a'; c.shadowColor = '#ffcf7a'; c.shadowBlur = 9; c.beginPath(); c.moveTo(7, -2.4); c.lineTo(14, 0); c.lineTo(7, 2.4); c.closePath(); c.fill(); c.shadowBlur = 0;   // glowing seeker nose
@@ -5823,7 +5862,7 @@ function renderProj(p, px) {
     const ang = Math.atan2(p.vy, p.vx), col = p.friendly ? '#ffe24a' : '#ff7a3a';
     for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .38; c.fillStyle = '#cfd6de'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, 1 + a2 * 2.6, 0, 6.28); c.fill(); }   // smoke trail
     c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(ang); c.scale(.5, .5);   // small tactical / interceptor missile — much smaller than a strategic ICBM
-    if (p.t === undefined || p.t >= (p.pop || 0)) { const fl = 3 + Math.random() * 4; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,180,60,.95)'; c.beginPath(); c.moveTo(-5, 0); c.lineTo(-5 - fl, -1.4); c.lineTo(-5 - fl * 1.7, 0); c.lineTo(-5 - fl, 1.4); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over'; }   // exhaust only once the motor ignites
+    if (p.lit !== false) { const fl = 3 + Math.random() * 4; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,180,60,.95)'; c.beginPath(); c.moveTo(-5, 0); c.lineTo(-5 - fl, -1.4); c.lineTo(-5 - fl * 1.7, 0); c.lineTo(-5 - fl, 1.4); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over'; }   // exhaust only while the motor's lit — cuts out cold once the fuel runs out (see updProj)
     c.fillStyle = '#7a828c'; c.beginPath(); c.moveTo(-3, -1.3); c.lineTo(-5.6, -2.9); c.lineTo(-3.4, -1.3); c.closePath(); c.fill(); c.beginPath(); c.moveTo(-3, 1.3); c.lineTo(-5.6, 2.9); c.lineTo(-3.4, 1.3); c.closePath(); c.fill();   // fins
     c.fillStyle = '#dfe6ee'; rr(c, -5, -1.5, 9, 3, 1.2); c.fill();   // body
     c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 5; c.beginPath(); c.moveTo(4, -1.5); c.lineTo(8.5, 0); c.lineTo(4, 1.5); c.closePath(); c.fill(); c.shadowBlur = 0;   // nose

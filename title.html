@@ -2960,12 +2960,15 @@ function finishSite(site) {
 // fireteam just as well as 4 did, for 25% fewer bodies at the SAME squad (and army-cap) count — see drawSquadUnit's
 // LOD path for how a big garrison stays smooth well past that.
 const SQUAD_LOADOUT = {
-  inf:   { n: 3, bodyS: 3, spread: 9, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
-  cdrone:{ n: 3, bodyS: 2.4, spread: 13, burst: 1, burstGap: 0, lerp: 7 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical
-  fighter:{ spread: 15, burst: 1, burstGap: 0, lerp: 8, roles: [
+  // SPREAD (v3.67 READABLE FIRETEAM PASS) — was 9/13/15px, which at these body sizes read as one blob under
+  // the tight SQUAD_BODY_SEP spring; widened so the formation visibly holds 3 (or 2+1) SEPARATE soldiers in
+  // a loose cluster instead of a smear. See SQUAD_BODY_SEP just below for the matching separation bump.
+  inf:   { n: 3, bodyS: 3, spread: 17, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
+  cdrone:{ n: 3, bodyS: 2.4, spread: 21, burst: 1, burstGap: 0, lerp: 7 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical
+  fighter:{ spread: 22, burst: 1, burstGap: 0, lerp: 8, roles: [
     { art: 'fighter', bodyS: 4.0, hpShare: .5,  dmgMul: 1,   rateMul: 1,    oy: 0 },    // the crewed 6th-gen Falcon — leads the flight
-    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: 6 },    // loyal-wingman escort drones — finally actually appear
-    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: -6 },
+    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: 9 },    // loyal-wingman escort drones — finally actually appear
+    { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: -9 },
   ] },
 };
 const INF_BODY_S = 3;   // legacy alias kept for readability at call sites that only ever meant infantry
@@ -2988,19 +2991,28 @@ const SQUAD_LOD_N = 45, SQUAD_LOD_ZOOM = 0.9;
 // global cross-unit separation bucket (SEP_BS) in updUnits, which is untouched.
 const SQUAD_PULL_K = 46;      // spring strength pulling a body back toward its formation slot — higher = snappier reform after a loss
 const SQUAD_PULL_DAMP = 10;   // velocity damping on the pull spring — higher = less overshoot/jitter settling into formation
-const SQUAD_BODY_SEP = 5.2;   // px — bodies of the SAME squad closer than this push apart (keeps them from stacking/overlapping)
-const SQUAD_BODY_SEP_K = 90;  // repulsion strength applied when two bodies are closer than SQUAD_BODY_SEP
+const SQUAD_BODY_SEP = 11;    // px — bodies of the SAME squad closer than this push apart (keeps them from stacking/overlapping). v3.67: was 5.2, which sat INSIDE a body's own sprite radius — bodies could overlap almost fully with no repulsion; doubled so a resting fireteam always shows daylight between its soldiers
+const SQUAD_BODY_SEP_K = 110; // repulsion strength applied when two bodies are closer than SQUAD_BODY_SEP
 const SQUAD_VEL_MAX = 60;     // px/s cap on a body's drift velocity — keeps the spring numerically stable under a big dt spike (tab-out, lag)
 const SQUAD_HITBOX_R = 2.4;   // px — nominal per-body hitbox radius, exposed for any future body-vs-body/AoE distance check
+const SQUAD_JITTER_AMP = 1.6; // px — per-body wobble amplitude added on top of the formation slot (see stepSquadBodies) so bodies shuffle instead of holding a perfectly rigid rosette
 // spring pull toward the formation slot + short-range separation from squad-mates, then integrate cx/cy. cfg carries
 // the per-squad-type "lerp" tuning (inf/cdrone/fighter already had distinct snap feels) — scaled onto the shared
 // spring constant so a fighter's escort still reforms tighter/faster than an infantry fireteam, same as before.
+// PATHFINDING VARIATION (v3.67): each body carries its own m.jphase/m.jspeed (set once at spawn — see spawnSquad)
+// and a per-body m.pullVar spring-strength multiplier, so bodies pull toward a SLOWLY DRIFTING point near their
+// slot (not the exact same static xy every frame) at slightly different spring stiffness — the cluster visibly
+// flexes/shuffles like a group of people holding a loose position, while still converging on the same formation
+// on average, so it reads as cohesive rather than random.
 function stepSquadBodies(u, cfg, dt) {
   const alive = u.members.filter(m => m.alive); if (!alive.length) return;
-  const pullK = SQUAD_PULL_K * ((cfg.lerp || 6) / 6);
+  const pullK0 = SQUAD_PULL_K * ((cfg.lerp || 6) / 6), t = animClock * .001;
   for (const m of alive) {
-    m.vcx = (m.vcx || 0) + ((m.ox - m.cx) * pullK - (m.vcx || 0) * SQUAD_PULL_DAMP) * dt;
-    m.vcy = (m.vcy || 0) + ((m.oy - m.cy) * pullK - (m.vcy || 0) * SQUAD_PULL_DAMP) * dt;
+    const jphase = m.jphase || 0, jspeed = m.jspeed || 1;
+    const jx = m.ox + Math.sin(t * jspeed + jphase) * SQUAD_JITTER_AMP, jy = m.oy + Math.cos(t * jspeed * .82 + jphase * 1.3) * SQUAD_JITTER_AMP * .6;
+    const pullK = pullK0 * (m.pullVar || 1);
+    m.vcx = (m.vcx || 0) + ((jx - m.cx) * pullK - (m.vcx || 0) * SQUAD_PULL_DAMP) * dt;
+    m.vcy = (m.vcy || 0) + ((jy - m.cy) * pullK - (m.vcy || 0) * SQUAD_PULL_DAMP) * dt;
   }
   const sep2 = SQUAD_BODY_SEP * SQUAD_BODY_SEP;
   for (let i = 0; i < alive.length; i++) { const a = alive[i];
@@ -3043,6 +3055,7 @@ function spawnSquad(key, d, x) {
       members.push({
         art: role.art || d.art, bodyS: role.bodyS || bodyS0,
         isAt: !!role.isAt, ox, oy: role.oy || 0, cx: ox, cy: role.oy || 0, vcx: 0, vcy: 0, aim: 0, facing: 1,
+        jphase: Math.random() * 6.28, jspeed: .55 + Math.random() * .5, pullVar: .85 + Math.random() * .3,   // per-body pathfinding variation — see stepSquadBodies
         hp: mhp, maxHp: mhp,
         weapon: role.weapon || d.weapon,
         dmg: d.dmg * (role.dmgMul != null ? role.dmgMul : 1),
@@ -3063,6 +3076,7 @@ function spawnSquad(key, d, x) {
       members.push({
         art: d.art, bodyS: bodyS0,
         isAt, ox, oy, cx: ox, cy: oy, vcx: 0, vcy: 0, aim: 0, facing: 1,
+        jphase: Math.random() * 6.28, jspeed: .55 + Math.random() * .5, pullVar: .85 + Math.random() * .3,   // per-body pathfinding variation — see stepSquadBodies
         hp: mhp, maxHp: mhp,
         weapon: isAt ? 'rotary' : d.weapon,
         dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
@@ -3580,19 +3594,34 @@ function hurt(t, dmg, ix, iy) {
   // ENERGY SHIELD RULE: only an active shield resists hits. Without one, units get DUMPSTERED — and the less armor, the worse: unarmored (esp. aircraft) die in a couple of hits.
   const fragile = !(t._b || t._city), rawArmor = (t.d && t.d.armor) || t.armor || 0;
   const eff = Math.max(1, dmg * (fragile ? HIT_BUFF * (rawArmor < 4 ? 2.7 : 1.9) : 1) - armor);
-  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t.hp -= ev; t._lastHit = ev; if (t.squad) hitSquadMember(t, ev, ix, iy); spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack)
+  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
 // SQUAD FOOTPRINT DAMAGE — a round landing anywhere inside the squad's collision radius (see hurt() above) is
-// routed here and assigned to the NEAREST LIVING MEMBER to the actual impact point (ix,iy, defaulting to the
-// squad's own position when a caller doesn't know exactly where the round landed). t.hp already took the SAME
-// hit as any ordinary unit (above) — this only decides which individual body carries it, so a squad still dies
-// correctly to area-of-effect code that hits G.units' aggregate .hp directly and never touches .members at all.
+// routed here and EATS THROUGH the living bodies NEAREST the actual impact point (ix,iy, defaulting to the
+// squad's own position when a caller doesn't know exactly where the round landed), nearest-first: the closest
+// body absorbs damage up to its own remaining HP, and only the OVERKILL remainder (if any) carries to the next
+// body out. Ordinary small-arms/single-shot hits rarely exceed one man's HP, so in practice this drops ONE
+// visible body per hit — the squad shrinks man-by-man under sustained fire. A single big hit (a blast big enough
+// to exceed one body's HP) is allowed to eat through several in one go — that's a fair "big AoE can take a few"
+// outcome, not the whole formation vanishing at once. THIS FUNCTION IS THE SOLE AUTHORITY on a squad's aggregate
+// t.hp (every caller skips its own t.hp -= ev for squads and lets this resync it from the members instead — see
+// hurt() and the AoE/DoT call sites) — the aggregate and the per-body pools used to be tracked independently and
+// could drift apart (different rounding on hp0/n vs the aggregate maxHp), which let the whole squad get cleaned
+// up & exploded the instant the DRIFTED aggregate hit 0 even while a body was still nominally alive — exactly
+// the "dies all at once" bug this whole rework exists to fix. Tying t.hp = sum(alive member hp) makes that
+// impossible: the squad entity can only ever expire in the same frame its LAST body does.
 function hitSquadMember(t, ev, ix, iy) {
-  const alive = t.members.filter(m => m.alive); if (!alive.length) return;
+  const alive = t.members.filter(m => m.alive); if (!alive.length) { t.hp = 0; return; }
   ix = ix == null ? t.x : ix; iy = iy == null ? t.y : iy;
-  let best = alive[0], bd = Infinity;
-  for (const m of alive) { const mx = t.x + m.cx, my = t.y + (m.cy || 0), dd = (mx - ix) ** 2 + (my - iy) ** 2; if (dd < bd) { bd = dd; best = m; } }
-  best.hp -= ev; best._lastHit = ev;
-  if (best.hp <= 0) { squadMemberDied(t, best); if (!t.members.some(m => m.alive)) t.hp = 0; }   // last body down → force the aggregate to 0 so the normal G.units cleanup removes the (now empty) squad entity this frame
+  const ordered = alive.map(m => ({ m, dd: (t.x + m.cx - ix) ** 2 + (t.y + (m.cy || 0) - iy) ** 2 })).sort((a, b) => a.dd - b.dd);
+  let remain = ev;
+  for (const { m } of ordered) {
+    if (remain <= 0) break;
+    const take = Math.min(remain, m.hp);
+    m.hp -= take; m._lastHit = take; remain -= take;
+    if (m.hp <= 0) squadMemberDied(t, m);
+  }
+  let sum = 0; for (const m of t.members) if (m.alive) sum += Math.max(0, m.hp);
+  t.hp = sum;   // last body down → sum is naturally 0, so the normal G.units cleanup removes the (now empty) squad entity this frame
 }
 function squadMemberDied(t, m) {
   m.alive = false;
@@ -3609,10 +3638,10 @@ function reformSquad(t) {
 // heal-over-time (repair aura / self-regen): the aggregate pool heals exactly like any ordinary unit, and the
 // same amount is ALSO spread across whichever living members are actually short of HP, so wounded bodies visibly recover
 function healSquad(t, amt) {
-  t.hp = Math.min(t.maxHp, t.hp + amt);
-  const hurt = t.members.filter(m => m.alive && m.hp < m.maxHp); if (!hurt.length) return;
-  const share = amt / hurt.length;
-  for (const m of hurt) m.hp = Math.min(m.maxHp, m.hp + share);
+  const hurt = t.members.filter(m => m.alive && m.hp < m.maxHp);
+  if (hurt.length) { const share = amt / hurt.length; for (const m of hurt) m.hp = Math.min(m.maxHp, m.hp + share); }
+  let sum = 0; for (const m of t.members) if (m.alive) sum += Math.max(0, m.hp);
+  t.hp = Math.min(t.maxHp, sum);   // resync from the bodies (same authority rule as hitSquadMember) instead of healing the aggregate independently
 }
 function blacksmoke(x, y, n) { for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: 1.7 + Math.random() * 2.4 }); }   // sooty trails that rise & fill the atmosphere
 function boom(x, y, p) {
@@ -3961,7 +3990,7 @@ function updateGame(dt) {
   if (G.fires.length) for (let i = G.fires.length - 1; i >= 0; i--) {
     const f = G.fires[i]; f.life -= dt; const gy = groundY(f.x);
     for (const e of G.enemies) if (Math.abs(e.x - f.x) < f.r && e.y > gy - 40) { e.killBy = 'bomb'; e.hp -= 50 * dt; }
-    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - f.x) < f.r && u.y > gy - 50) u.hp -= 30 * dt; }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - f.x) < f.r && u.y > gy - 50) { const fd = 30 * dt; if (u.squad) hitSquadMember(u, fd, f.x, u.y); else u.hp -= fd; } }   // v3.67: route through hitSquadMember so a firestorm cooking a squad drops bodies one at a time instead of quietly draining the aggregate then wiping the whole formation at once (hitSquadMember is the sole authority on a squad's t.hp — see its comment)
     if (Math.random() < .9) { const fx = f.x + (Math.random() - .5) * f.r * 2; G.parts.push({ k: 'fire', x: fx, y: groundY(fx), vx: (Math.random() - .5) * 8, vy: -28 - Math.random() * 34, r: 3 + Math.random() * 4, life: .4 + Math.random() * .6 }); }
     if (f.life <= 0) G.fires.splice(i, 1);
   }
@@ -3969,7 +3998,7 @@ function updateGame(dt) {
   if (G.beams.length) for (let i = G.beams.length - 1; i >= 0; i--) {
     const bm = G.beams[i]; bm.life -= dt;
     if (bm.hostile) {   // the Annihilator's glassing column — eats YOUR forces, buildings & cities
-      for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - bm.x) < bm.r) { u.killBy = 'beam'; u.hp -= 200 * dt; } }
+      for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - bm.x) < bm.r) { u.killBy = 'beam'; const bd = 200 * dt; if (u.squad) hitSquadMember(u, bd, bm.x, u.y); else u.hp -= bd; } }   // v3.67: squad-aware, see hitSquadMember
       for (const b of G.buildings) if (!b.ug && Math.abs(b.x - bm.x) < bm.r * .8) b.hp -= 170 * dt;
       for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - bm.x) < bm.r) damageDistrict(ct, dst, 230 * dt); }
       G.stab = Math.max(0, G.stab - 4 * dt);
@@ -4110,7 +4139,7 @@ function updateGame(dt) {
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
   for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
-    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; u.hp -= u.maxHp * .45; } }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; const cd = u.maxHp * .45; if (u.squad) hitSquadMember(u, cd, ct.x, u.y); else u.hp -= cd; } }   // v3.67: squad-aware — a city falling is a fair "eats through several bodies" blast, but still per-body (not an instant whole-formation wipe)
     for (const b of G.buildings) { if (b.ug) continue; if (Math.abs(b.x - ct.x) < half) b.hp -= b.maxHp * .35; }
   }
   // GROUND CAPTURE — enemy ground forces standing in a city take it over; your ground units retake it
@@ -4614,7 +4643,7 @@ function areaDamage(x, y, r, dmg, kb) {
   const core = r * .42;   // anything inside the inner core takes FULL damage — direct hits are lethal — then linear falloff to the edge
   const fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
   for (const e of G.enemies) { const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } }
-  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } }   // v3.67: squad-aware — see hitSquadMember (nearest-first, eats through several bodies only if the blast is genuinely big enough)
   for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .55 * fall(dd); }
   shallowUgHit(x, r * .8, dmg * .5);   // the blast caves in shallow tunnels under the crater
 }
@@ -4623,7 +4652,7 @@ function splashDamage(x, y, r, dmg, friendly, kb) {
   const core = r * .45, fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
   if (friendly) { for (const e of G.enemies) { if (e.reentry) continue; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } } }
   else {
-    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } }   // v3.67: squad-aware — see hitSquadMember
     for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); }
     for (const ct of G.cities) { if (ct.hp <= 0) continue; for (const dst of ct.districts) { if (dst.dead) continue; const ddx = ct.x + dst.dx; const dd = (ddx - x) ** 2 + (groundY(ddx) - y) ** 2; if (dd < r * r) { const e2 = dmg * .4 * fall(dd); damageDistrict(ct, dst, e2); G.stab = Math.max(0, G.stab - .012 * e2); } } }
   }
@@ -5377,7 +5406,7 @@ function updEnemies(dt) {
     }
     if (e.quake) {   // EARTHBREAKER PRESS — periodic seismic shock: screen shake, stability hit, damages nearby ground forces & buildings
       e.qCd = (e.qCd == null ? 3 : e.qCd) - dt; if (e.qCd <= 0) { e.qCd = 4 + Math.random() * 3; shake(13); G.stab = Math.max(0, G.stab - 3); SFX.boom(); floatText(e.x, e.y - e.s - 4, '⚡ EARTHQUAKE', '#9cc4ff');
-        for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; if (Math.abs(u.x - e.x) < 280) u.hp -= 20; }
+        for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; if (Math.abs(u.x - e.x) < 280) { if (u.squad) hitSquadMember(u, 20, e.x, u.y); else u.hp -= 20; } }   // v3.67: squad-aware — see hitSquadMember
         for (const b of G.buildings) { if (Math.abs(b.x - e.x) >= 320) continue; b.hp -= b.ug ? Math.max(55, b.maxHp * .5) : 16; if (b.ug) { spark(b.x, groundY(b.x) + UG_DEPTH * (b.ugLvl || 1), 4); floatText(b.x, groundY(b.x) - 14, '⚠ TUNNEL COLLAPSE', '#ff8a6a'); } }   // earthquakes RAPIDLY cave in buried structures (seismic shock travels straight into the tunnels)
         for (let i = 0; i < 12; i++) groundBurst(e.x + (Math.random() - .5) * 520, 2);
       }

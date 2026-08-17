@@ -5113,47 +5113,99 @@ function renderPart(pt, px) {
 function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? (cbMode ? '#ff9a00' : '#ff6b6b') : (cbMode ? '#37b6ff' : '#7cffb0')); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }   // colorblind mode: blue/orange bars instead of green/red
 const MM = { x: 0, y: 0, w: 150, h: 120 };
 function drawMinimap() {
-  // Proportion the minimap to the TRUE world aspect ratio (WORLD_W : worldH(), ~4-4.5:1 — a wide, short strip) instead of
-  // independently-capped width/height fractions, which used to squish it tall & narrow and distort where units plot.
-  // Cap the width to fit the corner, then DERIVE the height from that same ratio (re-deriving width if a height cap binds
-  // first on a very tall viewport) so horizontal and vertical scale always match and unit positions plot faithfully.
-  { let mw = Math.min(240, W * .26), mh = mw * (worldH() / WORLD_W); const maxH = H * .3; if (mh > maxH) { mh = maxH; mw = mh * (WORLD_W / worldH()); } MM.w = mw; MM.h = mh; }
+  // TACTICAL MINIMAP — a readable panel, not a squished world-aspect strip. The WIDTH sets the camera-scrub
+  // scale (click/drag maps px→worldX linearly across MM.w, so it stays intact); the HEIGHT is DECOUPLED and
+  // spent on legible ALTITUDE LAYERING — orbit at the top, air below it, the GROUND baseline, then a thin
+  // subterranean band under it. Bigger, colour-coded, clearly-shaped markers replace the old 1px dots so a
+  // glance reads the whole front: your forces (cool), the enemy (hot red), bosses (big pulsing), the frontline,
+  // and which cities are under threat. Every marker group sets its fillStyle ONCE then loops — no per-unit alloc.
+  { let mw = Math.min(300, Math.max(150, W * .30)), mh = Math.min(170, Math.max(96, H * .26));
+    if (mw > W - 18) mw = W - 18; if (mh > H - 18) mh = H - 18;                       // never let it swallow a tiny screen
+    if (mh > mw * .95) mh = mw * .95;                                                 // keep a sane landscape-ish shape
+    MM.w = mw; MM.h = mh; }
   MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
-  c.fillStyle = 'rgba(8,12,20,.85)'; c.strokeStyle = 'rgba(150,190,240,.3)'; c.lineWidth = 1; c.fillRect(MM.x, MM.y, MM.w, MM.h); c.strokeRect(MM.x, MM.y, MM.w, MM.h);
-  const sc = MM.w / WORLD_W, gy = MM.y + MM.h * .7;
-  c.strokeStyle = 'rgba(120,150,120,.5)'; c.beginPath(); for (let wx = 0; wx <= WORLD_W; wx += 60) { const e = elevAt(wx); c.lineTo(MM.x + wx * sc, gy - e * MM.h * .4); } c.stroke();
-  for (const n of G.nodes) { c.fillStyle = n.used ? '#666' : SR[n.type].col; c.fillRect(MM.x + n.x * sc - 1, gy - 2, 2, 4); }
-  for (const ct of G.cities) { c.fillStyle = ct.hp <= 0 ? '#555' : ct.held ? '#ff5a5a' : (ct.capital ? '#ffd23f' : '#7fd4ff'); const ww = Math.max(3, ct.w * sc); c.fillRect(MM.x + ct.x * sc - ww * .5, gy - 5, ww, 5); if (ct.capture > 1 && ct.hp > 0 && !ct.held) { c.fillStyle = '#ff9a3a'; c.fillRect(MM.x + ct.x * sc - ww * .5, gy - 7, ww * ct.capture / 100, 1.5); } }
-  // PLAYER UNITS — your forces on the minimap, split by domain so a big army reads as legible bands instead of one smeared
-  // coastline row. Ground spreads across a thin dithered band just above the ground line (still "on the ground", but not a
-  // single 1px stack); naval sits right at the shoreline as a small dash (afloat, not landed); air/space plot by true altitude.
-  // Each domain is one pass over G.units with its OWN fillStyle set once — cheap even with a huge army, no per-unit allocation.
-  // All player marks use cool blue/green hues, kept clearly distinct from the red enemy marks and orange/white ordnance below.
-  c.fillStyle = '#8fe0b0';
-  for (const u of G.units) { if (u.d.domain !== 'ground') continue; const jit = Math.abs(Math.sin(u.x * 12.9898 + u.y * 1.7)) * 5; c.fillRect(MM.x + u.x * sc, gy - 1.5 - jit, 1.6, 1.6); }
-  c.fillStyle = '#5ad0ff';
-  for (const u of G.units) { if (u.d.domain !== 'naval') continue; c.fillRect(MM.x + u.x * sc - 1.2, gy + 2, 2.4, 1.4); }
-  c.fillStyle = '#bcd8ff';
-  for (const u of G.units) { if (u.d.domain !== 'air') continue; c.fillRect(MM.x + u.x * sc, MM.y + 2 + (u.y / worldH()) * MM.h * .55, 1.8, 1.8); }
-  c.fillStyle = '#7aa8ff';
-  for (const u of G.units) { if (u.d.domain !== 'space') continue; c.fillRect(MM.x + u.x * sc, MM.y + 2 + (u.y / worldH()) * MM.h * .55, 1.8, 1.8); }
-  // GROUND FRONTLINE — mark enemy ground forces (red ticks at ground level) + the deepest incursion line
-  let frontX = null, fd = 1e9; const capX = (G.cities.find(c => c.capital) || {}).x;
-  for (const e of G.enemies) { const ground = e.ground || e.anchored; c.fillStyle = e.boss ? '#ff2a2a' : '#ff5a5a'; c.fillRect(MM.x + e.x * sc, ground ? gy - 3 : MM.y + 2 + (e.y / worldH()) * MM.h * .55, e.boss ? 3 : 1.5, e.boss ? 3 : 1.5); if (ground && capX != null) { const d = Math.abs(e.x - capX); if (d < fd) { fd = d; frontX = e.x; } } }
-  if (frontX != null) { c.strokeStyle = 'rgba(255,80,80,.8)'; c.lineWidth = 1; c.setLineDash([2, 2]); c.beginPath(); c.moveTo(MM.x + frontX * sc, MM.y + 1); c.lineTo(MM.x + frontX * sc, MM.y + MM.h - 1); c.stroke(); c.setLineDash([]); }
-  // INCOMING ORDNANCE — hostile falling missiles plotted by true altitude (worldH()), so the barrage descending on the world reads on the minimap too.
+  const small = MM.w < 200, legendH = small ? 0 : 13;
+  const sc = MM.w / WORLD_W, mx = wx => MM.x + wx * sc;
+  const skyTop = MM.y + legendH + 2, gy = MM.y + legendH + (MM.h - legendH) * .70, botY = MM.y + MM.h - 2, wH = worldH();
+  const altY = y => skyTop + Math.max(0, Math.min(1, y / wH)) * (gy - skyTop);        // world altitude → sky band (orbit≈top, low air≈just above ground)
+  const pulse = .5 + .5 * Math.sin(animClock * .006);
+  // panel + clip (markers can never spill outside the frame)
+  c.fillStyle = 'rgba(6,10,18,.9)'; c.fillRect(MM.x, MM.y, MM.w, MM.h);
+  c.save(); c.beginPath(); c.rect(MM.x, MM.y, MM.w, MM.h); c.clip();
+  // subterranean shade under the ground line, then the two altitude separators (ORBIT / AIR)
+  c.fillStyle = 'rgba(46,32,22,.4)'; c.fillRect(MM.x, gy, MM.w, botY - gy);
+  c.strokeStyle = 'rgba(120,150,190,.13)'; c.lineWidth = 1;
+  for (const by of [SPACE_Y(), MESO_Y()]) { const yy = altY(by); c.beginPath(); c.moveTo(MM.x, yy); c.lineTo(MM.x + MM.w, yy); c.stroke(); }
+  // GROUND baseline drawn from the real elevation profile so the coastline reads
+  c.strokeStyle = 'rgba(150,175,140,.6)'; c.lineWidth = 1.3; c.beginPath();
+  for (let wx = 0; wx <= WORLD_W; wx += 90) { const e = elevAt(wx); c.lineTo(mx(wx), gy - e * (gy - skyTop) * .13); } c.stroke();
+  // resource nodes — tiny ticks on the ground line
+  for (const n of G.nodes) { c.fillStyle = n.used ? '#666' : SR[n.type].col; c.fillRect(mx(n.x) - 1, gy - 2, 2, 4); }
+  // YOUR BUILDINGS — small steel squares so the fortress sprawl is visible; buried ones sit in the subterranean band
+  c.fillStyle = 'rgba(120,165,215,.75)';
+  for (const b of G.buildings) { if (b.done === false || b.hp <= 0 || b.captured) continue; const by = b.ug ? gy + 3 + Math.min(botY - gy - 2, (b.ugLvl || 1) * 3) : gy - 2; c.fillRect(mx(b.x) - 1, by - 1, 2, 2); }
+  // CITIES — bars on the ground line. Capital = gold + flag; captured = red; under threat (being captured / shelled /
+  // damaged) reddens and pulses, with a capture-progress sliver above so you SEE where you're losing.
+  for (const ct of G.cities) {
+    const px = mx(ct.x), ww = Math.max(4, ct.w * sc), dead = ct.hp <= 0, held = ct.held;
+    const threat = !dead && !held && (ct.capture > 1 || (ct.siegeT || 0) > 0 || ct.hp < ct.maxHp * .98);
+    let col = dead ? '#555' : held ? '#ff4a4a' : (ct.capital ? '#ffd23f' : '#7fd4ff');
+    if (threat) col = ct.capital ? (pulse > .5 ? '#ff5a5a' : '#ffd23f') : (pulse > .5 ? '#ff6a6a' : '#7fd4ff');
+    c.fillStyle = col; c.fillRect(px - ww * .5, gy - 5, ww, 5);
+    if (ct.capital && !dead) { c.fillStyle = held ? '#ff4a4a' : '#ffd23f'; c.fillRect(px - .6, gy - 11, 1.2, 6); c.fillRect(px, gy - 11, 4, 3); }   // capital flag
+    if (ct.capture > 1 && !dead && !held) { c.fillStyle = '#ff9a3a'; c.fillRect(px - ww * .5, gy - 8, ww * ct.capture / 100, 1.6); }
+  }
+  // YOUR UNITS by domain — bigger marks in cool hues, distinct from the hot enemy red. Ground on the baseline (light
+  // jitter so a stacked army spreads into a band), naval just below the shoreline, air/space plotted by true altitude.
+  c.fillStyle = '#7dffb0';
+  for (const u of G.units) { if (u.d.domain !== 'ground') continue; const jit = Math.abs(Math.sin(u.x * 12.9898 + u.y * 1.7)) * 4; c.fillRect(mx(u.x) - 1, gy - 2.5 - jit, 2, 2); }
+  c.fillStyle = '#37c8ff';
+  for (const u of G.units) { if (u.d.domain !== 'naval') continue; c.fillRect(mx(u.x) - 1.4, gy + 2, 2.8, 1.6); }
+  c.fillStyle = '#9fd2ff';
+  for (const u of G.units) { if (u.d.domain !== 'air') continue; c.fillRect(mx(u.x) - 1, altY(u.y) - 1, 2.2, 2.2); }
+  c.fillStyle = '#c9b6ff';
+  for (const u of G.units) { if (u.d.domain !== 'space') continue; c.fillRect(mx(u.x) - 1, altY(u.y) - 1, 2.2, 2.2); }
+  // ENEMY — hot red, split ground vs airborne; deepest ground incursion sets the FRONTLINE. Bosses deferred so they draw on top.
+  let frontX = null, fd = 1e9; const capX = (G.cities.find(x => x.capital) || {}).x; const bosses = [];
+  c.fillStyle = '#ff5252';
+  for (const e of G.enemies) {
+    if (e.boss) { bosses.push(e); }
+    const ground = e.ground || e.anchored;
+    if (!e.boss) { if (ground) c.fillRect(mx(e.x) - 1.2, gy - 3, 2.4, 3); else c.fillRect(mx(e.x) - 1, altY(e.y) - 1, 2.2, 2.2); }
+    if (ground && capX != null) { const d = Math.abs(e.x - capX); if (d < fd) { fd = d; frontX = e.x; } }
+  }
+  // FRONTLINE — dashed line at the deepest enemy ground push toward your capital
+  if (frontX != null) { c.strokeStyle = 'rgba(255,70,70,' + (.55 + .35 * pulse) + ')'; c.lineWidth = 1.2; c.setLineDash([3, 2]); c.beginPath(); c.moveTo(mx(frontX), gy - 10); c.lineTo(mx(frontX), botY); c.stroke(); c.setLineDash([]); }
+  // INCOMING ORDNANCE — hostile falling missiles by true altitude, so the descending barrage reads here too
   for (const p of G.proj) {
     if (p.friendly || p.x == null || p.y == null) continue;
-    let col = null, sz = 1.6;
-    if (p.k === 'buster') { col = '#ff2020'; sz = 2.6; }
-    else if (p.k === 'decoy') { col = 'rgba(255,140,70,.6)'; sz = 1.4; }
-    else if (p.k === 'krod') { col = '#ffffff'; sz = 2; }
-    else if (p.k === 'nuke' || p.k === 'fbomb' || p.k === 'mirv' || p.k === 'stratmis' || p.k === 'micromis') { col = '#ff6a3a'; sz = 2; }
+    let col = null, sz = 1.8;
+    if (p.k === 'buster') { col = '#ff2020'; sz = 2.8; }
+    else if (p.k === 'decoy') { col = 'rgba(255,140,70,.6)'; sz = 1.5; }
+    else if (p.k === 'krod') { col = '#ffffff'; sz = 2.2; }
+    else if (p.k === 'nuke' || p.k === 'fbomb' || p.k === 'mirv' || p.k === 'stratmis' || p.k === 'micromis') { col = '#ff8a3a'; sz = 2.2; }
     if (!col) continue;
-    const my = MM.y + Math.max(1, Math.min(MM.h - 1, (p.y / worldH()) * MM.h));
-    c.fillStyle = col; c.fillRect(MM.x + p.x * sc - sz * .5, my - sz * .5, sz, sz);
+    c.fillStyle = col; c.fillRect(mx(p.x) - sz * .5, altY(p.y) - sz * .5, sz, sz);
   }
-  c.strokeStyle = '#fff'; c.strokeRect(MM.x + (cam.x + W / 2 - W / (2 * (cam.z || 1))) * sc, MM.y + 1, (W / (cam.z || 1)) * sc, MM.h - 2);   // box tracks the VISIBLE span (zoom crops the strip around its centre)
+  // BOSSES — big bright pulsing diamond + halo ring, drawn last so they always stand out
+  for (const e of bosses) {
+    const bx = mx(e.x), by = (e.ground || e.anchored) ? gy - 4 : altY(e.y), r = 3 + pulse * 1.4;
+    c.strokeStyle = 'rgba(255,60,60,' + (.35 + .4 * pulse) + ')'; c.lineWidth = 1.2; c.beginPath(); c.arc(bx, by, r + 2.5, 0, 6.28); c.stroke();
+    c.fillStyle = '#ff2a2a'; c.beginPath(); c.moveTo(bx, by - r); c.lineTo(bx + r, by); c.lineTo(bx, by + r); c.lineTo(bx - r, by); c.closePath(); c.fill();
+  }
+  c.restore();
+  // VIEWPORT BOX — what you're currently looking at (tracks the visible span; zoom crops the strip around its centre)
+  c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.strokeRect(mx(cam.x + W / 2 - W / (2 * (cam.z || 1))) + .5, MM.y + 1.5, (W / (cam.z || 1)) * sc, MM.h - 3);
+  // FRAME + LEGEND — a compact key up top (skipped on very narrow screens)
+  c.strokeStyle = 'rgba(150,190,240,.4)'; c.lineWidth = 1; c.strokeRect(MM.x + .5, MM.y + .5, MM.w - 1, MM.h - 1);
+  if (!small) {
+    const ly = MM.y + 7; let lx = MM.x + 6; c.textBaseline = 'middle'; c.font = '8px system-ui, sans-serif';
+    const key = (col, label) => { c.fillStyle = col; c.fillRect(lx, ly - 2.5, 5, 5); lx += 8; c.fillStyle = 'rgba(210,225,245,.8)'; c.fillText(label, lx, ly + .5); lx += c.measureText(label).width + 9; };
+    key('#7dffb0', 'YOU'); key('#ff5252', 'ENEMY'); key('#ffd23f', 'CAP');
+    c.fillStyle = '#ff2a2a'; c.beginPath(); c.moveTo(lx + 2.5, ly - 3); c.lineTo(lx + 5.5, ly); c.lineTo(lx + 2.5, ly + 3); c.lineTo(lx - .5, ly); c.closePath(); c.fill();
+    lx += 8; c.fillStyle = 'rgba(210,225,245,.8)'; c.fillText('BOSS', lx, ly + .5);
+    c.textBaseline = 'alphabetic';
+  }
 }
 function clampCam(x) { const m = W / 2 - W / (2 * (cam.z || 1)); return Math.max(-m, Math.min(WORLD_W - W + m, x)); }   // zoom-aware (see clampCamY)
 

@@ -1003,6 +1003,12 @@ const passable = wx => elevAt(wx) >= SEA_E - .02;                          // gr
 const SPACE_Y = () => worldH() * .22, THERMO_Y = () => worldH() * .56, MESO_TOP = () => worldH() * .62, MESO_Y = () => worldH() * .67, STRATO_Y = () => worldH() * .76, TROPO_Y = () => worldH() * .82;
 // PHYSICAL flight ceiling — aircraft never cruise above the mesosphere top. Their FIRING reach goes one band higher (into the thermosphere) via defaultCeil's .56 air ceil, so they engage UP into the thermosphere without flying there. Exosphere = space-weapons only.
 function airTopY() { return MESO_TOP(); }
+// PLAYER ORBITAL STATIONING — your own space units (satellites, orbital frigates/fighters) contest orbit, they
+// don't permanently occupy it: by default they hold in the THERMOSPHERE (just below true orbit) and only climb
+// up into the EXOSPHERE when they actually need to reach a target up there, settling back once it's dealt with.
+// SPACE_STATION_Y is the resting/patrol line; SPACE_DESCEND_Y is the deepest they'll ever settle (never past the
+// thermosphere into the mesosphere, which is aircraft territory) — see updUnits' space-domain movement.
+const SPACE_STATION_Y = () => THERMO_Y(), SPACE_DESCEND_Y = () => THERMO_Y() + 40;
 function curEra() { return (G && G.unlocked && G.unlocked.spaceage) ? 2 : (G && G.unlocked && G.unlocked.fusion) ? 1 : 0; }   // 0 info · 1 fusion · 2 space — drives sleeker aircraft & cyberpunk buildings
 function plasmaArmed() { return !!(G && G.unlocked && G.unlocked.plasma); }   // plasma-capable turrets switch to plasma rounds once PLASMA WEAPONS is researched (not just the Fusion Age)
 const sx = wx => wx - cam.x;          // world -> UNSCALED screen X (the zoom transform scales this around the viewport centre)
@@ -3089,7 +3095,7 @@ function spawnUnit(key, x) {
   else if (d.domain === 'air') y = groundY(x) - 80;
   else if (d.domain === 'naval') { const w = findWater(x) ?? x; const b = waterBounds(w); wx0 = b[0]; wx1 = b[1]; x = Math.min(wx1 - 4, Math.max(wx0 + 4, w)); y = seaLevelY(x); }
   else y = groundY(x) - d.s;   // space units LAUNCH from the surface (see updUnits) instead of appearing in orbit
-  const patrol = d.domain === 'air' ? (d.lowAir ? groundY(x) - 90 - Math.random() * 40 : airTopY() + 30 + Math.random() * 70) : d.domain === 'space' ? SPACE_Y() * (.3 + Math.random() * .4) : 0;
+  const patrol = d.domain === 'air' ? (d.lowAir ? groundY(x) - 90 - Math.random() * 40 : airTopY() + 30 + Math.random() * 70) : d.domain === 'space' ? SPACE_STATION_Y() + (Math.random() - .5) * 40 : 0;   // space units STATION in the thermosphere by default (contest orbit, don't permanently occupy it) and only climb into the exosphere to engage — see SPACE_STATION_Y / updUnits
   let hp0 = Math.max(8, Math.round(d.hp * 0.66));   // friendly HP was absurdly bloated — combat should be decisive, not attrition (#7)
   if (d.bio && bmod().bioQual) hp0 = Math.round(hp0 * (1 + bmod().bioQual));   // Gene Facility raises bio-unit quality
   const launching = d.domain === 'space' && !bmod().noLaunch;   // satellites rocket/railgun to orbit — unless a Space Station is up
@@ -3147,6 +3153,43 @@ const THREAT_W_DIVE = 1.7;    // mid dive-bomb / impact run (e.dives) — about 
 const THREAT_W_GROUND = 1.15; // already-landed ground unit pressing the line — mildly favored over an equally-distant airborne straggler
 function threatWeight(e) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : 1); }
 function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle.
+// ── MISSILE FIRE DISCIPLINE — CLAIM/ENG above only ever live for a SINGLE frame, which is fine for hitscan
+// guns/lasers (damage lands the same frame it's claimed) but useless for a guided missile: it takes seconds to
+// fly to the target, and every frame in between the ledger has forgotten it exists — so with only one weak
+// enemy on the map, every missile-armed unit in range independently "discovers" it's unclaimed and fires, and
+// a whole squadron empties its magazines into one recon drone. MSL_INBOUND is a small persistent (multi-frame)
+// ledger of missile damage that's still physically in flight toward a target — entries just EXPIRE after a
+// flight-time estimate (MSL_INBOUND_TTL) instead of needing a hook into the missile's actual impact/death in
+// updProj (which belongs to another pass), so this stays entirely self-contained here.
+const MSL_INBOUND = new Map();      // enemy → [{dmg, exp}] committed missile damage still credibly in flight
+const MSL_INBOUND_TTL = 4.5;        // tunable — assumed worst-case missile flight time; long enough that a target isn't re-engaged the instant a missile launches, short enough that a miss/overkill clears the ledger promptly for a real re-check
+const MISSILE_LOWVAL_CAP = 2;       // tunable — max missiles ONE unit will commit to a single cheap/low-value (non-boss, non-diving, non-ground) contact before it holds fire and reassesses, so a lone recon drone never eats a fighter's whole magazine
+const MISSILE_ASSESS_CD = 1.1;      // tunable — short "hold and reassess" pause (not a full reload) applied when fire discipline withholds a shot, so the unit rechecks periodically instead of testing (and thrashing) every single frame
+function isMissileWeapon(w) { return w === 'missile' || w === 'rocket' || w === 'microrkt'; }
+function inboundMissileDmg(e) {   // sum of still-credible in-flight missile damage committed to this target (auto-prunes expired entries as a side effect)
+  const arr = MSL_INBOUND.get(e); if (!arr) return 0;
+  const now = G.time || 0; let sum = 0, live = null;
+  for (const it of arr) { if (it.exp > now) { sum += it.dmg; (live || (live = [])).push(it); } }
+  if (live) MSL_INBOUND.set(e, live); else MSL_INBOUND.delete(e);
+  return sum;
+}
+function commitMissile(e, dmg) { let arr = MSL_INBOUND.get(e); if (!arr) MSL_INBOUND.set(e, arr = []); arr.push({ dmg, exp: (G.time || 0) + MSL_INBOUND_TTL }); }
+// FIRE-DISCIPLINE GATE — returns true iff a missile-armed unit `u` should actually pull the trigger on `tgt` this
+// cycle. Two independent brakes, either one is enough to hold fire: (1) `tgt` already has enough damage EITHER
+// claimed this frame (claimOf, catches simultaneous salvos) OR credibly inbound from missiles already launched
+// in prior frames (inboundMissileDmg) to kill it outright — piling on is pure waste; (2) this specific unit has
+// already spent its small per-target allotment (MISSILE_LOWVAL_CAP) on a target that isn't a boss/diver/ground
+// unit — i.e. it won't blow its whole rack on one cheap drone even if that drone survives a couple of hits.
+// Gate only ever narrows firing for genuine finite-magazine ordnance (isMissileWeapon + u.maxAmmo); every other
+// weapon (guns/lasers/plasma/particle/rail/point-defense) is completely untouched.
+function missileFireGate(u, weapon, tgt) {
+  if (!isMissileWeapon(weapon) || !u.maxAmmo) return true;
+  if (u._mslTgt !== tgt) { u._mslTgt = tgt; u._mslCount = 0; }   // fresh target → fresh per-target allotment
+  const committed = claimOf(tgt) + inboundMissileDmg(tgt);
+  if (committed >= (tgt.hp + (tgt.shield || 0))) return false;   // already enough ordnance (this frame + still-flying) to finish it — hold
+  if (!tgt.boss && !tgt.dives && !tgt.ground && (u._mslCount || 0) >= MISSILE_LOWVAL_CAP) return false;   // a cheap/low-value contact only ever gets a couple of this unit's missiles
+  return true;
+}
 function acquireIncoming(x, y, range, ceilFrac) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const p of G.proj) { if (!(p.interceptable || p.pdable) || p.life <= 0) continue; if (p.y < ceil) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = p; } if (d < bd && claimOf(p) < (p.hp || 1)) { bd = d; b = p; } } return b || bAny; }   // point-defence: falling orbital lances, incoming enemy missiles/rockets/bombs, AND orbital bunker-busters — acquires within RANGE+CEILING same as acquireEnemy (a low-reach gun can't snipe a penetrator still high in orbit), spreads interceptors across multiple threats. ceilFrac optional for legacy callers that pass none (keeps old unlimited-height behavior).
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
 function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
@@ -4840,7 +4883,8 @@ function updUnits(dt) {
         u.facing = hcur ? (hcur.x >= u.x ? 1 : -1) : (u.vx >= 0 ? 1 : -1);   // face the target while hovering over / cruising to it
       } else {
       u.wob = (u.wob || Math.random() * 6.28) + dt * 2.4;
-      const hunt = u.lowAir ? tgt : near(u.x, u.y, G.enemies.filter(e => !e.reentry && (!aF || aF(e))), 1e9);   // jets hunt anywhere (BVR), within their role; helis stay local
+      const ceilY = ceilF ? ceilF * worldH() : -1e9;   // FIX 2 — same altitude ceiling acquireEnemy enforces for actual firing, reused here so BVR hunting/staging never chases/orbits an enemy this unit could never physically reach (exosphere targets stay railgun/particle/orbital/space work, never missile-armed atmospheric units)
+      const hunt = u.lowAir ? tgt : near(u.x, u.y, G.enemies.filter(e => !e.reentry && e.y >= ceilY && (!aF || aF(e))), 1e9);   // jets hunt anywhere within reach (BVR), within their role & ceiling; helis stay local
       let dy;
       if (hunt) {
         const dx = hunt.x - u.x, dist = Math.abs(dx), sdir = Math.sign(dx || 1);
@@ -4899,12 +4943,15 @@ function updUnits(dt) {
         if (u.y <= u.patrol) { u.launching = false; u.y = u.patrol; u.vy = 0; boom(u.x, u.y, 4); toast('🛰 ' + d.name.toUpperCase() + ' IN ORBIT'); }
         continue;
       }
-      // orbital units PATROL the exosphere band like aircraft do — cruising the orbit, weaving onto targets, drifting on patrol when idle
+      // ORBITAL STATIONING (FIX 3) — you contest orbit, you don't permanently occupy it: units HOLD in the
+      // THERMOSPHERE (SPACE_STATION_Y, just below true orbit) by default, and only climb up into the EXOSPHERE
+      // when actually engaging a target up there, settling back down to the station line once it's clear.
       u.wob = (u.wob || Math.random() * 6.28) + dt * 1.4;
-      if (tgt) { const dx = tgt.x - u.x, dist = Math.abs(dx); if (dist > rng * .8) u.vx += Math.sign(dx) * spd * 3 * dt; else { const orbit = Math.min(rng * .5, 300); const ox = tgt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 1.6 * dt; } }
-      else u.vx += (Math.sin(u.wob * .45) * spd * 2 - u.vx * .35) * dt;   // slow orbital cruise — sweeps the band on patrol
-      const dy = u.patrol + Math.sin(u.wob * .5) * 20; u.vy += (dy - u.y) * 1.6 * dt;
-      const vm = spd * 2.6; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .96; u.vy *= .92; u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = Math.max(10, Math.min(SPACE_Y() - 6, u.y)); u.facing = u.vx >= 0 ? 1 : -1;
+      let dy;
+      if (tgt) { const dx = tgt.x - u.x, dist = Math.abs(dx); if (dist > rng * .8) u.vx += Math.sign(dx) * spd * 3 * dt; else { const orbit = Math.min(rng * .5, 300); const ox = tgt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 1.6 * dt; } dy = Math.min(SPACE_STATION_Y(), tgt.y) + Math.sin(u.wob * .5) * 16; }   // rise to meet the target's altitude to engage it — never settles below its own station line to chase something lower
+      else { u.vx += (Math.sin(u.wob * .45) * spd * 2 - u.vx * .35) * dt; dy = SPACE_STATION_Y() + Math.sin(u.wob * .5) * 20; }   // no target → settle back to the resting thermosphere line, slow cruise
+      u.vy += (dy - u.y) * 1.6 * dt;
+      const vm = spd * 2.6; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .96; u.vy *= .92; u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = Math.max(10, Math.min(SPACE_DESCEND_Y(), u.y)); u.facing = u.vx >= 0 ? 1 : -1;   // can climb clear to the top of the exosphere to engage, but never sinks past the thermosphere into meso — that's aircraft territory
     }
     else if (d.domain === 'naval') {
       if (isWater(u.x)) {   // AFLOAT — recompute harbour bounds LIVE every frame so a ship is never pinned to a stale, now-dry harbour (terrain can be reshaped under it)
@@ -5004,9 +5051,11 @@ function updUnits(dt) {
     else if (tgt) {
       if (u.lastTgt !== tgt) { u.lastTgt = tgt; u.cd = Math.max(u.cd, .2 + Math.random() * .12); }   // ~0.2s acquisition delay so a formation doesn't all fire on the same frame
       u.aim = Math.atan2(tgt.y - u.y, tgt.x - u.x); if (d.domain !== 'air') u.facing = tgt.x >= u.x ? 1 : -1;
-      if (u.cd <= 0) { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); const sy = u.y - (d.domain === 'ground' ? d.s * (1 - GROUND_SEAT_FRAC) : 0) /* muzzle/lead-calc origin height tracks the ground-seat draw offset (GROUND_SEAT_FRAC) so the flash appears at the seated gun, not the old un-seated turret height */, sp = d.domain === 'air' ? 30 : 12, lt = leadTime(d.weapon, u.x, sy, tgt), ex = tgt.x + (tgt.vx || 0) * lt + (Math.random() - .5) * sp, ey = tgt.y + (tgt.vy || 0) * lt + (Math.random() - .5) * sp, sdmg = d.dmg * (1 + G.mult.dmg) * auraAt(u.x, 'dmg');   // plasma/missile/arc shots lead a moving target by its velocity × time-to-impact; natural aim spread; Ammo Depot / Psionic Relay speed up nearby fire; War Academy boosts nearby DAMAGE
+      if (u.cd <= 0) { const sy = u.y - (d.domain === 'ground' ? d.s * (1 - GROUND_SEAT_FRAC) : 0) /* muzzle/lead-calc origin height tracks the ground-seat draw offset (GROUND_SEAT_FRAC) so the flash appears at the seated gun, not the old un-seated turret height */, sp = d.domain === 'air' ? 30 : 12, lt = leadTime(d.weapon, u.x, sy, tgt), ex = tgt.x + (tgt.vx || 0) * lt + (Math.random() - .5) * sp, ey = tgt.y + (tgt.vy || 0) * lt + (Math.random() - .5) * sp, sdmg = d.dmg * (1 + G.mult.dmg) * auraAt(u.x, 'dmg');   // plasma/missile/arc shots lead a moving target by its velocity × time-to-impact; natural aim spread; Ammo Depot / Psionic Relay speed up nearby fire; War Academy boosts nearby DAMAGE
         const airMsl = d.domain === 'air';   // aircraft missiles HARD-LOCK this unit's OWN acquired target (diversify) + get a proximity fuse; ground/naval/space keep their straight-shot lead
-        if (tgt.interceptable || tgt.pdable) { flakHit(tgt, sdmg); SFX.shoot(); } else { fire(u.x, sy, d.weapon, ex, ey, true, sdmg, airMsl ? tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } } claimDmg(tgt, sdmg);   // PD shoots down interceptable lances AND incoming enemy missiles; aircraft burn their magazine then rearm; committed damage is booked so other shooters re-aim
+        if (tgt.interceptable || tgt.pdable) { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); flakHit(tgt, sdmg); SFX.shoot(); claimDmg(tgt, sdmg); }
+        else if (!missileFireGate(u, d.weapon, tgt)) { u.cd = MISSILE_ASSESS_CD; }   // FIRE DISCIPLINE (FIX 1) — target already has a lethal amount of ordnance committed/inbound, or this unit already spent its allotment on a cheap contact: hold fire and reassess shortly instead of dumping the whole magazine
+        else { u.cd = jitterCd(d.rate / (1 + G.mult.rof) / auraAt(u.x, 'rof')); fire(u.x, sy, d.weapon, ex, ey, true, sdmg, airMsl ? tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } if (isMissileWeapon(d.weapon)) { commitMissile(tgt, sdmg); u._mslCount = (u._mslCount || 0) + 1; } claimDmg(tgt, sdmg); }   // PD shoots down interceptable lances AND incoming enemy missiles; aircraft burn their magazine then rearm; committed damage is booked so other shooters re-aim
       }
     }
     // ⊕ SECONDARY TURRET (Phase 2a) — a multi-turreted warship's SECOND gun fires on its OWN cooldown at its OWN acquired
@@ -5043,16 +5092,17 @@ function updSquadMembers(u, dt, sharedTgt) {
     if (m.burstLeft > 0) {
       m.burstT -= dt;
       if (m.burstT <= 0) {
-        const live = m.tgt && m.tgt.hp > 0;
-        if (live) {
+        const live = m.tgt && m.tgt.hp > 0; let held = false;
+        if (live && !missileFireGate(u, m.weapon, m.tgt)) { m.burstLeft = 0; held = true; }   // FIRE DISCIPLINE (FIX 1) — squad-shared magazine already has enough ordnance committed/inbound on this target, or this squad already spent its allotment on a cheap contact: abort the rest of the volley instead of dumping it
+        else if (live) {
           const lt = leadTime(m.weapon, mx, my, m.tgt), ex = m.tgt.x + (m.tgt.vx || 0) * lt, ey = m.tgt.y + (m.tgt.vy || 0) * lt, sdmg = m.dmg * (1 + G.mult.dmg);
           const airMsl = u.d.domain === 'air';   // each flight member fires at its acquired target; aircraft missiles hard-lock it + proximity-fuse
-          if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else { fire(mx, my, m.weapon, ex, ey, true, sdmg, airMsl ? m.tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } }   // aircraft SQUADS share one magazine across the flight — mirrors the single-body RTB rule
+          if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else { fire(mx, my, m.weapon, ex, ey, true, sdmg, airMsl ? m.tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } if (isMissileWeapon(m.weapon)) { commitMissile(m.tgt, sdmg); u._mslCount = (u._mslCount || 0) + 1; } }   // aircraft SQUADS share one magazine across the flight — mirrors the single-body RTB rule
           claimDmg(m.tgt, sdmg);
           m.burstLeft--;
         } else m.burstLeft = 0;   // target died/vanished mid-burst — abort the rest of the volley instead of firing blind
         m.burstT = cfg.burstGap;
-        if (m.burstLeft <= 0) m.cd = jitterCd(m.rate / auraAt(u.x, 'rof'));
+        if (m.burstLeft <= 0) m.cd = held ? MISSILE_ASSESS_CD : jitterCd(m.rate / auraAt(u.x, 'rof'));   // fire-discipline hold gets a short reassess pause, not a full reload
       }
       continue;
     }

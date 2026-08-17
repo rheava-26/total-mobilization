@@ -2176,6 +2176,12 @@ const UNIT_DEFS = {
   heliscout:{ name: 'Scout Heli "Kestrel"', art: 'heliscout', domain: 'air', rotor: true, lowAir: true, airOnly: true, ic: 110, mp: 8, build: 6, hp: 70, armor: 2, range: 470, dmg: 16, rate: 1.1, weapon: 'missile', speed: 150, s: 3.6, grp: 1, ammo: 14, fuel: 40, ceil: .78, ds: 'AIR-TO-AIR scout helicopter — a light, fast rotor interceptor slaved to hunting enemy AIRCRAFT at low altitude with short-range heat-seeking missiles. NEVER strafes the ground: it is your rotor-arm air picket. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Tropo-ceilinged — it cannot climb to high-altitude threats, so it screens the deck against low-flying attackers.' },
   // 🚁 HEAVY GUNSHIP — the ROTOR arm's capital-weight CAS platform. groundAtk:true (like the Kite) but BIG, tanky and slow, with heavy rocket pods + a multi-barrel gun rack. A serious investment: high IC/MP, standing IC/s upkeep, and rotorW:3 (draws THREE ROTOR COMMAND slots, not one). Same rotor system (hover-CAS AI, tropo ceil, rearm at cities/heli-depots). Balance is deliberately conservative — power comes from being strong-but-COSTLY, never a cap. (tunable)
   heligunship:{ name: 'Heavy Gunship "Mastodon"', art: 'heligunship', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 340, mp: 24, build: 14, hp: 380, armor: 12, range: 480, dmg: 40, rate: 2.2, weapon: 'rocket', speed: 85, s: 6.5, grp: 1, ammo: 18, fuel: 46, ceil: .78, rotorW: 3, upkeep: 3, ds: '★ HEAVY assault gunship — a huge tandem-rotor hull that wades into the fight and hovers over its target hammering it with heavy rocket pods, a multi-barrel gun rack and a chin gun. Tanky and slow. A serious commitment: costs 3 🚁 ROTOR COMMAND slots and 3 IC/s standing upkeep. Needs NO runway: rearms at any CITY, HELI-DEPOT or airbase. Tropo-ceilinged like all rotorcraft — it dominates the ground & low air, not the high sky.' },
+  // 🚁 COMMAND HELICOPTER — the ROTOR arm's SUPPORT element. Its chin gun is light — barely a gesture at self-defense — because its
+  // real payload is aura:{...}, a MOBILE version of the same buff radius as an Ammunition Depot + Radar. It rides the shared hover-CAS
+  // AI (same as the Kite/Kestrel/Mastodon), so it loiters wherever the fighting actually is: the buff FOLLOWS the front line with zero
+  // micromanagement, the way the rest of the army already fights itself. Costs a ROTOR COMMAND slot + standing IC/MP like any rotorcraft
+  // — that scarce slot (and the fact a lucky hit can knock it down and collapse the buff) is its real cost, never a hard cap. (tunable)
+  helicmd:  { name: 'Command Helicopter "Overwatch"', art: 'heliscout', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 170, mp: 10, build: 9, hp: 85, armor: 3, range: 260, dmg: 6, rate: 1.0, weapon: 'tracer', speed: 115, s: 3.8, grp: 1, ammo: 30, fuel: 46, ceil: .78, aura: { rof: 1.2, range: 1.12, r: 320 }, ds: '🚁 SUPPORT rotorcraft — a light chin gun for token self-defense; its actual job is projecting a MOBILE AURA (+20% fire rate, +12% range in a wide radius) over whatever it happens to be hovering above, exactly like a flying Ammunition Depot + Radar. Loiters over the front on the same hover-CAS AI as the Kite/Mastodon, so the buff follows the fighting with zero micromanagement. Needs NO runway: draws 🚁 ROTOR COMMAND and rearms at any CITY, HELI-DEPOT or airbase.' },
   // ---- EXOTIC (unlocked by research branches) ----
   cdrone:   { name: 'Combat Drone Squadron', art: 'cdrone', domain: 'air', ammo: 10, ic: 230, mp: 12, build: 6, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 1, req: 'automation', ds: 'A SWARM of 3 pilotless combat drones flying as ONE unit — ONE army-cap-exempt slot, several missile-armed bodies. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds squadrons in bigger, faster batches.' },
   kdrone:   { name: 'Kamikaze Drones', art: 'kdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
@@ -2575,8 +2581,12 @@ function recalcBuildings() {
   if (G) G.bmod = m;
 }
 function bmod() { return (G && G.bmod) || {}; }
-function auraAt(x, field) { let m = 1; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field]; return m; }   // local building auras (range / fire-rate)
-function auraHeal(x) { let h = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal); return h; }   // Nanite Foundry repair radius
+function auraAt(x, field) { let m = 1; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field];
+  if (G && G.auraUnits && G.auraUnits.length) for (const u of G.auraUnits) if (u.d.aura[field] && Math.abs(u.x - x) < (u.d.aura.r || 300)) m *= u.d.aura[field];   // MOBILE auras (e.g. the Command Helicopter) — G.auraUnits is a per-tick cache built once in updateGame(), so the common case (no aura units fielded) costs one array-length check, never a scan of G.units
+  return m; }   // local building + mobile-unit auras (range / fire-rate)
+function auraHeal(x) { let h = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal);
+  if (G && G.auraUnits && G.auraUnits.length) for (const u of G.auraUnits) if (u.d.aura.heal && Math.abs(u.x - x) < (u.d.aura.r || 240)) h = Math.max(h, u.d.aura.heal);   // mobile heal auras, same cheap-guarded cache
+  return h; }   // Nanite Foundry repair radius + any mobile heal aura
 function armyCap() { let cap = 12 + Math.floor((G.mp || 0) / 25) + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return cap; }   // driven by your MANPOWER pool — ~300 mp ≈ 24 cap (old baseline), ~900 mp ≈ 48 cap; mechanical units never touch this (see isMechanical)
 // === GARRISON ECONOMY === a SEPARATE, free auto-defense track from the manual army above. garrisonCap() is the hard
 // GLOBAL WEIGHT BUDGET (set by Garrison Stockpiles); garrisonUsed() sums the weight of every currently-live garrisoner
@@ -3479,7 +3489,9 @@ function updateGame(dt) {
   if (bmod().amR) G.antimatter = Math.min(300, (G.antimatter || 0) + bmod().amR * dt);   // Antimatter Extractors slowly accrue antimatter
   const em = 1 + G.mult.econ;
   icR *= em; mpR *= (1 + G.mult.mp) * em; resR *= (1 + G.mult.res);
-  let upkeep = 0, garrUpkeep = 0; for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
+  let upkeep = 0, garrUpkeep = 0; const auraU = [];   // auraU: this tick's cache of friendly UNITS carrying a d.aura (e.g. the Command Helicopter) — piggybacks on the loop below (already O(units), runs once/tick) so auraAt() never has to scan G.units itself on every call
+  for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); if (u.d.aura && u.hp > 0 && !u.docked) auraU.push(u); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
+  G.auraUnits = auraU;   // MOBILE AURAS — refreshed once/tick here, BEFORE updUnits/updBuildings run this same frame, so every auraAt() call this tick sees a current list; a docked/rearming aura unit is excluded (it's parked at base, not over the front)
   if (G.evt && G.evt.housingShielded) for (const b of G.buildings) if (b.key === 'housing' && b.done !== false && !b.captured) upkeep += EVT1.shieldUpkeepPerHousing;   // EVENT #1 "Deflector Shields" choice — every standing Housing Block draws extra power for its dome, existing ones and any built later
   const upkeepCut = Math.min(.6, bmod().upkeepCut || 0); upkeep *= (1 - upkeepCut); garrUpkeep *= (1 - upkeepCut);   // Logistics Hubs cut TOTAL standing upkeep (garrison + capital ships + shield gens), floored at 40% of raw
   icR -= upkeep; G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;
@@ -4945,6 +4957,11 @@ function renderGame() {
       const col = b.d.aura.heal ? '109,255,176' : b.d.aura.dmg ? '255,110,90' : b.d.aura.rof ? '255,178,74' : '63,200,240';   // heal=green · damage=red · fire-rate=amber · range=cyan
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
     }
+    if (G.auraUnits) for (const u of G.auraUnits) { if (!G.showZones && u !== G.sel) continue;   // MOBILE aura (Command Helicopter) — same ring, but centered on the unit's own airborne position, not the ground
+      const r = u.d.aura.r || 300, px = sx(u.x); if (px < -r || px > W + r) continue;
+      const col = u.d.aura.heal ? '109,255,176' : u.d.aura.dmg ? '255,110,90' : u.d.aura.rof ? '255,178,74' : '63,200,240';
+      c.save(); c.beginPath(); c.arc(px, u.y, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
+    }
     // LOCALIZED GARRISON PRODUCER coverage — the neighbourhood a garrWorks building posts its standing garrisons into (amber, matching the garrison HUD colour)
     for (const b of G.buildings) { if (b.done === false || !b.d.garrWorks) continue; if (!G.showZones && b !== G.sel) continue;
       const r = b.d.garrWorks.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
@@ -5540,9 +5557,10 @@ function renderProdDetail() {
 // source, so a player can see (and learn) that nearby-building auras STACK. Pure display: recomputed fresh
 // every refreshSel() call from the same systems combat already uses (auraAt/auraHeal, G.mult, bmod, SR, UPGRADES)
 // — it never itself changes a stat.
-function auraSources(x, field) {   // which buildings' aura[field] currently reach x — mirrors auraAt()/auraHeal()'s own per-field radius default exactly, so the readout can never disagree with the real effect
+function auraSources(x, field) {   // which buildings/units' aura[field] currently reach x — mirrors auraAt()/auraHeal()'s own per-field radius default exactly, so the readout can never disagree with the real effect
   const out = [];
   if (G && G.buildings) for (const b of G.buildings) { if (b.done === false) continue; const a = b.d.aura; if (!a || !a[field]) continue; const r = a.r || (field === 'heal' ? 240 : 300); if (Math.abs(b.x - x) < r) out.push(b); }
+  if (G && G.auraUnits) for (const u of G.auraUnits) { const a = u.d.aura; if (!a[field]) continue; const r = a.r || (field === 'heal' ? 240 : 300); if (Math.abs(u.x - x) < r) out.push(u); }   // MOBILE auras (Command Helicopter) show up in the same buff readout, named via u.d.name like any building
   return out;
 }
 function buffSrcNames(list) {   // "2× Ammunition Depot, Radar" — collapses repeats so stacking is legible at a glance

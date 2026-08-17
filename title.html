@@ -2510,7 +2510,7 @@ const BUILD_DEFS = {
   aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'aegismsl', guidedpd: true, range: 700, dmg: 9, rate: .1, ceil: .60, noGround: true, pd: true, req: 'pointdefense', ds: 'SMART interceptor battery — where the CIWS hoses a dumb wall of flak, the Aegis snaps a single agile CYAN GUIDED interceptor onto each threat that HOMES in and CHASES it down (incoming missiles, rockets, tungsten RODS). One tracking round per target, not a spray. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (POINT DEFENSE)' },
   microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, pd: true, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
   // ── ANTI-MISSILE INTERCEPTOR (all tunable) — the dedicated bombardment counter. ceil:0 → reaches SPACE, so it catches HIGH orbital descents that aircraft can't. FINITE ammo (AMI_AMMO), slow auto-rearm (one missile back every AMI_REARM in-game seconds), so it CANNOT stop a saturation barrage on its own — invest heavily & still triage. Unlocked from START (basic defense, no research gate).
-  interceptor:{ name: 'Anti-Missile Interceptor', cat: 'DEF', ic: 500, mp: 60, build: 14, hp: 300, armor: 8, w: 18, h: 18, weapon: 'missile', range: 1250, dmg: 65, rate: 1.0, ceil: 0, pd: true, noGround: true, ami: true, ammo: 6, ds: 'Dedicated ANTI-BOMBARDMENT battery — LEAPS a big HYPERVELOCITY hit-to-kill interceptor off the rail at incoming orbital ordnance (bunker-busters, tungsten RODS, enemy missiles) at ANY altitude, clear into space. The fastest missile in the game — it runs down maneuvering rounds and airbursts on a near miss, so it rarely whiffs. Holds a FINITE magazine of 6 and reloads SLOWLY (one every ~8s) — it defends a sector, it does not shrug off a saturation barrage. No research needed.' },
+  interceptor:{ name: 'Anti-Missile Interceptor', cat: 'DEF', ic: 500, mp: 60, build: 14, hp: 300, armor: 8, w: 18, h: 18, weapon: 'missile', range: 1250, dmg: 65, rate: 1.0, ceil: 0, pd: true, noGround: true, ami: true, ammo: 4, ds: 'Dedicated ANTI-BOMBARDMENT battery — LEAPS a big HYPERVELOCITY hit-to-kill interceptor off the rail at incoming orbital ordnance (bunker-busters, tungsten RODS, enemy missiles) at ANY altitude, clear into space. The fastest missile in the game — it runs down maneuvering rounds and airbursts on a near miss, so it rarely whiffs. Holds a FINITE magazine of just 4 and reloads SLOWLY (one every ~10s), so it TRIAGES: it always prioritizes tungsten RODS and bunker-BUSTERS over lesser ordnance, ignores cheap decoy missiles outright, and HOLDS FIRE — refusing to burn a round — until something actually worth the shot is in range. It defends a sector, it does not shrug off a saturation barrage. No research needed.' },
   shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 130, shieldHp: 900, upkeep: 2, req: 'shieldtech', ds: 'Projects a tight PROJECTILE SHIELD DOME over what is right beside it — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Draws heavy power: 2 IC/s upkeep. Cover a base with several, not one. (DEFLECTOR SHIELDS)' },
   particlecannon:{ name: 'Particle Cannon', cat: 'DEF', ic: 440, mp: 80, build: 16, hp: 380, armor: 12, w: 22, h: 16, weapon: 'particle', range: 1600, dmg: 130, rate: 4.5, ceil: 0, pd: true, manual: true, heavy: true, req: 'particlebeam', ds: 'Single-shot hypervelocity PARTICLE bolt — near-instant, punches clean through anything at any altitude. Add it to ⊕ FIRE CONTROL to aim it. (PARTICLE BEAMS)' },
   siegegun: { name: 'Orbital Gun', cat: 'DEF', ic: 460, mp: 90, build: 18, hp: 440, armor: 14, w: 24, h: 16, weapon: 'rail', range: 1500, dmg: 72, rate: 5.5, heavy: true, ceil: 0, pd: true, manual: true, req: 'orbitalcmd', ds: 'Giant surface cannon — hurls hypervelocity rounds clear into the upper atmosphere & space. Slow, long-ranged, devastating. Select it, ⊕ ADD TO FIRE CONTROL, then click incoming enemies to designate its targets. (ORBITAL COMMAND)' },
@@ -5088,7 +5088,21 @@ function cityDefend(ct, dt) {
   ct.dcd = jitterCd(cfg.rate / guns); const sdmg = (cfg.dmg + 2) * (1 + G.mult.dmg);   // a fortified city is several emplacements — fires harder & faster than one building
   if (t.interceptable || t.pdable) flakHit(t, sdmg); else { const sxx = cx + (Math.random() - .5) * (ct.w || 100), lt = leadTime(cfg.w, sxx, cy, t); fire(sxx, cy, cfg.w, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); } claimDmg(t, sdmg);
 }
-const AMI_REARM = 8;   // tunable — in-game seconds to auto-regenerate ONE Anti-Missile Interceptor round (magazine size lives on the def as `ammo`). Slow enough that a battery can't shrug off a saturation barrage.
+const AMI_REARM = 10;   // tunable — in-game seconds to auto-regenerate ONE Anti-Missile Interceptor round (magazine size lives on the def as `ammo`). Slow enough that a battery can't shrug off a saturation barrage.
+function acquireAmiTarget(x, y, range, ceilFrac) {   // ANTI-MISSILE INTERCEPTOR target picker — with only 4 rounds every shot has to count: PRIORITIZE tungsten RODS ('krod') & bunker-BUSTERS ('buster') over lesser incoming, IGNORE decoy missiles entirely (they're bait — see the decoy spawn comment — never worth a precious round), and return null (hold fire) rather than settle for a minor target just because something is in range.
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range;
+  let big = null, bigD = r2, other = null, otherD = r2;
+  for (const p of G.proj) {
+    if (!(p.interceptable || p.pdable) || p.life <= 0) continue;
+    if (p.y < ceil) continue;
+    if (p.k === 'decoy') continue;   // bait — never worth the round, hold for the real thing
+    if (claimOf(p) >= (p.hp || 1)) continue;   // already claimed by enough incoming fire
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d > r2) continue;
+    if (p.k === 'krod' || p.k === 'buster') { if (d < bigD) { bigD = d; big = p; } }
+    else { if (d < otherD) { otherD = d; other = p; } }
+  }
+  return big || other;   // rods/busters win outright; a genuine incoming missile is the fallback; nothing worthy → null, battery holds
+}
 function updBuildings(dt) {
   if (G.designated && G.designated.length) G.designated = G.designated.filter(e => e && e.hp > 0 && G.enemies.indexOf(e) >= 0);   // drop killed / vanished designated targets
   for (const ct of G.cities) cityDefend(ct, dt);   // cities are fortified — their populace fires back at nearby threats
@@ -5127,14 +5141,14 @@ function updBuildings(dt) {
       b.cd -= dt;
       if (b.ammo > 0 && b.cd <= 0) {
         const my = b.y - b.d.h * .5, brng = b.d.range * radarBoost(b.x);
-        let t = acquireIncoming(b.x, my, brng, b.d.ceil);   // PRIORITISE falling bombardment (busters/rods/enemy missiles)
-        if (!t) t = acquireEnemy(b.x, my, brng, b.d.ceil, notNearGround);   // fallback: engage airborne foes so it isn't idle — never ground/deck-huggers
+        let t = acquireAmiTarget(b.x, my, brng, b.d.ceil);   // TRIAGE: rods/busters first, decoys never — only 4 rounds, so a real threat has to actually be worth it
+        if (!t) t = acquireEnemy(b.x, my, brng, b.d.ceil, notNearGround);   // no ordnance worth the shot — defend against airborne foes instead (never ground/deck-huggers)
         if (t) {
           b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); b.ammo--;
           const sdmg = b.d.dmg * (1 + G.mult.dmg);
           fire(b.x, my, 'missile', t.x, t.y, true, sdmg, t, false, true);   // HYPERVELOCITY hit-to-kill interceptor (ami flag), hard-locked to the target (chases HIGH orbital rounds the normal missile re-acquire won't touch)
           claimDmg(t, sdmg);
-        } else b.cd = .25;
+        } else b.cd = .25;   // HOLD FIRE — nothing worthy in range yet; keep the round, re-check shortly
       }
       continue;
     }
@@ -6124,6 +6138,11 @@ function buildProdMenu() {
 function renderProdDetail() {
   const pd = document.getElementById('pdetail'); if (!pd) return;
   const key = G.prodSel;
+  // #pdetail rebuilds its innerHTML wholesale below — never move the player's scroll against their will. A qty tweak
+  // or a live-stat refresh re-renders the SAME unit, so its scroll must survive; switching to a DIFFERENT unit is new
+  // content and legitimately opens at the top (that's the browser default, not something to fight).
+  const sameSel = pd._lastKey === key, savedScroll = sameSel ? pd.scrollTop : 0;
+  pd._lastKey = key;
   if (!key || !UNIT_DEFS[key]) { pd.innerHTML = '<div class="pdempty">Select a unit to see its loadout, cost and stats.</div>'; return; }
   const base = UNIT_DEFS[key], d = effDef(key), bm = bmod(), upgraded = d !== base;
   const prodUnl = unitProdUnlocked(key), bReqLock = unitBReq(d), reqMissing = d.req && !G.unlocked[d.req] && !prodUnl, locked = reqMissing || !!bReqLock; const noFac = !facsForUnit(d).length;
@@ -6170,6 +6189,7 @@ function renderProdDetail() {
     `<div class="qrow"><button class="qbtn" data-q="-1">−</button><div class="qval">×${qty}</div><button class="qbtn" data-q="1">+</button></div>` +
     `<button class="pbuild${canBuild ? '' : ' cant'}" data-build="${key}">${canBuild ? `BUILD ×${qty}` : 'CANNOT BUILD'}<span class="pbsub">${canBuild ? `${totUnits} unit${totUnits > 1 ? 's' : ''} · ${totIC} IC${totMP ? ` · ${totMP} MP` : ''}` : 'see requirement above'}</span></button>`;
   const ic = pd.querySelector('canvas').getContext('2d'); ic.translate(110, 40); ic.scale(2.4, 2.4); if (d.domain === 'air' || d.domain === 'naval') ic.scale(-1, 1); ART[d.art](ic, 13, -.6);
+  pd.scrollTop = savedScroll;   // restore — a qty tweak or a live stat refresh must never yank the panel back to the top on the player
 }
 // ---- UNIT BUFF PANEL — read-only readout of every LIVE effect currently touching a selected unit, with its
 // source, so a player can see (and learn) that nearby-building auras STACK. Pure display: recomputed fresh
@@ -6233,6 +6253,8 @@ function refreshSel() {
     if (d.makes) { const mk = []; for (const k in d.makes) mk.push('+' + d.makes[k] + '/s ' + (COMP[k] ? COMP[k].name : k)); html += `<div class="st"><span>Forges</span><b style="color:var(--res)">${mk.join(' · ')}</b></div>`; }
     if (d.autospawn) { const deep = !!bmod().autoFast, akey = deep ? 'android' : d.autospawn, every = d.spawnEvery * (deep ? .3 : 1), eta2 = Math.ceil(Math.max(0, every - (s.aut || 0)) / (0.45 * G.speed)); html += `<div class="st"><span>Auto-builds</span><b>${UNIT_DEFS[akey] ? UNIT_DEFS[akey].name : akey}</b></div><div class="st"><span>Next in</span><b>${eta2}s</b></div>`; }
     if (d.garrison) { const g = d.garrison, gk = g.keys || (g.unit ? [g.unit] : (g.key ? [g.key] : [])), gn = gk.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' / '); if (gn) html += `<div class="st"><span>Garrison</span><b>${g.n || 1} × ${gn}</b></div>`; }
+    if (d.garrWorks && UNIT_DEFS[d.garrWorks.unit]) { const gw = d.garrWorks, gwn = UNIT_DEFS[gw.unit].name, gwEvery = Math.ceil((gw.every || 18) / (0.45 * G.speed)); html += `<div class="st"><span>Supplies</span><b style="color:#ffd86b">1 × ${gwn} every ~${gwEvery}s</b></div><div class="id" style="margin-top:-3px">Posts each one as a standing garrison to the neediest friendly building within ${gw.r || 300}px — garrisons NOTHING if built with no friendly building nearby.</div>`; }
+    if (d.prodList) { const pn = d.prodList.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' · '); html += `<div class="st"><span>Produces</span><b style="color:#bfe9ff">${pn}</b></div>`; }
     if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else { html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div><div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s); }

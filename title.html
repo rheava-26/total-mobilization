@@ -1375,6 +1375,42 @@ function skyLift(x, pts, col) { x.save(); x.strokeStyle = col; x.lineWidth = 3; 
 function skyBlister(x, s, bx, by, r, ang) { x.save(); x.translate(bx, by); x.rotate(ang || 0); x.fillStyle = INK; x.beginPath(); x.arc(0, 0, r, Math.PI, 0); x.fill(); x.fillStyle = LO(); x.beginPath(); x.arc(0, 0, r, Math.PI, Math.PI * 1.15); x.lineTo(0, 0); x.fill(); x.fillStyle = SKY_NANO; x.fillRect(-r * .55, -r * .28, r * 1.1, r * .12); x.fillStyle = '#0e141c'; x.fillRect(r * .15, -r * .9, r * .18, r * .9); x.fillRect(-r * .33, -r * .9, r * .18, r * .9); skyGlow(x, SKY_GLOWH, 6, () => { x.beginPath(); x.arc(0, -r * .08, r * .22, 0, 6.28); x.fill(); }); x.restore(); }   // embedded weapon blister: hull dome + twin barrels + hot core
 function skyDeckJet(x, s, dx, dy, sc) { x.save(); x.translate(dx, dy); x.scale(sc, sc); x.fillStyle = '#3a4a58'; x.beginPath(); x.moveTo(s * .55, 0); x.lineTo(-s * .1, -s * .14); x.lineTo(-s * .42, -s * .24); x.lineTo(-s * .34, -s * .05); x.lineTo(-s * .5, 0); x.lineTo(-s * .34, s * .05); x.lineTo(-s * .42, s * .24); x.lineTo(-s * .1, s * .14); x.closePath(); x.fill(); skyGlow(x, SKY_GLOWC, 3, () => { x.fillRect(s * .46, -s * .02, s * .1, .04 * s); }); x.restore(); }   // tiny parked mini-jet on the carrier deck
 function skyDeckHeli(x, s, dx, dy, sc) { x.save(); x.translate(dx, dy); x.scale(sc, sc); x.fillStyle = '#3a4a58'; x.beginPath(); x.ellipse(0, 0, s * .32, s * .14, 0, 0, 6.28); x.fill(); x.fillRect(-s * .6, -s * .03, s * .35, s * .06); x.fillStyle = SKY_NANO; x.fillRect(-s * .68, -s * .13, s * .05, s * .2); x.strokeStyle = 'rgba(154,216,255,.85)'; x.lineWidth = Math.max(1.2, s * .045); x.beginPath(); x.ellipse(-s * .02, -s * .05, s * .58, s * .08, 0, 0, 6.28); x.stroke(); x.fillStyle = INK; x.fillRect(-s * .05, -s * .1, s * .06, s * .08); x.restore(); }   // tiny parked heli (rotor disc) on the carrier deck
+// ---- GRAND ARSENAL capital-ship kit — greebles shared by the 5 capital-class superweapons' bespoke art (cap_landdread/cap_battleship/cap_carrier/cap_colossus/cap_fortress below).
+//      cap-prefixed to avoid clashing with anything else; ported from the approved concept sheet (which used HI/LO/TRIM as plain constants — here they're called as functions per the game's convention). ----
+function capFlak(x, cx, cy, r) {   // small CIWS/flak turret bump — dark base + lit cap + twin stub barrels
+  x.fillStyle = LO(); x.beginPath(); x.arc(cx, cy, r, Math.PI, 0); x.fill();
+  x.fillStyle = HI(); x.beginPath(); x.arc(cx - r * .15, cy - r * .2, r * .62, Math.PI * 1.1, Math.PI * 1.85); x.fill();
+  x.fillStyle = '#14171c'; x.fillRect(cx + r * .1, cy - r * .5, r * .95, r * .22); x.fillRect(cx + r * .1, cy - r * .16, r * .95, r * .22);
+}
+function capRadar(x, cx, cy, r, sp) {   // rotating search radar on a short post
+  x.fillStyle = INK; x.fillRect(cx - r * .1, cy, r * .2, r * 1.5);
+  x.save(); x.translate(cx, cy); x.rotate(animClock * (sp || .0032));
+  x.fillStyle = LO(); x.fillRect(-r * .5, -r * .09, r, r * .18); x.fillStyle = HI(); x.fillRect(-r * .5, -r * .09, r, r * .06); x.restore();
+}
+function capMissileCell(x, cx, cy, w, h, n) {   // flat VLS block of square hatches
+  x.fillStyle = INK; rr(x, cx, cy, w, h, h * .08); x.fill();
+  x.fillStyle = HI(); x.fillRect(cx, cy, w, h * .12);
+  x.fillStyle = '#000'; const cw = w / n; for (let i = 0; i < n; i++) x.fillRect(cx + i * cw + cw * .12, cy + h * .3, cw * .76, h * .5);
+}
+function capShieldDome(x, s, cx, cy, rx, ry, alpha) {   // faint flat translucent deflector arc over a ground unit
+  x.save(); x.strokeStyle = TRIM(); x.lineWidth = Math.max(1, s * .02); x.setLineDash([s * .1, s * .07]);
+  x.globalAlpha = (alpha || .32) * pulseA(.012); x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, Math.PI, 0); x.stroke();
+  x.setLineDash([]); x.globalAlpha = 1; x.restore();
+}
+function capShieldRing(x, s, cx, cy, rx, ry, alpha) {   // full translucent ring around a hull (naval)
+  x.save(); x.strokeStyle = TRIM(); x.lineWidth = Math.max(1, s * .018); x.setLineDash([s * .09, s * .06]);
+  x.globalAlpha = (alpha || .28) * pulseA(.01); x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, 6.28); x.stroke();
+  x.setLineDash([]); x.globalAlpha = 1; x.restore();
+}
+function capAura(x, cx, cy, r, alpha) {   // wide pulsing amber command-bubble ring
+  x.save(); x.strokeStyle = '#ffcf6a'; x.lineWidth = 1.4; x.setLineDash([6, 10]);
+  x.globalAlpha = (alpha || .3) * pulseA(.008); x.beginPath(); x.arc(cx, cy, r, 0, 6.28); x.stroke();
+  x.setLineDash([]); x.globalAlpha = 1; x.restore();
+}
+function capWake(x, s) {   // naval wake foam, ported convention
+  x.save(); x.globalAlpha = .5; x.fillStyle = '#eaf6ff';
+  x.fillRect(-s * 3.2, s * .42, s * .48, s * .08); x.fillRect(s * 2.9, s * .28, s * .5, s * .07); x.restore();
+}
 const ART = {
   // ---- GROUND ----
   tank(x, s, a) {
@@ -2206,6 +2242,89 @@ const ART = {
     x.fillStyle = '#ff7a4a'; x.shadowColor = '#ff7a4a'; x.shadowBlur = s; x.beginPath(); x.arc(0, -s * .2, s * .18, 0, 6.28); x.fill(); x.shadowBlur = 0;   // seismic node (hostile orange)
     x.strokeStyle = 'rgba(255,140,90,.45)'; x.lineWidth = Math.max(1, s * .1); x.beginPath(); x.arc(0, 0, s * 1.5, Math.PI, 0); x.stroke();   // ground energy field
   },
+  // ---- GRAND ARSENAL CAPITAL SHIPS — bespoke art for the 5 capital-class superweapons (landdread/grandbattleship/supercarrier/warcolossus/mobilefortress), replacing the basic-unit
+  //      hulls they used to borrow (tank/battlecruiser/carrier/colossus/aa — all left untouched above, still used by the small units that own them). Adapted 1:1 from the approved
+  //      concept sheet's chosen variant per ship; ground fns keep taking `a` as an aim angle exactly like tank/aa/colossus do, naval fns stay facing-agnostic like battlecruiser/carrier.
+  cap_landdread(x, s, a) {   // LAND DREADNOUGHT — "Land Battlefort": hull-length spinal rail, 3 flak domes along the spine, shield dome overhead
+    x.fillStyle = LO(); rr(x, -s * 2.3, -s * .4, s * 4.6, s * .5, s * .1); x.fill();
+    wheels(x, s, -1.9, 1.9, .16);
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 2.25, -s * .4); x.lineTo(-s * 2.25, -s * .78); x.lineTo(-s * 1.2, -s * .92); x.lineTo(s * 1.6, -s * .92); x.lineTo(s * 2.3, -s * .55); x.lineTo(s * 2.3, -s * .4); x.closePath(); x.fill();   // long tracked hull deck
+    x.fillStyle = HI(); x.fillRect(-s * 2.25, -s * .92, s * 3.9, s * .1);   // sunlit deck edge
+    x.fillStyle = LO(); x.fillRect(-s * 2.25, -s * .48, s * 4.6, s * .07);   // shaded skirt
+    x.fillStyle = TRIM(); x.fillRect(-s * 2.0, -s * .68, s * 1.6, s * .06);   // ID stripe
+    for (const dx of [-1.3, -.55, .2]) capFlak(x, dx * s, -s * .92, s * .17);   // 3 flak domes along the spine
+    x.fillStyle = INK; x.save(); x.translate(s * .9, -s * .95); x.rotate(Math.max(-.5, Math.min(.05, a)));
+    x.fillRect(0, -s * .1, s * 3.4, s * .2); x.fillStyle = LO(); x.fillRect(s * 1.7, -s * .16, s * .4, s * .32);
+    x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = s * .6; x.fillRect(s * 3.2, -s * .12, s * .18, s * .24); x.shadowBlur = 0; x.restore();   // hull-length spinal railgun, still aims off `a`
+    capShieldDome(x, s, -s * .1, -s * .92, s * 2.5, s * 2.0, .3);
+  },
+  cap_battleship(x, s) {   // GRAND BATTLESHIP — "Triple-Turret Dreadnought": classic 3-turret battleship line, tall command tower, forward SAM cells
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 3.6, -s * .02); x.lineTo(s * 3.3, -s * .05); x.lineTo(s * 3.8, s * .2); x.lineTo(s * 3.0, s * .55); x.lineTo(-s * 3.3, s * .55); x.lineTo(-s * 3.6, s * .22); x.closePath(); x.fill();   // hull
+    x.fillStyle = '#2c3e50'; x.fillRect(-s * 3.5, s * .38, s * 7.0, s * .16);   // waterline shadow band
+    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 3.6, -s * .02); x.lineTo(s * 3.3, -s * .05); x.lineTo(s * 3.36, 0); x.lineTo(-s * 3.6, s * .05); x.closePath(); x.fill();   // sunlit deck edge
+    for (const tx of [-2.6, -.1, 2.2]) {   // 3 main gun turrets along the deck
+      x.fillStyle = INK; rr(x, tx * s - s * .5, -s * .5, s * 1.0, s * .42, s * .06); x.fill();
+      x.fillStyle = HI(); x.fillRect(tx * s - s * .5, -s * .5, s * 1.0, s * .06);
+      x.fillStyle = INK; x.fillRect(tx * s - s * .1, -s * .75, s * 1.0, s * .1);
+    }
+    capMissileCell(x, -s * 3.2, -s * .18, s * .9, s * .3, 3);   // forward SAM cells
+    x.fillStyle = INK; rr(x, -s * .55, -s * 1.15, s * .7, s * .65, s * .05); x.fill();   // tall command tower
+    x.fillStyle = GLASS; x.fillRect(-s * .45, -s * 1.02, s * .4, s * .14);
+    x.fillStyle = INK; x.fillRect(-s * .28, -s * 1.15, s * .1, s * .5); x.fillStyle = GLASS; x.fillRect(-s * .25, -s * 1.62, s * .09, s * .3);
+    capRadar(x, -s * .05, -s * 1.62, s * .3, .0028);
+    x.fillStyle = TRIM(); x.fillRect(s * 1.0, -s * .02, s * .6, s * .07);
+    capShieldRing(x, s, 0, s * .05, s * 3.9, s * .7, .28);   // hull shield halo
+    capWake(x, s);
+  },
+  cap_carrier(x, s) {   // SUPER CARRIER "LEVIATHAN-CLASS" — "Well-Deck Arsenal Carrier": flush low-profile deck, sunken flight well, biggest shield dome in the fleet
+    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 3.4, s * .06); x.lineTo(-s * 3.0, s * .42); x.lineTo(s * 2.9, s * .42); x.lineTo(s * 3.7, -s * .02); x.lineTo(s * 3.7, -s * .12); x.lineTo(-s * 3.3, -s * .12); x.closePath(); x.fill();   // hull
+    x.fillRect(-s * 3.3, -s * .24, s * 7.0, s * .12);   // flush low-profile deck
+    x.fillStyle = HI(); x.fillRect(-s * 3.3, -s * .24, s * 7.0, s * .04);
+    x.fillStyle = '#0e141c'; rr(x, -s * 1.6, -s * .2, s * 2.6, s * .12, s * .03); x.fill();   // sunken flight well
+    x.fillStyle = '#3a4a58'; for (let i = -1; i <= 1; i++) { x.save(); x.translate(i * s * .8 - s * .3, -s * .13); x.fillRect(0, -s * .03, s * .4, s * .06); x.fillRect(s * .1, -s * .07, s * .12, s * .04); x.restore(); }   // fighters parked below the deck line
+    x.fillStyle = LO(); rr(x, -s * .5, -s * .5, s * 1.0, s * .28, s * .06); x.fill(); x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.009); x.fillRect(-s * .3, -s * .42, s * .6, s * .1); x.globalAlpha = 1;   // low fairing mast, no island tower
+    x.fillStyle = INK; x.beginPath(); x.arc(-s * 2.2, s * .0, s * .22, Math.PI, 0); x.fill(); x.fillStyle = '#14171c'; x.fillRect(-s * 2.55, -s * .05, s * .38, s * .1);   // hull weapon blister, port
+    x.fillStyle = INK; x.beginPath(); x.arc(s * 2.4, s * .0, s * .22, Math.PI, 0); x.fill(); x.fillStyle = '#14171c'; x.fillRect(s * 2.32, -s * .05, s * .38, s * .1);   // hull weapon blister, stbd
+    capFlak(x, -s * 3.0, -s * .05, s * .12); capFlak(x, s * 3.2, -s * .0, s * .12);
+    capShieldDome(x, s, s * .1, -s * .05, s * 4.1, s * 1.15, .4);   // biggest personal shield in the fleet
+    capWake(x, s);
+    x.fillStyle = TRIM(); x.fillRect(s * 2.6, -s * .04, s * .5, s * .05);
+  },
+  cap_colossus(x, s, a) {   // WAR COLOSSUS — "Twin-Cannon Strider": tall rotating turret torso, two parallel siege barrels, flat forward shield plate
+    x.fillStyle = INK;
+    for (const g of [-1, 1]) {   // narrower stance legs than the small Colossus, to read as a turret ON legs rather than a walker with a gun
+      x.beginPath(); x.moveTo(g * s * .55, 0); x.lineTo(g * s * .18, 0); x.lineTo(g * s * .12, -s * .6); x.lineTo(g * s * .5, -s * 1.15); x.lineTo(g * s * .26, -s * 1.28); x.lineTo(g * s * .0, -s * .68); x.closePath(); x.fill();
+    }
+    rr(x, -s * .68, -s * 1.85, s * 1.36, s * .78, s * .14); x.fill();   // narrow tall torso
+    x.fillStyle = '#8f9aa6'; x.fillRect(-s * .68, -s * 1.85, s * 1.36, s * .14);
+    rr(x, -s * .95, -s * 2.55, s * .48, s * .7, s * .08); x.fill(); x.fillStyle = '#14171c'; x.fillRect(-s * .84, -s * 2.4, s * .28, s * .1); x.fillStyle = '#23e0ff'; x.beginPath(); x.arc(-s * .7, -s * 2.35, s * .07, 0, 6.28); x.fill();   // small sensor head, off to one side
+    x.fillStyle = INK; rr(x, s * .35, -s * 2.05, s * 1.0, s * .95, s * .12); x.fill();   // missile back-pack turret, high on the spine
+    capMissileCell(x, s * .45, -s * 1.95, s * .8, s * .7, 3);
+    x.save(); x.translate(s * .05, -s * 1.55); x.rotate(Math.max(-.5, Math.min(.15, (a || -.1))));   // twin parallel barrels — aims off `a` exactly like the small Colossus's cannon
+    for (const off of [-.13, .13]) { x.fillStyle = INK; x.fillRect(0, -s * .09 + off * s, s * 2.1, s * .1); x.fillStyle = '#6c7682'; x.fillRect(s * 1.95, -s * .12 + off * s, s * .3, s * .16); }
+    x.fillStyle = '#ff7a3a'; x.globalAlpha = pulseA(.02); x.beginPath(); x.arc(s * .15, 0, s * .14, 0, 6.28); x.fill(); x.globalAlpha = 1; x.restore();
+    x.save(); x.globalAlpha = .3 * pulseA(.012); x.fillStyle = TRIM(); rr(x, s * .1, -s * 2.1, s * .12, s * 2.1, s * .04); x.fill(); x.restore();   // flat forward barrier plate, not a dome
+    x.strokeStyle = TRIM(); x.lineWidth = 1.2; x.globalAlpha = .55 * pulseA(.012); x.strokeRect(s * .1, -s * 2.1, s * .12, s * 2.1); x.globalAlpha = 1;
+  },
+  cap_fortress(x, s, a) {   // MOBILE COMMAND FORTRESS — "Citadel-on-Treads": multi-story blockhouse, tall comms mast, garrison visible on an exterior platform
+    x.fillStyle = LO(); rr(x, -s * 1.9, -s * .4, s * 3.8, s * .48, s * .1); x.fill();
+    wheels(x, s, -1.55, 1.55, .16);
+    x.fillStyle = INK; rr(x, -s * 1.55, -s * 1.15, s * 3.1, s * .78, s * .05); x.fill();   // multi-story blockhouse
+    x.fillStyle = HI(); x.fillRect(-s * 1.55, -s * 1.15, s * 3.1, s * .08);
+    x.fillStyle = LO(); x.fillRect(-s * 1.55, -s * .68, s * 3.1, s * .06);   // floor line
+    x.fillStyle = '#0e141c'; for (let i = 0; i < 4; i++) x.fillRect(-s * 1.35 + i * s * .78, -s * .95, s * .3, s * .18);   // firing slits
+    x.fillStyle = TRIM(); x.fillRect(-s * 1.4, -s * .5, s * 1.1, s * .06);
+    x.fillStyle = INK; rr(x, -s * .3, -s * 1.7, s * .6, s * .55, s * .04); x.fill(); x.fillStyle = HI(); x.fillRect(-s * .3, -s * 1.7, s * .6, s * .06);   // command cupola
+    capRadar(x, -s * .05, -s * 2.15, s * .34, .0033);   // tall central comms mast
+    x.fillStyle = INK; x.fillRect(s * .35, -s * 1.95, s * .06, s * .8); x.fillStyle = '#7fd4ff'; x.globalAlpha = pulseA(.01, 1); x.beginPath(); x.arc(s * .38, -s * 1.98, s * .07, 0, 6.28); x.fill(); x.globalAlpha = 1;
+    capFlak(x, -s * 1.75, -s * 1.15, s * .16); capFlak(x, s * 1.6, -s * 1.15, s * .16);   // corner flak
+    x.fillStyle = INK; x.save(); x.translate(s * .95, -s * 1.02); x.rotate(Math.max(-1.2, Math.min(.1, a)));
+    x.fillRect(0, -s * .1, s * .95, s * .18); x.fillStyle = '#14171c'; x.fillRect(s * .84, -s * .1, s * .14, s * .18); x.restore();   // roof-mounted rotary gun — still elevates off `a` like the AA hull it used to borrow
+    x.fillStyle = '#14171c'; x.fillRect(-s * .2, -s * .35, s * .5, s * .08); x.fillRect(s * .3, -s * .35, s * .5, s * .08);   // standing garrison, visible on an exterior platform
+    x.fillStyle = LO(); x.beginPath(); x.arc(-s * .1, -s * .42, s * .07, 0, 6.28); x.fill(); x.beginPath(); x.arc(s * .35, -s * .42, s * .07, 0, 6.28); x.fill(); x.beginPath(); x.arc(s * .6, -s * .42, s * .07, 0, 6.28); x.fill();
+    capAura(x, -s * .1, -s * .3, s * 3.3, .3);   // command bubble
+    capShieldDome(x, s, -s * .1, -s * 1.0, s * 2.2, s * 2.1, .3);
+  },
 };
 
 /* =====================================================================
@@ -2407,11 +2526,11 @@ const UNIT_DEFS = {
   // its wings do the work. War Colossus trades single-target reach for a splash-damage plasma slug that shreds a
   // whole cluster at once (NOT a bigger Colossus laser). Mobile Fortress is a C2 aura + area-denial screen, the
   // weakest single-target puncher but the toughest shield, the anchor unit, not the hardest hitter.
-  landdread: { name: 'Land Dreadnought', art: 'tank', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1500, mp: 70, build: 34, hp: 2400, armor: 32, range: 1500, dmg: 210, rate: 5.2, weapon: 'rail', ceil: .82, speed: 3, s: 13, grp: 1, pd: true, weapon2: 'rotary', dmg2: 14, rate2: .22, range2: 620, ceil2: .70, wpn2Air: true, shield: 500, upkeep: 13, ds: '★ Rolling SIEGE BATTLESHIP — a whole defense network on tracks. Its spinal railgun levels anything on the ground from clear across the map, a flak/CIWS battery hoses down close-in air threats, and a big deflector shield soaks incoming fire before its armor ever does. Its guns still cannot elevate into high air or orbit — screen it against bombers or it dies to what it cannot answer. A capital ship (off the army cap); 13 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
-  grandbattleship: { name: 'Grand Battleship', art: 'battlecruiser', domain: 'naval', capital: true, facKey: 'grandarsenal', ic: 1550, mp: 75, build: 34, hp: 2100, armor: 24, range: 1900, dmg: 165, rate: 5.0, weapon: 'rail', speed: 5, s: 12, grp: 1, ceil: 0, pd: true, weapon2: 'missile', dmg2: 26, rate2: .7, range2: 950, ceil2: 0, wpn2Air: true, shield: 560, upkeep: 15, ds: '★ SHORE-BOMBARDMENT dreadnought — its spinal railgun out-reaches even an orbital tungsten rod and can elevate to hit ANY altitude, backed by a guided SAM battery that hunts aircraft independently and a deflector shield over the hull. Needs open water to float in. A capital ship (off the army cap); 15 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
-  supercarrier: { name: 'Super Carrier "Leviathan-class"', art: 'carrier', domain: 'naval', capital: true, facKey: 'grandarsenal', ic: 1700, mp: 90, build: 36, hp: 2000, armor: 18, range: 560, dmg: 12, rate: .4, weapon: 'tracer', speed: 5, s: 13, grp: 1, carrier: true, carrierN: 8, pd: true, weapon2: 'rocket', dmg2: 18, rate2: 1.2, range2: 580, wpn2Air: true, ceil2: .56, shield: 620, upkeep: 17, ds: '★ FLAGSHIP — a flight deck the length of a city block. Launches a free wing of EIGHT fighters (a normal Carrier launches two) plus its own escort helicopter, all off army-cap, that fly out, spend their ordnance and land back on deck to rearm. It barely fights directly — a light CIWS + a SAM turret defend the hull itself while the biggest personal shield in the fleet covers a deck that lives or dies by its air wing. Needs open water. A capital ship (off the army cap); 17 IC/s upkeep — the biggest standing drain in the fleet. (Super-Heavy Ground Units → Grand Arsenal)' },
-  warcolossus: { name: 'War Colossus', art: 'colossus', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1750, mp: 45, build: 36, hp: 2800, armor: 36, range: 720, dmg: 170, rate: 2.6, weapon: 'plasarc', ceil: .67, speed: 5, s: 15, grp: 1, pd: true, weapon2: 'missile', dmg2: 40, rate2: .9, range2: 850, ceil2: .56, wpn2Air: true, shield: 700, upkeep: 16, ds: '★ LINE FORTRESS — not a bigger Colossus: its main gun is a heavy arcing plasma siege slug that airbursts and shreds an entire cluster of enemies in one hit instead of dueling a single target, a long-ranged missile battery independently hunts anything airborne, and the largest shield yet fielded shrugs off small-arms fire while it grinds forward. A walking wall that owns the ground inside its bubble. A capital ship (off the army cap); 16 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
-  mobilefortress: { name: 'Mobile Command Fortress', art: 'aa', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1300, mp: 60, build: 30, hp: 2200, armor: 24, range: 580, dmg: 12, rate: .2, weapon: 'rotary', speed: 3, s: 12, grp: 1, pd: true, weapon2: 'missile', dmg2: 34, rate2: 1.0, range2: 780, shield: 800, upkeep: 12, aura: { rof: 1.25, range: 1.2, r: 520 }, garrison: { keys: ['inf'], n: 3, weight: 2 }, ds: '★ C2 + AREA DENIAL — a building on treads. Its real weapon is a rolling command bubble that boosts every friendly unit\'s fire-rate & range in a wide radius as it crawls with the front line, backed now by a wide flak PD screen, an independent missile battery, and the TOUGHEST personal shield in the fleet — the anchor that turns a sector into a fortress, not the hardest single hit. Keeps its own small standing garrison. A capital ship (off the army cap); 12 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
+  landdread: { name: 'Land Dreadnought', art: 'cap_landdread', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1500, mp: 70, build: 34, hp: 2400, armor: 32, range: 1500, dmg: 210, rate: 5.2, weapon: 'rail', ceil: .82, speed: 3, s: 13, grp: 1, pd: true, weapon2: 'rotary', dmg2: 14, rate2: .22, range2: 620, ceil2: .70, wpn2Air: true, shield: 500, upkeep: 13, ds: '★ Rolling SIEGE BATTLESHIP — a whole defense network on tracks. Its spinal railgun levels anything on the ground from clear across the map, a flak/CIWS battery hoses down close-in air threats, and a big deflector shield soaks incoming fire before its armor ever does. Its guns still cannot elevate into high air or orbit — screen it against bombers or it dies to what it cannot answer. A capital ship (off the army cap); 13 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
+  grandbattleship: { name: 'Grand Battleship', art: 'cap_battleship', domain: 'naval', capital: true, facKey: 'grandarsenal', ic: 1550, mp: 75, build: 34, hp: 2100, armor: 24, range: 1900, dmg: 165, rate: 5.0, weapon: 'rail', speed: 5, s: 12, grp: 1, ceil: 0, pd: true, weapon2: 'missile', dmg2: 26, rate2: .7, range2: 950, ceil2: 0, wpn2Air: true, shield: 560, upkeep: 15, ds: '★ SHORE-BOMBARDMENT dreadnought — its spinal railgun out-reaches even an orbital tungsten rod and can elevate to hit ANY altitude, backed by a guided SAM battery that hunts aircraft independently and a deflector shield over the hull. Needs open water to float in. A capital ship (off the army cap); 15 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
+  supercarrier: { name: 'Super Carrier "Leviathan-class"', art: 'cap_carrier', domain: 'naval', capital: true, facKey: 'grandarsenal', ic: 1700, mp: 90, build: 36, hp: 2000, armor: 18, range: 560, dmg: 12, rate: .4, weapon: 'tracer', speed: 5, s: 13, grp: 1, carrier: true, carrierN: 8, pd: true, weapon2: 'rocket', dmg2: 18, rate2: 1.2, range2: 580, wpn2Air: true, ceil2: .56, shield: 620, upkeep: 17, ds: '★ FLAGSHIP — a flight deck the length of a city block. Launches a free wing of EIGHT fighters (a normal Carrier launches two) plus its own escort helicopter, all off army-cap, that fly out, spend their ordnance and land back on deck to rearm. It barely fights directly — a light CIWS + a SAM turret defend the hull itself while the biggest personal shield in the fleet covers a deck that lives or dies by its air wing. Needs open water. A capital ship (off the army cap); 17 IC/s upkeep — the biggest standing drain in the fleet. (Super-Heavy Ground Units → Grand Arsenal)' },
+  warcolossus: { name: 'War Colossus', art: 'cap_colossus', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1750, mp: 45, build: 36, hp: 2800, armor: 36, range: 720, dmg: 170, rate: 2.6, weapon: 'plasarc', ceil: .67, speed: 5, s: 15, grp: 1, pd: true, weapon2: 'missile', dmg2: 40, rate2: .9, range2: 850, ceil2: .56, wpn2Air: true, shield: 700, upkeep: 16, ds: '★ LINE FORTRESS — not a bigger Colossus: its main gun is a heavy arcing plasma siege slug that airbursts and shreds an entire cluster of enemies in one hit instead of dueling a single target, a long-ranged missile battery independently hunts anything airborne, and the largest shield yet fielded shrugs off small-arms fire while it grinds forward. A walking wall that owns the ground inside its bubble. A capital ship (off the army cap); 16 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
+  mobilefortress: { name: 'Mobile Command Fortress', art: 'cap_fortress', domain: 'ground', capital: true, facKey: 'grandarsenal', ic: 1300, mp: 60, build: 30, hp: 2200, armor: 24, range: 580, dmg: 12, rate: .2, weapon: 'rotary', speed: 3, s: 12, grp: 1, pd: true, weapon2: 'missile', dmg2: 34, rate2: 1.0, range2: 780, shield: 800, upkeep: 12, aura: { rof: 1.25, range: 1.2, r: 520 }, garrison: { keys: ['inf'], n: 3, weight: 2 }, ds: '★ C2 + AREA DENIAL — a building on treads. Its real weapon is a rolling command bubble that boosts every friendly unit\'s fire-rate & range in a wide radius as it crawls with the front line, backed now by a wide flak PD screen, an independent missile battery, and the TOUGHEST personal shield in the fleet — the anchor that turns a sector into a fortress, not the hardest single hit. Keeps its own small standing garrison. A capital ship (off the army cap); 12 IC/s upkeep. (Super-Heavy Ground Units → Grand Arsenal)' },
   shock:    { name: 'Shock Troopers', art: 'shock', domain: 'ground', ic: 60, mp: 9, build: 3, hp: 70, armor: 4, range: 280, dmg: 9, rate: .42, weapon: 'tracer', speed: 20, s: 3.3, grp: 6, req: 'biotech', ds: 'Gene-boosted assault infantry. Fast & tough. (BIOTECH)' },
   // VETERAN GUARD — the Veterans' Hall unlock. Conventional elite infantry (NO research, NO exotic tech): heavy armour, hard-hitting rifles, buildable from any factory once a Veterans' Hall stands (bReq gates it). A parallel-path unit like the Hydra / Mammoth production lines.
   veteran:  { name: 'Veteran Guard', art: 'shock', domain: 'ground', ic: 150, mp: 22, build: 7, hp: 140, armor: 12, range: 340, dmg: 17, rate: 1.3, weapon: 'tracer', speed: 13, s: 4, grp: 2, bReq: 'vethall', ds: 'Elite conventional line infantry — heavily armoured veterans drilled to hold ground. No research, no exotic tech, just the best soldiers a mobilized nation can field. (build a Veterans\' Hall)' },

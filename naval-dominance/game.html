@@ -158,9 +158,11 @@
    ~600KB per edit; the SHIP build will inline three.module.min.js as a
    blob (offline-safe). Toggle DEV=false + set THREE_INLINE for release. */
 const DEV = true;
-// Three.js (ESM) is vendored as a sibling file so the game works offline, on GitHub Pages,
-// and with no CDN dependency. Ship-time option: inline it as a blob for a true single file.
-const THREE_URL = './three.module.js';
+// Module registry — sibling ESM files (three vendored; fleet/sfx are agent-built content
+// modules). build.mjs swaps this registry for embedded blob URLs to produce the standalone
+// double-clickable NavalDominance.html.
+let MODULES = { three:'./three.module.js', fleetHeavy:'./fleet-heavy.js', fleetLight:'./fleet-light.js', sfx:'./sfx.js' };
+/*__EMBED_HOOK__*/
 let THREE = null;
 
 /* ============================ §B CORE ============================ */
@@ -248,16 +250,21 @@ function musTick(dt){ if(!MUS.yt||!MUS.fade) return;
    clearly-marked WebAudio PLACEHOLDER so the feel loop is audible — the user
    prefers real samples, so this is scaffolding to be swapped, not the goal. */
 const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let SFX=null;   // synth sound bank module (sfx.js) — merged at boot; preferred over the inline placeholder
 const SND={ ctx:null, buf:{}, master:null, ready:false, placeholder:true,
-  init(){ if(this.ctx||!AudioCtx) return; this.ctx=new AudioCtx(); this.master=this.ctx.createGain(); this.master.gain.value=.75; this.master.connect(this.ctx.destination); this.ready=true; },
+  init(){ if(this.ctx||!AudioCtx) return; this.ctx=new AudioCtx(); this.master=this.ctx.createGain(); this.master.gain.value=.75; this.master.connect(this.ctx.destination); this.ready=true;
+    if(SFX){ try{ SFX.init(this.ctx,this.master); SFX.ambience(); }catch(e){ logErr(e); } } },
   unlock(){ if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
   async load(name,url){ this.init(); try{ const r=await fetch(url); const a=await r.arrayBuffer(); this.buf[name]=await this.ctx.decodeAudioData(a); }catch(e){ logErr(e); } },
   play(name,{gain=1,rate=1,delay=0}={}){ if(!this.ready) return; const b=this.buf[name]; if(!b) return;
     const s=this.ctx.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; const g=this.ctx.createGain(); g.gain.value=gain; s.connect(g).connect(this.master); s.start(this.ctx.currentTime+delay); },
   gunshot(cal){ this.init(); if(!this.ready) return;
+    if(SFX){ try{ SFX.gunshot(cal); return; }catch(e){ logErr(e); } }
     if(this.buf.gun){ const r=cal==='small'?1.5:cal==='medium'?1:.82; this.play('gun',{rate:r}); if(this.buf.gunBody) this.play('gunBody',{rate:r*.9,gain:.9}); return; }
     if(this.placeholder) this._ph(cal); },
-  impact(){ this.init(); if(!this.ready) return; if(this.buf.impact){ this.play('impact'); return; } if(this.placeholder) this._ph('hit'); },
+  impact(){ this.init(); if(!this.ready) return;
+    if(SFX){ try{ SFX.impact(); return; }catch(e){ logErr(e); } }
+    if(this.buf.impact){ this.play('impact'); return; } if(this.placeholder) this._ph('hit'); },
   // ---- PLACEHOLDER ONLY — replace with a CC0 sample pack ----
   _ph(kind){ const c=this.ctx,t=c.currentTime, big=kind!=='small'&&kind!=='hit';
     const len=Math.floor(c.sampleRate*(big?.34:.13)); const ab=c.createBuffer(1,len,c.sampleRate); const d=ab.getChannelData(0);
@@ -348,15 +355,23 @@ const ENEMY_WAVES = [ ['scoutheli','scoutheli'], ['gunship','scoutheli'], ['guns
 // with jitter to keep the fleet varied. Returns plain string arrays (JSON-clean, save-safe).
 function buildEnemyWaves(strength){
   const s=clamp(Math.round(strength||4),1,20);
-  const roster=['scoutheli','gunboat','gunship','missileboat'];   // light -> heavy
+  // tiered pools spanning the FULL merged roster (fleet-heavy/light modules load at boot).
+  // pickRoster() filters to defs that actually loaded, so the game still works if a module fails.
+  const TIERS=[
+    ['scoutheli','ptboat','seaplane','gunboat'],                       // t0 light
+    ['gunship','seahawk','missileboat','missilecorvette','minesweeper'],// t1 medium
+    ['cobra','patrolbomber','lcs','perry','submarine','fletcher'],      // t2 heavy
+    ['gearing','atlanta','ticonderoga','iowa','essex'],                 // t3 capital
+  ];
+  const pool=t=>{ const p=TIERS[clamp(t,0,3)].filter(k=>UNIT_DEFS[k]); return p.length?p:TIERS[0].filter(k=>UNIT_DEFS[k]); };
   const nWaves=clamp(2+Math.floor(s/4),2,4);
   const waves=[];
   for(let w=0; w<nWaves; w++){
     const size=clamp(1+Math.floor(s/6)+w,1,4);                    // bigger, later waves for stronger zones
     const wave=[];
     for(let k=0;k<size;k++){
-      const t=clamp(s/8 + w*0.5 + (Math.random()-0.5)*1.5, 0, roster.length-1);
-      wave.push(roster[Math.round(t)]);
+      const t=Math.round(clamp(s/6 + w*0.6 + (Math.random()-0.5)*1.4, 0, 3));
+      const p=pool(t); wave.push(p[Math.floor(Math.random()*p.length)]);
     }
     waves.push(wave);
   }
@@ -644,11 +659,13 @@ function initFX(){
   TRACER_MAT=new THREE.MeshBasicMaterial({map:TEX_STREAK,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
   FLASH_MAT=new THREE.SpriteMaterial({map:TEX_GLOW,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,color:0xffd9a0});
   // gameplay systems EMIT; juice OWNS all fx + sound (decoupling seam)
-  BUS.on('fire',e=>{ SND.gunshot(e.caliber); addFlash(e.pos, e.caliber==='medium'?4.2:2.4, 0xffe0a0);
+  BUS.on('fire',e=>{ if(e.kind==='rocket'&&SFX){ SND.init(); try{ SFX.rocket(); }catch(x){} } else SND.gunshot(e.caliber);
+    addFlash(e.pos, e.caliber==='medium'?4.2:2.4, 0xffe0a0);
     if(G.possess){ G.cam.kick[0]+=(Math.random()-.5)*1.4; G.cam.kick[1]+=(Math.random()-.5)*1.4; } });
   BUS.on('hit',e=>{ SND.impact(); addSpark(e.pos); G.hitStop=Math.max(G.hitStop,0.065); });
-  BUS.on('kill',e=>{ const ent=G.ents.find(x=>x.id===e.entId); if(ent) addFlash(ent.pos,8,0xff8a3a); });
-  BUS.on('splash',e=>{ addFlash([e.pos[0],0.2,e.pos[2]],3,0x9fc2d6); });
+  BUS.on('kill',e=>{ const ent=G.ents.find(x=>x.id===e.entId); if(ent) addFlash(ent.pos,8,0xff8a3a);
+    if(SFX){ try{ SFX.explosion(); }catch(x){} } });
+  BUS.on('splash',e=>{ addFlash([e.pos[0],0.2,e.pos[2]],3,0x9fc2d6); if(SFX){ try{ SFX.splash(); }catch(x){} } });
 }
 function addFlash(pos,scale,color){ if(!FX) return; const m=new THREE.Sprite(FLASH_MAT.clone()); if(color) m.material.color.setHex(color);
   m.position.set(pos[0],pos[1],pos[2]); m.scale.setScalar(scale); FX.add(m); FXLIST.push({mesh:m,life:.10,max:.10,kind:'flash'}); }
@@ -702,7 +719,7 @@ function tryFire(e,wi){ const w=e.weapons[wi]; if(!w||w.cooldown>0||!e.alive) re
   G.projectiles.push({ id, w:w.w, srcId:e.id, side:e.side, pos:[mp.x,mp.y,mp.z], prev:[mp.x,mp.y,mp.z],
     vel:[dir.x*wd.muzzle,dir.y*wd.muzzle,dir.z*wd.muzzle], life:3.2, dmg:wd.dmg, caliber:wd.caliber, grav:9.8 });
   w.cooldown=wd.reload; w.recoil=wd.caliber==='medium'?0.85:0.35;
-  BUS.emit('fire',{pos:[mp.x,mp.y,mp.z],caliber:wd.caliber});
+  BUS.emit('fire',{pos:[mp.x,mp.y,mp.z],caliber:wd.caliber,kind:wd.kind});
 }
 // gunnery: AI turrets auto-aim+fire; a possessed turret is driven by the player (same fire path)
 const SYS_gunnery={ update(dt){ for(const e of G.ents){ if(!e.alive) continue;
@@ -924,18 +941,29 @@ function setupBattleScene(opts){
 
 // ~11 zones with %-layout + an adjacency graph. Player owns 2 (bottom), enemy owns 2 (top).
 function genZones(){
-  const defs=[   // name, x%, y%, owner
-    ['Ironmouth',   25,12,'enemy'],  ['Blackreef',   70,14,'enemy'],
-    ['Cold Harbor', 48,25,'neutral'],['Gale Point',  17,36,'neutral'],
-    ['Kraken Deep', 82,37,'neutral'],['Siren Bay',   50,49,'neutral'],
-    ['Storm Isle',  29,60,'neutral'],['Mist Channel',73,61,'neutral'],
-    ['Reef Pass',   51,73,'neutral'],['Port Haven',  26,86,'player'],
-    ['Fort Tide',   74,87,'player'],
+  // 24-zone theater: enemy northern reach -> contested central archipelago -> player home
+  // waters. defs: [name, x%, y%, owner, strengthOverride?, incomeOverride?]
+  const defs=[
+    ['Ironmouth',      20, 8,'enemy'],       ['Grimstad Anchorage',44, 6,'enemy'],   ['Blackreef',      68, 7,'enemy'],
+    ['Frostwake',      10,18,'neutral'],     ['Cold Harbor',    33,16,'neutral',null,4],['Whale Sound',  57,15,'neutral'],
+    ['Kraken Deep',    84,17,'neutral'],
+    ['Gale Point',     14,32,'neutral'],     ['Siren Bay',      43,29,'neutral'],    ['Broken Chain',   68,30,'neutral',9,3],
+    ['Ember Atoll',    90,33,'neutral'],
+    ['Storm Isle',     26,45,'neutral'],     ['Mist Channel',   55,44,'neutral'],    ['The Teeth',      78,47,'neutral',10,3],
+    ['Widow’s Cut',12,57,'neutral'],    ['Reef Pass',      38,58,'neutral'],    ['Salt Meridian',  64,59,'neutral'],
+    ['Pearl Shallows', 88,60,'neutral'],
+    ['Anchor Bay',     25,72,'neutral'],     ['Trader’s Rest',52,71,'neutral',null,4],['Gullwing Cove',78,73,'neutral'],
+    ['Port Haven',     18,88,'player'],      ['Fort Tide',      48,89,'player'],     ['New Meridian',   76,87,'player'],
   ];
-  const edges=[[0,2],[0,3],[1,2],[1,4],[2,5],[3,5],[3,6],[4,5],[4,7],[5,6],[5,7],[6,8],[6,9],[7,8],[7,10],[8,9],[8,10],[9,10]];
+  const edges=[[0,3],[0,4],[1,4],[1,5],[2,5],[2,6],
+    [3,7],[4,7],[4,8],[5,8],[5,9],[6,9],[6,10],
+    [7,8],[7,11],[7,14],[8,9],[8,11],[8,12],[9,10],[9,12],[9,13],[10,13],[10,17],
+    [11,14],[11,15],[12,13],[12,15],[12,16],[13,16],[13,17],
+    [14,18],[15,16],[15,18],[15,19],[16,19],[16,20],[17,20],
+    [18,19],[18,21],[19,20],[19,22],[20,23],[21,22],[22,23]];
   const zones=defs.map((d,i)=>({ id:i, name:d[0], x:d[1], y:d[2], owner:d[3],
-    strength: d[3]==='player'?9 : d[3]==='enemy'?8 : 4+Math.floor(Math.random()*4),
-    income:   d[3]==='neutral'?2:3, adj:[] }));
+    strength: d[4]!=null?d[4] : d[3]==='player'?9 : d[3]==='enemy'?9 : 4+Math.floor(Math.random()*4),
+    income:   d[5]!=null?d[5] : d[3]==='neutral'?2:3, adj:[] }));
   for(const [a,b] of edges){ zones[a].adj.push(b); zones[b].adj.push(a); }
   return zones;
 }
@@ -1069,14 +1097,26 @@ function initCampaign(){
 
 /* ============================ §K ENTRY ============================ */
 async function boot(){
-  try{ el('bootMsg').textContent='LOADING RENDERER…'; THREE=await import(THREE_URL); }
+  try{ el('bootMsg').textContent='LOADING RENDERER…'; THREE=await import(MODULES.three); }
   catch(err){ el('bootMsg').textContent='could not load Three.js (network). Check connection.'; logErr(err); return; }
   initThreeScene();
+  // merge the agent-built content modules: fleets extend UNIT_DEFS/MODELS; sfx replaces the
+  // placeholder synth. Each is optional — a failed module degrades, never blocks boot.
+  el('bootMsg').textContent='MUSTERING THE FLEET…';
+  const H={THREE,MAT,box,cyl,buildHull,finishShip,turretGroup};
+  for(const key of ['fleetHeavy','fleetLight']){
+    try{ const F=(await import(MODULES[key])).makeFleet(H);
+      Object.assign(UNIT_DEFS,F.units); Object.assign(MODELS,F.models); }
+    catch(e){ logErr(e); }
+  }
+  try{ SFX=(await import(MODULES.sfx)).makeSFX(); if(SND.ctx) { SFX.init(SND.ctx,SND.master); SFX.ambience(); } }
+  catch(e){ logErr(e); }
   setupBattleScene();                      // build the battle world once (campaign relaunches reuse it)
   bindInput(); initHUD();
   // campaign layer: generate the map and land the player on it first (battles launch from here)
   initCampaign(); setScreen('campaign'); renderCampaign();
-  if(DEV) window.__nd={ G:()=>G, possess:(id,wi)=>enterPossess(id,wi), fire:(id,wi)=>{ const e=G.ents.find(x=>x.id===id); if(e) tryFire(e,wi); } };
+  if(DEV) window.__nd={ G:()=>G, possess:(id,wi)=>enterPossess(id,wi), fire:(id,wi)=>{ const e=G.ents.find(x=>x.id===id); if(e) tryFire(e,wi); },
+    defs:()=>Object.keys(UNIT_DEFS), spawn:(key,side,pos,h)=>addEnt(key,side||'enemy',pos||[0,0,60],h==null?Math.PI:h).id };
   el('boot').classList.add('hide'); setTimeout(()=>{ const b=el('boot'); if(b) b.remove(); },700);
   if(MUS.on){ /* music starts on first user gesture (autoplay policy) */ }
   last=performance.now(); requestAnimationFrame(frame);

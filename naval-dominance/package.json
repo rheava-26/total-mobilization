@@ -1,0 +1,6 @@
+{
+  "name": "naval-dominance",
+  "private": true,
+  "type": "module",
+  "description": "Marks this folder's .js files as ES modules so node --check / import verify them correctly. Not used by the browser."
+}

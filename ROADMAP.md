@@ -30,6 +30,30 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ---
 
+## 🏭 GARRISON REWORK — CORRECTED SPEC (I built the wrong thing; designer re-specced 2026-08-17)
+
+**⚠ WHAT I GOT WRONG (v3.23 + v3.50):** I built Garrison Stockpiles as an ABSTRACT WEIGHT-BUDGET CEILING (`garrisonCap` — a number), and garrison producers/factories that SPEED the fill RATE. Designer's verdict: garrison factories are "basically useless" (speeding a free trickle isn't a decision), and stockpiles get "put deep underground and never touched" (pure ceiling → no reason to place them anywhere).
+
+**✅ WHAT THE DESIGNER ACTUALLY WANTS (verbatim gist):** *"it's just: build garrison factories WITH UPKEEP, and they automatically fill nearby garrisons, THEN they fill storages. They have a LOT of upkeep to prevent them from being (EASILY) spammable."* So:
+- **Garrison Factories** (heavy upkeep) run automatically: (1) fill nearby buildings' standing garrisons first, (2) once those are full, OVERFLOW into STORAGES (stockpiles) — banking a real reserve of actual units, not setting an abstract cap.
+- **Storages/Stockpiles** become a physical RESERVE that FILLS UP (from factory overflow) and DRAWS DOWN (refilling garrisons under attack) — not a weight ceiling.
+- **The anti-spam lever is UPKEEP on the factories, NOT a weight cap.** Pure tenet-#1 (a real recurring COST, not a hard ceiling). High upkeep = you can't trivially carpet the map with them.
+- **NOT a "crazy supply line"** — designer explicitly rejected the deep supply-chain framing (and disliked throughput grind in the top-down rebuild). Keep it simple: factory→garrison→storage, gated by upkeep.
+- Likely retire/repurpose: the `garrisonCap` weight-budget ceiling, the `garrSpd` fill-rate auras (Garrison Factory aura, Mobilization Hub), and reconcile with the v3.50 `garrWorks` localized producers (which already auto-fill nearby — keep that skeleton, swap the WEIGHT-BUDGET ceiling for the UPKEEP lever + storage-overflow reserve).
+- **STATUS: designed + queued as its OWN code lane** (don't tangle with research/art lanes). Build after the current promo + research + art batch.
+
+## 🔬 AUTONOMOUS FACTORIES / NANOFABRICATION — pending direction (designer flagged, undecided)
+
+Designer: *"clarify more what autonomous factories do? or remove it/rework it? perhaps do stuff with nanofabrication."* (Note the "?" — genuinely undecided.) Current state: `autofactory` "Autonomous Plant" (PROD, req nanotech) = `autospawn:'shock'` every 16s + makes IC; Deep-Ore Excavator's `gmod:{autoFast}` upgrades it to 70%-faster android mechs. Vague description ("passively makes IC and garrison troops"). **KEY INSIGHT (Claude, designer didn't object): there are THREE overlapping "a building makes free units" systems — Autonomous Plant (`autospawn`), garrison producers (`garrWorks`), passive building garrisons (`garrison`) — and they blur together. NANOFABRICATION is the natural unifying identity: "buildings that FABRICATE units from your industry," which the garrison upkeep-model plugs straight into.** So autonomous-factories + garrison rework may want to be ONE consolidation pass under a nanofab identity. NEAR-TERM: safe move is CLARIFY (make the Autonomous Plant's function legible + give it a crisp nanofab identity), hold the bigger rework for the garrison/nanofab unification. AWAITING designer nod on clarify-vs-rework.
+
+## 🎨 UNIT/BUILDING ART REDESIGN — designer wants a batch (2026-08-17)
+
+Designer wants to revamp the OLDEST/ugliest procedural art, using the same process as the sky-fortress ships: **generate ~3 design options per unit for the designer to CHOOSE, then implement the picks.** **Targets (designer, explicit): NOT planes (already reworked) — GROUND UNITS, some BUILDINGS, and the SUPERHEAVY units.** (Clarify with designer WHICH ground units/buildings and whether "superheavy" = the 5 Grand Arsenal capitals we just did mechanically, or Colossus/Titan/etc.) Process = concept-art exploration artifact (rendered silhouette variants) → designer picks → agent implements chosen `ART`/`BART` draw-fns. Parallel creative track; pairs with promo (good art = good marketing).
+
+## 📣 PROMOTIONAL MATERIAL — STARTED (2026-08-17)
+
+Designer wants to start promo. Runs in PARALLEL with code lanes (doesn't touch `title.html`). First deliverable: a promo landing/hero page artifact (versatile — doubles as itch.io header, shareable link, source copy for posts) with real gameplay screenshots captured headlessly. Retarget as needed (Reddit post, Claude-server post — designer had a draft earlier). NOTE the designer's earlier privacy concern (real name out of files — none found; git handle "Talle" + noreply email) and the Reddit-NSFW-linkage worry (advised posting from a separate account).
+
 ## 🧠 THE TRANSCENDENCE ARC — combos become DOCTRINES, not units (designer design pass, 2026-08-17)
 
 **This is the fix for v1's single biggest missed opportunity: "a combo only ever unlocked a unit — it never changed the world."** The designer wants every research tree "infinitely more impactful," converging on a post-human capstone. Banked in full so nothing evaporates. NOT yet approved for build — framework-first, content-incremental (see feasibility note).

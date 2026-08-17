@@ -537,6 +537,7 @@
     <div class="hbtn has-tip" id="btnStrike" data-tip="Strategic strike — opens the launch overview, marks your silos, and lets you call a nuclear/orbital strike. Strikes cost STABILITY.">☢ STRIKE</div>
     <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
     <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
+    <div class="hbtn has-tip" id="btnFC" data-tip="⊕ FIRE CONTROL — show ALL weapon-range coverage (colored by reach: ground / air / space) and designate targets GLOBALLY. Click any enemy and every gun & unit in reach prioritizes it; right-click or the clear key empties it. Works while paused (key: F)." onclick="toggleFireControl()">⊕</div>
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
     <div class="hbtn has-tip" id="btnTip" data-tip="Ask for a tip — a random piece of strategy advice. New here? Tap it a few times.">💡 TIP</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
@@ -2400,7 +2401,7 @@ function newGame(diff) {
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
-    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [],   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
+    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
 
@@ -4174,7 +4175,7 @@ function updUnits(dt) {
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
     const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .56) : 0;   // ground guns reach only the low layers; AIRCRAFT now reach up into the THERMOSPHERE (.56 = THERMO_Y line) but NOT past it — the exosphere still needs railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
-    let tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);
+    let tgt = pickDesignated(u.x, u.y, rng, ceilF, aF) || acquireEnemy(u.x, u.y, rng, ceilF, aF);   // GLOBAL FIRE CONTROL: prefer a designated target this unit can reach, else auto-acquire as normal
     if (!tgt && d.pd) tgt = acquireIncoming(u.x, u.y, rng, ceilF);   // point-defense: swat falling orbital lances & bunker-busters within this unit's own reach (spreads across multiple rods)
     if (d.domain === 'air' && d.pd && !u.docked && (u.spool || 0) <= 0) {   // JET LASER CIWS — a short VISIBLE beam that swats an enemy missile chasing the jet, so you actually see the point-defence work (defensive only, low-rate — not a durability crutch)
       u.pdcd = (u.pdcd || 0) - dt;
@@ -4364,8 +4365,8 @@ function updSquadMembers(u, dt) {
       continue;
     }
     if (m.cd > 0) continue;
-    let tgt = null;
-    if (m.isAt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   // AA/AT trooper prioritizes airborne threats within its higher ceiling
+    let tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, m.isAt ? (e => !e.ground) : null);   // GLOBAL FIRE CONTROL: squad members also prefer a reachable designated target first
+    if (!tgt && m.isAt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   // AA/AT trooper prioritizes airborne threats within its higher ceiling
     if (!tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
     if (!tgt && m.pd) tgt = acquireIncoming(mx, my, m.range * rangeMod, m.ceil);
     if (!tgt) continue;
@@ -4444,13 +4445,32 @@ function updBuildings(dt) {
     const plasma = b.d.plasmaable && plasmaArmed();   // bunkers (etc.) re-arm with plasma — longer reach, more punch, fires higher
     const baseCf = b.d.ceil != null ? b.d.ceil : .80, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.56, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
-    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1); let t = acquireEnemy(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null); if (!t && b.d.pd) t = acquireIncoming(b.x, b.y - b.d.h * .5, brng, cf); if (t && b.cd <= 0) { /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
+    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1); let t = pickDesignated(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null) || acquireEnemy(b.x, b.y - b.d.h * .5, brng, cf, b.d.noGround ? notNearGround : null); if (!t && b.d.pd) t = acquireIncoming(b.x, b.y - b.d.h * .5, brng, cf); if (t && b.cd <= 0) {   /* GLOBAL FIRE CONTROL: prefer a reachable designated target, else auto-acquire */ /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
   }
 }
 // FIRE CONTROL — add multiple heavy guns to a control group; a radar covers their combined range and you DESIGNATE incoming
 // enemies by clicking them. The grouped guns then auto-engage only your designated targets (those within each gun's reach).
 function manualActive() { return !!(G && G.manualGuns && G.manualGuns.length); }
 function gunRadar(b) { return b.d.range * radarBoost(b.x); }   // a gun's radar/engagement radius (range, extended by nearby Radars)
+const FC_UNIT_RING_CAP = 600;   // GLOBAL FIRE CONTROL — hard cap on unit coverage rings drawn per frame (buildings are uncapped but few); bounds worst-case cost at 9000-unit scale. Rings are already off-screen-culled first.
+// GLOBAL FIRE CONTROL — when the mode is ON, a shooter PRIORITIZES any designated enemy it can actually reach (within range +
+// under its altitude ceiling + passing its own role filter), then falls back to normal auto-acquire. Returns the nearest such
+// designated target, or null. Cheap: bails instantly when the mode is off or nothing is designated. No per-call allocations.
+function pickDesignated(x, y, range, ceilFrac, filter) {
+  if (!G.fireControl || !G.designated.length) return null;
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range;
+  let best = null, bd = r2;
+  for (const e of G.designated) { if (!e || e.hp <= 0) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function toggleFireControl() {   // corner ⊕ button / F key — the GLOBAL fire-control overlay + designation mode (distinct from the per-gun battery)
+  if (!G) return;
+  G.fireControl = !G.fireControl;
+  const el = document.getElementById('btnFC'); if (el) el.classList.toggle('on', G.fireControl);
+  if (G.fireControl) { G.place = null; G.targeting = null; G.terrainMode = 0; if (G.strikeMode) closeStrike(); buildBuildBar(); toast('⊕ FIRE CONTROL ON — weapon coverage up · click enemies anywhere to designate; every gun & unit in reach engages them'); }
+  else toast('fire control off');
+}
+function clearDesignated() { if (!G) return; if (!G.designated.length) return; G.designated = []; toast('◎ designations cleared'); }
 function toggleManual() {   // add / remove the selected gun from the fire-control group
   if (!G || !G.sel || !G.sel.d || !G.sel.d.manual || !G.sel.d.weapon) return;
   const i = G.manualGuns.indexOf(G.sel);
@@ -4476,11 +4496,13 @@ function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.sho
 function togglePause() { if (!G || mode !== 'game' || G.over) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
 function designateAt(wx, wy) {
-  if (!manualActive()) return false;
+  if (!manualActive() && !G.fireControl) return false;
   let best = null, bd = 1e9;   // forgiving, zoom-aware pick radius — scales up when zoomed out and with the enemy's own size, so tiny fast movers are still easy to mark
   for (const e of G.enemies) { const thr = 52 / (cam.z || 1) + (e.s || 6), dc = (e.x - wx) ** 2 + (e.y - wy) ** 2; if (dc >= thr * thr || dc >= bd) continue;
-    let covered = false; for (const b of G.manualGuns) { if (G.buildings.indexOf(b) < 0) continue; const rr = gunRadar(b); if ((e.x - b.x) ** 2 + (e.y - (b.y - b.d.h * .5)) ** 2 <= rr * rr) { covered = true; break; } }
-    if (!covered) continue; bd = dc; best = e; }
+    if (!G.fireControl) {   // GLOBAL mode designates ANY enemy on the field; the legacy per-gun mode still requires the enemy be inside a battery gun's radar
+      let covered = false; for (const b of G.manualGuns) { if (G.buildings.indexOf(b) < 0) continue; const rr = gunRadar(b); if ((e.x - b.x) ** 2 + (e.y - (b.y - b.d.h * .5)) ** 2 <= rr * rr) { covered = true; break; } }
+      if (!covered) continue; }
+    bd = dc; best = e; }
   if (!best) return false;
   const i = G.designated.indexOf(best);
   if (i >= 0) { G.designated.splice(i, 1); } else { G.designated.push(best); if (SFX.click) SFX.click(); floatText(best.x, best.y - (best.s || 6) - 6, '◎ TARGET', '#ff7a7a'); }
@@ -4928,6 +4950,34 @@ function renderGame() {
       c.restore();
     }
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(109,255,176,.92)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('⊕ FIRE CONTROL — ' + G.manualGuns.length + ' gun' + (G.manualGuns.length > 1 ? 's' : '') + ' · ' + G.designated.length + ' target' + (G.designated.length !== 1 ? 's' : '') + ' · click enemies in radar to designate · Esc to release', W / 2, 96); c.textAlign = 'left'; c.restore();
+  }
+  // GLOBAL FIRE CONTROL — the corner ⊕ overlay: WEAPON-RANGE coverage for every armed building & unit (colored by REACH:
+  // blue=space · amber=air · red=ground) so you can see at a glance what can hit where, plus a spinning reticle on every
+  // globally designated enemy. Cheap: off-screen culled first, unit rings hard-capped, no per-frame allocations, stroke-only.
+  if (G.fireControl) {
+    c.save(); c.lineWidth = 1; c.setLineDash([3, 7]);
+    for (const b of G.buildings) { if (b.done === false || b.captured || !b.d.weapon || b.d.weapon === 'tractor') continue;   // every ARMED emplacement (not the telekinetic grapple, which has no range ring)
+      const rr = b.d.range * radarBoost(b.x); const px = sx(b.x); if (px < -rr || px > W + rr) continue;
+      const gy = groundY(b.x) - b.d.h * .5; if (gy - rr > VY1 || gy + rr < VY0) continue;
+      const cf = b.d.ceil != null ? b.d.ceil : .80, col = cf === 0 ? '78,168,255' : cf <= .60 ? '255,178,74' : '255,120,90';
+      c.strokeStyle = 'rgba(' + col + ',.30)'; c.beginPath(); c.arc(px, gy, rr, 0, 6.28); c.stroke();
+    }
+    let fcDrawn = 0;
+    for (const u of G.units) { if (fcDrawn >= FC_UNIT_RING_CAP) break; if (u.d.builder || u.onRail || !u.d.weapon) continue;
+      const px = sx(u.x); if (px < -40 || px > W + 40) continue; if (u.y < VY0 - 40 || u.y > VY1 + 40) continue;   // draw only on-screen armed units, capped, so 9000-unit scale stays bounded
+      const rr = u.d.range * (u.d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range);
+      const cf = u.d.domain === 'ground' ? (u.d.ceil != null ? u.d.ceil : .80) : u.d.domain === 'air' ? (u.d.ceil != null ? u.d.ceil : .56) : 0;
+      const col = cf === 0 ? '78,168,255' : cf <= .60 ? '255,178,74' : '255,120,90';
+      c.strokeStyle = 'rgba(' + col + ',.16)'; c.beginPath(); c.arc(px, u.y, rr, 0, 6.28); c.stroke(); fcDrawn++;
+    }
+    c.setLineDash([]); c.restore();
+    for (const e of G.designated) { if (!e || e.hp <= 0 || G.enemies.indexOf(e) < 0) continue; const ex = sx(e.x), ey = e.y, r = (e.s || 6) + 8, k = r * .5, rot = animClock * .004;
+      c.save(); c.strokeStyle = '#ff6a6a'; c.lineWidth = 1.6; c.globalAlpha = .92;
+      c.beginPath(); c.moveTo(ex - r, ey - r + k); c.lineTo(ex - r, ey - r); c.lineTo(ex - r + k, ey - r); c.moveTo(ex + r - k, ey - r); c.lineTo(ex + r, ey - r); c.lineTo(ex + r, ey - r + k); c.moveTo(ex + r, ey + r - k); c.lineTo(ex + r, ey + r); c.lineTo(ex + r - k, ey + r); c.moveTo(ex - r + k, ey + r); c.lineTo(ex - r, ey + r); c.lineTo(ex - r, ey + r - k); c.stroke();   // corner brackets
+      c.globalAlpha = .55; c.strokeStyle = 'rgba(255,90,90,.8)'; c.beginPath(); c.arc(ex, ey, r + 4, rot, rot + 1.4); c.stroke(); c.beginPath(); c.arc(ex, ey, r + 4, rot + Math.PI, rot + Math.PI + 1.4); c.stroke();   // spinning lock ring
+      c.restore();
+    }
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(109,255,176,.95)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('⊕ FIRE CONTROL — weapon coverage · ' + G.designated.length + ' target' + (G.designated.length !== 1 ? 's' : '') + ' · click any enemy to designate · right-click to clear · F to close', W / 2, 78); c.textAlign = 'left'; c.restore();
   }
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
   if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
@@ -5915,10 +5965,10 @@ function gameTap(px, py, button) {   // shared by mouse (mousedown) and touch (t
   if (G.strikeMode) { if (button === 2) { closeStrike(); return; } }
   if (G.terrainMode) { if (button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
   if (G.place) { if (button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
-  if (manualActive()) { if (button === 2) { releaseAllManual(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an in-radar enemy to designate it; right-click releases. (falls through to normal selection if no enemy was clicked, so you can add more guns)
+  if (manualActive() || G.fireControl) { if (button === 2) { if (manualActive()) releaseAllManual(); else clearDesignated(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an enemy to designate it (in radar for the per-gun battery, anywhere in GLOBAL mode); right-click releases / clears. (falls through to normal selection if no enemy was clicked)
   const hit = pickAt(wx, wyc); G.sel = hit ? hit.o : null; refreshSel();
 }
-function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
+function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
 function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchStrike(p.silo, p.type, p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
 // DELEGATED clicks for the selection panel — one listener on the persistent #info element, so the
 // buttons keep working even though the panel's innerHTML is rebuilt as the selection's stats change
@@ -6065,9 +6115,10 @@ addEventListener('keydown', e => {
     const kk = (e.key || '').toLowerCase();
     if (kk === 'h') { G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }
     else if (kk === 'v') { toggleZones(); }
+    else if (kk === 'f') { toggleFireControl(); }
     else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
   }
-  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);
 // ── LIVE RELOAD (dev convenience) ──────────────────────────────────────────────

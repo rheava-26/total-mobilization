@@ -2961,6 +2961,61 @@ const INF_BODY_S = 3;   // legacy alias kept for readability at call sites that 
 // on the field (a big garrison economy easily fields 60-100+), or once the camera is zoomed out enough that a body
 // would draw at a couple of px anyway, every squad renders as one cheap cluster glyph instead of N shadowed bodies.
 const SQUAD_LOD_N = 45, SQUAD_LOD_ZOOM = 0.9;
+// ===== SQUAD BODY PHYSICS (tunable, playtest draft) — "ONE BRAIN, MANY BODIES" fireteam rework: the squad entity
+// still runs exactly ONE target-acquisition + ONE movement decision per frame (see updUnits' single acquireEnemy/
+// pickDesignated call, reused by updSquadMembers below as the shared fire target — bodies inherit it instead of
+// each independently scanning G.enemies), but every LIVING body now has a real spring-driven position (m.cx/m.cy,
+// velocity m.vcx/m.vcy) instead of a flat ease-to-slot lerp: pulled toward its formation slot (m.ox/m.oy) by a
+// spring/damper, and gently repelled from its own squad-mates so the fireteam reads as a tight, flexing cluster of
+// genuinely separate bodies — "tightly linked, mostly independent" — instead of one blob or a rigid stack.
+// hitSquadMember() already resolves incoming fire against the body NEAREST the actual impact point using these same
+// cx/cy, so a shell landing on the left of the formation hits the left man (see the SQUAD FOOTPRINT DAMAGE comment
+// above hitSquadMember) — this rework only changes HOW cx/cy move, not how hits are resolved against them.
+// PERF: this stays SQUAD-LOCAL — every pass here only ever touches ONE squad's own 2-4 bodies (never other squads/
+// units), so the O(n²) repulsion check is trivially cheap (n<=4 → at most 6 pair checks/squad/frame) and is NOT the
+// global cross-unit separation bucket (SEP_BS) in updUnits, which is untouched.
+const SQUAD_PULL_K = 46;      // spring strength pulling a body back toward its formation slot — higher = snappier reform after a loss
+const SQUAD_PULL_DAMP = 10;   // velocity damping on the pull spring — higher = less overshoot/jitter settling into formation
+const SQUAD_BODY_SEP = 5.2;   // px — bodies of the SAME squad closer than this push apart (keeps them from stacking/overlapping)
+const SQUAD_BODY_SEP_K = 90;  // repulsion strength applied when two bodies are closer than SQUAD_BODY_SEP
+const SQUAD_VEL_MAX = 60;     // px/s cap on a body's drift velocity — keeps the spring numerically stable under a big dt spike (tab-out, lag)
+const SQUAD_HITBOX_R = 2.4;   // px — nominal per-body hitbox radius, exposed for any future body-vs-body/AoE distance check
+// spring pull toward the formation slot + short-range separation from squad-mates, then integrate cx/cy. cfg carries
+// the per-squad-type "lerp" tuning (inf/cdrone/fighter already had distinct snap feels) — scaled onto the shared
+// spring constant so a fighter's escort still reforms tighter/faster than an infantry fireteam, same as before.
+function stepSquadBodies(u, cfg, dt) {
+  const alive = u.members.filter(m => m.alive); if (!alive.length) return;
+  const pullK = SQUAD_PULL_K * ((cfg.lerp || 6) / 6);
+  for (const m of alive) {
+    m.vcx = (m.vcx || 0) + ((m.ox - m.cx) * pullK - (m.vcx || 0) * SQUAD_PULL_DAMP) * dt;
+    m.vcy = (m.vcy || 0) + ((m.oy - m.cy) * pullK - (m.vcy || 0) * SQUAD_PULL_DAMP) * dt;
+  }
+  const sep2 = SQUAD_BODY_SEP * SQUAD_BODY_SEP;
+  for (let i = 0; i < alive.length; i++) { const a = alive[i];
+    for (let j = i + 1; j < alive.length; j++) { const b = alive[j];
+      let dx = a.cx - b.cx, dy = a.cy - b.cy, dd = dx * dx + dy * dy;
+      if (dd >= sep2) continue;
+      if (dd < .01) { dx = .4; dy = .3; dd = .25; }   // exactly stacked → nudge apart on a deterministic direction
+      const dist = Math.sqrt(dd), inv = 1 / dist, f = (SQUAD_BODY_SEP - dist) * SQUAD_BODY_SEP_K * dt;
+      a.vcx += dx * inv * f; a.vcy += dy * inv * f;
+      b.vcx -= dx * inv * f; b.vcy -= dy * inv * f;
+    }
+  }
+  for (const m of alive) {
+    m.vcx = Math.max(-SQUAD_VEL_MAX, Math.min(SQUAD_VEL_MAX, m.vcx));
+    m.vcy = Math.max(-SQUAD_VEL_MAX, Math.min(SQUAD_VEL_MAX, m.vcy));
+    m.cx += m.vcx * dt; m.cy += m.vcy * dt;
+  }
+}
+// is the squad's ONE shared target (already acquired once this frame at the squad's own x/y — see updUnits) usable
+// from THIS body's own position/range/ceiling? Cheap O(1) check — lets ordinary bodies inherit the shared pick
+// instead of each running their own O(enemies) acquireEnemy scan; only falls back to a (still-cheap) fire-control
+// lookup when the shared pick genuinely doesn't reach this particular body.
+function sharedTgtUsable(tgt, x, y, range, ceilFrac) {
+  if (!tgt || tgt.hp <= 0) return false;
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9; if (tgt.y < ceil) return false;
+  const dx = tgt.x - x, dy = tgt.y - y; return dx * dx + dy * dy <= range * range;
+}
 function defaultCeil(d) { return d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .56) : (d.ceil != null ? d.ceil : 0); }   // AIR default .56 = THERMO_Y fraction — aircraft now reach up into the thermosphere (was .62 mesosphere top); exosphere still needs ceil:0 weapons
 function spawnSquad(key, d, x) {
   const cfg = SQUAD_LOADOUT[key];
@@ -2975,7 +3030,7 @@ function spawnSquad(key, d, x) {
       const ox = (i - (n - 1) / 2) * cfg.spread;
       members.push({
         art: role.art || d.art, bodyS: role.bodyS || bodyS0,
-        isAt: !!role.isAt, ox, oy: role.oy || 0, cx: ox, cy: role.oy || 0, aim: 0, facing: 1,
+        isAt: !!role.isAt, ox, oy: role.oy || 0, cx: ox, cy: role.oy || 0, vcx: 0, vcy: 0, aim: 0, facing: 1,
         hp: mhp, maxHp: mhp,
         weapon: role.weapon || d.weapon,
         dmg: d.dmg * (role.dmgMul != null ? role.dmgMul : 1),
@@ -2995,7 +3050,7 @@ function spawnSquad(key, d, x) {
       const oy = isAt ? -cfg.spread * .18 : (i % 2 === 0 ? -cfg.spread * .3 : cfg.spread * .3);   // a light zigzag "wedge" so a line of identical riflemen reads as a tight fireteam of distinct soldiers, not a flat overlapping row
       members.push({
         art: d.art, bodyS: bodyS0,
-        isAt, ox, oy, cx: ox, cy: oy, aim: 0, facing: 1,
+        isAt, ox, oy, cx: ox, cy: oy, vcx: 0, vcy: 0, aim: 0, facing: 1,
         hp: mhp, maxHp: mhp,
         weapon: isAt ? 'rotary' : d.weapon,
         dmg: isAt ? d.dmg * cfg.atDmgMul : d.dmg,
@@ -4944,7 +4999,7 @@ function updUnits(dt) {
       let myHub = null, md = 150; for (const h of railHubs) { const dd = Math.abs(h.x - u.x); if (dd < md) { md = dd; myHub = h; } }
       if (myHub) { let frontHub = null, fd = 1e9; for (const h of railHubs) { let nd = 1e9; for (const e of G.enemies) nd = Math.min(nd, Math.abs(e.x - h.x)); if (nd < fd) { fd = nd; frontHub = h; } } if (frontHub && frontHub !== myHub && Math.abs(frontHub.x - u.x) > 500 && fd < 700) { u.onRail = true; u.railTo = frontHub.x + (Math.random() - .5) * 40; u.railT = 1.4 + Math.abs(frontHub.x - u.x) / 1500; } }
     }
-    if (u.squad) { updSquadMembers(u, dt); }   // SQUAD — each member acquires & fires its OWN weapon independently (see updSquadMembers); the shared single-shot path below is for ordinary single-body units only
+    if (u.squad) { updSquadMembers(u, dt, tgt); }   // SQUAD — ONE shared brain (tgt was already acquired ONCE above for this squad, same as any ordinary unit) feeds every ordinary body's aim/fire; only the AT/AA specialist runs its own separate air-hunting channel (see updSquadMembers)
     else if (tgt) {
       if (u.lastTgt !== tgt) { u.lastTgt = tgt; u.cd = Math.max(u.cd, .2 + Math.random() * .12); }   // ~0.2s acquisition delay so a formation doesn't all fire on the same frame
       u.aim = Math.atan2(tgt.y - u.y, tgt.x - u.x); if (d.domain !== 'air') u.facing = tgt.x >= u.x ? 1 : -1;
@@ -4967,17 +5022,20 @@ function updUnits(dt) {
   }
   G._airRallyPrev = rallyNext;   // hand this frame's staging headcount to the NEXT frame (see the bookkeeping comment at the top of this function)
 }
-// SQUAD MULTI-WEAPON FIRE — runs once per living member per frame. Members lerp toward their formation slot
-// (reforming tighter as losses shrink the squad), then independently acquire & fire their OWN weapon: riflemen
-// burst 3 rounds at a time against ground/low targets, while the AT/AA specialist (m.isAt) separately hunts
-// airborne threats first (falling back to whatever's in reach) with its own longer-ceiling weapon & cooldown —
-// so one squad can be plinking a tank with rifles while its trooper simultaneously downs a strike jet.
-function updSquadMembers(u, dt) {
+// SQUAD MULTI-WEAPON FIRE — runs once per living member per frame. Bodies are stepped by the shared spring/cohesion
+// physics (stepSquadBodies — pulled to formation slot, repelled from squad-mates, reforming tighter as losses shrink
+// the squad), then each ordinary body FIRES at the ONE target the squad's shared brain already picked this frame
+// (sharedTgt, passed in from updUnits — the same single acquireEnemy/pickDesignated call an ordinary lone unit gets;
+// see "SQUAD BODY PHYSICS" above) instead of running its own O(enemies) scan. The lone AT/AA specialist (m.isAt) is
+// the one exception — it keeps its OWN separate acquisition channel, independently hunting airborne threats with its
+// own longer-ceiling weapon & cooldown, so one squad can still be plinking a tank on the shared target while its
+// trooper simultaneously downs a strike jet. Since there's only ever ONE such body per squad, that channel is also
+// O(squads), not O(bodies) — the whole function stays at most 2 acquisition calls/squad/frame regardless of body count.
+function updSquadMembers(u, dt, sharedTgt) {
   const cfg = u.squadCfg, rangeMod = (1 + G.mult.range) * radarBoost(u.x);
+  stepSquadBodies(u, cfg, dt);
   for (const m of u.members) {
     if (!m.alive) continue;
-    m.cx += (m.ox - m.cx) * Math.min(1, cfg.lerp * dt);
-    m.cy += (m.oy - m.cy) * Math.min(1, cfg.lerp * dt);
     const mx = u.x + m.cx, my = u.y + m.cy;
     if (m.tgt && m.tgt.hp > 0) { m.aim = Math.atan2(m.tgt.y - my, m.tgt.x - mx); m.facing = m.tgt.x >= mx ? 1 : -1; u.facing = m.facing; u.aim = m.aim; }
     m.cd -= dt;
@@ -4987,7 +5045,7 @@ function updSquadMembers(u, dt) {
         const live = m.tgt && m.tgt.hp > 0;
         if (live) {
           const lt = leadTime(m.weapon, mx, my, m.tgt), ex = m.tgt.x + (m.tgt.vx || 0) * lt, ey = m.tgt.y + (m.tgt.vy || 0) * lt, sdmg = m.dmg * (1 + G.mult.dmg);
-          const airMsl = u.d.domain === 'air';   // each flight member fires at ITS OWN acquired target (m.tgt via acquireEnemy+ENG_CAP → the wing diversifies); aircraft missiles hard-lock it + proximity-fuse
+          const airMsl = u.d.domain === 'air';   // each flight member fires at its acquired target; aircraft missiles hard-lock it + proximity-fuse
           if (m.tgt.interceptable || m.tgt.pdable) { flakHit(m.tgt, sdmg); SFX.shoot(); } else { fire(mx, my, m.weapon, ex, ey, true, sdmg, airMsl ? m.tgt : null, airMsl); if (u.maxAmmo) { u.ammo = (u.ammo == null ? u.maxAmmo : u.ammo) - 1; if (u.ammo <= 0) u.rtb = true; } }   // aircraft SQUADS share one magazine across the flight — mirrors the single-body RTB rule
           claimDmg(m.tgt, sdmg);
           m.burstLeft--;
@@ -4998,9 +5056,13 @@ function updSquadMembers(u, dt) {
       continue;
     }
     if (m.cd > 0) continue;
-    let tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, m.isAt ? (e => !e.ground) : null);   // GLOBAL FIRE CONTROL: squad members also prefer a reachable designated target first
-    if (!tgt && m.isAt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   // AA/AT trooper prioritizes airborne threats within its higher ceiling
-    if (!tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
+    let tgt;
+    if (m.isAt) {   // AT/AA specialist — its own separate air-hunting channel, unaffected by whatever the riflemen are sharing
+      tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, e => !e.ground) || acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);
+    } else {   // SHARED BRAIN — inherit the squad's ONE already-acquired target instead of scanning again; only re-checks
+               // fire-control designation (cheap, usually a no-op) if the shared pick can't actually be reached from here
+      tgt = sharedTgtUsable(sharedTgt, mx, my, m.range * rangeMod, m.ceil) ? sharedTgt : pickDesignated(mx, my, m.range * rangeMod, m.ceil, null);
+    }
     if (!tgt && m.pd) tgt = acquireIncoming(mx, my, m.range * rangeMod, m.ceil);
     if (!tgt) continue;
     m.tgt = tgt; m.burstLeft = m.isAt ? 1 : (cfg.burst || 1); m.burstT = .04 + Math.random() * .08;

@@ -660,6 +660,15 @@ function loadAchievements() { try { achUnlocked = JSON.parse(localStorage.getIte
 function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = Date.now(); try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
 function checkAchievements() { if (!G) return; for (const a of ACHIEVEMENTS) { if (!achUnlocked[a.id] && typeof a.test === 'function') { try { if (a.test(G)) unlockAchievement(a.id); } catch (e) {} } } }
 function openAchievements() { const body = document.getElementById('achBody'); if (body) { body.innerHTML = ACHIEVEMENTS.length ? ACHIEVEMENTS.map(a => { const got = !!achUnlocked[a.id]; return `<p style="opacity:${got ? 1 : .5}"><b>${got ? '🏆' : '🔒'} ${a.name}</b><br>${a.desc || ''}</p>`; }).join('') : '<p style="opacity:.7">No achievements defined yet — the framework is in place; medals will appear here as they\'re added.</p>'; } openModal('achModal'); }
+// ── ENDURANCE PERSONAL BEST (Apocalypse / "glass" intent — ORBITAL ANNIHILATION) ──
+// glass has no fleet to destroy, so its objective is reframed as HOLD FOR [target]: survive
+// until the fleet exhausts its orbital ordnance — that's already the existing win condition
+// (G.bombard<=0 && G.orbital<=0 && no enemies left, see the `done` check in updateGame). Rather
+// than invent a new mechanic, we just NAME that threshold and give it a HUD readout + a
+// cross-round personal-best record, independent of achievements, so a loss is still "a new best".
+function loadBestEndure() { try { return +localStorage.getItem('tm_bestEndure') || 0; } catch (e) { return 0; } }
+function saveBestEndure(sec) { try { localStorage.setItem('tm_bestEndure', String(Math.max(0, Math.round(sec)))); } catch (e) {} }
+function mmss(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
 
 /* =====================================================================
    SUPER EVENTS — HOI4-style decision popups (see ROADMAP.md "🎭 SUPER EVENTS").
@@ -3261,7 +3270,13 @@ const INTENT = {
   recon:    { label: 'PROBING ATTACK',      tip: 'The autofleet is only testing your defenses — a light probe to decide if a real invasion is worth it. No orbital bombardment — just a ground & air feeler.', fleetMul: .45, bombard: 0,  orbital: 0,  buster: 0,  skyfall: 0,  flank: 0, glass: false, capital: false, ground: .15, supers: [] },
   decap:    { label: 'DECAPITATION STRIKE', tip: 'They mean to behead the leadership fast — expect a concentrated drop on your CAPITAL. A precision strike, not a bombardment — no orbital ordnance.',               fleetMul: .85, bombard: 0,  orbital: 0,  buster: 26, skyfall: 12, flank: 2, glass: false, capital: true,  ground: .3, supers: [{ t: 16, kind: 'leviathan', capital: true }] },
   invasion: { label: 'FULL INVASION',       tip: 'A full ground & air invasion to take the planet — mass skyfall drops and ground landings on every flank.', fleetMul: 1.3, bombard: 12, orbital: 7,  buster: 52, skyfall: 24, flank: 8, glass: false, capital: false, ground: .5, supers: [{ t: 34, kind: 'hive' }, { t: 60, kind: 'bombarder' }, { t: 90, kind: 'leviathan' }] },
-  glass:    { label: 'ORBITAL ANNIHILATION',tip: 'Deemed not worth capturing. No landing — they will simply GLASS the planet from orbit. Survive the bombardment.', fleetMul: .5, bombard: 55, orbital: 55, buster: 60, skyfall: 0, flank: 0, glass: true, capital: false, ground: 0, supers: [{ t: 3, kind: 'annihilator' }, { t: 18, kind: 'bombarder' }, { t: 30, kind: 'annihilator' }] },
+  // NOTE — ENDURANCE MODE: glass never sends a fleet to defeat (fleetMul only scales the STRENGTH of what falls
+  // on you, not a countable force), so it can't win by attrition like the other three intents. Its real win
+  // condition is outlasting `bombard`/`orbital` (both game-seconds of ordnance; see the `done` check in
+  // updateGame) — the objective HUD (syncHUD) advertises that threshold as "HOLD FOR T-Xs" instead of leaving
+  // it a hidden number, and end() persists the longest survival time as a localStorage personal best
+  // (tm_bestEndure) so even a loss that outlasts your last run reads as progress, not "you failed at 9%".
+  glass:    { label: 'ORBITAL ANNIHILATION',tip: 'Deemed not worth capturing. No landing — they will simply GLASS the planet from orbit. Hold the line until the bombardment runs dry.', fleetMul: .5, bombard: 55, orbital: 55, buster: 60, skyfall: 0, flank: 0, glass: true, capital: false, ground: 0, supers: [{ t: 3, kind: 'annihilator' }, { t: 18, kind: 'bombarder' }, { t: 30, kind: 'annihilator' }] },
 };
 // ═════════════════════════════════════════════════════════════════════════════════════════════
 // ESC — INVASION ESCALATION TUNING (playtest-tunable)
@@ -3708,8 +3723,11 @@ function updateGame(dt) {
     if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
     if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
+    // for glass this doubles as the ENDURANCE win: outlasting G.bombard/G.orbital (both seeded from it.bombard/it.orbital)
+    // IS the "HOLD FOR" target advertised in the objective HUD (syncHUD) — reaching it is a real victory, not a milestone
+    // in an endless grind, so a held-the-line run gets a clean end screen instead of "survived 9%".
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
-    if (done) return end(true, it.glass ? 'THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
+    if (done) return end(true, it.glass ? 'YOU HELD THE LINE — THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
   updUnits(dt); updBuildings(dt); updEnemies(dt); updProj(dt); updParts(dt);
   // deaths
@@ -5891,7 +5909,17 @@ function end(win, msg) {
   else if (held >= 0.7) { rank = '★★ WORLD SECURED ★★'; col = 'var(--mp)'; }
   else if (held > 0) { rank = '★ PYRRHIC VICTORY ★'; col = '#ffb86b'; }
   else { rank = 'VICTORY AT ANY COST'; col = '#ffb86b'; }
-  const rk = document.getElementById('endRank'); if (rk) { rk.textContent = rank; rk.style.color = col; }
+  const rk = document.getElementById('endRank');
+  // ── ENDURANCE RECORD (glass/Apocalypse ORBITAL ANNIHILATION only) — persist the longest survival time as a
+  // personal best, independent of win/loss: even a loss that outlasts your old best is worth celebrating.
+  let enduranceLine = '';
+  if (G.intent === 'glass') {
+    const enduredSec = Math.max(0, (G.invTime || 0) / (0.45 * (G.speed || 1)));
+    const prevBest = loadBestEndure(), isRecord = enduredSec > prevBest;
+    if (isRecord) saveBestEndure(enduredSec);
+    enduranceLine = '<br><span style="opacity:.85">you survived ' + mmss(enduredSec) + ' — best ' + mmss(Math.max(prevBest, enduredSec)) + (isRecord ? ' · <b style="color:#ffd86b">NEW RECORD!</b>' : '') + '</span>';
+  }
+  if (rk) { rk.innerHTML = rank + enduranceLine; rk.style.color = col; }
   try { renderAARCharts(); } catch (er) { logErr && logErr(er); }
 }
 // ── AFTER-ACTION GRAPHS — small-multiple line charts drawn as inline SVG from the per-match G.hist time-series ──
@@ -6295,7 +6323,15 @@ function syncHUD() {
   const resNote = G.research ? ' · ◣ ' + RESEARCH[G.research.key].name + ' ' + Math.round(G.research.paid / G.research.cost * 100) + '%' : '';
   const intentLbl = (typeof INTENT !== 'undefined' && INTENT[G.intent]) ? INTENT[G.intent].label : '';
   if (G.phase === 'prep') { const tleft = Math.ceil(G.prepTimer / (0.45 * G.speed)); ob.textContent = 'PREP — ' + (intentLbl ? 'FLEET INTENT: ' + intentLbl : 'INVASION INBOUND'); ob.style.color = ''; os.textContent = 'T-' + tleft + 's · build & specialize · cities ' + alive + '/' + G.cities.length + resNote; }
-  else { const it = INTENT[G.intent], pct = it && it.glass ? Math.max(0, Math.min(99, ((it.bombard - Math.max(0, G.bombard)) / it.bombard) * 100)) : (G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0); ob.textContent = (intentLbl || 'INVASION'); ob.style.color = ''; os.textContent = (it && it.glass ? 'survived ' : 'repelled ') + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
+  else if (INTENT[G.intent] && INTENT[G.intent].glass) {
+    // ENDURANCE OBJECTIVE — glass has no fleet to whittle down (it never lands), so the objective is
+    // reframed as a HOLD-FOR countdown to the real win condition (ordnance exhaustion, see the `done`
+    // check in updateGame) plus a running survival clock and cross-round personal best.
+    const spd = 0.45 * G.speed, holdLeft = Math.max(0, Math.ceil(Math.max(0, G.bombard || 0) / spd)), elapsed = Math.max(0, (G.invTime || 0) / spd), best = Math.max(loadBestEndure(), elapsed);
+    ob.textContent = 'ENDURANCE — ' + intentLbl; ob.style.color = '';
+    os.textContent = (holdLeft > 0 ? 'HOLD FOR T-' + holdLeft + 's' : '⚑ ORDNANCE EXHAUSTED — hold the line') + ' · survived ' + mmss(elapsed) + ' · BEST ' + mmss(best) + ' · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote;
+  }
+  else { const pct = G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0; ob.textContent = (intentLbl || 'INVASION'); ob.style.color = ''; os.textContent = 'repelled ' + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   const rpb = document.getElementById('resProgBar'); if (rpb) { if (G.research && G.research.cost > 0) { rpb.style.display = 'block'; rpb.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%'; } else rpb.style.display = 'none'; }   // research-button progress fill
   if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state

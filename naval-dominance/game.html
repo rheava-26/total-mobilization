@@ -161,7 +161,8 @@ const DEV = true;
 // Module registry — sibling ESM files (three vendored; fleet/sfx are agent-built content
 // modules). build.mjs swaps this registry for embedded blob URLs to produce the standalone
 // double-clickable NavalDominance.html.
-let MODULES = { three:'./three.module.js', fleetHeavy:'./fleet-heavy.js', fleetLight:'./fleet-light.js', sfx:'./sfx.js' };
+let MODULES = { three:'./three.module.js', fleetHeavy:'./fleet-heavy.js', fleetLight:'./fleet-light.js', sfx:'./sfx.js',
+  gltfLoader:'./gltf-loader.js', fleetReal:'./fleet-real.js' };
 /*__EMBED_HOOK__*/
 let THREE = null;
 
@@ -358,10 +359,10 @@ function buildEnemyWaves(strength){
   // tiered pools spanning the FULL merged roster (fleet-heavy/light modules load at boot).
   // pickRoster() filters to defs that actually loaded, so the game still works if a module fails.
   const TIERS=[
-    ['scoutheli','ptboat','seaplane','gunboat'],                       // t0 light
+    ['scoutheli','ptboat','seaplane','gunboat','longboat','skiff2'],    // t0 light
     ['gunship','seahawk','missileboat','missilecorvette','minesweeper'],// t1 medium
     ['cobra','patrolbomber','lcs','perry','submarine','fletcher'],      // t2 heavy
-    ['gearing','atlanta','ticonderoga','iowa','essex'],                 // t3 capital
+    ['gearing','atlanta','ticonderoga','iowa','essex','galleon','brig'],// t3 capital
   ];
   const pool=t=>{ const p=TIERS[clamp(t,0,3)].filter(k=>UNIT_DEFS[k]); return p.length?p:TIERS[0].filter(k=>UNIT_DEFS[k]); };
   const nWaves=clamp(2+Math.floor(s/4),2,4);
@@ -393,7 +394,8 @@ const RENDER=new Map();   // id -> {group, turrets:[{pivot,barrel,muzzle}], pick
 const PICKABLE=[];        // invisible colliders for raycast selection
 function buildRenderRec(e){
   const d=UNIT_DEFS[e.def];
-  const rec=MODELS[d.model](d);      // {group, turrets, pick}
+  let rec=MODELS[d.model](d);        // {group, turrets, pick}
+  if(!rec) rec=MODELS.patrol(d);     // glb template failed to parse -> generic procedural hull
   rec.group.userData.entId=e.id;
   if(rec.pick){ rec.pick.userData={entId:e.id, weaponIdx:null}; PICKABLE.push(rec.pick); }
   // per-turret pick spheres (child of pivot) so turrets are individually take-overable
@@ -1111,6 +1113,14 @@ async function boot(){
   }
   try{ SFX=(await import(MODULES.sfx)).makeSFX(); if(SND.ctx) { SFX.init(SND.ctx,SND.master); SFX.ambience(); } }
   catch(e){ logErr(e); }
+  // REAL ported models (CC0 Kenney glb, embedded in fleet-real.js) — parsed once into
+  // templates via the vendored GLTFLoader, then merged like any other fleet module.
+  try{
+    const { GLTFLoader } = await import(MODULES.gltfLoader);
+    const FR = await import(MODULES.fleetReal);
+    await FR.prepare(H, GLTFLoader);
+    const F = FR.makeFleet(H); Object.assign(UNIT_DEFS, F.units); Object.assign(MODELS, F.models);
+  }catch(e){ logErr(e); }
   setupBattleScene();                      // build the battle world once (campaign relaunches reuse it)
   bindInput(); initHUD();
   // campaign layer: generate the map and land the player on it first (battles launch from here)

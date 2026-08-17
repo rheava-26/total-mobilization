@@ -11,6 +11,19 @@ Maintained by: Claude (auto-appends any new idea the dev raises). Last updated: 
 
 ## 💡 Idea log (newest first)
 
+### 2026-08-17 (latest — "copy someone's homework": real ported 3D models)
+- **Real CC0 models are now IN THE GAME.** Discovered the sandbox's git proxy clones public
+  GitHub repos → pulled Kenney (CC0) ship models from the `pmndrs/market-assets` mirror,
+  Draco-decompressed them at build time, and embedded them via a vendored GLTFLoader.
+  New units with real art: **Galleon of the Line, Brig Corsair, Armed Longboat, Skiff,
+  Shore Cannon** (first land-domain unit!). Licensing logged in `ASSETS.md`.
+- The same mirror has **pirate crew character models (CC0)** — perfect future fuel for the
+  parked crew-reactions pillar ("the crew is the soul").
+- More mirrors scouted for later: `ETdoFresh/kenney.nl` (full Kenney zip-contents mirror),
+  `KayKit-Game-Assets` org, `ToxSam/open-source-3D-assets` (991+ CC0 glb). Modern-warship
+  glb hunting continues — age-of-sail arrived first.
+- Lore note: the mirror's `sub` model is a submarine *sandwich*. Briefly enlisted; discharged.
+
 ### 2026-08-17 (later — the parallel fleet batch)
 - **Synth-generated sounds APPROVED** (dev reversed the earlier packs-only rule): "fuck it, we
   can have synth generated sounds." `sfx.js` is now a layered procedural WebAudio bank.

@@ -2143,6 +2143,9 @@ const UNIT_DEFS = {
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 30, rate: 3, weapon: 'rocket', speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery. (req Rocketry)' },
   sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .60, pd: true, noGround: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
   railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit. (req Kinetic Weapons)' },
+  // ── PRODUCTION-LINE GROUND UNITS — no research, unlocked by a home-front INFRA line building (unit bReq). A parallel path to the tech tree, like the Veteran Guard. ──
+  hydra:    { name: 'Hydra Rocket Battery', art: 'mlrs', domain: 'ground', ic: 210, mp: 14, build: 10, hp: 70, armor: 3, range: 760, dmg: 26, rate: 2.2, weapon: 'rocket', speed: 4, s: 4.2, grp: 2, bReq: 'missileworks', ds: 'Saturation rocket battery — salvos of guided rockets blanket ground & low-air targets from range. Buildable from any Factory once a MISSILE WORKS stands (no research, a parallel path to the tech tree). (build a Missile Works)' },
+  mammoth:  { name: 'Mammoth Super-Heavy', art: 'tank', domain: 'ground', ic: 340, mp: 30, build: 15, hp: 340, armor: 22, range: 360, dmg: 48, rate: 3.0, weapon: 'shell', speed: 5, s: 6, grp: 1, bReq: 'heavyfoundry', comp: { alloy: 3 }, ds: 'Super-heavy breakthrough tank — a rolling fortress that out-guns and out-armours even the Goliath, poured from HEAVY ALLOY. Buildable from any Factory once a HEAVY FOUNDRY stands (no research). (build a Heavy Foundry)' },
   // NAVAL WARSHIPS are MULTI-TURRETED (Phase 2a) — every hull mounts a main battery PLUS a dedicated secondary AA/PD turret
   // (weapon2/dmg2/rate2/range2, air-only via wpn2Air, ceil2 = its firing ceiling), fired on an independent cooldown just like
   // the Land Leviathan's second gun — so a warship can duel surface/main targets with its main battery while its AA turret
@@ -2161,7 +2164,9 @@ const UNIT_DEFS = {
   rods:     { name: 'Tungsten Rods "Zeus"', art: 'rods', domain: 'space', ic: 370, mp: 8, build: 15, hp: 40, armor: 1, range: 1300, dmg: 95, rate: 6, weapon: 'rod', speed: 11, s: 4.5, grp: 1, req: 'kinetics', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital kinetic bombardment. Needs orbital LIFT + a ROCKET PART. (req Kinetic Weapons)' },
   spacefrigate:{ name: 'Orbital Frigate', art: 'spacefrig', domain: 'space', ic: 200, mp: 6, build: 9, hp: 60, armor: 2, range: 1000, dmg: 18, rate: 1.4, weapon: 'beam', speed: 16, s: 4, grp: 2, req: 'orbital', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Cheap general-purpose space warship — an angular armoured orbital hull, fielded in numbers as the backbone of a Space-Age fleet. Each needs orbital LIFT + a ROCKET PART.' },
   ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 28, rate: 1.2, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns — duels the autodrone strike-wings high above. Needs orbital LIFT + a ROCKET PART. Built from a SPACE STATION.' },
-  bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 420, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, ds: 'Heavy bomber — carpet-bombs GROUND & naval targets from altitude, then returns to an airbase to reload its bays. Longest-endurance fuel tank in the fleet. Built straight from any Airbase.' },
+  bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 420, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, bReq: 'aeroworks', ds: 'Heavy bomber — carpet-bombs GROUND & naval targets from altitude, then returns to an airbase to reload its bays. Longest-endurance fuel tank in the fleet. A production-line unit: build an AERO WORKS to field it from any Airbase (no research). (build an Aero Works)' },
+  // LASER PLANE "SOLARIS" — research-gated (Directed Energy), but an AERO WORKS also prodUnlocks it (demonstrates the prodUnlock mechanism — a line building making a research-gated unit buildable natively). Uses the unused 'laserjet' BART art.
+  laserplane:{ name: 'Laser Plane "Solaris"', art: 'laserjet', domain: 'air', groundAtk: true, ic: 240, mp: 16, build: 9, hp: 60, armor: 2, range: 680, dmg: 20, rate: 1.0, weapon: 'beam', speed: 300, s: 4.4, grp: 1, fuel: 34, req: 'directedenergy', ds: 'Directed-energy strike aircraft — a dorsal laser emitter rakes ground, naval & air targets with no magazine to run dry (just fuel; return to an airbase to refuel). Research DIRECTED ENERGY — or build an AERO WORKS to field it with no research. (DIRECTED ENERGY / Aero Works)' },
   // 🚁 HELICOPTER — its own arm. rotor:true → draws ROTOR COMMAND (not hangar slots); lowAir:true → hugs the deck; groundAtk:true → CAS role (ground + low air);
   // ceil .78 (tropo band) → physically CANNOT reach the stratosphere/space, keeping helis out of the high-air-spam meta. Needs no runway — rearms at cities/heli-depots.
   heli:     { name: 'Attack Heli "Kite"', art: 'heli', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 120, mp: 10, build: 7, hp: 95, armor: 4, range: 430, dmg: 20, rate: 1.3, weapon: 'rocket', speed: 120, s: 4.2, grp: 1, ammo: 10, fuel: 42, ceil: .78, ds: 'CLOSE-AIR-SUPPORT gunship helicopter — hovers low over its target and pounds it with rocket pods & a chin gun, drifting with it. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Hugs the deck — it cannot climb to high-altitude enemies, so it lives or dies on ground & low-air work.' },
@@ -2289,6 +2294,16 @@ const BUILD_DEFS = {
   garrstock:{ name: 'Garrison Stockpile', cat: 'INFRA', ic: 140, mp: 40, build: 8, hp: 200, w: 16, h: 12, garrisonCap: 20, ds: 'Raises the GLOBAL GARRISON WEIGHT BUDGET by +20 — the hard cap on how much standing auto-defense (Bunkers, Barracks, Garrison Factories, Airbases…) can be alive at once. Holds no defenders of its own — it is pure ceiling. Build more to raise it.' },
   garrfactory:{ name: 'Garrison Factory', cat: 'INFRA', ic: 200, mp: 90, build: 11, hp: 240, w: 20, h: 14, garrison: { unit: 'tank', n: 2, weight: 3 }, aura: { garrSpd: 1.8, r: 300 }, ds: 'Dedicated auto-defense plant — keeps a standing pair of tanks, and its aura FILLS every nearby garrison building (Bunkers, Barracks, Airbases…) ~80% faster. Still bounded by your total Garrison Stockpile budget.' },
   mobhub:   { name: 'Mobilization Hub', cat: 'INFRA', ic: 110, mp: 30, build: 6, hp: 160, w: 14, h: 10, aura: { garrSpd: 1.5, r: 340 }, ds: 'Cheap coordination post — speeds up garrison fill for every defense building in its wide radius. No troops of its own.' },
+  // ===== LOCALIZED GARRISON PRODUCERS (cat INFRA) — a d.garrWorks building makes its SPECIALTY garrison unit on a timer and DIVVIES each new one
+  // out to a friendly building inside its LOCAL RADIUS (nearest-need spread). Its defensive value IS its neighbourhood: dump it underground mid-ocean
+  // with nothing around it and it garrisons nothing — build it INTO your sprawl/front. Overlap 90 of them and they STACK; the ONLY ceiling is the
+  // global GARRISON WEIGHT BUDGET (Garrison Stockpiles). See the garrWorks fill pass in updateGame(). garrWorks:{ unit, r, every, weight } — all tunable.
+  // The first three ALSO carry a production-line unit bReq (Part 1): their factory-buildable native unit. Both roles coexist. =====
+  missileworks:{ name: 'Missile Works', cat: 'INFRA', ic: 200, mp: 70, build: 11, hp: 240, w: 20, h: 16, garrWorks: { unit: 'hydra', r: 300, every: 15, weight: 2 }, ds: 'Rocket production line — unlocks the HYDRA rocket battery for any Factory (no research), AND acts as a LOCALIZED PRODUCER: on a timer it rolls out Hydra batteries and posts them as standing garrisons to nearby buildings inside its radius. Build it INTO your sprawl (isolated, it garrisons nothing). Stacks with more Missile Works — bounded only by your Garrison Stockpile budget.' },
+  heavyfoundry:{ name: 'Heavy Foundry', cat: 'INFRA', ic: 260, mp: 95, build: 13, hp: 300, w: 22, h: 16, makes: { alloy: .4 }, garrWorks: { unit: 'mammoth', r: 300, every: 22, weight: 3 }, ds: 'Heavy-armour production line — unlocks the MAMMOTH super-heavy tank for any Factory (no research) and forges HEAVY ALLOY. Also a LOCALIZED PRODUCER: it pours out Mammoths and stations them as garrisons at nearby buildings. Build it into a defended sector. Stacks — bounded only by your Garrison Stockpile budget.' },
+  aeroworks:{ name: 'Aero Works', cat: 'INFRA', ic: 240, mp: 85, build: 12, hp: 240, w: 22, h: 15, prodUnlock: ['laserplane'], garrWorks: { unit: 'fighter', r: 320, every: 20, weight: 3 }, ds: 'Aircraft production line — grants ✈ +4 AIR COMMAND, unlocks the LANCER heavy bomber for any Airbase, and prodUnlocks the LASER PLANE with no research. Also a LOCALIZED PRODUCER: it scrambles a standing fighter screen over nearby installations. Build it among your bases. Stacks — bounded only by your Garrison Stockpile budget.' },
+  plateworks:{ name: 'Armor Plate Mill', cat: 'INFRA', ic: 220, mp: 80, build: 12, hp: 280, w: 20, h: 14, makes: { alloy: .35 }, garrWorks: { unit: 'heavytank', r: 300, every: 18, weight: 3 }, ds: 'Rolls & welds armour plate (stockpiles HEAVY ALLOY) and, as a LOCALIZED PRODUCER, turns it into GOLIATH heavy tanks stationed as garrisons at nearby buildings. A permanent, no-research heavy-armour producer — no throughput bottleneck. Build it into your line; stacks up to your Garrison Stockpile budget.' },
+  avionicsworks:{ name: 'Avionics Works', cat: 'INFRA', ic: 210, mp: 70, build: 11, hp: 230, w: 20, h: 14, garrWorks: { unit: 'sam', r: 320, every: 16, weight: 2 }, ds: 'Builds guidance seekers & fire-control sets and, as a LOCALIZED PRODUCER, fields guided SAM batteries as standing garrisons across nearby buildings — a local anti-air / anti-missile net that grows itself. No research, no bottleneck. Build it into a sector you want covered; stacks up to your Garrison Stockpile budget.' },
   // TECH
   reslab:   { name: 'Research Lab', cat: 'TECH', ic: 170, mp: 70, build: 11, hp: 200, w: 19, h: 16, reslab: true, ds: 'Each lab makes research ~14% FASTER and ~8% CHEAPER in influence (stacks). Does NOT generate influence — it spends it more efficiently.' },
   // EXOTIC (research-unlocked)
@@ -2321,7 +2336,7 @@ const BUILD_DEFS = {
   waracademy:{ name: 'War Academy', cat: 'SPEC', ic: 260, mp: 85, build: 12, hp: 240, w: 20, h: 18, aura: { dmg: 1.15, r: 300 }, garrison: { keys: ['inf'], n: 1 }, ds: 'Trains your soldiers to VETERAN standard — every unit fighting in its radius hits +15% HARDER (a damage aura; STACKS multiplicatively, so ring a front line with several to make it brutal). Keeps a small instructor garrison. No research needed.' },
   fieldhospital:{ name: 'Field Hospital', cat: 'INFRA', ic: 150, mp: 60, build: 8, hp: 170, w: 18, h: 12, aura: { heal: 4, r: 270 }, ds: 'Front-line triage — patches up ANY of your units inside its radius at +4 HP/s. Repair does NOT stack (the strongest source wins), so spread hospitals to cover different sectors. An early, no-research alternative to the Nanite Foundry\'s repair aura.' },
   logistics:{ name: 'Logistics Hub', cat: 'INFRA', ic: 220, mp: 70, build: 10, hp: 230, w: 20, h: 12, gmod: { upkeepCut: .18 }, makes: { alloy: .3, rocketpart: .3 }, ds: 'Supply & maintenance depot — cuts your TOTAL standing UPKEEP −18% (garrisons, capital ships, shield generators…) and slowly stockpiles Heavy Alloy + Rocket Parts. Build more to stack the cut toward a floor of 40% of raw upkeep. No research needed.' },
-  vethall:{ name: 'Veterans\' Hall', cat: 'PROD', ic: 190, mp: 75, build: 9, hp: 220, w: 20, h: 15, prod: 'ground', prodList: ['veteran'], garrison: { keys: ['veteran'], n: 1, weight: 2 }, ds: 'Recruits & trains the VETERAN GUARD — elite armoured line infantry buildable with NO research (a parallel path to the tech tree, like the Missile Works). Any factory can build them once a Hall stands; the Hall also keeps a veteran on guard.' },
+  vethall:{ name: 'Veterans\' Hall', cat: 'INFRA', ic: 190, mp: 75, build: 9, hp: 220, w: 20, h: 15, prod: 'ground', prodList: ['veteran'], garrison: { keys: ['veteran'], n: 1, weight: 2 }, ds: 'Recruits & trains the VETERAN GUARD — elite armoured line infantry buildable with NO research (a parallel path to the tech tree, like the Missile Works). Any factory can build them once a Hall stands; the Hall also keeps a veteran on guard.' },
   fortresshq:{ name: 'Fortress HQ', cat: 'INFRA', ic: 300, mp: 110, build: 14, hp: 340, armor: 8, w: 22, h: 16, garrisonCap: 12, garrison: { keys: ['tank', 'aa'], n: 2, weight: 3 }, aura: { garrSpd: 1.5, r: 300 }, ds: 'A hardened command bastion — raises your GARRISON BUDGET +12, fields its own armour + flak garrison, AND speeds nearby garrison fill (aura). The anchor of a fortified sector. No research needed.' },
   combine:{ name: 'Industrial Combine', cat: 'ECON', ic: 300, mp: 120, build: 13, hp: 300, w: 24, h: 16, econ: { ic: 8 }, gmod: { conspd: .25, cost: .05 }, ds: 'Heavy-industry complex — a strong +8 IC/s, and it drives your whole war economy: +25% CONSTRUCTION SPEED and −5% on every unit\'s IC cost (both STACK with more Combines). No research needed.' },
 };
@@ -2575,7 +2590,7 @@ function orbCapFree() { return orbCap() - orbCapUsed(); }
 // ✈ AIR COMMAND — every CREWED aircraft needs hangar support (fuel, ordnance, ground crew), so an air armada is capped by
 // attackable infrastructure instead of raw money: Airbases, Underground Airwings & Aero Works grant slots. Carrier wings
 // support themselves (excluded), and disposable DRONES are exempt — swarming is their whole doctrine. Mirrors orbital LIFT.
-const AIR_SLOTS = { airbase: 6, airwing: 3 };
+const AIR_SLOTS = { airbase: 6, airwing: 3, aeroworks: 4 };
 function airCap() { let n = 0; for (const b of G.buildings) if (b.done !== false && !b.captured && AIR_SLOTS[b.key]) n += AIR_SLOTS[b.key]; return n; }
 function airUsed() { let n = 0; for (const u of G.units) if (u.d.domain === 'air' && !u.d.drone && !u.d.rotor && !u.d.capital && !u.carrFrom && !u.d.builder) n++; for (const b of G.buildings) if (b.queue) for (const q of b.queue) { const qd = UNIT_DEFS[q.key]; if (qd && qd.domain === 'air' && !qd.drone && !qd.rotor && !qd.capital) n++; } return n; }   // living + queued crewed FIXED-WING aircraft — HELICOPTERS (rotor) and SKY WARSHIPS (capital) are excluded (they draw ROTOR COMMAND / no slot at all)
 // 🚁 ROTOR COMMAND — the PARALLEL capacity pool for HELICOPTERS. A cheap heli and an expensive jet are different logistics, so helis do
@@ -3554,6 +3569,25 @@ function updateGame(dt) {
         if (b.gt >= fillT) { b.gt = 0;
           let nearby = 0; for (const u of G.units) if (u.garr && keys.indexOf(u.key) >= 0 && Math.abs(u.x - b.x) < 220) nearby++;
           if (nearby < cap && garrLive + gw <= G.garrCap) { spawnGarrison(keys[Math.floor(Math.random() * keys.length)], b.x + (Math.random() - .5) * b.d.w * 1.6, b, gw); garrLive += gw; }   // ANTI-SPAM WALL — hard-blocked once the global weight budget (Garrison Stockpiles) is exhausted, even if the building's own local slot is still open
+        }
+      }
+    }
+    // LOCALIZED GARRISON PRODUCER — a d.garrWorks building rolls out its specialty garrison unit on a timer and DIVVIES each new one to a
+    // friendly building inside its local radius (nearest-NEED: the eligible neighbour holding the fewest of this unit gets the next one). With NO
+    // eligible neighbour it garrisons nothing — placement into your sprawl is the whole point. Shares the SAME running weight ledger (garrLive) as
+    // the standing garrisons above, so it is bounded ONLY by the global budget (Garrison Stockpiles); "build 90 and they stack" holds up to that budget.
+    if (b.d.garrWorks && UNIT_DEFS[b.d.garrWorks.unit]) {
+      const gwk = b.d.garrWorks, wt = gwk.weight || 1, rad = gwk.r || 300;
+      const fillT = (gwk.every || 18) / Math.max(.4, auraAt(b.x, 'garrSpd'));   // Garrison Factory / Mobilization Hub auras speed producers too
+      b.gwt = (b.gwt || 0) + dt;
+      if (b.gwt >= fillT) { b.gwt = 0;
+        if (garrLive + wt <= G.garrCap) {   // the ONLY ceiling — global garrison weight budget
+          let best = null, bestN = 1e9;     // pick the nearest-NEED neighbour (fewest of our specialty already stationed there)
+          for (const o of G.buildings) { if (o === b || o.done === false || o.captured || o.hp <= 0) continue; if (Math.abs(o.x - b.x) > rad) continue;
+            let here = 0; for (const u of G.units) if (u.garrison && u.hp > 0 && u.key === gwk.unit && Math.abs(u.x - o.x) < 120) here++;
+            if (here < bestN) { bestN = here; best = o; }
+          }
+          if (best) { spawnGarrison(gwk.unit, best.x + (Math.random() - .5) * best.d.w * 1.4, best, wt); garrLive += wt; }   // no neighbour → produce nothing (rewards building it INTO your base)
         }
       }
     }
@@ -4902,11 +4936,16 @@ function renderGame() {
   const _heavyLOD = (G.units.length + G.enemies.length) > 200;   // at extreme scale, drop the per-body soft drop-shadow (the single most expensive per-entity canvas op); art itself is unchanged
   RSTAT.culled = 0; RSTAT.drawn = 0;
   // COVERAGE ZONES — buff/aura radii (radar range, fire-rate, repair). Toggle with V or the ◎ button; a selected aura building always shows its own ring.
-  if (G.showZones || (G.sel && G.sel.d && G.sel.d.aura)) {
+  if (G.showZones || (G.sel && G.sel.d && (G.sel.d.aura || G.sel.d.garrWorks))) {
     for (const b of G.buildings) { if (b.done === false || !b.d.aura) continue; if (!G.showZones && b !== G.sel) continue;
       const r = b.d.aura.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
       const col = b.d.aura.heal ? '109,255,176' : b.d.aura.dmg ? '255,110,90' : b.d.aura.rof ? '255,178,74' : '63,200,240';   // heal=green · damage=red · fire-rate=amber · range=cyan
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
+    }
+    // LOCALIZED GARRISON PRODUCER coverage — the neighbourhood a garrWorks building posts its standing garrisons into (amber, matching the garrison HUD colour)
+    for (const b of G.buildings) { if (b.done === false || !b.d.garrWorks) continue; if (!G.showZones && b !== G.sel) continue;
+      const r = b.d.garrWorks.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
+      c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = 'rgba(255,176,77,.05)'; c.fill(); c.strokeStyle = 'rgba(255,176,77,.55)'; c.lineWidth = 1.4; c.setLineDash([4, 5]); c.stroke(); c.setLineDash([]); c.restore();
     }
   }
   // HOSTILE JAMMER FIELDS — a violet static bubble where your homing missiles go blind; kill the drone to clear it

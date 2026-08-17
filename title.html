@@ -2254,14 +2254,36 @@ const UNIT_DEFS = {
 };
 // Past the FUSION AGE your conventional line is re-armed with plasma — base units become more effective versions of themselves.
 // Each entry overrides fields of the base def; everything else (domain, ic, mp, build, s, grp, req) is inherited.
+// ===== AMPHIBIOUS TRACKED ARMOR (Fusion Age) — the game's oldest complaint is ground units stuck on one axis, unable
+// to cross water, feeling weak next to aircraft/orbital. Fix: past FUSION, tracked armor upgrades to advanced
+// hover-assisted drivetrains — AMPHIBIOUS (drives straight over open water, no more stopping dead at every shoreline)
+// AND faster on land. Picked "tracked, already-mobile armor" only (speed>0 in UNIT_DEFS): MBT, Heavy tank, SPG,
+// MLRS, the Mammoth super-heavy, the Hydra battery (mlrs-hull), Land Dreadnought (explicitly "a tracked hull" in its
+// own ds) and the Mobile Command Fortress (explicitly "a BUILDING ON TREADS"). Deliberately EXCLUDES the AA
+// "Hailstorm" and Railgun "Lance" — both are speed:0 static emplacements by design (they never invoke the movement
+// code this fix touches at all), so amphibious/speed fields would be a no-op for them; leaving them out keeps this
+// change purely additive and avoids nudging speed:0 units into the ranged-hold/idle-advance movement paths.
+// AMPH_SPEED numbers are a first conservative pass (~40-50% faster) — fully tunable, never a cap.
+const AMPH_SPEED = { tank: 16, heavytank: 9, arty: 6, mlrs: 6, mammoth: 7, hydra: 6, landdread: 4.5, mobilefortress: 4.5 };   // era:'fusion' speed override per key (bases: 11/6/4/4/5/4/3/3)
+const AMPH_DS = 'Past the FUSION AGE: advanced hover-assisted tracks make this AMPHIBIOUS — it drives straight over open water instead of stopping at the shoreline — and faster on land besides.';
 const UPGRADES = {
   cdrone:    { era: 'fusion', name: 'Heavy Drone "Hornet"', art: 'cdrone', weapon: 'rocket', dmg: 14, rate: 1.2, range: 540, hp: 60, s: 3.4, grp: 1, kamikaze: false, ds: 'Fusion-era heavy combat drone squadron — car-sized, missile-armed bodies (no longer one-shot kamikazes; far less swarm-lag).' },
   // ALL plasma re-arms are gated behind PLASMA WEAPONS research now (not the Fusion Age) — ground AND aircraft
   inf:       { era: 'plasma', name: 'Plasma Infantry', art: 'inf', weapon: 'plasball', dmg: 9, rate: .42, range: 280, hp: 64, ds: 'Riflemen re-armed with plasma carbines. (Plasma Weapons)' },
-  tank:      { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank', weapon: 'plasball', dmg: 30, rate: 2.4, range: 560, hp: 150, ds: 'MBT re-armed with fast flat plasma bolts that AIRBURST right next to the target (no pinpoint hit needed), out-ranging guns. (Plasma Weapons)' },
-  heavytank: { era: 'plasma', name: 'Plasma Goliath', art: 'tank', weapon: 'plasball', dmg: 52, rate: 2.8, range: 600, hp: 300, ds: 'Breakthrough plasma battery. Walks through fleets. (Plasma Weapons)' },
+  // tank/heavytank/arty stack TWO independent tiers — FUSION (amphibious + speed, this fix) then PLASMA (re-arm, unchanged) —
+  // via the modifier-stack array form effDef() already supports (see the naval capital ladder further below for precedent).
+  tank:      [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.tank, ds: AMPH_DS },
+               { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank', weapon: 'plasball', dmg: 30, rate: 2.4, range: 560, hp: 150, ds: 'MBT re-armed with fast flat plasma bolts that AIRBURST right next to the target (no pinpoint hit needed), out-ranging guns. (Plasma Weapons) ' + AMPH_DS } ],
+  heavytank: [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.heavytank, ds: AMPH_DS },
+               { era: 'plasma', name: 'Plasma Goliath', art: 'tank', weapon: 'plasball', dmg: 52, rate: 2.8, range: 600, hp: 300, ds: 'Breakthrough plasma battery. Walks through fleets. (Plasma Weapons) ' + AMPH_DS } ],
   aa:        { era: 'plasma', name: 'Plasma Rotator', art: 'aa', weapon: 'plasball', dmg: 12, rate: .22, range: 500, ceil: .60, hp: 80, ds: 'Flak rotator re-armed — a storm of plasma bolts up into the mesosphere. (Plasma Weapons)' },
-  arty:      { era: 'plasma', name: 'Plasma Pelter "Thunder-P"', art: 'artillery', weapon: 'plasarc', dmg: 66, rate: 4.0, range: 860, hp: 70, ds: 'Long-range plasma artillery — saturates a position in deforming plasma. (Plasma Weapons)' },
+  arty:      [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.arty, ds: AMPH_DS },
+               { era: 'plasma', name: 'Plasma Pelter "Thunder-P"', art: 'artillery', weapon: 'plasarc', dmg: 66, rate: 4.0, range: 860, hp: 70, ds: 'Long-range plasma artillery — saturates a position in deforming plasma. (Plasma Weapons) ' + AMPH_DS } ],
+  mlrs:      { era: 'fusion', amphibious: true, speed: AMPH_SPEED.mlrs, ds: AMPH_DS },
+  mammoth:   { era: 'fusion', amphibious: true, speed: AMPH_SPEED.mammoth, ds: AMPH_DS },
+  hydra:     { era: 'fusion', amphibious: true, speed: AMPH_SPEED.hydra, ds: AMPH_DS },
+  landdread: { era: 'fusion', amphibious: true, speed: AMPH_SPEED.landdread, ds: 'Past the FUSION AGE: advanced hover-assisted tracks make this AMPHIBIOUS — it drives straight over open water — and faster besides. ★ Rolling SIEGE BATTLESHIP — a city-block-long tracked hull built around one spinal railgun that levels anything on the ground from clear across the map. Its gun still cannot elevate into high air or orbit — screen it or it dies to what it cannot answer. A capital ship (off the army cap); 11 IC/s upkeep. (SPACE AGE → Grand Arsenal)' },
+  mobilefortress: { era: 'fusion', amphibious: true, speed: AMPH_SPEED.mobilefortress, ds: 'Past the FUSION AGE: advanced hover-assisted tracks make this AMPHIBIOUS — it drives straight over open water — and faster besides. ★ A BUILDING ON TREADS — the novel one. Barely armed itself (self-defense only); its real weapon is a rolling C2 bubble that boosts every friendly unit\'s fire-rate & range in a wide radius as it crawls with the front line, and it keeps its own small standing garrison. A capital ship (off the army cap); 10 IC/s upkeep. (SPACE AGE → Grand Arsenal)' },
   // MICROROCKETS — a broad re-arm (like plasma) for the strike/CAS aircraft that keep missiles: their pods now split into independently-homing submunitions
   strikejet: { era: 'microrockets', name: 'Microrocket Warthog', weapon: 'microrkt', dmg: 16, rate: 2.0, range: 580, ds: 'CAS jet re-armed with MICROROCKET pods — every salvo splits into homing submunitions that pick their own targets. (Microrockets)' },
   bomber:    { era: 'microrockets', name: 'Microrocket Lancer', weapon: 'microrkt', dmg: 18, rate: 2.8, range: 640, ds: 'Heavy bomber re-armed with microrocket clusters that scatter onto independent targets. (Microrockets)' },
@@ -4594,8 +4616,9 @@ function updUnits(dt) {
         if (u.retreating && anyE) u.x -= Math.sign(anyE.x - u.x) * spd * RETREAT_SPEED_FRAC * dt;   // fall back AWAY from the nearest threat, toward friendly lines
         else if (tx != null && gap > stop && !leashed) u.x += Math.sign(tx - u.x) * Math.min(spd * GROUND_ADVANCE_MUL * dt, gap - stop);
       }
-      if (isWater(u.x) && !isWater(pX)) u.x = pX;   // ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); isWater() is the SAME predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
-      u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = groundY(u.x) - d.s;
+      const amph = d.amph || d.amphibious;   // AMPHIBIOUS TRACKED ARMOR (Fusion Age upgrade, see UPGRADES) — drives straight over open water instead of holding at the shoreline
+      if (!amph && isWater(u.x) && !isWater(pX)) u.x = pX;   // non-amphibious ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); isWater() is the SAME predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
+      u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = (amph ? landY(u.x) : groundY(u.x)) - d.s;   // amphibious units ride the SEA SURFACE over water (landY, same as naval/enemy-armor) instead of sinking to the seabed (groundY)
       // ENTRENCHMENT — a ground unit that holds position digs in for a fortification (damage-reduction) bonus; standing in a building's footprint GARRISONS it, digging in faster & deeper (an economic block = the best mini-fort)
       const moved = Math.abs(u.x - pX) > spd * dt * .35;
       u.fort = fortBonusAt(u.x);
@@ -4609,7 +4632,7 @@ function updUnits(dt) {
       // separation nudge above can no longer be the CAUSE) no longer rides the sea surface unharmed: a short grace period,
       // then it takes on water fast and goes under. u.drowned marks the death as a QUIET sink (see the death-cleanup loop
       // in updateGame) — mirrors the flooded-BUILDING path: a unit going under is a sink, never an ammo cook-off.
-      if (!d.amph && !d.amphibious) {
+      if (!amph) {
         if (isWater(u.x)) {
           u.drownT = (u.drownT || 0) + dt;
           if (u.drownT > .4) { u.hp -= u.maxHp * .6 * dt; u.drowned = true; if (Math.random() < .5) smoke(u.x, seaLevelY(u.x), 1); }

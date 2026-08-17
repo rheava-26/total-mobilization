@@ -82,7 +82,7 @@
   .objwrap { margin-left: auto; text-align: right; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 11px; }
   .objwrap .big { font-size: 13px; font-weight: 700; letter-spacing: 1px; } .objwrap .sub { font-size: 10px; opacity: .65; }
 
-  .buildbar { position: absolute; left: 8px; bottom: 8px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px; max-width: 340px; }
+  .buildbar { position: absolute; left: 8px; bottom: 8px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px; max-width: 340px; max-height: calc(100vh - 20px); display: flex; flex-direction: column; }
   .bbhdr { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 6px; font-size: 9px; letter-spacing: 1px; color: #9fb6d4; }
   .bbmin { cursor: pointer; padding: 0 5px; color: #cfe0ff; font-size: 12px; line-height: 1; border: 1px solid var(--line); border-radius: 3px; }
   .bbmin:hover { background: var(--ic); color: #05111f; }
@@ -94,7 +94,7 @@
   #achTab { position: fixed; right: 0; bottom: 150px; z-index: 5; pointer-events: auto; writing-mode: vertical-rl; background: rgba(14,23,38,.5); border: 1px solid var(--line); border-right: none; border-radius: 6px 0 0 6px; color: #cfe0ff; font-size: 12px; letter-spacing: 1px; padding: 9px 5px; cursor: pointer; opacity: .5; transition: opacity .15s, transform .15s, background .15s; }
   #achTab:hover { opacity: 1; background: rgba(22,36,58,.88); transform: translateX(-4px); }
   .bbtabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .bbtab { padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; font-size: 9px; letter-spacing: 1px; cursor: pointer; color: #9fb6d4; white-space: nowrap; } .bbtab.sel { background: var(--ic); color: #05111f; }
-  .bbgrid { display: flex; flex-wrap: wrap; gap: 5px; max-width: 326px; }
+  .bbgrid { display: flex; flex-wrap: wrap; gap: 5px; max-width: 326px; max-height: min(56vh, 420px); overflow-y: auto; }
   .bcard { width: 76px; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; padding: 4px; cursor: pointer; transition: .1s; }
   .bcard:hover { border-color: var(--ic); } .bcard.sel { border-color: var(--stab); background: #1a2740; } .bcard.cant { opacity: .4; }
   .bcard canvas { width: 68px; height: 30px; display: block; } .bcard .bn { font-size: 8.5px; font-weight: 700; color: #eaf2ff; letter-spacing: .3px; line-height: 1.1; margin-top: 2px; } .bcard .bc { font-size: 8px; color: #8fa6c4; }
@@ -5884,9 +5884,9 @@ function buildBuildBar() {
     else if (dl && G) digLine = `<div class="bc" style="color:#6a7a8a">⛏ surface only — can't bury</div>`;
     const st = d.econ && d.econ.stab, capN = st ? Math.round(st * 14) : 0;   // buildings raise the stability CAP by econ.stab × 14 (see the economy tick)
     const stabLine = st ? `<div class="bc" style="color:${st > 0 ? '#7cffb0' : '#ff8a6a'}">${st > 0 ? '+' : ''}${capN} stab cap</div>` : '';
-    // SPECIAL-BUILDING EFFECT TEXT — show the ds blurb on the card itself for the SPEC *and* Infrastructure menus (both special-building tabs), not just on hover
-    const effLine = (curBcat === 'SPEC' || curBcat === 'INFRA') && d.ds ? `<div class="bc bceff" style="color:#9fb6d4;line-height:1.35;margin-top:3px;font-size:8.5px;white-space:normal">${d.ds}</div>` : '';
-    card.innerHTML = `<canvas width="136" height="60"></canvas><div class="bn">${d.name}</div><div class="bc">${d.ic} IC · ${d.mp} MP · <span style="color:#ff8a8a">${infc} INF</span></div>${stabLine}${digLine}${effLine}`; grid.appendChild(card); const cc = card.querySelector('canvas').getContext('2d'); cc.translate(68, 52); cc.scale(1.05, 1.05); (BART[key] || BART.factory)(cc, d.w, d.h); card.onclick = () => { const l = bldLocked(d); if (l) return toast(l); G.terrainMode = 0; G.place = (G.place === key ? null : key); G.sel = null; refreshSel(); buildBuildBar(); };
+    // Full building description lives in the native hover tooltip (and on the card when selected/placed) — kept off the card face so every tab's cards stay compact and the panel never overflows.
+    if (d.ds) card.title = d.ds;
+    card.innerHTML = `<canvas width="136" height="60"></canvas><div class="bn">${d.name}</div><div class="bc">${d.ic} IC · ${d.mp} MP · <span style="color:#ff8a8a">${infc} INF</span></div>${stabLine}${digLine}`; grid.appendChild(card); const cc = card.querySelector('canvas').getContext('2d'); cc.translate(68, 52); cc.scale(1.05, 1.05); (BART[key] || BART.factory)(cc, d.w, d.h); card.onclick = () => { const l = bldLocked(d); if (l) return toast(l); G.terrainMode = 0; G.place = (G.place === key ? null : key); G.sel = null; refreshSel(); buildBuildBar(); };
     if (st) { card.onmouseenter = () => { stabPreview = { txt: (st > 0 ? '+' : '') + capN + ' stab cap', col: st > 0 ? '#7cffb0' : '#ff8a6a' }; }; card.onmouseleave = () => { stabPreview = null; }; } }
 }
 // research modal — interactive node graph

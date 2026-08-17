@@ -3037,6 +3037,15 @@ const SHIP_CIWS_INTERVAL = 0.3;  // game-seconds between CIWS bursts
 const SHIP_CIWS_SHOTS = 2;       // intercepts per burst — "2 CIWS turrets" worth of anti-ordnance fire
 const SHIP_CIWS_R = 150;         // px reach of the self-defence turrets
 const SHIP_CIWS_DMG = 6;         // damage per intercept (enemy missiles/rockets carry hp 5, micro-missiles hp 4 → a clean one-shot)
+// ── IDLE REPOSITIONING (tunable) — units with NOTHING in range don't stand in a field: they FLOW toward the front
+//    (the nearest threat / deepest incursion) so the army is always moving to the fight, never idling while a battle
+//    rages elsewhere. Pure behaviour — no damage/balance change. A unit garrisoning a post holds it (see GROUND leash). ──
+const GROUND_ADVANCE_MUL = 1.3;   // idle ground units march at this × base speed toward the nearest threat they could hit (else toward the nearest incursion)
+const GROUND_DEFEND_LEASH = 900;  // px: a ground unit garrisoning a building/city footprint (fort>0) will NOT abandon it to chase a threat farther than this — only closer incursions pull a garrison off its post
+const AIR_PATROL_FRAC = 0.55;     // fraction of speed at which an idle fighter (no role-valid target anywhere) drifts toward the nearest threat of any kind — a relaxed cruise to station, not a full-throttle dash to one edge
+const AIR_PATROL_HOLD = 260;      // px: once a drifting fighter is within this of the nearest threat's column it stops closing and loiters on-station (so it doesn't pile onto the enemy's exact x)
+const NAVAL_PATROL_FRAC = 0.7;    // fraction of speed at which a ship with no in-range target patrols along its coastline toward the nearest threat (clamped to its own body of water — it can't sail onto land)
+const NAVAL_PATROL_HOLD = 220;    // px: a ship within this of the nearest threat's column holds station instead of grinding against the shoreline
 function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox) {
   if (weapon === 'none') return;
   if (weapon === 'beam') { if (Math.random() < .3) blip(900, .1, 'sine', .1); } else if (weapon === 'particle') { if (Math.random() < .7) blip(1200, .14, 'sine', .22); } else if (weapon === 'amslug') { if (Math.random() < .5) blip(560, .09, 'sawtooth', .11); }
@@ -4241,7 +4250,14 @@ function updUnits(dt) {
         } else if (dist > rng * .8) u.vx += sdir * spd * 4 * dt;                               // GUN / short-range craft still sprint in and strafe
         else { const orbit = Math.min(rng * .5, 240); const tx = hunt.x + Math.cos(u.wob) * orbit; u.vx += (tx - u.x) * 2.4 * dt; }   // weave around it
         dy = Math.max(airTopY(), Math.min(landY(u.x) - 28, hunt.y - 22 + Math.sin(u.wob) * 30));
-      } else { dy = u.patrol + Math.sin(u.wob * .7) * 24; u.vx += (Math.sin(u.wob * .5) * spd - u.vx * .3) * dt; }
+      } else {   // NO role-valid target anywhere in the sky → don't hover pointlessly. DRIFT toward the nearest threat of
+                 // ANY kind (the front) at a relaxed cruise so idle fighters flow to where the fighting is and are already
+                 // on-station when a valid target appears; pure loiter only when the map is genuinely clear of enemies.
+        let fx = null, fd = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < fd) { fd = dd; fx = e.x; } }
+        if (fx != null && fd > AIR_PATROL_HOLD) u.vx += (Math.sign(fx - u.x) * spd * AIR_PATROL_FRAC - u.vx * .3) * dt;   // ease toward the front
+        else u.vx += (Math.sin(u.wob * .5) * spd - u.vx * .3) * dt;   // on-station or no enemies at all → gentle loiter
+        dy = u.patrol + Math.sin(u.wob * .7) * 24;
+      }
       u.vy += (dy - u.y) * 2.8 * dt;
       const vmax = spd * 1.5; u.vx = Math.max(-vmax, Math.min(vmax, u.vx)); u.vx *= .96; u.vy *= .9;
       u.x += u.vx * dt; u.y += u.vy * dt; u.y = Math.max(airTopY(), Math.min(landY(u.x) - 16, u.y)); u.facing = u.vx >= 0 ? 1 : -1;
@@ -4267,6 +4283,12 @@ function updUnits(dt) {
       if (isWater(u.x)) {   // AFLOAT — recompute harbour bounds LIVE every frame so a ship is never pinned to a stale, now-dry harbour (terrain can be reshaped under it)
         const b = waterBounds(u.x); u.wx0 = b[0]; u.wx1 = b[1]; u.beached = false;
         if (tgt && d.speed > 0) { const nx = u.x + Math.sign(tgt.x - u.x) * d.speed * dt; if (nx > u.wx0 && nx < u.wx1) u.x = nx; }
+        else if (!tgt && d.speed > 0 && G.enemies.length) {   // NO target in range → patrol along the coast toward the nearest threat so the ship
+          // is on the correct flank when something enters range. Stays inside its OWN body of water (waterBounds clamps
+          // it — it can never sail onto land); holds station once close to the threat's column so it doesn't grind the shore.
+          let ex = null, ed = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < ed) { ed = dd; ex = e.x; } }
+          if (ex != null && ed > NAVAL_PATROL_HOLD) { const nx = u.x + Math.sign(ex - u.x) * d.speed * NAVAL_PATROL_FRAC * dt; if (nx > u.wx0 && nx < u.wx1) u.x = nx; }
+        }
         u.x = Math.max(u.wx0 + 4, Math.min(u.wx1 - 4, u.x)); u.y = seaLevelY(u.x);
       } else {   // BEACHED — terrain was raised under us: crawl toward the nearest open water instead of sitting embedded in the risen ground (recovers to afloat the moment it reaches water; if the whole sea is gone it rests on the surface)
         const w = findWater(u.x); if (w != null) u.x += Math.sign(w - u.x) * Math.max(d.speed, 18) * dt;
@@ -4277,10 +4299,17 @@ function updUnits(dt) {
       const pX = u.x;
       if (tgt && d.speed > 0) u.x += Math.sign(tgt.x - u.x) * Math.min(spd * 1.3 * dt, Math.abs(tgt.x - u.x));
       else if (!tgt && d.speed > 0 && d.weapon && d.weapon !== 'none') {
+        // IDLE ADVANCE — no in-range target → flow to the FRONT instead of standing in a field. Prefer the nearest
+        // enemy this unit could actually hit (a reachable incursion), else march under/toward the nearest threat of
+        // any kind so the unit is on-station when the fight reaches it. Bounded horizontal scan, no allocations.
         const ceilY = ceilF * worldH(); let best = null, bd = 1e9, anyE = null, ad = 1e9;
         for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (e.y >= ceilY && dd < bd) { bd = dd; best = e; } if (dd < ad) { ad = dd; anyE = e; } }   // nearest enemy this unit can hit, plus nearest enemy of any kind
         const tx = best ? best.x : (anyE ? anyE.x : null), gap = best ? bd : ad, stop = best ? rng * .7 : 70;   // march to engage a reachable foe, else reposition under/toward the nearest threat (never idle)
-        if (tx != null && gap > stop) u.x += Math.sign(tx - u.x) * Math.min(spd * 1.3 * dt, gap - stop);
+        // DON'T ABANDON A DEFENDED POST — a unit garrisoning a building/city footprint (u.fort from last frame > 0)
+        // holds its position rather than marching across the map after a distant incursion; only a threat that has
+        // closed inside GROUND_DEFEND_LEASH pulls a garrison off its post. Un-garrisoned FIELD units always advance.
+        const leashed = (u.fort || 0) > 0 && gap > GROUND_DEFEND_LEASH;
+        if (tx != null && gap > stop && !leashed) u.x += Math.sign(tx - u.x) * Math.min(spd * GROUND_ADVANCE_MUL * dt, gap - stop);
       }
       if (isWater(u.x) && !isWater(pX)) u.x = pX;   // ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); isWater() is the SAME predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
       u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = groundY(u.x) - d.s;

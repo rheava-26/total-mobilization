@@ -2216,6 +2216,15 @@ const UNIT_DEFS = {
   // micromanagement, the way the rest of the army already fights itself. Costs a ROTOR COMMAND slot + standing IC/MP like any rotorcraft
   // — that scarce slot (and the fact a lucky hit can knock it down and collapse the buff) is its real cost, never a hard cap. (tunable)
   helicmd:  { name: 'Command Helicopter "Overwatch"', art: 'heliscout', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 170, mp: 10, build: 9, hp: 85, armor: 3, range: 260, dmg: 6, rate: 1.0, weapon: 'tracer', speed: 115, s: 3.8, grp: 1, ammo: 30, fuel: 46, ceil: .78, aura: { rof: 1.2, range: 1.12, r: 320 }, ds: '🚁 SUPPORT rotorcraft — a light chin gun for token self-defense; its actual job is projecting a MOBILE AURA (+20% fire rate, +12% range in a wide radius) over whatever it happens to be hovering above, exactly like a flying Ammunition Depot + Radar. Loiters over the front on the same hover-CAS AI as the Kite/Mastodon, so the buff follows the fighting with zero micromanagement. Needs NO runway: draws 🚁 ROTOR COMMAND and rearms at any CITY, HELI-DEPOT or airbase.' },
+  // 🚁 TRANSPORT HELICOPTER — the ROTOR arm's LOGISTICS element, and the AIR equivalent of a Rail Hub: idle rear troops
+  // get an automatic lift to the front instead of a tunnel ride, so it also crosses water/terrain the Rail Hub can't
+  // reach. d.ferry:true marks this variant — it runs a fully AUTOMATIC pickup/carry/drop cycle (see the FERRY_* tunables
+  // and the d.ferry branch inside d.rotor in updUnits) with ZERO player micromanagement: it finds an idle unit sitting
+  // uselessly in the rear, loads it (it's safely OFF the battlefield while aboard — can't fight, can't be shot), flies
+  // it to the front, sets it down, and goes back for the next one. Only a token chin gun for self-defense — a transport
+  // is a soft target by design, the real cost of fielding one. Reuses the Mastodon's tandem-rotor hull (scaled), no new
+  // art. Same rotor system as every other rotorcraft: draws ROTOR COMMAND, rearms at any city/heli-depot/airbase.
+  helilift: { name: 'Transport Helicopter "Chinook"', art: 'heligunship', domain: 'air', rotor: true, lowAir: true, ferry: true, ic: 160, mp: 8, build: 9, hp: 160, armor: 6, range: 200, dmg: 3, rate: .8, weapon: 'tracer', speed: 130, s: 6.4, grp: 1, fuel: 60, ceil: .78, ds: '🚁 LOGISTICS rotorcraft — the air version of the Rail Hub. Fully AUTOMATIC: it finds an idle ground unit sitting uselessly in your rear, flies out and LOADS it aboard (it vanishes from the field, safe from harm while carried), carries it to the front and sets it down near the fighting, then goes back for the next one. Zero micromanagement, and unlike a tunnel it can cross water. Only a token chin gun — it is not built to fight. Needs NO runway: draws 🚁 ROTOR COMMAND and rearms at any CITY, HELI-DEPOT or airbase.' },
   // ---- EXOTIC (unlocked by research branches) ----
   cdrone:   { name: 'Combat Drone Squadron', art: 'cdrone', domain: 'air', ammo: 10, ic: 230, mp: 12, build: 6, hp: 30, armor: 1, range: 460, dmg: 12, rate: 1.0, weapon: 'rocket', speed: 300, s: 2.6, grp: 1, req: 'automation', ds: 'A SWARM of 3 pilotless combat drones flying as ONE unit — ONE army-cap-exempt slot, several missile-armed bodies. (AUTOMATION) Upgrades to heavy "Hornet" missile drones in the Fusion Age. A Drone Assembly Line builds squadrons in bigger, faster batches.' },
   kdrone:   { name: 'Kamikaze Drones', art: 'kdrone', domain: 'air', ic: 60, mp: 2, build: 3, hp: 22, armor: 0, range: 420, dmg: 30, rate: .7, weapon: 'none', speed: 340, s: 2.4, grp: 4, kamikaze: true, req: 'automation', ds: 'Expendable suicide-drone swarm — they DIVE into the first enemy they detect and detonate. Dirt cheap, very fast, no return. (AUTOMATION)' },
@@ -2646,6 +2655,7 @@ function cityRecruit(dt) {
    ECONOMY / BUILD / PRODUCTION
    ===================================================================== */
 function findWater(fromX) { for (let r = 0; r < WORLD_W; r += 10) for (const x of [fromX - r, fromX + r]) if (x > 14 && x < WORLD_W - 14 && elevAt(x) < SEA_E - .02) return x; return null; }
+function findLand(fromX) { for (let r = 0; r < WORLD_W; r += 10) for (const x of [fromX - r, fromX + r]) if (x > 14 && x < WORLD_W - 14 && elevAt(x) >= SEA_E - .02) return x; return null; }   // mirror of findWater — nearest DRY x, used by the transport heli's ferry drop so a non-amphibious passenger never gets set down in open water
 function waterBounds(x) { let a = x, b = x; while (a > 12 && elevAt(a) < SEA_E) a -= 6; while (b < WORLD_W - 12 && elevAt(b) < SEA_E) b += 6; return [a + 6, b - 6]; }
 // SPECIAL-RESOURCE BUILDINGS aggregate their global modifiers here, recomputed whenever buildings change
 function recalcBuildings() {
@@ -3218,6 +3228,29 @@ const AIR_RALLY_COUNT = 5;           // idle jets massed at the same staging poi
 const AIR_RALLY_RADIUS = 380;        // px — how close to the staging point counts as "gathered" there (also the bucket width used to group jets staging toward the same front)
 const AIR_RALLY_STAGE_FRAC = 1.35;   // the staging point sits (weapon range × this) short of the contact — clearly OUTSIDE the actual combat standoff line (AIR_STANDOFF_FRAC, ~0.85×range) so a staged jet is holding, not already fighting; scales per-unit by its own range, not a flat px value, so it works the same for every aircraft type
 const AIR_RALLY_WAVE_N = 16;         // enemy headcount this large force-commits the wing immediately — a big wave doesn't wait on a nose count
+// ── 🚁 TRANSPORT HELICOPTER FERRY (tunable) — the fully-automatic pickup/carry/drop cycle run by any d.rotor unit
+//    that also carries d.ferry:true (see helilift + the branch inside d.rotor in updUnits). Kept deliberately
+//    conservative: a slow trickle of redeployed rear units, not a mass airlift. Per tenet #1, if this ever needs
+//    toning down the fix is a scarier enemy or a real cost (upkeep, fuel range), never a hard cap on what it can carry.
+const FERRY_SCAN_INTERVAL = 1.2;     // seconds between candidate re-scans while a heli has nothing claimed — throttled (NOT every frame) since a scan walks all of G.units once; this is far cheaper than the idle-ground-advance scan every unit already runs every frame elsewhere in this file
+const FERRY_REAR_MIN_DIST = 700;     // px: a ground unit must be at least this far OUTSIDE the enemy formation's bounding box to read as "rear" / ferry-worthy — anything closer is already near enough to just walk
+const FERRY_CLAIM_RADIUS = 3200;     // px: a heli only claims candidates within this of ITSELF — keeps one heli from streaking clear across the map for a single straggler; the next-nearest rear unit gets it instead
+const FERRY_PICKUP_RADIUS = 60;      // px: how close the heli must hover-close to trigger LOAD (on approach) or DROP (on delivery)
+const FERRY_DROP_STANDOFF = 260;     // px: cargo is set down this far from the nearest enemy contact, on the side it was picked up from — close enough to matter, short of dropping it on the enemy itself
+const FERRY_HOVER_LIFT = 70;         // px above the ground the heli hovers while ferrying (matches the CAS heli's low hover band)
+const FERRY_MAX_CARGO_HP = 500;      // def (base) HP at/above this is too big to ferry — excludes superweapons (Colossus 900, Titan 1300); ordinary infantry/armor are all well under this
+function ferryRelease(t, x) {   // shared LANDING logic for both a normal delivery and an emergency drop (heli destroyed mid-flight, see ferryEmergencyDrop) — always resets the passenger to valid, finite, DRY ground coordinates with every ferry flag cleared and transient AI state reset so it resumes normally
+  const amph = t.d.amph || t.d.amphibious;
+  let dx = Math.max(20, Math.min(WORLD_W - 20, x));
+  if (!amph && isWater(dx)) { const land = findLand(dx); if (land != null) dx = land; }   // never set a non-amphibious unit down in open water
+  t.x = dx; t.y = (amph ? landY(dx) : groundY(dx)) - t.d.s;
+  t.carried = false; t.carrierHeli = null; t.ferryClaim = null;
+  t.vx = 0; t.vy = 0; t.drownT = 0; t.entr = 0; t.fort = 0;   // clear stale entrenchment/drown-timer state left over from before pickup so it re-acquires the fight cleanly
+}
+function ferryEmergencyDrop(u) {   // ROBUSTNESS — called from EVERY unit-death path (destroyUnit/drownUnitQuiet) so a ferry heli killed mid-carry can never leak/strand its passenger: the cargo is unconditionally restored to valid ground with full state intact, and any outstanding pickup CLAIM is released so the target isn't locked out forever
+  if (u.cargo) { ferryRelease(u.cargo, u.x); floatText(u.x, u.y - (u.d ? u.d.s : 4) - 6, '⚠ CARGO DROPPED', '#ff8a6a'); u.cargo = null; }
+  if (u.ferryTgt) { if (u.ferryTgt.ferryClaim === u) u.ferryTgt.ferryClaim = null; u.ferryTgt = null; }
+}
 function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox, ami) {
   if (weapon === 'none') return;
   if (weapon === 'beam') { if (Math.random() < .3) blip(900, .1, 'sine', .1); } else if (weapon === 'particle') { if (Math.random() < .7) blip(1200, .14, 'sine', .22); } else if (weapon === 'amslug') { if (Math.random() < .5) blip(560, .09, 'sawtooth', .11); }
@@ -3269,7 +3302,7 @@ function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to 
 }
 function beamHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'beam'; const fade = Math.max(.5, 1 - Math.max(0, (TROPO_Y() - t.y) / TROPO_Y()) * .5); hurt(t, dmg * fade); } }   // a laser loses bite the higher it has to reach
 function particleHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) { if (fr && t.reentry) continue; if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'particle'; t.killX = x1; t.killY = y1; hurt(t, dmg); spark(t.x, t.y, 3); } } }   // PARTICLE CANNON — true hitscan: resolves instantly along the beam, punches through EVERYTHING on the line (no falloff at altitude — that's the whole point of it), no flight time to whiff a fast mover
-function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
+function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail && !u.carried) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
 function near(x, y, list, range) { let b = null, bd = range * range; for (const t of list) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }
 function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
 function hurt(t, dmg, ix, iy) {
@@ -3401,7 +3434,7 @@ function doSkyfall(it) {   // a GIANT mass-drop right after the opening bombardm
 function defenseScoreAt(x, r) {
   r = r || 480; let s = 0;
   for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; if (Math.abs(b.x - x) > r) continue; s += (b.d.cat === 'DEF' || b.d.pd) ? 2.2 : .4; }
-  for (const u of G.units) { if (u.d.builder || u.onRail) continue; if (Math.abs(u.x - x) > r) continue; s += u.d.pd ? 1.8 : 1; }
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - x) > r) continue; s += u.d.pd ? 1.8 : 1; }
   return s;
 }
 // LANDING-ZONE INTELLIGENCE — the fleet scouts several candidate stretches (near your cities + a few open
@@ -3663,7 +3696,7 @@ function updateGame(dt) {
   if (G.fires.length) for (let i = G.fires.length - 1; i >= 0; i--) {
     const f = G.fires[i]; f.life -= dt; const gy = groundY(f.x);
     for (const e of G.enemies) if (Math.abs(e.x - f.x) < f.r && e.y > gy - 40) { e.killBy = 'bomb'; e.hp -= 50 * dt; }
-    for (const u of G.units) { if (u.d.builder || u.onRail) continue; if (Math.abs(u.x - f.x) < f.r && u.y > gy - 50) u.hp -= 30 * dt; }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - f.x) < f.r && u.y > gy - 50) u.hp -= 30 * dt; }
     if (Math.random() < .9) { const fx = f.x + (Math.random() - .5) * f.r * 2; G.parts.push({ k: 'fire', x: fx, y: groundY(fx), vx: (Math.random() - .5) * 8, vy: -28 - Math.random() * 34, r: 3 + Math.random() * 4, life: .4 + Math.random() * .6 }); }
     if (f.life <= 0) G.fires.splice(i, 1);
   }
@@ -3671,7 +3704,7 @@ function updateGame(dt) {
   if (G.beams.length) for (let i = G.beams.length - 1; i >= 0; i--) {
     const bm = G.beams[i]; bm.life -= dt;
     if (bm.hostile) {   // the Annihilator's glassing column — eats YOUR forces, buildings & cities
-      for (const u of G.units) { if (u.d.builder || u.onRail) continue; if (Math.abs(u.x - bm.x) < bm.r) { u.killBy = 'beam'; u.hp -= 200 * dt; } }
+      for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - bm.x) < bm.r) { u.killBy = 'beam'; u.hp -= 200 * dt; } }
       for (const b of G.buildings) if (!b.ug && Math.abs(b.x - bm.x) < bm.r * .8) b.hp -= 170 * dt;
       for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - bm.x) < bm.r) damageDistrict(ct, dst, 230 * dt); }
       G.stab = Math.max(0, G.stab - 4 * dt);
@@ -3797,7 +3830,7 @@ function updateGame(dt) {
   }
   updUnits(dt); updBuildings(dt); updEnemies(dt); updProj(dt); updParts(dt);
   // deaths
-  for (const u of G.units) if (u.hp <= 0) { if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
+  for (const u of G.units) if (u.hp <= 0) { if (u.carried && u.carrierHeli && u.carrierHeli.cargo === u) u.carrierHeli.cargo = null; if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // BUGFIX SAFETY NET: carried units are excluded from every damage path (see u.carried guards below), so this should be unreachable for a passenger — but if it's ever hit anyway, clear the carrier's dangling cargo pointer first so the heli doesn't spend the rest of the game trying to deliver a corpse. a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
   filterInPlace(G.units, u => u.hp > 0);   // PERF: in-place compaction, see filterInPlace() — was `G.units = G.units.filter(...)`
   for (const e of G.enemies) if (e.hp <= 0 && !e.deployed) destroyEnemy(e);   // e.deployed is legacy (nothing currently sets it — the Shield Generator now dies like any other structure, full blast + kill credit); kept so a future "consumed quietly" enemy type can opt in
   filterInPlace(G.enemies, e => e.hp > 0);   // PERF: in-place compaction, see filterInPlace()
@@ -3812,14 +3845,14 @@ function updateGame(dt) {
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
   for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
-    for (const u of G.units) { if (u.d.builder || u.onRail) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; u.hp -= u.maxHp * .45; } }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; u.hp -= u.maxHp * .45; } }
     for (const b of G.buildings) { if (b.ug) continue; if (Math.abs(b.x - ct.x) < half) b.hp -= b.maxHp * .35; }
   }
   // GROUND CAPTURE — enemy ground forces standing in a city take it over; your ground units retake it
   for (const ct of G.cities) { if (ct.hp <= 0) { if (ct.held) setCityCaptured(ct, false); ct.held = false; continue; } const half = ct.w * .5 + 40;
     let eg = 0, fg = 0;
     for (const e of G.enemies) if (e.ground && !e.reentry && Math.abs(e.x - ct.x) < half) eg++;
-    for (const u of G.units) if (u.d.domain === 'ground' && !u.d.builder && !u.onRail && Math.abs(u.x - ct.x) < half) fg++;
+    for (const u of G.units) if (u.d.domain === 'ground' && !u.d.builder && !u.onRail && !u.carried && Math.abs(u.x - ct.x) < half) fg++;
     if (eg > 0 && fg === 0) ct.capture = Math.min(100, ct.capture + (8 + eg * 3) * dt);
     else if (fg > 0 && eg === 0) ct.capture = Math.max(0, ct.capture - 16 * dt);
     if (!ct.held && ct.capture >= 100) { ct.held = true; SFX.boom(); setCityCaptured(ct, true); toast('⚠ ' + (ct._cityName || 'CITY') + ' OCCUPIED — stability bleeds while they hold it, and they\'ve SEIZED your factories. Retake it with ground troops'); }
@@ -3954,6 +3987,7 @@ function shrapnel(x, y, n, dmg) { for (let i = 0; i < n; i++) { const a = Math.r
 // a hiss of steam/bubbles off the sea surface, no blast, no shrapnel, no crater, no screen shake. Mirrors the
 // flooded-BUILDING path (see the death-cleanup loop in updateGame) — going under water is a sink, not an explosion.
 function drownUnitQuiet(u) {
+  ferryEmergencyDrop(u);   // ROBUSTNESS — a heli can never actually reach this path (drowning only ever fires in the ground-domain branch of updUnits) but this guard is a free no-op for every non-carrying unit, so it costs nothing to be safe here too
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
   const gy = seaLevelY(u.x), w = (u.d && u.d.w) || (u.d ? u.d.s * 2.4 : 8);
   for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: u.x + (Math.random() - .5) * w, y: gy - Math.random() * 3, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 9, r: 1.6 + Math.random() * 2, life: .6 + Math.random() * .5 });   // rising steam
@@ -3961,6 +3995,7 @@ function drownUnitQuiet(u) {
   noise(.16, .18);
 }
 function destroyUnit(u) {
+  ferryEmergencyDrop(u);   // ROBUSTNESS — if THIS unit is a transport heli that dies while carrying a passenger (or mid-approach to one), rescue/release it BEFORE any of the wreck effects below run; a no-op for every unit that isn't a ferry heli
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
   const d = u.d, big = d.s >= 5 || d.hp >= 250, power = Math.min(30, d.s * 2.4 + (big ? 12 : 0));
   const frac = (u._lastHit || 0) / (u.maxHp || d.hp || 1);
@@ -4197,7 +4232,7 @@ function orbitalBarrage(x) { G.proj.push({ k: 'krod', orb: true, interceptable: 
 // BOMBARDER'S ORBITAL PLASMA CANNON — snipes a single player GROUND unit from orbit. GROUND-ONLY by design (never
 // targets air) — a deliberate anti-armor/anti-artillery pressure so turtling ground forces under the bombarder isn't safe.
 function bombarderGroundSnipe(e) {
-  const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.d.domain !== 'ground') continue; grd.push(u); }
+  const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; grd.push(u); }
   if (!grd.length) return;
   const t = grd[Math.floor(Math.random() * grd.length)];
   const dmg = Math.round((55 + (G.invTime || 0) * .35) * G.diff);
@@ -4262,7 +4297,7 @@ function areaDamage(x, y, r, dmg, kb) {
   const core = r * .42;   // anything inside the inner core takes FULL damage — direct hits are lethal — then linear falloff to the edge
   const fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
   for (const e of G.enemies) { const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } }
-  for (const u of G.units) { if (u.d.builder || u.onRail) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
   for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .55 * fall(dd); }
   shallowUgHit(x, r * .8, dmg * .5);   // the blast caves in shallow tunnels under the crater
 }
@@ -4271,7 +4306,7 @@ function splashDamage(x, y, r, dmg, friendly, kb) {
   const core = r * .45, fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
   if (friendly) { for (const e of G.enemies) { if (e.reentry) continue; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } } }
   else {
-    for (const u of G.units) { if (u.d.builder || u.onRail) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
+    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; u.hp -= d2; } }
     for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); }
     for (const ct of G.cities) { if (ct.hp <= 0) continue; for (const dst of ct.districts) { if (dst.dead) continue; const ddx = ct.x + dst.dx; const dd = (ddx - x) ** 2 + (groundY(ddx) - y) ** 2; if (dd < r * r) { const e2 = dmg * .4 * fall(dd); damageDistrict(ct, dst, e2); G.stab = Math.max(0, G.stab - .012 * e2); } } }
   }
@@ -4405,7 +4440,7 @@ function updUnits(dt) {
   // array-index parity to an x-position comparison (same simplification the existing enemy separation below
   // already uses) — that only picks which pixel a coincident overlap nudges apart on, no effect on HP/damage/outcomes.
   { const SEP_BS = 150, sepBuckets = new Map();
-    for (const u of G.units) { if (u.onRail) continue; const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
+    for (const u of G.units) { if (u.onRail || u.carried) continue; const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
     const sepU = (u, o) => { if (o.d.domain !== u.d.domain) return; const sep = (u.d.s + o.d.s) * 2.4 * (u.d.domain === 'air' ? AIR_SEP_MUL : 1) + 10, s2 = sep * sep;
       let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy; if (dd >= s2) return; if (dd < .01) { dx = (u.x > o.x ? 1 : -1) * .5 || .5; dy = 0; dd = .25; }   // perfectly stacked → nudge apart deterministically
       const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt, ux2 = u.x + dx * inv * f, ox2 = o.x - dx * inv * f;
@@ -4416,6 +4451,7 @@ function updUnits(dt) {
       for (let i = 0; i < arr.length; i++) { const u = arr[i]; for (let j = i + 1; j < arr.length; j++) sepU(u, arr[j]); for (let j = 0; j < nxt.length; j++) sepU(u, nxt[j]); } } }
   for (const u of G.units) {
     if (u.d.builder) continue;
+    if (u.carried) continue;   // 🚁 FERRY PASSENGER — aboard a transport heli: no AI, no movement, no combat, not drawn. Fully restored (position + all state) the instant it's delivered or its heli is destroyed (ferryRelease/ferryEmergencyDrop)
     if (u.mutiny) continue;   // CAPITULATION CRISIS — mutinied troops go inert: no targeting, no movement, no self-repair, until the crisis resolves and they stand back down
     if (u.maxShield && u.shield < u.maxShield) u.shield = Math.min(u.maxShield, u.shield + 8 * dt);   // energy shields recharge
     if (u.hp < u.maxHp) { let h = auraHeal(u.x); if (G.allRegen) h = Math.max(h, u.maxHp * .045); if (u.d.regen) h = Math.max(h, u.maxHp * .03); if (h) { if (u.squad) healSquad(u, h * dt); else u.hp = Math.min(u.maxHp, u.hp + h * dt); } }   // Nanite Foundry repair aura + shapeshifter self-regen + self-repairing hulls (Nanoforge Carrier)
@@ -4464,7 +4500,71 @@ function updUnits(dt) {
         if (u.fuel <= 0) { u.fuel = 0; if (!u.rtb) { u.rtb = true; floatText(u.x, u.y - d.s - 4, '⛽ BINGO FUEL — RTB', '#ffd23f'); } }
       }
       if ((u.maxAmmo || u.maxFuel) && (u.rtb || u.docked)) { rearmAircraft(u, d, spd, dt); continue; }   // out of ordnance and/or fuel → land at a friendly carrier/airbase, rearm/refuel, relaunch
-      if (d.rotor) {   // 🚁 HELICOPTER CAS — DISTINCT from the fixed-wing weave below: hug the deck, cruise to the fight, then HOVER/LOITER over the target sustaining fire, drifting WITH it (no fast strafing passes). Firing is handled by the shared block below via the range-limited tgt.
+      if (d.rotor) {
+        if (d.ferry) {   // 🚁 TRANSPORT HELICOPTER — FULLY AUTOMATIC troop ferry, zero player micromanagement (the air version of the Rail Hub).
+          // STATE MACHINE (all state lives on the unit itself — nothing global): SEEK (no ferryTgt, no cargo) → every
+          // FERRY_SCAN_INTERVAL, scan for the nearest unclaimed idle REAR ground unit and CLAIM it (t.ferryClaim = this
+          // heli — the ONE guard against double-pickup; every heli's scan skips anything already claimed) → PICKUP
+          // (ferryTgt set) → close on it, and within FERRY_PICKUP_RADIUS LOAD it: t.carried = true, which is the single
+          // flag that excludes it from every combat/targeting/movement/render pass in the game (see the u.carried guards
+          // in the main unit loop above, friendliesList(), areaDamage/splashDamage, city-fall/earthquake/fire damage,
+          // defenseScoreAt, the retreat-ally count, fire control, and the render loop) → DELIVER (cargo set) → fly
+          // toward the front and set the passenger down FERRY_DROP_STANDOFF short of the nearest enemy contact, on
+          // valid DRY ground (never open water unless amphibious — findLand), then clear every ferry flag and loop back
+          // to SEEK. ROBUSTNESS: if THIS heli dies at any point in the cycle, destroyUnit()/drownUnitQuiet() call
+          // ferryEmergencyDrop() FIRST (see the tunables block) — a carried passenger is unconditionally restored to
+          // valid ground with full state intact, and an outstanding pickup CLAIM is released, so nothing is ever lost
+          // or permanently locked out. NEVER FREEZES / NaNs: every branch below always resolves to a finite destX/destY.
+          u.wob = (u.wob || Math.random() * 6.28) + dt * 3.4;
+          if (u.ferryTgt) { const t = u.ferryTgt; if (t.hp <= 0 || t.carried || t.onRail || t.mutiny || t.d.domain !== 'ground') { if (t.ferryClaim === u) t.ferryClaim = null; u.ferryTgt = null; } }   // claimed candidate went invalid (died / got picked up some other way / dove into a rail tunnel) — release the claim so it's never stuck unpickable
+          u.ferryScanCd = (u.ferryScanCd == null ? Math.random() * FERRY_SCAN_INTERVAL : u.ferryScanCd) - dt;
+          if (!u.cargo && !u.ferryTgt && u.ferryScanCd <= 0) {
+            u.ferryScanCd = FERRY_SCAN_INTERVAL + Math.random() * .5;
+            if (G.enemies.length) {   // no live front at all → nothing to ferry toward yet
+              let feMinX = 1e9, feMaxX = -1e9;
+              for (const e of G.enemies) { if (e.reentry) continue; if (e.x < feMinX) feMinX = e.x; if (e.x > feMaxX) feMaxX = e.x; }
+              if (feMaxX >= feMinX) {   // cheap O(enemies)+O(units) "how far behind the fighting" proxy — distance OUTSIDE the enemy formation's bounding box — instead of an O(units×enemies) nearest-enemy scan per candidate
+                let best = null, bd = 1e9;
+                for (const c of G.units) {
+                  if (c === u || c.carried || c.ferryClaim || c.onRail || c.mutiny || c.garr || (c.hp || 0) <= 0) continue;
+                  const cd2 = c.d; if (cd2.domain !== 'ground' || cd2.builder || cd2.capital || cd2.hp >= FERRY_MAX_CARGO_HP) continue;   // ordinary infantry/armor only — no capital-class hulls, no superweapons, no other helis
+                  const distToFront = c.x < feMinX ? feMinX - c.x : c.x > feMaxX ? c.x - feMaxX : 0;
+                  if (distToFront < FERRY_REAR_MIN_DIST) continue;   // already close enough to the fight — let it walk, don't bother
+                  const hd = Math.abs(c.x - u.x); if (hd > FERRY_CLAIM_RADIUS || hd >= bd) continue;   // nearest-to-THIS-heli wins, bounded so it won't streak cross-map for one straggler
+                  bd = hd; best = c;
+                }
+                if (best) { best.ferryClaim = u; u.ferryTgt = best; }   // CLAIM — synchronous, so no other heli's scan (earlier or later this same frame) can also grab it
+              }
+            }
+          }
+          let destX, destY;
+          if (u.cargo) {   // DELIVER — fly the passenger toward the front and set it down short of the nearest contact
+            const t = u.cargo;
+            let nearE = null, ed = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < ed) { ed = dd; nearE = e; } }
+            let dropX = nearE ? nearE.x + (Math.sign((u.cargoFromX != null ? u.cargoFromX : u.x) - nearE.x) || 1) * FERRY_DROP_STANDOFF : u.x;   // stand off toward the side the passenger CAME from — never overshoots onto the enemy's own side; no enemies left anywhere → nothing left to deliver to, just set down here
+            dropX = Math.max(20, Math.min(WORLD_W - 20, dropX));
+            const amphC = t.d.amph || t.d.amphibious;
+            if (!amphC && isWater(dropX)) { const land = findLand(dropX); if (land != null) dropX = land; }   // never drop a non-amphibious unit into open water
+            destX = dropX; destY = (amphC ? landY(dropX) : groundY(dropX)) - FERRY_HOVER_LIFT;
+            if (Math.hypot(destX - u.x, destY - u.y) < FERRY_PICKUP_RADIUS) { ferryRelease(t, destX); u.cargo = null; floatText(u.x, u.y - d.s - 6, '🚁 DEPLOYED', '#6dffb0'); }
+          } else if (u.ferryTgt) {   // PICKUP — close on the claimed candidate and load it aboard
+            const t = u.ferryTgt, tAmph = t.d.amph || t.d.amphibious;
+            destX = t.x; destY = (tAmph ? landY(t.x) : groundY(t.x)) - FERRY_HOVER_LIFT;
+            if (Math.hypot(destX - u.x, destY - u.y) < FERRY_PICKUP_RADIUS) {
+              t.carried = true; t.carrierHeli = u; t.ferryClaim = null; t.vx = 0; t.vy = 0;
+              u.cargo = t; u.cargoFromX = t.x; u.ferryTgt = null;
+              floatText(u.x, u.y - d.s - 6, '🚁 LOADED', '#7dd6ff');
+            }
+          } else { destX = u.x + Math.sin(u.wob * .4) * 40; destY = null; }   // SEEK / nothing claimed yet — a gentle loiter (same idle-drift feel as every other rotorcraft), never freezes
+          if (destY == null) destY = landY(u.x) - FERRY_HOVER_LIFT + Math.sin(u.wob) * 6; else destY += Math.sin(u.wob) * 4;   // rotor bob
+          u.vx += ((destX - u.x) * 3 - u.vx * 2) * dt; u.vy += (destY - u.y) * 3.6 * dt;
+          const vmaxF = spd; u.vx = Math.max(-vmaxF, Math.min(vmaxF, u.vx)); u.vx *= .84; u.vy *= .82;
+          u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x));
+          u.y = Math.max(airTopY() + 6, Math.min(landY(u.x) - 14, u.y));
+          u.facing = u.vx >= 0 ? 1 : -1;
+          continue;   // ferry helicopters never fight — skip the shared targeting/fire block below entirely
+        }
+        // 🚁 HELICOPTER CAS — DISTINCT from the fixed-wing weave below: hug the deck, cruise to the fight, then HOVER/LOITER over the target sustaining fire, drifting WITH it (no fast strafing passes). Firing is handled by the shared block below via the range-limited tgt.
         u.wob = (u.wob || Math.random() * 6.28) + dt * 3.4;   // fast rotor bob
         let hcur = tgt;   // in-range target the shared block will fire on
         if (!hcur) {   // no in-range foe → CRUISE toward the nearest CAS-valid (ground/low, non-reentry) target so helis actually deploy to the fight, the way ground units advance — the tropo ceilF + CAS filter keep them off high enemies
@@ -4610,7 +4710,7 @@ function updUnits(dt) {
           u.retreatCd = .4 + Math.random() * .3;
           u.retreating = false;
           if (!leashed && anyE && ad < RETREAT_ENEMY_DIST && (u.hp / (u.maxHp || 1)) < RETREAT_HP_FRAC) {
-            let allies = 0; for (const o of G.units) { if (o === u || o.d.domain !== 'ground' || o.onRail) continue; if (Math.abs(o.x - u.x) < RETREAT_ALLY_RADIUS) { allies++; if (allies >= RETREAT_ALLY_MIN) break; } }
+            let allies = 0; for (const o of G.units) { if (o === u || o.d.domain !== 'ground' || o.onRail || o.carried) continue; if (Math.abs(o.x - u.x) < RETREAT_ALLY_RADIUS) { allies++; if (allies >= RETREAT_ALLY_MIN) break; } }
             u.retreating = allies < RETREAT_ALLY_MIN;
           }
         }
@@ -4932,7 +5032,7 @@ function updEnemies(dt) {
     }
     if (e.quake) {   // EARTHBREAKER PRESS — periodic seismic shock: screen shake, stability hit, damages nearby ground forces & buildings
       e.qCd = (e.qCd == null ? 3 : e.qCd) - dt; if (e.qCd <= 0) { e.qCd = 4 + Math.random() * 3; shake(13); G.stab = Math.max(0, G.stab - 3); SFX.boom(); floatText(e.x, e.y - e.s - 4, '⚡ EARTHQUAKE', '#9cc4ff');
-        for (const u of G.units) { if (u.d.builder || u.onRail || u.d.domain !== 'ground') continue; if (Math.abs(u.x - e.x) < 280) u.hp -= 20; }
+        for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; if (Math.abs(u.x - e.x) < 280) u.hp -= 20; }
         for (const b of G.buildings) { if (Math.abs(b.x - e.x) >= 320) continue; b.hp -= b.ug ? Math.max(55, b.maxHp * .5) : 16; if (b.ug) { spark(b.x, groundY(b.x) + UG_DEPTH * (b.ugLvl || 1), 4); floatText(b.x, groundY(b.x) - 14, '⚠ TUNNEL COLLAPSE', '#ff8a6a'); } }   // earthquakes RAPIDLY cave in buried structures (seismic shock travels straight into the tunnels)
         for (let i = 0; i < 12; i++) groundBurst(e.x + (Math.random() - .5) * 520, 2);
       }
@@ -5263,7 +5363,8 @@ function renderGame() {
   // squad to a single cheap cluster glyph instead of N fully-detailed bodies — see drawSquadUnit/drawSquadCluster.
   let liveSquadN = 0; for (const su of G.units) if (su.squad && su.hp > 0) liveSquadN++;
   const squadLOD = liveSquadN > SQUAD_LOD_N || (cam.z || 1) < SQUAD_LOD_ZOOM;
-  for (const u of G.units) { const px = sx(u.x); if (px < -30 || px > W + 30 || u.y < VY0 || u.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
+  for (const u of G.units) { if (u.carried) continue;   // 🚁 aboard a transport heli — not drawn on the ground at all (see the u.carried guard in updUnits)
+    const px = sx(u.x); if (px < -30 || px > W + 30 || u.y < VY0 || u.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
     if (u.squad) { drawSquadUnit(u, px, squadLOD); continue; }   // SQUAD — several bodies at their own formation offsets (or one cluster glyph under LOD); see drawSquadUnit
     if (d.domain === 'ground' && (u.entr || 0) > .25) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building)
     if (d.domain === 'ground' || d.domain === 'naval') { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow
@@ -5336,7 +5437,7 @@ function renderGame() {
       c.strokeStyle = 'rgba(' + col + ',.30)'; c.beginPath(); c.arc(px, gy, rr, 0, 6.28); c.stroke();
     }
     let fcDrawn = 0;
-    for (const u of G.units) { if (fcDrawn >= FC_UNIT_RING_CAP) break; if (u.d.builder || u.onRail || !u.d.weapon) continue;
+    for (const u of G.units) { if (fcDrawn >= FC_UNIT_RING_CAP) break; if (u.d.builder || u.onRail || u.carried || !u.d.weapon) continue;
       const px = sx(u.x); if (px < -40 || px > W + 40) continue; if (u.y < VY0 - 40 || u.y > VY1 + 40) continue;   // draw only on-screen armed units, capped, so 9000-unit scale stays bounded
       const rr = u.d.range * (u.d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range);
       const cf = u.d.domain === 'ground' ? (u.d.ceil != null ? u.d.ceil : .80) : u.d.domain === 'air' ? (u.d.ceil != null ? u.d.ceil : .56) : 0;

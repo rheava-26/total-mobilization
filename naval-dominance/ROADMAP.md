@@ -34,6 +34,16 @@ Maintained by: Claude (auto-appends any new idea the dev raises). Last updated: 
 - Modern-warship model hunt: Kenney's 3D catalog has no modern military (checked the full
   mirror — pirate kit only); ToxSam's index has no committed files (external links, blocked).
   Scout continues; procedural hulls remain the modern baseline until real ones are found.
+- **Hunt verdict (final for now):** two deep scouts + tree inspections of every lead
+  (full Kenney mirror, ToxSam index, nanos-world-quaternius, Quaternius' Pages repo) found
+  **zero committed free-licensed modern-military 3D models** on reachable GitHub. The niche
+  lives on itch.io/Sketchfab/quaternius.com (zip downloads — blocked from this sandbox).
+- **The 5-minute path when the dev wants real modern hulls:** on your own machine, download
+  any CC0 pack (e.g. Quaternius "Animated Tanks" / WW2 packs at quaternius.com, or any CC0
+  warship glb from Sketchfab/itch), commit the `.glb` files into `naval-dominance/models/`
+  in this repo, and say the word — the proven pipeline (decompress if needed → base64 embed →
+  `fleet-real.js` → vendored GLTFLoader, with our turrets on top) takes them from there.
+  Add each file's source+license to `ASSETS.md`.
 
 ### 2026-08-17 (later — the parallel fleet batch)
 - **Synth-generated sounds APPROVED** (dev reversed the earlier packs-only rule): "fuck it, we

@@ -288,6 +288,11 @@
   #debugConsole .dbgRow.err { color: #ff8a8a; } #debugConsole .dbgRow.warn { color: var(--stab); }
   #debugConsole .dbgRow .dt { color: #5c7290; margin-right: 8px; }
   #debugConsole .dbgEmpty { color: #5c7290; }
+  /* touch-reachable debug console affordance — always-present dim chip, no keyboard needed; flares red when logErr fires */
+  #dbgFab { position: fixed; left: 8px; bottom: 8px; z-index: 41; width: 34px; height: 34px; border-radius: 50%; background: rgba(10,16,30,.55); border: 1px solid rgba(150,190,240,.25); color: #9fb6d4; font-size: 16px; line-height: 32px; text-align: center; opacity: .35; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+  #dbgFab:active { opacity: .85; }
+  #dbgFab.err { opacity: 1; background: rgba(60,10,10,.9); border-color: #ff8a8a; color: #ffd8d8; animation: dbgFabPulse 1s ease-in-out infinite; }
+  @keyframes dbgFabPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,90,90,.55); } 50% { box-shadow: 0 0 0 9px rgba(255,90,90,0); } }
   .helpsec { border-left: 2px solid var(--term); padding: 2px 0 8px 12px; margin-bottom: 12px; }
   .helpsec h3 { font-size: 12.5px; letter-spacing: 2px; color: #eaf2ff; margin: 0 0 3px; }
   .helpsec p { font-size: 12px; line-height: 1.55; color: #b8c6da; margin: 0; }
@@ -371,11 +376,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.80.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.81.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.81.0 — SEAMLESS ZOOM-OUT + A CRASH LOG YOU CAN OPEN ON YOUR PHONE</b><br><b>🌌 No more dark blob at the edges when you zoom all the way out.</b> The empty space around the world at full zoom-out used to show a corner-darkening gradient that read as a weird dark spot; now it's seamless deep space, edge to edge, at any zoom. <b>🐞 The engine's error log is now reachable on touch.</b> There's a small dim bug chip in the bottom-left corner — tap it any time to open the debug console. If the game ever hits an engine error it flares red, and the alert now tells you to tap it (instead of a keyboard shortcut phones don't have). If you get that random kick-to-menu again, tap the 🐞, and screenshot me whatever's in red — that's the actual error, and it's what I need to fix the real cause.</p>
     <p><b>v3.80.0 — COMBAT FEEL: EXPLOSIONS THAT SURVIVE THE BARRAGE</b><br><b>💥 Your explosions no longer get cut short in a heavy fight.</b> Under a sustained barrage the game was quietly deleting the OLDEST effects to make room for new ones — which meant the fire and embers of a big blast got erased a split-second after it went off, right when you were watching it. Now the effects budget PROTECTS the expensive explosion particles (fire, embers, shockwave rings, molten metal, debris) and sheds the cheap cosmetic smoke/sparks first instead. Watch a long bombardment and the blasts play out in full. <b>🎯 Aegis Battery no longer machine-guns.</b> It was firing ~10 interceptors a second — a flak hose, not the "one smart guided round per target" it's meant to be. Slowed to a measured cadence; since each interceptor is now a one-shot kill, it still shreds an incoming salvo, it just looks like the precision weapon it is. <b>🚀 Missile trails die with the motor.</b> When a missile burns out and coasts, its exhaust streak now visibly dissipates instead of dragging on — the fuel-burnout you can already see on the flame now reads on the smoke too.</p>
     <p><b>v3.79.0 — CRITICAL FIX: THE INVASION IS BACK (+ the full 48-stat dossier)</b><br><b>🚨 Fixed a bug that stopped the invasion from happening at all.</b> A stray comment introduced in the last update silently ate the fleet-and-wave setup, so the autofleet arrived with zero ships and no attacks ever spawned. Repaired — the invasion lands in full force again. <b>📊 And the after-action dossier is now complete</b>, tracking the full set of categories: damage dealt vs taken, ordnance intercepted, your biggest kill-burst, forces by domain (ground/air/naval/space), capitals built, resources captured, cities lost/held/retaken, minimum stability, peak income, dangerous doctrines, final society, and more — spread across the tabbed pages, in the downloadable report too.</p>
     <p><b>v3.78.0 — THE AFTER-ACTION DOSSIER</b><br><b>📖 The end-of-game report is now a multi-page dossier you can page through, download and share.</b> A tab bar splits it into <b>OVERVIEW</b> (summary + graphs), <b>ECONOMY</b> (everything earned, spent, peaked, and produced), <b>MILITARY</b> (forces fielded vs lost, by domain, capitals, peak army), <b>COMBAT</b> (kills by enemy type, boss superweapons, strikes), <b>RESEARCH &amp; CONSTRUCTION</b> (your doctrine timeline + everything you built), and <b>WORLD</b>. The World page shows two automatic snapshots of your planet — <b>the fortress you built right before re-entry</b> and <b>the aftermath</b> when it was over — alongside the combat heatmap. New <b>⬇ DOWNLOAD REPORT</b> button saves the whole thing as a self-contained web page, and <b>⤴ SHARE</b> posts your result. (More stat categories still to come — tell me which numbers you want.)</p>
@@ -651,7 +657,8 @@
 <div id="resPopup"></div>
 <div id="strikePanel" class="cmdpanel"></div>
 <div id="alliesPanel" class="cmdpanel"></div>
-<div id="debugConsole"><div class="dbgHead"><b>⚙ DEBUG CONSOLE</b><span>Shift+Alt+D toggles · engine errors are captured here</span><span class="dbgx first" id="dbgCopy">COPY</span><span class="dbgx" id="dbgClear">CLEAR</span><span class="dbgx" id="dbgClose">✕</span></div><div class="dbgBody" id="dbgBody"></div></div>
+<div id="debugConsole"><div class="dbgHead"><b>⚙ DEBUG CONSOLE</b><span>Shift+Alt+D, or the 🐞 chip (bottom-left), toggles · engine errors are captured here</span><span class="dbgx first" id="dbgCopy">COPY</span><span class="dbgx" id="dbgClear">CLEAR</span><span class="dbgx" id="dbgClose">✕</span></div><div class="dbgBody" id="dbgBody"></div></div>
+<div id="dbgFab" title="debug console">🐞</div>
 
 <script>
 /* =====================================================================
@@ -6717,17 +6724,19 @@ function dbgToggle(on) { DBG.open = on === undefined ? !DBG.open : on; const el 
 (function () {   // mirror console + uncaught errors into the in-game console
   const wrap = (name, level) => { const orig = console[name] ? console[name].bind(console) : function () {}; console[name] = function (...a) { try { dbgLog(a.map(x => x instanceof Error ? (x.stack || x.message) : typeof x === 'object' ? JSON.stringify(x) : x).join(' '), level); } catch (e) {} orig(...a); }; };
   wrap('error', 'err'); wrap('warn', 'warn'); wrap('log', 'log');
-  addEventListener('error', e => dbgLog((e.message || 'error') + (e.filename ? ' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno : ''), 'err'));
+  addEventListener('error', e => dbgLog((e.error && e.error.stack) || ((e.message || 'error') + (e.filename ? ' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno : '')), 'err'));
   addEventListener('unhandledrejection', e => dbgLog('Unhandled promise: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason), 'err'));
 })();
 addEventListener('keydown', e => { if (e.shiftKey && e.altKey && (e.code === 'KeyD' || (e.key || '').toLowerCase() === 'd')) { e.preventDefault(); dbgToggle(); } });
 document.getElementById('dbgClose').addEventListener('click', () => dbgToggle(false));
 document.getElementById('dbgClear').addEventListener('click', () => { DBG.lines = []; dbgRender(); });
 document.getElementById('dbgCopy').addEventListener('click', () => { const txt = DBG.lines.map(l => l.t + ' [' + l.level + '] ' + l.msg).join('\n'); try { navigator.clipboard.writeText(txt); toast('debug log copied'); } catch (e) { toast('copy failed — select & copy manually'); } });
+/* touch-reachable console entry point — the 🐞 chip works with no keyboard: tap any time to open, tap flares off once opened after an error */
+document.getElementById('dbgFab').addEventListener('click', () => { dbgToggle(true); document.getElementById('dbgFab').classList.remove('err'); });
 
 let last = performance.now(), animClock = 0, errShown = false;
 let hudAcc = 999;   // PERF: syncHUD (+ the refreshSel it calls) throttle accumulator — see the frame() call site. Starts high so the very first frame always paints the HUD.
-function logErr(e) { console.error('[TM]', (e && (e.stack || e.message)) || e); if (!errShown) { errShown = true; toast('ENGINE ERROR — press Shift+Alt+D for the console'); } }
+function logErr(e) { console.error('[TM]', (e && (e.stack || e.message)) || e); const fab = document.getElementById('dbgFab'); if (fab) fab.classList.add('err'); if (!errShown) { errShown = true; toast('ENGINE ERROR — tap 🐞 (bottom-left) for the console'); } }
 // VIGNETTE — a quiet darkening of the frame edges that pulls the eye to the action (cached per canvas size; screen-fixed)
 // Fixed 2026-08-15: the old version used a CIRCULAR gradient sized off Math.min(W,H), so on a wide
 // landscape screen the "safe" transparent zone only covered the short (vertical) dimension — the
@@ -6769,6 +6778,8 @@ function frame(now) {
   try {
     c.clearRect(0, 0, W, H);
     const bgg = c.createRadialGradient(W * .5, H * .42, 0, W * .5, H * .42, Math.max(W, H) * .75); bgg.addColorStop(0, '#0a1430'); bgg.addColorStop(.5, '#060a1c'); bgg.addColorStop(1, '#02030a'); c.fillStyle = bgg; c.fillRect(0, 0, W, H);
+    /* in-game only: flat deep-space fill matching the sky's own top color, painted UNDER the zoom-scaled world. At cz===1 drawWorld fully covers this so it's invisible; at cz<1 (zoomed out) the margins outside the scaled world now read as seamless space instead of the radial bg's corner-darkening blob. Title screen (mode!=='game') keeps the untouched radial behind the Earth. */
+    if (mode === 'game') { c.fillStyle = (soc.sky ? soc.sky[0] : '#01030c'); c.fillRect(0, 0, W, H); }
     if (mode !== 'game') { updateStars(dt); drawStars(1); }
     if (!reducedMotion) { earth.rot += dt * .06; earth.cloudRot += dt * .045; }
     if (mode === 'title') { const tx = mouse.active ? earth.homeX + (mouse.x - earth.homeX) * .06 : earth.homeX, ty = mouse.active ? earth.homeY + (mouse.y - earth.homeY) * .06 : earth.homeY; earth.x += (tx - earth.x) * Math.min(1, dt * 4); earth.y += (ty - earth.y) * Math.min(1, dt * 4); drawEarth(1, 1); }

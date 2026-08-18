@@ -3131,6 +3131,13 @@ const SQUAD_BODY_SEP_K = 110; // repulsion strength applied when two bodies are 
 const SQUAD_VEL_MAX = 60;     // px/s cap on a body's drift velocity — keeps the spring numerically stable under a big dt spike (tab-out, lag)
 const SQUAD_HITBOX_R = 2.4;   // px — nominal per-body hitbox radius, exposed for any future body-vs-body/AoE distance check
 const SQUAD_JITTER_AMP = 1.6; // px — per-body wobble amplitude added on top of the formation slot (see stepSquadBodies) so bodies shuffle instead of holding a perfectly rigid rosette
+// v3.68: how much of a GROUND body's vertical formation offset (m.cy — the wedge stagger + jitter above) actually
+// moves its DRAW position. m.cy stays 100% live everywhere else (aim origin, hitSquadMember's nearest-body pick)
+// — only drawSquadUnit's per-body translate/shadow dial it back — because at full strength m.cy (±5-6px for a
+// 17px-spread fireteam) stacked on the ground seat read as bodies floating above / sunk into the terrain at
+// mismatched heights, not soldiers standing together (this is what made a squad look like "a dark block" instead
+// of a fireteam). Kept > 0, not zeroed, so the formation still visibly breathes/wedges instead of going rigid-flat.
+const SQUAD_DRAW_CY_FRAC = 0.15;
 // spring pull toward the formation slot + short-range separation from squad-mates, then integrate cx/cy. cfg carries
 // the per-squad-type "lerp" tuning (inf/cdrone/fighter already had distinct snap feels) — scaled onto the shared
 // spring constant so a fighter's escort still reforms tighter/faster than an infantry fireteam, same as before.
@@ -3240,8 +3247,10 @@ function spawnSquad(key, d, x) {
 // 0; vehicle tracks/wheels dip only ~0.05-0.1×s below it) — NOT centered at -s like the -d.s lift assumes — so
 // the model was floating d.s above ground. This fraction nudges ONLY the draw (translate + its attached HUD
 // chrome: HP/ammo/fuel bars, selection box, shield ring, muzzle flash) back down to close that gap; u.y itself
-// is never touched. Kept just under 1.0 so wheels/treads settle onto the ground without ever dipping below it.
-const GROUND_SEAT_FRAC = 0.92;
+// is never touched. v3.68: was 0.92, leaving every ground unit visibly hovering ~0.08×s above the terrain (the
+// "magic flying infantry" report) — a vehicle's own tracks/wheels already dip 0.05-0.1×s BELOW local y=0 (see
+// above), so seating at the full 1.0 still never lifts a wheel clear of the ground; it settles it flush.
+const GROUND_SEAT_FRAC = 1.0;
 function spawnUnit(key, x) {
   if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x);
   const d = effDef(key); let y, wx0 = 0, wx1 = 0;
@@ -5904,8 +5913,8 @@ function renderGame() {
     const px = sx(u.x); if (px < -30 || px > W + 30 || u.y < VY0 || u.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
     if (u.squad) { drawSquadUnit(u, px, squadLOD); continue; }   // SQUAD — several bodies at their own formation offsets (or one cluster glyph under LOD); see drawSquadUnit
     if (d.domain === 'ground' && (u.entr || 0) > .25) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building)
-    if (d.domain === 'ground' || d.domain === 'naval') { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow
     const gdy = d.domain === 'ground' ? u.y + d.s * GROUND_SEAT_FRAC : u.y;   // draw-only ground seat (see GROUND_SEAT_FRAC above) — u.y itself is unchanged
+    if (d.domain === 'ground' || d.domain === 'naval') { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, d.domain === 'ground' ? gdy : u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow — GROUND shares the sprite's own seated anchor (gdy) so the shadow never floats above/below the feet it belongs to; naval keeps its own hull-relative offset (a boat's shadow sits below the WATERLINE, not d.s away from a lifted y)
     c.save(); c.translate(px, gdy); if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } c.restore(); if (u.shield > 0) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } }
   // enemies
   for (const e of G.enemies) { const px = sx(e.x); if (px < -30 || px > W + 30 || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
@@ -6011,8 +6020,16 @@ function drawSquadUnit(u, px, lod) {
   const gdy0 = ground ? u.y + d.s * GROUND_SEAT_FRAC : u.y;   // draw-only ground seat for the formation's aggregate bars/selection box (see GROUND_SEAT_FRAC) — u.y itself is unchanged
   for (const m of u.members) {
     if (!m.alive) continue;
-    const s = m.bodyS || INF_BODY_S, mpx = px + m.cx, my = u.y + (m.cy || 0), myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position; my stays the unseated anchor for the ground shadow below
-    if (ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, my + s * .9, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // per-body ground contact shadow — already sits at true ground, unaffected by the seat fix
+    const s = m.bodyS || INF_BODY_S, mpx = px + m.cx;
+    // GROUND squads: m.cy is a real per-body vertical offset (spawnSquad's wedge stagger + stepSquadBodies'
+    // jitter) that stays fully live for game logic — aim origin, hitSquadMember's nearest-body pick — but drawn
+    // at full strength it stacked several world-units of up/down scatter on TOP of the ground seat, so a
+    // fireteam read as bodies floating above and sinking below the terrain at mismatched heights instead of
+    // soldiers standing together (see SQUAD_DRAW_CY_FRAC). Only the DRAW position dials it back; air squads
+    // (drone swarms, fighter+wingmen flights) never touch ground so their stagger is a real flight formation —
+    // draw it at full strength, same as before.
+    const my = ground ? u.y + (m.cy || 0) * SQUAD_DRAW_CY_FRAC : u.y + (m.cy || 0), myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position; my is its unseated anchor, shared by the per-body shadow below
+    if (ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, myD, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // per-body ground contact shadow — shares the body's own seated anchor (myD), so it never floats above/below the feet it belongs to
     c.save(); c.translate(mpx, myD);
     const facing = m.facing || u.facing || 1; c.scale(facing, 1);
     const art = m.art || d.art;
@@ -6032,8 +6049,8 @@ function drawSquadUnit(u, px, lod) {
 // stops paying for N fully-detailed bodies once there are dozens of squads on the field at once.
 function drawSquadCluster(u, px, d, ground) {
   const alive = u.members.filter(m => m.alive), n = alive.length; if (!n) return;
-  const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position (see GROUND_SEAT_FRAC); my stays the unseated anchor for the ground shadow below
-  if (ground) { c.save(); c.globalAlpha = .26; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, my + s * 1.05, s * 2.3, s * .55, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // already sits at true ground, unaffected by the seat fix
+  const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position (see GROUND_SEAT_FRAC); my stays the unseated anchor
+  if (ground) { c.save(); c.globalAlpha = .26; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, myD, s * 2.3, s * .55, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // shares the representative body's own seated anchor (myD), same as the single-unit/per-member shadows above
   c.save(); c.translate(px, myD); const facing = u.facing || 1; c.scale(facing, 1);
   ART[d.art](c, s * 1.08, ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0);   // one representative body stands in for the whole formation
   c.restore();

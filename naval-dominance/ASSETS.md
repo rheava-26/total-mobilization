@@ -5,6 +5,11 @@ release is clean. **Nothing enters the game without an entry here.**
 
 ## 3D models (embedded as base64 .glb inside `fleet-real.js`)
 
+> **STATUS (2026-08-17): PARKED, not in the active roster.** These are age-of-sail hulls and
+> clashed with the game's industrial/modern identity, so they're exported as `sailUnits`
+> (unmerged) — reserved for a possible age-of-sail scenario. Licensing below remains accurate
+> since the bytes still ship inside `fleet-real.js`.
+
 | In-game unit | Source model | Creator | License | Obtained via |
 |---|---|---|---|---|
 | Galleon of the Line (`galleon`) | `ship-dark` | **Kenney** (kenney.nl) | **CC0 1.0** | `pmndrs/market-assets` mirror (`files/models/ship-dark`, info.json creator:"kenney") |

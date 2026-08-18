@@ -41,7 +41,10 @@ function shipModel(key, sink){ return (H) => (d) => {
   return H.finishShip(g, d);
 }; }
 export function makeFleet(H){
-  const units = {
+  // ERA NOTE: these are age-of-sail hulls — benched from the active industrial-era roster
+  // (dev call, 2026-08-17). Exported as `sailUnits` (NOT merged by default); models stay
+  // registered so a future age-of-sail scenario can re-enable them by merging sailUnits.
+  const sailUnits = {
     galleon:  { name:'Galleon of the Line', cls:'GALLEON', model:'r_galleon', domain:'sea',
       len:36, beam:9, mass:1400, hp:420,
       turrets:[ {w:'mainGun', pos:[0,5.2,9],  barrel:4.6}, {w:'mainGun', pos:[0,6.4,-8], barrel:4.6}, {w:'aaGun', pos:[0,7.4,0], barrel:2.2, scale:0.9} ] },
@@ -63,5 +66,5 @@ export function makeFleet(H){
     r_longboat: shipModel('boat-large', 0.4), r_skiff: shipModel('boat-small', 0.3), r_cannon: shipModel('cannon', -0.1),
   };
   const models = {}; for (const k in mk) models[k] = mk[k](H);
-  return { units, models };
+  return { units: {}, sailUnits, models };   // sailUnits deliberately not in the default merge
 }

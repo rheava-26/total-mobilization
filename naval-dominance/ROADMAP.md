@@ -24,6 +24,17 @@ Maintained by: Claude (auto-appends any new idea the dev raises). Last updated: 
   glb hunting continues — age-of-sail arrived first.
 - Lore note: the mirror's `sub` model is a submarine *sandwich*. Briefly enlisted; discharged.
 
+### 2026-08-17 (correction — era consistency)
+- **Sail ships BENCHED from active play** (dev call: "why sailing vessels in a very much
+  industrial-age game?" — correct; they were ported because they were *available*, not because
+  they *fit*). The models stay embedded as `fleet-real.js` → exported `sailUnits` (not merged);
+  a future **age-of-sail scenario** can re-enable them by merging `sailUnits` into UNIT_DEFS.
+- Standing rule going forward: **new content must match the industrial/modern identity** unless
+  it's explicitly a scenario-scoped era.
+- Modern-warship model hunt: Kenney's 3D catalog has no modern military (checked the full
+  mirror — pirate kit only); ToxSam's index has no committed files (external links, blocked).
+  Scout continues; procedural hulls remain the modern baseline until real ones are found.
+
 ### 2026-08-17 (later — the parallel fleet batch)
 - **Synth-generated sounds APPROVED** (dev reversed the earlier packs-only rule): "fuck it, we
   can have synth generated sounds." `sfx.js` is now a layered procedural WebAudio bank.

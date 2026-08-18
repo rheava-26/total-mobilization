@@ -359,10 +359,10 @@ function buildEnemyWaves(strength){
   // tiered pools spanning the FULL merged roster (fleet-heavy/light modules load at boot).
   // pickRoster() filters to defs that actually loaded, so the game still works if a module fails.
   const TIERS=[
-    ['scoutheli','ptboat','seaplane','gunboat','longboat','skiff2'],    // t0 light
+    ['scoutheli','ptboat','seaplane','gunboat'],                        // t0 light
     ['gunship','seahawk','missileboat','missilecorvette','minesweeper'],// t1 medium
     ['cobra','patrolbomber','lcs','perry','submarine','fletcher'],      // t2 heavy
-    ['gearing','atlanta','ticonderoga','iowa','essex','galleon','brig'],// t3 capital
+    ['gearing','atlanta','ticonderoga','iowa','essex'],                 // t3 capital
   ];
   const pool=t=>{ const p=TIERS[clamp(t,0,3)].filter(k=>UNIT_DEFS[k]); return p.length?p:TIERS[0].filter(k=>UNIT_DEFS[k]); };
   const nWaves=clamp(2+Math.floor(s/4),2,4);

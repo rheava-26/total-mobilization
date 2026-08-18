@@ -3344,7 +3344,29 @@ function missileFireGate(u, weapon, tgt) {
   if (!tgt.boss && !tgt.dives && !tgt.ground && (u._mslCount || 0) >= MISSILE_LOWVAL_CAP) return false;   // a cheap/low-value contact only ever gets a couple of this unit's missiles
   return true;
 }
-function acquireIncoming(x, y, range, ceilFrac) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = r2, bAny = null, bdAny = r2; for (const p of G.proj) { if (!(p.interceptable || p.pdable) || p.life <= 0) continue; if (p.y < ceil) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = p; } if (d < bd && claimOf(p) < (p.hp || 1)) { bd = d; b = p; } } return b || bAny; }   // point-defence: falling orbital lances, incoming enemy missiles/rockets/bombs, AND orbital bunker-busters — acquires within RANGE+CEILING same as acquireEnemy (a low-reach gun can't snipe a penetrator still high in orbit), spreads interceptors across multiple threats. ceilFrac optional for legacy callers that pass none (keeps old unlimited-height behavior).
+// GENERAL POINT-DEFENSE TARGET PICKER (CIWS/Aegis/microrockets/any pd-flagged emplacement, plus city self-defense) — falling
+// orbital lances, incoming enemy missiles/rockets/bombs, AND orbital bunker-busters, within RANGE+CEILING same as acquireEnemy
+// (a low-reach gun can't snipe a penetrator still high in orbit). Mirrors acquireAmiTarget's threat ranking: real ordnance —
+// tungsten RODS ('krod') & bunker-BUSTERS ('buster') — ALWAYS wins the shot over a lesser incoming, and DECOY missiles are
+// DEPRIORITIZED to dead last (bait — see the decoy spawn comment at spawnBuster) so the net's fire concentrates on what
+// actually kills you instead of getting soaked by chaff. Unlike the dedicated AMI (which holds fire on nothing worthwhile),
+// general PD never idles: with nothing better in reach it'll still mop up a decoy, or take a leftover shot at an
+// already-well-claimed target, rather than let a barrel sit unused.
+function acquireIncoming(x, y, range, ceilFrac) {
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range;
+  let big = null, bigD = r2, other = null, otherD = r2, decoy = null, decoyD = r2;   // under-claimed picks, ranked
+  let bigAny = null, bigAnyD = r2, otherAny = null, otherAnyD = r2, decoyAny = null, decoyAnyD = r2;   // last-resort picks (ignore claim), same ranking
+  for (const p of G.proj) {
+    if (!(p.interceptable || p.pdable) || p.life <= 0) continue;
+    if (p.y < ceil) continue;
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d > r2) continue;
+    const under = claimOf(p) < (p.hp || 1);
+    if (p.k === 'krod' || p.k === 'buster') { if (d < bigAnyD) { bigAnyD = d; bigAny = p; } if (under && d < bigD) { bigD = d; big = p; } }
+    else if (p.k === 'decoy') { if (d < decoyAnyD) { decoyAnyD = d; decoyAny = p; } if (under && d < decoyD) { decoyD = d; decoy = p; } }
+    else { if (d < otherAnyD) { otherAnyD = d; otherAny = p; } if (under && d < otherD) { otherD = d; other = p; } }
+  }
+  return big || other || decoy || bigAny || otherAny || decoyAny;   // real rods/busters first, then genuine other incoming, decoys only as a last resort; never idle if anything's in reach
+}
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
 function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
@@ -4712,16 +4734,23 @@ function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & 
 function orbitalBarrage(x) { G.proj.push({ k: 'krod', orb: true, interceptable: true, hp: Math.round(16 * G.diff), s: 4, strat: true, x, y: -320, vx: 0, vy: 560, tx: x, ty: groundY(x), life: 9, friendly: false, tr: [] }); }
 // BOMBARDER'S ORBITAL PLASMA CANNON — snipes a single player GROUND unit from orbit. GROUND-ONLY by design (never
 // targets air) — a deliberate anti-armor/anti-artillery pressure so turtling ground forces under the bombarder isn't safe.
+// FIX: this used to be a pure hitscan — a beam FX + an unavoidable hurt() applied the same frame, with nothing the player
+// could actually shoot at. It's a PHYSICAL round now: a real falling plasma bolt with travel time, flagged interceptable
+// the same way krod/buster are, so the general PD net (acquireIncoming) and the dedicated AMI (acquireAmiTarget) can both
+// engage it in flight. Damage, cadence and target selection are unchanged — only "can the player shoot it down" changed.
 function bombarderGroundSnipe(e) {
   const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; grd.push(u); }
   if (!grd.length) return;
   const t = grd[Math.floor(Math.random() * grd.length)];
   const dmg = Math.round((55 + (G.invTime || 0) * .35) * G.diff);
-  G.proj.push({ k: 'beam', x1: t.x, y1: -60, x2: t.x, y2: t.y, life: .26, friendly: false, dmg: 0 });   // purely visual — the hit itself is applied directly below so it can never land on an air unit
-  G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 18, life: .22 });
-  boom(t.x, t.y, 7); shake(5);
-  hurt(t, dmg);
-  floatText(t.x, t.y - (t.s || t.d.s || 12) - 8, '☄ ORBITAL PLASMA SNIPE', '#ff8a5a');
+  const sxx = t.x + (Math.random() - .5) * 10;
+  G.proj.push({ k: 'plasmasnipe', interceptable: true, hp: Math.round(9 * G.diff), s: 3.2, strat: true, x: sxx, y: -260, vx: 0, vy: 620, tx: t.x, ty: t.y, dmg, life: 4, friendly: false, tr: [] });   // orbital altitude start + capped fall speed mirrors krod's descent (see updProj) — several real seconds of engagement window before impact, same as any other orbital ordnance
+  floatText(t.x, t.y - (t.s || t.d.s || 12) - 8, '☄ ORBITAL PLASMA SNIPE INBOUND', '#ff8a5a');
+}
+function detonatePlasmaSnipe(x, y, dmg) {   // impact of a plasma snipe round that WASN'T intercepted — a tight, precise hit (a sniper round, not an area weapon)
+  G.parts.push({ k: 'flash', x, y, r: 18, life: .22 });
+  boom(x, y, 7); shake(5);
+  areaDamage(x, y, 20, dmg, 'plasma');   // narrow radius — still one-shots what it was aimed at, doesn't splash a whole formation
 }
 // BUNKER-BUSTER TARGET PRIORITY — the autofleet ranks your structures by how much killing them hurts you: air power first, then your economy of war, then anything fragile-and-catastrophic, then the defences shielding a landing, then general infrastructure.
 function busterScore(b) { const d = b.d, k = b.key; if (k === 'airbase' || k === 'aeroworks' || k === 'ugairwing') return 100; if (d.fallout || k === 'amextractor') return 92; if (k === 'extractor' || k === 'deepore') return 84; if (d.strat || k === 'uranenrich' || k === 'droidfoundry' || k === 'genefac' || k === 'cloningfac' || k === 'spacestation' || k === 'spacecenter' || k === 'massrail') return 72; if (d.cat === 'DEF') return 52; if (k === 'radar' || k === 'powerplant' || k === 'ammodepot' || k === 'munition' || k === 'factory' || k === 'shipyard' || k === 'housing') return 26; return 12; }
@@ -4742,7 +4771,7 @@ function playerAirDefenseScore() {
 function decapBusterBudget() { return Math.round(Math.min(20, 10 + playerAirDefenseScore() * .4)); }
 function busterTarget() { let best = null, bs = 8; for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; let s = busterScore(b); if (s <= 0) continue; if (b.d.cat === 'DEF' && G.lastLZ != null && Math.abs(b.x - G.lastLZ) < 320) s += 46; if (b.ug) s -= 14; s -= busterClaims(b) * 26; s += Math.random() * 7; if (s > bs) { bs = s; best = b; } } return best; }
 function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
-  for (let d = 0; d < 8; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a screen of DECOY missiles falls with each penetrator — DURABLE flares (a few hits, not one) that soak your interceptors so the real round gets through to impact; hard to pick the real buster out of the screen on a single shot. Mirrors the buster's slow-start orbital descent so the screen reads consistently
+  for (let d = 0; d < 3; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a MINIMAL screen of DECOY missiles falls with each penetrator (was 8 — a full flare wall let decoys soak the whole interceptor net and let real busters through unchallenged; PD now also ranks rods/busters over decoys — see acquireIncoming/acquireAmiTarget — so a thin screen is enough to matter without smothering the defense) — DURABLE flares (a few hits, not one) that still cost a shot if engaged. Mirrors the buster's slow-start orbital descent so the screen reads consistently
   G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: -440, vx: 0, vy: 8 + Math.random() * 6, ay: 62, vyCap: 420, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [] });   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — mirrors the enemy re-entry profile (near-stationary start, gradual accel, capped terminal speed, see updProj) instead of slamming down in ~1.5s, so a layered defense grid gets several real seconds of engagement window before it lands
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
 function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOINT: one plane-sized round guts its SINGLE designated target with a small, sharp blast (incl. shallow-buried bunkers) — a sniper round, not an area nuke
@@ -5609,6 +5638,12 @@ function updProj(dt) {
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
       continue;
     }
+    if (p.k === 'plasmasnipe') {   // ORBITAL PLASMA SNIPE — a physical falling bolt now (was hitscan); straight vertical drop onto the ground unit it locked, capped fall speed, shot-downable in flight like any other orbital ordnance
+      if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 8); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .15 }); spark(p.x, p.y, 4); p.life = 0; continue; }
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; }
+      continue;
+    }
     if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — launched from orbit: starts nearly stationary and gradually accelerates (mirrors enemy re-entry, see updEnemies), jinks + spams flares to shake interceptors; a real several-second engagement window before it lands
       if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
       p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1850);   // gradual accel to a capped terminal speed — orbit→ground now takes several seconds, not ~1.5s
@@ -6136,6 +6171,7 @@ function renderProj(p, px) {
     c.restore();
   }
   else if (p.k === 'krod') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .6; c.strokeStyle = '#cfeaff'; c.lineWidth = 1 + a2 * 3; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i].x), p.tr[i].y + 10); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.fillStyle = '#fff'; c.shadowColor = '#bfe9ff'; c.shadowBlur = 14; c.fillRect(-2, -16, 4, 22); c.shadowBlur = 0; c.restore(); }
+  else if (p.k === 'plasmasnipe') { for (let i = 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .55; c.strokeStyle = '#ff5ad0'; c.lineWidth = 1 + a2 * 3; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i].x), p.tr[i].y + 9); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.fillStyle = '#ffc4f2'; c.shadowColor = '#ff5ad0'; c.shadowBlur = 15; c.beginPath(); c.arc(0, 0, p.s * .9, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // a real bolt of orbital plasma falling — bright magenta core + trail so it reads distinctly from a kinetic rod, and is obviously a physical thing PD can hit
   else if (p.k === 'buster') { for (let i = 1; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .5; c.strokeStyle = '#ffd9a0'; c.lineWidth = 1 + a2 * 3.5; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i - 1].x), p.tr[i - 1].y); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const L = p.s * 5.4, Wd = p.s * .5; c.fillStyle = '#20242a'; c.beginPath(); c.moveTo(L, 0); c.lineTo(L * .5, -Wd); c.lineTo(-L * .6, -Wd); c.lineTo(-L * .72, 0); c.lineTo(-L * .6, Wd); c.lineTo(L * .5, Wd); c.closePath(); c.fill(); c.strokeStyle = '#ff2626'; c.lineWidth = 1.2; c.shadowColor = '#ff2626'; c.shadowBlur = 4; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#15181c'; c.beginPath(); c.moveTo(-L * .55, -Wd); c.lineTo(-L * .84, -Wd * 2.1); c.lineTo(-L * .48, -Wd * .3); c.closePath(); c.moveTo(-L * .55, Wd); c.lineTo(-L * .84, Wd * 2.1); c.lineTo(-L * .48, Wd * .3); c.closePath(); c.fill(); c.fillStyle = '#3a4048'; c.fillRect(-L * .05, -Wd, L * .16, Wd * 2); c.fillStyle = '#ffcaa0'; c.shadowColor = '#ff7a30'; c.shadowBlur = 13; c.beginPath(); c.arc(L * .8, 0, Wd * .82, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // heat-shielded bunker-buster: finned heavy body, glowing re-entry nose, amber contrail
   else if (p.k === 'decoy') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.globalAlpha = .85; c.strokeStyle = '#ffcaa0'; c.lineWidth = 1.5; c.shadowColor = '#ff7a30'; c.shadowBlur = 6; c.beginPath(); c.moveTo(-p.s * 1.7, 0); c.lineTo(p.s * 1.2, 0); c.stroke(); c.fillStyle = '#ffe0b0'; c.beginPath(); c.arc(p.s * 1.1, 0, p.s * .34, 0, 6.28); c.fill(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // decoy — a thin, fainter flare-missile than the real penetrator
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
@@ -6271,6 +6307,7 @@ function drawMinimap() {
     if (p.k === 'buster') { col = '#ff2020'; sz = 2.8; }
     else if (p.k === 'decoy') { col = 'rgba(255,140,70,.6)'; sz = 1.5; }
     else if (p.k === 'krod') { col = '#ffffff'; sz = 2.2; }
+    else if (p.k === 'plasmasnipe') { col = '#ff5ad0'; sz = 2.2; }
     else if (p.k === 'nuke' || p.k === 'fbomb' || p.k === 'mirv' || p.k === 'stratmis' || p.k === 'micromis') { col = '#ff8a3a'; sz = 2.2; }
     if (!col) continue;
     c.fillStyle = col; c.fillRect(mx(p.x) - sz * .5, altY(p.y) - sz * .5, sz, sz);

@@ -6069,7 +6069,7 @@ function drawSquadUnit(u, px, lod) {
     // soldiers standing together (see SQUAD_DRAW_CY_FRAC). Only the DRAW position dials it back; air squads
     // (drone swarms, fighter+wingmen flights) never touch ground so their stagger is a real flight formation —
     // draw it at full strength, same as before.
-    const my = ground ? u.y + (m.cy || 0) * SQUAD_DRAW_CY_FRAC : u.y + (m.cy || 0), myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position; my is its unseated anchor, shared by the per-body shadow below
+    const my = ground ? u.y + (m.cy || 0) * SQUAD_DRAW_CY_FRAC : u.y + (m.cy || 0), myD = ground ? my + d.s * GROUND_SEAT_FRAC : my;   // myD = seated draw position (seated with the UNIT's d.s, matching gdy0/the single-unit path — NOT the per-body draw scale s/bodyS, which would under-seat bodies whose bodyS < d.s); my is its unseated anchor, shared by the per-body shadow below
     if (ground) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(mpx, myD, s * 1.8, s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // per-body ground contact shadow — shares the body's own seated anchor (myD), so it never floats above/below the feet it belongs to
     c.save(); c.translate(mpx, myD);
     const facing = m.facing || u.facing || 1; c.scale(facing, 1);
@@ -6092,7 +6092,7 @@ function drawSquadUnit(u, px, lod) {
 // shadows + N aim recomputes + N healthbars, so SQUAD_LOD_N still protects framerate on a big standing army.
 function drawSquadCluster(u, px, d, ground) {
   const alive = u.members.filter(m => m.alive), n = alive.length; if (!n) return;
-  const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position (see GROUND_SEAT_FRAC); my stays the unseated anchor
+  const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + d.s * GROUND_SEAT_FRAC : my;   // myD = seated draw position, seated with the UNIT's d.s (matching gdy0/the single-unit path), NOT the cluster's small draw-scale s (see GROUND_SEAT_FRAC); my stays the unseated anchor
   const pipN = Math.min(n, 3);   // up to 3 compact bodies stand in for the whole formation — draws a little GROUP, not a lone soldier
   const OFF_X = [[0], [-.8, .8], [-1.6, 0, 1.6]][pipN - 1];   // tight horizontal spread (× s) so the bodies overlap into a cluster
   const OFF_Y = [[0], [-2, 1.5], [-2, 1, -1.5]][pipN - 1];    // a couple px of per-body vertical jitter so they don't look stamped from one mold

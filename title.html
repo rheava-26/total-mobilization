@@ -632,7 +632,7 @@
     <div class="aar-tab" data-pg="world">WORLD</div>
   </div>
   <div id="endScroll">
-    <div class="aar-page sel" data-pg="overview"><div id="endStats"></div><div id="endCharts"></div></div>
+    <div class="aar-page sel" data-pg="overview"><div id="endStats"></div><div id="endMeta"></div><div id="endCharts"></div></div>
     <div class="aar-page" data-pg="economy" id="pgEconomy"></div>
     <div class="aar-page" data-pg="military" id="pgMilitary"></div>
     <div class="aar-page" data-pg="combat" id="pgCombat"></div>
@@ -2875,12 +2875,19 @@ function newGame(diff) {
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
     // AFTER-ACTION "every stat ever" TRACKING — additive, bounded (heat grid fixed-size; the others are naturally bounded by content), read only by the end screen
-    stats: { built: {}, recruited: {}, researched: [], strikes: {}, killsByType: {}, lostByType: {}, spentIC: 0, spentMP: 0, spentInf: 0, earnedIC: 0, earnedMP: 0, earnedInf: 0, peakIC: 0, peakMP: 0, peakInf: 0, upkeepPaid: 0, peakUpkeep: 0, antimatterMade: 0, componentsMade: { alloy: 0, rocketpart: 0 }, bossKills: 0, peakArmy: 0, heat: new Array(HEAT_COLS * HEAT_ROWS).fill(0), snap: {} },
+    stats: { built: {}, recruited: {}, researched: [], strikes: {}, killsByType: {}, lostByType: {}, spentIC: 0, spentMP: 0, spentInf: 0, earnedIC: 0, earnedMP: 0, earnedInf: 0, peakIC: 0, peakMP: 0, peakInf: 0, upkeepPaid: 0, peakUpkeep: 0, antimatterMade: 0, componentsMade: { alloy: 0, rocketpart: 0 }, bossKills: 0, peakArmy: 0, heat: new Array(HEAT_COLS * HEAT_ROWS).fill(0), snap: {},
+      // v3.79 EXPANDED DOSSIER — the rest of the ~48-field target set. Same rules: additive, read-only by the end screen, never fed back into gameplay.
+      peakIncomeIC: 0, resourcesCaptured: { steel: 0, oil: 0, rare: 0, uranium: 0 },   // ECONOMY
+      totalRecruited: 0, byDomain: { ground: 0, air: 0, naval: 0, space: 0 }, capitalsBuilt: 0, totalLost: 0, peakArmyCap: 0,   // MILITARY
+      damageDealt: 0, damageTaken: 0, ordnanceIntercepted: 0, biggestKillBurst: 0, totalKills: 0, peakEnemies: 0,   // COMBAT
+      buildingsLost: 0, citiesLost: 0, citiesCaptured: 0, citiesRetaken: 0, minStability: 100, fleetStartMax: 0,   // DEFENSE / SURVIVAL
+      dangerousResearched: 0, society: null, eraReached: 0, intent: '', difficulty: '', prepDuration: 0 },        // RESEARCH / META (intent/difficulty/prepDuration filled in just below, once G exists)
 
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
       couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game)
   };
+  G.stats.intent = intent; G.stats.difficulty = G.diffName; G.stats.prepDuration = G.prepTimer;   // AFTER-ACTION — campaign setup, recorded once at the start (prepTimer counts down from here, so grab it now while it's still the full duration)
   if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
@@ -3130,7 +3137,7 @@ function nearestIdleConstructor(x) { let best = null, bd = 1e9; for (const u of 
 function finishSite(site) {
   const b = mkBuilding(site.key, site.x); b.done = true; b.ug = site.ug; b.ugLvl = site.ugLvl || (site.ug ? 1 : 0); if (b.ug) b.y = groundY(b.x) + UG_DEPTH * b.ugLvl; G.buildings.push(b);
   if (G.stats) G.stats.built[site.key] = (G.stats.built[site.key] || 0) + 1;   // AFTER-ACTION — a player-ordered construction just completed (pre-placed capital/city seed buildings bypass sites entirely, so this counts what was actually BUILT during play)
-  if (site.d.onNode) { const n = nodeNear(site.x); if (n) { n.used = true; G.owned[n.type] = (G.owned[n.type] || 0) + 1; b.srtype = n.type; toast('CLAIMED ' + SR[n.type].name.toUpperCase()); } }
+  if (site.d.onNode) { const n = nodeNear(site.x); if (n) { n.used = true; G.owned[n.type] = (G.owned[n.type] || 0) + 1; b.srtype = n.type; toast('CLAIMED ' + SR[n.type].name.toUpperCase()); if (G.stats && G.stats.resourcesCaptured[n.type] != null) G.stats.resourcesCaptured[n.type]++; } }   // AFTER-ACTION — special-resource deposits claimed, by type
   if (site.d.garrison) { const g = site.d.garrison, keys = g.keys || (g.unit ? [g.unit] : [g.key]), gw = g.weight || 1; if (UNIT_DEFS[keys[0]]) { let room = garrisonCap() - garrisonUsed(); for (let i = 0; i < g.n && room >= gw; i++) { spawnGarrison(keys[i % keys.length], site.x + (Math.random() - .5) * site.d.w * 1.6, b, gw); room -= gw; } } }   // a combined-arms garrison forms around it, capped by the GLOBAL GARRISON weight budget — any slots that don't fit yet are picked up later by the tick fill loop as the budget grows
   recalcBuildings();   // a new special building may change global modifiers
   if (b.d.strat && !G.hintStrike) { G.hintStrike = true; const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('attn'); toast('☢ ' + b.d.name.toUpperCase() + ' READY — press ☢ STRIKE (top bar) to call one down'); }   // playtest: nobody found the STRIKE button — point at it the moment it becomes useful
@@ -3315,6 +3322,7 @@ function spawnSquad(key, d, x) {
 const GROUND_SEAT_FRAC = 1.0;
 function spawnUnit(key, x) {
   if (G.stats) G.stats.recruited[key] = (G.stats.recruited[key] || 0) + 1;   // AFTER-ACTION — every FRIENDLY unit fielded (spawnUnit is only ever called for the player's own forces; enemies go through spawnEnemy)
+  if (G.stats) { const sd = effDef(key); G.stats.totalRecruited++; if (sd && G.stats.byDomain[sd.domain] != null) G.stats.byDomain[sd.domain]++; if (sd && sd.capital) G.stats.capitalsBuilt++; }   // AFTER-ACTION — total fielded, by domain, and capital-class hulls (Sky Dock ships etc — draw no hangar slot)
   if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x);
   const d = effDef(key); let y, wx0 = 0, wx1 = 0;
   if (d.domain === 'ground') y = groundY(x) - d.s;
@@ -3634,7 +3642,7 @@ function finishResearch() {
   markEver('res', key);   // ACHIEVEMENT: cross-round "researched every tech" progress
   if (G.ach) G.ach.researchedAnything = true;   // ACHIEVEMENT: pacifist-win tracking — any completed non-root research disqualifies it
   G.unlocked[key] = true; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf;
-  if (G.stats) G.stats.researched.push({ key, t: G.time });   // AFTER-ACTION RESEARCH TIMELINE — once per completed node, in completion order
+  if (G.stats) { G.stats.researched.push({ key, t: G.time }); if (r.dang) G.stats.dangerousResearched++; }   // AFTER-ACTION RESEARCH TIMELINE — once per completed node, in completion order + a running count of the dangerous ones
   applyEraUpgrades();   // re-arm fielded units if this unlock advanced the age
   if (key === 'plasma') toast('⚡ PLASMA ARMS ONLINE — your ground & air units re-arm with plasma');
   else if (key === 'fusion') toast('⚙ FUSION AGE — combat drones upgrade to heavy "Hornet" missile drones');
@@ -3815,6 +3823,7 @@ function friendliesList() { const a = []; for (const u of G.units) if (!u.d.buil
 function near(x, y, list, range) { let b = null, bd = range * range; for (const t of list) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }
 function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
 function hurt(t, dmg, ix, iy) {
+  if (G.stats && dmg > 0) { if (t.kind) G.stats.damageDealt += dmg; else G.stats.damageTaken += dmg; }   // AFTER-ACTION — every hit attributed by side: enemies carry `.kind`, friendlies (units/city/building wrappers) never do — counts the incoming amount, same as every other hit-driven FX below, not the post-armor/shield remainder
   if (t.kind && !t.boss && !t._b && !t._city) { const dm = enemyDome(t); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min(dmg, room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(t.x, t.y, 1); G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 4, life: .07 }); return; } }   // a deployed beachhead dome soaks the hit for everything under it (bosses excepted) — capped at dm.frameCap dmg/frame so massed fire can't delete it in one tick
   if (t.shield > 0 && (t.kind || t.key)) {   // energy shield (strike-wings, flying superhumans): reflects energy/gun fire; only missiles overload & rip it apart
     if (t.killBy === 'missile' || t.killBy === 'rocket' || t.killBy === 'bomb') { t.shield = 0; floatText(t.x, t.y, 'SHIELD DOWN', '#7fd4ff'); G.parts.push({ k: 'ring', x: t.x, y: t.y, r: 3, max: t.s * 6, life: .3 }); }   // overloaded — this hit's damage carries through below
@@ -4154,7 +4163,13 @@ function sampleHist() {
   h.enemies.push(G.enemies ? G.enemies.length : 0);
   h.fleet.push(Math.max(0, G.fleet || 0));
   if ((G.fleetMax || 0) > h.fleetMax) h.fleetMax = G.fleetMax;
-  if (G.stats) G.stats.peakArmy = Math.max(G.stats.peakArmy, G.units ? G.units.length : 0);   // AFTER-ACTION — highest simultaneous friendly unit count seen
+  if (G.stats) {
+    G.stats.peakArmy = Math.max(G.stats.peakArmy, G.units ? G.units.length : 0);   // AFTER-ACTION — highest simultaneous friendly unit count seen
+    G.stats.peakIncomeIC = Math.max(G.stats.peakIncomeIC, G.icR || 0);             // AFTER-ACTION — highest IC/s income rate seen
+    G.stats.peakArmyCap = Math.max(G.stats.peakArmyCap, typeof armyCap === 'function' ? armyCap() : 0);   // AFTER-ACTION — highest army cap reached (distinct from the FINAL cap shown elsewhere)
+    G.stats.minStability = Math.min(G.stats.minStability, effStab());              // AFTER-ACTION — lowest effective stability ever reached
+    G.stats.peakEnemies = Math.max(G.stats.peakEnemies, G.enemies ? G.enemies.length : 0);   // AFTER-ACTION — highest simultaneous hostile count seen
+  }
 }
 // AFTER-ACTION MAP SNAPSHOTS — grabs the current rendered frame off the main canvas as a JPEG data: URI, stashed under
 // G.stats.snap.{prep,mid,end}. Purely a read of the already-drawn pixel buffer — never touches game state.
@@ -4325,7 +4340,8 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; captureSnap('prep');   // AFTER-ACTION — "THE FORTRESS" snapshot, the instant before re-entry G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; captureSnap('prep');   /* AFTER-ACTION — "THE FORTRESS" snapshot, the instant before re-entry */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
+G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
   else if (G.phase === 'invasion') {
@@ -4369,10 +4385,13 @@ function updateGame(dt) {
   // deaths
   for (const u of G.units) if (u.hp <= 0) { if (u.carried && u.carrierHeli && u.carrierHeli.cargo === u) u.carrierHeli.cargo = null; if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // BUGFIX SAFETY NET: carried units are excluded from every damage path (see u.carried guards below), so this should be unreachable for a passenger — but if it's ever hit anyway, clear the carrier's dangling cargo pointer first so the heli doesn't spend the rest of the game trying to deliver a corpse. a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
   filterInPlace(G.units, u => u.hp > 0);   // PERF: in-place compaction, see filterInPlace() — was `G.units = G.units.filter(...)`
+  G._tickKills = 0;   // AFTER-ACTION — reset the this-tick kill counter destroyEnemy() feeds, then read it back below once the sweep is done
   for (const e of G.enemies) if (e.hp <= 0 && !e.deployed) destroyEnemy(e);   // e.deployed is legacy (nothing currently sets it — the Shield Generator now dies like any other structure, full blast + kill credit); kept so a future "consumed quietly" enemy type can opt in
+  if (G.stats && G._tickKills > 0) G.stats.biggestKillBurst = Math.max(G.stats.biggestKillBurst, G._tickKills);   // AFTER-ACTION — largest number of enemies killed in a single simulation tick
   filterInPlace(G.enemies, e => e.hp > 0);   // PERF: in-place compaction, see filterInPlace()
   for (const b of G.buildings) if (b.hp > 0 && !b.ug && !b.d.needWater && elevAt(b.x) < SEA_E - .04) { b.hp = 0; b.flooded = true; floatText(b.x, groundY(b.x) - 18, 'FLOODED', '#5fd0ff'); }   // a building whose ground genuinely sinks below sea level (margin, so a shallow crater at the waterline doesn't drown it) is drowned — handled as a QUIET sink below, never a blast
   for (const b of G.buildings) if (b.hp <= 0) {
+    if (G.stats) G.stats.buildingsLost++;   // AFTER-ACTION — every structure that hit 0 HP this campaign (housing/flooded/emplacement/blast paths all funnel through here)
     if (b.key === 'housing' && !b.captured) { const housingLossHit = 5 * (G.evt && G.evt.reassured ? EVT1.reassureAmplify : 1); G.stab = Math.max(0, G.stab - housingLossHit); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY. EVENT #1: if you reassured people the bunkers were safe, losing a block for real hits MUCH harder (EVT1.reassureAmplify)
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
@@ -4380,7 +4399,7 @@ function updateGame(dt) {
     if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); } if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
-  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
+  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
     for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; const cd = u.maxHp * .45; if (u.squad) hitSquadMember(u, cd, ct.x, u.y); else u.hp -= cd; } }   // v3.67: squad-aware — a city falling is a fair "eats through several bodies" blast, but still per-body (not an instant whole-formation wipe)
     for (const b of G.buildings) { if (b.ug) continue; if (Math.abs(b.x - ct.x) < half) b.hp -= b.maxHp * .35; }
@@ -4392,8 +4411,8 @@ function updateGame(dt) {
     for (const u of G.units) if (u.d.domain === 'ground' && !u.d.builder && !u.onRail && !u.carried && Math.abs(u.x - ct.x) < half) fg++;
     if (eg > 0 && fg === 0) ct.capture = Math.min(100, ct.capture + (8 + eg * 3) * dt);
     else if (fg > 0 && eg === 0) ct.capture = Math.max(0, ct.capture - 16 * dt);
-    if (!ct.held && ct.capture >= 100) { ct.held = true; SFX.boom(); setCityCaptured(ct, true); toast('⚠ ' + (ct._cityName || 'CITY') + ' OCCUPIED — stability bleeds while they hold it, and they\'ve SEIZED your factories. Retake it with ground troops'); }
-    else if (ct.held && ct.capture <= 0) { ct.held = false; setCityCaptured(ct, false); toast('✅ ' + (ct._cityName || 'CITY') + ' RETAKEN — stability penalty lifted, industry back online'); }
+    if (!ct.held && ct.capture >= 100) { ct.held = true; if (G.stats) G.stats.citiesCaptured++; SFX.boom(); setCityCaptured(ct, true); toast('⚠ ' + (ct._cityName || 'CITY') + ' OCCUPIED — stability bleeds while they hold it, and they\'ve SEIZED your factories. Retake it with ground troops'); }
+    else if (ct.held && ct.capture <= 0) { ct.held = false; if (G.stats) G.stats.citiesRetaken++; setCityCaptured(ct, false); toast('✅ ' + (ct._cityName || 'CITY') + ' RETAKEN — stability penalty lifted, industry back online'); }
   }
   // OCCUPIED cities get FORTIFIED — once they hold a city the autodrones stop shelling it and instead emplace massive immobile SIEGE GUNS inside it that hammer you (retaking means clearing them out)
   for (const ct of G.cities) { if (!ct.held || ct.hp <= 0) continue; ct.holdGunT = (ct.holdGunT == null ? 4 : ct.holdGunT) - dt;
@@ -4582,7 +4601,7 @@ function drownUnitQuiet(u) {
 function destroyUnit(u) {
   ferryEmergencyDrop(u);   // ROBUSTNESS — if THIS unit is a transport heli that dies while carrying a passenger (or mid-approach to one), rescue/release it BEFORE any of the wreck effects below run; a no-op for every unit that isn't a ferry heli
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
-  if (G.stats && !u.builder && !(u.d && u.d.builder)) G.stats.lostByType[u.key] = (G.stats.lostByType[u.key] || 0) + 1;   // AFTER-ACTION — friendly losses by unit type
+  if (G.stats && !u.builder && !(u.d && u.d.builder)) { G.stats.lostByType[u.key] = (G.stats.lostByType[u.key] || 0) + 1; G.stats.totalLost++; }   // AFTER-ACTION — friendly losses by unit type + running total
   if (G.stats) { const col = Math.max(0, Math.min(HEAT_COLS - 1, Math.floor(u.x / WORLD_W * HEAT_COLS))), row = Math.max(0, Math.min(HEAT_ROWS - 1, Math.floor(u.y / worldH() * HEAT_ROWS))); G.stats.heat[row * HEAT_COLS + col] += 0.5; }   // AFTER-ACTION HEATMAP — friendly losses count too, at half weight, so the map shows where the war was actually fought, not just where the player won
   const d = u.d, big = d.s >= 5 || d.hp >= 250, power = Math.min(30, d.s * 2.4 + (big ? 12 : 0));
   const frac = (u._lastHit || 0) / (u.maxHp || d.hp || 1);
@@ -4603,6 +4622,7 @@ function destroyEnemy(e) {
   G.kills = (G.kills || 0) + 1;
   if (G.stats) {   // AFTER-ACTION — kills by enemy type + the spatial COMBAT HEATMAP (world-x × altitude-band grid)
     G.stats.killsByType[e.kind || 'drone'] = (G.stats.killsByType[e.kind || 'drone'] || 0) + 1;
+    G.stats.totalKills++; G._tickKills = (G._tickKills || 0) + 1;   // AFTER-ACTION — running total + this-tick counter for the biggest-kill-burst peak (see updateGame)
     const col = Math.max(0, Math.min(HEAT_COLS - 1, Math.floor(e.x / WORLD_W * HEAT_COLS))), row = Math.max(0, Math.min(HEAT_ROWS - 1, Math.floor(e.y / worldH() * HEAT_ROWS)));
     G.stats.heat[row * HEAT_COLS + col]++;
   }
@@ -5728,7 +5748,7 @@ function updProj(dt) {
     if (p.friendly && p.life > 0 && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const dm = enemyDome({ x: p.x, y: p.y }); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min((p.dmg || 10) + (p.big ? 30 : 12), room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 8, life: .13 }); (dm.shieldHits || (dm.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(dm.x), p.x - dm.x), t: 0 }); p.life = 0; continue; } }   // BEACHHEAD SHIELD DOME — mirrors the field check above: catches YOUR incoming round IN FLIGHT (missiles, plasma, MIRV submunitions — everything that would've silently splashed via areaDamage/splashDamage, completely bypassing the dome) before it can detonate. Same per-frame DPS cap as the hurt()-side soak below; beams & strategic strikes punch straight through it, matching the field
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
-      if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
+      if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 16) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 40 * 40) { detonateKinetic(p.x, p.y); p.life = 0; break; } }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
@@ -5741,7 +5761,7 @@ function updProj(dt) {
       continue;
     }
     if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — launched from orbit: starts nearly stationary and gradually accelerates (mirrors enemy re-entry, see updEnemies), jinks + spams flares to shake interceptors; a real several-second engagement window before it lands
-      if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
+      if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
       p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1850);   // gradual accel to a capped terminal speed — orbit→ground now takes several seconds, not ~1.5s
       const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target + evasive jink
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -6823,6 +6843,7 @@ function enterGame() { if (mode === 'game') return; mode = 'game'; document.body
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; }
 function end(win, msg) {
   if (!G || G.over) return; G.over = win ? 'win' : 'lose';
+  if (G.stats) { G.stats.society = G.society || null; G.stats.eraReached = typeof curEra === 'function' ? curEra() : 0; }   // AFTER-ACTION — final civilizational state + tech era, captured once at the end
   // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set.
   if (G.ach) { if (win) { G.ach.won = true; markEver('win', G.intent); } else { G.ach.lostReason = msg || ''; if (G.phase === 'prep') G.ach.couped = true; } }   // ACHIEVEMENT: a stability collapse that ends the game before the invasion phase begins is a COUP, not a battlefield loss
   try { checkAchievements(); } catch (er) {}
@@ -6862,6 +6883,7 @@ function end(win, msg) {
   }
   if (rk) { rk.innerHTML = rank + enduranceLine; rk.style.color = col; }
   try { captureSnap('end'); } catch (er) {}   // AFTER-ACTION — "AFTERMATH" snapshot, taken at the final rendered frame
+  try { renderAAROverviewMeta(); } catch (er) { logErr && logErr(er); }
   try { renderAARCharts(); } catch (er) { logErr && logErr(er); }
   try { renderAAREconomy(); } catch (er) { logErr && logErr(er); }
   try { renderAARMilitary(); } catch (er) { logErr && logErr(er); }
@@ -6966,6 +6988,16 @@ function aarHeatCanvas(cv, heat) {
 // the research draw-down, launchStrike, hireAllies, destroyEnemy, destroyUnit, updateGame's economy tick,
 // captureSnap). Additive & read-only — never touches balance, only reports what already happened.
 function aarStatRow(a, b) { return '<div class="lbl">' + a + '</div><div class="val">' + b + '</div>'; }
+// OVERVIEW META — campaign setup (recorded at newGame) + survival extremes (min stability, city fall/capture/retake, fleet size at arrival). Sits below the main endStats block, same visual language as the other pages.
+function renderAAROverviewMeta() {
+  const host = document.getElementById('endMeta'); if (!host) return;
+  const st = G && G.stats; if (!st) { host.innerHTML = ''; return; }
+  const intentLbl = (INTENT[st.intent] && INTENT[st.intent].label) || (st.intent || '—').toUpperCase();
+  let html = '';
+  html += '<div class="aar-group"><h3>CAMPAIGN</h3><div class="aar-stats">' + aarStatRow('Fleet Intent', intentLbl) + aarStatRow('Difficulty', st.difficulty || '—') + aarStatRow('Prep Duration', aarMMSS(st.prepDuration || 0)) + aarStatRow('Min Stability Reached', Math.round(st.minStability != null ? st.minStability : 0) + '%') + '</div></div>';
+  html += '<div class="aar-group"><h3>SURVIVAL</h3><div class="aar-stats">' + aarStatRow('Autofleet Size On Arrival', st.fleetStartMax || 0) + aarStatRow('Cities Lost', st.citiesLost || 0) + aarStatRow('Cities Captured By Enemy', st.citiesCaptured || 0) + aarStatRow('Cities Retaken', st.citiesRetaken || 0) + '</div></div>';
+  host.innerHTML = html;
+}
 function renderAAREconomy() {
   const host = document.getElementById('pgEconomy'); if (!host) return;
   const st = G && G.stats; if (!st) { host.innerHTML = '<div class="aar-empty">// no telemetry</div>'; return; }
@@ -6973,10 +7005,10 @@ function renderAAREconomy() {
   let html = '';
   html += '<div class="aar-group"><h3>EARNED</h3><div class="aar-stats">' + aarStatRow('Industrial Capacity', n(st.earnedIC)) + aarStatRow('Manpower', n(st.earnedMP)) + aarStatRow('Influence', n(st.earnedInf)) + '</div></div>';
   html += '<div class="aar-group"><h3>SPENT</h3><div class="aar-stats">' + aarStatRow('Industrial Capacity', n(st.spentIC)) + aarStatRow('Manpower', n(st.spentMP)) + aarStatRow('Influence', n(st.spentInf)) + '</div></div>';
-  html += '<div class="aar-group"><h3>PEAKS</h3><div class="aar-stats">' + aarStatRow('Peak IC Banked', n(st.peakIC)) + aarStatRow('Peak Manpower Banked', n(st.peakMP)) + aarStatRow('Peak Influence Banked', n(st.peakInf)) + aarStatRow('Peak Army Size', n(st.peakArmy)) + '</div></div>';
+  html += '<div class="aar-group"><h3>PEAKS</h3><div class="aar-stats">' + aarStatRow('Peak IC Banked', n(st.peakIC)) + aarStatRow('Peak Manpower Banked', n(st.peakMP)) + aarStatRow('Peak Influence Banked', n(st.peakInf)) + aarStatRow('Peak Army Size', n(st.peakArmy)) + aarStatRow('Peak IC Income', (st.peakIncomeIC || 0).toFixed(1) + ' IC/s') + '</div></div>';
   html += '<div class="aar-group"><h3>PRODUCTION</h3><div class="aar-stats">' + aarStatRow('Antimatter Refined', n(st.antimatterMade)) + aarStatRow('Heavy Alloy Forged', n(st.componentsMade.alloy)) + aarStatRow('Rocket Parts Built', n(st.componentsMade.rocketpart)) + '</div></div>';
   html += '<div class="aar-group"><h3>UPKEEP</h3><div class="aar-stats">' + aarStatRow('Total Upkeep Paid', n(st.upkeepPaid) + ' IC') + aarStatRow('Peak Standing Upkeep', (st.peakUpkeep || 0).toFixed(1) + ' IC/s') + '</div></div>';
-  const resRows = ['steel', 'oil', 'rare', 'uranium'].map(k => SR[k] ? [SR[k].name, (G.owned && G.owned[k]) || 0] : null).filter(Boolean);
+  const resRows = ['steel', 'oil', 'rare', 'uranium'].map(k => SR[k] ? [SR[k].name, (st.resourcesCaptured && st.resourcesCaptured[k]) || 0] : null).filter(Boolean);
   html += '<div class="aar-group"><h3>RESOURCES CAPTURED</h3><div class="aar-stats">' + (resRows.some(r => r[1] > 0) ? resRows.map(r => aarStatRow(r[0], r[1])).join('') : '<div class="aar-empty" style="grid-column:1/-1">// no special-resource deposits claimed</div>') + '</div></div>';
   const h = G && G.hist;
   if (h && h.t && h.t.length > 1) {
@@ -7003,12 +7035,11 @@ function renderAARMilitary() {
   if (!lost.length) html += '<div class="aar-empty" style="padding:10px">// not a single unit was lost</div>';
   else for (const [key, n] of lost) { const nd = UNIT_DEFS[key] ? effDef(key) : null; html += '<div class="aar-row">' + (nd ? '<canvas width="40" height="28" data-lk="' + key + '"></canvas>' : '') + '<span class="aar-name">' + (nd ? nd.name : key) + '</span><span class="aar-count" style="color:#ff8a7a">×' + n + '</span></div>'; }
   html += '</div><div class="aar-total">' + (G.unitsLost || 0).toLocaleString() + ' units lost</div></div>';
-  const dom = { ground: 0, air: 0, naval: 0, space: 0 };
-  for (const k in st.recruited) { const d = UNIT_DEFS[k]; if (d && dom[d.domain] != null) dom[d.domain] += st.recruited[k]; }
+  const dom = st.byDomain || { ground: 0, air: 0, naval: 0, space: 0 };
   const capTot = (G.cities || []).filter(c => c.capital).length, capAlive = (G.cities || []).filter(c => c.capital && c.hp > 0).length;
   html += '<div class="aar-group aar-panel-wide"><h3>BY DOMAIN &amp; TOTALS</h3><div class="aar-stats">' + aarStatRow('Ground Forces Fielded', dom.ground) + aarStatRow('Air Forces Fielded', dom.air) + aarStatRow('Naval Forces Fielded', dom.naval) + aarStatRow('Space Forces Fielded', dom.space) +
-    aarStatRow('Capitals Standing', capAlive + ' / ' + capTot) + aarStatRow('Peak Army Size', st.peakArmy) + aarStatRow('Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—') +
-    aarStatRow('Total Recruited', aarSum(st.recruited).toLocaleString()) + aarStatRow('Total Lost', (G.unitsLost || 0).toLocaleString()) + '</div></div>';
+    aarStatRow('Capitals Standing', capAlive + ' / ' + capTot) + aarStatRow('Capital-Class Units Built', st.capitalsBuilt || 0) + aarStatRow('Peak Army Size', st.peakArmy) + aarStatRow('Peak Army Cap', st.peakArmyCap || 0) + aarStatRow('Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—') +
+    aarStatRow('Total Recruited', (st.totalRecruited || aarSum(st.recruited)).toLocaleString()) + aarStatRow('Total Lost', (st.totalLost || G.unitsLost || 0).toLocaleString()) + '</div></div>';
   host.innerHTML = html;
   for (const [key] of rec) { const cv = host.querySelector('canvas[data-uk="' + key + '"]'); if (cv) aarUnitIcon(cv, effDef(key)); }
   for (const [key] of lost) { const cv = host.querySelector('canvas[data-lk="' + key + '"]'); if (cv) aarUnitIcon(cv, effDef(key)); }
@@ -7017,9 +7048,10 @@ function renderAARCombat() {
   const host = document.getElementById('pgCombat'); if (!host) return;
   const st = G && G.stats; if (!st) { host.innerHTML = '<div class="aar-empty">// no telemetry</div>'; return; }
   let html = '';
-  const totalKills = aarSum(st.killsByType) || G.kills || 0;
+  const totalKills = st.totalKills || aarSum(st.killsByType) || G.kills || 0;
   const h = G && G.hist, mx = a => a.reduce((m, v) => v > m ? v : m, 0);
-  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Total Kills', totalKills.toLocaleString()) + aarStatRow('Superweapons Destroyed', st.bossKills || 0) + aarStatRow('Peak Simultaneous Hostiles', h && h.enemies ? mx(h.enemies) : 0) + aarStatRow('Waves Repelled', G.waveN || 0) + aarStatRow('Strikes Launched', aarSum(st.strikes)) + '</div>';
+  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Total Kills', totalKills.toLocaleString()) + aarStatRow('Superweapons Destroyed', st.bossKills || 0) + aarStatRow('Peak Simultaneous Hostiles', st.peakEnemies || (h && h.enemies ? mx(h.enemies) : 0)) + aarStatRow('Waves Repelled', G.waveN || 0) + aarStatRow('Strikes Launched', aarSum(st.strikes)) + '</div>';
+  html += '<div class="aar-group aar-panel-wide"><h3>FIREPOWER</h3><div class="aar-stats">' + aarStatRow('Damage Dealt', Math.round(st.damageDealt || 0).toLocaleString()) + aarStatRow('Damage Taken', Math.round(st.damageTaken || 0).toLocaleString()) + aarStatRow('Ordnance Intercepted', st.ordnanceIntercepted || 0) + aarStatRow('Biggest Kill Burst', (st.biggestKillBurst || 0) + ' in one instant') + '</div></div>';
   const kbt = Object.entries(st.killsByType).sort((a, b) => b[1] - a[1]);
   html += '<div class="aar-chart aar-panel-wide"><h4>KILLS BY ENEMY TYPE</h4><div class="aar-list">';
   if (!kbt.length) html += '<div class="aar-empty" style="padding:10px">// no confirmed kills</div>';
@@ -7040,8 +7072,10 @@ function renderAARResearch() {
   const host = document.getElementById('pgResearch'); if (!host) return;
   const st = G && G.stats; if (!st) { host.innerHTML = '<div class="aar-empty">// no telemetry</div>'; return; }
   let html = '';
-  const dang = st.researched.filter(r => RESEARCH[r.key] && RESEARCH[r.key].dang).length;
-  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Doctrines Researched', st.researched.length) + aarStatRow('Dangerous Doctrines', dang) + aarStatRow('Era Reached', ['Information', 'Fusion', 'Space'][curEra()]) + aarStatRow('Society', G.society ? (G.society.charAt(0).toUpperCase() + G.society.slice(1)) : 'Baseline') + '</div>';
+  const dang = st.dangerousResearched || st.researched.filter(r => RESEARCH[r.key] && RESEARCH[r.key].dang).length;
+  const era = ['Information', 'Fusion', 'Space'][st.eraReached != null ? st.eraReached : curEra()];
+  const socName = st.society || G.society;
+  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Doctrines Researched', st.researched.length) + aarStatRow('Dangerous Doctrines', dang) + aarStatRow('Era Reached', era) + aarStatRow('Society', socName ? (socName.charAt(0).toUpperCase() + socName.slice(1)) : 'Baseline') + aarStatRow('Buildings Lost', st.buildingsLost || 0) + '</div>';
   html += '<div class="aar-chart"><h4>RESEARCH TIMELINE</h4><div class="aar-list">';
   if (!st.researched.length) html += '<div class="aar-empty" style="padding:10px">// no doctrines researched — a purely conventional war</div>';
   else for (const rr of st.researched) { const r = RESEARCH[rr.key]; if (!r) continue; const tm = mmss(rr.t / (0.45 * (G.speed || 1))); html += '<div class="aar-row"><span class="aar-name">' + r.name + (r.dang ? ' <span style="color:#ff8a7a">⚠</span>' : '') + '</span><span class="aar-time">' + tm + '</span></div>'; }
@@ -7086,7 +7120,8 @@ function aarReportHTML() {
   const rec = Object.entries(st.recruited).sort((a, b) => b[1] - a[1]);
   const lost = Object.entries(st.lostByType).sort((a, b) => b[1] - a[1]);
   const blt = Object.entries(st.built).sort((a, b) => b[1] - a[1]);
-  const resRows = ['steel', 'oil', 'rare', 'uranium'].map(k => SR[k] ? ['Captured: ' + SR[k].name, (G.owned && G.owned[k]) || 0] : null).filter(Boolean);
+  const resRows = ['steel', 'oil', 'rare', 'uranium'].map(k => SR[k] ? ['Captured: ' + SR[k].name, (st.resourcesCaptured && st.resourcesCaptured[k]) || 0] : null).filter(Boolean);
+  const intentLbl = (INTENT[st.intent] && INTENT[st.intent].label) || (st.intent || '—').toUpperCase();
   const snapsHTML = ['prep', 'mid', 'end'].map(k => { const cap = k === 'prep' ? 'THE FORTRESS — right before re-entry' : k === 'mid' ? 'MIDWAR' : 'AFTERMATH'; return (st.snap && st.snap[k]) ? '<figure><img src="' + st.snap[k] + '"><figcaption>' + cap + '</figcaption></figure>' : ''; }).join('');
   return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
     'body{background:#050a16;color:#d8ecff;font-family:Consolas,monospace;margin:0;padding:28px 24px;max-width:960px}' +
@@ -7096,13 +7131,13 @@ function aarReportHTML() {
     '.heat img{width:100%;border-radius:6px;border:1px solid #1a2c46}.grid2{display:flex;gap:24px;flex-wrap:wrap}.grid2>div{flex:1;min-width:260px}footer{margin-top:30px;color:#7fa8d8;font-size:11px}' +
     '</style></head><body>' +
     '<h1>' + esc(title) + '</h1><div class="rank">' + esc(rankTxt.replace(/<[^>]*>/g, ' ')) + '</div>' +
-    '<h2>OVERVIEW</h2><table>' + rows([['Doctrine', G.diffName || '—'], ['Time in Combat', durTxt], ['Cities Held', citiesAlive + ' / ' + citiesTot], ['Waves Repelled', G.waveN || 0], ['Districts Lost', G.lostStructures || 0], ['Forces Lost', G.unitsLost || 0]]) + '</table>' +
-    '<h2>ECONOMY</h2><table>' + rows([['Earned IC', n(st.earnedIC)], ['Earned MP', n(st.earnedMP)], ['Earned Influence', n(st.earnedInf)], ['Spent IC', n(st.spentIC)], ['Spent MP', n(st.spentMP)], ['Spent Influence', n(st.spentInf)], ['Peak IC Banked', n(st.peakIC)], ['Peak MP Banked', n(st.peakMP)], ['Peak Influence Banked', n(st.peakInf)], ['Antimatter Refined', n(st.antimatterMade)], ['Heavy Alloy Forged', n(st.componentsMade.alloy)], ['Rocket Parts Built', n(st.componentsMade.rocketpart)], ['Total Upkeep Paid', n(st.upkeepPaid) + ' IC'], ['Peak Standing Upkeep', (st.peakUpkeep || 0).toFixed(1) + ' IC/s']].concat(resRows)) + '</table>' +
-    '<h2>MILITARY</h2><table>' + rows([['Total Recruited', aarSum(st.recruited)], ['Total Lost', G.unitsLost || 0], ['Peak Army Size', st.peakArmy], ['Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—']]) + '</table>' +
+    '<h2>OVERVIEW</h2><table>' + rows([['Doctrine', G.diffName || '—'], ['Fleet Intent', intentLbl], ['Prep Duration', aarMMSS(st.prepDuration || 0)], ['Time in Combat', durTxt], ['Cities Held', citiesAlive + ' / ' + citiesTot], ['Cities Lost', st.citiesLost || 0], ['Cities Captured By Enemy', st.citiesCaptured || 0], ['Cities Retaken', st.citiesRetaken || 0], ['Waves Repelled', G.waveN || 0], ['Districts Lost', G.lostStructures || 0], ['Forces Lost', G.unitsLost || 0], ['Min Stability Reached', Math.round(st.minStability != null ? st.minStability : 0) + '%'], ['Autofleet Size On Arrival', st.fleetStartMax || 0]]) + '</table>' +
+    '<h2>ECONOMY</h2><table>' + rows([['Earned IC', n(st.earnedIC)], ['Earned MP', n(st.earnedMP)], ['Earned Influence', n(st.earnedInf)], ['Spent IC', n(st.spentIC)], ['Spent MP', n(st.spentMP)], ['Spent Influence', n(st.spentInf)], ['Peak IC Banked', n(st.peakIC)], ['Peak MP Banked', n(st.peakMP)], ['Peak Influence Banked', n(st.peakInf)], ['Peak IC Income', (st.peakIncomeIC || 0).toFixed(1) + ' IC/s'], ['Antimatter Refined', n(st.antimatterMade)], ['Heavy Alloy Forged', n(st.componentsMade.alloy)], ['Rocket Parts Built', n(st.componentsMade.rocketpart)], ['Total Upkeep Paid', n(st.upkeepPaid) + ' IC'], ['Peak Standing Upkeep', (st.peakUpkeep || 0).toFixed(1) + ' IC/s']].concat(resRows)) + '</table>' +
+    '<h2>MILITARY</h2><table>' + rows([['Total Recruited', st.totalRecruited || aarSum(st.recruited)], ['Total Lost', st.totalLost || G.unitsLost || 0], ['Ground Forces Fielded', (st.byDomain && st.byDomain.ground) || 0], ['Air Forces Fielded', (st.byDomain && st.byDomain.air) || 0], ['Naval Forces Fielded', (st.byDomain && st.byDomain.naval) || 0], ['Space Forces Fielded', (st.byDomain && st.byDomain.space) || 0], ['Capital-Class Units Built', st.capitalsBuilt || 0], ['Peak Army Size', st.peakArmy], ['Peak Army Cap', st.peakArmyCap || 0], ['Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—']]) + '</table>' +
     '<div class="grid2"><div><h3>Forces Fielded</h3><table>' + rows(rec.map(([k, c]) => [UNIT_DEFS[k] ? effDef(k).name : k, '×' + c])) + '</table></div><div><h3>Losses</h3><table>' + rows(lost.map(([k, c]) => [UNIT_DEFS[k] ? effDef(k).name : k, '×' + c])) + '</table></div></div>' +
-    '<h2>COMBAT</h2><table>' + rows([['Total Kills', aarSum(st.killsByType) || G.kills || 0], ['Superweapons Destroyed', st.bossKills || 0], ['Strikes Launched', aarSum(st.strikes)]]) + '</table>' +
+    '<h2>COMBAT</h2><table>' + rows([['Total Kills', st.totalKills || aarSum(st.killsByType) || G.kills || 0], ['Superweapons Destroyed', st.bossKills || 0], ['Peak Simultaneous Hostiles', st.peakEnemies || 0], ['Damage Dealt', n(st.damageDealt)], ['Damage Taken', n(st.damageTaken)], ['Ordnance Intercepted', st.ordnanceIntercepted || 0], ['Biggest Kill Burst', st.biggestKillBurst || 0], ['Strikes Launched', aarSum(st.strikes)]]) + '</table>' +
     '<div><h3>Kills by Enemy Type</h3><table>' + rows(kbt.map(([k, c]) => [EKIND_LABEL[k] || k, '×' + c])) + '</table></div>' +
-    '<h2>RESEARCH &amp; CONSTRUCTION</h2><table>' + rows([['Doctrines Researched', st.researched.length], ['Dangerous Doctrines', st.researched.filter(r => RESEARCH[r.key] && RESEARCH[r.key].dang).length], ['Era Reached', ['Information', 'Fusion', 'Space'][curEra()]], ['Society', G.society || 'Baseline']]) + '</table>' +
+    '<h2>RESEARCH &amp; CONSTRUCTION</h2><table>' + rows([['Doctrines Researched', st.researched.length], ['Dangerous Doctrines', st.dangerousResearched || st.researched.filter(r => RESEARCH[r.key] && RESEARCH[r.key].dang).length], ['Era Reached', ['Information', 'Fusion', 'Space'][st.eraReached != null ? st.eraReached : curEra()]], ['Society', st.society || G.society || 'Baseline'], ['Buildings Lost', st.buildingsLost || 0]]) + '</table>' +
     '<div class="grid2"><div><h3>Research Timeline</h3><table>' + rows(st.researched.map(rr => [RESEARCH[rr.key] ? RESEARCH[rr.key].name : rr.key, mmss(rr.t / (0.45 * (G.speed || 1)))])) + '</table></div><div><h3>Construction</h3><table>' + rows(blt.map(([k, c]) => [BUILD_DEFS[k] ? BUILD_DEFS[k].name : k, '×' + c])) + '</table></div></div>' +
     '<h2>WORLD</h2><div>' + (snapsHTML || '<p>No map snapshots captured this campaign.</p>') + '</div>' +
     '<div class="heat"><h3>Where The War Was Fought</h3>' + (heatImg ? '<img src="' + heatImg + '">' : '<p>No heatmap data.</p>') + '</div>' +

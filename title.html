@@ -3114,7 +3114,7 @@ const INF_BODY_S = 3;   // legacy alias kept for readability at call sites that 
 // SQUAD RENDER LOD thresholds — see the "SQUAD LOD" comment above the units draw loop. Past this many LIVE squads
 // on the field (a big garrison economy easily fields 60-100+), or once the camera is zoomed out enough that a body
 // would draw at a couple of px anyway, every squad renders as one cheap cluster glyph instead of N shadowed bodies.
-const SQUAD_LOD_N = 45, SQUAD_LOD_ZOOM = 0.9;
+const SQUAD_LOD_N = 45, SQUAD_LOD_ZOOM = 0.75;   // SQUAD_LOD_ZOOM lowered from 0.9 — the full detailed fireteam should survive a normal zoom-out instead of collapsing to the cluster glyph almost immediately; SQUAD_LOD_N (big-garrison perf cap) is unchanged
 // ===== SQUAD BODY PHYSICS (tunable, playtest draft) — "ONE BRAIN, MANY BODIES" fireteam rework: the squad entity
 // still runs exactly ONE target-acquisition + ONE movement decision per frame (see updUnits' single acquireEnemy/
 // pickDesignated call, reused by updSquadMembers below as the shared fire target — bodies inherit it instead of
@@ -6083,20 +6083,25 @@ function drawSquadUnit(u, px, lod) {
   if (u.maxAmmo) bar(px, gdy0 - d.s * 1.6 - (u.hp < u.maxHp ? 13 : 8), d.s * 2.2, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a');
   if (u.maxFuel) bar(px, gdy0 - d.s * 1.6 - (u.hp < u.maxHp ? 17 : 12) - (u.maxAmmo ? 4 : 0), d.s * 2.2, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0');
 }
-// SQUAD LOD CLUSTER — the cheap path for a big standing garrison (see SQUAD_LOD_N/SQUAD_LOD_ZOOM): ONE flat
-// silhouette draw (no per-member shadow, aim recompute, or healthbar) plus a short row of "more than one" pips and
-// the squad's existing aggregate bars, so a formation still visibly reads as a SQUAD, not a lone soldier — it just
-// stops paying for N fully-detailed bodies once there are dozens of squads on the field at once.
+// SQUAD LOD CLUSTER — the cheap path for a big standing garrison (see SQUAD_LOD_N/SQUAD_LOD_ZOOM): up to 3 compact
+// flat silhouette bodies standing together (no per-member shadow, aim recompute, or healthbar — every body shares
+// the squad's single u.aim/facing) plus ONE shared ground-contact shadow and the squad's existing aggregate bars,
+// so a formation reads as an actual GROUP of soldiers, not a lone soldier with pips floating over its head. Still
+// cheap: ~3 flat sprite draws + 1 shadow + 1 aggregate bar per squad — far under the full per-member path's N
+// shadows + N aim recomputes + N healthbars, so SQUAD_LOD_N still protects framerate on a big standing army.
 function drawSquadCluster(u, px, d, ground) {
   const alive = u.members.filter(m => m.alive), n = alive.length; if (!n) return;
   const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + s * GROUND_SEAT_FRAC : my;   // myD = seated draw position (see GROUND_SEAT_FRAC); my stays the unseated anchor
-  if (ground) { c.save(); c.globalAlpha = .26; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, myD, s * 2.3, s * .55, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // shares the representative body's own seated anchor (myD), same as the single-unit/per-member shadows above
-  c.save(); c.translate(px, myD); const facing = u.facing || 1; c.scale(facing, 1);
-  ART[d.art](c, s * 1.08, ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0);   // one representative body stands in for the whole formation
-  c.restore();
-  const pipN = Math.min(n, 4), pw = s * .5, gap = s * .3, total = pipN * pw + (pipN - 1) * gap;
-  c.fillStyle = 'rgba(225,238,255,.85)';
-  for (let i = 0; i < pipN; i++) c.fillRect(px - total / 2 + i * (pw + gap), myD - s * 2.6, pw, s * .4);   // strength pips — reads as "a squad", costs 1 fillRect per body instead of a full art draw
+  const pipN = Math.min(n, 3);   // up to 3 compact bodies stand in for the whole formation — draws a little GROUP, not a lone soldier
+  const OFF_X = [[0], [-.8, .8], [-1.6, 0, 1.6]][pipN - 1];   // tight horizontal spread (× s) so the bodies overlap into a cluster
+  const OFF_Y = [[0], [-2, 1.5], [-2, 1, -1.5]][pipN - 1];    // a couple px of per-body vertical jitter so they don't look stamped from one mold
+  if (ground) { c.save(); c.globalAlpha = .26; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, myD, s * (1.9 + .35 * (pipN - 1)), s * .55, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ONE shared ground-contact shadow sized for the little group — not per body
+  const facing = u.facing || 1;
+  for (let i = 0; i < pipN; i++) {
+    c.save(); c.translate(px + OFF_X[i] * s, myD + OFF_Y[i]); c.scale(facing, 1);
+    ART[d.art](c, s * .95, ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0);   // shared aim/facing across the whole cluster — no per-body recompute
+    c.restore();
+  }
   if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, myD - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, myD, d.range * radarBoost(u.x)); }
   if (u.hp < u.maxHp) bar(px, myD - s * 2.6 - 5, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');
 }

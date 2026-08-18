@@ -1012,11 +1012,13 @@ const SPACE_Y = () => worldH() * .22, THERMO_Y = () => worldH() * .56, MESO_TOP 
 // PHYSICAL flight ceiling — aircraft never cruise above the mesosphere top. Their FIRING reach goes one band higher (into the thermosphere) via defaultCeil's .56 air ceil, so they engage UP into the thermosphere without flying there. Exosphere = space-weapons only.
 function airTopY() { return MESO_TOP(); }
 // PLAYER ORBITAL STATIONING — your own space units (satellites, orbital frigates/fighters) contest orbit, they
-// don't permanently occupy it: by default they hold in the THERMOSPHERE (just below true orbit) and only climb
-// up into the EXOSPHERE when they actually need to reach a target up there, settling back once it's dealt with.
-// SPACE_STATION_Y is the resting/patrol line; SPACE_DESCEND_Y is the deepest they'll ever settle (never past the
-// thermosphere into the mesosphere, which is aircraft territory) — see updUnits' space-domain movement.
-const SPACE_STATION_Y = () => THERMO_Y(), SPACE_DESCEND_Y = () => THERMO_Y() + 40;
+// don't permanently occupy it: by default they hold in the UPPER THERMOSPHERE, right up against the exosphere
+// boundary (true orbit), and only climb into the EXOSPHERE itself when they actually need to reach a target up
+// there, settling back once it's dealt with. SPACE_STATION_Y has its OWN cruise fraction (.48 — separate from
+// THERMO_Y's .56, which stays the aircraft firing-ceiling/descend-threshold line) so this can be tuned without
+// touching anything aircraft use. SPACE_DESCEND_Y is still the deepest a space unit will ever settle (never past
+// the thermosphere into the mesosphere, which is aircraft territory) — see updUnits' space-domain movement.
+const SPACE_STATION_Y = () => worldH() * .48, SPACE_DESCEND_Y = () => THERMO_Y() + 40;
 function curEra() { return (G && G.unlocked && G.unlocked.spaceage) ? 2 : (G && G.unlocked && G.unlocked.fusion) ? 1 : 0; }   // 0 info · 1 fusion · 2 space — drives sleeker aircraft & cyberpunk buildings
 function plasmaArmed() { return !!(G && G.unlocked && G.unlocked.plasma); }   // plasma-capable turrets switch to plasma rounds once PLASMA WEAPONS is researched (not just the Fusion Age)
 const sx = wx => wx - cam.x;          // world -> UNSCALED screen X (the zoom transform scales this around the viewport centre)
@@ -3378,8 +3380,9 @@ function acquireIncoming(x, y, range, ceilFrac) {
   return big || other || decoy || bigAny || otherAny || decoyAny;   // real rods/busters first, then genuine other incoming, decoys only as a last resort; never idle if anything's in reach
 }
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
-function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air
+function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : d.weapon === 'rod' ? notSpaceStationed : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air; ROD-armed space units (Tungsten Rods "Zeus") are kinetic GROUND bombardment — see notSpaceStationed
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
+function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50; }   // TUNGSTEN ROD target rule — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
 // HELICOPTERS need no runway — they rearm/refuel at ANY heli-depot, airbase, or building flagged rotorBase, AND at any surviving city.
 // Cities aren't in G.buildings, so a fresh lightweight {x,hp} wrapper stands in for them (resolved every call — currentBase never caches a heli's base).

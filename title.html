@@ -167,8 +167,8 @@
   #endStats { display: grid; grid-template-columns: auto auto; gap: 6px 26px; background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 16px 24px; font: 13px Consolas, monospace; min-width: 320px; }
   #endStats .lbl { color: #7fa8d8; letter-spacing: 1px; }
   #endStats .val { color: #d8ecff; text-align: right; font-weight: 600; }
-  #endScroll { display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(860px, 94vw); max-height: 62vh; overflow-y: auto; padding: 2px 6px; }
-  #endCharts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; width: 100%; }
+  #endScroll { display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(1120px, 96vw); max-height: 78vh; overflow-y: auto; padding: 2px 6px 10px; }
+  #endCharts, #endPanels { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; width: 100%; }
   .aar-chart { background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 10px 12px 8px; }
   .aar-chart h4 { margin: 0 0 6px; font: 600 10px Consolas, monospace; letter-spacing: 1.5px; color: #6dffb0; }
   .aar-chart svg { display: block; width: 100%; height: auto; }
@@ -176,6 +176,19 @@
   .aar-leg span { display: inline-flex; align-items: center; gap: 4px; }
   .aar-leg i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
   .aar-empty { grid-column: 1 / -1; text-align: center; color: #7fa8d8; font: 12px Consolas, monospace; padding: 18px; }
+  /* AFTER-ACTION — expanded stat block + FORCES FIELDED / CONSTRUCTION / RESEARCH TIMELINE / COMBAT HEATMAP panels */
+  .aar-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px 26px; background: rgba(8,16,34,.72); border: 1px solid #244468; border-radius: 8px; padding: 16px 24px; font: 13px Consolas, monospace; width: 100%; }
+  .aar-stats .lbl { color: #7fa8d8; letter-spacing: 1px; }
+  .aar-stats .val { color: #d8ecff; text-align: right; font-weight: 600; }
+  .aar-panel-wide { grid-column: 1 / -1; }
+  .aar-list { display: flex; flex-direction: column; gap: 2px; max-height: 230px; overflow-y: auto; padding-right: 4px; }
+  .aar-row { display: flex; align-items: center; gap: 8px; font: 11px Consolas, monospace; color: #d8ecff; padding: 2px 0; border-bottom: 1px dashed rgba(150,190,240,.10); }
+  .aar-row canvas { background: rgba(255,255,255,.03); border-radius: 4px; flex: none; }
+  .aar-row .aar-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .aar-row .aar-count, .aar-row .aar-time { color: #9fb6d4; white-space: nowrap; }
+  .aar-total { margin-top: 6px; font: 10px Consolas, monospace; color: #7fa8d8; letter-spacing: .5px; }
+  .aar-heat-wrap { position: relative; }
+  .aar-heat { display: block; width: 100%; height: auto; border-radius: 6px; background: #050a16; border: 1px solid #1a2c46; }
   /* research — node graph */
   #resModal .modal { width: 98vw; max-width: 1500px; height: 95vh; max-height: 95vh; padding: 16px 20px; display: flex; flex-direction: column; position: relative; }
   .resHead { display: flex; align-items: center; gap: 18px; font-size: 12px; letter-spacing: 1px; margin-bottom: 8px; flex-wrap: wrap; }
@@ -589,7 +602,7 @@
   <button class="back" id="backBtn">❮ ABANDON</button>
 </div>
 
-<div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endScroll"><div id="endStats"></div><div id="endCharts"></div></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
+<div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div><div id="endScroll"><div id="endStats"></div><div id="endCharts"></div><div id="endStats2" class="aar-stats"></div><div id="endPanels"></div></div><button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
 <div class="alertbanner" id="alertBanner"></div>
@@ -972,6 +985,7 @@ function eblobs(list, rot, R, cx, cy, cols, aMul) { for (const b of list) { cons
    WORLD — wide scrolling terrain (world coords; camera pans)
    ===================================================================== */
 const WORLD_W = 6000, CURVE_AMT = 92, SEA_E = 0.45;   // wider front (v1.9.8 — bigger map)
+const HEAT_COLS = 80, HEAT_ROWS = 6;   // AFTER-ACTION COMBAT HEATMAP — fixed-size world-position × altitude-band grid; see G.stats.heat
 const MIN_LAND_FRAC = 0.35;   // guarantee at least this fraction of the strip is dry, buildable land — clamps pathological "waterworld" rolls (only a few tiny dry spots → one forced gigacity) WITHOUT flattening coastline variety; only ever RAISES a too-wet map, never lowers a good one
 const MIN_CITY_SPACING = 360;   // minimum gap between seeded city centres — cities that OVERLAP still fuse into a megacity (a feature), but they shouldn't ALL fuse just because they snapped onto the same scrap of land; > the ~290px merge threshold so spread seeds stay distinct
 let TSEED = null, MSEED = null, CLOUDLIST = [], craters = [], fills = [], levels = [], NEB = [], TBIAS = 0;   // fills = legacy mounds; levels = smooth feathered RAISE/LEVEL/SINK terrain edits; NEB = deep-space nebula clouds; TBIAS = uniform elevation lift applied to the base heightfield to enforce MIN_LAND_FRAC (preserves shape/variety, just raises the whole coastline)
@@ -2823,6 +2837,8 @@ function newGame(diff) {
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
+    // AFTER-ACTION "every stat ever" TRACKING — additive, bounded (heat grid fixed-size; the others are naturally bounded by content), read only by the end screen
+    stats: { built: {}, recruited: {}, researched: [], strikes: {}, killsByType: {}, spentIC: 0, spentMP: 0, spentInf: 0, peakArmy: 0, heat: new Array(HEAT_COLS * HEAT_ROWS).fill(0) },
 
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
@@ -3052,7 +3068,7 @@ function placeBuilding(key, wx) {
     } else {
       return toast(G.ic < icc ? ('NOT ENOUGH IC' + (ug ? ' (burying costs more)' : '')) : G.mp < mpc ? 'NOT ENOUGH MANPOWER' : 'NOT ENOUGH INFLUENCE');
     }
-  } else { G.ic -= icc; G.mp -= mpc; G.inf -= infc; }
+  } else { G.ic -= icc; G.mp -= mpc; G.inf -= infc; if (G.stats) { G.stats.spentIC += icc; G.stats.spentMP += mpc; G.stats.spentInf += infc; } }
   G.infSpent = true; SFX.build();
   if (d.cat !== 'ECON' && d.cat !== 'DEF') G.ach.onlyDefEcon = false;   // Stone Wall watches for any non-econ/defensive build
   markEver('bld', key);
@@ -3076,6 +3092,7 @@ function doTerrain(wx) {   // smooth, feathered terrain editing — wide soft br
 function nearestIdleConstructor(x) { let best = null, bd = 1e9; for (const u of G.units) if (u.d.builder && !u.job) { const dd = Math.abs(u.x - x); if (dd < bd) { bd = dd; best = u; } } return best; }
 function finishSite(site) {
   const b = mkBuilding(site.key, site.x); b.done = true; b.ug = site.ug; b.ugLvl = site.ugLvl || (site.ug ? 1 : 0); if (b.ug) b.y = groundY(b.x) + UG_DEPTH * b.ugLvl; G.buildings.push(b);
+  if (G.stats) G.stats.built[site.key] = (G.stats.built[site.key] || 0) + 1;   // AFTER-ACTION — a player-ordered construction just completed (pre-placed capital/city seed buildings bypass sites entirely, so this counts what was actually BUILT during play)
   if (site.d.onNode) { const n = nodeNear(site.x); if (n) { n.used = true; G.owned[n.type] = (G.owned[n.type] || 0) + 1; b.srtype = n.type; toast('CLAIMED ' + SR[n.type].name.toUpperCase()); } }
   if (site.d.garrison) { const g = site.d.garrison, keys = g.keys || (g.unit ? [g.unit] : [g.key]), gw = g.weight || 1; if (UNIT_DEFS[keys[0]]) { let room = garrisonCap() - garrisonUsed(); for (let i = 0; i < g.n && room >= gw; i++) { spawnGarrison(keys[i % keys.length], site.x + (Math.random() - .5) * site.d.w * 1.6, b, gw); room -= gw; } } }   // a combined-arms garrison forms around it, capped by the GLOBAL GARRISON weight budget — any slots that don't fit yet are picked up later by the tick fill loop as the budget grows
   recalcBuildings();   // a new special building may change global modifiers
@@ -3260,6 +3277,7 @@ function spawnSquad(key, d, x) {
 // above), so seating at the full 1.0 still never lifts a wheel clear of the ground; it settles it flush.
 const GROUND_SEAT_FRAC = 1.0;
 function spawnUnit(key, x) {
+  if (G.stats) G.stats.recruited[key] = (G.stats.recruited[key] || 0) + 1;   // AFTER-ACTION — every FRIENDLY unit fielded (spawnUnit is only ever called for the player's own forces; enemies go through spawnEnemy)
   if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x);
   const d = effDef(key); let y, wx0 = 0, wx1 = 0;
   if (d.domain === 'ground') y = groundY(x) - d.s;
@@ -3508,7 +3526,7 @@ function queueUnit(b, key) {
   if (key === 'dreadnought' && (G.antimatter || 0) < 40) return toast('NEEDS 40 ANTIMATTER — build an Antimatter Extractor');
   if (G.ic < cost) return toast('NOT ENOUGH IC'); if (G.mp < mp) return toast('NOT ENOUGH MANPOWER');
   if (key === 'dreadnought') G.antimatter = Math.max(0, (G.antimatter || 0) - 40);
-  G.ic -= cost; G.mp -= mp;
+  G.ic -= cost; G.mp -= mp; if (G.stats) { G.stats.spentIC += cost; G.stats.spentMP += mp; }
   if (d.comp) for (const k in d.comp) G.comp[k] = Math.max(0, (G.comp[k] || 0) - d.comp[k] * grp);   // spend the component parts (orbital lift is reserved, not spent — see orbCapUsed)
   let bt = d.build * 1.2;
   if (d.clone && bm.cloneFast) bt *= .5;                      // cloning vats grow clones FASTER now
@@ -3579,6 +3597,7 @@ function finishResearch() {
   markEver('res', key);   // ACHIEVEMENT: cross-round "researched every tech" progress
   if (G.ach) G.ach.researchedAnything = true;   // ACHIEVEMENT: pacifist-win tracking — any completed non-root research disqualifies it
   G.unlocked[key] = true; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf;
+  if (G.stats) G.stats.researched.push({ key, t: G.time });   // AFTER-ACTION RESEARCH TIMELINE — once per completed node, in completion order
   applyEraUpgrades();   // re-arm fielded units if this unlock advanced the age
   if (key === 'plasma') toast('⚡ PLASMA ARMS ONLINE — your ground & air units re-arm with plasma');
   else if (key === 'fusion') toast('⚙ FUSION AGE — combat drones upgrade to heavy "Hornet" missile drones');
@@ -4098,6 +4117,7 @@ function sampleHist() {
   h.enemies.push(G.enemies ? G.enemies.length : 0);
   h.fleet.push(Math.max(0, G.fleet || 0));
   if ((G.fleetMax || 0) > h.fleetMax) h.fleetMax = G.fleetMax;
+  if (G.stats) G.stats.peakArmy = Math.max(G.stats.peakArmy, G.units ? G.units.length : 0);   // AFTER-ACTION — highest simultaneous friendly unit count seen
 }
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
@@ -4149,7 +4169,7 @@ function updateGame(dt) {
   let infSpentThisFrame = !!G.infSpent; G.infSpent = false;   // carries forward any out-of-frame spend (building placement) since the last tick
   if (G.research) {
     const rs = G.research, pay = Math.min(G.inf, rs.payRate * dt, rs.cost - rs.paid);
-    if (pay > 0) { G.inf -= pay; rs.paid += pay; infSpentThisFrame = true; }
+    if (pay > 0) { G.inf -= pay; rs.paid += pay; infSpentThisFrame = true; if (G.stats) G.stats.spentInf += pay; }
     if (rs.paid >= rs.cost) finishResearch();
   } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
   // INFLUENCE MOMENTUM — patiently NOT spending ramps income up to 3× over ~75s of saving; any spend (research draw,
@@ -4514,6 +4534,7 @@ function drownUnitQuiet(u) {
 function destroyUnit(u) {
   ferryEmergencyDrop(u);   // ROBUSTNESS — if THIS unit is a transport heli that dies while carrying a passenger (or mid-approach to one), rescue/release it BEFORE any of the wreck effects below run; a no-op for every unit that isn't a ferry heli
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
+  if (G.stats) { const col = Math.max(0, Math.min(HEAT_COLS - 1, Math.floor(u.x / WORLD_W * HEAT_COLS))), row = Math.max(0, Math.min(HEAT_ROWS - 1, Math.floor(u.y / worldH() * HEAT_ROWS))); G.stats.heat[row * HEAT_COLS + col] += 0.5; }   // AFTER-ACTION HEATMAP — friendly losses count too, at half weight, so the map shows where the war was actually fought, not just where the player won
   const d = u.d, big = d.s >= 5 || d.hp >= 250, power = Math.min(30, d.s * 2.4 + (big ? 12 : 0));
   const frac = (u._lastHit || 0) / (u.maxHp || d.hp || 1);
   let style = pickStyle(u.killBy, d.domain, d.s, frac); if (d.domain === 'space' && (style === 'meltdown' || style === 'melt' || style === 'gunned')) style = 'split';   // satellites SHATTER in the vacuum — they don't slump, melt & pool, or fall
@@ -4531,6 +4552,11 @@ function destroyUnit(u) {
 }
 function destroyEnemy(e) {
   G.kills = (G.kills || 0) + 1;
+  if (G.stats) {   // AFTER-ACTION — kills by enemy type + the spatial COMBAT HEATMAP (world-x × altitude-band grid)
+    G.stats.killsByType[e.kind || 'drone'] = (G.stats.killsByType[e.kind || 'drone'] || 0) + 1;
+    const col = Math.max(0, Math.min(HEAT_COLS - 1, Math.floor(e.x / WORLD_W * HEAT_COLS))), row = Math.max(0, Math.min(HEAT_ROWS - 1, Math.floor(e.y / worldH() * HEAT_ROWS)));
+    G.stats.heat[row * HEAT_COLS + col]++;
+  }
   if (G.salvage) { const refund = Math.round(5 + (e.maxHp || 10) * .14); G.ic += refund; floatText(e.x, e.y, '+' + refund + ' IC', '#7cffb0'); }   // nanobots reclaim materiel from the wreck
   const s = e.s, big = e.kind === 'bomber' || e.anchored || s >= 5, dom = e.ground ? 'ground' : 'air';
   const frac = (e._lastHit || 0) / (e.maxHp || 1);
@@ -4592,6 +4618,7 @@ function launchStrike(silo, type, tx, ty, air) {
   if (G.ic < cost) return toast('NOT ENOUGH IC FOR ' + w.name.toUpperCase());
   const desperate = w.taboo && G.stab < sc + 3;   // launching while too unstable to "afford" the full hit — allowed (see STRIKE_STAB_FLOOR), but it bottoms out your stability. Only TABOO strikes spend stability, so only they can be "desperate".
   G.ic -= cost; G.stab = Math.max(STRIKE_STAB_FLOOR, G.stab - sc); silo.silocd = w.cd;
+  if (G.stats) { G.stats.strikes[type] = (G.stats.strikes[type] || 0) + 1; G.stats.spentIC += cost; }   // AFTER-ACTION — strategic strikes launched, by type
   if (w.amCost) G.antimatter = Math.max(0, (G.antimatter || 0) - w.amCost);
   // ACHIEVEMENT TRACKING — strike-type counters (nuke spam, peacetime nuke, ballistic spam), reset each new game via G.ach
   if (G.ach) {
@@ -4705,6 +4732,7 @@ function hireAllies(type) {
   const a = ALLIES[type]; if (!a || !G || mode !== 'game' || G.over) return;
   const av = allyAvail(a); if (av) return toast(av.toUpperCase());
   G.inf -= a.inf; G.ic -= a.ic; G.mp -= a.mp; G.infSpent = true;   // spending INFLUENCE snaps momentum back to baseline, exactly like a research draw or a building placement
+  if (G.stats) { G.stats.spentIC += a.ic; G.stats.spentMP += a.mp; G.stats.spentInf += a.inf; }
   G.allyCd = a.cd;
   const base = allyLandingX();
   let n = 0;
@@ -6784,6 +6812,7 @@ function end(win, msg) {
   }
   if (rk) { rk.innerHTML = rank + enduranceLine; rk.style.color = col; }
   try { renderAARCharts(); } catch (er) { logErr && logErr(er); }
+  try { renderAARExtra(); } catch (er) { logErr && logErr(er); }
 }
 // ── AFTER-ACTION GRAPHS — small-multiple line charts drawn as inline SVG from the per-match G.hist time-series ──
 function aarFmt(v) { v = Math.round(v); if (v >= 10000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k'; if (v >= 1000) return (v / 1000).toFixed(1) + 'k'; return '' + v; }
@@ -6843,6 +6872,78 @@ function renderAARCharts() {
     html += '<div class="aar-chart"><h4>AUTOFLEET REMAINING</h4><div class="aar-empty" style="padding:24px 8px">// the invasion never made landfall</div></div>';
   }
   host.innerHTML = html;
+}
+// ── AFTER-ACTION EXTRA — "every stat ever": expanded totals + FORCES FIELDED / CONSTRUCTION / RESEARCH TIMELINE /
+// COMBAT HEATMAP, all fed by G.stats (tracked live during play — see the hook sites: spawnUnit, finishSite,
+// placeBuilding, queueUnit, finishResearch, the research draw-down, launchStrike, hireAllies, destroyEnemy,
+// destroyUnit, sampleHist). Additive & read-only — never touches balance, only reports what already happened.
+const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship' };
+function aarSum(obj) { let s = 0; for (const k in obj) s += obj[k]; return s; }
+// draw ONE unit/building icon into a small canvas — same ART/BART renderers the live production menus use (see buildProdMenu / showResDetail)
+function aarUnitIcon(cv, d) { if (!cv || !d || !ART[d.art]) return; const x = cv.getContext('2d'); x.translate(cv.width / 2, cv.height * .62); x.scale(1.4, 1.4); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 8, -.6); } catch (er) {} }
+function aarBldIcon(cv, key, d) { if (!cv || !d) return; const x = cv.getContext('2d'); x.translate(cv.width / 2, cv.height * .82); x.scale(.75, .75); try { (BART[key] || BART.factory)(x, d.w, d.h); } catch (er) {} }
+function aarHeatCanvas(cv, heat) {
+  if (!cv || !heat) return; const ctx = cv.getContext('2d'), cw = cv.width, ch = cv.height, cellW = cw / HEAT_COLS, cellH = ch / HEAT_ROWS;
+  ctx.fillStyle = '#050a16'; ctx.fillRect(0, 0, cw, ch);
+  let mx = 1; for (const v of heat) if (v > mx) mx = v;
+  for (let row = 0; row < HEAT_ROWS; row++) for (let col = 0; col < HEAT_COLS; col++) {
+    const v = heat[row * HEAT_COLS + col]; if (!v) continue;
+    const t = Math.min(1, v / mx), r = Math.round(70 + t * 185), g = Math.round(120 - t * 60), b = Math.round(255 - t * 210);
+    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (0.28 + 0.68 * t) + ')';
+    ctx.fillRect(Math.floor(col * cellW), Math.floor(row * cellH), Math.ceil(cellW) + 1, Math.ceil(cellH) + 1);
+  }
+  ctx.strokeStyle = 'rgba(120,150,190,.16)'; ctx.lineWidth = 1;
+  for (let row = 1; row < HEAT_ROWS; row++) { const yy = Math.round(row * cellH) + .5; ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(cw, yy); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(120,150,190,.4)'; ctx.strokeRect(.5, .5, cw - 1, ch - 1);
+  ctx.font = '9px Consolas, monospace'; ctx.fillStyle = '#7fa8d8'; ctx.textBaseline = 'top'; ctx.fillText('◤ ORBIT', 4, 3);
+  ctx.textBaseline = 'bottom'; ctx.fillText('◣ GROUND', 4, ch - 3);
+}
+function renderAARExtra() {
+  const st = G && G.stats; const s2 = document.getElementById('endStats2'), panels = document.getElementById('endPanels');
+  if (!st) { if (s2) s2.innerHTML = ''; if (panels) panels.innerHTML = ''; return; }
+  // ── expanded numeric totals ──────────────────────────────────────────
+  if (s2) {
+    const strikeTotal = aarSum(st.strikes);
+    const topKills = Object.entries(st.killsByType).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => (EKIND_LABEL[k] || k) + ' ×' + n).join(', ') || '—';
+    const rows2 = [
+      ['IC SPENT', Math.round(st.spentIC).toLocaleString()],
+      ['MANPOWER SPENT', Math.round(st.spentMP).toLocaleString()],
+      ['INFLUENCE SPENT', Math.round(st.spentInf).toLocaleString()],
+      ['PEAK ARMY SIZE', st.peakArmy.toLocaleString()],
+      ['UNITS RECRUITED', aarSum(st.recruited).toLocaleString()],
+      ['STRUCTURES BUILT', aarSum(st.built).toLocaleString()],
+      ['DOCTRINES RESEARCHED', st.researched.length],
+      ['STRIKES LAUNCHED', strikeTotal],
+      ['TOP KILLS', topKills],
+    ];
+    s2.innerHTML = rows2.map(r => '<div class="lbl">' + r[0] + '</div><div class="val">' + r[1] + '</div>').join('');
+  }
+  if (!panels) return;
+  let html = '';
+  // ── FORCES FIELDED ───────────────────────────────────────────────────
+  const rec = Object.entries(st.recruited).sort((a, b) => b[1] - a[1]);
+  html += '<div class="aar-chart"><h4>FORCES FIELDED</h4><div class="aar-list">';
+  if (!rec.length) html += '<div class="aar-empty" style="padding:10px">// no units ever left the depot</div>';
+  else for (const [key, n] of rec) { if (!UNIT_DEFS[key]) continue; const nd = effDef(key); html += '<div class="aar-row"><canvas width="40" height="28" data-uk="' + key + '"></canvas><span class="aar-name">' + nd.name + '</span><span class="aar-count">×' + n + '</span></div>'; }
+  html += '</div><div class="aar-total">' + aarSum(st.recruited).toLocaleString() + ' units recruited across ' + rec.length + ' type' + (rec.length === 1 ? '' : 's') + '</div></div>';
+  // ── CONSTRUCTION ─────────────────────────────────────────────────────
+  const blt = Object.entries(st.built).sort((a, b) => b[1] - a[1]);
+  html += '<div class="aar-chart"><h4>CONSTRUCTION</h4><div class="aar-list">';
+  if (!blt.length) html += '<div class="aar-empty" style="padding:10px">// nothing new was ever built</div>';
+  else for (const [key, n] of blt) { const d = BUILD_DEFS[key]; if (!d) continue; html += '<div class="aar-row"><canvas width="40" height="28" data-bk="' + key + '"></canvas><span class="aar-name">' + d.name + '</span><span class="aar-count">×' + n + '</span></div>'; }
+  html += '</div><div class="aar-total">' + aarSum(st.built).toLocaleString() + ' structures built across ' + blt.length + ' type' + (blt.length === 1 ? '' : 's') + '</div></div>';
+  // ── RESEARCH TIMELINE ────────────────────────────────────────────────
+  html += '<div class="aar-chart"><h4>RESEARCH TIMELINE</h4><div class="aar-list">';
+  if (!st.researched.length) html += '<div class="aar-empty" style="padding:10px">// no doctrines researched — a purely conventional war</div>';
+  else for (const rr of st.researched) { const r = RESEARCH[rr.key]; if (!r) continue; const tm = mmss(rr.t / (0.45 * (G.speed || 1))); html += '<div class="aar-row"><span class="aar-name">' + r.name + '</span><span class="aar-time">' + tm + '</span></div>'; }
+  html += '</div></div>';
+  // ── COMBAT HEATMAP ───────────────────────────────────────────────────
+  html += '<div class="aar-chart aar-panel-wide"><h4>WHERE THE WAR WAS FOUGHT</h4><div class="aar-heat-wrap"><canvas class="aar-heat" id="aarHeatCv" width="800" height="120"></canvas></div></div>';
+  panels.innerHTML = html;
+  // paint the icon canvases + heatmap now that they're in the DOM
+  for (const [key] of rec) { const cv = panels.querySelector('canvas[data-uk="' + key + '"]'); if (cv) aarUnitIcon(cv, effDef(key)); }
+  for (const [key] of blt) { const cv = panels.querySelector('canvas[data-bk="' + key + '"]'); if (cv) aarBldIcon(cv, key, BUILD_DEFS[key]); }
+  aarHeatCanvas(document.getElementById('aarHeatCv'), st.heat);
 }
 
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));

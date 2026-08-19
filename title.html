@@ -248,6 +248,40 @@
   .resDetail .rdhint.bad { color: var(--inf); }
   .resDetail .rdclose { position: absolute; top: 3px; right: 5px; pointer-events: auto; cursor: pointer; background: none; border: none; color: #8fa6c4; font-size: 15px; line-height: 1; padding: 3px 6px; }
   .resDetail .rdclose:hover { color: #eaf2ff; }
+  /* MEGAPROJECTS tab */
+  .resTabs { display: flex; gap: 8px; margin-bottom: 8px; }
+  .resTabs .tabBtn { padding: 7px 16px; font-size: 11px; opacity: .55; }
+  .resTabs .tabBtn.on { opacity: 1; border-color: var(--term); color: var(--term); }
+  .projView { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 2px 8px; }
+  .projGroup { margin-bottom: 18px; }
+  .projGroupHd { font-size: 12px; letter-spacing: 3px; color: var(--term); border-bottom: 1px solid var(--line); padding-bottom: 5px; margin-bottom: 10px; }
+  .projCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .projCard { background: rgba(10,16,28,.8); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .projCard.proj-revealed { border-color: var(--res); box-shadow: 0 0 0 1px var(--res) inset; }
+  .projCard.proj-building { border-color: var(--stab); }
+  .projCard.proj-done { border-color: var(--mp); background: rgba(93,255,141,.08); }
+  .projCardHd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .projKind { font-size: 8px; letter-spacing: 1.5px; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,.08); color: #cdd9ea; }
+  .projKind-forge { background: rgba(255,90,90,.18); color: #ff9a8a; }
+  .projKind-edifice { background: rgba(78,168,255,.18); color: #8fc4ff; }
+  .projKind-doctrine { background: rgba(200,155,255,.18); color: var(--res); }
+  .projName { font-weight: 700; font-size: 13px; letter-spacing: .5px; color: #eaf2ff; }
+  .projTeaser { font-size: 11px; color: #9fb6c4; font-style: italic; margin-bottom: 8px; line-height: 1.4; }
+  .projDesc { font-size: 11px; color: #c4d4e8; line-height: 1.4; margin-bottom: 8px; }
+  .projReqs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .projReq { font-size: 10px; color: #8fa6c4; }
+  .projReq.met { color: var(--mp); }
+  .projReq .projReqL, .projReq .projReqN { display: inline-block; }
+  .projReq .projReqN { float: right; }
+  .projBar { height: 4px; margin-top: 3px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; clear: both; }
+  .projBar.big { height: 7px; margin-top: 6px; }
+  .projBar > i { display: block; height: 100%; background: var(--res); width: 0; }
+  .projReq.met .projBar > i { background: var(--mp); }
+  .projCommit { width: 100%; margin-top: 4px; border-color: var(--res); color: var(--res); }
+  .projCommit:hover { background: rgba(200,155,255,.14); }
+  .projStatus { font-size: 10px; letter-spacing: 1px; color: var(--stab); }
+  .projStatus.done { color: var(--mp); }
+  .projHidden { font-size: 10px; letter-spacing: .5px; color: #66788f; opacity: .8; padding: 4px 2px; }
   /* now-playing banner */
   #nowPlaying { position: fixed; left: 18px; bottom: 64px; z-index: 17; background: linear-gradient(90deg, rgba(8,14,26,.95), rgba(8,14,26,.7)); border: 1px solid var(--line); border-left: 3px solid var(--term); border-radius: 5px; padding: 8px 18px 8px 13px; color: var(--paper); pointer-events: none; opacity: 0; transform: translateX(-26px); transition: opacity .5s, transform .5s; box-shadow: 0 8px 30px rgba(0,0,0,.5); max-width: 340px; }
   #nowPlaying.show { opacity: 1; transform: translateX(0); }
@@ -2842,6 +2876,93 @@ function society(kind) {
 }
 
 /* =====================================================================
+   MEGAPROJECTS — civilization-scale endgame undertakings, shown in a
+   dedicated PROJECTS tab inside the research menu. Three KINDS:
+     forge    — produces a super-unit
+     edifice  — a megastructure with a permanent global effect
+     doctrine — a course-of-action / rule + society shift, no structure
+   A project is gated NOT just by spending currency but by PHYSICALLY
+   BUILDING infrastructure (reqs). Satisfy reqs by playing, COMMIT it,
+   then it runs a timed BUILD phase during live gameplay (updateProjects).
+   FOG OF WAR — see projFog() below: hidden -> hinted -> revealed ->
+   building -> done. research:[] means the conventional path stays viable
+   (no tech required to ever see/commit it). */
+const PROJECTS = [
+  { id: 'deepcore', kind: 'edifice', name: 'Deep Core Drill', branch: 'econ', research: [],
+    teaser: 'Bore into the planet\'s core for limitless industrial power.',
+    desc: 'A hundred-mile drill into the mantle — massively boosts your industrial output.',
+    reqs: [ { type: 'build', key: 'powerplant', n: 4 }, { type: 'build', key: 'extractor', n: 2 }, { type: 'ic', n: 15000 } ],
+    build: { secs: 90, ic: 0, speedBy: 'powerplant' },
+    effect: g => { g.mult.econ += 2.0; } },
+  { id: 'totalwar', kind: 'doctrine', name: 'Total War Economy', branch: 'military', research: [],
+    teaser: 'Throw every constraint aside — total war footing.',
+    desc: 'Production and manpower surge and your army cap grows, but society hardens toward dystopia.',
+    reqs: [ { type: 'build', key: 'factory', n: 3 }, { type: 'build', key: 'barracks', n: 2 } ],
+    build: { secs: 60, ic: 6000 },
+    /* g.mult.capb (not a bare g.capBonus field) is the real army-cap multiplier the rest of the game reads — see armyCap() */
+    effect: g => { g.mult.econ += .6; g.mult.mp += .6; g.mult.capb += 20; if (typeof society === 'function') society('dystopia'); } },
+  { id: 'grandarsenal', kind: 'forge', name: 'The Grand Arsenal', branch: 'military', research: ['fusion'],
+    teaser: 'The largest war machine industry can forge.',
+    desc: 'Marshals every foundry in the nation at once to forge a single walking colossus of a war machine — a placeholder for the future boss-scale Grand Arsenal builds.',
+    reqs: [ { type: 'build', key: 'factory', n: 5 }, { type: 'ic', n: 20000 } ],
+    build: { secs: 120, ic: 0, speedBy: 'factory' },
+    /* spawnUnit() is a free placement (no cost deduction) — the assembled hull just appears at the capital */
+    effect: g => { const cap = g.cities.find(c => c.capital) || g.cities[0]; spawnUnit('titan', cap ? cap.x : WORLD_W / 2); } },
+];
+/* per-save project progress: id -> { committed, progress, icPaid, built } — lazily created, see projState() */
+function projState(id) { if (!G.projects) G.projects = {}; return G.projects[id] || (G.projects[id] = { committed: false, progress: 0, icPaid: 0, built: false }); }
+function countBuildings(key) { let n = 0; if (G.buildings) for (const b of G.buildings) if (b.key === key && b.done !== false && !b.captured) n++; return n; }
+function countUnits(key) { let n = 0; if (G.units) for (const u of G.units) if (u.key === key && u.hp > 0) n++; return n; }
+/* one condition -> {have, need} progress; add new req types here as the designer's project list grows */
+function projReqProgress(req) {
+  switch (req.type) {
+    case 'build': return { have: countBuildings(req.key), need: req.n };
+    case 'unit': return { have: countUnits(req.key), need: req.n };
+    case 'ic': return { have: Math.floor(G.ic || 0), need: req.n };
+    case 'mp': return { have: Math.floor(G.mp || 0), need: req.n };
+    case 'antimatter': return { have: Math.floor(G.antimatter || 0), need: req.n };
+    case 'research': return { have: (G.unlocked && G.unlocked[req.key]) ? 1 : 0, need: 1 };
+    default: return { have: 0, need: 1 };
+  }
+}
+function projReqMet(req) { const pr = projReqProgress(req); return pr.have >= pr.need; }
+/* fog state for a project: hidden -> hinted -> revealed -> building -> done */
+function projFog(p) {
+  const st = projState(p.id);
+  if (st.built) return 'done';
+  if (st.committed) return 'building';
+  if (p.research.length && !p.research.every(k => G.unlocked && G.unlocked[k])) return 'hidden';   // not yet on the path
+  return p.reqs.every(projReqMet) ? 'revealed' : 'hinted';
+}
+/* advance every COMMITTED-but-not-built project — called from updateGame (already guarded by G.over there) */
+function updateProjects(dt) {
+  if (!G.projects) return;
+  for (const p of PROJECTS) {
+    const st = G.projects[p.id]; if (!st || !st.committed || st.built) continue;
+    const b = p.build || {};
+    let speedMul = 1; if (b.speedBy) speedMul += 0.15 * countBuildings(b.speedBy);   // more supporting facilities finish the build faster
+    st.progress = (st.progress || 0) + dt * speedMul;
+    if (b.ic) {   // IC DRAW-DOWN — same shape as research funding: siphons up to ic/secs per second, stretches (never stalls) if underfunded
+      const rate = b.ic / Math.max(.1, b.secs), pay = Math.min(G.ic, rate * dt, b.ic - (st.icPaid || 0));
+      if (pay > 0) { G.ic -= pay; st.icPaid = (st.icPaid || 0) + pay; }
+    }
+    const icDone = !b.ic || (st.icPaid || 0) >= b.ic;
+    if (st.progress >= (b.secs || 0) && icDone) {
+      st.built = true; p.effect(G);   // effect fires exactly once — the built flag latches it out of this loop for good
+      toast('🏛 PROJECT COMPLETE — ' + p.name); try { (SFX.research || SFX.build || (() => {}))(); } catch (e) {}
+    }
+  }
+}
+/* commit a REVEALED project — no instant effect, the build phase runs the rest during live play */
+function commitProject(id) {
+  const p = PROJECTS.find(x => x.id === id); if (!p || projFog(p) !== 'revealed') return;
+  const st = projState(id); st.committed = true; st.progress = 0; st.icPaid = 0;
+  try { SFX.build(); } catch (e) {}
+  toast('◈ PROJECT COMMITTED — ' + p.name);
+  buildProjects();
+}
+
+/* =====================================================================
    SCENARIO / NEW GAME
    ===================================================================== */
 // ── INHERITED NATION (all tunable) — you take command of an existing country, not bare dirt. Every city
@@ -2880,6 +3001,7 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
+    projects: {},     // MEGAPROJECTS — id -> { committed, progress, icPaid, built }, lazily filled by projState() (see PROJECTS)
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
@@ -4243,6 +4365,7 @@ function updateGame(dt) {
     if (pay > 0) { G.inf -= pay; rs.paid += pay; infSpentThisFrame = true; if (G.stats) G.stats.spentInf += pay; }
     if (rs.paid >= rs.cost) finishResearch();
   } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
+  updateProjects(dt);   // MEGAPROJECTS — advance any committed build phases (see PROJECTS)
   // INFLUENCE MOMENTUM — patiently NOT spending ramps income up to 3× over ~75s of saving; any spend (research draw,
   // building placement) snaps it straight back down to baseline. Rewards saving up, discourages influence-spam.
   const MOM_CAP = 3.0, MOM_TAU = 25;   // exponential approach: ~95% of the way to the cap after ~75s (3×tau) of uninterrupted saving
@@ -7332,9 +7455,11 @@ function buildResearch() {
   if (!m) {
     m = document.createElement('div'); m.className = 'modal-bg'; m.id = 'resModal';
     m.innerHTML = `<div class="modal"><h2>RESEARCH — DOCTRINE TREE</h2>
+      <div class="resTabs"><button class="pill tabBtn on" id="tabResearch" onclick="switchResTab('research')">RESEARCH</button><button class="pill tabBtn" id="tabProjects" onclick="switchResTab('projects')">PROJECTS</button></div>
       <div class="resHead"><span>Influence <b id="resInf">0</b></span><span>Income <b id="resIncome">+0/s</b></span><span>Era <b id="resEra">—</b></span><span class="resActive" id="resActive"></span><span class="resLegend">hover a node → its detail + prerequisites light up (blue) · drag to pan · pinch / scroll to zoom · ★ superweapon · red = dangerous · ONE research at a time</span></div>
       <div class="resBoard" id="resBoard"><div class="resCanvas" id="resCanvas"><svg id="resSvg" viewBox="0 0 1200 600" preserveAspectRatio="none"></svg></div></div>
       <div id="resDetail" class="resDetail"></div>
+      <div id="projView" class="projView" style="display:none"></div>
       <div class="actions"><button class="pill" onclick="closeModal('resModal')">CLOSE</button></div></div>`;
     document.body.appendChild(m);
     // PAN + PINCH-ZOOM camera — one-finger drag pans, two fingers pinch-zoom, wheel zooms; taps still select nodes. Works on phone (the old version was mouse-scroll only).
@@ -7421,6 +7546,70 @@ function showResDetail(key) {
   for (const d of units) { const x = cans[i++].getContext('2d'); x.translate(32, 26); x.scale(1.5, 1.5); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 7, -.6); } catch (e) {} }
   for (const d of blds) { const x = cans[i++].getContext('2d'); x.translate(32, 35); x.scale(.7, .7); try { (BART[d.key] || BART.factory)(x, d.w, d.h); } catch (e) {} }
 }
+// ── MEGAPROJECTS TAB — toggles the research tree vs the project cards. Never tears down window.__resCam:
+// the tree just goes display:none so pan/zoom state survives switching back.
+function switchResTab(tab) {
+  const m = document.getElementById('resModal'); if (!m) return;
+  const board = document.getElementById('resBoard'), detail = document.getElementById('resDetail'), head = m.querySelector('.resHead'), pv = document.getElementById('projView');
+  const tb = document.getElementById('tabResearch'), tp = document.getElementById('tabProjects');
+  const onProjects = tab === 'projects';
+  if (board) board.style.display = onProjects ? 'none' : '';
+  if (head) head.style.display = onProjects ? 'none' : '';
+  if (detail) { detail.classList.remove('show'); detail.style.display = onProjects ? 'none' : ''; }
+  if (pv) pv.style.display = onProjects ? 'block' : 'none';
+  if (tb) tb.classList.toggle('on', !onProjects); if (tp) tp.classList.toggle('on', onProjects);
+  if (onProjects) buildProjects();
+}
+const PROJ_KIND_LABEL = { forge: 'FORGE', edifice: 'EDIFICE', doctrine: 'DOCTRINE' };
+// human-readable label for a requirement row — projects can supply their own req.label, else this derives one from type+key
+function projReqLabel(req) {
+  if (req.label) return req.label;
+  switch (req.type) {
+    case 'build': return req.n + '× ' + ((BUILD_DEFS[req.key] && BUILD_DEFS[req.key].name) || req.key);
+    case 'unit': return req.n + '× ' + ((UNIT_DEFS[req.key] && UNIT_DEFS[req.key].name) || req.key);
+    case 'ic': return req.n.toLocaleString() + ' IC';
+    case 'mp': return req.n.toLocaleString() + ' Manpower';
+    case 'antimatter': return req.n.toLocaleString() + ' Antimatter';
+    case 'research': return ((RESEARCH[req.key] && RESEARCH[req.key].name) || req.key) + ' researched';
+    default: return req.type;
+  }
+}
+function projReqRowHtml(req) {
+  const pr = projReqProgress(req), pct = pr.need ? Math.min(100, pr.have / pr.need * 100) : 100, met = pr.have >= pr.need;
+  return `<div class="projReq${met ? ' met' : ''}"><span class="projReqL">${projReqLabel(req)}</span><span class="projReqN">${Math.min(pr.have, pr.need)}/${pr.need}</span><div class="projBar"><i style="width:${pct}%"></i></div></div>`;
+}
+function projCardHtml(p) {
+  const fog = projFog(p), st = projState(p.id);
+  let html = `<div class="projCard proj-${fog}"><div class="projCardHd"><span class="projKind projKind-${p.kind}">${PROJ_KIND_LABEL[p.kind]}</span><span class="projName">${p.name}</span></div>`;
+  if (fog === 'hinted') {
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+  } else if (fog === 'revealed') {
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projDesc">${p.desc}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+    html += `<button class="pill projCommit" onclick="commitProject('${p.id}')">COMMIT</button>`;
+  } else if (fog === 'building') {
+    const pct = Math.min(100, (st.progress || 0) / Math.max(.1, (p.build && p.build.secs) || 1) * 100);
+    html += `<div class="projDesc">${p.desc}</div><div class="projStatus">⏳ BUILDING…</div><div class="projBar big"><i style="width:${pct}%"></i></div>`;
+  } else if (fog === 'done') {
+    html += `<div class="projDesc">${p.desc}</div><div class="projStatus done">✅ COMPLETE</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+// renders #projView: cards grouped by KIND, hidden projects rolled up into a per-branch "N undiscovered" line
+function buildProjects() {
+  const pv = document.getElementById('projView'); if (!pv || !G) return;
+  let html = '';
+  for (const kind of ['forge', 'edifice', 'doctrine']) {
+    const list = PROJECTS.filter(p => p.kind === kind); if (!list.length) continue;
+    html += `<div class="projGroup"><h3 class="projGroupHd">${PROJ_KIND_LABEL[kind]}</h3><div class="projCards">`;
+    const hiddenByBranch = {};
+    for (const p of list) { const fog = projFog(p); if (fog === 'hidden') hiddenByBranch[p.branch] = (hiddenByBranch[p.branch] || 0) + 1; else html += projCardHtml(p); }
+    html += `</div>`;
+    for (const branch in hiddenByBranch) html += `<div class="projHidden">◈ ${hiddenByBranch[branch]} undiscovered project(s) down the ${branch} path</div>`;
+    html += `</div>`;
+  }
+  pv.innerHTML = html || '<div class="projHidden">No megaprojects defined yet.</div>';
+}
 function tickResearchUI() {
   const m = document.getElementById('resModal'); if (!m || !m.classList.contains('show') || !G) return;
   const inf = document.getElementById('resInf'); if (inf) { inf.textContent = Math.floor(G.inf); inf.style.color = 'var(--inf)'; }
@@ -7429,6 +7618,7 @@ function tickResearchUI() {
   const act = document.getElementById('resActive');
   if (act) { const q = G.resQueue.length ? ' · QUEUE: ' + G.resQueue.map(k => RESEARCH[k].name).join(' → ') : ''; act.textContent = (G.research ? ('◣ RESEARCHING ' + RESEARCH[G.research.key].name + ' — ' + Math.round(G.research.paid / G.research.cost * 100) + '% funded') : (G.resQueue.length ? 'starting queue…' : 'no active research — click nodes to queue them')) + q; }
   const bar = m.querySelector('.rnode2.active .rbar > i'); if (bar && G.research) bar.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%';
+  const pv = document.getElementById('projView'); if (pv && pv.style.display !== 'none') buildProjects();   // keep requirement/progress bars live while the PROJECTS tab is open
 }
 
 // canvas interaction

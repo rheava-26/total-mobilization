@@ -3854,7 +3854,7 @@ function hurt(t, dmg, ix, iy) {
   // ENERGY SHIELD RULE: only an active shield resists hits. Without one, units get DUMPSTERED — and the less armor, the worse: unarmored (esp. aircraft) die in a couple of hits.
   const fragile = !(t._b || t._city), rawArmor = (t.d && t.d.armor) || t.armor || 0;
   const eff = Math.max(1, dmg * (fragile ? HIT_BUFF * (rawArmor < 4 ? 2.7 : 1.9) : 1) - armor);
-  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
+  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (t.d && t.d.domain === 'air') t.evadeT = 2; /* EVASION TRIGGER — any un-answered hit on an airborne friendly makes it skittish for ~2s; see the air-unit no-reachable-target branch in updUnits, which jinks/retreats instead of loitering while this is > 0 */ if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
 // SQUAD FOOTPRINT DAMAGE — a round landing anywhere inside the squad's collision radius (see hurt() above) is
 // routed here and EATS THROUGH the living bodies NEAREST the actual impact point (ix,iy, defaulting to the
 // squad's own position when a caller doesn't know exactly where the round landed), nearest-first: the closest
@@ -5142,6 +5142,7 @@ function updUnits(dt) {
           q.hp = (q.hp || 1) - SHIP_CIWS_DMG; G.proj.push({ k: 'beam', x1: u.x, y1: sy0, x2: q.x, y2: q.y, life: .06, friendly: true, dmg: 0 }); if (q.hp <= 0) { q.life = 0; spark(q.x, q.y, 2); } shots--; } }
     }
     if (d.domain === 'air') {   // aircraft scream across the map to INTERCEPT the nearest threat (beyond visual range), then weave & strafe — fast & agile
+      if (u.evadeT > 0) u.evadeT -= dt;   /* EVASION TIMER — ticks down regardless of state; see hurt() for where it's set and the no-reachable-target branch below for where it's consumed */
       if (u.spool > 0) { u.spool -= dt; continue; }   // scrambling from the pad — freshly built/refuelled aircraft sit parked for a few seconds before they're combat-ready
       if (u.maxFuel != null && !u.docked) {   // FUEL: burns while airborne; forces RTB once only enough remains to reach a base + a 5% reserve. Running dry NO LONGER crashes — the aircraft just commits to landing.
         u.fuel -= AIR_FUEL_BURN * dt;
@@ -5283,6 +5284,12 @@ function updUnits(dt) {
           else { const orbit = Math.min(rng * .5, 240); const tx = hunt.x + Math.cos(u.wob) * orbit; u.vx += (tx - u.x) * 2.4 * dt; }   // weave around it
           dy = Math.max(airTopY(), Math.min(landY(u.x) - 28, hunt.y - 22 + Math.sin(u.wob) * 30));
         }
+      } else if (u.evadeT > 0) {   /* EVASION — this jet has NO reachable target anywhere (hunt came up null: whatever's shooting at it sits above its ceiling, e.g. orbital railguns/rods) AND it just took an un-answered hit (evadeT, set in hurt()). It cannot fight back, so it bugs out of the open kill zone instead of loitering as a stationary target: hard jink + full-speed run for the nearest friendly base + dive for the deck under friendly AA cover. Resumes normal patrol the instant evadeT expires or a reachable target shows up (the hunt branch above takes priority every frame). */
+        u.wingCommit = false;
+        const home = currentBase(u), hx = home ? home.x : u.x;
+        u.vx += (Math.sign(hx - u.x) * spd * 1.4 - u.vx * .4) * dt;   // sprint for home at full speed, not the gentle patrol ease
+        u.vx += Math.sin(u.wob * 4.5) * spd * .9 * dt;   // hard erratic jink — much sharper than the idle weave, so it's never a stationary target
+        dy = Math.min(landY(u.x) - 40, u.patrol + 220);   // dive well below patrol altitude, out from under the orbital guns
       } else {   // NO role-valid target anywhere in the sky → don't hover pointlessly. DRIFT toward the nearest threat of
                  // ANY kind (the front) at a relaxed cruise so idle fighters flow to where the fighting is and are already
                  // on-station when a valid target appears; pure loiter only when the map is genuinely clear of enemies.

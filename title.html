@@ -320,6 +320,9 @@
   #musicModal .maddrow input { flex: 1; background: #0a1322; border: 1px solid var(--line); border-radius: 4px; color: #eaf2ff; padding: 8px 10px; font-family: inherit; font-size: 12px; }
   #musicModal .maddrow .pill { white-space: nowrap; }
   #musicModal .mnote { font-size: 10.5px; color: #7c90ac; margin-top: 6px; line-height: 1.5; }
+  #musicModal .mmodetoggle { display: flex; align-items: center; margin: 2px 0 12px; }
+  #musicModal .mtoggle { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 11px; letter-spacing: .5px; }
+  #musicModal .mtoggle input { width: 15px; height: 15px; accent-color: var(--term); cursor: pointer; }
 
   /* ===== MOBILE / SMALL SCREENS — compact HUD, touch-sized targets ===== */
   @media (pointer: coarse) {
@@ -593,13 +596,20 @@
 </div></div>
 
 <div class="modal-bg" id="musicModal"><div class="modal">
-  <h2>SOUNDTRACK</h2><div class="hd">// PASTE YOUTUBE LINKS — PLAYS IN-GAME</div>
+  <h2>SOUNDTRACK</h2><div class="hd">// PASTE YOUTUBE LINKS, OR PLAY YOUR OWN FILES — PLAYS IN-GAME</div>
+  <div class="mmodetoggle"><label class="mtoggle" for="lmModeToggle"><input type="checkbox" id="lmModeToggle" /> USE LOCAL FILES (NO ADS)</label></div>
   <div class="mcol">
     <div class="mlist" id="mlistPrep"><h4>♫ PEACETIME (PREP)</h4></div>
     <div class="mlist" id="mlistCombat"><h4>☢ COMBAT (INVASION)</h4></div>
   </div>
-  <div class="maddrow"><input id="ytUrl" placeholder="paste a YouTube link or video ID…" /><button class="pill" id="addPrep">+ PEACETIME</button><button class="pill" id="addCombat">+ COMBAT</button></div>
-  <div class="mnote">Tracks stream from YouTube and are saved on this device. Peacetime plays while you build; the playlist crossfades to Combat the moment the invasion lands. If a video can't be embedded it's auto-skipped. Click a track to play it now.</div>
+  <div class="maddrow" id="ytAddRow"><input id="ytUrl" placeholder="paste a YouTube link or video ID…" /><button class="pill" id="addPrep">+ PEACETIME</button><button class="pill" id="addCombat">+ COMBAT</button></div>
+  <div class="maddrow" id="lmAddRow" style="display:none">
+    <button class="pill" id="lmAddPrep">＋ ADD TRACKS (PEACETIME)</button>
+    <button class="pill" id="lmAddCombat">＋ ADD TRACKS (COMBAT)</button>
+    <input type="file" id="lmFilePrep" accept="audio/*" multiple style="display:none" />
+    <input type="file" id="lmFileCombat" accept="audio/*" multiple style="display:none" />
+  </div>
+  <div class="mnote" id="musModeNote">Tracks stream from YouTube and are saved on this device. Peacetime plays while you build; the playlist crossfades to Combat the moment the invasion lands. If a video can't be embedded it's auto-skipped. Click a track to play it now.</div>
   <div class="actions"><button class="pill primary" onclick="closeModal('musicModal')">DONE</button></div>
 </div></div>
 
@@ -911,7 +921,61 @@ function loadPlaylists() { try { const s = localStorage.getItem('tm_playlists');
 function savePlaylists() { try { localStorage.setItem('tm_playlists', JSON.stringify(MUSIC)); } catch (e) {} }
 function ytId(u) { u = (u || '').trim(); if (!u) return null; const m = u.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/|music\.youtube\.com\/watch\?v=)([\w-]{11})/); if (m) return m[1]; if (/^[\w-]{11}$/.test(u)) return u; return null; }
 let MUSIC = loadPlaylists();
-const MUS = { on: true, vol: 55, phase: null, idx: { prep: 0, combat: 0 }, yt: null, ready: false, started: false, curVol: 0, fade: null, pending: false, track: null, apiAsked: false, warned: false, fails: 0, adOn: false, adPoll: 0 };
+/* =====================================================================
+   LOCAL MUSIC — an alternative backend that plays the player's OWN audio
+   files instead of streaming from YouTube (no ads, works offline). Files
+   are kept in IndexedDB (tm_localmusic / store "tracks", records
+   { id, phase, name, blob }) so they survive a reload; object URLs are
+   created lazily (on load / refresh) and revoked when no longer needed.
+   Every DB call is Promise-based and swallows its own errors so a browser
+   without IndexedDB, or a blocked read, can never throw into the game loop.
+   ===================================================================== */
+const LM_DB_NAME = 'tm_localmusic', LM_STORE = 'tracks';
+function lmOpenDB() {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!window.indexedDB) return reject(new Error('no indexedDB'));
+      const req = indexedDB.open(LM_DB_NAME, 1);
+      req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(LM_STORE)) db.createObjectStore(LM_STORE, { keyPath: 'id', autoIncrement: true }); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    } catch (e) { reject(e); }
+  });
+}
+function lmAdd(phase, file) {
+  /* stores the raw File/Blob under { phase, name, blob } — resolves the new id, or null on any failure */
+  return lmOpenDB().then(db => new Promise((resolve, reject) => {
+    try { const tx = db.transaction(LM_STORE, 'readwrite'), store = tx.objectStore(LM_STORE), req = store.add({ phase: phase === 'combat' ? 'combat' : 'prep', name: (file && file.name) || 'track', blob: file });
+      req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); } catch (e) { reject(e); }
+  })).catch(e => { console.warn('lmAdd failed', e); return null; });
+}
+function lmAll() {
+  /* resolves an array of every stored record, or [] on any failure */
+  return lmOpenDB().then(db => new Promise((resolve, reject) => {
+    try { const tx = db.transaction(LM_STORE, 'readonly'), store = tx.objectStore(LM_STORE), req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []); req.onerror = () => reject(req.error); } catch (e) { reject(e); }
+  })).catch(e => { console.warn('lmAll failed', e); return []; });
+}
+function lmDelete(id) {
+  return lmOpenDB().then(db => new Promise((resolve, reject) => {
+    try { const tx = db.transaction(LM_STORE, 'readwrite'), store = tx.objectStore(LM_STORE), req = store.delete(id);
+      req.onsuccess = () => resolve(true); req.onerror = () => reject(req.error); } catch (e) { reject(e); }
+  })).catch(e => { console.warn('lmDelete failed', e); return false; });
+}
+function lmRefresh() {
+  /* rebuilds MUS.local from IndexedDB, minting fresh object URLs and revoking the old ones so nothing leaks */
+  return lmAll().then(records => {
+    try { for (const ph of ['prep', 'combat']) for (const t of (MUS.local[ph] || [])) { if (t.url) URL.revokeObjectURL(t.url); } } catch (e) {}
+    const next = { prep: [], combat: [] };
+    for (const r of records) { const ph = r.phase === 'combat' ? 'combat' : 'prep'; let url = null; try { url = URL.createObjectURL(r.blob); } catch (e) {} if (url) next[ph].push({ id: r.id, name: r.name, url }); }
+    MUS.local = next; return next;
+  }).catch(e => { console.warn('lmRefresh failed', e); return MUS.local; });
+}
+function loadMusMode() { try { return localStorage.getItem('tm_musmode') === 'local' ? 'local' : 'yt'; } catch (e) { return 'yt'; } }
+function saveMusMode() { try { localStorage.setItem('tm_musmode', MUS.mode); } catch (e) {} }
+function makeMusAudio() { try { const a = new Audio(); a.preload = 'auto'; a.onended = () => { if (MUS.mode === 'local') localNext(); }; return a; } catch (e) { return null; } }
+const MUS = { on: true, vol: 55, phase: null, idx: { prep: 0, combat: 0 }, yt: null, ready: false, started: false, curVol: 0, fade: null, pending: false, track: null, apiAsked: false, warned: false, fails: 0, adOn: false, adPoll: 0, mode: loadMusMode(), local: { prep: [], combat: [] }, audio: makeMusAudio() };
+lmRefresh();   /* populate MUS.local on load so switching to local mode (or the modal) has tracks ready immediately */
 function loadYTApi() {
   if (MUS.apiAsked) return; MUS.apiAsked = true;
   const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api';
@@ -935,6 +999,7 @@ function musBanner(track, realTitle) { const b = document.getElementById('nowPla
    on=false restores the normal now-playing banner for the current track via musBanner (reuse, not duplication). */
 function musAdBanner(on) { const b = document.getElementById('nowPlaying'); if (!b) return; if (!on) { musBanner(MUS.track, null); return; } b.innerHTML = `<span class="npq">♫ AD</span><span class="npt">MUTED</span>`; b.classList.add('show'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('show'), 5400); }
 function musPlay(phase, fadeDur) {
+  if (MUS.mode === 'local') return localPlay(phase, fadeDur);
   if (!MUS.on) return;
   MUS.phase = phase;
   const list = MUSIC[phase]; if (!list || !list.length) return;
@@ -943,21 +1008,54 @@ function musPlay(phase, fadeDur) {
   try { MUS.yt.loadVideoById(track.id); MUS.yt.setVolume(0); MUS.curVol = 0; MUS.yt.playVideo(); } catch (e) {}
   MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 }; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0;   // a fresh track cancels any pending duck-restore; ad-mute state resets with it
 }
-function musNext() { const ph = MUS.phase; if (!ph || !MUSIC[ph] || !MUSIC[ph].length) return; MUS.idx[ph] = (MUS.idx[ph] + 1) % MUSIC[ph].length; musPlay(ph, 1.2); }
+function musNext() { if (MUS.mode === 'local') return localNext(); const ph = MUS.phase; if (!ph || !MUSIC[ph] || !MUSIC[ph].length) return; MUS.idx[ph] = (MUS.idx[ph] + 1) % MUSIC[ph].length; musPlay(ph, 1.2); }
 function musSkip() { MUS.fails++; if (MUS.fails > ((MUSIC[MUS.phase] || []).length + 1)) { if (!MUS.warned) { MUS.warned = true; toast('♫ playlist empty or unplayable — add YouTube links via the ≣ button'); } return; } musNext(); }
-function musDuck() { if (MUS.started) { MUS.fade = { to: MUS.vol * .28, dur: 2 }; MUS.duckRestore = 8; } }   // BUGFIX: duck the music sharply then AUTO-RESTORE after a hold. It used to set a one-way fade to 28% with no way back, so a boss-spawn duck (updEnemies) left the combat music permanently quiet.
-function musStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
+function musDuck() { if (MUS.started) { MUS.fade = { to: MUS.vol * .28, dur: 2 }; MUS.duckRestore = 8; } }   // BUGFIX: duck the music sharply then AUTO-RESTORE after a hold. It used to set a one-way fade to 28% with no way back, so a boss-spawn duck (updEnemies) left the combat music permanently quiet. Backend-agnostic — musTick applies the resulting fade to whichever of yt/audio is active.
+function musStop() { if (MUS.mode === 'local') return localStop(); MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
 function musToggle() { MUS.on = !MUS.on; const mb = document.getElementById('btnMus'); if (mb) mb.classList.toggle('on', MUS.on); if (!MUS.on) musStop(); else { MUS.fails = 0; if (G && mode === 'game') musPlay(G.phase === 'prep' ? 'prep' : 'combat', 1.5); } toast(MUS.on ? '♫ SOUNDTRACK ON' : '♫ SOUNDTRACK OFF'); }
-function musKick() { if (MUS.on && MUS.started && MUS.yt && MUS.ready) { try { const st = MUS.yt.getPlayerState(); if (st !== 1 && st !== 3) MUS.yt.playVideo(); } catch (e) {} } }   // nudge playback to resume after a user gesture (autoplay policy)
+function musKick() {
+  /* nudge playback to resume after a user gesture (autoplay policy) — routes to whichever backend is active */
+  if (!MUS.on || !MUS.started) return;
+  if (MUS.mode === 'local') { if (MUS.audio) try { if (MUS.audio.paused) { const p = MUS.audio.play(); if (p && p.catch) p.catch(() => {}); } } catch (e) {} return; }
+  if (MUS.yt && MUS.ready) { try { const st = MUS.yt.getPlayerState(); if (st !== 1 && st !== 3) MUS.yt.playVideo(); } catch (e) {} }
+}
+/* ----- LOCAL playback path (mirrors musPlay/musNext/musStop above, but drives MUS.audio instead of the YT player) ----- */
+function localPlay(phase, fadeDur) {
+  if (!MUS.on) return;
+  MUS.phase = phase;
+  const list = MUS.local[phase]; if (!list || !list.length) { MUS.started = false; return; }
+  const track = list[MUS.idx[phase] % list.length]; MUS.track = track;
+  if (!MUS.audio) return;
+  try {
+    if (MUS.audio.src !== track.url) MUS.audio.src = track.url;
+    MUS.audio.currentTime = 0; MUS.audio.volume = 0;
+    const p = MUS.audio.play(); if (p && p.catch) p.catch(() => {});   /* swallow the autoplay-policy rejection, same as the YT path */
+  } catch (e) {}
+  MUS.curVol = 0; MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 }; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0;
+  musBanner({ t: track.name, a: 'Local file' }, null);
+}
+function localNext() { const ph = MUS.phase, list = MUS.local[ph]; if (!ph || !list || !list.length) return; MUS.idx[ph] = (MUS.idx[ph] + 1) % list.length; localPlay(ph, 1.2); }
+function localStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; if (MUS.audio) try { MUS.audio.pause(); } catch (e) {} }
+function setMusMode(newMode) {
+  /* switches the active playback backend — stops whichever backend is currently running (musStop dispatches on the
+     OLD MUS.mode), flips the mode, persists it, then resumes on the new backend if music was playing */
+  newMode = newMode === 'local' ? 'local' : 'yt';
+  if (newMode === MUS.mode) return;
+  const wasStarted = MUS.started, ph = MUS.phase;
+  musStop();
+  MUS.mode = newMode; saveMusMode();
+  if (MUS.on && wasStarted && ph) { MUS.fails = 0; musPlay(ph, 1.5); }
+}
 function musTick(dt) {
-  if (!MUS.yt) return;
   if (MUS.duckRestore > 0 && MUS.started) { MUS.duckRestore -= dt; if (MUS.duckRestore <= 0 && !MUS.fade) MUS.fade = { to: MUS.vol, dur: 5 }; }   /* a duck's hold has expired -> swell the music back up to full */
   if (MUS.fade) {
     const f = MUS.fade, diff = f.to - MUS.curVol, mv = (100 / Math.max(.2, f.dur)) * dt;
-    if (Math.abs(diff) <= mv) { MUS.curVol = f.to; MUS.fade = null; if (f.to === 0) { try { MUS.yt.pauseVideo(); } catch (e) {} } }
+    if (Math.abs(diff) <= mv) { MUS.curVol = f.to; MUS.fade = null; if (f.to === 0) { if (MUS.mode === 'local') { if (MUS.audio) try { MUS.audio.pause(); } catch (e) {} } else if (MUS.yt) try { MUS.yt.pauseVideo(); } catch (e) {} } }
     else MUS.curVol += Math.sign(diff) * mv;
   }
   if (!MUS.on || !MUS.started) return;
+  if (MUS.mode === 'local') { if (MUS.audio) try { MUS.audio.volume = Math.max(0, Math.min(100, MUS.curVol)) / 100; } catch (e) {} return; }
+  if (!MUS.yt) return;
   /* AD-MUTING: YouTube injects ads mid-playback with no event we can hook. Detect one by polling getVideoData()
      (a cross-iframe call, so throttled to ~0.45s not every frame) and comparing its video_id to the id we actually
      requested (MUS.track.id) — a confirmed MISMATCH means an ad is playing. An empty/undefined video_id just means
@@ -975,19 +1073,37 @@ function musTick(dt) {
 }
 /* ----- in-game playlist editor (the ≣ button) ----- */
 function buildMusicModal() {
+  const modeChk = document.getElementById('lmModeToggle'); if (modeChk) modeChk.checked = MUS.mode === 'local';
+  const ytRow = document.getElementById('ytAddRow'), lmRow = document.getElementById('lmAddRow'), note = document.getElementById('musModeNote');
+  if (ytRow) ytRow.style.display = MUS.mode === 'local' ? 'none' : '';
+  if (lmRow) lmRow.style.display = MUS.mode === 'local' ? '' : 'none';
+  if (note) note.textContent = MUS.mode === 'local' ? 'Local files play straight from this device — no ads, no network. Use ＋ ADD TRACKS below to pick audio files for each phase; Peacetime plays while you build, Combat plays once the invasion lands. Click a track to play it now.' : "Tracks stream from YouTube and are saved on this device. Peacetime plays while you build; the playlist crossfades to Combat the moment the invasion lands. If a video can't be embedded it's auto-skipped. Click a track to play it now.";
   for (const ph of ['prep', 'combat']) {
     const el = document.getElementById(ph === 'prep' ? 'mlistPrep' : 'mlistCombat'); if (!el) continue;
     const head = el.querySelector('h4'); el.innerHTML = ''; if (head) el.appendChild(head);
-    const list = MUSIC[ph];
-    if (!list.length) { const e = document.createElement('div'); e.className = 'mnote'; e.textContent = 'empty — add a YouTube link below'; el.appendChild(e); }
-    list.forEach((tr, i) => {
-      const playingHere = MUS.phase === ph && (MUS.idx[ph] % Math.max(1, list.length)) === i && MUS.started;
-      const row = document.createElement('div'); row.className = 'mtrack' + (playingHere ? ' now' : '');
-      row.innerHTML = `<span class="nowdot">${playingHere ? '▶' : '♪'}</span><span class="tt">${tr.t}${tr.a ? ' · ' + tr.a : ''}</span><span class="mdel" title="remove">✕</span>`;
-      row.querySelector('.tt').onclick = () => { MUS.idx[ph] = i; MUS.on = true; const mb = document.getElementById('btnMus'); if (mb) mb.classList.add('on'); loadYTApi(); musPlay(ph, 1.0); buildMusicModal(); };
-      row.querySelector('.mdel').onclick = () => { MUSIC[ph].splice(i, 1); savePlaylists(); buildMusicModal(); };
-      el.appendChild(row);
-    });
+    if (MUS.mode === 'local') {
+      const list = MUS.local[ph] || [];
+      if (!list.length) { const e = document.createElement('div'); e.className = 'mnote'; e.textContent = 'no local tracks — add tracks above'; el.appendChild(e); }
+      list.forEach((tr, i) => {
+        const playingHere = MUS.phase === ph && (MUS.idx[ph] % Math.max(1, list.length)) === i && MUS.started;
+        const row = document.createElement('div'); row.className = 'mtrack' + (playingHere ? ' now' : '');
+        row.innerHTML = `<span class="nowdot">${playingHere ? '▶' : '♪'}</span><span class="tt">${tr.name}</span><span class="mdel" title="remove">✕</span>`;
+        row.querySelector('.tt').onclick = () => { MUS.idx[ph] = i; MUS.on = true; const mb = document.getElementById('btnMus'); if (mb) mb.classList.add('on'); localPlay(ph, 1.0); buildMusicModal(); };
+        row.querySelector('.mdel').onclick = () => { lmDelete(tr.id).then(() => lmRefresh()).then(() => buildMusicModal()); };
+        el.appendChild(row);
+      });
+    } else {
+      const list = MUSIC[ph];
+      if (!list.length) { const e = document.createElement('div'); e.className = 'mnote'; e.textContent = 'empty — add a YouTube link below'; el.appendChild(e); }
+      list.forEach((tr, i) => {
+        const playingHere = MUS.phase === ph && (MUS.idx[ph] % Math.max(1, list.length)) === i && MUS.started;
+        const row = document.createElement('div'); row.className = 'mtrack' + (playingHere ? ' now' : '');
+        row.innerHTML = `<span class="nowdot">${playingHere ? '▶' : '♪'}</span><span class="tt">${tr.t}${tr.a ? ' · ' + tr.a : ''}</span><span class="mdel" title="remove">✕</span>`;
+        row.querySelector('.tt').onclick = () => { MUS.idx[ph] = i; MUS.on = true; const mb = document.getElementById('btnMus'); if (mb) mb.classList.add('on'); loadYTApi(); musPlay(ph, 1.0); buildMusicModal(); };
+        row.querySelector('.mdel').onclick = () => { MUSIC[ph].splice(i, 1); savePlaylists(); buildMusicModal(); };
+        el.appendChild(row);
+      });
+    }
   }
 }
 function addTrackFromInput(phase) {
@@ -996,7 +1112,13 @@ function addTrackFromInput(phase) {
   MUSIC[phase].push({ id, t: 'YouTube track', a: '(added — title loads on play)' }); savePlaylists(); inp.value = ''; buildMusicModal();
   toast('♫ ADDED TO ' + (phase === 'prep' ? 'PEACETIME' : 'COMBAT') + ' PLAYLIST');
 }
-function openMusicModal() { loadYTApi(); buildMusicModal(); openModal('musicModal'); }
+function addLocalFiles(phase, fileList) {
+  /* stores each chosen file in IndexedDB, then refreshes MUS.local and the modal — non-fatal if the DB is unavailable */
+  if (!fileList || !fileList.length) return;
+  const files = Array.from(fileList);
+  Promise.all(files.map(f => lmAdd(phase, f))).then(() => lmRefresh()).then(() => { buildMusicModal(); toast('♫ ADDED TO ' + (phase === 'prep' ? 'PEACETIME' : 'COMBAT') + ' PLAYLIST'); }).catch(() => {});
+}
+function openMusicModal() { loadYTApi(); lmRefresh().then(() => buildMusicModal()); buildMusicModal(); openModal('musicModal'); }
 
 /* ---------- stars ---------- */
 let stars = [], starTarget = 150, skyStars = [];
@@ -7356,6 +7478,11 @@ document.getElementById('btnPlaylist').addEventListener('click', openMusicModal)
 document.getElementById('addPrep').addEventListener('click', () => addTrackFromInput('prep'));
 document.getElementById('addCombat').addEventListener('click', () => addTrackFromInput('combat'));
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') addTrackFromInput('prep'); });
+document.getElementById('lmModeToggle').addEventListener('change', e => { setMusMode(e.target.checked ? 'local' : 'yt'); buildMusicModal(); });
+document.getElementById('lmAddPrep').addEventListener('click', () => document.getElementById('lmFilePrep').click());
+document.getElementById('lmAddCombat').addEventListener('click', () => document.getElementById('lmFileCombat').click());
+document.getElementById('lmFilePrep').addEventListener('change', e => { addLocalFiles('prep', e.target.files); e.target.value = ''; });
+document.getElementById('lmFileCombat').addEventListener('change', e => { addLocalFiles('combat', e.target.files); e.target.value = ''; });
 document.getElementById('endReturn').addEventListener('click', backToTitle);
 document.querySelectorAll('.sbtn').forEach(b => b.addEventListener('click', () => { if (!G) return; G.speed = +b.dataset.spd; if (G.ach) G.ach.speedChg = (G.ach.speedChg || 0) + 1; document.querySelectorAll('.sbtn').forEach(x => x.classList.toggle('act', x === b)); }));
 

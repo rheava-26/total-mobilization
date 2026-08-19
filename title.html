@@ -4366,13 +4366,25 @@ function sampleHist() {
   }
 }
 // AFTER-ACTION MAP SNAPSHOTS — grabs the current rendered frame off the main canvas as a JPEG data: URI, stashed under
-// G.stats.snap.{prep,mid,end}. Purely a read of the already-drawn pixel buffer — never touches game state.
+// G.stats.snap.{start,prep,end}. Purely a read of the already-drawn pixel buffer — never touches game state.
+// Drawn DOWN onto a small cached offscreen canvas first, then exported from THAT — on a big high-DPI phone canvas,
+// toDataURL() on the FULL-SIZE canvas silently returns a blank image (a known mobile limitation), so we never
+// export the main canvas directly.
+let _snapCv = null;
 function captureSnap(label) {
   if (!G || !G.stats || !cv) return;
-  try { G.stats.snap[label] = cv.toDataURL('image/jpeg', 0.55); } catch (er) {}
+  try {
+    if (!_snapCv) _snapCv = document.createElement('canvas');
+    const sw = 800, sh = Math.max(1, Math.round(cv.height / cv.width * 800));
+    if (_snapCv.width !== sw || _snapCv.height !== sh) { _snapCv.width = sw; _snapCv.height = sh; }
+    const octx = _snapCv.getContext('2d');
+    octx.drawImage(cv, 0, 0, sw, sh);
+    G.stats.snap[label] = _snapCv.toDataURL('image/jpeg', 0.5);
+  } catch (er) {}
 }
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
+  if (G.stats && !G.stats.snap.start && G.time > 1.2) captureSnap('start');   // AFTER-ACTION — "MOBILIZATION" snapshot, taken once a couple frames have rendered at the outset
   updAmbient(dt);   // 🚗✈🚤 cosmetic ambient life tick — see AMBIENT LIFE (never touches gameplay state)
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
@@ -4547,7 +4559,6 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
       G.acqLockT -= dt; if (G.acqLockT <= 0) { const nb = G.acqOrder.find(b => !b._acqLock && b.hp > 0); if (nb) { nb._acqLock = 1; if (SFX.click) SFX.click(); } G.acqLockT = Math.max(.2, 13 / (G.acqOrder.length + 1)); }
       if (G.acqT <= 0) { G.acqPhase = false; for (const b of G.buildings) b._acqLock = 0; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
     if (!G.acqPhase) G.invTime += dt;
-    if (G.stats && !G.stats.snap.mid && G.invTime >= 45) captureSnap('mid');   // AFTER-ACTION — "MIDWAR" snapshot, taken once ~45s into the invasion
     if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
     if (!G.acqPhase && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
@@ -7299,7 +7310,7 @@ function renderAARWorld() {
   const host = document.getElementById('pgWorld'); if (!host) return;
   const st = G && G.stats; if (!st) { host.innerHTML = '<div class="aar-empty">// no telemetry</div>'; return; }
   let html = '';
-  const snaps = [['prep', 'THE FORTRESS — right before re-entry'], ['mid', 'MIDWAR'], ['end', 'AFTERMATH']];
+  const snaps = [['start', 'MOBILIZATION — the outset'], ['prep', 'THE FORTRESS — right before re-entry'], ['end', 'AFTERMATH']];
   const have = snaps.filter(([k]) => st.snap && st.snap[k]);
   html += '<div class="aar-snaps">';
   if (!have.length) html += '<div class="aar-empty">// no map snapshots were captured this campaign</div>';
@@ -7329,7 +7340,7 @@ function aarReportHTML() {
   const blt = Object.entries(st.built).sort((a, b) => b[1] - a[1]);
   const resRows = ['steel', 'oil', 'rare', 'uranium'].map(k => SR[k] ? ['Captured: ' + SR[k].name, (st.resourcesCaptured && st.resourcesCaptured[k]) || 0] : null).filter(Boolean);
   const intentLbl = (INTENT[st.intent] && INTENT[st.intent].label) || (st.intent || '—').toUpperCase();
-  const snapsHTML = ['prep', 'mid', 'end'].map(k => { const cap = k === 'prep' ? 'THE FORTRESS — right before re-entry' : k === 'mid' ? 'MIDWAR' : 'AFTERMATH'; return (st.snap && st.snap[k]) ? '<figure><img src="' + st.snap[k] + '"><figcaption>' + cap + '</figcaption></figure>' : ''; }).join('');
+  const snapsHTML = ['start', 'prep', 'end'].map(k => { const cap = k === 'start' ? 'MOBILIZATION — the outset' : k === 'prep' ? 'THE FORTRESS — right before re-entry' : 'AFTERMATH'; return (st.snap && st.snap[k]) ? '<figure><img src="' + st.snap[k] + '"><figcaption>' + cap + '</figcaption></figure>' : ''; }).join('');
   return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
     'body{background:#050a16;color:#d8ecff;font-family:Consolas,monospace;margin:0;padding:28px 24px;max-width:960px}' +
     'h1{color:#fff;letter-spacing:2px;font-size:26px;margin:0 0 2px}h2{color:#6dffb0;letter-spacing:1.5px;font-size:14px;margin:26px 0 8px;border-bottom:1px solid #244468;padding-bottom:4px}h3{color:#9fb6d4;font-size:12px;letter-spacing:1px;margin:0 0 6px}' +

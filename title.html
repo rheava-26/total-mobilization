@@ -3106,6 +3106,14 @@ const CRISIS_SAFE_FLOOR = 40;    // recovery completes once stability reaches th
 const CRISIS_GRACE_T    = 20;    // seconds of immunity AFTER recovery: the crisis cannot re-trigger, giving you a real window to fix the root cause (retake cities, raise the cap) before it can happen again — kills the per-frame flip-flop
 const CRISIS_LOSS_COUNT = 4;     // reaching this many stacked-up crises ends the run — the loss now comes from SUSTAINED inability to hold the nation together across MULTIPLE collapses, not a per-frame dip
 const CRISIS_COUNT_FORGIVE = 60; // seconds to forgive ONE crisis off the running count once you're stable again — survive and space them out and you never hit the loss; collapse repeatedly in quick succession and you do
+// ── STALEMATE WATCHDOG — the game must never soft-lock forever. If an impenetrable defense faces an unkillable
+// remainder of the fleet, neither WIN (fleet drained + all enemies dead) nor LOSE (cities gone / capitulation) can
+// ever trigger, and the match idles at high speed forever. "Progress" for either side is a city being lost/occupied
+// (the enemy advancing) or G.fleet dropping (the autofleet's pool being consumed — i.e. you making headway on it).
+// invTime units are GAME-seconds (see G.invTime += dt inside the invasion branch of updateGame), matching how the
+// rest of the invasion pacing (waves, bosses) is already timed — NOT wall-clock seconds.
+const STALEMATE_WINDOW  = 240;   // game-seconds with ZERO progress from either side before we call it a draw
+const STALEMATE_ABS_CAP = 900;   // absolute safety cap: an unresolved invasion this long ends in a stalemate no matter what
 function ugAllowed(d) { return !!d.rail || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't
 function digLevel(key) { const d = BUILD_DEFS[key]; if (d.rail) return 1; if (d.autoBury) return Math.min(2, d.autoBury); if (G && G.dig && ugAllowed(d)) return Math.min(2, G.dig | 0); return 0; }   // 0 surface · 1 shallow · 2 deep — rail hubs & autoBury buildings always sink
 function placeUg(key) { return digLevel(key) > 0; }
@@ -4469,6 +4477,16 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
   // TUNNEL ASSAULT — once enemy ground forces reach a buried structure's surface position they breach the tunnels (shallow caves in fast; deep resists). Underground is safer, not invincible.
   for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
   if (G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
+  // ── STALEMATE WATCHDOG — see STALEMATE_WINDOW/STALEMATE_ABS_CAP above. Runs AFTER the city-loss/capture sweep so
+  // citiesBad reflects this tick's outcome. Tracked lazily on G (no newGame/phase-transition edit needed): first
+  // tick of the invasion seeds the baseline, every later tick compares against it.
+  if (G.phase === 'invasion' && !G.over) {
+    const citiesBad = G.cities.filter(ct => ct.hp <= 0 || ct.held).length, fleetNow = G.fleet || 0;
+    if (G._smBaseline == null) { G._smBaseline = true; G._smFleet = fleetNow; G._smCitiesBad = citiesBad; G.lastProgress = G.invTime || 0; }
+    if (citiesBad > G._smCitiesBad || fleetNow < G._smFleet) G.lastProgress = G.invTime || 0;   // either side made headway — reset the drought timer
+    G._smFleet = fleetNow; G._smCitiesBad = citiesBad;
+    if ((G.invTime || 0) - (G.lastProgress || 0) >= STALEMATE_WINDOW || (G.invTime || 0) >= STALEMATE_ABS_CAP) return end('stalemate', 'NEITHER SIDE COULD FORCE A DECISION');
+  }
   // ── CAPITULATION CRISIS ───────────────────────────────────────────────────────────────────
   // Effective stability hitting 0 is no longer an instant "gotcha" defeat, NOR a permanent 0-pin you
   // oscillate against every frame. It triggers a BOUNDED, RECOVERABLE emergency that runs as a small
@@ -6908,13 +6926,17 @@ function enterGame() { if (mode === 'game') return; mode = 'game'; document.body
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; }
 function end(win, msg) {
-  if (!G || G.over) return; G.over = win ? 'win' : 'lose';
+  /* THIRD OUTCOME: win === 'stalemate' is a draw — the invasion watchdog fired because neither side could force a decision. Distinct from true (win) / false (lose); never counts as a win for achievements. */
+  const isDraw = win === 'stalemate';
+  if (!G || G.over) return; G.over = isDraw ? 'stalemate' : (win ? 'win' : 'lose');
   if (G.stats) { G.stats.society = G.society || null; G.stats.eraReached = typeof curEra === 'function' ? curEra() : 0; }   // AFTER-ACTION — final civilizational state + tech era, captured once at the end
-  // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set.
-  if (G.ach) { if (win) { G.ach.won = true; markEver('win', G.intent); } else { G.ach.lostReason = msg || ''; if (G.phase === 'prep') G.ach.couped = true; } }   // ACHIEVEMENT: a stability collapse that ends the game before the invasion phase begins is a COUP, not a battlefield loss
+  // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set. A stalemate is neither a win nor a battlefield loss, so it records nothing achievement-relevant.
+  if (G.ach) { if (win === true) { G.ach.won = true; markEver('win', G.intent); } else if (!isDraw) { G.ach.lostReason = msg || ''; if (G.phase === 'prep') G.ach.couped = true; } }   // ACHIEVEMENT: a stability collapse that ends the game before the invasion phase begins is a COUP, not a battlefield loss
   try { checkAchievements(); } catch (er) {}
   const e = document.getElementById('endScreen'); e.style.display = 'flex';
-  const t = document.getElementById('endTitle'); t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)';
+  const t = document.getElementById('endTitle');
+  if (isDraw) { t.textContent = 'STALEMATE — A WAR WITHOUT END'; t.style.color = '#9fb0c8'; }
+  else { t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)'; }
   // ── AFTER-ACTION SUMMARY ───────────────────────────────────────────────
   const citiesAlive = G.cities ? G.cities.filter(c => c.hp > 0 && !c.held).length : 0, citiesTot = G.cities ? G.cities.length : 0;
   const secs = Math.max(0, Math.round(G.invTime || 0)), dur = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
@@ -6932,7 +6954,8 @@ function end(win, msg) {
   // a light commendation based on how the defense went (cities are everything)
   const held = citiesTot ? citiesAlive / citiesTot : 0;
   let rank, col;
-  if (!win) { rank = (G.ach && G.ach.couped) ? '✦ A COUP — YOUR OWN STATE REMOVED YOU BEFORE THE ENEMY EVER ARRIVED ✦' : (G.lostStructures || 0) > 0 ? '✦ A COSTLY STAND ✦' : '✦ THE LINE BROKE ✦'; col = 'var(--inf)'; }
+  if (isDraw) { rank = 'Neither side could force a decision.'; col = '#9fb0c8'; }
+  else if (!win) { rank = (G.ach && G.ach.couped) ? '✦ A COUP — YOUR OWN STATE REMOVED YOU BEFORE THE ENEMY EVER ARRIVED ✦' : (G.lostStructures || 0) > 0 ? '✦ A COSTLY STAND ✦' : '✦ THE LINE BROKE ✦'; col = 'var(--inf)'; }
   else if (held >= 1 && (G.lostStructures || 0) === 0) { rank = '★★★ FLAWLESS DEFENSE — PLANETARY SAVIOUR ★★★'; col = '#ffd86b'; }
   else if (held >= 0.7) { rank = '★★ WORLD SECURED ★★'; col = 'var(--mp)'; }
   else if (held > 0) { rank = '★ PYRRHIC VICTORY ★'; col = '#ffb86b'; }
@@ -7224,7 +7247,7 @@ function shareAARReport() {
   try {
     const st = G && G.stats;
     const citiesAlive = G && G.cities ? G.cities.filter(c => c.hp > 0 && !c.held).length : 0, citiesTot = G && G.cities ? G.cities.length : 0;
-    const result = G && G.over === 'win' ? 'VICTORY' : 'DEFEAT';
+    const result = G && G.over === 'win' ? 'VICTORY' : (G && G.over === 'stalemate' ? 'STALEMATE' : 'DEFEAT');
     const kills = (st && aarSum(st.killsByType)) || (G && G.kills) || 0;
     const text = 'TOTAL MOBILIZATION — ' + result + ' as ' + (G ? G.diffName : '') + ' · ' + kills.toLocaleString() + ' kills · ' + (G ? (G.waveN || 0) : 0) + ' waves · ' + citiesAlive + '/' + citiesTot + ' cities held';
     const url = 'https://rheava-26.github.io/total-mobilization/';

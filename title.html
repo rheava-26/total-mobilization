@@ -379,11 +379,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.84.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.84.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.84.1 — MORE SOUNDTRACK: AYDEN GEORGE (THE FIRE RISES OST)</b><br><b>🎵 Three more tracks are now built into the default soundtrack</b>, cleared for use by their composer <b>Ayden George</b> (The Fire Rises OST) — one added to the Peacetime playlist and two to the Combat playlist. They stream in automatically alongside the existing lineup; no setup needed. As always you can swap in your own YouTube links or local files from the ♫ soundtrack menu.</p>
     <p><b>v3.84.0 — PLAY YOUR OWN MUSIC FILES (NO ADS, NO YOUTUBE)</b><br><b>🎵 You can now load your own audio files as the soundtrack.</b> Open the ♫ soundtrack menu, flip on <b>USE LOCAL FILES</b>, and add audio files to your Peacetime and Combat playlists — they play straight off your device, so there's no YouTube, no ads, ever, and full quality. Your tracks are <b>saved on your device</b>, so you load them once and they stay. Everything works like before — the playlist crossfades from Peacetime to Combat when the invasion lands, and ducks under big moments. YouTube stays as the fallback if you'd rather stream. <b>🔊 Also fixed</b> a bug where the music could get ducked quiet during a boss arrival and never come back up.</p>
     <p><b>v3.83.4 — MUSIC ADS GET MUTED AUTOMATICALLY</b><br><b>🔇 No more ads blasting over your battle.</b> The music player now watches what's actually playing, and the instant it's an ad instead of your track, it drops the volume to zero — flashing a quiet "♫ AD — MUTED" so you know — then brings your music right back the moment the ad ends. Your soundtrack, uninterrupted, no ads screaming over the climax.</p>
     <p><b>v3.83.3 — NO MORE UNWINNABLE STANDSTILLS + AIR ACTUALLY FIRES AT BUSTERS</b><br><b>⚖ A war that can't be won or lost now ends in a STALEMATE.</b> If your defense is impenetrable but you can't finish off the fleet — no cities falling, no ground gained by either side for a long stretch — the game no longer idles forever. It resolves to a draw: "STALEMATE — A WAR WITHOUT END." <b>🏭 Minimum industrial economy.</b> Your IC income can never be driven net-negative, even if your factories are bombed flat under heavy upkeep — you always slowly accrue enough to rebuild, so a rough opening is never a dead end. <b>🚀 Missile aircraft launch real missiles at bunker-busters.</b> Fighters and other missile-armed aircraft used to "intercept" incoming busters with a weak flak-poke; now they fire an actual homing missile at them, so your air screen genuinely contributes against the bombardment.</p>
@@ -911,11 +912,14 @@ const YT_DEFAULT = {
     { id: 'iMPEY9q7iAQ', t: 'Third Degree',        a: 'WARNO OST' },
     { id: 'hiqzO9KRBug', t: 'Timelessness',        a: 'Weightlessness' },
     { id: 'fRvBg45SMQo', t: 'Broken Arrow (Beta)', a: 'Samara Eater' },
+    { id: 'Zrysf6Tg2v0', t: 'The Fire Rises OST',  a: 'Ayden George' },
   ],
   combat: [
     { id: 'bAFFhW73xRU', t: 'Hostile Fleet Detected', a: 'Andreas Waldetoft' },
     { id: '4T9rxNNpyIc', t: 'Get Together',           a: 'WARNO OST' },
     { id: 'b5PeQAbgYSk', t: 'Lap Time',               a: 'WARNO OST' },
+    { id: 'NA01YCQqW0o', t: 'The Fire Rises OST',      a: 'Ayden George' },
+    { id: 'ES3Cen1HED8', t: 'The Fire Rises OST',      a: 'Ayden George' },
   ],
 };
 function loadPlaylists() { try { const s = localStorage.getItem('tm_playlists'); if (s) { const p = JSON.parse(s); if (p && Array.isArray(p.prep) && Array.isArray(p.combat)) return p; } } catch (e) {} return JSON.parse(JSON.stringify(YT_DEFAULT)); }

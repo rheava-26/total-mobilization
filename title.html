@@ -2842,6 +2842,93 @@ function society(kind) {
 }
 
 /* =====================================================================
+   MEGAPROJECTS — civilization-scale endgame undertakings, shown in a
+   dedicated PROJECTS tab inside the research menu. Three KINDS:
+     forge    — produces a super-unit
+     edifice  — a megastructure with a permanent global effect
+     doctrine — a course-of-action / rule + society shift, no structure
+   A project is gated NOT just by spending currency but by PHYSICALLY
+   BUILDING infrastructure (reqs). Satisfy reqs by playing, COMMIT it,
+   then it runs a timed BUILD phase during live gameplay (updateProjects).
+   FOG OF WAR — see projFog() below: hidden -> hinted -> revealed ->
+   building -> done. research:[] means the conventional path stays viable
+   (no tech required to ever see/commit it). */
+const PROJECTS = [
+  { id: 'deepcore', kind: 'edifice', name: 'Deep Core Drill', branch: 'econ', research: [],
+    teaser: 'Bore into the planet\'s core for limitless industrial power.',
+    desc: 'A hundred-mile drill into the mantle — massively boosts your industrial output.',
+    reqs: [ { type: 'build', key: 'powerplant', n: 4 }, { type: 'build', key: 'extractor', n: 2 }, { type: 'ic', n: 15000 } ],
+    build: { secs: 90, ic: 0, speedBy: 'powerplant' },
+    effect: g => { g.mult.econ += 2.0; } },
+  { id: 'totalwar', kind: 'doctrine', name: 'Total War Economy', branch: 'military', research: [],
+    teaser: 'Throw every constraint aside — total war footing.',
+    desc: 'Production and manpower surge and your army cap grows, but society hardens toward dystopia.',
+    reqs: [ { type: 'build', key: 'factory', n: 3 }, { type: 'build', key: 'barracks', n: 2 } ],
+    build: { secs: 60, ic: 6000 },
+    /* g.mult.capb (not a bare g.capBonus field) is the real army-cap multiplier the rest of the game reads — see armyCap() */
+    effect: g => { g.mult.econ += .6; g.mult.mp += .6; g.mult.capb += 20; if (typeof society === 'function') society('dystopia'); } },
+  { id: 'grandarsenal', kind: 'forge', name: 'The Grand Arsenal', branch: 'military', research: ['fusion'],
+    teaser: 'The largest war machine industry can forge.',
+    desc: 'Marshals every foundry in the nation at once to forge a single walking colossus of a war machine — a placeholder for the future boss-scale Grand Arsenal builds.',
+    reqs: [ { type: 'build', key: 'factory', n: 5 }, { type: 'ic', n: 20000 } ],
+    build: { secs: 120, ic: 0, speedBy: 'factory' },
+    /* spawnUnit() is a free placement (no cost deduction) — the assembled hull just appears at the capital */
+    effect: g => { const cap = g.cities.find(c => c.capital) || g.cities[0]; spawnUnit('titan', cap ? cap.x : WORLD_W / 2); } },
+];
+/* per-save project progress: id -> { committed, progress, icPaid, built } — lazily created, see projState() */
+function projState(id) { if (!G.projects) G.projects = {}; return G.projects[id] || (G.projects[id] = { committed: false, progress: 0, icPaid: 0, built: false }); }
+function countBuildings(key) { let n = 0; if (G.buildings) for (const b of G.buildings) if (b.key === key && b.done !== false && !b.captured) n++; return n; }
+function countUnits(key) { let n = 0; if (G.units) for (const u of G.units) if (u.key === key && u.hp > 0) n++; return n; }
+/* one condition -> {have, need} progress; add new req types here as the designer's project list grows */
+function projReqProgress(req) {
+  switch (req.type) {
+    case 'build': return { have: countBuildings(req.key), need: req.n };
+    case 'unit': return { have: countUnits(req.key), need: req.n };
+    case 'ic': return { have: Math.floor(G.ic || 0), need: req.n };
+    case 'mp': return { have: Math.floor(G.mp || 0), need: req.n };
+    case 'antimatter': return { have: Math.floor(G.antimatter || 0), need: req.n };
+    case 'research': return { have: (G.unlocked && G.unlocked[req.key]) ? 1 : 0, need: 1 };
+    default: return { have: 0, need: 1 };
+  }
+}
+function projReqMet(req) { const pr = projReqProgress(req); return pr.have >= pr.need; }
+/* fog state for a project: hidden -> hinted -> revealed -> building -> done */
+function projFog(p) {
+  const st = projState(p.id);
+  if (st.built) return 'done';
+  if (st.committed) return 'building';
+  if (p.research.length && !p.research.every(k => G.unlocked && G.unlocked[k])) return 'hidden';   // not yet on the path
+  return p.reqs.every(projReqMet) ? 'revealed' : 'hinted';
+}
+/* advance every COMMITTED-but-not-built project — called from updateGame (already guarded by G.over there) */
+function updateProjects(dt) {
+  if (!G.projects) return;
+  for (const p of PROJECTS) {
+    const st = G.projects[p.id]; if (!st || !st.committed || st.built) continue;
+    const b = p.build || {};
+    let speedMul = 1; if (b.speedBy) speedMul += 0.15 * countBuildings(b.speedBy);   // more supporting facilities finish the build faster
+    st.progress = (st.progress || 0) + dt * speedMul;
+    if (b.ic) {   // IC DRAW-DOWN — same shape as research funding: siphons up to ic/secs per second, stretches (never stalls) if underfunded
+      const rate = b.ic / Math.max(.1, b.secs), pay = Math.min(G.ic, rate * dt, b.ic - (st.icPaid || 0));
+      if (pay > 0) { G.ic -= pay; st.icPaid = (st.icPaid || 0) + pay; }
+    }
+    const icDone = !b.ic || (st.icPaid || 0) >= b.ic;
+    if (st.progress >= (b.secs || 0) && icDone) {
+      st.built = true; p.effect(G);   // effect fires exactly once — the built flag latches it out of this loop for good
+      toast('🏛 PROJECT COMPLETE — ' + p.name); try { (SFX.research || SFX.build || (() => {}))(); } catch (e) {}
+    }
+  }
+}
+/* commit a REVEALED project — no instant effect, the build phase runs the rest during live play */
+function commitProject(id) {
+  const p = PROJECTS.find(x => x.id === id); if (!p || projFog(p) !== 'revealed') return;
+  const st = projState(id); st.committed = true; st.progress = 0; st.icPaid = 0;
+  try { SFX.build(); } catch (e) {}
+  toast('◈ PROJECT COMMITTED — ' + p.name);
+  buildProjects();
+}
+
+/* =====================================================================
    SCENARIO / NEW GAME
    ===================================================================== */
 // ── INHERITED NATION (all tunable) — you take command of an existing country, not bare dirt. Every city
@@ -2880,6 +2967,7 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
+    projects: {},     // MEGAPROJECTS — id -> { committed, progress, icPaid, built }, lazily filled by projState() (see PROJECTS)
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
@@ -4243,6 +4331,7 @@ function updateGame(dt) {
     if (pay > 0) { G.inf -= pay; rs.paid += pay; infSpentThisFrame = true; if (G.stats) G.stats.spentInf += pay; }
     if (rs.paid >= rs.cost) finishResearch();
   } else if (G.resQueue.length) tryStartQueue();   // research queue — auto-starts the next eligible item
+  updateProjects(dt);   // MEGAPROJECTS — advance any committed build phases (see PROJECTS)
   // INFLUENCE MOMENTUM — patiently NOT spending ramps income up to 3× over ~75s of saving; any spend (research draw,
   // building placement) snaps it straight back down to baseline. Rewards saving up, discourages influence-spam.
   const MOM_CAP = 3.0, MOM_TAU = 25;   // exponential approach: ~95% of the way to the cap after ~75s (3×tau) of uninterrupted saving

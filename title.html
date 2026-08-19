@@ -4230,6 +4230,7 @@ function captureSnap(label) {
     G.stats.snap[label] = _snapCv.toDataURL('image/jpeg', 0.5);
   } catch (er) {}
 }
+const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
   if (G.stats && !G.stats.snap.start && G.time > 1.2) captureSnap('start');   // AFTER-ACTION — "MOBILIZATION" snapshot, taken once a couple frames have rendered at the outset
@@ -4254,7 +4255,7 @@ function updateGame(dt) {
   G.auraUnits = auraU;   // MOBILE AURAS — refreshed once/tick here, BEFORE updUnits/updBuildings run this same frame, so every auraAt() call this tick sees a current list; a docked/rearming aura unit is excluded (it's parked at base, not over the front)
   if (G.evt && G.evt.housingShielded) for (const b of G.buildings) if (b.key === 'housing' && b.done !== false && !b.captured) upkeep += EVT1.shieldUpkeepPerHousing;   // EVENT #1 "Deflector Shields" choice — every standing Housing Block draws extra power for its dome, existing ones and any built later
   const upkeepCut = Math.min(.6, bmod().upkeepCut || 0); upkeep *= (1 - upkeepCut); garrUpkeep *= (1 - upkeepCut);   // Logistics Hubs cut TOTAL standing upkeep (garrison + capital ships + shield gens), floored at 40% of raw
-  icR -= upkeep; G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;
+  icR -= upkeep; icR = Math.max(IC_FLOOR, icR); G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;   /* IC FLOOR — clamp net income (gross - upkeep) to a small positive floor so a nation whose industry is bombed to ~0 always has SOME way back; readout (G.icR below) matches what's actually applied, so the HUD isn't lying */
   if (G.stats) { G.stats.upkeepPaid += upkeep * dt; G.stats.peakUpkeep = Math.max(G.stats.peakUpkeep, upkeep); }   // AFTER-ACTION — cumulative + peak standing upkeep drain
   if (G.dystopia) capPenalty += 20;   // a dystopian society is FRAGILE, not a bottomless pit — it lowers the ceiling stability can climb to rather than bleeding banked stability toward zero with no counterplay
   if (G.evt && G.evt.capPenalty) capPenalty += G.evt.capPenalty;   // running total of SUPER EVENT choices that cost stability CAP (see EVENTS' effect fns) — same "lower ceiling, not a bleed" treatment as everything else here

@@ -1139,12 +1139,18 @@ function drawWorld(alpha) {
   if (!W || !H) return;   // no layout yet (e.g. a 0-size frame) — bail before any gradient math goes non-finite
   c.save(); c.globalAlpha = alpha;
   const VH = worldH(), x0 = cam.x, x1 = cam.x + W;
+  /* ZOOM-OUT OVER-SCAN — drawWorld draws in UNSCALED screen space [0,W]×[0,VH], but the frame applies cam.z around
+     the viewport centre BEFORE calling us. At any cz<1 that shrinks our fills to the middle and leaves DARK margins
+     past the map edges. PX/PY extend the sky + terrain fills to cover the full visible area at any zoom, so there is
+     never a dark border to see. Off-map columns clamp their world-x to [0,WORLD_W] so the edge terrain just repeats flat. */
+  const cz = cam.z || 1, PX = cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) + 8 : 0, PY = cz < 1 ? Math.ceil(H * (1 / cz - 1) / 2) + 8 : 0;
+  const clampWX = x => x < 0 ? 0 : x > WORLD_W ? WORLD_W : x;
   // === SKY — banded, glowing atmosphere spanning the whole TALL world: deep space at the top → horizon glow near the ground ===
   const g = c.createLinearGradient(0, 0, 0, VH);
   const top = soc.sky || ['#01030c', '#060f2c', '#0e2f63', '#1f5aa0', '#3f8acb', '#79bce4'];
   // deep-space black fills the top HALF (the vast exosphere), then the atmosphere colours compress below .50
   g.addColorStop(0, top[0]); g.addColorStop(.40, top[0]); g.addColorStop(.50, top[1]); g.addColorStop(.62, top[2]); g.addColorStop(.72, top[3]); g.addColorStop(.80, top[4]); g.addColorStop(.87, top[5]);
-  c.fillStyle = g; c.fillRect(0, 0, W, VH);
+  c.fillStyle = g; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY);
   drawNebula(alpha); drawSkyStars(alpha * .9); drawMoon(alpha); drawSun(alpha); drawAurora(alpha); drawMeteors(alpha); c.globalAlpha = alpha;
   // faint layer guides — exosphere & thermosphere are now distinct bands (labels at each band's midpoint)
   c.font = '10px Consolas'; c.textAlign = 'right';
@@ -1156,15 +1162,15 @@ function drawWorld(alpha) {
   drawAmbientHorizon(alpha);// distant background skyline (+ invasion-only drop-pod streaks & horizon muzzle-flashes) — cosmetic, see AMBIENT LIFE
   drawHorizonGlow(alpha);   // atmospheric scattering hugging the curved limb (before terrain, so the ground covers its lower half)
   // === TERRAIN body (visible slice) ===
-  c.beginPath(); c.moveTo(0, groundY(x0));
-  for (let px = 0; px <= W; px += 3) c.lineTo(px, groundY(wxAt(px)));
-  c.lineTo(W, VH + UG_VIEW_PAD); c.lineTo(0, VH + UG_VIEW_PAD); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space
+  c.beginPath(); c.moveTo(-PX, groundY(clampWX(wxAt(-PX))));
+  for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px))));
+  c.lineTo(W + PX, VH + UG_VIEW_PAD); c.lineTo(-PX, VH + UG_VIEW_PAD); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space; PX over-scan fills the zoomed-out side margins
   const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + UG_VIEW_PAD); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
   drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body
-  for (let px = 0; px < W; px += 3) { const wx = wxAt(px), y = groundY(wx), y2 = groundY(wx + 3); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
+  for (let px = -PX; px < W + PX; px += 3) { const wx = clampWX(wxAt(px)), y = groundY(wx), y2 = groundY(clampWX(wx + 3)); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
   c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = 0; px <= W; px += 4) { const y = groundY(wxAt(px)); px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight
   drawTerrainDetail(alpha);   // biome scenery — forests, brush, boulders, snow glints
-  if (soc.tint) { c.fillStyle = soc.tint; c.fillRect(0, 0, W, VH); }
+  if (soc.tint) { c.fillStyle = soc.tint; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY); }
   // GROUND LEVEL line + water in valleys
   c.strokeStyle = 'rgba(220,235,255,.22)'; c.setLineDash([7, 7]); c.beginPath(); for (let px = 0; px <= W; px += 6) c.lineTo(px, seaLevelY(wxAt(px))); c.stroke(); c.setLineDash([]);
   let inW = false, sxs = 0;
@@ -1219,15 +1225,16 @@ function drawMoon(a) { const px = (((.24 * W - cam.x * .065) % W) + W) % W, y = 
 function drawAurora(a) {
   if (reducedMotion) return;
   const t = animClock * .0004, VH = worldH();
+  const _cz = cam.z || 1, PX = _cz < 1 ? Math.ceil(W * (1 / _cz - 1) / 2) + 8 : 0;   /* zoom-out over-scan so the aurora ribbon fills the widened side margins too (matches drawWorld) */
   c.save(); c.globalCompositeOperation = 'lighter';
   for (const [hue, ph, base, amp] of [['96,255,178', 0, .375, 26], ['80,210,255', 2.4, .345, 34]]) {
     const yB = VH * base;
     const grad = c.createLinearGradient(0, yB - 120, 0, yB + 14); grad.addColorStop(0, `rgba(${hue},0)`); grad.addColorStop(.72, `rgba(${hue},${.08 * a})`); grad.addColorStop(1, `rgba(${hue},${.20 * a})`);
     c.fillStyle = grad; c.beginPath();
     const eb = px => yB + Math.sin(px * .012 + t * 2.6 + ph + cam.x * .0016) * amp * .35 + Math.sin(px * .0034 - t * 1.7 + ph) * amp;   // rippling lower edge
-    c.moveTo(0, eb(0) - 120 - Math.sin(t + ph) * 18);
-    for (let px = 0; px <= W; px += 16) c.lineTo(px, eb(px) - 110 - Math.sin(px * .005 + t * 3 + ph) * 22);   // wavering top
-    for (let px = W; px >= 0; px -= 16) c.lineTo(px, eb(px));
+    c.moveTo(-PX, eb(-PX) - 120 - Math.sin(t + ph) * 18);
+    for (let px = -PX; px <= W + PX; px += 16) c.lineTo(px, eb(px) - 110 - Math.sin(px * .005 + t * 3 + ph) * 22);   // wavering top
+    for (let px = W + PX; px >= -PX; px -= 16) c.lineTo(px, eb(px));
     c.closePath(); c.fill();
     c.strokeStyle = `rgba(${hue},${.10 * a})`; c.lineWidth = 1.6; c.beginPath(); for (let px = 0; px <= W; px += 16) { const y = eb(px); px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // luminous lower fringe
   }
@@ -1260,6 +1267,7 @@ const h01 = n => { const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math
 function drawRidges(a) {
   if (!RSEED1) return;
   const ME = maxElev(), wrap = u => ((u % WORLD_W) + WORLD_W) % WORLD_W;
+  const _cz = cam.z || 1, PX = _cz < 1 ? Math.ceil(W * (1 / _cz - 1) / 2) + 8 : 0;   /* zoom-out over-scan so the distant ranges fill the widened side margins too (matches drawWorld) */
   const layers = [
     { seed: RSEED2, par: .34, lift: .30, amp: 1.0, fill: 'rgba(70,104,142,.55)', snow: 'rgba(214,232,248,.30)', step: 7, snowAt: .66 },
     { seed: RSEED1, par: .60, lift: .08, amp: 1.45, fill: 'rgba(42,66,96,.72)', snow: 'rgba(226,240,252,.45)', step: 5, snowAt: .72 },
@@ -1267,13 +1275,13 @@ function drawRidges(a) {
   c.save(); c.globalAlpha = a;
   for (const L of layers) {
     const pts = [];
-    for (let px = -4; px <= W + 4; px += L.step) {
+    for (let px = -PX - 4; px <= W + PX + 4; px += L.step) {
       const e = noiseAt(L.seed, wrap(cam.x * L.par + px)), r = 1 - Math.abs(2 * e - 1);   // ridged profile
       pts.push([px, curveAt(wxAt(px)) - (L.lift + r * L.amp) * ME, r]);
     }
-    c.beginPath(); c.moveTo(-4, worldH());
+    c.beginPath(); c.moveTo(-PX - 4, worldH());
     for (const p of pts) c.lineTo(p[0], p[1]);
-    c.lineTo(W + 4, worldH()); c.closePath();
+    c.lineTo(W + PX + 4, worldH()); c.closePath();
     c.fillStyle = L.fill; c.fill();
     c.strokeStyle = L.snow; c.lineWidth = 1.7; c.lineCap = 'round'; c.beginPath();   // snowcaps above the snowline only
     let pen = false;

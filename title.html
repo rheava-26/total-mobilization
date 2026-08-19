@@ -2888,36 +2888,72 @@ function society(kind) {
    FOG OF WAR — see projFog() below: hidden -> hinted -> revealed ->
    building -> done. research:[] means the conventional path stays viable
    (no tech required to ever see/commit it). */
+/* PFX — reusable effect builders so a project's `effect` composes small named pieces instead of a one-off arrow function.
+   Each PFX.* call returns a function of (g) with the exact signature updateProjects() already calls (effect(G)) —
+   a plain hand-written g=>{} effect and a PFX-composed one are interchangeable; nothing downstream needs to know which. */
+const PFX = {
+  econ: mult => g => { g.mult.econ += mult; },
+  mod: (field, amt) => g => { g.mult[field] += amt; },   /* generic G.mult bump — field e.g. 'dmg','mp','capb','range' */
+  society: kind => g => { if (typeof society === 'function') society(kind); },
+  spawn: (key, n, near) => g => { const a = projAnchor(near); for (let i = 0; i < (n || 1); i++) spawnUnit(key, (a ? a.x : WORLD_W / 2) + (Math.random() - .5) * 80); },
+  rule: (flag, val) => g => { (g.projectRules = g.projectRules || {})[flag] = (val === undefined ? true : val); },   /* GLOBAL RULE FLAGS namespace — doctrine projects that change a rule set one here; consumers get wired per-project later */
+  stabCap: delta => g => { g.mult.stab += delta; },   /* g.mult.stab is the real field the stability CEILING reads (×30, clamped 20-100) — see the G.stabCap line in updateGame, NOT a bare capBonus field */
+  all: (...fns) => g => { for (const f of fns) f(g); },
+};
 const PROJECTS = [
   { id: 'deepcore', kind: 'edifice', name: 'Deep Core Drill', branch: 'econ', research: [],
     teaser: 'Bore into the planet\'s core for limitless industrial power.',
-    desc: 'A hundred-mile drill into the mantle — massively boosts your industrial output.',
-    reqs: [ { type: 'build', key: 'powerplant', n: 4 }, { type: 'build', key: 'extractor', n: 2 }, { type: 'ic', n: 15000 } ],
-    build: { secs: 90, ic: 0, speedBy: 'powerplant' },
-    effect: g => { g.mult.econ += 2.0; } },
+    desc: 'A hundred-mile drill into the mantle, sunk from the capital\'s own industrial ring and fed stage by stage — massively boosts your industrial output once it fires.',
+    /* STAGED + LOCAL demo project — 3 tranches, each gated on infrastructure standing near the capital, not a global count.
+       See projStages()/projCurStage() below for how a flat (non-staged) project like totalwar still runs the identical code path. */
+    stages: [
+      { name: 'Sink the Shaft', note: 'Placeholder narration: the bore begins — every power plant near the capital feeds current into the drill head.',
+        reqs: [ { type: 'build', key: 'powerplant', n: 3, near: 'capital', radius: 650 } ],
+        build: { secs: 40, speedBy: { key: 'powerplant', near: 'capital', radius: 650 } } },
+      { name: 'Breach the Mantle', note: 'Placeholder narration: the shaft punches through the crust. Local extractors feed it raw material, and the Industrial Capacity cost is a real, live draw-down.',
+        reqs: [ { type: 'build', key: 'extractor', n: 2, near: 'capital', radius: 650 }, { type: 'ic', n: 8000 } ],
+        build: { secs: 50, ic: 8000 } },
+      { name: 'Ignition', note: 'Placeholder narration: the core taps in — nothing left to build, just keep the local grid running while it primes.',
+        reqs: [],
+        build: { secs: 40, speedBy: { key: 'powerplant', near: 'capital', radius: 650 } } },
+    ],
+    effect: PFX.econ(2.0) },
   { id: 'totalwar', kind: 'doctrine', name: 'Total War Economy', branch: 'military', research: [],
     teaser: 'Throw every constraint aside — total war footing.',
     desc: 'Production and manpower surge and your army cap grows, but society hardens toward dystopia.',
     reqs: [ { type: 'build', key: 'factory', n: 3 }, { type: 'build', key: 'barracks', n: 2 } ],
     build: { secs: 60, ic: 6000 },
     /* g.mult.capb (not a bare g.capBonus field) is the real army-cap multiplier the rest of the game reads — see armyCap() */
-    effect: g => { g.mult.econ += .6; g.mult.mp += .6; g.mult.capb += 20; if (typeof society === 'function') society('dystopia'); } },
+    effect: PFX.all(PFX.econ(.6), PFX.mod('mp', .6), PFX.mod('capb', 20), PFX.society('dystopia')) },
   { id: 'grandarsenal', kind: 'forge', name: 'The Grand Arsenal', branch: 'military', research: ['fusion'],
     teaser: 'The largest war machine industry can forge.',
     desc: 'Marshals every foundry in the nation at once to forge a single walking colossus of a war machine — a placeholder for the future boss-scale Grand Arsenal builds.',
     reqs: [ { type: 'build', key: 'factory', n: 5 }, { type: 'ic', n: 20000 } ],
     build: { secs: 120, ic: 0, speedBy: 'factory' },
     /* spawnUnit() is a free placement (no cost deduction) — the assembled hull just appears at the capital */
-    effect: g => { const cap = g.cities.find(c => c.capital) || g.cities[0]; spawnUnit('titan', cap ? cap.x : WORLD_W / 2); } },
+    effect: PFX.spawn('titan', 1, 'capital') },
 ];
-/* per-save project progress: id -> { committed, progress, icPaid, built } — lazily created, see projState() */
-function projState(id) { if (!G.projects) G.projects = {}; return G.projects[id] || (G.projects[id] = { committed: false, progress: 0, icPaid: 0, built: false }); }
+/* per-save project progress: id -> { committed, progress, icPaid, built, stage } — lazily created, see projState(). `stage` is the
+   active index into projStages(p); flat projects just sit at stage 0 forever. */
+function projState(id) { if (!G.projects) G.projects = {}; return G.projects[id] || (G.projects[id] = { committed: false, progress: 0, icPaid: 0, built: false, stage: 0 }); }
 function countBuildings(key) { let n = 0; if (G.buildings) for (const b of G.buildings) if (b.key === key && b.done !== false && !b.captured) n++; return n; }
+/* LOCAL count — same as countBuildings but only within `radius` px of anchor x `ax` (a district/complex, not the whole nation) */
+function countBuildingsNear(key, ax, radius) { let n = 0; if (G.buildings && ax != null) for (const b of G.buildings) if (b.key === key && b.done !== false && !b.captured && Math.abs(b.x - ax) <= radius) n++; return n; }
 function countUnits(key) { let n = 0; if (G.units) for (const u of G.units) if (u.key === key && u.hp > 0) n++; return n; }
+/* resolves a `near` tag to an anchor CITY for local reqs/speedBy. 'capital' and omitted both mean the capital (or nearest/first
+   city if none is flagged capital) — the only anchor kind implemented so far; new `near` values branch here later. */
+function projAnchor(near) { return (G && G.cities && G.cities.length) ? (G.cities.find(c => c.capital) || G.cities[0]) : null; }
+/* normalized stage list for a project — a flat (non-staged) project becomes one implicit stage from its own reqs/build,
+   so staged and flat projects share every code path below (projFog, updateProjects, the UI). */
+function projStages(p) { return (p.stages && p.stages.length) ? p.stages : [ { name: p.name, reqs: p.reqs || [], build: p.build || {} } ]; }
+/* the ACTIVE stage object + its index, per current G.projects[p.id].stage (clamped in case content changed under a save) */
+function projCurStage(p) { const stages = projStages(p), st = projState(p.id), i = Math.max(0, Math.min(st.stage || 0, stages.length - 1)); return { stage: stages[i], index: i, stages }; }
 /* one condition -> {have, need} progress; add new req types here as the designer's project list grows */
 function projReqProgress(req) {
   switch (req.type) {
-    case 'build': return { have: countBuildings(req.key), need: req.n };
+    case 'build':
+      if (req.radius) { const a = projAnchor(req.near); return { have: a ? countBuildingsNear(req.key, a.x, req.radius) : 0, need: req.n }; }   // LOCAL — fed by a nearby complex, not the whole nation
+      return { have: countBuildings(req.key), need: req.n };
     case 'unit': return { have: countUnits(req.key), need: req.n };
     case 'ic': return { have: Math.floor(G.ic || 0), need: req.n };
     case 'mp': return { have: Math.floor(G.mp || 0), need: req.n };
@@ -2927,21 +2963,31 @@ function projReqProgress(req) {
   }
 }
 function projReqMet(req) { const pr = projReqProgress(req); return pr.have >= pr.need; }
-/* fog state for a project: hidden -> hinted -> revealed -> building -> done */
+/* fog state for a project: hidden -> hinted -> revealed -> building -> done. 'revealed' (ready to COMMIT) checks only
+   STAGE 0's reqs — later stages are satisfied by playing, one tranche at a time, once the plan is underway. */
 function projFog(p) {
   const st = projState(p.id);
   if (st.built) return 'done';
   if (st.committed) return 'building';
   if (p.research.length && !p.research.every(k => G.unlocked && G.unlocked[k])) return 'hidden';   // not yet on the path
-  return p.reqs.every(projReqMet) ? 'revealed' : 'hinted';
+  return projStages(p)[0].reqs.every(projReqMet) ? 'revealed' : 'hinted';
 }
-/* advance every COMMITTED-but-not-built project — called from updateGame (already guarded by G.over there) */
+/* advance every COMMITTED-but-not-built project — called from updateGame (already guarded by G.over there). Staged projects
+   run their stages IN ORDER: hold at the current stage until ITS reqs are met (more infrastructure to build), then let its
+   own timed/IC build phase progress exactly like the old single-phase flow; on completion either advance to the next stage
+   (resetting progress/icPaid) or, on the LAST stage, fire the project effect once and latch built=true. */
 function updateProjects(dt) {
   if (!G.projects) return;
   for (const p of PROJECTS) {
     const st = G.projects[p.id]; if (!st || !st.committed || st.built) continue;
-    const b = p.build || {};
-    let speedMul = 1; if (b.speedBy) speedMul += 0.15 * countBuildings(b.speedBy);   // more supporting facilities finish the build faster
+    const { stage, index, stages } = projCurStage(p);
+    if (stage.reqs && stage.reqs.length && !stage.reqs.every(projReqMet)) continue;   // HOLD — this stage's infrastructure isn't standing yet
+    const b = stage.build || {};
+    let speedMul = 1;
+    if (b.speedBy) {
+      if (typeof b.speedBy === 'string') speedMul += 0.15 * countBuildings(b.speedBy);   // GLOBAL — string form, unchanged behavior
+      else { const a = projAnchor(b.speedBy.near); speedMul += 0.15 * (a ? countBuildingsNear(b.speedBy.key, a.x, b.speedBy.radius) : 0); }   // LOCAL — object form
+    }
     st.progress = (st.progress || 0) + dt * speedMul;
     if (b.ic) {   // IC DRAW-DOWN — same shape as research funding: siphons up to ic/secs per second, stretches (never stalls) if underfunded
       const rate = b.ic / Math.max(.1, b.secs), pay = Math.min(G.ic, rate * dt, b.ic - (st.icPaid || 0));
@@ -2949,15 +2995,21 @@ function updateProjects(dt) {
     }
     const icDone = !b.ic || (st.icPaid || 0) >= b.ic;
     if (st.progress >= (b.secs || 0) && icDone) {
-      st.built = true; p.effect(G);   // effect fires exactly once — the built flag latches it out of this loop for good
-      toast('🏛 PROJECT COMPLETE — ' + p.name); try { (SFX.research || SFX.build || (() => {}))(); } catch (e) {}
+      if (index < stages.length - 1) {   // stage done, more to go — advance the plan, reset the per-stage counters
+        st.stage = index + 1; st.progress = 0; st.icPaid = 0;
+        toast('◈ STAGE COMPLETE — ' + p.name + (stages[index + 1].name ? (': ' + stages[index + 1].name) : ''));
+        try { SFX.build(); } catch (e) {}
+      } else {
+        st.built = true; p.effect(G);   // effect fires exactly once — the built flag latches it out of this loop for good
+        toast('🏛 PROJECT COMPLETE — ' + p.name); try { (SFX.research || SFX.build || (() => {}))(); } catch (e) {}
+      }
     }
   }
 }
-/* commit a REVEALED project — no instant effect, the build phase runs the rest during live play */
+/* commit a REVEALED project — no instant effect, the (first) build phase runs the rest during live play */
 function commitProject(id) {
   const p = PROJECTS.find(x => x.id === id); if (!p || projFog(p) !== 'revealed') return;
-  const st = projState(id); st.committed = true; st.progress = 0; st.icPaid = 0;
+  const st = projState(id); st.committed = true; st.progress = 0; st.icPaid = 0; st.stage = 0;
   try { SFX.build(); } catch (e) {}
   toast('◈ PROJECT COMMITTED — ' + p.name);
   buildProjects();
@@ -3002,7 +3054,8 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    projects: {},     // MEGAPROJECTS — id -> { committed, progress, icPaid, built }, lazily filled by projState() (see PROJECTS)
+    projects: {},     // MEGAPROJECTS — id -> { committed, progress, icPaid, built, stage }, lazily filled by projState() (see PROJECTS)
+    projectRules: {},   // GLOBAL RULE FLAGS a doctrine project can set via PFX.rule() — namespace only for now, consumers wire in per-project later
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
@@ -7566,7 +7619,7 @@ const PROJ_KIND_LABEL = { forge: 'FORGE', edifice: 'EDIFICE', doctrine: 'DOCTRIN
 function projReqLabel(req) {
   if (req.label) return req.label;
   switch (req.type) {
-    case 'build': return req.n + '× ' + ((BUILD_DEFS[req.key] && BUILD_DEFS[req.key].name) || req.key);
+    case 'build': return req.n + '× ' + ((BUILD_DEFS[req.key] && BUILD_DEFS[req.key].name) || req.key) + (req.radius ? (' (near ' + (req.near || 'capital') + ')') : '');
     case 'unit': return req.n + '× ' + ((UNIT_DEFS[req.key] && UNIT_DEFS[req.key].name) || req.key);
     case 'ic': return req.n.toLocaleString() + ' IC';
     case 'mp': return req.n.toLocaleString() + ' Manpower';
@@ -7580,16 +7633,24 @@ function projReqRowHtml(req) {
   return `<div class="projReq${met ? ' met' : ''}"><span class="projReqL">${projReqLabel(req)}</span><span class="projReqN">${Math.min(pr.have, pr.need)}/${pr.need}</span><div class="projBar"><i style="width:${pct}%"></i></div></div>`;
 }
 function projCardHtml(p) {
-  const fog = projFog(p), st = projState(p.id);
+  const fog = projFog(p), st = projState(p.id), stages = projStages(p), staged = stages.length > 1;
   let html = `<div class="projCard proj-${fog}"><div class="projCardHd"><span class="projKind projKind-${p.kind}">${PROJ_KIND_LABEL[p.kind]}</span><span class="projName">${p.name}</span></div>`;
   if (fog === 'hinted') {
-    html += `<div class="projTeaser">${p.teaser}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projReqs">` + stages[0].reqs.map(projReqRowHtml).join('') + `</div>`;
   } else if (fog === 'revealed') {
-    html += `<div class="projTeaser">${p.teaser}</div><div class="projDesc">${p.desc}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projDesc">${p.desc}</div><div class="projReqs">` + stages[0].reqs.map(projReqRowHtml).join('') + `</div>`;
+    /* pre-commit ROADMAP for a staged project — names only, an enticing preview of the plan, not the full requirement lists */
+    if (staged) html += `<div class="projStatus">◈ PLAN: ` + stages.map((s, i) => (i === 0 ? '<b>' : '') + (s.name || ('Stage ' + (i + 1))) + (i === 0 ? '</b>' : '')).join(' → ') + `</div>`;
     html += `<button class="pill projCommit" onclick="commitProject('${p.id}')">COMMIT</button>`;
   } else if (fog === 'building') {
-    const pct = Math.min(100, (st.progress || 0) / Math.max(.1, (p.build && p.build.secs) || 1) * 100);
-    html += `<div class="projDesc">${p.desc}</div><div class="projStatus">⏳ BUILDING…</div><div class="projBar big"><i style="width:${pct}%"></i></div>`;
+    const { stage, index } = projCurStage(p);
+    const pct = Math.min(100, (st.progress || 0) / Math.max(.1, (stage.build && stage.build.secs) || 1) * 100);
+    const unmet = (stage.reqs || []).filter(r => !projReqMet(r));
+    html += `<div class="projDesc">${p.desc}</div>`;
+    html += staged ? `<div class="projStatus">⏳ STAGE ${index + 1} / ${stages.length} — ${stage.name || ''}</div>` : `<div class="projStatus">⏳ BUILDING…</div>`;
+    if (staged && stage.note) html += `<div class="projTeaser">${stage.note}</div>`;
+    if (unmet.length) html += `<div class="projReqs">` + unmet.map(projReqRowHtml).join('') + `</div>`;   // what to build NEXT to keep this stage moving
+    html += `<div class="projBar big"><i style="width:${pct}%"></i></div>`;
   } else if (fog === 'done') {
     html += `<div class="projDesc">${p.desc}</div><div class="projStatus done">✅ COMPLETE</div>`;
   }

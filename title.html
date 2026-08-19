@@ -248,6 +248,40 @@
   .resDetail .rdhint.bad { color: var(--inf); }
   .resDetail .rdclose { position: absolute; top: 3px; right: 5px; pointer-events: auto; cursor: pointer; background: none; border: none; color: #8fa6c4; font-size: 15px; line-height: 1; padding: 3px 6px; }
   .resDetail .rdclose:hover { color: #eaf2ff; }
+  /* MEGAPROJECTS tab */
+  .resTabs { display: flex; gap: 8px; margin-bottom: 8px; }
+  .resTabs .tabBtn { padding: 7px 16px; font-size: 11px; opacity: .55; }
+  .resTabs .tabBtn.on { opacity: 1; border-color: var(--term); color: var(--term); }
+  .projView { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 2px 8px; }
+  .projGroup { margin-bottom: 18px; }
+  .projGroupHd { font-size: 12px; letter-spacing: 3px; color: var(--term); border-bottom: 1px solid var(--line); padding-bottom: 5px; margin-bottom: 10px; }
+  .projCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .projCard { background: rgba(10,16,28,.8); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .projCard.proj-revealed { border-color: var(--res); box-shadow: 0 0 0 1px var(--res) inset; }
+  .projCard.proj-building { border-color: var(--stab); }
+  .projCard.proj-done { border-color: var(--mp); background: rgba(93,255,141,.08); }
+  .projCardHd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .projKind { font-size: 8px; letter-spacing: 1.5px; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,.08); color: #cdd9ea; }
+  .projKind-forge { background: rgba(255,90,90,.18); color: #ff9a8a; }
+  .projKind-edifice { background: rgba(78,168,255,.18); color: #8fc4ff; }
+  .projKind-doctrine { background: rgba(200,155,255,.18); color: var(--res); }
+  .projName { font-weight: 700; font-size: 13px; letter-spacing: .5px; color: #eaf2ff; }
+  .projTeaser { font-size: 11px; color: #9fb6c4; font-style: italic; margin-bottom: 8px; line-height: 1.4; }
+  .projDesc { font-size: 11px; color: #c4d4e8; line-height: 1.4; margin-bottom: 8px; }
+  .projReqs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .projReq { font-size: 10px; color: #8fa6c4; }
+  .projReq.met { color: var(--mp); }
+  .projReq .projReqL, .projReq .projReqN { display: inline-block; }
+  .projReq .projReqN { float: right; }
+  .projBar { height: 4px; margin-top: 3px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; clear: both; }
+  .projBar.big { height: 7px; margin-top: 6px; }
+  .projBar > i { display: block; height: 100%; background: var(--res); width: 0; }
+  .projReq.met .projBar > i { background: var(--mp); }
+  .projCommit { width: 100%; margin-top: 4px; border-color: var(--res); color: var(--res); }
+  .projCommit:hover { background: rgba(200,155,255,.14); }
+  .projStatus { font-size: 10px; letter-spacing: 1px; color: var(--stab); }
+  .projStatus.done { color: var(--mp); }
+  .projHidden { font-size: 10px; letter-spacing: .5px; color: #66788f; opacity: .8; padding: 4px 2px; }
   /* now-playing banner */
   #nowPlaying { position: fixed; left: 18px; bottom: 64px; z-index: 17; background: linear-gradient(90deg, rgba(8,14,26,.95), rgba(8,14,26,.7)); border: 1px solid var(--line); border-left: 3px solid var(--term); border-radius: 5px; padding: 8px 18px 8px 13px; color: var(--paper); pointer-events: none; opacity: 0; transform: translateX(-26px); transition: opacity .5s, transform .5s; box-shadow: 0 8px 30px rgba(0,0,0,.5); max-width: 340px; }
   #nowPlaying.show { opacity: 1; transform: translateX(0); }
@@ -7421,9 +7455,11 @@ function buildResearch() {
   if (!m) {
     m = document.createElement('div'); m.className = 'modal-bg'; m.id = 'resModal';
     m.innerHTML = `<div class="modal"><h2>RESEARCH — DOCTRINE TREE</h2>
+      <div class="resTabs"><button class="pill tabBtn on" id="tabResearch" onclick="switchResTab('research')">RESEARCH</button><button class="pill tabBtn" id="tabProjects" onclick="switchResTab('projects')">PROJECTS</button></div>
       <div class="resHead"><span>Influence <b id="resInf">0</b></span><span>Income <b id="resIncome">+0/s</b></span><span>Era <b id="resEra">—</b></span><span class="resActive" id="resActive"></span><span class="resLegend">hover a node → its detail + prerequisites light up (blue) · drag to pan · pinch / scroll to zoom · ★ superweapon · red = dangerous · ONE research at a time</span></div>
       <div class="resBoard" id="resBoard"><div class="resCanvas" id="resCanvas"><svg id="resSvg" viewBox="0 0 1200 600" preserveAspectRatio="none"></svg></div></div>
       <div id="resDetail" class="resDetail"></div>
+      <div id="projView" class="projView" style="display:none"></div>
       <div class="actions"><button class="pill" onclick="closeModal('resModal')">CLOSE</button></div></div>`;
     document.body.appendChild(m);
     // PAN + PINCH-ZOOM camera — one-finger drag pans, two fingers pinch-zoom, wheel zooms; taps still select nodes. Works on phone (the old version was mouse-scroll only).
@@ -7510,6 +7546,70 @@ function showResDetail(key) {
   for (const d of units) { const x = cans[i++].getContext('2d'); x.translate(32, 26); x.scale(1.5, 1.5); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 7, -.6); } catch (e) {} }
   for (const d of blds) { const x = cans[i++].getContext('2d'); x.translate(32, 35); x.scale(.7, .7); try { (BART[d.key] || BART.factory)(x, d.w, d.h); } catch (e) {} }
 }
+// ── MEGAPROJECTS TAB — toggles the research tree vs the project cards. Never tears down window.__resCam:
+// the tree just goes display:none so pan/zoom state survives switching back.
+function switchResTab(tab) {
+  const m = document.getElementById('resModal'); if (!m) return;
+  const board = document.getElementById('resBoard'), detail = document.getElementById('resDetail'), head = m.querySelector('.resHead'), pv = document.getElementById('projView');
+  const tb = document.getElementById('tabResearch'), tp = document.getElementById('tabProjects');
+  const onProjects = tab === 'projects';
+  if (board) board.style.display = onProjects ? 'none' : '';
+  if (head) head.style.display = onProjects ? 'none' : '';
+  if (detail) { detail.classList.remove('show'); detail.style.display = onProjects ? 'none' : ''; }
+  if (pv) pv.style.display = onProjects ? 'block' : 'none';
+  if (tb) tb.classList.toggle('on', !onProjects); if (tp) tp.classList.toggle('on', onProjects);
+  if (onProjects) buildProjects();
+}
+const PROJ_KIND_LABEL = { forge: 'FORGE', edifice: 'EDIFICE', doctrine: 'DOCTRINE' };
+// human-readable label for a requirement row — projects can supply their own req.label, else this derives one from type+key
+function projReqLabel(req) {
+  if (req.label) return req.label;
+  switch (req.type) {
+    case 'build': return req.n + '× ' + ((BUILD_DEFS[req.key] && BUILD_DEFS[req.key].name) || req.key);
+    case 'unit': return req.n + '× ' + ((UNIT_DEFS[req.key] && UNIT_DEFS[req.key].name) || req.key);
+    case 'ic': return req.n.toLocaleString() + ' IC';
+    case 'mp': return req.n.toLocaleString() + ' Manpower';
+    case 'antimatter': return req.n.toLocaleString() + ' Antimatter';
+    case 'research': return ((RESEARCH[req.key] && RESEARCH[req.key].name) || req.key) + ' researched';
+    default: return req.type;
+  }
+}
+function projReqRowHtml(req) {
+  const pr = projReqProgress(req), pct = pr.need ? Math.min(100, pr.have / pr.need * 100) : 100, met = pr.have >= pr.need;
+  return `<div class="projReq${met ? ' met' : ''}"><span class="projReqL">${projReqLabel(req)}</span><span class="projReqN">${Math.min(pr.have, pr.need)}/${pr.need}</span><div class="projBar"><i style="width:${pct}%"></i></div></div>`;
+}
+function projCardHtml(p) {
+  const fog = projFog(p), st = projState(p.id);
+  let html = `<div class="projCard proj-${fog}"><div class="projCardHd"><span class="projKind projKind-${p.kind}">${PROJ_KIND_LABEL[p.kind]}</span><span class="projName">${p.name}</span></div>`;
+  if (fog === 'hinted') {
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+  } else if (fog === 'revealed') {
+    html += `<div class="projTeaser">${p.teaser}</div><div class="projDesc">${p.desc}</div><div class="projReqs">` + p.reqs.map(projReqRowHtml).join('') + `</div>`;
+    html += `<button class="pill projCommit" onclick="commitProject('${p.id}')">COMMIT</button>`;
+  } else if (fog === 'building') {
+    const pct = Math.min(100, (st.progress || 0) / Math.max(.1, (p.build && p.build.secs) || 1) * 100);
+    html += `<div class="projDesc">${p.desc}</div><div class="projStatus">⏳ BUILDING…</div><div class="projBar big"><i style="width:${pct}%"></i></div>`;
+  } else if (fog === 'done') {
+    html += `<div class="projDesc">${p.desc}</div><div class="projStatus done">✅ COMPLETE</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+// renders #projView: cards grouped by KIND, hidden projects rolled up into a per-branch "N undiscovered" line
+function buildProjects() {
+  const pv = document.getElementById('projView'); if (!pv || !G) return;
+  let html = '';
+  for (const kind of ['forge', 'edifice', 'doctrine']) {
+    const list = PROJECTS.filter(p => p.kind === kind); if (!list.length) continue;
+    html += `<div class="projGroup"><h3 class="projGroupHd">${PROJ_KIND_LABEL[kind]}</h3><div class="projCards">`;
+    const hiddenByBranch = {};
+    for (const p of list) { const fog = projFog(p); if (fog === 'hidden') hiddenByBranch[p.branch] = (hiddenByBranch[p.branch] || 0) + 1; else html += projCardHtml(p); }
+    html += `</div>`;
+    for (const branch in hiddenByBranch) html += `<div class="projHidden">◈ ${hiddenByBranch[branch]} undiscovered project(s) down the ${branch} path</div>`;
+    html += `</div>`;
+  }
+  pv.innerHTML = html || '<div class="projHidden">No megaprojects defined yet.</div>';
+}
 function tickResearchUI() {
   const m = document.getElementById('resModal'); if (!m || !m.classList.contains('show') || !G) return;
   const inf = document.getElementById('resInf'); if (inf) { inf.textContent = Math.floor(G.inf); inf.style.color = 'var(--inf)'; }
@@ -7518,6 +7618,7 @@ function tickResearchUI() {
   const act = document.getElementById('resActive');
   if (act) { const q = G.resQueue.length ? ' · QUEUE: ' + G.resQueue.map(k => RESEARCH[k].name).join(' → ') : ''; act.textContent = (G.research ? ('◣ RESEARCHING ' + RESEARCH[G.research.key].name + ' — ' + Math.round(G.research.paid / G.research.cost * 100) + '% funded') : (G.resQueue.length ? 'starting queue…' : 'no active research — click nodes to queue them')) + q; }
   const bar = m.querySelector('.rnode2.active .rbar > i'); if (bar && G.research) bar.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%';
+  const pv = document.getElementById('projView'); if (pv && pv.style.display !== 'none') buildProjects();   // keep requirement/progress bars live while the PROJECTS tab is open
 }
 
 // canvas interaction

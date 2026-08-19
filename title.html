@@ -910,7 +910,7 @@ function loadPlaylists() { try { const s = localStorage.getItem('tm_playlists');
 function savePlaylists() { try { localStorage.setItem('tm_playlists', JSON.stringify(MUSIC)); } catch (e) {} }
 function ytId(u) { u = (u || '').trim(); if (!u) return null; const m = u.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/|music\.youtube\.com\/watch\?v=)([\w-]{11})/); if (m) return m[1]; if (/^[\w-]{11}$/.test(u)) return u; return null; }
 let MUSIC = loadPlaylists();
-const MUS = { on: true, vol: 55, phase: null, idx: { prep: 0, combat: 0 }, yt: null, ready: false, started: false, curVol: 0, fade: null, pending: false, track: null, apiAsked: false, warned: false, fails: 0 };
+const MUS = { on: true, vol: 55, phase: null, idx: { prep: 0, combat: 0 }, yt: null, ready: false, started: false, curVol: 0, fade: null, pending: false, track: null, apiAsked: false, warned: false, fails: 0, adOn: false, adPoll: 0 };
 function loadYTApi() {
   if (MUS.apiAsked) return; MUS.apiAsked = true;
   const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api';
@@ -930,6 +930,9 @@ window.onYouTubeIframeAPIReady = function () {
   } catch (e) {}
 };
 function musBanner(track, realTitle) { const b = document.getElementById('nowPlaying'); if (!b) return; const t = (realTitle && realTitle.trim()) || (track && track.t) || 'Unknown track', a = (track && track.a) || 'YouTube'; b.innerHTML = `<span class="npq">♫ NOW PLAYING</span><span class="npt">${t}</span><span class="npa">${a}</span>`; b.classList.add('show'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('show'), 5400); const mm = document.getElementById('musicModal'); if (mm && mm.classList.contains('show')) buildMusicModal(); }
+/* AD-MUTING transition banner: reuses the #nowPlaying element/styling. on=true shows a small "AD - MUTED" flash;
+   on=false restores the normal now-playing banner for the current track via musBanner (reuse, not duplication). */
+function musAdBanner(on) { const b = document.getElementById('nowPlaying'); if (!b) return; if (!on) { musBanner(MUS.track, null); return; } b.innerHTML = `<span class="npq">♫ AD</span><span class="npt">MUTED</span>`; b.classList.add('show'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('show'), 5400); }
 function musPlay(phase, fadeDur) {
   if (!MUS.on) return;
   MUS.phase = phase;
@@ -937,22 +940,37 @@ function musPlay(phase, fadeDur) {
   const track = list[MUS.idx[phase] % list.length]; MUS.track = track;
   if (!MUS.ready || !MUS.yt) { MUS.pending = true; loadYTApi(); return; }
   try { MUS.yt.loadVideoById(track.id); MUS.yt.setVolume(0); MUS.curVol = 0; MUS.yt.playVideo(); } catch (e) {}
-  MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 }; MUS.duckRestore = 0;   // a fresh track cancels any pending duck-restore
+  MUS.started = true; MUS.fade = { to: MUS.vol, dur: fadeDur || 2.5 }; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0;   // a fresh track cancels any pending duck-restore; ad-mute state resets with it
 }
 function musNext() { const ph = MUS.phase; if (!ph || !MUSIC[ph] || !MUSIC[ph].length) return; MUS.idx[ph] = (MUS.idx[ph] + 1) % MUSIC[ph].length; musPlay(ph, 1.2); }
 function musSkip() { MUS.fails++; if (MUS.fails > ((MUSIC[MUS.phase] || []).length + 1)) { if (!MUS.warned) { MUS.warned = true; toast('♫ playlist empty or unplayable — add YouTube links via the ≣ button'); } return; } musNext(); }
 function musDuck() { if (MUS.started) { MUS.fade = { to: MUS.vol * .28, dur: 2 }; MUS.duckRestore = 8; } }   // BUGFIX: duck the music sharply then AUTO-RESTORE after a hold. It used to set a one-way fade to 28% with no way back, so a boss-spawn duck (updEnemies) left the combat music permanently quiet.
-function musStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
+function musStop() { MUS.fade = null; MUS.curVol = 0; MUS.started = false; MUS.phase = null; MUS.duckRestore = 0; MUS.adOn = false; MUS.adPoll = 0; if (MUS.yt) try { MUS.yt.pauseVideo(); MUS.yt.setVolume(0); } catch (e) {} }
 function musToggle() { MUS.on = !MUS.on; const mb = document.getElementById('btnMus'); if (mb) mb.classList.toggle('on', MUS.on); if (!MUS.on) musStop(); else { MUS.fails = 0; if (G && mode === 'game') musPlay(G.phase === 'prep' ? 'prep' : 'combat', 1.5); } toast(MUS.on ? '♫ SOUNDTRACK ON' : '♫ SOUNDTRACK OFF'); }
 function musKick() { if (MUS.on && MUS.started && MUS.yt && MUS.ready) { try { const st = MUS.yt.getPlayerState(); if (st !== 1 && st !== 3) MUS.yt.playVideo(); } catch (e) {} } }   // nudge playback to resume after a user gesture (autoplay policy)
 function musTick(dt) {
   if (!MUS.yt) return;
-  if (MUS.duckRestore > 0 && MUS.started) { MUS.duckRestore -= dt; if (MUS.duckRestore <= 0 && !MUS.fade) MUS.fade = { to: MUS.vol, dur: 5 }; }   // a duck's hold has expired → swell the music back up to full
-  if (!MUS.fade) return;
-  const f = MUS.fade, diff = f.to - MUS.curVol, mv = (100 / Math.max(.2, f.dur)) * dt;
-  if (Math.abs(diff) <= mv) { MUS.curVol = f.to; MUS.fade = null; if (f.to === 0) { try { MUS.yt.pauseVideo(); } catch (e) {} } }
-  else MUS.curVol += Math.sign(diff) * mv;
-  try { MUS.yt.setVolume(Math.max(0, Math.min(100, MUS.curVol))); } catch (e) {}
+  if (MUS.duckRestore > 0 && MUS.started) { MUS.duckRestore -= dt; if (MUS.duckRestore <= 0 && !MUS.fade) MUS.fade = { to: MUS.vol, dur: 5 }; }   /* a duck's hold has expired -> swell the music back up to full */
+  if (MUS.fade) {
+    const f = MUS.fade, diff = f.to - MUS.curVol, mv = (100 / Math.max(.2, f.dur)) * dt;
+    if (Math.abs(diff) <= mv) { MUS.curVol = f.to; MUS.fade = null; if (f.to === 0) { try { MUS.yt.pauseVideo(); } catch (e) {} } }
+    else MUS.curVol += Math.sign(diff) * mv;
+  }
+  if (!MUS.on || !MUS.started) return;
+  /* AD-MUTING: YouTube injects ads mid-playback with no event we can hook. Detect one by polling getVideoData()
+     (a cross-iframe call, so throttled to ~0.45s not every frame) and comparing its video_id to the id we actually
+     requested (MUS.track.id) — a confirmed MISMATCH means an ad is playing. An empty/undefined video_id just means
+     a load transition (buffering our own track) and must NOT trigger a mute. MUS.adOn only zeroes the volume we
+     SEND to the player, never MUS.curVol itself, so the real track resumes at the right level once the ad ends. */
+  MUS.adPoll = (MUS.adPoll || 0) + dt;
+  if (MUS.adPoll >= .45) {
+    MUS.adPoll = 0;
+    let vd = null; try { vd = MUS.yt.getVideoData(); } catch (e) {}
+    const wasAd = MUS.adOn;
+    MUS.adOn = !!(vd && vd.video_id && MUS.track && MUS.track.id && vd.video_id !== MUS.track.id);
+    if (MUS.adOn !== wasAd) musAdBanner(MUS.adOn);
+  }
+  try { MUS.yt.setVolume(Math.max(0, Math.min(100, MUS.adOn ? 0 : MUS.curVol))); } catch (e) {}
 }
 /* ----- in-game playlist editor (the ≣ button) ----- */
 function buildMusicModal() {

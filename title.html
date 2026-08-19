@@ -2919,7 +2919,9 @@ function newGame(diff) {
   cam.z = 1; cam.x = clampCam(cap.x - W / 2); cam.y = clampCamY(worldH()); cam.manualT = 0;   // start framed on the ground (bottom of the tall world) — zoom reset FIRST so the clamps use z=1
   // resource nodes
   const types = ['steel', 'oil', 'rare', 'uranium', 'steel', 'oil', 'rare', 'uranium'];
-  for (let i = 0; i < types.length; i++) { let x = flatLand(WORLD_W * (0.07 + 0.84 / (types.length - 1) * i) + (Math.random() - .5) * 160); G.nodes.push({ x, type: types[i], used: false }); }
+  const MIN_NODE_SPACING = 110;   /* an Extractor's 40px claim radius means two deposits any closer than this can't both be reached — pick each node's spot by scanning ALL of the map's dry land for the closest still-clear point, rather than walking outward from the target, so stranded targets don't all pile onto the same lone scrap of land */
+  const nodeXs = [];
+  for (let i = 0; i < types.length; i++) { const target = WORLD_W * (0.07 + 0.84 / (types.length - 1) * i) + (Math.random() - .5) * 160; const x = nodeSpot(target, nodeXs, MIN_NODE_SPACING); nodeXs.push(x); G.nodes.push({ x, type: types[i], used: false }); }
   // pre-placed structures: capital starting base + city defenses + docks
   const cw = cap.w * .5 + 60;   // spread the capital's working base across the city footprint
   preBuild(cap.x - cw * .7, 'powerplant'); preBuild(cap.x - cw * .2, 'housing'); preBuild(cap.x + cw * .25, 'factory'); preBuild(cap.x + cw * .6, 'airbase'); preBuild(cap.x + cw, 'reslab');
@@ -2938,6 +2940,16 @@ function flatLandSpread(x, placed, gap) {
   const base = flatLand(x); if (clear(base)) return base;
   for (let d = 40; d <= WORLD_W; d += 40) for (const cx of [x + d, x - d]) { if (cx < 220 || cx > WORLD_W - 220) continue; const c = flatLand(cx); if (clear(c)) return c; }   // walk outward for flat land that clears the spacing
   return base;   // no room found — fall back to the nearest flat land (it may fuse; still better than a crash)
+}
+// pick the closest still-clear dry-land spot to `target`, scanning the WHOLE map rather than walking outward from
+// the target — an outward walk lets several stranded targets all discover the same lone scrap of land in turn and
+// pile onto it one after another; scoring every candidate by distance (with a light flatness tiebreak) instead lets
+// each node claim the nearest AVAILABLE ground even when that means a different island than its neighbour took
+function nodeSpot(target, placed, gap) {
+  let best = null, bestScore = 1e15;
+  for (let xx = 220; xx <= WORLD_W - 220; xx += 20) { if (elevAt(xx) <= SEA_E + .05) continue; let ok = true; for (const p of placed) if (Math.abs(p - xx) < gap) { ok = false; break; } if (!ok) continue;
+    const fl = Math.abs(elevAt(xx - 20) - elevAt(xx + 20)), score = Math.abs(xx - target) + fl * 4000; if (score < bestScore) { bestScore = score; best = xx; } }
+  return best === null ? flatLand(target) : best;   // no clear dry spot exists anywhere on the map (pathological tiny-land roll) — best-effort fallback, never a crash or a dropped node
 }
 function flatLand(x) { x = landNear(x); let best = x, bf = 1e9; for (let dx = -160; dx <= 160; dx += 14) { const xx = x + dx; if (xx < 60 || xx > WORLD_W - 60 || elevAt(xx) <= SEA_E + .05) continue; const fl = Math.abs(elevAt(xx - 20) - elevAt(xx + 20)); if (fl < bf) { bf = fl; best = xx; } } return best; }
 function preBuild(x, key, city) { if (city) return; const d = BUILD_DEFS[key]; if (!d) return; const px = d.needWater ? (findWater(x) ?? x) : landNear(x); G.buildings.push(mkBuilding(key, px)); }

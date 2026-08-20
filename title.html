@@ -379,11 +379,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.86.3 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.86.4 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.86.4 — SNAPSHOTS SHOW THE WHOLE MAP</b><br><b>🗺 The after-action snapshots now pull back far enough to fit your ENTIRE nation in frame</b> — edge to edge, however far across the map you've sprawled. They were capped at the normal in-game zoom limit, so a wide empire only got a corner of itself photographed; a snapshot doesn't need that limit, so it's gone. Big bases now get a true full-map portrait, centered so it's all landscape and no dead space.</p>
     <p><b>v3.86.3 — SNAPSHOTS THAT PHOTOGRAPH YOUR NATION</b><br><b>📸 The after-action snapshots now take a proper postcard.</b> Instead of grabbing whatever slice of underground dirt the camera happened to be sitting on, each of the three shots (MOBILIZATION / THE FORTRESS / AFTERMATH) now briefly frames a wide view of your whole nation — the surface, your base sprawl, and the sky — then captures that. Your report finally looks like the war you fought.</p>
     <p><b>v3.86.2 — THE AFTERMATH SNAPSHOT IS ALIVE</b><br><b>📸 Fixed the blank "AFTERMATH" image</b> in the after-action report. The last-frame snapshot was being grabbed a split-second too early (mid-update, off a stale buffer) — the same timing bug that blanked the other two shots, but it had been missed on this one. It now waits for a real final frame of the frozen battlefield, matching the fix already applied to the MOBILIZATION and FORTRESS shots.</p>
     <p><b>v3.86.1 — PLASMA THAT CONNECTS · MICROMISSILES THAT TRACK</b><br><b>💥 Physical plasma rounds now hit airborne targets.</b> Plasma bolts were refusing to detonate on enemies still dropping from orbit — they'd fly clean through the very target they were fired at. Fixed: plasma reliably airbursts on aircraft and descending enemies now, with a wider proximity fuse for fast movers, while staying dead-straight (not homing) as intended. <b>🚀 The Micromissile Barrage strike actually homes.</b> When everything near the impact was still in re-entry, every micro-missile in the salvo was coming out with no target and flying dumb — now all 18 reliably lock and chase. <b>📸 After-action snapshots</b> get a mobile-reliability pass (they were coming out blank on some phones) — capturing a fresh frame and hardening the readback. <i>If your report snapshots were blank, please try again and let me know.</i></p>
@@ -4407,9 +4408,11 @@ function snapFrameCam() {
   let centerX, span;
   if (isFinite(minX) && isFinite(maxX)) { centerX = (minX + maxX) / 2; span = Math.max(260, maxX - minX); }
   else { const cap = G && G.cities.find(ct => ct.capital); centerX = cap ? cap.x : WORLD_W / 2; span = 900; }   // fallback: no live holdings found (e.g. total wipeout) — center on the capital's ruins, or the map middle
-  cam.z = Math.max(.83, Math.min(1, W * .85 / span));   // fit the sprawl with margin; never zoom IN past 1x (a postcard shows the whole base, not a close-up) and never past the engine's own zoomed-out floor
+  cam.z = Math.min(1, Math.max(W / (WORLD_W * 1.04), W * .9 / span));   // fit the WHOLE sprawl with margin — a snapshot is exempt from the live 0.83 zoom floor, so it can pull ALL the way back to show the entire map at once when the nation spans it; never zooms IN past 1x (a postcard, not a close-up), and never past fitting the full world width
   cam.x = clampCam(centerX - W / 2);
-  cam.y = clampCamY(groundY(centerX) - H / 2 - .12 * H / cam.z);   // frac≈.62 cinematic recipe: y = groundY - H/2 - (frac-.5)*H/z — pushes the surface into the lower third so sky fills the top, never a soil-cross-section
+  const frac = cam.z > .7 ? .62 : .5;   // compact base: surface in the lower third (sky on top). Full-map (zoomed out): CENTER the ground line so sky fills the upper half and the crust the lower half — no big black margins
+  cam.y = groundY(centerX) - H / 2 - (frac - .5) * H / cam.z;   // y = groundY - H/2 - (frac-.5)*H/z places the surface at screen-fraction `frac`
+  if (cam.z > .7) cam.y = clampCamY(cam.y);   // clamp only for the near-1x postcard; the full-map shot is INTENTIONALLY past the gameplay camera clamp, so don't let clampCamY drag it back and reintroduce the black band
   cam.manualT = 99999;   // pin for the one frame this is used — nothing should fight this framing
 }
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)

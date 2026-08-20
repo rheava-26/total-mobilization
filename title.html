@@ -6067,12 +6067,12 @@ function updProj(dt) {
       const deployY = p.air ? p.ty : groundY(p.x);
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target
         boom(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
-        const tlist = enemiesLive.filter(e => e.y >= SPACE_Y()), pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.split).map(o => o[1]);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle)
+        const tlist = G.enemies.filter(e => e.y >= SPACE_Y()), pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.split).map(o => o[1]);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle). NOTE: built from G.enemies, NOT the reentry-stripped enemiesLive — these are direct-hit homing missiles (same weapon class as the generic guided missile, which already reacquires reentry targets via hostileMeso), so a re-entry target that has already descended into reach (y >= SPACE_Y()) is a perfectly valid lock, not just orbital ones sitting above the line
         for (let i = 0; i < p.split; i++) {
           const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4;
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
           if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — same fix as the microrocket split: never deploy a submunition already heading groundward (this carrier explicitly bursts AT ground level when its target isn't airborne, so this was diving straight in on detach)
-          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : near(p.x, p.y, tlist, 900);   // GUARANTEE HOMING — same fallback as the microrocket split, still respecting the atmosphere-only tlist (no orbital lock)
+          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : (near(p.x, p.y, tlist, 1400) || near(p.x, p.y, G.enemies, 2200));   // GUARANTEE HOMING — widened fallback radius, then (if the burst point genuinely has nothing atmospheric anywhere near it) an absolute last resort over the FULL enemy list so a submunition is never left with a null target while ANY enemy is alive, even if that means briefly crossing the "atmosphere-only" intent in the rare case nothing else exists to hunt
           G.proj.push({ k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null });
         }
         p.life = 0;

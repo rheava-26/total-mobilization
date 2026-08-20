@@ -3987,7 +3987,7 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox, ami, msz) 
   else if (weapon === 'rail' || weapon === 'rod') { const v = weapon === 'rod' ? 380 : 520; G.proj.push({ k: 'rail', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, big: weapon === 'rod' }); }
   else if (weapon === 'amslug') { const v = 640; G.proj.push({ k: 'amslug', x: sxx, y: syy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, life: 3, friendly, dmg, tr: [] }); }   // WHISTLER's microscopic antimatter slug — fast, DEAD STRAIGHT, no homing (fixes the old homing missile that snapped onto the nearest friendly and detonated a few feet out)
   else if (weapon === 'particle') { G.proj.push({ k: 'particlebeam', x1: sxx, y1: syy, x2: tx, y2: ty, life: .14, friendly, dmg }); particleHit(sxx, syy, tx, ty, dmg, friendly); }   // TRUE HITSCAN — single-shot hypervelocity bolt resolves its hit the SAME TICK it fires (no flight time to whiff a fast mover); drawn as an instant beam, not a projectile
-  else if (weapon === 'microrkt') { const slow = 30; G.proj.push({ k: 'microrkt', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 60, spd: slow, t: 0, splitT: .45, n: 4, life: 6, friendly, dmg, tr: [] }); }   // carrier rocket → splits into homing submunitions
+  else if (weapon === 'microrkt') { const slow = 30; G.proj.push({ k: 'microrkt', x: sxx, y: syy, vx: Math.cos(ang) * slow, vy: Math.sin(ang) * slow - 60, spd: slow, t: 0, splitT: .25, n: 6, life: 6, friendly, dmg, tr: [] }); }   // carrier rocket → bursts almost immediately into a fan of 6 homing submunitions (not a stream of dumb rockets)
   else if (weapon === 'rotary') { for (let n = 0; n < 4; n++) { const aa = ang + (Math.random() - .5) * .04, v = 560 + Math.random() * 140; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.25, friendly, dmg: dmg * .5, fire: true, stream: true }); } }   // ROTARY CANNON — hoses out a tight STREAM of tiny fast rounds (a continuous jet of flak) rather than a few fat tracers; fast + long-lived enough to cover the gun's full range
   else { for (let n = 0; n < 2; n++) { const aa = ang + (Math.random() - .5) * .045, v = 320 + Math.random() * 50; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.4, friendly, dmg, fire: true }); } }   // aimed gun burst — tight spread so it reads as directed fire, not a shotgun scatter
 }
@@ -6022,15 +6022,16 @@ function updProj(dt) {
       p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
       if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      const cluster = near(p.x, p.y, tlist, 300);
-      if ((p.t >= p.splitT && cluster) || p.t > 1.6 || p.life <= 0 || p.y >= groundY(p.x)) {
+      const cluster = near(p.x, p.y, tlist, 550);
+      if ((p.t >= p.splitT && cluster) || p.t > .8 || p.life <= 0 || p.y >= groundY(p.x)) {
         boom(p.x, p.y, 3); spark(p.x, p.y, 5);
         const pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.n).map(o => o[1]);
         for (let i = 0; i < p.n; i++) {
           const a = -1.4 + (i / Math.max(1, p.n - 1)) * 2.8 + (Math.random() - .5) * .4;
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
           if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — a fan angle that would launch this sub already heading groundward instead gets a brief upward/outward kick, so it clears the burst point and acquires before it ever starts descending (was: augered straight into the dirt on detach)
-          const sub = { k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null };
+          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : near(p.x, p.y, tlist, 900);   // GUARANTEE HOMING — never let a submunition detach with no lock; fall back to a fresh scan if the initial pool came up empty
+          const sub = { k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null };
           if (!p.friendly) { sub.pdable = true; sub.hp = 4; }
           G.proj.push(sub);
         }
@@ -6070,7 +6071,8 @@ function updProj(dt) {
           const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4;
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
           if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — same fix as the microrocket split: never deploy a submunition already heading groundward (this carrier explicitly bursts AT ground level when its target isn't airborne, so this was diving straight in on detach)
-          G.proj.push({ k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 3.4, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: pool[i] || pool[i % Math.max(1, pool.length)] || null });
+          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : near(p.x, p.y, tlist, 900);   // GUARANTEE HOMING — same fallback as the microrocket split, still respecting the atmosphere-only tlist (no orbital lock)
+          G.proj.push({ k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null });
         }
         p.life = 0;
       }

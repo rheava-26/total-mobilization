@@ -379,11 +379,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.85.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.85.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.85.1 — THE MIND-FORGE HITS LIKE A MIND-FORGE</b><br><b>☢ The Mind-Forge was badly under-tuned — fixed.</b> The most expensive strike in the game (24% stability, taboo) was chipping bosses for a fifth of their health and looking cosmetic doing it. Now it lives up to its billing: a <b>~5× damage increase</b>, a wider column, and a longer sustained beam. One Mind-Forge puts a <b>Land Leviathan on life support</b> and annihilates everything smaller in the whole vertical column, at any altitude. Aim it at the thing you most need dead.</p>
     <p><b>v3.85.0 — GARRISON WORKS ARM YOUR WHOLE FRONT</b><br><b>🏭 The production-line "Works" buildings are transformed.</b> Instead of trickling out one garrison unit every so often, each one now projects a radius that ARMS every matching production building inside it. Drop an <b>Aero Works</b> among your airbases and <i>every</i> airbase in range keeps a standing <b>Laser Plane + Lancer bomber</b> screen; a <b>Missile Works</b> arms every nearby Factory with a <b>Hydra</b> battery; <b>Heavy Foundry</b> → <b>Mammoths</b>, <b>Armor Plate Mill</b> → <b>Goliaths</b>, <b>Avionics Works</b> → a local <b>SAM</b> net. They STACK — two Works over one base doubles it, and one Works arms a whole wall of bases at once. Build them into your sprawl; isolated, they arm nothing. <b>🛡 Tidier build menu.</b> The radius-bonus support buildings — War Academy, Field Hospital, Ammunition Depot, Logistics Hub and the Nanite Foundry — now live in the <b>DEFENSE</b> tab alongside Radar, where they belong. <b>⚙ Upgrade units feel like upgrades:</b> the Hydra, Mammoth super-heavy and Lancer bomber now clearly out-gun the base units they replace (and their cards say why). Plus a description cleanup pass across the affected buildings.</p>
     <p><b>v3.84.1 — MORE SOUNDTRACK: AYDEN GEORGE (THE FIRE RISES OST)</b><br><b>🎵 Three more tracks are now built into the default soundtrack</b>, cleared for use by their composer <b>Ayden George</b> (The Fire Rises OST) — one added to the Peacetime playlist and two to the Combat playlist. They stream in automatically alongside the existing lineup; no setup needed. As always you can swap in your own YouTube links or local files from the ♫ soundtrack menu.</p>
     <p><b>v3.84.0 — PLAY YOUR OWN MUSIC FILES (NO ADS, NO YOUTUBE)</b><br><b>🎵 You can now load your own audio files as the soundtrack.</b> Open the ♫ soundtrack menu, flip on <b>USE LOCAL FILES</b>, and add audio files to your Peacetime and Combat playlists — they play straight off your device, so there's no YouTube, no ads, ever, and full quality. Your tracks are <b>saved on your device</b>, so you load them once and they stay. Everything works like before — the playlist crossfades from Peacetime to Combat when the invasion lands, and ducks under big moments. YouTube stays as the fallback if you'd rather stream. <b>🔊 Also fixed</b> a bug where the music could get ducked quiet during a boss arrival and never come back up.</p>
@@ -4466,7 +4467,7 @@ function updateGame(dt) {
       for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - bm.x) < bm.r) damageDistrict(ct, dst, 230 * dt); }
       G.stab = Math.max(0, G.stab - 4 * dt);
     } else {   // YOUR Mind-Forge — obliterates enemies in the column; it will NOT fry your own forces or structures
-      for (const e of G.enemies) if (Math.abs(e.x - bm.x) < bm.r) { e.killBy = 'beam'; e.hp -= 240 * dt; }
+      for (const e of G.enemies) if (Math.abs(e.x - bm.x) < bm.r) { e.killBy = 'beam'; e.hp -= 650 * dt; }
     }
     for (let n = 0; n < 3; n++) { const fx = bm.x + (Math.random() - .5) * bm.r * 1.7, fy = Math.random() * groundY(bm.x); G.parts.push({ k: 'plasma', x: fx, y: fy, vx: (Math.random() - .5) * 16, vy: (Math.random() - .5) * 36, r: 2 + Math.random() * 4, life: .3 + Math.random() * .4, hostile: bm.hostile }); }
     if (bm.life <= 0) { craters.push({ x: bm.x, r: 84, depth: .067 }); if (craters.length > 70) craters.shift(); groundBurst(bm.x, 20); G.beams.splice(i, 1); }
@@ -5130,7 +5131,7 @@ function barrageTarget() {
   return Math.max(120, Math.min(WORLD_W - 120, cap + (Math.random() - .5) * WORLD_W * .7));
 }
 function firePsiLance(x) {
-  G.beams.push({ x, r: 92, life: 1.4, total: 1.4 });
+  G.beams.push({ x, r: 120, life: 2.5, total: 2.5 });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 60, groundY(x), 12);
   G.nukeFlash = .5; shake(14); SFX.split(); SFX.boom();
 }

@@ -30,6 +30,19 @@ The designer's own words: *"you see this thing and say 'oooh I could place 100 o
 
 ---
 
+## ⚙ BATTLEGROUPS — THE ANSWER TO MASS (designer direction, 2026-08-20) ★ eventual, deferred
+
+**Designer's vision (verbatim gist):** *"i wanna do battlegroups eventually where squads upon squads will form unit battalions of the same type."* So the hierarchy becomes **body → squad → BATTALION (a battlegroup of same-type squads)** — a battalion is ONE entity with a count/HP pool + formation, simulated & rendered as a cluster that READS as many. This is the tenet-correct way to say YES to thousands: the player fields battalions, the engine simulates dozens of entities, not thousands of independent bodies. (Aligns with the HOI4-style battlegroup idea already banked in the feedback tracker — now the confirmed direction.)
+
+**WHY (perf diagnosis, profiled 2026-08-20 from report_5 — a 3,791-unit game running at ~0.29x speed / "every second like 3.5s"):**
+- Bottleneck is **`updUnits`** — 82ms of 85ms/tick at ~3,000 units (~28µs/unit), FLAT. Confirmed NOT v3.88.0 interception (76ms with OR without bombardment — the incoming-list early-out works), NOT auras (84.5→85ms adding 63 aura buildings), NOT enemies/proj/buildings (all <1ms). Purely the per-unit AI loop.
+- SQUADS MULTIPLY IT: Clone Battalions (and other grp units) are SQUADS with multiple member bodies each — 2,748 Clone Battalions = many thousands of simulated bodies. Separation is already bucketed (not O(n²)); the cost is the sheer per-body AI.
+- Render (frame/renderGame) was NOT separately measured (rAF-driven) but scales with the same body count — a co-cost on top of sim.
+
+**ROOT ECONOMY DRIVER (why the player reaches 3,800):** excess IC with nothing to spend it on. Manpower/army-cap gates the normal army, so the player funnels a huge IC economy into OFF-CAP units (Shapeshifters in report_3/4, Clone Battalions ×2748 in report_5) — the only way to convert banked IC into force. Battlegroups help; a deeper IC-sink pass (more toys to spend on — tenet-positive, NOT a cap) is the complementary design lever. (Designer standing rule: do NOT change manpower — "it's perfect where it is.")
+
+**STATUS: DEFERRED** (designer: "we can fix this later, this is very much an outlier case"). No optimization pass now. Build battlegroups as its own architectural project when picked up: battalion entity (type + squad list + pooled HP/count + formation), aggregate AI/targeting/movement at the battalion level, cluster rendering + LOD, and a UI to raise/command battalions. Reuse the existing squad system as the building block.
+
 ## 🏭 GARRISON REWORK — CORRECTED SPEC (I built the wrong thing; designer re-specced 2026-08-17)
 
 **⚠ WHAT I GOT WRONG (v3.23 + v3.50):** I built Garrison Stockpiles as an ABSTRACT WEIGHT-BUDGET CEILING (`garrisonCap` — a number), and garrison producers/factories that SPEED the fill RATE. Designer's verdict: garrison factories are "basically useless" (speeding a free trickle isn't a decision), and stockpiles get "put deep underground and never touched" (pure ceiling → no reason to place them anywhere).

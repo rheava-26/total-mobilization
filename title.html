@@ -2896,16 +2896,19 @@ const BUILD_DEFS = {
   garrstock:{ name: 'Garrison Stockpile', cat: 'INFRA', ic: 140, mp: 40, build: 8, hp: 200, w: 16, h: 12, garrisonCap: 20, ds: 'Raises the GLOBAL GARRISON WEIGHT BUDGET by +20 — the hard cap on how much standing auto-defense (Bunkers, Barracks, Garrison Factories, Airbases…) can be alive at once. Holds no defenders of its own — it is pure ceiling. Build more to raise it.' },
   garrfactory:{ name: 'Garrison Factory', cat: 'INFRA', ic: 200, mp: 90, build: 11, hp: 240, w: 20, h: 14, garrison: { unit: 'tank', n: 2, weight: 3 }, aura: { garrSpd: 1.8, r: 300 }, ds: 'Dedicated auto-defense plant — keeps a standing pair of tanks, and its aura FILLS every nearby garrison building (Bunkers, Barracks, Airbases…) ~80% faster. Still bounded by your total Garrison Stockpile budget.' },
   mobhub:   { name: 'Mobilization Hub', cat: 'INFRA', ic: 110, mp: 30, build: 6, hp: 160, w: 14, h: 10, aura: { garrSpd: 1.5, r: 340 }, ds: 'Cheap coordination post — speeds up garrison fill for every defense building in its wide radius. No troops of its own.' },
-  // ===== LOCALIZED GARRISON PRODUCERS (cat INFRA) — a d.garrWorks building makes its SPECIALTY garrison unit on a timer and DIVVIES each new one
-  // out to a friendly building inside its LOCAL RADIUS (nearest-need spread). Its defensive value IS its neighbourhood: dump it underground mid-ocean
-  // with nothing around it and it garrisons nothing — build it INTO your sprawl/front. Overlap 90 of them and they STACK; the ONLY ceiling is the
-  // global GARRISON WEIGHT BUDGET (Garrison Stockpiles). See the garrWorks fill pass in updateGame(). garrWorks:{ unit, r, every, weight } — all tunable.
-  // The first three ALSO carry a production-line unit bReq (Part 1): their factory-buildable native unit. Both roles coexist. =====
-  missileworks:{ name: 'Missile Works', cat: 'INFRA', ic: 200, mp: 70, build: 11, hp: 240, w: 20, h: 16, garrWorks: { unit: 'hydra', r: 300, every: 15, weight: 2 }, ds: 'Rocket production line — unlocks the HYDRA rocket battery for any Factory (no research), AND acts as a LOCALIZED PRODUCER: on a timer it rolls out Hydra batteries and posts them as standing garrisons to nearby buildings inside its radius. Build it INTO your sprawl (isolated, it garrisons nothing). Stacks with more Missile Works — bounded only by your Garrison Stockpile budget.' },
-  heavyfoundry:{ name: 'Heavy Foundry', cat: 'INFRA', ic: 260, mp: 95, build: 13, hp: 300, w: 22, h: 16, makes: { alloy: .4 }, garrWorks: { unit: 'mammoth', r: 300, every: 22, weight: 3 }, ds: 'Heavy-armour production line — unlocks the MAMMOTH super-heavy tank for any Factory (no research) and forges HEAVY ALLOY. Also a LOCALIZED PRODUCER: it pours out Mammoths and stations them as garrisons at nearby buildings. Build it into a defended sector. Stacks — bounded only by your Garrison Stockpile budget.' },
-  aeroworks:{ name: 'Aero Works', cat: 'INFRA', ic: 240, mp: 85, build: 12, hp: 240, w: 22, h: 15, prodUnlock: ['laserplane'], garrWorks: { unit: 'fighter', r: 320, every: 20, weight: 3 }, ds: 'Aircraft production line — grants ✈ +4 AIR COMMAND, unlocks the LANCER heavy bomber for any Airbase, and prodUnlocks the LASER PLANE with no research. Also a LOCALIZED PRODUCER: it scrambles a standing fighter screen over nearby installations. Build it among your bases. Stacks — bounded only by your Garrison Stockpile budget.' },
-  plateworks:{ name: 'Armor Plate Mill', cat: 'INFRA', ic: 220, mp: 80, build: 12, hp: 280, w: 20, h: 14, makes: { alloy: .35 }, garrWorks: { unit: 'heavytank', r: 300, every: 18, weight: 3 }, ds: 'Rolls & welds armour plate (stockpiles HEAVY ALLOY) and, as a LOCALIZED PRODUCER, turns it into GOLIATH heavy tanks stationed as garrisons at nearby buildings. A permanent, no-research heavy-armour producer — no throughput bottleneck. Build it into your line; stacks up to your Garrison Stockpile budget.' },
-  avionicsworks:{ name: 'Avionics Works', cat: 'INFRA', ic: 210, mp: 70, build: 11, hp: 230, w: 20, h: 14, garrWorks: { unit: 'sam', r: 320, every: 16, weight: 2 }, ds: 'Builds guidance seekers & fire-control sets and, as a LOCALIZED PRODUCER, fields guided SAM batteries as standing garrisons across nearby buildings — a local anti-air / anti-missile net that grows itself. No research, no bottleneck. Build it into a sector you want covered; stacks up to your Garrison Stockpile budget.' },
+  // ===== GARRISON AURA WORKS (cat INFRA) — a d.garrAura building produces nothing itself; instead it radiates a coverage
+  // RADIUS that arms every matching PRODUCER building (d.prod === target — Airbase for 'air', Factory for 'ground') inside
+  // it with an ADDITIONAL standing garrison of its listed units, ON TOP of that producer's own d.garrison. N overlapping
+  // Works of the SAME KIND covering one producer STACK N× the extra garrison there. Its defensive value IS its
+  // neighbourhood: dump it isolated and it garrisons nothing — build it INTO your sprawl/front. Fills via the SAME
+  // spawnGarrison mechanism as everything else, so it's still bounded by the global GARRISON WEIGHT BUDGET (Garrison
+  // Stockpiles). See the garrAura fill pass in updateGame(). garrAura:{ target, units, r } — all tunable. The first three
+  // ALSO carry a production-line unit bReq (Part 1): their factory-buildable native unit. Both roles coexist. =====
+  missileworks:{ name: 'Missile Works', cat: 'INFRA', ic: 200, mp: 70, build: 11, hp: 240, w: 20, h: 16, garrAura: { target: 'ground', units: ['hydra'], r: 320 }, ds: 'Rocket production line — unlocks the HYDRA rocket battery for any Factory (no research). As a garrison doctrine it radiates a coverage aura that arms every FACTORY in its radius with an extra standing Hydra battery — build more Factories inside it and one Missile Works arms them all. Stacks with more Missile Works, bounded only by your Garrison Stockpile budget.' },
+  heavyfoundry:{ name: 'Heavy Foundry', cat: 'INFRA', ic: 260, mp: 95, build: 13, hp: 300, w: 22, h: 16, makes: { alloy: .4 }, garrAura: { target: 'ground', units: ['mammoth'], r: 320 }, ds: 'Heavy-armour production line — unlocks the MAMMOTH super-heavy tank for any Factory (no research) and forges HEAVY ALLOY. As a garrison doctrine it arms every FACTORY in its radius with an extra standing Mammoth guard. Build it into a defended sector — stacks with more Heavy Foundries, bounded only by your Garrison Stockpile budget.' },
+  aeroworks:{ name: 'Aero Works', cat: 'INFRA', ic: 240, mp: 85, build: 12, hp: 240, w: 22, h: 15, prodUnlock: ['laserplane'], garrAura: { target: 'air', units: ['laserplane', 'bomber'], r: 340 }, ds: 'Aircraft production line — grants ✈ +4 AIR COMMAND, unlocks the LANCER heavy bomber for any Airbase, and prodUnlocks the LASER PLANE with no research. As a garrison doctrine it scrambles a standing Laser Plane + Lancer screen over EVERY Airbase in its radius — build more Airbases and one Aero Works arms them all. Stacks, bounded only by your Garrison Stockpile budget.' },
+  plateworks:{ name: 'Armor Plate Mill', cat: 'INFRA', ic: 220, mp: 80, build: 12, hp: 280, w: 20, h: 14, makes: { alloy: .35 }, garrAura: { target: 'ground', units: ['heavytank'], r: 320 }, ds: 'Rolls & welds armour plate (stockpiles HEAVY ALLOY). As a garrison doctrine it arms every FACTORY in its radius with an extra standing GOLIATH heavy-tank guard — a permanent, no-research heavy-armour screen. Build it into your line; stacks with more Armor Plate Mills, bounded only by your Garrison Stockpile budget.' },
+  avionicsworks:{ name: 'Avionics Works', cat: 'INFRA', ic: 210, mp: 70, build: 11, hp: 230, w: 20, h: 14, garrAura: { target: 'air', units: ['sam'], r: 340 }, ds: 'Builds guidance seekers & fire-control sets — no research, no bottleneck. As a garrison doctrine it arms every AIRBASE in its radius with an extra standing SAM battery, a local anti-air / anti-missile net that grows itself. Build it into a sector you want covered; stacks with more Avionics Works, bounded only by your Garrison Stockpile budget.' },
   // TECH
   reslab:   { name: 'Research Lab', cat: 'TECH', ic: 170, mp: 70, build: 11, hp: 200, w: 19, h: 16, reslab: true, ds: 'Each lab makes research ~14% FASTER and ~8% CHEAPER in influence (stacks). Does NOT generate influence — it spends it more efficiently.' },
   // EXOTIC (research-unlocked)
@@ -4497,22 +4500,25 @@ function updateGame(dt) {
         }
       }
     }
-    // LOCALIZED GARRISON PRODUCER — a d.garrWorks building rolls out its specialty garrison unit on a timer and DIVVIES each new one to a
-    // friendly building inside its local radius (nearest-NEED: the eligible neighbour holding the fewest of this unit gets the next one). With NO
-    // eligible neighbour it garrisons nothing — placement into your sprawl is the whole point. Shares the SAME running weight ledger (garrLive) as
-    // the standing garrisons above, so it is bounded ONLY by the global budget (Garrison Stockpiles); "build 90 and they stack" holds up to that budget.
-    if (b.d.garrWorks && UNIT_DEFS[b.d.garrWorks.unit]) {
-      const gwk = b.d.garrWorks, wt = gwk.weight || 1, rad = gwk.r || 300;
-      const fillT = (gwk.every || 18) / Math.max(.4, auraAt(b.x, 'garrSpd'));   // Garrison Factory / Mobilization Hub auras speed producers too
-      b.gwt = (b.gwt || 0) + dt;
-      if (b.gwt >= fillT) { b.gwt = 0;
-        if (garrLive + wt <= G.garrCap) {   // the ONLY ceiling — global garrison weight budget
-          let best = null, bestN = 1e9;     // pick the nearest-NEED neighbour (fewest of our specialty already stationed there)
-          for (const o of G.buildings) { if (o === b || o.done === false || o.captured || o.hp <= 0) continue; if (Math.abs(o.x - b.x) > rad) continue;
-            let here = 0; for (const u of G.units) if (u.garrison && u.hp > 0 && u.key === gwk.unit && Math.abs(u.x - o.x) < 120) here++;
-            if (here < bestN) { bestN = here; best = o; }
+    // GARRISON AURA — a d.garrAura building doesn't produce a unit itself; instead it radiates a coverage RADIUS that
+    // arms every matching PRODUCER building (d.prod === target) inside it with an ADDITIONAL standing garrison of its
+    // listed units, on top of that producer's own d.garrison. N overlapping Works of the SAME KIND covering one
+    // producer STACK N× the extra garrison. With NO matching producer in range it garrisons nothing — placement into
+    // your sprawl is still the whole point. Shares the SAME running weight ledger (garrLive) as the standing
+    // garrisons above, so it is bounded ONLY by the global budget (Garrison Stockpiles) exactly like everything else.
+    if (b.d.garrAura) {
+      const ga = b.d.garrAura, rad = ga.r || 300;
+      b.gat = (b.gat || 0) + dt;
+      if (b.gat >= 22) { b.gat = 0;
+        for (const o of G.buildings) {
+          if (o === b || o.done === false || o.captured || o.hp <= 0 || o.d.prod !== ga.target) continue;
+          if (Math.abs(o.x - b.x) > rad) continue;
+          let covering = 0;   // how many Works of THIS SAME KIND cover this producer — the stacking factor
+          for (const w of G.buildings) { if (w.done === false || w.captured || w.key !== b.key || !w.d.garrAura) continue; if (Math.abs(w.x - o.x) <= (w.d.garrAura.r || rad)) covering++; }
+          for (const uk of ga.units) { if (!UNIT_DEFS[uk]) continue;
+            let cur = 0; for (const u of G.units) if (u.hp > 0 && u.garrison && u.key === uk && Math.abs(u.x - o.x) < 120) cur++;
+            if (cur < covering && garrLive + 1 <= G.garrCap) { spawnGarrison(uk, o.x + (Math.random() - .5) * o.d.w * 1.4, o, 1); garrLive += 1; }   // hard-blocked once the global weight budget is exhausted, same as everything else
           }
-          if (best) { spawnGarrison(gwk.unit, best.x + (Math.random() - .5) * best.d.w * 1.4, best, wt); garrLive += wt; }   // no neighbour → produce nothing (rewards building it INTO your base)
         }
       }
     }
@@ -6207,7 +6213,7 @@ function renderGame() {
   const _heavyLOD = (G.units.length + G.enemies.length) > 200;   // at extreme scale, drop the per-body soft drop-shadow (the single most expensive per-entity canvas op); art itself is unchanged
   RSTAT.culled = 0; RSTAT.drawn = 0;
   // COVERAGE ZONES — buff/aura radii (radar range, fire-rate, repair). Toggle with V or the ◎ button; a selected aura building always shows its own ring.
-  if (G.showZones || (G.sel && G.sel.d && (G.sel.d.aura || G.sel.d.garrWorks))) {
+  if (G.showZones || (G.sel && G.sel.d && (G.sel.d.aura || G.sel.d.garrAura))) {
     for (const b of G.buildings) { if (b.done === false || !b.d.aura) continue; if (!G.showZones && b !== G.sel) continue;
       const r = b.d.aura.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
       const col = b.d.aura.heal ? '109,255,176' : b.d.aura.dmg ? '255,110,90' : b.d.aura.rof ? '255,178,74' : '63,200,240';   // heal=green · damage=red · fire-rate=amber · range=cyan
@@ -6218,9 +6224,9 @@ function renderGame() {
       const col = u.d.aura.heal ? '109,255,176' : u.d.aura.dmg ? '255,110,90' : u.d.aura.rof ? '255,178,74' : '63,200,240';
       c.save(); c.beginPath(); c.arc(px, u.y, r, 0, 6.28); c.fillStyle = `rgba(${col},.045)`; c.fill(); c.strokeStyle = `rgba(${col},.5)`; c.lineWidth = 1.4; c.setLineDash([7, 6]); c.stroke(); c.setLineDash([]); c.restore();
     }
-    // LOCALIZED GARRISON PRODUCER coverage — the neighbourhood a garrWorks building posts its standing garrisons into (amber, matching the garrison HUD colour)
-    for (const b of G.buildings) { if (b.done === false || !b.d.garrWorks) continue; if (!G.showZones && b !== G.sel) continue;
-      const r = b.d.garrWorks.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
+    // GARRISON AURA coverage — the neighbourhood a garrAura Works arms with extra standing garrisons (amber, matching the garrison HUD colour)
+    for (const b of G.buildings) { if (b.done === false || !b.d.garrAura) continue; if (!G.showZones && b !== G.sel) continue;
+      const r = b.d.garrAura.r || 300, px = sx(b.x); if (px < -r || px > W + r) continue; const gy = groundY(b.x);
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = 'rgba(255,176,77,.05)'; c.fill(); c.strokeStyle = 'rgba(255,176,77,.55)'; c.lineWidth = 1.4; c.setLineDash([4, 5]); c.stroke(); c.setLineDash([]); c.restore();
     }
   }
@@ -6912,7 +6918,7 @@ function refreshSel() {
     if (d.makes) { const mk = []; for (const k in d.makes) mk.push('+' + d.makes[k] + '/s ' + (COMP[k] ? COMP[k].name : k)); html += `<div class="st"><span>Forges</span><b style="color:var(--res)">${mk.join(' · ')}</b></div>`; }
     if (d.autospawn) { const deep = !!bmod().autoFast, akey = deep ? 'android' : d.autospawn, every = d.spawnEvery * (deep ? .3 : 1), eta2 = Math.ceil(Math.max(0, every - (s.aut || 0)) / (0.45 * G.speed)); html += `<div class="st"><span>Auto-builds</span><b>${UNIT_DEFS[akey] ? UNIT_DEFS[akey].name : akey}</b></div><div class="st"><span>Next in</span><b>${eta2}s</b></div>`; }
     if (d.garrison) { const g = d.garrison, gk = g.keys || (g.unit ? [g.unit] : (g.key ? [g.key] : [])), gn = gk.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' / '); if (gn) html += `<div class="st"><span>Garrison</span><b>${g.n || 1} × ${gn}</b></div>`; }
-    if (d.garrWorks && UNIT_DEFS[d.garrWorks.unit]) { const gw = d.garrWorks, gwn = UNIT_DEFS[gw.unit].name, gwEvery = Math.ceil((gw.every || 18) / (0.45 * G.speed)); html += `<div class="st"><span>Supplies</span><b style="color:#ffd86b">1 × ${gwn} every ~${gwEvery}s</b></div><div class="id" style="margin-top:-3px">Posts each one as a standing garrison to the neediest friendly building within ${gw.r || 300}px — garrisons NOTHING if built with no friendly building nearby.</div>`; }
+    if (d.garrAura) { const ga = d.garrAura, gan = ga.units.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' + '), tgt = ga.target === 'air' ? 'Airbase' : 'Factory'; html += `<div class="st"><span>Arms nearby</span><b style="color:#ffd86b">every ${tgt} within ${ga.r || 300}px: +${gan}</b></div>`; }
     if (d.prodList) { const pn = d.prodList.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' · '); html += `<div class="st"><span>Produces</span><b style="color:#bfe9ff">${pn}</b></div>`; }
     if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }

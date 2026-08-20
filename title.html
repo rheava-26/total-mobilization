@@ -5152,9 +5152,9 @@ function areaDamage(x, y, r, dmg, kb) {
   shallowUgHit(x, r * .8, dmg * .5);   // the blast caves in shallow tunnels under the crater
 }
 // side-aware splash (friendly hits enemies only; hostile hits your units/buildings/cities) — used by lobbed plasma
-function splashDamage(x, y, r, dmg, friendly, kb) {
+function splashDamage(x, y, r, dmg, friendly, kb, hitReentry) {   // hitReentry: lets this specific splash also land on enemies still in their re-entry descent — off by default (nukes/MIRVs/etc. keep the reentry vulnerability window intact), opted into only by plasmaBurst (see there — plasball is explicitly allowed to detonate on & damage a re-entry target now)
   const core = r * .45, fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
-  if (friendly) { for (const e of G.enemies) { if (e.reentry) continue; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } } }
+  if (friendly) { for (const e of G.enemies) { if (e.reentry && !hitReentry) continue; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } } }
   else {
     for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } }   // v3.67: squad-aware — see hitSquadMember
     for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); }
@@ -5168,7 +5168,7 @@ function plasmaBurst(x, y, r, dmg, friendly) {   // contained slug dumps its hea
   const n = big ? 14 : 7;
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 80 + Math.random() * (big ? 200 : 120); G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, r: 1.1 + Math.random() * 1.4, life: .18 + Math.random() * .26 }); }   // white-hot metal spall
   smoke(x, y, big ? 3 : 1);
-  splashDamage(x, y, r, dmg, friendly, 'plasma');
+  splashDamage(x, y, r, dmg, friendly, 'plasma', true);   // hitReentry:true — plasball is now allowed to airburst on & damage a still-descending re-entry target (see updProj's plasball branch), matching the hitscan 'plasma' beam which already reaches re-entry via beamHit
   shake(big ? 3 : 1.2);   // every plasma hit kicks
   if (big && Math.random() < .5) SFX.boom(); else if (Math.random() < .6) blip(150, .12, 'square', .18);
 }
@@ -6084,10 +6084,10 @@ function updProj(dt) {
       if (p.grav) p.vy += p.grav * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (p.big ? 5 : 4)) p.tr.shift();
-      let hit = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5, prox = (p.big ? 44 : 22);   // PROXIMITY radius — bursts NEAR the target, not only on contact
-      if (p.friendly) { for (const t of G.enemies) { if (t.reentry) continue; const rad = (t.s || 16) + prox + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { hit = true; break; } } }
+      let hit = false, hitAir = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5, prox = (p.big ? 44 : 22);   // PROXIMITY radius — bursts NEAR the target, not only on contact
+      if (p.friendly) { for (const t of G.enemies) { const wide = !t.ground, rad = (t.s || 16) + (wide ? prox * 1.6 : prox) + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { hit = true; hitAir = wide; break; } } }   // NOTE: no `if (t.reentry) continue` here — plasma-armed units (acquireEnemy has no reentry filter, gated only by ceilF) DO acquire & fire at descending re-entry targets, so the bolt must be able to airburst on them too, or it flies straight through and whiffs. Airborne (non-ground) targets get a wider fuse — fast movers/descenders were slipping past the tight radius on a dead-straight shot; ground behavior (tanks, artillery) is untouched.
       else { for (const t of friendlyList) { const rad = (t.s || t.r || 16) + prox + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { hit = true; break; } } }
-      if (hit || p.y >= groundY(p.x) || p.life <= 0) { plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), p.big ? 80 : 42, p.dmg, p.friendly); p.life = 0; }   // burst radius comfortably exceeds the proximity trigger so a near-miss still lands solid damage, not a glancing edge hit
+      if (hit || p.y >= groundY(p.x) || p.life <= 0) { const burstR = (p.big ? 80 : 42) + (hitAir ? 26 : 0); plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), burstR, p.dmg, p.friendly); p.life = 0; }   // burst radius must comfortably exceed the proximity TRIGGER radius above, or a shot can detonate "near" a fast-moving/wide-fused airborne target yet land just outside its own blast (a trigger-without-damage near-miss) — the +26 keeps that margin now that airborne targets get a wider trigger fuse
       continue;
     }
     if (p.k === 'smart') {   // homes, then latches onto an enemy and seeds disassembler nanites

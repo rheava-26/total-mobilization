@@ -3994,7 +3994,7 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox, ami, msz) 
 // estimate how far ahead to aim so a shot meets a moving target — EVERY projectile-firing weapon leads by its own muzzle velocity;
 // only true hitscan/instant weapons (beam, particle, tractor) are absent from PS and return 0 (they need no lead — they resolve on the same tick)
 function leadTime(weapon, sx, sy, tgt) {
-  const PS = { plasma: 1100, plasball: 900, plasarc: 540, shell: 250, rocket: 360, missile: 320, bomb: 320, rail: 540, rod: 400, amslug: 640, tracer: 345, rotary: 630, smart: 280, microrkt: 260 };
+  const PS = { plasball: 900, plasarc: 540, shell: 250, rocket: 360, missile: 320, bomb: 320, rail: 540, rod: 400, amslug: 640, tracer: 345, rotary: 630, smart: 280, microrkt: 260 };   // 'plasma' is a HITSCAN beam (see fire()'s pbeam branch, beamHit resolves instantly) — it must NOT lead; giving it a lead time here aimed the beam at empty sky ahead of fast/descending targets ("psi-troopers fire randomly into the sky")
   const spd = PS[weapon]; if (!spd) return 0;   // hitscan beams / fast guns don't lead
   const CAP = 1.1;   // capped so guns don't over-predict on erratically-jinking targets at long range
   const vx = tgt.vx || 0, vy = tgt.vy || 0;

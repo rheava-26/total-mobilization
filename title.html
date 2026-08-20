@@ -4391,6 +4391,26 @@ function captureSnap(label) {
     G.stats.snap[label] = _snapCv.toDataURL('image/jpeg', 0.5);
   } catch (er) {}
 }
+// POSTCARD CAMERA — a wide, level "portrait of the nation" framing used ONLY for the instant an AFTER-ACTION snapshot is
+// captured (see frame()'s save/apply/capture/restore around the _want* flags). The LIVE battle camera can be sitting
+// anywhere (often low, mostly-underground, right after the opening zoom) — this computes a totally separate cam pose
+// centered on the player's actual holdings, zoomed to show the sprawl, and framed with the surface in the lower third
+// so sky fills the top. Mutates cam.x/y/z/manualT directly (clampCam/clampCamY both read the CURRENT cam.z, so z must
+// be set first); the caller is responsible for saving/restoring cam around this call.
+function snapFrameCam() {
+  let minX = Infinity, maxX = -Infinity;
+  if (G) {
+    for (const ct of G.cities) { if (ct.hp <= 0 || ct.held) continue; const hw = ct.w / 2; if (ct.x - hw < minX) minX = ct.x - hw; if (ct.x + hw > maxX) maxX = ct.x + hw; }
+    for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; const hw = (b.d.w || 20) / 2; if (b.x - hw < minX) minX = b.x - hw; if (b.x + hw > maxX) maxX = b.x + hw; }
+  }
+  let centerX, span;
+  if (isFinite(minX) && isFinite(maxX)) { centerX = (minX + maxX) / 2; span = Math.max(260, maxX - minX); }
+  else { const cap = G && G.cities.find(ct => ct.capital); centerX = cap ? cap.x : WORLD_W / 2; span = 900; }   // fallback: no live holdings found (e.g. total wipeout) — center on the capital's ruins, or the map middle
+  cam.z = Math.max(.83, Math.min(1, W * .85 / span));   // fit the sprawl with margin; never zoom IN past 1x (a postcard shows the whole base, not a close-up) and never past the engine's own zoomed-out floor
+  cam.x = clampCam(centerX - W / 2);
+  cam.y = clampCamY(groundY(centerX) - H / 2 - .12 * H / cam.z);   // frac≈.62 cinematic recipe: y = groundY - H/2 - (frac-.5)*H/z — pushes the surface into the lower third so sky fills the top, never a soil-cross-section
+  cam.manualT = 99999;   // pin for the one frame this is used — nothing should fight this framing
+}
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
@@ -7024,12 +7044,18 @@ function frame(now) {
       if (G) updateCamera(dt);
       if (G && !paused && !G.over) { try { updateGame(dt * 0.45 * G.speed); } catch (e) { logErr(e); } }
       let ox = 0, oy = 0; if (shakeAmt > .2) { ox = (Math.random() - .5) * shakeAmt; oy = (Math.random() - .5) * shakeAmt; shakeAmt = Math.max(0, shakeAmt - dt * 22); } else shakeAmt = 0;
+      // POSTCARD CAMERA — if this frame is about to satisfy a pending AAR snapshot, swap in snapFrameCam()'s wide
+      // nation-framing pose for JUST this one render, then restore the real (live-battle) cam right after the capture
+      // hook below runs. Saves/restores z BEFORE x/y since clampCam/clampCamY both read the live cam.z.
+      let _snapSaved = null;
+      if (G && G.stats && (G.stats.snap._wantStart || G.stats.snap._wantPrep || G.stats.snap._wantEnd)) { _snapSaved = { x: cam.x, y: cam.y, z: cam.z, manualT: cam.manualT }; snapFrameCam(); }
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
       // AFTER-ACTION SNAPSHOTS — capture 'start'/'prep' HERE, right after a complete fresh renderGame() pass has actually
       // drawn to `cv`, instead of mid-updateGame (which reads whatever the PREVIOUS frame left in the buffer — on some
       // mobile GPUs that previous-frame buffer can still be stale/partial, a suspected cause of blank AAR map snapshots).
       // Same two logical moments as before (outset ~1.2s in, the instant before re-entry) — just relocated + flag-gated.
       if (G && G.stats) { if (G.stats.snap._wantStart && !G.stats.snap.start) { captureSnap('start'); G.stats.snap._wantStart = false; } if (G.stats.snap._wantPrep && !G.stats.snap.prep) { captureSnap('prep'); G.stats.snap._wantPrep = false; } if (G.stats.snap._wantEnd && !G.stats.snap.end) { captureSnap('end'); G.stats.snap._wantEnd = false; } }
+      if (_snapSaved) { cam.z = _snapSaved.z; cam.x = _snapSaved.x; cam.y = _snapSaved.y; cam.manualT = _snapSaved.manualT; }   // restore the real live cam — only THIS one rendered frame used the postcard pose
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
       if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the guaranteed recovery ramping stability back up so the player can see they're being clawed out of it

@@ -379,11 +379,12 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.86.4 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.86.5 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
 
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.86.5 — WATER RENDERS WHEN ZOOMED OUT</b><br><b>🌊 Fixed the sea vanishing at the screen edges when zoomed out.</b> The terrain, sky and mountains all stretched to fill a zoomed-out view, but the water surface (and a couple of ground-outline details) stopped at the old screen edge — so pulling the camera back, or the new full-map snapshot, left dry seabed where there should be ocean. Water now extends to fill the whole view at any zoom. Caught thanks to a sharp eye on the full-map report shots.</p>
     <p><b>v3.86.4 — SNAPSHOTS SHOW THE WHOLE MAP</b><br><b>🗺 The after-action snapshots now pull back far enough to fit your ENTIRE nation in frame</b> — edge to edge, however far across the map you've sprawled. They were capped at the normal in-game zoom limit, so a wide empire only got a corner of itself photographed; a snapshot doesn't need that limit, so it's gone. Big bases now get a true full-map portrait, centered so it's all landscape and no dead space.</p>
     <p><b>v3.86.3 — SNAPSHOTS THAT PHOTOGRAPH YOUR NATION</b><br><b>📸 The after-action snapshots now take a proper postcard.</b> Instead of grabbing whatever slice of underground dirt the camera happened to be sitting on, each of the three shots (MOBILIZATION / THE FORTRESS / AFTERMATH) now briefly frames a wide view of your whole nation — the surface, your base sprawl, and the sky — then captures that. Your report finally looks like the war you fought.</p>
     <p><b>v3.86.2 — THE AFTERMATH SNAPSHOT IS ALIVE</b><br><b>📸 Fixed the blank "AFTERMATH" image</b> in the after-action report. The last-frame snapshot was being grabbed a split-second too early (mid-update, off a stale buffer) — the same timing bug that blanked the other two shots, but it had been missed on this one. It now waits for a real final frame of the frozen battlefield, matching the fix already applied to the MOBILIZATION and FORTRESS shots.</p>
@@ -1291,28 +1292,30 @@ function drawWorld(alpha) {
   const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + UG_VIEW_PAD); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
   drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body
   for (let px = -PX; px < W + PX; px += 3) { const wx = clampWX(wxAt(px)), y = groundY(wx), y2 = groundY(clampWX(wx + 3)); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
-  c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = 0; px <= W; px += 4) { const y = groundY(wxAt(px)); px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight
+  c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = -PX; px <= W + PX; px += 4) { const y = groundY(clampWX(wxAt(px))); px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight (over-scans at cz<1 so the margins aren't bare)
   drawTerrainDetail(alpha);   // biome scenery — forests, brush, boulders, snow glints
   if (soc.tint) { c.fillStyle = soc.tint; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY); }
   // GROUND LEVEL line + water in valleys
-  c.strokeStyle = 'rgba(220,235,255,.22)'; c.setLineDash([7, 7]); c.beginPath(); for (let px = 0; px <= W; px += 6) c.lineTo(px, seaLevelY(wxAt(px))); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = 'rgba(220,235,255,.22)'; c.setLineDash([7, 7]); c.beginPath(); for (let px = -PX; px <= W + PX; px += 6) c.lineTo(px, seaLevelY(clampWX(wxAt(px)))); c.stroke(); c.setLineDash([]);
   let inW = false, sxs = 0;
-  for (let px = 0; px <= W + 3; px += 3) { const wx = wxAt(px), below = px <= W && groundY(wx) > seaLevelY(wx) + .5; if (below && !inW) { inW = true; sxs = px; } else if (!below && inW) { drawWaterRegion(sxs, px - 3, alpha); inW = false; } }
-  c.strokeStyle = 'rgba(15,25,15,.4)'; c.lineWidth = 1.3; c.beginPath(); for (let px = 0; px <= W; px += 3) c.lineTo(px, groundY(wxAt(px))); c.stroke();
+  for (let px = -PX; px <= W + PX + 3; px += 3) { const wx = clampWX(wxAt(px)), below = px <= W + PX && groundY(wx) > seaLevelY(wx) + .5; if (below && !inW) { inW = true; sxs = px; } else if (!below && inW) { drawWaterRegion(sxs, px - 3, alpha); inW = false; } }   // over-scan so water at the map edges renders when zoomed out (cz<1), matching the terrain body
+  c.strokeStyle = 'rgba(15,25,15,.4)'; c.lineWidth = 1.3; c.beginPath(); for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px)))); c.stroke();
   if (G) drawRoads();
   if (G) drawAmbientGround(alpha);   // 🚗🚤 civilian cars on the roads + boats on the water — cosmetic, see AMBIENT LIFE
   c.fillStyle = 'rgba(230,240,255,.55)'; c.textAlign = 'right'; c.fillText('GROUND LEVEL', W - 16, seaLevelY(x1) - 4); c.fillText('SUBTERRANEAN', W - 16, (seaBaseY() + worldH()) / 2 + 30); c.textAlign = 'left';
   c.restore();
 }
 function drawWaterRegion(px0, px1, a) {
-  if (px1 <= px0) return; const midY = seaLevelY(wxAt((px0 + px1) / 2)), t = animClock * .001;
-  const wave = px => Math.sin(wxAt(px) * .045 + t * 1.7) * .9 + Math.sin(wxAt(px) * .013 - t * .8) * .8;   // two gentle crossing swells (cosmetic — gameplay stays at flat sea level)
+  if (px1 <= px0) return;
+  const cwx = px => { const w = wxAt(px); return w < 0 ? 0 : w > WORLD_W ? WORLD_W : w; };   // clamp off-map columns so a region drawn into the zoom-out over-scan margin repeats the edge flat (same as the terrain body) instead of extrapolating the sea curve
+  const midY = seaLevelY(cwx((px0 + px1) / 2)), t = animClock * .001;
+  const wave = px => Math.sin(cwx(px) * .045 + t * 1.7) * .9 + Math.sin(cwx(px) * .013 - t * .8) * .8;   // two gentle crossing swells (cosmetic — gameplay stays at flat sea level)
   const wg = c.createLinearGradient(0, midY, 0, midY + 150); wg.addColorStop(0, '#9cc6e6'); wg.addColorStop(.45, '#356b9e'); wg.addColorStop(1, '#0a1c30');
-  c.globalAlpha = a; c.fillStyle = wg; c.beginPath(); c.moveTo(px0, seaLevelY(wxAt(px0)) + wave(px0));
-  for (let px = px0; px <= px1; px += 3) c.lineTo(px, seaLevelY(wxAt(px)) + wave(px));
-  for (let px = px1; px >= px0; px -= 3) c.lineTo(px, Math.max(seaLevelY(wxAt(px)), groundY(wxAt(px)))); c.closePath(); c.fill();
+  c.globalAlpha = a; c.fillStyle = wg; c.beginPath(); c.moveTo(px0, seaLevelY(cwx(px0)) + wave(px0));
+  for (let px = px0; px <= px1; px += 3) c.lineTo(px, seaLevelY(cwx(px)) + wave(px));
+  for (let px = px1; px >= px0; px -= 3) c.lineTo(px, Math.max(seaLevelY(cwx(px)), groundY(cwx(px)))); c.closePath(); c.fill();
   // rolling surface crest — a bright line riding the swell
-  c.strokeStyle = 'rgba(230,248,255,.42)'; c.lineWidth = 1.2; c.beginPath(); for (let px = px0; px <= px1; px += 3) { const y = seaLevelY(wxAt(px)) + wave(px); px === px0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();
+  c.strokeStyle = 'rgba(230,248,255,.42)'; c.lineWidth = 1.2; c.beginPath(); for (let px = px0; px <= px1; px += 3) { const y = seaLevelY(cwx(px)) + wave(px); px === px0 ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();
   // drifting sun glints — short additive sparkles that slide along the surface
   const wdt = px1 - px0, nGl = Math.min(9, 1 + (wdt / 55 | 0));
   c.save(); c.globalCompositeOperation = 'lighter';

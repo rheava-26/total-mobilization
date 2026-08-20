@@ -4371,22 +4371,28 @@ function sampleHist() {
 // Drawn DOWN onto a small cached offscreen canvas first, then exported from THAT — on a big high-DPI phone canvas,
 // toDataURL() on the FULL-SIZE canvas silently returns a blank image (a known mobile limitation), so we never
 // export the main canvas directly.
-let _snapCv = null;
+// MOBILE-BLANK BEST EFFORT (unconfirmed on-device — cannot repro headless): reports of blank/solid-colour snaps on
+// phones. Two plausible causes addressed here: (1) willReadFrequently hints the browser to keep this offscreen
+// canvas on a CPU-readable surface instead of a GPU surface a toDataURL() readback can come back empty/stale from;
+// (2) the explicit 9-arg drawImage names the FULL source rect (0,0,cv.width,cv.height) instead of relying on the
+// implicit "whole source" behavior of the 5-arg form, in case a mobile Canvas2D implementation mishandles that
+// shorthand when source and dest sizes differ. Needs real on-device confirmation — flag for follow-up if it recurs.
+let _snapCv = null, _snapCtx = null;
 function captureSnap(label) {
   if (!G || !G.stats || !cv) return;
   try {
-    if (!_snapCv) _snapCv = document.createElement('canvas');
+    if (!_snapCv) { _snapCv = document.createElement('canvas'); _snapCtx = _snapCv.getContext('2d', { willReadFrequently: true }); }
     const sw = 800, sh = Math.max(1, Math.round(cv.height / cv.width * 800));
     if (_snapCv.width !== sw || _snapCv.height !== sh) { _snapCv.width = sw; _snapCv.height = sh; }
-    const octx = _snapCv.getContext('2d');
-    octx.drawImage(cv, 0, 0, sw, sh);
+    const octx = _snapCtx || _snapCv.getContext('2d', { willReadFrequently: true });
+    octx.drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, sw, sh);
     G.stats.snap[label] = _snapCv.toDataURL('image/jpeg', 0.5);
   } catch (er) {}
 }
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
-  if (G.stats && !G.stats.snap.start && G.time > 1.2) captureSnap('start');   // AFTER-ACTION — "MOBILIZATION" snapshot, taken once a couple frames have rendered at the outset
+  if (G.stats && !G.stats.snap.start && G.time > 1.2) G.stats.snap._wantStart = true;   // AFTER-ACTION — "MOBILIZATION" snapshot; just FLAGS it here (the actual capture happens in frame(), right after renderGame() draws a complete fresh frame — capturing mid-updateGame was reading the PREVIOUS frame's buffer, a suspected cause of blank snaps on some mobile GPUs)
   updAmbient(dt);   // 🚗✈🚤 cosmetic ambient life tick — see AMBIENT LIFE (never touches gameplay state)
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
@@ -4555,7 +4561,7 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; captureSnap('prep');   /* AFTER-ACTION — "THE FORTRESS" snapshot, the instant before re-entry */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
 G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
@@ -7017,6 +7023,11 @@ function frame(now) {
       if (G && !paused && !G.over) { try { updateGame(dt * 0.45 * G.speed); } catch (e) { logErr(e); } }
       let ox = 0, oy = 0; if (shakeAmt > .2) { ox = (Math.random() - .5) * shakeAmt; oy = (Math.random() - .5) * shakeAmt; shakeAmt = Math.max(0, shakeAmt - dt * 22); } else shakeAmt = 0;
       c.save(); const cz = cam.z || 1; if (cz !== 1) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } c.translate(ox, oy - cam.y); drawWorld(1); if (G) { try { renderGame(); } catch (e) { logErr(e); } } c.restore();   // zoom (scaled around the viewport centre) + vertical camera shift
+      // AFTER-ACTION SNAPSHOTS — capture 'start'/'prep' HERE, right after a complete fresh renderGame() pass has actually
+      // drawn to `cv`, instead of mid-updateGame (which reads whatever the PREVIOUS frame left in the buffer — on some
+      // mobile GPUs that previous-frame buffer can still be stale/partial, a suspected cause of blank AAR map snapshots).
+      // Same two logical moments as before (outset ~1.2s in, the instant before re-entry) — just relocated + flag-gated.
+      if (G && G.stats) { if (G.stats.snap._wantStart && !G.stats.snap.start) { captureSnap('start'); G.stats.snap._wantStart = false; } if (G.stats.snap._wantPrep && !G.stats.snap.prep) { captureSnap('prep'); G.stats.snap._wantPrep = false; } }
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
       if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the guaranteed recovery ramping stability back up so the player can see they're being clawed out of it

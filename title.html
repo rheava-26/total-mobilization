@@ -2987,6 +2987,17 @@ const BUILD_DEFS = {
   fortresshq:{ name: 'Fortress HQ', cat: 'INFRA', ic: 300, mp: 110, build: 14, hp: 340, armor: 8, w: 22, h: 16, garrisonCap: 12, garrison: { keys: ['tank', 'aa'], n: 2, weight: 3 }, aura: { garrSpd: 1.5, r: 300 }, ds: 'A hardened command bastion — raises your GARRISON BUDGET +12, fields its own armour + flak garrison, AND speeds nearby garrison fill (aura). The anchor of a fortified sector. No research needed.' },
   combine:{ name: 'Industrial Combine', cat: 'ECON', ic: 300, mp: 120, build: 13, hp: 300, w: 24, h: 16, econ: { ic: 8 }, gmod: { conspd: .25, cost: .05 }, ds: 'Heavy-industry complex — a strong +8 IC/s, and it drives your whole war economy: +25% CONSTRUCTION SPEED and −5% on every unit\'s IC cost (both STACK with more Combines). No research needed.' },
 };
+// AURA GRID CACHE tunables — auraAt()/auraHeal() are called several times PER UNIT PER TICK (range/dmg/rof for the
+// primary weapon, again for a secondary turret, etc.), and used to do a full O(G.buildings) scan every single call —
+// murder once a base is ringed with dozens of stacked Radars/Ammo Depots/War Academies (deliberate stacking is a
+// tenet-YES pattern, see ROADMAP, so it must stay CHEAP, not get capped). AURA_BS buckets aura-emitting buildings by
+// x once per tick (updateGame, alongside the existing G.auraUnits mobile-aura cache); AURA_MAX_R is computed HERE
+// from the real data (every def's aura.r, defaulting to 300 same as the lookup functions) so the bucket-window scan
+// is provably wide enough to catch every building that could possibly reach a query x — no magic number to rot if a
+// future aura radius grows. This makes the scan touch only nearby aura buildings, never the whole roster; the actual
+// per-building r/field check inside is UNCHANGED, so results are exact, not approximated (no tolerance needed).
+const AURA_BS = 100;
+const AURA_MAX_R = (() => { let m = 300; for (const k in BUILD_DEFS) { const a = BUILD_DEFS[k].aura; if (a) m = Math.max(m, a.r || 300); } for (const k in UNIT_DEFS) { const a = UNIT_DEFS[k].aura; if (a) m = Math.max(m, a.r || 300); } return m; })();
 /* RESEARCH — a node graph. Conventional arms (rifles→railguns→nukes→orbital) are ALREADY
    unlocked at game start; research is purely the exotic, escalating doctrines. The 3 AGES are
    the safe spine (info→fusion→space). Everything else is an optional, "dangerous" branch.
@@ -3243,10 +3254,22 @@ function recalcBuildings() {
   if (G) G.bmod = m;
 }
 function bmod() { return (G && G.bmod) || {}; }
-function auraAt(x, field) { let m = 1; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field];
+// AURA GRID CACHE — G.auraBB (built once/tick in updateGame) buckets aura-emitting buildings by x in AURA_BS-wide
+// cells; AURA_MAX_R (computed from real def data, see above) bounds how many cells could possibly reach a query x.
+// auraAt/auraHeal below walk only those nearby buckets (no callback/closure — this runs several times PER UNIT
+// PER TICK, so an inline loop avoids allocating a function object on every call) instead of scanning ALL buildings;
+// falls back to a plain G.buildings scan pre-first-tick, before G.auraBB exists. The per-building check inside is
+// UNCHANGED (same b.done/aura/field/radius predicate as before), so results are exact, not approximated.
+function auraAt(x, field) { let m = 1;
+  if (G && G.auraBB) { const k0 = Math.round((x - AURA_MAX_R) / AURA_BS), k1 = Math.round((x + AURA_MAX_R) / AURA_BS);
+    for (let k = k0; k <= k1; k++) { const a = G.auraBB.get(k); if (!a) continue; for (const b of a) if (b.done !== false && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field]; } }
+  else if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura[field] && Math.abs(b.x - x) < (b.d.aura.r || 300)) m *= b.d.aura[field];
   if (G && G.auraUnits && G.auraUnits.length) for (const u of G.auraUnits) if (u.d.aura[field] && Math.abs(u.x - x) < (u.d.aura.r || 300)) m *= u.d.aura[field];   // MOBILE auras (Command Helicopter, Mobile Command Fortress) — G.auraUnits is a per-tick cache built once in updateGame(), so the common case (no aura units fielded) costs one array-length check, never a scan of G.units
   return m; }   // local building + mobile-unit auras (range / fire-rate)
-function auraHeal(x) { let h = 0; if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal);
+function auraHeal(x) { let h = 0;
+  if (G && G.auraBB) { const k0 = Math.round((x - AURA_MAX_R) / AURA_BS), k1 = Math.round((x + AURA_MAX_R) / AURA_BS);
+    for (let k = k0; k <= k1; k++) { const a = G.auraBB.get(k); if (!a) continue; for (const b of a) if (b.done !== false && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal); } }
+  else if (G && G.buildings) for (const b of G.buildings) if (b.done !== false && b.d.aura && b.d.aura.heal && Math.abs(b.x - x) < (b.d.aura.r || 240)) h = Math.max(h, b.d.aura.heal);
   if (G && G.auraUnits && G.auraUnits.length) for (const u of G.auraUnits) if (u.d.aura.heal && Math.abs(u.x - x) < (u.d.aura.r || 240)) h = Math.max(h, u.d.aura.heal);   // mobile heal auras, same cheap-guarded cache
   return h; }   // Nanite Foundry repair radius + any mobile heal aura
 function armyCap() { let cap = 12 + Math.floor((G.mp || 0) / 25) + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return cap; }   // driven by your MANPOWER pool — ~300 mp ≈ 24 cap (old baseline), ~900 mp ≈ 48 cap; mechanical units never touch this (see isMechanical)
@@ -4499,6 +4522,9 @@ function updateGame(dt) {
   let upkeep = 0, garrUpkeep = 0; const auraU = [];   // auraU: this tick's cache of friendly UNITS carrying a d.aura (e.g. the Command Helicopter) — piggybacks on the loop below (already O(units), runs once/tick) so auraAt() never has to scan G.units itself on every call
   for (const u of G.units) { if (u.d.upkeep && !u.garr) upkeep += u.d.upkeep; if (u.garrison) garrUpkeep += GARRISON_UPKEEP_PER_WEIGHT * (u.garrWeight || 1); if (u.d.aura && u.hp > 0 && !u.docked) auraU.push(u); } upkeep += garrUpkeep; for (const b of G.buildings) if (b.done !== false && !b.captured && b.d.upkeep) upkeep += b.d.upkeep;   // fielded units AND power-hungry buildings (shield generators etc.) with a standing UPKEEP drain IC/s flat — this is what caps how many you can keep running at once; the GARRISON ECONOMY folds its own small per-weight upkeep into this same total
   G.auraUnits = auraU;   // MOBILE AURAS — refreshed once/tick here, BEFORE updUnits/updBuildings run this same frame, so every auraAt() call this tick sees a current list; a docked/rearming aura unit is excluded (it's parked at base, not over the front)
+  { const auraBB = new Map();   // AURA GRID CACHE (buildings) — same predicate auraAt() always used (b.done !== false && b.d.aura), just bucketed by x once here instead of re-filtered/re-scanned on every one of the many auraAt()/auraHeal() calls per unit per tick; see AURA_BS/AURA_MAX_R above
+    for (const b of G.buildings) { if (b.done === false || !b.d.aura) continue; const k = Math.round(b.x / AURA_BS); let a = auraBB.get(k); if (!a) auraBB.set(k, a = []); a.push(b); }
+    G.auraBB = auraBB; }
   if (G.evt && G.evt.housingShielded) for (const b of G.buildings) if (b.key === 'housing' && b.done !== false && !b.captured) upkeep += EVT1.shieldUpkeepPerHousing;   // EVENT #1 "Deflector Shields" choice — every standing Housing Block draws extra power for its dome, existing ones and any built later
   const upkeepCut = Math.min(.6, bmod().upkeepCut || 0); upkeep *= (1 - upkeepCut); garrUpkeep *= (1 - upkeepCut);   // Logistics Hubs cut TOTAL standing upkeep (garrison + capital ships + shield gens), floored at 40% of raw
   icR -= upkeep; icR = Math.max(IC_FLOOR, icR); G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;   /* IC FLOOR — clamp net income (gross - upkeep) to a small positive floor so a nation whose industry is bombed to ~0 always has SOME way back; readout (G.icR below) matches what's actually applied, so the HUD isn't lying */

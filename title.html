@@ -5452,7 +5452,16 @@ function updUnits(dt) {
   // that was ever in range goes unchecked. Only the exact-stack (dd<.01) tie-break direction changes from
   // array-index parity to an x-position comparison (same simplification the existing enemy separation below
   // already uses) — that only picks which pixel a coincident overlap nudges apart on, no effect on HP/damage/outcomes.
-  { const SEP_BS = 150, sepBuckets = new Map();
+  // DENSE-BUCKET CAP: bucketing alone still degrades to O(bucket²) when a huge pile of units shares one 150px
+  // column (the "wall of manpower" — a chokepoint, a rally point, or thousands spawned at the same x). SEP_CAP
+  // bounds how many same-bucket / next-bucket neighbors EACH unit resolves against per tick, turning worst-case
+  // cost from O(n²) into O(n·SEP_CAP). Ordinary buckets (a spread front line, a normal formation) sit WELL under
+  // this cap so behavior there is byte-identical to the old unbounded loop — the cap only ever engages on the
+  // pathological mega-stack case, where "every unit spreads a little every tick until the pile is gone" is already
+  // an approximation (not real physics) and stays true with a partial neighbor set: units on the edges of a capped
+  // scan still get pushed, the push cascades tick over tick, and the pile still separates — just without paying for
+  // literally every one of a million same-column pairs to prove it never overlaps exactly.
+  { const SEP_BS = 150, SEP_CAP = 12, sepBuckets = new Map();
     for (const u of G.units) { if (u.onRail || u.carried) continue; const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
     const sepU = (u, o) => { if (o.d.domain !== u.d.domain) return; const sep = (u.d.s + o.d.s) * 2.4 * (u.d.domain === 'air' ? AIR_SEP_MUL : 1) + 10, s2 = sep * sep;
       let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy; if (dd >= s2) return; if (dd < .01) { dx = (u.x > o.x ? 1 : -1) * .5 || .5; dy = 0; dd = .25; }   // perfectly stacked → nudge apart deterministically
@@ -5461,7 +5470,7 @@ function updUnits(dt) {
       if (o.d.domain !== 'ground' || !isWater(ox2) || isWater(o.x)) o.x = ox2;
       if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } };
     for (const [k, arr] of sepBuckets) { const nxt = sepBuckets.get(k + 1) || [];
-      for (let i = 0; i < arr.length; i++) { const u = arr[i]; for (let j = i + 1; j < arr.length; j++) sepU(u, arr[j]); for (let j = 0; j < nxt.length; j++) sepU(u, nxt[j]); } } }
+      for (let i = 0; i < arr.length; i++) { const u = arr[i], jMax = Math.min(arr.length, i + 1 + SEP_CAP), nMax = Math.min(nxt.length, SEP_CAP); for (let j = i + 1; j < jMax; j++) sepU(u, arr[j]); for (let j = 0; j < nMax; j++) sepU(u, nxt[j]); } } }
   for (const u of G.units) {
     if (u.d.builder) continue;
     if (u.carried) continue;   // 🚁 FERRY PASSENGER — aboard a transport heli: no AI, no movement, no combat, not drawn. Fully restored (position + all state) the instant it's delivered or its heli is destroyed (ferryRelease/ferryEmergencyDrop)

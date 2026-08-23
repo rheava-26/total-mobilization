@@ -59,8 +59,11 @@
   .evtChoice { text-align: left; padding: 11px 14px; }
   .scen { border: 1px solid var(--line); border-left: 3px solid var(--stab); border-radius: 4px; padding: 14px; margin-bottom: 12px; background: rgba(8,14,24,.6); }
   .scen .nm { font-size: 15px; letter-spacing: 2px; color: #eaf2ff; } .scen .ds { font-size: 12px; color: #9fb6d4; margin: 6px 0 10px; line-height: 1.5; }
-  .diffs { display: flex; gap: 6px; margin-top: 8px; } .diff { flex: 1; text-align: center; padding: 7px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; letter-spacing: 1px; cursor: pointer; color: #c4d4e8; }
+  .diffs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; } .diff { flex: 1; min-width: 74px; text-align: center; padding: 7px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; letter-spacing: 1px; cursor: pointer; color: #c4d4e8; }
   .diff:hover, .diff.sel { background: rgba(255,210,63,.16); border-color: var(--stab); color: #fff; }
+  .diff.warn { border-color: #ff3b3b; color: #ff9a9a; animation: warnPulse 1.6s ease-in-out infinite; }
+  .diff.warn:hover, .diff.warn.sel { background: rgba(255,59,59,.22); border-color: #ff3b3b; color: #fff; }
+  @keyframes warnPulse { 0%,100% { box-shadow: 0 0 0 rgba(255,59,59,0); } 50% { box-shadow: 0 0 9px rgba(255,59,59,.65); } }
 
   /* in-game HUD */
   #gameHud { position: fixed; inset: 0; z-index: 4; display: none; pointer-events: none; font-size: 12px; color: var(--paper); }
@@ -547,7 +550,7 @@
 <div class="modal-bg" id="scenModal"><div class="modal">
   <h2>SCENARIOS</h2><div class="hd">// SELECT OPERATION</div>
   <div class="scen"><div class="nm">OPERATION: UNPREPARED EARTH</div><div class="ds">A coastal sector with several cities, roads, docks and old military bases. Build an industrial base, research, and specialize before the autodrone fleet's single sustained invasion arrives.</div>
-    <div class="diffs"><div class="diff" data-d="recruit" title="PROBING ATTACK">RECRUIT</div><div class="diff" data-d="officer" title="DECAPITATION STRIKE">OFFICER</div><div class="diff sel" data-d="general" title="FULL INVASION">GENERAL</div><div class="diff" data-d="apocalypse" title="ORBITAL ANNIHILATION">APOCALYPSE</div></div>
+    <div class="diffs"><div class="diff" data-d="recruit" title="PROBING ATTACK">RECRUIT</div><div class="diff" data-d="officer" title="DECAPITATION STRIKE">OFFICER</div><div class="diff sel" data-d="general" title="FULL INVASION">GENERAL</div><div class="diff" data-d="apocalypse" title="ORBITAL ANNIHILATION">APOCALYPSE</div><div class="diff warn" data-d="extinction" title="⚠ DO NOT ATTEMPT">EXTINCTION</div></div>
     <div class="diffdesc" id="diffDesc" style="font-size:11px;color:#8fb0d4;margin-top:9px;min-height:32px;line-height:1.5">The difficulty sets the autofleet's INTENT — why they came, not just bigger numbers.</div></div>
   <div class="actions"><button class="pill" onclick="closeModal('scenModal')">BACK</button><button class="pill" onclick="closeModal('scenModal');openScenarioEditor()">⚙ CUSTOM SCENARIO</button><button class="pill primary" data-act="play">DEPLOY</button></div>
 </div></div>
@@ -3043,8 +3046,8 @@ function seedInheritedNation() {
 }
 function newGame(diff) {
   seedTerrain(); soc.sky = null; soc.tint = null;
-  const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2 }[diff] || 1);
-  const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
+  const dm = diff === 'custom' ? SCEN.diff : ({ recruit: .7, officer: 1, general: 1.4, apocalypse: 2, extinction: 4 }[diff] || 1);
+  const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass', extinction: 'extinction' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
   G = {
     ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, stabReserve: 0, stabReserveMax: 0, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent, allyCd: 0,
     cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {},
@@ -3056,7 +3059,7 @@ function newGame(diff) {
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
-    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
+    time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500, extinction: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
     speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
@@ -4124,7 +4127,23 @@ const INTENT = {
   // it a hidden number, and end() persists the longest survival time as a localStorage personal best
   // (tm_bestEndure) so even a loss that outlasts your last run reads as progress, not "you failed at 9%".
   glass:    { label: 'ORBITAL ANNIHILATION',tip: 'Deemed not worth capturing. No landing — they will simply GLASS the planet from orbit. Hold the line until the bombardment runs dry.', fleetMul: .5, bombard: 55, orbital: 55, buster: 60, skyfall: 0, flank: 0, glass: true, capital: false, ground: 0, supers: [{ t: 3, kind: 'annihilator' }, { t: 18, kind: 'bombarder' }, { t: 30, kind: 'annihilator' }] },
+  // ═══ EXTINCTION — DO NOT ATTEMPT ═══ a tier ABOVE Apocalypse, roughly 30x a FULL INVASION's fielded fleet
+  // (fleetMax = round(90*diff*fleetMul); general = round(90*1.4*1.3) = 164, this = round(90*4*13.5) = 4860,
+  // ~29.6x). Deliberately SPLITS the 30x between quality (diff: 4, double Apocalypse's per-enemy stat scaling —
+  // see spawnEnemy's `t = G.diff*(1+invTime/70)`) and count (fleetMul: 13.5) rather than compounding it all onto
+  // diff alone, which would make every single enemy absurdly tanky ON TOP of the huge headcount. Every category
+  // of pressure (bombardment, orbital rain, bunker-busters, skyfall, flank landings) is pushed hard past GLASS's
+  // numbers, AND it keeps real ground landings (glass:false) unlike GLASS's pure survive-the-bombardment mode —
+  // the full kitchen sink, not one axis of attack. extinctionSupers() strings a LONG repeating boss rotation (16
+  // supers, one every 42s) instead of the usual 2-3, so boss-tier pressure never lets up across a long fight —
+  // this is meant to be a genuinely oppressive, framerate-taxing "how long can you last" test, not a beatable
+  // ladder rung; the LOD work (updUnits/updEnemies/renderGame) is what keeps it running at all.
+  extinction: { label: 'DO NOT ATTEMPT', tip: 'There is no reason for this. The full weight of the autofleet, all at once, forever — mass bombardment, orbital rain, bunker-busters, skyfall drops and ground landings on every flank, with a boss-tier superweapon arriving every 42 seconds. This is not a difficulty setting. This is a mistake.', fleetMul: 13.5, bombard: 40, orbital: 30, buster: 140, skyfall: 60, flank: 20, glass: false, capital: false, ground: .8, supers: extinctionSupers() },
 };
+// EXTINCTION's boss rotation — cycles through all four boss kinds, one every 42s, starting at t=20s, for 16
+// arrivals (~11 minutes of continuous boss-tier pressure). Declared as a function (not inlined) purely so the
+// schedule is generated instead of hand-typed 16 times; called once, at INTENT's own definition above.
+function extinctionSupers() { const kinds = ['leviathan', 'hive', 'bombarder', 'annihilator']; const arr = []; for (let i = 0; i < 16; i++) arr.push({ t: 20 + i * 42, kind: kinds[i % kinds.length] }); return arr; }
 // ═════════════════════════════════════════════════════════════════════════════════════════════
 // ESC — INVASION ESCALATION TUNING (playtest-tunable)
 // GOVERNING TENET: difficulty is an OVERWHELMING, ESCALATING ENEMY — never a nerf to the player.
@@ -7484,7 +7503,7 @@ document.getElementById('endDownload').addEventListener('click', downloadAARRepo
 document.getElementById('endShare').addEventListener('click', shareAARReport);
 
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));
-const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only testing your defenses, deciding whether a full invasion is worth it. Light & survivable.', officer: 'DECAPITATION — they mean to behead the leadership fast: a concentrated skyfall drop aimed at your CAPITAL.', general: 'FULL INVASION — a hard ground & air campaign: a mass SKYFALL drop after the opening bombardment, plus ground landings on every flank.', apocalypse: 'ANNIHILATION — the planet was written off. No landing at all: relentless orbital bombardment to GLASS it from orbit. Just survive.' };
+const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only testing your defenses, deciding whether a full invasion is worth it. Light & survivable.', officer: 'DECAPITATION — they mean to behead the leadership fast: a concentrated skyfall drop aimed at your CAPITAL.', general: 'FULL INVASION — a hard ground & air campaign: a mass SKYFALL drop after the opening bombardment, plus ground landings on every flank.', apocalypse: 'ANNIHILATION — the planet was written off. No landing at all: relentless orbital bombardment to GLASS it from orbit. Just survive.', extinction: '⚠ DO NOT ATTEMPT — roughly 30x a Full Invasion\'s fleet. Every category of attack at once, without pause, with a boss-tier superweapon arriving every 42 seconds. Not a difficulty setting. A mistake.' };
 function setDiffDesc(d) { const el = document.getElementById('diffDesc'); if (el) el.textContent = DIFF_DESC[d] || ''; }
 document.querySelectorAll('.diff').forEach(d => d.addEventListener('click', () => { document.querySelectorAll('.diff').forEach(x => x.classList.remove('sel')); d.classList.add('sel'); pendingDiff = d.dataset.d; setDiffDesc(pendingDiff); }));
 setDiffDesc(pendingDiff);

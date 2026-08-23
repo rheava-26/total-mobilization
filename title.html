@@ -4200,16 +4200,24 @@ const INTENT = {
   // diff alone, which would make every single enemy absurdly tanky ON TOP of the huge headcount. Every category
   // of pressure (bombardment, orbital rain, bunker-busters, skyfall, flank landings) is pushed hard past GLASS's
   // numbers, AND it keeps real ground landings (glass:false) unlike GLASS's pure survive-the-bombardment mode —
-  // the full kitchen sink, not one axis of attack. extinctionSupers() strings a LONG repeating boss rotation (16
-  // supers, one every 42s) instead of the usual 2-3, so boss-tier pressure never lets up across a long fight —
-  // this is meant to be a genuinely oppressive, framerate-taxing "how long can you last" test, not a beatable
-  // ladder rung; the LOD work (updUnits/updEnemies/renderGame) is what keeps it running at all.
-  extinction: { label: 'DO NOT ATTEMPT', tip: 'There is no reason for this. The full weight of the autofleet, all at once, forever — mass bombardment, orbital rain, bunker-busters, skyfall drops and ground landings on every flank, with a boss-tier superweapon arriving every 42 seconds. This is not a difficulty setting. This is a mistake.', fleetMul: 13.5, bombard: 40, orbital: 30, buster: 140, skyfall: 60, flank: 20, glass: false, capital: false, ground: .8, supers: extinctionSupers() },
+  // the full kitchen sink, not one axis of attack. extinctionSupers() drops boss-tier pressure in perf-safe
+  // SWARMS (batches of 10-30 bosses at once, growing as the fight drags on) instead of the usual 2-3, so
+  // boss-tier pressure never lets up across a long fight — this is meant to be a genuinely oppressive,
+  // framerate-taxing "how long can you last" test, not a beatable ladder rung; the LOD work
+  // (updUnits/updEnemies/renderGame) plus batched bosses skipping their satellite-grid deployment is what keeps
+  // it running at all.
+  extinction: { label: 'DO NOT ATTEMPT', tip: 'There is no reason for this. The full weight of the autofleet, all at once, forever — mass bombardment, orbital rain, bunker-busters, skyfall drops and ground landings on every flank, with boss-tier superweapons arriving not one at a time but in SWARMS — a fresh wave of autodrone leviathans, hives, bombarders and annihilators every few seconds. This is not a difficulty setting. This is a mistake.', fleetMul: 13.5, bombard: 40, orbital: 30, buster: 140, skyfall: 60, flank: 20, glass: false, capital: false, ground: .8, supers: extinctionSupers() },
 };
-// EXTINCTION's boss rotation — cycles through all four boss kinds, one every 42s, starting at t=20s, for 16
-// arrivals (~11 minutes of continuous boss-tier pressure). Declared as a function (not inlined) purely so the
-// schedule is generated instead of hand-typed 16 times; called once, at INTENT's own definition above.
-function extinctionSupers() { const kinds = ['leviathan', 'hive', 'bombarder', 'annihilator']; const arr = []; for (let i = 0; i < 16; i++) arr.push({ t: 20 + i * 42, kind: kinds[i % kinds.length] }); return arr; }
+// EXTINCTION's boss schedule — perf-safe SWARMS of boss-tier superweapons, not a slow one-at-a-time rotation.
+// Opens with a 20-boss wave at t=2s, then a fresh batch every 26s, growing from 10 to 30 bosses per batch as
+// the fight drags on. Declared as a function (not inlined) purely so the schedule is generated instead of
+// hand-typed dozens of times; called once, at INTENT's own definition above.
+function extinctionSupers() {
+  const kinds = ['bombarder', 'leviathan', 'hive', 'annihilator', 'bombarder'];
+  const arr = [{ t: 2, kind: 'bombarder', n: 20 }];   /* opening boss wave — the sky is full of them from the first breath */
+  for (let i = 0; i < 20; i++) arr.push({ t: 16 + i * 26, kind: kinds[i % kinds.length], n: 10 + Math.min(20, i * 2) });   /* every 26s a fresh swarm, batch growing 10 -> 30 as the fight drags on */
+  return arr;
+}
 // ═════════════════════════════════════════════════════════════════════════════════════════════
 // ESC — INVASION ESCALATION TUNING (playtest-tunable)
 // GOVERNING TENET: difficulty is an OVERWHELMING, ESCALATING ENEMY — never a nerf to the player.
@@ -4283,14 +4291,18 @@ function pickLandingZone(it, cap, live) {
   for (const c of cands) { const s = defenseScoreAt(c) + Math.random() * 1.5; if (s < bs) { bs = s; best = c; } }   // small jitter so it's not perfectly deterministic
   return best;
 }
-function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superweapon enters the theatre — arrives in a small GROUP, never alone. atX: drop the group at this exact x (e.g. a wave's chosen landing zone) instead of picking its own spot.
+function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superweapon enters the theatre — arrives in a GROUP, never alone. atX: drop the group at this exact x (e.g. a wave's chosen landing zone) instead of picking its own spot.
   n = n || (2 + (Math.random() < .3 ? 1 : 0));
+  const mass = n >= 6;   /* EXTINCTION-scale boss SWARM — many bosses at once */
+  const scap = mass ? 340 : 100;   /* raise the per-spawn enemy cap for a mass drop; a normal group still tops out at 100 */
+  const spreadX = mass ? 200 : 240;
   const cap = G.cities.find(c => c.capital);
   const baseX = atX != null ? Math.max(160, Math.min(WORLD_W - 160, atX)) : (atCapital && cap ? Math.max(160, Math.min(WORLD_W - 160, cap.x + (Math.random() - .5) * 220)) : 220 + Math.random() * (WORLD_W - 440));
   let first = null, spawned = 0;
-  for (let i = 0; i < n && G.enemies.length < 100; i++) {
-    const x = Math.max(160, Math.min(WORLD_W - 160, baseX + (i - (n - 1) / 2) * 240 + (Math.random() - .5) * 60));
+  for (let i = 0; i < n && G.enemies.length < scap; i++) {
+    const x = Math.max(160, Math.min(WORLD_W - 160, (mass ? (220 + Math.random() * (WORLD_W - 440)) : baseX + (i - (n - 1) / 2) * spreadX) + (Math.random() - .5) * 60));
     spawnEnemy(kind, x); const e = G.enemies[G.enemies.length - 1]; if (!first) first = e; spawned++;
+    if (mass && i >= 2 && e) e.openBomb = true;   /* beyond the first two, skip the 16-sat orbital grid + escorts so a boss SWARM doesn't spawn hundreds of satellites and melt the framerate */
   }
   toast('⚠⚠ AUTODRONE SUPERWEAPON' + (spawned > 1 ? 'S' : '') + ' — ' + ((first && first.bossName) || 'INBOUND') + (spawned > 1 ? ' ×' + spawned : '')); shake(11); SFX.boom(); if (typeof musDuck === 'function') musDuck();
   return first;
@@ -4726,7 +4738,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     if (!G.acqPhase && G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
     // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule
     const sups = it.supers || []; G.superI = G.superI || 0;
-    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital); G.superI++; }
+    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital, sw.n); G.superI++; }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
     if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     // for glass this doubles as the ENDURANCE win: outlasting G.bombard/G.orbital (both seeded from it.bombard/it.orbital)
@@ -7709,7 +7721,7 @@ document.getElementById('endDownload').addEventListener('click', downloadAARRepo
 document.getElementById('endShare').addEventListener('click', shareAARReport);
 
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));
-const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only testing your defenses, deciding whether a full invasion is worth it. Light & survivable.', officer: 'DECAPITATION — they mean to behead the leadership fast: a concentrated skyfall drop aimed at your CAPITAL.', general: 'FULL INVASION — a hard ground & air campaign: a mass SKYFALL drop after the opening bombardment, plus ground landings on every flank.', apocalypse: 'ANNIHILATION — the planet was written off. No landing at all: relentless orbital bombardment to GLASS it from orbit. Just survive.', extinction: '⚠ DO NOT ATTEMPT — roughly 30x a Full Invasion\'s fleet. Every category of attack at once, without pause, with a boss-tier superweapon arriving every 42 seconds. Not a difficulty setting. A mistake.' };
+const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only testing your defenses, deciding whether a full invasion is worth it. Light & survivable.', officer: 'DECAPITATION — they mean to behead the leadership fast: a concentrated skyfall drop aimed at your CAPITAL.', general: 'FULL INVASION — a hard ground & air campaign: a mass SKYFALL drop after the opening bombardment, plus ground landings on every flank.', apocalypse: 'ANNIHILATION — the planet was written off. No landing at all: relentless orbital bombardment to GLASS it from orbit. Just survive.', extinction: '⚠ DO NOT ATTEMPT — roughly 30x a Full Invasion\'s fleet. Every category of attack at once, without pause, with boss-tier superweapons arriving in SWARMS, not one at a time. Not a difficulty setting. A mistake.' };
 function setDiffDesc(d) { const el = document.getElementById('diffDesc'); if (el) el.textContent = DIFF_DESC[d] || ''; }
 document.querySelectorAll('.diff').forEach(d => d.addEventListener('click', () => { document.querySelectorAll('.diff').forEach(x => x.classList.remove('sel')); d.classList.add('sel'); pendingDiff = d.dataset.d; setDiffDesc(pendingDiff); }));
 setDiffDesc(pendingDiff);

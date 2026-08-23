@@ -382,7 +382,7 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.91.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.91.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
 
 <div class="modal-bg" id="extinctConfirm"><div class="modal" style="max-width:470px;border-color:#ff5a5a">
   <h2 style="color:#ff6a6a">&#9760; EXTINCTION</h2>
@@ -561,6 +561,8 @@
   <div class="row"><label>Colorblind-Friendly Bars <span style="opacity:.55;font-size:10px">— blue/orange instead of green/red</span></label><div class="toggle" id="tCb"><div class="knob"></div></div></div>
   <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
   <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
+  <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
+  <div class="row"><label>Feedback &amp; Bug Reports <span style="opacity:.55;font-size:10px">— this game is in active development</span></label><button class="pill" onclick="openFeedback()">&#128172; SEND FEEDBACK</button></div>
   <div class="actions"><button class="pill" onclick="closeModal('optsModal')">CLOSE</button></div>
 </div></div>
 
@@ -725,6 +727,15 @@ addEventListener('resize', resize);
 
 let mode = 'title', zoomStart = 0, reducedMotion = false, edgeScroll = true;
 let shakeOn = true, flashRed = false, cbMode = false, grainOn = true;   // accessibility: screen shake · flash reduction (photosensitivity) · colorblind-safe bar colors · film grain+vignette
+const FEEDBACK_URL = '';   // feedback form link — set this to the game's feedback form URL to enable the Feedback buttons
+function openFeedback() { if (!FEEDBACK_URL) { toast('💬 Feedback form coming soon!'); return; } window.open(FEEDBACK_URL, '_blank', 'noopener'); }   // opens the feedback form in a new tab; graceful message until the URL is set
+function applySafeMode() {
+  reducedMotion = true; shakeOn = false; shakeAmt = 0; flashRed = true; grainOn = false;
+  const set = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
+  set('tMotion', true); set('tShake', false); set('tFlash', true); set('tGrain', false);
+  if (typeof saveOpts === 'function') saveOpts();
+  toast('♿ Photosensitive Safe Mode applied');
+}
 const ZOOM_DUR = 2.0;
 const mouse = { x: -9999, y: -9999, active: false };
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; });

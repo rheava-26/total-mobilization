@@ -2999,6 +2999,16 @@ const BUILD_DEFS = {
 // per-building r/field check inside is UNCHANGED, so results are exact, not approximated (no tolerance needed).
 const AURA_BS = 100;
 const AURA_MAX_R = (() => { let m = 300; for (const k in BUILD_DEFS) { const a = BUILD_DEFS[k].aura; if (a) m = Math.max(m, a.r || 300); } for (const k in UNIT_DEFS) { const a = UNIT_DEFS[k].aura; if (a) m = Math.max(m, a.r || 300); } return m; })();
+/* FORT GRID CACHE tunables — same pattern/rationale as the AURA grid just above: fortBonusAt(x) is called once per
+   GROUND unit per tick (entrenchment/garrison check) and used to do a full O(G.buildings) scan every call — with
+   thousands of units and a base ringed in buildings that's O(units*buildings), the same murder the aura grid fixed.
+   FORT_BS buckets EVERY standing, non-underground building by x once per tick (built in updateGame right alongside
+   G.auraBB); FORT_MAX_R is computed from the real per-def footprint width (b.d.w*.6+10, the exact reach fortBonusAt
+   already used) so the bucket-window scan is provably wide enough to catch every building that could possibly reach
+   a query x — no magic number to rot if a future building grows wider. The actual per-building distance/tier check
+   inside is UNCHANGED, so results stay exact, not approximated. */
+const FORT_BS = 100;
+const FORT_MAX_R = (() => { let m = 40; for (const k in BUILD_DEFS) { const w = BUILD_DEFS[k].w; if (w) m = Math.max(m, w * .6 + 10); } return m; })();
 /* RESEARCH — a node graph. Conventional arms (rifles→railguns→nukes→orbital) are ALREADY
    unlocked at game start; research is purely the exotic, escalating doctrines. The 3 AGES are
    the safe spine (info→fusion→space). Everything else is an optional, "dangerous" branch.
@@ -3714,7 +3724,8 @@ function acquireIncoming(x, y, range, ceilFrac, filter) {
   return big || other || decoy || bigAny || otherAny || decoyAny;   // real rods/busters first, then genuine other incoming, decoys only as a last resort; never idle if anything's in reach
 }
 // PURPOSE-BUILT AIRCRAFT — interceptors engage only AIRBORNE foes (no ground strikes); ground-attack craft hit ground + low air, not high bombers/fighters
-function airFilter(d) { return d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : d.weapon === 'rod' ? notSpaceStationed : null; }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air; ROD-armed space units (Tungsten Rods "Zeus") are kinetic GROUND bombardment — see notSpaceStationed
+function airFilter(d) { if (d._airF !== undefined) return d._airF;   // MEMOIZED PER DEF — effDef() returns an identity-stable object per key+unlock-state (see its own comment), so this closure only ever needs building ONCE per distinct def, not once per unit per tick; was allocating a brand-new (e=>...) closure on every single call (every unit, every frame) for noGround/groundAtk defs
+  return d._airF = (d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : d.weapon === 'rod' ? notSpaceStationed : null); }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air; ROD-armed space units (Tungsten Rods "Zeus") are kinetic GROUND bombardment — see notSpaceStationed
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
 function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50; }   // TUNGSTEN ROD target rule — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
@@ -3751,7 +3762,11 @@ function flakHit(t, dmg) { t.hp -= dmg; spark(t.x, t.y, 3); G.parts.push({ k: 'f
 function incomingList() { const a = []; for (const p of G.proj) if (p.interceptable && p.life > 0) a.push(p); return a; }   // orbital lances the player can shoot down
 function interceptableProjList() { const a = []; for (const p of G.proj) if ((p.interceptable || p.pdable) && p.life > 0) a.push(p); return a; }   // everything acquireIncoming is allowed to pick — busters/rods/decoys (interceptable) PLUS plain enemy homing missiles (pdable-only, no .interceptable) — snapshotted ONCE per tick into G._incoming so every pd-capable shooter's acquireIncoming call scans a handful of entries instead of all of G.proj. Deliberately WIDER than incomingList() (which stays interceptable-only for its own callers, e.g. homing-missile retargeting) — see the "pdable rounds aren't in incList" comment on the AMI hit-to-kill path
 function isMechanical(d) { return !!(d.mech || d.drone || d.elec || d.clone || (d.capital && d.domain !== 'air')); }   // synthetic/mechanical & vat-grown units — no people to muster, so they DON'T eat the army cap (only manpower-crewed units do). GROUND/NAVAL CAPITAL-CLASS units (Land Dreadnought, Grand Battleship, Super Carrier, War Colossus, Mobile Command Fortress) are ALSO army-cap-exempt — deliberately, unlike the SKY warships (domain 'air', still cap-gated): they're already gated hard by IC/MP cost, build time & a standing IC/s upkeep, so a cap on top would just be a second tax on the same toy. Never nerf the fantasy — raise the price instead.
-function fortBonusAt(x) { let f = 0; for (const b of G.buildings) { if (b.done === false || b.ug) continue; if (Math.abs(b.x - x) < b.d.w * .6 + 10) f = Math.max(f, (b.d.cat === 'ECON' || b.key === 'bunker') ? 2 : 1); } return f; }   // a ground unit standing in a building's footprint GARRISONS it for cover — 2 = an economic block / bunker (deepest fortification), 1 = any other building
+function fortBonusAt(x) { let f = 0;   // a ground unit standing in a building's footprint GARRISONS it for cover — 2 = an economic block / bunker (deepest fortification), 1 = any other building
+  if (G && G.fortBB) { const k0 = Math.round((x - FORT_MAX_R) / FORT_BS), k1 = Math.round((x + FORT_MAX_R) / FORT_BS);   // FORT GRID CACHE — see tunables comment above FORT_BS: only scan the handful of buckets that could possibly reach x, same exact per-building check as the fallback below, just fewer candidates visited
+    for (let k = k0; k <= k1; k++) { const a = G.fortBB.get(k); if (!a) continue; for (const b of a) if (Math.abs(b.x - x) < b.d.w * .6 + 10) f = Math.max(f, (b.d.cat === 'ECON' || b.key === 'bunker') ? 2 : 1); }
+    return f; }
+  for (const b of G.buildings) { if (b.done === false || b.ug) continue; if (Math.abs(b.x - x) < b.d.w * .6 + 10) f = Math.max(f, (b.d.cat === 'ECON' || b.key === 'bunker') ? 2 : 1); } return f; }   // pre-first-tick fallback (mirrors auraAt's own fallback), before G.fortBB exists
 function cityStabPenalty() { let p = (G.lostStructures || 0) * 2.5; if (G.cities) for (const ct of G.cities) if (ct.hp > 0 && ct.held) p += 6; return p; }   // OCCUPIED cities each bleed stability while held (recovered on retake); every city STRUCTURE destroyed is a PERMANENT loss
 function effStab() { if (G.crisis) return Math.max(0, G.stab); return Math.max(0, G.stab - (G.stabOffset || 0) - cityStabPenalty()); }   // EFFECTIVE stability = base minus PERMANENT research "unrest" minus city losses; feeds influence & gates strikes/research. DURING a capitulation crisis the emergency government SUSPENDS those drains (returns raw stab) so the guaranteed recovery ramp actually lands instead of being eaten by the very −penalty that caused the collapse
 // AUTO-EMPLACEMENTS — small free fortifications a dug-in ground unit raises around itself (a mini-fort with mixed weapons). Stored as lightweight buildings so they fire, get targeted & render via the normal pipelines.
@@ -4526,6 +4541,9 @@ function updateGame(dt) {
   { const auraBB = new Map();   // AURA GRID CACHE (buildings) — same predicate auraAt() always used (b.done !== false && b.d.aura), just bucketed by x once here instead of re-filtered/re-scanned on every one of the many auraAt()/auraHeal() calls per unit per tick; see AURA_BS/AURA_MAX_R above
     for (const b of G.buildings) { if (b.done === false || !b.d.aura) continue; const k = Math.round(b.x / AURA_BS); let a = auraBB.get(k); if (!a) auraBB.set(k, a = []); a.push(b); }
     G.auraBB = auraBB; }
+  { const fortBB = new Map();   // FORT GRID CACHE (buildings) — same predicate fortBonusAt() always used (!b.done===false && !b.ug), bucketed by x once here instead of re-scanning every standing building on every ground unit's fortBonusAt() call; see FORT_BS/FORT_MAX_R above
+    for (const b of G.buildings) { if (b.done === false || b.ug) continue; const k = Math.round(b.x / FORT_BS); let a = fortBB.get(k); if (!a) fortBB.set(k, a = []); a.push(b); }
+    G.fortBB = fortBB; }
   if (G.evt && G.evt.housingShielded) for (const b of G.buildings) if (b.key === 'housing' && b.done !== false && !b.captured) upkeep += EVT1.shieldUpkeepPerHousing;   // EVENT #1 "Deflector Shields" choice — every standing Housing Block draws extra power for its dome, existing ones and any built later
   const upkeepCut = Math.min(.6, bmod().upkeepCut || 0); upkeep *= (1 - upkeepCut); garrUpkeep *= (1 - upkeepCut);   // Logistics Hubs cut TOTAL standing upkeep (garrison + capital ships + shield gens), floored at 40% of raw
   icR -= upkeep; icR = Math.max(IC_FLOOR, icR); G.upkeep = upkeep; G.garrUpkeepIC = garrUpkeep;   /* IC FLOOR — clamp net income (gross - upkeep) to a small positive floor so a nation whose industry is bombed to ~0 always has SOME way back; readout (G.icR below) matches what's actually applied, so the HUD isn't lying */
@@ -5489,12 +5507,20 @@ function updUnits(dt) {
   // scan still get pushed, the push cascades tick over tick, and the pile still separates — just without paying for
   // literally every one of a million same-column pairs to prove it never overlaps exactly.
   { const SEP_BS = 150, SEP_CAP = 12, sepBuckets = new Map();
-    for (const u of G.units) { if (u.onRail || u.carried) continue; const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
+    /* PERF: this build pass already visits every active unit once — piggyback a per-unit "already in water" cache
+       (_wet) onto it for GROUND units only, computed from u.x at this same fixed moment (before any separation nudge
+       touches it this tick — same sub-pixel-tolerance approximation as the terrain cache/u._gy elsewhere: a unit
+       moves at most a few px/tick). sepU below used to call isWater(u.x)/isWater(o.x) fresh inside its OWN fallback
+       check on every one of up to SEP_CAP*2 pair-tests per unit — same value, re-derived from the terrain cache over
+       and over. Reading the cached bool instead cuts that call volume without changing which side of the OR wins:
+       isWater(ux2)/isWater(ox2) (the dynamic PROPOSED post-nudge position) are genuinely per-pair and still call
+       through live — only the "am I already standing in water" fallback got cached. */
+    for (const u of G.units) { if (u.onRail || u.carried) continue; if (u.d.domain === 'ground') u._wet = isWater(u.x); const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
     const sepU = (u, o) => { if (o.d.domain !== u.d.domain) return; const sep = (u.d.s + o.d.s) * 2.4 * (u.d.domain === 'air' ? AIR_SEP_MUL : 1) + 10, s2 = sep * sep;
       let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy; if (dd >= s2) return; if (dd < .01) { dx = (u.x > o.x ? 1 : -1) * .5 || .5; dy = 0; dd = .25; }   // perfectly stacked → nudge apart deterministically
       const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt, ux2 = u.x + dx * inv * f, ox2 = o.x - dx * inv * f;
-      if (u.d.domain !== 'ground' || !isWater(ux2) || isWater(u.x)) u.x = ux2;   // never shove a ground unit off dry land into the sea (a unit that's ALREADY in the water — a legitimate terrain-sink drown — is still free to keep drifting; checked against isWater(), the SAME predicate the drowning code below uses, not the slightly more permissive passable(), so this can never leave a unit in the strip that reads as "water" for drowning purposes)
-      if (o.d.domain !== 'ground' || !isWater(ox2) || isWater(o.x)) o.x = ox2;
+      if (u.d.domain !== 'ground' || !isWater(ux2) || u._wet) u.x = ux2;   // never shove a ground unit off dry land into the sea (a unit that's ALREADY in the water — a legitimate terrain-sink drown — is still free to keep drifting; checked against the SAME isWater() predicate the drowning code below uses (via the cached u._wet, same tick), not the slightly more permissive passable(), so this can never leave a unit in the strip that reads as "water" for drowning purposes)
+      if (o.d.domain !== 'ground' || !isWater(ox2) || o._wet) o.x = ox2;
       if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } };
     for (const [k, arr] of sepBuckets) { const nxt = sepBuckets.get(k + 1) || [];
       for (let i = 0; i < arr.length; i++) { const u = arr[i], jMax = Math.min(arr.length, i + 1 + SEP_CAP), nMax = Math.min(nxt.length, SEP_CAP); for (let j = i + 1; j < jMax; j++) sepU(u, arr[j]); for (let j = 0; j < nMax; j++) sepU(u, nxt[j]); } } }
@@ -5766,6 +5792,11 @@ function updUnits(dt) {
         // IDLE ADVANCE — no in-range target → flow to the FRONT instead of standing in a field. Prefer the nearest
         // enemy this unit could actually hit (a reachable incursion), else march under/toward the nearest threat of
         // any kind so the unit is on-station when the fight reaches it. Bounded horizontal scan, no allocations.
+        // PERF NOTE: tried LOD-gating this scan the same way acquireEnemy is gated above (reuse a cached nearest-
+        // enemy result on COLD frames); measured NO win at the standard 5k benchmark (nearly every idle unit there
+        // sits within LOD_ENGAGE_DIST of some enemy, so it's classified HOT anyway and the cache is never actually
+        // consulted) while adding branch/staleness risk to the retreat/leash logic below — reverted. This loop's
+        // O(enemies) cost genuinely tracks how spread out the two sides are, not something to fake away safely.
         const ceilY = ceilF * worldH(); let best = null, bd = 1e9, anyE = null, ad = 1e9;
         for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (e.y >= ceilY && dd < bd) { bd = dd; best = e; } if (dd < ad) { ad = dd; anyE = e; } }   // nearest enemy this unit can hit, plus nearest enemy of any kind
         const tx = best ? best.x : (anyE ? anyE.x : null), gap = best ? bd : ad, stop = best ? rng * .7 : 70;   // march to engage a reachable foe, else reposition under/toward the nearest threat (never idle)
@@ -5790,8 +5821,17 @@ function updUnits(dt) {
         else if (tx != null && gap > stop && !leashed) u.x += Math.sign(tx - u.x) * Math.min(spd * GROUND_ADVANCE_MUL * dt, gap - stop);
       }
       const amph = d.amph || d.amphibious;   // AMPHIBIOUS TRACKED ARMOR (Fusion Age upgrade, see UPGRADES) — drives straight over open water instead of holding at the shoreline
-      if (!amph && isWater(u.x) && !isWater(pX)) u.x = pX;   // non-amphibious ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); isWater() is the SAME predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
-      u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = (amph ? landY(u.x) : groundY(u.x)) - d.s;   // amphibious units ride the SEA SURFACE over water (landY, same as naval/enemy-armor) instead of sinking to the seabed (groundY)
+      /* PERF: TERRAIN-CACHE CALL-VOLUME — a non-amphibious ground unit used to call isWater(u.x)/groundY(u.x)/isWater(u.x)
+         again below (shoreline hold-check, y-settle, drowning check) as up to 3 SEPARATE elevAt() lookups for what is,
+         barring the rare shoreline-reset just below, the exact same x. groundY()/isWater() both derive from one
+         elevAt() sample (isWater: elevAt(x)<SEA_E; groundY: curveAt(x)-elevAt(x)*maxElev()) — sample it ONCE (eCur)
+         and reuse it for both, keeping it in sync across the one branch that can actually change u.x afterward (the
+         world-edge clamp just below). EXACT, not approximate — this only removes literally-redundant re-derivations
+         of the same terrain sample within the same tick, never changes which sample backs a given x. */
+      let eCur = amph ? 0 : elevAt(u.x);
+      if (!amph && eCur < SEA_E) { const ePx = elevAt(pX); if (ePx >= SEA_E) { u.x = pX; eCur = ePx; } }   // non-amphibious ground units can't wade into open water — they hold at the shoreline (only orbital drops reach the sea); same isWater() predicate the DROWNING check below uses (not the slightly more permissive passable()), so a unit can never end up standing in the strip that would immediately start its drown timer
+      const _preClampX = u.x; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); if (!amph && u.x !== _preClampX) eCur = elevAt(u.x);   // rare world-edge clamp actually moved x — resample exactly, same as a fresh groundY()/isWater() call would have
+      u.y = (amph ? landY(u.x) : (curveAt(u.x) - eCur * maxElev())) - d.s;   // amphibious units ride the SEA SURFACE over water (landY, same as naval/enemy-armor) instead of sinking to the seabed (groundY, inlined here from the cached eCur sample above)
       // ENTRENCHMENT — a ground unit that holds position digs in for a fortification (damage-reduction) bonus; standing in a building's footprint GARRISONS it, digging in faster & deeper (an economic block = the best mini-fort)
       const moved = Math.abs(u.x - pX) > spd * dt * .35;
       u.fort = fortBonusAt(u.x);
@@ -5806,7 +5846,7 @@ function updUnits(dt) {
       // then it takes on water fast and goes under. u.drowned marks the death as a QUIET sink (see the death-cleanup loop
       // in updateGame) — mirrors the flooded-BUILDING path: a unit going under is a sink, never an ammo cook-off.
       if (!amph) {
-        if (isWater(u.x)) {
+        if (eCur < SEA_E) {   // reuses the eCur terrain sample from above (isWater(u.x) equivalent) — u.x hasn't moved since it was last synced (entrenchment/emplacement above never touch u.x)
           u.drownT = (u.drownT || 0) + dt;
           if (u.drownT > .4) { u.hp -= u.maxHp * .6 * dt; u.drowned = true; if (Math.random() < .5) smoke(u.x, seaLevelY(u.x), 1); }
         } else { u.drownT = 0; u.drowned = false; }
@@ -6177,7 +6217,7 @@ function updEnemies(dt) {
         if (tgt2) { const ly2 = leadTime(e.weapon2, e.x, e.y, tgt2); e.wCd2 = (e.wCd2 == null ? Math.random() * (e.rate2 || 1) : e.wCd2) - dt; if (e.wCd2 <= 0) { e.wCd2 = jitterCd(e.rate2 || 1.2); fire(e.x, e.y, e.weapon2, tgt2.x + (tgt2.vx || 0) * ly2, tgt2.y, false, e.dmg2 != null ? e.dmg2 : e.dmg, undefined, undefined, undefined, (e.ground || e.anchored) ? 'large' : 'small'); } }
       }
     }
-    if (e.dives && e.y >= groundY(e.x) - 6) { const h = near(e.x, e.y, _friendlyList, e.pod ? 90 : 70); if (h) hurt(h, e.pod ? 95 : e.dmg * 4); G.stab = Math.max(0, G.stab - (e.pod ? 2.5 : 1.2)); e.hp = 0; boomW(e.x, groundY(e.x) - 6, e.pod ? 18 : 7); }
+    if (e.dives) { const _gyD = groundY(e.x) - 6; if (e.y >= _gyD) { const h = near(e.x, e.y, _friendlyList, e.pod ? 90 : 70); if (h) hurt(h, e.pod ? 95 : e.dmg * 4); G.stab = Math.max(0, G.stab - (e.pod ? 2.5 : 1.2)); e.hp = 0; boomW(e.x, _gyD, e.pod ? 18 : 7); } }   // PERF: cache the one groundY(e.x) sample instead of calling it twice for the same x in the same tick
   }
 }
 function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOME? — now a FULL bubble around a live Shield Generator, so it also reaches BELOW the surface and covers ships / the water, not just the air above

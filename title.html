@@ -3514,7 +3514,7 @@ function spawnSquad(key, d, x) {
   const spool = hasFuel ? 3 + Math.random() * 2 : 0;
   const u = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0: 0, wx1: 0, patrol, job: null,
     ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool,
-    squad: true, members, squadCfg: cfg };
+    squad: true, members, squadCfg: cfg, _id: (G._nextUId = (G._nextUId || 0) + 1) };   // _id: stable per-unit id for TEMPORAL AI LOD's frame-stagger (see updUnits)
   G.units.push(u);
   return u;
 }
@@ -3545,7 +3545,7 @@ function spawnUnit(key, x) {
   const limitAmmo = d.domain === 'air' && !d.capital && (d.weapon === 'rocket' || d.weapon === 'missile' || d.weapon === 'bomb'), ammo0 = limitAmmo ? (d.ammo || 8) : null;   // missile/bomb aircraft carry a finite magazine and must land to rearm — SKY WARSHIPS (capital) fire freely like naval ships, no sortie cycle
   const hasFuel = d.domain === 'air' && d.fuel != null, fuel0 = hasFuel ? d.fuel : null;   // conventional crewed aircraft are SORTIE-based — limited fuel, must return to base (excludes Superhumans, enemy air, and disposable drone swarms, none of which set d.fuel)
   const spool = hasFuel ? 3 + Math.random() * 2 : 0;   // scrambling from the pad takes a few seconds before a freshly-built wing is actually airborne & combat-ready
-  G.units.push({ key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0, wx1, patrol, job: null, launching, railLaunch: launching && !!(G.unlocked && G.unlocked.spaceage), shield: d.shield || 0, maxShield: d.shield || 0, ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool });
+  G.units.push({ key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0, wx1, patrol, job: null, launching, railLaunch: launching && !!(G.unlocked && G.unlocked.spaceage), shield: d.shield || 0, maxShield: d.shield || 0, ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool, _id: (G._nextUId = (G._nextUId || 0) + 1) });   // _id: stable per-unit id for TEMPORAL AI LOD's frame-stagger (see updUnits)
 }
 // launch one FREE deck craft belonging to carrier u (off army-cap/air-command, tied to the deck for rearm). An AIRBORNE
 // carrier (Nanoforge) launches its wing from its OWN altitude and gets it combat-ready fast, so the deck is never a slow
@@ -4315,7 +4315,7 @@ function spawnEnemy(kind, atX) {
   const x = atX != null ? atX : cam.x + 40 + Math.random() * (W - 80), t = G.diff * (1 + (G.invTime || 0) / 70);
   const wxw = Math.max(40, Math.min(WORLD_W - 40, x));
   // every hostile drops from orbit: a fast, vulnerable RE-ENTRY plunge, then it reaches its operating layer and turns hostile
-  const e = { x: wxw, y: -50, vx: (Math.random() - .5) * 8, vy: 6 + Math.random() * 8, aim: 1.57, cd: .5 + Math.random() * 1.1, kind, reentry: true };   // re-entry now BEGINS very slow (a long vulnerable high-altitude descent) and gradually accelerates — see updEnemies
+  const e = { x: wxw, y: -50, vx: (Math.random() - .5) * 8, vy: 6 + Math.random() * 8, aim: 1.57, cd: .5 + Math.random() * 1.1, kind, reentry: true, _id: (G._nextEId = (G._nextEId || 0) + 1) };   // re-entry now BEGINS very slow (a long vulnerable high-altitude descent) and gradually accelerates — see updEnemies; _id: stable per-enemy id for TEMPORAL AI LOD's frame-stagger (see updEnemies)
   if (kind === 'drone') Object.assign(e, { hp: 16 * t, s: 3, armor: 1, spd: 26, hold: TROPO_Y() + Math.random() * 40, weapon: 'tracer', dmg: 7, rate: .8, dives: true, art: 'drone' });
   else if (kind === 'bombpod') Object.assign(e, { hp: 10 + 4 * t, s: 4, armor: 0, spd: 70, vy: 200, hold: groundY(wxw) - 4, weapon: 'none', dmg: 0, dives: true, pod: true, art: 'bombpod' });   // bombardment munition — keeps its fast plunge (not the slow unit re-entry)
   else if (kind === 'interceptor') Object.assign(e, { hp: 22 * t, s: 3.2, armor: 1, spd: 24, hold: MESO_Y() + 30 + Math.random() * 70, weapon: 'rocket', dmg: 11, rate: 1.5, dives: false, air: true, art: 'einterceptor' });   // hunts your aircraft — air duels
@@ -4453,6 +4453,7 @@ function snapFrameCam() {
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
 function updateGame(dt) {
   if (G.over) return; G.time += dt;
+  G.frameCount = (G.frameCount || 0) + 1;   // TEMPORAL AI LOD — a plain per-tick counter (never resets) used only to STAGGER which frame each far-from-combat unit/enemy re-runs its expensive target-acquisition scan on; see LOD_N/lodShouldScan below updUnits
   if (G.stats && !G.stats.snap.start && G.time > 1.2) G.stats.snap._wantStart = true;   // AFTER-ACTION — "MOBILIZATION" snapshot; just FLAGS it here (the actual capture happens in frame(), right after renderGame() draws a complete fresh frame — capturing mid-updateGame was reading the PREVIOUS frame's buffer, a suspected cause of blank snaps on some mobile GPUs)
   updAmbient(dt);   // 🚗✈🚤 cosmetic ambient life tick — see AMBIENT LIFE (never touches gameplay state)
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
@@ -5336,8 +5337,77 @@ function ww3Victory() {
 }
 function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (w.taboo && G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — DESPERATION LAUNCH');   /* no hard stability block — a strike is always launchable; launchStrike drains stability to STRIKE_STAB_FLOOR. Only TABOO strikes spend stability at all. */ G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
 
+// ═════════════════════════════════════════════════════════════════════════════════════════════
+// TEMPORAL AI LOD — the fix for updUnits/updEnemies being ~28µs/entity FLAT regardless of whether
+// an entity is actually fighting: at mega-army scale (thousands of units), most of them are idle
+// marchers far from any contact, yet every single one still ran a full target-ACQUISITION scan
+// (acquireEnemy/acquireIncoming/pickDesignated, or updEnemies' near() call) every single frame.
+// HOT/COLD classification: an entity is HOT — full per-frame acquisition, completely untouched —
+// if it's ON-SCREEN (so the player could actually be watching it fight) OR within LOD_ENGAGE_DIST
+// of an opposing entity (so it's genuinely in or near a fight even off-screen). Anything else is
+// COLD: it only re-runs its acquisition scan once every LOD_N frames, STAGGERED by its own stable
+// _id so the cost of 1/LOD_N of a mega-army's re-scans spreads evenly across frames (never a spike
+// on frame 0 of every cycle). Between its own scans a COLD entity reuses its last acquired target —
+// dropped (not re-scanned) the instant it's dead/gone — so it keeps firing if that target is still
+// alive & in range, and keeps moving/closing on it otherwise; this is provably invisible to the
+// player because a COLD entity is by definition not on-screen and not near any fight. The instant
+// something COLD comes on-screen or a foe closes within engage range, it's HOT again next frame and
+// gets full-fidelity acquisition every frame from then on — nothing in or near combat is ever
+// throttled. Both classification passes below are themselves O(n) (one bucket-map build per frame,
+// O(1) average lookup per entity) so they add only a small flat overhead, never a new O(n²) scan.
+const LOD_N = 6;                 // COLD entities re-scan for a target once every this-many frames
+const LOD_ENGAGE_DIST = 700;     // px — "near enough to a foe to count as in-a-fight" even off-screen
+function lodOnScreen(x, y) {   // near-screen test — matches the same zoom-out over-scan margin drawWorld/renderGame's own culling already use, plus a modest flat pad (same order as the render loop's own ~30-160px cull margins) so an entity just off the visible edge (about to scroll into frame) still reads as HOT a beat early. Deliberately NOT a big pad — at this game's world:viewport ratio (WORLD_W=6000 vs a ~1280px viewport), even a small pad already covers a meaningful slice of the map on its own; a big pad would silently keep most of a spread-out mega-army HOT and defeat the point of the LOD.
+  const cz = cam.z || 1;
+  const padX = (cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0) + 120;
+  const padY = (cz < 1 ? Math.ceil(H * (1 / cz - 1) / 2) : 0) + 120;
+  if (x - cam.x < -padX || x - cam.x > W + padX) return false;
+  if (y < cam.y - padY || y > cam.y + H + padY) return false;
+  return true;
+}
+// A SORTED FLAT ARRAY of the opposing side's x-positions + binary search beats a Map-of-buckets here: building it
+// is one allocation + one native sort() (V8's sort is highly optimized, even for a few hundred entries), and each
+// per-entity lookup is a handful of array-index compares (~log2(n)) with none of a Map's hashing/bucket-object
+// overhead. Measured with a CPU profile — the original Map-bucket version's OWN classification cost exceeded what
+// it saved by skipping acquireEnemy/near() calls, a net LOSS; this flat-array version is the fix. On top of that,
+// a min/max BOUNDING BOX (computed in the same pass, for free) lets lodNearAny reject an entity with just two
+// comparisons whenever the opposing force is clustered (the common case — a landing zone, a front line) instead
+// of even touching the sorted array/binary search; the array is only consulted when x falls inside the box, which
+// still correctly separates "in that stretch of the map" from "actually within LOD_ENGAGE_DIST of a real unit"
+// for a spread-out or gappy formation.
+function lodBuildEngageIndex(list, getX) {
+  const n = list.length, xs = new Array(n); let minX = Infinity, maxX = -Infinity;
+  for (let i = 0; i < n; i++) { const gx = getX(list[i]); xs[i] = gx; if (gx < minX) minX = gx; if (gx > maxX) maxX = gx; }
+  xs.sort((a, b) => a - b);
+  return { xs, minX: minX - LOD_ENGAGE_DIST, maxX: maxX + LOD_ENGAGE_DIST };
+}
+function lodNearAny(idx, x) {
+  const xs = idx.xs, n = xs.length; if (!n || x < idx.minX || x > idx.maxX) return false;
+  let lo = 0, hi = n;
+  while (lo < hi) { const mid = (lo + hi) >>> 1; if (xs[mid] < x) lo = mid + 1; else hi = mid; }   // first index with xs[index] >= x
+  if (lo < n && xs[lo] - x <= LOD_ENGAGE_DIST) return true;
+  if (lo > 0 && x - xs[lo - 1] <= LOD_ENGAGE_DIST) return true;
+  return false;
+}
+function lodIsHot(x, y, engageIndex) { return lodOnScreen(x, y) || lodNearAny(engageIndex, x); }
+// combines the HOT test + the frame-stagger test into ONE call (one fewer function call per entity per frame
+// than calling lodIsHot then a separate stagger check) — a COLD entity's OWN scan cadence is only ever checked
+// once hot is already known false (short-circuit), so a HOT entity never even reaches the modulo.
+function lodShouldScan(x, y, id, engageIndex) { return lodIsHot(x, y, engageIndex) || (((id || 0) + G.frameCount) % LOD_N === 0); }
+// friendliesList() entries are either a real G.units object (has .hp) or a synthetic wrapper around a
+// building (._b) / city district (._dist, ._city) — a COLD enemy's cached target may be any of the three,
+// so this checks "still worth keeping" across all of them without re-scanning the source list.
+function lodTargetAlive(t) {
+  if (!t) return false;
+  if (t._b) return t._b.hp > 0 && t._b.done !== false && !t._b.captured;
+  if (t._dist) return !t._dist.dead && t._city && t._city.hp > 0 && !t._city.held;
+  if (t._city) return t._city.hp > 0 && !t._city.held;
+  return t.hp == null || t.hp > 0;
+}
 function updUnits(dt) {
   const railHubs = G.buildings.filter(b => b.d.rail && b.done !== false);
+  // TEMPORAL AI LOD — classify HOT/COLD against the enemy fleet's positions (built once, reused by every unit below)
+  const _lodEngBuckets = lodBuildEngageIndex(G.enemies, e => e.x);
   // ── MASSED AIR RALLY bookkeeping (item 3, tunables above) — a lightweight per-frame headcount of idle jets staging
   // toward each front, bucketed by target x. Consulted from the PREVIOUS frame (rallyPrev) so every jet staging at
   // the same front sees the SAME number and the whole wing commits together the instant the threshold is crossed —
@@ -5387,9 +5457,20 @@ function updUnits(dt) {
     const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
     const ceilF = d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .56) : 0;   // ground guns reach only the low layers; AIRCRAFT now reach up into the THERMOSPHERE (.56 = THERMO_Y line) but NOT past it — the exosphere still needs railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
+    // TEMPORAL AI LOD — HOT units (on-screen or near a foe) run the exact acquisition below every frame, unchanged.
+    // A COLD unit (far off-screen, nowhere near a fight) only re-runs it once every LOD_N frames (staggered by
+    // _id); on the frames in between it reuses the cached result — still firing if that target is alive & in
+    // range, otherwise dropping it (no fresh scan) until its next scheduled cadence. See the LOD block above.
+    const _lodScan = lodShouldScan(u.x, u.y, u._id, _lodEngBuckets);
     let tgt = null;
-    if (canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF);   /* INTERCEPT PRIORITY, GATED BY AIR-CAPABILITY NOT THE OLD `pd` FLAG (v3.88.0) — ANY combat unit that can shoot at an airborne enemy at this position (same range/ceil/role-filter check as acquireEnemy below) breaks off to engage an in-reach incoming bunker-buster / tungsten-rod / lance / homing missile FIRST, not only as an idle fallback. During an invasion there is ALWAYS a regular enemy in reach, so a fallback-only pd line dogfights drones forever while the bombardment rains straight through it — the exact "why won't my defenses shoot the busters?" bug. Passing `aF` means a low-ceil ground unit only ever catches ordnance that's descended into ITS reach — the altitude puzzle is preserved, just no longer gated by an arbitrary flag. The claim/spread system in acquireIncoming keeps this from mobbing one shell. */
-    if (!tgt) tgt = pickDesignated(u.x, u.y, rng, ceilF, aF) || acquireEnemy(u.x, u.y, rng, ceilF, aF);   // then a fire-control designated target this unit can reach, else auto-acquire an enemy as normal
+    if (_lodScan) {
+      if (canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF);   /* INTERCEPT PRIORITY, GATED BY AIR-CAPABILITY NOT THE OLD `pd` FLAG (v3.88.0) — ANY combat unit that can shoot at an airborne enemy at this position (same range/ceil/role-filter check as acquireEnemy below) breaks off to engage an in-reach incoming bunker-buster / tungsten-rod / lance / homing missile FIRST, not only as an idle fallback. During an invasion there is ALWAYS a regular enemy in reach, so a fallback-only pd line dogfights drones forever while the bombardment rains straight through it — the exact "why won't my defenses shoot the busters?" bug. Passing `aF` means a low-ceil ground unit only ever catches ordnance that's descended into ITS reach — the altitude puzzle is preserved, just no longer gated by an arbitrary flag. The claim/spread system in acquireIncoming keeps this from mobbing one shell. */
+      if (!tgt) tgt = pickDesignated(u.x, u.y, rng, ceilF, aF) || acquireEnemy(u.x, u.y, rng, ceilF, aF);   // then a fire-control designated target this unit can reach, else auto-acquire an enemy as normal
+      u._lodTgt = tgt;
+    } else {
+      tgt = u._lodTgt || null;
+      if (tgt) { const _tdx = tgt.x - u.x, _tdy = tgt.y - u.y, _tcy = ceilF ? ceilF * worldH() : -1e9; if (tgt.hp <= 0 || tgt.y < _tcy || _tdx * _tdx + _tdy * _tdy > rng * rng) tgt = null; }   // stale/dead/out-of-range cache dropped WITHOUT a fresh scan — stays cheap; it'll re-acquire on its next scheduled cadence tick (or immediately once it goes HOT)
+    }
     if (d.domain === 'air' && d.pd && !u.docked && (u.spool || 0) <= 0) {   // JET LASER CIWS — a short VISIBLE beam that swats an enemy missile chasing the jet, so you actually see the point-defence work (defensive only, low-rate — not a durability crutch)
       u.pdcd = (u.pdcd || 0) - dt;
       if (u.pdcd <= 0) { let best = null, bd = 95 * 95; for (const q of G.proj) { if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - u.x) ** 2 + (q.y - u.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
@@ -5693,7 +5774,11 @@ function updUnits(dt) {
     // secondary AA/SAM turret simultaneously swats aircraft. wpn2Air restricts the secondary to airborne foes (never ground).
     if (d.weapon2 && (u.spool || 0) <= 0 && !u.docked && !u.launching) {
       const rng2 = (d.range2 || d.range) * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range);
-      const t2 = acquireEnemy(u.x, u.y, rng2, d.ceil2 != null ? d.ceil2 : .56, d.wpn2Air ? (e => !e.ground) : airFilter(d));
+      // TEMPORAL AI LOD — same HOT/COLD gate as the primary weapon above (same unit, same frame): a COLD hull's
+      // secondary turret reuses its own cached lock between scans instead of re-running acquireEnemy every frame.
+      let t2;
+      if (_lodScan) { t2 = acquireEnemy(u.x, u.y, rng2, d.ceil2 != null ? d.ceil2 : .56, d.wpn2Air ? (e => !e.ground) : airFilter(d)); u._lodTgt2 = t2; }
+      else { t2 = u._lodTgt2 || null; if (t2) { const _t2cy = (d.ceil2 != null ? d.ceil2 : .56) * worldH(), _dx2 = t2.x - u.x, _dy2 = t2.y - u.y; if (t2.hp <= 0 || t2.y < _t2cy || _dx2 * _dx2 + _dy2 * _dy2 > rng2 * rng2) t2 = null; } }
       u.wCd2 = (u.wCd2 == null ? Math.random() * (d.rate2 || 1) : u.wCd2) - dt;
       if (t2 && u.wCd2 <= 0) { u.wCd2 = jitterCd((d.rate2 || 1) / (1 + G.mult.rof) / auraAt(u.x, 'rof'));
         const sy2 = u.y, lt2 = leadTime(d.weapon2, u.x, sy2, t2), ex2 = t2.x + (t2.vx || 0) * lt2 + (Math.random() - .5) * 14, ey2 = t2.y + (t2.vy || 0) * lt2, sdmg2 = (d.dmg2 != null ? d.dmg2 : d.dmg) * (1 + G.mult.dmg) * auraAt(u.x, 'dmg'), homing = d.weapon2 === 'rocket' || d.weapon2 === 'missile';   // War Academy dmg aura applies to the secondary turret too
@@ -5915,6 +6000,8 @@ function updEnemies(dt) {
   // are identical for every enemy processed this frame — hoist them to ONE snapshot, reused throughout. Purely
   // mechanical: same objects, same order, same content as every one of the calls this replaces.
   const _friendlyList = friendliesList(), _airTgtList = airTargetsList(), _airOnlyList = airOnlyList();
+  // TEMPORAL AI LOD — classify HOT/COLD against the player's fielded positions (reuses the snapshot just above, one bucket-map build for the whole frame); see the LOD block above updUnits
+  const _lodEngBucketsE = lodBuildEngageIndex(_friendlyList, f => f.x);
   // SEPARATION — enemies all steer at the nearest target, so a wave used to collapse into a single
   // overlapping column on a city. Nudge them apart so a group reads as a loose handful with space
   // between craft, not a stack. Bucketed by x (each enemy only checks its own + the next column) so
@@ -5950,7 +6037,15 @@ function updEnemies(dt) {
       if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       continue;
     }
-    const tgt = near(e.x, e.y, e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) };
+    // TEMPORAL AI LOD — HOT enemies (on-screen or near a player unit) re-scan for the nearest target every frame,
+    // exactly as before. A COLD enemy (far off-screen, nowhere near your forces) only re-scans once every LOD_N
+    // frames (staggered by _id); in between it reuses its cached target if it's still alive, else falls back to
+    // holding its own position (the SAME cheap fallback `near()` already used when nothing was found) rather than
+    // paying for a fresh scan. See the LOD block above updUnits.
+    const _lodScanE = lodShouldScan(e.x, e.y, e._id, _lodEngBucketsE);
+    let tgt;
+    if (_lodScanE) { tgt = near(e.x, e.y, e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) }; e._lodTgt = tgt; }
+    else { tgt = e._lodTgt; if (!tgt || !lodTargetAlive(tgt)) tgt = { x: e.x, y: groundY(e.x) }; }
     if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 70) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); const pn = e.prodGroup || 1, pk = e.prodKinds; for (let i = 0; i < pn && G.enemies.length < 74; i++) spawnEnemy(pk ? pk[Math.floor(Math.random() * pk.length)] : 'drone', e.x + (Math.random() - .5) * 100 + i * 34); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); floatText(e.x, e.y - e.s - 6, '⚙ CARRIER FABRICATED', '#c9a6ff'); } }   // harvester / hive / bombarder / leviathan act as CARRIERS — periodically birth a small GROUP of normal units, not a lone drone (prodGroup/prodKinds); the HIVE's cadence is boosted (fastProd)
     if (e.mender) {   // SUPPORT SHIP — mends every damaged hostile within its radius, every tick (mirrors the player's Nanite Foundry repair aura, but for the fleet)
       for (const o of G.enemies) { if (o === e || o.reentry || o.hp <= 0 || o.hp >= o.maxHp) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd < (e.healR || 320) * (e.healR || 320)) { o.hp = Math.min(o.maxHp, o.hp + (e.healRate || 22) * dt); if (Math.random() < .1) spark(o.x, o.y, 1); } }

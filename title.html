@@ -1806,8 +1806,8 @@ const ART = {
     x.fillStyle = '#0e141c'; x.fillRect(-s * 2.02, -s * .13, s * .16, s * .11); x.fillRect(-s * 2.02, s * .02, s * .16, s * .11);   // twin nozzles
     aburn(x, -s * 2.0, -s * .07, s * .8, s * .07); aburn(x, -s * 2.0, s * .07, s * .8, s * .07);
   },
-  pdjet(x, s) {   // LASER INTERCEPTOR "WARDEN" — exotic PD interceptor: forward-swept wings + canards, nose PD-laser lens always "on"
-    s *= .76;
+  pdjet(x, s) {   // LASER INTERCEPTOR "WARDEN" — small, sharp air-superiority dart: forward-swept wings + canards, nose PD-laser lens always "on". Drawn noticeably smaller/leaner than the Solaris gunship — it trades bulk for speed & altitude.
+    s *= .64;
     // FORWARD-SWEPT wings (tips ahead of roots) — symmetric, the exotic planform
     x.fillStyle = LO(); x.beginPath(); x.moveTo(-s * .55, s * .1); x.lineTo(s * .75, s * 1.05); x.lineTo(s * 1.2, s * 1.05); x.lineTo(s * .05, s * .1); x.closePath(); x.fill();
     x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .55, -s * .1); x.lineTo(s * .75, -s * 1.05); x.lineTo(s * 1.2, -s * 1.05); x.lineTo(s * .05, -s * .1); x.closePath(); x.fill();
@@ -2012,8 +2012,8 @@ const ART = {
     x.fillStyle = '#0e141c'; x.fillRect(-s * 1.6, -s * .24, s * .18, s * .14); x.fillRect(-s * 1.6, s * .1, s * .18, s * .14);
     x.save(); x.shadowColor = '#7fd4ff'; x.shadowBlur = 6; x.fillStyle = '#7fd4ff'; x.fillRect(-s * 1.62, -s * .2, s * .06, s * .06); x.fillRect(-s * 1.62, s * .14, s * .06, s * .06); x.restore();
   },
-  laserjet(x, s) {   // LASER PLANE "SOLARIS" — exotic directed-energy lifting-body: dorsal emitter spine + nose focusing barrel
-    s *= .8;
+  laserjet(x, s) {   // LASER PLANE "SOLARIS" — big, heavy directed-energy gunship-bomber: broad lifting-body hull, dorsal emitter spine + long belly/nose focusing barrel. Drawn noticeably larger/bulkier than the Warden interceptor it shares a weapon family with.
+    s *= .92;
     // straight mid-mounted radiator wings (symmetric)
     x.fillStyle = LO(); x.beginPath(); x.moveTo(s * .5, s * .1); x.lineTo(-s * .3, s * 1.15); x.lineTo(-s * .75, s * 1.15); x.lineTo(-s * .55, s * .1); x.closePath(); x.fill();
     x.fillStyle = INK; x.beginPath(); x.moveTo(s * .5, -s * .1); x.lineTo(-s * .3, -s * 1.15); x.lineTo(-s * .75, -s * 1.15); x.lineTo(-s * .55, -s * .1); x.closePath(); x.fill();
@@ -2753,7 +2753,7 @@ const UNIT_DEFS = {
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, weapon2: 'rocket', dmg2: 12, rate2: 1.1, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA and a secondary SAM turret. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
   fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, ds: 'Stealth MULTIROLE fighter FLIGHT — ONE produced unit, ONE hangar/army-cap slot: the crewed Falcon leads two LOYAL-WINGMAN escort drones flying formation with it, each carrying its own missiles. Beyond-visual-range AAMs for air superiority, and the same missiles strike GROUND & naval targets, AND the flight breaks to intercept incoming bunker-busters/rods when any are within reach. The whole flight shares one magazine and burns fuel together, then lands at an airbase to rearm/refuel.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
-  pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 45, armor: 1, range: 620, dmg: 16, rate: 1.1, weapon: 'beam', speed: 300, s: 3.6, grp: 2, fuel: 34, req: 'directedenergy', ds: 'Dedicated air-superiority interceptor built around a nose-mounted POINT-DEFENSE LASER — it duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
+  pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'FAST, FRAGILE air-superiority interceptor — the quickest jet in the fleet, climbing highest and cycling its nose laser fastest of any aircraft, but built with zero armor plating and a light airframe: a stiff breeze kills it. Pure anti-air & missile-defense — it does NOT strafe the ground. It duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
   missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital LIFT + a ROCKET PART. (req Orbital Ops)' },
   rods:     { name: 'Tungsten Rods "Zeus"', art: 'rods', domain: 'space', ic: 370, mp: 8, build: 15, hp: 40, armor: 1, range: 1300, dmg: 95, rate: 6, weapon: 'rod', speed: 11, s: 4.5, grp: 1, req: 'kinetics', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital kinetic bombardment. Needs orbital LIFT + a ROCKET PART. (req Kinetic Weapons)' },
@@ -2761,7 +2761,7 @@ const UNIT_DEFS = {
   ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 28, rate: 1.2, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns — duels the autodrone strike-wings high above. Needs orbital LIFT + a ROCKET PART. Built from a SPACE STATION.' },
   bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 500, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, bReq: 'aeroworks', ds: 'Heavy bomber — clearly outclasses the Warthog CAS jet: +9% range, nearly 3× the payload per bomb run, thicker hull & armor, and the longest-endurance fuel tank in the fleet. Carpet-bombs GROUND & naval targets from altitude, then returns to an airbase to reload its bays. A production-line unit: build an AERO WORKS to field it from any Airbase (no research). (build an Aero Works)' },
   // LASER PLANE "SOLARIS" — research-gated (Directed Energy), but an AERO WORKS also prodUnlocks it (demonstrates the prodUnlock mechanism — a line building making a research-gated unit buildable natively). Uses the unused 'laserjet' BART art.
-  laserplane:{ name: 'Laser Plane "Solaris"', art: 'laserjet', domain: 'air', groundAtk: true, ic: 240, mp: 16, build: 9, hp: 60, armor: 2, range: 680, dmg: 20, rate: 1.0, weapon: 'beam', speed: 300, s: 4.4, grp: 1, fuel: 34, req: 'directedenergy', ds: 'Directed-energy strike aircraft — a dorsal laser emitter rakes ground, naval & air targets with no magazine to run dry (just fuel; return to an airbase to refuel). Research DIRECTED ENERGY — or build an AERO WORKS to field it with no research. (DIRECTED ENERGY / Aero Works)' },
+  laserplane:{ name: 'Laser Plane "Solaris"', art: 'laserjet', domain: 'air', groundAtk: true, ic: 240, mp: 16, build: 9, hp: 80, armor: 3, range: 720, dmg: 30, rate: .85, weapon: 'beam', speed: 250, s: 4.8, grp: 1, fuel: 34, req: 'directedenergy', ds: 'HEAVY directed-energy gunship — a big, tanky, slow-loitering hull that trades the Warden\'s speed & altitude for armor plating and a huge belly laser emitter that rakes the ground, ships & aircraft with slow, brutally heavy pulses. Not built to duel fighters — it is built to sit low over the front and grind it down. No magazine to run dry (just fuel; return to an airbase to refuel). Research DIRECTED ENERGY — or build an AERO WORKS to field it with no research. (DIRECTED ENERGY / Aero Works)' },
   // 🚁 HELICOPTER — its own arm. rotor:true → draws ROTOR COMMAND (not hangar slots); lowAir:true → hugs the deck; groundAtk:true → CAS role (ground + low air);
   // ceil .78 (tropo band) → physically CANNOT reach the stratosphere/space, keeping helis out of the high-air-spam meta. Needs no runway — rearms at cities/heli-depots.
   heli:     { name: 'Attack Heli "Kite"', art: 'heli', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 120, mp: 10, build: 7, hp: 95, armor: 4, range: 430, dmg: 20, rate: 1.3, weapon: 'rocket', speed: 120, s: 2.9, grp: 1, ammo: 10, fuel: 42, ceil: .78, ds: 'CLOSE-AIR-SUPPORT gunship helicopter — hovers low over its target and pounds it with rocket pods & a chin gun, drifting with it. Needs NO runway: draws 🚁 ROTOR COMMAND (separate from Air Command) and rearms at any CITY, HELI-DEPOT or airbase. Hugs the deck — it cannot climb to high-altitude enemies, so it lives or dies on ground & low-air work.' },
@@ -5148,41 +5148,47 @@ function armStrike(type) {
   const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
   toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click target · launches from the ▲ marked silo'));
 }
-/* ===== ⚑ HIRE ALLIES — an INFLUENCE SINK & safety valve =====
-   Late-game influence tends to pile up with nothing large to spend it on. Calling in a favour from
-   the world's other powers lets you dump a big slug of INFLUENCE (+ IC & manpower) for an instant
-   package of allied forces spawned as YOUR OWN units near your capital. Mirrors the ☢ STRIKE UX (a
-   top-bar button + a panel of options) but needs no aiming — the favour just arrives. Gated by a
-   single shared cooldown (G.allyCd) so it's a paced valve, not a spammable win button. Everything
-   below is deliberately CONSERVATIVE and TUNABLE — bump the numbers, don't add caps. */
+/* ===== ⚑ HIRE ALLIES — a PREMIUM, high-impact INFLUENCE+IC dump =====
+   Late-game influence (and IC) tends to pile up with nothing large to spend it on. Calling in a favour
+   from the world's other powers lets you dump a HUGE slug of INFLUENCE + IC (manpower stays a modest
+   secondary cost) for an instant, genuinely heavyweight package of allied forces spawned as YOUR OWN
+   units near your capital. Mirrors the ☢ STRIKE UX (a top-bar button + a panel of options) but needs no
+   aiming — the favour just arrives. Gated by a single shared cooldown (G.allyCd) so it's a paced valve,
+   not a spammable win button. This is deliberately EXPENSIVE now — a real emergency button, not a cheap
+   top-up — and the rosters are up-tiered with real hardware, not just more bodies. Everything below is
+   TUNABLE — bump the numbers, don't add caps. */
 const ALLIES = {
   // units: EXISTING friendly unit keys (see UNIT_DEFS). Carrier auto-launches its own free deck wing (carrierN),
-  // so the strike group brings its own fighters organically. inf = the primary sink; ic/mp are secondary costs; cd in game-seconds.
-  csg:    { name: 'Carrier Strike Group', short: 'Strike Group', inf: 200, ic: 280, mp: 90, cd: 100,
-            units: ['carrier', 'destroyer', 'destroyer', 'cruiser'],
-            ds: 'Allied CARRIER STRIKE GROUP — a fleet carrier (launches its own free fighter wing off the deck), two destroyer escorts and a missile cruiser, sailed in from a friendly power and deployed off your coast. The heavyweight influence dump. (needs water near your capital)' },
-  armor:  { name: 'Armored Battalion', short: 'Battalion', inf: 110, ic: 170, mp: 70, cd: 70,
-            units: ['heavytank', 'tank', 'tank', 'tank', 'aa'],
-            ds: 'Allied ARMORED BATTALION — a heavy "Goliath", three main battle tanks and a flak vehicle, landed by your capital. The cheap, fast reinforcement when a flank is caving in.' },
-  airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 150, ic: 200, mp: 60, cd: 85,
-            units: ['fighter', 'fighter', 'strikejet', 'strikejet'],
-            ds: 'Allied EXPEDITIONARY AIR WING — two multirole "Falcon" fighters and two "Warthog" strike jets, scrambled from an allied base. Instant air power (they rearm at your airbases once their ordnance is spent).' },
-  // ── extra packages — same shared-cooldown + INFLUENCE(+IC+MP) model, spread across cheap fast-fixes → heavyweight buys. All use EXISTING friendly unit keys (see UNIT_DEFS) and spawn as YOUR OWN units. Tune freely; add packages, don't cap. ──
-  interc: { name: 'Interceptor Screen', short: 'Interceptor Screen', inf: 80, ic: 120, mp: 35, cd: 55,
-            units: ['fighter', 'fighter', 'fighter'],
-            ds: 'Allied INTERCEPTOR SCREEN — a flight of three "Falcon" fighters put up as a combat air patrol. The cheapest, fastest call — pure air-to-air to clear a sky that\'s getting away from you.' },
-  arty:   { name: 'Artillery Battery', short: 'Artillery Battery', inf: 95, ic: 150, mp: 55, cd: 60,
-            units: ['mlrs', 'mlrs', 'arty', 'arty'],
-            ds: 'Allied ARTILLERY BATTERY — two "Tempest" MLRS and two "Thunder" SPGs, trucked in to your capital. Long-range ground suppression to break up a landing before it reaches your lines.' },
-  helo:   { name: 'Helicopter Wing', short: 'Helicopter Wing', inf: 125, ic: 170, mp: 50, cd: 75,
-            units: ['heli', 'heli', 'heligunship'],
-            ds: 'Allied HELICOPTER WING — two "Kite" attack helis and a heavy "Mastodon" gunship, flown in low. Fast-responding close air support that loiters over the flank that\'s caving.' },
-  bombers:{ name: 'Bomber Wing', short: 'Bomber Wing', inf: 175, ic: 250, mp: 65, cd: 95,
-            units: ['bomber', 'bomber', 'fighter', 'fighter'],
-            ds: 'Allied BOMBER WING — two "Lancer" heavy bombers with a two-"Falcon" fighter escort. Heavyweight air ordnance to flatten a massed skyfall or a grounded harvester.' },
-  column: { name: 'Heavy Armor Column', short: 'Armor Column', inf: 165, ic: 260, mp: 110, cd: 95,
-            units: ['heavytank', 'heavytank', 'tank', 'tank', 'tank', 'aa'],
-            ds: 'Allied HEAVY ARMOR COLUMN — two "Goliath" heavies, three "Aegis" MBTs and a flak track: a full armored fist landed by your capital. The big ground buy when a whole flank has collapsed.' },
+  // so the strike group brings its own fighters organically. inf = the primary sink; ic is a heavy secondary
+  // cost (~2-2.5× the old numbers); mp stays modest; cd in game-seconds.
+  csg:    { name: 'Carrier Strike Group', short: 'Strike Group', inf: 450, ic: 650, mp: 100, cd: 110,
+            units: ['carrier', 'battlecruiser', 'destroyer', 'cruiser'],
+            ds: 'Allied CARRIER STRIKE GROUP — a fleet carrier (launches its own free fighter wing off the deck), a railgun battlecruiser, a destroyer escort and a missile cruiser, sailed in from a friendly power and deployed off your coast. The heavyweight naval influence dump. (needs water near your capital)' },
+  armor:  { name: 'Armored Battalion', short: 'Battalion', inf: 250, ic: 400, mp: 85, cd: 75,
+            units: ['mammoth', 'heavytank', 'tank', 'tank', 'railgun'],
+            ds: 'Allied ARMORED BATTALION — a Mammoth super-heavy, a "Goliath" heavy, two main battle tanks and a railgun to punch through anything, landed by your capital. A serious armored fist for when a flank is caving in.' },
+  airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 340, ic: 460, mp: 70, cd: 90,
+            units: ['fighter', 'fighter', 'laserplane', 'pdjet'],
+            ds: 'Allied EXPEDITIONARY AIR WING — two multirole "Falcon" fighters, a heavy "Solaris" laser gunship and a "Warden" laser interceptor, scrambled from an allied base. Real air power across both roles (they rearm at your airbases once their ordnance/fuel runs low).' },
+  // ── extra packages — same shared-cooldown + INFLUENCE(+IC+MP) model, spread across expensive fast-fixes → the heaviest buy in the game. All use EXISTING friendly unit keys (see UNIT_DEFS) and spawn as YOUR OWN units. Tune freely; add packages, don't cap. ──
+  interc: { name: 'Interceptor Screen', short: 'Interceptor Screen', inf: 180, ic: 270, mp: 40, cd: 60,
+            units: ['pdjet', 'pdjet', 'pdjet'],
+            ds: 'Allied INTERCEPTOR SCREEN — a flight of three "Warden" laser interceptors put up as a combat air patrol: the fastest, highest-climbing jets in the sky. The cheapest call left in the book — pure air-superiority to clear a sky that\'s getting away from you.' },
+  arty:   { name: 'Artillery Battery', short: 'Artillery Battery', inf: 210, ic: 340, mp: 65, cd: 65,
+            units: ['railgun', 'mlrs', 'mlrs', 'arty'],
+            ds: 'Allied ARTILLERY BATTERY — a hypervelocity "Lance" railgun plus two "Tempest" MLRS and a "Thunder" SPG, trucked in to your capital. Long-range ground suppression with real armor-piercing teeth to break up a landing before it reaches your lines.' },
+  helo:   { name: 'Helicopter Wing', short: 'Helicopter Wing', inf: 280, ic: 390, mp: 60, cd: 80,
+            units: ['heli', 'heligunship', 'heligunship'],
+            ds: 'Allied HELICOPTER WING — a "Kite" attack heli and TWO heavy "Mastodon" gunships, flown in low. Fast-responding close air support with real staying power over the flank that\'s caving.' },
+  bombers:{ name: 'Bomber Wing', short: 'Bomber Wing', inf: 400, ic: 580, mp: 75, cd: 100,
+            units: ['bomber', 'bomber', 'pdjet', 'pdjet'],
+            ds: 'Allied BOMBER WING — two "Lancer" heavy bombers with a pair of "Warden" laser interceptors flying top cover. Heavyweight air ordnance, properly escorted, to flatten a massed skyfall or a grounded harvester.' },
+  column: { name: 'Heavy Armor Column', short: 'Armor Column', inf: 380, ic: 600, mp: 125, cd: 100,
+            units: ['mammoth', 'heavytank', 'tank', 'tank', 'railgun', 'aa'],
+            ds: 'Allied HEAVY ARMOR COLUMN — a Mammoth super-heavy, a "Goliath" heavy, two main battle tanks, a railgun and a flak track: a full armored fist with real anti-armor punch, landed by your capital. The big ground buy when a whole flank has collapsed.' },
+  fleet:  { name: 'Allied Expeditionary Fleet', short: 'Expeditionary Fleet', inf: 550, ic: 1050, mp: 150, cd: 170,
+            units: ['grandbattleship', 'battlecruiser', 'destroyer'],
+            ds: '★ Allied EXPEDITIONARY FLEET — a full allied shore-bombardment dreadnought (a spinal railgun that out-reaches even an orbital tungsten rod and elevates to hit ANY altitude, plus a deflector shield), escorted by a railgun battlecruiser and a destroyer screen. The single most expensive favour you can call in — a fleet that can turn a battle on its own. Both capital hulls carry their own standing IC/s upkeep once landed. (needs water near your capital)' },
 };
 function allyAvail(a) {   // null = hireable; otherwise a short reason string (shown on the button / as a toast)
   if ((G.allyCd || 0) > 0) return 'regrouping — ' + Math.ceil(G.allyCd) + 's';

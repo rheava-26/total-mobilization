@@ -3940,6 +3940,7 @@ function finishResearch() {
   markEver('res', key);   // ACHIEVEMENT: cross-round "researched every tech" progress
   if (G.ach) G.ach.researchedAnything = true;   // ACHIEVEMENT: pacifist-win tracking — any completed non-root research disqualifies it
   G.unlocked[key] = true; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf;
+  if (r.dang) G.dangCap = (G.dangCap || 0) + (r.sc || 0);   // dangerous doctrines PERMANENTLY shrink the stability ceiling (sc points as %), a Faustian cost that stacks — you can no longer research everything for free
   if (G.stats) { G.stats.researched.push({ key, t: G.time }); if (r.dang) G.stats.dangerousResearched++; }   // AFTER-ACTION RESEARCH TIMELINE — once per completed node, in completion order + a running count of the dangerous ones
   applyEraUpgrades();   // re-arm fielded units if this unlock advanced the age
   if (key === 'plasma') toast('⚡ PLASMA ARMS ONLINE — your ground & air units re-arm with plasma');
@@ -4582,7 +4583,7 @@ function updateGame(dt) {
   G.ic = Math.max(0, G.ic + icR * dt); G.mp = Math.min(900, G.mp + mpR * dt); G.res += resR * dt;
   if (G.stats) { if (icR > 0) G.stats.earnedIC += icR * dt; if (mpR > 0) G.stats.earnedMP += mpR * dt; G.stats.peakIC = Math.max(G.stats.peakIC, G.ic); G.stats.peakMP = Math.max(G.stats.peakMP, G.mp); }   // AFTER-ACTION — cumulative gross income + peak banked totals (read only, no gameplay effect)
   G.superN = 0; for (const u of G.units) if (u.key === 'superhuman') G.superN++;   // Superhuman Cadres carry a standing upkeep — near-immortal flying laser demigods have lasting societal & political implications
-  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus - capPenalty + Math.max(0, G.mult.stab) * 30 - 3 * G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; dystopia, unrest buildings & EACH fielded Superhuman Cadre LOWER the ceiling by 3% instead of draining current stability — a smaller maximum you can rebuild toward, never a runaway bleed
+  G.stabCap = Math.max(20, Math.min(100, 65 + capBonus - capPenalty - (G.dangCap || 0) + Math.max(0, G.mult.stab) * 30 - 3 * G.superN));   // STABILITY CEILING — raise it with stability structures (Comms / Propaganda / Radar) & doctrine; dystopia, unrest buildings & EACH fielded Superhuman Cadre LOWER the ceiling by 3% instead of draining current stability — a smaller maximum you can rebuild toward, never a runaway bleed
   let stabRegen = G.stab < G.stabCap ? Math.min(0.5, (G.stabCap - G.stab) * 0.05) : Math.max(-1, (G.stabCap - G.stab) * 0.1);   // stability GAIN is slow & LIMITED — it only trends toward the cap; anything above the cap (e.g. a boss-kill bonus, or the reserve below) drifts back down; a cap DROP pulls stability toward the new, lower ceiling at this same gentle pace — never an instant hit
   G.stab = Math.max(0, Math.min(100, G.stab + stabRegen * dt));
   // STABILITY RESERVE — Comms Towers / Propaganda Bureaus / Radar quietly bank a small reserve (capped hard at 100 total,
@@ -7798,7 +7799,7 @@ function buildDevPanel() {
   h += '</div>';
   body.innerHTML = h;
 }
-function devAll() { for (const k in RESEARCH) { if (!G.unlocked[k]) { G.unlocked[k] = true; const r = RESEARCH[k]; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf; } } applyEraUpgrades(); buildBuildBar(); buildProdMenu(); buildDevPanel(); toast('DEV: all tech + ages granted'); }
+function devAll() { for (const k in RESEARCH) { if (!G.unlocked[k]) { G.unlocked[k] = true; const r = RESEARCH[k]; if (r.apply) r.apply(G); if (r.inf) G.infBonus = (G.infBonus || 0) + r.inf; if (r.dang) G.dangCap = (G.dangCap || 0) + (r.sc || 0); } } applyEraUpgrades(); buildBuildBar(); buildProdMenu(); buildDevPanel(); toast('DEV: all tech + ages granted'); }
 function devRes() { G.ic += 5000; G.mp = 900; G.inf = 600; toast('DEV: +resources'); }
 function devStab() { G.stab = 100; toast('DEV: stability maxed'); }
 function devInvade() { if (G.phase === 'prep') { G.prepTimer = 0.1; toast('DEV: invasion incoming'); } else toast('already invading'); }
@@ -7946,6 +7947,7 @@ function showResDetail(key) {
     + (r.inf ? `<span>Influence <b style="color:var(--mp)">+${r.inf}/s</b></span>` : '')
     + (r.sc ? `<span>Unrest <b style="color:var(--inf)">−${r.sc}</b> <span style="opacity:.7">(recovers)</span></span>` : '')
     + (r.srReq ? `<span>Needs <b style="color:var(--res)">${SR[r.srReq].name}</b></span>` : '') + `</div>`;
+  if (r.dang) html += `<div class="rdeff" style="color:var(--inf);font-weight:600">⚠ PERMANENT: −${r.sc}% max stability</div>`;   // Faustian cost is forever — shown separately from the recoverable "Unrest" stat above so the player can't mistake one for the other
   if (units.length || blds.length) {
     html += `<div class="rdunits"><span style="font-size:9px;color:var(--term);letter-spacing:1px">UNLOCKS:</span>`;
     for (const d of units) html += `<div class="rdunit"><canvas width="64" height="40"></canvas><span>${d.name}</span></div>`;

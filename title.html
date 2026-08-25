@@ -4345,6 +4345,18 @@ function openingBombarders(it) {
   }
   toast('☄☄ ORBITAL BOMBARDERS ON STATION — the whole sky is theirs'); shake(10); if (typeof musDuck === 'function') musDuck();
 }
+function openingAAsalvo(it) {   // the autofleet's counter to strong player air — a rank of carriers high in the exosphere/space band burst into swarms of independently-homing anti-air micromissiles hunting YOUR aircraft. Reuses the existing splitting 'microrkt' carrier + homing-sub code (see the p.k==='microrkt' block in updProj and its aaOnly branches) — this just seeds carriers with friendly:false + aaOnly:true instead of writing new projectile physics.
+  if (!(it.skyfall > 0 || it.fleetMul >= 1)) return;   // a recon PROBE / pure orbital GLASSING stay light on this too — the salvo belongs to intents that actually commit a fleet to the fight
+  const n = Math.max(4, Math.min(6, Math.round(5 * (it.fleetMul || 1))));
+  const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
+  for (let i = 0; i < n; i++) {
+    const frac = n === 1 ? .5 : i / (n - 1);
+    const x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
+    const y = SPACE_Y() + Math.random() * (MESO_Y() - SPACE_Y());
+    G.proj.push({ k: 'microrkt', x, y, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12, tr: [], aaOnly: true });
+  }
+  toast('⚠ ANTI-AIR MICROMISSILE CARRIERS ON STATION — hunting anything that flies'); shake(8); if (typeof musDuck === 'function') musDuck();
+}
 function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam — a hostile full-height plasma column dropped on a city
   G.beams.push({ x, r: 64, life: 1.5, total: 1.5, hostile: true });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13);
@@ -4729,7 +4741,7 @@ function updateGame(dt) {
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — ' + curIntent().label); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
-G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it);   // the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only) — see ESC.OPEN_*
+G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = it.skyfall > 0 ? it.bombard + 2 : -1; G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it); openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
   else if (G.phase === 'invasion') {
@@ -6280,6 +6292,7 @@ function updProj(dt) {
   // exactly as before.
   const friendlyList = friendliesList();
   const enemiesLive = G.enemies.filter(e => !e.reentry);
+  const airOnly = airOnlyList();   // STRICT player air/space-only pool — used by aaOnly:true micromissile subs (the opening anti-air salvo) so they hunt aircraft specifically, never falling back to ground targets
   const hostileList = incList.length ? G.enemies.concat(incList) : G.enemies;
   const hostileMeso = hostileList.filter(e => e.y >= MESO_TOP());
   for (const p of G.proj) {
@@ -6324,7 +6337,7 @@ function updProj(dt) {
     }
     if (p.k === 'microrkt') {   // MICROROCKET carrier — climbs toward the threat, then bursts into homing submunitions that each chase an independent target
       p.t += dt; p.spd = Math.min(420, (p.spd || 30) + 600 * dt);
-      const tlist = p.friendly ? enemiesLive : friendlyList;
+      const tlist = p.friendly ? enemiesLive : (p.aaOnly ? airOnly : friendlyList);
       let cur = Math.atan2(p.vy, p.vx); const t = near(p.x, p.y, tlist, 900); if (t) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; cur += Math.max(-1.4 * dt, Math.min(1.4 * dt, da)); }
       p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
       if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
@@ -6338,7 +6351,7 @@ function updProj(dt) {
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
           if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — a fan angle that would launch this sub already heading groundward instead gets a brief upward/outward kick, so it clears the burst point and acquires before it ever starts descending (was: augered straight into the dirt on detach)
           const ht = pool.length ? (pool[i] || pool[i % pool.length]) : near(p.x, p.y, tlist, 900);   // GUARANTEE HOMING — never let a submunition detach with no lock; fall back to a fresh scan if the initial pool came up empty
-          const sub = { k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null };
+          const sub = { k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: p.friendly, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null, aaOnly: p.aaOnly };
           if (!p.friendly) { sub.pdable = true; sub.hp = 4; }
           G.proj.push(sub);
         }
@@ -6415,7 +6428,7 @@ function updProj(dt) {
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * dt;
         if (p.ami && p.spd > p.maxspd) p.spd = p.maxspd;   // ONLY the Anti-Missile Interceptor round honors its top-speed cap (normal missiles stay uncapped as before) — keeps the hypervelocity boost from running away
         let cur = Math.atan2(p.vy, p.vx);
-        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? hostileMeso : friendlyList, 640);   // your guided missiles can NEVER re-acquire a target above the mesosphere — no more pitching up into orbit to snipe bombardiers (orbit belongs to kinetics / space weapons)
+        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? hostileMeso : (p.aaOnly ? airOnly : friendlyList), 640);   // your guided missiles can NEVER re-acquire a target above the mesosphere — no more pitching up into orbit to snipe bombardiers (orbit belongs to kinetics / space weapons). aaOnly subs (opening anti-air salvo) reacquire strictly from the player's air/space pool, never falling back to ground targets
         if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }   // a hostile EW field blinds the seeker — it stops steering and flies straight until it clears the jam
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }

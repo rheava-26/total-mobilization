@@ -3773,7 +3773,9 @@ function currentBase(u) {   // resolves — and RE-resolves every call — the a
 function rearmAircraft(u, d, spd, dt) {   // fly home, land on a carrier deck / airbase, reload the magazine + refuel, relaunch — generalised from the carrier wing
   const base = currentBase(u);
   if (!base) {   // no carrier or airbase anywhere — the wing improvises a slow FIELD resupply (rearm AND refuel) so it's never permanently grounded/frozen. It's much slower than a proper landing, so airfields still matter, but a wing whose airbases were all destroyed keeps fighting instead of hovering dead in the sky.
+    u.docked = 0;   // there is nothing under this unit to be "docked" ON — if its old base/carrier died mid-turnaround, drop the stale flag NOW, else it never decays (the loiter below never touches it), permanently blocking weapon fire/CIWS/aura (everything gated on !u.docked) and — worse — causing an instant same-frame teleport of u.y to a NEW base's deck the moment one appears anywhere on the map, since rearmAircraft's docked branch snaps y=deckY unconditionally
     u.vx *= .9; u.vy += (u.patrol - u.y) * 2 * dt; u.vy *= .9; u.x += u.vx * dt; u.y += u.vy * dt;
+    u.y = Math.min(u.y, groundY(u.x) - 20);   // safety floor — a loitering wing with nowhere to land must never rest below (or clipped into) the terrain surface
     u.reload = (u.reload || 0) + dt; if (Math.random() < .25) spark(u.x, u.y, 1);
     if (u.reload >= 3.5) { u.reload = 0; u.rtb = false; if (u.maxAmmo) u.ammo = u.maxAmmo; if (u.maxFuel) u.fuel = u.maxFuel; } return;
   }

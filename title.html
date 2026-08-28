@@ -559,6 +559,7 @@
   <div class="row"><label>UI Scale</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="uiScale" min="60" max="140" value="100"><span class="v" id="uiScaleV">100%</span></div></div>
   <div class="row"><label>Star Density</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="starDen" min="40" max="240" value="150"><span class="v" id="starDenV">150</span></div></div>
   <div class="row"><label>Edge Scroll</label><div class="toggle on" id="tEdge"><div class="knob"></div></div></div>
+  <div class="row"><label>Full Effects <span style="opacity:.55;font-size:10px">— every explosion flourish, unit shadow/glow &amp; lingering smoke. Turn off on low-end devices</span></label><div class="toggle on" id="tFullFx"><div class="knob"></div></div></div>
   <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>ACCESSIBILITY</b></div>
   <div class="row"><label>Reduced Motion <span style="opacity:.55;font-size:10px">— stills the aurora, meteors &amp; planet spin</span></label><div class="toggle" id="tMotion"><div class="knob"></div></div></div>
   <div class="row"><label>Screen Shake</label><div class="toggle on" id="tShake"><div class="knob"></div></div></div>
@@ -732,6 +733,7 @@ addEventListener('resize', resize);
 
 let mode = 'title', zoomStart = 0, reducedMotion = false, edgeScroll = true;
 let shakeOn = true, flashRed = false, cbMode = false, grainOn = true;   // accessibility: screen shake · flash reduction (photosensitivity) · colorblind-safe bar colors · film grain+vignette
+let fullFx = true;   // PERF/VISUALS — default ON: the sim is what's ever actually slow (render is cheap by comparison), so the old count-based visual cutbacks bought ~nothing and cost the game's whole appeal. ON keeps every per-unit shadow/glow/berm/shield-ring, the full explosion death-flourish set (fxHeavy()), and lets smoke linger; OFF restores the old aggressive low-end cutbacks. Toggle in OPTIONS for low-end devices.
 const FEEDBACK_URL = '';   // feedback form link — set this to the game's feedback form URL to enable the Feedback buttons
 function openFeedback() { if (!FEEDBACK_URL) { toast('💬 Feedback form coming soon!'); return; } window.open(FEEDBACK_URL, '_blank', 'noopener'); }   // opens the feedback form in a new tab; graceful message until the URL is set
 function applySafeMode() {
@@ -4193,7 +4195,7 @@ function healSquad(t, amt) {
   let sum = 0; for (const m of t.members) if (m.alive) sum += Math.max(0, m.hp);
   t.hp = Math.min(t.maxHp, sum);   // resync from the bodies (same authority rule as hitSquadMember) instead of healing the aggregate independently
 }
-function blacksmoke(x, y, n) { for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: 1.7 + Math.random() * 2.4 }); }   // sooty trails that rise & fill the atmosphere
+function blacksmoke(x, y, n) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: (1.7 + Math.random() * 2.4) * _fxL }); }   // sooty trails that rise & fill the atmosphere — Full Effects lets it linger ~1.8x longer
 function boom(x, y, p) {
   G.parts.push({ k: 'ring', x, y, r: 2, max: p * 6, life: .5 });
   G.parts.push({ k: 'flash', x, y, r: p * 2.2, life: .16 });
@@ -4205,7 +4207,7 @@ function boom(x, y, p) {
   if (p >= 5 && Math.random() < .7) SFX.boom(); else if (p >= 3 && Math.random() < .3) noise(.16, .4);
 }
 function spark(x, y, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * 50; G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2, life: .22 }); } }
-function smoke(x, y, n) { for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: .9 + Math.random() * .9 }); }
+function smoke(x, y, n) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: (.9 + Math.random() * .9) * _fxL }); }   // Full Effects lets it linger ~1.8x longer
 function floatText(x, y, txt, col) { G.parts.push({ k: 'text', x, y, vy: -26, txt, col: col || '#fff', life: 1.2 }); }   // small rising label (salvage, alerts)
 // THE AUTOFLEET'S INTENT shapes the whole invasion — difficulty is about WHY they came, not just bigger stat bars
 const INTENT = {
@@ -4925,7 +4927,7 @@ function boomW(x, y, p) { boom(x, y, p); if (p >= 12) { pushCrater({ x, r: 24 + 
 // so a mass die-off can't spike G.parts. The core silhouette of each death style (puddle disc / flecks / flash+ring) still
 // plays even then. This used to trip at >200 — routine late-game — which muted the beloved conventional explosions for
 // most of every playthrough; raised hard so ordinary big battles keep FULL, gorgeous FX and only a true swarm dials back.
-function fxHeavy() { return (G.units.length + G.enemies.length) > 600; }
+function fxHeavy() { return !fullFx && (G.units.length + G.enemies.length) > 600; }   // Full Effects ON (default) → always the full death-flourish set, no count-based cutback; OFF restores the old low-end dial-back
 function pickStyle(k, dom, s, frac) {
   if (k === 'beam') return (frac != null && frac < .10) ? 'melt' : 'meltdown';     // ★ LASER / DIRECTED-ENERGY — a beam that barely overkills just slags & drops it; a heavy beam cooks it clean down to a pool of slag. Never an explosion — see meltDeath()/sludgePool()
   if (k === 'rail' || k === 'rod' || k === 'particle') return 'split';             // PENETRATORS punch clean through → split in half + debris cloud
@@ -6531,8 +6533,9 @@ function updParts(dt) {
     pt.vy += 150 * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; if (pt.rot !== undefined) pt.rot += pt.vr * dt;
   }
   filterInPlace(G.parts, p => p.life > 0);   // PERF: in-place compaction, see filterInPlace()
-  if (G.parts.length > 1300) {   /* PRIORITY CULL — a barrage flooding in cheap smoke/muzzle/spark/tracer/clod particles must NOT evict the still-burning hero fire/ember/ring/etc. of an explosion that started a moment ago. Walk oldest-first and drop cheap kinds until back under budget; only fall back to oldest-first-overall (the old behavior) if there aren't enough cheap ones to cut. O(n), no allocation. */
-    let toCut = G.parts.length - 1300, w = 0;
+  const _partCap = fullFx ? 2400 : 1300;   // Full Effects raises the budget so lingering smoke isn't evicted the instant a fight gets big — still a HARD cap either way, particles can never grow unbounded
+  if (G.parts.length > _partCap) {   /* PRIORITY CULL — a barrage flooding in cheap smoke/muzzle/spark/tracer/clod particles must NOT evict the still-burning hero fire/ember/ring/etc. of an explosion that started a moment ago. Walk oldest-first and drop cheap kinds until back under budget; only fall back to oldest-first-overall (the old behavior) if there aren't enough cheap ones to cut. O(n), no allocation. */
+    let toCut = G.parts.length - _partCap, w = 0;
     for (let i = 0; i < G.parts.length; i++) { const p = G.parts[i]; if (toCut > 0 && !HERO_PARTS[p.k]) { toCut--; continue; } G.parts[w++] = p; }
     G.parts.length = w;
     if (toCut > 0) G.parts.splice(0, toCut);   /* ran out of cheap particles — reluctantly cut the oldest hero ones too */
@@ -6570,7 +6573,7 @@ function renderGame() {
   const _cz = cam.z || 1, _vhalf = H / (2 * _cz), _vcy = cam.y + H * 0.5;
   const VY0 = _vcy - _vhalf - 160, VY1 = _vcy + _vhalf + 160;
   const PX = _cz < 1 ? Math.ceil(W * (1 / _cz - 1) / 2) : 0;   /* ZOOM-OUT horizontal over-scan — at cz<1 the frame shows more world than [cam.x,cam.x+W]; widen every horizontal cull by PX so edge entities/scenery don't derender (mirrors the vertical band's H/(2*_cz)). */
-  const _heavyLOD = (G.units.length + G.enemies.length) > 200;   // at extreme scale, drop the per-body soft drop-shadow (the single most expensive per-entity canvas op); art itself is unchanged
+  const _heavyLOD = !fullFx && (G.units.length + G.enemies.length) > 200;   // at extreme scale, drop the per-body soft drop-shadow (the single most expensive per-entity canvas op); art itself is unchanged — skipped entirely when Full Effects is ON
   // RENDER LOD (Task B) — a further tier past _heavyLOD, for genuinely mega-army scale (thousands of units) or a
   // heavily zoomed-out view where individual entities are only a few px tall anyway: drops small cosmetic-only
   // extras that add up per-entity at that scale — ambient aircraft glow, ground/naval contact shadows, the
@@ -6578,7 +6581,7 @@ function renderGame() {
   // carry gameplay information the base sprite + HP bar don't already show, and every entity is still drawn (the
   // mass still reads as a mass, per the design tenet) — only this fine detail layer is skipped. On/off-screen
   // culling above is untouched either way; a normal-count, normal-zoom battle looks IDENTICAL to before.
-  const _extremeLOD = (G.units.length + G.enemies.length) > 1200 || (cam.z || 1) < .55;
+  const _extremeLOD = (!fullFx && (G.units.length + G.enemies.length) > 1200) || (cam.z || 1) < .55;   // Full Effects ON keeps only the zoom-out drop (favor keeping visuals); the count-based mega-army cutback is skipped
   RSTAT.culled = 0; RSTAT.drawn = 0;
   // COVERAGE ZONES — buff/aura radii (radar range, fire-rate, repair). Toggle with V or the ◎ button; a selected aura building always shows its own ring.
   if (G.showZones || (G.sel && G.sel.d && (G.sel.d.aura || G.sel.d.garrAura))) {
@@ -8205,7 +8208,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -8214,10 +8217,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false;
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false;
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn);
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx);
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -8227,6 +8230,7 @@ bindToggle('tShake', v => { shakeOn = v; if (!v) shakeAmt = 0; });
 bindToggle('tFlash', v => flashRed = v);
 bindToggle('tCb', v => cbMode = v);
 bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
+bindToggle('tFullFx', v => fullFx = v);
 loadOpts();
 addEventListener('keydown', e => {
   // HIDE-HUD toggle (H). While hidden, any non-navigation keypress flashes a reminder of how to bring it back.

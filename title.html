@@ -7249,7 +7249,7 @@ function renderProdDetail() {
     `<div class="pdtags">${domTag}</div>` +
     `<div class="pdds">${d.ds || ''}</div>` +
     `<div class="pdh">⚔ ARMAMENT</div>${wpnHtml}` +
-    `<div class="pdh">📊 STATS</div><div class="st"><span>HP / Armor</span><b>${d.hp} / ${d.armor || 0}</b></div><div class="st"><span>Speed</span><b>${d.speed}</b></div>` +
+    `<div class="pdh">📊 STATS</div><div class="st"><span>HP / Armor</span><b>${d.hp} / ${d.armor || 0}</b></div><div class="st"><span>Speed</span><b>${d.speed}</b></div><div class="st"><span>⚖ Weight</span><b>${Math.round(defWeight(d) * 100) / 100}</b></div>` +
     `<div class="pdh">💲 COST</div>${costLines}` +
     (lockHtml ? `<div class="pdlock">${lockHtml}</div>` : '') +
     `<div class="qrow"><button class="qbtn" data-q="-1">−</button><div class="qval">×${qty}</div><button class="qbtn" data-q="1">+</button></div>` +
@@ -7342,7 +7342,8 @@ function refreshSel() {
     /* stat row additions — fire rate & speed alongside the existing HP/Armor + Range/Dmg, mirroring the same d.rate/d.speed fields renderProdDetail's PRODUCE card already shows; skipped when the def has none */
     const rateTxt = d.rate ? `<div class="st"><span>Rate</span><b>${(1 / d.rate).toFixed(1)}/s</b></div>` : '';
     const spdTxt = d.speed != null ? `<div class="st"><span>Speed</span><b>${d.speed}</b></div>` : '';
-    html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>` + rateTxt + spdTxt + `<div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s);
+    const wgtTxt = `<div class="st"><span>⚖ Weight</span><b>${Math.round(unitWeight(s) * 100) / 100}</b></div>`;   // army-cap weight this unit eats (v3.98's weighted cap) — surfaced next to Domain/Speed so it's never a mystery
+    html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>` + rateTxt + spdTxt + wgtTxt + `<div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s);
   }
   if (html === info._html) return;   // only rebuild the panel when its content actually changed — avoids destroying the buttons ~60×/s (which ate every click) and re-drawing the preview each frame
   info._html = html; info.innerHTML = html;

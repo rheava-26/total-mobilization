@@ -6587,6 +6587,7 @@ function drawOrbitalStation(px, gy) {   // a Space Station puts an actual platfo
 }
 const RSTAT = { culled: 0, drawn: 0 };   // PERF instrumentation — off-screen entities skipped vs drawn this frame (read by the headless bench / a live overlay); pure counters, no gameplay effect
 function renderGame() {
+  _glowFrameCount = 0;   // WHITE-OUT CLAMP — fresh budget of additive glow draws every frame, see glow()
   // PERF — visible world-Y band (mirrors the existing horizontal sx()-cull): the world is 1.9× the viewport and the
   // camera pans it vertically, so at any moment most sky/space/underground entities are off-screen. Compute the band
   // ONCE per frame from the camera + zoom and early-continue anything outside it (+ a generous margin for tall art,
@@ -6959,10 +6960,14 @@ function neonBuilding(px, gy, w, h) {
 // createRadialGradient(0,0,0,0,0,1) under scale(r,r) is mathematically identical to a radius-r gradient at (px,y),
 // so the halo looks exactly the same; we just stop re-allocating it thousands of times a frame.
 const _glowCache = new Map();
+let _glowFrameCount = 0;   // v3.98.0 WHITE-OUT CLAMP — reset to 0 once per rendered frame (renderGame), incremented on every additive glow draw
+const GLOW_SOFT_CAP = 220;   // past this many 'lighter'-blended glow draws in ONE frame, further ones fade out — a mass-death event can dump thousands of overlapping explosion blooms into the same screen area; this stops that from ever stacking to a solid white sheet, while a normal-density fight (well under the cap) is completely unaffected
 function glow(px, y, r, col, a) { if (a <= .01 || r <= 0) return;
+  _glowFrameCount++;
+  if (_glowFrameCount > GLOW_SOFT_CAP) { const over = Math.min(1, (_glowFrameCount - GLOW_SOFT_CAP) / GLOW_SOFT_CAP); a *= (1 - over * .85); if (a <= .01) return; }   // fades, never hard-cuts — a blast still flashes, it just can't pile on top of hundreds of others at full brightness
   let g = _glowCache.get(col);
   if (!g) { g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, col); g.addColorStop(.32, col); g.addColorStop(.6, col.replace(/[\d.]+\)$/, '.45)')); g.addColorStop(1, 'rgba(0,0,0,0)'); _glowCache.set(col, g); }
-  c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, a); c.translate(px, y); c.scale(r, r); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, 6.28); c.fill(); c.restore(); }
+  c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(.85, a); c.translate(px, y); c.scale(r, r); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, 6.28); c.fill(); c.restore(); }   // HARD per-draw alpha ceiling .85 (was 1) — even a single glow can no longer paint fully-opaque white
 function renderPart(pt, px) {
   if (pt.r < 0) pt.r = 0;   // a shrinking particle whose radius briefly undershoots 0 (seen in the orbital-barrage VFX) would throw IndexSizeError on the canvas arc() calls below — clamp it (glow() already self-guards r<=0)
   if (pt.k === 'ring') { const la = Math.max(0, pt.life / .35); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .85; c.strokeStyle = '#ffd9a0'; c.lineWidth = 2; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.stroke(); c.globalAlpha = la * .4; c.strokeStyle = '#fff3da'; c.lineWidth = 4.5; c.beginPath(); c.arc(px, pt.y, pt.r * .82, 0, 6.28); c.stroke(); c.restore(); c.globalAlpha = 1; }

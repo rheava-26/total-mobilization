@@ -14,3 +14,6 @@
 !icon-192.png
 !icon-512.png
 !apple-touch-icon.png
+# Bundled ad-free audio tracks (menu theme, etc.) referenced directly by title.html
+!audio/
+!audio/the_fire_rages.m4a

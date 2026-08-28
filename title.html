@@ -5774,7 +5774,7 @@ function updUnits(dt) {
             u.vx += Math.cos(u.wob) * spd * .22 * dt;                                            // gentle lateral weave so a standing flight isn't a static dot
           } else if (dist > rng * .8) u.vx += sdir * spd * 4 * dt;                               // GUN / short-range craft still sprint in and strafe
           else { const orbit = Math.min(rng * .5, 240); const tx = hunt.x + Math.cos(u.wob) * orbit; u.vx += (tx - u.x) * 2.4 * dt; }   // weave around it
-          dy = Math.max(airTopY(), Math.min(landY(u.x) - 28, hunt.y - 22 + Math.sin(u.wob) * 30));
+          dy = Math.max(airTopY(), Math.min(landY(u.x) - (26 + d.s), hunt.y - 22 + Math.sin(u.wob) * 30));   // SIZE-AWARE floor — a big hull (Nanoforge/Airship) seated only 26px above the ground has its bottom edge (half-height d.s) clipped underground; small jets (tiny d.s) are essentially unaffected
         }
       } else if (u.evadeT > 0) {   /* EVASION — this jet has NO reachable target anywhere (hunt came up null: whatever's shooting at it sits above its ceiling, e.g. orbital railguns/rods) AND it just took an un-answered hit (evadeT, set in hurt()). It cannot fight back, so it bugs out of the open kill zone instead of loitering as a stationary target: hard jink + full-speed run for the nearest friendly base + dive for the deck under friendly AA cover. Resumes normal patrol the instant evadeT expires or a reachable target shows up (the hunt branch above takes priority every frame). */
         u.wingCommit = false;
@@ -5793,7 +5793,7 @@ function updUnits(dt) {
       }
       u.vy += (dy - u.y) * 2.8 * dt;
       const vmax = spd * 1.5; u.vx = Math.max(-vmax, Math.min(vmax, u.vx)); u.vx *= .96; u.vy *= .9;
-      u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = Math.max(airTopY(), Math.min(landY(u.x) - 16, u.y)); u.facing = u.vx >= 0 ? 1 : -1;   // BUGFIX (pre-existing, surfaced by verification): fixed-wing aircraft had a Y clamp but no X clamp, so a fast/aggressive flyer chasing a target near the map edge could sail off-map — matches the same clamp every other domain (ground/space/naval) already applies; purely a boundary safety net, doesn't touch normal-range flight
+      u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x)); u.y = Math.max(airTopY(), Math.min(landY(u.x) - (14 + d.s), u.y)); u.facing = u.vx >= 0 ? 1 : -1;   // SIZE-AWARE hard clamp — same reasoning as the target-altitude floor above: a fixed 16px floor put a big hull's bottom (d.s below its seated y) below the terrain line   // BUGFIX (pre-existing, surfaced by verification): fixed-wing aircraft had a Y clamp but no X clamp, so a fast/aggressive flyer chasing a target near the map edge could sail off-map — matches the same clamp every other domain (ground/space/naval) already applies; purely a boundary safety net, doesn't touch normal-range flight
       if (d.kamikaze && hunt) { const dd = (hunt.x - u.x) ** 2 + (hunt.y - u.y) ** 2, rr2 = u.d.s + (hunt.s || 8) + 8; if (dd < rr2 * rr2) { hunt.killBy = 'bomb'; hurt(hunt, d.dmg * 4); boom(u.x, u.y, 6); spark(u.x, u.y, 5); u.hp = 0; continue; } }   // dive-bomb: ram the target & detonate
       }
     }

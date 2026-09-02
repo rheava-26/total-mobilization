@@ -609,6 +609,12 @@
   <div class="actions"><button class="pill" onclick="closeModal('tutPromptModal')">MAYBE LATER</button></div>
 </div></div>
 
+<div class="modal-bg" id="tutDiagModal"><div class="modal" style="max-width:600px;border-color:var(--stab)">
+  <h2>⚠ THE FLEET IS 20 SECONDS OUT</h2><div class="hd">// HERE'S WHAT YOU'RE LIKELY TO LOSE TO</div>
+  <div id="tutDiagGaps" style="margin:8px 0 12px"></div>
+  <div id="tutDiagActions"></div>
+</div></div>
+
 <div class="modal-bg" id="scenModal"><div class="modal">
   <h2>SCENARIOS</h2><div class="hd">// SELECT OPERATION</div>
   <div class="scen"><div class="nm">OPERATION: UNPREPARED EARTH</div><div class="ds">A coastal sector with several cities, roads, docks and old military bases. Build an industrial base, research, and specialize before the autodrone fleet's single sustained invasion arrives.</div>
@@ -844,7 +850,7 @@ function markEver(cat,key){ try{ const s=everGet(cat); if(!s[key]){ s[key]=1; lo
 function everCount(cat){ return Object.keys(everGet(cat)).length; }
 let achUnlocked = {};
 function loadAchievements() { try { achUnlocked = JSON.parse(localStorage.getItem('tm_ach') || '{}'); } catch (e) { achUnlocked = {}; } }
-function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = Date.now(); try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
+function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = { t: Date.now(), altered: !!(typeof G !== 'undefined' && G && G.ach && G.ach.altered) }; try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
 function checkAchievements() { if (!G) return; for (const a of ACHIEVEMENTS) { if (!achUnlocked[a.id] && typeof a.test === 'function') { try { if (a.test(G)) unlockAchievement(a.id); } catch (e) {} } } }
 function openAchievements() { const body = document.getElementById('achBody'); if (body) { body.innerHTML = ACHIEVEMENTS.length ? ACHIEVEMENTS.map(a => { const rec = achUnlocked[a.id]; const got = !!rec; const altered = got && typeof rec === 'object' && rec.altered; return `<p style="opacity:${got ? 1 : .5}"><b>${got ? '🏆' : '🔒'} ${a.name}</b>${altered ? ' <span style="color:#8fb0d4;font-size:10px;letter-spacing:.5px" title="Earned with help — an assisted run">◇ assisted</span>' : ''}<br>${a.desc || ''}</p>`; }).join('') : '<p style="opacity:.7">No achievements defined yet — the framework is in place; medals will appear here as they\'re added.</p>'; } openModal('achModal'); }
 // ── TUTORIAL / ONBOARDING SETTINGS — persisted across matches (tm_tut), independent of the tutorial
@@ -8453,7 +8459,27 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   #tutAdvisor .adv-b{font-size:12px;line-height:1.45;color:#c8d6e6}
   #tutAdvisor .adv-b b{color:#fff}
   #tutAdvisor .adv-x{position:absolute;top:4px;right:8px;cursor:pointer;color:#7f93ad;font-size:15px;line-height:1;background:none;border:none;font-family:inherit}
-  #tutAdvisor .adv-x:hover{color:#fff}`;
+  #tutAdvisor .adv-x:hover{color:#fff}
+  /* ★ READINESS PANEL — docked to the right edge; mirrors #tutAdvisor's card language */
+  #tutReady{position:fixed;right:12px;top:104px;z-index:8500;width:290px;max-width:80vw;max-height:70vh;overflow-y:auto;background:linear-gradient(268deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-right:3px solid var(--res,#c89bff);border-radius:6px;padding:9px 12px 11px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none}
+  #tutReady.show{display:block}
+  #tutReady .tr-hdr{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2.5px;color:var(--res,#c89bff);opacity:.95;margin-bottom:6px}
+  #tutReady .tr-x{background:none;border:none;color:#7f93ad;font-size:15px;line-height:1;cursor:pointer;font-family:inherit}
+  #tutReady .tr-x:hover{color:#fff}
+  #tutReady .tr-sec-h{font-size:9px;letter-spacing:2px;color:#8fb0d4;margin:8px 0 3px}
+  #tutReady .tr-sec-h:first-child{margin-top:0}
+  #tutReady .tr-sec-h.opt{color:#6a7a8a}
+  #tutReady .tr-scale{font-size:11px;line-height:1.4;color:#c8d6e6}
+  #tutReady .tr-gap{font-size:10.5px;line-height:1.4;margin-bottom:4px;padding-left:2px}
+  #tutReady .tr-gap.high{color:#ff9a7a}
+  #tutReady .tr-gap.med{color:#e8d68a}
+  #tutReady .tr-ok{font-size:11px;color:#7cffb0}
+  #tutReady .tr-chk{font-size:10.5px;line-height:1.55}
+  #tutReady .tr-chk.ok{color:#8fd8a8}
+  #tutReady .tr-chk.no{color:#ff9a7a}
+  #tutReadyTab{position:fixed;right:0;top:104px;z-index:8500;display:none;background:rgba(10,16,28,.9);border:1px solid rgba(120,160,220,.4);border-right:none;border-radius:6px 0 0 6px;color:var(--res,#c89bff);font-size:14px;padding:8px 6px;cursor:pointer}
+  #tutReadyTab.show{display:block}
+  #tutDiagModal .modal .row{padding:8px 0}`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
   // ============================================================================
@@ -8476,6 +8502,61 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     STAB_LOW:          35,    // effective stability below this is dangerous
     STAB_TREND:        -5,    // a stability drop of this much over the window (while still < 55) also counts as slipping
   };
+
+  // ============================================================================
+  // ★ READINESS SYSTEM — a data-driven catalog of gaps the game can actually SEE, weighed into
+  // a score + a sorted gap list every ~1s during PREP. Each reason only fires on a condition it
+  // can verify against real G/it state — never a global "are you going to win" oracle. Wording is
+  // a first pass in a warm, direct coaching voice — the designer will tune it.
+  // ============================================================================
+  function tutAnyDone(pred) { for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (pred(b)) return true; } return false; }
+  function tutAnyUnit(pred) { for (const u of G.units) { if (pred(u)) return true; } return false; }
+  function tutBestCeil() {   // lowest (= highest-reaching) ceil among everything you can field — 1 means "nothing reaches past the ground"
+    let c = 1;
+    for (const u of G.units) { if (!canIntercept(u.d)) continue; const cc = defaultCeil(u.d); if (cc < c) c = cc; }
+    for (const b of G.buildings) { if (b.done === false || b.captured) continue; const d = b.d; if (!d || !d.weapon) continue; const cc = d.ceil != null ? d.ceil : .8; if (cc < c) c = cc; }
+    return c;
+  }
+  function tutCityHasDefense(ct) {   // any DEF building or ground unit within ~one screen-width of the city
+    const R = 480;
+    for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (Math.abs(b.x - ct.x) > R) continue; if (b.d && (b.d.cat === 'DEF' || b.key === 'bunker')) return true; }
+    for (const u of G.units) { if (!u.d || u.d.domain !== 'ground') continue; if (Math.abs(u.x - ct.x) <= R) return true; }
+    return false;
+  }
+  function tutWaterFrac() { let n = 0, tot = 0; for (let x = 0; x < WORLD_W; x += 120) { tot++; if (elevAt(x) < SEA_E) n++; } return tot ? n / tot : 0; }
+  function tutPrepFrac() { const dur = (G.stats && G.stats.prepDuration) || 200; return dur > 0 ? 1 - (G.prepTimer / dur) : 0; }   // 0 at the start of prep, 1 at re-entry — gates reasons that shouldn't nag in the first seconds
+  const READY_REASONS = [
+    { id: 'noArmy', sev: 'high', why: 'You have no army at all. When the fleet lands, nothing will be standing between it and your cities.', fix: 'Queue some Infantry, AA or a tank from the PROD tab — even a small force buys you time.',
+      check: (G, it) => G.units.length === 0 },
+    { id: 'underMobilized', sev: 'med', why: 'Your army is well under its cap — you\'re leaving fielded strength on the table while the clock runs.', fix: 'Keep queuing units. Check the army-cap weight budget (STATS) if you\'re not sure how much room you have left.',
+      check: (G, it) => G.units.length > 0 && combatWeight() < armyCap() * 0.35 && tutPrepFrac() > 0.4 },
+    { id: 'noAA', sev: 'high', why: 'You have nothing that can shoot at the sky. This fleet brings real air pressure, and it will fly right over your head.', fix: 'Build AA "Hailstorm" or SAM batteries — either the unit or the DEF-tab building works.',
+      check: (G, it) => (it.bombard > 0 || it.orbital > 0 || it.buster > 0 || it.skyfall > 0) && !tutAnyUnit(u => u.d && u.d.noGround) && !tutAnyDone(b => b.d && b.d.noGround) },
+    { id: 'noHighReach', sev: 'high', why: 'Nothing you own reaches the stratosphere, let alone orbit. Anything that sits up high is untouchable until it decides to come down.', fix: 'SAMs and AA only reach the mesosphere — you need aircraft, railguns or orbital weapons to touch anything higher.',
+      check: (G, it) => (it.bombard > 0 || it.orbital > 0) && tutBestCeil() > 0.62 },
+    { id: 'noInterceptors', sev: 'high', why: 'This fleet is bringing a heavy bunker-buster barrage and you have no dedicated interceptors to thin it out.', fix: 'Build an Anti-Missile Interceptor (DEF tab) — it triages busters and tungsten rods out of a saturation strike.',
+      check: (G, it) => (it.buster || 0) >= 20 && !tutAnyDone(b => b.d && b.d.ami) },
+    { id: 'noCityDefLanding', sev: 'high', why: 'The fleet plans to LAND troops, and at least one of your cities has nothing nearby to meet them.', fix: 'Garrison your cities — a Bunker or a couple of dug-in units near each one goes a long way.',
+      check: (G, it) => (it.skyfall > 0 || it.flank > 0 || (it.ground || 0) > 0) && G.cities.some(ct => !ct.held && !tutCityHasDefense(ct)) },
+    { id: 'capitalUndefended', sev: 'high', why: 'This intent is aiming for your CAPITAL specifically, and it\'s currently undefended.', fix: 'Your capital is the priority target — put a Bunker and some AA on it before anything else.',
+      check: (G, it) => !!it.capital && (() => { const cap = G.cities.find(c => c.capital); return !!cap && !cap.held && !tutCityHasDefense(cap); })() },
+    { id: 'cityZeroDefenders', sev: 'med', why: 'At least one city has literally nobody nearby to defend it, regardless of what the fleet is planning.', fix: 'Even one dug-in squad or a cheap Bunker per city is enough to not be an open door.',
+      check: (G, it) => tutPrepFrac() > 0.3 && G.cities.some(ct => !ct.held && !tutCityHasDefense(ct)) },
+    { id: 'noProd', sev: 'med', why: 'You have no production building standing yet — no way to field more than what you\'ve hand-placed.', fix: 'A Factory or Barracks (PROD tab) turns your economy into a standing army over time.',
+      check: (G, it) => tutPrepFrac() > 0.5 && !tutAnyDone(b => b.d && (b.d.cat === 'PROD' || b.key === 'combine')) },
+    { id: 'richUnarmed', sev: 'med', why: 'You\'re sitting on a big IC reserve and almost nothing to show for it in units.', fix: 'Units cost no influence — spend that reserve on an army, it\'s always allowed.',
+      check: (G, it) => G.ic > Math.max(300, (G.icR || 0) * 40) && combatWeight() < armyCap() * 0.2 },
+    { id: 'lowStabCap', sev: 'med', why: 'Your stability CEILING is low — you\'ll have little room to absorb the shocks of strikes and losses once the fighting starts.', fix: 'Comms Towers and Propaganda Bureaus (ECON tab) raise your stability cap; build at least one of each.',
+      check: (G, it) => tutPrepFrac() > 0.4 && (G.stabCap || 0) < 70 && !tutAnyDone(b => b.key === 'comms' || b.key === 'propaganda') },
+    { id: 'lowManpower', sev: 'med', why: 'Manpower is running low, which caps how much more army you can field.', fix: 'Build Housing Blocks (ECON tab) — or lean on what doesn\'t need bodies: planes, drones, buildings.',
+      check: (G, it) => tutPrepFrac() > 0.4 && G.mp < 40 },
+    { id: 'hoardingInf', sev: 'med', why: 'You\'re banking a large influence reserve and not researching anything with it.', fix: 'Open Research and start something — or a couple of Labs first if it\'s crawling.',
+      check: (G, it) => tutPrepFrac() > 0.4 && G.inf > 400 && !G.research && !(G.resQueue && G.resQueue.length) },
+    { id: 'unclaimedNodes', sev: 'med', why: 'There are resource deposits sitting unclaimed on the map — free income you\'re not collecting.', fix: 'Drop Extractors (ECON tab) on the glowing nodes.',
+      check: (G, it) => tutPrepFrac() > 0.55 && (G.nodes || []).some(n => !n.used) && !tutAnyDone(b => b.key === 'extractor') },
+    { id: 'noNavy', sev: 'med', why: 'This is a water-heavy map and you have nothing that floats.', fix: 'A Shipyard (PROD tab, needs water) opens up naval units — optional, but the sea is wide open right now.',
+      check: (G, it) => tutPrepFrac() > 0.5 && tutWaterFrac() > 0.12 && !tutAnyUnit(u => u.d && u.d.domain === 'naval') },
+  ];
 
   // ---- ORIENTATION: the phase-0 spotlight click-through (first-ever game / replay) ----
   const ORIENT = [
@@ -8581,6 +8662,134 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   function showTip(id, html) { const n = advNode(); n.querySelector('.adv-b').innerHTML = html; n.classList.add('show'); }
   function hideTip() { if (advEl) advEl.classList.remove('show'); }
 
+  // ============================================================================
+  // ★ READINESS PANEL — a docked right-edge corner card, mirroring #tutAdvisor's pattern but for
+  // the always-on gap readout (ENEMY SCALE / GAPS / CHECKLIST). Independent of hand-holding —
+  // gated purely by G.tut.readyPanels — and only meaningful during PREP.
+  // ============================================================================
+  function tutIntentBlurb(it) {
+    const fleetMax = Math.round(90 * (G.diff || 1) * (it.fleetMul || 1));
+    const bits = [];
+    if (it.glass) bits.push('NO LANDING — pure orbital glassing');
+    else if (it.capital) bits.push('a concentrated drop on your CAPITAL');
+    else if ((it.skyfall || 0) > 0 || (it.flank || 0) > 0) bits.push('mass skyfall + ground landings');
+    else bits.push('a light probe');
+    if ((it.bombard || 0) > 0 || (it.orbital || 0) > 0) bits.push('heavy orbital bombardment');
+    if ((it.buster || 0) >= 20) bits.push('bunker-buster barrage');
+    return `${it.label} — ~${fleetMax.toLocaleString()} hostiles · ${bits.join(' · ')}`;
+  }
+  let readyEl = null, readyTabEl = null;
+  function tutReadyNode() {
+    if (readyEl) return readyEl;
+    readyEl = document.createElement('div'); readyEl.id = 'tutReady';
+    readyEl.innerHTML = '<div class="tr-hdr"><span>★ READINESS</span><button class="tr-x" type="button" title="hide">×</button></div><div class="tr-body"></div>';
+    readyEl.querySelector('.tr-x').addEventListener('click', () => { try { localStorage.setItem('tm_readyPanel', 'hidden'); } catch (e) {} readyEl.classList.remove('show'); tutShowReadyTab(); });
+    document.body.appendChild(readyEl);
+    return readyEl;
+  }
+  function tutShowReadyTab() {
+    if (!readyTabEl) {
+      readyTabEl = document.createElement('button'); readyTabEl.id = 'tutReadyTab'; readyTabEl.type = 'button'; readyTabEl.textContent = '★'; readyTabEl.title = 'Show the readiness panel';
+      readyTabEl.addEventListener('click', () => { try { localStorage.setItem('tm_readyPanel', 'shown'); } catch (e) {} readyTabEl.classList.remove('show'); tutReadyNode().classList.add('show'); renderReadyPanel(); });
+      document.body.appendChild(readyTabEl);
+    }
+    readyTabEl.classList.add('show');
+  }
+  function renderReadyPanel() {
+    if (!G || !G.tut || !G.tut.readyPanels) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); return; }
+    if (G.phase !== 'prep') { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); return; }
+    let hidden = false; try { hidden = localStorage.getItem('tm_readyPanel') === 'hidden'; } catch (e) {}
+    const el = tutReadyNode();
+    if (hidden) { el.classList.remove('show'); tutShowReadyTab(); return; }
+    if (readyTabEl) readyTabEl.classList.remove('show');
+    el.classList.add('show');
+    const it = curIntent(), R = G.readiness || { score: 1, gaps: [] };
+    const gapsHtml = R.gaps.length
+      ? R.gaps.slice(0, 4).map(g => `<div class="tr-gap ${g.sev}">${g.sev === 'high' ? '⚠' : '·'} ${g.why}</div>`).join('')
+      : '<div class="tr-ok">✓ READY — no gaps I can see right now.</div>';
+    const need = [
+      ['Power / income', tutAnyDone(b => b.d && b.d.cat === 'ECON')],
+      ['Production', tutAnyDone(b => b.d && (b.d.cat === 'PROD' || b.key === 'combine'))],
+      ['An army', G.units.length > 0],
+      ['Anti-air', tutAnyUnit(u => u.d && u.d.noGround) || tutAnyDone(b => b.d && b.d.noGround)],
+      ['Ground defense at cities', G.cities.every(ct => ct.held || tutCityHasDefense(ct))],
+    ];
+    if ((it.buster || 0) >= 20) need.push(['Interceptors', tutAnyDone(b => b.d && b.d.ami)]);
+    const opt = [
+      ['Research', !!G.research || !!(G.resQueue && G.resQueue.length) || !!(G.stats && G.stats.researched && G.stats.researched.length)],
+      ['Strikes ready', typeof hasSilo === 'function' && hasSilo()],
+      ['Navy', tutAnyUnit(u => u.d && u.d.domain === 'naval')],
+      ['Space', tutAnyUnit(u => u.d && u.d.domain === 'space')],
+    ];
+    const line = (l, ok) => `<div class="tr-chk ${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${l}</div>`;
+    el.querySelector('.tr-body').innerHTML =
+      `<div class="tr-sec-h">ENEMY SCALE</div><div class="tr-scale">${tutIntentBlurb(it)}</div>` +
+      `<div class="tr-sec-h">GAPS</div>${gapsHtml}` +
+      `<div class="tr-sec-h">CHECKLIST</div><div class="tr-needed">${need.map(([l, ok]) => line(l, ok)).join('')}</div>` +
+      `<div class="tr-sec-h opt">OPTIONAL</div><div class="tr-opt">${opt.map(([l, ok]) => line(l, ok)).join('')}</div>`;
+  }
+
+  // ---- T-20s DIAGNOSIS — auto-pause + a 4-option modal when a serious gap survives to re-entry ----
+  function tutDiagActionsHtml() {
+    return '<div class="row"><label>Continue <span style="opacity:.55;font-size:10px">— go in as you are</span></label><button class="pill" type="button" id="tdContinue">CONTINUE</button></div>'
+      + '<div class="row"><label>+150 seconds <span style="opacity:.55;font-size:10px">— buy more prep time</span></label><button class="pill" type="button" id="td150">+150 SECONDS</button></div>'
+      + '<div class="row"><label>Restart <span style="opacity:.55;font-size:10px">— same settings, a fresh map</span></label><button class="pill" type="button" id="tdRestart">RESTART</button></div>'
+      + '<div class="row" style="border:none"><label>Emergency units <span style="opacity:.55;font-size:10px">— a small mixed defense pack, on us</span></label><button class="pill primary" type="button" id="tdEmergency">EMERGENCY UNITS</button></div>';
+  }
+  function tutCloseDiagnosis() { closeModal('tutDiagModal'); if (G && G._evtAutoPause) { G.paused = false; G._evtAutoPause = false; } }
+  function tutEmergencyUnits() {
+    if (!G || typeof spawnUnit !== 'function' || typeof allyLandingX !== 'function') return;
+    const pack = ['inf', 'inf', 'inf', 'inf', 'inf', 'inf', 'aa', 'aa', 'sam', 'sam', 'tank'];
+    const base = allyLandingX();
+    pack.forEach((k, i) => {
+      const dx = Math.max(80, Math.min(WORLD_W - 80, base + (i - (pack.length - 1) / 2) * 60));
+      spawnUnit(k, dx); const u = G.units[G.units.length - 1];
+      if (u) { u.ally = true; if (u.d.domain === 'ground') { u.x = dx; u.y = groundY(dx) - u.d.s; } }
+    });
+    if (G.ach) G.ach.altered = true;
+    const gy = groundY(base);
+    if (typeof boom === 'function') boom(base, gy - 6, 6); if (typeof shake === 'function') shake(4);
+    if (typeof floatText === 'function') floatText(base, gy - 46, '⚑ EMERGENCY REINFORCEMENTS ARRIVE', '#7fc4ff');
+    if (typeof toast === 'function') toast('⚑ Emergency units deployed near your lines.');
+  }
+  function tutWireDiagActions() {
+    const c = document.getElementById('tdContinue'); if (c) c.onclick = () => tutCloseDiagnosis();
+    const b150 = document.getElementById('td150'); if (b150) b150.onclick = () => { if (G) G.prepTimer += 150; if (G && G.ach) G.ach.altered = true; if (typeof toast === 'function') toast('+150s — the countdown just bought you breathing room.'); tutCloseDiagnosis(); };
+    const rs = document.getElementById('tdRestart'); if (rs) rs.onclick = () => { closeModal('tutDiagModal'); if (typeof pendingDiff !== 'undefined' && typeof newGame === 'function') { newGame(pendingDiff); if (window.startTutorial) window.startTutorial(TUT); } };
+    const em = document.getElementById('tdEmergency'); if (em) em.onclick = () => { tutEmergencyUnits(); tutCloseDiagnosis(); };
+  }
+  function tutOpenDiagnosis(gaps) {
+    if (!G || G.over) return;
+    G.paused = true; G._evtAutoPause = true;
+    const top = gaps.slice(0, 3);
+    const body = document.getElementById('tutDiagGaps');
+    if (body) body.innerHTML = top.length
+      ? top.map(g => `<div class="tr-gap ${g.sev}"><b>${g.sev === 'high' ? '⚠' : '·'} ${g.why}</b><br><span style="opacity:.8">${g.fix}</span></div>`).join('')
+      : '<div class="tr-ok">Nothing glaring — you might just be cutting it close on the numbers.</div>';
+    const acts = document.getElementById('tutDiagActions'); if (acts) acts.innerHTML = tutDiagActionsHtml();
+    tutWireDiagActions();
+    if (typeof musDuck === 'function') musDuck();
+    openModal('tutDiagModal');
+  }
+  // recomputes the readiness score + gap list ~1/s during PREP (called from tutAdvTick's G.advT accumulator)
+  function tutReadyTick() {
+    if (!G || G.phase !== 'prep') return;
+    const T = G.tut, it = curIntent();
+    let score = 0, wsum = 0; const gaps = [];
+    for (const r of READY_REASONS) {
+      const w = r.sev === 'high' ? 2 : 1; wsum += w;
+      let bad = false; try { bad = !!r.check(G, it); } catch (e) {}
+      if (bad) gaps.push(r); else score += w;
+    }
+    gaps.sort((a, b) => (a.sev === 'high' ? 0 : 1) - (b.sev === 'high' ? 0 : 1));
+    G.readiness = { score: wsum ? score / wsum : 1, gaps };
+    if (T.readyPanels) renderReadyPanel();
+    if (T.diagnosis && !T.readyShown && G.prepTimer <= 20) {
+      T.readyShown = true;
+      if (gaps.some(g => g.sev === 'high') || G.readiness.score < 0.5) tutOpenDiagnosis(gaps);
+    }
+  }
+
   // ---- PHASE TRANSITIONS ----
   function enterIndustry() {
     if (!G || !G.tut) return;
@@ -8628,7 +8837,12 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
 
   // ---- THE ~1/s ADVISOR + MILESTONE TICK (called from updateGame via the G.advT accumulator) ----
   window.tutAdvTick = function (dt) {
-    const T = G && G.tut; if (!T || T.off) return;
+    const T = G && G.tut; if (!T) return;
+    // ★ READINESS SYSTEM — independent of hand-holding (readyPanels/diagnosis are separate toggles
+    // from handHold; a Streamlined/Oversight run has readyPanels on with T.off true)
+    if (T.readyPanels || T.diagnosis) { try { tutReadyTick(); } catch (e) {} }
+    else if (readyEl || readyTabEl) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); }
+    if (T.off) return;   // the hand-held spotlight/milestone track below only runs when handHold is on
     // trailing IC + stability trends
     T.icHist = T.icHist || []; T.stabHist = T.stabHist || [];
     T.icHist.push(G.ic); if (T.icHist.length > TUNE.TREND_N) T.icHist.shift();
@@ -8666,7 +8880,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   };
 
   // clear any tutorial overlay state on a fresh game (called from newGame)
-  window.tutClear = function () { teardown(); clearGrey(); hideTip(); };
+  window.tutClear = function () { teardown(); clearGrey(); hideTip(); if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); closeModal('tutDiagModal'); };
 
   // orientation entry — the ONLY public start; reads the TUT toggle set (mode presets OR standalone match
   // options — see loadTut/TUT_MODES above), copies them onto G.tut for the rest of the sim to read, and
@@ -8682,6 +8896,9 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       G.tut.phase = 'orient';
     }
     if (G && G.tut && G.tut.hideUnimportant && typeof curBcat !== 'undefined') { curBcat = 'ECON'; if (typeof buildBuildBar === 'function') buildBuildBar(); }
+    // kick the readiness panel immediately — the match STARTS paused (read & plan first), so without this
+    // nudge a readPanels-on run would show nothing until the player presses Space and the sim tick reaches it
+    if (G && G.tut && (G.tut.readyPanels || G.tut.diagnosis)) { try { tutReadyTick(); } catch (e) {} }
     if (!G || !G.tut || G.tut.off || ov) return;   // no hand-hold requested (or already showing something) — nothing to spotlight
     lock('#btnRes'); lock('#btnStrike');
     openSpotlight(ORIENT, { onComplete: enterIndustry, onSkip: skipAll });

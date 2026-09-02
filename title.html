@@ -680,7 +680,10 @@
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
     <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣</div>
     <div class="hbtn has-tip" id="btnPause" data-tip="Pause / resume (or press SPACE)." onclick="togglePause()">❚❚</div>
-    <div class="hbtn sbtn" data-spd="0.5">½x</div><div class="hbtn sbtn act" data-spd="1">1x</div><div class="hbtn sbtn" data-spd="2">2x</div><div class="hbtn sbtn" data-spd="3">3x</div>
+    <span id="speedBtns" style="display:contents"><div class="hbtn sbtn" data-spd="0.5">½x</div><div class="hbtn sbtn act" data-spd="1">1x</div><div class="hbtn sbtn" data-spd="2">2x</div><div class="hbtn sbtn" data-spd="3">3x</div></span>
+    <span id="stepBtns" style="display:none"><div class="hbtn step" data-step="1">+1s</div><div class="hbtn step" data-step="3">+3s</div><div class="hbtn step" data-step="5">+5s</div><div class="hbtn step" data-step="10">+10s</div></span>
+    <div class="hbtn has-tip" id="btnTurnMode" data-tip="TURN MODE — freezes real time; advance the sim yourself using the step buttons instead of a running clock. No time pressure — build & fight at your own pace." onclick="toggleTurnMode()">⏱ TURN</div>
+    <span id="turnModeBadge" class="has-tip" data-tip="TURN MODE is ON — the clock only moves when YOU press a step button." style="display:none;font-size:9px;letter-spacing:1px;color:#ffe08a;padding:0 4px;align-self:center">⏱ TURN MODE</span>
     <div class="objwrap"><div class="big" id="objBig">—</div><div class="sub" id="objSub"></div></div>
   </div>
   <div class="ghint" id="ghint">PREP PHASE — build Power/Housing, then Factories/Airbases/Shipyards. Scroll with arrows / screen edges; pan the TALL sky with W/S, ↑/↓ or Shift+wheel; ZOOM with the mouse wheel or the +/− buttons. SPACE = pause.</div>
@@ -3149,7 +3152,7 @@ function newGame(diff) {
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500, extinction: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
-    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false,   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
+    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false, turnMode: loadTurnMode(),   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
     // AFTER-ACTION "every stat ever" TRACKING — additive, bounded (heat grid fixed-size; the others are naturally bounded by content), read only by the end screen
@@ -3163,7 +3166,7 @@ function newGame(diff) {
 
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
-      couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game)
+      couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false, altered: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game) — `altered` flags TURN MODE use (read by Agent A's notch)
   };
   G.stats.intent = intent; G.stats.difficulty = G.diffName; G.stats.prepDuration = G.prepTimer;   // AFTER-ACTION — campaign setup, recorded once at the start (prepTimer counts down from here, so grab it now while it's still the full duration)
   if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
@@ -3188,6 +3191,7 @@ function newGame(diff) {
   seedInheritedNation();   // INHERITED NATION — every city opens with a modest standing base (stockpiles + factories + a few silos)
   recalcBuildings(); buildBuildBar();
   initAmbient();   // 🚗✈🚤 cosmetic ambient life pool — see AMBIENT LIFE
+  applyTurnModeUI();   // TURN MODE — sync the speed/step button clusters + HUD badge to whatever was persisted, and (if on) force-pause
 }
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
 // snap to flat land like flatLand(), but keep at least `gap` from every already-placed city centre so
@@ -6268,7 +6272,38 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
   G.sel = null; refreshSel(); buildBuildBar && buildBuildBar();
 }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
-function togglePause() { if (!G || mode !== 'game' || G.over) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too
+function togglePause() { if (!G || mode !== 'game' || G.over) return; if (G.turnMode) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too (TURN MODE forces & holds the pause — see toggleTurnMode)
+/* ===== TURN MODE — trade the real-time clock for player-driven steps (persisted, default off) ===== */
+function loadTurnMode() { try { return localStorage.getItem('tm_turnMode') === '1'; } catch (e) { return false; } }
+function saveTurnMode(v) { try { localStorage.setItem('tm_turnMode', v ? '1' : '0'); } catch (e) {} }
+function applyTurnModeUI() {   // syncs the speed/step button clusters + HUD badge + button highlight to G.turnMode; called on newGame and on toggle
+  const on = !!(G && G.turnMode);
+  const sp = document.getElementById('speedBtns'), st = document.getElementById('stepBtns'), badge = document.getElementById('turnModeBadge'), btn = document.getElementById('btnTurnMode');
+  if (sp) sp.style.display = on ? 'none' : 'contents';
+  if (st) st.style.display = on ? 'contents' : 'none';
+  if (badge) badge.style.display = on ? '' : 'none';
+  if (btn) btn.classList.toggle('on', on);
+  if (on && G) G.paused = true;
+}
+function toggleTurnMode() {
+  if (!G || mode !== 'game' || G.over) return;
+  G.turnMode = !G.turnMode; saveTurnMode(G.turnMode);
+  if (G.turnMode) { G.paused = true; toast('⏱ TURN MODE ON — real time is frozen; use the step buttons to advance'); } else { toast('⏱ TURN MODE OFF — real time resumed (press SPACE / ❚❚ to pause as normal)'); }
+  applyTurnModeUI();
+}
+function stepGame(sec) {   // advance the sim by EXACTLY `sec` game-seconds in fixed 1/30s increments, then stay paused
+  if (!G || mode !== 'game' || G.over || !G.turnMode) return;
+  const STEP = 1 / 30, iters = Math.round(sec * 30);
+  let advanced = false;
+  for (let i = 0; i < iters; i++) {
+    if (G.over || G._eventOpen) break;   // an event popup mid-step demands the player's attention before the sim keeps moving
+    try { updateGame(STEP); } catch (e) { logErr(e); }
+    advanced = true;
+    if (G.over || G._eventOpen) break;
+  }
+  if (advanced && G.ach && !G.ach.altered) G.ach.altered = true;   // ACHIEVEMENT NOTCH — first step taken this round (Agent A renders the notch)
+  G.paused = true;   // stays paused — the continuously-running rAF loop (frame()) repaints on its own very next tick, no manual render call needed
+}
 // click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
 function designateAt(wx, wy) {
   if (!manualActive() && !G.fireControl) return false;
@@ -8030,6 +8065,7 @@ document.getElementById('lmFilePrep').addEventListener('change', e => { addLocal
 document.getElementById('lmFileCombat').addEventListener('change', e => { addLocalFiles('combat', e.target.files); e.target.value = ''; });
 document.getElementById('endReturn').addEventListener('click', backToTitle);
 document.querySelectorAll('.sbtn').forEach(b => b.addEventListener('click', () => { if (!G) return; G.speed = +b.dataset.spd; if (G.ach) G.ach.speedChg = (G.ach.speedChg || 0) + 1; document.querySelectorAll('.sbtn').forEach(x => x.classList.toggle('act', x === b)); }));
+document.querySelectorAll('.step').forEach(b => b.addEventListener('click', () => stepGame(+b.dataset.step)));   // TURN MODE — [+1s]/[+3s]/[+5s]/[+10s]
 
 // build bar
 let curBcat = 'ECON';
@@ -8371,7 +8407,7 @@ addEventListener('keydown', e => {
     else if (kk === 'f') { toggleFireControl(); }
     else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
   }
-  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);
 // ── LIVE RELOAD (dev convenience) ──────────────────────────────────────────────

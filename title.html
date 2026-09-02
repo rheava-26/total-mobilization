@@ -8087,7 +8087,13 @@ function openStats() {   // universal stat readout — every current modifier in
   mdl.innerHTML = h; mdl.classList.add('show');
 }
 function buildBuildBar() {
-  const cats = ['ECON', 'PROD', 'DEF', 'TECH', 'INFRA', 'SPEC']; const tabs = document.getElementById('bbtabs'); tabs.innerHTML = '';
+  const ALL_CATS = ['ECON', 'PROD', 'DEF', 'TECH', 'INFRA', 'SPEC'];
+  // PROGRESSIVE REVEAL (hideUnimportant) — only categories G.tut.revealed has unlocked so far show up;
+  // everything else stays off the shelf entirely (see tutRevealTick, which grants them on real milestones).
+  const revealing = !!(G && G.tut && G.tut.hideUnimportant);
+  const cats = revealing ? ALL_CATS.filter(c => G.tut.revealed && G.tut.revealed[c]) : ALL_CATS;
+  if (revealing && cats.indexOf(curBcat) < 0) curBcat = cats[0] || 'ECON';
+  const tabs = document.getElementById('bbtabs'); tabs.innerHTML = '';
   for (const cat of cats) { const t = document.createElement('div'); t.className = 'bbtab' + (cat === curBcat ? ' sel' : ''); t.textContent = cat; t.onclick = () => { curBcat = cat; buildBuildBar(); }; tabs.appendChild(t); }
   const dl = (G && G.dig) | 0, digLabels = ['⛏ DIG: OFF', '⛏ DIG: SHALLOW', '⛏ DIG: DEEP'];
   const dig = document.createElement('div'); dig.className = 'bbtab' + (dl ? ' sel' : ''); dig.textContent = digLabels[dl]; dig.title = 'Underground build mode — cycle OFF → SHALLOW → DEEP. A deeper layer is safer but costs more, and different depths don\'t collide.'; dig.style.marginLeft = '10px'; dig.style.color = dl ? '#caa030' : ''; dig.onclick = () => { if (G) { G.dig = ((G.dig | 0) + 1) % 3; G.terrainMode = 0; G.place = null; toast(['surface build mode', '⛏ SHALLOW dig — buildings bury one layer down', '⛏ DEEP dig — a second layer below the first'][G.dig]); buildBuildBar(); } }; tabs.appendChild(dig);
@@ -8470,6 +8476,8 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   /* GREYING — the anti-overwhelm lever: layers not yet earned read as dimmed & locked */
   .tut-locked{opacity:.42;filter:grayscale(.55);position:relative}
   .tut-locked::after{content:'🔒';position:absolute;top:-7px;right:-3px;font-size:9px;opacity:.85;pointer-events:none;text-shadow:0 0 3px #000}
+  /* PROGRESSIVE REVEAL (hideUnimportant) — off the shelf entirely, not just greyed */
+  .tut-hidden{display:none!important}
   /* ADVISOR — the adaptive corner coach; distinct from the spotlight card */
   #tutAdvisor{position:fixed;left:12px;top:104px;z-index:8500;width:302px;max-width:82vw;background:linear-gradient(92deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-left:3px solid var(--term,#6dffb0);border-radius:6px;padding:9px 30px 10px 12px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;pointer-events:auto}
   #tutAdvisor.show{display:block}
@@ -8611,8 +8619,10 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   let idx = 0, ov = null, onKey = null, onResize = null, curSteps = null, curOpts = {}, doneTimer = null;
 
   // ---- GREYING helpers (idempotent; always safe to clear) ----
-  function lock(sel)   { const e = document.querySelector(sel); if (e) e.classList.add('tut-locked'); }
-  function unlock(sel) { const e = document.querySelector(sel); if (e) e.classList.remove('tut-locked'); }
+  // PROGRESSIVE REVEAL (hideUnimportant): lock() HIDES entirely instead of greying — a layer you haven't
+  // earned yet isn't just discouraged, it's off the shelf. Every other mode keeps the original grey+🔒 look.
+  function lock(sel)   { const e = document.querySelector(sel); if (!e) return; if (G && G.tut && G.tut.hideUnimportant) e.classList.add('tut-hidden'); else e.classList.add('tut-locked'); }
+  function unlock(sel) { const e = document.querySelector(sel); if (!e) return; e.classList.remove('tut-locked'); e.classList.remove('tut-hidden'); }
   function clearGrey() { unlock('#btnRes'); unlock('#btnStrike'); }
 
   // ---- SPOTLIGHT overlay (reused for orientation AND the one-off milestone beats) ----
@@ -8848,6 +8858,30 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     }
   }
 
+  // ---- PROGRESSIVE REVEAL (hideUnimportant) — the build bar starts ECON-only; each milestone below
+  // unlocks a layer via ANY route that satisfies it (power plants vs extractors vs comms, player's choice)
+  // and announces it with a diegetic toast. Independent of hand-holding — this runs any time
+  // G.tut.hideUnimportant is on, heavy/light/off alike. Idempotent: safe to call every ~1s.
+  function tutRevealTick() {
+    if (!G || !G.tut || !G.tut.hideUnimportant) return;
+    const T = G.tut; T.revealed = T.revealed || { ECON: true };
+    let changed = false;
+    const reveal = (cats, msg) => {
+      let any = false;
+      for (const c of cats) if (!T.revealed[c]) { T.revealed[c] = true; any = true; }
+      if (any) { changed = true; if (msg && typeof toast === 'function') toast(msg); }
+    };
+    const econN = tutCountB('powerplant') + tutCountB('housing') + tutCountB('comms') + tutCountB('propaganda') + tutCountB('extractor');
+    if (econN >= 2) reveal(['PROD', 'INFRA'], '🏭 Your industry is online — PRODUCTION available.');
+    if ((G.icR || 0) >= TUNE.BASELINE_ICR * 1.5) reveal(['DEF'], '🛡 Your economy can arm defenses — DEFENSE available.');
+    const researchReady = (G.icR || 0) >= (T.icR0 || TUNE.BASELINE_ICR) * TUNE.MILESTONE_IC_MULT && typeof econCount === 'function' && econCount() >= TUNE.MILESTONE_ECON_N;
+    if (researchReady) reveal(['TECH', 'SPEC'], '🔬 Stable footing — RESEARCH available.');
+    if (researchReady && !T.revealResFired) { T.revealResFired = true; unlock('#btnRes'); }
+    const strikesReady = (G.phase === 'prep' && G.prepTimer <= TUNE.STRIKE_PREP_S) || (typeof hasSilo === 'function' && hasSilo());
+    if (strikesReady && !T.revealStrikeFired) { T.revealStrikeFired = true; unlock('#btnStrike'); if (typeof toast === 'function') toast('☢ The unthinkable is available — STRIKES unlocked.'); }
+    if (changed && typeof buildBuildBar === 'function') buildBuildBar();
+  }
+
   // ---- PHASE TRANSITIONS ----
   function enterIndustry() {
     if (!G || !G.tut) return;
@@ -8900,6 +8934,8 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     // from handHold; a Streamlined/Oversight run has readyPanels on with T.off true)
     if (T.readyPanels || T.diagnosis) { try { tutReadyTick(); } catch (e) {} }
     else if (readyEl || readyTabEl) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); }
+    // PROGRESSIVE REVEAL — also independent of hand-holding (Streamlined is hideUnimportant with handHold off)
+    if (T.hideUnimportant) { try { tutRevealTick(); } catch (e) {} }
     if (T.off) return;   // the hand-held spotlight/milestone track below only runs when handHold is on
     // trailing IC + stability trends
     T.icHist = T.icHist || []; T.stabHist = T.stabHist || [];
@@ -8953,7 +8989,12 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       G.tut.hideUnimportant = !!T.hideUnimportant; G.tut.tips = !!T.tips; G.tut.babyFleet = !!T.babyFleet;
       G.tut.phase = 'orient';
     }
-    if (G && G.tut && G.tut.hideUnimportant && typeof curBcat !== 'undefined') { curBcat = 'ECON'; if (typeof buildBuildBar === 'function') buildBuildBar(); }
+    if (G && G.tut && G.tut.hideUnimportant) {
+      if (typeof curBcat !== 'undefined') curBcat = 'ECON';
+      lock('#btnRes'); lock('#btnStrike');   // hidden (not just greyed) — see lock()'s hideUnimportant branch
+      try { tutRevealTick(); } catch (e) {}   // starting econ buildings (capital's Power Plant + Housing) may already clear the PROD milestone — reflect that immediately
+      if (typeof buildBuildBar === 'function') buildBuildBar();
+    }
     // kick the readiness panel immediately — the match STARTS paused (read & plan first), so without this
     // nudge a readPanels-on run would show nothing until the player presses Space and the sim tick reaches it
     if (G && G.tut && (G.tut.readyPanels || G.tut.diagnosis)) { try { tutReadyTick(); } catch (e) {} }

@@ -44,6 +44,12 @@
   .modal-bg.show { display: flex; }
   .modal { width: 560px; max-width: 94vw; max-height: 90vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 22px; color: var(--paper); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
   .modal h2 { font-size: 18px; letter-spacing: 3px; color: #eaf2ff; margin-bottom: 4px; } .modal .hd { color: var(--term); font-size: 11px; letter-spacing: 2px; margin-bottom: 16px; }
+  .tut-mode-card { display: block; width: 100%; text-align: left; background: rgba(20,32,52,.7); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--paper); font-family: inherit; cursor: pointer; transition: .12s; }
+  .tut-mode-card:hover { background: rgba(40,60,90,.85); border-color: var(--res,#c89bff); }
+  .tut-mode-card.cur { border-color: var(--term,#6dffb0); box-shadow: 0 0 0 1px var(--term,#6dffb0) inset; }
+  .tut-mode-card .tmc-label { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; margin-bottom: 4px; }
+  .tut-mode-card .tmc-desc { font-size: 10.5px; line-height: 1.4; color: #a9bdd6; }
+  @media (max-width: 560px) { #tutModeGrid { grid-template-columns: 1fr !important; } }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px dashed rgba(150,190,240,.16); }
   .row label { font-size: 13px; letter-spacing: 1px; color: #c4d4e8; } .row .v { color: var(--ic); font-size: 13px; min-width: 46px; text-align: right; }
   input[type=range] { width: 220px; accent-color: var(--ic); }
@@ -590,8 +596,17 @@
   <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
   <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
   <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
+  <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>TUTORIAL &amp; GUIDANCE</b></div>
+  <div class="row"><label>Guidance Mode <span style="opacity:.55;font-size:10px">— how much hand-holding, help panels &amp; tips you get, in ANY match</span></label><button class="pill" onclick="closeModal('optsModal');openTutPrompt()">🎓 CHOOSE MODE</button></div>
   <div class="row"><label>Feedback &amp; Bug Reports <span style="opacity:.55;font-size:10px">— this game is in active development</span></label><button class="pill" onclick="openFeedback()">&#128172; SEND FEEDBACK</button></div>
   <div class="actions"><button class="pill" onclick="closeModal('optsModal')">CLOSE</button></div>
+</div></div>
+
+<div class="modal-bg" id="tutPromptModal"><div class="modal" style="max-width:660px">
+  <h2>WANT A TUTORIAL?</h2><div class="hd">// HOW INTENSIVE?</div>
+  <div id="tutModeGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0"></div>
+  <div class="row" style="border:none;padding:6px 0 0"><label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;opacity:.8"><input type="checkbox" id="tutNoPromptChk" style="width:15px;height:15px"> Don't show this again</label></div>
+  <div class="actions"><button class="pill" onclick="closeModal('tutPromptModal')">MAYBE LATER</button></div>
 </div></div>
 
 <div class="modal-bg" id="scenModal"><div class="modal">
@@ -831,7 +846,35 @@ let achUnlocked = {};
 function loadAchievements() { try { achUnlocked = JSON.parse(localStorage.getItem('tm_ach') || '{}'); } catch (e) { achUnlocked = {}; } }
 function unlockAchievement(id) { if (achUnlocked[id]) return; const a = ACHIEVEMENTS.find(x => x.id === id); achUnlocked[id] = Date.now(); try { localStorage.setItem('tm_ach', JSON.stringify(achUnlocked)); } catch (e) {} toast('🏆 ACHIEVEMENT UNLOCKED' + (a ? ' — ' + a.name : '')); try { SFX.build(); } catch (e) {} }
 function checkAchievements() { if (!G) return; for (const a of ACHIEVEMENTS) { if (!achUnlocked[a.id] && typeof a.test === 'function') { try { if (a.test(G)) unlockAchievement(a.id); } catch (e) {} } } }
-function openAchievements() { const body = document.getElementById('achBody'); if (body) { body.innerHTML = ACHIEVEMENTS.length ? ACHIEVEMENTS.map(a => { const got = !!achUnlocked[a.id]; return `<p style="opacity:${got ? 1 : .5}"><b>${got ? '🏆' : '🔒'} ${a.name}</b><br>${a.desc || ''}</p>`; }).join('') : '<p style="opacity:.7">No achievements defined yet — the framework is in place; medals will appear here as they\'re added.</p>'; } openModal('achModal'); }
+function openAchievements() { const body = document.getElementById('achBody'); if (body) { body.innerHTML = ACHIEVEMENTS.length ? ACHIEVEMENTS.map(a => { const rec = achUnlocked[a.id]; const got = !!rec; const altered = got && typeof rec === 'object' && rec.altered; return `<p style="opacity:${got ? 1 : .5}"><b>${got ? '🏆' : '🔒'} ${a.name}</b>${altered ? ' <span style="color:#8fb0d4;font-size:10px;letter-spacing:.5px" title="Earned with help — an assisted run">◇ assisted</span>' : ''}<br>${a.desc || ''}</p>`; }).join('') : '<p style="opacity:.7">No achievements defined yet — the framework is in place; medals will appear here as they\'re added.</p>'; } openModal('achModal'); }
+// ── TUTORIAL / ONBOARDING SETTINGS — persisted across matches (tm_tut), independent of the tutorial
+// engine further down. TUT holds the CURRENT toggle state; the six "modes" below are just named PRESETS
+// of the same toggles — every toggle also works standalone as a normal-match option (see Options modal).
+// { mode:0..6, handHold:'off'|'light'|'heavy', readyPanels, diagnosis, hideUnimportant, tips, babyFleet }
+const TUT_MODES = [
+  { id: 1, key: 'video', label: '📺 WATCH A VIDEO', desc: 'A narrated walkthrough of your first minutes. (Coming soon — for now this just drops you into a normal game with the readiness panel switched on.)',
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false } },
+  { id: 2, key: 'heavy', label: '🖐 HEAVILY GUIDED', desc: 'Every early step spelled out and verified as you do it, a readiness panel, live tips, and a scaled-down opening invasion so your first fight is survivable.',
+    preset: { handHold: 'heavy', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: true } },
+  { id: 3, key: 'guided', label: '🧭 GUIDED', desc: 'A short guided opening, then you\'re released on your own — with a readiness panel, a T-20s gap check before the fleet lands, and live tips.',
+    preset: { handHold: 'light', readyPanels: true, diagnosis: true, hideUnimportant: false, tips: true, babyFleet: false } },
+  { id: 4, key: 'stream', label: '📋 STREAMLINED', desc: 'No hand-holding — the build menu only shows what\'s relevant right now and reveals more as your base grows, plus a readiness panel and tips.',
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: true, tips: true, babyFleet: false } },
+  { id: 5, key: 'oversight', label: '👁 OVERSIGHT', desc: 'Nothing hidden, no hand-holding — just a readiness panel and live tips watching your back.',
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: false } },
+  { id: 6, key: 'none', label: '✕ NO THANKS', desc: 'Turns every one of the above off. You are on your own, Commander.',
+    preset: { handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false } },
+];
+const TUT_DEFAULT = { mode: 0, handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false };
+function loadTut() { let t = null; try { t = JSON.parse(localStorage.getItem('tm_tut') || 'null'); } catch (e) {} return Object.assign({}, TUT_DEFAULT, t || {}); }
+function saveTut() { try { localStorage.setItem('tm_tut', JSON.stringify(TUT)); } catch (e) {} }
+let TUT = loadTut();
+function applyTutMode(id) { const m = TUT_MODES.find(x => x.id === id); if (!m) return TUT; TUT = Object.assign({ mode: id }, m.preset); saveTut(); if (m.key === 'video' && typeof toast === 'function') toast('🎬 Video tutorial coming soon — dropping you in with the readiness panel on.'); return TUT; }
+function tutModeCardHtml(m) { return `<button type="button" class="tut-mode-card${TUT.mode === m.id ? ' cur' : ''}" data-mode="${m.id}"><div class="tmc-label">${m.label}</div><div class="tmc-desc">${m.desc}</div></button>`; }
+function renderTutModeGrid() { const grid = document.getElementById('tutModeGrid'); if (!grid) return; grid.innerHTML = TUT_MODES.map(tutModeCardHtml).join(''); grid.querySelectorAll('.tut-mode-card').forEach(btn => btn.onclick = () => { applyTutMode(+btn.dataset.mode); closeModal('tutPromptModal'); }); }
+function openTutPrompt() { renderTutModeGrid(); const chk = document.getElementById('tutNoPromptChk'); if (chk) { let sup = false; try { sup = !!localStorage.getItem('tm_noTutPrompt'); } catch (e) {} chk.checked = sup; chk.onchange = () => { try { if (chk.checked) localStorage.setItem('tm_noTutPrompt', '1'); else localStorage.removeItem('tm_noTutPrompt'); } catch (e) {} }; } openModal('tutPromptModal'); }
+// called once by the intro cinematic when it hands control back to the title screen (see the intro IIFE's finish())
+window.tutMaybePromptTitle = function () { let suppress = false; try { suppress = !!localStorage.getItem('tm_noTutPrompt'); } catch (e) {} if (suppress) return; if (typeof mode !== 'undefined' && mode !== 'title') return; openTutPrompt(); };
 // ── ENDURANCE PERSONAL BEST (Apocalypse / "glass" intent — ORBITAL ANNIHILATION) ──
 // glass has no fleet to destroy, so its objective is reframed as HOLD FOR [target]: survive
 // until the fleet exhausts its orbital ordnance — that's already the existing win condition
@@ -3162,7 +3205,9 @@ function newGame(diff) {
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
     firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state
     // PHASED ONBOARDING — inert by default (off:true → normal game does nothing); window.startTutorial flips it on. phase: orient→industry→doctrine→strikes→done
-    tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null }, advT: 0,   // firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
+    tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null,
+      handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, readyShown: false, revealed: { ECON: true }, prodFired: false, defFired: false },   // ONBOARDING toggles copied from TUT by startTutorial(); revealed tracks which build-bar tabs hideUnimportant has unlocked so far
+    advT: 0, readiness: { score: 1, gaps: [] },   // firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
@@ -3181,7 +3226,7 @@ function newGame(diff) {
 
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
-      couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false, altered: false },   // ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game) — `altered` flags TURN MODE use (read by Agent A's notch)
+      couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false, altered: false },   /* ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game); altered = this run used TURN MODE or onboarding assistance (+150s, emergency units, baby fleet…) — renders the ◇ assisted notch */
   };
   G.stats.intent = intent; G.stats.difficulty = G.diffName; G.stats.prepDuration = G.prepTimer;   // AFTER-ACTION — campaign setup, recorded once at the start (prepTimer counts down from here, so grab it now while it's still the full duration)
   if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
@@ -7558,9 +7603,9 @@ function banner(main, sub, dur) { const el = document.getElementById('alertBanne
 function hideBanner() { const el = document.getElementById('alertBanner'); if (el) { el.classList.remove('show'); clearTimeout(el._t); } }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } if (id === 'resModal') { const RC = window.__resCam; if (RC) { RC.pts.clear(); RC.drag = null; RC.pinch = null; RC.moved = false; RC.centered = false; } const d = document.getElementById('resDetail'); if (d) d.classList.remove('show'); const bd = document.getElementById('resBoard'); if (bd) bd.classList.remove('scan', 'grabbing'); clearTimeout(resHoverT); } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
-function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') { window.__forceTut = true; pendingDiff = 'recruit'; startDeploy(); } else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
+function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') openTutPrompt(); else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; if (pendingDiff === 'extinction' && !window.__extinctConfirmed) { openModal('extinctConfirm'); return; }   /* EXTINCTION is 30x — make the player say YES on purpose (I ACCEPT sets __extinctConfirmed then re-calls startDeploy) */ mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); const f = document.getElementById('footer'); f.style.opacity = 0; f.style.display = 'none'; newGame(pendingDiff); }   // display:none, not just opacity:0 — the footer's CHANGELOG/ACHIEVEMENTS links keep pointer-events:auto, so an invisible footer was still catching clicks mid-game
-function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); stopMenuTheme(); MUS.fails = 0; musPlay('prep', 2.2); let seen = true; try { seen = !!localStorage.getItem('tm_seenTut'); } catch (e) {} const forceTut = !!window.__forceTut; window.__forceTut = false; if (forceTut || !seen) { try { localStorage.setItem('tm_seenTut', '1'); } catch (e) {} setTimeout(() => { if (mode === 'game') startTutorial(); }, 650); }
+function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); stopMenuTheme(); MUS.fails = 0; musPlay('prep', 2.2); setTimeout(() => { if (mode === 'game') startTutorial(TUT); }, 650);   /* startTutorial reads TUT's toggles itself — a "no thanks" TUT is a safe no-op call */
   document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
 function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; playMenuTheme(); }
@@ -8623,10 +8668,21 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   // clear any tutorial overlay state on a fresh game (called from newGame)
   window.tutClear = function () { teardown(); clearGrey(); hideTip(); };
 
-  // orientation entry — the ONLY public start; flips the adaptive system on and greys the locked layers
-  window.startTutorial = function () {
-    if (ov) return;
-    if (G && G.tut) { G.tut.off = false; G.tut.phase = 'orient'; }
+  // orientation entry — the ONLY public start; reads the TUT toggle set (mode presets OR standalone match
+  // options — see loadTut/TUT_MODES above), copies them onto G.tut for the rest of the sim to read, and
+  // ONLY runs the hand-held spotlight when handHold is actually on. readyPanels/diagnosis/hideUnimportant/tips
+  // are independent of hand-holding and are read straight off G.tut by tutAdvTick every ~1s (see below).
+  window.startTutorial = function (tut) {
+    const T = tut || TUT || {};
+    if (G && G.tut) {
+      G.tut.handHold = T.handHold || 'off';
+      G.tut.off = (G.tut.handHold !== 'heavy' && G.tut.handHold !== 'light');
+      G.tut.readyPanels = !!T.readyPanels; G.tut.diagnosis = !!T.diagnosis;
+      G.tut.hideUnimportant = !!T.hideUnimportant; G.tut.tips = !!T.tips; G.tut.babyFleet = !!T.babyFleet;
+      G.tut.phase = 'orient';
+    }
+    if (G && G.tut && G.tut.hideUnimportant && typeof curBcat !== 'undefined') { curBcat = 'ECON'; if (typeof buildBuildBar === 'function') buildBuildBar(); }
+    if (!G || !G.tut || G.tut.off || ov) return;   // no hand-hold requested (or already showing something) — nothing to spotlight
     lock('#btnRes'); lock('#btnStrike');
     openSpotlight(ORIENT, { onComplete: enterIndustry, onSkip: skipAll });
   };
@@ -8740,6 +8796,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     setTimeout(() => {
       if (el.parentNode) el.parentNode.removeChild(el);
       const ui = document.getElementById('ui'); if (ui) ui.classList.remove('hidden');
+      if (window.tutMaybePromptTitle) window.tutMaybePromptTitle();   // ONBOARDING — "want a tutorial?" prompt, once the title screen is actually visible
     }, 480);
   }
 

@@ -4458,7 +4458,23 @@ const ESC = {
   // ── POPULATION CEILING ──────────────────────────────────────────────────────────────────
   POP_CEIL: 92,                // modest raise from 80 so an escalated wave has room to land (perf ceiling)
 };
-function curIntent() { return INTENT[G.intent] || INTENT.invasion; }
+function curIntent() {
+  const base = INTENT[G.intent] || INTENT.invasion;
+  if (!(G.tut && G.tut.babyFleet)) return base;
+  // BABY FLEET (tutorial mode 2, Heavily Guided) — a scaled COPY of the real intent, never a mutation of
+  // the shared INTENT table. Goes through the exact same spawn path as a normal match (doWave/doSkyfall/
+  // spawnSuper all just read whatever curIntent() hands them) — it's a real fight, just small & survivable.
+  if (G.tut._babyBase === base && G.tut._babyOut) return G.tut._babyOut;   // cache per underlying intent — this is called every frame during invasion
+  const out = Object.assign({}, base, {
+    fleetMul: base.fleetMul * 0.2,
+    supers: [],
+    bombard: 0, orbital: 0, buster: 0,
+    skyfall: Math.round((base.skyfall || 0) * 0.25),
+    flank: Math.round((base.flank || 0) * 0.25),
+  });
+  G.tut._babyBase = base; G.tut._babyOut = out;
+  return out;
+}
 // nudge a landing zone OUT of a city's inner footprint to its outskirts — the autodrones assault from the edges, they don't drop dead-centre on a city
 function avoidCityCenter(x, pad) { pad = pad == null ? 70 : pad; for (const ct of G.cities) { if (ct.hp <= 0) continue; const edge = ct.w * .5 + pad, d = x - ct.x; if (Math.abs(d) < edge) { x = ct.x + (d >= 0 ? 1 : -1) * edge; break; } } return Math.max(120, Math.min(WORLD_W - 120, x)); }
 function doSkyfall(it) {   // a GIANT mass-drop right after the opening bombardment + ground landings on the neglected flanks

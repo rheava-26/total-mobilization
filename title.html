@@ -5722,7 +5722,10 @@ function updUnits(dt) {
     // range, otherwise dropping it (no fresh scan) until its next scheduled cadence. See the LOD block above.
     const _lodScan = lodShouldScan(u.x, u.y, u._id, _lodEngBuckets);
     let tgt = null;
-    if (_lodScan) {
+    if (u.bgLeader && u.bgLeader.hp > 0) {   // BATTLEGROUPS — FOLLOWER shared brain: skip this unit's OWN acquisition scan entirely, reuse whatever the leader resolved THIS frame instead. The leader runs the unchanged branch below (same acquireEnemy/filters/ceiling any solo unit would use) — this is the ~20x AI-cost cut for a full group, see bgOnSpawn/battlegroupFollowMove near spawnUnit.
+      tgt = u.bgLeader._lodTgt || null;
+      u._lodTgt = tgt;
+    } else if (_lodScan) {
       if (canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF);   /* INTERCEPT PRIORITY, GATED BY AIR-CAPABILITY NOT THE OLD `pd` FLAG (v3.88.0) — ANY combat unit that can shoot at an airborne enemy at this position (same range/ceil/role-filter check as acquireEnemy below) breaks off to engage an in-reach incoming bunker-buster / tungsten-rod / lance / homing missile FIRST, not only as an idle fallback. During an invasion there is ALWAYS a regular enemy in reach, so a fallback-only pd line dogfights drones forever while the bombardment rains straight through it — the exact "why won't my defenses shoot the busters?" bug. Passing `aF` means a low-ceil ground unit only ever catches ordnance that's descended into ITS reach — the altitude puzzle is preserved, just no longer gated by an arbitrary flag. The claim/spread system in acquireIncoming keeps this from mobbing one shell. */
       if (!tgt) tgt = pickDesignated(u.x, u.y, rng, ceilF, aF) || acquireEnemy(u.x, u.y, rng, ceilF, aF);   // then a fire-control designated target this unit can reach, else auto-acquire an enemy as normal
       u._lodTgt = tgt;
@@ -5730,6 +5733,7 @@ function updUnits(dt) {
       tgt = u._lodTgt || null;
       if (tgt) { const _tdx = tgt.x - u.x, _tdy = tgt.y - u.y, _tcy = ceilF ? ceilF * worldH() : -1e9; if (tgt.hp <= 0 || tgt.y < _tcy || _tdx * _tdx + _tdy * _tdy > rng * rng) tgt = null; }   // stale/dead/out-of-range cache dropped WITHOUT a fresh scan — stays cheap; it'll re-acquire on its next scheduled cadence tick (or immediately once it goes HOT)
     }
+    if (u.bgLeader && u.bgLeader.hp > 0) { battlegroupFollowMove(u, dt); } else {   // BATTLEGROUPS — FOLLOWER: skip the whole expensive per-domain AI block below (BVR hunt scans, idle-advance scans, CIWS) for a cheap O(1) formation-offset ease toward the leader; see battlegroupFollowMove near spawnUnit. LEADER (or any solo unit) falls through to the exact unchanged code every unit has always run.
     if (d.domain === 'air' && canIntercept(d) && !u.docked && (u.spool || 0) <= 0) {   // JET LASER CIWS — a short VISIBLE beam that swats an enemy missile chasing the jet, so you actually see the point-defence work (defensive only, low-rate — not a durability crutch)
       u.pdcd = (u.pdcd || 0) - dt;
       if (u.pdcd <= 0) { let best = null, bd = 95 * 95; for (const q of G.proj) { if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - u.x) ** 2 + (q.y - u.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
@@ -6024,10 +6028,11 @@ function updUnits(dt) {
         } else { u.drownT = 0; u.drowned = false; }
       }
     }
+    }   // BATTLEGROUPS — closes the else{} opened at the JET LASER CIWS line above
     u.cd -= dt;
     if (!tgt) u.lastTgt = null;
     // idle ground reserves dive into the rail tunnels and redeploy to the hub nearest the fighting
-    if (!tgt && d.domain === 'ground' && (u.railCd || 0) <= 0 && railHubs.length >= 2 && G.enemies.length) {
+    if (!tgt && !u.bgLeader && d.domain === 'ground' && (u.railCd || 0) <= 0 && railHubs.length >= 2 && G.enemies.length) {   // BATTLEGROUPS — a follower doesn't independently decide to hop the rail network away from its group
       let myHub = null, md = 150; for (const h of railHubs) { const dd = Math.abs(h.x - u.x); if (dd < md) { md = dd; myHub = h; } }
       if (myHub) { let frontHub = null, fd = 1e9; for (const h of railHubs) { let nd = 1e9; for (const e of G.enemies) nd = Math.min(nd, Math.abs(e.x - h.x)); if (nd < fd) { fd = nd; frontHub = h; } } if (frontHub && frontHub !== myHub && Math.abs(frontHub.x - u.x) > 500 && fd < 700) { u.onRail = true; u.railTo = frontHub.x + (Math.random() - .5) * 40; u.railT = 1.4 + Math.abs(frontHub.x - u.x) / 1500; } }
     }

@@ -393,6 +393,24 @@
     <span class="pill" style="border-color:#ff5a5a;color:#ffb0b0" onclick="window.__extinctConfirmed=true;closeModal('extinctConfirm');startDeploy();window.__extinctConfirmed=false;">&#9760; I ACCEPT MY FATE</span>
   </div>
 </div></div>
+<!-- PAUSE MENU — opened by #backBtn instead of ending the match directly (no more fat-finger abandons); RESUME is the big default action, ABANDON MATCH is deliberately small & at the bottom, gated behind its own confirm modal below -->
+<div class="modal-bg" id="pauseMenuModal"><div class="modal" style="max-width:380px;text-align:center">
+  <h2>❚❚ PAUSED</h2>
+  <div class="hd">// COMMAND</div>
+  <div class="actions" style="flex-direction:column;gap:10px;margin-top:10px;align-items:stretch">
+    <button class="pill primary" style="width:100%;font-size:15px;padding:14px" onclick="closeModal('pauseMenuModal')">&#9654; RESUME</button>
+    <button class="pill" style="width:100%" onclick="closeModal('pauseMenuModal');openModal('optsModal')">&#9881; OPTIONS</button>
+    <button class="pill" style="width:100%;font-size:10px;opacity:.65;margin-top:14px;border-color:#ff5a5a;color:#ff9a9a;padding:7px" onclick="closeModal('pauseMenuModal');openModal('abandonConfirmModal')">&#10094; ABANDON MATCH</button>
+  </div>
+</div></div>
+<div class="modal-bg" id="abandonConfirmModal"><div class="modal" style="max-width:420px;border-color:#ff5a5a;text-align:center">
+  <h2 style="color:#ff6a6a">ABANDON THE MATCH?</h2>
+  <p style="line-height:1.6;color:var(--paper)">Abandon the match? Your progress is lost.</p>
+  <div class="actions" style="flex-direction:column;gap:10px;margin-top:6px;align-items:stretch">
+    <button class="pill primary" style="width:100%;font-size:15px;padding:14px" onclick="closeModal('abandonConfirmModal');openModal('pauseMenuModal')">KEEP PLAYING</button>
+    <button class="pill" id="abandonFinalBtn" style="width:100%;font-size:10px;opacity:.75;margin-top:6px;border-color:#ff5a5a;color:#ff9a9a;padding:7px;position:relative;overflow:hidden">&#10005; ABANDON<span id="abandonHoldFill" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,90,90,.35);pointer-events:none;transition:none"></span></button>
+  </div>
+</div></div>
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
@@ -692,7 +710,7 @@
   <div id="achTab" title="Achievements" onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
   <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="ptabs" id="ptabs"></div><div class="pbody"><div class="pgrid" id="pgrid"></div><div class="pdetail" id="pdetail"></div></div></div>
   <div class="info" id="info"></div>
-  <button class="back" id="backBtn">❮ ABANDON</button>
+  <button class="back" id="backBtn">❚❚ MENU</button>
 </div>
 
 <div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div>
@@ -7988,7 +8006,21 @@ const DIFF_DESC = { recruit: 'RECON — a probing attack. The autofleet is only 
 function setDiffDesc(d) { const el = document.getElementById('diffDesc'); if (el) el.textContent = DIFF_DESC[d] || ''; }
 document.querySelectorAll('.diff').forEach(d => d.addEventListener('click', () => { document.querySelectorAll('.diff').forEach(x => x.classList.remove('sel')); d.classList.add('sel'); pendingDiff = d.dataset.d; setDiffDesc(pendingDiff); }));
 setDiffDesc(pendingDiff);
-document.getElementById('backBtn').addEventListener('click', backToTitle);
+document.getElementById('backBtn').addEventListener('click', () => openModal('pauseMenuModal'));   // ABANDON SAFETY — opens the pause menu instead of ending the match directly; ABANDON MATCH inside it is gated behind its own confirm
+(function () {   // ABANDON SAFETY — the confirm modal's final ABANDON button: on mouse a click fires immediately; on touch (IS_TOUCH, matches the rest of the codebase's mouse/touch branching) it instead requires a ~900ms press-and-hold — pointerdown arms & starts the timer, pointerup/leave/cancel before it fires cancels — so a stray tap can never end the match. IS_TOUCH itself is declared further down this same script but isn't read until a real user interaction fires these handlers, long after the whole script has run.
+  const btn = document.getElementById('abandonFinalBtn'), fill = document.getElementById('abandonHoldFill');
+  if (!btn) return;
+  const doAbandon = () => { closeModal('abandonConfirmModal'); closeModal('pauseMenuModal'); backToTitle(); };
+  let holdT = null, holdRaf = null, holdStart = 0;
+  const HOLD_MS = 900;
+  const clearHold = () => { if (holdT) { clearTimeout(holdT); holdT = null; } if (holdRaf) { cancelAnimationFrame(holdRaf); holdRaf = null; } if (fill) fill.style.width = '0%'; btn.classList.remove('holding'); };
+  const tickHold = () => { if (!holdT) return; if (fill) fill.style.width = Math.min(100, (performance.now() - holdStart) / HOLD_MS * 100) + '%'; holdRaf = requestAnimationFrame(tickHold); };
+  btn.addEventListener('click', () => { if (!IS_TOUCH) doAbandon(); });
+  btn.addEventListener('pointerdown', ev => { if (!IS_TOUCH) return; ev.preventDefault(); btn.classList.add('holding'); holdStart = performance.now(); tickHold(); holdT = setTimeout(() => { clearHold(); doAbandon(); }, HOLD_MS); });
+  btn.addEventListener('pointerup', () => { if (IS_TOUCH) clearHold(); });
+  btn.addEventListener('pointerleave', () => { if (IS_TOUCH) clearHold(); });
+  btn.addEventListener('pointercancel', () => { if (IS_TOUCH) clearHold(); });
+})();
 document.getElementById('btnProd').addEventListener('click', () => { const p = document.getElementById('produce'); const showing = p.classList.toggle('show'); const bp = document.getElementById('btnProd'); bp.classList.toggle('on', showing); bp.classList.remove('attn'); if (G) G.hintProd = true; if (showing) buildProdMenu(); });
 document.getElementById('btnRes').addEventListener('click', () => { buildResearch(); openModal('resModal'); });
 document.getElementById('btnStrike').addEventListener('click', () => { document.getElementById('btnStrike').classList.remove('attn'); openStrike(); });

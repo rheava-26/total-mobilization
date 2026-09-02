@@ -598,6 +598,10 @@
   <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
   <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>TUTORIAL &amp; GUIDANCE</b></div>
   <div class="row"><label>Guidance Mode <span style="opacity:.55;font-size:10px">— how much hand-holding, help panels &amp; tips you get, in ANY match</span></label><button class="pill" onclick="closeModal('optsModal');openTutPrompt()">🎓 CHOOSE MODE</button></div>
+  <div class="row"><label>★ Readiness Panel <span style="opacity:.55;font-size:10px">— enemy scale, gaps &amp; a checklist during PREP</span></label><div class="toggle" id="tTutReady"><div class="knob"></div></div></div>
+  <div class="row"><label>T-20s Gap Check <span style="opacity:.55;font-size:10px">— pauses with options if a serious gap survives to re-entry</span></label><div class="toggle" id="tTutDiag"><div class="knob"></div></div></div>
+  <div class="row"><label>Progressive Reveal <span style="opacity:.55;font-size:10px">— the build menu only shows what's relevant, unlocking as you grow</span></label><div class="toggle" id="tTutHide"><div class="knob"></div></div></div>
+  <div class="row"><label>Advisor Tips <span style="opacity:.55;font-size:10px">— occasional coaching in the corner when something needs attention</span></label><div class="toggle" id="tTutTips"><div class="knob"></div></div></div>
   <div class="row"><label>Feedback &amp; Bug Reports <span style="opacity:.55;font-size:10px">— this game is in active development</span></label><button class="pill" onclick="openFeedback()">&#128172; SEND FEEDBACK</button></div>
   <div class="actions"><button class="pill" onclick="closeModal('optsModal')">CLOSE</button></div>
 </div></div>
@@ -7623,7 +7627,7 @@ const TIPS = [
 function showTip() { const t = document.getElementById('toast'); if (!t) return; const msg = TIPS[Math.floor(Math.random() * TIPS.length)]; t.textContent = '💡 ' + msg; t.classList.add('show'); toastT = 7; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 7000); }
 function banner(main, sub, dur) { const el = document.getElementById('alertBanner'); if (!el) return; el.innerHTML = `<div class="ab-main">${main}</div>` + (sub ? `<div class="ab-sub">${sub}</div>` : ''); el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), (dur || 4) * 1000); }   // BIG centre-screen alert, independent of the toast so major events can't be buried by build messages
 function hideBanner() { const el = document.getElementById('alertBanner'); if (el) { el.classList.remove('show'); clearTimeout(el._t); } }
-function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
+function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } if (id === 'optsModal' && typeof syncTutOptToggles === 'function') syncTutOptToggles(); if (id === 'tutPromptModal' && typeof renderTutModeGrid === 'function') renderTutModeGrid(); }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
 function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && G._resAutoPause) { G.paused = false; G._resAutoPause = false; } if (id === 'resModal') { const RC = window.__resCam; if (RC) { RC.pts.clear(); RC.drag = null; RC.pinch = null; RC.moved = false; RC.centered = false; } const d = document.getElementById('resDetail'); if (d) d.classList.remove('show'); const bd = document.getElementById('resBoard'); if (bd) bd.classList.remove('scan', 'grabbing'); clearTimeout(resHoverT); } }   // null-safe: #resModal is created lazily, so Esc before opening it must not crash. Auto-resume only if WE paused (respects a manual pause)
 function doAct(a) { if (a === 'play') startDeploy(); else if (a === 'tutorial') openTutPrompt(); else if (a === 'scen') openModal('scenModal'); else if (a === 'opts') openModal('optsModal'); else if (a === 'exit') toast('THERE IS NO STANDING DOWN, COMMANDER'); }
 function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (mode !== 'title') return; if (pendingDiff === 'extinction' && !window.__extinctConfirmed) { openModal('extinctConfirm'); return; }   /* EXTINCTION is 30x — make the player say YES on purpose (I ACCEPT sets __extinctConfirmed then re-calls startDeploy) */ mode = 'zoom'; zoomStart = performance.now(); document.getElementById('ui').classList.add('hidden'); const f = document.getElementById('footer'); f.style.opacity = 0; f.style.display = 'none'; newGame(pendingDiff); }   // display:none, not just opacity:0 — the footer's CHANGELOG/ACHIEVEMENTS links keep pointer-events:auto, so an invisible footer was still catching clicks mid-game
@@ -8393,6 +8397,18 @@ function loadOpts() {
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
 bindToggle('tEdge', v => edgeScroll = v);
+// TUTORIAL/GUIDANCE match-option toggles — separate from the above (they persist to tm_tut, not tm_opts)
+// so a normal match can turn any of readyPanels/diagnosis/hideUnimportant/tips on or off independent of
+// the 6-mode picker. Applies live if a match is already running.
+const tutOptToggle = (id, field) => { const el = document.getElementById(id); if (el) el.addEventListener('click', () => { el.classList.toggle('on'); TUT[field] = el.classList.contains('on'); saveTut(); if (typeof G !== 'undefined' && G && G.tut) { G.tut[field] = TUT[field]; if (field === 'hideUnimportant' && typeof buildBuildBar === 'function') buildBuildBar(); } }); };
+tutOptToggle('tTutReady', 'readyPanels');
+tutOptToggle('tTutDiag', 'diagnosis');
+tutOptToggle('tTutHide', 'hideUnimportant');
+tutOptToggle('tTutTips', 'tips');
+function syncTutOptToggles() {
+  const map = { tTutReady: 'readyPanels', tTutDiag: 'diagnosis', tTutHide: 'hideUnimportant', tTutTips: 'tips' };
+  for (const id in map) { const el = document.getElementById(id); if (el) el.classList.toggle('on', !!TUT[map[id]]); }
+}
 bindToggle('tMotion', v => reducedMotion = v);
 bindToggle('tShake', v => { shakeOn = v; if (!v) shakeAmt = 0; });
 bindToggle('tFlash', v => flashRed = v);
@@ -8905,16 +8921,30 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   function isResearching() { return !!(G.research || (G.resQueue && G.resQueue.length)); }
   function effS() { return (typeof effStab === 'function') ? effStab() : G.stab; }
 
-  // pick the single dominant Advisor tip (priority: stabLow > noMP > infGlut > icGlut > industry)
+  // pick the single dominant Advisor tip — a when-to/when-not-to nudge, not a lecture. Priority:
+  // stabLow > lateAA > noMP > researchEarly > noCityDef > icUnspent > infGlut > icGlut > industry.
+  // Gated entirely by G.tut.tips (see tutAdvTick) — independent of hand-holding.
   function pickTip(icTrend, stabTrend) {
     const T = G.tut, eff = effS();
     const infCap = TUNE.INF_CAP, mpCap = TUNE.MP_CAP;
     // stabLow — stability danger, highest priority
     if (eff < TUNE.STAB_LOW || (stabTrend <= TUNE.STAB_TREND && eff < 55))
       return { id: 'stabLow', body: '▸ <b>Stability</b>’s slipping. Ease off dangerous research, and raise your cap with <b>Comms Towers / Propaganda</b> — if it hits zero your own people finish you.' };
+    // lateAA — T-90 and nothing that can shoot at the sky yet
+    if (G.phase === 'prep' && G.prepTimer > 0 && G.prepTimer < 90 && !tutAnyUnit(u => u.d && u.d.noGround) && !tutAnyDone(b => b.d && b.d.noGround))
+      return { id: 'lateAA', body: '▸ Under 90 seconds and you have <b>no anti-air</b> — get an AA "Hailstorm" or a SAM up now, not after the fleet\'s already in your sky.' };
     // noMP — army bottlenecked on bodies
     if (G.mp < TUNE.MP_LOW || (combatWeight() >= armyCap() && G.mp < 200))
       return { id: 'noMP', body: '▸ Out of <b>Manpower</b>? It caps your army. Build <b>Housing</b> for more — or lean on what doesn’t need bodies: <b>planes, drones, buildings</b>.' };
+    // researchEarly — don't spend influence on doctrine before the economy that pays for it exists
+    if (isResearching() && tutCountB('powerplant') < 2)
+      return { id: 'researchEarly', body: '▸ You started <b>Research</b> before 2 Power Plants are up — it\'ll crawl. Not a mistake you can\'t recover from, just build more power first next time.' };
+    // noCityDef — name the exposed city, don't just gesture at "somewhere"
+    if ((() => { const c = (G.cities || []).find(ct => !ct.held && !tutCityHasDefense(ct)); if (c) { T._tipCity = c; return true; } return false; })())
+      return { id: 'noCityDef', body: `▸ No ground defense near ${T._tipCity && T._tipCity.capital ? 'your CAPITAL' : 'one of your cities'} — even a cheap Bunker or a dug-in squad closes that door.` };
+    // icUnspent — a real reserve with nothing actually under construction
+    if (G.ic > 400 && (!G.sites || G.sites.length === 0) && !G.buildings.some(b => b.queue && b.queue.length))
+      return { id: 'icUnspent', body: `▸ You have ${Math.round(G.ic)} <b>IC</b> sitting unspent and nothing under construction — build something with it.` };
     // infGlut — hoarding the one thing that buys doctrine
     if (G.inf >= TUNE.INF_GLUT_FRAC * infCap && !isResearching() && G.ic < TUNE.IC_GLUT_ABS)
       return { id: 'infGlut', body: '▸ You’re hoarding <b>Influence</b> — the one thing that buys doctrine. Open <b>Research</b> and put it to work before it caps. (Build a couple of <b>Labs</b> first so it doesn’t crawl.)' };
@@ -8936,38 +8966,43 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     else if (readyEl || readyTabEl) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); }
     // PROGRESSIVE REVEAL — also independent of hand-holding (Streamlined is hideUnimportant with handHold off)
     if (T.hideUnimportant) { try { tutRevealTick(); } catch (e) {} }
-    if (T.off) return;   // the hand-held spotlight/milestone track below only runs when handHold is on
-    // trailing IC + stability trends
+
+    // trailing IC + stability trends — feeds both the hand-held milestone track below AND the tips
+    // catalog (pickTip), so this stays unconditional even when handHold is off (T.off true)
     T.icHist = T.icHist || []; T.stabHist = T.stabHist || [];
     T.icHist.push(G.ic); if (T.icHist.length > TUNE.TREND_N) T.icHist.shift();
     T.stabHist.push(effS()); if (T.stabHist.length > TUNE.TREND_N) T.stabHist.shift();
     const icTrend = T.icHist.length >= 2 ? (G.ic - T.icHist[0]) : 0;
     const stabTrend = T.stabHist.length >= 2 ? (effS() - T.stabHist[0]) : 0;
 
-    // MILESTONE → DOCTRINE: a stable base that can carry a war
-    if (T.phase === 'industry' && !T.doctrineFired && !ov) {
-      if (G.icR >= (T.icR0 || TUNE.BASELINE_ICR) * TUNE.MILESTONE_IC_MULT && econCount() >= TUNE.MILESTONE_ECON_N && icTrend >= TUNE.MILESTONE_TREND) {
-        T.doctrineFired = true; T.phase = 'doctrine'; unlock('#btnRes');
-        openSpotlight([{ sel: '#btnRes', title: 'STABLE FOOTING', body: 'Your economy can carry a war now — time to spend it. <b>Research</b> buys the doctrines that transform your civilization, paid with <b>Influence</b>. One tip: stand up a couple of <b>Research Labs</b> first, or it’ll crawl.', last: true }]);
-        return;
+    if (!T.off) {   // the hand-held spotlight/milestone track only runs when handHold is on
+      // MILESTONE → DOCTRINE: a stable base that can carry a war
+      if (T.phase === 'industry' && !T.doctrineFired && !ov) {
+        if (G.icR >= (T.icR0 || TUNE.BASELINE_ICR) * TUNE.MILESTONE_IC_MULT && econCount() >= TUNE.MILESTONE_ECON_N && icTrend >= TUNE.MILESTONE_TREND) {
+          T.doctrineFired = true; T.phase = 'doctrine'; unlock('#btnRes');
+          openSpotlight([{ sel: '#btnRes', title: 'STABLE FOOTING', body: 'Your economy can carry a war now — time to spend it. <b>Research</b> buys the doctrines that transform your civilization, paid with <b>Influence</b>. One tip: stand up a couple of <b>Research Labs</b> first, or it’ll crawl.', last: true }]);
+          return;
+        }
       }
-    }
-    // MILESTONE → STRIKES: re-entry nears, or a Silo is standing
-    if ((T.phase === 'industry' || T.phase === 'doctrine') && !T.strikesFired && !ov) {
-      const nearReentry = (G.phase === 'prep' && G.prepTimer <= TUNE.STRIKE_PREP_S);
-      if (nearReentry || hasSilo()) {
-        T.strikesFired = true; T.phase = 'strikes'; unlock('#btnRes'); unlock('#btnStrike');
-        openSpotlight([
-          { sel: '#btnStrike', title: 'THE UNTHINKABLE IS AVAILABLE', body: 'Build a <b>Silo</b> and you can call down nukes, orbital rods and worse. Devastating — but every strike costs <b>Stability</b>, so spend them like they matter.' },
-          { sel: '.objwrap', title: 'THEY’RE ALMOST HERE', body: 'When the countdown hits zero the fleet <b>re-enters</b> — waves that never stop and grow stronger the longer you survive. Destroy the fleet to win. Hold the line, Commander.', last: true },
-        ], { onComplete: () => { if (G && G.tut) G.tut.phase = 'done'; } });
-        return;
+      // MILESTONE → STRIKES: re-entry nears, or a Silo is standing
+      if ((T.phase === 'industry' || T.phase === 'doctrine') && !T.strikesFired && !ov) {
+        const nearReentry = (G.phase === 'prep' && G.prepTimer <= TUNE.STRIKE_PREP_S);
+        if (nearReentry || hasSilo()) {
+          T.strikesFired = true; T.phase = 'strikes'; unlock('#btnRes'); unlock('#btnStrike');
+          openSpotlight([
+            { sel: '#btnStrike', title: 'THE UNTHINKABLE IS AVAILABLE', body: 'Build a <b>Silo</b> and you can call down nukes, orbital rods and worse. Devastating — but every strike costs <b>Stability</b>, so spend them like they matter.' },
+            { sel: '.objwrap', title: 'THEY’RE ALMOST HERE', body: 'When the countdown hits zero the fleet <b>re-enters</b> — waves that never stop and grow stronger the longer you survive. Destroy the fleet to win. Hold the line, Commander.', last: true },
+          ], { onComplete: () => { if (G && G.tut) G.tut.phase = 'done'; } });
+          return;
+        }
       }
     }
 
-    // ADVISOR tips — throttled, non-repeating, only when a condition clearly dominates
+    // ADVISOR tips — gated purely by G.tut.tips (a standalone match option, independent of handHold),
+    // throttled, non-repeating, only when a condition clearly dominates
     T.advCd = Math.max(0, (T.advCd || 0) - dt);
     if (ov) return;             // don't stack a corner tip under a spotlight beat
+    if (!T.tips) { hideTip(); return; }
     if (T.advCd > 0) return;
     const tip = pickTip(icTrend, stabTrend);
     if (tip && tip.id !== T.lastTip) { showTip(tip.id, tip.body); T.lastTip = tip.id; T.curTip = tip.id; T.advCd = TUNE.ADV_THROTTLE_S; }

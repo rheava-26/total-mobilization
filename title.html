@@ -8449,6 +8449,8 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   #tutOverlay .tut-btn:hover{background:rgba(50,72,104,.85)}
   #tutOverlay .tut-btn.primary{background:var(--res,#c89bff);border-color:var(--res,#c89bff);color:#160a26;font-weight:700}
   #tutOverlay .tut-btn[disabled]{opacity:.35;cursor:default}
+  #tutOverlay .tut-waiting{margin-top:4px;font-size:11px;letter-spacing:.06em;color:var(--term,#6dffb0);animation:tutPulse 1.4s ease-in-out infinite}
+  @keyframes tutPulse{0%,100%{opacity:.55}50%{opacity:1}}
   /* GREYING — the anti-overwhelm lever: layers not yet earned read as dimmed & locked */
   .tut-locked{opacity:.42;filter:grayscale(.55);position:relative}
   .tut-locked::after{content:'🔒';position:absolute;top:-7px;right:-3px;font-size:9px;opacity:.85;pointer-events:none;text-shadow:0 0 3px #000}
@@ -8558,16 +8560,39 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       check: (G, it) => tutPrepFrac() > 0.5 && tutWaterFrac() > 0.12 && !tutAnyUnit(u => u.d && u.d.domain === 'naval') },
   ];
 
-  // ---- ORIENTATION: the phase-0 spotlight click-through (first-ever game / replay) ----
-  const ORIENT = [
-    { sel: null, title: 'HOLD THE LINE', body: 'An orbital autofleet is inbound. During <b>PREP</b> you build; when the countdown hits zero the invasion begins and never stops. This is a lot of game — so I’ll teach it a piece at a time. Nothing here is graded. Go at your own pace.' },
-    { sel: '.cell.ic', title: 'THIS IS WHAT YOU SPEND', body: '<b>Industrial Capacity</b> — your main build currency, spent on every building and unit. Everything starts here: more IC means more of everything else. <b>Power Plants</b> raise the rate.' },
-    { sel: '#btnRes', title: 'SEE ALL THIS? IGNORE IT.', body: 'Research, strikes, doctrines — it’s all here, and it’s <b>greyed out on purpose</b>. It’s not going anywhere. Trying to learn it all at once is why this game feels impossible. Forget it for one minute.' },
-    { sel: '#btnProd', title: 'YOUR ONE JOB: GET RICH', body: 'Right now you do <b>one</b> thing — build industry. <b>Power Plants</b> for income, and <b>Extractors</b> dropped on the glowing resource nodes on the map. Cover the ground in them. A bigger economy makes everything else possible.' },
-    { sel: null, title: 'I’LL SPEAK UP WHEN IT MATTERS', body: 'That’s all you need for now. Build your economy — I’ll surface a tip when your situation calls for one, and I’ll unlock the next layer once your industry can carry it. Go.', last: true },
-  ];
+  // ---- ORIENTATION: the phase-0 hand-held opening (see HAND_STEPS_HEAVY/LIGHT below) ----
+  // ---- resolver helpers for hand-held steps (a step's `sel` can be a fn — see place()'s support for that) ----
+  function tutCardSel(key) { return () => document.querySelector('.bcard[data-bkey="' + key + '"]'); }
+  function tutSwitchTab(cat) { return () => { curBcat = cat; if (typeof buildBuildBar === 'function') buildBuildBar(); }; }
+  // the starting base is NOT bare — the capital pre-builds a Power Plant/Factory/Bunkers and every city
+  // seeds a Factory (+ most seed a SAM Battery). So "done" can't be "does one exist" — it has to be "did the
+  // COUNT go up since this step began", baselined in onEnter() and read back in done(). Field names are just
+  // local ids; the map lives on G.tut so a restart/newGame wipes it for free.
+  function tutCountB(key) { let n = 0; for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (b.key === key) n++; } return n; }
+  function tutCountU(key) { let n = 0; for (const u of G.units) { if (u.key === key) n++; } return n; }
+  function tutCountQ(key) { let n = 0; for (const b of G.buildings) { if (!b.queue) continue; for (const q of b.queue) if (q.key === key) n++; } return n; }
+  function tutStepBase(field, cur) { G.tut._base = G.tut._base || {}; G.tut._base[field] = cur; }
+  function tutStepGrew(field, cur) { return cur > ((G.tut._base && G.tut._base[field]) || 0); }
 
-  let idx = 0, ov = null, onKey = null, onResize = null, curSteps = ORIENT, curOpts = {};
+  // ---- HAND-HELD OPENING — verified ACTION steps (s.done) on the spotlight engine; the spotlight WAITS
+  // for the real action (a NEW building, a NEWLY queued unit…) instead of trusting a click-through. HEAVY
+  // runs every step; LIGHT runs the first three then releases you with a pointer at the ★ READINESS panel.
+  const HAND_STEPS_HEAVY = [
+    { sel: null, title: 'HOLD THE LINE', body: 'An orbital autofleet is inbound. During <b>PREP</b> you build; when the countdown hits zero the invasion begins and never stops. I\'ll walk you through your first few real moves — not just tell you about them. Do each one when you\'re ready; I\'ll know.' },
+    { sel: tutCardSel('powerplant'), onEnter: () => { curBcat = 'ECON'; buildBuildBar(); tutStepBase('pp', tutCountB('powerplant')); }, title: 'BUILD: A POWER PLANT', body: 'Everything runs on <b>Industrial Capacity</b>. A Power Plant is the best IC/s you can buy this early. Click the card below, then click the ground to place it — watch your income climb once it\'s done.', done: G => tutStepGrew('pp', tutCountB('powerplant')) },
+    { sel: tutCardSel('extractor'), onEnter: () => { curBcat = 'ECON'; buildBuildBar(); tutStepBase('ext', tutCountB('extractor')); }, title: 'BUILD: AN EXTRACTOR', body: 'See the glowing deposits scattered on the map? Drop an <b>Extractor</b> on one — it claims the resource AND adds IC income, for good.', done: G => tutStepGrew('ext', tutCountB('extractor')) },
+    { sel: tutCardSel('factory'), onEnter: () => { curBcat = 'PROD'; buildBuildBar(); tutStepBase('fac', tutCountB('factory')); }, title: 'BUILD: A FACTORY', body: 'Switch to the <b>PROD</b> tab (done for you) and place a <b>Factory</b>. It turns IC and Manpower into a standing army over time, and makes Heavy Alloy on its own.', done: G => tutStepGrew('fac', tutCountB('factory')) },
+    { sel: () => document.getElementById('btnProd'), onEnter: () => tutStepBase('inf', tutCountU('inf') + tutCountQ('inf')), title: 'QUEUE: INFANTRY', body: 'Select your new Factory, then queue <b>Infantry</b> from the PRODUCE panel (bottom button). Units cost Manpower, not Influence — and every unit carries a WEIGHT against your army cap; a rifle squad is light, a tank is heavy.', done: G => tutStepGrew('inf', tutCountU('inf') + tutCountQ('inf')) },
+    { sel: tutCardSel('bunker'), onEnter: () => { curBcat = 'DEF'; buildBuildBar(); tutStepBase('bunk', tutCountB('bunker')); tutStepBase('sam', tutCountB('samsite') + tutCountU('sam')); }, title: 'BUILD: A BUNKER + A SAM', body: 'Switch to <b>DEF</b> (done for you) and place both a new <b>Bunker</b> (ground defense) and a new <b>SAM</b> (reaches into the sky). You need both — one covers the ground, the other covers the air.', done: G => tutStepGrew('bunk', tutCountB('bunker')) && tutStepGrew('sam', tutCountB('samsite') + tutCountU('sam')) },
+    { sel: null, title: 'THE ALTITUDE LESSON', body: 'Here\'s the whole air-defense puzzle in one line: <b>a bomber sitting high in the sky can only be hit by weapons that reach that high.</b> A Bunker can\'t touch it. A SAM reaches up into the mesosphere. Only aircraft, railguns and orbital weapons touch the exosphere. Altitude IS cover — for them and for you.' },
+    { sel: () => document.querySelector('.objwrap'), title: 'THE COUNTDOWN', body: 'That\'s your <b>PREP</b> timer. When it hits zero, the fleet re-enters — a long, slow, vulnerable fall you can shoot pieces off before it goes fully active. Every second left is worth spending.' },
+    { sel: null, title: 'RE-ENTRY', body: 'When you see <b>⚠ RE-ENTRY DETECTED</b>, that\'s your final warning — the countdown is nearly out. After that, waves never stop, and every one is a little stronger than the last. Destroy the fleet to win. I\'ll keep coaching from the corner, and watch the ★ READINESS panel too. Good luck, Commander.', last: true },
+  ];
+  const HAND_STEPS_LIGHT = HAND_STEPS_HEAVY.slice(0, 3).concat([
+    { sel: null, title: 'YOU\'RE ON YOUR OWN FROM HERE', body: 'That\'s the core loop — power, resources, production. I won\'t walk you through the rest step by step. Watch the ★ <b>READINESS</b> panel on the right for what still needs attention before the fleet arrives.', last: true },
+  ]);
+
+  let idx = 0, ov = null, onKey = null, onResize = null, curSteps = null, curOpts = {}, doneTimer = null;
 
   // ---- GREYING helpers (idempotent; always safe to clear) ----
   function lock(sel)   { const e = document.querySelector(sel); if (e) e.classList.add('tut-locked'); }
@@ -8575,7 +8600,9 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   function clearGrey() { unlock('#btnRes'); unlock('#btnStrike'); }
 
   // ---- SPOTLIGHT overlay (reused for orientation AND the one-off milestone beats) ----
+  function stopDonePoll() { if (doneTimer) { clearInterval(doneTimer); doneTimer = null; } }
   function teardown() {
+    stopDonePoll();
     if (onKey) window.removeEventListener('keydown', onKey, true), onKey = null;
     if (onResize) window.removeEventListener('resize', onResize), onResize = null;
     if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
@@ -8587,7 +8614,8 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   function place() {
     if (!ov) return;
     const s = curSteps[idx], ring = ov.querySelector('.tut-ring'), card = ov.querySelector('.tut-card');
-    const el = s.sel ? document.querySelector(s.sel) : null;
+    const rawSel = typeof s.sel === 'function' ? s.sel() : s.sel;
+    const el = rawSel ? (typeof rawSel === 'string' ? document.querySelector(rawSel) : rawSel) : null;
     const vw = window.innerWidth, vh = window.innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
     if (el) {
       const r = el.getBoundingClientRect(), pad = 6;
@@ -8605,17 +8633,31 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     }
   }
 
+  // a VERIFIED-ACTION step (s.done set) doesn't advance on its own — it polls done(G) every ~400ms and
+  // auto-advances the moment it's true, no matter whether the game is paused (hand-held step 1 happens
+  // before the player ever presses Space). NEXT is hidden while waiting; SKIP/BACK still always work.
+  function armDonePoll(s) {
+    stopDonePoll();
+    if (!s.done) return;
+    doneTimer = setInterval(() => { let ok = false; try { ok = !!(G && s.done(G)); } catch (e) {} if (ok) { stopDonePoll(); go(1); } }, 400);
+  }
+
   function render() {
     const s = curSteps[idx];
+    if (s.onEnter) { try { s.onEnter(G); } catch (e) {} }
     ov.querySelector('.tut-step').textContent = curSteps.length > 1 ? ('STEP ' + (idx + 1) + ' / ' + curSteps.length) : 'ADVISORY';
     ov.querySelector('.tut-title').textContent = s.title;
-    ov.querySelector('.tut-body').innerHTML = s.body;
+    ov.querySelector('.tut-body').innerHTML = s.body + (s.done ? '<div class="tut-waiting">◉ waiting for you to do this…</div>' : '');
     ov.querySelector('.tut-back').disabled = idx === 0;
-    ov.querySelector('.tut-next').textContent = s.last ? (curSteps === ORIENT ? 'BEGIN' : 'GOT IT') : 'NEXT ›';
+    const nextBtn = ov.querySelector('.tut-next');
+    nextBtn.hidden = !!s.done;   // verified-action steps advance themselves — no button to jump ahead of the check
+    nextBtn.textContent = s.last ? 'GOT IT' : 'NEXT ›';
     place();
+    armDonePoll(s);
   }
 
   function go(d) {
+    stopDonePoll();
     const n = idx + d;
     if (n < 0) return;
     if (n >= curSteps.length) { finishSteps(); return; }
@@ -8901,7 +8943,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     if (G && G.tut && (G.tut.readyPanels || G.tut.diagnosis)) { try { tutReadyTick(); } catch (e) {} }
     if (!G || !G.tut || G.tut.off || ov) return;   // no hand-hold requested (or already showing something) — nothing to spotlight
     lock('#btnRes'); lock('#btnStrike');
-    openSpotlight(ORIENT, { onComplete: enterIndustry, onSkip: skipAll });
+    openSpotlight(G.tut.handHold === 'heavy' ? HAND_STEPS_HEAVY : HAND_STEPS_LIGHT, { onComplete: enterIndustry, onSkip: skipAll });
   };
 
   // ---- LOCKED-TAB advisory: a greyed tab still OPENS — the tutorial only ADVISES you to wait, it never

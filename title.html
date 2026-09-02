@@ -632,7 +632,7 @@
     <b>5.</b> Watch the <b>T-timer</b> (top right). When the fleet hits, hold every city. Lose them all — or hit 0 stability — and it's over.</p></div>
   <details class="helpsec"><summary>🕹 CONTROLS — DESKTOP &amp; TOUCH</summary><p>
     <b>Desktop:</b> <span class="k">← → / A D</span> scroll the front · <span class="k">W S / ↑ ↓</span> or <span class="k">Shift+wheel</span> pan the tall sky · <span class="k">wheel</span> zooms toward the cursor (or the <span class="k">+ − ⌂</span> buttons) · <span class="k">click</span> selects · <span class="k">right-click / Esc</span> cancels anything · <span class="k">SPACE</span> pauses · <span class="k">M</span> toggles music · click or drag the <b>minimap</b> to jump the camera.<br>
-    <b>Touch:</b> <b>drag</b> to scroll · <b>pinch</b> to zoom · <b>tap</b> to select / place / designate · <b>long-press</b> to cancel · strategic strikes take a first tap to AIM, then a <span class="k">☢ CONFIRM</span> tap to fire — no fat-finger nukes.
+    <b>Touch:</b> <b>drag</b> to scroll · <b>pinch</b> to zoom · <b>tap</b> to select / place · <b>long-press</b> to cancel · strategic strikes take a first tap to AIM, then a <span class="k">☢ CONFIRM</span> tap to fire — no fat-finger nukes.
     <span class="tip2">Zoomed in? The camera can reach the whole world — pan speed matches what your eye sees at any zoom.</span></p></details>
   <details class="helpsec"><summary>① ECONOMY — IC · MANPOWER · STABILITY → INFLUENCE</summary><p>
     <b>IND. CAP</b> builds everything. <b>MANPOWER</b> crews it. <b>INFLUENCE</b> buys research &amp; raises your army cap — and it flows from <b>STABILITY alone</b>: the higher your stability, the faster influence accrues.<br><br>
@@ -651,8 +651,6 @@
     Build <b>Extractors</b> on the glowing deposits. Owning Steel / Oil / Rare Earth permanently <b>cheapens</b> its matching unit category (ground / air &amp; naval / space); <b>Uranium</b> additionally softens both the IC and stability cost of every strike — they decide everything late-game. Some tech &amp; weapons (Nuclear, Mind-Forge) require specific deposits.</p></details>
   <details class="helpsec"><summary>⑥ ★ SUPERWEAPONS &amp; THE MIND-FORGE</summary><p>
     Superweapons (Colossus, Titan, Telekinetic Pylon, Dreadnought…) are built from <span class="k">PRODUCE</span> once researched. The <b>MIND-FORGE</b> plasma lance appears in <span class="k">☢ STRIKE</span> once you have <b>Antimatter</b> + <b>Telekinesis</b> researched and own <b>Uranium</b>.</p></details>
-  <details class="helpsec"><summary>⊕ FIRE CONTROL — HAND-AIM YOUR HEAVY GUNS</summary><p>
-    Heavy emplacements (Bunker, Laser Tower, Orbital Gun, Mass Driver, Microrocket Battery, Particle Cannon) can be <b>hand-directed</b>. <b>1)</b> Select the gun → press <span class="k">⊕ ADD TO FIRE CONTROL</span> in its info panel. <b>2)</b> <b>Click enemies inside the radar ring</b> to mark them. <b>3)</b> The gun PRIORITIZES your marks — save that railgun round for a tungsten rod, not chaff. Add more guns to build a battery on one radar. <span style="color:#ffb86b">A gun in Fire Control always hits what you designate first; with nothing marked in reach it still defends on its own, so it's never idle.</span> <b>Right-click</b> / <span class="k">Esc</span> / long-press releases.</p></details>
   <details class="helpsec"><summary>⑦ BUILDINGS &amp; THEIR COSTS</summary><p>
     Every structure costs <b>IC</b> + <b>MANPOWER</b> plus a small <b>INFLUENCE</b> authorization. Burying a building costs more but shields it (deep tunnels resist assault). As the ages advance your buildings take on a <b>cyberpunk</b> neon look.</p>
     <div id="manualBuildings" style="margin-top:8px"></div></details>
@@ -692,7 +690,6 @@
     <div class="hbtn has-tip" id="btnStrike" data-tip="Strategic strike — opens the launch overview, marks your silos, and lets you call a nuclear/orbital strike. Strikes cost STABILITY.">☢ STRIKE</div>
     <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
     <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
-    <div class="hbtn has-tip" id="btnFC" data-tip="⊕ FIRE CONTROL — show ALL weapon-range coverage (colored by reach: ground / air / space) and designate targets GLOBALLY. Click any enemy and every gun & unit in reach prioritizes it; right-click or the clear key empties it. Works while paused (key: F)." onclick="toggleFireControl()">⊕</div>
     <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
     <div class="hbtn has-tip" id="btnTip" data-tip="Ask for a tip — a random piece of strategy advice. New here? Tap it a few times.">💡 TIP</div>
     <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
@@ -2977,18 +2974,18 @@ const BUILD_DEFS = {
   // subtree. Ground placement (naval hulls it produces still need open water nearby to launch into).
   grandarsenal:{ name: 'Grand Arsenal', cat: 'PROD', ic: 450, mp: 180, build: 20, hp: 380, w: 28, h: 24, req: 'colossus', prodList: ['landdread', 'grandbattleship', 'supercarrier', 'warcolossus', 'mobilefortress'], makes: { alloy: .4 }, ds: 'The nation\'s heaviest dry-dock & foundry complex — the only place the GRAND ARSENAL WARSHIPS are assembled (Land Dreadnought, Grand Battleship, Super Carrier "Leviathan-class", War Colossus, Mobile Command Fortress). Forges Heavy Alloy alongside. These are a class beyond your regular army: no army-cap, but each carries a serious standing IC/s upkeep. (Super-Heavy Ground Units)' },
   // DEFENSE
-  bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget). Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it.' },
+  bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget).' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'rotary', range: 560, dmg: 5, rate: .1, ceil: .4, noGround: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon hosing a STREAM of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Fires ONLY at aircraft & ordnance — it will NOT depress onto ground units or targets hugging the deck. Cheap — screen your cities with them. No research needed.' },
   samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .60, noGround: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances.' },
   radar:    { name: 'Radar', cat: 'DEF', ic: 100, mp: 40, build: 7, hp: 140, w: 13, h: 18, econ: { stab: 0.3 }, aura: { range: 1.12 }, ds: 'Boosts nearby unit range +12% — and it STACKS: ring a heavy gun with several Radars to reach dramatically farther. Also slightly raises your stability cap.' },
   silo:     { name: 'Missile Silo', cat: 'DEF', ic: 420, mp: 130, build: 20, hp: 320, armor: 6, w: 18, h: 15, strat: true, ds: 'STRATEGIC: enables the ☢ STRIKE button. Call nuclear/orbital strikes that cost STABILITY (not a long reload). Bury it to keep it safe.' },
   aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'aegismsl', guidedpd: true, range: 700, dmg: 9, rate: .45, ceil: .60, noGround: true, req: 'microrockets', ds: 'SMART interceptor battery — where the CIWS hoses a dumb wall of flak, the Aegis snaps a single agile CYAN GUIDED interceptor onto each threat that HOMES in and CHASES it down (incoming missiles, rockets, tungsten RODS). One tracking round per target, not a spray. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (MICROROCKETS)' },
-  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Add it to ⊕ FIRE CONTROL to direct it. (MICROROCKETS)' },
+  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. (MICROROCKETS)' },
   // ── ANTI-MISSILE INTERCEPTOR (all tunable) — the dedicated bombardment counter. ceil:0 → reaches SPACE, so it catches HIGH orbital descents that aircraft can't. FINITE ammo (AMI_AMMO), slow auto-rearm (one missile back every AMI_REARM in-game seconds), so it CANNOT stop a saturation barrage on its own — invest heavily & still triage. Unlocked from START (basic defense, no research gate).
   interceptor:{ name: 'Anti-Missile Interceptor', cat: 'DEF', ic: 500, mp: 60, build: 14, hp: 300, armor: 8, w: 18, h: 18, weapon: 'missile', range: 1250, dmg: 65, rate: 1.0, ceil: 0, noGround: true, ami: true, ammo: 4, ds: 'Dedicated ANTI-BOMBARDMENT battery — LEAPS a big HYPERVELOCITY hit-to-kill interceptor off the rail at incoming orbital ordnance (bunker-busters, tungsten RODS, enemy missiles) at ANY altitude, clear into space. The fastest missile in the game — it runs down maneuvering rounds and airbursts on a near miss, so it rarely whiffs. Holds a FINITE magazine of just 4 and reloads SLOWLY (one every ~10s), so it TRIAGES: it always prioritizes tungsten RODS and bunker-BUSTERS over lesser ordnance, ignores cheap decoy missiles outright, and HOLDS FIRE — refusing to burn a round — until something actually worth the shot is in range. It defends a sector, it does not shrug off a saturation barrage. No research needed.' },
   shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 130, shieldHp: 900, upkeep: 2, req: 'shieldtech', ds: 'Projects a tight PROJECTILE SHIELD DOME over what is right beside it — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Draws heavy power: 2 IC/s upkeep. Cover a base with several, not one. (DEFLECTOR SHIELDS)' },
-  particlecannon:{ name: 'Particle Cannon', cat: 'DEF', ic: 440, mp: 80, build: 16, hp: 380, armor: 12, w: 22, h: 16, weapon: 'particle', range: 1600, dmg: 130, rate: 4.5, ceil: 0, manual: true, heavy: true, req: 'particlebeam', ds: 'Single-shot hypervelocity PARTICLE bolt — near-instant, punches clean through anything at any altitude. Add it to ⊕ FIRE CONTROL to aim it. (PARTICLE BEAMS)' },
-  siegegun: { name: 'Orbital Gun', cat: 'DEF', ic: 460, mp: 90, build: 18, hp: 440, armor: 14, w: 24, h: 16, weapon: 'rail', range: 1500, dmg: 72, rate: 5.5, heavy: true, ceil: 0, manual: true, req: 'orbitalcmd', ds: 'Giant surface cannon — hurls hypervelocity rounds clear into the upper atmosphere & space. Slow, long-ranged, devastating. Select it, ⊕ ADD TO FIRE CONTROL, then click incoming enemies to designate its targets. (ORBITAL COMMAND)' },
+  particlecannon:{ name: 'Particle Cannon', cat: 'DEF', ic: 440, mp: 80, build: 16, hp: 380, armor: 12, w: 22, h: 16, weapon: 'particle', range: 1600, dmg: 130, rate: 4.5, ceil: 0, manual: true, heavy: true, req: 'particlebeam', ds: 'Single-shot hypervelocity PARTICLE bolt — near-instant, punches clean through anything at any altitude. (PARTICLE BEAMS)' },
+  siegegun: { name: 'Orbital Gun', cat: 'DEF', ic: 460, mp: 90, build: 18, hp: 440, armor: 14, w: 24, h: 16, weapon: 'rail', range: 1500, dmg: 72, rate: 5.5, heavy: true, ceil: 0, manual: true, req: 'orbitalcmd', ds: 'Giant surface cannon — hurls hypervelocity rounds clear into the upper atmosphere & space. Slow, long-ranged, devastating. (ORBITAL COMMAND)' },
   // INFRASTRUCTURE (underground)
   railhub:  { name: 'Rail Hub', cat: 'INFRA', ic: 220, mp: 60, build: 12, hp: 280, w: 20, h: 12, rail: true, ds: 'Underground rail node (auto-buried). Build two or more — idle troops dive into the tunnels and redeploy at rail speed to the hub nearest the fighting.' },
   // ===== GARRISON ECONOMY — a SEPARATE, free auto-defense track that runs beside manual production. Garrisoner units
@@ -3013,7 +3010,7 @@ const BUILD_DEFS = {
   // TECH
   reslab:   { name: 'Research Lab', cat: 'TECH', ic: 170, mp: 70, build: 11, hp: 200, w: 19, h: 16, reslab: true, ds: 'Each lab makes research ~14% FASTER and ~8% CHEAPER in influence (stacks). Does NOT generate influence — it spends it more efficiently.' },
   // EXOTIC (research-unlocked)
-  lasertower:{ name: 'Laser Tower', cat: 'DEF', ic: 150, mp: 30, build: 8, hp: 240, armor: 8, w: 14, h: 18, weapon: 'beam', range: 560, dmg: 18, rate: 1.9, ceil: .67, manual: true, req: 'directedenergy', ds: 'Hardened directed-energy turret — short-ranged and slow-cycling, and its beam only reaches up to the mesosphere: LASERS can\'t punch into orbit (bloom & divergence) — leave the exosphere to railguns, orbital guns & particle beams. Select it and ⊕ ADD TO FIRE CONTROL to hand-direct it. (DIRECTED ENERGY)' },
+  lasertower:{ name: 'Laser Tower', cat: 'DEF', ic: 150, mp: 30, build: 8, hp: 240, armor: 8, w: 14, h: 18, weapon: 'beam', range: 560, dmg: 18, rate: 1.9, ceil: .67, manual: true, req: 'directedenergy', ds: 'Hardened directed-energy turret — short-ranged and slow-cycling, and its beam only reaches up to the mesosphere: LASERS can\'t punch into orbit (bloom & divergence) — leave the exosphere to railguns, orbital guns & particle beams. (DIRECTED ENERGY)' },
   autofactory:{ name: 'Autonomous Plant', cat: 'PROD', ic: 260, mp: 40, build: 14, hp: 320, w: 24, h: 19, econ: { ic: 6 }, autospawn: 'shock', spawnEvery: 16, req: 'nanotech', ds: 'Self-runs: passively makes IC and garrison troops on its own. (NANOTECH)' },
   plasmaturret:{ name: 'Plasma Turret', cat: 'DEF', ic: 220, mp: 50, build: 9, hp: 260, armor: 10, w: 16, h: 16, weapon: 'plasball', range: 640, dmg: 34, rate: .6, ceil: .56, req: 'plasma', ds: 'Hardened plasma battery — fast self-steering plasma bolts that out-range & out-hit guns and reach high into the sky. (PLASMA WEAPONS)' },
   naniteturret:{ name: 'Nanite Turret', cat: 'DEF', ic: 170, mp: 45, build: 8, hp: 220, armor: 6, w: 14, h: 16, weapon: 'smart', range: 660, dmg: 8, rate: 1.1, ceil: .58, req: 'nanotech', ds: 'Fires NANOBOT ROUNDS — smart munitions that latch onto a target and rapidly DISASSEMBLE it (chews through heavy armour & shields where lasers/plasma struggle). A strong, cheap defensive line straight off the Nanotech path — no Nanite Foundry required. (NANOTECHNOLOGY)' },
@@ -3029,7 +3026,7 @@ const BUILD_DEFS = {
   ammodepot:{ name: 'Ammunition Depot', cat: 'DEF', ic: 160, mp: 60, build: 9, hp: 220, w: 18, h: 14, aura: { rof: 1.25, r: 260 }, garrison: { keys: ['inf', 'aa'], n: 2 }, ds: 'Nearby units fire +25% faster, and it keeps a small defensive garrison. No research needed.' },
   droidfoundry:{ name: 'Battle-Droid Foundry', cat: 'SPEC', ic: 320, mp: 70, build: 15, hp: 280, w: 22, h: 18, req: 'robotics', prod: 'ground', prodList: ['android', 'cyborg', 'colossus'], garrison: { keys: ['android'], n: 1 }, gmod: { mpAll: .12 }, ds: 'Builds droids & mechs anywhere, self-produces androids, and cuts global manpower −12%. Big IC up front. (Robotics)' },
   spacestation:{ name: 'Space Station', cat: 'SPEC', ic: 440, mp: 150, build: 20, hp: 520, armor: 20, w: 22, h: 22, req: 'spaceage', orbcap: 8, makes: { rocketpart: .8 }, gmod: { noLaunch: 1, costSpace: .3 }, ds: 'Orbital fortress — your space units skip the rocket launch and cost −30%, and it adds a big +8 ORBITAL LIFT plus fast ROCKET-PART output. Heavily armored. (Space Age)' },
-  massrail: { name: 'Mass-Driver Railway', cat: 'SPEC', ic: 360, mp: 100, build: 17, hp: 360, armor: 16, w: 26, h: 13, weapon: 'rail', range: 1500, dmg: 64, rate: 5, ceil: 0, manual: true, req: 'orbital', ds: 'A buildable railgun emplacement — place several IN A ROW: every adjacent segment makes the shot hit far harder. Fires into orbit. Add it to ⊕ FIRE CONTROL to hand-direct it. (Orbital Operations)' },
+  massrail: { name: 'Mass-Driver Railway', cat: 'SPEC', ic: 360, mp: 100, build: 17, hp: 360, armor: 16, w: 26, h: 13, weapon: 'rail', range: 1500, dmg: 64, rate: 5, ceil: 0, manual: true, req: 'orbital', ds: 'A buildable railgun emplacement — place several IN A ROW: every adjacent segment makes the shot hit far harder. Fires into orbit. (Orbital Operations)' },
   munitionfac:{ name: 'Munition Factory', cat: 'SPEC', ic: 220, mp: 80, build: 11, hp: 240, w: 18, h: 16, gmod: { cost: .08, garr: 1 }, ds: 'All units cost −8% IC and every garrison holds +1 unit. No research needed.' },
   rotaryworks:{ name: 'Rotary Cannon Works', cat: 'INFRA', ic: 240, mp: 70, build: 12, hp: 240, w: 20, h: 14, bDef: 1, ds: 'Arms the armed populace in EVERY CITY with a CIWS-class rotary cannon — a rapid STREAM of flak that shreds low-flying enemies AND shoots down incoming missiles. Your cities become point-defence hubs. No research needed.' },
   plasmabastion:{ name: 'Plasma Bastion Works', cat: 'INFRA', ic: 360, mp: 95, build: 15, hp: 300, w: 20, h: 16, req: 'plasma', bDef: 2, ds: 'Upgrades every CITY\'s defense to heavy PLASMA cannons — long reach, hard-hitting, fire high into the sky. Turns your cities into fortresses. (Plasma Weapons)' },
@@ -3170,7 +3167,7 @@ function newGame(diff) {
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
     resQueue: [],     // queued research keys — auto-start in order as influence accrues
     time: 0, phase: 'prep', prepTimer: intent === 'custom' ? SCEN.prep : ({ recon: 200, decap: 135, invasion: 450, glass: 500, extinction: 500 }[intent] || 135), invTime: 0, fleet: 0, fleetMax: 0, spawnT: 0, bombard: 0, warned: false, reinforced: false, stabOffset: 0, lostStructures: 0, crisis: false, crisisT: 0, crisisGrace: 0, crisisCount: 0,
-    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, manualGuns: [], designated: [], fireControl: false, turnMode: loadTurnMode(),   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
+    speed: 1, paused: true, over: null, icR: 0, mpR: 0, resR: 0, sel: null, place: null, turnMode: loadTurnMode(),   // START PAUSED — the prep clock is precious; read & plan first, press SPACE to begin
     kills: 0, unitsLost: 0, diffName: (diff === 'custom' ? 'CUSTOM' : String(diff || 'officer').toUpperCase()),   // battle tally for the after-action summary
     hist: { t: [], ic: [], mp: [], inf: [], stab: [], army: [], enemies: [], fleet: [], fleetMax: 0 }, histT: 0,   // per-match TIME-SERIES for the after-action graphs — sampled ~every 2 game-seconds, bounded, reset each newGame
     // AFTER-ACTION "every stat ever" TRACKING — additive, bounded (heat grid fixed-size; the others are naturally bounded by content), read only by the end screen
@@ -4939,7 +4936,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
     else { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
-    if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); } if (G.sel === b) { G.sel = null; refreshSel(); }
+    if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
   for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
@@ -5749,7 +5746,7 @@ function updUnits(dt) {
       u._lodTgt = tgt;
     } else if (_lodScan) {
       if (canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF);   /* INTERCEPT PRIORITY, GATED BY AIR-CAPABILITY NOT THE OLD `pd` FLAG (v3.88.0) — ANY combat unit that can shoot at an airborne enemy at this position (same range/ceil/role-filter check as acquireEnemy below) breaks off to engage an in-reach incoming bunker-buster / tungsten-rod / lance / homing missile FIRST, not only as an idle fallback. During an invasion there is ALWAYS a regular enemy in reach, so a fallback-only pd line dogfights drones forever while the bombardment rains straight through it — the exact "why won't my defenses shoot the busters?" bug. Passing `aF` means a low-ceil ground unit only ever catches ordnance that's descended into ITS reach — the altitude puzzle is preserved, just no longer gated by an arbitrary flag. The claim/spread system in acquireIncoming keeps this from mobbing one shell. */
-      if (!tgt) tgt = pickDesignated(u.x, u.y, rng, ceilF, aF) || acquireEnemy(u.x, u.y, rng, ceilF, aF);   // then a fire-control designated target this unit can reach, else auto-acquire an enemy as normal
+      if (!tgt) tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);   // auto-acquire an enemy as normal (fire-control designation was removed)
       u._lodTgt = tgt;
     } else {
       tgt = u._lodTgt || null;
@@ -6191,7 +6188,6 @@ function acquireAmiTarget(x, y, range, ceilFrac) {   // ANTI-MISSILE INTERCEPTOR
   return big || other;   // rods/busters win outright; a genuine incoming missile is the fallback; nothing worthy → null, battery holds
 }
 function updBuildings(dt) {
-  if (G.designated && G.designated.length) G.designated = G.designated.filter(e => e && e.hp > 0 && G.enemies.indexOf(e) >= 0);   // drop killed / vanished designated targets
   for (const ct of G.cities) cityDefend(ct, dt);   // cities are fortified — their populace fires back at nearby threats
   for (const b of G.buildings) {
     if (b.done === false || b.captured) continue;   // a captured building no longer answers to you (it works for the enemy — see the capture loop)
@@ -6199,23 +6195,6 @@ function updBuildings(dt) {
     if (b.emplace && (!b.owner || b.owner.hp <= 0 || G.units.indexOf(b.owner) < 0 || Math.abs(b.owner.x - b.x) > 150)) { b.hp -= 16 * dt; if (b.hp <= 0) continue; }   // an emplacement crumbles once its dug-in unit dies or marches off
     if (b.d.strat && b.silocd > 0) b.silocd = Math.max(0, b.silocd - dt);
     if (!b.d.weapon) { if (!b.ug) populaceDefend(b, dt); continue; }   // every non-turret building defends itself at close range — the armed populace inside (rifles by default; CIWS/plasma once you build the upgrade works)
-    if (G.manualGuns && G.manualGuns.indexOf(b) >= 0) {   // FIRE CONTROL — autonomy suspended; this gun engages ONLY the enemies the player has designated (and only those within its range & ceiling)
-      b.cd -= dt;
-      const plasmaM = b.d.plasmaable && plasmaArmed(), wpnM = plasmaM ? 'plasball' : b.d.weapon;
-      const baseCfM = b.d.ceil != null ? b.d.ceil : .80, cfM = plasmaM ? Math.min(.56, baseCfM) : baseCfM, ceilM = cfM ? cfM * worldH() : -1e9;
-      const brngM = b.d.range * radarBoost(b.x) * (plasmaM ? 1.5 : 1), r2M = brngM * brngM, myM = b.y - b.d.h * .5;
-      let tM = null, bdM = r2M; for (const e of G.designated) { if (e.y < ceilM) continue; const dd = (e.x - b.x) ** 2 + (e.y - myM) ** 2; if (dd < bdM) { bdM = dd; tM = e; } }
-      if (!tM) { tM = acquireEnemy(b.x, myM, brngM, cfM, b.d.noGround ? notNearGround : null); if (!tM && canIntercept(b.d)) tM = acquireIncoming(b.x, myM, brngM, cfM); }   // FALLBACK: with none of your marks in reach, the gun still defends on its own — fire control PRIORITIZES targets, it never leaves a gun sitting idle
-      if (tM && b.cd <= 0) {
-        b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof'));
-        let dmgMulM = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMulM = 1 + .6 * segs; }
-        const sdmgM = b.d.dmg * (1 + G.mult.dmg) * (plasmaM ? 1.6 : 1) * dmgMulM;
-        if (tM.interceptable || tM.pdable) { flakHit(tM, sdmgM); SFX.shoot(); }
-        else { const ltM = leadTime(wpnM, b.x, myM, tM); fire(b.x, myM, wpnM, tM.x + (tM.vx || 0) * ltM, tM.y + (tM.vy || 0) * ltM, true, sdmgM, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, myM - b.d.h * .5, 5); smoke(b.x, myM - b.d.h * .4, 3); shake(3); } }
-        claimDmg(tM, sdmgM);
-      }
-      continue;
-    }
     if (b.d.weapon === 'tractor') {   // telekinetic grapple — drag the highest airborne enemy down; it burns up once hauled into the dense atmosphere
       const by = b.y - b.d.h * .5; let t = null, hy = 1e9;
       for (const e of G.enemies) { if (e.reentry || e.y >= TROPO_Y()) continue; const dd = (e.x - b.x) ** 2 + (e.y - by) ** 2; if (dd < b.d.range * b.d.range && e.y < hy) { hy = e.y; t = e; } }
@@ -6242,17 +6221,12 @@ function updBuildings(dt) {
     const plasma = b.d.plasmaable && plasmaArmed();   // bunkers (etc.) re-arm with plasma — longer reach, more punch, fires higher
     const baseCf = b.d.ceil != null ? b.d.ceil : .80, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.56, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
-    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = b.y - b.d.h * .5, _efilt = b.d.noGround ? notNearGround : null; let t = pickDesignated(b.x, _emy, brng, cf, _efilt); if (!t && canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — after any fire-control designation — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* GLOBAL FIRE CONTROL: prefer a reachable designated target, else auto-acquire */ /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
+    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = b.y - b.d.h * .5, _efilt = b.d.noGround ? notNearGround : null; let t = null; if (canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t); fire(b.x, my, wpn, t.x + (t.vx || 0) * lt, t.y + (t.vy || 0) * lt, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }
   }
 }
-// FIRE CONTROL — add multiple heavy guns to a control group; a radar covers their combined range and you DESIGNATE incoming
-// enemies by clicking them. The grouped guns then auto-engage only your designated targets (those within each gun's reach).
-function manualActive() { return !!(G && G.manualGuns && G.manualGuns.length); }
-function gunRadar(b) { return b.d.range * radarBoost(b.x); }   // a gun's radar/engagement radius (range, extended by nearby Radars)
-const FC_UNIT_RING_CAP = 600;   // GLOBAL FIRE CONTROL — hard cap on unit coverage rings drawn per frame (buildings are uncapped but few); bounds worst-case cost at 9000-unit scale. Rings are already off-screen-culled first.
-// GLOBAL FIRE CONTROL — when the mode is ON, a shooter PRIORITIZES any designated enemy it can actually reach (within range +
-// under its altitude ceiling + passing its own role filter), then falls back to normal auto-acquire. Returns the nearest such
-// designated target, or null. Cheap: bails instantly when the mode is off or nothing is designated. No per-call allocations.
+// FIRE CONTROL WAS REMOVED (never worked well, cut for good — see the game's CLAUDE.md) — pickDesignated is kept only because
+// squad target-sharing code still calls it; G.fireControl is never set anymore so `!G.fireControl` short-circuits every call
+// straight to null with no G.designated read, making it a permanent, harmless no-op. Safe to delete once those callers are gone.
 function pickDesignated(x, y, range, ceilFrac, filter) {
   if (!G.fireControl || !G.designated.length) return null;
   const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range;
@@ -6260,22 +6234,6 @@ function pickDesignated(x, y, range, ceilFrac, filter) {
   for (const e of G.designated) { if (!e || e.hp <= 0) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bd) { bd = d; best = e; } }
   return best;
 }
-function toggleFireControl() {   // corner ⊕ button / F key — the GLOBAL fire-control overlay + designation mode (distinct from the per-gun battery)
-  if (!G) return;
-  G.fireControl = !G.fireControl;
-  const el = document.getElementById('btnFC'); if (el) el.classList.toggle('on', G.fireControl);
-  if (G.fireControl) { G.place = null; G.targeting = null; G.terrainMode = 0; if (G.strikeMode) closeStrike(); buildBuildBar(); toast('⊕ FIRE CONTROL ON — weapon coverage up · click enemies anywhere to designate; every gun & unit in reach engages them'); }
-  else toast('fire control off');
-}
-function clearDesignated() { if (!G) return; if (!G.designated.length) return; G.designated = []; toast('◎ designations cleared'); }
-function toggleManual() {   // add / remove the selected gun from the fire-control group
-  if (!G || !G.sel || !G.sel.d || !G.sel.d.manual || !G.sel.d.weapon) return;
-  const i = G.manualGuns.indexOf(G.sel);
-  if (i >= 0) { G.manualGuns.splice(i, 1); toast(G.manualGuns.length ? 'removed from fire control' : 'fire control released'); }
-  else { G.manualGuns.push(G.sel); G.place = null; G.targeting = null; G.terrainMode = 0; if (G.strikeMode) closeStrike(); buildBuildBar(); toast('⊕ FIRE CONTROL (' + G.manualGuns.length + ' gun' + (G.manualGuns.length > 1 ? 's' : '') + ') — click incoming enemies to designate'); }
-  refreshSel();
-}
-function releaseAllManual() { if (!G) return; G.manualGuns = []; G.designated = []; toast('fire control released'); refreshSel(); }
 const DEMOLISH_STAB_COST = 10;   // tunable — demolition must sting (a real decision, not free space-reclamation), not just be a discounted refund
 function demolishSelected() {   // DEMOLITION — undo an overbuild without waiting for the enemy to do it for you. Reclaims a slice of the IC spent, but costs STABILITY — tearing down what you built rattles the public.
   if (!G || !G.sel || !G.buildings) return;
@@ -6284,7 +6242,6 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
   G.ic = Math.min(1e9, G.ic + refund);
   G.stab = Math.max(0, G.stab - DEMOLISH_STAB_COST);
   G.buildings.splice(idx, 1);
-  if (G.manualGuns) { const mi = G.manualGuns.indexOf(b); if (mi >= 0) G.manualGuns.splice(mi, 1); }
   smoke(b.x, b.ug ? groundY(b.x) : groundY(b.x) - b.d.h * .5, 6); SFX.build();
   toast('⛏ DEMOLISHED ' + b.d.name.toUpperCase() + ' — +' + refund + ' IC reclaimed, −' + DEMOLISH_STAB_COST + '% STABILITY');
   G.sel = null; refreshSel(); buildBuildBar && buildBuildBar();
@@ -6321,20 +6278,6 @@ function stepGame(sec) {   // advance the sim by EXACTLY `sec` game-seconds in f
   }
   if (advanced && G.ach && !G.ach.altered) G.ach.altered = true;   // ACHIEVEMENT NOTCH — first step taken this round (Agent A renders the notch)
   G.paused = true;   // stays paused — the continuously-running rAF loop (frame()) repaints on its own very next tick, no manual render call needed
-}
-// click on/near an enemy that's inside the group's radar coverage → toggle it as a designated target. Returns true if it handled the click.
-function designateAt(wx, wy) {
-  if (!manualActive() && !G.fireControl) return false;
-  let best = null, bd = 1e9;   // forgiving, zoom-aware pick radius — scales up when zoomed out and with the enemy's own size, so tiny fast movers are still easy to mark
-  for (const e of G.enemies) { const thr = 52 / (cam.z || 1) + (e.s || 6), dc = (e.x - wx) ** 2 + (e.y - wy) ** 2; if (dc >= thr * thr || dc >= bd) continue;
-    if (!G.fireControl) {   // GLOBAL mode designates ANY enemy on the field; the legacy per-gun mode still requires the enemy be inside a battery gun's radar
-      let covered = false; for (const b of G.manualGuns) { if (G.buildings.indexOf(b) < 0) continue; const rr = gunRadar(b); if ((e.x - b.x) ** 2 + (e.y - (b.y - b.d.h * .5)) ** 2 <= rr * rr) { covered = true; break; } }
-      if (!covered) continue; }
-    bd = dc; best = e; }
-  if (!best) return false;
-  const i = G.designated.indexOf(best);
-  if (i >= 0) { G.designated.splice(i, 1); } else { G.designated.push(best); if (SFX.click) SFX.click(); floatText(best.x, best.y - (best.s || 6) - 6, '◎ TARGET', '#ff7a7a'); }
-  return true;
 }
 // ── BOMBARDER (CAPITAL FABRICATOR) BALANCE (tunable) ──────────────────────────────────────────────
 // Playtest: the Bombardier read as an un-beatable wall. These dial it down to "strong but beatable"
@@ -6867,51 +6810,6 @@ function renderGame() {
   }
   // strategic targeting reticle — follows the AIR aim point (snaps to airborne enemies), so you can airburst
   if (G.targeting) { const ap = (G.pendingStrike && G.pendingStrike.ap) || strikeAimPoint(), px = sx(ap.x), gy = ap.y, w = STRAT[G.targeting.type]; const col = ap.air ? '#ff9a3a' : '#ff5a5a'; /* a touch-aimed strike PINS the reticle where you tapped until you confirm */ c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.arc(px, gy, 16, 0, 6.28); c.moveTo(px - 24, gy); c.lineTo(px + 24, gy); c.moveTo(px, gy - 24); c.lineTo(px, gy + 24); c.stroke(); c.setLineDash([3, 5]); c.beginPath(); c.arc(px, gy, 60, 0, 6.28); c.stroke(); c.setLineDash([]); if (ap.air) { c.setLineDash([4, 6]); c.beginPath(); c.moveTo(px, gy); c.lineTo(px, groundY(ap.x)); c.stroke(); c.setLineDash([]); } c.fillStyle = col; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('☢ ' + (w ? w.name.toUpperCase() : 'STRIKE') + (ap.air ? ' ✈ AIRBURST' : ''), px, gy - 28); c.textAlign = 'left'; }
-  // FIRE CONTROL — radar coverage for the manual gun group (range rings + a rotating sweep) and a target reticle on every designated enemy
-  if (manualActive()) {
-    const sweep = animClock * .0013;
-    for (const b of G.manualGuns) { if (G.buildings.indexOf(b) < 0) continue; const gx = sx(b.x), gy = groundY(b.x) - b.d.h * .5, rr = gunRadar(b);
-      c.save(); c.globalAlpha = .35; c.strokeStyle = '#6dffb0'; c.setLineDash([4, 9]); c.lineWidth = 1; c.beginPath(); c.arc(gx, gy, rr, 0, 6.28); c.stroke(); c.setLineDash([]);
-      const a0 = sweep % 6.283; c.globalAlpha = .10; c.fillStyle = '#6dffb0'; c.beginPath(); c.moveTo(gx, gy); c.arc(gx, gy, rr, a0 - .45, a0); c.closePath(); c.fill();   // sweep wedge
-      c.globalAlpha = .5; c.strokeStyle = 'rgba(109,255,176,.7)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + Math.cos(a0) * rr, gy + Math.sin(a0) * rr); c.stroke();
-      c.globalAlpha = .8; c.fillStyle = '#6dffb0'; c.beginPath(); c.arc(gx, gy, 2.5, 0, 6.28); c.fill(); c.restore();
-    }
-    for (const e of G.designated) { if (!e || e.hp <= 0 || G.enemies.indexOf(e) < 0) continue; const ex = sx(e.x), ey = e.y, r = (e.s || 6) + 8, k = r * .5, rot = animClock * .004;
-      c.save(); c.strokeStyle = '#ff6a6a'; c.lineWidth = 1.6; c.globalAlpha = .92;
-      c.beginPath(); c.moveTo(ex - r, ey - r + k); c.lineTo(ex - r, ey - r); c.lineTo(ex - r + k, ey - r); c.moveTo(ex + r - k, ey - r); c.lineTo(ex + r, ey - r); c.lineTo(ex + r, ey - r + k); c.moveTo(ex + r, ey + r - k); c.lineTo(ex + r, ey + r); c.lineTo(ex + r - k, ey + r); c.moveTo(ex - r + k, ey + r); c.lineTo(ex - r, ey + r); c.lineTo(ex - r, ey + r - k); c.stroke();   // corner brackets
-      c.globalAlpha = .55; c.strokeStyle = 'rgba(255,90,90,.8)'; c.beginPath(); c.arc(ex, ey, r + 4, rot, rot + 1.4); c.stroke(); c.beginPath(); c.arc(ex, ey, r + 4, rot + Math.PI, rot + Math.PI + 1.4); c.stroke();   // spinning lock ring
-      c.restore();
-    }
-    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(109,255,176,.92)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('⊕ FIRE CONTROL — ' + G.manualGuns.length + ' gun' + (G.manualGuns.length > 1 ? 's' : '') + ' · ' + G.designated.length + ' target' + (G.designated.length !== 1 ? 's' : '') + ' · click enemies in radar to designate · Esc to release', W / 2, 96); c.textAlign = 'left'; c.restore();
-  }
-  // GLOBAL FIRE CONTROL — the corner ⊕ overlay: WEAPON-RANGE coverage for every armed building & unit (colored by REACH:
-  // blue=space · amber=air · red=ground) so you can see at a glance what can hit where, plus a spinning reticle on every
-  // globally designated enemy. Cheap: off-screen culled first, unit rings hard-capped, no per-frame allocations, stroke-only.
-  if (G.fireControl) {
-    c.save(); c.lineWidth = 1; c.setLineDash([3, 7]);
-    for (const b of G.buildings) { if (b.done === false || b.captured || !b.d.weapon || b.d.weapon === 'tractor') continue;   // every ARMED emplacement (not the telekinetic grapple, which has no range ring)
-      const rr = b.d.range * radarBoost(b.x); const px = sx(b.x); if (px < -rr - PX || px > W + rr + PX) continue;
-      const gy = groundY(b.x) - b.d.h * .5; if (gy - rr > VY1 || gy + rr < VY0) continue;
-      const cf = b.d.ceil != null ? b.d.ceil : .80, col = cf === 0 ? '78,168,255' : cf <= .60 ? '255,178,74' : '255,120,90';
-      c.strokeStyle = 'rgba(' + col + ',.30)'; c.beginPath(); c.arc(px, gy, rr, 0, 6.28); c.stroke();
-    }
-    let fcDrawn = 0;
-    for (const u of G.units) { if (fcDrawn >= FC_UNIT_RING_CAP) break; if (u.d.builder || u.onRail || u.carried || !u.d.weapon) continue;
-      const px = sx(u.x); if (px < -40 - PX || px > W + 40 + PX) continue; if (u.y < VY0 - 40 || u.y > VY1 + 40) continue;   // draw only on-screen armed units, capped, so 9000-unit scale stays bounded
-      const rr = u.d.range * (u.d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range);
-      const cf = u.d.domain === 'ground' ? (u.d.ceil != null ? u.d.ceil : .80) : u.d.domain === 'air' ? (u.d.ceil != null ? u.d.ceil : .56) : 0;
-      const col = cf === 0 ? '78,168,255' : cf <= .60 ? '255,178,74' : '255,120,90';
-      c.strokeStyle = 'rgba(' + col + ',.16)'; c.beginPath(); c.arc(px, u.y, rr, 0, 6.28); c.stroke(); fcDrawn++;
-    }
-    c.setLineDash([]); c.restore();
-    for (const e of G.designated) { if (!e || e.hp <= 0 || G.enemies.indexOf(e) < 0) continue; const ex = sx(e.x), ey = e.y, r = (e.s || 6) + 8, k = r * .5, rot = animClock * .004;
-      c.save(); c.strokeStyle = '#ff6a6a'; c.lineWidth = 1.6; c.globalAlpha = .92;
-      c.beginPath(); c.moveTo(ex - r, ey - r + k); c.lineTo(ex - r, ey - r); c.lineTo(ex - r + k, ey - r); c.moveTo(ex + r - k, ey - r); c.lineTo(ex + r, ey - r); c.lineTo(ex + r, ey - r + k); c.moveTo(ex + r, ey + r - k); c.lineTo(ex + r, ey + r); c.lineTo(ex + r - k, ey + r); c.moveTo(ex - r + k, ey + r); c.lineTo(ex - r, ey + r); c.lineTo(ex - r, ey + r - k); c.stroke();   // corner brackets
-      c.globalAlpha = .55; c.strokeStyle = 'rgba(255,90,90,.8)'; c.beginPath(); c.arc(ex, ey, r + 4, rot, rot + 1.4); c.stroke(); c.beginPath(); c.arc(ex, ey, r + 4, rot + Math.PI, rot + Math.PI + 1.4); c.stroke();   // spinning lock ring
-      c.restore();
-    }
-    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(109,255,176,.95)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('⊕ FIRE CONTROL — weapon coverage · ' + G.designated.length + ' target' + (G.designated.length !== 1 ? 's' : '') + ' · click any enemy to designate · right-click to clear · F to close', W / 2, 78); c.textAlign = 'left'; c.restore();
-  }
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
   if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
   if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
@@ -7489,7 +7387,7 @@ function refreshSel() {
     if (d.garrison) { const g = d.garrison, gk = g.keys || (g.unit ? [g.unit] : (g.key ? [g.key] : [])), gn = gk.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' / '); if (gn) html += `<div class="st"><span>Garrison</span><b>${g.n || 1} × ${gn}</b></div>`; }
     if (d.garrAura) { const ga = d.garrAura, gan = ga.units.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' + '), tgt = ga.target === 'air' ? 'Airbase' : 'Factory'; html += `<div class="st"><span>Arms nearby</span><b style="color:#ffd86b">every ${tgt} within ${ga.r || 300}px: +${gan}</b></div>`; }
     if (d.prodList) { const pn = d.prodList.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' · '); html += `<div class="st"><span>Produces</span><b style="color:#bfe9ff">${pn}</b></div>`; }
-    if (d.manual && d.weapon) { const on = G.manualGuns.indexOf(s) >= 0; html += `<button class="pill" style="margin-top:6px;width:100%;font-size:10px;${on ? 'background:#2c4a32;border-color:#6dffb0;color:#cfeede' : ''}" data-act="toggleManual">${on ? '✓ IN FIRE CONTROL — remove' : '⊕ ADD TO FIRE CONTROL'}</button>`; if (G.manualGuns.length) html += `<button class="pill" style="margin-top:4px;width:100%;font-size:9px" data-act="releaseManual">⊗ RELEASE ALL (${G.manualGuns.length})</button>`; } if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button>`; } }
+    if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else {
     /* stat row additions — fire rate & speed alongside the existing HP/Armor + Range/Dmg, mirroring the same d.rate/d.speed fields renderProdDetail's PRODUCE card already shows; skipped when the def has none */
@@ -8275,14 +8173,13 @@ function gameTap(px, py, button) {   // shared by mouse (mousedown) and touch (t
   if (G.strikeMode) { if (button === 2) { closeStrike(); return; } }
   if (G.terrainMode) { if (button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
   if (G.place) { if (button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
-  if (manualActive() || G.fireControl) { if (button === 2) { if (manualActive()) releaseAllManual(); else clearDesignated(); return; } if (designateAt(wx, wyc)) return; }   // fire control: left-click an enemy to designate it (in radar for the per-gun battery, anywhere in GLOBAL mode); right-click releases / clears. (falls through to normal selection if no enemy was clicked)
   const hit = pickAt(wx, wyc); G.sel = hit ? hit.o : null; refreshSel();
 }
-function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
+function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
 function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchStrike(p.silo, p.type, p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
 // DELEGATED clicks for the selection panel — one listener on the persistent #info element, so the
 // buttons keep working even though the panel's innerHTML is rebuilt as the selection's stats change
-document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'toggleManual') toggleManual(); else if (act === 'releaseManual') releaseAllManual(); else if (act === 'armSilo') armSilo(el.dataset.arg); else if (act === 'demolish') demolishSelected(); });
+document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'armSilo') armSilo(el.dataset.arg); else if (act === 'demolish') demolishSelected(); });
 // DELEGATED clicks for the PRODUCTION side panel — quantity stepper + BUILD. One listener on the persistent #pdetail
 // element so the buttons survive its innerHTML being rebuilt on every selection / cap change.
 document.getElementById('pdetail').addEventListener('click', e => {
@@ -8436,10 +8333,9 @@ addEventListener('keydown', e => {
     const kk = (e.key || '').toLowerCase();
     if (kk === 'h') { G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }
     else if (kk === 'v') { toggleZones(); }
-    else if (kk === 'f') { toggleFireControl(); }
     else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
   }
-  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.manualGuns = []; G.designated = []; G.fireControl = false; const fcb = document.getElementById('btnFC'); if (fcb) fcb.classList.remove('on'); G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);
 // ── LIVE RELOAD (dev convenience) ──────────────────────────────────────────────

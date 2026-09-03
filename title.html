@@ -8474,6 +8474,10 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   const CSS = `
   #tutOverlay{position:fixed;inset:0;z-index:9000;font-family:Consolas,"SF Mono",Menlo,monospace}
   #tutOverlay .tut-dim{position:absolute;inset:0;background:rgba(3,7,14,.62)}
+  #tutOverlay.tut-action{pointer-events:none}
+  /* ACTION STEPS (s.done set) — the player has to click something under the overlay (a build-bar card, then the ground), so the whole overlay goes click-through and the dim goes light; only the card stays interactive for SKIP/BACK. Read-only steps keep the full block. */
+  #tutOverlay.tut-action .tut-dim{background:rgba(3,7,14,.18)}
+  #tutOverlay.tut-action .tut-card{pointer-events:auto}
   #tutOverlay .tut-ring{position:absolute;border:2px solid var(--res,#c89bff);border-radius:8px;background:rgba(200,155,255,.06);box-shadow:0 0 0 3px rgba(200,155,255,.22),0 0 22px 4px rgba(200,155,255,.45);pointer-events:none;transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease,opacity .18s ease}
   #tutOverlay .tut-card{position:absolute;width:340px;max-width:86vw;background:rgba(9,15,26,.97);border:1px solid rgba(140,175,225,.45);border-radius:10px;padding:15px 18px 13px;box-shadow:0 10px 40px rgba(0,0,0,.6);color:#dbe6f2}
   #tutOverlay .tut-step{font-size:11px;letter-spacing:.14em;color:#7f93ad;margin-bottom:6px}
@@ -8609,7 +8613,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   // seeds a Factory (+ most seed a SAM Battery). So "done" can't be "does one exist" — it has to be "did the
   // COUNT go up since this step began", baselined in onEnter() and read back in done(). Field names are just
   // local ids; the map lives on G.tut so a restart/newGame wipes it for free.
-  function tutCountB(key) { let n = 0; for (const b of G.buildings) { if (b.done === false || b.captured) continue; if (b.key === key) n++; } return n; }
+  function tutCountB(key) { let n = 0; for (const b of G.buildings) { if (b.captured) continue; if (b.key === key) n++; } for (const s of (G.sites || [])) { if (s.key === key) n++; } return n; }   /* counts a building the moment it's PLACED — placeBuilding() only pushes a G.sites entry (construction in progress); it doesn't land in G.buildings until finishSite() runs, which needs the sim actually ticking. Counting G.sites too means the step advances on the player's ACTION, not once construction finishes seconds later. */
   function tutCountU(key) { let n = 0; for (const u of G.units) { if (u.key === key) n++; } return n; }
   function tutCountQ(key) { let n = 0; for (const b of G.buildings) { if (!b.queue) continue; for (const q of b.queue) if (q.key === key) n++; } return n; }
   function tutStepBase(field, cur) { G.tut._base = G.tut._base || {}; G.tut._base[field] = cur; }
@@ -8688,6 +8692,12 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   function render() {
     const s = curSteps[idx];
     if (s.onEnter) { try { s.onEnter(G); } catch (e) {} }
+    // ACTION STEPS (s.done) need the player to click THROUGH the overlay onto the real game (a build-bar
+    // card, then the ground) — see the .tut-action CSS above. They also need the sim actually running: the
+    // match STARTS PAUSED, and a paused game never finishes construction, so a verified-action step would
+    // wait forever. Read-only steps (no done) keep the original full-block, no-auto-unpause behaviour.
+    ov.classList.toggle('tut-action', !!s.done);
+    if (s.done && G && G.paused) G.paused = false;
     ov.querySelector('.tut-step').textContent = curSteps.length > 1 ? ('STEP ' + (idx + 1) + ' / ' + curSteps.length) : 'ADVISORY';
     ov.querySelector('.tut-title').textContent = s.title;
     ov.querySelector('.tut-body').innerHTML = s.body + (s.done ? '<div class="tut-waiting">◉ waiting for you to do this…</div>' : '');
@@ -8724,6 +8734,10 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     ov.querySelector('.tut-back').addEventListener('click', () => go(-1));
     ov.querySelector('.tut-next').addEventListener('click', () => go(1));
     onKey = function (e) {
+      // ACTION STEPS have no NEXT to press and no dim to Escape out of — and the game itself needs
+      // Escape (cancel a placement), Space (pause) etc. to keep working, so hands off entirely; SKIP is
+      // still reachable by clicking the card's button.
+      if (curSteps[idx] && curSteps[idx].done) return;
       if (e.key === 'Escape') { skipSteps(); e.preventDefault(); e.stopPropagation(); }
       else if (e.key === 'Enter' || e.key === 'ArrowRight') { go(1); e.preventDefault(); e.stopPropagation(); }
       else if (e.key === 'ArrowLeft') { go(-1); e.preventDefault(); e.stopPropagation(); }

@@ -86,22 +86,42 @@
   .hbtn.attn { border-color: var(--term); color: var(--term); animation: attnPulse 1.5s ease-in-out infinite; }   /* onboarding: pulse a button the player hasn't discovered yet */
   @keyframes attnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(109,255,176,0); } 50% { box-shadow: 0 0 14px 2px rgba(109,255,176,.6); } }
   .sbtn { min-width: 30px; justify-content: center; } .sbtn.act { background: var(--ic); color: #05111f; }
+  #btnSpeed { min-width: 32px; justify-content: center; }
   .srbar { display: flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
   .srbar .sr { font-size: 11px; color: var(--res); letter-spacing: 1px; } .srbar .none { color: #5c7290; }
   .objwrap { margin-left: auto; text-align: right; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 11px; }
   .objwrap .big { font-size: 13px; font-weight: 700; letter-spacing: 1px; } .objwrap .sub { font-size: 10px; opacity: .65; }
+  /* SUBBAR — the secondary "watch, don't open" line under the topbar: garrison / tech-era / special-resources,
+     demoted from full topbar cells so the primary row stays to the 5 core stats + 3 verbs + objective. JS
+     (layoutHudChrome, called from syncHUD) keeps `top` pinned to the live bottom edge of .topbar so it never
+     overlaps it even while the topbar itself wraps to 2 rows on a narrow phone. */
+  .subbar { position: absolute; left: 8px; right: 8px; top: 44px; display: flex; gap: 10px; flex-wrap: wrap; pointer-events: none; }
+  .subbar .cell { background: rgba(10,16,28,.55); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; min-width: 0; display: flex; align-items: baseline; gap: 5px; pointer-events: auto; }
+  .subbar .cell .l { font-size: 7.5px; } .subbar .cell .n { font-size: 10.5px; } .subbar .cell .r { font-size: 7.5px; }
+  .subbar .srbar { padding: 2px 8px; }
 
   .buildbar { position: absolute; left: 8px; bottom: 8px; pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px; max-width: 340px; max-height: calc(100vh - 20px); display: flex; flex-direction: column; }
   .bbhdr { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 6px; font-size: 9px; letter-spacing: 1px; color: #9fb6d4; }
   .bbmin { cursor: pointer; padding: 0 5px; color: #cfe0ff; font-size: 12px; line-height: 1; border: 1px solid var(--line); border-radius: 3px; }
   .bbmin:hover { background: var(--ic); color: #05111f; }
-  .buildbar.min .bbtabs, .buildbar.min .bbgrid { display: none; } .buildbar.min .bbhdr { margin-bottom: 0; }
+  .buildbar.min .bbtabs, .buildbar.min .bbgrid, .buildbar.min .ghint { display: none; } .buildbar.min .bbhdr { margin-bottom: 0; }
+  .bbtools { cursor: pointer; padding: 0 5px; color: #9fb6d4; font-size: 10px; letter-spacing: .5px; border: 1px solid var(--line); border-radius: 3px; margin-right: auto; }
+  .bbtools:hover, .bbtools.on { background: var(--ic); color: #05111f; border-color: var(--ic); }
   #zoomctl { position: absolute; right: 8px; bottom: 50px; pointer-events: auto; display: flex; flex-direction: column; gap: 4px; }
   #zoomctl button { width: 26px; height: 26px; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; color: #cfe0ff; font-size: 16px; line-height: 1; cursor: pointer; }
   #zoomctl button:hover { background: var(--ic); color: #05111f; }
-  /* bottom-right pull-out tab — reaches ACHIEVEMENTS mid-game, since the footer link (which normally opens it) is hidden during gameplay. Sits ABOVE #zoomctl, flush to the right edge, so it never overlaps the +/-/reset buttons. */
-  #achTab { position: fixed; right: 0; bottom: 150px; z-index: 5; pointer-events: auto; writing-mode: vertical-rl; background: rgba(14,23,38,.5); border: 1px solid var(--line); border-right: none; border-radius: 6px 0 0 6px; color: #cfe0ff; font-size: 12px; letter-spacing: 1px; padding: 9px 5px; cursor: pointer; opacity: .5; transition: opacity .15s, transform .15s, background .15s; }
-  #achTab:hover { opacity: 1; background: rgba(22,36,58,.88); transform: translateX(-4px); }
+  /* right-edge pull-out DRAWER — replaces the old always-on #achTab. One tab opens ONE panel that hosts every
+     "open when you want it" control (view/audio toggles, help, stats/readiness/achievements/allies) so the
+     always-visible chrome stays down to core verbs + live stats. z-index sits above #gameHud(4)/.info but
+     below .modal-bg(14) so a modal always wins. */
+  #drawerTab { position: fixed; right: 0; bottom: 150px; z-index: 10; pointer-events: auto; writing-mode: vertical-rl; background: rgba(14,23,38,.5); border: 1px solid var(--line); border-right: none; border-radius: 6px 0 0 6px; color: #cfe0ff; font-size: 12px; letter-spacing: 1px; padding: 9px 5px; cursor: pointer; opacity: .5; transition: opacity .15s, transform .15s, background .15s, right .22s ease; }
+  #drawerTab:hover, #drawerTab.on { opacity: 1; background: rgba(22,36,58,.88); }
+  #drawerTab.on { right: min(240px, 86vw); }
+  #hudDrawer { position: fixed; top: 0; right: -100%; bottom: 0; width: min(240px, 86vw); z-index: 10; pointer-events: auto; background: rgba(9,14,24,.97); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.5); padding: 46px 12px 16px; overflow-y: auto; transition: right .22s ease; }
+  #hudDrawer.open { right: 0; }
+  #hudDrawer .dwsec { margin-bottom: 16px; }
+  #hudDrawer .dwh { font-size: 9px; letter-spacing: 2px; color: var(--term); opacity: .85; margin-bottom: 6px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  #hudDrawer .hbtn { width: 100%; margin-bottom: 6px; justify-content: flex-start; box-sizing: border-box; }
   .bbtabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .bbtab { padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; font-size: 9px; letter-spacing: 1px; cursor: pointer; color: #9fb6d4; white-space: nowrap; } .bbtab.sel { background: var(--ic); color: #05111f; }
   .bbgrid { display: flex; flex-wrap: wrap; gap: 5px; max-width: 326px; max-height: min(56vh, 420px); overflow-y: auto; }
   .bcard { width: 76px; background: #0e1726; border: 1px solid var(--line); border-radius: 4px; padding: 4px; cursor: pointer; transition: .1s; }
@@ -151,7 +171,9 @@
 
   .back { position: absolute; left: 50%; top: 56%; transform: translateX(-50%); pointer-events: auto; background: var(--panel); border: 1px solid var(--inf); color: #fff; padding: 9px 18px; border-radius: 4px; cursor: pointer; letter-spacing: 1px; font-family: inherit; font-size: 13px; display: none; z-index: 6; }
   .back:hover { border-color: var(--inf); color: #fff; }
-  .ghint { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); color: var(--term); font-size: 12px; letter-spacing: 1px; pointer-events: none; text-shadow: 0 0 8px #000; text-align: center; }
+  /* GHINT — used to float mid-canvas over the PAUSED text; now docked as one line inside the build bar header
+     (still the same #ghint node/id, JS keeps setting its text — see syncHUD) so it never occludes the canvas. */
+  .ghint { display: block; color: var(--term); font-size: 9.5px; letter-spacing: .4px; line-height: 1.4; pointer-events: none; text-align: left; max-width: 300px; margin-bottom: 5px; transition: opacity .5s; }
 
   .has-tip { text-decoration: underline dotted rgba(180,210,255,.55); text-underline-offset: 2px; cursor: help; }
   .tip { position: fixed; z-index: 30; display: none; max-width: 250px; background: var(--panel); border: 1px solid var(--ic); border-radius: 5px; padding: 8px 11px; font-size: 11px; color: var(--paper); pointer-events: none; line-height: 1.55; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
@@ -336,8 +358,8 @@
   /* ===== MOBILE / SMALL SCREENS — compact HUD, touch-sized targets ===== */
   @media (pointer: coarse) {
     .hbtn { min-height: 40px; padding: 6px 13px; }               /* finger-sized buttons */
-    #zoomctl button { width: 42px; height: 42px; font-size: 20px; }
-    #achTab { bottom: 200px; font-size: 14px; padding: 12px 7px; opacity: .65; }   /* zoomctl grows on touch, so the tab needs to sit higher to stay clear of it */
+    #zoomctl { display: none; }                                  /* pinch-to-zoom already exists on touch — the +/-/reset buttons are desktop-only clutter here */
+    #drawerTab { font-size: 14px; padding: 12px 7px; opacity: .65; }
     .bbmin { padding: 4px 10px; font-size: 15px; }
     .toggle { width: 56px; height: 27px; } .toggle .knob { width: 21px; height: 21px; } .toggle.on .knob { left: 32px; }
     .bcard { width: 86px; } .bcard canvas { width: 78px; }
@@ -352,12 +374,12 @@
     .menu { width: min(92vw, 340px); }
     .topbar { gap: 3px; padding: 4px; }
     .cell { min-width: 62px; padding: 2px 6px; } .cell .n { font-size: 12px; }
-    .srbar { display: none; }                                    /* special resources live in 📊 STATS on small screens */
+    .srbar { display: none; }                                    /* special resources live in 📊 STATS (drawer → MODES & TOOLS) on small screens */
+    .subbar .cell { padding: 1px 6px; }
     .objwrap { padding: 3px 8px; } .objwrap .big { font-size: 11px; } .objwrap .sub { font-size: 8.5px; }
     .buildbar { max-width: min(52vw, 300px); } .bbgrid { max-width: none; max-height: 32vh; overflow-y: auto; }
     .produce { max-width: 96vw; } .pbody { flex-direction: column; } .pgrid { width: auto; max-width: 94vw; max-height: 28vh; } .pdetail { width: auto; align-self: stretch; max-height: 34vh; }
     .info { width: 180px; top: 92px; }
-    .ghint { font-size: 10.5px; max-width: 94vw; top: 38%; background: rgba(6,12,24,.82); border: 1px solid rgba(109,255,176,.35); border-radius: 6px; padding: 9px 12px; line-height: 1.5; }   /* the wrapped topbar eats the top of the screen — drop the hint to mid-screen on its own panel */
     .modal { padding: 14px; } input[type=range] { width: 140px; }
     .toast { bottom: 130px; max-width: 92vw; font-size: 11px; }
     .cmdpanel { min-width: 0; width: 94vw; top: 8px; max-height: 82vh; overflow-y: auto; padding: 8px 9px; }
@@ -367,7 +389,7 @@
     .footer { font-size: 10px; }
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
-  body.hud-hidden .topbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying, body.hud-hidden #achTab { display: none !important; }
+  body.hud-hidden .topbar, body.hud-hidden .subbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying, body.hud-hidden #drawerTab, body.hud-hidden #hudDrawer, body.hud-hidden #tutReady { display: none !important; }
 </style>
 </head>
 <body>
@@ -703,35 +725,58 @@
 </div></div>
 
 <div id="gameHud">
+  <!-- ALWAYS-VISIBLE topbar — the 5 core stats that change moment to moment, the 3 core verbs, and the objective.
+       Everything else ("open when you want it") moved to #hudDrawer or the contextual pieces below (subbar /
+       readiness pill / ghint-in-buildbar). See the HUD-decluttering pass in the changelog for the full map. -->
   <div class="topbar">
     <div class="cell ic" data-tip="Industrial Capacity — production base. Build buildings & units. Power Plants raise the rate."><div class="l has-tip">IND. CAP</div><div class="n" id="hIc">0</div><div class="r" id="icR">+0/s</div></div>
     <div class="cell mp" data-tip="Manpower — population to crew units & establish new zones. Housing raises it."><div class="l has-tip">MANPOWER</div><div class="n" id="hMp">0</div><div class="r" id="mpR">+0/s</div></div>
-    <div class="cell garr" data-tip="Garrison — the SEPARATE auto-defense track. Bunkers, Barracks, Garrison Factories & Airbases passively spawn free defenders up to this WEIGHT budget, set by your Garrison Stockpiles. Each live garrisoner drains a little IC/s upkeep (shown here)."><div class="l has-tip">GARRISON</div><div class="n" id="hGarr">0/0</div><div class="r" id="garrR">-0.0/s</div></div>
-    <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
     <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar (they also bank a small green +RESERVE shown next to your stability — an ABSORBING SHIELD that eats losses first, so stability holds at its ceiling until the reserve is spent, then it starts to fall). Falls when cities are hit or you over-use strikes. Hitting 0 triggers a recoverable CAPITULATION CRISIS — production freezes and troops mutiny while the state forcibly stabilizes, then a grace period keeps it from flip-flopping. Not instant defeat; only repeated collapses lose the run."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
-    <div class="cell res" data-tip="Tech Era — research is bought with INFLUENCE in the RESEARCH tree. Advancing to Fusion/Space age unlocks higher tiers."><div class="l has-tip">TECH ERA</div><div class="n" id="hRes">I</div><div class="r" id="resR">INFO AGE</div></div>
-    <div class="srbar" id="srBar" data-tip="Special Resources — extracted from deposits. Owning one permanently cheapens/unlocks related units."><span class="none">no special resources</span></div>
+    <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
     <div class="hbtn has-tip" id="btnRes" data-tip="Open the research tree — General (cheap) & Dangerous (society-shifting) tech.">RESEARCH<i id="resProgBar"></i></div>
     <div class="hbtn has-tip" id="btnStrike" data-tip="Strategic strike — opens the launch overview, marks your silos, and lets you call a nuclear/orbital strike. Strikes cost STABILITY.">☢ STRIKE</div>
-    <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
-    <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎</div>
-    <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">?</div>
-    <div class="hbtn has-tip" id="btnTip" data-tip="Ask for a tip — a random piece of strategy advice. New here? Tap it a few times.">💡 TIP</div>
-    <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫</div>
-    <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣</div>
     <div class="hbtn has-tip" id="btnPause" data-tip="Pause / resume (or press SPACE)." onclick="togglePause()">❚❚</div>
-    <span id="speedBtns" style="display:contents"><div class="hbtn sbtn" data-spd="0.5">½x</div><div class="hbtn sbtn act" data-spd="1">1x</div><div class="hbtn sbtn" data-spd="2">2x</div><div class="hbtn sbtn" data-spd="3">3x</div></span>
+    <span id="speedBtns" style="display:contents"><div class="hbtn has-tip" id="btnSpeed" data-spd="1" data-tip="Game speed — tap to cycle (keys 1/2/3 still work if they exist).">1x</div></span>
     <span id="stepBtns" style="display:none"><div class="hbtn step" data-step="1">+1s</div><div class="hbtn step" data-step="3">+3s</div><div class="hbtn step" data-step="5">+5s</div><div class="hbtn step" data-step="10">+10s</div></span>
     <div class="hbtn has-tip" id="btnTurnMode" data-tip="TURN MODE — freezes real time; advance the sim yourself using the step buttons instead of a running clock. No time pressure — build & fight at your own pace." onclick="toggleTurnMode()">⏱ TURN</div>
     <span id="turnModeBadge" class="has-tip" data-tip="TURN MODE is ON — the clock only moves when YOU press a step button." style="display:none;font-size:9px;letter-spacing:1px;color:#ffe08a;padding:0 4px;align-self:center">⏱ TURN MODE</span>
     <div class="objwrap"><div class="big" id="objBig">—</div><div class="sub" id="objSub"></div></div>
   </div>
-  <div class="ghint" id="ghint">PREP PHASE — build Power/Housing, then Factories/Airbases/Shipyards. Scroll with arrows / screen edges; pan the TALL sky with W/S, ↑/↓ or Shift+wheel; ZOOM with the mouse wheel or the +/− buttons. SPACE = pause.</div>
-  <div class="buildbar" id="buildbar"><div class="bbhdr"><span>⚙ BUILD</span><span class="bbmin" id="bbmin" onclick="toggleBuildBar()" title="Minimize / expand the build bar">▾</span></div><div class="bbtabs" id="bbtabs"></div><div class="bbgrid" id="bbgrid"></div></div>
+  <!-- SUBBAR — "watch, don't open": garrison / tech era / special resources, demoted off the primary row but
+       still glanceable at all times. Same ids as before (hGarr/garrR/hRes/resR/srBar) so update code is untouched. -->
+  <div class="subbar" id="subbar">
+    <div class="cell garr" data-tip="Garrison — the SEPARATE auto-defense track. Bunkers, Barracks, Garrison Factories & Airbases passively spawn free defenders up to this WEIGHT budget, set by your Garrison Stockpiles. Each live garrisoner drains a little IC/s upkeep (shown here)."><div class="l has-tip">GARRISON</div><div class="n" id="hGarr">0/0</div><div class="r" id="garrR">-0.0/s</div></div>
+    <div class="cell res" data-tip="Tech Era — research is bought with INFLUENCE in the RESEARCH tree. Advancing to Fusion/Space age unlocks higher tiers."><div class="l has-tip">TECH ERA</div><div class="n" id="hRes">I</div><div class="r" id="resR">INFO AGE</div></div>
+    <div class="srbar" id="srBar" data-tip="Special Resources — extracted from deposits. Owning one permanently cheapens/unlocks related units."><span class="none">no special resources</span></div>
+  </div>
+  <div class="buildbar" id="buildbar"><div class="bbhdr"><span>⚙ BUILD</span><span class="bbtools" id="bbtools" title="Show/hide DIG & TERRAIN tools">🛠 TOOLS</span><span class="bbmin" id="bbmin" onclick="toggleBuildBar()" title="Minimize / expand the build bar">▾</span></div><div class="ghint" id="ghint">PREP PHASE — build Power/Housing, then Factories/Airbases/Shipyards. Scroll with arrows / screen edges; pan the TALL sky with W/S, ↑/↓ or Shift+wheel; ZOOM with the mouse wheel or the +/− buttons. SPACE = pause.</div><div class="bbtabs" id="bbtabs"></div><div class="bbgrid" id="bbgrid"></div></div>
   <div id="zoomctl"><button onclick="zoomBtn(1.25)" title="Zoom in">+</button><button onclick="zoomBtn(0.8)" title="Zoom out">−</button><button onclick="zoomReset()" title="Reset zoom" style="font-size:9px">⌂</button></div>
-  <div id="achTab" title="Achievements" onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
+  <!-- DRAWER — every "open when you want it" control lives here now, behind ONE right-edge tab. -->
+  <div id="drawerTab" title="Menu">▤</div>
+  <div id="hudDrawer">
+    <div class="dwsec">
+      <div class="dwh">VIEW &amp; AUDIO</div>
+      <div class="hbtn on has-tip" id="btnMus" data-tip="Toggle the soundtrack (or press M).">♫ MUSIC</div>
+      <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣ PLAYLIST</div>
+      <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎ COVERAGE ZONES</div>
+      <div class="hbtn has-tip" id="btnHideHud" data-tip="Hide the whole HUD for a clean screenshot (or press H)." onclick="toggleHudHidden()">🖥 HIDE HUD</div>
+    </div>
+    <div class="dwsec">
+      <div class="dwh">HELP</div>
+      <div class="hbtn has-tip" id="btnHelp" data-tip="Field Manual — what everything does and WHERE to use it.">? FIELD MANUAL</div>
+      <div class="hbtn has-tip" id="btnTip" data-tip="Ask for a tip — a random piece of strategy advice. New here? Tap it a few times.">💡 TIP</div>
+      <div class="hbtn has-tip" id="btnGuidanceMode" data-tip="Change how much hand-holding / help you get, for THIS match." onclick="openTutPrompt()">🎓 GUIDANCE MODE</div>
+    </div>
+    <div class="dwsec">
+      <div class="dwh">MODES &amp; TOOLS</div>
+      <div class="hbtn has-tip" id="btnStatsDrawer" data-tip="Open the full status report — every current stat, research bonus and special-building buff." onclick="openStats()">📊 STATS</div>
+      <div class="hbtn has-tip" id="btnReadyToggle" data-tip="Show/hide the ★ READINESS panel (a docked pill that expands with what your force is missing before re-entry)." onclick="toggleReadyPanel()">★ READINESS</div>
+      <div class="hbtn has-tip" id="btnAchievements" data-tip="Achievements earned this run." onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
+      <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
+    </div>
+  </div>
   <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="ptabs" id="ptabs"></div><div class="pbody"><div class="pgrid" id="pgrid"></div><div class="pdetail" id="pdetail"></div></div></div>
   <div class="info" id="info"></div>
   <button class="back" id="backBtn">❚❚ MENU</button>
@@ -3264,6 +3309,7 @@ function newGame(diff) {
   recalcBuildings(); buildBuildBar();
   initAmbient();   // 🚗✈🚤 cosmetic ambient life pool — see AMBIENT LIFE
   applyTurnModeUI();   // TURN MODE — sync the speed/step button clusters + HUD badge to whatever was persisted, and (if on) force-pause
+  if (typeof setSpeedUI === 'function') setSpeedUI();
 }
 function landNear(x) { for (let r = 0; r < WORLD_W; r += 14) for (const xx of [x - r, x + r]) if (xx > 60 && xx < WORLD_W - 60 && elevAt(xx) > SEA_E + .05) return xx; return x; }
 // snap to flat land like flatLand(), but keep at least `gap` from every already-placed city centre so
@@ -6321,6 +6367,14 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
 }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
 function togglePause() { if (!G || mode !== 'game' || G.over) return; if (G.turnMode) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too (TURN MODE forces & holds the pause — see toggleTurnMode)
+function toggleHudHidden() { if (!G) return; G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); if (typeof toast === 'function') toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }   // screenshot/cinematic mode — shared by the H key and the drawer's 🖥 HIDE HUD button
+// DRAWER — one right-edge tab opens/closes #hudDrawer; persisted so re-opening the game keeps it as you left it.
+function setDrawerOpen(open) {
+  const d = document.getElementById('hudDrawer'), t = document.getElementById('drawerTab');
+  if (d) d.classList.toggle('open', open); if (t) t.classList.toggle('on', open);
+  try { localStorage.setItem('tm_drawer', open ? '1' : '0'); } catch (e) {}
+}
+function toggleDrawer() { const d = document.getElementById('hudDrawer'); setDrawerOpen(!(d && d.classList.contains('open'))); }
 /* ===== TURN MODE — trade the real-time clock for player-driven steps (persisted, default off) ===== */
 function loadTurnMode() { try { return localStorage.getItem('tm_turnMode') === '1'; } catch (e) { return false; } }
 function saveTurnMode(v) { try { localStorage.setItem('tm_turnMode', v ? '1' : '0'); } catch (e) {} }
@@ -8067,7 +8121,11 @@ document.getElementById('lmAddCombat').addEventListener('click', () => document.
 document.getElementById('lmFilePrep').addEventListener('change', e => { addLocalFiles('prep', e.target.files); e.target.value = ''; });
 document.getElementById('lmFileCombat').addEventListener('change', e => { addLocalFiles('combat', e.target.files); e.target.value = ''; });
 document.getElementById('endReturn').addEventListener('click', backToTitle);
-document.querySelectorAll('.sbtn').forEach(b => b.addEventListener('click', () => { if (!G) return; G.speed = +b.dataset.spd; if (G.ach) G.ach.speedChg = (G.ach.speedChg || 0) + 1; document.querySelectorAll('.sbtn').forEach(x => x.classList.toggle('act', x === b)); }));
+// SPEED — a single button that CYCLES ½ → 1 → 2 → 3 → ½ (used to be 4 separate [½x][1x][2x][3x] buttons).
+// #speedBtns is still the wrapper applyTurnModeUI() shows/hides for TURN MODE; #btnSpeed is the one control inside it.
+const SPEED_CYCLE = [0.5, 1, 2, 3];
+function setSpeedUI() { const b = document.getElementById('btnSpeed'); if (b) b.textContent = (G ? G.speed : 1) === 0.5 ? '½x' : Math.round(G ? G.speed : 1) + 'x'; }
+{ const sb = document.getElementById('btnSpeed'); if (sb) sb.addEventListener('click', () => { if (!G) return; const i = SPEED_CYCLE.indexOf(G.speed); G.speed = SPEED_CYCLE[(i < 0 ? 0 : i + 1) % SPEED_CYCLE.length]; if (G.ach) G.ach.speedChg = (G.ach.speedChg || 0) + 1; setSpeedUI(); }); }
 document.querySelectorAll('.step').forEach(b => b.addEventListener('click', () => stepGame(+b.dataset.step)));   // TURN MODE — [+1s]/[+3s]/[+5s]/[+10s]
 
 // build bar
@@ -8101,11 +8159,19 @@ function buildBuildBar() {
   if (revealing && cats.indexOf(curBcat) < 0) curBcat = cats[0] || 'ECON';
   const tabs = document.getElementById('bbtabs'); tabs.innerHTML = '';
   for (const cat of cats) { const t = document.createElement('div'); t.className = 'bbtab' + (cat === curBcat ? ' sel' : ''); t.textContent = cat; t.onclick = () => { curBcat = cat; buildBuildBar(); }; tabs.appendChild(t); }
-  const dl = (G && G.dig) | 0, digLabels = ['⛏ DIG: OFF', '⛏ DIG: SHALLOW', '⛏ DIG: DEEP'];
-  const dig = document.createElement('div'); dig.className = 'bbtab' + (dl ? ' sel' : ''); dig.textContent = digLabels[dl]; dig.title = 'Underground build mode — cycle OFF → SHALLOW → DEEP. A deeper layer is safer but costs more, and different depths don\'t collide.'; dig.style.marginLeft = '10px'; dig.style.color = dl ? '#caa030' : ''; dig.onclick = () => { if (G) { G.dig = ((G.dig | 0) + 1) % 3; G.terrainMode = 0; G.place = null; toast(['surface build mode', '⛏ SHALLOW dig — buildings bury one layer down', '⛏ DEEP dig — a second layer below the first'][G.dig]); buildBuildBar(); } }; tabs.appendChild(dig);
-  const tm = (G && G.terrainMode) | 0, tLabels = ['🛠 TERRAIN', '⛰ RAISE', '▭ LEVEL', '🌊 SINK'], tCols = ['', '#caa030', '#6dffb0', '#4ea8ff'];
-  const ter = document.createElement('div'); ter.className = 'bbtab' + (tm ? ' sel' : ''); ter.textContent = tLabels[tm]; ter.title = 'Terrain tool — click the ground to reshape it with a smooth, feathered brush (35 IC each). Cycle: RAISE land → LEVEL it flat for building → SINK it toward water → off.'; ter.style.color = tCols[tm]; ter.onclick = () => { if (!G) return; G.terrainMode = ((G.terrainMode | 0) + 1) % 4; G.dig = 0; G.place = null; toast(G.terrainMode ? '🛠 TERRAIN: ' + TERRAIN_MODES[G.terrainMode] + ' (35 IC) — click the ground' : 'terrain tool off'); buildBuildBar(); }; tabs.appendChild(ter);
-  const stat = document.createElement('div'); stat.className = 'bbtab'; stat.textContent = '📊 STATS'; stat.title = 'Open the full status report — every current stat, research bonus and special-building buff.'; stat.style.marginLeft = '10px'; stat.onclick = () => openStats(); tabs.appendChild(stat);
+  // 🛠 TOOLS — DIG & TERRAIN used to sit permanently in this row; now they're tucked behind a small toggle
+  // (persisted in localStorage tm_bbTools) so the default build-bar header stays to just its category tabs.
+  // 📊 STATS moved out entirely into the #hudDrawer (MODES & TOOLS section).
+  let toolsOn = false; try { toolsOn = localStorage.getItem('tm_bbTools') === '1'; } catch (e) {}
+  const toolsBtn = document.getElementById('bbtools');
+  if (toolsBtn) { toolsBtn.classList.toggle('on', toolsOn); toolsBtn.onclick = () => { let v = false; try { v = localStorage.getItem('tm_bbTools') === '1'; } catch (e) {} try { localStorage.setItem('tm_bbTools', v ? '0' : '1'); } catch (e) {} buildBuildBar(); }; }
+  const dl = (G && G.dig) | 0;   // read unconditionally — every build card's per-card dig-cost line (below) depends on this regardless of whether the DIG/TERRAIN buttons themselves are shown
+  if (toolsOn) {
+    const digLabels = ['⛏ DIG: OFF', '⛏ DIG: SHALLOW', '⛏ DIG: DEEP'];
+    const dig = document.createElement('div'); dig.className = 'bbtab' + (dl ? ' sel' : ''); dig.textContent = digLabels[dl]; dig.title = 'Underground build mode — cycle OFF → SHALLOW → DEEP. A deeper layer is safer but costs more, and different depths don\'t collide.'; dig.style.marginLeft = '10px'; dig.style.color = dl ? '#caa030' : ''; dig.onclick = () => { if (G) { G.dig = ((G.dig | 0) + 1) % 3; G.terrainMode = 0; G.place = null; toast(['surface build mode', '⛏ SHALLOW dig — buildings bury one layer down', '⛏ DEEP dig — a second layer below the first'][G.dig]); buildBuildBar(); } }; tabs.appendChild(dig);
+    const tm = (G && G.terrainMode) | 0, tLabels = ['🛠 TERRAIN', '⛰ RAISE', '▭ LEVEL', '🌊 SINK'], tCols = ['', '#caa030', '#6dffb0', '#4ea8ff'];
+    const ter = document.createElement('div'); ter.className = 'bbtab' + (tm ? ' sel' : ''); ter.textContent = tLabels[tm]; ter.title = 'Terrain tool — click the ground to reshape it with a smooth, feathered brush (35 IC each). Cycle: RAISE land → LEVEL it flat for building → SINK it toward water → off.'; ter.style.color = tCols[tm]; ter.onclick = () => { if (!G) return; G.terrainMode = ((G.terrainMode | 0) + 1) % 4; G.dig = 0; G.place = null; toast(G.terrainMode ? '🛠 TERRAIN: ' + TERRAIN_MODES[G.terrainMode] + ' (35 IC) — click the ground' : 'terrain tool off'); buildBuildBar(); }; tabs.appendChild(ter);
+  }
   const grid = document.getElementById('bbgrid'); grid.innerHTML = '';
   if (curBcat === 'INFRA' && G) { const bl = bmodLines(); const sum = document.createElement('div'); sum.style.cssText = 'flex-basis:100%;width:100%;font-size:9px;line-height:1.5;color:#bfe9ff;border:1px solid var(--line);border-radius:4px;padding:5px 8px;margin-bottom:4px;background:rgba(10,20,34,.6)'; sum.innerHTML = '<b style="color:var(--term);letter-spacing:1px">ACTIVE SPECIAL-RESOURCE BUFFS</b><br>' + (bl.length ? bl.map(p => p[0] + ' <b style="color:#7cffb0">' + p[1] + '</b>').join(' · ') : 'None yet — build special-resource structures below.') + ' &nbsp; <span style="color:#9fb6d4">(📊 STATS for the full report)</span>'
     + '<br><b style="color:var(--garr);letter-spacing:1px">GARRISON BUDGET</b> weight ' + Math.round(G.garrUsed || 0) + ' / ' + Math.round(G.garrCap || 0) + ' &nbsp; upkeep <b style="color:#ff8a6a">-' + (G.garrUpkeepIC || 0).toFixed(1) + '/s IC</b> &nbsp; <span style="color:#9fb6d4">build a Garrison Stockpile to raise the cap</span>'; grid.appendChild(sum); }
@@ -8353,12 +8419,27 @@ function syncHUD() {
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   const rpb = document.getElementById('resProgBar'); if (rpb) { if (G.research && G.research.cost > 0) { rpb.style.display = 'block'; rpb.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%'; } else rpb.style.display = 'none'; }   // research-button progress fill
   if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state
-  document.getElementById('ghint').style.opacity = G.time < 10 ? 1 : 0;
+  { const gh = document.getElementById('ghint'); if (gh) gh.style.opacity = (G.time < 60 || (G.tut && G.tut.tips)) ? 1 : 0; }   // shown in the build-bar header for the first 60s of a match, or the whole time if G.tut.tips (advisor tips) is on
   if (!G.hintProd && G.time > 25) { G.hintProd = true; toast('🏭 Your factories are idle — press the pulsing PRODUCE button (top bar) to raise an army'); }   // playtest onboarding: point at PRODUCE if it's gone unused
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';
   { const pb = document.getElementById('btnPause'); if (pb) { pb.textContent = G.paused ? '▶' : '❚❚'; pb.classList.toggle('on', G.paused); pb.title = G.paused ? 'Resume (or press SPACE).' : 'Pause (or press SPACE).'; } }
   tickResearchUI();
   if (G.sel) { if ((G.sel.hp !== undefined && G.sel.hp <= 0) || (G.units.indexOf(G.sel) < 0 && G.buildings.indexOf(G.sel) < 0 && G.cities.indexOf(G.sel) < 0)) { G.sel = null; refreshSel(); } else refreshSel(); }
+  layoutHudChrome();
+}
+// LAYOUT — keeps .subbar and the ★ READINESS dock pinned to the live bottom edge of .topbar (which itself can
+// wrap to a 2nd row on a narrow phone), so neither one can ever drift up and cover .objwrap. Cheap (2-3
+// getBoundingClientRect reads at ~30fps, same cadence as the rest of syncHUD) — recomputed every tick rather
+// than only on resize because the topbar's OWN height changes as its content changes (e.g. TURN MODE's step
+// buttons appearing/disappearing), not just the viewport size.
+function layoutHudChrome() {
+  const tb = document.querySelector('.topbar'); if (!tb) return;
+  const tRect = tb.getBoundingClientRect();
+  let bottom = tRect.bottom;
+  const sb = document.getElementById('subbar');
+  if (sb) { sb.style.top = Math.round(tRect.bottom + 2) + 'px'; const sRect = sb.getBoundingClientRect(); if (sRect.bottom > bottom) bottom = sRect.bottom; }
+  const rp = document.getElementById('tutReady');
+  if (rp) rp.style.top = Math.round(bottom + 8) + 'px';
 }
 
 // tooltips
@@ -8422,11 +8503,23 @@ addEventListener('keydown', e => {
   // HIDE-HUD toggle (H). While hidden, any non-navigation keypress flashes a reminder of how to bring it back.
   if (mode === 'game' && G && !e.repeat && !/^(input|textarea)$/i.test((e.target && e.target.tagName) || '')) {
     const kk = (e.key || '').toLowerCase();
-    if (kk === 'h') { G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }
+    if (kk === 'h') { toggleHudHidden(); }
     else if (kk === 'v') { toggleZones(); }
     else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
   }
-  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); if (G) { G.place = null; G.targeting = null; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+  if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); const dw = document.getElementById('hudDrawer'); if (dw && dw.classList.contains('open')) setDrawerOpen(false); if (G) { G.place = null; G.targeting = null; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
+// DRAWER wiring — tab toggles it; a click outside the open drawer (and off its tab) closes it; state persists across sessions.
+{
+  const dTab = document.getElementById('drawerTab');
+  if (dTab) dTab.addEventListener('click', toggleDrawer);
+  addEventListener('pointerdown', e => {
+    const d = document.getElementById('hudDrawer'); if (!d || !d.classList.contains('open')) return;
+    if (d.contains(e.target) || (dTab && dTab.contains(e.target))) return;
+    setDrawerOpen(false);
+  }, true);
+  let drawerWasOpen = false; try { drawerWasOpen = localStorage.getItem('tm_drawer') === '1'; } catch (e) {}
+  if (drawerWasOpen) setDrawerOpen(true);
+}
 
 loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFrame(frame);
 // ── LIVE RELOAD (dev convenience) ──────────────────────────────────────────────
@@ -8509,8 +8602,19 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   #tutAdvisor .adv-x{position:absolute;top:4px;right:8px;cursor:pointer;color:#7f93ad;font-size:15px;line-height:1;background:none;border:none;font-family:inherit}
   #tutAdvisor .adv-x:hover{color:#fff}
   /* ★ READINESS PANEL — docked to the right edge; mirrors #tutAdvisor's card language */
-  #tutReady{position:fixed;right:12px;top:104px;z-index:8500;width:290px;max-width:80vw;max-height:70vh;overflow-y:auto;background:linear-gradient(268deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-right:3px solid var(--res,#c89bff);border-radius:6px;padding:9px 12px 11px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none}
+  /* ★ READINESS — boots COLLAPSED as a one-line pill (.tr-pill) docked under the topbar on the right; tapping it
+     sets .tr-expanded to show the full .tr-hdr/.tr-body panel instead. JS (layoutHudChrome) keeps the CSS top
+     offset pinned under the live topbar/objwrap bottom edge so the expanded panel can never cover .objwrap. */
+  #tutReady{position:fixed;right:12px;top:104px;z-index:8500;background:linear-gradient(268deg,rgba(10,16,28,.97),rgba(10,16,28,.9));border:1px solid rgba(120,160,220,.4);border-right:3px solid var(--res,#c89bff);border-radius:6px;color:#dbe6f2;font-family:Consolas,"SF Mono",Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;transition:top .15s}
   #tutReady.show{display:block}
+  #tutReady .tr-pill{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:10px;letter-spacing:1px;white-space:nowrap;padding:6px 11px}
+  #tutReady .tr-pilldot{width:7px;height:7px;border-radius:50%;background:#7cffb0;flex:0 0 auto}
+  #tutReady.sev-med .tr-pilldot{background:#e8d68a}
+  #tutReady.sev-high .tr-pilldot{background:#ff6a6a;box-shadow:0 0 6px rgba(255,90,90,.7)}
+  #tutReady:not(.tr-expanded){width:auto;max-height:none;overflow:visible}
+  #tutReady.tr-expanded{width:290px;max-width:80vw;max-height:70vh;overflow-y:auto;padding:9px 12px 11px}
+  #tutReady.tr-expanded .tr-pill{display:none}
+  #tutReady:not(.tr-expanded) .tr-hdr, #tutReady:not(.tr-expanded) .tr-body{display:none}
   #tutReady .tr-hdr{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2.5px;color:var(--res,#c89bff);opacity:.95;margin-bottom:6px}
   #tutReady .tr-x{background:none;border:none;color:#7f93ad;font-size:15px;line-height:1;cursor:pointer;font-family:inherit}
   #tutReady .tr-x:hover{color:#fff}
@@ -8525,8 +8629,6 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   #tutReady .tr-chk{font-size:10.5px;line-height:1.55}
   #tutReady .tr-chk.ok{color:#8fd8a8}
   #tutReady .tr-chk.no{color:#ff9a7a}
-  #tutReadyTab{position:fixed;right:0;top:104px;z-index:8500;display:none;background:rgba(10,16,28,.9);border:1px solid rgba(120,160,220,.4);border-right:none;border-radius:6px 0 0 6px;color:var(--res,#c89bff);font-size:14px;padding:8px 6px;cursor:pointer}
-  #tutReadyTab.show{display:block}
   #tutDiagModal .modal .row{padding:8px 0}`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
@@ -8778,32 +8880,32 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     if ((it.buster || 0) >= 20) bits.push('bunker-buster barrage');
     return `${it.label} — ~${fleetMax.toLocaleString()} hostiles · ${bits.join(' · ')}`;
   }
-  let readyEl = null, readyTabEl = null;
+  // COLLAPSED-BY-DEFAULT — boots as a one-line pill (readyExpanded=false); tapping it expands to the full
+  // panel, its × collapses back to the pill (no longer hides forever — that's the drawer's ★ READINESS
+  // toggle now, via window.toggleReadyPanel + tm_readyPanel). Auto-expands ONCE at the T-20 diagnosis beat
+  // (see tutReadyTick below) so a serious gap actually gets seen instead of sitting collapsed.
+  let readyEl = null, readyExpanded = false;
   function tutReadyNode() {
     if (readyEl) return readyEl;
     readyEl = document.createElement('div'); readyEl.id = 'tutReady';
-    readyEl.innerHTML = '<div class="tr-hdr"><span>★ READINESS</span><button class="tr-x" type="button" title="hide">×</button></div><div class="tr-body"></div>';
-    readyEl.querySelector('.tr-x').addEventListener('click', () => { try { localStorage.setItem('tm_readyPanel', 'hidden'); } catch (e) {} readyEl.classList.remove('show'); tutShowReadyTab(); });
+    readyEl.innerHTML = '<div class="tr-pill" title="Tap to expand"><span class="tr-pilldot"></span><span class="tr-pilltxt">★ READINESS</span></div><div class="tr-hdr"><span>★ READINESS</span><button class="tr-x" type="button" title="collapse">×</button></div><div class="tr-body"></div>';
+    readyEl.querySelector('.tr-pill').addEventListener('click', () => { readyExpanded = true; renderReadyPanel(); if (typeof layoutHudChrome === 'function') layoutHudChrome(); });
+    readyEl.querySelector('.tr-x').addEventListener('click', () => { readyExpanded = false; renderReadyPanel(); });
     document.body.appendChild(readyEl);
     return readyEl;
   }
-  function tutShowReadyTab() {
-    if (!readyTabEl) {
-      readyTabEl = document.createElement('button'); readyTabEl.id = 'tutReadyTab'; readyTabEl.type = 'button'; readyTabEl.textContent = '★'; readyTabEl.title = 'Show the readiness panel';
-      readyTabEl.addEventListener('click', () => { try { localStorage.setItem('tm_readyPanel', 'shown'); } catch (e) {} readyTabEl.classList.remove('show'); tutReadyNode().classList.add('show'); renderReadyPanel(); });
-      document.body.appendChild(readyTabEl);
-    }
-    readyTabEl.classList.add('show');
-  }
   function renderReadyPanel() {
-    if (!G || !G.tut || !G.tut.readyPanels) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); return; }
-    if (G.phase !== 'prep') { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); return; }
+    if (!G || !G.tut || !G.tut.readyPanels) { if (readyEl) readyEl.classList.remove('show'); return; }
+    if (G.phase !== 'prep') { if (readyEl) readyEl.classList.remove('show'); return; }
     let hidden = false; try { hidden = localStorage.getItem('tm_readyPanel') === 'hidden'; } catch (e) {}
+    if (hidden) { if (readyEl) readyEl.classList.remove('show'); return; }
     const el = tutReadyNode();
-    if (hidden) { el.classList.remove('show'); tutShowReadyTab(); return; }
-    if (readyTabEl) readyTabEl.classList.remove('show');
     el.classList.add('show');
+    el.classList.toggle('tr-expanded', readyExpanded);
     const it = curIntent(), R = G.readiness || { score: 1, gaps: [] };
+    const worstSev = R.gaps.some(g => g.sev === 'high') ? 'high' : (R.gaps.length ? 'med' : 'ok');
+    el.classList.remove('sev-high', 'sev-med', 'sev-ok'); el.classList.add('sev-' + worstSev);
+    const pillTxt = el.querySelector('.tr-pilltxt'); if (pillTxt) pillTxt.textContent = '★ READINESS' + (R.gaps.length ? ' · ' + R.gaps.length + ' GAP' + (R.gaps.length > 1 ? 'S' : '') : ' · READY');
     const gapsHtml = R.gaps.length
       ? R.gaps.slice(0, 4).map(g => `<div class="tr-gap ${g.sev}">${g.sev === 'high' ? '⚠' : '·'} ${g.why}</div>`).join('')
       : '<div class="tr-ok">✓ READY — no gaps I can see right now.</div>';
@@ -8886,6 +8988,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     if (T.readyPanels) renderReadyPanel();
     if (T.diagnosis && !T.readyShown && G.prepTimer <= 20) {
       T.readyShown = true;
+      if (T.readyPanels) { readyExpanded = true; renderReadyPanel(); }   // AUTO-EXPAND ONCE — the T-20 re-entry beat is exactly when a collapsed pill would otherwise get missed
       if (gaps.some(g => g.sev === 'high') || G.readiness.score < 0.5) tutOpenDiagnosis(gaps);
     }
   }
@@ -8979,7 +9082,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     // ★ READINESS SYSTEM — independent of hand-holding (readyPanels/diagnosis are separate toggles
     // from handHold; a Streamlined/Oversight run has readyPanels on with T.off true)
     if (T.readyPanels || T.diagnosis) { try { tutReadyTick(); } catch (e) {} }
-    else if (readyEl || readyTabEl) { if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); }
+    else if (readyEl) { readyEl.classList.remove('show'); }
     // PROGRESSIVE REVEAL — also independent of hand-holding (Streamlined is hideUnimportant with handHold off)
     if (T.hideUnimportant) { try { tutRevealTick(); } catch (e) {} }
 
@@ -9025,7 +9128,16 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   };
 
   // clear any tutorial overlay state on a fresh game (called from newGame)
-  window.tutClear = function () { teardown(); clearGrey(); hideTip(); if (readyEl) readyEl.classList.remove('show'); if (readyTabEl) readyTabEl.classList.remove('show'); closeModal('tutDiagModal'); };
+  window.tutClear = function () { teardown(); clearGrey(); hideTip(); readyExpanded = false; if (readyEl) readyEl.classList.remove('show'); closeModal('tutDiagModal'); };
+  // exposed for the #hudDrawer's ★ READINESS button — fully show/hide the pill+panel (separate from the
+  // pill's own expand/collapse), mirroring the old tutReadyTab's hidden/shown localStorage semantics.
+  window.toggleReadyPanel = function () {
+    let hidden = false; try { hidden = localStorage.getItem('tm_readyPanel') === 'hidden'; } catch (e) {}
+    try { localStorage.setItem('tm_readyPanel', hidden ? 'shown' : 'hidden'); } catch (e) {}
+    if (hidden) readyExpanded = false;
+    renderReadyPanel();
+    if (typeof toast === 'function') toast(hidden ? '★ Readiness panel shown' : '★ Readiness panel hidden');
+  };
 
   // orientation entry — the ONLY public start; reads the TUT toggle set (mode presets OR standalone match
   // options — see loadTut/TUT_MODES above), copies them onto G.tut for the rest of the sim to read, and

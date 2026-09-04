@@ -356,7 +356,11 @@
   #musicModal .mtoggle input { width: 15px; height: 15px; accent-color: var(--term); cursor: pointer; }
 
   /* ===== MOBILE / SMALL SCREENS — compact HUD, touch-sized targets ===== */
+  #hudEye { display: none; position: fixed; right: 10px; top: 10px; z-index: 12; pointer-events: auto; font-size: 20px; line-height: 1; padding: 6px 9px; background: rgba(14,23,38,.55); border: 1px solid var(--line); border-radius: 6px; opacity: .55; cursor: pointer; transition: opacity .15s; }
+  #hudEye:hover { opacity: 1; }
+  body.hud-hidden #hudEye { display: block; }   /* the ONLY control left on screen while the HUD is hidden — a phone has no H key, so this is the way back */
   @media (pointer: coarse) {
+    #hudEye { font-size: 26px; padding: 10px 12px; opacity: .7; }
     .hbtn { min-height: 40px; padding: 6px 13px; }               /* finger-sized buttons */
     #zoomctl { display: none; }                                  /* pinch-to-zoom already exists on touch — the +/-/reset buttons are desktop-only clutter here */
     #drawerTab { font-size: 14px; padding: 12px 7px; opacity: .65; }
@@ -410,7 +414,7 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v3.101.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v3.101.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
 
 <div class="modal-bg" id="extinctConfirm"><div class="modal" style="max-width:470px;border-color:#ff5a5a">
   <h2 style="color:#ff6a6a">&#9760; EXTINCTION</h2>
@@ -442,6 +446,7 @@
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v3.101.1 — MOBILE HOTFIX: 👁 UN-HIDE BUTTON + iOS MUSIC IMPORT</b><br>The drawer’s 🖥 HIDE HUD hid the drawer too, and a phone has no H key — a softlock. Now hiding the HUD leaves exactly one thing on screen: a small 👁 button in the top-right that brings everything back (H still works on desktop). Also: the music modal’s “add files” picker only offered photos on iPhone, because iOS treats a plain audio/* filter as a media-library request — it now lists real audio extensions (.mp3 .m4a .aac .wav .ogg .flac…), so Files opens properly.</p>
     <p><b>v3.101.0 — THE DECLUTTER: WHAT YOU WATCH vs WHAT YOU OPEN</b><br>The HUD had ~35 things fighting for a phone screen. Now the always-visible set is only what changes moment to moment or is a core verb: five stat cells (IND.CAP · MANPOWER · INFLUENCE · STABILITY · ARMY), PRODUCE / RESEARCH / STRIKE, the prep timer &amp; fleet intent, BUILD, the minimap, and ❚❚ + ONE speed button that cycles ½ → 1 → 2 → 3 + ⏱ TURN. GARRISON, TECH ERA and special resources moved to a slim strip under the topbar. Everything else lives behind a single ▤ drawer on the right edge (it replaces the permanent 🏆 tab): VIEW &amp; AUDIO (music, playlist, coverage zones, hide HUD) · HELP (field manual, tip, guidance-mode picker) · MODES &amp; TOOLS (stats, readiness, achievements, allies). DIG and TERRAIN tuck under a 🛠 TOOLS toggle in the build bar. The ★ READINESS panel now boots as a one-line pill that expands on tap and never covers the prep-timer line. The hint text left the middle of the screen (it was sitting on the PAUSED banner) and now lives in the build-bar header for the first minute. Zoom +/− is hidden on touch, where you pinch. Nothing was removed — every control is still there, just where it belongs.</p>
     <p><b>v3.100.1 — HOTFIX: GUIDED MODE WAS UNPLAYABLE</b><br>The Heavily-Guided and Guided openings asked you to place a Power Plant while the tutorial’s dim layer sat on top of the whole screen swallowing every click — and the step counter only counted FINISHED buildings while the match starts paused, so nothing you did could ever register. On a phone (no spacebar, ▶ under the dim) that was a total lock. Now: any step that waits for a real action is click-through with a light dim (the card stays clickable for SKIP/BACK), the game unpauses the moment the first action step opens, a building counts as soon as it’s PLACED, and Esc cancels your placement instead of skipping the whole tutorial. Read-only cards behave exactly as before.</p>
     <p><b>v3.100.0 — THE ONBOARDING UPDATE: SIX TUTORIAL MODES, READINESS, TURN MODE</b><br>New players were getting annihilated their first few games, and the old tutorial taught you to build an economy and then let the sky fall on you. Rebuilt from the ground up. <b>A prompt on every boot</b> asks how much help you want (turn it off with one checkbox): <b>Watch a video</b> (coming soon) · <b>Heavily guided</b> — it tells you exactly what to place and why, step by verified step, then throws a <b>baby fleet</b> at you so your first fight is real but survivable · <b>Guided</b> — a short hand-hold, then the game coaches you from the side · <b>Streamlined</b> — the clutter is hidden until you earn it, and you pick the route · <b>Oversight</b> — every panel and tip, nothing hidden · or <b>No thanks</b>. <b>★ THE READINESS SYSTEM:</b> a hideable side panel shows <b>how big the incoming fleet is</b>, the <b>gaps</b> in your defense (no anti-air, nothing that reaches orbit, a city with no defenders, a fortune unspent…) and a <b>needed-vs-optional checklist</b>. Twenty seconds before the fleet lands, if you're about to lose, the game <b>tells you why</b> and offers a way out: <b>continue</b>, <b>+150 seconds</b>, <b>restart</b>, or a pack of <b>emergency units</b>. Every one of these is also a toggle for normal matches. Taking help never costs you a medal — it just marks the run <b>◇ assisted</b> in Achievements. <b>TURN-BASED MODE:</b> no time pressure — pause the clock and advance the war 1, 3, 5 or 10 seconds at a time. <b>No more fat-finger abandons:</b> the pause button opens a real menu; abandoning takes a confirm, and on touch a press-and-hold. <b>Fire Control is gone</b> — it never worked and it dragged your framerate. <b>Battlegroups (perf):</b> drones and clones now fight in groups of up to 20 with one shared brain and a count badge — same swarm, same damage, a fraction of the thinking; big swarms run far smoother.</p>
@@ -718,8 +723,8 @@
   <div class="maddrow" id="lmAddRow" style="display:none">
     <button class="pill" id="lmAddPrep">＋ ADD TRACKS (PEACETIME)</button>
     <button class="pill" id="lmAddCombat">＋ ADD TRACKS (COMBAT)</button>
-    <input type="file" id="lmFilePrep" accept="audio/*" multiple style="display:none" />
-    <input type="file" id="lmFileCombat" accept="audio/*" multiple style="display:none" />
+    <input type="file" id="lmFilePrep" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac,.webm,audio/*,audio/mpeg,audio/mp4,audio/x-m4a" multiple style="display:none" />
+    <input type="file" id="lmFileCombat" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac,.webm,audio/*,audio/mpeg,audio/mp4,audio/x-m4a" multiple style="display:none" />
   </div>
   <div class="mnote" id="musModeNote">Tracks stream from YouTube and are saved on this device. Peacetime plays while you build; the playlist crossfades to Combat the moment the invasion lands. If a video can't be embedded it's auto-skipped. Click a track to play it now.</div>
   <div class="actions"><button class="pill primary" onclick="closeModal('musicModal')">DONE</button></div>
@@ -756,6 +761,7 @@
   <div id="zoomctl"><button onclick="zoomBtn(1.25)" title="Zoom in">+</button><button onclick="zoomBtn(0.8)" title="Zoom out">−</button><button onclick="zoomReset()" title="Reset zoom" style="font-size:9px">⌂</button></div>
   <!-- DRAWER — every "open when you want it" control lives here now, behind ONE right-edge tab. -->
   <div id="drawerTab" title="Menu">▤</div>
+  <div id="hudEye" title="Show HUD (or press H)" onclick="toggleHudHidden()">👁</div>
   <div id="hudDrawer">
     <div class="dwsec">
       <div class="dwh">VIEW &amp; AUDIO</div>
@@ -6368,7 +6374,7 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
 }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
 function togglePause() { if (!G || mode !== 'game' || G.over) return; if (G.turnMode) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too (TURN MODE forces & holds the pause — see toggleTurnMode)
-function toggleHudHidden() { if (!G) return; G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); if (typeof toast === 'function') toast(G.hideHUD ? '🖥 HUD hidden — press H to show' : '🖥 HUD shown'); }   // screenshot/cinematic mode — shared by the H key and the drawer's 🖥 HIDE HUD button
+function toggleHudHidden() { if (!G) return; G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); if (G.hideHUD && typeof setDrawerOpen === 'function') setDrawerOpen(false); if (typeof toast === 'function') toast(G.hideHUD ? '🖥 HUD hidden — tap 👁 or press H to show' : '🖥 HUD shown'); }   // screenshot/cinematic mode — shared by the H key and the drawer's 🖥 HIDE HUD button
 // DRAWER — one right-edge tab opens/closes #hudDrawer; persisted so re-opening the game keeps it as you left it.
 function setDrawerOpen(open) {
   const d = document.getElementById('hudDrawer'), t = document.getElementById('drawerTab');

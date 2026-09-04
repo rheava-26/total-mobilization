@@ -79,6 +79,8 @@
   .cell .l { font-size: 8px; letter-spacing: 1.2px; opacity: .7; } .cell .n { font-size: 15px; font-weight: 700; } .cell .r { font-size: 8px; opacity: .6; color: var(--term); }
   .cell.ic .l { color: var(--ic); } .cell.mp .l { color: var(--mp); } .cell.inf .l { color: var(--inf); } .cell.stab .l { color: var(--stab); } .cell.res .l { color: var(--res); }
   .cell.garr .l { color: var(--garr); } .cell.army .l { color: var(--army); } .cell.garr .r, .cell.army .r { color: inherit; opacity: .55; }
+  .cell.inf.momreset { animation: momresetflash .6s ease-out; }   /* MOMENTUM READOUT — brief red-gold border flash when a spend snaps ×N back to ×1 */
+  @keyframes momresetflash { 0% { border-color: #ff6a6a; box-shadow: 0 0 10px rgba(255,106,106,.6); } 60% { border-color: #ffd27a; box-shadow: 0 0 8px rgba(255,210,122,.4); } 100% { border-color: var(--line); box-shadow: none; } }
   .hbtn { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 11px; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; font-family: inherit; color: var(--paper); }
   .hbtn:hover { border-color: var(--ic); } .hbtn.on { background: var(--ic); color: #05111f; }
   #btnRes { position: relative; overflow: hidden; }   /* host the research-progress bar */
@@ -632,6 +634,7 @@
   <div class="row"><label>T-20s Gap Check <span style="opacity:.55;font-size:10px">— pauses with options if a serious gap survives to re-entry</span></label><div class="toggle" id="tTutDiag"><div class="knob"></div></div></div>
   <div class="row"><label>Progressive Reveal <span style="opacity:.55;font-size:10px">— the build menu only shows what's relevant, unlocking as you grow</span></label><div class="toggle" id="tTutHide"><div class="knob"></div></div></div>
   <div class="row"><label>Advisor Tips <span style="opacity:.55;font-size:10px">— occasional coaching in the corner when something needs attention</span></label><div class="toggle" id="tTutTips"><div class="knob"></div></div></div>
+  <div class="row"><label>📖 Lessons <span style="opacity:.55;font-size:10px">— explain each rule the first time it matters</span></label><div class="toggle" id="tTutLessons"><div class="knob"></div></div></div>
   <div class="row"><label>Feedback &amp; Bug Reports <span style="opacity:.55;font-size:10px">— this game is in active development</span></label><button class="pill" onclick="openFeedback()">&#128172; SEND FEEDBACK</button></div>
   <div class="actions"><button class="pill" onclick="closeModal('optsModal')">CLOSE</button></div>
 </div></div>
@@ -737,7 +740,7 @@
   <div class="topbar">
     <div class="cell ic" data-tip="Industrial Capacity — production base. Build buildings & units. Power Plants raise the rate."><div class="l has-tip">IND. CAP</div><div class="n" id="hIc">0</div><div class="r" id="icR">+0/s</div></div>
     <div class="cell mp" data-tip="Manpower — population to crew units & establish new zones. Housing raises it."><div class="l has-tip">MANPOWER</div><div class="n" id="hMp">0</div><div class="r" id="mpR">+0/s</div></div>
-    <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
+    <div class="cell inf" data-tip="Influence — control over your forces; caps your army size & buys research. Now generated ENTIRELY by Stability — the higher your stability, the faster it flows. The +/s here is what your CURRENT stability is producing. MOMENTUM: influence grows faster the longer you leave it unspent — up to ×3 after ~75s — and snaps back to ×1 the moment you spend any. Bank it, then spend in one burst."><div class="l has-tip">INFLUENCE</div><div class="n" id="hInf">0</div><div class="r" id="infR">+0/s</div></div>
     <div class="cell stab" data-tip="Stability / Cap — the source of all Influence. It slowly climbs toward your CAP, which you raise by building Comms / Propaganda / Radar (they also bank a small green +RESERVE shown next to your stability — an ABSORBING SHIELD that eats losses first, so stability holds at its ceiling until the reserve is spent, then it starts to fall). Falls when cities are hit or you over-use strikes. Hitting 0 triggers a recoverable CAPITULATION CRISIS — production freezes and troops mutiny while the state forcibly stabilizes, then a grace period keeps it from flip-flopping. Not instant defeat; only repeated collapses lose the run."><div class="l has-tip">STABILITY</div><div class="n" id="hStab">65 / 65</div></div>
     <div class="cell army" data-tip="Army — your MANUALLY produced field army, capped by Manpower. Garrison units are free and do NOT count against this."><div class="l has-tip">ARMY</div><div class="n" id="hArmy">0/0</div><div class="r" id="armyR">+0/s</div></div>
     <div class="hbtn has-tip" id="btnProd" data-tip="Produce units — they roll out of your factories/airbases/shipyards/space centers.">PRODUCE</div>
@@ -914,22 +917,22 @@ function openAchievements() { const body = document.getElementById('achBody'); i
 // ── TUTORIAL / ONBOARDING SETTINGS — persisted across matches (tm_tut), independent of the tutorial
 // engine further down. TUT holds the CURRENT toggle state; the six "modes" below are just named PRESETS
 // of the same toggles — every toggle also works standalone as a normal-match option (see Options modal).
-// { mode:0..6, handHold:'off'|'light'|'heavy', readyPanels, diagnosis, hideUnimportant, tips, babyFleet }
+// { mode:0..6, handHold:'off'|'light'|'heavy', readyPanels, diagnosis, hideUnimportant, tips, babyFleet, lessons }
 const TUT_MODES = [
   { id: 1, key: 'video', label: '📺 WATCH A VIDEO', desc: 'A narrated walkthrough of your first minutes. (Coming soon — for now this just drops you into a normal game with the readiness panel switched on.)',
-    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false } },
-  { id: 2, key: 'heavy', label: '🖐 HEAVILY GUIDED', desc: 'Every early step spelled out and verified as you do it, a readiness panel, live tips, and a scaled-down opening invasion so your first fight is survivable.',
-    preset: { handHold: 'heavy', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: true } },
-  { id: 3, key: 'guided', label: '🧭 GUIDED', desc: 'A short guided opening, then you\'re released on your own — with a readiness panel, a T-20s gap check before the fleet lands, and live tips.',
-    preset: { handHold: 'light', readyPanels: true, diagnosis: true, hideUnimportant: false, tips: true, babyFleet: false } },
-  { id: 4, key: 'stream', label: '📋 STREAMLINED', desc: 'No hand-holding — the build menu only shows what\'s relevant right now and reveals more as your base grows, plus a readiness panel and tips.',
-    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: true, tips: true, babyFleet: false } },
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, lessons: false } },
+  { id: 2, key: 'heavy', label: '🖐 HEAVILY GUIDED', desc: 'Every early step spelled out and verified as you do it, a readiness panel, live tips, event-triggered rule lessons, and a scaled-down opening invasion so your first fight is survivable.',
+    preset: { handHold: 'heavy', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: true, lessons: true } },
+  { id: 3, key: 'guided', label: '🧭 GUIDED', desc: 'A short guided opening, then you\'re released on your own — with a readiness panel, a T-20s gap check before the fleet lands, live tips, and rule lessons the first time each one matters.',
+    preset: { handHold: 'light', readyPanels: true, diagnosis: true, hideUnimportant: false, tips: true, babyFleet: false, lessons: true } },
+  { id: 4, key: 'stream', label: '📋 STREAMLINED', desc: 'No hand-holding — the build menu only shows what\'s relevant right now and reveals more as your base grows, plus a readiness panel, tips and rule lessons.',
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: true, tips: true, babyFleet: false, lessons: true } },
   { id: 5, key: 'oversight', label: '👁 OVERSIGHT', desc: 'Nothing hidden, no hand-holding — just a readiness panel and live tips watching your back.',
-    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: false } },
+    preset: { handHold: 'off', readyPanels: true, diagnosis: false, hideUnimportant: false, tips: true, babyFleet: false, lessons: false } },
   { id: 6, key: 'none', label: '✕ NO THANKS', desc: 'Turns every one of the above off. You are on your own, Commander.',
-    preset: { handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false } },
+    preset: { handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, lessons: false } },
 ];
-const TUT_DEFAULT = { mode: 0, handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false };
+const TUT_DEFAULT = { mode: 0, handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, lessons: false };
 function loadTut() { let t = null; try { t = JSON.parse(localStorage.getItem('tm_tut') || 'null'); } catch (e) {} return Object.assign({}, TUT_DEFAULT, t || {}); }
 function saveTut() { try { localStorage.setItem('tm_tut', JSON.stringify(TUT)); } catch (e) {} }
 let TUT = loadTut();
@@ -3270,7 +3273,8 @@ function newGame(diff) {
     firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state
     // PHASED ONBOARDING — inert by default (off:true → normal game does nothing); window.startTutorial flips it on. phase: orient→industry→doctrine→strikes→done
     tut: { phase: 'done', off: true, icR0: 0, doctrineFired: false, strikesFired: false, icHist: [], stabHist: [], advCd: 0, lastTip: '', curTip: null,
-      handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, readyShown: false, revealed: { ECON: true }, prodFired: false, defFired: false },   // ONBOARDING toggles copied from TUT by startTutorial(); revealed tracks which build-bar tabs hideUnimportant has unlocked so far
+      handHold: 'off', readyPanels: false, diagnosis: false, hideUnimportant: false, tips: false, babyFleet: false, readyShown: false, revealed: { ECON: true }, prodFired: false, defFired: false,
+      lessons: false, lessonsFired: {}, lessonCd: 0, _momPrev: 1, _heavyQueued: false, _cityHit: false },   // LESSONS — event-triggered rule cards (see LESSONS array); ONBOARDING toggles copied from TUT by startTutorial(); revealed tracks which build-bar tabs hideUnimportant has unlocked so far
     advT: 0, readiness: { score: 1, gaps: [] },   // firedEvents tracks `once` events so they never repeat this session; G.evt holds flags/counters the events' effects read & write (see EVENTS below)
     mult: { econ: 0, armor: 0, airspd: 0, navalrng: 0, conspd: 0, rof: 0, dmg: 0, mp: 0, capb: 0, stab: 0, res: 0, range: 0, cost: 0 }, regen: false, synOn: {},
     research: null,   // { key, total, cost, payRate, paid } — the active research; paid drains gradually from G.inf and gates completion (see updateGame)
@@ -3373,6 +3377,7 @@ function mergeCities() {   // any two cities whose footprints overlap merge into
 function recomputeCityHp(ct) { let h = 0; for (const d of ct.districts) h += Math.max(0, d.hp); ct.hp = h; }
 function damageDistrict(ct, dist, dmg) {
   if (!ct) return; if (dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN;   // a city that is being shelled stops mustering troops for a while (see CITY AUTO-RECRUIT)
+  if (dmg > 0 && G.tut) G.tut._cityHit = true;   // LESSONS — 'firstLoss' card fires the next time it's checked
   if (!dist || dist.dead) return hurtCity(ct, dist ? ct.x + dist.dx : ct.x, dmg);
   dist.hp -= dmg;
   if (dist.hp <= 0 && !dist.dead) { dist.dead = true; G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9); groundBurst(dx, 7); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
@@ -4123,6 +4128,7 @@ function queueUnit(b, key) {
   if (isMechanical(d) && bm.mechFast) bt *= Math.max(.3, 1 - bm.mechFast);   // Automated Assembly Line: mechanical units (mech/drone/elec/clone/space-capital) recruit faster
   bt = Math.max(.5, bt);
   for (let i = 0; i < grp; i++) b.queue.push({ key, t: bt, total: bt });
+  if (G.tut && defWeight(d) >= 1.5) G.tut._heavyQueued = true;   // LESSONS — 'weight' card fires the next time it's checked
   if (b.queue.length <= grp) toast('PRODUCING ' + d.name + (grp > (d.grp || 1) ? ' ×' + grp : ''));
 }
 function countQueued() { let n = 0; for (const b of G.buildings) for (const q of b.queue) if (UNIT_DEFS[q.key]) n++; return n; }   // RAW headcount of queued units — display/AAR only, see combatCount
@@ -8405,7 +8411,8 @@ function syncHUD() {
   { const hg = document.getElementById('hGarr'), gr = document.getElementById('garrR'); if (hg) hg.textContent = Math.round(G.garrUsed || 0) + '/' + Math.round(G.garrCap || 0); if (gr) gr.textContent = '-' + (G.garrUpkeepIC || 0).toFixed(1) + '/s'; }   // GARRISON ECONOMY — separate free auto-defense track: live weight / global Stockpile-set budget, and its IC/s upkeep drain
   { const ha = document.getElementById('hArmy'), ar = document.getElementById('armyR'); if (ha) ha.textContent = Math.round(combatWeight()) + '/' + armyCap(); if (ar) ar.textContent = '+' + Math.max(0, (G.mpR || 0) / 25).toFixed(2) + '/s'; }   // ARMY — now shows WEIGHT used / weight budget (nothing off-cap any more); rate shown is how fast MANPOWER income is currently growing the budget
   document.getElementById('hInf').textContent = Math.floor(G.inf) + ' (' + Math.round(combatWeight()) + '/' + armyCap() + ')';
-  { const ir = document.getElementById('infR'); if (ir) ir.textContent = '+' + (G.infR || 0).toFixed(1) + '/s'; }   // what your CURRENT stability is generating (stability × momentum — Superhuman Cadres no longer drain this; their upkeep only eats the stability CAP, see G.stabCap)
+  { const ir = document.getElementById('infR'); const mom = G.infMomentum || 1; if (ir) { ir.textContent = '+' + (G.infR || 0).toFixed(1) + '/s ×' + mom.toFixed(1); const t = Math.max(0, Math.min(1, (mom - 1) / 2)); const lerp = (a, b) => Math.round(a + (b - a) * t); ir.style.color = 'rgb(' + lerp(0x6d, 0xff) + ',' + lerp(0xff, 0xd2) + ',' + lerp(0xb0, 0x7a) + ')'; ir.style.opacity = (0.6 + 0.4 * t).toFixed(2); }   // MOMENTUM READOUT — the live ×N multiplier + a gold lerp as it climbs 1→3 (see MOM_CAP/MOM_TAU)
+    const infCellEl = document.querySelector('.cell.inf'); const prevMom = G._momPrev == null ? 1 : G._momPrev; if (infCellEl && prevMom >= 1.5 && mom <= 1.0001) { infCellEl.classList.remove('momreset'); void infCellEl.offsetWidth; infCellEl.classList.add('momreset'); } G._momPrev = mom; }   // MOMENTUM RESET FLASH — a spend snapped ×N back to ×1; brief border flash via the .momreset keyframe (CSS auto-clears via the animation, no timer needed)
   document.getElementById('hStab').innerHTML = Math.round(effStab()) + ((G.stabReserve || 0) > 0.5 ? '<span style="color:#7cffb0" title="Stability reserve — absorbs losses first; stability holds at cap until this is spent">+' + Math.round(G.stabReserve) + '</span>' : '') + ' / ' + Math.round(G.stabCap || 100) + (G.stabOffset > 1 ? ' <span style="color:#ff8a6a">⚠−' + Math.round(G.stabOffset) + '</span>' : '') + (G.crisis ? ' <span style="color:#ff6a6a">⚠ CRISIS</span>' : '') + (stabPreview ? ' <span style="color:' + stabPreview.col + '">' + stabPreview.txt + '</span>' : '') + ((G.superN || 0) > 0 ? ' <span style="color:#ff8a6a" title="' + G.superN + ' Superhuman Cadres — each lowers your max stability by 3%">⚡−' + (3 * G.superN) + '</span>' : '');   /* EFFECTIVE stability, +RESERVE (green, absorbing shield) / CAP; ⚠ flags research-unrest; CRISIS flags an active capitulation crisis; ⚡ flags Superhuman Cadre upkeep eating the ceiling; hover a research/special building to preview its stability impact here */
   document.getElementById('hRes').textContent = ['', 'I', 'II', 'III'][curTier()]; document.getElementById('resR').textContent = ['', 'INFO', 'FUSION', 'SPACE'][curTier()] + ' AGE';
   const sb = document.getElementById('srBar'); const owned = Object.keys(G.owned).filter(k => G.owned[k]); const am = (G.antimatter || 0) > 0 ? `<span class="sr" style="color:#c8a0ff" data-tip="Antimatter — produced by Antimatter Extractors. Fuels the Antimatter strike & Dreadnoughts.">☢ Antimatter ${Math.floor(G.antimatter)}</span>` : ''; const parts = owned.map(k => `<span class="sr" data-tip="${SR[k].name} — ${SR[k].ds}">◆ ${SR[k].name}×${G.owned[k]}</span>`); sb.innerHTML = (parts.length || am) ? parts.join('') + am : '<span class="none">no special resources</span>';
@@ -8495,8 +8502,9 @@ tutOptToggle('tTutReady', 'readyPanels');
 tutOptToggle('tTutDiag', 'diagnosis');
 tutOptToggle('tTutHide', 'hideUnimportant');
 tutOptToggle('tTutTips', 'tips');
+tutOptToggle('tTutLessons', 'lessons');
 function syncTutOptToggles() {
-  const map = { tTutReady: 'readyPanels', tTutDiag: 'diagnosis', tTutHide: 'hideUnimportant', tTutTips: 'tips' };
+  const map = { tTutReady: 'readyPanels', tTutDiag: 'diagnosis', tTutHide: 'hideUnimportant', tTutTips: 'tips', tTutLessons: 'lessons' };
   for (const id in map) { const el = document.getElementById(id); if (el) el.classList.toggle('on', !!TUT[map[id]]); }
 }
 bindToggle('tMotion', v => reducedMotion = v);
@@ -8658,6 +8666,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     MP_LOW:            60,    // manpower this low is a real bottleneck
     STAB_LOW:          35,    // effective stability below this is dangerous
     STAB_TREND:        -5,    // a stability drop of this much over the window (while still < 55) also counts as slipping
+    LESSON_GAP_S:      25,    // minimum game-seconds between two LESSON cards (see LESSONS below) so they never stack back to back
   };
 
   // ============================================================================
@@ -8744,8 +8753,51 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     { sel: null, title: 'RE-ENTRY', body: 'When you see <b>⚠ RE-ENTRY DETECTED</b>, that\'s your final warning — the countdown is nearly out. After that, waves never stop, and every one is a little stronger than the last. Destroy the fleet to win. I\'ll keep coaching from the corner, and watch the ★ READINESS panel too. Good luck, Commander.', last: true },
   ];
   const HAND_STEPS_LIGHT = HAND_STEPS_HEAVY.slice(0, 3).concat([
-    { sel: null, title: 'YOU\'RE ON YOUR OWN FROM HERE', body: 'That\'s the core loop — power, resources, production. I won\'t walk you through the rest step by step. Watch the ★ <b>READINESS</b> panel on the right for what still needs attention before the fleet arrives.', last: true },
+    { sel: null, title: 'YOU\'RE ON YOUR OWN FROM HERE', body: 'That\'s the core loop — power, resources, production. I won\'t walk you through the rest step by step — I\'ll step in whenever a rule first matters, starting with how the game breathes.', last: true },
   ]);
+
+  // ============================================================================
+  // LESSONS — event-triggered one-off spotlight cards (Guided/Streamlined/Oversight/Heavy, gated by
+  // G.tut.lessons, independent of hand-holding). Each fires ONCE, the first time its `when(G,T)` is
+  // true, throttled by TUNE.LESSON_GAP_S so two never stack back to back. See fireLesson()/tutAdvTick.
+  // ============================================================================
+  function tutAnyQueued() { for (const b of G.buildings) if (b.queue && b.queue.length) return true; return false; }
+  const LESSONS = [
+    { id: 'cycle', sel: '.topbar', title: 'THE RHYTHM', when: (G, T) => T.phase !== 'orient', body:
+      'Here\'s how this actually runs, cycle after cycle: <b>IC</b> builds buildings, buildings make more <b>IC</b>. <b>Manpower</b> fields units — and units cost NO influence at all.<br>' +
+      '<b>Influence</b> is the odd one out: leave it unspent and it grows up to <b>×3</b> faster over ~75s (watch the ×N.N on the INFLUENCE cell) — spend any of it and it snaps straight back to ×1.<br>' +
+      'So the rhythm is: bank influence while you pour IC and manpower into an army, then spend the influence in one big research push. And all of it runs on <b>Stability</b> — that\'s what makes influence flow at all.' },
+    { id: 'momentum', sel: '.cell.inf', title: 'MOMENTUM', when: (G, T) => (G.infMomentum || 1) >= 1.6, body:
+      'See the ×MOMVAL climbing on your INFLUENCE cell? That\'s <b>momentum</b> — every second you don\'t spend influence, it ramps up, to a cap of ×3. It\'s the game rewarding patience: bank it now, spend it deliberately later.' },
+    { id: 'momentumReset', sel: '.cell.inf', title: 'THE SNAP-BACK', when: (G, T) => T._momPrev >= 2.0 && (G.infMomentum || 1) <= 1.05, body:
+      'That spend just dropped your momentum from ×PREV to ×1. Not a mistake — that\'s the price of spending. The rhythm is bank, burst, bank again: let it climb, then cash it in all at once.' },
+    { id: 'manpower', sel: '.cell.mp', title: 'THE ARMY CAP', when: (G, T) => combatWeight() >= armyCap() - 0.5 || (G.mp < 60 && tutAnyQueued()), body:
+      'Your army is capped by <b>Manpower</b> — the cap is roughly 12 + manpower÷25, spent as a WEIGHT budget, not a headcount. <b>Housing Blocks</b> raise it. Manpower itself tops out at 900, so more Housing is the long-term answer, not just this cap.' },
+    { id: 'weight', sel: '.cell.army', title: 'WEIGHT ISN\'T HEADCOUNT', when: (G, T) => !!T._heavyQueued, body:
+      'That last unit weighs as much as two rifle squads against your army cap. Mass is always allowed — a big force just costs more bodies. Check the ARMY cell\'s weight/cap number before you commit to something heavy.' },
+    { id: 'stability', sel: '.cell.stab', title: 'STABILITY IS THE SOURCE', when: (G, T) => effStab() <= (G.stabCap || 65) - 8 || tutCountB('comms') + tutCountB('propaganda') + tutCountB('radar') > 0, body:
+      'Stability is the SOURCE of your Influence — the higher it runs, the faster influence flows. <b>Comms Towers</b>, <b>Propaganda Bureaus</b> and <b>Radar</b> raise the CEILING; city damage and strikes spend it down. Hitting zero triggers a recoverable capitulation crisis, not instant defeat.' },
+    { id: 'garrison', sel: '.cell.garr', title: 'GARRISON IS FREE', when: (G, T) => G.units.some(u => u.garrison), body:
+      'Those are free defenders your Bunkers, Barracks and Airbases raise on their own — a completely separate track from your manually-produced army, at the cost of a little IC/s upkeep.' },
+    { id: 'reentry', sel: null, title: 'THE RE-ENTRY WINDOW', when: (G, T) => G.phase === 'invasion' && G.enemies.some(e => e.reentry), body:
+      'They fall slow and vulnerable on the way in. Everything that reaches high enough gets free shots during that descent — that\'s the window. Kill them before they go active and start fighting back.' },
+    { id: 'waves', sel: '.objwrap', title: 'WAVES AREN\'T THE GOAL', when: (G, T) => G.phase === 'invasion' && G.invTime >= 60, body:
+      'Every wave that lands is stronger than the last one — they scale with elapsed time. Surviving waves isn\'t the win condition. The <b>FLEET</b> is. Grind down G.fleet / G.fleetMax and the invasion ends.' },
+    { id: 'firstLoss', sel: '.cell.stab', title: 'CITIES ARE THE OBJECTIVE', when: (G, T) => !!T._cityHit, body:
+      'Losing a whole city costs 12 stability; a fallout breach costs 6. Cities are what this war is actually about — the ground in between is just the fight to keep them.' },
+  ];
+  function fireLesson(l) {
+    const T = G.tut; T.lessonsFired[l.id] = true; T.lessonCd = TUNE.LESSON_GAP_S;
+    let didPause = false;
+    if (!G.turnMode && !G.paused) { G.paused = true; G._evtAutoPause = true; didPause = true; }
+    const resume = () => { if (didPause && G._evtAutoPause) { G.paused = false; G._evtAutoPause = false; } };
+    let body = l.body;
+    if (l.id === 'momentum') body = body.replace('×MOMVAL', '×' + (G.infMomentum || 1).toFixed(1));   // fill in the REAL current momentum value at fire time
+    if (l.id === 'momentumReset') body = body.replace('×PREV', '×' + (T._momPrev || 2).toFixed(1));   // fill in the REAL previous momentum value at fire time
+    openSpotlight([{ sel: l.sel, title: l.title, body, last: true }], { onComplete: resume, onSkip: resume });
+  }
+  window.tutFireLesson = id => { const l = LESSONS.find(x => x.id === id); if (l) fireLesson(l); };
+  window.TUT_LESSON_IDS = LESSONS.map(l => l.id);
 
   let idx = 0, ov = null, onKey = null, onResize = null, curSteps = null, curOpts = {}, doneTimer = null;
 
@@ -9106,7 +9158,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       if (T.phase === 'industry' && !T.doctrineFired && !ov) {
         if (G.icR >= (T.icR0 || TUNE.BASELINE_ICR) * TUNE.MILESTONE_IC_MULT && econCount() >= TUNE.MILESTONE_ECON_N && icTrend >= TUNE.MILESTONE_TREND) {
           T.doctrineFired = true; T.phase = 'doctrine'; unlock('#btnRes');
-          openSpotlight([{ sel: '#btnRes', title: 'STABLE FOOTING', body: 'Your economy can carry a war now — time to spend it. <b>Research</b> buys the doctrines that transform your civilization, paid with <b>Influence</b>. One tip: stand up a couple of <b>Research Labs</b> first, or it’ll crawl.', last: true }]);
+          openSpotlight([{ sel: '#btnRes', title: 'STABLE FOOTING', body: 'Your economy can carry a war now — time to spend it. <b>Research</b> buys the doctrines that transform your civilization, paid with <b>Influence</b>. One tip: stand up a couple of <b>Research Labs</b> first, or it’ll crawl. Spend it in one burst — momentum resets on every spend.', last: true }]);
           return;
         }
       }
@@ -9122,6 +9174,23 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
           return;
         }
       }
+    }
+
+    // LESSONS — event-triggered rule cards, OUTSIDE the `if (!T.off)` gate above so a Streamlined/Guided
+    // run (handHold off, T.off true) still gets them; gated purely by G.tut.lessons. Fires the first
+    // not-yet-fired lesson whose `when(G,T)` goes true, throttled by TUNE.LESSON_GAP_S. T._momPrev is
+    // tracked here (updated at the END, after the check) so momentumReset can see the value BEFORE this tick's change.
+    if (T.lessons && !ov && !G.over) {
+      T.lessonCd = Math.max(0, (T.lessonCd || 0) - dt);
+      if (T.lessonCd <= 0) {
+        T.lessonsFired = T.lessonsFired || {};
+        for (const l of LESSONS) {
+          if (T.lessonsFired[l.id]) continue;
+          let ok = false; try { ok = !!l.when(G, T); } catch (e) {}
+          if (ok) { fireLesson(l); break; }
+        }
+      }
+      T._momPrev = G.infMomentum || 1;
     }
 
     // ADVISOR tips — gated purely by G.tut.tips (a standalone match option, independent of handHold),
@@ -9156,8 +9225,8 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       G.tut.handHold = T.handHold || 'off';
       G.tut.off = (G.tut.handHold !== 'heavy' && G.tut.handHold !== 'light');
       G.tut.readyPanels = !!T.readyPanels; G.tut.diagnosis = !!T.diagnosis;
-      G.tut.hideUnimportant = !!T.hideUnimportant; G.tut.tips = !!T.tips; G.tut.babyFleet = !!T.babyFleet;
-      G.tut.phase = 'orient';
+      G.tut.hideUnimportant = !!T.hideUnimportant; G.tut.tips = !!T.tips; G.tut.babyFleet = !!T.babyFleet; G.tut.lessons = !!T.lessons;
+      G.tut.phase = G.tut.off ? 'done' : 'orient';   // LESSONS — no hand-hold means no 'orient' step to wait out; skip straight to 'done' so the 'cycle' lesson can fire on the very first tick
     }
     if (G && G.tut && G.tut.hideUnimportant) {
       if (typeof curBcat !== 'undefined') curBcat = 'ECON';

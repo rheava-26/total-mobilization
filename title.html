@@ -699,6 +699,7 @@
   <details class="helpsec"><summary>② PRODUCE UNITS &amp; ✈ AIR COMMAND</summary><p>
     Build a <b>Factory / Airbase / Shipyard / Space Center</b>, then press <span class="k">PRODUCE</span> (top bar) — units roll out of the matching building. Researched doctrines add whole new rosters here.<br><br>
     <b>✈ AIR COMMAND:</b> every crewed FIXED-WING aircraft needs a hangar slot — <b>Airbase +6</b>, <b>Underground Airwing +3</b>, <b>Aero Works +4</b>. Drones are exempt (swarm away) and carrier wings support themselves. A bigger air force means more air infrastructure — which the enemy can bomb.<br>
+    <b>🛸 DRONE SWARMS</b> are ONE unit that GROWS bodies (up to 48) as you build more — cheap to field in mass, but a swarm within range of an <b>Automated Assembly Line</b> also slowly REGROWS bodies it's lost, drawing IC — the real long-term cost of a drone army. Field enough of them and the autofleet answers with the <b>ECM HIJACKER</b>: it halves a caught swarm's fire rate, then outright steals a chunk of its bodies (they reappear as hostile drones) the longer it lingers in its field — kill it fast.<br>
     <b>🚁 ROTOR COMMAND:</b> HELICOPTERS are their own arm — they draw a SEPARATE pool (not hangar slots), need no runway, and base out of <b>Heli-Depots +6</b> and every CITY (+3 each). They hug the deck: a heli hovers over its target pounding it with rockets, but physically cannot climb to high-altitude enemies — pure close air support. Rearm at any city, heli-depot, airbase, or carrier deck.<br>
     <b>⬆ ORBITAL LIFT</b> works the same for space units: each Space Center / Station provides lift that your orbital fleet reserves.
     <span class="tip2">Locked cards tell you exactly what they need — research, a production-line building, a resource deposit, lift or hangar space.</span></p></details>
@@ -3131,7 +3132,7 @@ const BUILD_DEFS = {
   deepore:  { name: 'Deep-Ore Excavator', cat: 'SPEC', ic: 360, mp: 130, build: 17, hp: 320, w: 22, h: 16, reqs: ['spaceage', 'automation'], econ: { ic: 14 }, gmod: { autoFast: 1, costMech: .15 }, ds: 'Massive IC boost. Autonomous Plants nanofabricate 70% faster AND switch to high-tier MECHS (android droids) — build droid armies. (Space Age + Automation)' },
   genefac:  { name: 'Gene Facility', cat: 'SPEC', ic: 200, mp: 90, build: 11, hp: 220, w: 18, h: 16, req: 'biotech', garrison: { keys: ['shock'], n: 1 }, gmod: { bioQual: .35, costBio: .15 }, ds: 'Biological units +35% quality (HP) and −15% IC. Build several — each one stacks the bonus. Keeps a gene-boosted shock-trooper guard. (Bioengineering)' },
   uranenrich:{ name: 'Uranium Enrichment', cat: 'SPEC', ic: 260, mp: 90, build: 13, hp: 240, w: 18, h: 18, srReq: 'uranium', fallout: true, gmod: { ppBonus: .4 }, ds: 'Enriches uranium — REQUIRED to arm Nuclear & Ballistic strikes. +40% Power Plant output. If destroyed, it spills a fallout firestorm. (needs a Uranium deposit)' },
-  droneassembly:{ name: 'Automated Assembly Line', cat: 'SPEC', ic: 240, mp: 70, build: 12, hp: 240, w: 20, h: 16, req: 'automation', garrison: { keys: ['cdrone'], n: 2 }, gmod: { droneBatch: 3, droneFast: .6, mechFast: .4, conspd: .3 }, ds: 'Automates the whole production line: +30% CONSTRUCTION SPEED sitewide, and MECHANICAL units (drones/mechs/electronics/capitals) recruit ~40% faster. Drone batches still come out +3 per order and ~60% faster — flood the sky with swarms. Keeps a patrol of combat drones. (Automation)' },
+  droneassembly:{ name: 'Automated Assembly Line', cat: 'SPEC', ic: 240, mp: 70, build: 12, hp: 240, w: 20, h: 16, req: 'automation', garrison: { keys: ['cdrone'], n: 2 }, gmod: { droneBatch: 3, droneFast: .6, mechFast: .4, conspd: .3 }, ds: 'Automates the whole production line: +30% CONSTRUCTION SPEED sitewide, and MECHANICAL units (drones/mechs/electronics/capitals) recruit ~40% faster. Drone batches still come out +3 per order and ~60% faster — flood the sky with swarms. Keeps a patrol of combat drones. Nearby drone SWARMS also REGROW lost bodies here — 1 every 4s, ~77 IC each — so a Drone Assembly Line is the real long-term cost of fielding mass drones. (Automation)' },
   datacenter:{ name: 'Data Center', cat: 'SPEC', ic: 280, mp: 200, build: 14, hp: 220, w: 18, h: 18, req: 'automation', garrison: { keys: ['cdrone'], n: 1 }, gmod: { droneNoMp: 1, resSpd: .4 }, ds: 'Costs heavy manpower up front, then drones/autonomous units need ZERO manpower and research runs +40% faster. Fields a guardian drone. (Automation)' },
   antimatterex:{ name: 'Antimatter Extractor', cat: 'SPEC', ic: 360, mp: 120, build: 18, hp: 110, armor: 0, w: 18, h: 18, req: 'antimatter', gmod: { amR: 1.2 }, ds: 'Extremely fragile. Slowly produces ANTIMATTER — fuels the devastating Antimatter strike and Antimatter Dreadnoughts. (Antimatter)' },
   ammodepot:{ name: 'Ammunition Depot', cat: 'DEF', ic: 160, mp: 60, build: 9, hp: 220, w: 18, h: 14, aura: { rof: 1.25, r: 260 }, garrison: { keys: ['inf', 'aa'], n: 2 }, ds: 'Nearby units fire +25% faster, and it keeps a small defensive garrison. No research needed.' },
@@ -3476,7 +3477,7 @@ function deriveWeight(d) {
   return 1;                     // normal ground/air/naval line units — the baseline
 }
 function defWeight(d) { return d.wt != null ? d.wt : deriveWeight(d); }   // d.wt ?? deriveWeight(d) — explicit override honored first
-function unitWeight(u) { return defWeight(u.d); }
+function unitWeight(u) { return u.swarm ? swarmBodies(u) * (.35 / 3) : defWeight(u.d); }   // SWARMS (v3.103) — a live swarm's weight scales with its ACTUAL body count (3 bodies = .35, same as before merging existed; 48 = 5.6), not a flat per-order constant — combatWeight()/armyCap() see the exact same total budget as before, just accounted on far fewer G.units entries
 function armyCap() { let cap = 12 + Math.floor((G.mp || 0) / 25) + (G.mult.capb | 0) + (bmod().capb | 0); for (const b of G.buildings) if (b.done !== false && b.d.econ && b.d.econ.cap) cap += b.d.econ.cap; return Math.round(cap * ARMY_WEIGHT_MULT); }   // WEIGHT BUDGET, not a headcount — same MP/Housing-driven growth curve as before, scaled up (ARMY_WEIGHT_MULT) so a real combined-arms army still fits once every unit (drones, capitals, everything) has a weight (see deriveWeight)
 // === GARRISON ECONOMY === a SEPARATE, free auto-defense track from the manual army above. garrisonCap() is the hard
 // GLOBAL WEIGHT BUDGET (set by Garrison Stockpiles); garrisonUsed() sums the weight of every currently-live garrisoner
@@ -3630,7 +3631,7 @@ const SQUAD_LOADOUT = {
   // the tight SQUAD_BODY_SEP spring; widened so the formation visibly holds 3 (or 2+1) SEPARATE soldiers in
   // a loose cluster instead of a smear. See SQUAD_BODY_SEP just below for the matching separation bump.
   inf:   { n: 3, bodyS: 3, spread: 17, burst: 3, burstGap: .11, atRate: 1.9, atRangeMul: 1.15, atCeil: .56, atDmgMul: 1.6, lerp: 6 },
-  cdrone:{ n: 3, bodyS: 2.4, spread: 21, burst: 1, burstGap: 0, lerp: 7 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical
+  cdrone:{ n: 3, bodyS: 2.4, spread: 21, burst: 1, burstGap: 0, lerp: 7, swarm: true, nMax: 48 },   // homogeneous drone swarm — no AT specialist, all 3 bodies identical. swarm:true (v3.103) — cdrone is now ONE unit that GROWS bodies (up to nMax) instead of many small squad-units; see SWARM MECHANICS below
   fighter:{ spread: 22, burst: 1, burstGap: 0, lerp: 8, roles: [
     { art: 'fighter', bodyS: 4.0, hpShare: .5,  dmgMul: 1,   rateMul: 1,    oy: 0 },    // the crewed 6th-gen Falcon — leads the flight
     { art: 'wingman', bodyS: 2.3, hpShare: .25, dmgMul: .55, rateMul: 1.15, oy: 9 },    // loyal-wingman escort drones — finally actually appear
@@ -3662,6 +3663,7 @@ const SQUAD_BODY_SEP_K = 110; // repulsion strength applied when two bodies are 
 const SQUAD_VEL_MAX = 60;     // px/s cap on a body's drift velocity — keeps the spring numerically stable under a big dt spike (tab-out, lag)
 const SQUAD_HITBOX_R = 2.4;   // px — nominal per-body hitbox radius, exposed for any future body-vs-body/AoE distance check
 const SQUAD_JITTER_AMP = 1.6; // px — per-body wobble amplitude added on top of the formation slot (see stepSquadBodies) so bodies shuffle instead of holding a perfectly rigid rosette
+const SQUAD_SEP_MAX_N = 16;   // PERF (v3.103 SWARMS) — the O(n²) body-vs-body repulsion pass below is fine at old squad sizes (n<=4) but a 48-body swarm would cost ~190x the pair-checks; a swarm's blob-ring layout (see swarmSlotOffset) already spaces bodies well past SQUAD_BODY_SEP by construction, so past this many LIVE bodies the repulsion pass is skipped entirely — the spring pull-to-slot alone is enough to hold formation
 // v3.68: how much of a GROUND body's vertical formation offset (m.cy — the wedge stagger + jitter above) actually
 // moves its DRAW position. m.cy stays 100% live everywhere else (aim origin, hitSquadMember's nearest-body pick)
 // — only drawSquadUnit's per-body translate/shadow dial it back — because at full strength m.cy (±5-6px for a
@@ -3687,6 +3689,7 @@ function stepSquadBodies(u, cfg, dt) {
     m.vcx = (m.vcx || 0) + ((jx - m.cx) * pullK - (m.vcx || 0) * SQUAD_PULL_DAMP) * dt;
     m.vcy = (m.vcy || 0) + ((jy - m.cy) * pullK - (m.vcy || 0) * SQUAD_PULL_DAMP) * dt;
   }
+  if (alive.length <= SQUAD_SEP_MAX_N) {   // PERF — see SQUAD_SEP_MAX_N: skipped outright for big swarms, whose ring layout already keeps bodies apart
   const sep2 = SQUAD_BODY_SEP * SQUAD_BODY_SEP;
   for (let i = 0; i < alive.length; i++) { const a = alive[i];
     for (let j = i + 1; j < alive.length; j++) { const b = alive[j];
@@ -3697,6 +3700,7 @@ function stepSquadBodies(u, cfg, dt) {
       a.vcx += dx * inv * f; a.vcy += dy * inv * f;
       b.vcx -= dx * inv * f; b.vcy -= dy * inv * f;
     }
+  }
   }
   for (const m of alive) {
     m.vcx = Math.max(-SQUAD_VEL_MAX, Math.min(SQUAD_VEL_MAX, m.vcx));
@@ -3714,13 +3718,81 @@ function sharedTgtUsable(tgt, x, y, range, ceilFrac) {
   const dx = tgt.x - x, dy = tgt.y - y; return dx * dx + dy * dy <= range * range;
 }
 function defaultCeil(d) { return d.domain === 'ground' ? (d.ceil != null ? d.ceil : .80) : d.domain === 'air' ? (d.ceil != null ? d.ceil : .56) : (d.ceil != null ? d.ceil : 0); }   // AIR default .56 = THERMO_Y fraction — aircraft now reach up into the thermosphere (was .62 mesosphere top); exosphere still needs ceil:0 weapons
-function spawnSquad(key, d, x) {
+// ===== SWARMS (v3.103) — cdrone: true "one unit, growable bodies" ===================================================
+// Perf problem: a fielded drone army used to be hundreds/thousands of separate 3-body G.units squads (each with its
+// own AI-think + render), the single easiest way to lag the game. A SWARM (SQUAD_LOADOUT[key].swarm) is the fix:
+// still exactly the squad-body machinery above (members[], stepSquadBodies, updSquadMembers, hitSquadMember all
+// unchanged in shape) but bodies pile onto ONE unit up to nMax, and new deliveries MERGE into a nearby swarm instead
+// of spawning a fresh unit — see spawnSquad's cfg.swarm branch + swarmAddBodies. Per-body HP is FIXED (see
+// swarmPerBodyHp — always def.hp*.66/cfg.n, never divided by the LIVE body count), so a 48-body swarm is genuinely
+// 16x the HP/DPS of a 3-body one, never a diluted one — the mass IS the power, exactly like before, just one object.
+const SWARM_RING_N = [1, 6, 12, 18, 11];   // concentric ring sizes (sums to 48 = nMax) a swarm's bodies fill in order
+// which ring does body index `idx` (0-based, filled in ring order) fall in, and its [ox,oy] formation offset. Ring 0
+// is a single body at the centre; ring r>0 spreads its members evenly around a circle of radius spread*r*.9, staggered
+// per ring (+r*.9 rad) so successive rings don't align into spokes. Air swarms (the only kind today) also compress the
+// vertical spread to r*.5 so the blob reads as a wide, flat cloud rather than a tall column.
+function swarmSlotOffset(idx, spread, isAir) {
+  let ring = 0, rem = idx;
+  for (; ring < SWARM_RING_N.length; ring++) { if (rem < SWARM_RING_N[ring]) break; rem -= SWARM_RING_N[ring]; }
+  if (ring === 0) return [0, 0];
+  const cnt = SWARM_RING_N[ring] || 1, rad = spread * ring * .9, ang = (rem / cnt) * 6.2831853 + ring * .9;
+  return [Math.cos(ang) * rad, Math.sin(ang) * rad * (isAir ? .5 : .3)];
+}
+// how big a ring-blob of n bodies reads on screen (radius, px) — used to scale the selection box/HP bar to the swarm's
+// actual size instead of a fixed per-unit box (see drawSquadUnit) — ~76px radius (~150px wide) at a full 48-body swarm.
+function swarmBlobRadius(n, spread) {
+  let ring = 0, rem = n; for (; ring < SWARM_RING_N.length; ring++) { if (rem <= SWARM_RING_N[ring]) break; rem -= SWARM_RING_N[ring]; }
+  return spread * Math.max(1, ring) * .9;
+}
+function swarmBodies(u) { let n = 0; for (const m of u.members) if (m.alive) n++; return n; }   // live body count — the swarm's real "headcount" (u itself is ONE G.units entry regardless)
+function swarmPerBodyHp(d, cfg) { return Math.max(4, Math.round(d.hp * .66 / (cfg.n || 3))); }   // FIXED per-body HP off the squad's BASE order size (cfg.n, e.g. 3 for cdrone) — never the live body count, so growing the swarm adds real HP/DPS instead of diluting existing bodies
+// fold `n` fresh bodies onto an already-live swarm (a merged delivery, OR the regrowth-upkeep tick — see updSwarmSupport)
+function swarmAddBodies(u, n) {
+  const cfg = u.squadCfg; if (!cfg || !cfg.swarm) return 0;
+  if (u.members.length > (cfg.nMax || 48) * 2) u.members = u.members.filter(m => m.alive);   // PERF — drop long-dead body slots periodically so a swarm that's regrown many times over a long fight doesn't carry an ever-growing dead-weight array
+  const perBody = swarmPerBodyHp(u.d, cfg), isAir = u.d.domain === 'air';
+  let cur = swarmBodies(u), added = 0;
+  while (added < n && cur < (cfg.nMax || 48)) {
+    const [ox, oy] = swarmSlotOffset(cur, cfg.spread, isAir);
+    u.members.push({ art: u.d.art, bodyS: cfg.bodyS || INF_BODY_S, isAt: false, ox, oy, cx: ox, cy: oy, vcx: 0, vcy: 0, aim: 0, facing: 1,
+      jphase: Math.random() * 6.28, jspeed: .55 + Math.random() * .5, pullVar: .85 + Math.random() * .3,
+      hp: perBody, maxHp: perBody, weapon: u.d.weapon, dmg: u.d.dmg, rate: u.d.rate, range: u.d.range, ceil: defaultCeil(u.d),
+      cd: Math.random() * u.d.rate, burstLeft: 0, burstT: 0, tgt: null, alive: true });
+    u.hp += perBody; u.maxHp += perBody; cur++; added++;
+  }
+  return added;
+}
+function spawnSquad(key, d, x, nBodies, noMerge) {
   const cfg = SQUAD_LOADOUT[key];
   const bodyS0 = cfg.bodyS || INF_BODY_S;
   const y = d.domain === 'air' ? groundY(x) - 80 : groundY(x) - bodyS0;
-  const hp0 = Math.max(8, Math.round(d.hp * 0.66));
+  let hp0 = Math.max(8, Math.round(d.hp * 0.66));
   const members = [];
-  if (cfg.roles) {   // MIXED squad — a leader body plus escort bodies, each with its own art & power share (see fighter above)
+  if (cfg.swarm) {   // SWARM — see the "SWARMS (v3.103)" block above spawnSquad. MERGE ON DELIVERY: fold this order's
+    // bodies into a nearby friendly swarm of the SAME key first (so a stream of build-queue completions/garrison
+    // drops/regrowth all pile onto a handful of live swarms instead of spawning a fresh unit every time) — this is
+    // the actual perf win: up to nMax bodies live as ONE G.units entry with ONE AI-think per frame, not nMax of them.
+    const n0 = nBodies != null ? nBodies : cfg.n;
+    if (!noMerge && !G._noSwarmMerge) {
+      let best = null, bestBodies = -1;
+      for (const o of G.units) {
+        if (o.key !== key || !o.swarm || o.hp <= 0 || o.garr) continue;   // never fold into a GARRISON swarm — separate weight-budget track, see spawnGarrison
+        const ob = swarmBodies(o); if (ob + n0 > (cfg.nMax || 48)) continue;
+        if (Math.abs(o.x - x) > 260) continue;
+        if (ob > bestBodies) { bestBodies = ob; best = o; }
+      }
+      if (best) { swarmAddBodies(best, n0); return best; }   // no new unit created — no bgOnSpawn, nothing to clean up later
+    }
+    const perBody = swarmPerBodyHp(d, cfg), isAir = d.domain === 'air';
+    for (let i = 0; i < n0; i++) {
+      const [ox, oy] = swarmSlotOffset(i, cfg.spread, isAir);
+      members.push({ art: d.art, bodyS: bodyS0, isAt: false, ox, oy, cx: ox, cy: oy, vcx: 0, vcy: 0, aim: 0, facing: 1,
+        jphase: Math.random() * 6.28, jspeed: .55 + Math.random() * .5, pullVar: .85 + Math.random() * .3,
+        hp: perBody, maxHp: perBody, weapon: d.weapon, dmg: d.dmg, rate: d.rate, range: d.range, ceil: defaultCeil(d),
+        cd: Math.random() * d.rate, burstLeft: 0, burstT: 0, tgt: null, alive: true });
+    }
+    hp0 = perBody * n0;   // a swarm's aggregate HP scales with its LIVE body count (fixed per-body HP × n) — NOT the flat d.hp*.66 every other squad type uses, so growing the swarm genuinely adds HP/DPS instead of just re-slicing the same pool
+  } else if (cfg.roles) {   // MIXED squad — a leader body plus escort bodies, each with its own art & power share (see fighter above)
     const n = cfg.roles.length;
     cfg.roles.forEach((role, i) => {
       const mhp = Math.max(4, Math.round(hp0 * (role.hpShare != null ? role.hpShare : 1 / n)));
@@ -3766,9 +3838,9 @@ function spawnSquad(key, d, x) {
   const spool = hasFuel ? 3 + Math.random() * 2 : 0;
   const u = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0: 0, wx1: 0, patrol, job: null,
     ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool,
-    squad: true, members, squadCfg: cfg, _id: (G._nextUId = (G._nextUId || 0) + 1) };   // _id: stable per-unit id for TEMPORAL AI LOD's frame-stagger (see updUnits)
+    squad: true, members, squadCfg: cfg, swarm: !!cfg.swarm, _id: (G._nextUId = (G._nextUId || 0) + 1) };   // _id: stable per-unit id for TEMPORAL AI LOD's frame-stagger (see updUnits)
   G.units.push(u);
-  bgOnSpawn(u);   // BATTLEGROUPS — squads (e.g. cdrone) group same as any other light unit, one entry per squad
+  bgOnSpawn(u);   // BATTLEGROUPS — squads (e.g. inf/fighter) group same as any other light unit, one entry per squad; a no-op for u.swarm (see bgOnSpawn's own guard) — swarms already ARE the "many bodies, one brain" consolidation, battlegrouping them again would fight the swarm's own multi-target AI
   return u;
 }
 // GROUND SEAT (cosmetic only, global — read by both render() and fire()'s muzzle-origin calc below) — a ground
@@ -3807,6 +3879,7 @@ function bgOffsetFor(i) { if (i <= 0) return [0, 0]; const r = 12 * Math.sqrt(i)
 // BG_JOIN_R that isn't already full, else becomes a new group leader itself. O(live leaders of this key)
 // per spawn — bounded (~total light units / 20), never O(all units).
 function bgOnSpawn(u) {
+  if (u.swarm) return;   // SWARMS (v3.103) — a swarm already IS the "many bodies, one brain" consolidation (up to 48 bodies/G.units-entry); battlegrouping swarm UNITS together on top of that would hand their movement to battlegroupFollowMove's crude single-point ease and stomp the swarm's own multi-target acquisition (see updSquadMembers) for no perf gain — there are already few enough live swarms
   if (!bgEligible(u.d)) return;
   const list = G._bgIndex[u.key] || (G._bgIndex[u.key] = []);
   let best = null, bd = BG_JOIN_R * BG_JOIN_R;
@@ -3851,10 +3924,10 @@ function battlegroupFollowMove(u, dt) {
   else { u.y = groundY(u.x) - d.s; }   // ground/space fallback — no eligible unit is currently space-domain, kept for completeness
   u.facing = dx >= 0 ? 1 : -1;
 }
-function spawnUnit(key, x) {
+function spawnUnit(key, x, n, noMerge) {   // n/noMerge: SWARMS only (v3.103) — forwarded straight to spawnSquad; every other caller omits both and gets the old default behaviour untouched
   if (G.stats) G.stats.recruited[key] = (G.stats.recruited[key] || 0) + 1;   // AFTER-ACTION — every FRIENDLY unit fielded (spawnUnit is only ever called for the player's own forces; enemies go through spawnEnemy)
   if (G.stats) { const sd = effDef(key); G.stats.totalRecruited++; if (sd && G.stats.byDomain[sd.domain] != null) G.stats.byDomain[sd.domain]++; if (sd && sd.capital) G.stats.capitalsBuilt++; }   // AFTER-ACTION — total fielded, by domain, and capital-class hulls (Sky Dock ships etc — draw no hangar slot)
-  if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x);
+  if (SQUAD_LOADOUT[key]) return spawnSquad(key, effDef(key), x, n, noMerge);
   const d = effDef(key); let y, wx0 = 0, wx1 = 0;
   if (d.domain === 'ground') y = groundY(x) - d.s;
   else if (d.domain === 'air') y = groundY(x) - 80;
@@ -3870,13 +3943,13 @@ function spawnUnit(key, x) {
   const _uNew = { key, d, x, y, vx: 0, vy: 0, hp: hp0, maxHp: hp0, aim: -1.2, cd: Math.random() * d.rate, facing: 1, wx0, wx1, patrol, job: null, launching, railLaunch: launching && !!(G.unlocked && G.unlocked.spaceage), shield: d.shield || 0, maxShield: d.shield || 0, ammo: ammo0, maxAmmo: ammo0, fuel: fuel0, maxFuel: fuel0, spool, _id: (G._nextUId = (G._nextUId || 0) + 1) };   // _id: stable per-unit id for TEMPORAL AI LOD's frame-stagger (see updUnits)
   G.units.push(_uNew);
   bgOnSpawn(_uNew);   // BATTLEGROUPS — light units (drone/clone family) self-organize into a shared-brain group, see bgOnSpawn
+  return _uNew;   // v3.103 — callers (spawnGarrison, carrierLaunch) used to assume G.units[G.units.length-1] was always the fresh spawn; that broke the instant a call could return an EXISTING merged unit instead (see spawnSquad's swarm branch), so every path here now returns the real result
 }
 // launch one FREE deck craft belonging to carrier u (off army-cap/air-command, tied to the deck for rearm). An AIRBORNE
 // carrier (Nanoforge) launches its wing from its OWN altitude and gets it combat-ready fast, so the deck is never a slow
 // ground-scramble the enemy kills on the climb.
 function carrierLaunch(u, key) {
-  spawnUnit(key, u.x + (Math.random() - .5) * 80);
-  const f = G.units[G.units.length - 1];
+  const f = spawnUnit(key, u.x + (Math.random() - .5) * 80, undefined, true);   // noMerge:true (v3.103) — a deck launch must always be ITS OWN unit so carrFrom/ammo/rearm tracking below attaches to the actual craft that just launched, never to some other already-live swarm a merge could've returned instead
   if (!f) return;
   f.garr = true; f.carrFrom = u; f.ammo = f.maxAmmo || 8; if (f.maxFuel) f.fuel = f.maxFuel;
   if (u.d.domain === 'air') { f.y = u.y + 6; f.patrol = u.y; f.spool = Math.min(f.spool || 0, .5); }
@@ -3891,6 +3964,15 @@ function applyEraUpgrades() {
 // re-arm a fielded squad's RIFLEMEN with the new era weapon (tracer→plasball etc.) — the AT/AA specialist keeps its
 // own missile loadout untouched, matching the game-wide rule that plasma only re-arms gun/kinetic platforms.
 function upgradeSquadLoadout(u, nd) {
+  if (u.swarm) {   // SWARMS — per-body HP is FIXED off the squad's BASE order size (swarmPerBodyHp: nd.hp*.66/cfg.n), never live-n — a 48-body Hornet swarm keeps all 48 bodies at the new era's per-body HP, it does NOT re-slice one shrinking pool across them
+    const perBody = swarmPerBodyHp(nd, u.squadCfg);
+    let sum = 0, bodies = 0;
+    for (const m of u.members) { if (!m.alive) continue; const frac = m.maxHp ? Math.max(0, m.hp) / m.maxHp : 1;
+      m.weapon = nd.weapon; m.dmg = nd.dmg; m.rate = nd.rate; m.range = nd.range;
+      m.maxHp = perBody; m.hp = Math.max(0, Math.round(perBody * frac)); sum += m.hp; bodies++; }
+    u.hp = sum; u.maxHp = perBody * bodies;
+    return;
+  }
   const n = u.members.length, baseHp0 = Math.max(8, Math.round(nd.hp * .66));
   for (const m of u.members) {
     if (m.isAt) continue;
@@ -3920,6 +4002,17 @@ const THREAT_W_DIVE = 1.7;    // mid dive-bomb / impact run (e.dives) — about 
 const THREAT_W_GROUND = 1.15; // already-landed ground unit pressing the line — mildly favored over an equally-distant airborne straggler
 function threatWeight(e) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : 1); }
 function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle.
+// SWARM MULTI-TARGET ACQUISITION (v3.103) — a single acquireEnemy() pick would have up to 48 swarm bodies all
+// dogpiling ONE enemy while everything else in range goes untouched (the old 3-body squad never had enough bodies
+// for this to matter). Returns up to `n` distinct in-range enemies, nearest/most-threatening first, in ONE
+// O(enemies) pass — called once per SWARM per frame (see updSquadMembers), never once per body, so this is exactly
+// as cheap as the single acquireEnemy() call every other squad/unit already pays.
+function acquireEnemyMulti(x, y, range, ceilFrac, filter, n) {
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range, cand = [];
+  for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d > r2) continue; cand.push([d / threatWeight(e), e]); }
+  cand.sort((a, b) => a[0] - b[0]);
+  return cand.slice(0, n).map(c => c[1]);
+}
 // ── MISSILE FIRE DISCIPLINE — CLAIM/ENG above only ever live for a SINGLE frame, which is fine for hitscan
 // guns/lasers (damage lands the same frame it's claimed) but useless for a guided missile: it takes seconds to
 // fly to the target, and every frame in between the ledger has forgotten it exists — so with only one weak
@@ -4060,7 +4153,7 @@ function deployEmplacement(type, x, owner) {
 }
 function combatCount() { let n = 0; for (const u of G.units) if (!u.d.builder && !u.garr) n++; return n; }   // RAW headcount — garrison units are a separate free local-defense track and never counted here; display/AAR use ONLY, the cap itself now runs on combatWeight() (nothing is off-cap any more, see deriveWeight)
 function combatWeight() { let w = 0; for (const u of G.units) if (!u.d.builder && !u.garr) w += unitWeight(u); return w; }   // the actual army-cap accounting — every live unit's weight (drones cheap, capitals/superweapons expensive), garrison excluded same as combatCount
-function spawnGarrison(key, x, home, weight) { spawnUnit(key, x); const u = G.units[G.units.length - 1]; if (u) { u.garr = true; u.garrison = true; u.garrHome = home || null; u.garrWeight = weight || 1; } return u; }   // u.garrison + u.garrWeight/garrHome feed the GARRISON ECONOMY's global weight budget; u.garr alone keeps the older army-cap/upkeep exclusions working unchanged
+function spawnGarrison(key, x, home, weight) { const u = spawnUnit(key, x, undefined, true); if (u) { u.garr = true; u.garrison = true; u.garrHome = home || null; u.garrWeight = weight || 1; } return u; }   // u.garrison + u.garrWeight/garrHome feed the GARRISON ECONOMY's global weight budget; u.garr alone keeps the older army-cap/upkeep exclusions working unchanged. noMerge:true (v3.103) — a garrison swarm (e.g. the droneassembly's own patrol) must never fold into (or receive) a merge with a player-commanded combat swarm: garr/garrison flags are per-UNIT and the two weight tracks (army cap vs. the separate garrison budget) would corrupt each other the instant one swarm answered to both
 // ── ALLIED REINFORCEMENTS (all tunable) — "you are not alone." When the invasion lands, allied conventional
 //    forces surge in near your cities as YOUR OWN units so they just join the fight. It's a SAFETY NET: a woefully
 //    weak opening isn't an instant loss, but it's never a free win — everyone gets a token baseline, the underprepared
@@ -4425,6 +4518,7 @@ function squadMemberDied(t, m) {
 }
 // remaining members close ranks — recompute their formation slots so the squad visibly shrinks/tightens as it takes losses
 function reformSquad(t) {
+  if (t.swarm) return;   // SWARMS — no reform: a ring-blob just leaves a gap where a body died (bodies added later fill the next free ring slot, see swarmAddBodies); the linear (i-(n-1)/2)*spread recompute below is for the tight inf/fighter fireteams and would be meaningless on a ring layout
   const alive = t.members.filter(m => m.alive), n = alive.length; if (!n) return;
   const spread = t.squadCfg.spread;
   alive.forEach((m, i) => { m.ox = (i - (n - 1) / 2) * spread; });
@@ -4627,8 +4721,10 @@ function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam —
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13);
   G.nukeFlash = .5; shake(14); SFX.split(); SFX.boom(); toast('☢ ANNIHILATION BEAM — A CITY IS BEING GLASSED');
 }
+function playerDroneWeight() { let w = 0; for (const u of G.units) if (u.d.drone) w += unitWeight(u); return w; }   // ECM HIJACKER wave-picker gate (v3.103) — total army-cap weight fielded across ALL drone-family units (swarm bodies counted live, see unitWeight), the same signal the player's own army-cap accounting uses
 function waveAirKind() {   // the air contingent of a landing — variety widens the longer the invasion has run
   const r = Math.random();
+  if (G.invTime >= 60) { const dw = playerDroneWeight(); if (dw >= 12) { const hijackP = dw >= 40 ? .10 : .05; if (Math.random() < hijackP) return 'hijacker'; } }   // ★ ECM HIJACKER — only shows up once the player is genuinely massing drones (never below dw 12), and more often the deeper into drone-spam they go
   if (G.invTime > 85 && r > .94) return 'bulwark';   // late-war exosphere heavy armour
   if (G.invTime > 70 && r > .92) return 'harvester';
   if (G.invTime > 40 && r > .87) return 'jammer';   // EW support drone — blinds your homing missiles until you gun it down
@@ -4706,6 +4802,19 @@ function spawnEnemy(kind, atX) {
   else if (kind === 'pelter') Object.assign(e, { hp: 55 * t, s: 4, armor: 4, spd: 6, hold: landY(wxw) - 4, weapon: 'plasarc', dmg: 30, rate: 3.2, dives: false, ground: true, art: 'epelter' });   // PELTER — ground plasma artillery turret, lobs deforming plasma; a constant pressure on cities (dropped in swarms)
   else if (kind === 'earthbreaker') Object.assign(e, { hp: 620 * t, s: 10, armor: 20, spd: 4, hold: landY(wxw) - 10, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, quake: true, art: 'eearthbreaker' });   // EARTHBREAKER PRESS — heavy seismic siege unit; its energy field triggers earthquakes that rattle morale (stability) & damage nearby ground forces/buildings
   else if (kind === 'jammer') Object.assign(e, { hp: 44 * t, s: 4, armor: 2, spd: 12, hold: MESO_Y() + 20 + Math.random() * 50, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, jammer: true, jamR: 360, art: 'ejammer' });   // ELECTRONIC-WARFARE drone — no guns, but projects a field that blinds your homing missiles; kill it with GUNS/LASERS/KINETICS (missiles go dumb inside it) to restore lock
+  // ★ ECM HIJACKER (v3.103) — the autofleet's answer to mass drone SWARMS: a token chin gun (it's not a real threat by
+  // itself), but drifts toward your biggest swarm and projects a field (e.hijackR) that halves its fire rate
+  // (u.jammed, consumed in updSquadMembers) and, after SWARM_JAM_HIJACK_T seconds caught in it, HIJACKS a chunk of its
+  // bodies outright — they die and reappear as hostile 'drone' re-entries at the swarm's own position (see
+  // updSwarmSupport). Named 'hijacker' (not 'jammer') to avoid colliding with the EW-blind-missile drone above, which
+  // is a completely different, pre-existing mechanic (e.jammer/jamR) this deliberately never touches.
+  // STAND-OFF RANGE (headless-tuned, not the nerf lever): a mass swarm's alpha strike is enormous by design (that's
+  // the whole point of merging bodies) — never nerf THAT to make this "work". Instead hijackR is deliberately wider
+  // than any drone's weapon range (cdrone 460, Hornet-upgraded 540) and the hijacker's own movement (see updEnemies)
+  // holds it at a stand-off just inside hijackR but outside drone range, so it can jam/hijack a swarm that
+  // structurally cannot shoot back — verified headless: at jamR:240 (inside weapon range) a full swarm alpha-struck
+  // and killed it before the 6s hijack timer ever completed, making the whole mechanic dead on arrival.
+  else if (kind === 'hijacker') Object.assign(e, { hp: 40 * t, s: 4.2, armor: 3, spd: 340, hold: MESO_Y() + 40 + (Math.random() - .5) * 80, weapon: 'tracer', dmg: 4, rate: 1.2, dives: false, air: true, shield: Math.round(20 * t), maxShield: Math.round(20 * t), hijacker: true, hijackR: 820, art: 'einterceptor' });   // spd bumped well past cdrone/Hornet (300) — headless-verified: at a slow speed the hijacker could never MAINTAIN the stand-off (a drone swarm chasing it via the normal BVR-hunt movement path just runs it down), which defeats the stand-off entirely regardless of hijackR. hijackR itself is wide of HIJACKER_STANDOFF(560) with real margin (headless-verified: too tight a margin and ordinary flight wobble kept nudging it in/out of the field, and jamT's decay is 2x its accrual rate — see updSwarmSupport — so it never reliably completed an uninterrupted 6s streak)
   // ===== AUTODRONE SUPERWEAPONS (boss-tier) =====
   else if (kind === 'hive') Object.assign(e, { hp: 1100 * t, s: 13, armor: 14, spd: 8, hold: STRATO_Y() - 18, weapon: 'bomb', dmg: 26, rate: 2.0, dives: false, air: true, producer: true, prodCd: 3, fastProd: true, prodGroup: 2, prodKinds: ['drone', 'interceptor'], weapon2: 'plasarc', dmg2: 34, rate2: 3.4, boss: true, bossName: 'SKYFORTRESS "HIVE"', art: 'airship', reinforceEligible: true });   // flying drone-carrier fortress — rains bombs, births a SQUAD at a much faster clip (not a lone drone), and now keeps a second plasma volley going alongside its bombs
   else if (kind === 'leviathan') Object.assign(e, { hp: 1700 * t, s: 12, armor: 22, spd: 11, hold: landY(wxw) - 12, weapon: 'plasarc', dmg: 66, rate: 2.6, dives: false, ground: true, boss: true, bossName: 'LAND LEVIATHAN', art: 'colossus', weapon2: 'rotary', dmg2: 10, rate2: .5, wpn2Air: true, wpn2Range: 1300, airSupport: true, airSupportLeft: 3, airSupportCd: 9 + Math.random() * 4, producer: true, prodCd: 10, prodGroup: 2, prodKinds: ['gtank', 'gmech'], reinforceEligible: true });   // siege crawler that grinds toward your cities — its main plasma cannon hammers ground/low targets while a rapid rotary AA gun (air-ONLY target list) keeps aircraft from freely swarming it; periodically calls in interceptor escorts AND fabricates a small armor squad, a true mobile carrier
@@ -5009,7 +5118,7 @@ function updateGame(dt) {
   const cityMpR = cityRecruit(dt);
   G.cityMpR = cityMpR; G.mpR += cityMpR; G.mp = Math.min(900, G.mp + cityMpR * dt);
   // production buildings — frozen during a CAPITULATION CRISIS (queues just wait; nothing is lost)
-  if (!G.crisis) for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }
+  if (!G.crisis) for (const b of G.buildings) { if (b.done === false || b.captured || !b.queue.length) continue; const q = b.queue[0]; q.t -= dt; if (q.t <= 0) { spawnUnit(q.key, b.x + (Math.random() - .5) * 20); b.queue.shift(); } }   // SWARMS (v3.103): passing no explicit n here is deliberate — queueUnit already inflates the QUEUE-ENTRY COUNT for droneBatch (unchanged, so IC/MP cost per body is untouched), and each completed entry's default n=cfg.n=3 bodies MERGES into a nearby swarm (spawnSquad's cfg.swarm branch) instead of spawning a fresh unit — an Assembly Line's droneBatch ends up growing ONE big swarm faster, exactly as its own flavor text always claimed, with zero economy change
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
@@ -5054,7 +5163,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     if (done) return end(true, it.glass ? 'YOU HELD THE LINE — THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
   G._incoming = interceptableProjList();   // PERF — one small snapshot of intercept-eligible ordnance per tick; acquireIncoming (called by every combat unit/building below) scans THIS instead of all of G.proj, and early-outs to ~zero cost whenever it's empty (the common no-bombardment case)
-  updUnits(dt); updBuildings(dt); updEnemies(dt); updProj(dt); updParts(dt);
+  updUnits(dt); updBuildings(dt); updEnemies(dt); updSwarmSupport(dt); updProj(dt); updParts(dt);
   // deaths
   for (const u of G.units) if (u.hp <= 0) { if (u.bg || u.bgLeader) bgDrop(u); if (u.carried && u.carrierHeli && u.carrierHeli.cargo === u) u.carrierHeli.cargo = null; if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // BATTLEGROUPS: bgDrop() promotes a follower on a dead leader / drops a dead follower from its roster, BEFORE the compaction filter below removes it — see bgDrop near spawnUnit. BUGFIX SAFETY NET: carried units are excluded from every damage path (see u.carried guards below), so this should be unreachable for a passenger — but if it's ever hit anyway, clear the carrier's dangling cargo pointer first so the heli doesn't spend the rest of the game trying to deliver a corpse. a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
   filterInPlace(G.units, u => u.hp > 0);   // PERF: in-place compaction, see filterInPlace() — was `G.units = G.units.filter(...)`
@@ -6243,9 +6352,15 @@ function updUnits(dt) {
 // own longer-ceiling weapon & cooldown, so one squad can still be plinking a tank on the shared target while its
 // trooper simultaneously downs a strike jet. Since there's only ever ONE such body per squad, that channel is also
 // O(squads), not O(bodies) — the whole function stays at most 2 acquisition calls/squad/frame regardless of body count.
+const SWARM_TARGETS_N = 6;   // SWARMS (v3.103) — up to this many distinct enemies one swarm's bodies spread their fire across per acquisition pass (see acquireEnemyMulti below) instead of every body piling onto the ONE target a normal squad shares
 function updSquadMembers(u, dt, sharedTgt) {
   const cfg = u.squadCfg, rangeMod = (1 + G.mult.range) * radarBoost(u.x);
   stepSquadBodies(u, cfg, dt);
+  // SWARM MULTI-TARGET — ONE acquireEnemyMulti() scan per SWARM per frame (not per body, see the function's own
+  // comment), giving every body up to SWARM_TARGETS_N candidates to round-robin across below instead of all
+  // dogpiling the single shared pick a normal (small, non-swarm) squad gets.
+  let swarmTgts = null, _rr = 0;
+  if (cfg.swarm) { const rep = u.members.find(m => m.alive); if (rep) swarmTgts = acquireEnemyMulti(u.x, u.y, rep.range * rangeMod, rep.ceil, null, SWARM_TARGETS_N); }
   for (const m of u.members) {
     if (!m.alive) continue;
     const mx = u.x + m.cx, my = u.y + m.cy;
@@ -6265,7 +6380,7 @@ function updSquadMembers(u, dt, sharedTgt) {
           m.burstLeft--;
         } else m.burstLeft = 0;   // target died/vanished mid-burst — abort the rest of the volley instead of firing blind
         m.burstT = cfg.burstGap;
-        if (m.burstLeft <= 0) m.cd = held ? MISSILE_ASSESS_CD : jitterCd(m.rate / auraAt(u.x, 'rof'));   // fire-discipline hold gets a short reassess pause, not a full reload
+        if (m.burstLeft <= 0) m.cd = held ? MISSILE_ASSESS_CD : jitterCd((m.rate / auraAt(u.x, 'rof')) * (u.jammed ? 2 : 1));   // fire-discipline hold gets a short reassess pause, not a full reload; ECM HIJACKER (v3.103) — a jammed swarm's effective fire rate is halved (doubled cooldown) while caught in a hijacker's field, see updSwarmSupport
       }
       continue;
     }
@@ -6273,6 +6388,11 @@ function updSquadMembers(u, dt, sharedTgt) {
     let tgt;
     if (m.isAt) {   // AT/AA specialist — its own separate air-hunting channel, unaffected by whatever the riflemen are sharing
       tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, e => !e.ground) || acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);
+    } else if (swarmTgts && swarmTgts.length) {   // SWARM — round-robin across the swarm's shared multi-target pool so up to 48 bodies spread across up to 6 enemies instead of all focusing one
+      let picked = null;
+      for (let i = 0; i < swarmTgts.length; i++) { const cand = swarmTgts[(_rr + i) % swarmTgts.length]; if (sharedTgtUsable(cand, mx, my, m.range * rangeMod, m.ceil)) { picked = cand; break; } }
+      _rr++;
+      tgt = picked || (sharedTgtUsable(sharedTgt, mx, my, m.range * rangeMod, m.ceil) ? sharedTgt : pickDesignated(mx, my, m.range * rangeMod, m.ceil, null));
     } else {   // SHARED BRAIN — inherit the squad's ONE already-acquired target instead of scanning again; only re-checks
                // fire-control designation (cheap, usually a no-op) if the shared pick can't actually be reached from here
       tgt = sharedTgtUsable(sharedTgt, mx, my, m.range * rangeMod, m.ceil) ? sharedTgt : pickDesignated(mx, my, m.range * rangeMod, m.ceil, null);
@@ -6533,9 +6653,21 @@ function updEnemies(dt) {
         continue;   // while diving it ignores normal patrol/fire
       }
     }
+    if (e.hijacker) {   // ★ ECM HIJACKER (v3.103) — homes on the BIGGEST player drone swarm in reach, but holds a STAND-OFF distance (just inside its own jam field, outside any drone's weapon range — see the hijackR comment at spawnEnemy) rather than closing to point-blank; otherwise wanders slowly. Its actual weapon (a token tracer gun) still fires through the shared targeting/fire code further down, using whatever `tgt` the normal TEMPORAL AI LOD scan resolved — a swarm out of ITS OWN weapon range simply won't come up as a valid `tgt` for it either, which is fine (it isn't meant to be the thing killing the swarm).
+      let bestSw = null, bestBodies = -1;
+      for (const o of G.units) { if (!o.swarm || o.hp <= 0) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd > 900 * 900) continue; const b = swarmBodies(o); if (b > bestBodies) { bestBodies = b; bestSw = o; } }
+      e.wob = (e.wob || Math.random() * 6.28) + dt * 1.4;
+      const HIJACKER_STANDOFF = 560;   // > cdrone (460) and Hornet-upgraded (540) weapon range, <= hijackR(650) — jams from a distance the swarm structurally cannot return fire across
+      let targX, targY;
+      if (bestSw) { const dx = bestSw.x - e.x, dy = bestSw.y - e.y, dist = Math.hypot(dx, dy) || 1; targX = bestSw.x - dx / dist * HIJACKER_STANDOFF; targY = bestSw.y - dy / dist * HIJACKER_STANDOFF; }
+      else { targX = e.x + Math.sin(e.wob * .4) * 40; targY = e.hold; }
+      e.vx = (e.vx || 0) + Math.sign(targX - e.x) * e.spd * 2.6 * dt;
+      const hvm = e.spd * 2.2; e.vx = Math.max(-hvm, Math.min(hvm, e.vx)) * .95; e.x += e.vx * dt; e.x = Math.max(20, Math.min(WORLD_W - 20, e.x));
+      e.y += (targY + Math.sin(e.wob * .7) * 20 - e.y) * Math.min(1, (bestSw ? 3 : 2) * dt);
+    }
     if (e.dives) e.y = Math.min(groundY(e.x) - 4, e.y + e.spd * dt);   // divers keep sinking toward the ground (strafing on the way down)
     if (!e.pod) {
-      if (!e.anchored) {
+      if (!e.anchored && !e.hijacker) {
         if (!e.ground && !e.dives) {   // every airborne enemy now WEAVES & bobs like player aircraft — sprint into range, then orbit the target with a vertical wobble (no more sliding dead-straight)
           e.wob = (e.wob || Math.random() * 6.28) + dt * 2.0;
           const dx = tgt.x - e.x, dist = Math.abs(dx);
@@ -6553,6 +6685,45 @@ function updEnemies(dt) {
       }
     }
     if (e.dives) { const _gyD = groundY(e.x) - 6; if (e.y >= _gyD) { const h = near(e.x, e.y, _friendlyList, e.pod ? 90 : 70); if (h) hurt(h, e.pod ? 95 : e.dmg * 4); G.stab = Math.max(0, G.stab - (e.pod ? 2.5 : 1.2)); e.hp = 0; boomW(e.x, _gyD, e.pod ? 18 : 7); } }   // PERF: cache the one groundY(e.x) sample instead of calling it twice for the same x in the same tick
+  }
+}
+// ===== SWARM SUPPORT TICK (v3.103) — Assembly Line REGROWTH upkeep + ECM HIJACKER jam/hijack effect =================
+// One O(units)+O(hijackers*units) pass, run once/tick from updateGame (not per-body): the real cost of a growable
+// swarm (regrowing lost bodies drains IC near a Drone Assembly Line — see droneassembly's gmod comment) and the
+// autofleet's counter to mass drones (the ECM Hijacker halves a caught swarm's fire rate, then steals a chunk of its
+// bodies outright the longer it lingers in the field — see the hijacker's own spawnEnemy comment).
+const SWARM_REGROW_R = 420, SWARM_REGROW_EVERY = 4, SWARM_JAM_HIJACK_T = 6;
+function nearestDoneAssembly(x, r) { let best = null, bd = r * r; for (const b of G.buildings) { if (b.done === false || b.key !== 'droneassembly') continue; const dd = (b.x - x) ** 2; if (dd < bd) { bd = dd; best = b; } } return best; }
+function updSwarmSupport(dt) {
+  const hijackers = []; for (const e of G.enemies) if (e.hijacker && !e.reentry && e.hp > 0) hijackers.push(e);
+  for (const u of G.units) {
+    if (!u.swarm || u.hp <= 0) continue;
+    const cfg = u.squadCfg;
+    // ECM HIJACK — inside ANY live hijacker's field this tick?
+    let inField = null;
+    for (const h of hijackers) { const dd = (h.x - u.x) ** 2 + (h.y - u.y) ** 2; if (dd < (h.hijackR || 240) * (h.hijackR || 240)) { inField = h; break; } }
+    if (inField) {
+      u.jammed = true; u.jamT = (u.jamT || 0) + dt;
+      if (u.jamT >= SWARM_JAM_HIJACK_T) {
+        u.jamT = 0;
+        const alive0 = swarmBodies(u), k = Math.max(1, Math.min(6, Math.round(alive0 * .15)));
+        let killed = 0;
+        for (const m of u.members) { if (killed >= k) break; if (!m.alive) continue; squadMemberDied(u, m); killed++; }
+        let sum = 0; for (const m of u.members) if (m.alive) sum += Math.max(0, m.hp); u.hp = sum; u.maxHp = swarmBodies(u) * swarmPerBodyHp(u.d, cfg);
+        for (let i = 0; i < killed; i++) { spawnEnemy('drone', u.x); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = u.y; ne.hijacked = true; } }
+        if (!inField._toasted) { inField._toasted = true; toast('⚠ ECM — YOUR DRONES ARE BEING HIJACKED'); }
+      }
+    } else { u.jammed = false; u.jamT = Math.max(0, (u.jamT || 0) - dt); }   // decay tuned 1:1 with accrual (was 2x) — headless-verified: at 2x, the normal back-and-forth of a fast swarm's BVR pursuit vs. the hijacker's stand-off (see updEnemies) frequently dipped in/out of hijackR just enough that the 6s streak almost never completed, making the whole mechanic a coin flip in practice
+    // REGROWTH UPKEEP — an Assembly Line within range slowly rebuilds a swarm's lost bodies, charged in IC
+    if (swarmBodies(u) < (cfg.nMax || 48)) {
+      if (nearestDoneAssembly(u.x, SWARM_REGROW_R)) {
+        u.regrowing = true; u.regrowT = (u.regrowT || 0) + dt;
+        if (u.regrowT >= SWARM_REGROW_EVERY) {
+          const cost = Math.round(u.d.ic / 3);
+          if (G.ic >= cost) { G.ic -= cost; u.regrowT -= SWARM_REGROW_EVERY; swarmAddBodies(u, 1); }   // not enough IC yet — regrowT stays at/over threshold and retries next tick, no progress lost
+        }
+      } else u.regrowing = false;
+    } else u.regrowing = false;
   }
 }
 function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOME? — now a FULL bubble around a live Shield Generator, so it also reaches BELOW the surface and covers ships / the water, not just the air above
@@ -6855,6 +7026,12 @@ function renderGame() {
     c.save(); c.beginPath(); c.arc(px, e.y, r, 0, 6.28); c.fillStyle = 'rgba(150,90,220,.06)'; c.fill();
     c.strokeStyle = 'rgba(193,132,255,' + (.2 + .18 * pulseA(.02)) + ')'; c.lineWidth = 1.4; c.setLineDash([5, 7]); c.stroke(); c.setLineDash([]);
     for (let k = 0; k < 6; k++) { const a2 = animClock * .01 + k * 1.7, rr = r * (.25 + (k / 6) * .65); c.globalAlpha = .35 * pulseA(.03, k); c.fillStyle = '#c184ff'; c.fillRect(px + Math.cos(a2) * rr, e.y + Math.sin(a2) * rr, 2, 2); } c.globalAlpha = 1; c.restore(); }
+  // ★ ECM HIJACKER FIELDS (v3.103) — a pulsing dim-MAGENTA bubble (distinct from the violet EW-jammer field above) where
+  // any player drone SWARM caught inside gets its fire rate halved, then hijacked outright the longer it lingers
+  for (const e of G.enemies) { if (!e.hijacker || e.reentry || e.hp <= 0) continue; const px = sx(e.x), r = e.hijackR || 240; if (px < -r - PX || px > W + r + PX) continue;
+    c.save(); c.beginPath(); c.arc(px, e.y, r, 0, 6.28); c.fillStyle = 'rgba(220,40,140,.055)'; c.fill();
+    c.strokeStyle = 'rgba(255,90,190,' + (.18 + .16 * pulseA(.025)) + ')'; c.lineWidth = 1.4; c.setLineDash([5, 6]); c.stroke(); c.setLineDash([]);
+    c.globalAlpha = .8; c.fillStyle = '#ff8cd2'; c.font = 'bold 8px Consolas'; c.textAlign = 'center'; c.fillText('ECM', px, e.y - r - 6); c.textAlign = 'left'; c.globalAlpha = 1; c.restore(); }
   // resource nodes
   for (const n of G.nodes) { const px = sx(n.x); if (px < -20 - PX || px > W + 20 + PX) continue; const y = groundY(n.x); const col = n.used ? 'rgba(120,120,120,.5)' : SR[n.type].col;
     // ore VEIN descending into the soil — flecks of the resource colour, glinting when unmined
@@ -6972,6 +7149,7 @@ function drawBgBadge(px, y, n) { c.fillStyle = '#bfe8ff'; c.font = 'bold 8px Con
 function drawSquadUnit(u, px, lod) {
   const d = u.d, ground = d.domain === 'ground';
   if (lod) { drawSquadCluster(u, px, d, ground); return; }
+  const isSwarm = !!(u.squadCfg && u.squadCfg.swarm), blobR = isSwarm ? swarmBlobRadius(swarmBodies(u), u.squadCfg.spread) : d.s * 1.6;   // SWARMS (v3.103) — the selection box/HP bars scale with the swarm's actual ring-blob size (~76px radius at 48 bodies) instead of a fixed per-unit box; every non-swarm squad keeps the old fixed d.s*1.6
   const gdy0 = ground ? u.y + d.s * GROUND_SEAT_FRAC : u.y;   // draw-only ground seat for the formation's aggregate bars/selection box (see GROUND_SEAT_FRAC) — u.y itself is unchanged
   for (const m of u.members) {
     if (!m.alive) continue;
@@ -6995,10 +7173,12 @@ function drawSquadUnit(u, px, lod) {
     if (m.isAt) { c.fillStyle = '#5fd0ff'; c.beginPath(); c.arc(mpx, myD - s * 2.7, 1.6, 0, 6.28); c.fill(); }   // marks the AA/AT specialist / escort apart from the leader
     if (m.hp < m.maxHp) bar(mpx, myD - s * 2.2, s * 2, Math.max(0, m.hp) / m.maxHp);
   }
-  if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, gdy0 - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, gdy0, d.range * radarBoost(u.x)); }
-  if (u.hp < u.maxHp) bar(px, gdy0 - d.s * 1.6 - 8, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');   // aggregate squad-strength bar over the whole formation
-  if (u.maxAmmo) bar(px, gdy0 - d.s * 1.6 - (u.hp < u.maxHp ? 13 : 8), d.s * 2.2, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a');
-  if (u.maxFuel) bar(px, gdy0 - d.s * 1.6 - (u.hp < u.maxHp ? 17 : 12) - (u.maxAmmo ? 4 : 0), d.s * 2.2, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0');
+  if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - blobR, gdy0 - blobR, blobR * 2, blobR * 1.625); if (d.range) ring(px, gdy0, d.range * radarBoost(u.x)); }
+  const barW = isSwarm ? Math.max(d.s * 2.2, blobR * 1.6) : d.s * 2.2;
+  if (u.hp < u.maxHp) bar(px, gdy0 - blobR - 8, barW, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');   // aggregate squad-strength bar over the whole formation
+  if (u.maxAmmo) bar(px, gdy0 - blobR - (u.hp < u.maxHp ? 13 : 8), barW, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a');
+  if (u.maxFuel) bar(px, gdy0 - blobR - (u.hp < u.maxHp ? 17 : 12) - (u.maxAmmo ? 4 : 0), barW, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0');
+  if (isSwarm && u.regrowing) { c.save(); c.globalAlpha = .7 + .3 * pulseA(.03); c.fillStyle = '#6dffb0'; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('↻', px, gdy0 - blobR - 18); c.textAlign = 'left'; c.restore(); }   // REGROWTH UPKEEP (v3.103) — a small pulsing glyph while a nearby done Assembly Line is actively regrowing this swarm's lost bodies, see updSwarmSupport
 }
 // SQUAD LOD CLUSTER — the cheap path for a big standing garrison (see SQUAD_LOD_N/SQUAD_LOD_ZOOM): up to 3 compact
 // flat silhouette bodies standing together (no per-member shadow, aim recompute, or healthbar — every body shares
@@ -7008,6 +7188,7 @@ function drawSquadUnit(u, px, lod) {
 // shadows + N aim recomputes + N healthbars, so SQUAD_LOD_N still protects framerate on a big standing army.
 function drawSquadCluster(u, px, d, ground) {
   const alive = u.members.filter(m => m.alive), n = alive.length; if (!n) return;
+  if (u.squadCfg && u.squadCfg.swarm) { drawSwarmCluster(u, px, d, n); return; }
   const s = (u.squadCfg && u.squadCfg.bodyS) || INF_BODY_S, my = u.y, myD = ground ? my + d.s * GROUND_SEAT_FRAC : my;   // myD = seated draw position, seated with the UNIT's d.s (matching gdy0/the single-unit path), NOT the cluster's small draw-scale s (see GROUND_SEAT_FRAC); my stays the unseated anchor
   const pipN = Math.min(n, 3);   // up to 3 compact bodies stand in for the whole formation — draws a little GROUP, not a lone soldier
   const OFF_X = [[0], [-.8, .8], [-1.6, 0, 1.6]][pipN - 1];   // tight horizontal spread (× s) so the bodies overlap into a cluster
@@ -7023,6 +7204,26 @@ function drawSquadCluster(u, px, d, ground) {
   }
   if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, myD - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, myD, d.range * radarBoost(u.x)); }
   if (u.hp < u.maxHp) bar(px, myD - s * 2.6 - 5, d.s * 2.2, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');
+}
+// SWARM LOD CLUSTER (v3.103) — a big swarm at LOD draws up to 9 pips on its real ring-blob layout (a scaled-down
+// swarmSlotOffset, same shape as the full-detail draw, just far fewer of them) plus a faint "×n" count label, so a
+// 48-body swarm still reads as a CLOUD at a glance instead of collapsing to the ordinary 3-pip cluster glyph.
+function drawSwarmCluster(u, px, d, n) {
+  const cfg = u.squadCfg, s = cfg.bodyS || INF_BODY_S, my = u.y, isAir = d.domain === 'air';
+  const pipN = Math.min(n, 9), facing = u.facing || 1, blobR = swarmBlobRadius(n, cfg.spread) * .55;   // compact scale — LOD reads as a cloud, not the full-size formation
+  for (let i = 0; i < pipN; i++) {
+    const [ox, oy] = swarmSlotOffset(Math.floor(i * n / pipN), cfg.spread * .55, isAir);
+    c.save(); c.translate(px + ox, my + oy); c.scale(facing, 1);
+    if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
+    ART[d.art](c, s * .95, 0);
+    if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; }
+    c.restore();
+  }
+  if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - blobR, my - blobR, blobR * 2, blobR * 1.625); if (d.range) ring(px, my, d.range * radarBoost(u.x)); }
+  const barW = Math.max(d.s * 2.2, blobR * 1.6);
+  if (u.hp < u.maxHp) bar(px, my - blobR - 9, barW, Math.max(0, u.hp) / u.maxHp, false, '#ffd23f');
+  c.save(); c.globalAlpha = .55; c.fillStyle = '#dce6ff'; c.font = '9px Consolas'; c.textAlign = 'center'; c.fillText('×' + n, px, my - blobR - (u.hp < u.maxHp ? 14 : 5)); c.textAlign = 'left'; c.restore();
+  if (u.regrowing) { c.save(); c.globalAlpha = .7 + .3 * pulseA(.03); c.fillStyle = '#6dffb0'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText('↻', px, my - blobR - (u.hp < u.maxHp ? 24 : 15)); c.textAlign = 'left'; c.restore(); }
 }
 const _tracerCache = new Map();   // PERF: cached tapered-tracer gradients keyed by colour (see the default bullet branch below)
 function renderProj(p, px) {
@@ -7535,7 +7736,8 @@ function refreshSel() {
     const rateTxt = d.rate ? `<div class="st"><span>Rate</span><b>${(1 / d.rate).toFixed(1)}/s</b></div>` : '';
     const spdTxt = d.speed != null ? `<div class="st"><span>Speed</span><b>${d.speed}</b></div>` : '';
     const wgtTxt = `<div class="st"><span>⚖ Weight</span><b>${Math.round(unitWeight(s) * 100) / 100}</b></div>`;   // army-cap weight this unit eats (v3.98's weighted cap) — surfaced next to Domain/Speed so it's never a mystery
-    html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>` + rateTxt + spdTxt + wgtTxt + `<div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s);
+    const swarmTxt = s.swarm ? `<div class="st"><span>Swarm</span><b style="color:#ffd23f">${swarmBodies(s)} / ${(s.squadCfg && s.squadCfg.nMax) || swarmBodies(s)}${s.regrowing ? ' ↻' : ''}${s.jammed ? ' ⚠ JAMMED' : ''}</b></div>` : '';   // SWARMS (v3.103) — live body count / cap, plus regrow/jam status right on the card
+    html += `<div class="id">${d.ds || ''}</div><div class="st"><span>HP / Armor</span><b>${Math.round(s.hp)} / ${d.armor || 0}</b></div><div class="st"><span>Range / Dmg</span><b>${d.range} / ${d.dmg}</b></div>` + rateTxt + spdTxt + wgtTxt + swarmTxt + `<div class="st"><span>Domain</span><b>${(d.domain || '').toUpperCase()}</b></div>` + (d.upkeep ? `<div class="st"><span>Upkeep</span><b style="color:#ff8a6a">${d.upkeep} IC/s</b></div>` : '') + `<div class="st"><span>Status</span><b>${s.job ? 'BUILDING' : (near(s.x, s.y, G.enemies, d.range || 1) ? 'ENGAGING' : 'HOLDING')}</b></div>` + unitBuffHtml(s);
   }
   if (html === info._html) return;   // only rebuild the panel when its content actually changed — avoids destroying the buttons ~60×/s (which ate every click) and re-drawing the preview each frame
   info._html = html; info.innerHTML = html;
@@ -7831,7 +8033,7 @@ function renderAARCharts() {
 // COMBAT HEATMAP, all fed by G.stats (tracked live during play — see the hook sites: spawnUnit, finishSite,
 // placeBuilding, queueUnit, finishResearch, the research draw-down, launchStrike, hireAllies, destroyEnemy,
 // destroyUnit, sampleHist). Additive & read-only — never touches balance, only reports what already happened.
-const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship' };
+const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hijacker: 'ECM Hijacker', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship' };
 function aarSum(obj) { let s = 0; for (const k in obj) s += obj[k]; return s; }
 // draw ONE unit/building icon into a small canvas — same ART/BART renderers the live production menus use (see buildProdMenu / showResDetail)
 function aarUnitIcon(cv, d) { if (!cv || !d || !ART[d.art]) return; const x = cv.getContext('2d'); x.translate(cv.width / 2, cv.height * .62); x.scale(1.4, 1.4); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 8, -.6); } catch (er) {} }

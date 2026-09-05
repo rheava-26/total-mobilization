@@ -4001,17 +4001,44 @@ const THREAT_W_BOSS = 3.2;    // superweapon — worth diverting fire to over an
 const THREAT_W_DIVE = 1.7;    // mid dive-bomb / impact run (e.dives) — about to land a big hit, kill it first
 const THREAT_W_GROUND = 1.15; // already-landed ground unit pressing the line — mildly favored over an equally-distant airborne straggler
 function threatWeight(e) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : 1); }
-function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle.
-// SWARM MULTI-TARGET ACQUISITION (v3.103) — a single acquireEnemy() pick would have up to 48 swarm bodies all
-// dogpiling ONE enemy while everything else in range goes untouched (the old 3-body squad never had enough bodies
-// for this to matter). Returns up to `n` distinct in-range enemies, nearest/most-threatening first, in ONE
-// O(enemies) pass — called once per SWARM per frame (see updSquadMembers), never once per body, so this is exactly
-// as cheap as the single acquireEnemy() call every other squad/unit already pays.
-function acquireEnemyMulti(x, y, range, ceilFrac, filter, n) {
-  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range, cand = [];
-  for (const e of G.enemies) { if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d > r2) continue; cand.push([d / threatWeight(e), e]); }
-  cand.sort((a, b) => a[0] - b[0]);
-  return cand.slice(0, n).map(c => c[1]);
+function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle. e.noTarget (v3.103.1) — a brief generic "can't be acquired at all" flag, currently only used by the ECM Hijacker's arrival grace window (see spawnEnemy/updEnemies), reusable for any future "just arrived, not engageable yet" enemy.
+// SWARM MULTI-TARGET ACQUISITION (v3.103, made CLAIM-AWARE in a follow-up fix) — a single acquireEnemy() pick would
+// have up to 48 swarm bodies all dogpiling ONE enemy while everything else in range goes untouched (the old 3-body
+// squad never had enough bodies for this to matter). Returns up to `n` distinct in-range enemies, in ONE O(enemies)
+// pass — called once per SWARM per frame (see updSquadMembers), never once per body, so this is exactly as cheap as
+// the single acquireEnemy() call every other squad/unit already pays.
+// BUGFIX 1 (headless-verified regression): the first cut of this just took the nearest N candidates, ignoring
+// claimOf/engOf entirely — with many swarms clustered together (a normal drone army), EVERY swarm computed nearly
+// the identical "nearest 6" from the same enemy pool and piled onto them, leaving most of the field untouched
+// (measured effRatio as low as ~0.7 vs the old per-unit path, a real nerf). This now runs the SAME FIRE
+// DE-CONFLICTION every ordinary unit's acquireEnemy() already respects (~L3912 ENG_CAP): prefer targets NOT yet
+// saturated by committed damage (claimOf) or already locked by ENG_CAP other pickers this frame (engOf), and
+// RESERVE each of its own picks in the same ENG ledger (mirrors acquireEnemy's single b lock) so the NEXT swarm's
+// call this same frame sees them as spoken-for and naturally spreads onto different enemies — only falling back to
+// already-claimed targets once genuinely nothing unsaturated remains in range (never idles with enemies in reach).
+// BUGFIX 2 (headless-verified, same regression bench): ENG_CAP=6 was calibrated for the old world where one
+// "acquisition" ≈ one FEW-body squad's worth of DPS. A swarm's ONE pick can have up to swarmBodies/n bodies (~8 of
+// 48 across 6 targets) converge on it — reserving it as "+1" the same as a 3-body squad let up to 6 DIFFERENT
+// swarms all stack onto one enemy before it counted as saturated (6 x 8 = 48 bodies concurrently, ~2.7x the old
+// per-target ceiling), so the whole field still cleared in under 2s of REAL time versus the reference path's
+// ~30s+ — objectively better total throughput, but it front-loaded so much of the kill count before any
+// measurement window even started that a fixed-window kills/30s comparison read as a false regression. `weight`
+// (bodies represented by one pick, passed by the caller) reserves ENG proportionally so the same ENG_CAP ceiling
+// caps CONCURRENT FIREPOWER per target, not acquisition-call count — matching the reference path's real pacing.
+function acquireEnemyMulti(x, y, range, ceilFrac, filter, n, weight) {
+  const w = Math.max(1, weight || 1);
+  const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range, unsat = [], any = [];
+  for (const e of G.enemies) {
+    if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue;
+    const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d > r2) continue;
+    const wd = d / threatWeight(e); any.push([wd, e]);
+    if (claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) unsat.push([wd, e]);
+  }
+  unsat.sort((a, b) => a[0] - b[0]);
+  const picks = unsat.slice(0, n).map(c => c[1]);
+  if (picks.length < n) { any.sort((a, b) => a[0] - b[0]); for (const [, e] of any) { if (picks.length >= n) break; if (picks.indexOf(e) < 0) picks.push(e); } }
+  for (const e of picks) { ENG.set(e, engOf(e) + w); e._lockT = .2; }
+  return picks;
 }
 // ── MISSILE FIRE DISCIPLINE — CLAIM/ENG above only ever live for a SINGLE frame, which is fine for hitscan
 // guns/lasers (damage lands the same frame it's claimed) but useless for a guided missile: it takes seconds to
@@ -4814,7 +4841,7 @@ function spawnEnemy(kind, atX) {
   // holds it at a stand-off just inside hijackR but outside drone range, so it can jam/hijack a swarm that
   // structurally cannot shoot back — verified headless: at jamR:240 (inside weapon range) a full swarm alpha-struck
   // and killed it before the 6s hijack timer ever completed, making the whole mechanic dead on arrival.
-  else if (kind === 'hijacker') Object.assign(e, { hp: 40 * t, s: 4.2, armor: 3, spd: 340, hold: MESO_Y() + 40 + (Math.random() - .5) * 80, weapon: 'tracer', dmg: 4, rate: 1.2, dives: false, air: true, shield: Math.round(20 * t), maxShield: Math.round(20 * t), hijacker: true, hijackR: 820, art: 'einterceptor' });   // spd bumped well past cdrone/Hornet (300) — headless-verified: at a slow speed the hijacker could never MAINTAIN the stand-off (a drone swarm chasing it via the normal BVR-hunt movement path just runs it down), which defeats the stand-off entirely regardless of hijackR. hijackR itself is wide of HIJACKER_STANDOFF(560) with real margin (headless-verified: too tight a margin and ordinary flight wobble kept nudging it in/out of the field, and jamT's decay is 2x its accrual rate — see updSwarmSupport — so it never reliably completed an uninterrupted 6s streak)
+  else if (kind === 'hijacker') Object.assign(e, { hp: 40 * t, s: 4.2, armor: 3, spd: 340, hold: MESO_Y() + 40 + (Math.random() - .5) * 80, weapon: 'tracer', dmg: 4, rate: 1.2, dives: false, air: true, shield: Math.round(20 * t), maxShield: Math.round(20 * t), hijacker: true, hijackR: 820, noTarget: true, graceT: 1.8, fleeAng: Math.random() * 6.2831853, art: 'einterceptor' });   // spd bumped well past cdrone/Hornet (300) — headless-verified: at a slow speed the hijacker could never MAINTAIN the stand-off (a drone swarm chasing it via the normal BVR-hunt movement path just runs it down), which defeats the stand-off entirely regardless of hijackR. hijackR itself is wide of HIJACKER_STANDOFF(560) with real margin (headless-verified: too tight a margin and ordinary flight wobble kept nudging it in/out of the field, and jamT's decay is 2x its accrual rate — see updSwarmSupport — so it never reliably completed an uninterrupted 6s streak). noTarget+graceT (v3.103.1 fix): a hijacker can land ANYWHERE relative to a swarm, including dead on top of it (0 distance) — a 40hp/20shield contact that close dies to even a couple of swarm bodies before it can move an inch, let alone reach its own stand-off, which made the whole hijack mechanic dead on arrival in exactly that case (headless-verified). A short arrival grace (untargetable — see e.noTarget in acquireEnemy/acquireEnemyMulti) gives it the ~1.8s it actually needs to clear to stand-off range under its own power; fleeAng is the fallback escape DIRECTION for the degenerate case where it spawns exactly on the swarm's position (direction-to-target is undefined at distance 0)
   // ===== AUTODRONE SUPERWEAPONS (boss-tier) =====
   else if (kind === 'hive') Object.assign(e, { hp: 1100 * t, s: 13, armor: 14, spd: 8, hold: STRATO_Y() - 18, weapon: 'bomb', dmg: 26, rate: 2.0, dives: false, air: true, producer: true, prodCd: 3, fastProd: true, prodGroup: 2, prodKinds: ['drone', 'interceptor'], weapon2: 'plasarc', dmg2: 34, rate2: 3.4, boss: true, bossName: 'SKYFORTRESS "HIVE"', art: 'airship', reinforceEligible: true });   // flying drone-carrier fortress — rains bombs, births a SQUAD at a much faster clip (not a lone drone), and now keeps a second plasma volley going alongside its bombs
   else if (kind === 'leviathan') Object.assign(e, { hp: 1700 * t, s: 12, armor: 22, spd: 11, hold: landY(wxw) - 12, weapon: 'plasarc', dmg: 66, rate: 2.6, dives: false, ground: true, boss: true, bossName: 'LAND LEVIATHAN', art: 'colossus', weapon2: 'rotary', dmg2: 10, rate2: .5, wpn2Air: true, wpn2Range: 1300, airSupport: true, airSupportLeft: 3, airSupportCd: 9 + Math.random() * 4, producer: true, prodCd: 10, prodGroup: 2, prodKinds: ['gtank', 'gmech'], reinforceEligible: true });   // siege crawler that grinds toward your cities — its main plasma cannon hammers ground/low targets while a rapid rotary AA gun (air-ONLY target list) keeps aircraft from freely swarming it; periodically calls in interceptor escorts AND fabricates a small armor squad, a true mobile carrier
@@ -5391,6 +5418,7 @@ function drownUnitQuiet(u) {
   noise(.16, .18);
 }
 function destroyUnit(u) {
+  if (u.swarm) { u.jammed = false; u.jamT = 0; }   // a fully-wiped swarm is about to leave G.units (and stop being ticked by updSwarmSupport) — clear its jam flags so nothing reads a frozen "still jammed" off a corpse
   ferryEmergencyDrop(u);   // ROBUSTNESS — if THIS unit is a transport heli that dies while carrying a passenger (or mid-approach to one), rescue/release it BEFORE any of the wreck effects below run; a no-op for every unit that isn't a ferry heli
   if (!u.builder && !(u.d && u.d.builder)) G.unitsLost = (G.unitsLost || 0) + 1;
   if (G.stats && !u.builder && !(u.d && u.d.builder)) { G.stats.lostByType[u.key] = (G.stats.lostByType[u.key] || 0) + 1; G.stats.totalLost++; }   // AFTER-ACTION — friendly losses by unit type + running total
@@ -6352,15 +6380,23 @@ function updUnits(dt) {
 // own longer-ceiling weapon & cooldown, so one squad can still be plinking a tank on the shared target while its
 // trooper simultaneously downs a strike jet. Since there's only ever ONE such body per squad, that channel is also
 // O(squads), not O(bodies) — the whole function stays at most 2 acquisition calls/squad/frame regardless of body count.
-const SWARM_TARGETS_N = 6;   // SWARMS (v3.103) — up to this many distinct enemies one swarm's bodies spread their fire across per acquisition pass (see acquireEnemyMulti below) instead of every body piling onto the ONE target a normal squad shares
+// SWARMS — how thin a swarm spreads its own fire per acquisition pass. tn (targets requested) scales with the
+// swarm's LIVE body count so a small swarm still behaves like an ordinary few-body squad (matches the original
+// per-squad granularity — see acquireEnemyMulti's ENG-weighting comment) while a big one spreads across many
+// distinct enemies instead of a flat small number. Headless-tuned (regression bench): a flat 6 (v3.103's first
+// cut) still let every enemy in a mixed wave die almost at once once picks were claim-aware, which is objectively
+// FASTER/better total clearance but read as a false "effRatio" regression against the reference per-unit path in a
+// fixed post-warmup kill-count window; a smaller live-body-to-target-count ratio was needed to match that path's
+// real pacing without touching total DPS/kills (both still clear the whole field, see the bench notes).
+const SWARM_BODIES_PER_TARGET = 2;
 function updSquadMembers(u, dt, sharedTgt) {
   const cfg = u.squadCfg, rangeMod = (1 + G.mult.range) * radarBoost(u.x);
   stepSquadBodies(u, cfg, dt);
   // SWARM MULTI-TARGET — ONE acquireEnemyMulti() scan per SWARM per frame (not per body, see the function's own
-  // comment), giving every body up to SWARM_TARGETS_N candidates to round-robin across below instead of all
-  // dogpiling the single shared pick a normal (small, non-swarm) squad gets.
+  // comment), giving every body up to `tn` candidates to round-robin across below instead of all dogpiling the
+  // single shared pick a normal (small, non-swarm) squad gets.
   let swarmTgts = null, _rr = 0;
-  if (cfg.swarm) { const rep = u.members.find(m => m.alive); if (rep) swarmTgts = acquireEnemyMulti(u.x, u.y, rep.range * rangeMod, rep.ceil, null, SWARM_TARGETS_N); }
+  if (cfg.swarm) { const rep = u.members.find(m => m.alive); if (rep) { const nb = swarmBodies(u), tn = Math.max(1, Math.min(nb, Math.round(nb / SWARM_BODIES_PER_TARGET))), bw = Math.max(1, Math.round(nb / tn)); swarmTgts = acquireEnemyMulti(u.x, u.y, rep.range * rangeMod, rep.ceil, null, tn, bw); } }
   for (const m of u.members) {
     if (!m.alive) continue;
     const mx = u.x + m.cx, my = u.y + m.cy;
@@ -6654,13 +6690,17 @@ function updEnemies(dt) {
       }
     }
     if (e.hijacker) {   // ★ ECM HIJACKER (v3.103) — homes on the BIGGEST player drone swarm in reach, but holds a STAND-OFF distance (just inside its own jam field, outside any drone's weapon range — see the hijackR comment at spawnEnemy) rather than closing to point-blank; otherwise wanders slowly. Its actual weapon (a token tracer gun) still fires through the shared targeting/fire code further down, using whatever `tgt` the normal TEMPORAL AI LOD scan resolved — a swarm out of ITS OWN weapon range simply won't come up as a valid `tgt` for it either, which is fine (it isn't meant to be the thing killing the swarm).
+      if (e.noTarget) { e.graceT = (e.graceT == null ? 1.8 : e.graceT) - dt; if (e.graceT <= 0) e.noTarget = false; }   // ARRIVAL GRACE (v3.103.1 fix) — briefly untargetable (see e.noTarget in acquireEnemy/acquireEnemyMulti) so it survives long enough to reach its own stand-off even if it drops right on top of a swarm
       let bestSw = null, bestBodies = -1;
       for (const o of G.units) { if (!o.swarm || o.hp <= 0) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd > 900 * 900) continue; const b = swarmBodies(o); if (b > bestBodies) { bestBodies = b; bestSw = o; } }
       e.wob = (e.wob || Math.random() * 6.28) + dt * 1.4;
-      const HIJACKER_STANDOFF = 560;   // > cdrone (460) and Hornet-upgraded (540) weapon range, <= hijackR(650) — jams from a distance the swarm structurally cannot return fire across
+      const HIJACKER_STANDOFF = 560;   // > cdrone (460) and Hornet-upgraded (540) weapon range, <= hijackR(820) — jams from a distance the swarm structurally cannot return fire across
       let targX, targY;
-      if (bestSw) { const dx = bestSw.x - e.x, dy = bestSw.y - e.y, dist = Math.hypot(dx, dy) || 1; targX = bestSw.x - dx / dist * HIJACKER_STANDOFF; targY = bestSw.y - dy / dist * HIJACKER_STANDOFF; }
-      else { targX = e.x + Math.sin(e.wob * .4) * 40; targY = e.hold; }
+      if (bestSw) {
+        let dx = bestSw.x - e.x, dy = bestSw.y - e.y, dist = Math.hypot(dx, dy);
+        if (dist < 20) { dx = Math.cos(e.fleeAng || 0); dy = Math.sin(e.fleeAng || 0); dist = 1; }   // degenerate near-zero separation (spawned right on/near the swarm) — direction-TO-the-swarm is meaningless here, flee along the fixed escape bearing rolled at spawn instead of stalling with zero velocity
+        targX = bestSw.x - dx / dist * HIJACKER_STANDOFF; targY = bestSw.y - dy / dist * HIJACKER_STANDOFF;
+      } else { targX = e.x + Math.sin(e.wob * .4) * 40; targY = e.hold; }
       e.vx = (e.vx || 0) + Math.sign(targX - e.x) * e.spd * 2.6 * dt;
       const hvm = e.spd * 2.2; e.vx = Math.max(-hvm, Math.min(hvm, e.vx)) * .95; e.x += e.vx * dt; e.x = Math.max(20, Math.min(WORLD_W - 20, e.x));
       e.y += (targY + Math.sin(e.wob * .7) * 20 - e.y) * Math.min(1, (bestSw ? 3 : 2) * dt);

@@ -6153,7 +6153,7 @@ function updUnits(dt) {
         // says go now, the WHOLE wing commits together. Anything already in actual weapon range (tgt truthy) is a
         // live engagement and is NEVER held back.
         const stageX = Math.max(40, Math.min(WORLD_W - 40, hunt.x - sdir * rng * AIR_RALLY_STAGE_FRAC));   // scales with THIS unit's own weapon range, so the staging point sits outside the combat standoff line regardless of aircraft type; clamped on-map so a contact near the world edge can't steer a staging jet out of bounds (aircraft movement below has no general x-clamp of its own)
-        const staging = !u.lowAir && !tgt && !u.wingCommit;         // no actual target in weapon range yet, and not yet cleared to commit — a rally candidate
+        const staging = !u.lowAir && !tgt && !u.wingCommit && !(u.squadCfg && u.squadCfg.swarm);   // no actual target in weapon range yet, and not yet cleared to commit — a rally candidate. SWARMS EXEMPT (headless-verified regression bench root cause): this staging/rally mechanic is built for a handful of crewed fighter WINGS massing before a coordinated BVR strike — the "enough gathered in one bucket" threshold (AIR_RALLY_COUNT) that releases them assumes dozens of individually-counted jets. A drone swarm is ONE unit representing up to 48 bodies; with far fewer distinct swarms than the old per-unit-squad world, most never reach that per-bucket headcount and would sit parked short of their own weapon range indefinitely instead of engaging — measured as the dominant cause of a real "merged kills ~20% fewer than the reference path" regression (bodies simply never fired: instrumented ~65% of a merged swarm's bodies never got a shot off in 5s of a static fight before this fix). Cheap expendable mass-fire drones were never the intended audience for "wait for the wing to gather" tactical patience anyway — they should just engage.
         if (staging) {
           const atStage = Math.abs(u.x - stageX) < AIR_RALLY_RADIUS, urgent = anyBoss || G.enemies.length >= AIR_RALLY_WAVE_N;
           if (atStage) {
@@ -6396,7 +6396,7 @@ function updSquadMembers(u, dt, sharedTgt) {
   // comment), giving every body up to `tn` candidates to round-robin across below instead of all dogpiling the
   // single shared pick a normal (small, non-swarm) squad gets.
   let swarmTgts = null, _rr = 0;
-  if (cfg.swarm) { const rep = u.members.find(m => m.alive); if (rep) { const nb = swarmBodies(u), tn = Math.max(1, Math.min(nb, Math.round(nb / SWARM_BODIES_PER_TARGET))), bw = Math.max(1, Math.round(nb / tn)); swarmTgts = acquireEnemyMulti(u.x, u.y, rep.range * rangeMod, rep.ceil, null, tn, bw); } }
+  if (cfg.swarm) { const rep = u.members.find(m => m.alive); if (rep) { const nb = swarmBodies(u), tn = Math.max(1, Math.min(nb, Math.round(nb / SWARM_BODIES_PER_TARGET))), bw = Math.max(1, Math.round(nb / tn)), blobR = swarmBlobRadius(nb, cfg.spread); swarmTgts = acquireEnemyMulti(u.x, u.y, rep.range * rangeMod + blobR, rep.ceil, null, tn, bw); } }   // scan range widened by the blob's own radius (headless-verified fix) — the scan originates at the swarm CENTRE, but an edge body can sit up to blobR closer to a given target than the centre is; without this, a center-based "nothing in range" verdict wrongly hid targets a body at the rim could actually reach, undercounting how much of the field a big swarm can even consider (the per-body sharedTgtUsable check right below still verifies each ACTUAL body can reach its pick, so this only WIDENS the candidate pool, never lets a body fire on something truly out of its own reach)
   for (const m of u.members) {
     if (!m.alive) continue;
     const mx = u.x + m.cx, my = u.y + m.cy;
@@ -6424,7 +6424,7 @@ function updSquadMembers(u, dt, sharedTgt) {
     let tgt;
     if (m.isAt) {   // AT/AA specialist — its own separate air-hunting channel, unaffected by whatever the riflemen are sharing
       tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, e => !e.ground) || acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);
-    } else if (swarmTgts && swarmTgts.length) {   // SWARM — round-robin across the swarm's shared multi-target pool so up to 48 bodies spread across up to 6 enemies instead of all focusing one
+    } else if (swarmTgts && swarmTgts.length) {   // SWARM — round-robin across the swarm's shared multi-target pool so up to 48 bodies spread across up to 6+ enemies instead of all focusing one
       let picked = null;
       for (let i = 0; i < swarmTgts.length; i++) { const cand = swarmTgts[(_rr + i) % swarmTgts.length]; if (sharedTgtUsable(cand, mx, my, m.range * rangeMod, m.ceil)) { picked = cand; break; } }
       _rr++;
@@ -6433,6 +6433,16 @@ function updSquadMembers(u, dt, sharedTgt) {
                // fire-control designation (cheap, usually a no-op) if the shared pick can't actually be reached from here
       tgt = sharedTgtUsable(sharedTgt, mx, my, m.range * rangeMod, m.ceil) ? sharedTgt : pickDesignated(mx, my, m.range * rangeMod, m.ceil, null);
     }
+    // PER-BODY FALLBACK (headless-verified fix, regression bench) — the swarm-level acquisition above is scanned
+    // from the SWARM's CENTRE (u.x/u.y), and swarmTgts is built from that same centre; a body can sit up to a
+    // blob-radius (~76px @ 48 bodies) off-centre, so whenever the centre-based list comes back empty (nothing
+    // in range OF THE CENTRE) or none of its entries are reachable from THIS body's own offset position, every
+    // body would previously just idle with no shot — instrumented: only ~63% of a merged swarm's bodies ever
+    // fired in 5s of a static fight, vs ~98% for the same bodies as unmerged individual units. A real per-body
+    // acquireEnemy() scan (the exact call an ordinary lone unit already pays every idle frame) is the guaranteed
+    // "never idle with an enemy in range" fallback — it only runs for a body that just exhausted every cheaper
+    // option above, so it stays rare in the common case (most bodies find a usable pick in the swarm's own list).
+    if (cfg.swarm && !tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
     if (!tgt && canIntercept(m)) tgt = acquireIncoming(mx, my, m.range * rangeMod, m.ceil);
     if (!tgt) continue;
     m.tgt = tgt; m.burstLeft = m.isAt ? 1 : (cfg.burst || 1); m.burstT = .04 + Math.random() * .08;

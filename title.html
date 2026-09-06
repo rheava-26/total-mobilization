@@ -1409,10 +1409,26 @@ const TERR_STEP = 1;   // world-px between cached samples. Tried 2px first: fine
 let TERR_CACHE = null;   // Float64Array, index i -> world x = i*TERR_STEP, value = elevAtRaw(x)
 function buildTerrainCache() { const n = Math.floor(WORLD_W / TERR_STEP) + 1; TERR_CACHE = new Float64Array(n); for (let i = 0; i < n; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP); }
 function rebuildTerrainRange(loX, hiX) { if (!TERR_CACHE) return; const n = TERR_CACHE.length, i0 = Math.max(0, Math.floor(loX / TERR_STEP) - 1), i1 = Math.min(n - 1, Math.ceil(hiX / TERR_STEP) + 1); for (let i = i0; i <= i1; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP); }
-function pushCrater(c) { craters.push(c); rebuildTerrainRange(c.x - c.r, c.x + c.r); }   // mirrors a bare craters.push(...) call site — no cap/shift, so array-growth behavior at that site is unchanged
+function pushCrater(c) { craters.push(c); rebuildTerrainRange(c.x - c.r, c.x + c.r); charAdd(c.x, .25); }   // mirrors a bare craters.push(...) call site — no cap/shift, so array-growth behavior at that site is unchanged. DESTRUCTION LAYER: every crater scars the ground permanently (see charAdd)
 function capCraters() { if (craters.length > 70) { const old = craters.shift(); rebuildTerrainRange(old.x - old.r, old.x + old.r); } }   // mirrors an `if (craters.length > 70) craters.shift();` call site — also invalidates the range the dropped crater used to affect
 function pushLevel(L) { levels.push(L); rebuildTerrainRange(L.x - L.r, L.x + L.r); }
 function capLevels() { if (levels.length > 220) { const old = levels.shift(); rebuildTerrainRange(old.x - old.r, old.x + old.r); } }
+// ===== DESTRUCTION LAYER — permanent scorch/char scars + destroyed-building ruins (v4.0 D). All state lives on G so a
+// fresh newGame() gets a clean battlefield; every function below guards on G/G.char so it's a safe no-op before newGame
+// has run (e.g. the title→game zoom transition calls drawWorld with G still null). See drawWorld for the render pass. =====
+const CHAR_CELL = 40;   // world-px per scar cell — WORLD_W/40 = 150 cells total, cheap to scan/draw in full every frame
+function charAdd(x, amt) {   // scar a ground cell — PERMANENT (no decay); also (re)starts that cell's ~2min fire window
+  if (!G || !G.char) return; const n = G.char.length, i = Math.max(0, Math.min(n - 1, Math.floor(x / CHAR_CELL)));
+  G.char[i] = Math.min(1, G.char[i] + amt); G.charFedT[i] = G.time;   // charBurnT() derives the fire window from this timestamp instead of a live per-frame decay tick
+}
+function charBurnT(i) { const fed = G.charFedT[i]; return fed == null ? 0 : Math.max(0, 1 - (G.time - fed) / 120); }   // 0..1 — how alive a heavily-scarred cell's fire still is, ~2 minutes after last fed, no ticking required to compute it
+function pushRuin(b) {   // a destroyed building leaves a permanent silhouette — shape precomputed ONCE here so drawWorld's render pass never allocates
+  if (!G || !G.ruins) return; const w = (b.d && b.d.w) || 20, h = (b.d && b.d.h) || 16, sh = h * .55;
+  const n = 3 + (Math.random() * 3 | 0), spikes = []; for (let i = 0; i <= n; i++) spikes.push([-w / 2 + w * i / n, -(sh * .5 + Math.random() * sh * .5)]);
+  const rn = 4 + (Math.random() * 3 | 0), rubble = []; for (let i = 0; i < rn; i++) rubble.push([(Math.random() - .5) * w * .9, 1 + Math.random() * 2]);
+  G.ruins.push({ x: b.x, w, h, art: (b.d && b.d.art) || b.key, t: G.time, spikes, rubble, plumeNextT: G.time + 2 });
+  if (G.ruins.length > 60) G.ruins.shift();   // oldest evicted, mirrors capCraters/capLevels above
+}
 function elevAt(wx) { if (!TSEED || !TERR_CACHE) seedTerrain(); const n = TERR_CACHE.length;
   if (wx <= 0) return TERR_CACHE[0]; if (wx >= (n - 1) * TERR_STEP) return TERR_CACHE[n - 1];
   const idx = wx / TERR_STEP, i0 = Math.floor(idx), f = idx - i0; return TERR_CACHE[i0] * (1 - f) + TERR_CACHE[i0 + 1] * f; }   // linear lerp between adjacent cached samples — same return semantics/range as the old elevAt
@@ -1454,14 +1470,27 @@ const scrToWY = py => (py - H / 2) / (cam.z || 1) + H / 2 + cam.y;
 const mwx = () => scrToWX(mouse.x), mwy = () => scrToWY(mouse.y);   // world point under the cursor
 // camera clamps are ZOOM-AWARE: the render scales around the viewport centre, so at z>1 only the central W/z × H/z of the
 // unscaled strip is visible — the clamps widen by the cropped margin so the world's edges (and the ground!) stay reachable
-const clampCamY = y => { const m = H / 2 - H / (2 * (cam.z || 1)); return Math.max(-m, Math.min(worldH() - H + m + UG_VIEW_PAD, y)); };   // +UG_VIEW_PAD lets the camera pan past the nominal floor into the extended dirt band so the deep-dig layer is reachable everywhere
+const clampCamY = y => { const cz = cam.z || 1, m = H / 2 - H / (2 * cz), pad = cz < .6 ? 0 : UG_VIEW_PAD; return Math.max(-m, Math.min(worldH() - H + m + pad, y)); };   // +UG_VIEW_PAD lets the camera pan past the nominal floor into the extended dirt band so the deep-dig layer is reachable everywhere — EXCEPT in the HUD-LESS FULL-MAP VIEW (cz<.6), where drawWorld no longer renders that band at all (see digDepth), so the pad is dropped and the clamp stops right at the ground
 function biome(e, m) { if (e < .30) return '#c9b787'; if (e > .82) return '#eef4fb'; if (e > .70) return '#928d86'; if (m > .62) return e > .5 ? '#2c5f2c' : '#347a35'; if (m < .36) return e > .5 ? '#b9a06a' : '#caa463'; return e > .5 ? '#4e8a3c' : '#5a9748'; }
 let G = null, soc = { sky: null, tint: null };
 
+const _topScratch = new Array(6);   // DESTRUCTION LAYER — reused scratch buffer for the war-tint-desaturated sky-band top colors, so drawWorld never allocates a fresh array for it every frame (see lerpHex/drawWorld below)
+function lerpHex(a, bHex, t) {   // '#rrggbb' lerp toward bHex by t (0..1) — used only a handful of times/frame (6 sky-band stops), only while warTint > 0
+  const ah = parseInt(a.slice(1), 16), bh = parseInt(bHex.slice(1), 16);
+  const ar = (ah >> 16) & 255, ag = (ah >> 8) & 255, ab = ah & 255, br = (bh >> 16) & 255, bg = (bh >> 8) & 255, bb = bh & 255;
+  const r = Math.round(ar + (br - ar) * t), g = Math.round(ag + (bg - ag) * t), b = Math.round(ab + (bb - ab) * t);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
 function drawWorld(alpha) {
   if (!W || !H) return;   // no layout yet (e.g. a 0-size frame) — bail before any gradient math goes non-finite
   c.save(); c.globalAlpha = alpha;
   const VH = worldH(), x0 = cam.x, x1 = cam.x + W;
+  // DESTRUCTION LAYER — sky darkening from accumulated losses, recomputed ~1/s off G.time (not every frame); see charAdd/pushRuin for what feeds G.lostStructures/G.stats.totalKills/G.unitsLost
+  if (G && (G._warTintSec == null || Math.floor(G.time) !== G._warTintSec)) { G._warTintSec = Math.floor(G.time);
+    const lost = G.lostStructures || 0, kills = (G.stats && G.stats.totalKills) || 0, unitsLost = G.unitsLost || 0;
+    G.warTint = Math.max(0, Math.min(.45, lost * .02 + kills * .0004 + unitsLost * .001));
+  }
+  const warTint = (G && G.warTint) || 0;
   /* ZOOM-OUT OVER-SCAN — drawWorld draws in UNSCALED screen space [0,W]×[0,VH], but the frame applies cam.z around
      the viewport centre BEFORE calling us. At any cz<1 that shrinks our fills to the middle and leaves DARK margins
      past the map edges. PX/PY extend the sky + terrain fills to cover the full visible area at any zoom, so there is
@@ -1470,11 +1499,14 @@ function drawWorld(alpha) {
   const clampWX = x => x < 0 ? 0 : x > WORLD_W ? WORLD_W : x;
   // === SKY — banded, glowing atmosphere spanning the whole TALL world: deep space at the top → horizon glow near the ground ===
   const g = c.createLinearGradient(0, 0, 0, VH);
-  const top = soc.sky || ['#01030c', '#060f2c', '#0e2f63', '#1f5aa0', '#3f8acb', '#79bce4'];
+  const top0 = soc.sky || ['#01030c', '#060f2c', '#0e2f63', '#1f5aa0', '#3f8acb', '#79bce4'];
+  let top = top0;
+  if (warTint > .01) { for (let i = 0; i < 6; i++) _topScratch[i] = lerpHex(top0[i], '#3a332c', warTint); top = _topScratch; }   // DESTRUCTION LAYER — desaturate the sky bands toward a dead grey-brown as the war goes badly
   // deep-space black fills the top HALF (the vast exosphere), then the atmosphere colours compress below .50
   g.addColorStop(0, top[0]); g.addColorStop(.40, top[0]); g.addColorStop(.50, top[1]); g.addColorStop(.62, top[2]); g.addColorStop(.72, top[3]); g.addColorStop(.80, top[4]); g.addColorStop(.87, top[5]);
   c.fillStyle = g; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY);
   drawNebula(alpha); drawSkyStars(alpha * .9); drawMoon(alpha); drawSun(alpha); drawAurora(alpha); drawMeteors(alpha); c.globalAlpha = alpha;
+  if (warTint > 0) { const ov = c.createLinearGradient(0, 0, 0, VH); ov.addColorStop(0, `rgba(20,16,14,${(warTint * .6).toFixed(3)})`); ov.addColorStop(1, `rgba(40,30,22,${warTint.toFixed(3)})`); c.fillStyle = ov; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY); }   // DESTRUCTION LAYER — one darkening overlay over the whole sky, before clouds; society tint (below, painted after terrain) still sits on top of this
   // faint layer guides — exosphere & thermosphere are now distinct bands (labels at each band's midpoint)
   c.font = '10px Consolas'; c.textAlign = 'right';
   for (const [yy, lab] of [[VH * .25, 'EXOSPHERE'], [VH * .56, 'THERMOSPHERE'], [VH * .66, 'MESOSPHERE'], [VH * .76, 'STRATOSPHERE'], [VH * .83, 'TROPOSPHERE']]) { c.strokeStyle = 'rgba(180,210,255,.07)'; c.setLineDash([5, 9]); c.beginPath(); c.moveTo(0, yy); c.lineTo(W, yy); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(200,220,255,.4)'; c.fillText(lab, W - 16, yy + 12); }
@@ -1485,14 +1517,27 @@ function drawWorld(alpha) {
   drawAmbientHorizon(alpha);// distant background skyline (+ invasion-only drop-pod streaks & horizon muzzle-flashes) — cosmetic, see AMBIENT LIFE
   drawHorizonGlow(alpha);   // atmospheric scattering hugging the curved limb (before terrain, so the ground covers its lower half)
   // === TERRAIN body (visible slice) ===
+  const digDepth = cz < .6 ? 0 : UG_VIEW_PAD;   // HUD-LESS FULL-MAP VIEW (v4.0 D2) — past this zoom-out threshold, don't render the extended dirt/strata band below the nominal floor (only sky + ground line are real gameplay fields down here); mirrors clampCamY's own cz<.6 change so the camera can't pan into a clipped void either
   c.beginPath(); c.moveTo(-PX, groundY(clampWX(wxAt(-PX))));
   for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px))));
-  c.lineTo(W + PX, VH + UG_VIEW_PAD); c.lineTo(-PX, VH + UG_VIEW_PAD); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space; PX over-scan fills the zoomed-out side margins
-  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + UG_VIEW_PAD); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
-  drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body
+  c.lineTo(W + PX, VH + digDepth); c.lineTo(-PX, VH + digDepth); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space (clipped to the nominal floor in the full-map view instead); PX over-scan fills the zoomed-out side margins
+  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + digDepth); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
+  if (cz >= .6) drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body — skipped in the full-map view (nothing to show, see digDepth above)
   for (let px = -PX; px < W + PX; px += 3) { const wx = clampWX(wxAt(px)), y = groundY(wx), y2 = groundY(clampWX(wx + 3)); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
   c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = -PX; px <= W + PX; px += 4) { const y = groundY(clampWX(wxAt(px))); px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight (over-scans at cz<1 so the margins aren't bare)
   drawTerrainDetail(alpha);   // biome scenery — forests, brush, boulders, snow glints
+  if (G && G.char) {   // === DESTRUCTION LAYER — permanent scorch scars + slow-dying embers on heavily-charred ground (see charAdd/charBurnT) ===
+    const _cn = G.char.length, _ci0 = Math.max(0, Math.floor(clampWX(wxAt(-PX)) / CHAR_CELL) - 1), _ci1 = Math.min(_cn - 1, Math.ceil(clampWX(wxAt(W + PX)) / CHAR_CELL) + 1);
+    c.fillStyle = '#120c08';
+    if (cz < .35) {   // zoomed way out — one averaged strip per 4 cells instead of drawing each (well under the ~150-fill budget, still reads as scarred ground)
+      for (let i = _ci0 - (((_ci0 % 4) + 4) % 4); i <= _ci1; i += 4) { let sum = 0, cnt = 0; for (let k = Math.max(0, i); k < i + 4 && k <= _ci1 && k < _cn; k++) { sum += G.char[k]; cnt++; } if (!cnt) continue; const avg = sum / cnt; if (avg <= .05) continue; const wx = clampWX((i + 2) * CHAR_CELL), px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, avg * .55); c.fillRect(px - CHAR_CELL * 2, y, CHAR_CELL * 4, 10 + avg * 8); }
+      c.globalAlpha = alpha;
+    } else {
+      for (let i = _ci0; i <= _ci1; i++) { const ch = G.char[i]; if (ch <= .05) continue; const wx = i * CHAR_CELL + CHAR_CELL / 2, px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, ch * .55); c.fillRect(px - CHAR_CELL / 2, y, CHAR_CELL, 10 + ch * 8); }
+      c.globalAlpha = alpha;
+      if (fullFx) for (let i = _ci0; i <= _ci1; i++) { if (G.char[i] <= .6 || charBurnT(i) <= 0 || G.time < G._fireNextT[i]) continue; G._fireNextT[i] = G.time + .7 + Math.random() * .6; const wx = i * CHAR_CELL + CHAR_CELL / 2 + (Math.random() - .5) * 20, gy = groundY(wx); G.parts.push({ k: 'fire', x: wx, y: gy - 2, vx: (Math.random() - .5) * 6, vy: -14 - Math.random() * 12, r: 1.3 + Math.random() * 1.6, life: .45 + Math.random() * .35 }); }   // ≤1 ember/s/cell, only on-screen, only with Full Effects on — see charBurnT for the ~2min no-decay-tick burnout window
+    }
+  }
   if (soc.tint) { c.fillStyle = soc.tint; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY); }
   // GROUND LEVEL line + water in valleys
   c.strokeStyle = 'rgba(220,235,255,.22)'; c.setLineDash([7, 7]); c.beginPath(); for (let px = -PX; px <= W + PX; px += 6) c.lineTo(px, seaLevelY(clampWX(wxAt(px)))); c.stroke(); c.setLineDash([]);
@@ -1501,6 +1546,15 @@ function drawWorld(alpha) {
   c.strokeStyle = 'rgba(15,25,15,.4)'; c.lineWidth = 1.3; c.beginPath(); for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px)))); c.stroke();
   if (G) drawRoads();
   if (G) drawAmbientGround(alpha);   // 🚗🚤 civilian cars on the roads + boats on the water — cosmetic, see AMBIENT LIFE
+  if (G && G.ruins && G.ruins.length) {   // === DESTRUCTION LAYER — destroyed-building silhouettes (see pushRuin); drawn here rather than alongside live buildings (renderGame, outside this function's scope) since a dead building has already left G.buildings ===
+    for (const ru of G.ruins) { const px = ru.x - cam.x; if (px < -ru.w - 40 - PX || px > W + ru.w + 40 + PX) continue; const gy = groundY(ru.x);
+      c.save(); c.translate(px, gy); c.globalAlpha = alpha * .85; c.fillStyle = '#0d0a08';
+      c.beginPath(); c.moveTo(ru.spikes[0][0], 0); for (const sp of ru.spikes) c.lineTo(sp[0], sp[1]); c.lineTo(ru.spikes[ru.spikes.length - 1][0], 0); c.closePath(); c.fill();
+      c.globalAlpha = alpha * .6; for (const rb of ru.rubble) { c.beginPath(); c.arc(rb[0], -rb[1] * .3, rb[1], 0, 6.28); c.fill(); }
+      c.globalAlpha = alpha; c.restore();
+      if (fullFx && G.time - ru.t < 90 && G.time >= ru.plumeNextT && px > -60 && px < W + 60) { ru.plumeNextT = G.time + 2; G.parts.push({ k: 'smoke', x: ru.x + (Math.random() - .5) * ru.w * .4, y: gy - ru.h * .4, vx: (Math.random() - .5) * 6, vy: -8 - Math.random() * 10, r: 2 + Math.random() * 2, life: 1.2 + Math.random() * .8 }); }   // ≤1 puff / 2s / ruin, only for the first 90s after death, only on-screen, only with Full Effects on
+    }
+  }
   c.fillStyle = 'rgba(230,240,255,.55)'; c.textAlign = 'right'; c.fillText('GROUND LEVEL', W - 16, seaLevelY(x1) - 4); c.fillText('SUBTERRANEAN', W - 16, (seaBaseY() + worldH()) / 2 + 30); c.textAlign = 'left';
   c.restore();
 }
@@ -3300,6 +3354,11 @@ function newGame(diff) {
       couped: false, nukeCount: 0, prepNuke: false, ballisticCount: 0, researchedAnything: false, altered: false },   /* ACHIEVEMENT: coup framing + strike-spam + pacifist-win tracking (reset every new game); altered = this run used TURN MODE or onboarding assistance (+150s, emergency units, baby fleet…) — renders the ◇ assisted notch */
   };
   G.stats.intent = intent; G.stats.difficulty = G.diffName; G.stats.prepDuration = G.prepTimer;   // AFTER-ACTION — campaign setup, recorded once at the start (prepTimer counts down from here, so grab it now while it's still the full duration)
+  // DESTRUCTION LAYER (v4.0 D) — fresh scar/ruin/war-tint state for this run (G itself is a brand-new object above, so
+  // there's nothing to reuse); see charAdd/charBurnT/pushRuin above and the render pass in drawWorld. The `if (!G.char)`
+  // guard elsewhere (charAdd et al.) is defensive only — for any stray call that could run before this line does.
+  G.char = new Float32Array(Math.ceil(WORLD_W / CHAR_CELL)); G.charFedT = new Float32Array(G.char.length); G._fireNextT = new Float32Array(G.char.length);
+  G.ruins = []; G.warTint = 0; G._warTintSec = -1;
   if (window.tutClear) window.tutClear();   // wipe any greying / advisor card left over from the previous game (the DOM buttons persist across games)
   // cities across the world (victory points) — each is a SPRAWL of destructible districts; nearby ones fuse into a megacity
   const nCity = 7, capIdx = 3;
@@ -5206,6 +5265,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
     else { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
+    if (!b.flooded) { charAdd(b.x, .4); pushRuin(b); }   // DESTRUCTION LAYER — a flooded building just sinks quietly (no scorch/rubble); every other death leaves a permanent scar + a ruin silhouette (see charAdd/pushRuin, drawn in drawWorld)
     if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
@@ -5403,6 +5463,7 @@ function annihilate(x, y, s, big, heavy) {
 }
 function groundBurst(x, power) {   // shockwave kicks terrain into the air
   if (power >= 10) SFX.rumble();   // a big ground blast is felt as a deep rumble (throttled internally)
+  charAdd(x, .08);   // DESTRUCTION LAYER — every ground burst scars the ground a little (see charAdd)
   const gy = groundY(x); G.parts.push({ k: 'shock', x, y: gy, r: 4, max: power * 8, life: .45 });
   for (let i = 0; i < power; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.7, sp = 40 + Math.random() * power * 9; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * power, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2.3, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, life: .8 + Math.random(), grav: 150, gy, dom: 'ground', settled: false }); }
 }
@@ -5797,6 +5858,7 @@ function detonateKinetic(x, y) {
 }
 function igniteFirestorm(x) {
   const y = groundY(x); for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 90, y, 11);
+  charAdd(x, .5);   // DESTRUCTION LAYER — firestorms scorch the ground hard (see charAdd)
   G.fires.push({ x, r: 130, life: 6 }); groundBurst(x, 10); shake(8); SFX.boom();
 }
 function detonateHE(x, y) {   // conventional ballistic warhead — strong, smaller than a nuke, no fallout
@@ -6548,7 +6610,7 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
 }
 function toggleZones() { if (!G) return; G.showZones = !G.showZones; toast(G.showZones ? '◎ COVERAGE ZONES ON — radar / buff / repair radii' : 'coverage zones off'); }
 function togglePause() { if (!G || mode !== 'game' || G.over) return; if (G.turnMode) return; G.paused = !G.paused; }   // the SPACE-bar pause, but a tappable button so phones can pause/resume too (TURN MODE forces & holds the pause — see toggleTurnMode)
-function toggleHudHidden() { if (!G) return; G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); if (G.hideHUD && typeof setDrawerOpen === 'function') setDrawerOpen(false); if (typeof toast === 'function') toast(G.hideHUD ? '🖥 HUD hidden — tap 👁 or press H to show' : '🖥 HUD shown'); }   // screenshot/cinematic mode — shared by the H key and the drawer's 🖥 HIDE HUD button
+function toggleHudHidden() { if (!G) return; G.hideHUD = !G.hideHUD; document.body.classList.toggle('hud-hidden', G.hideHUD); if (G.hideHUD && typeof setDrawerOpen === 'function') setDrawerOpen(false); if (!G.hideHUD && (cam.z || 1) < 0.83) { cam.z = 0.83; cam.x = clampCam(cam.x); cam.y = clampCamY(cam.y); }   /* HUD-LESS FULL-MAP VIEW (v4.0 D2) — coming back from a full-map zoom snaps straight back to the normal 0.83 floor (zoomMin() now forbids it) rather than leaving the camera stuck past-limit or animating a tween; re-clamp x/y too since a wider zoom-out could have parked them past the normal-zoom bounds */ if (typeof toast === 'function') toast(G.hideHUD ? '🖥 HUD hidden — tap 👁 or press H to show' : '🖥 HUD shown'); }   // screenshot/cinematic mode — shared by the H key and the drawer's 🖥 HIDE HUD button
 // DRAWER — one right-edge tab opens/closes #hudDrawer; persisted so re-opening the game keeps it as you left it.
 function setDrawerOpen(open) {
   const d = document.getElementById('hudDrawer'), t = document.getElementById('drawerTab');
@@ -7053,6 +7115,8 @@ function renderGame() {
   // mass still reads as a mass, per the design tenet) — only this fine detail layer is skipped. On/off-screen
   // culling above is untouched either way; a normal-count, normal-zoom battle looks IDENTICAL to before.
   const _extremeLOD = (!fullFx && (G.units.length + G.enemies.length) > 1200) || (cam.z || 1) < .55;   // Full Effects ON keeps only the zoom-out drop (favor keeping visuals); the count-based mega-army cutback is skipped
+  const _blipLOD = _cz < .5;   // HUD-LESS FULL-MAP VIEW (v4.0 D2) — past this zoom-out, units/enemies/buildings draw as cheap batched blips instead of full sprites (see the unit/enemy/building loops + the attack-arrows pass below)
+  const _blipS = 1 / _cz;   // renderGame draws inside the frame()-applied cz canvas scale, so a size specified in these pre-scale units shrinks to cz*size real device px — at cz as low as .18 a plain "2px" square would be under half a device pixel and invisible; dividing by _cz keeps every blip/ring/tick/arrow a constant, always-legible on-screen size at any zoom
   RSTAT.culled = 0; RSTAT.drawn = 0;
   // COVERAGE ZONES — buff/aura radii (radar range, fire-rate, repair). Toggle with V or the ◎ button; a selected aura building always shows its own ring.
   if (G.showZones || (G.sel && G.sel.d && (G.sel.d.aura || G.sel.d.garrAura))) {
@@ -7116,6 +7180,7 @@ function renderGame() {
   for (const s of G.sites) { const px = sx(s.x); if (px < -40 - PX || px > W + 40 + PX) continue; const oy = s.ug ? UG_DEPTH * (s.ugLvl || 1) : 0, gy = (s.d.needWater ? seaLevelY(s.x) : groundY(s.x)) + oy; /* naval sites build at the water SURFACE, not the seabed */ if (s.ug) { c.strokeStyle = 'rgba(60,48,32,.6)'; c.lineWidth = 4; c.beginPath(); c.moveTo(px, groundY(s.x)); c.lineTo(px, gy - s.d.h * .4); c.stroke(); } c.globalAlpha = .4; c.save(); c.translate(px, gy); (BART[s.key] || BART.factory)(c, s.d.w, s.d.h); c.restore(); c.globalAlpha = 1; bar(px, gy - s.d.h - 6, s.d.w, s.prog / s.total, false, '#caa030'); c.strokeStyle = 'rgba(202,160,48,.6)'; c.setLineDash([4, 4]); c.strokeRect(px - s.d.w / 2, gy - s.d.h, s.d.w, s.d.h); c.setLineDash([]); }
   // buildings
   for (const b of G.buildings) { const px = sx(b.x); if (px < -80 - PX || px > W + 80 + PX) continue; const gy = bldBaseY(b);
+    if (_blipLOD) { c.fillStyle = 'rgba(170,178,190,.85)'; c.fillRect(px - _blipS, gy - _blipS * 1.5, _blipS * 2, _blipS * 1.5); continue; }   // HUD-LESS FULL-MAP VIEW — a tiny grey tick instead of the full sprite + foundation/neon/badge draw below
     if (b.ug) { c.strokeStyle = 'rgba(55,44,30,.9)'; c.lineWidth = 5; c.beginPath(); c.moveTo(px, groundY(b.x)); c.lineTo(px, gy - b.d.h * .5); c.stroke(); c.fillStyle = 'rgba(8,6,4,.9)'; rr(c, px - b.d.w * .72, gy - b.d.h - 6, b.d.w * 1.44, b.d.h + 12, 6); c.fill(); }
     if (!b.ug && !b.d.needWater) drawFoundation(b.x, px, gy, b.d.w * .55);   // sit level on uneven ground (naval platforms float, no foundation)
     c.save(); c.translate(px, gy); (BART[b.key] || BART.factory)(c, b.d.w, b.d.h); c.restore();
@@ -7134,14 +7199,20 @@ function renderGame() {
   let liveSquadN = 0; for (const su of G.units) if (su.squad && su.hp > 0) liveSquadN++;
   const squadLOD = liveSquadN > SQUAD_LOD_N || (cam.z || 1) < SQUAD_LOD_ZOOM;
   for (const u of G.units) { if (u.carried) continue;   // 🚁 aboard a transport heli — not drawn on the ground at all (see the u.carried guard in updUnits)
-    const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX || u.y < VY0 || u.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0 && !_extremeLOD) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
+    const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX || u.y < VY0 || u.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { c.fillStyle = u.ally ? '#5be0ff' : '#4dff88'; c.fillRect(px - _blipS, u.y - _blipS, _blipS * 2, _blipS * 2); continue; } const d = u.d; if (u.onRail) { c.globalAlpha = .6; c.fillStyle = '#9fc0e0'; c.beginPath(); c.arc(px, u.y, Math.max(2.4, d.s), 0, 6.28); c.fill(); c.globalAlpha = .22; c.fillStyle = '#dff0ff'; c.beginPath(); c.arc(px, u.y, d.s * 2, 0, 6.28); c.fill(); c.globalAlpha = 1; continue; } if (d.domain === 'air' && !d.lowAir && curEra() > 0 && !_extremeLOD) glow(px, u.y, d.s * 2.3, curEra() > 1 ? 'rgba(120,200,255,1)' : 'rgba(120,255,210,1)', .22);
     if (u.squad) { drawSquadUnit(u, px, squadLOD); if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, u.y - (u.squadCfg.bodyS || 3) * 2 - 18, u.bg.members.length); continue; }   // SQUAD — several bodies at their own formation offsets (or one cluster glyph under LOD); see drawSquadUnit. BATTLEGROUPS: a squad LEADER (e.g. a cdrone squadron) draws its group-size badge too
     if (d.domain === 'ground' && (u.entr || 0) > .25 && !_extremeLOD) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building) — RENDER LOD: skipped at mega-army scale/far zoom-out, see _extremeLOD
     const gdy = d.domain === 'ground' ? u.y + d.s * GROUND_SEAT_FRAC : u.y;   // draw-only ground seat (see GROUND_SEAT_FRAC above) — u.y itself is unchanged
     if ((d.domain === 'ground' || d.domain === 'naval') && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, d.domain === 'ground' ? gdy : u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow — GROUND shares the sprite's own seated anchor (gdy) so the shadow never floats above/below the feet it belongs to; naval keeps its own hull-relative offset (a boat's shadow sits below the WATERLINE, not d.s away from a lifted y)
     c.save(); c.translate(px, gdy); if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } c.restore(); if (u.shield > 0 && !_extremeLOD) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, gdy - d.s * 2 - 9, u.bg.members.length); }   // BATTLEGROUPS — non-squad leader (kdrone/clone) group-size badge
   // enemies
-  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  if (_blipLOD) {   // HUD-LESS FULL-MAP VIEW — ATTACK ARROWS: a faint shooter→target line for every 3rd entity that's currently on a fire-cooldown (i.e. just fired — see u.cd/e.cd, reset by the fire code right after a shot) with a real live target still standing; capped at 300/frame
+    let _arrowN = 0, _arrowI = 0; c.lineWidth = _blipS;
+    for (const u of G.units) { if (u.carried || !u.cd || u.cd <= 0) continue; const t = u.lastTgt || u._lodTgt; if (!t || t.hp == null || t.hp <= 0) continue; _arrowI++; if (_arrowI % 3 !== 0) continue; if (_arrowN >= 300) break; _arrowN++; const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX) continue; c.globalAlpha = .25; c.strokeStyle = u.ally ? '#5be0ff' : '#4dff88'; c.beginPath(); c.moveTo(px, u.y); c.lineTo(sx(t.x), t.y); c.stroke(); }
+    for (const e of G.enemies) { if (e.reentry || !e.cd || e.cd <= 0) continue; const t = e._lodTgt; if (!t || t.hp == null || t.hp <= 0) continue; _arrowI++; if (_arrowI % 3 !== 0) continue; if (_arrowN >= 300) break; _arrowN++; const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX) continue; c.globalAlpha = .25; c.strokeStyle = '#ff4d4d'; c.beginPath(); c.moveTo(px, e.y); c.lineTo(sx(t.x), t.y); c.stroke(); }
+    c.globalAlpha = 1;
+  }
   for (const b of G.buildings) { if (!b._acqLock || b.hp <= 0) continue; const px = sx(b.x); if (px < -60 - PX || px > W + 60 + PX) continue; const cy = groundY(b.x) - (b.d.h || 12) * .5, rr = (b.d.w || 16) * .7 + 8, rot = -animClock * .07; c.save(); c.globalAlpha = .55 + .35 * Math.sin(animClock * .02); c.strokeStyle = '#ff2323'; c.lineWidth = 2; c.shadowColor = '#ff3030'; c.shadowBlur = 8; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, cy, rr, ba - .42, ba + .42); c.stroke(); } c.beginPath(); c.moveTo(px - rr, cy); c.lineTo(px - rr * .55, cy); c.moveTo(px + rr * .55, cy); c.lineTo(px + rr, cy); c.moveTo(px, cy - rr); c.lineTo(px, cy - rr * .55); c.moveTo(px, cy + rr * .55); c.lineTo(px, cy + rr); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // ◎ RED enemy-acquisition reticle — the autofleet has locked this structure as a bunker-buster target
   // beachhead shield domes — a translucent hemisphere over the landing; brightness fades as it's battered down
   for (const dm of G.domes) { const px = sx(dm.x); if (px < -dm.r - PX || px > W + dm.r + PX) continue; const gy = groundY(dm.x), a = Math.max(.18, dm.hp / dm.maxHp); c.save(); c.beginPath(); c.arc(px, gy, dm.r, Math.PI, 0); c.globalAlpha = .08 + .06 * Math.sin(animClock * .01); c.fillStyle = '#5a8cff'; c.fill(); c.globalAlpha = .3 + .4 * a; c.strokeStyle = '#9cc4ff'; c.lineWidth = 2; c.shadowColor = '#9cc4ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0;
@@ -8604,8 +8675,9 @@ addEventListener('mousemove', e => { if (mmDrag && G) cam.x = clampCam((e.client
 addEventListener('mouseup', () => mmDrag = false);
 cv.addEventListener('wheel', e => { if (mode !== 'game' || !G) return; e.preventDefault(); if (e.shiftKey) { cam.y = clampCamY(cam.y + Math.sign(e.deltaY) * 90 / (cam.z || 1)); cam.manualT = 3.5; } else { zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.14 : 1 / 1.14); } }, { passive: false });   // wheel = ZOOM toward the cursor; Shift+wheel = pan the tall skybox vertically (screen-space step at any zoom)
 // ZOOM — scale the world around the viewport centre; zoomAt keeps the world point under (px,py) fixed so it zooms toward the cursor
+function zoomMin() { return document.body.classList.contains('hud-hidden') ? Math.max(0.18, W / WORLD_W) : 0.83; }   // HUD-LESS FULL-MAP VIEW (v4.0 D2) — hiding the HUD (🖥/H) unlocks zooming all the way out to the whole 6000px map at once; the normal 0.83 floor otherwise applies
 function zoomAt(px, py, factor) {
-  const z0 = cam.z || 1, z1 = Math.max(0.83, Math.min(3, z0 * factor)); if (z1 === z0) return;   // min zoom widened from 1 -> 0.83 (~20% more zoom-out) so more of the battlefield — and more of the underground band — fits on screen at once
+  const z0 = cam.z || 1, z1 = Math.max(zoomMin(), Math.min(3, z0 * factor)); if (z1 === z0) return;   // min zoom widened from 1 -> 0.83 (~20% more zoom-out) so more of the battlefield — and more of the underground band — fits on screen at once; further widened to zoomMin() while the HUD is hidden
   const wx = (px - W / 2) / z0 + W / 2 + cam.x, wy = (py - H / 2) / z0 + H / 2 + cam.y;   // world point under the cursor
   cam.z = z1; cam.x = clampCam(wx - W / 2 - (px - W / 2) / z1); cam.y = clampCamY(wy - H / 2 - (py - H / 2) / z1); cam.manualT = 3.5;
 }

@@ -822,7 +822,7 @@
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
 <div class="alertbanner" id="alertBanner"></div>
-<div id="strikeConfirm"><div class="scq">☢ STRIKE AIMED — tap the map to re-aim, or:</div><button class="pill primary" onclick="confirmStrike()">☢ CONFIRM STRIKE</button><button class="pill" onclick="gameCancel()">✕ ABORT</button></div>
+<div id="strikeConfirm"><div class="scq">☢ STRIKE AIMED — tap the map to re-aim, or:</div><button class="pill primary" id="strikeConfirmBtn" onclick="confirmStrike()">☢ CONFIRM STRIKE</button><button class="pill" onclick="gameCancel()">✕ ABORT</button></div>
 <div id="nowPlaying"></div>
 <div id="ytplayer" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></div>
 <div id="resPopup"></div>
@@ -3151,11 +3151,11 @@ const BUILD_DEFS = {
   // DEFENSE
   bunker:   { name: 'Bunker', cat: 'DEF', ic: 110, mp: 45, build: 7, hp: 200, armor: 10, w: 18, h: 11, weapon: 'tracer', range: 360, dmg: 8, rate: .3, ceil: .80, plasmaable: true, manual: true, garrison: { unit: 'inf', n: 1, weight: 1 }, ds: 'Hardened auto-gun for ground & low-air threats. Upgrades to PLASMA rounds (longer reach, higher punch) once you research Plasma Weapons. Garrisoned by a rifleman (bounded by your GARRISON weight budget).' },
   ciws:     { name: 'CIWS "Sentry"', cat: 'DEF', ic: 130, mp: 35, build: 6, hp: 160, armor: 6, w: 12, h: 12, weapon: 'rotary', range: 560, dmg: 5, rate: .1, ceil: .4, noGround: true, ds: 'Close-In Weapon System — a radar-slaved rotary autocannon hosing a STREAM of flak. Dedicated POINT DEFENCE: shreds incoming bombs/missiles and intercepts falling TUNGSTEN RODS & orbital lances out of the sky. Fires ONLY at aircraft & ordnance — it will NOT depress onto ground units or targets hugging the deck. Cheap — screen your cities with them. No research needed.' },
-  samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .60, noGround: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances.' },
+  samsite:  { name: 'SAM Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 180, armor: 6, w: 18, h: 12, weapon: 'rocket', range: 620, dmg: 30, rate: 3, ceil: .60, noGround: true, ugFire: true, ds: 'Static SAM — reaches up into the MESOSPHERE (not the exosphere). Intercepts falling lances. Can be built underground; fires upward from a surface muzzle.' },
   radar:    { name: 'Radar', cat: 'DEF', ic: 100, mp: 40, build: 7, hp: 140, w: 13, h: 18, econ: { stab: 0.3 }, aura: { range: 1.12 }, ds: 'Boosts nearby unit range +12% — and it STACKS: ring a heavy gun with several Radars to reach dramatically farther. Also slightly raises your stability cap.' },
   silo:     { name: 'Missile Silo', cat: 'DEF', ic: 420, mp: 130, build: 20, hp: 320, armor: 6, w: 18, h: 15, strat: true, ds: 'STRATEGIC: enables the ☢ STRIKE button. Call nuclear/orbital strikes that cost STABILITY (not a long reload). Bury it to keep it safe.' },
-  aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'aegismsl', guidedpd: true, range: 700, dmg: 9, rate: .45, ceil: .60, noGround: true, req: 'microrockets', ds: 'SMART interceptor battery — where the CIWS hoses a dumb wall of flak, the Aegis snaps a single agile CYAN GUIDED interceptor onto each threat that HOMES in and CHASES it down (incoming missiles, rockets, tungsten RODS). One tracking round per target, not a spray. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. (MICROROCKETS)' },
-  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, manual: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. (MICROROCKETS)' },
+  aegisbattery:{ name: 'Aegis Battery', cat: 'DEF', ic: 200, mp: 55, build: 9, hp: 200, armor: 8, w: 16, h: 13, weapon: 'aegismsl', guidedpd: true, range: 700, dmg: 9, rate: .45, ceil: .60, noGround: true, ugFire: true, req: 'microrockets', ds: 'SMART interceptor battery — where the CIWS hoses a dumb wall of flak, the Aegis snaps a single agile CYAN GUIDED interceptor onto each threat that HOMES in and CHASES it down (incoming missiles, rockets, tungsten RODS). One tracking round per target, not a spray. Sky-facing only: it will NOT fire on ground units or deck-huggers. The backbone of an anti-bombardment net. Can be built underground; fires upward from a surface muzzle. (MICROROCKETS)' },
+  microbattery:{ name: 'Microrocket Battery', cat: 'DEF', ic: 240, mp: 60, build: 10, hp: 210, armor: 6, w: 16, h: 14, weapon: 'microrkt', range: 860, dmg: 13, rate: 1.3, ceil: .56, manual: true, ugFire: true, req: 'microrockets', ds: 'Fires MICROROCKETS that split into independently-homing submunitions — each chases its own target, shredding swarms & incoming ordnance. Can be built underground; fires upward from a surface muzzle. (MICROROCKETS)' },
   // ── ANTI-MISSILE INTERCEPTOR (all tunable) — the dedicated bombardment counter. ceil:0 → reaches SPACE, so it catches HIGH orbital descents that aircraft can't. FINITE ammo (AMI_AMMO), slow auto-rearm (one missile back every AMI_REARM in-game seconds), so it CANNOT stop a saturation barrage on its own — invest heavily & still triage. Unlocked from START (basic defense, no research gate).
   interceptor:{ name: 'Anti-Missile Interceptor', cat: 'DEF', ic: 500, mp: 60, build: 14, hp: 300, armor: 8, w: 18, h: 18, weapon: 'missile', range: 1250, dmg: 65, rate: 1.0, ceil: 0, noGround: true, ami: true, ammo: 4, ds: 'Dedicated ANTI-BOMBARDMENT battery — LEAPS a big HYPERVELOCITY hit-to-kill interceptor off the rail at incoming orbital ordnance (bunker-busters, tungsten RODS, enemy missiles) at ANY altitude, clear into space. The fastest missile in the game — it runs down maneuvering rounds and airbursts on a near miss, so it rarely whiffs. Holds a FINITE magazine of just 4 and reloads SLOWLY (one every ~10s), so it TRIAGES: it always prioritizes tungsten RODS and bunker-BUSTERS over lesser ordnance, ignores cheap decoy missiles outright, and HOLDS FIRE — refusing to burn a round — until something actually worth the shot is in range. It defends a sector, it does not shrug off a saturation barrage. No research needed.' },
   shieldgen:{ name: 'Shield Generator', cat: 'DEF', ic: 320, mp: 90, build: 14, hp: 300, armor: 10, w: 18, h: 18, shieldR: 130, shieldHp: 900, upkeep: 2, req: 'shieldtech', ds: 'Projects a tight PROJECTILE SHIELD DOME over what is right beside it — incoming rods, missiles & bombs splash against it until it is battered down, then it recharges. Draws heavy power: 2 IC/s upkeep. Cover a base with several, not one. (DEFLECTOR SHIELDS)' },
@@ -3208,7 +3208,7 @@ const BUILD_DEFS = {
   superconductor:{ name: 'Superconductor Facility', cat: 'SPEC', ic: 260, mp: 90, build: 13, hp: 220, w: 18, h: 18, req: 'directedenergy', gmod: { costElec: .3, resCost: .1 }, ds: 'High-tech electronics (radars, lasers, railguns, satellites, dreadnoughts) cost −30% IC, and research costs −10% influence. (Directed Energy)' },
   mantleforge:{ name: 'Mantle Forge', cat: 'SPEC', ic: 320, mp: 110, build: 16, hp: 300, w: 20, h: 14, req: 'automation', autoBury: 2, econ: { ic: 10, stab: -0.5 }, gmod: { costMech: .3 }, ds: 'A deep lava forge (auto-buries itself to the deep layer): mechanical units −30% IC and a strong IC income — but the upheaval LOWERS your stability cap (not a drain on stability you\'ve already banked). (Automation)' },
   airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
-  tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. (Telekinesis)' },
+  tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', charge: 100, ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. Also SWATS incoming ordnance out of its path — falling rods/bombs/missiles within reach get flung wide of their aim — drawing down a charge meter that idles back to full when nothing needs deflecting. (Telekinesis)' },
   nanitefoundry:{ name: 'Nanite Foundry', cat: 'DEF', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .58, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
   heavyport:{ name: 'Heavy Port', cat: 'SPEC', ic: 420, mp: 90, build: 16, hp: 280, armor: 8, w: 24, h: 18, needWater: true, gmod: { allyNavalFast: 1 }, ds: 'Coastal ALLIED logistics base — naval favours (Carrier Strike Group, Expeditionary Fleet) deliver TWICE as fast, and every allied hull that arrives is +2 ARMOR off the gangway. Stack more for more concurrent throughput.' },
   milbase:  { name: 'Military Base', cat: 'SPEC', ic: 380, mp: 110, build: 14, hp: 260, armor: 6, w: 20, h: 16, gmod: { allyLandFast: 1 }, ds: 'Forward ALLIED staging base — ground & air favours deliver TWICE as fast, and every allied unit that arrives is +2 ARMOR off the transport. Stack more for more concurrent throughput.' },
@@ -3605,7 +3605,7 @@ const CRISIS_COUNT_FORGIVE = 60; // seconds to forgive ONE crisis off the runnin
 // rest of the invasion pacing (waves, bosses) is already timed — NOT wall-clock seconds.
 const STALEMATE_WINDOW  = 240;   // game-seconds with ZERO progress from either side before we call it a draw
 const STALEMATE_ABS_CAP = 900;   // absolute safety cap: an unresolved invasion this long ends in a stalemate no matter what
-function ugAllowed(d) { return !!d.rail || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't
+function ugAllowed(d) { return !!d.rail || !!d.ugFire || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't — EXCEPT the ugFire-flagged AA batteries (SAM/Microrocket/Aegis), which can dig in and still shoot upward (see updBuildings)
 function digLevel(key) { const d = BUILD_DEFS[key]; if (d.rail) return 1; if (d.autoBury) return Math.min(2, d.autoBury); if (G && G.dig && ugAllowed(d)) return Math.min(2, G.dig | 0); return 0; }   // 0 surface · 1 shallow · 2 deep — rail hubs & autoBury buildings always sink
 function placeUg(key) { return digLevel(key) > 0; }
 const OVERLAP_FRAC = .32;   // was .5 (full footprint spacing, +4px gap) — relaxed so buildings may pack in with a modest footprint overlap instead of needing full clearance; still >0 so two buildings can never occupy the exact same spot
@@ -5104,6 +5104,8 @@ function updateGame(dt) {
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
+  if (G.strikeQueue && G.strikeQueue.length) { for (let qi = G.strikeQueue.length - 1; qi >= 0; qi--) { const q = G.strikeQueue[qi]; q.delay -= dt; if (q.delay <= 0) { if (G.buildings.indexOf(q.silo) >= 0 && q.silo.done !== false) launchStrike(q.silo, q.type, q.tx, q.ty, q.air); G.strikeQueue.splice(qi, 1); } } }   // B2 — MASS STRIKE counterbattery: each queued silo fires ~0.15s after the last, full cost/stability charged per launch
+  G.autoStrikeT = (G.autoStrikeT || 0) + dt; if (G.autoStrikeT >= 1) { G.autoStrikeT = 0; tickAutoStrikes(); }   // B2 — per-silo AUTO: once a second, any silo with autoStrike set fires at the densest enemy cluster if it can afford it
   G.advT = (G.advT || 0) + dt; if (G.advT >= 1) { const adt = G.advT; G.advT = 0; if (window.tutAdvTick) window.tutAdvTick(adt); }   // PHASED ONBOARDING — adaptive Advisor + milestone unlock checks ~1/s (no-op unless a tutorial session is active)
   G.histT = (G.histT || 0) + dt; if (G.histT >= 2) { G.histT = 0; sampleHist(); }   // AFTER-ACTION GRAPHS — snapshot key stats every ~2 game-seconds into bounded G.hist arrays
   // economy from buildings
@@ -5628,6 +5630,38 @@ function strikeAimPoint() {
   if (my < gy - 34) return { x: wx, y: my, air: true };   // deliberate airburst point
   return { x: wx, y: gy, air: false };
 }
+// B1 — STRIKE ETA: a tiny OFFLINE simulation of the real flight model each strike type actually runs in updProj
+// (same constants, same equations), so the aim label / confirm bar can show a genuine time-to-impact instead of
+// a guess. step .05s, capped at 30s (returns 30 if it never technically "arrives" within that window — a shot
+// that takes longer than that isn't worth making the player wait on for a label). Returns null for strikes with
+// no meaningful flight time to show (Combat Drop lands instantly; Mind-Forge is a full-height instant beam).
+function strikeEta(type, sx, sy, tx, ty) {
+  const w = STRAT[type]; if (!w) return null;
+  if (type === 'airdrop' || type === 'psilance') return null;
+  const gy = groundY(tx), air = ty < gy - 30, DT = .05, CAP = 30;
+  if (type === 'ballistic' || type === 'nuke' || type === 'firestorm' || type === 'antimissile') {   // stratmis profile: CLIMB → BURN (thrust, re-aimed at target) → COAST (gravity + drag, no more steering)
+    const p = { x: sx, y: sy, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, burnT: 6, t: 0 };
+    for (let simT = 0; simT < CAP; simT += DT) {
+      p.t += DT; const burnEnd = p.climb + p.burnT, burning = p.t < burnEnd;
+      if (burning) p.spd = Math.min(p.maxspd, p.spd + p.thrust * DT);
+      const aimUp = p.t < p.climb, ax = aimUp ? p.x : tx, ay = aimUp ? p.y - 360 : ty;
+      let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
+      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-2.6 * DT, Math.min(2.6 * DT, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
+      else { p.vy += 120 * DT; p.vx *= (1 - .05 * DT); p.vy *= (1 - .05 * DT); }
+      p.x += p.vx * DT; p.y += p.vy * DT;
+      const arrived = (!aimUp && ((p.x - tx) ** 2 + (p.y - ty) ** 2 < 22 * 22)) || (p.t > p.climb && p.y >= groundY(p.x));
+      if (arrived) return simT + DT;
+    }
+    return CAP;
+  }
+  if (type === 'kinetic') { let y = -260, vy = 640; for (let simT = 0; simT < CAP; simT += DT) { y += vy * DT; const dy = air ? ty : gy; if (y >= dy) return simT + DT; } return CAP; }   // krod profile: straight fall from its fixed spawn height
+  if (type === 'mirv' || type === 'micromissile') {   // mirv/micromis carrier profile: fixed-lob parabola (gravity 240), deploys at apex (mirv) or over the target (micromissile)
+    const vy0 = -440, apexT = 440 / 240, vx = (tx - sx) / apexT; const p = { x: sx, y: sy, vx, vy: vy0 };
+    for (let simT = 0; simT < CAP; simT += DT) { p.vy += 240 * DT; p.x += p.vx * DT; p.y += p.vy * DT; const deployY = type === 'micromissile' ? (air ? ty : gy) : groundY(p.x); if (p.vy >= 0 || p.y >= deployY) return simT + DT; }
+    return CAP;
+  }
+  return null;
+}
 function launchStrike(silo, type, tx, ty, air) {
   const w = STRAT[type]; if (!w) return;
   if (silo.silocd > 0) return toast('SILO RELOADING');
@@ -5658,9 +5692,16 @@ function launchStrike(silo, type, tx, ty, air) {
   else if (type === 'kinetic') { G.proj.push({ k: 'krod', strat: true, x: tx + (Math.random() - .5) * 4, y: -260, vx: 0, vy: 640, tx, ty, air, life: 7, friendly: true, tr: [] }); }
   else if (type === 'mirv') { const vy = -440, apexT = 440 / 240, vx = (tx - sx0) / apexT; G.proj.push({ k: 'mirv', strat: true, x: sx0, y: sy0, vx, vy, tx, ty, air, life: 9, friendly: true, dmg: 0, tr: [] }); }   // strong fixed lob → reliably reaches a high apex roughly above the target, then deploys there
   else if (type === 'micromissile') { const nC = 3; for (let i = 0; i < nC; i++) { const aimX = Math.max(60, Math.min(WORLD_W - 60, tx + (i - (nC - 1) / 2) * 90)), vy = -440, apexT = 440 / 240, vx = (aimX - sx0) / apexT; G.proj.push({ k: 'micromis', strat: true, x: sx0, y: sy0, vx, vy, tx: aimX, ty, air, split: 6, dmg: 16, life: 9, friendly: true, tr: [] }); } }   // a few carriers fan across the strip, each bursting into a swarm of homing micro-missiles
-  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, t: 0, tx, ty, air, life: 9, friendly: true, tr: [] }); }
+  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, burnT: 6, t: 0, tx, ty, air, life: 16, friendly: true, tr: [] }); }   // B1 — a real fuel-limited profile: climbs, BURNS (thrust) for burnT seconds, then COASTS ballistically; life bumped so a long-range coast still has time to arrive
   SFX.missile(); toast('☢ ' + w.name.toUpperCase() + (air ? ' — AIRBURST' : '') + (desperate ? ' — DESPERATION LAUNCH' : '') + ' LAUNCHED'); shake(3);
   if (G.strikeMode) closeStrike();
+}
+// B2 — resolves a G.targeting/pendingStrike (single silo OR the arm-all `silos` array) into actual launches: one silo fires immediately as before; several silos are staggered 0.15s apart via G.strikeQueue (drained in updateGame) — full cost/stability is charged PER LAUNCH exactly as launchStrike always has.
+function launchTargeting(type, silos, tx, ty, air) {
+  const list = silos || []; if (!list.length) return;
+  if (list.length === 1) { launchStrike(list[0], type, tx, ty, air); return; }
+  G.strikeQueue = G.strikeQueue || [];
+  list.forEach((silo, i) => G.strikeQueue.push({ silo, type, tx, ty, air, delay: i * .15 }));
 }
 /* ===== dedicated STRIKE command — a button that marks your launch sites & calls a strike ===== */
 function openStrike() {
@@ -5678,15 +5719,17 @@ function buildStrikePanel() {
   const silos = G.buildings.filter(b => b.d && b.d.strat && b.done !== false), ready = silos.filter(b => b.silocd <= 0).length;
   let html = `<button class="cmdx" title="Close (Esc)">×</button><div class="sph">☢ STRATEGIC STRIKE COMMAND · ${ready}/${silos.length} silo${silos.length !== 1 ? 's' : ''} ready · STAB ${Math.round(G.stab)}%</div>`;
   for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), lowStab = w.taboo && effStab() <= sc + 3, can = ready > 0 && !av && G.ic >= cost;   // stability is NO LONGER a gate — a strike stays selectable at low stab (desperation launch); the ⚠ just warns it will bottom you out. Conventional (non-taboo) strikes have sc===0, so no stab warning and no stab-cost line is shown for them.
-    html += `<button class="sopt${can ? '' : ' cant'}" data-st="${t}" title="${w.ds}"><b>${w.name}</b>${sc > 0 ? `<span class="sx">${lowStab ? '⚠ ' : ''}−${sc}% STAB</span>` : ''}<br><span style="font-size:9px;color:#9fb6d4">${cost} IC · ${w.cd}s cooldown${av ? ' · 🔒 ' + av : ''}</span></button>`; }
-  html += `<div class="spc">pick a strike → click the battlefield · ▲ marks your launch sites · right-click cancels</div>`;
+    html += `<div style="display:flex;gap:4px;margin-top:5px"><button class="sopt${can ? '' : ' cant'}" data-st="${t}" style="margin-top:0;flex:1" title="${w.ds}"><b>${w.name}</b>${sc > 0 ? `<span class="sx">${lowStab ? '⚠ ' : ''}−${sc}% STAB</span>` : ''}<br><span style="font-size:9px;color:#9fb6d4">${cost} IC · ${w.cd}s cooldown${av ? ' · 🔒 ' + av : ''}</span></button><button class="pill${can ? '' : ' cant'}" data-stall="${t}" style="flex:none;width:34px;font-size:14px" title="⚡ ARM ALL ready silos with ${w.name} (or hold SHIFT and click the strike)">⚡</button></div>`; }
+  html += `<div class="spc">pick a strike → click the battlefield · ▲ marks your launch sites · right-click cancels · SHIFT-click or ⚡ arms every ready silo</div>`;
   sp.innerHTML = html; sp.classList.add('show');
   const xb = sp.querySelector('.cmdx'); if (xb) xb.onclick = closeStrike;   // × closes the panel (the panel had no dismiss before)
-  sp.querySelectorAll('.sopt').forEach(b => b.onclick = () => armStrike(b.dataset.st));
+  sp.querySelectorAll('.sopt').forEach(b => b.onclick = e => e.shiftKey ? armSiloAll(b.dataset.st) : armStrike(b.dataset.st));
+  sp.querySelectorAll('[data-stall]').forEach(b => b.onclick = () => armSiloAll(b.dataset.stall));
   const bs = document.getElementById('btnStrike'); if (bs) bs.classList.add('on');
 }
-function armStrike(type) {
+function armStrike(type, all) {
   const w = STRAT[type]; if (!w || !G) return;
+  if (all) return armSiloAll(type);
   const av = stratAvail(w); if (av) return toast(av.toUpperCase());
   const cx = wxAt(W / 2); let silo = null, bd = 1e9;
   for (const b of G.buildings) if (b.d && b.d.strat && b.done !== false && b.silocd <= 0) { const dd = Math.abs(b.x - cx); if (dd < bd) { bd = dd; silo = b; } }
@@ -6075,7 +6118,38 @@ function ww3Victory() {
   closeModal('eventModal');
   end(true, 'THE AUTOFLEET DIVERTS (there is nothing left to invade)');   // technically you stopped them
 }
-function armSilo(type) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (w.taboo && G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — DESPERATION LAUNCH');   /* no hard stability block — a strike is always launchable; launchStrike drains stability to STRIKE_STAB_FLOOR. Only TABOO strikes spend stability at all. */ G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
+function armSilo(type, all) { const s = G.sel, w = STRAT[type]; if (!s || !s.d || !s.d.strat) return; if (all) return armSiloAll(type); if (s.silocd > 0) return toast('SILO RELOADING — ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'); const av = stratAvail(w); if (av) return toast(av.toUpperCase()); if (G.ic < stratCost(w)) return toast('NOT ENOUGH IC'); if (w.taboo && G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — DESPERATION LAUNCH');   /* no hard stability block — a strike is always launchable; launchStrike drains stability to STRIKE_STAB_FLOOR. Only TABOO strikes spend stability at all. */ G.targeting = { silo: s, type }; toast('AIM ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)')); }
+// B2 — MASS STRIKES: arms EVERY ready silo for `type` at once (SHIFT+click a strike type, or the ⚡ ARM ALL button); one aim, one confirm → launchStrike fires each armed silo with a short stagger (see G.strikeQueue drain in updateGame) — the "counterbattery". Full cost/stability is still charged PER LAUNCH, exactly as a single strike — that's the price of doing it en masse.
+function armSiloAll(type) {
+  const w = STRAT[type]; if (!w || !G) return;
+  const av = stratAvail(w); if (av) return toast(av.toUpperCase());
+  const silos = G.buildings.filter(b => b.d && b.d.strat && b.done !== false && b.silocd <= 0);
+  if (!silos.length) return toast('NO SILOS READY');
+  if (w.taboo && G.stab < stratStab(w) + 3) toast('⚠ LOW STABILITY — MASS DESPERATION LAUNCH');
+  G.targeting = { silos, type };
+  const sp = document.getElementById('strikePanel'); if (sp) sp.classList.remove('show');
+  toast('⚡ ARM ALL — ' + silos.length + ' silo' + (silos.length > 1 ? 's' : '') + ' armed with ' + w.name.toUpperCase() + (IS_TOUCH ? ' — tap to aim, then ☢ CONFIRM' : ' — click a target (right-click to cancel)'));
+}
+// B2 — densest live enemy cluster (bucketed by 300px x-bins, weighted by HP) — used by per-silo AUTO to pick where to fire without player input
+function bestClusterX() {
+  const bins = new Map();
+  for (const e of G.enemies) { if (e.reentry) continue; const bx = Math.round(e.x / 300); let b = bins.get(bx); if (!b) bins.set(bx, b = { w: 0, xSum: 0, ySum: 0, n: 0 }); b.w += (e.hp || 1); b.xSum += e.x; b.ySum += e.y; b.n++; }
+  let best = null, bw = -1; for (const b of bins.values()) if (b.w > bw) { bw = b.w; best = b; }
+  return best ? { x: best.xSum / best.n, y: best.ySum / best.n } : null;
+}
+// B2 — per-silo AUTO: once a second (see updateGame), every silo with `autoStrike` set fires that strike at the densest cluster on its own, provided it's ready, unlocked, and can actually afford the cost + stability floor
+function tickAutoStrikes() {
+  if (!G || G.over || G.phase !== 'invasion') return;
+  const cluster = bestClusterX(); if (!cluster) return;
+  for (const b of G.buildings) {
+    if (!b.d || !b.d.strat || b.done === false || !b.autoStrike || b.silocd > 0) continue;
+    const w = STRAT[b.autoStrike]; if (!w) continue;
+    if (stratAvail(w)) continue;
+    const cost = stratCost(w), sc = stratStab(w); if (G.ic < cost || G.stab <= sc + 5) continue;
+    const tx = cluster.x, gy = groundY(tx), ty = cluster.y, air = ty < gy - 30;
+    launchStrike(b, b.autoStrike, tx, ty, air);
+  }
+}
 
 // ═════════════════════════════════════════════════════════════════════════════════════════════
 // TEMPORAL AI LOD — the fix for updUnits/updEnemies being ~28µs/entity FLAT regardless of whether
@@ -6703,10 +6777,20 @@ function updBuildings(dt) {
     if (b.emplace && (!b.owner || b.owner.hp <= 0 || G.units.indexOf(b.owner) < 0 || Math.abs(b.owner.x - b.x) > 150)) { b.hp -= 16 * dt; if (b.hp <= 0) continue; }   // an emplacement crumbles once its dug-in unit dies or marches off
     if (b.d.strat && b.silocd > 0) b.silocd = Math.max(0, b.silocd - dt);
     if (!b.d.weapon) { if (!b.ug) populaceDefend(b, dt); continue; }   // every non-turret building defends itself at close range — the armed populace inside (rifles by default; CIWS/plasma once you build the upgrade works)
-    if (b.d.weapon === 'tractor') {   // telekinetic grapple — drag the highest airborne enemy down; it burns up once hauled into the dense atmosphere
-      const by = b.y - b.d.h * .5; let t = null, hy = 1e9;
-      for (const e of G.enemies) { if (e.reentry || e.y >= TROPO_Y()) continue; const dd = (e.x - b.x) ** 2 + (e.y - by) ** 2; if (dd < b.d.range * b.d.range && e.y < hy) { hy = e.y; t = e; } }
-      if (t) { t.y += 150 * dt; t.vx = (t.vx || 0) * .9; t.tractored = .2; if (t.y > STRATO_Y()) { t.killBy = 'beam'; t.hp -= 150 * dt; if (Math.random() < .6) G.parts.push({ k: 'fire', x: t.x + (Math.random() - .5) * t.s * 1.5, y: t.y - t.s, vx: (Math.random() - .5) * 8, vy: -14 - Math.random() * 18, r: 1.4 + Math.random() * 2.2, life: .2 + Math.random() * .3 }); } G.proj.push({ k: 'beam', x1: b.x, y1: by, x2: t.x, y2: t.y, life: dt * 1.2, friendly: true, dmg: 0, tractor: true }); }
+    if (b.ug && !b.d.ugFire) continue;   // BURIED-WEAPON DEFAULT — a dug-in emplacement with no ugFire flag can't fire at all from underground (defensive default; only ugFire-flagged AA — SAM/Microrocket/Aegis — can shoot from below)
+    if (b.d.weapon === 'tractor') {   // telekinetic grapple — drag the highest airborne enemy down; it burns up once hauled into the dense atmosphere. B4: also SWATS incoming hostile ordnance out of its flight path, both draws down a shared charge meter
+      const by = b.y - b.d.h * .5; if (b.charge == null) b.charge = b.d.charge; let active = false;
+      if (b.charge > 0) {
+        for (const p of G.proj) { if (p.friendly || p.life <= 0) continue; if (p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.k === 'krodfx') continue;   /* deflect real falling ordnance (rods/busters/decoys/missiles/bombs) — never non-physical beam visuals */
+          const dd = (p.x - b.x) ** 2 + (p.y - by) ** 2; if (dd > 380 * 380) continue;
+          const sgn = (p.x - b.x) >= 0 ? 1 : -1; p.vx += 700 * dt * sgn; p.vy -= 60 * dt; p.tractored = .3; b.charge = Math.max(0, b.charge - 18 * dt); active = true; G.proj.push({ k: 'beam', x1: b.x, y1: by, x2: p.x, y2: p.y, life: dt * 1.2, friendly: true, dmg: 0, tractor: true }); }
+        if (!active) {
+          let t = null, hy = 1e9;
+          for (const e of G.enemies) { if (e.reentry || e.y >= TROPO_Y()) continue; const dd = (e.x - b.x) ** 2 + (e.y - by) ** 2; if (dd < b.d.range * b.d.range && e.y < hy) { hy = e.y; t = e; } }
+          if (t) { t.y += 150 * dt; t.vx = (t.vx || 0) * .9; t.tractored = .2; if (t.y > STRATO_Y()) { t.killBy = 'beam'; t.hp -= 150 * dt; if (Math.random() < .6) G.parts.push({ k: 'fire', x: t.x + (Math.random() - .5) * t.s * 1.5, y: t.y - t.s, vx: (Math.random() - .5) * 8, vy: -14 - Math.random() * 18, r: 1.4 + Math.random() * 2.2, life: .2 + Math.random() * .3 }); } G.proj.push({ k: 'beam', x1: b.x, y1: by, x2: t.x, y2: t.y, life: dt * 1.2, friendly: true, dmg: 0, tractor: true }); b.charge = Math.max(0, b.charge - 6 * dt); active = true; }
+        }
+      }
+      if (!active) b.charge = Math.min(b.d.charge, b.charge + 12 * dt);   // idle recharge — no lock, no deflection needed right now
       continue;
     }
     if (b.d.ami) {   // ANTI-MISSILE INTERCEPTOR — finite magazine of HOMING interceptors vs incoming orbital ordnance; ceil 0 reaches clear into space
@@ -6729,7 +6813,7 @@ function updBuildings(dt) {
     const plasma = b.d.plasmaable && plasmaArmed();   // bunkers (etc.) re-arm with plasma — longer reach, more punch, fires higher
     const baseCf = b.d.ceil != null ? b.d.ceil : .80, wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.56, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
-    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = b.y - b.d.h * .5, _efilt = b.d.noGround ? notNearGround : null; let t = null; if (canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = b.y - b.d.h * .5, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t), gj = (!t.ground && !b.d.noGround && isGroundGunWeapon(wpn)) ? gunAccJitter(wpn, b.x, my, t) : 0; fire(b.x, my, wpn, t.x + (t.vx || 0) * lt + (Math.random() * 2 - 1) * gj, t.y + (t.vy || 0) * lt + (Math.random() * 2 - 1) * gj, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }   /* gj (v4.0 C) — GROUND/BUILDING gun accuracy falls off vs a small fast airborne target; b.d.noGround (CIWS/SAM/Aegis/AMI) is exempt, and plasma-armed (wpn:'plasball') is naturally excluded — not in isGroundGunWeapon's set */
+    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = buriedAA ? groundY(b.x) - 6 : b.y - b.d.h * .5, _efiltBase = b.d.noGround ? notNearGround : null, _efilt = buriedAA ? (e => (!_efiltBase || _efiltBase(e)) && (e.k ? true : e.y < groundY(e.x) - 10)) : _efiltBase; let t = null; if (canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof')); const my = _emy, sdmg = bdmg * dmgMul; if ((t.interceptable || t.pdable) && b.d.guidedpd) { fire(b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t), gj = (!t.ground && !b.d.noGround && isGroundGunWeapon(wpn)) ? gunAccJitter(wpn, b.x, my, t) : 0; fire(b.x, my, wpn, t.x + (t.vx || 0) * lt + (Math.random() * 2 - 1) * gj, t.y + (t.vy || 0) * lt + (Math.random() * 2 - 1) * gj, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }   /* gj (v4.0 C) — GROUND/BUILDING gun accuracy falls off vs a small fast airborne target; b.d.noGround (CIWS/SAM/Aegis/AMI) is exempt, and plasma-armed (wpn:'plasball') is naturally excluded — not in isGroundGunWeapon's set */
   }
 }
 // FIRE CONTROL WAS REMOVED (never worked well, cut for good — see the game's CLAUDE.md) — pickDesignated is kept only because
@@ -7074,14 +7158,15 @@ function updProj(dt) {
       continue;
     }
     // NOTE: 'particle' is no longer a flying projectile kind — the Particle Cannon is now a true hitscan (see fire() + particleHit()); its visual is the 'particlebeam' instant-beam handled above with 'beam'/'pbeam'.
-    if (p.k === 'stratmis') {   // surface ICBM: climbs slowly off the pad, then accelerates downrange (not constant-velocity)
-      p.t += dt; p.spd = Math.min(p.maxspd, p.spd + p.thrust * dt);
+    if (p.k === 'stratmis') {   // surface ICBM: climbs slowly off the pad, BURNS toward the target for burnT seconds, then COASTS ballistically once its motor's spent (long shots visibly slow down — see strikeEta, which simulates this exact profile offline)
+      p.t += dt; const burnEnd = p.climb + (p.burnT != null ? p.burnT : 6), burning = p.t < burnEnd;
+      if (burning) p.spd = Math.min(p.maxspd, p.spd + p.thrust * dt);
       const aimUp = p.t < p.climb, ax = aimUp ? p.x : p.tx, ay = aimUp ? p.y - 360 : p.ty;
       let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
-      let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832;
-      const na = cur + Math.max(-2.6 * dt, Math.min(2.6 * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd;
+      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-2.6 * dt, Math.min(2.6 * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
+      else { p.vy += 120 * dt; p.vx *= (1 - .05 * dt); p.vy *= (1 - .05 * dt); }   // COAST — no more thrust or steering, just gravity + light drag
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 26) p.tr.shift();
-      if (Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 });
+      if (burning) { if (Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 }); if (Math.random() < .85) G.parts.push({ k: 'ember', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random() * 1.3, life: .16 + Math.random() * .14, tw: Math.random() * 6 }); }   // smoke trail + a brighter exhaust flare — BOTH cut out the instant the motor burns out (coasting = no plume)
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.t > p.climb) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 46 * 46) { detonateStrat(p.sub, p.x, p.y); p.life = 0; break; } }   // AIRBURST on a fleet → strikes hit the air
       if (p.life > 0) { const arrived = (!aimUp && ((p.x - p.tx) ** 2 + (p.y - p.ty) ** 2 < 22 * 22)) || (p.t > p.climb && p.y >= groundY(p.x)); if (arrived) { detonateStrat(p.sub, p.x, p.air ? p.ty : groundY(p.x)); p.life = 0; } }   // burst at the aimed altitude, or ground
@@ -7345,6 +7430,8 @@ function renderGame() {
       c.strokeStyle = '#ff5a5a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(px, gy - b.d.h - 4); c.lineTo(px, gy - b.d.h - 18); c.stroke(); c.fillStyle = '#ff5a5a'; c.fillRect(px, gy - b.d.h - 18, 7, 5);
       c.fillStyle = '#ff7a6a'; c.font = 'bold 7px Consolas'; c.textAlign = 'center'; c.fillText('◗ SEIZED', px, gy - b.d.h - 21); c.textAlign = 'left'; }
     if (b.key === 'spacestation' && b.done !== false) drawOrbitalStation(px, groundY(b.x));   // its platform actually sits in orbit
+    if (b.key === 'tractorbeam' && b.d.charge) { const chf = Math.max(0, Math.min(1, (b.charge == null ? b.d.charge : b.charge) / b.d.charge)); c.strokeStyle = 'rgba(120,70,100,.4)'; c.lineWidth = 3; c.beginPath(); c.arc(px, gy - b.d.h - 11, 7, 0, 6.2832); c.stroke(); c.strokeStyle = chf > 0 ? 'rgba(216,182,255,.9)' : 'rgba(120,70,100,.6)'; c.lineWidth = 2.4; c.beginPath(); c.arc(px, gy - b.d.h - 11, 7, -1.5708, -1.5708 + 6.2832 * chf); c.stroke(); }   // B4 — small cooldown-style ring showing the tractor beam's deflection charge
+    if (b.autoStrike && STRAT[b.autoStrike]) { c.fillStyle = '#5dff8d'; c.font = 'bold 7px Consolas'; c.textAlign = 'center'; c.fillText('⟳ AUTO', px, gy - b.d.h - 21); c.textAlign = 'left'; }   // B2 — persistent glyph flags an automated silo
     if (!b.ug && curEra() > 0) neonBuilding(px, gy, b.d.w, b.d.h);   // buildings go cyberpunk as the ages advance
     if (G.sel === b) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.5; c.strokeRect(px - b.d.w / 2 - 3, gy - b.d.h - 5, b.d.w + 6, b.d.h + 8); if (b.d.range) ring(px, gy - b.d.h * .5, b.d.range); }
     if (b.hp < b.maxHp) bar(px, gy - b.d.h - 6, b.d.w, b.hp / b.maxHp); if (b.queue && b.queue.length) bar(px, gy - b.d.h - 11, b.d.w, 1 - b.queue[0].t / b.queue[0].total, false, '#5dff8d'); }
@@ -7396,17 +7483,19 @@ function renderGame() {
   if (G.terrainMode) { const wx = mwx(), dpx = sx(wx), gy = groundY(wx), mode = G.terrainMode, col = ['', 'rgba(202,160,48,.85)', 'rgba(109,255,176,.85)', 'rgba(78,168,255,.85)'][mode]; c.strokeStyle = col; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.arc(dpx, gy, 44, 0, 6.28); c.stroke(); c.setLineDash([]); c.fillStyle = col; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(TERRAIN_MODES[mode] + ' TERRAIN - 35 IC', dpx, gy - 52); c.textAlign = 'left'; }
   // launch-site markers — show the player exactly where their strikes fire from
   if (G.strikeMode || G.targeting) {
-    const armed = G.targeting ? G.targeting.silo : null; const pulse = .5 + .5 * Math.sin(animClock * .008);
-    for (const b of G.buildings) { if (!b.d || !b.d.strat || b.done === false) continue; const px = sx(b.x); if (px < -40 - PX || px > W + 40 + PX) continue; const gy = bldSurfaceY(b); const ready = b.silocd <= 0; const col = b === armed ? '#ffd23f' : ready ? '#ff7a7a' : '#7a8aa0';
+    const armedList = G.targeting ? (G.targeting.silos || (G.targeting.silo ? [G.targeting.silo] : [])) : []; const pulse = .5 + .5 * Math.sin(animClock * .008);
+    for (const b of G.buildings) { if (!b.d || !b.d.strat || b.done === false) continue; const px = sx(b.x); if (px < -40 - PX || px > W + 40 + PX) continue; const gy = bldSurfaceY(b); const ready = b.silocd <= 0; const isArmed = armedList.indexOf(b) >= 0; const col = isArmed ? '#ffd23f' : ready ? '#ff7a7a' : '#7a8aa0';
       c.strokeStyle = col; c.lineWidth = 1.6; c.globalAlpha = .55 + pulse * .45; c.beginPath(); c.arc(px, gy - b.d.h * .5, 16 + pulse * 6, 0, 6.28); c.stroke();
       c.beginPath(); c.moveTo(px, gy - b.d.h - 14); c.lineTo(px - 6, gy - b.d.h - 4); c.lineTo(px + 6, gy - b.d.h - 4); c.closePath(); c.fillStyle = col; c.fill();
       c.globalAlpha = 1; c.fillStyle = col; c.font = 'bold 8px Consolas'; c.textAlign = 'center'; c.fillText(ready ? '▲ LAUNCH SITE' : '▲ RELOADING', px, gy - b.d.h - 18); c.textAlign = 'left';
-      if (b === armed) { c.strokeStyle = 'rgba(255,210,63,.5)'; c.lineWidth = 1.4; c.setLineDash([5, 6]); c.beginPath(); c.moveTo(px, gy - b.d.h - 4); c.lineTo(mouse.x, groundY(wxAt(mouse.x))); c.stroke(); c.setLineDash([]); }
+      if (isArmed) { c.strokeStyle = 'rgba(255,210,63,.5)'; c.lineWidth = 1.4; c.setLineDash([5, 6]); c.beginPath(); c.moveTo(px, gy - b.d.h - 4); c.lineTo(mouse.x, groundY(wxAt(mouse.x))); c.stroke(); c.setLineDash([]); }
     }
     if (G.strikeMode && !G.targeting) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(255,120,120,.85)'; c.font = 'bold 11px Consolas'; c.textAlign = 'center'; c.fillText('STRATEGIC COMMAND — pick a strike above', W / 2, 78); c.textAlign = 'left'; c.restore(); }
   }
   // strategic targeting reticle — follows the AIR aim point (snaps to airborne enemies), so you can airburst
-  if (G.targeting) { const ap = (G.pendingStrike && G.pendingStrike.ap) || strikeAimPoint(), px = sx(ap.x), gy = ap.y, w = STRAT[G.targeting.type]; const col = ap.air ? '#ff9a3a' : '#ff5a5a'; /* a touch-aimed strike PINS the reticle where you tapped until you confirm */ c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.arc(px, gy, 16, 0, 6.28); c.moveTo(px - 24, gy); c.lineTo(px + 24, gy); c.moveTo(px, gy - 24); c.lineTo(px, gy + 24); c.stroke(); c.setLineDash([3, 5]); c.beginPath(); c.arc(px, gy, 60, 0, 6.28); c.stroke(); c.setLineDash([]); if (ap.air) { c.setLineDash([4, 6]); c.beginPath(); c.moveTo(px, gy); c.lineTo(px, groundY(ap.x)); c.stroke(); c.setLineDash([]); } c.fillStyle = col; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('☢ ' + (w ? w.name.toUpperCase() : 'STRIKE') + (ap.air ? ' ✈ AIRBURST' : ''), px, gy - 28); c.textAlign = 'left'; }
+  if (G.targeting) { const ap = (G.pendingStrike && G.pendingStrike.ap) || strikeAimPoint(), px = sx(ap.x), gy = ap.y, w = STRAT[G.targeting.type]; const col = ap.air ? '#ff9a3a' : '#ff5a5a'; /* a touch-aimed strike PINS the reticle where you tapped until you confirm */
+    const etaSilo = G.targeting.silo || (G.targeting.silos && G.targeting.silos[0]); const eta = etaSilo ? strikeEta(G.targeting.type, etaSilo.x, bldSurfaceY(etaSilo) - etaSilo.d.h - 4, ap.x, ap.y) : null; const etaTxt = eta != null ? (' · ETA ' + eta.toFixed(1) + 's') : '';   // B1 — live flight-time readout while aiming
+    c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.arc(px, gy, 16, 0, 6.28); c.moveTo(px - 24, gy); c.lineTo(px + 24, gy); c.moveTo(px, gy - 24); c.lineTo(px, gy + 24); c.stroke(); c.setLineDash([3, 5]); c.beginPath(); c.arc(px, gy, 60, 0, 6.28); c.stroke(); c.setLineDash([]); if (ap.air) { c.setLineDash([4, 6]); c.beginPath(); c.moveTo(px, gy); c.lineTo(px, groundY(ap.x)); c.stroke(); c.setLineDash([]); } c.fillStyle = col; c.font = 'bold 10px Consolas'; c.textAlign = 'center'; c.fillText('☢ ' + (w ? w.name.toUpperCase() : 'STRIKE') + (ap.air ? ' ✈ AIRBURST' : '') + etaTxt, px, gy - 28); c.textAlign = 'left'; }
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
   if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
   if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
@@ -7507,6 +7596,7 @@ function drawSwarmCluster(u, px, d, n) {
 const _tracerCache = new Map();   // PERF: cached tapered-tracer gradients keyed by colour (see the default bullet branch below)
 function renderProj(p, px) {
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = p.tractor ? 14 : 10; c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet
+  if (p.k === 'beam' && p.tractor) { const tpx = sx(p.x2), tpy = p.y2, tclk = animClock * .006; c.save(); c.strokeStyle = 'rgba(200,140,255,.4)'; c.lineWidth = 1.2; for (let i = 0; i < 2; i++) { const rr2 = 13 + i * 9 + Math.sin(tclk * 23 + i) * 6; c.beginPath(); c.arc(tpx, tpy, rr2, 0, 6.2832); c.stroke(); } c.strokeStyle = 'rgba(216,182,255,.22)'; c.lineWidth = 1; for (let i = 0; i < 4; i++) { const a = (i / 4) * 6.2832 + tclk * .4; c.beginPath(); c.moveTo(tpx + Math.cos(a) * 8, tpy + Math.sin(a) * 8); c.lineTo(tpx + Math.cos(a) * 28, tpy + Math.sin(a) * 28); c.stroke(); } c.restore(); }   // B4 — jittering distortion rings + faint lens streaks at the drag/deflect point
   else if (p.k === 'pbeam') {   // PLASMA lance — thick additive bolt of superheated matter (psionic / antimatter)
     const a = Math.max(0, p.life / .17), x1 = sx(p.x1), x2 = sx(p.x2), col = p.friendly ? '#c184ff' : '#ff6bd0', mid = p.friendly ? '#e6d2ff' : '#ffc4ec';
     c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
@@ -8011,7 +8101,9 @@ function refreshSel() {
     if (d.garrison) { const g = d.garrison, gk = g.keys || (g.unit ? [g.unit] : (g.key ? [g.key] : [])), gn = gk.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' / '); if (gn) html += `<div class="st"><span>Garrison</span><b>${g.n || 1} × ${gn}</b></div>`; }
     if (d.garrAura) { const ga = d.garrAura, gan = ga.units.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' + '), tgt = ga.target === 'air' ? 'Airbase' : 'Factory'; html += `<div class="st"><span>Arms nearby</span><b style="color:#ffd86b">every ${tgt} within ${ga.r || 300}px: +${gan}</b></div>`; }
     if (d.prodList) { const pn = d.prodList.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' · '); html += `<div class="st"><span>Produces</span><b style="color:#bfe9ff">${pn}</b></div>`; }
-    if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div>`; for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost; html += `<button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="margin-top:6px;width:100%;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button>`; } }
+    if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div><div class="st"><span>⟳ Auto-Strike</span><b style="color:${s.autoStrike ? 'var(--mp)' : '#7a8aa0'}">${s.autoStrike && STRAT[s.autoStrike] ? STRAT[s.autoStrike].name.toUpperCase() : 'OFF'}</b></div>`;   // B2 — ⚡ ARM ALL + ⟳ AUTO sit next to the per-type ☢ button (SHIFT-click a ☢ button also arms every ready silo)
+      for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost, isAuto = s.autoStrike === t;
+        html += `<div style="display:flex;gap:3px;margin-top:6px"><button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="flex:1;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button><button class="pill" title="⚡ Arm every ready silo with ${w.name}" style="flex:none;width:24px;font-size:11px;padding:0;${can ? '' : 'opacity:.45'}" data-act="armSiloAll" data-arg="${t}">⚡</button><button class="pill" title="${isAuto ? 'Turn off auto-strike' : 'Auto-fire ' + w.name + ' at the densest enemy cluster whenever this silo can afford it'}" style="flex:none;width:24px;font-size:11px;padding:0;${isAuto ? 'background:var(--mp);border-color:var(--mp);color:#04150a' : (av ? 'opacity:.45' : '')}" data-act="toggleAutoStrike" data-arg="${t}">⟳</button></div>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else {
     /* stat row additions — fire rate & speed alongside the existing HP/Armor + Range/Dmg, mirroring the same d.rate/d.speed fields renderProdDetail's PRODUCE card already shows; skipped when the def has none */
@@ -8834,18 +8926,18 @@ function gameTap(px, py, button) {   // shared by mouse (mousedown) and touch (t
   const wx = scrToWX(px), wyc = scrToWY(py);
   if (G.targeting) { if (button === 2) { G.targeting = null; G.pendingStrike = null; closeStrike(); toast('strike cancelled'); return; }
     const ap = strikeAimPoint();
-    if (IS_TOUCH) { G.pendingStrike = { silo: G.targeting.silo, type: G.targeting.type, ap }; return; }   // touch: first tap AIMS (re-tap to re-aim) — the ☢ CONFIRM button fires, so no fat-finger nukes
-    launchStrike(G.targeting.silo, G.targeting.type, ap.x, ap.y, ap.air); G.targeting = null; return; }
+    if (IS_TOUCH) { G.pendingStrike = { silo: G.targeting.silo, silos: G.targeting.silos, type: G.targeting.type, ap }; return; }   // touch: first tap AIMS (re-tap to re-aim) — the ☢ CONFIRM button fires, so no fat-finger nukes
+    launchTargeting(G.targeting.type, G.targeting.silos || (G.targeting.silo ? [G.targeting.silo] : []), ap.x, ap.y, ap.air); G.targeting = null; return; }
   if (G.strikeMode) { if (button === 2) { closeStrike(); return; } }
   if (G.terrainMode) { if (button === 2) { G.terrainMode = 0; buildBuildBar(); return; } doTerrain(wx); return; }
   if (G.place) { if (button === 2) { G.place = null; buildBuildBar(); return; } placeBuilding(G.place, wx); if (!(keys['shift'])) { G.place = null; buildBuildBar(); } return; }
   const hit = pickAt(wx, wyc); G.sel = hit ? hit.o : null; refreshSel();
 }
 function gameCancel() { if (!G) return; G.place = null; G.targeting = null; G.pendingStrike = null; G.sel = null; closeStrike(); buildBuildBar(); refreshSel(); }
-function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchStrike(p.silo, p.type, p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
+function confirmStrike() { const p = G && G.pendingStrike; if (!p || !G.targeting) return; launchTargeting(p.type, p.silos || (p.silo ? [p.silo] : []), p.ap.x, p.ap.y, p.ap.air); G.targeting = null; G.pendingStrike = null; }
 // DELEGATED clicks for the selection panel — one listener on the persistent #info element, so the
 // buttons keep working even though the panel's innerHTML is rebuilt as the selection's stats change
-document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'armSilo') armSilo(el.dataset.arg); else if (act === 'demolish') demolishSelected(); });
+document.getElementById('info').addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el) return; const act = el.dataset.act; if (act === 'armSilo') armSilo(el.dataset.arg, e.shiftKey); else if (act === 'armSiloAll') armSiloAll(el.dataset.arg); else if (act === 'toggleAutoStrike') { const s = G.sel; if (s) { s.autoStrike = (s.autoStrike === el.dataset.arg) ? null : el.dataset.arg; toast(s.autoStrike && STRAT[s.autoStrike] ? '⟳ AUTO: ' + STRAT[s.autoStrike].name.toUpperCase() : '⟳ AUTO OFF'); refreshSel(); } } else if (act === 'demolish') demolishSelected(); });
 // DELEGATED clicks for the PRODUCTION side panel — quantity stepper + BUILD. One listener on the persistent #pdetail
 // element so the buttons survive its innerHTML being rebuilt on every selection / cap change.
 document.getElementById('pdetail').addEventListener('click', e => {
@@ -8943,6 +9035,7 @@ function syncHUD() {
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   const rpb = document.getElementById('resProgBar'); if (rpb) { if (G.research && G.research.cost > 0) { rpb.style.display = 'block'; rpb.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%'; } else rpb.style.display = 'none'; }   // research-button progress fill
   if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state
+  if (G.pendingStrike && G.targeting) { const scb = document.getElementById('strikeConfirmBtn'); if (scb) { const p = G.pendingStrike, siloForEta = p.silo || (p.silos && p.silos[0]), eta = siloForEta ? strikeEta(p.type, siloForEta.x, bldSurfaceY(siloForEta) - siloForEta.d.h - 4, p.ap.x, p.ap.y) : null; scb.textContent = '☢ CONFIRM STRIKE' + (p.silos && p.silos.length > 1 ? ' ×' + p.silos.length : '') + (eta != null ? ' · ETA ' + eta.toFixed(1) + 's' : ''); } }   // B1/B2 — confirm bar shows flight ETA and the mass-strike silo count
   { const gh = document.getElementById('ghint'); if (gh) gh.style.opacity = (G.time < 60 || (G.tut && G.tut.tips)) ? 1 : 0; }   // shown in the build-bar header for the first 60s of a match, or the whole time if G.tut.tips (advisor tips) is on
   if (!G.hintProd && G.time > 25) { G.hintProd = true; toast('🏭 Your factories are idle — press the pulsing PRODUCE button (top bar) to raise an army'); }   // playtest onboarding: point at PRODUCE if it's gone unused
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';

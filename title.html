@@ -734,7 +734,14 @@
     The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> probes your grid with harmless <b>decoy</b> pods and a light bunker-buster pass, reading what shoots back.<br>
     <b>PHASE 2 · BLACKOUT</b> drops <b>EMP bursts</b> (⚡ zones on the map) that degrade guns, radar and drone swarms caught inside — a nearby Psionic Relay or Data Center resists it — alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
     <b>PHASE 3 · ALL-OUT</b> lands three real beachheads exactly where you took the LEAST damage, backed by superweapons and a fast interceptor screen.<br>
-    <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.</p></details>
+    <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.<br><br>
+    <b>THE FLEET ADAPTS.</b> It reads your heaviest standing element every ~45 seconds and re-tasks the SAME units at whatever you're leaning on — watch for an "AUTOFLEET ADAPTING" alert:<br>
+    &nbsp;• <b>Laser grid</b> → shielded strike wings + more bombers.<br>
+    &nbsp;• <b>Missile AA</b> → armoured exosphere platforms + heavier EMP-zone micromissile saturation.<br>
+    &nbsp;• <b>Robotic mass</b> (drones/mechs/androids) → ECM hijackers get twice the odds.<br>
+    &nbsp;• <b>Infantry</b> → area bombardment from the air and ground artillery.<br>
+    &nbsp;• <b>Navy</b> → antimatter whistlers + missile-support frigates, beachheads nudged toward the coast.<br>
+    &nbsp;• <b>Anti-orbital guns</b> (railguns, particle/orbital cannons…) → its space-tier bosses hold off and land clear of your guns; it leans on mass ground landings instead.</p></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -1857,6 +1864,7 @@ const GLOW = '#ff3030';
 const INK_DEF = INK, GLASS_DEF = GLASS;                       // canonical (player) palette
 const ENEMY_INK = '#6e4848', ENEMY_GLASS = '#3a2630';        // hostile GROUND units paint up in a reddish dark-grey so they read as enemy at a glance
 const ALLY_INK = '#3f8a54', ALLY_GLASS = '#214a30';          // allied (u.ally) units paint up green so they read apart from both the player's own blue-grey units and the enemy's red-brown ones
+let EMP_PULSE = 1;   // v4.0.1 — ANTIMATTER EMP WARHEAD: set just before ART.eempwarhead is called for a falling e.empburst (see the enemy draw loop) so its containment ring can spin FASTER the closer it gets to e.hold — the ART fn itself takes no per-enemy args, so this is the narrow channel that carries "how close to detonation" in without touching every ART call site
 function wheels(x, s, from, to, r) { x.fillStyle = '#000'; for (let i = from; i <= to; i += .42) { x.beginPath(); x.arc(i * s, -s * .1, r * s, 0, 6.28); x.fill(); } x.fillStyle = '#3a4048'; for (let i = from; i <= to; i += .42) { x.beginPath(); x.arc(i * s - r * s * .25, -s * .1 - r * s * .25, r * s * .45, 0, 6.28); x.fill(); } x.fillStyle = INK; }   // road wheels + lit hubs
 // ---- SHADING KIT — highlight / shadow / accent tones derived from the ACTIVE palette (INK is swapped for hostile ground units) ----
 const HI = () => INK === ENEMY_INK ? '#96706a' : INK === ALLY_INK ? '#7fdf98' : '#eef4fb';     // sun-struck upper facets
@@ -2733,6 +2741,13 @@ const ART = {
     x.fillStyle = GLOW; x.beginPath(); x.arc(-s * 2.5, s * .05, s * .18, 0, 6.28); x.fill();   // engine
     x.fillStyle = '#8ac8ff'; for (const gx of [1.4, .2, -1.0]) { x.beginPath(); x.arc(gx * s, -s * .55, s * .07, 0, 6.28); x.fill(); }   // PD turret blips
   },
+  eempwarhead(x, s) {   // v4.0.1 — ANTIMATTER EMP WARHEAD: dark ovoid body, a violet containment ring, a small bright core, 3 short tail fins — it now LOOKS like the payload it is, not a shrunk capital ship
+    x.fillStyle = '#141018'; x.beginPath(); x.ellipse(0, -s * .1, s * .58, s * 1.15, 0, 0, 6.28); x.fill();   // dark ovoid body
+    x.fillStyle = '#1e1826'; x.beginPath(); x.ellipse(0, -s * .3, s * .42, s * .78, 0, 0, 6.28); x.fill();   // inner hull facet, upper half
+    for (const fx of [-.55, 0, .55]) { x.fillStyle = '#0e0c12'; x.beginPath(); x.moveTo(fx * s, s * .8); x.lineTo(fx * s * 1.6, s * 1.4); x.lineTo(fx * s * .25, s * 1.05); x.closePath(); x.fill(); }   // 3 short tail fins
+    x.save(); x.rotate(animClock * .0045 * (EMP_PULSE || 1)); x.strokeStyle = '#b98cff'; x.lineWidth = Math.max(1, s * .1); x.shadowColor = '#b98cff'; x.shadowBlur = s * .55; x.beginPath(); x.arc(0, -s * .1, s * .74, .3, 3.4); x.stroke(); x.shadowBlur = 0; x.restore();   // slow-rotating violet containment-ring segment — spins faster as EMP_PULSE climbs toward detonation
+    x.fillStyle = '#e8d8ff'; x.shadowColor = '#c184ff'; x.shadowBlur = s * (.55 + .45 * pulseA(.02)); x.beginPath(); x.arc(0, -s * .1, s * .2, 0, 6.28); x.fill(); x.shadowBlur = 0;   // small bright antimatter core
+  },
   ebulwark(x, s) {   // CONSTANT THREAT — bulky exosphere armour platform, heavy plasma emitter, energy field
     x.fillStyle = '#161616'; rr(x, -s * 1.1, -s * .9, s * 2.2, s * 1.6, s * .3); x.fill();   // armoured body
     x.fillStyle = '#262626'; rr(x, -s * .7, -s * 1.2, s * 1.4, s * .5, s * .15); x.fill();   // turret block
@@ -3375,7 +3390,7 @@ function newGame(diff) {
       totalRecruited: 0, byDomain: { ground: 0, air: 0, naval: 0, space: 0 }, capitalsBuilt: 0, totalLost: 0, peakArmyCap: 0, allyUnits: 0,   // MILITARY
       damageDealt: 0, damageTaken: 0, ordnanceIntercepted: 0, biggestKillBurst: 0, totalKills: 0, peakEnemies: 0,   // COMBAT
       buildingsLost: 0, citiesLost: 0, citiesCaptured: 0, citiesRetaken: 0, minStability: 100, fleetStartMax: 0,   // DEFENSE / SURVIVAL
-      dangerousResearched: 0, society: null, eraReached: 0, intent: '', difficulty: '', prepDuration: 0 },        // RESEARCH / META (intent/difficulty/prepDuration filled in just below, once G exists)
+      dangerousResearched: 0, society: null, eraReached: 0, intent: '', difficulty: '', prepDuration: 0, adaptations: 0 },  // RESEARCH / META (intent/difficulty/prepDuration filled in just below, once G exists; adaptations: v4.0.1 THE FLEET ADAPTS — how many times the autofleet's read on the player's composition changed)
 
     // ACHIEVEMENT TRACKING — per-round counters read by ACHIEVEMENTS[].test (cross-round progress lives in localStorage via markEver)
     ach: { won: false, lostReason: '', minStab: 65, pausedT: 0, speedChg: 0, failBuild: 0, forcedPlace: false, prodAny: false, drones: 0, superShift: 0, dom: { ground: 0, air: 0, naval: 0, space: 0 }, onlyDefEcon: true,
@@ -4903,19 +4918,67 @@ function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam —
   G.nukeFlash = .5; shake(14); SFX.split(); SFX.boom(); toast('☢ ANNIHILATION BEAM — A CITY IS BEING GLASSED');
 }
 function playerDroneWeight() { let w = 0; for (const u of G.units) if (u.d.drone) w += unitWeight(u); return w; }   // ECM HIJACKER wave-picker gate (v3.103) — total army-cap weight fielded across ALL drone-family units (swarm bodies counted live, see unitWeight), the same signal the player's own army-cap accounting uses
-function waveAirKind() {   // the air contingent of a landing — variety widens the longer the invasion has run
-  const r = Math.random();
-  if (G.invTime >= 60) { const dw = playerDroneWeight(); if (dw >= 12) { const hijackP = dw >= 40 ? .10 : .05; if (Math.random() < hijackP) return 'hijacker'; } }   // ★ ECM HIJACKER — only shows up once the player is genuinely massing drones (never below dw 12), and more often the deeper into drone-spam they go
-  if (G.invTime > 85 && r > .94) return 'bulwark';   // late-war exosphere heavy armour
-  if (G.invTime > 70 && r > .92) return 'harvester';
-  if (G.invTime > 40 && r > .87) return 'jammer';   // EW support drone — blinds your homing missiles until you gun it down
-  if (G.invTime > 55 && r > .84) return 'frigate';
-  if (G.invTime > 45 && r > .76) return 'whistler';
-  if (G.invTime > 30 && r > .64) return 'strikewing';
-  if (r > .5) return 'bomber';
-  if (r > .3) return 'interceptor';
-  if (r > .14) return 'gunship';
-  return 'drone';
+// ═════════════════════════════════════════════════════════════════════════════════════════════
+// THE FLEET ADAPTS (v4.0.1) — scanEnemyIntel() (below) reads the player's standing composition
+// every ~45s and, when one element clearly dominates, counterBias() turns that into concrete
+// re-tasking weights: which air kind a landing draws from (waveAirKind), which ground kind
+// (doWave/phase3AllOut), the hijacker's odds, EMP-warhead salvo count, space-super timing/
+// placement, and a soft water-adjacency preference for beachheads. dominant === null (no clear
+// signal, or a balanced base) returns every multiplier at 1 — EXACTLY today's odds, never a nerf,
+// just where the SAME existing units get aimed. See G.enemyIntel / G.counterBias.
+// GROUND_BASE_WEIGHTS mirrors doWave's original `.45/.30/.18/.07` gtank/gmech/pelter/earthbreaker
+// roll and phase3AllOut's gtank/gmech/pelter column cycle (which never included earthbreaker) —
+// both now draw from this ONE weighted table so a groundWeights bias reaches both call sites.
+const GROUND_BASE_WEIGHTS = { gtank: .45, gmech: .30, pelter: .18, earthbreaker: .07 };
+function applyWeightBias(base, mult) { const out = {}; for (const k in base) out[k] = base[k] * ((mult && mult[k]) || 1); return out; }   // multiplies each base weight by its bias (default 1 = unchanged)
+function weightedPick(weights) {
+  let total = 0; for (const k in weights) total += weights[k];
+  if (!(total > 0)) { const ks = Object.keys(weights); return ks[Math.floor(Math.random() * ks.length)] || 'drone'; }
+  let r = Math.random() * total;
+  for (const k in weights) { r -= weights[k]; if (r <= 0) return k; }
+  const ks = Object.keys(weights); return ks[ks.length - 1];   // float rounding fallback — last key
+}
+// Rebuilds waveAirKind's original invTime-gated ladder as a weight table instead of sequential
+// r-thresholds, so a bias can multiply any one kind without hand-recomputing the whole ladder.
+// Each gate here is IDENTICAL (kind, threshold, invTime condition) to the original waveAirKind —
+// this just walks them top-down (highest threshold first) and turns the r-range each ACTIVE gate
+// would have claimed into a probability mass, letting inactive gates fall through exactly like
+// the original sequential ifs did. At G.invTime>=85 this reproduces bulwark .06 / harvester .02 /
+// jammer .05 / frigate .03 / whistler .08 / strikewing .12 / bomber .14 / interceptor .20 /
+// gunship .16 / drone .14 (sums to 1.00) — headless-verified against the pre-4.0.1 ladder.
+function waveAirBaseWeights(invTime) {
+  const gates = [
+    ['bulwark', .94, invTime > 85], ['harvester', .92, invTime > 70], ['jammer', .87, invTime > 40],
+    ['frigate', .84, invTime > 55], ['whistler', .76, invTime > 45], ['strikewing', .64, invTime > 30],
+    ['bomber', .5, true], ['interceptor', .3, true], ['gunship', .14, true], ['drone', 0, true],
+  ];
+  const w = {}; let upper = 1;
+  for (const [kind, thr, active] of gates) { if (!active) continue; w[kind] = (w[kind] || 0) + (upper - thr); upper = thr; }
+  return w;
+}
+// counterBias(dominant) — turns G.enemyIntel.dominant into concrete re-tasking knobs. Called only
+// when dominant CHANGES (see scanEnemyIntel), cached on G.counterBias, and read from there by
+// waveAirKind/doWave/phase3AllOut/pickLeastDamagedZones/detonateEmpBurst/the supers scheduler —
+// none of them recompute it per-call.
+function counterBias(dominant) {
+  const out = { kindWeights: {}, groundWeights: {}, hijackMul: 1, extraSalvos: 0, delaySpaceSupers: 0, nearWater: false, colMul: 1 };
+  const aa = (G.enemyIntel && G.enemyIntel.aa) || 0;
+  if (dominant === 'lasers') out.kindWeights = { strikewing: 3, bomber: 1.5 };   // shielded strike wings (guns/kinetics can't touch the shield) + more bombers vs a laser-heavy grid
+  else if (dominant === 'aa') { out.kindWeights = { bulwark: 2.5, frigate: 2 }; out.extraSalvos = Math.min(3, Math.round(aa / 30)); }   // armoured platforms that shrug off SAMs + heavier EMP-zone micromissile saturation
+  else if (dominant === 'robotic') { out.kindWeights = { jammer: 2 }; out.hijackMul = 2; }   // the ECM hijacker's own precheck probability doubles (see waveAirKind) — mass drone/mech/elec swarms get ECM'd harder
+  else if (dominant === 'infantry') { out.kindWeights = { gunship: 2.5, bomber: 1.5 }; out.groundWeights = { pelter: 2 }; }   // area bombardment (air + ground artillery) vs a bio-heavy standing army
+  else if (dominant === 'navy') { out.kindWeights = { whistler: 2.5, frigate: 1.5 }; out.nearWater = true; }   // antimatter harassers + missile support, beachheads nudged toward the coast the navy is defending
+  else if (dominant === 'spaceReach') { out.delaySpaceSupers = 40; out.groundWeights = { earthbreaker: 2 }; out.colMul = 1.5; }   // the fleet holds its space-tier bosses back (and lands them clear of the cluster) + leans harder on mass ground landings instead
+  return out;
+}
+function waveAirKind() {   // the air contingent of a landing — variety widens the longer the invasion has run; v4.0.1: weighted by counterBias() instead of a flat ladder
+  if (G.invTime >= 60) {
+    const dw = playerDroneWeight();
+    if (dw >= 12) { let hijackP = dw >= 40 ? .10 : .05; if (G.counterBias && G.counterBias.hijackMul) hijackP *= G.counterBias.hijackMul; if (Math.random() < hijackP) return 'hijacker'; }   // ★ ECM HIJACKER — only shows up once the player is genuinely massing drones (never below dw 12), more often the deeper into drone-spam they go, and doubled again when the fleet has read the player as ROBOTIC-dominant (see counterBias)
+  }
+  const base = waveAirBaseWeights(G.invTime);
+  const bias = (G.counterBias && G.counterBias.kindWeights) || null;
+  return weightedPick(bias ? applyWeightBias(base, bias) : base);
 }
 function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank the player leaves unanswered (see ESC)
   G.waveN = (G.waveN || 0) + 1;
@@ -4944,7 +5007,7 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
   let grd = 0, lineSpawned = 0;
   for (let i = 0; i < size && G.fleet > 0; i++) {
     const x = Math.max(70, Math.min(WORLD_W - 70, lz + (Math.random() - .5) * 280));
-    let kind; if (Math.random() < groundFrac) { const gr = Math.random(); kind = gr < .45 ? 'gtank' : gr < .75 ? 'gmech' : gr < .93 ? 'pelter' : 'earthbreaker'; grd++; } else kind = waveAirKind();
+    let kind; if (Math.random() < groundFrac) { kind = weightedPick(applyWeightBias(GROUND_BASE_WEIGHTS, G.counterBias && G.counterBias.groundWeights)); grd++; } else kind = waveAirKind();   // v4.0.1: weighted by counterBias() (groundWeights) instead of a flat .45/.30/.18/.07 roll — same shape when the fleet has no read
     spawnEnemy(kind, x); const ne = G.enemies[G.enemies.length - 1]; if (ne) ne.flankId = flank.id; lineSpawned++; G.fleet = Math.max(0, G.fleet - 1);
   }
   flank.spawned = lineSpawned;   // this line-group's size is the yardstick for "answered?" at the next reinforcement (super/anchor deliberately NOT counted — they're too tanky to fairly gate escalation)
@@ -4972,7 +5035,7 @@ function spawnEnemy(kind, atX) {
   if (kind === 'drone') Object.assign(e, { hp: 16 * t, s: 3, armor: 1, spd: 26, hold: TROPO_Y() + Math.random() * 40, weapon: 'tracer', dmg: 7, rate: .8, dives: true, art: 'drone' });
   else if (kind === 'bombpod') Object.assign(e, { hp: 10 + 4 * t, s: 4, armor: 0, spd: 70, vy: 200, hold: groundY(wxw) - 4, weapon: 'none', dmg: 0, dives: true, pod: true, art: 'bombpod' });   // bombardment munition — keeps its fast plunge (not the slow unit re-entry)
   else if (kind === 'decoy') Object.assign(e, { hp: 6 * t, s: 5, armor: 0, spd: 50, vy: 80, hold: groundY(wxw) - 4, weapon: 'none', dmg: 0, dives: true, pod: true, decoy: true, art: 'bombpod' });   // v4.0 E PHASE 1 SCREENING — falls slower than a real bombpod over a defended stretch, purely to DRAW FIRE (harmless: dmg 0) so the fleet can read what shoots back (see the decoyHitX bump in hurt() + busterTarget)
-  else if (kind === 'empburst') Object.assign(e, { hp: 90 * t, s: 8, armor: 4, spd: 30, vy: 90, hold: STRATO_Y(), weapon: 'none', dmg: 0, dives: false, empburst: true, empR: 700, art: 'ebombarder' });   // v4.0 E PHASE 2 BLACKOUT — a slow-falling antimatter EMP warhead; detonates on reaching STRATO_Y (see updEnemies) and pushes a blackout zone, NOT a kinetic pod (no ground impact damage)
+  else if (kind === 'empburst') Object.assign(e, { hp: 90 * t, s: 8, armor: 4, spd: 30, vy: 90, hold: STRATO_Y(), weapon: 'none', dmg: 0, dives: false, empburst: true, empR: 700, art: 'eempwarhead' });   // v4.0 E PHASE 2 BLACKOUT — a slow-falling antimatter EMP warhead; detonates on reaching STRATO_Y (see updEnemies) and pushes a blackout zone, NOT a kinetic pod (no ground impact damage). v4.0.1: gets its own art (eempwarhead) instead of borrowing the bombarder's hull
   else if (kind === 'shockwave') Object.assign(e, { hp: 12 * t, s: 5, armor: 0, spd: 60, vy: 90, hold: groundY(wxw) - 4, weapon: 'none', dmg: 30, dives: true, pod: true, shock: true, art: 'bombpod' });   // v4.0 E PHASE 2 BLACKOUT — bombpod variant: on burst, shoves every airborne friendly within 220px + a quarter of its damage (see shockwaveBurst)
   else if (kind === 'interceptor') Object.assign(e, { hp: 22 * t, s: 3.2, armor: 1, spd: 306, hold: MESO_Y() + 30 + Math.random() * 70, weapon: 'rocket', dmg: 11, rate: 1.5, dives: false, air: true, art: 'einterceptor' });   // hunts your aircraft — air duels. spd 306 (v4.0 C, up from 24) — headless-measured to match the Falcon's own real px/s (enemy movement's vx=e.spd*3.5-then-.96-drag steady-state converts spd→real speed at a DIFFERENT ratio than friendly aircraft's spd*1.5-then-.96 — 306 is the value that lands both sides on ~489.6px/s, not a naive "same number" port)
   else if (kind === 'bomber') Object.assign(e, { hp: 52 * t, s: 4.5, armor: 5, spd: 168, hold: STRATO_Y() - 30, weapon: 'bomb', dmg: 22, rate: 2.4, dives: false, art: 'bomber' });   // sits high in the stratosphere, only aircraft/railguns reach it. spd 168 (v4.0 C, up from 18) — ~55% of the Falcon's real px/s, same conversion as interceptor above
@@ -5056,12 +5119,14 @@ function announcePhase(n, title, sub) { banner(title, sub, 5); toast(title); if 
 function addDmgTaken(x, amt) { if (!G || !G.dmgTaken || !(amt > 0)) return; const n = G.dmgTaken.length, i = Math.max(0, Math.min(n - 1, Math.floor(x / WORLD_W * n))); G.dmgTaken[i] += amt; }
 function pickLeastDamagedZones(n, minGap) {
   const buckets = G.dmgTaken, bw = WORLD_W / buckets.length, order = [];
+  const nearWater = !!(G.counterBias && G.counterBias.nearWater);   // v4.0.1 — THE FLEET ADAPTS: navy-dominant read → soft-prefer beachheads next to open water (a NAVY-heavy defense is itself coastal-shaped)
   for (let i = 0; i < buckets.length; i++) order.push(i);
-  order.sort((a, b) => buckets[a] - buckets[b]);
+  order.sort((a, b) => (buckets[a] * (nearWater && bucketNearWater(a, bw) ? .5 : 1)) - (buckets[b] * (nearWater && bucketNearWater(b, bw) ? .5 : 1)));   // a scale-free 50% discount on water-adjacent buckets, not a hard filter — still falls back to "least damaged" when no water is nearby
   const chosen = [];
   for (const i of order) { const x = (i + .5) * bw; if (x < 200 || x > WORLD_W - 200) continue; if (isWater(x)) continue; if (chosen.some(cx => Math.abs(cx - x) < minGap)) continue; chosen.push(x); if (chosen.length >= n) break; }
   return chosen;
 }
+function bucketNearWater(i, bw) { const x = (i + .5) * bw; return isWater(Math.max(0, x - bw)) || isWater(Math.min(WORLD_W, x + bw)); }   // v4.0.1 — is a damage-map bucket adjacent to open water (used only for the navy-dominant nearWater tiebreak above)
 // PHASE 1 — SCREENING: the fleet drops a handful of harmless DECOY pods over your defended ground to
 // see what shoots back, plus a small opening bunker-buster probe (recon / buster-less intents skip
 // the probe entirely — decap already gets its own capital-focused count from decapBusterBudget()).
@@ -5072,8 +5137,9 @@ function phase1Screening(it) {
     for (let i = 0; i < n; i++) { const tb = busterTarget(); const bx = (tb ? tb.x : (G.cities[0] || { x: WORLD_W / 2 }).x) + (Math.random() - .5) * 40; spawnBuster(bx, groundY(bx)); }
   }
 }
-// PHASE 1 — ENEMY INTEL: a one-shot composition scan of the player's standing forces ~15s in, so
-// busterTarget/decapBusterBudget and future AI decisions can read what they're actually up against.
+// PHASE 1 — ENEMY INTEL: a composition scan of the player's standing forces, first at ~15s in and
+// every ~45s after (see G._intelNextT in updateInvPhases), so busterTarget/decapBusterBudget and —
+// v4.0.1 — THE FLEET ADAPTS can read what they're actually up against and re-task accordingly.
 function scanEnemyIntel() {
   let aa = 0, lasers = 0, infantry = 0, robotic = 0, navy = 0, spaceReach = 0;
   for (const u of G.units) {
@@ -5087,13 +5153,52 @@ function scanEnemyIntel() {
     if (d.drone || d.mech || d.elec || d.clone) robotic += unitWeight(u);
   }
   for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const d = b.d, ceil = d.ceil != null ? d.ceil : .8; if (ceil <= .6 || d.noGround) aa++; if (d.weapon === 'beam') lasers++; if (ceil === 0) spaceReach += (d.dmg || 0) / Math.max(.1, d.rate || 1); }
-  G.enemyIntel = { aa, lasers, infantry, robotic, navy, spaceReach };
+  // v4.0.1 — DOMINANT ELEMENT: normalise each raw count against a rough "a lot of this" scale, then
+  // call it dominant only if it clearly leads (>= .8 of its own scale AND >= 1.4x the runner-up) —
+  // a small or balanced base reads as null (no read), same as today's behaviour (see counterBias).
+  const norm = { aa: aa / 40, lasers: lasers / 6, infantry: infantry / 25, robotic: robotic / 30, navy: navy / 10, spaceReach: spaceReach / 40 };
+  const ranked = Object.keys(norm).sort((a, b) => norm[b] - norm[a]);
+  let dominant = null;
+  if (ranked.length && norm[ranked[0]] >= .8 && (ranked.length < 2 || norm[ranked[0]] >= norm[ranked[1]] * 1.4)) dominant = ranked[0];
+  const prevDominant = (G.enemyIntel && G.enemyIntel.dominant) || null;
+  G.enemyIntel = { aa, lasers, infantry, robotic, navy, spaceReach, norm, dominant, prevDominant };
+  if (dominant !== prevDominant) {
+    G.counterBias = counterBias(dominant);   // recompute once per change, cached — every consumer (waveAirKind, doWave, phase3AllOut, pickLeastDamagedZones, detonateEmpBurst, the supers scheduler) just reads G.counterBias
+    if (dominant && dominant === 'spaceReach' && G.supersPlan) {   // push back any not-yet-spawned space-tier boss so it doesn't walk straight into a wall of anti-orbital guns (see the supers consumer in updateGame)
+      const nextIdx = G.superI || 0;
+      for (let i = nextIdx; i < G.supersPlan.length; i++) { const s = G.supersPlan[i]; if (/bombarder|annihilator/.test(s.kind)) s.t += 40; }
+    }
+    if (dominant) {
+      G.stats.adaptations = (G.stats.adaptations || 0) + 1;
+      const LINES = {
+        lasers: 'heaviest element: LASER GRID — shielded strike wings tasked',
+        aa: 'heaviest element: MISSILE AA — armoured platforms + micromissile saturation',
+        robotic: 'heaviest element: ROBOTIC MASS — ECM hijackers tasked',
+        infantry: 'heaviest element: INFANTRY — area bombardment tasked',
+        navy: 'heaviest element: NAVY — whistlers tasked',
+        spaceReach: 'heaviest element: ANTI-ORBITAL GUNS — mass ground landings, fleet holding off',
+      };
+      banner('⚠ AUTOFLEET ADAPTING', LINES[dominant], 4.5); toast('⚠ AUTOFLEET ADAPTING — ' + LINES[dominant]);
+    }   // dominant → null (losing a clear read) is a real dominance change too, so G.counterBias resets to neutral above, but it's a quiet reset — no banner for "we don't have a read anymore"
+  }
 }
 // PHASE 2 — BLACKOUT: EMP bursts detonate over your densest defended clusters, each pushing a
 // {x,r,t} zone into G.blackout; empMul() (consulted at every degraded call site) is what reads it.
 function densestDefenseX() {   // bucketed like bestClusterX, but over PLAYER weapon-armed buildings (not enemies)
   const bins = new Map();
   for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const bx = Math.round(b.x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += (b.d.cat === 'DEF' ? 2.2 : 1); e.xSum += b.x; e.n++; }
+  const out = []; for (const e of bins.values()) out.push({ x: e.xSum / e.n, w: e.w });
+  out.sort((a, b) => b.w - a.w); return out;
+}
+// v4.0.1 — THE FLEET ADAPTS (spaceReach): the same bucket-and-rank shape as densestDefenseX, but
+// over PLAYER weapon-armed buildings/units whose ceil is 0 (reach clear into orbit — railguns,
+// particle cannons, orbital guns, psi-troopers…) instead of every armed building. Used only to
+// steer a not-yet-spawned space-tier boss (bombarder/annihilator) clear of that cluster once the
+// fleet has read the player as anti-orbital-gun-dominant (see the supers consumer in updateGame).
+function densestSpaceReachX() {
+  const bins = new Map(), add = (x, w) => { const bx = Math.round(x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += w; e.xSum += x; e.n++; };
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const ceil = b.d.ceil != null ? b.d.ceil : .8; if (ceil === 0) add(b.x, 2.2); }
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || !u.d.weapon) continue; const ceil = u.d.ceil != null ? u.d.ceil : defaultCeil(u.d); if (ceil === 0) add(u.x, 1); }
   const out = []; for (const e of bins.values()) out.push({ x: e.xSum / e.n, w: e.w });
   out.sort((a, b) => b.w - a.w); return out;
 }
@@ -5105,7 +5210,9 @@ function detonateEmpBurst(e) {
   G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 10, max: r, life: .8 });
   shake(13); if (SFX.boom) SFX.boom(); if (SFX.split) SFX.split();
   toast('⚡ EMP — DEFENSE GRID DEGRADED at ' + Math.round(e.x));
-  G.proj.push({ k: 'microrkt', x: e.x, y: e.y - 60, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12 * G.diff, tr: [], aaOnly: false });   // one hostile micromissile carrier bursts over each new zone (reuses the friendly micromis carrier->submunition projectile as hostile, see openingAAsalvo)
+  G.empFlash = Math.max(G.empFlash || 0, 1);   // v4.0.1 — a brief violet screen tint on detonation (decays in updateGame, rendered in renderGame alongside nukeFlash/hitFlash)
+  const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone, not a scarier single one — see counterBias('aa')
+  for (let i = 0; i < salvos; i++) G.proj.push({ k: 'microrkt', x: e.x + (i - (salvos - 1) / 2) * 90, y: e.y - 60, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12 * G.diff, tr: [], aaOnly: false });   // one (or more, see salvos) hostile micromissile carrier bursts over each new zone (reuses the friendly micromis carrier->submunition projectile as hostile, see openingAAsalvo)
 }
 function phase2Blackout(it) {
   const n = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);   // FAIRNESS — a low-difficulty custom scenario never gets more than one zone (r 500, see detonateEmpBurst)
@@ -5114,6 +5221,7 @@ function phase2Blackout(it) {
     const c = clusters[i % Math.max(1, clusters.length)];
     const x = c ? Math.max(160, Math.min(WORLD_W - 160, c.x + (Math.random() - .5) * 120)) : 200 + Math.random() * (WORLD_W - 400);
     spawnEnemy('empburst', x);
+    if (!G._warheadWarned) { G._warheadWarned = true; toast('⚛ ANTIMATTER WARHEAD FALLING — shoot it down before it reaches the stratosphere'); }   // v4.0.1 — once per phase, the FIRST warhead gets its own callout (the zone/EMP toast on detonation already existed; this is the earlier "it's coming" warning)
   }
   const shockN = Math.max(1, Math.round(6 * G.diff));
   for (let i = 0; i < shockN; i++) spawnEnemy('shockwave', 160 + Math.random() * (WORLD_W - 320));
@@ -5153,11 +5261,13 @@ function phase3AllOut(it) {
   const superN = { invasion: 2, glass: 3, extinction: 5, decap: 1 }[G.intent] || 0;
   if (superN > 0) spawnSuper('bombarder', false, superN);
   const zones = pickLeastDamagedZones(3, 600);
-  const cols = it.fleetMul >= 2 ? 4 : it.fleetMul >= 1.2 ? 3 : 2;
+  let cols = it.fleetMul >= 2 ? 4 : it.fleetMul >= 1.2 ? 3 : 2;
+  if (G.counterBias && G.counterBias.colMul && G.counterBias.colMul !== 1) cols = Math.max(1, Math.round(cols * G.counterBias.colMul));   // v4.0.1 — spaceReach-dominant reads lean harder on mass ground landings (colMul, see counterBias)
+  const groundBias = applyWeightBias(GROUND_BASE_WEIGHTS, G.counterBias && G.counterBias.groundWeights);
   let first = true;
   for (const zx of zones) {
     const cx = avoidCityCenter(zx);
-    for (let i = 0; i < cols; i++) { const kind = i % 3 === 0 ? 'gtank' : i % 3 === 1 ? 'gmech' : 'pelter'; spawnEnemy(kind, cx + (i - (cols - 1) / 2) * 70); }
+    for (let i = 0; i < cols; i++) { spawnEnemy(weightedPick(groundBias), cx + (i - (cols - 1) / 2) * 70); }   // v4.0.1 — was a fixed gtank/gmech/pelter cycle (never earthbreaker); now the SAME weighted ground table doWave uses, so groundWeights reaches here too
     spawnEnemy('shieldgen', cx);
     if (first) { G.lastLZ = cx; first = false; }
   }
@@ -5185,7 +5295,8 @@ function tickPhase4(it, dt) {
 function updateInvPhases(it, dt) {
   if (G.invPhase < 1) return;
   if (G.blackout && G.blackout.length) for (let i = G.blackout.length - 1; i >= 0; i--) { G.blackout[i].t -= dt; if (G.blackout[i].t <= 0) G.blackout.splice(i, 1); }
-  if (!G._intelScanned && G.invTime >= 15) { G._intelScanned = true; scanEnemyIntel(); }
+  if (!G._intelScanned && G.invTime >= 15) { G._intelScanned = true; G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // first read at ~15s in
+  else if (G._intelScanned && G.invTime >= (G._intelNextT || Infinity)) { G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // v4.0.1 — THE FLEET ADAPTS: re-read every ~45s for the rest of the match, not just once
   if (G.intent === 'recon') { if (G.invPhase < 4 && G.invTime >= 18) G.invPhase = 4; }
   else { if (G.invPhase < 2 && G.invTime >= 18) enterInvPhase(2, it); if (G.invPhase < 3 && G.invTime >= 50) enterInvPhase(3, it); if (G.invPhase === 3) G.invPhase = 4; }
   if (G.invPhase >= 4) tickPhase4(it, dt);
@@ -5362,6 +5473,7 @@ function updateGame(dt) {
   if (typeof tickAllyContracts === 'function') tickAllyContracts(dt);   // deliver each open ally contract's next unit at its city once its clock elapses — see hireAllies
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
   if (G.hitFlash) G.hitFlash = Math.max(0, G.hitFlash - dt * 2.6);   // red impact flicker decays fast
+  if (G.empFlash) G.empFlash = Math.max(0, G.empFlash - dt * 2.5);   // v4.0.1 — violet EMP-warhead detonation flash, ~0.4s to fade (rendered in renderGame alongside nukeFlash/hitFlash)
   // lingering firestorms — cook anything on the ground inside them
   if (G.fires.length) for (let i = G.fires.length - 1; i >= 0; i--) {
     const f = G.fires[i]; f.life -= dt; const gy = groundY(f.x);
@@ -5467,6 +5579,7 @@ function updateGame(dt) {
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — SCREENING FIRE IMMINENT'); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
+G.supersPlan = (it.supers || []).map(s => Object.assign({}, s));   /* v4.0.1 — THE FLEET ADAPTS: a per-match COPY of this intent's boss schedule, made ONCE here — the supers consumer below reads/mutates THIS, never INTENT itself, so a spaceReach-triggered delay (see scanEnemyIntel) can't leak into a later match or a different intent */
 G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it); openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
@@ -5496,9 +5609,18 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     } }
     // MASS SKYFALL — the giant drop right after the opening bombardment (+ flank ground landings)
     if (!G.acqPhase && G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
-    // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule
-    const sups = it.supers || []; G.superI = G.superI || 0;
-    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) { const sw = sups[G.superI]; spawnSuper(sw.kind, sw.capital, sw.n); G.superI++; }
+    // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule (v4.0.1: G.supersPlan, a
+    // per-match COPY made at the invasion transition — see above — never the shared INTENT array itself,
+    // since scanEnemyIntel can push a not-yet-spawned entry's `t` later on a spaceReach-dominant read)
+    const sups = G.supersPlan || (G.supersPlan = (it.supers || []).map(s => Object.assign({}, s))); G.superI = G.superI || 0;
+    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) {
+      const sw = sups[G.superI]; let atX = null;
+      if (/bombarder|annihilator/.test(sw.kind) && G.enemyIntel && G.enemyIntel.dominant === 'spaceReach') {   // v4.0.1 — land the space-tier boss CLEAR of the player's densest anti-orbital cluster instead of a random spot
+        const clusters = densestSpaceReachX();
+        if (clusters.length) { const cx = clusters[0].x; atX = cx < WORLD_W / 2 ? Math.min(WORLD_W - 160, cx + 900 + Math.random() * 400) : Math.max(160, cx - 900 - Math.random() * 400); }
+      }
+      spawnSuper(sw.kind, sw.capital, sw.n, atX); G.superI++;
+    }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
     if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     // for glass this doubles as the ENDURANCE win: outlasting G.bombard/G.orbital (both seeded from it.bombard/it.orbital)
@@ -7109,6 +7231,7 @@ function updEnemies(dt) {
     if (e.reentry) {   // a long, vulnerable plunge: starts very slow high in the exosphere (giving your railguns / lasers / orbital sats time to whittle it) and GRADUALLY accelerates as it bites into thicker air. Can't fire yet.
       e.x += (e.vx || 0) * dt; e.vy = Math.min((e.vy || 6) + (e.pod ? 130 : 30) * dt, e.pod ? 760 : 440); e.y += e.vy * dt;   // accel/cap scaled up for the taller sky so the (still slow & vulnerable) descent doesn't drag
       if (Math.random() < .2 + e.vy / 600) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s * 1.6, y: e.y - e.s, vx: (Math.random() - .5) * 8, vy: -16 - Math.random() * 22, r: 1.4 + Math.random() * 2.4, life: .22 + Math.random() * .3 });   // only really glows hot once it's moving fast
+      if (e.empburst && fullFx) { e._sparkTick = (e._sparkTick || 0) + 1; if (e._sparkTick % 3 === 0) G.parts.push({ k: 'plasma', x: e.x + (Math.random() - .5) * e.s * 1.4, y: e.y + (Math.random() - .5) * e.s, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random(), life: .3 + Math.random() * .2 }); }   // v4.0.1 — a violet sparkle trail (reuses the 'plasma' particle's violet palette) off the falling warhead itself, at most every 3rd tick, Full Effects only
       if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.empburst) { detonateEmpBurst(e); continue; }   /* v4.0 E PHASE 2 BLACKOUT — the warhead itself, not a landed unit: detonate on arrival at STRATO_Y and remove it */ if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
       continue;
     }
@@ -7644,7 +7767,7 @@ function renderGame() {
     if ((d.domain === 'ground' || d.domain === 'naval') && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, d.domain === 'ground' ? gdy : u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow — GROUND shares the sprite's own seated anchor (gdy) so the shadow never floats above/below the feet it belongs to; naval keeps its own hull-relative offset (a boat's shadow sits below the WATERLINE, not d.s away from a lifted y)
     c.save(); c.translate(px, gdy); if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } c.restore(); if (u.shield > 0 && !_extremeLOD) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, gdy - d.s * 2 - 9, u.bg.members.length); }   // BATTLEGROUPS — non-squad leader (kdrone/clone) group-size badge
   // enemies
-  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else (ART[e.art || e.kind] || ART.drone)(c, e.s); c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3;   /* v4.0.1 — spin the warhead's containment ring faster the closer it gets to e.hold (detonation) */ (ART[e.art || e.kind] || ART.drone)(c, e.s); } c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
   if (_blipLOD) {   // HUD-LESS FULL-MAP VIEW — ATTACK ARROWS: a faint shooter→target line for every 3rd entity that's currently on a fire-cooldown (i.e. just fired — see u.cd/e.cd, reset by the fire code right after a shot) with a real live target still standing; capped at 300/frame
     let _arrowN = 0, _arrowI = 0; c.lineWidth = _blipS;
     for (const u of G.units) { if (u.carried || !u.cd || u.cd <= 0) continue; const t = u.lastTgt || u._lodTgt; if (!t || t.hp == null || t.hp <= 0) continue; _arrowI++; if (_arrowI % 3 !== 0) continue; if (_arrowN >= 300) break; _arrowN++; const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX) continue; c.globalAlpha = .25; c.strokeStyle = u.ally ? '#5be0ff' : '#4dff88'; c.beginPath(); c.moveTo(px, u.y); c.lineTo(sx(t.x), t.y); c.stroke(); }
@@ -7693,6 +7816,7 @@ function renderGame() {
   // nuclear flash — screen-fixed (drawn in identity space so it covers the viewport regardless of vertical scroll)
   if (G.nukeFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,250,236,${G.nukeFlash * (flashRed ? .18 : 1)})`; c.fillRect(0, 0, W, H); c.restore(); }   // flash-reduction caps the full-screen strobe
   if (G.hitFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(255,40,30,${G.hitFlash * (flashRed ? .3 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // RED impact flicker when a penetrator lands
+  if (G.empFlash > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(170,110,255,${G.empFlash * (flashRed ? .18 : 1) * .5})`; c.fillRect(0, 0, W, H); c.restore(); }   // v4.0.1 — VIOLET flash when an antimatter EMP warhead detonates
 }
 function ring(px, y, r) { c.strokeStyle = 'rgba(109,255,176,.25)'; c.lineWidth = 1; c.setLineDash([4, 6]); c.beginPath(); c.arc(px, y, r, 0, 6.28); c.stroke(); c.setLineDash([]); }
 // BATTLEGROUPS — tiny monospace group-size badge over a battlegroup LEADER (mirrors the boss-name label style
@@ -8623,7 +8747,7 @@ function renderAARCharts() {
 // COMBAT HEATMAP, all fed by G.stats (tracked live during play — see the hook sites: spawnUnit, finishSite,
 // placeBuilding, queueUnit, finishResearch, the research draw-down, launchStrike, hireAllies, destroyEnemy,
 // destroyUnit, sampleHist). Additive & read-only — never touches balance, only reports what already happened.
-const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hijacker: 'ECM Hijacker', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship' };
+const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hijacker: 'ECM Hijacker', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship', empburst: 'Antimatter EMP Warhead', decoy: 'Decoy Pod', shockwave: 'Shockwave Pod' };   // v4.0.1: empburst/decoy/shockwave were missing labels — they read as their raw kind string in the after-action report
 function aarSum(obj) { let s = 0; for (const k in obj) s += obj[k]; return s; }
 // draw ONE unit/building icon into a small canvas — same ART/BART renderers the live production menus use (see buildProdMenu / showResDetail)
 function aarUnitIcon(cv, d) { if (!cv || !d || !ART[d.art]) return; const x = cv.getContext('2d'); x.translate(cv.width / 2, cv.height * .62); x.scale(1.4, 1.4); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 8, -.6); } catch (er) {} }

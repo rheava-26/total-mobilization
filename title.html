@@ -4603,12 +4603,21 @@ function mslLeadPoint(p, t) {
 // BUILDING — every call site also checks `!d.noGround`, so dedicated AA/CIWS (already purpose-built to track this
 // exact target class) keeps its old accuracy untouched; never touches missile/rocket/sam/ami/beam seekers, which
 // already lead/home far better than a dumb-fire round ever could.
+// TUNING NOTE (v4.0 C, retune): the falloff is driven by target SPEED × smallness, with a FLOOR — GUN_ACC_JMAX caps
+// how large J can get so the gun never goes fully blind, not even at absurd speeds. Headless-verified (a target
+// crossing GROUND GUNS actually chase, not the earlier synthetic "outruns the muzzle entirely" geometry): a
+// stationary-ish drone (~40px/s) still lands ~85% of shots; the SAME drone at real fighter/interceptor speed
+// (~490px/s) drops to ~19-22%; a big slow target (bulwark/bomber) stays ~100%. Past ~600-700px/s (a target
+// genuinely outrunning the gun's own muzzle velocity) hit rate keeps falling toward 0 regardless of JMAX — that
+// last bit is real ballistics (leadTime() has no valid intercept solution left), not a design gap, and nothing in
+// the current roster crosses that fast.
 const GUN_ACC_BASE = 0.02;    // baseline angular jitter even against a dead-stationary target (natural gun dispersion)
-const GUN_ACC_K = 0.00015;   // scales (targetSpeedPx / targetRadius) into extra angular jitter — headless-tuned, see VERIFY (a target crossing at real fighter-speed already misses almost every shot from a dumb-fire gun at this value; a big slow target is barely nudged off its old accuracy)
+const GUN_ACC_K = 0.0032;    // scales (targetSpeedPx / targetRadius) into extra angular jitter — headless-tuned, see VERIFY
+const GUN_ACC_JMAX = 0.5;    // hard cap on J (radians) — the FLOOR: no matter how fast a future unit gets, the gun's own aim error never grows past this, so hit chance never collapses to literal zero from jitter alone
 function isGroundGunWeapon(w) { return w === 'shell' || w === 'rail' || w === 'rod' || w === 'plasma' || w === 'tracer' || w === 'rotary'; }
 function gunWeaponHeaviness(w) { return w === 'rod' ? 2.2 : (w === 'rail' || w === 'plasma') ? 1.6 : 1; }
 function gunAccJitter(w, sxx, syy, tgt) {   // extra random offset (px), applied independently to the x and y aim point — an ANGULAR dispersion model: J behaves like the tangent of a dispersion half-angle, so the same jitter reads as a near-miss up close and a wide miss at range, same as a real gun's group opening up with distance
-  const spdT = Math.hypot(tgt.vx || 0, tgt.vy || 0), J = GUN_ACC_BASE + GUN_ACC_K * (spdT / Math.max(2, tgt.s || 16)) * gunWeaponHeaviness(w);
+  const spdT = Math.hypot(tgt.vx || 0, tgt.vy || 0), J = Math.min(GUN_ACC_JMAX, GUN_ACC_BASE + GUN_ACC_K * (spdT / Math.max(2, tgt.s || 16)) * gunWeaponHeaviness(w));
   return J * Math.hypot(tgt.x - sxx, tgt.y - syy);
 }
 function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to a line segment (beam hit-test)

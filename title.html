@@ -152,7 +152,12 @@
   .pdetail canvas { width: 100%; height: 50px; background: linear-gradient(180deg,#0a1830,#0e2236); border-radius: 4px; display: block; }
   .pdetail .pdname { font-size: 12px; font-weight: 700; color: #eaf2ff; letter-spacing: .3px; margin-top: 6px; line-height: 1.2; }
   .pdetail .pdtags { font-size: 8px; letter-spacing: .5px; color: var(--term); margin-top: 3px; }
-  .pdetail .pdds { font-size: 9.5px; color: #9fb6d4; line-height: 1.45; margin: 6px 0; }
+  .pdetail .pdds { font-size: 9.5px; color: #9fb6d4; line-height: 1.45; margin: 6px 0; max-height: 9em; overflow: hidden; position: relative; }
+  .pdetail .pdds.expanded { max-height: none; }
+  .pdetail .pdds .pdds-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 1.7em; background: linear-gradient(to bottom, rgba(11,20,33,0), #0b1421 85%); pointer-events: none; }
+  .pdetail .pdds.expanded .pdds-fade { display: none; }
+  .pdetail .pdmore { display: block; background: none; border: none; color: var(--term); font-size: 8.5px; cursor: pointer; padding: 0 0 5px; margin: -3px 0 0; text-align: left; }
+  .pdetail .pdmore:hover { color: #eaf2ff; }
   .pdetail .pdh { font-size: 8.5px; letter-spacing: 1px; color: var(--term); margin: 8px 0 3px; border-top: 1px solid var(--line); padding-top: 6px; }
   .pdetail .st { font-size: 9.5px; color: #c4d4e8; display: flex; justify-content: space-between; padding: 1.5px 0; } .pdetail .st b { color: var(--ic); }
   .pdetail .wpn { font-size: 9px; color: #cfe0f5; padding: 2px 0; line-height: 1.35; } .pdetail .wpn b { color: #ffd86b; }
@@ -787,7 +792,7 @@
       <div class="hbtn has-tip" id="btnStatsDrawer" data-tip="Open the full status report — every current stat, research bonus and special-building buff." onclick="openStats()">📊 STATS</div>
       <div class="hbtn has-tip" id="btnReadyToggle" data-tip="Show/hide the ★ READINESS panel (a docked pill that expands with what your force is missing before re-entry)." onclick="toggleReadyPanel()">★ READINESS</div>
       <div class="hbtn has-tip" id="btnAchievements" data-tip="Achievements earned this run." onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
-      <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing, deployed by your capital. A late-game influence sink & safety valve, on a cooldown.">⚑ ALLIES</div>
+      <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower) to call in an allied Carrier Strike Group, Armored Battalion or Air Wing. The favour arrives at EVERY held city, one unit at a time over the following seconds — and lowers your max INFLUENCE for as long as it keeps delivering (or any of it survives). A late-game safety valve with a real ongoing price, on a cooldown.">⚑ ALLIES</div>
     </div>
   </div>
   <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="ptabs" id="ptabs"></div><div class="pbody"><div class="pgrid" id="pgrid"></div><div class="pdetail" id="pdetail"></div></div></div>
@@ -2907,6 +2912,9 @@ const BART = {
   vethall(x, w, h) { x.fillStyle = '#1c2a1e'; x.fillRect(-w * .5, -h * .6, w, h * .6); x.fillStyle = '#2c3e2c'; x.beginPath(); x.moveTo(-w * .5, -h * .6); x.lineTo(0, -h * .95); x.lineTo(w * .5, -h * .6); x.closePath(); x.fill(); for (let i = -1; i <= 1; i += 2) x.fillStyle = '#0c1410', x.fillRect(i * w * .28 - w * .06, -h * .46, w * .12, h * .3); x.fillStyle = '#151b22'; x.fillRect(-w * .08, -h * .5, w * .16, h * .34); x.fillStyle = '#caa030'; x.fillRect(-w * .03, -h * 1.12, w * .06, h * .2); x.fillStyle = '#e23a3a'; x.beginPath(); x.moveTo(w * .03, -h * 1.12); x.lineTo(w * .24, -h * 1.04); x.lineTo(w * .03, -h * .96); x.closePath(); x.fill(); },   // regimental hall with pennant
   fortresshq(x, w, h) { x.fillStyle = '#2a2f34'; x.beginPath(); x.moveTo(-w * .5, 0); x.lineTo(-w * .44, -h * .7); x.lineTo(w * .44, -h * .7); x.lineTo(w * .5, 0); x.closePath(); x.fill(); x.fillStyle = '#1a1f24'; for (let i = -2; i <= 2; i++) x.fillRect(i * w * .18 - w * .05, -h * .82, w * .1, h * .16); x.fillStyle = '#3a444e'; x.fillRect(-w * .16, -h * 1.05, w * .32, h * .38); x.fillStyle = '#6dffb0'; x.beginPath(); x.arc(0, -h * 1.05, w * .07, 0, 6.28); x.fill(); x.fillStyle = '#0c1116'; for (let i = -1; i <= 1; i++) x.fillRect(i * w * .28 - w * .04, -h * .5, w * .08, h * .2); },   // hardened bastion HQ — battlements + command mast
   combine(x, w, h) { x.fillStyle = '#18222e'; x.fillRect(-w * .5, -h * .62, w, h * .62); x.beginPath(); for (let i = 0; i < 5; i++) { const rx = -w * .5 + i * w * .2; x.moveTo(rx, -h * .62); x.lineTo(rx + w * .1, -h * .82); x.lineTo(rx + w * .2, -h * .62); } x.fill(); x.fillStyle = '#2c3e50'; x.fillRect(w * .18, -h * 1.15, w * .1, h * .55); x.fillRect(w * .34, -h * 1.0, w * .09, h * .4); x.fillStyle = '#7fd4ff'; x.beginPath(); x.arc(-w * .28, -h * .38, w * .06, 0, 6.28); x.arc(-w * .02, -h * .38, w * .06, 0, 6.28); x.fill(); },   // heavy-industry complex — sawtooth roofs + twin stacks
+  // ── ALLIES INFRASTRUCTURE — reuse existing silhouettes with a distinct tint band, no fussy new art ──
+  heavyport(x, w, h) { BART.shipyard(x, w, h); x.fillStyle = '#ffb347'; x.globalAlpha = .55; x.fillRect(-w * .5, -h * .08, w * .7, h * .1); x.globalAlpha = 1; },   // Heavy Port — Shipyard silhouette + an amber "heavy" tint band
+  milbase(x, w, h) { BART.barracks(x, w, h); x.fillStyle = '#ff6a4a'; x.globalAlpha = .55; x.fillRect(-w * .5, -h * .3, w, h * .08); x.globalAlpha = 1; },   // Military Base — Barracks silhouette + a red-orange forward-base tint band
 };
 function lights(x, ax, ay, w, h) { x.fillStyle = 'rgba(255,225,120,.8)'; for (let wy = ay + 4; wy < -4; wy += 7) for (let wx = ax + 3; wx < ax + w - 3; wx += 6) if (Math.random() < .5 || true) x.fillRect(wx, wy, 1.6, 1.6); x.fillStyle = '#10202e'; }
 
@@ -2932,7 +2940,7 @@ const UNIT_DEFS = {
   arty:     { name: 'SPG "Thunder"', art: 'artillery', domain: 'ground', ic: 170, mp: 12, build: 9, hp: 55, armor: 2, range: 780, dmg: 44, rate: 4.2, weapon: 'shell', speed: 4, s: 4, grp: 2, ds: 'Long-range barrage. Slow.' },
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 30, rate: 3, weapon: 'rocket', speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery. (req Rocketry)' },
   sam:      { name: 'SAM "Aegis-AA"', art: 'sam', domain: 'ground', ic: 220, mp: 13, build: 9, hp: 55, armor: 3, range: 620, dmg: 30, rate: 3.4, weapon: 'rocket', speed: 0, s: 4, grp: 1, req: 'rocketry', ceil: .60, noGround: true, ds: 'Ground SAM — now reaches up into the MESOSPHERE, but still cannot touch the exosphere (that needs aircraft / railguns / orbital weapons). Intercepts falling lances. (req Rocketry)' },
-  railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit. (req Kinetic Weapons)' },
+  railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', comp: { alloy: 20 }, ds: 'Hypervelocity kinetic gun — reaches clear into orbit, hits any altitude. Its tungsten armatures need a STEEL deposit AND heavy alloy. (req Kinetic Weapons)' },
   // ── PRODUCTION-LINE GROUND UNITS — no research, unlocked by a home-front INFRA line building (unit bReq). A parallel path to the tech tree, like the Veteran Guard. ──
   hydra:    { name: 'Hydra Rocket Battery', art: 'mlrs', domain: 'ground', ic: 210, mp: 14, build: 10, hp: 70, armor: 3, range: 820, dmg: 28, rate: 1.8, weapon: 'rocket', speed: 4, s: 4.2, grp: 2, bReq: 'missileworks', ds: 'Saturation rocket battery — a clear step up from the Tempest MLRS: +14% range, a faster reload that pushes DPS over +50% higher, and sturdier armor to survive counter-battery fire. Salvos of guided rockets blanket ground & low-air targets from range. Buildable from any Factory once a MISSILE WORKS stands (no research, a parallel path to the tech tree). (build a Missile Works)' },
   mammoth:  { name: 'Mammoth Super-Heavy', art: 'tank', domain: 'ground', ic: 340, mp: 30, build: 15, hp: 340, armor: 22, range: 360, dmg: 48, rate: 3.0, weapon: 'shell', speed: 5, s: 6, grp: 1, bReq: 'heavyfoundry', comp: { alloy: 3 }, ds: 'Super-heavy breakthrough tank — roughly +48% HP, +38% armor and +40% DPS over the Goliath, a rolling fortress poured from HEAVY ALLOY. Buildable from any Factory once a HEAVY FOUNDRY stands (no research). (build a Heavy Foundry)' },
@@ -2954,7 +2962,7 @@ const UNIT_DEFS = {
   battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1400, dmg: 40, rate: 1.5, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', weapon2: 'rotary', dmg2: 4, rate2: .4, range2: 360, wpn2Air: true, ceil2: .38, ds: 'VLS SATURATION arsenal ship — the longest hull and longest reach in the fleet, its deck packed edge-to-edge with vertical launch cells that empty in rapid, overlapping salvos onto ground & surface targets. Its own air-defense is a weak flak stub with a short, low reach — screen it with a Missile Cruiser, or it is easy prey from above. (req Naval Power)' },
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, req: 'kinetics', elec: true, weapon2: 'rocket', dmg2: 16, rate2: 1.4, range2: 560, wpn2Air: true, ceil2: .56, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, backed by laser PD and a secondary SAM turret. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, weapon2: 'rocket', dmg2: 12, rate2: 1.1, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA and a secondary SAM turret. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
-  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, ds: 'Stealth MULTIROLE fighter FLIGHT — ONE produced unit, ONE hangar/army-cap slot: the crewed Falcon leads two LOYAL-WINGMAN escort drones flying formation with it, each carrying its own missiles. Beyond-visual-range AAMs for air superiority, and the same missiles strike GROUND & naval targets, AND the flight breaks to intercept incoming bunker-busters/rods when any are within reach. The whole flight shares one magazine and burns fuel together, then lands at an airbase to rearm/refuel.' },
+  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two loyal-wingman drones sharing a single hangar slot. Rearms at an airbase.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'FAST, FRAGILE air-superiority interceptor — the quickest jet in the fleet, climbing highest and cycling its nose laser fastest of any aircraft, but built with zero armor plating and a light airframe: a stiff breeze kills it. Pure anti-air & missile-defense — it does NOT strafe the ground. It duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
@@ -3122,7 +3130,7 @@ for (const k in UNIT_FAM) if (UNIT_DEFS[k]) for (const f of UNIT_FAM[k]) UNIT_DE
 const BUILD_DEFS = {
   // ECON
   powerplant:{ name: 'Power Plant', cat: 'ECON', ic: 120, mp: 55, build: 8, hp: 240, w: 19, h: 15, econ: { ic: 7 }, ds: '+7 Industrial Capacity / sec. Needs a workforce.' },
-  housing:  { name: 'Housing Block', cat: 'ECON', ic: 100, mp: 26, build: 7, hp: 200, w: 18, h: 18, econ: { mp: 3, cap: 4 }, ds: '+3 Manpower/sec, +4 army cap. Settles a district.' },
+  housing:  { name: 'Housing Block', cat: 'ECON', ic: 100, mp: 26, build: 7, hp: 200, w: 18, h: 18, econ: { mp: 3, cap: 4 }, ds: '+3 Manpower/s · +4 army cap.' },
   comms:    { name: 'Comms Tower', cat: 'ECON', ic: 130, mp: 48, build: 8, hp: 160, w: 15, h: 21, econ: { stab: 0.5 }, stabRes: 7, ds: 'THE stability RESERVE building — the ONLY structure that banks a shock-absorber reserve, auto-refilling stability you\'ve lost (up to 100). Stockpile a buffer against sudden shocks. Also lifts your STABILITY CAP a little. (Propaganda Bureaus raise the cap harder; Comms Towers bank the reserve — build both.)' },
   propaganda:{ name: 'Propaganda Bureau', cat: 'ECON', ic: 140, mp: 50, build: 8, hp: 180, w: 16, h: 20, econ: { stab: 1.1 }, ds: 'Hammers out the party line — THE stability CAP building, raising your ceiling harder than anything else. The backbone of a high-influence late game: a higher cap means more stability, and more stability means faster research & a bigger army. (For a shock-absorber RESERVE, build Comms Towers instead.)' },
   extractor:{ name: 'Extractor', cat: 'ECON', ic: 90, mp: 65, build: 7, hp: 180, w: 16, h: 18, onNode: true, econ: { ic: 4 }, ds: 'Build on a deposit to claim a Special Resource + IC.' },
@@ -3182,7 +3190,7 @@ const BUILD_DEFS = {
   plasmaturret:{ name: 'Plasma Turret', cat: 'DEF', ic: 220, mp: 50, build: 9, hp: 260, armor: 10, w: 16, h: 16, weapon: 'plasball', range: 640, dmg: 34, rate: .6, ceil: .56, req: 'plasma', ds: 'Hardened plasma battery — fast self-steering plasma bolts that out-range & out-hit guns and reach high into the sky. (PLASMA WEAPONS)' },
   naniteturret:{ name: 'Nanite Turret', cat: 'DEF', ic: 170, mp: 45, build: 8, hp: 220, armor: 6, w: 14, h: 16, weapon: 'smart', range: 660, dmg: 8, rate: 1.1, ceil: .58, req: 'nanotech', ds: 'Fires NANOBOT ROUNDS — smart munitions that latch onto a target and rapidly DISASSEMBLE it (chews through heavy armour & shields where lasers/plasma struggle). A strong, cheap defensive line straight off the Nanotech path — no Nanite Foundry required. (NANOTECHNOLOGY)' },
   // ===== SPECIAL-RESOURCE / REQUIREMENT BUILDINGS (cat SPEC) — most of your power now comes from BUILDING these, not from raw research =====
-  psionicrelay:{ name: 'Psionic Relay', cat: 'SPEC', ic: 180, mp: 60, build: 9, hp: 160, w: 14, h: 22, req: 'psistudies', econ: { stab: -0.3, inf: -2 }, aura: { rof: 1.18, range: 1.08, r: 280 }, ds: 'Projects local fire-rate & range like a radar, but the mind-static LOWERS your stability cap and trickles away influence. Not a drain on banked stability — just a lower ceiling you can build back up with Comms/Propaganda. The mind-static is what lets your psions reach Applied Psionics.' },
+  psionicrelay:{ name: 'Psionic Relay', cat: 'SPEC', ic: 180, mp: 60, build: 9, hp: 160, w: 14, h: 22, req: 'psistudies', econ: { stab: -0.143, inf: -2 }, aura: { rof: 1.18, range: 1.08, r: 280 }, ds: 'Projects local fire-rate & range like a radar, but the mind-static LOWERS your stability cap and trickles away influence. Not a drain on banked stability — just a lower ceiling you can build back up with Comms/Propaganda. The mind-static is what lets your psions reach Telekinesis.' },
   cloningfac:{ name: 'Cloning Facility', cat: 'SPEC', ic: 220, mp: 80, build: 11, hp: 200, w: 18, h: 16, req: 'cloning', econ: { mp: 2 }, garrison: { keys: ['clone'], n: 2 }, gmod: { costClone: .5, mpAll: .1, cloneFast: 1, capb: 8 }, ds: 'Clone units cost −50% IC and grow TWICE as fast; all units use −10% manpower; +8 army cap and a steady manpower trickle. Decants a standing guard of clones.' },
   deepore:  { name: 'Deep-Ore Excavator', cat: 'SPEC', ic: 360, mp: 130, build: 17, hp: 320, w: 22, h: 16, reqs: ['spaceage', 'automation'], econ: { ic: 14 }, gmod: { autoFast: 1, costMech: .15 }, ds: 'Massive IC boost. Autonomous Plants nanofabricate 70% faster AND switch to high-tier MECHS (android droids) — build droid armies. (Space Age + Automation)' },
   genefac:  { name: 'Gene Facility', cat: 'SPEC', ic: 200, mp: 90, build: 11, hp: 220, w: 18, h: 16, req: 'biotech', garrison: { keys: ['shock'], n: 1 }, gmod: { bioQual: .35, costBio: .15 }, ds: 'Biological units +35% quality (HP) and −15% IC. Build several — each one stacks the bonus. Keeps a gene-boosted shock-trooper guard. (Bioengineering)' },
@@ -3202,6 +3210,8 @@ const BUILD_DEFS = {
   airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
   tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. (Telekinesis)' },
   nanitefoundry:{ name: 'Nanite Foundry', cat: 'DEF', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .58, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
+  heavyport:{ name: 'Heavy Port', cat: 'SPEC', ic: 420, mp: 90, build: 16, hp: 280, armor: 8, w: 24, h: 18, needWater: true, gmod: { allyNavalFast: 1 }, ds: 'Coastal ALLIED logistics base — naval favours (Carrier Strike Group, Expeditionary Fleet) deliver TWICE as fast, and every allied hull that arrives is +2 ARMOR off the gangway. Stack more for more concurrent throughput.' },
+  milbase:  { name: 'Military Base', cat: 'SPEC', ic: 380, mp: 110, build: 14, hp: 260, armor: 6, w: 20, h: 16, gmod: { allyLandFast: 1 }, ds: 'Forward ALLIED staging base — ground & air favours deliver TWICE as fast, and every allied unit that arrives is +2 ARMOR off the transport. Stack more for more concurrent throughput.' },
   // ===== HOME-FRONT INFRASTRUCTURE BATCH (all no-research, all TUNABLE) — buildings that reward INVESTING in your rear echelon: veterancy, medicine, logistics, elite recruitment, fortification, heavy industry. Each reuses an EXISTING mechanism (aura / gmod / garrison / prod). =====
   waracademy:{ name: 'War Academy', cat: 'DEF', ic: 260, mp: 85, build: 12, hp: 240, w: 20, h: 18, aura: { dmg: 1.15, r: 300 }, garrison: { keys: ['inf'], n: 1 }, ds: 'Trains your soldiers to VETERAN standard — every unit fighting in its radius hits +15% HARDER (a damage aura; STACKS multiplicatively, so ring a front line with several to make it brutal). Keeps a small instructor garrison. No research needed.' },
   fieldhospital:{ name: 'Field Hospital', cat: 'DEF', ic: 150, mp: 60, build: 8, hp: 170, w: 18, h: 12, aura: { heal: 4, r: 270 }, ds: 'Front-line triage — patches up ANY of your units inside its radius at +4 HP/s. Repair does NOT stack (the strongest source wins), so spread hospitals to cover different sectors. An early, no-research alternative to the Nanite Foundry\'s repair aura.' },
@@ -3261,8 +3271,8 @@ const RESEARCH = {
   titans:   { name: 'Living Titans', tier: 3, branch: 'bio', x: 770, y: 445, pre: ['cloning'], cost: 320, time: 32, eff: '★ Unlocks the TITAN superweapon. +40% Manpower, +8 army cap.', units: ['titan'], apply: g => { g.mult.mp += .4; g.mult.capb += 8; } },
   // ===== PSIONICS (the whole tree is dangerous — kinesises) =====
   psistudies:{ name: 'Psionic Studies', tier: 1, branch: 'psi', dang: true, x: 150, y: 470, pre: ['info'], cost: 70, time: 14, sc: 5, eff: 'Open the mind. +stability, +4 influence/sec, +8% fire rate. Unlocks the PSIONIC RELAY — which you must build to reach Applied Psionics.', inf: 4, blds: ['psionicrelay'], apply: g => { g.mult.stab += .15; g.mult.rof += .08; } },
-  psionics: { name: 'Applied Psionics', tier: 2, branch: 'psi', dang: true, x: 500, y: 545, pre: ['psistudies'], bReq: 'psionicrelay', cost: 170, time: 22, sc: 8, eff: '+15% fire rate, +12% range. Unlocks Psi-Troopers. (Requires a Psionic Relay built.)', units: ['psitrooper'], apply: g => { g.mult.rof += .15; g.mult.range += .12; } },
-  telekinesis:{ name: 'Telekinesis', tier: 3, branch: 'psi', dang: true, x: 800, y: 540, pre: ['psionics'], cost: 300, time: 30, sc: 10, eff: '★ Unlocks the TELEKINETIC PYLON superweapon and the TRACTOR BEAM (drags high orbital enemies down to burn up in the atmosphere). Mind-moved matter: +60% CONSTRUCTION SPEED, +10 army cap. Also +25% range, +15% fire rate.', units: ['psibeam'], blds: ['tractorbeam'], apply: g => { g.mult.range += .25; g.mult.rof += .15; g.mult.conspd += .6; g.mult.capb += 10; } },
+  telekinesis:{ name: 'Telekinesis', tier: 2, branch: 'psi', dang: true, x: 500, y: 545, pre: ['psistudies'], bReq: 'psionicrelay', cost: 170, time: 22, sc: 8, eff: '★ Unlocks the TELEKINETIC PYLON superweapon and the TRACTOR BEAM (drags high orbital enemies down to burn up in the atmosphere). Mind-moved matter: +60% CONSTRUCTION SPEED, +10 army cap. Also +25% range, +15% fire rate. (Requires a Psionic Relay built.)', units: ['psibeam'], blds: ['tractorbeam'], apply: g => { g.mult.range += .25; g.mult.rof += .15; g.mult.conspd += .6; g.mult.capb += 10; } },
+  psionics: { name: 'Applied Psionics', tier: 3, branch: 'psi', dang: true, x: 800, y: 540, pre: ['telekinesis'], cost: 300, time: 30, sc: 10, eff: '+15% fire rate, +12% range. Unlocks Psi-Troopers.', units: ['psitrooper'], apply: g => { g.mult.rof += .15; g.mult.range += .12; } },
   // CUT: hivemind (combo psi+nanotech → +30 army cap / −12% cost) removed — a bare stat combo that never integrated cleanly and was a prerequisite for nothing.
   shapeshifter:{ name: 'Shapeshifters', tier: 3, branch: 'psi', dang: true, x: 650, y: 558, pre: ['psionics', 'biotech', 'nanotech'], cost: 360, time: 36, sc: 12, eff: '★ TRIPLE-COMBO Bio+Psi+Nano → Shapeshifters. ALL your units now SELF-REGENERATE and your ground troops move much faster. +15% armor & damage.', units: ['shifter'], apply: g => { g.mult.armor += .15; g.mult.dmg += .15; g.allRegen = true; g.infFast = true; } },
   // ===== DEFENSE (anti-bombardment — the answer to the orbital-rod apocalypse) =====
@@ -3344,7 +3354,7 @@ function newGame(diff) {
     stats: { built: {}, recruited: {}, researched: [], strikes: {}, killsByType: {}, lostByType: {}, spentIC: 0, spentMP: 0, spentInf: 0, earnedIC: 0, earnedMP: 0, earnedInf: 0, peakIC: 0, peakMP: 0, peakInf: 0, upkeepPaid: 0, peakUpkeep: 0, antimatterMade: 0, componentsMade: { alloy: 0, rocketpart: 0 }, bossKills: 0, peakArmy: 0, heat: new Array(HEAT_COLS * HEAT_ROWS).fill(0), snap: {},
       // v3.79 EXPANDED DOSSIER — the rest of the ~48-field target set. Same rules: additive, read-only by the end screen, never fed back into gameplay.
       peakIncomeIC: 0, resourcesCaptured: { steel: 0, oil: 0, rare: 0, uranium: 0 },   // ECONOMY
-      totalRecruited: 0, byDomain: { ground: 0, air: 0, naval: 0, space: 0 }, capitalsBuilt: 0, totalLost: 0, peakArmyCap: 0,   // MILITARY
+      totalRecruited: 0, byDomain: { ground: 0, air: 0, naval: 0, space: 0 }, capitalsBuilt: 0, totalLost: 0, peakArmyCap: 0, allyUnits: 0,   // MILITARY
       damageDealt: 0, damageTaken: 0, ordnanceIntercepted: 0, biggestKillBurst: 0, totalKills: 0, peakEnemies: 0,   // COMBAT
       buildingsLost: 0, citiesLost: 0, citiesCaptured: 0, citiesRetaken: 0, minStability: 100, fleetStartMax: 0,   // DEFENSE / SURVIVAL
       dangerousResearched: 0, society: null, eraReached: 0, intent: '', difficulty: '', prepDuration: 0 },        // RESEARCH / META (intent/difficulty/prepDuration filled in just below, once G exists)
@@ -4367,7 +4377,7 @@ function tryStartQueue() {
 }
 function cancelResearch() {
   if (!G.research) return; const r = RESEARCH[G.research.key];
-  G.inf = Math.min(600, G.inf + (G.research.paid || 0)); if (r.sc) G.stabOffset = Math.max(0, (G.stabOffset || 0) - r.sc);   // refund only what's actually been paid in so far; refund the unrest offset on cancel
+  G.inf = Math.min(INF_CAP(), G.inf + (G.research.paid || 0)); if (r.sc) G.stabOffset = Math.max(0, (G.stabOffset || 0) - r.sc);   // refund only what's actually been paid in so far; refund the unrest offset on cancel
   G.research = null; toast('RESEARCH CANCELLED — influence refunded'); tryStartQueue(); buildResearch();
 }
 function finishResearch() {
@@ -5099,10 +5109,11 @@ function updateGame(dt) {
   // building placement) snaps it straight back down to baseline. Rewards saving up, discourages influence-spam.
   const MOM_CAP = 3.0, MOM_TAU = 25;   // exponential approach: ~95% of the way to the cap after ~75s (3×tau) of uninterrupted saving
   G.infMomentum = infSpentThisFrame ? 1.0 : Math.min(MOM_CAP, (G.infMomentum || 1) + (MOM_CAP - (G.infMomentum || 1)) * dt / MOM_TAU);
-  G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) * G.infMomentum); G.inf = Math.max(0, Math.min(600, G.inf + G.infR * dt));   /* INFLUENCE accrues from effective stability, amplified by momentum; Superhuman Cadres no longer drain influence directly — their upkeep is paid entirely via the stability CEILING (see G.stabCap below), never a hard lockout of the research economy */
+  G.infR = Math.max(0, (2.0 + (G.infBonus || 0)) * (Math.max(0, effStab()) / 100) * G.infMomentum); G.inf = Math.max(0, Math.min(INF_CAP(), G.inf + G.infR * dt));   /* INFLUENCE accrues from effective stability, amplified by momentum; Superhuman Cadres no longer drain influence directly — their upkeep is paid entirely via the stability CEILING (see G.stabCap below), never a hard lockout of the research economy */
   if (G.stats) { if (G.infR > 0) G.stats.earnedInf += G.infR * dt; G.stats.peakInf = Math.max(G.stats.peakInf, G.inf); }   // AFTER-ACTION — cumulative earned + peak banked influence
   if (G.stabOffset > 0) G.stabOffset = Math.max(0, G.stabOffset - (0.5 + Math.max(0, G.mult.stab) * .1) * dt);   // dangerous-research unrest now RECOVERS on its own over time (no longer requires spamming stability buildings)
   if (G.allyCd > 0) G.allyCd = Math.max(0, G.allyCd - dt);   // ⚑ HIRE ALLIES reinforcement cooldown — a single shared timer so allied packages are a paced safety valve, not a spammable win button (see ALLIES / hireAllies)
+  if (typeof tickAllyContracts === 'function') tickAllyContracts(dt);   // deliver each open ally contract's next unit at its city once its clock elapses — see hireAllies
   if (G.nukeFlash) G.nukeFlash = Math.max(0, G.nukeFlash - dt * 1.4);
   if (G.hitFlash) G.hitFlash = Math.max(0, G.hitFlash - dt * 2.6);   // red impact flicker decays fast
   // lingering firestorms — cook anything on the ground inside them
@@ -5635,45 +5646,54 @@ function armStrike(type) {
 /* ===== ⚑ HIRE ALLIES — a PREMIUM, high-impact INFLUENCE+IC dump =====
    Late-game influence (and IC) tends to pile up with nothing large to spend it on. Calling in a favour
    from the world's other powers lets you dump a HUGE slug of INFLUENCE + IC (manpower stays a modest
-   secondary cost) for an instant, genuinely heavyweight package of allied forces spawned as YOUR OWN
-   units near your capital. Mirrors the ☢ STRIKE UX (a top-bar button + a panel of options) but needs no
-   aiming — the favour just arrives. Gated by a single shared cooldown (G.allyCd) so it's a paced valve,
-   not a spammable win button. This is deliberately EXPENSIVE now — a real emergency button, not a cheap
-   top-up — and the rosters are up-tiered with real hardware, not just more bodies. Everything below is
-   TUNABLE — bump the numbers, don't add caps. */
+   secondary cost) for a genuinely heavyweight package of allied forces, fielded as YOUR OWN units. v4.0
+   REWORK: hiring no longer dumps everything at once by your capital — it opens a CONTRACT at EVERY held
+   city (the roster divided round-robin, every city gets ≥1) that trickles units in one at a time over the
+   following seconds — see hireAllies/tickAllyContracts. Each package also permanently (for as long as it's
+   delivering, or anything it delivered survives) shaves a chunk off your INFLUENCE CAP — see INF_CAP() /
+   G.allyInfPen — a real ongoing price for outside power, not just an up-front one. Mirrors the ☢ STRIKE UX
+   (a top-bar button + a panel of options) but needs no aiming. Gated by a single shared cooldown (G.allyCd)
+   so it's a paced valve, not a spammable win button. This is deliberately EXPENSIVE — a real emergency
+   button, not a cheap top-up — and the rosters are up-tiered with real hardware, not just more bodies.
+   Everything below is TUNABLE — bump the numbers, don't add caps. */
 const ALLIES = {
   // units: EXISTING friendly unit keys (see UNIT_DEFS). Carrier auto-launches its own free deck wing (carrierN),
   // so the strike group brings its own fighters organically. inf = the primary sink; ic is a heavy secondary
-  // cost (~2-2.5× the old numbers); mp stays modest; cd in game-seconds.
-  csg:    { name: 'Carrier Strike Group', short: 'Strike Group', inf: 450, ic: 650, mp: 100, cd: 110,
+  // cost (~2-2.5× the old numbers); mp stays modest; cd in game-seconds. NAVAL PACKAGES ARE MARKED naval:true —
+  // Heavy Port doubles their delivery speed + armors delivered hulls; every OTHER package is a ground/air package
+  // that Military Base speeds up instead. infCapCost = how much this favour permanently shaves off your influence
+  // CAP for as long as it's still delivering or has a living delivered unit (see INF_CAP/G.allyInfPen) — the real
+  // price of calling in outside power. every = game-seconds between each unit delivered PER CITY (see hireAllies).
+  csg:    { name: 'Carrier Strike Group', short: 'Strike Group', inf: 450, ic: 650, mp: 100, cd: 110, naval: true, infCapCost: 80, every: 13,
             units: ['carrier', 'battlecruiser', 'destroyer', 'cruiser'],
             ds: 'Allied CARRIER STRIKE GROUP — a fleet carrier (launches its own free fighter wing off the deck), a railgun battlecruiser, a destroyer escort and a missile cruiser, sailed in from a friendly power and deployed off your coast. The heavyweight naval influence dump. (needs water near your capital)' },
-  armor:  { name: 'Armored Battalion', short: 'Battalion', inf: 250, ic: 400, mp: 85, cd: 75,
+  armor:  { name: 'Armored Battalion', short: 'Battalion', inf: 250, ic: 400, mp: 85, cd: 75, infCapCost: 40, every: 9,
             units: ['mammoth', 'heavytank', 'tank', 'tank', 'railgun'],
             ds: 'Allied ARMORED BATTALION — a Mammoth super-heavy, a "Goliath" heavy, two main battle tanks and a railgun to punch through anything, landed by your capital. A serious armored fist for when a flank is caving in.' },
-  airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 340, ic: 460, mp: 70, cd: 90,
+  airwing:{ name: 'Expeditionary Air Wing', short: 'Air Wing', inf: 340, ic: 460, mp: 70, cd: 90, infCapCost: 40, every: 10,
             units: ['fighter', 'fighter', 'laserplane', 'pdjet'],
             ds: 'Allied EXPEDITIONARY AIR WING — two multirole "Falcon" fighters, a heavy "Solaris" laser gunship and a "Warden" laser interceptor, scrambled from an allied base. Real air power across both roles (they rearm at your airbases once their ordnance/fuel runs low).' },
   // ── extra packages — same shared-cooldown + INFLUENCE(+IC+MP) model, spread across expensive fast-fixes → the heaviest buy in the game. All use EXISTING friendly unit keys (see UNIT_DEFS) and spawn as YOUR OWN units. Tune freely; add packages, don't cap. ──
-  interc: { name: 'Interceptor Screen', short: 'Interceptor Screen', inf: 180, ic: 270, mp: 40, cd: 60,
+  interc: { name: 'Interceptor Screen', short: 'Interceptor Screen', inf: 180, ic: 270, mp: 40, cd: 60, infCapCost: 40, every: 7,
             units: ['pdjet', 'pdjet', 'pdjet'],
             ds: 'Allied INTERCEPTOR SCREEN — a flight of three "Warden" laser interceptors put up as a combat air patrol: the fastest, highest-climbing jets in the sky. The cheapest call left in the book — pure air-superiority to clear a sky that\'s getting away from you.' },
-  arty:   { name: 'Artillery Battery', short: 'Artillery Battery', inf: 210, ic: 340, mp: 65, cd: 65,
+  arty:   { name: 'Artillery Battery', short: 'Artillery Battery', inf: 210, ic: 340, mp: 65, cd: 65, infCapCost: 40, every: 8,
             units: ['railgun', 'mlrs', 'mlrs', 'arty'],
             ds: 'Allied ARTILLERY BATTERY — a hypervelocity "Lance" railgun plus two "Tempest" MLRS and a "Thunder" SPG, trucked in to your capital. Long-range ground suppression with real armor-piercing teeth to break up a landing before it reaches your lines.' },
-  helo:   { name: 'Helicopter Wing', short: 'Helicopter Wing', inf: 280, ic: 390, mp: 60, cd: 80,
+  helo:   { name: 'Helicopter Wing', short: 'Helicopter Wing', inf: 280, ic: 390, mp: 60, cd: 80, infCapCost: 40, every: 9,
             units: ['heli', 'heligunship', 'heligunship'],
             ds: 'Allied HELICOPTER WING — a "Kite" attack heli and TWO heavy "Mastodon" gunships, flown in low. Fast-responding close air support with real staying power over the flank that\'s caving.' },
-  bombers:{ name: 'Bomber Wing', short: 'Bomber Wing', inf: 400, ic: 580, mp: 75, cd: 100,
+  bombers:{ name: 'Bomber Wing', short: 'Bomber Wing', inf: 400, ic: 580, mp: 75, cd: 100, infCapCost: 80, every: 11,
             units: ['bomber', 'bomber', 'pdjet', 'pdjet'],
             ds: 'Allied BOMBER WING — two "Lancer" heavy bombers with a pair of "Warden" laser interceptors flying top cover. Heavyweight air ordnance, properly escorted, to flatten a massed skyfall or a grounded harvester.' },
-  column: { name: 'Heavy Armor Column', short: 'Armor Column', inf: 380, ic: 600, mp: 125, cd: 100,
+  column: { name: 'Heavy Armor Column', short: 'Armor Column', inf: 380, ic: 600, mp: 125, cd: 100, infCapCost: 80, every: 10,
             units: ['mammoth', 'heavytank', 'tank', 'tank', 'railgun', 'aa'],
             ds: 'Allied HEAVY ARMOR COLUMN — a Mammoth super-heavy, a "Goliath" heavy, two main battle tanks, a railgun and a flak track: a full armored fist with real anti-armor punch, landed by your capital. The big ground buy when a whole flank has collapsed.' },
-  fleet:  { name: 'Allied Expeditionary Fleet', short: 'Expeditionary Fleet', inf: 550, ic: 1050, mp: 150, cd: 170,
+  fleet:  { name: 'Allied Expeditionary Fleet', short: 'Expeditionary Fleet', inf: 550, ic: 1050, mp: 150, cd: 170, naval: true, infCapCost: 80, every: 16,
             units: ['grandbattleship', 'battlecruiser', 'destroyer'],
             ds: '★ Allied EXPEDITIONARY FLEET — a full allied shore-bombardment dreadnought (a spinal railgun that out-reaches even an orbital tungsten rod and elevates to hit ANY altitude, plus a deflector shield), escorted by a railgun battlecruiser and a destroyer screen. The single most expensive favour you can call in — a fleet that can turn a battle on its own. Both capital hulls carry their own standing IC/s upkeep once landed. (needs water near your capital)' },
 };
+function INF_CAP() { return Math.max(200, 600 - (G.allyInfPen || 0)); }   // ⚑ ALLIES permanently shave the influence CAP while their favour is still delivering or has a living unit in the field — see tickAllyContracts
 function allyAvail(a) {   // null = hireable; otherwise a short reason string (shown on the button / as a toast)
   if ((G.allyCd || 0) > 0) return 'regrouping — ' + Math.ceil(G.allyCd) + 's';
   if (G.inf < a.inf) return 'needs ' + a.inf + ' influence';
@@ -5686,25 +5706,74 @@ function allyLandingX() {   // deploy near a surviving city (prefer the capital)
   const c = live.find(c => c.capital) || live[0];
   return Math.max(120, Math.min(WORLD_W - 120, c ? c.x : WORLD_W / 2));
 }
+// ⚑ ALLY CONTRACTS (v4.0 rework) — hiring a package no longer dumps every unit at once by your capital. It opens a
+// CONTRACT at EVERY held city: the package's unit roster is divided round-robin across those cities (each city gets
+// at least one unit, even if the roster is smaller than your city count — the roster repeats to cover them all), then
+// each contract trickles its units in one at a time, `every` seconds apart, AT that city. Cost is charged once, up
+// front, same as before. See tickAllyContracts (the per-frame delivery clock) and deliverAllyUnit.
 function hireAllies(type) {
   const a = ALLIES[type]; if (!a || !G || mode !== 'game' || G.over) return;
   const av = allyAvail(a); if (av) return toast(av.toUpperCase());
+  const cities = (G.cities || []).filter(c => c.hp > 0 && !c.held);
+  if (!cities.length) return toast('NO CITIES STANDING TO RECEIVE ALLIES');
   G.inf -= a.inf; G.ic -= a.ic; G.mp -= a.mp; G.infSpent = true;   // spending INFLUENCE snaps momentum back to baseline, exactly like a research draw or a building placement
   if (G.stats) { G.stats.spentIC += a.ic; G.stats.spentMP += a.mp; G.stats.spentInf += a.inf; }
   G.allyCd = a.cd;
-  const base = allyLandingX();
-  let n = 0;
-  for (let i = 0; i < a.units.length; i++) {
-    const k = a.units[i];
-    const dx = Math.max(80, Math.min(WORLD_W - 80, base + (i - (a.units.length - 1) / 2) * 72));   // fan the package out around the landing point
-    spawnUnit(k, dx); const u = G.units[G.units.length - 1];
-    if (u) { u.ally = true; n++; if (u.d.domain === 'ground') { u.x = dx; u.y = groundY(dx) - u.d.s; } }   // ground pieces land exactly where fanned; spawnUnit already snaps naval hulls to the nearest water & air units to a patrol altitude
+  const nCities = cities.length, totalUnits = Math.max(a.units.length, nCities);   // repeat the roster if there are more held cities than package units, so every city still gets ≥1
+  const perCity = Array.from({ length: nCities }, () => []);
+  for (let i = 0; i < totalUnits; i++) perCity[i % nCities].push(a.units[i % a.units.length]);
+  G.allyContracts = G.allyContracts || []; G.allyContractSeq = (G.allyContractSeq || 0) + 1;
+  const groupId = G.allyContractSeq;
+  for (let ci = 0; ci < nCities; ci++) {
+    const cityIdx = G.cities.indexOf(cities[ci]);
+    G.allyContracts.push({ id: groupId + '.' + ci, groupId, type, name: a.name, cityIdx, queue: perCity[ci], every: a.every || 10, t: 0, naval: !!a.naval, infCapCost: a.infCapCost || 40 });
   }
-  const gy = groundY(base);
-  G.parts.push({ k: 'flash', x: base, y: gy - 30, r: 40, life: .3 }); boom(base, gy - 6, 6); shake(3);
-  floatText(base, gy - 46, '⚑ ALLIED ' + a.short.toUpperCase() + ' ARRIVES', '#7fc4ff');
-  toast('⚑ ' + a.name.toUpperCase() + ' DEPLOYED — ' + n + ' UNITS'); if (SFX.build) SFX.build();
-  buildAlliesPanel();   // refresh the panel so the cooldown / affordability updates immediately
+  toast('⚑ ' + a.name.toUpperCase() + ' EN ROUTE — arriving at ' + nCities + ' cit' + (nCities > 1 ? 'ies' : 'y') + ' over time'); if (SFX.build) SFX.build();
+  buildAlliesPanel();   // refresh the panel so the cooldown / affordability / contract list updates immediately
+}
+// per-frame delivery clock for every open ally contract — called from updateGame right beside the G.allyCd countdown
+function tickAllyContracts(dt) {
+  if (!G.allyContracts) G.allyContracts = [];
+  G._allyPanelT = (G._allyPanelT || 0) + dt; if (G._allyPanelT > 1) { G._allyPanelT = 0; const ap = document.getElementById('alliesPanel'); if (ap && ap.classList.contains('show')) buildAlliesPanel(); }   // live-refresh the EN ROUTE list / cooldown while the panel is open, throttled to ~1/s
+  if (!G.allyContracts.length) { G.allyInfPen = 0; return; }
+  const bm = bmod();
+  for (const c of G.allyContracts) {
+    if (!c.queue.length) continue;
+    const city = G.cities[c.cityIdx];
+    if (!city || city.hp <= 0 || city.held) { c.queue.length = 0; continue; }   // the city fell — cancel whatever was still inbound to it
+    const speedMul = (c.naval ? bm.allyNavalFast : bm.allyLandFast) ? 2 : 1;   // Heavy Port / Military Base double the delivery rate for their matching packages
+    c.t += dt * speedMul;
+    while (c.queue.length && c.t >= c.every) { c.t -= c.every; deliverAllyUnit(c, city); }
+  }
+  G.allyContracts = G.allyContracts.filter(c => c.queue.length > 0 || G.units.some(u => u.allyContract === c.id));   // drop a contract only once it's both empty AND every unit it delivered has died
+  G.allyInfPen = G.allyContracts.reduce((s, c) => s + c.infCapCost, 0);   // the permanent (while it lasts) influence-CAP price — see INF_CAP()
+}
+function deliverAllyUnit(c, city) {
+  const key = c.queue.shift();
+  const dx = Math.max(80, Math.min(WORLD_W - 80, city.x + (Math.random() - .5) * 100));
+  spawnUnit(key, dx); const u = G.units[G.units.length - 1];
+  if (u) {
+    u.ally = true; u.allyContract = c.id;
+    if (u.d.domain === 'ground') { u.x = dx; u.y = groundY(dx) - u.d.s; }   // naval hulls already snapped to water, air units to patrol altitude, inside spawnUnit
+    const bm = bmod(), armored = (c.naval ? bm.allyNavalFast : bm.allyLandFast);
+    if (armored) u.d = Object.assign({}, u.d, { armor: (u.d.armor || 0) + 2 });   // a PRIVATE per-unit def copy — never mutates the shared UNIT_DEFS/effDef entry every other unit of this type points at
+  }
+  if (G.stats) G.stats.allyUnits = (G.stats.allyUnits || 0) + 1;
+  const gy = groundY(dx); G.parts.push({ k: 'flash', x: dx, y: gy - 24, r: 26, life: .25 }); if (typeof spark === 'function') spark(dx, gy - 24, 1);
+  floatText(dx, gy - 40, '⚑ ALLY ARRIVES', '#7fc4ff');
+}
+// ⚡ RUSH — pay 25% of a contract's package IC to deliver every unit still in its queue immediately, at that city
+function rushAllyContract(id) {
+  if (!G || mode !== 'game' || G.over) return;
+  const c = (G.allyContracts || []).find(c => c.id === id); if (!c || !c.queue.length) return;
+  const a = ALLIES[c.type]; if (!a) return;
+  const cost = Math.round(a.ic * .25);
+  if (G.ic < cost) return toast('NEEDS ' + cost + ' IC TO RUSH');
+  const city = G.cities[c.cityIdx]; if (!city || city.hp <= 0 || city.held) { c.queue.length = 0; return; }
+  G.ic -= cost; if (G.stats) G.stats.spentIC += cost;
+  while (c.queue.length) deliverAllyUnit(c, city);
+  toast('⚡ RUSHED ' + a.name.toUpperCase() + ' AT ' + (city._cityName || 'CITY').toUpperCase());
+  buildAlliesPanel();
 }
 function openAllies() {
   if (!G || mode !== 'game' || G.over) return;
@@ -5719,11 +5788,22 @@ function buildAlliesPanel() {
   const cd = G.allyCd || 0;
   let html = `<button class="cmdx" title="Close (Esc)">×</button><div class="sph">⚑ HIRE ALLIES · ${Math.floor(G.inf)} INFLUENCE · ${cd > 0 ? 'REGROUPING ' + Math.ceil(cd) + 's' : 'READY'}</div>`;
   for (const t in ALLIES) { const a = ALLIES[t], av = allyAvail(a), can = !av;
-    html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic} IC · ${a.mp} MP · ${a.cd}s cooldown${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
-  html += `<div class="spc">a favour from the world's other powers — allied forces deploy by your capital · an influence sink, not a win button</div>`;
+    html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic} IC · ${a.mp} MP · ${a.cd}s cooldown · arrives at every held city over time${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
+  const contracts = (G.allyContracts || []).filter(c => c.queue.length > 0);
+  if (contracts.length) {
+    html += `<div style="font-size:8.5px;letter-spacing:1px;color:#7fc4ff;margin:10px 0 4px;border-top:1px solid var(--line);padding-top:6px">EN ROUTE</div>`;
+    for (const c of contracts) {
+      const city = G.cities[c.cityIdx], rushCost = Math.round((ALLIES[c.type] ? ALLIES[c.type].ic : 0) * .25);
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:#10161f;border:1px solid var(--line);border-radius:4px;padding:5px 8px;margin-top:5px;font-size:9.5px;color:#c4d4e8">`
+        + `<span>${c.name} → ${city ? (city._cityName || 'CITY') : '?'} <b style="color:#7fc4ff">×${c.queue.length}</b> left</span>`
+        + `<button data-rush="${c.id}" style="background:#1a2735;border:1px solid #4a9fe0;color:#7fc4ff;border-radius:3px;padding:3px 7px;font-size:9px;cursor:pointer;white-space:nowrap">⚡ RUSH (${rushCost} IC)</button></div>`;
+    }
+  }
+  html += `<div class="spc">a favour from the world's other powers — arrives at EVERY held city over time, but lowers your influence CAP while it's still delivering (or alive) · an influence sink, not a win button</div>`;
   ap.innerHTML = html; ap.classList.add('show');
   const xb = ap.querySelector('.cmdx'); if (xb) xb.onclick = closeAllies;   // × closes the panel
   ap.querySelectorAll('.sopt').forEach(b => b.onclick = () => hireAllies(b.dataset.al));
+  ap.querySelectorAll('[data-rush]').forEach(b => b.onclick = () => rushAllyContract(b.dataset.rush));
   const bA = document.getElementById('btnAllies'); if (bA) bA.classList.add('on');
 }
 function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & HURLS the earth, flattens anything anchored where it lands
@@ -7717,6 +7797,7 @@ function renderProdDetail() {
   // or a live-stat refresh re-renders the SAME unit, so its scroll must survive; switching to a DIFFERENT unit is new
   // content and legitimately opens at the top (that's the browser default, not something to fight).
   const sameSel = pd._lastKey === key, savedScroll = sameSel ? pd.scrollTop : 0;
+  if (!sameSel) pd._dsExpanded = false;   // switching to a different unit re-collapses the description
   pd._lastKey = key;
   if (!key || !UNIT_DEFS[key]) { pd.innerHTML = '<div class="pdempty">Select a unit to see its loadout, cost and stats.</div>'; return; }
   const base = UNIT_DEFS[key], d = effDef(key), bm = bmod(), upgraded = d !== base;
@@ -7755,7 +7836,7 @@ function renderProdDetail() {
     `<canvas width="220" height="50"></canvas>` +
     `<div class="pdname">${upgraded ? `<span style="color:#7cffb0">${d.name}</span>` : d.name}${grp > 1 ? ` · batch ×${grp}` : ''}</div>` +
     `<div class="pdtags">${domTag}</div>` +
-    `<div class="pdds">${d.ds || ''}</div>` +
+    `<div class="pdds" id="pdDs">${d.ds || ''}<div class="pdds-fade"></div></div><button class="pdmore" data-more hidden>more ▾</button>` +
     `<div class="pdh">⚔ ARMAMENT</div>${wpnHtml}` +
     `<div class="pdh">📊 STATS</div><div class="st"><span>HP / Armor</span><b>${d.hp} / ${d.armor || 0}</b></div><div class="st"><span>Speed</span><b>${d.speed}</b></div><div class="st"><span>⚖ Weight</span><b>${Math.round(defWeight(d) * 100) / 100}</b></div>` +
     `<div class="pdh">💲 COST</div>${costLines}` +
@@ -7763,6 +7844,8 @@ function renderProdDetail() {
     `<div class="qrow"><button class="qbtn" data-q="-1">−</button><div class="qval">×${qty}</div><button class="qbtn" data-q="1">+</button></div>` +
     `<button class="pbuild${canBuild ? '' : ' cant'}" data-build="${key}">${canBuild ? `BUILD ×${qty}` : 'CANNOT BUILD'}<span class="pbsub">${canBuild ? `${totUnits} unit${totUnits > 1 ? 's' : ''} · ${totIC} IC${totMP ? ` · ${totMP} MP` : ''}` : 'see requirement above'}</span></button>`;
   const ic = pd.querySelector('canvas').getContext('2d'); ic.translate(110, 40); ic.scale(2.4, 2.4); if (d.domain === 'air' || d.domain === 'naval') ic.scale(-1, 1); ART[d.art](ic, 13, -.6);
+  const dsEl = pd.querySelector('#pdDs'), moreBtn = pd.querySelector('[data-more]');   // long descriptions clamp to 9em with a fade + toggle so stats never hide below the fold
+  if (dsEl && moreBtn) { const overflowing = dsEl.scrollHeight > dsEl.clientHeight + 2; if (overflowing) { moreBtn.hidden = false; if (pd._dsExpanded) { dsEl.classList.add('expanded'); moreBtn.textContent = '▴ less'; } } else pd._dsExpanded = false; }
   pd.scrollTop = savedScroll;   // restore — a qty tweak or a live stat refresh must never yank the panel back to the top on the player
 }
 // ---- UNIT BUFF PANEL — read-only readout of every LIVE effect currently touching a selected unit, with its
@@ -8013,10 +8096,32 @@ const TIPS = [
   'Air units burn fuel and ammo and must return to base to rearm. Keep airbases behind your line so they have somewhere to land.',
   'Hitting 0 stability is a recoverable CRISIS now, not instant defeat — but production freezes and troops mutiny. Don\'t live on the edge.',
   'Bury your key buildings underground and they survive an orbital barrage. Anything anchored at ground zero gets gutted.',
-  'The ⚑ ALLIES button turns spare Influence into instant units by your capital — a safety valve when a flank caves in.',
+  'The ⚑ ALLIES button turns spare Influence into reinforcements that arrive at EVERY held city over time — a safety valve when a flank caves in, at a real ongoing cost to your influence cap.',
   'Entrenched, dug-in ground units soak up to 60% of incoming damage. Let them hold a position instead of shuffling them around.',
   'Killing a boss superweapon gives you back +10 stability. Prioritize the big ones — they\'re also spawning the smaller waves.',
   'Space out your launch sites — TELs, Arsenal Ships and Ballistic Subs all fire strikes, so one hit can\'t knock out your whole arsenal.',
+  'If you don\'t have a lot of anti-orbital, investing in Railgun Lances can help fill a screen.',
+  'Spamming is not a pointless strategy, but the autodrones will start adapting to your playstyle if you leave gaps in your defensive line.',
+  'Infantry are the only unit type that will passively build fixed gun emplacements and defensive structures where they\'re stationed.',
+  'Nanoforge ships are by far the most powerful units in the game, but they incur heavy costs.',
+  'Even if you have no plans to build ships, toss a few Shipyards onto water. The autodrones tend to land there, and Shipyards keep an escort.',
+  'Uranium Enrichment is a great way to get early-game income, since it improves how effective your Power Plants are. Just be careful to protect it.',
+  'Draining oceans for more land is a valid way to build more space for structures.',
+  'Autodrone armor has hover modules. Sinking your own units into the sea won\'t sink the drones.',
+  'Build speed might seem unhelpful until after the initial bombardment, when the drones have pounded your defenses.',
+  'Helicopters can refuel at cities, so spread them around the map for easy air cover.',
+  'Anything that can hit air can intercept falling projectiles.',
+  'Aircraft carriers produce their deck aircraft outside the army cap and hangar limits.',
+  'Special buildings have incredibly powerful bonuses. Look at your new upgrades to see how you can stack these effects together.',
+  'Building underground is INCREDIBLY useful if you need more space. Buildings that grant local bonuses still give them to the surface above.',
+  'Use your late-game influence to buy allies. They reinforce you permanently and let you focus on other sectors when you have excess influence.',
+  'You should typically aim for about 400 mobile units in a Total Invasion.',
+  "Don't quit if the bunker busters destroy a big chunk of your ground forces. That's intended. You can bite back.",
+  'Autodrones will target your airbases to make it harder for your aircraft to refuel. Keep a healthy defensive screen around them.',
+  "You're cool.",
+  "Please don't research everything in one match. The maximum-stability reduction will bankrupt you.",
+  'Cities automatically raise infantry militia, which helps them hold a defensive line.',
+  "Infantry is a good way to spend early-game manpower so you don't waste time sitting at the cap.",
 ];
 function showTip() { const t = document.getElementById('toast'); if (!t) return; const msg = TIPS[Math.floor(Math.random() * TIPS.length)]; t.textContent = '💡 ' + msg; t.classList.add('show'); toastT = 7; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 7000); }
 function banner(main, sub, dur) { const el = document.getElementById('alertBanner'); if (!el) return; el.innerHTML = `<div class="ab-main">${main}</div>` + (sub ? `<div class="ab-sub">${sub}</div>` : ''); el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), (dur || 4) * 1000); }   // BIG centre-screen alert, independent of the toast so major events can't be buried by build messages
@@ -8232,7 +8337,8 @@ function renderAARMilitary() {
   const capTot = (G.cities || []).filter(c => c.capital).length, capAlive = (G.cities || []).filter(c => c.capital && c.hp > 0).length;
   html += '<div class="aar-group aar-panel-wide"><h3>BY DOMAIN &amp; TOTALS</h3><div class="aar-stats">' + aarStatRow('Ground Forces Fielded', dom.ground) + aarStatRow('Air Forces Fielded', dom.air) + aarStatRow('Naval Forces Fielded', dom.naval) + aarStatRow('Space Forces Fielded', dom.space) +
     aarStatRow('Capitals Standing', capAlive + ' / ' + capTot) + aarStatRow('Capital-Class Units Built', st.capitalsBuilt || 0) + aarStatRow('Peak Army Size', st.peakArmy) + aarStatRow('Peak Army Cap', st.peakArmyCap || 0) + aarStatRow('Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—') +
-    aarStatRow('Total Recruited', (st.totalRecruited || aarSum(st.recruited)).toLocaleString()) + aarStatRow('Total Lost', (st.totalLost || G.unitsLost || 0).toLocaleString()) + '</div></div>';
+    aarStatRow('Total Recruited', (st.totalRecruited || aarSum(st.recruited)).toLocaleString()) + aarStatRow('Total Lost', (st.totalLost || G.unitsLost || 0).toLocaleString()) +
+    (() => { const totFielded = st.totalRecruited || aarSum(st.recruited), allied = st.allyUnits || 0; return allied ? aarStatRow('Allied Units Delivered', allied.toLocaleString() + (totFielded ? ' (' + (allied / totFielded * 100).toFixed(1) + '% of all units fielded)' : '')) : ''; })() + '</div></div>';
   host.innerHTML = html;
   for (const [key] of rec) { const cv = host.querySelector('canvas[data-uk="' + key + '"]'); if (cv) aarUnitIcon(cv, effDef(key)); }
   for (const [key] of lost) { const cv = host.querySelector('canvas[data-lk="' + key + '"]'); if (cv) aarUnitIcon(cv, effDef(key)); }
@@ -8668,6 +8774,7 @@ document.getElementById('info').addEventListener('click', e => { const el = e.ta
 document.getElementById('pdetail').addEventListener('click', e => {
   if (!G) return;
   const q = e.target.closest('[data-q]'); if (q) { G.prodQty = Math.max(1, Math.min(50, (G.prodQty || 1) + (+q.dataset.q))); renderProdDetail(); return; }
+  const m = e.target.closest('[data-more]'); if (m) { const pd = document.getElementById('pdetail'); pd._dsExpanded = !pd._dsExpanded; renderProdDetail(); return; }
   const b = e.target.closest('[data-build]'); if (b) { if (b.classList.contains('cant')) { produceGlobal(b.dataset.build); return; } produceGlobalN(b.dataset.build, G.prodQty || 1); }
 });
 cv.addEventListener('mousedown', e => gameTap(e.clientX, e.clientY, e.button));
@@ -8736,7 +8843,7 @@ function syncHUD() {
   document.getElementById('hMp').textContent = Math.floor(G.mp); document.getElementById('mpR').textContent = '+' + Math.round(G.mpR) + '/s';
   { const hg = document.getElementById('hGarr'), gr = document.getElementById('garrR'); if (hg) hg.textContent = Math.round(G.garrUsed || 0) + '/' + Math.round(G.garrCap || 0); if (gr) gr.textContent = '-' + (G.garrUpkeepIC || 0).toFixed(1) + '/s'; }   // GARRISON ECONOMY — separate free auto-defense track: live weight / global Stockpile-set budget, and its IC/s upkeep drain
   { const ha = document.getElementById('hArmy'), ar = document.getElementById('armyR'); if (ha) ha.textContent = Math.round(combatWeight()) + '/' + armyCap(); if (ar) ar.textContent = '+' + Math.max(0, (G.mpR || 0) / 25).toFixed(2) + '/s'; }   // ARMY — now shows WEIGHT used / weight budget (nothing off-cap any more); rate shown is how fast MANPOWER income is currently growing the budget
-  document.getElementById('hInf').textContent = Math.floor(G.inf) + ' (' + Math.round(combatWeight()) + '/' + armyCap() + ')';
+  document.getElementById('hInf').textContent = Math.floor(G.inf) + ' (' + Math.round(combatWeight()) + '/' + armyCap() + ')' + (INF_CAP() < 600 ? ' · cap ' + INF_CAP() : '');
   { const ir = document.getElementById('infR'); const mom = G.infMomentum || 1; if (ir) { ir.textContent = '+' + (G.infR || 0).toFixed(1) + '/s ×' + mom.toFixed(1); const t = Math.max(0, Math.min(1, (mom - 1) / 2)); const lerp = (a, b) => Math.round(a + (b - a) * t); ir.style.color = 'rgb(' + lerp(0x6d, 0xff) + ',' + lerp(0xff, 0xd2) + ',' + lerp(0xb0, 0x7a) + ')'; ir.style.opacity = (0.6 + 0.4 * t).toFixed(2); }   // MOMENTUM READOUT — the live ×N multiplier + a gold lerp as it climbs 1→3 (see MOM_CAP/MOM_TAU)
     const infCellEl = document.querySelector('.cell.inf'); const prevMom = G._momPrev == null ? 1 : G._momPrev; if (infCellEl && prevMom >= 1.5 && mom <= 1.0001) { infCellEl.classList.remove('momreset'); void infCellEl.offsetWidth; infCellEl.classList.add('momreset'); } G._momPrev = mom; }   // MOMENTUM RESET FLASH — a spend snapped ×N back to ×1; brief border flash via the .momreset keyframe (CSS auto-clears via the animation, no timer needed)
   document.getElementById('hStab').innerHTML = Math.round(effStab()) + ((G.stabReserve || 0) > 0.5 ? '<span style="color:#7cffb0" title="Stability reserve — absorbs losses first; stability holds at cap until this is spent">+' + Math.round(G.stabReserve) + '</span>' : '') + ' / ' + Math.round(G.stabCap || 100) + (G.stabOffset > 1 ? ' <span style="color:#ff8a6a">⚠−' + Math.round(G.stabOffset) + '</span>' : '') + (G.crisis ? ' <span style="color:#ff6a6a">⚠ CRISIS</span>' : '') + (stabPreview ? ' <span style="color:' + stabPreview.col + '">' + stabPreview.txt + '</span>' : '') + ((G.superN || 0) > 0 ? ' <span style="color:#ff8a6a" title="' + G.superN + ' Superhuman Cadres — each lowers your max stability by 3%">⚡−' + (3 * G.superN) + '</span>' : '');   /* EFFECTIVE stability, +RESERVE (green, absorbing shield) / CAP; ⚠ flags research-unrest; CRISIS flags an active capitulation crisis; ⚡ flags Superhuman Cadre upkeep eating the ceiling; hover a research/special building to preview its stability impact here */
@@ -9017,7 +9124,27 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   }
   function tutWaterFrac() { let n = 0, tot = 0; for (let x = 0; x < WORLD_W; x += 120) { tot++; if (elevAt(x) < SEA_E) n++; } return tot ? n / tot : 0; }
   function tutPrepFrac() { const dur = (G.stats && G.stats.prepDuration) || 200; return dur > 0 ? 1 - (G.prepTimer / dur) : 0; }   // 0 at the start of prep, 1 at re-entry — gates reasons that shouldn't nag in the first seconds
+  function anyQueuedUnits() { return tutAnyQueued(); }   // alias — tutAnyQueued already checks every building's queue, kept for readability at the call site below
+  function tutSpaceReachDps() {   // total DPS from everything with a SPACE-REACH weapon (ceil === 0) — a lone Railgun Lance (70dmg/4.5s) reads ~15.6
+    let s = 0;
+    for (const u of G.units) { if (u.garr) continue; const d = u.d; if (!d || !d.weapon) continue; const cc = d.ceil != null ? d.ceil : .8; if (cc === 0) s += (d.dmg || 0) / (d.rate || 1); }
+    for (const b of G.buildings) { if (b.done === false || b.captured) continue; const d = b.d; if (!d || !d.weapon) continue; const cc = d.ceil != null ? d.ceil : .8; if (cc === 0) s += (d.dmg || 0) / (d.rate || 1); }
+    return s;
+  }
+  function tutPdPierceCount() {   // count of VOLUME-fire ordnance sources that can saturate a point-defense grid (missiles/rockets/rods, not single precision beams)
+    const wpns = ['rocket', 'missile', 'microrkt', 'rod'];
+    let n = 0;
+    for (const u of G.units) { if (u.garr) continue; const d = u.d; if (!d) continue; if (wpns.includes(d.weapon)) n++; else if (d.weapon2 && wpns.includes(d.weapon2)) n++; }
+    for (const b of G.buildings) { if (b.done === false || b.captured) continue; const d = b.d; if (!d) continue; if (d.weapon && wpns.includes(d.weapon)) n++; else if (b.key === 'silo') n++; }
+    return n;
+  }
   const READY_REASONS = [
+    { id: 'capInsufficient', sev: 'high', why: 'Your army cap is full or over-committed — units are queued (or about to be) with no room left to hold them.', fix: 'Housing Blocks (ECON tab) raise manpower and the cap directly; Cloning Vats and Living Titans research push the cap further still.',
+      check: (G, it) => (combatWeight() >= armyCap() * 0.95 && anyQueuedUnits()) || queuedWeight() > armyCap() - combatWeight() },
+    { id: 'noSpaceReach', sev: 'high', why: 'This fleet parks boss-tier hostiles up in space, and nothing you own reaches that high to touch them.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites and railgun-armed ships all reach clear into orbit.',
+      check: (G, it) => (it.orbital > 0 || (it.supers || []).some(s => /bombarder|annihilator/.test(s.kind || s))) && tutSpaceReachDps() < 40 },
+    { id: 'noPdPierce', sev: 'med', why: 'The Bombarder deploys a point-defense grid that shreds single shots — you need real VOLUME fire to get anything through it.', fix: 'Microrocket Batteries, a MIRV/ballistic-armed Missile Silo, and massed Railgun Lances all give you the saturation to punch through.',
+      check: (G, it) => (it.supers || []).some(s => /bombarder/.test(s.kind || s)) && tutPdPierceCount() < 3 },
     { id: 'noArmy', sev: 'high', why: 'You have no army at all. When the fleet lands, nothing will be standing between it and your cities.', fix: 'Queue some Infantry, AA or a tank from the PROD tab — even a small force buys you time.',
       check: (G, it) => G.units.length === 0 },
     { id: 'underMobilized', sev: 'med', why: 'Your army is well under its cap — you\'re leaving fielded strength on the table while the clock runs.', fix: 'Keep queuing units. Check the army-cap weight budget (STATS) if you\'re not sure how much room you have left.',

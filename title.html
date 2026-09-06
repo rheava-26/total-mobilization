@@ -5146,13 +5146,28 @@ function scanEnemyIntel() {
     if (u.d.builder || u.onRail || u.carried) continue; const d = u.d, w = u.swarm ? swarmBodies(u) : 1;
     if (d.weapon === 'beam') lasers += w;
     if (d.domain === 'naval') navy += w;
-    const ceil = d.ceil != null ? d.ceil : defaultCeil(d);
-    if (d.weapon && (ceil <= .6 || d.noGround)) aa += w;
-    if (d.weapon && ceil === 0) spaceReach += (d.dmg || 0) / Math.max(.1, d.rate || 1);
+    // v4.0.1.1 — NAVY ≠ SPACE REACH: spaceReach reads ONLY an EXPLICIT d.ceil===0 or a rod/rail weapon —
+    // never defaultCeil()'s naval fallback (naval units with no explicit ceil used to silently read as
+    // "reaches orbit" and drown out their own navy signal; a hull that GENUINELY reaches orbit, like the
+    // Railgun Battlecruiser, sets ceil:0 itself and still counts here).
+    const explicitCeil = d.ceil != null ? d.ceil : null;
+    if (d.weapon && (explicitCeil === 0 || d.weapon === 'rod' || d.weapon === 'rail')) spaceReach += (d.dmg || 0) / Math.max(.1, d.rate || 1);
+    // aa: a DRONE never counts here (it's read under robotic instead, see below — no double-signal, no
+    // collision between the two). A naval hull only counts if it's explicitly built for it (noGround, or
+    // an AA weapon2) — its primary deck gun alone doesn't make it "anti-air", so a fleet of destroyers
+    // reads as NAVY, not AA.
+    if (d.weapon && !d.drone) {
+      const ceil = explicitCeil != null ? explicitCeil : defaultCeil(d);
+      const isAA = d.domain === 'naval' ? (d.noGround || d.wpn2Air) : (ceil <= .6 || d.noGround);
+      if (isAA) aa += w;
+    }
     if (d.bio) infantry += w;
-    if (d.drone || d.mech || d.elec || d.clone) robotic += unitWeight(u);
+    // ROBOTIC MASS: weighs live BODIES (swarmBodies), not the army-cap-scaled unitWeight — a squad's
+    // (cdrone) alive headcount counts directly, matching the same raw-count scale as aa/lasers/navy;
+    // a standalone (non-squad) robotic unit — android, cyborg, dreadnought, shifter — counts as 1 body.
+    if (d.drone || d.mech || d.elec || d.clone) robotic += (u.members ? swarmBodies(u) : 1);
   }
-  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const d = b.d, ceil = d.ceil != null ? d.ceil : .8; if (ceil <= .6 || d.noGround) aa++; if (d.weapon === 'beam') lasers++; if (ceil === 0) spaceReach += (d.dmg || 0) / Math.max(.1, d.rate || 1); }
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const d = b.d, ceil = d.ceil != null ? d.ceil : .8, explicitCeilB = d.ceil != null ? d.ceil : null; if (ceil <= .6 || d.noGround) aa++; if (d.weapon === 'beam') lasers++; if (explicitCeilB === 0 || d.weapon === 'rod' || d.weapon === 'rail') spaceReach += (d.dmg || 0) / Math.max(.1, d.rate || 1); }
   // v4.0.1 — DOMINANT ELEMENT: normalise each raw count against a rough "a lot of this" scale, then
   // call it dominant only if it clearly leads (>= .8 of its own scale AND >= 1.4x the runner-up) —
   // a small or balanced base reads as null (no read), same as today's behaviour (see counterBias).

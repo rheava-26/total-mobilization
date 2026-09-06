@@ -5723,10 +5723,11 @@ function hireAllies(type) {
   const perCity = Array.from({ length: nCities }, () => []);
   for (let i = 0; i < totalUnits; i++) perCity[i % nCities].push(a.units[i % a.units.length]);
   G.allyContracts = G.allyContracts || []; G.allyContractSeq = (G.allyContractSeq || 0) + 1;
-  const groupId = G.allyContractSeq;
+  const hireId = G.allyContractSeq;   // ONE id per HIRE (per button press) — shared by every per-city contract it spawns, so the influence-CAP price below is charged once per hire, not once per city (see tickAllyContracts/G.allyHireCost)
+  G.allyHireCost = G.allyHireCost || new Map(); G.allyHireCost.set(hireId, a.infCapCost || 40);
   for (let ci = 0; ci < nCities; ci++) {
     const cityIdx = G.cities.indexOf(cities[ci]);
-    G.allyContracts.push({ id: groupId + '.' + ci, groupId, type, name: a.name, cityIdx, queue: perCity[ci], every: a.every || 10, t: 0, naval: !!a.naval, infCapCost: a.infCapCost || 40 });
+    G.allyContracts.push({ id: hireId + '.' + ci, hireId, type, name: a.name, cityIdx, queue: perCity[ci], every: a.every || 10, t: 0, naval: !!a.naval });
   }
   toast('⚑ ' + a.name.toUpperCase() + ' EN ROUTE — arriving at ' + nCities + ' cit' + (nCities > 1 ? 'ies' : 'y') + ' over time'); if (SFX.build) SFX.build();
   buildAlliesPanel();   // refresh the panel so the cooldown / affordability / contract list updates immediately
@@ -5734,26 +5735,36 @@ function hireAllies(type) {
 // per-frame delivery clock for every open ally contract — called from updateGame right beside the G.allyCd countdown
 function tickAllyContracts(dt) {
   if (!G.allyContracts) G.allyContracts = [];
+  if (!G.allyHireCost) G.allyHireCost = new Map();
   G._allyPanelT = (G._allyPanelT || 0) + dt; if (G._allyPanelT > 1) { G._allyPanelT = 0; const ap = document.getElementById('alliesPanel'); if (ap && ap.classList.contains('show')) buildAlliesPanel(); }   // live-refresh the EN ROUTE list / cooldown while the panel is open, throttled to ~1/s
-  if (!G.allyContracts.length) { G.allyInfPen = 0; return; }
-  const bm = bmod();
-  for (const c of G.allyContracts) {
-    if (!c.queue.length) continue;
-    const city = G.cities[c.cityIdx];
-    if (!city || city.hp <= 0 || city.held) { c.queue.length = 0; continue; }   // the city fell — cancel whatever was still inbound to it
-    const speedMul = (c.naval ? bm.allyNavalFast : bm.allyLandFast) ? 2 : 1;   // Heavy Port / Military Base double the delivery rate for their matching packages
-    c.t += dt * speedMul;
-    while (c.queue.length && c.t >= c.every) { c.t -= c.every; deliverAllyUnit(c, city); }
+  if (G.allyContracts.length) {
+    const bm = bmod();
+    for (const c of G.allyContracts) {
+      if (!c.queue.length) continue;
+      const city = G.cities[c.cityIdx];
+      if (!city || city.hp <= 0 || city.held) { c.queue.length = 0; continue; }   // the city fell — cancel whatever was still inbound to it
+      const speedMul = (c.naval ? bm.allyNavalFast : bm.allyLandFast) ? 2 : 1;   // Heavy Port / Military Base double the delivery rate for their matching packages
+      c.t += dt * speedMul;
+      while (c.queue.length && c.t >= c.every) { c.t -= c.every; deliverAllyUnit(c, city); }
+    }
+    G.allyContracts = G.allyContracts.filter(c => c.queue.length > 0 || G.units.some(u => u.allyContract === c.id));   // drop a per-CITY contract only once it's both empty AND every unit IT delivered has died
   }
-  G.allyContracts = G.allyContracts.filter(c => c.queue.length > 0 || G.units.some(u => u.allyContract === c.id));   // drop a contract only once it's both empty AND every unit it delivered has died
-  G.allyInfPen = G.allyContracts.reduce((s, c) => s + c.infCapCost, 0);   // the permanent (while it lasts) influence-CAP price — see INF_CAP()
+  // INFLUENCE-CAP PRICE — charged ONCE PER HIRE (per button press), not once per city contract: a hire stays
+  // "active" (and its infCapCost charged) while ANY of its per-city contracts is still delivering, OR any unit it
+  // ever delivered (tagged u.allyHireId) is still alive — see hireAllies/deliverAllyUnit/INF_CAP.
+  const activeHires = new Set();
+  for (const c of G.allyContracts) if (c.queue.length > 0) activeHires.add(c.hireId);
+  for (const u of G.units) if (u.allyHireId != null) activeHires.add(u.allyHireId);
+  for (const hid of Array.from(G.allyHireCost.keys())) if (!activeHires.has(hid)) G.allyHireCost.delete(hid);   // a hire with nothing left delivering AND nothing left alive drops its price entirely
+  let pen = 0; for (const cost of G.allyHireCost.values()) pen += cost;
+  G.allyInfPen = pen;
 }
 function deliverAllyUnit(c, city) {
   const key = c.queue.shift();
   const dx = Math.max(80, Math.min(WORLD_W - 80, city.x + (Math.random() - .5) * 100));
   spawnUnit(key, dx); const u = G.units[G.units.length - 1];
   if (u) {
-    u.ally = true; u.allyContract = c.id;
+    u.ally = true; u.allyContract = c.id; u.allyHireId = c.hireId;
     if (u.d.domain === 'ground') { u.x = dx; u.y = groundY(dx) - u.d.s; }   // naval hulls already snapped to water, air units to patrol altitude, inside spawnUnit
     const bm = bmod(), armored = (c.naval ? bm.allyNavalFast : bm.allyLandFast);
     if (armored) u.d = Object.assign({}, u.d, { armor: (u.d.armor || 0) + 2 });   // a PRIVATE per-unit def copy — never mutates the shared UNIT_DEFS/effDef entry every other unit of this type points at

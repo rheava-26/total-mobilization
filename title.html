@@ -2672,6 +2672,7 @@ const ART = {
     x.fillStyle = GLOW; x.globalAlpha = pulseA(.011, s * 2); x.shadowColor = GLOW; x.shadowBlur = s; x.beginPath(); x.arc(0, -s * .12, s * .3, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // pulsing core
   },
   bombpod(x, s) { x.fillStyle = '#1b1b1b'; x.beginPath(); x.moveTo(0, s * 1.1); x.lineTo(s * .6, -s * .3); x.lineTo(0, -s); x.lineTo(-s * .6, -s * .3); x.closePath(); x.fill(); x.fillStyle = '#ff7a30'; x.beginPath(); x.arc(0, -s * .15, s * .3, 0, 6.28); x.fill(); },
+  bomblet(x, s) { x.fillStyle = '#1c1c1c'; x.beginPath(); x.moveTo(0, s * .95); x.lineTo(s * .5, -s * .15); x.lineTo(0, -s * .85); x.lineTo(-s * .5, -s * .15); x.closePath(); x.fill(); x.globalAlpha = .55; x.fillStyle = '#ff7a30'; x.beginPath(); x.moveTo(-s * .18, -s * .5); x.lineTo(0, -s * 1.7); x.lineTo(s * .18, -s * .5); x.closePath(); x.fill(); x.globalAlpha = 1; },   // CLUSTER BOMBLET — a small dark teardrop trailing a faint orange tail (see bombpod's split — spawnBomblets)
   eshield(x, s) {   // SHIELD CARRIER — a heavy hovering projector pod topped by a dome emitter
     x.fillStyle = INK; rr(x, -s * .9, -s * .35, s * 1.8, s * .8, s * .2); x.fill();   // hull (tints with the hostile palette)
     x.fillStyle = '#222'; x.fillRect(-s * .5, -s * .72, s, s * .4);   // emitter housing
@@ -4924,6 +4925,51 @@ function openingAAsalvo(it) {   // the autofleet's counter to strong player air 
   }
   toast('⚠ ANTI-AIR MICROMISSILE CARRIERS ON STATION — hunting anything that flies'); shake(8); if (typeof musDuck === 'function') musDuck();
 }
+// v4.0.4 B — 400-ISH MICROMISSILE OPENING BARRAGE: "add micromissile barrages to the initial bombardment…
+// like 400ish… not all group on one target… unguided bombs that act like dispersed, area damage that is
+// hard to shoot down, to weaken lighter units." Ground-targeted carriers (reusing the same 'microrkt' carrier
+// projectile as openingAAsalvo/detonateEmpBurst, just p.ground:true instead of p.aaOnly:true) climb down from
+// near the top of the sky and split, at the STRATO/MESO boundary, into the SAME unguided C2 bomblet — no single
+// mega-salvo on one spot: a rotating pick across up to 8 densest-defended clusters + 4 random live-building
+// x's (see defenseBuckets), round-robin, never the same bucket twice running, skipping any bucket that's since
+// been leveled. Runs across phases 1-2 (t 0-50s), then stops — later adaptive pressure is extraSalvos' job.
+function defenseBuckets() {
+  const dense = densestDefenseX().slice(0, 8).map(e => ({ x: e.x }));
+  const alive = G.buildings.filter(b => b.done !== false && !b.captured && b.hp > 0);
+  const rnd = []; for (let i = 0; i < 4 && alive.length; i++) rnd.push({ x: alive[Math.floor(Math.random() * alive.length)].x });
+  return dense.concat(rnd);
+}
+function openingMicroBarrage(it) {
+  if (!(it.buster > 0 || it.fleetMul >= 1)) { G.microBarrage = null; return; }   // recon stays a feeler — no dispersed micromissile carpet
+  const total = Math.round(400 * G.diff / 1.4), carriersTotal = Math.max(1, Math.ceil(total / 8));
+  // interval is a FIXED, fairly tight cadence (not solved backward from carriersTotal/50s) — a bucket that's died
+  // since the last 10s recompute is skipped (see tickMicroBarrage), and skipped picks cost an attempt without
+  // producing a carrier, so the attempt rate needs real headroom over the target to still land ~carriersTotal
+  // by t=50 even with a chunk of picks whiffing.
+  G.microBarrage = { active: true, total, carriersTotal, carriersSpawned: 0, interval: 1.3, nextT: 1.3, buckets: [], bucketT: -999, rrIdx: -1, lastIdx: -1 };
+}
+function tickMicroBarrage(dt) {
+  const mb = G.microBarrage; if (!mb || !mb.active) return;
+  if (G.invTime > 50 || mb.carriersSpawned >= mb.carriersTotal) { mb.active = false; return; }
+  if (!mb.buckets.length || G.invTime - mb.bucketT >= 10) { mb.buckets = defenseBuckets(); mb.bucketT = G.invTime; }   // recompute the target roster once per 10s
+  mb.nextT -= dt;
+  if (mb.nextT <= 0) {
+    mb.nextT = mb.interval;
+    const nCarr = 2 + (Math.random() < .5 ? 1 : 0);   // 2-3 per salvo — never a single mega-salvo on one target
+    for (let i = 0; i < nCarr && mb.carriersSpawned < mb.carriersTotal; i++) {
+      if (!mb.buckets.length) break;
+      let picked = null, tries = 0;
+      while (tries < mb.buckets.length) { mb.rrIdx = (mb.rrIdx + 1) % mb.buckets.length; tries++;
+        const b = mb.buckets[mb.rrIdx]; if (mb.rrIdx === mb.lastIdx && mb.buckets.length > 1) continue;   // never the same bucket twice running
+        const alive = G.buildings.some(bd => bd.done !== false && !bd.captured && bd.hp > 0 && Math.abs(bd.x - b.x) < 260); if (!alive) continue;   // skip a bucket whose buildings have since all died
+        picked = b; break; }
+      if (!picked) continue;
+      mb.lastIdx = mb.rrIdx; mb.carriersSpawned++;
+      const tx = Math.max(80, Math.min(WORLD_W - 80, picked.x + (Math.random() * 2 - 1) * 120));
+      G.proj.push({ k: 'microrkt', ground: true, aaOnly: false, friendly: false, x: tx + (Math.random() - .5) * 60, y: -50, vx: 0, vy: 20, spd: 30, t: 0, tx, n: 8, life: 9, dmg: 9 * G.diff, tr: [] });
+    }
+  }
+}
 function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam — a hostile full-height plasma column dropped on a city
   G.beams.push({ x, r: 64, life: 1.5, total: 1.5, hostile: true });
   for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13);
@@ -5143,6 +5189,7 @@ function bucketNearWater(i, bw) { const x = (i + .5) * bw; return isWater(Math.m
 // see what shoots back, plus a small opening bunker-buster probe (recon / buster-less intents skip
 // the probe entirely — decap already gets its own capital-focused count from decapBusterBudget()).
 function phase1Screening(it) {
+  openingMicroBarrage(it);   // v4.0.4 B — schedules the ~400-bomblet dispersed opening barrage; ticked each frame by tickMicroBarrage (see the main invasion loop) through phases 1-2 (t 0-50s)
   for (let i = 0; i < 4; i++) spawnEnemy('decoy', 200 + Math.random() * (WORLD_W - 400));
   if (it.buster > 0) {
     const n = G.intent === 'decap' ? decapBusterBudget() : Math.round(10 * G.diff);
@@ -5674,6 +5721,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
       if (G.acqT <= 0) { G.acqPhase = false; for (const b of G.buildings) b._acqLock = 0; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
     if (!G.acqPhase) G.invTime += dt;
     if (!G.acqPhase) updateInvPhases(it, dt);   /* v4.0 E — THE AUTOFLEET'S PLAN: advances invPhase (screening -> blackout -> all-out -> reinforce/morale), ticks blackout-zone decay + phase-2/phase-4 ongoing effects */
+    if (!G.acqPhase) tickMicroBarrage(dt);   /* v4.0.4 B — the ~400-bomblet dispersed opening barrage, phases 1-2 only (see openingMicroBarrage/tickMicroBarrage) */
     if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
     if (!G.acqPhase && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
@@ -6489,9 +6537,33 @@ function playerAirDefenseScore() {
 }
 function decapBusterBudget() { return Math.round(Math.min(20, 10 + playerAirDefenseScore() * .4)); }
 function busterTarget() { let best = null, bs = 8; for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0) continue; let s = busterScore(b); if (s <= 0) continue; if (b.d.cat === 'DEF' && G.lastLZ != null && Math.abs(b.x - G.lastLZ) < 320) s += 46; if (G.decoyHitX && G.decoyHitX.length) for (const dx of G.decoyHitX) if (Math.abs(b.x - dx) < 220) { s += 30; break; }   /* v4.0 E — PHASE 1 SCREENING: re-target whatever actually shot at the decoys */ if (b.ug) s -= 14; s -= busterClaims(b) * 26; s += Math.random() * 7; if (s > bs) { bs = s; best = b; } } return best; }
+// v4.0.4 B — ORBIT-SLOW / ATMOSPHERE-FAST FALL PROFILE: analytic helper that sizes the new two-band descent
+// (constant high-altitude crawl, then a hard uncapped burn below MESO_Y) so the TOTAL fall time matches what
+// the old accelerate-then-cap formula would have taken — see the p.k==='buster'/'decoy' blocks in updProj.
+// fallTimeConst(D, v0, ay, vyCap) is the closed-form time to cover distance D under that OLD profile (solves
+// the capped-accel kinematics exactly instead of stepping frame-by-frame), used ONCE at spawn as p.tFall.
+function fallTimeConst(D, v0, ay, vyCap) { if (D <= 0) return .1; if (ay <= 0) return Math.max(.1, D / Math.max(1, v0));
+  const tCap = Math.max(0, (vyCap - v0) / ay), dCap = v0 * tCap + .5 * ay * tCap * tCap;
+  if (dCap >= D) { const disc = Math.max(0, v0 * v0 + 2 * ay * D); return Math.max(.1, (-v0 + Math.sqrt(disc)) / ay); }
+  return tCap + (D - dCap) / vyCap;
+}
+// how much of tFall the low-altitude (below MESO) burn gets to keep — MESO_Y sits most of the way down these
+// spawn columns (they start way up at y0<<0), so a literal "12% of the whole flight's mean speed" crawl would
+// itself eat several TIMES the old total fall time before ever reaching MESO. Sizing the crawl to consume the
+// REST of the budget (leaving this slice for the below-MESO band) is what actually keeps total time matched —
+// see the ROADMAP/commit note for the full reasoning. The result is still dramatically slower up high than the
+// old profile was by the time it neared this same altitude (it was already almost at vyCap by then) and a hard,
+// short, uncapped burn right at the end — "screaming near the ground," same total time.
+const FALL_LOWBAND_FRAC = .05;
 function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
-  for (let d = 0; d < 3; d++) G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: -360 - Math.random() * 200, vx: (Math.random() - .5) * 50, vy: 8 + Math.random() * 10, ay: 55 + Math.random() * 25, vyCap: 380 + Math.random() * 80, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [] });   // a MINIMAL screen of DECOY missiles falls with each penetrator (was 8 — a full flare wall let decoys soak the whole interceptor net and let real busters through unchallenged; PD now also ranks rods/busters over decoys — see acquireIncoming/acquireAmiTarget — so a thin screen is enough to matter without smothering the defense) — DURABLE flares (a few hits, not one) that still cost a shot if engaged. Mirrors the buster's slow-start orbital descent so the screen reads consistently
-  G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: -440, vx: 0, vy: 8 + Math.random() * 6, ay: 62, vyCap: 420, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [] });   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — mirrors the enemy re-entry profile (near-stationary start, gradual accel, capped terminal speed, see updProj) instead of slamming down in ~1.5s, so a layered defense grid gets several real seconds of engagement window before it lands
+  for (let d = 0; d < 3; d++) {
+    const y0 = -360 - Math.random() * 200, vy0 = 8 + Math.random() * 10, ay0 = 55 + Math.random() * 25, vcap0 = 380 + Math.random() * 80;
+    const D = gy - y0, tFall = fallTimeConst(D, vy0, ay0, vcap0), d1 = Math.max(1, MESO_Y() - y0), t1Budget = Math.max(.1, tFall * (1 - FALL_LOWBAND_FRAC)), crawlV = d1 / t1Budget;
+    G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: y0, vx: (Math.random() - .5) * 50, vy: vy0, ay: ay0, vyCap: vcap0, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [], t: 0, tFall, crawlV });   // a MINIMAL screen of DECOY missiles falls with each penetrator (was 8 — a full flare wall let decoys soak the whole interceptor net and let real busters through unchallenged; PD now also ranks rods/busters over decoys — see acquireIncoming/acquireAmiTarget — so a thin screen is enough to matter without smothering the defense) — DURABLE flares (a few hits, not one) that still cost a shot if engaged. Mirrors the buster's slow-start orbital descent so the screen reads consistently
+  }
+  { const by0 = -440, bvy0 = 8 + Math.random() * 6, bay0 = 62, bvcap0 = 420;
+    const bD = gy - by0, btFall = fallTimeConst(bD, bvy0, bay0, bvcap0), bd1 = Math.max(1, MESO_Y() - by0), bt1Budget = Math.max(.1, btFall * (1 - FALL_LOWBAND_FRAC)), bcrawlV = bd1 / bt1Budget;
+    G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: by0, vx: 0, vy: bvy0, ay: bay0, vyCap: bvcap0, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [], t: 0, tFall: btFall, crawlV: bcrawlV }); }   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — near-stationary CRAWL while high (an easy, slow, long-hanging target — orbit = easy), then a short hard uncapped burn once it crosses into the lower atmosphere (see updProj) — same total orbit→ground time as before, wildly harder to hit up close
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
 function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOINT: one plane-sized round guts its SINGLE designated target with a small, sharp blast (incl. shallow-buried bunkers) — a sniper round, not an area nuke
   const gy = groundY(x);
@@ -6505,6 +6577,20 @@ function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOIN
   for (const b of G.buildings) { if (b.captured) continue; const dd = Math.abs(b.x - x); if (b.ug) { if (dd < 44) b.hp -= (b.ugLvl >= 2 ? 520 : 1400); } else if (dd < b.d.w * .6 + 20) b.hp -= 1600; }   // PENETRATOR: one/two-shots the SINGLE target it was aimed at, and bunker-busts it even shallow-buried — unchanged, this was already effectively single-target
   areaDamage(x, gy, 46, 220, 'buster'); shallowUgHit(x, 40, 220);   // collateral splash cut to a small radius — the target dies, its immediate neighbours don't
   for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - x) < 46) damageDistrict(ct, dst, 260); }
+}
+// v4.0.4 B — CLUSTER SUBMUNITIONS: unguided, dispersed, area-damage bomblets. Used by BOTH the bombpod's mid-air
+// split (see updEnemies' e.reentry block) and the opening micromissile barrage's ground-carrier (openingMicroBarrage).
+// hp:3, interceptable:false (and NOT pdable) — small & numerous, deliberately kept OUT of the dedicated
+// interceptor/AMI point-defence pool (see interceptableProjList) so 400 of them can't be trivially swept by one
+// PD gun the way a handful of real busters/rods can; hard to shoot down BY DESIGN, meant to weaken lighter units
+// through sheer coverage rather than be a fair PD target. See the p.k==='bomblet' block in updProj for its flight/impact.
+function spawnBomblets(x, y, baseVy, n, dmg, r) {
+  for (let i = 0; i < n; i++) { const ang = (Math.random() * 2 - 1) * (20 * Math.PI / 180), vy0 = baseVy * Math.cos(ang), vx0 = baseVy * Math.sin(ang) + (Math.random() - .5) * 20;
+    G.proj.push({ k: 'bomblet', friendly: false, interceptable: false, hp: 3, s: 2.6, x: x + (Math.random() - .5) * 16, y, vx: vx0, vy: vy0, dmg, r, life: 6, tr: [] }); }
+}
+function detonateBomblet(x, y, dmg, r) {
+  boomW(x, y, 9); groundBurst(x, 5); G.parts.push({ k: 'flash', x, y, r: r * .35, life: .13 }); smoke(x, y, 2);
+  splashDamage(x, y, r, dmg, false, 'bomblet');
 }
 // where an orbital barrage round falls — STRATEGIC targets (cities + your surface infrastructure) spread across the WHOLE world, never keyed to the camera (rods used to only rain on whatever you were looking at)
 function barrageTarget() {
@@ -7444,6 +7530,12 @@ function updEnemies(dt) {
     if (e.smartDot) { e.killBy = 'smart'; e.hp -= e.smartDot * dt; if (Math.random() < .4) spark(e.x + (Math.random() - .5) * e.s, e.y + (Math.random() - .5) * e.s, 1); }   // disassembler nanites eat the hull — FIX: this used to tag the kill 'beam' (laser), so a nanite-disassembled enemy wrongly played the laser-melt wreck FX; the DoT tick is the actual weapon that finishes the target off (the round itself only latches on), so it must set the real killBy for pickStyle()
     if (e.reentry) {   // a long, vulnerable plunge: starts very slow high in the exosphere (giving your railguns / lasers / orbital sats time to whittle it) and GRADUALLY accelerates as it bites into thicker air. Can't fire yet.
       e.x += (e.vx || 0) * dt; e.vy = Math.min((e.vy || 6) + (e.pod ? 130 : 30) * dt, e.pod ? 760 : 440); e.y += e.vy * dt;   // accel/cap scaled up for the taller sky so the (still slow & vulnerable) descent doesn't drag
+      if (e.kind === 'bombpod' && e.y >= STRATO_Y() + 120) {   // v4.0.4 B — CLUSTER RELEASE: the triangular bombpod bursts into a wide, unguided bomblet spread once it's low enough to matter, instead of carrying a single ground-impact hit all the way down. Stays interceptable (a real target) right up to the split.
+        G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 3, life: .2, bloom: true }); if (SFX.split) SFX.split(); shake(4);
+        floatText(e.x, e.y - e.s - 6, '💥 CLUSTER RELEASE', '#ffb060');
+        spawnBomblets(e.x, e.y, e.vy, 8 + 2 * Math.round(G.diff), 22 * (G.diff * (1 + G.invTime / 70)), 90);
+        e.hp = 0; e.deployed = true; continue;
+      }
       if (Math.random() < .2 + e.vy / 600) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s * 1.6, y: e.y - e.s, vx: (Math.random() - .5) * 8, vy: -16 - Math.random() * 22, r: 1.4 + Math.random() * 2.4, life: .22 + Math.random() * .3 });   // only really glows hot once it's moving fast
       if (e.empburst && fullFx) { e._sparkTick = (e._sparkTick || 0) + 1; if (e._sparkTick % 3 === 0) G.parts.push({ k: 'plasma', x: e.x + (Math.random() - .5) * e.s * 1.4, y: e.y + (Math.random() - .5) * e.s, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random(), life: .3 + Math.random() * .2 }); }   // v4.0.1 — a violet sparkle trail (reuses the 'plasma' particle's violet palette) off the falling warhead itself, at most every 3rd tick, Full Effects only
       if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.empburst) { detonateEmpBurst(e); continue; }   /* v4.0 E PHASE 2 BLACKOUT — the warhead itself, not a landed unit: detonate on arrival at STRATO_Y and remove it */ if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
@@ -7644,25 +7736,38 @@ function updProj(dt) {
       if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; }
       continue;
     }
-    if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — launched from orbit: starts nearly stationary and gradually accelerates (mirrors enemy re-entry, see updEnemies), jinks + spams flares to shake interceptors; a real several-second engagement window before it lands
+    if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — v4.0.4 B TWO-BAND FALL: near-stationary CRAWL while above MESO_Y (orbit = a long, easy, unchanging shot), then a short hard UNCAPPED burn below it, solved on band-entry to land at p.ty in the SAME total time the old accelerate-to-cap profile would have taken (see fallTimeConst/spawnBuster) — jinks + spams flares only once it's actually in the lower atmosphere, where an interceptor could realistically still catch it
       if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
-      p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1850);   // gradual accel to a capped terminal speed — orbit→ground now takes several seconds, not ~1.5s
-      const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target + evasive jink
+      p.t = (p.t || 0) + dt;
+      if (p.y < MESO_Y()) { p.vy = p.crawlV; }   // ORBITAL CRAWL — constant, slow; a defender gets a long unhurried window
+      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }   // solved ONCE on band entry: remaining distance / remaining time, no cap — screaming by the time it's low
+      const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; if (p.y >= STRATO_Y()) p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target; evasive jink only in the lower atmosphere
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 18) p.tr.shift();
-      p.flareCd -= dt; if (p.flareCd <= 0) { p.flareCd = .1; for (let f = 0; f < 2; f++) G.parts.push({ k: 'ember', x: p.x + (Math.random() - .5) * 8, y: p.y - p.s, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1 + Math.random() * 1.5, life: .5 + Math.random() * .5, tw: Math.random() * 6 }); }   // flare countermeasures
+      if (p.y >= STRATO_Y()) { p.flareCd -= dt; if (p.flareCd <= 0) { p.flareCd = .1; for (let f = 0; f < 2; f++) G.parts.push({ k: 'ember', x: p.x + (Math.random() - .5) * 8, y: p.y - p.s, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1 + Math.random() * 1.5, life: .5 + Math.random() * .5, tw: Math.random() * 6 }); } }   // flare countermeasures — lower atmosphere only
       if (Math.random() < .6) G.parts.push({ k: 'fire', x: p.x + (Math.random() - .5) * p.s, y: p.y - p.s, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 18, r: 1.4 + Math.random() * 2.2, life: .2 + Math.random() * .3 });   // heat-shield glow
       if (p.y >= p.ty || p.y >= groundY(p.x) || p.life <= 0) { G.busterThrough = (G.busterThrough || 0) + 1; detonateBuster(p.x, groundY(p.x)); p.life = 0; }
       continue;
     }
-    if (p.k === 'decoy') {   // DECOY MISSILE — falls like a penetrator to bait your point-defence, then fizzles harmlessly; 1 HP so a single interceptor kills it (that's the point — it soaks a shot the real round would've eaten)
+    if (p.k === 'decoy') {   // DECOY MISSILE — v4.0.4 B: same two-band crawl-then-burn profile as the buster (see there), so the screen still reads consistently against it — falls like a penetrator to bait your point-defence, then fizzles harmlessly; 1 HP so a single interceptor kills it (that's the point — it soaks a shot the real round would've eaten)
       if (p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .1 }); p.life = 0; continue; }
-      p.vy = Math.min(p.vy + p.ay * dt, p.vyCap || 1700);
+      p.t = (p.t || 0) + dt;
+      if (p.y < MESO_Y()) { p.vy = p.crawlV; }
+      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }
       const dx = p.tx - p.x; p.vx += (dx * 1.5 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .05) * 70 * dt; p.vx = Math.max(-340, Math.min(340, p.vx));
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 12) p.tr.shift();
       p.flareCd -= dt; if (p.flareCd <= 0) { p.flareCd = .13; G.parts.push({ k: 'ember', x: p.x, y: p.y - p.s, vx: (Math.random() - .5) * 28, vy: -12 - Math.random() * 22, r: .7 + Math.random(), life: .35 + Math.random() * .4, tw: Math.random() * 6 }); }
       if (p.y >= p.ty || p.y >= groundY(p.x) || p.life <= 0) { G.parts.push({ k: 'flash', x: p.x, y: groundY(p.x), r: 8, life: .12 }); smoke(p.x, groundY(p.x), 2); p.life = 0; }   // harmless fizzle
+      continue;
+    }
+    if (p.k === 'microrkt' && p.ground) {   // v4.0.4 B — GROUND MICROMISSILE CARRIER (the opening barrage, see openingMicroBarrage/tickMicroBarrage): NOT homing — just plunges toward its assigned x, then bursts into unguided C2 bomblets once it crosses the STRATO/MESO band. No lock-on, no single-target pile-up.
+      p.t += dt; p.vy = Math.min((p.vy || 20) + 240 * dt, 900);
+      const dx = p.tx - p.x; p.vx += (dx * 1.1 - p.vx * 1.1) * dt; p.vx = Math.max(-180, Math.min(180, p.vx));
+      p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
+      if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
+      if (p.y >= MESO_Y() || p.life <= 0 || p.y >= groundY(p.x)) { boom(p.x, p.y, 3); spark(p.x, p.y, 5); spawnBomblets(p.x, p.y, p.vy, p.n, p.dmg, 60); p.life = 0; }
       continue;
     }
     if (p.k === 'microrkt') {   // MICROROCKET carrier — climbs toward the threat, then bursts into homing submunitions that each chase an independent target
@@ -7730,6 +7835,15 @@ function updProj(dt) {
       continue;
     }
     if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 8) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9); groundBurst(p.x, 8); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
+    if (p.k === 'bomblet') {   // v4.0.4 B — unguided cluster/micromissile submunition: no homing, just ballistic; see spawnBomblets. Deliberately excluded from interceptable/pdable (see there) — a proximity fuse still lets it swat a player aircraft it flies close past, not just on ground impact
+      if (p.hp <= 0) { spark(p.x, p.y, 2); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .1 }); p.life = 0; continue; }
+      p.vy += 180 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 7) p.tr.shift();
+      let hitAir = null; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'air') continue; const dd = (u.x - p.x) ** 2 + (u.y - p.y) ** 2; if (dd < 18 * 18) { hitAir = u; break; } }
+      const gy = groundY(p.x);
+      if (hitAir || p.y >= gy || p.life <= 0) { detonateBomblet(p.x, hitAir ? p.y : gy, p.dmg, p.r || 90); p.life = 0; }
+      continue;
+    }
     if (p.k === 'plasball') {   // PLASMA bolt — flies DEAD STRAIGHT (heavy arty variant arcs under gravity); it does NOT home. It has a PROXIMITY FUSE and airbursts as soon as it gets near an enemy, so it never needs a pinpoint hit on a fast mover (a contained plasma slug that detonates in proximity — matches the lore, and fixes the "terrible aim")
       if (p.grav) p.vy += p.grav * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -8226,6 +8340,7 @@ function renderProj(p, px) {
   else if (p.k === 'buster') { for (let i = 1; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .5; c.strokeStyle = '#ffd9a0'; c.lineWidth = 1 + a2 * 3.5; c.beginPath(); c.moveTo(sx(p.tr[i].x), p.tr[i].y); c.lineTo(sx(p.tr[i - 1].x), p.tr[i - 1].y); c.stroke(); } c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const L = p.s * 5.4, Wd = p.s * .5; c.fillStyle = '#20242a'; c.beginPath(); c.moveTo(L, 0); c.lineTo(L * .5, -Wd); c.lineTo(-L * .6, -Wd); c.lineTo(-L * .72, 0); c.lineTo(-L * .6, Wd); c.lineTo(L * .5, Wd); c.closePath(); c.fill(); c.strokeStyle = '#ff2626'; c.lineWidth = 1.2; c.shadowColor = '#ff2626'; c.shadowBlur = 4; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#15181c'; c.beginPath(); c.moveTo(-L * .55, -Wd); c.lineTo(-L * .84, -Wd * 2.1); c.lineTo(-L * .48, -Wd * .3); c.closePath(); c.moveTo(-L * .55, Wd); c.lineTo(-L * .84, Wd * 2.1); c.lineTo(-L * .48, Wd * .3); c.closePath(); c.fill(); c.fillStyle = '#3a4048'; c.fillRect(-L * .05, -Wd, L * .16, Wd * 2); c.fillStyle = '#ffcaa0'; c.shadowColor = '#ff7a30'; c.shadowBlur = 13; c.beginPath(); c.arc(L * .8, 0, Wd * .82, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }   // heat-shielded bunker-buster: finned heavy body, glowing re-entry nose, amber contrail
   else if (p.k === 'decoy') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.globalAlpha = .85; c.strokeStyle = '#ffcaa0'; c.lineWidth = 1.5; c.shadowColor = '#ff7a30'; c.shadowBlur = 6; c.beginPath(); c.moveTo(-p.s * 1.7, 0); c.lineTo(p.s * 1.2, 0); c.stroke(); c.fillStyle = '#ffe0b0'; c.beginPath(); c.arc(p.s * 1.1, 0, p.s * .34, 0, 6.28); c.fill(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // decoy — a thin, fainter flare-missile than the real penetrator
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
+  else if (p.k === 'bomblet') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx) + Math.PI / 2); ART.bomblet(c, p.s || 3); c.restore(); }   // v4.0.4 B — unguided cluster submunition, see spawnBomblets
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
   else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff2b0'), hot = !p.friendly ? '#ffe0cc' : '#fffbe8';   // a THIN bullet + tracer trail — tapered streak fading to nothing behind a bright point round
     c.globalCompositeOperation = 'lighter';

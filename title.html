@@ -734,8 +734,8 @@
     <div id="manualBuildings" style="margin-top:8px"></div></details>
   <details class="helpsec"><summary>⑧ THE AUTOFLEET'S PLAN</summary><p>
     The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> probes your grid with harmless <b>decoy</b> pods and a light bunker-buster pass, reading what shoots back.<br>
-    <b>PHASE 2 · BLACKOUT</b> drops <b>EMP bursts</b> (⚡ zones on the map) that degrade guns, radar and drone swarms caught inside — a nearby Psionic Relay or Data Center resists it — alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
-    <b>PHASE 3 · ALL-OUT</b> lands three real beachheads exactly where you took the LEAST damage, backed by superweapons and a fast interceptor screen.<br>
+    <b>PHASE 2 · SUPPRESSION</b> intensifies buster raids and opens hostile <b>micromissile salvos</b> over your densest defenses, alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
+    <b>PHASE 3 · ALL-OUT</b> opens with falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center) right as the mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds behind it, backed by a fast interceptor screen; the fleet's bombarder reinforcements arrive ~40s into this phase, not with the opening wave.<br>
     <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.<br><br>
     <b>THE FLEET ADAPTS.</b> It reads your heaviest standing element every ~45 seconds and re-tasks the SAME units at whatever you're leaning on — watch for an "AUTOFLEET ADAPTING" alert:<br>
     &nbsp;• <b>Laser grid</b> → shielded strike wings + more bombers.<br>
@@ -2997,7 +2997,7 @@ const UNIT_DEFS = {
   battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1400, dmg: 40, rate: 1.5, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', weapon2: 'rotary', dmg2: 4, rate2: .4, range2: 360, wpn2Air: true, ceil2: .38, ds: 'VLS SATURATION arsenal ship — the longest hull and longest reach in the fleet, its deck packed edge-to-edge with vertical launch cells that empty in rapid, overlapping salvos onto ground & surface targets. Its own air-defense is a weak flak stub with a short, low reach — screen it with a Missile Cruiser, or it is easy prey from above. (req Naval Power)' },
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, req: 'kinetics', elec: true, weapon2: 'rocket', dmg2: 16, rate2: 1.4, range2: 560, wpn2Air: true, ceil2: .56, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, backed by laser PD and a secondary SAM turret. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, weapon2: 'rocket', dmg2: 12, rate2: 1.1, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA and a secondary SAM turret. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
-  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'rotary', dmg2: 5, rate2: .3, range2: 300, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two loyal-wingman drones sharing a single hangar slot. Rearms at an airbase. Short-range autocannon for close dogfights.' },
+  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'tracer', dmg2: 6, rate2: 1.0, range2: 260, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two loyal-wingman drones sharing a single hangar slot. Rearms at an airbase. Short-range autocannon for close dogfights.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'FAST, FRAGILE air-superiority interceptor — the quickest jet in the fleet, climbing highest and cycling its nose laser fastest of any aircraft, but built with zero armor plating and a light airframe: a stiff breeze kills it. Pure anti-air & missile-defense — it does NOT strafe the ground. It duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
@@ -4685,7 +4685,7 @@ function hurt(t, dmg, ix, iy) {
   // ENERGY SHIELD RULE: only an active shield resists hits. Without one, units get DUMPSTERED — and the less armor, the worse: unarmored (esp. aircraft) die in a couple of hits.
   const fragile = !(t._b || t._city), rawArmor = (t.d && t.d.armor) || t.armor || 0;
   const eff = Math.max(1, dmg * (fragile ? HIT_BUFF * (rawArmor < 4 ? 2.7 : 1.9) : 1) - armor);
-  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; addDmgTaken(t.x, eff); spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (!t.kind) addDmgTaken(t.x, ev); /* v4.0 E — DAMAGE-TAKEN MAP: only PLAYER units (no .kind field; enemies always carry one) count toward where PHASE 3 picks its least-hit landing zones */ if (t.d && t.d.domain === 'air') t.evadeT = 2; /* EVASION TRIGGER — any un-answered hit on an airborne friendly makes it skittish for ~2s; see the air-unit no-reachable-target branch in updUnits, which jinks/retreats instead of loitering while this is > 0 */ if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; if (t.kind && t.hp > 0 && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.killBy === 'rail' || t.killBy === 'rod' || t.killBy === 'shell' || t.killBy === 'beam')) t.evadeT = 1.2; /* ENEMY EVASION (v4.0 C) — mirrors the friendly trigger just above: a heavy round (rail/rod/shell/plasma — a plasma hit lands as killBy 'beam', shared with lasers via beamHit(), so both spook it the same way) that HITS an enemy air unit and it survives spooks it into evasive jinking too (consumed in updEnemies' airborne weave branch); bosses/bulwark/shieldgen/ground/anchored never evade */ spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
+  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; addDmgTaken(t.x, eff); spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (!t.kind) addDmgTaken(t.x, ev); /* v4.0 E — DAMAGE-TAKEN MAP: only PLAYER units (no .kind field; enemies always carry one) count toward where PHASE 3 picks its least-hit landing zones */ if (t.d && t.d.domain === 'air') t.evadeT = 2; /* EVASION TRIGGER — any un-answered hit on an airborne friendly makes it skittish for ~2s; see the air-unit no-reachable-target branch in updUnits, which jinks/retreats instead of loitering while this is > 0 */ if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; if (t.empburst && t.hp <= 0) detonateEmpBurst(t); /* B3 SHOT DOWN — an antimatter warhead killed in flight detonates at its CURRENT altitude (not just dies); detonateEmpBurst reads t.x/t.y as they stand right now, scaling the blackout radius by how far it still had to fall */ if (t.kind && t.hp > 0 && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.killBy === 'rail' || t.killBy === 'rod' || t.killBy === 'shell' || t.killBy === 'beam')) t.evadeT = 1.2; /* ENEMY EVASION (v4.0 C) — mirrors the friendly trigger just above: a heavy round (rail/rod/shell/plasma — a plasma hit lands as killBy 'beam', shared with lasers via beamHit(), so both spook it the same way) that HITS an enemy air unit and it survives spooks it into evasive jinking too (consumed in updEnemies' airborne weave branch); bosses/bulwark/shieldgen/ground/anchored never evade */ spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
 // SQUAD FOOTPRINT DAMAGE — a round landing anywhere inside the squad's collision radius (see hurt() above) is
 // routed here and EATS THROUGH the living bodies NEAREST the actual impact point (ix,iy, defaulting to the
 // squad's own position when a caller doesn't know exactly where the round landed), nearest-first: the closest
@@ -5022,7 +5022,7 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
   if (grd > 0) { if (G.waveN >= 2 && Math.random() < .6) spawnEnemy('breacher', lz); else spawnEnemy('shieldgen', lz); G.fleet = Math.max(0, G.fleet - 1); }   // a SHIELD CARRIER (early waves) or a persistent BEACHHEAD ANCHOR (later waves) drops with the group to hold the landing zone — down it in the sky before it deploys
   // EVERY LANDING HAS A SUPER UNIT — arrives as part of the group (spawnSuper always clusters them), throttled only by the perf-safety enemy cap
   let sup = false;
-  if (G.enemies.length < 78) { const pool = it.ground > .4 ? ['leviathan', 'hive', 'bombarder'] : ['hive', 'bombarder', 'leviathan']; spawnSuper(pool[Math.floor(Math.random() * pool.length)], false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
+  if (G.enemies.length < 78) { const bMul = (G.invTime || 0) < 120 ? .5 : 1; /* B2 — bombardiers came early: halve the per-wave odds of a bombarder super for the first 120s so the boss-tier space fabricator doesn't show up before the player has any anti-orbital answer yet */ const pool = { leviathan: 1, hive: 1, bombarder: 1 * bMul }; spawnSuper(weightedPick(pool), false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
   const escNote = escMul > 1.05 ? ' ×' + escMul.toFixed(1) + ' UNANSWERED FLANK' : '';
   toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + escNote + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '') + (sup ? ' + SUPERWEAPON GROUP' : '')); shake(10); SFX.boom();
 }
@@ -5216,8 +5216,9 @@ function scanEnemyIntel() {
     }   // dominant → null (losing a clear read) is a real dominance change too, so G.counterBias resets to neutral above, but it's a quiet reset — no banner for "we don't have a read anymore"
   }
 }
-// PHASE 2 — BLACKOUT: EMP bursts detonate over your densest defended clusters, each pushing a
-// {x,r,t} zone into G.blackout; empMul() (consulted at every degraded call site) is what reads it.
+// densestDefenseX — bucketed density of the player's own weapon-armed buildings, used to aim PHASE 2's
+// suppressing micromissile salvos (see phase2Suppression). Antimatter warheads (each detonation pushes a
+// {x,r,t} zone into G.blackout; empMul() reads it) now launch from PHASE 3 instead — see densestAntiAirX.
 function densestDefenseX() {   // bucketed like bestClusterX, but over PLAYER weapon-armed buildings (not enemies)
   const bins = new Map();
   for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const bx = Math.round(b.x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += (b.d.cat === 'DEF' ? 2.2 : 1); e.xSum += b.x; e.n++; }
@@ -5236,9 +5237,20 @@ function densestSpaceReachX() {
   const out = []; for (const e of bins.values()) out.push({ x: e.xSum / e.n, w: e.w });
   out.sort((a, b) => b.w - a.w); return out;
 }
+// B3 — densestDefenseX(), but filtered to strictly ANTI-AIR-capable things (noGround, or ceil <= .6 —
+// the same "is this thing actually anti-air" test scanEnemyIntel uses) over both buildings AND fielded
+// units, not raw defense density. Used to aim the phase-3 antimatter warheads at the player's real AA
+// cluster (bunkers/SAMs/AA guns/fighters), not just wherever buildings happen to be thickest.
+function densestAntiAirX() {
+  const bins = new Map(), add = (x, w) => { const bx = Math.round(x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += w; e.xSum += x; e.n++; };
+  for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const ceil = b.d.ceil != null ? b.d.ceil : .8; if (!(b.d.noGround || ceil <= .6)) continue; add(b.x, b.d.cat === 'DEF' ? 2.2 : 1); }
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || !u.d.weapon) continue; const ceil = u.d.ceil != null ? u.d.ceil : defaultCeil(u.d); if (!(u.d.noGround || ceil <= .6)) continue; add(u.x, 1); }
+  const out = []; for (const e of bins.values()) out.push({ x: e.xSum / e.n, w: e.w });
+  out.sort((a, b) => b.w - a.w); return out;
+}
 function detonateEmpBurst(e) {
   e.hp = 0;
-  const r = (G.diff <= .7) ? 500 : 700;   // FAIRNESS — Recruit never gets its whole capital footprint blacked out at once
+  const r = 700 * Math.max(.35, Math.min(1, 1 - (e.hold - e.y) / e.hold));   /* B3 — ALTITUDE-SCALED BLACKOUT: it goes off wherever it dies. Shot down high (e.y still far short of e.hold) leaves it a long way from arming, so the zone is small (floor .35 -> r 245); let it fall all the way to e.hold (the stratosphere) and it gives the full r 700 */
   G.blackout.push({ x: e.x, r, t: 14 });
   G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 220, life: .5, bloom: true });
   G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 10, max: r, life: .8 });
@@ -5248,14 +5260,21 @@ function detonateEmpBurst(e) {
   const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone, not a scarier single one — see counterBias('aa')
   for (let i = 0; i < salvos; i++) G.proj.push({ k: 'microrkt', x: e.x + (i - (salvos - 1) / 2) * 90, y: e.y - 60, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12 * G.diff, tr: [], aaOnly: false });   // one (or more, see salvos) hostile micromissile carrier bursts over each new zone (reuses the friendly micromis carrier->submunition projectile as hostile, see openingAAsalvo)
 }
-function phase2Blackout(it) {
-  const n = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);   // FAIRNESS — a low-difficulty custom scenario never gets more than one zone (r 500, see detonateEmpBurst)
+// B3 — PHASE 2 is now SUPPRESSION, not BLACKOUT: the antimatter warheads moved to opening PHASE 3 (see
+// phase3AllOut/detonateEmpBurst) so they go off right as the mass wave hits the main defenses, not out
+// here where they used to land 30+ seconds too early. Phase 2 keeps everything else that made it feel
+// like the screws tightening: buster cadence already runs x1.6 through this phase (G.busterCd tick,
+// untouched, elsewhere), a wall of hostile MICROMISSILE carriers still bursts over the densest defended
+// clusters (previously only arrived bolted to a warhead kill — now it's its own suppressing fire), and
+// shockwave pods still shove your aircraft around.
+function phase2Suppression(it) {
+  const n = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);
   const clusters = densestDefenseX();
+  const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone
   for (let i = 0; i < n; i++) {
     const c = clusters[i % Math.max(1, clusters.length)];
     const x = c ? Math.max(160, Math.min(WORLD_W - 160, c.x + (Math.random() - .5) * 120)) : 200 + Math.random() * (WORLD_W - 400);
-    spawnEnemy('empburst', x);
-    if (!G._warheadWarned) { G._warheadWarned = true; toast('⚛ ANTIMATTER WARHEAD FALLING — shoot it down before it reaches the stratosphere'); }   // v4.0.1 — once per phase, the FIRST warhead gets its own callout (the zone/EMP toast on detonation already existed; this is the earlier "it's coming" warning)
+    for (let j = 0; j < salvos; j++) G.proj.push({ k: 'microrkt', x: x + (j - (salvos - 1) / 2) * 90, y: STRATO_Y() - 60, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12 * G.diff, tr: [], aaOnly: false });
   }
   const shockN = Math.max(1, Math.round(6 * G.diff));
   for (let i = 0; i < shockN; i++) spawnEnemy('shockwave', 160 + Math.random() * (WORLD_W - 320));
@@ -5287,13 +5306,35 @@ function shockwaveBurst(e) {
     hurt(u, baseDmg * .25);
   }
 }
-// PHASE 3 — ALL-OUT: the existing doSkyfall() drop (now timed to fire HERE instead of its own old
-// bombard+2s timer), boss reinforcements sized by intent, three real ground landings picked by LEAST
-// damage taken (see pickLeastDamagedZones), and a fast interceptor screen crossing the gap.
+// PHASE 3 — ALL-OUT. B3: OPENS with the antimatter warheads, launched at the densest ANTI-AIR cluster
+// (densestAntiAirX — not just "densest defense"), so the blackout they leave behind lands where it
+// actually hurts the player's air defense. The rest of the phase — doSkyfall's mass drop, three real
+// ground landings picked by LEAST damage taken (pickLeastDamagedZones), and the interceptor screen — is
+// deferred G._skyfallDelayT seconds (see phase3Skyfall + the tick in updateInvPhases) so that blackout
+// zone is already spreading by the time the wave itself arrives, not detonating over empty sky 30+
+// seconds early like the old phase-2 warheads did. B2: the bombarder reinforcement group no longer
+// spawns HERE at phase-3 open either — it's scheduled G._bombarderT seconds later instead (also ticked
+// in updateInvPhases), only for intents whose own schedule (it.supers) actually includes a bombarder —
+// that intent's OWN scheduled bombarder (invasion t:60, glass t:18, extinction's rotation) is untouched.
 function phase3AllOut(it) {
+  const wn = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);   // same warhead counts as the old phase-2 BLACKOUT used — just launched from here now
+  const clusters = densestAntiAirX();
+  for (let i = 0; i < wn; i++) {
+    const c = clusters[i % Math.max(1, clusters.length)];
+    const x = c ? Math.max(160, Math.min(WORLD_W - 160, c.x + (Math.random() - .5) * 120)) : 200 + Math.random() * (WORLD_W - 400);
+    spawnEnemy('empburst', x);
+    if (!G._warheadWarned) { G._warheadWarned = true; toast('⚛ ANTIMATTER WARHEAD FALLING — shoot it down HIGH, it goes off wherever it dies'); }   // once per match, the FIRST warhead gets its own callout
+  }
+  G._skyfallDelayT = 8; G._skyfallIt = it;   // phase3Skyfall(it) fires after this delay (ticked in updateInvPhases) — the mass wave lands as the blackout is already spreading
+  const superN = { invasion: 1, glass: 2, extinction: 3, decap: 0 }[G.intent] || 0;
+  if (superN > 0 && it.supers && it.supers.some(s => s.kind === 'bombarder')) { G._bombarderT = 40; G._bombarderN = superN; }   // B2 — bombardiers came early: delayed ~40s into phase 3 instead of arriving with the opening wave
+}
+// B3 (deferred half of PHASE 3 — see phase3AllOut above): the mass skyfall drop, boss reinforcements
+// sized by intent, three real ground landings picked by LEAST damage taken, and a fast interceptor
+// screen crossing the gap. Unchanged from the pre-4.0.3 phase3AllOut except it now fires
+// G._skyfallDelayT seconds after the warheads launch instead of synchronously at phase-3 open.
+function phase3Skyfall(it) {
   doSkyfall(it);
-  const superN = { invasion: 2, glass: 3, extinction: 5, decap: 1 }[G.intent] || 0;
-  if (superN > 0) spawnSuper('bombarder', false, superN);
   const zones = pickLeastDamagedZones(3, 600);
   let cols = it.fleetMul >= 2 ? 4 : it.fleetMul >= 1.2 ? 3 : 2;
   if (G.counterBias && G.counterBias.colMul && G.counterBias.colMul !== 1) cols = Math.max(1, Math.round(cols * G.counterBias.colMul));   // v4.0.1 — spaceReach-dominant reads lean harder on mass ground landings (colMul, see counterBias)
@@ -5329,6 +5370,8 @@ function tickPhase4(it, dt) {
 function updateInvPhases(it, dt) {
   if (G.invPhase < 1) return;
   if (G.blackout && G.blackout.length) for (let i = G.blackout.length - 1; i >= 0; i--) { G.blackout[i].t -= dt; if (G.blackout[i].t <= 0) G.blackout.splice(i, 1); }
+  if (G._skyfallDelayT != null) { G._skyfallDelayT -= dt; if (G._skyfallDelayT <= 0) { const dIt = G._skyfallIt; G._skyfallDelayT = null; G._skyfallIt = null; phase3Skyfall(dIt); } }   /* B3 — the mass wave (+ its 3 real landings) lands ~8s after the phase-3 antimatter warheads launch, so the blackout is already spreading when it arrives */
+  if (G._bombarderT != null) { G._bombarderT -= dt; if (G._bombarderT <= 0) { const bN = G._bombarderN || 0; G._bombarderT = null; G._bombarderN = null; if (bN > 0) spawnSuper('bombarder', false, bN); } }   /* B2 — bombardiers came early: the delayed phase-3 reinforcement batch, ~40s into the phase */
   if (!G._intelScanned && G.invTime >= 15) { G._intelScanned = true; G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // first read at ~15s in
   else if (G._intelScanned && G.invTime >= (G._intelNextT || Infinity)) { G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // v4.0.1 — THE FLEET ADAPTS: re-read every ~45s for the rest of the match, not just once
   if (G.intent === 'recon') { if (G.invPhase < 4 && G.invTime >= 18) G.invPhase = 4; }
@@ -5339,8 +5382,8 @@ function enterInvPhase(n, it) {
   if (G.invPhase >= n) return;
   G.invPhase = n; G.invPhaseT = 0;
   if (n === 1) { announcePhase(1, 'AUTOFLEET · PHASE 1 — SCREENING FIRE', 'probing your grid'); phase1Screening(it); }
-  else if (n === 2) { announcePhase(2, 'PHASE 2 — BLACKOUT', 'antimatter EMP bursts in the stratosphere'); phase2Blackout(it); }
-  else if (n === 3) { announcePhase(3, 'PHASE 3 — ALL-OUT ASSAULT', 'landings where your line bent'); phase3AllOut(it); }
+  else if (n === 2) { announcePhase(2, 'PHASE 2 — SUPPRESSION', 'buster raids and micromissile salvos'); phase2Suppression(it); }
+  else if (n === 3) { announcePhase(3, 'PHASE 3 — ALL-OUT · ANTIMATTER WARHEADS INBOUND', 'falling on your AA grid — the mass wave lands right behind'); phase3AllOut(it); }
 }
 
 /* =====================================================================
@@ -7386,6 +7429,7 @@ function updEnemies(dt) {
       if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.empburst) { detonateEmpBurst(e); continue; }   /* v4.0 E PHASE 2 BLACKOUT — the warhead itself, not a landed unit: detonate on arrival at STRATO_Y and remove it */ if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
       continue;
     }
+    if (e.empburst && e.hp > 0) { e.fuse = (e.fuse == null ? 6 : e.fuse) - dt; if (e.fuse <= 0) { detonateEmpBurst(e); continue; } }   /* B3 FUSE — safety net: re-entry ended (reentry===false) without ever reaching e.hold — a warhead that ends up here (e.g. yanked off its normal descent) still detonates within 6s of that instead of drifting inert forever; the normal hold-arrival and shot-down paths above/in hurt() both zero e.hp before this can ever run, so it only fires on the genuinely-stalled case */
     if (e.reinforceEligible) {   // THE BEACHHEAD CLOCK — a landed/anchored superweapon that survives long enough calls in ONE support group (see reinforceBoss / BOSS_REINFORCE_T)
       e.activeT = (e.activeT || 0) + dt;
       if (!e.reinforced && e.activeT >= BOSS_REINFORCE_T) { e.reinforced = true; reinforceBoss(e); }
@@ -7565,6 +7609,7 @@ function updProj(dt) {
     if (!p.friendly && p.life > 0 && p.k !== 'krodfx') { const sh = shieldBlocks(p.x, p.y); if (sh) { sh.shieldHp -= (p.dmg || 0) + (p.k === 'krod' ? 90 : p.k === 'subbomb' ? 50 : 30); spark(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 9, life: .14 }); (sh.shieldHits || (sh.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(sh.x), p.x - sh.x), t: 0 }); if (p.k === 'krod' || p.k === 'subbomb') boom(p.x, p.y, 5); p.life = 0; continue; } }   // DEFLECTOR DOME soaks incoming rods/missiles/bombs until it's battered down — each hit spawns a surface ripple at its impact angle
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const fld = enemyField(p.x, p.y); if (fld) { fld.fieldHp -= (p.dmg || 10) + (p.big ? 30 : 12); spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .12 }); (fld.fieldHits || (fld.fieldHits = [])).push({ ang: Math.atan2(p.y - fld.y, p.x - fld.x), t: 0 }); p.life = 0; continue; } }   // ENEMY DEFLECTOR FIELD scrubs YOUR incoming rounds (incl. the AoE that bypasses armour) until it's battered down; beams & strategic strikes punch straight through it
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const dm = enemyDome({ x: p.x, y: p.y }); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min((p.dmg || 10) + (p.big ? 30 : 12), room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 8, life: .13 }); (dm.shieldHits || (dm.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(dm.x), p.x - dm.x), t: 0 }); p.life = 0; continue; } }   // BEACHHEAD SHIELD DOME — mirrors the field check above: catches YOUR incoming round IN FLIGHT (missiles, plasma, MIRV submunitions — everything that would've silently splashed via areaDamage/splashDamage, completely bypassing the dome) before it can detonate. Same per-frame DPS cap as the hurt()-side soak below; beams & strategic strikes punch straight through it, matching the field
+    if ((p.k === 'tracer' || p.k === 'rotary' || p.k === 'shell') && p.y < STRATO_Y()) p.vy += 140 * dt;   /* B1 BULLET DROP — autocannon/flak/shell rounds that stray above the stratosphere line get pulled back down by gravity, so a fighter's gun can't plink targets sailing into orbit; keyed strictly on kind so missiles/beams/rods (guided, unaffected by gunfire ballistics here) never see this */
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
       if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact

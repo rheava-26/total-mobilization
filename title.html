@@ -6547,22 +6547,23 @@ function fallTimeConst(D, v0, ay, vyCap) { if (D <= 0) return .1; if (ay <= 0) r
   if (dCap >= D) { const disc = Math.max(0, v0 * v0 + 2 * ay * D); return Math.max(.1, (-v0 + Math.sqrt(disc)) / ay); }
   return tCap + (D - dCap) / vyCap;
 }
-// how much of tFall the low-altitude (below MESO) burn gets to keep — MESO_Y sits most of the way down these
-// spawn columns (they start way up at y0<<0), so a literal "12% of the whole flight's mean speed" crawl would
-// itself eat several TIMES the old total fall time before ever reaching MESO. Sizing the crawl to consume the
-// REST of the budget (leaving this slice for the below-MESO band) is what actually keeps total time matched —
-// see the ROADMAP/commit note for the full reasoning. The result is still dramatically slower up high than the
-// old profile was by the time it neared this same altitude (it was already almost at vyCap by then) and a hard,
-// short, uncapped burn right at the end — "screaming near the ground," same total time.
-const FALL_LOWBAND_FRAC = .05;
+// how much of tFall the ORBITAL CRAWL (above MESO_Y) gets to keep, vs. the below-MESO burn — tuned to 65/35
+// (was briefly 95/5: that starved the below-MESO burn down to ~0.35s, crossing the whole lower atmosphere in
+// one near-instant jump that read as a teleport, not "speeds up as it enters the atmosphere", and left no real
+// low-altitude intercept window). At 65/35 the below-MESO phase gets a real ~2.5s window — see the commit note
+// for measured numbers. Sizing off tFall (not a fixed altitude split) is what keeps total time matched — see
+// fallTimeConst above. The crawl is still dramatically slower than the old profile was by the time it neared
+// this same altitude (it was already almost at vyCap by then), and the below-MESO burn is still uncapped —
+// "screaming near the ground" — just with room to actually be shot at on the way down now.
+const REENTRY_CRAWL_FRAC = .65;
 function spawnBuster(tx, ty) { const gy = ty != null ? ty : groundY(tx);
   for (let d = 0; d < 3; d++) {
     const y0 = -360 - Math.random() * 200, vy0 = 8 + Math.random() * 10, ay0 = 55 + Math.random() * 25, vcap0 = 380 + Math.random() * 80;
-    const D = gy - y0, tFall = fallTimeConst(D, vy0, ay0, vcap0), d1 = Math.max(1, MESO_Y() - y0), t1Budget = Math.max(.1, tFall * (1 - FALL_LOWBAND_FRAC)), crawlV = d1 / t1Budget;
-    G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: y0, vx: (Math.random() - .5) * 50, vy: vy0, ay: ay0, vyCap: vcap0, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [], t: 0, tFall, crawlV });   // a MINIMAL screen of DECOY missiles falls with each penetrator (was 8 — a full flare wall let decoys soak the whole interceptor net and let real busters through unchallenged; PD now also ranks rods/busters over decoys — see acquireIncoming/acquireAmiTarget — so a thin screen is enough to matter without smothering the defense) — DURABLE flares (a few hits, not one) that still cost a shot if engaged. Mirrors the buster's slow-start orbital descent so the screen reads consistently
+    const D = gy - y0, tFall = fallTimeConst(D, vy0, ay0, vcap0), d1 = Math.max(1, MESO_Y() - y0), t1Budget = Math.max(.1, tFall * REENTRY_CRAWL_FRAC), crawlV = d1 / t1Budget;
+    G.proj.push({ k: 'decoy', interceptable: true, strat: true, hp: 5, s: 3, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 240)), y: y0, vx: (Math.random() - .5) * 50, vy: vy0, ay: ay0, vyCap: vcap0, tx: tx + (Math.random() - .5) * 280, ty: gy, life: 16, friendly: false, flareCd: Math.random() * .1, jink: Math.random() * 6.28, tr: [], t: 0, tFall, crawlV });   // a MINIMAL screen of DECOY missiles falls with each penetrator (was 8 — a full flare wall let decoys soak the whole interceptor net and let real busters through unchallenged; PD now also ranks rods/busters over decoys — see acquireIncoming/acquireAmiTarget — so a thin screen is enough to matter without smothering the defense) — DURABLE flares (a few hits, not one) that still cost a shot if engaged. Mirrors the buster's slow-start orbital descent so the screen reads consistently — SAME REENTRY_CRAWL_FRAC 65/35 split as the buster
   }
   { const by0 = -440, bvy0 = 8 + Math.random() * 6, bay0 = 62, bvcap0 = 420;
-    const bD = gy - by0, btFall = fallTimeConst(bD, bvy0, bay0, bvcap0), bd1 = Math.max(1, MESO_Y() - by0), bt1Budget = Math.max(.1, btFall * (1 - FALL_LOWBAND_FRAC)), bcrawlV = bd1 / bt1Budget;
+    const bD = gy - by0, btFall = fallTimeConst(bD, bvy0, bay0, bvcap0), bd1 = Math.max(1, MESO_Y() - by0), bt1Budget = Math.max(.1, btFall * REENTRY_CRAWL_FRAC), bcrawlV = bd1 / bt1Budget;
     G.proj.push({ k: 'buster', interceptable: true, strat: true, hp: 200, s: 5, big: true, x: Math.max(60, Math.min(WORLD_W - 60, tx + (Math.random() - .5) * 80)), y: by0, vx: 0, vy: bvy0, ay: bay0, vyCap: bvcap0, tx, ty: gy, life: 16, friendly: false, flareCd: 0, jink: Math.random() * 6.28, tr: [], t: 0, tFall: btFall, crawlV: bcrawlV }); }   // 200 HP → survives ~3 interceptor hits; LAUNCHED FROM ORBIT — near-stationary CRAWL while high (an easy, slow, long-hanging target — orbit = easy), then a short hard uncapped burn once it crosses into the lower atmosphere (see updProj) — same total orbit→ground time as before, wildly harder to hit up close
 }   // strat:true keeps them alive through the cull during the long high-altitude fall (same as the orbital lance)
 function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOINT: one plane-sized round guts its SINGLE designated target with a small, sharp blast (incl. shallow-buried bunkers) — a sniper round, not an area nuke
@@ -7740,7 +7741,7 @@ function updProj(dt) {
       if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
       p.t = (p.t || 0) + dt;
       if (p.y < MESO_Y()) { p.vy = p.crawlV; }   // ORBITAL CRAWL — constant, slow; a defender gets a long unhurried window
-      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }   // solved ONCE on band entry: remaining distance / remaining time, no cap — screaming by the time it's low
+      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t), vAvgNeed = d / trem; p.vy = Math.min(p.vy, vAvgNeed * .1); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }   // solved ONCE on band entry: remaining distance / remaining time, no cap — screaming by the time it's low. AT REENTRY_CRAWL_FRAC .65, MESO_Y sits so far down these spawn columns (~82% of the distance) that the crawl speed needed to cover that distance in 65% of the flight time is ALREADY faster than the average speed the (much shorter, ~18%-of-distance) below-MESO stretch can spend its 35% time budget on — carrying the crawl velocity straight into this solve would demand DECELERATION (clamped away) and the round would coast in early, undershooting total time. Reset to a low reference speed (10% of what the below-band needs on average) right at the MESO crossing instead — it visibly catches/staggers as it bites into thicker air, then burns hard for a real multi-second window, same total time
       const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; if (p.y >= STRATO_Y()) p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target; evasive jink only in the lower atmosphere
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 18) p.tr.shift();
@@ -7753,7 +7754,7 @@ function updProj(dt) {
       if (p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .1 }); p.life = 0; continue; }
       p.t = (p.t || 0) + dt;
       if (p.y < MESO_Y()) { p.vy = p.crawlV; }
-      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }
+      else { if (p.belowAy == null) { const d = p.ty - p.y, trem = Math.max(.15, p.tFall - p.t), vAvgNeed = d / trem; p.vy = Math.min(p.vy, vAvgNeed * .1); p.belowAy = Math.max(0, 2 * (d - p.vy * trem) / (trem * trem)); } p.vy += p.belowAy * dt; }   // SAME low-speed reset on MESO crossing as the buster (see its comment above) — required for the same feasibility reason
       const dx = p.tx - p.x; p.vx += (dx * 1.5 - p.vx * 1.2) * dt; p.vx += Math.sin((p.y + p.jink * 40) * .05) * 70 * dt; p.vx = Math.max(-340, Math.min(340, p.vx));
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 12) p.tr.shift();

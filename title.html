@@ -4848,10 +4848,6 @@ const ESC = {
   OPEN_BOMBARDERS: 2,          // how many bombarders seed the opening   /* v4.0.3: was 5 at invasion t=0 — designer: "bombardiers came early"; the opening wall now arrives with PHASE 2 · SUPPRESSION and is smaller */
   OPEN_MARGIN: 0.08,           // keep them off the extreme edges: x in [margin*W, (1-margin)*W]
   OPEN_JITTER: 200,            // +/- px so the rank isn't a perfect ruler-line
-  OPEN_BOMBARDERS_GRID: false, // opening bombarders SKIP the 21-unit orbital-defense grid + escorts so
-                               //   5 of them at once don't vomit 100+ sats (perf + beatability). Flip
-                               //   true to restore the full wall. Their core kit (ground-snipe +
-                               //   orbital barrage + point-defence) is untouched either way.
 
   // ── LANDING-ZONE SNOWBALL ───────────────────────────────────────────────────────────────
   // A landing the player DOESN'T answer sends BIGGER reinforcements to that same flank next time.
@@ -4972,14 +4968,23 @@ function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superw
 // whole map, so orbital-plasma pressure blankets every stretch of ground from t=0 instead of one
 // hotspot. Reuses the existing bombarder spawn/def; only orbital-bombardment intents open this way.
 // (See ESC.OPEN_* for tuning.) Their core kit — ground-snipe + orbital barrage + PD — is unchanged.
-function openingBombarders(it, nOverride) {   // G2: now called from a PHASE-3 timer (see phase3Skyfall/updateInvPhases), never at t=0 — and every bombarder it drops deploys its FULL orbital grid + personal escort like any other (semantics of the old ESC.OPEN_BOMBARDERS_GRID flag are gone: nothing here skips the grid any more, see the satDeployed/escorted gates in updEnemies)
+// v4.1 G: these are the ONLY bombarders marked e.wallGrid, so they're also the ONLY ones that deploy
+// the full 8+8+mender orbital defense grid (see the satDeployed gate in updEnemies) — every other
+// bombarder (wave supers, adaptive delays, INTENT supers) makes do with the small 2-3 escort pair
+// + its 4 personal escortfighters. Stacking the full grid on every bombarder in the game, not just
+// this opening wall, is what turned the orbital layer untouchable.
+function openingBombarders(it, nOverride) {   // G2: now called from a PHASE-3 timer (see phase3Skyfall/updateInvPhases), never at t=0
   if (!(it.bombard > 0 || it.orbital > 0 || it.glass)) return;   // a recon PROBE / decap precision strike stay a light feeler — no opening orbital wall
   const n = nOverride != null ? nOverride : ESC.OPEN_BOMBARDERS; if (n <= 0) return;
   const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
   for (let i = 0; i < n; i++) {
     const frac = n === 1 ? .5 : i / (n - 1);
     const x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
+    const idx = G.enemies.length;   // spawnEnemy() pushes the bombarder itself BEFORE attachEscorts appends its escortfighters, so this index still lands on the bombarder even though more than one enemy comes out of the call
     spawnEnemy('bombarder', x);
+    let e = G.enemies[idx];
+    if (!e || e.kind !== 'bombarder') { for (let j = G.enemies.length - 1; j >= idx; j--) { if (G.enemies[j].kind === 'bombarder') { e = G.enemies[j]; break; } } }   // fallback: scan back for the freshest bombarder if the index ever stops lining up
+    if (e) e.wallGrid = true;   // v4.1 G — ONLY the opening wall gets the full 8+8+mender orbital defense grid; every other bombarder (wave supers, adaptive delays, INTENT supers) makes do with its 4 escort fighters + the small pair
   }
   toast('☄☄ ORBITAL BOMBARDERS ON STATION — the whole sky is theirs'); shake(10); if (typeof musDuck === 'function') musDuck();
 }
@@ -7723,6 +7728,7 @@ const BOMBARDER_POD_CD = 22;   // v4.1 — seconds between cluster-bomb pods per
 const LASERSAT_RANGE = 1150;     // BUGFIX: laser-defense sats used to snipe the WHOLE MAP (target near() ran at 1e9 with no fire-range gate). Clamp hard to a LOCAL picket radius so they defend the bombarder's orbit, not the battlefield (WORLD_W is 6000)
 const RAILSAT_RANGE = 1900;      // the offensive railgun sats keep a longer reach than the laser pickets, but are STILL bounded well under map width (same whole-map-snipe bug)
 const BOMBARDER_SAT_N = 8;       // sats of EACH type deployed on arrival (was 10 — a modest tone-down of the grid's density)
+const PD_UNINTERCEPTABLE = { rail: 1, shell: 1 };   // v4.1 — point-defence lances MISSILES (rockets/microrockets/strategic ordnance), never hypervelocity kinetic slugs (railguns/tungsten rods) or tank shells — those are too fast/dumb-fired to intercept
 function updEnemies(dt) {
   // PERF: friendliesList()/airTargetsList()/airOnlyList() each walk EVERY player unit + building + city district
   // to build a fresh array. The loop below used to call them fresh for EVERY enemy (targeting, whistler dive,
@@ -7774,7 +7780,7 @@ function updEnemies(dt) {
       if (e.aimCity != null && e.chargeT <= 2 && e.chargeT > 0) { const cx = e.aimCity; if (Math.random() < .7) G.parts.push({ k: 'spark', x: cx + (Math.random() - .5) * 30, y: groundY(cx) - Math.random() * 220, vx: (Math.random() - .5) * 16, vy: -30 - Math.random() * 50, r: 1.4, life: .4 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.3, life: .1 }); }
       if (e.chargeT <= 0) { fireHostileColumn(e.aimCity != null ? e.aimCity : e.x); e.chargeT = 8 + Math.random() * 4; e.aimCity = null; }
       e.pdCd = (e.pdCd == null ? .5 : e.pdCd) - dt;   // POINT DEFENCE — same pattern as the bombarder's, so the annihilator isn't trivially missiled down while it's charging its beam
-      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       continue;
     }
     // TEMPORAL AI LOD — HOT enemies (on-screen or near a player unit) re-scan for the nearest target every frame,
@@ -7820,15 +7826,15 @@ function updEnemies(dt) {
     }
     if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + DOUBLE-RATE point-defence swats your shots + hunts your aircraft + pins escorts near its orbit + snipes your ground units from orbit + (G3) a high-speed plasma lance + twin secondary batteries — "they're supposed to be on the SAME level as a nanoforge ship, so let them have powerful main guns and secondary batteries"
       e.dropCd = (e.dropCd == null ? 5 : e.dropCd) - dt; if (e.dropCd <= 0) { e.dropCd = 5 + Math.random() * 4; orbitalBarrage(e.x + (Math.random() - .5) * 520); } e.podCd = (e.podCd == null ? BOMBARDER_POD_CD * .5 : e.podCd) - dt; if (e.podCd <= 0) { e.podCd = BOMBARDER_POD_CD; if (G.enemies.length < 210) spawnEnemy('bombpod', e.x + (Math.random() - .5) * 380); }   /* v4.1 — CLUSTER BOMBS on a SIEGE cadence: one pod per bombarder per BOMBARDER_POD_CD seconds (was a 50% roll on every 5-9s barrage tick PLUS fabricator pods) */
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE — nerfed to HALF the old rate (BOMBARDER_PD_CD): a red PD beam still lances one of your incoming rounds, but it eats far fewer of them, so massed fire gets through
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE — nerfed to HALF the old rate (BOMBARDER_PD_CD): a red PD beam still lances one of your incoming MISSILES (kinetic slugs and shells cannot be intercepted), but it eats far fewer of them, so massed fire gets through
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, _airOnlyList, 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13, undefined, undefined, undefined, 'large'); } else e.aaCd = 1.2; }
-      if (!e.escorted && !e.noEscort) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once. G2: every bombarder now gets this (the old ESC.OPEN_BOMBARDERS_GRID opening-wave carve-out is gone) — only a mass-drop SWARM (e.noEscort, n>=6) skips it for perf.
+      if (!e.escorted && !e.noEscort) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once. Every bombarder still gets this small pair (wall or not) — only a mass-drop SWARM (e.noEscort, n>=6) skips it for perf, and only the opening wall additionally gets the FULL 8+8+mender grid below (e.wallGrid).
         e.escorted = true; const n = 2 + (Math.random() < .5 ? 1 : 0);
         for (let i = 0; i < n && G.enemies.length < 222; i++) { spawnEnemy(Math.random() < .5 ? 'frigate' : 'strikewing', e.x + (i - (n - 1) / 2) * 170); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 90; ne.y = ne.hold; } }
         floatText(e.x, e.y - e.s - 12, '🛰 ESCORTS DEPLOYED', '#9cc4ff');
       }
-      if (!e.satDeployed && !e.noEscort) {   // FULL ORBITAL DEFENSE GRID — on arrival, ONCE: 8 railgun sats + 8 laser-defense sats + a repair support ship, ringed around it. G2: every bombarder deploys this now — see e.noEscort above.
+      if (!e.satDeployed && !e.noEscort && e.wallGrid) {   // v4.1 G — FULL ORBITAL DEFENSE GRID (8 railgun sats + 8 laser-defense sats + a repair support ship) is now an OPENING-WALL-ONLY thing (see e.wallGrid, set by openingBombarders): a whole fleet of these on every wave super/adaptive-delay/INTENT bombarder is what made the orbital layer untouchable (100+ sats + 30 escorts eating railgun rounds). Every other bombarder still gets the small escort pair above + its 4 personal escortfighters (attachEscorts) — just not the grid.
         e.satDeployed = true;
         for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('railsat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
         for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('lasersat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
@@ -7853,7 +7859,7 @@ function updEnemies(dt) {
       }
       e.cPodCd = (e.cPodCd == null ? 30 : e.cPodCd) - dt;
       if (e.cPodCd <= 0 && G.enemies.length < 300) { e.cPodCd = 30; spawnEnemy('bombpod', e.x + (Math.random() - .5) * 440); }
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && Math.abs(p.x - e.x) < 460 && Math.abs(p.y - e.y) < 340) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 460 && Math.abs(p.y - e.y) < 340) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       if (!e.satDeployed && !e.noEscort) {   // its own orbital defense grid, once — the personal escort (6 escortfighters) was already attached at spawn by attachEscorts
         e.satDeployed = true;
         for (let i = 0; i < 6 && G.enemies.length < 300; i++) { spawnEnemy('railsat', e.x + (i - 2.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 160; ne.y = ne.hold; } }

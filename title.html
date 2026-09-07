@@ -421,7 +421,7 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v4.0.3 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v4.0.4 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
 
 <div class="modal-bg" id="extinctConfirm"><div class="modal" style="max-width:470px;border-color:#ff5a5a">
   <h2 style="color:#ff6a6a">&#9760; EXTINCTION</h2>
@@ -453,6 +453,7 @@
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v4.0.4 — ALLIED BUILDINGS, CORRECTED</b><br>4.0.3's 100× IC pass hit the wrong buildings — it was meant for the ALLIES hire packages only, but the Allied Air Foundry / AA Depot / Armory / Heavy Port / Military Base got caught in the same multiplier and ended up costing tens of thousands of IC apiece. Their prices are back to normal (Armory 380, Air Foundry 420, AA Depot 300, Heavy Port 420, Military Base 380) — the hire packages themselves keep their 100× IC cost, that part was correct. And their bonuses now <b>STACK PER COPY</b> as originally intended: two Armories add four heavy tanks to every reinforcement clump, not two; the same goes for the AA Depot, Air Foundry and Heavy Port. The hire panel now shows roughly how many units a contingent will actually bring (roster + your current building stack). <b>SMALLER.</b> The Falcon's autocannon fires noticeably faster again — 4.0.3 slowed it more than intended.</p>
     <p><b>v4.0.3 — REBALANCE: THE FLOOR OF THE MAP IS VISIBLE AGAIN</b><br>The last report was a flawless two-minute win on 4,436 allied units and zero research. That was the allies being too cheap and too fast, and this fixes it without touching what they are.<br><b>ALLIES.</b> A hire still lands the full roster at every city and keeps reinforcing forever, but now as <b>one contingent every 45 seconds</b> shared across your cities, not a stream at each one. The influence you pay is exactly what comes off your <b>maximum influence</b>, permanently: hire a Heavy Armor Column for 380 and your cap drops by 380. Everything allied costs <b>100× the IC</b>. Allied units are <b>off your army cap</b>, so they never block your own factories, and they fight at <b>70% quality</b>. The Allied Armory, AA Depot, Air Foundry and Heavy Port each add a flat bonus to every reinforcement (two heavy tanks, one battery, one bomber, one warship) no matter how many battalions you hold; extra copies add nothing. Rushing is gone. The Military Base shortens the clock instead.<br><b>THE AUTOFLEET.</b> Bombarders no longer arrive at the moment of re-entry. The opening wall is smaller and comes with Phase 2, which is now <b>SUPPRESSION</b>: buster raids, micromissile salvos and shockwave pods, no EMP. The <b>antimatter warheads</b> now launch as Phase 3 opens, aimed at your densest anti-air, eight seconds ahead of the mass skyfall, so the blackout lands as the big wave hits the guns that matter. And a warhead detonates <b>wherever it dies</b>: shoot it down high and the zone is small and barely reaches the ground; let it fall and it goes off at full size.<br><b>SMALLER.</b> The Falcon’s autocannon fires the command helicopter’s round at one shot a second. Gunfire that reaches the stratosphere now drops instead of sailing into orbit. Two allies tips rewritten for the new model.</p>
     <p><b>v4.0.2 — ALLIES ARE PERMANENT</b><br>4.0.0 got allies wrong, and this fixes it to what was always meant. Hiring a battalion is a sunk cost: you pay once, its full roster lands at <b>every city you hold</b> immediately, and then it <b>keeps sending units forever</b>, one at a time at every city, for the rest of the match. Hire the same battalion twice and the trickle doubles. Buy it in prep and it’s your pre-invasion stockpile; buy it late and it’s scaling you never have to manage. The price is permanent too: each hire lowers your maximum influence for good, whether the units live or die.<br>Allies field what you’ve researched and built: tanks become Goliaths and Mammoths once you can make them, strike jets become Lancers, riflemen become Shock Troopers, destroyers become cruisers. Three new buildings add units to <b>every</b> allied deployment and stack per copy: the <b>Allied Air Foundry</b> (+1 heavy bomber), the <b>Allied AA Depot</b> (+1 anti-air battery) and the <b>Allied Armory</b> (+1 heavy tank, +2 armor). The Heavy Port adds warships at coastal cities and the Military Base halves the delivery interval. Rush any battalion for IC to get a full deployment now.<br>The autofleet’s screening fire now includes micromissile barrages from the first minute.</p>
     <p><b>v4.0.1 — THE FLEET ADAPTS</b><br>The autofleet now reads what your heaviest element is, every 45 seconds, and re-tasks against it. It tells you when it does: <b>⚠ AUTOFLEET ADAPTING</b>, then what it read and what it is sending. A laser grid draws shielded strike wings, whose shields shrug off guns and beams and only fall to missiles. A missile-heavy anti-air net draws armoured bulwarks and frigates, and micromissile salvos scaled to saturate it. Robotic mass draws twice the ECM hijackers and jammers. Infantry draws gunships, bombers and plasma artillery. A navy draws whistlers and frigates, and the fleet lands on your coasts. Build enough anti-orbital guns and the fleet stops parking its bosses in your kill zone: they arrive forty seconds later, well away from your railguns, and the ground landings get heavier instead. A balanced base gets no counter at all. It only re-tasks when one element clearly dominates.<br>The <b>antimatter EMP warhead</b> finally looks like one: a dark ovoid in a spinning violet containment ring, trailing sparks as it falls. The first one warns you: shoot it down before it reaches the stratosphere. Kill it and there is no blackout. Let it arm and the screen flashes violet as the grid goes down.</p>
@@ -461,7 +462,7 @@
 <b>THE AIR WAR.</b> Enemy aircraft now fly at fighter speeds. Missiles launch like missiles: a short kick, a pivot onto the target, then a hard burn, and the seeker now <b>leads</b> its target in flight instead of chasing where it was. Heavy and unguided ground guns get visibly worse at hitting small fast aircraft, which jink under fire, and the <b>Falcon</b> carries a short-range autocannon for the dogfights that follow. Nothing lost the right to shoot at anything. Big slow targets are as easy to hit as ever.<br>
 <b>STRIKES.</b> Every strike shows its <b>ETA</b> while you aim and on the confirm bar. Ballistic strikes climb, burn, and coast like a real fuel-limited missile. Hold SHIFT or press ⚡ to <b>arm every ready silo</b> of a type and fire a grouped counterbattery on one confirm. Any silo can be set to <b>⟳ AUTO</b> and will fire at the densest enemy cluster whenever it is ready, paid for at the usual price.<br>
 <b>DEFENSE.</b> SAM Batteries, Microrocket Batteries and Aegis Batteries can now be built <b>underground</b>, firing upward from a surface muzzle at anything above ground. The <b>Tractor Beam</b> now bends incoming ordnance off course on a charge that refills, and you can see it distort the air.<br>
-<b>ALLIES.</b> Hired packages arrive at <b>every city you hold</b> immediately, then the battalion joins a shared reinforcement CLUMP — one contingent, spread round-robin across your cities, every ~45 seconds (faster with a <b>Military Base</b>). Allied units sit OFF your army cap entirely, but fight at only <b>70% quality</b>. Hiring permanently lowers your <b>maximum influence</b> by exactly the influence you paid — the price never comes back, win or lose. The <b>Allied Air Foundry</b>, <b>AA Depot</b>, <b>Armory</b> and <b>Heavy Port</b> each add one flat bonus unit to every clump (extra copies of the same building add nothing). The after-action report counts allied units.<br>
+<b>ALLIES.</b> Hired packages arrive at <b>every city you hold</b> immediately, then the battalion joins a shared reinforcement CLUMP — one contingent, spread round-robin across your cities, every ~45 seconds (faster with a <b>Military Base</b>). Allied units sit OFF your army cap entirely, but fight at only <b>70% quality</b>. Hiring permanently lowers your <b>maximum influence</b> by exactly the influence you paid — the price never comes back, win or lose. The <b>Allied Air Foundry</b>, <b>AA Depot</b>, <b>Armory</b> and <b>Heavy Port</b> each add bonus units to every clump, PER COPY, STACKING — two Armories add four extra heavy tanks, not two. The after-action report counts allied units.<br>
 <b>THE WORLD REMEMBERS.</b> Ground chars where fighting happens and stays charred. Hot ground burns. Destroyed buildings leave ruins that smoke. The sky darkens with the scale of the destruction on both sides. All of it capped and cheap. Hide the HUD and you can now zoom out to the <b>whole map</b>: the underground band vanishes, units become blips, and attacks draw as arrows.<br>
 <b>READINESS</b> now warns when your army cap can’t hold what you’ve queued, when nothing you own can reach the bosses in space, and when you lack the volume to punch through a point-defense grid.<br>
 <b>SMALLER THINGS.</b> Twenty-two new tips. The Falcon and Housing Block descriptions no longer ramble, and long descriptions fold. Psionic Relays cost 2 stability cap each instead of 4. Telekinesis and Applied Psionics swapped places in the tree. The Railgun Lance costs 20 Heavy Alloy. Influence momentum, swarms and lessons from 3.10x are all still here.</p>
@@ -817,7 +818,7 @@
       <div class="hbtn has-tip" id="btnStatsDrawer" data-tip="Open the full status report — every current stat, research bonus and special-building buff." onclick="openStats()">📊 STATS</div>
       <div class="hbtn has-tip" id="btnReadyToggle" data-tip="Show/hide the ★ READINESS panel (a docked pill that expands with what your force is missing before re-entry)." onclick="toggleReadyPanel()">★ READINESS</div>
       <div class="hbtn has-tip" id="btnAchievements" data-tip="Achievements earned this run." onclick="openAchievements()">🏆 ACHIEVEMENTS</div>
-      <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower), ONCE, to call in an allied Carrier Strike Group, Armored Battalion or Air Wing — OFF your own army cap, but at only 70% quality vs a purpose-built unit. The full roster arrives at EVERY held city immediately, then that battalion joins a SHARED reinforcement CLUMP delivered to your cities every ~45s (faster with a Military Base), topped up by flat bonuses from the Allied Air Foundry, AA Depot, Armory & Heavy Port. Permanently lowers your max INFLUENCE by exactly what you paid — a real ongoing price for a favour that never stops paying out. Hire it again for a second battalion; the hire itself is on a cooldown.">⚑ ALLIES</div>
+      <div class="hbtn has-tip" id="btnAllies" data-tip="Hire allies — spend INFLUENCE (+ IC & manpower), ONCE, to call in an allied Carrier Strike Group, Armored Battalion or Air Wing — OFF your own army cap, but at only 70% quality vs a purpose-built unit. The full roster arrives at EVERY held city immediately, then that battalion joins a SHARED reinforcement CLUMP delivered to your cities every ~45s (faster with a Military Base), topped up by bonuses from the Allied Air Foundry, AA Depot, Armory & Heavy Port that stack per copy built. Permanently lowers your max INFLUENCE by exactly what you paid — a real ongoing price for a favour that never stops paying out. Hire it again for a second battalion; the hire itself is on a cooldown.">⚑ ALLIES</div>
     </div>
   </div>
   <div class="produce" id="produce"><div class="pt" id="pt">PRODUCTION</div><div class="ptabs" id="ptabs"></div><div class="pbody"><div class="pgrid" id="pgrid"></div><div class="pdetail" id="pdetail"></div></div></div>
@@ -2998,7 +2999,7 @@ const UNIT_DEFS = {
   battleship:{ name: 'Arsenal Ship "Leviathan"', art: 'battleship', domain: 'naval', ic: 420, mp: 26, build: 16, hp: 320, armor: 14, range: 1400, dmg: 40, rate: 1.5, weapon: 'rocket', speed: 7, s: 7, grp: 1, req: 'navalpwr', weapon2: 'rotary', dmg2: 4, rate2: .4, range2: 360, wpn2Air: true, ceil2: .38, ds: 'VLS SATURATION arsenal ship — the longest hull and longest reach in the fleet, its deck packed edge-to-edge with vertical launch cells that empty in rapid, overlapping salvos onto ground & surface targets. Its own air-defense is a weak flak stub with a short, low reach — screen it with a Missile Cruiser, or it is easy prey from above. (req Naval Power)' },
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, req: 'kinetics', elec: true, weapon2: 'rocket', dmg2: 16, rate2: 1.4, range2: 560, wpn2Air: true, ceil2: .56, ds: 'Sea-going railgun battlecruiser — a spinal hypervelocity rail-gun down the foredeck hammers any altitude with slugs, backed by laser PD and a secondary SAM turret. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 8, rate: .4, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, weapon2: 'rocket', dmg2: 12, rate2: 1.1, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase — launches a free wing of fighters (off army-cap) that fly out, spend their ordnance, then land back on the deck to rearm and re-launch. Defends itself with laser AA and a secondary SAM turret. Costs 5 IC/s UPKEEP to run — a fleet of them is a serious drain. (req Naval Power)' },
-  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'tracer', dmg2: 6, rate2: 1.0, range2: 260, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two loyal-wingman drones sharing a single hangar slot. Rearms at an airbase. Short-range autocannon for close dogfights.' },
+  fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 14, rate: .9, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'tracer', dmg2: 6, rate2: .4, range2: 260, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two loyal-wingman drones sharing a single hangar slot. Rearms at an airbase. Short-range autocannon for close dogfights.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 22, rate: 1.6, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Purpose-built CLOSE-AIR-SUPPORT jet — fast, armoured, strafes GROUND & naval targets with rockets. The dedicated CAS platform now that the fighter carries its own strike load. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'FAST, FRAGILE air-superiority interceptor — the quickest jet in the fleet, climbing highest and cycling its nose laser fastest of any aircraft, but built with zero armor plating and a light airframe: a stiff breeze kills it. Pure anti-air & missile-defense — it does NOT strafe the ground. It duels enemy aircraft with its beam and swats missiles & falling lances chasing it or nearby friendlies right out of the sky. No magazine to run dry, just fuel — return to an airbase to refuel. (DIRECTED ENERGY)' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser. Dominates high altitude. Needs orbital LIFT capacity + a ROCKET PART to launch. (req Orbital Ops)' },
@@ -3246,11 +3247,11 @@ const BUILD_DEFS = {
   airwing:  { name: 'Underground Airwing', cat: 'SPEC', ic: 115, mp: 30, build: 9, hp: 240, w: 20, h: 12, autoBury: 1, garrison: { keys: ['fighter'], n: 2 }, ds: 'A buried hangar granting ✈ +3 AIR COMMAND that keeps a fighter wing aloft and AUTO-REPLACES them as they\'re lost — aircraft are fragile, so this keeps the sky covered. Auto-buries itself (a true underground hangar) and is CHEAP — about half the price of a surface airbase.' },
   tractorbeam:{ name: 'Tractor Beam', cat: 'SPEC', ic: 320, mp: 70, build: 14, hp: 240, armor: 6, w: 18, h: 20, weapon: 'tractor', range: 1400, ceil: 0, dmg: 0, rate: 0, req: 'telekinesis', charge: 100, ds: 'Telekinetic grapple — drags the highest orbital enemies DOWN; once hauled into the dense atmosphere they burn up on re-entry. Useless against low targets. Also SWATS incoming ordnance out of its path — falling rods/bombs/missiles within reach get flung wide of their aim — drawing down a charge meter that idles back to full when nothing needs deflecting. (Telekinesis)' },
   nanitefoundry:{ name: 'Nanite Foundry', cat: 'DEF', ic: 300, mp: 80, build: 14, hp: 240, w: 20, h: 16, weapon: 'smart', range: 700, ceil: .58, dmg: 6, rate: 1.0, aura: { heal: 7, r: 240 }, gmod: { conspd: .6 }, req: 'nanotech', ds: 'Repairs nearby units in a radius, builds/digs +60% faster, and fires SMART ROUNDS that latch onto enemies and rapidly disassemble them. (Nanotechnology)' },
-  heavyport:{ name: 'Heavy Port', cat: 'SPEC', ic: 42000, mp: 90, build: 16, hp: 280, armor: 8, w: 24, h: 18, needWater: true, gmod: { allyNavalFast: 1 }, ds: 'Coastal ALLIED logistics base — every shared reinforcement CLUMP (~every 45s, see ⚑ ALLIES) also drops in one extra warship at whichever coastal city has the fewest allied units nearby. Flat — extra Heavy Ports add nothing more.' },
-  milbase:  { name: 'Military Base', cat: 'SPEC', ic: 38000, mp: 110, build: 14, hp: 260, armor: 6, w: 20, h: 16, gmod: { allyLandFast: 1 }, ds: 'Forward ALLIED staging base — speeds up the shared reinforcement CLOCK ×0.75 (floor 30s between clumps, see ⚑ ALLIES). Flat — extra Military Bases add nothing more.' },
-  alliedairfoundry:{ name: 'Allied Air Foundry', cat: 'SPEC', ic: 42000, mp: 90, build: 16, hp: 260, armor: 6, w: 22, h: 16, gmod: { allyAirFoundry: 1 }, ds: 'Allied air-support wing — every shared reinforcement CLUMP also drops in one extra heavy bomber — a "Lancer" once you can field one, else a "Warthog" strike jet — at whichever city has the fewest allied units nearby. Needs a standing AIRBASE for the bomber to rearm at, or it delivers nothing. Flat — extra Air Foundries add nothing more.' },
-  alliedaadepot:{ name: 'Allied AA Depot', cat: 'SPEC', ic: 30000, mp: 60, build: 12, hp: 220, armor: 6, w: 18, h: 14, gmod: { allyAADepot: 1 }, ds: 'Allied air-defense cell — every shared reinforcement CLUMP also drops in one extra AA unit — a "Aegis-AA" SAM once researched, else a "Hailstorm" flak track. Flat — extra AA Depots add nothing more.' },
-  alliedarmory:{ name: 'Allied Armory', cat: 'SPEC', ic: 38000, mp: 100, build: 14, hp: 260, armor: 8, w: 20, h: 16, gmod: { allyArmory: 1 }, ds: 'Allied armor depot — every shared reinforcement CLUMP also drops in two extra heavy tanks (Mammoth/Goliath once fielded, else MBT). Flat — extra Armories add nothing more. Allied units still field at only 70% quality, same as everything else the ⚑ ALLIES button calls in.' },
+  heavyport:{ name: 'Heavy Port', cat: 'SPEC', ic: 420, mp: 90, build: 16, hp: 280, armor: 8, w: 24, h: 18, needWater: true, gmod: { allyNavalFast: 1 }, ds: 'Coastal ALLIED logistics base — every shared reinforcement CLUMP (~every 45s, see ⚑ ALLIES) also drops in one extra warship per copy at whichever coastal city has the fewest allied units nearby — each copy adds one more per contingent.' },
+  milbase:  { name: 'Military Base', cat: 'SPEC', ic: 380, mp: 110, build: 14, hp: 260, armor: 6, w: 20, h: 16, gmod: { allyLandFast: 1 }, ds: 'Forward ALLIED staging base — speeds up the shared reinforcement CLOCK ×0.75 (floor 30s between clumps, see ⚑ ALLIES). Flat — extra Military Bases add nothing more.' },
+  alliedairfoundry:{ name: 'Allied Air Foundry', cat: 'SPEC', ic: 420, mp: 90, build: 16, hp: 260, armor: 6, w: 22, h: 16, gmod: { allyAirFoundry: 1 }, ds: 'Allied air-support wing — every shared reinforcement CLUMP also drops in one extra heavy bomber per copy — a "Lancer" once you can field one, else a "Warthog" strike jet — at whichever city has the fewest allied units nearby. Needs a standing AIRBASE for the bomber to rearm at, or it delivers nothing. Each copy adds one more per contingent.' },
+  alliedaadepot:{ name: 'Allied AA Depot', cat: 'SPEC', ic: 300, mp: 60, build: 12, hp: 220, armor: 6, w: 18, h: 14, gmod: { allyAADepot: 1 }, ds: 'Allied air-defense cell — every shared reinforcement CLUMP also drops in one extra AA unit per copy — a "Aegis-AA" SAM once researched, else a "Hailstorm" flak track. Each copy adds one more per contingent.' },
+  alliedarmory:{ name: 'Allied Armory', cat: 'SPEC', ic: 380, mp: 100, build: 14, hp: 260, armor: 8, w: 20, h: 16, gmod: { allyArmory: 1 }, ds: 'Allied armor depot — every shared reinforcement CLUMP also drops in two extra heavy tanks per copy (Mammoth/Goliath once fielded, else MBT). Each copy adds two more per contingent. Allied units still field at only 70% quality, same as everything else the ⚑ ALLIES button calls in.' },
   // ===== HOME-FRONT INFRASTRUCTURE BATCH (all no-research, all TUNABLE) — buildings that reward INVESTING in your rear echelon: veterancy, medicine, logistics, elite recruitment, fortification, heavy industry. Each reuses an EXISTING mechanism (aura / gmod / garrison / prod). =====
   waracademy:{ name: 'War Academy', cat: 'DEF', ic: 260, mp: 85, build: 12, hp: 240, w: 20, h: 18, aura: { dmg: 1.15, r: 300 }, garrison: { keys: ['inf'], n: 1 }, ds: 'Trains your soldiers to VETERAN standard — every unit fighting in its radius hits +15% HARDER (a damage aura; STACKS multiplicatively, so ring a front line with several to make it brutal). Keeps a small instructor garrison. No research needed.' },
   fieldhospital:{ name: 'Field Hospital', cat: 'DEF', ic: 150, mp: 60, build: 8, hp: 170, w: 18, h: 12, aura: { heal: 4, r: 270 }, ds: 'Front-line triage — patches up ANY of your units inside its radius at +4 HP/s. Repair does NOT stack (the strongest source wins), so spread hospitals to cover different sectors. An early, no-research alternative to the Nanite Foundry\'s repair aura.' },
@@ -6153,9 +6154,9 @@ function armStrike(type, all) {
    by EXACTLY what you paid for it — the price IS the influence cost, not a separate arbitrary
    number. Allied units are visibly WORSE than a purpose-built one of the same key — 70% HP, 70%
    damage, −2 armor (min 0) — see applyAllyQuality. The three new SPEC buildings (Allied Air
-   Foundry / AA Depot / Armory) and the two existing ones (Heavy Port / Military Base) now add FLAT
-   bonuses to every CLUMP event — extra copies of the same building add nothing (see
-   deliverAllyClumpExtras) — instead of stacking per-copy on every single delivery. ⚡ RUSH is gone
+   Foundry / AA Depot / Armory) and Heavy Port each add bonus units to every CLUMP event, PER
+   COPY, STACKING (see deliverAllyClumpExtras) — build two Armories and each clump brings four
+   extra heavy tanks, not two. ⚡ RUSH is gone
    — it let a single hire dump its entire roster on demand for a modest IC fee, which is exactly
    the "I could place 100 of those" escape hatch the designer wants closed; the dump-then-clump
    cadence is the only way units arrive now. Mirrors the ☢ STRIKE UX (top-bar button + panel) but
@@ -6239,12 +6240,22 @@ function resolveAllyKey(key) {   // the LAST rung of ALLY_UPGRADE[key] that's ac
   return key;
 }
 function hasNearWater(x) { const w = findWater(x); return w !== null && Math.abs(w - x) < 500; }   // "coastal" for allied naval delivery purposes — more lenient than the buildable-water test (canPlace's needWater, <120px)
-// ── SUPPORT BUILDINGS — read once per clump event. heavyport/milbase are EXISTING buildings (their gmod
-// counts already sum across copies via recalcBuildings); the three new SPEC buildings below add their own
-// gmod flags the exact same way, so bmod() gives a live COUNT of each — but v4.0.3 only ever checks
-// PRESENCE (> 0), never the count, so stacking extra copies of any one support building adds nothing.
+// ── SUPPORT BUILDINGS — read once per clump event. heavyport/milbase/airfoundry/aadepot/armory all
+// stack: their gmod counts sum across copies via recalcBuildings, and allySupport() returns that live
+// COUNT of each — deliverAllyClumpExtras loops that many times, so N copies of a support building
+// deliver N× the extras, PER COPY, STACKING (only milbase stays presence-only — it speeds the shared
+// clock, not a per-copy quantity).
 function allySupport() { const bm = bmod(); return { heavyport: bm.allyNavalFast || 0, milbase: bm.allyLandFast || 0, airfoundry: bm.allyAirFoundry || 0, aadepot: bm.allyAADepot || 0, armory: bm.allyArmory || 0 }; }
 function haveAirbaseBuilt() { return G.buildings && G.buildings.some(b => b.key === 'airbase' && b.done !== false); }
+// N units a single package's contingent will actually deliver at the next clump: its own roster PLUS
+// whatever the CURRENT stack of support buildings adds (Armory +2/copy, AA Depot +1/copy, Air Foundry
+// +1/copy if an Airbase stands, Heavy Port +1/copy) — mirrors deliverAllyClumpExtras exactly so the
+// hire panel's estimate never drifts from what actually spawns.
+function allyContingentSize(units) {
+  const sup = allySupport();
+  const extras = sup.armory * 2 + sup.aadepot + (haveAirbaseBuilt() ? sup.airfoundry : 0) + sup.heavyport;
+  return (units ? units.length : 0) + extras;
+}
 // the SHARED GLOBAL reinforcement clock — Military Base speeds up the WHOLE clump (naval batallions
 // included, v4.0.3 dropped the old naval-exempt trickle), ×0.75, floored at 30s. Extra Military Bases
 // add nothing more (presence-only, see allySupport).
@@ -6341,8 +6352,9 @@ function hireAllies(type) {
 // per-battalion per-city trickle. Every standing battalion delivers ONE contingent = its full roster
 // ONCE, spread round-robin across held cities starting from a rotating index (so with more cities than
 // roster slots, different cities get skipped each time instead of the same ones every event) — see
-// deliverAllyClump. Then FLAT support extras land once, city picked by fewest allied units nearby — see
-// deliverAllyClumpExtras. G.allyClumpT is the shared clock; it only advances while at least one
+// deliverAllyClump. Then support-building extras land, PER COPY of each SPEC building, each landing
+// at whichever city has fewest allied units nearby at that moment — see deliverAllyClumpExtras.
+// G.allyClumpT is the shared clock; it only advances while at least one
 // battalion is standing (nothing to clump otherwise).
 function deliverAllyClump() {
   if (!G.allyBattalions || !G.allyBattalions.length) return;
@@ -6355,10 +6367,14 @@ function deliverAllyClump() {
   }
   deliverAllyClumpExtras(cities);
 }
-// FLAT support extras for one clump EVENT — booleans, not counts: whether you have one Allied Armory or
-// five, this adds exactly +2 heavy tanks, once, to the city with the fewest allied units nearby (never
-// per battalion, never per building copy — see the designer's own "not 2 heavy tanks every single one
-// you buy" feedback).
+// PER-COPY, STACKING support extras for one clump EVENT — allySupport() SUMS each building's gmod
+// across every standing copy (recalcBuildings adds them all up), so sup.armory etc. IS the copy count,
+// not a boolean. Build two Allied Armories and every clump now brings FOUR extra heavy tanks (2 per
+// copy), not two — same for AA Depot (+1 AA per copy), Allied Air Foundry (+1 heavy bomber per copy,
+// still gated on a standing Airbase to rearm at) and Heavy Port (+1 warship per copy at a coastal
+// city). Each individual unit still lands at whichever city has the fewest allied units nearby at
+// the moment it spawns, so a stack of copies spreads its extras across your cities rather than
+// dog-piling one.
 function deliverAllyClumpExtras(cities) {
   const sup = allySupport();
   if (!sup.armory && !sup.aadepot && !(sup.airfoundry && haveAirbaseBuilt()) && !sup.heavyport) return;
@@ -6368,10 +6384,10 @@ function deliverAllyClumpExtras(cities) {
     for (let i = 1; i < list.length; i++) { const n = alliesNear(list[i]); if (n < bestN) { bestN = n; best = list[i]; } }
     return best;
   }
-  if (sup.armory > 0) { const c = bestCity(false); if (c) for (let i = 0; i < 2; i++) spawnAllyUnit(resolveAllyKey('tank'), c); }   // +2 heavy tanks, flat
-  if (sup.aadepot > 0) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('aa'), c); }   // +1 AA, flat
-  if (sup.airfoundry > 0 && haveAirbaseBuilt()) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('strikejet'), c); }   // +1 heavy bomber, flat (needs a standing Airbase)
-  if (sup.heavyport > 0) { const c = bestCity(true); if (c) spawnAllyUnit('destroyer', c); }   // +1 warship at a coastal city, flat
+  for (let i = 0; i < sup.armory; i++) { const c = bestCity(false); if (c) for (let j = 0; j < 2; j++) spawnAllyUnit(resolveAllyKey('tank'), c); }   // +2 heavy tanks PER Armory copy
+  for (let i = 0; i < sup.aadepot; i++) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('aa'), c); }   // +1 AA PER AA Depot copy
+  if (haveAirbaseBuilt()) for (let i = 0; i < sup.airfoundry; i++) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('strikejet'), c); }   // +1 heavy bomber PER Air Foundry copy (needs a standing Airbase)
+  for (let i = 0; i < sup.heavyport; i++) { const c = bestCity(true); if (c) spawnAllyUnit('destroyer', c); }   // +1 warship PER Heavy Port copy, at a coastal city
 }
 // per-frame delivery clock — called from updateGame right beside the G.allyCd countdown. Advances the
 // SHARED clump clock (not a per-battalion one any more) and fires deliverAllyClump every time it rolls
@@ -6396,8 +6412,8 @@ function buildAlliesPanel() {
   const ap = document.getElementById('alliesPanel'); if (!ap || !G) return;
   const cd = G.allyCd || 0, iv = allyClumpInterval();
   let html = `<button class="cmdx" title="Close (Esc)">×</button><div class="sph">⚑ HIRE ALLIES · ${Math.floor(G.inf)} INFLUENCE · ${cd > 0 ? 'REGROUPING ' + Math.ceil(cd) + 's' : 'READY'}</div>`;
-  for (const t in ALLIES) { const a = ALLIES[t], av = allyAvail(a), can = !av;
-    html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic.toLocaleString()} IC · ${a.mp} MP · ${a.cd}s cooldown · max influence −${a.inf}, permanently · full roster at every city now, then a contingent every ${Math.round(iv)}s${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
+  for (const t in ALLIES) { const a = ALLIES[t], av = allyAvail(a), can = !av, csz = allyContingentSize(a.units);
+    html += `<button class="sopt${can ? '' : ' cant'}" data-al="${t}" title="${a.ds}"><b>${a.name}</b><span class="sx">${a.inf} INF</span><br><span style="font-size:9px;color:#9fb6d4">${a.ic.toLocaleString()} IC · ${a.mp} MP · ${a.cd}s cooldown · max influence −${a.inf}, permanently · full roster at every city now, then ≈${csz} units every ${Math.round(iv)}s${av && cd <= 0 ? ' · 🔒 ' + av : ''}</span></button>`; }
   const groups = {}; for (const bt of (G.allyBattalions || [])) (groups[bt.type] = groups[bt.type] || []).push(bt);
   const types = Object.keys(groups);
   if (types.length) {
@@ -6411,12 +6427,12 @@ function buildAlliesPanel() {
     }
   }
   const sup = allySupport(), bits = [];
-  if (sup.armory) bits.push('+2 heavy tanks');
-  if (sup.aadepot) bits.push('+1 AA');
-  if (sup.airfoundry) bits.push('+1 heavy bomber' + (haveAirbaseBuilt() ? '' : ' (needs an Airbase)'));
-  if (sup.heavyport) bits.push('+1 warship at a coastal city');
+  if (sup.armory) bits.push(`+${sup.armory * 2} heavy tanks` + (sup.armory > 1 ? ` (×${sup.armory} Armory)` : ''));
+  if (sup.aadepot) bits.push(`+${sup.aadepot} AA` + (sup.aadepot > 1 ? ` (×${sup.aadepot} AA Depot)` : ''));
+  if (sup.airfoundry) bits.push(`+${haveAirbaseBuilt() ? sup.airfoundry : 0} heavy bomber` + (sup.airfoundry > 1 ? ` (×${sup.airfoundry} Air Foundry)` : '') + (haveAirbaseBuilt() ? '' : ' (needs an Airbase)'));
+  if (sup.heavyport) bits.push(`+${sup.heavyport} warship at a coastal city` + (sup.heavyport > 1 ? ` (×${sup.heavyport} Heavy Port)` : ''));
   if (sup.milbase) bits.push('reinforcement clock ×0.75, floor 30s');
-  if (bits.length) html += `<div style="font-size:8.5px;letter-spacing:1px;color:#7fc4ff;margin:10px 0 4px;border-top:1px solid var(--line);padding-top:6px">SUPPORT IN EFFECT</div><div style="font-size:9.5px;color:#c4d4e8">${bits.join(' · ')} — flat per reinforcement clump, extra copies add nothing</div>`;
+  if (bits.length) html += `<div style="font-size:8.5px;letter-spacing:1px;color:#7fc4ff;margin:10px 0 4px;border-top:1px solid var(--line);padding-top:6px">SUPPORT IN EFFECT</div><div style="font-size:9.5px;color:#c4d4e8">${bits.join(' · ')} — per reinforcement clump, stacks per copy</div>`;
   html += `<div class="spc">a favour from the world's other powers — OFF your army cap, but only 70% quality vs a purpose-built unit. Full roster at every held city NOW, then a shared contingent every ${Math.round(iv)}s · permanently lowers your influence CAP by exactly what you paid · an influence sink, not a win button</div>`;
   ap.innerHTML = html; ap.classList.add('show');
   const xb = ap.querySelector('.cmdx'); if (xb) xb.onclick = closeAllies;   // × closes the panel
@@ -8800,7 +8816,7 @@ const TIPS = [
   'Aircraft carriers produce their deck aircraft outside the army cap and hangar limits.',
   'Special buildings have incredibly powerful bonuses. Look at your new upgrades to see how you can stack these effects together.',
   'Building underground is INCREDIBLY useful if you need more space. Buildings that grant local bonuses still give them to the surface above.',
-  'Use your late-game influence to buy allies — the hire is a one-time cost, but it permanently lowers your influence cap by that same amount. A Military Base speeds up the whole reinforcement clock; Allied Armory / AA Depot / Air Foundry each add a flat bonus unit to every clump, no matter how many you build.',
+  'Use your late-game influence to buy allies — the hire is a one-time cost, but it permanently lowers your influence cap by that same amount. A Military Base speeds up the whole reinforcement clock; Allied Armory / AA Depot / Air Foundry / Heavy Port each add bonus units to every clump, and they STACK — build several for a bigger contingent every time.',
   'You should typically aim for about 400 mobile units in a Total Invasion.',
   "Don't quit if the bunker busters destroy a big chunk of your ground forces. That's intended. You can bite back.",
   'Autodrones will target your airbases to make it harder for your aircraft to refuel. Keep a healthy defensive screen around them.',

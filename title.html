@@ -747,7 +747,13 @@
     &nbsp;• <b>Navy</b> → antimatter whistlers + missile-support frigates, beachheads nudged toward the coast.<br>
     &nbsp;• <b>Anti-orbital guns</b> (railguns, particle/orbital cannons…) → its space-tier bosses hold off and land clear of your guns; it leans on mass ground landings instead.<br><br>
     <b>CLUSTER BOMBS</b> — the triangular bombardment pods now split in the stratosphere into a cone of unguided bomblets with big area damage; kill the pod before it splits, missiles can't intercept bomblets.<br>
-    <b>RE-ENTRY PROFILE</b> — busters and decoys crawl while in orbit and accelerate hard in the atmosphere; railguns, satellites and lances get the easy shot up high, low interception is much harder.</p></details>
+    <b>RE-ENTRY PROFILE</b> — busters and decoys crawl while in orbit and accelerate hard in the atmosphere; railguns, satellites and lances get the easy shot up high, low interception is much harder.<br><br>
+    <b>ESCORT FIGHTERS.</b> Interceptors and gunships screen every wave — they hunt your aircraft first and only turn to ground targets once nothing is flying. Keep your own air cover concentrated, not spread thin, or it gets swarmed in the sky before it ever reaches the fleet.<br>
+    <b>RAIDERS.</b> A fast, twin-gun agile fighter that now backbones most air waves — it evades harder and longer than an ordinary interceptor. Expect a lot of them; they hunt your aircraft first, ground second.<br>
+    <b>SHIELD CARRIERS.</b> A flying shield ship that cruises to your densest anti-air cluster and drops a protective dome that follows it wherever it goes — the dome soaks incoming fire for everything under it. Shoot the carrier itself down; the dome dies with it.<br>
+    <b>THE FLEET FLAGSHIP.</b> Sits in high orbit — only space-reaching weapons (railguns, satellites, orbital guns, or a strategic strike) can touch it. Killing it takes a full quarter off the fleet meter.<br>
+    <b>WITHDRAWAL TO ORBIT.</b> If the fleet's ground assault is getting wrecked, it calls the landing off — surviving beachhead troops LIFT OFF back to orbit (nothing is lost, they simply rejoin the fleet) and it leans on bombardment instead for a while, then commits ground forces again once it reads an opening.<br>
+    <b>THE FRONT.</b> A dashed marker shows where the fleet's most recent landing came down — a rough read on where the fighting is concentrated, not a hard line.</p></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -2859,6 +2865,24 @@ const ART = {
     x.fillStyle = LO(); x.beginPath(); x.arc(-s * .1, -s * .42, s * .07, 0, 6.28); x.fill(); x.beginPath(); x.arc(s * .35, -s * .42, s * .07, 0, 6.28); x.fill(); x.beginPath(); x.arc(s * .6, -s * .42, s * .07, 0, 6.28); x.fill();
     capAura(x, -s * .1, -s * .3, s * 3.3, .3);   // command bubble
     capShieldDome(x, s, -s * .1, -s * 1.0, s * 2.2, s * 2.1, .3);
+  },
+  eraider(x, s) {   // v4.1 F J1 — RAIDER: swept dart-shaped agile escort fighter, twin chin cannons — leaner and faster-reading than the interceptor
+    x.fillStyle = '#131313'; x.beginPath(); x.moveTo(s * 1.7, 0); x.lineTo(-s * .1, -s * .5); x.lineTo(-s * 1.15, -s * .18); x.lineTo(-s * 1.15, s * .18); x.lineTo(-s * .1, s * .5); x.closePath(); x.fill();   // dart body
+    x.fillStyle = '#262b31'; x.beginPath(); x.moveTo(s * 1.7, 0); x.lineTo(-s * .1, -s * .5); x.lineTo(-s * .1, -s * .3); x.lineTo(s * 1.4, 0); x.closePath(); x.fill();   // top facet
+    x.fillStyle = '#0e0e0e'; x.beginPath(); x.moveTo(-s * .3, -s * .06); x.lineTo(-s * 1.05, -s * .78); x.lineTo(-s * .55, -s * .06); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(-s * .3, s * .06); x.lineTo(-s * 1.05, s * .78); x.lineTo(-s * .55, s * .06); x.closePath(); x.fill();   // sharply swept wings
+    x.fillStyle = '#0a0a0a'; x.fillRect(s * .3, -s * .16, s * 1.25, s * .07); x.fillRect(s * .3, s * .09, s * 1.25, s * .07);   // twin chin cannons
+    x.fillStyle = '#8ac8ff'; x.globalAlpha = pulseA(.022, s); x.fillRect(s * 1.5, -s * .14, s * .12, s * .06); x.fillRect(s * 1.5, s * .11, s * .12, s * .06); x.globalAlpha = 1;   // charged muzzle glow
+    x.fillStyle = '#ff8a3a'; x.globalAlpha = .8; x.fillRect(-s * 1.12, -s * .1, s * .12, s * .2); x.globalAlpha = 1;   // afterburner
+    x.fillStyle = GLOW; x.globalAlpha = pulseA(.02, s * 2); x.shadowColor = GLOW; x.shadowBlur = s * .6; x.beginPath(); x.arc(-s * .3, 0, s * .13, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
+  },
+  eshieldcarrier(x, s) {   // v4.1 F J2 — SHIELD CARRIER: lens-shaped hovering hull ringed by its own projector band
+    x.fillStyle = '#15181c'; x.beginPath(); x.ellipse(0, 0, s * 1.9, s * .62, 0, 0, 6.28); x.fill();   // lens hull
+    x.fillStyle = '#262c33'; x.beginPath(); x.ellipse(0, -s * .12, s * 1.55, s * .32, 0, 0, 6.28); x.fill();   // upper facet
+    x.strokeStyle = '#6aa0ff'; x.lineWidth = Math.max(1, s * .1); x.globalAlpha = .8; x.beginPath(); x.ellipse(0, 0, s * 2.15, s * .78, 0, 0, 6.28); x.stroke(); x.globalAlpha = 1;   // projector ring
+    x.fillStyle = '#0d0d0d'; x.beginPath(); x.arc(0, -s * .55, s * .34, Math.PI, 0); x.fill();   // dorsal emitter dome
+    x.fillStyle = '#5a8cff'; x.globalAlpha = pulseA(.016, s); x.shadowColor = '#5a8cff'; x.shadowBlur = s * .8; x.beginPath(); x.arc(0, -s * .1, s * .2, 0, 6.28); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;   // core
+    for (const gx of [-1.3, 0, 1.3]) { x.fillStyle = '#5a8cff'; x.globalAlpha = .55 + .35 * Math.sin(animClock * .01 + gx); x.beginPath(); x.arc(gx * s, s * .1, s * .09, 0, 6.28); x.fill(); } x.globalAlpha = 1;   // ring emitter nodes
   },
 };
 
@@ -4988,6 +5012,7 @@ function playerDroneWeight() { let w = 0; for (const u of G.units) if (u.d.drone
 // roll and phase3AllOut's gtank/gmech/pelter column cycle (which never included earthbreaker) —
 // both now draw from this ONE weighted table so a groundWeights bias reaches both call sites.
 const GROUND_BASE_WEIGHTS = { gtank: .45, gmech: .30, pelter: .18, earthbreaker: .07 };
+const GROUND_KINDS_FOR_INTEL = ['gtank', 'gmech', 'pelter', 'earthbreaker', 'leviathan', 'breacher', 'shieldgen'];   // v4.1 F I1 — every kind spawnEnemy tags e.ground:true; used by scanEnemyIntel's groundLoss ratio (THE FLEET REACTS)
 function applyWeightBias(base, mult) { const out = {}; for (const k in base) out[k] = base[k] * ((mult && mult[k]) || 1); return out; }   // multiplies each base weight by its bias (default 1 = unchanged)
 function weightedPick(weights) {
   let total = 0; for (const k in weights) total += weights[k];
@@ -4996,22 +5021,22 @@ function weightedPick(weights) {
   for (const k in weights) { r -= weights[k]; if (r <= 0) return k; }
   const ks = Object.keys(weights); return ks[ks.length - 1];   // float rounding fallback — last key
 }
-// Rebuilds waveAirKind's original invTime-gated ladder as a weight table instead of sequential
-// r-thresholds, so a bias can multiply any one kind without hand-recomputing the whole ladder.
-// Each gate here is IDENTICAL (kind, threshold, invTime condition) to the original waveAirKind —
-// this just walks them top-down (highest threshold first) and turns the r-range each ACTIVE gate
-// would have claimed into a probability mass, letting inactive gates fall through exactly like
-// the original sequential ifs did. At G.invTime>=85 this reproduces bulwark .06 / harvester .02 /
-// jammer .05 / frigate .03 / whistler .08 / strikewing .12 / bomber .14 / interceptor .20 /
-// gunship .16 / drone .14 (sums to 1.00) — headless-verified against the pre-4.0.1 ladder.
+// A weight table for waveAirKind()'s pick — a bias (counterBias) can multiply any one kind by key
+// without touching the rest. v4.1 F J1 — REBALANCED RAID COMPOSITION ("increase the size of enemy
+// raids by giving them more agile fighter craft"): RAIDER is the new backbone of every air wave, and
+// interceptor/strikewing/gunship/bomber/bulwark/whistler are retuned to the designer's new numbers.
+// jammer/frigate/harvester/drone are DE-EMPHASIZED (small magnitude, same invTime gates as before —
+// they still show up, just rarely) rather than deleted outright — nothing that used to exist stops
+// existing. Magnitudes are on the same relative scale as the pre-4.1 ladder (weightedPick only ever
+// cares about ratios, not the absolute total, so mixing scales is harmless).
 function waveAirBaseWeights(invTime) {
-  const gates = [
-    ['bulwark', .94, invTime > 85], ['harvester', .92, invTime > 70], ['jammer', .87, invTime > 40],
-    ['frigate', .84, invTime > 55], ['whistler', .76, invTime > 45], ['strikewing', .64, invTime > 30],
-    ['bomber', .5, true], ['interceptor', .3, true], ['gunship', .14, true], ['drone', 0, true],
-  ];
-  const w = {}; let upper = 1;
-  for (const [kind, thr, active] of gates) { if (!active) continue; w[kind] = (w[kind] || 0) + (upper - thr); upper = thr; }
+  const w = { bomber: 12, interceptor: 20, gunship: 12, drone: 5, raider: 30 };
+  if (invTime > 30) w.strikewing = 18;
+  if (invTime > 40) w.jammer = 3;
+  if (invTime > 45) w.whistler = 3;
+  if (invTime > 55) w.frigate = 2;
+  if (invTime > 70) w.harvester = 1;
+  if (invTime > 85) w.bulwark = 5;
   return w;
 }
 // counterBias(dominant) — turns G.enemyIntel.dominant into concrete re-tasking knobs. Called only
@@ -5044,6 +5069,7 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
   let lz = pickLandingZone(it, cap, live);   // LANDING-ZONE INTELLIGENCE — scouts several stretches, drops on whichever is least defended (decap always hits the capital)
   lz = avoidCityCenter(Math.max(160, Math.min(WORLD_W - 160, lz)));   // land on the outskirts, not dead-centre in the city
   G.lastLZ = lz;   // remember the freshest landing zone so bunker-busters can pre-soften its defenders
+  G.front = { x: lz, t: 40 };   // v4.1 F I2 — THE FRONT: a visible marker at the most recent landing zone (renderGame draws it, tickFleetStance decays it)
   // ── SNOWBALL BOOKKEEPING — find (or open) the flank this drop lands on, then judge whether the
   //    player answered its LAST drop. Unanswered flank → this reinforcement is BIGGER; answered → smaller.
   G.flanks = G.flanks || []; G.flankSeq = G.flankSeq || 0;
@@ -5061,7 +5087,7 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
   const escMul = flank.esc;   // 1.0 for a fresh/answered flank, up to ESC.SNOWBALL_MAX_MULT for a neglected one
   // FEWER, HEAVIER DROPS (~2x the old headcount) that then SNOWBALL by escMul on unanswered flanks; it.fleetMul + invTime keep late/harder drops bigger
   const size = Math.max(9, Math.round((6 + G.waveN * 1.4 + G.invTime / 28) * it.fleetMul * 2 * escMul));
-  const groundFrac = Math.min(.75, (it.ground != null ? it.ground : .3) + .15);
+  const groundFrac = (G.fleetStance === 'orbital' && (G._landingPauseT || 0) > 0) ? .15 : Math.min(.75, (it.ground != null ? it.ground : .3) + .15);   // v4.1 F I1 — withdrawn-to-orbit: the ground push is nearly entirely called off, air/bombardment fills the gap
   let grd = 0, lineSpawned = 0;
   for (let i = 0; i < size && G.fleet > 0; i++) {
     const x = Math.max(70, Math.min(WORLD_W - 70, lz + (Math.random() - .5) * 280));
@@ -5069,10 +5095,11 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
     spawnEnemy(kind, x); const ne = G.enemies[G.enemies.length - 1]; if (ne) ne.flankId = flank.id; lineSpawned++; G.fleet = Math.max(0, G.fleet - 1);
   }
   flank.spawned = lineSpawned;   // this line-group's size is the yardstick for "answered?" at the next reinforcement (super/anchor deliberately NOT counted — they're too tanky to fairly gate escalation)
+  if (size - grd >= 8) { spawnEnemy('shieldcarrier', lz); G.fleet = Math.max(0, G.fleet - 1); }   // v4.1 F J2 — a real air wave gets a flying SHIELD CARRIER to dome the beachhead
   if (grd > 0) { if (G.waveN >= 2 && Math.random() < .6) spawnEnemy('breacher', lz); else spawnEnemy('shieldgen', lz); G.fleet = Math.max(0, G.fleet - 1); }   // a SHIELD CARRIER (early waves) or a persistent BEACHHEAD ANCHOR (later waves) drops with the group to hold the landing zone — down it in the sky before it deploys
   // EVERY LANDING HAS A SUPER UNIT — arrives as part of the group (spawnSuper always clusters them), throttled only by the perf-safety enemy cap
   let sup = false;
-  if (G.enemies.length < 78) { const bMul = (G.invTime || 0) < 60 ? 0 : ((G.invTime || 0) < 120 ? .5 : 1); /* B2 — bombardiers came early: halve the per-wave odds of a bombarder super for the first 120s so the boss-tier space fabricator doesn't show up before the player has any anti-orbital answer yet */ const pool = { leviathan: 1, hive: 1, bombarder: 1 * bMul }; spawnSuper(weightedPick(pool), false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
+  if (G.enemies.length < 78) { const bMul = (G.invTime || 0) < 60 ? 0 : ((G.invTime || 0) < 120 ? .5 : 1); /* B2 — bombardiers came early: halve the per-wave odds of a bombarder super for the first 120s so the boss-tier space fabricator doesn't show up before the player has any anti-orbital answer yet */ const pool = (G.fleetStance === 'orbital' && (G._landingPauseT || 0) > 0) ? (G._stancePool || { bombarder: 3, hive: 1 }) : { leviathan: 1, hive: 1, bombarder: 1 * bMul }; spawnSuper(weightedPick(pool), false, 2 + (G.waveN >= 4 && Math.random() < .4 ? 1 : 0), lz); sup = true; }
   const escNote = escMul > 1.05 ? ' ×' + escMul.toFixed(1) + ' UNANSWERED FLANK' : '';
   toast('☄ WAVE ' + G.waveN + ' — AUTODRONE LANDING' + escNote + (grd > 0 ? ' (shield carrier inbound — down it before it lands!)' : '') + (sup ? ' + SUPERWEAPON GROUP' : '')); shake(10); SFX.boom();
 }
@@ -5083,7 +5110,7 @@ function spawnShieldDome(x, gen) {   // gen: the Shield Generator enemy this dom
   const dm = { x: Math.max(120, Math.min(WORLD_W - 120, x)), r: 150, hp, maxHp: hp, life: 30, gen: gen || null, dpsCap: Math.round((260 + (G.invTime || 0) * 2) * G.diff), rechargeRate: Math.round((22 + (G.invTime || 0) * .2) * G.diff), frameAbs: 0, frameCap: 0 };
   G.domes.push(dm); toast('🛡 BEACHHEAD SHIELD DEPLOYED'); return dm;
 }
-function enemyDome(e) { for (const dm of G.domes) { if (dm.hp <= 0) continue; const dx = dm.x - e.x; if (Math.abs(dx) >= dm.r) continue; const top = groundY(dm.x) - Math.sqrt(Math.max(0, dm.r * dm.r - dx * dx)); if (e.y >= top) return dm; } return null; }   // the active dome (if any) shielding enemy e
+function enemyDome(e) { for (const dm of G.domes) { if (dm.hp <= 0) continue; const dx = dm.x - e.x; if (Math.abs(dx) >= dm.r) continue; if (dm.y != null) { const dy = dm.y - e.y; if (dx * dx + dy * dy >= dm.r * dm.r) continue; return dm; }   /* v4.1 F J2 — a FLYING dome (dm.y set, see shieldcarrier's updEnemies block) is a full circle centered on the carrier, not the ground-anchored semicircle below */ const top = groundY(dm.x) - Math.sqrt(Math.max(0, dm.r * dm.r - dx * dx)); if (e.y >= top) return dm; } return null; }   // the active dome (if any) shielding enemy e
 function enemyField(x, y) { for (const e of G.enemies) { if (!e.breacher || e.reentry || !e.fieldOn || (e.fieldHp || 0) <= 0) continue; const r = e.fieldR || 190; if ((x - e.x) ** 2 + (y - e.y) ** 2 < r * r) return e; } return null; }   // the active enemy DEFLECTOR FIELD (a beachhead anchor's projectile-scrub bubble) covering this point, if any
 function spawnEnemy(kind, atX) {
   const x = atX != null ? atX : cam.x + 40 + Math.random() * (W - 80), t = G.diff * (1 + (G.invTime || 0) / 70);
@@ -5104,6 +5131,8 @@ function spawnEnemy(kind, atX) {
   else if (kind === 'gtank') Object.assign(e, { hp: 70 * t, s: 4.5, armor: 6, spd: 20, hold: landY(wxw) - 4.5, weapon: 'shell', dmg: 16, rate: 2.2, dives: false, ground: true, art: 'tank' });   // landed enemy armor — crawls toward your cities & guns them down (amphibious: rides the sea surface if it drops on water)
   else if (kind === 'gmech') Object.assign(e, { hp: 100 * t, s: 5, armor: 8, spd: 15, hold: landY(wxw) - 5, weapon: 'tracer', dmg: 11, rate: .5, dives: false, ground: true, art: 'android' });   // enemy walker infantry
   else if (kind === 'shieldgen') Object.assign(e, { hp: Math.round(220 * t), s: 6, armor: 8, spd: 0, hold: landY(wxw) - 6, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, anchored: true, shieldgen: true, art: 'eshield' });   // SHIELD GENERATOR droppod — descends WITH the wave (vulnerable the whole way down); on touchdown it becomes a PERSISTENT landed structure that projects the beachhead dome for as long as IT lives — shoot the generator itself to drop the shield (see updEnemies + spawnShieldDome)
+  else if (kind === 'raider') Object.assign(e, { hp: 26 * t, s: 3, armor: 2, spd: 340, hold: MESO_Y() + 20 + Math.random() * 70, weapon: 'rail', dmg: 10 * t, rate: 1.2, weapon2: 'rail', dmg2: 10 * t, rate2: 1.2, dives: false, air: true, raider: true, art: 'eraider' });   // v4.1 F J1 — AGILE ESCORT FIGHTER: fast twin-railgun dogfighter; the standard air-target list (e.air:true) already hunts aircraft first and only falls back to ground when nothing's flying, so no custom targeting is needed — its doubled evasion persistence lives in its own small updEnemies block (see below)
+  else if (kind === 'shieldcarrier') Object.assign(e, { hp: 260 * t, s: 9, armor: 8, spd: 150, hold: STRATO_Y() - 60, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, shieldcarrier: true, art: 'eshieldcarrier' });   // v4.1 F J2 — FLYING SHIELD SHIP: no gun of its own; cruises to the player's densest AA cluster and, on arrival, projects a beachhead dome that FOLLOWS it for as long as it lives (see its own updEnemies block + enemyDome's optional dm.y)
   else if (kind === 'pelter') Object.assign(e, { hp: 55 * t, s: 4, armor: 4, spd: 6, hold: landY(wxw) - 4, weapon: 'plasarc', dmg: 30, rate: 3.2, dives: false, ground: true, art: 'epelter' });   // PELTER — ground plasma artillery turret, lobs deforming plasma; a constant pressure on cities (dropped in swarms)
   else if (kind === 'earthbreaker') Object.assign(e, { hp: 620 * t, s: 10, armor: 20, spd: 4, hold: landY(wxw) - 10, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, quake: true, art: 'eearthbreaker' });   // EARTHBREAKER PRESS — heavy seismic siege unit; its energy field triggers earthquakes that rattle morale (stability) & damage nearby ground forces/buildings
   else if (kind === 'jammer') Object.assign(e, { hp: 44 * t, s: 4, armor: 2, spd: 12, hold: MESO_Y() + 20 + Math.random() * 50, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, jammer: true, jamR: 360, art: 'ejammer' });   // ELECTRONIC-WARFARE drone — no guns, but projects a field that blinds your homing missiles; kill it with GUNS/LASERS/KINETICS (missiles go dumb inside it) to restore lock
@@ -5132,6 +5161,8 @@ function spawnEnemy(kind, atX) {
   else if (kind === 'lasersat') Object.assign(e, { hp: 15 * t, s: 3, armor: 1, spd: 0, hold: SPACE_Y() * .68, weapon: 'beam', dmg: 9, rate: 1.1, dives: false, air: true, anchored: true, range: LASERSAT_RANGE, art: 'satlaser' });   // orbital laser-defense satellite — a LOCAL picket of constant-fire lasers (range CLAMPED — no more whole-map sniping)
   else if (kind === 'mender') Object.assign(e, { hp: 110 * t, s: 5, armor: 6, spd: 0, hold: SPACE_Y() * .68, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, mender: true, healR: 320, healRate: 22, art: 'eshield' });   // SUPPORT SHIP — no guns of its own; projects a repair field that mends every hostile it can reach
   else Object.assign(e, { hp: 200 * t, s: 7, armor: 10, spd: 0, hold: landY(wxw) - 7, weapon: 'rocket', dmg: 10, rate: 1.6, dives: false, anchored: true, producer: true, prodCd: 7, harvester: true, reinforceEligible: true, art: 'eharvester' });   // harvester — lands, anchors, keeps dropping reinforcements, and (like the other anchored superweapons) calls in one support group if it survives long enough
+  if (e.ground && !G._gSpawnLog) G._gSpawnLog = [];   // v4.1 F I1 — THE FLEET REACTS: timestamp log of every ground-kind spawn, pruned to the trailing 60s in scanEnemyIntel
+  if (e.ground) G._gSpawnLog.push(G.invTime || 0);
   e.hp = Math.round(e.hp); e.maxHp = e.hp; if (e.shield) e.maxShield = e.shield; G.enemies.push(e);
 }
 // THE BEACHHEAD CLOCK — a landed/anchored superweapon (hive, leviathan, bombarder, harvester) that survives
@@ -5265,6 +5296,44 @@ function scanEnemyIntel() {
       };
       banner('⚠ AUTOFLEET ADAPTING', LINES[dominant], 4.5); toast('⚠ AUTOFLEET ADAPTING — ' + LINES[dominant]);
     }   // dominant → null (losing a clear read) is a real dominance change too, so G.counterBias resets to neutral above, but it's a quiet reset — no banner for "we don't have a read anymore"
+  }
+  // ═══════════════════════════════════════════════════════════════════════════════════════════
+  // v4.1 F I1 — THE FLEET REACTS: a rolling ground-assault loss ratio, purely off a spawn-time
+  // log (G._gSpawnLog, pruned to the trailing 60s — see spawnEnemy) and G.stats.killsByType
+  // DELTAS between scans (never touches hurt()/destroyEnemy). Two consecutive bad scans (>.7
+  // losses) pulls the ground assault back into orbit — surviving beachhead troops LIFT OFF and
+  // are refunded to G.fleet, not lost (see tickFleetStance) — and landings pause for 90s while
+  // the fleet leans on bombardment instead. Two consecutive good scans (<.35), or reading the
+  // player as anti-orbital-gun-dominant, commits it back to landing.
+  {
+    const gWindowStart = (G.invTime || 0) - 60;
+    G._gSpawnLog = (G._gSpawnLog || []).filter(ts => ts >= gWindowStart);
+    const spawnedInWindow = G._gSpawnLog.length;
+    let gKillsNow = 0; for (const k of GROUND_KINDS_FOR_INTEL) gKillsNow += (G.stats.killsByType[k] || 0);
+    const gKilledDelta = Math.max(0, gKillsNow - (G._gKillsPrev || 0));
+    G._gKillsPrev = gKillsNow;
+    const groundLoss = spawnedInWindow > 0 ? Math.min(1, gKilledDelta / spawnedInWindow) : (G._lastGroundLoss || 0);
+    G._lastGroundLoss = groundLoss;
+    G.fleetStance = G.fleetStance || 'landing';
+    G._stanceHist = G._stanceHist || []; G._stanceHist.push(groundLoss); if (G._stanceHist.length > 2) G._stanceHist.shift();
+    const twoBad = G._stanceHist.length >= 2 && G._stanceHist.every(v => v > .7);
+    const twoGood = G._stanceHist.length >= 2 && G._stanceHist.every(v => v < .35);
+    if (G.fleetStance === 'landing' && twoBad) {
+      G.fleetStance = 'orbital'; G._landingPauseT = 90; G._stancePool = { bombarder: 3, hive: 1 };
+      banner('⚠ AUTOFLEET WITHDRAWING TO ORBIT', 'ground assault called off, the fleet turns to bombardment', 5);
+      toast('⚠ AUTOFLEET WITHDRAWING TO ORBIT');
+      const liftCenters = []; for (const e2 of G.enemies) if (e2.kind === 'shieldgen' || e2.kind === 'leviathan' || e2.kind === 'breacher') liftCenters.push(e2);
+      for (const e2 of G.enemies) {
+        if (!e2.ground || e2.reentry || e2.hp <= 0 || e2.liftOff) continue;
+        let nearCenter = liftCenters.length === 0; if (!nearCenter) for (const lc of liftCenters) { if (Math.abs(lc.x - e2.x) < 300) { nearCenter = true; break; } }
+        if (nearCenter) e2.liftOff = true;
+      }
+      if (G.supersPlan) for (const sp of G.supersPlan) if (sp.kind === 'leviathan') sp.kind = 'bombarder';   // not-yet-fired supers re-tasked from siege crawler to orbital fabricator
+    } else if (G.fleetStance === 'orbital' && (twoGood || dominant === 'spaceReach')) {
+      G.fleetStance = 'landing'; G._landingPauseT = 0; G._stancePool = null;
+      banner('⚠ AUTOFLEET COMMITTING GROUND FORCES', 'landings resume', 5);
+      toast('⚠ AUTOFLEET COMMITTING GROUND FORCES');
+    }
   }
 }
 // densestDefenseX — bucketed density of the player's own weapon-armed buildings, used to aim PHASE 2's
@@ -5417,6 +5486,33 @@ function tickPhase4(it, dt) {
     if (G.moraleCd <= 0) { G.moraleCd = 6 / 1.5; const tx = (Math.random() < .8 && G.cities.length) ? G.cities[Math.floor(Math.random() * G.cities.length)].x : barrageTarget(); orbitalBarrage(tx); }
   }
 }
+// v4.1 F I1/I2/J3 — FLEET STANCE TICK: the per-frame half of THE FLEET REACTS (scanEnemyIntel does the
+// twice-a-scan decision; this animates whatever it decided). Three independent jobs, each guarded so
+// they're no-ops outside their own condition: (1) the landing-pause countdown started when the fleet
+// pulls back to orbit; (2) LIFT-OFF — any enemy scanEnemyIntel marked e.liftOff climbs (reverse
+// re-entry) and is REFUNDED to G.fleet on reaching MESO_Y, never destroyed/lost; (3) SPACE PICKETS —
+// from phase 3 on, keeps 2+round(diff) picket frigates standing in the space band, topping up on a
+// 12s cooldown. Also decays the THE FRONT marker (I2 — see doWave/renderGame) on the same clock.
+function tickFleetStance(it, dt) {
+  if ((G._landingPauseT || 0) > 0) G._landingPauseT = Math.max(0, G._landingPauseT - dt);
+  if (G.front && G.front.t > 0) { G.front.t -= dt; if (G.front.t <= 0) G.front = null; }
+  for (let i = G.enemies.length - 1; i >= 0; i--) {
+    const e = G.enemies[i]; if (!e.liftOff) continue;
+    e.y -= 120 * dt; e.vy = 0; e.reentry = false;
+    if (Math.random() < .5) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s, y: e.y + e.s, vx: (Math.random() - .5) * 6, vy: 30 + Math.random() * 20, r: 1.4 + Math.random() * 2, life: .2 + Math.random() * .2 });   // thruster flame trailing DOWNWARD as it climbs
+    if (e.y <= MESO_Y()) { G.enemies.splice(i, 1); G.fleet = Math.min(G.fleetMax || 1e9, (G.fleet || 0) + 1); }   // clear of the fight and handed straight back to the fleet pool — withdrawn, not destroyed
+  }
+  if ((G.invPhase || 0) >= 3) {
+    G._picketCd = (G._picketCd || 0) - dt;
+    const wantN = 2 + Math.round(G.diff || 1);
+    let liveN = 0; for (const e of G.enemies) if (e.kind === 'frigate' && e.picket && e.hp > 0) liveN++;
+    if (liveN < wantN && G._picketCd <= 0) {
+      G._picketCd = 12;
+      spawnEnemy('frigate', 100 + Math.random() * (WORLD_W - 200));
+      const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.picket = true; ne.reentry = false; ne.hold = SPACE_Y() + 80; ne.y = ne.hold; }
+    }
+  }
+}
 // advances G.invPhase on the intent's own clock (RECON skips straight from 1 to a phase-4-style
 // trickle — no blackout, no all-out) and runs each phase's ongoing tick.
 function updateInvPhases(it, dt) {
@@ -5429,6 +5525,7 @@ function updateInvPhases(it, dt) {
   if (G.intent === 'recon') { if (G.invPhase < 4 && G.invTime >= 18) G.invPhase = 4; }
   else { if (G.invPhase < 2 && G.invTime >= 18) enterInvPhase(2, it); if (G.invPhase < 3 && G.invTime >= 50) enterInvPhase(3, it); if (G.invPhase === 3) G.invPhase = 4; }
   if (G.invPhase >= 4) tickPhase4(it, dt);
+  tickFleetStance(it, dt);
 }
 function enterInvPhase(n, it) {
   if (G.invPhase >= n) return;
@@ -7636,6 +7733,22 @@ function updEnemies(dt) {
       const hvm = e.spd * 2.2; e.vx = Math.max(-hvm, Math.min(hvm, e.vx)) * .95; e.x += e.vx * dt; e.x = Math.max(20, Math.min(WORLD_W - 20, e.x));
       e.y += (targY + Math.sin(e.wob * .7) * 20 - e.y) * Math.min(1, (bestSw ? 3 : 2) * dt);
     }
+    // v4.1 F J1 — RAIDER: no custom movement/targeting needed (e.air:true already routes it through
+    // the standard air-target list, which hunts aircraft first and only falls back to ground when
+    // nothing's flying — see airTargetsList()); this just doubles how long an evasive jink lasts by
+    // halving evadeT's normal per-frame decay, without touching the shared decay/set call sites.
+    if (e.kind === 'raider' && e.evadeT > 0) e.evadeT += dt * .5;
+    // v4.1 F J2 — SHIELD CARRIER: overrides this frame's `tgt` so the shared weave-movement code
+    // (right below) flies it toward the player's densest AA cluster instead of the nearest target;
+    // once close it raises a beachhead dome via the existing spawnShieldDome/G.domes machinery (same
+    // recharge/collapse-with-generator lifecycle as a landed Shield Generator) and keeps that dome
+    // pinned to its own position every frame for as long as it lives.
+    if (e.kind === 'shieldcarrier') {
+      if (e._scTX == null) { const cl = densestAntiAirX(); e._scTX = cl.length ? cl[0].x : e.x; }
+      tgt = { x: e._scTX, y: e.hold };
+      if (!e.scDome && Math.abs(e.x - e._scTX) < 60) { e.scDome = spawnShieldDome(e.x, e); floatText(e.x, e.y - e.s - 6, '🛡 SHIELD CARRIER — DOME UP', '#9cc4ff'); }
+      if (e.scDome) { if (e.scDome.hp <= 0) e.scDome = null; else { e.scDome.x = e.x; e.scDome.y = e.y; } }
+    }
     if (e.dives) e.y = Math.min(groundY(e.x) - 4, e.y + e.spd * dt);   // divers keep sinking toward the ground (strafing on the way down)
     if (!e.pod) {
       if (!e.anchored && !e.hijacker) {
@@ -8026,6 +8139,20 @@ function renderGame() {
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = 'rgba(255,176,77,.05)'; c.fill(); c.strokeStyle = 'rgba(255,176,77,.55)'; c.lineWidth = 1.4; c.setLineDash([4, 5]); c.stroke(); c.setLineDash([]); c.restore();
     }
   }
+  // v4.1 F I2 — THE FRONT: a thin dashed marker at the most recent landing zone (G.front, set in doWave,
+  // decayed in tickFleetStance), with a faint ground-band highlight; alpha fades out over its 40s life.
+  if (G.front && G.front.t > 0) {
+    const fx = G.front.x, fpx = sx(fx);
+    if (fpx > -160 - PX && fpx < W + 160 + PX) {
+      const fa = Math.max(0, Math.min(1, G.front.t / 40)), fgy = groundY(fx), fTopY = STRATO_Y();
+      c.save();
+      c.globalAlpha = fa * .12; c.fillStyle = '#ff6a4a'; c.fillRect(sx(fx - 140), fTopY, sx(fx + 140) - sx(fx - 140), fgy - fTopY);
+      c.globalAlpha = fa * .55; c.strokeStyle = '#ff6a4a'; c.lineWidth = 1.6; c.setLineDash([6, 6]);
+      c.beginPath(); c.moveTo(fpx, fgy); c.lineTo(fpx, fTopY); c.stroke(); c.setLineDash([]);
+      c.globalAlpha = fa; c.fillStyle = '#ff8a6a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText('▮ FRONT', fpx, fTopY - 6); c.textAlign = 'left';
+      c.globalAlpha = 1; c.restore();
+    }
+  }
   // HOSTILE JAMMER FIELDS — a violet static bubble where your homing missiles go blind; kill the drone to clear it
   for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const px = sx(e.x), r = e.jamR || 360; if (px < -r - PX || px > W + r + PX) continue;
     c.save(); c.beginPath(); c.arc(px, e.y, r, 0, 6.28); c.fillStyle = 'rgba(150,90,220,.06)'; c.fill();
@@ -8108,7 +8235,7 @@ function renderGame() {
   }
   for (const b of G.buildings) { if (!b._acqLock || b.hp <= 0) continue; const px = sx(b.x); if (px < -60 - PX || px > W + 60 + PX) continue; const cy = groundY(b.x) - (b.d.h || 12) * .5, rr = (b.d.w || 16) * .7 + 8, rot = -animClock * .07; c.save(); c.globalAlpha = .55 + .35 * Math.sin(animClock * .02); c.strokeStyle = '#ff2323'; c.lineWidth = 2; c.shadowColor = '#ff3030'; c.shadowBlur = 8; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, cy, rr, ba - .42, ba + .42); c.stroke(); } c.beginPath(); c.moveTo(px - rr, cy); c.lineTo(px - rr * .55, cy); c.moveTo(px + rr * .55, cy); c.lineTo(px + rr, cy); c.moveTo(px, cy - rr); c.lineTo(px, cy - rr * .55); c.moveTo(px, cy + rr * .55); c.lineTo(px, cy + rr); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; c.restore(); }   // ◎ RED enemy-acquisition reticle — the autofleet has locked this structure as a bunker-buster target
   // beachhead shield domes — a translucent hemisphere over the landing; brightness fades as it's battered down
-  for (const dm of G.domes) { const px = sx(dm.x); if (px < -dm.r - PX || px > W + dm.r + PX) continue; const gy = groundY(dm.x), a = Math.max(.18, dm.hp / dm.maxHp); c.save(); c.beginPath(); c.arc(px, gy, dm.r, Math.PI, 0); c.globalAlpha = .08 + .06 * Math.sin(animClock * .01); c.fillStyle = '#5a8cff'; c.fill(); c.globalAlpha = .3 + .4 * a; c.strokeStyle = '#9cc4ff'; c.lineWidth = 2; c.shadowColor = '#9cc4ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0;
+  for (const dm of G.domes) { const px = sx(dm.x); if (px < -dm.r - PX || px > W + dm.r + PX) continue; const _flying = dm.y != null; const gy = _flying ? dm.y : groundY(dm.x), a = Math.max(.18, dm.hp / dm.maxHp); c.save(); c.beginPath(); if (_flying) c.arc(px, gy, dm.r, 0, 6.28); else c.arc(px, gy, dm.r, Math.PI, 0);   /* v4.1 F J2 — a FLYING dome (shieldcarrier) draws as a full circle at its own altitude instead of the ground-anchored upper semicircle */ c.globalAlpha = .08 + .06 * Math.sin(animClock * .01); c.fillStyle = '#5a8cff'; c.fill(); c.globalAlpha = .3 + .4 * a; c.strokeStyle = '#9cc4ff'; c.lineWidth = 2; c.shadowColor = '#9cc4ff'; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0;
     if (dm.shieldHits) for (const h of dm.shieldHits) { const f = 1 - h.t / .5; if (f <= 0) continue; const spread = .12 + (1 - f) * .85; c.globalCompositeOperation = 'lighter'; c.globalAlpha = f * .85; c.strokeStyle = '#e8f4ff'; c.lineWidth = 3.2 * f + .8; c.shadowColor = '#9cc4ff'; c.shadowBlur = 10; c.beginPath(); c.arc(px, gy, dm.r, h.ang - spread, h.ang + spread); c.stroke(); c.shadowBlur = 0; c.globalCompositeOperation = 'source-over'; }   // impact ripple where YOUR fire is landing on it — same visual language as the friendly shield generator & enemy field so it reads as "absorbing", not "nothing happening"
     c.globalAlpha = 1; c.restore(); }
   for (const e of G.enemies) { if (!e.breacher || !e.fieldOn || (e.fieldHp || 0) <= 0) continue; const px = sx(e.x); if (px < -e.fieldR - PX || px > W + e.fieldR + PX) continue; const a = Math.max(.12, e.fieldHp / (e.fieldMax || e.fieldHp)); c.save(); c.globalAlpha = .05 + .05 * Math.sin(animClock * .014); c.fillStyle = '#a072ff'; c.beginPath(); c.arc(px, e.y, e.fieldR, 0, 6.28); c.fill(); c.globalAlpha = .22 + .4 * a; c.strokeStyle = '#c9a6ff'; c.lineWidth = 1.6; c.shadowColor = '#c9a6ff'; c.shadowBlur = 7; c.beginPath(); c.arc(px, e.y, e.fieldR, 0, 6.28); c.stroke(); c.shadowBlur = 0; if (e.fieldHits) for (const h of e.fieldHits) { const hx = px + Math.cos(h.ang) * e.fieldR, hy = e.y + Math.sin(h.ang) * e.fieldR; c.globalAlpha = Math.max(0, .6 - h.t * 1.2); c.fillStyle = '#eadcff'; c.beginPath(); c.arc(hx, hy, 3, 0, 6.28); c.fill(); } c.globalAlpha = 1; c.restore(); }   // BEACHHEAD ANCHOR deflector field — violet projectile-scrub bubble, brightens where your rounds are being scrubbed, fades as it's battered down
@@ -8943,6 +9070,10 @@ const TIPS = [
   "Please don't research everything in one match. The maximum-stability reduction will bankrupt you.",
   'Cities automatically raise infantry militia, which helps them hold a defensive line.',
   "Infantry is a good way to spend early-game manpower so you don't waste time sitting at the cap.",
+  'The FLEET FLAGSHIP only ever shows up in high orbit. If you have zero space-reaching weapons, you cannot touch it at all — a single Railgun "Lance" fixes that.',
+  "If the fleet's ground assault is getting wrecked, it calls the landing off and withdraws to orbit for a while — the units it pulls back aren't lost, so don't expect the retreat to be permanent.",
+  "Cluster bomb pods split into a wide cone of unguided bomblets — missiles can't intercept the bomblets themselves, only the pod before it splits.",
+  'Escort fighters (interceptors, raiders, gunships) go after your aircraft first and ground targets second. A concentrated air screen survives them far better than a thin one.',
 ];
 /* ===== TIP BUCKET — no tip repeats until every tip in TIPS has been shown once. The live deck is a shuffled
    array of TIPS indices, drawn from the end (G._tipDeck); when it runs dry it's refilled with every index,
@@ -9103,7 +9234,7 @@ function renderAARCharts() {
 // COMBAT HEATMAP, all fed by G.stats (tracked live during play — see the hook sites: spawnUnit, finishSite,
 // placeBuilding, queueUnit, finishResearch, the research draw-down, launchStrike, hireAllies, destroyEnemy,
 // destroyUnit, sampleHist). Additive & read-only — never touches balance, only reports what already happened.
-const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hijacker: 'ECM Hijacker', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship', empburst: 'Antimatter EMP Warhead', decoy: 'Decoy Pod', shockwave: 'Shockwave Pod' };   // v4.0.1: empburst/decoy/shockwave were missing labels — they read as their raw kind string in the after-action report
+const EKIND_LABEL = { drone: 'Drone', bombpod: 'Bomb Pod', interceptor: 'Interceptor', bomber: 'Bomber', gunship: 'Gunship', strikewing: 'Strike Wing', frigate: 'Frigate', whistler: 'Whistler', gtank: 'Landed Armor', gmech: 'Walker Infantry', shieldgen: 'Shield Generator', pelter: 'Pelter Artillery', earthbreaker: 'Earthbreaker Press', jammer: 'Jammer Drone', hijacker: 'ECM Hijacker', hive: 'Skyfortress "Hive"', leviathan: 'Land Leviathan', annihilator: 'Orbital Annihilator', bombarder: 'Autodrone Bombarder', bulwark: 'Bulwark Platform', breacher: 'Beachhead Breacher', railsat: 'Railgun Satellite', lasersat: 'Laser Satellite', mender: 'Support Ship', empburst: 'Antimatter EMP Warhead', decoy: 'Decoy Pod', shockwave: 'Shockwave Pod', raider: 'Raider', shieldcarrier: 'Shield Carrier' };   // v4.0.1: empburst/decoy/shockwave were missing labels — they read as their raw kind string in the after-action report. v4.1 F: raider/shieldcarrier added
 function aarSum(obj) { let s = 0; for (const k in obj) s += obj[k]; return s; }
 // draw ONE unit/building icon into a small canvas — same ART/BART renderers the live production menus use (see buildProdMenu / showResDetail)
 function aarUnitIcon(cv, d) { if (!cv || !d || !ART[d.art]) return; const x = cv.getContext('2d'); x.translate(cv.width / 2, cv.height * .62); x.scale(1.4, 1.4); if (d.domain === 'air' || d.domain === 'naval') x.scale(-1, 1); try { ART[d.art](x, 8, -.6); } catch (er) {} }
@@ -9986,9 +10117,11 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     { id: 'capInsufficient', sev: 'high', why: 'Your army cap is full or over-committed — units are queued (or about to be) with no room left to hold them.', fix: 'Housing Blocks (ECON tab) raise manpower and the cap directly; Cloning Vats and Living Titans research push the cap further still.',
       check: (G, it) => (combatWeight() >= armyCap() * 0.95 && anyQueuedUnits()) || queuedWeight() > armyCap() - combatWeight() },
     { id: 'noSpaceReach', sev: 'high', why: 'This fleet parks boss-tier hostiles up in space, and nothing you own reaches that high to touch them.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites and railgun-armed ships all reach clear into orbit.',
-      check: (G, it) => (it.orbital > 0 || (it.supers || []).some(s => /bombarder|annihilator/.test(s.kind || s))) && tutSpaceReachDps() < 40 },
+      check: (G, it) => (it.orbital > 0 || (it.supers || []).some(s => /bombarder|annihilator/.test(s.kind || s))) && tutSpaceReachDps() < 100 },   // v4.1 F K: ×2.5 — the fleet is 3× as of 4.1
+    { id: 'noFlagshipReach', sev: 'high', why: 'Nothing you own can reach the FLEET FLAGSHIP in high orbit — railguns, satellites, orbital units or strategic strikes.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships, or a strategic strike all reach clear into orbit.',
+      check: (G, it) => tutSpaceReachDps() <= 0 },   // v4.1 F K — reuses the noSpaceReach measure, but strictly: fires on truly ZERO space reach, not just "not much"
     { id: 'noPdPierce', sev: 'med', why: 'The Bombarder deploys a point-defense grid that shreds single shots — you need real VOLUME fire to get anything through it.', fix: 'Microrocket Batteries, a MIRV/ballistic-armed Missile Silo, and massed Railgun Lances all give you the saturation to punch through.',
-      check: (G, it) => (it.supers || []).some(s => /bombarder/.test(s.kind || s)) && tutPdPierceCount() < 3 },
+      check: (G, it) => (it.supers || []).some(s => /bombarder/.test(s.kind || s)) && tutPdPierceCount() < 8 },   // v4.1 F K: ×2.5 (3 → 7.5, rounded to 8) — the fleet is 3× as of 4.1
     { id: 'noArmy', sev: 'high', why: 'You have no army at all. When the fleet lands, nothing will be standing between it and your cities.', fix: 'Queue some Infantry, AA or a tank from the PROD tab — even a small force buys you time.',
       check: (G, it) => G.units.length === 0 },
     { id: 'underMobilized', sev: 'med', why: 'Your army is well under its cap — you\'re leaving fielded strength on the table while the clock runs.', fix: 'Keep queuing units. Check the army-cap weight budget (STATS) if you\'re not sure how much room you have left.',

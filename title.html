@@ -4939,7 +4939,7 @@ function attachEscorts(e) {
   const tbl = ESCORT_TABLE[e.kind]; if (!tbl || e.noEscort) return;
   for (const ek in tbl) {
     const n = tbl[ek];
-    for (let i = 0; i < n && G.enemies.length < 300; i++) {
+    for (let i = 0; i < n && G.enemies.length < 900 /* v4.1: a boss ALWAYS gets its contingent unless the theatre is absurdly full — POP_CEIL governs line units, not guards */; i++) {
       spawnEnemy(ek, e.x + (Math.random() - .5) * 260);
       const ne = G.enemies[G.enemies.length - 1]; if (!ne) continue;
       ne.escortOf = e;

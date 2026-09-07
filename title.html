@@ -4797,7 +4797,7 @@ const ESC = {
   // orbital-plasma ground pressure blankets every stretch from t=0 (not one hotspot). Only intents
   // that actually bombard from orbit open this way — a recon PROBE / decap precision strike stay
   // true to their advertised "no orbital ordnance" flavor.
-  OPEN_BOMBARDERS: 5,          // how many bombarders seed the opening
+  OPEN_BOMBARDERS: 2,          // how many bombarders seed the opening   /* v4.0.3: was 5 at invasion t=0 — designer: "bombardiers came early"; the opening wall now arrives with PHASE 2 · SUPPRESSION and is smaller */
   OPEN_MARGIN: 0.08,           // keep them off the extreme edges: x in [margin*W, (1-margin)*W]
   OPEN_JITTER: 200,            // +/- px so the rank isn't a perfect ruler-line
   OPEN_BOMBARDERS_GRID: false, // opening bombarders SKIP the 21-unit orbital-defense grid + escorts so
@@ -5268,6 +5268,7 @@ function detonateEmpBurst(e) {
 // clusters (previously only arrived bolted to a warhead kill — now it's its own suppressing fire), and
 // shockwave pods still shove your aircraft around.
 function phase2Suppression(it) {
+  openingBombarders(it);   /* v4.0.3: the (smaller) opening bombarder wall now arrives WITH the suppression phase, not at t=0 */
   const n = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);
   const clusters = densestDefenseX();
   const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone
@@ -5657,7 +5658,7 @@ function updateGame(dt) {
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — SCREENING FIRE IMMINENT'); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
 G.supersPlan = (it.supers || []).map(s => Object.assign({}, s));   /* v4.0.1 — THE FLEET ADAPTS: a per-match COPY of this intent's boss schedule, made ONCE here — the supers consumer below reads/mutates THIS, never INTENT itself, so a spaceReach-triggered delay (see scanEnemyIntel) can't leak into a later match or a different intent */
-G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); openingBombarders(it); openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
+G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); /* v4.0.3: openingBombarders(it) moved to phase2Suppression — no boss platforms at t=0 */ openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
   else if (G.phase === 'invasion') {

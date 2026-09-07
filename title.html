@@ -4849,7 +4849,7 @@ const ESC = {
   FLANK_TRACK_MAX: 8,          // how many flanks to remember (prunes oldest)
 
   // ── POPULATION CEILING ──────────────────────────────────────────────────────────────────
-  POP_CEIL: 92,                // modest raise from 80 so an escalated wave has room to land (perf ceiling)
+  POP_CEIL: 280,                // v4.1 D — fleet ×3: long sieges, not 150-unit pushovers (perf ceiling raised in step with fleetMax)
 };
 function curIntent() {
   const base = INTENT[G.intent] || INTENT.invasion;
@@ -4881,7 +4881,7 @@ function doSkyfall(it) {   // a GIANT mass-drop right after the opening bombardm
   // ground landings on the normally-neglected edges, marching inward
   for (let i = 0; i < it.flank; i++) { const left = Math.random() < .5; const x = left ? 70 + Math.random() * 260 : WORLD_W - 70 - Math.random() * 260; spawnEnemy(Math.random() < .55 ? 'gtank' : 'gmech', x); }
   // EVERY mass drop brings a SUPER-UNIT GROUP down with it — the sky doesn't just fall, something huge falls in it
-  if (it.skyfall > 0 && G.enemies.length < 90) spawnSuper(it.capital ? 'leviathan' : (Math.random() < .5 ? 'hive' : 'bombarder'), it.capital);
+  if (it.skyfall > 0 && G.enemies.length < 270) spawnSuper(it.capital ? 'leviathan' : (Math.random() < .5 ? 'hive' : 'bombarder'), it.capital);
 }
 // DEFENSE SCORE — how well-covered a stretch of the map is: static AA/DEF emplacements weigh heaviest (a real
 // grid), other buildings a little, fielded PD-capable units more than plain ones. Used to pick landing zones.
@@ -5173,23 +5173,23 @@ function reinforceBoss(e) {
   shake(11); SFX.boom();
   if (e.ground) {   // LAND LEVIATHAN — an armor column rallies around the crawler
     const n = 5;
-    for (let i = 0; i < n && G.enemies.length < 74; i++) {
+    for (let i = 0; i < n && G.enemies.length < 222; i++) {
       const r = Math.random(), gk = r < .45 ? 'gtank' : r < .85 ? 'gmech' : 'pelter';
       spawnEnemy(gk, e.x + (i - (n - 1) / 2) * 90);
       const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; }
     }
   } else if (e.bombarder) {   // AUTODRONE BOMBARDER — drops another squadron to hold the sky around it
     const n = 5;
-    for (let i = 0; i < n && G.enemies.length < 74; i++) spawnEnemy(Math.random() < .6 ? 'drone' : 'bombpod', e.x + (Math.random() - .5) * 420);
+    for (let i = 0; i < n && G.enemies.length < 222; i++) spawnEnemy(Math.random() < .6 ? 'drone' : 'bombpod', e.x + (Math.random() - .5) * 420);
   } else if (e.harvester) {   // ANCHORED HARVESTER — calls down a mixed squad to protect its position
     const n = 4;
-    for (let i = 0; i < n && G.enemies.length < 74; i++) {
+    for (let i = 0; i < n && G.enemies.length < 222; i++) {
       spawnEnemy(Math.random() < .5 ? 'gtank' : 'gmech', e.x + (Math.random() - .5) * 260);
       const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; }
     }
   } else if (e.kind === 'hive') {   // SKYFORTRESS — calls down a fresh escort wing to screen it
     const n = 4;
-    for (let i = 0; i < n && G.enemies.length < 74; i++) { spawnEnemy(Math.random() < .5 ? 'interceptor' : 'gunship', e.x + (Math.random() - .5) * 300); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 60; ne.y = ne.hold; } }
+    for (let i = 0; i < n && G.enemies.length < 222; i++) { spawnEnemy(Math.random() < .5 ? 'interceptor' : 'gunship', e.x + (Math.random() - .5) * 300); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 60; ne.y = ne.hold; } }
   }
 }
 // ═════════════════════════════════════════════════════════════════════════════════════════════
@@ -5804,7 +5804,7 @@ function updateGame(dt) {
   // construction sites — IC-funded, auto-build (no constructors); a work crew kicks up dust. Also frozen during a crisis.
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
-  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — SCREENING FIRE IMMINENT'); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(90 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
+  if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — SCREENING FIRE IMMINENT'); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(270 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
 G.supersPlan = (it.supers || []).map(s => Object.assign({}, s));   /* v4.0.1 — THE FLEET ADAPTS: a per-match COPY of this intent's boss schedule, made ONCE here — the supers consumer below reads/mutates THIS, never INTENT itself, so a spaceReach-triggered delay (see scanEnemyIntel) can't leak into a later match or a different intent */
 G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); /* v4.0.3: openingBombarders(it) moved to phase2Suppression — no boss platforms at t=0 */ openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
@@ -5894,10 +5894,10 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
   // OCCUPIED cities get FORTIFIED — once they hold a city the autodrones stop shelling it and instead emplace massive immobile SIEGE GUNS inside it that hammer you (retaking means clearing them out)
   for (const ct of G.cities) { if (!ct.held || ct.hp <= 0) continue; ct.holdGunT = (ct.holdGunT == null ? 4 : ct.holdGunT) - dt;
     if (ct.holdGunT <= 0) { ct.holdGunT = 9 + Math.random() * 5; const cap = 2 + Math.round((ct.w || 150) / 130); let guns = 0; for (const e of G.enemies) if (e.cityGun && Math.abs(e.x - ct.x) < ct.w * .5 + 60) guns++;
-      if (guns < cap && G.enemies.length < 90) { const gx = ct.x + (Math.random() - .5) * (ct.w || 120); spawnEnemy(Math.random() < .35 ? 'earthbreaker' : 'pelter', gx); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; ne.cityGun = true; ne.spd = 0; } floatText(gx, groundY(gx) - 30, '⚙ SIEGE GUN EMPLACED', '#ff8a6a'); } } }
+      if (guns < cap && G.enemies.length < 270) { const gx = ct.x + (Math.random() - .5) * (ct.w || 120); spawnEnemy(Math.random() < .35 ? 'earthbreaker' : 'pelter', gx); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; ne.cityGun = true; ne.spd = 0; } floatText(gx, groundY(gx) - 30, '⚙ SIEGE GUN EMPLACED', '#ff8a6a'); } } }
   // a captured city's factories/industry crank out enemy ground forces — the autodrones turn your own war economy against you
   for (const b of G.buildings) { if (!b.captured || b.done === false || b.hp <= 0) continue; b.capT = (b.capT || 0) - dt;
-    if (b.capT <= 0) { b.capT = 8 + Math.random() * 4; if (G.enemies.length < 85) { const k = b.d.prod === 'air' ? 'gunship' : b.d.prod === 'naval' ? 'gtank' : (Math.random() < .5 ? 'gtank' : 'gmech'); spawnEnemy(k, b.x); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; } floatText(b.x, groundY(b.x) - 34, '⚙ ENEMY PRODUCTION', '#ff8a6a'); spark(b.x, groundY(b.x) - 8, 3); } } }
+    if (b.capT <= 0) { b.capT = 8 + Math.random() * 4; if (G.enemies.length < 255) { const k = b.d.prod === 'air' ? 'gunship' : b.d.prod === 'naval' ? 'gtank' : (Math.random() < .5 ? 'gtank' : 'gmech'); spawnEnemy(k, b.x); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; } floatText(b.x, groundY(b.x) - 34, '⚙ ENEMY PRODUCTION', '#ff8a6a'); spark(b.x, groundY(b.x) - 8, 3); } } }
   // TUNNEL ASSAULT — once enemy ground forces reach a buried structure's surface position they breach the tunnels (shallow caves in fast; deep resists). Underground is safer, not invincible.
   for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
   if (G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
@@ -10359,7 +10359,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   // gated purely by G.tut.readyPanels — and only meaningful during PREP.
   // ============================================================================
   function tutIntentBlurb(it) {
-    const fleetMax = Math.round(90 * (G.diff || 1) * (it.fleetMul || 1));
+    const fleetMax = Math.round(270 * (G.diff || 1) * (it.fleetMul || 1));
     const bits = [];
     if (it.glass) bits.push('NO LANDING — pure orbital glassing');
     else if (it.capital) bits.push('a concentrated drop on your CAPITAL');

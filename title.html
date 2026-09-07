@@ -745,7 +745,9 @@
     &nbsp;• <b>Robotic mass</b> (drones/mechs/androids) → ECM hijackers get twice the odds.<br>
     &nbsp;• <b>Infantry</b> → area bombardment from the air and ground artillery.<br>
     &nbsp;• <b>Navy</b> → antimatter whistlers + missile-support frigates, beachheads nudged toward the coast.<br>
-    &nbsp;• <b>Anti-orbital guns</b> (railguns, particle/orbital cannons…) → its space-tier bosses hold off and land clear of your guns; it leans on mass ground landings instead.</p></details>
+    &nbsp;• <b>Anti-orbital guns</b> (railguns, particle/orbital cannons…) → its space-tier bosses hold off and land clear of your guns; it leans on mass ground landings instead.<br><br>
+    <b>CLUSTER BOMBS</b> — the triangular bombardment pods now split in the stratosphere into a cone of unguided bomblets with big area damage; kill the pod before it splits, missiles can't intercept bomblets.<br>
+    <b>RE-ENTRY PROFILE</b> — busters and decoys crawl while in orbit and accelerate hard in the atmosphere; railguns, satellites and lances get the easy shot up high, low interception is much harder.</p></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -8825,7 +8827,29 @@ const TIPS = [
   'Cities automatically raise infantry militia, which helps them hold a defensive line.',
   "Infantry is a good way to spend early-game manpower so you don't waste time sitting at the cap.",
 ];
-function showTip() { const t = document.getElementById('toast'); if (!t) return; const msg = TIPS[Math.floor(Math.random() * TIPS.length)]; t.textContent = '💡 ' + msg; t.classList.add('show'); toastT = 7; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 7000); }
+/* ===== TIP BUCKET — no tip repeats until every tip in TIPS has been shown once. The live deck is a shuffled
+   array of TIPS indices, drawn from the end (G._tipDeck); when it runs dry it's refilled with every index,
+   Fisher-Yates shuffled, with a guard so the very next draw can't equal the last tip shown. Persisted to
+   localStorage.tm_tipDeck so a reload (or a fresh match) continues the same deck instead of resetting it. ===== */
+let _tipDeckFallback = null;   // used only if G doesn't exist yet (the 💡 TIP button lives in the in-game HUD, so this shouldn't normally trigger)
+function _tipDeckHost() { return (typeof G !== 'undefined' && G) ? G : (_tipDeckFallback = _tipDeckFallback || {}); }
+function _tipDeckLoad() { try { const arr = JSON.parse(localStorage.getItem('tm_tipDeck')); if (Array.isArray(arr) && arr.length && arr.every(n => Number.isInteger(n) && n >= 0 && n < TIPS.length)) return arr.slice(); } catch (e) {} return null; }
+function _tipDeckSave(deck) { try { localStorage.setItem('tm_tipDeck', JSON.stringify(deck)); } catch (e) {} }
+function _tipDeckShuffle(avoidIdx) {
+  const idx = TIPS.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp; }
+  if (idx.length > 1 && idx[idx.length - 1] === avoidIdx) { const j = Math.floor(Math.random() * (idx.length - 1)); const tmp = idx[idx.length - 1]; idx[idx.length - 1] = idx[j]; idx[j] = tmp; }   // don't let a refill's first draw repeat the tip that was just shown
+  return idx;
+}
+function drawTip() {   // returns a TIPS index, never repeating one from this pass through the bucket
+  const host = _tipDeckHost();
+  if (!host._tipDeck || !host._tipDeck.length) host._tipDeck = _tipDeckLoad() || _tipDeckShuffle(host._lastTipIdx);
+  const i = host._tipDeck.pop();
+  host._lastTipIdx = i;
+  _tipDeckSave(host._tipDeck);
+  return i;
+}
+function showTip() { const t = document.getElementById('toast'); if (!t) return; const msg = TIPS[drawTip()]; t.textContent = '💡 ' + msg; t.classList.add('show'); toastT = 7; clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 7000); }
 function banner(main, sub, dur) { const el = document.getElementById('alertBanner'); if (!el) return; el.innerHTML = `<div class="ab-main">${main}</div>` + (sub ? `<div class="ab-sub">${sub}</div>` : ''); el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), (dur || 4) * 1000); }   // BIG centre-screen alert, independent of the toast so major events can't be buried by build messages
 function hideBanner() { const el = document.getElementById('alertBanner'); if (el) { el.classList.remove('show'); clearTimeout(el._t); } }
 function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); if (id === 'resModal' && typeof G !== 'undefined' && G && typeof mode !== 'undefined' && mode === 'game' && !G.over && !G.paused) { G.paused = true; G._resAutoPause = true; } if (id === 'optsModal' && typeof syncTutOptToggles === 'function') syncTutOptToggles(); if (id === 'tutPromptModal' && typeof renderTutModeGrid === 'function') renderTutModeGrid(); }   // the research tree fills the whole screen — pause the battle while it's open so you're not fighting blind
@@ -10076,7 +10100,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     document.body.appendChild(advEl);
     return advEl;
   }
-  function showTip(id, html) { const n = advNode(); n.querySelector('.adv-b').innerHTML = html; n.classList.add('show'); }
+  function showAdvTip(id, html) { const n = advNode(); n.querySelector('.adv-b').innerHTML = html; n.classList.add('show'); }   // renamed from showTip to de-collide with the global 💡 TIPS-bucket showTip() near the TIPS array — this one is the ADVISOR corner popup and is unrelated
   function hideTip() { if (advEl) advEl.classList.remove('show'); }
 
   // ============================================================================
@@ -10356,7 +10380,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     if (!T.tips) { hideTip(); return; }
     if (T.advCd > 0) return;
     const tip = pickTip(icTrend, stabTrend);
-    if (tip && tip.id !== T.lastTip) { showTip(tip.id, tip.body); T.lastTip = tip.id; T.curTip = tip.id; T.advCd = TUNE.ADV_THROTTLE_S; }
+    if (tip && tip.id !== T.lastTip) { showAdvTip(tip.id, tip.body); T.lastTip = tip.id; T.curTip = tip.id; T.advCd = TUNE.ADV_THROTTLE_S; }
   };
 
   // clear any tutorial overlay state on a fresh game (called from newGame)

@@ -4532,6 +4532,7 @@ const MSL_BURN_AEGIS = 5;        // AEGIS guided interceptor — stays lit its w
 // see the `!p.ami && !p.aegis` gate at both call sites — so their profile is byte-identical to before.
 const MSL_TURN_T = .35;          // seconds after ignition (t>=pop) spent pivoting before the main motor lights fully
 const MSL_TURN_THRUST_FRAC = .15;// fraction of full thrust during the pivot — a light kick, not a dead drift and not a full burn
+const STRAT_MSL_HP = 90;         // v4.2 — hp given to every friendly strat:true round on launch (kinetic lance, MIRV carrier, micromissile carrier, and the ballistic/nuke/firestorm/antimissile family) so enemy point defense has to chew through several lances instead of deleting a strategic strike in one shot — see PD_LANCE_DMG
 const MSL_TURN_RATE_MUL = 2.5;   // pivot turn-rate multiplier over the missile's own base `turn` — a hard nose-swing onto the lead point
 const AIR_SEP_MUL = 1.9;         // extra separation multiplier applied to FRIENDLY aircraft only, so a wing fans out instead of clumping
 // ── AIRCRAFT STANDOFF (tunable) — missile/rocket jets KITE from near max range instead of diving into the enemy PD bubble ──
@@ -6325,10 +6326,10 @@ function launchStrike(silo, type, tx, ty, air) {
     floatText(gx, groundY(gx) - 42, era === 2 ? '🛰 ORBITAL DROP' : era === 1 ? '☄ DROP PODS' : '🪂 PARATROOPERS', '#7cffb0');
   }
   else if (type === 'psilance') { firePsiLance(tx); }   // full-height column — already hits every altitude
-  else if (type === 'kinetic') { G.proj.push({ k: 'krod', strat: true, x: tx + (Math.random() - .5) * 4, y: -260, vx: 0, vy: 640, tx, ty, air, life: 7, friendly: true, tr: [] }); }
-  else if (type === 'mirv') { const vy = -440, apexT = 440 / 240, vx = (tx - sx0) / apexT; G.proj.push({ k: 'mirv', strat: true, x: sx0, y: sy0, vx, vy, tx, ty, air, life: 9, friendly: true, dmg: 0, tr: [] }); }   // strong fixed lob → reliably reaches a high apex roughly above the target, then deploys there
-  else if (type === 'micromissile') { const nC = 3; for (let i = 0; i < nC; i++) { const aimX = Math.max(60, Math.min(WORLD_W - 60, tx + (i - (nC - 1) / 2) * 90)), vy = -440, apexT = 440 / 240, vx = (aimX - sx0) / apexT; G.proj.push({ k: 'micromis', strat: true, x: sx0, y: sy0, vx, vy, tx: aimX, ty, air, split: 6, dmg: 16, life: 9, friendly: true, tr: [] }); } }   // a few carriers fan across the strip, each bursting into a swarm of homing micro-missiles
-  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 1400, thrust: 900, climb: .85, burnT: 6, t: 0, tx, ty, air, life: 16, friendly: true, tr: [] }); }   // v4.2 — a real fuel-limited profile: climbs, BURNS hard (thrust) for burnT seconds up to 1400px/s, then COASTS at whatever speed it reached; life bumped so a long-range coast still has time to arrive
+  else if (type === 'kinetic') { G.proj.push({ k: 'krod', strat: true, hp: STRAT_MSL_HP, x: tx + (Math.random() - .5) * 4, y: -260, vx: 0, vy: 640, tx, ty, air, life: 7, friendly: true, tr: [] }); }
+  else if (type === 'mirv') { const vy = -440, apexT = 440 / 240, vx = (tx - sx0) / apexT; G.proj.push({ k: 'mirv', strat: true, hp: STRAT_MSL_HP, x: sx0, y: sy0, vx, vy, tx, ty, air, life: 9, friendly: true, dmg: 0, tr: [] }); }   // strong fixed lob → reliably reaches a high apex roughly above the target, then deploys there
+  else if (type === 'micromissile') { const nC = 3; for (let i = 0; i < nC; i++) { const aimX = Math.max(60, Math.min(WORLD_W - 60, tx + (i - (nC - 1) / 2) * 90)), vy = -440, apexT = 440 / 240, vx = (aimX - sx0) / apexT; G.proj.push({ k: 'micromis', strat: true, hp: STRAT_MSL_HP, x: sx0, y: sy0, vx, vy, tx: aimX, ty, air, split: 6, dmg: 16, life: 9, friendly: true, tr: [] }); } }   // a few carriers fan across the strip, each bursting into a swarm of homing micro-missiles
+  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, hp: STRAT_MSL_HP, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 1400, thrust: 900, climb: .85, burnT: 6, t: 0, tx, ty, air, life: 16, friendly: true, tr: [] }); }   // v4.2 — a real fuel-limited profile: climbs, BURNS hard (thrust) for burnT seconds up to 1400px/s, then COASTS at whatever speed it reached; life bumped so a long-range coast still has time to arrive; hp lets enemy PD chew through it instead of one-shotting it (see STRAT_MSL_HP/PD_LANCE_DMG)
   SFX.missile(); toast('☢ ' + w.name.toUpperCase() + (air ? ' — AIRBURST' : '') + (desperate ? ' — DESPERATION LAUNCH' : '') + ' LAUNCHED'); shake(3);
   if (G.strikeMode) closeStrike();
 }
@@ -7772,6 +7773,11 @@ const LASERSAT_RANGE = 1150;     // BUGFIX: laser-defense sats used to snipe the
 const RAILSAT_RANGE = 1900;      // the offensive railgun sats keep a longer reach than the laser pickets, but are STILL bounded well under map width (same whole-map-snipe bug)
 const BOMBARDER_SAT_N = 8;       // sats of EACH type deployed on arrival (was 10 — a modest tone-down of the grid's density)
 const PD_UNINTERCEPTABLE = { rail: 1, shell: 1 };   // v4.1 — point-defence lances MISSILES (rockets/microrockets/strategic ordnance), never hypervelocity kinetic slugs (railguns/tungsten rods) or tank shells — those are too fast/dumb-fired to intercept
+const PD_LANCE_DMG = 30;   // v4.2 — damage one enemy PD lance does to a strategic round's hp (see STRAT_MSL_HP): a strategic missile survives several lances instead of dying to the first one; an ordinary missile/rocket (no hp) still dies to one lance, unchanged
+// v4.2 — POINT DEFENSE vs STRATEGIC ORDNANCE: a lance against a friendly strat:true round with hp DAMAGES it
+// (PD_LANCE_DMG) instead of deleting it outright; it only dies once hp is spent. A round with no hp (ordinary
+// missiles/rockets/microrockets, AMI, Aegis) keeps the old one-shot kill — that's the "regular system" untouched.
+function pdLanceHit(p) { if (p.strat && p.hp != null) { p.hp -= PD_LANCE_DMG; if (p.hp <= 0) p.life = 0; } else p.life = 0; }
 function updEnemies(dt) {
   // PERF: friendliesList()/airTargetsList()/airOnlyList() each walk EVERY player unit + building + city district
   // to build a fresh array. The loop below used to call them fresh for EVERY enemy (targeting, whistler dive,
@@ -7823,7 +7829,7 @@ function updEnemies(dt) {
       if (e.aimCity != null && e.chargeT <= 2 && e.chargeT > 0) { const cx = e.aimCity; if (Math.random() < .7) G.parts.push({ k: 'spark', x: cx + (Math.random() - .5) * 30, y: groundY(cx) - Math.random() * 220, vx: (Math.random() - .5) * 16, vy: -30 - Math.random() * 50, r: 1.4, life: .4 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.3, life: .1 }); }
       if (e.chargeT <= 0) { fireHostileColumn(e.aimCity != null ? e.aimCity : e.x); e.chargeT = 8 + Math.random() * 4; e.aimCity = null; }
       e.pdCd = (e.pdCd == null ? .5 : e.pdCd) - dt;   // POINT DEFENCE — same pattern as the bombarder's, so the annihilator isn't trivially missiled down while it's charging its beam
-      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       continue;
     }
     // TEMPORAL AI LOD — HOT enemies (on-screen or near a player unit) re-scan for the nearest target every frame,
@@ -7853,7 +7859,7 @@ function updEnemies(dt) {
         const et = near(p.x, p.y, _friendlyList, 700);   // engages air/ground/naval alike — whatever's actually threatening the parent
         if (et) { e.aim = Math.atan2(et.y - e.y, et.x - e.x); e.cd = (e.cd == null ? 0 : e.cd) - dt; if (e.cd <= 0) { e.cd = jitterCd(e.rate || 1.6); const ly = leadTime(e.weapon, e.x, e.y, et); fire(e.x, e.y, e.weapon, et.x + (et.vx || 0) * ly, et.y, false, e.dmg, undefined, undefined, undefined, 'small'); } }
         e.escPdCd = (e.escPdCd == null ? .1 : e.escPdCd) - dt;   // MOBILE SATELLITE — swats ANY incoming player round (missiles, strategic strikes included — "act like mobile satellites") near itself OR its parent; only pierce (uninterceptable) and beam/instant weapons are exempt
-        if (e.escPdCd <= 0) { e.escPdCd = .35; for (const pr of G.proj) { if (pr.friendly && pr.life > 0 && !pr.pierce && !PD_UNINTERCEPTABLE[pr.k] && pr.k !== 'beam' && pr.k !== 'pbeam' && pr.k !== 'particlebeam' && ((Math.abs(pr.x - e.x) < 300 && Math.abs(pr.y - e.y) < 300) || (Math.abs(pr.x - p.x) < 300 && Math.abs(pr.y - p.y) < 300))) { pr.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: pr.x, y2: pr.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: pr.x, y: pr.y, r: 4, life: .12 }); spark(pr.x, pr.y, 2); break; } } }
+        if (e.escPdCd <= 0) { e.escPdCd = .35; for (const pr of G.proj) { if (pr.friendly && pr.life > 0 && !pr.pierce && !PD_UNINTERCEPTABLE[pr.k] && pr.k !== 'beam' && pr.k !== 'pbeam' && pr.k !== 'particlebeam' && ((Math.abs(pr.x - e.x) < 300 && Math.abs(pr.y - e.y) < 300) || (Math.abs(pr.x - p.x) < 300 && Math.abs(pr.y - p.y) < 300))) { pdLanceHit(pr); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: pr.x, y2: pr.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: pr.x, y: pr.y, r: 4, life: .12 }); spark(pr.x, pr.y, 2); break; } } }
       }
     }
     if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 210) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); const pn = e.prodGroup || 1, pk = e.prodKinds; for (let i = 0; i < pn && G.enemies.length < 222; i++) spawnEnemy(pk ? pk[Math.floor(Math.random() * pk.length)] : 'drone', e.x + (Math.random() - .5) * 100 + i * 34); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); floatText(e.x, e.y - e.s - 6, '⚙ CARRIER FABRICATED', '#c9a6ff'); } }   // harvester / hive / bombarder / leviathan act as CARRIERS — periodically birth a small GROUP of normal units, not a lone drone (prodGroup/prodKinds); the HIVE's cadence is boosted (fastProd)
@@ -7869,7 +7875,7 @@ function updEnemies(dt) {
     }
     if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + DOUBLE-RATE point-defence swats your shots + hunts your aircraft + pins escorts near its orbit + snipes your ground units from orbit + (G3) a high-speed plasma lance + twin secondary batteries — "they're supposed to be on the SAME level as a nanoforge ship, so let them have powerful main guns and secondary batteries"
       e.dropCd = (e.dropCd == null ? 5 : e.dropCd) - dt; if (e.dropCd <= 0) { e.dropCd = 5 + Math.random() * 4; orbitalBarrage(e.x + (Math.random() - .5) * 520); } e.podCd = (e.podCd == null ? BOMBARDER_POD_CD * .5 : e.podCd) - dt; if (e.podCd <= 0) { e.podCd = BOMBARDER_POD_CD; if (G.enemies.length < 210) spawnEnemy('bombpod', e.x + (Math.random() - .5) * 380); }   /* v4.1 — CLUSTER BOMBS on a SIEGE cadence: one pod per bombarder per BOMBARDER_POD_CD seconds (was a 50% roll on every 5-9s barrage tick PLUS fabricator pods) */
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE — nerfed to HALF the old rate (BOMBARDER_PD_CD): a red PD beam still lances one of your incoming MISSILES (kinetic slugs and shells cannot be intercepted), but it eats far fewer of them, so massed fire gets through
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE — nerfed to HALF the old rate (BOMBARDER_PD_CD): a red PD beam still lances one of your incoming MISSILES (kinetic slugs and shells cannot be intercepted), but a strategic round survives several lances (see PD_LANCE_DMG/STRAT_MSL_HP) — and it eats far fewer of them either way, so massed fire gets through
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, _airOnlyList, 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13, undefined, undefined, undefined, 'large'); } else e.aaCd = 1.2; }
       if (!e.escorted && !e.noEscort) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once. Every bombarder still gets this small pair (wall or not) — only a mass-drop SWARM (e.noEscort, n>=6) skips it for perf, and only the opening wall additionally gets the FULL 8+8+mender grid below (e.wallGrid).
@@ -7902,7 +7908,7 @@ function updEnemies(dt) {
       }
       e.cPodCd = (e.cPodCd == null ? 30 : e.cPodCd) - dt;
       if (e.cPodCd <= 0 && G.enemies.length < 300) { e.cPodCd = 30; spawnEnemy('bombpod', e.x + (Math.random() - .5) * 440); }
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && !p.strat && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 460 && Math.abs(p.y - e.y) < 340) { p.life = 0; G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 460 && Math.abs(p.y - e.y) < 340) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
       if (!e.satDeployed && !e.noEscort) {   // its own orbital defense grid, once — the personal escort (6 escortfighters) was already attached at spawn by attachEscorts
         e.satDeployed = true;
         for (let i = 0; i < 6 && G.enemies.length < 300; i++) { spawnEnemy('railsat', e.x + (i - 2.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 160; ne.y = ne.hold; } }
@@ -8061,6 +8067,7 @@ function updProj(dt) {
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
       if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
+      if (p.strat && p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this kinetic lance down to 0hp: it fizzles, no warhead effect
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 16) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 40 * 40) { detonateKinetic(p.x, p.y); p.life = 0; break; } }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
@@ -8130,6 +8137,7 @@ function updProj(dt) {
     }
     // NOTE: 'particle' is no longer a flying projectile kind — the Particle Cannon is now a true hitscan (see fire() + particleHit()); its visual is the 'particlebeam' instant-beam handled above with 'beam'/'pbeam'.
     if (p.k === 'stratmis') {   // surface ICBM: climbs slowly off the pad, BURNS toward the target for burnT seconds, then COASTS ballistically once its motor's spent (long shots visibly slow down — see strikeEta, which simulates this exact profile offline)
+      if (p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this missile down to 0hp: it detonates harmlessly, no warhead effect (see STRAT_MSL_HP/PD_LANCE_DMG)
       p.t += dt; const burnEnd = p.climb + (p.burnT != null ? p.burnT : 6), burning = p.t < burnEnd;
       if (burning) p.spd = Math.min(p.maxspd, p.spd + p.thrust * dt);
       const aimUp = p.t < p.climb, ax = aimUp ? p.x : p.tx, ay = aimUp ? p.y - 360 : p.ty;
@@ -8144,7 +8152,9 @@ function updProj(dt) {
       continue;
     }
     if (p.k === 'fbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { igniteFirestorm(p.x); p.life = 0; } continue; }
-    if (p.k === 'mirv') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    if (p.k === 'mirv') {
+      if (p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this MIRV carrier down to 0hp: it fizzles, no warheads deploy
+      p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.vy >= 0 || p.y >= groundY(p.x) || p.life <= 0) {   // DEPLOY at apex (the instant it starts to fall) — reliable, at peak altitude; then the warheads carpet the target
         boom(p.x, p.y, 5); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 14, life: .18 });
         const ground = groundY(p.x), fall = Math.max(.5, Math.sqrt(2 * Math.max(60, ground - p.y) / 240));
@@ -8152,6 +8162,7 @@ function updProj(dt) {
         p.life = 0;
       } continue; }
     if (p.k === 'micromis') {   // MICROMISSILE BARRAGE carrier — lobs over the target, then BURSTS into a swarm of independently-homing micro-missiles
+      if (p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this carrier down to 0hp: it fizzles, no burst
       p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       const deployY = p.air ? p.ty : groundY(p.x);
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target

@@ -739,9 +739,9 @@
     Every structure costs <b>IC</b> + <b>MANPOWER</b> plus a small <b>INFLUENCE</b> authorization. Burying a building costs more but shields it (deep tunnels resist assault). As the ages advance your buildings take on a <b>cyberpunk</b> neon look.</p>
     <div id="manualBuildings" style="margin-top:8px"></div></details>
   <details class="helpsec"><summary>⑧ THE AUTOFLEET'S PLAN</summary><p>
-    The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> probes your grid with harmless <b>decoy</b> pods and a light bunker-buster pass, reading what shoots back.<br>
+    The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> opens with falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center) — plus a 30-second run of <b>anti-air micromissile</b> carriers hunting your aircraft, harmless <b>decoy</b> pods, and a light bunker-buster pass reading what shoots back.<br>
     <b>PHASE 2 · SUPPRESSION</b> intensifies buster raids and opens hostile <b>micromissile salvos</b> over your densest defenses, alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
-    <b>PHASE 3 · ALL-OUT</b> opens with the <b>bombarder wall</b> arriving on station, then falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center). The mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds later, backed by a fast interceptor screen.<br>
+    <b>PHASE 3 · ALL-OUT</b> opens with the <b>bombarder wall</b> arriving on station. The mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds later, backed by a fast interceptor screen.<br>
     <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.<br><br>
     <b>THE FLEET ADAPTS.</b> It reads your heaviest standing element every ~45 seconds and re-tasks the SAME units at whatever you're leaning on — watch for an "AUTOFLEET ADAPTING" alert:<br>
     &nbsp;• <b>Laser grid</b> → shielded strike wings + more bombers.<br>
@@ -5315,6 +5315,20 @@ function bucketNearWater(i, bw) { const x = (i + .5) * bw; return isWater(Math.m
 // see what shoots back, plus a small opening bunker-buster probe (recon / buster-less intents skip
 // the probe entirely — decap already gets its own capital-focused count from decapBusterBudget()).
 function phase1Screening(it) {
+  // v4.2 E1 — ANTIMATTER EMP OPENS THE INVASION: "why would EMP happen AFTER the two strikes? you don't EMP
+  // the enemy after they're already under siege." The two warheads used to wait for PHASE 3 (~t=50s); now
+  // they fall right here, at the top of PHASE 1, aimed at the player's densest anti-air cluster — same
+  // densestAntiAirX() targeting and count phase3AllOut used to use. Recon stays a light probe — no warheads.
+  if (G.intent !== 'recon') {
+    const wn = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);
+    const wclusters = densestAntiAirX();
+    for (let i = 0; i < wn; i++) {
+      const c = wclusters[i % Math.max(1, wclusters.length)];
+      const x = c ? Math.max(160, Math.min(WORLD_W - 160, c.x + (Math.random() - .5) * 120)) : 200 + Math.random() * (WORLD_W - 400);
+      spawnEnemy('empburst', x);
+      if (!G._warheadWarned) { G._warheadWarned = true; toast('⚛ ANTIMATTER WARHEAD FALLING — shoot it down HIGH, it goes off wherever it dies'); }
+    }
+  }
   openingMicroBarrage(it);   // v4.0.4 B — schedules the ~400-bomblet dispersed opening barrage; ticked each frame by tickMicroBarrage (see the main invasion loop) through phases 1-2 (t 0-50s)
   for (let i = 0; i < 4; i++) spawnEnemy('decoy', 200 + Math.random() * (WORLD_W - 400));
   if (it.buster > 0) {
@@ -5433,7 +5447,7 @@ function scanEnemyIntel() {
 }
 // densestDefenseX — bucketed density of the player's own weapon-armed buildings, used to aim PHASE 2's
 // suppressing micromissile salvos (see phase2Suppression). Antimatter warheads (each detonation pushes a
-// {x,r,t} zone into G.blackout; empMul() reads it) now launch from PHASE 3 instead — see densestAntiAirX.
+// {x,r,t} zone into G.blackout; empMul() reads it) launch from PHASE 1 instead — see densestAntiAirX.
 function densestDefenseX() {   // bucketed like bestClusterX, but over PLAYER weapon-armed buildings (not enemies)
   const bins = new Map();
   for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const bx = Math.round(b.x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += (b.d.cat === 'DEF' ? 2.2 : 1); e.xSum += b.x; e.n++; }
@@ -5454,7 +5468,7 @@ function densestSpaceReachX() {
 }
 // B3 — densestDefenseX(), but filtered to strictly ANTI-AIR-capable things (noGround, or ceil <= .6 —
 // the same "is this thing actually anti-air" test scanEnemyIntel uses) over both buildings AND fielded
-// units, not raw defense density. Used to aim the phase-3 antimatter warheads at the player's real AA
+// units, not raw defense density. Used to aim the phase-1 antimatter warheads at the player's real AA
 // cluster (bunkers/SAMs/AA guns/fighters), not just wherever buildings happen to be thickest.
 function densestAntiAirX() {
   const bins = new Map(), add = (x, w) => { const bx = Math.round(x / 300); let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, n: 0 }); e.w += w; e.xSum += x; e.n++; };
@@ -5475,9 +5489,9 @@ function detonateEmpBurst(e) {
   const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone, not a scarier single one — see counterBias('aa')
   for (let i = 0; i < salvos; i++) G.proj.push({ k: 'microrkt', x: e.x + (i - (salvos - 1) / 2) * 90, y: e.y - 60, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12 * G.diff, tr: [], aaOnly: false });   // one (or more, see salvos) hostile micromissile carrier bursts over each new zone (reuses the friendly micromis carrier->submunition projectile as hostile, see openingAAsalvo)
 }
-// B3 — PHASE 2 is now SUPPRESSION, not BLACKOUT: the antimatter warheads moved to opening PHASE 3 (see
-// phase3AllOut/detonateEmpBurst) so they go off right as the mass wave hits the main defenses, not out
-// here where they used to land 30+ seconds too early. Phase 2 keeps everything else that made it feel
+// B3 — PHASE 2 is now SUPPRESSION, not BLACKOUT: the antimatter warheads moved to opening PHASE 1 (v4.2
+// E1 — see phase1Screening/detonateEmpBurst) so they go off right as the invasion starts, before the siege
+// proper, not partway through it. Phase 2 keeps everything else that made it feel
 // like the screws tightening: buster cadence already runs x1.6 through this phase (G.busterCd tick,
 // untouched, elsewhere), a wall of hostile MICROMISSILE carriers still bursts over the densest defended
 // clusters (previously only arrived bolted to a warhead kill — now it's its own suppressing fire), and
@@ -5524,31 +5538,21 @@ function shockwaveBurst(e) {
     hurt(u, baseDmg * .25);
   }
 }
-// PHASE 3 — ALL-OUT. v4.2 WAVE ORDER: OPENS with the BOMBARDER WALL (see below), then the antimatter
-// warheads, launched at the densest ANTI-AIR cluster (densestAntiAirX — not just "densest defense") so
-// the blackout they leave behind lands where it actually hurts the player's air defense. The rest of the
-// phase — doSkyfall's mass drop, three real ground landings picked by LEAST damage taken
-// (pickLeastDamagedZones), and the interceptor screen — is deferred G._skyfallDelayT seconds (see
-// phase3Skyfall + the tick in updateInvPhases) so the blackout zone is already spreading, and the
-// bombarder wall already on station, by the time the wave itself arrives.
-// v4.2 — BOMBARDER WALL FIRST: the evenly-spread opening orbital wall (openingBombarders) now fires
-// synchronously right as phase 3 opens, ahead of the antimatter warheads and the mass skyfall — previously
-// it was deferred ~20s after the skyfall (see the old phase3Skyfall), so a short match never saw one. Sized
-// by intent: the full opening-wall count for a real invasion, a smaller 3-ship wall for the pure-orbital
-// GLASS/EXTINCTION scenarios, none at all for a feeler (recon, which never reaches phase 3) or a precision
-// strike (decap).
+// PHASE 3 — ALL-OUT. v4.2 WAVE ORDER: OPENS with the BOMBARDER WALL (see below). v4.2 E1 — the antimatter
+// warheads no longer launch here: they moved to PHASE 1 (see phase1Screening), right at the top of the
+// invasion, so the grid goes dark before the siege instead of partway through it. The rest of the phase —
+// doSkyfall's mass drop, three real ground landings picked by LEAST damage taken (pickLeastDamagedZones),
+// and the interceptor screen — is still deferred G._skyfallDelayT seconds (see phase3Skyfall + the tick in
+// updateInvPhases) so the bombarder wall is already on station by the time the wave itself arrives.
+// v4.2 — BOMBARDER WALL FIRST: the evenly-spread opening orbital wall (openingBombarders) fires
+// synchronously right as phase 3 opens, ahead of the mass skyfall — previously it was deferred ~20s after
+// the skyfall (see the old phase3Skyfall), so a short match never saw one. Sized by intent: the full
+// opening-wall count for a real invasion, a smaller 3-ship wall for the pure-orbital GLASS/EXTINCTION
+// scenarios, none at all for a feeler (recon, which never reaches phase 3) or a precision strike (decap).
 function phase3AllOut(it) {
   const bn = G.intent === 'invasion' ? ESC.OPEN_BOMBARDERS : (G.intent === 'glass' || G.intent === 'extinction') ? 3 : 0;
   if (bn > 0) openingBombarders(it, bn);
-  const wn = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);   // same warhead counts as the old phase-2 BLACKOUT used — just launched from here now
-  const clusters = densestAntiAirX();
-  for (let i = 0; i < wn; i++) {
-    const c = clusters[i % Math.max(1, clusters.length)];
-    const x = c ? Math.max(160, Math.min(WORLD_W - 160, c.x + (Math.random() - .5) * 120)) : 200 + Math.random() * (WORLD_W - 400);
-    spawnEnemy('empburst', x);
-    if (!G._warheadWarned) { G._warheadWarned = true; toast('⚛ ANTIMATTER WARHEAD FALLING — shoot it down HIGH, it goes off wherever it dies'); }   // once per match, the FIRST warhead gets its own callout
-  }
-  G._skyfallDelayT = 8; G._skyfallIt = it;   // phase3Skyfall(it) fires after this delay (ticked in updateInvPhases) — the mass wave lands as the blackout is already spreading
+  G._skyfallDelayT = 8; G._skyfallIt = it;   // phase3Skyfall(it) fires after this delay (ticked in updateInvPhases) — gives the bombarder wall time to settle before the mass wave arrives
 }
 // B3 (deferred half of PHASE 3 — see phase3AllOut above): the mass skyfall drop, boss reinforcements
 // sized by intent, three real ground landings picked by LEAST damage taken, and a fast interceptor
@@ -5631,9 +5635,12 @@ function updateInvPhases(it, dt) {
 function enterInvPhase(n, it) {
   if (G.invPhase >= n) return;
   G.invPhase = n; G.invPhaseT = 0;
-  if (n === 1) { announcePhase(1, 'AUTOFLEET · PHASE 1 — SCREENING FIRE', 'probing your grid'); phase1Screening(it); }
+  if (n === 1) {   // v4.2 E1 — EMP FIRST: the grid goes dark before the siege, not partway through it — this banner fires ahead of the screening banner below, and phase1Screening (called right after) is what actually launches the two warheads
+    banner('⚡ ANTIMATTER EMP — THE GRID GOES DARK', 'warheads inbound on your densest air defence — kill them high', 5); toast('⚡ ANTIMATTER EMP — THE GRID GOES DARK'); if (typeof musDuck === 'function') musDuck();
+    announcePhase(1, 'AUTOFLEET · PHASE 1 — SCREENING FIRE', 'probing your grid'); phase1Screening(it);
+  }
   else if (n === 2) { announcePhase(2, 'PHASE 2 — SUPPRESSION', 'buster raids and micromissile salvos'); phase2Suppression(it); }
-  else if (n === 3) { announcePhase(3, 'PHASE 3 — ALL-OUT · ANTIMATTER WARHEADS INBOUND', 'falling on your AA grid — the mass wave lands right behind'); phase3AllOut(it); }
+  else if (n === 3) { announcePhase(3, 'PHASE 3 — ALL-OUT · BOMBARDER WALL ON STATION', 'the mass wave lands right behind'); phase3AllOut(it); }
 }
 
 /* =====================================================================

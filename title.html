@@ -10548,6 +10548,15 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     for (const b of G.buildings) { if (b.done === false || b.captured) continue; const d = b.d; if (!d) continue; if (d.weapon && wpns.includes(d.weapon)) n++; else if (b.key === 'silo') n++; }
     return n;
   }
+  // v4.2 E3 — STATIC anti-air DPS only: the buildings-side half of playerAirDefenseScore()'s own ceil<=.6/
+  // noGround test, standing structures only. A fielded aircraft doesn't count as its own point-defense — the
+  // whole point of airExposed (below) is "you have planes and nothing on the ground covering them", so the
+  // score has to stay blind to however many planes are the ones actually under threat.
+  function tutGroundAADps() {
+    let s = 0;
+    for (const b of G.buildings) { if (b.done === false || b.captured || b.hp <= 0 || !b.d.weapon) continue; const d = b.d, ceil = d.ceil != null ? d.ceil : .8; if (!(ceil <= .6 || d.noGround)) continue; s += (d.dmg || 1) / Math.max(.1, d.rate || 1); }
+    return s;
+  }
   const READY_REASONS = [
     { id: 'capInsufficient', sev: 'high', why: 'Your army cap is full or over-committed — units are queued (or about to be) with no room left to hold them.', fix: 'Housing Blocks (ECON tab) raise manpower and the cap directly; Cloning Vats and Living Titans research push the cap further still.',
       check: (G, it) => (combatWeight() >= armyCap() * 0.95 && anyQueuedUnits()) || queuedWeight() > armyCap() - combatWeight() },
@@ -10587,7 +10596,10 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       check: (G, it) => tutPrepFrac() > 0.55 && (G.nodes || []).some(n => !n.used) && !tutAnyDone(b => b.key === 'extractor') },
     { id: 'noNavy', sev: 'med', why: 'This is a water-heavy map and you have nothing that floats.', fix: 'A Shipyard (PROD tab, needs water) opens up naval units — optional, but the sea is wide open right now.',
       check: (G, it) => tutPrepFrac() > 0.5 && tutWaterFrac() > 0.12 && !tutAnyUnit(u => u.d && u.d.domain === 'naval') },
+    { id: 'airExposed', sev: 'high', why: 'Your air force will be hit by about 300 anti-air micromissiles in the first 30 seconds. Land it or cover it.', fix: 'SAM Batteries or Aegis Batteries (DEF tab) thin the salvo before it reaches your planes — or keep them grounded until it passes.',
+      check: (G, it) => (it.skyfall > 0 || it.fleetMul >= 1) && G.units.filter(u => u.d && u.d.domain === 'air' && !u.d.builder && !u.onRail && !u.carried).length >= 12 && tutGroundAADps() < 80 },
   ];
+  window.__READY_REASONS = READY_REASONS;   // v4.2 E3 — headless-verification hook only: lets an external test evaluate .check(G, it) directly without the DOM-rendering side effects of tutReadyTick()
 
   // ---- ORIENTATION: the phase-0 hand-held opening (see HAND_STEPS_HEAVY/LIGHT below) ----
   // ---- resolver helpers for hand-held steps (a step's `sel` can be a fn — see place()'s support for that) ----

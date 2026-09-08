@@ -729,7 +729,7 @@
   <details class="helpsec"><summary>③ RESEARCH &amp; DOCTRINES</summary><p>
     Press <span class="k">RESEARCH</span> and spend <b>INFLUENCE</b> on the tech tree. <b>Doctrines unlock whole armies</b> — drones, androids, psionics, superhumans — plus the ★ superweapons. Click several nodes to <b>queue</b> them; they auto-start as influence arrives. Research Labs make research faster &amp; cheaper. Hover a node to see the full prerequisite path light up.</p></details>
   <details class="helpsec"><summary>④ ☢ STRATEGIC STRIKES</summary><p>
-    Build a <b>Missile Silo</b> (<span class="k">DEF</span> tab), then press <span class="k">☢ STRIKE</span>, choose a weapon and click the battlefield. Launch sites are marked ▲. Conventional strikes (Heavy Guided Missile, Kinetic Lance, Micromissile Barrage, Combat Drop) cost only <b>IC</b> and a short reload — call them the moment a line breaks. <b>Only the genuinely unthinkable — Nuclear, Cluster MIRV, Firestorm, Antimatter Strike, Mind-Forge — spend STABILITY</b>, your political capital for crossing that line. The reticle <b>snaps to air fleets</b> for airbursts; on touch, tap to aim then hit <span class="k">☢ CONFIRM</span>.</p></details>
+    Build a <b>Missile Silo</b> (<span class="k">DEF</span> tab), then press <span class="k">☢ STRIKE</span>, choose a weapon and click the battlefield. Launch sites are marked ▲. Conventional strikes (Heavy Guided Missile, Kinetic Lance, Micromissile Barrage, Combat Drop) cost only <b>IC</b> and a short reload — call them the moment a line breaks. <b>Only the genuinely unthinkable — Nuclear, Cluster MIRV, Firestorm, Antimatter Strike, Mind-Forge — spend STABILITY</b>, your political capital for crossing that line. The reticle <b>snaps to air fleets</b> for airbursts; on touch, tap to aim then hit <span class="k">☢ CONFIRM</span>. Auto silos fire at the densest enemy clusters and spread across them.</p></details>
   <details class="helpsec"><summary>⑤ SPECIAL RESOURCES</summary><p>
     Build <b>Extractors</b> on the glowing deposits. Owning Steel / Oil / Rare Earth permanently <b>cheapens</b> its matching unit category (ground / air &amp; naval / space); <b>Uranium</b> additionally softens both the IC and stability cost of every strike — they decide everything late-game. Some tech &amp; weapons (Nuclear, Mind-Forge) require specific deposits.</p></details>
   <details class="helpsec"><summary>⑥ ★ SUPERWEAPONS &amp; THE MIND-FORGE</summary><p>
@@ -5713,7 +5713,8 @@ function updateGame(dt) {
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
   if (G.strikeQueue && G.strikeQueue.length) { for (let qi = G.strikeQueue.length - 1; qi >= 0; qi--) { const q = G.strikeQueue[qi]; q.delay -= dt; if (q.delay <= 0) { if (G.buildings.indexOf(q.silo) >= 0 && q.silo.done !== false) launchStrike(q.silo, q.type, q.tx, q.ty, q.air); G.strikeQueue.splice(qi, 1); } } }   // B2 — MASS STRIKE counterbattery: each queued silo fires ~0.15s after the last, full cost/stability charged per launch
-  G.autoStrikeT = (G.autoStrikeT || 0) + dt; if (G.autoStrikeT >= 1) { G.autoStrikeT = 0; tickAutoStrikes(); }   // B2 — per-silo AUTO: once a second, any silo with autoStrike set fires at the densest enemy cluster if it can afford it
+  decayStrikeClaims(dt);   // v4.2 — age down the SPREAD FIRE claim ledger every frame so it tracks real time regardless of tick rate
+  G.autoStrikeT = (G.autoStrikeT || 0) + dt; if (G.autoStrikeT >= 1) { G.autoStrikeT = 0; tickAutoStrikes(); }   // B2 — per-silo AUTO: once a second, any silo with autoStrike set fires at a live enemy cluster if it can afford it, spreading across clusters via the claim ledger
   G.advT = (G.advT || 0) + dt; if (G.advT >= 1) { const adt = G.advT; G.advT = 0; if (window.tutAdvTick) window.tutAdvTick(adt); }   // PHASED ONBOARDING — adaptive Advisor + milestone unlock checks ~1/s (no-op unless a tutorial session is active)
   G.histT = (G.histT || 0) + dt; if (G.histT >= 2) { G.histT = 0; sampleHist(); }   // AFTER-ACTION GRAPHS — snapshot key stats every ~2 game-seconds into bounded G.hist arrays
   // economy from buildings
@@ -6325,11 +6326,22 @@ function launchStrike(silo, type, tx, ty, air) {
   if (G.strikeMode) closeStrike();
 }
 // B2 — resolves a G.targeting/pendingStrike (single silo OR the arm-all `silos` array) into actual launches: one silo fires immediately as before; several silos are staggered 0.15s apart via G.strikeQueue (drained in updateGame) — full cost/stability is charged PER LAUNCH exactly as launchStrike always has.
+// v4.2 SPREAD FIRE: a grouped salvo (list.length > 1, e.g. ⚡ ARM ALL) divides itself across up to N live enemy
+// clusters via the same bestClusterTargets/pickSpreadTarget/claim ledger AUTO uses, instead of every silo in the
+// battery landing on the exact same spot. The aim/confirm bar still shows the one point the player clicked — that
+// click is what steered the salvo toward this stretch of the map — only the per-silo impact point spreads within
+// it, and only when there's actually a cluster to spread onto (an empty-sky/ground click still lands every silo
+// on the clicked spot, unchanged).
 function launchTargeting(type, silos, tx, ty, air) {
   const list = silos || []; if (!list.length) return;
   if (list.length === 1) { launchStrike(list[0], type, tx, ty, air); return; }
+  const clusters = bestClusterTargets(list.length);
   G.strikeQueue = G.strikeQueue || [];
-  list.forEach((silo, i) => G.strikeQueue.push({ silo, type, tx, ty, air, delay: i * .15 }));
+  list.forEach((silo, i) => {
+    let ltx = tx, lty = ty, lair = air;
+    if (clusters.length) { const cl = pickSpreadTarget(clusters); if (cl) { ltx = cl.x; lty = cl.y; lair = lty < groundY(ltx) - 30; claimStrikeTarget(ltx); } }
+    G.strikeQueue.push({ silo, type, tx: ltx, ty: lty, air: lair, delay: i * .15 });
+  });
 }
 /* ===== dedicated STRIKE command — a button that marks your launch sites & calls a strike ===== */
 function openStrike() {
@@ -6965,16 +6977,46 @@ function bestClusterX() {
   let best = null, bw = -1; for (const b of bins.values()) if (b.w > bw) { bw = b.w; best = b; }
   return best ? { x: best.xSum / best.n, y: best.ySum / best.n } : null;
 }
-// B2 — per-silo AUTO: once a second (see updateGame), every silo with `autoStrike` set fires that strike at the densest cluster on its own, provided it's ready, unlocked, and can actually afford the cost + stability floor
+// v4.2 — SPREAD FIRE: the same 300px HP-weighted binning as bestClusterX, but returns the top `n` clusters (densest
+// first) instead of only the single densest one — so a battery of silos can be handed a different target each.
+function bestClusterTargets(n) {
+  const bins = new Map();
+  for (const e of G.enemies) { if (e.reentry) continue; const bx = Math.round(e.x / 300); let b = bins.get(bx); if (!b) bins.set(bx, b = { w: 0, xSum: 0, ySum: 0, n: 0 }); b.w += (e.hp || 1); b.xSum += e.x; b.ySum += e.y; b.n++; }
+  const list = [...bins.values()].map(b => ({ x: b.xSum / b.n, y: b.ySum / b.n, w: b.w })).sort((a, b) => b.w - a.w);
+  return list.slice(0, Math.max(1, n || 1));
+}
+const STRIKE_CLAIM_TTL = 7, STRIKE_CLAIM_R = 260;   // v4.2 — a claim on a cluster lasts 7s and covers a 260px radius before another auto/mass silo will pile onto it too
+// v4.2 — the SPREAD FIRE claim ledger: a short list of {x,t} recently-targeted spots, aged down every frame in updateGame
+// (see decayStrikeClaims) and read by pickSpreadTarget so AUTO silos and a grouped ARM ALL salvo divide up the densest
+// clusters instead of every missile in the battery dogpiling the single juiciest one.
+function decayStrikeClaims(dt) { if (!G._strikeClaims || !G._strikeClaims.length) return; for (let i = G._strikeClaims.length - 1; i >= 0; i--) { G._strikeClaims[i].t -= dt; if (G._strikeClaims[i].t <= 0) G._strikeClaims.splice(i, 1); } }
+function claimStrikeTarget(x) { G._strikeClaims = G._strikeClaims || []; G._strikeClaims.push({ x, t: STRIKE_CLAIM_TTL }); }
+// picks the best cluster from `clusters` (already sorted densest-first) that isn't within STRIKE_CLAIM_R of a live
+// claim; if every candidate is claimed, falls back to the one whose nearest claim is closest to expiring (i.e. the
+// least-recently-claimed target) so the battery still spreads rather than stacking on the very latest claim
+function pickSpreadTarget(clusters) {
+  if (!clusters || !clusters.length) return null;
+  G._strikeClaims = G._strikeClaims || [];
+  for (const cl of clusters) { let claimed = false; for (const cm of G._strikeClaims) if (Math.abs(cm.x - cl.x) < STRIKE_CLAIM_R) { claimed = true; break; } if (!claimed) return cl; }
+  let best = clusters[0], bestT = Infinity;
+  for (const cl of clusters) { let nearT = Infinity; for (const cm of G._strikeClaims) if (Math.abs(cm.x - cl.x) < STRIKE_CLAIM_R) nearT = Math.min(nearT, cm.t); if (nearT < bestT) { bestT = nearT; best = cl; } }
+  return best;
+}
+// B2 — per-silo AUTO: once a second (see updateGame), every silo with `autoStrike` set fires that strike at a live
+// enemy cluster on its own, provided it's ready, unlocked, and can actually afford the cost + stability floor.
+// v4.2 SPREAD FIRE: each ready silo claims a DIFFERENT cluster (via pickSpreadTarget/G._strikeClaims) instead of the
+// whole battery dumping every missile on bestClusterX's single densest target.
 function tickAutoStrikes() {
   if (!G || G.over || G.phase !== 'invasion') return;
-  const cluster = bestClusterX(); if (!cluster) return;
+  const clusters = bestClusterTargets(8); if (!clusters.length) return;
   for (const b of G.buildings) {
     if (!b.d || !b.d.strat || b.done === false || !b.autoStrike || b.silocd > 0) continue;
     const w = STRAT[b.autoStrike]; if (!w) continue;
     if (stratAvail(w)) continue;
     const cost = stratCost(w), sc = stratStab(w); if (G.ic < cost || G.stab <= sc + 5) continue;
+    const cluster = pickSpreadTarget(clusters); if (!cluster) continue;
     const tx = cluster.x, gy = groundY(tx), ty = cluster.y, air = ty < gy - 30;
+    claimStrikeTarget(tx);
     launchStrike(b, b.autoStrike, tx, ty, air);
   }
 }
@@ -9055,7 +9097,7 @@ function refreshSel() {
     if (d.prodList) { const pn = d.prodList.map(k => UNIT_DEFS[k] ? UNIT_DEFS[k].name : k).join(' · '); html += `<div class="st"><span>Produces</span><b style="color:#bfe9ff">${pn}</b></div>`; }
     if (d.strat) { const ready = s.silocd <= 0; html += `<div class="st"><span>Silo</span><b style="color:${ready ? 'var(--mp)' : 'var(--inf)'}">${ready ? 'READY' : 'RELOAD ' + Math.ceil(s.silocd / (0.45 * G.speed)) + 's'}</b></div><div class="st"><span>⟳ Auto-Strike</span><b style="color:${s.autoStrike ? 'var(--mp)' : '#7a8aa0'}">${s.autoStrike && STRAT[s.autoStrike] ? STRAT[s.autoStrike].name.toUpperCase() : 'OFF'}</b></div>`;   // B2 — ⚡ ARM ALL + ⟳ AUTO sit next to the per-type ☢ button (SHIFT-click a ☢ button also arms every ready silo)
       for (const t in STRAT) { const w = STRAT[t], av = stratAvail(w), cost = stratCost(w), sc = stratStab(w), can = ready && !av && G.ic >= cost, isAuto = s.autoStrike === t;
-        html += `<div style="display:flex;gap:3px;margin-top:6px"><button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="flex:1;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button><button class="pill" title="⚡ Arm every ready silo with ${w.name}" style="flex:none;width:24px;font-size:11px;padding:0;${can ? '' : 'opacity:.45'}" data-act="armSiloAll" data-arg="${t}">⚡</button><button class="pill" title="${isAuto ? 'Turn off auto-strike' : 'Auto-fire ' + w.name + ' at the densest enemy cluster whenever this silo can afford it'}" style="flex:none;width:24px;font-size:11px;padding:0;${isAuto ? 'background:var(--mp);border-color:var(--mp);color:#04150a' : (av ? 'opacity:.45' : '')}" data-act="toggleAutoStrike" data-arg="${t}">⟳</button></div>`; } }
+        html += `<div style="display:flex;gap:3px;margin-top:6px"><button class="pill" title="${w.ds}${av ? ' — ' + av : ''}" style="flex:1;font-size:10px;text-align:left;${can ? '' : 'opacity:.45'}" data-act="armSilo" data-arg="${t}">☢ ${w.name} · ${cost} IC${sc > 0 ? ` · ${w.taboo && G.stab <= sc + 3 ? '⚠ ' : ''}−${sc}% stab` : ''}${av ? ' 🔒 ' + av : ''}</button><button class="pill" title="⚡ Arm every ready silo with ${w.name}" style="flex:none;width:24px;font-size:11px;padding:0;${can ? '' : 'opacity:.45'}" data-act="armSiloAll" data-arg="${t}">⚡</button><button class="pill" title="${isAuto ? 'Turn off auto-strike' : 'Auto-fire ' + w.name + ' at the densest enemy clusters, spreading across them, whenever this silo can afford it'}" style="flex:none;width:24px;font-size:11px;padding:0;${isAuto ? 'background:var(--mp);border-color:var(--mp);color:#04150a' : (av ? 'opacity:.45' : '')}" data-act="toggleAutoStrike" data-arg="${t}">⟳</button></div>`; } }
     html += `<button class="pill" title="Tear it down — reclaims ${Math.round((d.ic || 0) * .4)} IC. Undoes an overbuild without waiting for it to die." style="margin-top:6px;width:100%;font-size:10px;background:#3a1414;border-color:#a04040;color:#ffb0b0" data-act="demolish">⛏ DEMOLISH — +${Math.round((d.ic || 0) * .4)} IC</button>`; }
   else {
     /* stat row additions — fire rate & speed alongside the existing HP/Armor + Range/Dmg, mirroring the same d.rate/d.speed fields renderProdDetail's PRODUCE card already shows; skipped when the def has none */

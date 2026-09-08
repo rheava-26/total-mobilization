@@ -4998,17 +4998,80 @@ function openingBombarders(it, nOverride) {   // G2: now called from a PHASE-3 t
   }
   toast('☄☄ ORBITAL BOMBARDERS ON STATION — the whole sky is theirs'); shake(10); if (typeof musDuck === 'function') musDuck();
 }
-function openingAAsalvo(it) {   // the autofleet's counter to strong player air — a rank of carriers high in the exosphere/space band burst into swarms of independently-homing anti-air micromissiles hunting YOUR aircraft. Reuses the existing splitting 'microrkt' carrier + homing-sub code (see the p.k==='microrkt' block in updProj and its aaOnly branches) — this just seeds carriers with friendly:false + aaOnly:true instead of writing new projectile physics.
-  if (!(it.skyfall > 0 || it.fleetMul >= 1)) return;   // a recon PROBE / pure orbital GLASSING stay light on this too — the salvo belongs to intents that actually commit a fleet to the fight
-  const n = Math.max(4, Math.min(6, Math.round(5 * (it.fleetMul || 1))));
-  const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
-  for (let i = 0; i < n; i++) {
-    const frac = n === 1 ? .5 : i / (n - 1);
-    const x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
-    const y = SPACE_Y() + Math.random() * (MESO_Y() - SPACE_Y());
-    G.proj.push({ k: 'microrkt', x, y, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12, tr: [], aaOnly: true });
+// v4.2 E2 — 300 ANTI-AIR MICROMISSILES: "where were the enemy 300 micromissile salvos during the initial
+// barrage wrecking my air superiority, forcing them to land so they can fly uncontested?" openingAAsalvo now
+// just ARMS a 30-second programme (G.aaSalvo), ticked by tickAASalvo (called alongside tickMicroBarrage) —
+// carriers of 6 anti-air micromissiles each, 2-3 carriers every 1.5s, round-robin across the player's own
+// densest AIR clusters (densestAirX) so the salvo actually chases where the aircraft ARE, spawning just
+// above the highest one in each cluster (never below MESO_Y — always up where a re-entering carrier belongs).
+// No aircraft up yet at invasion start → falls back to the old one-shot rank-across-the-map salvo (~36 subs).
+function openingAAsalvo(it) {
+  if (!(it.skyfall > 0 || it.fleetMul >= 1)) { G.aaSalvo = null; return; }   // a recon PROBE / pure orbital GLASSING stay light on this too — the salvo belongs to intents that actually commit a fleet to the fight
+  const bins = densestAirX();
+  if (!bins.length) {   // no player aircraft aloft yet — the old one-shot rank-across-the-map salvo, same shape as before E2
+    const n = Math.max(4, Math.min(6, Math.round(5 * (it.fleetMul || 1))));
+    const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
+    for (let i = 0; i < n; i++) {
+      const frac = n === 1 ? .5 : i / (n - 1);
+      const x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
+      const y = SPACE_Y() + Math.random() * (MESO_Y() - SPACE_Y());
+      G.proj.push({ k: 'microrkt', x, y, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12, tr: [], aaOnly: true });
+    }
+    G.aaSalvo = null;
+    toast('⚠ ANTI-AIR MICROMISSILE CARRIERS ON STATION — hunting anything that flies'); shake(8); if (typeof musDuck === 'function') musDuck();
+    return;
   }
-  toast('⚠ ANTI-AIR MICROMISSILE CARRIERS ON STATION — hunting anything that flies'); shake(8); if (typeof musDuck === 'function') musDuck();
+  const total = Math.round(300 * G.diff / 1.4), carriersTotal = Math.max(1, Math.round(total / 6));
+  G.aaSalvo = { active: true, total, carriersTotal, carriersSpawned: 0, interval: 1.5, nextT: 0, bins, binT: G.invTime || 0, rrIdx: -1 };
+  toast('⚠ ANTI-AIR MICROMISSILE SALVOS — 30 seconds of it. Land what you can\'t cover.'); shake(8); if (typeof musDuck === 'function') musDuck();
+}
+// v4.2 E2 — bucketed density of the player's own AIR-domain units (fighters, gunships, bombers, drone
+// swarms…) in tight 160px bins, ranked and capped to the top 6 — used to aim the 30s anti-air micromissile
+// programme (see tickAASalvo) at where the player's real air power actually is, not the whole map. Each
+// bin also remembers topY, the y of its highest (smallest-y) live aircraft, so carriers can spawn just
+// above it.
+function densestAirX() {
+  const bins = new Map();
+  for (const u of G.units) {
+    if (u.d.builder || u.onRail || u.carried) continue;
+    const d = u.d; if (!d || d.domain !== 'air') continue;
+    const w = u.members ? swarmBodies(u) : 1; if (w <= 0) continue;
+    const bx = Math.round(u.x / 160);
+    let e = bins.get(bx); if (!e) bins.set(bx, e = { w: 0, xSum: 0, topY: Infinity });
+    e.w += w; e.xSum += u.x * w; if (u.y < e.topY) e.topY = u.y;
+  }
+  const out = []; for (const e of bins.values()) out.push({ x: e.xSum / e.w, w: e.w, topY: e.topY });
+  out.sort((a, b) => b.w - a.w); return out.slice(0, 6);
+}
+// v4.2 E2 — ticks the 30-second anti-air micromissile programme armed by openingAAsalvo. Called from the
+// same place tickMicroBarrage is (the ground barrage stays completely separate — different G-state, different
+// bins). Stops at G.invTime > 30 or once carriersTotal is reached, whichever comes first.
+function tickAASalvo(dt) {
+  const as = G.aaSalvo; if (!as || !as.active) return;
+  if ((G.invTime || 0) > 30 || as.carriersSpawned >= as.carriersTotal) { as.active = false; return; }
+  if (!as.bins.length || (G.invTime || 0) - as.binT >= 5) { as.bins = densestAirX(); as.binT = G.invTime || 0; }   // re-read where the player's air actually is every ~5s — it moves
+  as.nextT -= dt;
+  if (as.nextT <= 0) {
+    as.nextT = as.interval;
+    const nCarr = 2 + (Math.random() < .5 ? 1 : 0);   // 2-3 carriers per salvo, every 1.5s
+    for (let i = 0; i < nCarr && as.carriersSpawned < as.carriersTotal; i++) {
+      let x, y;
+      if (as.bins.length) {
+        let b, tries = 0;   // ROUND-ROBIN across bins, checked against the RAW bin key (not just array index) — a 5s re-read (densestAirX recompute above) can reshuffle array order/length, and comparing raw keys is what actually guarantees no two carriers running ever hit the same real spot, even straddling a recompute
+        do { as.rrIdx = (as.rrIdx + 1) % as.bins.length; b = as.bins[as.rrIdx]; tries++; } while (tries < as.bins.length && Math.round(b.x / 160) === as.lastBinKey);
+        as.lastBinKey = Math.round(b.x / 160);
+        x = Math.max(160, Math.min(WORLD_W - 160, b.x + (Math.random() - .5) * 160));
+        y = Math.min(MESO_Y(), b.topY - (60 + Math.random() * 60));   // 60-120px ABOVE the highest aircraft in the bin, never lower (further down) than MESO_Y
+      } else {   // the player's whole air force died mid-programme — fall back to the old rank-across-the-map spread for whatever's left
+        const frac = as.carriersTotal <= 1 ? .5 : as.carriersSpawned / Math.max(1, as.carriersTotal - 1);
+        const lo = WORLD_W * ESC.OPEN_MARGIN, span = WORLD_W * (1 - 2 * ESC.OPEN_MARGIN);
+        x = Math.max(160, Math.min(WORLD_W - 160, lo + span * frac + (Math.random() - .5) * ESC.OPEN_JITTER));
+        y = SPACE_Y() + Math.random() * (MESO_Y() - SPACE_Y());
+      }
+      G.proj.push({ k: 'microrkt', x, y, vx: 0, vy: 20, spd: 30, t: 0, splitT: .3, n: 6, life: 7, friendly: false, dmg: 12, tr: [], aaOnly: true });
+      as.carriersSpawned++;
+    }
+  }
 }
 // G4 — THE SUPER HEAVY CARRIER: "the primary ship is going to be the super heavy carrier that the entire fleet
 // hinges around." ONE per match, on invasion/glass/extinction only, 25s into PHASE 4 — ticked from tickPhase4
@@ -5928,6 +5991,7 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
     if (!G.acqPhase) G.invTime += dt;
     if (!G.acqPhase) updateInvPhases(it, dt);   /* v4.0 E — THE AUTOFLEET'S PLAN: advances invPhase (screening -> blackout -> all-out -> reinforce/morale), ticks blackout-zone decay + phase-2/phase-4 ongoing effects */
     if (!G.acqPhase) tickMicroBarrage(dt);   /* v4.0.4 B — the ~400-bomblet dispersed opening barrage, phases 1-2 only (see openingMicroBarrage/tickMicroBarrage) */
+    if (!G.acqPhase) tickAASalvo(dt);   /* v4.2 E2 — the 30s anti-air micromissile programme armed by openingAAsalvo (see there/tickAASalvo) */
     if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
     if (!G.acqPhase && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)

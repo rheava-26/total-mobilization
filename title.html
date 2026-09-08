@@ -10312,9 +10312,9 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       check: (G, it) => (combatWeight() >= armyCap() * 0.95 && anyQueuedUnits()) || queuedWeight() > armyCap() - combatWeight() },
     { id: 'noSpaceReach', sev: 'high', why: 'This fleet parks boss-tier hostiles up in space, and nothing you own reaches that high to touch them.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites and railgun-armed ships all reach clear into orbit.',
       check: (G, it) => (it.orbital > 0 || (it.supers || []).some(s => /bombarder|annihilator/.test(s.kind || s))) && tutSpaceReachDps() < 100 },   // v4.1 F K: ×2.5 — the fleet is 3× as of 4.1
-    { id: 'noFlagshipReach', sev: 'high', why: 'Nothing you own can reach the FLEET FLAGSHIP in high orbit — railguns, satellites, orbital units or strategic strikes.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships, or a strategic strike all reach clear into orbit.',
+    { id: 'noFlagshipReach', sev: 'high', why: 'Nothing you own can reach the fleet flagship in high orbit — railguns, satellites, orbital units or strategic strikes.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships, or a strategic strike all reach clear into orbit.',
       check: (G, it) => tutSpaceReachDps() <= 0 },   // v4.1 F K — reuses the noSpaceReach measure, but strictly: fires on truly ZERO space reach, not just "not much"
-    { id: 'noPdPierce', sev: 'med', why: 'The Bombarder deploys a point-defense grid that shreds single shots — you need real VOLUME fire to get anything through it.', fix: 'Microrocket Batteries, a MIRV/ballistic-armed Missile Silo, and massed Railgun Lances all give you the saturation to punch through.',
+    { id: 'noPdPierce', sev: 'med', why: 'The Bombarder deploys a point-defense grid that shreds single shots — you need real volume fire to get anything through it.', fix: 'Microrocket Batteries, a MIRV/ballistic-armed Missile Silo, and massed Railgun Lances all give you the saturation to punch through.',
       check: (G, it) => (it.supers || []).some(s => /bombarder/.test(s.kind || s)) && tutPdPierceCount() < 8 },   // v4.1 F K: ×2.5 (3 → 7.5, rounded to 8) — the fleet is 3× as of 4.1
     { id: 'noArmy', sev: 'high', why: 'You have no army at all. When the fleet lands, nothing will be standing between it and your cities.', fix: 'Queue some Infantry, AA or a tank from the PROD tab — even a small force buys you time.',
       check: (G, it) => G.units.length === 0 },
@@ -10326,9 +10326,9 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       check: (G, it) => (it.bombard > 0 || it.orbital > 0) && tutBestCeil() > 0.62 },
     { id: 'noInterceptors', sev: 'high', why: 'This fleet is bringing a heavy bunker-buster barrage and you have no dedicated interceptors to thin it out.', fix: 'Build an Anti-Missile Interceptor (DEF tab) — it triages busters and tungsten rods out of a saturation strike.',
       check: (G, it) => (it.buster || 0) >= 20 && !tutAnyDone(b => b.d && b.d.ami) },
-    { id: 'noCityDefLanding', sev: 'high', why: 'The fleet plans to LAND troops, and at least one of your cities has nothing nearby to meet them.', fix: 'Garrison your cities — a Bunker or a couple of dug-in units near each one goes a long way.',
+    { id: 'noCityDefLanding', sev: 'high', why: 'The fleet plans to land troops, and at least one of your cities has nothing nearby to meet them.', fix: 'Garrison your cities — a Bunker or a couple of dug-in units near each one goes a long way.',
       check: (G, it) => (it.skyfall > 0 || it.flank > 0 || (it.ground || 0) > 0) && G.cities.some(ct => !ct.held && !tutCityHasDefense(ct)) },
-    { id: 'capitalUndefended', sev: 'high', why: 'This intent is aiming for your CAPITAL specifically, and it\'s currently undefended.', fix: 'Your capital is the priority target — put a Bunker and some AA on it before anything else.',
+    { id: 'capitalUndefended', sev: 'high', why: 'This intent is aiming for your capital specifically, and it\'s currently undefended.', fix: 'Your capital is the priority target — put a Bunker and some AA on it before anything else.',
       check: (G, it) => !!it.capital && (() => { const cap = G.cities.find(c => c.capital); return !!cap && !cap.held && !tutCityHasDefense(cap); })() },
     { id: 'cityZeroDefenders', sev: 'med', why: 'At least one city has literally nobody nearby to defend it, regardless of what the fleet is planning.', fix: 'Even one dug-in squad or a cheap Bunker per city is enough to not be an open door.',
       check: (G, it) => tutPrepFrac() > 0.3 && G.cities.some(ct => !ct.held && !tutCityHasDefense(ct)) },
@@ -10336,7 +10336,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
       check: (G, it) => tutPrepFrac() > 0.5 && !tutAnyDone(b => b.d && (b.d.cat === 'PROD' || b.key === 'combine')) },
     { id: 'richUnarmed', sev: 'med', why: 'You\'re sitting on a big IC reserve and almost nothing to show for it in units.', fix: 'Units cost no influence — spend that reserve on an army, it\'s always allowed.',
       check: (G, it) => G.ic > Math.max(300, (G.icR || 0) * 40) && combatWeight() < armyCap() * 0.2 },
-    { id: 'lowStabCap', sev: 'med', why: 'Your stability CEILING is low — you\'ll have little room to absorb the shocks of strikes and losses once the fighting starts.', fix: 'Comms Towers and Propaganda Bureaus (ECON tab) raise your stability cap; build at least one of each.',
+    { id: 'lowStabCap', sev: 'med', why: 'Your stability ceiling is low — you\'ll have little room to absorb the shocks of strikes and losses once the fighting starts.', fix: 'Comms Towers and Propaganda Bureaus (ECON tab) raise your stability cap; build at least one of each.',
       check: (G, it) => tutPrepFrac() > 0.4 && (G.stabCap || 0) < 70 && !tutAnyDone(b => b.key === 'comms' || b.key === 'propaganda') },
     { id: 'lowManpower', sev: 'med', why: 'Manpower is running low, which caps how much more army you can field.', fix: 'Build Housing Blocks (ECON tab) — or lean on what doesn\'t need bodies: planes, drones, buildings.',
       check: (G, it) => tutPrepFrac() > 0.4 && G.mp < 40 },

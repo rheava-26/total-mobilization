@@ -740,7 +740,7 @@
   <details class="helpsec"><summary>⑧ THE AUTOFLEET'S PLAN</summary><p>
     The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> probes your grid with harmless <b>decoy</b> pods and a light bunker-buster pass, reading what shoots back.<br>
     <b>PHASE 2 · SUPPRESSION</b> intensifies buster raids and opens hostile <b>micromissile salvos</b> over your densest defenses, alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
-    <b>PHASE 3 · ALL-OUT</b> opens with falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center) right as the mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds behind it, backed by a fast interceptor screen; the fleet's bombarder reinforcements arrive ~40s into this phase, not with the opening wave.<br>
+    <b>PHASE 3 · ALL-OUT</b> opens with the <b>bombarder wall</b> arriving on station, then falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center). The mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds later, backed by a fast interceptor screen.<br>
     <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.<br><br>
     <b>THE FLEET ADAPTS.</b> It reads your heaviest standing element every ~45 seconds and re-tasks the SAME units at whatever you're leaning on — watch for an "AUTOFLEET ADAPTING" alert:<br>
     &nbsp;• <b>Laser grid</b> → shielded strike wings + more bombers.<br>
@@ -4970,6 +4970,17 @@ function spawnSuper(kind, atCapital, n, atX) {   // a boss-tier autodrone superw
 // bombarder (wave supers, adaptive delays, INTENT supers) makes do with the small 2-3 escort pair
 // + its 4 personal escortfighters. Stacking the full grid on every bombarder in the game, not just
 // this opening wall, is what turned the orbital layer untouchable.
+// v4.2 WAVE ORDER — a per-match COPY of an intent's boss schedule (it.supers), with any entry scheduled
+// before phase 3 opens (t < 50) pushed into the first 20s of phase 3 instead: t = 50 + (original t % 20).
+// Bosses used to be able to walk in during PHASE 1/2 screening/suppression, well ahead of the mass
+// skyfall and the bombarder wall — this keeps the whole boss roster inside the ALL-OUT phase where the
+// rest of the plan expects it. RECON has no phases (it never reaches phase 3 — see updateInvPhases) and
+// keeps its own early schedule untouched.
+function buildSupersPlan(it) {
+  const list = (it.supers || []).map(s => Object.assign({}, s));
+  if (G.intent !== 'recon') for (const s of list) if (s.t < 50) s.t = 50 + (s.t % 20);
+  return list;
+}
 function openingBombarders(it, nOverride) {   // G2: now called from a PHASE-3 timer (see phase3Skyfall/updateInvPhases), never at t=0
   if (!(it.bombard > 0 || it.orbital > 0 || it.glass)) return;   // a recon PROBE / decap precision strike stay a light feeler — no opening orbital wall
   const n = nOverride != null ? nOverride : ESC.OPEN_BOMBARDERS; if (n <= 0) return;
@@ -5465,9 +5476,9 @@ function detonateEmpBurst(e) {
 // clusters (previously only arrived bolted to a warhead kill — now it's its own suppressing fire), and
 // shockwave pods still shove your aircraft around.
 function phase2Suppression(it) {
-  // G2: the opening bombarder wall moved OUT of here — bombarders now arrive ONLY in phase 3+ (see phase3Skyfall's
-  // G._bombarderT scheduling + openingBombarders, ticked from updateInvPhases) so they don't show up before the
-  // player has any anti-orbital answer at all.
+  // G2: the opening bombarder wall moved OUT of here — bombarders now arrive ONLY in phase 3+, synchronously as
+  // it opens (see phase3AllOut's openingBombarders call), so they don't show up before the player has any
+  // anti-orbital answer at all.
   const n = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);
   const clusters = densestDefenseX();
   const salvos = 1 + ((G.counterBias && G.counterBias.extraSalvos) || 0);   // v4.0.1 — THE FLEET ADAPTS: a heavily missile-AA player gets MORE micromissile carriers per zone
@@ -5506,17 +5517,22 @@ function shockwaveBurst(e) {
     hurt(u, baseDmg * .25);
   }
 }
-// PHASE 3 — ALL-OUT. B3: OPENS with the antimatter warheads, launched at the densest ANTI-AIR cluster
-// (densestAntiAirX — not just "densest defense"), so the blackout they leave behind lands where it
-// actually hurts the player's air defense. The rest of the phase — doSkyfall's mass drop, three real
-// ground landings picked by LEAST damage taken (pickLeastDamagedZones), and the interceptor screen — is
-// deferred G._skyfallDelayT seconds (see phase3Skyfall + the tick in updateInvPhases) so that blackout
-// zone is already spreading by the time the wave itself arrives, not detonating over empty sky 30+
-// seconds early like the old phase-2 warheads did. B2: the bombarder reinforcement group no longer
-// spawns HERE at phase-3 open either — it's scheduled G._bombarderT seconds later instead (also ticked
-// in updateInvPhases), only for intents whose own schedule (it.supers) actually includes a bombarder —
-// that intent's OWN scheduled bombarder (invasion t:60, glass t:18, extinction's rotation) is untouched.
+// PHASE 3 — ALL-OUT. v4.2 WAVE ORDER: OPENS with the BOMBARDER WALL (see below), then the antimatter
+// warheads, launched at the densest ANTI-AIR cluster (densestAntiAirX — not just "densest defense") so
+// the blackout they leave behind lands where it actually hurts the player's air defense. The rest of the
+// phase — doSkyfall's mass drop, three real ground landings picked by LEAST damage taken
+// (pickLeastDamagedZones), and the interceptor screen — is deferred G._skyfallDelayT seconds (see
+// phase3Skyfall + the tick in updateInvPhases) so the blackout zone is already spreading, and the
+// bombarder wall already on station, by the time the wave itself arrives.
+// v4.2 — BOMBARDER WALL FIRST: the evenly-spread opening orbital wall (openingBombarders) now fires
+// synchronously right as phase 3 opens, ahead of the antimatter warheads and the mass skyfall — previously
+// it was deferred ~20s after the skyfall (see the old phase3Skyfall), so a short match never saw one. Sized
+// by intent: the full opening-wall count for a real invasion, a smaller 3-ship wall for the pure-orbital
+// GLASS/EXTINCTION scenarios, none at all for a feeler (recon, which never reaches phase 3) or a precision
+// strike (decap).
 function phase3AllOut(it) {
+  const bn = G.intent === 'invasion' ? ESC.OPEN_BOMBARDERS : (G.intent === 'glass' || G.intent === 'extinction') ? 3 : 0;
+  if (bn > 0) openingBombarders(it, bn);
   const wn = G.diff <= .7 ? 1 : ({ invasion: 2, glass: 3, extinction: 3, decap: 1 }[G.intent] || 2);   // same warhead counts as the old phase-2 BLACKOUT used — just launched from here now
   const clusters = densestAntiAirX();
   for (let i = 0; i < wn; i++) {
@@ -5529,8 +5545,9 @@ function phase3AllOut(it) {
 }
 // B3 (deferred half of PHASE 3 — see phase3AllOut above): the mass skyfall drop, boss reinforcements
 // sized by intent, three real ground landings picked by LEAST damage taken, and a fast interceptor
-// screen crossing the gap. Unchanged from the pre-4.0.3 phase3AllOut except it now fires
-// G._skyfallDelayT seconds after the warheads launch instead of synchronously at phase-3 open.
+// screen crossing the gap. Fires G._skyfallDelayT seconds after phase 3 opens (and the bombarder wall/
+// warheads have already launched). v4.2 — also reschedules the regular repeating landing wave (doWave,
+// gated to invPhase >= 3 — see the ENEMY WAVES tick in updateGame) to land ~6s after this skyfall.
 function phase3Skyfall(it) {
   doSkyfall(it);
   const zones = pickLeastDamagedZones(3, 600);
@@ -5547,12 +5564,7 @@ function phase3Skyfall(it) {
   const ictN = Math.round(24 * G.diff);
   for (let i = 0; i < ictN; i++) { const x = 160 + Math.random() * (WORLD_W - 320); spawnEnemy('interceptor', x); const e = G.enemies[G.enemies.length - 1]; if (e) { e.reentry = false; e.hold = STRATO_Y(); e.y = e.hold; } }
   G._lz3 = zones; G._phase3T = G.invTime;
-  // G2 — BOMBARDERS ARRIVE ONLY IN PHASE 3+: the opening orbital wall (openingBombarders — the evenly-spread
-  // rank across the whole map) now fires from here, ~20s after the mass wave lands, instead of at t=0/phase-2.
-  // Sized by intent: the full opening-wall count for a real invasion, a smaller 3-ship wall for the pure-orbital
-  // GLASS/EXTINCTION scenarios, none at all for a feeler (recon) or a precision strike (decap).
-  const bn = G.intent === 'invasion' ? ESC.OPEN_BOMBARDERS : (G.intent === 'glass' || G.intent === 'extinction') ? 3 : 0;
-  if (bn > 0) { G._bombarderT = 20; G._bombarderIt = it; G._bombarderN = bn; }   // ticked in updateInvPhases -> openingBombarders(it, n)
+  G.waveT = 6;   // v4.2 — the regular repeating landing wave was gated off until invPhase >= 3; its first landing now comes ~6s after THIS skyfall, not at t=6s of the whole invasion
 }
 // PHASE 4 — REINFORCE / MORALE: the existing flank snowball (doWave/ESC) already piles onto any
 // unanswered landing — the one-time "AUTOFLEET RE-TASKING" banner fires from doWave itself (see
@@ -5602,7 +5614,6 @@ function updateInvPhases(it, dt) {
   if (G.invPhase < 1) return;
   if (G.blackout && G.blackout.length) for (let i = G.blackout.length - 1; i >= 0; i--) { G.blackout[i].t -= dt; if (G.blackout[i].t <= 0) G.blackout.splice(i, 1); }
   if (G._skyfallDelayT != null) { G._skyfallDelayT -= dt; if (G._skyfallDelayT <= 0) { const dIt = G._skyfallIt; G._skyfallDelayT = null; G._skyfallIt = null; phase3Skyfall(dIt); } }   /* B3 — the mass wave (+ its 3 real landings) lands ~8s after the phase-3 antimatter warheads launch, so the blackout is already spreading when it arrives */
-  if (G._bombarderT != null) { G._bombarderT -= dt; if (G._bombarderT <= 0) { const bN = G._bombarderN || 0, bIt = G._bombarderIt; G._bombarderT = null; G._bombarderN = null; G._bombarderIt = null; if (bN > 0) openingBombarders(bIt, bN); } }   /* G2 — bombarders arrive ONLY in phase 3+: the evenly-spread opening wall, scheduled ~20s after phase3Skyfall (see there) instead of at t=0 */
   if (!G._intelScanned && G.invTime >= 15) { G._intelScanned = true; G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // first read at ~15s in
   else if (G._intelScanned && G.invTime >= (G._intelNextT || Infinity)) { G._intelNextT = G.invTime + 45; scanEnemyIntel(); }   // v4.0.1 — THE FLEET ADAPTS: re-read every ~45s for the rest of the match, not just once
   if (G.intent === 'recon') { if (G.invPhase < 4 && G.invTime >= 18) G.invPhase = 4; }
@@ -5889,8 +5900,8 @@ function updateGame(dt) {
   if (!G.crisis) for (let i = G.sites.length - 1; i >= 0; i--) { const s = G.sites[i]; s.prog += dt * 1.6 * (1 + G.mult.conspd + (bmod().conspd || 0)); if (Math.random() < .25) smoke(s.x + (Math.random() - .5) * s.d.w, groundY(s.x), 1); if (s.prog >= s.total) { finishSite(s); G.sites.splice(i, 1); } }
   // invasion
   if (G.phase === 'prep') { if (G.prepTimer < 12 && !G.warned) { G.warned = true; toast('⚠ FLEET INBOUND — SCREENING FIRE IMMINENT'); musDuck(); } G.prepTimer -= dt; if (G.prepTimer <= 0) { const it = curIntent(); G.phase = 'invasion'; if (G.stats) G.stats.snap._wantPrep = true;   /* AFTER-ACTION — "THE FORTRESS" snapshot; just FLAGS it (captured in frame(), right after renderGame() draws a complete fresh frame — see captureSnap's callers) */ G.fleetMax = Math.round(270 * G.diff * it.fleetMul); G.fleet = G.fleetMax; if (G.stats) G.stats.fleetStartMax = G.fleetMax;   /* AFTER-ACTION — size of the autofleet at the moment it arrived */
-G.supersPlan = (it.supers || []).map(s => Object.assign({}, s));   /* v4.0.1 — THE FLEET ADAPTS: a per-match COPY of this intent's boss schedule, made ONCE here — the supers consumer below reads/mutates THIS, never INTENT itself, so a spaceReach-triggered delay (see scanEnemyIntel) can't leak into a later match or a different intent */
-G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); /* v4.0.3: openingBombarders(it) moved to phase2Suppression — no boss platforms at t=0 */ openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
+G.supersPlan = buildSupersPlan(it);   /* v4.0.1 — THE FLEET ADAPTS: a per-match COPY of this intent's boss schedule, made ONCE here — the supers consumer below reads/mutates THIS, never INTENT itself, so a spaceReach-triggered delay (see scanEnemyIntel) can't leak into a later match or a different intent. v4.2 WAVE ORDER — buildSupersPlan also pushes any pre-phase-3 entry into the phase-3 window (see there) */
+G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.orbital; G.skyfallN = it.skyfall; G.skyfallT = -1;   /* v4.2 WAVE ORDER — a large sentinel: doWave is gated to invPhase >= 3 anyway, and this keeps it from ever firing in the ~8s window between phase 3 opening and phase3Skyfall actually setting G.waveT = 6 */   /* v4.0 E: PHASE 3 · ALL-OUT now fires doSkyfall() itself at t=50s — the old bombard+2s auto-timer is disabled (-1, never fires) so it can't double-drop */ G.busterN = G.intent === 'decap' ? decapBusterBudget() : Math.round((it.buster || 0) * G.diff); G.busterCd = 1.2; G.busterFired = 0; G.busterThrough = 0; G.busterKilled = 0; MUS.fails = 0; musPlay('combat', 5); shake(12); toast('☄ ' + it.label + ' — ' + it.tip); /* v4.2: openingBombarders(it) now fires from phase3AllOut, synchronously as phase 3 opens — no boss platforms at t=0 */ openingAAsalvo(it);   /* the invasion OPENS with a rank of bombarders strung across the whole map (orbital-bombardment intents only, see ESC.OPEN_*) plus a rank of anti-air micromissile carriers hunting the player's aircraft */ enterInvPhase(1, it);   /* v4.0 E — THE AUTOFLEET'S PLAN: announce + kick off PHASE 1 · SCREENING */
       if (it.buster > 0) { G.acqPhase = true; G.acqT = 15; G.acqLockT = .8; G.acqOrder = null; banner('⚠ TARGET ACQUISITION', 'The autofleet is aligning its bunker-busters on your PRIMARY TARGETS — air-defense grid online', 16); musDuck(); }
       maybeReinforce(it); } }   // ALLIED REINFORCEMENTS — a "you're not alone" surge sized to how underprepared you are (fires once)
   else if (G.phase === 'invasion') {
@@ -5923,7 +5934,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
     // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule (v4.0.1: G.supersPlan, a
     // per-match COPY made at the invasion transition — see above — never the shared INTENT array itself,
     // since scanEnemyIntel can push a not-yet-spawned entry's `t` later on a spaceReach-dominant read)
-    const sups = G.supersPlan || (G.supersPlan = (it.supers || []).map(s => Object.assign({}, s))); G.superI = G.superI || 0;
+    const sups = G.supersPlan || (G.supersPlan = buildSupersPlan(it)); G.superI = G.superI || 0;
     if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) {
       const sw = sups[G.superI]; let atX = null;
       if (/bombarder|annihilator/.test(sw.kind) && G.enemyIntel && G.enemyIntel.dominant === 'spaceReach') {   // v4.0.1 — land the space-tier boss CLEAR of the player's densest anti-orbital cluster instead of a random spot
@@ -5933,7 +5944,7 @@ G.spawnT = 1; G.waveT = 6; G.waveN = 0; G.bombard = it.bombard; G.orbital = it.o
       spawnSuper(sw.kind, sw.capital, sw.n, atX); G.superI++;
     }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
-    if (!G.acqPhase && !it.glass && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
+    if (!G.acqPhase && !it.glass && G.invPhase >= 3 && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // v4.2 WAVE ORDER — gated to PHASE 3+ so no landing wave fires during screening/suppression; the first one is scheduled ~6s after phase3Skyfall (see G.waveT there), not at t=6s of the whole invasion. FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     // for glass this doubles as the ENDURANCE win: outlasting G.bombard/G.orbital (both seeded from it.bombard/it.orbital)
     // IS the "HOLD FOR" target advertised in the objective HUD (syncHUD) — reaching it is a real victory, not a milestone
     // in an endless grind, so a held-the-line run gets a clean end screen instead of "survived 9%".

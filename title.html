@@ -6259,6 +6259,13 @@ function strikeAimPoint() {
   if (my < gy - 34) return { x: wx, y: my, air: true };   // deliberate airburst point
   return { x: wx, y: gy, air: false };
 }
+// v4.2 — STRATEGIC MISSILE FLIGHT: a real fuel-limited ballistic profile (surface-launched stratmis only — ordinary
+// unit missiles/rockets/microrockets, AMI and Aegis rounds are untouched). A slow vertical kick off the pad, then a
+// hard burn that reaches 1400px/s in a couple of seconds, then a fuel-out coast at whatever speed it reached. Turn
+// rate is high while the main motor is lit (fast enough to pivot up to ~180° onto its aim point inside about a
+// second) and low once it's coasting (a light aerodynamic correction — it can still nudge the impact point, never
+// chase a target that dodges).
+const STRATMIS_BURN_TURN = 3.2, STRATMIS_COAST_TURN = .8;
 // B1 — STRIKE ETA: a tiny OFFLINE simulation of the real flight model each strike type actually runs in updProj
 // (same constants, same equations), so the aim label / confirm bar can show a genuine time-to-impact instead of
 // a guess. step .05s, capped at 30s (returns 30 if it never technically "arrives" within that window — a shot
@@ -6268,15 +6275,15 @@ function strikeEta(type, sx, sy, tx, ty) {
   const w = STRAT[type]; if (!w) return null;
   if (type === 'airdrop' || type === 'psilance') return null;
   const gy = groundY(tx), air = ty < gy - 30, DT = .05, CAP = 30;
-  if (type === 'ballistic' || type === 'nuke' || type === 'firestorm' || type === 'antimissile') {   // stratmis profile: CLIMB → BURN (thrust, re-aimed at target) → COAST (gravity + drag, no more steering)
-    const p = { x: sx, y: sy, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, burnT: 6, t: 0 };
+  if (type === 'ballistic' || type === 'nuke' || type === 'firestorm' || type === 'antimissile') {   // stratmis profile: CLIMB → BURN (thrust, re-aimed at target) → COAST (gravity + drag, light residual steering only)
+    const p = { x: sx, y: sy, vx: 0, vy: -50, spd: 50, maxspd: 1400, thrust: 900, climb: .85, burnT: 6, t: 0 };
     for (let simT = 0; simT < CAP; simT += DT) {
       p.t += DT; const burnEnd = p.climb + p.burnT, burning = p.t < burnEnd;
       if (burning) p.spd = Math.min(p.maxspd, p.spd + p.thrust * DT);
       const aimUp = p.t < p.climb, ax = aimUp ? p.x : tx, ay = aimUp ? p.y - 360 : ty;
       let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
-      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-2.6 * DT, Math.min(2.6 * DT, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
-      else { p.vy += 120 * DT; p.vx *= (1 - .05 * DT); p.vy *= (1 - .05 * DT); }
+      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_BURN_TURN * DT, Math.min(STRATMIS_BURN_TURN * DT, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
+      else { p.vy += 120 * DT; p.vx *= (1 - .05 * DT); p.vy *= (1 - .05 * DT); const curSpd = Math.hypot(p.vx, p.vy); let want = Math.atan2(ty - p.y, tx - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_COAST_TURN * DT, Math.min(STRATMIS_COAST_TURN * DT, da)); p.vx = Math.cos(na) * curSpd; p.vy = Math.sin(na) * curSpd; }
       p.x += p.vx * DT; p.y += p.vy * DT;
       const arrived = (!aimUp && ((p.x - tx) ** 2 + (p.y - ty) ** 2 < 22 * 22)) || (p.t > p.climb && p.y >= groundY(p.x));
       if (arrived) return simT + DT;
@@ -6321,7 +6328,7 @@ function launchStrike(silo, type, tx, ty, air) {
   else if (type === 'kinetic') { G.proj.push({ k: 'krod', strat: true, x: tx + (Math.random() - .5) * 4, y: -260, vx: 0, vy: 640, tx, ty, air, life: 7, friendly: true, tr: [] }); }
   else if (type === 'mirv') { const vy = -440, apexT = 440 / 240, vx = (tx - sx0) / apexT; G.proj.push({ k: 'mirv', strat: true, x: sx0, y: sy0, vx, vy, tx, ty, air, life: 9, friendly: true, dmg: 0, tr: [] }); }   // strong fixed lob → reliably reaches a high apex roughly above the target, then deploys there
   else if (type === 'micromissile') { const nC = 3; for (let i = 0; i < nC; i++) { const aimX = Math.max(60, Math.min(WORLD_W - 60, tx + (i - (nC - 1) / 2) * 90)), vy = -440, apexT = 440 / 240, vx = (aimX - sx0) / apexT; G.proj.push({ k: 'micromis', strat: true, x: sx0, y: sy0, vx, vy, tx: aimX, ty, air, split: 6, dmg: 16, life: 9, friendly: true, tr: [] }); } }   // a few carriers fan across the strip, each bursting into a swarm of homing micro-missiles
-  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 540, thrust: 360, climb: .85, burnT: 6, t: 0, tx, ty, air, life: 16, friendly: true, tr: [] }); }   // B1 — a real fuel-limited profile: climbs, BURNS (thrust) for burnT seconds, then COASTS ballistically; life bumped so a long-range coast still has time to arrive
+  else { const sub = type === 'firestorm' ? 'fbomb' : type === 'ballistic' ? 'he' : type === 'antimissile' ? 'am' : 'nuke'; G.proj.push({ k: 'stratmis', sub, strat: true, x: sx0, y: sy0, vx: 0, vy: -50, spd: 50, maxspd: 1400, thrust: 900, climb: .85, burnT: 6, t: 0, tx, ty, air, life: 16, friendly: true, tr: [] }); }   // v4.2 — a real fuel-limited profile: climbs, BURNS hard (thrust) for burnT seconds up to 1400px/s, then COASTS at whatever speed it reached; life bumped so a long-range coast still has time to arrive
   SFX.missile(); toast('☢ ' + w.name.toUpperCase() + (air ? ' — AIRBURST' : '') + (desperate ? ' — DESPERATION LAUNCH' : '') + ' LAUNCHED'); shake(3);
   if (G.strikeMode) closeStrike();
 }
@@ -8127,8 +8134,8 @@ function updProj(dt) {
       if (burning) p.spd = Math.min(p.maxspd, p.spd + p.thrust * dt);
       const aimUp = p.t < p.climb, ax = aimUp ? p.x : p.tx, ay = aimUp ? p.y - 360 : p.ty;
       let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
-      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-2.6 * dt, Math.min(2.6 * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
-      else { p.vy += 120 * dt; p.vx *= (1 - .05 * dt); p.vy *= (1 - .05 * dt); }   // COAST — no more thrust or steering, just gravity + light drag
+      if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_BURN_TURN * dt, Math.min(STRATMIS_BURN_TURN * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
+      else { p.vy += 120 * dt; p.vx *= (1 - .05 * dt); p.vy *= (1 - .05 * dt); const curSpd = Math.hypot(p.vx, p.vy); let want = Math.atan2(p.ty - p.y, p.tx - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_COAST_TURN * dt, Math.min(STRATMIS_COAST_TURN * dt, da)); p.vx = Math.cos(na) * curSpd; p.vy = Math.sin(na) * curSpd; }   // COAST — fuel spent: gravity + light drag, plus a small residual correction (≤ STRATMIS_COAST_TURN) so it can still nudge onto target without chasing one that dodges
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 26) p.tr.shift();
       if (burning) { if (Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 }); if (Math.random() < .85) G.parts.push({ k: 'ember', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random() * 1.3, life: .16 + Math.random() * .14, tw: Math.random() * 6 }); }   // smoke trail + a brighter exhaust flare — BOTH cut out the instant the motor burns out (coasting = no plume)
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;

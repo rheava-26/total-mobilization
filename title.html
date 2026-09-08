@@ -8310,7 +8310,16 @@ function updProj(dt) {
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 5) p.tr.shift();   // ~5 samples at this speed reads as a short (~160px) fading trail, not a long streak
       const sweep = Math.hypot(p.vx, p.vy) * dt * .5;
       let ht = null; for (const t of friendlyList) { if (p.hitSet && p.hitSet.has(t)) continue; const rad = (t.s || t.r || 16) + 26 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { ht = t; break; } }
-      if (ht) { plasmaBurst(p.x, p.y, 90, p.dmg, false); shake(6); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 28, life: .16, bloom: true }); if (!p.hitSet) p.hitSet = new Set(); p.hitSet.add(ht); if (p.pierceLeft == null) p.pierceLeft = 300; }   // first (and every subsequent) hull hit within the pierce window: full AoE burst, but the bolt itself keeps flying — hitSet stops it re-hitting the same hull every frame while it's still overlapping
+      if (ht) {
+        // SHIELD-AWARE HULL HIT — a heavy railgun strike drains an energy shield (nanoforge, superhuman cadre, strikewing…) before it ever
+        // reaches hull, with any overflow carrying through — plasmaBurst/splashDamage below has no concept of shields (same as every other
+        // plasma-slug weapon in the game), so pre-credit the hit unit exactly the shield-absorbed portion of what that call is about to
+        // subtract (same fall(dd) falloff splashDamage itself uses, computed locally since it's a closure inside splashDamage) — the net
+        // change after the burst lands works out to shield-first-then-hp, with nothing double-counted, while every OTHER unit the AoE
+        // catches (unshielded collateral) takes the burst exactly as before.
+        if (ht.shield > 0 && !ht.squad) { const core90 = 90 * .45, dh = Math.hypot(p.x - ht.x, p.y - ht.y), fallF = dh <= core90 ? 1 : Math.max(0, 1 - (dh - core90) / (90 - core90)), raw = p.dmg * fallF, absorb = Math.min(ht.shield, raw); ht.shield -= absorb; ht.hp += absorb; }
+        plasmaBurst(p.x, p.y, 90, p.dmg, false); shake(6); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 28, life: .16, bloom: true }); if (!p.hitSet) p.hitSet = new Set(); p.hitSet.add(ht); if (p.pierceLeft == null) p.pierceLeft = 300;
+      }   // first (and every subsequent) hull hit within the pierce window: full AoE burst, but the bolt itself keeps flying — hitSet stops it re-hitting the same hull every frame while it's still overlapping
       if (p.pierceLeft != null) { p.pierceLeft -= Math.hypot(p.vx, p.vy) * dt; if (p.pierceLeft <= 0 || p.y >= groundY(p.x)) p.life = 0; }   // pierce budget spent (300px past the first hit) or it's plunged into the ground → done, no extra burst (already burst on the hit that started the pierce)
       else if (p.y >= groundY(p.x) || p.life <= 0) { plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), 90, p.dmg, false); shake(6); p.life = 0; }   // never actually hit a hull — bursts once on reaching the ground/max range, same as before
       continue;

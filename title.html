@@ -755,8 +755,7 @@
     <b>RAIDERS.</b> A fast, twin-gun agile fighter that backbones most air waves — it evades harder and longer than an ordinary interceptor. Expect a lot of them; they hunt your aircraft first, ground second.<br>
     <b>SHIELD CARRIERS.</b> A flying shield ship that cruises to your densest anti-air cluster and drops a protective dome that follows it wherever it goes — the dome soaks incoming fire for everything under it. Shoot the carrier itself down; the dome dies with it.<br>
     <b>THE FLEET FLAGSHIP.</b> Sits in high orbit — only space-reaching weapons (railguns, satellites, orbital guns, or a strategic strike) can touch it. Killing it takes a full quarter off the fleet meter.<br>
-    <b>WITHDRAWAL TO ORBIT.</b> If the fleet's ground assault is getting wrecked, it calls the landing off — surviving beachhead troops LIFT OFF back to orbit (nothing is lost, they simply rejoin the fleet) and it leans on bombardment instead for a while, then commits ground forces again once it reads an opening.<br>
-    <b>THE FRONT.</b> A dashed marker shows where the fleet's most recent landing came down — a rough read on where the fighting is concentrated, not a hard line.</p></details>
+    <b>WITHDRAWAL TO ORBIT.</b> If the fleet's ground assault is getting wrecked, it calls the landing off — surviving beachhead troops LIFT OFF back to orbit (nothing is lost, they simply rejoin the fleet) and it leans on bombardment instead for a while, then commits ground forces again once it reads an opening.</p></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -5135,7 +5134,6 @@ function doWave(it) {   // a CONCENTRATED LANDING that SNOWBALLS on any flank th
   let lz = pickLandingZone(it, cap, live);   // LANDING-ZONE INTELLIGENCE — scouts several stretches, drops on whichever is least defended (decap always hits the capital)
   lz = avoidCityCenter(Math.max(160, Math.min(WORLD_W - 160, lz)));   // land on the outskirts, not dead-centre in the city
   G.lastLZ = lz;   // remember the freshest landing zone so bunker-busters can pre-soften its defenders
-  G.front = { x: lz, t: 40 };   // v4.1 F I2 — THE FRONT: a visible marker at the most recent landing zone (renderGame draws it, tickFleetStance decays it)
   // ── SNOWBALL BOOKKEEPING — find (or open) the flank this drop lands on, then judge whether the
   //    player answered its LAST drop. Unanswered flank → this reinforcement is BIGGER; answered → smaller.
   G.flanks = G.flanks || []; G.flankSeq = G.flankSeq || 0;
@@ -5577,10 +5575,9 @@ function tickPhase4(it, dt) {
 // pulls back to orbit; (2) LIFT-OFF — any enemy scanEnemyIntel marked e.liftOff climbs (reverse
 // re-entry) and is REFUNDED to G.fleet on reaching MESO_Y, never destroyed/lost; (3) SPACE PICKETS —
 // from phase 3 on, keeps 2+round(diff) picket frigates standing in the space band, topping up on a
-// 12s cooldown. Also decays the THE FRONT marker (I2 — see doWave/renderGame) on the same clock.
+// 12s cooldown.
 function tickFleetStance(it, dt) {
   if ((G._landingPauseT || 0) > 0) G._landingPauseT = Math.max(0, G._landingPauseT - dt);
-  if (G.front && G.front.t > 0) { G.front.t -= dt; if (G.front.t <= 0) G.front = null; }
   for (let i = G.enemies.length - 1; i >= 0; i--) {
     const e = G.enemies[i]; if (!e.liftOff) continue;
     e.y -= 120 * dt; e.vy = 0; e.reentry = false;
@@ -8318,20 +8315,6 @@ function renderGame() {
     for (const b of G.buildings) { if (b.done === false || !b.d.garrAura) continue; if (!G.showZones && b !== G.sel) continue;
       const r = b.d.garrAura.r || 300, px = sx(b.x); if (px < -r - PX || px > W + r + PX) continue; const gy = groundY(b.x);
       c.save(); c.beginPath(); c.arc(px, gy, r, 0, 6.28); c.fillStyle = 'rgba(255,176,77,.05)'; c.fill(); c.strokeStyle = 'rgba(255,176,77,.55)'; c.lineWidth = 1.4; c.setLineDash([4, 5]); c.stroke(); c.setLineDash([]); c.restore();
-    }
-  }
-  // v4.1 F I2 — THE FRONT: a thin dashed marker at the most recent landing zone (G.front, set in doWave,
-  // decayed in tickFleetStance), with a faint ground-band highlight; alpha fades out over its 40s life.
-  if (G.front && G.front.t > 0) {
-    const fx = G.front.x, fpx = sx(fx);
-    if (fpx > -160 - PX && fpx < W + 160 + PX) {
-      const fa = Math.max(0, Math.min(1, G.front.t / 40)), fgy = groundY(fx), fTopY = STRATO_Y();
-      c.save();
-      c.globalAlpha = fa * .12; c.fillStyle = '#ff6a4a'; c.fillRect(sx(fx - 140), fTopY, sx(fx + 140) - sx(fx - 140), fgy - fTopY);
-      c.globalAlpha = fa * .55; c.strokeStyle = '#ff6a4a'; c.lineWidth = 1.6; c.setLineDash([6, 6]);
-      c.beginPath(); c.moveTo(fpx, fgy); c.lineTo(fpx, fTopY); c.stroke(); c.setLineDash([]);
-      c.globalAlpha = fa; c.fillStyle = '#ff8a6a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText('▮ FRONT', fpx, fTopY - 6); c.textAlign = 'left';
-      c.globalAlpha = 1; c.restore();
     }
   }
   // HOSTILE JAMMER FIELDS — a violet static bubble where your homing missiles go blind; kill the drone to clear it

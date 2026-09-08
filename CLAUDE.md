@@ -29,6 +29,13 @@ and DEPLOY it to `main` (branch → main) yourself, with a changelog entry — d
 Keep old decisions and the whole backlog (`ROADMAP.md`) in mind so nothing is dropped or
 re-litigated, and update + commit `ROADMAP.md` every turn.
 
+**Player-facing text style (standing rule):** 1–4 short declarative sentences: what it is · reach
+· the numbers that matter · one special rule. No history ("no longer", "used to", "instead of",
+version numbers), no comparisons to other units, no rationale, no ALL-CAPS. The designer's sample:
+*High speed anti aircraft interceptors. Can hit up to the exosphere. Has a limited magazine of 4
+missiles that refills one missile every 8 seconds. Prioritizes bunker buster missiles.* Every
+builder brief that touches `ds`/`eff`/tips/tooltips/manual inherits this.
+
 ---
 
 Everything known about the **original** Total Mobilization, the single-file game in this

@@ -7790,6 +7790,24 @@ const PD_LANCE_DMG = 30;   // v4.2 — damage one enemy PD lance does to a strat
 // (PD_LANCE_DMG) instead of deleting it outright; it only dies once hp is spent. A round with no hp (ordinary
 // missiles/rockets/microrockets, AMI, Aegis) keeps the old one-shot kill — that's the "regular system" untouched.
 function pdLanceHit(p) { if (p.strat && p.hp != null) { p.hp -= PD_LANCE_DMG; if (p.hp <= 0) p.life = 0; } else p.life = 0; }
+// v4.2 — POINT-DEFENCE WALL: a capital ship carries dozens of batteries and CIWS mounts, not one lance — it
+// blocks a whole VOLLEY per tick, not a single round. pdSweep collects every interceptable friendly projectile
+// within `r` of `e` (optionally ALSO within `r` of a second centre cx2/cy2, for an escort screening its parent),
+// sorts nearest-first, lances up to `nMax` of them with pdLanceHit, and draws the whole swat as ONE fan of red
+// lines (a single G.proj 'pdfan' entry) instead of nMax separate beam projectiles — cheaper and reads as a wall.
+function pdSweep(e, r, nMax, cx2, cy2) {
+  const cands = [];
+  for (const p of G.proj) {
+    if (!p.friendly || p.life <= 0 || p.pierce || PD_UNINTERCEPTABLE[p.k] || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam') continue;
+    const d1 = Math.hypot(p.x - e.x, p.y - e.y), d2 = (cx2 != null) ? Math.hypot(p.x - cx2, p.y - cy2) : Infinity, d = Math.min(d1, d2);
+    if (d <= r) cands.push({ p, d });
+  }
+  if (!cands.length) return;
+  cands.sort((a, b) => a.d - b.d);
+  const pts = [], n = Math.min(nMax, cands.length);
+  for (let i = 0; i < n; i++) { const p = cands[i].p; pdLanceHit(p); pts.push([p.x, p.y]); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 4, life: .12 }); spark(p.x, p.y, 2); }
+  G.proj.push({ k: 'pdfan', x: e.x, y: e.y, pts, life: .12, friendly: false, dmg: 0 });
+}
 function updEnemies(dt) {
   // PERF: friendliesList()/airTargetsList()/airOnlyList() each walk EVERY player unit + building + city district
   // to build a fresh array. The loop below used to call them fresh for EVERY enemy (targeting, whistler dive,
@@ -7840,8 +7858,8 @@ function updEnemies(dt) {
       if (e.aimCity == null && e.chargeT <= 3) { let best = null, bd = 1e9; for (const ct of G.cities) if (ct.hp > 0) { const d = Math.abs(ct.x - e.x); if (d < bd) { bd = d; best = ct; } } e.aimCity = best ? best.x : e.x; }
       if (e.aimCity != null && e.chargeT <= 2 && e.chargeT > 0) { const cx = e.aimCity; if (Math.random() < .7) G.parts.push({ k: 'spark', x: cx + (Math.random() - .5) * 30, y: groundY(cx) - Math.random() * 220, vx: (Math.random() - .5) * 16, vy: -30 - Math.random() * 50, r: 1.4, life: .4 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.3, life: .1 }); }
       if (e.chargeT <= 0) { fireHostileColumn(e.aimCity != null ? e.aimCity : e.x); e.chargeT = 8 + Math.random() * 4; e.aimCity = null; }
-      e.pdCd = (e.pdCd == null ? .5 : e.pdCd) - dt;   // POINT DEFENCE — same pattern as the bombarder's, so the annihilator isn't trivially missiled down while it's charging its beam
-      if (e.pdCd <= 0) { e.pdCd = .4; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 380 && Math.abs(p.y - e.y) < 300) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      e.pdCd = (e.pdCd == null ? .5 : e.pdCd) - dt;   // POINT DEFENCE — same pattern as the bombarder's, so the annihilator isn't trivially missiled down while it's charging its beam; dozens of batteries and CIWS mounts — it blocks volleys, not single rounds
+      if (e.pdCd <= 0) { e.pdCd = .4; pdSweep(e, 420, 4); }
       continue;
     }
     // TEMPORAL AI LOD — HOT enemies (on-screen or near a player unit) re-scan for the nearest target every frame,
@@ -7870,8 +7888,8 @@ function updEnemies(dt) {
         e.x += e.vx * dt; e.y += e.vy * dt; e.x = Math.max(20, Math.min(WORLD_W - 20, e.x));
         const et = near(p.x, p.y, _friendlyList, 700);   // engages air/ground/naval alike — whatever's actually threatening the parent
         if (et) { e.aim = Math.atan2(et.y - e.y, et.x - e.x); e.cd = (e.cd == null ? 0 : e.cd) - dt; if (e.cd <= 0) { e.cd = jitterCd(e.rate || 1.6); const ly = leadTime(e.weapon, e.x, e.y, et); fire(e.x, e.y, e.weapon, et.x + (et.vx || 0) * ly, et.y, false, e.dmg, undefined, undefined, undefined, 'small'); } }
-        e.escPdCd = (e.escPdCd == null ? .1 : e.escPdCd) - dt;   // MOBILE SATELLITE — swats ANY incoming player round (missiles, strategic strikes included — "act like mobile satellites") near itself OR its parent; only pierce (uninterceptable) and beam/instant weapons are exempt
-        if (e.escPdCd <= 0) { e.escPdCd = .35; for (const pr of G.proj) { if (pr.friendly && pr.life > 0 && !pr.pierce && !PD_UNINTERCEPTABLE[pr.k] && pr.k !== 'beam' && pr.k !== 'pbeam' && pr.k !== 'particlebeam' && ((Math.abs(pr.x - e.x) < 300 && Math.abs(pr.y - e.y) < 300) || (Math.abs(pr.x - p.x) < 300 && Math.abs(pr.y - p.y) < 300))) { pdLanceHit(pr); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: pr.x, y2: pr.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: pr.x, y: pr.y, r: 4, life: .12 }); spark(pr.x, pr.y, 2); break; } } }
+        e.escPdCd = (e.escPdCd == null ? .1 : e.escPdCd) - dt;   // MOBILE SATELLITE — swats incoming player rounds (missiles, strategic strikes included — "act like mobile satellites") near itself OR its parent; only pierce (uninterceptable) and beam/instant weapons are exempt; blocks a volley, not one round
+        if (e.escPdCd <= 0) { e.escPdCd = .35; pdSweep(e, 300, 2, p.x, p.y); }
       }
     }
     if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 210) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); const pn = e.prodGroup || 1, pk = e.prodKinds; for (let i = 0; i < pn && G.enemies.length < 222; i++) spawnEnemy(pk ? pk[Math.floor(Math.random() * pk.length)] : 'drone', e.x + (Math.random() - .5) * 100 + i * 34); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); floatText(e.x, e.y - e.s - 6, '⚙ CARRIER FABRICATED', '#c9a6ff'); } }   // harvester / hive / bombarder / leviathan act as CARRIERS — periodically birth a small GROUP of normal units, not a lone drone (prodGroup/prodKinds); the HIVE's cadence is boosted (fastProd)
@@ -7887,7 +7905,7 @@ function updEnemies(dt) {
     }
     if (e.bombarder) {   // CAPITAL FABRICATOR — rains orbital ordnance across the front + DOUBLE-RATE point-defence swats your shots + hunts your aircraft + pins escorts near its orbit + snipes your ground units from orbit + (G3) a high-speed plasma lance + twin secondary batteries — "they're supposed to be on the SAME level as a nanoforge ship, so let them have powerful main guns and secondary batteries"
       e.dropCd = (e.dropCd == null ? 5 : e.dropCd) - dt; if (e.dropCd <= 0) { e.dropCd = 5 + Math.random() * 4; orbitalBarrage(e.x + (Math.random() - .5) * 520); } e.podCd = (e.podCd == null ? BOMBARDER_POD_CD * .5 : e.podCd) - dt; if (e.podCd <= 0) { e.podCd = BOMBARDER_POD_CD; if (G.enemies.length < 210) spawnEnemy('bombpod', e.x + (Math.random() - .5) * 380); }   /* v4.1 — CLUSTER BOMBS on a SIEGE cadence: one pod per bombarder per BOMBARDER_POD_CD seconds (was a 50% roll on every 5-9s barrage tick PLUS fabricator pods) */
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 420 && Math.abs(p.y - e.y) < 320) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }   // POINT DEFENCE — nerfed to HALF the old rate (BOMBARDER_PD_CD): a red PD beam still lances one of your incoming MISSILES (kinetic slugs and shells cannot be intercepted), but a strategic round survives several lances (see PD_LANCE_DMG/STRAT_MSL_HP) — and it eats far fewer of them either way, so massed fire gets through
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; pdSweep(e, 420, 6); }   // POINT DEFENCE — dozens of batteries and CIWS mounts fire together: a whole VOLLEY of your incoming MISSILES gets lanced per sweep (kinetic slugs and shells cannot be intercepted), but a strategic round survives several lances (see PD_LANCE_DMG/STRAT_MSL_HP)
       e.aaCd = (e.aaCd == null ? 2 : e.aaCd) - dt;   // AIR DENIAL — a spread of anti-air micro-missiles at the nearest player aircraft/space unit, independent of the ground barrage above
       if (e.aaCd <= 0) { const at = near(e.x, e.y, _airOnlyList, 1700); if (at) { e.aaCd = 4 + Math.random() * 2.5; for (let i = 0; i < 3; i++) fire(e.x + (i - 1) * 30, e.y, 'rocket', at.x + (at.vx || 0) * .3 + (Math.random() - .5) * 40, at.y, false, 13, undefined, undefined, undefined, 'large'); } else e.aaCd = 1.2; }
       if (!e.escorted && !e.noEscort) {   // ORBITAL DOMINANCE — on arrival, pin 2-3 stationary defence satellites near its altitude, once. Every bombarder still gets this small pair (wall or not) — only a mass-drop SWARM (e.noEscort, n>=6) skips it for perf, and only the opening wall additionally gets the FULL 8+8+mender grid below (e.wallGrid).
@@ -7920,7 +7938,7 @@ function updEnemies(dt) {
       }
       e.cPodCd = (e.cPodCd == null ? 30 : e.cPodCd) - dt;
       if (e.cPodCd <= 0 && G.enemies.length < 300) { e.cPodCd = 30; spawnEnemy('bombpod', e.x + (Math.random() - .5) * 440); }
-      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = BOMBARDER_PD_CD; for (const p of G.proj) { if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && !PD_UNINTERCEPTABLE[p.k] && Math.abs(p.x - e.x) < 460 && Math.abs(p.y - e.y) < 340) { pdLanceHit(p); G.proj.push({ k: 'beam', x1: e.x, y1: e.y, x2: p.x, y2: p.y, life: .1, friendly: false, dmg: 0 }); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .13 }); spark(p.x, p.y, 3); break; } } }
+      e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .3; pdSweep(e, 560, 16); }   // FLEET FLAGSHIP POINT DEFENCE — the flagship carries dozens of anti-missile batteries and CIWS cannons: it blocks whole volleys of incoming rounds per sweep, not one round at a time
       if (!e.satDeployed && !e.noEscort) {   // its own orbital defense grid, once — the personal escort (6 escortfighters) was already attached at spawn by attachEscorts
         e.satDeployed = true;
         for (let i = 0; i < 6 && G.enemies.length < 300; i++) { spawnEnemy('railsat', e.x + (i - 2.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 160; ne.y = ne.hold; } }
@@ -8071,7 +8089,7 @@ function updProj(dt) {
   const hostileList = incList.length ? G.enemies.concat(incList) : G.enemies;
   const hostileMeso = hostileList.filter(e => e.y >= MESO_TOP());
   for (const p of G.proj) {
-    if (p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam') { p.life -= dt; continue; }
+    if (p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.k === 'pdfan') { p.life -= dt; continue; }   // v4.2 — pdfan is a one-frame visual marker (a whole fan of PD lances drawn as one path), no physics of its own
     if (!p.friendly && p.life > 0 && p.k !== 'krodfx') { const sh = shieldBlocks(p.x, p.y); if (sh) { sh.shieldHp -= (p.dmg || 0) + (p.k === 'krod' ? 90 : p.k === 'subbomb' ? 50 : 30); spark(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 9, life: .14 }); (sh.shieldHits || (sh.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(sh.x), p.x - sh.x), t: 0 }); if (p.k === 'krod' || p.k === 'subbomb') boom(p.x, p.y, 5); p.life = 0; continue; } }   // DEFLECTOR DOME soaks incoming rods/missiles/bombs until it's battered down — each hit spawns a surface ripple at its impact angle
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const fld = enemyField(p.x, p.y); if (fld) { fld.fieldHp -= (p.dmg || 10) + (p.big ? 30 : 12); spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .12 }); (fld.fieldHits || (fld.fieldHits = [])).push({ ang: Math.atan2(p.y - fld.y, p.x - fld.x), t: 0 }); p.life = 0; continue; } }   // ENEMY DEFLECTOR FIELD scrubs YOUR incoming rounds (incl. the AoE that bypasses armour) until it's battered down; beams & strategic strikes punch straight through it
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const dm = enemyDome({ x: p.x, y: p.y }); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min((p.dmg || 10) + (p.big ? 30 : 12), room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 8, life: .13 }); (dm.shieldHits || (dm.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(dm.x), p.x - dm.x), t: 0 }); p.life = 0; continue; } }   // BEACHHEAD SHIELD DOME — mirrors the field check above: catches YOUR incoming round IN FLIGHT (missiles, plasma, MIRV submunitions — everything that would've silently splashed via areaDamage/splashDamage, completely bypassing the dome) before it can detonate. Same per-frame DPS cap as the hurt()-side soak below; beams & strategic strikes punch straight through it, matching the field
@@ -8608,6 +8626,7 @@ function drawSwarmCluster(u, px, d, n) {
 }
 const _tracerCache = new Map();   // PERF: cached tapered-tracer gradients keyed by colour (see the default bullet branch below)
 function renderProj(p, px) {
+  if (p.k === 'pdfan') { const a = Math.max(0, p.life / .12); c.save(); c.globalAlpha = a * .85; c.strokeStyle = '#ff5050'; c.lineWidth = 1.6; c.shadowColor = '#ff5050'; c.shadowBlur = 6; c.beginPath(); for (const pt of p.pts) { c.moveTo(px, p.y); c.lineTo(sx(pt[0]), pt[1]); } c.stroke(); c.restore(); return; }   // v4.2 — ONE fan of thin red lances, emitter → every round it swatted this tick, instead of nMax separate beam projectiles
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = p.tractor ? 14 : 10; c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet
   if (p.k === 'beam' && p.tractor) { const tpx = sx(p.x2), tpy = p.y2, tclk = animClock * .006; c.save(); c.strokeStyle = 'rgba(200,140,255,.4)'; c.lineWidth = 1.2; for (let i = 0; i < 2; i++) { const rr2 = 13 + i * 9 + Math.sin(tclk * 23 + i) * 6; c.beginPath(); c.arc(tpx, tpy, rr2, 0, 6.2832); c.stroke(); } c.strokeStyle = 'rgba(216,182,255,.22)'; c.lineWidth = 1; for (let i = 0; i < 4; i++) { const a = (i / 4) * 6.2832 + tclk * .4; c.beginPath(); c.moveTo(tpx + Math.cos(a) * 8, tpy + Math.sin(a) * 8); c.lineTo(tpx + Math.cos(a) * 28, tpy + Math.sin(a) * 28); c.stroke(); } c.restore(); }   // B4 — jittering distortion rings + faint lens streaks at the drag/deflect point
   else if (p.k === 'pbeam') {   // PLASMA lance — thick additive bolt of superheated matter (psionic / antimatter)

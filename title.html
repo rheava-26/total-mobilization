@@ -421,7 +421,7 @@
     <button class="mbtn" style="--accent:var(--inf)" data-act="exit"><span class="idx">05</span>STAND DOWN<span class="sweep"></span></button>
   </div>
 </div>
-<div class="footer" id="footer">TOTAL MOBILIZATION · v4.2.0 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
+<div class="footer" id="footer">TOTAL MOBILIZATION · v4.2.1 · <span class="clog" onclick="openModal('changelogModal')">CHANGELOG ▸</span> · <span class="clog" onclick="openAchievements()">🏆 ACHIEVEMENTS</span> · <span class="clog" onclick="window.startIntro && window.startIntro()">▶ INTRO</span> · <span class="clog" onclick="openFeedback()">&#128172; FEEDBACK</span></div>
 
 <div class="modal-bg" id="extinctConfirm"><div class="modal" style="max-width:470px;border-color:#ff5a5a">
   <h2 style="color:#ff6a6a">&#9760; EXTINCTION</h2>
@@ -453,6 +453,7 @@
 <div class="modal-bg" id="changelogModal"><div class="modal">
   <h2>CHANGELOG</h2><div class="hd">// VERSION HISTORY</div>
   <div class="clogbody">
+    <p><b>v4.2.1 — THE WALL OF FIVE</b><br>The all-out phase opens with five bombarders strung evenly across the whole map, each with its four escort fighters and its full satellite grid. Same for orbital annihilation and extinction.</p>
     <p><b>v4.2.0 — THE ORBITAL FORTRESS</b><br>The flagship and the bombarders become what they were always meant to be.<br><b>Point-defence walls.</b> Bombarders, escorts and the flagship sweep every incoming round in their envelope each tick instead of picking one. A strategic missile still takes three lances to kill. The flagship adds an <b>antimatter flak field</b> every four seconds that damages every projectile and aircraft inside a wide ring.<br><b>The flagship is a fleet.</b> Nine thousand hit points scaling with the clock, armor 30, a regenerating shield, eight escort fighters, twenty satellites and two support ships. It arrives with two bombarders, six picket frigates and four shield carriers, launches fighters, raiders, strike wings and shield generators every five seconds, drops <b>antimatter bombs</b> with a local blackout every thirty, and pulls back into its fleet when hurt. Killing it still takes a quarter of the fleet off the board.<br><b>Antimatter railgun lances.</b> The bombarder main gun fires a 3,000 px/s lance that grows with the invasion, punches through the first hull and up to three behind it, and spalls onto nearby units. Three lances kill a Nanoforge. The Nanoforge holds 2,400 hit points.<br><b>Satellites hold station.</b> Laser, missile and rod satellites no longer wander or climb. Orbital strike fighters hunt across the whole space band with the fighter AI. Frigates stay the movers.<br><b>The opening.</b> The antimatter EMP warheads launch in the first second, before anything else. Three hundred anti-air micromissiles fall over the first thirty seconds, aimed above your densest aircraft. Land what you can't cover. Readiness warns an exposed air force.</p>
     <p><b>v4.1.3 — STRIKES, POINT DEFENCE, WAVE ORDER</b><br><b>Auto strikes spread out.</b> Auto silos and grouped salvos pick the densest enemy clusters and spread across them instead of dumping every missile on one. <b>Strategic missiles fly like missiles.</b> A short vertical kick, a six-second hard burn to 1,400 px/s with a fast pivot onto the target, then a coast. The ETA on the aim bar matches. <b>Enemy point defence</b> now takes three lances to kill a strategic missile instead of one. Your ordinary rockets and your own point defence are unchanged. <b>Wave order.</b> No landing before the all-out phase. At 50 seconds the bombarder wall arrives first with its escorts and grid, the skyfall follows eight seconds later, and the first landing six seconds after that. Bosses on the schedule never arrive before the all-out phase. The flagship still comes 25 seconds into reinforcement. <b>Removed</b> the front-line marker.</p>
     <p><b>v4.1.2 — POINT DEFENSE</b><br>Point Defense is back as the defense branch's first node. It unlocks the Aegis Battery. Microrockets needs it and keeps the Microrocket Battery. Deflector Shields is the Point Defense + Directed Energy combo again.</p>
@@ -742,7 +743,7 @@
   <details class="helpsec"><summary>⑧ THE AUTOFLEET'S PLAN</summary><p>
     The invasion is not one big wave — it is a PLAN, run in four phases. <b>PHASE 1 · SCREENING</b> opens with falling <b>antimatter warheads</b> aimed at your densest anti-air cluster — shoot one down HIGH and it only clips a small radius; let it fall and it goes off wherever it dies, dropping a full <b>EMP blackout</b> zone (⚡ — degrades guns, radar and drone swarms caught inside, resisted by a nearby Psionic Relay or Data Center) — plus a 30-second run of <b>anti-air micromissile</b> carriers hunting your aircraft, harmless <b>decoy</b> pods, and a light bunker-buster pass reading what shoots back.<br>
     <b>PHASE 2 · SUPPRESSION</b> intensifies buster raids and opens hostile <b>micromissile salvos</b> over your densest defenses, alongside concussive <b>shockwave pods</b> that shove your aircraft around.<br>
-    <b>PHASE 3 · ALL-OUT</b> opens with the <b>bombarder wall</b> arriving on station. The mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds later, backed by a fast interceptor screen.<br>
+    <b>PHASE 3 · ALL-OUT</b> opens with the <b>bombarder wall</b>: five bombarders spread across the whole map, each with its escort fighters and satellite grid. The mass skyfall and three real beachheads — chosen exactly where you took the LEAST damage — land 8 seconds later, backed by a fast interceptor screen.<br>
     <b>PHASE 4 · REINFORCE</b> keeps feeding whichever landing zone is still holding; wipe every beachhead and the fleet falls back to occasional ATTRITION BOMBING to grind your morale instead of landing again.<br><br>
     <b>THE FLEET ADAPTS.</b> It reads your heaviest standing element every ~45 seconds and re-tasks the SAME units at whatever you're leaning on — watch for an "AUTOFLEET ADAPTING" alert:<br>
     &nbsp;• <b>Laser grid</b> → shielded strike wings + more bombers.<br>
@@ -4845,7 +4846,7 @@ const ESC = {
   // orbital-plasma ground pressure blankets every stretch from t=0 (not one hotspot). Only intents
   // that actually bombard from orbit open this way — a recon PROBE / decap precision strike stay
   // true to their advertised "no orbital ordnance" flavor.
-  OPEN_BOMBARDERS: 2,          // how many bombarders seed the opening   /* v4.0.3: was 5 at invasion t=0 — designer: "bombardiers came early"; the opening wall now arrives with PHASE 2 · SUPPRESSION and is smaller */
+  OPEN_BOMBARDERS: 5,          // the WALL OF FIVE — openingBombarders strings them evenly across the whole map at the phase-3 open, each with 4 escort fighters and the full 8+8+mender satellite grid (v4.2.1: back to five — 4.0.3 had cut it to 2 when they still arrived at t=0 unescorted)
   OPEN_MARGIN: 0.08,           // keep them off the extreme edges: x in [margin*W, (1-margin)*W]
   OPEN_JITTER: 200,            // +/- px so the rank isn't a perfect ruler-line
 
@@ -5614,7 +5615,7 @@ function shockwaveBurst(e) {
 // opening-wall count for a real invasion, a smaller 3-ship wall for the pure-orbital GLASS/EXTINCTION
 // scenarios, none at all for a feeler (recon, which never reaches phase 3) or a precision strike (decap).
 function phase3AllOut(it) {
-  const bn = G.intent === 'invasion' ? ESC.OPEN_BOMBARDERS : (G.intent === 'glass' || G.intent === 'extinction') ? 3 : 0;
+  const bn = (G.intent === 'invasion' || G.intent === 'glass' || G.intent === 'extinction') ? ESC.OPEN_BOMBARDERS : 0;   /* the bombardment intents all open phase 3 with the full wall; decap/recon get none */
   if (bn > 0) openingBombarders(it, bn);
   G._skyfallDelayT = 8; G._skyfallIt = it;   // phase3Skyfall(it) fires after this delay (ticked in updateInvPhases) — gives the bombarder wall time to settle before the mass wave arrives
 }

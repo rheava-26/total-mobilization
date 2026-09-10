@@ -367,7 +367,7 @@ Killing a boss gives **+10 stability**.
 
 ### Altitude bands
 
-`SPACE_Y` 12% of world height · `MESO_Y` 40% · `STRATO_Y` 58% · `TROPO_Y` 74%. World height is
+`SPACE_Y` 22% of world height (exosphere above it) · `THERMO_Y` 56% · `MESO_TOP` 62% · `MESO_Y` 67% · `STRATO_Y` 76% · `TROPO_Y` 82% (smaller = higher; these are the live constants in `title.html`, corrected 2026-09-10 — older notes said 12/40/58/74). World height is
 **1.9× the viewport** (`SKY_MULT`). Weapons have a `ceil` value limiting how high they reach —
 this is the core of the air-defense puzzle: a bomber sitting in the stratosphere can only be
 touched by aircraft and railguns.

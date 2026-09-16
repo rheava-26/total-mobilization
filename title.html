@@ -3052,7 +3052,7 @@ const UNIT_DEFS = {
   battlecruiser:{ name: 'Railgun Battlecruiser "Tempest"', art: 'battlecruiser', domain: 'naval', ic: 460, mp: 28, build: 17, hp: 300, armor: 12, range: 1400, dmg: 90, rate: 4.5, weapon: 'rail', speed: 8, s: 7.5, grp: 1, ceil: 0, req: 'kinetics', elec: true, weapon2: 'rocket', dmg2: 35, rate2: 3.08, range2: 560, wpn2Air: true, ceil2: .56, ds: 'Railgun battlecruiser — a spinal hypervelocity railgun hits any altitude, backed by laser PD and a secondary SAM turret. (req Kinetic Weapons)' },
   carrier:  { name: 'Carrier "Sentinel"', art: 'carrier', domain: 'naval', ic: 380, mp: 30, build: 16, hp: 360, armor: 10, range: 520, dmg: 18, rate: 0.88, weapon: 'tracer', speed: 6, s: 8, grp: 1, carrier: true, carrierN: 2, upkeep: 5, weapon2: 'rocket', dmg2: 26, rate2: 2.42, range2: 520, wpn2Air: true, ceil2: .56, ds: 'Mobile airbase launching a free wing of 2 fighters that rearm on deck. Laser AA plus a secondary SAM turret, reaching the stratosphere. 5 IC/s upkeep. (req Naval Power)' },
   fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 31, rate: 1.98, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'tracer', dmg2: 13, rate2: 0.88, range2: 260, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two wingman drones sharing a hangar slot. Short-range autocannon for dogfights. Rearms at an airbase.' },
-  strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 48, rate: 3.52, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, ds: 'Close-air-support jet — fast and armored, strafes ground and naval targets with rockets. Rearms at an airbase.' },
+  strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 48, rate: 3.52, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, weapon2: 'rotary', dmg2: 26, rate2: .6, range2: 340, ceil2: .78, heavyGun: true, ds: 'Close-air-support jet. Rockets for armor and ships, a heavy autocannon that never runs dry. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'Fast, fragile interceptor, the quickest climber in the fleet, but unarmored. Duels aircraft with its beam, shoots down nearby missiles. (req Directed Energy)' },
   satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', sat: true, ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser dominating high altitude. Needs orbital lift and a rocket part to launch. Holds station in the thermosphere. (req Orbital Ops)' },
   missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', sat: true, ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital lift and a rocket part. Holds station in the thermosphere. (req Orbital Ops)' },
@@ -3068,7 +3068,7 @@ const UNIT_DEFS = {
   // 🚁 SCOUT/INTERCEPT HELI — the ROTOR arm's air-to-air element. airOnly:true → engages ONLY airborne foes (never ground), the mirror of the Kite's ground-attack role. Same rotor system (ROTOR COMMAND, hover-CAS AI, tropo ceil .78, rearm at cities/heli-depots) but tuned LIGHT & fast with short-range AA missiles — a low-altitude air picket that swats enemy aircraft hugging the deck. Balance: cheap, fragile (low HP/armor), high fire-rate missiles. (tunable)
   heliscout:{ name: 'Scout Heli "Kestrel"', art: 'heliscout', domain: 'air', rotor: true, lowAir: true, airOnly: true, ic: 110, mp: 8, build: 6, hp: 70, armor: 2, range: 470, dmg: 35, rate: 2.42, weapon: 'missile', speed: 150, s: 2.5, grp: 1, ammo: 14, fuel: 40, ceil: .78, ds: 'Air-to-air scout helicopter — light, fast, hunts enemy aircraft with heat-seeking missiles at low altitude. Never strafes ground. Rearms at any city or airbase.' },
   // 🚁 HEAVY GUNSHIP — the ROTOR arm's capital-weight CAS platform. groundAtk:true (like the Kite) but BIG, tanky and slow, with heavy rocket pods + a multi-barrel gun rack. A serious investment: high IC/MP, standing IC/s upkeep, and rotorW:3 (draws THREE ROTOR COMMAND slots, not one). Same rotor system (hover-CAS AI, tropo ceil, rearm at cities/heli-depots). Balance is deliberately conservative — power comes from being strong-but-COSTLY, never a cap. (tunable)
-  heligunship:{ name: 'Heavy Gunship "Mastodon"', art: 'heligunship', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 340, mp: 24, build: 14, hp: 380, armor: 12, range: 480, dmg: 88, rate: 4.84, weapon: 'rocket', speed: 85, s: 3.3, grp: 1, ammo: 18, fuel: 46, ceil: .78, rotorW: 3, upkeep: 3, ds: 'Heavy assault gunship — a tandem-rotor hull that hovers, hammering targets with rocket pods and a chin gun. Tanky, slow. Costs 3 rotor slots + 3 IC/s upkeep.' },
+  heligunship:{ name: 'Heavy Gunship "Mastodon"', art: 'heligunship', domain: 'air', rotor: true, lowAir: true, groundAtk: true, ic: 340, mp: 24, build: 14, hp: 380, armor: 12, range: 480, dmg: 88, rate: 4.84, weapon: 'rocket', speed: 85, s: 3.3, grp: 1, ammo: 18, fuel: 46, ceil: .78, rotorW: 3, upkeep: 3, weapon2: 'tracer', dmg2: 18, rate2: .35, range2: 300, ceil2: .78, heavyGun: true, ds: 'Heavy assault gunship — a tandem-rotor hull that hovers, hammering targets with rocket pods and a chin gun. Tanky, slow. Costs 3 rotor slots + 3 IC/s upkeep.' },
   // 🚁 COMMAND HELICOPTER — the ROTOR arm's SUPPORT element. Its chin gun is light — barely a gesture at self-defense — because its
   // real payload is aura:{...}, a MOBILE version of the same buff radius as an Ammunition Depot + Radar. It rides the shared hover-CAS
   // AI (same as the Kite/Kestrel/Mastodon), so it loiters wherever the fighting actually is: the buff FOLLOWS the front line with zero
@@ -6205,6 +6205,7 @@ function pickStyle(k, dom, s, frac) {
   if (k === 'plasma' || k === 'plasball' || k === 'plasarc') return 'spall';       // plasma slug → body thrown off the shot, spall sprays out behind
   if (k === 'smart') return 'disassemble';                                        // NANITE / SMART ROUNDS — latch on & eat the hull: dissolves into a scatter of flecks, not a blast — see disassemble()
   if (k === 'tracer') return 'gunned';                                            // riddled with gunfire → ceases functioning, smokes & falls
+  if (k === 'rotary') return 'gunned';                                            // rotary-cannon kill (same death as a plain gun — its rounds are just a faster stream of the same 'tracer' kind)
   if (k === 'amslug' || k === 'antimatter') return 'annihilate';                  // ★ ANTIMATTER — brilliant flash, implosion, shockwave, almost nothing left — see annihilate()
   if (k === 'bomb' || k === 'shell' || k === 'nuke' || k === 'he') return 'blast'; // HIGH EXPLOSIVE → ripped to shreds
   if (k === 'missile' || k === 'rocket') return 'mblast';                         // missile → small body blast, then drops out of the sky w/ shrapnel
@@ -6661,7 +6662,31 @@ function applyAllyQuality(u) {
   u.hp = u.maxHp;
   return u;
 }
-// deliver ONE unit (already-resolved key) at `city`, tag it ally, and knock it down to ALLIED QUALITY
+// ── ALLY TOUCHDOWN FX — small and domain-appropriate ON PURPOSE, never a boom/shake/big flash. The OLD
+// per-unit effect was a r26 'flash' (renders as a ~94px additive white bloom) + a spark + its OWN floatText;
+// deployFullRoster/deliverSupportExtras/deliverAllyClumpExtras spawn 6–11 units in the same frame within
+// ±50px of each other, so those blooms stacked into what read as a bombing run, not reinforcements arriving
+// (the designer's exact complaint). See spawnAllyUnit for how this is throttled to a gentle stream instead.
+function allyLandingFx(x, y, domain) {
+  if (domain === 'naval') {   // a light spray/wake ring, no flash
+    G.parts.push({ k: 'ring', x, y, r: 2, max: 16, life: .3 }); smoke(x, y, 2);
+  } else if (domain === 'air') {   // a short contrail puff — it's already up at patrol altitude, no ground FX
+    smoke(x, y, 2); smoke(x - 6, y + 2, 1);
+  } else {   // ground (and space/mech allies, which still touch down through the same air) — a small retro-thrust flare + a little dust, not a crater
+    const gy = groundY(x);
+    G.parts.push({ k: 'flash', x, y: gy - 20, r: 7, life: .18 });
+    for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.6; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * 20, y: gy, vx: Math.cos(a) * 20, vy: Math.sin(a) * 30, r: 1 + Math.random() * 1.6, rot: Math.random() * 6, vr: (Math.random() - .5) * 6, life: .5 + Math.random() * .4, grav: 150, gy, dom: 'ground', settled: false }); }
+    smoke(x, gy - 10, 2);
+  }
+}
+// how many seconds apart the arrival-FX queue below releases one touchdown effect — see tickAllyBattalions
+const ALLY_DROP_GAP = .12;
+// deliver ONE unit (already-resolved key) at `city`, tag it ally, and knock it down to ALLIED QUALITY. The
+// unit itself is created RIGHT HERE, IMMEDIATELY — every caller's return value / count / stat / army-cap /
+// achievement bookkeeping sees it exist the instant this call returns, unchanged from before. Only its small
+// touchdown FX is deferred onto G._allyDropQ, drained one every ALLY_DROP_GAP seconds by tickAllyBattalions —
+// that's the ONLY thing that's staggered, which is also the only thing that was ever stacking into a bombing
+// run. (One float text per DELIVERY, not per unit, is now the caller's job — see deployFullRoster/deliverAllyClump.)
 function spawnAllyUnit(key, city) {
   const dx = Math.max(80, Math.min(WORLD_W - 80, city.x + (Math.random() - .5) * 100));
   const u = spawnUnit(key, dx);
@@ -6671,10 +6696,13 @@ function spawnAllyUnit(key, city) {
     applyAllyQuality(u);
   }
   if (G.stats) G.stats.allyUnits = (G.stats.allyUnits || 0) + 1;
-  const gy = groundY(dx); G.parts.push({ k: 'flash', x: dx, y: gy - 24, r: 26, life: .25 }); if (typeof spark === 'function') spark(dx, gy - 24, 1);
-  floatText(dx, gy - 40, '⚑ ALLY ARRIVES', '#7fc4ff');
+  G._allyDropQ = G._allyDropQ || [];
+  G._allyDropQ.push(u ? { x: u.x, y: u.y, domain: u.d.domain } : { x: dx, y: groundY(dx), domain: 'ground' });
   return u;
 }
+// ONE aggregate '⚑ ALLIES LANDING ×N' float text for a whole delivery event (a hire dump or a clump tick),
+// replacing the old per-unit '⚑ ALLY ARRIVES' spam — see deployFullRoster/deliverAllyClump.
+function allyDeliveryText(n) { if (n <= 0) return; const bx = allyLandingX(); floatText(bx, groundY(bx) - 46, '⚑ ALLIES LANDING ×' + n, '#7fc4ff'); }
 // the battalion's own roster slot `key` at ONE city (resolved to its best unlocked/built tier). A naval
 // roster slot only lands at a coastal city (hasNearWater) — inland cities get none of that slot (today's
 // rosters have no non-naval fallback unit, so a fully-naval package simply skips inland cities entirely).
@@ -6691,11 +6719,13 @@ function deliverOwnRosterUnit(key, city) {
 // single one-time event, so a wall of support buildings paying off big just once is fine — it's the
 // FOREVER-REPEATING trickle that had to stop scaling per copy.
 function deliverSupportExtras(city, sup) {
+  let n = 0;
   const coastal = hasNearWater(city.x);
-  if (coastal) for (let i = 0; i < sup.heavyport; i++) spawnAllyUnit('destroyer', city);   // +1 warship PER Heavy Port, coastal cities only
-  if (sup.airfoundry > 0 && haveAirbaseBuilt()) { const bk = resolveAllyKey('strikejet'); for (let i = 0; i < sup.airfoundry; i++) spawnAllyUnit(bk, city); }   // +1 heavy bomber PER Allied Air Foundry (needs a standing Airbase to rearm at)
-  for (let i = 0; i < sup.aadepot; i++) spawnAllyUnit(resolveAllyKey('aa'), city);   // +1 AA unit PER Allied AA Depot
-  for (let i = 0; i < sup.armory; i++) spawnAllyUnit(resolveAllyKey('tank'), city);   // +1 heavy tank PER Allied Armory
+  if (coastal) for (let i = 0; i < sup.heavyport; i++) { spawnAllyUnit('destroyer', city); n++; }   // +1 warship PER Heavy Port, coastal cities only
+  if (sup.airfoundry > 0 && haveAirbaseBuilt()) { const bk = resolveAllyKey('strikejet'); for (let i = 0; i < sup.airfoundry; i++) { spawnAllyUnit(bk, city); n++; } }   // +1 heavy bomber PER Allied Air Foundry (needs a standing Airbase to rearm at)
+  for (let i = 0; i < sup.aadepot; i++) { spawnAllyUnit(resolveAllyKey('aa'), city); n++; }   // +1 AA unit PER Allied AA Depot
+  for (let i = 0; i < sup.armory; i++) { spawnAllyUnit(resolveAllyKey('tank'), city); n++; }   // +1 heavy tank PER Allied Armory
+  return n;   // v4.4 — so deployFullRoster can fold this into ONE aggregate delivery count/float-text instead of one per unit
 }
 // deliver the FULL roster (every slot) of battalion `bt` at every held city — the ONE-TIME HIRE DUMP,
 // unchanged from before v4.0.3. Support extras land ONCE per city (only if that city actually received
@@ -6704,11 +6734,13 @@ function deployFullRoster(bt) {
   const a = ALLIES[bt.type]; if (!a) return;
   const cities = (G.cities || []).filter(c => c.hp > 0 && !c.held); if (!cities.length) return;
   const sup = allySupport();
+  let n = 0;
   for (const city of cities) {
     let any = false;
-    for (const key of a.units) if (deliverOwnRosterUnit(key, city)) any = true;
-    if (any) deliverSupportExtras(city, sup);
+    for (const key of a.units) if (deliverOwnRosterUnit(key, city)) { any = true; n++; }
+    if (any) n += deliverSupportExtras(city, sup);
   }
+  allyDeliveryText(n);   // ONE '⚑ ALLIES LANDING ×N' for the whole hire dump, not one per unit
 }
 // ⚑ HIRE — a ONE-TIME, PERMANENTLY spent cost that stands up a battalion. Every held city gets the FULL
 // roster right now (deployFullRoster); from then on the battalion joins the shared 45s reinforcement
@@ -6740,13 +6772,15 @@ function hireAllies(type) {
 function deliverAllyClump() {
   if (!G.allyBattalions || !G.allyBattalions.length) return;
   const cities = (G.cities || []).filter(c => c.hp > 0 && !c.held); if (!cities.length) return;
+  let landed = 0;
   for (const bt of G.allyBattalions) {
     const a = ALLIES[bt.type]; if (!a) continue;
     const roster = a.units, n = roster.length, start = bt.cityIdx || 0;
-    for (let i = 0; i < n; i++) deliverOwnRosterUnit(roster[i], cities[(start + i) % cities.length]);
+    for (let i = 0; i < n; i++) if (deliverOwnRosterUnit(roster[i], cities[(start + i) % cities.length])) landed++;
     bt.cityIdx = (start + n) % cities.length;   // rotate the start point so a roster shorter than the city count still visits every city over time
   }
-  deliverAllyClumpExtras(cities);
+  landed += deliverAllyClumpExtras(cities);
+  allyDeliveryText(landed);   // ONE '⚑ ALLIES LANDING ×N' for the whole clump tick (roster + extras), not one per unit
 }
 // PER-COPY, STACKING support extras for one clump EVENT — allySupport() SUMS each building's gmod
 // across every standing copy (recalcBuildings adds them all up), so sup.armory etc. IS the copy count,
@@ -6758,17 +6792,19 @@ function deliverAllyClump() {
 // dog-piling one.
 function deliverAllyClumpExtras(cities) {
   const sup = allySupport();
-  if (!sup.armory && !sup.aadepot && !(sup.airfoundry && haveAirbaseBuilt()) && !sup.heavyport) return;
+  if (!sup.armory && !sup.aadepot && !(sup.airfoundry && haveAirbaseBuilt()) && !sup.heavyport) return 0;
+  let n = 0;
   function bestCity(needCoastal) {
     const list = needCoastal ? cities.filter(c => hasNearWater(c.x)) : cities; if (!list.length) return null;
     let best = list[0], bestN = alliesNear(best);
-    for (let i = 1; i < list.length; i++) { const n = alliesNear(list[i]); if (n < bestN) { bestN = n; best = list[i]; } }
+    for (let i = 1; i < list.length; i++) { const nn = alliesNear(list[i]); if (nn < bestN) { bestN = nn; best = list[i]; } }
     return best;
   }
-  for (let i = 0; i < sup.armory; i++) { const c = bestCity(false); if (c) for (let j = 0; j < 2; j++) spawnAllyUnit(resolveAllyKey('tank'), c); }   // +2 heavy tanks PER Armory copy
-  for (let i = 0; i < sup.aadepot; i++) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('aa'), c); }   // +1 AA PER AA Depot copy
-  if (haveAirbaseBuilt()) for (let i = 0; i < sup.airfoundry; i++) { const c = bestCity(false); if (c) spawnAllyUnit(resolveAllyKey('strikejet'), c); }   // +1 heavy bomber PER Air Foundry copy (needs a standing Airbase)
-  for (let i = 0; i < sup.heavyport; i++) { const c = bestCity(true); if (c) spawnAllyUnit('destroyer', c); }   // +1 warship PER Heavy Port copy, at a coastal city
+  for (let i = 0; i < sup.armory; i++) { const c = bestCity(false); if (c) for (let j = 0; j < 2; j++) { spawnAllyUnit(resolveAllyKey('tank'), c); n++; } }   // +2 heavy tanks PER Armory copy
+  for (let i = 0; i < sup.aadepot; i++) { const c = bestCity(false); if (c) { spawnAllyUnit(resolveAllyKey('aa'), c); n++; } }   // +1 AA PER AA Depot copy
+  if (haveAirbaseBuilt()) for (let i = 0; i < sup.airfoundry; i++) { const c = bestCity(false); if (c) { spawnAllyUnit(resolveAllyKey('strikejet'), c); n++; } }   // +1 heavy bomber PER Air Foundry copy (needs a standing Airbase)
+  for (let i = 0; i < sup.heavyport; i++) { const c = bestCity(true); if (c) { spawnAllyUnit('destroyer', c); n++; } }   // +1 warship PER Heavy Port copy, at a coastal city
+  return n;   // v4.4 — folded into deliverAllyClump's single aggregate delivery count/float-text
 }
 // per-frame delivery clock — called from updateGame right beside the G.allyCd countdown. Advances the
 // SHARED clump clock (not a per-battalion one any more) and fires deliverAllyClump every time it rolls
@@ -6776,6 +6812,14 @@ function deliverAllyClumpExtras(cities) {
 function tickAllyBattalions(dt) {
   if (!G.allyBattalions) G.allyBattalions = [];
   G._allyPanelT = (G._allyPanelT || 0) + dt; if (G._allyPanelT > 1) { G._allyPanelT = 0; const ap = document.getElementById('alliesPanel'); if (ap && ap.classList.contains('show')) buildAlliesPanel(); }   // live-refresh the panel while it's open, throttled to ~1/s
+  // ⚑ ARRIVAL FX QUEUE — drains one gentle touchdown effect every ALLY_DROP_GAP seconds (see spawnAllyUnit /
+  // allyLandingFx), so a 6-11-unit delivery reads as a stream of arrivals instead of a stack of flashes in one
+  // frame. Runs independent of the battalion list below (a hire dump's queued FX must still drain out even
+  // after every battalion is later wiped).
+  if (G._allyDropQ && G._allyDropQ.length) {
+    G._allyDropT = (G._allyDropT || 0) - dt;
+    while (G._allyDropT <= 0 && G._allyDropQ.length) { const q = G._allyDropQ.shift(); allyLandingFx(q.x, q.y, q.domain); G._allyDropT += ALLY_DROP_GAP; }
+  } else G._allyDropT = 0;
   if (!G.allyBattalions.length) return;
   G.allyClumpT = (G.allyClumpT || 0) + dt;
   const iv = allyClumpInterval();
@@ -7665,7 +7709,8 @@ function updUnits(dt) {
       u.wCd2 = (u.wCd2 == null ? Math.random() * (d.rate2 || 1) : u.wCd2) - dt;
       if (t2 && u.wCd2 <= 0) { u.wCd2 = jitterCd((d.rate2 || 1) / (1 + G.mult.rof) / auraAt(u.x, 'rof'));
         const sy2 = u.y, lt2 = leadTime(d.weapon2, u.x, sy2, t2), ex2 = t2.x + (t2.vx || 0) * lt2 + (Math.random() - .5) * 14, ey2 = t2.y + (t2.vy || 0) * lt2, sdmg2 = (d.dmg2 != null ? d.dmg2 : d.dmg) * (1 + G.mult.dmg) * auraAt(u.x, 'dmg'), homing = d.weapon2 === 'rocket' || d.weapon2 === 'missile';   // War Academy dmg aura applies to the secondary turret too
-        if (t2.interceptable || t2.pdable) { flakHit(t2, sdmg2); SFX.shoot(); } else fireCeil(ceil2, u.x, sy2, d.weapon2, ex2, ey2, true, sdmg2, homing ? t2 : null, false, undefined, d.domain === 'air' ? 'small' : 'large', false, d.bigMissile && (d.weapon2 === 'rocket' || d.weapon2 === 'missile')); claimDmg(t2, sdmg2); }
+        if (t2.interceptable || t2.pdable) { flakHit(t2, sdmg2); SFX.shoot(); } else { const _hgStart = G.proj.length; fireCeil(ceil2, u.x, sy2, d.weapon2, ex2, ey2, true, sdmg2, homing ? t2 : null, false, undefined, d.domain === 'air' ? 'small' : 'large', false, d.bigMissile && (d.weapon2 === 'rocket' || d.weapon2 === 'missile')); if (d.heavyGun) for (let _hi = _hgStart; _hi < G.proj.length; _hi++) G.proj[_hi].heavy = true; }   // HEAVY GUN (v4.4) — mirrors _stampFireCeil: stamp p.heavy on every round THIS secondary-turret shot just pushed (Warthog autocannon / Mastodon chin gun), so the renderer & impact FX can draw/react to it differently from an ordinary tracer
+        claimDmg(t2, sdmg2); }
     }
     // ⊛ MULTI-TURRET MOUNTS (Phase 2b) — capital ships (d.turrets array) carry an arbitrary number of INDEPENDENT mounts
     // beyond weapon2, each with its own cooldown & own acquired target — mirrors the SECONDARY TURRET block above, just
@@ -8521,8 +8566,9 @@ function updProj(dt) {
     let list = p.friendly ? hostileList : friendlyList;
     if (p.friendly && p.homeTgt && p.homeTgt.pdable && p.homeTgt.life > 0) list = list.concat(p.homeTgt);   // an interceptor hard-locked onto a pdable enemy missile can detonate on exactly that round (pdable rounds aren't in incList)
     const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   // fast relentless missiles get a swept hit-radius so they don't tunnel through targets
+    if (p.heavy && p.k === 'tracer') { for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { spark(p.x, p.y, 3); break; } } }   // HEAVY GUN (v4.4) — a read-only pre-check, own small hit-scan mirroring the generic one below: Warthog autocannon / Mastodon chin gun rounds get a small impact spark; ordinary tracer/flak still spawns none (see the PERF note on the line below)
     for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg * (p.fade ?? 1), p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } else if (p.friendly && (p.k === 'shell' || p.k === 'rail') && t.kind && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.x - p.x) ** 2 + (t.y - p.y) ** 2 < 1600) t.evadeT = 1.2; }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit. NEAR-MISS EVASION (v4.0 C) — a heavy round (shell/rail — rod is rail with p.big) passing within 40px (1600=40²) of a live enemy AIR unit without actually hitting it still spooks it into evasive jinking, mirroring the on-hit trigger in hurt(); bosses/bulwark/shieldgen/ground/anchored never evade
-    if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
+    if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); else if (p.heavy && p.k === 'tracer') boom(p.x, groundY(p.x), 2); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }   // HEAVY GUN (v4.4) — a heavy round that reaches the ground gets a small boom (3-arg call) instead of nothing
   }
   filterInPlace(G.proj, p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // PERF: in-place compaction, see filterInPlace() — keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
   if (G.proj.length > 1400) G.proj.splice(0, G.proj.length - 1400);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
@@ -8959,11 +9005,11 @@ function renderProj(p, px) {
   else if (p.k === 'subbomb') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.fillStyle = '#15181c'; c.fillRect(-5, -1.8, 10, 3.6); c.fillStyle = '#ffb24a'; c.beginPath(); c.arc(-5, 0, 1.6, 0, 6.28); c.fill(); c.restore(); }
   else if (p.k === 'bomblet') { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx) + Math.PI / 2); ART.bomblet(c, p.s || 3); c.restore(); }   // v4.0.4 B — unguided cluster submunition, see spawnBomblets
   else if (p.stream) { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff9a6b' : '#ffd27a'; c.strokeStyle = col; c.lineWidth = .9; c.shadowColor = '#ff7a30'; c.shadowBlur = 3; c.beginPath(); c.moveTo(-2.4, 0); c.lineTo(1, 0); c.stroke(); c.shadowBlur = 0; c.restore(); }   // rotary-cannon stream round — a tiny bright fleck, drawn small so a burst reads as a continuous jet of fire
-  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff2b0'), hot = !p.friendly ? '#ffe0cc' : '#fffbe8';   // a THIN bullet + tracer trail — tapered streak fading to nothing behind a bright point round
+  else { c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); const col = !p.friendly ? '#ff8a5a' : (p.fire ? '#ffd15a' : '#fff2b0'), hot = !p.friendly ? '#ffe0cc' : '#fffbe8', heavy = !!p.heavy;   // a THIN bullet + tracer trail — tapered streak fading to nothing behind a bright point round. p.heavy (v4.4 — Warthog autocannon / Mastodon chin gun) draws 2x thicker with a bigger, brighter head so a heavy round reads distinctly from ordinary flak
     c.globalCompositeOperation = 'lighter';
     let g = _tracerCache.get(col); if (!g) { g = c.createLinearGradient(-6, 0, 1.5, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col); _tracerCache.set(col, g); }   // PERF: tracer runs in a fixed local frame (-6,0)→(1.5,0) after translate/rotate, so ONE gradient per colour serves every bullet — no per-round allocation
-    c.strokeStyle = g; c.lineWidth = .6; c.beginPath(); c.moveTo(-6, 0); c.lineTo(1.5, 0); c.stroke();   // tapered tracer trail — SHORT, THIN & bright (a real tracer streak, not a fat blob); shorter length + lower shadowBlur also cut per-round render cost
-    c.fillStyle = hot; c.shadowColor = col; c.shadowBlur = 2; c.beginPath(); c.arc(1.5, 0, .5, 0, 6.28); c.fill(); c.shadowBlur = 0;   // small bright bullet head
+    c.strokeStyle = g; c.lineWidth = heavy ? 1.2 : .6; c.beginPath(); c.moveTo(-6, 0); c.lineTo(1.5, 0); c.stroke();   // tapered tracer trail — SHORT, THIN & bright (a real tracer streak, not a fat blob); shorter length + lower shadowBlur also cut per-round render cost
+    c.fillStyle = heavy ? '#ffffff' : hot; c.shadowColor = col; c.shadowBlur = heavy ? 4 : 2; c.beginPath(); c.arc(1.5, 0, heavy ? .8 : .5, 0, 6.28); c.fill(); c.shadowBlur = 0;   // small bright bullet head
     c.globalCompositeOperation = 'source-over'; c.restore(); }
 }
 // cyberpunk overlay for buildings in advanced eras: neon edge + glowing strip lights + a soft top glow

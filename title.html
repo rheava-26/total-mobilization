@@ -1080,7 +1080,7 @@ let actx, mvol, lastShot = 0;
 function initAudio() { if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); mvol = actx.createGain(); mvol.gain.value = .22; mvol.connect(actx.destination); } catch (e) {} }
 function blip(f, dur, type, v) { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'square'; o.frequency.setValueAtTime(f, actx.currentTime); g.gain.setValueAtTime(v || .3, actx.currentTime); g.gain.exponentialRampToValueAtTime(.0008, actx.currentTime + dur); o.connect(g); g.connect(mvol); o.start(); o.stop(actx.currentTime + dur); }
 function noise(dur, v) { if (!actx) return; const n = (actx.sampleRate * dur) | 0, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2); const s = actx.createBufferSource(); s.buffer = b; const g = actx.createGain(); g.gain.value = v || .5; s.connect(g); g.connect(mvol); s.start(); }
-const SFX = { shoot() { const t = performance.now(); if (t - lastShot < 45) return; lastShot = t; blip(380 + Math.random() * 160, .05, 'square', .16); }, launch() { blip(180, .28, 'sawtooth', .22); noise(.18, .3); }, boom() { noise(.5, .8); blip(58, .4, 'sine', .5); }, click() { blip(660, .04, 'triangle', .3); }, build() { blip(300, .1, 'sine', .35); blip(440, .12, 'sine', .25); }, research() { blip(330, .14, 'sine', .3); blip(495, .2, 'sine', .22); blip(660, .26, 'triangle', .16); }, split() { blip(150, .14, 'sawtooth', .34); noise(.22, .55); blip(70, .3, 'sine', .4); }, rip() { noise(.12, .4); blip(220, .08, 'square', .25); } };
+const SFX = { shoot() { const t = performance.now(); if (t - lastShot < 45) return; lastShot = t; blip(380 + Math.random() * 160, .05, 'square', .16); }, launch() { blip(180, .28, 'sawtooth', .22); noise(.18, .3); }, boom() { noise(.5, .8); blip(58, .4, 'sine', .5); }, click() { blip(660, .04, 'triangle', .3); }, build() { blip(300, .1, 'sine', .35); blip(440, .12, 'sine', .25); }, research() { blip(330, .14, 'sine', .3); blip(495, .2, 'sine', .22); blip(660, .26, 'triangle', .16); }, split() { blip(150, .14, 'sawtooth', .34); noise(.22, .55); blip(70, .3, 'sine', .4); }, rip() { noise(.12, .4); blip(220, .08, 'square', .25); }, charge() { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(140, actx.currentTime); o.frequency.linearRampToValueAtTime(520, actx.currentTime + 1.1); g.gain.setValueAtTime(.001, actx.currentTime); g.gain.linearRampToValueAtTime(.16, actx.currentTime + 1.0); g.gain.exponentialRampToValueAtTime(.0008, actx.currentTime + 1.2); o.connect(g); g.connect(mvol); o.start(); o.stop(actx.currentTime + 1.2); } };   /* v4.4 — a rising charge tone for the telegraphed antimatter lance: pitch climbs as the charge fills, so the player hears the shot coming before it fires */
 let lastWhoom = 0;
 function whoom() { if (!actx) return; const t = performance.now(); if (t - lastWhoom < 60) return; lastWhoom = t; const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(150, actx.currentTime); o.frequency.exponentialRampToValueAtTime(430, actx.currentTime + .12); g.gain.setValueAtTime(.0001, actx.currentTime); g.gain.exponentialRampToValueAtTime(.13, actx.currentTime + .04); g.gain.exponentialRampToValueAtTime(.0006, actx.currentTime + .19); o.connect(g); g.connect(mvol); o.start(); o.stop(actx.currentTime + .2); }
 let lastRumble = 0;
@@ -3421,7 +3421,7 @@ function newGame(diff) {
   const intent = diff === 'custom' ? 'custom' : ({ recruit: 'recon', officer: 'decap', general: 'invasion', apocalypse: 'glass', extinction: 'extinction' }[diff] || 'invasion');   // difficulty = the autofleet's INTENT, not just stat bars (custom = the Scenario Editor)
   G = {
     ic: 320, mp: 180, inf: 50, infBonus: 0, infMomentum: 1, infSpent: false, stab: 65, stabCap: 65, stabReserve: 0, stabReserveMax: 0, res: 0, antimatter: 0, comp: { alloy: 0, rocketpart: 0 }, bmod: {}, diff: dm, intent, allyCd: 0,
-    cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], owned: {}, _bgIndex: {},   // BATTLEGROUPS — { [unitKey]: [liveGroupLeaders...] }, see bgOnSpawn/bgDrop near spawnUnit
+    cities: [], buildings: [], units: [], enemies: [], proj: [], parts: [], sites: [], nodes: [], fires: [], beams: [], domes: [], teleLines: [], owned: {}, _bgIndex: {},   // BATTLEGROUPS — { [unitKey]: [liveGroupLeaders...] }, see bgOnSpawn/bgDrop near spawnUnit; teleLines — hostile lance charge-up telegraphs (v4.4), see plasmaLanceFire
     // conventional arsenal is unlocked from the start; research = exotic doctrines only
     unlocked: { info: true, mobilize: true, metals: true, rocketry: true, navalpwr: true, avionics: true, orbital: true, kinetics: true }, society: null, dystopia: false,
     firedEvents: {}, evt: {}, evtT: 0, _eventOpen: null,   // SUPER EVENTS state
@@ -4291,7 +4291,7 @@ function weaponCeil(d, wkey, second) {
 function airFilter(d) { if (d._airF !== undefined) return d._airF;   // MEMOIZED PER DEF — effDef() returns an identity-stable object per key+unlock-state (see its own comment), so this closure only ever needs building ONCE per distinct def, not once per unit per tick; was allocating a brand-new (e=>...) closure on every single call (every unit, every frame) for noGround/groundAtk defs
   return d._airF = (d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : d.weapon === 'rod' ? notSpaceStationed : null); }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air; ROD-armed space units (Tungsten Rods "Zeus") are kinetic GROUND bombardment — see notSpaceStationed
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
-function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50; }   // TUNGSTEN ROD target rule — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
+function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50 || (e.anchored && e.boss); }   // TUNGSTEN ROD target rule — v4.4: also allows a parked BOSS hull (bombarder/carrier/annihilator) even up in the exosphere, so Zeus can engage the hull itself, not just its (now-lower) grid; still excludes ordinary anchored orbital hardware (railsat/lasersat/mender/bulwark) sitting at the rod sat's own altitude — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
 // HELICOPTERS need no runway — they rearm/refuel at ANY heli-depot, airbase, or building flagged rotorBase, AND at any surviving city.
 // Cities aren't in G.buildings, so a fresh lightweight {x,hp} wrapper stands in for them (resolved every call — currentBase never caches a heli's base).
@@ -5046,7 +5046,8 @@ function attachEscorts(e) {
       ne.escortOf = e;
       if (ek === 'shieldgen') continue;   // shieldgen def/handling is off-limits here — leave it on its own normal reentry-fall-then-deploy-dome path, untouched, just tagged as this parent's escort
       ne.reentry = false;
-      if (ne.air) { ne.hold = e.hold + (Math.random() - .5) * 180; ne.y = ne.hold; }   // air/space escorts take station near the parent's own altitude
+      if (ek === 'escortfighter' && (e.bombarder || e.carrier)) { ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; }   // v4.4 — a bombarder/carrier's personal screen takes station in the same low grid band as its satellites, not up at the hull's own high-orbit altitude — they were untouchable parked next to it
+      else if (ne.air) { ne.hold = e.hold + (Math.random() - .5) * 180; ne.y = ne.hold; }   // air/space escorts of every other boss take station near the parent's own altitude, unchanged
       else ne.y = ne.hold;   // ground escorts simply land beside it (hold is already computed relative to its own x)
     }
   }
@@ -5419,9 +5420,9 @@ function spawnEnemy(kind, atX, noEscort) {   // G1: optional 3rd arg — pass tr
   else if (kind === 'bulwark') Object.assign(e, { hp: 360 * t, s: 8, armor: 20, spd: 7, hold: SPACE_Y() * .92, weapon: 'plasarc', dmg: 83, rate: 5.5, dives: false, art: 'ebulwark' });   // CONSTANT THREAT — exosphere heavy-armour platform lobbing nuke-calibre plasma DOWN at the ground (no air flag → it bombards cities/units, not aircraft); ground missiles can't even reach it, only space weapons / orbital guns / tractor-deorbit
   else if (kind === 'breacher') Object.assign(e, { hp: 300 * t, s: 7, armor: 12, spd: 0, hold: landY(wxw) - 7, weapon: 'none', dmg: 0, rate: 0, dives: false, ground: true, anchored: true, breacher: true, fieldR: 190, fieldHp: Math.round((360 + (G.invTime || 0) * 4) * G.diff), art: 'ebreacher' });   // BEACHHEAD ANCHOR — lands, throws up a DEFLECTOR FIELD that scrubs your incoming projectiles (incl. the AoE rounds that bypass shields), and FABRICATES ground reinforcements while it holds. Beams / strategic strikes punch through; sustained fire collapses the field, then you can kill it.
   // ===== BOMBARDER'S ORBITAL DEFENSE GRID (deployed on arrival — see the bombarder block in updEnemies) =====
-  else if (kind === 'railsat') Object.assign(e, { hp: 20 * t, s: 3, armor: 2, spd: 0, hold: SPACE_Y() * .68, weapon: 'rail', dmg: 43, rate: 5.28, dives: false, air: true, anchored: true, range: RAILSAT_RANGE, art: 'rods' });   // orbital railgun satellite — cheap, numerous, hits hard at range (range CLAMPED so it can't snipe the whole map)
-  else if (kind === 'lasersat') Object.assign(e, { hp: 15 * t, s: 3, armor: 1, spd: 0, hold: SPACE_Y() * .68, weapon: 'beam', dmg: 10, rate: 1.1, dives: false, air: true, anchored: true, range: LASERSAT_RANGE, art: 'satlaser' });   // orbital laser-defense satellite — a LOCAL picket of constant-fire lasers (range CLAMPED — no more whole-map sniping)
-  else if (kind === 'mender') Object.assign(e, { hp: 110 * t, s: 5, armor: 6, spd: 0, hold: SPACE_Y() * .68, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, mender: true, healR: 320, healRate: 22, art: 'eshield' });   // SUPPORT SHIP — no guns of its own; projects a repair field that mends every hostile it can reach
+  else if (kind === 'railsat') Object.assign(e, { hp: 20 * t, s: 3, armor: 2, spd: 0, hold: MESO_TOP() + 40 + Math.random() * 80, weapon: 'rail', dmg: 43, rate: 5.28, dives: false, air: true, anchored: true, range: RAILSAT_RANGE, art: 'rods' });   // orbital railgun satellite — cheap, numerous, hits hard at range (range CLAMPED so it can't snipe the whole map). v4.4 — grid descends to just above the mesosphere ceiling (was parked in the exosphere with the hull, out of reach of most ground AA); keeps ground fire
+  else if (kind === 'lasersat') Object.assign(e, { hp: 15 * t, s: 3, armor: 1, spd: 0, hold: MESO_TOP() + 40 + Math.random() * 80, weapon: 'beam', dmg: 10, rate: 1.1, dives: false, air: true, anchored: true, airOnly: true, range: LASERSAT_RANGE, art: 'satlaser' });   // orbital laser-defense satellite — a LOCAL picket of constant-fire lasers (range CLAMPED — no more whole-map sniping). v4.4 — grid descends with railsat/mender; airOnly:true (never snipes ground)
+  else if (kind === 'mender') Object.assign(e, { hp: 110 * t, s: 5, armor: 6, spd: 0, hold: MESO_TOP() + 40 + Math.random() * 80, weapon: 'none', dmg: 0, rate: 0, dives: false, air: true, anchored: true, mender: true, healR: 320, healRate: 12, art: 'eshield' });   // SUPPORT SHIP — no guns of its own; projects a repair field that mends every hostile it can reach. v4.4 — healRate 22→12, grid descends with railsat/lasersat
   else Object.assign(e, { hp: 200 * t, s: 7, armor: 10, spd: 0, hold: landY(wxw) - 7, weapon: 'rocket', dmg: 25, rate: 3.52, dives: false, anchored: true, producer: true, prodCd: 7, harvester: true, reinforceEligible: true, art: 'eharvester' });   // harvester — lands, anchors, keeps dropping reinforcements, and (like the other anchored superweapons) calls in one support group if it survives long enough
   if (e.ground && !G._gSpawnLog) G._gSpawnLog = [];   // v4.1 F I1 — THE FLEET REACTS: timestamp log of every ground-kind spawn, pruned to the trailing 60s in scanEnemyIntel
   if (e.ground) G._gSpawnLog.push(G.invTime || 0);
@@ -6003,6 +6004,26 @@ function updateGame(dt) {
     }
     for (let n = 0; n < 3; n++) { const fx = bm.x + (Math.random() - .5) * bm.r * 1.7, fy = Math.random() * groundY(bm.x); G.parts.push({ k: 'plasma', x: fx, y: fy, vx: (Math.random() - .5) * 16, vy: (Math.random() - .5) * 36, r: 2 + Math.random() * 4, life: .3 + Math.random() * .4, hostile: bm.hostile }); }
     if (bm.life <= 0) { pushCrater({ x: bm.x, r: 84, depth: .067 }); capCraters(); groundBurst(bm.x, 20); G.beams.splice(i, 1); }
+  }
+  // v4.4 TELEGRAPHED LANCE — charge-ups started by plasmaLanceFire: track the owning hull, keep the drawn
+  // line pinned to its current position, and fire the actual bolt once the charge empties. Re-reads the
+  // densest cluster at the moment of firing; if it drifted more than 120px from the aim the charge locked
+  // onto, the shot re-aims there instead — pulling units clear during the 1.2s charge actually saves them.
+  if (G.teleLines.length) for (let i = G.teleLines.length - 1; i >= 0; i--) {
+    const tl = G.teleLines[i], e = tl.e;
+    if (!e || e.hp <= 0) { G.teleLines.splice(i, 1); continue; }   // owning hull died mid-charge — the telegraph just fizzles, no bolt
+    tl.x1 = e.x; tl.y1 = e.y; tl.t -= dt;
+    if (tl.t <= 0) {
+      let ax = tl.ax, ay = tl.ay;
+      const reAim = densestShipClusterNear(e.x, 1400);
+      if (reAim && Math.hypot(reAim.x - tl.ax, reAim.y - tl.ay) > 120) { ax = reAim.x; ay = reAim.y; }
+      const ang = Math.atan2(ay - e.y, ax - e.x), v = 3000;
+      G.proj.push({ k: 'amlance', x: e.x, y: e.y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, dmg: AMLANCE_DMG * invT(), life: 3, friendly: false, tr: [] });
+      G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.4, life: .12, bloom: true });
+      floatText(e.x, e.y - e.s - 10, '⚡ ANTIMATTER LANCE', '#d9b3ff');
+      if (SFX.launch) SFX.launch();
+      G.teleLines.splice(i, 1);
+    }
   }
   // beachhead shield domes — a dome TIED TO A LIVE GENERATOR (dm.gen) persists & recharges for as long as its generator
   // stands, and collapses the instant the generator's HP hits 0; an untied/legacy dome just protects the landing until your
@@ -7014,13 +7035,18 @@ function densestShipClusterNear(x, r) {
 // hits, then PIERCES on for another 300px hitting anything else on the line before it expires — "bombardiers
 // need bigger heavier guns that can fire massive explosive lances like antimatter railguns at enemy ships at
 // incredible speed" — reused for the carrier's 3-lance ripple as well as the bombarder's single gun.
+// v4.4 TELEGRAPHED LANCE — plasmaLanceFire no longer fires immediately: it starts a LANCE_CHARGE_T
+// charge-up (a hostile telegraph line from the hull to the locked aim point, plus a rising tone) and
+// pushes it onto G.teleLines; the bolt itself only leaves the barrel once that charge empties (see the
+// G.teleLines tick block, right after the G.beams block, in updateGame). Firing at your densest ship
+// cluster still happens on the SAME cadence as before (e.lanceCd/e.rippleCd, untouched) — only the shot
+// is now dodgeable: a cluster that scatters more than 120px from where the charge locked genuinely
+// escapes it (see the re-aim check where the charge actually fires).
 function plasmaLanceFire(e) {
   const tgt = densestShipClusterNear(e.x, 1400); if (tgt == null) return;
-  const ang = Math.atan2(tgt.y - e.y, tgt.x - e.x), v = 3000;
-  G.proj.push({ k: 'amlance', x: e.x, y: e.y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, dmg: 300 * invT(), life: 3, friendly: false, tr: [] });
-  G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 1.4, life: .12, bloom: true });
-  floatText(e.x, e.y - e.s - 10, '⚡ ANTIMATTER LANCE', '#d9b3ff');
-  if (typeof blip === 'function') blip(200, .22, 'sawtooth', .22);
+  G.teleLines.push({ e, t: LANCE_CHARGE_T, total: LANCE_CHARGE_T, ax: tgt.x, ay: tgt.y, x1: e.x, y1: e.y });
+  if (SFX.charge) SFX.charge(); else if (typeof blip === 'function') blip(160, .3, 'sawtooth', .18);
+  floatText(e.x, e.y - e.s - 10, '⚡ LANCE CHARGING', '#d9b3ff');
 }
 // BUNKER-BUSTER TARGET PRIORITY — the autofleet ranks your structures by how much killing them hurts you: air power first, then your economy of war, then anything fragile-and-catastrophic, then the defences shielding a landing, then general infrastructure.
 function busterScore(b) { const d = b.d, k = b.key; if (k === 'airbase' || k === 'aeroworks' || k === 'ugairwing') return 100; if (d.fallout || k === 'amextractor') return 92; if (k === 'extractor' || k === 'deepore') return 84; if (d.strat || k === 'uranenrich' || k === 'droidfoundry' || k === 'genefac' || k === 'cloningfac' || k === 'spacestation' || k === 'spacecenter' || k === 'massrail') return 72; if (d.cat === 'DEF') return 52; if (k === 'radar' || k === 'powerplant' || k === 'ammodepot' || k === 'munition' || k === 'factory' || k === 'shipyard' || k === 'housing') return 26; return 12; }
@@ -8069,6 +8095,15 @@ const RAILSAT_RANGE = 1900;      // the offensive railgun sats keep a longer rea
 const BOMBARDER_SAT_N = 8;       // sats of EACH type deployed on arrival (was 10 — a modest tone-down of the grid's density)
 const PD_UNINTERCEPTABLE = { rail: 1, shell: 1 };   // v4.1 — point-defence lances MISSILES (rockets/microrockets/strategic ordnance), never hypervelocity kinetic slugs (railguns/tungsten rods) or tank shells — those are too fast/dumb-fired to intercept
 const PD_LANCE_DMG = 30;   // v4.2 — damage one enemy PD lance does to a strategic round's hp (see STRAT_MSL_HP): a strategic missile survives several lances instead of dying to the first one; an ordinary missile/rocket (no hp) still dies to one lance, unchanged
+// ── PD_SAT — SATURABLE POINT DEFENCE (v4.4) ────────────────────────────────────────────────────
+// The wall of PD hulls used to be an unlimited faucet: every one of them could lance its whole nMax
+// EVERY sweep, forever, no matter how many rounds you threw at it — "the main gun completely erased
+// most of my ground units" was really this, not the lance. Give each PD-capable hull a real ammo
+// pool instead: it regens `rate` intercepts/second up to `max`, so a burst still gets swatted, but
+// throwing more rounds at it than it can regenerate DRAINS the pool and lets fire through — mass
+// wins by SATURATING the defence, never by being individually stronger than it (tenet #1: the
+// answer to "this is OP" is a defence you can overwhelm, not a smaller fleet).
+const PD_SAT = { bombarder: { rate: 5, max: 10 }, carrier: { rate: 14, max: 28 }, escortfighter: { rate: 1, max: 2 }, annihilator: { rate: 3, max: 6 } };
 // v4.2 — POINT DEFENSE vs STRATEGIC ORDNANCE: a lance against a friendly strat:true round with hp DAMAGES it
 // (PD_LANCE_DMG) instead of deleting it outright; it only dies once hp is spent. A round with no hp (ordinary
 // missiles/rockets/microrockets, AMI, Aegis) keeps the old one-shot kill — that's the "regular system" untouched.
@@ -8087,13 +8122,17 @@ function pdSweep(e, r, nMax, cx2, cy2) {
   }
   if (!cands.length) return;
   cands.sort((a, b) => a.d - b.d);
-  const pts = [], n = Math.min(nMax, cands.length);
-  for (let i = 0; i < n; i++) { const p = cands[i].p; pdLanceHit(p); pts.push([p.x, p.y]); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 4, life: .12 }); spark(p.x, p.y, 2); }
+  let n = Math.min(nMax, cands.length);
+  if (e.pdBudget != null) { if (e.pdBudget < 1) return; n = Math.min(n, Math.floor(e.pdBudget)); if (n < 1) return; }   // v4.4 SATURABLE PD — a hull with an ammo pool (see PD_SAT/updEnemies) can only lance what it currently has budget for; a hull with no pool (e.pdBudget stays null) behaves exactly as before, unlimited
+  const pts = [];
+  for (let i = 0; i < n; i++) { const p = cands[i].p; pdLanceHit(p); pts.push([p.x, p.y]); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 4, life: .12 }); spark(p.x, p.y, 2); if (e.pdBudget != null) e.pdBudget--; }
   G.proj.push({ k: 'pdfan', x: e.x, y: e.y, pts, life: .12, friendly: false, dmg: 0 });
 }
-const AMLANCE_SPLASH = .3, AMLANCE_PIERCE_HITS = 4;   // v4.2 — fraction of a lance's damage its 90px burst deals to everything that isn't the hull it hit
+const AMLANCE_SPLASH = .3, AMLANCE_PIERCE_HITS = 2;   // v4.4 — fraction of a lance's damage its 90px burst deals to everything that isn't the hull it hit; pierce hits cut from 4 to 2 (was punching through a whole formation for free)
+const AMLANCE_DMG = 220;   // v4.4 — first-hull lance damage per ×invT, down from 300: the telegraph (see plasmaLanceFire) is the real answer to it "erasing" a ground cluster — a warned player can scatter, so the hit itself didn't need to stay as heavy
+const LANCE_CHARGE_T = 1.2;   // v4.4 — seconds the lance visibly telegraphs (hostile line hull→aim + rising tone) before it actually fires; see plasmaLanceFire/G.teleLines
 const FLAK_AIR = 8;   // v4.2 — flak burst damage to player aircraft per ×invT (a Falcon survives one burst and dies to the second; 40 was a one-burst no-fly zone that took a 95-fighter force to 12 in 15s on the bench)
-const FLAK_DMG = 60, FLAK_R = 260;   // v4.2 — the flagship's antimatter batteries: a wide expanding burst instead of a lance, meant to clear a whole cluster of incoming rounds/aircraft at once, not pick off one at a time
+const FLAK_DMG = 60, FLAK_R = 260, FLAK_CAP = 12;   // v4.2 — the flagship's antimatter batteries: a wide expanding burst instead of a lance, meant to clear a whole cluster of incoming rounds/aircraft at once, not pick off one at a time. v4.4: FLAK_CAP saturates it the same way PD_SAT does — the ring only ever clears its nearest 12 rounds, not literally everything in range
 // v4.2 — ANTIMATTER FLAK BURST: an expanding ring centred on the flagship that damages every intercept-eligible
 // friendly projectile AND every player air unit within FLAK_R. Strategic rounds (hp-bearing) take FLAK_DMG off
 // their hp like a PD lance; anything else dies outright. Aircraft just take a flat hit — they don't die to one burst.
@@ -8101,11 +8140,15 @@ function flagshipFlakBurst(e) {
   G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 8, max: FLAK_R, life: .5 });
   G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 26, life: .2, bloom: true });
   G.proj.push({ k: 'flakring', x: e.x, y: e.y, life: .12, friendly: false, dmg: 0 });
+  const cands = [];   // v4.4 — SATURATE, don't erase: the ring only clears its nearest FLAK_CAP rounds, not literally every friendly projectile in range
   for (const p of G.proj) {
     if (!p.friendly || p.life <= 0 || PD_UNINTERCEPTABLE[p.k]) continue;
-    if (Math.hypot(p.x - e.x, p.y - e.y) > FLAK_R) continue;
-    if (p.strat && p.hp != null) { p.hp -= FLAK_DMG; if (p.hp <= 0) p.life = 0; } else p.life = 0;
+    const dd = (p.x - e.x) ** 2 + (p.y - e.y) ** 2; if (dd > FLAK_R * FLAK_R) continue;
+    cands.push({ p, dd });
   }
+  cands.sort((a, b) => a.dd - b.dd);
+  const cn = Math.min(FLAK_CAP, cands.length);
+  for (let i = 0; i < cn; i++) { const p = cands[i].p; if (p.strat && p.hp != null) { p.hp -= FLAK_DMG; if (p.hp <= 0) p.life = 0; } else p.life = 0; }
   for (const u of G.units) {
     if (!u.d || u.d.domain !== 'air') continue;
     if (Math.hypot(u.x - e.x, u.y - e.y) > FLAK_R) continue;
@@ -8144,6 +8187,7 @@ function updEnemies(dt) {
     for (const [k, arr] of buckets) { const nxt = buckets.get(k + 1) || [];
       for (let i = 0; i < arr.length; i++) { const u = arr[i]; for (let j = i + 1; j < arr.length; j++) sepE(u, arr[j]); for (let j = 0; j < nxt.length; j++) sepE(u, nxt[j]); } } }
   for (const e of G.enemies) {
+    if (PD_SAT[e.kind]) { const cfg = PD_SAT[e.kind]; if (e.pdBudget == null) { e.pdRate = cfg.rate; e.pdMax = cfg.max; e.pdBudget = cfg.max; } e.pdBudget = Math.min(e.pdMax, e.pdBudget + e.pdRate * dt); }   // v4.4 SATURABLE PD — every PD-capable hull regens its ammo pool every tick, whether or not it actually swept this frame; pdSweep only ever spends from it, never refills it
     if (e.mfSlam) { e.y += 2600 * dt; const gy = groundY(e.x); if (e.y >= gy) { e.y = gy; boomW(e.x, gy, 8); groundBurst(e.x, 10); e.hp = 0; e.killBy = 'beam'; } continue; }   /* MIND-FORGE SLAM — driven here every tick (not only while the beam is still overlapping it) so a yanked target reliably falls to its death even if it drifts out of the column or the 2.5s beam expires first; zeroes/overrides all normal movement while slammed */
     if (e._lockT > 0) e._lockT -= dt;   // fade the "you are being engaged" target reticle
     if (e.evadeT > 0) e.evadeT -= dt;   // EVASION TIMER (v4.0 C) — mirrors the friendly u.evadeT in hurt(): ticks down regardless of state; consumed in the airborne weave branch below
@@ -8162,7 +8206,7 @@ function updEnemies(dt) {
         }
         G.parts.push({ k: 'flash', x: e.x, y: e.y, r: e.s * 3, life: .2, bloom: true }); if (SFX.split) SFX.split(); shake(4);
         floatText(e.x, e.y - e.s - 6, '💥 CLUSTER RELEASE', '#ffb060');
-        spawnBomblets(e.x, e.y, e.vy, 8 + 2 * Math.round(G.diff), 22 * (G.diff * (1 + G.invTime / 70)), 90);
+        spawnBomblets(e.x, e.y, e.vy, 8 + 2 * Math.round(G.diff), 13 * (G.diff * (1 + G.invTime / 70)), 70);   // v4.4 — per-bomblet dmg 22→13 and radius 90→70: this cluster pod was "severely weakening" the whole screen on one release; leave the opening carpet and the flagship's ambomb untouched
         e.hp = 0; e.deployed = true; continue;
       }
       if (Math.random() < .2 + e.vy / 600) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s * 1.6, y: e.y - e.s, vx: (Math.random() - .5) * 8, vy: -16 - Math.random() * 22, r: 1.4 + Math.random() * 2.4, life: .22 + Math.random() * .3 });   // only really glows hot once it's moving fast
@@ -8192,7 +8236,7 @@ function updEnemies(dt) {
     // paying for a fresh scan. See the LOD block above updUnits.
     const _lodScanE = lodShouldScan(e.x, e.y, e._id, _lodEngBucketsE);
     let tgt;
-    if (_lodScanE) { tgt = near(e.x, e.y, e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) }; e._lodTgt = tgt; }
+    if (_lodScanE) { tgt = near(e.x, e.y, e.airOnly ? _airOnlyList : e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) }; e._lodTgt = tgt; }   // v4.4 — e.airOnly (lasersat) hunts the STRICT air/space pool only, no ground fallback, so it never snipes your ground units
     else { tgt = e._lodTgt; if (!tgt || !lodTargetAlive(tgt)) tgt = { x: e.x, y: groundY(e.x) }; }
     // G1 — ESCORT FIGHTER: orbits its parent super-unit in a slow figure-8, snaps back if pulled too far out, and
     // engages anything that comes within 700px of the PARENT (a real mobile picket screening the super-unit, not
@@ -8203,22 +8247,24 @@ function updEnemies(dt) {
       if (!p || p.hp <= 0) { e.escortOf = null; }
       else {
         e.wob = (e.wob || Math.random() * 6.28) + dt * .6;
-        const cx = p.x + Math.sin(e.wob) * 200, cy = p.y + Math.sin(e.wob * 2) * 80;
-        const dPar = Math.hypot(e.x - p.x, e.y - p.y);
-        const wantX = dPar > 320 ? p.x : cx, wantY = dPar > 320 ? p.y : cy;
+        const baseY = e.hold != null ? e.hold : p.y;   // v4.4 — a bombarder/carrier escort's own hold now sits in the grid band, well below the hull; anchor its figure-8 on ITS hold, not the parent's altitude, or it would just fly up to sit next to a hull it can no longer reach
+        const cx = p.x + Math.sin(e.wob) * 200, cy = baseY + Math.sin(e.wob * 2) * 80;
+        const dPar = Math.abs(e.x - p.x);   // horizontal-only: the parent's x is still the anchor, but its altitude no longer is
+        const wantX = dPar > 320 ? p.x : cx, wantY = dPar > 320 ? baseY : cy;
         e.vx = (e.vx || 0) + (wantX - e.x) * 1.4 * dt; e.vy = (e.vy || 0) + (wantY - e.y) * 1.4 * dt;
         const vm = e.spd * 1.6; e.vx = Math.max(-vm, Math.min(vm, e.vx)) * .96; e.vy = Math.max(-vm, Math.min(vm, e.vy)) * .96;
         e.x += e.vx * dt; e.y += e.vy * dt; e.x = Math.max(20, Math.min(WORLD_W - 20, e.x));
         const et = near(p.x, p.y, _friendlyList, 700);   // engages air/ground/naval alike — whatever's actually threatening the parent
         if (et) { e.aim = Math.atan2(et.y - e.y, et.x - e.x); e.cd = (e.cd == null ? 0 : e.cd) - dt; if (e.cd <= 0) { e.cd = jitterCd(e.rate || 1.6); const ly = leadTime(e.weapon, e.x, e.y, et); fire(e.x, e.y, e.weapon, et.x + (et.vx || 0) * ly, et.y, false, e.dmg, undefined, undefined, undefined, 'small'); } }
         e.escPdCd = (e.escPdCd == null ? .1 : e.escPdCd) - dt;   // MOBILE SATELLITE — swats incoming player rounds (missiles, strategic strikes included — "act like mobile satellites") near itself OR its parent; only pierce (uninterceptable) and beam/instant weapons are exempt; blocks a volley, not one round
-        if (e.escPdCd <= 0) { e.escPdCd = .35; pdSweep(e, 300, 2, p.x, p.y); }
+        if (e.escPdCd <= 0) { e.escPdCd = .35; pdSweep(e, 220, 2); }   // v4.4 — dropped the parent's second centre and tightened 300→220: an escort screen alone was ALSO lancing anything near its parent, doubling the wall's effective coverage
       }
     }
     if (e.producer) { e.prodCd -= dt; if (e.prodCd <= 0 && G.enemies.length < 210) { e.prodCd = (e.fastProd ? 3 : 8) + Math.random() * (e.fastProd ? 2 : 5); const pn = e.prodGroup || 1, pk = e.prodKinds; for (let i = 0; i < pn && G.enemies.length < 222; i++) spawnEnemy(pk ? pk[Math.floor(Math.random() * pk.length)] : 'drone', e.x + (Math.random() - .5) * 100 + i * 34); G.parts.push({ k: 'flash', x: e.x, y: e.y - e.s, r: 6, life: .12 }); floatText(e.x, e.y - e.s - 6, '⚙ CARRIER FABRICATED', '#c9a6ff'); } }   // harvester / hive / bombarder / leviathan act as CARRIERS — periodically birth a small GROUP of normal units, not a lone drone (prodGroup/prodKinds); the HIVE's cadence is boosted (fastProd)
     if (e.mender) {   // SUPPORT SHIP — mends every damaged hostile within its radius, every tick (mirrors the player's Nanite Foundry repair aura, but for the fleet)
-      for (const o of G.enemies) { if (o === e || o.reentry || o.hp <= 0 || o.hp >= o.maxHp) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd < (e.healR || 320) * (e.healR || 320)) { o.hp = Math.min(o.maxHp, o.hp + (e.healRate || 22) * dt); if (Math.random() < .1) spark(o.x, o.y, 1); } }
+      for (const o of G.enemies) { if (o === e || o.reentry || o.hp <= 0 || o.hp >= o.maxHp) continue; const dd = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (dd < (e.healR || 320) * (e.healR || 320)) { o.hp = Math.min(o.maxHp, o.hp + (e.healRate || 12) * dt); if (Math.random() < .1) spark(o.x, o.y, 1); } }
       if (Math.random() < .05) G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: e.healR || 320, life: .8 });
+      e._healPulseCd = (e._healPulseCd == null ? 0 : e._healPulseCd) - dt; if (e._healPulseCd <= 0) { e._healPulseCd = 1; G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 8, max: 46, life: .55 }); }   // v4.4 — a small, readable pulse ON the hull itself (not the wide heal-radius ring above) every ~1s, so the mender reads as "kill this first"
     }
     if (e.breacher) {   // BEACHHEAD ANCHOR — fabricates ground reinforcements under the cover of its deflector field
       e.facCd = (e.facCd == null ? 4 : e.facCd) - dt;
@@ -8238,9 +8284,9 @@ function updEnemies(dt) {
       }
       if (!e.satDeployed && !e.noEscort && e.wallGrid) {   // v4.1 G — FULL ORBITAL DEFENSE GRID (8 railgun sats + 8 laser-defense sats + a repair support ship) is now an OPENING-WALL-ONLY thing (see e.wallGrid, set by openingBombarders): a whole fleet of these on every wave super/adaptive-delay/INTENT bombarder is what made the orbital layer untouchable (100+ sats + 30 escorts eating railgun rounds). Every other bombarder still gets the small escort pair above + its 4 personal escortfighters (attachEscorts) — just not the grid.
         e.satDeployed = true;
-        for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('railsat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
-        for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('lasersat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 140; ne.y = ne.hold; } }
-        spawnEnemy('mender', e.x + (Math.random() - .5) * 160); { const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 100; ne.y = ne.hold; } }
+        for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('railsat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }   // v4.4 — the grid descends to just above the mesosphere ceiling instead of parking at the hull's own high-orbit altitude; the hull itself stays put
+        for (let i = 0; i < BOMBARDER_SAT_N && G.enemies.length < 390; i++) { spawnEnemy('lasersat', e.x + (i - (BOMBARDER_SAT_N - 1) / 2) * 60 + (Math.random() - .5) * 20); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }
+        spawnEnemy('mender', e.x + (Math.random() - .5) * 160); { const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }
         banner('🛰 ORBITAL DEFENSE GRID ONLINE', BOMBARDER_SAT_N + ' railgun sats · ' + BOMBARDER_SAT_N + ' laser sats · a support ship — the CAPITAL FABRICATOR is dug in', 4.5); shake(9); SFX.boom();
       }
       e.snipeCd = (e.snipeCd == null ? 4 + Math.random() * 3 : e.snipeCd) - dt;   // GROUND-SNIPE PLASMA CANNON — picks a player GROUND unit (never air) and drops an orbital plasma bolt on it
@@ -8264,9 +8310,9 @@ function updEnemies(dt) {
       e.pdCd = (e.pdCd == null ? .2 : e.pdCd) - dt; if (e.pdCd <= 0) { e.pdCd = .3; pdSweep(e, 560, 16); }   // FLEET FLAGSHIP POINT DEFENCE — the flagship carries dozens of anti-missile batteries and CIWS cannons: it blocks whole volleys of incoming rounds per sweep, not one round at a time
       if (!e.satDeployed && !e.noEscort) {   // its own orbital defense grid, once — the personal escort (8 escortfighters) was already attached at spawn by attachEscorts
         e.satDeployed = true;
-        for (let i = 0; i < 10 && G.enemies.length < 500; i++) { spawnEnemy('railsat', e.x + (i - 4.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 160; ne.y = ne.hold; } }
-        for (let i = 0; i < 10 && G.enemies.length < 500; i++) { spawnEnemy('lasersat', e.x + (i - 4.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 160; ne.y = ne.hold; } }
-        for (let i = 0; i < 2 && G.enemies.length < 500; i++) { spawnEnemy('mender', e.x + (i - .5) * 90); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = e.hold + (Math.random() - .5) * 100; ne.y = ne.hold; } }
+        for (let i = 0; i < 10 && G.enemies.length < 500; i++) { spawnEnemy('railsat', e.x + (i - 4.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }   // v4.4 — grid descends to the mesosphere ceiling; the flagship hull stays anchored in high orbit
+        for (let i = 0; i < 10 && G.enemies.length < 500; i++) { spawnEnemy('lasersat', e.x + (i - 4.5) * 60); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }
+        for (let i = 0; i < 2 && G.enemies.length < 500; i++) { spawnEnemy('mender', e.x + (i - .5) * 90); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.hold = MESO_TOP() + 40 + Math.random() * 80; ne.y = ne.hold; } }
         banner('🛰 FLAGSHIP DEFENSE GRID ONLINE', '10 railgun sats · 10 laser sats · 2 support ships', 4.5); shake(9); SFX.boom();
       }
       e.lanceCd = (e.lanceCd == null ? 6 : e.lanceCd) - dt;
@@ -8589,7 +8635,7 @@ function updProj(dt) {
         if (p.hits === 1) { const sd = p.dmg * AMLANCE_SPLASH, core = 90 * .42; for (const u of G.units) { if (u === ht || u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - p.x) ** 2 + (u.y - p.y) ** 2; if (dd >= 8100) continue; const dist = Math.sqrt(dd), f = dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (90 - core)), d2 = sd * f; u.killBy = 'amlance'; u.killX = p.x; u.killY = p.y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, p.x, p.y); else u.hp -= d2; } boom(p.x, p.y, 14, resolveStyleAt('antimatter', p.x, p.y)); } shake(6);   /* v4.2 tune: the lance's burst is UNITS-ONLY — a ship-killer's spall hits hulls and crews near the impact, it does not level the buildings around them (the shared splashDamage helper's half-damage-to-buildings was still deleting ~15 stacked batteries per shot) */ G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 28, life: .16, bloom: true }); if (!p.hitSet) p.hitSet = new Set(); p.hitSet.add(ht); if (p.pierceLeft == null) p.pierceLeft = 300;
       }   // first (and every subsequent) hull hit within the pierce window: full AoE burst, but the bolt itself keeps flying — hitSet stops it re-hitting the same hull every frame while it's still overlapping
       if (p.pierceLeft != null) { p.pierceLeft -= Math.hypot(p.vx, p.vy) * dt; if (p.pierceLeft <= 0 || p.y >= groundY(p.x)) p.life = 0; }   // pierce budget spent (300px past the first hit) or it's plunged into the ground → done, no extra burst (already burst on the hit that started the pierce)
-      else if (p.y >= groundY(p.x) || p.life <= 0) { plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), 90, p.dmg, false); shake(6); p.life = 0; }   // never actually hit a hull — bursts once on reaching the ground/max range, same as before
+      else if (p.y >= groundY(p.x) || p.life <= 0) { plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), 90, p.dmg * AMLANCE_SPLASH, false); shake(6); p.life = 0; }   // v4.4 — never actually hit a hull: this is a MISS, so it only bursts for the same splash fraction a glancing hit deals, not the full lance
       continue;
     }
     if (p.k === 'plasball') {   // PLASMA bolt — flies DEAD STRAIGHT (heavy arty variant arcs under gravity); it does NOT home. It has a PROXIMITY FUSE and airbursts as soon as it gets near an enemy, so it never needs a pinpoint hit on a fast mover (a contained plasma slug that detonates in proximity — matches the lore, and fixes the "terrible aim")
@@ -8850,7 +8896,7 @@ function renderGame() {
     if ((d.domain === 'ground' || d.domain === 'naval') && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, d.domain === 'ground' ? gdy : u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow — GROUND shares the sprite's own seated anchor (gdy) so the shadow never floats above/below the feet it belongs to; naval keeps its own hull-relative offset (a boat's shadow sits below the WATERLINE, not d.s away from a lifted y)
     c.save(); c.translate(px, gdy); if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } c.restore(); if (u.shield > 0 && !_extremeLOD) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, gdy - d.s * 2 - 9, u.bg.members.length); }   // BATTLEGROUPS — non-squad leader (kdrone/clone) group-size badge
   // enemies
-  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3;   /* v4.0.1 — spin the warhead's containment ring faster the closer it gets to e.hold (detonation) */ (ART[e.art || e.kind] || ART.drone)(c, e.s); } c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2.4; c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3;   /* v4.0.1 — spin the warhead's containment ring faster the closer it gets to e.hold (detonation) */ (ART[e.art || e.kind] || ART.drone)(c, e.s); } c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e.pdBudget != null && e.pdBudget < 1 && !e.reentry && !_extremeLOD) { c.globalAlpha = .3 + .3 * Math.sin(animClock * .09); c.strokeStyle = '#ff3b3b'; c.lineWidth = 1.6; c.beginPath(); c.arc(px, e.y, e.s * 1.35, 0, 6.28); c.stroke(); c.globalAlpha = 1; }   /* v4.4 — PD SATURATED: a flickering red ring reads "its point-defence pool is empty, fire through it now" */ if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
   if (_blipLOD) {   // HUD-LESS FULL-MAP VIEW — ATTACK ARROWS: a faint shooter→target line for every 3rd entity that's currently on a fire-cooldown (i.e. just fired — see u.cd/e.cd, reset by the fire code right after a shot) with a real live target still standing; capped at 300/frame
     let _arrowN = 0, _arrowI = 0; c.lineWidth = _blipS;
     for (const u of G.units) { if (u.carried || !u.cd || u.cd <= 0) continue; const t = u.lastTgt || u._lodTgt; if (!t || t.hp == null || t.hp <= 0) continue; _arrowI++; if (_arrowI % 3 !== 0) continue; if (_arrowN >= 300) break; _arrowN++; const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX) continue; c.globalAlpha = .25; c.strokeStyle = u.ally ? '#5be0ff' : '#4dff88'; c.beginPath(); c.moveTo(px, u.y); c.lineTo(sx(t.x), t.y); c.stroke(); }
@@ -8875,6 +8921,9 @@ function renderGame() {
   for (const f of G.fires) { const px = sx(f.x); if (px < -f.r - PX || px > W + f.r + PX) continue; const gy = groundY(f.x); c.globalAlpha = Math.min(.42, f.life * .11); c.fillStyle = '#ff6a2a'; c.beginPath(); c.ellipse(px, gy, f.r, 11, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   // Mind-Forge plasma columns
   for (const bm of G.beams) { const px = sx(bm.x); if (px < -bm.r - PX || px > W + bm.r + PX) continue; const gy = groundY(bm.x); const a = Math.min(1, bm.life / .35) * (.7 + .3 * Math.sin(animClock * .05)); const ho = bm.hostile; const grad = c.createLinearGradient(px, 0, px, gy); if (ho) { grad.addColorStop(0, 'rgba(255,90,60,0)'); grad.addColorStop(.45, `rgba(255,110,80,${a * .5})`); grad.addColorStop(1, `rgba(255,200,120,${a * .75})`); } else { grad.addColorStop(0, 'rgba(180,120,255,0)'); grad.addColorStop(.45, `rgba(196,132,255,${a * .45})`); grad.addColorStop(1, `rgba(130,230,255,${a * .7})`); } c.fillStyle = grad; c.fillRect(px - bm.r, 0, bm.r * 2, gy); c.globalAlpha = a; c.fillStyle = ho ? '#fff0e0' : '#eef6ff'; const coreHW = ho ? 5 : 8; c.fillRect(px - coreHW, 0, coreHW * 2, gy); c.shadowColor = ho ? '#ff5a3a' : '#b478ff'; c.shadowBlur = ho ? 22 : 30; c.fillStyle = ho ? '#ffd0b0' : '#dff0ff'; const hotHW = ho ? 2 : 3.5; c.fillRect(px - hotHW, 0, hotHW * 2, gy); c.shadowBlur = 0; c.globalAlpha = a * .5; c.fillStyle = ho ? '#ff8a5a' : '#c896ff'; c.beginPath(); c.ellipse(px, gy, bm.r, 15, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; }   /* the friendly Mind-Forge column reads visibly WIDER/BRIGHTER than a hostile glassing beam — it's the strongest weapon in the game */
+  // v4.4 — hostile lance telegraph: a thin dashed line from the charging hull to its locked aim point, brightening
+  // as the charge fills, with a pulsing dot on the aim itself — "a gun you SEE coming"
+  for (const tl of G.teleLines) { const px1 = sx(tl.x1), px2 = sx(tl.ax); if (Math.max(px1, px2) < -PX || Math.min(px1, px2) > W + PX) continue; const prog = 1 - Math.max(0, tl.t) / tl.total, ta = .35 + .35 * prog; c.save(); c.globalAlpha = ta; c.strokeStyle = '#ff6a5a'; c.lineWidth = 2; c.setLineDash([7, 6]); c.beginPath(); c.moveTo(px1, tl.y1); c.lineTo(px2, tl.ay); c.stroke(); c.setLineDash([]); const pr = 3 + 2.4 * (.5 + .5 * Math.sin(animClock * .05)); c.fillStyle = '#ff8a6a'; c.shadowColor = '#ff5a3a'; c.shadowBlur = 8; c.beginPath(); c.arc(px2, tl.ay, pr, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }
   // particles
   for (const pt of G.parts) { const px = sx(pt.x); if (px < -40 - PX || px > W + 40 + PX || pt.y < VY0 || pt.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; renderPart(pt, px); }
   // placement ghost

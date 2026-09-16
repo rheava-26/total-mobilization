@@ -3543,7 +3543,7 @@ function damageDistrict(ct, dist, dmg) {
   if (!dist || dist.dead) return hurtCity(ct, dist ? ct.x + dist.dx : ct.x, dmg);
   if (dmg > 0) addDmgTaken(ct.x + dist.dx, dmg);   // v4.0 E — DAMAGE-TAKEN MAP (see pickLeastDamagedZones)
   dist.hp -= dmg;
-  if (dist.hp <= 0 && !dist.dead) { dist.dead = true; G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9); groundBurst(dx, 7); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
+  if (dist.hp <= 0 && !dist.dead) { dist.dead = true; G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9, 'collapse'); groundBurst(dx, 7, 'collapse'); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
   recomputeCityHp(ct);
 }
 function hurtCity(ct, x, dmg) { if (ct && dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN; let best = null, bd = 1e9; for (const d of ct.districts) { if (d.dead) continue; const dd = Math.abs(ct.x + d.dx - x); if (dd < bd) { bd = dd; best = d; } } if (best) damageDistrict(ct, best, dmg); else recomputeCityHp(ct); }
@@ -4818,19 +4818,68 @@ function healSquad(t, amt) {
   let sum = 0; for (const m of t.members) if (m.alive) sum += Math.max(0, m.hp);
   t.hp = Math.min(t.maxHp, sum);   // resync from the bodies (same authority rule as hitSquadMember) instead of healing the aggregate independently
 }
-function blacksmoke(x, y, n) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: (1.7 + Math.random() * 2.4) * _fxL }); }   // sooty trails that rise & fill the atmosphere — Full Effects lets it linger ~1.8x longer
-function boom(x, y, p) {
-  G.parts.push({ k: 'ring', x, y, r: 2, max: p * 6, life: .5 });
-  G.parts.push({ k: 'flash', x, y, r: p * 2.2, life: .16 });
-  if (p >= 6) G.parts.push({ k: 'flash', x, y, r: p * 3.4, life: .26, bloom: true });   // a second, broader bloom blossoms for bigger blasts
-  for (let i = 0; i < p * 1.5; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * p * 14; G.parts.push({ k: 'deb', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, r: 1 + Math.random() * 2.4, life: .9 + Math.random() * 1.2, rot: Math.random() * 6, vr: (Math.random() - .5) * 12 }); }
-  for (let i = 0; i < Math.min(12, p * 1.2); i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * p * 16; G.parts.push({ k: 'ember', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, r: .8 + Math.random() * 1.4, life: .7 + Math.random() * .9, tw: Math.random() * 6 }); }   // glowing embers arcing out of the blast
-  smoke(x, y, Math.ceil(p / 3)); blacksmoke(x, y, Math.ceil(p / 2.5));   // grey core puff + lingering black soot
-  if (p >= 10) { shake(Math.min(8, p * .4)); }
-  if (p >= 5 && Math.random() < .7) SFX.boom(); else if (p >= 3 && Math.random() < .3) noise(.16, .4);
+function blacksmoke(x, y, n, col) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: (1.7 + Math.random() * 2.4) * _fxL, col }); }   // sooty trails that rise & fill the atmosphere — Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff for a styled boom() family — omitted (undefined) at every pre-existing call site, so the default grey/black look is completely unchanged
+/* ===== EXPLOSION STYLE FAMILIES ===================================================================
+   ONE system (boom/boomW), ~12 palettes keyed by weapon/size, each with a couple of randomized
+   variants (ring/flash/ember scale) so the same family doesn't read identically twice. `he` is
+   deliberately just a re-typed copy of the ORIGINAL boom() body — every field it needs (`col`) is
+   left undefined on its particles (see the `bare` branch in boom() below), so renderPart() falls
+   back to its original hardcoded colours and 'he' is pixel-for-pixel what boom() always drew. Every
+   other family opts into `col`/`col2` overrides on the same particle kinds, plus a couple of new
+   kinds (shard/arc/plume/spray/wavefront — see updParts/renderPart) for the ones that need a shape
+   boom()'s ring+flash+deb+ember+smoke vocabulary can't express (a mushroom column, a lightning arc,
+   a ground shockwave line). None of this touches damage/HP/balance — cosmetic only, like the death
+   flourishes above. */
+const BOOM_STYLES = {
+  he:         { ring: '#ffd9a0', ring2: '#fff3da', flash: '#fff6d8', ember: null, smoke: null, deb: 1, emberN: 1, smokeN: 1, blackN: 1, shock: 1, crater: 1, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.12, f: .92, e: 1.25 }, { r: .86, f: 1.15, e: .8 }] },
+  plasma:     { ring: '#d9b3ff', ring2: '#c184ff', flash: '#f0e2ff', ember: '#b98cff', smoke: null, deb: .15, emberN: 1, smokeN: 0, blackN: 0, shard: 2.5, shock: .55, crater: .4, sfx: 'split', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.15, f: .85, e: 1.3 }, { r: .85, f: 1.2, e: .75 }] },
+  kinetic:    { ring: '#bfe9ff', ring2: '#eaf7ff', flash: '#eaf7ff', ember: '#9fd9ff', smoke: '#a8b6c4', deb: 1.2, emberN: .6, smokeN: .5, blackN: 0, plume: 1, shock: 1.5, crater: 1.7, sfx: 'split', variants: [{ r: 1, f: 1, e: 1 }, { r: .8, f: 1.3, e: .9 }, { r: 1.2, f: .85, e: 1.15 }] },
+  antimatter: { ring: '#c9a0ff', ring2: '#eaf3ff', flash: '#f4f8ff', ember: '#a0d0ff', smoke: null, deb: 0, emberN: .4, smokeN: 0, blackN: 0, shard: 3.5, motes: 1, shock: 1.6, crater: .5, sfx: 'split', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.2, f: 1, e: 1.4 }, { r: .9, f: 1.15, e: .8 }] },
+  nuke:       { ring: '#ffe4b0', ring2: '#fff8e0', flash: '#fff6d8', ember: '#ffb060', smoke: null, deb: 1.4, emberN: 1.4, smokeN: 2.5, blackN: 2.4, plume: 2, nukeFlash: 1, shock: 2, crater: 1.3, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.15, f: .92, e: 1.3 }, { r: .88, f: 1.1, e: .85 }] },
+  fire:       { ring: '#ff9a4a', ring2: '#ffd28a', flash: '#ffdca0', ember: '#ff6a2a', smoke: '#3a2a20', deb: .8, emberN: 2.2, smokeN: 1.3, blackN: 1.8, fires: 1, shock: .8, crater: .6, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.1, f: .9, e: 1.3 }, { r: .9, f: 1.15, e: .75 }] },
+  cluster:    { ring: '#ffd9a0', ring2: '#fff3da', flash: '#fff6d8', ember: '#ffb060', smoke: null, deb: .5, emberN: .5, smokeN: .25, blackN: .15, shock: .3, crater: .5, sfx: 'blip', variants: [{ r: 1, f: 1, e: 1 }, { r: .85, f: 1.15, e: .7 }, { r: 1.1, f: .9, e: 1.15 }] },
+  seismic:    { ring: '#c9ab7a', ring2: '#e8d3a4', flash: '#e8cfa0', ember: '#c98a4a', smoke: '#6b5638', deb: 1.4, emberN: .6, smokeN: .7, blackN: .4, wavefront: 1, shock: 1.8, crater: 1.7, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.15, f: .9, e: 1.2 }, { r: .85, f: 1.1, e: .85 }] },
+  melt:       { ring: null, ring2: null, flash: '#ffd060', ember: '#ff8a4a', smoke: '#4a3a2a', deb: 0, emberN: 1.4, smokeN: .7, blackN: 0, molten: 1, shock: .3, crater: 0, sfx: null, variants: [{ r: 1, f: 1, e: 1 }, { r: 1, f: 1.2, e: 1.1 }, { r: 1, f: .85, e: .9 }] },
+  emp:        { ring: '#c9a6ff', ring2: '#eaf3ff', flash: '#e6d6ff', ember: null, smoke: null, deb: 0, emberN: 0, smokeN: 0, blackN: 0, arc: 5, shock: 1, crater: 0, sfx: 'split', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.2, f: .85, e: 1 }, { r: .85, f: 1.15, e: 1 }] },
+  vacuum:     { ring: '#eaf3ff', ring2: '#ffffff', flash: '#ffffff', ember: '#cfe8ff', smoke: null, deb: .3, emberN: .4, smokeN: 0, blackN: 0, shard: 2, shock: 0, crater: .3, sfx: null, variants: [{ r: 1, f: 1, e: 1 }, { r: 1.15, f: .9, e: 1.1 }, { r: .85, f: 1.1, e: .9 }] },
+  water:      { ring: '#dff2ff', ring2: '#ffffff', flash: '#eaf8ff', ember: null, smoke: null, deb: 0, emberN: 0, smokeN: 0, blackN: 0, spray: 1, shock: .4, crater: 0, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.15, f: .9, e: 1.2 }, { r: .85, f: 1.1, e: .85 }] },
+  collapse:   { ring: '#9098a0', ring2: '#c4cad2', flash: '#c9ced6', ember: null, smoke: '#787e88', deb: 1.6, emberN: 0, smokeN: 2.6, blackN: .8, dust: 1, shock: .7, crater: 0, sfx: 'boom', variants: [{ r: 1, f: 1, e: 1 }, { r: 1.1, f: .9, e: 1.15 }, { r: .9, f: 1.1, e: .85 }] },
+};
+function hexToRgba(h) { const n = parseInt(h.slice(1), 16); return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',1)'; }   // BOOM_STYLES colours are plain '#rrggbb' (readable in the table); glow() wants an rgba(...) string, so convert on the rare non-'he' path only
+function emitPlume(x, y, p, mul) { const n = Math.min(10, Math.round(3 + p * .35 * mul)); for (let i = 0; i < n; i++) { const h = i / n; G.parts.push({ k: 'plume', x: x + (Math.random() - .5) * p * .5, y: y - h * p * 3, vx: (Math.random() - .5) * 8, vy: -20 - h * 40 - Math.random() * 20, r: 3 + h * p * .5 + Math.random() * 3, life: 1 + h * 1.4 + Math.random() * .6 }); } }   // a rising column of puffs, stacked with height — the mushroom column (nuke) / vertical dust plume (kinetic)
+function emitShard(x, y, p, count, col, grav) { const n = Math.round(2 + p * .4 * (count || 1)); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * p * 18; G.parts.push({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2, life: .3 + Math.random() * .35, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, grav: grav || 0, col: col || '#eaf3ff' }); } }   // bright glassy/metal slivers flung radially — grav 0 (default) drifts weightless (space/plasma), pass a value to let them fall
+function emitArc(x, y, p, count, col) { const n = Math.round(2 + count); for (let i = 0; i < n; i++) { const ang = Math.random() * 6.28, len = 14 + Math.random() * p * 2.2; G.parts.push({ k: 'arc', x, y, ang, len, life: .1 + Math.random() * .08, col: col || '#c9a6ff' }); } }   // jagged violet lightning segments radiating off an EMP burst
+function emitSpray(x, y, p) { const n = Math.round(6 + p * .8); for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.1, sp = 50 + Math.random() * p * 12; G.parts.push({ k: 'spray', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 1.8, life: .5 + Math.random() * .5 }); } }   // a plume of droplets kicked up by a WATER impact — falls under updParts' generic gravity fallback
+function emitMotes(x, y, p) { const n = Math.round(6 + p * .5); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 90, rr = p * 1.6; G.parts.push({ k: 'plasma', x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, r: 1.5 + Math.random() * 2.2, life: .16 + Math.random() * .18 }); } }   // ANTIMATTER — the same inward-sucking-implosion look annihilate() already uses (reuses the 'plasma' particle kind), just parameterised off the boom() power instead of a unit's size
+function emitDust(x, y, p) { for (let i = 0; i < Math.round(4 + p * .3); i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 20 + Math.random() * p * 4; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * p, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 10, r: 1 + Math.random() * 2.4, rot: Math.random() * 6, vr: (Math.random() - .5) * 6, grav: 90, gy: y + Math.random() * 4, dom: 'ground', settled: false, life: .6 + Math.random() * .6, col: '#787e88' }); } }   // COLLAPSE — grey rubble chunks (reuses 'clod', tinted concrete-grey instead of dirt-brown) settling out of a demolished structure
+function boom(x, y, p, style) {   // THE universal explosion — style (default 'he') picks a BOOM_STYLES family + a random variant of it; every non-'he' family is additive on top of the same ring/flash/deb/ember/smoke skeleton the original single-look boom() always used
+  const fam = BOOM_STYLES[style] || BOOM_STYLES.he, bare = fam === BOOM_STYLES.he, vr = fam.variants[(Math.random() * fam.variants.length) | 0], heavy = fxHeavy();
+  const RCOL = bare ? undefined : fam.ring, RCOL2 = bare ? undefined : fam.ring2, FCOL = bare ? undefined : fam.flash, ECOL = bare ? undefined : fam.ember, SCOL = bare ? undefined : fam.smoke;
+  if (fam.ring) G.parts.push({ k: 'ring', x, y, r: 2, max: p * 6 * vr.r, life: .5, col: RCOL, col2: RCOL2 });
+  G.parts.push({ k: 'flash', x, y, r: p * 2.2 * vr.f, life: .16, col: FCOL });
+  if (p >= 6 && fam.ring) G.parts.push({ k: 'flash', x, y, r: p * 3.4 * vr.f, life: .26, bloom: true, col: FCOL });   // a second, broader bloom blossoms for bigger blasts
+  if (fam.nukeFlash) G.parts.push({ k: 'flash', x, y, r: p * 4.6 * vr.f, life: .34, bloom: true, col: FCOL });   // NUKE — a third, widest bloom on top of the standard pair, so it reads unmistakably bigger than an HE hit at the same power
+  if (fam.deb) for (let i = 0; i < p * 1.5 * fam.deb; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * p * 14; G.parts.push({ k: 'deb', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, r: 1 + Math.random() * 2.4, life: .9 + Math.random() * 1.2, rot: Math.random() * 6, vr: (Math.random() - .5) * 12 }); }
+  if (fam.emberN) for (let i = 0; i < Math.min(12, p * 1.2) * fam.emberN * vr.e; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * p * 16; G.parts.push({ k: 'ember', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, r: .8 + Math.random() * 1.4, life: .7 + Math.random() * .9, tw: Math.random() * 6, col: ECOL }); }   // glowing embers arcing out of the blast
+  if (fam.smokeN) smoke(x, y, Math.ceil(p / 3 * fam.smokeN), SCOL);
+  if (fam.blackN) blacksmoke(x, y, Math.ceil(p / 2.5 * fam.blackN), SCOL);   // grey core puff + lingering black soot
+  if (!heavy) {   // OPTIONAL EXTRAS — plume/shard/arc/spray/motes/fires/molten/dust all skip under fxHeavy() (genuinely extreme unit counts, see fxHeavy's own comment); the core ring/flash/deb/ember/smoke skeleton above still always plays
+    if (fam.plume) emitPlume(x, y, p, fam.plume);
+    if (fam.shard) emitShard(x, y, p, fam.shard, fam.ember || fam.ring, style === 'vacuum' ? 0 : 140);   // VACUUM shards drift weightless (no ground to fall to); every other family's shards fall like any other debris
+    if (fam.arc) emitArc(x, y, p, fam.arc, fam.ring);
+    if (fam.spray) emitSpray(x, y, p);
+    if (fam.motes) emitMotes(x, y, p);
+    if (fam.fires && p >= 14) G.fires.push({ x, r: 40 + p * 2, life: 3 + p * .15 });   // FIRE — the biggest fire-family hits leave a lingering G.fires ground flame (same system igniteFirestorm uses), not just a puff of embers
+    if (fam.molten) molten(x, y, Math.max(2, p * .3));
+    if (fam.dust) emitDust(x, y, p);
+  }
+  if (p >= 10) shake(Math.min(8, p * .4) * (fam.shock != null ? fam.shock : 1));
+  if (fam.sfx === 'boom') { if (p >= 5 && Math.random() < .7) SFX.boom(); else if (p >= 3 && Math.random() < .3) noise(.16, .4); }
+  else if (fam.sfx === 'split') { if (p >= 5 && Math.random() < .6) SFX.split(); else if (p >= 3 && Math.random() < .3) noise(.12, .3); }
+  else if (fam.sfx === 'blip') { if (p >= 3 && Math.random() < .5) blip(180 + Math.random() * 120, .1, 'square', .18); }
 }
 function spark(x, y, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * 50; G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2, life: .22 }); } }
-function smoke(x, y, n) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: (.9 + Math.random() * .9) * _fxL }); }   // Full Effects lets it linger ~1.8x longer
+function smoke(x, y, n, col) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: (.9 + Math.random() * .9) * _fxL, col }); }   // Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff — omitted at every pre-existing call site, so the default grey look never changes
 function floatText(x, y, txt, col) { G.parts.push({ k: 'text', x, y, vy: -26, txt, col: col || '#fff', life: 1.2 }); }   // small rising label (salvage, alerts)
 // THE AUTOFLEET'S INTENT shapes the whole invasion — difficulty is about WHY they came, not just bigger stat bars
 const INTENT = {
@@ -5179,7 +5228,7 @@ function tickMicroBarrage(dt) {
 }
 function fireHostileColumn(x) {   // the Orbital Annihilator's glassing beam — a hostile full-height plasma column dropped on a city
   G.beams.push({ x, r: 64, life: 1.5, total: 1.5, hostile: true });
-  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13);
+  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 50, groundY(x), 13, 'plasma');
   G.nukeFlash = .5; shake(14); SFX.split(); SFX.boom(); toast('☢ ANNIHILATION BEAM — A CITY IS BEING GLASSED');
 }
 function playerDroneWeight() { let w = 0; for (const u of G.units) if (u.d.drone) w += unitWeight(u); return w; }   // ECM HIJACKER wave-picker gate (v3.103) — total army-cap weight fielded across ALL drone-family units (swarm bodies counted live, see unitWeight), the same signal the player's own army-cap accounting uses
@@ -5580,6 +5629,7 @@ function detonateEmpBurst(e) {
   e.hp = 0;
   const r = 700 * Math.max(.35, Math.min(1, 1 - (e.hold - e.y) / e.hold));   /* B3 — ALTITUDE-SCALED BLACKOUT: it goes off wherever it dies. Shot down high (e.y still far short of e.hold) leaves it a long way from arming, so the zone is small (floor .35 -> r 245); let it fall all the way to e.hold (the stratosphere) and it gives the full r 700 */
   G.blackout.push({ x: e.x, r, t: 14 });
+  boom(e.x, e.y, 12, 'emp');   // EMP family — the crackling violet arcs; the blackout-radius flash/ring below is a separate, much bigger bespoke effect representing the field itself, not the detonation
   G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 220, life: .5, bloom: true });
   G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 10, max: r, life: .8 });
   shake(13); if (SFX.boom) SFX.boom(); if (SFX.split) SFX.split();
@@ -5942,7 +5992,7 @@ function updateGame(dt) {
     if (dm.shieldHits && dm.shieldHits.length) { for (const h of dm.shieldHits) h.t += dt; if (dm.shieldHits.some(h => h.t >= .5)) dm.shieldHits = dm.shieldHits.filter(h => h.t < .5); }   // age off spent impact ripples, same as the friendly shield generator & the enemy field
     if (dm.gen) { if (dm.gen.hp <= 0) dm.hp = 0; else { dm.hp = Math.min(dm.maxHp, dm.hp + (dm.rechargeRate || 20) * dt); dm.life = 30; } }
     else dm.life -= dt;
-    if (dm.hp <= 0) { const gy = groundY(dm.x); boom(dm.x, gy - dm.r * .4, 9); G.parts.push({ k: 'ring', x: dm.x, y: gy - dm.r * .4, r: dm.r * .4, max: dm.r * 1.3, life: .5 }); toast('🛡 BEACHHEAD SHIELD DOWN'); if (dm.gen) dm.gen.dome = null; G.domes.splice(i, 1); }
+    if (dm.hp <= 0) { const gy = groundY(dm.x); boom(dm.x, gy - dm.r * .4, 9, 'plasma'); G.parts.push({ k: 'ring', x: dm.x, y: gy - dm.r * .4, r: dm.r * .4, max: dm.r * 1.3, life: .5 }); toast('🛡 BEACHHEAD SHIELD DOWN'); if (dm.gen) dm.gen.dome = null; G.domes.splice(i, 1); }
     else if (!dm.gen && dm.life <= 0) G.domes.splice(i, 1);
   }
   if (G.regen) for (const b of G.buildings) if (b.hp < b.maxHp) b.hp = Math.min(b.maxHp, b.hp + 5 * dt);   // repair nanobots
@@ -6080,12 +6130,12 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
     if (b.key === 'housing' && !b.captured) { const housingLossHit = 5 * (G.evt && G.evt.reassured ? EVT1.reassureAmplify : 1); G.stab = Math.max(0, G.stab - housingLossHit); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY. EVENT #1: if you reassured people the bunkers were safe, losing a block for real hits MUCH harder (EVT1.reassureAmplify)
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
-    else { boomW(b.x, b.y - 10, 16); groundBurst(b.x, 16); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
+    else { boomW(b.x, b.y - 10, 16, 'collapse'); groundBurst(b.x, 16, 'collapse'); shrapnel(b.x, b.y - 10, 8, 4); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
     if (!b.flooded) { charAdd(b.x, .4); pushRuin(b); }   // DESTRUCTION LAYER — a flooded building just sinks quietly (no scorch/rubble); every other death leaves a permanent scar + a ruin silhouette (see charAdd/pushRuin, drawn in drawWorld)
     if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
-  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24); groundBurst(ct.x, 22); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
+  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24, 'collapse'); groundBurst(ct.x, 22, 'collapse'); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
     for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; const cd = u.maxHp * .45; if (u.squad) hitSquadMember(u, cd, ct.x, u.y); else u.hp -= cd; } }   // v3.67: squad-aware — a city falling is a fair "eats through several bodies" blast, but still per-body (not an instant whole-formation wipe)
     for (const b of G.buildings) { if (b.ug) continue; if (Math.abs(b.x - ct.x) < half) b.hp -= b.maxHp * .35; }
@@ -6189,7 +6239,24 @@ function autoCamY() {
 }
 let shakeAmt = 0; function shake(a) { if (!shakeOn) return; shakeAmt = Math.min(16, Math.max(shakeAmt, a)); }
 function nearCity(x) { let b = null, bd = 1e9; for (const ct of G.cities) if (ct.hp > 0) { const d = Math.abs(ct.x - x); if (d < bd) { bd = d; b = ct; } } return b; }
-function boomW(x, y, p) { boom(x, y, p); if (p >= 12) { pushCrater({ x, r: 24 + p, depth: .013 + p * .001 }); capCraters(); } }
+function boomW(x, y, p, style) { boom(x, y, p, style); const cm = (BOOM_STYLES[style] || BOOM_STYLES.he).crater; if (p >= 12 && cm > 0) { pushCrater({ x, r: (24 + p) * cm, depth: (.013 + p * .001) * cm }); capCraters(); } }   // crater size/depth scaled by the family's craterMul — melt/emp/vacuum/water (crater:0) never scar the ground; seismic/kinetic/nuke gouge harder than the 'he' baseline
+function famForKind(k) {   // maps a projectile/killBy kind string to a BOOM_STYLES family — shared by boomStyleFor() (live projectile impacts) and destroyUnit/destroyEnemy (death FX), so both paths agree on what e.g. a 'buster' hit looks like
+  switch (k) {
+    case 'rail': case 'rod': case 'krod': case 'amslug': return 'kinetic';
+    case 'plasball': case 'plasarc': case 'plasmasnipe': return 'plasma';
+    case 'amlance': case 'antimatter': return 'antimatter';
+    case 'bomblet': case 'subbomb': case 'microrkt': case 'mirv': case 'micromis': return 'cluster';
+    case 'buster': return 'seismic';
+    case 'fbomb': return 'fire';
+    default: return 'he';
+  }
+}
+function resolveStyleAt(style, x, y) {   // the WORLD overrides the weapon: high enough up there's no air to carry smoke or sound (vacuum), and a surface hit over open water sprays instead of kicking up dirt — antimatter/emp keep their own bespoke look even in orbit (they're not conventional propellant/frag weapons, a vacuum wouldn't change how they read)
+  if (y < THERMO_Y() && style !== 'antimatter' && style !== 'emp') return 'vacuum';
+  if (isWater(x) && y >= seaLevelY(x) - 40) return 'water';
+  return style;
+}
+function boomStyleFor(p) { return resolveStyleAt(famForKind(p.k), p.x, p.y); }   // picks the BOOM_STYLES family for a projectile's own impact FX from its kind + where it actually hit
 
 /* ===== PHYSICS-BASED DESTRUCTION ===== units break apart by damage type & domain — COSMETIC ONLY, none of this touches damage/HP/balance ===== */
 // PERF GUARD — only once the field is a genuinely EXTREME mass (well past any normal late-game battle — see _heavyLOD in
@@ -6208,7 +6275,12 @@ function pickStyle(k, dom, s, frac) {
   if (k === 'rotary') return 'gunned';                                            // rotary-cannon kill (same death as a plain gun — its rounds are just a faster stream of the same 'tracer' kind)
   if (k === 'amslug' || k === 'antimatter') return 'annihilate';                  // ★ ANTIMATTER — brilliant flash, implosion, shockwave, almost nothing left — see annihilate()
   if (k === 'bomb' || k === 'shell' || k === 'nuke' || k === 'he') return 'blast'; // HIGH EXPLOSIVE → ripped to shreds
-  if (k === 'missile' || k === 'rocket') return 'mblast';                         // missile → small body blast, then drops out of the sky w/ shrapnel
+  if (k === 'missile' || k === 'rocket' || k === 'aegismsl') return 'mblast';     // missile (incl. the AEGIS interceptor round) → small body blast, then drops out of the sky w/ shrapnel
+  if (k === 'rotary') return 'gunned';                                            // ROTARY CANNON — same hosed-down-by-gunfire kill as tracer
+  if (k === 'krod') return 'split';                                               // orbital kinetic lance — punches clean through like any other penetrator
+  if (k === 'amlance') return 'spall';                                            // antimatter railgun lance — a heavy contained slug, reads like plasma on the way out
+  if (k === 'buster' || k === 'fbomb') return 'blast';                            // bunker-buster / firebomb — conventional HE bucket
+  if (k === 'microrkt' || k === 'bomblet' || k === 'subbomb' || k === 'mirv') return 'blast';   // cluster/MIRV submunitions — small HE bucket
   if (dom === 'naval') return 'split';                                            // ships break in half
   return s >= 6 ? 'split' : 'blast';
 }
@@ -6278,11 +6350,17 @@ function annihilate(x, y, s, big, heavy) {
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 90; G.parts.push({ k: 'plasma', x: x + Math.cos(a) * s * 2.4, y: y + Math.sin(a) * s * 2.4, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, r: 1.5 + Math.random() * 2.4, life: .18 + Math.random() * .16 }); }   // IMPLOSION — motes sucked INWARD, the opposite of a blast
   for (let i = 0; i < (big ? 6 : 3); i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * 120; G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2, life: .2 }); }   // a handful of stray white-hot embers — that's ALL that's left
 }
-function groundBurst(x, power) {   // shockwave kicks terrain into the air
+function groundBurst(x, power, style) {   // shockwave kicks terrain into the air — TERRAIN-AWARE: a water impact sprays instead of throwing dirt, and dirt clods are tinted by the local elevation (sandy/brown low, rocky grey up high). `style` (optional) also decides whether a big-enough burst leaves a WAVEFRONT — a bright line hugging the ground that expands outward along the terrain, scaled by that family's craterMul
   if (power >= 10) SFX.rumble();   // a big ground blast is felt as a deep rumble (throttled internally)
   charAdd(x, .08);   // DESTRUCTION LAYER — every ground burst scars the ground a little (see charAdd)
-  const gy = groundY(x); G.parts.push({ k: 'shock', x, y: gy, r: 4, max: power * 8, life: .45 });
-  for (let i = 0; i < power; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.7, sp = 40 + Math.random() * power * 9; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * power, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2.3, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, life: .8 + Math.random(), grav: 150, gy, dom: 'ground', settled: false }); }
+  const water = isWater(x), gy = water ? seaLevelY(x) : groundY(x);
+  G.parts.push({ k: 'shock', x, y: gy, r: 4, max: power * 8, life: .45 });
+  if (water) { emitSpray(x, gy, power); }
+  else {
+    const elev = elevAt(x), tint = elev > .65 ? '#5a5a5a' : elev > SEA_E + .12 ? '#6b4a2e' : '#8a7a4a';   // rock grey high up, sandy near the coast, ordinary brown dirt between
+    for (let i = 0; i < power; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.7, sp = 40 + Math.random() * power * 9; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * power, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2.3, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, life: .8 + Math.random(), grav: 150, gy, dom: 'ground', settled: false, col: tint }); }
+  }
+  if (power >= 12 && !water) { const fam = BOOM_STYLES[style] || BOOM_STYLES.he, cm = fam.crater != null ? fam.crater : 1; if (cm > 0) G.parts.push({ k: 'wavefront', x, y: gy, life: .6, maxLife: .6, spread: 40 + power * cm * 3, col: fam.ring || '#d8c090' }); }
 }
 function shrapnel(x, y, n, dmg) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 130 + Math.random() * 130; G.parts.push({ k: 'shrap', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .45 + Math.random() * .4, dmg }); } }
 // DROWNED unit — a non-amphibious ground unit that went under (see the DROWNING block in updUnits) sinks QUIETLY:
@@ -6311,11 +6389,12 @@ function destroyUnit(u) {
   if (style === 'disassemble') { disassemble(u.x, u.y, d.s, big, heavy); if (!heavy) shake(Math.min(2, d.s * .3)); return; }   // NANITE/SMART ROUNDS — dissolved, not blasted
   if (style === 'annihilate') { annihilate(u.x, u.y, d.s, big, heavy); shake(Math.min(9, d.s * 1.1)); if (!heavy) pushCrater({ x: u.x, r: 6 + d.s, depth: .01 }); return; }   // ANTIMATTER — near-total erasure
   if (style === 'gunned') { deformWreck(u.x, u.y, d.art, d.s, u.facing || 1, d.domain, true); boom(u.x, u.y, Math.min(14, d.s * 1.6)); smoke(u.x, u.y, heavy ? 2 : 4); shrapnel(u.x, u.y, Math.max(2, Math.round(d.s * (heavy ? .5 : .85))), Math.max(2, d.s * .6)); if (d.domain === 'ground') groundBurst(u.x, Math.min(16, d.s * 2.2)); shake(Math.min(6, d.s * .85)); if (big) { shake(9); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 2.6, life: .16 }); SFX.boom(); } return; }   // ★ GUNNED KILL (tracer/rifle fire, the most common kill in the game) — a proper boom + billowing smoke + flying shrapnel, same generosity as a blast/split kill; still slumps into a wreck (deformWreck) rather than shattering into frags
-  boom(u.x, u.y, Math.min(24, d.s * 2.2));
+  const fam = resolveStyleAt(famForKind(u.killBy), u.x, u.y);   // EXPLOSION FAMILIES — same killBy→family lookup a live projectile impact uses (boomStyleFor), so a unit killed by e.g. a kinetic rod gets the same kinetic-styled death boom; resolveStyleAt still lets altitude/water override it (a naval kill at the waterline sprays, a space kill goes vacuum-silent)
+  boom(u.x, u.y, Math.min(24, d.s * 2.2), fam);
   frags(u.x, u.y, d.art, d.s, u.facing || 1, d.domain, style, dir, power); shrapnel(u.x, u.y, Math.max(2, Math.round(d.s * (style === 'blast' ? 1.1 : .7))), Math.max(2, d.s * .7)); if (style === 'split' || style === 'spall') SFX.split(); else SFX.rip();   // every wreck throws shrapnel now
-  if (d.domain === 'ground') groundBurst(u.x, Math.min(20, d.s * 2.4));
+  if (d.domain === 'ground') groundBurst(u.x, Math.min(20, d.s * 2.4), fam);
   shake(Math.min(7, d.s * .9));   // every kill kicks the screen
-  if (big) { shake(11); groundBurst(u.x, 20); shrapnel(u.x, u.y, Math.round(d.s * 1.4), Math.max(4, d.s)); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 4, life: .18 }); pushCrater({ x: u.x, r: 24 + d.s * 3, depth: .017 + d.s * .002 }); capCraters(); SFX.boom(); }
+  if (big) { shake(11); groundBurst(u.x, 20, fam); shrapnel(u.x, u.y, Math.round(d.s * 1.4), Math.max(4, d.s)); G.parts.push({ k: 'flash', x: u.x, y: u.y, r: d.s * 4, life: .18 }); pushCrater({ x: u.x, r: 24 + d.s * 3, depth: .017 + d.s * .002 }); capCraters(); SFX.boom(); }
 }
 function destroyEnemy(e) {
   G.kills = (G.kills || 0) + 1;
@@ -6336,9 +6415,10 @@ function destroyEnemy(e) {
   else if (style === 'annihilate') { annihilate(e.x, e.y, s, big, heavy); shake(Math.min(9, s * 1.1)); if (!heavy) pushCrater({ x: e.x, r: 6 + s, depth: .01 }); }   // ANTIMATTER — near-total erasure
   else if (style === 'gunned') { deformWreck(e.x, e.y, e.art || e.kind, s, e.vx < 0 ? -1 : 1, dom, true); boom(e.x, e.y, Math.min(12, s * 1.5)); smoke(e.x, e.y, heavy ? 2 : 4); shrapnel(e.x, e.y, Math.max(2, Math.round(s * (heavy ? .5 : .85))), Math.max(2, s * .6)); if (e.y > groundY(e.x) - 12) groundBurst(e.x, Math.min(14, s * 2)); shake(Math.min(6, s * .8)); if (big) { shake(8); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: s * 2.6, life: .16 }); SFX.boom(); } }   // ★ GUNNED KILL — same generosity as a blast/split kill (see destroyUnit's twin)
   else {
-    boom(e.x, e.y, Math.min(20, s * 2.1));
+    const fam = resolveStyleAt(famForKind(e.killBy), e.x, e.y);   // EXPLOSION FAMILIES — see destroyUnit's twin comment; a boss (below) still gets its own bespoke multi-boom flourish on top of this
+    boom(e.x, e.y, Math.min(20, s * 2.1), fam);
     frags(e.x, e.y, e.art || e.kind, s, 1, dom, style, dir, Math.min(24, s * 2.2)); shrapnel(e.x, e.y, Math.max(2, Math.round(s * (style === 'blast' ? 1 : .6))), Math.max(2, s * .6)); if (style === 'split' || style === 'spall') SFX.rip();
-    if (e.y > groundY(e.x) - 12) groundBurst(e.x, Math.min(16, s * 2.2));
+    if (e.y > groundY(e.x) - 12) groundBurst(e.x, Math.min(16, s * 2.2), fam);
     shake(Math.min(6, s * .8));
     if (big) { shake(8); shrapnel(e.x, e.y, Math.round(s * 1.3), Math.max(3, s * .8)); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: s * 3.4, life: .16 }); SFX.boom(); }
   }
@@ -6866,9 +6946,9 @@ function buildAlliesPanel() {
 }
 function detonateOrbital(x, y) {   // hostile orbital lance impact — gouges & HURLS the earth, flattens anything anchored where it lands
   G.parts.push({ k: 'flash', x, y: y - 32, r: 104, life: .35 });
-  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 64, y, 15);
+  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 64, y, 15, 'kinetic');
   pushCrater({ x, r: 72 + Math.random() * 44, depth: .11 }); capCraters();
-  groundBurst(x, 34); molten(x, groundY(x), 10); shrapnel(x, y, 22, 13);   // a huge gout of earth + molten debris thrown skyward
+  groundBurst(x, 34, 'kinetic'); molten(x, groundY(x), 10); shrapnel(x, y, 22, 13);   // a huge gout of earth + molten debris thrown skyward
   for (const b of G.buildings) if (!b.ug && Math.abs(b.x - x) < 58) b.hp -= 460;   // anything anchored at ground-zero is gutted (bury your base to survive a barrage)
   areaDamage(x, y, 140, 520, 'rod'); shake(9);
   for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - x) < 130) damageDistrict(ct, dst, 320); }   // a lance landing in a city levels its districts
@@ -6976,8 +7056,8 @@ function detonateBuster(x, y) {   // heat-shielded penetrator impact — PINPOIN
   const gy = groundY(x);
   G.hitFlash = Math.max(G.hitFlash || 0, .2);   // a penetrator that GOT THROUGH punches a red flicker across the screen
   G.parts.push({ k: 'flash', x, y: gy - 40, r: 70, life: .35 });
-  for (let i = 0; i < 2; i++) boom(x + (Math.random() - .5) * 26, gy, 12);
-  boomW(x, gy - 14, 18); groundBurst(x, 24); shake(11); SFX.boom(); if (SFX.rumble) SFX.rumble();
+  for (let i = 0; i < 2; i++) boom(x + (Math.random() - .5) * 26, gy, 12, 'seismic');
+  boomW(x, gy - 14, 18, 'seismic'); groundBurst(x, 24, 'seismic'); shake(11); SFX.boom(); if (SFX.rumble) SFX.rumble();
   pushCrater({ x, r: 36 + Math.random() * 20, depth: .1 }); capCraters();
   for (let i = 0; i < 20; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.0, sp = 90 + Math.random() * 260; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * 28, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.4 + Math.random() * 3, rot: Math.random() * 6, vr: (Math.random() - .5) * 11, grav: 150, gy, dom: 'ground', settled: false, life: .8 + Math.random() * 1.1 }); }   // a tighter DIRT KICK over the fireball — still visceral, no longer wide enough to swallow the whole base
   smoke(x, gy, 5); blacksmoke(x, gy, 4);
@@ -6996,7 +7076,7 @@ function spawnBomblets(x, y, baseVy, n, dmg, r) {
     G.proj.push({ k: 'bomblet', friendly: false, interceptable: false, hp: 3, s: 2.6, x: x + (Math.random() - .5) * 16, y, vx: vx0, vy: vy0, dmg, r, life: 6, tr: [] }); }
 }
 function detonateBomblet(x, y, dmg, r) {
-  boomW(x, y, 9); groundBurst(x, 5); G.parts.push({ k: 'flash', x, y, r: r * .35, life: .13 }); smoke(x, y, 2);
+  boomW(x, y, 9, 'cluster'); groundBurst(x, 5, 'cluster'); G.parts.push({ k: 'flash', x, y, r: r * .35, life: .13 }); smoke(x, y, 2);
   splashDamage(x, y, r, dmg, false, 'bomblet');
 }
 // where an orbital barrage round falls — STRATEGIC targets (cities + your surface infrastructure) spread across the WHOLE world, never keyed to the camera (rods used to only rain on whatever you were looking at)
@@ -7009,7 +7089,7 @@ function barrageTarget() {
 }
 function firePsiLance(x) {
   G.beams.push({ x, r: 120, life: 2.5, total: 2.5 });
-  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 60, groundY(x), 12);
+  for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 60, groundY(x), 12, i % 2 ? 'kinetic' : 'plasma');   // MIND-FORGE — the column reads as a plasma/kinetic mix, not one flat look, along its own height
   G.nukeFlash = .5; shake(14); SFX.split(); SFX.boom();
 }
 // SHALLOW-TUNNEL HIT — heavy weapons & bombs crack SHALLOW (ugLvl 1) buried structures; DEEP (ugLvl 2) ones shrug most of it off (only a tunnel assault reaches them)
@@ -7047,29 +7127,29 @@ function plasmaBurst(x, y, r, dmg, friendly) {   // contained slug dumps its hea
 function detonateNuke(x, y) {
   const R = 230, high = y < groundY(x) - 110;   // an airburst high in thin air can't form a mushroom — it's a swelling plasma ball
   G.parts.push({ k: 'flash', x, y: y - 20, r: R * .9, life: .4 });
-  for (let i = 0; i < 4; i++) boom(x + (Math.random() - .5) * 120, y - Math.random() * 50, 18);
+  for (let i = 0; i < 4; i++) boom(x + (Math.random() - .5) * 120, y - Math.random() * 50, 18, 'nuke');
   if (high) {
     G.parts.push({ k: 'ring', x, y, r: 8, max: R * 1.15, life: .6 });
     for (let i = 0; i < 44; i++) { const a = Math.random() * 6.28, sp = 50 + Math.random() * 210; G.parts.push({ k: 'plasma', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 3 + Math.random() * 6, life: .4 + Math.random() * .7 }); }   // expanding plasma sphere
   } else {
-    groundBurst(x, 30); shrapnel(x, y, 26, 18);
+    groundBurst(x, 30, 'nuke'); shrapnel(x, y, 26, 18);
     for (let i = 0; i < 42; i++) { const a = (Math.random() - .5) * 1.4; G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 70, y: y - Math.random() * 130, vx: Math.cos(a - 1.57) * 18, vy: -28 - Math.random() * 44, r: 6 + Math.random() * 9, life: 1.6 + Math.random() * 1.8 }); }   // mushroom column
     pushCrater({ x, r: 130, depth: .08 }); capCraters();
   }
   areaDamage(x, y, R, 720); shake(16); SFX.boom(); G.nukeFlash = .65;
 }
 function detonateKinetic(x, y) {
-  for (let i = 0; i < 2; i++) boom(x, y, 13);
+  for (let i = 0; i < 2; i++) boom(x, y, 13, 'kinetic');
   G.parts.push({ k: 'flash', x, y: y - 40, r: 70, life: .3 });
   pushCrater({ x, r: 52, depth: .11 }); capCraters();
-  groundBurst(x, 18); shrapnel(x, y, 16, 14);
+  groundBurst(x, 18, 'kinetic'); shrapnel(x, y, 16, 14);
   areaDamage(x, y, 118, 620, 'rod');   // pure kinetic — splits whatever it touches, clean through
   shake(13); SFX.split(); SFX.boom();
 }
 function igniteFirestorm(x) {
-  const y = groundY(x); for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 90, y, 11);
+  const y = groundY(x); for (let i = 0; i < 3; i++) boom(x + (Math.random() - .5) * 90, y, 11, 'fire');
   charAdd(x, .5);   // DESTRUCTION LAYER — firestorms scorch the ground hard (see charAdd)
-  G.fires.push({ x, r: 130, life: 6 }); groundBurst(x, 10); shake(8); SFX.boom();
+  G.fires.push({ x, r: 130, life: 6 }); groundBurst(x, 10, 'fire'); shake(8); SFX.boom();
 }
 function detonateHE(x, y) {   // conventional ballistic warhead — strong, smaller than a nuke, no fallout
   const R = 150;
@@ -7081,9 +7161,9 @@ function detonateHE(x, y) {   // conventional ballistic warhead — strong, smal
 function detonateAntimatter(x, y) {   // antimatter warhead — bigger than a nuke, with a plasma-violet flash
   const R = 300;
   G.parts.push({ k: 'flash', x, y: y - 24, r: R, life: .5 });
-  for (let i = 0; i < 5; i++) boom(x + (Math.random() - .5) * 150, y - Math.random() * 60, 20);
+  for (let i = 0; i < 5; i++) boom(x + (Math.random() - .5) * 150, y - Math.random() * 60, 20, 'antimatter');
   for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 160; G.parts.push({ k: 'plasma', x, y: y - 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20, r: 3 + Math.random() * 5, life: .4 + Math.random() * .6 }); }
-  groundBurst(x, 38); shrapnel(x, y, 30, 22); pushCrater({ x, r: 160, depth: .1 }); capCraters();
+  groundBurst(x, 38, 'antimatter'); shrapnel(x, y, 30, 22); pushCrater({ x, r: 160, depth: .1 }); capCraters();
   areaDamage(x, y, R, 1100, 'antimatter'); shake(18); SFX.boom(); SFX.split(); G.nukeFlash = .8;   // tag the kill 'antimatter' (was defaulting to 'bomb') so anything caught in the blast gets the annihilate death FX, not a generic explosion wreck
 }
 function detonateStrat(sub, x, y) { if (sub === 'fbomb') igniteFirestorm(x); else if (sub === 'he') detonateHE(x, y); else if (sub === 'am') detonateAntimatter(x, y); else detonateNuke(x, y); }
@@ -8067,7 +8147,7 @@ function updEnemies(dt) {
       }
       if (Math.random() < .2 + e.vy / 600) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s * 1.6, y: e.y - e.s, vx: (Math.random() - .5) * 8, vy: -16 - Math.random() * 22, r: 1.4 + Math.random() * 2.4, life: .22 + Math.random() * .3 });   // only really glows hot once it's moving fast
       if (e.empburst && fullFx) { e._sparkTick = (e._sparkTick || 0) + 1; if (e._sparkTick % 3 === 0) G.parts.push({ k: 'plasma', x: e.x + (Math.random() - .5) * e.s * 1.4, y: e.y + (Math.random() - .5) * e.s, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random(), life: .3 + Math.random() * .2 }); }   // v4.0.1 — a violet sparkle trail (reuses the 'plasma' particle's violet palette) off the falling warhead itself, at most every 3rd tick, Full Effects only
-      if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1)); if (e.empburst) { detonateEmpBurst(e); continue; }   /* v4.0 E PHASE 2 BLACKOUT — the warhead itself, not a landed unit: detonate on arrival at STRATO_Y and remove it */ if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
+      if (e.y >= e.hold) { e.reentry = false; e.y = e.hold; e.vy = 0; boom(e.x, e.y, Math.min(8, e.s + 1), resolveStyleAt('he', e.x, e.y)); if (e.empburst) { detonateEmpBurst(e); continue; }   /* v4.0 E PHASE 2 BLACKOUT — the warhead itself, not a landed unit: detonate on arrival at STRATO_Y and remove it */ if (e.shieldgen) { e.dome = spawnShieldDome(e.x, e); for (let i = 0; i < 3; i++) { spawnEnemy(Math.random() < .6 ? 'gtank' : 'gmech', e.x + (i - 1) * 48); const ne = G.enemies[G.enemies.length - 1]; ne.reentry = false; ne.y = ne.hold; } floatText(e.x, e.y - e.s, '🛡 SHIELD GENERATOR DEPLOYED — DESTROY IT TO DROP THE DOME', '#9cc4ff'); } if (e.breacher) { e.fieldOn = true; e.fieldMax = e.fieldHp; floatText(e.x, e.y - e.s, '⛨ BEACHHEAD ANCHOR — DEFLECTOR FIELD UP', '#c9a6ff'); shake(6); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: e.fieldR * .4, max: e.fieldR * 1.15, life: .55 }); } if ((e.boss || e.harvester) && !e._arrivedBanner) { e._arrivedBanner = true; const onGround = !!e.ground; const nm = e.bossName || (e.harvester ? 'AUTODRONE HARVESTER' : 'AUTODRONE SUPERWEAPON'); banner('⚠ WARNING — ' + nm + (onGround ? ' HAS MADE GROUNDFALL' : ' IS ON STATION'), onGround ? 'It will fortify and call reinforcements — destroy it fast' : 'Overwhelming orbital pressure — bring it down before it digs in', 4.5); shake(14); SFX.boom(); G.parts.push({ k: 'ring', x: e.x, y: e.y, r: 6, max: 90, life: .7 }); G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 22, life: .22, bloom: true }); } }   // reached its layer → on touchdown the Shield Striker raises its dome AND disgorges a ground squad; a Beachhead Anchor throws up its deflector field; and EVERY boss/super-tier arrival (leviathan, hive, bombarder, annihilator, harvester...) fires its own big styled alert + on-map flash ONCE (guarded by _arrivedBanner) so nothing sneaks in unnoticed
       continue;
     }
     if (e.empburst && e.hp > 0) { e.fuse = (e.fuse == null ? 6 : e.fuse) - dt; if (e.fuse <= 0) { detonateEmpBurst(e); continue; } }   /* B3 FUSE — safety net: re-entry ended (reentry===false) without ever reaching e.hold — a warhead that ends up here (e.g. yanked off its normal descent) still detonates within 6s of that instead of drifting inert forever; the normal hold-arrival and shot-down paths above/in hurt() both zero e.hp before this can ever run, so it only fires on the genuinely-stalled case */
@@ -8348,7 +8428,7 @@ function updProj(dt) {
     if ((p.k === 'tracer' || p.k === 'rotary' || p.k === 'shell') && p.y < STRATO_Y()) p.vy += 140 * dt;   /* B1 BULLET DROP — autocannon/flak/shell rounds that stray above the stratosphere line get pulled back down by gravity, so a fighter's gun can't plink targets sailing into orbit; keyed strictly on kind so missiles/beams/rods (guided, unaffected by gunfire ballistics here) never see this */
     if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
-      if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9); p.life = 0; continue; }   // shot down mid-air → no ground impact
+      if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9, resolveStyleAt('kinetic', p.x, p.y)); p.life = 0; continue; }   // shot down mid-air → no ground impact
       if (p.strat && p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this kinetic lance down to 0hp: it fizzles, no warhead effect
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 16) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 40 * 40) { detonateKinetic(p.x, p.y); p.life = 0; break; } }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
@@ -8356,13 +8436,13 @@ function updProj(dt) {
       continue;
     }
     if (p.k === 'plasmasnipe') {   // ORBITAL PLASMA SNIPE — a physical falling bolt now (was hitscan); straight vertical drop onto the ground unit it locked, capped fall speed, shot-downable in flight like any other orbital ordnance
-      if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 8); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .15 }); spark(p.x, p.y, 4); p.life = 0; continue; }
+      if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 8, resolveStyleAt('plasma', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .15 }); spark(p.x, p.y, 4); p.life = 0; continue; }
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; }
       continue;
     }
     if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — SINGLE CONTINUOUS ACCELERATION (no bands): starts at a slow REENTRY_V0_FRAC-scaled orbital crawl and accelerates the whole way to impact, uncapped (see spawnBuster) — mean speed matches the old formula's, so total fall time still does, and impact is fast enough that only the last ~0.7-0.8s of the curve is actually below MESO_Y — jinks + spams flares only once it's in that real lower-atmosphere stretch
-      if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 11); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
+      if (p.interceptable && p.hp <= 0) { G.busterKilled = (G.busterKilled || 0) + 1; if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 11, resolveStyleAt('seismic', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 16, life: .18 }); spark(p.x, p.y, 6); p.life = 0; continue; }
       p.t = (p.t || 0) + dt;
       p.vy = p.v0 + p.aAcc * p.t;   // vy = v0 + a·t — continuous, monotonic, never capped, never reset
       const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; if (p.y >= STRATO_Y()) p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target; evasive jink only in the lower atmosphere
@@ -8390,7 +8470,7 @@ function updProj(dt) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
       if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
-      if (p.y >= MESO_Y() || p.life <= 0 || p.y >= groundY(p.x)) { boom(p.x, p.y, 3); spark(p.x, p.y, 5); spawnBomblets(p.x, p.y, p.vy, p.n, p.dmg, 60); p.life = 0; }
+      if (p.y >= MESO_Y() || p.life <= 0 || p.y >= groundY(p.x)) { boom(p.x, p.y, 3, resolveStyleAt('cluster', p.x, p.y)); spark(p.x, p.y, 5); spawnBomblets(p.x, p.y, p.vy, p.n, p.dmg, 60); p.life = 0; }
       continue;
     }
     if (p.k === 'microrkt') {   // MICROROCKET carrier — climbs toward the threat, then bursts into homing submunitions that each chase an independent target
@@ -8402,7 +8482,7 @@ function updProj(dt) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       const cluster = near(p.x, p.y, tlist, 550);
       if ((p.t >= p.splitT && cluster) || p.t > .8 || p.life <= 0 || p.y >= groundY(p.x)) {
-        boom(p.x, p.y, 3); spark(p.x, p.y, 5);
+        boom(p.x, p.y, 3, resolveStyleAt('cluster', p.x, p.y)); spark(p.x, p.y, 5);
         const pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.n).map(o => o[1]);
         for (let i = 0; i < p.n; i++) {
           const a = -1.4 + (i / Math.max(1, p.n - 1)) * 2.8 + (Math.random() - .5) * .4;
@@ -8438,7 +8518,7 @@ function updProj(dt) {
       if (p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this MIRV carrier down to 0hp: it fizzles, no warheads deploy
       p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.vy >= 0 || p.y >= groundY(p.x) || p.life <= 0) {   // DEPLOY at apex (the instant it starts to fall) — reliable, at peak altitude; then the warheads carpet the target
-        boom(p.x, p.y, 5); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 14, life: .18 });
+        boom(p.x, p.y, 5, resolveStyleAt('cluster', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 14, life: .18 });
         const ground = groundY(p.x), fall = Math.max(.5, Math.sqrt(2 * Math.max(60, ground - p.y) / 240));
         for (let i = 0; i < 6; i++) { const xi = Math.max(60, Math.min(WORLD_W - 60, p.tx + (i - 2.5) * 64)), vx = (xi - p.x) / fall + (Math.random() - .5) * 24; G.proj.push({ k: 'subbomb', strat: true, x: p.x, y: p.y, vx, vy: -20 + Math.random() * 25, ty: groundY(xi), life: 8, friendly: true, tr: [] }); }
         p.life = 0;
@@ -8448,7 +8528,7 @@ function updProj(dt) {
       p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       const deployY = p.air ? p.ty : groundY(p.x);
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target
-        boom(p.x, p.y, 4); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
+        boom(p.x, p.y, 4, resolveStyleAt('cluster', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
         const tlist = G.enemies.filter(e => e.y >= SPACE_Y()), pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.split).map(o => o[1]);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle). NOTE: built from G.enemies, NOT the reentry-stripped enemiesLive — these are direct-hit homing missiles (same weapon class as the generic guided missile, which already reacquires reentry targets via hostileMeso), so a re-entry target that has already descended into reach (y >= SPACE_Y()) is a perfectly valid lock, not just orbital ones sitting above the line
         for (let i = 0; i < p.split; i++) {
           const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4;
@@ -8461,7 +8541,7 @@ function updProj(dt) {
       }
       continue;
     }
-    if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 8) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9); groundBurst(p.x, 8); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
+    if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 8) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9, 'cluster'); groundBurst(p.x, 8, 'cluster'); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
     if (p.k === 'bomblet') {   // v4.0.4 B — unguided cluster/micromissile submunition: no homing, just ballistic; see spawnBomblets. Deliberately excluded from interceptable/pdable (see there) — a proximity fuse still lets it swat a player aircraft it flies close past, not just on ground impact
       if (p.hp <= 0) { spark(p.x, p.y, 2); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .1 }); p.life = 0; continue; }
       p.vy += 180 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -8486,7 +8566,7 @@ function updProj(dt) {
         /* v4.2 tune: the LANCE is a ship-killer, not a base-eraser — the hull it hits takes the full lance through hurt() (shield-aware), everything else in the 90px burst takes AMLANCE_SPLASH of it (buildings half of that again via splashDamage). At 300·invT a full-strength burst was deleting ~18 stacked buildings per shot and 850 buildings in 15s on the reference bench. */
         ht.killBy = 'amlance'; ht.killX = p.x; ht.killY = p.y; p.hits = (p.hits || 0) + 1;
         if (p.hits === 1) { hurt(ht, p.dmg, p.x, p.y); } else { hurt(ht, p.dmg * AMLANCE_SPLASH, p.x, p.y); if (p.hits >= AMLANCE_PIERCE_HITS) p.life = 0; }   /* v4.2 tune: the FIRST hull takes the full lance and the burst; hulls on the pierce path take splash only, and the bolt spends itself after AMLANCE_PIERCE_HITS hulls — a full-strength hit on every hull along 300px was 30 stacked buildings per shot */
-        if (p.hits === 1) { const sd = p.dmg * AMLANCE_SPLASH, core = 90 * .42; for (const u of G.units) { if (u === ht || u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - p.x) ** 2 + (u.y - p.y) ** 2; if (dd >= 8100) continue; const dist = Math.sqrt(dd), f = dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (90 - core)), d2 = sd * f; u.killBy = 'amlance'; u.killX = p.x; u.killY = p.y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, p.x, p.y); else u.hp -= d2; } boom(p.x, p.y, 14); } shake(6);   /* v4.2 tune: the lance's burst is UNITS-ONLY — a ship-killer's spall hits hulls and crews near the impact, it does not level the buildings around them (the shared splashDamage helper's half-damage-to-buildings was still deleting ~15 stacked batteries per shot) */ G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 28, life: .16, bloom: true }); if (!p.hitSet) p.hitSet = new Set(); p.hitSet.add(ht); if (p.pierceLeft == null) p.pierceLeft = 300;
+        if (p.hits === 1) { const sd = p.dmg * AMLANCE_SPLASH, core = 90 * .42; for (const u of G.units) { if (u === ht || u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - p.x) ** 2 + (u.y - p.y) ** 2; if (dd >= 8100) continue; const dist = Math.sqrt(dd), f = dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (90 - core)), d2 = sd * f; u.killBy = 'amlance'; u.killX = p.x; u.killY = p.y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, p.x, p.y); else u.hp -= d2; } boom(p.x, p.y, 14, resolveStyleAt('antimatter', p.x, p.y)); } shake(6);   /* v4.2 tune: the lance's burst is UNITS-ONLY — a ship-killer's spall hits hulls and crews near the impact, it does not level the buildings around them (the shared splashDamage helper's half-damage-to-buildings was still deleting ~15 stacked batteries per shot) */ G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 28, life: .16, bloom: true }); if (!p.hitSet) p.hitSet = new Set(); p.hitSet.add(ht); if (p.pierceLeft == null) p.pierceLeft = 300;
       }   // first (and every subsequent) hull hit within the pierce window: full AoE burst, but the bolt itself keeps flying — hitSet stops it re-hitting the same hull every frame while it's still overlapping
       if (p.pierceLeft != null) { p.pierceLeft -= Math.hypot(p.vx, p.vy) * dt; if (p.pierceLeft <= 0 || p.y >= groundY(p.x)) p.life = 0; }   // pierce budget spent (300px past the first hit) or it's plunged into the ground → done, no extra burst (already burst on the hit that started the pierce)
       else if (p.y >= groundY(p.x) || p.life <= 0) { plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), 90, p.dmg, false); shake(6); p.life = 0; }   // never actually hit a hull — bursts once on reaching the ground/max range, same as before
@@ -8555,7 +8635,7 @@ function updProj(dt) {
     if (p.k === 'missile' && p.prox && p.friendly && p.life > 0) {   // AIRCRAFT MISSILE PROXIMITY FUSE — a near-miss on a jinking target airbursts (splash) instead of tunnelling past; domes/fields already caught it in flight above, so this only triggers in the open
       let best = null, bd = FIGHTER_MSL_PROX * FIGHTER_MSL_PROX;
       for (const e of G.enemies) { if (e.reentry || e.hp <= 0) continue; const dd = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (dd < bd) { bd = dd; best = e; } }
-      if (best) { splashDamage(p.x, p.y, FIGHTER_MSL_SPLASH, p.dmg * (p.fade ?? 1), true, 'missile'); boomW(p.x, p.y, 4); spark(p.x, p.y, 3); p.life = 0; continue; }
+      if (best) { splashDamage(p.x, p.y, FIGHTER_MSL_SPLASH, p.dmg * (p.fade ?? 1), true, 'missile'); boomW(p.x, p.y, 4, boomStyleFor(p)); spark(p.x, p.y, 3); p.life = 0; continue; }
     }
     if (p.k === 'missile' && p.ami && p.friendly && p.life > 0) {   // ANTI-MISSILE INTERCEPTOR PROXIMITY FUSE — hit-to-kill: the round detonates on a NEAR MISS of the incoming ordnance it's chasing (rods/busters/enemy missiles are small & fast, so demanding pixel-perfect contact is exactly why the old interceptor whiffed). One interceptor kills one round; the finite magazine + slow rearm is the balance, not per-round survivability.
       let best = null, bd = AMI_MSL_PROX * AMI_MSL_PROX;
@@ -8567,13 +8647,13 @@ function updProj(dt) {
     if (p.friendly && p.homeTgt && p.homeTgt.pdable && p.homeTgt.life > 0) list = list.concat(p.homeTgt);   // an interceptor hard-locked onto a pdable enemy missile can detonate on exactly that round (pdable rounds aren't in incList)
     const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   // fast relentless missiles get a swept hit-radius so they don't tunnel through targets
     if (p.heavy && p.k === 'tracer') { for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { spark(p.x, p.y, 3); break; } } }   // HEAVY GUN (v4.4) — a read-only pre-check, own small hit-scan mirroring the generic one below: Warthog autocannon / Mastodon chin gun rounds get a small impact spark; ordinary tracer/flak still spawns none (see the PERF note on the line below)
-    for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg * (p.fade ?? 1), p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } else if (p.friendly && (p.k === 'shell' || p.k === 'rail') && t.kind && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.x - p.x) ** 2 + (t.y - p.y) ** 2 < 1600) t.evadeT = 1.2; }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit. NEAR-MISS EVASION (v4.0 C) — a heavy round (shell/rail — rod is rail with p.big) passing within 40px (1600=40²) of a live enemy AIR unit without actually hitting it still spooks it into evasive jinking, mirroring the on-hit trigger in hurt(); bosses/bulwark/shieldgen/ground/anchored never evade
-    if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5); else if (p.heavy && p.k === 'tracer') boom(p.x, groundY(p.x), 2); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }   // HEAVY GUN (v4.4) — a heavy round that reaches the ground gets a small boom (3-arg call) instead of nothing
+    for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg * (p.fade ?? 1), p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3), boomStyleFor(p)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } else if (p.friendly && (p.k === 'shell' || p.k === 'rail') && t.kind && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.x - p.x) ** 2 + (t.y - p.y) ** 2 < 1600) t.evadeT = 1.2; }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit. NEAR-MISS EVASION (v4.0 C) — a heavy round (shell/rail — rod is rail with p.big) passing within 40px (1600=40²) of a live enemy AIR unit without actually hitting it still spooks it into evasive jinking, mirroring the on-hit trigger in hurt(); bosses/bulwark/shieldgen/ground/anchored never evade
+    if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5, boomStyleFor(p)); else if (p.heavy && p.k === 'tracer') boom(p.x, groundY(p.x), 2, 'kinetic'); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
   }
   filterInPlace(G.proj, p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // PERF: in-place compaction, see filterInPlace() — keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
   if (G.proj.length > 1400) G.proj.splice(0, G.proj.length - 1400);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
 }
-const HERO_PARTS = { fire: 1, ember: 1, ring: 1, flash: 1, molten: 1, chunk: 1, deb: 1, wreck: 1, plasma: 1, text: 1 };   /* the expensive "hero" explosion particle kinds — preserved over the cheap cosmetic ones (smoke/muzzle/spark/tracer/clod/etc.) when G.parts is over budget, see the priority cull at the end of updParts() */
+const HERO_PARTS = { fire: 1, ember: 1, ring: 1, flash: 1, molten: 1, chunk: 1, deb: 1, wreck: 1, plasma: 1, text: 1, shard: 1, plume: 1 };   /* the expensive "hero" explosion particle kinds — preserved over the cheap cosmetic ones (smoke/muzzle/spark/tracer/clod/etc.) when G.parts is over budget, see the priority cull at the end of updParts() */
 function updParts(dt) {
   for (const pt of G.parts) {
     if (pt.k === 'ring' || pt.k === 'shock') { pt.r += (pt.max - pt.r) * (pt.k === 'shock' ? 8 : 9) * dt; pt.life -= dt; continue; }
@@ -8583,6 +8663,9 @@ function updParts(dt) {
     if (pt.k === 'fire') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 10 * dt; pt.r *= .965; pt.life -= dt; continue; }
     if (pt.k === 'ember') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 95 * dt; pt.vx *= .985; pt.tw += dt * 22; pt.life -= dt; continue; }   // embers arc softly & flicker
     if (pt.k === 'plasma') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= .95; pt.vy *= .95; pt.life -= dt; continue; }
+    if (pt.k === 'plume') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy *= .96; pt.vy -= 6 * dt; pt.r += 14 * dt; pt.life -= dt; continue; }   // a mushroom-column / dust-plume puff — rises, decelerates, keeps growing wider
+    if (pt.k === 'shard') { if (pt.grav) pt.vy += pt.grav * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= .985; if (!pt.grav) pt.vy *= .985; if (pt.rot !== undefined) pt.rot += (pt.vr || 0) * dt; pt.life -= dt; continue; }   // a bright glassy/metal sliver — falls if grav is set (most families), else drifts weightless (VACUUM)
+    if (pt.k === 'arc' || pt.k === 'wavefront') { pt.life -= dt; continue; }   // both are stationary — an EMP lightning bolt just fades in place, a ground WAVEFRONT expands purely in renderPart() off its elapsed life fraction
     if (pt.k === 'shrap') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 120 * dt; pt.life -= dt; let h = null; for (const t of G.enemies) if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.s + 3) ** 2) { h = t; break; } if (!h) for (const t of G.units) { if (t.d.builder) continue; if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.d.s * 2 + 3) ** 2) { h = t; break; } } if (h) { h.killBy = h.killBy || 'shell'; hurt(h, pt.dmg, pt.x, pt.y); spark(pt.x, pt.y, 2); pt.life = 0; } continue; }
     if (pt.k === 'chunk' || pt.k === 'clod' || pt.k === 'molten') {
       if (pt.hot) pt.hot = Math.max(0, pt.hot - dt);
@@ -9038,18 +9121,23 @@ function glow(px, y, r, col, a) { if (a <= .01 || r <= 0) return;
   c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(.85, a); c.translate(px, y); c.scale(r, r); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, 6.28); c.fill(); c.restore(); }   // HARD per-draw alpha ceiling .85 (was 1) — even a single glow can no longer paint fully-opaque white
 function renderPart(pt, px) {
   if (pt.r < 0) pt.r = 0;   // a shrinking particle whose radius briefly undershoots 0 (seen in the orbital-barrage VFX) would throw IndexSizeError on the canvas arc() calls below — clamp it (glow() already self-guards r<=0)
-  if (pt.k === 'ring') { const la = Math.max(0, pt.life / .35); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .85; c.strokeStyle = '#ffd9a0'; c.lineWidth = 2; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.stroke(); c.globalAlpha = la * .4; c.strokeStyle = '#fff3da'; c.lineWidth = 4.5; c.beginPath(); c.arc(px, pt.y, pt.r * .82, 0, 6.28); c.stroke(); c.restore(); c.globalAlpha = 1; }
-  else if (pt.k === 'flash') { const lf = Math.max(0, pt.life / (pt.bloom ? .26 : .12)) * (flashRed ? .4 : 1); if (pt.bloom) { glow(px, pt.y, pt.r * 3.2, 'rgba(255,228,168,1)', lf * .9); glow(px, pt.y, pt.r * 1.8, 'rgba(255,250,235,1)', lf); } else { glow(px, pt.y, pt.r * 3.6, 'rgba(255,242,210,1)', lf); glow(px, pt.y, pt.r * 1.7, 'rgba(255,255,255,1)', lf); c.globalAlpha = lf; c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; } }
-  else if (pt.k === 'smoke') { const la = Math.max(0, pt.life); if (pt.dark) { c.globalAlpha = Math.min(.5, la * .42); c.fillStyle = '#14161a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = Math.min(.3, la * .25); c.fillStyle = '#2e3138'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .32, pt.r * .55, 0, 6.28); c.fill(); } else { c.globalAlpha = la * .32; c.fillStyle = '#8a8f98'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = la * .2; c.fillStyle = '#cfd4dc'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .35, pt.r * .55, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // shaded puff — lit crown over a darker body
+  if (pt.k === 'ring') { const la = Math.max(0, pt.life / .35); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .85; c.strokeStyle = pt.col || '#ffd9a0'; c.lineWidth = 2; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.stroke(); c.globalAlpha = la * .4; c.strokeStyle = pt.col2 || '#fff3da'; c.lineWidth = 4.5; c.beginPath(); c.arc(px, pt.y, pt.r * .82, 0, 6.28); c.stroke(); c.restore(); c.globalAlpha = 1; }
+  else if (pt.k === 'flash') { const lf = Math.max(0, pt.life / (pt.bloom ? .26 : .12)) * (flashRed ? .4 : 1); if (pt.bloom) { glow(px, pt.y, pt.r * 3.2, pt.col ? hexToRgba(pt.col) : 'rgba(255,228,168,1)', lf * .9); glow(px, pt.y, pt.r * 1.8, pt.col ? hexToRgba(pt.col) : 'rgba(255,250,235,1)', lf); } else { glow(px, pt.y, pt.r * 3.6, pt.col ? hexToRgba(pt.col) : 'rgba(255,242,210,1)', lf); glow(px, pt.y, pt.r * 1.7, pt.col ? hexToRgba(pt.col) : 'rgba(255,255,255,1)', lf); c.globalAlpha = lf; c.fillStyle = pt.col || '#fff6d8'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; } }
+  else if (pt.k === 'smoke') { const la = Math.max(0, pt.life); if (pt.dark) { c.globalAlpha = Math.min(.5, la * .42); c.fillStyle = pt.col || '#14161a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = Math.min(.3, la * .25); c.fillStyle = '#2e3138'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .32, pt.r * .55, 0, 6.28); c.fill(); } else { c.globalAlpha = la * .32; c.fillStyle = pt.col || '#8a8f98'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = la * .2; c.fillStyle = '#cfd4dc'; c.beginPath(); c.arc(px - pt.r * .3, pt.y - pt.r * .35, pt.r * .55, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // shaded puff — lit crown over a darker body; `col` (optional, set by a styled boom() family) tints the main body only, the highlight stays fixed — undefined at every pre-existing call site so the default grey/black look is unchanged
   else if (pt.k === 'fire') { glow(px, pt.y, pt.r * 4, pt.life > .35 ? 'rgba(255,190,70,1)' : 'rgba(255,95,40,1)', Math.min(1, pt.life * 2) * .8); c.globalAlpha = Math.min(1, pt.life * 2) * .8; c.fillStyle = pt.life > .35 ? '#ffd24a' : '#ff5a2a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); if (pt.life > .3) { c.globalAlpha = Math.min(1, pt.life * 2) * .7; c.fillStyle = '#fff6d0'; c.beginPath(); c.arc(px, pt.y - pt.r * .15, pt.r * .45, 0, 6.28); c.fill(); } c.globalAlpha = 1; }   // white-hot core while young
-  else if (pt.k === 'ember') { const fl = .55 + .45 * Math.sin(pt.tw), la = Math.min(1, pt.life * 1.8) * fl, hot = pt.life > .6; glow(px, pt.y, pt.r * 5, hot ? 'rgba(255,210,110,1)' : 'rgba(255,110,50,1)', la * .5); c.globalAlpha = la; c.fillStyle = hot ? '#ffe9a8' : '#ff8a4a'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
+  else if (pt.k === 'ember') { const fl = .55 + .45 * Math.sin(pt.tw), la = Math.min(1, pt.life * 1.8) * fl, hot = pt.life > .6, ecol = pt.col || (hot ? '#ffe9a8' : '#ff8a4a'); glow(px, pt.y, pt.r * 5, pt.col ? hexToRgba(pt.col) : (hot ? 'rgba(255,210,110,1)' : 'rgba(255,110,50,1)'), la * .5); c.globalAlpha = la; c.fillStyle = ecol; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
+  else if (pt.k === 'shard') { const la = Math.max(0, Math.min(1, pt.life * 3)); c.save(); c.translate(px, pt.y); c.rotate(pt.rot || 0); c.globalAlpha = la; c.fillStyle = pt.col || '#eaf3ff'; c.fillRect(-pt.r * 1.6, -pt.r * .35, pt.r * 3.2, pt.r * .7); c.restore(); c.globalAlpha = 1; }   // a thin bright glassy/metal sliver, not a round mote
+  else if (pt.k === 'arc') { const la = Math.max(0, pt.life / .18); if (la > .01) { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la; c.strokeStyle = pt.col || '#c9a6ff'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(px, pt.y); const segs = 3; for (let s = 1; s <= segs; s++) { const t = s / segs; c.lineTo(px + Math.cos(pt.ang) * pt.len * t + (Math.random() - .5) * 8, pt.y + Math.sin(pt.ang) * pt.len * t + (Math.random() - .5) * 8); } c.stroke(); c.restore(); c.globalAlpha = 1; } }   // EMP — a jagged lightning segment, re-jittered every frame so it crackles instead of sitting static
+  else if (pt.k === 'plume') { const la = Math.max(0, Math.min(1, pt.life)); c.globalAlpha = la * .35; c.fillStyle = '#7a7f88'; c.beginPath(); c.ellipse(px, pt.y, pt.r * .8, pt.r * 1.3, 0, 0, 6.28); c.fill(); c.globalAlpha = la * .2; c.fillStyle = '#c7ccd4'; c.beginPath(); c.ellipse(px - pt.r * .2, pt.y - pt.r * .3, pt.r * .5, pt.r * .8, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; }   // a taller, narrower puff than 'smoke' — reads as a rising column when several are stacked (see emitPlume)
+  else if (pt.k === 'spray') { const la = Math.max(0, Math.min(1, pt.life * 2)); glow(px, pt.y, pt.r * 2.2, 'rgba(223,242,255,1)', la * .4); c.globalAlpha = la * .85; c.fillStyle = '#dff2ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }   // WATER impact droplet
+  else if (pt.k === 'wavefront') { const t = 1 - Math.max(0, pt.life) / pt.maxLife, off = t * pt.spread, wa = Math.max(0, 1 - t) * .8; if (wa > .01) { c.save(); c.globalAlpha = wa; c.strokeStyle = pt.col || '#d8c090'; c.lineWidth = 2.4; for (const dir of [-1, 1]) { const ex = pt.x + dir * off, epx = sx(ex), egy = groundY(ex); c.beginPath(); c.moveTo(epx - 9, egy); c.lineTo(epx + 9, egy); c.stroke(); } c.restore(); c.globalAlpha = 1; } }   // SEISMIC — two bright dashes riding the real terrain profile, racing outward from ground zero
   else if (pt.k === 'muzzle') { const la = Math.max(0, pt.life / .06) * (flashRed ? .45 : 1); c.save(); c.translate(px, pt.y); c.rotate(pt.ang); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .9; c.fillStyle = pt.col || '#ffdf9a'; c.beginPath(); c.moveTo(pt.r * .4, 0); c.lineTo(pt.r * 2.0, -pt.r * .55); c.lineTo(pt.r * 3.1, 0); c.lineTo(pt.r * 2.0, pt.r * .55); c.closePath(); c.fill(); c.fillStyle = '#fff8e8'; c.beginPath(); c.arc(pt.r * .8, 0, pt.r * .5, 0, 6.28); c.fill(); c.restore(); c.globalAlpha = 1; }   // muzzle blast cone
   else if (pt.k === 'plasma') { glow(px, pt.y, pt.r * 4.4, 'rgba(190,140,255,1)', Math.min(1, pt.life * 2.5) * .85); c.globalAlpha = Math.min(1, pt.life * 2.5) * .85; c.fillStyle = pt.life > .3 ? '#dff0ff' : '#c184ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   else if (pt.k === 'wreck') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.scale(pt.facing, 1); c.globalAlpha = Math.min(1, pt.life / 2.5) * .92; if (ART[pt.art]) ART[pt.art](c, pt.s, -.5); c.globalAlpha = .35; c.fillStyle = '#000'; c.fillRect(-pt.s * 2, -pt.s * .2, pt.s * 4, pt.s * .5); c.globalAlpha = 1; c.restore(); }
   else if (pt.k === 'deb') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.globalAlpha = Math.min(1, pt.life); c.fillStyle = '#2a2a2a'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }
   else if (pt.k === 'text') { c.globalAlpha = Math.min(1, pt.life / .4); c.font = 'bold 11px ui-monospace,monospace'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.7)'; c.strokeText(pt.txt, px, pt.y); c.fillStyle = pt.col; c.fillText(pt.txt, px, pt.y); c.textAlign = 'left'; c.globalAlpha = 1; }
   else if (pt.k === 'chunk') { const cl = pt.clip, cmx = cl[0] + cl[2] / 2, cmy = cl[1] + cl[3] / 2; c.save(); c.translate(px, pt.y); c.scale(pt.facing || 1, 1); c.rotate(pt.rot); c.translate(-cmx, -cmy); c.beginPath(); c.rect(cl[0], cl[1], cl[2], cl[3]); c.clip(); c.globalAlpha = Math.min(1, pt.life / 2) * .95; if (ART[pt.art]) ART[pt.art](c, pt.s, -.4); c.restore(); if (pt.hot > 0) { c.globalAlpha = pt.hot * .5; c.fillStyle = '#ff6a30'; c.beginPath(); c.arc(px, pt.y, pt.s * .6, 0, 6.28); c.fill(); } c.globalAlpha = 1; }
-  else if (pt.k === 'clod') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot || 0); c.globalAlpha = Math.min(1, pt.life * 1.5); c.fillStyle = '#6b4a2e'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }
+  else if (pt.k === 'clod') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot || 0); c.globalAlpha = Math.min(1, pt.life * 1.5); c.fillStyle = pt.col || '#6b4a2e'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }
   else if (pt.k === 'molten') { glow(px, pt.y, pt.r * 2.6, pt.hot > .2 ? 'rgba(255,210,96,1)' : 'rgba(255,106,48,1)', Math.min(1, pt.life * 2) * .45); c.globalAlpha = Math.min(1, pt.life * 2); c.fillStyle = pt.hot > .2 ? '#ffd060' : '#ff6a30'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   else if (pt.k === 'shock') { c.globalAlpha = Math.max(0, pt.life / .45) * .55; c.strokeStyle = '#d8c090'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(px, pt.y, pt.r, pt.r * .3, 0, Math.PI, 2 * Math.PI); c.stroke(); c.globalAlpha = 1; }
   else if (pt.k === 'shrap') { c.globalAlpha = Math.min(1, pt.life * 2.5); c.strokeStyle = '#ffe0a0'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(px, pt.y); c.lineTo(px - pt.vx * .02, pt.y - pt.vy * .02); c.stroke(); c.globalAlpha = 1; }

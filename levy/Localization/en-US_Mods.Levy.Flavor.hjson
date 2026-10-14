@@ -1,0 +1,17 @@
+# Flavor strings. Keys are relative to Mods.Levy.Flavor.
+AlreadyStudied: Already studied.
+Studied: "{0} has been studied. {1}"
+Effect: {
+	Conscription: Each town NPC provides {0} manpower.
+	Drill: Militia aim {0}% better.
+	Plunder: Coins hauled to the treasury are worth {0}% more.
+	Fortification: Soldiers within {0} tiles of a Barracks gain {1} defense.
+	Discipline: Each settlement regenerates {0} extra manpower at dawn.
+}
+Drop: {
+	BloodMoon: Drops during a Blood Moon.
+	GoblinArmy: Drops during a Goblin Army invasion.
+	Pirates: Drops during a Pirate invasion.
+	OldOnesArmy: Drops during the Old One's Army.
+	Eclipse: Drops during a Solar Eclipse.
+}

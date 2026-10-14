@@ -31,11 +31,26 @@ Mods: {
 					Right-click to give orders to your Regulars.
 					'''
 			}
-			GuideToConscription: { DisplayName: A Guide to Conscription, Tooltip: Each town NPC provides 5 manpower instead of 3. Consumed on use, once per world. }
-			GuideToDrill: { DisplayName: A Guide to Drill, Tooltip: Militia aim 25% better. Consumed on use, once per world. }
-			GuideToPlunder: { DisplayName: A Guide to Plunder, Tooltip: Coins hauled to the treasury are worth 50% more. Consumed on use, once per world. }
-			GuideToFortification: { DisplayName: A Guide to Fortification, Tooltip: Soldiers within 60 tiles of a Barracks gain 4 defense. Consumed on use, once per world. }
-			GuideToDiscipline: { DisplayName: A Guide to Discipline, Tooltip: Each settlement regenerates 1 extra manpower at dawn. Consumed on use, once per world. }
+			GuideToConscription: {
+				DisplayName: "A Guide to Conscription"
+				Tooltip: "Each town NPC provides 5 manpower instead of 3. Consumed on use, once per world."
+			}
+			GuideToDrill: {
+				DisplayName: "A Guide to Drill"
+				Tooltip: "Militia aim 25% better. Consumed on use, once per world."
+			}
+			GuideToPlunder: {
+				DisplayName: "A Guide to Plunder"
+				Tooltip: "Coins hauled to the treasury are worth 50% more. Consumed on use, once per world."
+			}
+			GuideToFortification: {
+				DisplayName: "A Guide to Fortification"
+				Tooltip: "Soldiers within 60 tiles of a Barracks gain 4 defense. Consumed on use, once per world."
+			}
+			GuideToDiscipline: {
+				DisplayName: "A Guide to Discipline"
+				Tooltip: "Each settlement regenerates 1 extra manpower at dawn. Consumed on use, once per world."
+			}
 		}
 		Tiles: {
 			BarracksTile.MapEntry: Barracks
@@ -66,26 +81,87 @@ Mods: {
 					Economy: Economy
 					Interface: Interface
 				}
-				BossHpScalingPercentPerCp: { Label: Boss HP scaling per command point (%), Tooltip: Bosses gain this much max and current HP for every command point of soldiers that engage them. }
-				BossHpScalingCapPercent: { Label: Boss HP scaling cap (%), Tooltip: The most a boss can gain from engaged soldiers. }
-				BossesPunishSoldiers: { Label: Bosses punish soldiers, Tooltip: Bosses redirect shots and dashes at soldiers that get close or hurt them. }
-				FearMultiplier: { Label: Fear multiplier, Tooltip: Scales every fear gain during boss fights. }
-				SoldierDamageMultiplier: { Label: Soldier damage multiplier, Tooltip: Scales all soldier damage. }
-				RenderCap: { Label: Soldiers on screen, Tooltip: Bodies above this number wait in the barracks as reinforcements. }
-				Tombstones: { Label: Tombstones, Tooltip: Vanilla drops one only for a Hardcore commander. }
-				EnemiesTargetSoldiers: { Label: Enemies target soldiers, Tooltip: Allowlisted enemies chase the nearest soldier like a player. }
-				UseVanillaStatPipeline: { Label: Use vanilla stat pipeline, Tooltip: Soldiers get armor set and accessory stats through the game's own equipment code. Turn off if another mod misbehaves. }
-				SoldiersTriggerPressurePlates: { Label: Soldiers trigger pressure plates, Tooltip: Off by default. }
-				ExtraTargetingAiStyles: { Label: Extra targeting AI styles, Tooltip: Additional NPC aiStyle numbers that may target soldiers. }
-				WageMultiplier: { Label: Wage multiplier, Tooltip: Scales every wage and fee. }
-				AutoMusterDefault: { Label: Auto-muster by default, Tooltip: New barracks call the militia when an invasion or Blood Moon starts. }
-				NurseHealsSoldiers: { Label: Nurse heals soldiers, Tooltip: Soldiers within 4 tiles of the Nurse are healed at her price from the treasury. }
-				Nameplates: { Label: Nameplates, Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen. }
-				MilitiaDeathMessages: { Label: Militia death messages, Tooltip: Count posts one line when the event ends. }
-				RegularDeathMessages: { Label: Regular death messages, Tooltip: A chat line when a Regular dies. }
+				BossHpScalingPercentPerCp: {
+					Label: "Boss HP scaling per command point (%)"
+					Tooltip: "Bosses gain this much max and current HP for every command point of soldiers that engage them."
+				}
+				BossHpScalingCapPercent: {
+					Label: "Boss HP scaling cap (%)"
+					Tooltip: "The most a boss can gain from engaged soldiers."
+				}
+				BossesPunishSoldiers: {
+					Label: "Bosses punish soldiers"
+					Tooltip: "Bosses redirect shots and dashes at soldiers that get close or hurt them."
+				}
+				FearMultiplier: {
+					Label: "Fear multiplier"
+					Tooltip: "Scales every fear gain during boss fights."
+				}
+				SoldierDamageMultiplier: {
+					Label: "Soldier damage multiplier"
+					Tooltip: "Scales all soldier damage."
+				}
+				RenderCap: {
+					Label: "Soldiers on screen"
+					Tooltip: "Bodies above this number wait in the barracks as reinforcements."
+				}
+				Tombstones: {
+					Label: "Tombstones"
+					Tooltip: "Vanilla drops one only for a Hardcore commander."
+				}
+				EnemiesTargetSoldiers: {
+					Label: "Enemies target soldiers"
+					Tooltip: "Allowlisted enemies chase the nearest soldier like a player."
+				}
+				UseVanillaStatPipeline: {
+					Label: "Use vanilla stat pipeline"
+					Tooltip: "Soldiers get armor set and accessory stats through the game's own equipment code. Turn off if another mod misbehaves."
+				}
+				SoldiersTriggerPressurePlates: {
+					Label: "Soldiers trigger pressure plates"
+					Tooltip: "Off by default."
+				}
+				ExtraTargetingAiStyles: {
+					Label: "Extra targeting AI styles"
+					Tooltip: "Additional NPC aiStyle numbers that may target soldiers."
+				}
+				WageMultiplier: {
+					Label: "Wage multiplier"
+					Tooltip: "Scales every wage and fee."
+				}
+				AutoMusterDefault: {
+					Label: "Auto-muster by default"
+					Tooltip: "New barracks call the militia when an invasion or Blood Moon starts."
+				}
+				NurseHealsSoldiers: {
+					Label: "Nurse heals soldiers"
+					Tooltip: "Soldiers within 4 tiles of the Nurse are healed at her price from the treasury."
+				}
+				Nameplates: {
+					Label: "Nameplates"
+					Tooltip: "Name, grade and HP over each soldier. Hidden when more than 20 are on screen."
+				}
+				MilitiaDeathMessages: {
+					Label: "Militia death messages"
+					Tooltip: "Count posts one line when the event ends."
+				}
+				RegularDeathMessages: {
+					Label: "Regular death messages"
+					Tooltip: "A chat line when a Regular dies."
+				}
 			}
-			TombstoneMode: { Tooltip: "", Vanilla.Label: Vanilla, Always.Label: Always, Never.Label: Never }
-			MilitiaDeathMessageMode: { Tooltip: "", Count.Label: Count, Individual.Label: Individual, None.Label: None }
+			TombstoneMode: {
+				Tooltip: ""
+				Vanilla.Label: "Vanilla"
+				Always.Label: "Always"
+				Never.Label: "Never"
+			}
+			MilitiaDeathMessageMode: {
+				Tooltip: ""
+				Count.Label: "Count"
+				Individual.Label: "Individual"
+				None.Label: "None"
+			}
 		}
 		UI: {
 			ChatOrders: Orders

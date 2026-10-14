@@ -165,12 +165,11 @@ namespace Levy.Content.NPCs
 				if (critChance < 0) critChance = CritChance(item);
 				bool crit = Main.rand.Next(1, 101) <= critChance;
 				int dir = n.Center.X < NPC.Center.X ? -1 : 1;
+				LootCredit.Credit(n, this); // before the strike: StrikeNPC runs checkDead → NPCLoot synchronously on a killing blow
 				int done = n.SimpleStrikeNPC(dmg, dir, crit, item.knockBack, item.DamageType ?? DamageClass.Melee, true, 0f, true);
 				_swingHits.Add(i);
-				LootCredit.Credit(n, this);
-				BossRule.OnSoldierDamagedNpc(n, this, done);
 				LastMeleeHitTick = (int)Main.GameUpdateCount;
-				if (n.life <= 0) { Record.Kills++; DialogueSystem.Bark(this, DialogueTrigger.KILL); }
+				LootCredit.OnSoldierHit(n, this, done); // boss rule accounting, kill count, KILL bark
 			}
 		}
 

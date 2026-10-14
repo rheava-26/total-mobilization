@@ -106,14 +106,8 @@ namespace Levy.Content.Projectiles
 		{
 			SoldierNPC s = Soldier;
 			if (s == null) return;
-			LootCredit.Credit(target, s);
-			BossRule.OnSoldierDamagedNpc(target, s, damageDone);
+			// Credit, boss-rule accounting, kill count and the KILL bark are applied by LootCreditGlobalProjectile for every tagged soldier projectile.
 			s.LastMeleeHitTick = (int)Main.GameUpdateCount;
-			if (target.life <= 0 && s.Record != null)
-			{
-				s.Record.Kills++;
-				DialogueSystem.Bark(s, DialogueTrigger.KILL);
-			}
 		}
 
 		public override bool ShouldUpdatePosition() => false; // anchored to the body in AI; velocity is only the thrust direction

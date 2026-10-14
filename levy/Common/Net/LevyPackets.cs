@@ -34,12 +34,13 @@ namespace Levy.Common.Net
 	///  ArmorySnapshot: (unused: same)
 	///  SoldierVisual: (unused: NPC SendExtraAI)
 	///  Bark: short npcIndex, byte channel (DialogueChannel), byte emoteId, string text   (Dialogue)
+	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
 	/// </summary>
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
 		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed,
-		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark,
+		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
 	}
 
 	public static class LevyPackets

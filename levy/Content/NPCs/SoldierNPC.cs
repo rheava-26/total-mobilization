@@ -373,7 +373,9 @@ namespace Levy.Content.NPCs
 			if (!reader.ReadBoolean()) { Record = null; return; }
 			Record ??= new SoldierRecord();
 			Record.Id = reader.ReadInt32(); Record.Name = reader.ReadString(); Record.Kind = (SoldierKind)reader.ReadByte(); Record.Grade = (Grade)reader.ReadByte(); Record.Temperament = (Temperament)reader.ReadByte(); Record.Veteran = reader.ReadBoolean();
+			int prevAnim = ItemAnimation;
 			State = (SoldierState)reader.ReadByte(); TargetIndex = reader.ReadInt16(); Record.Fear = reader.ReadSingle(); UsingSidearm = reader.ReadBoolean(); AimRotation = reader.ReadSingle(); ItemAnimation = reader.ReadInt16(); ItemAnimationMax = reader.ReadInt16();
+			bool newUse = ItemAnimation > 0 && ItemAnimation == ItemAnimationMax && prevAnim != ItemAnimation;
 			Record.Hair = reader.ReadInt32(); Record.SkinVariant = reader.ReadInt32(); Record.Male = reader.ReadBoolean();
 			Record.HairColor = reader.ReadRGB(); Record.SkinColor = reader.ReadRGB(); Record.EyeColor = reader.ReadRGB(); Record.ShirtColor = reader.ReadRGB(); Record.UnderShirtColor = reader.ReadRGB(); Record.PantsColor = reader.ReadRGB(); Record.ShoeColor = reader.ReadRGB();
 			Record.CommanderName = reader.ReadString(); Record.HomeBarracksId = reader.ReadInt32();
@@ -381,6 +383,11 @@ namespace Levy.Content.NPCs
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();
+			if (newUse && !Main.dedServ)
+			{
+				var held = Dummy.inventory[0];
+				if (held != null && !held.IsAir && held.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(held.UseSound.Value, NPC.Center);
+			}
 		}
 
 		// =====================================================================================================

@@ -186,8 +186,8 @@ namespace Levy.Common.Systems
 		{
 			if (body == null || rec == null || !body.NPC.active) return;
 			rec.CurrentHp = Math.Max(1, body.NPC.life);
-			body.Bind(rec);
-			body.StatsDirty = true;
+			body.NPC.GivenName = rec.Name;
+			body.NotifyGearChanged(); // re-reads the weapon profile and stats without resetting the brain
 		}
 
 		private static void DespawnBody(SoldierNPC body)

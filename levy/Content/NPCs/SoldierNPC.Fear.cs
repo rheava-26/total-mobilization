@@ -107,7 +107,7 @@ namespace Levy.Content.NPCs
 
 		// INTEGRATION: BossRule may grow TerrorFor(NPC boss, SoldierNPC soldier) (trophies near the home barracks lower the terror).
 		// When it exists, this is the single call to switch: return BossRule.TerrorFor(boss, this);
-		private int Fear_Terror(NPC boss) => BossRule.TerrorOf(boss);
+		private int Fear_Terror(NPC boss) => BossRule.TerrorFor(boss, this);
 
 		private void Fear_OnBossSighted(NPC boss)
 		{

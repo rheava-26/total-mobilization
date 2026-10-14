@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Config;
+using Levy.Common.Net;
 using Levy.Common.Fear;
 using Levy.Common.Globals;
 using Levy.Common.Systems;
@@ -23,6 +24,12 @@ namespace Levy.Common.Boss
 	{
 		public override void Load()
 		{
+			LevyPackets.Register(LevyPacket.BossLifeMax, (reader, from) =>
+			{
+				int idx = reader.ReadInt16(); int lifeMax = reader.ReadInt32();
+				if (Main.netMode != NetmodeID.MultiplayerClient) return;
+				if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active && lifeMax > 0) Main.npc[idx].lifeMax = lifeMax;
+			});
 			On_NPC.TargetClosest += Hook_TargetClosest;
 			On_NPC.TargetClosestUpgraded += Hook_TargetClosestUpgraded;
 		}

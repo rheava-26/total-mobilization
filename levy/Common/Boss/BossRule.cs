@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Levy.Common.Config;
+using Levy.Common.Net;
 using Levy.Common.Globals;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
@@ -262,7 +263,12 @@ namespace Levy.Common.Boss
 				npc.lifeMax += delta;
 				npc.life += delta;
 				st.AppliedAdd = targetAdd;
-				npc.netUpdate = true; // vanilla syncs life (not lifeMax); clients only need lifeMax for the health bar
+				npc.netUpdate = true; // vanilla syncs life (not lifeMax)
+				if (Main.netMode == NetmodeID.Server)
+				{
+					var p = LevyPackets.New(LevyPacket.BossLifeMax);
+					p.Write((short)npc.whoAmI); p.Write(npc.lifeMax); p.Send();
+				}
 			}
 			_scale[npc.whoAmI] = st;
 		}

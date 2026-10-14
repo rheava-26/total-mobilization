@@ -48,15 +48,14 @@ namespace Levy.Content.NPCs
 		private int _resupplySearchTick = -100000;
 		private int _resupplyWaitUntil;
 		private int _manaLowSinceTick = -1;
-		private int _manaLastSeen;
 		private int _topUpTick = -100000;
 		private int _haulTargetItem = -1;
 		private int _haulCooldownUntil;
 		private int _haulStartedTick;
+		private int _commanderLookupTick = -100000;
 		private WeaponProfile _mainProfile;
 		private int _mainProfileType = -1;
 		private int _mainProfilePrefix = -1;
-		private bool _teleportedThisThink;
 
 		// =====================================================================================================
 		// Contract entry points
@@ -96,6 +95,13 @@ namespace Levy.Content.NPCs
 			_haulTargetItem = -1;
 			_idleAnchorSet = false;
 			if (State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead) return; // fear/roster own these
+			if (IsMilitia)
+			{
+				// Militia only ever stand down; every other order keeps them on their settlement patrol.
+				SetState(order == SoldierOrder.ReturnToBarracks ? SoldierState.ReturnHome : SoldierState.Patrol);
+				_lastSeenState = State;
+				return;
+			}
 			switch (order)
 			{
 				case SoldierOrder.Follow: HoldPosition = false; SetState(SoldierState.Follow); break;
@@ -112,7 +118,7 @@ namespace Levy.Content.NPCs
 			int now = (int)Main.GameUpdateCount;
 			SoldierState prevState = State; int prevTarget = TargetIndex;
 			_thinkCount++;
-			_teleportedThisThink = false;
+			RefreshCommanderIndex(now);
 
 			// Another module (Fear, Roster) changed the state since the last think: restart the state clock.
 			if (State != _lastSeenState) { _stateEnteredTick = now; StateTimer = 0; _lastSeenState = State; }
@@ -168,9 +174,18 @@ namespace Levy.Content.NPCs
 			_thinkCount = 0; _outOfAmmoBarked = false; _idleAnchorSet = false; _idleNextDecisionTick = 0;
 			_patrolLeg = 0; _patrolPauseUntil = 0;
 			_resupplyArmory = null; _resupplyFailTick = -100000; _resupplySearchTick = -100000; _resupplyWaitUntil = 0;
-			_manaLowSinceTick = -1; _manaLastSeen = Record?.Mana ?? 0; _topUpTick = -100000;
+			_manaLowSinceTick = -1; _topUpTick = -100000;
 			_haulTargetItem = -1; _haulCooldownUntil = 0; _haulStartedTick = 0;
-			_lastTeleportTick = -100000; _lastEngageBarkTick = -100000;
+			_lastTeleportTick = -100000; _lastEngageBarkTick = -100000; _commanderLookupTick = -100000;
+		}
+
+		/// <summary>A commander who relogged gets a new player index; re-resolve the name once a second while the index is stale.</summary>
+		private void RefreshCommanderIndex(int now)
+		{
+			if (!IsRegular || string.IsNullOrEmpty(Record.CommanderName) || Commander != null) return;
+			if (now - _commanderLookupTick < 60) return;
+			_commanderLookupTick = now;
+			Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 		}
 
 		/// <summary>Writes State unless the Fear agent owns the current label (Shaken with the meter still high, Routed).</summary>
@@ -242,6 +257,12 @@ namespace Levy.Content.NPCs
 		{
 			var home = Home;
 			return home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.NearHomeTiles);
+		}
+
+		private bool AtMusterPoint()
+		{
+			var home = Home;
+			return home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.HomeArriveTiles);
 		}
 
 		/// <summary>Profile of the issued main weapon (not the sidearm), cached by type + prefix.</summary>
@@ -489,13 +510,11 @@ namespace Levy.Content.NPCs
 		// 5. Resupply
 		// =====================================================================================================
 
+		/// <summary>Magic: the pool has sat below one cast's cost for ManaStarvedTicks without recovering.</summary>
 		private bool ManaStarved(int now)
 		{
 			var main = MainProfile();
-			if (main == null || main.Family != WeaponFamily.Magic || main.Mana <= 0) { _manaLowSinceTick = -1; _manaLastSeen = Record.Mana; return false; }
-			int mana = Record.Mana;
-			if (mana >= main.Mana || mana > _manaLastSeen) { _manaLowSinceTick = -1; _manaLastSeen = mana; return false; }
-			_manaLastSeen = mana;
+			if (main == null || main.Family != WeaponFamily.Magic || main.Mana <= 0 || Record.Mana >= main.Mana) { _manaLowSinceTick = -1; return false; }
 			if (_manaLowSinceTick < 0) { _manaLowSinceTick = now; return false; }
 			return now - _manaLowSinceTick >= LevyConstants.ManaStarvedTicks;
 		}
@@ -516,7 +535,10 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Resupply)
 			{
 				var armory = _resupplyArmory;
-				if (!ArmoryAlive(armory)) { _resupplyArmory = null; }
+				if (!ArmoryAlive(armory))
+				{
+					SetState(OrderState()); // the armory is gone; search again below
+				}
 				else if (LevyUtil.WithinTiles(NPC.Center, armory.Center, LevyConstants.ArmoryArriveTiles))
 				{
 					ClearGoal();
@@ -524,13 +546,14 @@ namespace Levy.Content.NPCs
 					{
 						int taken = armory.TakeAmmo(main.UseAmmo, Record.Gear.Ammo, LevyConstants.AmmoPouchMax);
 						if (taken > 0) { Rearmed(); return false; }
-						_resupplyFailTick = now;
+						_resupplyFailTick = now; // empty shelves: sidearm, try again later
+						SetState(OrderState());
 					}
 					else
 					{
 						if (_resupplyWaitUntil == 0) _resupplyWaitUntil = now + LevyConstants.MagicRegenWaitTicks;
 						if (now < _resupplyWaitUntil) return true;
-						_manaLowSinceTick = -1; _manaLastSeen = Record.Mana;
+						_manaLowSinceTick = -1;
 						Rearmed(); return false;
 					}
 				}
@@ -540,26 +563,24 @@ namespace Levy.Content.NPCs
 					return true;
 				}
 			}
-			else if (now - _resupplyFailTick >= LevyConstants.ResupplyRetryTicks && now - _resupplySearchTick >= LevyConstants.ResupplySearchIntervalTicks)
+
+			if (State != SoldierState.Resupply && now - _resupplyFailTick >= LevyConstants.ResupplyRetryTicks && now - _resupplySearchTick >= LevyConstants.ResupplySearchIntervalTicks)
 			{
 				_resupplySearchTick = now;
 				var armory = SettlementSystem.Instance.NearestArmory(NPC.Center, LevyConstants.ResupplyArmoryRadius);
 				if (ArmoryAlive(armory))
 				{
-					_resupplyArmory = armory;
 					SetState(SoldierState.Resupply);
-					_resupplyArmory = armory; _resupplyWaitUntil = 0;
-					SetGoal(armory.Center);
-					return true;
+					if (State == SoldierState.Resupply)
+					{
+						_resupplyArmory = armory; _resupplyWaitUntil = 0;
+						SetGoal(armory.Center);
+						return true;
+					}
 				}
-			}
-			else if (now - _resupplyFailTick < LevyConstants.ResupplyRetryTicks && State == SoldierState.Resupply)
-			{
-				SetState(OrderState());
 			}
 
 			// No armory in reach (or it had nothing): sidearm if there is one, else carry on without engaging.
-			if (State == SoldierState.Resupply) SetState(OrderState());
 			if (Record.Gear.HasSidearm && !UsingSidearm)
 			{
 				UsingSidearm = true; StatsDirty = true;
@@ -604,25 +625,15 @@ namespace Levy.Content.NPCs
 		private void ThinkOrder(int now, float nearestHostileTiles)
 		{
 			if (State == SoldierState.Haul) { ThinkHaul(now, nearestHostileTiles); return; }
-			if (State == SoldierState.Engage || State == SoldierState.Resupply) SetState(OrderState());
 
-			// Fear agent's Shaken label stays; behave by the standing order underneath it.
-			SoldierState behave = State == SoldierState.Shaken ? OrderState() : State;
-			if (behave != SoldierState.ReturnHome && behave != SoldierState.Follow && behave != SoldierState.Patrol && behave != SoldierState.Idle)
-			{
-				behave = OrderState();
-				SetState(behave);
-				if (State == SoldierState.Shaken) { /* label kept */ }
-			}
-			else if (State != SoldierState.Shaken)
-			{
-				// Re-derive from the order so a returned commander, a finished walk home or a dead commander flips the state.
-				var os = OrderState();
-				if (os != behave && !(behave == SoldierState.ReturnHome && os == SoldierState.Idle && !LevyUtil.WithinTiles(NPC.Center, Home?.MusterPoint ?? NPC.Center, LevyConstants.HomeArriveTiles)))
-				{
-					SetState(os); behave = os;
-				}
-			}
+			// Re-derive the state from the standing order every think so a returned commander, a finished walk home,
+			// a dead commander or the end of a fight all flip it. A walk home finishes at the muster point, not at the
+			// wider "near home" radius that keeps idlers from re-triggering it.
+			SoldierState os = OrderState();
+			if (State == SoldierState.ReturnHome && os == SoldierState.Idle && !AtMusterPoint()) os = SoldierState.ReturnHome;
+			SoldierState behave;
+			if (State == SoldierState.Shaken) behave = os; // the Fear agent's label stays; behave by the order underneath it
+			else { if (State != os) SetState(os); behave = State; }
 
 			bool mayHaul = State != SoldierState.Shaken && !Shaken && !Record.HoldFire && !HoldPosition;
 			switch (behave)
@@ -748,7 +759,6 @@ namespace Levy.Content.NPCs
 			NPC.netUpdate = true;
 			ClearGoal();
 			_haulTargetItem = -1;
-			_teleportedThisThink = true;
 			Movement_OnTeleported();
 		}
 
@@ -858,7 +868,7 @@ namespace Levy.Content.NPCs
 			{
 				var it = _haulTargetItem < Main.maxItems ? Main.item[_haulTargetItem] : null;
 				if (it == null || !IsHaulable(it, armory != null, now) || !LevyUtil.WithinTiles(NPC.Center, it.Center, LevyConstants.HaulPickupRadius * 2f)) _haulTargetItem = -1;
-				else if (NPC.Hitbox.Intersects(it.Hitbox)) { PickUp(_haulTargetItem); _haulTargetItem = -1; }
+				else if (NPC.Hitbox.Intersects(it.Hitbox)) { PickUp(_haulTargetItem); _haulTargetItem = -1; _haulStartedTick = now; }
 				else { SetGoal(it.Center); return; }
 			}
 			if (_carried.Count < LevyConstants.HaulCarryMax && calm && haveDest)
@@ -933,7 +943,8 @@ namespace Levy.Content.NPCs
 			var a = Record.PatrolA; var b = Record.PatrolB;
 			bool hasA = a != Point16.NegativeOne, hasB = b != Point16.NegativeOne;
 			if (!hasA && !hasB) { ThinkIdle(now); return; }
-			if (!hasA) a = b; if (!hasB) b = a;
+			if (!hasA) a = b;
+			if (!hasB) b = a;
 			if (now < _patrolPauseUntil) { ClearGoal(); return; }
 			Vector2 target = PatrolWorld(_patrolLeg == 0 ? a : b);
 			bool arrived = Math.Abs(NPC.Center.X - target.X) < LevyConstants.PatrolArriveXTiles * LevyConstants.TilePx

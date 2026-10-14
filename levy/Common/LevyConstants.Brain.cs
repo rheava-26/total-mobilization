@@ -47,7 +47,8 @@ namespace Levy.Common
 		public const int HaulRefusedCooldownTicks = 60 * 60;
 		public const int HaulRefusedMemory = 4;
 		public const int HaulScanEveryThinks = 2;
-		public const int HaulGiveUpTicks = 60 * 30;
+		/// <summary>A single haul leg (walk to the item, or to the drop-off) that takes longer than this is abandoned.</summary>
+		public const int HaulGiveUpTicks = 60 * 45;
 
 		// ---------- Home / patrol / idle ----------
 		public const float HomeArriveTiles = 2f;

@@ -1,0 +1,3 @@
+Your junk becomes a garrison. Throw the weapons, armor, ammo and life crystals you no longer use into an Armory and the town arms a militia with them. Pay gold to keep a few Regulars who follow you anywhere. Blow a War Horn during a Blood Moon or an invasion and the whole settlement turns out to hold the walls. They are morons. They die like players. They cost money.
+
+Craft a Barracks (30 wood, 10 iron or lead bars, 1 banner) and an Armory (20 iron or lead bars, 1 chest) at a Work Bench. Right-click the Barracks to enlist. Right-click the Armory to issue gear.

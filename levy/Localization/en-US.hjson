@@ -1,0 +1,158 @@
+# Levy — every player-facing string except soldier dialogue (Dialogue/en-US.txt).
+# Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
+Mods: {
+	Levy: {
+		Items: {
+			BarracksItem: {
+				DisplayName: Barracks
+				Tooltip:
+					'''
+					The hub of a settlement. Town NPCs living within 120 tiles belong to it.
+					Right-click it to enlist Regulars, pay wages and raise the militia.
+					'''
+			}
+			ArmoryItem: {
+				DisplayName: Armory
+				Tooltip:
+					'''
+					A 120-slot store with issue rows for weapons, armor, ammo and potions.
+					Soldiers of a Barracks within 20 tiles arm themselves from it.
+					'''
+			}
+			PatrolBannerItem: {
+				DisplayName: Patrol Banner
+				Tooltip: Place two to mark a patrol line. Assign Regulars to it from the Barracks.
+			}
+			WarHorn: {
+				DisplayName: War Horn
+				Tooltip:
+					'''
+					Left-click to call up or stand down the nearest settlement's militia.
+					Right-click to give orders to your Regulars.
+					'''
+			}
+			GuideToConscription: { DisplayName: A Guide to Conscription, Tooltip: Each town NPC provides 5 manpower instead of 3. Consumed on use, once per world. }
+			GuideToDrill: { DisplayName: A Guide to Drill, Tooltip: Militia aim 25% better. Consumed on use, once per world. }
+			GuideToPlunder: { DisplayName: A Guide to Plunder, Tooltip: Coins hauled to the treasury are worth 50% more. Consumed on use, once per world. }
+			GuideToFortification: { DisplayName: A Guide to Fortification, Tooltip: Soldiers within 60 tiles of a Barracks gain 4 defense. Consumed on use, once per world. }
+			GuideToDiscipline: { DisplayName: A Guide to Discipline, Tooltip: Each settlement regenerates 1 extra manpower at dawn. Consumed on use, once per world. }
+		}
+		Tiles: {
+			BarracksTile.MapEntry: Barracks
+			ArmoryTile.MapEntry: Armory
+			PatrolBannerTile.MapEntry: Patrol Banner
+		}
+		NPCs: {
+			SoldierNPC.DisplayName: Soldier
+		}
+		Projectiles: {
+			SoldierThrust.DisplayName: Thrust
+		}
+		Keybinds: {
+			FollowMe.DisplayName: Levy: Follow me
+			HoldHere.DisplayName: Levy: Hold here
+			ReturnToBarracks.DisplayName: Levy: Return to barracks
+			HoldFire.DisplayName: Levy: Hold fire / fire at will
+			Mobilize.DisplayName: Levy: Mobilize / stand down
+			Rally.DisplayName: Levy: Rally
+			ArmyStrip.DisplayName: Levy: Army overview
+		}
+		Configs: {
+			LevyConfig: {
+				DisplayName: Levy
+				Headers: {
+					Bosses: Bosses
+					Soldiers: Soldiers
+					Economy: Economy
+					Interface: Interface
+				}
+				BossHpScalingPercentPerCp: { Label: Boss HP scaling per command point (%), Tooltip: Bosses gain this much max and current HP for every command point of soldiers that engage them. }
+				BossHpScalingCapPercent: { Label: Boss HP scaling cap (%), Tooltip: The most a boss can gain from engaged soldiers. }
+				BossesPunishSoldiers: { Label: Bosses punish soldiers, Tooltip: Bosses redirect shots and dashes at soldiers that get close or hurt them. }
+				FearMultiplier: { Label: Fear multiplier, Tooltip: Scales every fear gain during boss fights. }
+				SoldierDamageMultiplier: { Label: Soldier damage multiplier, Tooltip: Scales all soldier damage. }
+				RenderCap: { Label: Soldiers on screen, Tooltip: Bodies above this number wait in the barracks as reinforcements. }
+				Tombstones: { Label: Tombstones, Tooltip: Vanilla drops one only for a Hardcore commander. }
+				EnemiesTargetSoldiers: { Label: Enemies target soldiers, Tooltip: Allowlisted enemies chase the nearest soldier like a player. }
+				UseVanillaStatPipeline: { Label: Use vanilla stat pipeline, Tooltip: Soldiers get armor set and accessory stats through the game's own equipment code. Turn off if another mod misbehaves. }
+				SoldiersTriggerPressurePlates: { Label: Soldiers trigger pressure plates, Tooltip: Off by default. }
+				ExtraTargetingAiStyles: { Label: Extra targeting AI styles, Tooltip: Additional NPC aiStyle numbers that may target soldiers. }
+				WageMultiplier: { Label: Wage multiplier, Tooltip: Scales every wage and fee. }
+				AutoMusterDefault: { Label: Auto-muster by default, Tooltip: New barracks call the militia when an invasion or Blood Moon starts. }
+				NurseHealsSoldiers: { Label: Nurse heals soldiers, Tooltip: Soldiers within 4 tiles of the Nurse are healed at her price from the treasury. }
+				Nameplates: { Label: Nameplates, Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen. }
+				MilitiaDeathMessages: { Label: Militia death messages, Tooltip: Count posts one line when the event ends. }
+				RegularDeathMessages: { Label: Regular death messages, Tooltip: A chat line when a Regular dies. }
+			}
+			TombstoneMode: { Tooltip: "", Vanilla.Label: Vanilla, Always.Label: Always, Never.Label: Never }
+			MilitiaDeathMessageMode: { Tooltip: "", Count.Label: Count, Individual.Label: Individual, None.Label: None }
+		}
+		UI: {
+			ChatOrders: Orders
+			ChatHandAmmo: Hand ammo
+			Barracks: "{0} Barracks"
+			Treasury: "Treasury: {0}"
+			Manpower: "Manpower {0} / {1}"
+			CommandPoints: "Command points {0} / {1}"
+			Enlist: Enlist
+			EnlistLevy: "Enlist Levy ({0})"
+			EnlistManAtArms: "Enlist Man-at-Arms ({0})"
+			EnlistChampion: "Enlist Champion ({0})"
+			Promote: "Promote ({0})"
+			Discharge: Discharge
+			Deposit: Deposit
+			Withdraw: Withdraw
+			RecruitingDrive: "Recruiting drive ({0} per point)"
+			HazardPay: "Hazard pay ({0})"
+			AutoMuster: Auto-muster
+			TaxToTreasury: Tax Collector pays the treasury
+			Mobilize: Mobilize
+			StandDown: Stand down
+			Follow: Follow me
+			Hold: Hold here
+			Return: Return to barracks
+			HoldFire: Hold fire
+			FireAtWill: Fire at will
+			Rally: Rally
+			Patrol: Assign patrol
+			Veteran: Veteran
+			Unpaid: "Unpaid {0} days"
+			StoodDown: Stood down
+			DepositJunk: Deposit junk
+			LootAll: Loot all
+			IssueWeapons: Weapons
+			IssueArmor: Armor sets
+			IssueAmmo: Ammo
+			IssuePotions: Potions
+			Storage: Storage
+			GradeLevy: Levy
+			GradeManAtArms: Man-at-Arms
+			GradeChampion: Champion
+			NotEnoughCp: Not enough command points.
+			NotEnoughMoney: The treasury cannot cover that.
+			GradeLocked: That grade is not unlocked yet.
+			TooFewNpcs: A settlement needs at least two town NPCs to raise militia.
+			FirstTimeTip: Town NPCs within 120 tiles belong to this Barracks. Right-click it to enlist Regulars and raise militia. Build an Armory nearby and throw your junk in it.
+		}
+		Chat: {
+			Militia: Militia
+			MilitiaCalledUp: "The militia of {0} has been called up!"
+			MilitiaStandsDown: "The militia of {0} stands down."
+			NoOneLeft: "{0} has no one left to send."
+			Payday: "Paid the garrison: {0}."
+			Unpaid: "The treasury of {0} could not cover the garrison."
+			Deserted: "{0} has deserted, taking {1} and no regrets."
+			MilitiaLost: "{0} lost {1} militia."
+			Enlisted: "{0} has enlisted at {1}."
+			Promoted: "{0} has been promoted to {1}."
+			Veteran: "{0} is now a veteran."
+			Rallied: The horn sounds. The line rallies.
+			GuideHint: Throw your junk in the Armory. The militia will sort out what to do with it.
+			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
+			HazardPay: "Hazard pay issued at {0}: {1}."
+		}
+		Towns: {
+			Names: Fort Hallow|Fort Hope|Fort Nowhere|Fort Last|Millbrook|Ashford|Stonegate|Oakwall|Redfield|Brightwater|Greywatch|Ironhold|Lanternmoor|Saltmarsh|Thornby|Weststead
+		}
+	}
+}

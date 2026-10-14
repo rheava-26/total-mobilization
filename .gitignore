@@ -17,3 +17,10 @@
 # Bundled ad-free audio tracks (menu theme, etc.) referenced directly by title.html
 !audio/
 !audio/the_fire_rages.m4a
+
+# Levy — the tModLoader mod lives in its own subfolder (not part of the game site)
+!levy/
+!levy-tools/
+levy/obj/
+levy/bin/
+levy/.vs/

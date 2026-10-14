@@ -37,7 +37,11 @@ def canvas(w, h):
 
 
 def rect(d, x0, y0, x1, y1, fill, outline=None):
-    """Inclusive pixel rectangle."""
+    """Inclusive pixel rectangle; corners may be given in any order (taper loops can cross over)."""
+    if x1 < x0:
+        x0, x1 = x1, x0
+    if y1 < y0:
+        y0, y1 = y1, y0
     d.rectangle([x0, y0, x1, y1], fill=fill, outline=outline)
 
 

@@ -32,6 +32,11 @@ namespace Levy.Common.Systems
 		/// <summary>Called by RosterSystem when a militia body dies (after manpower was taken).</summary>
 		public virtual void OnMilitiaBodyDied(BarracksTE barracks, Soldiers.SoldierRecord rec, Content.NPCs.SoldierNPC body) { }
 
+		/// <summary>A militia body reached home after StandDown: return gear to the armory, drop the record, deactivate the NPC (server).</summary>
+		public virtual void DismissMilitiaBody(Content.NPCs.SoldierNPC body) { }
+		/// <summary>Sets an event-book flag; false if it was already set (books are once per world).</summary>
+		public virtual bool TrySetBook(string key) => false;
+
 		// ---- militia (server) ----
 		public virtual bool CanRaiseMilitia(BarracksTE barracks) => false;
 		public virtual void Mobilize(BarracksTE barracks, Player by) { }

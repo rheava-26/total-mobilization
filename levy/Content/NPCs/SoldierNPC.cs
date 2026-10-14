@@ -63,6 +63,10 @@ namespace Levy.Content.NPCs
 
 		// ---- stats (RefreshStats) ----
 		public int Defense;
+		/// <summary>Flat defense bonus hook (Flavor: +4 near a barracks with A Guide to Fortification). Null = none.</summary>
+		public static Func<SoldierNPC, int> ExtraDefense;
+		/// <summary>Tick of the last melee hit this soldier landed (Combat sets; Brain steps back after it).</summary>
+		public int LastMeleeHitTick = -1000;
 		public float MoveSpeedMult = 1f;
 		public bool StatsDirty = true;
 		private int _statsTimer;
@@ -208,6 +212,7 @@ namespace Levy.Content.NPCs
 				int def = 0; foreach (var it in Record.Gear.AllItems()) if (!it.accessory || true) def += it.defense;
 				Defense = def; MoveSpeedMult = 1f; Abilities = new Common.Movement.MovementAbilities();
 			}
+			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			NPC.defense = Defense;
 			int maxHp = Math.Max(1, Record.MaxHp);
 			if (NPC.lifeMax != maxHp) { NPC.life = (int)Math.Clamp(NPC.life * (float)maxHp / Math.Max(1, NPC.lifeMax), 1, maxHp); NPC.lifeMax = maxHp; }

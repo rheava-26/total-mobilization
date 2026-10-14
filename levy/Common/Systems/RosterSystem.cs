@@ -41,6 +41,12 @@ namespace Levy.Common.Systems
 		public virtual IEnumerable<SoldierRecord> RegularsOf(Player commander) { foreach (var r in Regulars) if (r.CommanderName == commander.name) yield return r; }
 		public virtual void Rebase(SoldierRecord rec, BarracksTE newHome) { }
 
+		// ---- treasury (server; UI calls these or sends Deposit/Withdraw packets) ----
+		/// <summary>Takes coins from the player's inventory into the barracks treasury. Returns false if they cannot pay.</summary>
+		public virtual bool Deposit(Player player, BarracksTE barracks, long copper) => false;
+		/// <summary>Moves coins from the treasury to the player (spawned at the player). Returns false if the treasury is short.</summary>
+		public virtual bool Withdraw(Player player, BarracksTE barracks, long copper) => false;
+
 		// ---- bodies ----
 		/// <summary>Spawns a body for a record at a position (server). Returns the NPC index or -1 (render cap, no slot).</summary>
 		public virtual int SpawnBody(SoldierRecord rec, Vector2 position) => -1;

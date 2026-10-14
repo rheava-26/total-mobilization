@@ -22,8 +22,8 @@ namespace Levy.Content.NPCs
 	/// DECIDES. It writes State, StateTimer, TargetIndex, HasMoveGoal/MoveGoal, WantsToFallThrough, HoldPosition and (for
 	/// resupply only) UsingSidearm. Movement walks to MoveGoal; Combat fires at TargetIndex.
 	/// Priority per think: Dead/Desert → Routed → Flee → Engage → Resupply → order state (ReturnHome / Follow / Haul / Patrol / Idle).
-	/// Shaken and Routed are owned by the Fear agent: the brain never writes them, except that a Shaken label with the fear
-	/// meter already below the threshold is returned to the order state.
+	/// Shaken and Routed are owned by the Fear agent: the brain never writes State while either is set. Routed walks home;
+	/// Shaken engages like Engage (Combat applies the penalties) and never hauls.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -94,7 +94,8 @@ namespace Levy.Content.NPCs
 			HasMoveGoal = false; WantsToFallThrough = false;
 			_haulTargetItem = -1;
 			_idleAnchorSet = false;
-			if (State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead) return; // fear/roster own these
+			// Fear owns Shaken/Routed and the roster owns Desert/Dead: the order is recorded (core) and takes effect when they let go.
+			if (State == SoldierState.Shaken || State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead) return;
 			if (IsMilitia)
 			{
 				// Militia only ever stand down; every other order keeps them on their settlement patrol.
@@ -141,7 +142,7 @@ namespace Levy.Content.NPCs
 					ThinkRouted(nearestHostileTiles);
 					break;
 				default:
-					if (State == SoldierState.Shaken && !Shaken) SetState(OrderState()); // stale label: fear already fell below the threshold
+					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
 					if (fleeIdx >= 0) ThinkFlee(fleeIdx);
 					else if (!TryEngage(now))
 					{
@@ -188,12 +189,11 @@ namespace Levy.Content.NPCs
 			Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 		}
 
-		/// <summary>Writes State unless the Fear agent owns the current label (Shaken with the meter still high, Routed).</summary>
+		/// <summary>Writes State unless the Fear agent owns the current label (Shaken, Routed): only Fear moves out of those.</summary>
 		private void SetState(SoldierState s)
 		{
 			if (State == s) return;
-			if (State == SoldierState.Routed) return;
-			if (State == SoldierState.Shaken && Shaken) return;
+			if (State == SoldierState.Routed || State == SoldierState.Shaken) return;
 			State = s;
 			_stateEnteredTick = (int)Main.GameUpdateCount; StateTimer = 0;
 			if (s != SoldierState.Idle) _idleAnchorSet = false;

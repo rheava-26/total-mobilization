@@ -108,7 +108,7 @@ namespace Levy.Common.Systems
 		private static void OnWithdraw(BinaryReader r, int whoAmI)
 		{
 			int barracksId = r.ReadInt32(); long copper = r.ReadInt64();
-			if (!LevyUtil.IsServer) return;
+			if (!LevyUtil.IsServer || copper <= 0) return;
 			var sender = Sender(whoAmI);
 			if (sender == null) return;
 			if (!Roster.Withdraw(sender, SettlementSystem.Instance.GetBarracks(barracksId), copper)) RosterSystem.SendToPlayer(sender, LevyUtil.T("UI.NotEnoughMoney"));

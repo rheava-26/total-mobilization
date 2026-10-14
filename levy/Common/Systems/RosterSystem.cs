@@ -399,6 +399,7 @@ namespace Levy.Common.Systems
 		public virtual int SpawnBody(SoldierRecord rec, Vector2 position)
 		{
 			if (LevyUtil.IsClient || rec == null) return -1;
+			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;
@@ -593,7 +594,7 @@ namespace Levy.Common.Systems
 
 			FearSystem.OnComradeDied(body);
 			npc.life = 0;
-			SendRosterSnapshot();
+			if (rec.Kind == SoldierKind.Regular) SendRosterSnapshot(); // militia are not in the regulars list
 		}
 
 		private static string KillerText(int killerNpcType, string killerName)

@@ -22,7 +22,8 @@ namespace Levy.Content.Projectiles
 	/// </summary>
 	public class SoldierThrust : ModProjectile
 	{
-		public override string Texture => "Levy/Content/Projectiles/SoldierThrust";
+		/// <summary>No asset of its own: PreDraw draws the thrusting item's texture. The vanilla spear texture only satisfies the loader.</summary>
+		public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.Spear;
 
 		public override void SetDefaults()
 		{

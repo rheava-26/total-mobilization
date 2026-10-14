@@ -218,15 +218,16 @@ namespace Levy.Common.Boss
 			var rec = soldier.Record;
 			var data = LevyNpcData.Of(root);
 			bool eow = rootType == NPCID.EaterofWorldsHead;
+			int engagementKey = EngagementKey(rec);
 			int engagedCp;
 			if (eow)
 			{
-				if (_eowEngagedIds.Add(rec.Id)) _eowEngagedCp += rec.CommandPointCost;
+				if (_eowEngagedIds.Add(engagementKey)) _eowEngagedCp += rec.CommandPointCost;
 				engagedCp = _eowEngagedCp;
 			}
 			else
 			{
-				if (data.EngagedSoldierIds.Add(rec.Id)) data.EngagedCp += rec.CommandPointCost;
+				if (data.EngagedSoldierIds.Add(engagementKey)) data.EngagedCp += rec.CommandPointCost;
 				engagedCp = data.EngagedCp;
 			}
 			rec.EngagedBosses.Add(root.whoAmI);
@@ -240,10 +241,19 @@ namespace Levy.Common.Boss
 			if (damage > 0 && cfg.BossesPunishSoldiers && soldier.NPC != null) RecordDamage(data, soldier.NPC.whoAmI, damage);
 		}
 
+		/// <summary>Regulars dedupe by record Id; a record without an Id (transient militia) dedupes by object identity in the negative range.</summary>
+		private static int EngagementKey(Soldiers.SoldierRecord rec)
+			=> rec.Id > 0 ? rec.Id : -1 - (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(rec) & 0x3FFFFFFF);
+
+		private static bool IsEowSegment(int type) => type == NPCID.EaterofWorldsHead || type == NPCID.EaterofWorldsBody || type == NPCID.EaterofWorldsTail;
+
+		/// <summary>Same NPC for scaling purposes. Eater of Worlds segments turn into heads/tails with a bare type change (NPC.cs 45852/45866) and keep their life.</summary>
+		private static bool SameScalingKind(int a, int b) => a == b || (IsEowSegment(a) && IsEowSegment(b));
+
 		private static void ApplyScaling(NPC npc, float fraction)
 		{
 			if (npc == null || !npc.active || fraction <= 0f) return;
-			if (!_scale.TryGetValue(npc.whoAmI, out var st) || st.Type != npc.type || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)
+			if (!_scale.TryGetValue(npc.whoAmI, out var st) || !SameScalingKind(st.Type, npc.type) || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)
 				st = new ScaleState { Type = npc.type, BaseLifeMax = Math.Max(1, npc.lifeMax), AppliedAdd = 0 };
 			int targetAdd = (int)(st.BaseLifeMax * fraction);
 			int delta = targetAdd - st.AppliedAdd;
@@ -258,7 +268,7 @@ namespace Levy.Common.Boss
 		}
 
 		/// <summary>Life added to this NPC by soldier engagement so far (0 when untouched).</summary>
-		public static int ScaledLifeAdded(NPC npc) => npc != null && _scale.TryGetValue(npc.whoAmI, out var st) && st.Type == npc.type ? st.AppliedAdd : 0;
+		public static int ScaledLifeAdded(NPC npc) => npc != null && _scale.TryGetValue(npc.whoAmI, out var st) && SameScalingKind(st.Type, npc.type) ? st.AppliedAdd : 0;
 
 		private static void RecordDamage(LevyNpcData data, int soldierIndex, int damage)
 		{
@@ -309,7 +319,7 @@ namespace Levy.Common.Boss
 				_pruneBuffer.Clear();
 				foreach (var kv in _scale)
 				{
-					if (kv.Key < 0 || kv.Key >= Main.maxNPCs || !Main.npc[kv.Key].active || Main.npc[kv.Key].type != kv.Value.Type) _pruneBuffer.Add(kv.Key);
+					if (kv.Key < 0 || kv.Key >= Main.maxNPCs || !Main.npc[kv.Key].active || !SameScalingKind(Main.npc[kv.Key].type, kv.Value.Type)) _pruneBuffer.Add(kv.Key);
 				}
 				for (int i = 0; i < _pruneBuffer.Count; i++) _scale.Remove(_pruneBuffer[i]);
 			}

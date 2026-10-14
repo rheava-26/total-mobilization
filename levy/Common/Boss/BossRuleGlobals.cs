@@ -208,6 +208,7 @@ namespace Levy.Common.Boss
 		{
 			Main.player[SoldierNPC.DummySlot] = _backup;
 			npc.target = _savedTarget; // outside the dash the boss keeps chasing the player it had
+			npc.netUpdate = true;      // clients predicted the dash toward a player; ship the real heading now
 			_swapped = false; _swapNpc = -1; _savedTarget = -1; _dummy = null; _backup = null;
 		}
 

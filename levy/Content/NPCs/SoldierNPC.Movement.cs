@@ -1,0 +1,447 @@
+using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+using Levy.Common;
+using Levy.Common.Movement;
+using static Levy.Common.LevyConstants.Movement;
+
+namespace Levy.Content.NPCs
+{
+	/// <summary>
+	/// Movement reflexes, run every tick after the brain (server/single player): walk and run toward MoveGoal, step up,
+	/// jump obstacles, drop through platforms, open and close doors, refuse lava, deep water and unrecoverable drops,
+	/// recover when stuck, follow a coarse path when a direct walk is blocked, and fly or glide with wings.
+	/// Clients only mirror the velocity into the dummy for leg animation. OWNED BY THE MOVEMENT AGENT.
+	/// </summary>
+	public partial class SoldierNPC
+	{
+		// ---- movement state ----
+		private int _wingTime; private bool _flying; private int _jumpsUsed; private bool _stepInit;
+		private int _fallThroughTicks;
+		private bool _closeDoor; private int _doorX, _doorY;
+		private Vector2 _stuckPos; private int _stuckSampleTimer, _stuckTicks, _stuckTotal, _reverseTicks; private bool _stuckJumped;
+		private readonly List<Vector2> _path = new();
+		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
+		private bool _blocked, _blockedHard;
+
+		/// <summary>Remaining flight ticks (refilled on the ground).</summary>
+		public int WingTime => _wingTime;
+		public bool IsFlying => _flying;
+		/// <summary>The direct walk toward the current goal was refused or obstructed this tick.</summary>
+		public bool MoveBlocked => _blocked;
+		public bool HasPath => _path.Count > 0;
+
+		/// <summary>Travel helpers call this after moving the body.</summary>
+		public void NotifyTeleported() => Movement_OnTeleported();
+
+		partial void Movement_Update()
+		{
+			NPC npc = NPC;
+			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
+			bool grounded = npc.velocity.Y == 0f;
+			if (grounded) { _jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; }
+
+			CloseDoorBehind();
+			NudgeOffPlayers();
+			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
+			else WantsToFallThrough = false;
+
+			if (!HasMoveGoal)
+			{
+				Decelerate();
+				_blocked = false; _blockedHard = false; _flying = false;
+				if (_path.Count > 0) _path.Clear();
+				ResetStuck();
+				Glide(grounded);
+				AnimateDummy();
+				return;
+			}
+
+			Vector2 goal = ResolveLocalGoal();
+			float dx = goal.X - npc.Center.X;
+			float dy = goal.Y - npc.Bottom.Y; // > 0: goal below the feet
+			if (Math.Abs(dx) < ArriveXPx && Math.Abs(dy) < ArriveYPx)
+			{
+				Decelerate();
+				_blocked = false; _blockedHard = false; _flying = false;
+				ResetStuck();
+				Glide(grounded);
+				AnimateDummy();
+				return;
+			}
+
+			_blocked = false; _blockedHard = false;
+			int jumpTiles = 0; bool wantFly = false; bool flyUp = false;
+			bool horizontal = Math.Abs(dx) >= ArriveXPx;
+			int dir = dx >= 0f ? 1 : -1;
+			bool reversing = _reverseTicks > 0;
+			if (reversing) { _reverseTicks--; dir = -dir; }
+			float maxSpeed = 0f, accel = 0f;
+			if (horizontal)
+			{
+				npc.direction = dir; npc.spriteDirection = dir;
+				bool walk = reversing || Math.Abs(dx) < WalkWithinTiles * 16 || State == SoldierState.Idle || State == SoldierState.Patrol;
+				maxSpeed = (walk ? WalkSpeedPx : Abilities.MaxRunSpeed) * Abilities.WalkSpeed;
+				accel = walk ? WalkAccel : RunAccel;
+				Point feet = TileNav.FeetTile(npc.Bottom);
+				int ax = (int)((npc.Center.X + dir * (npc.width / 2f + LookAheadPx)) / 16f);
+				ScanAhead(feet.X, ax, feet.Y, dir, grounded, ref jumpTiles, ref wantFly, ref flyUp);
+			}
+
+			// goal above and close: jump to it, fly to it, or admit it is out of reach
+			if (!_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= JumpTowardGoalReachTiles * 16 + 8)
+			{
+				int tiles = (int)Math.Ceiling(-dy / 16f);
+				if (tiles <= Abilities.JumpTiles) { if (tiles > jumpTiles) jumpTiles = tiles; }
+				else if (Abilities.HasWings) wantFly = true;
+				else { _blocked = true; _blockedHard = true; }
+			}
+			// goal well below while standing on a platform: drop through it when the floor below is safe
+			if (grounded && dy > PlatformDropBelowPx)
+			{
+				Point feet = TileNav.FeetTile(npc.Bottom);
+				if (TileNav.IsPlatform(feet.X, feet.Y + 1) && !TileNav.IsSolid(feet.X, feet.Y + 1))
+				{
+					int depth = TileNav.DropDepth(feet.X, feet.Y + 1);
+					if (depth >= 0 && (Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles)) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
+				}
+			}
+			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
+
+			if (Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
+			{
+				Fly(goal, dir, flyUp);
+			}
+			else
+			{
+				_flying = false;
+				if (horizontal)
+				{
+					if (_blocked) npc.velocity.X *= BlockedDecel;
+					else Accelerate(dir, maxSpeed, accel);
+				}
+				else Decelerate();
+				if (jumpTiles > 0) TryJump(jumpTiles);
+				StepUp();
+				Glide(grounded);
+			}
+
+			TrackStuck();
+			UpdatePathRequest();
+			AnimateDummy();
+		}
+
+		partial void Movement_ClientAnimate() => AnimateDummy();
+
+		partial void Movement_OnTeleported()
+		{
+			_path.Clear(); _pathTimer = 0; _pathFailTimer = 0;
+			ResetStuck(); _stuckTotal = 0;
+			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
+			_fallThroughTicks = 0; WantsToFallThrough = false;
+			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false;
+			NPC.velocity = Vector2.Zero;
+			_stuckPos = NPC.position;
+			NPC.netUpdate = true;
+		}
+
+		// =====================================================================================================
+		// look-ahead
+		// =====================================================================================================
+
+		/// <summary>Looks at the column one step ahead: doors, lava, deep water, walls to jump, ledges to refuse.</summary>
+		private void ScanAhead(int feetX, int ax, int fy, int dir, bool grounded, ref int jumpTiles, ref bool wantFly, ref bool flyUp)
+		{
+			// closed door in the way: open it (town-NPC pattern) or stand blocked
+			for (int ty = fy; ty >= fy - 2; ty--)
+			{
+				Tile t = Framing.GetTileSafely(ax, ty);
+				if (!TileNav.IsClosedDoor(t)) continue;
+				if (!TryOpenDoor(ax, ty, dir)) _blocked = true;
+				return;
+			}
+			// lava in the next two columns, from head height to the floor under the next step
+			for (int i = 0; i < 2; i++)
+			{
+				int tx = ax + dir * i;
+				for (int ty = fy - 2; ty <= fy + 1; ty++)
+					if (TileNav.HasLava(tx, ty)) { _blocked = true; _blockedHard = true; return; }
+			}
+			// deep water at head height ahead, unless already swimming
+			if (!NPC.wet && TileNav.IsDeepWater(ax, fy - 2)) { _blocked = true; _blockedHard = true; return; }
+
+			// wall ahead: count solid tiles upward from feet level
+			int h = 0;
+			while (h < MaxJumpTiles + 3 && TileNav.IsSolid(ax, fy - h)) h++;
+			if (h >= 2)
+			{
+				bool clearAbove = !TileNav.IsSolid(ax, fy - h) && !TileNav.IsSolid(ax, fy - h - 1) && !TileNav.IsSolid(ax, fy - h - 2);
+				bool headroom = true;
+				for (int k = 1; k <= h && headroom; k++) if (TileNav.IsSolid(feetX, fy - 2 - k)) headroom = false;
+				if (h <= Abilities.JumpTiles && clearAbove && headroom) { if (h > jumpTiles) jumpTiles = h; }
+				else { _blocked = true; _blockedHard = true; if (Abilities.HasWings) { wantFly = true; flyUp = true; } }
+				return;
+			}
+			if (h == 1) return; // a single step: Collision.StepUp carries the body over it
+
+			// ledge ahead: refuse bottomless drops, lava below, and drops too deep to climb back (wings may fly down)
+			if (grounded && !TileNav.IsFloor(ax, fy + 1))
+			{
+				int depth = TileNav.DropDepth(ax, fy);
+				if (depth < 0) { _blocked = true; _blockedHard = true; return; }
+				if (depth > Abilities.JumpTiles + DropMarginTiles)
+				{
+					if (Abilities.HasWings) wantFly = true;
+					else { _blocked = true; _blockedHard = true; }
+				}
+			}
+		}
+
+		// =====================================================================================================
+		// locomotion
+		// =====================================================================================================
+
+		private float Gravity()
+		{
+			float g = NPC.gravity;
+			return g > 0f ? g : DefaultGravity;
+		}
+
+		private void Accelerate(int dir, float maxSpeed, float accel)
+		{
+			float v = NPC.velocity.X;
+			if (Math.Sign(v) == -dir) v *= 0.9f; // turning around: shed the wrong-way speed quickly
+			float target = dir * maxSpeed;
+			if (Math.Abs(v - target) <= accel) v = target;
+			else v += v < target ? accel : -accel;
+			NPC.velocity.X = v;
+		}
+
+		private void Decelerate()
+		{
+			NPC.velocity.X *= StopDecel;
+			if (Math.Abs(NPC.velocity.X) < StopBelowPx) NPC.velocity.X = 0f;
+		}
+
+		private float JumpSpeedFor(int tiles)
+			=> MathHelper.Clamp((float)Math.Sqrt(2f * Gravity() * (tiles * 16 + JumpClearancePx)), MinJumpSpeed, MaxJumpSpeed);
+
+		/// <summary>Jumps from the ground, or spends an extra jump near the top of the arc. Returns true if a jump started.</summary>
+		private bool TryJump(int tiles)
+		{
+			tiles = Math.Clamp(tiles, 1, MaxJumpTiles);
+			if (NPC.velocity.Y == 0f)
+			{
+				NPC.velocity.Y = -JumpSpeedFor(tiles);
+				NPC.netUpdate = true;
+				return true;
+			}
+			if (_jumpsUsed < Abilities.ExtraJumps && NPC.velocity.Y > -1f)
+			{
+				_jumpsUsed++;
+				NPC.velocity.Y = -JumpSpeedFor(Math.Min(tiles, BaseJumpTiles)) * ExtraJumpSpeedMult;
+				NPC.netUpdate = true;
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>One-tile steps, exactly as NPC.AI_107_ImprovedWalkers does it.</summary>
+		private void StepUp()
+		{
+			NPC npc = NPC;
+			if (npc.noGravity || npc.velocity.Y < 0f) return;
+			Point c = npc.Center.ToTileCoordinates();
+			if (!WorldGen.InWorld(c.X, c.Y, 5)) return;
+			npc.GetTileCollisionParameters(out Vector2 cPos, out int cW, out int cH);
+			Vector2 offset = npc.position - cPos;
+			Collision.StepUp(ref cPos, ref npc.velocity, cW, cH, ref npc.stepSpeed, ref npc.gfxOffY);
+			npc.position = cPos + offset;
+		}
+
+		/// <summary>Powered flight toward the goal; gravity is added by UpdateNPC after AI, so it is cancelled here.</summary>
+		private void Fly(Vector2 goal, int dir, bool flyUp)
+		{
+			NPC npc = NPC;
+			_flying = true;
+			Vector2 desired = flyUp
+				? new Vector2(dir * FlySpeed * 0.3f, -FlySpeed)
+				: (goal - npc.Bottom).SafeNormalize(Vector2.Zero) * FlySpeed;
+			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -FlyAccel, FlyAccel);
+			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -FlyAccel, FlyAccel);
+			npc.velocity.Y -= Gravity();
+			_wingTime--;
+			_blocked = false;
+			if (desired.X != 0f) { npc.direction = desired.X > 0f ? 1 : -1; npc.spriteDirection = npc.direction; }
+		}
+
+		/// <summary>With wings but no flight time left, fall slowly.</summary>
+		private void Glide(bool grounded)
+		{
+			if (grounded || _flying || !Abilities.CanGlide || _wingTime > 0) return;
+			if (NPC.velocity.Y > GlideFallSpeed) NPC.velocity.Y = GlideFallSpeed;
+		}
+
+		/// <summary>Soldiers never body-block a player: slide out of any overlapping player hitbox.</summary>
+		private void NudgeOffPlayers()
+		{
+			Rectangle hb = NPC.Hitbox;
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (!p.active || p.dead || p.ghost) continue;
+				if (!hb.Intersects(p.Hitbox)) continue;
+				NPC.position.X += NPC.Center.X >= p.Center.X ? PlayerNudgePx : -PlayerNudgePx;
+			}
+		}
+
+		// =====================================================================================================
+		// doors
+		// =====================================================================================================
+
+		private bool TryOpenDoor(int x, int y, int dir)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			Tile t = Framing.GetTileSafely(x, y);
+			if (t.TileType == TileID.TallGateClosed)
+			{
+				if (!WorldGen.ShiftTallGate(x, y, closing: false)) return false;
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 4, x, y);
+				RememberDoor(x, y);
+				return true;
+			}
+			if (WorldGen.OpenDoor(x, y, dir))
+			{
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, dir);
+				RememberDoor(x, y);
+				return true;
+			}
+			if (WorldGen.OpenDoor(x, y, -dir))
+			{
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, -dir);
+				RememberDoor(x, y);
+				return true;
+			}
+			return false;
+		}
+
+		private void RememberDoor(int x, int y) { _closeDoor = true; _doorX = x; _doorY = y; NPC.netUpdate = true; }
+
+		/// <summary>Closes the door once the body is three tiles past it; gives up when far away or when someone stands in it for too long.</summary>
+		private void CloseDoorBehind()
+		{
+			if (!_closeDoor) return;
+			float tx = NPC.Center.X / 16f, ty = NPC.Center.Y / 16f;
+			if (Math.Abs(tx - (_doorX + 0.5f)) < DoorCloseDistanceTiles) return;
+			bool done = false;
+			Tile t = Framing.GetTileSafely(_doorX, _doorY);
+			if (TileLoader.CloseDoorID(t) >= 0)
+			{
+				if (WorldGen.CloseDoor(_doorX, _doorY))
+				{
+					done = true;
+					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 1, _doorX, _doorY, NPC.direction);
+				}
+			}
+			else if (t.TileType == TileID.TallGateOpen)
+			{
+				if (WorldGen.ShiftTallGate(_doorX, _doorY, closing: true))
+				{
+					done = true;
+					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 5, _doorX, _doorY);
+				}
+			}
+			else done = true; // already closed by someone else, or gone
+			if (done || Math.Abs(tx - _doorX) > DoorGiveUpDistanceTiles || Math.Abs(ty - _doorY) > DoorGiveUpDistanceTiles) _closeDoor = false;
+		}
+
+		// =====================================================================================================
+		// stuck handling
+		// =====================================================================================================
+
+		private void ResetStuck()
+		{
+			_stuckTicks = 0; _stuckSampleTimer = 0; _stuckJumped = false; _reverseTicks = 0;
+			_stuckPos = NPC.position;
+		}
+
+		/// <summary>Samples position every few ticks: jump, then walk back a tile, then (following) teleport to the commander.</summary>
+		private void TrackStuck()
+		{
+			if (++_stuckSampleTimer < StuckSampleTicks) return;
+			_stuckSampleTimer = 0;
+			float moved = Vector2.Distance(NPC.position, _stuckPos);
+			_stuckPos = NPC.position;
+			if (moved < StuckMoveThresholdPx)
+			{
+				_stuckTicks += StuckSampleTicks;
+				_stuckTotal += StuckSampleTicks;
+			}
+			else
+			{
+				_stuckTicks = 0; _stuckJumped = false;
+				if (moved > 16f) _stuckTotal = 0; // real progress, not the reverse shuffle
+			}
+			if (State == SoldierState.Follow && _stuckTotal >= LevyConstants.StuckTeleportTicks)
+			{
+				_stuckTotal = 0;
+				if (FollowerTravel.TeleportNearCommander(this)) return;
+			}
+			if (_stuckTicks < LevyConstants.StuckTicks) return;
+			if (!_stuckJumped) { _stuckJumped = true; TryJump(Abilities.JumpTiles); return; }
+			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) _reverseTicks = ReverseTicks;
+		}
+
+		// =====================================================================================================
+		// pathfinding (Follow and Haul only)
+		// =====================================================================================================
+
+		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul;
+
+		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>
+		private Vector2 ResolveLocalGoal()
+		{
+			if (!UsesPath)
+			{
+				if (_path.Count > 0) _path.Clear();
+				return MoveGoal;
+			}
+			float moved = PathGoalMovedTiles * 16f;
+			if (_path.Count > 0 && Vector2.DistanceSquared(_pathGoal, MoveGoal) > moved * moved) { _path.Clear(); _pathTimer = PathRecalcTicks; }
+			while (_path.Count > 0 && Vector2.DistanceSquared(_path[0], NPC.Bottom) <= WaypointReachPx * WaypointReachPx) _path.RemoveAt(0);
+			return _path.Count > 0 ? _path[0] : MoveGoal;
+		}
+
+		/// <summary>Searches when the direct walk is blocked, and refreshes a live path every 30 ticks.</summary>
+		private void UpdatePathRequest()
+		{
+			if (!UsesPath) return;
+			_pathTimer++;
+			if (_pathFailTimer > 0) { _pathFailTimer--; return; }
+			bool want = _blockedHard && _path.Count == 0;
+			bool refresh = _path.Count > 0 && _pathTimer >= PathRecalcTicks;
+			if (!want && !refresh) return;
+			_pathTimer = 0;
+			_pathGoal = MoveGoal;
+			if (!Pathfinder.FindPath(NPC.Bottom, MoveGoal, Abilities, _path)) { _path.Clear(); _pathFailTimer = PathFailRetryTicks; }
+		}
+
+		// =====================================================================================================
+		// dummy animation hints (the Draw agent calls PlayerFrame)
+		// =====================================================================================================
+
+		private void AnimateDummy()
+		{
+			if (Dummy == null) return;
+			Dummy.velocity = NPC.velocity;
+			Dummy.direction = NPC.direction == 0 ? 1 : NPC.direction;
+			Dummy.controlLeft = NPC.velocity.X < -StopBelowPx;
+			Dummy.controlRight = NPC.velocity.X > StopBelowPx;
+			Dummy.controlJump = NPC.velocity.Y < 0f || _flying;
+			if (Dummy.wingsLogic > 0) Dummy.wingTime = (NPC.velocity.Y < 0f || _flying) ? Math.Max(1, Dummy.wingTimeMax) : 0f;
+		}
+	}
+}

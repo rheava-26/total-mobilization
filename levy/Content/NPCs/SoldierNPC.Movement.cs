@@ -384,7 +384,7 @@ namespace Levy.Content.NPCs
 			_stuckSampleTimer = 0;
 			float moved = Vector2.Distance(NPC.position, _stuckPos);
 			_stuckPos = NPC.position;
-			_sinceReverse += StuckSampleTicks;
+			if (_sinceReverse < ReverseSettleTicks) _sinceReverse += StuckSampleTicks;
 			if (moved < StuckMoveThresholdPx)
 			{
 				_stuckTicks += StuckSampleTicks;

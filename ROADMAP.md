@@ -800,3 +800,12 @@ Established in-conversation, keep consistent: **the faction is a single fully-mo
 
 ## ✅ SHIPPED THIS SESSION (on `main`)
 Emplacement-crumble fix · intro cinematic (plays every load, skip after first watch) · minimap (true world aspect, legible units) · camera auto-pull removed · **General** default · adaptive decapitation busters · persistent (killable) beachhead Shield Generator · super-units made proactive & multi-weapon (no HP inflation) · **Garrison economy v1** (weight budget, upkeep, HUD cell) · **infantry squads** · distinct **drone & warship textures** · **drone & fighter (with wingmen) squads** + grp:6 exploit fix · **Bombardment counterplay** (slow orbital buster descent, predictive interception, pinpoint damage) · **Stability overhaul** (drains→cap reductions, 0-stab = recoverable Capitulation Crisis not instant loss, stability reserve, demolition) · dispersed launcher buildings removed (TEL/Arsenal Ship/Ballistic Sub) · garrison orbital-lift exemption · mobile strike menu · demolition costs stability · buildings can slightly overlap · **Comms = reserve / Propaganda = cap** split + radar-stacking surfaced · **Particle Cannon → true hitscan** + **every projectile gun now LEADS** its shots (corrected intercept solve, 0%→100% hit rate on fast movers) · **squad perf** (4→3 bodies + render LOD, no phone-melt at scale) + **cleaner squad art** (staggered fireteam) + **water/drowning fix** (units never shoved into the sea; drowned units sink quietly, no explosion). Versions v3.20.1 → v3.31.0, each with a changelog entry.
+
+---
+
+## Side project (2026-10-14): Levy — a tModLoader mod (`levy/`)
+
+Not part of the game. The designer asked for a one-shot build of the "Levy" Terraria mod from Build Spec v0.1
+(junk becomes a garrison; Regulars + Militia; boss rule + fear; wages). It lives in `levy/` with its own
+`PLAN.md`, `README.md`, `TESTING.md`; verification tooling in `levy-tools/`. Target: tModLoader 1.4.4.9 (v2026.08.3.0, .NET 8).
+Status is tracked in `levy/PLAN.md` §7 and `levy/TESTING.md`.

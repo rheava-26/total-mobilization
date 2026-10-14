@@ -229,14 +229,21 @@ namespace Levy.Common.Dialogue
 			DeliverFloating(s, line, (byte)trigger);
 		}
 
-		/// <summary>Big moments: floating text, one per squad per FloatingLineIntervalTicks. They only compete with each other.</summary>
+		/// <summary>
+		/// Big moments: floating text, one per squad per FloatingLineIntervalTicks. They only compete with each other.
+		/// A boss-specific BOSS line outranks the generic BOSS_SIGHTED fired just before it: BOSS passes through a clock that only
+		/// BOSS_SIGHTED set, so the pair (sighting, then the boss's own line) both show. In the other order the sighting is dropped.
+		/// </summary>
 		private static void BarkFloating(SoldierNPC s, SoldierRecord rec, DialogueTrigger trigger, DialogueContext ctx, int now)
 		{
 			SquadClock clock = Squad(rec);
-			if (Within(clock.Big, now, LevyConstants.FloatingLineIntervalTicks)) return;
+			bool blocked = Within(clock.Big, now, LevyConstants.FloatingLineIntervalTicks);
+			if (blocked && trigger == DialogueTrigger.BOSS && clock.BigWasSighted) blocked = false;
+			if (blocked) return;
 			string line = Pick(trigger, rec, ctx, s, false, -1, out _);
 			if (line == null) return;
 			clock.Big = clock.Any = now;
+			clock.BigWasSighted = trigger == DialogueTrigger.BOSS_SIGHTED;
 			DeliverFloating(s, line, (byte)trigger);
 		}
 
@@ -356,7 +363,7 @@ namespace Levy.Common.Dialogue
 			}
 			else
 			{
-				SpawnFloating(s.NPC.Hitbox, text, triggerByte);
+				SpawnFloating(s.NPC.whoAmI, s.NPC.Hitbox, text, triggerByte);
 			}
 		}
 
@@ -375,7 +382,7 @@ namespace Levy.Common.Dialogue
 			switch (channel)
 			{
 				case DialogueChannel.FloatingText:
-					SpawnFloating(npc.Hitbox, text, extra);
+					SpawnFloating(npcIndex, npc.Hitbox, text, extra);
 					break;
 
 				case DialogueChannel.ChatWindow:
@@ -391,8 +398,11 @@ namespace Levy.Common.Dialogue
 			}
 		}
 
-		/// <summary>Draws a line as combat text above a body. Client and single player only; skipped when the speaker is off screen.</summary>
-		private static void SpawnFloating(Rectangle hitbox, string text, byte triggerByte)
+		/// <summary>
+		/// Draws a line as combat text above a body. Client and single player only; skipped when the speaker is off screen.
+		/// A second line from the same speaker stacks above the first until the first has risen out of the way.
+		/// </summary>
+		private static void SpawnFloating(int npcIndex, Rectangle hitbox, string text, byte triggerByte)
 		{
 			if (Main.netMode == NetmodeID.Server || Main.dedServ) return;
 			if (string.IsNullOrEmpty(text) || !LevyUtil.IsOnScreen(hitbox)) return;
@@ -400,6 +410,17 @@ namespace Levy.Common.Dialogue
 			string[] rows = Wrap(text, LevyConstants.DialogueFloatingRowChars);
 			var font = FontAssets.CombatText[0].Value;
 			float rowHeight = font.MeasureString("Ag").Y * 0.9f;
+
+			bool tracked = (uint)npcIndex < MaxBodies;
+			int now = Now;
+			float lift = 0f;
+			if (tracked && Within(FloatStackTick[npcIndex], now, LevyConstants.DialogueFloatingLifeTicks))
+			{
+				// How far the previous line has already risen: vanilla combat text moves 7 px a tick, decaying by 0.92.
+				float risen = LevyConstants.DialogueFloatingRisePx * (1f - MathF.Pow(LevyConstants.DialogueFloatingRiseDecay, now - FloatStackTick[npcIndex]));
+				lift = Math.Min(Math.Max(0f, FloatStackPx[npcIndex] - risen), LevyConstants.DialogueFloatingMaxStackRows * rowHeight);
+			}
+
 			for (int k = 0; k < rows.Length; k++)
 			{
 				int i = CombatText.NewText(hitbox, color, rows[k]);
@@ -407,9 +428,14 @@ namespace Levy.Common.Dialogue
 				CombatText ct = Main.combatText[i];
 				if (!ct.active) continue;
 				Vector2 size = font.MeasureString(rows[k]);
-				// Stack the rows above the head, centred; keep the text up long enough to read a sentence.
-				ct.position = new Vector2(hitbox.Center.X - size.X * 0.5f, hitbox.Top - 10f - (rows.Length - k) * rowHeight);
+				// Rows stack above the head, centred; keep the text up long enough to read a sentence.
+				ct.position = new Vector2(hitbox.Center.X - size.X * 0.5f, hitbox.Top - 10f - lift - (rows.Length - k) * rowHeight);
 				ct.lifeTime = LevyConstants.DialogueFloatingLifeTicks;
+			}
+			if (tracked)
+			{
+				FloatStackTick[npcIndex] = now;
+				FloatStackPx[npcIndex] = lift + rows.Length * rowHeight;
 			}
 		}
 

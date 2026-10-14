@@ -21,7 +21,10 @@ namespace Levy.Common
 		public const int DialogueFloatingLifeTicks = 60 * 3;
 		/// <summary>Only clients within this many pixels of the speaker receive a floating line.</summary>
 		public const float DialogueFloatingRangePx = 3200f;
-		/// <summary>A comrade placeholder with no named comrade is filled with a squad-mate inside this many tiles.</summary>
-		public const int DialogueComradeSearchTiles = 40;
+		/// <summary>Combat text rises about this many pixels over its life (vanilla: 7 px/tick decaying by 0.92). A second line from the same speaker stacks above what has not risen out of the way yet.</summary>
+		public const float DialogueFloatingRisePx = 80f;
+		public const float DialogueFloatingRiseDecay = 0.92f;
+		/// <summary>Most rows that may be stacked above one speaker's head.</summary>
+		public const int DialogueFloatingMaxStackRows = 6;
 	}
 }

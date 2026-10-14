@@ -27,6 +27,9 @@ namespace Levy.Common.Dialogue
 		private static readonly int[] LastChatTick = NewTicks();
 		private static readonly int[] LastChatLine = new int[MaxBodies];
 		private static readonly RecentLine[] Recent = new RecentLine[MaxBodies];
+		// client / single player drawing: when each speaker last spawned floating text, and how tall that stack was
+		private static readonly int[] FloatStackTick = NewTicks();
+		private static readonly float[] FloatStackPx = new float[MaxBodies];
 		private static readonly Dictionary<string, SquadClock> RegularSquads = new(StringComparer.Ordinal);
 		private static readonly Dictionary<int, SquadClock> MilitiaSquads = new();
 
@@ -49,6 +52,8 @@ namespace Levy.Common.Dialogue
 		private sealed class SquadClock
 		{
 			public int Any = Never, Big = Never;
+			/// <summary>The last big line was the generic BOSS_SIGHTED, which a boss-specific BOSS line may pre-empt.</summary>
+			public bool BigWasSighted;
 		}
 
 		private static int[] NewTicks()
@@ -58,13 +63,15 @@ namespace Levy.Common.Dialogue
 			return a;
 		}
 
-		internal static void ResetRuntime()
+		public static void ResetRuntime()
 		{
 			LineUsed.Clear();
 			Array.Fill(LastEmote, Never);
 			Array.Fill(LastChatTick, Never);
 			Array.Clear(LastChatLine);
 			Array.Clear(Recent);
+			Array.Fill(FloatStackTick, Never);
+			Array.Clear(FloatStackPx);
 			RegularSquads.Clear();
 			MilitiaSquads.Clear();
 		}
@@ -125,6 +132,8 @@ namespace Levy.Common.Dialogue
 
 			string text = Fill.Build(chosen);
 			Candidates.Clear();
+			// Safety net: a line is filtered on every placeholder it needs, so a brace here means a bug. Never show it raw.
+			if (text.IndexOf('{') >= 0 || text.IndexOf('}') >= 0) return null;
 			if (mark) LineUsed[chosen.Id] = now;
 			picked = chosen;
 			return text;
@@ -220,7 +229,7 @@ namespace Levy.Common.Dialogue
 						switch (need)
 						{
 							case LineNeeds.Name: _name = NonEmpty(_rec?.Name); break;
-							case LineNeeds.Comrade: _comrade = NonEmpty(_ctx?.Comrade) ?? FindComrade(); break;
+							case LineNeeds.Comrade: _comrade = NonEmpty(_ctx?.Comrade); break; // only ever the comrade the caller names
 							case LineNeeds.Boss: _boss = NonEmpty(_ctx?.Boss) ?? BossName(_ctx?.BossKey); break;
 							case LineNeeds.Killer: _killer = NonEmpty(_ctx?.Killer) ?? NonEmpty(_body?.LastAttackerName); break;
 							case LineNeeds.Town: _town = NonEmpty(_ctx?.Town) ?? NonEmpty(HomeTown()); break;
@@ -268,28 +277,6 @@ namespace Levy.Common.Dialogue
 			{
 				if (string.IsNullOrEmpty(bossKey)) return null;
 				return NPCID.Search.TryGetId(bossKey, out int id) ? Terraria.Lang.GetNPCNameValue(id) : bossKey;
-			}
-
-			/// <summary>A random living squad-mate: same commander (Regulars) or same barracks (militia), near the speaker when it has a body.</summary>
-			private string FindComrade()
-			{
-				if (_rec == null) return null;
-				float maxSq = LevyConstants.DialogueComradeSearchTiles * LevyConstants.TilePx;
-				maxSq *= maxSq;
-				string found = null;
-				int seen = 0;
-				for (int i = 0; i < Main.maxNPCs; i++)
-				{
-					NPC n = Main.npc[i];
-					if (!n.active || n.ModNPC is not SoldierNPC other) continue;
-					SoldierRecord o = other.Record;
-					if (o == null || ReferenceEquals(o, _rec) || !other.IsAlive || string.IsNullOrWhiteSpace(o.Name)) continue;
-					if (_rec.Kind == SoldierKind.Militia ? (o.Kind != SoldierKind.Militia || o.HomeBarracksId != _rec.HomeBarracksId) : (o.Kind != SoldierKind.Regular || o.CommanderName != _rec.CommanderName)) continue;
-					if (_body != null && Microsoft.Xna.Framework.Vector2.DistanceSquared(_body.NPC.Center, n.Center) > maxSq) continue;
-					seen++;
-					if (Main.rand.Next(seen) == 0) found = o.Name; // reservoir sample: uniform without allocating
-				}
-				return found;
 			}
 
 			public string Build(DialogueLine line)

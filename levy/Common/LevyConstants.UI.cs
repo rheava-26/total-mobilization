@@ -7,11 +7,11 @@ namespace Levy.Common
 		{
 			// ---- panels ----
 			public const int PanelCloseDistanceTiles = 10;
-			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 470;
+			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 520;
 			public const int ArmoryPanelWidth = 664, ArmoryPanelHeight = 404;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
-			public const int RosterRowHeight = 78;
+			public const int RosterRowHeight = 100;
 			public const float ButtonTextScale = 0.75f, SmallTextScale = 0.8f;
 			public const long DepositSmall = 10000, DepositLarge = 100000; // 1 gold, 10 gold
 			/// <summary>First and one-past-last main-inventory slot (hotbar, coins and ammo excluded).</summary>

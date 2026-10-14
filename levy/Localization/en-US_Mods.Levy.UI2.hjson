@@ -14,6 +14,7 @@ DepositHint: Move coins from your inventory into the treasury.
 WithdrawHint: Take coins out of the treasury.
 On: On
 Off: Off
+TaxShort: Tax to treasury
 Toggle: "{0}: {1}"
 UsedToday: used today
 AllOrders: All Regulars

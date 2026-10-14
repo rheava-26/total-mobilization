@@ -24,6 +24,9 @@ namespace Levy.Content.NPCs
 	///   the queued NPC sprites are not flushed yet and the device state is whatever the previous flush left.
 	/// So this file ends the NPC batch, draws the body inside its own Immediate batch (same sampler, rasterizer and matrix the
 	/// vanilla player pass uses), ends it, and restarts the NPC batch with exactly the parameters DoDraw used.
+	///
+	/// Main.DrawNPCs deactivates any NPC whose draw throws, which would delete the soldier. Nothing here may throw: on the
+	/// first failure the renderer path is disabled for the session and bodies fall back to the placeholder sprite.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -32,27 +35,37 @@ namespace Levy.Content.NPCs
 		/// <summary>Game tick the dummy's frame counters were last advanced on; animation advances once per tick, not per draw.</summary>
 		private uint _drawAnimTick = uint.MaxValue;
 		private static bool _dyeRefreshBroken;
+		private static bool _rendererBroken;
 
 		partial void Draw_PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, ref bool drawn)
 		{
 			if (Main.dedServ || Record == null || !NPC.active) return;
 			if (!IsAlive) { drawn = true; return; } // dying bodies draw nothing while the roster handles the death
+			if (_rendererBroken) return;             // placeholder texture draws instead
 			EnsureDummy();
-			UISystem.SoldiersOnScreen++;
-
-			RefreshDummyGear();
-			SyncDummyTransform();
-			Dummy.gfxOffY = NPC.gfxOffY;
-			Dummy.lastVisualizedSelectedItem = Dummy.inventory[0]; // the renderer draws this, not inventory[selectedItem]
-			PoseDummy();
 			uint tick = Main.GameUpdateCount;
-			if (tick != _drawAnimTick)
+			bool newTick = tick != _drawAnimTick;
+			if (newTick) UISystem.SoldiersOnScreen++; // once per tick per body, whatever the draw rate
+			try
 			{
-				_drawAnimTick = tick;
-				AnimateDummy();
+				RefreshDummyGear();
+				SyncDummyTransform();
+				Dummy.gfxOffY = NPC.gfxOffY;
+				Dummy.lastVisualizedSelectedItem = Dummy.inventory[0]; // the renderer draws this, not inventory[selectedItem]
+				PoseDummy();
+				if (newTick)
+				{
+					_drawAnimTick = tick;
+					AnimateDummy();
+				}
+				DrawDummy(spriteBatch, screenPos);
+				drawn = true;
 			}
-			DrawDummy(spriteBatch, screenPos);
-			drawn = true;
+			catch (Exception e)
+			{
+				_rendererBroken = true;
+				Levy.Instance.Logger.Error("Levy: drawing a soldier through the player renderer failed; soldiers fall back to the placeholder sprite: " + e);
+			}
 		}
 
 		partial void Draw_PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -93,6 +106,7 @@ namespace Levy.Content.NPCs
 		/// <summary>
 		/// Sets the inputs Player.PlayerFrame / WingFrame / the use-style code read: facing, movement flags, item animation,
 		/// item rotation and location. Runs every draw (cheap, allocation-free) so the pose never lags the synced state.
+		/// Only animation inputs are written; wingTime/jump and the stat fields stay untouched (the Movement agent may own them).
 		/// </summary>
 		private void PoseDummy()
 		{
@@ -100,9 +114,7 @@ namespace Levy.Content.NPCs
 			bool airborne = NPC.velocity.Y != 0f;
 			p.controlLeft = NPC.velocity.X < 0f;
 			p.controlRight = NPC.velocity.X > 0f;
-			p.controlJump = airborne;
-			p.wingTime = airborne ? 1f : 0f;
-			p.jump = 0;
+			p.controlJump = airborne; // wings animate while airborne, flap while rising (see AnimateDummy)
 
 			Item held = p.inventory[0];
 			bool holdsItem = held != null && !held.IsAir;
@@ -114,7 +126,8 @@ namespace Levy.Content.NPCs
 			{
 				int style = held.useStyle;
 				bool aimStyle = style == ItemUseStyleID.Shoot || style == ItemUseStyleID.Rapier;
-				if (anim <= 0 && style == ItemUseStyleID.Shoot && Weapon != null && Weapon.IsRanged
+				bool rangedHeld = held.useAmmo > 0 || (held.mana > 0 && held.shoot > 0); // guns/bows/magic, not spears
+				if (anim <= 0 && style == ItemUseStyleID.Shoot && rangedHeld
 					&& (State == SoldierState.Engage || State == SoldierState.Shaken))
 				{
 					// keep the gun/bow/staff shouldered between shots while engaging

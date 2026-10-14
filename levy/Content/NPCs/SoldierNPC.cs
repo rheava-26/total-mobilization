@@ -337,6 +337,9 @@ namespace Levy.Content.NPCs
 			Combat_OnGearChanged();
 		}
 
+		/// <summary>Gear or grade changed from outside (promotion, crystals, armory issue): re-read the weapon profile and stats.</summary>
+		public void NotifyGearChanged() { StatsDirty = true; Combat_OnGearChanged(); NPC.netUpdate = true; }
+
 		/// <summary>Orders arrive here (server) from the roster.</summary>
 		public void ReceiveOrder(SoldierOrder order)
 		{

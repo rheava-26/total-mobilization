@@ -1,0 +1,7 @@
+# Levy — settlement and militia notices (keys live under Mods.Levy.Militia).
+# Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
+DefaultTownName: the settlement
+RecruitingDriveDone: "{0} already ran a recruiting drive today."
+HazardPayDone: "{0} already issued hazard pay today."
+ManpowerFull: "{0} is at full manpower."
+NoOneToPay: "{0} has no one on the payroll."

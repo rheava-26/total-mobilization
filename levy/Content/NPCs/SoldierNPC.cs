@@ -86,7 +86,13 @@ namespace Levy.Content.NPCs
 		public string SoldierName => Record?.Name ?? "Soldier";
 		public Grade Grade => Record?.Grade ?? Grade.Levy;
 		public float DamageMultiplier => LevyConstants.GradeDamageMult[(int)Grade] * LevyConfig.Get.SoldierDamageMultiplier * (Shaken ? LevyConstants.ShakenDamageMult : 1f);
-		public int ProjectileOwner => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.Server ? Main.maxPlayers - 1 : Main.myPlayer);
+		/// <summary>
+		/// Owner index for projectiles the soldier spawns. Must be Main.myPlayer: Projectile.NewProjectile only assigns ai[], sends the
+		/// spawn packet and runs NPC hit detection when owner == Main.myPlayer (255 on a dedicated server). Loot credit is separate: see <see cref="CreditPlayer"/>.
+		/// </summary>
+		public int ProjectileOwner => Main.myPlayer;
+		/// <summary>Player index that receives loot/banner credit for this soldier's kills (commander, else the local player in single player, else -1).</summary>
+		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Main.myPlayer : -1);
 		public bool IsAlive => NPC.active && NPC.life > 0 && !_deathHandled;
 
 		public override string Texture => "Levy/Content/NPCs/SoldierNPC";

@@ -11,4 +11,4 @@ for b in $(git for-each-ref --format='%(refname:short)' refs/heads/worktree-agen
     echo "!! CONFLICT merging $b"; git diff --name-only --diff-filter=U; git merge --abort; echo "   aborted; resolve manually"
   fi
 done
-/home/user/tools/compile.sh /home/user/total-mobilization/levy 2>&1 | grep -v "^warning" | tail -40
+/home/user/tools/compile.sh /home/user/total-mobilization/Levy 2>&1 | grep -v "^warning" | tail -40

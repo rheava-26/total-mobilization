@@ -806,6 +806,6 @@ Emplacement-crumble fix · intro cinematic (plays every load, skip after first w
 ## Side project (2026-10-14): Levy — a tModLoader mod (`levy/`)
 
 Not part of the game. The designer asked for a one-shot build of the "Levy" Terraria mod from Build Spec v0.1
-(junk becomes a garrison; Regulars + Militia; boss rule + fear; wages). It lives in `levy/` with its own
+(junk becomes a garrison; Regulars + Militia; boss rule + fear; wages). It lives in `Levy/` with its own
 `PLAN.md`, `README.md`, `TESTING.md`; verification tooling in `levy-tools/`. Target: tModLoader 1.4.4.9 (v2026.08.3.0, .NET 8).
-Status is tracked in `levy/PLAN.md` §7 and `levy/TESTING.md`.
+Status is tracked in `Levy/PLAN.md` §7 and `Levy/TESTING.md`.

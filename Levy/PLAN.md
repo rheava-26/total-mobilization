@@ -38,7 +38,7 @@ broadsword/shortsword/spear; ammo crafted+consumed from issue slots; loot credit
 player, spite targets, HP +2 %/CP cap +80 %); fear only during main-boss fights; two kinds (Regulars/Militia); grades gated
 late; accessory slots are the power knob; vanilla invasions; render cap 40; no worldgen.
 
-## 2. Layout (all paths relative to `levy/`)
+## 2. Layout (all paths relative to `Levy/` — the folder must be named `Levy`; tModLoader names the mod after it)
 
 ```
 Levy.csproj  build.txt  description.txt  icon.png  Levy.cs

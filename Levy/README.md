@@ -11,7 +11,7 @@ removable (roster data is dropped, tiles become plain tiles).
 ## Install (source, the normal way for a work in progress)
 1. Open tModLoader once so `ModSources` exists: `Documents/My Games/Terraria/tModLoader/ModSources/` (Linux:
    `~/.local/share/Terraria/tModLoader/ModSources/`).
-2. Copy this whole `levy/` folder there and rename it to `Levy` (folder name must equal the mod's internal name).
+2. Copy this whole `Levy/` folder there (the folder name must stay `Levy`: tModLoader names the mod after it).
 3. In tModLoader: **Workshop → Develop Mods → Levy → Build + Reload**. Enable the mod, play.
 
 ## Install (prebuilt)

@@ -1,0 +1,16 @@
+# Roster strings. Keys are relative to Mods.Levy.Roster (prefix comes from the file name).
+Nothing: nothing
+KillerFall: the fall
+KillerLava: lava
+KillerDrowning: the water
+KillerUnknown: misadventure
+Fell: "{0} fell."
+Memorial: "{0} will not return. The name goes on the memorial."
+Discharged: "{0} has been discharged."
+ReturnsToDuty: "{0} returns to duty."
+Rebased: "{0} now reports to {1}."
+Homeless: "{0} has no barracks and will follow you."
+NoHome: That soldier has no barracks to pay from.
+RallyCooldown: "The horn needs {0} more seconds."
+TaxCollected: "The Tax Collector paid {0} into the treasury of {1}."
+CrystalRefused: "{0} cannot use that. It was handed back."

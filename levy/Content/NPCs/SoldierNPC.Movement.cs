@@ -56,7 +56,7 @@ namespace Levy.Content.NPCs
 				if (_path.Count > 0) _path.Clear();
 				ResetStuck();
 				Glide(grounded);
-				AnimateDummy();
+				MirrorDummyControls();
 				return;
 			}
 
@@ -69,7 +69,7 @@ namespace Levy.Content.NPCs
 				_blocked = false; _blockedHard = false; _flying = false;
 				ResetStuck();
 				Glide(grounded);
-				AnimateDummy();
+				MirrorDummyControls();
 				return;
 			}
 
@@ -131,10 +131,10 @@ namespace Levy.Content.NPCs
 
 			TrackStuck();
 			UpdatePathRequest();
-			AnimateDummy();
+			MirrorDummyControls();
 		}
 
-		partial void Movement_ClientAnimate() => AnimateDummy();
+		partial void Movement_ClientAnimate() => MirrorDummyControls();
 
 		partial void Movement_OnTeleported()
 		{
@@ -443,7 +443,7 @@ namespace Levy.Content.NPCs
 		// dummy animation hints (the Draw agent calls PlayerFrame)
 		// =====================================================================================================
 
-		private void AnimateDummy()
+		private void MirrorDummyControls()
 		{
 			if (Dummy == null) return;
 			Dummy.velocity = NPC.velocity;

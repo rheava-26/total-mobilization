@@ -246,7 +246,10 @@ namespace Levy.Content.NPCs
 			SyncDummyTransform();
 			if (LevyUtil.IsClient)
 			{
-				// clients only animate; the server owns the brain
+				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
+				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
+				if (ItemAnimation > 0) ItemAnimation--;
+				if (AttackCooldown > 0) AttackCooldown--;
 				Movement_ClientAnimate();
 				return;
 			}

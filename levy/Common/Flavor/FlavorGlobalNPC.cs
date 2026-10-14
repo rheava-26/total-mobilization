@@ -91,9 +91,12 @@ namespace Levy.Common.Flavor
 			NPCID.DrManFly, NPCID.Psycho, NPCID.ThePossessed,
 		};
 
+		/// <summary>True for the Solar Eclipse monsters that can carry the Discipline book (not Mothron eggs or hatchlings).</summary>
+		public static bool IsEclipseType(int npcType) => EclipseTypes.Contains(npcType);
+
 		public EclipseBookCondition() : base("Discipline", "Eclipse") { }
 
-		protected override bool EventApplies(NPC npc) => Main.eclipse && EclipseTypes.Contains(npc.type);
+		protected override bool EventApplies(NPC npc) => Main.eclipse && IsEclipseType(npc.type);
 	}
 
 	// ------------------------------------------------------------------ loot
@@ -124,21 +127,8 @@ namespace Levy.Common.Flavor
 				npcLoot.Add(ItemDropRule.ByCondition(Pirates, ModContent.ItemType<GuideToPlunder>(), denominator));
 			if (NPCID.Sets.BelongsToInvasionOldOnesArmy[type] && type != NPCID.DD2EterniaCrystal && type != NPCID.DD2LanePortal)
 				npcLoot.Add(ItemDropRule.ByCondition(OldOnes, ModContent.ItemType<GuideToFortification>(), denominator));
-			if (IsEclipseType(type))
+			if (EclipseBookCondition.IsEclipseType(type))
 				npcLoot.Add(ItemDropRule.ByCondition(Eclipse, ModContent.ItemType<GuideToDiscipline>(), denominator));
-		}
-
-		private static bool IsEclipseType(int type)
-		{
-			switch (type)
-			{
-				case NPCID.Eyezor: case NPCID.Frankenstein: case NPCID.SwampThing: case NPCID.Vampire: case NPCID.VampireBat:
-				case NPCID.CreatureFromTheDeep: case NPCID.Fritz: case NPCID.Nailhead: case NPCID.Reaper: case NPCID.Mothron:
-				case NPCID.Butcher: case NPCID.DeadlySphere: case NPCID.DrManFly: case NPCID.Psycho: case NPCID.ThePossessed:
-					return true;
-				default:
-					return false;
-			}
 		}
 	}
 

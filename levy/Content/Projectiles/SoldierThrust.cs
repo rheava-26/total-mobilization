@@ -65,7 +65,12 @@ namespace Levy.Content.Projectiles
 		public override void AI()
 		{
 			SoldierNPC s = Soldier;
-			if (s == null || !s.NPC.active || s.NPC.life <= 0) { Projectile.Kill(); return; }
+			if (s == null || !s.NPC.active || s.NPC.life <= 0)
+			{
+				// Clients may receive the thrust before the body's record sync: let timeLeft expire instead of killing a live server projectile.
+				if (Main.netMode == NetmodeID.MultiplayerClient) return;
+				Projectile.Kill(); return;
+			}
 
 			int life = Life;
 			if (Projectile.localAI[0] == 0f && Projectile.timeLeft < life) Projectile.timeLeft = life; // both sides: ai[2] is synced

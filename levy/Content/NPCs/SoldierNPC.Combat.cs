@@ -32,14 +32,13 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) { Weapon = null; UsingSidearm = false; return; }
 			var g = Record.Gear;
+			// unsupported items keep a profile (Supported == false) so the stale check below stays quiet; they are never usable
 			_mainProfile = g.HasWeapon ? WeaponClassifier.GetProfile(g.Weapon) : null;
 			_sideProfile = g.HasSidearm ? WeaponClassifier.GetProfile(g.Sidearm) : null;
-			if (_mainProfile != null && !_mainProfile.Supported) _mainProfile = null;
-			if (_sideProfile != null && !_sideProfile.Supported) _sideProfile = null;
 			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile);
 			bool sideUsable = _sideProfile != null && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
 			UsingSidearm = !mainUsable && sideUsable;
-			Weapon = UsingSidearm ? _sideProfile : _mainProfile;
+			Weapon = SupportedOrNull(UsingSidearm ? _sideProfile : _mainProfile);
 			_swingHits.Clear();
 			_sidearmTick = 0;
 			StatsDirty = true;
@@ -50,10 +49,12 @@ namespace Levy.Content.NPCs
 		private void UpdateSidearm()
 		{
 			var g = Record.Gear;
+			// gear swapped without a Combat_OnGearChanged call: rebuild the profiles
+			if ((g.HasWeapon ? g.Weapon.type : 0) != (_mainProfile?.ItemType ?? 0) || (g.HasSidearm ? g.Sidearm.type : 0) != (_sideProfile?.ItemType ?? 0)) { Combat_OnGearChanged(); return; }
 			bool mainUsable = _mainProfile != null && g.HasWeapon && WeaponUse.HasResources(this, g.Weapon, _mainProfile);
 			bool sideUsable = _sideProfile != null && g.HasSidearm && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
 			bool wantSidearm = !mainUsable && sideUsable;
-			WeaponProfile want = wantSidearm ? _sideProfile : _mainProfile;
+			WeaponProfile want = SupportedOrNull(wantSidearm ? _sideProfile : _mainProfile);
 			if (wantSidearm != UsingSidearm || !ReferenceEquals(want, Weapon))
 			{
 				UsingSidearm = wantSidearm;
@@ -64,6 +65,8 @@ namespace Levy.Content.NPCs
 				NPC.netUpdate = true;
 			}
 		}
+
+		private static WeaponProfile SupportedOrNull(WeaponProfile p) => p != null && p.Supported ? p : null;
 
 		/// <summary>True while the weapon in hand can be used (ammo in the pouch, mana for magic).</summary>
 		public bool CanUseHeldWeapon()

@@ -237,7 +237,7 @@ namespace Levy.Common.Weapons
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 			int life = Math.Max(1, item.useAnimation);
 			Projectile p = Spawn(s, s.NPC.Center, dir, ModContent.ProjectileType<SoldierThrust>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, life);
-			if (p == null) return false;
+			if (p == null) { s.AttackCooldown = Math.Max(1, item.useTime); return false; } // projectile array full: wait a use before rescanning
 			p.timeLeft = Math.Max(p.timeLeft, life);
 			s.NoteThrust(p.whoAmI);
 			FinishUse(s, item, dir);
@@ -248,7 +248,8 @@ namespace Levy.Common.Weapons
 		private static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
 		{
 			s.AttackCooldown = Math.Max(1, item.useTime);
-			s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation);
+			// A running animation keeps going (burst weapons fire several shots per animation); the reuse delay applies when it ends.
+			if (s.ItemAnimation <= 0) s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation);
 			if (aimVel != Vector2.Zero && !aimVel.HasNaNs())
 			{
 				s.AimRotation = aimVel.ToRotation();

@@ -350,6 +350,7 @@ namespace Levy.Common.Dialogue
 				{
 					Player pl = Main.player[i];
 					if (!pl.active || Vector2.DistanceSquared(pl.Center, s.NPC.Center) > rangeSq) continue;
+					if (!Netplay.Clients[i].IsConnected()) continue; // Send(toClient) dereferences the socket
 					if (packet == null)
 					{
 						packet = LevyPackets.New(LevyPacket.Bark);

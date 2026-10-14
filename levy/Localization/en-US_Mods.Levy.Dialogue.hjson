@@ -1,0 +1,4 @@
+# Keys are relative to Mods.Levy.Dialogue.
+# Soldier lines themselves live in Dialogue/en-US.txt.
+DefaultPlayer: the boss
+Silence: "..."

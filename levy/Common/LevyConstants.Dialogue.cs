@@ -14,7 +14,7 @@ namespace Levy.Common
 		/// <summary>Selection weight of a personality line (temperament or Veteran) relative to an Any line.</summary>
 		public const int DialoguePersonalityWeight = 3;
 		/// <summary>Soldiers also show the text of emote triggers (ENGAGE, KILL, HURT...) as a small floating line, within the squad budget.</summary>
-		public const bool DialogueChatterText = true;
+		public static readonly bool DialogueChatterText = true;
 		/// <summary>Floating lines longer than this are split over two or three rows.</summary>
 		public const int DialogueFloatingRowChars = 34;
 		/// <summary>Floating text lives this long (vanilla combat text lives 60 ticks, too short to read a sentence).</summary>

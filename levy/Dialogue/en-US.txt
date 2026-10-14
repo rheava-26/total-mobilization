@@ -1,0 +1,481 @@
+# ============================================================================================================
+# LEVY SOLDIER DIALOGUE  (designer-editable, no code changes needed)
+# ============================================================================================================
+# One entry per line:        TRIGGER | Temperament | text
+# Blank lines and lines starting with # are ignored. A malformed line is logged with its line number and skipped.
+# The table is read when the mod loads and again whenever the game language changes (Dialogue/<culture>.txt,
+# falling back to this file).
+#
+# TEMPERAMENT   Greenhorn, Sellsword, Zealot, Cynic, Veteran or Any.
+#               A temperament line is only spoken by soldiers of that temperament. A Veteran line is only spoken by
+#               soldiers who earned Veteran. Any is spoken by everyone. Personality lines are picked more often than Any.
+#
+# TRIGGER       IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN
+#               BIOME_JUNGLE BIOME_DUNGEON BIOME_UNDERWORLD BIOME_SNOW BIOME_CORRUPTION BIOME_CRIMSON BIOME_HALLOW
+#               BIOME_OCEAN BIOME_UNDERGROUND
+#               PAYDAY UNPAID DESERTED MUSTER STAND_DOWN NO_ONE_LEFT
+#               EVENT_GOBLINS EVENT_PIRATES EVENT_ECLIPSE EVENT_PUMPKIN EVENT_FROST EVENT_MARTIANS EVENT_OLDONES EVENT_FROSTLEGION
+#               ENGAGE KILL HURT LOW_HP OUT_OF_AMMO HOLD_FIRE
+#               BOSS_SIGHTED   (any main boss comes into view; also the fallback when a boss has no lines of its own)
+#               BOSS_<name>    (one boss; <name> is the vanilla NPC internal name: KingSlime EyeofCthulhu EaterofWorldsHead
+#                               BrainofCthulhu QueenBee Deerclops SkeletronHead WallofFlesh QueenSlimeBoss Retinazer
+#                               Spazmatism TheDestroyer SkeletronPrime Plantera Golem HallowBoss DukeFishron CultistBoss
+#                               MoonLordCore)
+#               COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED VICTORY PROMOTED VETERAN DEATH_MESSAGE
+#
+# WHERE A LINE SHOWS UP
+#   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_*
+#   Emote bubble + a small floating line:   ENGAGE KILL HURT LOW_HP OUT_OF_AMMO SHAKEN COMRADE_HIT MUSTER STAND_DOWN PROMOTED VETERAN
+#   Floating line over the head:   BOSS_SIGHTED BOSS_* COMRADE_DOWN ROUTED RALLIED VICTORY (and EVENT_* for the militia)
+#   Chat log:   DEATH_MESSAGE DESERTED NO_ONE_LEFT
+#   Militia only ever speak: ENGAGE KILL HURT LOW_HP OUT_OF_AMMO COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED MUSTER
+#   STAND_DOWN EVENT_* BOSS_SIGHTED BOSS_* DEATH_MESSAGE.
+#
+# PLACEHOLDERS (a line whose placeholder cannot be filled is skipped, so keep a few lines per trigger without any)
+#   {Player}   the commander (or "the boss")           {Name}     the speaking soldier
+#   {Comrade}  another soldier of the squad            {Boss}     the boss being fought
+#   {Killer}   what killed the soldier                 {Town}     the settlement
+#   {Wage}     the soldier's daily wage
+#   Town NPCs (the line only fires while that NPC lives in the world):
+#   {Guide} {Nurse} {ArmsDealer} {Demolitionist} {Merchant} {Dryad} {Clothier} {PartyGirl} {Tavernkeep} {TaxCollector}
+#   {Mechanic} {GoblinTinkerer} {Wizard} {Steampunker} {Cyborg} {Pirate} {Truffle} {Stylist} {Angler} {DyeTrader}
+#   {Painter} {WitchDoctor} {Golfer} {Zoologist} {Princess} {SantaClaus}
+#
+# A line is not repeated within two minutes. Keep lines to one or two short sentences. Plain ASCII only.
+# ============================================================================================================
+
+
+# ---------------------------------------------------------------- IDLE: Greenhorn
+IDLE | Greenhorn | They said basic training was three days. It was three minutes.
+IDLE | Greenhorn | Is the giant eye in the sky normal? Nobody said whether the giant eye in the sky was normal.
+IDLE | Greenhorn | I polished my armor this morning. Then a slime sat on it.
+IDLE | Greenhorn | My mother thinks I work in an office. Technically I work in a hole.
+IDLE | Greenhorn | I named my gun Gerald. Gerald is the only one who gets me.
+IDLE | Greenhorn | Nobody warned me about the standing. So much standing. My feet have filed a complaint.
+IDLE | Greenhorn | I was promised adventure. So far it has been mostly waiting.
+IDLE | Greenhorn | I tried to count the bricks in the wall. It's dirt. There are no bricks.
+IDLE | Greenhorn | The recruiter said steady work. He did not say steady at what.
+IDLE | Greenhorn | Are we the good guys? The zombies seem pretty committed too.
+
+# ---------------------------------------------------------------- IDLE: Sellsword
+IDLE | Sellsword | Loyalty's extra. Ask about our rates.
+IDLE | Sellsword | I've fought for worse people for less money. Not many, though.
+IDLE | Sellsword | My contract says reasonable danger. We disagree on reasonable.
+IDLE | Sellsword | I charge extra for heroics. Cowardice is free. Think about that.
+IDLE | Sellsword | I'd die for you, but it would be a rush job, and rush jobs are time and a half.
+IDLE | Sellsword | The last employer paid in exposure. I still have the sunburn.
+IDLE | Sellsword | I read the fine print. The fine print has teeth.
+IDLE | Sellsword | Gold doesn't judge. Gold doesn't ask me to hold a wall.
+IDLE | Sellsword | Nothing personal about the monsters. It's strictly business. They don't pay, though.
+
+# ---------------------------------------------------------------- IDLE: Zealot
+IDLE | Zealot | Every slime slain is a prayer answered. I've prayed forty times today.
+IDLE | Zealot | The Corruption fears us! Probably! It's hard to tell with the Corruption.
+IDLE | Zealot | The Crimson is just the Corruption with a gym membership.
+IDLE | Zealot | I have no fear of death. I have a mild fear of paperwork, but that is different.
+IDLE | Zealot | Every wound is a blessing. I have been blessed eleven times today.
+IDLE | Zealot | We are the wall, and the wall is holy. Please do not lean on the wall.
+IDLE | Zealot | I prayed for a miracle and received a Minishark. I accept it.
+IDLE | Zealot | If I fall, do not mourn. Just move my body before it becomes a hazard.
+IDLE | Zealot | Death is only a door. A loud door with a lot of teeth, but a door.
+
+# ---------------------------------------------------------------- IDLE: Cynic
+IDLE | Cynic | Another day, another chance to die for someone else's basement.
+IDLE | Cynic | You built a wall out of dirt and expect me to hold it. Bold.
+IDLE | Cynic | They call it a settlement. I call it a collection of targets with furniture.
+IDLE | Cynic | Hope is just fear that hasn't met the enemy yet.
+IDLE | Cynic | Everyone wants a hero. Nobody wants to pay for the funeral.
+IDLE | Cynic | I'm not saying we're doomed. I'm saying I've started packing.
+IDLE | Cynic | Sure, the sky is calm. That's how it starts.
+IDLE | Cynic | They gave me a spear and a motto. The motto broke first.
+IDLE | Cynic | I didn't volunteer. I was volunteered. Retroactively.
+
+# ---------------------------------------------------------------- IDLE: Veteran
+IDLE | Veteran | Third Blood Moon this month. I've started naming the zombies.
+IDLE | Veteran | Three bosses. Three. I've seen things. Mostly teeth.
+IDLE | Veteran | Rookies ask where the front is. Veterans ask where the exit is. I ask where the snacks are.
+IDLE | Veteran | I have a scar for every monster. I have a second scar for the paperwork.
+IDLE | Veteran | Don't tell the greenhorns, but I'm still scared. Every single day. It keeps the reflexes sharp.
+IDLE | Veteran | I once held a line for six hours with a broken sword. The line was in worse shape.
+IDLE | Veteran | You get used to the screaming. Then you get used to the screaming being yours.
+IDLE | Veteran | A good soldier knows when to run. A veteran knows which way the Nurse is.
+IDLE | Veteran | I've outlived better soldiers than me. Mostly through poor eyesight.
+
+# ---------------------------------------------------------------- IDLE: anyone
+IDLE | Any | All quiet. I hate it when it's quiet.
+IDLE | Any | Nothing to report. Reporting that there's nothing to report.
+IDLE | Any | Just standing here. It's most of the job.
+IDLE | Any | The sky is still up there. Good for the sky.
+
+# ---------------------------------------------------------------- IDLE_NIGHT
+IDLE_NIGHT | Any | Night shift. Again. Did I enlist, or get sentenced?
+IDLE_NIGHT | Any | The moon's out. The zombies are out. I'm out of patience.
+IDLE_NIGHT | Any | Night duty means counting stars. I lost count at four, and a zombie walked by.
+IDLE_NIGHT | Any | It's dark and I'm responsible for it. Nobody consulted me about the dark.
+IDLE_NIGHT | Any | Everything is scarier in the dark. Including the guy next to me.
+IDLE_NIGHT | Any | Cold, dark, and I'm not allowed to nap. This is what they call a career.
+IDLE_NIGHT | Any | I can hear things out there. They're doing their best.
+IDLE_NIGHT | Any | If I stay very still, the night can't see me. It's a theory. I'm testing it.
+
+# ---------------------------------------------------------------- NAMEDROP
+NAMEDROP | Any | {ArmsDealer} says he can get me a bigger gun. {ArmsDealer} says that to everyone.
+NAMEDROP | Any | {Nurse} charged me two silver to tell me I was fine. I had an arrow in me.
+NAMEDROP | Any | {Demolitionist} called the barracks a target-rich environment. I don't like how he said it.
+NAMEDROP | Any | {Guide} keeps giving me survival tips. I asked him about lava. He got quiet.
+NAMEDROP | Any | {TaxCollector} came by for contributions. I told him I'm paid in exposure.
+NAMEDROP | Any | {Merchant} sold me a torch for a silver and called it military grade.
+NAMEDROP | Any | {Dryad} keeps asking me to plant sunflowers around the graves. I keep asking why there are so many graves.
+NAMEDROP | Any | {Clothier} offered to tailor my uniform. It's platinum armor. It doesn't tailor.
+NAMEDROP | Any | {PartyGirl} wants to throw a party for the fallen. I told her they can't come.
+NAMEDROP | Any | {Tavernkeep} says his ale is liquid courage. Mostly it's liquid.
+NAMEDROP | Any | {Mechanic} offered to wire my gun to a timer. I asked for a trigger. She said timers are friendlier.
+NAMEDROP | Any | {GoblinTinkerer} says he can reforge my armor. I've seen his face when he says it. I'm keeping the armor.
+NAMEDROP | Any | {Wizard} enchanted my sword. It's still a sword. It's just a more confident sword.
+NAMEDROP | Any | {Steampunker} says my rifle needs more gears. It has the gears it needs and some it'll never admit to.
+NAMEDROP | Any | {Cyborg} called me statistically fragile. I hate that I looked it up.
+NAMEDROP | Any | {Pirate} offered me a parrot. It's a mercenary parrot. It wants a share.
+NAMEDROP | Any | {Truffle} says the mushroom biome is lovely this time of year. It's lovely every time of year. It's a mushroom thing.
+NAMEDROP | Any | {Stylist} told me my helmet doesn't go with my face. I'm keeping the helmet.
+NAMEDROP | Any | {Angler} asked me to fetch him a fish. I'm a soldier. He called me a very slow fisherman.
+NAMEDROP | Any | {DyeTrader} offered to dye my armor black. It's already black. He said blacker.
+NAMEDROP | Any | {Painter} keeps painting the barracks. I'm not sure it's art. It's very wet.
+NAMEDROP | Any | {WitchDoctor} gave me a charm against bad luck. A zombie bit it later. Unlucky for the zombie.
+NAMEDROP | Any | {Golfer} says the fairway is the only honest battlefield. I said that's a lawn. He hit me.
+NAMEDROP | Any | {Zoologist} wants to study the zombies. I told her they study us. She wrote that down.
+NAMEDROP | Any | {Princess} thanked me for my service. I looked behind me. She meant me.
+NAMEDROP | Any | {SantaClaus} gave me a lump of coal. It was a good lump. I've kept it.
+NAMEDROP | Any | {ArmsDealer} and {Demolitionist} are arguing about whose bang is bigger. We're hiding.
+NAMEDROP | Any | {Nurse} says I should rest. {Guide} says I should read. I'm going to stand here, thanks.
+NAMEDROP | Any | {Dryad} blessed my armor. It stayed clean all day. Then it rained.
+NAMEDROP | Any | {PartyGirl} threw confetti at the zombies. They loved it. They loved it a lot.
+NAMEDROP | Any | {Clothier} says he used to be cursed. He says it in the same voice he uses for good morning.
+NAMEDROP | Any | {Guide} gave me a tip for surviving the night. The tip was don't die. Very helpful.
+NAMEDROP | Any | {Demolitionist} says I stand too far from the explosions. He says it like it's a problem.
+NAMEDROP | Any | {Merchant} sold a torch to me and a torch to the zombie. The zombie bought two.
+NAMEDROP | Any | {Mechanic} and {Steampunker} are building something in the back. We've agreed not to ask.
+
+# ---------------------------------------------------------------- Situations
+BLOOD_MOON | Any | The water's red, the zombies are angry, and I'm on a fixed salary.
+BLOOD_MOON | Any | If you're not paying or bleeding, keep walking.
+BLOOD_MOON | Any | The moon is red. I've decided that's a personal attack.
+BLOOD_MOON | Any | Red moon, loud night, quiet payroll.
+
+PARTY | Any | I'm on duty. Is there cake? I can be on duty near cake.
+PARTY | Any | A party! Finally, a threat I understand.
+PARTY | Any | Confetti in a war zone. I'm not complaining. I'm making a note of it.
+PARTY | Any | I'll hold the wall and the cake, in whichever order is faster.
+
+GRAVEYARD | Any | So many headstones. I'm not reading the names. Don't read the names.
+GRAVEYARD | Any | It's very quiet here. Quiet is just loud in disguise.
+GRAVEYARD | Any | The ghosts are taking attendance. I don't want to be counted.
+GRAVEYARD | Any | Nice cemetery. Excellent drainage. I looked into it out of professional interest.
+
+RAIN | Any | Rain again. The armor rusts, the gun jams, the pay stays the same.
+RAIN | Any | Rain makes the zombies slippery. It does nothing for my morale.
+RAIN | Any | Wet armor squeaks. Every step announces me. I'm the squeakiest soldier alive.
+RAIN | Any | I'd say it's raining cats and dogs, but at this point I'd welcome them.
+
+# ---------------------------------------------------------------- Biomes
+BIOME_DUNGEON | Any | I've got a bad feeling about this. The feeling has bones.
+BIOME_DUNGEON | Any | The walls are watching. I'd rather they didn't.
+BIOME_DUNGEON | Any | Somebody built this place to keep something in. Looking at the bones, it was not us.
+BIOME_DUNGEON | Any | Skeletons are rude. They never say hello. They just rattle.
+
+BIOME_UNDERWORLD | Any | If I die here, tell my mother I was in the Jungle.
+BIOME_UNDERWORLD | Any | It's hot and it's hell. Please tell me this is overtime.
+BIOME_UNDERWORLD | Any | My boots are melting. My morale melted a mile ago.
+BIOME_UNDERWORLD | Any | Everything here wants to hug me with fire. I decline all hugs.
+
+BIOME_JUNGLE | Any | Everything here has thorns. Everything. I checked.
+BIOME_JUNGLE | Any | I heard something move. Then I heard everything move.
+BIOME_JUNGLE | Any | The vines are following me. They're very slow, but they're committed.
+BIOME_JUNGLE | Any | Humidity: yes. Mosquitoes: yes. Joy: no.
+
+BIOME_SNOW | Any | Platinum plate in a snowstorm. It's like hugging an icicle.
+BIOME_SNOW | Any | My nose has gone. I'd like it back at some point.
+BIOME_SNOW | Any | At least the zombies are slower in the cold. That's the only upside.
+BIOME_SNOW | Any | Snow, wind, and a very sarcastic penguin. Fantastic location.
+
+BIOME_CORRUPTION | Any | The ground is purple and it's humming. I'm not fighting the ground.
+BIOME_CORRUPTION | Any | The air tastes like regret and old pennies.
+BIOME_CORRUPTION | Any | I touched a thorn. My glove is gone. The thorn says hello.
+BIOME_CORRUPTION | Any | The worms are enthusiastic here. I admire that in a worm.
+
+BIOME_CRIMSON | Any | It's meaty here. Why is the ground meaty.
+BIOME_CRIMSON | Any | The floor moved. The floor shouldn't move. I'm filing a complaint with the floor.
+BIOME_CRIMSON | Any | Everything here is pulsing in rhythm. I hate the rhythm.
+BIOME_CRIMSON | Any | Is that a heart? In the ground? Nobody say anything.
+
+BIOME_HALLOW | Any | They told me about the zombies. Nobody mentioned the unicorns.
+BIOME_HALLOW | Any | Everything is shiny and pointy and all of it is looking at me.
+BIOME_HALLOW | Any | The pixies are cute. The pixies are armed. Cute and armed is the worst combination.
+BIOME_HALLOW | Any | It's so pretty here I feel rude carrying a gun.
+
+BIOME_OCEAN | Any | Sharks. Love sharks. Had a Minishark once. It bit me.
+BIOME_OCEAN | Any | The sand is in everything. The sand is in my gun. The gun is now sand.
+BIOME_OCEAN | Any | Seagulls, crabs, and the sound of someone else's vacation.
+BIOME_OCEAN | Any | Nice beach. Shame about the sharks. And the pirates. And the crabs.
+
+BIOME_UNDERGROUND | Any | It's dark down here and I'm told that's normal. I'm told many things.
+BIOME_UNDERGROUND | Any | A cave full of things that live in caves. I'm not a cave person.
+BIOME_UNDERGROUND | Any | Good news: the sky can't fall on us. Bad news: the ceiling can.
+BIOME_UNDERGROUND | Any | Every tunnel looks the same and every tunnel is a trap. I appreciate the consistency.
+
+# ---------------------------------------------------------------- Pay and service
+PAYDAY | Any | Payday! My favorite day. Tied with didn't-die day.
+PAYDAY | Any | Coin in hand! Now I'll fight for you AND like you.
+PAYDAY | Any | Paid in full. I'm going to stare at it until it feels real.
+PAYDAY | Any | {Wage} a day. It's just enough to make me feel guilty about complaining.
+PAYDAY | Any | Paid on time. I don't know what to do with that. I'm being suspicious.
+PAYDAY | Sellsword | Right on time. {Player} is my favorite employer, and I keep a list.
+
+UNPAID | Any | No coin, no courage. I didn't make the rules. Well, I made that one.
+UNPAID | Any | Two days unpaid. Three and I start a union. We've got banners.
+UNPAID | Any | The treasury is empty and so is my enthusiasm.
+UNPAID | Any | I'm not saying I'll leave. I'm saying my bag is packed and in plain view.
+UNPAID | Any | A soldier fights on his stomach. Mine has filed a grievance.
+
+DESERTED | Any | {Name} has deserted, taking a Minishark and no regrets.
+DESERTED | Any | {Name} walked out of the barracks and kept walking. Please send a card.
+DESERTED | Any | {Name} has deserted, citing creative differences and unpaid wages.
+DESERTED | Any | {Name} has deserted. The gear went along. The goodbye did not.
+
+MUSTER | Any | You rang? It's a horn, but you rang.
+MUSTER | Any | Militia, assemble! Slowly! Some of us have knees!
+MUSTER | Any | Falling in! Please hold the monsters until I've buckled this.
+MUSTER | Any | Horn heard. Boots found. Courage still looking.
+MUSTER | Any | Reporting! I had a nap planned, but this is fine.
+
+STAND_DOWN | Any | Stand down? I've barely sat up.
+STAND_DOWN | Any | Back to the barracks. The soup is cold but it's ours.
+STAND_DOWN | Any | Standing down. I'll keep one eye open, in a professional capacity.
+STAND_DOWN | Any | Another battle survived. I'm treating it as a clerical error.
+
+NO_ONE_LEFT | Any | {Town} has run out of people. Everyone remaining is a civilian with a strong opinion.
+NO_ONE_LEFT | Any | There is no one left to call up in {Town}. The horn is very sorry.
+NO_ONE_LEFT | Any | {Town} is out of militia. The wall is now more of a suggestion.
+
+# ---------------------------------------------------------------- Events
+EVENT_GOBLINS | Any | Goblins. Short, angry, well organized. Like {Demolitionist}.
+EVENT_GOBLINS | Any | Goblin Army. They're small, loud, and they want our stuff. I get that.
+EVENT_GOBLINS | Any | Watch the sorcerers. They throw balls of shadow. Don't catch them.
+
+EVENT_PIRATES | Any | Pirates! Guard the chests! Guard the chests before you guard me!
+EVENT_PIRATES | Any | Pirates say arr like it's a legal term.
+EVENT_PIRATES | Any | The cannon is the problem. The pirates are just the delivery.
+
+EVENT_ECLIPSE | Any | Why is the sun going out? Is the sun on payroll? Did we miss its payday?
+EVENT_ECLIPSE | Any | Solar eclipse. Everything has a face, and everything is mad.
+EVENT_ECLIPSE | Any | The sun's gone dark and the monsters are out in the daytime. That's new, and I dislike it.
+
+EVENT_PUMPKIN | Any | The pumpkins have faces. The pumpkins have TEETH.
+EVENT_PUMPKIN | Any | Pumpkin Moon. Every year the same pumpkins, and every year they're angrier.
+EVENT_PUMPKIN | Any | Pumpkin heads, scarecrows, and one very persistent tree. This is why I skip Halloween.
+
+EVENT_FROST | Any | Who gave Santa a tank.
+EVENT_FROST | Any | Frost Moon. Candy canes with legs, presents with fangs. Happy holidays.
+EVENT_FROST | Any | Elf gunners in the snow. Nobody asked for gifts like these.
+
+EVENT_MARTIANS | Any | Little gray men with ray guns. I want hazard pay. I want it in advance.
+EVENT_MARTIANS | Any | Martians landed in the middle of my shift. I'm filing a grievance with the universe.
+EVENT_MARTIANS | Any | They have a saucer, lasers, and no manners.
+
+EVENT_OLDONES | Any | The Old One's Army. Protect the crystal. Do not let anything touch the crystal.
+EVENT_OLDONES | Any | Ogres, goblins, and a dragon on the way. Nobody paid me for dragons.
+EVENT_OLDONES | Any | Everything is walking toward the crystal. I'm going to stand in the way and look supportive.
+
+EVENT_FROSTLEGION | Any | Frost Legion! Snowmen with guns. I have so many questions and no time.
+EVENT_FROSTLEGION | Any | Snowman gangsters. They look jolly. They carry tommy guns. Jolly, armed, and mean.
+EVENT_FROSTLEGION | Any | Is it too early to say we should have built a bigger snow shovel?
+
+# ---------------------------------------------------------------- Combat
+ENGAGE | Any | Contact! Is contact right? Someone said it in a dream.
+ENGAGE | Any | Enemy sighted! Shooting it is the plan. It's the whole plan.
+ENGAGE | Any | Here they come! Everyone act brave. I'll start.
+ENGAGE | Any | Targets ahead. I'm calling them targets. It sounds better than monsters.
+ENGAGE | Any | Weapons up! Mostly up. Up-ish.
+ENGAGE | Any | Contact, front, and slightly to the left, and getting closer.
+
+KILL | Any | Got one! Put it on the banner!
+KILL | Any | That one's for {Comrade}! The other ones were for me.
+KILL | Any | Down it goes. Was that cool? Tell me that was cool.
+KILL | Any | One less. Only a few hundred to go.
+KILL | Any | Dead on the first try. I'll never repeat it.
+KILL | Any | Another one for the tally. The tally is on my arm. It's getting long.
+KILL | Any | And stay down! ... Please stay down.
+KILL | Veteran | Another one. They never stop being surprised.
+
+HURT | Any | I'm hit! Right in the part that was fine!
+HURT | Any | Ow! That was a good one. Rude, but good.
+HURT | Any | Hit! I'm fine! I'm completely fine! Don't look at me!
+HURT | Any | Ouch. That's coming out of someone's pay.
+HURT | Any | I felt that in my armor. And my other armor. And my feelings.
+
+LOW_HP | Any | Not dead! Mostly! {Nurse}, if you're listening...
+LOW_HP | Any | Somebody find a Nurse! Or a bandage. Or a cheerful anecdote.
+LOW_HP | Any | I'm not saying I'm dying. I'm saying I can see a bright light and it smells like soup.
+LOW_HP | Any | Health is low. Optimism is lower. I'm still shooting, though.
+LOW_HP | Any | Please don't mention the blood. It's mine and I'm attached to it.
+
+OUT_OF_AMMO | Any | Out of ammo! Throwing the gun! Throwing the gun didn't work!
+OUT_OF_AMMO | Any | Click. Why is it click? It's never supposed to click.
+OUT_OF_AMMO | Any | I'm out! Does anyone have a bullet? A pebble? An encouraging word?
+OUT_OF_AMMO | Any | Empty! I'd say sorry, but mostly I'm just empty.
+
+HOLD_FIRE | Any | Standing down. Best order all week.
+HOLD_FIRE | Any | Fingers off the triggers. I'm not worried. I'm just very, very quiet.
+HOLD_FIRE | Any | Holding fire. Please tell the monsters.
+HOLD_FIRE | Any | Holding fire. My trigger finger and I are having a conversation.
+
+COMRADE_HIT | Any | {Comrade}'s hit! Someone shoot that thing!
+COMRADE_HIT | Any | They hit {Comrade}! No, they got {Comrade}! No, hit! There's a difference!
+COMRADE_HIT | Any | Hold on, {Comrade}! Hold on, and hold something heavy!
+COMRADE_HIT | Any | Someone's hit! Not me! Good! Someone else!
+COMRADE_HIT | Any | Cover the wounded! Cover everyone! Cover me, mainly!
+COMRADE_HIT | Any | That one hurt a friend. Now I'm angry, in a very organized way.
+
+# ---------------------------------------------------------------- Bosses
+BOSS_SIGHTED | Any | That's a boss. That's a boss and it's looking at me.
+BOSS_SIGHTED | Any | That's bigger than the briefing said. The briefing said nothing.
+BOSS_SIGHTED | Any | Everyone stay calm. I'll panic enough for the whole squad.
+BOSS_SIGHTED | Any | A boss! Good. I wrote my will on the way here.
+BOSS_SIGHTED | Any | Is that a health bar over its head? That is a very big health bar.
+
+BOSS_KingSlime | Any | It's a slime. It's a big slime. It's wearing a crown. I respect the crown.
+BOSS_KingSlime | Any | How many little slimes can one big slime hold? I'm about to find out.
+
+BOSS_EyeofCthulhu | Any | Why is the eye only looking at me.
+BOSS_EyeofCthulhu | Any | It has a second form. They always have a second form.
+
+BOSS_EaterofWorldsHead | Any | The ground's moving. The ground's got TEETH.
+BOSS_EaterofWorldsHead | Any | It's all segments, and every segment is angry. That's a lot of angry.
+
+BOSS_BrainofCthulhu | Any | It's a brain. A big brain. We're not winning the argument.
+BOSS_BrainofCthulhu | Any | It's seeing double, and now so am I. Which one do I shoot?
+
+BOSS_QueenBee | Any | Bees. You said this job wouldn't have bees.
+BOSS_QueenBee | Any | Her majesty is mad. Her majesty has a stinger. Her majesty has a lot of children.
+
+BOSS_Deerclops | Any | A deer. One eye, no patience, and cold air everywhere. I want to go home.
+BOSS_Deerclops | Any | The snow is moving away from it. Everything is moving away from it. Should I?
+
+BOSS_SkeletronHead | Any | That old man was NOT fine.
+BOSS_SkeletronHead | Any | A skull with hands that aren't attached. I'm not attached to this plan either.
+
+BOSS_WallofFlesh | Any | Nobody told me the wall moves.
+BOSS_WallofFlesh | Any | It has a mouth, eyes, and lasers. Where do I even aim?
+
+BOSS_QueenSlimeBoss | Any | A slime queen. Pink, sparkly, and furious. The sparkles are a threat.
+BOSS_QueenSlimeBoss | Any | She has crystal wings. I didn't know slimes had wings. I didn't know slimes had a queen.
+
+BOSS_Retinazer | Any | Two of them. Mechanical. Who is BUILDING these?
+BOSS_Retinazer | Any | It has a laser and it's looking at me. I'd call it personal, but it feels like policy.
+
+BOSS_Spazmatism | Any | Two of them. Mechanical. Who is BUILDING these?
+BOSS_Spazmatism | Any | It spits fire out of its eye. I'm told that's normal.
+
+BOSS_TheDestroyer | Any | That's not a worm. That's a train with opinions.
+BOSS_TheDestroyer | Any | Its body is made of probes, and every probe has a grudge.
+
+BOSS_SkeletronPrime | Any | It's Skeletron again, but he brought tools.
+BOSS_SkeletronPrime | Any | Four arms, four weapons, one angry skull. I know which one I'd rather fight, and it's none of them.
+
+BOSS_Plantera | Any | It's a flower and I'm scared of a flower.
+BOSS_Plantera | Any | Hooks, thorns, and a lovely bloom if you get close enough to see it. I won't.
+
+BOSS_Golem | Any | It's a statue. It's a walking statue. We're leaving. We're not leaving.
+BOSS_Golem | Any | It's a lot of rocks very close together, and all of them are angry.
+
+BOSS_HallowBoss | Any | She's beautiful and she's going to kill all of us. In that order.
+BOSS_HallowBoss | Any | Prismatic bolts and a very straight stare. I'm moved. I'm also moving.
+
+BOSS_DukeFishron | Any | A pig. A fish. A dragon. Pick ONE.
+BOSS_DukeFishron | Any | It brought sharknados. Who brings sharknados to a fight?
+
+BOSS_CultistBoss | Any | He's doing a ritual! I don't know what it does! It's rude to interrupt!
+BOSS_CultistBoss | Any | Lightning, fireballs, and ice. He's got range. I've got a stick.
+
+BOSS_MoonLordCore | Any | The moon has a face. The moon has a FACE.
+BOSS_MoonLordCore | Any | There's an eye on its hand, an eye on its chest, and an eye on the eye. So many eyes.
+
+# ---------------------------------------------------------------- Comrades and fear
+COMRADE_DOWN | Any | A comrade has fallen!
+COMRADE_DOWN | Any | Man down! Man down!
+COMRADE_DOWN | Greenhorn | They got {Comrade}!
+COMRADE_DOWN | Greenhorn | {Comrade} went down! Somebody do something!
+COMRADE_DOWN | Greenhorn | No, no, no. {Comrade} was going to teach me the knots.
+COMRADE_DOWN | Greenhorn | A soldier's down! Get the Nurse!
+COMRADE_DOWN | Cynic | {Comrade} owed me two silver.
+COMRADE_DOWN | Cynic | Another one down. And they said it would be fun.
+COMRADE_DOWN | Cynic | {Comrade} went down. I did warn them. Nobody listens to me.
+COMRADE_DOWN | Cynic | Call it a lesson. Call it a shame. Call it Tuesday.
+COMRADE_DOWN | Sellsword | Dibs on {Comrade}'s boots.
+COMRADE_DOWN | Sellsword | {Comrade} is down. Their contract is legally unclear.
+COMRADE_DOWN | Sellsword | {Comrade} fell. I'll hold their wages in trust. For a while.
+COMRADE_DOWN | Sellsword | Someone fell. Pay stops at the end of the shift.
+COMRADE_DOWN | Zealot | {Comrade} is with the Dryad now. Metaphorically. She's right there.
+COMRADE_DOWN | Zealot | {Comrade} has gone ahead. We will follow, but only after we win.
+COMRADE_DOWN | Zealot | A sacrifice has been made! I will say a few words. The words are ow.
+COMRADE_DOWN | Zealot | May the light find {Comrade}. And someone should find their gear.
+COMRADE_DOWN | Veteran | {Comrade} was a good one. Say a prayer and keep your head down.
+COMRADE_DOWN | Veteran | Eyes up. Grieve later. That's the job.
+COMRADE_DOWN | Veteran | I knew {Comrade} for years. Twelve minutes, I mean. It felt like years.
+
+SHAKEN | Any | I signed up for zombies! ZOMBIES!
+SHAKEN | Any | {Comrade} was standing right there. Right. There.
+SHAKEN | Any | That's too big. That's way too big. Is it getting bigger?
+SHAKEN | Any | My hands won't stop shaking. The gun is doing a little dance.
+SHAKEN | Any | I'm fine. I'm fine. I'm just going to hold the wall with my eyes shut.
+SHAKEN | Any | Nobody said the word boss in the briefing. Not once.
+SHAKEN | Zealot | The light is faint. The light is very faint. Where is the light?
+SHAKEN | Cynic | I knew this was a bad idea. I even said so, out loud.
+SHAKEN | Veteran | Breathe. Aim. Pray. The last one is optional but recommended.
+
+ROUTED | Any | Strategic retreat! Very strategic! Running now!
+ROUTED | Any | Tell {Player} I was brave right up until this part.
+ROUTED | Any | Everyone for themselves! I'll be for myself over here!
+ROUTED | Any | Retreat! I'm not running. I'm advancing in the opposite direction!
+ROUTED | Any | Nope. Nope. Nope. Nope. Nope.
+ROUTED | Any | I'll be at the barracks! Tell {Player} I was never here!
+
+RALLIED | Any | Okay. I'm back. Don't tell anyone.
+RALLIED | Any | Nobody saw that. Good. Where's the big one.
+RALLIED | Any | Right. Back to work. We didn't see anything.
+RALLIED | Any | I'm back. Shaken, not stirred. Mostly shaken.
+RALLIED | Any | The horn! I remember now. We were winning. We are still winning, right?
+RALLIED | Any | Okay, okay. I found my courage. It was under the pile of fear.
+
+VICTORY | Any | We won! Is that what winning feels like? It's mostly ringing.
+VICTORY | Any | Loot! The boss had loot! Is any of it ours? No? Cool. Cool.
+VICTORY | Any | It's dead. It's actually dead. Somebody check. Not me.
+VICTORY | Any | Victory! We'll celebrate later. After the Nurse. And the paperwork.
+VICTORY | Any | We did it! Which of us did it? The record will say all of us.
+VICTORY | Veteran | Another one down. Tell the rookies it was easy.
+
+PROMOTED | Any | Promoted? Me? I'd like it noted that I'm still terrified.
+PROMOTED | Any | A promotion! More pay, more danger. The pay is better than I expected and the danger exactly as expected.
+PROMOTED | Any | Thank you for the promotion. I'll try not to ruin it.
+PROMOTED | Any | A raise? A real raise? I'll pretend that's not why I'm smiling.
+
+VETERAN | Any | Veteran now. Which means I'm old. Or lucky. Or both.
+VETERAN | Any | They call me Sergeant now. I'm going to let it go to my head.
+VETERAN | Any | I've survived enough to be called a veteran. I'd like a plaque.
+VETERAN | Any | Veteran status unlocked. Please hold your applause.
+
+# ---------------------------------------------------------------- Death messages (chat log)
+DEATH_MESSAGE | Any | {Name} was honorably discharged by {Killer}.
+DEATH_MESSAGE | Any | {Name} died for {Wage} a day.
+DEATH_MESSAGE | Any | {Name} was told the {Killer} wouldn't be there.
+DEATH_MESSAGE | Any | {Name} has gone to the great barracks in the sky.
+DEATH_MESSAGE | Any | {Name} finally got that day off.
+DEATH_MESSAGE | Any | {Name} has been relieved of duty. Permanently.
+DEATH_MESSAGE | Any | {Name} blamed {Player}'s wall.
+DEATH_MESSAGE | Any | {Name} fell in the line of duty. The line was not very long.
+DEATH_MESSAGE | Any | {Name} was last seen holding the wall. The wall is fine.
+DEATH_MESSAGE | Any | {Name} gave everything. Including the armor.
+DEATH_MESSAGE | Any | {Name} went out in a blaze of glory. Mostly the blaze.
+DEATH_MESSAGE | Any | {Name} has retired, suddenly and without notice.
+DEATH_MESSAGE | Any | {Name} has joined the great payroll in the sky.
+DEATH_MESSAGE | Any | {Name} did their best. Their best was brief.
+DEATH_MESSAGE | Any | {Name} has fallen. They would have wanted us to carry on, loudly.
+DEATH_MESSAGE | Any | {Name} has fallen. {Killer} did it, for the record.

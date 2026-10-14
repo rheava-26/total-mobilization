@@ -52,9 +52,9 @@ namespace Levy.Content.NPCs
 		private int _haulCooldownUntil;
 		private int _haulStartedTick;
 		private int _commanderLookupTick = -100000;
-		private WeaponProfile _mainProfile;
-		private int _mainProfileType = -1;
-		private int _mainProfilePrefix = -1;
+		private WeaponProfile _brainMainProfile;
+		private int _brainMainProfileType = -1;
+		private int _brainMainProfilePrefix = -1;
 
 		// =====================================================================================================
 		// Contract entry points
@@ -283,12 +283,12 @@ namespace Levy.Content.NPCs
 		private WeaponProfile MainProfile()
 		{
 			var w = Record.Gear.Weapon;
-			if (w == null || w.IsAir) { _mainProfile = null; _mainProfileType = -1; return null; }
-			if (_mainProfile == null || _mainProfileType != w.type || _mainProfilePrefix != w.prefix)
+			if (w == null || w.IsAir) { _brainMainProfile = null; _brainMainProfileType = -1; return null; }
+			if (_brainMainProfile == null || _brainMainProfileType != w.type || _brainMainProfilePrefix != w.prefix)
 			{
-				_mainProfile = WeaponClassifier.GetProfile(w); _mainProfileType = w.type; _mainProfilePrefix = w.prefix;
+				_brainMainProfile = WeaponClassifier.GetProfile(w); _brainMainProfileType = w.type; _brainMainProfilePrefix = w.prefix;
 			}
-			return _mainProfile;
+			return _brainMainProfile;
 		}
 
 		private static bool ArmoryAlive(ArmoryTE a) => a != null && TileEntity.ByID.TryGetValue(a.ID, out var te) && ReferenceEquals(te, a);

@@ -68,6 +68,8 @@ namespace Levy.Common.UI
 		{
 			Te = te;
 			if (_grid == null) return;
+			float sh = Main.screenHeight / Main.UIScale;
+			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
 			_grid.RemoveAllChildren();
 			_issue.RemoveAllChildren();
 			if (te == null) return;

@@ -172,7 +172,6 @@ namespace Levy.Common.UI
 		// ------------------------------------------------------------------ layers
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
 		{
-			Nameplates.EndFrame();
 			if (_barracksUI == null) return;
 			var gt = _lastGameTime ?? new GameTime();
 

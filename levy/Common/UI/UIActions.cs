@@ -79,7 +79,11 @@ namespace Levy.Common.UI
 			}
 		}
 
-		/// <summary>Consumes one crystal from the local inventory and feeds it (the packet contract says the client consumes first).</summary>
+		/// <summary>
+		/// Consumes one crystal from the local inventory and feeds it. The packet contract says the client consumes first, so
+		/// RosterSystem.FeedCrystal is assumed NOT to touch the commander's inventory; the UI consumes in single player too.
+		/// // CONTRACT-REQUEST: RosterSystem.FeedCrystal doc should state it never consumes items (the caller does).
+		/// </summary>
 		public static bool FeedCrystal(SoldierRecord rec, int itemType)
 		{
 			if (rec == null || !CanFeed(rec, itemType) || !Me.HasItem(itemType)) return false;

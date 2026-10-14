@@ -11,15 +11,16 @@ namespace Levy.Common.UI
 	/// <summary>Name, grade chevrons, HP bar, fear icon over a soldier. OWNED BY THE UI AGENT.</summary>
 	public static class Nameplates
 	{
-		private static int _drawnThisFrame, _drawnLastFrame;
+		private static int _drawnThisFrame, _drawnLastFrame, _frameStamp = -1;
 		private static readonly Color Gold = new(255, 215, 80), Dark = new(20, 20, 20, 200), FearOrange = new(255, 140, 30), RoutRed = new(255, 60, 40);
 
-		/// <summary>Called once per frame by the UI system when the interface is drawn; rolls the on-screen counter over.</summary>
-		public static void EndFrame() { _drawnLastFrame = _drawnThisFrame; _drawnThisFrame = 0; }
+		/// <summary>Soldiers whose plates were requested last frame (per draw frame, not per tick, via Main.drawsCountedForFPS).</summary>
+		public static int DrawnLastFrame => _drawnLastFrame;
 
 		/// <summary>Draw from the body's PostDraw. <paramref name="screenPos"/> is Main.screenPosition (world minus screen = pixels).</summary>
 		public static void Draw(SoldierNPC s, SpriteBatch spriteBatch, Vector2 screenPos)
 		{
+			if (Main.drawsCountedForFPS != _frameStamp) { _frameStamp = Main.drawsCountedForFPS; _drawnLastFrame = _drawnThisFrame; _drawnThisFrame = 0; }
 			_drawnThisFrame++;
 			if (s?.Record == null || spriteBatch == null || Main.dedServ) return;
 			if (!LevyConfig.Get.Nameplates) return;

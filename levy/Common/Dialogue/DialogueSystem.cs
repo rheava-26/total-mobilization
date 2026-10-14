@@ -243,9 +243,11 @@ namespace Levy.Common.Dialogue
 		/// <summary>Chat-window triggers: keep the line so the next right-click can use it, and tell the clients who will do the chatting.</summary>
 		private static void RememberForChat(SoldierNPC s, SoldierRecord rec, DialogueTrigger trigger, DialogueContext ctx, int idx, int now)
 		{
-			string line = Pick(trigger, rec, ctx, s, false, -1, out _);
+			// Prefer a line nobody said lately, but fall back to a repeat: the cooldown only starts when the line is actually shown (TakeRecent).
+			string line = Pick(trigger, rec, ctx, s, false, -1, out DialogueLine picked, mark: false)
+				?? Pick(trigger, rec, ctx, s, true, -1, out picked, mark: false);
 			if (line == null) return;
-			SetRecent(idx, trigger, line, rec.Id, now);
+			SetRecent(idx, trigger, line, rec.Id, now, picked?.Id ?? -1);
 			if (Main.netMode != NetmodeID.Server) return;
 			ModPacket p = LevyPackets.New(LevyPacket.Bark);
 			p.Write((short)idx);
@@ -255,9 +257,9 @@ namespace Levy.Common.Dialogue
 			p.Send();
 		}
 
-		private static void SetRecent(int idx, DialogueTrigger trigger, string line, int recordId, int now)
+		private static void SetRecent(int idx, DialogueTrigger trigger, string line, int recordId, int now, int lineId = -1)
 		{
-			Recent[idx] = new RecentLine { Valid = true, Trigger = trigger, Line = line, Tick = now, RecordId = recordId };
+			Recent[idx] = new RecentLine { Valid = true, Trigger = trigger, Line = line, Tick = now, RecordId = recordId, LineId = lineId };
 		}
 
 		private static string TakeRecent(int idx, SoldierRecord rec, int now)
@@ -267,6 +269,7 @@ namespace Levy.Common.Dialogue
 			if (r.Trigger != DialogueTrigger.PAYDAY && r.Trigger != DialogueTrigger.UNPAID && r.Trigger != DialogueTrigger.HOLD_FIRE) return null;
 			Recent[idx].Valid = false; // said once
 			if (r.RecordId != rec.Id || !Within(r.Tick, now, LevyConstants.DialogueRecentLineTicks)) return null;
+			if (r.LineId >= 0) LineUsed[r.LineId] = now; // shown now, so the two-minute repeat cooldown starts now
 			return r.Line;
 		}
 

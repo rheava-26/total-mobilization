@@ -41,6 +41,8 @@ namespace Levy.Common.Dialogue
 			public string Line;
 			public int Tick;
 			public int RecordId;
+			/// <summary>Repeat-cooldown id of the remembered line (-1 on a client, where the line arrives as text only).</summary>
+			public int LineId;
 		}
 
 		/// <summary>Per-squad floating-text clocks. Chatter competes with everything; big moments only with each other.</summary>
@@ -90,7 +92,7 @@ namespace Levy.Common.Dialogue
 		/// Picks and fills a line. 'body' is the speaking soldier's body when the caller has it (else it is found through the record).
 		/// Marks the line used. Returns null when nothing fits.
 		/// </summary>
-		internal static string Pick(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked)
+		internal static string Pick(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark = true)
 		{
 			picked = null;
 			List<DialogueLine> pool = PoolFor(trigger, ctx);
@@ -123,7 +125,7 @@ namespace Levy.Common.Dialogue
 
 			string text = Fill.Build(chosen);
 			Candidates.Clear();
-			LineUsed[chosen.Id] = now;
+			if (mark) LineUsed[chosen.Id] = now;
 			picked = chosen;
 			return text;
 		}

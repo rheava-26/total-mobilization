@@ -215,14 +215,22 @@ namespace Levy.Common.Dialogue
 				if ((_resolved & need) == 0)
 				{
 					_resolved |= need;
-					switch (need)
+					try
 					{
-						case LineNeeds.Name: _name = NonEmpty(_rec?.Name); break;
-						case LineNeeds.Comrade: _comrade = NonEmpty(_ctx?.Comrade) ?? FindComrade(); break;
-						case LineNeeds.Boss: _boss = NonEmpty(_ctx?.Boss) ?? BossName(_ctx?.BossKey); break;
-						case LineNeeds.Killer: _killer = NonEmpty(_ctx?.Killer) ?? NonEmpty(_body?.LastAttackerName); break;
-						case LineNeeds.Town: _town = NonEmpty(_ctx?.Town) ?? NonEmpty(HomeTown()); break;
-						case LineNeeds.Wage: _wage = NonEmpty(_ctx?.Wage) ?? WageText(); break;
+						switch (need)
+						{
+							case LineNeeds.Name: _name = NonEmpty(_rec?.Name); break;
+							case LineNeeds.Comrade: _comrade = NonEmpty(_ctx?.Comrade) ?? FindComrade(); break;
+							case LineNeeds.Boss: _boss = NonEmpty(_ctx?.Boss) ?? BossName(_ctx?.BossKey); break;
+							case LineNeeds.Killer: _killer = NonEmpty(_ctx?.Killer) ?? NonEmpty(_body?.LastAttackerName); break;
+							case LineNeeds.Town: _town = NonEmpty(_ctx?.Town) ?? NonEmpty(HomeTown()); break;
+							case LineNeeds.Wage: _wage = NonEmpty(_ctx?.Wage) ?? WageText(); break;
+						}
+					}
+					catch (Exception)
+					{
+						// Another system is not ready (no roster, no config): the placeholder stays unfilled and its lines are skipped.
+						// A bark must never throw into the soldier AI.
 					}
 				}
 				switch (need)

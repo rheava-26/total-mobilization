@@ -176,6 +176,13 @@ namespace Levy.Content.NPCs
 			// wall ahead: count solid tiles upward from feet level
 			int h = 0;
 			while (h < MaxJumpTiles + 3 && TileNav.IsSolid(ax, fy - h)) h++;
+			if (h == 0 && (TileNav.IsSolid(ax, fy - 1) || TileNav.IsSolid(ax, fy - 2)))
+			{
+				// an overhang at chest or head height: the body cannot duck under it and cannot jump onto it
+				_blocked = true; _blockedHard = true;
+				if (Abilities.HasWings) { wantFly = true; flyUp = true; }
+				return;
+			}
 			if (h >= 2)
 			{
 				bool clearAbove = !TileNav.IsSolid(ax, fy - h) && !TileNav.IsSolid(ax, fy - h - 1) && !TileNav.IsSolid(ax, fy - h - 2);
@@ -226,8 +233,9 @@ namespace Levy.Content.NPCs
 			if (Math.Abs(NPC.velocity.X) < StopBelowPx) NPC.velocity.X = 0f;
 		}
 
+		/// <summary>v = sqrt(2 g h); the small offset keeps the arc from passing through exactly 0 (the grounded test).</summary>
 		private float JumpSpeedFor(int tiles)
-			=> MathHelper.Clamp((float)Math.Sqrt(2f * Gravity() * (tiles * 16 + JumpClearancePx)), MinJumpSpeed, MaxJumpSpeed);
+			=> MathHelper.Clamp((float)Math.Sqrt(2f * Gravity() * (tiles * 16 + JumpClearancePx)) + JumpSpeedOffset, MinJumpSpeed, MaxJumpSpeed);
 
 		/// <summary>Jumps from the ground, or spends an extra jump near the top of the arc. Returns true if a jump started.</summary>
 		private bool TryJump(int tiles)
@@ -294,7 +302,8 @@ namespace Levy.Content.NPCs
 				Player p = Main.player[i];
 				if (!p.active || p.dead || p.ghost) continue;
 				if (!hb.Intersects(p.Hitbox)) continue;
-				NPC.position.X += NPC.Center.X >= p.Center.X ? PlayerNudgePx : -PlayerNudgePx;
+				Vector2 nudged = NPC.position + new Vector2(NPC.Center.X >= p.Center.X ? PlayerNudgePx : -PlayerNudgePx, 0f);
+				if (!Collision.SolidCollision(nudged, NPC.width, NPC.height)) NPC.position = nudged;
 			}
 		}
 
@@ -390,7 +399,7 @@ namespace Levy.Content.NPCs
 				_stuckTotal = 0;
 				if (FollowerTravel.TeleportNearCommander(this)) return;
 			}
-			if (_stuckTicks < LevyConstants.StuckTicks) return;
+			if (_stuckTicks < LevyConstants.StuckTicks || _blockedHard) return; // a deliberate refusal (lava, drop, wall) is not a wedge
 			if (!_stuckJumped) { _stuckJumped = true; TryJump(Abilities.JumpTiles); return; }
 			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) _reverseTicks = ReverseTicks;
 		}

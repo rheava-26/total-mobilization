@@ -27,9 +27,10 @@ namespace Levy.Common
 			public const int MaxJumpTiles = 12;
 			public const int JumpClearancePx = 12;
 			public const float MinJumpSpeed = 4.4f, MaxJumpSpeed = 12f;
+			public const float JumpSpeedOffset = 0.013f;        // keeps the arc from passing through exactly 0 (the grounded test)
 			public const float ExtraJumpSpeedMult = 0.9f;
 			public const int JumpTowardGoalReachTiles = 3;
-			public const float JumpUpAbovePx = 20f;
+			public const float JumpUpAbovePx = 24f;               // a one-tile rise is walked up (Collision.StepUp), not jumped
 
 			// ---- hazards ----
 			public const int LookAheadPx = 8;

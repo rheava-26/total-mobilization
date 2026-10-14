@@ -51,7 +51,7 @@ namespace Levy.Common.Targeting
 		internal static void RefreshConfig() => _cfg = LevyConfig.Get;
 
 		/// <summary>Soldier body (live) that this enemy is locked on, or null.</summary>
-		public static SoldierNPC SoldierTargetOf(NPC npc) => npc == null ? null : LiveBody(LevyNpcData.Of(npc).SoldierTarget);
+		public static SoldierNPC SoldierTargetOf(NPC npc) => npc == null || !npc.active ? null : LiveBody(LevyNpcData.Of(npc).SoldierTarget);
 
 		/// <summary>Live soldier body at an NPC index, or null (guards reuse of the slot by another NPC).</summary>
 		public static SoldierNPC LiveBody(int npcIndex)
@@ -81,9 +81,15 @@ namespace Levy.Common.Targeting
 			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return false;
 			int style = npc.aiStyle;
 			if (style == NPCAIStyleID.Mimic && npc.ai[0] == 0f) return false; // disguised chest: let it wait for a player
-			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || _cfg.ExtraTargetingAiStyles.Contains(style);
+			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
 			if (_swapIncompatible.Contains(style)) return false;
-			return _swapStyles.Contains(style) || _cfg.ExtraTargetingAiStyles.Contains(style);
+			return _swapStyles.Contains(style) || ConfigAllows(style);
+		}
+
+		private static bool ConfigAllows(int style)
+		{
+			var extra = _cfg?.ExtraTargetingAiStyles;
+			return extra != null && extra.Contains(style);
 		}
 
 		// =====================================================================================================
@@ -211,7 +217,6 @@ namespace Levy.Common.Targeting
 			if (_swapped) Unswap();
 			body.SyncDummyTransform(); // active, !dead, !ghost, position/velocity of the body, whoAmI 255
 			_backup = Main.player[SoldierNPC.DummySlot];
-			if (_backup != null && !IsAnyDummy(_backup)) _nullPlayer = _backup;
 			Main.player[SoldierNPC.DummySlot] = body.Dummy;
 			_swapped = true;
 		}
@@ -286,8 +291,9 @@ namespace Levy.Common.Targeting
 			{
 				// The soldier died, despawned or the slot now holds another NPC: pick again right now so the enemy never
 				// chases the null player at (0,0) or a stranger that inherited the index.
+				int staleTarget = native ? data.SoldierTarget + 300 : SoldierNPC.DummySlot;
 				data.SoldierTarget = -1;
-				if (native ? npc.HasNPCTarget : npc.target == SoldierNPC.DummySlot) EnemyTargeting.Retarget(npc);
+				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveBody(data.SoldierTarget);
 				if (body == null) return true;
 			}

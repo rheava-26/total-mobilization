@@ -32,23 +32,26 @@ namespace Levy.Common.Targeting
 			return -1;
 		}
 
-		/// <summary>Credit the shooter's commander with this enemy (banner progress, bestiary, "defeated by" line, instanced drops).</summary>
+		/// <summary>
+		/// Credit the shooter's commander with this enemy (banner progress, bestiary, "defeated by" line, instanced drops).
+		/// Call it BEFORE the strike: NPC.StrikeNPC runs checkDead() → NPCLoot synchronously, so a credit applied afterwards misses the killing blow.
+		/// </summary>
 		public static void Credit(NPC target, SoldierNPC shooter)
 		{
-			if (target == null || !target.active) return;
+			if (target == null) return;
 			int idx = CreditPlayerOf(shooter);
 			if (idx < 0 || idx >= Main.maxPlayers) return;
 			target.PlayerInteraction(idx);
 		}
 
 		/// <summary>
-		/// Everything that happens when a soldier damages an enemy, from any weapon family (projectile hits arrive through
-		/// LootCreditGlobalProjectile; melee code calls this after SimpleStrikeNPC). Server / single player only.
+		/// Everything that happens after a soldier damaged an enemy, from any weapon family (projectile hits arrive through
+		/// LootCreditGlobalProjectile; melee code calls Credit before SimpleStrikeNPC and this after it). Server / single player only.
 		/// </summary>
 		public static void OnSoldierHit(NPC target, SoldierNPC body, int damageDone)
 		{
 			if (target == null || body == null || body.Record == null || LevyUtil.IsClient) return;
-			Credit(target, body);
+			Credit(target, body); // harmless repeat; keeps melee callers that only call this correct for non-lethal hits
 			BossRule.OnSoldierDamagedNpc(target, body, damageDone);
 			LevyNpcData.Of(target).LastHitBySoldier = body.NPC.whoAmI;
 			NPC root = LevyUtil.RootNpc(target);
@@ -71,6 +74,15 @@ namespace Levy.Common.Targeting
 			// disguised mimics, cultist set pieces, bound NPCs, Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose.
 			if (SoldierTargeting.IsNeverTarget(target)) return false;
 			return null;
+		}
+
+		// Runs before NPC.StrikeNPC (which drops loot synchronously on a kill): the commander must already be on the interaction list here.
+		public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)
+		{
+			var tag = projectile.GetGlobalProjectile<SoldierProjectileTag>();
+			if (!tag.IsSoldierShot || LevyUtil.IsClient) return;
+			SoldierNPC body = EnemyTargeting.LiveBody(tag.SoldierIndex);
+			if (body != null) LootCredit.Credit(target, body);
 		}
 
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)

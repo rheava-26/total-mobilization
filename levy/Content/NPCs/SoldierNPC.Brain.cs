@@ -248,7 +248,16 @@ namespace Levy.Content.NPCs
 				}
 				case SoldierOrder.Hold: return SoldierState.Idle;
 				case SoldierOrder.Patrol: return SoldierState.Patrol;
-				case SoldierOrder.ReturnToBarracks: return Home == null || NearHome() ? SoldierState.Idle : SoldierState.ReturnHome;
+				case SoldierOrder.ReturnToBarracks:
+				{
+					if (Home == null)
+					{
+						// Homeless (barracks destroyed): there is nowhere to return to, so fall in behind a living commander.
+						var cmd = Commander;
+						return cmd != null && !cmd.dead ? SoldierState.Follow : SoldierState.Idle;
+					}
+					return NearHome() ? SoldierState.Idle : SoldierState.ReturnHome;
+				}
 			}
 			return SoldierState.Idle;
 		}

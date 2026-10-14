@@ -1,0 +1,65 @@
+# Levy interface strings added by the UI module. Keys are relative to Mods.Levy.UI2.
+ArmoryTitle: Armory
+Close: Close
+Orders: Orders
+Sidearm: sidearm
+PotionHealing: healing
+PotionBuff: buff
+DepositOneGold: +1 gold
+DepositTenGold: +10 gold
+DepositAll: +all coins
+WithdrawOneGold: -1 gold
+WithdrawTenGold: -10 gold
+DepositHint: Move coins from your inventory into the treasury.
+WithdrawHint: Take coins out of the treasury.
+On: On
+Off: Off
+TaxShort: Tax to treasury
+Toggle: "{0}: {1}"
+UsedToday: used today
+AllOrders: All Regulars
+FollowAll: Follow
+HoldAll: Hold
+ReturnAll: Return
+Roster: Roster
+NoRegulars: You have no Regulars. Enlist one above.
+WagePerDay: "{0} a day"
+Home: "Home: {0}"
+Homeless: No barracks
+NotDeployed: Not deployed
+DeadRespawn: "Dead. Back in {0}s"
+Dead: Dead
+Hp: "HP {0}/{1}"
+Kills: "{0} kills"
+FeedLifeCrystal: +Life Crystal
+FeedLifeFruit: +Life Fruit
+FeedManaCrystal: +Mana Crystal
+RebaseHere: Rebase here
+RebaseTo: "Rebase to {0}"
+NeedTwoBanners: Place two Patrol Banners within 60 tiles of the barracks.
+PatrolHint: Walk between the two nearest Patrol Banners.
+PromoteMax: Highest grade
+NoBarracksNearby: No barracks within 120 tiles.
+MobilizeHint: Call up the militia of the nearest settlement.
+StandDownHint: Send the militia home.
+RallyHint: Steady every Regular within 30 tiles. Once a minute.
+HoldFireHint: Soldiers stop shooting until told otherwise.
+FireAtWillHint: Soldiers engage anything hostile in reach.
+FollowHint: Regulars within 40 tiles follow you.
+HoldHint: Regulars within 40 tiles hold where they stand.
+ReturnHint: Regulars within 40 tiles walk back to their barracks.
+HudTitle: Army
+HudHover: "{0} - {1}"
+State: {
+	Idle: Idle
+	Follow: Following
+	Patrol: Patrolling
+	Engage: Fighting
+	Haul: Hauling
+	Resupply: Resupplying
+	Shaken: Shaken
+	Routed: Routed
+	ReturnHome: Returning
+	Dead: Dead
+	Desert: Deserting
+}

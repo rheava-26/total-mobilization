@@ -19,6 +19,7 @@ namespace Levy.Content.Items
 		public static readonly SoundStyle HornSound = SoundID.Roar with { Pitch = 0.55f, PitchVariance = 0.05f, Volume = 0.8f };
 
 		private static uint _lastHintTick;
+		private static bool _hinted;
 
 		public override void SetDefaults()
 		{
@@ -34,8 +35,8 @@ namespace Levy.Content.Items
 			if (player.altFunctionUse == 2) return true;
 			if (Nearest(player) != null) return true;
 			// No settlement in reach: a short hint for the local player, at most once per 5 s.
-			if (player.whoAmI == Main.myPlayer && Main.netMode != NetmodeID.Server && Main.GameUpdateCount - _lastHintTick > (uint)LevyConstants.HornHintCooldownTicks) {
-				_lastHintTick = Main.GameUpdateCount;
+			if (player.whoAmI == Main.myPlayer && Main.netMode != NetmodeID.Server && (!_hinted || Main.GameUpdateCount - _lastHintTick > (uint)LevyConstants.HornHintCooldownTicks)) {
+				_hinted = true; _lastHintTick = Main.GameUpdateCount;
 				Main.NewText(LevyUtil.T("Tiles.HornNoBarracks"), new Color(255, 200, 100));
 			}
 			return false;

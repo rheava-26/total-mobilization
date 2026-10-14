@@ -33,7 +33,8 @@
 #
 # PLACEHOLDERS (a line whose placeholder cannot be filled is skipped, so keep a few lines per trigger without any)
 #   {Player}   the commander (or "the boss")           {Name}     the speaking soldier
-#   {Comrade}  another soldier of the squad            {Boss}     the boss being fought
+#   {Comrade}  the comrade who fell or was hit         {Boss}     the boss being fought
+#              (only when the game names one; otherwise the line is skipped, never shown with a gap)
 #   {Killer}   what killed the soldier                 {Town}     the settlement
 #   {Wage}     the soldier's daily wage
 #   Town NPCs (the line only fires while that NPC lives in the world):

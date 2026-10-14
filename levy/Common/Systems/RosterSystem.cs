@@ -1,9 +1,20 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Chat;
+using Terraria.DataStructures;
+using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using Levy.Common.Config;
+using Levy.Common.Dialogue;
+using Levy.Common.Fear;
+using Levy.Common.Net;
 using Levy.Common.Soldiers;
+using Levy.Common.Util;
 using Levy.Content.NPCs;
 using Levy.Content.TileEntities;
 
@@ -11,8 +22,8 @@ namespace Levy.Common.Systems
 {
 	/// <summary>
 	/// The roster: regulars (persistent), the memorial, command points, tiers, dawn ticks, payday, desertion, respawn queue,
-	/// body deployment under the render cap, and orders. Server-authoritative. OWNED BY THE ROSTER AGENT; the public surface
-	/// below is the contract other modules call.
+	/// body deployment under the render cap, and orders. Server-authoritative: every mutating member is a no-op on a
+	/// multiplayer client; clients hold a display-only copy of <see cref="Regulars"/> fed by roster snapshots.
 	/// </summary>
 	public class RosterSystem : ModSystem
 	{
@@ -25,64 +36,890 @@ namespace Levy.Common.Systems
 		public int DayNumber;
 		public int RallyCooldown;
 
-		// ---- progression (computed from boss flags) ----
-		public virtual int CommandPoints => LevyConstants.CommandPointsBase;
+		// ---- runtime ----
+		private readonly List<SoldierNPC> _bodies = new();
+		private readonly List<Deserter> _deserters = new();
+		private readonly List<SoldierRecord> _deployScratch = new();
+		private readonly Dictionary<string, int> _onlineByName = new();
+		private int _deployTimer, _snapshotTimer;
+		private bool _dawnInit, _lastDayTime;
+
+		private sealed class Deserter { public SoldierNPC Body; public int Ticks; }
+
+		private static readonly Comparison<SoldierRecord> DeployOrder = (a, b) => DeployPriority(a).CompareTo(DeployPriority(b));
+
+		public override void Load() => RosterNet.Register();
+
+		// =====================================================================================================
+		// Progression (computed from boss flags every time it is read; never stored)
+		// =====================================================================================================
+		private static bool AnyMechDown => NPC.downedMechBossAny || NPC.downedMechBoss1 || NPC.downedMechBoss2 || NPC.downedMechBoss3;
+
+		public virtual int CommandPoints
+		{
+			get
+			{
+				int cp = LevyConstants.CommandPointsBase;
+				if (NPC.downedSlimeKing) cp += LevyConstants.CpKingSlime;
+				if (NPC.downedBoss1) cp += LevyConstants.CpEyeOfCthulhu;
+				if (NPC.downedBoss2) cp += LevyConstants.CpEaterOrBrain;
+				if (NPC.downedQueenBee) cp += LevyConstants.CpQueenBee;
+				if (NPC.downedBoss3) cp += LevyConstants.CpSkeletron;
+				if (NPC.downedDeerclops) cp += LevyConstants.CpDeerclops;
+				if (Main.hardMode) cp += LevyConstants.CpWallOfFlesh;
+				if (NPC.downedQueenSlime) cp += LevyConstants.CpQueenSlime;
+				if (NPC.downedMechBoss1) cp += LevyConstants.CpEachMech;
+				if (NPC.downedMechBoss2) cp += LevyConstants.CpEachMech;
+				if (NPC.downedMechBoss3) cp += LevyConstants.CpEachMech;
+				if (NPC.downedPlantBoss) cp += LevyConstants.CpPlantera;
+				if (NPC.downedGolemBoss) cp += LevyConstants.CpGolem;
+				if (NPC.downedEmpressOfLight) cp += LevyConstants.CpEmpress;
+				if (NPC.downedFishron) cp += LevyConstants.CpFishron;
+				if (NPC.downedAncientCultist) cp += LevyConstants.CpCultist;
+				if (NPC.downedMoonlord) cp += LevyConstants.CpMoonLord;
+				return cp;
+			}
+		}
+
 		public virtual int CommandPointsUsed { get { int n = 0; foreach (var r in Regulars) n += r.CommandPointCost; return n; } }
-		public virtual int Tier => 1;
-		public virtual long LevyWage => LevyConstants.TierLevyWage[0];
-		public virtual bool GradeUnlocked(Grade g) => g == Grade.Levy;
 
-		// ---- roster ops (server) ----
-		public virtual SoldierRecord Enlist(BarracksTE home, Player commander, Grade grade) => null;
-		public virtual bool Promote(SoldierRecord rec, Grade to) => false;
-		public virtual void Discharge(SoldierRecord rec) { }
-		public virtual bool FeedCrystal(SoldierRecord rec, int itemType) => false;
+		public virtual int Tier
+		{
+			get
+			{
+				if (NPC.downedMoonlord) return 6;
+				if (NPC.downedGolemBoss) return 5;
+				if (NPC.downedPlantBoss) return 4;
+				if (AnyMechDown) return 3;
+				if (Main.hardMode) return 2;
+				return 1;
+			}
+		}
+
+		public virtual long LevyWage => LevyConstants.TierLevyWage[Math.Clamp(Tier - 1, 0, LevyConstants.TierLevyWage.Length - 1)];
+
+		public virtual bool GradeUnlocked(Grade g) => g switch
+		{
+			Grade.Levy => true,
+			Grade.ManAtArms => AnyMechDown,
+			Grade.Champion => NPC.downedGolemBoss,
+			_ => false,
+		};
+
+		// =====================================================================================================
+		// Lookups (contract)
+		// =====================================================================================================
 		public virtual SoldierRecord FindById(int id) { foreach (var r in Regulars) if (r.Id == id) return r; return null; }
-		public virtual IEnumerable<SoldierRecord> RegularsOf(Player commander) { foreach (var r in Regulars) if (r.CommanderName == commander.name) yield return r; }
-		public virtual void Rebase(SoldierRecord rec, BarracksTE newHome) { }
+		public virtual IEnumerable<SoldierRecord> RegularsOf(Player commander) { if (commander == null) yield break; foreach (var r in Regulars) if (r.CommanderName == commander.name) yield return r; }
 
-		// ---- treasury (server; UI calls these or sends Deposit/Withdraw packets) ----
-		/// <summary>Takes coins from the player's inventory into the barracks treasury. Returns false if they cannot pay.</summary>
-		public virtual bool Deposit(Player player, BarracksTE barracks, long copper) => false;
-		/// <summary>Moves coins from the treasury to the player (spawned at the player). Returns false if the treasury is short.</summary>
-		public virtual bool Withdraw(Player player, BarracksTE barracks, long copper) => false;
+		// =====================================================================================================
+		// Helpers
+		// =====================================================================================================
+		/// <summary>Chat line to one player: NewText in single player, a targeted chat message on the server.</summary>
+		internal static void SendToPlayer(Player player, string text, Color? color = null)
+		{
+			if (player == null || string.IsNullOrEmpty(text)) return;
+			Color c = color ?? new Color(255, 240, 20);
+			if (Main.netMode == NetmodeID.Server) ChatHelper.SendChatMessageToClient(NetworkText.FromLiteral(text), c, player.whoAmI);
+			else if (Main.netMode == NetmodeID.SinglePlayer) Main.NewText(text, c);
+		}
 
-		// ---- bodies ----
-		/// <summary>Spawns a body for a record at a position (server). Returns the NPC index or -1 (render cap, no slot).</summary>
-		public virtual int SpawnBody(SoldierRecord rec, Vector2 position) => -1;
-		public virtual IEnumerable<SoldierNPC> ActiveBodies() { for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC s && s.Record != null) yield return s; }
-		public virtual int ActiveBodyCount { get { int n = 0; foreach (var _ in ActiveBodies()) n++; return n; } }
-		/// <summary>Called by the body on death (server). Handles drops, manpower, respawn queue, memorial, chat, fear events.</summary>
-		public virtual void OnBodyDied(SoldierNPC body, int killerNpcType, string killerName) { }
-		public virtual void OnBodyDeserted(SoldierNPC body) { }
+		/// <summary>Pushes a barracks tile entity to every client after its treasury/manpower changed (server).</summary>
+		internal static void SyncBarracks(BarracksTE te)
+		{
+			if (te == null || Main.netMode != NetmodeID.Server) return;
+			NetMessage.SendData(MessageID.TileEntitySharing, -1, -1, null, te.ID, te.Position.X, te.Position.Y);
+		}
 
-		// ---- orders ----
-		/// <summary>Order regulars within <see cref="LevyConstants.OrderRadius"/> tiles of the commander (or all of theirs when atBarracks).</summary>
-		public virtual void IssueOrder(Player commander, SoldierOrder order, bool atBarracks = false) { }
-		public virtual void ToggleHoldFire(Player commander, bool atBarracks = false) { }
-		public virtual void Rally(Player commander) { }
-		public virtual void AssignPatrol(SoldierRecord rec, Terraria.DataStructures.Point16 a, Terraria.DataStructures.Point16 b) { }
+		private static SoldierNPC BodyOf(SoldierRecord rec) => rec != null && rec.HasBody ? Main.npc[rec.BodyIndex].ModNPC as SoldierNPC : null;
 
-		// ---- hooks for other modules ----
-		/// <summary>A main boss was killed: veterancy, rally, victory barks.</summary>
-		public virtual void OnMainBossKilled(NPC boss) { }
-		/// <summary>The commander died: followers go home.</summary>
-		public virtual void OnCommanderDied(Player commander) { }
+		/// <summary>The commander if online (refreshes <see cref="SoldierRecord.CommanderIndex"/>), else null.</summary>
+		private static Player OnlineCommander(SoldierRecord rec)
+		{
+			if (rec == null || string.IsNullOrEmpty(rec.CommanderName)) return null;
+			int i = rec.CommanderIndex;
+			if (i < 0 || i >= Main.maxPlayers || !Main.player[i].active || Main.player[i].name != rec.CommanderName) i = LevyUtil.FindPlayerByName(rec.CommanderName);
+			rec.CommanderIndex = i;
+			return i >= 0 ? Main.player[i] : null;
+		}
 
-		// ---- persistence (contract: records are saved here) ----
+		private static BarracksTE HomeOf(SoldierRecord rec) => SettlementSystem.Instance.GetBarracks(rec?.HomeBarracksId ?? -1);
+		private static ArmoryTE ArmoryOf(BarracksTE home) => home == null ? null : SettlementSystem.Instance.LinkedArmory(home);
+
+		/// <summary>The barracks that pays this regular: its home, or for the homeless the nearest barracks to the commander (or body).</summary>
+		private static BarracksTE PayingBarracks(SoldierRecord rec)
+		{
+			var home = HomeOf(rec);
+			if (home != null) return home;
+			var commander = OnlineCommander(rec);
+			var body = BodyOf(rec);
+			if (commander != null) return SettlementSystem.Instance.NearestBarracks(commander.Center);
+			if (body != null) return SettlementSystem.Instance.NearestBarracks(body.NPC.Center);
+			return null;
+		}
+
+		private static string GradeName(Grade g) => LevyUtil.T(g switch { Grade.ManAtArms => "UI.GradeManAtArms", Grade.Champion => "UI.GradeChampion", _ => "UI.GradeLevy" });
+
+		/// <summary>"Pvt. Andrew" → "Andrew" (strips a dotted rank prefix only).</summary>
+		private static string BaseName(string name)
+		{
+			if (string.IsNullOrEmpty(name)) return "";
+			int sp = name.IndexOf(' ');
+			return sp > 0 && name[sp - 1] == '.' && sp + 1 < name.Length ? name.Substring(sp + 1) : name;
+		}
+
+		private static T Pick<T>(T[] options) => options[Main.rand.Next(options.Length)];
+
+		private static int DeployPriority(SoldierRecord r)
+		{
+			if (r.Order == SoldierOrder.Follow && r.CommanderIndex >= 0) return 0;
+			if (r.Order == SoldierOrder.Patrol) return 1;
+			return 2;
+		}
+
+		/// <summary>
+		/// Re-binds a living body to its (changed) record so the body re-reads gear, name and stats. Bind resets the brain
+		/// to Idle for one think cycle, which is acceptable for promotions and crystal feeding.
+		/// CONTRACT-REQUEST: a public SoldierNPC.NotifyGearChanged() that only calls Combat_OnGearChanged would avoid the brain reset.
+		/// </summary>
+		private static void RebindBody(SoldierNPC body, SoldierRecord rec)
+		{
+			if (body == null || rec == null || !body.NPC.active) return;
+			rec.CurrentHp = Math.Max(1, body.NPC.life);
+			body.Bind(rec);
+			body.StatsDirty = true;
+		}
+
+		private static void DespawnBody(SoldierNPC body)
+		{
+			if (body == null) return;
+			var npc = body.NPC;
+			if (!npc.active) return;
+			npc.active = false;
+			npc.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
+		}
+
+		private static void DropAllGear(SoldierRecord rec, IEntitySource source, Rectangle box)
+		{
+			foreach (var it in rec.Gear.AllItems())
+			{
+				if (it == null || it.IsAir || it.stack <= 0) continue;
+				Item.NewItem(source, box, it);
+			}
+			rec.Gear.Clear();
+		}
+
+		// =====================================================================================================
+		// Roster ops (server)
+		// =====================================================================================================
+		public virtual SoldierRecord Enlist(BarracksTE home, Player commander, Grade grade)
+		{
+			if (LevyUtil.IsClient || home == null || commander == null) return null;
+			int gi = (int)grade;
+			if (gi < 0 || gi >= LevyConstants.GradeCpCost.Length) return null;
+			if (!GradeUnlocked(grade)) { SendToPlayer(commander, LevyUtil.T("UI.GradeLocked")); return null; }
+			if (CommandPointsUsed + LevyConstants.GradeCpCost[gi] > CommandPoints) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return null; }
+			long fee = EconomySystem.MusterFee(grade);
+			if (!EconomySystem.TryPay(home, fee)) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughMoney")); return null; }
+
+			var rec = NewRecord(grade);
+			rec.HomeBarracksId = home.ID; rec.HomePos = home.Position;
+			rec.CommanderName = commander.name; rec.CommanderIndex = commander.whoAmI;
+			rec.Order = SoldierOrder.Follow; rec.StoodDown = false;
+			ArmoryOf(home)?.IssueGear(rec);
+			Regulars.Add(rec);
+			SpawnBody(rec, home.MusterPoint); // -1 under the render cap: the deployment loop picks it up later
+			LevyUtil.Chat(LevyUtil.T("Chat.Enlisted", rec.Name, SettlementSystem.Instance.TownName(home)));
+			SyncBarracks(home);
+			SendRosterSnapshot();
+			return rec;
+		}
+
+		private SoldierRecord NewRecord(Grade grade)
+		{
+			var rec = new SoldierRecord
+			{
+				Id = NextId++, Kind = SoldierKind.Regular, Grade = grade,
+				Temperament = (Temperament)Main.rand.Next(4),
+				Male = Main.rand.NextBool(),
+			};
+			var variants = rec.Male ? LevyConstants.MaleSkinVariants : LevyConstants.FemaleSkinVariants;
+			rec.SkinVariant = Pick(variants);
+			rec.Hair = Main.rand.Next(0, LevyConstants.HairStyleCount);
+			rec.HairColor = Pick(LevyConstants.HairPalette); rec.SkinColor = Pick(LevyConstants.SkinPalette); rec.EyeColor = Pick(LevyConstants.EyePalette);
+			rec.ShirtColor = Pick(LevyConstants.ShirtPalette); rec.UnderShirtColor = Pick(LevyConstants.UnderShirtPalette);
+			rec.PantsColor = Pick(LevyConstants.PantsPalette); rec.ShoeColor = Pick(LevyConstants.ShoePalette);
+			string given = DialogueSystem.RandomSoldierName(rec.Male);
+			if (string.IsNullOrWhiteSpace(given)) given = rec.Male ? "Andrew" : "Molly";
+			rec.Name = rec.RankPrefix + " " + given;
+			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
+			return rec;
+		}
+
+		public virtual bool Promote(SoldierRecord rec, Grade to)
+		{
+			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec)) return false;
+			int ti = (int)to;
+			if (ti >= LevyConstants.GradeCpCost.Length || to <= rec.Grade) return false;
+			var commander = OnlineCommander(rec);
+			if (!GradeUnlocked(to)) { SendToPlayer(commander, LevyUtil.T("UI.GradeLocked")); return false; }
+			int delta = LevyConstants.GradeCpCost[ti] - LevyConstants.GradeCpCost[(int)rec.Grade];
+			if (CommandPointsUsed + delta > CommandPoints) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
+			var payer = PayingBarracks(rec);
+			if (payer == null) { SendToPlayer(commander, LevyUtil.T("Roster.NoHome")); return false; }
+			if (!EconomySystem.TryPay(payer, EconomySystem.PromotionCost(rec.Grade, to))) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughMoney")); return false; }
+
+			rec.Grade = to;
+			rec.CurrentHp = Math.Clamp(rec.CurrentHp, 1, rec.MaxHp);
+			rec.Mana = Math.Clamp(rec.Mana, 0, rec.MaxMana);
+			ArmoryOf(HomeOf(rec))?.IssueGear(rec); // fills the new accessory slots
+			var body = BodyOf(rec);
+			RebindBody(body, rec);
+			LevyUtil.Chat(LevyUtil.T("Chat.Promoted", rec.Name, GradeName(to)));
+			if (body != null) DialogueSystem.Bark(body, DialogueTrigger.PROMOTED);
+			SyncBarracks(payer);
+			SendRosterSnapshot();
+			return true;
+		}
+
+		public virtual void Discharge(SoldierRecord rec)
+		{
+			if (LevyUtil.IsClient || rec == null) return;
+			bool wasListed = Regulars.Remove(rec);
+			var body = BodyOf(rec);
+			var home = HomeOf(rec);
+			var armory = ArmoryOf(home);
+			if (armory != null) armory.ReturnGear(rec.Gear);
+			else
+			{
+				Rectangle box;
+				if (body != null) box = body.NPC.Hitbox;
+				else if (home != null) box = new Rectangle((int)home.MusterPoint.X - 8, (int)home.MusterPoint.Y - 40, 16, 40);
+				else { var c = OnlineCommander(rec); box = c != null ? c.Hitbox : Rectangle.Empty; }
+				if (box != Rectangle.Empty) DropAllGear(rec, new EntitySource_Misc("Levy:Discharge"), box);
+			}
+			rec.Gear.Clear();
+			DespawnBody(body);
+			rec.BodyIndex = -1; rec.Dead = false; rec.RespawnTimer = 0;
+			if (wasListed) LevyUtil.Chat(LevyUtil.T("Roster.Discharged", rec.Name));
+			SendRosterSnapshot();
+		}
+
+		public virtual bool FeedCrystal(SoldierRecord rec, int itemType)
+		{
+			if (LevyUtil.IsClient || rec == null) return false;
+			int gi = Math.Clamp((int)rec.Grade, 0, LevyConstants.MaxLifeCrystalsByGrade.Length - 1);
+			int hpGain = 0;
+			switch (itemType)
+			{
+				case ItemID.LifeCrystal:
+					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystalsByGrade[gi]) return false;
+					rec.LifeCrystals++; hpGain = LevyConstants.HpPerLifeCrystal;
+					break;
+				case ItemID.LifeFruit:
+					if (rec.Grade != Grade.Champion || rec.LifeFruit >= LevyConstants.MaxLifeFruit) return false;
+					rec.LifeFruit++; hpGain = LevyConstants.HpPerLifeFruit;
+					break;
+				case ItemID.ManaCrystal:
+					if (rec.ManaCrystals >= (LevyConstants.MaxMana - LevyConstants.BaseMana) / LevyConstants.ManaPerCrystal) return false;
+					rec.ManaCrystals++; rec.Mana = rec.MaxMana;
+					break;
+				default:
+					return false;
+			}
+			int maxHp = Math.Max(1, rec.MaxHp);
+			var body = BodyOf(rec);
+			if (body != null)
+			{
+				var npc = body.NPC;
+				npc.lifeMax = maxHp;
+				npc.life = Math.Clamp(npc.life + hpGain, 1, maxHp);
+				rec.CurrentHp = npc.life;
+				body.StatsDirty = true;
+				npc.netUpdate = true;
+			}
+			else if (!rec.Dead) rec.CurrentHp = Math.Clamp(rec.CurrentHp + hpGain, 1, maxHp);
+			SendRosterSnapshot();
+			return true;
+		}
+
+		public virtual void Rebase(SoldierRecord rec, BarracksTE newHome)
+		{
+			if (LevyUtil.IsClient || rec == null) return;
+			TryRebase(rec, newHome);
+			var commander = OnlineCommander(rec);
+			var home = HomeOf(rec);
+			if (home != null) SendToPlayer(commander, LevyUtil.T("Roster.Rebased", rec.Name, SettlementSystem.Instance.TownName(home)));
+			else SendToPlayer(commander, LevyUtil.T("Roster.Homeless", rec.Name));
+			SendRosterSnapshot();
+		}
+
+		/// <summary>Sets the home (explicit, or the nearest barracks within <see cref="LevyConstants.HomelessRebaseRadius"/>), else homeless. No chat.</summary>
+		private static void TryRebase(SoldierRecord rec, BarracksTE newHome)
+		{
+			if (newHome == null)
+			{
+				var body = BodyOf(rec);
+				Vector2? at = null;
+				if (body != null) at = body.NPC.Center;
+				else if (rec.HomePos != Point16.NegativeOne) at = new Vector2((rec.HomePos.X + 1.5f) * 16f, (rec.HomePos.Y + 1.5f) * 16f);
+				else { var c = OnlineCommander(rec); if (c != null) at = c.Center; }
+				if (at.HasValue) newHome = SettlementSystem.Instance.NearestBarracks(at.Value, LevyConstants.HomelessRebaseRadius);
+			}
+			if (newHome != null) { rec.HomeBarracksId = newHome.ID; rec.HomePos = newHome.Position; }
+			else { rec.HomeBarracksId = -1; rec.HomePos = Point16.NegativeOne; }
+		}
+
+		// =====================================================================================================
+		// Treasury (server / single player)
+		// =====================================================================================================
+		public virtual bool Deposit(Player player, BarracksTE barracks, long copper)
+		{
+			if (LevyUtil.IsClient || player == null || barracks == null || copper <= 0) return false;
+			if (!player.BuyItem(copper)) return false;
+			barracks.Treasury += copper;
+			SyncBarracks(barracks);
+			return true;
+		}
+
+		public virtual bool Withdraw(Player player, BarracksTE barracks, long copper)
+		{
+			if (LevyUtil.IsClient || player == null || barracks == null || copper <= 0) return false;
+			if (barracks.Treasury < copper) return false;
+			barracks.Treasury -= copper;
+			EconomySystem.GiveCoins(player, copper, player.GetSource_Misc("Levy:Withdraw"));
+			SyncBarracks(barracks);
+			return true;
+		}
+
+		// =====================================================================================================
+		// Bodies
+		// =====================================================================================================
+		public virtual int SpawnBody(SoldierRecord rec, Vector2 position)
+		{
+			if (LevyUtil.IsClient || rec == null) return -1;
+			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
+			int type = ModContent.NPCType<SoldierNPC>();
+			if (type <= 0) return -1;
+			int idx = NPC.NewNPC(new EntitySource_WorldEvent("Levy:Soldier"), (int)position.X, (int)position.Y, type);
+			if (idx < 0 || idx >= Main.maxNPCs) return -1;
+			var npc = Main.npc[idx];
+			if (npc.ModNPC is not SoldierNPC body) { npc.active = false; return -1; }
+			body.Bind(rec);
+			npc.Bottom = position;
+			npc.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
+			_bodies.Add(body);
+			return idx;
+		}
+
+		public override void PreUpdateNPCs()
+		{
+			_bodies.Clear();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC s && s.Record != null) _bodies.Add(s);
+			}
+		}
+
+		public virtual IEnumerable<SoldierNPC> ActiveBodies()
+		{
+			for (int i = 0; i < _bodies.Count; i++)
+			{
+				var s = _bodies[i];
+				if (s.NPC.active && s.Record != null) yield return s;
+			}
+		}
+
+		public virtual int ActiveBodyCount
+		{
+			get
+			{
+				int n = 0;
+				for (int i = 0; i < _bodies.Count; i++) if (_bodies[i].NPC.active && _bodies[i].Record != null) n++;
+				return n;
+			}
+		}
+
+		public override void PostUpdateNPCs()
+		{
+			if (LevyUtil.IsClient) return;
+			if (RallyCooldown > 0) RallyCooldown--;
+			TickDeserters();
+			if (++_deployTimer >= LevyConstants.DeployIntervalTicks)
+			{
+				_deployTimer = 0;
+				ResolveCommanders();
+				TickRespawns(LevyConstants.DeployIntervalTicks);
+				Deploy();
+			}
+			if (LevyUtil.IsServer && ++_snapshotTimer >= LevyConstants.SnapshotIntervalTicks) { _snapshotTimer = 0; SendRosterSnapshot(); }
+		}
+
+		private void ResolveCommanders()
+		{
+			_onlineByName.Clear();
+			for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].active && !string.IsNullOrEmpty(Main.player[i].name)) _onlineByName[Main.player[i].name] = i;
+			foreach (var rec in Regulars) rec.CommanderIndex = !string.IsNullOrEmpty(rec.CommanderName) && _onlineByName.TryGetValue(rec.CommanderName, out int idx) ? idx : -1;
+		}
+
+		private void TickRespawns(int ticks)
+		{
+			bool changed = false;
+			for (int i = 0; i < Regulars.Count; i++)
+			{
+				var rec = Regulars[i];
+				if (!rec.Dead) continue;
+				if (rec.RespawnTimer > 0) { rec.RespawnTimer -= ticks; if (rec.RespawnTimer > 0) continue; rec.RespawnTimer = 0; }
+				var home = HomeOf(rec);
+				if (home == null) { TryRebase(rec, null); home = HomeOf(rec); if (home == null) continue; }
+				if (home.Manpower <= 0) continue; // keep waiting; re-checked every deploy tick
+				rec.Dead = false; rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; rec.Fear = 0f;
+				ArmoryOf(home)?.IssueGear(rec);
+				SpawnBody(rec, home.MusterPoint);
+				SendToPlayer(OnlineCommander(rec), LevyUtil.T("Roster.ReturnsToDuty", rec.Name));
+				changed = true;
+			}
+			if (changed) SendRosterSnapshot();
+		}
+
+		private void Deploy()
+		{
+			_deployScratch.Clear();
+			foreach (var rec in Regulars) if (!rec.Dead && !rec.HasBody) _deployScratch.Add(rec);
+			if (_deployScratch.Count == 0) return;
+			_deployScratch.Sort(DeployOrder);
+			for (int i = 0; i < _deployScratch.Count; i++)
+			{
+				var rec = _deployScratch[i];
+				if (!SpawnPositionFor(rec, out var pos)) continue;
+				if (SpawnBody(rec, pos) < 0) break; // render cap or no NPC slot: the rest wait
+			}
+			_deployScratch.Clear();
+		}
+
+		private static bool SpawnPositionFor(SoldierRecord rec, out Vector2 pos)
+		{
+			var commander = OnlineCommander(rec);
+			var home = HomeOf(rec);
+			if (commander != null && (rec.Order == SoldierOrder.Follow || home == null))
+			{
+				pos = Movement.FollowerTravel.FindStandingSpot(commander.Center, LevyConstants.SpawnNearCommanderRadius, out var spot) ? spot : commander.Bottom;
+				return true;
+			}
+			if (home != null) { pos = home.MusterPoint; return true; }
+			pos = default;
+			return false;
+		}
+
+		private void TickDeserters()
+		{
+			for (int i = _deserters.Count - 1; i >= 0; i--)
+			{
+				var d = _deserters[i];
+				var body = d.Body;
+				bool live = body != null && body.NPC.active && body.NPC.whoAmI >= 0 && body.NPC.whoAmI < Main.maxNPCs && ReferenceEquals(Main.npc[body.NPC.whoAmI].ModNPC, body);
+				if (!live) { _deserters.RemoveAt(i); continue; }
+				if (--d.Ticks > 0) continue;
+				DespawnBody(body);
+				_deserters.RemoveAt(i);
+			}
+		}
+
+		public virtual void OnBodyDied(SoldierNPC body, int killerNpcType, string killerName)
+		{
+			if (LevyUtil.IsClient || body == null) return;
+			var rec = body.Record;
+			if (rec == null) return;
+			var npc = body.NPC;
+			var home = HomeOf(rec);
+			var commander = OnlineCommander(rec);
+
+			byte difficulty = commander != null ? commander.difficulty : PlayerDifficultyID.SoftCore;
+			if (difficulty == PlayerDifficultyID.Creative) difficulty = PlayerDifficultyID.SoftCore;
+			bool hardcore = difficulty == PlayerDifficultyID.Hardcore;
+			bool mediumcore = difficulty == PlayerDifficultyID.MediumCore;
+
+			// ---- drops where they fell ----
+			var source = npc.GetSource_Death();
+			var box = npc.Hitbox;
+			if (hardcore || mediumcore) DropAllGear(rec, source, box);
+			else
+			{
+				var pouch = rec.Gear.Ammo;
+				if (pouch != null && !pouch.IsAir && pouch.stack >= 2)
+				{
+					int half = pouch.stack / 2;
+					var drop = pouch.Clone(); drop.stack = half;
+					Item.NewItem(source, box, drop);
+					pouch.stack -= half;
+				}
+			}
+
+			// ---- manpower ----
+			if (home != null) { home.Manpower = Math.Max(0, home.Manpower - 1); SyncBarracks(home); }
+
+			var ctx = new DialogueContext
+			{
+				Killer = KillerText(killerNpcType, killerName),
+				Wage = LevyUtil.Coins(EconomySystem.WagePerDay(rec.Grade, false)),
+				Player = commander?.name ?? rec.CommanderName,
+				Town = SettlementSystem.Instance.TownName(home),
+			};
+
+			rec.Dead = true; rec.BodyIndex = -1; rec.CurrentHp = 0; rec.Fear = 0f;
+			rec.LastDeathTick = (int)Main.GameUpdateCount;
+			if (rec.Kind == SoldierKind.Regular)
+			{
+				rec.RespawnTimer = LevyConstants.RegularRespawnTicks;
+				if (hardcore && Regulars.Remove(rec)) Memorial.Add(rec);
+				if (LevyConfig.Get.RegularDeathMessages) DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx);
+				if (hardcore) LevyUtil.Chat(LevyUtil.T("Roster.Memorial", rec.Name));
+			}
+			else
+			{
+				switch (LevyConfig.Get.MilitiaDeathMessages)
+				{
+					case MilitiaDeathMessageMode.Individual: DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx); break;
+					case MilitiaDeathMessageMode.Count: if (home != null) home.MilitiaLostThisEvent++; break;
+				}
+				SettlementSystem.Instance.OnMilitiaBodyDied(home, rec, body);
+			}
+
+			bool tombstone = LevyConfig.Get.Tombstones switch { TombstoneMode.Always => true, TombstoneMode.Vanilla => hardcore, _ => false };
+			if (tombstone) DropTombstone(body, rec, ctx);
+
+			FearSystem.OnComradeDied(body);
+			npc.life = 0;
+			SendRosterSnapshot();
+		}
+
+		private static string KillerText(int killerNpcType, string killerName)
+		{
+			if (!string.IsNullOrWhiteSpace(killerName)) return killerName;
+			if (killerNpcType > 0 && killerNpcType < NPCLoader.NPCCount)
+			{
+				string n = Lang.GetNPCNameValue(killerNpcType);
+				if (!string.IsNullOrWhiteSpace(n)) return n;
+			}
+			return killerNpcType switch
+			{
+				LevyConstants.EnvKillerLava => LevyUtil.T("Roster.KillerLava"),
+				LevyConstants.EnvKillerDrowning => LevyUtil.T("Roster.KillerDrowning"),
+				LevyConstants.EnvKillerFall => LevyUtil.T("Roster.KillerFall"),
+				_ => LevyUtil.T("Roster.KillerUnknown"),
+			};
+		}
+
+		/// <summary>Replicates Player.DropTombstone for a soldier: a cheap-tier tombstone projectile carrying the death line.</summary>
+		private static void DropTombstone(SoldierNPC body, SoldierRecord rec, DialogueContext ctx)
+		{
+			var npc = body.NPC;
+			string line = DialogueSystem.PickLine(DialogueTrigger.DEATH_MESSAGE, rec, ctx);
+			if (string.IsNullOrWhiteSpace(line)) line = LevyUtil.T("Roster.Fell", rec.Name);
+			float drift;
+			for (drift = Main.rand.Next(-35, 36) * 0.1f; drift < 2f && drift > -2f; drift += Main.rand.Next(-30, 31) * 0.1f) { }
+			int kind = Main.rand.Next(6);
+			int type = kind != 0 ? 200 + kind : ProjectileID.Tombstone; // GraveMarker..Obelisk (201-205) or the plain Tombstone (43)
+			int dir = npc.direction == 0 ? 1 : -npc.direction;
+			int owner = Main.myPlayer;
+			float ai0 = rec.CommanderIndex >= 0 ? rec.CommanderIndex : owner;
+			int idx = Projectile.NewProjectile(npc.GetSource_Death(), npc.Center.X, npc.Center.Y,
+				Main.rand.Next(10, 30) * 0.1f * dir + drift, Main.rand.Next(-40, -20) * 0.1f, type, 0, 0f, owner, ai0);
+			if (idx < 0 || idx >= Main.projectile.Length) return;
+			DateTime now = DateTime.Now;
+			string date = GameCulture.FromCultureName(GameCulture.CultureName.English).IsActive ? now.ToString("MMMM d, yyy") : now.ToString("D");
+			Main.projectile[idx].miscText = line + "\n" + date;
+		}
+
+		public virtual void OnBodyDeserted(SoldierNPC body)
+		{
+			if (LevyUtil.IsClient || body == null) return;
+			DesertBookkeeping(body);
+			SendRosterSnapshot();
+		}
+
+		private void DesertBookkeeping(SoldierNPC body)
+		{
+			var rec = body.Record;
+			if (rec != null) Regulars.Remove(rec);
+			foreach (var d in _deserters) if (ReferenceEquals(d.Body, body)) return;
+			_deserters.Add(new Deserter { Body = body, Ticks = LevyConstants.DesertDespawnTicks });
+		}
+
+		// =====================================================================================================
+		// Dawn: payday, desertion, daily flags, settlements, taxes
+		// =====================================================================================================
+		public override void PostUpdateTime()
+		{
+			if (LevyUtil.IsClient) return;
+			bool day = Main.dayTime;
+			if (!_dawnInit) { _dawnInit = true; _lastDayTime = day; return; }
+			if (day && !_lastDayTime) OnDawn();
+			_lastDayTime = day;
+		}
+
+		private void OnDawn()
+		{
+			DayNumber++;
+			ResolveCommanders();
+
+			var payers = new Dictionary<int, BarracksTE>();
+			var wages = new Dictionary<int, long>();
+			var members = new Dictionary<int, List<SoldierRecord>>();
+			var orphans = new List<SoldierRecord>();
+			foreach (var rec in Regulars)
+			{
+				var te = PayingBarracks(rec);
+				if (te == null) { orphans.Add(rec); continue; }
+				if (!payers.ContainsKey(te.ID)) { payers[te.ID] = te; wages[te.ID] = 0; members[te.ID] = new List<SoldierRecord>(); }
+				wages[te.ID] += EconomySystem.WagePerDay(rec.Grade, rec.StoodDown);
+				members[te.ID].Add(rec);
+			}
+			foreach (var kv in payers)
+			{
+				var te = kv.Value; long due = wages[kv.Key]; var list = members[kv.Key];
+				if (te.Treasury >= due)
+				{
+					te.Treasury -= due;
+					foreach (var r in list) { r.DaysUnpaid = 0; var b = BodyOf(r); if (b != null) DialogueSystem.Bark(b, DialogueTrigger.PAYDAY); }
+					if (due > 0) LevyUtil.Chat(LevyUtil.T("Chat.Payday", LevyUtil.Coins(due)));
+				}
+				else
+				{
+					foreach (var r in list) { r.DaysUnpaid++; var b = BodyOf(r); if (b != null) DialogueSystem.Bark(b, DialogueTrigger.UNPAID); }
+					LevyUtil.Chat(LevyUtil.T("Chat.Unpaid", SettlementSystem.Instance.TownName(te)));
+				}
+				SyncBarracks(te);
+			}
+			foreach (var r in orphans) r.DaysUnpaid++; // nobody can pay a homeless regular whose commander is away
+
+			// desertion rolls
+			for (int i = Regulars.Count - 1; i >= 0; i--)
+			{
+				var r = Regulars[i];
+				if (r.DaysUnpaid < 2) continue;
+				float chance = LevyConstants.DesertionChanceByDaysUnpaid[Math.Min(r.DaysUnpaid, LevyConstants.DesertionChanceByDaysUnpaid.Length - 1)];
+				if (chance <= 0f || Main.rand.NextFloat() >= chance) continue;
+				Desert(r);
+			}
+
+			foreach (var r in Regulars) r.HazardPaid = false;
+			SettlementSystem.Instance.OnDawn(DayNumber);
+			RouteTaxes();
+			SendRosterSnapshot();
+		}
+
+		private void Desert(SoldierRecord rec)
+		{
+			string weapon = rec.Gear.HasWeapon ? rec.Gear.Weapon.Name : LevyUtil.T("Roster.Nothing");
+			LevyUtil.Chat(LevyUtil.T("Chat.Deserted", rec.Name, weapon));
+			var body = BodyOf(rec);
+			if (body != null)
+			{
+				DialogueSystem.Bark(body, DialogueTrigger.DESERTED);
+				body.State = SoldierState.Desert; body.StateTimer = 0; body.TargetIndex = -1;
+				body.NPC.netUpdate = true;
+				DesertBookkeeping(body); // the Brain walks the body off the map; it is force-despawned after DesertDespawnTicks
+			}
+			else Regulars.Remove(rec);
+		}
+
+		/// <summary>Single player only: a housed Tax Collector's take goes to a barracks with TaxToTreasury. In multiplayer taxMoney is per client and stays with the player.</summary>
+		private static void RouteTaxes()
+		{
+			if (Main.netMode != NetmodeID.SinglePlayer) return;
+			var player = Main.LocalPlayer;
+			if (player == null || !player.active || player.taxMoney <= 0) return;
+			foreach (var te in SettlementSystem.Instance.AllBarracks())
+			{
+				if (!te.TaxToTreasury) continue;
+				bool housed = false;
+				foreach (var n in SettlementSystem.Instance.TownNpcsOf(te)) if (n != null && n.type == NPCID.TaxCollector) { housed = true; break; }
+				if (!housed) continue;
+				long amount = player.taxMoney;
+				te.Treasury += amount;
+				player.taxMoney = 0;
+				LevyUtil.Chat(LevyUtil.T("Roster.TaxCollected", LevyUtil.Coins(amount), SettlementSystem.Instance.TownName(te)));
+				break;
+			}
+		}
+
+		// =====================================================================================================
+		// Orders
+		// =====================================================================================================
+		private bool Selected(SoldierRecord rec, Player commander, bool atBarracks, out SoldierNPC body)
+		{
+			body = null;
+			if (rec.CommanderName != commander.name) return false;
+			body = BodyOf(rec);
+			if (atBarracks) return true;
+			return body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius);
+		}
+
+		public virtual void IssueOrder(Player commander, SoldierOrder order, bool atBarracks = false)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			bool any = false;
+			foreach (var rec in Regulars)
+			{
+				if (!Selected(rec, commander, atBarracks, out var body)) continue;
+				rec.Order = order;
+				rec.StoodDown = order == SoldierOrder.ReturnToBarracks;
+				if (order == SoldierOrder.Hold && body == null) rec.HoldPos = commander.Center;
+				body?.ReceiveOrder(order);
+				any = true;
+			}
+			if (any) SendRosterSnapshot();
+		}
+
+		public virtual void ToggleHoldFire(Player commander, bool atBarracks = false)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			int total = 0, holding = 0;
+			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
+			if (total == 0) return;
+			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
+			foreach (var rec in Regulars)
+			{
+				if (!Selected(rec, commander, atBarracks, out var body)) continue;
+				rec.HoldFire = set;
+				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
+			}
+			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
+			SendRosterSnapshot();
+		}
+
+		public virtual void Rally(Player commander)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			if (RallyCooldown > 0) { SendToPlayer(commander, LevyUtil.T("Roster.RallyCooldown", (RallyCooldown + 59) / 60)); return; }
+			FearSystem.Rally(commander.Center, LevyConstants.RallyRadius);
+			RallyCooldown = LevyConstants.RallyCooldownTicks;
+			LevyUtil.Chat(LevyUtil.T("Chat.Rallied"));
+		}
+
+		public virtual void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
+		{
+			if (LevyUtil.IsClient || rec == null) return;
+			rec.PatrolA = a; rec.PatrolB = b;
+			rec.Order = SoldierOrder.Patrol; rec.StoodDown = false;
+			BodyOf(rec)?.ReceiveOrder(SoldierOrder.Patrol);
+			SendRosterSnapshot();
+		}
+
+		// =====================================================================================================
+		// Hooks for other modules
+		// =====================================================================================================
+		public virtual void OnMainBossKilled(NPC boss)
+		{
+			if (LevyUtil.IsClient || boss == null) return;
+			int veterans = 0;
+			foreach (var r in Regulars) if (r.Veteran) veterans++;
+			bool changed = false;
+			foreach (var rec in Regulars)
+			{
+				if (rec.Dead || !rec.EngagedBosses.Contains(boss.whoAmI)) continue;
+				rec.BossFightsSurvived++;
+				changed = true;
+				var body = BodyOf(rec);
+				if (body != null) DialogueSystem.Bark(body, DialogueTrigger.VICTORY);
+				if (!rec.Veteran && rec.BossFightsSurvived >= LevyConstants.VeteranBossFights && veterans < LevyConstants.VeteranMaxFraction * Regulars.Count)
+				{
+					rec.Veteran = true; veterans++;
+					rec.Name = rec.RankPrefix + " " + BaseName(rec.Name);
+					if (body != null) { body.NPC.GivenName = rec.Name; body.NPC.netUpdate = true; DialogueSystem.Bark(body, DialogueTrigger.VETERAN); }
+					LevyUtil.Chat(LevyUtil.T("Chat.Veteran", rec.Name));
+				}
+			}
+			foreach (var rec in Regulars) rec.EngagedBosses.Clear();
+			if (changed) SendRosterSnapshot();
+		}
+
+		public virtual void OnCommanderDied(Player commander)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			IssueOrder(commander, SoldierOrder.ReturnToBarracks, atBarracks: true);
+		}
+
+		// =====================================================================================================
+		// Multiplayer
+		// =====================================================================================================
+		/// <summary>Server: send the whole regulars list to every client (display-only copies).</summary>
+		public void SendRosterSnapshot()
+		{
+			if (!LevyUtil.IsServer) return;
+			var p = LevyPackets.New(LevyPacket.RosterSnapshot);
+			WriteRoster(p);
+			p.Send();
+		}
+
+		private void WriteRoster(BinaryWriter writer)
+		{
+			writer.Write(Regulars.Count);
+			foreach (var r in Regulars) r.WriteSnapshot(writer);
+		}
+
+		/// <summary>Client: replace the display-only regulars list with a snapshot.</summary>
+		internal void ReadRoster(BinaryReader reader)
+		{
+			int n = reader.ReadInt32();
+			if (n < 0 || n > LevyConstants.MaxSnapshotRecords) return;
+			Regulars.Clear();
+			for (int i = 0; i < n; i++) Regulars.Add(SoldierRecord.ReadSnapshot(reader));
+		}
+
+		public override void NetSend(BinaryWriter writer) => WriteRoster(writer);
+		public override void NetReceive(BinaryReader reader) => ReadRoster(reader);
+
+		// =====================================================================================================
+		// Persistence
+		// =====================================================================================================
 		public override void SaveWorldData(TagCompound tag)
 		{
 			var list = new List<TagCompound>(); foreach (var r in Regulars) list.Add(r.Save()); tag["regulars"] = list;
 			var mem = new List<TagCompound>(); foreach (var r in Memorial) mem.Add(r.Save()); tag["memorial"] = mem;
 			tag["nextId"] = NextId; tag["day"] = DayNumber;
+			var deadIds = new List<int>(); var deadTimers = new List<int>();
+			foreach (var r in Regulars) if (r.Dead) { deadIds.Add(r.Id); deadTimers.Add(r.RespawnTimer); }
+			tag["deadIds"] = deadIds; tag["deadTimers"] = deadTimers;
 		}
+
 		public override void LoadWorldData(TagCompound tag)
 		{
 			Regulars.Clear(); Memorial.Clear();
 			foreach (var t in tag.GetList<TagCompound>("regulars")) Regulars.Add(SoldierRecord.Load(t));
 			foreach (var t in tag.GetList<TagCompound>("memorial")) Memorial.Add(SoldierRecord.Load(t));
 			NextId = tag.GetInt("nextId"); if (NextId < 1) NextId = 1; DayNumber = tag.GetInt("day");
+			foreach (var r in Regulars) if (r.Id >= NextId) NextId = r.Id + 1;
+			foreach (var r in Memorial) if (r.Id >= NextId) NextId = r.Id + 1;
+			var deadIds = tag.GetList<int>("deadIds"); var deadTimers = tag.GetList<int>("deadTimers");
+			for (int i = 0; i < deadIds.Count; i++)
+			{
+				var r = FindById(deadIds[i]);
+				if (r == null) continue;
+				r.Dead = true; r.RespawnTimer = i < deadTimers.Count ? Math.Max(0, deadTimers[i]) : 0; r.CurrentHp = 0;
+			}
+			ResetRuntime();
 		}
-		public override void ClearWorld() { Regulars.Clear(); Memorial.Clear(); NextId = 1; DayNumber = 0; }
+
+		private void ResetRuntime()
+		{
+			foreach (var r in Regulars) { r.BodyIndex = -1; r.CommanderIndex = -1; r.EngagedBosses.Clear(); r.Fear = 0f; }
+			foreach (var r in Memorial) { r.BodyIndex = -1; r.CommanderIndex = -1; r.Dead = true; }
+			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
+			_deployTimer = 0; _snapshotTimer = 0; RallyCooldown = 0;
+			_dawnInit = false; _lastDayTime = Main.dayTime;
+		}
+
+		public override void OnWorldLoad() => ResetRuntime();
+
+		public override void ClearWorld()
+		{
+			Regulars.Clear(); Memorial.Clear(); NextId = 1; DayNumber = 0;
+			ResetRuntime();
+		}
 	}
 }

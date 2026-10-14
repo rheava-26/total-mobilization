@@ -32,7 +32,6 @@ namespace Levy.Content.NPCs
 		private readonly int[] _haulRefusedType = new int[LevyConstants.HaulRefusedMemory];
 		private readonly int[] _haulRefusedTick = new int[LevyConstants.HaulRefusedMemory];
 		private SoldierState _lastSeenState = SoldierState.Idle;
-		private int _stateEnteredTick;
 		private int _thinkCount;
 		private int _lastEngageBarkTick = -100000;
 		private int _lastTeleportTick = -100000;
@@ -82,7 +81,6 @@ namespace Levy.Content.NPCs
 				}
 			}
 			_lastSeenState = State;
-			_stateEnteredTick = (int)Main.GameUpdateCount;
 			StateTimer = 0;
 			TargetIndex = -1;
 			HasMoveGoal = false; WantsToFallThrough = false;
@@ -121,8 +119,8 @@ namespace Levy.Content.NPCs
 			_thinkCount++;
 			RefreshCommanderIndex(now);
 
-			// Another module (Fear, Roster) changed the state since the last think: restart the state clock.
-			if (State != _lastSeenState) { _stateEnteredTick = now; StateTimer = 0; _lastSeenState = State; }
+			// Another module (Fear, Roster, Settlement) changed the state since the last think: restart the state clock.
+			if (State != _lastSeenState) { StateTimer = 0; _lastSeenState = State; }
 			else StateTimer += LevyConstants.ThinkIntervalTicks;
 
 			// Hold-fire edge: drop the target and say so.
@@ -136,7 +134,7 @@ namespace Levy.Content.NPCs
 				case SoldierState.Dead:
 					break;
 				case SoldierState.Desert:
-					ThinkDesert(now);
+					ThinkDesert();
 					break;
 				case SoldierState.Routed:
 					ThinkRouted(nearestHostileTiles);
@@ -152,7 +150,7 @@ namespace Levy.Content.NPCs
 			}
 
 			if (!NPC.active) return; // despawned this think
-			if (State != prevState) { _stateEnteredTick = now; StateTimer = 0; }
+			if (State != prevState) StateTimer = 0;
 			_lastSeenState = State;
 			if (State != prevState || TargetIndex != prevTarget) NPC.netUpdate = true;
 		}
@@ -195,7 +193,7 @@ namespace Levy.Content.NPCs
 			if (State == s) return;
 			if (State == SoldierState.Routed || State == SoldierState.Shaken) return;
 			State = s;
-			_stateEnteredTick = (int)Main.GameUpdateCount; StateTimer = 0;
+			StateTimer = 0;
 			if (s != SoldierState.Idle) _idleAnchorSet = false;
 			if (s != SoldierState.Haul) _haulTargetItem = -1;
 			if (s != SoldierState.Resupply) { _resupplyArmory = null; _resupplyWaitUntil = 0; }
@@ -237,7 +235,14 @@ namespace Levy.Content.NPCs
 		/// <summary>The state the standing order asks for right now (no fear, no target, nothing to haul).</summary>
 		private SoldierState OrderState()
 		{
-			if (IsMilitia) return Record.Order == SoldierOrder.ReturnToBarracks ? SoldierState.ReturnHome : SoldierState.Patrol;
+			if (IsMilitia)
+			{
+				// Stand-down is signalled by the settlement writing State = ReturnHome directly (and Mobilized = false); honour
+				// both so a body on its way home is never turned back onto patrol. Re-mobilizing writes Idle, which lands on Patrol.
+				var home = Home;
+				bool standingDown = State == SoldierState.ReturnHome || Record.Order == SoldierOrder.ReturnToBarracks || home == null || !home.Mobilized;
+				return standingDown ? SoldierState.ReturnHome : SoldierState.Patrol;
+			}
 			switch (Record.Order)
 			{
 				case SoldierOrder.Follow:
@@ -292,18 +297,19 @@ namespace Levy.Content.NPCs
 		// 1. Desert / 2. Routed / 3. Flee
 		// =====================================================================================================
 
-		private void ThinkDesert(int now)
+		private void ThinkDesert()
 		{
 			TargetIndex = -1;
 			float leftX = LevyConstants.DesertEdgeMarginPx;
 			float rightX = Main.maxTilesX * (float)LevyConstants.TilePx - LevyConstants.DesertEdgeMarginPx;
 			float edgeX = NPC.Center.X - leftX < rightX - NPC.Center.X ? leftX : rightX;
-			bool arrived = Math.Abs(NPC.Center.X - edgeX) < LevyConstants.DesertArriveTiles * LevyConstants.TilePx;
-			if (arrived || now - _stateEnteredTick >= LevyConstants.DesertDespawnTicks)
+			// Reaching the edge despawns the body here; the roster's TickDeserters force-despawns it after DesertDespawnTicks
+			// regardless (it checks the body is still live, so a slot reused after this despawn is never touched).
+			if (Math.Abs(NPC.Center.X - edgeX) < LevyConstants.DesertArriveTiles * LevyConstants.TilePx)
 			{
 				DropCarriedItems();
 				ClearGoal();
-				// The roster may already have struck the record at the dawn roll; only report the walk-off if it still owns it.
+				// The roster strikes the record when it rolls the desertion; only report the walk-off if it still owns the record.
 				if (RosterSystem.Instance.Regulars.Contains(Record)) RosterSystem.Instance.OnBodyDeserted(this);
 				NPC.active = false; NPC.netUpdate = true;
 				return;

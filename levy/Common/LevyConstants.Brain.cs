@@ -59,7 +59,7 @@ namespace Levy.Common
 		public const int IdleDecisionMinTicks = 60 * 3, IdleDecisionMaxTicks = 60 * 6;
 
 		// ---------- Desert ----------
-		public const int DesertDespawnTicks = 60 * 20;
+		// The 20 s force-despawn backstop is the roster's DesertDespawnTicks (LevyConstants.Roster.cs); the brain only despawns at the edge.
 		public const int DesertEdgeMarginPx = 200;
 		public const float DesertArriveTiles = 3f;
 

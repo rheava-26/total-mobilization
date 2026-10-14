@@ -22,7 +22,7 @@ namespace Levy.Content.NPCs
 		private int _wingTime; private bool _flying; private int _jumpsUsed; private bool _stepInit;
 		private int _fallThroughTicks;
 		private bool _closeDoor; private int _doorX, _doorY;
-		private Vector2 _stuckPos; private int _stuckSampleTimer, _stuckTicks, _stuckTotal, _reverseTicks; private bool _stuckJumped;
+		private Vector2 _stuckPos; private int _stuckSampleTimer, _stuckTicks, _stuckTotal, _reverseTicks, _sinceReverse = 100000; private bool _stuckJumped;
 		private readonly List<Vector2> _path = new();
 		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
 		private bool _blocked, _blockedHard;
@@ -373,7 +373,7 @@ namespace Levy.Content.NPCs
 
 		private void ResetStuck()
 		{
-			_stuckTicks = 0; _stuckSampleTimer = 0; _stuckJumped = false; _reverseTicks = 0;
+			_stuckTicks = 0; _stuckTotal = 0; _stuckSampleTimer = 0; _stuckJumped = false; _reverseTicks = 0;
 			_stuckPos = NPC.position;
 		}
 
@@ -384,6 +384,7 @@ namespace Levy.Content.NPCs
 			_stuckSampleTimer = 0;
 			float moved = Vector2.Distance(NPC.position, _stuckPos);
 			_stuckPos = NPC.position;
+			_sinceReverse += StuckSampleTicks;
 			if (moved < StuckMoveThresholdPx)
 			{
 				_stuckTicks += StuckSampleTicks;
@@ -392,7 +393,7 @@ namespace Levy.Content.NPCs
 			else
 			{
 				_stuckTicks = 0; _stuckJumped = false;
-				if (moved > 16f) _stuckTotal = 0; // real progress, not the reverse shuffle
+				if (moved >= StuckProgressPx && _reverseTicks == 0 && _sinceReverse >= ReverseSettleTicks) _stuckTotal = 0; // real walking, not the reverse shuffle
 			}
 			if (State == SoldierState.Follow && _stuckTotal >= LevyConstants.StuckTeleportTicks)
 			{
@@ -401,7 +402,7 @@ namespace Levy.Content.NPCs
 			}
 			if (_stuckTicks < LevyConstants.StuckTicks || _blockedHard) return; // a deliberate refusal (lava, drop, wall) is not a wedge
 			if (!_stuckJumped) { _stuckJumped = true; TryJump(Abilities.JumpTiles); return; }
-			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) _reverseTicks = ReverseTicks;
+			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) { _reverseTicks = ReverseTicks; _sinceReverse = 0; }
 		}
 
 		// =====================================================================================================

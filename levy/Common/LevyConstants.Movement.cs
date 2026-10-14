@@ -47,6 +47,8 @@ namespace Levy.Common
 			public const float StuckMoveThresholdPx = 2f;
 			public const int StuckReverseAfterExtraTicks = 30;
 			public const int ReverseTicks = 20;
+			public const float StuckProgressPx = 8f;            // movement per sample that counts as real walking
+			public const int ReverseSettleTicks = 60;           // the reverse shuffle does not count as progress for this long
 
 			// ---- pathfinding ----
 			public const int PathRecalcTicks = 30;

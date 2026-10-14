@@ -433,7 +433,13 @@ namespace Levy.Common.Systems
 		{
 			_scratchIds.Clear();
 			foreach (var id in _rt.Keys) if (GetBarracks(id) == null) _scratchIds.Add(id);
-			for (int k = 0; k < _scratchIds.Count; k++) _rt.Remove(_scratchIds[k]);
+			for (int k = 0; k < _scratchIds.Count; k++)
+			{
+				// The barracks is gone: a record still waiting on the render cap hands its kit to the nearest armory near the old home.
+				var stale = _rt[_scratchIds[k]];
+				if (stale.PendingSpawn != null) ReturnGearHome(null, stale.PendingSpawn);
+				_rt.Remove(_scratchIds[k]);
+			}
 
 			CollectBarracksIds();
 			for (int k = 0; k < _scratchIds.Count; k++)

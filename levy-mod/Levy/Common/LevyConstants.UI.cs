@@ -29,6 +29,10 @@ namespace Levy.Common
 			public const int MobilizeKeyRadiusTiles = 120;
 			public const int PatrolBannerSearchTiles = 60;
 			public const int RadialRadius = 112;
+			/// <summary>Horizontal radius the wheel starts from before it is grown to fit its button count.</summary>
+			public const int RadialRadiusX = 180;
+			/// <summary>Minimum empty gap kept between any two radial buttons (px).</summary>
+			public const int RadialGapPx = 4;
 			public const int RadialButtonWidth = 150, RadialButtonHeight = 34;
 			/// <summary>Ticks after opening during which right-click / Escape do not close the radial (the opening click itself).</summary>
 			public const int RadialInputGraceTicks = 6;

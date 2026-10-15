@@ -134,6 +134,47 @@ namespace Levy.Common
 		/// <summary>Low-discrepancy step (golden ratio) that turns a body index into a well-spread slot fraction.</summary>
 		public const float SlotGoldenStep = 0.6180339f;
 
+		// ---------- Combat orders: Spread Out ----------
+		/// <summary>Spread Out multiplies every dispersion spacing (crowd gap, nudge spacing, nudge length, lateral slot, altitude and melee spread) by this.</summary>
+		public const float SpreadOutMult = 2.5f;
+		/// <summary>Idle / holding soldiers on Spread Out may drift this far past their normal wander radius to find room (tiles).</summary>
+		public const int SpreadOutIdleExtraTiles = 24;
+		/// <summary>Following soldiers on Spread Out take slots alternately behind and ahead of the commander, this many tiles apart per rank.</summary>
+		public const float SpreadOutFollowSpacingTiles = 6f;
+		/// <summary>... never farther than this from the commander (tiles); keeps it inside FollowChaseLimit.</summary>
+		public const float SpreadOutFollowMaxTiles = 24f;
+
+		// ---------- Combat orders: Search & Destroy ----------
+		/// <summary>A searching soldier never strays farther than this from its search anchor (the settlement muster point, or where the order found it).</summary>
+		public const int SearchLeashTiles = 120;
+		/// <summary>One sweep leg: the next waypoint lies this far outward along the current heading (tiles).</summary>
+		public const int SearchStepTiles = 36;
+		/// <summary>A sweep leg shorter than this means the leash edge (or a dead end) is reached: turn round.</summary>
+		public const int SearchMinStepTiles = 8;
+		/// <summary>Searching soldiers acquire targets at weapon reach x this, so they run enemies down instead of waiting for them.</summary>
+		public const float SearchAcquireRangeMult = 1.5f;
+		/// <summary>Standable-tile search radius around a roam waypoint (tiles).</summary>
+		public const int SearchSpotRadiusTiles = 12;
+		/// <summary>Pause at a waypoint / after turning round (ticks).</summary>
+		public const int SearchPauseTicks = 90, SearchTurnPauseTicks = 150;
+		public const float SearchArriveXTiles = 2f;
+		/// <summary>A waypoint not reached in this long is dropped and a new one picked.</summary>
+		public const int SearchGoalTimeoutTicks = 60 * 14;
+		/// <summary>Keep this far (tiles) beyond the standoff before a roaming ranged soldier stops advancing toward a hostile it cannot engage.</summary>
+		public const float SearchHaltMarginTiles = 10f;
+		/// <summary>Per-soldier lateral offset of a waypoint, so a squad fans out while sweeping (tiles, either side).</summary>
+		public const float SearchSlotSpreadTiles = 5f;
+		/// <summary>Stay this far from the world's left and right edges (tiles).</summary>
+		public const int SearchWorldMarginTiles = 60;
+
+		// ---------- Combat orders: Focus Target ----------
+		/// <summary>The focus target is accepted out to weapon reach x this, so the squad commits to it instead of nearer enemies.</summary>
+		public const float FocusRangeMult = 1.25f;
+		/// <summary>Click tolerance around an enemy's hitbox when designating (px).</summary>
+		public const int FocusClickPadPx = 10;
+		/// <summary>Designate mode ignores clicks for this many ticks after it starts (so the radial click itself is not consumed).</summary>
+		public const int FocusDesignateGraceTicks = 4;
+
 		// ---------- Flee ----------
 		public const int FleeScanTiles = 60;
 		public const int FleeRunTiles = 30;

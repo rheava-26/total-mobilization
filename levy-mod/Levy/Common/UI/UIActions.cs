@@ -97,6 +97,20 @@ namespace Levy.Common.UI
 			else { var p = LevyPackets.New(LevyPacket.HoldFire); p.Write(atBarracks); p.Send(); }
 		}
 
+		/// <summary>Squad-wide toggle: wide loose formation on / off (same plumbing as <see cref="HoldFire"/>).</summary>
+		public static void SpreadOut(bool atBarracks)
+		{
+			if (Single) RosterSystem.Instance.ToggleSpreadOut(Me, atBarracks);
+			else { var p = LevyPackets.New(LevyPacket.SpreadOut); p.Write(atBarracks); p.Send(); }
+		}
+
+		/// <summary>Sets (or, with -1 / the same NPC again, clears) the squad's shared focus target. Client to server authoritative.</summary>
+		public static void FocusTarget(int npcId)
+		{
+			if (Single) RosterSystem.Instance.SetFocusTarget(Me, npcId);
+			else { var p = LevyPackets.New(LevyPacket.FocusTarget); p.Write(npcId); p.Send(); }
+		}
+
 		public static void Rally()
 		{
 			if (Single) RosterSystem.Instance.Rally(Me);
@@ -265,6 +279,13 @@ namespace Levy.Common.UI
 			int hold = 0, total = 0;
 			foreach (var r in MyRegulars()) { total++; if (r.HoldFire) hold++; }
 			return total > 0 && hold * 2 > total;
+		}
+
+		public static bool MajoritySpreadOut()
+		{
+			int spread = 0, total = 0;
+			foreach (var r in MyRegulars()) { total++; if (r.SpreadOut) spread++; }
+			return total > 0 && spread * 2 > total;
 		}
 
 		public static int AvailableCp => RosterSystem.Instance.CommandPoints - RosterSystem.Instance.CommandPointsUsed;

@@ -28,6 +28,11 @@ namespace Levy.Common.UI
 		/// <summary>Force soldier nameplates to show even in a crowd (toggled from the War Horn radial; not saved).</summary>
 		public static bool NameplatesForced;
 
+		/// <summary>True while the next left-click on a hostile NPC designates the squad's focus target (set from the radial; read by <see cref="UIPlayer"/>).</summary>
+		public static bool FocusDesignating { get; private set; }
+		/// <summary>GameUpdateCount when designate mode began (clicks inside the grace window are ignored).</summary>
+		public static uint FocusDesignateStartTick { get; private set; }
+
 		public static ModKeybind FollowKey, HoldKey, ReturnKey, HoldFireKey, MobilizeKey, RallyKey, ArmyStripKey;
 
 		public static BarracksTE CurrentBarracks { get; private set; }
@@ -72,10 +77,10 @@ namespace Levy.Common.UI
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
 			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = null;
 			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null;
-			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false;
+			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false;
 		}
 
-		public override void OnWorldUnload() { if (!Main.dedServ) CloseAll(); }
+		public override void OnWorldUnload() { FocusDesignating = false; if (!Main.dedServ) CloseAll(); }
 
 		// ------------------------------------------------------------------ open / close (client)
 		public virtual void OpenBarracks(BarracksTE te)
@@ -173,6 +178,17 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuClose);
 		}
 
+		/// <summary>Enters one-shot designate mode: the next left-click on a hostile NPC sets the squad's focus target; empty space, Escape or right-click cancels.</summary>
+		public void BeginFocusDesignate()
+		{
+			if (Main.dedServ) return;
+			FocusDesignating = true;
+			FocusDesignateStartTick = Main.GameUpdateCount;
+			Main.NewText(LevyUtil.T("UI2.FocusDesignate"), 200, 200, 120);
+		}
+
+		public void EndFocusDesignate() => FocusDesignating = false;
+
 		public bool RadialOpen => _radialUI?.CurrentState != null;
 
 		public virtual void ToggleArmyStrip()
@@ -255,6 +271,7 @@ namespace Levy.Common.UI
 				layers.Insert(inv + 2, new LegacyGameInterfaceLayer("Levy: Orders Radial", () =>
 				{
 					if (_radialUI?.CurrentState != null) _radialUI.Draw(Main.spriteBatch, gt);
+					if (FocusDesignating) Terraria.ModLoader.UI.UICommon.TooltipMouseText(LevyUtil.T("UI2.FocusCursorHint"));
 					return true;
 				}, InterfaceScaleType.UI));
 			}

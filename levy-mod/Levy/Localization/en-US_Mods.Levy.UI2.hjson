@@ -48,6 +48,15 @@ FireAtWillHint: Soldiers engage anything hostile in reach.
 FollowHint: Regulars within 40 tiles follow you.
 HoldHint: Regulars within 40 tiles hold where they stand.
 ReturnHint: Regulars within 40 tiles walk back to their barracks.
+SpreadOutHint: Soldiers keep far wider gaps, even while idle. Blunts area attacks.
+CloseUpHint: Soldiers return to the normal tight formation.
+SearchDestroyHint: Regulars within 40 tiles roam outward from the settlement hunting enemies, keeping their standoff.
+FocusTargetHint: Then click an enemy. Every Regular fires on it until it dies.
+FocusDesignate: Click an enemy to focus fire on it. Click elsewhere, right-click or press Escape to cancel.
+FocusCursorHint: Click an enemy to focus fire
+FocusCancelled: Focus fire cancelled.
+FocusSet: Focus fire on {0}.
+FocusCleared: Focus fire cleared.
 HudTitle: Army
 HudHover: "{0} - {1}"
 
@@ -63,4 +72,5 @@ State: {
 	ReturnHome: Returning
 	Dead: Dead
 	Desert: Deserting
+	SearchDestroy: Hunting
 }

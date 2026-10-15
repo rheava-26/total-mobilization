@@ -3,6 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Globals;
+using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
 
@@ -19,10 +20,26 @@ namespace Levy.Common.Targeting
 		private static readonly int[] _attackTick = new int[Main.maxNPCs];
 		private static readonly int[] _attackType = new int[Main.maxNPCs];
 
-		/// <summary>Best enemy within <paramref name="rangeTiles"/> with line of sight, or -1.</summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles)
+		/// <summary>
+		/// The commander's designated focus target when it is alive, a legal target and within weapon reach x <see cref="LevyConstants.FocusRangeMult"/>
+		/// (line of sight is not required: the engage logic walks to a firing line). -1 when there is none or it is out of reach.
+		/// </summary>
+		public static int FocusTargetFor(SoldierNPC s, float rangeTiles)
+		{
+			if (s?.Record == null || s.NPC == null || !s.NPC.active || s.Record.Kind != SoldierKind.Regular) return -1;
+			int idx = RosterSystem.FocusTargetOf(s.Record.CommanderName);
+			if (idx < 0) return -1;
+			return LevyUtil.WithinTiles(s.NPC.Center, Main.npc[idx].Center, rangeTiles * LevyConstants.FocusRangeMult) ? idx : -1;
+		}
+
+		/// <summary>
+		/// Best enemy within <paramref name="rangeTiles"/> with line of sight, or -1. With <paramref name="useFocus"/> the commander's focus
+		/// target (see <see cref="FocusTargetFor"/>) beats everything else.
+		/// </summary>
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
+			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
 			Vector2 from = s.NPC.Center;
 			float rangePx = rangeTiles * LevyConstants.TilePx;
 			float rangeSq = rangePx * rangePx;

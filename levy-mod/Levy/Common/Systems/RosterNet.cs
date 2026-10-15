@@ -24,6 +24,8 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.Promote, OnPromote);
 			LevyPackets.Register(LevyPacket.Order, OnOrder);
 			LevyPackets.Register(LevyPacket.HoldFire, OnHoldFire);
+			LevyPackets.Register(LevyPacket.SpreadOut, OnSpreadOut);
+			LevyPackets.Register(LevyPacket.FocusTarget, OnFocusTarget);
 			LevyPackets.Register(LevyPacket.Rally, OnRally);
 			LevyPackets.Register(LevyPacket.Rearm, OnRearm);
 			LevyPackets.Register(LevyPacket.Deposit, OnDeposit);
@@ -78,7 +80,7 @@ namespace Levy.Common.Systems
 			byte order = r.ReadByte(); bool atBarracks = r.ReadBoolean();
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
-			if (sender == null || order > (byte)SoldierOrder.ReturnToBarracks) return;
+			if (sender == null || order > (byte)SoldierOrder.SearchDestroy) return;
 			Roster.IssueOrder(sender, (SoldierOrder)order, atBarracks);
 		}
 
@@ -88,6 +90,22 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
 			if (sender != null) Roster.ToggleHoldFire(sender, atBarracks);
+		}
+
+		private static void OnSpreadOut(BinaryReader r, int whoAmI)
+		{
+			bool atBarracks = r.ReadBoolean();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender != null) Roster.ToggleSpreadOut(sender, atBarracks);
+		}
+
+		private static void OnFocusTarget(BinaryReader r, int whoAmI)
+		{
+			int npcId = r.ReadInt32();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender != null) Roster.SetFocusTarget(sender, npcId);
 		}
 
 		private static void OnRally(BinaryReader r, int whoAmI)

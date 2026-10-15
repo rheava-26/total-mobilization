@@ -12,8 +12,10 @@ namespace Levy.Common.Net
 	///  Enlist: int barracksId, byte grade                         (handler: Roster)
 	///  Discharge: int soldierId                                   (Roster)
 	///  Promote: int soldierId, byte grade                         (Roster)
-	///  Order: byte order, bool atBarracks                         (Roster) — commander = sender
+	///  Order: byte order (SoldierOrder, incl. SearchDestroy), bool atBarracks   (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
+	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire
+	///  FocusTarget: int npcId (-1 clears)                         (Roster) — commander = sender; the squad prioritizes that hostile NPC
 	///  Rally: (none)                                              (Roster)
 	///  Rearm: (none)                                              (Roster) — commander = sender
 	///  Mobilize: int barracksId                                   (Militia)
@@ -41,7 +43,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
 	}
 

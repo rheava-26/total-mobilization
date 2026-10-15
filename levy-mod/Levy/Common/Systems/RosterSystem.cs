@@ -876,6 +876,63 @@ namespace Levy.Common.Systems
 			SendRosterSnapshot();
 		}
 
+		/// <summary>Toggle the wide-formation stance for the commander's soldiers (same majority rule as HoldFire).</summary>
+		public virtual void ToggleSpreadOut(Player commander, bool atBarracks = false)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			int total = 0, spread = 0;
+			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; }
+			if (total == 0) return;
+			bool set = spread * 2 <= total; // majority already spread → close up; otherwise spread
+			foreach (var rec in Regulars)
+			{
+				if (!Selected(rec, commander, atBarracks, out var body)) continue;
+				rec.SpreadOut = set;
+				if (body != null) body.NPC.netUpdate = true;
+			}
+			SendToPlayer(commander, LevyUtil.T(set ? "UI.SpreadOut" : "UI.CloseUp"));
+			SendRosterSnapshot();
+		}
+
+		// ---- focus target (commander-scoped, runtime only, never saved) ----
+		private static readonly Dictionary<string, (int id, int type)> _focusTargets = new();
+
+		/// <summary>Server / single player: the commander's soldiers focus this hostile NPC. -1, an invalid NPC or the same NPC again clears it.</summary>
+		public virtual void SetFocusTarget(Player commander, int npcId)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			string who = commander.name;
+			if (npcId < 0 || npcId >= Main.maxNPCs || !Main.npc[npcId].active || Targeting.SoldierTargeting.IsNeverTarget(Main.npc[npcId]))
+			{
+				if (_focusTargets.Remove(who)) SendToPlayer(commander, LevyUtil.T("UI2.FocusCleared"));
+				return;
+			}
+			var npc = Main.npc[npcId];
+			if (_focusTargets.TryGetValue(who, out var cur) && cur.id == npcId && cur.type == npc.type)
+			{
+				_focusTargets.Remove(who);
+				SendToPlayer(commander, LevyUtil.T("UI2.FocusCleared"));
+				return;
+			}
+			_focusTargets[who] = (npcId, npc.type);
+			SendToPlayer(commander, LevyUtil.T("UI2.FocusSet", npc.GivenOrTypeName));
+		}
+
+		/// <summary>The NPC index this commander's soldiers should focus, or -1. Clears itself when the NPC died, was replaced in its slot, or stopped being a legal target.</summary>
+		public static int FocusTargetOf(string commanderName)
+		{
+			if (string.IsNullOrEmpty(commanderName) || !_focusTargets.TryGetValue(commanderName, out var f)) return -1;
+			if (f.id >= 0 && f.id < Main.maxNPCs)
+			{
+				var n = Main.npc[f.id];
+				if (n.active && n.type == f.type && n.life > 0 && !Targeting.SoldierTargeting.IsNeverTarget(n)) return f.id;
+			}
+			_focusTargets.Remove(commanderName);
+			return -1;
+		}
+
+		public static void ClearFocusTargets() => _focusTargets.Clear();
+
 		public virtual void Rally(Player commander)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
@@ -1024,7 +1081,7 @@ namespace Levy.Common.Systems
 			foreach (var r in Regulars) { r.BodyIndex = -1; r.CommanderIndex = -1; r.EngagedBosses.Clear(); r.Fear = 0f; }
 			foreach (var r in Memorial) { r.BodyIndex = -1; r.CommanderIndex = -1; r.Dead = true; }
 			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
-			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; RallyCooldown = 0;
+			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; RallyCooldown = 0; _focusTargets.Clear();
 			_dawnInit = false; _lastDayTime = Main.dayTime;
 		}
 

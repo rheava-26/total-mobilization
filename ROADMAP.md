@@ -833,7 +833,11 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 
 **Watch after this drop (runtime, couldn't test headless):** class-aware scratch-Player runs UpdateEquips once per distinct armor set (same calls as soldier RefreshStats) — watch for odd side effects; class-aware tuning thresholds (ArmorDoctrine.MinBonus/MinLead) are untuned guesses; armor with only mana/other bonuses gets no preference.
 
-**Playtest feedback — backlog (Wave 2). DONE in the 2026-10-15 drop: #9, #10, #12. Still open below (AI/movement is the priority cluster: #2, #14, #3):**
+**IN FLIGHT (two parallel builders, 2026-10-15 pm):**
+- **AI/movement overhaul** (#2, #14, parts of #4): no-suicide standoff (ranged never close to contact), significantly increased engagement range (RangeGun/Bow/Magic up + kite/acquire up), **fighting-retreat rout** (routed soldiers back off AND keep shooting instead of blind panic — explicit designer ask), dodge incoming hostile projectiles, platform/gap handling + reachability so they don't get stranded across a pit (King Slime fix). Confirmed with designer: AI fixes were NEVER implemented before this.
+- **Per-unit loadout menu** (#1): "Kit" button on each Barracks roster row → panel with weapon/sidearm/armor/accessory/ammo slots (ItemSlotElement, hover tooltips); hand-equip; per-slot LOCK so auto-issue/Re-arm won't override; net-synced, save-compatible.
+
+**Playtest feedback — backlog (Wave 2). DONE in 0.2.0: #9, #10, #12. IN FLIGHT: #1, #2, #14, part #4. Still open: #3 (orders: Spread Out / Focus Target / Search & Destroy), #5 (idle melee swings), #6 (thorns), #7 (path jitter), #8 (dummy targeting), #11 (armor-coverage confirm), #13 (boss fear tuning):**
 1. **Per-unit loadout menu** (TOP ask): click any soldier/militia in the Barracks menu, see kit with hover tooltips, hand-assign weapons/accessories, locked against auto-issue. Covers the accessory-slot ask.
 2. **AI fix — soldiers must NOT run into enemies.** They currently close distance (toward commander/target) and get strung out, so one offscreen enemy kills them one by one. Keep a standoff / don't suicide into contact.
 3. **Orders:** Spread Out (loose formation vs AoE like Eye of Cthulhu); Focus Target (click an enemy, concentrate fire); **Search & Destroy** (roam all directions hunting enemies instead of clustering). Note: current Rally is a morale steady-up, NOT spread-out.

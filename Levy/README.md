@@ -25,6 +25,8 @@ If a `Levy.tmod` is shipped next to this folder, drop it into `.../tModLoader/Mo
 * Right-click the Barracks: deposit coins, **Enlist** a Levy. They walk out, arm themselves and follow you.
 * Horn: left-click calls up / stands down the militia; right-click opens the orders radial. Hotkeys: Y follow, U hold,
   I return, O hold fire, P mobilize, K rally, N army overview.
+* **New to it?** Craft a **Field Manual** at a Work Bench (5 wood) and right-click it — the full how-to prints to chat.
+* You do **not** house the soldiers. House your ordinary town NPCs near the Barracks as usual; each one adds manpower, and the soldiers live at the Barracks.
 
 ## Design
 `PLAN.md` is the architecture and build plan; the design spec (Build Spec v0.1) holds the numbers, all of which live in

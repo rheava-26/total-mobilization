@@ -35,6 +35,15 @@ Mods: {
 					'''
 			}
 
+			FieldManual: {
+				DisplayName: Field Manual
+				Tooltip:
+					'''
+					A plain-language guide to raising a militia and an army.
+					Right-click to read it. It stays in your pack; read it whenever.
+					'''
+			}
+
 			GuideToConscription: {
 				DisplayName: A Guide to Conscription
 				Tooltip: Each town NPC provides 5 manpower instead of 3. Consumed on use, once per world.
@@ -277,9 +286,31 @@ Mods: {
 			Promoted: "{0} has been promoted to {1}."
 			Veteran: "{0} is now a veteran."
 			Rallied: The horn sounds. The line rallies.
-			GuideHint: Throw your junk in the Armory. The militia will sort out what to do with it.
+			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
 			HazardPay: Hazard pay issued at {0}: {1}.
+		}
+
+		Manual: {
+			Title: === Levy Field Manual ===
+			Body:
+				'''
+				Your junk becomes a garrison. Here is how.
+
+				1. Settlement. Build a Barracks and an Armory at a Work Bench, side by side in your town. Town NPCs whose homes are within 120 tiles of the Barracks become its settlement. You do not house soldiers; they live at the Barracks. House your town NPCs as you always would. Each one adds manpower.
+
+				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Guns, bows, bolt magic, broadswords, shortswords and spears all work. Put what you want issued first into the issue slots at the top.
+
+				3. Regulars. Right-click the Barracks and enlist. Regulars are named soldiers who follow you anywhere. They cost a muster fee up front and a daily wage at dawn, both from the Barracks treasury, so deposit coins there. Keep it full or they desert.
+
+				4. Militia. Hold the War Horn and left-click to call up the whole town to hold the walls. They arm from the Armory, fight at the settlement, and stand down when the invasion or Blood Moon ends. Manpower is the limit, and it drains as they fall.
+
+				5. Orders. Right-click the War Horn for the radial. Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally, N army overview.
+
+				6. Growth. Feed soldiers Life Crystals for more health. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
+
+				They are morons. They die like players. They cost money. Watch them fight.
+				'''
 		}
 
 		Towns.Names: Fort Hallow|Fort Hope|Fort Nowhere|Fort Last|Millbrook|Ashford|Stonegate|Oakwall|Redfield|Brightwater|Greywatch|Ironhold|Lanternmoor|Saltmarsh|Thornby|Weststead

@@ -823,11 +823,17 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 **Playtest feedback — shipped (branch `claude/levy-mod`):**
 - Readable scrollable Field Manual (was a chat dump); weapon name on nameplates; Re-arm order on the War Horn radial; armory-break spill feedback + OnKill safety spill.
 
-**Playtest feedback — in flight (two parallel builders):**
-- Real weapon Shoot pipeline so special gun/bow/staff effects work (Hellwing arrows, Daedalus rain, multishot); beam swords already fire beams.
-- More Armory issue slots (6→12 wpn etc.); auto-consume Life/Mana Crystals + Life Fruit from the Armory; Life Crystal sound on use.
+**Playtest feedback — shipped, 2026-10-15 (combined drop, commit 72d24c5):**
+- Real weapon fire: modded/global Shoot hooks run; vanilla special-arrow behavior reproduced (Hellwing, Daedalus rain, Molten Quiver, launcher/ammo pairings, Blood Rain). Config RealWeaponShoot (default on), safe fallback. Beam swords already fired beams. Found: Hellwing/Daedalus are hard-coded in Player.ItemCheck_Shoot/PickAmmo, not hooks — so ported, not hooked.
+- More Armory issue slots (12 wpn / 12 armor / 6 ammo), wider panel.
+- Auto-consume Life/Mana Crystals + Life Fruit from the Armory (AutoFeedCrystals, default on); Life Crystal sound on use/feed.
+- Bosses call out the garrison (#12): auto-muster while any boss is alive (`LevyUtil.IsBossActive`), stand down on boss death.
+- Manpower reserve ×3 (9/NPC); field still capped by RenderCap (#9 done).
+- Class-aware weapon issue (#10): armor's actual class bonus (read via the stat pipeline, cached per set in `ArmorDoctrine`) biases weapon pick; armor issued first; falls back to best-available. Config ClassMatchIssue (default on).
 
-**Playtest feedback — backlog (Wave 2, not started):**
+**Watch after this drop (runtime, couldn't test headless):** class-aware scratch-Player runs UpdateEquips once per distinct armor set (same calls as soldier RefreshStats) — watch for odd side effects; class-aware tuning thresholds (ArmorDoctrine.MinBonus/MinLead) are untuned guesses; armor with only mana/other bonuses gets no preference.
+
+**Playtest feedback — backlog (Wave 2). DONE in the 2026-10-15 drop: #9, #10, #12. Still open below (AI/movement is the priority cluster: #2, #14, #3):**
 1. **Per-unit loadout menu** (TOP ask): click any soldier/militia in the Barracks menu, see kit with hover tooltips, hand-assign weapons/accessories, locked against auto-issue. Covers the accessory-slot ask.
 2. **AI fix — soldiers must NOT run into enemies.** They currently close distance (toward commander/target) and get strung out, so one offscreen enemy kills them one by one. Keep a standoff / don't suicide into contact.
 3. **Orders:** Spread Out (loose formation vs AoE like Eye of Cthulhu); Focus Target (click an enemy, concentrate fire); **Search & Destroy** (roam all directions hunting enemies instead of clustering). Note: current Rally is a morale steady-up, NOT spread-out.

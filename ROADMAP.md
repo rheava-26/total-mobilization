@@ -832,5 +832,10 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 2. **AI fix — soldiers must NOT run into enemies.** They currently close distance (toward commander/target) and get strung out, so one offscreen enemy kills them one by one. Keep a standoff / don't suicide into contact.
 3. **Orders:** Spread Out (loose formation vs AoE like Eye of Cthulhu); Focus Target (click an enemy, concentrate fire); **Search & Destroy** (roam all directions hunting enemies instead of clustering). Note: current Rally is a morale steady-up, NOT spread-out.
 4. **Movement:** use movement accessories (double jump, hover); handle 1-block gaps. Best-effort (NPC pathing).
+5. **Flavor — idle melee swings:** melee soldiers occasionally swing even with no target (player often runs around attacking; they should too).
+6. **Attack thorns in path** (needs clarity: destructible thorn/obstacle tiles vs thorn enemies — assume they should clear hazard tiles / strike thorny obstacles they pass).
+7. **Path deviation:** per-soldier route jitter so they don't all take the identical path to a shared destination; occasional idle hops/repositioning for liveliness.
+8. **Targeting — training dummies:** soldiers ignore the LuiAFK super dummy (and likely the vanilla Target Dummy). Add dummies to the allowed-target set so players can DPS-test their army.
+9. **Manpower sustain:** triple the manpower RESERVE pool but keep the simultaneous field cap dictated by command points — militia currently run out and die before an invasion ends. (Fits tenet #1: more sustain, enemy stays the threat; no field-cap change.) Small constant change — fold into a merge, owner: RosterSystem/LevyConstants.Roster.
 - Facts confirmed for the designer: mana pool works (magic throttles on empty, swaps to sidearm); storage weapons ARE issued after issue slots; dead regulars keep kit on respawn, militia return kit to Armory (nothing lost).
 - New GitHub repo for the mod: user is creating an empty `rheava-26/Levy` + granting the Claude GitHub App access (Option B); push there once ready.

@@ -48,7 +48,12 @@ namespace Levy.Common.UI
 			ArmyStripKey = KeybindLoader.RegisterKeybind(Mod, "ArmyStrip", "N");
 
 			LevyPackets.Register(LevyPacket.ArmorySlotSet, HandleArmorySlotSet);
+		}
 
+		public override void PostSetupContent()
+		{
+			// Panels bake their static labels from localization in OnInitialize (via Activate), so build them after localization
+			// is fully loaded; doing this in Load would stamp raw keys like "Mods.Levy.UI2.Roster" into the buttons.
 			if (Main.dedServ) return;
 			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface();
 			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip();

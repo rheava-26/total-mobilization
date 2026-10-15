@@ -123,6 +123,8 @@ namespace Levy.Common.Systems
 		// =====================================================================================================
 		public virtual IEnumerable<BarracksTE> AllBarracks() { foreach (var te in TileEntity.ByID.Values) if (te is BarracksTE b) yield return b; }
 		public virtual BarracksTE GetBarracks(int id) => id >= 0 && TileEntity.ByID.TryGetValue(id, out var te) && te is BarracksTE b ? b : null;
+		/// <summary>The barracks whose top-left tile sits at <paramref name="pos"/>. Position is stable across saves; the tile-entity ID is not.</summary>
+		public virtual BarracksTE BarracksAt(Point16 pos) { if (pos == Point16.NegativeOne) return null; foreach (var te in TileEntity.ByID.Values) if (te is BarracksTE b && b.Position == pos) return b; return null; }
 		public virtual IEnumerable<ArmoryTE> ArmoriesNear(Vector2 worldPos, float tiles) { foreach (var te in TileEntity.ByID.Values) if (te is ArmoryTE a && Vector2.Distance(a.Center, worldPos) <= tiles * 16f) yield return a; }
 
 		public virtual BarracksTE NearestBarracks(Vector2 worldPos, float maxTiles = float.MaxValue)

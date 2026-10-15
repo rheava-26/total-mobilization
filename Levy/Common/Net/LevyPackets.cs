@@ -23,7 +23,7 @@ namespace Levy.Common.Net
 	///  HazardPay: int barracksId                                  (Militia)
 	///  ArmorySlotSet: int armoryId, byte region(0 storage,1 weapons,2 armor,3 ammo,4 potions), short slot, Item via ItemIO.Send(writeStack:true)  (UI)
 	///  BarracksToggle: int barracksId, byte which(0 AutoMuster,1 TaxToTreasury), bool value   (Militia)
-	///  HandAmmo: int npcIndex, int inventorySlot                  (Roster) — server moves the stack from the sender's inventory
+	///  HandAmmo: int npcIndex, int itemType, int count            (Roster) — client consumed the stack; server adds what fits, returns overflow
 	///  AssignPatrol: int soldierId, short ax, short ay, short bx, short by   (Roster)
 	///  FeedCrystal: int soldierId, int itemType                   (Roster) — client already consumed one item
 	///  SetRebase: int soldierId, int barracksId                   (Roster)

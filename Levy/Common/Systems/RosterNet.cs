@@ -117,16 +117,15 @@ namespace Levy.Common.Systems
 		/// <summary>Moves the ammo stack from the sender's inventory slot into the soldier's pouch, then re-syncs that slot to everyone.</summary>
 		private static void OnHandAmmo(BinaryReader r, int whoAmI)
 		{
-			int npcIndex = r.ReadInt32(); int slot = r.ReadInt32();
+			int npcIndex = r.ReadInt32(); int type = r.ReadInt32(); int count = r.ReadInt32();
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
-			if (sender == null || npcIndex < 0 || npcIndex >= Main.maxNPCs || slot < 0 || slot >= sender.inventory.Length) return;
+			if (sender == null || npcIndex < 0 || npcIndex >= Main.maxNPCs || type <= 0 || count <= 0) return;
 			var npc = Main.npc[npcIndex];
 			if (!npc.active || npc.ModNPC is not SoldierNPC body || body.Record == null) return;
-			var item = sender.inventory[slot];
-			if (item == null || item.IsAir || item.ammo <= 0) return;
-			body.HandAmmo(sender, item);
-			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, whoAmI, slot, item.prefix);
+			// the client already consumed the stack; add what fits and hand any overflow back to the sender
+			int left = body.GiveAmmo(type, count);
+			if (left > 0) sender.QuickSpawnItem(sender.GetSource_Misc("Levy:HandAmmo"), type, left);
 		}
 
 		private static void OnAssignPatrol(BinaryReader r, int whoAmI)

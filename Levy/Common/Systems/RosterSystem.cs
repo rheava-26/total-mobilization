@@ -584,7 +584,7 @@ namespace Levy.Common.Systems
 				switch (LevyConfig.Get.MilitiaDeathMessages)
 				{
 					case MilitiaDeathMessageMode.Individual: DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx); break;
-					case MilitiaDeathMessageMode.Count: if (home != null) home.MilitiaLostThisEvent++; break;
+					// Count mode: SettlementSystem.OnMilitiaBodyDied owns MilitiaLostThisEvent and reports it at stand down.
 				}
 				SettlementSystem.Instance.OnMilitiaBodyDied(home, rec, body);
 			}
@@ -915,7 +915,16 @@ namespace Levy.Common.Systems
 			_dawnInit = false; _lastDayTime = Main.dayTime;
 		}
 
-		public override void OnWorldLoad() => ResetRuntime();
+		public override void OnWorldLoad()
+		{
+			// tModLoader renumbers tile-entity IDs on every world load (WorldFile.cs: tileEntity.ID = num2++), so the saved
+			// HomeBarracksId is stale. Re-resolve each home from its saved tile position, which is stable.
+			var set = SettlementSystem.Instance;
+			void Rehome(SoldierRecord r) { if (r == null) return; if (r.HomePos != Terraria.DataStructures.Point16.NegativeOne) { var b = set.BarracksAt(r.HomePos); r.HomeBarracksId = b?.ID ?? -1; } else r.HomeBarracksId = -1; }
+			foreach (var r in Regulars) Rehome(r);
+			foreach (var r in Memorial) Rehome(r);
+			ResetRuntime();
+		}
 
 		public override void ClearWorld()
 		{

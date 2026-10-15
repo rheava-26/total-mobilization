@@ -34,7 +34,12 @@ namespace Levy.Common.Boss
 			On_NPC.TargetClosestUpgraded += Hook_TargetClosestUpgraded;
 		}
 
-		public override void Unload() => BossRule.ClearAll();
+		public override void Unload()
+		{
+			On_NPC.TargetClosest -= Hook_TargetClosest;
+			On_NPC.TargetClosestUpgraded -= Hook_TargetClosestUpgraded;
+			BossRule.ClearAll();
+		}
 
 		public override void PreUpdateNPCs()
 		{

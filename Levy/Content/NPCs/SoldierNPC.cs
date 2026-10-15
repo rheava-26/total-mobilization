@@ -318,29 +318,42 @@ namespace Levy.Content.NPCs
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
 			button = LevyUtil.T("UI.ChatOrders");
-			var held = Main.LocalPlayer.HeldItem;
-			if (held != null && !held.IsAir && held.ammo > 0) button2 = LevyUtil.T("UI.ChatHandAmmo");
+			if (AcceptsAmmo(Main.LocalPlayer.HeldItem)) button2 = LevyUtil.T("UI.ChatHandAmmo");
 		}
+
+		/// <summary>True when this soldier's ranged weapon can actually use the held ammo (not gel, coins, or the wrong ammo id).</summary>
+		public bool AcceptsAmmo(Item stack)
+		{
+			if (stack == null || stack.IsAir || stack.ammo <= 0 || stack.IsACoin) return false;
+			var w = Record?.Gear.Weapon;
+			if (w == null || w.IsAir || w.useAmmo <= 0) return false;
+			return stack.ammo == w.useAmmo;
+		}
+
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
 		{
 			if (firstButton) { Common.UI.UISystem.Instance.ToggleRadial(); return; }
 			var held = Main.LocalPlayer.HeldItem;
-			if (held == null || held.IsAir || held.ammo <= 0) return;
-			if (LevyUtil.IsClient) { var p = Common.Net.LevyPackets.New(Common.Net.LevyPacket.HandAmmo); p.Write(NPC.whoAmI); p.Write(Main.LocalPlayer.selectedItem); p.Send(); }
-			else HandAmmo(Main.LocalPlayer, held);
+			if (!AcceptsAmmo(held)) return;
+			int type = held.type, count = held.stack;
+			held.TurnToAir(); // the handing client consumes first (server-authoritative add), so the stack is never duplicated
+			if (LevyUtil.IsClient) { var p = Common.Net.LevyPackets.New(Common.Net.LevyPacket.HandAmmo); p.Write(NPC.whoAmI); p.Write(type); p.Write(count); p.Send(); }
+			else { int left = GiveAmmo(type, count); if (left > 0) Main.LocalPlayer.QuickSpawnItem(Main.LocalPlayer.GetSource_Misc("Levy:HandAmmo"), type, left); }
 		}
 
-		/// <summary>Give a stack of ammo to this soldier (server).</summary>
-		public void HandAmmo(Player from, Item stack)
+		/// <summary>Adds up to <paramref name="count"/> of ammo type to the pouch (server). Returns the amount that did not fit or did not match the weapon.</summary>
+		public int GiveAmmo(int type, int count)
 		{
-			if (Record == null || stack == null || stack.IsAir || stack.ammo <= 0) return;
+			if (Record == null || type <= 0 || type >= ItemLoader.ItemCount || count <= 0) return count;
+			var w = Record.Gear.Weapon;
+			if (w == null || w.IsAir || w.useAmmo <= 0 || ContentSamples.ItemsByType[type].ammo != w.useAmmo) return count;
 			var pouch = Record.Gear.Ammo;
-			if (!pouch.IsAir && pouch.type != stack.type) return;
+			if (!pouch.IsAir && pouch.type != type) return count;
 			int room = LevyConstants.AmmoPouchMax - (pouch.IsAir ? 0 : pouch.stack);
-			int take = Math.Min(room, stack.stack); if (take <= 0) return;
-			if (pouch.IsAir) { pouch.SetDefaults(stack.type); pouch.stack = take; } else pouch.stack += take;
-			stack.stack -= take; if (stack.stack <= 0) stack.TurnToAir();
+			int take = Math.Min(room, count); if (take <= 0) return count;
+			if (pouch.IsAir) { pouch.SetDefaults(type); pouch.stack = take; } else pouch.stack += take;
 			Combat_OnGearChanged();
+			return count - take;
 		}
 
 		/// <summary>Gear or grade changed from outside (promotion, crystals, armory issue): re-read the weapon profile and stats.</summary>

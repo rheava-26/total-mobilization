@@ -171,3 +171,13 @@ Configuration → Levy, and `EventBookDropDenominator` in `Common/LevyConstants.
 * Another mod throwing inside an enemy AI while the dummy player occupies slot 255: the mod restores the slot on the next
   tick; look for `Levy:` warnings in the log.
 * A draw exception in another mod's player layer would make the body fall back to the placeholder sprite (logged once).
+
+## Known gaps left in v1 (from the source review; multiplayer is not a v1 goal)
+* Multiplayer client roster rows read from the periodic snapshot, not from the live body, so a row's HP/state can lag the
+  real soldier by up to the snapshot interval.
+* The Barracks panel's "used today" marker for Recruiting drive / Hazard pay does not appear on multiplayer clients (the day
+  counter is server-side); the server still enforces once-per-day.
+* The War Horn chooses mobilize vs stand down from the client's last-synced flag, so a horn pressed in the same instant as an
+  auto-muster can briefly disagree until the next tile-entity sync.
+* Deposit, feed-crystal and book-used packets trust the client's claim in multiplayer (treasury/flags are not re-validated
+  against the server's inventory mirror). A cheating client could mint treasury; harmless in single player and co-op.

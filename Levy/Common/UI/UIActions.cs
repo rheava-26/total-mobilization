@@ -287,7 +287,9 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>True while the tile entity still exists in the world under the same ID.</summary>
-		public static bool IsLive(TileEntity te) => te != null && TileEntity.ByID.TryGetValue(te.ID, out var cur) && ReferenceEquals(cur, te);
+		// In multiplayer every TileEntitySharing (MessageID 86) replaces the stored instance, so a ReferenceEquals test would close
+		// the panel on each resync. Liveness is by id + position + type instead; the panel reads the current instance through ByID.
+		public static bool IsLive(TileEntity te) => te != null && TileEntity.ByID.TryGetValue(te.ID, out var cur) && cur.GetType() == te.GetType() && cur.Position == te.Position;
 
 		public static string StateText(SoldierRecord rec)
 		{

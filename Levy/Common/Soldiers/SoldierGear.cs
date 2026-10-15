@@ -84,7 +84,7 @@ namespace Levy.Common.Soldiers
 		/// <summary>Visual-only sync (type + prefix) for clients that draw the body.</summary>
 		public void WriteVisual(BinaryWriter w)
 		{
-			void W(Item it) { w.Write(it.type); w.Write((byte)it.prefix); }
+			void W(Item it) { w.Write(it.type); w.Write((ushort)it.prefix); }
 			W(Weapon); W(Sidearm); W(Head); W(Body); W(Legs);
 			foreach (var a in Accessories) W(a);
 			foreach (var d in Dyes) W(d);
@@ -93,7 +93,7 @@ namespace Levy.Common.Soldiers
 
 		public void ReadVisual(BinaryReader r)
 		{
-			Item R() { var it = new Item(); int t = r.ReadInt32(); int p = r.ReadByte(); if (t > 0) { it.SetDefaults(t); if (p > 0) it.Prefix(p); } return it; }
+			Item R() { var it = new Item(); int t = r.ReadInt32(); int p = r.ReadUInt16(); if (t > 0) { it.SetDefaults(t); if (p > 0) it.Prefix(p); } return it; }
 			Weapon = R(); Sidearm = R(); Head = R(); Body = R(); Legs = R();
 			for (int i = 0; i < AccessorySlots; i++) Accessories[i] = R();
 			for (int i = 0; i < DyeSlots; i++) Dyes[i] = R();

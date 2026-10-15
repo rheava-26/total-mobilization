@@ -24,6 +24,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.Order, OnOrder);
 			LevyPackets.Register(LevyPacket.HoldFire, OnHoldFire);
 			LevyPackets.Register(LevyPacket.Rally, OnRally);
+			LevyPackets.Register(LevyPacket.Rearm, OnRearm);
 			LevyPackets.Register(LevyPacket.Deposit, OnDeposit);
 			LevyPackets.Register(LevyPacket.Withdraw, OnWithdraw);
 			LevyPackets.Register(LevyPacket.HandAmmo, OnHandAmmo);
@@ -92,6 +93,13 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
 			if (sender != null) Roster.Rally(sender);
+		}
+
+		private static void OnRearm(BinaryReader r, int whoAmI)
+		{
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender != null) Roster.Rearm(sender);
 		}
 
 		/// <summary>The client already removed the coins from its own inventory; the server only credits the treasury.</summary>

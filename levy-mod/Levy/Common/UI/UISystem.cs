@@ -30,9 +30,10 @@ namespace Levy.Common.UI
 		public static BarracksTE CurrentBarracks { get; private set; }
 		public static ArmoryTE CurrentArmory { get; private set; }
 
-		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI;
+		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI, _manualUI;
 		private BarracksPanel _barracks;
 		private ArmoryPanel _armory;
+		private ManualPanel _manual;
 		private OrdersRadial _radial;
 		private HudStrip _hud;
 		private GameTime _lastGameTime;
@@ -55,16 +56,16 @@ namespace Levy.Common.UI
 			// Panels bake their static labels from localization in OnInitialize (via Activate), so build them after localization
 			// is fully loaded; doing this in Load would stamp raw keys like "Mods.Levy.UI2.Roster" into the buttons.
 			if (Main.dedServ) return;
-			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface();
-			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip();
-			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate();
+			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface();
+			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel();
+			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate();
 		}
 
 		public override void Unload()
 		{
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
-			_barracksUI = _armoryUI = _radialUI = _hudUI = null;
-			_barracks = null; _armory = null; _radial = null; _hud = null;
+			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = null;
+			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null;
 			CurrentBarracks = null; CurrentArmory = null; ArmyStripVisible = false;
 		}
 
@@ -74,7 +75,7 @@ namespace Levy.Common.UI
 		public virtual void OpenBarracks(BarracksTE te)
 		{
 			if (Main.dedServ || te == null || _barracksUI == null) return;
-			CloseArmory(); CloseRadial();
+			CloseArmory(); CloseRadial(); CloseManual();
 			CurrentBarracks = te;
 			_barracks.Bind(te);
 			_barracksUI.SetState(_barracks);
@@ -87,7 +88,7 @@ namespace Levy.Common.UI
 		public virtual void OpenArmory(ArmoryTE te)
 		{
 			if (Main.dedServ || te == null || _armoryUI == null) return;
-			CloseBarracks(); CloseRadial();
+			CloseBarracks(); CloseRadial(); CloseManual();
 			CurrentArmory = te;
 			_armory.Bind(te);
 			_armoryUI.SetState(_armory);
@@ -97,7 +98,23 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
 
-		public virtual void CloseAll() { CloseBarracks(); CloseArmory(); CloseRadial(); }
+		public virtual void OpenManual()
+		{
+			if (Main.dedServ || _manualUI == null) return;
+			CloseBarracks(); CloseArmory(); CloseRadial();
+			_manual.Open();
+			_manualUI.SetState(_manual);
+			SoundEngine.PlaySound(SoundID.MenuOpen);
+		}
+
+		public virtual void CloseAll() { CloseBarracks(); CloseArmory(); CloseRadial(); CloseManual(); }
+
+		public void CloseManual()
+		{
+			if (_manualUI?.CurrentState == null) return;
+			_manualUI.SetState(null);
+			SoundEngine.PlaySound(SoundID.MenuClose);
+		}
 
 		public void CloseBarracks()
 		{
@@ -117,7 +134,7 @@ namespace Levy.Common.UI
 		{
 			if (Main.dedServ || _radialUI == null) return;
 			if (_radialUI.CurrentState != null) { CloseRadial(); return; }
-			CloseBarracks(); CloseArmory();
+			CloseBarracks(); CloseArmory(); CloseManual();
 			_radial.Open();
 			_radialUI.SetState(_radial);
 			SoundEngine.PlaySound(SoundID.MenuOpen);
@@ -158,6 +175,11 @@ namespace Levy.Common.UI
 				if (!PanelStillValid(CurrentArmory, CurrentArmory?.Center ?? Vector2.Zero, player)) CloseArmory();
 				else _armoryUI.Update(gameTime);
 			}
+			if (_manualUI.CurrentState != null)
+			{
+				if (Main.gameMenu || player.dead) CloseManual();
+				else _manualUI.Update(gameTime);
+			}
 			if (_radialUI.CurrentState != null)
 			{
 				if (Main.gameMenu || player.dead) CloseRadial();
@@ -187,6 +209,7 @@ namespace Levy.Common.UI
 				{
 					if (_barracksUI?.CurrentState != null) _barracksUI.Draw(Main.spriteBatch, gt);
 					if (_armoryUI?.CurrentState != null) _armoryUI.Draw(Main.spriteBatch, gt);
+					if (_manualUI?.CurrentState != null) _manualUI.Draw(Main.spriteBatch, gt);
 					return true;
 				}, InterfaceScaleType.UI));
 				layers.Insert(inv + 2, new LegacyGameInterfaceLayer("Levy: Orders Radial", () =>

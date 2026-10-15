@@ -15,6 +15,7 @@ namespace Levy.Common.Net
 	///  Order: byte order, bool atBarracks                         (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  Rally: (none)                                              (Roster)
+	///  Rearm: (none)                                              (Roster) — commander = sender
 	///  Mobilize: int barracksId                                   (Militia)
 	///  StandDown: int barracksId                                  (Militia)
 	///  Deposit: int barracksId, long copper                       (Roster) — client already removed the coins
@@ -39,7 +40,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
 	}
 

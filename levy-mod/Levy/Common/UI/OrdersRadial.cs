@@ -9,12 +9,14 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Six buttons on a circle around the cursor: Follow / Hold / Return / Hold fire–Fire at will / Mobilize–Stand down / Rally.
+	/// Seven buttons on an ellipse around the cursor: Follow / Hold / Return / Hold fire–Fire at will / Mobilize–Stand down / Rally / Re-arm.
 	/// Opened by the War Horn right-click or the soldier chat button; closes after a click, on Escape or on right-click.
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 6;
+		private const int Count = 7;
+		/// <summary>Horizontal radius of the button ring; wider than tall so the bottom pair of buttons clear each other.</summary>
+		private const int RadiusX = 180;
 		private UIElement _root;
 		private readonly LevyButton[] _buttons = new LevyButton[Count];
 		private Label _title;
@@ -22,21 +24,23 @@ namespace Levy.Common.UI
 		private int _refreshTimer;
 		private BarracksTE _nearest;
 
-		private static int RootSize => 2 * (LevyConstants.UI.RadialRadius + LevyConstants.UI.RadialButtonWidth / 2) + 20;
+		private static int RootW => 2 * (RadiusX + LevyConstants.UI.RadialButtonWidth / 2) + 20;
+		private static int RootH => 2 * (LevyConstants.UI.RadialRadius + LevyConstants.UI.RadialButtonHeight / 2) + 20;
 
 		public override void OnInitialize()
 		{
 			_root = new UIElement();
-			_root.Width.Set(RootSize, 0f); _root.Height.Set(RootSize, 0f);
+			_root.Width.Set(RootW, 0f); _root.Height.Set(RootH, 0f);
 			int bw = LevyConstants.UI.RadialButtonWidth, bh = LevyConstants.UI.RadialButtonHeight, r = LevyConstants.UI.RadialRadius;
-			float c = RootSize * 0.5f;
+			float cx = RootW * 0.5f, cy = RootH * 0.5f;
 			for (int i = 0; i < Count; i++)
 			{
 				int idx = i;
-				double ang = -Math.PI / 2 + i * (2 * Math.PI / Count);
+				// Offset half a step so two buttons sit at the top and one at the bottom.
+				double ang = -Math.PI / 2 + (i - 0.5) * (2 * Math.PI / Count);
 				var b = new LevyButton("", LevyConstants.UI.SmallTextScale, bw, bh, () => Click(idx));
-				b.Left.Set(c + (float)Math.Cos(ang) * r - bw * 0.5f, 0f);
-				b.Top.Set(c + (float)Math.Sin(ang) * r - bh * 0.5f, 0f);
+				b.Left.Set(cx + (float)Math.Cos(ang) * RadiusX - bw * 0.5f, 0f);
+				b.Top.Set(cy + (float)Math.Sin(ang) * r - bh * 0.5f, 0f);
 				_buttons[i] = b;
 				_root.Append(b);
 			}
@@ -51,10 +55,10 @@ namespace Levy.Common.UI
 		{
 			_openedTick = Main.GameUpdateCount;
 			float sw = Main.screenWidth / Main.UIScale, sh = Main.screenHeight / Main.UIScale;
-			float half = RootSize * 0.5f;
+			float halfW = RootW * 0.5f, halfH = RootH * 0.5f;
 			var m = Main.MouseScreen;
-			float x = MathHelper.Clamp(m.X, half, Math.Max(half, sw - half)) - half;
-			float y = MathHelper.Clamp(m.Y, half, Math.Max(half, sh - half)) - half;
+			float x = MathHelper.Clamp(m.X, halfW, Math.Max(halfW, sw - halfW)) - halfW;
+			float y = MathHelper.Clamp(m.Y, halfH, Math.Max(halfH, sh - halfH)) - halfH;
 			_root.Left.Set(x, 0f); _root.Top.Set(y, 0f);
 			Refresh();
 			Recalculate();
@@ -71,6 +75,7 @@ namespace Levy.Common.UI
 			if (_nearest == null) _buttons[4].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
 			else _buttons[4].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
 			_buttons[5].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
+			_buttons[6].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
 		}
 
 		private void Click(int idx)
@@ -83,6 +88,7 @@ namespace Levy.Common.UI
 				case 3: UIActions.HoldFire(false); break;
 				case 4: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
 				case 5: UIActions.Rally(); break;
+				case 6: UIActions.Rearm(); break;
 			}
 			UISystem.Instance.CloseRadial();
 		}

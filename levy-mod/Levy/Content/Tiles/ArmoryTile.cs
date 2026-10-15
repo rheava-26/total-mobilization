@@ -8,6 +8,7 @@ using Terraria.ModLoader;
 using Terraria.ObjectData;
 using Levy.Common;
 using Levy.Common.UI;
+using Levy.Common.Util;
 using Levy.Content.Items.Placeables;
 using Levy.Content.TileEntities;
 
@@ -45,10 +46,13 @@ namespace Levy.Content.Tiles
 
 		public override void KillMultiTile(int i, int j, int frameX, int frameY)
 		{
-			// Spill the contents first (server / single player; clients hold only a mirror), then remove the entity.
+			// Spill the contents first (server / single player; clients hold only a mirror) and keep the count. The entity's OnKill
+			// spills again during Kill, but the slots are already air by then, so every item drops exactly once.
 			// The placing item itself drops automatically through ModTile.GetItemDrops.
-			if (TileEntity.TryGet(i, j, out ArmoryTE te)) te.DropAllContents();
+			int spilled = TileEntity.TryGet(i, j, out ArmoryTE te) ? te.DropAllContents() : 0;
 			ModContent.GetInstance<ArmoryTE>().Kill(i, j);
+			if (Main.netMode == NetmodeID.SinglePlayer)
+				Main.NewText(spilled > 0 ? LevyUtil.T(spilled == 1 ? "Chat.ArmoryBrokenOne" : "Chat.ArmoryBroken", spilled) : LevyUtil.T("Chat.ArmoryBrokenEmpty"), LevyConstants.EventChatColor);
 		}
 
 		public override void MouseOver(int i, int j)

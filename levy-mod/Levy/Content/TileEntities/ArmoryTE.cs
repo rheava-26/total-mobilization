@@ -307,18 +307,27 @@ namespace Levy.Content.TileEntities
 				new Vector2(LevyConstants.ArmorySpillWidth, LevyConstants.ArmorySpillHeight), item);
 		}
 
-		/// <summary>Spills every stored item onto the ground (the tile was broken). Server / single player only; slots become air.</summary>
-		public void DropAllContents()
+		/// <summary>
+		/// Spills every stored item onto the ground (the tile was broken). Server / single player only; slots become air, so a second
+		/// call spills nothing. Returns the number of item stacks spilled.
+		/// </summary>
+		public int DropAllContents()
 		{
-			if (Main.netMode == NetmodeID.MultiplayerClient) return;
+			if (Main.netMode == NetmodeID.MultiplayerClient) return 0;
+			int stacks = 0;
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) {
 				for (int i = 0; i < arr.Length; i++) {
 					if (IsAir(arr[i])) continue;
 					Spill(arr[i]);
 					arr[i] = new Item();
+					stacks++;
 				}
 			}
+			return stacks;
 		}
+
+		/// <summary>Whatever path removes this entity, its contents spill first (idempotent: slots are already air after a spill).</summary>
+		public override void OnKill() => DropAllContents();
 
 		// ------------------------------------------------------------------ persistence / net
 

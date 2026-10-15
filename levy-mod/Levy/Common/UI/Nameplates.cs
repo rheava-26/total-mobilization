@@ -12,7 +12,7 @@ namespace Levy.Common.UI
 	public static class Nameplates
 	{
 		private static int _drawnThisFrame, _drawnLastFrame, _frameStamp = -1;
-		private static readonly Color Gold = new(255, 215, 80), Dark = new(20, 20, 20, 200), FearOrange = new(255, 140, 30), RoutRed = new(255, 60, 40);
+		private static readonly Color Gold = new(255, 215, 80), Dark = new(20, 20, 20, 200), FearOrange = new(255, 140, 30), RoutRed = new(255, 60, 40), WeaponTan = new(200, 185, 150);
 
 		/// <summary>Soldiers whose plates were requested last frame (per draw frame, not per tick, via Main.drawsCountedForFPS).</summary>
 		public static int DrawnLastFrame => _drawnLastFrame;
@@ -49,6 +49,11 @@ namespace Levy.Common.UI
 			int bx = (int)(top.X - w * 0.5f), by = (int)(y + 8f);
 			spriteBatch.Draw(pixel, new Rectangle(bx - 1, by - 1, w + 2, h + 2), Dark);
 			spriteBatch.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), Color.Lerp(Color.Red, Color.LimeGreen, frac));
+
+			// held weapon, small and muted, centred under the HP bar (militia and regulars alike)
+			var weapon = s.Record.Gear?.Weapon;
+			string weaponName = weapon == null || weapon.IsAir ? "Unarmed" : weapon.Name;
+			Utils.DrawBorderString(spriteBatch, weaponName, new Vector2(top.X, by + h + 6f), WeaponTan, scale * LevyConstants.UI.NameplateWeaponScale, 0.5f, 0f);
 			if (militia) return;
 
 			// fear

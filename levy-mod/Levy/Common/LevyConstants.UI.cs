@@ -37,6 +37,8 @@ namespace Levy.Common
 			public const int NameplateOffsetY = 28;
 			public const int NameplateHpBarWidth = 30, NameplateHpBarHeight = 4;
 			public const float NameplateTextScale = 0.8f;
+			/// <summary>Weapon line scale relative to the name text scale.</summary>
+			public const float NameplateWeaponScale = 0.8f;
 			public const float FearIconMinScale = 0.6f, FearIconMaxScale = 1.3f;
 
 			// ---- HUD strip ----

@@ -252,6 +252,8 @@ Mods: {
 			HoldFire: Hold fire
 			FireAtWill: Fire at will
 			Rally: Rally
+			Rearm: Re-arm
+			RearmHint: Every soldier returns their kit to the Armory and draws again from the current issue slots.
 			Patrol: Assign patrol
 			Veteran: Veteran
 			Unpaid: Unpaid {0} days
@@ -286,6 +288,11 @@ Mods: {
 			Promoted: "{0} has been promoted to {1}."
 			Veteran: "{0} is now a veteran."
 			Rallied: The horn sounds. The line rallies.
+			Rearmed: The muster re-arms from the racks.
+			RearmNone: No soldier has an Armory to draw from.
+			ArmoryBroken: Armory destroyed. {0} items recovered.
+			ArmoryBrokenOne: Armory destroyed. 1 item recovered.
+			ArmoryBrokenEmpty: Armory destroyed. The racks were empty; your soldiers are carrying the gear.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
 			HazardPay: Hazard pay issued at {0}: {1}.

@@ -802,6 +802,33 @@ namespace Levy.Common.Systems
 			LevyUtil.Chat(LevyUtil.T("Chat.Rallied"));
 		}
 
+		/// <summary>
+		/// Re-arm order (server / single player): every living Regular of this commander and every fielded militiaman returns
+		/// their kit to the home Armory, then all of them draw again best-first from the current issue slots. Returning
+		/// everyone before anyone draws means the whole muster re-deals from one pool. Soldiers with no reachable Armory
+		/// keep what they carry. Deployed bodies are told to re-read their weapon profile.
+		/// </summary>
+		public virtual void Rearm(Player commander)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			var batch = new List<(ArmoryTE armory, SoldierRecord rec)>();
+			foreach (var rec in Regulars)
+			{
+				if (rec.CommanderName != commander.name || rec.Dead) continue;
+				var armory = ArmoryOf(HomeOf(rec));
+				if (armory != null) batch.Add((armory, rec));
+			}
+			foreach (var (armory, rec) in batch) armory.ReturnGear(rec.Gear);
+			foreach (var (armory, rec) in batch)
+			{
+				armory.IssueGear(rec);
+				RebindBody(BodyOf(rec), rec);
+			}
+			int total = batch.Count + SettlementSystem.Instance.RearmMilitia();
+			SendToPlayer(commander, LevyUtil.T(total > 0 ? "Chat.Rearmed" : "Chat.RearmNone"));
+			if (batch.Count > 0) SendRosterSnapshot();
+		}
+
 		public virtual void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
 		{
 			if (LevyUtil.IsClient || rec == null) return;

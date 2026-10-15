@@ -629,6 +629,28 @@ namespace Levy.Common.Systems
 			rec.Gear.Clear();
 		}
 
+		/// <summary>
+		/// Re-arm for fielded militia (server / single player): each returns its kit to its barracks' Armory, then everyone draws again
+		/// from the current issue slots. Militia with no linked Armory keep their kit. Returns how many were re-armed.
+		/// </summary>
+		public virtual int RearmMilitia()
+		{
+			if (!LevyUtil.IsServerOrSingle) return 0;
+			var batch = new List<(BarracksTE home, SoldierRecord rec)>();
+			foreach (var b in AllBarracks())
+			{
+				if (!b.Mobilized || LinkedArmory(b) == null) continue;
+				foreach (var rec in b.Militia) if (rec.HasBody) batch.Add((b, rec));
+			}
+			foreach (var (home, rec) in batch) ReturnGearHome(home, rec);
+			foreach (var (home, rec) in batch)
+			{
+				IssueGear(home, rec);
+				BodyOf(rec)?.NotifyGearChanged();
+			}
+			return batch.Count;
+		}
+
 		private void FlushArmorySync()
 		{
 			if (_dirtyArmories.Count == 0) return;

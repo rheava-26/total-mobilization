@@ -269,6 +269,9 @@ Mods: {
 			Rally: Rally
 			Rearm: Re-arm
 			RearmHint: Every soldier returns their kit to the Armory and draws again from the current issue slots.
+			NamesOn: Show names
+			NamesOff: Hide names
+			NamesHint: Show every soldier's nameplate, even in a crowd. Toggle again to return to the normal fade.
 			Patrol: Assign patrol
 			Veteran: Veteran
 			Unpaid: Unpaid {0} days

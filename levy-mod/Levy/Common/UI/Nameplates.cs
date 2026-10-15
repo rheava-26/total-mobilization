@@ -23,8 +23,9 @@ namespace Levy.Common.UI
 			if (Main.drawsCountedForFPS != _frameStamp) { _frameStamp = Main.drawsCountedForFPS; _drawnLastFrame = _drawnThisFrame; _drawnThisFrame = 0; }
 			_drawnThisFrame++;
 			if (s?.Record == null || spriteBatch == null || Main.dedServ) return;
-			if (!LevyConfig.Get.Nameplates) return;
-			if (Math.Max(UISystem.SoldiersOnScreenLastFrame, _drawnLastFrame) > LevyConstants.NameplateHideAbove) return;
+			bool forced = UISystem.NameplatesForced; // War Horn toggle: show every plate even in a crowd
+			if (!forced && !LevyConfig.Get.Nameplates) return;
+			if (!forced && Math.Max(UISystem.SoldiersOnScreenLastFrame, _drawnLastFrame) > LevyConstants.NameplateHideAbove) return;
 
 			var npc = s.NPC;
 			var top = npc.Top - screenPos;

@@ -25,6 +25,8 @@ namespace Levy.Common.UI
 		public static int SoldiersOnScreenLastFrame;
 		/// <summary>Army strip visibility (toggled with the ArmyStrip keybind; not saved).</summary>
 		public static bool ArmyStripVisible;
+		/// <summary>Force soldier nameplates to show even in a crowd (toggled from the War Horn radial; not saved).</summary>
+		public static bool NameplatesForced;
 
 		public static ModKeybind FollowKey, HoldKey, ReturnKey, HoldFireKey, MobilizeKey, RallyKey, ArmyStripKey;
 
@@ -70,7 +72,7 @@ namespace Levy.Common.UI
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
 			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = null;
 			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null;
-			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false;
+			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false;
 		}
 
 		public override void OnWorldUnload() { if (!Main.dedServ) CloseAll(); }
@@ -177,6 +179,14 @@ namespace Levy.Common.UI
 		{
 			if (Main.dedServ) return;
 			ArmyStripVisible = !ArmyStripVisible;
+			SoundEngine.PlaySound(SoundID.MenuTick);
+		}
+
+		/// <summary>Force all soldier nameplates on/off regardless of the crowd threshold.</summary>
+		public virtual void ToggleNameplates()
+		{
+			if (Main.dedServ) return;
+			NameplatesForced = !NameplatesForced;
 			SoundEngine.PlaySound(SoundID.MenuTick);
 		}
 

@@ -9,12 +9,12 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Seven buttons on an ellipse around the cursor: Follow / Hold / Return / Hold fire–Fire at will / Mobilize–Stand down / Rally / Re-arm.
+	/// Eight buttons on an ellipse around the cursor: Follow / Hold / Return / Hold fire–Fire at will / Mobilize–Stand down / Rally / Re-arm / Nameplates.
 	/// Opened by the War Horn right-click or the soldier chat button; closes after a click, on Escape or on right-click.
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 7;
+		private const int Count = 8;
 		/// <summary>Horizontal radius of the button ring; wider than tall so the bottom pair of buttons clear each other.</summary>
 		private const int RadiusX = 180;
 		private UIElement _root;
@@ -76,6 +76,7 @@ namespace Levy.Common.UI
 			else _buttons[4].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
 			_buttons[5].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
 			_buttons[6].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
+			_buttons[7].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
 		private void Click(int idx)
@@ -89,6 +90,7 @@ namespace Levy.Common.UI
 				case 4: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
 				case 5: UIActions.Rally(); break;
 				case 6: UIActions.Rearm(); break;
+				case 7: UISystem.Instance.ToggleNameplates(); break;
 			}
 			UISystem.Instance.CloseRadial();
 		}

@@ -859,7 +859,9 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 
 **All v0.4.0 AI numbers are first-guess named constants — a tuning pass is expected once playtested.**
 
-**Still open (Wave 2): #3 (orders: Spread Out order / Focus Target / Search & Destroy — note dispersion #16 partly covers "spread"), #5 (idle melee swings), #6 (thorns — needs clarity), #7 (path jitter — partly covered by dispersion), #8 (dummy targeting), #11 (armor-coverage confirm), #13 (boss fear tuning).**
+**SHIPPED v0.5.0 (commit e2abc66) — #3 combat orders:** Spread Out (squad toggle, ~2.5x formation + idle spread), Search & Destroy (SoldierOrder=4, roam on a 120-tile leash, hunt smart, standoff respected), Focus Target (radial → click enemy → squad focus-fires, commander-scoped, clears on death). Radial auto-sizes to 11 buttons. All first-guess constants (SpreadOutMult 2.5, SearchLeashTiles 120, SearchAcquireRangeMult 1.5, FocusRangeMult 1.25).
+
+**Still open (Wave 2): #5 (idle melee swings), #6 (thorns — needs clarity), #8 (dummy targeting for DPS testing), #11 (armor-coverage confirm), #13 (boss fear tuning). Plus: tuning passes on the v0.4.0/v0.5.0 AI constants once the designer playtests (aerial feel, perch thresholds, spread/leash/focus numbers).**
 - Per-unit gear grids seen in a clip are from ANOTHER mod (inventory viewer), NOT Levy — so the per-unit loadout menu (#1) is still needed; build it as click-to-edit.
 - Facts confirmed for the designer: mana pool works (magic throttles on empty, swaps to sidearm); storage weapons ARE issued after issue slots; dead regulars keep kit on respawn, militia return kit to Armory (nothing lost).
 - New GitHub repo for the mod: user is creating an empty `rheava-26/Levy` + granting the Claude GitHub App access (Option B); push there once ready.

@@ -96,7 +96,7 @@ namespace Levy.Content.NPCs
 			RegenMana();
 			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); }
 
-			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken;
+			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
 			if (!fighting || Record.HoldFire) return;
 			if (TargetIndex < 0 || TargetIndex >= Main.maxNPCs) return;
 			NPC target = Main.npc[TargetIndex];
@@ -112,7 +112,14 @@ namespace Levy.Content.NPCs
 				if (tiles > Weapon.RangeTiles) return;
 				Vector2 muzzle = WeaponUse.Muzzle(this);
 				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(muzzle, seg.Center)) return;
-				if (!WeaponUse.TryAttack(this, target) && AttackCooldown <= 0) UpdateSidearm();
+				// Routed shots are wilder: the shaken multiplier (already in the weapon layer while the meter is up) is topped up to RoutedAimMult.
+				float extra = 1f;
+				if (State == SoldierState.Routed) extra = Shaken ? LevyConstants.RoutedAimMult / LevyConstants.ShakenAimMult : LevyConstants.RoutedAimMult;
+				Aiming.ExtraErrorScale = extra;
+				bool fired;
+				try { fired = WeaponUse.TryAttack(this, target); }
+				finally { Aiming.ExtraErrorScale = 1f; }
+				if (!fired && AttackCooldown <= 0) UpdateSidearm();
 				return;
 			}
 

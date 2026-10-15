@@ -217,7 +217,7 @@ namespace Levy.Common.UI
 			public readonly SoldierRecord Rec;
 			private readonly BarracksPanel _owner;
 			private readonly Label _name, _grade, _hp, _state, _line2;
-			private readonly LevyButton _promote, _discharge, _follow, _hold, _return, _patrol, _feedLc, _feedLf, _feedMc, _rebase;
+			private readonly LevyButton _promote, _discharge, _follow, _hold, _return, _kit, _patrol, _feedLc, _feedLf, _feedMc, _rebase;
 			private readonly List<LevyButton> _line4 = new();
 			private static readonly Color Gold = new(255, 215, 80);
 
@@ -239,6 +239,7 @@ namespace Levy.Common.UI
 				_follow = Add(new LevyButton(LevyUtil.T("UI2.FollowAll"), 0.7f, 66, 24, () => UIActions.SoldierOrder(Rec, SoldierOrder.Follow), LevyUtil.T("UI.Follow")), 238, 40);
 				_hold = Add(new LevyButton(LevyUtil.T("UI2.HoldAll"), 0.7f, 60, 24, () => UIActions.SoldierOrder(Rec, SoldierOrder.Hold), LevyUtil.T("UI.Hold")), 308, 40);
 				_return = Add(new LevyButton(LevyUtil.T("UI2.ReturnAll"), 0.7f, 70, 24, () => UIActions.SoldierOrder(Rec, SoldierOrder.ReturnToBarracks), LevyUtil.T("UI.Return")), 372, 40);
+				_kit = Add(new LevyButton(LevyUtil.T("Loadout.Button"), 0.7f, 56, 24, OpenKit, LevyUtil.T("Loadout.ButtonHint")), 446, 40);
 
 				_patrol = new LevyButton(LevyUtil.T("UI.Patrol"), 0.7f, 110, 24, Patrol, LevyUtil.T("UI2.PatrolHint"));
 				_feedLc = new LevyButton(LevyUtil.T("UI2.FeedLifeCrystal"), 0.7f, 104, 24, () => UIActions.FeedCrystal(Rec, ItemID.LifeCrystal));
@@ -319,6 +320,13 @@ namespace Levy.Common.UI
 				if (b.Parent == null) Append(b);
 				b.Left.Set(x, 0f); b.Top.Set(68f, 0f);
 				x += b.Width.Pixels + 4f;
+			}
+
+			private void OpenKit()
+			{
+				if (Rec == null) return;
+				if (UISystem.CurrentLoadoutId == Rec.Id) UISystem.Instance.CloseSoldierLoadout();
+				else UISystem.Instance.OpenSoldierLoadout(Rec);
 			}
 
 			private void Promote()

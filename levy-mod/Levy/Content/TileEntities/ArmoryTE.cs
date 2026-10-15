@@ -129,8 +129,10 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>Issue slots first (indices issueFrom..issueTo step issueStep), bulk storage second; best-first within each.</summary>
-		private Item TakeBest(Item[] issue, int issueFrom, int issueTo, int issueStep, Func<Item, bool> pred, Func<Item, float> score)
+		private Item TakeBest(Item[] issue, int issueFrom, int issueTo, int issueStep, Func<Item, bool> userPred, Func<Item, float> score)
 		{
+			// Items a Re-arm just pulled off a soldier with a hand-assigned slot are held for that soldier until the same tick ends.
+			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
 			if (issue != null && TryBest(issue, pred, score, out int idx, issueFrom, issueTo, issueStep)) return Remove(issue, idx);
 			if (TryBest(Storage, pred, score, out idx)) return Remove(Storage, idx);
 			return null;
@@ -144,6 +146,78 @@ namespace Levy.Content.TileEntities
 			if (worn == null) return false;
 			for (int i = 0; i < worn.Length; i++) if (!IsAir(worn[i]) && worn[i].type == type) return true;
 			return false;
+		}
+
+		// ------------------------------------------------------------------ hand-assigned gear across a Re-arm
+
+		// Re-arm = ReturnGear for the whole muster, then IssueGear for each soldier, all inside one tick. ReturnGear parks the
+		// hand-assigned (locked) items in storage like everything else but remembers them on the soldier (SoldierGear.Reserved) and
+		// here; IssueGear hands the same instances back first, and TakeBest skips them meanwhile so nobody else draws them.
+		// Discharge / stand-down never issue in the same tick, so the reservation lapses and the items simply stay in the armory.
+		private readonly List<Item> _reservedRefs = new();
+		private uint _reservedTick;
+
+		private bool IsReservedRef(Item it)
+		{
+			if (_reservedRefs.Count == 0) return false;
+			if (_reservedTick != Main.GameUpdateCount) { _reservedRefs.Clear(); return false; }
+			for (int i = 0; i < _reservedRefs.Count; i++) if (ReferenceEquals(_reservedRefs[i], it)) return true;
+			return false;
+		}
+
+		private void Reserve(Item it)
+		{
+			if (_reservedTick != Main.GameUpdateCount) { _reservedRefs.Clear(); _reservedTick = Main.GameUpdateCount; }
+			_reservedRefs.Add(it);
+		}
+
+		private static int IndexOfRef(Item[] arr, Item it) { for (int i = 0; i < arr.Length; i++) if (ReferenceEquals(arr[i], it)) return i; return -1; }
+
+		/// <summary>Gives a soldier back what ReturnGear took from his locked slots earlier in the same tick (a Re-arm). Locks are restored.</summary>
+		private bool ReclaimLocked(SoldierGear g, int accessorySlots)
+		{
+			var kept = g.Reserved; uint tick = g.ReservedTick;
+			g.Reserved = null;
+			if (kept == null || tick != Main.GameUpdateCount) return false;
+			bool any = false;
+			for (int s = 0; s < SoldierGear.SlotCount && s < kept.Length; s++) {
+				var item = kept[s];
+				if (IsAir(item)) continue;
+				if (s >= SoldierGear.SlotAcc0 && s < SoldierGear.SlotAmmo && s - SoldierGear.SlotAcc0 >= accessorySlots) continue;
+				if (!IsAir(g.Get(s))) continue;
+				if (s == SoldierGear.SlotAmmo) {
+					// Stackable: the pouch may have merged into a bigger stack, so take the same type back by count.
+					var pouch = new Item(); pouch.SetDefaults(item.type); pouch.stack = 0;
+					int want = Math.Min(item.stack, LevyConstants.AmmoPouchMax);
+					int moved = DrainType(IssueAmmo, item.type, pouch, want);
+					if (moved < want) moved += DrainType(Storage, item.type, pouch, want - moved);
+					if (moved > 0) { g.Set(s, pouch); g.SetLocked(s, true); any = true; }
+					continue;
+				}
+				int idx = IndexOfRef(Storage, item);
+				if (idx >= 0) { g.Set(s, Remove(Storage, idx)); g.SetLocked(s, true); any = true; continue; }
+				idx = IndexOfRef(IssueWeapons, item);
+				if (idx >= 0) { g.Set(s, Remove(IssueWeapons, idx)); g.SetLocked(s, true); any = true; continue; }
+				idx = IndexOfRef(IssueArmor, item);
+				if (idx >= 0) { g.Set(s, Remove(IssueArmor, idx)); g.SetLocked(s, true); any = true; }
+			}
+			if (any) MarkDirty();
+			return any;
+		}
+
+		private static int DrainType(Item[] arr, int type, Item pouch, int max)
+		{
+			int moved = 0;
+			for (int i = 0; i < arr.Length && moved < max; i++) {
+				var it = arr[i];
+				if (IsAir(it) || it.type != type) continue;
+				int room = Math.Min(max - moved, pouch.maxStack - pouch.stack);
+				if (room <= 0) break;
+				int n = Math.Min(room, it.stack);
+				pouch.stack += n; it.stack -= n; moved += n;
+				if (it.stack <= 0) arr[i] = new Item();
+			}
+			return moved;
 		}
 
 		// ------------------------------------------------------------------ issue API
@@ -266,18 +340,24 @@ namespace Levy.Content.TileEntities
 			return item;
 		}
 
-		/// <summary>Auto-issue best-first: armor, weapon (matching the armor's damage class when possible), sidearm, accessories (grade slots), ammo. Returns true if anything changed.</summary>
+		/// <summary>
+		/// Auto-issue best-first: armor, weapon (matching the armor's damage class when possible), sidearm, accessories (grade slots), ammo.
+		/// Slots the player hand-assigned (<see cref="SoldierGear.IsLocked"/>) are never replaced or emptied. Returns true if anything changed.
+		/// </summary>
 		public virtual bool IssueGear(SoldierRecord soldier)
 		{
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			bool changed = false;
 
-			if (IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
-			if (IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
-			if (IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
+			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
+			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
 
-			if (!g.HasWeapon)
+			if (!g.IsLocked(SoldierGear.SlotHead) && IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
+			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
+			if (!g.IsLocked(SoldierGear.SlotLegs) && IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
+
+			if (!g.IsLocked(SoldierGear.SlotWeapon) && !g.HasWeapon)
 			{
 				// The armor decides doctrine: prefer a weapon of its class, else the best of anything.
 				Item w = null;
@@ -292,49 +372,73 @@ namespace Levy.Content.TileEntities
 
 			// A melee primary needs no fallback blade; save the swords for the gunners.
 			bool primaryMelee = g.HasWeapon && IsMeleeFamily(WeaponClassifier.Classify(g.Weapon));
-			if (!g.HasSidearm && !primaryMelee) { var s = TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && !primaryMelee) { var s = TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
 
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {
-				if (!IsAir(g.Accessories[i])) continue;
+				if (g.IsLocked(SoldierGear.SlotAcc0 + i) || !IsAir(g.Accessories[i])) continue;
 				var a = TakeAccessory(soldier);
 				if (a == null) break;
 				g.Accessories[i] = a; changed = true;
 			}
 
 			g.Ammo ??= new Item();
-			int ammoId = g.HasWeapon ? g.Weapon.useAmmo : 0;
-			if (ammoId > 0) {
-				if (!IsAir(g.Ammo) && g.Ammo.ammo != ammoId) {
-					// Wrong ammo for the new weapon: back to storage.
+			if (g.IsLocked(SoldierGear.SlotAmmo)) {
+				// Hand-assigned pouch: never swapped or dumped; if it has run dry the lock lapses so the armory can refill it.
+				if (IsAir(g.Ammo)) g.SetLocked(SoldierGear.SlotAmmo, false);
+			}
+			if (!g.IsLocked(SoldierGear.SlotAmmo)) {
+				int ammoId = g.HasWeapon ? g.Weapon.useAmmo : 0;
+				if (ammoId > 0) {
+					if (!IsAir(g.Ammo) && g.Ammo.ammo != ammoId) {
+						// Wrong ammo for the new weapon: back to storage.
+						g.Ammo = Deposit(g.Ammo) ?? new Item();
+						changed = true;
+					}
+					if (IsAir(g.Ammo) || g.Ammo.ammo == ammoId) {
+						if (IsAir(g.Ammo)) g.Ammo = new Item();
+						if (TakeAmmo(ammoId, g.Ammo, LevyConstants.AmmoPouchMax) > 0) changed = true;
+					}
+				}
+				else if (g.HasWeapon && !IsAir(g.Ammo)) {
+					// Blade or spellbook in hand: the pouch is dead weight.
 					g.Ammo = Deposit(g.Ammo) ?? new Item();
 					changed = true;
 				}
-				if (IsAir(g.Ammo) || g.Ammo.ammo == ammoId) {
-					if (IsAir(g.Ammo)) g.Ammo = new Item();
-					if (TakeAmmo(ammoId, g.Ammo, LevyConstants.AmmoPouchMax) > 0) changed = true;
-				}
-			}
-			else if (g.HasWeapon && !IsAir(g.Ammo)) {
-				// Blade or spellbook in hand: the pouch is dead weight.
-				g.Ammo = Deposit(g.Ammo) ?? new Item();
-				changed = true;
 			}
 
 			if (changed) MarkDirty();
 			return changed;
 		}
 
-		/// <summary>Returns a soldier's whole kit to storage (stand down / discharge / softcore death).</summary>
+		/// <summary>
+		/// Returns a soldier's whole kit to storage (stand down / discharge / softcore death / the first half of a Re-arm). Locks do not stop
+		/// the return (they only guard against auto-issue) and are cleared with the gear. The one exception is bookkeeping for Re-arm: the
+		/// hand-assigned items are remembered for the rest of this tick so an IssueGear in the same tick hands the same items back
+		/// (see <see cref="ReclaimLocked"/>); any other caller never issues in the same tick, so for them the items just stay returned.
+		/// </summary>
 		public virtual void ReturnGear(SoldierGear gear)
 		{
 			if (gear == null) return;
+			Item[] kept = null;
+			if (gear.LockMask != 0) {
+				kept = new Item[SoldierGear.SlotCount];
+				for (int s = 0; s < SoldierGear.SlotCount; s++) {
+					if (!gear.IsLocked(s) || IsAir(gear.Get(s))) continue;
+					// Ammo is stackable and may merge into storage, so remember a copy; everything else keeps its instance.
+					kept[s] = s == SoldierGear.SlotAmmo ? gear.Get(s).Clone() : gear.Get(s);
+				}
+			}
 			var items = new List<Item>(gear.AllItems());
 			foreach (var it in items) {
 				var rem = Deposit(it);
 				if (!IsAir(rem)) Spill(rem);
 			}
 			gear.Clear();
+			if (kept != null) {
+				gear.Reserved = kept; gear.ReservedTick = Main.GameUpdateCount;
+				for (int s = 0; s < kept.Length; s++) if (kept[s] != null && s != SoldierGear.SlotAmmo) Reserve(kept[s]);
+			}
 			MarkDirty();
 		}
 

@@ -26,6 +26,7 @@ namespace Levy.Content.NPCs
 		private readonly List<Vector2> _path = new();
 		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
 		private bool _blocked, _blockedHard;
+		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
 
 		/// <summary>Remaining flight ticks (refilled on the ground).</summary>
 		public int WingTime => _wingTime;
@@ -48,6 +49,7 @@ namespace Levy.Content.NPCs
 			NudgeOffPlayers();
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
+			if (TickDodge(grounded)) { MirrorDummyControls(); return; }
 
 			if (!HasMoveGoal)
 			{
@@ -82,13 +84,16 @@ namespace Levy.Content.NPCs
 			float maxSpeed = 0f, accel = 0f;
 			if (horizontal)
 			{
-				npc.direction = dir; npc.spriteDirection = dir;
-				bool walk = reversing || Math.Abs(dx) < WalkWithinTiles * 16 || State == SoldierState.Idle || State == SoldierState.Patrol;
+				int face = FacingWhileMoving(dir);
+				npc.direction = face; npc.spriteDirection = face;
+				bool close = Math.Abs(dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step
+				bool walk = reversing || close || State == SoldierState.Idle || State == SoldierState.Patrol;
 				maxSpeed = (walk ? WalkSpeedPx : Abilities.MaxRunSpeed) * Abilities.WalkSpeed;
+				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
 				accel = walk ? WalkAccel : RunAccel;
 				Point feet = TileNav.FeetTile(npc.Bottom);
 				int ax = (int)((npc.Center.X + dir * (npc.width / 2f + LookAheadPx)) / 16f);
-				ScanAhead(feet.X, ax, feet.Y, dir, grounded, ref jumpTiles, ref wantFly, ref flyUp);
+				ScanAhead(feet.X, ax, feet.Y, dir, grounded, dy, ref jumpTiles, ref wantFly, ref flyUp);
 			}
 
 			// goal above and close: jump to it, fly to it, or admit it is out of reach
@@ -142,7 +147,7 @@ namespace Levy.Content.NPCs
 			ResetStuck(); _stuckTotal = 0;
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
-			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false;
+			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
 			NPC.netUpdate = true;
@@ -153,7 +158,7 @@ namespace Levy.Content.NPCs
 		// =====================================================================================================
 
 		/// <summary>Looks at the column one step ahead: doors, lava, deep water, walls to jump, ledges to refuse.</summary>
-		private void ScanAhead(int feetX, int ax, int fy, int dir, bool grounded, ref int jumpTiles, ref bool wantFly, ref bool flyUp)
+		private void ScanAhead(int feetX, int ax, int fy, int dir, bool grounded, float dyPx, ref int jumpTiles, ref bool wantFly, ref bool flyUp)
 		{
 			// closed door in the way: open it (town-NPC pattern) or stand blocked
 			for (int ty = fy; ty >= fy - 2; ty--)
@@ -198,6 +203,8 @@ namespace Levy.Content.NPCs
 			if (grounded && !TileNav.IsFloor(ax, fy + 1))
 			{
 				int depth = TileNav.DropDepth(ax, fy);
+				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
+				if ((depth < 0 || depth >= Math.Max(2, Abilities.JumpTiles)) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0) { _blocked = true; _blockedHard = true; return; }
 				if (depth > Abilities.JumpTiles + DropMarginTiles)
 				{
@@ -205,6 +212,121 @@ namespace Levy.Content.NPCs
 					else { _blocked = true; _blockedHard = true; }
 				}
 			}
+		}
+
+		/// <summary>
+		/// The column ahead has no floor. If solid floor resumes within <see cref="GapJumpMaxTiles"/> columns on the same level (clear
+		/// headroom over the gap and the landing), ask for a jump. Not when the goal is well below: then dropping is the point.
+		/// </summary>
+		private bool TryGapJump(int ax, int fy, int dir, float dyPx, ref int jumpTiles)
+		{
+			if (dyPx > 2f * 16f) return false;
+			for (int w = 0; w <= GapJumpMaxTiles; w++)
+			{
+				int cx = ax + dir * w;
+				for (int r = 0; r <= GapJumpClearRows; r++) if (TileNav.IsSolid(cx, fy - r)) return false;
+				if (TileNav.HasLava(cx, fy) || TileNav.HasLava(cx, fy - 1)) return false;
+				if (!TileNav.IsFloor(cx, fy + 1)) continue;
+				if (w == 0) return false;
+				if (TileNav.HasLava(cx, fy + 1)) return false;
+				int tiles = Math.Min(Abilities.JumpTiles, GapJumpTiles);
+				if (tiles < 2) return false;
+				if (tiles > jumpTiles) jumpTiles = tiles;
+				return true;
+			}
+			return false;
+		}
+
+		// =====================================================================================================
+		// facing / retreat / dodging
+		// =====================================================================================================
+
+		/// <summary>A body backing away (fear rout, or a ranged soldier stepping out of its standoff).</summary>
+		private bool Retreating => State == SoldierState.Routed
+			|| (_engMode == EngageMode.Retreat && (State == SoldierState.Engage || State == SoldierState.Shaken));
+
+		/// <summary>Fighting bodies face the thing they are shooting while they walk, so a backpedal reads as a backpedal.</summary>
+		private int FacingWhileMoving(int walkDir)
+		{
+			if ((State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed) && TargetIndex >= 0 && TargetIndex < Main.maxNPCs)
+			{
+				NPC t = Main.npc[TargetIndex];
+				float tx = t.Center.X - NPC.Center.X;
+				if (t.active && Math.Abs(tx) > 2f) return tx < 0f ? -1 : 1;
+			}
+			return walkDir;
+		}
+
+		/// <summary>
+		/// Dodges the nearest incoming hostile projectile: a short sidestep for steep shots, a hop for flat ones. Rate-limited.
+		/// Returns true while a sidestep is in progress (the walk logic is skipped for those few ticks).
+		/// </summary>
+		private bool TickDodge(bool grounded)
+		{
+			NPC npc = NPC;
+			if (_dodgeTicks > 0)
+			{
+				_dodgeTicks--;
+				npc.velocity.X = _dodgeVx;
+				return true;
+			}
+			if (_dodgeCooldown > 0) { _dodgeCooldown--; return false; }
+			if (!grounded || _flying || npc.wet) return false;
+			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)DodgeScanIntervalTicks) != 0) return false;
+
+			Projectile worst = null; float bestT = DodgeLookaheadTicks; Vector2 worstClosest = default;
+			float rSq = DodgeRadiusTiles * 16f * DodgeRadiusTiles * 16f;
+			float hit = DodgeHitRadiusPx + npc.width * 0.5f;
+			Vector2 c = npc.Center;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || !p.hostile || p.damage < DodgeMinDamage) continue;
+				Vector2 rel = c - p.Center;
+				if (rel.LengthSquared() > rSq) continue;
+				Vector2 v = p.velocity; float v2 = v.LengthSquared();
+				if (v2 < DodgeMinProjectileSpeed * DodgeMinProjectileSpeed) continue;
+				float t = Vector2.Dot(rel, v) / v2; // ticks until the closest approach
+				if (t < 2f || t > bestT) continue;
+				Vector2 closest = p.Center + v * t;
+				if (Vector2.Distance(closest, c) > hit) continue;
+				bestT = t; worst = p; worstClosest = closest;
+			}
+			if (worst == null) return false;
+
+			_dodgeCooldown = DodgeCooldownTicks;
+			Vector2 pv = worst.velocity;
+			bool flat = Math.Abs(pv.X) > Math.Abs(pv.Y) * 1.5f;
+			if (!flat)
+			{
+				// steep shot: step out of its column, preferably the way we are already heading
+				float off = c.X - worstClosest.X;
+				int side = off >= 0f ? 1 : -1;
+				if (Math.Abs(off) < 4f) side = HasMoveGoal ? (MoveGoal.X >= c.X ? 1 : -1) : (NPC.direction == 0 ? 1 : -NPC.direction);
+				for (int attempt = 0; attempt < 2; attempt++, side = -side)
+				{
+					if (!SidestepSafe(side)) continue;
+					_dodgeVx = side * DodgeSidestepSpeedPx; _dodgeTicks = DodgeSidestepTicks;
+					npc.velocity.X = _dodgeVx; npc.netUpdate = true;
+					return true;
+				}
+			}
+			if (TryJump(DodgeHopTiles)) npc.netUpdate = true;
+			return false;
+		}
+
+		/// <summary>Room to sidestep a couple of tiles: no wall, no lava, floor under every column.</summary>
+		private bool SidestepSafe(int side)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			int ax = (int)((NPC.Center.X + side * (NPC.width / 2f + LookAheadPx)) / 16f);
+			for (int i = 0; i < 3; i++)
+			{
+				int x = ax + side * i;
+				if (TileNav.IsSolid(x, feet.Y) || TileNav.IsSolid(x, feet.Y - 1) || TileNav.IsSolid(x, feet.Y - 2)) return false;
+				if (!TileNav.IsFloor(x, feet.Y + 1) || TileNav.HasLava(x, feet.Y) || TileNav.HasLava(x, feet.Y + 1)) return false;
+			}
+			return true;
 		}
 
 		// =====================================================================================================
@@ -409,7 +531,8 @@ namespace Levy.Content.NPCs
 		// pathfinding (Follow and Haul only)
 		// =====================================================================================================
 
-		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul;
+		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul
+			|| (_engPathOk && (State == SoldierState.Engage || State == SoldierState.Shaken));
 
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>
 		private Vector2 ResolveLocalGoal()

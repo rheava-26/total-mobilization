@@ -5,6 +5,10 @@ namespace Levy.Common
 	/// <summary>Weapon-layer numbers (combat agent). Additive partial; see LevyConstants.cs for the rest.</summary>
 	public static partial class LevyConstants
 	{
+		// ---------- Weapon reach (tiles) ----------
+		/// <summary>Effective engagement range by family: how far a soldier acquires targets and opens fire. Ranged soldiers hold and kite at this reach.</summary>
+		public const int RangeGun = 72, RangeBow = 54, RangeMagic = 40;
+
 		// ---------- Muzzle / aim ----------
 		/// <summary>Muzzle offset from the body centre, in pixels (X is multiplied by the facing direction).</summary>
 		public const float MuzzleOffsetX = 10f, MuzzleOffsetY = -4f;
@@ -20,6 +24,9 @@ namespace Levy.Common
 			299, 302, 323, 325, 348, 349, 350, 355, 374, 376, 389, 435, 436, 438, 440, 442, 449, 459, 462, 467, 468, 469, 472, 483, 484, 485, 498, 576, 577,
 			585, 592, 593, 601, 606, 616, 634, 635, 638, 639, 660, 661, 682, 684, 706, 709, 710, 712, 876,
 		};
+
+		/// <summary>Routed soldiers keep shooting: the aim error is this multiple of normal in total (Shaken's own x2 is part of it, not on top).</summary>
+		public const float RoutedAimMult = 3f;
 
 		// ---------- Cadence / animation ----------
 		/// <summary>Melee weapons start a swing when the target is within RangeTiles + this many tiles.</summary>

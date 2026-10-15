@@ -28,6 +28,8 @@ namespace Levy.Common.UI
 		private readonly float _scale;
 		/// <summary>Optional filter: an item that fails it is bounced back into the mouse.</summary>
 		public Func<Item, bool> Accepts;
+		/// <summary>Called with the offending item when <see cref="Accepts"/> bounced a placement back to the mouse.</summary>
+		public Action<Item> OnRejected;
 		/// <summary>Called after a click changed this slot's content.</summary>
 		public Action<Item[], int> OnChanged;
 		/// <summary>Hover text shown while the slot is empty and the mouse holds nothing.</summary>
@@ -57,10 +59,13 @@ namespace Levy.Common.UI
 				ItemSlot.OverrideHover(ref inv, context);
 				ItemSlot.LeftClick(ref inv, context);
 				ItemSlot.RightClick(ref inv, context);
-				if (Accepts != null && inv != null && !inv.IsAir && !Accepts(inv))
+				// Only a click that changed the slot is vetted, so an item that is already in the slot is never yanked out for failing the filter.
+				if (Accepts != null && inv != null && !inv.IsAir && before.Changed(inv) && !Accepts(inv))
 				{
+					var rejected = inv;
 					Utils.Swap(ref inv, ref Main.mouseItem);
 					SoundEngine.PlaySound(SoundID.MenuTick);
+					OnRejected?.Invoke(rejected);
 				}
 				inv ??= new Item();
 				ItemSlot.MouseHover(ref inv, context);

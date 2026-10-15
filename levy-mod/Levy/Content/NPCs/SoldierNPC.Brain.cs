@@ -22,8 +22,11 @@ namespace Levy.Content.NPCs
 	/// DECIDES. It writes State, StateTimer, TargetIndex, HasMoveGoal/MoveGoal, WantsToFallThrough, HoldPosition and (for
 	/// resupply only) UsingSidearm. Movement walks to MoveGoal; Combat fires at TargetIndex.
 	/// Priority per think: Dead/Desert → Routed → Flee → Engage → Resupply → order state (ReturnHome / Follow / Haul / Patrol / Idle).
-	/// Shaken and Routed are owned by the Fear agent: the brain never writes State while either is set. Routed walks home;
-	/// Shaken engages like Engage (Combat applies the penalties) and never hauls.
+	/// Shaken and Routed are owned by the Fear agent: the brain never writes State while either is set. Routed is a FIGHTING
+	/// retreat: it backs away from the nearest threat (toward home / the commander when that lies on the safe side), keeps a
+	/// target and keeps firing at it (Combat applies the accuracy penalty). Shaken engages like Engage and never hauls.
+	/// Ranged soldiers keep a standoff from every hostile (see RangedGoal): they hold in range, step away from anything that
+	/// closes inside it, and never walk toward a target they can already shoot.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -52,6 +55,19 @@ namespace Levy.Content.NPCs
 		private int _haulCooldownUntil;
 		private int _haulStartedTick;
 		private int _commanderLookupTick = -100000;
+		// ---- engage scratch (standoff / reachability) ----
+		private enum EngageMode : byte { None, Hold, Retreat, Approach }
+		private EngageMode _engMode;
+		/// <summary>The goal is an approach toward a target (not a kite step): Movement may path to it around gaps and walls.</summary>
+		private bool _engPathOk;
+		private int _threatIdx = -1;
+		private float _threatTiles = float.MaxValue;
+		private int _retreatDir;
+		private int _unreachIdx = -1, _unreachUntil;
+		private int _spotTarget = -1, _spotTick = -100000;
+		private bool _spotValid;
+		private Vector2 _spot;
+		private readonly List<Vector2> _probePath = new();
 		private WeaponProfile _brainMainProfile;
 		private int _brainMainProfileType = -1;
 		private int _brainMainProfilePrefix = -1;
@@ -137,7 +153,7 @@ namespace Levy.Content.NPCs
 					ThinkDesert();
 					break;
 				case SoldierState.Routed:
-					ThinkRouted(nearestHostileTiles);
+					ThinkRouted(nearestHostileTiles, now);
 					break;
 				default:
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
@@ -176,6 +192,8 @@ namespace Levy.Content.NPCs
 			_manaLowSinceTick = -1; _topUpTick = -100000;
 			_haulTargetItem = -1; _haulCooldownUntil = 0; _haulStartedTick = 0;
 			_lastTeleportTick = -100000; _lastEngageBarkTick = -100000; _commanderLookupTick = -100000;
+			_engMode = EngageMode.None; _engPathOk = false; _threatIdx = -1; _threatTiles = float.MaxValue; _retreatDir = 0;
+			_unreachIdx = -1; _unreachUntil = 0; _spotTarget = -1; _spotTick = -100000; _spotValid = false;
 		}
 
 		/// <summary>A commander who relogged gets a new player index; re-resolve the name once a second while the index is stale.</summary>
@@ -220,7 +238,11 @@ namespace Levy.Content.NPCs
 		{
 			fleeIdx = -1; float fleeBest = float.MaxValue; float hostileBest = float.MaxValue;
 			Vector2 c = NPC.Center;
-			float fleeScanSq = LevyConstants.FleeScanTiles * LevyConstants.FleeScanTiles * (float)(LevyConstants.TilePx * LevyConstants.TilePx);
+			float tileSq = LevyConstants.TilePx * LevyConstants.TilePx;
+			float fleeScanSq = LevyConstants.FleeScanTiles * LevyConstants.FleeScanTiles * tileSq;
+			// threat = nearest enemy that matters (hitbox distance, so a wide boss counts from its edge); prefilter on the centre distance
+			float threatBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int threatIdx = -1;
+			float threatPrefilterSq = (LevyConstants.ThreatScanTiles + 30f) * (LevyConstants.ThreatScanTiles + 30f) * tileSq;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				var n = Main.npc[i];
@@ -228,7 +250,14 @@ namespace Levy.Content.NPCs
 				float dsq = Vector2.DistanceSquared(c, n.Center);
 				if (dsq < fleeScanSq && dsq < fleeBest && SoldierTargeting.IsFleeTarget(n)) { fleeBest = dsq; fleeIdx = i; }
 				if (dsq < hostileBest && LevyUtil.IsHostileTarget(n)) hostileBest = dsq;
+				if (dsq < threatPrefilterSq)
+				{
+					float hsq = Vector2.DistanceSquared(c, n.Hitbox.ClosestPointInRect(c));
+					if (hsq < threatBest && !SoldierTargeting.IsNeverTarget(n)) { threatBest = hsq; threatIdx = i; }
+				}
 			}
+			_threatIdx = threatIdx;
+			_threatTiles = threatIdx < 0 ? float.MaxValue : MathF.Sqrt(threatBest) / LevyConstants.TilePx;
 			nearestHostileTiles = hostileBest == float.MaxValue ? float.MaxValue : MathF.Sqrt(hostileBest) / LevyConstants.TilePx;
 		}
 
@@ -317,24 +346,65 @@ namespace Levy.Content.NPCs
 			SetGoal(new Vector2(edgeX, NPC.Center.Y));
 		}
 
-		private void ThinkRouted(float nearestHostileTiles)
+		/// <summary>
+		/// Fighting retreat. The body keeps (or picks) a target and Combat keeps firing at it with the routed accuracy penalty;
+		/// this only decides where to run. Away from the nearest threat; to the anchor (home muster point, or the commander
+		/// of a following regular) when the anchor lies on the safe side; with nothing near, walk to the anchor and stand.
+		/// </summary>
+		private void ThinkRouted(float nearestHostileTiles, int now)
 		{
-			TargetIndex = -1;
-			_haulTargetItem = -1;
-			var home = Home;
-			if (home != null)
+			_haulTargetItem = -1; _engPathOk = false; _engMode = EngageMode.None;
+			KeepRoutedTarget(now);
+
+			bool hasAnchor = RoutedAnchor(out Vector2 anchor);
+			bool anchorArrived = hasAnchor && LevyUtil.WithinTiles(NPC.Center, anchor, LevyConstants.RoutedAnchorArriveTiles);
+			if (_threatIdx >= 0 && _threatTiles < LevyConstants.ThreatScanTiles)
 			{
-				if (LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.HomeArriveTiles)) ClearGoal();
-				else SetGoal(home.MusterPoint);
+				NPC threat = Main.npc[_threatIdx];
+				float away = AwayDir(threat.Center);
+				if (hasAnchor && !anchorArrived && Math.Sign(anchor.X - NPC.Center.X) == (int)away) SetGoal(anchor);
+				else SetGoal(new Vector2(NPC.Center.X + away * LevyConstants.RoutedRetreatTiles * LevyConstants.TilePx, NPC.Center.Y));
 				return;
 			}
-			// Homeless: put distance between us and the nearest hostile, else stand.
-			if (nearestHostileTiles < LevyConstants.FleeScanTiles)
+			if (hasAnchor && !anchorArrived) SetGoal(anchor);
+			else ClearGoal();
+		}
+
+		/// <summary>Direction (+1 / -1) that increases the distance from a point; sticks to the previous answer when directly above or below it.</summary>
+		private float AwayDir(Vector2 from)
+		{
+			float dx = NPC.Center.X - from.X;
+			if (Math.Abs(dx) >= LevyConstants.TilePx) _retreatDir = dx > 0f ? 1 : -1;
+			else if (_retreatDir == 0) _retreatDir = NPC.direction == 0 ? 1 : -NPC.direction;
+			return _retreatDir;
+		}
+
+		/// <summary>Where a routed body runs for safety: the commander of a following regular, else the home muster point.</summary>
+		private bool RoutedAnchor(out Vector2 anchor)
+		{
+			if (IsRegular && Record.Order == SoldierOrder.Follow)
 			{
-				int idx = NearestHostileIndex();
-				if (idx >= 0) { RunAwayFrom(Main.npc[idx].Center); return; }
+				var cmd = Commander;
+				if (cmd != null && !cmd.dead) { anchor = cmd.Bottom; return true; }
 			}
-			ClearGoal();
+			var home = Home;
+			if (home != null) { anchor = home.MusterPoint; return true; }
+			anchor = default; return false;
+		}
+
+		/// <summary>A routed body keeps shooting: hold the current target while it stays in reach, else take the best one in sight.</summary>
+		private void KeepRoutedTarget(int now)
+		{
+			if (!CanFight(now)) { TargetIndex = -1; return; }
+			float range = AcquireRangeTiles();
+			if (ValidNpc(TargetIndex))
+			{
+				var t = Main.npc[TargetIndex];
+				if (t.life > 0 && !SoldierTargeting.IsNeverTarget(t) && LevyUtil.WithinTiles(NPC.Center, t.Center, range * LevyConstants.TargetKeepRangeMult)) return;
+			}
+			TargetIndex = -1;
+			int pick = SoldierTargeting.PickTarget(this, range);
+			if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick])) TargetIndex = pick;
 		}
 
 		private int NearestHostileIndex()
@@ -359,7 +429,7 @@ namespace Levy.Content.NPCs
 		private void ThinkFlee(int fleeIdx)
 		{
 			TargetIndex = -1;
-			_haulTargetItem = -1;
+			_haulTargetItem = -1; _engMode = EngageMode.None; _engPathOk = false;
 			if (State == SoldierState.Engage || State == SoldierState.Resupply || State == SoldierState.Haul) SetState(OrderState());
 			RunAwayFrom(Main.npc[fleeIdx].Center);
 		}
@@ -409,7 +479,8 @@ namespace Levy.Content.NPCs
 
 		private bool TryEngage(int now)
 		{
-			if (!CanFight(now)) { TargetIndex = -1; return false; }
+			_engPathOk = false;
+			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; return false; }
 			float range = AcquireRangeTiles();
 			NPC target = null;
 			if (TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
@@ -422,7 +493,9 @@ namespace Levy.Content.NPCs
 					TargetIndex = pick; target = Main.npc[pick];
 				}
 			}
-			if (target == null) return false;
+			// a melee target the body could not path to is left alone for a while
+			if (target != null && TargetIndex == _unreachIdx && now < _unreachUntil) { TargetIndex = -1; target = null; }
+			if (target == null) { _engMode = EngageMode.None; return false; }
 
 			if (State != SoldierState.Engage && State != SoldierState.Shaken)
 			{
@@ -430,37 +503,119 @@ namespace Levy.Content.NPCs
 				if (now - _lastEngageBarkTick >= LevyConstants.EngageBarkCooldownTicks) { _lastEngageBarkTick = now; DialogueSystem.Bark(this, DialogueTrigger.ENGAGE, MakeContext()); }
 			}
 
-			if (Weapon.IsMelee) MeleeGoal(target, now); else RangedGoal(target);
-			return true;
+			if (Weapon.IsMelee) { MeleeGoal(target, now); return true; }
+			if (RangedGoal(target, now)) return true;
+			// nothing to shoot from here and nowhere to shoot from: drop it so the soldier carries on with its order
+			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
+			_unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks;
+			TargetIndex = -1; _engMode = EngageMode.None;
+			return false;
 		}
 
-		private void RangedGoal(NPC target)
+		/// <summary>Distance (tiles) inside which a ranged soldier backs away from any hostile.</summary>
+		private static float StandoffTiles(float range)
+			=> Math.Min(Math.Max(LevyConstants.KiteMin, range * LevyConstants.StandoffRangeFrac), range * LevyConstants.StandoffMaxRangeFrac);
+
+		/// <summary>Distance (tiles) a ranged soldier walks out to when it has to close on a target.</summary>
+		private static float HoldMaxTiles(float range) => Math.Min(LevyConstants.KiteMax, range * LevyConstants.KiteMaxRangeFrac);
+
+		/// <summary>
+		/// Gun / bow / magic. Priority: (1) anything hostile inside the standoff -> step away (still facing and firing);
+		/// (2) a target in reach with a clear shot -> hold and shoot, never walk toward it (so a gap or pit between us is irrelevant);
+		/// (3) otherwise find a spot that is both reachable and a firing line, or stand and wait if there is none.
+		/// </summary>
+		private bool RangedGoal(NPC target, int now)
 		{
-			float d = LevyUtil.TileDistance(NPC.Center, target.Center);
-			Vector2 away = NPC.Center - target.Center;
-			if (away.LengthSquared() < 1f) away = new Vector2(-(NPC.direction == 0 ? 1 : NPC.direction), 0f);
-			away.Normalize();
-			Vector2 goal;
-			if (d < LevyConstants.KiteMin)
+			float range = Weapon.RangeTiles;
+			float standoff = StandoffTiles(range);
+
+			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line
+			float standoffNow = standoff + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
+			if (_threatIdx >= 0 && _threatTiles < standoffNow)
 			{
-				float sx = away.X != 0f ? Math.Sign(away.X) : -(NPC.direction == 0 ? 1 : NPC.direction);
-				goal = new Vector2(NPC.Center.X + sx * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
+				float away = AwayDir(Main.npc[_threatIdx].Center);
+				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
+				ApplyChaseClamp(ref step);
+				_engMode = EngageMode.Retreat;
+				SetGoal(step);
+				return true;
 			}
-			else if (d > LevyConstants.KiteMax || !Aiming.HasLineOfSight(NPC.Center, target.Center))
+			if (_engMode == EngageMode.Retreat) ClearGoal();
+
+			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
+			bool los = HasFiringLine(seg);
+
+			if (dT <= range * LevyConstants.ShootableRangeFrac && los)
 			{
-				goal = target.Center + away * LevyConstants.KiteMax * LevyConstants.TilePx;
-			}
-			else
-			{
-				// In the pocket: a small lateral shuffle every other think, otherwise keep what we had.
-				if ((_thinkCount & 1) != 0) return;
+				if (_engMode == EngageMode.Approach) ClearGoal();
+				_engMode = EngageMode.Hold;
+				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
+				if ((_thinkCount & 1) != 0 || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
 				float side = ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
-				goal = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				Vector2 shuffle = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				ApplyChaseClamp(ref shuffle);
+				SetGoal(shuffle);
+				return true;
 			}
-			ApplyChaseClamp(ref goal);
-			SetGoal(goal);
+
+			if (FindEngageSpot(target, seg, range, standoff, now, out Vector2 spot))
+			{
+				ApplyChaseClamp(ref spot);
+				_engMode = EngageMode.Approach; _engPathOk = true;
+				SetGoal(spot);
+				return true;
+			}
+			// No route to a firing line (or the target is across a gap out of reach): stand here rather than walk into the gap.
+			if (_engMode == EngageMode.Approach) ClearGoal();
+			_engMode = EngageMode.Hold;
+			return false;
 		}
 
+		/// <summary>A shot from the muzzle would reach the segment (projectiles that ignore tiles always can).</summary>
+		private bool HasFiringLine(NPC seg) => ShotIgnoresTiles() || Aiming.HasLineOfSight(WeaponUse.Muzzle(this), seg.Center);
+
+		/// <summary>
+		/// Somewhere to stand that is inside reach, outside the standoff, has a firing line to the target and can be walked to.
+		/// A handful of candidates on the line from the target toward us (far to near), each tested with one path search; the answer
+		/// is cached per target for EngageSpotRecheckTicks.
+		/// </summary>
+		private bool FindEngageSpot(NPC target, NPC seg, float range, float standoff, int now, out Vector2 spot)
+		{
+			if (_spotTarget == target.whoAmI && now - _spotTick < LevyConstants.EngageSpotRecheckTicks) { spot = _spot; return _spotValid; }
+			_spotTarget = target.whoAmI; _spotTick = now; _spotValid = false; _spot = default;
+			spot = default;
+
+			Vector2 tc = seg.Center;
+			Vector2 toUs = NPC.Center - tc;
+			if (toUs.LengthSquared() < 1f) toUs = new Vector2(NPC.direction == 0 ? 1f : -NPC.direction, 0f);
+			toUs.Normalize();
+			float holdMax = HoldMaxTiles(range);
+			float nearest = Math.Min(standoff + 2f, holdMax);
+			int n = Math.Max(2, LevyConstants.EngageSpotCandidates);
+			bool ignoresTiles = ShotIgnoresTiles();
+			for (int k = 0; k < n; k++)
+			{
+				float distTiles = MathHelper.Lerp(holdMax, nearest, k / (float)(n - 1));
+				Vector2 pt = tc + toUs * distTiles * LevyConstants.TilePx;
+				if (!TileNav.NearestStandable((int)(pt.X / 16f), (int)(pt.Y / 16f), LevyConstants.EngageSpotSearchRadius, out Point tile)) continue;
+				Vector2 bottom = TileNav.BottomCentre(tile.X, tile.Y);
+				Vector2 body = bottom - new Vector2(0f, BodyHeight / 2f);
+				float d = Vector2.Distance(body, tc) / LevyConstants.TilePx;
+				if (d > range * LevyConstants.ShootableRangeFrac || d < standoff) continue;
+				if (!ignoresTiles && !Aiming.HasLineOfSight(body, tc)) continue;
+				bool here = Vector2.Distance(NPC.Bottom, bottom) < 2f * LevyConstants.TilePx;
+				if (!here && !Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
+				_spot = bottom; _spotValid = true; spot = bottom;
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Melee closes on its target. If the direct walk has been refused (gap, wall, lava) and Movement's own path search found no
+		/// route either, the target is unreachable: stop pushing at it and leave it alone for a few seconds.
+		/// </summary>
 		private void MeleeGoal(NPC target, int now)
 		{
 			Vector2 goal;
@@ -468,12 +623,21 @@ namespace Levy.Content.NPCs
 			{
 				float sx = NPC.Center.X >= target.Center.X ? 1f : -1f;
 				goal = new Vector2(NPC.Center.X + sx * LevyConstants.MeleeStepBackPixels * 2, NPC.Center.Y);
+				_engMode = EngageMode.Retreat;
 			}
 			else if (!LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.RangeMelee))
 			{
+				if (_blockedHard && _path.Count == 0 && _pathFailTimer > 0)
+				{
+					_unreachIdx = TargetIndex; _unreachUntil = now + LevyConstants.UnreachableIgnoreTicks;
+					TargetIndex = -1; _engMode = EngageMode.Hold;
+					ClearGoal();
+					return;
+				}
 				goal = target.Center;
+				_engMode = EngageMode.Approach; _engPathOk = true;
 			}
-			else { ClearGoal(); return; }
+			else { _engMode = EngageMode.Hold; ClearGoal(); return; }
 			ApplyChaseClamp(ref goal);
 			SetGoal(goal);
 		}

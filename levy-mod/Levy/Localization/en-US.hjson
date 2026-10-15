@@ -323,7 +323,7 @@ Mods: {
 
 				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Guns, bows, bolt magic, broadswords, shortswords and spears all work. Put what you want issued first into the issue slots at the top. Soldiers also draw from storage, best first.
 
-				3. Regulars. Right-click the Barracks and enlist. Regulars are named soldiers who follow you anywhere. They cost a muster fee up front and a daily wage at dawn, both from the Barracks treasury, so deposit coins there. Keep it full or they desert.
+				3. Regulars. Right-click the Barracks and enlist. Regulars are named soldiers who follow you anywhere. They cost a muster fee up front and a daily wage at dawn, both from the Barracks treasury, so deposit coins there. Keep it full or they desert. The Kit button on a Regular's row shows their gear; put an item in a slot by hand and it stays on them until you take it out.
 
 				4. Militia. Hold the War Horn and left-click to call up the whole town to hold the walls. They arm from the Armory, fight at the settlement, and stand down when the invasion or Blood Moon ends. Manpower is the limit, and it drains as they fall.
 
@@ -333,6 +333,28 @@ Mods: {
 
 				They are morons. They die like players. They cost money. Watch them fight.
 				'''
+		}
+
+		Loadout: {
+			Button: Kit
+			ButtonHint: Inspect and hand-equip this soldier.
+			Title: "{0} - Kit"
+			AccessorySlots: Accessory slots: {0}
+			Arms: Arms
+			Armor: Armor
+			Accessories: Accessories
+			Weapon: Weapon
+			Sidearm: Sidearm
+			Ammo: Ammo
+			Head: Head
+			Body: Body
+			Legs: Legs
+			Accessory: Accessory
+			EmptyHint: Place a {0} item here to assign it.
+			Hint: Items you place stay on this soldier. Take one out and the Armory chooses again.
+			Rejected: That does not fit the {0} slot.
+			Assigned: "{0} assigned."
+			Released: "{0} cleared. The Armory may refill it."
 		}
 
 		Towns.Names: Fort Hallow|Fort Hope|Fort Nowhere|Fort Last|Millbrook|Ashford|Stonegate|Oakwall|Redfield|Brightwater|Greywatch|Ironhold|Lanternmoor|Saltmarsh|Thornby|Weststead

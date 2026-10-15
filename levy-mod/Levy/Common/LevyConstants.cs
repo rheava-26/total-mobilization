@@ -77,8 +77,8 @@ namespace Levy.Common
 		public const int ThinkIntervalTicks = 6;
 
 		// ---------- Brain / ranges ----------
-		public const int RangeGun = 40, RangeBow = 30, RangeMagic = 25, RangeMelee = 3;
-		public const int KiteMin = 8, KiteMax = 16;
+		public const int RangeMelee = 3;
+		// RangeGun/RangeBow/RangeMagic live in LevyConstants.Weapons.cs; KiteMin/KiteMax and the standoff numbers in LevyConstants.Brain.cs.
 		public const int HoldChaseLimit = 15, PostChaseLimit = 20;
 		public const int FollowDistance = 12;
 		public const int TeleportDistance = 60;

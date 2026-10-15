@@ -130,13 +130,13 @@ namespace Levy.Content.NPCs
 			DialogueSystem.Bark(this, DialogueTrigger.SHAKEN, fallen == null ? null : new DialogueContext { Comrade = fallen });
 		}
 
-		/// <summary>Routs this body: it runs, ignores enemies and drops its target. Returns false if it could not rout.</summary>
+		/// <summary>Routs this body: it backs away from the threat but keeps its target and keeps shooting (badly). Returns false if it could not rout.</summary>
 		internal bool Fear_Rout(DialogueContext ctx, bool bark)
 		{
 			if (Record == null || State == SoldierState.Routed || State == SoldierState.Dead || State == SoldierState.Desert) return false;
 			if (Record.Fear < FearK.ShakenThreshold) Record.Fear = FearK.ShakenThreshold; // a routed soldier reads as afraid everywhere
 			State = SoldierState.Routed; StateTimer = 0;
-			TargetIndex = -1;
+			// the target is kept: a routed body retreats (Brain) and keeps firing at what chases it (Combat)
 			_fearOutOfSightTicks = 0;
 			NPC.netUpdate = true;
 			if (bark) DialogueSystem.Bark(this, DialogueTrigger.ROUTED, ctx);

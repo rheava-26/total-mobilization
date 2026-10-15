@@ -28,6 +28,7 @@ namespace Levy.Common.Net
 	///  AssignPatrol: int soldierId, short ax, short ay, short bx, short by   (Roster)
 	///  FeedCrystal: int soldierId, int itemType                   (Roster) — client already consumed one item
 	///  SetRebase: int soldierId, int barracksId                   (Roster)
+	///  SoldierGearSet: int soldierId, byte slot(SoldierGear.Slot*), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the item out of its own hands (air = took the slot's item out); server validates, applies, locks/unlocks, re-syncs
 	///  BookUsed: string bookKey                                   (Flavor) — client consumed the book; server sets the world flag
 	/// Server -> client:
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
@@ -40,7 +41,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
 	}
 

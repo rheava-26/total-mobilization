@@ -2,6 +2,7 @@ using System.IO;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
+using Terraria.ModLoader.IO;
 using Levy.Common.Net;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
@@ -31,6 +32,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.AssignPatrol, OnAssignPatrol);
 			LevyPackets.Register(LevyPacket.FeedCrystal, OnFeedCrystal);
 			LevyPackets.Register(LevyPacket.SetRebase, OnSetRebase);
+			LevyPackets.Register(LevyPacket.SoldierGearSet, OnSoldierGearSet);
 			LevyPackets.Register(LevyPacket.RosterSnapshot, OnRosterSnapshot);
 		}
 
@@ -166,6 +168,51 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var rec = Owned(soldierId, Sender(whoAmI));
 			if (rec != null) Roster.Rebase(rec, SettlementSystem.Instance.GetBarracks(barracksId));
+		}
+
+		/// <summary>
+		/// Hand-equip from a client. The client already took the item out of its own hands, so anything the server refuses (not the
+		/// commander, wrong slot, wrong kind of item) goes straight back to the sender rather than vanishing.
+		/// </summary>
+		private static void OnSoldierGearSet(BinaryReader r, int whoAmI)
+		{
+			int soldierId = r.ReadInt32(); byte slot = r.ReadByte();
+			Item item = ItemIO.Receive(r, readStack: true);
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender == null) return;
+			var rec = Owned(soldierId, sender);
+			Item extra = null;
+			bool ok = rec != null && ApplyGearSlot(rec, slot, item, out extra);
+			if (!ok) Return(sender, item);
+			else Return(sender, extra);
+		}
+
+		private static void Return(Player sender, Item it)
+		{
+			if (sender == null || it == null || it.IsAir || it.stack <= 0) return;
+			sender.QuickSpawnItem(sender.GetSource_Misc("Levy:GearRefused"), it, it.stack);
+		}
+
+		/// <summary>
+		/// Puts <paramref name="item"/> (or air, to empty the slot) into one of a soldier's gear slots and locks the slot against
+		/// auto-issue while it holds something. A placement also lets the Armory fill what is still empty (e.g. ammo for a new bow).
+		/// Used by the server handler and by single-player UIActions. <paramref name="overflow"/> is ammo above the pouch limit.
+		/// </summary>
+		internal static bool ApplyGearSlot(SoldierRecord rec, int slot, Item item, out Item overflow)
+		{
+			overflow = null;
+			if (rec == null || rec.Gear == null) return false;
+			if (!rec.Gear.TrySet(slot, item, rec.AccessorySlots, out overflow)) return false;
+			if (!rec.Gear.Get(slot).IsAir)
+			{
+				var home = SettlementSystem.Instance.GetBarracks(rec.HomeBarracksId);
+				var armory = home == null ? null : SettlementSystem.Instance.LinkedArmory(home);
+				armory?.IssueGear(rec);
+			}
+			if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC body) body.NotifyGearChanged();
+			if (LevyUtil.IsServer) Roster.SendRosterSnapshot();
+			return true;
 		}
 
 		private static void OnRosterSnapshot(BinaryReader r, int whoAmI)

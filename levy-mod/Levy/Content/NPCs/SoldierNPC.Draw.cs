@@ -128,7 +128,7 @@ namespace Levy.Content.NPCs
 				bool aimStyle = style == ItemUseStyleID.Shoot || style == ItemUseStyleID.Rapier;
 				bool rangedHeld = held.useAmmo > 0 || (held.mana > 0 && held.shoot > 0); // guns/bows/magic, not spears
 				if (anim <= 0 && style == ItemUseStyleID.Shoot && rangedHeld
-					&& (State == SoldierState.Engage || State == SoldierState.Shaken))
+					&& (State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed))
 				{
 					// keep the gun/bow/staff shouldered between shots while engaging
 					anim = LevyConstants.Draw.RangedPoseHoldAnimation;

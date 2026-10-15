@@ -8,6 +8,12 @@ namespace Levy.Common.Weapons
 	public static class Aiming
 	{
 		/// <summary>
+		/// Extra multiplier on jitter and lead error for the shots fired while it is set. The combat layer raises it around a single
+		/// TryAttack call (routed soldiers) and always puts it back to 1 afterwards; the game update is single threaded.
+		/// </summary>
+		public static float ExtraErrorScale = 1f;
+
+		/// <summary>
 		/// Where the target will be when a projectile of <paramref name="speed"/> px/tick arrives (two iterations). Returns a direction * speed.
 		/// With <paramref name="gravity"/> the aim point is raised by the drop a projectile accumulates after <paramref name="gravityDelay"/> ticks
 		/// at <paramref name="gravityPerTick"/> px/tick² (vanilla arrows: 0.1 after 15 ticks), refined once.
@@ -63,6 +69,7 @@ namespace Levy.Common.Weapons
 		{
 			float speed = velocity.Length();
 			if (speed <= 0.0001f) return velocity;
+			if (ExtraErrorScale != 1f) { jitterDeg *= ExtraErrorScale; leadError *= ExtraErrorScale; }
 			Vector2 dir = velocity / speed;
 			if (leadError > 0f && lead != Vector2.Zero && !lead.HasNaNs())
 			{

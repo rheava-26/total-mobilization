@@ -69,6 +69,30 @@ namespace Levy.Common
 			public const float GlideFallSpeed = 1.5f;
 			public const float FlyArriveYPx = 16f;
 
+			// ---- gaps ----
+			/// <summary>Widest gap (tiles with no floor) a body will jump across instead of falling into.</summary>
+			public const int GapJumpMaxTiles = 2;
+			/// <summary>Jump height (tiles) used to clear a gap: sets the airtime, so 3 carries about 40 ticks.</summary>
+			public const int GapJumpTiles = 3;
+			/// <summary>Rows above the feet that must be clear over the gap and the far edge.</summary>
+			public const int GapJumpClearRows = 4;
+
+			// ---- projectile dodging ----
+			public const int DodgeScanIntervalTicks = 4;
+			public const int DodgeCooldownTicks = 45;
+			/// <summary>Hostile projectiles farther than this are ignored.</summary>
+			public const float DodgeRadiusTiles = 16f;
+			/// <summary>Only projectiles that would arrive within this many ticks matter.</summary>
+			public const float DodgeLookaheadTicks = 30f;
+			/// <summary>Closest approach (px) at which a projectile counts as a hit.</summary>
+			public const float DodgeHitRadiusPx = 36f;
+			public const float DodgeMinProjectileSpeed = 2f;
+			public const float DodgeSidestepSpeedPx = 3.2f;
+			public const int DodgeHopTiles = 2;
+			public const int DodgeMinDamage = 1;
+			/// <summary>A sidestep keeps its speed for this many ticks (about 1.5 tiles at 3.2 px/tick).</summary>
+			public const int DodgeSidestepTicks = 8;
+
 			// ---- bodies ----
 			public const float PlayerNudgePx = 0.5f;
 			public const float StepSpeed = 1f;

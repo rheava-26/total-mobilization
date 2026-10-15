@@ -9,11 +9,42 @@ namespace Levy.Common
 		/// <summary>Followers never chase farther than this from their commander.</summary>
 		public const int FollowChaseLimit = 30;
 		public const int EngageBarkCooldownTicks = 60 * 20;
-		public const int KiteStepAwayTiles = 4;
+		/// <summary>How far one step away from a hostile that got inside the standoff reaches.</summary>
+		public const int KiteStepAwayTiles = 6;
 		public const int StrafeTiles = 2;
 		public const int MeleeStepBackWindowTicks = 12;
 		/// <summary>A held target may drift to range x this before it is dropped.</summary>
 		public const float TargetKeepRangeMult = 1.5f;
+
+		// ---------- Ranged standoff (gun / bow / magic never walk into contact) ----------
+		/// <summary>Floor of the standoff: ranged soldiers step away from any hostile closer than this (hitbox to body, tiles).</summary>
+		public const int KiteMin = 14;
+		/// <summary>Ceiling of the distance a ranged soldier walks out to when it has to close on a target.</summary>
+		public const int KiteMax = 64;
+		/// <summary>The standoff scales with weapon reach: reach x this (but never under KiteMin).</summary>
+		public const float StandoffRangeFrac = 0.30f;
+		/// <summary>The standoff never exceeds reach x this, so a short weapon still has room to shoot.</summary>
+		public const float StandoffMaxRangeFrac = 0.60f;
+		/// <summary>When closing on a target, stop at reach x this (capped by KiteMax).</summary>
+		public const float KiteMaxRangeFrac = 0.90f;
+		/// <summary>A target inside reach x this with a clear shot is simply shot at: no approach, no walking toward it.</summary>
+		public const float ShootableRangeFrac = 0.98f;
+		/// <summary>Once retreating, a ranged soldier keeps backing off until the threat is this far past the standoff (tiles).</summary>
+		public const float StandoffHysteresisTiles = 2f;
+		/// <summary>The in-range lateral shuffle only happens with this much room past the standoff (tiles).</summary>
+		public const float StrafeMarginTiles = 6f;
+
+		// ---------- Reachability / firing spots ----------
+		/// <summary>A cached firing spot or reachability answer is re-tested this often (ticks) or when the target changes.</summary>
+		public const int EngageSpotRecheckTicks = 120;
+		/// <summary>Tiles searched around a candidate point for somewhere to stand.</summary>
+		public const int EngageSpotSearchRadius = 6;
+		/// <summary>Candidate firing spots tried per search (each costs one path search).</summary>
+		public const int EngageSpotCandidates = 4;
+		/// <summary>A melee target the body cannot path to is left alone this long (ticks).</summary>
+		public const int UnreachableIgnoreTicks = 60 * 4;
+		/// <summary>Seconds a blocked melee chase waits before the next reachability probe (ticks).</summary>
+		public const int MeleeProbeRecheckTicks = 90;
 
 		// ---------- Flee ----------
 		public const int FleeScanTiles = 60;

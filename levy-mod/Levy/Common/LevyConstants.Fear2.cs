@@ -13,5 +13,15 @@ namespace Levy.Common
 		public const int FearFallenRecallTicks = 60 * 30;
 		/// <summary>Fear changes of this size trigger a network refresh of the body so clients see the meter.</summary>
 		public const float FearNetStep = 10f;
+
+		// ---------- Fighting retreat (Routed) ----------
+		/// <summary>Hostiles within this many tiles (hitbox distance) count as threats: ranged standoff checks them, a routed soldier runs from them. With none about, a routed soldier walks to its anchor.</summary>
+		public const int ThreatScanTiles = 60;
+		/// <summary>Retreat speed multiplier on top of the run speed.</summary>
+		public const float RoutedSpeedMult = 1.15f;
+		/// <summary>How far ahead of itself a retreating soldier sets its goal (tiles).</summary>
+		public const int RoutedRetreatTiles = 30;
+		/// <summary>Within this of its anchor (home muster point / commander) a retreating soldier stops running.</summary>
+		public const float RoutedAnchorArriveTiles = 3f;
 	}
 }

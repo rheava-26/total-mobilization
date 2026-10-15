@@ -208,6 +208,43 @@ namespace Levy.Common.UI
 			p.Send();
 		}
 
+		// ------------------------------------------------------------------ soldier loadout
+		/// <summary>
+		/// Hand-equip: the loadout panel has already put <paramref name="item"/> into the slot (taken from the mouse, so it came out of
+		/// the player's own inventory) or emptied it (the old item is now on the mouse). Single player applies it to the record at once;
+		/// a multiplayer client applies the same change to its display copy and sends <see cref="LevyPacket.SoldierGearSet"/> so the
+		/// server makes it real. An ammo stack above the pouch limit leaves the excess in the player's inventory. Returns false (and
+		/// hands the item back to the player) when the slot refuses it.
+		/// </summary>
+		public static bool SetGearSlot(SoldierRecord rec, int slot, Item item)
+		{
+			if (rec == null) return false;
+			item = item == null || item.IsAir ? new Item() : item;
+			if (Single)
+			{
+				if (RosterNet.ApplyGearSlot(rec, slot, item, out var extra)) { GiveToPlayer(extra); return true; }
+			}
+			else if (rec.Gear.TrySet(slot, item, rec.AccessorySlots, out var extra))
+			{
+				GiveToPlayer(extra);
+				var p = LevyPackets.New(LevyPacket.SoldierGearSet);
+				p.Write(rec.Id); p.Write((byte)slot);
+				ItemIO.Send(rec.Gear.Get(slot), p, writeStack: true);
+				p.Send();
+				return true;
+			}
+			GiveToPlayer(item);
+			return false;
+		}
+
+		/// <summary>Hands an item to the local player: inventory first, dropped at their feet if the pack is full.</summary>
+		private static void GiveToPlayer(Item it)
+		{
+			if (it == null || it.IsAir || it.stack <= 0) return;
+			var left = Me.GetItem(Main.myPlayer, it, GetItemSettings.InventoryEntityToPlayerInventorySettings);
+			if (left != null && !left.IsAir && left.stack > 0) Me.QuickSpawnItem(Me.GetSource_Misc("Levy:Loadout"), left, left.stack);
+		}
+
 		// ------------------------------------------------------------------ queries (client-side views)
 		public static SoldierNPC BodyOf(SoldierRecord rec)
 		{

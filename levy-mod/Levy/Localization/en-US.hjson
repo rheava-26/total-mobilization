@@ -150,6 +150,16 @@ Mods: {
 					Tooltip: Soldiers draw Life Crystals, Life Fruit and Mana Crystals from their Armory's storage, one at a time, until they reach their grade limit.
 				}
 
+				RealWeaponShoot: {
+					Label: Real weapon effects
+					Tooltip: Soldiers fire through the game's own shooting code, so special weapons keep their effects. Turn off to use the simpler fallback.
+				}
+
+				ClassMatchIssue: {
+					Label: Armor decides weapon class
+					Tooltip: A soldier's armor biases the weapon they draw, so ranged armor takes guns and bows, magic armor takes staves. Falls back to best available when nothing matches.
+				}
+
 				SoldiersTriggerPressurePlates: {
 					Label: Soldiers trigger pressure plates
 					Tooltip: Off by default.

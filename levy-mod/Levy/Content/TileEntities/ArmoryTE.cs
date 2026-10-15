@@ -156,6 +156,14 @@ namespace Levy.Content.TileEntities
 				?? TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuable, WeaponClassifier.Score);
 		}
 
+		/// <summary>Best issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
+		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls)
+		{
+			if (cls == null) return null;
+			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.FamilyDamageClass(WeaponClassifier.Classify(it)) == cls && HasAmmoFor(it, forSoldier);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, Pred, WeaponClassifier.Score);
+		}
+
 		/// <summary>Best issuable sidearm (melee item in the sidearm slot or any supported melee); removes it. Null if none.</summary>
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
@@ -258,22 +266,33 @@ namespace Levy.Content.TileEntities
 			return item;
 		}
 
-		/// <summary>Auto-issue best-first: weapon, sidearm, armor, accessories (grade slots), ammo. Returns true if anything changed.</summary>
+		/// <summary>Auto-issue best-first: armor, weapon (matching the armor's damage class when possible), sidearm, accessories (grade slots), ammo. Returns true if anything changed.</summary>
 		public virtual bool IssueGear(SoldierRecord soldier)
 		{
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			bool changed = false;
 
-			if (!g.HasWeapon) { var w = TakeBestWeapon(soldier); if (w != null) { g.Weapon = w; changed = true; } }
+			if (IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
+			if (IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
+			if (IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
+
+			if (!g.HasWeapon)
+			{
+				// The armor decides doctrine: prefer a weapon of its class, else the best of anything.
+				Item w = null;
+				if (Common.Config.LevyConfig.Get.ClassMatchIssue)
+				{
+					var cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+					if (cls != null) w = TakeBestWeaponOfClass(soldier, cls);
+				}
+				w ??= TakeBestWeapon(soldier);
+				if (w != null) { g.Weapon = w; changed = true; }
+			}
 
 			// A melee primary needs no fallback blade; save the swords for the gunners.
 			bool primaryMelee = g.HasWeapon && IsMeleeFamily(WeaponClassifier.Classify(g.Weapon));
 			if (!g.HasSidearm && !primaryMelee) { var s = TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
-
-			if (IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
-			if (IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
-			if (IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
 
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {

@@ -166,6 +166,14 @@ namespace Levy.Common.Weapons
 		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type);
 		public static bool IsAmmo(Item item) => item != null && !item.IsAir && item.ammo > 0;
 		public static bool IsHealingPotion(Item item) => item != null && !item.IsAir && item.healLife > 0 && item.consumable;
+		/// <summary>The vanilla damage class a family belongs to: guns/bows Ranged, Magic Magic, blades/spears Melee. Null for None/Unsupported.</summary>
+		public static DamageClass FamilyDamageClass(WeaponFamily f) => f switch
+		{
+			WeaponFamily.Gun or WeaponFamily.Bow => DamageClass.Ranged,
+			WeaponFamily.Magic => DamageClass.Magic,
+			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear => DamageClass.Melee,
+			_ => null,
+		};
 		/// <summary>Rank weapons for best-first issue: damage per second-ish. Higher is better.</summary>
 		public static float Score(Item item)
 		{

@@ -503,6 +503,7 @@ namespace Levy.Common.Systems
 			if (heads == 0) { ChatTo(by, LevyUtil.T("Militia.NoOneToPay", town)); return false; }
 			if (!EconomySystem.TryPay(barracks, cost)) { ChatTo(by, LevyUtil.T("UI.NotEnoughMoney")); return false; }
 			for (int i = 0; i < regulars.Count; i++) if (regulars[i].HomeBarracksId == barracks.ID) regulars[i].HazardPaid = true;
+			for (int i = 0; i < barracks.Militia.Count; i++) barracks.Militia[i].HazardPaid = true; // charged above; grant them the fear reduction (militia records are transient, no dawn reset needed)
 			barracks.HazardPayDay = day;
 			LevyUtil.Chat(LevyUtil.T("Chat.HazardPay", town, LevyUtil.Coins(cost)));
 			SyncTE(barracks);

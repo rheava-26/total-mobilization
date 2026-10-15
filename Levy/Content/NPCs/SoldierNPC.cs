@@ -170,18 +170,21 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Copies gear into the dummy's equipment arrays (references, not clones).</summary>
+		private Item _blankSlot;
 		public void EquipDummy()
 		{
 			if (Record == null) return;
 			var g = Record.Gear;
-			for (int i = 0; i < Dummy.armor.Length; i++) Dummy.armor[i] = new Item();
-			for (int i = 0; i < Dummy.dye.Length; i++) Dummy.dye[i] = new Item();
+			// One shared air item fills the unused armor/dye slots; vanilla equip code only reads these slots, never writes them.
+			_blankSlot ??= new Item();
+			for (int i = 0; i < Dummy.armor.Length; i++) Dummy.armor[i] = _blankSlot;
+			for (int i = 0; i < Dummy.dye.Length; i++) Dummy.dye[i] = _blankSlot;
 			Dummy.armor[0] = g.Head; Dummy.armor[1] = g.Body; Dummy.armor[2] = g.Legs;
 			int slots = Record.AccessorySlots;
 			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i];
 			for (int i = 0; i < 3; i++) Dummy.dye[i] = g.Dyes[i];
 			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.dye[3 + i] = g.Dyes[3 + i];
-			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : new Item());
+			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
 			Dummy.selectedItem = 0;
 			Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, Record.MaxHp);
 			Dummy.statManaMax = Dummy.statManaMax2 = Record.MaxMana;

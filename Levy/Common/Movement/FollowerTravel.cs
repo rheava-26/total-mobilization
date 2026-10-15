@@ -77,7 +77,8 @@ namespace Levy.Common.Movement
 			if (commander == null || commander.dead) return false;
 			float offset = body.NPC.Center.X - commander.Center.X;
 			int side = Math.Abs(offset) < 1f ? -Math.Sign(commander.direction == 0 ? 1 : commander.direction) : Math.Sign(offset);
-			Vector2 edge = commander.Center + new Vector2(side * (Main.screenWidth / 2f + ScreenEdgeExtraPx), 0f);
+			float sw = (LevyUtil.IsServer || Main.screenWidth <= 0) ? LevyConstants.ServerAssumedScreenW : Main.screenWidth; // Main.screenWidth stays 1152 on a dedicated server
+			Vector2 edge = commander.Center + new Vector2(side * (sw / 2f + ScreenEdgeExtraPx), 0f);
 			if (!FindStandingSpot(edge, StandingSpotRadiusTiles, out var spot) && !FindStandingSpot(commander.Center, StandingSpotRadiusTiles, out spot))
 				spot = commander.Bottom;
 			Place(body, spot);

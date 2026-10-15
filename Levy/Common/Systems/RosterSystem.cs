@@ -817,12 +817,15 @@ namespace Levy.Common.Systems
 		public virtual void OnMainBossKilled(NPC boss)
 		{
 			if (LevyUtil.IsClient || boss == null) return;
+			// Defer crediting until the whole fight is over: the Twins are two main-boss roots and the Eater of Worlds' head
+			// whoAmI shifts as it splits, so crediting per boss NPC would double-count the Twins and miss the Eater.
+			if (Common.Fear.FearSystem.AnotherMainBossAlive(boss)) return;
 			int veterans = 0;
 			foreach (var r in Regulars) if (r.Veteran) veterans++;
 			bool changed = false;
 			foreach (var rec in Regulars)
 			{
-				if (rec.Dead || !rec.EngagedBosses.Contains(boss.whoAmI)) continue;
+				if (rec.Dead || rec.EngagedBosses.Count == 0) continue; // engaged at least one main boss this fight
 				rec.BossFightsSurvived++;
 				changed = true;
 				var body = BodyOf(rec);

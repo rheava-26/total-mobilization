@@ -227,7 +227,8 @@ namespace Levy.Common.Fear
 		}
 
 		/// <summary>Is a main boss other than <paramref name="dead"/> (and its own parts) still alive?</summary>
-		private static bool AnotherMainBossAlive(NPC dead)
+		/// <summary>True if a main boss other than <paramref name="dead"/> (and not a part of it) is still alive — a Twins/EoW fight is not over yet.</summary>
+		public static bool AnotherMainBossAlive(NPC dead)
 		{
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{

@@ -84,6 +84,7 @@ namespace Levy.Common.Weapons
 		public static NPC NearestSegment(NPC npc, Vector2 from)
 		{
 			if (npc == null) return null;
+			if (npc.realLife < 0 && !npc.boss) return npc; // single-part ordinary enemy: no segment scan needed
 			int root = npc.realLife >= 0 && npc.realLife < Main.maxNPCs ? npc.realLife : npc.whoAmI;
 			NPC best = npc;
 			float bestDist = float.MaxValue;

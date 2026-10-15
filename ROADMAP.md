@@ -818,4 +818,19 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
   defects fixed, including the tile-entity-ID renumber on world load (home re-resolved from tile position), a
   militia-death double-count, HandAmmo accepting the wrong ammo, and fight-scoped veterancy for the Twins / Eater of
   Worlds. Remaining gaps are multiplayer-only (not a v1 goal); see `Levy/TESTING.md`.
-- Next: playtest from the M0 gate — a levy with a Musket kills a zombie and gets paid. Test script in `Levy/TESTING.md`.
+- Now at `levy-mod/` (box: `Levy/` source, prebuilt `Levy.tmod`, `tools/`, `README.md`). **Being actively playtested by the designer — it works and is fun** (held a goblin army at a chokepoint; barks and fear firing).
+
+**Playtest feedback — shipped (branch `claude/levy-mod`):**
+- Readable scrollable Field Manual (was a chat dump); weapon name on nameplates; Re-arm order on the War Horn radial; armory-break spill feedback + OnKill safety spill.
+
+**Playtest feedback — in flight (two parallel builders):**
+- Real weapon Shoot pipeline so special gun/bow/staff effects work (Hellwing arrows, Daedalus rain, multishot); beam swords already fire beams.
+- More Armory issue slots (6→12 wpn etc.); auto-consume Life/Mana Crystals + Life Fruit from the Armory; Life Crystal sound on use.
+
+**Playtest feedback — backlog (Wave 2, not started):**
+1. **Per-unit loadout menu** (TOP ask): click any soldier/militia in the Barracks menu, see kit with hover tooltips, hand-assign weapons/accessories, locked against auto-issue. Covers the accessory-slot ask.
+2. **AI fix — soldiers must NOT run into enemies.** They currently close distance (toward commander/target) and get strung out, so one offscreen enemy kills them one by one. Keep a standoff / don't suicide into contact.
+3. **Orders:** Spread Out (loose formation vs AoE like Eye of Cthulhu); Focus Target (click an enemy, concentrate fire); **Search & Destroy** (roam all directions hunting enemies instead of clustering). Note: current Rally is a morale steady-up, NOT spread-out.
+4. **Movement:** use movement accessories (double jump, hover); handle 1-block gaps. Best-effort (NPC pathing).
+- Facts confirmed for the designer: mana pool works (magic throttles on empty, swaps to sidearm); storage weapons ARE issued after issue slots; dead regulars keep kit on respawn, militia return kit to Armory (nothing lost).
+- New GitHub repo for the mod: user is creating an empty `rheava-26/Levy` + granting the Claude GitHub App access (Option B); push there once ready.

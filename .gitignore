@@ -25,3 +25,6 @@ Levy/obj/
 Levy/bin/
 Levy/.vs/
 !Levy.tmod
+
+# review workflow script (dev-only, not part of the mod)
+levy-tools/review2.js

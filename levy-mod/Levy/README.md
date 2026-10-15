@@ -14,8 +14,10 @@ removable (roster data is dropped, tiles become plain tiles).
 2. Copy this whole `Levy/` folder there (the folder name must stay `Levy`: tModLoader names the mod after it).
 3. In tModLoader: **Workshop → Develop Mods → Levy → Build + Reload**. Enable the mod, play.
 
-## Install (prebuilt)
-If a `Levy.tmod` is shipped next to this folder, drop it into `.../tModLoader/Mods/` and enable it in **Mods**.
+## Install (prebuilt — easiest)
+A built **`Levy.tmod`** sits one folder up (in `levy-mod/`). Drop it into your tModLoader `Mods` folder
+(Windows `Documents\My Games\Terraria\tModLoader\Mods`, Linux `~/.local/share/Terraria/tModLoader/Mods`), then enable
+**Levy** in the in-game **Mods** menu and Reload. See `levy-mod/README.md` for step-by-step.
 
 ## First steps in game
 * Work Bench: **Barracks** (30 wood, 10 iron/lead bars, 1 banner), **Armory** (20 iron/lead bars, 1 chest), **War Horn**

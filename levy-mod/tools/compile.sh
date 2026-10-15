@@ -2,7 +2,7 @@
 # Compile a tModLoader mod source folder against the real tModLoader 1.4.4 (2026.08.3.0) assemblies with Roslyn.
 # Usage: compile.sh <mod dir> [extra csc args]   -> prints errors; exit code 0 on success.
 set -u
-MOD="${1:-/home/user/total-mobilization/Levy}"; shift || true
+MOD="${1:-/home/user/total-mobilization/levy-mod/Levy}"; shift || true
 R=/home/user/dotnet; D=/home/user/dotnet-pkgs; T=/home/user/tml-bin/tml
 export DOTNET_ROOT=$R
 OUT=$(mktemp -d)

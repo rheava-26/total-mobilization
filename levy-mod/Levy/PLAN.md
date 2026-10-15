@@ -77,7 +77,7 @@ Content/TileEntities/BarracksTE.cs ArmoryTE.cs PatrolBannerTE.cs
 Content/NPCs/SoldierNPC.cs (core)  .Brain.cs  .Combat.cs  .Movement.cs  .Draw.cs  .Fear.cs  .Damage.cs  SoldierNPC.png
 Content/Projectiles/SoldierThrust.cs (+png)   shared spear/shortsword thrust
 ```
-`levy-tools/` (repo root, outside the mod): `gen_sprites.py` (placeholder art), `compile.sh`, `tmlbuild.sh` copies.
+`../tools/` (in levy-mod/, outside the mod): `gen_sprites.py` (placeholder art), `compile.sh`, `tmlbuild.sh` copies.
 
 ## 3. Core data
 

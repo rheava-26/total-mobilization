@@ -18,13 +18,11 @@
 !audio/
 !audio/the_fire_rages.m4a
 
-# Levy — the tModLoader mod lives in its own subfolder (not part of the game site)
-!Levy/
-!levy-tools/
-Levy/obj/
-Levy/bin/
-Levy/.vs/
-!Levy.tmod
+# Levy — the tModLoader mod lives in its own box (levy-mod/), separate from the game site
+!levy-mod/
+levy-mod/Levy/obj/
+levy-mod/Levy/bin/
+levy-mod/Levy/.vs/
 
 # review workflow script (dev-only, not part of the mod)
-levy-tools/review2.js
+levy-mod/tools/review2.js

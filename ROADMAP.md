@@ -803,9 +803,19 @@ Emplacement-crumble fix · intro cinematic (plays every load, skip after first w
 
 ---
 
-## Side project (2026-10-14): Levy — a tModLoader mod (`levy/`)
+## Side project (2026-10-14/15): Levy — a tModLoader mod (`Levy/`)
 
 Not part of the game. The designer asked for a one-shot build of the "Levy" Terraria mod from Build Spec v0.1
-(junk becomes a garrison; Regulars + Militia; boss rule + fear; wages). It lives in `Levy/` with its own
-`PLAN.md`, `README.md`, `TESTING.md`; verification tooling in `levy-tools/`. Target: tModLoader 1.4.4.9 (v2026.08.3.0, .NET 8).
-Status is tracked in `Levy/PLAN.md` §7 and `Levy/TESTING.md`.
+(junk becomes a garrison; Regulars + Militia; boss rule + fear; wages). It lives in `Levy/` (the folder name must stay
+`Levy` — tModLoader names the mod after it), with `PLAN.md`, `README.md`, `TESTING.md`; verification tooling in
+`levy-tools/`. Target: tModLoader **1.4.4.9 (v2026.08.3.0 stable, .NET 8)**.
+
+**Status: built, integrated, reviewed, not yet playtested.** Branch `claude/levy-mod`.
+- All spec milestones M0–M8 and M10 implemented across ~90 source files, built by 14 parallel subagents against a shared
+  contract, integrated, and compiled clean both with Roslyn against the real tModLoader assemblies and with tModLoader's
+  headless `-build`, which packs **`Levy.tmod`** at the repo root.
+- Two adversarial source-review passes (6 lenses, every finding re-verified against the decompiled game); 16 confirmed
+  defects fixed, including the tile-entity-ID renumber on world load (home re-resolved from tile position), a
+  militia-death double-count, HandAmmo accepting the wrong ammo, and fight-scoped veterancy for the Twins / Eater of
+  Worlds. Remaining gaps are multiplayer-only (not a v1 goal); see `Levy/TESTING.md`.
+- Next: playtest from the M0 gate — a levy with a Musket kills a zombie and gets paid. Test script in `Levy/TESTING.md`.

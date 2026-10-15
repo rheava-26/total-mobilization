@@ -269,6 +269,7 @@ Mods: {
 			SpreadOut: Spread out
 			CloseUp: Close up
 			SearchDestroy: Search & destroy
+			FreeRein: Free rein
 			FocusTarget: Focus target
 			Rally: Rally
 			Rearm: Re-arm
@@ -334,7 +335,7 @@ Mods: {
 
 				4. Militia. Hold the War Horn and left-click to call up the whole town to hold the walls. They arm from the Armory, fight at the settlement, and stand down when the invasion or Blood Moon ends. Manpower is the limit, and it drains as they fall.
 
-				5. Orders. Right-click the War Horn for the radial. Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally, N army overview. The radial also has Search & destroy (roam outward and hunt, never into contact), Spread out (a wide loose line against area attacks) and Focus target (click an enemy and the squad fires on it).
+				5. Orders. Right-click the War Horn for the radial. Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally, N army overview. The radial also has Search & destroy (roam outward and hunt, never into contact), Free rein (the same hunt with no leash: they range across the whole region on their own, out of your sight, and follow the fighting), Spread out (a wide loose line against area attacks) and Focus target (click an enemy and the squad fires on it).
 
 				6. Growth. Feed soldiers Life Crystals for more health, or leave Life Crystals, Life Fruit and Mana Crystals in the Armory and they take them on their own. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
 

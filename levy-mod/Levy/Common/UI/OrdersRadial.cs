@@ -16,7 +16,7 @@ namespace Levy.Common.UI
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 11;
+		private const int Count = 12;
 		private const float GrowStep = 1.04f;
 		private const int MaxGrowSteps = 60;
 		private static float _radX, _radY;
@@ -102,14 +102,15 @@ namespace Levy.Common.UI
 			_buttons[1].Set(LevyUtil.T("UI.Hold"), true, LevyUtil.T("UI2.HoldHint"));
 			_buttons[2].Set(LevyUtil.T("UI.Return"), true, LevyUtil.T("UI2.ReturnHint"));
 			_buttons[3].Set(LevyUtil.T("UI.SearchDestroy"), true, LevyUtil.T("UI2.SearchDestroyHint"));
-			_buttons[4].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
-			_buttons[5].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
-			_buttons[6].Set(LevyUtil.T("UI.FocusTarget"), true, LevyUtil.T("UI2.FocusTargetHint"));
-			if (_nearest == null) _buttons[7].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
-			else _buttons[7].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
-			_buttons[8].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
-			_buttons[9].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
-			_buttons[10].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
+			_buttons[4].Set(LevyUtil.T("UI.FreeRein"), true, LevyUtil.T("UI2.FreeReinHint"));
+			_buttons[5].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
+			_buttons[6].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
+			_buttons[7].Set(LevyUtil.T("UI.FocusTarget"), true, LevyUtil.T("UI2.FocusTargetHint"));
+			if (_nearest == null) _buttons[8].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
+			else _buttons[8].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
+			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
+			_buttons[10].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
+			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
 		private void Click(int idx)
@@ -120,13 +121,14 @@ namespace Levy.Common.UI
 				case 1: UIActions.Order(SoldierOrder.Hold, false); break;
 				case 2: UIActions.Order(SoldierOrder.ReturnToBarracks, false); break;
 				case 3: UIActions.Order(SoldierOrder.SearchDestroy, false); break;
-				case 4: UIActions.HoldFire(false); break;
-				case 5: UIActions.SpreadOut(false); break;
-				case 6: UISystem.Instance.BeginFocusDesignate(); break;
-				case 7: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
-				case 8: UIActions.Rally(); break;
-				case 9: UIActions.Rearm(); break;
-				case 10: UISystem.Instance.ToggleNameplates(); break;
+				case 4: UIActions.Order(SoldierOrder.FreeRein, false); break;
+				case 5: UIActions.HoldFire(false); break;
+				case 6: UIActions.SpreadOut(false); break;
+				case 7: UISystem.Instance.BeginFocusDesignate(); break;
+				case 8: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
+				case 9: UIActions.Rally(); break;
+				case 10: UIActions.Rearm(); break;
+				case 11: UISystem.Instance.ToggleNameplates(); break;
 			}
 			UISystem.Instance.CloseRadial();
 		}

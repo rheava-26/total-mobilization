@@ -167,6 +167,34 @@ namespace Levy.Common
 		/// <summary>Stay this far from the world's left and right edges (tiles).</summary>
 		public const int SearchWorldMarginTiles = 60;
 
+		// ---------- Combat orders: Free Rein (Search & Destroy, unleashed) ----------
+		// Free Rein sweeps and hunts exactly like Search & Destroy, but is tied to no player and no short anchor. Its only bound is an outer
+		// safety circle of FreeReinLeashTiles around a fixed base (the soldier's home muster point / nearest settlement, else where the order
+		// found it), plus the world-edge margin and the underworld floor. Inside that circle a soldier roams where it likes: legs are measured
+		// from its own position, not from the base, and the heading is pulled toward the nearest distant enemy so the squad follows the fight.
+		/// <summary>The outer safety radius around the Free Rein base (tiles). Roaming, chasing and waypoints never leave it.</summary>
+		public const int FreeReinLeashTiles = 600;
+		/// <summary>One roam leg (tiles). Kept under half the pathfinder window (80 tiles) so every leg can be path-checked.</summary>
+		public const int FreeReinStepTiles = 64;
+		/// <summary>When a leg of full length cannot be pathed, retry at these fractions of it before turning round.</summary>
+		public const float FreeReinStepRetryMult1 = 0.5f, FreeReinStepRetryMult2 = 0.25f;
+		/// <summary>Free-roaming soldiers acquire targets at weapon reach x this.</summary>
+		public const float FreeReinAcquireRangeMult = 1.75f;
+		/// <summary>The heading is pulled toward the nearest hostile inside this radius (tiles) that is not yet in acquire range.</summary>
+		public const int FreeReinScoutTiles = 220;
+		/// <summary>After a blocked leg or a turn-round the scout pull is ignored this long (ticks), so an unreachable enemy cannot pin the soldier.</summary>
+		public const int FreeReinScoutCooldownTicks = 60 * 10;
+		/// <summary>Without a fight to follow, a soldier turns round after this many legs in one direction (+0..FreeReinLegsSpread per soldier).</summary>
+		public const int FreeReinLegsBeforeTurn = 5, FreeReinLegsSpread = 4;
+		/// <summary>Standable-tile search radius around a roam waypoint (tiles); wider than Search & Destroy because the legs are longer.</summary>
+		public const int FreeReinSpotRadiusTiles = 24;
+		/// <summary>A waypoint not reached in this long is dropped and a new one picked (ticks).</summary>
+		public const int FreeReinGoalTimeoutTicks = 60 * 22;
+		/// <summary>Stay this far from the world's left and right edges (tiles).</summary>
+		public const int FreeReinWorldMarginTiles = 80;
+		/// <summary>Never roam into the bottom of the world: waypoints stay this many tiles above the underworld layer.</summary>
+		public const int FreeReinUnderworldMarginTiles = 10;
+
 		// ---------- Combat orders: Focus Target ----------
 		/// <summary>The focus target is accepted out to weapon reach x this, so the squad commits to it instead of nearer enemies.</summary>
 		public const float FocusRangeMult = 1.25f;

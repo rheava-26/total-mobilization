@@ -63,7 +63,7 @@ namespace Levy.Content.NPCs
 			// Shaken in, Shaken out. Routed is left alone here: only a rally, the boss dying or the out-of-sight timer ends it.
 			if (Fear >= FearK.ShakenThreshold)
 			{
-				if (State is SoldierState.Idle or SoldierState.Follow or SoldierState.Patrol or SoldierState.SearchDestroy or SoldierState.Engage or SoldierState.Haul or SoldierState.Resupply)
+				if (State is SoldierState.Idle or SoldierState.Follow or SoldierState.Patrol or SoldierState.SearchDestroy or SoldierState.FreeRein or SoldierState.Engage or SoldierState.Haul or SoldierState.Resupply)
 					Fear_BecomeShaken();
 			}
 			else if (State == SoldierState.Shaken) Fear_ReenterOrder();

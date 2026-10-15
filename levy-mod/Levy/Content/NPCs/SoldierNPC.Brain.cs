@@ -95,6 +95,8 @@ namespace Levy.Content.NPCs
 		private Vector2 _searchGoal;
 		private int _searchGoalTick, _searchPauseUntil;
 		private const float SlotSaltSearch = 0.53f;
+		// ---- free rein (shares the search fields; these two are its own) ----
+		private int _freeLegs, _freeScoutOffUntil;
 		// ---- aerial engagement (brain -> Movement) ----
 		/// <summary>The brain wants the body held at <see cref="AltitudeBottomY"/> (world Y of the feet) while it fights. Cleared at the top of every think.</summary>
 		public bool WantsAltitude;
@@ -126,6 +128,7 @@ namespace Levy.Content.NPCs
 					case SoldierOrder.Patrol: State = SoldierState.Patrol; break;
 					case SoldierOrder.ReturnToBarracks: State = SoldierState.ReturnHome; break;
 					case SoldierOrder.SearchDestroy: State = SoldierState.SearchDestroy; break;
+					case SoldierOrder.FreeRein: State = SoldierState.FreeRein; break;
 					default: State = SoldierState.Idle; break;
 				}
 			}
@@ -142,6 +145,7 @@ namespace Levy.Content.NPCs
 			_haulTargetItem = -1;
 			_idleAnchorSet = false;
 			_searchAnchorSet = false; _searchDir = 0; _searchPauseUntil = 0; // any new order (or a re-entry from fear) restarts the sweep
+			_freeLegs = 0; _freeScoutOffUntil = 0;
 			// Fear owns Shaken/Routed and the roster owns Desert/Dead: the order is recorded (core) and takes effect when they let go.
 			if (State == SoldierState.Shaken || State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead) return;
 			if (IsMilitia)
@@ -158,6 +162,7 @@ namespace Levy.Content.NPCs
 				case SoldierOrder.Patrol: HoldPosition = false; _patrolLeg = 0; _patrolPauseUntil = 0; SetState(SoldierState.Patrol); break;
 				case SoldierOrder.ReturnToBarracks: HoldPosition = false; SetState(SoldierState.ReturnHome); break;
 				case SoldierOrder.SearchDestroy: HoldPosition = false; SetState(SoldierState.SearchDestroy); break;
+				case SoldierOrder.FreeRein: HoldPosition = false; SetState(SoldierState.FreeRein); break;
 			}
 			_lastSeenState = State;
 		}
@@ -235,6 +240,7 @@ namespace Levy.Content.NPCs
 			_perchActive = false; _perchTarget = -1; _perchNextTick = -1; _nudgeNextTick = 0;
 			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
 			_searchAnchorSet = false; _searchDir = 0; _searchGoalTick = 0; _searchPauseUntil = 0;
+			_freeLegs = 0; _freeScoutOffUntil = 0;
 		}
 
 		/// <summary>Spread Out multiplier on every dispersion spacing (1 when off).</summary>
@@ -331,6 +337,7 @@ namespace Levy.Content.NPCs
 				case SoldierOrder.Hold: return SoldierState.Idle;
 				case SoldierOrder.Patrol: return SoldierState.Patrol;
 				case SoldierOrder.SearchDestroy: return SoldierState.SearchDestroy;
+				case SoldierOrder.FreeRein: return SoldierState.FreeRein;
 				case SoldierOrder.ReturnToBarracks:
 				{
 					if (Home == null)
@@ -523,7 +530,7 @@ namespace Levy.Content.NPCs
 				var cmd = Commander;
 				if (cmd != null && !LevyUtil.WithinTiles(cmd.Center, target.Center, LevyConstants.FollowChaseLimit + rangeTiles)) return false;
 			}
-			if (IsRegular && Record.Order == SoldierOrder.SearchDestroy && !LevyUtil.WithinTiles(SearchAnchor(), target.Center, LevyConstants.SearchLeashTiles + rangeTiles)) return false;
+			if (Roaming && !LevyUtil.WithinTiles(RoamAnchor(), target.Center, RoamLeashTiles + rangeTiles)) return false;
 			return true;
 		}
 
@@ -545,7 +552,7 @@ namespace Levy.Content.NPCs
 			_engPathOk = false;
 			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false; return false; }
 			float range = AcquireRangeTiles();
-			if (IsRegular && Record.Order == SoldierOrder.SearchDestroy) range *= LevyConstants.SearchAcquireRangeMult; // hunters run enemies down
+			if (Roaming) range *= FreeReining ? LevyConstants.FreeReinAcquireRangeMult : LevyConstants.SearchAcquireRangeMult; // hunters run enemies down
 			NPC target = null;
 			int focus = FocusTargetIndex(range, now);
 			if (focus >= 0) { TargetIndex = focus; target = Main.npc[focus]; } // the commander's designated target outranks everything
@@ -1061,7 +1068,9 @@ namespace Levy.Content.NPCs
 				var cmd = Commander;
 				if (cmd != null) ClampToCircle(ref goal, cmd.Center, LevyConstants.FollowChaseLimit);
 			}
-			if (IsRegular && Record.Order == SoldierOrder.SearchDestroy) ClampToCircle(ref goal, SearchAnchor(), LevyConstants.SearchLeashTiles);
+			if (Roaming) ClampToCircle(ref goal, RoamAnchor(), RoamLeashTiles);
+			if (FreeReining) // never chase a target out past the world margin into the edge void
+				goal.X = MathHelper.Clamp(goal.X, LevyConstants.FreeReinWorldMarginTiles * LevyConstants.TilePx, (Main.maxTilesX - LevyConstants.FreeReinWorldMarginTiles) * LevyConstants.TilePx);
 		}
 
 		private static void ClampToCircle(ref Vector2 goal, Vector2 center, float radiusTiles)
@@ -1216,10 +1225,11 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Shaken) behave = os; // the Fear agent's label stays; behave by the order underneath it
 			else { if (State != os) SetState(os); behave = State; }
 
-			bool mayHaul = State != SoldierState.Shaken && !Shaken && !Record.HoldFire && !HoldPosition && Record.Order != SoldierOrder.SearchDestroy;
+			bool mayHaul = State != SoldierState.Shaken && !Shaken && !Record.HoldFire && !HoldPosition && !Roaming;
 			switch (behave)
 			{
-				case SoldierState.SearchDestroy: ThinkSearch(now); break;
+				case SoldierState.SearchDestroy:
+				case SoldierState.FreeRein: ThinkSearch(now); break;
 				case SoldierState.ReturnHome: ThinkReturnHome(now); break;
 				case SoldierState.Follow:
 					if (mayHaul && TryStartHaul(now, nearestHostileTiles)) return;
@@ -1549,7 +1559,54 @@ namespace Levy.Content.NPCs
 			SetGoal(target);
 		}
 
-		// ---- 11. Search & Destroy ----
+		// ---- 11. Search & Destroy / Free Rein ----
+		private bool FreeReining => IsRegular && Record.Order == SoldierOrder.FreeRein;
+		/// <summary>On a roaming order (Search &amp; Destroy or Free Rein): bounded by <see cref="RoamLeashTiles"/> around <see cref="RoamAnchor"/>.</summary>
+		private bool Roaming => IsRegular && (Record.Order == SoldierOrder.SearchDestroy || Record.Order == SoldierOrder.FreeRein);
+		private int RoamLeashTiles => FreeReining ? LevyConstants.FreeReinLeashTiles : LevyConstants.SearchLeashTiles;
+		private Vector2 RoamAnchor() => FreeReining ? FreeReinBase() : SearchAnchor();
+
+		/// <summary>
+		/// Free Rein's fixed base, independent of any player: the soldier's home muster point, else the nearest settlement's, when within the
+		/// outer leash of where the soldier stood when the order arrived; otherwise that spot. The outer safety circle is centred here.
+		/// </summary>
+		private Vector2 FreeReinBase()
+		{
+			if (_searchAnchorSet) return _searchAnchor;
+			Vector2 a = NPC.Center;
+			var home = Home;
+			if (home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.FreeReinLeashTiles)) a = home.MusterPoint;
+			else
+			{
+				var near = SettlementSystem.Instance.NearestBarracks(NPC.Center, LevyConstants.FreeReinLeashTiles);
+				if (near != null) a = near.MusterPoint;
+			}
+			_searchAnchor = a; _searchAnchorSet = true;
+			return a;
+		}
+
+		/// <summary>
+		/// The nearest legal enemy inside <see cref="LevyConstants.FreeReinScoutTiles"/> (and inside the outer leash) — the fight a free
+		/// soldier drifts toward. dx is the signed horizontal offset to it in px.
+		/// </summary>
+		private bool FindFreeReinScout(Vector2 anchor, out float dx)
+		{
+			dx = 0f; int best = -1; float bestSq = float.MaxValue;
+			float tilePx = LevyConstants.TilePx, reach = LevyConstants.FreeReinScoutTiles * tilePx; reach *= reach;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var n = Main.npc[i];
+				if (!n.active || i == NPC.whoAmI || SoldierTargeting.IsNeverTarget(n)) continue;
+				float dsq = Vector2.DistanceSquared(NPC.Center, n.Center);
+				if (dsq > reach || dsq >= bestSq || Math.Abs(n.Center.X - NPC.Center.X) < LevyConstants.SearchMinStepTiles * tilePx) continue;
+				if (!LevyUtil.WithinTiles(anchor, n.Center, LevyConstants.FreeReinLeashTiles)) continue;
+				best = i; bestSq = dsq;
+			}
+			if (best < 0) return false;
+			dx = Main.npc[best].Center.X - NPC.Center.X;
+			return true;
+		}
+
 		/// <summary>
 		/// Where the sweep is centred: the home muster point when the soldier stood within the leash of it when the order arrived, otherwise
 		/// where the soldier stood (e.g. out with the commander). Fixed for the life of the order.
@@ -1564,7 +1621,7 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>
-		/// Search &amp; destroy with nothing to shoot: sweep outward from the anchor in legs of SearchStepTiles, pausing at each waypoint, turning
+		/// Search &amp; destroy / Free Rein with nothing to shoot: sweep outward from the anchor in legs of SearchStepTiles, pausing at each waypoint, turning
 		/// round at the leash edge (SearchLeashTiles), the world margin or a dead end. Targets are found by TryEngage first (longer acquire
 		/// range), so every standoff / retreat / perch / aerial rule applies as for any fight; this only decides where to look next, and never
 		/// advances a ranged soldier toward a hostile it could not engage while that hostile is inside the standoff plus SearchHaltMarginTiles.
@@ -1573,7 +1630,9 @@ namespace Levy.Content.NPCs
 		private void ThinkSearch(int now)
 		{
 			if (!CanFight(now)) { ClearGoal(); return; } // holding fire / nothing to shoot with: stand here rather than roam
-			Vector2 anchor = SearchAnchor();
+			Vector2 anchor = RoamAnchor();
+			bool free = FreeReining;
+			int leash = RoamLeashTiles;
 			float tilePx = LevyConstants.TilePx;
 			bool melee = Weapon.IsMelee;
 			float standoff = melee ? 0f : StandoffTiles(Weapon.RangeTiles);
@@ -1598,12 +1657,19 @@ namespace Levy.Content.NPCs
 				bool headingIntoThreat = haveThreat && _threatTiles < standoff + LevyConstants.SearchHaltMarginTiles && Math.Sign(_searchGoal.X - NPC.Center.X) == threatSide;
 				if (headingIntoThreat) { ClearGoal(); _searchGoal = default; _searchGoalTick = 0; _searchPauseUntil = now + LevyConstants.SearchPauseTicks; return; }
 				if (arrived) { ClearGoal(); _searchGoal = default; _searchGoalTick = 0; _searchPauseUntil = now + LevyConstants.SearchPauseTicks; return; }
-				if (blocked || now - _searchGoalTick > LevyConstants.SearchGoalTimeoutTicks) { SearchTurnAround(now); return; }
+				if (blocked || now - _searchGoalTick > (free ? LevyConstants.FreeReinGoalTimeoutTicks : LevyConstants.SearchGoalTimeoutTicks)) { SearchTurnAround(now); return; }
 				return; // still walking to the waypoint
 			}
 			if (now < _searchPauseUntil) { if (HasMoveGoal && MoveGoal != _searchGoal) ClearGoal(); return; }
 
 			// pick the next waypoint
+			if (free)
+			{
+				// follow the fight: head for the nearest distant enemy; with none to follow, sweep a few legs one way then double back
+				if (now >= _freeScoutOffUntil && FindFreeReinScout(anchor, out float sdx)) { _searchDir = Math.Sign(sdx); _freeLegs = 0; }
+				else if (_freeLegs >= LevyConstants.FreeReinLegsBeforeTurn + (int)(SlotFrac(SlotSaltSearch) * LevyConstants.FreeReinLegsSpread))
+				{ _searchDir = _searchDir == 0 ? 1 : -_searchDir; _freeLegs = 0; }
+			}
 			if (_searchDir == 0)
 			{
 				float off = NPC.Center.X - anchor.X;
@@ -1611,17 +1677,30 @@ namespace Levy.Content.NPCs
 			}
 			if (haveThreat && _threatTiles < standoff + LevyConstants.SearchHaltMarginTiles && _searchDir == (int)threatSide) { SearchTurnAround(now); return; }
 
-			float leftEdge = Math.Max(anchor.X - LevyConstants.SearchLeashTiles * tilePx, LevyConstants.SearchWorldMarginTiles * tilePx);
-			float rightEdge = Math.Min(anchor.X + LevyConstants.SearchLeashTiles * tilePx, (Main.maxTilesX - LevyConstants.SearchWorldMarginTiles) * tilePx);
-			float gx = NPC.Center.X + _searchDir * LevyConstants.SearchStepTiles * tilePx
-				+ SlotOffsetTiles(SlotSaltSearch, LevyConstants.SearchSlotSpreadTiles * SpreadMult) * tilePx;
-			gx = MathHelper.Clamp(gx, leftEdge, rightEdge);
-			if (Math.Abs(gx - NPC.Center.X) < LevyConstants.SearchMinStepTiles * tilePx) { SearchTurnAround(now); return; } // leash edge or world margin
-			if (!TileNav.NearestStandable((int)(gx / tilePx), (int)(NPC.Bottom.Y / tilePx) - 1, LevyConstants.SearchSpotRadiusTiles, out Point tile)) { SearchTurnAround(now); return; }
-			Vector2 bottom = TileNav.BottomCentre(tile.X, tile.Y);
-			if (Vector2.DistanceSquared(bottom, anchor) > LevyConstants.SearchLeashTiles * LevyConstants.SearchLeashTiles * tilePx * tilePx) { SearchTurnAround(now); return; }
-			if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) { SearchTurnAround(now); return; }
-			_searchGoal = bottom; _searchGoalTick = now;
+			int margin = free ? LevyConstants.FreeReinWorldMarginTiles : LevyConstants.SearchWorldMarginTiles;
+			float leftEdge = Math.Max(anchor.X - leash * tilePx, margin * tilePx);
+			float rightEdge = Math.Min(anchor.X + leash * tilePx, (Main.maxTilesX - margin) * tilePx);
+			float slotPx = SlotOffsetTiles(SlotSaltSearch, LevyConstants.SearchSlotSpreadTiles * SpreadMult) * tilePx;
+			int spotRadius = free ? LevyConstants.FreeReinSpotRadiusTiles : LevyConstants.SearchSpotRadiusTiles;
+			float stepTiles = free ? LevyConstants.FreeReinStepTiles : LevyConstants.SearchStepTiles;
+			// a long leg that cannot be pathed (window, budget, cliff) is retried shorter before the soldier gives up and turns round
+			int attempts = free ? 3 : 1;
+			bool underworldBase = anchor.Y / tilePx >= Main.UnderworldLayer - LevyConstants.FreeReinUnderworldMarginTiles;
+			Vector2 bottom = default; bool found = false;
+			for (int t = 0; t < attempts && !found; t++)
+			{
+				float mult = t == 0 ? 1f : t == 1 ? LevyConstants.FreeReinStepRetryMult1 : LevyConstants.FreeReinStepRetryMult2;
+				float gx = MathHelper.Clamp(NPC.Center.X + _searchDir * stepTiles * mult * tilePx + slotPx, leftEdge, rightEdge);
+				if (Math.Abs(gx - NPC.Center.X) < LevyConstants.SearchMinStepTiles * tilePx) break; // leash edge or world margin: shorter legs only get shorter
+				if (!TileNav.NearestStandable((int)(gx / tilePx), (int)(NPC.Bottom.Y / tilePx) - 1, spotRadius, out Point tile)) continue;
+				Vector2 cand = TileNav.BottomCentre(tile.X, tile.Y);
+				if (Vector2.DistanceSquared(cand, anchor) > (float)leash * leash * tilePx * tilePx) continue;
+				if (free && !underworldBase && tile.Y >= Main.UnderworldLayer - LevyConstants.FreeReinUnderworldMarginTiles) continue; // never wander down into the underworld
+				if (!Pathfinder.FindPath(NPC.Bottom, cand, Abilities, _probePath)) continue;
+				bottom = cand; found = true;
+			}
+			if (!found) { SearchTurnAround(now); return; }
+			_searchGoal = bottom; _searchGoalTick = now; _freeLegs++;
 			SetGoal(bottom);
 		}
 
@@ -1630,6 +1709,7 @@ namespace Levy.Content.NPCs
 		{
 			_searchDir = _searchDir == 0 ? 1 : -_searchDir;
 			_searchGoal = default; _searchGoalTick = 0;
+			_freeLegs = 0; _freeScoutOffUntil = now + LevyConstants.FreeReinScoutCooldownTicks; // a blocked / dead-end heading must not be re-picked by the scout pull at once
 			_searchPauseUntil = now + LevyConstants.SearchTurnPauseTicks;
 			ClearGoal();
 		}

@@ -80,7 +80,7 @@ namespace Levy.Common.Systems
 			byte order = r.ReadByte(); bool atBarracks = r.ReadBoolean();
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
-			if (sender == null || order > (byte)SoldierOrder.SearchDestroy) return;
+			if (sender == null || order > (byte)SoldierOrder.FreeRein) return;
 			Roster.IssueOrder(sender, (SoldierOrder)order, atBarracks);
 		}
 

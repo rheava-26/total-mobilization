@@ -12,7 +12,7 @@ namespace Levy.Common.Net
 	///  Enlist: int barracksId, byte grade                         (handler: Roster)
 	///  Discharge: int soldierId                                   (Roster)
 	///  Promote: int soldierId, byte grade                         (Roster)
-	///  Order: byte order (SoldierOrder, incl. SearchDestroy), bool atBarracks   (Roster) — commander = sender
+	///  Order: byte order (SoldierOrder, incl. SearchDestroy, FreeRein), bool atBarracks   (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire
 	///  FocusTarget: int npcId (-1 clears)                         (Roster) — commander = sender; the squad prioritizes that hostile NPC

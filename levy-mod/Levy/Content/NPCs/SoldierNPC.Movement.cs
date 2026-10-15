@@ -27,10 +27,23 @@ namespace Levy.Content.NPCs
 		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
 		private bool _blocked, _blockedHard;
 		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
+		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
+		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
+		private int _rocketTime; private float _drainAcc;
+		private bool _aerial, _aerialClimbed, _aerialSpent, _wasAirborne, _usedRocket;
+		private int _aerialCooldown, _airJumpCooldown, _aerialVisualTicks, _gapAssist;
 
 		/// <summary>Remaining flight ticks (refilled on the ground).</summary>
 		public int WingTime => _wingTime;
 		public bool IsFlying => _flying;
+		/// <summary>The gear gives this soldier some way to gain altitude (wings, extra jumps or rocket boots). Re-read whenever the abilities object is rebuilt.</summary>
+		public bool HasFlightKit { get { RefreshKit(); return _kitAny; } }
+		/// <summary>Tiles above the ground a full budget of wings, extra jumps and rocket boots can lift the body (0 without gear).</summary>
+		public float AerialMaxReachTiles { get; private set; }
+		/// <summary>World Y of the feet the last time the body stood on something (the reference for the altitude cap).</summary>
+		public float AerialGroundY { get; private set; } = float.MinValue;
+		/// <summary>The body is in aerial mode this tick: climbing to or holding the brain's firing altitude.</summary>
+		public bool IsAerial => _aerial;
 		/// <summary>The direct walk toward the current goal was refused or obstructed this tick.</summary>
 		public bool MoveBlocked => _blocked;
 		public bool HasPath => _path.Count > 0;
@@ -42,14 +55,26 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
-			bool grounded = npc.velocity.Y == 0f;
-			if (grounded) { _jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; }
+			bool grounded = npc.velocity.Y == 0f && !(_wasAirborne && HeadOnCeiling());
+			RefreshKit();
+			if (grounded)
+			{
+				_jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false;
+				_rocketTime = _kitRocketMax; _drainAcc = 0f;
+				AerialGroundY = npc.Bottom.Y;
+				if (_wasAirborne && _aerialSpent) _aerialCooldown = Math.Max(_aerialCooldown, AerialRelaunchCooldownTicks);
+				_aerialSpent = false; _aerialClimbed = false;
+			}
+			else if (AerialGroundY == float.MinValue) AerialGroundY = npc.Bottom.Y;
+			_wasAirborne = !grounded;
+			bool air = UpdateAerial(grounded);
+			if (_gapAssist > 0 && !air) TickGapAssist(grounded);
 
 			CloseDoorBehind();
 			NudgeOffPlayers();
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
-			if (TickDodge(grounded)) { MirrorDummyControls(); return; }
+			if (TickDodge(grounded, air)) { if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
 
 			if (!HasMoveGoal)
 			{
@@ -57,7 +82,7 @@ namespace Levy.Content.NPCs
 				_blocked = false; _blockedHard = false; _flying = false;
 				if (_path.Count > 0) _path.Clear();
 				ResetStuck();
-				Glide(grounded);
+				if (air) ApplyAltitude(grounded); else Glide(grounded);
 				MirrorDummyControls();
 				return;
 			}
@@ -65,12 +90,12 @@ namespace Levy.Content.NPCs
 			Vector2 goal = ResolveLocalGoal();
 			float dx = goal.X - npc.Center.X;
 			float dy = goal.Y - npc.Bottom.Y; // > 0: goal below the feet
-			if (Math.Abs(dx) < ArriveXPx && Math.Abs(dy) < ArriveYPx)
+			if (Math.Abs(dx) < ArriveXPx && (air || Math.Abs(dy) < ArriveYPx)) // aloft the goal's Y is the ground spot below: only X counts
 			{
 				Decelerate();
 				_blocked = false; _blockedHard = false; _flying = false;
 				ResetStuck();
-				Glide(grounded);
+				if (air) ApplyAltitude(grounded); else Glide(grounded);
 				MirrorDummyControls();
 				return;
 			}
@@ -97,7 +122,7 @@ namespace Levy.Content.NPCs
 			}
 
 			// goal above and close: jump to it, fly to it, or admit it is out of reach
-			if (!_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= JumpTowardGoalReachTiles * 16 + 8)
+			if (!air && !_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= JumpTowardGoalReachTiles * 16 + 8)
 			{
 				int tiles = (int)Math.Ceiling(-dy / 16f);
 				if (tiles <= Abilities.JumpTiles) { if (tiles > jumpTiles) jumpTiles = tiles; }
@@ -105,7 +130,7 @@ namespace Levy.Content.NPCs
 				else { _blocked = true; _blockedHard = true; }
 			}
 			// goal well below while standing on a platform: drop through it when the floor below is safe
-			if (grounded && dy > PlatformDropBelowPx)
+			if (!air && grounded && dy > PlatformDropBelowPx)
 			{
 				Point feet = TileNav.FeetTile(npc.Bottom);
 				if (TileNav.IsPlatform(feet.X, feet.Y + 1) && !TileNav.IsSolid(feet.X, feet.Y + 1))
@@ -115,8 +140,9 @@ namespace Levy.Content.NPCs
 				}
 			}
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
+			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
-			if (Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
+			if (!air && Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
 			{
 				Fly(goal, dir, flyUp);
 			}
@@ -131,7 +157,7 @@ namespace Levy.Content.NPCs
 				else Decelerate();
 				if (jumpTiles > 0) TryJump(jumpTiles);
 				StepUp();
-				Glide(grounded);
+				if (air) ApplyAltitude(grounded); else Glide(grounded);
 			}
 
 			TrackStuck();
@@ -146,6 +172,7 @@ namespace Levy.Content.NPCs
 			_path.Clear(); _pathTimer = 0; _pathFailTimer = 0;
 			ResetStuck(); _stuckTotal = 0;
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
+			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
 			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0;
 			NPC.velocity = Vector2.Zero;
@@ -221,7 +248,8 @@ namespace Levy.Content.NPCs
 		private bool TryGapJump(int ax, int fy, int dir, float dyPx, ref int jumpTiles)
 		{
 			if (dyPx > 2f * 16f) return false;
-			for (int w = 0; w <= GapJumpMaxTiles; w++)
+			int maxW = GapJumpMaxTiles + (Abilities.ExtraJumps > 0 ? AirGapBonusTiles : 0); // an extra jump mid-air carries a wider gap
+			for (int w = 0; w <= maxW; w++)
 			{
 				int cx = ax + dir * w;
 				for (int r = 0; r <= GapJumpClearRows; r++) if (TileNav.IsSolid(cx, fy - r)) return false;
@@ -232,6 +260,7 @@ namespace Levy.Content.NPCs
 				int tiles = Math.Min(Abilities.JumpTiles, GapJumpTiles);
 				if (tiles < 2) return false;
 				if (tiles > jumpTiles) jumpTiles = tiles;
+				if (Abilities.ExtraJumps > 0 || Abilities.HasWings || _kitRocketMax > 0) _gapAssist = GapAssistTicks;
 				return true;
 			}
 			return false;
@@ -261,7 +290,7 @@ namespace Levy.Content.NPCs
 		/// Dodges the nearest incoming hostile projectile: a short sidestep for steep shots, a hop for flat ones. Rate-limited.
 		/// Returns true while a sidestep is in progress (the walk logic is skipped for those few ticks).
 		/// </summary>
-		private bool TickDodge(bool grounded)
+		private bool TickDodge(bool grounded, bool air)
 		{
 			NPC npc = NPC;
 			if (_dodgeTicks > 0)
@@ -271,7 +300,7 @@ namespace Levy.Content.NPCs
 				return true;
 			}
 			if (_dodgeCooldown > 0) { _dodgeCooldown--; return false; }
-			if (!grounded || _flying || npc.wet) return false;
+			if ((!grounded && !air) || _flying || npc.wet) return false; // aloft in aerial mode a dodge is allowed too
 			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)DodgeScanIntervalTicks) != 0) return false;
 
 			Projectile worst = null; float bestT = DodgeLookaheadTicks; Vector2 worstClosest = default;
@@ -305,13 +334,15 @@ namespace Levy.Content.NPCs
 				if (Math.Abs(off) < 4f) side = HasMoveGoal ? (MoveGoal.X >= c.X ? 1 : -1) : (NPC.direction == 0 ? 1 : -NPC.direction);
 				for (int attempt = 0; attempt < 2; attempt++, side = -side)
 				{
-					if (!SidestepSafe(side)) continue;
+					if (!(grounded ? SidestepSafe(side) : SidestepClearAir(side))) continue;
 					_dodgeVx = side * DodgeSidestepSpeedPx; _dodgeTicks = DodgeSidestepTicks;
 					npc.velocity.X = _dodgeVx; npc.netUpdate = true;
 					return true;
 				}
 			}
-			if (TryJump(DodgeHopTiles)) npc.netUpdate = true;
+			if (!grounded) { if (AirBlip()) npc.netUpdate = true; return false; } // aloft: no room to sidestep, so flap or kick off the air
+			// a flighted soldier's hop is bigger (the extra jump and boots are there to be used)
+			if (TryJump(DodgeHopTiles + (_kitAny ? FlightDodgeHopBonusTiles : 0))) npc.netUpdate = true;
 			return false;
 		}
 
@@ -411,7 +442,13 @@ namespace Levy.Content.NPCs
 		/// <summary>With wings but no flight time left, fall slowly.</summary>
 		private void Glide(bool grounded)
 		{
-			if (grounded || _flying || !Abilities.CanGlide || _wingTime > 0) return;
+			if (grounded || _flying || !Abilities.CanGlide) return;
+			if (_wingTime > 0)
+			{
+				// budget in hand after an aerial climb: come down under control rather than plunge
+				if (_aerialClimbed && NPC.velocity.Y > AerialDescendSpeedPx) NPC.velocity.Y = AerialDescendSpeedPx;
+				return;
+			}
 			if (NPC.velocity.Y > GlideFallSpeed) NPC.velocity.Y = GlideFallSpeed;
 		}
 
@@ -426,6 +463,185 @@ namespace Levy.Content.NPCs
 				if (!hb.Intersects(p.Hitbox)) continue;
 				Vector2 nudged = NPC.position + new Vector2(NPC.Center.X >= p.Center.X ? PlayerNudgePx : -PlayerNudgePx, 0f);
 				if (!Collision.SolidCollision(nudged, NPC.width, NPC.height)) NPC.position = nudged;
+			}
+		}
+
+		// =====================================================================================================
+		// aerial engagement: climbing to the brain's firing altitude with extra jumps, then wings, then rocket boots
+		// =====================================================================================================
+
+		/// <summary>
+		/// Re-reads the flight kit when the abilities object is rebuilt (every RefreshStats, i.e. on any gear change and once a second).
+		/// Wings and extra jumps come from <see cref="Abilities"/>; rocket boots (Player.rocketBoots / rocketTimeMax) from the dummy,
+		/// which still carries the flags UpdateEquips just set because this runs in the same tick as RefreshStats.
+		/// </summary>
+		private void RefreshKit()
+		{
+			if (ReferenceEquals(_kitRef, Abilities)) return;
+			_kitRef = Abilities;
+			var a = Abilities;
+			if (a == null) { _kitRocketMax = 0; _kitAny = false; AerialMaxReachTiles = 0f; AerialSustained = false; return; }
+			_kitRocketMax = Dummy != null && Dummy.rocketBoots > 0 ? Math.Max(1, Dummy.rocketTimeMax) * RocketBurstTicks : 0;
+			_rocketTime = Math.Min(_rocketTime, _kitRocketMax);
+			_kitAny = a.ExtraJumps > 0 || a.HasWings || _kitRocketMax > 0;
+			AerialSustained = a.HasWings || _kitRocketMax > 0;
+			float g = Gravity();
+			float risePx = _kitAny ? a.JumpTiles * 16f : 0f;
+			risePx += a.ExtraJumps * (AirJumpImpulsePx * AirJumpImpulsePx / (2f * g));
+			if (a.HasWings) risePx += Math.Max(0, a.WingTimeMax - WingBudgetReserveTicks) * AerialClimbSpeedPx * AerialReachEfficiency;
+			risePx += _kitRocketMax * AerialClimbSpeedPx * AerialReachEfficiency;
+			AerialMaxReachTiles = risePx / 16f;
+		}
+
+		/// <summary>The flight kit has wings or rocket boots (a hover is possible), not only extra jumps.</summary>
+		public bool AerialSustained { get; private set; }
+
+		/// <summary>Standing at 0 vertical speed with the head against a ceiling and no floor underfoot: a bump, not a landing.</summary>
+		private bool HeadOnCeiling()
+		{
+			NPC npc = NPC;
+			if (!Collision.SolidCollision(new Vector2(npc.position.X, npc.position.Y - CeilingProbePx), npc.width, CeilingProbePx)) return false;
+			return !Collision.SolidCollision(new Vector2(npc.position.X, npc.position.Y + npc.height), npc.width, CeilingProbePx);
+		}
+
+		private bool CeilingAbove()
+			=> Collision.SolidCollision(new Vector2(NPC.position.X, NPC.position.Y - CeilingProbePx), NPC.width, CeilingProbePx);
+
+		/// <summary>
+		/// Decides whether aerial mode owns the vertical axis this tick: the brain wants a firing altitude (WantsAltitude / AltitudeBottomY),
+		/// the gear can fly, this airtime has not run dry, and (from the ground) the relaunch cooldown is over and the climb is worth it.
+		/// A body that is no longer wanted aloft simply drops out of the mode and falls back to the normal glide/descend rules.
+		/// </summary>
+		private bool UpdateAerial(bool grounded)
+		{
+			if (_aerialCooldown > 0) _aerialCooldown--;
+			if (_airJumpCooldown > 0) _airJumpCooldown--;
+			if (_aerialVisualTicks > 0) _aerialVisualTicks--;
+			_aerial = false;
+			if (!WantsAltitude || !_kitAny || _aerialSpent || State == SoldierState.Routed || State == SoldierState.Dead) return false;
+			if (grounded && (_aerialCooldown > 0 || AltitudeBottomY > NPC.Bottom.Y - LevyConstants.MinClimbBenefitTiles * 16f)) return false;
+			_aerial = true;
+			return true;
+		}
+
+		/// <summary>
+		/// One tick of vertical control toward AltitudeBottomY. From the ground: an ordinary jump. In the air: an extra jump near the apex
+		/// while a big climb remains; otherwise wing thrust (budget above the reserve), then rocket boots; thrust is a proportional
+		/// controller (desired speed = error x gain, capped), so it eases into a hover that feathers at a fraction of the climb's cost.
+		/// Out of budget with the altitude still unreached (or a ceiling overhead) the airtime is spent: aerial mode stays off until the
+		/// body has landed and the relaunch cooldown has passed. Gravity is added by UpdateNPC after AI, so thrust ticks subtract it first.
+		/// </summary>
+		private void ApplyAltitude(bool grounded)
+		{
+			NPC npc = NPC;
+			float g = Gravity();
+			float dy = AltitudeBottomY - npc.Bottom.Y; // < 0: the firing altitude is above the feet
+			bool needUp = dy < -AltitudeToleranceTiles * 16f;
+			if (grounded)
+			{
+				if (needUp && TryJump(Abilities.JumpTiles)) _aerialClimbed = true;
+				return;
+			}
+			_aerialClimbed = true;
+			float vy = npc.velocity.Y;
+
+			// extra jumps first: spent near the apex of the previous impulse, and only while a real climb remains
+			if (needUp && Abilities.ExtraJumps - _jumpsUsed > 0 && dy < -AirJumpMinNeedTiles * 16f)
+			{
+				if (vy > AirJumpApexVy && _airJumpCooldown == 0) AirJump(AirJumpImpulsePx);
+				return; // otherwise coast up to the apex
+			}
+
+			float desired = MathHelper.Clamp(dy * AerialClimbGain, -AerialClimbSpeedPx, AerialDescendSpeedPx);
+			if (vy <= desired + AerialThrustDeadbandPx) { Glide(false); return; } // already rising as fast as wanted (or falling gently): coast
+			bool wing = Abilities.HasWings && _wingTime > WingBudgetReserveTicks;
+			bool rocket = !wing && _rocketTime > 0; // boots only once the wings are out, as in vanilla
+			if (!wing && !rocket)
+			{
+				if (needUp) _aerialSpent = true; // dry before the altitude: land, recharge, wait out the cooldown
+				Glide(false);
+				return;
+			}
+			if (desired < 0f && CeilingAbove()) { _aerialSpent = true; Glide(false); return; } // a roof overhead: stop burning budget on it
+
+			float post = vy + Math.Max(desired - vy, -AerialClimbAccel); // vertical speed after this tick's gravity
+			if (Math.Abs(post) < AerialMinVyPx) post = -AerialMinVyPx;   // never exactly 0: that reads as standing on the ground
+			npc.velocity.Y = post - g;
+			SpendFlight(wing, desired < AerialClimbDrainBelowVy ? AerialClimbDrain : AerialHoverDrain);
+			_aerialVisualTicks = AerialVisualHoldTicks; _usedRocket = rocket;
+			if (((uint)Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)AerialNetSyncTicks == 0) npc.netUpdate = true;
+		}
+
+		/// <summary>Burns flight budget in fractions (hover feathering costs less than a tick of climb).</summary>
+		private void SpendFlight(bool wing, float amount)
+		{
+			_drainAcc += amount;
+			while (_drainAcc >= 1f)
+			{
+				_drainAcc -= 1f;
+				if (wing) _wingTime--; else _rocketTime--;
+			}
+		}
+
+		private void AirJump(float impulse)
+		{
+			_jumpsUsed++;
+			NPC.velocity.Y = -(impulse + JumpSpeedOffset); // the offset keeps the arc from passing through exactly 0 (the grounded test)
+			_airJumpCooldown = AirJumpCooldownTicks;
+			NPC.netUpdate = true;
+		}
+
+		/// <summary>An upward kick in mid-air: an extra jump if one is left, else a wing flap, else a rocket pulse. Returns true if one was spent.</summary>
+		private bool AirKick(float upPx)
+		{
+			if (_airJumpCooldown > 0) return false;
+			if (_jumpsUsed < Abilities.ExtraJumps) { AirJump(upPx); return true; }
+			if (Abilities.HasWings && _wingTime > WingBudgetReserveTicks + FlapAssistCostTicks) { _wingTime -= FlapAssistCostTicks; _usedRocket = false; }
+			else if (_rocketTime > FlapAssistCostTicks) { _rocketTime -= FlapAssistCostTicks; _usedRocket = true; }
+			else return false;
+			NPC.velocity.Y = Math.Min(NPC.velocity.Y, -(upPx + JumpSpeedOffset));
+			_airJumpCooldown = AirJumpCooldownTicks;
+			_aerialVisualTicks = AerialVisualHoldTicks;
+			NPC.netUpdate = true;
+			return true;
+		}
+
+		/// <summary>Aloft in aerial mode a flat shot is dodged by a kick upward (extra jump, flap or pulse).</summary>
+		private bool AirBlip() => AirKick(AirDodgeBlipPx);
+
+		/// <summary>Aloft there is no floor to check: just no wall, three columns out.</summary>
+		private bool SidestepClearAir(int side)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			int ax = (int)((NPC.Center.X + side * (NPC.width / 2f + LookAheadPx)) / 16f);
+			for (int i = 0; i < 3; i++)
+			{
+				int x = ax + side * i;
+				if (TileNav.IsSolid(x, feet.Y) || TileNav.IsSolid(x, feet.Y - 1) || TileNav.IsSolid(x, feet.Y - 2)) return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Armed by a gap jump. Once the body is falling over the gap with the far edge a few columns ahead, one extra jump (or flap)
+		/// carries it across instead of into the pit. Fires at most once per jump.
+		/// </summary>
+		private void TickGapAssist(bool grounded)
+		{
+			_gapAssist--;
+			if (grounded || NPC.velocity.Y < GapAssistFallVy || _airJumpCooldown > 0) return;
+			int dir = NPC.velocity.X != 0f ? (NPC.velocity.X > 0f ? 1 : -1) : (NPC.direction >= 0 ? 1 : -1);
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			if (TileNav.IsFloor(feet.X, feet.Y + 1) || TileNav.IsFloor(feet.X, feet.Y + 2)) return; // over footing already
+			for (int i = 1; i <= GapAssistLandingTiles; i++)
+			{
+				int x = feet.X + dir * i;
+				for (int r = -1; r <= 1; r++)
+				{
+					if (!TileNav.IsFloor(x, feet.Y + r) || TileNav.IsSolid(x, feet.Y + r - 1)) continue;
+					if (AirKick(AirJumpImpulsePx)) _gapAssist = 0;
+					return;
+				}
 			}
 		}
 
@@ -537,7 +753,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>
 		private Vector2 ResolveLocalGoal()
 		{
-			if (!UsesPath)
+			if (!UsesPath || _aerial) // aloft the ground path means nothing: fly straight at the goal's X
 			{
 				if (_path.Count > 0) _path.Clear();
 				return MoveGoal;
@@ -573,8 +789,10 @@ namespace Levy.Content.NPCs
 			Dummy.direction = NPC.direction == 0 ? 1 : NPC.direction;
 			Dummy.controlLeft = NPC.velocity.X < -StopBelowPx;
 			Dummy.controlRight = NPC.velocity.X > StopBelowPx;
-			Dummy.controlJump = NPC.velocity.Y < 0f || _flying;
-			if (Dummy.wingsLogic > 0) Dummy.wingTime = (NPC.velocity.Y < 0f || _flying) ? Math.Max(1, Dummy.wingTimeMax) : 0f;
+			bool thrusting = _aerialVisualTicks > 0;
+			Dummy.controlJump = NPC.velocity.Y < 0f || _flying || thrusting;
+			if (Dummy.wingsLogic > 0) Dummy.wingTime = (NPC.velocity.Y < 0f || _flying || thrusting) ? Math.Max(1, Dummy.wingTimeMax) : 0f;
+			if (Dummy.rocketBoots > 0) Dummy.rocketFrame = thrusting && _usedRocket;
 		}
 	}
 }

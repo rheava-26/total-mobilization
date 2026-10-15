@@ -46,6 +46,26 @@ namespace Levy.Common
 		/// <summary>Seconds a blocked melee chase waits before the next reachability probe (ticks).</summary>
 		public const int MeleeProbeRecheckTicks = 90;
 
+		// ---------- Aerial engagement (soldiers with wings / extra jumps / rocket boots) ----------
+		/// <summary>A target this many tiles above the body centre is worth climbing to (the body can jump 3, so this is well past a hop).</summary>
+		public const int VerticalEngageMinTiles = 7;
+		/// <summary>Once aloft the soldier stays up until the separation falls below Min - this (stops it flapping up and down on the line).</summary>
+		public const int VerticalEngageExitTiles = 3;
+		/// <summary>A ranged soldier hovers with its centre this far below the target's centre, never level with it.</summary>
+		public const int FiringAltitudeBelowTargetTiles = 3;
+		/// <summary>Climbs shorter than this (tiles above the last solid ground) are not worth the budget.</summary>
+		public const int MinClimbBenefitTiles = 4;
+		/// <summary>Never climb higher than this above the last solid ground.</summary>
+		public const int MaxAltitudeTiles = 40;
+		/// <summary>The climb plan uses at most this fraction of the kit's reach.</summary>
+		public const float MaxReachUseFrac = 0.9f;
+		/// <summary>Never aim above this many tiles under the top of the world.</summary>
+		public const int WorldTopMarginTiles = 80;
+		/// <summary>A ranged target counts as in range for climbing at reach x this (extends the shoot-from-here check once aloft).</summary>
+		public const float AerialRangeKeepMult = 1.1f;
+		/// <summary>A melee soldier only climbs when its reach gets the body within this many tiles of the target's level.</summary>
+		public const int MeleeAerialSlackTiles = 4;
+
 		// ---------- Flee ----------
 		public const int FleeScanTiles = 60;
 		public const int FleeRunTiles = 30;

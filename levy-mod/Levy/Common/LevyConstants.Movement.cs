@@ -69,6 +69,68 @@ namespace Levy.Common
 			public const float GlideFallSpeed = 1.5f;
 			public const float FlyArriveYPx = 16f;
 
+			// ---- aerial engagement (wings / extra jumps / rocket boots climbing to an airborne target) ----
+			// Flight is hand-rolled on NPC.velocity: UpdateNPC adds gravity after AI, so thrust ticks subtract it first (as Fly does).
+			/// <summary>Fastest climb under thrust (px/tick up). Vanilla wings cap at jumpSpeed x 1.5 = 7.5; kept lower so the climb reads as controlled.</summary>
+			public const float AerialClimbSpeedPx = 5.5f;
+			/// <summary>Upward acceleration of one thrust tick (px/tick per tick). Vanilla wings gain about 0.2 to 0.6.</summary>
+			public const float AerialClimbAccel = 0.3f;
+			/// <summary>Desired vertical speed per pixel of altitude error, so the climb eases off into the hover.</summary>
+			public const float AerialClimbGain = 0.12f;
+			/// <summary>Fastest controlled descent while aloft with flight budget left (px/tick down).</summary>
+			public const float AerialDescendSpeedPx = 2.5f;
+			/// <summary>Thrust only fires when the body is this much slower upward than wanted (px/tick); keeps a hover from flickering.</summary>
+			public const float AerialThrustDeadbandPx = 0.15f;
+			/// <summary>While thrusting, the vertical speed never lands on exactly 0 (that is the grounded test).</summary>
+			public const float AerialMinVyPx = 0.02f;
+			/// <summary>Within this of the target altitude (tiles) the body is "there": no climb, only the hover.</summary>
+			public const float AltitudeToleranceTiles = 1.5f;
+			/// <summary>Flight budget burned per tick of climbing thrust.</summary>
+			public const float AerialClimbDrain = 1f;
+			/// <summary>Flight budget burned per tick of hover feathering (vanilla wings burn 1 per tick held; tapping averages less).</summary>
+			public const float AerialHoverDrain = 0.4f;
+			/// <summary>Climb thrust below this vertical speed (px/tick, negative = up) counts as climbing; above it as hovering.</summary>
+			public const float AerialClimbDrainBelowVy = -1f;
+			/// <summary>Wing time kept in hand: below this the wings are not used to climb or hover, so a landing is always glided.</summary>
+			public const int WingBudgetReserveTicks = 24;
+			/// <summary>One rocket-boot burst lasts this long (vanilla rocketDelay); rocketTimeMax bursts make the whole budget.</summary>
+			public const int RocketBurstTicks = 10;
+			/// <summary>Fraction of a thrust source's theoretical climb that a plan can count on (acceleration, hover, drift).</summary>
+			public const float AerialReachEfficiency = 0.6f;
+			/// <summary>After a flight ran dry the soldier lands and waits this long before climbing again (no bouncing).</summary>
+			public const int AerialRelaunchCooldownTicks = 180;
+			/// <summary>Extra jump impulse (px/tick up). Peaks about 3.75 tiles higher at gravity 0.3.</summary>
+			public const float AirJumpImpulsePx = 6f;
+			/// <summary>An extra jump is spent only once the body is no longer rising faster than this (px/tick, negative = up): near the apex.</summary>
+			public const float AirJumpApexVy = -1f;
+			/// <summary>Climbs that still need less than this (tiles) do not spend an extra jump.</summary>
+			public const int AirJumpMinNeedTiles = 3;
+			public const int AirJumpCooldownTicks = 12;
+			/// <summary>Position/velocity is re-sent this often while aloft (ticks); NPC netUpdate is otherwise event-driven.</summary>
+			public const int AerialNetSyncTicks = 10;
+			/// <summary>Height (px) of the strip probed above the head / under the feet to tell a ceiling bump from a landing.</summary>
+			public const int CeilingProbePx = 2;
+			/// <summary>Dummy flap animation holds this many ticks after the last thrust.</summary>
+			public const int AerialVisualHoldTicks = 8;
+
+			// ---- flight-assisted dodge and gaps ----
+			/// <summary>Flighted soldiers hop this many tiles higher when dodging a flat shot.</summary>
+			public const int FlightDodgeHopBonusTiles = 2;
+			/// <summary>An airborne (aerial-mode) dodge by flap or extra jump: upward speed (px/tick).</summary>
+			public const float AirDodgeBlipPx = 4.5f;
+			/// <summary>Wing/rocket budget one flap-assist costs.</summary>
+			public const int FlapAssistCostTicks = 8;
+			/// <summary>Extra gap width (tiles) a body with extra jumps will attempt.</summary>
+			public const int AirGapBonusTiles = 2;
+			/// <summary>After a gap jump is requested, the in-flight assist is armed for this many ticks.</summary>
+			public const int GapAssistTicks = 50;
+			/// <summary>The assist only fires once the body is falling faster than this (px/tick).</summary>
+			public const float GapAssistFallVy = 1f;
+			/// <summary>Columns ahead searched for the far edge before the assist fires.</summary>
+			public const int GapAssistLandingTiles = 3;
+			/// <summary>Upward speed of a gap-assist flap that has no extra jump to spend (px/tick).</summary>
+			public const float GapAssistFlapPx = 3.5f;
+
 			// ---- gaps ----
 			/// <summary>Widest gap (tiles with no floor) a body will jump across instead of falling into.</summary>
 			public const int GapJumpMaxTiles = 2;

@@ -68,6 +68,11 @@ namespace Levy.Content.NPCs
 		private bool _spotValid;
 		private Vector2 _spot;
 		private readonly List<Vector2> _probePath = new();
+		// ---- aerial engagement (brain -> Movement) ----
+		/// <summary>The brain wants the body held at <see cref="AltitudeBottomY"/> (world Y of the feet) while it fights. Cleared at the top of every think.</summary>
+		public bool WantsAltitude;
+		public float AltitudeBottomY;
+		private bool _altHeld;
 		private WeaponProfile _brainMainProfile;
 		private int _brainMainProfileType = -1;
 		private int _brainMainProfilePrefix = -1;
@@ -130,6 +135,8 @@ namespace Levy.Content.NPCs
 		partial void Brain_Think()
 		{
 			if (Record == null || !NPC.active) return;
+			_altHeld &= WantsAltitude; // the exit latch only carries over a think that was actually aloft
+			WantsAltitude = false; // re-asserted below by TryEngage when there is still an airborne target worth climbing to
 			int now = (int)Main.GameUpdateCount;
 			SoldierState prevState = State; int prevTarget = TargetIndex;
 			_thinkCount++;
@@ -194,6 +201,7 @@ namespace Levy.Content.NPCs
 			_lastTeleportTick = -100000; _lastEngageBarkTick = -100000; _commanderLookupTick = -100000;
 			_engMode = EngageMode.None; _engPathOk = false; _threatIdx = -1; _threatTiles = float.MaxValue; _retreatDir = 0;
 			_unreachIdx = -1; _unreachUntil = 0; _spotTarget = -1; _spotTick = -100000; _spotValid = false;
+			WantsAltitude = false; _altHeld = false;
 		}
 
 		/// <summary>A commander who relogged gets a new player index; re-resolve the name once a second while the index is stale.</summary>
@@ -509,7 +517,48 @@ namespace Levy.Content.NPCs
 			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
 			_unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks;
 			TargetIndex = -1; _engMode = EngageMode.None;
+			WantsAltitude = false; _altHeld = false;
 			return false;
+		}
+
+		/// <summary>
+		/// Aerial engagement. A soldier with a flight kit whose target is well above it (and in reach) asks Movement for a firing
+		/// altitude instead of shooting up from the ground. Written every think; Movement owns the climb, hover and budget.
+		/// The altitude is the target's level less FiringAltitudeBelowTargetTiles, pushed further below it while the target is closer
+		/// than the standoff (so the standoff holds in 2D), capped by the kit's reach, MaxAltitudeTiles over the last solid ground and the
+		/// top of the world. A latch (VerticalEngageExitTiles) stops the intent flickering on the threshold.
+		/// </summary>
+		private void UpdateAltitudeIntent(NPC seg, float rangeTiles, float standoffTiles, bool melee)
+		{
+			WantsAltitude = false;
+			if (!HasFlightKit || AerialMaxReachTiles < LevyConstants.MinClimbBenefitTiles) { _altHeld = false; return; }
+			float tilePx = LevyConstants.TilePx;
+			float sepTiles = (NPC.Center.Y - seg.Center.Y) / tilePx; // > 0: the target is above the body centre
+			float need = _altHeld ? LevyConstants.VerticalEngageMinTiles - LevyConstants.VerticalEngageExitTiles : LevyConstants.VerticalEngageMinTiles;
+			if (sepTiles < need) { _altHeld = false; return; }
+			if (!melee)
+			{
+				float reach = rangeTiles * LevyConstants.ShootableRangeFrac * (_altHeld ? LevyConstants.AerialRangeKeepMult : 1f);
+				if (Aiming.TilesToHitbox(NPC.Center, seg) > reach) { _altHeld = false; return; } // not close enough yet: the ground approach handles it
+			}
+
+			float belowTiles = LevyConstants.FiringAltitudeBelowTargetTiles;
+			if (melee) belowTiles = 0f;
+			else
+			{
+				float dxTiles = Math.Abs(seg.Center.X - NPC.Center.X) / tilePx;
+				if (dxTiles < standoffTiles) belowTiles = Math.Max(belowTiles, MathF.Sqrt(standoffTiles * standoffTiles - dxTiles * dxTiles));
+			}
+			float bottom = seg.Center.Y + belowTiles * tilePx + BodyHeight * 0.5f;
+			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
+			float maxPx = Math.Min(LevyConstants.MaxAltitudeTiles, AerialMaxReachTiles * LevyConstants.MaxReachUseFrac) * tilePx;
+			float capped = Math.Max(bottom, groundY - maxPx);
+			capped = Math.Max(capped, (LevyConstants.WorldTopMarginTiles + 3) * tilePx);
+			bool truncated = capped - bottom > LevyConstants.MeleeAerialSlackTiles * tilePx;
+			// melee must actually reach its target; a jump-only kit has no hover, so it only goes when it can fully get there
+			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
+			if (groundY - capped < LevyConstants.MinClimbBenefitTiles * tilePx) { _altHeld = false; return; }
+			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
 		}
 
 		/// <summary>Distance (tiles) inside which a ranged soldier backs away from any hostile.</summary>
@@ -528,6 +577,8 @@ namespace Levy.Content.NPCs
 		{
 			float range = Weapon.RangeTiles;
 			float standoff = StandoffTiles(range);
+			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
 
 			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line
 			float standoffNow = standoff + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
@@ -542,7 +593,6 @@ namespace Levy.Content.NPCs
 			}
 			if (_engMode == EngageMode.Retreat) ClearGoal();
 
-			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
 
@@ -619,6 +669,7 @@ namespace Levy.Content.NPCs
 		private void MeleeGoal(NPC target, int now)
 		{
 			Vector2 goal;
+			UpdateAltitudeIntent(target, 0f, 0f, true);
 			if (now - LastMeleeHitTick < LevyConstants.MeleeStepBackWindowTicks)
 			{
 				float sx = NPC.Center.X >= target.Center.X ? 1f : -1f;

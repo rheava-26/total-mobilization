@@ -58,7 +58,9 @@ namespace Levy.Common
 		public const int SettlementRadiusX = 120, SettlementRadiusY = 70;
 		public const int ArmoryLinkRadius = 20;
 		public const int MinTownNpcsForMilitia = 2;
-		public const int ManpowerPerNpc = 3, ManpowerPerNpcConscription = 5;
+		// Manpower is the militia RESERVE (drains 1 per death). Simultaneous bodies on the field are capped separately by
+		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.
+		public const int ManpowerPerNpc = 9, ManpowerPerNpcConscription = 15;
 		public const int NpcsPerManpowerRegen = 2;       // +1 per 2 town NPCs at dawn, rounded up
 		public const int DisciplineExtraRegen = 1;
 		public const int FortificationDefense = 4, FortificationRadius = 60;

@@ -10,7 +10,7 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Armory: 12x10 storage grid plus the issue rows (6 weapons with a sidearm slot, 3 armor sets, 4 ammo, 2 potions),
+	/// Armory: 12x10 storage grid plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
 	/// "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
 	/// ArmorySlotSet for each changed slot.
 	/// </summary>
@@ -23,7 +23,7 @@ namespace Levy.Common.UI
 		private LevyButton _depositJunk, _lootAll, _close;
 		private Label _title;
 
-		private const int GridLeft = 10, GridTop = 40, IssueLeft = 432, IssueWidth = 220;
+		private const int GridLeft = 10, GridTop = 40, IssueLeft = 432, IssueWidth = 220, IssueColumns = 6;
 		private static int Pitch => LevyConstants.UI.SlotPitch;
 		private static float Scale => LevyConstants.UI.SlotScale;
 
@@ -84,40 +84,48 @@ namespace Levy.Common.UI
 
 			float y = 0f;
 			AddLabel(LevyUtil.T("UI.IssueWeapons"), y); y += 18f;
+			int weaponRows = (te.IssueWeapons.Length + IssueColumns - 1) / IssueColumns;
 			for (int i = 0; i < te.IssueWeapons.Length; i++)
 			{
 				bool sidearm = i == ArmoryTE.SidearmSlot;
 				var slot = MakeSlot(te.IssueWeapons, i, 1, IsWeaponShaped, sidearm ? LevyUtil.T("UI2.Sidearm") : null);
-				slot.Left.Set(i * Pitch, 0f); slot.Top.Set(y, 0f);
+				slot.Left.Set((i % IssueColumns) * Pitch, 0f); slot.Top.Set(y + (i / IssueColumns) * Pitch, 0f);
 				_issue.Append(slot);
-			}
-			var side = new Label(LevyUtil.T("UI2.Sidearm"), 0.6f);
-			side.Left.Set(ArmoryTE.SidearmSlot * Pitch, 0f); side.Top.Set(y + Pitch - 2f, 0f);
-			_issue.Append(side);
-			y += Pitch + 16f;
-
-			AddLabel(LevyUtil.T("UI.IssueArmor"), y); y += 18f;
-			for (int set = 0; set < 3; set++)
-			{
-				for (int part = 0; part < 3; part++)
+				if (sidearm)
 				{
-					int idx = set * 3 + part, p = part;
-					if (idx >= te.IssueArmor.Length) break;
+					var side = new Label(LevyUtil.T("UI2.Sidearm"), 0.6f);
+					side.Left.Set((i % IssueColumns) * Pitch, 0f); side.Top.Set(y + (i / IssueColumns) * Pitch + Pitch - 2f, 0f);
+					_issue.Append(side);
+				}
+			}
+			y += weaponRows * Pitch + 16f;
+
+			// Armor sets sit side by side, two sets (head, body, legs each) per row of the issue grid.
+			AddLabel(LevyUtil.T("UI.IssueArmor"), y); y += 18f;
+			int setsPerRow = Math.Max(1, IssueColumns / ArmoryTE.ArmorParts);
+			int setCount = te.IssueArmor.Length / ArmoryTE.ArmorParts;
+			for (int set = 0; set < setCount; set++)
+			{
+				for (int part = 0; part < ArmoryTE.ArmorParts; part++)
+				{
+					int idx = set * ArmoryTE.ArmorParts + part, p = part;
 					var slot = MakeSlot(te.IssueArmor, idx, 2, it => IsArmorPart(it, p), null);
-					slot.Left.Set(part * Pitch, 0f); slot.Top.Set(y + set * Pitch, 0f);
+					slot.Left.Set(((set % setsPerRow) * ArmoryTE.ArmorParts + part) * Pitch, 0f);
+					slot.Top.Set(y + (set / setsPerRow) * Pitch, 0f);
 					_issue.Append(slot);
 				}
 			}
-			y += 3 * Pitch + 6f;
+			y += ((setCount + setsPerRow - 1) / setsPerRow) * Pitch + 6f;
 
 			AddLabel(LevyUtil.T("UI.IssueAmmo"), y); y += 18f;
+			int ammoRows = (te.IssueAmmo.Length + IssueColumns - 1) / IssueColumns;
 			for (int i = 0; i < te.IssueAmmo.Length; i++)
 			{
 				var slot = MakeSlot(te.IssueAmmo, i, 3, it => it.ammo > 0 && !it.IsACoin, null);
-				slot.Left.Set(i * Pitch, 0f); slot.Top.Set(y, 0f);
+				slot.Left.Set((i % IssueColumns) * Pitch, 0f); slot.Top.Set(y + (i / IssueColumns) * Pitch, 0f);
 				_issue.Append(slot);
 			}
-			y += Pitch + 6f;
+			y += ammoRows * Pitch + 6f;
 
 			AddLabel(LevyUtil.T("UI.IssuePotions"), y); y += 18f;
 			for (int i = 0; i < te.IssuePotions.Length; i++)

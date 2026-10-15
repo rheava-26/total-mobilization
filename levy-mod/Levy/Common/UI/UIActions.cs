@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader.IO;
@@ -60,24 +61,7 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>True when the record can still absorb one of this crystal (mirrors the growth caps so a client never wastes one).</summary>
-		public static bool CanFeed(SoldierRecord rec, int itemType)
-		{
-			if (rec == null) return false;
-			switch (itemType)
-			{
-				case ItemID.LifeCrystal:
-				{
-					int cap = rec.Grade == Grade.Levy ? LevyConstants.MaxLifeCrystalsLevy : rec.Grade == Grade.ManAtArms ? LevyConstants.MaxLifeCrystalsManAtArms : LevyConstants.MaxLifeCrystalsChampion;
-					return rec.LifeCrystals < cap && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
-				}
-				case ItemID.LifeFruit:
-					return rec.Grade == Grade.Champion && rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
-				case ItemID.ManaCrystal:
-					return rec.MaxMana < LevyConstants.MaxMana;
-				default:
-					return false;
-			}
-		}
+		public static bool CanFeed(SoldierRecord rec, int itemType) => RosterSystem.CanAbsorbCrystal(rec, itemType);
 
 		/// <summary>
 		/// Consumes one crystal from the local inventory and feeds it. The packet contract says the client consumes first, so
@@ -91,10 +75,12 @@ namespace Levy.Common.UI
 			{
 				if (!RosterSystem.Instance.FeedCrystal(rec, itemType)) return false;
 				Me.ConsumeItem(itemType);
+				SoundEngine.PlaySound(RosterSystem.CrystalSound(itemType, out _));
 				return true;
 			}
 			Me.ConsumeItem(itemType);
 			var p = LevyPackets.New(LevyPacket.FeedCrystal); p.Write(rec.Id); p.Write(itemType); p.Send();
+			SoundEngine.PlaySound(RosterSystem.CrystalSound(itemType, out _));
 			return true;
 		}
 

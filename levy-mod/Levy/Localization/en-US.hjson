@@ -145,6 +145,11 @@ Mods: {
 					Tooltip: Soldiers get armor set and accessory stats through the game's own equipment code. Turn off if another mod misbehaves.
 				}
 
+				AutoFeedCrystals: {
+					Label: Soldiers use growth crystals from the Armory
+					Tooltip: Soldiers draw Life Crystals, Life Fruit and Mana Crystals from their Armory's storage, one at a time, until they reach their grade limit.
+				}
+
 				SoldiersTriggerPressurePlates: {
 					Label: Soldiers trigger pressure plates
 					Tooltip: Off by default.
@@ -306,7 +311,7 @@ Mods: {
 
 				1. Settlement. Build a Barracks and an Armory at a Work Bench, side by side in your town. Town NPCs whose homes are within 120 tiles of the Barracks become its settlement. You do not house soldiers; they live at the Barracks. House your town NPCs as you always would. Each one adds manpower.
 
-				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Guns, bows, bolt magic, broadswords, shortswords and spears all work. Put what you want issued first into the issue slots at the top.
+				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Guns, bows, bolt magic, broadswords, shortswords and spears all work. Put what you want issued first into the issue slots at the top. Soldiers also draw from storage, best first.
 
 				3. Regulars. Right-click the Barracks and enlist. Regulars are named soldiers who follow you anywhere. They cost a muster fee up front and a daily wage at dawn, both from the Barracks treasury, so deposit coins there. Keep it full or they desert.
 
@@ -314,7 +319,7 @@ Mods: {
 
 				5. Orders. Right-click the War Horn for the radial. Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally, N army overview.
 
-				6. Growth. Feed soldiers Life Crystals for more health. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
+				6. Growth. Feed soldiers Life Crystals for more health, or leave Life Crystals, Life Fruit and Mana Crystals in the Armory and they take them on their own. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
 
 				They are morons. They die like players. They cost money. Watch them fight.
 				'''

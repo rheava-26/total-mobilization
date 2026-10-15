@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.Chat;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -41,7 +42,7 @@ namespace Levy.Common.Systems
 		private readonly List<Deserter> _deserters = new();
 		private readonly List<SoldierRecord> _deployScratch = new();
 		private readonly Dictionary<string, int> _onlineByName = new();
-		private int _deployTimer, _snapshotTimer;
+		private int _deployTimer, _snapshotTimer, _feedTimer;
 		private bool _dawnInit, _lastDayTime;
 
 		private sealed class Deserter { public SoldierNPC Body; public int Ticks; }
@@ -309,6 +310,15 @@ namespace Levy.Common.Systems
 		public virtual bool FeedCrystal(SoldierRecord rec, int itemType)
 		{
 			if (LevyUtil.IsClient || rec == null) return false;
+			if (!ApplyCrystal(rec, itemType)) return false;
+			SendRosterSnapshot();
+			return true;
+		}
+
+		/// <summary>Applies the growth for one crystal (never touches any inventory or storage, never sends a snapshot).</summary>
+		private bool ApplyCrystal(SoldierRecord rec, int itemType)
+		{
+			if (LevyUtil.IsClient || rec == null) return false;
 			int gi = Math.Clamp((int)rec.Grade, 0, LevyConstants.MaxLifeCrystalsByGrade.Length - 1);
 			int hpGain = 0;
 			switch (itemType)
@@ -340,7 +350,6 @@ namespace Levy.Common.Systems
 				npc.netUpdate = true;
 			}
 			else if (!rec.Dead) rec.CurrentHp = Math.Clamp(rec.CurrentHp + hpGain, 1, maxHp);
-			SendRosterSnapshot();
 			return true;
 		}
 
@@ -456,7 +465,81 @@ namespace Levy.Common.Systems
 				TickRespawns(LevyConstants.DeployIntervalTicks);
 				Deploy();
 			}
+			if (++_feedTimer >= LevyConstants.AutoFeedIntervalTicks) { _feedTimer = 0; TickAutoFeed(); }
 			if (LevyUtil.IsServer && ++_snapshotTimer >= LevyConstants.SnapshotIntervalTicks) { _snapshotTimer = 0; SendRosterSnapshot(); }
+		}
+
+		/// <summary>Growth crystals a soldier will draw from the home Armory's storage, in the order they are tried.</summary>
+		private static readonly int[] AutoFeedItems = { ItemID.LifeCrystal, ItemID.LifeFruit, ItemID.ManaCrystal };
+
+		/// <summary>
+		/// Every <see cref="LevyConstants.AutoFeedIntervalTicks"/>: each living soldier whose home Armory storage holds a growth crystal
+		/// it can still absorb takes ONE (at most one per soldier per check). Server / single player only.
+		/// </summary>
+		private void TickAutoFeed()
+		{
+			if (LevyUtil.IsClient) return;
+			var cfg = LevyConfig.Get;
+			if (cfg == null || !cfg.AutoFeedCrystals) return;
+			bool changed = false;
+			for (int i = 0; i < Regulars.Count; i++)
+			{
+				var rec = Regulars[i];
+				if (rec == null || rec.Dead) continue;
+				var armory = ArmoryOf(HomeOf(rec));
+				if (armory == null) continue;
+				for (int k = 0; k < AutoFeedItems.Length; k++)
+				{
+					int type = AutoFeedItems[k];
+					if (!CanAbsorbCrystal(rec, type) || !armory.TryTakeOne(type)) continue;
+					if (!ApplyCrystal(rec, type)) { armory.Deposit(new Item(type)); break; } // refused after all: the crystal goes back
+					changed = true;
+					var body = BodyOf(rec);
+					PlayCrystalSound(type, body != null ? body.NPC.Center : armory.Center);
+					break;
+				}
+			}
+			if (changed) SendRosterSnapshot();
+		}
+
+		/// <summary>True when the record can still absorb one of this crystal (life crystal / life fruit by grade and HP cap, mana crystal by the mana cap).</summary>
+		public static bool CanAbsorbCrystal(SoldierRecord rec, int itemType)
+		{
+			if (rec == null) return false;
+			switch (itemType)
+			{
+				case ItemID.LifeCrystal:
+				{
+					int cap = rec.Grade == Grade.Levy ? LevyConstants.MaxLifeCrystalsLevy : rec.Grade == Grade.ManAtArms ? LevyConstants.MaxLifeCrystalsManAtArms : LevyConstants.MaxLifeCrystalsChampion;
+					return rec.LifeCrystals < cap && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
+				}
+				case ItemID.LifeFruit:
+					return rec.Grade == Grade.Champion && rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
+				case ItemID.ManaCrystal:
+					return rec.MaxMana < LevyConstants.MaxMana;
+				default:
+					return false;
+			}
+		}
+
+		/// <summary>The vanilla use sound for a growth crystal (Item4 for Life Crystal / Life Fruit, Item29 for Mana Crystal) and its SoundID field name.</summary>
+		public static SoundStyle CrystalSound(int itemType, out string soundName)
+		{
+			if (itemType == ItemID.ManaCrystal) { soundName = "Item29"; return SoundID.Item29; }
+			soundName = "Item4";
+			return SoundID.Item4;
+		}
+
+		/// <summary>Plays the crystal use sound: locally in single player, broadcast from the server in multiplayer. A client never calls this.</summary>
+		public static void PlayCrystalSound(int itemType, Vector2 position)
+		{
+			var style = CrystalSound(itemType, out string name);
+			if (Main.netMode == NetmodeID.Server)
+			{
+				if (SoundID.IndexByName != null && SoundID.IndexByName.TryGetValue(name, out ushort idx))
+					NetMessage.PlayNetSound(new NetMessage.NetSoundInfo(position, idx));
+			}
+			else SoundEngine.PlaySound(style, position);
 		}
 
 		private void ResolveCommanders()
@@ -941,7 +1024,7 @@ namespace Levy.Common.Systems
 			foreach (var r in Regulars) { r.BodyIndex = -1; r.CommanderIndex = -1; r.EngagedBosses.Clear(); r.Fear = 0f; }
 			foreach (var r in Memorial) { r.BodyIndex = -1; r.CommanderIndex = -1; r.Dead = true; }
 			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
-			_deployTimer = 0; _snapshotTimer = 0; RallyCooldown = 0;
+			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; RallyCooldown = 0;
 			_dawnInit = false; _lastDayTime = Main.dayTime;
 		}
 

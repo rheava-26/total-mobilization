@@ -126,7 +126,12 @@ namespace Levy.Content.NPCs
 		private bool ShotIgnoresTiles()
 		{
 			int projType = 0;
-			if (Weapon.UsesAmmo) { var pouch = Record.Gear.Ammo; if (pouch != null && !pouch.IsAir) projType = pouch.shoot; }
+			if (Weapon.UsesAmmo)
+			{
+				var pouch = Record.Gear.Ammo; Item held = WeaponUse.HeldItem(this);
+				if (pouch != null && !pouch.IsAir && held != null && !held.IsAir) projType = WeaponUse.ResolveProjectile(this, held, pouch);
+				else if (pouch != null && !pouch.IsAir) projType = pouch.shoot;
+			}
 			if (projType <= 0) projType = Weapon.Shoot;
 			var sample = WeaponClassifier.ProjectileSample(projType);
 			return sample != null && !sample.tileCollide;

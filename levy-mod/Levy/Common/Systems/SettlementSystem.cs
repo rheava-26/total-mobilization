@@ -375,7 +375,7 @@ namespace Levy.Common.Systems
 		public override void PostUpdateInvasions()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
-			bool active = EventActive;
+			bool active = EventActive || LevyUtil.IsBossActive();
 			if (active == _lastEventActive) return;
 			_lastEventActive = active;
 			CollectBarracksIds();

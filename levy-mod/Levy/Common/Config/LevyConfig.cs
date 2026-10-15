@@ -23,6 +23,8 @@ namespace Levy.Common.Config
 		[DefaultValue(TombstoneMode.Vanilla)] [DrawTicks] public TombstoneMode Tombstones;
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;
 		[DefaultValue(true)] public bool UseVanillaStatPipeline;
+		[DefaultValue(true)] public bool RealWeaponShoot;
+		[DefaultValue(true)] public bool AutoFeedCrystals;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
 		public List<int> ExtraTargetingAiStyles = new();
 

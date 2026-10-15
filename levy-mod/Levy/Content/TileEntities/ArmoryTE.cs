@@ -17,12 +17,18 @@ namespace Levy.Content.TileEntities
 	/// <summary>120-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
 	public class ArmoryTE : ModTileEntity
 	{
-		public const int StorageSize = 120, WeaponSlots = 6, ArmorSlots = 9, AmmoSlots = 4, PotionSlots = 2;
-		public const int SidearmSlot = 5;
+		public const int StorageSize = 120, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
+		/// <summary>Armor pieces per set: head, body, legs.</summary>
+		public const int ArmorParts = 3;
+		public const int ArmorSlots = ArmorSets * ArmorParts;
+		/// <summary>The sidearm slot is always the last weapon slot.</summary>
+		public const int SidearmSlot = WeaponSlots - 1;
+		/// <summary>Weapon slot count of worlds saved before the issue rows were enlarged (sidearm was the last of these).</summary>
+		private const int LegacyWeaponSlots = 6;
 
 		public Item[] Storage = NewItems(StorageSize);
 		public Item[] IssueWeapons = NewItems(WeaponSlots);
-		/// <summary>3 sets x (head, body, legs): index = set*3 + part.</summary>
+		/// <summary>ArmorSets x (head, body, legs): index = set*ArmorParts + part.</summary>
 		public Item[] IssueArmor = NewItems(ArmorSlots);
 		public Item[] IssueAmmo = NewItems(AmmoSlots);
 		/// <summary>0 = healing, 1 = buff.</summary>
@@ -150,7 +156,7 @@ namespace Levy.Content.TileEntities
 				?? TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuable, WeaponClassifier.Score);
 		}
 
-		/// <summary>Best issuable sidearm (melee item in slot 5 or any supported melee); removes it. Null if none.</summary>
+		/// <summary>Best issuable sidearm (melee item in the sidearm slot or any supported melee); removes it. Null if none.</summary>
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
@@ -162,8 +168,8 @@ namespace Levy.Content.TileEntities
 		{
 			if (part < 0 || part > 2) return null;
 			bool Pred(Item it) => WeaponClassifier.IsArmorPiece(it, part) && !it.vanity;
-			// Sets are laid out head/body/legs, so the slots for one part are part, part+3, part+6.
-			return TakeBest(IssueArmor, part, ArmorSlots, 3, Pred, ArmorScore);
+			// Sets are laid out head/body/legs, so the slots for one part are part, part+ArmorParts, part+2*ArmorParts, ... across every set.
+			return TakeBest(IssueArmor, part, ArmorSlots, ArmorParts, Pred, ArmorScore);
 		}
 
 		/// <summary>Best accessory not already worn; removes it. Null if none.</summary>
@@ -215,6 +221,20 @@ namespace Levy.Content.TileEntities
 			if (it.stack <= 0) IssuePotions[kind] = new Item();
 			MarkDirty();
 			return one;
+		}
+
+		/// <summary>Removes ONE item of this type from bulk storage (first matching stack). False if there is none.</summary>
+		public virtual bool TryTakeOne(int itemType)
+		{
+			for (int i = 0; i < Storage.Length; i++) {
+				var it = Storage[i];
+				if (IsAir(it) || it.type != itemType) continue;
+				it.stack--;
+				if (it.stack <= 0) Storage[i] = new Item();
+				MarkDirty();
+				return true;
+			}
+			return false;
 		}
 
 		/// <summary>Puts an item into bulk storage (stacking); returns what did not fit (or null).</summary>
@@ -338,6 +358,11 @@ namespace Levy.Content.TileEntities
 		public override void LoadData(TagCompound tag)
 		{
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
+			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
+			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
+				IssueWeapons[SidearmSlot] = IssueWeapons[LegacyWeaponSlots - 1];
+				IssueWeapons[LegacyWeaponSlots - 1] = new Item();
+			}
 		}
 		private static List<TagCompound> SaveList(Item[] items) { var l = new List<TagCompound>(items.Length); foreach (var it in items) l.Add(ItemIO.Save(it)); return l; }
 		private static void LoadList(TagCompound tag, string key, Item[] into) { var l = tag.GetList<TagCompound>(key); for (int i = 0; i < into.Length; i++) into[i] = i < l.Count ? ItemIO.Load(l[i]) : new Item(); }

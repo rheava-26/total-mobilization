@@ -65,6 +65,18 @@ namespace Levy.Common.Util
 				|| Terraria.GameContent.Events.DD2Event.Ongoing;
 		}
 
+		/// <summary>True while any hostile boss (or boss-tier NPC) is alive, so the garrison turns out to fight it.</summary>
+		public static bool IsBossActive()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly) continue;
+				if (n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type])) return true;
+			}
+			return false;
+		}
+
 		/// <summary>Finds the player index by name, -1 if not online.</summary>
 		public static int FindPlayerByName(string name)
 		{

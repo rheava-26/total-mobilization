@@ -2,8 +2,10 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Config;
 using Levy.Common.Dialogue;
 using Levy.Common.Globals;
 using Levy.Common.Systems;
@@ -86,17 +88,29 @@ namespace Levy.Common.Weapons
 			if (idx < 0 || idx >= Main.maxProjectiles) return null;
 			Projectile p = Main.projectile[idx];
 			if (!p.active || p.type != type) return null;
+			TagSoldierProjectile(s, p, damageType);
+			return p;
+		}
+
+		/// <summary>
+		/// Marks a projectile as this soldier's shot: owned by <see cref="OwnerFor"/> (never the dummy slot, or it becomes an unsynced ghost), friendly,
+		/// loot-credited through <see cref="SoldierProjectileTag"/>, and (when piercing) given its own local NPC immunity. Used by <see cref="Spawn"/>
+		/// and by the real-weapon-shoot path for every projectile a weapon hook spawned.
+		/// </summary>
+		public static void TagSoldierProjectile(SoldierNPC s, Projectile p, DamageClass dmgType)
+		{
+			if (s == null || p == null || !p.active) return;
+			p.owner = OwnerFor(s);
 			p.npcProj = true;
 			p.noDropItem = true;
 			p.friendly = true;
 			p.hostile = false;
-			if (damageType != null) p.DamageType = damageType;
+			if (dmgType != null) p.DamageType = dmgType;
 			if (p.TryGetGlobalProjectile<SoldierProjectileTag>(out var tag)) tag.SoldierIndex = s.NPC.whoAmI;
 			// Soldier shots are all owned by Main.myPlayer, so a piercing projectile would share the owner immunity slot with other
 			// soldiers' shots and with the commander. Give each piercing soldier shot its own local immunity instead.
 			if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity) { p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }
 			p.netUpdate = true;
-			return p;
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -106,7 +120,7 @@ namespace Levy.Common.Weapons
 		{
 			Item pouch = s.Record.Gear.Ammo;
 			if (pouch == null || pouch.IsAir || pouch.stack <= 0 || pouch.ammo != profile.UseAmmo) return false;
-			int projType = pouch.shoot > 0 ? pouch.shoot : item.shoot;
+			int projType = ResolveProjectile(s, item, pouch);
 			if (projType <= 0) return false;
 			int damage = Math.Max(1, (int)Math.Round((s.WeaponDamage(item) + Math.Max(0, pouch.damage)) * s.DamageMultiplier));
 			float knockback = item.knockBack + pouch.knockBack;
@@ -115,7 +129,8 @@ namespace Levy.Common.Weapons
 
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
-			FireSpread(s, muzzle, vel, projType, damage, knockback, profile);
+			if (!TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback))
+				FireSpread(s, muzzle, vel, projType, damage, knockback, profile);
 
 			if (!AmmoFreeThisShot(s, item, pouch))
 			{
@@ -141,7 +156,8 @@ namespace Levy.Common.Weapons
 			float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
-			FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile);
+			if (!TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack))
+				FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile);
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
@@ -157,6 +173,151 @@ namespace Levy.Common.Weapons
 				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
 				Spawn(s, muzzle, v, projType, damage, knockback, profile.DamageType);
 			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Real weapon Shoot pipeline
+		// ------------------------------------------------------------------------------------------------------------
+		private static bool[] _projBefore;
+
+		/// <summary>
+		/// The projectile a gun/bow fires with <paramref name="ammo"/>: the ammo's projectile (or the weapon's own), then the weapon-specific
+		/// swaps vanilla's Player.PickAmmo applies (Hellwing Bow bats, Shadowflame Bow, launcher/ammo pairings, Molten Quiver...).
+		/// Without <see cref="LevyConfig.RealWeaponShoot"/> this is just the ammo's own projectile.
+		/// </summary>
+		public static int ResolveProjectile(SoldierNPC s, Item weapon, Item ammo)
+		{
+			bool haveAmmo = ammo != null && !ammo.IsAir;
+			int proj = haveAmmo && ammo.shoot > 0 ? ammo.shoot : weapon.shoot;
+			if (!LevyConfig.Get.RealWeaponShoot || proj <= 0) return proj;
+			// PickAmmo_TryFindingSpecificMatches: per-launcher projectile for specific ammo items, falling back to a related launcher
+			if (haveAmmo)
+			{
+				int launcher = weapon.type, match;
+				if (AmmoID.Sets.SpecificLauncherAmmoProjectileMatches.TryGetValue(launcher, out var table) && table.TryGetValue(ammo.type, out match)) proj = match;
+				else
+				{
+					int fallback = launcher >= 0 && launcher < AmmoID.Sets.SpecificLauncherAmmoProjectileFallback.Length ? AmmoID.Sets.SpecificLauncherAmmoProjectileFallback[launcher] : -1;
+					if (fallback != -1 && AmmoID.Sets.SpecificLauncherAmmoProjectileMatches.TryGetValue(fallback, out var table2) && table2.TryGetValue(ammo.type, out match)) proj = match;
+				}
+			}
+			switch (weapon.type)
+			{
+				case ItemID.HellwingBow: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.Hellwing; break;
+				case ItemID.ShadowFlameBow: proj = ProjectileID.ShadowFlameArrow; break;
+				case ItemID.FairyQueenRangedItem: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.FairyQueenRangedItemShot; break;
+				case ItemID.BloodRainBow: proj = ProjectileID.BloodArrow; break;
+				case ItemID.SkeletonBow: if (proj == ProjectileID.BoneArrowFromMerchant) proj = ProjectileID.BoneArrow; break;
+				case ItemID.BeesKnees: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.BeeArrow; break;
+			}
+			if (s?.Dummy != null && s.Dummy.hasMoltenQuiver && proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.FireArrow;
+			return proj;
+		}
+
+		/// <summary>
+		/// Fires through the weapon's own hooks: CombinedHooks.ModifyShootStats then CombinedHooks.Shoot (ModItem/GlobalItem/ModPlayer Shoot) with the
+		/// soldier's dummy as the player, exactly the pair Player.ItemCheck_Shoot calls. Projectiles the hooks spawned are re-owned and tagged.
+		/// When the hooks leave the default shot to us (they return true) the weapon's vanilla special (Daedalus Stormbow rain, Blood Rain Bow) or the
+		/// profile's multishot spread is fired with the hook-modified stats. Returns false when nothing was fired and the caller should use the
+		/// plain manual path: feature disabled, no dummy, or the hooks returned false without spawning anything.
+		/// </summary>
+		private static bool TryRealShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, int ammoItemId, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback)
+		{
+			if (!LevyConfig.Get.RealWeaponShoot) return false;
+			Player d = s.Dummy;
+			if (d == null || item == null || item.IsAir) return false;
+
+			bool[] before = _projBefore ??= new bool[Main.maxProjectiles];
+			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
+
+			int savedWho = d.whoAmI, savedDir = d.direction; Vector2 savedCenter = d.Center;
+			Vector2 pos = muzzle, v = vel; int type = projType, dmg = damage; float kb = knockback;
+			bool useDefault = false, threw = false;
+			try
+			{
+				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
+				d.whoAmI = OwnerFor(s);
+				d.Center = s.NPC.Center;
+				d.direction = s.NPC.direction == 0 ? 1 : s.NPC.direction;
+				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
+				d.selectedItem = 0;
+				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+				var source = new EntitySource_ItemUse_WithAmmo(d, item, ammoItemId);
+				useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
+			}
+			catch (Exception) { threw = true; }
+			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; }
+
+			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
+			int adopted = 0;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || before[i]) continue;
+				TagSoldierProjectile(s, p, dmgType);
+				adopted++;
+			}
+			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
+			if (threw) return adopted > 0;
+			if (!useDefault) return adopted > 0;
+
+			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);
+			return true;
+		}
+
+		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: the weapon's hard-coded vanilla special, else the (multishot) default.</summary>
+		private static void DefaultShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int damage, float knockback)
+		{
+			if (item.type == ItemID.DaedalusStormbow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, DaedalusCount(type), 201, 100, 150f, false, 40, 0.03f, 75, 150)) return;
+			if (item.type == ItemID.BloodRainBow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, BloodRainCount(), 61, 30, 150f, true, 20, 0.03f, 55, 80)) return;
+			FireSpread(s, pos, vel, type, damage, knockback, profile);
+		}
+
+		private static int DaedalusCount(int type)
+		{
+			int n = 3;
+			if (ProjectileID.Sets.FiresFewerFromDaedalusStormbow[type]) { if (Main.rand.NextBool(3)) n--; }
+			else if (Main.rand.NextBool(3)) n++;
+			return n;
+		}
+
+		private static int BloodRainCount()
+		{
+			int n = Main.rand.Next(1, 3);
+			if (Main.rand.NextBool(3)) n++;
+			return n;
+		}
+
+		/// <summary>
+		/// Vanilla's "arrows rain from the sky onto the cursor" shot (Daedalus Stormbow, Blood Rain Bow) with the target standing in for the cursor.
+		/// Returns false (so a plain shot is fired) when the sky above the soldier is blocked and the rain could not reach the target.
+		/// </summary>
+		private static bool RainShot(SoldierNPC s, WeaponProfile profile, NPC target, float speed, int type, int damage, float knockback, int count,
+			int spreadX, int jitterX, float stepY, bool randomStep, int velJitter, float velJitterScale, int mulMinPct, int mulMaxPct)
+		{
+			Vector2 c = s.NPC.Center;
+			int dir = s.NPC.direction == 0 ? 1 : s.NPC.direction;
+			Vector2 aim = target.Center;
+			if (speed < 1f) speed = 1f;
+			// need open sky above the soldier for the arrows to start from
+			if (!Collision.CanHitLine(c, 0, 0, c + new Vector2(0f, -600f), 0, 0)) return false;
+			for (int k = 0; k < count; k++)
+			{
+				var origin = new Vector2(aim.X + s.NPC.width * 0.5f + Main.rand.Next(spreadX) * -dir, c.Y - 600f);
+				origin.X = (origin.X * 10f + c.X) / 11f + Main.rand.Next(-jitterX, jitterX + 1);
+				origin.Y -= randomStep ? stepY * Main.rand.NextFloat() : stepY * k;
+				float vx = aim.X - origin.X, vy = aim.Y - origin.Y;
+				if (vy < 0f) vy = -vy;
+				if (vy < 20f) vy = 20f;
+				float scale = speed / (float)Math.Sqrt(vx * vx + vy * vy);
+				vx *= scale; vy *= scale;
+				float fx = vx + Main.rand.Next(-velJitter, velJitter + 1) * velJitterScale;
+				float fy = vy + Main.rand.Next(-40, 41) * velJitterScale;
+				fx *= Main.rand.Next(mulMinPct, mulMaxPct) * 0.01f;
+				origin.X += Main.rand.Next(-50, 51);
+				Spawn(s, origin, new Vector2(fx, fy), type, damage, knockback, profile.DamageType);
+			}
+			return true;
 		}
 
 		/// <summary>Lead, ballistics and grade error for a shot of <paramref name="projType"/>. Homing ammo flies straight at the target.</summary>
@@ -223,7 +384,9 @@ namespace Levy.Common.Weapons
 				float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 				int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 				Vector2 vel = Aiming.SolveIntercept(s.NPC.Center, speed, target.Center, target.velocity, WeaponClassifier.ProjectileHasGravity(item.shoot), LevyConstants.ArrowGravity, LevyConstants.ArrowGravityDelayTicks);
-				Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, item.DamageType ?? DamageClass.Melee);
+				DamageClass beamType = item.DamageType ?? DamageClass.Melee;
+				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
+					Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, beamType);
 			}
 			s.BeginSwing();
 			FinishUse(s, item, toTarget);

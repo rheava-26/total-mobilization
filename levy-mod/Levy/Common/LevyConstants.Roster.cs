@@ -20,6 +20,8 @@ namespace Levy.Common
 		public const int MaxSnapshotRecords = 4096;
 
 		// ---------- Roster: growth ----------
+		/// <summary>How often soldiers check their home Armory storage for a growth crystal to absorb (ticks); one crystal per soldier per check.</summary>
+		public const int AutoFeedIntervalTicks = 180;
 		public static readonly int[] MaxLifeCrystalsByGrade = { MaxLifeCrystalsLevy, MaxLifeCrystalsManAtArms, MaxLifeCrystalsChampion };
 
 		// ---------- Roster: environmental killers ----------

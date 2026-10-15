@@ -24,18 +24,18 @@ ReturnAll: Return
 Roster: Roster
 NoRegulars: You have no Regulars. Enlist one above.
 WagePerDay: "{0} a day"
-Home: "Home: {0}"
+Home: Home: {0}
 Homeless: No barracks
 NotDeployed: Not deployed
-DeadRespawn: "Dead. Back in {0}s"
+DeadRespawn: Dead. Back in {0}s
 Dead: Dead
-Hp: "HP {0}/{1}"
+Hp: HP {0}/{1}
 Kills: "{0} kills"
 FeedLifeCrystal: +Life Crystal
 FeedLifeFruit: +Life Fruit
 FeedManaCrystal: +Mana Crystal
 RebaseHere: Rebase here
-RebaseTo: "Rebase to {0}"
+RebaseTo: Rebase to {0}
 NeedTwoBanners: Place two Patrol Banners within 60 tiles of the barracks.
 PatrolHint: Walk between the two nearest Patrol Banners.
 PromoteMax: Highest grade
@@ -50,6 +50,7 @@ HoldHint: Regulars within 40 tiles hold where they stand.
 ReturnHint: Regulars within 40 tiles walk back to their barracks.
 HudTitle: Army
 HudHover: "{0} - {1}"
+
 State: {
 	Idle: Idle
 	Follow: Following

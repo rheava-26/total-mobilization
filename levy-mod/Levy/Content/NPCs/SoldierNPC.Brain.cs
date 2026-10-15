@@ -68,6 +68,26 @@ namespace Levy.Content.NPCs
 		private bool _spotValid;
 		private Vector2 _spot;
 		private readonly List<Vector2> _probePath = new();
+		// ---- tactical positioning (high ground + dispersion) ----
+		/// <summary>Heading for a better firing spot (a ledge / platform / higher ground) picked by <see cref="TryPerch"/>.</summary>
+		private bool _perchActive;
+		private Vector2 _perchGoal;
+		private int _perchTarget = -1, _perchStartTick;
+		/// <summary>Earliest tick of the next perch evaluation; -1 until the first one is staggered per soldier.</summary>
+		private int _perchNextTick = -1;
+		private int _nudgeNextTick;
+		/// <summary>Crowding read from the last NPC scan: which way to step (+ right / - left, weighted), how many friends, nearest gap in tiles.</summary>
+		private float _crowdAway, _crowdNearestTiles = float.MaxValue;
+		private int _crowdCount;
+		// scratch shared by every soldier (the brain runs on one thread): friends near the search and the best-scoring candidate spots
+		private static readonly Vector2[] _friendPos = new Vector2[LevyConstants.PerchFriendCap];
+		private static int _friendN;
+		private static readonly Vector2[] _candPos = new Vector2[Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates)];
+		private static readonly float[] _candScore = new float[Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates)];
+		private static int _candN;
+		private const int HashMulX = 73856093, HashMulY = 19349663, HashMulId = 83492791;
+		private const uint HashMix = 1274126177u;
+		private const float SlotSaltAltitude = 0.37f, SlotSaltPhase = 0.71f, SlotSaltMelee = 0.13f;
 		// ---- aerial engagement (brain -> Movement) ----
 		/// <summary>The brain wants the body held at <see cref="AltitudeBottomY"/> (world Y of the feet) while it fights. Cleared at the top of every think.</summary>
 		public bool WantsAltitude;
@@ -202,6 +222,8 @@ namespace Levy.Content.NPCs
 			_engMode = EngageMode.None; _engPathOk = false; _threatIdx = -1; _threatTiles = float.MaxValue; _retreatDir = 0;
 			_unreachIdx = -1; _unreachUntil = 0; _spotTarget = -1; _spotTick = -100000; _spotValid = false;
 			WantsAltitude = false; _altHeld = false;
+			_perchActive = false; _perchTarget = -1; _perchNextTick = -1; _nudgeNextTick = 0;
+			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
 		}
 
 		/// <summary>A commander who relogged gets a new player index; re-resolve the name once a second while the index is stale.</summary>
@@ -247,6 +269,9 @@ namespace Levy.Content.NPCs
 			fleeIdx = -1; float fleeBest = float.MaxValue; float hostileBest = float.MaxValue;
 			Vector2 c = NPC.Center;
 			float tileSq = LevyConstants.TilePx * LevyConstants.TilePx;
+			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
+			float crowdReach = LevyConstants.DispersionMinGapTiles + LevyConstants.DispersionVerticalTiles;
+			float crowdSq = crowdReach * crowdReach * tileSq;
 			float fleeScanSq = LevyConstants.FleeScanTiles * LevyConstants.FleeScanTiles * tileSq;
 			// threat = nearest enemy that matters (hitbox distance, so a wide boss counts from its edge); prefilter on the centre distance
 			float threatBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int threatIdx = -1;
@@ -258,6 +283,7 @@ namespace Levy.Content.NPCs
 				float dsq = Vector2.DistanceSquared(c, n.Center);
 				if (dsq < fleeScanSq && dsq < fleeBest && SoldierTargeting.IsFleeTarget(n)) { fleeBest = dsq; fleeIdx = i; }
 				if (dsq < hostileBest && LevyUtil.IsHostileTarget(n)) hostileBest = dsq;
+				if (dsq < crowdSq && n.type == NPC.type && n.ModNPC is SoldierNPC friend && friend.State != SoldierState.Dead) AccumulateCrowd(n);
 				if (dsq < threatPrefilterSq)
 				{
 					float hsq = Vector2.DistanceSquared(c, n.Hitbox.ClosestPointInRect(c));
@@ -361,7 +387,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private void ThinkRouted(float nearestHostileTiles, int now)
 		{
-			_haulTargetItem = -1; _engPathOk = false; _engMode = EngageMode.None;
+			_haulTargetItem = -1; _engPathOk = false; _engMode = EngageMode.None; _perchActive = false;
 			KeepRoutedTarget(now);
 
 			bool hasAnchor = RoutedAnchor(out Vector2 anchor);
@@ -437,7 +463,7 @@ namespace Levy.Content.NPCs
 		private void ThinkFlee(int fleeIdx)
 		{
 			TargetIndex = -1;
-			_haulTargetItem = -1; _engMode = EngageMode.None; _engPathOk = false;
+			_haulTargetItem = -1; _engMode = EngageMode.None; _engPathOk = false; _perchActive = false;
 			if (State == SoldierState.Engage || State == SoldierState.Resupply || State == SoldierState.Haul) SetState(OrderState());
 			RunAwayFrom(Main.npc[fleeIdx].Center);
 		}
@@ -488,7 +514,7 @@ namespace Levy.Content.NPCs
 		private bool TryEngage(int now)
 		{
 			_engPathOk = false;
-			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; return false; }
+			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false; return false; }
 			float range = AcquireRangeTiles();
 			NPC target = null;
 			if (TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
@@ -503,7 +529,7 @@ namespace Levy.Content.NPCs
 			}
 			// a melee target the body could not path to is left alone for a while
 			if (target != null && TargetIndex == _unreachIdx && now < _unreachUntil) { TargetIndex = -1; target = null; }
-			if (target == null) { _engMode = EngageMode.None; return false; }
+			if (target == null) { _engMode = EngageMode.None; _perchActive = false; return false; }
 
 			if (State != SoldierState.Engage && State != SoldierState.Shaken)
 			{
@@ -516,7 +542,7 @@ namespace Levy.Content.NPCs
 			// nothing to shoot from here and nowhere to shoot from: drop it so the soldier carries on with its order
 			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
 			_unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks;
-			TargetIndex = -1; _engMode = EngageMode.None;
+			TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false;
 			WantsAltitude = false; _altHeld = false;
 			return false;
 		}
@@ -548,6 +574,7 @@ namespace Levy.Content.NPCs
 			{
 				float dxTiles = Math.Abs(seg.Center.X - NPC.Center.X) / tilePx;
 				if (dxTiles < standoffTiles) belowTiles = Math.Max(belowTiles, MathF.Sqrt(standoffTiles * standoffTiles - dxTiles * dxTiles));
+				belowTiles += SlotFrac(SlotSaltAltitude) * LevyConstants.DispersionAltitudeSpreadTiles; // hovering squads fan out in altitude, only ever further from the target
 			}
 			float bottom = seg.Center.Y + belowTiles * tilePx + BodyHeight * 0.5f;
 			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
@@ -588,6 +615,7 @@ namespace Levy.Content.NPCs
 				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
 				ApplyChaseClamp(ref step);
 				_engMode = EngageMode.Retreat;
+				if (_perchActive) AbandonPerch(now); // the standoff outranks the climb to a better spot
 				SetGoal(step);
 				return true;
 			}
@@ -598,16 +626,25 @@ namespace Levy.Content.NPCs
 
 			if (dT <= range * LevyConstants.ShootableRangeFrac && los)
 			{
+				// Aloft the aerial system owns position; on the ground, first look for better footing, then for elbow room.
+				bool aloft = WantsAltitude || _aerial;
+				if (!aloft && TryPerch(target, seg, range, standoff, now)) return true;
 				if (_engMode == EngageMode.Approach) ClearGoal();
 				_engMode = EngageMode.Hold;
+				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;
 				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
 				if ((_thinkCount & 1) != 0 || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
 				float side = ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
-				Vector2 shuffle = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				Vector2 shuffle;
+				if (aloft) shuffle = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				else if (!FindSafeStep((int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)
+					&& !FindSafeStep(-(int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
 				return true;
 			}
+
+			if (_perchActive) AbandonPerch(now); // out of reach or no line from here: the approach search takes over
 
 			if (FindEngageSpot(target, seg, range, standoff, now, out Vector2 spot))
 			{
@@ -627,8 +664,9 @@ namespace Levy.Content.NPCs
 
 		/// <summary>
 		/// Somewhere to stand that is inside reach, outside the standoff, has a firing line to the target and can be walked to.
-		/// A handful of candidates on the line from the target toward us (far to near), each tested with one path search; the answer
-		/// is cached per target for EngageSpotRecheckTicks.
+		/// A handful of candidates on the line from the target toward us (shifted sideways by this soldier's own slot so a squad
+		/// does not converge on one tile), each SCORED (<see cref="SpotMerit"/>: height, ledge, platform, travel, crowding); the best
+		/// get one path search each, in score order. The answer is cached per target for EngageSpotRecheckTicks.
 		/// </summary>
 		private bool FindEngageSpot(NPC target, NPC seg, float range, float standoff, int now, out Vector2 spot)
 		{
@@ -644,21 +682,273 @@ namespace Levy.Content.NPCs
 			float nearest = Math.Min(standoff + 2f, holdMax);
 			int n = Math.Max(2, LevyConstants.EngageSpotCandidates);
 			bool ignoresTiles = ShotIgnoresTiles();
-			for (int k = 0; k < n; k++)
+			GatherFriends();
+			float slotPx = SlotOffsetTiles(0f, LevyConstants.DispersionSpreadTiles) * LevyConstants.TilePx;
+			for (int pass = 0; pass < 2; pass++)
 			{
-				float distTiles = MathHelper.Lerp(holdMax, nearest, k / (float)(n - 1));
-				Vector2 pt = tc + toUs * distTiles * LevyConstants.TilePx;
-				if (!TileNav.NearestStandable((int)(pt.X / 16f), (int)(pt.Y / 16f), LevyConstants.EngageSpotSearchRadius, out Point tile)) continue;
-				Vector2 bottom = TileNav.BottomCentre(tile.X, tile.Y);
-				Vector2 body = bottom - new Vector2(0f, BodyHeight / 2f);
-				float d = Vector2.Distance(body, tc) / LevyConstants.TilePx;
-				if (d > range * LevyConstants.ShootableRangeFrac || d < standoff) continue;
-				if (!ignoresTiles && !Aiming.HasLineOfSight(body, tc)) continue;
-				bool here = Vector2.Distance(NPC.Bottom, bottom) < 2f * LevyConstants.TilePx;
-				if (!here && !Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
-				_spot = bottom; _spotValid = true; spot = bottom;
+				// pass 0 fans out by slot; pass 1 (only if the shifted points found nothing at all) is the plain line
+				if (pass == 1 && (slotPx == 0f || _candN > 0)) break;
+				float shift = pass == 0 ? slotPx : 0f;
+				_candN = 0;
+				for (int k = 0; k < n; k++)
+				{
+					float distTiles = MathHelper.Lerp(holdMax, nearest, k / (float)(n - 1));
+					Vector2 pt = tc + toUs * distTiles * LevyConstants.TilePx;
+					pt.X += shift;
+					if (!TileNav.NearestStandable((int)(pt.X / 16f), (int)(pt.Y / 16f), LevyConstants.EngageSpotSearchRadius, out Point tile)) continue;
+					Vector2 bottom = TileNav.BottomCentre(tile.X, tile.Y);
+					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ignoresTiles)) continue;
+					InsertCandidate(bottom, SpotMerit(bottom, tc), n);
+				}
+				for (int i = 0; i < _candN; i++)
+				{
+					Vector2 bottom = _candPos[i];
+					bool here = Vector2.Distance(NPC.Bottom, bottom) < 2f * LevyConstants.TilePx;
+					if (!here && !Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
+					_spot = bottom; _spotValid = true; spot = bottom;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// =====================================================================================================
+		// 4b. Tactical positioning: high ground (perch) and dispersion
+		// =====================================================================================================
+
+		/// <summary>This soldier's stable fraction in [0,1): a golden-ratio sequence over the body index, so neighbouring indices land far apart.</summary>
+		private float SlotFrac(float salt)
+		{
+			float f = (NPC.whoAmI + 1) * LevyConstants.SlotGoldenStep + salt;
+			return f - MathF.Floor(f);
+		}
+
+		/// <summary>This soldier's stable offset in [-spread, +spread) tiles.</summary>
+		private float SlotOffsetTiles(float salt, float spreadTiles) => (SlotFrac(salt) - 0.5f) * 2f * spreadTiles;
+
+		/// <summary>Deterministic per-soldier, per-tile noise in [-PerchJitter/2, +PerchJitter/2].</summary>
+		private float TileJitter(int x, int y)
+		{
+			uint h = unchecked((uint)(NPC.whoAmI * HashMulId) ^ (uint)(x * HashMulX) ^ (uint)(y * HashMulY));
+			h ^= h >> 13; h = unchecked(h * HashMix); h ^= h >> 16;
+			return ((h & 0xFFFFu) / 65535f - 0.5f) * LevyConstants.PerchJitter;
+		}
+
+		/// <summary>Adds one friendly soldier in the crowding box to the push read by <see cref="TryDisperseStep"/>.</summary>
+		private void AccumulateCrowd(NPC other)
+		{
+			float tilePx = LevyConstants.TilePx;
+			float dx = other.Center.X - NPC.Center.X;
+			float adx = Math.Abs(dx);
+			if (adx >= LevyConstants.DispersionMinGapTiles * tilePx || Math.Abs(other.Bottom.Y - NPC.Bottom.Y) >= LevyConstants.DispersionVerticalTiles * tilePx) return;
+			float weight = Math.Max(0.1f, 1f - adx / (LevyConstants.DispersionMinGapTiles * tilePx));
+			float away = adx < 1f ? (NPC.whoAmI < other.whoAmI ? -1f : 1f) : (dx > 0f ? -1f : 1f); // exactly stacked: the lower index yields left
+			_crowdAway += away * weight; _crowdCount++;
+			_crowdNearestTiles = Math.Min(_crowdNearestTiles, adx / tilePx);
+		}
+
+		/// <summary>Friendly soldiers near enough to matter for crowding a perch; a soldier already travelling counts at its destination.</summary>
+		private void GatherFriends()
+		{
+			_friendN = 0;
+			float reachPx = (LevyConstants.PerchSearchRadiusTiles + LevyConstants.DispersionSpacingTiles) * LevyConstants.TilePx;
+			for (int i = 0; i < Main.maxNPCs && _friendN < _friendPos.Length; i++)
+			{
+				var o = Main.npc[i];
+				if (!o.active || i == NPC.whoAmI || o.type != NPC.type || Math.Abs(o.Center.X - NPC.Center.X) > reachPx) continue;
+				if (o.ModNPC is not SoldierNPC f || f.Record == null || f.State == SoldierState.Dead) continue;
+				_friendPos[_friendN++] = f._perchActive ? f._perchGoal : o.Bottom;
+			}
+		}
+
+		/// <summary>Merit lost to friends standing on or near a spot (same height band only).</summary>
+		private static float CrowdPenalty(Vector2 bottom)
+		{
+			float tilePx = LevyConstants.TilePx, pen = 0f;
+			float spacingPx = LevyConstants.DispersionSpacingTiles * tilePx, bandPx = LevyConstants.DispersionVerticalTiles * tilePx;
+			for (int i = 0; i < _friendN; i++)
+			{
+				float dx = Math.Abs(_friendPos[i].X - bottom.X);
+				if (dx >= spacingPx || Math.Abs(_friendPos[i].Y - bottom.Y) >= bandPx) continue;
+				pen += LevyConstants.DispersionCrowdPenalty * (1f - dx / spacingPx);
+			}
+			return pen;
+		}
+
+		/// <summary>
+		/// How good a spot to shoot from is (higher is better), ignoring range and line of sight: height over the target, a ledge over
+		/// open ground below, a platform underfoot, minus the walk there and any friends already standing around it, plus per-soldier
+		/// noise that splits near-equal spots between soldiers. <see cref="GatherFriends"/> must have run for this search.
+		/// </summary>
+		private float SpotMerit(Vector2 bottom, Vector2 tc)
+		{
+			float tilePx = LevyConstants.TilePx;
+			float bodyY = bottom.Y - BodyHeight * 0.5f;
+			float cap = LevyConstants.PerchElevationCapTiles;
+			float merit = LevyConstants.PerchElevationWeight * MathHelper.Clamp((tc.Y - bodyY) / tilePx, -cap, cap);
+			Point feet = TileNav.FeetTile(bottom);
+			int below = TileNav.DropDepth(feet.X, feet.Y + 1); // empty tiles under this floor before the next one; -1 none within the scan, -2 lava
+			float gap = below == -1 ? LevyConstants.PerchLedgeCapTiles : below < 0 ? 0f : Math.Min(below, LevyConstants.PerchLedgeCapTiles);
+			merit += LevyConstants.PerchLedgeWeight * gap;
+			if (TileNav.IsPlatform(feet.X, feet.Y + 1)) merit += LevyConstants.PerchPlatformBonus;
+			merit -= LevyConstants.PerchTravelCostPerTile * Vector2.Distance(NPC.Bottom, bottom) / tilePx;
+			merit -= CrowdPenalty(bottom);
+			merit += TileJitter(feet.X, feet.Y);
+			return merit;
+		}
+
+		/// <summary>The spot is inside reach (x rangeFrac), past the standoff (+ margin) and, unless the shot ignores tiles, has a firing line.</summary>
+		private bool SpotFires(Vector2 bottom, Vector2 tc, float range, float standoff, float rangeFrac, float standoffMargin, bool ignoresTiles, bool checkLos = true)
+		{
+			Vector2 body = bottom - new Vector2(0f, BodyHeight * 0.5f);
+			float d = Vector2.Distance(body, tc) / LevyConstants.TilePx;
+			if (d > range * rangeFrac || d < standoff + standoffMargin) return false;
+			return !checkLos || ignoresTiles || Aiming.HasLineOfSight(body, tc);
+		}
+
+		/// <summary>Keeps the best <paramref name="cap"/> candidates sorted by score (descending); duplicates are dropped.</summary>
+		private static void InsertCandidate(Vector2 pos, float score, int cap)
+		{
+			for (int i = 0; i < _candN; i++) if (Vector2.DistanceSquared(_candPos[i], pos) < 1f) return;
+			int at = _candN;
+			while (at > 0 && _candScore[at - 1] < score) at--;
+			if (at >= cap) return;
+			for (int j = Math.Min(_candN, cap - 1); j > at; j--) { _candPos[j] = _candPos[j - 1]; _candScore[j] = _candScore[j - 1]; }
+			_candPos[at] = pos; _candScore[at] = score;
+			_candN = Math.Min(_candN + 1, cap);
+		}
+
+		/// <summary>A chosen spot must be where the order lets this soldier stand (hold radius, post, settlement, commander leash).</summary>
+		private bool WithinChaseClamp(Vector2 bottom)
+		{
+			Vector2 g = bottom;
+			ApplyChaseClamp(ref g);
+			return Vector2.DistanceSquared(g, bottom) < 4f;
+		}
+
+		private void AbandonPerch(int now)
+		{
+			_perchActive = false;
+			_perchNextTick = Math.Max(_perchNextTick, now + LevyConstants.PerchFailCooldownTicks);
+			if (_engMode == EngageMode.Approach) ClearGoal();
+		}
+
+		/// <summary>
+		/// High ground. Called while the soldier can already shoot from where it stands. Scores its own footing against standable
+		/// tiles in a box around it (every PerchColumnStepTiles-th column, PerchMaxRiseTiles up to PerchMaxDropTiles down), keeps the
+		/// best few that are inside reach, past the standoff and within the order's leash, and relocates to the first of them (by score)
+		/// that has a firing line and a walkable path, but only when it beats the current footing by PerchMinImprovement. Evaluated at
+		/// most once per EngageSpotRecheckTicks, then PerchRelocateCooldownTicks after a decision and PerchSettleTicks after arriving.
+		/// Returns true while a relocation is under way (the goal is set). Never called aloft or while backing off.
+		/// </summary>
+		private bool TryPerch(NPC target, NPC seg, float range, float standoff, int now)
+		{
+			float tilePx = LevyConstants.TilePx;
+			Vector2 tc = seg.Center;
+			if (_perchActive)
+			{
+				bool arrived = Math.Abs(NPC.Bottom.X - _perchGoal.X) < LevyConstants.PerchArriveXTiles * tilePx
+					&& Math.Abs(NPC.Bottom.Y - _perchGoal.Y) < LevyConstants.PerchArriveYTiles * tilePx;
+				if (arrived)
+				{
+					_perchActive = false;
+					_perchNextTick = Math.Max(_perchNextTick, now + LevyConstants.PerchSettleTicks);
+					return false;
+				}
+				bool stalled = now - _perchStartTick > LevyConstants.PerchStallGraceTicks && _blockedHard && _path.Count == 0 && _pathFailTimer > 0;
+				if (target.whoAmI != _perchTarget || stalled || now - _perchStartTick > LevyConstants.PerchTravelTimeoutTicks
+					|| !SpotFires(_perchGoal, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ShotIgnoresTiles()))
+				{
+					AbandonPerch(now);
+					return false;
+				}
+				_engMode = EngageMode.Approach; _engPathOk = true;
+				SetGoal(_perchGoal);
 				return true;
 			}
+
+			if (_perchNextTick < 0) { _perchNextTick = now + (int)(SlotFrac(SlotSaltPhase) * LevyConstants.EngageSpotRecheckTicks); return false; } // stagger the first look
+			if (now < _perchNextTick) return false;
+			_perchNextTick = now + LevyConstants.EngageSpotRecheckTicks;
+			if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
+
+			GatherFriends();
+			bool ignoresTiles = ShotIgnoresTiles();
+			float current = SpotMerit(NPC.Bottom, tc);
+			float need = current + LevyConstants.PerchMinImprovement;
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			int r = LevyConstants.PerchSearchRadiusTiles, step = Math.Max(1, LevyConstants.PerchColumnStepTiles);
+			int phase = (int)(SlotFrac(SlotSaltPhase) * step);
+			_candN = 0;
+			for (int cx = feet.X - r + phase; cx <= feet.X + r; cx += step)
+			{
+				for (int cy = feet.Y - LevyConstants.PerchMaxRiseTiles; cy <= feet.Y + LevyConstants.PerchMaxDropTiles; cy++)
+				{
+					if (Math.Abs(cx - feet.X) <= 1 && Math.Abs(cy - feet.Y) <= 1) continue;
+					if (!TileNav.InBounds(cx, cy) || !TileNav.IsStandable(cx, cy)) continue;
+					Vector2 bottom = TileNav.BottomCentre(cx, cy);
+					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, true, false)) continue;
+					if (!WithinChaseClamp(bottom)) continue;
+					float merit = SpotMerit(bottom, tc);
+					if (merit >= need) InsertCandidate(bottom, merit, LevyConstants.PerchCandidates);
+				}
+			}
+
+			int pathChecks = 0;
+			for (int i = 0; i < _candN; i++)
+			{
+				Vector2 bottom = _candPos[i];
+				if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, ignoresTiles)) continue;
+				if (pathChecks++ >= LevyConstants.PerchPathChecks) break;
+				if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
+				_perchActive = true; _perchGoal = bottom; _perchTarget = target.whoAmI; _perchStartTick = now;
+				_perchNextTick = now + LevyConstants.PerchRelocateCooldownTicks;
+				_engMode = EngageMode.Approach; _engPathOk = true;
+				SetGoal(bottom);
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Elbow room. Steps sideways, away from the friends crowding this soldier, to roughly DispersionSpacingTiles of space, but only
+		/// onto firm footing at the same level that is still a legal firing spot (standoff and reach hold). No spot: stays (the perch
+		/// search can still move it). Rate-limited by DispersionNudgeCooldownTicks.
+		/// </summary>
+		private bool TryDisperseStep(NPC seg, float range, float standoff, int now)
+		{
+			if (Math.Abs(_crowdAway) < 0.01f) return false; // pressed from both sides equally
+			int dir = _crowdAway > 0f ? 1 : -1;
+			int steps = Math.Clamp((int)Math.Ceiling(LevyConstants.DispersionSpacingTiles - _crowdNearestTiles), 1, LevyConstants.DispersionNudgeMaxTiles);
+			if (!FindSafeStep(dir, steps, seg.Center, range, standoff, true, out Vector2 dest)) return false;
+			ApplyChaseClamp(ref dest);
+			_nudgeNextTick = now + LevyConstants.DispersionNudgeCooldownTicks;
+			SetGoal(dest);
+			return true;
+		}
+
+		/// <summary>
+		/// A standable tile up to <paramref name="maxSteps"/> columns away in <paramref name="dir"/> (the farthest that works) at the same
+		/// level (+/- one row) that still satisfies the standoff and reach. False if none, so a ledge edge is never stepped off.
+		/// </summary>
+		private bool FindSafeStep(int dir, int maxSteps, Vector2 tc, float range, float standoff, bool checkLos, out Vector2 dest)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			bool ignoresTiles = checkLos && ShotIgnoresTiles();
+			for (int k = maxSteps; k >= 1; k--)
+			{
+				int x = feet.X + dir * k;
+				for (int row = 0; row < 3; row++)
+				{
+					int y = feet.Y + (row == 0 ? 0 : row == 1 ? -1 : 1);
+					if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y)) continue;
+					Vector2 bottom = TileNav.BottomCentre(x, y);
+					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ignoresTiles, checkLos)) continue;
+					dest = bottom;
+					return true;
+				}
+			}
+			dest = default;
 			return false;
 		}
 
@@ -685,7 +975,8 @@ namespace Levy.Content.NPCs
 					ClearGoal();
 					return;
 				}
-				goal = target.Center;
+				// each swordsman aims for its own spot beside the target, within the melee reach, so a squad does not stack on one tile
+				goal = target.Center + new Vector2(SlotOffsetTiles(SlotSaltMelee, LevyConstants.DispersionMeleeSpreadTiles) * LevyConstants.TilePx, 0f);
 				_engMode = EngageMode.Approach; _engPathOk = true;
 			}
 			else { _engMode = EngageMode.Hold; ClearGoal(); return; }

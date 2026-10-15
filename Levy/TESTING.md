@@ -1,5 +1,7 @@
 # TESTING.md — hand-test gates
 
+> For a full flat playtest checklist (every system, do-X-expect-Y, tickable), see **PLAYTEST.md**.
+
 Nothing below has been played. The mod was built headlessly (Roslyn against the real tModLoader 1.4.4.9 assemblies, then
 tModLoader's own `-build`, both clean) and reviewed from source against the decompiled game. The first in-game session is
 the real test. Run the gates in order on a fresh **Classic** world; repeat the boss gates on **Expert**. When something does

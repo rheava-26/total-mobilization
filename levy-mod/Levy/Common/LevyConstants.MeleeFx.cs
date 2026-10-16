@@ -24,5 +24,10 @@ namespace Levy.Common
 		public const float BladeOfGrassTargetRadiusPx = 150f;
 		/// <summary>Hellwing Bow bats curve toward the aim vector; this scatters it like vanilla (fractions of the shot speed).</summary>
 		public const float HellwingAimScatter = 0.15f;
+
+		/// <summary>Terra Blade beam (projectile 985): leaves at shootSpeed 12 x5 (Player.ItemCheck_Shoot); ai1 is the swing length it fades out over.</summary>
+		public const float TerraBladeBeamSpeed = 60f, TerraBladeBeamLifeAi = 18f;
+		/// <summary>The Horseman's Blade pumpkin (Flaming Jack, projectile 321) flies in from this offset from the soldier (vanilla: a screen corner) at speed 8.</summary>
+		public const float HorsemanPumpkinOffsetXPx = 480f, HorsemanPumpkinOffsetYPx = 270f, HorsemanPumpkinSpeed = 8f;
 	}
 }

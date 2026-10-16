@@ -378,7 +378,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Lead, ballistics and grade error for a shot of <paramref name="projType"/>. Homing ammo flies straight at the target.</summary>
-		private static Vector2 AimShot(SoldierNPC s, Vector2 muzzle, NPC target, int projType, float speed, int ammoType)
+		internal static Vector2 AimShot(SoldierNPC s, Vector2 muzzle, NPC target, int projType, float speed, int ammoType)
 		{
 			Vector2 targetPos = target.Center;
 			Vector2 targetVel = target.velocity;
@@ -461,6 +461,9 @@ namespace Levy.Common.Weapons
 				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
 					Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, beamType);
 			}
+			// Night's Edge family: the held slash stays a swing hitbox; the one beam that flies on its own velocity (Terra Blade) is launched from the soldier.
+			// The IsHeldSlashProjectile guard above also keeps item.shoot (Terra Blade's 985) from firing a second, commander-bound shot.
+			SwordBeams.TryFire(s, item, profile, target);
 			s.BeginSwing();
 			FinishUse(s, item, toTarget);
 			return true;

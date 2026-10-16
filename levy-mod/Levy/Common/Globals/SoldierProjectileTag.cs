@@ -1,6 +1,7 @@
 using System.IO;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 
@@ -28,6 +29,15 @@ namespace Levy.Common.Globals
 			{
 				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
 			}
+		}
+
+		/// <summary>
+		/// Terra Blade's beam (AI_191) switches ownerHitCheck on for its first 6 ticks, which gates every hit on a line of sight from Main.player[owner] (the commander)
+		/// to the enemy. A soldier's beam starts at the soldier, so that check is turned back off.
+		/// </summary>
+		public override void PostAI(Projectile projectile)
+		{
+			if (SoldierIndex >= 0 && projectile.type == ProjectileID.TerraBlade2Shot) projectile.ownerHitCheck = false;
 		}
 
 		public override void SendExtraAI(Projectile projectile, BitWriter bitWriter, BinaryWriter binaryWriter)

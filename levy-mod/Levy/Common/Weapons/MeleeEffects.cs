@@ -128,6 +128,9 @@ namespace Levy.Common.Weapons
 					case ItemID.TentacleSpike:
 						if (!s.SwingSpecialSpent && target.CanBeChasedBy(s.Dummy)) { SpawnBarb(s, item, target, damage, 971, false, cls); s.SwingSpecialSpent = true; }
 						break;
+					case ItemID.TheHorsemansBlade:
+						if (hittable && !target.SpawnedFromStatue && !NPCID.Sets.CountsAsCritter[target.type]) SpawnHorsemanPumpkin(s, item, target, damage, cls);
+						break;
 					case ItemID.BatBat:
 						if (!s.SwingSpecialSpent && s.NPC.life < s.NPC.lifeMax && target.HittableForOnHitRewards())
 						{
@@ -153,6 +156,15 @@ namespace Levy.Common.Weapons
 				else if (shootType == ProjectileID.ThornChakram) { if (Main.rand.NextBool(2)) target.AddBuff(BuffID.Poisoned, 420); }
 			}
 			catch (Exception) { }
+		}
+
+		/// <summary>The Horseman's Blade: a homing Flaming Jack (projectile 321, ai0 = the struck enemy) flies in from off to the side at 8 px/tick for the hit's damage (Player.HorsemansBlade_SpawnPumpkin).</summary>
+		private static void SpawnHorsemanPumpkin(SoldierNPC s, Item item, NPC target, int damage, DamageClass cls)
+		{
+			if (target.whoAmI < 0 || target.whoAmI >= Main.maxNPCs) return;
+			Vector2 from = s.NPC.Center + new Vector2(Main.rand.NextBool() ? LevyConstants.HorsemanPumpkinOffsetXPx : -LevyConstants.HorsemanPumpkinOffsetXPx, Main.rand.NextBool() ? LevyConstants.HorsemanPumpkinOffsetYPx : -LevyConstants.HorsemanPumpkinOffsetYPx);
+			Vector2 vel = (target.Center - from).SafeNormalize(Vector2.UnitX) * LevyConstants.HorsemanPumpkinSpeed;
+			WeaponUse.Spawn(s, from, vel, ProjectileID.FlamingJack, damage, item.knockBack, cls, target.whoAmI);
 		}
 
 		private static void SpawnBees(SoldierNPC s, NPC target, int damage, int dir, Rectangle box)

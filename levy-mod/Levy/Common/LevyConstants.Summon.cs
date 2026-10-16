@@ -9,10 +9,14 @@ namespace Levy.Common
 		/// <summary>How often a soldier recounts its flock and tops it up (ticks), and the wait after each new summon.</summary>
 		public const int MinionMaintainIntervalTicks = 20;
 		public const int MinionSpawnCooldownTicks = 40;
-		/// <summary>Hover radius around the soldier (px) and the vertical lift of the orbit centre.</summary>
-		public const float MinionOrbitRadiusPx = 52f, MinionOrbitSpreadPx = 22f, MinionOrbitLiftPx = 26f;
-		/// <summary>Orbit angular speed in radians per tick.</summary>
-		public const float MinionOrbitSpeed = 0.035f;
+		/// <summary>Scatter radius (px) of a fresh minion's spawn point around its soldier.</summary>
+		public const float MinionOrbitRadiusPx = 52f;
+		/// <summary>Idle trailing formation: distance behind the soldier of the first minion, extra distance per further minion, base lift above the soldier's centre, and the extra lift of every second minion (all px).</summary>
+		public const float MinionTrailBackPx = 34f, MinionTrailSpacingPx = 26f, MinionTrailLiftPx = 30f, MinionTrailStaggerPx = 16f;
+		/// <summary>Idle bob: vertical amplitude (px) and angular speed (radians per tick).</summary>
+		public const float MinionBobAmpPx = 8f, MinionBobSpeed = 0.06f;
+		/// <summary>Ranged minions back away when closer than this fraction of their standoff range; each shot nudges them back by the kickback (px/tick).</summary>
+		public const float MinionRangedBackoffFraction = 0.5f, MinionRangedKickback = 1.2f;
 		/// <summary>A minion this far from its soldier (px) snaps back beside it.</summary>
 		public const float MinionTeleportDistPx = 900f;
 		/// <summary>Targets must be within this many px of the minion to be picked, and within the leash of the soldier.</summary>

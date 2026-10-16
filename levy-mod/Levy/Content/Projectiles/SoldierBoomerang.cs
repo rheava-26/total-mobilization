@@ -115,6 +115,10 @@ namespace Levy.Content.Projectiles
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
 		{
 			// Credit, boss-rule accounting, kill count and the KILL bark come from LootCreditGlobalProjectile.
+			// The debuffs vanilla keys on the thrown projectile's type (Flamarang, Ice Boomerang, Thorn Chakram) are lost with the custom projectile: reapply them.
+			int item = ItemType;
+			if (item > 0 && ContentSamples.ItemsByType.TryGetValue(item, out var sample) && sample != null)
+				global::Levy.Common.Weapons.MeleeEffects.ApplyBoomerangStatus(sample.shoot, target);
 		}
 
 		public override bool PreDraw(ref Color lightColor)

@@ -256,6 +256,10 @@ namespace Levy.Common.Weapons
 			switch (weapon.type)
 			{
 				case ItemID.HellwingBow: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.Hellwing; break;
+				case ItemID.MoltenFury: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.FireArrow; break;
+				case ItemID.SniperRifle:
+				case ItemID.VenusMagnum:
+				case ItemID.Uzi: if (proj == ProjectileID.Bullet) proj = ProjectileID.BulletHighVelocity; break;
 				case ItemID.ShadowFlameBow: proj = ProjectileID.ShadowFlameArrow; break;
 				case ItemID.FairyQueenRangedItem: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.FairyQueenRangedItemShot; break;
 				case ItemID.BloodRainBow: proj = ProjectileID.BloodArrow; break;
@@ -320,6 +324,7 @@ namespace Levy.Common.Weapons
 		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: the weapon's hard-coded vanilla special, else the (multishot) default.</summary>
 		private static void DefaultShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int damage, float knockback)
 		{
+			if (ItemShots.TryShoot(s, item, profile, target, pos, vel, type, damage, knockback)) return;
 			if (item.type == ItemID.DaedalusStormbow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, DaedalusCount(type), 201, 100, 150f, false, 40, 0.03f, 75, 150)) return;
 			if (item.type == ItemID.BloodRainBow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, BloodRainCount(), 61, 30, 150f, true, 20, 0.03f, 55, 80)) return;
 			FireSpread(s, pos, vel, type, damage, knockback, profile);
@@ -446,7 +451,8 @@ namespace Levy.Common.Weapons
 		{
 			Vector2 toTarget = target.Center - s.NPC.Center;
 			if (toTarget == Vector2.Zero) toTarget = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
-			if (item.shoot > 0)
+			// Held slash projectiles (Night's Edge family) are drawn around the commander's body, not flown: the swing hitbox is the weapon.
+			if (item.shoot > 0 && !WeaponClassifier.IsHeldSlashProjectile(item.shoot))
 			{
 				float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 				int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));

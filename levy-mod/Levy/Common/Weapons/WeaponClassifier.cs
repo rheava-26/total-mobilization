@@ -93,11 +93,17 @@ namespace Levy.Common.Weapons
 				if (item.CountsAsClass(DamageClass.Summon) && (sample.minion || sample.minionSlots > 0f)) return WeaponFamily.Summon;
 				if (sample.aiStyle == ProjAIStyleID.Boomerang && item.useAmmo == AmmoID.None) return WeaponFamily.Boomerang;
 			}
+			if (item.type == ItemID.Harpoon) return WeaponFamily.Unsupported; // tethered to its owner (see the projectile check below)
+			// Night's Edge family: a no-melee swing whose "projectile" is a slash drawn around the owner's body. A soldier swings the blade instead (the hitbox is the damage).
+			if (sample != null && item.useStyle == ItemUseStyleID.Swing && item.CountsAsClass(DamageClass.Melee) && IsHeldSlashProjectile(shoot)) return WeaponFamily.Broadsword;
 			if (item.CountsAsClass(DamageClass.Summon)) return WeaponFamily.Unsupported; // sentries, summon tools and anything without a minion shot
 			if (sample != null)
 			{
 				int ai = sample.aiStyle;
 				if (ai == ProjAIStyleID.Yoyo || ai == ProjAIStyleID.Flail || ai == ProjAIStyleID.Boomerang || ai == ProjAIStyleID.Whip) return WeaponFamily.Unsupported;
+				// Tethered lines (Harpoon, Golem Fist, Boxing Glove, Chain Knife) retract to Main.player[owner] and allow one out per owner, and grappling hooks
+				// anchor to it: soldier shots are owned by the commander, so they would tether to the commander and take over the commander's own slot.
+				if (ai == ProjAIStyleID.Harpoon || ai == ProjAIStyleID.Hook) return WeaponFamily.Unsupported;
 				if (IsSet(ProjectileID.Sets.IsAWhip, shoot)) return WeaponFamily.Unsupported;
 				if (shoot < ProjectileID.Sets.YoyosLifeTimeMultiplier.Length && ProjectileID.Sets.YoyosLifeTimeMultiplier[shoot] != -1f) return WeaponFamily.Unsupported;
 				if (sample.minion || sample.sentry || sample.minionSlots > 0f) return WeaponFamily.Unsupported;
@@ -213,6 +219,13 @@ namespace Levy.Common.Weapons
 			var sample = ProjectileSample(projType);
 			if (sample == null) return false;
 			return sample.aiStyle == ProjAIStyleID.Arrow && !LevyConstants.AiStyle1NoGravity.Contains(projType);
+		}
+
+		/// <summary>Projectiles that swing around their owner's body as the weapon's visible blade (aiStyle NightsEdge / TrueNightsEdge): Night's Edge, Excalibur, Terra Blade, The Horseman's Blade.</summary>
+		public static bool IsHeldSlashProjectile(int projType)
+		{
+			var sample = ProjectileSample(projType);
+			return sample != null && (sample.aiStyle == ProjAIStyleID.NightsEdge || sample.aiStyle == ProjAIStyleID.TrueNightsEdge);
 		}
 
 		public static Projectile ProjectileSample(int projType)

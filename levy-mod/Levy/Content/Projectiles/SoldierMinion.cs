@@ -16,8 +16,8 @@ namespace Levy.Content.Projectiles
 {
 	/// <summary>
 	/// One minion of a summoner soldier: ai[0] = soldier whoAmI, ai[1] = the summon weapon's minion projectile type (drawn as that sprite),
-	/// ai[2] = chased NPC index + 1 (0 = none). Hovers around its soldier, dives at the nearest hostile (tagged ones first), backs off after
-	/// each hit, and goes home when it has nothing to chase. Owned by Main.myPlayer like every soldier projectile; it vanishes with its soldier.
+	/// ai[2] = chased NPC index + 1 (0 = none). Trails behind its soldier, dives at the nearest hostile (tagged ones first), backs off after
+	/// each hit (or, for shooter minions in <see cref="RangedMinions"/>, holds a standoff range and fires instead), and goes home when it has nothing to chase. Owned by Main.myPlayer like every soldier projectile; it vanishes with its soldier.
 	/// </summary>
 	public class SoldierMinion : ModProjectile
 	{
@@ -93,6 +93,10 @@ namespace Levy.Content.Projectiles
 				Projectile.localAI[1] -= 1f;
 				Projectile.velocity *= 0.94f;
 			}
+			else if (target != null && RangedMinions.TryGetValue(VisualType, out RangedShot ranged))
+			{
+				RangedAttack(s, target, in ranged, authoritative);
+			}
 			else if (target != null)
 			{
 				Vector2 want = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX) * LevyConstants.MinionDashSpeed;
@@ -100,12 +104,12 @@ namespace Levy.Content.Projectiles
 			}
 			else
 			{
-				Vector2 home = OrbitPoint(s, tick);
+				Vector2 home = TrailPoint(s, tick);
 				Vector2 to = home - Projectile.Center;
 				float dist = to.Length();
 				if (dist > LevyConstants.MinionTeleportDistPx)
 				{
-					Projectile.Center = s.NPC.Center + new Vector2(0f, -LevyConstants.MinionOrbitLiftPx);
+					Projectile.Center = home;
 					Projectile.velocity = Vector2.Zero;
 					if (authoritative) Projectile.netUpdate = true;
 				}
@@ -124,12 +128,98 @@ namespace Levy.Content.Projectiles
 			Projectile.rotation = Projectile.velocity.X * 0.04f;
 		}
 
-		/// <summary>Where this minion hovers while idle: a slow circle over the soldier's head, each minion at its own phase and radius.</summary>
-		private Vector2 OrbitPoint(SoldierNPC s, float tick)
+		/// <summary>How a ranged minion shoots: the vanilla projectile it fires, ticks between shots, launch speed, the range it holds, and the effective px/tick used for lead.</summary>
+		private readonly struct RangedShot
 		{
-			float phase = Projectile.whoAmI * 1.9f + tick * LevyConstants.MinionOrbitSpeed;
-			float radius = LevyConstants.MinionOrbitRadiusPx + (Projectile.whoAmI % 3) * (LevyConstants.MinionOrbitSpreadPx * 0.5f);
-			return s.NPC.Center + new Vector2((float)Math.Cos(phase) * radius, -LevyConstants.MinionOrbitLiftPx + (float)Math.Sin(phase) * radius * 0.45f);
+			public readonly int Proj, CooldownTicks; public readonly float Speed, StandoffPx, LeadSpeed, DamageMult; public readonly int TimeLeft;
+			public RangedShot(int proj, int cooldownTicks, float speed, float standoffPx, float leadSpeed, float damageMult = 1f, int timeLeft = 300)
+			{ Proj = proj; CooldownTicks = cooldownTicks; Speed = speed; StandoffPx = standoffPx; LeadSpeed = leadSpeed; DamageMult = damageMult; TimeLeft = timeLeft; }
+		}
+
+		/// <summary>
+		/// Vanilla minions that shoot instead of ramming, keyed by the minion projectile type. Fired ids, speeds and cadence are read from vanilla
+		/// Projectile.AI_062 / AI_066 / AI_054 (cooldown = threshold / average counter gain per tick). LeadSpeed accounts for extraUpdates. Anything
+		/// not listed keeps the dive-and-recoil melee behaviour.
+		/// </summary>
+		private static readonly System.Collections.Generic.Dictionary<int, RangedShot> RangedMinions = new System.Collections.Generic.Dictionary<int, RangedShot>
+		{
+			{ ProjectileID.Hornet,       new RangedShot(ProjectileID.HornetStinger,       36, 10f, 240f, 10f) },
+			{ ProjectileID.FlyingImp,    new RangedShot(ProjectileID.ImpFireball,         68, 11f, 280f, 22f) },
+			{ ProjectileID.Tempest,      new RangedShot(ProjectileID.MiniSharkron,        30, 20f, 300f, 20f) },
+			{ ProjectileID.UFOMinion,    new RangedShot(ProjectileID.UFOLaser,            24,  4f, 380f, 0f,  1f, 100) },
+			{ ProjectileID.Retanimini,   new RangedShot(ProjectileID.MiniRetinaLaser,     45,  8f, 320f, 24f, 1.15f) },
+			{ ProjectileID.Pygmy,        new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
+			{ ProjectileID.Pygmy2,       new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
+			{ ProjectileID.Pygmy3,       new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
+			{ ProjectileID.Pygmy4,       new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
+		};
+
+		private int _fireCd;
+
+		/// <summary>One ranged minion tick with a target: close to its standoff range with a clear line, hold there, shoot on cooldown.</summary>
+		private void RangedAttack(SoldierNPC s, NPC target, in RangedShot shot, bool authoritative)
+		{
+			if (_fireCd > 0) _fireCd--;
+			Vector2 to = target.Center - Projectile.Center;
+			float dist = to.Length();
+			Vector2 dir = dist < 1f ? Vector2.UnitX : to / dist;
+			bool clear = Collision.CanHitLine(Projectile.Center, 1, 1, target.Center, 1, 1);
+			Vector2 want;
+			if (dist > shot.StandoffPx || !clear) want = dir * LevyConstants.MinionDashSpeed;
+			else if (dist < shot.StandoffPx * LevyConstants.MinionRangedBackoffFraction) want = -dir * LevyConstants.MinionIdleSpeed * 0.6f;
+			else want = Vector2.Zero;
+			Projectile.velocity = Vector2.Lerp(Projectile.velocity, want, LevyConstants.MinionTurnLerp);
+			if (Math.Abs(to.X) > 8f) Projectile.spriteDirection = Projectile.direction = to.X < 0f ? -1 : 1;
+
+			if (!authoritative || _fireCd > 0 || !clear || dist > shot.StandoffPx * 1.1f) return;
+			try
+			{
+				Vector2 v = shot.LeadSpeed > 0.01f
+					? Aiming.SolveIntercept(Projectile.Center, shot.LeadSpeed, target.Center, target.velocity, false) * (shot.Speed / shot.LeadSpeed)
+					: dir * shot.Speed;
+				int dmg = Math.Max(1, (int)Math.Round(Projectile.damage * shot.DamageMult));
+				if (LevyNpcData.IsNpcTagged(target)) dmg = Math.Max(1, (int)Math.Round(dmg * (1f + LevyConstants.TagMinionDamageBonus)));
+				Projectile p = WeaponUse.Spawn(s, Projectile.Center, v, shot.Proj, dmg, Projectile.knockBack, DamageClass.Summon);
+				_fireCd = shot.CooldownTicks;
+				if (p == null) return;
+				if (shot.TimeLeft > 0) p.timeLeft = shot.TimeLeft;
+				p.netUpdate = true;
+				Projectile.velocity -= dir * LevyConstants.MinionRangedKickback;
+			}
+			catch (Exception)
+			{
+				_fireCd = shot.CooldownTicks; // never retry every tick
+			}
+		}
+
+		/// <summary>
+		/// Where this minion rests while idle: a loose trailing line behind the soldier (opposite its facing) and a little above it, each minion
+		/// one step further back and alternately higher/lower so the flock fans out, with a gentle bob. Same idea as vanilla minionPos spacing.
+		/// </summary>
+		private Vector2 TrailPoint(SoldierNPC s, float tick)
+		{
+			int slot = FlockSlot(s, tick);
+			int back = s.NPC.direction == 0 ? -1 : -s.NPC.direction;
+			float phase = slot * 1.7f + Projectile.whoAmI * 0.9f + tick * LevyConstants.MinionBobSpeed;
+			float x = back * (LevyConstants.MinionTrailBackPx + slot * LevyConstants.MinionTrailSpacingPx) + (float)Math.Cos(phase * 0.7f) * LevyConstants.MinionBobAmpPx * 0.5f;
+			float y = -LevyConstants.MinionTrailLiftPx - (slot % 2) * LevyConstants.MinionTrailStaggerPx + (float)Math.Sin(phase) * LevyConstants.MinionBobAmpPx;
+			return s.NPC.Center + new Vector2(x, y);
+		}
+
+		/// <summary>This minion's stable place in its soldier's flock (0 = nearest the soldier): its rank by projectile index among that soldier's minions, refreshed a few times a second.</summary>
+		private int FlockSlot(SoldierNPC s, float tick)
+		{
+			if (Projectile.localAI[2] <= 0f || ((int)tick + Projectile.whoAmI) % LevyConstants.MinionMaintainIntervalTicks == 0)
+			{
+				int rank = 0;
+				for (int i = 0; i < Projectile.whoAmI && i < Main.maxProjectiles; i++)
+				{
+					Projectile o = Main.projectile[i];
+					if (o.active && o.type == Projectile.type && (int)o.ai[0] == SoldierIndex) rank++;
+				}
+				Projectile.localAI[2] = Math.Min(rank, LevyConstants.MinionMaxPerSoldier - 1) + 1f;
+			}
+			return (int)Projectile.localAI[2] - 1;
 		}
 
 		/// <summary>The chased NPC if still valid (alive, hostile, near the soldier), else null.</summary>

@@ -39,7 +39,7 @@ namespace Levy.Content.NPCs
 			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsSummon && sideUsable); // a summon weapon is not swung: the sidearm is the hand weapon
 			UsingSidearm = !mainUsable && sideUsable;
 			Weapon = SupportedOrNull(UsingSidearm ? _sideProfile : _mainProfile);
-			_swingHits.Clear();
+			ClearSwingHits();
 			_sidearmTick = 0;
 			StatsDirty = true;
 			NPC.netUpdate = true;
@@ -59,7 +59,7 @@ namespace Levy.Content.NPCs
 			{
 				UsingSidearm = wantSidearm;
 				Weapon = want;
-				_swingHits.Clear();
+				ClearSwingHits();
 				if (ItemAnimation > 0) ItemAnimation = 0;
 				StatsDirty = true;
 				NPC.netUpdate = true;
@@ -88,13 +88,14 @@ namespace Levy.Content.NPCs
 				if (ItemAnimation <= 0)
 				{
 					ItemAnimation = 0;
-					_swingHits.Clear();
+					ClearSwingHits();
 					if (Weapon != null && Weapon.ReuseDelay > 0) AttackCooldown = Math.Max(AttackCooldown, Weapon.ReuseDelay);
 				}
 			}
 			if (State == SoldierState.Engage) _lastEngageTick = (int)Main.GameUpdateCount;
 			RegenMana();
 			MaintainMinions();
+			MaintainAccessoryProjectiles();
 			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); }
 
 			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
@@ -158,7 +159,16 @@ namespace Levy.Content.NPCs
 		// Broadsword swing
 		// ------------------------------------------------------------------------------------------------------------
 		/// <summary>Called by WeaponUse when a swing starts: resets the per-swing hit list.</summary>
-		public void BeginSwing() => _swingHits.Clear();
+		public void BeginSwing() => ClearSwingHits();
+
+		/// <summary>True once this swing's one-per-swing weapon special (Volcano blast, Muramasa cut, Blood Butcherer / Tentacle Spike barb, Bat Bat leech) has fired.</summary>
+		public bool SwingSpecialSpent;
+
+		private void ClearSwingHits()
+		{
+			_swingHits.Clear();
+			SwingSpecialSpent = false;
+		}
 
 		/// <summary>Hits every hostile NPC whose hitbox meets the swing rectangle, once per swing.</summary>
 		private void ProcessSwing(NPC primary)
@@ -180,8 +190,10 @@ namespace Levy.Content.NPCs
 				bool crit = Main.rand.Next(1, 101) <= critChance;
 				int dir = n.Center.X < NPC.Center.X ? -1 : 1;
 				LootCredit.Credit(n, this); // before the strike: StrikeNPC runs checkDead → NPCLoot synchronously on a killing blow
-				int done = n.SimpleStrikeNPC(dmg, dir, crit, item.knockBack, item.DamageType ?? DamageClass.Melee, true, 0f, true);
+				// The strike runs the item's own hit hooks (ModItem / GlobalItem / ModPlayer) and item statuses; the vanilla hard-coded melee specials follow it.
+				int done = MeleeEffects.StrikeNpc(this, item, n, dmg, dir, crit, item.knockBack, out int sourceDamage);
 				_swingHits.Add(i);
+				MeleeEffects.ApplyVanillaMeleeHit(this, item, n, sourceDamage, box);
 				LastMeleeHitTick = (int)Main.GameUpdateCount;
 				LootCredit.OnSoldierHit(n, this, done); // boss rule accounting, kill count, KILL bark
 			}

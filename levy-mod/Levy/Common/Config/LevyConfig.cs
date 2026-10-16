@@ -32,6 +32,7 @@ namespace Levy.Common.Config
 		[Header("Economy")]
 		[Range(0f, 5f)] [DefaultValue(1f)] public float WageMultiplier;
 		[DefaultValue(true)] public bool AutoMusterDefault;
+		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
 
 		[Header("Interface")]

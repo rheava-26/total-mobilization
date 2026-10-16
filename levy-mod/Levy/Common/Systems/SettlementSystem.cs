@@ -319,7 +319,7 @@ namespace Levy.Common.Systems
 			{
 				// Someone is left in the pool and not yet on the field (render cap or still streaming): send the next after the delay.
 				int fielded = b.Militia.Count + (rt.PendingSpawn != null ? 1 : 0);
-				if (fielded < b.Manpower)
+				if (fielded < FieldCap(b))
 				{
 					b.ReinforcementsPending++;
 					if (b.MusterTimer < LevyConstants.ReinforcementDelayTicks) b.MusterTimer = LevyConstants.ReinforcementDelayTicks;
@@ -388,6 +388,9 @@ namespace Levy.Common.Systems
 		}
 
 		/// <summary>One body per tick at most: retry a capped record, else stream the next when the pool has room and the timer ran out.</summary>
+		/// <summary>How many militia a barracks fields AT ONCE: the small field cap, never more than the manpower reserve it has left.</summary>
+		private static int FieldCap(BarracksTE b) => Math.Min(b.Manpower, Math.Max(1, LevyConfig.Get.MilitiaFieldCap));
+
 		private void StreamTick(BarracksTE b, Runtime rt)
 		{
 			if (rt.PendingSpawn != null)
@@ -395,7 +398,7 @@ namespace Levy.Common.Systems
 				if (TrySpawn(b, rt.PendingSpawn)) rt.PendingSpawn = null;
 				return;
 			}
-			if (b.Militia.Count >= b.Manpower) return;
+			if (b.Militia.Count >= FieldCap(b)) return;
 			if (b.MusterTimer > 0) { b.MusterTimer--; return; }
 
 			var rec = CreateMilitiaRecord(b, rt);

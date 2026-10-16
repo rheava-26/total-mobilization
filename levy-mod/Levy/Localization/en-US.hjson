@@ -180,6 +180,11 @@ Mods: {
 					Tooltip: New barracks call the militia when an invasion or Blood Moon starts.
 				}
 
+				MilitiaFieldCap: {
+					Label: Militia on the field at once
+					Tooltip: How many militia a town fields simultaneously. Manpower is the deeper reserve they draw from as they fall; this keeps the active crowd small.
+				}
+
 				NurseHealsSoldiers: {
 					Label: Nurse heals soldiers
 					Tooltip: Soldiers within 4 tiles of the Nurse are healed at her price from the treasury.

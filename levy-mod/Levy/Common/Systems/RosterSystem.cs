@@ -13,6 +13,7 @@ using Terraria.ModLoader.IO;
 using Levy.Common.Config;
 using Levy.Common.Dialogue;
 using Levy.Common.Fear;
+using Levy.Common.Movement;
 using Levy.Common.Net;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
@@ -412,6 +413,7 @@ namespace Levy.Common.Systems
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;
+			position = SafeSpawnPosition(position); // never materialise inside a fight (falls back to the asked position)
 			int idx = NPC.NewNPC(new EntitySource_WorldEvent("Levy:Soldier"), (int)position.X, (int)position.Y, type);
 			if (idx < 0 || idx >= Main.maxNPCs) return -1;
 			var npc = Main.npc[idx];
@@ -422,6 +424,71 @@ namespace Levy.Common.Systems
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
 			_bodies.Add(body);
 			return idx;
+		}
+
+		// ---- safe spawn placement ----
+		private static readonly Vector2[] _spawnHostileCentre = new Vector2[LevyConstants.SpawnHostileCap];
+		private static readonly Rectangle[] _spawnHostileBox = new Rectangle[LevyConstants.SpawnHostileCap];
+
+		/// <summary>
+		/// Where a body asked for at <paramref name="wanted"/> (bottom-centre) should really appear. If a hostile NPC is within
+		/// SpawnDangerRadiusTiles (hitbox distance) of it, the nearest standable spot within SpawnSafeSearchTiles columns that is clear of
+		/// every hostile by that radius is returned instead. Candidates are scored by distance from the wanted point (so a muster point
+		/// stays the home side), with a malus for lying on the nearest hostile's side of it. No hostile near, or no safe spot found:
+		/// the wanted point comes back unchanged. Server / single player only; bounded to SpawnSafeSearchTiles x (2 x SpawnSafeVerticalTiles + 1) tile tests.
+		/// </summary>
+		public static Vector2 SafeSpawnPosition(Vector2 wanted)
+		{
+			if (LevyUtil.IsClient) return wanted;
+			try
+			{
+				float tilePx = LevyConstants.TilePx;
+				float dangerPx = LevyConstants.SpawnDangerRadiusTiles * tilePx;
+				float dangerSq = dangerPx * dangerPx;
+				Vector2 wantedBody = wanted - new Vector2(0f, SoldierNPC.BodyHeight * 0.5f);
+				float scanPx = dangerPx + (LevyConstants.SpawnSafeSearchTiles + 2) * tilePx;
+				// remember the hostiles that can matter to any candidate (hitbox boxes; contact damage > 0 or a boss)
+				int n = 0; bool wantedUnsafe = false; float nearestSq = float.MaxValue; Vector2 nearestCentre = default;
+				for (int i = 0; i < Main.maxNPCs && n < _spawnHostileBox.Length; i++)
+				{
+					NPC h = Main.npc[i];
+					if (!h.active || h.ModNPC is SoldierNPC || !LevyUtil.IsHostileTarget(h) || (h.damage <= 0 && !h.boss)) continue;
+					if (Math.Abs(h.Center.X - wanted.X) > scanPx + h.width || Math.Abs(h.Center.Y - wanted.Y) > scanPx + h.height) continue;
+					_spawnHostileCentre[n] = h.Center; _spawnHostileBox[n] = h.Hitbox; n++;
+					float dsq = Vector2.DistanceSquared(wantedBody, h.Hitbox.ClosestPointInRect(wantedBody));
+					if (dsq < dangerSq) wantedUnsafe = true;
+					if (dsq < nearestSq) { nearestSq = dsq; nearestCentre = h.Center; }
+				}
+				if (!wantedUnsafe) return wanted;
+
+				int wx = (int)(wanted.X / 16f), wy = (int)((wanted.Y - 1f) / 16f);
+				float side = Math.Sign(nearestCentre.X - wanted.X);
+				bool found = false; Vector2 best = wanted; float bestScore = float.MaxValue;
+				for (int dx = -LevyConstants.SpawnSafeSearchTiles; dx <= LevyConstants.SpawnSafeSearchTiles; dx++)
+				{
+					int x = wx + dx;
+					float colScoreFloor = (Math.Abs(dx) - 1) * tilePx;
+					if (colScoreFloor >= bestScore) continue; // columns only get farther out: cannot beat the best already found
+					for (int k = 0; k <= LevyConstants.SpawnSafeVerticalTiles * 2; k++)
+					{
+						int dy = (k & 1) == 0 ? -(k >> 1) : ((k + 1) >> 1); // 0, +1, -1... nearest rows first (alternating)
+						int y = wy + dy;
+						if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y) || TileNav.HasLiquid(x, y) || TileNav.HasLiquid(x, y - 1)) continue;
+						Vector2 bottom = TileNav.BottomCentre(x, y);
+						Vector2 body = bottom - new Vector2(0f, SoldierNPC.BodyHeight * 0.5f);
+						bool safe = true;
+						for (int j = 0; j < n; j++)
+							if (Vector2.DistanceSquared(body, _spawnHostileBox[j].ClosestPointInRect(body)) < dangerSq) { safe = false; break; }
+						if (!safe) continue;
+						float score = Vector2.Distance(bottom, wanted);
+						if (side != 0f && Math.Sign(bottom.X - wanted.X) == side) score += LevyConstants.SpawnHostileSideMalusTiles * tilePx;
+						if (score < bestScore) { bestScore = score; best = bottom; found = true; }
+						break; // the nearest standable row of this column is enough
+					}
+				}
+				return found ? best : wanted;
+			}
+			catch { return wanted; } // placement is a nicety: a tile read failing must never cost the soldier its body
 		}
 
 		public override void PreUpdateNPCs()

@@ -56,7 +56,9 @@ namespace Levy.Common
 
 		// ---------- Settlement / manpower ----------
 		public const int SettlementRadiusX = 120, SettlementRadiusY = 70;
-		public const int ArmoryLinkRadius = 20;
+		// Armories within this many tiles of a Barracks arm its militia. Matches the settlement footprint so an Armory anywhere
+		// in the town links — it no longer has to sit right next to the Barracks.
+		public const int ArmoryLinkRadius = 120;
 		public const int MinTownNpcsForMilitia = 2;
 		// Manpower is the militia RESERVE (drains 1 per death). Simultaneous bodies on the field are capped separately by
 		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.

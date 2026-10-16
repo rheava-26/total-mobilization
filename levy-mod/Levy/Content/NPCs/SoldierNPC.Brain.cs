@@ -55,6 +55,12 @@ namespace Levy.Content.NPCs
 		private int _haulCooldownUntil;
 		private int _haulStartedTick;
 		private int _commanderLookupTick = -100000;
+		// ---- spawn grace / melee caution ----
+		/// <summary>No advancing on anything before this game tick (set when the body is bound).</summary>
+		private int _spawnGraceUntil;
+		/// <summary>Nearest hostile (hitbox distance) a melee soldier will not charge (boss / lethal contact damage); -1 none. Only scanned for melee weapons.</summary>
+		private int _dangerIdx = -1;
+		private float _dangerTiles = float.MaxValue;
 		// ---- engage scratch (standoff / reachability) ----
 		private enum EngageMode : byte { None, Hold, Retreat, Approach }
 		private EngageMode _engMode;
@@ -113,6 +119,7 @@ namespace Levy.Content.NPCs
 		partial void Brain_OnBound()
 		{
 			ResetBrainScratch();
+			_spawnGraceUntil = (int)Main.GameUpdateCount + LevyConstants.SpawnGraceTicks; // a body that just appeared never charges at once
 			_lastHoldFire = Record.HoldFire;
 			if (IsMilitia)
 			{
@@ -200,9 +207,11 @@ namespace Levy.Content.NPCs
 				default:
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
 					if (fleeIdx >= 0) ThinkFlee(fleeIdx);
+					else if (now < _spawnGraceUntil) ThinkSpawnGrace();
 					else if (!TryEngage(now))
 					{
-						if (!TryResupply(now)) ThinkOrder(now, nearestHostileTiles);
+						// resupply outranks the unarmed fallback (a dry soldier heads for the armory); a soldier with nothing to fight with stays out of it
+						if (!TryResupply(now) && !ThinkUnarmed(now)) ThinkOrder(now, nearestHostileTiles);
 					}
 					break;
 			}
@@ -241,6 +250,7 @@ namespace Levy.Content.NPCs
 			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
 			_searchAnchorSet = false; _searchDir = 0; _searchGoalTick = 0; _searchPauseUntil = 0;
 			_freeLegs = 0; _freeScoutOffUntil = 0;
+			_dangerIdx = -1; _dangerTiles = float.MaxValue;
 		}
 
 		/// <summary>Spread Out multiplier on every dispersion spacing (1 when off).</summary>
@@ -296,6 +306,9 @@ namespace Levy.Content.NPCs
 			// threat = nearest enemy that matters (hitbox distance, so a wide boss counts from its edge); prefilter on the centre distance
 			float threatBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int threatIdx = -1;
 			float threatPrefilterSq = (LevyConstants.ThreatScanTiles + 30f) * (LevyConstants.ThreatScanTiles + 30f) * tileSq;
+			// a melee soldier also tracks the nearest hostile it will not charge (boss / lethal contact damage)
+			bool meleeCare = Weapon != null && Weapon.IsMelee;
+			float dangerBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int dangerIdx = -1;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				var n = Main.npc[i];
@@ -307,9 +320,16 @@ namespace Levy.Content.NPCs
 				if (dsq < threatPrefilterSq)
 				{
 					float hsq = Vector2.DistanceSquared(c, n.Hitbox.ClosestPointInRect(c));
-					if (hsq < threatBest && !SoldierTargeting.IsNeverTarget(n)) { threatBest = hsq; threatIdx = i; }
+					bool wantsThreat = hsq < threatBest, wantsDanger = meleeCare && hsq < dangerBest;
+					if ((wantsThreat || wantsDanger) && !SoldierTargeting.IsNeverTarget(n))
+					{
+						if (wantsThreat) { threatBest = hsq; threatIdx = i; }
+						if (wantsDanger && IsMeleeLethal(n)) { dangerBest = hsq; dangerIdx = i; }
+					}
 				}
 			}
+			_dangerIdx = dangerIdx;
+			_dangerTiles = dangerIdx < 0 ? float.MaxValue : MathF.Sqrt(dangerBest) / LevyConstants.TilePx;
 			_threatIdx = threatIdx;
 			_threatTiles = threatIdx < 0 ? float.MaxValue : MathF.Sqrt(threatBest) / LevyConstants.TilePx;
 			nearestHostileTiles = hostileBest == float.MaxValue ? float.MaxValue : MathF.Sqrt(hostileBest) / LevyConstants.TilePx;
@@ -576,7 +596,17 @@ namespace Levy.Content.NPCs
 				if (now - _lastEngageBarkTick >= LevyConstants.EngageBarkCooldownTicks) { _lastEngageBarkTick = now; DialogueSystem.Bark(this, DialogueTrigger.ENGAGE, MakeContext()); }
 			}
 
-			if (Weapon.IsMelee) { MeleeGoal(target, now); return true; }
+			if (Weapon.IsMelee)
+			{
+				// never charge a boss / a hit that would maim us: prefer a safe mob in reach, else MeleeGoal holds a cautious distance
+				if (MeleeAvoids(target))
+				{
+					int alt = FindSafeMeleeTarget(range, now);
+					if (alt >= 0) { TargetIndex = alt; target = Main.npc[alt]; }
+				}
+				MeleeGoal(target, now);
+				return true;
+			}
 			if (RangedGoal(target, now)) return true;
 			// nothing to shoot from here and nowhere to shoot from: drop it so the soldier carries on with its order
 			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
@@ -1025,6 +1055,26 @@ namespace Levy.Content.NPCs
 		private void MeleeGoal(NPC target, int now)
 		{
 			Vector2 goal;
+			// Caution first: anything we will not charge (boss / lethal contact) that is inside the caution distance is stepped away from,
+			// exactly like the ranged standoff; a target of that kind is never approached, only watched from a distance.
+			float cautionNow = LevyConstants.MeleeCautionTiles + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
+			if (_dangerIdx >= 0 && ValidNpc(_dangerIdx) && _dangerTiles < cautionNow)
+			{
+				float away = AwayDir(Main.npc[_dangerIdx].Center);
+				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
+				ApplyChaseClamp(ref step);
+				_engMode = EngageMode.Retreat; _engPathOk = false;
+				WantsAltitude = false; _altHeld = false;
+				SetGoal(step);
+				return;
+			}
+			if (MeleeAvoids(target))
+			{
+				_engMode = EngageMode.Hold; _engPathOk = false;
+				WantsAltitude = false; _altHeld = false;
+				ClearGoal();
+				return;
+			}
 			UpdateAltitudeIntent(target, 0f, 0f, true);
 			if (now - LastMeleeHitTick < LevyConstants.MeleeStepBackWindowTicks)
 			{
@@ -1048,6 +1098,111 @@ namespace Levy.Content.NPCs
 			else { _engMode = EngageMode.Hold; ClearGoal(); return; }
 			ApplyChaseClamp(ref goal);
 			SetGoal(goal);
+		}
+
+		// =====================================================================================================
+		// 4c. No-suicide: melee caution, spawn grace, unarmed fallback
+		// =====================================================================================================
+
+		/// <summary>
+		/// True when touching this hostile would kill or maim the soldier: any boss, or contact damage (after this body's defense, the player
+		/// formula) of at least MeleeLethalContactFrac of its CURRENT hit points. Hostile, damaging NPCs only.
+		/// </summary>
+		private bool IsMeleeLethal(NPC n)
+		{
+			if (n == null || !n.active || n.friendly || n.damage <= 0) return false;
+			if (n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type])) return true;
+			float hit = Math.Max(1f, n.damage - NPC.defense * 0.5f);
+			return hit >= Math.Max(1, NPC.life) * LevyConstants.MeleeLethalContactFrac;
+		}
+
+		/// <summary>A melee soldier will not close on this target.</summary>
+		private bool MeleeAvoids(NPC target) => target != null && IsMeleeLethal(target);
+
+		/// <summary>The nearest hostile in reach a melee soldier is willing to charge (inside its chase bounds); -1 if none.</summary>
+		private int FindSafeMeleeTarget(float rangeTiles, int now)
+		{
+			int best = -1; float bestSq = rangeTiles * rangeTiles * LevyConstants.TilePx * LevyConstants.TilePx;
+			Vector2 c = NPC.Center;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var n = Main.npc[i];
+				if (!n.active || n.life <= 0 || i == NPC.whoAmI || SoldierTargeting.IsNeverTarget(n)) continue;
+				float dsq = Vector2.DistanceSquared(c, n.Center);
+				if (dsq >= bestSq || IsMeleeLethal(n)) continue;
+				if (i == _unreachIdx && now < _unreachUntil) continue;
+				if (!WithinChaseBounds(n, rangeTiles)) continue;
+				best = i; bestSq = dsq;
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// Spawn grace: for SpawnGraceTicks after binding, the body engages nothing. A hostile inside SpawnGraceKeepAwayTiles is stepped away
+		/// from (toward home / the commander when that is the safe way); otherwise it stands. Routed / flee / desert outrank this as usual.
+		/// </summary>
+		private void ThinkSpawnGrace()
+		{
+			TargetIndex = -1; _engMode = EngageMode.None; _engPathOk = false; _perchActive = false;
+			WantsAltitude = false; _altHeld = false;
+			if (State == SoldierState.Engage || State == SoldierState.Resupply || State == SoldierState.Haul) SetState(OrderState());
+			if (!StandAway(LevyConstants.SpawnGraceKeepAwayTiles, LevyConstants.SpawnGraceKeepAwayTiles, false)) ClearGoal();
+		}
+
+		/// <summary>
+		/// No usable weapon: nothing supported in hand (none issued and no sidearm), or the one in hand is dry / out of mana with no
+		/// usable sidearm to fall back on. A magic user is only unarmed once its mana has been starved (a momentary dip is not).
+		/// A soldier told to hold fire is not unarmed - it still has its weapon.
+		/// </summary>
+		private bool IsUnarmed(int now)
+		{
+			if (Record == null || Record.HoldFire) return false;
+			if (Weapon == null || !Weapon.Supported) return true;
+			if (CanUseHeldWeapon()) return false;
+			return Weapon.Family != WeaponFamily.Magic || ManaStarved(now);
+		}
+
+		/// <summary>
+		/// A soldier with no usable weapon (nothing issued and no sidearm, or the only weapon cannot be used) never advances: with a hostile
+		/// inside UnarmedAlertTiles it backs off to UnarmedKeepAwayTiles or heads for its anchor when that is clear, then waits. Returns
+		/// true when it took over this think. A soldier that gets a usable weapon (re-arm / issue) is no longer unarmed and resumes at once.
+		/// </summary>
+		private bool ThinkUnarmed(int now)
+		{
+			if (!IsUnarmed(now)) return false;
+			TargetIndex = -1; _engMode = EngageMode.None; _engPathOk = false; _perchActive = false;
+			WantsAltitude = false; _altHeld = false;
+			if (!StandAway(LevyConstants.UnarmedKeepAwayTiles, LevyConstants.UnarmedAlertTiles, true)) return false;
+			if (State == SoldierState.Engage || State == SoldierState.Haul) SetState(OrderState());
+			return true;
+		}
+
+		/// <summary>
+		/// Keeps clear of the nearest threat. Inside <paramref name="keepAwayTiles"/> it steps away (or walks to the anchor - the commander of a
+		/// following regular, else the home muster point - when that lies on the safe side and is itself clear of the threat); beyond it, with
+		/// <paramref name="returnToAnchor"/>, it walks to a clear anchor, else stands. False (no goal written) when no threat is within
+		/// <paramref name="alertTiles"/>.
+		/// </summary>
+		private bool StandAway(float keepAwayTiles, float alertTiles, bool returnToAnchor)
+		{
+			if (_threatIdx < 0 || !ValidNpc(_threatIdx) || _threatTiles > alertTiles) return false;
+			NPC threat = Main.npc[_threatIdx];
+			float tilePx = LevyConstants.TilePx;
+			float away = AwayDir(threat.Center);
+			bool anchorClear = RoutedAnchor(out Vector2 anchor)
+				&& LevyUtil.TileDistance(anchor, threat.Center) >= keepAwayTiles
+				&& (Math.Sign(anchor.X - NPC.Center.X) == (int)away || Math.Abs(anchor.X - NPC.Center.X) < tilePx);
+			bool anchorArrived = anchorClear && LevyUtil.WithinTiles(NPC.Center, anchor, LevyConstants.RoutedAnchorArriveTiles);
+			if (_threatTiles < keepAwayTiles)
+			{
+				if (anchorClear && !anchorArrived) { SetGoal(anchor); return true; }
+				float x = MathHelper.Clamp(NPC.Center.X + away * LevyConstants.UnarmedStepAwayTiles * tilePx, LevyConstants.UnarmedWorldMarginPx, Main.maxTilesX * tilePx - LevyConstants.UnarmedWorldMarginPx);
+				SetGoal(new Vector2(x, NPC.Center.Y));
+				return true;
+			}
+			if (returnToAnchor && anchorClear && !anchorArrived) SetGoal(anchor);
+			else ClearGoal();
+			return true;
 		}
 
 		private void ApplyChaseClamp(ref Vector2 goal)
@@ -1635,14 +1790,16 @@ namespace Levy.Content.NPCs
 			int leash = RoamLeashTiles;
 			float tilePx = LevyConstants.TilePx;
 			bool melee = Weapon.IsMelee;
-			float standoff = melee ? 0f : StandoffTiles(Weapon.RangeTiles);
+			float standoff = melee ? LevyConstants.MeleeCautionTiles : StandoffTiles(Weapon.RangeTiles);
+			// the hostile a roaming soldier must not walk at: any threat for ranged, only a boss / lethal-contact one for melee
+			int thIdx = melee ? _dangerIdx : _threatIdx; float thTiles = melee ? _dangerTiles : _threatTiles;
 
 			// a hostile we are not engaging but that is close: never walk at it; back off when it is inside the standoff
-			bool haveThreat = _threatIdx >= 0 && !melee;
-			float threatSide = haveThreat ? Math.Sign(Main.npc[_threatIdx].Center.X - NPC.Center.X) : 0f;
-			if (haveThreat && _threatTiles < standoff)
+			bool haveThreat = thIdx >= 0 && ValidNpc(thIdx);
+			float threatSide = haveThreat ? Math.Sign(Main.npc[thIdx].Center.X - NPC.Center.X) : 0f;
+			if (haveThreat && thTiles < standoff)
 			{
-				var step = new Vector2(NPC.Center.X + AwayDir(Main.npc[_threatIdx].Center) * LevyConstants.KiteStepAwayTiles * tilePx, NPC.Center.Y);
+				var step = new Vector2(NPC.Center.X + AwayDir(Main.npc[thIdx].Center) * LevyConstants.KiteStepAwayTiles * tilePx, NPC.Center.Y);
 				ApplyChaseClamp(ref step);
 				SetGoal(step);
 				_searchGoal = default; _searchGoalTick = 0;
@@ -1654,7 +1811,7 @@ namespace Levy.Content.NPCs
 			{
 				bool arrived = Math.Abs(NPC.Center.X - _searchGoal.X) < LevyConstants.SearchArriveXTiles * tilePx;
 				bool blocked = _blockedHard && _path.Count == 0 && _pathFailTimer > 0;
-				bool headingIntoThreat = haveThreat && _threatTiles < standoff + LevyConstants.SearchHaltMarginTiles && Math.Sign(_searchGoal.X - NPC.Center.X) == threatSide;
+				bool headingIntoThreat = haveThreat && thTiles < standoff + LevyConstants.SearchHaltMarginTiles && Math.Sign(_searchGoal.X - NPC.Center.X) == threatSide;
 				if (headingIntoThreat) { ClearGoal(); _searchGoal = default; _searchGoalTick = 0; _searchPauseUntil = now + LevyConstants.SearchPauseTicks; return; }
 				if (arrived) { ClearGoal(); _searchGoal = default; _searchGoalTick = 0; _searchPauseUntil = now + LevyConstants.SearchPauseTicks; return; }
 				if (blocked || now - _searchGoalTick > (free ? LevyConstants.FreeReinGoalTimeoutTicks : LevyConstants.SearchGoalTimeoutTicks)) { SearchTurnAround(now); return; }
@@ -1675,7 +1832,7 @@ namespace Levy.Content.NPCs
 				float off = NPC.Center.X - anchor.X;
 				_searchDir = Math.Abs(off) > tilePx * 2f ? Math.Sign(off) : (SlotFrac(SlotSaltSearch) < 0.5f ? -1 : 1);
 			}
-			if (haveThreat && _threatTiles < standoff + LevyConstants.SearchHaltMarginTiles && _searchDir == (int)threatSide) { SearchTurnAround(now); return; }
+			if (haveThreat && thTiles < standoff + LevyConstants.SearchHaltMarginTiles && _searchDir == (int)threatSide) { SearchTurnAround(now); return; }
 
 			int margin = free ? LevyConstants.FreeReinWorldMarginTiles : LevyConstants.SearchWorldMarginTiles;
 			float leftEdge = Math.Max(anchor.X - leash * tilePx, margin * tilePx);

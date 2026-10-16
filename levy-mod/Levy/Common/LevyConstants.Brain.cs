@@ -34,6 +34,38 @@ namespace Levy.Common
 		/// <summary>The in-range lateral shuffle only happens with this much room past the standoff (tiles).</summary>
 		public const float StrafeMarginTiles = 6f;
 
+		// ---------- Safe spawn / spawn grace ----------
+		/// <summary>A new body is never dropped within this many tiles (to the hostile's hitbox) of a hostile NPC when a safe spot exists.</summary>
+		public const float SpawnDangerRadiusTiles = 14f;
+		/// <summary>The safe-spot search covers columns this far either side of the intended spawn point (tiles).</summary>
+		public const int SpawnSafeSearchTiles = 40;
+		/// <summary>In each searched column, floors up to this many tiles above / below the intended spawn height are considered.</summary>
+		public const int SpawnSafeVerticalTiles = 10;
+		/// <summary>At most this many nearby hostiles are remembered for the safe-spot test.</summary>
+		public const int SpawnHostileCap = 48;
+		/// <summary>A candidate on the hostile's side of the intended point is penalised by this many tiles of extra travel.</summary>
+		public const float SpawnHostileSideMalusTiles = 8f;
+		/// <summary>A freshly bound body does not advance on anything for this long (ticks); it backs off from close hostiles and otherwise stands.</summary>
+		public const int SpawnGraceTicks = 45;
+		/// <summary>During the grace a hostile closer than this (tiles) is stepped away from.</summary>
+		public const float SpawnGraceKeepAwayTiles = 16f;
+
+		// ---------- Melee caution (no suicide charges) ----------
+		/// <summary>A hostile whose contact damage (after defense) is at least this fraction of the soldier's current HP is not charged by melee soldiers. Bosses always count.</summary>
+		public const float MeleeLethalContactFrac = 0.40f;
+		/// <summary>Melee soldiers keep this far (tiles, hitbox distance) from a hostile they will not charge. Kept under MeleeAcquireRangeTiles.</summary>
+		public const float MeleeCautionTiles = 14f;
+
+		// ---------- Unarmed soldiers (no usable weapon) ----------
+		/// <summary>An unarmed soldier reacts to hostiles inside this many tiles.</summary>
+		public const float UnarmedAlertTiles = 45f;
+		/// <summary>An unarmed soldier backs off from any hostile closer than this (tiles), and only returns to its anchor when it is at least this far from the hostile.</summary>
+		public const float UnarmedKeepAwayTiles = 26f;
+		/// <summary>One step away from a hostile that got inside the keep-away distance (tiles).</summary>
+		public const int UnarmedStepAwayTiles = 10;
+		/// <summary>Unarmed soldiers never walk closer than this to the world's left or right edge (px).</summary>
+		public const int UnarmedWorldMarginPx = 160;
+
 		// ---------- Reachability / firing spots ----------
 		/// <summary>A cached firing spot or reachability answer is re-tested this often (ticks) or when the target changes.</summary>
 		public const int EngageSpotRecheckTicks = 120;

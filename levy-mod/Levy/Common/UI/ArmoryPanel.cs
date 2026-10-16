@@ -155,7 +155,7 @@ namespace Levy.Common.UI
 			for (int i = 0; i < te.IssuePotions.Length; i++)
 			{
 				bool healing = i == 0;
-				var slot = MakeSlot(te.IssuePotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
+				var slot = MakeSlot(te.IssuePotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
 				slot.Left.Set(i * Pitch, 0f); slot.Top.Set(y, 0f);
 				_issue.Append(slot);
 				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);

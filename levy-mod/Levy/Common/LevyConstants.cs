@@ -38,6 +38,7 @@ namespace Levy.Common
 		public const int MaxLifeCrystalsLevy = 5, MaxLifeCrystalsManAtArms = 15, MaxLifeCrystalsChampion = 20, MaxLifeFruit = 20;
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
+		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool
 		public const int PotionSicknessTicks = 60 * 30;
 		public const int RegenDelayTicks = 60 * 5;
 		public const int RegenIntervalTicks = 60;

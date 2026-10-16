@@ -195,15 +195,19 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null || _armoryRetry > 0) return;
 			bool wantHeal = PotionSickness == 0 && NPC.life * 100 < NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent;
+			// Magic/summon soldiers top up an empty mana pool from the same potion slot (Mana / Restoration / Super Mana potions).
+			bool wantMana = PotionSickness == 0 && Record.MaxMana > 0 && Record.Mana * 100 < Record.MaxMana * LevyConstants.ManaPotionDrinkBelowPercent;
 			bool wantBuff = _buffPotionCooldown == 0 && (State == SoldierState.Engage || TargetIndex >= 0);
-			if (!wantHeal && !wantBuff) return;
+			if (!wantHeal && !wantMana && !wantBuff) return;
 			var armory = SettlementSystem.Instance.NearestArmory(NPC.Center, LevyConstants.ResupplyArmoryRadius);
 			if (armory == null) { _armoryRetry = LevyConstants.PotionRetryTicks; return; }
 			bool drank = false;
-			if (wantHeal)
+			if (wantHeal || wantMana)
 			{
 				var potion = armory.TakePotion(0);
-				if (potion != null && !potion.IsAir && (potion.healLife > 0 || potion.healMana > 0 || potion.buffType > 0))
+				// Only drink when this potion actually serves the current need, so a mana-starved soldier doesn't burn a health potion (and vice versa).
+				bool serves = potion != null && !potion.IsAir && ((wantHeal && potion.healLife > 0) || (wantMana && potion.healMana > 0) || (wantHeal && potion.buffType > 0));
+				if (serves)
 				{
 					if (potion.healLife > 0) NPC.life = Math.Min(NPC.lifeMax, NPC.life + potion.healLife);
 					if (potion.healMana > 0) Record.Mana = Math.Min(Record.MaxMana, Record.Mana + potion.healMana);
@@ -213,7 +217,7 @@ namespace Levy.Content.NPCs
 				}
 				else
 				{
-					if (potion != null && !potion.IsAir) armory.Deposit(potion); // not drinkable: give it back
+					if (potion != null && !potion.IsAir) armory.Deposit(potion); // not what we need right now: give it back
 					_armoryRetry = LevyConstants.PotionRetryTicks;
 				}
 			}

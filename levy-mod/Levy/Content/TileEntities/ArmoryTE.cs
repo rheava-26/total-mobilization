@@ -354,7 +354,7 @@ namespace Levy.Content.TileEntities
 			if (kind < 0 || kind >= PotionSlots) return null;
 			var it = IssuePotions[kind];
 			if (IsAir(it)) return null;
-			if (kind == 0 && it.healLife <= 0) return null;
+			if (kind == 0 && it.healLife <= 0 && it.healMana <= 0) return null; // slot 0 dispenses both health and mana restoratives
 			var one = it.Clone();
 			one.stack = 1;
 			it.stack--;

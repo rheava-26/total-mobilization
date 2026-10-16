@@ -20,7 +20,7 @@ namespace Levy.Common.Weapons
 		public const float MinLead = 0.02f;
 		private const float CritWeight = 0.005f; // 10 crit points count like 5% damage
 
-		private static readonly DamageClass[] Classes = { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic };
+		private static readonly DamageClass[] Classes = { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon };
 		private static readonly Dictionary<(int, int, int), int> _cache = new(); // value: index into Classes, or -1 for no preference
 		private static Player _scratch;
 		private static float[] _baseline;
@@ -96,6 +96,8 @@ namespace Levy.Common.Weapons
 			for (int i = 0; i < Classes.Length; i++) {
 				var dmg = p.GetDamage(Classes[i]);
 				r[i] = (dmg.Additive - 1f) + (dmg.Multiplicative - 1f) + p.GetCritChance(Classes[i]) * CritWeight;
+				// Summoner armor mostly buys minion slots: every slot above the bare one counts like extra summon damage.
+				if (Classes[i] == DamageClass.Summon) r[i] += Math.Max(0, p.maxMinions - 1) * LevyConstants.MinionDoctrineWeight;
 				if (baseline != null) r[i] -= baseline[i];
 			}
 			// Leave the scratch player clean.

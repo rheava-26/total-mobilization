@@ -23,8 +23,13 @@ namespace Levy.Common.Weapons
 		public bool Extended;
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
-		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic;
-		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
+		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
+		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang;
+		/// <summary>Whips count as melee for the brain (close to the lash's reach, avoid bosses); they stop short at a fraction of their reach.</summary>
+		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear || Family == WeaponFamily.Whip;
+		public bool IsSummon => Family == WeaponFamily.Summon;
+		public bool IsWhip => Family == WeaponFamily.Whip;
+		public bool IsBoomerang => Family == WeaponFamily.Boomerang;
 		public bool IsThrust => Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
 		public bool UsesAmmo => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow;
 		public bool Supported => Family != WeaponFamily.Unsupported && Family != WeaponFamily.None;
@@ -74,12 +79,21 @@ namespace Levy.Common.Weapons
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
 			if (item.channel) return WeaponFamily.Unsupported;
-			if (item.sentry || item.CountsAsClass(DamageClass.Summon)) return WeaponFamily.Unsupported;
+			if (item.sentry) return WeaponFamily.Unsupported;
 			if (IsSet(ItemID.Sets.Yoyo, item.type)) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 
 			int shoot = item.shoot;
 			Projectile sample = ProjectileSample(shoot);
+
+			// Soldier-anchored families (SoldierMinion / SoldierWhip / SoldierBoomerang): whips first, since whips are Summon-class items.
+			if (sample != null && !sample.sentry)
+			{
+				if (IsSet(ProjectileID.Sets.IsAWhip, shoot) || sample.aiStyle == ProjAIStyleID.Whip) return WeaponFamily.Whip;
+				if (item.CountsAsClass(DamageClass.Summon) && (sample.minion || sample.minionSlots > 0f)) return WeaponFamily.Summon;
+				if (sample.aiStyle == ProjAIStyleID.Boomerang && item.useAmmo == AmmoID.None) return WeaponFamily.Boomerang;
+			}
+			if (item.CountsAsClass(DamageClass.Summon)) return WeaponFamily.Unsupported; // sentries, summon tools and anything without a minion shot
 			if (sample != null)
 			{
 				int ai = sample.aiStyle;
@@ -163,6 +177,12 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Gun: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeGun) : LevyConstants.RangeGun; p.Gravity = false; break;
 				case WeaponFamily.Bow: p.RangeTiles = LevyConstants.RangeBow; p.Gravity = true; break;
 				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); break;
+				case WeaponFamily.Summon: p.RangeTiles = LevyConstants.RangeSummon; break;
+				case WeaponFamily.Boomerang: p.RangeTiles = LevyConstants.RangeBoomerang; break;
+				case WeaponFamily.Whip:
+					p.ThrustReachPx = WhipReach(src.shootSpeed);
+					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.WhipRangeMinTiles, LevyConstants.WhipRangeMaxTiles);
+					break;
 				case WeaponFamily.Spear:
 				case WeaponFamily.Shortsword:
 					p.ThrustReachPx = ThrustReach(src.shootSpeed);
@@ -182,6 +202,8 @@ namespace Levy.Common.Weapons
 			float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
 			return Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, familyRange);
 		}
+
+		public static float WhipReach(float shootSpeed) => Math.Clamp(shootSpeed * LevyConstants.WhipReachPerShootSpeed, LevyConstants.WhipReachMinPx, LevyConstants.WhipReachMaxPx);
 
 		public static float ThrustReach(float shootSpeed) => Math.Max(LevyConstants.ThrustReachMinPx, shootSpeed * LevyConstants.ThrustReachPerShootSpeed);
 
@@ -213,7 +235,8 @@ namespace Levy.Common.Weapons
 		{
 			WeaponFamily.Gun or WeaponFamily.Bow => DamageClass.Ranged,
 			WeaponFamily.Magic => DamageClass.Magic,
-			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear => DamageClass.Melee,
+			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang => DamageClass.Melee,
+			WeaponFamily.Summon or WeaponFamily.Whip => DamageClass.Summon,
 			_ => null,
 		};
 
@@ -222,6 +245,7 @@ namespace Levy.Common.Weapons
 		{
 			if (item == null || item.IsAir) return null;
 			var f = GetProfile(item).Family;
+			if (f == WeaponFamily.Boomerang) return item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Melee) ? DamageClass.Ranged : DamageClass.Melee;
 			if (f == WeaponFamily.Magic && !item.CountsAsClass(DamageClass.Magic))
 				return item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : item.CountsAsClass(DamageClass.Melee) ? DamageClass.Melee : null;
 			return FamilyDamageClass(f);
@@ -241,6 +265,9 @@ namespace Levy.Common.Weapons
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
 			float dps = item.damage * p.ProjectilesPerShot * 60f / Math.Max(1, item.useTime);
+			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
+			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;
+			else if (p.Family == WeaponFamily.Boomerang) dps *= LevyConstants.BoomerangScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
 			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));

@@ -283,6 +283,7 @@ namespace Levy.Content.NPCs
 		{
 			if (_deathHandled) return true;
 			_deathHandled = true;
+			if (LevyUtil.IsServerOrSingle) KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier
 			if (LevyUtil.IsServerOrSingle && Record != null)
 			{
 				Record.CurrentHp = 0;

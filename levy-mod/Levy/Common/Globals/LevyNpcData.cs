@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria;
 using Terraria.ModLoader;
+using Levy.Common;
 
 namespace Levy.Common.Globals
 {
@@ -31,5 +32,20 @@ namespace Levy.Common.Globals
 
 		// ---- misc ----
 		public int LastHitBySoldier = -1;
+
+		// ---- soldier whip tag (see SoldierWhip / SoldierMinion) ----
+		/// <summary>Game tick the tag runs out (0 = never tagged) and the soldier whoAmI that lashed it.</summary>
+		public int TagExpireTick;
+		public int TagSoldier = -1;
+		public bool IsTagged => TagExpireTick > (int)Main.GameUpdateCount;
+		/// <summary>Marks an enemy as tagged by a soldier's whip for <see cref="LevyConstants.TagDurationTicks"/>; a fresh lash refreshes it.</summary>
+		public static void ApplyTag(NPC npc, int soldierIndex)
+		{
+			if (npc == null || !npc.active) return;
+			var d = Of(npc);
+			d.TagExpireTick = (int)Main.GameUpdateCount + LevyConstants.TagDurationTicks;
+			d.TagSoldier = soldierIndex;
+		}
+		public static bool IsNpcTagged(NPC npc) => npc != null && npc.active && Of(npc).IsTagged;
 	}
 }

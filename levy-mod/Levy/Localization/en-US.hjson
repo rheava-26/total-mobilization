@@ -77,7 +77,13 @@ Mods: {
 		}
 
 		NPCs.SoldierNPC.DisplayName: Soldier
-		Projectiles.SoldierThrust.DisplayName: Thrust
+
+		Projectiles: {
+			SoldierThrust.DisplayName: Thrust
+			SoldierMinion.DisplayName: Minion
+			SoldierWhip.DisplayName: Whip
+			SoldierBoomerang.DisplayName: Boomerang
+		}
 
 		Keybinds: {
 			FollowMe.DisplayName: Levy: Follow me

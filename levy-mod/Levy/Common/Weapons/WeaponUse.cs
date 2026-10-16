@@ -38,6 +38,9 @@ namespace Levy.Common.Weapons
 					case WeaponFamily.Broadsword: return StartSwing(s, item, profile, seg);
 					case WeaponFamily.Spear:
 					case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
+					case WeaponFamily.Whip: return StartWhip(s, item, profile, seg);
+					case WeaponFamily.Boomerang: return ThrowBoomerang(s, item, profile, seg);
+					case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
 				}
 			}
 			catch (Exception e)
@@ -471,6 +474,39 @@ namespace Levy.Common.Weapons
 			p.timeLeft = Math.Max(p.timeLeft, life);
 			s.NoteThrust(p.whoAmI);
 			FinishUse(s, item, dir);
+			return true;
+		}
+
+		/// <summary>Spawns a lash toward the target unless this soldier's lash is still out. Reach grows with the dummy's whip range bonus.</summary>
+		private static bool StartWhip(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			int type = ModContent.ProjectileType<SoldierWhip>();
+			if (s.CountAnchored<SoldierWhip>() > 0) { s.AttackCooldown = 4; return false; }
+			Vector2 dir = target.Center - s.NPC.Center;
+			if (dir == Vector2.Zero) dir = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
+			dir = Vector2.Normalize(dir);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			int life = Math.Max(14, item.useAnimation);
+			float mult = s.Dummy != null && s.Dummy.whipRangeMultiplier > 0.5f ? s.Dummy.whipRangeMultiplier : 1f;
+			Projectile p = Spawn(s, s.NPC.Center, dir, type, damage, item.knockBack, item.DamageType ?? DamageClass.SummonMeleeSpeed, s.NPC.whoAmI, item.type, SoldierWhip.PackAi2(life, mult));
+			if (p == null) { s.AttackCooldown = Math.Max(1, item.useTime); return false; }
+			p.timeLeft = Math.Max(p.timeLeft, life + 2);
+			FinishUse(s, item, dir);
+			return true;
+		}
+
+		/// <summary>Throws the soldier's boomerang at the target unless the allowed number are already out.</summary>
+		private static bool ThrowBoomerang(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (s.CountAnchored<SoldierBoomerang>() >= LevyConstants.BoomerangMaxOut) { s.AttackCooldown = 6; return false; }
+			if (item.shoot <= 0) return Dud(s, item);
+			float speed = MathHelper.Clamp(item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.BoomerangMinSpeed, LevyConstants.BoomerangMinSpeed, LevyConstants.BoomerangMaxSpeed);
+			Vector2 muzzle = Muzzle(s);
+			Vector2 vel = AimShot(s, muzzle, target, item.shoot, speed, -1);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			Projectile p = Spawn(s, muzzle, vel, ModContent.ProjectileType<SoldierBoomerang>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, 0f);
+			if (p == null) return Dud(s, item);
+			FinishUse(s, item, vel);
 			return true;
 		}
 

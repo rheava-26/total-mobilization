@@ -244,7 +244,10 @@ namespace Levy.Content.TileEntities
 		{
 			if (cls == null) return null;
 			var onHand = AmmoIdsOnHand();
-			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand);
+			// Summoners want the summon weapon itself as primary; their whip comes through the sidearm slot.
+			bool needSummon = cls == DamageClass.Summon;
+			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand)
+				&& (!needSummon || WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon);
 			return TakeVaried(forSoldier, Pred);
 		}
 
@@ -289,6 +292,15 @@ namespace Levy.Content.TileEntities
 		{
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableMelee, WeaponClassifier.Score);
+		}
+
+		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
+
+		/// <summary>A summoner's sidearm: a whip (the sidearm slot first, then the best in the armory), else the usual melee sidearm. Removes it. Null if none.</summary>
+		public virtual Item TakeSummonerSidearm(SoldierRecord forSoldier)
+		{
+			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score) ?? TakeSidearm(forSoldier);
 		}
 
 		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>
@@ -499,7 +511,8 @@ namespace Levy.Content.TileEntities
 
 			// A melee primary needs no fallback blade; save the swords for the gunners.
 			bool primaryMelee = g.HasWeapon && IsMeleeFamily(WeaponClassifier.Classify(g.Weapon));
-			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && !primaryMelee) { var s = TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
+			bool primarySummon = g.HasWeapon && WeaponClassifier.Classify(g.Weapon) == WeaponFamily.Summon; // the flock fights; the hand carries a whip
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && !primaryMelee) { var s = primarySummon ? TakeSummonerSidearm(soldier) : TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
 
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {

@@ -1052,6 +1052,9 @@ namespace Levy.Content.NPCs
 		/// Melee closes on its target. If the direct walk has been refused (gap, wall, lava) and Movement's own path search found no
 		/// route either, the target is unreachable: stop pushing at it and leave it alone for a few seconds.
 		/// </summary>
+		/// <summary>How close a melee soldier closes on its target: the blade reach, or a fraction of the lash's reach for a whip (which never needs to charge).</summary>
+		private float MeleeHoldTiles() => Weapon != null && Weapon.IsWhip ? Math.Max(LevyConstants.RangeMelee, Weapon.RangeTiles * LevyConstants.WhipHoldFraction) : LevyConstants.RangeMelee;
+
 		private void MeleeGoal(NPC target, int now)
 		{
 			Vector2 goal;
@@ -1082,7 +1085,7 @@ namespace Levy.Content.NPCs
 				goal = new Vector2(NPC.Center.X + sx * LevyConstants.MeleeStepBackPixels * 2, NPC.Center.Y);
 				_engMode = EngageMode.Retreat;
 			}
-			else if (!LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.RangeMelee))
+			else if (!LevyUtil.WithinTiles(NPC.Center, target.Center, MeleeHoldTiles()))
 			{
 				if (_blockedHard && _path.Count == 0 && _pathFailTimer > 0)
 				{

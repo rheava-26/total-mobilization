@@ -62,5 +62,29 @@ namespace Levy.Common
 		public const int ThrustLocalHitCooldownTicks = 20;
 		public const int ThrustHitboxPx = 18;
 		public const int ThrustRangeMinTiles = 2, ThrustRangeMaxTiles = 6;
+
+		// ---------- Wider weapon compatibility ----------
+		/// <summary>Ammo weapons whose projectile dies young (flamethrowers, short-lived shots) engage only at their real reach: speed x lifetime x this fraction, clamped to [min, RangeGun].</summary>
+		public const float ShortShotReachFraction = 0.8f;
+		public const int ShortShotRangeMinTiles = 8;
+		/// <summary>A projectile whose default lifetime exceeds this many ticks is treated as long-range (no reach clamp).</summary>
+		public const int LongShotLifetimeTicks = 240;
+		/// <summary>A weapon that spawned nothing (hooks fired no projectile / threw) waits this many ticks before the soldier tries again, so a dud never spams hooks every tick.</summary>
+		public const int DudWeaponRetryTicks = 30;
+		/// <summary>Rarity tier given to Expert / Master items (negative item.rare values) when ranking.</summary>
+		public const int SpecialRarityTier = 6;
+		/// <summary>Highest rarity tier counted when ranking (modded rarities above vanilla Purple still count up to here).</summary>
+		public const int MaxRarityTier = 12;
+
+		// ---------- Tier-aware ranking ----------
+		/// <summary>Weapon score = DPS x (1 + WeaponRarityWeight x tier + WeaponValueWeight x log10(1 + value copper)). DPS stays primary; a tier is worth ~6%.</summary>
+		public const float WeaponRarityWeight = 0.06f, WeaponValueWeight = 0.04f;
+		/// <summary>Armor score = rarity tier x ArmorRarityWeight + defense x ArmorDefenseWeight + log10(1 + value) x ArmorValueWeight. One rarity tier outweighs ~3.5 defense, so progression beats flat defense.</summary>
+		public const float ArmorRarityWeight = 350f, ArmorDefenseWeight = 100f, ArmorValueWeight = 40f;
+
+		// ---------- Squad weapon variety ----------
+		/// <summary>When issuing a primary weapon a soldier draws from the weapon types scoring within this fraction of the best viable score (at most WeaponVarietyMaxTypes types).</summary>
+		public const float WeaponVarietyTopFraction = 0.75f;
+		public const int WeaponVarietyMaxTypes = 6;
 	}
 }

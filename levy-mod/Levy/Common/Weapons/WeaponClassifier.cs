@@ -19,6 +19,8 @@ namespace Levy.Common.Weapons
 		public bool Gravity; public bool Homing;
 		public int MultishotCount = 1; public float SpreadDeg;
 		public DamageClass DamageType = DamageClass.Default;
+		/// <summary>True when the weapon is only accepted by the widened rules (non-bullet/arrow ammo, non-magic casters, plain shooters).</summary>
+		public bool Extended;
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
 		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic;
@@ -56,15 +58,25 @@ namespace Levy.Common.Weapons
 			ItemID.EncumberingStone, ItemID.GuideVoodooDoll, ItemID.ClothierVoodooDoll,
 		};
 
-		public static WeaponFamily Classify(Item item)
+		public static WeaponFamily Classify(Item item) => ClassifyCore(item, out _);
+
+		/// <summary>
+		/// Accepts the long tail on purpose: every ammo type (bullets and arrows keep their families, everything else fires like a gun), any mana
+		/// weapon that shoots, melee swings/thrusts, and finally any plain shooter, all fired through the real shoot pipeline. Rejects what a
+		/// stationary-ish soldier cannot use: tools, consumables, channeled/held weapons, yoyos, flails, boomerangs, whips, minions and sentries.
+		/// <paramref name="extended"/> is set when only the widened rules accepted it.
+		/// </summary>
+		private static WeaponFamily ClassifyCore(Item item, out bool extended)
 		{
+			extended = false;
 			if (item == null || item.IsAir) return WeaponFamily.None;
 			if (item.damage <= 0) return WeaponFamily.Unsupported;
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
 			if (item.channel) return WeaponFamily.Unsupported;
-			if (item.CountsAsClass(DamageClass.Summon)) return WeaponFamily.Unsupported;
+			if (item.sentry || item.CountsAsClass(DamageClass.Summon)) return WeaponFamily.Unsupported;
 			if (IsSet(ItemID.Sets.Yoyo, item.type)) return WeaponFamily.Unsupported;
+			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 
 			int shoot = item.shoot;
 			Projectile sample = ProjectileSample(shoot);
@@ -74,24 +86,42 @@ namespace Levy.Common.Weapons
 				if (ai == ProjAIStyleID.Yoyo || ai == ProjAIStyleID.Flail || ai == ProjAIStyleID.Boomerang || ai == ProjAIStyleID.Whip) return WeaponFamily.Unsupported;
 				if (IsSet(ProjectileID.Sets.IsAWhip, shoot)) return WeaponFamily.Unsupported;
 				if (shoot < ProjectileID.Sets.YoyosLifeTimeMultiplier.Length && ProjectileID.Sets.YoyosLifeTimeMultiplier[shoot] != -1f) return WeaponFamily.Unsupported;
+				if (sample.minion || sample.sentry || sample.minionSlots > 0f) return WeaponFamily.Unsupported;
 			}
 
 			if (item.useAmmo != AmmoID.None)
 			{
 				if (item.useAmmo == AmmoID.Bullet) return WeaponFamily.Gun;
 				if (item.useAmmo == AmmoID.Arrow) return WeaponFamily.Bow;
-				return WeaponFamily.Unsupported; // darts, rockets, coins, snowballs, gel, solutions, flares, stakes: out of v1
+				if (item.useAmmo == AmmoID.Coin) return WeaponFamily.Unsupported; // would burn the player's money
+				extended = true;
+				return WeaponFamily.Gun; // rockets, darts, gel, stakes, snowballs, flares, sand, solutions, modded ammo: all fire through the gun path
 			}
 
-			if (item.mana > 0 && shoot > 0 && item.CountsAsClass(DamageClass.Magic)) return WeaponFamily.Magic;
-
-			if (item.CountsAsClass(DamageClass.Melee))
+			if (item.mana > 0 && shoot > 0)
 			{
-				if (sample != null && sample.aiStyle == ProjAIStyleID.Spear) return WeaponFamily.Spear;
-				if (IsSet(ItemID.Sets.Spears, item.type)) return WeaponFamily.Spear;
-				if (item.useStyle == ItemUseStyleID.Rapier) return WeaponFamily.Shortsword;
-				if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) return WeaponFamily.Shortsword;
-				if (item.useStyle == ItemUseStyleID.Swing && !item.noMelee) return WeaponFamily.Broadsword;
+				extended = !item.CountsAsClass(DamageClass.Magic);
+				return WeaponFamily.Magic;
+			}
+
+			bool meleeish = item.CountsAsClass(DamageClass.Melee) || !(item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic));
+			if (meleeish)
+			{
+				bool viaMeleeClass = item.CountsAsClass(DamageClass.Melee);
+				WeaponFamily melee = WeaponFamily.Unsupported;
+				if (sample != null && sample.aiStyle == ProjAIStyleID.Spear) melee = WeaponFamily.Spear;
+				else if (IsSet(ItemID.Sets.Spears, item.type)) melee = WeaponFamily.Spear;
+				else if (item.useStyle == ItemUseStyleID.Rapier) melee = WeaponFamily.Shortsword;
+				else if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) melee = WeaponFamily.Shortsword;
+				else if (item.useStyle == ItemUseStyleID.Swing && !item.noMelee) melee = WeaponFamily.Broadsword;
+				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
+			}
+
+			// Plain shooter: a projectile weapon with no ammo and no mana (cannons, wands, modded launchers). The shoot pipeline decides what happens.
+			if (shoot > 0 && shoot != ProjectileID.PurificationPowder && sample != null)
+			{
+				extended = true;
+				return WeaponFamily.Magic; // fired by the caster path at zero mana cost
 			}
 			return WeaponFamily.Unsupported;
 		}
@@ -109,10 +139,12 @@ namespace Levy.Common.Weapons
 
 		private static WeaponProfile Build(Item src)
 		{
+			var family = ClassifyCore(src, out bool extended);
 			var p = new WeaponProfile
 			{
 				ItemType = src.type,
-				Family = Classify(src),
+				Family = family,
+				Extended = extended,
 				UseTime = Math.Max(1, src.useTime),
 				UseAnimation = Math.Max(1, src.useAnimation),
 				ReuseDelay = Math.Max(0, src.reuseDelay),
@@ -128,9 +160,9 @@ namespace Levy.Common.Weapons
 			if (LevyConstants.Multishot.TryGetValue(src.type, out var ms)) { p.MultishotCount = Math.Max(1, ms.count); p.SpreadDeg = ms.spreadDeg; }
 			switch (p.Family)
 			{
-				case WeaponFamily.Gun: p.RangeTiles = LevyConstants.RangeGun; p.Gravity = false; break;
+				case WeaponFamily.Gun: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeGun) : LevyConstants.RangeGun; p.Gravity = false; break;
 				case WeaponFamily.Bow: p.RangeTiles = LevyConstants.RangeBow; p.Gravity = true; break;
-				case WeaponFamily.Magic: p.RangeTiles = LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); break;
+				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); break;
 				case WeaponFamily.Spear:
 				case WeaponFamily.Shortsword:
 					p.ThrustReachPx = ThrustReach(src.shootSpeed);
@@ -139,6 +171,16 @@ namespace Levy.Common.Weapons
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
 			return p;
+		}
+
+		/// <summary>Engagement range for an extended ranged weapon: the family range, cut down to the real reach when its projectile has a short lifetime (flames).</summary>
+		private static int ShortShotRange(Item src, int familyRange)
+		{
+			var sample = ProjectileSample(src.shoot);
+			if (sample == null || sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
+			float speed = Math.Max(1f, src.shootSpeed) * (1 + Math.Max(0, sample.extraUpdates));
+			float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
+			return Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, familyRange);
 		}
 
 		public static float ThrustReach(float shootSpeed) => Math.Max(LevyConstants.ThrustReachMinPx, shootSpeed * LevyConstants.ThrustReachPerShootSpeed);
@@ -174,13 +216,35 @@ namespace Levy.Common.Weapons
 			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear => DamageClass.Melee,
 			_ => null,
 		};
-		/// <summary>Rank weapons for best-first issue: damage per second-ish. Higher is better.</summary>
+
+		/// <summary>The damage class an item counts as for doctrine matching: the family class, except a plain shooter / non-magic caster in the caster family reports its own class (or null when it matches none).</summary>
+		public static DamageClass ItemDamageClass(Item item)
+		{
+			if (item == null || item.IsAir) return null;
+			var f = GetProfile(item).Family;
+			if (f == WeaponFamily.Magic && !item.CountsAsClass(DamageClass.Magic))
+				return item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : item.CountsAsClass(DamageClass.Melee) ? DamageClass.Melee : null;
+			return FamilyDamageClass(f);
+		}
+
+		/// <summary>Progression tier of a rarity: 0 and below is 0, Expert/Master count as <see cref="LevyConstants.SpecialRarityTier"/>, capped at <see cref="LevyConstants.MaxRarityTier"/>.</summary>
+		public static int RarityTier(int rare)
+		{
+			if (rare == ItemRarityID.Expert || rare == ItemRarityID.Master) return LevyConstants.SpecialRarityTier;
+			return Math.Clamp(rare, 0, LevyConstants.MaxRarityTier);
+		}
+
+		/// <summary>Rank weapons for best-first issue: damage per second scaled up by rarity tier and value, so sensible high-tier weapons rank up. Higher is better.</summary>
 		public static float Score(Item item)
 		{
 			if (item == null || item.IsAir) return 0f;
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
-			return item.damage * p.ProjectilesPerShot * 60f / Math.Max(1, item.useTime);
+			float dps = item.damage * p.ProjectilesPerShot * 60f / Math.Max(1, item.useTime);
+			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
+			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
+			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));
+			return dps * tier;
 		}
 	}
 }

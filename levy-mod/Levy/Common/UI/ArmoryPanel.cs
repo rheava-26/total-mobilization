@@ -12,7 +12,7 @@ namespace Levy.Common.UI
 {
 	/// <summary>
 	/// Armory: scrolling storage grid (12 columns, 10 rows in view, all ArmoryTE.StorageSize slots reachable) plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
-	/// "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
+	/// "Sort", "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
 	/// ArmorySlotSet for each changed slot.
 	/// </summary>
 	public class ArmoryPanel : UIState
@@ -23,7 +23,7 @@ namespace Levy.Common.UI
 		private UIElement _issue;
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
-		private LevyButton _depositJunk, _lootAll, _close;
+		private LevyButton _depositJunk, _lootAll, _sort, _close;
 		private Label _title;
 
 		private const int GridLeft = 10, GridTop = 40, IssueLeft = 460, IssueWidth = 220, IssueColumns = 6;
@@ -52,6 +52,9 @@ namespace Levy.Common.UI
 			_depositJunk = new LevyButton(LevyUtil.T("UI.DepositJunk"), LevyConstants.UI.ButtonTextScale, 150, 26, DepositJunk);
 			_depositJunk.Left.Set(w - 36 - 112 - 158, 0f); _depositJunk.Top.Set(6f, 0f);
 			_panel.Append(_depositJunk);
+			_sort = new LevyButton(LevyUtil.T("UI.Sort"), LevyConstants.UI.ButtonTextScale, 62, 26, SortStorage, LevyUtil.T("UI.SortHint"));
+			_sort.Left.Set(w - 36 - 112 - 158 - 70, 0f); _sort.Top.Set(6f, 0f);
+			_panel.Append(_sort);
 
 			// Storage: one UIList row per grid row (only rows in view are drawn), scrolled by the wheel or the bar beside it.
 			_grid = new UIList();
@@ -232,6 +235,14 @@ namespace Levy.Common.UI
 			if (any) SoundEngine.PlaySound(SoundID.Grab);
 		}
 
+		/// <summary>Groups and packs the storage (weapons, armor, accessories, ammo, potions, the rest; partial stacks merged). Single player edits live; a multiplayer client asks the server.</summary>
+		private void SortStorage()
+		{
+			if (Te == null || !UIActions.IsLive(Te)) return;
+			UIActions.SortArmory(Te);
+			SoundEngine.PlaySound(SoundID.Grab);
+		}
+
 		private static SlotSnap[] Snapshot(Item[] arr) { var s = new SlotSnap[arr.Length]; for (int i = 0; i < arr.Length; i++) s[i] = new SlotSnap(arr[i]); return s; }
 
 		private void SendChanged(SlotSnap[] before, Item[] arr)
@@ -247,6 +258,7 @@ namespace Levy.Common.UI
 			bool anyStorage = false;
 			if (Te != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) { anyStorage = true; break; }
 			_lootAll.Enabled = anyStorage;
+			_sort.Enabled = anyStorage;
 		}
 	}
 }

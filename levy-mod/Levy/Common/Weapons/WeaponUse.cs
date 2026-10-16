@@ -28,15 +28,34 @@ namespace Levy.Common.Weapons
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
-			switch (profile.Family)
+			try
 			{
-				case WeaponFamily.Gun:
-				case WeaponFamily.Bow: return FireRanged(s, item, profile, seg);
-				case WeaponFamily.Magic: return FireMagic(s, item, profile, seg);
-				case WeaponFamily.Broadsword: return StartSwing(s, item, profile, seg);
-				case WeaponFamily.Spear:
-				case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
+				switch (profile.Family)
+				{
+					case WeaponFamily.Gun:
+					case WeaponFamily.Bow: return FireRanged(s, item, profile, seg);
+					case WeaponFamily.Magic: return FireMagic(s, item, profile, seg);
+					case WeaponFamily.Broadsword: return StartSwing(s, item, profile, seg);
+					case WeaponFamily.Spear:
+					case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
+				}
 			}
+			catch (Exception e)
+			{
+				// A weapon (usually a modded one the widened classifier let in) threw while firing: the soldier just holds and retries later.
+				s.AttackCooldown = Math.Max(1, Math.Max(item.useTime, LevyConstants.DudWeaponRetryTicks));
+				if (_reportedDuds.Add(item.type)) ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: weapon {item.Name} ({item.type}) threw while a soldier fired it: {e.Message}");
+			}
+			return false;
+		}
+
+		/// <summary>Item types already reported as throwing, so the log gets one line per weapon instead of one per shot.</summary>
+		private static readonly System.Collections.Generic.HashSet<int> _reportedDuds = new();
+
+		/// <summary>A weapon spawned nothing this use: back off for a while so the soldier does not rerun its hooks every tick.</summary>
+		private static bool Dud(SoldierNPC s, Item item)
+		{
+			s.AttackCooldown = Math.Max(1, Math.Max(item.useTime, LevyConstants.DudWeaponRetryTicks));
 			return false;
 		}
 
@@ -121,18 +140,20 @@ namespace Levy.Common.Weapons
 			Item pouch = s.Record.Gear.Ammo;
 			if (pouch == null || pouch.IsAir || pouch.stack <= 0 || pouch.ammo != profile.UseAmmo) return false;
 			int projType = ResolveProjectile(s, item, pouch);
-			if (projType <= 0) return false;
+			if (projType <= 0) return Dud(s, item);
 			int damage = Math.Max(1, (int)Math.Round((s.WeaponDamage(item) + Math.Max(0, pouch.damage)) * s.DamageMultiplier));
 			float knockback = item.knockBack + pouch.knockBack;
 			float speed = item.shootSpeed + pouch.shootSpeed;  // Player.PickAmmo adds the ammo's shootSpeed
+			ModifyForAmmo(s, item, pouch, ref projType, ref speed, ref knockback);
 			if (speed < 1f) speed = 1f;
 
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
-			if (!TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback))
-				FireSpread(s, muzzle, vel, projType, damage, knockback, profile);
+			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback);
+			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
+			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
 
-			if (!AmmoFreeThisShot(s, item, pouch))
+			if (ConsumesAmmo(s, item, pouch))
 			{
 				pouch.stack--;
 				if (pouch.stack <= 0)
@@ -146,33 +167,52 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
+		/// <summary>The ammo item's own PickAmmo hooks (ModItem/GlobalItem) may swap the projectile or speed, as in Player.PickAmmo. A throwing hook is ignored.</summary>
+		private static void ModifyForAmmo(SoldierNPC s, Item weapon, Item ammo, ref int projType, ref float speed, ref float knockback)
+		{
+			if (!LevyConfig.Get.RealWeaponShoot || s.Dummy == null) return;
+			try
+			{
+				var dmg = StatModifier.Default;
+				int t = projType; float sp = speed, kb = knockback;
+				ItemLoader.PickAmmo(weapon, ammo, s.Dummy, ref t, ref sp, ref dmg, ref kb);
+				if (t > 0) projType = t;
+				if (sp > 0f) speed = sp;
+				knockback = kb;
+			}
+			catch (Exception) { }
+		}
+
 		private static bool FireMagic(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			int cost = Math.Max(0, item.mana);
 			if (s.Record.Mana < cost) return false;
 			int projType = item.shoot;
-			if (projType <= 0) return false;
+			if (projType <= 0) return Dud(s, item);
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 			float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
-			if (!TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack))
-				FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile);
+			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
+			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
 		}
 
-		private static void FireSpread(SoldierNPC s, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, WeaponProfile profile)
+		/// <summary>Fires the manual (multishot) volley and returns how many projectiles actually spawned.</summary>
+		private static int FireSpread(SoldierNPC s, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, WeaponProfile profile)
 		{
-			int n = profile.ProjectilesPerShot;
+			int n = profile.ProjectilesPerShot, spawned = 0;
 			float spread = profile.SpreadDeg;
 			for (int k = 0; k < n; k++)
 			{
 				float deg = n > 1 ? -spread * 0.5f + spread * k / (n - 1) : 0f;
 				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
-				Spawn(s, muzzle, v, projType, damage, knockback, profile.DamageType);
+				if (Spawn(s, muzzle, v, projType, damage, knockback, profile.DamageType) != null) spawned++;
 			}
+			return spawned;
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -188,7 +228,10 @@ namespace Levy.Common.Weapons
 		public static int ResolveProjectile(SoldierNPC s, Item weapon, Item ammo)
 		{
 			bool haveAmmo = ammo != null && !ammo.IsAir;
-			int proj = haveAmmo && ammo.shoot > 0 ? ammo.shoot : weapon.shoot;
+			int proj;
+			// Player.PickAmmo: rocket and solution ammo ADD their shoot offset to the launcher's base projectile; everything else replaces it.
+			if (haveAmmo && (weapon.useAmmo == AmmoID.Rocket || weapon.useAmmo == AmmoID.Solution)) proj = weapon.shoot + Math.Max(0, ammo.shoot);
+			else proj = haveAmmo && ammo.shoot > 0 ? ammo.shoot : weapon.shoot;
 			if (!LevyConfig.Get.RealWeaponShoot || proj <= 0) return proj;
 			// PickAmmo_TryFindingSpecificMatches: per-launcher projectile for specific ammo items, falling back to a related launcher
 			if (haveAmmo)
@@ -200,6 +243,12 @@ namespace Levy.Common.Weapons
 					int fallback = launcher >= 0 && launcher < AmmoID.Sets.SpecificLauncherAmmoProjectileFallback.Length ? AmmoID.Sets.SpecificLauncherAmmoProjectileFallback[launcher] : -1;
 					if (fallback != -1 && AmmoID.Sets.SpecificLauncherAmmoProjectileMatches.TryGetValue(fallback, out var table2) && table2.TryGetValue(ammo.type, out match)) proj = match;
 				}
+			}
+			// Sandgun: sand ammo maps to a bespoke projectile (never the falling-sand block that would place tiles).
+			if (haveAmmo && proj == ProjectileID.SandBallGun)
+			{
+				var sand = ammo.type >= 0 && ammo.type < ItemID.Sets.SandgunAmmoProjectileData.Length ? ItemID.Sets.SandgunAmmoProjectileData[ammo.type] : null;
+				if (sand != null) proj = sand.ProjectileType;
 			}
 			switch (weapon.type)
 			{
@@ -357,12 +406,27 @@ namespace Levy.Common.Weapons
 			return m;
 		}
 
+		/// <summary>Whether this shot uses up a piece of ammo: not for endless (non-consumable) ammo, and not when a hook or the weapon's own rules spare it.</summary>
+		private static bool ConsumesAmmo(SoldierNPC s, Item weapon, Item pouch)
+		{
+			if (!pouch.consumable) return false;
+			if (AmmoFreeThisShot(s, weapon, pouch)) return false;
+			if (s.Dummy != null)
+			{
+				try { CombinedHooks.OnConsumeAmmo(s.Dummy, weapon, pouch); } catch (Exception) { }
+			}
+			return true;
+		}
+
 		/// <summary>Ammo conservation from the dummy's equipment flags (Player.IsAmmoFreeThisShot odds).</summary>
 		private static bool AmmoFreeThisShot(SoldierNPC s, Item weapon, Item ammo)
 		{
 			Player d = s.Dummy;
 			if (d == null) return false;
 			bool free = false;
+			try { if (!CombinedHooks.CanConsumeAmmo(d, weapon, ammo)) return true; } catch (Exception) { }
+			if (weapon.consumeAmmoOnFirstShotOnly && s.ItemAnimation > 0) return true;
+			if (weapon.consumeAmmoOnLastShotOnly && s.ItemAnimation > Math.Max(1, weapon.useTime)) return true;
 			if (d.huntressAmmoCost90 && Main.rand.NextBool(LevyConstants.AmmoConserve90Denominator)) free = true;
 			if (d.chloroAmmoCost80 && Main.rand.NextBool(LevyConstants.AmmoConserve80Denominator)) free = true;
 			if (d.ammoCost80 && Main.rand.NextBool(LevyConstants.AmmoConserve80Denominator)) free = true;

@@ -60,6 +60,7 @@ namespace Levy.Common.UI
 			ArmyStripKey = KeybindLoader.RegisterKeybind(Mod, "ArmyStrip", "N");
 
 			LevyPackets.Register(LevyPacket.ArmorySlotSet, HandleArmorySlotSet);
+			LevyPackets.Register(LevyPacket.ArmorySort, HandleArmorySort);
 		}
 
 		public override void PostSetupContent()
@@ -287,6 +288,18 @@ namespace Levy.Common.UI
 		}
 
 		// ------------------------------------------------------------------ packets
+		/// <summary>Server: a client asked for the armory storage to be sorted. Payload: int armoryId.</summary>
+		private static void HandleArmorySort(BinaryReader reader, int fromWhoAmI)
+		{
+			int armoryId = reader.ReadInt32();
+			if (Main.netMode != NetmodeID.Server) return;
+			if (!TileEntity.ByID.TryGetValue(armoryId, out var te) || te is not ArmoryTE armory) return;
+			if (fromWhoAmI < 0 || fromWhoAmI >= Main.maxPlayers || !Main.player[fromWhoAmI].active) return;
+			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
+			armory.SortStorage();
+			armory.Sync();
+		}
+
 		/// <summary>Server: a client set one armory slot. Payload: int armoryId, byte region, short slot, Item (ItemIO, stack).</summary>
 		private static void HandleArmorySlotSet(BinaryReader reader, int fromWhoAmI)
 		{

@@ -79,31 +79,31 @@ namespace Levy.Content.TileEntities
 
 		private static bool IsAir(Item it) => it == null || it.IsAir || it.stack <= 0;
 
-		private static bool IsSupportedFamily(WeaponFamily f) =>
-			f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || IsMeleeFamily(f);
-
 		private static bool IsMeleeFamily(WeaponFamily f) =>
 			f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;
 
-		/// <summary>A weapon the armory may hand out: the classifier accepts it AND its family is one a soldier can use.</summary>
-		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it) && IsSupportedFamily(WeaponClassifier.Classify(it));
+		/// <summary>A weapon the armory may hand out: the classifier accepts it (cached per item type, so scanning a 1000-slot hoard stays cheap).</summary>
+		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it);
 
-		private static bool IsIssuableMelee(Item it) => IsIssuable(it) && IsMeleeFamily(WeaponClassifier.Classify(it));
+		private static bool IsIssuableMelee(Item it) => IsIssuable(it) && IsMeleeFamily(WeaponClassifier.GetProfile(it).Family);
 
-		/// <summary>True when the weapon needs no ammo, the soldier's pouch already holds its ammo, or the armory has some.</summary>
-		private bool HasAmmoFor(Item weapon, SoldierRecord soldier)
+		/// <summary>True when the weapon needs no ammo, the soldier's pouch already holds its ammo, or the armory has some (<paramref name="onHand"/>: ammo ids in the issue ammo row and storage).</summary>
+		private static bool HasAmmoFor(Item weapon, SoldierRecord soldier, HashSet<int> onHand)
 		{
 			int ammoId = weapon.useAmmo;
 			if (ammoId <= 0) return true;
 			var pouch = soldier?.Gear?.Ammo;
 			if (!IsAir(pouch) && pouch.ammo == ammoId) return true;
-			return AnyAmmo(IssueAmmo, ammoId) || AnyAmmo(Storage, ammoId);
+			return onHand.Contains(ammoId);
 		}
 
-		private static bool AnyAmmo(Item[] arr, int ammoId)
+		/// <summary>Every ammo id the armory currently holds (issue ammo row + storage), so per-weapon ammo checks are O(1) instead of rescanning 1000 slots.</summary>
+		private HashSet<int> AmmoIdsOnHand()
 		{
-			for (int i = 0; i < arr.Length; i++) { var it = arr[i]; if (!IsAir(it) && it.ammo == ammoId) return true; }
-			return false;
+			var set = new HashSet<int>();
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
+			return set;
 		}
 
 		/// <summary>Best slot in <paramref name="arr"/> over indices from, from+step, ... (&lt; to) that passes <paramref name="pred"/>; strictly-better wins so the leftmost takes ties.</summary>
@@ -139,7 +139,11 @@ namespace Levy.Content.TileEntities
 			return null;
 		}
 
-		private static float ArmorScore(Item it) => it.defense * 100f + it.rare;
+		/// <summary>Tier first, defense second: rarity tier and value outweigh a few points of flat defense, so progression gear (Crimtane) beats flat-defense metal (Platinum).</summary>
+		private static float ArmorScore(Item it) =>
+			WeaponClassifier.RarityTier(it.rare) * LevyConstants.ArmorRarityWeight
+			+ it.defense * LevyConstants.ArmorDefenseWeight
+			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight;
 		private static float AccessoryScore(Item it) => it.rare * 100f + it.defense;
 
 		private static bool AlreadyWorn(Item[] worn, int type)
@@ -223,20 +227,61 @@ namespace Levy.Content.TileEntities
 
 		// ------------------------------------------------------------------ issue API
 
-		/// <summary>Best issuable weapon for this soldier (family must be supported); removes it from the armory. Null if none.</summary>
+		/// <summary>
+		/// A strong issuable weapon for this soldier (family must be supported); removes it from the armory. Null if none.
+		/// Draws from the top tier of viable weapon types (see <see cref="TryPickVaried"/>), so a varied armory yields a mixed squad.
+		/// </summary>
 		public virtual Item TakeBestWeapon(SoldierRecord forSoldier)
 		{
 			// Pass 1: weapons that can actually fire (no ammo needed, or ammo in the pouch / armory). Pass 2: anything issuable.
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuable(it) && HasAmmoFor(it, forSoldier), WeaponClassifier.Score)
-				?? TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuable, WeaponClassifier.Score);
+			var onHand = AmmoIdsOnHand();
+			return TakeVaried(forSoldier, it => IsIssuable(it) && HasAmmoFor(it, forSoldier, onHand))
+				?? TakeVaried(forSoldier, IsIssuable);
 		}
 
-		/// <summary>Best issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
+		/// <summary>A strong issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
 		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls)
 		{
 			if (cls == null) return null;
-			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.FamilyDamageClass(WeaponClassifier.Classify(it)) == cls && HasAmmoFor(it, forSoldier);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, Pred, WeaponClassifier.Score);
+			var onHand = AmmoIdsOnHand();
+			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand);
+			return TakeVaried(forSoldier, Pred);
+		}
+
+		/// <summary>Issue weapon slots first, bulk storage second; within each, a varied pick among the top-scoring weapon types.</summary>
+		private Item TakeVaried(SoldierRecord who, Func<Item, bool> userPred)
+		{
+			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
+			if (TryPickVaried(IssueWeapons, pred, who, 0, SidearmSlot, out int idx)) return Remove(IssueWeapons, idx);
+			if (TryPickVaried(Storage, pred, who, 0, Storage.Length, out idx)) return Remove(Storage, idx);
+			return null;
+		}
+
+		/// <summary>
+		/// Picks one weapon from <paramref name="arr"/>: the best-scoring copy of each weapon type, keep the types within
+		/// <see cref="LevyConstants.WeaponVarietyTopFraction"/> of the best score (at most <see cref="LevyConstants.WeaponVarietyMaxTypes"/>), and
+		/// let the soldier's stable id choose among them. Same soldier, same armory: same pick; consecutive soldiers rotate through the types.
+		/// </summary>
+		private static bool TryPickVaried(Item[] arr, Func<Item, bool> pred, SoldierRecord who, int from, int to, out int bestIdx)
+		{
+			bestIdx = -1;
+			var byType = new Dictionary<int, (int idx, float score)>();
+			for (int i = from; i < to && i < arr.Length; i++)
+			{
+				var it = arr[i];
+				if (IsAir(it) || !pred(it)) continue;
+				float sc = WeaponClassifier.Score(it);
+				if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (i, sc);
+			}
+			if (byType.Count == 0) return false;
+			var list = new List<(int idx, float score)>(byType.Values);
+			list.Sort((a, b) => { int c = b.score.CompareTo(a.score); return c != 0 ? c : a.idx.CompareTo(b.idx); });
+			float cutoff = list[0].score * LevyConstants.WeaponVarietyTopFraction;
+			int tier = 1;
+			while (tier < list.Count && tier < LevyConstants.WeaponVarietyMaxTypes && list[tier].score >= cutoff) tier++;
+			int key = who?.Id ?? 0;
+			bestIdx = list[(int)((uint)key % (uint)tier)].idx;
+			return true;
 		}
 
 		/// <summary>Best issuable sidearm (melee item in the sidearm slot or any supported melee); removes it. Null if none.</summary>
@@ -304,6 +349,87 @@ namespace Levy.Content.TileEntities
 			if (it.stack <= 0) IssuePotions[kind] = new Item();
 			MarkDirty();
 			return one;
+		}
+
+		// ------------------------------------------------------------------ sort
+
+		private const int GroupWeapon = 0, GroupArmor = 1, GroupAccessory = 2, GroupAmmo = 3, GroupPotion = 4, GroupOther = 5;
+
+		/// <summary>Sort bucket and in-bucket sub-order: weapons the soldiers can use first, then armor by part, accessories, ammo, potions, everything else.</summary>
+		private static void SortBucket(Item it, out int group, out int sub)
+		{
+			sub = 0;
+			if (it.headSlot >= 0 || it.bodySlot >= 0 || it.legSlot >= 0)
+			{
+				group = GroupArmor;
+				sub = (it.headSlot >= 0 ? 0 : it.bodySlot >= 0 ? 1 : 2) + (it.vanity ? 3 : 0);
+			}
+			else if (it.accessory) { group = GroupAccessory; sub = it.vanity ? 1 : 0; }
+			else if (it.ammo > 0 && !it.IsACoin) group = GroupAmmo;
+			else if (it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin) { group = GroupWeapon; sub = WeaponClassifier.IsIssuableWeapon(it) ? 0 : 1; }
+			else if (it.healLife > 0 || it.healMana > 0 || (it.buffType > 0 && it.consumable)) group = GroupPotion;
+			else group = GroupOther;
+		}
+
+		private struct SortKey
+		{
+			public Item Item; public int Group, Sub, Tier, BaseValue;
+		}
+
+		/// <summary>
+		/// Tidies bulk storage: merges partial stacks of the same type and prefix, orders the rest weapons → armor → accessories → ammo → potions →
+		/// everything else (within a bucket by rarity tier then value, highest first; same item types stay together), and packs it to the front so
+		/// every empty slot trails at the end. Server / single player only (a client asks the server). Returns true if anything moved.
+		/// </summary>
+		public bool SortStorage()
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			var items = new List<Item>();
+			foreach (var it in Storage) if (!IsAir(it)) items.Add(it);
+
+			// 1. merge partial stacks (same type + prefix; the mod's CanStack hooks decide the rest)
+			var open = new Dictionary<(int, int), Item>();
+			var merged = new List<Item>(items.Count);
+			foreach (var it in items)
+			{
+				if (it.maxStack > 1 && open.TryGetValue((it.type, it.prefix), out var dest) && dest.stack < dest.maxStack)
+				{
+					ItemLoader.TryStackItems(dest, it, out _);
+					if (IsAir(it)) continue;
+				}
+				merged.Add(it);
+				if (it.maxStack > 1) open[(it.type, it.prefix)] = it;
+			}
+
+			// 2. order
+			var keys = new List<SortKey>(merged.Count);
+			foreach (var it in merged)
+			{
+				SortBucket(it, out int g, out int sub);
+				int baseValue = ContentSamples.ItemsByType.TryGetValue(it.type, out var sample) && sample != null ? sample.value : it.value;
+				keys.Add(new SortKey { Item = it, Group = g, Sub = sub, Tier = WeaponClassifier.RarityTier(it.rare), BaseValue = baseValue });
+			}
+			keys.Sort((a, b) =>
+			{
+				int c = a.Group.CompareTo(b.Group); if (c != 0) return c;
+				c = a.Sub.CompareTo(b.Sub); if (c != 0) return c;
+				c = b.Tier.CompareTo(a.Tier); if (c != 0) return c;
+				c = b.BaseValue.CompareTo(a.BaseValue); if (c != 0) return c;
+				c = a.Item.type.CompareTo(b.Item.type); if (c != 0) return c;
+				c = a.Item.prefix.CompareTo(b.Item.prefix); if (c != 0) return c;
+				return b.Item.stack.CompareTo(a.Item.stack);
+			});
+
+			// 3. compact to the front
+			bool changed = false;
+			for (int i = 0; i < Storage.Length; i++)
+			{
+				Item next = i < keys.Count ? keys[i].Item : null;
+				if (next == null) { if (!IsAir(Storage[i])) { Storage[i] = new Item(); changed = true; } continue; }
+				if (!ReferenceEquals(Storage[i], next)) { Storage[i] = next; changed = true; }
+			}
+			if (changed || merged.Count != items.Count) MarkDirty();
+			return changed;
 		}
 
 		/// <summary>Removes ONE item of this type from bulk storage (first matching stack). False if there is none.</summary>

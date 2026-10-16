@@ -210,6 +210,14 @@ namespace Levy.Common.UI
 			return region switch { 0 => te.Storage, 1 => te.IssueWeapons, 2 => te.IssueArmor, 3 => te.IssueAmmo, 4 => te.IssuePotions, _ => null };
 		}
 
+		/// <summary>Sorts the armory's bulk storage: single player directly, a multiplayer client asks the server (which re-syncs the tile entity).</summary>
+		public static void SortArmory(ArmoryTE te)
+		{
+			if (te == null || !IsLive(te)) return;
+			if (Single) { te.SortStorage(); return; }
+			var p = LevyPackets.New(LevyPacket.ArmorySort); p.Write(te.ID); p.Send();
+		}
+
 		/// <summary>Multiplayer client: tells the server what this slot now holds. No-op in single player (the arrays are live).</summary>
 		public static void SendArmorySlot(ArmoryTE te, byte region, int slot)
 		{

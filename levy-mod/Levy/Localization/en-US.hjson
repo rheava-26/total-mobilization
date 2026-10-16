@@ -288,6 +288,8 @@ Mods: {
 			StoodDown: Stood down
 			DepositJunk: Deposit junk
 			LootAll: Loot all
+			Sort: Sort
+			SortHint: Groups storage into weapons, armor, accessories, ammo, potions and everything else, merges partial stacks and packs it to the front.
 			IssueWeapons: Weapons
 			IssueArmor: Armor sets
 			IssueAmmo: Ammo

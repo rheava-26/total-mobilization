@@ -65,14 +65,21 @@ namespace Levy.Common.Util
 				|| Terraria.GameContent.Events.DD2Event.Ongoing;
 		}
 
-		/// <summary>True while any hostile boss (or boss-tier NPC) is alive, so the garrison turns out to fight it.</summary>
+		/// <summary>True while a hostile boss is alive AND near a player, so the garrison turns out to fight it. The proximity check
+		/// stops an ambient or modded "boss" elsewhere in the world from keeping every town permanently mustered.</summary>
 		public static bool IsBossActive()
 		{
+			float r2 = LevyConstants.BossMusterTiles * 16f; r2 *= r2;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly) continue;
-				if (n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type])) return true;
+				if (!(n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type]))) continue;
+				for (int p = 0; p < Main.maxPlayers; p++)
+				{
+					Player pl = Main.player[p];
+					if (pl != null && pl.active && !pl.dead && Vector2.DistanceSquared(pl.Center, n.Center) <= r2) return true;
+				}
 			}
 			return false;
 		}

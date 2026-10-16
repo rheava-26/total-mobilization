@@ -60,6 +60,8 @@ namespace Levy.Common
 		// in the town links — it no longer has to sit right next to the Barracks.
 		public const int ArmoryLinkRadius = 120;
 		public const int MinTownNpcsForMilitia = 2;
+		// A boss must be within this many tiles of a player to call out the garrison — keeps ambient/modded bosses from perma-mustering.
+		public const int BossMusterTiles = 250;
 		// Manpower is the militia RESERVE (drains 1 per death). Simultaneous bodies on the field are capped separately by
 		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.
 		public const int ManpowerPerNpc = 9, ManpowerPerNpcConscription = 15;

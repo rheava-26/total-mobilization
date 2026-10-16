@@ -23,5 +23,11 @@ namespace Levy.Common
 		public const int PatrolBannerWidth = 1, PatrolBannerHeight = 3;
 		/// <summary>Spread (pixels) of items spilled when an armory is broken.</summary>
 		public const int ArmorySpillWidth = 32, ArmorySpillHeight = 48;
+		/// <summary>
+		/// Starting Item.timeSinceItemSpawned for gear the Armory had no room to take back. Terraria has no despawn timer for ground items; a world item
+		/// is only ever lost when all 400 item slots are full and the slot with the highest timeSinceItemSpawned is recycled. A hugely negative start
+		/// keeps the item last in that queue (about 4 years of ticks before it could ever count as old).
+		/// </summary>
+		public const int ArmorySpillProtectedAge = -1_000_000_000;
 	}
 }

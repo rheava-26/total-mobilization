@@ -14,10 +14,11 @@ using Levy.Content.Tiles;
 
 namespace Levy.Content.TileEntities
 {
-	/// <summary>120-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
+	/// <summary>1000-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
 	public class ArmoryTE : ModTileEntity
 	{
-		public const int StorageSize = 120, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
+		/// <summary>Bulk storage slots (fixed array; the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows.</summary>
+		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
 		/// <summary>Armor pieces per set: head, body, legs.</summary>
 		public const int ArmorParts = 3;
 		public const int ArmorSlots = ArmorSets * ArmorParts;
@@ -432,7 +433,7 @@ namespace Levy.Content.TileEntities
 			var items = new List<Item>(gear.AllItems());
 			foreach (var it in items) {
 				var rem = Deposit(it);
-				if (!IsAir(rem)) Spill(rem);
+				if (!IsAir(rem)) Spill(rem, protect: true); // storage truly full: never lose gear, keep it on the ground, protected from slot recycling
 			}
 			gear.Clear();
 			if (kept != null) {
@@ -442,12 +443,17 @@ namespace Levy.Content.TileEntities
 			MarkDirty();
 		}
 
-		/// <summary>Drops an item that found no room, in front of the armory (server / single player only).</summary>
-		private void Spill(Item item)
+		/// <summary>
+		/// Drops an item in front of the armory (server / single player only). With <paramref name="protect"/> the ground item is moved to the back of
+		/// Terraria's item-slot recycling queue (see <see cref="LevyConstants.ArmorySpillProtectedAge"/>), so it stays until someone picks it up.
+		/// </summary>
+		private void Spill(Item item, bool protect = false)
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient || IsAir(item)) return;
-			Item.NewItem(new EntitySource_TileEntity(this), new Vector2(Position.X * 16f, Position.Y * 16f),
+			int idx = Item.NewItem(new EntitySource_TileEntity(this), new Vector2(Position.X * 16f, Position.Y * 16f),
 				new Vector2(LevyConstants.ArmorySpillWidth, LevyConstants.ArmorySpillHeight), item);
+			if (protect && idx >= 0 && idx < Main.maxItems && Main.item[idx].active)
+				Main.item[idx].timeSinceItemSpawned = LevyConstants.ArmorySpillProtectedAge;
 		}
 
 		/// <summary>
@@ -467,6 +473,20 @@ namespace Levy.Content.TileEntities
 				}
 			}
 			return stacks;
+		}
+
+		/// <summary>True while any storage or issue slot holds an item — used to block breaking a stocked Armory (chest rule).</summary>
+		public bool HasAnyContents
+		{
+			get
+			{
+				foreach (var it in Storage) if (!IsAir(it)) return true;
+				foreach (var it in IssueWeapons) if (!IsAir(it)) return true;
+				foreach (var it in IssueArmor) if (!IsAir(it)) return true;
+				foreach (var it in IssueAmmo) if (!IsAir(it)) return true;
+				foreach (var it in IssuePotions) if (!IsAir(it)) return true;
+				return false;
+			}
 		}
 
 		/// <summary>Whatever path removes this entity, its contents spill first (idempotent: slots are already air after a spill).</summary>

@@ -44,6 +44,21 @@ namespace Levy.Content.Tiles
 
 		public override bool HasSmartInteract(int i, int j, SmartInteractScanSettings settings) => true;
 
+		/// <summary>A stocked Armory can't be mined (vanilla chest rule): empty it with Loot All first, so a break can't spill more than the world can hold.</summary>
+		public override bool CanKillTile(int i, int j, ref bool blockDamaged)
+		{
+			Tile t = Main.tile[i, j];
+			int left = i - t.TileFrameX / 16, top = j - t.TileFrameY / 16;
+			if (TileEntity.TryGet(left, top, out ArmoryTE te) && te.HasAnyContents)
+			{
+				if (Main.netMode != NetmodeID.Server && Main.GameUpdateCount % 40 == 0)
+					Main.NewText(LevyUtil.T("Chat.ArmoryNotEmpty"), LevyConstants.EventChatColor);
+				blockDamaged = false;
+				return false;
+			}
+			return true;
+		}
+
 		public override void KillMultiTile(int i, int j, int frameX, int frameY)
 		{
 			// Spill the contents first (server / single player; clients hold only a mirror) and keep the count. The entity's OnKill

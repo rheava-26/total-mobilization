@@ -316,6 +316,7 @@ Mods: {
 			ArmoryBroken: Armory destroyed. {0} items recovered.
 			ArmoryBrokenOne: Armory destroyed. 1 item recovered.
 			ArmoryBrokenEmpty: Armory destroyed. The racks were empty; your soldiers are carrying the gear.
+			ArmoryNotEmpty: Empty the Armory first (Loot All) before you move it.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
 			HazardPay: Hazard pay issued at {0}: {1}.

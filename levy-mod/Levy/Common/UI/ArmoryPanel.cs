@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
+using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.UI;
 using Levy.Common.Util;
@@ -10,7 +11,7 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Armory: 12x10 storage grid plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
+	/// Armory: scrolling storage grid (12 columns, 10 rows in view, all ArmoryTE.StorageSize slots reachable) plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
 	/// "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
 	/// ArmorySlotSet for each changed slot.
 	/// </summary>
@@ -19,11 +20,13 @@ namespace Levy.Common.UI
 		public ArmoryTE Te { get; private set; }
 
 		private DraggablePanel _panel;
-		private UIElement _grid, _issue;
+		private UIElement _issue;
+		private UIList _grid;
+		private UIScrollbar _gridScroll;
 		private LevyButton _depositJunk, _lootAll, _close;
 		private Label _title;
 
-		private const int GridLeft = 10, GridTop = 40, IssueLeft = 432, IssueWidth = 220, IssueColumns = 6;
+		private const int GridLeft = 10, GridTop = 40, IssueLeft = 460, IssueWidth = 220, IssueColumns = 6;
 		private static int Pitch => LevyConstants.UI.SlotPitch;
 		private static float Scale => LevyConstants.UI.SlotScale;
 
@@ -50,10 +53,19 @@ namespace Levy.Common.UI
 			_depositJunk.Left.Set(w - 36 - 112 - 158, 0f); _depositJunk.Top.Set(6f, 0f);
 			_panel.Append(_depositJunk);
 
-			_grid = new UIElement();
+			// Storage: one UIList row per grid row (only rows in view are drawn), scrolled by the wheel or the bar beside it.
+			_grid = new UIList();
 			_grid.Left.Set(GridLeft, 0f); _grid.Top.Set(GridTop, 0f);
 			_grid.Width.Set(LevyConstants.UI.ArmoryColumns * Pitch, 0f); _grid.Height.Set(LevyConstants.UI.ArmoryRows * Pitch, 0f);
+			_grid.ListPadding = 0f;
+			_grid.ManualSortMethod = _ => { };
 			_panel.Append(_grid);
+			_gridScroll = new UIScrollbar();
+			_gridScroll.Left.Set(GridLeft + LevyConstants.UI.ArmoryColumns * Pitch + LevyConstants.UI.ArmoryScrollGap, 0f);
+			_gridScroll.Top.Set(GridTop, 0f);
+			_gridScroll.Height.Set(LevyConstants.UI.ArmoryRows * Pitch, 0f);
+			_panel.Append(_gridScroll);
+			_grid.SetScrollbar(_gridScroll);
 
 			_issue = new UIElement();
 			_issue.Left.Set(IssueLeft, 0f); _issue.Top.Set(GridTop, 0f);
@@ -70,17 +82,26 @@ namespace Levy.Common.UI
 			if (_grid == null) return;
 			float sh = Main.screenHeight / Main.UIScale;
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
-			_grid.RemoveAllChildren();
+			_grid.Clear();
 			_issue.RemoveAllChildren();
 			if (te == null) return;
 
-			for (int i = 0; i < te.Storage.Length && i < LevyConstants.UI.ArmoryColumns * LevyConstants.UI.ArmoryRows; i++)
+			// Every storage slot, in rows of ArmoryColumns; the list culls the rows that are scrolled out of view.
+			int cols = LevyConstants.UI.ArmoryColumns;
+			var rows = new System.Collections.Generic.List<UIElement>((te.Storage.Length + cols - 1) / cols);
+			for (int start = 0; start < te.Storage.Length; start += cols)
 			{
-				var slot = MakeSlot(te.Storage, i, 0, null, null);
-				slot.Left.Set((i % LevyConstants.UI.ArmoryColumns) * Pitch, 0f);
-				slot.Top.Set((i / LevyConstants.UI.ArmoryColumns) * Pitch, 0f);
-				_grid.Append(slot);
+				var row = new UIElement();
+				row.Width.Set(cols * Pitch, 0f); row.Height.Set(Pitch, 0f);
+				for (int c = 0; c < cols && start + c < te.Storage.Length; c++)
+				{
+					var slot = MakeSlot(te.Storage, start + c, 0, null, null);
+					slot.Left.Set(c * Pitch, 0f);
+					row.Append(slot);
+				}
+				rows.Add(row);
 			}
+			_grid.AddRange(rows);
 
 			float y = 0f;
 			AddLabel(LevyUtil.T("UI.IssueWeapons"), y); y += 18f;
@@ -139,6 +160,7 @@ namespace Levy.Common.UI
 				_issue.Append(tag);
 			}
 			Recalculate();
+			_gridScroll.ViewPosition = 0f;
 		}
 
 		private void AddLabel(string text, float y)

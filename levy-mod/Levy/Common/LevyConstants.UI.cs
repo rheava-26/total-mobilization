@@ -8,7 +8,7 @@ namespace Levy.Common
 			// ---- panels ----
 			public const int PanelCloseDistanceTiles = 10;
 			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 520;
-			public const int ArmoryPanelWidth = 664, ArmoryPanelHeight = 404;
+			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 404;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
 			public const int RosterRowHeight = 100;
@@ -19,7 +19,10 @@ namespace Levy.Common
 			public const int InventoryMouseSlot = 58;
 
 			// ---- armory grid ----
+			/// <summary>Storage grid: 12 columns, and ArmoryRows rows visible at once; the full ArmoryTE.StorageSize slots scroll inside it.</summary>
 			public const int ArmoryColumns = 12, ArmoryRows = 10;
+			/// <summary>Gap between the storage grid and its scrollbar, and the scrollbar's width.</summary>
+			public const int ArmoryScrollGap = 6, ArmoryScrollWidth = 20;
 			public const float SlotScale = 0.6f;
 			public const int SlotPitch = 34; // 52 * 0.6 + gap
 			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory).</summary>

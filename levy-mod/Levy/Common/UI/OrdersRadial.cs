@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using Terraria;
 using Terraria.UI;
 using Levy.Common.Util;
+using Levy.Content.Items;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.UI
@@ -27,6 +28,7 @@ namespace Levy.Common.UI
 		private uint _openedTick;
 		private int _refreshTimer;
 		private BarracksTE _nearest;
+		private bool _radio;
 
 		/// <summary>
 		/// Button centres relative to the wheel centre. Starts from the base ellipse and grows both radii together until every pair of
@@ -95,7 +97,10 @@ namespace Levy.Common.UI
 
 		private void Refresh()
 		{
-			_nearest = UIActions.NearestBarracks(Main.LocalPlayer.Center, LevyConstants.UI.MobilizeKeyRadiusTiles);
+			// Command Radio in the pack: every order goes map-wide and the muster button reaches the nearest barracks anywhere.
+			_radio = CommandRadio.Has(Main.LocalPlayer);
+			_title.SetText(LevyUtil.T(_radio ? "UI.RadioOrders" : "UI2.Orders"));
+			_nearest = UIActions.NearestBarracks(Main.LocalPlayer.Center, _radio ? float.MaxValue : LevyConstants.UI.MobilizeKeyRadiusTiles);
 			bool holdFire = UIActions.MajorityHoldFire();
 			bool spread = UIActions.MajoritySpreadOut();
 			_buttons[0].Set(LevyUtil.T("UI.Follow"), true, LevyUtil.T("UI2.FollowHint"));
@@ -117,13 +122,13 @@ namespace Levy.Common.UI
 		{
 			switch (idx)
 			{
-				case 0: UIActions.Order(SoldierOrder.Follow, false); break;
-				case 1: UIActions.Order(SoldierOrder.Hold, false); break;
-				case 2: UIActions.Order(SoldierOrder.ReturnToBarracks, false); break;
-				case 3: UIActions.Order(SoldierOrder.SearchDestroy, false); break;
-				case 4: UIActions.Order(SoldierOrder.FreeRein, false); break;
-				case 5: UIActions.HoldFire(false); break;
-				case 6: UIActions.SpreadOut(false); break;
+				case 0: UIActions.Order(SoldierOrder.Follow, _radio); break;
+				case 1: UIActions.Order(SoldierOrder.Hold, _radio); break;
+				case 2: UIActions.Order(SoldierOrder.ReturnToBarracks, _radio); break;
+				case 3: UIActions.Order(SoldierOrder.SearchDestroy, _radio); break;
+				case 4: UIActions.Order(SoldierOrder.FreeRein, _radio); break;
+				case 5: UIActions.HoldFire(_radio); break;
+				case 6: UIActions.SpreadOut(_radio); break;
 				case 7: UISystem.Instance.BeginFocusDesignate(); break;
 				case 8: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
 				case 9: UIActions.Rally(); break;

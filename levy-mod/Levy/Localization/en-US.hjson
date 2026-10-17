@@ -35,6 +35,15 @@ Mods: {
 					'''
 			}
 
+			CommandRadio: {
+				DisplayName: Command Radio
+				Tooltip:
+					'''
+					A field set tuned to every soldier you command.
+					Carry it to give orders from the radial to your whole army, anywhere. Click it to open the radial.
+					'''
+			}
+
 			FieldManual: {
 				DisplayName: Field Manual
 				Tooltip:
@@ -258,6 +267,7 @@ Mods: {
 
 		UI: {
 			ChatOrders: Orders
+			RadioOrders: Command radio
 			ChatHandAmmo: Hand ammo
 			Barracks: "{0} Barracks"
 			Treasury: Treasury: {0}

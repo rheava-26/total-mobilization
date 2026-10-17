@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common;
 using Levy.Common.Soldiers;
+using Levy.Common.Systems;
 using Levy.Common.Weapons;
 using Levy.Content.Tiles;
 
@@ -103,6 +104,7 @@ namespace Levy.Content.TileEntities
 			var set = new HashSet<int>();
 			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
 			foreach (var it in Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
 			return set;
 		}
 
@@ -129,6 +131,36 @@ namespace Levy.Content.TileEntities
 			return it;
 		}
 
+		private static readonly List<ArmoryTE> NoOthers = new();
+
+		/// <summary>
+		/// The other armories sharing this one's pooled gear (pylon-networked, see <see cref="SettlementSystem.NetworkedArmories"/>), nearest first.
+		/// Empty when this armory is not on the network, on a multiplayer client (the server owns item movement), or when no other armory is live.
+		/// Issue-side only: callers read their Storage and must remove through <see cref="TakeSlot"/> on THAT armory.
+		/// </summary>
+		private List<ArmoryTE> OtherNetworked()
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return NoOthers;
+			var sys = SettlementSystem.Instance;
+			if (sys == null) return NoOthers;
+			var all = sys.NetworkedArmories(this);
+			if (all == null || all.Count <= 1) return NoOthers;
+			var res = new List<ArmoryTE>(all.Count - 1);
+			foreach (var a in all) {
+				if (a == null || ReferenceEquals(a, this) || a.Storage == null) continue;
+				if (!ByID.TryGetValue(a.ID, out var live) || !ReferenceEquals(live, a)) continue; // gone since the cache was built
+				res.Add(a);
+			}
+			return res.Count == 0 ? NoOthers : res;
+		}
+
+		/// <summary>Removes the real Item in <paramref name="arr"/>[idx] of THIS armory (which must own <paramref name="arr"/>), marking this armory dirty. Null (nothing changed) if the slot is invalid or empty.</summary>
+		private Item TakeSlot(Item[] arr, int idx)
+		{
+			if (arr == null || idx < 0 || idx >= arr.Length || IsAir(arr[idx])) return null;
+			return Remove(arr, idx);
+		}
+
 		/// <summary>Issue slots first (indices issueFrom..issueTo step issueStep), bulk storage second; best-first within each.</summary>
 		private Item TakeBest(Item[] issue, int issueFrom, int issueTo, int issueStep, Func<Item, bool> userPred, Func<Item, float> score)
 		{
@@ -136,6 +168,12 @@ namespace Levy.Content.TileEntities
 			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
 			if (issue != null && TryBest(issue, pred, score, out int idx, issueFrom, issueTo, issueStep)) return Remove(issue, idx);
 			if (TryBest(Storage, pred, score, out idx)) return Remove(Storage, idx);
+			// Spill over into pylon-networked armories' storage; each honours its OWN re-arm reservations and loses the item from its OWN slot.
+			foreach (var o in OtherNetworked()) {
+				var src = o;
+				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
+				if (TryBest(src.Storage, opred, score, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
+			}
 			return null;
 		}
 
@@ -177,7 +215,7 @@ namespace Levy.Content.TileEntities
 			return t.Length >= 3 && t[0] == "Ancient" ? t[0] + " " + t[1] : t[0];
 		}
 
-		private struct ArmorCand { public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; }
+		private struct ArmorCand { public ArmoryTE Src; public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; }
 
 		// ------------------------------------------------------------------ hand-assigned gear across a Re-arm
 
@@ -283,6 +321,11 @@ namespace Levy.Content.TileEntities
 			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
 			if (TryPickVaried(IssueWeapons, pred, who, 0, SidearmSlot, out int idx)) return Remove(IssueWeapons, idx);
 			if (TryPickVaried(Storage, pred, who, 0, Storage.Length, out idx)) return Remove(Storage, idx);
+			foreach (var o in OtherNetworked()) {
+				var src = o;
+				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
+				if (TryPickVaried(src.Storage, opred, who, 0, src.Storage.Length, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
+			}
 			return null;
 		}
 
@@ -359,6 +402,13 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public virtual bool TakeArmorSet(SoldierRecord soldier)
 		{
+			// Own armory first; only when it cannot complete a set do the pylon-networked armories' storage join the pool.
+			if (TakeArmorSetCore(soldier, false)) return true;
+			return OtherNetworked().Count > 0 && TakeArmorSetCore(soldier, true);
+		}
+
+		private bool TakeArmorSetCore(SoldierRecord soldier, bool usePool)
+		{
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			int[] slot = { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs };
@@ -371,22 +421,23 @@ namespace Levy.Content.TileEntities
 			var pool = new List<ArmorCand>[ArmorParts];
 			var byType = new Dictionary<int, int>[ArmorParts];
 			for (int p = 0; p < ArmorParts; p++) { pool[p] = new List<ArmorCand>(); byType[p] = new Dictionary<int, int>(); }
-			void Scan(Item[] arr)
+			void Scan(Item[] arr, ArmoryTE src)
 			{
 				for (int i = 0; i < arr.Length; i++) {
 					var it = arr[i];
-					if (IsAir(it) || it.vanity || IsReservedRef(it)) continue;
+					if (IsAir(it) || it.vanity || src.IsReservedRef(it)) continue;
 					for (int p = 0; p < ArmorParts; p++) {
 						if (!need[p] || !WeaponClassifier.IsArmorPiece(it, p)) continue;
 						float sc = ArmorScore(it);
-						var c = new ArmorCand { Arr = arr, Idx = i, It = it, Score = sc, Stem = ArmorStem(it) };
+						var c = new ArmorCand { Src = src, Arr = arr, Idx = i, It = it, Score = sc, Stem = ArmorStem(it) };
 						if (byType[p].TryGetValue(it.type, out int at)) { if (sc > pool[p][at].Score) pool[p][at] = c; }
 						else { byType[p][it.type] = pool[p].Count; pool[p].Add(c); }
 						break;
 					}
 				}
 			}
-			Scan(IssueArmor); Scan(Storage);
+			Scan(IssueArmor, this); Scan(Storage, this);
+			if (usePool) foreach (var o in OtherNetworked()) Scan(o.Storage, o);
 			for (int p = 0; p < ArmorParts; p++) if (need[p] && pool[p].Count == 0) return false; // a needed part has no stock at all: no complete set possible
 
 			// Pieces he already wears are fixed members of the set.
@@ -463,8 +514,9 @@ namespace Levy.Content.TileEntities
 			for (int p = 0; p < ArmorParts; p++) {
 				if (!need[p]) continue;
 				var c = best[p];
-				if (c.Arr == null || c.Idx < 0 || c.Idx >= c.Arr.Length || !ReferenceEquals(c.Arr[c.Idx], c.It)) continue;
-				var piece = Remove(c.Arr, c.Idx);
+				if (c.Src == null || c.Arr == null || c.Idx < 0 || c.Idx >= c.Arr.Length || !ReferenceEquals(c.Arr[c.Idx], c.It)) continue;
+				var piece = c.Src.TakeSlot(c.Arr, c.Idx); // removes from the SOURCE armory (home or networked) and marks it dirty
+				if (piece == null) continue;
 				if (p == 0) g.Head = piece; else if (p == 1) g.Body = piece; else g.Legs = piece;
 				any = true;
 			}
@@ -486,6 +538,11 @@ namespace Levy.Content.TileEntities
 			int moved = Drain(IssueAmmo, ammoId, pouch, max);
 			moved += Drain(Storage, ammoId, pouch, max);
 			if (moved > 0) MarkDirty();
+			// Networked armories top the pouch up; Drain only moves what it removes, and only a source that lost ammo is marked dirty.
+			foreach (var o in OtherNetworked()) {
+				int n = Drain(o.Storage, ammoId, pouch, max);
+				if (n > 0) { o.MarkDirty(); moved += n; }
+			}
 			return moved;
 		}
 

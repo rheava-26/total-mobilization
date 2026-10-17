@@ -71,6 +71,8 @@ namespace Levy.Common
 		// Armories within this many tiles of a Barracks arm its militia. Matches the settlement footprint so an Armory anywhere
 		// in the town links — it no longer has to sit right next to the Barracks.
 		public const int ArmoryLinkRadius = 120;
+		/// <summary>An armory with a vanilla pylon within this many tiles is on the pylon network and pools its stored gear with every other networked armory when issuing.</summary>
+		public const float PylonShareRadius = 60f;
 		public const int MinTownNpcsForMilitia = 2;
 		// A boss must be within this many tiles of a player to call out the garrison — keeps ambient/modded bosses from perma-mustering.
 		public const int BossMusterTiles = 250;

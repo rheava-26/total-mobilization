@@ -71,6 +71,7 @@ namespace Levy.Common.Systems
 		private void ResetRuntime()
 		{
 			_rt.Clear(); _dirtyArmories.Clear(); _scratchIds.Clear();
+			_netArmories.Clear(); _netStamp = uint.MaxValue;
 			_nextMilitiaId = -1;
 			_lastEventActive = false; _eventTick = uint.MaxValue;
 			_housekeepingTimer = 0;
@@ -151,6 +152,57 @@ namespace Levy.Common.Systems
 				if (d <= limit && d < bestD) { bestD = d; best = a; }
 			}
 			return best;
+		}
+
+		// ---- pylon-networked armories share issue-side gear ----
+		private readonly List<ArmoryTE> _netArmories = new();
+		private uint _netStamp = uint.MaxValue;
+
+		/// <summary>
+		/// The armories that pool their stored gear for issuing. An armory with a vanilla pylon (any type, any team) within
+		/// <see cref="LevyConstants.PylonShareRadius"/> tiles is on the network, and every networked armory shares one pool (pylons interconnect).
+		/// <paramref name="from"/> is always first, the rest nearest-first. An armory off the network gets just itself. Cached per tick; read-only use.
+		/// </summary>
+		public virtual List<ArmoryTE> NetworkedArmories(ArmoryTE from)
+		{
+			var res = new List<ArmoryTE>(4);
+			if (from == null) return res;
+			res.Add(from);
+			var pylons = Main.PylonSystem?.Pylons;
+			if (pylons == null || pylons.Count == 0) return res;
+
+			uint now = Main.GameUpdateCount;
+			if (_netStamp != now)
+			{
+				_netStamp = now;
+				_netArmories.Clear();
+				foreach (var te in TileEntity.ByID.Values)
+					if (te is ArmoryTE a && NearPylon(a, pylons)) _netArmories.Add(a);
+			}
+			if (!_netArmories.Contains(from)) return res;
+
+			int start = res.Count;
+			foreach (var a in _netArmories) if (!ReferenceEquals(a, from)) res.Add(a);
+			Vector2 c = from.Center;
+			res.Sort(start, res.Count - start, Comparer<ArmoryTE>.Create((x, y) =>
+			{
+				int d = Vector2.DistanceSquared(x.Center, c).CompareTo(Vector2.DistanceSquared(y.Center, c));
+				return d != 0 ? d : x.ID.CompareTo(y.ID);
+			}));
+			return res;
+		}
+
+		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
+		{
+			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit;
+			Vector2 c = a.Center;
+			for (int i = 0; i < pylons.Count; i++)
+			{
+				var p = pylons[i].PositionInTiles; // top-left of the 3x4 pylon; measure from its middle
+				var pc = new Vector2((p.X + 1.5f) * LevyConstants.TilePx, (p.Y + 2f) * LevyConstants.TilePx);
+				if (Vector2.DistanceSquared(c, pc) <= limit) return true;
+			}
+			return false;
 		}
 
 		public virtual ArmoryTE LinkedArmory(BarracksTE barracks) => barracks == null ? null : NearestArmory(barracks.Center, LevyConstants.ArmoryLinkRadius);

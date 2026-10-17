@@ -46,7 +46,7 @@ Mods: {
 
 			GuideToConscription: {
 				DisplayName: A Guide to Conscription
-				Tooltip: Each town NPC provides 5 manpower instead of 3. Consumed on use, once per world.
+				Tooltip: Each town NPC provides 15 manpower instead of 9. Manpower is the reserve the militia draw from as they fall, not how many stand at once. Consumed on use, once per world.
 			}
 
 			GuideToDrill: {

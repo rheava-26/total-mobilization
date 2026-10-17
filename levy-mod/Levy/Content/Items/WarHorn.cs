@@ -15,8 +15,9 @@ namespace Levy.Content.Items
 	/// <summary>Left-click: mobilize / stand down the nearest settlement. Right-click: orders radial. OWNED BY THE ITEMS AGENT (UI agent owns the radial).</summary>
 	public class WarHorn : ModItem
 	{
-		/// <summary>A long brass call: the vanilla roar pitched up and softened.</summary>
-		public static readonly SoundStyle HornSound = SoundID.Roar with { Pitch = 0.55f, PitchVariance = 0.05f, Volume = 0.8f };
+		/// <summary>A deep, long horn: the vanilla roar dropped well below its normal pitch, layered with a higher second voice for a brass chord.</summary>
+		public static readonly SoundStyle HornSound = SoundID.Roar with { Pitch = -0.55f, PitchVariance = 0.04f, Volume = 0.9f };
+		public static readonly SoundStyle HornSoundUpper = SoundID.Roar with { Pitch = -0.2f, PitchVariance = 0.04f, Volume = 0.45f };
 
 		private static uint _lastHintTick;
 		private static bool _hinted;
@@ -50,7 +51,10 @@ namespace Levy.Content.Items
 				return true;
 			}
 
-			if (Main.netMode != NetmodeID.Server) SoundEngine.PlaySound(HornSound, player.Center);
+			if (!Main.dedServ) {
+				SoundEngine.PlaySound(HornSound, player.Center);
+				SoundEngine.PlaySound(HornSoundUpper, player.Center);
+			}
 			if (player.whoAmI != Main.myPlayer) return true;
 
 			BarracksTE te = Nearest(player);

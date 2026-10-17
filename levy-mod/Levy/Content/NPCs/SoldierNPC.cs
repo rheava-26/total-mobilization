@@ -259,6 +259,7 @@ namespace Levy.Content.NPCs
 				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
 				if (ItemAnimation > 0) ItemAnimation--;
 				if (AttackCooldown > 0) AttackCooldown--;
+				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
 				Movement_ClientAnimate();
 				return;
 			}
@@ -383,6 +384,7 @@ namespace Levy.Content.NPCs
 			writer.WriteRGB(Record.HairColor); writer.WriteRGB(Record.SkinColor); writer.WriteRGB(Record.EyeColor); writer.WriteRGB(Record.ShirtColor); writer.WriteRGB(Record.UnderShirtColor); writer.WriteRGB(Record.PantsColor); writer.WriteRGB(Record.ShoeColor);
 			writer.Write(Record.CommanderName ?? ""); writer.Write(Record.HomeBarracksId);
 			Record.Gear.WriteVisual(writer);
+			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -397,6 +399,7 @@ namespace Levy.Content.NPCs
 			Record.HairColor = reader.ReadRGB(); Record.SkinColor = reader.ReadRGB(); Record.EyeColor = reader.ReadRGB(); Record.ShirtColor = reader.ReadRGB(); Record.UnderShirtColor = reader.ReadRGB(); Record.PantsColor = reader.ReadRGB(); Record.ShoeColor = reader.ReadRGB();
 			Record.CommanderName = reader.ReadString(); Record.HomeBarracksId = reader.ReadInt32();
 			Record.Gear.ReadVisual(reader);
+			PotionSickness = reader.ReadByte() * 30;
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

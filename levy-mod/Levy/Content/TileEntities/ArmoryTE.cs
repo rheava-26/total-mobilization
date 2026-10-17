@@ -144,14 +144,40 @@ namespace Levy.Content.TileEntities
 			WeaponClassifier.RarityTier(it.rare) * LevyConstants.ArmorRarityWeight
 			+ it.defense * LevyConstants.ArmorDefenseWeight
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight;
-		private static float AccessoryScore(Item it) => it.rare * 100f + it.defense;
 
-		private static bool AlreadyWorn(Item[] worn, int type)
+		/// <summary>Strength of an accessory: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
+		private static float AccessoryScore(Item it, DamageClass cls) =>
+			WeaponClassifier.RarityTier(it.rare) * LevyConstants.AccessoryRarityWeight
+			+ it.defense * LevyConstants.AccessoryDefenseWeight
+			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.AccessoryValueWeight
+			+ (it.prefix > 0 ? LevyConstants.AccessoryPrefixBonus : 0f)
+			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight;
+
+		/// <summary>Vanilla accessory rules: never two of one type, never two pairs of wings, and whatever the mods forbid pairing.</summary>
+		private static bool CanWearWith(Item[] worn, Item it)
 		{
-			if (worn == null) return false;
-			for (int i = 0; i < worn.Length; i++) if (!IsAir(worn[i]) && worn[i].type == type) return true;
-			return false;
+			if (worn == null) return true;
+			for (int i = 0; i < worn.Length; i++) {
+				var w = worn[i];
+				if (IsAir(w)) continue;
+				if (w.type == it.type) return false;
+				if (w.wingSlot > 0 && it.wingSlot > 0) return false;
+				try { if (!ItemLoader.CanAccessoryBeEquippedWith(w, it)) return false; } catch (Exception) { }
+			}
+			return true;
 		}
+
+		// ------------------------------------------------------------------ matching armor sets
+
+		/// <summary>The armor's family: the first word of its name ("Hallowed Mask" and "Hallowed Plate Mail" both read "Hallowed"); "Ancient X ..." keeps two words.</summary>
+		private static string ArmorStem(Item it)
+		{
+			var t = (it.Name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (t.Length == 0) return "";
+			return t.Length >= 3 && t[0] == "Ancient" ? t[0] + " " + t[1] : t[0];
+		}
+
+		private struct ArmorCand { public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; }
 
 		// ------------------------------------------------------------------ hand-assigned gear across a Re-arm
 
@@ -315,9 +341,141 @@ namespace Levy.Content.TileEntities
 		/// <summary>Best accessory not already worn; removes it. Null if none.</summary>
 		public virtual Item TakeAccessory(SoldierRecord forSoldier)
 		{
-			var worn = forSoldier?.Gear?.Accessories;
-			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && !AlreadyWorn(worn, it.type);
-			return TakeBest(null, 0, 0, 1, Pred, AccessoryScore);
+			var g = forSoldier?.Gear;
+			var worn = g?.Accessories;
+			// Best fit to the soldier's class: his weapon's, else what his armor favours.
+			DamageClass cls = null;
+			if (g != null && g.HasWeapon) cls = WeaponClassifier.ItemDamageClass(g.Weapon);
+			if (cls == null && g != null) cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it);
+			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls));
+		}
+
+		/// <summary>
+		/// Fills the soldier's empty, unlocked armor slots from ONE matching set (same family head/body/legs) when the armory can supply it, so the set bonus
+		/// works. Sets are scored by piece tier/defense, a bonus for a real set bonus, and a bonus when the set's doctrine matches the soldier's weapon class;
+		/// pieces he already wears must belong to the chosen set. Removes the taken pieces from the armory. Returns false (nothing taken) when no complete
+		/// set is on hand or the set would be far weaker than the best loose pieces; the caller then falls back to <see cref="TakeArmor"/>.
+		/// </summary>
+		public virtual bool TakeArmorSet(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null) return false;
+			int[] slot = { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs };
+			Item[] cur = { g.Head, g.Body, g.Legs };
+			var need = new bool[ArmorParts]; bool anyNeed = false;
+			for (int p = 0; p < ArmorParts; p++) { need[p] = !g.IsLocked(slot[p]) && IsAir(cur[p]); anyNeed |= need[p]; }
+			if (!anyNeed) return false;
+
+			// Pool: the best copy of each armor type, per part (issue row first, then storage; strictly-better wins so the issue row takes ties).
+			var pool = new List<ArmorCand>[ArmorParts];
+			var byType = new Dictionary<int, int>[ArmorParts];
+			for (int p = 0; p < ArmorParts; p++) { pool[p] = new List<ArmorCand>(); byType[p] = new Dictionary<int, int>(); }
+			void Scan(Item[] arr)
+			{
+				for (int i = 0; i < arr.Length; i++) {
+					var it = arr[i];
+					if (IsAir(it) || it.vanity || IsReservedRef(it)) continue;
+					for (int p = 0; p < ArmorParts; p++) {
+						if (!need[p] || !WeaponClassifier.IsArmorPiece(it, p)) continue;
+						float sc = ArmorScore(it);
+						var c = new ArmorCand { Arr = arr, Idx = i, It = it, Score = sc, Stem = ArmorStem(it) };
+						if (byType[p].TryGetValue(it.type, out int at)) { if (sc > pool[p][at].Score) pool[p][at] = c; }
+						else { byType[p][it.type] = pool[p].Count; pool[p].Add(c); }
+						break;
+					}
+				}
+			}
+			Scan(IssueArmor); Scan(Storage);
+			for (int p = 0; p < ArmorParts; p++) if (need[p] && pool[p].Count == 0) return false; // a needed part has no stock at all: no complete set possible
+
+			// Pieces he already wears are fixed members of the set.
+			var fixedC = new ArmorCand[ArmorParts];
+			string fixedStem = null; bool conflict = false;
+			for (int p = 0; p < ArmorParts; p++) {
+				if (need[p]) continue;
+				if (IsAir(cur[p])) { fixedC[p] = new ArmorCand { Fixed = true }; continue; } // locked-empty slot: no piece
+				string st = ArmorStem(cur[p]);
+				if (fixedStem != null && fixedStem != st) conflict = true;
+				fixedStem ??= st;
+				fixedC[p] = new ArmorCand { Fixed = true, It = cur[p], Score = ArmorScore(cur[p]), Stem = st };
+			}
+			if (conflict) return false; // he already wears a mixed kit: leave the rest to the per-piece pick
+
+			DamageClass wc = null;
+			if (Common.Config.LevyConfig.Get.ClassMatchIssue && g.HasWeapon) wc = WeaponClassifier.ItemDamageClass(g.Weapon);
+
+			float bestScore = float.NegativeInfinity;
+			ArmorCand[] best = null;
+			void EvalCombos(List<ArmorCand>[] opts, bool requireBonus)
+			{
+				foreach (var h in opts[0]) foreach (var b in opts[1]) foreach (var l in opts[2]) {
+					bool full = h.It != null && b.It != null && l.It != null;
+					bool bonus = full && ArmorDoctrine.FormsSetBonus(h.It, b.It, l.It);
+					if (requireBonus && !bonus) continue;
+					float sc = h.Score + b.Score + l.Score;
+					if (bonus) sc += LevyConstants.ArmorSetBonusScore;
+					if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
+					if (sc > bestScore) { bestScore = sc; best = new[] { h, b, l }; }
+				}
+			}
+
+			// Pass 1: one family by name.
+			var stems = new List<string>();
+			for (int p = 0; p < ArmorParts; p++) if (need[p]) foreach (var c in pool[p]) if (!stems.Contains(c.Stem)) stems.Add(c.Stem);
+			foreach (var stem in stems) {
+				if (fixedStem != null && fixedStem != stem) continue;
+				var opts = new List<ArmorCand>[ArmorParts];
+				bool ok = true;
+				for (int p = 0; p < ArmorParts && ok; p++) {
+					opts[p] = need[p] ? pool[p].FindAll(c => c.Stem == stem) : new List<ArmorCand> { fixedC[p] };
+					if (opts[p].Count == 0) ok = false;
+				}
+				if (ok) EvalCombos(opts, false);
+			}
+			// Pass 2 (irregular names): the strongest pieces whose combination the game itself calls a set (needs all three pieces to verify).
+			if (best == null && !IsMissingFixed(fixedC)) {
+				var opts = new List<ArmorCand>[ArmorParts];
+				for (int p = 0; p < ArmorParts; p++) {
+					if (!need[p]) { opts[p] = new List<ArmorCand> { fixedC[p] }; continue; }
+					var top = new List<ArmorCand>(pool[p]);
+					top.Sort((a, b) => b.Score.CompareTo(a.Score));
+					if (top.Count > LevyConstants.ArmorSetCrossSearchTop) top.RemoveRange(LevyConstants.ArmorSetCrossSearchTop, top.Count - LevyConstants.ArmorSetCrossSearchTop);
+					opts[p] = top;
+				}
+				EvalCombos(opts, true);
+			}
+			if (best == null) return false;
+
+			// Never trade a lot of armor for a tidy set: compare the taken pieces to the best loose ones.
+			float taken = 0f, loose = 0f;
+			for (int p = 0; p < ArmorParts; p++) {
+				if (!need[p]) continue;
+				taken += best[p].Score;
+				float top = float.NegativeInfinity;
+				foreach (var c in pool[p]) top = Math.Max(top, c.Score);
+				loose += top;
+			}
+			if (taken < loose * LevyConstants.ArmorSetMinFractionOfBest) return false;
+
+			// Commit: each pick is a distinct real slot; remove it and equip it.
+			bool any = false;
+			for (int p = 0; p < ArmorParts; p++) {
+				if (!need[p]) continue;
+				var c = best[p];
+				if (c.Arr == null || c.Idx < 0 || c.Idx >= c.Arr.Length || !ReferenceEquals(c.Arr[c.Idx], c.It)) continue;
+				var piece = Remove(c.Arr, c.Idx);
+				if (p == 0) g.Head = piece; else if (p == 1) g.Body = piece; else g.Legs = piece;
+				any = true;
+			}
+			return any;
+		}
+
+		/// <summary>True when any fixed (not-needed) slot holds no piece (a locked-empty slot), so a three-piece set cannot be verified.</summary>
+		private static bool IsMissingFixed(ArmorCand[] fixedC)
+		{
+			foreach (var c in fixedC) if (c.Fixed && c.It == null) return true;
+			return false;
 		}
 
 		/// <summary>Fills the pouch with ammo of <paramref name="ammoId"/> (AmmoID.Bullet/Arrow) from issue slots in priority order, then storage. Returns the amount taken.</summary>
@@ -491,6 +649,9 @@ namespace Levy.Content.TileEntities
 
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
+
+			// One matching set first (set bonus, aligned with his weapon); anything it could not supply is filled piece by piece below.
+			if (TakeArmorSet(soldier)) changed = true;
 
 			if (!g.IsLocked(SoldierGear.SlotHead) && IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }

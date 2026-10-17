@@ -19,7 +19,7 @@ namespace Levy.Common
 		// ---------- Grades ----------
 		public static readonly int[] GradeSlots = { 1, 3, 5 };
 		public static readonly int[] GradeCpCost = { 1, 3, 7 };
-		public static readonly int[] GradeHpCap = { 200, 400, 500 };
+		public static readonly int[] GradeHpCap = { 400, 500, 600 };
 		public static readonly float[] GradeWageMult = { 1f, 3f, 7f };
 		public static readonly float[] GradeDamageMult = { 0.8f, 0.9f, 1.0f };
 		public static readonly float[] GradeAimJitterDeg = { 6f, 3f, 1f };
@@ -31,11 +31,22 @@ namespace Levy.Common
 		public const int VeteranBossFights = 3;
 		public const float VeteranMaxFraction = 0.25f;
 
+		// ---------- Armor sets / accessory ranking ----------
+		/// <summary>Set pick score = sum of piece scores + bonuses: a set whose pieces trigger a vanilla set bonus, and a set whose doctrine matches the soldier's weapon class.</summary>
+		public const float ArmorSetBonusScore = 300f, ArmorSetClassMatchScore = 1400f;
+		/// <summary>A complete matching set is only preferred while its piece scores total at least this fraction of the best loose pieces (never trade Hallowed for Wood just to match).</summary>
+		public const float ArmorSetMinFractionOfBest = 0.5f;
+		/// <summary>Cross-family (set-bonus verified) set search considers only the top N pieces of each slot.</summary>
+		public const int ArmorSetCrossSearchTop = 6;
+		/// <summary>Accessory score = rarity tier x Rarity + defense x Defense + log10(1 + value) x Value + prefix + class fit (damage fraction for the soldier's class) x ClassFit.</summary>
+		public const float AccessoryRarityWeight = 1000f, AccessoryDefenseWeight = 50f, AccessoryValueWeight = 30f, AccessoryPrefixBonus = 10f, AccessoryClassFitWeight = 3000f;
+
 		// ---------- HP / mana ----------
 		public const int BaseHp = 100;
 		public const int HpPerLifeCrystal = 20;
 		public const int HpPerLifeFruit = 5;
-		public const int MaxLifeCrystalsLevy = 5, MaxLifeCrystalsManAtArms = 15, MaxLifeCrystalsChampion = 20, MaxLifeFruit = 20;
+		/// <summary>Any grade can climb: Life Crystals (+20) and Life Fruit (+5, all grades) both count. Levy 100 + 12x20 + 12x5 = 400; Man-at-Arms 100 + 18x20 + 8x5 = 500; Champion 100 + 20x20 + 20x5 = 600.</summary>
+		public const int MaxLifeCrystalsLevy = 12, MaxLifeCrystalsManAtArms = 18, MaxLifeCrystalsChampion = 20, MaxLifeFruit = 20;
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool

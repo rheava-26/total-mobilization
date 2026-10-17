@@ -26,6 +26,8 @@ namespace Levy.Content.NPCs
 		private readonly List<Vector2> _path = new();
 		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
 		private bool _blocked, _blockedHard;
+		private float _rhBest = float.MaxValue; private int _rhNoProgress;
+		private int _hopTimer;
 		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
 		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
@@ -55,6 +57,7 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
+			TickReturnHomeProgress();
 			bool grounded = npc.velocity.Y == 0f && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
 			if (grounded)
@@ -125,7 +128,8 @@ namespace Levy.Content.NPCs
 			if (!air && !_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= JumpTowardGoalReachTiles * 16 + 8)
 			{
 				int tiles = (int)Math.Ceiling(-dy / 16f);
-				if (tiles <= Abilities.JumpTiles) { if (tiles > jumpTiles) jumpTiles = tiles; }
+				int reachBonus = State == SoldierState.Engage ? EngageJumpReachBonusTiles : 0; // a weapon covers the last stretch
+				if (tiles <= Abilities.JumpTiles + reachBonus) { int jt = Math.Min(tiles, Abilities.JumpTiles); if (jt > jumpTiles) jumpTiles = jt; }
 				else if (Abilities.HasWings) wantFly = true;
 				else { _blocked = true; _blockedHard = true; }
 			}
@@ -156,6 +160,7 @@ namespace Levy.Content.NPCs
 				}
 				else Decelerate();
 				if (jumpTiles > 0) TryJump(jumpTiles);
+				else if (grounded && horizontal && !_blocked && !air) TryRunningHop(dx, dir);
 				StepUp();
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
 			}
@@ -231,7 +236,7 @@ namespace Levy.Content.NPCs
 			{
 				int depth = TileNav.DropDepth(ax, fy);
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
-				if ((depth < 0 || depth >= Math.Max(2, Abilities.JumpTiles)) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
+				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0) { _blocked = true; _blockedHard = true; return; }
 				if (depth > Abilities.JumpTiles + DropMarginTiles)
 				{
@@ -410,6 +415,37 @@ namespace Levy.Content.NPCs
 			return false;
 		}
 
+		/// <summary>
+		/// A soldier on the move toward a distant goal hops now and then over open, floored ground so a march does not look flat-footed.
+		/// Rate-limited (random interval), never in water, never while backing away, and only with a clear landing ahead.
+		/// </summary>
+		private void TryRunningHop(float dx, int dir)
+		{
+			if (_hopTimer > 0) { _hopTimer--; return; }
+			if (!(State == SoldierState.Follow || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy
+				|| State == SoldierState.FreeRein || State == SoldierState.Engage || State == SoldierState.Resupply)) return;
+			NPC npc = NPC;
+			if (npc.wet || Retreating || _closeDoor || Math.Abs(dx) < HopMinGoalDistTiles * 16f) return;
+			if (Math.Abs(npc.velocity.X) < HopMinSpeedPx || Math.Sign(npc.velocity.X) != dir) return;
+			if (!HopLandingClear(dir)) return;
+			_hopTimer = Main.rand.Next(HopIntervalMinTicks, HopIntervalMaxTicks + 1);
+			TryJump(HopTiles);
+		}
+
+		/// <summary>Headroom overhead and the next few columns open, floored and free of lava: a hop here lands on solid ground.</summary>
+		private bool HopLandingClear(int dir)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			for (int r = 1; r <= HopClearRows; r++) if (TileNav.IsSolid(feet.X, feet.Y - r)) return false;
+			for (int i = 1; i <= HopLandingTiles; i++)
+			{
+				int x = feet.X + dir * i;
+				for (int r = 0; r <= HopClearRows; r++) if (TileNav.IsSolid(x, feet.Y - r)) return false;
+				if (!TileNav.IsFloor(x, feet.Y + 1) || TileNav.HasLava(x, feet.Y) || TileNav.HasLava(x, feet.Y + 1)) return false;
+			}
+			return true;
+		}
+
 		/// <summary>One-tile steps, exactly as NPC.AI_107_ImprovedWalkers does it.</summary>
 		private void StepUp()
 		{
@@ -519,7 +555,7 @@ namespace Levy.Content.NPCs
 			if (_aerialVisualTicks > 0) _aerialVisualTicks--;
 			_aerial = false;
 			if (!WantsAltitude || !_kitAny || _aerialSpent || State == SoldierState.Routed || State == SoldierState.Dead) return false;
-			if (grounded && (_aerialCooldown > 0 || AltitudeBottomY > NPC.Bottom.Y - LevyConstants.MinClimbBenefitTiles * 16f)) return false;
+			if (grounded && (_aerialCooldown > 0 || AltitudeBottomY > NPC.Bottom.Y - AerialClimbBenefitTiles * 16f)) return false;
 			_aerial = true;
 			return true;
 		}
@@ -715,6 +751,27 @@ namespace Levy.Content.NPCs
 			_stuckPos = NPC.position;
 		}
 
+		/// <summary>Snaps the body onto its barracks muster point (server/single player). The brain then sees it arrived and stands it down.</summary>
+		private bool TeleportHome()
+		{
+			var home = Home;
+			if (home == null) return false;
+			_rhBest = float.MaxValue; _rhNoProgress = 0;
+			return FollowerTravel.TeleportToPoint(this, home.MusterPoint);
+		}
+
+		/// <summary>While ordered home: if the muster point has not gotten ReturnHomeProgressPx closer for ReturnHomeNoProgressTeleportTicks, teleport there. Normal travel always keeps beating its best distance.</summary>
+		private void TickReturnHomeProgress()
+		{
+			if (State != SoldierState.ReturnHome) { _rhBest = float.MaxValue; _rhNoProgress = 0; return; }
+			var home = Home;
+			if (home == null) return;
+			float d = Vector2.Distance(NPC.Bottom, home.MusterPoint);
+			if (d < _rhBest - ReturnHomeProgressPx || _rhBest == float.MaxValue) { _rhBest = d; _rhNoProgress = 0; return; }
+			if (d <= LevyConstants.HomeArriveTiles * 16f) return; // arrived: the brain dismisses / stands down
+			if (++_rhNoProgress >= ReturnHomeNoProgressTeleportTicks) TeleportHome();
+		}
+
 		/// <summary>Samples position every few ticks: jump, then walk back a tile, then (following) teleport to the commander.</summary>
 		private void TrackStuck()
 		{
@@ -738,6 +795,11 @@ namespace Levy.Content.NPCs
 				_stuckTotal = 0;
 				if (FollowerTravel.TeleportNearCommander(this)) return;
 			}
+			if (State == SoldierState.ReturnHome && _stuckTotal >= ReturnHomeStuckTeleportTicks)
+			{
+				_stuckTotal = 0;
+				if (TeleportHome()) return;
+			}
 			if (_stuckTicks < LevyConstants.StuckTicks || _blockedHard) return; // a deliberate refusal (lava, drop, wall) is not a wedge
 			if (!_stuckJumped) { _stuckJumped = true; TryJump(Abilities.JumpTiles); return; }
 			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) { _reverseTicks = ReverseTicks; _sinceReverse = 0; }
@@ -747,7 +809,7 @@ namespace Levy.Content.NPCs
 		// pathfinding (Follow and Haul only)
 		// =====================================================================================================
 
-		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
+		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
 			|| (_engPathOk && (State == SoldierState.Engage || State == SoldierState.Shaken));
 
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>

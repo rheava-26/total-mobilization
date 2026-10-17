@@ -325,11 +325,11 @@ namespace Levy.Common.Systems
 			switch (itemType)
 			{
 				case ItemID.LifeCrystal:
-					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystalsByGrade[gi]) return false;
+					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystalsByGrade[gi] || rec.MaxHp >= LevyConstants.GradeHpCap[gi]) return false;
 					rec.LifeCrystals++; hpGain = LevyConstants.HpPerLifeCrystal;
 					break;
 				case ItemID.LifeFruit:
-					if (rec.Grade != Grade.Champion || rec.LifeFruit >= LevyConstants.MaxLifeFruit) return false;
+					if (rec.LifeFruit >= LevyConstants.MaxLifeFruit || rec.MaxHp >= LevyConstants.GradeHpCap[gi]) return false;
 					rec.LifeFruit++; hpGain = LevyConstants.HpPerLifeFruit;
 					break;
 				case ItemID.ManaCrystal:
@@ -577,11 +577,11 @@ namespace Levy.Common.Systems
 			{
 				case ItemID.LifeCrystal:
 				{
-					int cap = rec.Grade == Grade.Levy ? LevyConstants.MaxLifeCrystalsLevy : rec.Grade == Grade.ManAtArms ? LevyConstants.MaxLifeCrystalsManAtArms : LevyConstants.MaxLifeCrystalsChampion;
+					int cap = LevyConstants.MaxLifeCrystalsByGrade[Math.Clamp((int)rec.Grade, 0, LevyConstants.MaxLifeCrystalsByGrade.Length - 1)];
 					return rec.LifeCrystals < cap && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
 				}
 				case ItemID.LifeFruit:
-					return rec.Grade == Grade.Champion && rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
+					return rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
 				case ItemID.ManaCrystal:
 					return rec.MaxMana < LevyConstants.MaxMana;
 				default:

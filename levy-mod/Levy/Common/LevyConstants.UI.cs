@@ -46,6 +46,9 @@ namespace Levy.Common
 			public const float NameplateTextScale = 0.8f;
 			/// <summary>Weapon line scale relative to the name text scale.</summary>
 			public const float NameplateWeaponScale = 0.8f;
+			/// <summary>Potion-sickness pip: size of the box, gap below the weapon line, and the text scale relative to the name text.</summary>
+			public const int PotionPipWidth = 22, PotionPipHeight = 9, PotionPipGap = 3;
+			public const float PotionPipTextScale = 0.7f;
 			public const float FearIconMinScale = 0.6f, FearIconMaxScale = 1.3f;
 
 			// ---- HUD strip ----

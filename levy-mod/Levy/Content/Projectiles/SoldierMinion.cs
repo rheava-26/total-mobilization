@@ -79,10 +79,24 @@ namespace Levy.Content.Projectiles
 			bool authoritative = Main.netMode != NetmodeID.MultiplayerClient;
 
 			// ---- target ----
-			if (authoritative && ((int)tick + Projectile.whoAmI) % LevyConstants.MinionRetargetTicks == 0)
+			if (authoritative)
 			{
-				int enc = (s.Record.HoldFire ? -1 : FindTarget(s)) + 1;
-				if (enc != (int)Projectile.ai[2]) { Projectile.ai[2] = enc; Projectile.netUpdate = true; }
+				if (s.Record.HoldFire)
+				{
+					if (((int)tick + Projectile.whoAmI) % LevyConstants.MinionRetargetTicks == 0 && Projectile.ai[2] != 0f) { Projectile.ai[2] = 0f; Projectile.netUpdate = true; }
+				}
+				else
+				{
+					// the soldier's own target (which already folds in the commander's focus designation) pulls the flock the moment it is chosen
+					int pref = SoldierTargetIfValid(s);
+					int cur = (int)Projectile.ai[2] - 1;
+					if (pref >= 0 && pref != cur) { Projectile.ai[2] = pref + 1; Projectile.netUpdate = true; }
+					else if (pref < 0 && ((int)tick + Projectile.whoAmI) % LevyConstants.MinionRetargetTicks == 0)
+					{
+						int enc = FindTarget(s) + 1;
+						if (enc != (int)Projectile.ai[2]) { Projectile.ai[2] = enc; Projectile.netUpdate = true; }
+					}
+				}
 			}
 			NPC target = CurrentTarget(s);
 
@@ -231,6 +245,17 @@ namespace Levy.Content.Projectiles
 			if (!n.active || n.life <= 0 || !LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) return null;
 			if (Vector2.DistanceSquared(n.Center, s.NPC.Center) > LevyConstants.MinionLeashPx * LevyConstants.MinionLeashPx) return null;
 			return n;
+		}
+
+		/// <summary>The soldier's current target (<c>TargetIndex</c>, which includes the commander's focus designation) if it is a live hostile inside the leash, else -1. Seek range does not apply: minions fly to wherever the soldier is fighting.</summary>
+		private static int SoldierTargetIfValid(SoldierNPC s)
+		{
+			int idx = s.TargetIndex;
+			if (idx < 0 || idx >= Main.maxNPCs) return -1;
+			NPC n = Main.npc[idx];
+			if (!n.active || n.life <= 0 || !LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) return -1;
+			if (Vector2.DistanceSquared(n.Center, s.NPC.Center) > LevyConstants.MinionLeashPx * LevyConstants.MinionLeashPx) return -1;
+			return idx;
 		}
 
 		/// <summary>Nearest hostile to this minion inside the seek range and the soldier's leash; tagged enemies and the soldier's own target count as closer.</summary>

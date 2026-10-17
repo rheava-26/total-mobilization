@@ -85,6 +85,15 @@ namespace Levy.Common.Movement
 			return true;
 		}
 
+		/// <summary>Snaps a body that cannot reach its barracks onto the muster point (or the nearest free standing spot). Server/single player only.</summary>
+		public static bool TeleportToPoint(SoldierNPC body, Vector2 musterBottom)
+		{
+			if (body == null || body.NPC == null || !LevyUtil.IsServerOrSingle) return false;
+			if (!FindStandingSpot(musterBottom, StandingSpotRadiusTiles, out var spot)) spot = musterBottom;
+			Place(body, spot);
+			return true;
+		}
+
 		private static void Place(SoldierNPC body, Vector2 bottom)
 		{
 			NPC npc = body.NPC;

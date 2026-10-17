@@ -480,3 +480,24 @@ DEATH_MESSAGE | Any | {Name} has joined the great payroll in the sky.
 DEATH_MESSAGE | Any | {Name} did their best. Their best was brief.
 DEATH_MESSAGE | Any | {Name} has fallen. They would have wanted us to carry on, loudly.
 DEATH_MESSAGE | Any | {Name} has fallen. {Killer} did it, for the record.
+DEATH_MESSAGE | Any | {Name} now has sick leave
+DEATH_MESSAGE | Any | {Name} was about to ask for a paid vacation
+DEATH_MESSAGE | Any | {Name} was thinking about their paycheck
+DEATH_MESSAGE | Any | {Name} didn't realize that running into an enemy kills you
+DEATH_MESSAGE | Any | {Name} was let go, effective immediately
+DEATH_MESSAGE | Any | {Name} filed their last two weeks' notice. It was not honored
+DEATH_MESSAGE | Any | {Name} has been laid off by {Killer}
+DEATH_MESSAGE | Any | {Name} never got to use their dental plan
+DEATH_MESSAGE | Any | {Name} was in the middle of a performance review
+DEATH_MESSAGE | Any | {Name} clocked out early
+DEATH_MESSAGE | Any | {Name} is no longer a stakeholder
+DEATH_MESSAGE | Any | {Name} has been reassigned to the afterlife department
+DEATH_MESSAGE | Any | {Name} was one shift away from overtime pay
+DEATH_MESSAGE | Any | {Name} would like to speak to HR about this
+DEATH_MESSAGE | Any | {Name} forgot to read the fine print on the contract
+DEATH_MESSAGE | Any | {Name} was not covered for this
+DEATH_MESSAGE | Any | {Name} missed the mandatory safety briefing
+DEATH_MESSAGE | Any | {Name} has taken an unscheduled break
+DEATH_MESSAGE | Any | {Name} was saving up for something nice
+DEATH_MESSAGE | Any | {Name} won't be making it to the staff party
+DEATH_MESSAGE | Any | {Name} wasn't paid enough for this

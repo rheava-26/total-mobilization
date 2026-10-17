@@ -29,8 +29,26 @@ namespace Levy.Common
 			public const float MinJumpSpeed = 4.4f, MaxJumpSpeed = 12f;
 			public const float JumpSpeedOffset = 0.013f;        // keeps the arc from passing through exactly 0 (the grounded test)
 			public const float ExtraJumpSpeedMult = 0.9f;
-			public const int JumpTowardGoalReachTiles = 3;
-			public const float JumpUpAbovePx = 24f;               // a one-tile rise is walked up (Collision.StepUp), not jumped
+			public const int JumpTowardGoalReachTiles = 6;      // a goal this far across and above (tiles) is jumped for, not just walked toward
+			public const float JumpUpAbovePx = 20f;               // a one-tile rise is walked up (Collision.StepUp), not jumped; anything over a tile and a bit is
+
+			// ---- eager jumping (soldiers should leave the ground whenever it helps) ----
+			/// <summary>A fighting soldier jumps for a target up to this many tiles above the height its own jump reaches (its weapon covers the rest).</summary>
+			public const int EngageJumpReachBonusTiles = 2;
+			/// <summary>A pit this deep or deeper (tiles) with floor on the far side is jumped, not dropped into (was: the body's full jump height).</summary>
+			public const int GapJumpMinDepthTiles = 2;
+			/// <summary>Running hops: a soldier on the move toward a goal at least this far (tiles) hops now and then while it has open, safe ground ahead.</summary>
+			public const int HopMinGoalDistTiles = 8;
+			/// <summary>Ticks between running hops (random in this range).</summary>
+			public const int HopIntervalMinTicks = 90, HopIntervalMaxTicks = 210;
+			/// <summary>A running hop needs at least this horizontal speed (px/tick) and clears this many tiles.</summary>
+			public const float HopMinSpeedPx = 1.6f;
+			public const int HopTiles = 2;
+			/// <summary>Columns ahead that must be open, floored and lava-free before a running hop; rows above the feet that must be clear.</summary>
+			public const int HopLandingTiles = 4, HopClearRows = 4;
+			/// <summary>Flight-kit soldiers engage targets this many tiles above them (the base rule asks for 7) and the climb pays off from this height.</summary>
+			public const int AerialEngageMinTiles = 5;
+			public const int AerialClimbBenefitTiles = 3;
 
 			// ---- hazards ----
 			public const int LookAheadPx = 8;
@@ -49,6 +67,13 @@ namespace Levy.Common
 			public const int ReverseTicks = 20;
 			public const float StuckProgressPx = 8f;            // movement per sample that counts as real walking
 			public const int ReverseSettleTicks = 60;           // the reverse shuffle does not count as progress for this long
+
+			// ---- ordered home (ReturnToBarracks / stand-down) ----
+			/// <summary>Wedged (not walking) this long while heading home: snap to the barracks muster point.</summary>
+			public const int ReturnHomeStuckTeleportTicks = 60 * 8;
+			/// <summary>No closer to home by <see cref="ReturnHomeProgressPx"/> for this long (a shuffle, a failed path, an unreachable muster point): snap home.</summary>
+			public const int ReturnHomeNoProgressTeleportTicks = 60 * 15;
+			public const float ReturnHomeProgressPx = 24f;
 
 			// ---- pathfinding ----
 			public const int PathRecalcTicks = 30;
@@ -133,9 +158,9 @@ namespace Levy.Common
 
 			// ---- gaps ----
 			/// <summary>Widest gap (tiles with no floor) a body will jump across instead of falling into.</summary>
-			public const int GapJumpMaxTiles = 2;
+			public const int GapJumpMaxTiles = 3;
 			/// <summary>Jump height (tiles) used to clear a gap: sets the airtime, so 3 carries about 40 ticks.</summary>
-			public const int GapJumpTiles = 3;
+			public const int GapJumpTiles = 4;
 			/// <summary>Rows above the feet that must be clear over the gap and the far edge.</summary>
 			public const int GapJumpClearRows = 4;
 

@@ -12,7 +12,7 @@ namespace Levy.Common.UI
 	public static class Nameplates
 	{
 		private static int _drawnThisFrame, _drawnLastFrame, _frameStamp = -1;
-		private static readonly Color Gold = new(255, 215, 80), Dark = new(20, 20, 20, 200), FearOrange = new(255, 140, 30), RoutRed = new(255, 60, 40), WeaponTan = new(200, 185, 150);
+		private static readonly Color Gold = new(255, 215, 80), Dark = new(20, 20, 20, 200), FearOrange = new(255, 140, 30), RoutRed = new(255, 60, 40), WeaponTan = new(200, 185, 150), SicknessTeal = new(110, 220, 200);
 
 		/// <summary>Soldiers whose plates were requested last frame (per draw frame, not per tick, via Main.drawsCountedForFPS).</summary>
 		public static int DrawnLastFrame => _drawnLastFrame;
@@ -54,7 +54,20 @@ namespace Levy.Common.UI
 			// held weapon, small and muted, centred under the HP bar (militia and regulars alike)
 			var weapon = s.Record.Gear?.Weapon;
 			string weaponName = weapon == null || weapon.IsAir ? "Unarmed" : weapon.Name;
-			Utils.DrawBorderString(spriteBatch, weaponName, new Vector2(top.X, by + h + 6f), WeaponTan, scale * LevyConstants.UI.NameplateWeaponScale, 0.5f, 0f);
+			float weaponScale = scale * LevyConstants.UI.NameplateWeaponScale;
+			Utils.DrawBorderString(spriteBatch, weaponName, new Vector2(top.X, by + h + 6f), WeaponTan, weaponScale, 0.5f, 0f);
+
+			// potion sickness: a small dark box with the whole seconds left, centred under the weapon line (only while on cooldown)
+			if (s.PotionSickness > 0)
+			{
+				string secs = ((s.PotionSickness + 59) / 60).ToString(); // PotionSickness counts ticks (60/s)
+				float pipY = by + h + 6f + font.MeasureString(weaponName).Y * weaponScale + LevyConstants.UI.PotionPipGap;
+				int pw = LevyConstants.UI.PotionPipWidth, ph = LevyConstants.UI.PotionPipHeight;
+				var pip = new Rectangle((int)(top.X - pw * 0.5f), (int)pipY, pw, ph);
+				spriteBatch.Draw(pixel, new Rectangle(pip.X - 1, pip.Y - 1, pw + 2, ph + 2), Dark);
+				spriteBatch.Draw(pixel, pip, SicknessTeal * 0.35f);
+				Utils.DrawBorderString(spriteBatch, secs, new Vector2(top.X, pip.Y + ph * 0.5f), SicknessTeal, scale * LevyConstants.UI.PotionPipTextScale, 0.5f, 0.5f);
+			}
 			if (militia) return;
 
 			// fear

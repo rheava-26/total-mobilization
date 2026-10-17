@@ -626,10 +626,10 @@ namespace Levy.Content.NPCs
 		private void UpdateAltitudeIntent(NPC seg, float rangeTiles, float standoffTiles, bool melee)
 		{
 			WantsAltitude = false;
-			if (!HasFlightKit || AerialMaxReachTiles < LevyConstants.MinClimbBenefitTiles) { _altHeld = false; return; }
+			if (!HasFlightKit || AerialMaxReachTiles < LevyConstants.Movement.AerialClimbBenefitTiles) { _altHeld = false; return; }
 			float tilePx = LevyConstants.TilePx;
 			float sepTiles = (NPC.Center.Y - seg.Center.Y) / tilePx; // > 0: the target is above the body centre
-			float need = _altHeld ? LevyConstants.VerticalEngageMinTiles - LevyConstants.VerticalEngageExitTiles : LevyConstants.VerticalEngageMinTiles;
+			float need = _altHeld ? LevyConstants.Movement.AerialEngageMinTiles - LevyConstants.VerticalEngageExitTiles : LevyConstants.Movement.AerialEngageMinTiles;
 			if (sepTiles < need) { _altHeld = false; return; }
 			if (!melee)
 			{
@@ -653,7 +653,7 @@ namespace Levy.Content.NPCs
 			bool truncated = capped - bottom > LevyConstants.MeleeAerialSlackTiles * tilePx;
 			// melee must actually reach its target; a jump-only kit has no hover, so it only goes when it can fully get there
 			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
-			if (groundY - capped < LevyConstants.MinClimbBenefitTiles * tilePx) { _altHeld = false; return; }
+			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
 			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
 		}
 

@@ -148,11 +148,98 @@ namespace Levy.Content.Projectiles
 			if (s != null) s.LastMeleeHitTick = (int)Main.GameUpdateCount;
 		}
 
+		/// <summary>The whip projectile type the source item fires (its texture is the real 5-frame strip: handle, three segments, tip), or -1.</summary>
+		private int WhipProjType()
+		{
+			int t = ItemType;
+			if (t <= 0 || !ContentSamples.ItemsByType.TryGetValue(t, out var it) || it == null) return -1;
+			int sp = it.shoot;
+			return sp > 0 && sp < ProjectileLoader.ProjectileCount ? sp : -1;
+		}
+
+		private static Color VanillaLineColor(int projType) => projType switch
+		{
+			ProjectileID.SwordWhip => Color.OrangeRed,
+			ProjectileID.MaceWhip => Color.DarkBlue,
+			ProjectileID.ScytheWhip => Color.Black,
+			ProjectileID.CoolWhip => Color.LightBlue,
+			ProjectileID.FireWhip => Color.Firebrick,
+			ProjectileID.ThornWhip => Color.ForestGreen,
+			ProjectileID.RainbowWhip => Color.White,
+			ProjectileID.BoneWhip => Color.Tan,
+			_ => Color.White
+		};
+
+		/// <summary>Vanilla whip draw: a thin cord along the control points, then the whip's 5-frame projectile sheet laid on it (handle, repeating segments, enlarged tip). Returns false when the texture can't resolve.</summary>
+		private bool DrawRealWhip(SoldierNPC s)
+		{
+			int wp = WhipProjType();
+			if (wp < 0) return false;
+			Main.instance.LoadProjectile(wp);
+			var asset = TextureAssets.Projectile[wp];
+			if (asset == null || !asset.IsLoaded) return false;
+			Texture2D tex = asset.Value;
+			if (tex == null || tex.IsDisposed || tex.Height < 5 * 6 || tex.Width < 4) return false;
+
+			Rectangle frame = tex.Frame(1, 5);
+			int frameH = frame.Height;
+			frame.Height -= 2;
+			int segLen = Math.Max(6, frameH - 2);
+			int segs = Math.Clamp((int)Math.Round(ReachPx() / segLen), 6, 30);
+			var pts = new Vector2[segs + 1];
+			FillPoints(s, pts);
+
+			// cord
+			Texture2D cord = TextureAssets.FishingLine.Value;
+			Rectangle cordFrame = cord.Frame();
+			Vector2 cordOrigin = new Vector2(cordFrame.Width / 2, 2f);
+			Color cordColor = VanillaLineColor(wp);
+			Vector2 at = pts[0];
+			for (int i = 0; i < segs; i++)
+			{
+				Vector2 d = pts[i + 1] - pts[i];
+				if (d.LengthSquared() < 0.01f) continue;
+				Color c = Lighting.GetColor(pts[i].ToTileCoordinates(), cordColor);
+				Main.EntitySpriteDraw(cord, at - Main.screenPosition, cordFrame, c, d.ToRotation() - MathHelper.PiOver2, cordOrigin, new Vector2(1f, (d.Length() + 2f) / cordFrame.Height), SpriteEffects.None);
+				at += d;
+			}
+
+			// sprite strip
+			SpriteEffects fx = Projectile.spriteDirection == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+			Vector2 baseOrigin = frame.Size() / 2f;
+			at = pts[0];
+			float t = MathHelper.Clamp(Projectile.localAI[0] / Math.Max(1, Life), 0f, 1f);
+			float tipScale = MathHelper.Lerp(0.5f, 1.5f, Utils.GetLerpValue(0.1f, 0.7f, t, true) * Utils.GetLerpValue(0.95f, 0.7f, t, true));
+			for (int i = 0; i < segs; i++)
+			{
+				Vector2 origin = baseOrigin;
+				float scale = 1f;
+				int fr;
+				if (i == 0) { fr = 0; origin.Y -= 4f; }
+				else if (i == segs - 1) { fr = 4; scale = tipScale; }
+				else fr = 1 + Math.Min(2, (i - 1) * 3 / Math.Max(1, segs - 2));
+				frame.Y = frameH * fr;
+				Vector2 d = pts[i + 1] - pts[i];
+				if (d.LengthSquared() > 0.01f)
+				{
+					Color c = Lighting.GetColor(pts[i].ToTileCoordinates());
+					Main.EntitySpriteDraw(tex, at - Main.screenPosition, frame, c, d.ToRotation() - MathHelper.PiOver2, origin, scale, fx);
+				}
+				at += d;
+			}
+			return true;
+		}
+
 		public override bool PreDraw(ref Color lightColor)
 		{
 			if (Main.dedServ) return false;
 			SoldierNPC s = Soldier;
 			if (s == null) return false;
+			try
+			{
+				if (DrawRealWhip(s)) return false;
+			}
+			catch (Exception) { }
 			try
 			{
 				var pts = new Vector2[LevyConstants.WhipSegments];

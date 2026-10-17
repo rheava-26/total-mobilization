@@ -22,6 +22,8 @@ namespace Levy.Common.Weapons
 
 		private static readonly DamageClass[] Classes = { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon };
 		private static readonly Dictionary<(int, int, int), int> _cache = new(); // value: index into Classes, or -1 for no preference
+		private static readonly Dictionary<(int, int, int), bool> _setCache = new();
+		private static readonly Dictionary<int, float[]> _accCache = new();
 		private static Player _scratch;
 		private static float[] _baseline;
 		private static bool _broken;
@@ -29,7 +31,7 @@ namespace Levy.Common.Weapons
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _cache.Clear(); _scratch = null; _baseline = null; _broken = false; }
+		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _scratch = null; _baseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -42,6 +44,56 @@ namespace Levy.Common.Weapons
 			idx = Compute(h, b, l);
 			_cache[key] = idx;
 			return idx >= 0 ? Classes[idx] : null;
+		}
+
+		/// <summary>
+		/// True when the three pieces form one armor set: the vanilla/mod equip pass reports a set bonus for them (a bonus string only appears for a true
+		/// head+body+legs match). Cached by item types. False on any failure.
+		/// </summary>
+		public static bool FormsSetBonus(Item head, Item body, Item legs)
+		{
+			int h = TypeOf(head), b = TypeOf(body), l = TypeOf(legs);
+			if (h == 0 || b == 0 || l == 0 || _broken) return false;
+			var key = (h, b, l);
+			if (_setCache.TryGetValue(key, out bool ok)) return ok;
+			ok = false;
+			try {
+				EnsureScratch();
+				var p = _scratch;
+				for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+				p.armor[0].SetDefaults(h); p.armor[1].SetDefaults(b); p.armor[2].SetDefaults(l);
+				p.setBonus = "";
+				p.UpdateArmorSets(SoldierNPC.DummySlot);
+				ok = !string.IsNullOrEmpty(p.setBonus);
+				for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+			}
+			catch (Exception e) {
+				Levy.Instance?.Logger.Warn("Levy: armor-set check failed, sets are matched by name only: " + e);
+				_broken = true;
+			}
+			_setCache[key] = ok;
+			return ok;
+		}
+
+		/// <summary>The damage bonus (fraction, as <see cref="PreferredClass"/> measures it) an accessory gives the given class; 0 when it gives none or the read fails. Cached per item type.</summary>
+		public static float AccessoryClassFit(Item acc, DamageClass cls)
+		{
+			if (acc == null || acc.IsAir || cls == null || _broken) return 0f;
+			int ci = Array.IndexOf(Classes, cls);
+			if (ci < 0) return 0f;
+			if (!_accCache.TryGetValue(acc.type, out var fit)) {
+				fit = new float[Classes.Length];
+				try {
+					if (LevyConfig.Get.UseVanillaStatPipeline) {
+						EnsureScratch();
+						_baseline ??= Measure(0, 0, 0, null);
+						fit = Measure(0, 0, 0, _baseline, acc.type);
+					}
+				}
+				catch (Exception) { fit = new float[Classes.Length]; }
+				_accCache[acc.type] = fit;
+			}
+			return Math.Max(0f, fit[ci]);
 		}
 
 		private static int TypeOf(Item it) => it == null || it.IsAir ? 0 : it.type;
@@ -78,7 +130,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Per-class bonus after equipping the three pieces; <paramref name="baseline"/> (the bare-player reading) is subtracted so default crit cancels.</summary>
-		private static float[] Measure(int head, int body, int legs, float[] baseline)
+		private static float[] Measure(int head, int body, int legs, float[] baseline, int accessory = 0)
 		{
 			var p = _scratch;
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();

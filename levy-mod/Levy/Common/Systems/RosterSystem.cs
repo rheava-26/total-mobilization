@@ -43,7 +43,7 @@ namespace Levy.Common.Systems
 		private readonly List<Deserter> _deserters = new();
 		private readonly List<SoldierRecord> _deployScratch = new();
 		private readonly Dictionary<string, int> _onlineByName = new();
-		private int _deployTimer, _snapshotTimer, _feedTimer;
+		private int _deployTimer, _snapshotTimer, _feedTimer, _spoilsTimer, _spoilsSoundCd;
 		private bool _dawnInit, _lastDayTime;
 
 		private sealed class Deserter { public SoldierNPC Body; public int Ticks; }
@@ -533,7 +533,75 @@ namespace Levy.Common.Systems
 				Deploy();
 			}
 			if (++_feedTimer >= LevyConstants.AutoFeedIntervalTicks) { _feedTimer = 0; TickAutoFeed(); }
+			if (_spoilsSoundCd > 0) _spoilsSoundCd--;
+			if (++_spoilsTimer >= LevyConstants.SpoilsIntervalTicks) { _spoilsTimer = 0; TickSpoils(); }
 			if (LevyUtil.IsServer && ++_snapshotTimer >= LevyConstants.SnapshotIntervalTicks) { _snapshotTimer = 0; SendRosterSnapshot(); }
+		}
+
+		private readonly List<BarracksTE> _spoilsTouched = new();
+
+		/// <summary>
+		/// Every <see cref="LevyConstants.SpoilsIntervalTicks"/>: dropped coins lying within <see cref="LevyConstants.SpoilsRadiusPx"/> of a living
+		/// soldier body are removed and their copper value goes to that soldier's home barracks treasury. A coin inside any active
+		/// player's pickup range is left alone. A soldier with no home barracks leaves the coin. Server / single player only.
+		/// </summary>
+		private void TickSpoils()
+		{
+			if (LevyUtil.IsClient) return;
+			var cfg = LevyConfig.Get;
+			if (cfg == null || !cfg.Spoils || _bodies.Count == 0) return;
+			float r2 = LevyConstants.SpoilsRadiusPx * LevyConstants.SpoilsRadiusPx;
+			bool looted = false;
+			Vector2 soundAt = default;
+			_spoilsTouched.Clear();
+			for (int i = 0; i < Main.maxItems; i++)
+			{
+				var item = Main.item[i];
+				if (!item.active || item.stack <= 0 || !item.IsACoin || item.noGrabDelay > 0) continue;
+				long value = EconomySystem.CoinValue(item);
+				if (value <= 0 || NearAnyPlayer(item)) continue;
+				Vector2 c = item.Center;
+				for (int b = 0; b < _bodies.Count; b++)
+				{
+					var s = _bodies[b];
+					if (!s.IsAlive || Vector2.DistanceSquared(s.NPC.Center, c) > r2) continue;
+					var home = s.Home;
+					if (home == null) continue;
+					EconomySystem.Deposit(home, value);
+					if (!_spoilsTouched.Contains(home)) _spoilsTouched.Add(home);
+					soundAt = c;
+					looted = true;
+					item.TurnToAir();
+					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncItem, -1, -1, null, i);
+					break;
+				}
+			}
+			for (int k = 0; k < _spoilsTouched.Count; k++) SyncBarracks(_spoilsTouched[k]);
+			_spoilsTouched.Clear();
+			if (looted && _spoilsSoundCd <= 0)
+			{
+				_spoilsSoundCd = LevyConstants.SpoilsSoundCooldownTicks;
+				if (Main.netMode == NetmodeID.Server)
+				{
+					if (SoundID.IndexByName != null && SoundID.IndexByName.TryGetValue("CoinPickup", out ushort idx))
+						NetMessage.PlayNetSound(new NetMessage.NetSoundInfo(soundAt, idx));
+				}
+				else SoundEngine.PlaySound(SoundID.CoinPickup, soundAt);
+			}
+		}
+
+		/// <summary>True when the item is inside a player's normal pickup reach (their body padded by the vanilla grab range, magnets included).</summary>
+		private static bool NearAnyPlayer(Item item)
+		{
+			Rectangle box = item.Hitbox;
+			for (int p = 0; p < Main.maxPlayers; p++)
+			{
+				var pl = Main.player[p];
+				if (!pl.active || pl.dead) continue;
+				int g = pl.GetItemGrabRange(item);
+				if (new Rectangle((int)pl.position.X - g, (int)pl.position.Y - g, pl.width + g * 2, pl.height + g * 2).Intersects(box)) return true;
+			}
+			return false;
 		}
 
 		/// <summary>Growth crystals a soldier will draw from the home Armory's storage, in the order they are tried.</summary>
@@ -1148,7 +1216,7 @@ namespace Levy.Common.Systems
 			foreach (var r in Regulars) { r.BodyIndex = -1; r.CommanderIndex = -1; r.EngagedBosses.Clear(); r.Fear = 0f; }
 			foreach (var r in Memorial) { r.BodyIndex = -1; r.CommanderIndex = -1; r.Dead = true; }
 			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
-			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; RallyCooldown = 0; _focusTargets.Clear();
+			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; _spoilsTimer = 0; _spoilsSoundCd = 0; RallyCooldown = 0; _focusTargets.Clear();
 			_dawnInit = false; _lastDayTime = Main.dayTime;
 		}
 

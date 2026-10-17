@@ -34,6 +34,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool AutoMusterDefault;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
+		[DefaultValue(true)] public bool Spoils;
 
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;

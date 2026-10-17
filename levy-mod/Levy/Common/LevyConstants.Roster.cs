@@ -22,6 +22,14 @@ namespace Levy.Common
 		// ---------- Roster: growth ----------
 		/// <summary>How often soldiers check their home Armory storage for a growth crystal to absorb (ticks); one crystal per soldier per check.</summary>
 		public const int AutoFeedIntervalTicks = 180;
+
+		// ---------- Roster: spoils (soldiers loot dropped coins into the home treasury) ----------
+		/// <summary>How often soldiers sweep nearby dropped coins (ticks). One pass over Main.item per sweep.</summary>
+		public const int SpoilsIntervalTicks = 20;
+		/// <summary>A dropped coin within this many pixels of a living soldier's body is looted (about 5 tiles; vanilla player grab range is 42 px).</summary>
+		public const float SpoilsRadiusPx = 80f;
+		/// <summary>Minimum ticks between spoils pickup sounds, so a big drop makes one soft chime.</summary>
+		public const int SpoilsSoundCooldownTicks = 30;
 		public static readonly int[] MaxLifeCrystalsByGrade = { MaxLifeCrystalsLevy, MaxLifeCrystalsManAtArms, MaxLifeCrystalsChampion };
 
 		// ---------- Roster: environmental killers ----------

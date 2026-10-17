@@ -196,6 +196,11 @@ Mods: {
 					Tooltip: Soldiers within 4 tiles of the Nurse are healed at her price from the treasury.
 				}
 
+				Spoils: {
+					Label: Soldiers loot coins
+					Tooltip: Coins dropped near a soldier go into their barracks treasury. Coins near you are left alone.
+				}
+
 				Nameplates: {
 					Label: Nameplates
 					Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen.

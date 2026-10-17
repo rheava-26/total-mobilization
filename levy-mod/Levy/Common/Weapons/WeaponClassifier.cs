@@ -68,7 +68,7 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// Accepts the long tail on purpose: every ammo type (bullets and arrows keep their families, everything else fires like a gun), any mana
 		/// weapon that shoots, melee swings/thrusts, and finally any plain shooter, all fired through the real shoot pipeline. Rejects what a
-		/// stationary-ish soldier cannot use: tools, consumables, channeled/held weapons, yoyos, flails, boomerangs, whips, minions and sentries.
+		/// stationary-ish soldier cannot use: tools, consumables, held-beam weapons, custom-resource modded weapons, yoyos, flails, boomerangs, whips, minions and sentries.
 		/// <paramref name="extended"/> is set when only the widened rules accepted it.
 		/// </summary>
 		private static WeaponFamily ClassifyCore(Item item, out bool extended)
@@ -78,13 +78,17 @@ namespace Levy.Common.Weapons
 			if (item.damage <= 0) return WeaponFamily.Unsupported;
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
-			if (item.channel) return WeaponFamily.Unsupported;
 			if (item.sentry) return WeaponFamily.Unsupported;
 			if (IsSet(ItemID.Sets.Yoyo, item.type)) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
+			// A modded weapon that counts as none of the five combat classes runs on a custom resource (Mechanica's MechanicDamage power weapons): not issued.
+			if (item.type >= ItemID.Count && !CountsAsAnyCombatClass(item)) return WeaponFamily.Unsupported;
 
 			int shoot = item.shoot;
 			Projectile sample = ProjectileSample(shoot);
+			// Channeled weapons are accepted like any other (modded "hold to fire" guns set channel for that reason), except those whose shot is a held beam/gun
+			// projectile anchored to its owner (Last Prism, Charged Blaster, Laser Machinegun, Vortex Beater, Phantasm, ...): that would fire from the commander.
+			if (item.channel && sample != null && IsHeldOwnerProjectile(sample)) return WeaponFamily.Unsupported;
 
 			// Soldier-anchored families (SoldierMinion / SoldierWhip / SoldierBoomerang): whips first, since whips are Summon-class items.
 			if (sample != null && !sample.sentry)
@@ -227,6 +231,13 @@ namespace Levy.Common.Weapons
 			var sample = ProjectileSample(projType);
 			return sample != null && (sample.aiStyle == ProjAIStyleID.NightsEdge || sample.aiStyle == ProjAIStyleID.TrueNightsEdge);
 		}
+
+		/// <summary>True for projectiles that live attached to their owner's hands: the held-weapon style (Laser Machinegun, Vortex Beater, Phantasm, Last Prism's holder) and the thick-laser beam style (Last Prism ray, Charged Blaster beam).</summary>
+		public static bool IsHeldOwnerProjectile(Projectile sample) => sample != null && (sample.aiStyle == ProjAIStyleID.HeldProjectile || sample.aiStyle == ProjAIStyleID.ThickLaser);
+
+		private static bool CountsAsAnyCombatClass(Item item) =>
+			item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)
+			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing);
 
 		public static Projectile ProjectileSample(int projType)
 		{

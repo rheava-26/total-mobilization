@@ -907,7 +907,11 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 - **Spoils** — proposed: units vacuum nearby coin drops while mobilized → bank to treasury (self-fund wages), scoped to combat so it doesn't snatch the player's coins. Awaiting treasury-vs-individual-wallet decision.
 - **Magic Storage + cross-base armory sharing** — pylon-linked armory sharing is in-mod & recommended first; Magic Storage integration is a dedicated weak-reference cross-mod task (needs the designer to confirm they run MS). Awaiting priority call.
 
+**SHIPPED v0.8.3 (CRITICAL gear-loss fix):**
+- **Militia death deleted the dead soldier's entire kit.** `SettlementSystem.OnMilitiaBodyDied` removed the record + counted the loss but NEVER returned the gear; in a softcore world nothing dropped it either, so the kit (drawn from the armory) evaporated. Over a long fight waves of militia muster (pull stored sets into hand) and die, each death silently deleting a full set → armory drains to empty. (Designer lost dozens of Necro sets to a hardmode goblin army.) FIX: OnMilitiaBodyDied now calls ReturnGearHome(b, rec) on the genuine removal (idempotent: hardcore/mediumcore OnBodyDied already dropped+cleared the gear, so it no-ops there; softcore recovers the kit to the armory). Also recovers via HomePos when no barracks is found. This is distinct from the v0.5.2 overflow-spill fix — that path was fine; this was the death path. NOTE: already-lost gear is unrecoverable.
+
 **Still open / next up:**
+- **"toggleable setting"** — designer said this (terse) before the bug report; UNCLEAR which of the 4 open questions it answers (likely militia-reserve-as-config or Spoils-as-toggle). ASKED for clarification.
 - **Sword-beam stand-in** for Night's Edge / Excalibur / True Excalibur / True Night's Edge — pending designer's vibe pick (see v0.8.1 open decision).
 - **Nurse healing** — EXISTS ALREADY as `LevyConfig.NurseHealsSoldiers` ("Soldiers within 4 tiles of the Nurse are healed at her price from the treasury"). Verify it works + juice it (barks, maybe walk-to-nurse) rather than build from scratch.
 - **Nurse healing (requested):** nurse heals nearby soldiers, or they visit the nurse and pay (docked from treasury). `LevyConfig.NurseHealsSoldiers` flag already exists — check what it does. Grim-funny, on-theme.

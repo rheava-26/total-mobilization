@@ -310,10 +310,14 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServerOrSingle || rec == null) return;
 			rec.BodyIndex = -1; rec.Dead = true;
 			var b = barracks ?? GetBarracks(rec.HomeBarracksId) ?? FindBarracksHolding(rec);
-			if (b == null) return;
+			if (b == null) { ReturnGearHome(null, rec); return; } // no barracks found: still recover the kit via the record's home position
 			var rt = RuntimeOf(b);
 			RemoveStandingDown(rt, rec);
-			if (!b.Militia.Remove(rec)) return; // already dismissed: never count a loss twice
+			if (!b.Militia.Remove(rec)) return; // already dismissed: never count a loss twice (and the kit was already handled)
+			// A dead militiaman's kit was drawn from the armory — recover it (softcore keeps gear on death). In hardcore/mediumcore
+			// OnBodyDied already dropped the gear on the ground and cleared it, so this is a harmless no-op there. Without this,
+			// every militia death silently DELETED a full kit, draining the armory over a long fight.
+			ReturnGearHome(b, rec);
 			b.MilitiaLostThisEvent++;
 			if (b.Mobilized && b.Manpower > 0)
 			{

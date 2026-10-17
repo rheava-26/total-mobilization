@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common;
+using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Weapons;
@@ -105,7 +106,68 @@ namespace Levy.Content.TileEntities
 			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
 			foreach (var it in Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
 			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
+			var ms = MsHeart();
+			if (ms != null) set.UnionWith(MagicStorageBridge.AmmoIds(ms));
 			return set;
+		}
+
+		// ------------------------------------------------------------------ Magic Storage supply (issue-side, optional, reflection-only)
+
+		/// <summary>The Magic Storage Heart this armory may draw from, or null (MS absent / toggle off / client / none in range). Zero cost when MS is not installed.</summary>
+		private object MsHeart()
+		{
+			if (!MagicStorageBridge.Enabled) return null;
+			return MagicStorageBridge.FindHeart(Center, LevyConstants.MagicStorageRadius);
+		}
+
+		/// <summary>Withdraws the best-scoring stored item passing <paramref name="pred"/> from the MS network; the returned item is exactly what MS gave up (the caller equips it). Null if nothing was withdrawn.</summary>
+		private Item MsTakeBest(Func<Item, bool> pred, Func<Item, float> score)
+		{
+			var heart = MsHeart();
+			if (heart == null) return null;
+			return MagicStorageBridge.TryWithdrawMatch(heart, pred, 1, out var got, score) ? got : null;
+		}
+
+		/// <summary>Varied weapon pick over the MS network's items, then a single-item withdraw of the chosen one. Null if nothing was withdrawn.</summary>
+		private Item MsTakeVaried(Func<Item, bool> pred, SoldierRecord who)
+		{
+			var heart = MsHeart();
+			if (heart == null) return null;
+			var arr = MagicStorageBridge.Snapshot(heart).ToArray();
+			if (arr.Length == 0 || !TryPickVaried(arr, pred, who, 0, arr.Length, out int idx)) return null;
+			return MagicStorageBridge.TryWithdrawExact(heart, arr[idx], 1, out var got) ? got : null;
+		}
+
+		/// <summary>Tops the pouch up from the MS network. Withdraws only what fits, then adds exactly the withdrawn count (any surplus or mismatch is dropped at the armory, never destroyed). Returns the amount added to the pouch.</summary>
+		private int MsTakeAmmo(int ammoId, Item pouch, int max)
+		{
+			var heart = MsHeart();
+			if (heart == null) return 0;
+			int have = IsAir(pouch) ? 0 : pouch.stack;
+			Item cand = null;
+			foreach (var it in MagicStorageBridge.Snapshot(heart)) {
+				if (IsAir(it) || it.ammo != ammoId || it.IsACoin) continue;
+				if (!IsAir(pouch) && pouch.type != it.type) continue;
+				if (cand == null || it.stack > cand.stack) cand = it;
+			}
+			if (cand == null) return 0;
+			int room = Math.Min(max, IsAir(pouch) ? cand.maxStack : pouch.maxStack) - have;
+			if (room <= 0) return 0;
+			if (!MagicStorageBridge.TryWithdrawExact(heart, cand, room, out var got)) return 0;
+			int added = 0;
+			try {
+				if (IsAir(pouch)) { pouch.SetDefaults(got.type); pouch.stack = 0; }
+				if (pouch.type == got.type) {
+					added = Math.Min(got.stack, Math.Max(0, pouch.maxStack - pouch.stack));
+					pouch.stack += added;
+				}
+			}
+			catch (Exception) { added = 0; }
+			if (added < got.stack) { // never destroy withdrawn ammo: whatever did not land in the pouch is dropped at the armory
+				var rest = got.Clone(); rest.stack = got.stack - added;
+				Item.NewItem(new Terraria.DataStructures.EntitySource_Misc("LevyMagicStorage"), Center, rest);
+			}
+			return added;
 		}
 
 		/// <summary>Best slot in <paramref name="arr"/> over indices from, from+step, ... (&lt; to) that passes <paramref name="pred"/>; strictly-better wins so the leftmost takes ties.</summary>
@@ -174,7 +236,7 @@ namespace Levy.Content.TileEntities
 				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
 				if (TryBest(src.Storage, opred, score, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
 			}
-			return null;
+			return MsTakeBest(userPred, score); // last resort: a connected Magic Storage network
 		}
 
 		/// <summary>Tier first, defense second: rarity tier and value outweigh a few points of flat defense, so progression gear (Crimtane) beats flat-defense metal (Platinum).</summary>
@@ -215,7 +277,7 @@ namespace Levy.Content.TileEntities
 			return t.Length >= 3 && t[0] == "Ancient" ? t[0] + " " + t[1] : t[0];
 		}
 
-		private struct ArmorCand { public ArmoryTE Src; public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; }
+		private struct ArmorCand { public ArmoryTE Src; public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; public bool Ms; }
 
 		// ------------------------------------------------------------------ hand-assigned gear across a Re-arm
 
@@ -326,7 +388,7 @@ namespace Levy.Content.TileEntities
 				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
 				if (TryPickVaried(src.Storage, opred, who, 0, src.Storage.Length, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
 			}
-			return null;
+			return MsTakeVaried(userPred, who); // last resort: a connected Magic Storage network
 		}
 
 		/// <summary>
@@ -404,7 +466,7 @@ namespace Levy.Content.TileEntities
 		{
 			// Own armory first; only when it cannot complete a set do the pylon-networked armories' storage join the pool.
 			if (TakeArmorSetCore(soldier, false)) return true;
-			return OtherNetworked().Count > 0 && TakeArmorSetCore(soldier, true);
+			return (OtherNetworked().Count > 0 || MsHeart() != null) && TakeArmorSetCore(soldier, true);
 		}
 
 		private bool TakeArmorSetCore(SoldierRecord soldier, bool usePool)
@@ -421,7 +483,8 @@ namespace Levy.Content.TileEntities
 			var pool = new List<ArmorCand>[ArmorParts];
 			var byType = new Dictionary<int, int>[ArmorParts];
 			for (int p = 0; p < ArmorParts; p++) { pool[p] = new List<ArmorCand>(); byType[p] = new Dictionary<int, int>(); }
-			void Scan(Item[] arr, ArmoryTE src)
+			object msHeart = usePool ? MsHeart() : null;
+			void Scan(Item[] arr, ArmoryTE src, bool ms = false)
 			{
 				for (int i = 0; i < arr.Length; i++) {
 					var it = arr[i];
@@ -429,7 +492,7 @@ namespace Levy.Content.TileEntities
 					for (int p = 0; p < ArmorParts; p++) {
 						if (!need[p] || !WeaponClassifier.IsArmorPiece(it, p)) continue;
 						float sc = ArmorScore(it);
-						var c = new ArmorCand { Src = src, Arr = arr, Idx = i, It = it, Score = sc, Stem = ArmorStem(it) };
+						var c = new ArmorCand { Src = src, Arr = arr, Idx = i, It = it, Score = sc, Stem = ArmorStem(it), Ms = ms };
 						if (byType[p].TryGetValue(it.type, out int at)) { if (sc > pool[p][at].Score) pool[p][at] = c; }
 						else { byType[p][it.type] = pool[p].Count; pool[p].Add(c); }
 						break;
@@ -438,6 +501,7 @@ namespace Levy.Content.TileEntities
 			}
 			Scan(IssueArmor, this); Scan(Storage, this);
 			if (usePool) foreach (var o in OtherNetworked()) Scan(o.Storage, o);
+			if (msHeart != null) Scan(MagicStorageBridge.Snapshot(msHeart).FindAll(x => !x.vanity && (x.headSlot >= 0 || x.bodySlot >= 0 || x.legSlot >= 0)).ToArray(), this, true); // Magic Storage last: ties keep the armories' stock
 			for (int p = 0; p < ArmorParts; p++) if (need[p] && pool[p].Count == 0) return false; // a needed part has no stock at all: no complete set possible
 
 			// Pieces he already wears are fixed members of the set.
@@ -514,6 +578,12 @@ namespace Levy.Content.TileEntities
 			for (int p = 0; p < ArmorParts; p++) {
 				if (!need[p]) continue;
 				var c = best[p];
+				if (c.Ms) { // Magic Storage piece: equip exactly what the withdraw returned, nothing if it returned nothing
+					if (msHeart == null || !MagicStorageBridge.TryWithdrawExact(msHeart, c.It, 1, out var drawn)) continue;
+					if (p == 0) g.Head = drawn; else if (p == 1) g.Body = drawn; else g.Legs = drawn;
+					any = true;
+					continue;
+				}
 				if (c.Src == null || c.Arr == null || c.Idx < 0 || c.Idx >= c.Arr.Length || !ReferenceEquals(c.Arr[c.Idx], c.It)) continue;
 				var piece = c.Src.TakeSlot(c.Arr, c.Idx); // removes from the SOURCE armory (home or networked) and marks it dirty
 				if (piece == null) continue;
@@ -543,6 +613,7 @@ namespace Levy.Content.TileEntities
 				int n = Drain(o.Storage, ammoId, pouch, max);
 				if (n > 0) { o.MarkDirty(); moved += n; }
 			}
+			if (MagicStorageBridge.Enabled) moved += MsTakeAmmo(ammoId, pouch, max); // then a connected Magic Storage network
 			return moved;
 		}
 

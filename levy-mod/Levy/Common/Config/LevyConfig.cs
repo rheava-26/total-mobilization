@@ -35,6 +35,7 @@ namespace Levy.Common.Config
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
 		[DefaultValue(true)] public bool Spoils;
+		[DefaultValue(true)] public bool MagicStorageSupply;
 
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;

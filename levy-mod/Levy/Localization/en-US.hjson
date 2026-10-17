@@ -210,6 +210,11 @@ Mods: {
 					Tooltip: Coins dropped near a soldier go into their barracks treasury. Coins near you are left alone.
 				}
 
+				MagicStorageSupply: {
+					Label: Armories draw from Magic Storage
+					Tooltip: An armory within 50 tiles of a Storage Heart, Storage Access or Remote Access arms soldiers from that network once its own shelves and pylon-linked armories run dry. Does nothing without Magic Storage.
+				}
+
 				Nameplates: {
 					Label: Nameplates
 					Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen.

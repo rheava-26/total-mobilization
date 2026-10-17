@@ -143,7 +143,7 @@ namespace Levy.Content.Projectiles
 		}
 
 		/// <summary>How a ranged minion shoots: the vanilla projectile it fires, ticks between shots, launch speed, the range it holds, and the effective px/tick used for lead.</summary>
-		private readonly struct RangedShot
+		public readonly struct RangedShot
 		{
 			public readonly int Proj, CooldownTicks; public readonly float Speed, StandoffPx, LeadSpeed, DamageMult; public readonly int TimeLeft;
 			public RangedShot(int proj, int cooldownTicks, float speed, float standoffPx, float leadSpeed, float damageMult = 1f, int timeLeft = 300)
@@ -167,6 +167,37 @@ namespace Levy.Content.Projectiles
 			{ ProjectileID.Pygmy3,       new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
 			{ ProjectileID.Pygmy4,       new RangedShot(ProjectileID.PygmySpear,          56, 11f, 280f, 22f) },
 		};
+
+		/// <summary>Keys added at runtime by other mods' bridges, so they can be removed again on unload / re-registration without touching the vanilla entries.</summary>
+		private static readonly System.Collections.Generic.HashSet<int> RegisteredKeys = new System.Collections.Generic.HashSet<int>();
+
+		/// <summary>
+		/// Registers (or replaces) a shooter minion: any soldier stand-in drawing <paramref name="minionProjType"/> will hold a standoff range and fire
+		/// <see cref="RangedShot.Proj"/> instead of ramming. Intended for weak-reference bridges to other mods; call during load (PostSetupContent).
+		/// </summary>
+		public static void RegisterRangedMinion(int minionProjType, RangedShot shot)
+		{
+			if (minionProjType <= 0 || shot.Proj <= 0) return;
+			lock (RangedMinions)
+			{
+				RangedMinions[minionProjType] = shot;
+				RegisteredKeys.Add(minionProjType);
+			}
+		}
+
+		/// <summary>Raw-field overload of <see cref="RegisterRangedMinion(int, RangedShot)"/> (ticks between shots, launch speed, held range px, effective px/tick for lead, damage multiplier, shot lifetime; 0 keeps the projectile's own).</summary>
+		public static void RegisterRangedMinion(int minionProjType, int proj, int cooldownTicks, float speed, float standoffPx, float leadSpeed, float damageMult = 1f, int timeLeft = 300)
+			=> RegisterRangedMinion(minionProjType, new RangedShot(proj, cooldownTicks, speed, standoffPx, leadSpeed, damageMult, timeLeft));
+
+		/// <summary>Removes every entry added through <see cref="RegisterRangedMinion(int, RangedShot)"/>; the vanilla table is untouched.</summary>
+		public static void ClearRegisteredRangedMinions()
+		{
+			lock (RangedMinions)
+			{
+				foreach (int k in RegisteredKeys) RangedMinions.Remove(k);
+				RegisteredKeys.Clear();
+			}
+		}
 
 		private int _fireCd;
 

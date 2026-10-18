@@ -71,6 +71,8 @@ namespace Levy.Content.NPCs
 		/// <summary>Taunt weight read from the dummy's equip pass (Player.aggro: Flesh Knuckles and tank armor raise it, stealth gear lowers it). Enemy targeting subtracts it from the soldier's distance, as vanilla does for players. Synced to clients.</summary>
 		public int Aggro;
 		public bool StatsDirty = true;
+		/// <summary>Buff stations beside an armory this soldier is near (refreshed with the stats; server only). Damage.cs reads it for regen.</summary>
+		public StationFlags Stations;
 		private int _statsTimer;
 		private static bool _pipelineBroken;
 
@@ -198,6 +200,7 @@ namespace Levy.Content.NPCs
 			StatsDirty = false;
 			if (Record == null) return;
 			EquipDummy();
+			Stations = StationBuffSystem.For(NPC.Center);
 			bool ok = false;
 			if (LevyConfig.Get.UseVanillaStatPipeline && !_pipelineBroken)
 			{
@@ -207,6 +210,7 @@ namespace Levy.Content.NPCs
 					Dummy.ResetEffects();
 					Dummy.UpdateEquips(DummySlot);
 					Dummy.UpdateArmorSets(DummySlot);
+					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 					Defense = Dummy.statDefense;
 					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed);
 					Abilities = Common.Movement.MovementAbilities.FromDummy(Dummy);
@@ -235,7 +239,14 @@ namespace Levy.Content.NPCs
 			if (item == null || item.IsAir) return 0;
 			if (!_pipelineBroken && LevyConfig.Get.UseVanillaStatPipeline)
 			{
-				try { Dummy.inventory[0] = item; return Math.Max(1, Dummy.GetWeaponDamage(item)); } catch { _pipelineBroken = true; }
+				try
+				{
+					Dummy.inventory[0] = item;
+					int dmg = Dummy.GetWeaponDamage(item);
+					if ((Stations & StationFlags.Sharpening) != 0 && item.CountsAsClass(DamageClass.Melee)) dmg += LevyConstants.SharpenedMeleeFlatDamage;
+					return Math.Max(1, dmg);
+				}
+				catch { _pipelineBroken = true; }
 			}
 			return Math.Max(1, item.damage);
 		}

@@ -172,8 +172,35 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		// Natural regen
 		// ------------------------------------------------------------------------------------------------------
+		private int _stationLifeCount, _stationManaTick;
+
+		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
+		private void StationRegen()
+		{
+			if (Stations == StationFlags.None) { _stationLifeCount = _stationManaTick = 0; return; }
+			int units = StationBuffSystem.LifeRegen(Stations);
+			if (units > 0 && NPC.life < NPC.lifeMax)
+			{
+				_stationLifeCount += units;
+				if (_stationLifeCount >= LevyConstants.StationLifeRegenPerHp)
+				{
+					_stationLifeCount -= LevyConstants.StationLifeRegenPerHp;
+					NPC.life = Math.Min(NPC.lifeMax, NPC.life + 1);
+					if (Record != null) Record.CurrentHp = NPC.life;
+					NPC.netUpdate = true;
+				}
+			}
+			else _stationLifeCount = 0;
+			if ((Stations & StationFlags.StarInBottle) != 0 && Record != null && Record.MaxMana > 0 && Record.Mana < Record.MaxMana)
+			{
+				if (++_stationManaTick >= LevyConstants.StationStarManaIntervalTicks) { _stationManaTick = 0; Record.Mana++; }
+			}
+			else _stationManaTick = 0;
+		}
+
 		private void Regen()
 		{
+			StationRegen();
 			if (NPC.life >= NPC.lifeMax || TicksSinceDamaged <= LevyConstants.RegenDelayTicks) { _regenCounter = 0; return; }
 			if (++_regenCounter < LevyConstants.RegenIntervalTicks) return;
 			_regenCounter = 0;

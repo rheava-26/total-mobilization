@@ -944,9 +944,21 @@ Not part of the game. The designer asked for a one-shot build of the "Levy" Terr
 **SOMEDAY / BANKED IDEAS (designer, not now):**
 - **Thorium compatibility — Healer-class soldiers.** Designer wants to eventually play a Healer with soldier support (Thorium's Healer uses radiant weapons that heal allies). Musing only — hasn't played Thorium yet, said "maybe not yet." Cool fit for Levy (soldiers that heal the commander + each other). Bank it; don't build until the designer commits. Would need: classify Thorium radiant/healer weapons, soldiers target ALLIES for healing weapons (new targeting mode), weak-ref like the other mod bridges.
 
+**IN PROGRESS — OVERNIGHT AI BATCH (designer gave a list + "deal with this via a plan since I'm about to go to sleep" → building autonomously, shipping in verified waves). Designer: the AI is "already incredibly smart" → polish not overhaul, be CONSERVATIVE, don't regress, named constants.**
+1. Engage enemies behind COVER: ranged soldier with no line of sight REPOSITIONS for an angle (high ground/flank), does NOT run at the enemy, then keeps shooting. (brain/movement)
+2. Projectile-melee weapons (Ice Sickle, Enchanted Sword, beam swords) SWING/FIRE their projectile at RANGE constantly, not only in melee; still melee when close. (classifier profile + combat)
+3. Biome mimics: soldiers walk into disguised mimics & die on the ambush; reflected shots go to the PLAYER; mimics ignore units & chase the player. FIX: mimics target soldiers; soldiers treat mimics as lethal-contact (no suicide-walk). Reflection-to-player may be inherent (soldier shots owned by commander) → note if not fixable.
+4. Long-range ACCURACY: slightly better past a distance threshold, close range ~unchanged. (Aiming/WeaponUse)
+5a. More HIGH GROUND, don't crowd one doorway. (brain/movement)
+5b. NEW ORDER "Focus Attack": designate a POSITION/block/critter; units attack toward/around it. (Enums/OrdersRadial/UISystem/Packets/Brain)
+6. AGGRO accessories apply to soldiers: high-aggro soldiers draw enemies (Player.aggro weighting in targeting); low-aggro player → soldiers preferred; prefer ISSUING taunt accessories. (targeting + ArmoryTE)
+7. Melee units more aggressive: swing as an enemy approaches, even slightly out of range. (combat)
+8. Any PROJECTILE-weapon unit (incl. melee-that-shoots) engages from FURTHER. (profile RangeTiles + brain)
+9. BANANARANG throws only 1, should throw up to 5. (SoldierBoomerang/WeaponUse per-weapon max-out)
+WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons/Combat (#2,#7,#4,#9) + A2 Targeting/aggro (#6 + targeting half of #3). B (Brain/Movement) = #1,#5a,#8,#3 soldier-side. C = #5b Focus Attack. Each wave: compile + headless boot before merge; ship v0.9.x incrementally w/ changelog. Behavior changes code-verified only (no headless combat-feel test) → designer playtest needed. JUDGMENT CALLS (asleep): projectile-melee=hybrid; accuracy=gentle; Focus Attack=point+converge+fire, critters/tiles valid; aggro issue pref mild; mimic reflection likely deferred.
+
 **Still open / next up:**
-- **Sword-beam stand-in** for Night's Edge / Excalibur / True Excalibur / True Night's Edge — pending designer's vibe pick (see v0.8.1).
-- Playtest feedback wanted on v0.8.2+ (matching armor sets, whip texture, minion focus-fire — all code-verified, unseen).
+- Playtest feedback wanted on v0.8.2+ (matching armor sets, whip texture, minion focus-fire, Mechanica weapons/minions — all code-verified, unseen).
 - **Sword-beam stand-in** for Night's Edge / Excalibur / True Excalibur / True Night's Edge — pending designer's vibe pick (see v0.8.1 open decision).
 - **Nurse healing** — EXISTS ALREADY as `LevyConfig.NurseHealsSoldiers` ("Soldiers within 4 tiles of the Nurse are healed at her price from the treasury"). Verify it works + juice it (barks, maybe walk-to-nurse) rather than build from scratch.
 - **Nurse healing (requested):** nurse heals nearby soldiers, or they visit the nurse and pay (docked from treasury). `LevyConfig.NurseHealsSoldiers` flag already exists — check what it does. Grim-funny, on-theme.

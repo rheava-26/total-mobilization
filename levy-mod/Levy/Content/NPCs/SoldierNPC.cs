@@ -68,6 +68,8 @@ namespace Levy.Content.NPCs
 		/// <summary>Tick of the last melee hit this soldier landed (Combat sets; Brain steps back after it).</summary>
 		public int LastMeleeHitTick = -1000;
 		public float MoveSpeedMult = 1f;
+		/// <summary>Taunt weight read from the dummy's equip pass (Player.aggro: Flesh Knuckles and tank armor raise it, stealth gear lowers it). Enemy targeting subtracts it from the soldier's distance, as vanilla does for players. Synced to clients.</summary>
+		public int Aggro;
 		public bool StatsDirty = true;
 		private int _statsTimer;
 		private static bool _pipelineBroken;
@@ -219,7 +221,7 @@ namespace Levy.Content.NPCs
 			if (!ok)
 			{
 				int def = 0; foreach (var it in Record.Gear.AllItems()) if (!it.accessory || true) def += it.defense;
-				Defense = def; MoveSpeedMult = 1f; Abilities = new Common.Movement.MovementAbilities();
+				Defense = def; MoveSpeedMult = 1f; Aggro = 0; Abilities = new Common.Movement.MovementAbilities();
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			NPC.defense = Defense;
@@ -385,6 +387,7 @@ namespace Levy.Content.NPCs
 			writer.Write(Record.CommanderName ?? ""); writer.Write(Record.HomeBarracksId);
 			Record.Gear.WriteVisual(writer);
 			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
+			writer.Write((short)Math.Clamp(Aggro, short.MinValue, short.MaxValue)); // taunt weight, so client-side target searches weigh this soldier like the server
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -400,6 +403,7 @@ namespace Levy.Content.NPCs
 			Record.CommanderName = reader.ReadString(); Record.HomeBarracksId = reader.ReadInt32();
 			Record.Gear.ReadVisual(reader);
 			PotionSickness = reader.ReadByte() * 30;
+			Aggro = reader.ReadInt16();
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

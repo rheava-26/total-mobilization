@@ -11,6 +11,7 @@ using Levy.Common;
 using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
+using Levy.Common.Targeting;
 using Levy.Common.Weapons;
 using Levy.Content.Tiles;
 
@@ -251,7 +252,8 @@ namespace Levy.Content.TileEntities
 			+ it.defense * LevyConstants.AccessoryDefenseWeight
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.AccessoryValueWeight
 			+ (it.prefix > 0 ? LevyConstants.AccessoryPrefixBonus : 0f)
-			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight;
+			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight
+			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight; // taunt gear leans toward the soldiers who tank for the player
 
 		/// <summary>Vanilla accessory rules: never two of one type, never two pairs of wings, and whatever the mods forbid pairing.</summary>
 		private static bool CanWearWith(Item[] worn, Item it)

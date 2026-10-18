@@ -80,11 +80,13 @@ namespace Levy.Common.Targeting
 			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].boss) return false;
 			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return false;
 			int style = npc.aiStyle;
-			if (style == NPCAIStyleID.Mimic && npc.ai[0] == 0f) return false; // disguised chest: let it wait for a player
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
 			if (_swapIncompatible.Contains(style)) return false;
 			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
+
+		/// <summary>Chest mimic (aiStyle 25) or biome Big Mimic (87) still waiting disguised: ai[0] == 0 until a target comes close or it is hurt.</summary>
+		public static bool IsDisguisedMimic(NPC npc) => npc != null && (npc.aiStyle == NPCAIStyleID.Mimic || npc.aiStyle == NPCAIStyleID.BiomeMimic) && npc.ai[0] == 0f;
 
 		private static bool ConfigAllows(int style)
 		{
@@ -165,13 +167,20 @@ namespace Levy.Common.Targeting
 				if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active) vanillaDist = Metric(npc, center, Main.npc[idx].Center, manhattan);
 			}
 
+			// A sleeping mimic only reacts to something inside its wake radius, so soldiers compete for it only that close.
+			if (IsDisguisedMimic(npc)) maxSoldierDist = Math.Min(maxSoldierDist, LevyConstants.Targeting.MimicWakeSoldierRangePx);
+
+			// Same weighting vanilla applies to players (NPC.TryTrackingTarget / TargetClosestUpgraded: distance -= player.aggro): the soldier's aggro,
+			// read from its dummy's equip pass, shortens its effective distance. The range limit uses the real distance.
 			SoldierNPC best = null; float bestDist = float.PositiveInfinity;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				SoldierNPC body = Bodies[i];
 				if (!body.IsAlive) continue;
-				float d = Metric(npc, center, body.NPC.Center, manhattan);
-				if (d > maxSoldierDist || d >= bestDist) continue;
+				float real = Metric(npc, center, body.NPC.Center, manhattan);
+				if (real > maxSoldierDist) continue;
+				float d = real - body.Aggro;
+				if (d >= bestDist) continue;
 				bestDist = d; best = body;
 			}
 			if (best == null || bestDist >= vanillaDist) { data.SoldierTarget = -1; return false; }

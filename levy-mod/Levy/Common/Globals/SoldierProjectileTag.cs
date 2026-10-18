@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -22,6 +23,8 @@ namespace Levy.Common.Globals
 		public bool Redirected;
 
 		public bool IsSoldierShot => SoldierIndex >= 0;
+		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
+		private bool _reflectRedirected;
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
@@ -38,6 +41,21 @@ namespace Levy.Common.Globals
 		public override void PostAI(Projectile projectile)
 		{
 			if (SoldierIndex >= 0 && projectile.type == ProjectileID.TerraBlade2Shot) projectile.ownerHitCheck = false;
+			// A mimic (etc.) reflecting a soldier's shot aims the bounce-back at Main.player[owner] — the commander, since soldier shots are
+			// owned by the commander. Re-aim it at the soldier that fired it instead, so the reflection comes back at the unit, not at you. Once.
+			if (SoldierIndex >= 0 && projectile.reflected && !_reflectRedirected)
+			{
+				_reflectRedirected = true;
+				if (SoldierIndex < Main.maxNPCs)
+				{
+					NPC s = Main.npc[SoldierIndex];
+					if (s.active && s.ModNPC is Content.NPCs.SoldierNPC)
+					{
+						Vector2 dir = s.Center - projectile.Center;
+						if (dir != Vector2.Zero) { projectile.velocity = Vector2.Normalize(dir) * projectile.velocity.Length(); projectile.netUpdate = true; }
+					}
+				}
+			}
 		}
 
 		public override void SendExtraAI(Projectile projectile, BitWriter bitWriter, BinaryWriter binaryWriter)

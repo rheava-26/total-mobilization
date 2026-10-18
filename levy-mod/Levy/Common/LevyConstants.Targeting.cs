@@ -15,6 +15,13 @@ namespace Levy.Common
 			public const int FleeDistanceTiles = 60;
 			/// <summary>Old One's Army enemies only consider players within 200 px (vanilla filter); soldiers compete under the same rule.</summary>
 			public const float OldOnesSoldierRangePx = 200f;
+			/// <summary>
+			/// A disguised mimic (ai[0] == 0) wakes when its target comes within about 100 px (chest mimic: its rectangle grown by 100) or 80 px (biome mimic).
+			/// A soldier only competes for one this close, so a sleeping mimic is woken by a soldier walking up to it and never hunts one across the map.
+			/// </summary>
+			public const float MimicWakeSoldierRangePx = 200f;
+			/// <summary>Accessory-issue score per point of aggro an accessory adds (Flesh Knuckles +400 = 100, about two defense points). A tie-breaker, never a rank override.</summary>
+			public const float AccessoryAggroWeight = 0.25f;
 
 			/// <summary>
 			/// AI styles whose vanilla code reads <c>Main.player[target]</c> directly and therefore work with the slot-255 dummy swap.
@@ -24,7 +31,7 @@ namespace Levy.Common
 			{
 				NPCAIStyleID.Slime, NPCAIStyleID.DemonEye, NPCAIStyleID.Fighter, NPCAIStyleID.Worm, NPCAIStyleID.Caster, NPCAIStyleID.Bat,
 				NPCAIStyleID.Piranha, NPCAIStyleID.Vulture, NPCAIStyleID.Jellyfish, NPCAIStyleID.Antlion, NPCAIStyleID.HoveringFighter,
-				NPCAIStyleID.Mimic, NPCAIStyleID.Spider, NPCAIStyleID.FlyingFish,
+				NPCAIStyleID.Mimic, NPCAIStyleID.BiomeMimic, NPCAIStyleID.Spider, NPCAIStyleID.FlyingFish,
 			};
 
 			/// <summary>

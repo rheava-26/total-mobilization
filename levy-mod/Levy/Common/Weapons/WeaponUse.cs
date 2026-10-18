@@ -192,6 +192,8 @@ namespace Levy.Common.Weapons
 			if (s.Record.Mana < cost) return false;
 			int projType = item.shoot;
 			if (projType <= 0) return Dud(s, item);
+			// Flying Knife: one per soldier. While it is out the soldier just keeps aiming, like a player holding the knife at the cursor.
+			if (projType == ProjectileID.FlyingKnife && SoldierProjectileTag.SoldierHasLiveKnife(s.NPC.whoAmI)) return Dud(s, item);
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 			float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 			Vector2 muzzle = Muzzle(s);

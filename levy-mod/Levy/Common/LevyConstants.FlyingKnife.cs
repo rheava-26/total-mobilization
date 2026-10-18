@@ -1,19 +1,20 @@
 namespace Levy.Common
 {
-	/// <summary>Soldier-fired Flying Knife numbers: the knife seeks its soldier's target, darts around it, then returns to the soldier. Additive partial; see LevyConstants.cs for the rest.</summary>
+	/// <summary>Soldier-fired Flying Knife numbers: one knife per soldier hovers on the soldier's current target for as long as it keeps fighting, and returns to the soldier once it stops. Additive partial; see LevyConstants.cs for the rest.</summary>
 	public static partial class LevyConstants
 	{
 		// ---- Soldier Flying Knife ----
-		/// <summary>Seek phase: homing acceleration (px/tick per tick), top speed (px/tick) and length (ticks) before the knife peels off for home.</summary>
+		/// <summary>Attack phase: homing acceleration (px/tick per tick) and top speed (px/tick). There is no timeout while the soldier fights.</summary>
 		public const float KnifeSeekAccel = 0.7f, KnifeSeekMaxSpeed = 15f;
-		public const int KnifeSeekTicks = 75;
 		/// <summary>Return phase: homing acceleration, top speed (px/tick), and the distance to the soldier (px) at which the knife is caught and despawns.</summary>
 		public const float KnifeReturnAccel = 1.0f, KnifeReturnMaxSpeed = 19f, KnifeReturnCatchPx = 20f;
 		/// <summary>Blade spin per tick (radians).</summary>
 		public const float KnifeSpinPerTick = 0.45f;
-		/// <summary>With no soldier target, the knife looks for the nearest hostile within this many tiles of itself.</summary>
-		public const float KnifeFallbackSearchTiles = 50f;
-		/// <summary>Hard cap on the knife's lifetime (ticks), and the return-phase grace (ticks) it flies on after its soldier is gone.</summary>
-		public const int KnifeMaxLifeTicks = 180, KnifeOrphanGraceTicks = 20;
+		/// <summary>Ticks the knife coasts after its soldier is gone before despawning.</summary>
+		public const int KnifeOrphanGraceTicks = 20;
+		/// <summary>Ticks the knife hovers with no target (soldier still fighting) before heading home, so a kill followed by a new acquisition never sends it back.</summary>
+		public const int KnifeLoseTargetGraceTicks = 30;
+		/// <summary>Defensive backstop (ticks, 3 minutes): cleans up a stuck knife only; not a normal lifetime.</summary>
+		public const int KnifeSafetyMaxTicks = 10800;
 	}
 }

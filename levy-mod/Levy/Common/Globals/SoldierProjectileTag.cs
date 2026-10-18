@@ -62,7 +62,8 @@ namespace Levy.Common.Globals
 
 		/// <summary>
 		/// A soldier-fired Flying Knife would otherwise steer to Main.player[owner]'s cursor (the commander's, since soldier shots are owned by the commander)
-		/// and hover in open air. Replace its AI: seek the soldier's target, dart around it, then return to the soldier. A player's own knife keeps vanilla AI.
+		/// and hover in open air. Replace its AI to mirror a held vanilla knife: it hovers on the soldier's current target for as long as the soldier keeps fighting,
+		/// and returns to the soldier only once it stops. A player's own knife keeps vanilla AI.
 		/// </summary>
 		public override bool PreAI(Projectile projectile)
 		{
@@ -72,64 +73,65 @@ namespace Levy.Common.Globals
 		}
 
 		private int _knifeAge;
+		/// <summary>Ticks with no valid target while the soldier still fights (hover grace); doubles as the orphan counter once the soldier is gone.</summary>
+		private int _knifeLost;
+
+		/// <summary>True if this soldier already has a Flying Knife in the air (the spawn gate: one knife at a time per soldier).</summary>
+		public static bool SoldierHasLiveKnife(int soldierIndex)
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (q.active && q.type == ProjectileID.FlyingKnife && q.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == soldierIndex) return true;
+			}
+			return false;
+		}
 
 		private void DriveSoldierFlyingKnife(Projectile p)
 		{
-			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
-			SoldierNPC body = s != null && s.active ? s.ModNPC as SoldierNPC : null;
-
 			p.tileCollide = false;
 			p.rotation += LevyConstants.KnifeSpinPerTick;
 			if (p.timeLeft < 5) p.timeLeft = 5;
-			if (++_knifeAge > LevyConstants.KnifeMaxLifeTicks) { p.Kill(); return; }
+			// Defensive backstop only: cleans up a truly stuck knife; the soldier simply throws a fresh one.
+			if (++_knifeAge > LevyConstants.KnifeSafetyMaxTicks) { p.Kill(); return; }
 
-			if (p.ai[0] == 0f)
-			{
-				NPC target = PickKnifeTarget(p, body);
-				p.ai[1]++;
-				if (target == null || p.ai[1] >= LevyConstants.KnifeSeekTicks)
-				{
-					p.ai[0] = 1f; p.ai[1] = 0f; p.netUpdate = true;
-					return;
-				}
-				SteerKnife(p, target.Center, LevyConstants.KnifeSeekAccel, LevyConstants.KnifeSeekMaxSpeed);
-				return;
-			}
-
-			p.ai[1]++;
+			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
+			SoldierNPC body = s != null && s.active ? s.ModNPC as SoldierNPC : null;
 			if (body == null)
 			{
-				// Soldier gone: coast on the current heading, slowing, and despawn after a short grace.
+				// Soldier gone: coast, slowing, and despawn after a short grace.
 				p.velocity *= 0.96f;
-				if (p.ai[1] > LevyConstants.KnifeOrphanGraceTicks) p.Kill();
+				if (++_knifeLost > LevyConstants.KnifeOrphanGraceTicks) p.Kill();
 				return;
 			}
+
+			// Same "is actively shooting" test as SoldierNPC.Combat.
+			bool engaging = (body.State == SoldierState.Engage || body.State == SoldierState.Shaken || body.State == SoldierState.Routed) && !body.Record.HoldFire;
+			NPC target = engaging ? CurrentKnifeTarget(body) : null;
+			if (target != null)
+			{
+				_knifeLost = 0;
+				SteerKnife(p, target.Center, LevyConstants.KnifeSeekAccel, LevyConstants.KnifeSeekMaxSpeed); // overshoot/orbit = the jabbing hover
+				return;
+			}
+			_knifeLost++;
+			if (engaging && _knifeLost < LevyConstants.KnifeLoseTargetGraceTicks)
+			{
+				p.velocity *= 0.9f; // between targets: hold position and wait for the soldier to reacquire
+				return;
+			}
+			// Disengaged (or grace spent): fly home. If the soldier re-engages en route, the next tick's target != null flips it back to attacking.
 			if (Vector2.Distance(p.Center, s.Center) <= LevyConstants.KnifeReturnCatchPx) { p.Kill(); return; }
 			SteerKnife(p, s.Center, LevyConstants.KnifeReturnAccel, LevyConstants.KnifeReturnMaxSpeed);
 		}
 
-		/// <summary>The soldier's engaged enemy if it is still a valid hostile; else the nearest valid hostile within the fallback radius of the knife; else null.</summary>
-		private static NPC PickKnifeTarget(Projectile p, SoldierNPC body)
+		/// <summary>The soldier's own engaged enemy if it is still a valid hostile; else null. The knife mirrors the soldier's aim and never picks a target itself.</summary>
+		private static NPC CurrentKnifeTarget(SoldierNPC body)
 		{
-			if (body != null)
-			{
-				int ti = body.TargetIndex;
-				if (ti >= 0 && ti < Main.maxNPCs)
-				{
-					NPC t = Main.npc[ti];
-					if (t.active && t.life > 0 && !SoldierTargeting.IsNeverTarget(t)) return t;
-				}
-			}
-			float best = LevyConstants.KnifeFallbackSearchTiles * LevyConstants.TilePx;
-			NPC found = null;
-			for (int i = 0; i < Main.maxNPCs; i++)
-			{
-				NPC n = Main.npc[i];
-				if (!n.active || n.life <= 0 || SoldierTargeting.IsNeverTarget(n)) continue;
-				float d = Vector2.Distance(p.Center, n.Center);
-				if (d < best) { best = d; found = n; }
-			}
-			return found;
+			int ti = body.TargetIndex;
+			if (ti < 0 || ti >= Main.maxNPCs) return null;
+			NPC t = Main.npc[ti];
+			return t.active && t.life > 0 && !SoldierTargeting.IsNeverTarget(t) ? t : null;
 		}
 
 		/// <summary>Standard homing: pull the velocity toward the destination, capped at max speed. Overshoots and loops, which reads as darting around the point.</summary>

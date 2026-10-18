@@ -62,6 +62,7 @@ FocusCursorHint: Click a target or a spot to attack
 FocusCancelled: Focus attack cancelled.
 FocusSet: Focus fire on {0}.
 FocusCleared: Focus fire cleared.
+FocusClearHint: Stops the squad firing at the marked target or spot.
 FocusAttackHint: Then click an enemy, a critter, or a spot. The squad attacks it until it's clear.
 FocusAttackSet: The squad attacks the marked spot.
 FocusAttackCleared: Focus attack cleared.

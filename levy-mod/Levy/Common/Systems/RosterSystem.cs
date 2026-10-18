@@ -1097,6 +1097,10 @@ namespace Levy.Common.Systems
 			return -1;
 		}
 
+		/// <summary>True when this commander has any focus standing (a locked NPC or an attack position). Server / single player authoritative.</summary>
+		public static bool HasFocus(string commanderName)
+			=> FocusTargetOf(commanderName) >= 0 || FocusPositionOf(commanderName, out _);
+
 		public static void ClearFocusTargets() { _focusTargets.Clear(); _focusPositions.Clear(); }
 
 		public virtual void Rally(Player commander)

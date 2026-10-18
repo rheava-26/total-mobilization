@@ -30,6 +30,8 @@ namespace Levy.Common.UI
 
 		/// <summary>True while the next left-click in the world designates the squad's Focus Attack (a hostile locks it, anything else marks a spot); set from the radial, read by <see cref="UIPlayer"/>.</summary>
 		public static bool FocusDesignating { get; private set; }
+		/// <summary>Client mirror: the local commander has a focus standing (locked NPC or attack position). Optimistic; the server is authoritative. Drives the radial's Clear-focus label in multiplayer.</summary>
+		public static bool FocusActive;
 		/// <summary>GameUpdateCount when designate mode began (clicks inside the grace window are ignored).</summary>
 		public static uint FocusDesignateStartTick { get; private set; }
 
@@ -78,10 +80,10 @@ namespace Levy.Common.UI
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
 			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = null;
 			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null;
-			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false;
+			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusActive = false;
 		}
 
-		public override void OnWorldUnload() { FocusDesignating = false; if (!Main.dedServ) CloseAll(); }
+		public override void OnWorldUnload() { FocusDesignating = false; FocusActive = false; if (!Main.dedServ) CloseAll(); }
 
 		// ------------------------------------------------------------------ open / close (client)
 		public virtual void OpenBarracks(BarracksTE te)

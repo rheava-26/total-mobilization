@@ -302,6 +302,7 @@ Mods: {
 			SearchDestroy: Search & destroy
 			FreeRein: Free rein
 			FocusAttack: Focus attack
+			FocusClear: Clear focus
 			Rally: Rally
 			Rearm: Re-arm
 			RearmHint: Every soldier returns their kit to the Armory and draws again from the current issue slots.

@@ -110,7 +110,8 @@ namespace Levy.Common.UI
 			_buttons[4].Set(LevyUtil.T("UI.FreeRein"), true, LevyUtil.T(_radio ? "UI2.FreeReinHintRadio" : "UI2.FreeReinHint"));
 			_buttons[5].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
 			_buttons[6].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
-			_buttons[7].Set(LevyUtil.T("UI.FocusAttack"), true, LevyUtil.T("UI2.FocusAttackHint"));
+			bool focusOn = UIActions.FocusStanding();
+			_buttons[7].Set(LevyUtil.T(focusOn ? "UI.FocusClear" : "UI.FocusAttack"), true, LevyUtil.T(focusOn ? "UI2.FocusClearHint" : "UI2.FocusAttackHint"));
 			if (_nearest == null) _buttons[8].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
 			else _buttons[8].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
 			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
@@ -129,7 +130,10 @@ namespace Levy.Common.UI
 				case 4: UIActions.Order(SoldierOrder.FreeRein, _radio); break;
 				case 5: UIActions.HoldFire(_radio); break;
 				case 6: UIActions.SpreadOut(_radio); break;
-				case 7: UISystem.Instance.BeginFocusDesignate(); break;
+				case 7:
+					if (UIActions.FocusStanding()) UIActions.ClearFocus();
+					else UISystem.Instance.BeginFocusDesignate();
+					break;
 				case 8: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
 				case 9: UIActions.Rally(); break;
 				case 10: UIActions.Rearm(); break;

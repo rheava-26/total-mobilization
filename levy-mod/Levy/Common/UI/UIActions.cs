@@ -107,6 +107,7 @@ namespace Levy.Common.UI
 		/// <summary>Sets (or, with -1 / the same NPC again, clears) the squad's shared focus target. Client to server authoritative.</summary>
 		public static void FocusTarget(int npcId)
 		{
+			UISystem.FocusActive = npcId >= 0;
 			if (Single) RosterSystem.Instance.SetFocusTarget(Me, npcId);
 			else { var p = LevyPackets.New(LevyPacket.FocusTarget); p.Write(npcId); p.Send(); }
 		}
@@ -114,8 +115,29 @@ namespace Levy.Common.UI
 		/// <summary>Sets (or clears) the squad's Focus Attack world position. Client to server authoritative (the server clears it when the same spot is designated again).</summary>
 		public static void FocusAttack(bool set, Vector2 world)
 		{
+			UISystem.FocusActive = set;
 			if (Single) RosterSystem.Instance.SetFocusAttack(Me, set, world);
 			else { var p = LevyPackets.New(LevyPacket.FocusAttack); p.Write(set); p.Write(world.X); p.Write(world.Y); p.Send(); }
+		}
+
+		/// <summary>True when the local commander has a focus standing. Authoritative in single player; the client mirror in multiplayer.</summary>
+		public static bool FocusStanding()
+			=> Single ? RosterSystem.HasFocus(Me.name) : UISystem.FocusActive;
+
+		/// <summary>Calls the squad off any standing focus: a locked NPC and/or an attack position. Idempotent.</summary>
+		public static void ClearFocus()
+		{
+			UISystem.FocusActive = false;
+			if (Single)
+			{
+				RosterSystem.Instance.SetFocusTarget(Me, -1);
+				RosterSystem.Instance.SetFocusAttack(Me, false, default);
+			}
+			else
+			{
+				var p = LevyPackets.New(LevyPacket.FocusTarget); p.Write(-1); p.Send();
+				var q = LevyPackets.New(LevyPacket.FocusAttack); q.Write(false); q.Write(0f); q.Write(0f); q.Send();
+			}
 		}
 
 		public static void Rally()

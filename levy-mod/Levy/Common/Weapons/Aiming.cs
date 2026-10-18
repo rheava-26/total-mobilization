@@ -49,6 +49,19 @@ namespace Levy.Common.Weapons
 			return 0.5f * gravityPerTick * n * (n + 1f);
 		}
 
+		/// <summary>
+		/// Multiplier on aim error for a shot of <paramref name="distPx"/> pixels: 1 up to <see cref="LevyConstants.AccuracyFalloffStartTiles"/>, then easing
+		/// linearly down to <see cref="LevyConstants.AccuracyLongRangeErrorMult"/> at <see cref="LevyConstants.AccuracyFalloffEndTiles"/>.
+		/// </summary>
+		public static float LongRangeErrorScale(float distPx)
+		{
+			float tiles = distPx / LevyConstants.TilePx;
+			float start = LevyConstants.AccuracyFalloffStartTiles, end = LevyConstants.AccuracyFalloffEndTiles;
+			if (tiles <= start || end <= start) return 1f;
+			float t = MathHelper.Clamp((tiles - start) / (end - start), 0f, 1f);
+			return MathHelper.Lerp(1f, LevyConstants.AccuracyLongRangeErrorMult, t);
+		}
+
 		public static bool HasLineOfSight(Vector2 from, Vector2 to) => Collision.CanHitLine(from, 1, 1, to, 1, 1);
 
 		/// <summary>

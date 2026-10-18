@@ -16,6 +16,12 @@ namespace Levy.Common.Weapons
 		public int Damage; public float Knockback; public int Crit;
 		public int UseAmmo; public int Mana;
 		public int RangeTiles = LevyConstants.RangeMelee;
+		/// <summary>How far the weapon's own blow reaches, in tiles (the swing/thrust/lash). Equals <see cref="RangeTiles"/> except for projectile-melee weapons, whose RangeTiles is the longer beam reach.</summary>
+		public int MeleeReachTiles = LevyConstants.RangeMelee;
+		/// <summary>A melee swing that also launches a real friendly projectile (Enchanted Sword, Ice Blade, Beam Sword, Starfury, Terra Blade...). The soldier swings from out to <see cref="RangeTiles"/>.</summary>
+		public bool FiresProjectileMelee;
+		/// <summary>The projectile type a <see cref="FiresProjectileMelee"/> swing launches (0 otherwise).</summary>
+		public int BeamProjType;
 		public bool Gravity; public bool Homing;
 		public int MultishotCount = 1; public float SpreadDeg;
 		public DamageClass DamageType = DamageClass.Default;
@@ -200,7 +206,35 @@ namespace Levy.Common.Weapons
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
+			p.MeleeReachTiles = p.RangeTiles;
+			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			return p;
+		}
+
+		/// <summary>
+		/// A broadsword whose swing launches a real friendly projectile gets FiresProjectileMelee and the projectile's reach as RangeTiles (never below the
+		/// melee reach, capped at ProjectileMeleeReachCapTiles). Held slashes drawn around the body (Night's Edge family) do not count; Terra Blade's
+		/// flown beam comes from the SwordBeams table.
+		/// </summary>
+		private static void ApplyProjectileMelee(Item src, WeaponProfile p)
+		{
+			bool table = SwordBeams.HasBeam(src.type);
+			int beam = table ? SwordBeams.BeamProjectile(src.type) : src.shoot;
+			if (beam <= 0) return;
+			var sample = ProjectileSample(beam);
+			if (sample == null || !sample.friendly || sample.hostile || sample.minion || sample.sentry) return;
+			if (!table && IsHeldSlashProjectile(beam)) return;
+			if (IsHeldOwnerProjectile(sample)) return;
+			int reach = LevyConstants.ProjectileMeleeReachCapTiles;
+			if (!table && sample.timeLeft <= LevyConstants.LongShotLifetimeTicks)
+			{
+				float speed = Math.Max(1f, src.shootSpeed) * (1 + Math.Max(0, sample.extraUpdates));
+				float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
+				reach = Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, LevyConstants.ProjectileMeleeReachCapTiles);
+			}
+			p.FiresProjectileMelee = true;
+			p.BeamProjType = beam;
+			p.RangeTiles = Math.Max(p.MeleeReachTiles, reach);
 		}
 
 		/// <summary>Engagement range for an extended ranged weapon: the family range, cut down to the real reach when its projectile has a short lifetime (flames).</summary>

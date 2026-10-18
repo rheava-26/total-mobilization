@@ -129,7 +129,20 @@ namespace Levy.Content.NPCs
 			// melee
 			if (Weapon.Family == WeaponFamily.Broadsword && ItemAnimation > 0) ProcessSwing(target);
 			float meleeTiles = Aiming.TilesToHitbox(NPC.Center, seg);
-			if (meleeTiles <= Weapon.RangeTiles + LevyConstants.MeleeEngageExtraTiles) WeaponUse.TryAttack(this, target);
+			float blowReach = Weapon.MeleeReachTiles;
+			float closeTrigger = blowReach + LevyConstants.MeleeEngageExtraTiles;
+			if (Weapon.FiresProjectileMelee)
+			{
+				// Swing from out to the beam's reach so the projectile flies; up close the swing hitbox lands as always (no line of sight needed there).
+				if (meleeTiles <= closeTrigger) { WeaponUse.TryAttack(this, target); return; }
+				if (meleeTiles > Weapon.RangeTiles) return;
+				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(WeaponUse.Muzzle(this), seg.Center)) return;
+				WeaponUse.TryAttack(this, target);
+				return;
+			}
+			// Pure melee: begin the swing/thrust as the enemy closes in, a little before it is strictly in reach (whips keep their lash for real targets).
+			float trigger = Weapon.IsWhip ? closeTrigger : Math.Max(closeTrigger, blowReach * LevyConstants.MeleePreSwingReachMult);
+			if (meleeTiles <= trigger) WeaponUse.TryAttack(this, target);
 		}
 
 		/// <summary>The projectile the weapon in hand would fire passes through tiles (no line-of-sight check needed).</summary>
@@ -142,7 +155,7 @@ namespace Levy.Content.NPCs
 				if (pouch != null && !pouch.IsAir && held != null && !held.IsAir) projType = WeaponUse.ResolveProjectile(this, held, pouch);
 				else if (pouch != null && !pouch.IsAir) projType = pouch.shoot;
 			}
-			if (projType <= 0) projType = Weapon.Shoot;
+			if (projType <= 0) projType = Weapon.BeamProjType > 0 ? Weapon.BeamProjType : Weapon.Shoot;
 			var sample = WeaponClassifier.ProjectileSample(projType);
 			return sample != null && !sample.tileCollide;
 		}

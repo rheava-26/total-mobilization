@@ -52,6 +52,12 @@ namespace Levy.Common
 		// ---------- Boomerangs ----------
 		/// <summary>Boomerangs one soldier may have out at once.</summary>
 		public const int BoomerangMaxOut = 1;
+		/// <summary>Per-weapon override of <see cref="BoomerangMaxOut"/>: multi-throw boomerangs. Bananarang is capped at 10 owned projectiles in vanilla (Player.ItemCheck_CheckCanUse, shoot 272).</summary>
+		public const int BananarangMaxOut = 10;
+		public static readonly System.Collections.Generic.Dictionary<int, int> BoomerangMaxOutByItem = new()
+		{
+			[Terraria.ID.ItemID.Bananarang] = BananarangMaxOut,
+		};
 		/// <summary>Engagement range (tiles) and the farthest a boomerang flies out from the soldier (px).</summary>
 		public const int RangeBoomerang = 22;
 		public const float BoomerangMaxOutPx = 22f * 16f;

@@ -28,6 +28,9 @@ namespace Levy.Common.Weapons
 
 		public static bool HasBeam(int itemType) => Table.ContainsKey(itemType);
 
+		/// <summary>The projectile type the item's table beam launches, or 0 when the item has none.</summary>
+		public static int BeamProjectile(int itemType) => Table.TryGetValue(itemType, out BeamSpec spec) ? spec.ProjType : 0;
+
 		/// <summary>Launches the item's beam from the soldier toward <paramref name="target"/>. Returns false when the item has none or nothing spawned.</summary>
 		public static bool TryFire(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{

@@ -25,12 +25,23 @@ namespace Levy.Common
 			585, 592, 593, 601, 606, 616, 634, 635, 638, 639, 660, 661, 682, 684, 706, 709, 710, 712, 876,
 		};
 
+		/// <summary>
+		/// Long-range aim help: shots farther than AccuracyFalloffStartTiles scale their jitter and lead error down, reaching AccuracyLongRangeErrorMult
+		/// of the normal error at AccuracyFalloffEndTiles and beyond. Shots inside the start distance are untouched.
+		/// </summary>
+		public const int AccuracyFalloffStartTiles = RangeGun / 2, AccuracyFalloffEndTiles = RangeGun;
+		public const float AccuracyLongRangeErrorMult = 0.6f;
+
 		/// <summary>Routed soldiers keep shooting: the aim error is this multiple of normal in total (Shaken's own x2 is part of it, not on top).</summary>
 		public const float RoutedAimMult = 3f;
 
 		// ---------- Cadence / animation ----------
 		/// <summary>Melee weapons start a swing when the target is within RangeTiles + this many tiles.</summary>
 		public const int MeleeEngageExtraTiles = 1;
+		/// <summary>Pure melee soldiers (swords, spears, shortswords) start the swing/thrust when a hostile is within this multiple of their melee reach, so the blow is already landing as the enemy arrives. Never less than reach + MeleeEngageExtraTiles.</summary>
+		public const float MeleePreSwingReachMult = 1.4f;
+		/// <summary>Projectile-melee weapons (swords that fire a beam) engage out to the beam's reach, capped here.</summary>
+		public const int ProjectileMeleeReachCapTiles = RangeMagic;
 		/// <summary>Size of the swing hitbox when no texture is loaded (dedicated server): vanilla's fallback item rectangle.</summary>
 		public const int MeleeHitboxFallbackPx = 32;
 		/// <summary>Titan Glove melee size bonus (Player.ApplyMeleeScale).</summary>

@@ -399,7 +399,7 @@ namespace Levy.Common.Weapons
 				float t = MathHelper.Clamp(Vector2.Distance(muzzle, targetPos) / Math.Max(0.01f, speed), 0f, LevyConstants.AimMaxLeadTicks);
 				lead = targetVel * t;
 			}
-			float errMult = AimErrorMultiplier(s);
+			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, targetPos));
 			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
 			float jitter = LevyConstants.GradeAimJitterDeg[grade] * errMult;
 			float leadErr = LevyConstants.GradeLeadError[grade] * errMult;
@@ -506,10 +506,13 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
+		/// <summary>How many of this boomerang one soldier may have out at once: the per-weapon override (Bananarang), else the shared cap.</summary>
+		public static int BoomerangCap(Item item) => item != null && LevyConstants.BoomerangMaxOutByItem.TryGetValue(item.type, out int n) ? n : LevyConstants.BoomerangMaxOut;
+
 		/// <summary>Throws the soldier's boomerang at the target unless the allowed number are already out.</summary>
 		private static bool ThrowBoomerang(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
-			if (s.CountAnchored<SoldierBoomerang>() >= LevyConstants.BoomerangMaxOut) { s.AttackCooldown = 6; return false; }
+			if (s.CountAnchored<SoldierBoomerang>() >= BoomerangCap(item)) { s.AttackCooldown = 6; return false; }
 			if (item.shoot <= 0) return Dud(s, item);
 			float speed = MathHelper.Clamp(item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.BoomerangMinSpeed, LevyConstants.BoomerangMinSpeed, LevyConstants.BoomerangMaxSpeed);
 			Vector2 muzzle = Muzzle(s);

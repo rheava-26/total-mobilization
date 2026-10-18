@@ -347,7 +347,7 @@ namespace Levy.Common.Systems
 			{
 				var rec = barracks.Militia[i];
 				var body = BodyOf(rec);
-				if (body == null) { barracks.Militia.RemoveAt(i); continue; }
+				if (body == null) { ReturnGearHome(barracks, rec); barracks.Militia.RemoveAt(i); continue; }
 				body.State = SoldierState.ReturnHome;
 				body.NPC.netUpdate = true;
 				rt.StandingDown.Add((rec, deadline));
@@ -484,7 +484,7 @@ namespace Levy.Common.Systems
 			{
 				var (rec, deadline) = rt.StandingDown[i];
 				var body = BodyOf(rec);
-				if (body == null) { b.Militia.Remove(rec); rt.StandingDown.RemoveAt(i); continue; }
+				if (body == null) { ReturnGearHome(b, rec); b.Militia.Remove(rec); rt.StandingDown.RemoveAt(i); continue; }
 				if (now >= deadline) { rt.StandingDown.RemoveAt(i); DismissMilitiaBody(body); }
 			}
 		}
@@ -508,7 +508,7 @@ namespace Levy.Common.Systems
 				var b = GetBarracks(_scratchIds[k]); if (b == null) continue;
 				var rt = RuntimeOf(b);
 				for (int i = b.Militia.Count - 1; i >= 0; i--)
-					if (!b.Militia[i].HasBody) { RemoveStandingDown(rt, b.Militia[i]); b.Militia.RemoveAt(i); }
+					if (!b.Militia[i].HasBody) { ReturnGearHome(b, b.Militia[i]); RemoveStandingDown(rt, b.Militia[i]); b.Militia.RemoveAt(i); }
 			}
 
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -673,7 +673,10 @@ namespace Levy.Common.Systems
 			catch (Exception e) { Levy.Instance.Logger.Warn("Levy: armory refused to issue gear to a militia record: " + e); }
 		}
 
-		/// <summary>Returns a militia kit to the home armory (or the nearest one in link range of the old home position). No armory: the gear came from nowhere and goes nowhere.</summary>
+		/// <summary>
+		/// Returns a militia kit to the home armory (or the nearest one in link range of the old home position). No armory: the kit is
+		/// DROPPED on the ground (at the live body, else the old home position) — a kit is never deleted.
+		/// </summary>
 		private void ReturnGearHome(BarracksTE home, SoldierRecord rec)
 		{
 			if (rec == null) return;
@@ -685,7 +688,45 @@ namespace Levy.Common.Systems
 				try { armory.ReturnGear(rec.Gear); _dirtyArmories.Add(armory.ID); }
 				catch (Exception e) { Levy.Instance.Logger.Warn("Levy: armory refused a returned militia kit: " + e); }
 			}
+			else if (LevyUtil.IsServerOrSingle)
+			{
+				// No armory anywhere (the player removed it): spill the kit instead of deleting it.
+				var body = BodyOf(rec);
+				Vector2? at = null;
+				if (body != null && body.NPC.active) at = body.NPC.Center;
+				else if (rec.HomePos.X >= 0) at = new Vector2((rec.HomePos.X + 1.5f) * LevyConstants.TilePx, (rec.HomePos.Y + 1.5f) * LevyConstants.TilePx);
+				if (at.HasValue)
+				{
+					var box = new Rectangle((int)at.Value.X - 8, (int)at.Value.Y - 8, 16, 16);
+					var source = new EntitySource_Misc("Levy:MilitiaKitRecovered");
+					foreach (var it in rec.Gear.AllItems())
+					{
+						if (it == null || it.IsAir || it.stack <= 0) continue;
+						Item.NewItem(source, box, it);
+					}
+				}
+				else Levy.Instance.Logger.Warn("Levy: a militia kit had no armory and no position to drop at; it was lost.");
+			}
 			rec.Gear.Clear();
+		}
+
+		/// <summary>
+		/// Runs before the quit-save: every mustered militiaman's kit goes back to its armory (or the ground) so it is written with the world.
+		/// Militia records are never saved, so without this the gear drawn onto them would vanish on exit.
+		/// </summary>
+		public override void PreSaveAndQuit()
+		{
+			if (!LevyUtil.IsServerOrSingle) return;
+			foreach (var b in new List<BarracksTE>(AllBarracks()))
+			{
+				var rt = RuntimeOf(b);
+				var done = new HashSet<SoldierRecord>();
+				if (rt.PendingSpawn != null) { done.Add(rt.PendingSpawn); ReturnGearHome(b, rt.PendingSpawn); }
+				foreach (var rec in b.Militia) if (done.Add(rec)) ReturnGearHome(b, rec);
+				foreach (var (rec, _) in rt.StandingDown) if (done.Add(rec)) ReturnGearHome(b, rec);
+				b.Militia.Clear(); rt.StandingDown.Clear(); rt.PendingSpawn = null;
+				b.Mobilized = false;
+			}
 		}
 
 		/// <summary>

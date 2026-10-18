@@ -272,7 +272,7 @@ namespace Levy.Common.UI
 				layers.Insert(inv + 2, new LegacyGameInterfaceLayer("Levy: Orders Radial", () =>
 				{
 					if (_radialUI?.CurrentState != null) _radialUI.Draw(Main.spriteBatch, gt);
-					if (FocusDesignating) Terraria.ModLoader.UI.UICommon.TooltipMouseText(LevyUtil.T("UI2.FocusCursorHint"));
+					if (FocusDesignating) HintTooltip.Queue(LevyUtil.T("UI2.FocusCursorHint")); // clean tooltip (no fake-item "Material" line)
 					return true;
 				}, InterfaceScaleType.UI));
 			}

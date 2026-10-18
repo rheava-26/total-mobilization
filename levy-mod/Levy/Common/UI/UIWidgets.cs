@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -6,7 +7,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
-using Terraria.ModLoader.UI;
+using Terraria.ModLoader;
 using Terraria.UI;
 
 namespace Levy.Common.UI
@@ -51,7 +52,73 @@ namespace Levy.Common.UI
 		protected override void DrawSelf(SpriteBatch spriteBatch)
 		{
 			base.DrawSelf(spriteBatch);
-			if (IsMouseHovering && !string.IsNullOrEmpty(Hint)) UICommon.TooltipMouseText(Hint);
+			if (IsMouseHovering && !string.IsNullOrEmpty(Hint)) HintTooltip.Queue(Hint);
+		}
+	}
+
+	/// <summary>
+	/// Plain text tooltip for UI hints. Deliberately NOT UICommon.TooltipMouseText: with the opaque-box setting on, that fabricates a fake
+	/// Item and runs it through the vanilla item-tooltip pipeline, which appends item lines such as "Material" (item.material is taken from
+	/// ItemID.Sets.IsAMaterial for the fake item). This draws the same panel and text itself, so only the hint shows.
+	/// The hint is queued during UI drawing and drawn from PostDrawInterface so no later widget can paint over it.
+	/// </summary>
+	public class HintTooltip : ModSystem
+	{
+		private const int MaxWidth = 340;
+		private static string _pending;
+
+		public static void Queue(string text) => _pending = text;
+
+		public override void PostDrawInterface(SpriteBatch spriteBatch)
+		{
+			string text = _pending;
+			_pending = null;
+			if (Main.dedServ || string.IsNullOrEmpty(text)) return;
+			Draw(spriteBatch, text);
+		}
+
+		private static List<string> Wrap(string text, ReLogic.Graphics.DynamicSpriteFont font)
+		{
+			var lines = new List<string>();
+			foreach (string para in text.Split('\n'))
+			{
+				string cur = "";
+				foreach (string word in para.Split(' '))
+				{
+					string trial = cur.Length == 0 ? word : cur + " " + word;
+					if (cur.Length > 0 && font.MeasureString(trial).X > MaxWidth) { lines.Add(cur); cur = word; }
+					else cur = trial;
+				}
+				lines.Add(cur);
+			}
+			return lines;
+		}
+
+		private static void Draw(SpriteBatch spriteBatch, string text)
+		{
+			var font = FontAssets.MouseText.Value;
+			if (font == null) return;
+			List<string> lines = Wrap(text, font);
+			float width = 0f;
+			foreach (string l in lines) width = Math.Max(width, font.MeasureString(l).X);
+			int lineH = Math.Max(24, (int)font.LineSpacing);
+			float height = lineH * lines.Count;
+
+			bool box = Main.SettingsEnabled_OpaqueBoxBehindTooltips;
+			float x = Main.mouseX + 16, y = Main.mouseY + 16;
+			int margin = 4;
+			if (box) { x += 8; y += 2; margin = 18; }
+			if (x + width + margin > Main.screenWidth) x = Main.screenWidth - width - margin;
+			if (y + height + margin > Main.screenHeight) y = Main.screenHeight - height - margin;
+			if (x < 0) x = 0;
+			if (y < 0) y = 0;
+
+			byte c = Main.mouseTextColor;
+			Color color = box ? Color.White : new Color(c, c, c, c);
+			if (box)
+				Utils.DrawInvBG(spriteBatch, new Rectangle((int)x - 10, (int)y - 5, (int)width + 20, (int)height + 7), new Color(23, 25, 81, 255) * 0.925f * 0.85f);
+			for (int i = 0; i < lines.Count; i++)
+				Utils.DrawBorderStringFourWay(spriteBatch, font, lines[i], x, y + i * lineH, color, Color.Black, Vector2.Zero);
 		}
 	}
 

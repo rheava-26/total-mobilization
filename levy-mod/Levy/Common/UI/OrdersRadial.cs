@@ -103,11 +103,11 @@ namespace Levy.Common.UI
 			_nearest = UIActions.NearestBarracks(Main.LocalPlayer.Center, _radio ? float.MaxValue : LevyConstants.UI.MobilizeKeyRadiusTiles);
 			bool holdFire = UIActions.MajorityHoldFire();
 			bool spread = UIActions.MajoritySpreadOut();
-			_buttons[0].Set(LevyUtil.T("UI.Follow"), true, LevyUtil.T("UI2.FollowHint"));
-			_buttons[1].Set(LevyUtil.T("UI.Hold"), true, LevyUtil.T("UI2.HoldHint"));
-			_buttons[2].Set(LevyUtil.T("UI.Return"), true, LevyUtil.T("UI2.ReturnHint"));
-			_buttons[3].Set(LevyUtil.T("UI.SearchDestroy"), true, LevyUtil.T("UI2.SearchDestroyHint"));
-			_buttons[4].Set(LevyUtil.T("UI.FreeRein"), true, LevyUtil.T("UI2.FreeReinHint"));
+			_buttons[0].Set(LevyUtil.T("UI.Follow"), true, LevyUtil.T(_radio ? "UI2.FollowHintRadio" : "UI2.FollowHint"));
+			_buttons[1].Set(LevyUtil.T("UI.Hold"), true, LevyUtil.T(_radio ? "UI2.HoldHintRadio" : "UI2.HoldHint"));
+			_buttons[2].Set(LevyUtil.T("UI.Return"), true, LevyUtil.T(_radio ? "UI2.ReturnHintRadio" : "UI2.ReturnHint"));
+			_buttons[3].Set(LevyUtil.T("UI.SearchDestroy"), true, LevyUtil.T(_radio ? "UI2.SearchDestroyHintRadio" : "UI2.SearchDestroyHint"));
+			_buttons[4].Set(LevyUtil.T("UI.FreeRein"), true, LevyUtil.T(_radio ? "UI2.FreeReinHintRadio" : "UI2.FreeReinHint"));
 			_buttons[5].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
 			_buttons[6].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
 			_buttons[7].Set(LevyUtil.T("UI.FocusTarget"), true, LevyUtil.T("UI2.FocusTargetHint"));

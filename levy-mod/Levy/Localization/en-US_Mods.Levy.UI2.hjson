@@ -46,12 +46,17 @@ RallyHint: Steady every Regular within 30 tiles. Once a minute.
 HoldFireHint: Soldiers stop shooting until told otherwise.
 FireAtWillHint: Soldiers engage anything hostile in reach.
 FollowHint: Regulars within 40 tiles follow you.
+FollowHintRadio: Every Regular, anywhere, follows you.
 HoldHint: Regulars within 40 tiles hold where they stand.
+HoldHintRadio: Every Regular, anywhere, holds where it stands.
 ReturnHint: Regulars within 40 tiles walk back to their barracks.
+ReturnHintRadio: Every Regular, anywhere, walks back to its barracks.
 SpreadOutHint: Soldiers keep far wider gaps, even while idle. Blunts area attacks.
 CloseUpHint: Soldiers return to the normal tight formation.
 SearchDestroyHint: Regulars within 40 tiles roam outward from the settlement hunting enemies, keeping their standoff.
+SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff.
 FreeReinHint: Regulars within 40 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
+FreeReinHintRadio: Every Regular, anywhere, acts fully on its own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
 FocusTargetHint: Then click an enemy. Every Regular fires on it until it dies.
 FocusDesignate: Click an enemy to focus fire on it. Click elsewhere, right-click or press Escape to cancel.
 FocusCursorHint: Click an enemy to focus fire

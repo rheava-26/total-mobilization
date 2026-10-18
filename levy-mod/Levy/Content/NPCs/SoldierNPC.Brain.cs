@@ -82,14 +82,23 @@ namespace Levy.Content.NPCs
 		/// <summary>Earliest tick of the next perch evaluation; -1 until the first one is staggered per soldier.</summary>
 		private int _perchNextTick = -1;
 		private int _nudgeNextTick;
+		// ---- engaging from cover (in reach, no firing line) ----
+		/// <summary>Tick the line to the current target was first seen blocked while in reach; -1 while there is a line (or no target).</summary>
+		private int _noLosSinceTick = -1, _noLosTarget = -1;
+		/// <summary>Earliest tick of the next firing-angle search.</summary>
+		private int _coverNextTick;
+		// ---- mimics ----
+		/// <summary>Nearest still-disguised mimic (hitbox-nearest point) from the last NPC scan; spots near it are never chosen.</summary>
+		private bool _mimicNearValid;
+		private Vector2 _mimicNearPos;
 		/// <summary>Crowding read from the last NPC scan: which way to step (+ right / - left, weighted), how many friends, nearest gap in tiles.</summary>
 		private float _crowdAway, _crowdNearestTiles = float.MaxValue;
 		private int _crowdCount;
 		// scratch shared by every soldier (the brain runs on one thread): friends near the search and the best-scoring candidate spots
 		private static readonly Vector2[] _friendPos = new Vector2[LevyConstants.PerchFriendCap];
 		private static int _friendN;
-		private static readonly Vector2[] _candPos = new Vector2[Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates)];
-		private static readonly float[] _candScore = new float[Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates)];
+		private static readonly Vector2[] _candPos = new Vector2[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
+		private static readonly float[] _candScore = new float[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
 		private static int _candN;
 		private const int HashMulX = 73856093, HashMulY = 19349663, HashMulId = 83492791;
 		private const uint HashMix = 1274126177u;
@@ -247,6 +256,7 @@ namespace Levy.Content.NPCs
 			_unreachIdx = -1; _unreachUntil = 0; _spotTarget = -1; _spotTick = -100000; _spotValid = false;
 			WantsAltitude = false; _altHeld = false;
 			_perchActive = false; _perchTarget = -1; _perchNextTick = -1; _nudgeNextTick = 0;
+			_noLosSinceTick = -1; _noLosTarget = -1; _coverNextTick = 0; _mimicNearValid = false;
 			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
 			_searchAnchorSet = false; _searchDir = 0; _searchGoalTick = 0; _searchPauseUntil = 0;
 			_freeLegs = 0; _freeScoutOffUntil = 0;
@@ -307,8 +317,9 @@ namespace Levy.Content.NPCs
 			float threatBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int threatIdx = -1;
 			float threatPrefilterSq = (LevyConstants.ThreatScanTiles + 30f) * (LevyConstants.ThreatScanTiles + 30f) * tileSq;
 			// a melee soldier also tracks the nearest hostile it will not charge (boss / lethal contact damage)
-			bool meleeCare = Weapon != null && Weapon.IsMelee;
+			bool meleeCare = Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee; // a beam-firing swordsman positions like a gunner
 			float dangerBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int dangerIdx = -1;
+			float mimicBest = float.MaxValue; _mimicNearValid = false;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				var n = Main.npc[i];
@@ -319,9 +330,13 @@ namespace Levy.Content.NPCs
 				if (dsq < crowdSq && n.type == NPC.type && n.ModNPC is SoldierNPC friend && friend.State != SoldierState.Dead) AccumulateCrowd(n);
 				if (dsq < threatPrefilterSq)
 				{
-					float hsq = Vector2.DistanceSquared(c, n.Hitbox.ClosestPointInRect(c));
+					Vector2 nearPt = n.Hitbox.ClosestPointInRect(c);
+					float hsq = Vector2.DistanceSquared(c, nearPt);
+					bool mimic = IsMimicNpc(n);
+					if (mimic && IsDisguisedMimicNpc(n) && hsq < mimicBest) { mimicBest = hsq; _mimicNearPos = nearPt; _mimicNearValid = true; }
 					bool wantsThreat = hsq < threatBest, wantsDanger = meleeCare && hsq < dangerBest;
-					if ((wantsThreat || wantsDanger) && !SoldierTargeting.IsNeverTarget(n))
+					// a sleeping mimic is never a target, but it is the most dangerous thing on the map to stand next to: it counts as a threat
+					if ((wantsThreat || wantsDanger) && (mimic || !SoldierTargeting.IsNeverTarget(n)))
 					{
 						if (wantsThreat) { threatBest = hsq; threatIdx = i; }
 						if (wantsDanger && IsMeleeLethal(n)) { dangerBest = hsq; dangerIdx = i; }
@@ -523,7 +538,10 @@ namespace Levy.Content.NPCs
 			return true;
 		}
 
-		private float AcquireRangeTiles() => Weapon.IsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles;
+		/// <summary>True for a blade / spear / whip that closes to contact. A sword that fires a real projectile (FiresProjectileMelee) stands off at beam range like a gunner.</summary>
+		private bool PositionsAsMelee => Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee;
+
+		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles;
 
 		private bool TargetStillValid(int idx, float rangeTiles)
 		{
@@ -596,7 +614,7 @@ namespace Levy.Content.NPCs
 				if (now - _lastEngageBarkTick >= LevyConstants.EngageBarkCooldownTicks) { _lastEngageBarkTick = now; DialogueSystem.Bark(this, DialogueTrigger.ENGAGE, MakeContext()); }
 			}
 
-			if (Weapon.IsMelee)
+			if (PositionsAsMelee)
 			{
 				// never charge a boss / a hit that would maim us: prefer a safe mob in reach, else MeleeGoal holds a cautious distance
 				if (MeleeAvoids(target))
@@ -677,7 +695,7 @@ namespace Levy.Content.NPCs
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
 
 			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line
-			float standoffNow = standoff + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
+			float standoffNow = KeepAwayFor(_threatIdx, standoff) + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
 			if (_threatIdx >= 0 && _threatTiles < standoffNow)
 			{
 				float away = AwayDir(Main.npc[_threatIdx].Center);
@@ -692,8 +710,10 @@ namespace Levy.Content.NPCs
 
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
+			bool inReach = dT <= range * LevyConstants.ShootableRangeFrac;
+			if (!(inReach && !los) || target.whoAmI != _noLosTarget) _noLosSinceTick = -1; // the line is back (or a new target): the blocked clock restarts
 
-			if (dT <= range * LevyConstants.ShootableRangeFrac && los)
+			if (inReach && los)
 			{
 				// Aloft the aerial system owns position; on the ground, first look for better footing, then for elbow room.
 				bool aloft = WantsAltitude || _aerial;
@@ -711,6 +731,25 @@ namespace Levy.Content.NPCs
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
 				return true;
+			}
+
+			// In reach but behind cover: after a short debounce look for another ANGLE (higher ground / a flank with a firing line, outside the
+			// standoff) instead of walking at the target; with none reachable it falls through to the plain approach search below.
+			if (inReach && !los)
+			{
+				if (_noLosSinceTick < 0) { _noLosSinceTick = now; _noLosTarget = target.whoAmI; }
+				bool debounced = now - _noLosSinceTick >= LevyConstants.CoverLosDebounceTicks;
+				bool aloft = WantsAltitude || _aerial;
+				if (!aloft)
+				{
+					if (!debounced && !_perchActive)
+					{
+						if (_engMode == EngageMode.Approach) return true; // already walking somewhere: let it finish; a blink of lost line changes nothing
+						_engMode = EngageMode.Hold;
+						return true; // wait out the debounce on the spot (the line often comes back as the target moves)
+					}
+					if (TryPerch(target, seg, range, standoff, now, true)) return true;
+				}
 			}
 
 			if (_perchActive) AbandonPerch(now); // out of reach or no line from here: the approach search takes over
@@ -827,7 +866,8 @@ namespace Levy.Content.NPCs
 				var o = Main.npc[i];
 				if (!o.active || i == NPC.whoAmI || o.type != NPC.type || Math.Abs(o.Center.X - NPC.Center.X) > reachPx) continue;
 				if (o.ModNPC is not SoldierNPC f || f.Record == null || f.State == SoldierState.Dead) continue;
-				_friendPos[_friendN++] = f._perchActive ? f._perchGoal : o.Bottom;
+				// a friend already walking to a spot counts at its destination, so a squad takes different spots instead of funnelling to one
+				_friendPos[_friendN++] = f._perchActive ? f._perchGoal : f._engMode == EngageMode.Approach && f._engPathOk && f.HasMoveGoal ? f.MoveGoal : o.Bottom;
 			}
 		}
 
@@ -873,6 +913,7 @@ namespace Levy.Content.NPCs
 			Vector2 body = bottom - new Vector2(0f, BodyHeight * 0.5f);
 			float d = Vector2.Distance(body, tc) / LevyConstants.TilePx;
 			if (d > range * rangeFrac || d < standoff + standoffMargin) return false;
+			if (_mimicNearValid && Vector2.Distance(bottom, _mimicNearPos) < LevyConstants.MimicKeepAwayTiles * LevyConstants.TilePx) return false; // never pick a spot beside a sleeping mimic
 			return !checkLos || ignoresTiles || Aiming.HasLineOfSight(body, tc);
 		}
 
@@ -910,8 +951,11 @@ namespace Levy.Content.NPCs
 		/// that has a firing line and a walkable path, but only when it beats the current footing by PerchMinImprovement. Evaluated at
 		/// most once per EngageSpotRecheckTicks, then PerchRelocateCooldownTicks after a decision and PerchSettleTicks after arriving.
 		/// Returns true while a relocation is under way (the goal is set). Never called aloft or while backing off.
+		/// With <paramref name="cover"/> (the target is in reach but the line is blocked) the same machinery hunts a firing ANGLE instead:
+		/// a wider box, every candidate must already have a line to the target, no improvement over the current footing is needed (it has none),
+		/// and the search is throttled by CoverFailCooldownTicks / CoverRelocateCooldownTicks. Candidates stay past the standoff, so it never closes to melee.
 		/// </summary>
-		private bool TryPerch(NPC target, NPC seg, float range, float standoff, int now)
+		private bool TryPerch(NPC target, NPC seg, float range, float standoff, int now, bool cover = false)
 		{
 			float tilePx = LevyConstants.TilePx;
 			Vector2 tc = seg.Center;
@@ -937,17 +981,29 @@ namespace Levy.Content.NPCs
 				return true;
 			}
 
-			if (_perchNextTick < 0) { _perchNextTick = now + (int)(SlotFrac(SlotSaltPhase) * LevyConstants.EngageSpotRecheckTicks); return false; } // stagger the first look
-			if (now < _perchNextTick) return false;
-			_perchNextTick = now + LevyConstants.EngageSpotRecheckTicks;
-			if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
+			if (cover)
+			{
+				if (now < _coverNextTick) return false;
+				if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
+				_coverNextTick = now + LevyConstants.CoverFailCooldownTicks; // provisional; a found angle extends it below
+			}
+			else
+			{
+				if (_perchNextTick < 0) { _perchNextTick = now + (int)(SlotFrac(SlotSaltPhase) * LevyConstants.EngageSpotRecheckTicks); return false; } // stagger the first look
+				if (now < _perchNextTick) return false;
+				_perchNextTick = now + LevyConstants.EngageSpotRecheckTicks;
+				if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
+			}
 
 			GatherFriends();
 			bool ignoresTiles = ShotIgnoresTiles();
 			float current = SpotMerit(NPC.Bottom, tc);
 			float need = current + LevyConstants.PerchMinImprovement;
+			// already well above the target: only a clear win is worth the walk (no pointless climbing)
+			if ((tc.Y - (NPC.Bottom.Y - BodyHeight * 0.5f)) / tilePx >= LevyConstants.PerchGoodElevationTiles) need += LevyConstants.PerchGoodSpotExtraImprovement;
+			if (cover) need = float.NegativeInfinity;
 			Point feet = TileNav.FeetTile(NPC.Bottom);
-			int r = LevyConstants.PerchSearchRadiusTiles, step = Math.Max(1, LevyConstants.PerchColumnStepTiles);
+			int r = cover ? LevyConstants.CoverSearchRadiusTiles : LevyConstants.PerchSearchRadiusTiles, step = Math.Max(1, LevyConstants.PerchColumnStepTiles);
 			int phase = (int)(SlotFrac(SlotSaltPhase) * step);
 			_candN = 0;
 			for (int cx = feet.X - r + phase; cx <= feet.X + r; cx += step)
@@ -957,10 +1013,11 @@ namespace Levy.Content.NPCs
 					if (Math.Abs(cx - feet.X) <= 1 && Math.Abs(cy - feet.Y) <= 1) continue;
 					if (!TileNav.InBounds(cx, cy) || !TileNav.IsStandable(cx, cy)) continue;
 					Vector2 bottom = TileNav.BottomCentre(cx, cy);
-					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, true, false)) continue;
+					// cover mode wants a firing line from the very first test; the high-ground search only checks it for the best few
+					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, cover ? ignoresTiles : true, cover)) continue;
 					if (!WithinChaseClamp(bottom)) continue;
 					float merit = SpotMerit(bottom, tc);
-					if (merit >= need) InsertCandidate(bottom, merit, LevyConstants.PerchCandidates);
+					if (merit >= need) InsertCandidate(bottom, merit, cover ? LevyConstants.CoverCandidates : LevyConstants.PerchCandidates);
 				}
 			}
 
@@ -969,10 +1026,11 @@ namespace Levy.Content.NPCs
 			{
 				Vector2 bottom = _candPos[i];
 				if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, ignoresTiles)) continue;
-				if (pathChecks++ >= LevyConstants.PerchPathChecks) break;
+				if (pathChecks++ >= (cover ? LevyConstants.CoverPathChecks : LevyConstants.PerchPathChecks)) break;
 				if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
 				_perchActive = true; _perchGoal = bottom; _perchTarget = target.whoAmI; _perchStartTick = now;
 				_perchNextTick = now + LevyConstants.PerchRelocateCooldownTicks;
+				if (cover) _coverNextTick = now + LevyConstants.CoverRelocateCooldownTicks;
 				_engMode = EngageMode.Approach; _engPathOk = true;
 				SetGoal(bottom);
 				return true;
@@ -1060,7 +1118,7 @@ namespace Levy.Content.NPCs
 			Vector2 goal;
 			// Caution first: anything we will not charge (boss / lethal contact) that is inside the caution distance is stepped away from,
 			// exactly like the ranged standoff; a target of that kind is never approached, only watched from a distance.
-			float cautionNow = LevyConstants.MeleeCautionTiles + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
+			float cautionNow = KeepAwayFor(_dangerIdx, LevyConstants.MeleeCautionTiles) + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
 			if (_dangerIdx >= 0 && ValidNpc(_dangerIdx) && _dangerTiles < cautionNow)
 			{
 				float away = AwayDir(Main.npc[_dangerIdx].Center);
@@ -1114,10 +1172,22 @@ namespace Levy.Content.NPCs
 		private bool IsMeleeLethal(NPC n)
 		{
 			if (n == null || !n.active || n.friendly || n.damage <= 0) return false;
+			if (IsMimicNpc(n)) return true; // chest / biome mimics ambush whatever walks into them, awake or not
 			if (n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type])) return true;
 			float hit = Math.Max(1f, n.damage - NPC.defense * 0.5f);
 			return hit >= Math.Max(1, NPC.life) * LevyConstants.MeleeLethalContactFrac;
 		}
+
+		/// <summary>Chest mimic (aiStyle 25: Mimic, Ice Mimic, Present Mimic) or biome Big Mimic (aiStyle 87), hostile.</summary>
+		private static bool IsMimicNpc(NPC n)
+			=> n != null && n.active && !n.friendly && !n.townNPC && (n.aiStyle == NPCAIStyleID.Mimic || n.aiStyle == NPCAIStyleID.BiomeMimic);
+
+		/// <summary>A mimic still posing as a chest (ai[0] == 0 until something comes close or it is hurt).</summary>
+		private static bool IsDisguisedMimicNpc(NPC n) => IsMimicNpc(n) && n.ai[0] == 0f;
+
+		/// <summary>The distance to keep from the threat/danger NPC: a sleeping mimic is kept out of its wake radius whatever the weapon's own standoff.</summary>
+		private static float KeepAwayFor(int idx, float baseTiles)
+			=> ValidNpc(idx) && IsDisguisedMimicNpc(Main.npc[idx]) ? Math.Max(baseTiles, LevyConstants.MimicKeepAwayTiles) : baseTiles;
 
 		/// <summary>A melee soldier will not close on this target.</summary>
 		private bool MeleeAvoids(NPC target) => target != null && IsMeleeLethal(target);
@@ -1792,7 +1862,7 @@ namespace Levy.Content.NPCs
 			bool free = FreeReining;
 			int leash = RoamLeashTiles;
 			float tilePx = LevyConstants.TilePx;
-			bool melee = Weapon.IsMelee;
+			bool melee = PositionsAsMelee;
 			float standoff = melee ? LevyConstants.MeleeCautionTiles : StandoffTiles(Weapon.RangeTiles);
 			// the hostile a roaming soldier must not walk at: any threat for ranged, only a boss / lethal-contact one for melee
 			int thIdx = melee ? _dangerIdx : _threatIdx; float thTiles = melee ? _dangerTiles : _threatTiles;
@@ -1800,6 +1870,7 @@ namespace Levy.Content.NPCs
 			// a hostile we are not engaging but that is close: never walk at it; back off when it is inside the standoff
 			bool haveThreat = thIdx >= 0 && ValidNpc(thIdx);
 			float threatSide = haveThreat ? Math.Sign(Main.npc[thIdx].Center.X - NPC.Center.X) : 0f;
+			if (haveThreat) standoff = KeepAwayFor(thIdx, standoff);
 			if (haveThreat && thTiles < standoff)
 			{
 				var step = new Vector2(NPC.Center.X + AwayDir(Main.npc[thIdx].Center) * LevyConstants.KiteStepAwayTiles * tilePx, NPC.Center.Y);

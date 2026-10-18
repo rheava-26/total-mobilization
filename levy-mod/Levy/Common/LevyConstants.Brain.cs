@@ -102,9 +102,9 @@ namespace Levy.Common
 		// A ranged soldier already in a firing pocket scores its own footing against nearby standable tiles and relocates only
 		// for a clear win. Merit = elevation over the target + ledge height + platform bonus - travel - crowding.
 		/// <summary>Columns searched either side of the soldier for a better perch (tiles).</summary>
-		public const int PerchSearchRadiusTiles = 14;
+		public const int PerchSearchRadiusTiles = 18;
 		/// <summary>Highest a perch may sit above the soldier's feet (tiles).</summary>
-		public const int PerchMaxRiseTiles = 12;
+		public const int PerchMaxRiseTiles = 14;
 		/// <summary>Lowest a perch may sit below the soldier's feet (tiles).</summary>
 		public const int PerchMaxDropTiles = 3;
 		/// <summary>Every Nth column is sampled (the start column is shifted per soldier so a squad does not sample the same ones).</summary>
@@ -114,7 +114,7 @@ namespace Levy.Common
 		public const int PerchPathChecks = 2;
 		/// <summary>Merit per tile of height over the target's centre, up to PerchElevationCapTiles.</summary>
 		public const float PerchElevationWeight = 1f;
-		public const int PerchElevationCapTiles = 10;
+		public const int PerchElevationCapTiles = 12;
 		/// <summary>Merit per empty tile under the spot's floor before the next floor (a ledge over open ground), up to PerchLedgeCapTiles.</summary>
 		public const float PerchLedgeWeight = 0.5f;
 		public const int PerchLedgeCapTiles = 8;
@@ -125,11 +125,14 @@ namespace Levy.Common
 		/// <summary>Per-soldier, per-tile deterministic merit noise (full width), so near-equal spots are split between soldiers.</summary>
 		public const float PerchJitter = 1f;
 		/// <summary>A new spot must beat the current footing by at least this much merit (about three tiles of extra height).</summary>
-		public const float PerchMinImprovement = 4f;
+		public const float PerchMinImprovement = 3f;
+		/// <summary>A soldier already standing this many tiles above its target is in a good spot: a relocation must beat it by PerchGoodSpotExtraImprovement more (no pointless climbing).</summary>
+		public const float PerchGoodElevationTiles = 6f;
+		public const float PerchGoodSpotExtraImprovement = 3f;
 		/// <summary>No new relocation search this long after deciding to relocate (ticks).</summary>
 		public const int PerchRelocateCooldownTicks = 60 * 8;
 		/// <summary>After arriving the soldier stays put at least this long (ticks).</summary>
-		public const int PerchSettleTicks = 60 * 5;
+		public const int PerchSettleTicks = 60 * 4;
 		/// <summary>After an abandoned relocation (blocked, timed out, retreat) the next search waits this long (ticks).</summary>
 		public const int PerchFailCooldownTicks = 60 * 5;
 		/// <summary>A relocation that has not arrived by now is abandoned (ticks).</summary>
@@ -145,20 +148,37 @@ namespace Levy.Common
 		/// <summary>A blocked-path verdict is ignored this long after a relocation starts (it may be left over from the previous goal).</summary>
 		public const int PerchStallGraceTicks = 30;
 
+		// ---------- Engaging from cover (a target in reach but with no firing line) ----------
+		/// <summary>The line to an in-reach target must stay blocked this long (ticks) before the soldier looks for another angle.</summary>
+		public const int CoverLosDebounceTicks = 36;
+		/// <summary>Columns searched either side of the soldier for a spot with a firing line (tiles).</summary>
+		public const int CoverSearchRadiusTiles = 22;
+		/// <summary>Best-scoring firing-line spots kept per search, and how many of them get a path search.</summary>
+		public const int CoverCandidates = 4;
+		public const int CoverPathChecks = 3;
+		/// <summary>No new angle search for this long after one finds nothing (ticks); the plain approach search carries on meanwhile.</summary>
+		public const int CoverFailCooldownTicks = 90;
+		/// <summary>No new angle search for this long after a relocation starts (ticks).</summary>
+		public const int CoverRelocateCooldownTicks = 120;
+
+		// ---------- Biome / chest mimics ----------
+		/// <summary>Soldiers never step a spot closer than this (tiles, hitbox distance) to a mimic; kept over the mimic wake radius (MimicWakeSoldierRangePx = 200 px = 12.5 tiles).</summary>
+		public const float MimicKeepAwayTiles = 15f;
+
 		// ---------- Tactical positioning: dispersion ----------
 		/// <summary>Friendly soldiers closer than this (tiles, same height band) are crowding and nudge apart.</summary>
-		public const float DispersionMinGapTiles = 2.5f;
+		public const float DispersionMinGapTiles = 3f;
 		/// <summary>A nudge aims for this much room to the nearest neighbour; crowding merit fades to zero at this spacing (tiles).</summary>
-		public const float DispersionSpacingTiles = 3.5f;
+		public const float DispersionSpacingTiles = 4.5f;
 		/// <summary>Neighbours more than this above or below are on another level and do not crowd (tiles).</summary>
 		public const float DispersionVerticalTiles = 4f;
 		/// <summary>Each soldier's stable lateral slot lies within this either side of the firing line (tiles).</summary>
-		public const float DispersionSpreadTiles = 6f;
+		public const float DispersionSpreadTiles = 9f;
 		/// <summary>One nudge steps at most this far (tiles).</summary>
-		public const int DispersionNudgeMaxTiles = 4;
+		public const int DispersionNudgeMaxTiles = 5;
 		public const int DispersionNudgeCooldownTicks = 40;
 		/// <summary>Merit lost for a friendly soldier standing exactly on a candidate spot (fades with distance to DispersionSpacingTiles).</summary>
-		public const float DispersionCrowdPenalty = 5f;
+		public const float DispersionCrowdPenalty = 6f;
 		/// <summary>Hovering ranged soldiers sit up to this many tiles further below the target than the minimum, per their slot.</summary>
 		public const float DispersionAltitudeSpreadTiles = 2f;
 		/// <summary>Melee soldiers aim this far to one side of the target (tiles, either side); kept under the melee reach.</summary>

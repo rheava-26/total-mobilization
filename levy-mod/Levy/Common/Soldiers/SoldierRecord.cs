@@ -71,7 +71,7 @@ namespace Levy.Common.Soldiers
 			get
 			{
 				int hp = LevyConstants.BaseHp + LevyConstants.HpPerLifeCrystal * LifeCrystals + LevyConstants.HpPerLifeFruit * LifeFruit;
-				return Math.Min(hp, LevyConstants.GradeHpCap[(int)Grade]);
+				return Math.Min(hp, LevyConstants.MaxSoldierHp);
 			}
 		}
 

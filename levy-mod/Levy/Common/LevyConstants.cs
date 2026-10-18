@@ -19,7 +19,6 @@ namespace Levy.Common
 		// ---------- Grades ----------
 		public static readonly int[] GradeSlots = { 1, 3, 5 };
 		public static readonly int[] GradeCpCost = { 1, 3, 7 };
-		public static readonly int[] GradeHpCap = { 400, 500, 600 };
 		public static readonly float[] GradeWageMult = { 1f, 3f, 7f };
 		public static readonly float[] GradeDamageMult = { 0.8f, 0.9f, 1.0f };
 		public static readonly float[] GradeAimJitterDeg = { 6f, 3f, 1f };
@@ -45,8 +44,8 @@ namespace Levy.Common
 		public const int BaseHp = 100;
 		public const int HpPerLifeCrystal = 20;
 		public const int HpPerLifeFruit = 5;
-		/// <summary>Any grade can climb: Life Crystals (+20) and Life Fruit (+5, all grades) both count. Levy 100 + 12x20 + 12x5 = 400; Man-at-Arms 100 + 18x20 + 8x5 = 500; Champion 100 + 20x20 + 20x5 = 600.</summary>
-		public const int MaxLifeCrystalsLevy = 12, MaxLifeCrystalsManAtArms = 18, MaxLifeCrystalsChampion = 20, MaxLifeFruit = 20;
+		/// <summary>Vanilla player progression for every grade: 15 Life Crystals (+20) reach 400, then up to 20 Life Fruit (+5) reach the 500 ceiling.</summary>
+		public const int MaxLifeCrystals = 15, MaxLifeFruit = 20, MaxSoldierHp = 500;
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool

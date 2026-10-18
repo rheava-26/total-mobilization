@@ -30,7 +30,6 @@ namespace Levy.Common
 		public const float SpoilsRadiusPx = 80f;
 		/// <summary>Minimum ticks between spoils pickup sounds, so a big drop makes one soft chime.</summary>
 		public const int SpoilsSoundCooldownTicks = 30;
-		public static readonly int[] MaxLifeCrystalsByGrade = { MaxLifeCrystalsLevy, MaxLifeCrystalsManAtArms, MaxLifeCrystalsChampion };
 
 		// ---------- Roster: environmental killers ----------
 		// CONTRACT-REQUEST: SoldierNPC.LastAttackerType codes for deaths without an attacker (Damage agent): -1 fall, -2 lava, -3 drowning.

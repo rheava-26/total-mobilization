@@ -320,16 +320,15 @@ namespace Levy.Common.Systems
 		private bool ApplyCrystal(SoldierRecord rec, int itemType)
 		{
 			if (LevyUtil.IsClient || rec == null) return false;
-			int gi = Math.Clamp((int)rec.Grade, 0, LevyConstants.MaxLifeCrystalsByGrade.Length - 1);
 			int hpGain = 0;
 			switch (itemType)
 			{
 				case ItemID.LifeCrystal:
-					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystalsByGrade[gi] || rec.MaxHp >= LevyConstants.GradeHpCap[gi]) return false;
+					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystals) return false;
 					rec.LifeCrystals++; hpGain = LevyConstants.HpPerLifeCrystal;
 					break;
 				case ItemID.LifeFruit:
-					if (rec.LifeFruit >= LevyConstants.MaxLifeFruit || rec.MaxHp >= LevyConstants.GradeHpCap[gi]) return false;
+					if (rec.LifeCrystals < LevyConstants.MaxLifeCrystals || rec.LifeFruit >= LevyConstants.MaxLifeFruit) return false; // vanilla: fruit only after all crystals (400 HP)
 					rec.LifeFruit++; hpGain = LevyConstants.HpPerLifeFruit;
 					break;
 				case ItemID.ManaCrystal:
@@ -637,19 +636,16 @@ namespace Levy.Common.Systems
 			if (changed) SendRosterSnapshot();
 		}
 
-		/// <summary>True when the record can still absorb one of this crystal (life crystal / life fruit by grade and HP cap, mana crystal by the mana cap).</summary>
+		/// <summary>True when the record can still absorb one of this crystal (life crystal up to 15, life fruit only after 15 crystals up to 20, mana crystal by the mana cap).</summary>
 		public static bool CanAbsorbCrystal(SoldierRecord rec, int itemType)
 		{
 			if (rec == null) return false;
 			switch (itemType)
 			{
 				case ItemID.LifeCrystal:
-				{
-					int cap = LevyConstants.MaxLifeCrystalsByGrade[Math.Clamp((int)rec.Grade, 0, LevyConstants.MaxLifeCrystalsByGrade.Length - 1)];
-					return rec.LifeCrystals < cap && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
-				}
+					return rec.LifeCrystals < LevyConstants.MaxLifeCrystals;
 				case ItemID.LifeFruit:
-					return rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.MaxHp < LevyConstants.GradeHpCap[(int)rec.Grade];
+					return rec.LifeCrystals >= LevyConstants.MaxLifeCrystals && rec.LifeFruit < LevyConstants.MaxLifeFruit;
 				case ItemID.ManaCrystal:
 					return rec.MaxMana < LevyConstants.MaxMana;
 				default:

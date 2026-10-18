@@ -107,8 +107,20 @@ namespace Levy.Common.UI
 		/// <summary>Sets (or, with -1 / the same NPC again, clears) the squad's shared focus target. Client to server authoritative.</summary>
 		public static void FocusTarget(int npcId)
 		{
+			if (npcId >= 0) UISystem.FocusAttackActive = false; // a focus target replaces a standing Focus Attack
 			if (Single) RosterSystem.Instance.SetFocusTarget(Me, npcId);
 			else { var p = LevyPackets.New(LevyPacket.FocusTarget); p.Write(npcId); p.Send(); }
+		}
+
+		/// <summary>Sets (or clears) the squad's Focus Attack world position. Client to server authoritative; <see cref="UISystem.FocusAttackActive"/> mirrors it for the radial.</summary>
+		public static void FocusAttack(bool set, Vector2 world)
+		{
+			bool wasActive = UISystem.FocusAttackActive;
+			// designating near the standing spot clears it (the server applies the same rule)
+			UISystem.FocusAttackActive = set && !(wasActive && LevyUtil.WithinTiles(UISystem.FocusAttackSpot, world, LevyConstants.Targeting.FocusAttackToggleTiles));
+			if (UISystem.FocusAttackActive) UISystem.FocusAttackSpot = world;
+			if (Single) RosterSystem.Instance.SetFocusAttack(Me, set, world);
+			else { var p = LevyPackets.New(LevyPacket.FocusAttack); p.Write(set); p.Write(world.X); p.Write(world.Y); p.Send(); }
 		}
 
 		public static void Rally()

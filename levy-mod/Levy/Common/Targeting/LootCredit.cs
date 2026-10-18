@@ -72,7 +72,8 @@ namespace Levy.Common.Targeting
 			if (!tag.IsSoldierShot) return null;
 			// Friendly projectiles already skip friendly NPCs (Projectile.Damage flag9 = !npc.friendly); this adds the never-target list:
 			// disguised mimics, cultist set pieces, bound NPCs, Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose.
-			if (SoldierTargeting.IsNeverTarget(target)) return false;
+			// (the one exception: a critter inside the commander's Focus Attack radius)
+			if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(tag.SoldierIndex, target)) return false;
 			return null;
 		}
 

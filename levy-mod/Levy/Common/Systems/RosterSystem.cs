@@ -1050,7 +1050,38 @@ namespace Levy.Common.Systems
 				return;
 			}
 			_focusTargets[who] = (npcId, npc.type);
+			_focusPositions.Remove(who); // a new designation replaces a standing Focus Attack
 			SendToPlayer(commander, LevyUtil.T("UI2.FocusSet", npc.GivenOrTypeName));
+		}
+
+		// ---- focus attack position (commander-scoped, runtime only, never saved; sibling of the focus target) ----
+		private static readonly Dictionary<string, Vector2> _focusPositions = new();
+
+		/// <summary>
+		/// Server / single player: the commander's soldiers attack this world position (and any hostile or critter near it). <paramref name="set"/> false clears;
+		/// designating within <see cref="LevyConstants.Targeting.FocusAttackToggleTiles"/> of the standing position clears it too. Replaces a focus target.
+		/// </summary>
+		public virtual void SetFocusAttack(Player commander, bool set, Vector2 world)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			string who = commander.name;
+			bool valid = set && !float.IsNaN(world.X) && !float.IsNaN(world.Y) && world.X > 0f && world.Y > 0f
+				&& world.X < Main.maxTilesX * LevyConstants.TilePx && world.Y < Main.maxTilesY * LevyConstants.TilePx;
+			if (!valid || (_focusPositions.TryGetValue(who, out var cur) && LevyUtil.WithinTiles(cur, world, LevyConstants.Targeting.FocusAttackToggleTiles)))
+			{
+				if (_focusPositions.Remove(who)) SendToPlayer(commander, LevyUtil.T("UI2.FocusAttackCleared"));
+				return;
+			}
+			_focusPositions[who] = world;
+			_focusTargets.Remove(who);
+			SendToPlayer(commander, LevyUtil.T("UI2.FocusAttackSet"));
+		}
+
+		/// <summary>The world position this commander's soldiers are told to attack, if any.</summary>
+		public static bool FocusPositionOf(string commanderName, out Vector2 world)
+		{
+			world = default;
+			return _focusPositions.Count > 0 && !string.IsNullOrEmpty(commanderName) && _focusPositions.TryGetValue(commanderName, out world);
 		}
 
 		/// <summary>The NPC index this commander's soldiers should focus, or -1. Clears itself when the NPC died, was replaced in its slot, or stopped being a legal target.</summary>
@@ -1066,7 +1097,7 @@ namespace Levy.Common.Systems
 			return -1;
 		}
 
-		public static void ClearFocusTargets() => _focusTargets.Clear();
+		public static void ClearFocusTargets() { _focusTargets.Clear(); _focusPositions.Clear(); }
 
 		public virtual void Rally(Player commander)
 		{
@@ -1216,7 +1247,7 @@ namespace Levy.Common.Systems
 			foreach (var r in Regulars) { r.BodyIndex = -1; r.CommanderIndex = -1; r.EngagedBosses.Clear(); r.Fear = 0f; }
 			foreach (var r in Memorial) { r.BodyIndex = -1; r.CommanderIndex = -1; r.Dead = true; }
 			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
-			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; _spoilsTimer = 0; _spoilsSoundCd = 0; RallyCooldown = 0; _focusTargets.Clear();
+			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; _spoilsTimer = 0; _spoilsSoundCd = 0; RallyCooldown = 0; _focusTargets.Clear(); _focusPositions.Clear();
 			_dawnInit = false; _lastDayTime = Main.dayTime;
 		}
 

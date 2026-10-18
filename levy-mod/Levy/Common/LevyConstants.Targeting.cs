@@ -23,6 +23,18 @@ namespace Levy.Common
 			/// <summary>Accessory-issue score per point of aggro an accessory adds (Flesh Knuckles +400 = 100, about two defense points). A tie-breaker, never a rank override.</summary>
 			public const float AccessoryAggroWeight = 0.25f;
 
+			// ---------- Combat orders: Focus Attack (a designated world position) ----------
+			/// <summary>Hostiles and critters within this many tiles of the focus position are attacked (critters are otherwise never targets).</summary>
+			public const float FocusAttackRadiusTiles = 12f;
+			/// <summary>A soldier only takes up the focus position when it is within the larger of this and weapon reach x FocusRangeMult of it (tiles).</summary>
+			public const float FocusAttackEngageTiles = 60f;
+			/// <summary>Designating within this many tiles of the standing focus position clears it instead (tiles).</summary>
+			public const float FocusAttackToggleTiles = 2f;
+			/// <summary>Size of the stand-in target used to aim and position at a bare spot (px).</summary>
+			public const int FocusAttackPhantomPx = 16;
+			/// <summary>Step used to walk a focus point out of solid ground toward the shooter (px).</summary>
+			public const float FocusAttackExposeStepPx = 8f;
+
 			/// <summary>
 			/// AI styles whose vanilla code reads <c>Main.player[target]</c> directly and therefore work with the slot-255 dummy swap.
 			/// Verified per style in NPC.cs (see EnemyTargeting.cs header). Bosses and boss parts are excluded separately.

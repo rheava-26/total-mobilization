@@ -12,32 +12,46 @@ namespace Levy.Common.UI
 	public class UIPlayer : ModPlayer
 	{
 		/// <summary>
-		/// Focus-target designate mode (local player only). While active the mouse is claimed so the held item does not fire; the
-		/// next left-click on a hostile NPC sends the focus order, a click on nothing, Escape or right-click cancels.
+		/// Focus-target / Focus-attack designate mode (local player only). While active the mouse is claimed so the held item does not fire; the
+		/// next left-click on a hostile NPC sends the focus order, a click on nothing, Escape or right-click cancels. In Focus Attack mode the next left-click anywhere in the world sets the spot.
 		/// </summary>
 		public override void PreUpdate()
 		{
-			if (!UISystem.FocusDesignating) return;
-			if (Main.dedServ || Main.gameMenu || Player.whoAmI != Main.myPlayer || Player.dead) { UISystem.Instance.EndFocusDesignate(); return; }
+			bool attackMode = UISystem.FocusAttackDesignating;
+			if (!UISystem.FocusDesignating && !attackMode) return;
+			if (Main.dedServ || Main.gameMenu || Player.whoAmI != Main.myPlayer || Player.dead) { EndDesignate(); return; }
 
 			bool otherUiHovered = Player.mouseInterface; // set earlier this frame by any panel under the cursor
 			Player.mouseInterface = true; // blocks item use / mining while designating
 			if (Main.GameUpdateCount - UISystem.FocusDesignateStartTick <= LevyConstants.FocusDesignateGraceTicks) return;
 
 			bool escape = Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape);
-			if (escape || (Main.mouseRight && Main.mouseRightRelease)) { CancelDesignate(); return; }
+			if (escape || (Main.mouseRight && Main.mouseRightRelease)) { CancelDesignate(attackMode); return; }
 			if (otherUiHovered || !PlayerInput.Triggers.JustPressed.MouseLeft) return;
 
+			if (attackMode)
+			{
+				// any spot in the world: the squad attacks that position (a click near the standing spot clears it)
+				UISystem.Instance.EndFocusAttackDesignate();
+				UIActions.FocusAttack(true, Main.MouseWorld);
+				return;
+			}
 			int hit = HostileUnderCursor();
 			UISystem.Instance.EndFocusDesignate();
 			if (hit >= 0) UIActions.FocusTarget(hit);
 			else Main.NewText(LevyUtil.T("UI2.FocusCancelled"), 200, 160, 120);
 		}
 
-		private static void CancelDesignate()
+		private static void EndDesignate()
 		{
 			UISystem.Instance.EndFocusDesignate();
-			Main.NewText(LevyUtil.T("UI2.FocusCancelled"), 200, 160, 120);
+			UISystem.Instance.EndFocusAttackDesignate();
+		}
+
+		private static void CancelDesignate(bool attackMode)
+		{
+			EndDesignate();
+			Main.NewText(LevyUtil.T(attackMode ? "UI2.FocusAttackCancelled" : "UI2.FocusCancelled"), 200, 160, 120);
 		}
 
 		/// <summary>The legal hostile NPC whose (padded) hitbox contains the mouse, nearest to its centre; -1 if none.</summary>

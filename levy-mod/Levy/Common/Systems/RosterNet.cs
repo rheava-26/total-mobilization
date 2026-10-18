@@ -26,6 +26,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.HoldFire, OnHoldFire);
 			LevyPackets.Register(LevyPacket.SpreadOut, OnSpreadOut);
 			LevyPackets.Register(LevyPacket.FocusTarget, OnFocusTarget);
+			LevyPackets.Register(LevyPacket.FocusAttack, OnFocusAttack);
 			LevyPackets.Register(LevyPacket.Rally, OnRally);
 			LevyPackets.Register(LevyPacket.Rearm, OnRearm);
 			LevyPackets.Register(LevyPacket.Deposit, OnDeposit);
@@ -106,6 +107,15 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
 			if (sender != null) Roster.SetFocusTarget(sender, npcId);
+		}
+
+		private static void OnFocusAttack(BinaryReader r, int whoAmI)
+		{
+			bool set = r.ReadBoolean();
+			float x = r.ReadSingle(), y = r.ReadSingle();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender != null) Roster.SetFocusAttack(sender, set, new Microsoft.Xna.Framework.Vector2(x, y));
 		}
 
 		private static void OnRally(BinaryReader r, int whoAmI)

@@ -16,6 +16,7 @@ namespace Levy.Common.Net
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire
 	///  FocusTarget: int npcId (-1 clears)                         (Roster) — commander = sender; the squad prioritizes that hostile NPC
+	///  FocusAttack: bool set, float worldX, float worldY          (Roster) — commander = sender; the squad attacks that position (and hostiles/critters near it); set=false clears
 	///  Rally: (none)                                              (Roster)
 	///  Rearm: (none)                                              (Roster) — commander = sender
 	///  Mobilize: int barracksId                                   (Militia)
@@ -44,7 +45,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
 	}
 

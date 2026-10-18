@@ -100,9 +100,20 @@ namespace Levy.Content.NPCs
 
 			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
 			if (!fighting || Record.HoldFire) return;
-			if (TargetIndex < 0 || TargetIndex >= Main.maxNPCs) return;
-			NPC target = Main.npc[TargetIndex];
-			if (!target.active || !LevyUtil.IsHostileTarget(target)) return;
+			NPC target;
+			if (_focusBare && State != SoldierState.Routed && SoldierTargeting.FocusPositionFor(this, out Vector2 focusPos))
+			{
+				// Focus Attack on a bare spot: the brain engaged the position itself. Fire at it through a stand-in target (ranged weapons only).
+				if (Weapon == null || !Weapon.Supported || !Weapon.IsRanged) return;
+				target = SoldierTargeting.FocusPhantom(focusPos, NPC.Center);
+			}
+			else
+			{
+				if (TargetIndex < 0 || TargetIndex >= Main.maxNPCs) return;
+				target = Main.npc[TargetIndex];
+				// (a critter inside the commander's Focus Attack radius is the only non-hostile a soldier will shoot)
+				if (!target.active || (!LevyUtil.IsHostileTarget(target) && !SoldierTargeting.FocusAllowsCritter(this, target))) return;
+			}
 			if (Weapon == null || !Weapon.Supported) return;
 			if (Weapon.IsSummon) return; // a summoner with no hand weapon stands off while the flock fights
 
@@ -196,7 +207,7 @@ namespace Levy.Content.NPCs
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || _swingHits.Contains(i)) continue;
-				if (!LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) continue;
+				if ((!LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) && !(SoldierTargeting.IsFocusCritter(n) && box.Intersects(n.Hitbox) && SoldierTargeting.FocusAllowsCritter(this, n))) continue;
 				if (!box.Intersects(n.Hitbox)) continue;
 				if (!n.noTileCollide && !Collision.CanHit(NPC.position, NPC.width, NPC.height, n.position, n.width, n.height)) continue;
 				if (critChance < 0) critChance = CritChance(item);

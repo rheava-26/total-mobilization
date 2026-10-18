@@ -63,6 +63,13 @@ FocusCursorHint: Click an enemy to focus fire
 FocusCancelled: Focus fire cancelled.
 FocusSet: Focus fire on {0}.
 FocusCleared: Focus fire cleared.
+FocusAttackHint: Then click a spot. The squad attacks that position, critters and all.
+FocusAttackClearHint: Stops the squad attacking the marked spot.
+FocusAttackDesignate: Click a spot to attack. Right-click or press Escape to cancel.
+FocusAttackCursorHint: Click a spot to attack
+FocusAttackCancelled: Focus attack cancelled.
+FocusAttackSet: The squad attacks the marked spot.
+FocusAttackCleared: Focus attack cleared.
 HudTitle: Army
 HudHover: "{0} - {1}"
 

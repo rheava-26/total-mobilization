@@ -10,14 +10,14 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Eleven buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
-	/// Hold fire–Fire at will / Spread out–Close up / Focus target (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster).
+	/// Thirteen buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
+	/// Hold fire–Fire at will / Spread out–Close up / Focus target / Focus attack (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster).
 	/// The ellipse is grown at start-up until no two buttons touch, so it stays readable for any button count.
 	/// Opened by the War Horn right-click or the soldier chat button; closes after a click, on Escape or on right-click.
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 12;
+		private const int Count = 13;
 		private const float GrowStep = 1.04f;
 		private const int MaxGrowSteps = 60;
 		private static float _radX, _radY;
@@ -111,11 +111,13 @@ namespace Levy.Common.UI
 			_buttons[5].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
 			_buttons[6].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
 			_buttons[7].Set(LevyUtil.T("UI.FocusTarget"), true, LevyUtil.T("UI2.FocusTargetHint"));
-			if (_nearest == null) _buttons[8].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
-			else _buttons[8].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
-			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
-			_buttons[10].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
-			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
+			bool fa = UISystem.FocusAttackActive;
+			_buttons[8].Set(LevyUtil.T(fa ? "UI.FocusAttackClear" : "UI.FocusAttack"), true, LevyUtil.T(fa ? "UI2.FocusAttackClearHint" : "UI2.FocusAttackHint"));
+			if (_nearest == null) _buttons[9].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
+			else _buttons[9].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
+			_buttons[10].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
+			_buttons[11].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
+			_buttons[12].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
 		private void Click(int idx)
@@ -130,10 +132,14 @@ namespace Levy.Common.UI
 				case 5: UIActions.HoldFire(_radio); break;
 				case 6: UIActions.SpreadOut(_radio); break;
 				case 7: UISystem.Instance.BeginFocusDesignate(); break;
-				case 8: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
-				case 9: UIActions.Rally(); break;
-				case 10: UIActions.Rearm(); break;
-				case 11: UISystem.Instance.ToggleNameplates(); break;
+				case 8:
+					if (UISystem.FocusAttackActive) UIActions.FocusAttack(false, default); // a standing Focus Attack: the button clears it
+					else UISystem.Instance.BeginFocusAttackDesignate();
+					break;
+				case 9: if (_nearest != null && UIActions.IsLive(_nearest)) UIActions.ToggleMobilize(_nearest); break;
+				case 10: UIActions.Rally(); break;
+				case 11: UIActions.Rearm(); break;
+				case 12: UISystem.Instance.ToggleNameplates(); break;
 			}
 			UISystem.Instance.CloseRadial();
 		}

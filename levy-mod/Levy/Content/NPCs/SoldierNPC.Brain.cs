@@ -70,6 +70,10 @@ namespace Levy.Content.NPCs
 		private float _threatTiles = float.MaxValue;
 		private int _retreatDir;
 		private int _unreachIdx = -1, _unreachUntil;
+		/// <summary>Focus Attack: this think's engagement is against the bare focus position (Combat fires at it). Reset at the start of every think.</summary>
+		private bool _focusBare;
+		/// <summary>The bare focus position found no route / firing line: leave it alone until this tick.</summary>
+		private int _focusBareUnreachUntil;
 		private int _spotTarget = -1, _spotTick = -100000;
 		private bool _spotValid;
 		private Vector2 _spot;
@@ -191,6 +195,7 @@ namespace Levy.Content.NPCs
 			int now = (int)Main.GameUpdateCount;
 			SoldierState prevState = State; int prevTarget = TargetIndex;
 			_thinkCount++;
+			_focusBare = false; // re-asserted by TryEngage when this think engages the bare focus position
 			RefreshCommanderIndex(now);
 
 			// Another module (Fear, Roster, Settlement) changed the state since the last think: restart the state clock.
@@ -593,7 +598,17 @@ namespace Levy.Content.NPCs
 			if (Roaming) range *= FreeReining ? LevyConstants.FreeReinAcquireRangeMult : LevyConstants.SearchAcquireRangeMult; // hunters run enemies down
 			NPC target = null;
 			int focus = FocusTargetIndex(range, now);
+			// Focus Attack (the commander designated a position): a real hostile inside the focus radius outranks normal target choice;
+			// critters in the radius and the bare spot only come after it (below). All inert while no position is set.
+			bool hasFocusPos = false; Vector2 fpos = default; int fhostile = -1;
+			if (focus < 0 && SoldierTargeting.FocusPositionFor(this, out fpos)
+				&& LevyUtil.WithinTiles(NPC.Center, fpos, Math.Max(range * LevyConstants.FocusRangeMult, LevyConstants.Targeting.FocusAttackEngageTiles)))
+			{
+				hasFocusPos = true;
+				fhostile = FocusAttackNpc(fpos, range, now, false);
+			}
 			if (focus >= 0) { TargetIndex = focus; target = Main.npc[focus]; } // the commander's designated target outranks everything
+			else if (fhostile >= 0) { TargetIndex = fhostile; target = Main.npc[fhostile]; }
 			else if (TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
 			else
 			{
@@ -606,6 +621,17 @@ namespace Levy.Content.NPCs
 			}
 			// a melee target the body could not path to is left alone for a while
 			if (target != null && TargetIndex == _unreachIdx && now < _unreachUntil) { TargetIndex = -1; target = null; }
+			if (target == null && hasFocusPos)
+			{
+				// nothing else to fight: a critter in the focus radius, else the bare spot itself (ranged weapons only: a blade cannot hit an empty point)
+				int crit = FocusAttackNpc(fpos, range, now, true);
+				if (crit >= 0) { TargetIndex = crit; target = Main.npc[crit]; }
+				else if (Weapon.IsRanged && now >= _focusBareUnreachUntil)
+				{
+					NPC spot = SoldierTargeting.FocusPhantom(fpos, NPC.Center);
+					if (WithinChaseBounds(spot, range)) { TargetIndex = -1; target = spot; _focusBare = true; }
+				}
+			}
 			if (target == null) { _engMode = EngageMode.None; _perchActive = false; return false; }
 
 			if (State != SoldierState.Engage && State != SoldierState.Shaken)
@@ -628,10 +654,21 @@ namespace Levy.Content.NPCs
 			if (RangedGoal(target, now)) return true;
 			// nothing to shoot from here and nowhere to shoot from: drop it so the soldier carries on with its order
 			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
-			_unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks;
+			if (_focusBare) { _focusBare = false; _focusBareUnreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks; } // the bare spot has no index to remember
+			else { _unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks; }
 			TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false;
 			WantsAltitude = false; _altHeld = false;
 			return false;
+		}
+
+		/// <summary>
+		/// Focus Attack pick: the nearest legal hostile (or, with <paramref name="critters"/>, critter) inside the focus radius that is not recently unreachable
+		/// and inside the order's chase bounds. -1 when there is none.
+		/// </summary>
+		private int FocusAttackNpc(Vector2 fpos, float range, int now, bool critters)
+		{
+			int idx = SoldierTargeting.PickFocusAttackNpc(this, fpos, critters, now < _unreachUntil ? _unreachIdx : -1);
+			return idx >= 0 && WithinChaseBounds(Main.npc[idx], range) ? idx : -1;
 		}
 
 		/// <summary>

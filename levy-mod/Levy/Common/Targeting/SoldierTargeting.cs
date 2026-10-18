@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -57,6 +58,106 @@ namespace Levy.Common.Targeting
 				best = i; bestDistSq = distSq; bestAttacking = attacking;
 			}
 			return best;
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Focus Attack: the commander designated a world position. Everything here is gated on that position being set; with none, nothing changes.
+		// ------------------------------------------------------------------------------------------------------------
+
+		/// <summary>The commander's Focus Attack position for this soldier (regulars only), or false when none is set.</summary>
+		public static bool FocusPositionFor(SoldierNPC s, out Vector2 pos)
+		{
+			pos = default;
+			if (s?.Record == null || s.NPC == null || !s.NPC.active || s.Record.Kind != SoldierKind.Regular) return false;
+			return RosterSystem.FocusPositionOf(s.Record.CommanderName, out pos);
+		}
+
+		/// <summary>A critter that Focus Attack may shoot: alive, a vanilla critter, not a pet, not a town NPC, damageable.</summary>
+		public static bool IsFocusCritter(NPC npc)
+		{
+			if (npc == null || !npc.active || npc.life <= 0 || npc.townNPC || npc.dontTakeDamage || npc.immortal || npc.ModNPC is SoldierNPC) return false;
+			int type = npc.type;
+			if (type <= 0 || type >= NPCID.Sets.CountsAsCritter.Length || !NPCID.Sets.CountsAsCritter[type]) return false;
+			return !(type < NPCID.Sets.IsTownPet.Length && NPCID.Sets.IsTownPet[type]);
+		}
+
+		/// <summary>True when the NPC is within the focus radius of the position.</summary>
+		public static bool InFocusRadius(Vector2 pos, NPC npc) => LevyUtil.WithinTiles(pos, npc.Center, LevyConstants.Targeting.FocusAttackRadiusTiles);
+
+		/// <summary>The one exception to "critters are never targets": a critter inside the focus radius while this soldier's commander has a Focus Attack position.</summary>
+		public static bool FocusAllowsCritter(SoldierNPC s, NPC npc)
+			=> IsFocusCritter(npc) && FocusPositionFor(s, out Vector2 pos) && InFocusRadius(pos, npc);
+
+		/// <summary>Same exception for a soldier's projectile hitting the critter (the shot's owner is looked up by body index).</summary>
+		public static bool FocusAllowsCritterShot(int soldierIndex, NPC npc)
+		{
+			if (!IsFocusCritter(npc)) return false;
+			SoldierNPC body = EnemyTargeting.LiveBody(soldierIndex);
+			return body != null && FocusAllowsCritter(body, npc);
+		}
+
+		/// <summary>
+		/// The nearest (to the soldier) legal hostile (<paramref name="critters"/> false) or critter (true) inside the focus radius of <paramref name="pos"/>, or -1.
+		/// <paramref name="excludeIdx"/> is skipped (a target recently found unreachable).
+		/// </summary>
+		public static int PickFocusAttackNpc(SoldierNPC s, Vector2 pos, bool critters, int excludeIdx)
+		{
+			float radiusPx = LevyConstants.Targeting.FocusAttackRadiusTiles * LevyConstants.TilePx;
+			float radiusSq = radiusPx * radiusPx;
+			Vector2 from = s.NPC.Center;
+			int best = -1; float bestSq = float.MaxValue;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC npc = Main.npc[i];
+				if (!npc.active || i == excludeIdx || i == s.NPC.whoAmI || npc.life <= 0) continue;
+				if (Vector2.DistanceSquared(pos, npc.Center) > radiusSq) continue;
+				if (critters ? !IsFocusCritter(npc) : IsNeverTarget(npc)) continue;
+				float d = Vector2.DistanceSquared(from, npc.Center);
+				if (d < bestSq) { bestSq = d; best = i; }
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// The point to aim at for a focus position. A point inside solid ground is walked out toward the shooter to the first open spot, so a shot at a
+		/// buried block strikes its exposed face and the firing-line checks have an open point to test.
+		/// </summary>
+		public static Vector2 FocusAimPoint(Vector2 focus, Vector2 from)
+		{
+			if (!SolidAt(focus)) return focus;
+			Vector2 d = from - focus; float len = d.Length();
+			if (len < 1f) return focus;
+			d /= len;
+			float step = LevyConstants.Targeting.FocusAttackExposeStepPx, max = Math.Min(len, LevyConstants.Targeting.FocusAttackRadiusTiles * LevyConstants.TilePx);
+			for (float t = step; t <= max; t += step)
+			{
+				Vector2 p = focus + d * t;
+				if (!SolidAt(p)) return p;
+			}
+			return focus;
+		}
+
+		private static bool SolidAt(Vector2 world)
+		{
+			int x = (int)(world.X / LevyConstants.TilePx), y = (int)(world.Y / LevyConstants.TilePx);
+			return x >= 0 && y >= 0 && x < Main.maxTilesX && y < Main.maxTilesY && WorldGen.SolidTile(x, y);
+		}
+
+		private static NPC _phantom;
+
+		/// <summary>
+		/// A stand-in target at the focus position (exposed toward <paramref name="from"/>): never in <c>Main.npc</c>, a negative whoAmI unique to the spot so the per-target caches
+		/// reset when the spot changes. One shared instance, re-aimed on every call, so use it immediately and do not hold it across soldiers.
+		/// </summary>
+		public static NPC FocusPhantom(Vector2 focus, Vector2 from)
+		{
+			_phantom ??= new NPC();
+			int size = LevyConstants.Targeting.FocusAttackPhantomPx;
+			_phantom.active = true; _phantom.width = size; _phantom.height = size; _phantom.velocity = Vector2.Zero;
+			_phantom.Center = FocusAimPoint(focus, from);
+			int tx = (int)(focus.X / LevyConstants.TilePx), ty = (int)(focus.Y / LevyConstants.TilePx);
+			_phantom.whoAmI = -2 - (int)(unchecked((uint)tx * 73856093u ^ (uint)ty * 19349663u) & 0x3FFFFFFF);
+			return _phantom;
 		}
 
 		/// <summary>Things a soldier never shoots at: non-hostiles, invulnerable set pieces, disguised mimics, bound NPCs, boss hooks, projectile-NPCs, flee targets.</summary>

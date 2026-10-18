@@ -12,6 +12,30 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 ---
 
+## 🎙 PLAYTEST FEEDBACK & BACKLOG — v0.9.8 (2026-10-18, designer voice-note; "don't change anything yet")
+
+**Verdict: the mod is LANDING.** Balance "feels very real." Can beat e.g. Queen Slime normally-but-hard; sometimes loses WITH militia (intended — militia add HP + chaos, making it harder to read what to dodge). Soldiers feel smart/organic/intelligent, NOT OP; "not entire new players" but meaningfully influence boss fights and what you play. Player still clearly strongest (does ~40–60% of DPS) but soldiers are significant — they kill slower because their gear is UNOPTIMIZED (no reforge), and that is FUN, not a flaw. (Playing with Magic Storage, which makes the dump-into-chest loop painless.)
+
+**PROTECT THESE (do not "fix" them):** (1) the loot loop — dump garbage, keep a varied army; an off-class boss drop (a mage weapon while you play summoner) is exciting because it upgrades a soldier instead of being junk. (2) The power gap — you're the strongest by far; soldiers slower-to-kill because unreforged. Any gear buff must stay GENTLE so it never erases this. (3) The "put in effort → stronger soldiers" fantasy (mining hundreds of ore, making super-soldiers, upgrading over time).
+
+**BUGS / ROUGH EDGES LOGGED (designer says low priority):**
+- Soldiers get stuck sometimes, but ONLY deep underground / tight tunnels; moving keeps them catching up. (pathfinding, nav in tight space)
+- Occasional "run, then jump for a while" twitch. (jump-path heuristic)
+- Movement-accessory VISUALS/SFX missing: hovering on rocket boots shows no particles; Hermes/Lightning-boot-type running has no dust/sound. The dummy Player's movement effects aren't drawn on the NPC. (cosmetic)
+- Whips still look weird (hasn't really used summoner armor — ore armor is easier).
+
+**DESIGN BACKLOG (all PARKED pending designer go-ahead; nothing confirmed):**
+1. **Gear economy — "hard gear isn't worth it for 30 soldiers."** You get funneled into a few easy categories (ore armor, Hallowed/Adamantite repeaters, buyable shotguns). Single-drop weapons (Crystal Storm, soul-gated Onyx Blaster, etc.) can't scale to an army, so they're effectively dead options; farming one boss 30× is tolerable but odd. Designer floated an NPC that sells boss-exclusive gear once you've beaten the boss. Wary of changing balance "too integrally" (the dump-garbage + varied-army identity is the point).
+   - **(my take, to pitch when he's ready):** prefer a **bulk/army REFORGE** over a vendor. He named the exact cause ("no reforged equipment"); a cheap army-wide reforge is "put in effort → stronger" WITHOUT adding weapons or touching drop rarity or the dump-garbage loop, and modifiers are small enough (~10–20% + utility) to not erase the power gap. A vendor risks "just buy the best, ignore drops" → collapses the varied-army fun. The single-drop-can't-scale problem is a SEPARATE lever (e.g. craft-a-"pattern" once, army replicates at material cost) — that one is the balance-risky one he's wary of; leave it his call.
+2. **Militia orders.** Militia follow no orders — they walk in circles and die. Should default to a sane preset (Search & Destroy / Free Rein / a defend-the-settlement doctrine), maybe barracks-settable. **(my take: clear easy win, low risk — probably the first thing to do.)**
+3. **"Feel like players" MOVEMENT.** Soldiers should move/fly/dodge/dash and use double-jumps like players actually USE their mobility accessories (wings, boots, dash shields, double-jump bottles). Keep the rule: act/look like players, use weapons like players, but NOT OP like players. **(my take: biggest "alive" payoff and dead-on the North Star, but the hardest — driving flight/dash/double-jump through the dummy-Player on an NPC. The missing boot/wing particles+SFX are a smaller first slice that could ship as a taste.)**
+4. **Flails & yoyos.** Still unsupported (control-scheme weapons); designer misses them (iconic). **(my take: now plausibly feasible — the Flying Knife rework proved we can drive an owner-anchored/tethered projectile ourselves. A yoyo ≈ tethered orbit, a flail ≈ thrown-and-retracted melee. Medium effort each; worth revisiting with that pattern.)**
+5. **PARKED as scope-creep (designer agrees):** emplaceable turrets units man ("more a commander-class submod — turns this into commanding units, not the point"); making soldiers "more alive" (idle life/behaviors — more effort, not the point). Walled off intentionally.
+
+Designer will keep reporting accessory issues as he finds them ("keep telling you when there's wrong things with accessories, go from there").
+
+---
+
 ## ⭐ THE DESIGN TENET (read this first, it governs every decision)
 
 > **The game says YES to the player's power fantasy. Difficulty comes from the enemy being overwhelming — NEVER from capping, nerfing, or denying the player their toys.**

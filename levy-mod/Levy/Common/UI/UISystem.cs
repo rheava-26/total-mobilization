@@ -28,15 +28,10 @@ namespace Levy.Common.UI
 		/// <summary>Force soldier nameplates to show even in a crowd (toggled from the War Horn radial; not saved).</summary>
 		public static bool NameplatesForced;
 
-		/// <summary>True while the next left-click on a hostile NPC designates the squad's focus target (set from the radial; read by <see cref="UIPlayer"/>).</summary>
+		/// <summary>True while the next left-click in the world designates the squad's Focus Attack (a hostile locks it, anything else marks a spot); set from the radial, read by <see cref="UIPlayer"/>.</summary>
 		public static bool FocusDesignating { get; private set; }
 		/// <summary>GameUpdateCount when designate mode began (clicks inside the grace window are ignored).</summary>
 		public static uint FocusDesignateStartTick { get; private set; }
-		/// <summary>True while the next left-click in the world designates the squad's Focus Attack position (set from the radial; read by <see cref="UIPlayer"/>).</summary>
-		public static bool FocusAttackDesignating { get; private set; }
-		/// <summary>Client-side mirror of whether a Focus Attack position stands (the server owns the real state) and where; drives the radial's clear button.</summary>
-		public static bool FocusAttackActive;
-		public static Vector2 FocusAttackSpot;
 
 		public static ModKeybind FollowKey, HoldKey, ReturnKey, HoldFireKey, MobilizeKey, RallyKey, ArmyStripKey;
 
@@ -83,10 +78,10 @@ namespace Levy.Common.UI
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
 			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = null;
 			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null;
-			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusAttackDesignating = false; FocusAttackActive = false;
+			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false;
 		}
 
-		public override void OnWorldUnload() { FocusDesignating = false; FocusAttackDesignating = false; FocusAttackActive = false; if (!Main.dedServ) CloseAll(); }
+		public override void OnWorldUnload() { FocusDesignating = false; if (!Main.dedServ) CloseAll(); }
 
 		// ------------------------------------------------------------------ open / close (client)
 		public virtual void OpenBarracks(BarracksTE te)
@@ -184,29 +179,16 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuClose);
 		}
 
-		/// <summary>Enters one-shot designate mode: the next left-click on a hostile NPC sets the squad's focus target; empty space, Escape or right-click cancels.</summary>
+		/// <summary>Enters one-shot designate mode: the next left-click locks a hostile NPC as the focus target, or marks the spot under a critter or bare ground; Escape or right-click cancels.</summary>
 		public void BeginFocusDesignate()
 		{
 			if (Main.dedServ) return;
-			FocusAttackDesignating = false;
 			FocusDesignating = true;
 			FocusDesignateStartTick = Main.GameUpdateCount;
 			Main.NewText(LevyUtil.T("UI2.FocusDesignate"), 200, 200, 120);
 		}
 
 		public void EndFocusDesignate() => FocusDesignating = false;
-
-		/// <summary>Enters one-shot position-designate mode: the next left-click in the world sets the squad's Focus Attack spot; Escape or right-click cancels.</summary>
-		public void BeginFocusAttackDesignate()
-		{
-			if (Main.dedServ) return;
-			FocusDesignating = false;
-			FocusAttackDesignating = true;
-			FocusDesignateStartTick = Main.GameUpdateCount;
-			Main.NewText(LevyUtil.T("UI2.FocusAttackDesignate"), 200, 200, 120);
-		}
-
-		public void EndFocusAttackDesignate() => FocusAttackDesignating = false;
 
 		public bool RadialOpen => _radialUI?.CurrentState != null;
 
@@ -291,7 +273,6 @@ namespace Levy.Common.UI
 				{
 					if (_radialUI?.CurrentState != null) _radialUI.Draw(Main.spriteBatch, gt);
 					if (FocusDesignating) HintTooltip.Queue(LevyUtil.T("UI2.FocusCursorHint")); // clean tooltip (no fake-item "Material" line)
-					else if (FocusAttackDesignating) HintTooltip.Queue(LevyUtil.T("UI2.FocusAttackCursorHint"));
 					return true;
 				}, InterfaceScaleType.UI));
 			}

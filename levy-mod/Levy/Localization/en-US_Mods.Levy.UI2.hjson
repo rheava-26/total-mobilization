@@ -57,17 +57,12 @@ SearchDestroyHint: Regulars within 40 tiles roam outward from the settlement hun
 SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff.
 FreeReinHint: Regulars within 40 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
 FreeReinHintRadio: Every Regular, anywhere, acts fully on its own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
-FocusTargetHint: Then click an enemy. Every Regular fires on it until it dies.
-FocusDesignate: Click an enemy to focus fire on it. Click elsewhere, right-click or press Escape to cancel.
-FocusCursorHint: Click an enemy to focus fire
-FocusCancelled: Focus fire cancelled.
+FocusDesignate: Click an enemy, a critter, or a spot to attack. Right-click or press Escape to cancel.
+FocusCursorHint: Click a target or a spot to attack
+FocusCancelled: Focus attack cancelled.
 FocusSet: Focus fire on {0}.
 FocusCleared: Focus fire cleared.
-FocusAttackHint: Then click a spot. The squad attacks that position, critters and all.
-FocusAttackClearHint: Stops the squad attacking the marked spot.
-FocusAttackDesignate: Click a spot to attack. Right-click or press Escape to cancel.
-FocusAttackCursorHint: Click a spot to attack
-FocusAttackCancelled: Focus attack cancelled.
+FocusAttackHint: Then click an enemy, a critter, or a spot. The squad attacks it until it's clear.
 FocusAttackSet: The squad attacks the marked spot.
 FocusAttackCleared: Focus attack cleared.
 HudTitle: Army

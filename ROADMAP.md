@@ -56,6 +56,25 @@ Four agents dispatched in parallel on disjoint file regions (serialize pack/boot
 - 🔁 HELD-PROJECTILE WEAPONS: I accidentally TaskStop'd the held agent (ID mix-up) before it committed; RE-DISPATCHED fresh (same brief). Still cooking.
 - 🐞 PRE-EXISTING BUG banked (accessory agent found it, left out of scope): `ArmorDoctrine.Measure` takes an `accessory` param but never equips it on the scratch player → `AccessoryClassFit` always returns 0 → the accessory class-fit term in `AccessoryScore` (weapon/accessory issue preference) currently does NOTHING. Worth a tiny dedicated fix (equip the accessory in Measure like RunLean does). NOT yet fixed.
 
+## 🧭 WAVE 4 BACKLOG — from the decentralized per-stage audits (reports in scratchpad/audit-N-*.md)
+
+Audits done: **stage 4 (mid-HM)** ✅, **stage 5 (endgame)** ✅. Pending: stages 1 (early-prehm), 2 (late-prehm), 3 (early-HM). Consolidate into a Wave 4 build once all 5 land. Findings so far (source-verified by the Haiku agents):
+
+**ENDGAME (stage 5):**
+- **Zenith** — PROBLEM: owner-anchored (shot 933, aiStyle 182 reads commander MountedCenter → swords orbit the COMMANDER) AND misclassified (noMelee=true → falls to Magic plain-shooter). FIX (medium): slot-255 dummy swap for proj 933 only, + route as Broadsword (relax the noMelee gate) so it fights at blade reach.
+- **Daybreak** — PROBLEM: misclassified (melee, noMelee, aiStyle 113 StickProjectile → falls to Magic → brain kites at RangeMagic instead of closing). NOT owner-anchored. FIX (medium): thrown-melee route (Levy thrower/thrust) for melee-class noMelee non-spear non-beam swings; keep DamageType Melee.
+- **Starlight (PiercingStarlight 4923) + Solar Eruption (3473)** — aiStyle 75 held + channel + MELEE class; benched today. Should be caught by the HeldWeapon wrap (generic aiStyle75+channel key) — I've told the held agent to give MELEE-class held weapons melee reach, not ranged standoff.
+- **Anti-gravity Hook** — correctly Unsupported (damage=0 grapple tool). Would need a Levy grapple MOVEMENT ability, not a fired weapon. Leave benched.
+- **LunarSentry facing** (Rainbow Crystal Staff 3571, Lunar Portal Staff 3569; aiStyle 123) — minor cosmetic: tower reads commander's `direction`. EASY: slot-255 swap + set Dummy.direction from the soldier.
+- Confirmed OK (no action): Influx Waver, Meowmere, Star Wrath, Terra Blade (all Broadsword+beam, no owner re-anchor), Terrarian (yoyo), Kaleidoscope (whip), Stardust Dragon/Cells (SoldierMinion), Betsy's Wrath/Eventide (bow), Nightglow/Nebula Blaze/Nebula Arcanum/Lunar Flare (magic), Xenopopper/SDMG/Celebration (gun).
+
+**MID-HARDMODE (stage 4):**
+- **Life Drain / Soul Drain (3006)** — PROBLEM: owner-billed + owner-steered. Shot 476 aiStyle 185 LifeDrain charges `Main.player[owner]` (the COMMANDER's) mana on each hit and steers follow-ups to the commander. Issued as Magic, misbehaves. FIX (medium): Levy-owned AI via SoldierProjectileTag.PreAI (same pattern as the Flying Knife) — charge the SOLDIER's mana, aim at the soldier's target. Do NOT bench (tenet #1).
+- **Chlorophyte Chainsaw (1232)** — latent PROBLEM, currently refused only by the axe>0 rule: it's channel + aiStyle 20 Drill (owner-anchored, reads owner.channel + MountedCenter), which `IsHeldOwnerProjectile` (only 75/84) MISSES. FIX (easy): add Drill (20) to IsHeldOwnerProjectile / the channel refusal — **do this BEFORE the axe-rule relaxation below** so a commander-anchored drill never ships.
+- **Chlorophyte Greataxe (1233) + Warhammer (1234)** — coverage gap: refused by the pick/axe/hammer rule though they're plain melee swing blades (useStyle 1, shoot 0). FIX (easy): let Melee-class useStyle-Swing items with shoot==0 through the axe/hammer check → Broadsword (keep the PICK refusal; shoot==0 excludes the Chainsaw which has shoot=224).
+- **Toxic Flask (3105)** — aiStyle 2 thrown, the aim-solve assumes no gravity-drop; source has no gravity term so likely fine. Verify in-game only if it visibly arcs.
+- List corrections (not bugs): Sun Stone / Eye of the Golem = accessories (not weapons); "Baetsy" not in 1.4.4; Elf Melter + Flamethrower = gel-fed GUNS, not channeled (already supported); Possessed Hatchet/Flower Pow/North Pole/etc. all verified OK.
+
 **STILL OPEN — GUARD stance (design decision, NOT auto-built):** a new "front-line soldiers crank aggro so enemies peel onto them" ORDER. Held back because (a) it's a player-facing design addition, not a bug/compat fix, and (b) the Wave-1 de-aggro re-poll may already deliver this emergently (Flesh-Knuckles tank soldier + positioning). DESIGNER TO DECIDE after playtesting de-aggro: if enemies reliably peel onto an out-aggroing soldier, Guard is redundant for 1.0; if they still glue to the player, build it. (Asked the designer 2026-10-19.)
 
 ---

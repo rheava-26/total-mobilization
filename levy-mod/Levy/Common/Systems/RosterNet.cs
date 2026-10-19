@@ -7,6 +7,7 @@ using Levy.Common.Net;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
+using Levy.Content.TileEntities;
 
 namespace Levy.Common.Systems
 {
@@ -27,6 +28,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.SpreadOut, OnSpreadOut);
 			LevyPackets.Register(LevyPacket.FocusTarget, OnFocusTarget);
 			LevyPackets.Register(LevyPacket.FocusAttack, OnFocusAttack);
+			LevyPackets.Register(LevyPacket.ArmoryReforge, OnArmoryReforge);
 			LevyPackets.Register(LevyPacket.Rally, OnRally);
 			LevyPackets.Register(LevyPacket.Rearm, OnRearm);
 			LevyPackets.Register(LevyPacket.Deposit, OnDeposit);
@@ -123,6 +125,25 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
 			if (sender != null) Roster.Rally(sender);
+		}
+
+		/// <summary>Server: a client asked for the armory's weapons to be reforged up to a floor. Payload: int armoryId, byte floorIndex. The linked barracks treasury pays per roll.</summary>
+		private static void OnArmoryReforge(BinaryReader r, int whoAmI)
+		{
+			int armoryId = r.ReadInt32(); byte floor = r.ReadByte();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender == null) return;
+			if (!TileEntity.ByID.TryGetValue(armoryId, out var te) || te is not ArmoryTE armory) return;
+			if (!LevyUtil.WithinTiles(sender.Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
+			var payer = armory.LinkedBarracks();
+			var result = armory.ReforgeToFloor(payer, floor);
+			if (result.Rolls > 0)
+			{
+				armory.Sync();
+				RosterSystem.SyncBarracks(payer);
+			}
+			ArmoryTE.ReportReforge(sender, result);
 		}
 
 		private static void OnRearm(BinaryReader r, int whoAmI)

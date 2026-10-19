@@ -23,8 +23,12 @@ namespace Levy.Common.UI
 		private UIElement _issue;
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
-		private LevyButton _depositJunk, _lootAll, _sort, _close;
-		private Label _title;
+		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge;
+		private Label _title, _treasury;
+		/// <summary>Selected bulk-reforge floor (index into LevyConstants.UI.ReforgeFloorTopFraction); kept while the panel lives.</summary>
+		private int _floorIndex;
+		private int _payerRefresh;
+		private BarracksTE _payer;
 
 		private const int GridLeft = 10, GridTop = 40, IssueLeft = 460, IssueWidth = 220, IssueColumns = 6;
 		private static int Pitch => LevyConstants.UI.SlotPitch;
@@ -55,6 +59,18 @@ namespace Levy.Common.UI
 			_sort = new LevyButton(LevyUtil.T("UI.Sort"), LevyConstants.UI.ButtonTextScale, 62, 26, SortStorage, LevyUtil.T("UI.SortHint"));
 			_sort.Left.Set(w - 36 - 112 - 158 - 70, 0f); _sort.Top.Set(6f, 0f);
 			_panel.Append(_sort);
+
+			// Bottom bar: bulk reforge. The floor button cycles the preset; the reforge button spends treasury coin rerolling weapon modifiers up to it.
+			_floor = new LevyButton("", LevyConstants.UI.ButtonTextScale, 150, LevyConstants.UI.ArmoryBarHeight, CycleFloor, LevyUtil.T("UI2.ReforgeFloorHint"));
+			_floor.Left.Set(GridLeft, 0f); _floor.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_floor);
+			_reforge = new LevyButton(LevyUtil.T("UI2.ReforgeAll"), LevyConstants.UI.ButtonTextScale, 150, LevyConstants.UI.ArmoryBarHeight, ReforgeAll, LevyUtil.T("UI2.ReforgeAllHint"));
+			_reforge.Left.Set(GridLeft + 158, 0f); _reforge.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_reforge);
+			_treasury = new Label("", 0.8f);
+			_treasury.Left.Set(GridLeft + 158 + 160, 0f); _treasury.Top.Set(LevyConstants.UI.ArmoryBarTop + 4, 0f);
+			_panel.Append(_treasury);
+			RefreshReforgeBar();
 
 			// Storage: one UIList row per grid row (only rows in view are drawn), scrolled by the wheel or the bar beside it.
 			_grid = new UIList();
@@ -243,6 +259,28 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.Grab);
 		}
 
+		private void CycleFloor()
+		{
+			_floorIndex = (_floorIndex + 1) % LevyConstants.UI.ReforgeFloorTopFraction.Length;
+			RefreshReforgeBar();
+		}
+
+		/// <summary>Bulk reforge: every weapon below the floor is rerolled (a paid roll each, from the linked barracks treasury) until it meets it. Single player runs it; a multiplayer client asks the server.</summary>
+		private void ReforgeAll()
+		{
+			if (Te == null || !UIActions.IsLive(Te)) return;
+			UIActions.ReforgeArmory(Te, _floorIndex);
+			SoundEngine.PlaySound(SoundID.Item37);
+		}
+
+		private void RefreshReforgeBar()
+		{
+			if (_floor == null) return;
+			_floor.Set(LevyUtil.T("UI2.ReforgeFloor", LevyUtil.T("UI2." + LevyConstants.UI.ReforgeFloorNameKey[_floorIndex])), true);
+			_treasury.SetText(_payer == null ? "" : LevyUtil.T("UI.Treasury", LevyUtil.Coins(_payer.Treasury)));
+			_reforge.Enabled = _payer != null && _payer.Treasury > 0;
+		}
+
 		private static SlotSnap[] Snapshot(Item[] arr) { var s = new SlotSnap[arr.Length]; for (int i = 0; i < arr.Length; i++) s[i] = new SlotSnap(arr[i]); return s; }
 
 		private void SendChanged(SlotSnap[] before, Item[] arr)
@@ -259,6 +297,9 @@ namespace Levy.Common.UI
 			if (Te != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) { anyStorage = true; break; }
 			_lootAll.Enabled = anyStorage;
 			_sort.Enabled = anyStorage;
+			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }
+			else if (Te == null) _payer = null;
+			RefreshReforgeBar();
 		}
 	}
 }

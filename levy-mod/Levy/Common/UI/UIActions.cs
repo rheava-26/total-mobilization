@@ -247,6 +247,17 @@ namespace Levy.Common.UI
 			var p = LevyPackets.New(LevyPacket.ArmorySort); p.Write(te.ID); p.Send();
 		}
 
+		/// <summary>
+		/// Bulk reforge of the armory's weapons up to a floor (index into LevyConstants.UI.ReforgeFloorTopFraction), paid per roll from the linked barracks treasury.
+		/// Single player runs it directly; a multiplayer client asks the server, which reports back in chat and re-syncs both tile entities.
+		/// </summary>
+		public static void ReforgeArmory(ArmoryTE te, int floorIndex)
+		{
+			if (te == null || !IsLive(te)) return;
+			if (Single) { ArmoryTE.ReportReforge(Me, te.ReforgeToFloor(te.LinkedBarracks(), floorIndex)); return; }
+			var p = LevyPackets.New(LevyPacket.ArmoryReforge); p.Write(te.ID); p.Write((byte)floorIndex); p.Send();
+		}
+
 		/// <summary>Multiplayer client: tells the server what this slot now holds. No-op in single player (the arrays are live).</summary>
 		public static void SendArmorySlot(ArmoryTE te, byte region, int slot)
 		{

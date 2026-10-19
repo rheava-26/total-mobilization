@@ -8,7 +8,7 @@ namespace Levy.Common
 			// ---- panels ----
 			public const int PanelCloseDistanceTiles = 10;
 			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 520;
-			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 404;
+			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 424;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
 			public const int RosterRowHeight = 100;
@@ -27,6 +27,18 @@ namespace Levy.Common
 			public const int SlotPitch = 34; // 52 * 0.6 + gap
 			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory).</summary>
 			public const int ArmoryEditRangeTiles = 32;
+
+			// ---- bulk reforge (armory) ----
+			/// <summary>Reforge floor presets, best-of-N: a weapon qualifies once its prefix is among the top this-fraction of the prefixes THAT weapon can roll (0 = only the single best). Index = the floor button's cycle position.</summary>
+			public static readonly float[] ReforgeFloorTopFraction = { 0.50f, 0.25f, 0.10f, 0f };
+			/// <summary>Localization keys (Mods.Levy.UI2.*) naming each floor preset.</summary>
+			public static readonly string[] ReforgeFloorNameKey = { "ReforgeFloorGood", "ReforgeFloorGreat", "ReforgeFloorSuperb", "ReforgeFloorBest" };
+			/// <summary>Hard cap of paid rolls per weapon per bulk reforge (a weapon that has not reached the floor by then keeps its best roll seen).</summary>
+			public const int ReforgeMaxRollsPerWeapon = 40;
+			/// <summary>Throw-away rolls used (once per weapon type, cached) to learn which prefixes that weapon can take and how good each is.</summary>
+			public const int ReforgeSampleRolls = 600;
+			/// <summary>Layout of the armory's bottom bar (reforge controls).</summary>
+			public const int ArmoryBarTop = 388, ArmoryBarHeight = 26;
 
 			// ---- keybinds / radial ----
 			public const int MobilizeKeyRadiusTiles = 120;

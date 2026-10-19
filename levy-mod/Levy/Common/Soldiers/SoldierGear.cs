@@ -31,6 +31,11 @@ namespace Levy.Common.Soldiers
 		/// <summary>One bit per slot (see Slot*): set while the player hand-placed the item there. Auto-issue never replaces a locked slot.</summary>
 		public int LockMask;
 
+		/// <summary>Item type of the thrown-weapon stack that ran dry (0 when none). The armory hands the same throwable back first; see ArmoryTE.RestockThrown.</summary>
+		public int ThrownRestockType;
+		/// <summary>Transient: game tick of the last thrown-restock look at an armory (throttle).</summary>
+		public uint ThrownCheckTick;
+
 		/// <summary>Transient (never saved): locked items a Re-arm return pulled out, so the same tick's re-issue can hand them back. See ArmoryTE.ReturnGear.</summary>
 		public Item[] Reserved;
 		public uint ReservedTick;
@@ -71,7 +76,7 @@ namespace Levy.Common.Soldiers
 
 		private static bool Empty(Item it) => it == null || it.IsAir || it.stack <= 0;
 
-		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Sentry || f == WeaponFamily.HeldWeapon || IsMeleeFamily(f);
+		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Sentry || f == WeaponFamily.HeldWeapon || f == WeaponFamily.Thrown || IsMeleeFamily(f);
 		/// <summary>Sidearm candidates: blades and spears, the summoner's whip, the thrown boomerang/yoyo/flail, and a minion-summoning staff or a sentry for a melee soldier.</summary>
 		private static bool IsSidearmFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Summon || f == WeaponFamily.Sentry;
 		private static bool IsMeleeFamily(WeaponFamily f) => f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;
@@ -81,7 +86,8 @@ namespace Levy.Common.Soldiers
 		{
 			if (Empty(item)) return slot >= 0 && slot < SlotCount;
 			if (slot == SlotAmmo) return item.ammo > 0 && !item.IsACoin;
-			if (item.stack > 1) return false;
+			// Only a thrown consumable may be a stack: it is carried (and used up) as one. Every other weapon is a single item.
+			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
 			if (slot == SlotSidearm) return WeaponClassifier.IsIssuableWeapon(item) && IsSidearmFamily(WeaponClassifier.Classify(item));
 			if (slot == SlotHead) return WeaponClassifier.IsArmorPiece(item, 0) && !item.vanity;
@@ -112,8 +118,14 @@ namespace Levy.Common.Soldiers
 				overflow = item.Clone(); overflow.stack = item.stack - LevyConstants.AmmoPouchMax;
 				item.stack = LevyConstants.AmmoPouchMax;
 			}
+			if (slot == SlotWeapon && item.stack > LevyConstants.ThrownCarryMax && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)
+			{
+				overflow = item.Clone(); overflow.stack = item.stack - LevyConstants.ThrownCarryMax;
+				item.stack = LevyConstants.ThrownCarryMax;
+			}
 			Set(slot, item);
 			SetLocked(slot, !item.IsAir);
+			if (slot == SlotWeapon) ThrownRestockType = 0;
 			return true;
 		}
 
@@ -138,7 +150,7 @@ namespace Levy.Common.Soldiers
 
 		public void Clear()
 		{
-			LockMask = 0; Reserved = null;
+			LockMask = 0; Reserved = null; ThrownRestockType = 0;
 			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item();
 			Accessories = NewArray(AccessorySlots); Dyes = NewArray(DyeSlots);
 		}
@@ -147,7 +159,7 @@ namespace Levy.Common.Soldiers
 		{
 			var g = new SoldierGear
 			{
-				LockMask = LockMask,
+				LockMask = LockMask, ThrownRestockType = ThrownRestockType,
 				Weapon = Weapon.Clone(), Sidearm = Sidearm.Clone(), Head = Head.Clone(), Body = Body.Clone(), Legs = Legs.Clone(), Ammo = Ammo.Clone(),
 			};
 			for (int i = 0; i < AccessorySlots; i++) g.Accessories[i] = Accessories[i].Clone();
@@ -164,6 +176,7 @@ namespace Levy.Common.Soldiers
 			};
 			var acc = new List<TagCompound>(); foreach (var a in Accessories) acc.Add(ItemIO.Save(a)); tag["acc"] = acc;
 			var dyes = new List<TagCompound>(); foreach (var d in Dyes) dyes.Add(ItemIO.Save(d)); tag["dyes"] = dyes;
+			if (ThrownRestockType > 0) tag["thrownType"] = ThrownRestockType;
 			if (LockMask != 0) tag["locks"] = LockMask; // absent in old saves: loads as 0 (nothing locked)
 			return tag;
 		}
@@ -177,6 +190,7 @@ namespace Levy.Common.Soldiers
 			g.Ammo = ItemIO.Load(tag.GetCompound("ammo"));
 			var acc = tag.GetList<TagCompound>("acc"); for (int i = 0; i < AccessorySlots && i < acc.Count; i++) g.Accessories[i] = ItemIO.Load(acc[i]);
 			var dyes = tag.GetList<TagCompound>("dyes"); for (int i = 0; i < DyeSlots && i < dyes.Count; i++) g.Dyes[i] = ItemIO.Load(dyes[i]);
+			g.ThrownRestockType = tag.GetInt("thrownType");
 			g.LockMask = tag.GetInt("locks") & ((1 << SlotCount) - 1);
 			for (int s = 0; s < SlotCount; s++) if (g.IsLocked(s) && g.Get(s).IsAir) g.SetLocked(s, false); // a lock on an empty slot means nothing
 			return g;

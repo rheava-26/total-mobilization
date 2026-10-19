@@ -30,7 +30,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
 		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
-		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang || (Family == WeaponFamily.HeldWeapon && !HeldMelee);
+		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang || Family == WeaponFamily.Thrown || (Family == WeaponFamily.HeldWeapon && !HeldMelee);
 		/// <summary>Held-projectile weapon of the melee class (Starlight, Solar Eruption): positions and engages as melee. Ranged/magic held weapons use the ranged standoff.</summary>
 		public bool HeldMelee;
 		public bool IsHeld => Family == WeaponFamily.HeldWeapon;
@@ -49,6 +49,8 @@ namespace Levy.Common.Weapons
 		public bool IsDeployer => Family == WeaponFamily.Summon || Family == WeaponFamily.Sentry;
 		public bool IsWhip => Family == WeaponFamily.Whip;
 		public bool IsBoomerang => Family == WeaponFamily.Boomerang;
+		/// <summary>A consumable the soldier throws from a stack in his weapon slot (knives, shuriken, javelins, grenades, bombs). Each throw uses one up.</summary>
+		public bool IsThrown => Family == WeaponFamily.Thrown;
 		public bool IsThrust => Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
 		public bool UsesAmmo => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow;
 		public bool Supported => Family != WeaponFamily.Unsupported && Family != WeaponFamily.None;
@@ -112,6 +114,9 @@ namespace Levy.Common.Weapons
 		{
 			extended = false;
 			if (item == null || item.IsAir) return WeaponFamily.None;
+			// Thrown consumables (knives, shuriken, javelins, grenades, bombs) are decided before the consumable / zero-damage rejections below: a bomb item has damage 0
+			// (the blast damage lives on its projectile) and every one of them is a consumable.
+			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
 			if (item.damage <= 0) return WeaponFamily.Unsupported;
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
@@ -194,6 +199,32 @@ namespace Levy.Common.Weapons
 			}
 			return WeaponFamily.Unsupported;
 		}
+
+		/// <summary>
+		/// A consumable that is thrown as a weapon: it shoots a friendly, non-minion projectile that flies on a thrown AI (ThrownProjectile 2, Arrow 1 for javelins,
+		/// Explosive 16 for grenades and bombs, GroundProjectile 14 for the spiky ball and beenade, StickProjectile 113 for the bone javelin). Never ammo, a launcher
+		/// shot, a placeable, a potion, a liquid / dirt bomb or a modded item with no combat class. A zero-damage item (a bomb) must be an Explosive-AI shot, so a
+		/// glowstick or any other harmless thrown item is rejected.
+		/// </summary>
+		public static bool IsThrownConsumable(Item item)
+		{
+			if (item == null || item.IsAir || !item.consumable || item.shoot <= 0) return false;
+			if (item.ammo > 0 || item.useAmmo != AmmoID.None || item.accessory || item.IsACoin || item.sentry) return false;
+			if (item.createTile >= 0 || item.createWall >= 0 || item.healLife > 0 || item.healMana > 0 || item.buffType > 0) return false;
+			if (item.pick > 0 || item.axe > 0 || item.hammer > 0 || item.useStyle == ItemUseStyleID.None) return false;
+			if (item.CountsAsClass(DamageClass.Summon)) return false;
+			if (item.type < ItemID.Count ? LevyConstants.ThrownToolBombItems.Contains(item.type) : !CountsAsAnyCombatClass(item)) return false;
+			var sample = ProjectileSample(item.shoot);
+			if (sample == null || !sample.friendly || sample.hostile || sample.minion || sample.sentry || sample.minionSlots > 0f) return false;
+			int ai = sample.aiStyle;
+			bool thrownAi = ai == ProjAIStyleID.ThrownProjectile || ai == ProjAIStyleID.Arrow || ai == ProjAIStyleID.Explosive || ai == ProjAIStyleID.GroundProjectile || ai == LevyConstants.ThrownStickAiStyle;
+			if (!thrownAi) return false;
+			return item.damage > 0 || ai == ProjAIStyleID.Explosive;
+		}
+
+		/// <summary>Damage used to rank a thrown item: its own, else the blast its bomb projectile writes when it goes off.</summary>
+		public static int ThrownRankDamage(Item src) =>
+			src.damage > 0 ? src.damage : LevyConstants.ThrownDynamiteItems.Contains(src.type) ? LevyConstants.ThrownDynamiteBlastDamage : LevyConstants.ThrownBlastDamage;
 
 		/// <summary>Per-type profile (prefix-free numbers from ContentSamples). Live prefix values are read from the item at fire time.</summary>
 		public static WeaponProfile GetProfile(Item item)
@@ -388,6 +419,7 @@ namespace Levy.Common.Weapons
 			if (item == null || item.IsAir) return null;
 			var f = GetProfile(item).Family;
 			if (f == WeaponFamily.HeldWeapon) return item.CountsAsClass(DamageClass.Magic) ? DamageClass.Magic : item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : DamageClass.Melee;
+			if (f == WeaponFamily.Thrown) return item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Melee : DamageClass.Ranged;
 			if (f == WeaponFamily.Boomerang) return item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Melee) ? DamageClass.Ranged : DamageClass.Melee;
 			if (f == WeaponFamily.Magic && !item.CountsAsClass(DamageClass.Magic))
 				return item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : item.CountsAsClass(DamageClass.Melee) ? DamageClass.Melee : null;
@@ -414,13 +446,14 @@ namespace Levy.Common.Weapons
 				int shots = Math.Max(1, (Math.Max(1, item.useAnimation) + (int)cadence - 1) / (int)cadence);
 				cadence = (Math.Max(1, item.useAnimation) + item.reuseDelay) / (float)shots;
 			}
-			float dps = item.damage * p.ProjectilesPerShot * 60f / cadence;
+			float dps = (p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage) * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;
 			else if (p.Family == WeaponFamily.Boomerang) dps *= LevyConstants.BoomerangScoreFactor;
 			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;
 			else if (p.Family == WeaponFamily.Flail) dps *= LevyConstants.FlailScoreFactor;
+			else if (p.Family == WeaponFamily.Thrown) dps *= LevyConstants.ThrownScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
 			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));

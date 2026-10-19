@@ -12,7 +12,7 @@ namespace Levy.Common
 	/// FreeRein is the same hunt unleashed: it ranges across the whole region on its own, tied to no player and no short anchor (standoff rules intact).</summary>
 	public enum SoldierOrder : byte { Follow = 0, Hold = 1, Patrol = 2, ReturnToBarracks = 3, SearchDestroy = 4, FreeRein = 5 }
 
-	public enum WeaponFamily : byte { None = 0, Gun = 1, Bow = 2, Magic = 3, Broadsword = 4, Shortsword = 5, Spear = 6, Unsupported = 7, Summon = 8, Whip = 9, Boomerang = 10, Yoyo = 11, Flail = 12, Sentry = 13, HeldWeapon = 14 }
+	public enum WeaponFamily : byte { None = 0, Gun = 1, Bow = 2, Magic = 3, Broadsword = 4, Shortsword = 5, Spear = 6, Unsupported = 7, Summon = 8, Whip = 9, Boomerang = 10, Yoyo = 11, Flail = 12, Sentry = 13, HeldWeapon = 14, Thrown = 15 }
 
 	public enum TombstoneMode { Vanilla, Always, Never }
 	public enum MilitiaDeathMessageMode { Count, Individual, None }

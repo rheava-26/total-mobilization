@@ -14,6 +14,28 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 ---
 
+## 🌙 1.0 OVERNIGHT PUSH (designer 2026-10-19: "go ham, use up my weekly limit, finish everything, this is 1.0")
+
+**KEY REFRAME (told the designer):** compatibility is GENERIC — the classifier routes by weapon CLASS/BEHAVIOR, not per item. So we do NOT catalogue every Calamity/Thorium item; we make each weapon FAMILY + system bulletproof, and every mod's weapons of that family work for free. (Also: can't reach the designer's PC Calamity files from the cloud; deep custom-class work needs the .tmod uploaded like Mechanica was.)
+
+**NEW STANDING DESIGN RULES (designer, this session):**
+- **LINE FIGHTING IS VALID AND GOOD — do NOT force soldiers off a working line.** Verticality/high-ground/flight is OPPORTUNISTIC (take it when it helps, reachable within mobility), never a mandate. A bias toward holding the line.
+- Designer wants units to FLY, DASH, double-jump, take high ground (use mobility gear like a player) — the brave version (occasional over-commit/death is fine), but line-safe.
+- Melee-primary soldiers should NOT carry a redundant melee blade sidearm; take a SUMMON-staff utility sidearm instead (frontline fields a minion).
+- **WEAPON-COMPATIBILITY RULE (already standing): make it WORK, Unsupported is last resort.**
+- **ART is a known GAP:** cannot reliably produce Terraria-quality pixel art via agents; the Command Radio / added items look "funky." Needs a human hand or reference sprites to trace. Not brute-forceable. (Designer flagged for 1.0; set expectations.)
+
+**SCOPE for 1.0 = the 4 BASE CLASSES (melee/ranged/magic/summon) all work.** Secondary classes (Calamity ROGUE custom resource; Thorium BARD/HEALER custom resources) = "a different beast" (designer's words) — deferred; if trivial, add later; would be separate submods (Thorium-compat, Calamity-compat) and need the uploaded mod files.
+
+**WAVE 1 DISPATCHED (parallel, non-overlapping files; Sonnet not Haiku — coding quality matters for 1.0):**
+- Yoyos + Flails → Levy-owned SoldierYoyo/SoldierFlail (WeaponClassifier, WeaponUse, new projectiles).
+- Verticality + flight + dashes, LINE-SAFE (Movement, Brain).
+- Aggro de-aggro fix — find why flyers (Wyvern) slip the redirect at −400 aggro; extend coverage safely (EnemyTargeting).
+- Melee sidearm — melee primaries take a summon sidearm, not a melee blade (ArmoryTE.IssueGear).
+**WAVE 2 (fire as Wave 1 merges):** Guard/taunt stance, sentries (equip + simple placement + re-placement), active whips + visual, bulk reforge-to-threshold. (Parent merges each serially + re-boots to verify, since parallel agents can't all boot the shared tML at once — compile is their hard gate.)
+
+---
+
 ## 🛠 BUILD PLAN — ordered easy→hard (designer gave GO-AHEAD 2026-10-19; "get the easier stuff first")
 
 **KEY CODE FINDINGS from investigation (so we don't rebuild what exists):**

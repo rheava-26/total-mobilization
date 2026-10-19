@@ -30,7 +30,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
 		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
-		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang || Family == WeaponFamily.Thrown || (Family == WeaponFamily.HeldWeapon && !HeldMelee);
+		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang || Family == WeaponFamily.Thrown || Family == WeaponFamily.ThrownMelee || (Family == WeaponFamily.HeldWeapon && !HeldMelee);
 		/// <summary>Held-projectile weapon of the melee class (Starlight, Solar Eruption): positions and engages as melee. Ranged/magic held weapons use the ranged standoff.</summary>
 		public bool HeldMelee;
 		public bool IsHeld => Family == WeaponFamily.HeldWeapon;
@@ -51,6 +51,8 @@ namespace Levy.Common.Weapons
 		public bool IsBoomerang => Family == WeaponFamily.Boomerang;
 		/// <summary>A consumable the soldier throws from a stack in his weapon slot (knives, shuriken, javelins, grenades, bombs). Each throw uses one up.</summary>
 		public bool IsThrown => Family == WeaponFamily.Thrown;
+		/// <summary>A reusable melee-class thrower (Daybreak, Shadowflame Knife, Vampire Knives): thrown again and again, never used up. Counts as ranged for the brain, at a short melee-thrower range.</summary>
+		public bool IsThrownMelee => Family == WeaponFamily.ThrownMelee;
 		public bool IsThrust => Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
 		public bool UsesAmmo => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow;
 		public bool Supported => Family != WeaponFamily.Unsupported && Family != WeaponFamily.None;
@@ -101,7 +103,7 @@ namespace Levy.Common.Weapons
 			// Spear/Shortsword/Whip/Boomerang/Summon soldiers use Levy's own projectiles instead, so a weapon of those families never spawns its locking shot.
 			// A MELEE owner-locker (Serpent's Spear) is thrown as a Levy SoldierBoomerang: its own projectile, drawn with the item's shot sprite, returning to the soldier, so the commander is never pinned.
 			// A non-melee one (a gun or magic bolt) cannot sensibly be thrown and stays Unsupported.
-			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword)
+			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword || family == WeaponFamily.ThrownMelee)
 				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
 			{
 				extended = false;
@@ -195,6 +197,10 @@ namespace Levy.Common.Weapons
 				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
 			}
 
+			// Reusable melee-class throwers (Daybreak, Shadowflame Knife, Vampire Knives): no-melee, NOT consumable, thrown shot. Decided before the plain-shooter fallback so they fight at a short
+			// melee-thrower range instead of kiting like a caster. (Consumable throwables were already taken by the Thrown family above.)
+			if (IsReusableMeleeThrower(item, sample)) return WeaponFamily.ThrownMelee;
+
 			// Plain shooter: a projectile weapon with no ammo and no mana (cannons, wands, modded launchers). The shoot pipeline decides what happens.
 			if (shoot > 0 && shoot != ProjectileID.PurificationPowder && sample != null)
 			{
@@ -224,6 +230,19 @@ namespace Levy.Common.Weapons
 			bool thrownAi = ai == ProjAIStyleID.ThrownProjectile || ai == ProjAIStyleID.Arrow || ai == ProjAIStyleID.Explosive || ai == ProjAIStyleID.GroundProjectile || ai == LevyConstants.ThrownStickAiStyle;
 			if (!thrownAi) return false;
 			return item.damage > 0 || ai == ProjAIStyleID.Explosive;
+		}
+
+		/// <summary>
+		/// A reusable melee thrower: melee class, no-melee, NOT consumable, with damage and a friendly non-minion shot that flies on a thrown AI
+		/// (ThrownProjectile 2: knives; StickProjectile 113: Daybreak's spear). Never ammo-fed, never a mana weapon, never a channeled / held one.
+		/// </summary>
+		public static bool IsReusableMeleeThrower(Item item, Projectile sample)
+		{
+			if (item == null || item.IsAir || item.consumable || item.damage <= 0 || item.shoot <= 0 || sample == null) return false;
+			if (!item.noMelee || !item.CountsAsClass(DamageClass.Melee)) return false;
+			if (item.useAmmo != AmmoID.None || item.mana > 0 || item.channel || item.sentry) return false;
+			if (!sample.friendly || sample.hostile || sample.minion || sample.sentry || sample.minionSlots > 0f) return false;
+			return sample.aiStyle == ProjAIStyleID.ThrownProjectile || sample.aiStyle == LevyConstants.ThrownStickAiStyle;
 		}
 
 		/// <summary>Damage used to rank a thrown item: its own, else the blast its bomb projectile writes when it goes off.</summary>
@@ -270,6 +289,8 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Summon: p.RangeTiles = LevyConstants.RangeSummon; break;
 				case WeaponFamily.Sentry: p.RangeTiles = LevyConstants.RangeSentry; break;
 				case WeaponFamily.Boomerang: p.RangeTiles = LevyConstants.RangeBoomerang; break;
+				case WeaponFamily.Thrown: p.RangeTiles = LevyConstants.RangeThrown; p.Gravity = true; ThrownBlastGuardProjectile.Register(src.shoot); break;
+				case WeaponFamily.ThrownMelee: p.RangeTiles = LevyConstants.RangeThrownMelee; p.Gravity = true; break;
 				case WeaponFamily.Whip:
 					p.ThrustReachPx = WhipReach(src.shootSpeed);
 					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.WhipRangeMinTiles, LevyConstants.WhipRangeMaxTiles);
@@ -418,7 +439,7 @@ namespace Levy.Common.Weapons
 		{
 			WeaponFamily.Gun or WeaponFamily.Bow => DamageClass.Ranged,
 			WeaponFamily.Magic => DamageClass.Magic,
-			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang or WeaponFamily.Yoyo or WeaponFamily.Flail => DamageClass.Melee,
+			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang or WeaponFamily.Yoyo or WeaponFamily.Flail or WeaponFamily.ThrownMelee => DamageClass.Melee,
 			WeaponFamily.Summon or WeaponFamily.Whip or WeaponFamily.Sentry => DamageClass.Summon,
 			_ => null,
 		};

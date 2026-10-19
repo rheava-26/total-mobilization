@@ -76,7 +76,7 @@ namespace Levy.Common.Soldiers
 
 		private static bool Empty(Item it) => it == null || it.IsAir || it.stack <= 0;
 
-		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Sentry || f == WeaponFamily.HeldWeapon || f == WeaponFamily.Thrown || IsMeleeFamily(f);
+		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Sentry || f == WeaponFamily.HeldWeapon || f == WeaponFamily.Thrown || f == WeaponFamily.ThrownMelee || IsMeleeFamily(f);
 		/// <summary>Sidearm candidates: blades and spears, the summoner's whip, the thrown boomerang/yoyo/flail, and a minion-summoning staff or a sentry for a melee soldier.</summary>
 		private static bool IsSidearmFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.Summon || f == WeaponFamily.Sentry;
 		private static bool IsMeleeFamily(WeaponFamily f) => f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;

@@ -63,6 +63,8 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Yoyo: return ThrowYoyo(s, item, profile, seg);
 				case WeaponFamily.Flail: return ThrowFlail(s, item, profile, seg);
 				case WeaponFamily.HeldWeapon: return HeldWeapons.TryFire(s, item, profile, seg);
+				case WeaponFamily.Thrown: return ThrowConsumable(s, item, profile, seg);
+				case WeaponFamily.ThrownMelee: return ThrowMelee(s, item, profile, seg);
 				case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
 			}
 			return false;
@@ -614,6 +616,81 @@ namespace Levy.Common.Weapons
 				s.NPC.netUpdate = true;
 			}
 			return true;
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Reusable melee throwers (Daybreak, Shadowflame Knife, Vampire Knives): thrown again and again, nothing is used up.
+		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>
+		/// Throws the weapon's shot at the target on a simulated arc (<see cref="ThrownAim"/>), owned by the commander and tagged like every soldier shot; the item is never touched.
+		/// Daybreak (636) and the Shadowflame Knife (497) are not owner-anchored, so their REAL shots go out through <see cref="TryRealShoot"/> and just work.
+		/// The Vampire Knife (304) is special-cased: vanilla heals Main.player[Main.myPlayer] (the commander) from <c>Projectile.vampireHeal</c> whenever a type-304 shot hits,
+		/// so a soldier throws Levy's own <see cref="SoldierVampireKnife"/> instead, which heals the SOLDIER. Cadence is the item's useTime / reuseDelay (see <see cref="FinishUse"/>).
+		/// </summary>
+		private static bool ThrowMelee(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (item.shoot <= 0) return Dud(s, item);
+			int projType = item.shoot;
+			Vector2 muzzle = Muzzle(s);
+			float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
+			Vector2 vel = AimThrowMelee(s, muzzle, target, projType, speed);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			bool fired;
+			if (projType == ProjectileID.VampireKnife) fired = FireVampireKnives(s, muzzle, vel, damage, item.knockBack) > 0;
+			else
+			{
+				fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
+				if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			}
+			if (!fired) return Dud(s, item); // nothing came out: hold
+			FinishUse(s, item, vel);
+			return true;
+		}
+
+		/// <summary>The flight model of a melee thrower's shot, from its real AI (not the consumable-knife default), and the fraction of a tick one AI update lasts (a shot with extra updates flies several updates per tick).</summary>
+		private static LevyConstants.ThrownFlight MeleeThrowFlight(int projType, out float tickPerUpdate)
+		{
+			tickPerUpdate = 1f / (1 + Math.Max(0, WeaponClassifier.ProjectileSample(projType)?.extraUpdates ?? 0));
+			switch (projType)
+			{
+				case ProjectileID.VampireKnife: return LevyConstants.ThrownMeleeFlightStraight;
+				case ProjectileID.ShadowFlameKnife: return LevyConstants.ThrownMeleeFlightShadowflameKnife;
+				case ProjectileID.Daybreak: return LevyConstants.ThrownMeleeFlightDaybreak;
+				default: return ThrownAim.FlightFor(projType);
+			}
+		}
+
+		/// <summary>Launch velocity (per AI update) for a melee thrower's shot, with the same grade / veteran / shaken aim error every ranged soldier gets.</summary>
+		private static Vector2 AimThrowMelee(SoldierNPC s, Vector2 muzzle, NPC target, int projType, float shootSpeed)
+		{
+			LevyConstants.ThrownFlight flight = MeleeThrowFlight(projType, out float tickPerUpdate);
+			// The solver steps once per AI update, so a shot with extra updates sees the target move only a fraction of its per-tick velocity between steps.
+			Vector2 vel = ThrownAim.Solve(muzzle, target.Center, target.velocity * tickPerUpdate, flight, shootSpeed);
+			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, target.Center));
+			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
+			return Aiming.ApplyError(vel, LevyConstants.GradeAimJitterDeg[grade] * errMult, 0f, Vector2.Zero);
+		}
+
+		/// <summary>
+		/// A fan of Levy-owned Vampire Knives, vanilla's count and spread (4 knives, +1 on 1/2, 1/4, 1/8 and 1/16 rolls; knife k scatters 0.05 * k * U(-35, 35) px/tick per axis).
+		/// Each is owned by the commander and tagged to this soldier like every soldier shot; none is a type-304 projectile, so vanilla's commander lifesteal never runs.
+		/// </summary>
+		private static int FireVampireKnives(SoldierNPC s, Vector2 muzzle, Vector2 vel, int damage, float knockback)
+		{
+			int count = LevyConstants.VampKnifeBaseCount;
+			foreach (int denominator in LevyConstants.VampKnifeExtraRolls) if (Main.rand.NextBool(denominator)) count++;
+			int type = ModContent.ProjectileType<SoldierVampireKnife>();
+			float speed = vel.Length();
+			int spawned = 0;
+			int range = LevyConstants.VampKnifeSpreadRange;
+			for (int k = 0; k < count; k++)
+			{
+				float spread = LevyConstants.VampKnifeSpreadStep * k;
+				Vector2 v = vel + new Vector2(Main.rand.Next(-range, range + 1), Main.rand.Next(-range, range + 1)) * spread;
+				v = v.SafeNormalize(vel) * speed;
+				if (Spawn(s, muzzle, v, type, damage, knockback, DamageClass.Melee, s.NPC.whoAmI) != null) spawned++;
+			}
+			return spawned;
 		}
 
 		/// <summary>Launch velocity for a throw: the ballistic lob, then the same grade / veteran / shaken aim error every ranged soldier gets (angle only: a lob has no lead to mis-judge).</summary>

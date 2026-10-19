@@ -134,7 +134,7 @@ namespace Levy.Content.NPCs
 					if (Weapon != null && Weapon.ReuseDelay > 0) AttackCooldown = Math.Max(AttackCooldown, Weapon.ReuseDelay);
 				}
 			}
-			if (State == SoldierState.Engage) _lastEngageTick = (int)Main.GameUpdateCount;
+			if (State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed) _lastEngageTick = (int)Main.GameUpdateCount; // still fighting while shaken / routed
 			RegenMana();
 			MaintainMinions();
 			MaintainSentries();
@@ -161,7 +161,7 @@ namespace Levy.Content.NPCs
 			if (Weapon.IsDeployer) return; // a summoner / sentry keeper with no hand weapon stands off while the flock or tower fights
 
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
-			if (Math.Abs(seg.Center.X - NPC.Center.X) > 2f) NPC.direction = seg.Center.X < NPC.Center.X ? -1 : 1;
+			if (!SwingFacingLocked && Math.Abs(seg.Center.X - NPC.Center.X) > 2f) NPC.direction = seg.Center.X < NPC.Center.X ? -1 : 1;
 
 			if (Weapon.IsRanged)
 			{
@@ -208,9 +208,17 @@ namespace Levy.Content.NPCs
 			if (!Weapon.IsTethered && AttackCooldown <= 0 && ((int)Main.GameUpdateCount + NPC.whoAmI) % 3 == 0)
 			{
 				NPC near = NearestHostileWithin(blowReach + LevyConstants.MeleeEngageExtraTiles);
-				if (near != null) WeaponUse.TryAttack(this, near);
+				if (near != null)
+				{
+					// face the enemy being swung at (the swing box is built from NPC.direction); the facing then holds for the swing
+					if (Weapon.Family == WeaponFamily.Broadsword && ItemAnimation <= 0 && Math.Abs(near.Center.X - NPC.Center.X) > 2f) NPC.direction = near.Center.X < NPC.Center.X ? -1 : 1;
+					WeaponUse.TryAttack(this, near);
+				}
 			}
 		}
+
+		/// <summary>A broadsword mid-swing keeps its facing, so the swing box stays on the side the blow was thrown.</summary>
+		private bool SwingFacingLocked => Weapon != null && Weapon.Family == WeaponFamily.Broadsword && ItemAnimation > 0;
 
 		/// <summary>The nearest legal hostile whose hitbox is within <paramref name="tiles"/> of the body, or null.</summary>
 		private NPC NearestHostileWithin(float tiles)

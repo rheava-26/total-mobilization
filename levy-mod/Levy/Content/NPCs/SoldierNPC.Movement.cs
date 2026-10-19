@@ -301,6 +301,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Fighting bodies face the thing they are shooting while they walk, so a backpedal reads as a backpedal.</summary>
 		private int FacingWhileMoving(int walkDir)
 		{
+			if (SwingFacingLocked) return NPC.direction != 0 ? NPC.direction : walkDir; // a swing in flight keeps the side it was thrown on
 			if ((State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed) && TargetIndex >= 0 && TargetIndex < Main.maxNPCs)
 			{
 				NPC t = Main.npc[TargetIndex];

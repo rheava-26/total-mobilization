@@ -64,6 +64,9 @@ namespace Levy.Common
 		public const int MeleeRelentlessExtraTiles = 2;
 		/// <summary>Pure-melee soldiers close until the hostile's hitbox is this near (tiles) or its centre is within MeleeCloseCentreTiles, then hold and swing.</summary>
 		public const float MeleeContactTiles = 0.5f, MeleeCloseCentreTiles = 2f;
+		/// <summary>A blade / spear with at least this reach (tiles) holds at reach - 1 from the target's hitbox; a shorter one keeps a gap of MeleeShortGapReachFrac * reach (capped at MeleeContactTiles) outside its own body.</summary>
+		public const int MeleeLongReachTiles = 5;
+		public const float MeleeShortGapReachFrac = 0.35f;
 		/// <summary>Ticks after leaving Engage before mana regenerates at the idle rate.</summary>
 		public const int ManaCombatGraceTicks = 120;
 

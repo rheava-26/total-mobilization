@@ -613,11 +613,12 @@ namespace Levy.Content.NPCs
 			}
 			if (focus >= 0) { TargetIndex = focus; target = Main.npc[focus]; } // the commander's designated target outranks everything
 			else if (fhostile >= 0) { TargetIndex = fhostile; target = Main.npc[fhostile]; }
-			else if (TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
+			else if (!(TargetIndex == _unreachIdx && now < _unreachUntil) && TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
 			else
 			{
 				TargetIndex = -1;
-				int pick = SoldierTargeting.PickTarget(this, range, useFocus: false);
+				// the target found unreachable is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
+				int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1);
 				if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
 				{
 					TargetIndex = pick; target = Main.npc[pick];
@@ -1524,12 +1525,20 @@ namespace Levy.Content.NPCs
 			var main = MainProfile();
 			bool dry = main != null && main.IsRanged && main.UseAmmo > 0 && !Record.Gear.HasAmmo;
 			bool starved = !dry && main != null && main.Family == WeaponFamily.Magic && ManaStarved(now);
-			if (!dry && !starved)
+			bool dryThrown = !dry && !starved && ThrownNeedsRestock(main);
+			if (!dry && !starved && !dryThrown)
 			{
 				_outOfAmmoBarked = false;
 				if (State == SoldierState.Resupply) { SetState(OrderState()); ClearGoal(); }
 				TopUp(now, main);
 				return false;
+			}
+
+			if (State == SoldierState.Resupply && StateTimer > LevyConstants.HaulGiveUpTicks)
+			{
+				// never walked up in time (stuck, or the armory is unreachable): give up and let the retry cooldown run
+				_resupplyFailTick = now; _resupplyArmory = null;
+				SetState(OrderState()); ClearGoal();
 			}
 
 			if (State == SoldierState.Resupply)
@@ -1548,6 +1557,17 @@ namespace Levy.Content.NPCs
 						if (taken > 0) { Rearmed(); return false; }
 						_resupplyFailTick = now; // empty shelves: sidearm, try again later
 						SetState(OrderState());
+					}
+					else if (dryThrown)
+					{
+						bool changed = armory.RestockThrown(Record);
+						// nothing of that throwable on the shelves and the slot is free: issue SOME weapon so he is not left bare-handed
+						if (!changed && !Record.Gear.HasWeapon && !Record.Gear.IsLocked(SoldierGear.SlotWeapon)) changed = armory.IssueGear(Record);
+						if (changed) { NPC.netUpdate = true; Rearmed(); }
+						else SetState(OrderState());
+						// still short (partial stock, or nothing) -> hold off the next trip so he does not shuttle in and out of the armory
+						if (!changed || ThrownNeedsRestock(MainProfile())) _resupplyFailTick = now;
+						return false;
 					}
 					else
 					{
@@ -1568,6 +1588,7 @@ namespace Levy.Content.NPCs
 			{
 				_resupplySearchTick = now;
 				var armory = SettlementSystem.Instance.NearestArmory(NPC.Center, LevyConstants.ResupplyArmoryRadius);
+				if (!ArmoryAlive(armory) && dryThrown && Home != null) armory = SettlementSystem.Instance.LinkedArmory(Home); // thrown stock: the home armory, however far
 				if (ArmoryAlive(armory))
 				{
 					SetState(SoldierState.Resupply);
@@ -1580,6 +1601,9 @@ namespace Levy.Content.NPCs
 				}
 			}
 
+			// A thrown stack that is merely low still works: keep it (no sidearm swap, no out-of-ammo bark) until the retry window opens.
+			if (dryThrown && Record.Gear.HasWeapon) return false;
+
 			// No armory in reach (or it had nothing): sidearm if there is one, else carry on without engaging.
 			if (Record.Gear.HasSidearm && !UsingSidearm)
 			{
@@ -1589,6 +1613,14 @@ namespace Levy.Content.NPCs
 			}
 			if (!_outOfAmmoBarked) { _outOfAmmoBarked = true; DialogueSystem.Bark(this, DialogueTrigger.OUT_OF_AMMO, MakeContext()); }
 			return false;
+		}
+
+		/// <summary>A thrown-weapon soldier whose stack ran dry (slot empty, type remembered) or sits under the top-up fraction and so wants the armory.</summary>
+		private bool ThrownNeedsRestock(WeaponProfile main)
+		{
+			var g = Record.Gear;
+			if (!g.HasWeapon) return g.ThrownRestockType > 0;
+			return main != null && main.Family == WeaponFamily.Thrown && g.Weapon.stack < LevyConstants.ThrownCarryMax * LevyConstants.ThrownTopUpBelowFraction;
 		}
 
 		/// <summary>Back on the main weapon after a successful resupply.</summary>

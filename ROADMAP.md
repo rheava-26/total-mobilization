@@ -29,7 +29,7 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 3. **Boot/wing particles + SFX** → the dummy-player's movement visuals (rocket-boot flame, run dust, boot sounds) aren't drawn on the NPC. Cosmetic, visible, warms up the movement-visuals path. [needs a look at the draw code]
 
 **TIER 2 — medium, HIGHEST feel impact (the stick-figure drawing: cyan=mobile player, green=static clump):**
-4. **DODGING pass** — strengthen `TickDodge` so soldiers evade worms, wyverns, and multi-pierce projectiles on a collision course (currently they "jump once and die"). Goal: SOFT pressure + self-sufficiency (every class can save itself a little; survival must NOT depend on another class). [investigate TickDodge first]
+4. **DODGING pass** — ✅ SHIPPED v0.9.10. `TickDodge` now also flinches out of fast, hard-hitting hostile NPC BODIES (worms/wyverns/chargers) on a collision course — keyed on closing speed (DodgeNpcMinSpeed 4.5 px/tick) + contact damage (DodgeNpcMinDamage 20), predicts padded-hitbox overlap, sidesteps the lane or hops (surfaces double-jumps), brief flinch + cooldown, not a retreat. Projectile dodge unchanged. TUNE-IN-PLAY: 4.5/20 gate may catch fast bats/harpies; adjust DodgeNpcMinSpeed/MinDamage if they twitch at non-threats.
 5. **VERTICALITY / mobility** — make high ground a PREFERENCE (perch on platforms/ledges for angles over the frontline, not stand at the enemy's Y), and actually USE double-jump / wings / dash to get there and to dodge. The double-jump is the visual TELL. Likely root cause: Abilities not detected + perch too shy. [investigate aerial/Abilities/perch first] — (4 & 5 are one coupled movement pass: mobility enables both.)
 
 **TIER 3 — the summoner / melee cluster:**

@@ -30,21 +30,13 @@ namespace Levy.Common.Weapons
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
 			try
 			{
-				switch (profile.Family)
+				// Right-click alternate attack: mixed in on a cadence, falling back to the primary when it cannot fire.
+				if (AltEligible(profile))
 				{
-					case WeaponFamily.Gun:
-					case WeaponFamily.Bow: return FireRanged(s, item, profile, seg);
-					case WeaponFamily.Magic: return FireMagic(s, item, profile, seg);
-					case WeaponFamily.Broadsword: return StartSwing(s, item, profile, seg);
-					case WeaponFamily.Spear:
-					case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
-					case WeaponFamily.Whip: return StartWhip(s, item, profile, seg);
-					case WeaponFamily.Boomerang: return ThrowBoomerang(s, item, profile, seg);
-					case WeaponFamily.Yoyo: return ThrowYoyo(s, item, profile, seg);
-					case WeaponFamily.Flail: return ThrowFlail(s, item, profile, seg);
-					case WeaponFamily.HeldWeapon: return HeldWeapons.TryFire(s, item, profile, seg);
-					case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
+					if (TryAltAttack(s, item, profile, seg, out bool hold)) return true;
+					if (hold) return false; // a caster saving mana for the alt holds fire for a moment
 				}
+				return Dispatch(s, item, profile, seg);
 			}
 			catch (Exception e)
 			{
@@ -52,6 +44,137 @@ namespace Levy.Common.Weapons
 				s.AttackCooldown = Math.Max(1, Math.Max(item.useTime, LevyConstants.DudWeaponRetryTicks));
 				if (_reportedDuds.Add(item.type)) ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: weapon {item.Name} ({item.type}) threw while a soldier fired it: {e.Message}");
 			}
+			return false;
+		}
+
+		/// <summary>Fires the weapon's family attack (the primary, or the alt while <see cref="_altActive"/>). Returns true if a shot/swing started.</summary>
+		private static bool Dispatch(SoldierNPC s, Item item, WeaponProfile profile, NPC seg)
+		{
+			switch (profile.Family)
+			{
+				case WeaponFamily.Gun:
+				case WeaponFamily.Bow: return FireRanged(s, item, profile, seg);
+				case WeaponFamily.Magic: return FireMagic(s, item, profile, seg);
+				case WeaponFamily.Broadsword: return StartSwing(s, item, profile, seg);
+				case WeaponFamily.Spear:
+				case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
+				case WeaponFamily.Whip: return StartWhip(s, item, profile, seg);
+				case WeaponFamily.Boomerang: return ThrowBoomerang(s, item, profile, seg);
+				case WeaponFamily.Yoyo: return ThrowYoyo(s, item, profile, seg);
+				case WeaponFamily.Flail: return ThrowFlail(s, item, profile, seg);
+				case WeaponFamily.HeldWeapon: return HeldWeapons.TryFire(s, item, profile, seg);
+				case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
+			}
+			return false;
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Alt-fire (right-click). Only the shoot-pipeline families (guns, bows, staves): their shot goes through TryRealShoot, which runs the
+		// item's ModifyShootStats/Shoot hooks with the dummy as the player, so setting the dummy's altFunctionUse to 2 around the attack makes
+		// the weapon take its alt branch exactly as a right-click does. Melee swings, held weapons, thrown stacks, whips, boomerangs, yoyos and
+		// flails keep their left-click-only behaviour.
+		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>True while an alt attack is being fired: the plain-spread fallback is off, so an alt whose hooks spawn nothing fails (and the primary is used) instead of firing a stand-in.</summary>
+		private static bool _altActive;
+
+		/// <summary>Item types whose alt repeatedly did nothing: not tried again this session.</summary>
+		private static readonly System.Collections.Generic.HashSet<int> _altDudItems = new();
+
+		private static bool AltEligible(WeaponProfile profile) =>
+			LevyConstants.AltFireEnabled && (profile.Family == WeaponFamily.Gun || profile.Family == WeaponFamily.Bow || profile.Family == WeaponFamily.Magic);
+
+		/// <summary>The item fields an alt's CanUseItem/ModifyShootStats may rewrite; put back after the alt so the primary is unchanged.</summary>
+		private struct ItemStatSnapshot
+		{
+			private readonly int useTime, useAnimation, reuseDelay, shoot, mana, damage, crit, useAmmo, useStyle;
+			private readonly float shootSpeed, knockBack, scale;
+			private readonly bool autoReuse, channel, noMelee, noUseGraphic;
+			private readonly SoundStyle? sound;
+			public ItemStatSnapshot(Item i)
+			{
+				useTime = i.useTime; useAnimation = i.useAnimation; reuseDelay = i.reuseDelay; shoot = i.shoot; mana = i.mana; damage = i.damage; crit = i.crit;
+				useAmmo = i.useAmmo; useStyle = i.useStyle; shootSpeed = i.shootSpeed; knockBack = i.knockBack; scale = i.scale;
+				autoReuse = i.autoReuse; channel = i.channel; noMelee = i.noMelee; noUseGraphic = i.noUseGraphic; sound = i.UseSound;
+			}
+			public void Restore(Item i)
+			{
+				i.useTime = useTime; i.useAnimation = useAnimation; i.reuseDelay = reuseDelay; i.shoot = shoot; i.mana = mana; i.damage = damage; i.crit = crit;
+				i.useAmmo = useAmmo; i.useStyle = useStyle; i.shootSpeed = shootSpeed; i.knockBack = knockBack; i.scale = scale;
+				i.autoReuse = autoReuse; i.channel = channel; i.noMelee = noMelee; i.noUseGraphic = noUseGraphic; i.UseSound = sound;
+			}
+		}
+
+		/// <summary>
+		/// Maybe fires the weapon's right-click attack instead of the primary. Returns true when the alt fired. Returns false (and the caller uses the
+		/// primary) when the alt is on cooldown, not rolled this time, absent, refused, short of mana, or produced nothing. <paramref name="hold"/> is
+		/// set when a caster is a moment from the alt's mana and should hold fire to save for it.
+		/// </summary>
+		private static bool TryAltAttack(SoldierNPC s, Item item, WeaponProfile profile, NPC seg, out bool hold)
+		{
+			hold = false;
+			uint now = Main.GameUpdateCount;
+			Player d = s.Dummy;
+			if (d == null || !LevyConfig.Get.RealWeaponShoot || now < s.AltReadyTick || _altDudItems.Contains(item.type)) return false;
+			if (s.AltHoldSince == 0 && Main.rand.NextFloat() >= LevyConstants.AltUseChance) return false;
+
+			bool has = false;
+			try { has = ItemLoader.AltFunctionUse(item, d); } catch (Exception) { }
+			if (!has) { s.AltReadyTick = now + (uint)LevyConstants.AltNoAltRecheckTicks; s.AltHoldSince = 0; return false; }
+
+			var snap = new ItemStatSnapshot(item);
+			int savedAlt = d.altFunctionUse; Item savedSlot = d.inventory[0]; int savedSel = d.selectedItem;
+			bool fired = false, soft = false;
+			try
+			{
+				d.inventory[0] = item; d.selectedItem = 0;
+				d.altFunctionUse = 2;
+				bool can = true;
+				try { can = ItemLoader.CanUseItem(item, d); } catch (Exception) { can = false; }
+				if (!can) soft = true; // the weapon's own gate (alt on its own cooldown, a projectile already out): primary now, retry shortly
+				else if (profile.Family == WeaponFamily.Magic && s.Record.Mana < Math.Max(0, item.mana))
+				{
+					soft = true;
+					int missing = Math.Max(0, item.mana) - s.Record.Mana;
+					if (LevyConstants.AltSaveManaTicks > 0 && s.ManaWaitTicks(missing) <= LevyConstants.AltSaveManaTicks)
+					{
+						if (s.AltHoldSince == 0) s.AltHoldSince = now;
+						if (now - s.AltHoldSince <= (uint)LevyConstants.AltHoldMaxTicks) hold = true;
+					}
+				}
+				else
+				{
+					_altActive = true;
+					try { fired = Dispatch(s, item, profile, seg); } finally { _altActive = false; }
+				}
+			}
+			catch (Exception e)
+			{
+				fired = false;
+				if (_reportedDuds.Add(item.type)) ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: weapon {item.Name} ({item.type}) threw on its alt-fire: {e.Message}");
+			}
+			finally
+			{
+				_altActive = false;
+				try { d.altFunctionUse = 0; ItemLoader.CanUseItem(item, d); } catch (Exception) { } // let the weapon reset itself to primary mode
+				d.altFunctionUse = savedAlt == 2 ? 0 : savedAlt;
+				snap.Restore(item);
+				d.inventory[0] = savedSlot; d.selectedItem = savedSel;
+			}
+
+			if (fired)
+			{
+				s.AltFailStreak = 0; s.AltHoldSince = 0;
+				s.AltReadyTick = now + (uint)(LevyConstants.AltMinGapTicks + Main.rand.Next(0, LevyConstants.AltGapJitterTicks + 1));
+				return true;
+			}
+			s.AttackCooldown = 0; // a failed alt attempt must not leave a dud backoff on the primary
+			if (hold) return false;
+			s.AltHoldSince = 0;
+			if (soft) { s.AltReadyTick = now + (uint)LevyConstants.AltRetryTicks; return false; }
+			// Ran, but nothing came out: back off, and stop trying a weapon whose alt never does anything.
+			s.AltReadyTick = now + (uint)LevyConstants.AltFailBackoffTicks;
+			if (++s.AltFailStreak >= LevyConstants.AltGiveUpFailures && _altDudItems.Add(item.type))
+				ModContent.GetInstance<Levy>()?.Logger.Info($"Levy: alt-fire of {item.Name} ({item.type}) never fired; soldiers will use only its primary.");
 			return false;
 		}
 
@@ -161,7 +284,7 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
 			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback);
-			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
+			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
 			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
 
 			if (ConsumesAmmo(s, item, pouch))
@@ -207,7 +330,7 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
 			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);

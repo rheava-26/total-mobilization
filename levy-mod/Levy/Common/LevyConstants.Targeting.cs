@@ -44,7 +44,24 @@ namespace Levy.Common
 				NPCAIStyleID.Slime, NPCAIStyleID.DemonEye, NPCAIStyleID.Fighter, NPCAIStyleID.Worm, NPCAIStyleID.Caster, NPCAIStyleID.Bat,
 				NPCAIStyleID.Piranha, NPCAIStyleID.Vulture, NPCAIStyleID.Jellyfish, NPCAIStyleID.Antlion, NPCAIStyleID.HoveringFighter,
 				NPCAIStyleID.Mimic, NPCAIStyleID.BiomeMimic, NPCAIStyleID.Spider, NPCAIStyleID.FlyingFish,
+				// Added after reading each AI in NPC.cs: every target read is Main.player[target] (never GetTargetData) and nothing treats 255 as "no target".
+				// Unicorn (26: Unicorn, Wolf, Hellhound, Headless Horseman, Evolution Beast, Twinkle, Tumbleweed), Snowman (38: Snowman Gangsta, Mister Stabby,
+				// Snow Balla) and GiantTortoise (39: tortoises, Sroller, Giant Shelly) all re-run TargetClosest on their own cadence.
+				NPCAIStyleID.Unicorn, NPCAIStyleID.Snowman, NPCAIStyleID.GiantTortoise,
 			};
+
+			/// <summary>
+			/// Individual types that never use the swap even though their AI style is in <see cref="SwapAiStyles"/>.
+			/// Tumbleweed (Unicorn AI) despawns itself unless Main.player[target].ZoneDesert, and the soldier's dummy never stands in a desert zone.
+			/// </summary>
+			public static readonly int[] SwapExcludedTypes = { NPCID.Tumbleweed };
+
+			// Styles deliberately left out (correctness over coverage), verified in NPC.cs:
+			//  * Flying (5: Eater of Souls, Hornets, Meteor Head, Probe, Moth, Parrot, Blood Squid, Servant of Cthulhu) reads its target through GetTargetData(),
+			//    which rejects slot 255 (a swapped enemy would idle); with a 300+ index its retarget line evaluates Main.player[target].dead and the hornet branch
+			//    Main.player[target].position, both out of range. Only Queen Bee's bees (UsesNewTargetting, TargetClosestNonBees branch) are redirected, natively.
+			//  * Herpling (41) returns early when target >= 255, so a swapped enemy would lose its air control.
+			//  * Granite Elemental (91) tests target == 255 as "lost target". Every style not named in SwapAiStyles/NativeAiStyles was not audited and stays out.
 
 			/// <summary>
 			/// AI styles that read targets through <c>NPC.GetTargetData()</c>; their NPC types carry <c>NPCID.Sets.UsesNewTargetting</c> and are

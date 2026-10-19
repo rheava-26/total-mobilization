@@ -42,6 +42,7 @@ namespace Levy.Common.Weapons
 					case WeaponFamily.Boomerang: return ThrowBoomerang(s, item, profile, seg);
 					case WeaponFamily.Yoyo: return ThrowYoyo(s, item, profile, seg);
 					case WeaponFamily.Flail: return ThrowFlail(s, item, profile, seg);
+					case WeaponFamily.HeldWeapon: return HeldWeapons.TryFire(s, item, profile, seg);
 					case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
 				}
 			}
@@ -58,7 +59,7 @@ namespace Levy.Common.Weapons
 		private static readonly System.Collections.Generic.HashSet<int> _reportedDuds = new();
 
 		/// <summary>A weapon spawned nothing this use: back off for a while so the soldier does not rerun its hooks every tick.</summary>
-		private static bool Dud(SoldierNPC s, Item item)
+		internal static bool Dud(SoldierNPC s, Item item)
 		{
 			s.AttackCooldown = Math.Max(1, Math.Max(item.useTime, LevyConstants.DudWeaponRetryTicks));
 			return false;
@@ -85,6 +86,9 @@ namespace Levy.Common.Weapons
 					var pouch = s.Record.Gear.Ammo;
 					return pouch != null && !pouch.IsAir && pouch.stack > 0 && pouch.ammo == profile.UseAmmo && (pouch.shoot > 0 || item.shoot > 0);
 				case WeaponFamily.Magic:
+					return s.Record.Mana >= Math.Max(0, item.mana);
+				case WeaponFamily.HeldWeapon:
+					if (profile.UseAmmo > 0) { var hp = s.Record.Gear.Ammo; return hp != null && !hp.IsAir && hp.stack > 0 && hp.ammo == profile.UseAmmo; }
 					return s.Record.Mana >= Math.Max(0, item.mana);
 				default:
 					return true;

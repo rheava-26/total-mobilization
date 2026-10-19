@@ -30,9 +30,12 @@ namespace Levy.Common.Weapons
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
 		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
-		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang;
+		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang || (Family == WeaponFamily.HeldWeapon && !HeldMelee);
+		/// <summary>Held-projectile weapon of the melee class (Starlight, Solar Eruption): positions and engages as melee. Ranged/magic held weapons use the ranged standoff.</summary>
+		public bool HeldMelee;
+		public bool IsHeld => Family == WeaponFamily.HeldWeapon;
 		/// <summary>Whips count as melee for the brain (close to the lash's reach, avoid bosses); they stop short at a fraction of their reach.</summary>
-		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear || Family == WeaponFamily.Whip || Family == WeaponFamily.Yoyo || Family == WeaponFamily.Flail;
+		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear || Family == WeaponFamily.Whip || Family == WeaponFamily.Yoyo || Family == WeaponFamily.Flail || (Family == WeaponFamily.HeldWeapon && HeldMelee);
 		/// <summary>Yoyos and flails are melee-class tethered weapons: the soldier throws a Levy-owned projectile out on a short leash and it comes back. No ammo.</summary>
 		public bool IsYoyo => Family == WeaponFamily.Yoyo;
 		public bool IsFlail => Family == WeaponFamily.Flail;
@@ -120,9 +123,14 @@ namespace Levy.Common.Weapons
 
 			int shoot = item.shoot;
 			Projectile sample = ProjectileSample(shoot);
-			// Channeled weapons are accepted like any other (modded "hold to fire" guns set channel for that reason), except those whose shot is a held beam/gun
-			// projectile anchored to its owner (Last Prism, Charged Blaster, Laser Machinegun, Vortex Beater, Phantasm, ...): that would fire from the commander.
-			if (item.channel && sample != null && IsHeldOwnerProjectile(sample)) return WeaponFamily.Unsupported;
+			// Channeled weapons are accepted like any other (modded "hold to fire" guns set channel for that reason). Those whose shot is a held projectile anchored
+			// to its owner (Last Prism, Charged Blaster, Laser Machinegun, Vortex Beater, Phantasm, Phantom Phoenix, Starlight...) become HeldWeapon: the real vanilla
+			// held AI is run on the soldier (see HeldWeapons). Any other owner-anchored shot (a bare thick-laser beam) stays benched.
+			if (item.channel && sample != null && IsHeldOwnerProjectile(sample))
+			{
+				bool realClass = item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee);
+				return sample.aiStyle == ProjAIStyleID.HeldProjectile && realClass ? WeaponFamily.HeldWeapon : WeaponFamily.Unsupported;
+			}
 
 			// Soldier-anchored families (SoldierMinion / SoldierWhip / SoldierBoomerang): whips first, since whips are Summon-class items.
 			if (sample != null && !sample.sentry)
@@ -246,6 +254,11 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Shortsword:
 					p.ThrustReachPx = ThrustReach(src.shootSpeed);
 					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.ThrustRangeMinTiles, LevyConstants.ThrustRangeMaxTiles);
+					break;
+				case WeaponFamily.HeldWeapon:
+					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic);
+					p.RangeTiles = p.HeldMelee ? LevyConstants.HeldMeleeReachTiles
+						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? LevyConstants.RangeGun : LevyConstants.RangeMagic;
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
@@ -374,6 +387,7 @@ namespace Levy.Common.Weapons
 		{
 			if (item == null || item.IsAir) return null;
 			var f = GetProfile(item).Family;
+			if (f == WeaponFamily.HeldWeapon) return item.CountsAsClass(DamageClass.Magic) ? DamageClass.Magic : item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : DamageClass.Melee;
 			if (f == WeaponFamily.Boomerang) return item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Melee) ? DamageClass.Ranged : DamageClass.Melee;
 			if (f == WeaponFamily.Magic && !item.CountsAsClass(DamageClass.Magic))
 				return item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : item.CountsAsClass(DamageClass.Melee) ? DamageClass.Melee : null;

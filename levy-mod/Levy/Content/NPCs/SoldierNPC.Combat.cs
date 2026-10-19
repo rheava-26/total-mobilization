@@ -166,6 +166,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The projectile the weapon in hand would fire passes through tiles (no line-of-sight check needed).</summary>
 		private bool ShotIgnoresTiles()
 		{
+			if (Weapon.IsHeld) return false; // the holder itself ignores tiles, but the arrows / beam it fires do not
 			int projType = 0;
 			if (Weapon.UsesAmmo)
 			{

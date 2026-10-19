@@ -13,7 +13,7 @@ ReforgeNoBarracks: No barracks treasury is linked to this armory.
 ReforgeNothing: Every weapon here already meets the floor.
 ReforgeReport: Reforged {0} weapons in {1} rolls for {2}; {3} reached the floor.
 ReforgeBroke: The treasury ran dry. {0} weapons were left short of the floor.
-ReforgeCapped: {0} weapons did not reach the floor within {1} rolls and kept their best.
+ReforgeCapped: "{0} weapons did not reach the floor within {1} rolls and kept their best."
 Orders: Orders
 Sidearm: sidearm
 PotionHealing: healing / mana

@@ -85,6 +85,9 @@ namespace Levy.Content.TileEntities
 		private static bool IsMeleeFamily(WeaponFamily f) =>
 			f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;
 
+		/// <summary>Every melee-class primary (blades, spears, the thrown boomerang, the whip): none of them needs a fallback blade in the off hand.</summary>
+		private static bool IsMeleeTypeFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Boomerang || f == WeaponFamily.Whip;
+
 		/// <summary>A weapon the armory may hand out: the classifier accepts it (cached per item type, so scanning a 1000-slot hoard stays cheap).</summary>
 		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it);
 
@@ -434,6 +437,15 @@ namespace Levy.Content.TileEntities
 		{
 			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score) ?? TakeSidearm(forSoldier);
+		}
+
+		private static bool IsIssuableSummonStaff(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon;
+
+		/// <summary>A melee-type soldier's sidearm: a minion-summoning staff (the sidearm slot first, then the best in the armory). Never a blade. Removes it. Null if none.</summary>
+		public virtual Item TakeSummonSidearm(SoldierRecord forSoldier)
+		{
+			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponClassifier.Score);
 		}
 
 		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>
@@ -827,10 +839,11 @@ namespace Levy.Content.TileEntities
 				if (w != null) { g.Weapon = w; changed = true; }
 			}
 
-			// A melee primary needs no fallback blade; save the swords for the gunners.
-			bool primaryMelee = g.HasWeapon && IsMeleeFamily(WeaponClassifier.Classify(g.Weapon));
-			bool primarySummon = g.HasWeapon && WeaponClassifier.Classify(g.Weapon) == WeaponFamily.Summon; // the flock fights; the hand carries a whip
-			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && !primaryMelee) { var s = primarySummon ? TakeSummonerSidearm(soldier) : TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
+			// A melee-type primary (blade, spear, boomerang, whip) never takes a fallback blade: it takes a summon staff for a support minion, or nothing.
+			var primaryFam = g.HasWeapon ? WeaponClassifier.Classify(g.Weapon) : WeaponFamily.None;
+			bool primaryMelee = IsMeleeTypeFamily(primaryFam);
+			bool primarySummon = primaryFam == WeaponFamily.Summon; // the flock fights; the hand carries a whip
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm) { var s = primaryMelee ? TakeSummonSidearm(soldier) : primarySummon ? TakeSummonerSidearm(soldier) : TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
 
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {

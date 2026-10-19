@@ -21,12 +21,14 @@ namespace Levy.Content.NPCs
 		private int _minionTick, _minionSpawnCd;
 		private readonly List<int> _minionScratch = new();
 
-		/// <summary>The summon weapon this soldier maintains a flock for, or null (primary slot only; a sidearm summon staff is ignored).</summary>
+		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
 		public Item SummonWeapon()
 		{
 			var g = Record?.Gear;
-			if (g == null || !g.HasWeapon || _mainProfile == null || !_mainProfile.IsSummon || _mainProfile.ItemType != g.Weapon.type) return null;
-			return g.Weapon;
+			if (g == null) return null;
+			if (g.HasWeapon && _mainProfile != null && _mainProfile.IsSummon && _mainProfile.ItemType == g.Weapon.type) return g.Weapon;
+			if (g.HasSidearm && _sideProfile != null && _sideProfile.IsSummon && _sideProfile.ItemType == g.Sidearm.type) return g.Sidearm;
+			return null;
 		}
 
 		/// <summary>Minion slots one minion of this weapon takes.</summary>
@@ -98,7 +100,9 @@ namespace Levy.Content.NPCs
 				}
 
 				int desired = MinionCapacity(weapon);
+				Item held = Dummy != null ? Dummy.inventory[0] : null; // WeaponDamage parks the weapon in the dummy's hand: put the real hand item back (matters for a sidearm staff)
 				int damage = Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
+				if (Dummy != null && held != null) Dummy.inventory[0] = held;
 				for (int k = 0; k < _minionScratch.Count; k++)
 				{
 					Projectile p = Main.projectile[_minionScratch[k]];
@@ -126,7 +130,7 @@ namespace Levy.Content.NPCs
 			_minionSpawnCd = LevyConstants.MinionSpawnCooldownTicks;
 			if (p == null) return;
 			// a short cast animation when the staff is the weapon in hand
-			if (!UsingSidearm && ItemAnimation <= 0) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
+			if (!UsingSidearm && ItemAnimation <= 0 && ReferenceEquals(weapon, Record?.Gear?.Weapon)) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
 			if (weapon.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(weapon.UseSound.Value, NPC.Center);
 		}
 	}

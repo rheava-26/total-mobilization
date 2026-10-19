@@ -35,7 +35,7 @@ namespace Levy.Content.NPCs
 			// unsupported items keep a profile (Supported == false) so the stale check below stays quiet; they are never usable
 			_mainProfile = g.HasWeapon ? WeaponClassifier.GetProfile(g.Weapon) : null;
 			_sideProfile = g.HasSidearm ? WeaponClassifier.GetProfile(g.Sidearm) : null;
-			bool sideUsable = _sideProfile != null && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
+			bool sideUsable = _sideProfile != null && !(_sideProfile.IsSummon && !(_mainProfile?.IsSummon ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile); // a summon-staff sidearm is never the hand weapon (it only keeps a minion up)
 			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsSummon && sideUsable); // a summon weapon is not swung: the sidearm is the hand weapon
 			UsingSidearm = !mainUsable && sideUsable;
 			Weapon = SupportedOrNull(UsingSidearm ? _sideProfile : _mainProfile);
@@ -51,7 +51,7 @@ namespace Levy.Content.NPCs
 			var g = Record.Gear;
 			// gear swapped without a Combat_OnGearChanged call: rebuild the profiles
 			if ((g.HasWeapon ? g.Weapon.type : 0) != (_mainProfile?.ItemType ?? 0) || (g.HasSidearm ? g.Sidearm.type : 0) != (_sideProfile?.ItemType ?? 0)) { Combat_OnGearChanged(); return; }
-			bool sideUsable = _sideProfile != null && g.HasSidearm && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
+			bool sideUsable = _sideProfile != null && g.HasSidearm && !(_sideProfile.IsSummon && !(_mainProfile?.IsSummon ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
 			bool mainUsable = _mainProfile != null && g.HasWeapon && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsSummon && sideUsable);
 			bool wantSidearm = !mainUsable && sideUsable;
 			WeaponProfile want = SupportedOrNull(wantSidearm ? _sideProfile : _mainProfile);

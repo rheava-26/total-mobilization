@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
@@ -46,6 +47,19 @@ namespace Levy.Common.Weapons
 			}
 			return false;
 		}
+
+		/// <summary>Families with a real case in <see cref="Dispatch"/>. Keep in sync with the switch: WeaponWiringCheck asserts every WeaponFamily is in exactly one of this and <see cref="NotFiredFamilies"/>.</summary>
+		internal static readonly HashSet<WeaponFamily> FiredFamilies = new()
+		{
+			WeaponFamily.Gun, WeaponFamily.Bow, WeaponFamily.Magic, WeaponFamily.Broadsword, WeaponFamily.Spear, WeaponFamily.Shortsword, WeaponFamily.Whip,
+			WeaponFamily.Boomerang, WeaponFamily.Yoyo, WeaponFamily.Flail, WeaponFamily.HeldWeapon, WeaponFamily.Thrown, WeaponFamily.ThrownMelee,
+		};
+
+		/// <summary>Families <see cref="Dispatch"/> deliberately never fires (summons are kept up by SoldierNPC.MaintainMinions; the rest are unsupported or absent).</summary>
+		internal static readonly HashSet<WeaponFamily> NotFiredFamilies = new()
+		{
+			WeaponFamily.None, WeaponFamily.Unsupported, WeaponFamily.Summon, WeaponFamily.Sentry,
+		};
 
 		/// <summary>Fires the weapon's family attack (the primary, or the alt while <see cref="_altActive"/>). Returns true if a shot/swing started.</summary>
 		private static bool Dispatch(SoldierNPC s, Item item, WeaponProfile profile, NPC seg)

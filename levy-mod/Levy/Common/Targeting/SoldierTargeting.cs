@@ -36,8 +36,10 @@ namespace Levy.Common.Targeting
 		/// <summary>
 		/// Best enemy within <paramref name="rangeTiles"/> with line of sight, or -1. With <paramref name="useFocus"/> the commander's focus
 		/// target (see <see cref="FocusTargetFor"/>) beats everything else.
+		/// <paramref name="excludeIdx"/> (an NPC index, or -1) is never returned and never beats a reachable enemy: it is skipped before the line-of-sight test,
+		/// so a target the soldier found unreachable does not blank the pick while others stand in reach.
 		/// </summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true)
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
 			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
@@ -48,7 +50,7 @@ namespace Levy.Common.Targeting
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC npc = Main.npc[i];
-				if (!npc.active || i == s.NPC.whoAmI || IsNeverTarget(npc)) continue;
+				if (!npc.active || i == s.NPC.whoAmI || i == excludeIdx || IsNeverTarget(npc)) continue;
 				float distSq = Vector2.DistanceSquared(from, npc.Center);
 				if (distSq > rangeSq) continue;
 				bool attacking = IsAttackingUs(npc);

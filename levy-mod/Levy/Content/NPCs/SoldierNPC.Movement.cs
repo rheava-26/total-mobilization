@@ -989,7 +989,7 @@ namespace Levy.Content.NPCs
 		// pathfinding (Follow and Haul only)
 		// =====================================================================================================
 
-		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
+		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul || State == SoldierState.Resupply || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
 			|| (_engPathOk && (State == SoldierState.Engage || State == SoldierState.Shaken));
 
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>

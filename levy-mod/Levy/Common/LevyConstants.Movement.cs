@@ -50,6 +50,19 @@ namespace Levy.Common
 			public const int AerialEngageMinTiles = 5;
 			public const int AerialClimbBenefitTiles = 3;
 
+			// ---- goal-jump debounce (only a jump that keeps landing without gaining height; a clean ledge jump never meets these) ----
+			/// <summary>After a goal-jump that did not gain height, the next one waits until the goal is this close (tiles across) instead of the full reach.</summary>
+			public const int GoalJumpRetryReachTiles = 2;
+			/// <summary>This many goal-jumps in a row without gaining <see cref="GoalJumpGainPx"/> of height starts a hold.</summary>
+			public const int GoalJumpStreakMax = 3;
+			public const float GoalJumpGainPx = 12f;
+			/// <summary>No goal-jumps at all for this long after a futile streak (walls, gaps and running hops are unaffected).</summary>
+			public const int GoalJumpHoldTicks = 180;
+			/// <summary>A streak is forgotten this long after its last jump (longer than the hold, so the retry rule survives it).</summary>
+			public const int GoalJumpStreakResetTicks = 300;
+			/// <summary>A goal-jump is skipped while a ceiling is this close above the head (px): the body would only bump it.</summary>
+			public const int GoalJumpHeadroomPx = 32;
+
 			// ---- hazards ----
 			public const int LookAheadPx = 8;
 			public const int FallScanTiles = 20;
@@ -67,6 +80,14 @@ namespace Levy.Common
 			public const int ReverseTicks = 20;
 			public const float StuckProgressPx = 8f;            // movement per sample that counts as real walking
 			public const int ReverseSettleTicks = 60;           // the reverse shuffle does not count as progress for this long
+
+			// ---- wedge detector (long-window net displacement; catches bounce-in-place that the 10-tick sampler reads as movement) ----
+			/// <summary>Net displacement is judged over this window while the body is trying to walk (ticks).</summary>
+			public const int WedgeWindowTicks = 90;
+			/// <summary>A window that ends less than this far (px) from where it began counts as wedged (a slow walk covers 50+).</summary>
+			public const float WedgeNetPx = 20f;
+			/// <summary>Wedged windows in a row before a fresh path is forced (invisible), and before a following soldier is leashed to its commander.</summary>
+			public const int WedgeRepathWindows = 2, WedgeTeleportWindows = 4;
 
 			// ---- ordered home (ReturnToBarracks / stand-down) ----
 			/// <summary>Wedged (not walking) this long while heading home: snap to the barracks muster point.</summary>

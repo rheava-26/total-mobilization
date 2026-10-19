@@ -30,6 +30,9 @@ namespace Levy.Content.NPCs
 		private bool _blocked, _blockedHard;
 		private float _rhBest = float.MaxValue; private int _rhNoProgress;
 		private int _hopTimer;
+		// goal-jump debounce and wedge detector (see TickGoalJumpDebounce / TickWedge)
+		private int _goalJumpStreak, _goalJumpHold, _goalJumpIdle; private float _goalJumpBaseY;
+		private Vector2 _wedgeAnchor; private int _wedgeTimer, _wedgeWindows; private bool _wedgeShuffled, _wedgeForcePath;
 		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
 		private int _dashTicks, _dashCooldown, _dashDir;
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
@@ -73,6 +76,7 @@ namespace Levy.Content.NPCs
 			}
 			else if (AerialGroundY == float.MinValue) AerialGroundY = npc.Bottom.Y;
 			_wasAirborne = !grounded;
+			TickGoalJumpDebounce(grounded);
 			bool air = UpdateAerial(grounded);
 			if (_gapAssist > 0 && !air) TickGapAssist(grounded);
 
@@ -110,7 +114,7 @@ namespace Levy.Content.NPCs
 			if (TickDash(goal, dx, dy, grounded, air)) { MirrorDummyControls(); return; }
 
 			_blocked = false; _blockedHard = false;
-			int jumpTiles = 0; bool wantFly = false; bool flyUp = false;
+			int jumpTiles = 0; bool wantFly = false; bool flyUp = false; bool goalJump = false;
 			bool horizontal = Math.Abs(dx) >= ArriveXPx;
 			int dir = dx >= 0f ? 1 : -1;
 			bool reversing = _reverseTicks > 0;
@@ -131,11 +135,15 @@ namespace Levy.Content.NPCs
 			}
 
 			// goal above and close: jump to it, fly to it, or admit it is out of reach
-			if (!air && !_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= JumpTowardGoalReachTiles * 16 + 8)
+			if (!air && !_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= GoalJumpReachPx())
 			{
 				int tiles = (int)Math.Ceiling(-dy / 16f);
 				int reachBonus = State == SoldierState.Engage ? EngageJumpReachBonusTiles : 0; // a weapon covers the last stretch
-				if (tiles <= Abilities.JumpTiles + reachBonus) { int jt = Math.Min(tiles, Abilities.JumpTiles); if (jt > jumpTiles) jumpTiles = jt; }
+				if (tiles <= Abilities.JumpTiles + reachBonus)
+				{
+					int jt = Math.Min(tiles, Abilities.JumpTiles);
+					if (jt > jumpTiles && GoalJumpAllowed()) { jumpTiles = jt; goalJump = true; }
+				}
 				else if (Abilities.HasWings) wantFly = true;
 				else { _blocked = true; _blockedHard = true; }
 			}
@@ -165,7 +173,11 @@ namespace Levy.Content.NPCs
 					else Accelerate(dir, maxSpeed, accel);
 				}
 				else Decelerate();
-				if (jumpTiles > 0) TryJump(jumpTiles);
+				if (jumpTiles > 0)
+				{
+					bool fromGround = npc.velocity.Y == 0f;
+					if (TryJump(jumpTiles) && goalJump && fromGround) NoteGoalJump();
+				}
 				else if (grounded && horizontal && !_blocked && !air) TryRunningHop(dx, dir);
 				StepUp();
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
@@ -182,6 +194,7 @@ namespace Levy.Content.NPCs
 		{
 			_path.Clear(); _pathTimer = 0; _pathFailTimer = 0;
 			ResetStuck(); _stuckTotal = 0;
+			_goalJumpStreak = 0; _goalJumpHold = 0; _goalJumpIdle = 0;
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
@@ -856,6 +869,65 @@ namespace Levy.Content.NPCs
 		{
 			_stuckTicks = 0; _stuckTotal = 0; _stuckSampleTimer = 0; _stuckJumped = false; _reverseTicks = 0;
 			_stuckPos = NPC.position;
+			ResetWedge();
+		}
+
+		private void ResetWedge()
+		{
+			_wedgeAnchor = NPC.position; _wedgeTimer = 0; _wedgeWindows = 0; _wedgeShuffled = false;
+		}
+
+		// ---- goal-jump debounce ----
+		// A "goal is above me" jump that keeps landing without getting any higher (a hovering target, a ledge out of reach, a rock
+		// overhead) is pointless bunny-hopping. After a short futile streak the NEXT such jump waits for the goal to be close, and after
+		// GoalJumpStreakMax of them goal-jumps rest for a few seconds. Wall, gap, dodge and running-hop jumps never go through here, and
+		// a jump that does gain height clears the streak, so a normal ledge climb is never touched.
+
+		/// <summary>How far across (px) a goal above is still jumped for: the full reach, or only close in after a jump that gained nothing.</summary>
+		private float GoalJumpReachPx()
+			=> (_goalJumpStreak > 0 ? GoalJumpRetryReachTiles : JumpTowardGoalReachTiles) * 16 + 8;
+
+		private bool GoalJumpAllowed()
+			=> _goalJumpHold <= 0 && !Collision.SolidCollision(new Vector2(NPC.position.X, NPC.position.Y - GoalJumpHeadroomPx), NPC.width, GoalJumpHeadroomPx);
+
+		private void NoteGoalJump()
+		{
+			if (_goalJumpStreak == 0) _goalJumpBaseY = NPC.Bottom.Y;
+			if (_goalJumpStreak < 1000) _goalJumpStreak++;
+			_goalJumpIdle = 0;
+			if (_goalJumpStreak >= GoalJumpStreakMax) _goalJumpHold = GoalJumpHoldTicks;
+		}
+
+		private void TickGoalJumpDebounce(bool grounded)
+		{
+			if (_goalJumpHold > 0) _goalJumpHold--;
+			if (_goalJumpStreak == 0) return;
+			if (grounded && NPC.Bottom.Y < _goalJumpBaseY - GoalJumpGainPx) { _goalJumpStreak = 0; return; } // it got up: a real climb
+			if (++_goalJumpIdle > GoalJumpStreakResetTicks) _goalJumpStreak = 0;
+		}
+
+		// ---- wedge detector ----
+		// The 10-tick sampler in TrackStuck reads any vertical bounce as movement, so a body that hops against a wall or ceiling never
+		// looks stuck to it. This judges NET displacement over a long window while the body is trying to walk. Two wedged windows in a
+		// row force a fresh path request; four (about 6 s, the same as the existing leash) send a FOLLOWING soldier to its commander.
+
+		private void TickWedge()
+		{
+			if (_flying || _aerial) { ResetWedge(); return; }
+			if (_reverseTicks > 0) _wedgeShuffled = true;
+			if (++_wedgeTimer < WedgeWindowTicks) return;
+			_wedgeTimer = 0;
+			float net = Vector2.Distance(NPC.position, _wedgeAnchor);
+			_wedgeAnchor = NPC.position;
+			bool shuffled = _wedgeShuffled; _wedgeShuffled = false;
+			if (net >= WedgeNetPx && !shuffled) { _wedgeWindows = 0; return; }
+			_wedgeWindows++;
+			if (_wedgeWindows == WedgeRepathWindows) { _wedgeForcePath = UsesPath; _path.Clear(); _pathFailTimer = 0; }
+			else if (_wedgeWindows >= WedgeTeleportWindows)
+			{
+				_wedgeWindows = 0;
+				if (State == SoldierState.Follow && FollowerTravel.TeleportNearCommander(this)) return;
+			}
 		}
 
 		/// <summary>Snaps the body onto its barracks muster point (server/single player). The brain then sees it arrived and stands it down.</summary>
@@ -882,6 +954,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Samples position every few ticks: jump, then walk back a tile, then (following) teleport to the commander.</summary>
 		private void TrackStuck()
 		{
+			TickWedge();
 			if (++_stuckSampleTimer < StuckSampleTicks) return;
 			_stuckSampleTimer = 0;
 			float moved = Vector2.Distance(NPC.position, _stuckPos);
@@ -939,7 +1012,8 @@ namespace Levy.Content.NPCs
 			if (!UsesPath) return;
 			_pathTimer++;
 			if (_pathFailTimer > 0) { _pathFailTimer--; return; }
-			bool want = _blockedHard && _path.Count == 0;
+			bool want = (_blockedHard || _wedgeForcePath) && _path.Count == 0;
+			_wedgeForcePath = false; // one request per wedge, whatever it finds
 			bool refresh = _path.Count > 0 && _pathTimer >= PathRecalcTicks;
 			if (!want && !refresh) return;
 			_pathTimer = 0;

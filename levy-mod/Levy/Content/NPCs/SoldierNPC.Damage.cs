@@ -174,11 +174,40 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		private int _stationLifeCount, _stationManaTick;
 
+		/// <summary>
+		/// Potion buffs live on the NPC (NPC.AddBuff), but the stat pipeline reads the dummy Player, which never runs UpdateBuffs, so each active buff's
+		/// stat effect is applied to the dummy by hand (like StationBuffSystem.Apply; stations are flags, never NPC buffs, so nothing is applied twice).
+		/// Returns the life-regen units to feed StationRegen. Call after UpdateEquips/UpdateArmorSets, before the stats are read.
+		/// </summary>
+		private int ApplyPotionBuffs(Player d)
+		{
+			int regen = 0;
+			for (int i = 0; i < NPC.maxBuffs; i++)
+			{
+				if (NPC.buffType[i] <= 0 || NPC.buffTime[i] <= 0) continue;
+				switch (NPC.buffType[i])
+				{
+					case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
+					case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
+					case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
+					case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
+					case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
+					case BuffID.Regeneration: regen += LevyConstants.RegenerationLifeRegen; break;
+					case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
+					case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
+					case BuffID.AmmoReservation: d.ammoPotion = true; break;
+					case BuffID.Archery: d.archery = true; break;
+					case BuffID.Summoning: d.maxMinions++; break;
+				}
+			}
+			return regen;
+		}
+
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
 		private void StationRegen()
 		{
-			if (Stations == StationFlags.None) { _stationLifeCount = _stationManaTick = 0; return; }
-			int units = StationBuffSystem.LifeRegen(Stations);
+			if (Stations == StationFlags.None && _buffLifeRegen <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
+			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen);
 			if (units > 0 && NPC.life < NPC.lifeMax)
 			{
 				_stationLifeCount += units;
@@ -240,7 +269,7 @@ namespace Levy.Content.NPCs
 				{
 					if (potion.healLife > 0) NPC.life = Math.Min(NPC.lifeMax, NPC.life + potion.healLife);
 					if (potion.healMana > 0) Record.Mana = Math.Min(Record.MaxMana, Record.Mana + potion.healMana);
-					if (potion.buffType > 0) NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
+					if (potion.buffType > 0) { NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime)); StatsDirty = true; }
 					PotionSickness = LevyConstants.PotionSicknessTicks;
 					drank = true;
 				}
@@ -252,6 +281,7 @@ namespace Levy.Content.NPCs
 				if (potion != null && !potion.IsAir)
 				{
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
+					StatsDirty = true;
 					_buffPotionCooldown = LevyConstants.BuffPotionIntervalTicks;
 					drank = true;
 				}

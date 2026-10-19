@@ -74,7 +74,19 @@ namespace Levy.Content.NPCs
 		/// <summary>Buff stations beside an armory this soldier is near (refreshed with the stats; server only). Damage.cs reads it for regen.</summary>
 		public StationFlags Stations;
 		private int _statsTimer;
-		private static bool _pipelineBroken;
+		/// <summary>Per-soldier latch: tick (Main.GameUpdateCount) before which this soldier uses the manual stat fallback after its pipeline threw. Retried after <see cref="LevyConstants.PipelineRetryTicks"/>.</summary>
+		private uint _pipelineRetryAt;
+		private bool _pipelineWarned;
+		/// <summary>Weapon item types whose GetWeaponDamage threw; they use the plain item damage while every other item keeps the pipeline.</summary>
+		private static readonly System.Collections.Generic.HashSet<int> _badDamageItems = new();
+		/// <summary>Always false: kept so SoldierNPC.Combat.cs (static LevyConfigPipelineOk) still compiles. The real latch is per soldier (<see cref="PipelineOk"/>); Combat's crit read has its own try/catch.</summary>
+		private static bool _pipelineBroken => false;
+		/// <summary>True when the vanilla stat pipeline is enabled and this soldier's latch is not holding it off.</summary>
+		public bool PipelineOk => LevyConfig.Get.UseVanillaStatPipeline && Main.GameUpdateCount >= _pipelineRetryAt;
+		/// <summary>Damage reduction (0..<see cref="LevyConstants.MaxEndurance"/>) read from the dummy's endurance stat (Endurance potion, accessories). Server only.</summary>
+		public float Endurance;
+		/// <summary>Life regen units contributed by potion buffs (Regeneration); Damage.StationRegen adds it to the station counter.</summary>
+		private int _buffLifeRegen;
 
 		// ---- fear (meter on the record; helpers here) ----
 		public float Fear { get => Record?.Fear ?? 0f; set { if (Record != null) Record.Fear = MathHelper.Clamp(value, 0f, 100f); } }
@@ -192,6 +204,15 @@ namespace Levy.Content.NPCs
 			Dummy.selectedItem = 0;
 			Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, Record.MaxHp);
 			Dummy.statManaMax = Dummy.statManaMax2 = Record.MaxMana;
+			SyncDummyMana();
+		}
+
+		/// <summary>Mirrors the record's mana onto the dummy so modded Shoot / CanUseItem / CheckMana hooks see the real pool (HeldWeaponSwap sets it the same way around a held-weapon shot).</summary>
+		private void SyncDummyMana()
+		{
+			if (Dummy == null || Record == null) return;
+			Dummy.statManaMax = Dummy.statManaMax2 = Math.Max(0, Record.MaxMana);
+			Dummy.statMana = Math.Clamp(Record.Mana, 0, Dummy.statManaMax2);
 		}
 
 		/// <summary>Recomputes defense/damage/movement from gear through the dummy's vanilla stat pipeline (with a manual fallback).</summary>
@@ -202,7 +223,7 @@ namespace Levy.Content.NPCs
 			EquipDummy();
 			Stations = StationBuffSystem.For(NPC.Center);
 			bool ok = false;
-			if (LevyConfig.Get.UseVanillaStatPipeline && !_pipelineBroken)
+			if (PipelineOk)
 			{
 				try
 				{
@@ -211,6 +232,8 @@ namespace Levy.Content.NPCs
 					Dummy.UpdateEquips(DummySlot);
 					Dummy.UpdateArmorSets(DummySlot);
 					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
+					try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
+					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
 					Defense = Dummy.statDefense;
 					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed);
 					Abilities = Common.Movement.MovementAbilities.FromDummy(Dummy);
@@ -219,14 +242,15 @@ namespace Levy.Content.NPCs
 				}
 				catch (Exception e)
 				{
-					_pipelineBroken = true;
-					Levy.Instance.Logger.Warn("Levy: vanilla stat pipeline failed on a soldier, falling back to manual stats: " + e);
+					// Only THIS soldier falls back (and retries later): one bad modded item must not strip flight/dash from the whole army.
+					_pipelineRetryAt = Main.GameUpdateCount + (uint)LevyConstants.PipelineRetryTicks;
+					if (!_pipelineWarned) { _pipelineWarned = true; Levy.Instance.Logger.Warn("Levy: vanilla stat pipeline failed on soldier '" + SoldierName + "' (" + GearSummary() + "), using manual stats for " + LevyConstants.PipelineRetryTicks / 60 + "s then retrying: " + e); }
 				}
 			}
 			if (!ok)
 			{
 				int def = 0; foreach (var it in Record.Gear.AllItems()) if (!it.accessory || true) def += it.defense;
-				Defense = def; MoveSpeedMult = 1f; Aggro = 0; Abilities = new Common.Movement.MovementAbilities();
+				Defense = def; MoveSpeedMult = 1f; Aggro = 0; Endurance = 0f; _buffLifeRegen = 0; Abilities = new Common.Movement.MovementAbilities();
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			NPC.defense = Defense;
@@ -238,7 +262,7 @@ namespace Levy.Content.NPCs
 		public int WeaponDamage(Item item)
 		{
 			if (item == null || item.IsAir) return 0;
-			if (!_pipelineBroken && LevyConfig.Get.UseVanillaStatPipeline)
+			if (PipelineOk && !_badDamageItems.Contains(item.type))
 			{
 				try
 				{
@@ -247,9 +271,19 @@ namespace Levy.Content.NPCs
 					if ((Stations & StationFlags.Sharpening) != 0 && item.CountsAsClass(DamageClass.Melee)) dmg += LevyConstants.SharpenedMeleeFlatDamage;
 					return Math.Max(1, dmg);
 				}
-				catch { _pipelineBroken = true; }
+				catch (Exception e)
+				{
+					// Blacklist just this weapon type (plain item damage from now on); the pipeline stays on for every other item and soldier.
+					if (_badDamageItems.Add(item.type)) Levy.Instance.Logger.Warn("Levy: GetWeaponDamage threw for item " + item.Name + " (type " + item.type + "); using its plain damage: " + e);
+				}
 			}
 			return Math.Max(1, item.damage);
+		}
+
+		private string GearSummary()
+		{
+			try { var sb = new System.Text.StringBuilder(); foreach (var it in Record.Gear.AllItems()) if (it != null && !it.IsAir) sb.Append(it.Name).Append(", "); return sb.ToString().TrimEnd(',', ' '); }
+			catch { return "?"; }
 		}
 
 		/// <summary>Keeps the dummy where the body is. Called every tick before Draw/partials run.</summary>
@@ -260,6 +294,7 @@ namespace Levy.Content.NPCs
 			Dummy.gravDir = 1f; Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
 			Dummy.statLife = NPC.life; Dummy.statLifeMax2 = Math.Max(1, NPC.lifeMax);
 			Dummy.whoAmI = DummySlot;
+			SyncDummyMana();
 		}
 
 		public override void AI()
@@ -294,6 +329,7 @@ namespace Levy.Content.NPCs
 		{
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
+			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
 		}
 
 		public override bool CheckDead()

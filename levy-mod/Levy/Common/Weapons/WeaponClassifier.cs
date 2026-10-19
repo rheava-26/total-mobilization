@@ -83,11 +83,13 @@ namespace Levy.Common.Weapons
 			// Families that fire the item's OWN projectile (soldier shots are owned by the commander): refuse a modded shot that pins its owner's item-use state and never
 			// releases it (Mechanica's Serpent's Spear sets owner.heldProj/itemAnimation/itemTime every tick with no input check), or the commander can no longer attack.
 			// Spear/Shortsword/Whip/Boomerang/Summon soldiers use Levy's own projectiles instead, so a weapon of those families never spawns its locking shot.
+			// A MELEE owner-locker (Serpent's Spear) is thrown as a Levy SoldierBoomerang: its own projectile, drawn with the item's shot sprite, returning to the soldier, so the commander is never pinned.
+			// A non-melee one (a gun or magic bolt) cannot sensibly be thrown and stays Unsupported.
 			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword)
 				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
 			{
 				extended = false;
-				return WeaponFamily.Unsupported;
+				return item.CountsAsClass(DamageClass.Melee) ? WeaponFamily.Boomerang : WeaponFamily.Unsupported;
 			}
 			return family;
 		}

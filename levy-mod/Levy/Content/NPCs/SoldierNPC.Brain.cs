@@ -1715,6 +1715,7 @@ namespace Levy.Content.NPCs
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
 			Vector2 slot = cmd.Bottom + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
+			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmd.Bottom, slot); // underground only: surface slots are untouched
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
 			if (HasMoveGoal)
 			{
@@ -1723,6 +1724,27 @@ namespace Levy.Content.NPCs
 			}
 			else if (dSlot > LevyConstants.FollowDistance / 2f) SetGoal(slot);
 		}
+
+		/// <summary>
+		/// A follow slot whose body cells lie inside rock (a big army's far ranks, a shaft or a winding tunnel) is a spot nobody can walk to:
+		/// the soldier would shove at a wall until the catch-up teleport. Pull such a slot back toward the commander, one tile at a time,
+		/// to the first column whose three body cells are open. Open slots (everything on the surface) come back unchanged.
+		/// </summary>
+		private static Vector2 KeepSlotOutOfRock(Vector2 cmdBottom, Vector2 slot)
+		{
+			int fy = TileNav.FeetTile(slot).Y;
+			if (BodyCellsOpen((int)(slot.X / 16f), fy)) return slot;
+			float dx = slot.X - cmdBottom.X;
+			for (int back = (int)(Math.Abs(dx) / LevyConstants.TilePx) - 1; back >= 0; back--)
+			{
+				float x = cmdBottom.X + Math.Sign(dx) * back * LevyConstants.TilePx;
+				if (BodyCellsOpen((int)(x / 16f), fy)) return new Vector2(x, slot.Y);
+			}
+			return cmdBottom;
+		}
+
+		private static bool BodyCellsOpen(int tx, int fy)
+			=> !TileNav.IsSolid(tx, fy) && !TileNav.IsSolid(tx, fy - 1) && !TileNav.IsSolid(tx, fy - 2);
 
 		private static void ScreenHalfExtents(out float hx, out float hy)
 		{

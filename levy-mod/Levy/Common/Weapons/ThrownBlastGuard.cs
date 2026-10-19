@@ -1,29 +1,31 @@
-using System.Collections.Generic;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Globals;
 
 namespace Levy.Common.Weapons
 {
 	/// <summary>
-	/// A soldier's thrown bomb blasts enemies but must not eat the player's base. Vanilla's bomb Kill() calls Projectile.ExplodeTiles, which asks
-	/// <see cref="GlobalTile.CanExplode"/> for every tile; this guard answers "no" for the length of a Kill() of a soldier-thrown explosive. It only
-	/// affects projectile types a soldier has thrown from a Thrown-family item (see <see cref="Register"/>), never other soldier shots.
+	/// A soldier's explosive blasts enemies but must not eat the player's base. Vanilla's explosive Kill() calls Projectile.ExplodeTiles, which asks
+	/// <see cref="GlobalTile.CanExplode"/> for every tile; this guard answers "no" for the length of a Kill() of any soldier-fired explosive (thrown bombs,
+	/// and gun ordnance such as Rocket III/IV, Mini Nukes, Cluster Rockets and their fragments). Non-soldier explosions are never touched.
 	/// </summary>
 	public class ThrownBlastGuardProjectile : GlobalProjectile
 	{
 		/// <summary>True only between PreKill and OnKill of a guarded projectile (Projectile.Kill runs both in one call, so nothing else can explode meanwhile).</summary>
 		internal static bool Guarding;
-		private static readonly HashSet<int> _types = new();
-
-		/// <summary>Called by the classifier for every Thrown-family item's projectile type.</summary>
-		public static void Register(int projType) { if (projType > 0) _types.Add(projType); }
 
 		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => true;
 
+		/// <summary>The projectile explodes the way vanilla's bombs and rockets do (Projectile.Kill gates its explosion handling on these same two tests).</summary>
+		private static bool IsExplosive(Projectile p) => ProjectileID.Sets.Explosive[p.type] || p.aiStyle == ProjAIStyleID.Explosive;
+
 		public override bool PreKill(Projectile projectile, int timeLeft)
 		{
-			if (!LevyConstants.ThrownBlastsHarmTiles && _types.Contains(projectile.type)
+			// Always reset first: if an earlier guarded Kill was vetoed by another mod's PreKill, OnKill never ran and the flag would still be up
+			// for this (possibly legitimate, non-soldier) explosion.
+			Guarding = false;
+			if (!LevyConstants.ThrownBlastsHarmTiles && IsExplosive(projectile)
 				&& projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.IsSoldierShot)
 				Guarding = true;
 			return true;
@@ -42,7 +44,7 @@ namespace Levy.Common.Weapons
 		public override bool CanExplode(int i, int j, int type) => !ThrownBlastGuardProjectile.Guarding;
 	}
 
-	/// <summary>Safety net: a Kill() that threw before OnKill must not leave the guard on for the next explosion.</summary>
+	/// <summary>Safety net: a Kill() that threw or was vetoed before OnKill must not leave the guard on past this tick.</summary>
 	public class ThrownBlastGuardSystem : ModSystem
 	{
 		public override void PostUpdateEverything() { ThrownBlastGuardProjectile.Guarding = false; }

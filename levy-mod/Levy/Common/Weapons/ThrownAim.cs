@@ -24,7 +24,7 @@ namespace Levy.Common.Weapons
 					return projType == ProjectileID.Grenade || projType == ProjectileID.StickyGrenade || projType == ProjectileID.BouncyGrenade || projType == ProjectileID.PartyGirlGrenade
 						? LevyConstants.ThrownFlightGrenade : LevyConstants.ThrownFlightBomb;
 				case LevyConstants.ThrownStickAiStyle: return LevyConstants.ThrownFlightStick;
-				default: return LevyConstants.ThrownFlightKnife;
+				default: return projType == 162 ? LevyConstants.ThrownFlightKnife162 : LevyConstants.ThrownFlightKnife;
 			}
 		}
 
@@ -71,6 +71,8 @@ namespace Levy.Common.Weapons
 			for (int t = 1; t <= LevyConstants.ThrownSimMaxTicks; t++)
 			{
 				if (t > f.Delay) { vel.Y += f.Gravity; vel.X *= f.Drag; }
+				// aiStyle-2 AI clamps the fall speed (Projectile.cs ~19940: velocity.Y > 16 => 16); a harmless no-op for the slower models.
+				if (vel.Y > LevyConstants.ThrownKnifeTerminalVelY) vel.Y = LevyConstants.ThrownKnifeTerminalVelY;
 				pos += vel;
 				Vector2 tp = target + targetVel * Math.Min(t, LevyConstants.AimMaxLeadTicks);
 				float d = Vector2.Distance(pos, tp);

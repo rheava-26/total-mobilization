@@ -45,7 +45,11 @@ namespace Levy.Common
 			public ThrownFlight(int delay, float gravity, float drag) { Delay = delay; Gravity = gravity; Drag = drag; }
 		}
 		/// <summary>Read from Projectile.AI: aiStyle 2 (knives, shuriken, daggers), 1 (javelin), 14 (spiky ball, beenade), 16 (bombs, grenades), 113 (bone javelin).</summary>
-		public static readonly ThrownFlight ThrownFlightKnife = new(18, 0.28f, 0.99f);
+		public static readonly ThrownFlight ThrownFlightKnife = new(19, 0.4f, 0.97f);
+		/// <summary>The one aiStyle-2 type with its own branch (ProjectileID 162): gravity after 17 straight ticks.</summary>
+		public static readonly ThrownFlight ThrownFlightKnife162 = new(17, 0.28f, 0.99f);
+		/// <summary>Terminal fall speed (px/tick) vanilla's aiStyle-2 AI clamps velocity.Y to.</summary>
+		public const float ThrownKnifeTerminalVelY = 16f;
 		public static readonly ThrownFlight ThrownFlightArrow = new(15, 0.10f, 1f);
 		public static readonly ThrownFlight ThrownFlightGround = new(15, 0.20f, 1f);
 		public static readonly ThrownFlight ThrownFlightBomb = new(5, 0.20f, 1f);

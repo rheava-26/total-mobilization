@@ -37,9 +37,15 @@ namespace Levy.Common.Globals
 			{
 				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
 			}
-			// A soldier's sentry fires its own shots (ballista bolts, fireballs, lightning, hydra breath): they carry the soldier's tag so kills and loot credit the soldier.
-			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.sentry && parent.TryGetGlobalProjectile(out SoldierProjectileTag parentTag) && parentTag.SoldierIndex >= 0)
+			// Anything a soldier's projectile spawns (a sentry's own shots: ballista bolts, fireballs, lightning, hydra breath; Beenade bees, cluster and rocket fragments,
+			// Molotov fire, Stynger shards...) carries the soldier's tag so kills and loot credit the soldier, and is an NPC-style projectile so the commander's
+			// on-hit effects and item drops never run for it.
+			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.TryGetGlobalProjectile(out SoldierProjectileTag parentTag) && parentTag.SoldierIndex >= 0)
+			{
 				SoldierIndex = parentTag.SoldierIndex;
+				projectile.npcProj = true;
+				projectile.noDropItem = true;
+			}
 		}
 
 		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>

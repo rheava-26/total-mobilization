@@ -103,7 +103,7 @@ namespace Levy.Common.Weapons
 			// Spear/Shortsword/Whip/Boomerang/Summon soldiers use Levy's own projectiles instead, so a weapon of those families never spawns its locking shot.
 			// A MELEE owner-locker (Serpent's Spear) is thrown as a Levy SoldierBoomerang: its own projectile, drawn with the item's shot sprite, returning to the soldier, so the commander is never pinned.
 			// A non-melee one (a gun or magic bolt) cannot sensibly be thrown and stays Unsupported.
-			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword || family == WeaponFamily.ThrownMelee)
+			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword || family == WeaponFamily.ThrownMelee || family == WeaponFamily.Thrown)
 				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
 			{
 				extended = false;
@@ -285,11 +285,11 @@ namespace Levy.Common.Weapons
 			{
 				case WeaponFamily.Gun: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeGun) : LevyConstants.RangeGun; p.Gravity = false; break;
 				case WeaponFamily.Bow: p.RangeTiles = LevyConstants.RangeBow; p.Gravity = true; break;
-				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); break;
+				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); p.RangeTiles = ClampToDriverReach(src.shoot, p.RangeTiles); break;
 				case WeaponFamily.Summon: p.RangeTiles = LevyConstants.RangeSummon; break;
 				case WeaponFamily.Sentry: p.RangeTiles = LevyConstants.RangeSentry; break;
 				case WeaponFamily.Boomerang: p.RangeTiles = LevyConstants.RangeBoomerang; break;
-				case WeaponFamily.Thrown: p.RangeTiles = LevyConstants.RangeThrown; p.Gravity = true; ThrownBlastGuardProjectile.Register(src.shoot); break;
+				case WeaponFamily.Thrown: p.RangeTiles = LevyConstants.RangeThrown; p.Gravity = true; break;
 				case WeaponFamily.ThrownMelee: p.RangeTiles = LevyConstants.RangeThrownMelee; p.Gravity = true; break;
 				case WeaponFamily.Whip:
 					p.ThrustReachPx = WhipReach(src.shootSpeed);
@@ -349,6 +349,18 @@ namespace Levy.Common.Weapons
 			p.FiresProjectileMelee = true;
 			p.BeamProjType = beam;
 			p.RangeTiles = Math.Max(p.MeleeReachTiles, reach);
+		}
+
+		/// <summary>
+		/// Magic shots whose behaviour is a soldier-side driver with a hard reach shorter than the family range (Medusa Head's ray reaches
+		/// <see cref="LevyConstants.MedusaRangePx"/>) must not have the soldier stall at the family range, out of the ray's reach. Drivers that home from
+		/// anywhere (Flying Knife, guided missiles) or reach past the family range (Soul Drain) are left alone.
+		/// </summary>
+		private static int ClampToDriverReach(int projType, int rangeTiles)
+		{
+			float reachPx = projType == ProjectileID.MedusaHead ? LevyConstants.MedusaRangePx : 0f;
+			if (reachPx <= 0f) return rangeTiles;
+			return Math.Min(rangeTiles, Math.Max(LevyConstants.ShortShotRangeMinTiles, (int)Math.Round(reachPx / LevyConstants.TilePx * LevyConstants.DriverReachFraction)));
 		}
 
 		/// <summary>Engagement range for an extended ranged weapon: the family range, cut down to the real reach when its projectile has a short lifetime (flames).</summary>
@@ -485,6 +497,7 @@ namespace Levy.Common.Weapons
 			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;
 			else if (p.Family == WeaponFamily.Flail) dps *= LevyConstants.FlailScoreFactor;
 			else if (p.Family == WeaponFamily.Thrown) dps *= LevyConstants.ThrownScoreFactor;
+			else if (p.Family == WeaponFamily.HeldWeapon) dps *= LevyConstants.HeldScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
 			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));

@@ -196,20 +196,81 @@ namespace Levy.Common.Systems
 		{
 			if (body == null) return;
 			var npc = body.NPC;
+			// Item conservation: whatever the body was hauling goes on the ground, and any kit still on its record goes home. Both are
+			// no-ops when there is nothing left, so every despawn path (discharge, desert timeout) is safe.
+			body.DropCarriedItems();
+			if (body.Record != null) ReturnKit(body.Record, body);
 			if (!npc.active) return;
 			npc.active = false;
 			npc.netUpdate = true;
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
 		}
 
-		private static void DropAllGear(SoldierRecord rec, IEntitySource source, Rectangle box)
+		/// <summary>Drops one item on the ground and moves it to the back of Terraria's item-slot recycling queue, so a huge kit never evicts itself or silently vanishes when the 400-item cap is reached.</summary>
+		internal static void SpillProtected(IEntitySource source, Rectangle box, Item it)
 		{
+			if (it == null || it.IsAir || it.stack <= 0) return;
+			int idx = Item.NewItem(source, box, it);
+			if (idx >= 0 && idx < Main.maxItems && Main.item[idx].active)
+				Main.item[idx].timeSinceItemSpawned = LevyConstants.ArmorySpillProtectedAge;
+		}
+
+		/// <summary>Drops the whole kit with the protected-spill path, then clears the gear. Nothing is cleared when there is nowhere to drop.</summary>
+		private static bool DropAllGear(SoldierRecord rec, IEntitySource source, Rectangle box)
+		{
+			if (rec == null) return true;
+			if (box == Rectangle.Empty) return false;
 			foreach (var it in rec.Gear.AllItems())
-			{
-				if (it == null || it.IsAir || it.stack <= 0) continue;
-				Item.NewItem(source, box, it);
-			}
+				SpillProtected(source, box, it);
 			rec.Gear.Clear();
+			return true;
+		}
+
+		/// <summary>Where a record's kit can land when there is no armory: the live body, else the home muster point / tile, else the commander, else any player.</summary>
+		private static bool TryKitDropBox(SoldierRecord rec, SoldierNPC body, out Rectangle box)
+		{
+			if (body != null && body.NPC.active) { box = body.NPC.Hitbox; return true; }
+			var home = HomeOf(rec);
+			if (home != null) { box = new Rectangle((int)home.MusterPoint.X - 8, (int)home.MusterPoint.Y - 40, 16, 40); return true; }
+			if (rec != null && rec.HomePos != Terraria.DataStructures.Point16.NegativeOne)
+			{
+				box = new Rectangle((rec.HomePos.X + 1) * LevyConstants.TilePx - 8, (rec.HomePos.Y + 1) * LevyConstants.TilePx - 40, 16, 40);
+				return true;
+			}
+			var c = OnlineCommander(rec);
+			if (c != null) { box = c.Hitbox; return true; }
+			for (int i = 0; i < Main.maxPlayers; i++)
+				if (Main.player[i].active) { box = Main.player[i].Hitbox; return true; }
+			box = Rectangle.Empty;
+			return false;
+		}
+
+		/// <summary>
+		/// Conserving kit return for a record that is about to lose its place on the roster (discharge, desertion, despawn). Order: the home
+		/// armory (which spills protected if full), else the nearest armory in link range of the old home, else the ground at the body / home /
+		/// commander / any player. Returns false only if the kit had nowhere at all to go, in which case the gear is left untouched so the
+		/// caller must NOT drop the record. Server / single player only.
+		/// </summary>
+		private static bool ReturnKit(SoldierRecord rec, SoldierNPC body)
+		{
+			if (rec == null) return true;
+			bool any = false;
+			foreach (var _ in rec.Gear.AllItems()) { any = true; break; }
+			if (!any) return true;
+
+			var armory = ArmoryOf(HomeOf(rec));
+			if (armory == null && rec.HomePos != Terraria.DataStructures.Point16.NegativeOne)
+				armory = SettlementSystem.Instance.NearestArmory(new Vector2((rec.HomePos.X + 1.5f) * LevyConstants.TilePx, (rec.HomePos.Y + 1.5f) * LevyConstants.TilePx), LevyConstants.ArmoryLinkRadius);
+			bool ok;
+			if (armory != null)
+			{
+				armory.ReturnGear(rec.Gear); // deposits, spills protected when storage is full, then clears the gear
+				ok = true;
+			}
+			else ok = TryKitDropBox(rec, body, out var box) && DropAllGear(rec, new EntitySource_Misc("Levy:KitReturn"), box);
+			if (!ok) { Levy.Instance.Logger.Warn("Levy: a soldier's kit had no armory and nowhere to drop; the record was kept so nothing is lost."); return false; }
+			if (body != null && body.NPC.active) body.NotifyGearChanged();
+			return true;
 		}
 
 		// =====================================================================================================
@@ -288,21 +349,11 @@ namespace Levy.Common.Systems
 		public virtual void Discharge(SoldierRecord rec)
 		{
 			if (LevyUtil.IsClient || rec == null) return;
-			bool wasListed = Regulars.Remove(rec);
 			var body = BodyOf(rec);
-			var home = HomeOf(rec);
-			var armory = ArmoryOf(home);
-			if (armory != null) armory.ReturnGear(rec.Gear);
-			else
-			{
-				Rectangle box;
-				if (body != null) box = body.NPC.Hitbox;
-				else if (home != null) box = new Rectangle((int)home.MusterPoint.X - 8, (int)home.MusterPoint.Y - 40, 16, 40);
-				else { var c = OnlineCommander(rec); box = c != null ? c.Hitbox : Rectangle.Empty; }
-				if (box != Rectangle.Empty) DropAllGear(rec, new EntitySource_Misc("Levy:Discharge"), box);
-			}
-			rec.Gear.Clear();
-			DespawnBody(body);
+			// Kit first: home armory, else the ground. If it truly cannot go anywhere the discharge is refused rather than deleting it.
+			if (!ReturnKit(rec, body)) return;
+			bool wasListed = Regulars.Remove(rec);
+			DespawnBody(body); // also drops anything the body was hauling
 			rec.BodyIndex = -1; rec.Dead = false; rec.RespawnTimer = 0;
 			if (wasListed) LevyUtil.Chat(LevyUtil.T("Roster.Discharged", rec.Name));
 			SendRosterSnapshot();
@@ -848,7 +899,8 @@ namespace Levy.Common.Systems
 		private void DesertBookkeeping(SoldierNPC body)
 		{
 			var rec = body.Record;
-			if (rec != null) Regulars.Remove(rec);
+			// The kit goes home BEFORE the record leaves the roster (a deserter walks off unarmed; nothing is deleted with the record).
+			if (rec != null && ReturnKit(rec, body)) Regulars.Remove(rec);
 			foreach (var d in _deserters) if (ReferenceEquals(d.Body, body)) return;
 			_deserters.Add(new Deserter { Body = body, Ticks = LevyConstants.DesertDespawnTicks });
 		}
@@ -919,8 +971,9 @@ namespace Levy.Common.Systems
 		private void Desert(SoldierRecord rec)
 		{
 			string weapon = rec.Gear.HasWeapon ? rec.Gear.Weapon.Name : LevyUtil.T("Roster.Nothing");
-			LevyUtil.Chat(LevyUtil.T("Chat.Deserted", rec.Name, weapon));
 			var body = BodyOf(rec);
+			if (!ReturnKit(rec, body)) return; // nowhere to put the kit: the soldier stays on the roster (retried at the next dawn)
+			LevyUtil.Chat(LevyUtil.T("Chat.Deserted", rec.Name, weapon));
 			if (body != null)
 			{
 				DialogueSystem.Bark(body, DialogueTrigger.DESERTED);
@@ -928,7 +981,7 @@ namespace Levy.Common.Systems
 				body.NPC.netUpdate = true;
 				DesertBookkeeping(body); // the Brain walks the body off the map; it is force-despawned after DesertDespawnTicks
 			}
-			else Regulars.Remove(rec);
+			else Regulars.Remove(rec); // kit already returned above
 		}
 
 		/// <summary>Single player only: a housed Tax Collector's take goes to a barracks with TaxToTreasury. In multiplayer taxMoney is per client and stays with the player.</summary>

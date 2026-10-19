@@ -59,13 +59,33 @@ namespace Levy.Common.Systems
 		// Lifecycle
 		// =====================================================================================================
 		public override void Load() => SettlementNet.Register();
-		public override void OnWorldLoad() => ResetRuntime();
-		public override void OnWorldUnload() => ResetRuntime();
+		/// <summary>Militia kits read back from the world tag (written by <see cref="SaveWorldData"/>); returned to their armories on the first server tick after load.</summary>
+		private readonly List<(Point16 home, SoldierGear gear)> _pendingKits = new();
+
+		public override void OnWorldLoad()
+		{
+			ResetRuntime();
+			// Mobilized is saved on the barracks but the militia themselves never are: after a crash / dedicated-server exit / Host&Play shutdown
+			// the flag would otherwise stay true and keep streaming militia from a depleted armory.
+			if (LevyUtil.IsServerOrSingle) ClearStaleMobilization();
+		}
+
+		public override void OnWorldUnload() { ResetRuntime(); _pendingKits.Clear(); }
 
 		public override void ClearWorld()
 		{
 			BookConscription = BookDrill = BookPlunder = BookFortification = BookDiscipline = false;
 			ResetRuntime();
+			_pendingKits.Clear();
+		}
+
+		private void ClearStaleMobilization()
+		{
+			foreach (var b in AllBarracks())
+			{
+				b.Mobilized = false; b.MusterTimer = 0; b.ReinforcementsPending = 0; b.MilitiaLostThisEvent = 0; b.NoOneLeftAnnounced = false;
+				b.Militia.Clear();
+			}
 		}
 
 		private void ResetRuntime()
@@ -81,12 +101,60 @@ namespace Levy.Common.Systems
 		{
 			tag["bookConscription"] = BookConscription; tag["bookDrill"] = BookDrill; tag["bookPlunder"] = BookPlunder;
 			tag["bookFortification"] = BookFortification; tag["bookDiscipline"] = BookDiscipline;
+
+			// Mustered militia wear kits drawn from the armory and their records are never saved. PreSaveAndQuit only covers a single-player
+			// Save&Quit, so persist every live militia kit here too (crash, dedicated exit, Host&Play shutdown, autosave). Read-only: tile
+			// entities are never touched in here (they may already be serialized). The kits go back to an armory on the next load.
+			var kits = new List<TagCompound>();
+			var seen = new HashSet<SoldierRecord>();
+			void AddKit(SoldierRecord rec)
+			{
+				if (rec == null || rec.Kind != SoldierKind.Militia || !seen.Add(rec)) return;
+				bool any = false;
+				foreach (var _ in rec.Gear.AllItems()) { any = true; break; }
+				if (!any) return;
+				kits.Add(new TagCompound { ["gear"] = rec.Gear.Save(), ["hx"] = (int)rec.HomePos.X, ["hy"] = (int)rec.HomePos.Y });
+			}
+			foreach (var b in AllBarracks())
+			{
+				if (_rt.TryGetValue(b.ID, out var rt))
+				{
+					AddKit(rt.PendingSpawn);
+					foreach (var (rec, _) in rt.StandingDown) AddKit(rec);
+				}
+				foreach (var rec in b.Militia) AddKit(rec);
+			}
+			for (int i = 0; i < Main.maxNPCs; i++) // bodies not (yet) listed on a barracks
+			{
+				var n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC sn && sn.IsMilitia) AddKit(sn.Record);
+			}
+			// Kits restored from a previous load that have not been returned yet are still owed to the armory: keep them in the tag.
+			foreach (var (home, gear) in _pendingKits)
+				kits.Add(new TagCompound { ["gear"] = gear.Save(), ["hx"] = (int)home.X, ["hy"] = (int)home.Y });
+			if (kits.Count > 0) tag["militiaKits"] = kits;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
 		{
 			BookConscription = tag.GetBool("bookConscription"); BookDrill = tag.GetBool("bookDrill"); BookPlunder = tag.GetBool("bookPlunder");
 			BookFortification = tag.GetBool("bookFortification"); BookDiscipline = tag.GetBool("bookDiscipline");
+			_pendingKits.Clear();
+			foreach (var t in tag.GetList<TagCompound>("militiaKits"))
+				_pendingKits.Add((new Point16(t.GetInt("hx"), t.GetInt("hy")), SoldierGear.Load(t.GetCompound("gear"))));
+		}
+
+		/// <summary>First server tick after load: every persisted militia kit goes back to its home armory (nearest in range, else spilled protected).</summary>
+		private void RestorePendingKits()
+		{
+			if (_pendingKits.Count == 0) return;
+			foreach (var (home, gear) in _pendingKits)
+			{
+				var rec = new SoldierRecord { Kind = SoldierKind.Militia, HomePos = home, Gear = gear, BodyIndex = -1 };
+				var b = BarracksAt(home);
+				ReturnGearHome(b, rec);
+			}
+			_pendingKits.Clear();
 		}
 
 		/// <summary>Book flags ride along with WorldData so joining clients can draw caps and tooltips.</summary>
@@ -397,6 +465,7 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServerOrSingle || body == null) return;
 			var npc = body.NPC;
 			var rec = body.Record;
+			body.DropCarriedItems(); // anything the militiaman was hauling goes on the ground before the body vanishes
 			if (rec != null)
 			{
 				var home = GetBarracks(rec.HomeBarracksId) ?? FindBarracksHolding(rec);
@@ -416,6 +485,7 @@ namespace Levy.Common.Systems
 		public override void PostUpdateNPCs()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			if (_pendingKits.Count > 0) RestorePendingKits();
 			CollectBarracksIds();
 			for (int k = 0; k < _scratchIds.Count; k++)
 			{
@@ -680,32 +750,35 @@ namespace Levy.Common.Systems
 		private void ReturnGearHome(BarracksTE home, SoldierRecord rec)
 		{
 			if (rec == null) return;
+			bool any = false;
+			foreach (var _ in rec.Gear.AllItems()) { any = true; break; }
+			if (!any) { rec.Gear.Clear(); return; }
 			ArmoryTE armory = home != null ? LinkedArmory(home) : null;
 			if (armory == null && rec.HomePos.X >= 0)
 				armory = NearestArmory(new Vector2((rec.HomePos.X + 1.5f) * LevyConstants.TilePx, (rec.HomePos.Y + 1.5f) * LevyConstants.TilePx), LevyConstants.ArmoryLinkRadius);
 			if (armory != null)
 			{
-				try { armory.ReturnGear(rec.Gear); _dirtyArmories.Add(armory.ID); }
-				catch (Exception e) { Levy.Instance.Logger.Warn("Levy: armory refused a returned militia kit: " + e); }
+				try { armory.ReturnGear(rec.Gear); _dirtyArmories.Add(armory.ID); return; }
+				catch (Exception e) { Levy.Instance.Logger.Warn("Levy: armory refused a returned militia kit, dropping it instead: " + e); }
 			}
-			else if (LevyUtil.IsServerOrSingle)
+			if (LevyUtil.IsServerOrSingle)
 			{
 				// No armory anywhere (the player removed it): spill the kit instead of deleting it.
 				var body = BodyOf(rec);
 				Vector2? at = null;
 				if (body != null && body.NPC.active) at = body.NPC.Center;
 				else if (rec.HomePos.X >= 0) at = new Vector2((rec.HomePos.X + 1.5f) * LevyConstants.TilePx, (rec.HomePos.Y + 1.5f) * LevyConstants.TilePx);
+				else
+				{
+					for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].active) { at = Main.player[i].Center; break; }
+				}
 				if (at.HasValue)
 				{
 					var box = new Rectangle((int)at.Value.X - 8, (int)at.Value.Y - 8, 16, 16);
 					var source = new EntitySource_Misc("Levy:MilitiaKitRecovered");
-					foreach (var it in rec.Gear.AllItems())
-					{
-						if (it == null || it.IsAir || it.stack <= 0) continue;
-						Item.NewItem(source, box, it);
-					}
+					foreach (var it in rec.Gear.AllItems()) RosterSystem.SpillProtected(source, box, it);
 				}
-				else Levy.Instance.Logger.Warn("Levy: a militia kit had no armory and no position to drop at; it was lost.");
+				else { Levy.Instance.Logger.Warn("Levy: a militia kit had no armory and no position to drop at; keeping it on the record."); return; }
 			}
 			rec.Gear.Clear();
 		}

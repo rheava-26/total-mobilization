@@ -106,9 +106,57 @@ namespace Levy.Common.Globals
 				projectile.Kill();
 				return false;
 			}
-			if (SoldierIndex < 0 || projectile.type != ProjectileID.FlyingKnife) return true;
-			DriveSoldierFlyingKnife(projectile);
-			return false;
+			if (SoldierIndex < 0) return true;
+			if (projectile.type == ProjectileID.FlyingKnife) { DriveSoldierFlyingKnife(projectile); return false; }
+			if (IsGuidedMissile(projectile.type)) { DriveSoldierGuidedMissile(projectile); return false; }
+			return true;
+		}
+
+		/// <summary>Channel-guided aiStyle-9 missiles (Magic Missile, Flamelash, Rainbow Rod): vanilla steers them to Main.player[owner]'s cursor, which is the commander's for soldier shots.</summary>
+		private static bool IsGuidedMissile(int type) => type == ProjectileID.MagicMissile || type == ProjectileID.Flamelash || type == ProjectileID.RainbowRodBullet;
+
+		/// <summary>Cruise speed captured on the first driven tick; the missile keeps its own launch speed while steering.</summary>
+		private float _guidedSpeed;
+
+		/// <summary>
+		/// A soldier's guided missile homes on the soldier's current engaged target (never the commander's cursor/position) with a capped turn rate,
+		/// and keeps its launch speed. With no live target it flies straight on its last heading, and expires naturally via timeLeft / tile / hit.
+		/// </summary>
+		private void DriveSoldierGuidedMissile(Projectile p)
+		{
+			if (_guidedSpeed <= 0f) _guidedSpeed = System.Math.Max(p.velocity.Length(), 6f);
+
+			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
+			SoldierNPC body = s != null && s.active ? s.ModNPC as SoldierNPC : null;
+			if (body != null)
+			{
+				bool engaging = (body.State == SoldierState.Engage || body.State == SoldierState.Shaken || body.State == SoldierState.Routed) && !body.Record.HoldFire;
+				NPC target = engaging ? CurrentKnifeTarget(body) : null;
+				if (target != null)
+				{
+					Vector2 to = target.Center - p.Center;
+					if (to != Vector2.Zero)
+					{
+						// Rotate the heading toward the target by a bounded amount, then restore cruise speed (a lerp-and-renormalise turn).
+						Vector2 heading = p.velocity == Vector2.Zero ? Vector2.Normalize(to) : Vector2.Normalize(p.velocity);
+						heading = Vector2.Normalize(Vector2.Lerp(heading, Vector2.Normalize(to), 0.14f));
+						p.velocity = heading * _guidedSpeed;
+					}
+				}
+			}
+			if (p.velocity != Vector2.Zero)
+			{
+				p.rotation = p.velocity.ToRotation() + MathHelper.PiOver2;
+				p.netUpdate = false;
+			}
+			// Light trail in the missile's own colour family (vanilla AI is skipped, so supply a minimal one).
+			int dust = p.type == ProjectileID.Flamelash ? DustID.Torch : p.type == ProjectileID.RainbowRodBullet ? DustID.RainbowMk2 : DustID.MagicMirror;
+			if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2))
+			{
+				Dust d = Dust.NewDustPerfect(p.Center, dust, -p.velocity * 0.1f, 100, p.type == ProjectileID.RainbowRodBullet ? Main.hslToRgb((Main.GlobalTimeWrappedHourly * 2f) % 1f, 1f, 0.6f) : default, 1.1f);
+				d.noGravity = true;
+			}
+			Lighting.AddLight(p.Center, 0.35f, 0.3f, 0.5f);
 		}
 
 		private int _knifeAge;

@@ -16,8 +16,8 @@ Mods: {
 				DisplayName: Armory
 				Tooltip:
 					'''
-					A 120-slot store with issue rows for weapons, armor, ammo and potions.
-					Soldiers of a Barracks within 20 tiles arm themselves from it.
+					A 1000-slot store with issue rows for weapons, armor, ammo and potions.
+					Soldiers of a Barracks within 120 tiles arm themselves from it.
 					'''
 			}
 
@@ -367,7 +367,7 @@ Mods: {
 
 				1. Settlement. Build a Barracks and an Armory at a Work Bench, side by side in your town. Town NPCs whose homes are within 120 tiles of the Barracks become its settlement. You do not house soldiers; they live at the Barracks. House your town NPCs as you always would. Each one adds manpower.
 
-				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Guns, bows, bolt magic, broadswords, shortswords and spears all work. Put what you want issued first into the issue slots at the top. Soldiers also draw from storage, best first.
+				2. The Armory. Throw spare weapons, armor, ammo and potions into it. Soldiers arm themselves from its issue rows, best gear first. Soldiers wield nearly any weapon a player can: guns, bows, magic, swords, spears and shortswords, whips, boomerangs, yoyos and flails, summon staves and sentries, held weapons like the Last Prism, and thrown weapons and bombs. Put what you want issued first into the issue slots at the top. Soldiers also draw from storage, best first.
 
 				3. Regulars. Right-click the Barracks and enlist. Regulars are named soldiers who follow you anywhere. They cost a muster fee up front and a daily wage at dawn, both from the Barracks treasury, so deposit coins there. Keep it full or they desert. The Kit button on a Regular's row shows their gear; put an item in a slot by hand and it stays on them until you take it out.
 

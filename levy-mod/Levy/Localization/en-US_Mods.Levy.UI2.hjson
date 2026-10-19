@@ -16,6 +16,7 @@ ReforgeBroke: The treasury ran dry. {0} weapons were left short of the floor.
 ReforgeCapped: "{0} weapons did not reach the floor within {1} rolls and kept their best."
 Orders: Orders
 Sidearm: sidearm
+Unarmed: Unarmed
 PotionHealing: healing / mana
 PotionBuff: buff
 DepositOneGold: +1 gold

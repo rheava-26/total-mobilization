@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Levy.Common.Config;
+using Levy.Common.Util;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.UI
@@ -53,7 +54,7 @@ namespace Levy.Common.UI
 
 			// held weapon, small and muted, centred under the HP bar (militia and regulars alike)
 			var weapon = s.Record.Gear?.Weapon;
-			string weaponName = weapon == null || weapon.IsAir ? "Unarmed" : weapon.Name;
+			string weaponName = weapon == null || weapon.IsAir ? LevyUtil.T("UI2.Unarmed") : weapon.Name;
 			float weaponScale = scale * LevyConstants.UI.NameplateWeaponScale;
 			Utils.DrawBorderString(spriteBatch, weaponName, new Vector2(top.X, by + h + 6f), WeaponTan, weaponScale, 0.5f, 0f);
 

@@ -12,6 +12,36 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 ---
 
+## 🛠 BUILD PLAN — ordered easy→hard (designer gave GO-AHEAD 2026-10-19; "get the easier stuff first")
+
+**KEY CODE FINDINGS from investigation (so we don't rebuild what exists):**
+- **Potion drinking ALREADY WORKS** (`SoldierNPC.Damage.Potions()`): soldiers auto-drink HEAL (<50% HP), MANA (magic/summon, <30% mana, `ManaPotionDrinkBelowPercent`), and BUFF potions from the armory's 2 potion issue slots (slot 0 = heal/mana shared, slot 1 = buff). So "mages should drink mana" is DONE — the friction is that slot 0 is SHARED between healing and mana, and a soldier only drinks a potion that serves its need, so a mage can't get mana if slot 0 holds Healing Potions. Likely designer just hadn't stocked mana potions. CANDIDATE small improvement: a dedicated mana slot (or smarter slot handling) so heal+mana coexist. NOT a from-scratch build.
+- **Movement ALREADY HAS the bones for verticality+dodging:** `SoldierNPC.Movement.cs` has `TickDodge(grounded, air)`, `UpdateAerial`/`ApplyAltitude`/`Glide`, an `Abilities` object (WingTimeMax, JumpTiles, HasWings, extra jumps, rocket boots), and jump-to-reach-a-goal-above. So "they never double-jump / never take height / die to worms" is almost certainly: (a) Abilities not being detected from the dummy's accessories (extra-jump bottles/wings not translating), (b) TickDodge too timid (doesn't evade worms/wyverns/piercing), and (c) no tactical HIGH-GROUND preference (they only jump to reach a goal, never to gain advantageous height). → verticality/dodge is STRENGTHEN-WHAT-EXISTS, not build-new. Must read TickDodge/UpdateAerial/Abilities-detection/perch before briefing.
+- **Militia default `Order = SoldierOrder.Patrol`** on a fixed-Y line between two settlement points (`CreateMilitiaRecord`). THAT is "walk in circles and die." Fix = default them to SearchDestroy leashed to the settlement.
+
+**TIER 1 — easy / contained (DOING FIRST):**
+1. **Militia default doctrine** → change militia `Order` Patrol→SearchDestroy, leashed to their settlement so they actively hunt nearby threats instead of pacing a line, but don't wander the map. [DISPATCHED]
+2. **Mana potions** → ALREADY WORKS; tell designer to stock mana potions in the heal/mana slot. Small optional improvement: separate mana from the shared heal slot so both coexist. (verify/inform; tiny tweak at most)
+3. **Boot/wing particles + SFX** → the dummy-player's movement visuals (rocket-boot flame, run dust, boot sounds) aren't drawn on the NPC. Cosmetic, visible, warms up the movement-visuals path. [needs a look at the draw code]
+
+**TIER 2 — medium, HIGHEST feel impact (the stick-figure drawing: cyan=mobile player, green=static clump):**
+4. **DODGING pass** — strengthen `TickDodge` so soldiers evade worms, wyverns, and multi-pierce projectiles on a collision course (currently they "jump once and die"). Goal: SOFT pressure + self-sufficiency (every class can save itself a little; survival must NOT depend on another class). [investigate TickDodge first]
+5. **VERTICALITY / mobility** — make high ground a PREFERENCE (perch on platforms/ledges for angles over the frontline, not stand at the enemy's Y), and actually USE double-jump / wings / dash to get there and to dodge. The double-jump is the visual TELL. Likely root cause: Abilities not detected + perch too shy. [investigate aerial/Abilities/perch first] — (4 & 5 are one coupled movement pass: mobility enables both.)
+
+**TIER 3 — the summoner / melee cluster:**
+6. **Whips** — more active damage + aggressive use + fix the visual jank (summoner's active tool).
+7. **Melee summon/sentry sidearm** — carve the `!primaryMelee` no-sidearm rule so melee may take a summon-staff or sentry sidearm; summoner close positioning (beside melee) + anti-air/reach-behind-cover role.
+8. **Sentries** — support the family (equip + simple drop-where-you-stand + periodic re-placement, same spot 2–3× sometimes; mass forgives).
+
+**TIER 4 — bigger systems:**
+9. **Bulk reforge-to-threshold** — expensive station/UI; reroll each item only until it clears a chosen modifier tier.
+10. **Yoyos & flails** — new projectile-drive families (use the Flying-Knife PreAI pattern).
+
+**TIER 5 — hard / lower priority:**
+11. **Pathfinding** — the "run-then-jump" twitch (real bug) and underground-stuck (tight-tunnel nav; designer says low-pri, mass masks it).
+
+---
+
 ## 🎙 PLAYTEST FEEDBACK & BACKLOG — v0.9.8 (2026-10-18, designer voice-note; "don't change anything yet")
 
 **Verdict: the mod is LANDING.** Balance "feels very real." Can beat e.g. Queen Slime normally-but-hard; sometimes loses WITH militia (intended — militia add HP + chaos, making it harder to read what to dodge). Soldiers feel smart/organic/intelligent, NOT OP; "not entire new players" but meaningfully influence boss fights and what you play. Player still clearly strongest (does ~40–60% of DPS) but soldiers are significant — they kill slower because their gear is UNOPTIMIZED (no reforge), and that is FUN, not a flaw. (Playing with Magic Storage, which makes the dump-into-chest loop painless.)

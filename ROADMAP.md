@@ -29,7 +29,7 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 **TIER 1 — easy / contained (DOING FIRST):**
 1. **Militia default doctrine** → ✅ SHIPPED v0.9.9. Militia default to SearchDestroy, roam-anchored to their settlement muster point, 80-tile leash (MilitiaLeashTiles = SettlementRadiusX*2/3). Brain was hard-coded to Patrol in several places (Roaming was IsRegular-only) — all gated on militia now; regulars unaffected.
-2. **Mana potions** → ALREADY WORKS; tell designer to stock mana potions in the heal/mana slot. Small optional improvement: separate mana from the shared heal slot so both coexist. (verify/inform; tiny tweak at most)
+2. **Mana/heal/buff potions** → ✅ FIXED v0.9.13. Was: potions ONLY drawn from the 2 issue slots, never storage — so dumping mana potions in the chest did nothing (designer: "they drink mana potions my ass"). Now soldiers draw heal/mana/buff potions from STORAGE too (dump-in-chest, like ammo/crystals); issue slots still preferred. New ArmoryTE.TakeServingPotion(preferSlot, serves) + SplitOne; Potions() takes heal then mana then buff via serving predicates, one restorative per check, casters-only-for-mana.
 2b. **Ammo-on-death** → ✅ SHIPPED v0.9.11. Removed the softcore half-ammo-pouch ground-drop in OnBodyDied; softcore soldiers keep all ammo (it persists/returns like the rest of the kit). Hardcore/mediumcore still drop the whole kit.
 3. **Boot/wing particles + SFX** → the dummy-player's movement visuals (rocket-boot flame, run dust, boot sounds) aren't drawn on the NPC. Cosmetic, visible, warms up the movement-visuals path. [needs a look at the draw code]
 

@@ -216,13 +216,13 @@ namespace Levy.Content.NPCs
 		}
 
 		// ------------------------------------------------------------------------------------------------------
-		// Potions from the nearest armory's issue slots (0 healing, 1 buff)
+		// Potions from the nearest armory: issue slots first (0 heal/mana, 1 buff), then bulk storage
 		// ------------------------------------------------------------------------------------------------------
 		private void Potions()
 		{
 			if (Record == null || _armoryRetry > 0) return;
 			bool wantHeal = PotionSickness == 0 && NPC.life * 100 < NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent;
-			// Magic/summon soldiers top up an empty mana pool from the same potion slot (Mana / Restoration / Super Mana potions).
+			// Magic/summon soldiers top up an empty mana pool from Mana / Restoration / Super Mana potions.
 			bool wantMana = PotionSickness == 0 && Record.MaxMana > 0 && Record.Mana * 100 < Record.MaxMana * LevyConstants.ManaPotionDrinkBelowPercent;
 			bool wantBuff = _buffPotionCooldown == 0 && (State == SoldierState.Engage || TargetIndex >= 0);
 			if (!wantHeal && !wantMana && !wantBuff) return;
@@ -231,10 +231,11 @@ namespace Levy.Content.NPCs
 			bool drank = false;
 			if (wantHeal || wantMana)
 			{
-				var potion = armory.TakePotion(0);
-				// Only drink when this potion actually serves the current need, so a mana-starved soldier doesn't burn a health potion (and vice versa).
-				bool serves = potion != null && !potion.IsAir && ((wantHeal && potion.healLife > 0) || (wantMana && potion.healMana > 0) || (wantHeal && potion.buffType > 0));
-				if (serves)
+				// At most one restorative per check (PotionSickness then gates the next); heal is tried before mana. Only a potion that serves the need is removed.
+				Item potion = null;
+				if (wantHeal) potion = armory.TakeServingPotion(0, it => it.healLife > 0);
+				if (potion == null && wantMana) potion = armory.TakeServingPotion(0, it => it.healMana > 0);
+				if (potion != null && !potion.IsAir)
 				{
 					if (potion.healLife > 0) NPC.life = Math.Min(NPC.lifeMax, NPC.life + potion.healLife);
 					if (potion.healMana > 0) Record.Mana = Math.Min(Record.MaxMana, Record.Mana + potion.healMana);
@@ -242,26 +243,18 @@ namespace Levy.Content.NPCs
 					PotionSickness = LevyConstants.PotionSicknessTicks;
 					drank = true;
 				}
-				else
-				{
-					if (potion != null && !potion.IsAir) armory.Deposit(potion); // not what we need right now: give it back
-					_armoryRetry = LevyConstants.PotionRetryTicks;
-				}
+				else _armoryRetry = LevyConstants.PotionRetryTicks;
 			}
 			if (wantBuff)
 			{
-				var potion = armory.TakePotion(1);
-				if (potion != null && !potion.IsAir && potion.buffType > 0)
+				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0); // a pure buff potion, not a restorative
+				if (potion != null && !potion.IsAir)
 				{
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
 					_buffPotionCooldown = LevyConstants.BuffPotionIntervalTicks;
 					drank = true;
 				}
-				else
-				{
-					if (potion != null && !potion.IsAir) armory.Deposit(potion);
-					_buffPotionCooldown = LevyConstants.PotionRetryTicks;
-				}
+				else _buffPotionCooldown = LevyConstants.PotionRetryTicks;
 			}
 			if (drank)
 			{

@@ -651,6 +651,32 @@ namespace Levy.Content.TileEntities
 			return one;
 		}
 
+		/// <summary>Takes one potion that satisfies <paramref name="serves"/>, from the issue slot <paramref name="preferSlot"/> first, then bulk storage. Null if none. Server/single player.</summary>
+		public virtual Item TakeServingPotion(int preferSlot, Func<Item, bool> serves)
+		{
+			if (serves == null) return null;
+			if (preferSlot >= 0 && preferSlot < PotionSlots && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
+				return SplitOne(IssuePotions, preferSlot);
+			for (int i = 0; i < Storage.Length; i++) {
+				var it = Storage[i];
+				if (IsAir(it) || !serves(it)) continue;
+				return SplitOne(Storage, i);
+			}
+			return null;
+		}
+
+		/// <summary>Removes ONE item from the stack in arr[idx] (clearing the slot when it empties) and returns it as a 1-stack clone; marks dirty.</summary>
+		private Item SplitOne(Item[] arr, int idx)
+		{
+			var it = arr[idx];
+			var one = it.Clone();
+			one.stack = 1;
+			it.stack--;
+			if (it.stack <= 0) arr[idx] = new Item();
+			MarkDirty();
+			return one;
+		}
+
 		// ------------------------------------------------------------------ sort
 
 		private const int GroupWeapon = 0, GroupArmor = 1, GroupAccessory = 2, GroupAmmo = 3, GroupPotion = 4, GroupOther = 5;

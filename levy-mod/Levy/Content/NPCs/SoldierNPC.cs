@@ -274,6 +274,7 @@ namespace Levy.Content.NPCs
 				if (AttackCooldown > 0) AttackCooldown--;
 				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
 				Movement_ClientAnimate();
+				TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs)
 				return;
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
@@ -282,6 +283,7 @@ namespace Levy.Content.NPCs
 			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset) Brain_Think();
 			Fear_Update();
 			Movement_Update();
+			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
 			Combat_Update();
 			Record.CurrentHp = NPC.life;
 			SyncDummyTransform();

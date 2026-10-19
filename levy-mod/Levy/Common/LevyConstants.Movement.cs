@@ -206,6 +206,25 @@ namespace Levy.Common
 			/// <summary>Columns ahead that must be flat, open, floored and lava-free.</summary>
 			public const int DashLaneTiles = 7;
 
+			// ---- movement visuals (cosmetic only: dust, gore and sound that mirror the movement state; never read back by movement) ----
+			/// <summary>Boot flame / wing dust cadence (ticks). Vanilla emits every tick of a thrust; half the rate reads the same and halves the dust.</summary>
+			public const int FxRocketEveryTicks = 2, FxWingEveryTicks = 2;
+			/// <summary>Flame / flap visuals hold this many ticks after the last thrust tick (a rocket burst lasts 10 in vanilla).</summary>
+			public const int FxRocketHoldTicks = 6, FxWingHoldTicks = 4;
+			/// <summary>Boots sound spacing while thrusting (ticks): vanilla uses 30 for Rocket Boots, 15 for the rest.</summary>
+			public const int FxBootSoundSlowTicks = 30, FxBootSoundFastTicks = 15;
+			/// <summary>Run dust (Hermes / Lightning Boots style) cadence, the speed it needs (px/tick; a bootless walk tops out near 3.3) and the minimum spacing of the step sound.</summary>
+			public const int FxRunEveryTicks = 3, FxRunSoundTicks = 14;
+			public const float FxRunMinSpeedPx = 3.6f;
+			/// <summary>Extra-jump trail (Blizzard / Sandstorm / Tsunami / Cloud streams): base length in ticks (vanilla jump height), cap, and cadence.</summary>
+			public const int FxTrailBaseTicks = 15, FxTrailMaxTicks = 60, FxTrailEveryTicks = 2;
+			/// <summary>Dust in the burst at the start of a dash (vanilla 20) and ticks the afterimages linger after the burst.</summary>
+			public const int FxDashBurstDust = 12, FxDashShadowTail = 6;
+			/// <summary>Multiplayer clients cannot see the server's flight state: rising below this vertical speed (px/tick) with wings or boots reads as thrust, a ground speed this high as a dash, and a mid-air upward kick this big as an extra jump.</summary>
+			public const float FxClientThrustMaxVy = 0.5f, FxClientDashSpeedPx = DashSpeedPx * 0.92f, FxClientJumpKickPx = 3f;
+			/// <summary>Most visual emits (all soldiers together) allowed per game tick; the rest wait for the next cadence slot.</summary>
+			public const int FxBudgetPerTick = 24;
+
 			// ---- bodies ----
 			public const float PlayerNudgePx = 0.5f;
 			public const float StepSpeed = 1f;

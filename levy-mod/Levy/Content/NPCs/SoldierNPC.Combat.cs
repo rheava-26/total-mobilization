@@ -97,6 +97,17 @@ namespace Levy.Content.NPCs
 
 		private float ManaTicksPerPoint() => 60f / Math.Max(0.01f, ManaPerSecond());
 
+		/// <summary>Ticks this body needs to regenerate <paramref name="missing"/> mana right now (used to decide whether to save mana for an alt-fire).</summary>
+		public float ManaWaitTicks(int missing) => missing * ManaTicksPerPoint();
+
+		// Alt-fire (right-click) cadence state, used by WeaponUse.TryAltAttack. Not saved: it rebuilds from zero on load.
+		/// <summary>GameUpdateCount before which no alt is attempted.</summary>
+		public uint AltReadyTick;
+		/// <summary>Tick the soldier began holding fire to save mana for an alt (0 = not holding).</summary>
+		public uint AltHoldSince;
+		/// <summary>Consecutive alt attempts that ran but produced nothing.</summary>
+		public int AltFailStreak;
+
 		private static WeaponProfile SupportedOrNull(WeaponProfile p) => p != null && p.Supported ? p : null;
 
 		/// <summary>True while the weapon in hand can be used (ammo in the pouch, mana for magic).</summary>

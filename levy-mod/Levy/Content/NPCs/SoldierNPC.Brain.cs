@@ -1282,6 +1282,18 @@ namespace Levy.Content.NPCs
 		/// <summary>How close a melee soldier closes on its target: the blade reach, or a fraction of the lash's reach for a whip (which never needs to charge).</summary>
 		private float MeleeHoldTiles() => Weapon != null && Weapon.IsTethered ? Math.Max(LevyConstants.RangeMelee, Weapon.RangeTiles * Weapon.TetherHoldFraction) : LevyConstants.RangeMelee;
 
+		/// <summary>
+		/// Close enough to stop closing. A whip / yoyo / flail holds at a fraction of its reach; a blade / spear / shortsword presses in until the
+		/// target's hitbox is at its body (or the centre is near for a small target), so every swing lands.
+		/// </summary>
+		private bool MeleeInContact(NPC target)
+		{
+			if (Weapon != null && Weapon.IsTethered) return LevyUtil.WithinTiles(NPC.Center, target.Center, MeleeHoldTiles());
+			if (LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.MeleeCloseCentreTiles)) return true;
+			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+			return Aiming.TilesToHitbox(NPC.Center, seg) <= LevyConstants.MeleeContactTiles;
+		}
+
 		private void MeleeGoal(NPC target, int now)
 		{
 			Vector2 goal;
@@ -1306,13 +1318,14 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			UpdateAltitudeIntent(target, 0f, 0f, true);
-			if (now - LastMeleeHitTick < LevyConstants.MeleeStepBackWindowTicks)
+			// (only a tethered weapon backs off after a hit; a blade / spear / shortsword stays on the target and keeps swinging)
+			if (Weapon != null && Weapon.IsTethered && now - LastMeleeHitTick < LevyConstants.MeleeStepBackWindowTicks)
 			{
 				float sx = NPC.Center.X >= target.Center.X ? 1f : -1f;
 				goal = new Vector2(NPC.Center.X + sx * LevyConstants.MeleeStepBackPixels * 2, NPC.Center.Y);
 				_engMode = EngageMode.Retreat;
 			}
-			else if (!LevyUtil.WithinTiles(NPC.Center, target.Center, MeleeHoldTiles()))
+			else if (!MeleeInContact(target))
 			{
 				if (_blockedHard && _path.Count == 0 && _pathFailTimer > 0)
 				{

@@ -54,8 +54,16 @@ namespace Levy.Common
 		public const int SidearmCheckIntervalTicks = 30;
 
 		// ---------- Mana ----------
-		public const int ManaRegenIdleIntervalTicks = 10;
-		public const int ManaRegenCombatIntervalTicks = 20;
+		/// <summary>Mana per second: the larger of the floor and the pool fraction (a bigger pool refills faster, as in vanilla). In combat / out of combat.</summary>
+		public const float ManaRegenCombatMinPerSec = 6f, ManaRegenCombatPoolFrac = 0.20f;
+		public const float ManaRegenIdleMinPerSec = 12f, ManaRegenIdlePoolFrac = 0.40f;
+		/// <summary>A mana-fed primary that is short of one cast stays in hand (holding fire) when the pool will cover the cast within this many ticks; only a longer wait falls back to the sidearm. Once on the sidearm it returns to the primary when a full cast is available.</summary>
+		public const int ManaWaitForPrimaryTicks = 90;
+		/// <summary>Pure-melee soldiers (blade / spear / shortsword) swing whenever a hostile is within reach * this + extra tiles, so the blow is already landing as the enemy arrives and the swing never idles while one is in reach.</summary>
+		public const float MeleeRelentlessReachMult = 1.8f;
+		public const int MeleeRelentlessExtraTiles = 2;
+		/// <summary>Pure-melee soldiers close until the hostile's hitbox is this near (tiles) or its centre is within MeleeCloseCentreTiles, then hold and swing.</summary>
+		public const float MeleeContactTiles = 0.5f, MeleeCloseCentreTiles = 2f;
 		/// <summary>Ticks after leaving Engage before mana regenerates at the idle rate.</summary>
 		public const int ManaCombatGraceTicks = 120;
 

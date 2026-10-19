@@ -23,7 +23,8 @@ namespace Levy.Content.NPCs
 	{
 		private WeaponProfile _mainProfile, _sideProfile;
 		private readonly HashSet<int> _swingHits = new();
-		private int _manaTick, _sidearmTick, _lastEngageTick = -100000, _thrustIndex = -1;
+		private float _manaFrac;
+		private int _sidearmTick, _lastEngageTick = -100000, _thrustIndex = -1;
 
 		// ------------------------------------------------------------------------------------------------------------
 		// Gear
@@ -35,9 +36,7 @@ namespace Levy.Content.NPCs
 			// unsupported items keep a profile (Supported == false) so the stale check below stays quiet; they are never usable
 			_mainProfile = g.HasWeapon ? WeaponClassifier.GetProfile(g.Weapon) : null;
 			_sideProfile = g.HasSidearm ? WeaponClassifier.GetProfile(g.Sidearm) : null;
-			bool sideUsable = _sideProfile != null && !(_sideProfile.IsDeployer && !(_mainProfile?.IsDeployer ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile); // a summon-staff or sentry sidearm is never the hand weapon (it only keeps a minion or tower up)
-			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsDeployer && sideUsable); // a summon weapon or sentry is not swung: the sidearm is the hand weapon
-			UsingSidearm = !mainUsable && sideUsable;
+			UsingSidearm = WantSidearm(g);
 			Weapon = SupportedOrNull(UsingSidearm ? _sideProfile : _mainProfile);
 			ClearSwingHits();
 			_sidearmTick = 0;
@@ -51,9 +50,7 @@ namespace Levy.Content.NPCs
 			var g = Record.Gear;
 			// gear swapped without a Combat_OnGearChanged call: rebuild the profiles
 			if ((g.HasWeapon ? g.Weapon.type : 0) != (_mainProfile?.ItemType ?? 0) || (g.HasSidearm ? g.Sidearm.type : 0) != (_sideProfile?.ItemType ?? 0)) { Combat_OnGearChanged(); return; }
-			bool sideUsable = _sideProfile != null && g.HasSidearm && !(_sideProfile.IsDeployer && !(_mainProfile?.IsDeployer ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
-			bool mainUsable = _mainProfile != null && g.HasWeapon && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsDeployer && sideUsable);
-			bool wantSidearm = !mainUsable && sideUsable;
+			bool wantSidearm = WantSidearm(g);
 			WeaponProfile want = SupportedOrNull(wantSidearm ? _sideProfile : _mainProfile);
 			if (wantSidearm != UsingSidearm || !ReferenceEquals(want, Weapon))
 			{
@@ -65,6 +62,40 @@ namespace Levy.Content.NPCs
 				NPC.netUpdate = true;
 			}
 		}
+
+		/// <summary>
+		/// Main weapon or sidearm in hand. The primary is the hand weapon whenever it can be used; the sidearm is a fallback only (primary out of ammo,
+		/// unsupported, or a mana-fed primary that cannot be cast again soon). A mana-fed primary (staff, mana held weapon) that is a cast short stays in
+		/// hand, holding fire, while the pool will cover it within ManaWaitForPrimaryTicks; once the sidearm is out it stays out until a full cast is
+		/// available again, so the hand does not flicker. A summon / sentry sidearm is never the hand weapon.
+		/// </summary>
+		private bool WantSidearm(Common.Soldiers.SoldierGear g)
+		{
+			bool sideUsable = _sideProfile != null && g.HasSidearm && !(_sideProfile.IsDeployer && !(_mainProfile?.IsDeployer ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
+			if (!sideUsable) return false;
+			if (_mainProfile == null || !g.HasWeapon) return true;
+			if (_mainProfile.IsDeployer) return true; // a summon weapon or sentry is not swung: the sidearm is the hand weapon
+			if (WeaponUse.HasResources(this, g.Weapon, _mainProfile)) return false;
+			if (!UsingSidearm && ManaFed(_mainProfile))
+			{
+				int missing = Math.Max(0, g.Weapon.mana) - Record.Mana;
+				if (missing > 0 && missing * ManaTicksPerPoint() <= LevyConstants.ManaWaitForPrimaryTicks) return false; // a moment from the next cast: keep the primary up
+			}
+			return true;
+		}
+
+		private static bool ManaFed(WeaponProfile p) => p != null && p.Supported && (p.Family == WeaponFamily.Magic || (p.Family == WeaponFamily.HeldWeapon && p.UseAmmo <= 0));
+
+		/// <summary>Mana per second this body regenerates right now (faster out of combat, scaling with the pool).</summary>
+		private float ManaPerSecond()
+		{
+			bool recentCombat = (int)Main.GameUpdateCount - _lastEngageTick < LevyConstants.ManaCombatGraceTicks;
+			return recentCombat
+				? Math.Max(LevyConstants.ManaRegenCombatMinPerSec, Record.MaxMana * LevyConstants.ManaRegenCombatPoolFrac)
+				: Math.Max(LevyConstants.ManaRegenIdleMinPerSec, Record.MaxMana * LevyConstants.ManaRegenIdlePoolFrac);
+		}
+
+		private float ManaTicksPerPoint() => 60f / Math.Max(0.01f, ManaPerSecond());
 
 		private static WeaponProfile SupportedOrNull(WeaponProfile p) => p != null && p.Supported ? p : null;
 
@@ -153,14 +184,35 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			// Pure melee: begin the swing/thrust as the enemy closes in, a little before it is strictly in reach (whips keep their lash for real targets).
-			float trigger = Weapon.IsTethered ? closeTrigger : Math.Max(closeTrigger, blowReach * LevyConstants.MeleePreSwingReachMult);
+			// Relentless: a blade / spear / shortsword starts every swing the moment the weapon is ready and a hostile is anywhere near its reach.
+			float trigger = Weapon.IsTethered ? closeTrigger : Math.Max(blowReach + LevyConstants.MeleeRelentlessExtraTiles, blowReach * LevyConstants.MeleeRelentlessReachMult);
 			// A whip lashes the instant a target is inside the lash's real reach (including the dummy's whip range bonus) and keeps lashing every period.
 			if (Weapon.IsWhip)
 			{
 				float whipMult = Dummy != null && Dummy.whipRangeMultiplier > 0.5f ? Dummy.whipRangeMultiplier : 1f;
 				trigger = Math.Max(LevyConstants.RangeMelee, Weapon.ThrustReachPx * whipMult / LevyConstants.TilePx);
 			}
-			if (meleeTiles <= trigger) WeaponUse.TryAttack(this, target);
+			if (meleeTiles <= trigger) { WeaponUse.TryAttack(this, target); return; }
+			// The chosen target is still out of reach but another hostile is in it (a mob scrum, a target that just died or slipped away): keep swinging at that one.
+			if (!Weapon.IsTethered && AttackCooldown <= 0 && ((int)Main.GameUpdateCount + NPC.whoAmI) % 3 == 0)
+			{
+				NPC near = NearestHostileWithin(blowReach + LevyConstants.MeleeEngageExtraTiles);
+				if (near != null) WeaponUse.TryAttack(this, near);
+			}
+		}
+
+		/// <summary>The nearest legal hostile whose hitbox is within <paramref name="tiles"/> of the body, or null.</summary>
+		private NPC NearestHostileWithin(float tiles)
+		{
+			NPC best = null; float bestD = tiles;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.life <= 0 || !LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) continue;
+				float d = Aiming.TilesToHitbox(NPC.Center, n);
+				if (d <= bestD) { bestD = d; best = n; }
+			}
+			return best;
 		}
 
 		/// <summary>The projectile the weapon in hand would fire passes through tiles (no line-of-sight check needed).</summary>
@@ -181,10 +233,10 @@ namespace Levy.Content.NPCs
 
 		private void RegenMana()
 		{
-			if (Record.Mana >= Record.MaxMana) { _manaTick = 0; if (Record.Mana > Record.MaxMana) Record.Mana = Record.MaxMana; return; }
-			bool recentCombat = (int)Main.GameUpdateCount - _lastEngageTick < LevyConstants.ManaCombatGraceTicks;
-			int interval = recentCombat ? LevyConstants.ManaRegenCombatIntervalTicks : LevyConstants.ManaRegenIdleIntervalTicks;
-			if (++_manaTick >= interval) { _manaTick = 0; Record.Mana++; }
+			if (Record.Mana >= Record.MaxMana) { _manaFrac = 0f; if (Record.Mana > Record.MaxMana) Record.Mana = Record.MaxMana; return; }
+			_manaFrac += ManaPerSecond() / 60f;
+			int whole = (int)_manaFrac;
+			if (whole > 0) { _manaFrac -= whole; Record.Mana = Math.Min(Record.MaxMana, Record.Mana + whole); }
 		}
 
 		// ------------------------------------------------------------------------------------------------------------

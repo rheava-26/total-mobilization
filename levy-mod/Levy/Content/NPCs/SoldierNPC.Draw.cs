@@ -184,6 +184,7 @@ namespace Levy.Content.NPCs
 				try
 				{
 					if (Shaken || State == SoldierState.Shaken) DrawShakenTint(sb, screenPos);
+					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f);
 				}

@@ -216,7 +216,8 @@ namespace Levy.Content.NPCs
 		}
 
 		// ------------------------------------------------------------------------------------------------------
-		// Potions from the nearest armory: issue slots first (0 heal/mana, 1 buff), then bulk storage
+		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: issue slot 1 ONLY
+		// (intentionally never bulk storage - the buff slot is the limited buff economy, so choosing the army's buffs stays a real decision).
 		// ------------------------------------------------------------------------------------------------------
 		private void Potions()
 		{
@@ -247,7 +248,7 @@ namespace Levy.Content.NPCs
 			}
 			if (wantBuff)
 			{
-				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0); // a pure buff potion, not a restorative
+				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0, allowStorage: false); // a pure buff potion, not a restorative; issue-slot-only
 				if (potion != null && !potion.IsAir)
 				{
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));

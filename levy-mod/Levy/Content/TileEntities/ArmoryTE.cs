@@ -651,12 +651,13 @@ namespace Levy.Content.TileEntities
 			return one;
 		}
 
-		/// <summary>Takes one potion that satisfies <paramref name="serves"/>, from the issue slot <paramref name="preferSlot"/> first, then bulk storage. Null if none. Server/single player.</summary>
-		public virtual Item TakeServingPotion(int preferSlot, Func<Item, bool> serves)
+		/// <summary>Takes one potion that satisfies <paramref name="serves"/>, from the issue slot <paramref name="preferSlot"/> first, then (when <paramref name="allowStorage"/>) bulk storage. With allowStorage false only the issue slot is checked. Null if none. Server/single player.</summary>
+		public virtual Item TakeServingPotion(int preferSlot, Func<Item, bool> serves, bool allowStorage = true)
 		{
 			if (serves == null) return null;
 			if (preferSlot >= 0 && preferSlot < PotionSlots && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
 				return SplitOne(IssuePotions, preferSlot);
+			if (!allowStorage) return null;
 			for (int i = 0; i < Storage.Length; i++) {
 				var it = Storage[i];
 				if (IsAir(it) || !serves(it)) continue;

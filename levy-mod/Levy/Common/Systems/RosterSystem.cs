@@ -760,18 +760,7 @@ namespace Levy.Common.Systems
 			// ---- drops where they fell ----
 			var source = npc.GetSource_Death();
 			var box = npc.Hitbox;
-			if (hardcore || mediumcore) DropAllGear(rec, source, box);
-			else
-			{
-				var pouch = rec.Gear.Ammo;
-				if (pouch != null && !pouch.IsAir && pouch.stack >= 2)
-				{
-					int half = pouch.stack / 2;
-					var drop = pouch.Clone(); drop.stack = half;
-					Item.NewItem(source, box, drop);
-					pouch.stack -= half;
-				}
-			}
+			if (hardcore || mediumcore) DropAllGear(rec, source, box); // softcore keeps the whole kit, ammo pouch included
 
 			// ---- manpower ----
 			if (home != null) { home.Manpower = Math.Max(0, home.Manpower - 1); SyncBarracks(home); }

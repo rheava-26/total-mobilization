@@ -79,6 +79,21 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static WeaponFamily ClassifyCore(Item item, out bool extended)
 		{
+			WeaponFamily family = ClassifyFamily(item, out extended);
+			// Families that fire the item's OWN projectile (soldier shots are owned by the commander): refuse a modded shot that pins its owner's item-use state and never
+			// releases it (Mechanica's Serpent's Spear sets owner.heldProj/itemAnimation/itemTime every tick with no input check), or the commander can no longer attack.
+			// Spear/Shortsword/Whip/Boomerang/Summon soldiers use Levy's own projectiles instead, so a weapon of those families never spawns its locking shot.
+			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword)
+				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
+			{
+				extended = false;
+				return WeaponFamily.Unsupported;
+			}
+			return family;
+		}
+
+		private static WeaponFamily ClassifyFamily(Item item, out bool extended)
+		{
 			extended = false;
 			if (item == null || item.IsAir) return WeaponFamily.None;
 			if (item.damage <= 0) return WeaponFamily.Unsupported;

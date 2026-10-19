@@ -58,7 +58,7 @@ Four agents dispatched in parallel on disjoint file regions (serialize pack/boot
 
 ## 🧭 WAVE 4 BACKLOG — from the decentralized per-stage audits (reports in scratchpad/audit-N-*.md)
 
-Audits done: **stage 4 (mid-HM)** ✅, **stage 5 (endgame)** ✅. Pending: stages 1 (early-prehm), 2 (late-prehm), 3 (early-HM). Consolidate into a Wave 4 build once all 5 land. Findings so far (source-verified by the Haiku agents):
+Audits done: **stage 2 (late-prehm)** ✅, **stage 4 (mid-HM)** ✅, **stage 5 (endgame)** ✅. Pending: stages 1 (early-prehm), 3 (early-HM). Consolidate into a Wave 4 build once all 5 land. Findings so far (source-verified by the Haiku agents):
 
 **ENDGAME (stage 5):**
 - **Zenith** — PROBLEM: owner-anchored (shot 933, aiStyle 182 reads commander MountedCenter → swords orbit the COMMANDER) AND misclassified (noMelee=true → falls to Magic plain-shooter). FIX (medium): slot-255 dummy swap for proj 933 only, + route as Broadsword (relax the noMelee gate) so it fights at blade reach.
@@ -74,6 +74,13 @@ Audits done: **stage 4 (mid-HM)** ✅, **stage 5 (endgame)** ✅. Pending: stage
 - **Chlorophyte Greataxe (1233) + Warhammer (1234)** — coverage gap: refused by the pick/axe/hammer rule though they're plain melee swing blades (useStyle 1, shoot 0). FIX (easy): let Melee-class useStyle-Swing items with shoot==0 through the axe/hammer check → Broadsword (keep the PICK refusal; shoot==0 excludes the Chainsaw which has shoot=224).
 - **Toxic Flask (3105)** — aiStyle 2 thrown, the aim-solve assumes no gravity-drop; source has no gravity term so likely fine. Verify in-game only if it visibly arcs.
 - List corrections (not bugs): Sun Stone / Eye of the Golem = accessories (not weapons); "Baetsy" not in 1.4.4; Elf Melter + Flamethrower = gel-fed GUNS, not channeled (already supported); Possessed Hatchet/Flower Pow/North Pole/etc. all verified OK.
+
+**LATE PRE-HARDMODE (stage 2):**
+- **Vampire Knives (1569)** — PROBLEM: noMelee → falls to the zero-mana caster fallback (infinite throws), and shot 304 VampireKnife's lifesteal (`vampireHeal`, type==304) heals `Main.player[Main.myPlayer]` = the COMMANDER. Ranks ~#1 in tier (score ~184). FIX: per tenet #1 make it work (medium) — a Levy-owned thrown knife with its OWN projectile type (not 304) so the type==304 heal never fires; credit lifesteal to the SOLDIER. Easy fallback if needed: bench it. (Same owner-benefit-leak family as Soul Drain.)
+- **Ivy Whip (185)** — correctly refused (damage 0, Hook grapple tool). Leave.
+- **Snapthorn / Spinal Tap** — agent reports no ItemID in this decompiled 1.4.4 source (may be a source-snapshot gap; vanilla 1.4.4 does have Snapthorn). Whips are generically supported anyway. Low priority; confirm if the designer uses them.
+- Fidelity (not classifier failures): **Sunfury** flail loses vanilla on-hit fire → EASY add `ApplyFlailStatus` keyed on shoot type (mirror `MeleeEffects.ApplyBoomerangStatus`). **Clockwork Assault Rifle** (+ other burst/reuseDelay guns) score overstates ~2x because `Score()` ignores `reuseDelay`/`useAnimation` → EASY fold burst cadence into the Score DPS term (then re-check ranking shifts). **Blade of Grass** engages at the 40-tile beam cap while its swing hitbox is melee — design call, verify in-game.
+- Everything else in the tier verified SUPPORTED (guns/bows/casters/broadswords/spears/boomerangs/flails/yoyos/whips/summon staves all resolve correctly; none is an owner-anchored held projectile).
 
 **STILL OPEN — GUARD stance (design decision, NOT auto-built):** a new "front-line soldiers crank aggro so enemies peel onto them" ORDER. Held back because (a) it's a player-facing design addition, not a bug/compat fix, and (b) the Wave-1 de-aggro re-poll may already deliver this emergently (Flesh-Knuckles tank soldier + positioning). DESIGNER TO DECIDE after playtesting de-aggro: if enemies reliably peel onto an out-aggroing soldier, Guard is redundant for 1.0; if they still glue to the player, build it. (Asked the designer 2026-10-19.)
 

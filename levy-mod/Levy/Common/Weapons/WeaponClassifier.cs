@@ -41,6 +41,9 @@ namespace Levy.Common.Weapons
 		/// <summary>Fraction of <see cref="RangeTiles"/> a tethered soldier holds at (0 for everything else).</summary>
 		public float TetherHoldFraction;
 		public bool IsSummon => Family == WeaponFamily.Summon;
+		public bool IsSentry => Family == WeaponFamily.Sentry;
+		/// <summary>Weapons that are never swung or fired: the soldier keeps a flock (summon staff) or a tower (sentry) up instead.</summary>
+		public bool IsDeployer => Family == WeaponFamily.Summon || Family == WeaponFamily.Sentry;
 		public bool IsWhip => Family == WeaponFamily.Whip;
 		public bool IsBoomerang => Family == WeaponFamily.Boomerang;
 		public bool IsThrust => Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
@@ -81,7 +84,8 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// Accepts the long tail on purpose: every ammo type (bullets and arrows keep their families, everything else fires like a gun), any mana
 		/// weapon that shoots, melee swings/thrusts, and finally any plain shooter, all fired through the real shoot pipeline. Rejects what a
-		/// stationary-ish soldier cannot use: tools, consumables, held-beam weapons, custom-resource modded weapons, tethered lines (harpoons, hooks) and sentries.
+		/// stationary-ish soldier cannot use: tools, consumables, held-beam weapons, custom-resource modded weapons and tethered lines (harpoons, hooks).
+		/// Sentries (item.sentry) get their own family: the soldier plants the tower and keeps it up (see SoldierNPC.MaintainSentries).
 		/// <paramref name="extended"/> is set when only the widened rules accepted it.
 		/// </summary>
 		private static WeaponFamily ClassifyCore(Item item, out bool extended)
@@ -108,10 +112,11 @@ namespace Levy.Common.Weapons
 			if (item.damage <= 0) return WeaponFamily.Unsupported;
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
-			if (item.sentry) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 			// A modded weapon that counts as none of the five combat classes runs on a custom resource (Mechanica's MechanicDamage power weapons): not issued.
 			if (item.type >= ItemID.Count && !CountsAsAnyCombatClass(item)) return WeaponFamily.Unsupported;
+			// Sentries are Summon-class items but not minion staves: decided by the item flag, BEFORE any of the Summon/Whip/shooter rules below.
+			if (item.sentry) return item.shoot > 0 && ProjectileSample(item.shoot) != null ? WeaponFamily.Sentry : WeaponFamily.Unsupported;
 
 			int shoot = item.shoot;
 			Projectile sample = ProjectileSample(shoot);
@@ -220,6 +225,7 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Bow: p.RangeTiles = LevyConstants.RangeBow; p.Gravity = true; break;
 				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); break;
 				case WeaponFamily.Summon: p.RangeTiles = LevyConstants.RangeSummon; break;
+				case WeaponFamily.Sentry: p.RangeTiles = LevyConstants.RangeSentry; break;
 				case WeaponFamily.Boomerang: p.RangeTiles = LevyConstants.RangeBoomerang; break;
 				case WeaponFamily.Whip:
 					p.ThrustReachPx = WhipReach(src.shootSpeed);
@@ -359,7 +365,7 @@ namespace Levy.Common.Weapons
 			WeaponFamily.Gun or WeaponFamily.Bow => DamageClass.Ranged,
 			WeaponFamily.Magic => DamageClass.Magic,
 			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang or WeaponFamily.Yoyo or WeaponFamily.Flail => DamageClass.Melee,
-			WeaponFamily.Summon or WeaponFamily.Whip => DamageClass.Summon,
+			WeaponFamily.Summon or WeaponFamily.Whip or WeaponFamily.Sentry => DamageClass.Summon,
 			_ => null,
 		};
 
@@ -389,6 +395,7 @@ namespace Levy.Common.Weapons
 			if (!p.Supported) return 0f;
 			float dps = item.damage * p.ProjectilesPerShot * 60f / Math.Max(1, item.useTime);
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
+			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;
 			else if (p.Family == WeaponFamily.Boomerang) dps *= LevyConstants.BoomerangScoreFactor;
 			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;

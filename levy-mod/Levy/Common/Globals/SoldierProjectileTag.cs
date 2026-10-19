@@ -34,6 +34,37 @@ namespace Levy.Common.Globals
 			{
 				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
 			}
+			// A soldier's sentry fires its own shots (ballista bolts, fireballs, lightning, hydra breath): they carry the soldier's tag so kills and loot credit the soldier.
+			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.sentry && parent.TryGetGlobalProjectile(out SoldierProjectileTag parentTag) && parentTag.SoldierIndex >= 0)
+				SoldierIndex = parentTag.SoldierIndex;
+		}
+
+		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>
+		private bool _sentryParked;
+
+		/// <summary>
+		/// Vanilla culls sentries only inside Player.UpdateMaxTurrets (the commander placing one, or maxTurrets changing), over EVERY sentry the commander owns, oldest first.
+		/// Soldier shots are owned by the commander, so soldier towers would count against the commander's cap and cull its towers (and each other). Clearing
+		/// Projectile.sentry on them for the length of the commander's own Update (Projectile.WipableTurret requires it) hides them from that count; they are restored right after.
+		/// </summary>
+		public static void ParkSoldierSentries()
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || !p.sentry) continue;
+				if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0) { p.sentry = false; tag._sentryParked = true; }
+			}
+		}
+
+		/// <summary>Undoes <see cref="ParkSoldierSentries"/>. Per-projectile flag, so a slot that was recycled while parked is never touched.</summary>
+		public static void RestoreSoldierSentries()
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (p.active && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag._sentryParked) { p.sentry = true; tag._sentryParked = false; }
+			}
 		}
 
 		/// <summary>
@@ -67,6 +98,14 @@ namespace Levy.Common.Globals
 		/// </summary>
 		public override bool PreAI(Projectile projectile)
 		{
+			if (_sentryParked) { projectile.sentry = true; _sentryParked = false; } // backstop: never run a sentry's AI parked
+			// A soldier sentry whose soldier is gone (dismissed, replaced slot, killed outside the death hook) has no one to keep it up.
+			if (SoldierIndex >= 0 && projectile.sentry && Main.netMode != NetmodeID.MultiplayerClient
+				&& !(SoldierIndex < Main.maxNPCs && Main.npc[SoldierIndex].active && Main.npc[SoldierIndex].ModNPC is SoldierNPC))
+			{
+				projectile.Kill();
+				return false;
+			}
 			if (SoldierIndex < 0 || projectile.type != ProjectileID.FlyingKnife) return true;
 			DriveSoldierFlyingKnife(projectile);
 			return false;

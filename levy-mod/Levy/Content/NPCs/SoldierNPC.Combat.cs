@@ -35,8 +35,8 @@ namespace Levy.Content.NPCs
 			// unsupported items keep a profile (Supported == false) so the stale check below stays quiet; they are never usable
 			_mainProfile = g.HasWeapon ? WeaponClassifier.GetProfile(g.Weapon) : null;
 			_sideProfile = g.HasSidearm ? WeaponClassifier.GetProfile(g.Sidearm) : null;
-			bool sideUsable = _sideProfile != null && !(_sideProfile.IsSummon && !(_mainProfile?.IsSummon ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile); // a summon-staff sidearm is never the hand weapon (it only keeps a minion up)
-			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsSummon && sideUsable); // a summon weapon is not swung: the sidearm is the hand weapon
+			bool sideUsable = _sideProfile != null && !(_sideProfile.IsDeployer && !(_mainProfile?.IsDeployer ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile); // a summon-staff or sentry sidearm is never the hand weapon (it only keeps a minion or tower up)
+			bool mainUsable = _mainProfile != null && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsDeployer && sideUsable); // a summon weapon or sentry is not swung: the sidearm is the hand weapon
 			UsingSidearm = !mainUsable && sideUsable;
 			Weapon = SupportedOrNull(UsingSidearm ? _sideProfile : _mainProfile);
 			ClearSwingHits();
@@ -51,8 +51,8 @@ namespace Levy.Content.NPCs
 			var g = Record.Gear;
 			// gear swapped without a Combat_OnGearChanged call: rebuild the profiles
 			if ((g.HasWeapon ? g.Weapon.type : 0) != (_mainProfile?.ItemType ?? 0) || (g.HasSidearm ? g.Sidearm.type : 0) != (_sideProfile?.ItemType ?? 0)) { Combat_OnGearChanged(); return; }
-			bool sideUsable = _sideProfile != null && g.HasSidearm && !(_sideProfile.IsSummon && !(_mainProfile?.IsSummon ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
-			bool mainUsable = _mainProfile != null && g.HasWeapon && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsSummon && sideUsable);
+			bool sideUsable = _sideProfile != null && g.HasSidearm && !(_sideProfile.IsDeployer && !(_mainProfile?.IsDeployer ?? false)) && WeaponUse.HasResources(this, g.Sidearm, _sideProfile);
+			bool mainUsable = _mainProfile != null && g.HasWeapon && WeaponUse.HasResources(this, g.Weapon, _mainProfile) && !(_mainProfile.IsDeployer && sideUsable);
 			bool wantSidearm = !mainUsable && sideUsable;
 			WeaponProfile want = SupportedOrNull(wantSidearm ? _sideProfile : _mainProfile);
 			if (wantSidearm != UsingSidearm || !ReferenceEquals(want, Weapon))
@@ -95,6 +95,7 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Engage) _lastEngageTick = (int)Main.GameUpdateCount;
 			RegenMana();
 			MaintainMinions();
+			MaintainSentries();
 			MaintainAccessoryProjectiles();
 			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); }
 
@@ -115,7 +116,7 @@ namespace Levy.Content.NPCs
 				if (!target.active || (!LevyUtil.IsHostileTarget(target) && !SoldierTargeting.FocusAllowsCritter(this, target))) return;
 			}
 			if (Weapon == null || !Weapon.Supported) return;
-			if (Weapon.IsSummon) return; // a summoner with no hand weapon stands off while the flock fights
+			if (Weapon.IsDeployer) return; // a summoner / sentry keeper with no hand weapon stands off while the flock or tower fights
 
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			if (Math.Abs(seg.Center.X - NPC.Center.X) > 2f) NPC.direction = seg.Center.X < NPC.Center.X ? -1 : 1;

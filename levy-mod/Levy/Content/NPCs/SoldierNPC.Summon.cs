@@ -62,16 +62,16 @@ namespace Levy.Content.NPCs
 			return n;
 		}
 
-		/// <summary>Kills every minion, lash and boomerang anchored to this body.</summary>
+		/// <summary>Kills every minion, lash, boomerang, yoyo and flail anchored to this body.</summary>
 		public void KillAnchoredProjectiles()
 		{
 			if (LevyUtil.IsClient) return;
-			int minion = ModContent.ProjectileType<SoldierMinion>(), whip = ModContent.ProjectileType<SoldierWhip>(), boom = ModContent.ProjectileType<SoldierBoomerang>();
+			int minion = ModContent.ProjectileType<SoldierMinion>(), whip = ModContent.ProjectileType<SoldierWhip>(), boom = ModContent.ProjectileType<SoldierBoomerang>(), yoyo = ModContent.ProjectileType<SoldierYoyo>(), flail = ModContent.ProjectileType<SoldierFlail>();
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active || (int)p.ai[0] != NPC.whoAmI) continue;
-				if (p.type == minion || p.type == whip || p.type == boom) p.Kill();
+				if (p.type == minion || p.type == whip || p.type == boom || p.type == yoyo || p.type == flail) p.Kill();
 			}
 		}
 

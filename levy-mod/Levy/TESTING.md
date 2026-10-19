@@ -65,7 +65,7 @@ Configuration → Levy, and `EventBookDropDenominator` in `Common/LevyConstants.
 6. Eater of Worlds / Destroyer: shots go at the nearest segment.
 7. Empty the pouch: with an Armory within 40 tiles the soldier walks to it and refills; with none and a sidearm issued it
    switches and barks once; with neither it stops engaging. Walking past an armory with under 20 % ammo tops up.
-8. Yoyos, flails, boomerangs, whips, summon weapons, tools and thrown consumables are never issued from the armory.
+8. Tools and thrown consumables are never issued from the armory.
 9. Hold fire (O): soldiers stop firing instantly and stop hauling.
 
 ## M3 — targeting: "zombies chase soldiers, soldier kills drop loot, nobody shoots the Old Man"

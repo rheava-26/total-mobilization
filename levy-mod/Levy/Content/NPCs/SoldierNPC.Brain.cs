@@ -1148,7 +1148,7 @@ namespace Levy.Content.NPCs
 		/// route either, the target is unreachable: stop pushing at it and leave it alone for a few seconds.
 		/// </summary>
 		/// <summary>How close a melee soldier closes on its target: the blade reach, or a fraction of the lash's reach for a whip (which never needs to charge).</summary>
-		private float MeleeHoldTiles() => Weapon != null && Weapon.IsWhip ? Math.Max(LevyConstants.RangeMelee, Weapon.RangeTiles * LevyConstants.WhipHoldFraction) : LevyConstants.RangeMelee;
+		private float MeleeHoldTiles() => Weapon != null && Weapon.IsTethered ? Math.Max(LevyConstants.RangeMelee, Weapon.RangeTiles * Weapon.TetherHoldFraction) : LevyConstants.RangeMelee;
 
 		private void MeleeGoal(NPC target, int now)
 		{

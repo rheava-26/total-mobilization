@@ -92,6 +92,8 @@ Mods: {
 			SoldierMinion.DisplayName: Minion
 			SoldierWhip.DisplayName: Whip
 			SoldierBoomerang.DisplayName: Boomerang
+			SoldierYoyo.DisplayName: Yoyo
+			SoldierFlail.DisplayName: Flail
 		}
 
 		Keybinds: {

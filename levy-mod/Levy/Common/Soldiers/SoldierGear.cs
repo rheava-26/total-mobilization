@@ -71,9 +71,9 @@ namespace Levy.Common.Soldiers
 
 		private static bool Empty(Item it) => it == null || it.IsAir || it.stack <= 0;
 
-		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || IsMeleeFamily(f);
-		/// <summary>Sidearm candidates: blades and spears, plus the summoner's whip and the thrown boomerang.</summary>
-		private static bool IsSidearmFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang;
+		private static bool IsSupportedFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic || f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || IsMeleeFamily(f);
+		/// <summary>Sidearm candidates: blades and spears, plus the summoner's whip, the thrown boomerang, the yoyo and the flail.</summary>
+		private static bool IsSidearmFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Whip || f == WeaponFamily.Boomerang || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail;
 		private static bool IsMeleeFamily(WeaponFamily f) => f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;
 
 		/// <summary>True when <paramref name="item"/> may be hand-placed in <paramref name="slot"/> (air is always fine: it empties the slot). Accessory duplicates are rejected.</summary>

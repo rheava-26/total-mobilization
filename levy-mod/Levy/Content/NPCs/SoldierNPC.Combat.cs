@@ -152,7 +152,7 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			// Pure melee: begin the swing/thrust as the enemy closes in, a little before it is strictly in reach (whips keep their lash for real targets).
-			float trigger = Weapon.IsWhip ? closeTrigger : Math.Max(closeTrigger, blowReach * LevyConstants.MeleePreSwingReachMult);
+			float trigger = Weapon.IsTethered ? closeTrigger : Math.Max(closeTrigger, blowReach * LevyConstants.MeleePreSwingReachMult);
 			if (meleeTiles <= trigger) WeaponUse.TryAttack(this, target);
 		}
 

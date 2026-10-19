@@ -40,6 +40,8 @@ namespace Levy.Common.Weapons
 					case WeaponFamily.Shortsword: return StartThrust(s, item, profile, seg);
 					case WeaponFamily.Whip: return StartWhip(s, item, profile, seg);
 					case WeaponFamily.Boomerang: return ThrowBoomerang(s, item, profile, seg);
+					case WeaponFamily.Yoyo: return ThrowYoyo(s, item, profile, seg);
+					case WeaponFamily.Flail: return ThrowFlail(s, item, profile, seg);
 					case WeaponFamily.Summon: return false; // summon weapons are not fired: the flock is kept up by SoldierNPC.MaintainMinions
 				}
 			}
@@ -523,6 +525,40 @@ namespace Levy.Common.Weapons
 			Projectile p = Spawn(s, muzzle, vel, ModContent.ProjectileType<SoldierBoomerang>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, 0f);
 			if (p == null) return Dud(s, item);
 			FinishUse(s, item, vel);
+			return true;
+		}
+
+		/// <summary>Sends the soldier's yoyo out at the target unless one of its yoyos is already out. The yoyo is a Levy-owned SoldierYoyo: the vanilla held yoyo is never spawned.</summary>
+		private static bool ThrowYoyo(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (s.CountAnchored<SoldierYoyo>() >= LevyConstants.YoyoMaxOut) { s.AttackCooldown = 6; return false; }
+			if (item.shoot <= 0) return Dud(s, item);
+			Vector2 dir = target.Center - s.NPC.Center;
+			if (dir == Vector2.Zero) dir = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
+			dir = Vector2.Normalize(dir);
+			Vector2 muzzle = Muzzle(s);
+			if (!Aiming.HasLineOfSight(muzzle, target.Center)) { s.AttackCooldown = 10; return false; } // a yoyo does not fly through walls: wait for a clear line
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			Projectile p = Spawn(s, muzzle, dir * LevyConstants.YoyoMaxSpeed, ModContent.ProjectileType<SoldierYoyo>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, 0f);
+			if (p == null) return Dud(s, item);
+			FinishUse(s, item, dir);
+			return true;
+		}
+
+		/// <summary>Swings the soldier's flail out at the target unless one of its flails is already out. The ball is a Levy-owned SoldierFlail: the vanilla held flail is never spawned.</summary>
+		private static bool ThrowFlail(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (s.CountAnchored<SoldierFlail>() >= LevyConstants.FlailMaxOut) { s.AttackCooldown = 4; return false; }
+			if (item.shoot <= 0) return Dud(s, item);
+			Vector2 dir = target.Center - s.NPC.Center;
+			if (dir == Vector2.Zero) dir = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
+			dir = Vector2.Normalize(dir);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			int life = Math.Clamp(item.useAnimation, LevyConstants.FlailLifeMinTicks, LevyConstants.FlailLifeMaxTicks);
+			Projectile p = Spawn(s, s.NPC.Center, dir, ModContent.ProjectileType<SoldierFlail>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, life);
+			if (p == null) return Dud(s, item);
+			p.timeLeft = Math.Max(p.timeLeft, life + 2);
+			FinishUse(s, item, dir);
 			return true;
 		}
 

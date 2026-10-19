@@ -32,7 +32,14 @@ namespace Levy.Common.Weapons
 		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
 		public bool IsRanged => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow || Family == WeaponFamily.Magic || Family == WeaponFamily.Boomerang;
 		/// <summary>Whips count as melee for the brain (close to the lash's reach, avoid bosses); they stop short at a fraction of their reach.</summary>
-		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear || Family == WeaponFamily.Whip;
+		public bool IsMelee => Family == WeaponFamily.Broadsword || Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear || Family == WeaponFamily.Whip || Family == WeaponFamily.Yoyo || Family == WeaponFamily.Flail;
+		/// <summary>Yoyos and flails are melee-class tethered weapons: the soldier throws a Levy-owned projectile out on a short leash and it comes back. No ammo.</summary>
+		public bool IsYoyo => Family == WeaponFamily.Yoyo;
+		public bool IsFlail => Family == WeaponFamily.Flail;
+		/// <summary>Lash-style melee that holds off its target at a fraction of its reach (whips, yoyos, flails) instead of closing to blade range.</summary>
+		public bool IsTethered => Family == WeaponFamily.Whip || Family == WeaponFamily.Yoyo || Family == WeaponFamily.Flail;
+		/// <summary>Fraction of <see cref="RangeTiles"/> a tethered soldier holds at (0 for everything else).</summary>
+		public float TetherHoldFraction;
 		public bool IsSummon => Family == WeaponFamily.Summon;
 		public bool IsWhip => Family == WeaponFamily.Whip;
 		public bool IsBoomerang => Family == WeaponFamily.Boomerang;
@@ -74,7 +81,7 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// Accepts the long tail on purpose: every ammo type (bullets and arrows keep their families, everything else fires like a gun), any mana
 		/// weapon that shoots, melee swings/thrusts, and finally any plain shooter, all fired through the real shoot pipeline. Rejects what a
-		/// stationary-ish soldier cannot use: tools, consumables, held-beam weapons, custom-resource modded weapons, yoyos, flails, boomerangs, whips, minions and sentries.
+		/// stationary-ish soldier cannot use: tools, consumables, held-beam weapons, custom-resource modded weapons, tethered lines (harpoons, hooks) and sentries.
 		/// <paramref name="extended"/> is set when only the widened rules accepted it.
 		/// </summary>
 		private static WeaponFamily ClassifyCore(Item item, out bool extended)
@@ -102,7 +109,6 @@ namespace Levy.Common.Weapons
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
 			if (item.sentry) return WeaponFamily.Unsupported;
-			if (IsSet(ItemID.Sets.Yoyo, item.type)) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 			// A modded weapon that counts as none of the five combat classes runs on a custom resource (Mechanica's MechanicDamage power weapons): not issued.
 			if (item.type >= ItemID.Count && !CountsAsAnyCombatClass(item)) return WeaponFamily.Unsupported;
@@ -119,7 +125,11 @@ namespace Levy.Common.Weapons
 				if (IsSet(ProjectileID.Sets.IsAWhip, shoot) || sample.aiStyle == ProjAIStyleID.Whip) return WeaponFamily.Whip;
 				if (item.CountsAsClass(DamageClass.Summon) && (sample.minion || sample.minionSlots > 0f)) return WeaponFamily.Summon;
 				if (sample.aiStyle == ProjAIStyleID.Boomerang && item.useAmmo == AmmoID.None) return WeaponFamily.Boomerang;
+				// Yoyos and flails: Levy's own SoldierYoyo / SoldierFlail (the vanilla ones are held by, and tethered to, their owner).
+				if (item.useAmmo == AmmoID.None && IsYoyoProjectile(shoot, sample)) return WeaponFamily.Yoyo;
+				if (item.useAmmo == AmmoID.None && sample.aiStyle == ProjAIStyleID.Flail) return WeaponFamily.Flail;
 			}
+			if (item.useAmmo == AmmoID.None && IsSet(ItemID.Sets.Yoyo, item.type) && item.shoot > 0) return WeaponFamily.Yoyo; // a yoyo whose shot has no loadable sample
 			if (item.type == ItemID.Harpoon) return WeaponFamily.Unsupported; // tethered to its owner (see the projectile check below)
 			// Night's Edge family: a no-melee swing whose "projectile" is a slash drawn around the owner's body. A soldier swings the blade instead (the hitbox is the damage).
 			if (sample != null && item.useStyle == ItemUseStyleID.Swing && item.CountsAsClass(DamageClass.Melee) && IsHeldSlashProjectile(shoot)) return WeaponFamily.Broadsword;
@@ -127,12 +137,11 @@ namespace Levy.Common.Weapons
 			if (sample != null)
 			{
 				int ai = sample.aiStyle;
-				if (ai == ProjAIStyleID.Yoyo || ai == ProjAIStyleID.Flail || ai == ProjAIStyleID.Boomerang || ai == ProjAIStyleID.Whip) return WeaponFamily.Unsupported;
+				if (ai == ProjAIStyleID.Boomerang || ai == ProjAIStyleID.Whip) return WeaponFamily.Unsupported;
 				// Tethered lines (Harpoon, Golem Fist, Boxing Glove, Chain Knife) retract to Main.player[owner] and allow one out per owner, and grappling hooks
 				// anchor to it: soldier shots are owned by the commander, so they would tether to the commander and take over the commander's own slot.
 				if (ai == ProjAIStyleID.Harpoon || ai == ProjAIStyleID.Hook) return WeaponFamily.Unsupported;
 				if (IsSet(ProjectileID.Sets.IsAWhip, shoot)) return WeaponFamily.Unsupported;
-				if (shoot < ProjectileID.Sets.YoyosLifeTimeMultiplier.Length && ProjectileID.Sets.YoyosLifeTimeMultiplier[shoot] != -1f) return WeaponFamily.Unsupported;
 				if (sample.minion || sample.sentry || sample.minionSlots > 0f) return WeaponFamily.Unsupported;
 			}
 
@@ -215,6 +224,17 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.Whip:
 					p.ThrustReachPx = WhipReach(src.shootSpeed);
 					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.WhipRangeMinTiles, LevyConstants.WhipRangeMaxTiles);
+					p.TetherHoldFraction = LevyConstants.WhipHoldFraction;
+					break;
+				case WeaponFamily.Yoyo:
+					p.ThrustReachPx = YoyoReach(src.shoot);
+					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.YoyoRangeMinTiles, LevyConstants.YoyoRangeMaxTiles);
+					p.TetherHoldFraction = LevyConstants.YoyoHoldFraction;
+					break;
+				case WeaponFamily.Flail:
+					p.ThrustReachPx = FlailReach(src.shootSpeed);
+					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.FlailRangeMinTiles, LevyConstants.FlailRangeMaxTiles);
+					p.TetherHoldFraction = LevyConstants.FlailHoldFraction;
 					break;
 				case WeaponFamily.Spear:
 				case WeaponFamily.Shortsword:
@@ -266,6 +286,34 @@ namespace Levy.Common.Weapons
 
 		public static float WhipReach(float shootSpeed) => Math.Clamp(shootSpeed * LevyConstants.WhipReachPerShootSpeed, LevyConstants.WhipReachMinPx, LevyConstants.WhipReachMaxPx);
 
+		/// <summary>True for a yoyo's shot: the Yoyo AI style or any type with a yoyo flight-time multiplier registered.</summary>
+		public static bool IsYoyoProjectile(int projType, Projectile sample)
+		{
+			if (sample != null && sample.aiStyle == ProjAIStyleID.Yoyo) return true;
+			var set = ProjectileID.Sets.YoyosLifeTimeMultiplier;
+			return set != null && projType > 0 && projType < set.Length && set[projType] != -1f;
+		}
+
+		/// <summary>How far (px) a yoyo's string lets it fly: the shot's registered maximum range, else a default, clamped into the yoyo band.</summary>
+		public static float YoyoReach(int projType)
+		{
+			var set = ProjectileID.Sets.YoyosMaximumRange;
+			float r = set != null && projType > 0 && projType < set.Length ? set[projType] : 0f;
+			if (r <= 0f) r = LevyConstants.YoyoDefaultReachPx;
+			return Math.Clamp(r, LevyConstants.YoyoReachMinPx, LevyConstants.YoyoReachMaxPx);
+		}
+
+		/// <summary>How long (ticks) a yoyo stays out: its registered flight-time multiplier in seconds (non-positive means no limit), clamped into the loiter band.</summary>
+		public static int YoyoLoiterTicks(int projType)
+		{
+			var set = ProjectileID.Sets.YoyosLifeTimeMultiplier;
+			float m = set != null && projType > 0 && projType < set.Length ? set[projType] : -1f;
+			int ticks = m > 0f ? (int)(m * 60f) : LevyConstants.YoyoDefaultLoiterTicks;
+			return Math.Clamp(ticks, LevyConstants.YoyoLoiterMinTicks, LevyConstants.YoyoLoiterMaxTicks);
+		}
+
+		public static float FlailReach(float shootSpeed) => Math.Clamp(shootSpeed * LevyConstants.FlailReachPerShootSpeed, LevyConstants.FlailReachMinPx, LevyConstants.FlailReachMaxPx);
+
 		public static float ThrustReach(float shootSpeed) => Math.Max(LevyConstants.ThrustReachMinPx, shootSpeed * LevyConstants.ThrustReachPerShootSpeed);
 
 		/// <summary>Whether a projectile type falls: vanilla aiStyle 1 adds 0.1/tick after 15 ticks unless the type is on the exempt list (bullets, lasers, Jester's arrows).</summary>
@@ -310,7 +358,7 @@ namespace Levy.Common.Weapons
 		{
 			WeaponFamily.Gun or WeaponFamily.Bow => DamageClass.Ranged,
 			WeaponFamily.Magic => DamageClass.Magic,
-			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang => DamageClass.Melee,
+			WeaponFamily.Broadsword or WeaponFamily.Shortsword or WeaponFamily.Spear or WeaponFamily.Boomerang or WeaponFamily.Yoyo or WeaponFamily.Flail => DamageClass.Melee,
 			WeaponFamily.Summon or WeaponFamily.Whip => DamageClass.Summon,
 			_ => null,
 		};
@@ -343,6 +391,8 @@ namespace Levy.Common.Weapons
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;
 			else if (p.Family == WeaponFamily.Boomerang) dps *= LevyConstants.BoomerangScoreFactor;
+			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;
+			else if (p.Family == WeaponFamily.Flail) dps *= LevyConstants.FlailScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
 			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));

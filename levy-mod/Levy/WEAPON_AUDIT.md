@@ -42,7 +42,8 @@ Root causes found
 | Leather Whip, Snapthorn, Spinal Tap | lash + tag | A | `SoldierWhip` with Levy's own tag system; vanilla whip tag debuffs are replaced by it, not reproduced |
 | Wooden / Enchanted Boomerang, Bananarang, Light Disc | thrown, returns | A | `SoldierBoomerang` |
 | Flamarang, Ice Boomerang, Thorn Chakram | burn / frostburn / poison on hit | C | these debuffs are keyed on the vanilla projectile type in `Projectile.StatusNPC`; `ApplyBoomerangStatus` reapplies them from `SoldierBoomerang.OnHitNPC` |
-| Ball O' Hurt, Blue Moon, Sunfury, The Meatball, Mace, Flaming Mace, yoyos | flail / yoyo | D | classifier rejects them (anchored to the owner, channeled) |
+| Ball O' Hurt, Blue Moon, Sunfury, The Meatball, Mace, Flaming Mace | flail, thrown out and hauled back | A | `SoldierFlail` (Levy-owned, anchored to the soldier, item's ball sprite); the vanilla held flail is never spawned |
+| Wooden Yoyo ... Terrarian, modded yoyos | yoyo orbits the target for its flight time, then returns | A | `SoldierYoyo` (Levy-owned, own AI, reach from the shot's `YoyosMaximumRange`, flight time from `YoyosLifeTimeMultiplier`); the vanilla held yoyo is never spawned |
 | Harpoon, Chain Knife, Golem Fist, Boxing Glove | tethered line that retracts to the owner | D | projectile `aiStyle` 13 reads `Main.player[owner]` and allows one out per owner; a soldier's shot is owned by the commander, so it tethered to the commander and blocked the commander's own harpoon. The classifier now rejects `aiStyle` 13 and grappling hooks (7), and `ItemID.Harpoon` explicitly |
 | Hellwing Bow | bats curve toward the aim vector | C | arrow -> bat swap was already in `ResolveProjectile`; `ItemShots.Hellwing` sets ai[0..1] (vanilla chain item 3019). Without them the bat's velocity decays to zero |
 | Molten Fury | wooden arrows become fire arrows | C | `ResolveProjectile` (vanilla: `projToShoot == 1` -> 2 before the hooks) |

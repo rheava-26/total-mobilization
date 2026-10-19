@@ -86,7 +86,7 @@ namespace Levy.Content.TileEntities
 			f == WeaponFamily.Broadsword || f == WeaponFamily.Shortsword || f == WeaponFamily.Spear;
 
 		/// <summary>Every melee-class primary (blades, spears, the thrown boomerang, the whip): none of them needs a fallback blade in the off hand.</summary>
-		private static bool IsMeleeTypeFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Boomerang || f == WeaponFamily.Whip;
+		private static bool IsMeleeTypeFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Boomerang || f == WeaponFamily.Whip || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail;
 
 		/// <summary>A weapon the armory may hand out: the classifier accepts it (cached per item type, so scanning a 1000-slot hoard stays cheap).</summary>
 		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it);

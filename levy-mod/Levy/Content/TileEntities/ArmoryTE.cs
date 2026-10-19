@@ -442,11 +442,15 @@ namespace Levy.Content.TileEntities
 
 		private static bool IsIssuableSummonStaff(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon;
 
-		/// <summary>A melee-type soldier's sidearm: a minion-summoning staff (the sidearm slot first, then the best in the armory). Never a blade. Removes it. Null if none.</summary>
+		private static bool IsIssuableSentry(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Sentry;
+		/// <summary>A deploy-and-forget utility weapon: a minion-summoning staff or a sentry.</summary>
+		private static bool IsIssuableDeployer(Item it) => IsIssuableSummonStaff(it) || IsIssuableSentry(it);
+
+		/// <summary>A melee-type soldier's sidearm: a minion-summoning staff or a sentry (the sidearm slot first, then the best in the armory). Never a blade. Removes it. Null if none.</summary>
 		public virtual Item TakeSummonSidearm(SoldierRecord forSoldier)
 		{
-			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponClassifier.Score);
+			if (IsIssuableDeployer(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableDeployer, WeaponClassifier.Score);
 		}
 
 		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>

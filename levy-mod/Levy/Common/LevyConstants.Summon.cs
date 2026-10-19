@@ -36,6 +36,28 @@ namespace Levy.Common
 		/// <summary>Fallback minion slot cost when the summon weapon's projectile reports none.</summary>
 		public const float MinionDefaultSlots = 1f;
 
+		// ---------- Sentries ----------
+		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a sentry.</summary>
+		public const int RangeSentry = 36;
+		/// <summary>Sentries one soldier keeps standing at once.</summary>
+		public const int SentryMaxPerSoldier = 1;
+		/// <summary>How often a soldier recounts its sentry and decides whether to plant a new one (ticks). The standing sentry's lifetime is refreshed every tick.</summary>
+		public const int SentryMaintainIntervalTicks = 20;
+		/// <summary>Minimum wait after a sentry is planted before the next one may be (ticks), and the wait after a failed placement (no ground in reach, blocked spot).</summary>
+		public const int SentryReplaceCooldownTicks = 300, SentryRetryTicks = 90;
+		/// <summary>A soldier counts as in combat for sentry purposes while engaged and for this many ticks after its last engagement.</summary>
+		public const int SentryCombatGraceTicks = 300;
+		/// <summary>Fighting this many tiles from its sentry, the soldier plants a fresh one where it stands (the old one is removed).</summary>
+		public const int SentryReplaceDistTiles = 50;
+		/// <summary>How far below the soldier's feet (tiles) a sentry looks for ground to stand on.</summary>
+		public const int SentryGroundSearchTiles = 30;
+		/// <summary>In multiplayer a remote client counts a sentry down from its spawn (vanilla Projectile.SentryLifeTime); the soldier plants a fresh one before that runs out (ticks).</summary>
+		public const int SentryMpRefreshTicks = 30000;
+		/// <summary>Sentry-weapon score: item damage x this (the tower's own cadence is not the item's useTime).</summary>
+		public const float SentryScoreDamageFactor = 1.5f;
+		/// <summary>The summon-damage ratio the owner (commander) applies to a sentry is divided back out within these bounds, so the soldier's own gear sets the sentry's damage.</summary>
+		public const float SentryOwnerRatioMin = 0.1f, SentryOwnerRatioMax = 10f;
+
 		// ---------- Whips ----------
 		/// <summary>Reach of a lash in pixels per point of the item's shootSpeed, with floor/ceiling; the brain stops short at this fraction of reach.</summary>
 		public const float WhipReachPerShootSpeed = 40f, WhipReachMinPx = 90f, WhipReachMaxPx = 340f;

@@ -322,11 +322,11 @@ namespace Levy.Content.TileEntities
 				if (IsAir(item)) continue;
 				if (s >= SoldierGear.SlotAcc0 && s < SoldierGear.SlotAmmo && s - SoldierGear.SlotAcc0 >= accessorySlots) continue;
 				if (!IsAir(g.Get(s))) continue;
-				if (s == SoldierGear.SlotAmmo) {
-					// Stackable: the pouch may have merged into a bigger stack, so take the same type back by count.
+				if (IsStackSlot(s, item)) {
+					// Stackable (ammo pouch, a thrown-weapon stack): it may have merged into a bigger stack, so take the same type back by count.
 					var pouch = new Item(); pouch.SetDefaults(item.type); pouch.stack = 0;
-					int want = Math.Min(item.stack, LevyConstants.AmmoPouchMax);
-					int moved = DrainType(IssueAmmo, item.type, pouch, want);
+					int want = Math.Min(item.stack, s == SoldierGear.SlotAmmo ? LevyConstants.AmmoPouchMax : LevyConstants.ThrownCarryMax);
+					int moved = DrainType(s == SoldierGear.SlotAmmo ? IssueAmmo : IssueWeapons, item.type, pouch, want);
 					if (moved < want) moved += DrainType(Storage, item.type, pouch, want - moved);
 					if (moved > 0) { g.Set(s, pouch); g.SetLocked(s, true); any = true; }
 					continue;
@@ -341,6 +341,9 @@ namespace Levy.Content.TileEntities
 			if (any) MarkDirty();
 			return any;
 		}
+
+		/// <summary>Slots whose item is a stack that merges into storage on return, so a Re-arm must take it back by count: the ammo pouch and a thrown-weapon stack.</summary>
+		private static bool IsStackSlot(int slot, Item it) => slot == SoldierGear.SlotAmmo || (slot == SoldierGear.SlotWeapon && it != null && it.maxStack > 1);
 
 		private static int DrainType(Item[] arr, int type, Item pouch, int max)
 		{
@@ -367,8 +370,61 @@ namespace Levy.Content.TileEntities
 		{
 			// Pass 1: weapons that can actually fire (no ammo needed, or ammo in the pouch / armory). Pass 2: anything issuable.
 			var onHand = AmmoIdsOnHand();
-			return TakeVaried(forSoldier, it => IsIssuable(it) && HasAmmoFor(it, forSoldier, onHand))
-				?? TakeVaried(forSoldier, IsIssuable);
+			return CapThrown(TakeVaried(forSoldier, it => IsIssuable(it) && HasAmmoFor(it, forSoldier, onHand))
+				?? TakeVaried(forSoldier, IsIssuable));
+		}
+
+		/// <summary>A thrown stack leaves the shelf at most <see cref="LevyConstants.ThrownCarryMax"/> strong (what a soldier carries); the rest goes back to storage. Any other item is returned untouched.</summary>
+		private Item CapThrown(Item w)
+		{
+			if (IsAir(w) || w.stack <= LevyConstants.ThrownCarryMax || WeaponClassifier.GetProfile(w).Family != WeaponFamily.Thrown) return w;
+			var rest = w.Clone(); rest.stack = w.stack - LevyConstants.ThrownCarryMax; w.stack = LevyConstants.ThrownCarryMax;
+			var left = Deposit(rest);
+			if (!IsAir(left)) Spill(left, protect: true);
+			return w;
+		}
+
+		/// <summary>
+		/// Keeps a thrown-weapon stack supplied. A soldier holding a thrown stack below the carry limit is topped up from the shelves; one whose stack ran dry
+		/// (<see cref="SoldierGear.ThrownRestockType"/>) is handed the same throwable again, as long as any is stocked. A hand-assigned (locked) empty slot keeps
+		/// waiting for stock; an auto-issued one stops waiting once the shelves are bare, so a normal pick can arm him with something else. True if the gear changed.
+		/// </summary>
+		public virtual bool RestockThrown(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null) return false;
+			int max = LevyConstants.ThrownCarryMax;
+			if (g.HasWeapon)
+			{
+				g.ThrownRestockType = 0;
+				if (WeaponClassifier.GetProfile(g.Weapon).Family != WeaponFamily.Thrown || g.Weapon.stack >= max) return false;
+				return DrawThrown(g.Weapon, g.Weapon.type, max) > 0;
+			}
+			if (g.ThrownRestockType <= 0) return false;
+			var fresh = new Item();
+			if (DrawThrown(fresh, g.ThrownRestockType, max) > 0) { g.Weapon = fresh; g.ThrownRestockType = 0; return true; }
+			if (!g.IsLocked(SoldierGear.SlotWeapon)) g.ThrownRestockType = 0;
+			return false;
+		}
+
+		/// <summary>Moves up to (max - current) of <paramref name="type"/> from the issue weapon row, storage and the networked armories into <paramref name="stack"/> (air = a fresh stack). Returns the amount moved.</summary>
+		private int DrawThrown(Item stack, int type, int max)
+		{
+			bool wasAir = IsAir(stack);
+			if (wasAir) { stack.SetDefaults(type); stack.stack = 0; }
+			else if (stack.type != type) return 0;
+			int want = Math.Min(max, stack.maxStack) - stack.stack;
+			if (want <= 0) { if (wasAir) stack.TurnToAir(); return 0; }
+			int moved = DrainType(IssueWeapons, type, stack, want);
+			moved += DrainType(Storage, type, stack, want - moved);
+			if (moved > 0) MarkDirty();
+			foreach (var o in OtherNetworked()) {
+				if (moved >= want) break;
+				int n = DrainType(o.Storage, type, stack, want - moved);
+				if (n > 0) { o.MarkDirty(); moved += n; }
+			}
+			if (moved == 0 && wasAir) stack.TurnToAir();
+			return moved;
 		}
 
 		/// <summary>A strong issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
@@ -380,7 +436,7 @@ namespace Levy.Content.TileEntities
 			bool needSummon = cls == DamageClass.Summon;
 			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand)
 				&& (!needSummon || WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon);
-			return TakeVaried(forSoldier, Pred);
+			return CapThrown(TakeVaried(forSoldier, Pred));
 		}
 
 		/// <summary>Issue weapon slots first, bulk storage second; within each, a varied pick among the top-scoring weapon types.</summary>
@@ -1001,6 +1057,9 @@ namespace Levy.Content.TileEntities
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotLegs) && IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
 
+			// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
+			if (RestockThrown(soldier)) changed = true;
+
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && !g.HasWeapon)
 			{
 				// The armor decides doctrine: prefer a weapon of its class, else the best of anything.
@@ -1083,7 +1142,7 @@ namespace Levy.Content.TileEntities
 				for (int s = 0; s < SoldierGear.SlotCount; s++) {
 					if (!gear.IsLocked(s) || IsAir(gear.Get(s))) continue;
 					// Ammo is stackable and may merge into storage, so remember a copy; everything else keeps its instance.
-					kept[s] = s == SoldierGear.SlotAmmo ? gear.Get(s).Clone() : gear.Get(s);
+					kept[s] = IsStackSlot(s, gear.Get(s)) ? gear.Get(s).Clone() : gear.Get(s);
 				}
 			}
 			var items = new List<Item>(gear.AllItems());
@@ -1094,7 +1153,7 @@ namespace Levy.Content.TileEntities
 			gear.Clear();
 			if (kept != null) {
 				gear.Reserved = kept; gear.ReservedTick = Main.GameUpdateCount;
-				for (int s = 0; s < kept.Length; s++) if (kept[s] != null && s != SoldierGear.SlotAmmo) Reserve(kept[s]);
+				for (int s = 0; s < kept.Length; s++) if (kept[s] != null && !IsStackSlot(s, kept[s])) Reserve(kept[s]);
 			}
 			MarkDirty();
 		}

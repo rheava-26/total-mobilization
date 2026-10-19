@@ -128,7 +128,7 @@ namespace Levy.Content.NPCs
 			MaintainMinions();
 			MaintainSentries();
 			MaintainAccessoryProjectiles();
-			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); }
+			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); WeaponUse.ThrownRestockTick(this); }
 
 			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
 			if (!fighting || Record.HoldFire) return;

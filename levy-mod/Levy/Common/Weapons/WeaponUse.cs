@@ -90,6 +90,8 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.HeldWeapon:
 					if (profile.UseAmmo > 0) { var hp = s.Record.Gear.Ammo; return hp != null && !hp.IsAir && hp.stack > 0 && hp.ammo == profile.UseAmmo; }
 					return s.Record.Mana >= Math.Max(0, item.mana);
+				case WeaponFamily.Thrown:
+					return item.stack > 0; // a stack of throwables is the weapon: out of them, out of that weapon
 				default:
 					return true;
 			}
@@ -454,6 +456,86 @@ namespace Levy.Common.Weapons
 			if (d.ammoCost75 && Main.rand.NextBool(LevyConstants.AmmoConserve75Denominator)) free = true;
 			if (d.magicQuiver && weapon.useAmmo == AmmoID.Arrow && Main.rand.NextBool(LevyConstants.MagicQuiverDenominator)) free = true;
 			return free;
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Thrown consumables (knives, shuriken, javelins, grenades, bombs, dynamite): the weapon slot holds the STACK and each throw uses one up.
+		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>
+		/// Throws one item from the soldier's stack at the target: the item's own projectile, lobbed on a simulated arc (<see cref="ThrownAim"/>), owned by the
+		/// commander and tagged like every soldier shot. The projectile's own AI then does the rest (grenades and bombs blast, the poisoned knife poisons...).
+		/// Vanilla's Shoot hooks run first (<see cref="TryRealShoot"/>) so modded throwables keep their special shots. The stack drops by one; at zero the slot
+		/// empties, the type is remembered for the armory's restock, and the soldier barks that he is out.
+		/// </summary>
+		private static bool ThrowConsumable(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (item.stack <= 0 || item.shoot <= 0) return Dud(s, item);
+			int projType = item.shoot;
+			Vector2 muzzle = Muzzle(s);
+			Vector2 vel = AimThrow(s, muzzle, target, projType, item.shootSpeed);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier)); // a bomb item has no damage: the blast writes its own (PrepareBombToBlow)
+			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
+			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			if (!fired) return Dud(s, item); // nothing came out: keep the stack, hold
+
+			FinishUse(s, item, vel); // before the stack can empty: the cooldown and use sound come from the item
+			if (ConsumesThrown(s, item))
+			{
+				item.stack--;
+				if (item.stack <= 0)
+				{
+					s.Record.Gear.ThrownRestockType = item.type;
+					item.TurnToAir();
+					DialogueSystem.Bark(s, DialogueTrigger.OUT_OF_AMMO);
+				}
+				s.NPC.netUpdate = true;
+			}
+			return true;
+		}
+
+		/// <summary>Launch velocity for a throw: the ballistic lob, then the same grade / veteran / shaken aim error every ranged soldier gets (angle only: a lob has no lead to mis-judge).</summary>
+		private static Vector2 AimThrow(SoldierNPC s, Vector2 muzzle, NPC target, int projType, float shootSpeed)
+		{
+			Vector2 vel = ThrownAim.Solve(muzzle, target.Center, target.velocity, ThrownAim.FlightFor(projType), shootSpeed);
+			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, target.Center));
+			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
+			return Aiming.ApplyError(vel, LevyConstants.GradeAimJitterDeg[grade] * errMult, 0f, Vector2.Zero);
+		}
+
+		/// <summary>Whether this throw uses up an item: the Ninja armor's thrown-cost saving (on the dummy) and the item's own ConsumeItem hooks can spare it, as in Player.ItemCheck.</summary>
+		private static bool ConsumesThrown(SoldierNPC s, Item item)
+		{
+			Player d = s.Dummy;
+			if (d != null && item.CountsAsClass(DamageClass.Throwing))
+			{
+				if (d.ThrownCost50 && Main.rand.Next(100) < 50) return false;
+				if (d.ThrownCost33 && Main.rand.Next(100) < 33) return false;
+			}
+			if (d != null)
+			{
+				try { if (!ItemLoader.ConsumeItem(item, d)) return false; } catch (Exception) { }
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Called every sidearm check from the combat tick. A soldier with an empty thrown slot (the type is remembered), or a stack under
+		/// <see cref="LevyConstants.ThrownTopUpBelowFraction"/> of the carry limit, asks the armory he is standing at (within
+		/// <see cref="LevyConstants.TopUpArmoryTiles"/>) to restock it, at most every <see cref="LevyConstants.ThrownRestockIntervalTicks"/>.
+		/// </summary>
+		public static void ThrownRestockTick(SoldierNPC s)
+		{
+			var g = s?.Record?.Gear;
+			if (g == null) return;
+			bool empty = !g.HasWeapon && g.ThrownRestockType > 0;
+			bool low = !empty && g.HasWeapon && g.Weapon.stack < LevyConstants.ThrownCarryMax * LevyConstants.ThrownTopUpBelowFraction && WeaponClassifier.Classify(g.Weapon) == WeaponFamily.Thrown;
+			if (!empty && !low) return;
+			uint now = Main.GameUpdateCount;
+			if (now - g.ThrownCheckTick < LevyConstants.ThrownRestockIntervalTicks) return;
+			g.ThrownCheckTick = now;
+			var armory = SettlementSystem.Instance?.NearestArmory(s.NPC.Center, LevyConstants.TopUpArmoryTiles);
+			if (armory == null || !Terraria.DataStructures.TileEntity.ByID.TryGetValue(armory.ID, out var live) || !ReferenceEquals(live, armory)) return;
+			if (armory.RestockThrown(s.Record)) s.NotifyGearChanged();
 		}
 
 		// ------------------------------------------------------------------------------------------------------------

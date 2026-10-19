@@ -122,6 +122,7 @@ namespace Levy.Content.Projectiles
 			// Credit, boss-rule accounting, kill count and the KILL bark come from LootCreditGlobalProjectile.
 			SoldierNPC s = Soldier;
 			if (s != null) s.LastMeleeHitTick = (int)Main.GameUpdateCount;
+			MeleeEffects.ApplyFlailStatus(ShotType(), target);
 		}
 
 		public override bool PreDraw(ref Color lightColor)

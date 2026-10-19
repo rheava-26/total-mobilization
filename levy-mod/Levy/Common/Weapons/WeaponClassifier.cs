@@ -407,7 +407,14 @@ namespace Levy.Common.Weapons
 			if (item == null || item.IsAir) return 0f;
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
-			float dps = item.damage * p.ProjectilesPerShot * 60f / Math.Max(1, item.useTime);
+			// Burst weapons (reuseDelay) fire ceil(useAnimation / useTime) shots per useAnimation + reuseDelay ticks, not one per useTime.
+			float cadence = Math.Max(1, item.useTime);
+			if (item.reuseDelay > 0)
+			{
+				int shots = Math.Max(1, (Math.Max(1, item.useAnimation) + (int)cadence - 1) / (int)cadence);
+				cadence = (Math.Max(1, item.useAnimation) + item.reuseDelay) / (float)shots;
+			}
+			float dps = item.damage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;

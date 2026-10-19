@@ -171,8 +171,8 @@ namespace Levy.Common
 		public static readonly Dictionary<int, (int count, float spreadDeg)> Multishot = new()
 		{
 			{ ItemID.Boomstick, (3, 20f) }, { ItemID.Shotgun, (4, 25f) }, { ItemID.TacticalShotgun, (6, 25f) }, { ItemID.QuadBarrelShotgun, (4, 30f) },
-			{ ItemID.OnyxBlaster, (4, 20f) }, { ItemID.Xenopopper, (4, 15f) }, { ItemID.Tsunami, (5, 10f) }, { ItemID.Phantasm, (4, 6f) },
-			{ ItemID.DD2BetsyBow, (3, 12f) }, { ItemID.Marrow, (2, 8f) },
+			{ ItemID.OnyxBlaster, (5, 20f) }, { ItemID.Xenopopper, (4, 15f) }, { ItemID.Tsunami, (5, 10f) }, { ItemID.Phantasm, (4, 6f) },
+			{ ItemID.DD2BetsyBow, (3, 12f) }, { ItemID.BubbleGun, (3, 30f) },
 		};
 		/// <summary>Ammo whose projectile homes; the soldier skips the lead.</summary>
 		public static readonly HashSet<int> HomingAmmo = new() { ItemID.ChlorophyteBullet, ItemID.ChlorophyteArrow, ItemID.CursedDart, ItemID.IchorDart };

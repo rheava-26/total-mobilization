@@ -37,5 +37,7 @@ namespace Levy.Common
 		/// <summary>Pulse reach (px), ticks between pulse windows, and max enemies a pulse strikes.</summary>
 		public const float MedusaRangePx = 320f;
 		public const int MedusaPulseTicks = 60, MedusaMaxRays = 3;
+		/// <summary>A driver-based magic weapon engages at this fraction of its real reach so the soldier is inside it when he fires.</summary>
+		public const float DriverReachFraction = 0.9f;
 	}
 }

@@ -43,7 +43,7 @@ namespace Levy.Common.Weapons
 		}
 
 		internal static bool WantsAnchor(Projectile p) =>
-			IsAnchoredType(p.type) && p.owner != Slot && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
+			IsAnchoredType(p.type) && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
 
 		internal static void RunAi(On_Projectile.orig_AI orig, Projectile p)
 		{
@@ -60,12 +60,12 @@ namespace Levy.Common.Weapons
 			{
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
 				swapped = true;
-				p.owner = Slot;
+				if (p.owner != Slot) p.owner = Slot; // on a dedicated server a soldier shot is already owned by 255
 				orig(p);
 			}
 			finally
 			{
-				p.owner = savedOwner;
+				if (p.owner != savedOwner) p.owner = savedOwner;
 				if (swapped) EnemyTargeting.Unswap();
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}

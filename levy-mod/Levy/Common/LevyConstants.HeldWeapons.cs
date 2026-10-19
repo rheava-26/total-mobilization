@@ -19,5 +19,7 @@ namespace Levy.Common
 		public const float HeldLeadSpeedFactor = 0.8f, HeldLeadSpeedMin = 10f;
 		/// <summary>The fake cursor is placed at least this far (px) from the soldier along the aim direction.</summary>
 		public const float HeldAimMinDistPx = 96f;
+		/// <summary>Held weapons' real cadence lives in the held AI, not useTime (Last Prism's useTime of 5 would inflate its DPS), so their rank is scaled down.</summary>
+		public const float HeldScoreFactor = 0.4f;
 	}
 }

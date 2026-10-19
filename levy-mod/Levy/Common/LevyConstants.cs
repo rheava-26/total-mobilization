@@ -173,6 +173,7 @@ namespace Levy.Common
 			{ ItemID.Boomstick, (3, 20f) }, { ItemID.Shotgun, (4, 25f) }, { ItemID.TacticalShotgun, (6, 25f) }, { ItemID.QuadBarrelShotgun, (4, 30f) },
 			{ ItemID.OnyxBlaster, (5, 20f) }, { ItemID.Xenopopper, (4, 15f) }, { ItemID.Tsunami, (5, 10f) }, { ItemID.Phantasm, (4, 6f) },
 			{ ItemID.DD2BetsyBow, (3, 12f) }, { ItemID.BubbleGun, (3, 30f) },
+			{ ItemID.VampireKnives, (5, 0f) }, // thrown as a fan of ~5 (see FireVampireKnives); only the ranking reads this entry
 		};
 		/// <summary>Ammo whose projectile homes; the soldier skips the lead.</summary>
 		public static readonly HashSet<int> HomingAmmo = new() { ItemID.ChlorophyteBullet, ItemID.ChlorophyteArrow, ItemID.CursedDart, ItemID.IchorDart };

@@ -31,6 +31,7 @@ namespace Levy.Content.NPCs
 		private float _rhBest = float.MaxValue; private int _rhNoProgress;
 		private int _hopTimer;
 		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
+		private int _dashTicks, _dashCooldown, _dashDir;
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
 		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
 		private int _rocketTime; private float _drainAcc;
@@ -79,7 +80,8 @@ namespace Levy.Content.NPCs
 			NudgeOffPlayers();
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
-			if (TickDodge(grounded, air)) { if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
+			if (_dashCooldown > 0) _dashCooldown--;
+			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
 
 			if (!HasMoveGoal)
 			{
@@ -104,6 +106,8 @@ namespace Levy.Content.NPCs
 				MirrorDummyControls();
 				return;
 			}
+
+			if (TickDash(goal, dx, dy, grounded, air)) { MirrorDummyControls(); return; }
 
 			_blocked = false; _blockedHard = false;
 			int jumpTiles = 0; bool wantFly = false; bool flyUp = false;
@@ -181,7 +185,7 @@ namespace Levy.Content.NPCs
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
-			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0;
+			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dashTicks = 0;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
 			NPC.netUpdate = true;
@@ -398,6 +402,60 @@ namespace Levy.Content.NPCs
 			// a flighted soldier's hop is bigger (the extra jump and boots are there to be used)
 			if (TryJump(DodgeHopTiles + (_kitAny ? FlightDodgeHopBonusTiles : 0))) npc.netUpdate = true;
 			return false;
+		}
+
+		// =====================================================================================================
+		// dashing
+		// =====================================================================================================
+
+		/// <summary>
+		/// A dash accessory (Player.dashType) lends a short burst of speed to a walk the soldier is ALREADY making: toward a goal (or waypoint)
+		/// that is far across and level, down a flat, open, floored lane, while it is advancing (never retreating, routed or shaken). It
+		/// never chooses a destination, so it cannot pull a soldier off its line. Rate-limited by a cooldown with jitter. Returns true while a
+		/// burst is in progress (the walk logic is skipped for those few ticks).
+		/// </summary>
+		private bool TickDash(Vector2 goal, float dx, float dy, bool grounded, bool air)
+		{
+			NPC npc = NPC;
+			if (_dashTicks > 0)
+			{
+				// a burst ends early if the body left the ground, got wet, or hit something (the speed collapsed)
+				bool hit = DashBurstTicks - _dashTicks >= 2 && Math.Abs(npc.velocity.X) < DashSpeedPx * 0.4f;
+				if (!grounded || air || npc.wet || hit) { _dashTicks = 0; npc.netUpdate = true; return false; }
+				_dashTicks--;
+				npc.velocity.X = _dashDir * DashSpeedPx;
+				if (_dashTicks == 0) npc.netUpdate = true;
+				return true;
+			}
+			if (_dashCooldown > 0 || Abilities == null || !Abilities.HasDash || !grounded || air || npc.wet || _closeDoor) return false;
+			if (!(State == SoldierState.Follow || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
+				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) return false;
+			if (Retreating) return false;
+			float adx = Math.Abs(dx);
+			if (adx < DashMinGoalTiles * 16f || adx > DashMaxGoalTiles * 16f || Math.Abs(dy) > DashMaxRiseTiles * 16f) return false;
+			int dir = dx >= 0f ? 1 : -1;
+			if (Math.Abs(npc.velocity.X) > 0.5f && Math.Sign(npc.velocity.X) == -dir) return false; // mid-turn: wait for the body to face the goal
+			if (!DashLaneClear(dir)) return false;
+			_dashDir = dir; _dashTicks = DashBurstTicks;
+			_dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1);
+			npc.direction = dir; npc.spriteDirection = dir;
+			npc.velocity.X = dir * DashSpeedPx;
+			npc.netUpdate = true;
+			return true;
+		}
+
+		/// <summary>The next <see cref="DashLaneTiles"/> columns are level with the feet, open to head height, floored and free of lava and deep water.</summary>
+		private bool DashLaneClear(int dir)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			for (int i = 1; i <= DashLaneTiles; i++)
+			{
+				int x = feet.X + dir * i;
+				if (TileNav.IsSolid(x, feet.Y) || TileNav.IsSolid(x, feet.Y - 1) || TileNav.IsSolid(x, feet.Y - 2)) return false;
+				if (!TileNav.IsFloor(x, feet.Y + 1) || TileNav.HasLava(x, feet.Y) || TileNav.HasLava(x, feet.Y + 1) || TileNav.IsDeepWater(x, feet.Y - 1)) return false;
+				if (TileNav.IsClosedDoor(Framing.GetTileSafely(x, feet.Y))) return false;
+			}
+			return true;
 		}
 
 		/// <summary>Room to sidestep a couple of tiles: no wall, no lava, floor under every column.</summary>

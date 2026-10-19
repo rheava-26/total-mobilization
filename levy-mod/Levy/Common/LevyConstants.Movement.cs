@@ -194,6 +194,18 @@ namespace Levy.Common
 			/// <summary>Minimum horizontal component of the lane's normal for a sidestep to leave the lane; flatter charges are hopped instead.</summary>
 			public const float DodgeNpcMinLaneX = 0.5f;
 
+			// ---- dashes (Shield of Cthulhu, Tabi / Master Ninja Gear, Crystal Assassin: Player.dashType > 0) ----
+			// A dash only ever speeds up a walk the soldier is already making along a flat, safe lane; it never picks a new destination.
+			public const float DashSpeedPx = 8.5f;
+			public const int DashBurstTicks = 9;
+			public const int DashCooldownTicks = 60 * 6, DashCooldownJitterTicks = 60 * 3;
+			/// <summary>The goal (or next waypoint) must be at least this far across to be worth a dash, and no farther than the max.</summary>
+			public const int DashMinGoalTiles = 9, DashMaxGoalTiles = 45;
+			/// <summary>The goal must be within this many tiles of level.</summary>
+			public const int DashMaxRiseTiles = 1;
+			/// <summary>Columns ahead that must be flat, open, floored and lava-free.</summary>
+			public const int DashLaneTiles = 7;
+
 			// ---- bodies ----
 			public const float PlayerNudgePx = 0.5f;
 			public const float StepSpeed = 1f;

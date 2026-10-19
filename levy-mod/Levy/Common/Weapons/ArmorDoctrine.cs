@@ -31,7 +31,7 @@ namespace Levy.Common.Weapons
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _scratch = null; _baseline = null; _broken = false; }
+		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -94,6 +94,72 @@ namespace Levy.Common.Weapons
 				_accCache[acc.type] = fit;
 			}
 			return Math.Max(0f, fit[ci]);
+		}
+
+		// Summon/sentry lean of accessories. A sentry-capacity point is the strongest signal; minion slots and summon-ONLY damage (damage the three martial classes do not share) add the rest.
+		private const float LeanTurretWeight = 1.0f, LeanMinionWeight = 0.5f, LeanSummonDamageWeight = 1.0f;
+		/// <summary>Combined lean at or above which a soldier is treated as a sentry/summon kit: one sentry-capacity accessory, or e.g. two minion-slot accessories.</summary>
+		public const float SentryLeanThreshold = 0.9f;
+		private static readonly Dictionary<int, float> _leanCache = new();
+		private static float[] _leanBaseline; // maxTurrets, maxMinions, melee/ranged/magic/summon damage on a bare player
+
+		/// <summary>
+		/// How strongly the worn accessories point toward summoning and sentries: per accessory, the extra sentry slots (maxTurrets), extra minion slots and
+		/// summon-only damage fraction it adds on a scratch Player, summed and weighted. 0 when none, the pipeline is off, or the read fails. Cached per item type.
+		/// </summary>
+		public static float SentryLean(Item[] accessories)
+		{
+			if (accessories == null || _broken) return 0f;
+			float sum = 0f;
+			for (int i = 0; i < accessories.Length; i++) sum += AccessoryLean(accessories[i]);
+			return sum;
+		}
+
+		/// <summary>True when <see cref="SentryLean"/> reaches <see cref="SentryLeanThreshold"/>.</summary>
+		public static bool HasSentryLean(Item[] accessories) => SentryLean(accessories) >= SentryLeanThreshold;
+
+		private static float AccessoryLean(Item acc)
+		{
+			if (acc == null || acc.IsAir) return 0f;
+			if (_leanCache.TryGetValue(acc.type, out float v)) return v;
+			v = 0f;
+			try {
+				if (LevyConfig.Get.UseVanillaStatPipeline) {
+					EnsureScratch();
+					_leanBaseline ??= RunLean(0);
+					var m = RunLean(acc.type);
+					float turrets = Math.Max(0f, m[0] - _leanBaseline[0]);
+					float minions = Math.Max(0f, m[1] - _leanBaseline[1]);
+					// Generic all-damage gear lifts every class equally: only the excess over the weakest martial class is summoner-specific.
+					float melee = m[2] - _leanBaseline[2], ranged = m[3] - _leanBaseline[3], magic = m[4] - _leanBaseline[4], summon = m[5] - _leanBaseline[5];
+					float summonOnly = Math.Max(0f, summon - Math.Min(melee, Math.Min(ranged, magic)));
+					v = turrets * LeanTurretWeight + minions * LeanMinionWeight + summonOnly * LeanSummonDamageWeight;
+				}
+			}
+			catch (Exception) { v = 0f; }
+			_leanCache[acc.type] = v;
+			return v;
+		}
+
+		private static float[] RunLean(int accessoryType)
+		{
+			var p = _scratch;
+			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+			for (int i = 0; i < p.dye.Length; i++) p.dye[i] = new Item();
+			if (accessoryType != 0) p.armor[3].SetDefaults(accessoryType);
+			p.inventory[0] = new Item();
+			p.selectedItem = 0;
+			p.ResetEffects();
+			p.UpdateEquips(SoldierNPC.DummySlot);
+			p.UpdateArmorSets(SoldierNPC.DummySlot);
+			var r = new float[6];
+			r[0] = p.maxTurrets; r[1] = p.maxMinions;
+			for (int i = 0; i < 4; i++) {
+				var d = p.GetDamage(Classes[i]);
+				r[2 + i] = (d.Additive - 1f) + (d.Multiplicative - 1f);
+			}
+			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item(); // leave the scratch player clean
+			return r;
 		}
 
 		private static int TypeOf(Item it) => it == null || it.IsAir ? 0 : it.type;

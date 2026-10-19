@@ -214,6 +214,7 @@ namespace Levy.Content.NPCs
 					Defense = Dummy.statDefense;
 					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed);
 					Abilities = Common.Movement.MovementAbilities.FromDummy(Dummy);
+					Aggro = Dummy.aggro; // taunt/stealth gear (Flesh Knuckles +400, Putrid Scent -400, etc.) — EnemyTargeting weighs this exactly like a player's aggro
 					ok = true;
 				}
 				catch (Exception e)

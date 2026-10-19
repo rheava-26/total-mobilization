@@ -118,7 +118,10 @@ namespace Levy.Common.Weapons
 			// (the blast damage lives on its projectile) and every one of them is a consumable.
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
 			if (item.damage <= 0) return WeaponFamily.Unsupported;
-			if (item.pick > 0 || item.axe > 0 || item.hammer > 0) return WeaponFamily.Unsupported;
+			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
+			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
+			if (item.pick > 0) return WeaponFamily.Unsupported;
+			if ((item.axe > 0 || item.hammer > 0) && !IsPlainMeleeSwingTool(item)) return WeaponFamily.Unsupported;
 			if (item.consumable) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 			// A modded weapon that counts as none of the five combat classes runs on a custom resource (Mechanica's MechanicDamage power weapons): not issued.
@@ -187,7 +190,8 @@ namespace Levy.Common.Weapons
 				else if (IsSet(ItemID.Sets.Spears, item.type)) melee = WeaponFamily.Spear;
 				else if (item.useStyle == ItemUseStyleID.Rapier) melee = WeaponFamily.Shortsword;
 				else if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) melee = WeaponFamily.Shortsword;
-				else if (item.useStyle == ItemUseStyleID.Swing && !item.noMelee) melee = WeaponFamily.Broadsword;
+				// Zenith (noMelee, its swords orbit the body): the swing hitbox is the melee damage, so it fights at blade reach like any broadsword (see MiscProjSwap for the sword anchor).
+				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith)) melee = WeaponFamily.Broadsword;
 				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
 			}
 
@@ -305,6 +309,8 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static void ApplyProjectileMelee(Item src, WeaponProfile p)
 		{
+			// Zenith's swords swirl round the soldier (not a flown beam): it stays a pure blade-reach fighter.
+			if (src.type == ItemID.Zenith) return;
 			bool table = SwordBeams.HasBeam(src.type);
 			int beam = table ? SwordBeams.BeamProjectile(src.type) : src.shoot;
 			if (beam <= 0) return;
@@ -381,8 +387,12 @@ namespace Levy.Common.Weapons
 			return sample != null && (sample.aiStyle == ProjAIStyleID.NightsEdge || sample.aiStyle == ProjAIStyleID.TrueNightsEdge);
 		}
 
-		/// <summary>True for projectiles that live attached to their owner's hands: the held-weapon style (Laser Machinegun, Vortex Beater, Phantasm, Last Prism's holder) and the thick-laser beam style (Last Prism ray, Charged Blaster beam).</summary>
-		public static bool IsHeldOwnerProjectile(Projectile sample) => sample != null && (sample.aiStyle == ProjAIStyleID.HeldProjectile || sample.aiStyle == ProjAIStyleID.ThickLaser);
+		/// <summary>True for projectiles that live attached to their owner's hands: the held-weapon style (Laser Machinegun, Vortex Beater, Phantasm, Last Prism's holder) the thick-laser beam style (Last Prism ray, Charged Blaster beam) and the drill / chainsaw style (aiStyle 20, reads owner.channel and MountedCenter).</summary>
+		public static bool IsHeldOwnerProjectile(Projectile sample) => sample != null
+			&& (sample.aiStyle == ProjAIStyleID.HeldProjectile || sample.aiStyle == ProjAIStyleID.ThickLaser || sample.aiStyle == ProjAIStyleID.Drill);
+
+		/// <summary>An axe or hammer that is just a melee blade: melee class, swung (useStyle Swing) and launching no projectile (shoot == 0), so nothing owner-anchored can come out of it.</summary>
+		private static bool IsPlainMeleeSwingTool(Item item) => item.CountsAsClass(DamageClass.Melee) && item.useStyle == ItemUseStyleID.Swing && item.shoot == 0;
 
 		private static bool CountsAsAnyCombatClass(Item item) =>
 			item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)

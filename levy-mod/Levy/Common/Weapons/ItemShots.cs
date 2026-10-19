@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Graphics;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Content.NPCs;
@@ -30,6 +31,8 @@ namespace Levy.Common.Weapons
 				case ItemID.NimbusRod:
 					// The cloud flies to the point in ai[0..1] and rains there: vanilla stores the cursor, the soldier's target stands in.
 					return WeaponUse.Spawn(s, pos, vel, type, dmg, kb, cls, target.Center.X, target.Center.Y) != null;
+				case ItemID.ClingerStaff: return ClingerStaff(s, item, target, pos, vel, type, dmg, kb, cls);
+				case ItemID.Zenith: return Zenith(s, item, target, type, dmg, kb, cls);
 				case ItemID.IceRod:
 					// The ice block flies to the tile in ai[0..1] (vanilla: the cursor tile).
 					return WeaponUse.Spawn(s, pos, vel, type, dmg, kb, cls, (int)(target.Center.X / 16f), (int)(target.Center.Y / 16f)) != null;
@@ -140,6 +143,60 @@ namespace Levy.Common.Weapons
 			v.Normalize();
 			v *= len;
 			return WeaponUse.Spawn(s, pos, v, type, dmg, kb, cls, pull.X, pull.Y) != null;
+		}
+
+		/// <summary>
+		/// Clinger Staff (Player.ItemCheck_Shoot item 3014): a Cursed Flame wall. The shot marches from the muzzle toward the target until the line is blocked or the target is reached, then
+		/// scans the tile column there: ai[0] = Y of the wall's top, ai[1] = its height (at most 15 tiles), on the tile column. No ground within 30 tiles below means no wall (vanilla spawns nothing).
+		/// </summary>
+		private static bool ClingerStaff(SoldierNPC s, Item item, NPC target, Vector2 pos, Vector2 vel, int type, int dmg, float kb, DamageClass cls)
+		{
+			Vector2 aim = target.Center;
+			Vector2 step = vel.LengthSquared() > 0.0001f ? vel : (aim - pos).SafeNormalize(Vector2.UnitX) * Math.Max(1f, item.shootSpeed);
+			NPC body = s.NPC;
+			for (int guard = 0; guard < LevyConstants.ClingerMarchMaxSteps && Collision.CanHitLine(body.position, body.width, body.height, pos, 1, 1); guard++)
+			{
+				pos += step;
+				if ((pos - aim).Length() < LevyConstants.ClingerArrivePx + Math.Abs(step.X) + Math.Abs(step.Y)) { pos = aim; break; }
+			}
+			int col = Math.Clamp((int)(pos.X / 16f), 1, Main.maxTilesX - 2);
+			int row0 = Math.Clamp((int)(pos.Y / 16f), 11, Main.maxTilesY - 12);
+			int row = row0;
+			while (row < Main.maxTilesY - 10 && row - row0 < LevyConstants.ClingerScanTiles && !SolidOrPlatform(col, row)) row++;
+			if (!SolidOrPlatform(col, row)) return true; // nothing to stand a wall on: vanilla spawns nothing and still spends the cast
+			float floorY = row * 16;
+			row = row0;
+			while (row > 10 && row0 - row < LevyConstants.ClingerScanTiles && !WorldGen.SolidTile(col, row)) row--;
+			float topY = row * 16 + 16;
+			float height = Math.Min(floorY - topY, 16 * LevyConstants.ClingerMaxWallTiles);
+			topY = floorY - height;
+			Vector2 at = new Vector2((int)(pos.X / 16f) * 16, pos.Y);
+			return WeaponUse.Spawn(s, at, Vector2.Zero, type, dmg, kb, cls, topY, height) != null;
+		}
+
+		private static bool SolidOrPlatform(int x, int y) => WorldGen.SolidTile(x, y) || TileID.Sets.Platforms[Main.tile[x, y].TileType];
+
+		/// <summary>
+		/// Zenith (Player.ItemCheck_Shoot item 4956): per swing useAnimation / useTime swords (three). Each launch velocity is half the offset from the body to the target (the swirl's radius), ai[0] a
+		/// random arc width, ai[1] the sword-profile index (the first is the Zenith itself, the rest random; Graphics.FinalFractalHelper). The last sword is scattered. The swords' AI is anchored to the
+		/// soldier by <see cref="MiscProjSwap"/>.
+		/// </summary>
+		private static bool Zenith(SoldierNPC s, Item item, NPC target, int type, int dmg, float kb, DamageClass cls)
+		{
+			int count = Math.Clamp(Math.Max(1, item.useAnimation) / Math.Max(1, item.useTime), 1, LevyConstants.ZenithMaxShotsPerSwing);
+			Vector2 origin = s.NPC.Center;
+			int spawned = 0;
+			for (int k = 0; k < count; k++)
+			{
+				Vector2 offset = target.Center - origin;
+				if (k == count - 1 && count > 1) offset += Main.rand.NextVector2Circular(LevyConstants.ZenithScatterPx, LevyConstants.ZenithScatterPx);
+				if (offset.LengthSquared() < 1f) offset = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
+				if (offset.Length() > LevyConstants.ZenithMaxAimPx) offset = Vector2.Normalize(offset) * LevyConstants.ZenithMaxAimPx;
+				int profile = k == 0 ? ItemID.Zenith : FinalFractalHelper.GetRandomProfileIndex();
+				float arc = Main.rand.Next(-LevyConstants.ZenithArcRoll, LevyConstants.ZenithArcRoll + 1);
+				if (WeaponUse.Spawn(s, origin, offset / 2f, type, dmg, kb, cls, arc, profile) != null) spawned++;
+			}
+			return spawned > 0;
 		}
 
 		/// <summary>The nearest enemy within <paramref name="maxDist"/> of <paramref name="from"/> that a player's homing weapons could chase (Player.GetZenithTarget).</summary>

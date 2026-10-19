@@ -641,7 +641,7 @@ namespace Levy.Common.Systems
 				HomeBarracksId = b.ID,
 				HomePos = b.Position,
 				CommanderName = rt.MobilizerName ?? "",
-				Order = SoldierOrder.Patrol,
+				Order = SoldierOrder.SearchDestroy,
 				PatrolA = new Point16(Math.Clamp(b.Position.X - LevyConstants.SettlementRadiusX / 2, 1, Main.maxTilesX - 2), py),
 				PatrolB = new Point16(Math.Clamp(b.Position.X + LevyConstants.SettlementRadiusX / 2, 1, Main.maxTilesX - 2), py),
 			};

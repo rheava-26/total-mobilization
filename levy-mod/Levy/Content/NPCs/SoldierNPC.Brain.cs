@@ -136,7 +136,7 @@ namespace Levy.Content.NPCs
 			_lastHoldFire = Record.HoldFire;
 			if (IsMilitia)
 			{
-				State = SoldierState.Patrol;
+				State = SoldierState.SearchDestroy;
 				DialogueSystem.Bark(this, DialogueTrigger.MUSTER, MakeContext());
 			}
 			else
@@ -170,8 +170,8 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Shaken || State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead) return;
 			if (IsMilitia)
 			{
-				// Militia only ever stand down; every other order keeps them on their settlement patrol.
-				SetState(order == SoldierOrder.ReturnToBarracks ? SoldierState.ReturnHome : SoldierState.Patrol);
+				// Militia only ever stand down; every other order keeps them hunting around their settlement.
+				SetState(order == SoldierOrder.ReturnToBarracks ? SoldierState.ReturnHome : SoldierState.SearchDestroy);
 				_lastSeenState = State;
 				return;
 			}
@@ -361,10 +361,10 @@ namespace Levy.Content.NPCs
 			if (IsMilitia)
 			{
 				// Stand-down is signalled by the settlement writing State = ReturnHome directly (and Mobilized = false); honour
-				// both so a body on its way home is never turned back onto patrol. Re-mobilizing writes Idle, which lands on Patrol.
+				// both so a body on its way home is never turned back out to hunt. Re-mobilizing writes Idle, which lands on SearchDestroy.
 				var home = Home;
 				bool standingDown = State == SoldierState.ReturnHome || Record.Order == SoldierOrder.ReturnToBarracks || home == null || !home.Mobilized;
-				return standingDown ? SoldierState.ReturnHome : SoldierState.Patrol;
+				return standingDown ? SoldierState.ReturnHome : SoldierState.SearchDestroy;
 			}
 			switch (Record.Order)
 			{
@@ -561,7 +561,7 @@ namespace Levy.Content.NPCs
 		private bool WithinChaseBounds(NPC target, float rangeTiles)
 		{
 			if (HoldPosition && !LevyUtil.WithinTiles(Record.HoldPos, target.Center, LevyConstants.HoldChaseLimit + rangeTiles)) return false;
-			if ((Record.Order == SoldierOrder.Patrol || IsMilitia) && TryNearestPatrolPoint(out var post)
+			if ((Record.Order == SoldierOrder.Patrol || (IsMilitia && !Roaming)) && TryNearestPatrolPoint(out var post)
 				&& !LevyUtil.WithinTiles(post, target.Center, LevyConstants.PostChaseLimit + rangeTiles)) return false;
 			if (IsMilitia)
 			{
@@ -1318,7 +1318,7 @@ namespace Levy.Content.NPCs
 		private void ApplyChaseClamp(ref Vector2 goal)
 		{
 			if (HoldPosition) ClampToCircle(ref goal, Record.HoldPos, LevyConstants.HoldChaseLimit);
-			if ((Record.Order == SoldierOrder.Patrol || IsMilitia) && TryNearestPatrolPoint(out var post)) ClampToCircle(ref goal, post, LevyConstants.PostChaseLimit);
+			if ((Record.Order == SoldierOrder.Patrol || (IsMilitia && !Roaming)) && TryNearestPatrolPoint(out var post)) ClampToCircle(ref goal, post, LevyConstants.PostChaseLimit);
 			if (IsMilitia)
 			{
 				var home = Home;
@@ -1490,11 +1490,14 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Shaken) behave = os; // the Fear agent's label stays; behave by the order underneath it
 			else { if (State != os) SetState(os); behave = State; }
 
-			bool mayHaul = State != SoldierState.Shaken && !Shaken && !Record.HoldFire && !HoldPosition && !Roaming;
+			bool mayHaul = State != SoldierState.Shaken && !Shaken && !Record.HoldFire && !HoldPosition && (!Roaming || IsMilitia);
 			switch (behave)
 			{
 				case SoldierState.SearchDestroy:
-				case SoldierState.FreeRein: ThinkSearch(now); break;
+				case SoldierState.FreeRein:
+					if (mayHaul && IsMilitia && (Home?.Mobilized ?? false) && TryStartHaul(now, nearestHostileTiles)) return;
+					ThinkSearch(now);
+					break;
 				case SoldierState.ReturnHome: ThinkReturnHome(now); break;
 				case SoldierState.Follow:
 					if (mayHaul && TryStartHaul(now, nearestHostileTiles)) return;
@@ -1827,8 +1830,10 @@ namespace Levy.Content.NPCs
 		// ---- 11. Search & Destroy / Free Rein ----
 		private bool FreeReining => IsRegular && Record.Order == SoldierOrder.FreeRein;
 		/// <summary>On a roaming order (Search &amp; Destroy or Free Rein): bounded by <see cref="RoamLeashTiles"/> around <see cref="RoamAnchor"/>.</summary>
-		private bool Roaming => IsRegular && (Record.Order == SoldierOrder.SearchDestroy || Record.Order == SoldierOrder.FreeRein);
-		private int RoamLeashTiles => FreeReining ? LevyConstants.FreeReinLeashTiles : LevyConstants.SearchLeashTiles;
+		/// <remarks>Militia roam only while mustered out: a body walking home on stand-down (State ReturnHome) is not roaming.</remarks>
+		private bool Roaming => IsRegular ? (Record.Order == SoldierOrder.SearchDestroy || Record.Order == SoldierOrder.FreeRein)
+			: IsMilitia && Record.Order == SoldierOrder.SearchDestroy && State != SoldierState.ReturnHome;
+		private int RoamLeashTiles => FreeReining ? LevyConstants.FreeReinLeashTiles : IsMilitia ? LevyConstants.MilitiaLeashTiles : LevyConstants.SearchLeashTiles;
 		private Vector2 RoamAnchor() => FreeReining ? FreeReinBase() : SearchAnchor();
 
 		/// <summary>
@@ -1878,8 +1883,9 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private Vector2 SearchAnchor()
 		{
-			if (_searchAnchorSet) return _searchAnchor;
 			var home = Home;
+			if (IsMilitia) return home != null ? home.MusterPoint : NPC.Center; // town defenders always sweep around their own settlement
+			if (_searchAnchorSet) return _searchAnchor;
 			_searchAnchor = home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.SearchLeashTiles) ? home.MusterPoint : NPC.Center;
 			_searchAnchorSet = true;
 			return _searchAnchor;

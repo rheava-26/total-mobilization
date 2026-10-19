@@ -199,6 +199,8 @@ namespace Levy.Common
 		// ---------- Combat orders: Search & Destroy ----------
 		/// <summary>A searching soldier never strays farther than this from its search anchor (the settlement muster point, or where the order found it).</summary>
 		public const int SearchLeashTiles = 120;
+		/// <summary>Mustered militia hunt within this many tiles of their barracks muster point; two thirds of the settlement radius, so they cover the town and its approaches but never trek away from it.</summary>
+		public const int MilitiaLeashTiles = SettlementRadiusX * 2 / 3;
 		/// <summary>One sweep leg: the next waypoint lies this far outward along the current heading (tiles).</summary>
 		public const int SearchStepTiles = 36;
 		/// <summary>A sweep leg shorter than this means the leash edge (or a dead end) is reached: turn round.</summary>

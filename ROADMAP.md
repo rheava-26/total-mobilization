@@ -27,12 +27,12 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 **SCOPE for 1.0 = the 4 BASE CLASSES (melee/ranged/magic/summon) all work.** Secondary classes (Calamity ROGUE custom resource; Thorium BARD/HEALER custom resources) = "a different beast" (designer's words) — deferred; if trivial, add later; would be separate submods (Thorium-compat, Calamity-compat) and need the uploaded mod files.
 
-**WAVE 1 DISPATCHED (parallel, non-overlapping files; Sonnet not Haiku — coding quality matters for 1.0):**
-- Yoyos + Flails → Levy-owned SoldierYoyo/SoldierFlail (WeaponClassifier, WeaponUse, new projectiles).
-- Verticality + flight + dashes, LINE-SAFE (Movement, Brain).
-- Aggro de-aggro fix — find why flyers (Wyvern) slip the redirect at −400 aggro; extend coverage safely (EnemyTargeting).
+**WAVE 1 ✅ SHIPPED v0.9.16 (all four, integrated via 3-way merges, packs+boots clean):**
+- ✅ Yoyos + Flails → Levy-owned SoldierYoyo/SoldierFlail (whole families work, vanilla+modded).
+- ✅ Verticality + flight + dashes, LINE-SAFE — gear-assisted perches (winged soldiers take higher ground via AirPerchFeasible→aerial system), TryAerialPursuit for airborne targets (needs wings/rockets), TickDash (dummy.dashType). Gated: ~55% climb appetite, ≤25% mid-climb at once, kitless never flies.
+- ✅ De-aggro fix — ROOT CAUSE was STICKY TARGETS (worm/etc. AIs only re-search on target loss, so a player-locked enemy never re-evaluated). Fix: periodic ~1/s re-poll of allowlisted non-soldier-locked enemies through the existing Compete path. Also added Unicorn/Snowman/Tortoise aiStyles, excluded Tumbleweed. Flying aiStyle 5 (Hornets/Meteor Head/etc.) STILL excluded (GetTargetData rejects slot 255) — documented; possible future: swap into slot 254.
 - Melee sidearm — melee primaries take a summon sidearm, not a melee blade (ArmoryTE.IssueGear).
-**WAVE 2 (fire as Wave 1 merges):** Guard/taunt stance, sentries (equip + simple placement + re-placement), active whips + visual, bulk reforge-to-threshold. (Parent merges each serially + re-boots to verify, since parallel agents can't all boot the shared tML at once — compile is their hard gate.)
+**WAVE 2 (next):** Guard/taunt stance, sentries (equip + simple placement + re-placement), active whips + visual, bulk reforge-to-threshold. (Parent merges each serially + re-boots to verify, since parallel agents can't all boot the shared tML at once — compile is their hard gate.)
 
 ---
 

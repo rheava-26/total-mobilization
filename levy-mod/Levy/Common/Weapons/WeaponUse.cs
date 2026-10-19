@@ -273,6 +273,9 @@ namespace Levy.Common.Weapons
 				case ItemID.BloodRainBow: proj = ProjectileID.BloodArrow; break;
 				case ItemID.SkeletonBow: if (proj == ProjectileID.BoneArrowFromMerchant) proj = ProjectileID.BoneArrow; break;
 				case ItemID.BeesKnees: if (proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.BeeArrow; break;
+				case ItemID.Marrow: proj = ProjectileID.BoneArrow; break;
+				case ItemID.IceBow: proj = ProjectileID.FrostArrow; break;
+				case ItemID.PulseBow: proj = ProjectileID.PulseBolt; break;
 			}
 			if (s?.Dummy != null && s.Dummy.hasMoltenQuiver && proj == ProjectileID.WoodenArrowFriendly) proj = ProjectileID.FireArrow;
 			return proj;
@@ -466,6 +469,7 @@ namespace Levy.Common.Weapons
 			{
 				float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 				int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+				if (item.type == ItemID.IceSickle) damage = Math.Max(1, (int)(damage * 0.67)); // Player.ItemCheck_Shoot: totalDamage * 0.67
 				Vector2 vel = Aiming.SolveIntercept(s.NPC.Center, speed, target.Center, target.velocity, WeaponClassifier.ProjectileHasGravity(item.shoot), LevyConstants.ArrowGravity, LevyConstants.ArrowGravityDelayTicks);
 				DamageClass beamType = item.DamageType ?? DamageClass.Melee;
 				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack))

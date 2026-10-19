@@ -158,6 +158,18 @@ namespace Levy.Common.Weapons
 			catch (Exception) { }
 		}
 
+		/// <summary>Flail ball hit debuffs vanilla keys on the projectile type (Projectile.StatusNPC): Sunfury burns, Flaming Mace burns.</summary>
+		public static void ApplyFlailStatus(int shootType, NPC target)
+		{
+			if (target == null || !target.active) return;
+			try
+			{
+				if (shootType == ProjectileID.Sunfury) { if (Main.rand.NextBool(2)) target.AddBuff(BuffID.OnFire, 300); }
+				else if (shootType == ProjectileID.FlamingMace) { if (Main.rand.NextBool(6)) target.AddBuff(BuffID.OnFire, 60 * Main.rand.Next(2, 4)); }
+			}
+			catch (Exception) { }
+		}
+
 		/// <summary>The Horseman's Blade: a homing Flaming Jack (projectile 321, ai0 = the struck enemy) flies in from off to the side at 8 px/tick for the hit's damage (Player.HorsemansBlade_SpawnPumpkin).</summary>
 		private static void SpawnHorsemanPumpkin(SoldierNPC s, Item item, NPC target, int damage, DamageClass cls)
 		{

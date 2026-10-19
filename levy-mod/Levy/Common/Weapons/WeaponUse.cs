@@ -492,21 +492,27 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
+		/// <summary>Lash period in ticks: close to the weapon's useTime (a little brisker), clamped. The lash lives for the whole period, so the next one follows immediately.</summary>
+		public static int WhipPeriod(Item item) => Math.Clamp((int)Math.Round(Math.Max(1, item.useTime) * LevyConstants.WhipCadenceMult), LevyConstants.WhipCadenceMinTicks, LevyConstants.WhipCadenceMaxTicks);
+
 		/// <summary>Spawns a lash toward the target unless this soldier's lash is still out. Reach grows with the dummy's whip range bonus.</summary>
 		private static bool StartWhip(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			int type = ModContent.ProjectileType<SoldierWhip>();
-			if (s.CountAnchored<SoldierWhip>() > 0) { s.AttackCooldown = 4; return false; }
+			if (s.CountAnchored<SoldierWhip>() > 0) { s.AttackCooldown = 1; return false; } // the old lash is on its last tick: lash again the moment it clears
 			Vector2 dir = target.Center - s.NPC.Center;
 			if (dir == Vector2.Zero) dir = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
 			dir = Vector2.Normalize(dir);
-			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
-			int life = Math.Max(14, item.useAnimation);
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier * LevyConstants.WhipDamageMult));
+			int period = WhipPeriod(item);
+			int life = Math.Max(LevyConstants.WhipCadenceMinTicks - 1, period - 1);
 			float mult = s.Dummy != null && s.Dummy.whipRangeMultiplier > 0.5f ? s.Dummy.whipRangeMultiplier : 1f;
 			Projectile p = Spawn(s, s.NPC.Center, dir, type, damage, item.knockBack, item.DamageType ?? DamageClass.SummonMeleeSpeed, s.NPC.whoAmI, item.type, SoldierWhip.PackAi2(life, mult));
-			if (p == null) { s.AttackCooldown = Math.Max(1, item.useTime); return false; }
+			if (p == null) { s.AttackCooldown = Math.Max(1, period); return false; }
 			p.timeLeft = Math.Max(p.timeLeft, life + 2);
 			FinishUse(s, item, dir);
+			s.AttackCooldown = period; // brisk: not the full useTime
+			s.ItemAnimation = s.ItemAnimationMax = period;
 			return true;
 		}
 

@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -96,11 +97,28 @@ namespace Levy.Content.Projectiles
 			Projectile.direction = Projectile.spriteDirection = dir.X < 0f ? -1 : 1;
 			Projectile.Center = Hand(s) + dir * ReachPx() * Progress(); // the hit-box sits at the tip
 			Projectile.rotation = dir.ToRotation();
+
+			// The crack: once, as the tip reaches full extension.
+			if (!Main.dedServ && (int)Projectile.localAI[0] == Math.Max(2, (int)Math.Round(life * LevyConstants.WhipExtendFraction)))
+			{
+				SoundEngine.PlaySound(SoundID.Item153, Projectile.Center);
+				for (int i = 0; i < 4; i++)
+				{
+					Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.SilverCoin, dir.RotatedByRandom(0.9f) * Main.rand.NextFloat(1.5f, 3.5f), 0, default, 0.9f);
+					d.noGravity = true;
+				}
+			}
 		}
 
 		public override bool ShouldUpdatePosition() => false;
 
-		/// <summary>The lash as a polyline from the hand to the tip: a straight line bowed by a travelling wave that settles as the whip extends.</summary>
+		/// <summary>True while the lash is out far enough to hurt (not during the first wind-up ticks).</summary>
+		private bool Live() => Projectile.localAI[0] >= 3f && Progress() >= 0.3f;
+
+		/// <summary>
+		/// The lash as a polyline from the hand to the tip. Wind-up: the line arcs overhead and unrolls (tip trailing); at full extension it snaps straight
+		/// (the crack); on the retract it sags a little below the aim line as it recoils.
+		/// </summary>
 		private int FillPoints(SoldierNPC s, Vector2[] pts)
 		{
 			Vector2 hand = Hand(s);
@@ -109,14 +127,18 @@ namespace Levy.Content.Projectiles
 			Vector2 perp = new Vector2(-dir.Y, dir.X);
 			float len = Vector2.Distance(hand, tip);
 			float t = MathHelper.Clamp(Projectile.localAI[0] / Math.Max(1, Life), 0f, 1f);
-			float amp = len * 0.22f * (float)Math.Sin(MathHelper.Clamp(t / LevyConstants.WhipExtendFraction, 0f, 1f) * MathHelper.Pi) + len * 0.05f;
-			float side = Projectile.spriteDirection;
+			float ext = LevyConstants.WhipExtendFraction;
+			float bend;
+			if (t < ext) { float e = t / ext; bend = 0.34f * (float)Math.Pow(1f - e, 1.6f); }
+			else { float r = (t - ext) / Math.Max(0.01f, 1f - ext); bend = -0.14f * (float)Math.Sin(r * MathHelper.Pi); }
+			float up = -Projectile.spriteDirection; // perp * up points to screen-up for either facing
 			int n = pts.Length;
 			for (int i = 0; i < n; i++)
 			{
 				float f = i / (float)(n - 1);
-				float wave = (float)Math.Sin(f * MathHelper.Pi) * amp * (1f - f * 0.5f) * side;
-				pts[i] = Vector2.Lerp(hand, tip, f) + perp * wave;
+				float arc = (float)Math.Sin(f * MathHelper.Pi) * (0.55f + 0.45f * f); // fixed at the hand, free at the tip
+				float tipFlick = f > 0.8f ? (f - 0.8f) * 5f * bend * len * 0.25f : 0f; // a small curl at the cracker
+				pts[i] = Vector2.Lerp(hand, tip, f) + perp * (up * (arc * bend * len + tipFlick));
 			}
 			return n;
 		}
@@ -124,11 +146,11 @@ namespace Levy.Content.Projectiles
 		public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
 		{
 			SoldierNPC s = Soldier;
-			if (s == null) return false;
-			if (Projectile.localAI[0] < 3f) return false;
+			if (s == null || !Live()) return false;
 			var pts = new Vector2[LevyConstants.WhipSegments];
 			int n = FillPoints(s, pts);
-			Vector2 pos = targetHitbox.Location.ToVector2(), size = targetHitbox.Size();
+			int pad = LevyConstants.WhipHitPadPx;
+			Vector2 pos = targetHitbox.Location.ToVector2() - new Vector2(pad), size = targetHitbox.Size() + new Vector2(pad * 2);
 			for (int i = 1; i < n; i++)
 				if (Collision.CheckAABBvLineCollision(pos, size, pts[i - 1], pts[i])) return true;
 			return false;
@@ -140,12 +162,50 @@ namespace Levy.Content.Projectiles
 			return null;
 		}
 
+		/// <summary>True when the outer fraction of the lash (the cracker end) is what meets the target.</summary>
+		private bool TipHit(NPC target)
+		{
+			SoldierNPC s = Soldier;
+			if (s == null) return false;
+			var pts = new Vector2[LevyConstants.WhipSegments];
+			int n = FillPoints(s, pts);
+			int pad = LevyConstants.WhipHitPadPx;
+			Vector2 pos = target.Hitbox.Location.ToVector2() - new Vector2(pad), size = target.Hitbox.Size() + new Vector2(pad * 2);
+			int first = Math.Max(1, (int)Math.Floor(n * (1f - LevyConstants.WhipTipFraction)));
+			for (int i = first; i < n; i++)
+				if (Collision.CheckAABBvLineCollision(pos, size, pts[i - 1], pts[i])) return true;
+			return false;
+		}
+
+		public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
+		{
+			// The cracker end hits like a vanilla whip tip: a guaranteed critical.
+			if (TipHit(target)) modifiers.SetCrit();
+		}
+
+		/// <summary>The NPC tag debuff vanilla gives an enemy lashed by this whip projectile (0 when it has none), so the commander's own minions benefit too.</summary>
+		private static int VanillaTagBuff(int projType) => projType switch
+		{
+			ProjectileID.BlandWhip => BuffID.BlandWhipEnemyDebuff,
+			ProjectileID.ThornWhip => BuffID.ThornWhipNPCDebuff,
+			ProjectileID.BoneWhip => BuffID.BoneWhipNPCDebuff,
+			ProjectileID.MaceWhip => BuffID.MaceWhipNPCDebuff,
+			ProjectileID.SwordWhip => BuffID.SwordWhipNPCDebuff,
+			ProjectileID.ScytheWhip => BuffID.ScytheWhipEnemyDebuff,
+			ProjectileID.CoolWhip => BuffID.CoolWhipNPCDebuff,
+			ProjectileID.FireWhip => BuffID.FlameWhipEnemyDebuff,
+			ProjectileID.RainbowWhip => BuffID.RainbowWhipNPCDebuff,
+			_ => 0
+		};
+
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
 		{
 			// Credit, boss-rule accounting, kill count and the KILL bark come from LootCreditGlobalProjectile.
+			// The tag is Levy's own (soldier minions deal bonus damage to it and chase it first); the item's vanilla tag buff rides along with it.
 			LevyNpcData.ApplyTag(target, SoldierIndex);
-			SoldierNPC s = Soldier;
-			if (s != null) s.LastMeleeHitTick = (int)Main.GameUpdateCount;
+			int buff = VanillaTagBuff(WhipProjType());
+			if (buff > 0) { try { target.AddBuff(buff, LevyConstants.TagDurationTicks); } catch (Exception) { } }
+			// (no step-back: a whip soldier holds its standoff and keeps lashing)
 		}
 
 		/// <summary>The whip projectile type the source item fires (its texture is the real 5-frame strip: handle, three segments, tip), or -1.</summary>
@@ -185,7 +245,8 @@ namespace Levy.Content.Projectiles
 			int frameH = frame.Height;
 			frame.Height -= 2;
 			int segLen = Math.Max(6, frameH - 2);
-			int segs = Math.Clamp((int)Math.Round(ReachPx() / segLen), 6, 30);
+			float curLen = Vector2.Distance(Hand(s), Projectile.Center);
+			int segs = Math.Clamp((int)Math.Ceiling(curLen / segLen), LevyConstants.WhipDrawMinSegs, LevyConstants.WhipDrawMaxSegs); // spacing stays near one sprite per joint however far the lash is out
 			var pts = new Vector2[segs + 1];
 			FillPoints(s, pts);
 

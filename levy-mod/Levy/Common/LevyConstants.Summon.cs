@@ -45,6 +45,15 @@ namespace Levy.Common
 		/// <summary>Fraction of the lash life spent extending, then holding, before retracting.</summary>
 		public const float WhipExtendFraction = 0.4f, WhipHoldFractionOfLife = 0.2f;
 		public const int WhipLocalHitCooldownTicks = 60;
+		/// <summary>Cadence: a lash repeats every (useTime x this) ticks, clamped; the lash lives for that whole period so a target in reach is lashed back-to-back.</summary>
+		public const float WhipCadenceMult = 0.75f;
+		public const int WhipCadenceMinTicks = 14, WhipCadenceMaxTicks = 40;
+		/// <summary>The lash is the summoner's active damage: every lash deals this multiple of the weapon damage, and the outer fraction of the lash (the tip) cracks for a guaranteed critical.</summary>
+		public const float WhipDamageMult = 1.35f, WhipTipFraction = 0.3f;
+		/// <summary>Target hit-boxes are widened by this many pixels per side for the lash line test, so a lash that visibly meets an enemy lands.</summary>
+		public const int WhipHitPadPx = 8;
+		/// <summary>Segment sprite spacing (px) when drawing the lash sheet, and the min/max segment counts.</summary>
+		public const int WhipDrawMinSegs = 3, WhipDrawMaxSegs = 40;
 		/// <summary>The tag a lash leaves on an enemy: how long it lasts (ticks) and the extra fraction of damage soldier minions deal to it.</summary>
 		public const int TagDurationTicks = 240;
 		public const float TagMinionDamageBonus = 0.5f;

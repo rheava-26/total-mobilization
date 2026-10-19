@@ -1290,9 +1290,20 @@ namespace Levy.Content.NPCs
 		private bool MeleeInContact(NPC target)
 		{
 			if (Weapon != null && Weapon.IsTethered) return LevyUtil.WithinTiles(NPC.Center, target.Center, MeleeHoldTiles());
-			if (LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.MeleeCloseCentreTiles)) return true;
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
-			return Aiming.TilesToHitbox(NPC.Center, seg) <= LevyConstants.MeleeContactTiles;
+			float tiles = Aiming.TilesToHitbox(NPC.Center, seg);
+			// A blade / spear / shortsword fights from the tip of its reach, not from inside the enemy: a long weapon holds at (reach - 1),
+			// a short one keeps a small gap outside its own body (the measure runs from the body centre).
+			if (Weapon != null && (Weapon.Family == WeaponFamily.Broadsword || Weapon.Family == WeaponFamily.Spear || Weapon.Family == WeaponFamily.Shortsword))
+			{
+				int reach = Weapon.MeleeReachTiles;
+				if (reach >= LevyConstants.MeleeLongReachTiles) return tiles <= Math.Max(LevyConstants.MeleeContactTiles, reach - 1);
+				float bodyHalfTiles = NPC.width * 0.5f / LevyConstants.TilePx;
+				if (tiles <= bodyHalfTiles + Math.Min(LevyConstants.MeleeContactTiles, LevyConstants.MeleeShortGapReachFrac * reach)) return true;
+				return LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.MeleeCloseCentreTiles);
+			}
+			if (LevyUtil.WithinTiles(NPC.Center, target.Center, LevyConstants.MeleeCloseCentreTiles)) return true;
+			return tiles <= LevyConstants.MeleeContactTiles;
 		}
 
 		private void MeleeGoal(NPC target, int now)

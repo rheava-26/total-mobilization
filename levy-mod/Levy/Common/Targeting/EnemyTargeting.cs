@@ -28,7 +28,12 @@ namespace Levy.Common.Targeting
 	///  * NATIVE (types with NPCID.Sets.UsesNewTargetting: Old One's Army fighters/flyers/dark mages, Goblin Shark, Queen Bee's bees):
 	///    npc.target = soldier.WhoAmIToTargettingIndex (whoAmI + 300); their AI reads GetTargetData(), which resolves NPC targets. Those AIs
 	///    search through NPCUtils.TargetClosestOldOnesInvasion / TargetClosestNonBees / TargetClosestCommon, so those are detoured too.
-	/// Flying (5, Eater of Souls, Hornets…) is GetTargetData-based but reads Main.player[target] unguarded, so neither mechanism is safe; it is excluded.
+	/// Flying (5, Eater of Souls, Hornets…) is GetTargetData-based but reads Main.player[target] unguarded, so neither mechanism is safe; it is excluded
+		/// (details beside LevyConstants.Targeting.SwapAiStyles; only Queen Bee's bees, which carry UsesNewTargetting, take the native route).
+		/// STICKY TARGETS: many swap-style AIs (Worms incl. the Wyvern, Piranhas, Jellyfish, Mimics, Spiders, Flying fish) only call TargetClosest when
+		/// target == 255 or the target is dead. An enemy whose first search was won by the player (every soldier was farther than player distance + |aggro|,
+		/// or none was alive yet) therefore kept that player forever. EnemyTargetingGlobalNPC.PreAI re-runs the search for every allowlisted enemy about once
+		/// a second (staggered by whoAmI) so a de-aggroed player sheds such enemies onto the army as soon as a soldier wins the comparison.
 	/// Bosses, ShouldBeCountedAsBoss types, realLife parts of bosses and known boss segments are never allowlisted (the boss rule owns them).
 	/// </summary>
 	public static class EnemyTargeting
@@ -39,6 +44,7 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _nativeStyles = new(LevyConstants.Targeting.NativeAiStyles);
 		private static readonly HashSet<int> _swapIncompatible = new(LevyConstants.Targeting.SwapIncompatibleAiStyles);
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
+		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 
 		// ---- the slot-255 swap ----
 		private static Player _backup;
@@ -81,7 +87,7 @@ namespace Levy.Common.Targeting
 			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return false;
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
-			if (_swapIncompatible.Contains(style)) return false;
+			if (_swapIncompatible.Contains(style) || _swapExcludedTypes.Contains(type)) return false;
 			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
 
@@ -206,6 +212,15 @@ namespace Levy.Common.Targeting
 			return Math.Abs(point.X - npc.position.X + npc.width / 2) + Math.Abs(point.Y - npc.position.Y + npc.height / 2);
 		}
 
+		/// <summary>True on this enemy's staggered once-a-second slot when it is allowlisted, steers itself (worm segments follow their head) and a soldier exists.</summary>
+		internal static bool ShouldPollForSoldier(NPC npc)
+		{
+			if (Bodies.Count == 0) return false;
+			if ((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)LevyConstants.Targeting.RetargetIntervalTicks != 0) return false;
+			if (npc.realLife >= 0 && npc.realLife != npc.whoAmI) return false;
+			return IsAllowlisted(npc);
+		}
+
 		/// <summary>Re-run the vanilla search this enemy uses (the detours decide soldier vs player again). faceTarget false: never turns the sprite.</summary>
 		internal static void Retarget(NPC npc)
 		{
@@ -292,7 +307,14 @@ namespace Levy.Common.Targeting
 		{
 			if (!EnemyTargeting.Enabled) return true;
 			LevyNpcData data = LevyNpcData.Of(npc);
-			if (data.SoldierTarget < 0) return true;
+			if (data.SoldierTarget < 0)
+			{
+				// Not locked on a soldier: give the army a chance once a second. Without this a Wyvern/worm/piranha/jellyfish whose first search
+				// went to the player never searches again (their AIs only re-search on target == 255 or a dead target).
+				if (!EnemyTargeting.ShouldPollForSoldier(npc)) return true;
+				EnemyTargeting.Retarget(npc);
+				if (data.SoldierTarget < 0) return true;
+			}
 
 			bool native = EnemyTargeting.UsesNativeTargeting(npc);
 			SoldierNPC body = EnemyTargeting.LiveBody(data.SoldierTarget);

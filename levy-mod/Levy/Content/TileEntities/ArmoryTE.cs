@@ -453,6 +453,13 @@ namespace Levy.Content.TileEntities
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableDeployer, WeaponClassifier.Score);
 		}
 
+		/// <summary>A sentry-kitted soldier's sidearm: a sentry (the sidearm slot first, then the best in the armory). Removes it. Null if the armory has none.</summary>
+		public virtual Item TakeSentrySidearm(SoldierRecord forSoldier)
+		{
+			if (IsIssuableSentry(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSentry, WeaponClassifier.Score);
+		}
+
 		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>
 		public virtual Item TakeArmor(SoldierRecord forSoldier, int part)
 		{
@@ -1011,14 +1018,25 @@ namespace Levy.Content.TileEntities
 			var primaryFam = g.HasWeapon ? WeaponClassifier.Classify(g.Weapon) : WeaponFamily.None;
 			bool primaryMelee = IsMeleeTypeFamily(primaryFam);
 			bool primarySummon = primaryFam == WeaponFamily.Summon; // the flock fights; the hand carries a whip
-			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm) { var s = primaryMelee ? TakeSummonSidearm(soldier) : primarySummon ? TakeSummonerSidearm(soldier) : TakeSidearm(soldier); if (s != null) { g.Sidearm = s; changed = true; } }
-
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i) || !IsAir(g.Accessories[i])) continue;
 				var a = TakeAccessory(soldier);
 				if (a == null) break;
 				g.Accessories[i] = a; changed = true;
+			}
+
+			// The sidearm is chosen after the accessories so the kit can steer it (accessory choice never reads the sidearm). Sentry-capacity / summoner
+			// accessories put a sentry in the hand whatever the primary is; then the usual pick for the primary's type.
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm)
+			{
+				bool sentryKit = ArmorDoctrine.HasSentryLean(g.Accessories);
+				var s = sentryKit ? TakeSentrySidearm(soldier) : null;
+				s ??= primaryMelee ? TakeSummonSidearm(soldier)
+					: primarySummon ? TakeSummonerSidearm(soldier)
+					: sentryKit ? (TakeSummonSidearm(soldier) ?? TakeSidearm(soldier)) // no sentry on hand: a summon staff before a blade
+					: TakeSidearm(soldier);
+				if (s != null) { g.Sidearm = s; changed = true; }
 			}
 
 			g.Ammo ??= new Item();

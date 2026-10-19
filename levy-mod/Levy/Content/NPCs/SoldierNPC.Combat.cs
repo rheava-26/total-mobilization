@@ -297,14 +297,12 @@ namespace Levy.Content.NPCs
 		/// <summary>Weapon crit chance through the dummy's stat pipeline, with the item's own crit plus the player base as a fallback.</summary>
 		private int CritChance(Item item)
 		{
-			if (Dummy != null && LevyConfigPipelineOk)
+			if (Dummy != null && PipelineOk)
 			{
 				try { Dummy.inventory[0] = item; return Math.Clamp(Dummy.GetWeaponCrit(item), 0, 100); } catch { }
 			}
 			return Math.Clamp(item.crit + LevyConstants.BaseCritChance, 0, 100);
 		}
-
-		private static bool LevyConfigPipelineOk => !_pipelineBroken && Common.Config.LevyConfig.Get.UseVanillaStatPipeline;
 
 		/// <summary>
 		/// Vanilla's swing rectangle (Player.ItemCheck_GetMeleeHitbox + ItemCheck_ApplyUseStyle for useStyle 1) on this body: the item frame

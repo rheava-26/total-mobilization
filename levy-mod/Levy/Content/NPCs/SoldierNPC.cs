@@ -79,8 +79,6 @@ namespace Levy.Content.NPCs
 		private bool _pipelineWarned;
 		/// <summary>Weapon item types whose GetWeaponDamage threw; they use the plain item damage while every other item keeps the pipeline.</summary>
 		private static readonly System.Collections.Generic.HashSet<int> _badDamageItems = new();
-		/// <summary>Always false: kept so SoldierNPC.Combat.cs (static LevyConfigPipelineOk) still compiles. The real latch is per soldier (<see cref="PipelineOk"/>); Combat's crit read has its own try/catch.</summary>
-		private static bool _pipelineBroken => false;
 		/// <summary>True when the vanilla stat pipeline is enabled and this soldier's latch is not holding it off.</summary>
 		public bool PipelineOk => LevyConfig.Get.UseVanillaStatPipeline && Main.GameUpdateCount >= _pipelineRetryAt;
 		/// <summary>Damage reduction (0..<see cref="LevyConstants.MaxEndurance"/>) read from the dummy's endurance stat (Endurance potion, accessories). Server only.</summary>

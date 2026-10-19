@@ -23,6 +23,16 @@ namespace Levy.Common
 		/// <summary>After an armory lookup finds nothing to drink, wait this long before looking again.</summary>
 		public const int PotionRetryTicks = 60;
 
+		// ---------- stat pipeline latch ----------
+		/// <summary>After a soldier's vanilla stat pipeline throws, that soldier uses the manual fallback this long before it tries the pipeline again (30 s).</summary>
+		public const int PipelineRetryTicks = 60 * 30;
+
+		// ---------- potion buffs (vanilla values, applied to the dummy Player because it never runs UpdateBuffs) ----------
+		public const int IronskinDefense = 8, RegenerationLifeRegen = 4;
+		public const float SwiftnessMoveSpeed = 0.25f, WrathDamage = 0.1f, RageCrit = 10f, EnduranceReduction = 0.1f, MagicPowerDamage = 0.2f;
+		/// <summary>Damage reduction from the dummy's endurance (Endurance potion, Worm Scarf, Brain of Confusion...) never exceeds this.</summary>
+		public const float MaxEndurance = 0.9f;
+
 		// ---------- contact damage ----------
 		/// <summary>
 		/// Broad-phase margin (pixels) around the summed half-sizes before NPC.GetMeleeCollisionData is consulted; the widest

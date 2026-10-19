@@ -26,12 +26,13 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, float[]> _accCache = new();
 		private static Player _scratch;
 		private static float[] _baseline;
+		private static float[] _accBaseline; // bare-player reading in the accessory (Generic-inclusive) measurement mode
 		private static bool _broken;
 		/// <summary>How many times the vanilla equip pass actually ran (cache misses); for diagnostics.</summary>
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _broken = false; }
+		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -86,8 +87,8 @@ namespace Levy.Common.Weapons
 				try {
 					if (LevyConfig.Get.UseVanillaStatPipeline) {
 						EnsureScratch();
-						_baseline ??= Measure(0, 0, 0, null);
-						fit = Measure(0, 0, 0, _baseline, acc.type);
+						_accBaseline ??= Measure(0, 0, 0, null, 0, true);
+						fit = Measure(0, 0, 0, _accBaseline, acc.type, true);
 					}
 				}
 				catch (Exception) { fit = new float[Classes.Length]; }
@@ -203,7 +204,11 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Per-class bonus after equipping the three pieces; <paramref name="baseline"/> (the bare-player reading) is subtracted so default crit cancels.</summary>
-		private static float[] Measure(int head, int body, int legs, float[] baseline, int accessory = 0)
+		/// <remarks>
+		/// <paramref name="includeGeneric"/> (accessory path) reads GetTotalDamage/GetTotalCritChance so an all-class bonus (Avenger Emblem, Celestial Shell...) counts for the class;
+		/// the armor-inference path keeps the raw per-class value so generic armor still reads as "no preference". Both baselines must use the same mode.
+		/// </remarks>
+		private static float[] Measure(int head, int body, int legs, float[] baseline, int accessory = 0, bool includeGeneric = false)
 		{
 			var p = _scratch;
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
@@ -211,6 +216,7 @@ namespace Levy.Common.Weapons
 			if (head != 0) p.armor[0].SetDefaults(head);
 			if (body != 0) p.armor[1].SetDefaults(body);
 			if (legs != 0) p.armor[2].SetDefaults(legs);
+			if (accessory != 0) p.armor[3].SetDefaults(accessory);
 			p.inventory[0] = new Item();
 			p.selectedItem = 0;
 			p.ResetEffects();
@@ -221,8 +227,9 @@ namespace Levy.Common.Weapons
 			var r = new float[Classes.Length + 1];
 			r[Classes.Length] = Math.Max(0, p.maxMinions - 1);
 			for (int i = 0; i < Classes.Length; i++) {
-				var dmg = p.GetDamage(Classes[i]);
-				r[i] = (dmg.Additive - 1f) + (dmg.Multiplicative - 1f) + p.GetCritChance(Classes[i]) * CritWeight;
+				var dmg = includeGeneric ? p.GetTotalDamage(Classes[i]) : p.GetDamage(Classes[i]);
+				float crit = includeGeneric ? p.GetTotalCritChance(Classes[i]) : p.GetCritChance(Classes[i]);
+				r[i] = (dmg.Additive - 1f) + (dmg.Multiplicative - 1f) + crit * CritWeight;
 				// Summoner armor mostly buys minion slots: every slot above the bare one counts like extra summon damage.
 				if (Classes[i] == DamageClass.Summon) r[i] += Math.Max(0, p.maxMinions - 1) * LevyConstants.MinionDoctrineWeight;
 				if (baseline != null) r[i] -= baseline[i];

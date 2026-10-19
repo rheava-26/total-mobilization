@@ -1,11 +1,14 @@
 using System.IO;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common.Targeting;
+using Levy.Common.Util;
+using Levy.Common.Weapons;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Globals
@@ -109,6 +112,8 @@ namespace Levy.Common.Globals
 			if (SoldierIndex < 0) return true;
 			if (projectile.type == ProjectileID.FlyingKnife) { DriveSoldierFlyingKnife(projectile); return false; }
 			if (IsGuidedMissile(projectile.type)) { DriveSoldierGuidedMissile(projectile); return false; }
+			if (projectile.type == ProjectileID.SoulDrain) { DriveSoldierSoulDrain(projectile); return false; }
+			if (projectile.type == ProjectileID.MedusaHead) { DriveSoldierMedusaHead(projectile); return false; }
 			return true;
 		}
 
@@ -134,14 +139,9 @@ namespace Levy.Common.Globals
 				NPC target = engaging ? CurrentKnifeTarget(body) : null;
 				if (target != null)
 				{
-					Vector2 to = target.Center - p.Center;
-					if (to != Vector2.Zero)
-					{
-						// Rotate the heading toward the target by a bounded amount, then restore cruise speed (a lerp-and-renormalise turn).
-						Vector2 heading = p.velocity == Vector2.Zero ? Vector2.Normalize(to) : Vector2.Normalize(p.velocity);
-						heading = Vector2.Normalize(Vector2.Lerp(heading, Vector2.Normalize(to), 0.14f));
-						p.velocity = heading * _guidedSpeed;
-					}
+					// Fly at an intercept point with turn authority that grows as it closes and a speed that ramps up while lined up, so it connects instead of circling.
+					HomeIn(p, LeadPoint(p, target), LevyConstants.GuidedAccel, _guidedSpeed * LevyConstants.GuidedMaxSpeedMul, _guidedSpeed * LevyConstants.GuidedMinSpeedMul,
+						LevyConstants.HomeTurnFar, LevyConstants.HomeTurnNear, LevyConstants.GuidedNearRangePx);
 				}
 			}
 			if (p.velocity != Vector2.Zero)
@@ -198,7 +198,9 @@ namespace Levy.Common.Globals
 			if (target != null)
 			{
 				_knifeLost = 0;
-				SteerKnife(p, target.Center, LevyConstants.KnifeSeekAccel, LevyConstants.KnifeSeekMaxSpeed); // overshoot/orbit = the jabbing hover
+				// Dive straight at the enemy (intercept point, turn authority rising as it closes); after passing through it snaps back round for the next strike.
+				HomeIn(p, LeadPoint(p, target), LevyConstants.KnifeSeekAccel, LevyConstants.KnifeSeekMaxSpeed, LevyConstants.KnifeMinSpeed,
+					LevyConstants.HomeTurnFar, LevyConstants.HomeTurnNear, LevyConstants.HomeNearRangePx);
 				return;
 			}
 			_knifeLost++;
@@ -209,7 +211,8 @@ namespace Levy.Common.Globals
 			}
 			// Disengaged (or grace spent): fly home. If the soldier re-engages en route, the next tick's target != null flips it back to attacking.
 			if (Vector2.Distance(p.Center, s.Center) <= LevyConstants.KnifeReturnCatchPx) { p.Kill(); return; }
-			SteerKnife(p, s.Center, LevyConstants.KnifeReturnAccel, LevyConstants.KnifeReturnMaxSpeed);
+			HomeIn(p, s.Center, LevyConstants.KnifeReturnAccel, LevyConstants.KnifeReturnMaxSpeed, LevyConstants.KnifeMinSpeed,
+				LevyConstants.HomeTurnFar, LevyConstants.HomeTurnNear, LevyConstants.HomeNearRangePx);
 		}
 
 		/// <summary>The soldier's own engaged enemy if it is still a valid hostile; else null. The knife mirrors the soldier's aim and never picks a target itself.</summary>
@@ -221,13 +224,245 @@ namespace Levy.Common.Globals
 			return t.active && t.life > 0 && !SoldierTargeting.IsNeverTarget(t) ? t : null;
 		}
 
-		/// <summary>Standard homing: pull the velocity toward the destination, capped at max speed. Overshoots and loops, which reads as darting around the point.</summary>
-		private static void SteerKnife(Projectile p, Vector2 dest, float accel, float maxSpeed)
+		/// <summary>
+		/// Converging homing shared by the knife and the guided missiles. The heading rotates toward the destination by at most a turn rate that blends from
+		/// <paramref name="turnFar"/> to <paramref name="turnNear"/> as the distance falls inside <paramref name="nearRange"/> (so it can always curve into the target),
+		/// and the speed ramps toward <paramref name="maxSpeed"/> while the projectile is lined up, bleeding toward <paramref name="minSpeed"/> when it must swing round
+		/// after an overshoot (a slower projectile has a tighter turning circle). Deterministic and smooth: no per-tick jitter.
+		/// </summary>
+		private static void HomeIn(Projectile p, Vector2 dest, float accel, float maxSpeed, float minSpeed, float turnFar, float turnNear, float nearRange)
 		{
 			Vector2 to = dest - p.Center;
-			if (to != Vector2.Zero) p.velocity += Vector2.Normalize(to) * accel;
+			float dist = to.Length();
+			if (dist < 0.001f) return;
 			float sp = p.velocity.Length();
-			if (sp > maxSpeed) p.velocity *= maxSpeed / sp;
+			if (sp < 0.01f) { p.velocity = to / dist * minSpeed; sp = minSpeed; }
+			float cur = p.velocity.ToRotation();
+			float diff = MathHelper.WrapAngle(to.ToRotation() - cur);
+			float near = 1f - MathHelper.Clamp(dist / System.Math.Max(1f, nearRange), 0f, 1f);
+			float maxTurn = MathHelper.Lerp(turnFar, turnNear, near);
+			float turn = MathHelper.Clamp(diff, -maxTurn, maxTurn);
+			float align = System.MathF.Cos(diff); // 1 = dead ahead, -1 = target behind
+			float want = MathHelper.Lerp(minSpeed, maxSpeed, MathHelper.Clamp(align * 2f - 0.5f, 0f, 1f));
+			sp = sp < want ? System.Math.Min(want, sp + accel) : System.Math.Max(want, sp - accel * 2f);
+			p.velocity = new Vector2(System.MathF.Cos(cur + turn), System.MathF.Sin(cur + turn)) * sp;
+		}
+
+		/// <summary>The point to fly at to meet a moving target: its position advanced by its velocity over the (capped) time to reach it.</summary>
+		private static Vector2 LeadPoint(Projectile p, NPC target)
+		{
+			float sp = System.Math.Max(8f, p.velocity.Length());
+			float t = System.Math.Min(Vector2.Distance(p.Center, target.Center) / sp, 20f);
+			return target.Center + target.velocity * t * 0.7f;
+		}
+
+		// ============================================================================================================
+		// Soul Drain (ProjectileID.SoulDrain, aiStyle 185): vanilla pays the commander's mana on hit; the soldier already paid its cast mana in WeaponUse.FireMagic.
+		// ============================================================================================================
+		private int _auxAge;
+		private bool _drainSpent;
+
+		/// <summary>
+		/// The drain bolt is a stationary 200x200 blast that vanilla drops on the cursor. A soldier's lands on its engaged target (as far along the line as the ground allows),
+		/// never reads the commander (no mana, no steering), and gives the soldier a little HP back when it connects. No live target: it stays where it was cast.
+		/// </summary>
+		private void DriveSoldierSoulDrain(Projectile p)
+		{
+			p.velocity = Vector2.Zero;
+			p.tileCollide = false;
+			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
+			SoldierNPC body = s != null && s.active ? s.ModNPC as SoldierNPC : null;
+			bool first = _auxAge++ == 0;
+			if (first && body != null)
+			{
+				bool engaging = (body.State == SoldierState.Engage || body.State == SoldierState.Shaken || body.State == SoldierState.Routed) && !body.Record.HoldFire;
+				NPC target = engaging ? CurrentKnifeTarget(body) : null;
+				if (target != null)
+				{
+					Vector2 at = FarthestOnLine(s.Center, target.Center, LevyConstants.SoulDrainReachPx);
+					if (at != s.Center) { p.Center = at; p.netUpdate = true; }
+				}
+			}
+			if (!_drainSpent && body != null && body.IsAlive && LevyUtil.IsServerOrSingle)
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active || n.townNPC || n.dontTakeDamage || n.friendly || SoldierTargeting.IsNeverTarget(n) || !p.Hitbox.Intersects(n.Hitbox)) continue;
+					_drainSpent = true;
+					int heal = System.Math.Min(LevyConstants.SoulDrainHealPerHit, s.lifeMax - s.life);
+					if (heal > 0) { s.life += heal; body.Record.CurrentHp = s.life; }
+					break;
+				}
+			}
+			if (first && Main.netMode != NetmodeID.Server)
+			{
+				for (int k = 0; k < 6; k++)
+				{
+					Vector2 at = p.Center + new Vector2(Main.rand.Next(-60, 61), Main.rand.Next(-60, 61));
+					Vector2 toward = body != null ? s.Center - at : Vector2.Zero;
+					if (toward != Vector2.Zero) toward = Vector2.Normalize(toward) * 3f;
+					Dust d = Dust.NewDustPerfect(at, 235, toward, 0, default, Main.rand.Next(70, 85) * 0.01f);
+					d.noGravity = true;
+				}
+			}
+			Lighting.AddLight(p.Center, 0.35f, 0.1f, 0.45f);
+		}
+
+		/// <summary>Walks from <paramref name="from"/> toward <paramref name="to"/> in tile steps (up to <paramref name="maxDist"/>) and returns the last open point.</summary>
+		private static Vector2 FarthestOnLine(Vector2 from, Vector2 to, float maxDist)
+		{
+			Vector2 d = to - from;
+			float len = d.Length();
+			if (len < 1f) return from;
+			Vector2 dir = d / len;
+			float reach = System.Math.Min(len, maxDist);
+			Vector2 last = from;
+			for (float t = 16f; ; t += 16f)
+			{
+				float step = System.Math.Min(t, reach);
+				Vector2 pt = from + dir * step;
+				if (Collision.SolidCollision(pt - new Vector2(4f, 4f), 8, 8)) break;
+				last = pt;
+				if (step >= reach) break;
+			}
+			return last;
+		}
+
+		// ============================================================================================================
+		// Medusa Head (ProjectileID.MedusaHead, aiStyle 100): vanilla anchors to Main.player[owner], dies unless the commander channels, aims at the mouse and pays the commander.
+		// ============================================================================================================
+		/// <summary>Ticks the head has left (refreshed by each cast), the vanilla pulse countdown, and whether the last cast's mana has not yet bought a pulse.</summary>
+		private int _headLife, _headPulse;
+		private bool _headUnspent;
+
+		/// <summary>
+		/// A soldier's head floats at the soldier, pulses (up to 3 nearest enemies within range and line of sight, engaged target first) exactly like the vanilla head,
+		/// and never touches the commander. Each cast (paid by FireMagic from the soldier's own mana) keeps one head alive; further casts refresh it instead of stacking.
+		/// A cast that bought no pulse (nothing in reach) is refunded to the SOLDIER's mana. The head fades when the soldier dies, swaps weapons, or stops casting.
+		/// </summary>
+		private void DriveSoldierMedusaHead(Projectile p)
+		{
+			bool authority = LevyUtil.IsServerOrSingle;
+			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
+			SoldierNPC body = s != null && s.active ? s.ModNPC as SoldierNPC : null;
+			if (body == null || !body.IsAlive || body.Record == null)
+			{
+				if (authority) p.Kill(); // clients let timeLeft lapse; the authority's kill syncs
+				return;
+			}
+			Item held = WeaponUse.HeldItem(body);
+			if (authority && (held == null || held.IsAir || held.shoot != p.type)) { p.Kill(); return; }
+			int cost = held != null && !held.IsAir ? System.Math.Max(0, held.mana) : 0;
+
+			if (_auxAge++ == 0 && authority)
+			{
+				Projectile older = FindOlderHead(p);
+				if (older != null && older.TryGetGlobalProjectile(out SoldierProjectileTag ot))
+				{
+					ot.RefundUnspentHead(body, cost); // the previous cast bought nothing: give it back, the new one takes over
+					ot._headLife = LevyConstants.MedusaHeadLingerTicks; ot._headUnspent = true;
+					p.Kill();
+					return;
+				}
+				_headLife = LevyConstants.MedusaHeadLingerTicks; _headUnspent = true;
+			}
+			if (authority && --_headLife <= 0) { RefundUnspentHead(body, cost); p.Kill(); return; }
+
+			p.timeLeft = 2;
+			int dir = s.direction == 0 ? 1 : s.direction;
+			p.direction = p.spriteDirection = dir;
+			p.rotation = 0f;
+			Vector2 oldVel = p.velocity;
+			p.velocity = new Vector2(dir, 0f);
+			if (oldVel != p.velocity) p.netUpdate = true;
+			p.Center = (s.Center + new Vector2(dir * 8f, -16f) - p.velocity).Floor();
+
+			bool charged = _headPulse > 0;
+			if (_headPulse > 0) _headPulse--;
+			AnimateHead(p, charged);
+
+			if (authority && !body.Record.HoldFire && (!charged || _headPulse % 15 == 0)) PulseHead(p, body);
+			Lighting.AddLight(p.Center, 0.9f, 0.75f, 0.1f);
+		}
+
+		private static Projectile FindOlderHead(Projectile self)
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active || q.whoAmI == self.whoAmI || q.type != self.type) continue;
+				if (q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == self.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex && t._auxAge > 0) return q;
+			}
+			return null;
+		}
+
+		/// <summary>Credits the soldier (never the commander) with a cast that produced no pulse.</summary>
+		private void RefundUnspentHead(SoldierNPC body, int cost)
+		{
+			if (!_headUnspent) return;
+			_headUnspent = false;
+			if (cost > 0 && body.Record != null) body.Record.Mana = System.Math.Min(body.Record.MaxMana, body.Record.Mana + cost);
+		}
+
+		/// <summary>The head's frame cycle: 0-7 idle, 8-11 while charged (the vanilla ranges).</summary>
+		private static void AnimateHead(Projectile p, bool charged)
+		{
+			if (Main.projFrames[p.type] < 12) return;
+			if (charged)
+			{
+				if (p.frame < 8 || p.frame >= 12) p.frame = 8;
+				if (++p.frameCounter >= 5) { p.frameCounter = 0; if (++p.frame >= 12) p.frame = 8; }
+			}
+			else if (++p.frameCounter >= 5) { p.frameCounter = 0; if (++p.frame >= 8) p.frame = 0; }
+		}
+
+		/// <summary>One pulse: the nearest enemies in range with a clear line each take an instant ray hit (credited to the soldier); nothing in reach, no pulse.</summary>
+		private void PulseHead(Projectile p, SoldierNPC body)
+		{
+			Vector2 pos = p.Center;
+			var list = new System.Collections.Generic.List<(int idx, float key)>();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active) continue;
+				float d = p.Distance(n.Center);
+				if (d >= LevyConstants.MedusaRangePx || !n.CanBeChasedBy(p) || SoldierTargeting.IsNeverTarget(n) || !Collision.CanHitLine(n.position, n.width, n.height, pos, 0, 0)) continue;
+				list.Add((i, i == body.TargetIndex ? -1f : d)); // the soldier's engaged target is always struck first
+			}
+			if (list.Count == 0) return;
+			list.Sort((a, b) => a.key.CompareTo(b.key));
+
+			float angleSum = 0f;
+			int hit = 0;
+			for (int k = 0; k < list.Count && k < LevyConstants.MedusaMaxRays; k++)
+			{
+				NPC n = Main.npc[list[k].idx];
+				Vector2 v = n.Center - pos;
+				angleSum += v.ToRotation();
+				hit++;
+				int ri = Projectile.NewProjectile(p.GetSource_FromThis(), pos.X, pos.Y, v.X, v.Y, ProjectileID.MedusaHeadRay, 0, 0f, p.owner, p.whoAmI);
+				if (ri < 0 || ri >= Main.maxProjectiles) continue;
+				Projectile ray = Main.projectile[ri];
+				WeaponUse.TagSoldierProjectile(body, ray, DamageClass.Magic);
+				ray.Center = n.Center;
+				ray.damage = p.damage;
+				ray.Damage();
+				ray.damage = 0;
+				ray.Center = pos;
+			}
+			float aim = hit > 0 ? angleSum / hit : (p.direction == 1 ? 0f : MathHelper.Pi);
+			for (int l = 0; l < 4; l++)
+			{
+				Vector2 spread = Main.rand.NextBool(4)
+					? Vector2.UnitX.RotatedByRandom(MathHelper.TwoPi) * new Vector2(200f, 50f) * (Main.rand.NextFloat() * 0.7f + 0.3f)
+					: Vector2.UnitX.RotatedByRandom(MathHelper.Pi).RotatedBy(aim) * new Vector2(200f, 50f) * (Main.rand.NextFloat() * 0.7f + 0.3f);
+				Projectile.NewProjectile(p.GetSource_FromThis(), pos.X, pos.Y, spread.X, spread.Y, ProjectileID.MedusaHeadRay, 0, 0f, p.owner, p.whoAmI);
+			}
+			_headUnspent = false;
+			_headPulse = LevyConstants.MedusaPulseTicks;
+			p.netUpdate = true;
+			if (Main.netMode != NetmodeID.Server) SoundEngine.PlaySound(SoundID.Item17, pos);
 		}
 
 		public override void SendExtraAI(Projectile projectile, BitWriter bitWriter, BinaryWriter binaryWriter)

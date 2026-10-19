@@ -12,6 +12,7 @@ using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
+using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.Tiles;
 
@@ -769,6 +770,169 @@ namespace Levy.Content.TileEntities
 			}
 			if (changed || merged.Count != items.Count) MarkDirty();
 			return changed;
+		}
+
+		// ------------------------------------------------------------------ bulk reforge
+
+		/// <summary>Outcome of one <see cref="ReforgeToFloor"/> run.</summary>
+		public class ReforgeResult
+		{
+			/// <summary>Weapons that were rolled at least once.</summary>
+			public int Weapons;
+			/// <summary>Paid rolls in total.</summary>
+			public int Rolls;
+			/// <summary>Weapons that reached the floor during this run.</summary>
+			public int Reached;
+			/// <summary>Weapons below the floor at the end (cap hit or treasury empty).</summary>
+			public int Short;
+			/// <summary>Of those, weapons that used up their roll cap.</summary>
+			public int Capped;
+			public long Spent;
+			public bool RanDry;
+			public bool NoPayer;
+		}
+
+		/// <summary>Per weapon type: the quality scores of every prefix that weapon can roll (one per prefix, best first). Learned once from throw-away rolls.</summary>
+		private static readonly Dictionary<int, double[]> _prefixScores = new Dictionary<int, double[]>();
+
+		/// <summary>
+		/// Prefix quality for one weapon: the item's market value relative to the same weapon with no prefix. Terraria builds an item's value from
+		/// every stat the prefix touches (damage, speed, crit, knockback, mana, velocity, size), so it is the one number that ranks any prefix
+		/// of any weapon, vanilla or modded, on the same scale (1.0 = unprefixed; Legendary / Mythical / Unreal / Godly sit highest, Broken / Shoddy
+		/// / Awful lowest). Weapons with no base value fall back to damage x speed x crit relative to the unprefixed weapon.
+		/// </summary>
+		public static double PrefixQuality(Item it, Item sample)
+		{
+			if (sample.value > 0) return (double)it.value / sample.value;
+			double dmg = sample.damage > 0 ? (double)it.damage / sample.damage : 1.0;
+			double spd = it.useAnimation > 0 && sample.useAnimation > 0 ? (double)sample.useAnimation / it.useAnimation : 1.0;
+			return dmg * spd * (1.0 + (it.crit - sample.crit) / 100.0);
+		}
+
+		private static double[] LearnPrefixScores(Item sample)
+		{
+			if (_prefixScores.TryGetValue(sample.type, out var cached)) return cached;
+			var byPrefix = new Dictionary<int, double>();
+			for (int i = 0; i < LevyConstants.UI.ReforgeSampleRolls; i++)
+			{
+				var t = new Item();
+				t.SetDefaults(sample.type);
+				t.Prefix(-2);
+				if (t.prefix > 0 && !byPrefix.ContainsKey(t.prefix)) byPrefix[t.prefix] = PrefixQuality(t, sample);
+			}
+			var arr = new double[byPrefix.Count];
+			int n = 0; foreach (var v in byPrefix.Values) arr[n++] = v;
+			Array.Sort(arr); Array.Reverse(arr);
+			_prefixScores[sample.type] = arr;
+			return arr;
+		}
+
+		/// <summary>
+		/// The quality a weapon must reach: the score of the k-th best prefix it can roll, where k = ceil(topFraction x prefixes it can roll)
+		/// (at least 1, so fraction 0 means "the single best"). Defined for every prefixable weapon, and a floor means the same thing for a
+		/// sword and a staff alike: the top slice of what THAT weapon can get.
+		/// </summary>
+		private static double FloorThreshold(double[] sortedDesc, float topFraction)
+		{
+			int k = topFraction <= 0f ? 1 : Math.Max(1, (int)Math.Ceiling(topFraction * sortedDesc.Length));
+			return sortedDesc[Math.Min(k, sortedDesc.Length) - 1];
+		}
+
+		/// <summary>Weapons only (armor, accessories, ammo, potions, tools, stacks and favourited items are never touched) that can take a prefix.</summary>
+		public static bool IsReforgeable(Item it) =>
+			!IsAir(it) && !it.favorited && it.maxStack == 1 && it.damage > 0 && !it.accessory && !it.consumable && !it.IsACoin
+			&& it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && it.CanHavePrefixes();
+
+		/// <summary>Vanilla reforge price of this item as it is now: its value (prefix included) / 3, through the mods' ReforgePrice hooks. No Goblin Tinkerer discount, no shop mood.</summary>
+		public static long ReforgePrice(Item it)
+		{
+			int price = it.value; bool canDiscount = true;
+			if (ItemLoader.ReforgePrice(it, ref price, ref canDiscount)) price /= 3;
+			return Math.Max(1, price);
+		}
+
+		/// <summary>The barracks whose treasury pays for this armory (the nearest one that links to it), or null.</summary>
+		public BarracksTE LinkedBarracks()
+		{
+			BarracksTE best = null; float bestD = float.MaxValue;
+			float limit = LevyConstants.ArmoryLinkRadius * LevyConstants.TilePx; limit *= limit;
+			foreach (var b in SettlementSystem.Instance.AllBarracks())
+			{
+				float d = Vector2.DistanceSquared(b.Center, Center);
+				if (d > limit || d >= bestD || !ReferenceEquals(SettlementSystem.Instance.LinkedArmory(b), this)) continue;
+				bestD = d; best = b;
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// Bulk reforge-to-threshold. For every weapon below the floor (issue rows first, then storage) it pays the barracks treasury the vanilla
+		/// reforge price per roll and rerolls the prefix until it meets <paramref name="floorIndex"/> (an index into
+		/// <see cref="LevyConstants.UI.ReforgeFloorTopFraction"/>), up to <see cref="LevyConstants.UI.ReforgeMaxRollsPerWeapon"/> rolls. A weapon that
+		/// misses keeps the best prefix it rolled (never worse than before); when the treasury cannot afford the next roll the run stops.
+		/// Server / single player only.
+		/// </summary>
+		public ReforgeResult ReforgeToFloor(BarracksTE payer, int floorIndex)
+		{
+			var res = new ReforgeResult();
+			if (Main.netMode == NetmodeID.MultiplayerClient) return res;
+			if (payer == null) { res.NoPayer = true; return res; }
+			var fractions = LevyConstants.UI.ReforgeFloorTopFraction;
+			float frac = fractions[Math.Max(0, Math.Min(fractions.Length - 1, floorIndex))];
+			bool changed = false;
+			foreach (var arr in new[] { IssueWeapons, Storage })
+			{
+				for (int i = 0; i < arr.Length; i++)
+				{
+					var item = arr[i];
+					if (!IsReforgeable(item)) continue;
+					if (!ContentSamples.ItemsByType.TryGetValue(item.type, out var sample) || sample == null) continue;
+					var scores = LearnPrefixScores(sample);
+					if (scores.Length == 0) continue;
+					double threshold = FloorThreshold(scores, frac) - 1e-6;
+					double bestScore = PrefixQuality(item, sample);
+					if (bestScore >= threshold) continue;
+					if (res.RanDry) { res.Short++; continue; }
+
+					Item best = item, current = item;
+					bool reached = false, rolled = false;
+					int rolls = 0;
+					while (rolls < LevyConstants.UI.ReforgeMaxRollsPerWeapon)
+					{
+						long price = ReforgePrice(current);
+						if (!EconomySystem.TryPay(payer, price)) { res.RanDry = true; break; }
+						res.Spent += price;
+						res.Rolls++; rolls++; rolled = true;
+						var trial = current.Clone();
+						ItemLoader.PreReforge(trial);
+						trial.ResetPrefix();
+						trial.Prefix(-2);
+						ItemLoader.PostReforge(trial);
+						current = trial;
+						double score = PrefixQuality(trial, sample);
+						if (score > bestScore) { best = trial; bestScore = score; }
+						if (score >= threshold) { reached = true; break; }
+					}
+					if (rolled) res.Weapons++;
+					if (!ReferenceEquals(best, item)) { arr[i] = best; changed = true; }
+					if (reached) res.Reached++;
+					else { res.Short++; if (rolls >= LevyConstants.UI.ReforgeMaxRollsPerWeapon) res.Capped++; }
+				}
+			}
+			if (changed) MarkDirty();
+			if (res.Spent > 0) payer.MarkDirty();
+			return res;
+		}
+
+		/// <summary>Chat lines telling the player how the bulk reforge went. Server / single player.</summary>
+		public static void ReportReforge(Player to, ReforgeResult r)
+		{
+			if (to == null || r == null) return;
+			if (r.NoPayer) { RosterSystem.SendToPlayer(to, LevyUtil.T("UI2.ReforgeNoBarracks")); return; }
+			if (r.Rolls == 0 && r.Short == 0) { RosterSystem.SendToPlayer(to, LevyUtil.T("UI2.ReforgeNothing")); return; }
+			if (r.Rolls > 0) RosterSystem.SendToPlayer(to, LevyUtil.T("UI2.ReforgeReport", r.Weapons, r.Rolls, LevyUtil.Coins(r.Spent), r.Reached));
+			if (r.RanDry) RosterSystem.SendToPlayer(to, LevyUtil.T("UI.NotEnoughMoney") + " " + LevyUtil.T("UI2.ReforgeBroke", r.Short));
+			else if (r.Capped > 0) RosterSystem.SendToPlayer(to, LevyUtil.T("UI2.ReforgeCapped", r.Capped, LevyConstants.UI.ReforgeMaxRollsPerWeapon));
 		}
 
 		/// <summary>Removes ONE item of this type from bulk storage (first matching stack). False if there is none.</summary>

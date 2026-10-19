@@ -1,6 +1,19 @@
 # Levy interface strings added by the UI module. Keys are relative to Mods.Levy.UI2.
 ArmoryTitle: Armory
 Close: Close
+ReforgeFloor: Floor: {0}
+ReforgeFloorGood: Good
+ReforgeFloorGreat: Great
+ReforgeFloorSuperb: Superb
+ReforgeFloorBest: Best
+ReforgeFloorHint: Click to change the reforge floor. A weapon is rerolled until its modifier is among the top half (Good), quarter (Great) or tenth (Superb) of what that weapon can roll, or the single best (Best).
+ReforgeAll: Reforge to floor
+ReforgeAllHint: Rerolls the modifier of every weapon in storage and the issue rows until it meets the floor. Each roll costs the standard reforge price from the barracks treasury. A weapon that does not reach the floor keeps the best modifier it rolled. Items are never lost.
+ReforgeNoBarracks: No barracks treasury is linked to this armory.
+ReforgeNothing: Every weapon here already meets the floor.
+ReforgeReport: Reforged {0} weapons in {1} rolls for {2}; {3} reached the floor.
+ReforgeBroke: The treasury ran dry. {0} weapons were left short of the floor.
+ReforgeCapped: {0} weapons did not reach the floor within {1} rolls and kept their best.
 Orders: Orders
 Sidearm: sidearm
 PotionHealing: healing / mana

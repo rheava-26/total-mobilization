@@ -180,6 +180,20 @@ namespace Levy.Common
 			/// <summary>A sidestep keeps its speed for this many ticks (about 1.5 tiles at 3.2 px/tick).</summary>
 			public const int DodgeSidestepTicks = 8;
 
+			// ---- enemy-body dodging (worm segments, wyverns, chargers) ----
+			/// <summary>A hostile NPC body is only dodged if its contact damage is at least this (filters harmless fliers).</summary>
+			public const int DodgeNpcMinDamage = 20;
+			/// <summary>...and only if it is moving at least this fast (px/tick). The key filter: walkers being meleed are far below it.</summary>
+			public const float DodgeNpcMinSpeed = 4.5f;
+			/// <summary>Hostile bodies farther than this are ignored (bigger and faster than a projectile, so a wider scan).</summary>
+			public const float DodgeNpcRadiusTiles = 17f;
+			/// <summary>Only bodies that would arrive within this many ticks matter.</summary>
+			public const float DodgeNpcLookaheadTicks = 24f;
+			/// <summary>Extra padding (px) around the two hitboxes when judging an overlap.</summary>
+			public const float DodgeNpcMarginPx = 10f;
+			/// <summary>Minimum horizontal component of the lane's normal for a sidestep to leave the lane; flatter charges are hopped instead.</summary>
+			public const float DodgeNpcMinLaneX = 0.5f;
+
 			// ---- bodies ----
 			public const float PlayerNudgePx = 0.5f;
 			public const float StepSpeed = 1f;

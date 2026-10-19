@@ -6,6 +6,8 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Movement;
+using Levy.Common.Targeting;
+using Levy.Common.Util;
 using static Levy.Common.LevyConstants.Movement;
 
 namespace Levy.Content.NPCs
@@ -292,8 +294,10 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>
-		/// Dodges the nearest incoming hostile projectile: a short sidestep for steep shots, a hop for flat ones. Rate-limited.
-		/// Returns true while a sidestep is in progress (the walk logic is skipped for those few ticks).
+		/// Flinches out of the nearest incoming threat: a hostile projectile, or the body of a fast, hard-hitting hostile NPC (worm segment,
+		/// wyvern, charger) whose padded hitbox will overlap ours. A short sidestep out of the lane (or a hop when the lane is flat or the
+		/// sidestep is blocked), then a cooldown and straight back to the fight. Rate-limited. Returns true while a sidestep is in progress
+		/// (the walk logic is skipped for those few ticks).
 		/// </summary>
 		private bool TickDodge(bool grounded, bool air)
 		{
@@ -308,7 +312,7 @@ namespace Levy.Content.NPCs
 			if ((!grounded && !air) || _flying || npc.wet) return false; // aloft in aerial mode a dodge is allowed too
 			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)DodgeScanIntervalTicks) != 0) return false;
 
-			Projectile worst = null; float bestT = DodgeLookaheadTicks; Vector2 worstClosest = default;
+			Projectile worst = null; NPC worstNpc = null; float bestT = DodgeLookaheadTicks; Vector2 worstClosest = default;
 			float rSq = DodgeRadiusTiles * 16f * DodgeRadiusTiles * 16f;
 			float hit = DodgeHitRadiusPx + npc.width * 0.5f;
 			Vector2 c = npc.Center;
@@ -326,23 +330,68 @@ namespace Levy.Content.NPCs
 				if (Vector2.Distance(closest, c) > hit) continue;
 				bestT = t; worst = p; worstClosest = closest;
 			}
-			if (worst == null) return false;
+
+			// Enemy BODIES: only the fast, hard-hitting ones on a collision course (a slow melee enemy being traded blows with never qualifies).
+			// A worm is many segment NPCs, so this naturally catches the segment about to hit.
+			float npcRSq = DodgeNpcRadiusTiles * 16f * DodgeNpcRadiusTiles * 16f;
+			float minSpeedSq = DodgeNpcMinSpeed * DodgeNpcMinSpeed;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.whoAmI == npc.whoAmI || n.damage < DodgeNpcMinDamage) continue;
+				Vector2 rel = c - n.Center;
+				if (rel.LengthSquared() > npcRSq) continue;
+				Vector2 v = n.velocity; float v2 = v.LengthSquared();
+				if (v2 < minSpeedSq) continue;
+				if (!LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) continue;
+				float t = Vector2.Dot(rel, v) / v2; // ticks until the closest approach
+				if (t < 2f || t >= bestT || t > DodgeNpcLookaheadTicks) continue;
+				Vector2 closest = n.Center + v * t; // where the NPC's centre will be when it is nearest to us
+				// padded hitbox overlap at that moment (the NPC's real width/height: worm segments and wyverns are big)
+				if (Math.Abs(closest.X - c.X) > n.width * 0.5f + npc.width * 0.5f + DodgeNpcMarginPx) continue;
+				if (Math.Abs(closest.Y - c.Y) > n.height * 0.5f + npc.height * 0.5f + DodgeNpcMarginPx) continue;
+				bestT = t; worstNpc = n; worst = null; worstClosest = closest;
+			}
+			if (worst == null && worstNpc == null) return false;
 
 			_dodgeCooldown = DodgeCooldownTicks;
-			Vector2 pv = worst.velocity;
-			bool flat = Math.Abs(pv.X) > Math.Abs(pv.Y) * 1.5f;
-			if (!flat)
+			if (worstNpc != null)
 			{
-				// steep shot: step out of its column, preferably the way we are already heading
-				float off = c.X - worstClosest.X;
-				int side = off >= 0f ? 1 : -1;
-				if (Math.Abs(off) < 4f) side = HasMoveGoal ? (MoveGoal.X >= c.X ? 1 : -1) : (NPC.direction == 0 ? 1 : -NPC.direction);
-				for (int attempt = 0; attempt < 2; attempt++, side = -side)
+				// Step out of the body's lane: the side of its travel line that we are already on (a flat charge has no sideways lane, so hop).
+				Vector2 nv = worstNpc.velocity;
+				Vector2 nrm = new Vector2(-nv.Y, nv.X) / nv.Length();
+				float lateral = Vector2.Dot(c - worstNpc.Center, nrm);
+				if (Math.Abs(nrm.X) >= DodgeNpcMinLaneX)
 				{
-					if (!(grounded ? SidestepSafe(side) : SidestepClearAir(side))) continue;
-					_dodgeVx = side * DodgeSidestepSpeedPx; _dodgeTicks = DodgeSidestepTicks;
-					npc.velocity.X = _dodgeVx; npc.netUpdate = true;
-					return true;
+					float offX = nrm.X * lateral; // which way our offset from the travel line points, horizontally
+					int side = offX >= 0f ? 1 : -1;
+					if (Math.Abs(lateral) < 4f) side = HasMoveGoal ? (MoveGoal.X >= c.X ? 1 : -1) : (NPC.direction == 0 ? 1 : -NPC.direction);
+					for (int attempt = 0; attempt < 2; attempt++, side = -side)
+					{
+						if (!(grounded ? SidestepSafe(side) : SidestepClearAir(side))) continue;
+						_dodgeVx = side * DodgeSidestepSpeedPx; _dodgeTicks = DodgeSidestepTicks;
+						npc.velocity.X = _dodgeVx; npc.netUpdate = true;
+						return true;
+					}
+				}
+			}
+			else
+			{
+				Vector2 pv = worst.velocity;
+				bool flat = Math.Abs(pv.X) > Math.Abs(pv.Y) * 1.5f;
+				if (!flat)
+				{
+					// steep shot: step out of its column, preferably the way we are already heading
+					float off = c.X - worstClosest.X;
+					int side = off >= 0f ? 1 : -1;
+					if (Math.Abs(off) < 4f) side = HasMoveGoal ? (MoveGoal.X >= c.X ? 1 : -1) : (NPC.direction == 0 ? 1 : -NPC.direction);
+					for (int attempt = 0; attempt < 2; attempt++, side = -side)
+					{
+						if (!(grounded ? SidestepSafe(side) : SidestepClearAir(side))) continue;
+						_dodgeVx = side * DodgeSidestepSpeedPx; _dodgeTicks = DodgeSidestepTicks;
+						npc.velocity.X = _dodgeVx; npc.netUpdate = true;
+						return true;
+					}
 				}
 			}
 			if (!grounded) { if (AirBlip()) npc.netUpdate = true; return false; } // aloft: no room to sidestep, so flap or kick off the air

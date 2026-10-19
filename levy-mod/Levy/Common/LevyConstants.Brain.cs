@@ -148,6 +148,42 @@ namespace Levy.Common
 		/// <summary>A blocked-path verdict is ignored this long after a relocation starts (it may be left over from the previous goal).</summary>
 		public const int PerchStallGraceTicks = 30;
 
+		// ---------- Opportunistic verticality: gear-assisted perches and aerial pursuit ----------
+		// A tendency, never a stampede: only some soldiers (by stable slot) ever climb on their gear, only when it clearly beats their footing,
+		// only a few of a squad at a time, and never while much of the squad already has height.
+		/// <summary>A gear-assisted perch (extra jumps, wings, rocket boots) must sit at least this many tiles above the feet.</summary>
+		public const int AirPerchMinRiseTiles = 3;
+		/// <summary>...and within this fraction of the kit's computed reach (a double-jump soldier gets low ledges, a winged one real height).</summary>
+		public const float AirPerchReachUseFrac = 0.8f;
+		/// <summary>...and no farther than this across (tiles).</summary>
+		public const int AirPerchMaxDxTiles = 14;
+		/// <summary>A gear-assisted perch must beat the footing by this much merit on top of the usual improvement (a bias for holding the line).</summary>
+		public const float AirPerchExtraMerit = 2f;
+		/// <summary>Fraction of soldiers (stable per body) that ever climb on their gear.</summary>
+		public const float AirPerchAppetite = 0.55f;
+		/// <summary>At most this fraction of the nearby squad may be mid-climb at once (at least one soldier is always allowed).</summary>
+		public const float AirPerchMaxClimbingFrac = 0.25f;
+		/// <summary>No new climb while this fraction of the nearby squad already stands clearly higher.</summary>
+		public const float AirPerchMaxHighFrac = 0.35f;
+		/// <summary>A gear climb that has not arrived by now is abandoned (ticks).</summary>
+		public const int AirPerchTimeoutTicks = 60 * 5;
+		/// <summary>Ticks after launch the body may still be on the ground before the climb is written off.</summary>
+		public const int AirPerchLaunchGraceTicks = 30;
+		/// <summary>No new perch search for this long after a gear climb ends (ticks).</summary>
+		public const int AirPerchSettleTicks = 60 * 15;
+		/// <summary>The climb aims this far above the perch surface (tiles) and lets go once the feet are over it.</summary>
+		public const float AirPerchHoverAboveTiles = 1f;
+		public const float AirPerchArriveBelowPx = 4f;
+		/// <summary>Fraction of soldiers (stable per body) that take to the air after an airborne target no ground spot reaches.</summary>
+		public const float FlyPursuitAppetite = 0.75f;
+		/// <summary>A target counts as airborne when no floor lies within this many tiles beneath it.</summary>
+		public const int FlyPursuitMinAirTiles = 6;
+		/// <summary>An airborne target is pursued up to weapon reach x this.</summary>
+		public const float FlyPursuitRangeMult = 1.6f;
+		/// <summary>The pursuer closes to this fraction of weapon reach horizontally (never inside the standoff + margin).</summary>
+		public const float FlyPursuitHoldFrac = 0.65f;
+		public const float FlyPursuitStandoffMarginTiles = 2f;
+
 		// ---------- Engaging from cover (a target in reach but with no firing line) ----------
 		/// <summary>The line to an in-reach target must stay blocked this long (ticks) before the soldier looks for another angle.</summary>
 		public const int CoverLosDebounceTicks = 36;

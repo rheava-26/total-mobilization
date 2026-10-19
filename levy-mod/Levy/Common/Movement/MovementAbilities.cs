@@ -17,6 +17,8 @@ namespace Levy.Common.Movement
 		public int ExtraJumps;             // enabled tModLoader extra jumps (bottles, jars, mounts)
 		public bool HasWings; public int WingTimeMax; public bool CanGlide;
 		public bool NoFallDamage = true;
+		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
+		public bool HasDash;
 
 		/// <summary>
 		/// Reads the dummy's stats. Balloons add to jumpSpeedBoost in UpdateEquips; Frog Leg, Empress Brooch and Moon Lord
@@ -55,6 +57,7 @@ namespace Levy.Common.Movement
 			a.WingTimeMax = a.HasWings ? dummy.wingTimeMax : 0;
 			a.CanGlide = a.HasWings;
 			a.NoFallDamage = true;
+			a.HasDash = dummy.dashType > 0;
 			return a;
 		}
 	}

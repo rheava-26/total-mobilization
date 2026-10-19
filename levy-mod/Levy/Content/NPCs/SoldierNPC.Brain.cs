@@ -83,6 +83,8 @@ namespace Levy.Content.NPCs
 		private bool _perchActive;
 		private Vector2 _perchGoal;
 		private int _perchTarget = -1, _perchStartTick;
+		/// <summary>The active perch is reached on gear (extra jumps / wings / rocket boots through the aerial system), not by a ground path.</summary>
+		private bool _perchAir;
 		/// <summary>Earliest tick of the next perch evaluation; -1 until the first one is staggered per soldier.</summary>
 		private int _perchNextTick = -1;
 		private int _nudgeNextTick;
@@ -101,12 +103,14 @@ namespace Levy.Content.NPCs
 		// scratch shared by every soldier (the brain runs on one thread): friends near the search and the best-scoring candidate spots
 		private static readonly Vector2[] _friendPos = new Vector2[LevyConstants.PerchFriendCap];
 		private static int _friendN;
+		/// <summary>From the last <see cref="GatherFriends"/>: friends mid gear-climb, and friends standing clearly higher than this soldier.</summary>
+		private static int _friendClimbers, _friendHigher;
 		private static readonly Vector2[] _candPos = new Vector2[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
 		private static readonly float[] _candScore = new float[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
 		private static int _candN;
 		private const int HashMulX = 73856093, HashMulY = 19349663, HashMulId = 83492791;
 		private const uint HashMix = 1274126177u;
-		private const float SlotSaltAltitude = 0.37f, SlotSaltPhase = 0.71f, SlotSaltMelee = 0.13f;
+		private const float SlotSaltAltitude = 0.37f, SlotSaltPhase = 0.71f, SlotSaltMelee = 0.13f, SlotSaltClimb = 0.29f, SlotSaltFly = 0.83f;
 		// ---- search & destroy ----
 		private bool _searchAnchorSet;
 		private Vector2 _searchAnchor;
@@ -692,6 +696,22 @@ namespace Levy.Content.NPCs
 				if (Aiming.TilesToHitbox(NPC.Center, seg) > reach) { _altHeld = false; return; } // not close enough yet: the ground approach handles it
 			}
 
+			float capped = FiringAltitude(seg, standoffTiles, melee, out bool truncated);
+			// melee must actually reach its target; a jump-only kit has no hover, so it only goes when it can fully get there
+			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
+			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
+			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
+			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+		}
+
+		/// <summary>
+		/// The world Y of the feet to hold to shoot <paramref name="seg"/> from the air: its level less FiringAltitudeBelowTargetTiles (pushed further
+		/// below while the target is inside the standoff, plus this soldier's own altitude slot), capped by the kit's reach, MaxAltitudeTiles over the last
+		/// solid ground and the top of the world. <paramref name="truncated"/> is set when the cap kept the body well short of the wanted level.
+		/// </summary>
+		private float FiringAltitude(NPC seg, float standoffTiles, bool melee, out bool truncated)
+		{
+			float tilePx = LevyConstants.TilePx;
 			float belowTiles = LevyConstants.FiringAltitudeBelowTargetTiles;
 			if (melee) belowTiles = 0f;
 			else
@@ -705,11 +725,44 @@ namespace Levy.Content.NPCs
 			float maxPx = Math.Min(LevyConstants.MaxAltitudeTiles, AerialMaxReachTiles * LevyConstants.MaxReachUseFrac) * tilePx;
 			float capped = Math.Max(bottom, groundY - maxPx);
 			capped = Math.Max(capped, (LevyConstants.WorldTopMarginTiles + 3) * tilePx);
-			bool truncated = capped - bottom > LevyConstants.MeleeAerialSlackTiles * tilePx;
-			// melee must actually reach its target; a jump-only kit has no hover, so it only goes when it can fully get there
-			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
-			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
+			truncated = capped - bottom > LevyConstants.MeleeAerialSlackTiles * tilePx;
+			return capped;
+		}
+
+		/// <summary>No floor within FlyPursuitMinAirTiles under the target: it is genuinely in the air, not just standing on a ledge a little higher up.</summary>
+		private static bool TargetIsAirborne(NPC seg)
+		{
+			int x = (int)(seg.Center.X / 16f), y = (int)(seg.Bottom.Y / 16f);
+			for (int i = 0; i <= LevyConstants.FlyPursuitMinAirTiles; i++) if (TileNav.IsFloor(x, y + i)) return false;
+			return true;
+		}
+
+		/// <summary>
+		/// Taking to the air after an airborne target that no ground spot can shoot. Only for a soldier whose kit sustains flight (wings or rocket boots;
+		/// a jump-only body has no hover), a stable fraction of the squad, with the flight budget and relaunch cooldown intact. Closes to a fraction of the
+		/// weapon's reach (never inside the standoff) and asks Movement for the firing altitude; the order's chase clamp still bounds the flight. When the
+		/// budget runs dry the body lands and the normal rules (and the relaunch cooldown) apply, so an over-committed flyer is brave, not stuck.
+		/// </summary>
+		private bool TryAerialPursuit(NPC seg, float range, float standoff)
+		{
+			if (!AerialSustained || AerialMaxReachTiles < LevyConstants.Movement.AerialClimbBenefitTiles) return false;
+			if (_aerialSpent || (NPC.velocity.Y == 0f && _aerialCooldown > 0)) return false;
+			if (SlotFrac(SlotSaltFly) >= LevyConstants.FlyPursuitAppetite) return false;
+			if (Aiming.TilesToHitbox(NPC.Center, seg) > range * LevyConstants.FlyPursuitRangeMult) return false;
+			if (!TargetIsAirborne(seg)) return false;
+			float tilePx = LevyConstants.TilePx;
+			float capped = FiringAltitude(seg, standoff, false, out _);
+			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
+			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) return false; // it is not above us: nothing to climb to
+			float dxTiles = Math.Abs(seg.Center.X - NPC.Center.X) / tilePx;
+			float holdTiles = Math.Max(range * LevyConstants.FlyPursuitHoldFrac, standoff + LevyConstants.FlyPursuitStandoffMarginTiles);
+			float side = seg.Center.X >= NPC.Center.X ? 1f : -1f;
+			Vector2 goal = new Vector2(dxTiles > holdTiles ? seg.Center.X - side * holdTiles * tilePx : NPC.Center.X, NPC.Bottom.Y);
+			ApplyChaseClamp(ref goal);
 			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+			_engMode = EngageMode.Hold; _engPathOk = false;
+			SetGoal(goal);
+			return true;
 		}
 
 		/// <summary>Distance (tiles) inside which a ranged soldier backs away from any hostile.</summary>
@@ -754,7 +807,19 @@ namespace Levy.Content.NPCs
 			{
 				// Aloft the aerial system owns position; on the ground, first look for better footing, then for elbow room.
 				bool aloft = WantsAltitude || _aerial;
-				if (!aloft && TryPerch(target, seg, range, standoff, now)) return true;
+				if (_perchActive && _perchAir)
+				{
+					// a gear climb under way: an airborne target takes priority over it; otherwise the climb is flown to its end
+					if (WantsAltitude) AbandonPerch(now);
+					else
+					{
+						if (TryPerch(target, seg, range, standoff, now)) return true;
+						// arrived (or abandoned) while still airborne: let it settle onto the perch rather than strafe in mid-air
+						if (NPC.velocity.Y != 0f) { _engMode = EngageMode.Hold; ClearGoal(); return true; }
+					}
+					aloft = WantsAltitude || _aerial;
+				}
+				else if (!aloft && TryPerch(target, seg, range, standoff, now)) return true;
 				if (_engMode == EngageMode.Approach) ClearGoal();
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;
@@ -798,6 +863,8 @@ namespace Levy.Content.NPCs
 				SetGoal(spot);
 				return true;
 			}
+			// Nothing on the ground gets a shot at an airborne target: a soldier with wings or rocket boots takes to the air after it.
+			if (TryAerialPursuit(seg, range, standoff)) return true;
 			// No route to a firing line (or the target is across a gap out of reach): stand here rather than walk into the gap.
 			if (_engMode == EngageMode.Approach) ClearGoal();
 			_engMode = EngageMode.Hold;
@@ -896,7 +963,8 @@ namespace Levy.Content.NPCs
 		/// <summary>Friendly soldiers near enough to matter for crowding a perch; a soldier already travelling counts at its destination.</summary>
 		private void GatherFriends()
 		{
-			_friendN = 0;
+			_friendN = 0; _friendClimbers = 0; _friendHigher = 0;
+			float highPx = LevyConstants.AirPerchMinRiseTiles * LevyConstants.TilePx;
 			float reachPx = (LevyConstants.PerchSearchRadiusTiles + LevyConstants.DispersionSpacingTiles * SpreadMult) * LevyConstants.TilePx;
 			for (int i = 0; i < Main.maxNPCs && _friendN < _friendPos.Length; i++)
 			{
@@ -904,6 +972,8 @@ namespace Levy.Content.NPCs
 				if (!o.active || i == NPC.whoAmI || o.type != NPC.type || Math.Abs(o.Center.X - NPC.Center.X) > reachPx) continue;
 				if (o.ModNPC is not SoldierNPC f || f.Record == null || f.State == SoldierState.Dead) continue;
 				// a friend already walking to a spot counts at its destination, so a squad takes different spots instead of funnelling to one
+				if (f._perchActive && f._perchAir) _friendClimbers++;
+				if (o.Bottom.Y < NPC.Bottom.Y - highPx) _friendHigher++;
 				_friendPos[_friendN++] = f._perchActive ? f._perchGoal : f._engMode == EngageMode.Approach && f._engPathOk && f.HasMoveGoal ? f.MoveGoal : o.Bottom;
 			}
 		}
@@ -976,7 +1046,7 @@ namespace Levy.Content.NPCs
 
 		private void AbandonPerch(int now)
 		{
-			_perchActive = false;
+			_perchActive = false; _perchAir = false;
 			_perchNextTick = Math.Max(_perchNextTick, now + LevyConstants.PerchFailCooldownTicks);
 			if (_engMode == EngageMode.Approach) ClearGoal();
 		}
@@ -998,22 +1068,29 @@ namespace Levy.Content.NPCs
 			Vector2 tc = seg.Center;
 			if (_perchActive)
 			{
+				bool air = _perchAir;
+				// a gear climb has arrived once the feet are over the perch surface (it then lets go and settles onto it)
 				bool arrived = Math.Abs(NPC.Bottom.X - _perchGoal.X) < LevyConstants.PerchArriveXTiles * tilePx
-					&& Math.Abs(NPC.Bottom.Y - _perchGoal.Y) < LevyConstants.PerchArriveYTiles * tilePx;
+					&& (air ? NPC.Bottom.Y <= _perchGoal.Y + LevyConstants.AirPerchArriveBelowPx
+						: Math.Abs(NPC.Bottom.Y - _perchGoal.Y) < LevyConstants.PerchArriveYTiles * tilePx);
 				if (arrived)
 				{
-					_perchActive = false;
-					_perchNextTick = Math.Max(_perchNextTick, now + LevyConstants.PerchSettleTicks);
+					_perchActive = false; _perchAir = false;
+					_perchNextTick = Math.Max(_perchNextTick, now + (air ? LevyConstants.AirPerchSettleTicks : LevyConstants.PerchSettleTicks));
 					return false;
 				}
-				bool stalled = now - _perchStartTick > LevyConstants.PerchStallGraceTicks && _blockedHard && _path.Count == 0 && _pathFailTimer > 0;
-				if (target.whoAmI != _perchTarget || stalled || now - _perchStartTick > LevyConstants.PerchTravelTimeoutTicks
+				bool stalled = !air && now - _perchStartTick > LevyConstants.PerchStallGraceTicks && _blockedHard && _path.Count == 0 && _pathFailTimer > 0;
+				// a gear climb that never left the ground, ran out of flight budget, or took too long is written off
+				bool airFailed = air && (_aerialSpent || (NPC.velocity.Y == 0f && !_aerial && now - _perchStartTick > LevyConstants.AirPerchLaunchGraceTicks));
+				if (target.whoAmI != _perchTarget || stalled || airFailed
+					|| now - _perchStartTick > (air ? LevyConstants.AirPerchTimeoutTicks : LevyConstants.PerchTravelTimeoutTicks)
 					|| !SpotFires(_perchGoal, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ShotIgnoresTiles()))
 				{
 					AbandonPerch(now);
 					return false;
 				}
-				_engMode = EngageMode.Approach; _engPathOk = true;
+				_engMode = EngageMode.Approach; _engPathOk = !air; // a gear climb is flown straight at the perch, not routed over the ground
+				if (air) { WantsAltitude = true; AltitudeBottomY = _perchGoal.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
 				SetGoal(_perchGoal);
 				return true;
 			}
@@ -1063,16 +1140,71 @@ namespace Levy.Content.NPCs
 			{
 				Vector2 bottom = _candPos[i];
 				if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, ignoresTiles)) continue;
-				if (pathChecks++ >= (cover ? LevyConstants.CoverPathChecks : LevyConstants.PerchPathChecks)) break;
-				if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
-				_perchActive = true; _perchGoal = bottom; _perchTarget = target.whoAmI; _perchStartTick = now;
+				// Walkable (or flyable) by the path search, else - in the open high-ground search only - reachable on the soldier's own gear.
+				bool viaAir = false;
+				if (pathChecks < (cover ? LevyConstants.CoverPathChecks : LevyConstants.PerchPathChecks))
+				{
+					pathChecks++;
+					if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath))
+					{
+						if (cover || !AirPerchFeasible(bottom, _candScore[i], need)) continue;
+						viaAir = true;
+					}
+				}
+				else if (cover || !AirPerchFeasible(bottom, _candScore[i], need)) continue;
+				else viaAir = true;
+				_perchActive = true; _perchAir = viaAir; _perchGoal = bottom; _perchTarget = target.whoAmI; _perchStartTick = now;
 				_perchNextTick = now + LevyConstants.PerchRelocateCooldownTicks;
 				if (cover) _coverNextTick = now + LevyConstants.CoverRelocateCooldownTicks;
-				_engMode = EngageMode.Approach; _engPathOk = true;
+				_engMode = EngageMode.Approach; _engPathOk = !viaAir;
+				if (viaAir) { WantsAltitude = true; AltitudeBottomY = bottom.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
 				SetGoal(bottom);
 				return true;
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// A high-ground spot no ground path reaches but this soldier's own gear can: it has a flight kit with the budget and relaunch cooldown
+		/// intact, the spot is a clear win (merit beats the footing by AirPerchExtraMerit on top of the usual improvement), it sits between
+		/// AirPerchMinRiseTiles and the kit's computed reach above the feet (so extra jumps get low ledges, wings and rocket boots real height) and
+		/// not far across, a lane to it is open (straight up then across, or across then up), this soldier is one of the stable fraction that ever
+		/// climbs, and the squad has room for it (few already climbing, few already standing clearly higher). All of that keeps the line a line.
+		/// </summary>
+		private bool AirPerchFeasible(Vector2 bottom, float merit, float need)
+		{
+			if (!HasFlightKit || _aerialSpent || _aerialCooldown > 0) return false;
+			if (merit < need + LevyConstants.AirPerchExtraMerit) return false;
+			if (SlotFrac(SlotSaltClimb) >= LevyConstants.AirPerchAppetite) return false;
+			float tilePx = LevyConstants.TilePx;
+			float rise = (NPC.Bottom.Y - bottom.Y) / tilePx;
+			if (rise < LevyConstants.AirPerchMinRiseTiles || rise > LevyConstants.PerchMaxRiseTiles) return false;
+			if (rise > AerialMaxReachTiles * LevyConstants.AirPerchReachUseFrac) return false;
+			if (Math.Abs(bottom.X - NPC.Bottom.X) > LevyConstants.AirPerchMaxDxTiles * tilePx) return false;
+			if (_friendN > 0)
+			{
+				int maxClimbers = Math.Max(1, (int)MathF.Ceiling(_friendN * LevyConstants.AirPerchMaxClimbingFrac));
+				int maxHigh = Math.Max(1, (int)MathF.Ceiling(_friendN * LevyConstants.AirPerchMaxHighFrac));
+				if (_friendClimbers >= maxClimbers || _friendHigher >= maxHigh) return false;
+			}
+			Point a = TileNav.FeetTile(NPC.Bottom), b = TileNav.FeetTile(bottom);
+			return (BodyColumnClear(a.X, b.Y, a.Y) && BodyRowClear(b.Y, a.X, b.X))
+				|| (BodyRowClear(a.Y, a.X, b.X) && BodyColumnClear(b.X, b.Y, a.Y));
+		}
+
+		/// <summary>Every body position in column <paramref name="x"/> from feet row <paramref name="yTop"/> down to <paramref name="yBottom"/> is clear of walls and lava.</summary>
+		private static bool BodyColumnClear(int x, int yTop, int yBottom)
+		{
+			for (int y = yTop; y <= yBottom; y++) if (!TileNav.InBounds(x, y) || !TileNav.IsBodyClear(x, y)) return false;
+			return true;
+		}
+
+		/// <summary>Every body position in feet row <paramref name="y"/> between the two columns (inclusive) is clear of walls and lava.</summary>
+		private static bool BodyRowClear(int y, int x0, int x1)
+		{
+			int lo = Math.Min(x0, x1), hi = Math.Max(x0, x1);
+			for (int x = lo; x <= hi; x++) if (!TileNav.InBounds(x, y) || !TileNav.IsBodyClear(x, y)) return false;
+			return true;
 		}
 
 		/// <summary>

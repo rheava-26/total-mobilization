@@ -10,6 +10,8 @@
 
 When a soldier's stats / gear / consumables diverge from how a REAL Terraria player works, the default answer is **make it match vanilla** unless there's a strong reason not to. This settled the HP question (grade no longer caps HP: 15 Life Crystals → 400, Life Fruit → 500, same for every grade, exactly like a player). Use it to settle future "why does X behave weirdly" reports. (This is the Levy-mod guiding principle; the tenet below governs the separate title.html game.)
 
+**⭐ WEAPON-COMPATIBILITY RULE (designer, standing): ALWAYS try to make an incompatible weapon WORK — marking it Unsupported is the LAST resort, not the default.** When a weapon breaks on soldiers (owner-anchored projectile, control-scheme mismatch, channel, etc.), the first move is a compatible path: route it through a Levy-owned projectile (SoldierBoomerang / SoldierThrust / a drive-it-ourselves PreAI like the Flying Knife) so it behaves right without colliding with the commander's ownership. Benching it is only acceptable when there is genuinely no sane way to make it fight. (This corrected the v0.9.12 instinct of marking Mechanica's Serpent's Spear Unsupported — v0.9.14 routes it through the boomerang path instead.) Applies to every agent dispatched for weapon work.
+
 ---
 
 ## 🛠 BUILD PLAN — ordered easy→hard (designer gave GO-AHEAD 2026-10-19; "get the easier stuff first")
@@ -29,7 +31,7 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 **TIER 1 — easy / contained (DOING FIRST):**
 1. **Militia default doctrine** → ✅ SHIPPED v0.9.9. Militia default to SearchDestroy, roam-anchored to their settlement muster point, 80-tile leash (MilitiaLeashTiles = SettlementRadiusX*2/3). Brain was hard-coded to Patrol in several places (Roaming was IsRegular-only) — all gated on militia now; regulars unaffected.
-2. **Mana/heal/buff potions** → ✅ FIXED v0.9.13. Was: potions ONLY drawn from the 2 issue slots, never storage — so dumping mana potions in the chest did nothing (designer: "they drink mana potions my ass"). Now soldiers draw heal/mana/buff potions from STORAGE too (dump-in-chest, like ammo/crystals); issue slots still preferred. New ArmoryTE.TakeServingPotion(preferSlot, serves) + SplitOne; Potions() takes heal then mana then buff via serving predicates, one restorative per check, casters-only-for-mana.
+2. **Potions** → HEAL/MANA ✅ FIXED v0.9.13 (draw from STORAGE too, dump-in-chest like ammo/crystals; issue slots still preferred). BUFF corrected v0.9.14: buffs stay ISSUE-SLOT-ONLY (NOT storage) — buffs are a DELIBERATELY LIMITED resource (the buff-slot economy, to be made upgradeable with progression). v0.9.13 wrongly let buffs pull from unlimited storage (deleted the limit); v0.9.14 reverts buff-from-storage via a `allowStorage:false` on TakeServingPotion. So: heal/mana unlimited-from-chest (survival), buff limited-by-slot (intentional). New ArmoryTE.TakeServingPotion(preferSlot, serves, allowStorage) + SplitOne; Potions() takes heal then mana (storage ok) then buff (issue-slot only).
 2b. **Ammo-on-death** → ✅ SHIPPED v0.9.11. Removed the softcore half-ammo-pouch ground-drop in OnBodyDied; softcore soldiers keep all ammo (it persists/returns like the rest of the kit). Hardcore/mediumcore still drop the whole kit.
 3. **Boot/wing particles + SFX** → the dummy-player's movement visuals (rocket-boot flame, run dust, boot sounds) aren't drawn on the NPC. Cosmetic, visible, warms up the movement-visuals path. [needs a look at the draw code]
 

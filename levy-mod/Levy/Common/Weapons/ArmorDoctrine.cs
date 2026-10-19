@@ -106,8 +106,15 @@ namespace Levy.Common.Weapons
 				_baseline ??= Measure(0, 0, 0, null);
 				var s = Measure(head, body, legs, _baseline);
 				PipelineRuns++;
+				// A summon bonus with NO extra minion slots is only "tag" damage riding on the armor (the Old One's Army sets pile minion damage and
+				// sentry capacity onto every piece of an otherwise melee/ranged/magic set). When a martial class has a real bonus, that class is the
+				// set's identity and Summon sits out. Armor that buys minion slots (Spider, Stardust, Spooky...) is a true summoner set and still competes.
+				bool martialReal = false;
+				for (int i = 0; i < Classes.Length; i++) if (Classes[i] != DamageClass.Summon && s[i] >= MinBonus) martialReal = true;
+				bool summonIsRider = martialReal && s[Classes.Length] <= 0f;
 				int best = -1; float bestV = float.NegativeInfinity, second = float.NegativeInfinity;
-				for (int i = 0; i < s.Length; i++) {
+				for (int i = 0; i < Classes.Length; i++) {
+					if (summonIsRider && Classes[i] == DamageClass.Summon) continue;
 					if (s[i] > bestV) { second = bestV; bestV = s[i]; best = i; }
 					else if (s[i] > second) second = s[i];
 				}
@@ -144,7 +151,9 @@ namespace Levy.Common.Weapons
 			p.UpdateEquips(SoldierNPC.DummySlot);
 			p.UpdateArmorSets(SoldierNPC.DummySlot);
 
-			var r = new float[Classes.Length];
+			// Trailing extra element: bonus minion slots the armor grants (index Classes.Length); callers indexing by class never see it.
+			var r = new float[Classes.Length + 1];
+			r[Classes.Length] = Math.Max(0, p.maxMinions - 1);
 			for (int i = 0; i < Classes.Length; i++) {
 				var dmg = p.GetDamage(Classes[i]);
 				r[i] = (dmg.Additive - 1f) + (dmg.Multiplicative - 1f) + p.GetCritChance(Classes[i]) * CritWeight;

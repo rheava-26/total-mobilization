@@ -94,6 +94,7 @@ Mods: {
 			SoldierBoomerang.DisplayName: Boomerang
 			SoldierYoyo.DisplayName: Yoyo
 			SoldierFlail.DisplayName: Flail
+			SoldierVampireKnife.DisplayName: Soldier Vampire Knife
 		}
 
 		Keybinds: {

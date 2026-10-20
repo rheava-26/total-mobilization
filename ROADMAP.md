@@ -27,6 +27,27 @@ When a soldier's stats / gear / consumables diverge from how a REAL Terraria pla
 
 **SCOPE for 1.0 = the 4 BASE CLASSES (melee/ranged/magic/summon) all work.** Secondary classes (Calamity ROGUE custom resource; Thorium BARD/HEALER custom resources) = "a different beast" (designer's words) — deferred; if trivial, add later; would be separate submods (Thorium-compat, Calamity-compat) and need the uploaded mod files.
 
+---
+
+## 🎯 1.0 FEATURE SCOPE — THE BIG BRIEF (designer 2026-10-20: "i think this should be 1.0 update ngl" + a UI mockup)
+
+A dense design brain-dump. Captured in full; sequencing + opinions are Opus's, NOT yet all greenlit. GREENLIT = fire-and-let-live weapons (building now). Everything else needs the design pass below to settle before building.
+
+**T1 — DEPLOY-AND-PERSIST WEAPONS (✅ GREENLIT, agent building → v0.9.35):** Rainbow Gun / Magnet Sphere / (Nimbus/Crimson Rod, Clinger Staff) earn DPS from a PERSISTENT field, not re-firing. v0.9.34's kill-prior means a mashing soldier strangles its own rainbow every tick → near-zero DPS + bad feel. Fix = fire-and-let-live: deploy one, hold fire while the own-field is alive and covers the target, re-fire only on expiry/target-left. ALSO (deferred to T2 loadout work): "keep those weapons as SIDEARMS" — flag them utility/sidearm-preferred, not primaries.
+
+**T2 — AUTO-UPGRADE / LOADOUT FLOW (KEYSTONE, Opus's #1 rec). The loudest pain: "i'm making tons of weapons, i've been farming, but they still use post-1-mech sentries" / "too many items i'm making and they refuse to use."** Root cause: `IssueGear`/`Rearm` (SettlementSystem/RosterSystem) picks a weapon ONCE on arm and never re-evaluates when the player farms better gear. The core fantasy (farm → army gets stronger) is broken because loot doesn't flow to the army. FIX: soldiers AUTO-UPGRADE — periodically re-evaluate and swap to the best available armory weapon for their role (reuse WeaponClassifier.Score), default ON with a per-soldier LOADOUT LOCK to protect hand-picked kits. This also recreates the weapon VARIETY/churn the designer misses from the old item-loss-on-death ("it forced units to use more weapon varieties" — NOT advocating item loss, but wants its effect). PLUS manual control: "force X units to use a specific class or loadout" + per-unit rearm. Sidearm-flag for T1 weapons lands here.
+
+**T3 — ARMORY SORT/FILTER (Magic Storage-style). Designer: "the armory is difficult to sort — i'd just steal magic storage in terms of how to sort it and filtering out items."** Search bar + category filter (melee/ranged/magic/summon/sentry/accessory) + sort (tier/DPS/name). Supports T2 and T4.
+
+**T4 — BARRACKS / ROSTER UI OVERHAUL (designer drew a mockup).** Replace the vertical list with a GRID of compact unit CARDS: portrait, name, loadout ("items and stuff here"), HP value, color-coded by unit QUALITY/grade ("the better the type of unit it is a different color"). Global buttons (Mobilize, orders, enlist) move to the TOP. Per-card you can DIRECTLY grab weapons from the searchable armory (T3). Natural home for: DEMOTE a unit ("it's impossible to downgrade a unit without removing them :(") — add demote alongside promote; FILTER the roster ("a suggestion for how to filter your barracks" — by class/grade/home/status); FORCE-CLASS/loadout (T2); easier loadout editing ("i wish it was easier to use the barracks menu to edit loadouts").
+
+**T5 — ECONOMY / PROGRESSION PASS (needs design decisions):**
+- **Wage-failure consequence** ("i don't know what the punishment is for failing to pay them considering all they do is complain"). Today: dialogue complaints only (payday/unpaid/hold-fire lines). Opus rec: escalate — grace period → morale/performance penalty → DESERTION if it persists (with warning). DECISION: how harsh?
+- **Manpower** (cap = ManpowerPerNpc × townNPCcount, +3/day; designer: "cap ~90, 3/day... i'd change it so it could provide increased buff slots / new things"). Opus PUSHBACK: don't overload manpower (it's cleanly "army size"). INSTEAD route capability-unlocks through the BOOKS layer (below). DECISION: books vs manpower as the unlock lever?
+- **BOOKS underpowered / "the guide to discipline sucks."** 5 lootable books (Conscription/Drill/Plunder/Fortification/Discipline); Discipline's effect is just +regen (DisciplineExtraRegen). Opus rec: make the books the PROGRESSION-UNLOCK layer — buff slots, new unit abilities, new orders/capabilities — so they're worth farming. This absorbs the designer's "increased buff slots / allowing units to do new things" wish.
+
+**OPUS'S PROPOSED 1.0 BUILD ORDER:** T1 (now) → T2 auto-upgrade (keystone, fixes loudest pain) → T3 armory sort → T4 barracks UI (drives the manual overrides) → T5 economy pass. OPEN: designer drew the UI (T4) so may want it sooner; auto-upgrade (T2) is the bigger gameplay fix. Awaiting designer's priority call + the T5 decisions. ART remains a known gap (needs human/reference sprites) and will bound how polished T4's cards can look.
+
 **WAVE 1 ✅ SHIPPED v0.9.16 (all four, integrated via 3-way merges, packs+boots clean):**
 - ✅ Yoyos + Flails → Levy-owned SoldierYoyo/SoldierFlail (whole families work, vanilla+modded).
 - ✅ Verticality + flight + dashes, LINE-SAFE — gear-assisted perches (winged soldiers take higher ground via AirPerchFeasible→aerial system), TryAerialPursuit for airborne targets (needs wings/rockets), TickDash (dummy.dashType). Gated: ~55% climb appetite, ≤25% mid-climb at once, kitless never flies.

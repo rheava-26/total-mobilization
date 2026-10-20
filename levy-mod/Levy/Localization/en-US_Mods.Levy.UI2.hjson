@@ -44,8 +44,16 @@ NotDeployed: Not deployed
 DeadRespawn: Dead. Back in {0}s
 Dead: Dead
 Hp: HP {0}/{1}
+Mana: MP {0}/{1}
+MoreActions: More
+MoreActionsHint: Patrol, feeding and rebasing.
+BackActions: Back
+ResizeHint: Drag to resize the roster.
 Kills: "{0} kills"
 FeedLifeCrystal: +Life Crystal
+FeedLifeCrystalShort: +Life
+FeedLifeFruitShort: +Fruit
+FeedManaCrystalShort: +Mana
 FeedLifeFruit: +Life Fruit
 FeedManaCrystal: +Mana Crystal
 RebaseHere: Rebase here

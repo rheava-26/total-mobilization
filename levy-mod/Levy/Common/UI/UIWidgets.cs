@@ -185,6 +185,58 @@ namespace Levy.Common.UI
 		}
 	}
 
+	/// <summary>
+	/// A bottom-right corner grab handle. Press and drag: <see cref="OnDrag"/> is called every frame with the mouse movement (UI pixels) since the
+	/// press; <see cref="OnRelease"/> once when the button comes up. The owner turns that into a new panel size (and clamps it).
+	/// </summary>
+	public class ResizeGrip : UIElement
+	{
+		public Action<float, float> OnDrag;
+		public Action OnPress, OnRelease;
+		public string Hint;
+		private bool _dragging;
+		private Vector2 _start;
+
+		public ResizeGrip(int size, string hint = null) { Width.Set(size, 0f); Height.Set(size, 0f); Hint = hint; }
+
+		/// <summary>The mouse in UI-space pixels (screen pixels divided by the UI scale).</summary>
+		private static Vector2 Mouse => Main.MouseScreen / Main.UIScale;
+
+		public bool Dragging => _dragging;
+
+		public override void LeftMouseDown(UIMouseEvent evt)
+		{
+			base.LeftMouseDown(evt);
+			_dragging = true; _start = Mouse;
+			OnPress?.Invoke();
+			SoundEngine.PlaySound(SoundID.MenuTick);
+		}
+
+		public override void Update(GameTime gameTime)
+		{
+			base.Update(gameTime);
+			if (IsMouseHovering || _dragging) Main.LocalPlayer.mouseInterface = true;
+			if (!_dragging) return;
+			if (!Main.mouseLeft) { _dragging = false; OnRelease?.Invoke(); return; }
+			var d = Mouse - _start;
+			OnDrag?.Invoke(d.X, d.Y);
+		}
+
+		protected override void DrawSelf(SpriteBatch spriteBatch)
+		{
+			var r = GetDimensions().ToRectangle();
+			var px = TextureAssets.MagicPixel.Value;
+			var c = (_dragging || IsMouseHovering) ? Color.White : new Color(170, 180, 215);
+			// three diagonal ridges toward the corner, like a storage-window resize handle
+			for (int i = 0; i < 3; i++)
+			{
+				int off = 4 + i * 5; // distance of the ridge from the corner
+				for (int k = 0; k < off; k++) spriteBatch.Draw(px, new Rectangle(r.Right - 3 - k, r.Bottom - 3 - (off - k), 2, 2), c);
+			}
+			if (IsMouseHovering && !_dragging && !string.IsNullOrEmpty(Hint)) HintTooltip.Queue(Hint);
+		}
+	}
+
 	/// <summary>Plain label that never eats mouse events.</summary>
 	public class Label : UIText
 	{

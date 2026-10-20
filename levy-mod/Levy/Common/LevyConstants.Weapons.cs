@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Terraria.ID;
 
 namespace Levy.Common
 {
@@ -114,5 +115,25 @@ namespace Levy.Common
 		/// <summary>When issuing a primary weapon a soldier draws from the weapon types scoring within this fraction of the best viable score (at most WeaponVarietyMaxTypes types).</summary>
 		public const float WeaponVarietyTopFraction = 0.75f;
 		public const int WeaponVarietyMaxTypes = 6;
+
+		// ---------- Deploy-and-persist weapons (fire once, hold fire while the soldier's own field is still working) ----------
+		/// <summary>
+		/// Magic weapons whose damage comes from a long-lived field they leave behind (Rainbow Gun's rainbow, Magnet Sphere's orb, Nimbus / Crimson Rod's rain cloud), not from re-firing.
+		/// A soldier holding one fires again only when its own field has lapsed or no longer reaches the target (ItemShots.HoldsFire). Not included: Clinger Staff (a 16 px wall that
+		/// mostly misses a moving target, so holding buys nothing).
+		/// </summary>
+		public static readonly HashSet<int> DeployPersistItems = new() { ItemID.RainbowGun, ItemID.MagnetSphere, ItemID.NimbusRod, ItemID.CrimsonRod };
+		/// <summary>A field projectile with this few ticks left (or fewer) counts as lapsed: the Magnet Sphere stops zapping at 30, and a rainbow piece fades out over its last 10.</summary>
+		public const int DeployFieldMinTimeLeftTicks = 30;
+		/// <summary>Rainbow: a target within this many pixels of a rainbow piece (hitbox to hitbox) is still being worked by it.</summary>
+		public const float RainbowCoverPadPx = 24f;
+		/// <summary>Magnet Sphere: vanilla zaps anything within 300 px by |dx| + |dy| with a clear line; this circle sits inside that diamond, so a target in it is always in reach.</summary>
+		public const float MagnetSphereReachPx = 210f;
+		/// <summary>Rain clouds: raindrops spawn within 14 px of the cloud's centre (4 px wide); a target whose box comes within this much of that column is under the rain.</summary>
+		public const float RainCloudColumnHalfPx = 18f, RainCloudCoverPadPx = 16f;
+		/// <summary>Rain clouds: how far below the cloud the rain is counted as reaching (drops fall until they hit ground).</summary>
+		public const float RainCloudReachPx = 480f;
+		/// <summary>Rain clouds: a raining cloud whose ai[1] age counter reached this is fading out (vanilla culls the oldest when the owner has too many).</summary>
+		public const float RainCloudFadeAge = 18000f;
 	}
 }

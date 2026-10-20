@@ -34,6 +34,58 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>
+		/// Fire-and-let-live gate for the deploy-and-persist magic weapons (<see cref="LevyConstants.DeployPersistItems"/>): true while one of THIS soldier's own field projectiles (matched by
+		/// <see cref="SoldierProjectileTag.SoldierIndex"/>) is still in flight or alive and still reaches <paramref name="target"/>, so the soldier holds fire and the field earns its damage.
+		/// False when the field has lapsed or the target has left its reach (a fresh one is warranted; <see cref="PreShoot"/> then clears the spent rainbow). Other weapons always get false.
+		/// </summary>
+		public static bool HoldsFire(SoldierNPC s, int itemType, NPC target)
+		{
+			if (s == null || target == null || !LevyConstants.DeployPersistItems.Contains(itemType)) return false;
+			int soldier = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || p.timeLeft <= LevyConstants.DeployFieldMinTimeLeftTicks) continue;
+				if (!p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex != soldier) continue;
+				if (FieldCovers(itemType, p, target)) return true;
+			}
+			return false;
+		}
+
+		/// <summary>True if <paramref name="p"/> is a live piece of the field <paramref name="itemType"/> leaves behind (or the shot still flying out to become it) and it reaches the target.</summary>
+		private static bool FieldCovers(int itemType, Projectile p, NPC target)
+		{
+			switch (itemType)
+			{
+				case ItemID.RainbowGun:
+					// the head is still arcing out (it lays the rainbow as it goes); the pieces it laid damage whatever touches them
+					if (p.type == ProjectileID.RainbowFront) return true;
+					if (p.type != ProjectileID.RainbowBack) return false;
+					return Padded(target.Hitbox, LevyConstants.RainbowCoverPadPx).Intersects(p.Hitbox);
+				case ItemID.MagnetSphere:
+					// the orb zaps anything inside its reach with a clear line from its centre (Projectile.AI_047_MagnetSphere_TryAttacking)
+					return p.type == ProjectileID.MagnetSphereBall && p.Center.Distance(target.Center) <= LevyConstants.MagnetSphereReachPx
+						&& Collision.CanHit(p.Center, 1, 1, target.Center, 1, 1);
+				case ItemID.NimbusRod: return CloudCovers(p, ProjectileID.RainCloudMoving, ProjectileID.RainCloudRaining, target);
+				case ItemID.CrimsonRod: return CloudCovers(p, ProjectileID.BloodCloudMoving, ProjectileID.BloodCloudRaining, target);
+			}
+			return false;
+		}
+
+		/// <summary>A rain cloud: still flying to its spot, or raining (not fading) with the target in the column of drops below it.</summary>
+		private static bool CloudCovers(Projectile p, int movingType, int rainingType, NPC target)
+		{
+			if (p.type == movingType) return true;
+			if (p.type != rainingType || p.ai[1] >= LevyConstants.RainCloudFadeAge) return false;
+			Rectangle box = target.Hitbox;
+			float pad = LevyConstants.RainCloudCoverPadPx, rainTop = p.position.Y + p.height;
+			return box.Right + pad >= p.Center.X - LevyConstants.RainCloudColumnHalfPx && box.Left - pad <= p.Center.X + LevyConstants.RainCloudColumnHalfPx
+				&& box.Bottom >= rainTop && box.Top <= rainTop + LevyConstants.RainCloudReachPx;
+		}
+
+		private static Rectangle Padded(Rectangle r, float pad) { r.Inflate((int)pad, (int)pad); return r; }
+
 		/// <summary>Fires the item's special shot with the hook-modified stats. Returns false when the item has none (the caller then fires the plain shot).</summary>
 		public static bool TryShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int dmg, float kb)
 		{

@@ -112,11 +112,44 @@ namespace Levy.Content.Projectiles
 
 		public override bool ShouldUpdatePosition() => false; // anchored to the body in AI; velocity is only the thrust direction
 
+		/// <summary>
+		/// A real player never sees the spear's ITEM sprite: spears are noUseGraphic, and Main.DrawProj_Spear draws the item's shot projectile texture
+		/// (item.shoot, aiStyle 19) at proj.scale, which is that projectile's SetDefaults scale (Spear 1.1, Gungnir 1.3, ...); no item or melee-size scale is
+		/// applied to a spear projectile anywhere in vanilla. The projectile sprite is also larger than the item icon, so drawing the icon at item.scale was
+		/// markedly small. This reproduces DrawProj_Spear (tip pinned at the projectile centre, body trailing behind it). Returns false for non-spear shots
+		/// (shortswords, modded thrusts) so they keep the item-sprite draw.
+		/// </summary>
+		private bool TryDrawVanillaSpear(int itemType, Color color)
+		{
+			if (!ContentSamples.ItemsByType.TryGetValue(itemType, out var item) || item == null || item.shoot <= 0 || item.shoot >= TextureAssets.Projectile.Length) return false;
+			if (!ContentSamples.ProjectilesByType.TryGetValue(item.shoot, out var shot) || shot == null || shot.aiStyle != ProjAIStyleID.Spear) return false;
+			Main.instance.LoadProjectile(item.shoot);
+			var asset = TextureAssets.Projectile[item.shoot];
+			if (asset == null || !asset.IsLoaded) return false;
+			Texture2D tex = asset.Value;
+			float scale = Projectile.scale * shot.scale; // vanilla: proj.scale == the spear projectile's SetDefaults scale
+			Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+			// Main.DrawProj_Spear: rotation = atan2(velocity) + 3pi/4; facing right flips the sprite, pins its top-right corner and takes off another pi/2.
+			float rotation = dir.ToRotation() + 2.355f;
+			Vector2 origin = Vector2.Zero;
+			SpriteEffects fx = SpriteEffects.None;
+			if (Projectile.spriteDirection != -1)
+			{
+				fx = SpriteEffects.FlipHorizontally;
+				origin.X = tex.Width;
+				rotation -= MathHelper.PiOver2;
+			}
+			Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, null, color, rotation, origin, scale, fx);
+			return true;
+		}
+
 		public override bool PreDraw(ref Color lightColor)
 		{
 			if (Main.dedServ) return false;
 			int t = ItemType;
 			if (t <= 0 || t >= TextureAssets.Item.Length) return false;
+			Color color = Lighting.GetColor((int)(Projectile.Center.X / 16f), (int)(Projectile.Center.Y / 16f));
+			if (TryDrawVanillaSpear(t, color)) return false;
 			Main.instance.LoadItem(t);
 			var asset = TextureAssets.Item[t];
 			if (asset == null || !asset.IsLoaded) return false;
@@ -131,7 +164,6 @@ namespace Levy.Content.Projectiles
 			float rotation = dir.ToRotation() + (flip ? MathHelper.PiOver4 * 3f : MathHelper.PiOver4);
 			float blade = new Vector2(frame.Width, frame.Height).Length() * scale;
 			Vector2 grip = Projectile.Center - dir * blade;
-			Color color = Lighting.GetColor((int)(Projectile.Center.X / 16f), (int)(Projectile.Center.Y / 16f));
 			Main.EntitySpriteDraw(tex, grip - Main.screenPosition, frame, color, rotation, origin, scale, flip ? SpriteEffects.FlipHorizontally : SpriteEffects.None);
 			return false;
 		}

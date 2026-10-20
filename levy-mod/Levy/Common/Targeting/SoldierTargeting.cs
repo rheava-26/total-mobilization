@@ -38,8 +38,9 @@ namespace Levy.Common.Targeting
 		/// target (see <see cref="FocusTargetFor"/>) beats everything else.
 		/// <paramref name="excludeIdx"/> (an NPC index, or -1) is never returned and never beats a reachable enemy: it is skipped before the line-of-sight test,
 		/// so a target the soldier found unreachable does not blank the pick while others stand in reach.
+		/// With <paramref name="preferNearest"/> the attacker priority is ignored and the closest legal enemy in sight wins (every other filter still applies).
 		/// </summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false)
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false, bool preferNearest = false)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
 			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
@@ -54,7 +55,7 @@ namespace Levy.Common.Targeting
 				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
 				float distSq = Vector2.DistanceSquared(from, npc.Center);
 				if (distSq > rangeSq) continue;
-				bool attacking = IsAttackingUs(npc);
+				bool attacking = !preferNearest && IsAttackingUs(npc); // nearest-only: every candidate ranks as priority 2, so distance alone decides
 				if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
 				if (attacking == bestAttacking && distSq >= bestDistSq) continue;
 				if (!Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)

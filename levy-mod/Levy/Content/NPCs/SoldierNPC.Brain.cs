@@ -506,7 +506,7 @@ namespace Levy.Content.NPCs
 				if (t.life > 0 && !SoldierTargeting.IsNeverTarget(t) && LevyUtil.WithinTiles(NPC.Center, t.Center, range * LevyConstants.TargetKeepRangeMult)) return;
 			}
 			TargetIndex = -1;
-			int pick = SoldierTargeting.PickTarget(this, range);
+			int pick = SoldierTargeting.PickTarget(this, range, preferNearest: FiresBeamMelee);
 			if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick])) TargetIndex = pick;
 		}
 
@@ -553,6 +553,9 @@ namespace Levy.Content.NPCs
 		/// <summary>True for a blade / spear / whip that closes to contact. A sword that fires a real projectile (FiresProjectileMelee) stands off at beam range like a gunner.</summary>
 		private bool PositionsAsMelee => Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee;
 
+		/// <summary>A sword that throws its own projectile: it stands off like a gunner but picks the NEAREST enemy rather than the one attacking us.</summary>
+		private bool FiresBeamMelee => Weapon != null && Weapon.FiresProjectileMelee;
+
 		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles * FireBuffer;
 
 		/// <summary>Ranged weapons pick targets and open fire a little past their listed range (see <see cref="LevyConstants.RangedFireRangeBuffer"/>).</summary>
@@ -572,6 +575,20 @@ namespace Levy.Content.NPCs
 			rangeTiles *= BossRangeMult(n); // a boss held at its long reach stays the target
 			if (!LevyUtil.WithinTiles(NPC.Center, n.Center, rangeTiles * LevyConstants.TargetKeepRangeMult)) return false;
 			return WithinChaseBounds(n, rangeTiles);
+		}
+
+		/// <summary>
+		/// For a beam-firing swordsman holding <paramref name="current"/>: the index of a clearly nearer legal enemy in sight (inside the order's chase bounds
+		/// and not recently unreachable), or -1 to keep the current one.
+		/// </summary>
+		private int NearerBeamTarget(NPC current, float rangeTiles, int now)
+		{
+			int pick = SoldierTargeting.PickTarget(this, rangeTiles, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, preferNearest: true);
+			if (pick < 0 || pick == TargetIndex || !ValidNpc(pick)) return -1;
+			var n = Main.npc[pick];
+			if (n.life <= 0 || SoldierTargeting.IsNeverTarget(n) || !WithinChaseBounds(n, rangeTiles)) return -1;
+			float ratio = LevyConstants.Targeting.NearestSwitchRatio;
+			return Vector2.DistanceSquared(NPC.Center, n.Center) < Vector2.DistanceSquared(NPC.Center, current.Center) * ratio * ratio ? pick : -1;
 		}
 
 		/// <summary>Posts, holds, settlements and commanders bound how far a soldier may be dragged by a target.</summary>
@@ -626,12 +643,16 @@ namespace Levy.Content.NPCs
 			}
 			if (focus >= 0) { TargetIndex = focus; target = Main.npc[focus]; } // the commander's designated target outranks everything
 			else if (fhostile >= 0) { TargetIndex = fhostile; target = Main.npc[fhostile]; }
-			else if (!(TargetIndex == _unreachIdx && now < _unreachUntil) && TargetStillValid(TargetIndex, range)) target = Main.npc[TargetIndex];
+			else if (!(TargetIndex == _unreachIdx && now < _unreachUntil) && TargetStillValid(TargetIndex, range))
+			{
+				target = Main.npc[TargetIndex];
+				if (FiresBeamMelee) { int near = NearerBeamTarget(target, range, now); if (near >= 0) { TargetIndex = near; target = Main.npc[near]; } } // a closer threat steals the beam
+			}
 			else
 			{
 				TargetIndex = -1;
 				// the target found unreachable is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
-				int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1);
+				int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, preferNearest: FiresBeamMelee);
 				if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
 				{
 					TargetIndex = pick; target = Main.npc[pick];
@@ -640,7 +661,7 @@ namespace Levy.Content.NPCs
 				{
 					// nothing else in reach: a boss further out is still shot at from the long reach it earns
 					float bossRange = range * Weapon.BossReachMult;
-					int boss = SoldierTargeting.PickTarget(this, bossRange, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, bossesOnly: true);
+					int boss = SoldierTargeting.PickTarget(this, bossRange, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, bossesOnly: true, preferNearest: FiresBeamMelee);
 					if (ValidNpc(boss) && Main.npc[boss].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[boss]) && WithinChaseBounds(Main.npc[boss], bossRange))
 					{
 						TargetIndex = boss; target = Main.npc[boss];

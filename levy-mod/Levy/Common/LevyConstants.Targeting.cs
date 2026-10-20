@@ -20,6 +20,8 @@ namespace Levy.Common
 			/// A soldier only competes for one this close, so a sleeping mimic is woken by a soldier walking up to it and never hunts one across the map.
 			/// </summary>
 			public const float MimicWakeSoldierRangePx = 200f;
+			/// <summary>A beam-firing swordsman holding a target switches to a nearer enemy only when that one is closer than this fraction of the current distance (stops flapping between near-equals).</summary>
+			public const float NearestSwitchRatio = 0.85f;
 			/// <summary>Accessory-issue score per point of aggro an accessory adds (Flesh Knuckles +400 = 100, about two defense points). A tie-breaker, never a rank override.</summary>
 			public const float AccessoryAggroWeight = 0.25f;
 

@@ -187,6 +187,7 @@ namespace Levy.Content.NPCs
 					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f);
+					DrawSwordSlash(sb);
 				}
 				finally { sb.End(); }
 			}
@@ -195,6 +196,122 @@ namespace Levy.Content.NPCs
 				// exactly what DoDraw_DrawNPCsOverTiles / DoDraw_DrawNPCsBehindTiles began with
 				sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
 			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Big sword slash (Night's Edge / Excalibur / True Excalibur / Terra Blade / Horseman's Blade families)
+		//
+		// In vanilla these swords are useStyle Swing + noMelee: the large golden/purple/green arc is NOT the held item sprite but a
+		// separate projectile (aiStyle 190). Player.ItemCheck_Shoot spawns it as NewProjectile(MountedCenter, (direction,0), proj, ...,
+		// ai0 = direction*gravDir, ai1 = itemAnimationMax, ai2 = GetAdjustedItemScale). That projectile reads Main.player[owner], so a soldier
+		// (whose owner would be the commander) never spawns it (WeaponUse.StartSwing deliberately skips IsHeldSlashProjectile). The held
+		// item sprite itself is already drawn exactly like a player's by DrawPlayer (Swing pose + GetAdjustedItemScale); only the arc was
+		// missing. It is re-drawn here from the same inputs the projectile uses: Projectile.AI_190_NightsEdge (rotation / scale / centre)
+		// and Main.DrawProj_NightsEdge / _Excalibur / _TrueExcalibur / _TerraBlade2 / _TheHorsemansBlade (layers and colours). The star
+		// sparkles (Main.DrawPrettyStarSparkle is private) are left out; the sprite layers are the visible arc. Draw only: no hitbox, no
+		// projectile, no reach change.
+		// ------------------------------------------------------------------------------------------------------------
+		private const int ProjNightsEdge = 972, ProjExcalibur = 982, ProjTrueExcalibur = 983, ProjTerraBlade = 984, ProjHorsemansBlade = 997;
+
+		/// <summary>The arc projectile type(s) a held item's swing throws in vanilla (Player.ItemCheck_Shoot), or 0 when it has none.</summary>
+		private static int SlashProjectile(Item held, out int second)
+		{
+			second = 0;
+			switch (held.type)
+			{
+				case ItemID.NightsEdge: return ProjNightsEdge;
+				case ItemID.TrueNightsEdge: return ProjNightsEdge; // its own projectile 973 is the flown blade; the arc is the Night's Edge one
+				case ItemID.Excalibur: return ProjExcalibur;
+				case ItemID.TrueExcalibur: second = ProjExcalibur; return ProjTrueExcalibur; // vanilla throws both arcs (the 982 one with no damage)
+				case ItemID.TerraBlade: return ProjTerraBlade;
+				case ItemID.TheHorsemansBlade: return ProjHorsemansBlade;
+			}
+			switch (held.shoot)
+			{
+				case ProjNightsEdge: case ProjExcalibur: case ProjTrueExcalibur: case ProjTerraBlade: case ProjHorsemansBlade: return held.shoot;
+			}
+			return 0;
+		}
+
+		private void DrawSwordSlash(SpriteBatch sb)
+		{
+			Player p = Dummy;
+			Item held = p.inventory[0];
+			int anim = ItemAnimation;
+			if (held == null || held.IsAir || anim <= 0 || held.useStyle != ItemUseStyleID.Swing) return;
+			int proj = SlashProjectile(held, out int second);
+			if (proj == 0) return;
+			int animMax = Math.Max(1, ItemAnimationMax);
+			// Projectile.localAI[0] is 1 on its first tick and reaches ai1 (= itemAnimationMax) on its last; ItemAnimation counts animMax..1.
+			float t = Math.Clamp(animMax - anim + 1, 1, animMax) / (float)animMax;
+			float aiDir = p.direction >= 0 ? 1f : -1f;
+			float itemScale = p.GetAdjustedItemScale(held);
+			Vector2 center = p.RotatedRelativePoint(p.MountedCenter) - new Vector2(aiDir, 0f) - Main.screenPosition; // AI_190: Center = MountedCenter - velocity
+			DrawSlashArc(sb, proj, center, aiDir, t, itemScale, p.fullRotation);
+			if (second != 0) DrawSlashArc(sb, second, center, aiDir, t, itemScale, p.fullRotation);
+		}
+
+		private static void DrawSlashArc(SpriteBatch sb, int type, Vector2 center, float aiDir, float t, float itemScale, float fullRotation)
+		{
+			Main.instance.LoadProjectile(type);
+			Texture2D tex = TextureAssets.Projectile[type].Value;
+			if (tex == null) return;
+			// AI_190_NightsEdge: rotation / scale
+			float rotation = MathF.PI * aiDir * t + (aiDir > 0f ? 0f : MathF.PI) + aiDir * MathF.PI + fullRotation;
+			float growth = 0.2f, baseScale = 1f;
+			switch (type)
+			{
+				case ProjExcalibur: case ProjHorsemansBlade: case ProjTerraBlade: growth = 0.6f; break;
+				case ProjTrueExcalibur: growth = 1f; baseScale = 1.2f; break;
+			}
+			float num = (baseScale + t * growth) * itemScale * 1.1f; // DrawProj_*: proj.scale * 1.1
+			Rectangle body = tex.Frame(1, 4);
+			Rectangle core = tex.Frame(1, 4, 0, 3);
+			Vector2 origin = body.Size() / 2f;
+			SpriteEffects fx = aiDir >= 0f ? SpriteEffects.None : SpriteEffects.FlipVertically;
+			float fade = Utils.Remap(t, 0f, 0.6f, 0f, 1f) * Utils.Remap(t, 0.6f, 1f, 1f, 0f); // num3
+			float lit = Lighting.GetColor((center + Main.screenPosition).ToTileCoordinates()).ToVector3().Length() / (float)Math.Sqrt(3.0);
+			if (type == ProjTerraBlade) lit = 0.5f + lit * 0.5f;
+			lit = Utils.Remap(lit, 0.2f, 1f, 0f, 1f);
+			const float trim = 0.975f;
+
+			Color back, c2, c3;
+			switch (type)
+			{
+				case ProjNightsEdge: back = new Color(40, 20, 60); c2 = new Color(80, 40, 180); c3 = Color.White; break;
+				case ProjExcalibur: back = new Color(180, 160, 60); c2 = new Color(255, 240, 150); c3 = new Color(255, 255, 80); break;
+				case ProjTrueExcalibur:
+					back = Color.Lerp(new Color(180, 50, 90), new Color(180, 30, 60), fade);
+					c2 = Color.Lerp(new Color(255, 240, 150), new Color(255, 60, 170), fade);
+					c3 = Color.Lerp(new Color(255, 255, 80), new Color(255, 60, 190), fade); break;
+				case ProjTerraBlade: back = new Color(45, 124, 205); c2 = new Color(181, 230, 29); c3 = new Color(34, 177, 76); break;
+				default: back = new Color(193, 43, 43); c2 = new Color(247, 115, 0); c3 = new Color(255, 202, 130); break; // Horseman's Blade
+			}
+			Color haze = Color.White * fade * 0.5f;
+			haze.A = (byte)(haze.A * (1f - lit));
+			Color haze2 = haze * lit * 0.5f;
+			haze2.G = (byte)(haze2.G * lit);
+			if (type == ProjNightsEdge) haze2.R = (byte)(haze2.R * (0.25f + lit * 0.75f));
+			else haze2.B = (byte)(haze2.R * (0.25f + lit * 0.75f)); // vanilla derives B from R in the gold / red / green arcs
+			float tail = rotation + aiDir * (MathF.PI / 4f) * -1f * (1f - t);
+
+			if (type == ProjNightsEdge)
+			{
+				sb.Draw(tex, center, body, back * lit * fade, tail, origin, num * trim, fx, 0f);
+				sb.Draw(tex, center, body, haze2 * 0.15f, rotation + aiDir * 0.01f, origin, num, fx, 0f);
+				sb.Draw(tex, center, body, new Color(80, 30, 160) * lit * fade * 0.3f, rotation, origin, num * 0.8f, fx, 0f);
+				sb.Draw(tex, center, body, c2 * lit * fade * 0.7f, rotation, origin, num * trim, fx, 0f);
+				sb.Draw(tex, center, core, Color.White * 0.3f * fade * (1f - lit * 0.7f), rotation + aiDir * 0.01f, origin, num, fx, 0f);
+				return;
+			}
+			float backScale = type == ProjTerraBlade ? num * 0.95f : num;
+			sb.Draw(tex, center, body, back * lit * fade, tail, origin, backScale, fx, 0f);
+			sb.Draw(tex, center, body, haze2 * 0.15f, rotation + aiDir * 0.01f, origin, num, fx, 0f);
+			sb.Draw(tex, center, body, c3 * lit * fade * 0.3f, rotation, origin, num, fx, 0f);
+			sb.Draw(tex, center, body, c2 * lit * fade * 0.5f, rotation, origin, num * trim, fx, 0f);
+			sb.Draw(tex, center, core, Color.White * 0.6f * fade, rotation + aiDir * 0.01f, origin, num, fx, 0f);
+			sb.Draw(tex, center, core, Color.White * 0.5f * fade, rotation + aiDir * -0.05f, origin, num * 0.8f, fx, 0f);
+			sb.Draw(tex, center, core, Color.White * 0.4f * fade, rotation + aiDir * -0.1f, origin, num * 0.6f, fx, 0f);
 		}
 
 		private void DrawShakenTint(SpriteBatch sb, Vector2 screenPos)

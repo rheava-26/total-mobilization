@@ -22,6 +22,7 @@ namespace Levy.Content.NPCs
 	{
 		// ---- movement state ----
 		private int _wingTime; private bool _flying; private int _jumpsUsed; private bool _stepInit;
+		private int _flyRampTicks; private float _flyPeakMult = 1f; // hold-to-accelerate: ticks of continuous flight, and the wings' peak speed multiple
 		private int _fallThroughTicks;
 		private bool _closeDoor; private int _doorX, _doorY;
 		private Vector2 _stuckPos; private int _stuckSampleTimer, _stuckTicks, _stuckTotal, _reverseTicks, _sinceReverse = 100000; private bool _stuckJumped;
@@ -68,7 +69,7 @@ namespace Levy.Content.NPCs
 			RefreshKit();
 			if (grounded)
 			{
-				_jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false;
+				_jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0;
 				_rocketTime = _kitRocketMax; _drainAcc = 0f;
 				AerialGroundY = npc.Bottom.Y;
 				if (_wasAirborne && _aerialSpent) _aerialCooldown = Math.Max(_aerialCooldown, AerialRelaunchCooldownTicks);
@@ -90,7 +91,7 @@ namespace Levy.Content.NPCs
 			if (!HasMoveGoal)
 			{
 				Decelerate();
-				_blocked = false; _blockedHard = false; _flying = false;
+				_blocked = false; _blockedHard = false; _flying = false; _flyRampTicks = 0;
 				if (_path.Count > 0) _path.Clear();
 				ResetStuck();
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
@@ -104,7 +105,7 @@ namespace Levy.Content.NPCs
 			if (Math.Abs(dx) < ArriveXPx && (air || Math.Abs(dy) < ArriveYPx)) // aloft the goal's Y is the ground spot below: only X counts
 			{
 				Decelerate();
-				_blocked = false; _blockedHard = false; _flying = false;
+				_blocked = false; _blockedHard = false; _flying = false; _flyRampTicks = 0;
 				ResetStuck();
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
 				MirrorDummyControls();
@@ -166,7 +167,7 @@ namespace Levy.Content.NPCs
 			}
 			else
 			{
-				_flying = false;
+				_flying = false; _flyRampTicks = 0;
 				if (horizontal)
 				{
 					if (_blocked) npc.velocity.X *= BlockedDecel;
@@ -195,7 +196,7 @@ namespace Levy.Content.NPCs
 			_path.Clear(); _pathTimer = 0; _pathFailTimer = 0;
 			ResetStuck(); _stuckTotal = 0;
 			_goalJumpStreak = 0; _goalJumpHold = 0; _goalJumpIdle = 0;
-			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _jumpsUsed = 0;
+			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
 			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dashTicks = 0;
@@ -585,9 +586,14 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC;
 			_flying = true;
+			// hold-to-accelerate: bonus is the share of the wings' peak speed earned so far (0 = flat FlySpeed, today's behaviour)
+			float bonus = (_flyPeakMult - 1f) * Math.Min(1f, _flyRampTicks / (float)FlyRampTicks);
+			if (_flyRampTicks < FlyRampTicks) _flyRampTicks++;
+			Vector2 toGoal = goal - npc.Bottom;
+			// the bonus fades out over the last FlyRampArriveDampPx to the goal so the body arrives at plain FlySpeed and stops as it always did
 			Vector2 desired = flyUp
-				? new Vector2(dir * FlySpeed * 0.3f, -FlySpeed)
-				: (goal - npc.Bottom).SafeNormalize(Vector2.Zero) * FlySpeed;
+				? new Vector2(dir * FlySpeed * 0.3f, -FlySpeed * (1f + bonus * FlyUpRampShare))
+				: toGoal.SafeNormalize(Vector2.Zero) * FlySpeed * (1f + bonus * MathHelper.Clamp(toGoal.Length() / FlyRampArriveDampPx, 0f, 1f));
 			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -FlyAccel, FlyAccel);
 			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -FlyAccel, FlyAccel);
 			npc.velocity.Y -= Gravity();
@@ -637,7 +643,15 @@ namespace Levy.Content.NPCs
 			if (ReferenceEquals(_kitRef, Abilities)) return;
 			_kitRef = Abilities;
 			var a = Abilities;
-			if (a == null) { _kitRocketMax = 0; _kitAny = false; AerialMaxReachTiles = 0f; AerialSustained = false; return; }
+			if (a == null) { _kitRocketMax = 0; _kitAny = false; AerialMaxReachTiles = 0f; AerialSustained = false; _flyPeakMult = 1f; return; }
+			// peak flight speed from the wing's real horizontal speed (WingStats.AccRunSpeedOverride; unset/modded wings count as the reference tier)
+			_flyPeakMult = 1f;
+			if (a.HasWings && Dummy != null)
+			{
+				float wingRun = Dummy.GetWingStats(Dummy.wingsLogic).AccRunSpeedOverride;
+				if (wingRun <= 0f) wingRun = FlyWingRefRunSpeed;
+				_flyPeakMult = MathHelper.Clamp(FlyRampPeakMult + (wingRun - FlyWingRefRunSpeed) * FlyRampPeakPerRunSpeed, FlyRampPeakMinMult, FlyRampPeakMaxMult);
+			}
 			_kitRocketMax = Dummy != null && Dummy.rocketBoots > 0 ? Math.Max(1, Dummy.rocketTimeMax) * RocketBurstTicks : 0;
 			_rocketTime = Math.Min(_rocketTime, _kitRocketMax);
 			_kitAny = a.ExtraJumps > 0 || a.HasWings || _kitRocketMax > 0;

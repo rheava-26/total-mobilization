@@ -227,6 +227,19 @@ namespace Levy.Common
 		public const float SpreadOutMult = 2.5f;
 		/// <summary>Idle / holding soldiers on Spread Out may drift this far past their normal wander radius to find room (tiles).</summary>
 		public const int SpreadOutIdleExtraTiles = 24;
+		/// <summary>Idle / holding soldiers sharing an anchor stand evenly spaced on one line; this is its half-width either side of the anchor (tiles) with Spread Out off (Spread Out uses IdleWanderTiles + SpreadOutIdleExtraTiles).</summary>
+		public const float IdleLineHalfTiles = 12f;
+		/// <summary>Idle soldiers whose anchors lie within this of each other (tiles) share one line.</summary>
+		public const float IdleLineGroupTiles = 8f;
+		/// <summary>A soldier this close to its slot (tiles) counts as on it.</summary>
+		public const float IdleSlotDeadzoneTiles = 1.5f;
+		/// <summary>Idle life: a soldier on its slot shuffles at most this far either side (tiles).</summary>
+		public const float IdleBobTiles = 1f;
+		public const int IdleSlotRefreshTicks = 30, IdleSlotRetryTicks = 45;
+		/// <summary>Rows searched above and below the anchor's level for a standable slot spot.</summary>
+		public const int IdleSlotSearchTiles = 6;
+		/// <summary>The crowd nudge may move a soldier at most this far from its slot (tiles).</summary>
+		public const float IdleSlotLeewayTiles = 2f;
 		/// <summary>Following soldiers on Spread Out take slots alternately behind and ahead of the commander, this many tiles apart per rank.</summary>
 		public const float SpreadOutFollowSpacingTiles = 6f;
 		/// <summary>... never farther than this from the commander (tiles); keeps it inside FollowChaseLimit.</summary>

@@ -345,6 +345,7 @@ namespace Levy.Common.Weapons
 			float speed = item.shootSpeed > 0f ? item.shootSpeed : LevyConstants.SwordBeamSpeedFallback;
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
+			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
 			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
 			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold

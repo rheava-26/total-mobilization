@@ -753,6 +753,28 @@ namespace Levy.Common.Weapons
 			if (armory.RestockThrown(s.Record)) s.NotifyGearChanged();
 		}
 
+		/// <summary>
+		/// Automatic weapon upgrade (the body only ticks on the server / single player). Every <see cref="LevyConstants.AutoUpgradeCheckIntervalTicks"/> a soldier
+		/// asks his home barracks' linked armory for a clearly better weapon of his own kind (<see cref="ArmoryTE.UpgradeWeapons"/>); after a swap he waits
+		/// <see cref="LevyConstants.AutoUpgradeSwapCooldownTicks"/>. Skipped when switched off in the config, while the soldier's loadout is locked, and mid-fight or mid-swing.
+		/// </summary>
+		public static void WeaponUpgradeTick(SoldierNPC s)
+		{
+			var rec = s?.Record;
+			var g = rec?.Gear;
+			if (g == null || rec.LoadoutLocked || !Common.Config.LevyConfig.Get.AutoUpgradeWeapons) return;
+			uint now = Main.GameUpdateCount;
+			if (g.UpgradeCheckTick == 0) { g.UpgradeCheckTick = now + (uint)rec.Id % (uint)LevyConstants.AutoUpgradeCheckIntervalTicks; return; } // stagger by id
+			if (now < g.UpgradeCheckTick) return;
+			if (s.State == SoldierState.Engage || s.State == SoldierState.Shaken || s.State == SoldierState.Routed || s.ItemAnimation > 0) return; // look again at the next sidearm check
+			g.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeCheckIntervalTicks;
+			var armory = s.Home == null ? null : SettlementSystem.Instance?.LinkedArmory(s.Home);
+			if (armory == null || !Terraria.DataStructures.TileEntity.ByID.TryGetValue(armory.ID, out var live) || !ReferenceEquals(live, armory)) return;
+			if (!armory.UpgradeWeapons(rec)) return;
+			g.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeSwapCooldownTicks;
+			s.NotifyGearChanged(); // the periodic roster snapshot carries the new kit to clients
+		}
+
 		// ------------------------------------------------------------------------------------------------------------
 		// Melee
 		// ------------------------------------------------------------------------------------------------------------

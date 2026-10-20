@@ -116,6 +116,14 @@ namespace Levy.Common
 		public const float WeaponVarietyTopFraction = 0.75f;
 		public const int WeaponVarietyMaxTypes = 6;
 
+		// ---------- Automatic weapon upgrade (a soldier re-checks his Armory for a better weapon of his own kind) ----------
+		/// <summary>How often each soldier re-checks his Armory (ticks). Each soldier's first check is offset by his id, so a muster never checks on one tick.</summary>
+		public const int AutoUpgradeCheckIntervalTicks = 60 * 5;
+		/// <summary>After a swap the soldier does not look again for this long (ticks), so a chain of near-equal weapons cannot flip-flop.</summary>
+		public const int AutoUpgradeSwapCooldownTicks = 60 * 30;
+		/// <summary>A candidate must score at least this many times the weapon in hand (WeaponClassifier.Score) to be worth a swap.</summary>
+		public const float AutoUpgradeScoreMargin = 1.15f;
+
 		// ---------- Deploy-and-persist weapons (fire once, hold fire while the soldier's own field is still working) ----------
 		/// <summary>
 		/// Magic weapons whose damage comes from a long-lived field they leave behind (Rainbow Gun's rainbow, Magnet Sphere's orb, Nimbus / Crimson Rod's rain cloud), not from re-firing.

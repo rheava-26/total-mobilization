@@ -35,6 +35,8 @@ namespace Levy.Common.Soldiers
 		public int ThrownRestockType;
 		/// <summary>Transient: game tick of the last thrown-restock look at an armory (throttle).</summary>
 		public uint ThrownCheckTick;
+		/// <summary>Transient: game tick of this soldier's next automatic weapon-upgrade look at his armory (0 = not yet scheduled). See WeaponUse.WeaponUpgradeTick.</summary>
+		public uint UpgradeCheckTick;
 
 		/// <summary>Transient (never saved): locked items a Re-arm return pulled out, so the same tick's re-issue can hand them back. See ArmoryTE.ReturnGear.</summary>
 		public Item[] Reserved;

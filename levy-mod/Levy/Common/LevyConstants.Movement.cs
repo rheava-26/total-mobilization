@@ -114,6 +114,22 @@ namespace Levy.Common
 			public const float FlyAccel = 0.3f;
 			public const float GlideFallSpeed = 1.5f;
 			public const float FlyArriveYPx = 16f;
+			// Hold-to-accelerate: the longer a soldier keeps flying, the faster it flies, up to a peak set by its wings
+			// (the wing's own horizontal speed, Player.GetWingStats(wingsLogic).AccRunSpeedOverride). FlySpeed is the floor, never a nerf.
+			/// <summary>Ticks of continuous flight to reach the peak speed (linear ramp). Ground contact or any end of flight restarts it.</summary>
+			public const int FlyRampTicks = 75;
+			/// <summary>Peak speed as a multiple of FlySpeed for a reference wing (FlyWingRefRunSpeed), before the per-wing scaling below.</summary>
+			public const float FlyRampPeakMult = 1.3f;
+			/// <summary>Wing horizontal speed (px/tick) that earns exactly FlyRampPeakMult: vanilla starter wings (Angel / Demon, 6.25).</summary>
+			public const float FlyWingRefRunSpeed = 6.25f;
+			/// <summary>Extra peak multiple per px/tick of wing horizontal speed above the reference (Solar / Nebula wings, 9, reach about 1.63).</summary>
+			public const float FlyRampPeakPerRunSpeed = 0.12f;
+			/// <summary>Peak multiple clamp: never below 1 (weak wings fly at the flat FlySpeed), never above the cap (modded wings).</summary>
+			public const float FlyRampPeakMinMult = 1f, FlyRampPeakMaxMult = 1.8f;
+			/// <summary>Within this distance of the goal the ramp bonus fades linearly to nothing, so the body is back at plain FlySpeed on arrival.</summary>
+			public const float FlyRampArriveDampPx = 200f;
+			/// <summary>Share of the ramp bonus applied to the vertical-climb branch (flyUp), which stays controlled.</summary>
+			public const float FlyUpRampShare = 0.35f;
 
 			// ---- aerial engagement (wings / extra jumps / rocket boots climbing to an airborne target) ----
 			// Flight is hand-rolled on NPC.velocity: UpdateNPC adds gravity after AI, so thrust ticks subtract it first (as Fly does).

@@ -1127,6 +1127,86 @@ namespace Levy.Content.TileEntities
 			return changed;
 		}
 
+		// ------------------------------------------------------------------ automatic weapon upgrade
+
+		/// <summary>
+		/// Automatic weapon upgrade (server / single player): swaps the soldier's primary and sidearm for a clearly better weapon of the SAME KIND
+		/// (damage class for a primary; sentry / whip / summon staff / blade for a sidearm) when this armory stocks one. The candidate is drawn with
+		/// the same pick as <see cref="IssueGear"/> (<see cref="TakeVaried"/> / <see cref="TakeBest"/>), so it is a real, finite instance: the soldier's
+		/// old weapon goes back into storage and a different soldier can never hold the same one. A candidate must score at least
+		/// <see cref="LevyConstants.AutoUpgradeScoreMargin"/> times the weapon in hand. Hand-assigned (locked) slots and
+		/// <see cref="SoldierRecord.LoadoutLocked"/> soldiers are never touched; an empty slot is left to <see cref="IssueGear"/>. True if anything changed.
+		/// </summary>
+		public virtual bool UpgradeWeapons(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null || soldier.LoadoutLocked || Main.netMode == NetmodeID.MultiplayerClient) return false;
+			bool changed = false;
+			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
+			// The new weapon may fire other ammo: IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
+			if (changed) IssueGear(soldier);
+			return changed;
+		}
+
+		private bool UpgradePrimary(SoldierRecord soldier)
+		{
+			var g = soldier.Gear;
+			var cur = g.Weapon;
+			if (IsAir(cur) || cur.maxStack > 1) return false; // empty hand: IssueGear's job; thrown stacks are restocked, not swapped
+			var curFam = WeaponClassifier.GetProfile(cur).Family;
+			var cls = WeaponClassifier.ItemDamageClass(cur);
+			if (curFam == WeaponFamily.Thrown || cls == null) return false;
+			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
+			var onHand = AmmoIdsOnHand();
+			var pouch = g.Ammo;
+			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped, so the new weapon must fire it
+			bool Pred(Item it)
+			{
+				if (!IsIssuable(it) || it.maxStack > 1 || WeaponClassifier.ItemDamageClass(it) != cls || !HasAmmoFor(it, soldier, onHand)) return false;
+				if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
+				var fam = WeaponClassifier.GetProfile(it).Family;
+				// Same role: a summon staff stays a summon staff, a sentry a sentry; anything else stays within its damage class.
+				if ((fam == WeaponFamily.Summon) != (curFam == WeaponFamily.Summon) || (fam == WeaponFamily.Sentry) != (curFam == WeaponFamily.Sentry)) return false;
+				return fam != WeaponFamily.Thrown && WeaponClassifier.Score(it) >= need;
+			}
+			var neu = TakeVaried(soldier, Pred);
+			return neu != null && SwapIn(g, SoldierGear.SlotWeapon, neu);
+		}
+
+		private bool UpgradeSidearm(SoldierRecord soldier)
+		{
+			var g = soldier.Gear;
+			var cur = g.Sidearm;
+			if (IsAir(cur)) return false; // empty hand: IssueGear's job
+			var fam = WeaponClassifier.GetProfile(cur).Family;
+			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
+			Func<Item, bool> pool;
+			if (ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; } // a sentry kit wants a sentry in hand, whatever the fallback was
+			else if (fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
+			else if (fam == WeaponFamily.Whip) pool = IsIssuableWhip;
+			else if (fam == WeaponFamily.Summon) pool = IsIssuableDeployer;
+			else if (IsMeleeFamily(fam)) pool = IsIssuableMelee;
+			else return false;
+			bool Pred(Item it) => !IsReservedRef(it) && pool(it) && WeaponClassifier.Score(it) >= need;
+			// Same order as the initial pick: the dedicated sidearm slot first, then the best in the weapon row / storage / networked armories.
+			Item neu = Pred(IssueWeapons[SidearmSlot]) ? Remove(IssueWeapons, SidearmSlot) : null;
+			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, Pred, WeaponClassifier.Score);
+			return neu != null && SwapIn(g, SoldierGear.SlotSidearm, neu);
+		}
+
+		/// <summary>Puts <paramref name="neu"/> (already removed from the armory) in the soldier's slot and files the old weapon in storage; if storage is full it spills protected, so nothing is ever lost.</summary>
+		private bool SwapIn(SoldierGear g, int slot, Item neu)
+		{
+			var old = g.Get(slot);
+			g.Set(slot, neu);
+			if (slot == SoldierGear.SlotWeapon) g.ThrownRestockType = 0;
+			var rem = Deposit(old);
+			if (!IsAir(rem)) Spill(rem, protect: true);
+			MarkDirty();
+			return true;
+		}
+
 		/// <summary>
 		/// Returns a soldier's whole kit to storage (stand down / discharge / softcore death / the first half of a Re-arm). Locks do not stop
 		/// the return (they only guard against auto-issue) and are cleared with the gear. The one exception is bookkeeping for Re-arm: the

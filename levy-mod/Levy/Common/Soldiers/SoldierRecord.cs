@@ -46,6 +46,8 @@ namespace Levy.Common.Soldiers
 		public bool HoldFire;
 		/// <summary>Squad stance: hold a much wider loose formation (anti-AoE). Saved; off for old saves.</summary>
 		public bool SpreadOut;
+		/// <summary>Loadout lock: while set, the soldier keeps his weapons and is skipped by automatic weapon upgrade. Saved and synced; off (auto-upgrade on) for old saves.</summary>
+		public bool LoadoutLocked;
 		public Vector2 HoldPos;
 		public Point16 PatrolA = Point16.NegativeOne, PatrolB = Point16.NegativeOne;
 
@@ -85,7 +87,7 @@ namespace Levy.Common.Soldiers
 		{
 			w.Write(Id); w.Write(Name ?? ""); w.Write((byte)Kind); w.Write((byte)Grade); w.Write((byte)Temperament); w.Write(Veteran);
 			w.Write(LifeCrystals); w.Write(LifeFruit); w.Write(ManaCrystals); w.Write(CurrentHp); w.Write(Kills); w.Write(BossFightsSurvived);
-			w.Write(HomeBarracksId); w.Write(CommanderName ?? ""); w.Write(DaysUnpaid); w.Write(StoodDown); w.Write((byte)Order); w.Write(HoldFire); w.Write(SpreadOut);
+			w.Write(HomeBarracksId); w.Write(CommanderName ?? ""); w.Write(DaysUnpaid); w.Write(StoodDown); w.Write((byte)Order); w.Write(HoldFire); w.Write(SpreadOut); w.Write(LoadoutLocked);
 			w.Write(Dead); w.Write(RespawnTimer); w.Write(Fear);
 			w.Write(Hair); w.Write(SkinVariant); w.Write(Male);
 			w.WriteRGB(HairColor); w.WriteRGB(SkinColor); w.WriteRGB(EyeColor); w.WriteRGB(ShirtColor); w.WriteRGB(UnderShirtColor); w.WriteRGB(PantsColor); w.WriteRGB(ShoeColor);
@@ -97,7 +99,7 @@ namespace Levy.Common.Soldiers
 			var s = new SoldierRecord();
 			s.Id = r.ReadInt32(); s.Name = r.ReadString(); s.Kind = (SoldierKind)r.ReadByte(); s.Grade = (Grade)r.ReadByte(); s.Temperament = (Temperament)r.ReadByte(); s.Veteran = r.ReadBoolean();
 			s.LifeCrystals = r.ReadInt32(); s.LifeFruit = r.ReadInt32(); s.ManaCrystals = r.ReadInt32(); s.CurrentHp = r.ReadInt32(); s.Kills = r.ReadInt32(); s.BossFightsSurvived = r.ReadInt32();
-			s.HomeBarracksId = r.ReadInt32(); s.CommanderName = r.ReadString(); s.DaysUnpaid = r.ReadInt32(); s.StoodDown = r.ReadBoolean(); s.Order = (SoldierOrder)r.ReadByte(); s.HoldFire = r.ReadBoolean(); s.SpreadOut = r.ReadBoolean();
+			s.HomeBarracksId = r.ReadInt32(); s.CommanderName = r.ReadString(); s.DaysUnpaid = r.ReadInt32(); s.StoodDown = r.ReadBoolean(); s.Order = (SoldierOrder)r.ReadByte(); s.HoldFire = r.ReadBoolean(); s.SpreadOut = r.ReadBoolean(); s.LoadoutLocked = r.ReadBoolean();
 			s.Dead = r.ReadBoolean(); s.RespawnTimer = r.ReadInt32(); s.Fear = r.ReadSingle();
 			s.Hair = r.ReadInt32(); s.SkinVariant = r.ReadInt32(); s.Male = r.ReadBoolean();
 			s.HairColor = r.ReadRGB(); s.SkinColor = r.ReadRGB(); s.EyeColor = r.ReadRGB(); s.ShirtColor = r.ReadRGB(); s.UnderShirtColor = r.ReadRGB(); s.PantsColor = r.ReadRGB(); s.ShoeColor = r.ReadRGB();
@@ -113,7 +115,7 @@ namespace Levy.Common.Soldiers
 				["lc"] = LifeCrystals, ["lf"] = LifeFruit, ["mc"] = ManaCrystals, ["hp"] = CurrentHp, ["mana"] = Mana, ["kills"] = Kills, ["bosses"] = BossFightsSurvived,
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
 				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid,
-				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
+				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
 				["hair"] = Hair, ["skinVar"] = SkinVariant, ["male"] = Male,
 				["cHair"] = HairColor, ["cSkin"] = SkinColor, ["cEye"] = EyeColor, ["cShirt"] = ShirtColor, ["cUnder"] = UnderShirtColor, ["cPants"] = PantsColor, ["cShoe"] = ShoeColor,
@@ -130,7 +132,7 @@ namespace Levy.Common.Soldiers
 				Kills = t.GetInt("kills"), BossFightsSurvived = t.GetInt("bosses"),
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
 				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"),
-				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
+				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
 				PatrolA = new Point16(t.GetInt("pAX"), t.GetInt("pAY")), PatrolB = new Point16(t.GetInt("pBX"), t.GetInt("pBY")),
 				Hair = t.GetInt("hair"), SkinVariant = t.GetInt("skinVar"), Male = t.GetBool("male"),
 			};

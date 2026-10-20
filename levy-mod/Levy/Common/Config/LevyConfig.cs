@@ -24,6 +24,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;
 		[DefaultValue(true)] public bool UseVanillaStatPipeline;
 		[DefaultValue(true)] public bool ClassMatchIssue;
+		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool RealWeaponShoot;
 		[DefaultValue(true)] public bool AutoFeedCrystals;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;

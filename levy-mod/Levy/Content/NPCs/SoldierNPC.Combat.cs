@@ -169,6 +169,8 @@ namespace Levy.Content.NPCs
 				if (tiles > FireRangeTiles(target)) return; // a touch past the listed range, and much further against a boss
 				Vector2 muzzle = WeaponUse.Muzzle(this);
 				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(muzzle, seg.Center)) return;
+				// Deploy-and-persist weapons (Rainbow Gun, Magnet Sphere, rain-cloud rods) fire once and hold while their own field still reaches the target.
+				if (AttackCooldown <= 0 && ItemShots.HoldsFire(this, Weapon.ItemType, target)) return;
 				// Routed shots are wilder: the shaken multiplier (already in the weapon layer while the meter is up) is topped up to RoutedAimMult.
 				float extra = 1f;
 				if (State == SoldierState.Routed) extra = Shaken ? LevyConstants.RoutedAimMult / LevyConstants.ShakenAimMult : LevyConstants.RoutedAimMult;

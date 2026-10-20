@@ -4,6 +4,7 @@ using Terraria;
 using Terraria.Graphics;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Globals;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Weapons
@@ -15,6 +16,24 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public static class ItemShots
 	{
+		/// <summary>
+		/// Vanilla's pre-shoot cleanup (Player.ItemCheck_Shoot, before the Shoot hooks): firing the Rainbow Gun kills the owner's existing rainbow (front and back pieces) first, so a player
+		/// only ever has one. Soldier shots skip ItemCheck_Shoot, so each shot would stack another rainbow for 40 s and the pile exhausts the global projectile cap. This does the same
+		/// kill scoped to the FIRING soldier (matched by <see cref="SoldierProjectileTag.SoldierIndex"/>): the commander's own rainbow and other soldiers' rainbows are untouched.
+		/// Call it before the shot is spawned, whichever path spawns it.
+		/// </summary>
+		public static void PreShoot(SoldierNPC s, int type)
+		{
+			if (s == null || type != ProjectileID.RainbowFront) return;
+			int soldier = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || (p.type != ProjectileID.RainbowFront && p.type != ProjectileID.RainbowBack)) continue;
+				if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == soldier) p.Kill();
+			}
+		}
+
 		/// <summary>Fires the item's special shot with the hook-modified stats. Returns false when the item has none (the caller then fires the plain shot).</summary>
 		public static bool TryShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int dmg, float kb)
 		{

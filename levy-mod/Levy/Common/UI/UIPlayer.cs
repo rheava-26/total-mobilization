@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Input;
 using Terraria;
 using Terraria.GameInput;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
 
@@ -11,6 +12,20 @@ namespace Levy.Common.UI
 	/// <summary>Commander hotkeys. Runs only for the local player on a client / in single player.</summary>
 	public class UIPlayer : ModPlayer
 	{
+		/// <summary>Per-character UI state: the barracks panel size the player dragged it to (0 = never resized, use the default). Saved with the character.</summary>
+		public int BarracksW, BarracksH;
+
+		public override void SaveData(TagCompound tag)
+		{
+			if (BarracksW > 0 && BarracksH > 0) { tag["barracksW"] = BarracksW; tag["barracksH"] = BarracksH; }
+		}
+
+		public override void LoadData(TagCompound tag)
+		{
+			BarracksW = tag.GetInt("barracksW");
+			BarracksH = tag.GetInt("barracksH");
+		}
+
 		/// <summary>
 		/// Focus-attack designate mode (local player only). While active the mouse is claimed so the held item does not fire. The next left-click
 		/// on a hostile NPC locks it as the squad's focus target; a click on a critter or bare ground sets the focus-attack position there.

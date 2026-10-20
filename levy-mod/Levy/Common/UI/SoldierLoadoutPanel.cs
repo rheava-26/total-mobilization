@@ -124,7 +124,7 @@ namespace Levy.Common.UI
 			SoldierId = soldierId;
 			if (_panel == null) return;
 			float sw = Main.screenWidth / Main.UIScale, sh = Main.screenHeight / Main.UIScale;
-			float left = LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth + 12;
+			float left = Math.Max(LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth, BarracksPanel.DockRight) + 12; // beside the (resizable) barracks panel
 			_panel.Left.Set(Math.Max(0f, Math.Min(left, sw - W - 10f)), 0f);
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - H - 10f)), 0f);
 			_refreshTimer = 0; _statusTimer = 0; _status.SetText("");

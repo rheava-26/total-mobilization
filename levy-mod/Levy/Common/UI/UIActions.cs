@@ -408,5 +408,7 @@ namespace Levy.Common.UI
 
 		public static string GradeName(Grade g) => g switch { Grade.Champion => LevyUtil.T("UI.GradeChampion"), Grade.ManAtArms => LevyUtil.T("UI.GradeManAtArms"), _ => LevyUtil.T("UI.GradeLevy") };
 		public static string Chevrons(Grade g) => new string('^', (int)g + 1);
+		/// <summary>Quality colour of a grade (roster card border and tint): grey-blue Levy, blue Man-at-Arms, gold Champion.</summary>
+		public static Microsoft.Xna.Framework.Color GradeColor(Grade g) => g switch { Grade.Champion => LevyConstants.UI.GradeColorChampion, Grade.ManAtArms => LevyConstants.UI.GradeColorManAtArms, _ => LevyConstants.UI.GradeColorLevy };
 	}
 }

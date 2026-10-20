@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace Levy.Common
 {
 	public static partial class LevyConstants
@@ -11,7 +13,25 @@ namespace Levy.Common
 			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 424;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
-			public const int RosterRowHeight = 100;
+
+			// ---- barracks roster (resizable panel + card grid) ----
+			/// <summary>Where the roster grid starts below the panel top (the header of treasury / enlist / orders controls above it is fixed-height).</summary>
+			public const int BarracksListTop = 234;
+			/// <summary>Smallest the barracks panel can be dragged to: wide enough for the header controls, tall enough for one row of cards.</summary>
+			public const int BarracksMinWidth = 560, BarracksMinHeight = 380;
+			/// <summary>Margin kept to the screen edge when the resize grip is dragged out.</summary>
+			public const int BarracksScreenMargin = 4;
+			public const int ResizeGripSize = 18;
+			/// <summary>Roster cards: the grid fits as many columns of at least CardMinWidth as the panel is wide (cards then stretch to fill the row).</summary>
+			public const int RosterCardMinWidth = 220, RosterCardHeight = 132, RosterCardGap = 6;
+			/// <summary>Gear icon strip on a card: icon box size and the gap between boxes.</summary>
+			/// <summary>Width of a left column on each card reserved for the soldier's live sprite (0 until the portrait follow-up lands; the layout already honours it).</summary>
+			public static readonly int CardPortraitWidth = 0;
+			public const int CardGearIcon = 24, CardGearGap = 2;
+			public const float CardGearInventoryScale = 0.46f; // 52 * 0.46 ~ CardGearIcon
+			/// <summary>Card tint strength toward the grade colour (background), and the grade colours (border + tint). Better grade, warmer colour.</summary>
+			public const float CardGradeTint = 0.22f;
+			public static readonly Color GradeColorLevy = new(150, 165, 190), GradeColorManAtArms = new(90, 165, 240), GradeColorChampion = new(240, 190, 60);
 			public const float ButtonTextScale = 0.75f, SmallTextScale = 0.8f;
 			public const long DepositSmall = 10000, DepositLarge = 100000; // 1 gold, 10 gold
 			/// <summary>First and one-past-last main-inventory slot (hotbar, coins and ammo excluded).</summary>

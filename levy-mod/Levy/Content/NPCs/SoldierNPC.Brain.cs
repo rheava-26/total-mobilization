@@ -118,6 +118,9 @@ namespace Levy.Content.NPCs
 		private Vector2 _searchGoal;
 		private int _searchGoalTick, _searchPauseUntil;
 		private const float SlotSaltSearch = 0.53f;
+		// ---- idle line (evenly spaced, deterministic slots) ----
+		private const float SlotSaltIdle = 0.47f;
+		private float _idleSlotX; private bool _idleSlotCompressed; private int _idleSlotTick = -100000, _idleSlotRetryTick;
 		// ---- free rein (shares the search fields; these two are its own) ----
 		private int _freeLegs, _freeScoutOffUntil;
 		// ---- aerial engagement (brain -> Movement) ----
@@ -930,9 +933,11 @@ namespace Levy.Content.NPCs
 		// =====================================================================================================
 
 		/// <summary>This soldier's stable fraction in [0,1): a golden-ratio sequence over the body index, so neighbouring indices land far apart.</summary>
-		private float SlotFrac(float salt)
+		private float SlotFrac(float salt) => SlotFracOf(NPC.whoAmI, salt);
+
+		private static float SlotFracOf(int whoAmI, float salt)
 		{
-			float f = (NPC.whoAmI + 1) * LevyConstants.SlotGoldenStep + salt;
+			float f = (whoAmI + 1) * LevyConstants.SlotGoldenStep + salt;
 			return f - MathF.Floor(f);
 		}
 
@@ -2200,16 +2205,81 @@ namespace Levy.Content.NPCs
 
 		// ---- 10. Idle ----
 		/// <summary>
-		/// Spread Out while idle or holding: when friends crowd this soldier, step away from them (up to the scaled nudge length) so the
-		/// line is wide even before a fight. Stays within the wander radius plus SpreadOutIdleExtraTiles of its anchor. Returns true if it moved.
+		/// The idle line. Idle and holding soldiers sharing an anchor (same hold post, same barracks, or the same spot) are ranked by their
+		/// stable slot fraction and spaced evenly on one horizontal line centred on that anchor: spacing is DispersionSpacingTiles (times
+		/// SpreadMult), squeezed if the group would overrun the line's half-width, which for a hold post never passes the hold chase limit.
+		/// Sets the world X this soldier belongs on and whether the spacing had to be squeezed below the crowding gap. Cached per soldier.
 		/// </summary>
-		private bool TrySpreadIdle(int now, Vector2 anchor, float radiusTiles)
+		private void RefreshIdleSlot(int now, Vector2 anchor, float halfLimitTiles)
 		{
-			if (_crowdCount == 0 || Math.Abs(_crowdAway) < 0.01f || now < _nudgeNextTick) return false;
+			if (now - _idleSlotTick < LevyConstants.IdleSlotRefreshTicks) return;
+			_idleSlotTick = now;
+			float tilePx = LevyConstants.TilePx;
+			var home = Home;
+			float myFrac = SlotFrac(SlotSaltIdle);
+			int n = 1, rank = 0; float sumX = anchor.X;
+			float reachPx = LevyConstants.IdleLineGroupTiles * tilePx;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var o = Main.npc[i];
+				if (!o.active || i == NPC.whoAmI || o.type != NPC.type) continue;
+				if (o.ModNPC is not SoldierNPC f || f.Record == null || f.State == SoldierState.Dead) continue;
+				Vector2 fa;
+				if (HoldPosition)
+				{
+					if (!f.HoldPosition || Math.Abs(f.Record.HoldPos.X - Record.HoldPos.X) > reachPx || Math.Abs(f.Record.HoldPos.Y - Record.HoldPos.Y) > reachPx) continue;
+					fa = f.Record.HoldPos;
+				}
+				else if (f.HoldPosition || f.State != SoldierState.Idle) continue;
+				else if (home != null)
+				{
+					if (f.Record.HomeBarracksId != Record.HomeBarracksId) continue;
+					fa = anchor;
+				}
+				else
+				{
+					if (f.Record.HomeBarracksId >= 0 && f.Home != null) continue;
+					if (!f._idleAnchorSet || Math.Abs(f._idleAnchor.X - anchor.X) > reachPx || Math.Abs(f._idleAnchor.Y - anchor.Y) > reachPx) continue;
+					fa = f._idleAnchor;
+				}
+				n++; sumX += fa.X;
+				float ff = SlotFracOf(i, SlotSaltIdle);
+				if (ff < myFrac || (ff == myFrac && i < NPC.whoAmI)) rank++;
+			}
+			float centreX = sumX / n;
+			float half = halfLimitTiles;
+			if (HoldPosition) half = Math.Min(half, LevyConstants.HoldChaseLimit - 1f - Math.Abs(centreX - Record.HoldPos.X) / tilePx);
+			half = Math.Max(half, 1f);
+			float nominal = LevyConstants.DispersionSpacingTiles * SpreadMult;
+			float spacing = n > 1 ? Math.Min(nominal, 2f * half / (n - 1)) : nominal;
+			_idleSlotCompressed = spacing < LevyConstants.DispersionMinGapTiles * SpreadMult;
+			float x = centreX + (rank - (n - 1) * 0.5f) * spacing * tilePx;
+			if (HoldPosition) x = MathHelper.Clamp(x, Record.HoldPos.X - (LevyConstants.HoldChaseLimit - 1f) * tilePx, Record.HoldPos.X + (LevyConstants.HoldChaseLimit - 1f) * tilePx);
+			_idleSlotX = x;
+		}
+
+		/// <summary>Sends this soldier toward world column <paramref name="x"/> on the anchor's level. False when no standable spot lies there.</summary>
+		private bool GoToIdleColumn(float x, Vector2 anchor)
+		{
+			float tilePx = LevyConstants.TilePx;
+			int row = (int)(anchor.Y / tilePx);
+			if (!TileNav.NearestStandable((int)(x / tilePx), row, LevyConstants.IdleSlotSearchTiles, out Point tile) || Math.Abs(tile.Y - row) > LevyConstants.IdleSlotSearchTiles) return false;
+			SetGoal(TileNav.BottomCentre(tile.X, tile.Y));
+			return true;
+		}
+
+		/// <summary>
+		/// Secondary correction only (Spread Out, slots not squeezed): when a friend is still crowding this soldier despite the even line,
+		/// step a little away from them, never farther than IdleSlotLeewayTiles from its own slot. Returns true if it moved.
+		/// </summary>
+		private bool TrySpreadIdle(int now)
+		{
+			if (_idleSlotCompressed || _crowdCount == 0 || Math.Abs(_crowdAway) < 0.01f || now < _nudgeNextTick) return false;
 			int dir = _crowdAway > 0f ? 1 : -1;
 			if (!FindFlatStep(dir, DisperseSteps(), out Vector2 dest)) return false;
-			float limit = (radiusTiles + LevyConstants.SpreadOutIdleExtraTiles) * LevyConstants.TilePx;
-			dest.X = MathHelper.Clamp(dest.X, anchor.X - limit, anchor.X + limit);
+			float leeway = LevyConstants.IdleSlotLeewayTiles * LevyConstants.TilePx;
+			dest.X = MathHelper.Clamp(dest.X, _idleSlotX - leeway, _idleSlotX + leeway);
+			if (HoldPosition) ClampToCircle(ref dest, Record.HoldPos, LevyConstants.HoldChaseLimit);
 			if (Math.Abs(dest.X - NPC.Center.X) < LevyConstants.TilePx) return false;
 			_nudgeNextTick = now + LevyConstants.DispersionNudgeCooldownTicks;
 			_idleNextDecisionTick = Math.Max(_idleNextDecisionTick, now + LevyConstants.DispersionNudgeCooldownTicks);
@@ -2219,29 +2289,41 @@ namespace Levy.Content.NPCs
 
 		private void ThinkIdle(int now)
 		{
-			Vector2 anchor; float radius;
-			if (HoldPosition) { anchor = Record.HoldPos; radius = LevyConstants.HoldIdleWanderTiles; }
+			Vector2 anchor; float halfLimit;
+			bool spread = Record.SpreadOut;
+			float lineHalf = spread ? LevyConstants.IdleWanderTiles + LevyConstants.SpreadOutIdleExtraTiles : LevyConstants.IdleLineHalfTiles;
+			if (HoldPosition) { anchor = Record.HoldPos; halfLimit = Math.Min(lineHalf, LevyConstants.HoldChaseLimit - 1f); }
 			else
 			{
 				var home = Home;
-				if (home != null) { anchor = home.MusterPoint; radius = LevyConstants.IdleWanderTiles; }
+				if (home != null) { anchor = home.MusterPoint; halfLimit = lineHalf; }
 				else
 				{
 					if (!_idleAnchorSet) { _idleAnchor = NPC.Center; _idleAnchorSet = true; }
-					anchor = _idleAnchor; radius = LevyConstants.IdleWanderTiles;
+					anchor = _idleAnchor; halfLimit = lineHalf;
 				}
 			}
-			if (Record.SpreadOut && TrySpreadIdle(now, anchor, radius)) return;
+			RefreshIdleSlot(now, anchor, halfLimit);
+			if (spread && TrySpreadIdle(now)) return;
+
+			// off its slot: walk back to it now (retry-limited), not at the next idle decision
+			bool offSlot = Math.Abs(NPC.Center.X - _idleSlotX) > LevyConstants.IdleSlotDeadzoneTiles * LevyConstants.TilePx;
+			if (offSlot && now >= _idleSlotRetryTick)
+			{
+				_idleSlotRetryTick = now + LevyConstants.IdleSlotRetryTicks;
+				if (GoToIdleColumn(_idleSlotX, anchor)) return;
+			}
 			if (now < _idleNextDecisionTick)
 			{
 				if (HasMoveGoal && Math.Abs(NPC.Center.X - MoveGoal.X) < LevyConstants.TilePx) ClearGoal();
 				return;
 			}
 			_idleNextDecisionTick = now + Main.rand.Next(LevyConstants.IdleDecisionMinTicks, LevyConstants.IdleDecisionMaxTicks + 1);
-			// Like town NPCs: half the time stand (and let Movement face whichever way), half the time stroll a few tiles.
-			if (Main.rand.NextBool()) { ClearGoal(); return; }
-			float dx = Main.rand.NextFloat(-radius, radius) * LevyConstants.TilePx;
-			SetGoal(new Vector2(anchor.X + dx, anchor.Y));
+			// On its slot: half the time stand (Movement faces whichever way), half the time bob a tile or so for life.
+			if (offSlot || Main.rand.NextBool()) { ClearGoal(); return; }
+			float bx = _idleSlotX + Main.rand.NextFloat(-LevyConstants.IdleBobTiles, LevyConstants.IdleBobTiles) * LevyConstants.TilePx;
+			if (HoldPosition) bx = MathHelper.Clamp(bx, Record.HoldPos.X - (LevyConstants.HoldChaseLimit - 1f) * LevyConstants.TilePx, Record.HoldPos.X + (LevyConstants.HoldChaseLimit - 1f) * LevyConstants.TilePx);
+			if (!GoToIdleColumn(bx, anchor)) ClearGoal();
 		}
 	}
 

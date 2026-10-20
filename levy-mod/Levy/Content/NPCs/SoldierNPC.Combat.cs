@@ -166,7 +166,7 @@ namespace Levy.Content.NPCs
 			if (Weapon.IsRanged)
 			{
 				float tiles = Aiming.TilesToHitbox(NPC.Center, seg);
-				if (tiles > Weapon.RangeTiles) return;
+				if (tiles > FireRangeTiles(target)) return; // a touch past the listed range, and much further against a boss
 				Vector2 muzzle = WeaponUse.Muzzle(this);
 				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(muzzle, seg.Center)) return;
 				// Routed shots are wilder: the shaken multiplier (already in the weapon layer while the meter is up) is topped up to RoutedAimMult.

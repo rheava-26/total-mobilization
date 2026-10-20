@@ -8,6 +8,12 @@ namespace Levy.Common
 		// ---------- Weapon reach (tiles) ----------
 		/// <summary>Effective engagement range by family: how far a soldier acquires targets and opens fire. Ranged soldiers hold and kite at this reach.</summary>
 		public const int RangeGun = 72, RangeBow = 54, RangeMagic = 40;
+		/// <summary>Gun and magic soldiers reach this much further than the family numbers above (bows are held back by arrow drop and keep theirs).</summary>
+		public const float RangedRangeMult = 1.15f;
+		/// <summary>Ranged soldiers (gun / bow / magic / thrown / held ranged) pick targets and open fire out to reach x this, a touch past their listed range.</summary>
+		public const float RangedFireRangeBuffer = 1.10f;
+		/// <summary>Against a boss, reach (fire gate, target pickup, standoff and approach) is multiplied by this: guns, then magic, then bows (arrow drop limits those).</summary>
+		public const float RangedBossRangeMult = 1.75f, RangedBossMagicRangeMult = 1.5f, RangedBossBowRangeMult = 1.25f;
 
 		// ---------- Muzzle / aim ----------
 		/// <summary>Muzzle offset from the body centre, in pixels (X is multiplied by the facing direction).</summary>

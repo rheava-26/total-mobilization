@@ -65,6 +65,14 @@ namespace Levy.Common.Util
 				|| Terraria.GameContent.Events.DD2Event.Ongoing;
 		}
 
+		/// <summary>A boss, a type counted as one, or a segment of a boss (worm / multi-part bodies point at their root through realLife).</summary>
+		public static bool IsBossNpc(NPC n)
+		{
+			if (n == null || !n.active || n.friendly) return false;
+			if (n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type])) return true;
+			return n.realLife >= 0 && n.realLife < Main.maxNPCs && n.realLife != n.whoAmI && Main.npc[n.realLife].active && Main.npc[n.realLife].boss;
+		}
+
 		/// <summary>True while a hostile boss is alive AND near a player, so the garrison turns out to fight it. The proximity check
 		/// stops an ambient or modded "boss" elsewhere in the world from keeping every town permanently mustered.</summary>
 		public static bool IsBossActive()

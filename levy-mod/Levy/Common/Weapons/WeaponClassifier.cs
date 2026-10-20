@@ -27,6 +27,10 @@ namespace Levy.Common.Weapons
 		public DamageClass DamageType = DamageClass.Default;
 		/// <summary>True when the weapon is only accepted by the widened rules (non-bullet/arrow ammo, non-magic casters, plain shooters).</summary>
 		public bool Extended;
+		/// <summary>Gun / bow / magic / thrown / held ranged: picks targets and opens fire out to <see cref="RangeTiles"/> x <see cref="LevyConstants.RangedFireRangeBuffer"/>.</summary>
+		public bool OpensEarly;
+		/// <summary>Reach multiplier against a boss target (1 for weapons whose shot cannot fly that far: short-lived flames and bolts, thrown, melee).</summary>
+		public float BossReachMult = 1f;
 		/// <summary>Spears/shortswords: how far the thrust reaches, in pixels.</summary>
 		public float ThrustReachPx;
 		/// <summary>Boomerangs count as ranged for the brain (hold a standoff, need a line of sight); they use no ammo.</summary>
@@ -283,9 +287,9 @@ namespace Levy.Common.Weapons
 			if (LevyConstants.Multishot.TryGetValue(src.type, out var ms)) { p.MultishotCount = Math.Max(1, ms.count); p.SpreadDeg = ms.spreadDeg; }
 			switch (p.Family)
 			{
-				case WeaponFamily.Gun: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeGun) : LevyConstants.RangeGun; p.Gravity = false; break;
+				case WeaponFamily.Gun: p.RangeTiles = p.Extended ? ShortShotRange(src, BumpedRange(LevyConstants.RangeGun)) : BumpedRange(LevyConstants.RangeGun); p.Gravity = false; break;
 				case WeaponFamily.Bow: p.RangeTiles = LevyConstants.RangeBow; p.Gravity = true; break;
-				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, LevyConstants.RangeMagic) : LevyConstants.RangeMagic; p.Gravity = ProjectileHasGravity(src.shoot); p.RangeTiles = ClampToDriverReach(src.shoot, p.RangeTiles); break;
+				case WeaponFamily.Magic: p.RangeTiles = p.Extended ? ShortShotRange(src, BumpedRange(LevyConstants.RangeMagic)) : BumpedRange(LevyConstants.RangeMagic); p.Gravity = ProjectileHasGravity(src.shoot); p.RangeTiles = ClampToDriverReach(src.shoot, p.RangeTiles); break;
 				case WeaponFamily.Summon: p.RangeTiles = LevyConstants.RangeSummon; break;
 				case WeaponFamily.Sentry: p.RangeTiles = LevyConstants.RangeSentry; break;
 				case WeaponFamily.Boomerang: p.RangeTiles = LevyConstants.RangeBoomerang; break;
@@ -314,12 +318,13 @@ namespace Levy.Common.Weapons
 				case WeaponFamily.HeldWeapon:
 					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic);
 					p.RangeTiles = p.HeldMelee ? LevyConstants.HeldMeleeReachTiles
-						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? LevyConstants.RangeGun : LevyConstants.RangeMagic;
+						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? BumpedRange(LevyConstants.RangeGun) : BumpedRange(LevyConstants.RangeMagic);
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
+			ApplyLongReach(src, p);
 			return p;
 		}
 
@@ -361,6 +366,21 @@ namespace Levy.Common.Weapons
 			float reachPx = projType == ProjectileID.MedusaHead ? LevyConstants.MedusaRangePx : 0f;
 			if (reachPx <= 0f) return rangeTiles;
 			return Math.Min(rangeTiles, Math.Max(LevyConstants.ShortShotRangeMinTiles, (int)Math.Round(reachPx / LevyConstants.TilePx * LevyConstants.DriverReachFraction)));
+		}
+
+		private static int BumpedRange(int familyRange) => (int)Math.Round(familyRange * LevyConstants.RangedRangeMult);
+
+		/// <summary>
+		/// Fire-early and boss-reach flags. Every ranged family opens fire a little past its range; guns, bows and magic also reach out much further against a
+		/// boss, unless the shot dies young (flames, short bolts) and could not fly that far. Bows use a smaller multiplier: arrows drop.
+		/// </summary>
+		private static void ApplyLongReach(Item src, WeaponProfile p)
+		{
+			p.OpensEarly = p.IsRanged && p.Family != WeaponFamily.Boomerang && p.Family != WeaponFamily.ThrownMelee;
+			if (p.Family != WeaponFamily.Gun && p.Family != WeaponFamily.Bow && p.Family != WeaponFamily.Magic) return;
+			var sample = src.useAmmo == AmmoID.Bullet || src.useAmmo == AmmoID.Arrow ? null : ProjectileSample(src.shoot); // bullet / arrow weapons fly their ammo's shot, not the placeholder
+			if (sample != null && (sample.timeLeft <= LevyConstants.LongShotLifetimeTicks || sample.aiStyle == ProjAIStyleID.Flamethrower)) return;
+			p.BossReachMult = p.Family == WeaponFamily.Bow ? LevyConstants.RangedBossBowRangeMult : p.Family == WeaponFamily.Magic ? LevyConstants.RangedBossMagicRangeMult : LevyConstants.RangedBossRangeMult;
 		}
 
 		/// <summary>Engagement range for an extended ranged weapon: the family range, cut down to the real reach when its projectile has a short lifetime (flames).</summary>

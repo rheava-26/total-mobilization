@@ -30,7 +30,7 @@ namespace Levy.Common.Targeting
 			if (s?.Record == null || s.NPC == null || !s.NPC.active || s.Record.Kind != SoldierKind.Regular) return -1;
 			int idx = RosterSystem.FocusTargetOf(s.Record.CommanderName);
 			if (idx < 0) return -1;
-			return LevyUtil.WithinTiles(s.NPC.Center, Main.npc[idx].Center, rangeTiles * LevyConstants.FocusRangeMult) ? idx : -1;
+			return LevyUtil.WithinTiles(s.NPC.Center, Main.npc[idx].Center, rangeTiles * s.BossRangeMult(Main.npc[idx]) * LevyConstants.FocusRangeMult) ? idx : -1;
 		}
 
 		/// <summary>
@@ -39,7 +39,7 @@ namespace Levy.Common.Targeting
 		/// <paramref name="excludeIdx"/> (an NPC index, or -1) is never returned and never beats a reachable enemy: it is skipped before the line-of-sight test,
 		/// so a target the soldier found unreachable does not blank the pick while others stand in reach.
 		/// </summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1)
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
 			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
@@ -51,6 +51,7 @@ namespace Levy.Common.Targeting
 			{
 				NPC npc = Main.npc[i];
 				if (!npc.active || i == s.NPC.whoAmI || i == excludeIdx || IsNeverTarget(npc)) continue;
+				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
 				float distSq = Vector2.DistanceSquared(from, npc.Center);
 				if (distSq > rangeSq) continue;
 				bool attacking = IsAttackingUs(npc);

@@ -553,13 +553,23 @@ namespace Levy.Content.NPCs
 		/// <summary>True for a blade / spear / whip that closes to contact. A sword that fires a real projectile (FiresProjectileMelee) stands off at beam range like a gunner.</summary>
 		private bool PositionsAsMelee => Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee;
 
-		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles;
+		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles * FireBuffer;
+
+		/// <summary>Ranged weapons pick targets and open fire a little past their listed range (see <see cref="LevyConstants.RangedFireRangeBuffer"/>).</summary>
+		private float FireBuffer => Weapon != null && Weapon.OpensEarly ? LevyConstants.RangedFireRangeBuffer : 1f;
+
+		/// <summary>How much further this soldier's weapon reaches against <paramref name="target"/>: the weapon's boss multiplier for a boss, else 1.</summary>
+		internal float BossRangeMult(NPC target) => Weapon != null && Weapon.BossReachMult > 1f && LevyUtil.IsBossNpc(target) ? Weapon.BossReachMult : 1f;
+
+		/// <summary>Tiles from which this soldier opens fire on <paramref name="target"/>: weapon reach x fire buffer x boss multiplier.</summary>
+		internal float FireRangeTiles(NPC target) => Weapon.RangeTiles * FireBuffer * BossRangeMult(target);
 
 		private bool TargetStillValid(int idx, float rangeTiles)
 		{
 			if (!ValidNpc(idx)) return false;
 			var n = Main.npc[idx];
 			if (n.life <= 0 || SoldierTargeting.IsNeverTarget(n) || !LevyUtil.IsHostileTarget(n)) return false;
+			rangeTiles *= BossRangeMult(n); // a boss held at its long reach stays the target
 			if (!LevyUtil.WithinTiles(NPC.Center, n.Center, rangeTiles * LevyConstants.TargetKeepRangeMult)) return false;
 			return WithinChaseBounds(n, rangeTiles);
 		}
@@ -594,7 +604,7 @@ namespace Levy.Content.NPCs
 			int idx = SoldierTargeting.FocusTargetFor(this, rangeTiles);
 			if (idx < 0) return -1;
 			if (idx == _unreachIdx && now < _unreachUntil) return -1;
-			return WithinChaseBounds(Main.npc[idx], rangeTiles) ? idx : -1;
+			return WithinChaseBounds(Main.npc[idx], rangeTiles * BossRangeMult(Main.npc[idx])) ? idx : -1;
 		}
 
 		private bool TryEngage(int now)
@@ -625,6 +635,16 @@ namespace Levy.Content.NPCs
 				if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
 				{
 					TargetIndex = pick; target = Main.npc[pick];
+				}
+				else if (Weapon.BossReachMult > 1f && !PositionsAsMelee)
+				{
+					// nothing else in reach: a boss further out is still shot at from the long reach it earns
+					float bossRange = range * Weapon.BossReachMult;
+					int boss = SoldierTargeting.PickTarget(this, bossRange, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, bossesOnly: true);
+					if (ValidNpc(boss) && Main.npc[boss].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[boss]) && WithinChaseBounds(Main.npc[boss], bossRange))
+					{
+						TargetIndex = boss; target = Main.npc[boss];
+					}
 				}
 			}
 			// a melee target the body could not path to is left alone for a while
@@ -774,7 +794,7 @@ namespace Levy.Content.NPCs
 			=> Math.Min(Math.Max(LevyConstants.KiteMin, range * LevyConstants.StandoffRangeFrac), range * LevyConstants.StandoffMaxRangeFrac);
 
 		/// <summary>Distance (tiles) a ranged soldier walks out to when it has to close on a target.</summary>
-		private static float HoldMaxTiles(float range) => Math.Min(LevyConstants.KiteMax, range * LevyConstants.KiteMaxRangeFrac);
+		private static float HoldMaxTiles(float range, float reachMult = 1f) => Math.Min(LevyConstants.KiteMax * reachMult, range * LevyConstants.KiteMaxRangeFrac);
 
 		/// <summary>
 		/// Gun / bow / magic. Priority: (1) anything hostile inside the standoff -> step away (still facing and firing);
@@ -783,7 +803,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private bool RangedGoal(NPC target, int now)
 		{
-			float range = Weapon.RangeTiles;
+			float range = Weapon.RangeTiles * BossRangeMult(target); // a boss pushes reach, standoff and approach distance out together
 			float standoff = StandoffTiles(range);
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
@@ -804,7 +824,7 @@ namespace Levy.Content.NPCs
 
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
-			bool inReach = dT <= range * LevyConstants.ShootableRangeFrac;
+			bool inReach = dT <= range * FireBuffer * LevyConstants.ShootableRangeFrac; // the same buffered reach the fire gate uses
 			if (!(inReach && !los) || target.whoAmI != _noLosTarget) _noLosSinceTick = -1; // the line is back (or a new target): the blocked clock restarts
 
 			if (inReach && los)
@@ -894,7 +914,7 @@ namespace Levy.Content.NPCs
 			Vector2 toUs = NPC.Center - tc;
 			if (toUs.LengthSquared() < 1f) toUs = new Vector2(NPC.direction == 0 ? 1f : -NPC.direction, 0f);
 			toUs.Normalize();
-			float holdMax = HoldMaxTiles(range);
+			float holdMax = HoldMaxTiles(range, BossRangeMult(target));
 			float nearest = Math.Min(standoff + 2f, holdMax);
 			int n = Math.Max(2, LevyConstants.EngageSpotCandidates);
 			bool ignoresTiles = ShotIgnoresTiles();

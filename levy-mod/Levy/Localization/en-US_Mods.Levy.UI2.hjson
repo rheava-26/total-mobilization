@@ -91,6 +91,34 @@ FocusAttackCleared: Focus attack cleared.
 HudTitle: Army
 HudHover: "{0} - {1}"
 
+HeartValue: Each heart is worth {0} manpower.
+StarValue: Each star is worth {0} command points.
+CpFree: "{0} command points free."
+FilterAny: All
+FilterClass: "Class: {0}"
+FilterGrade: "Grade: {0}"
+FilterTier: "Tier: {0}"
+SortBy: "Sort: {0}"
+FilterClassHint: Shows only soldiers whose weapon is this class. Click to cycle, right-click to go back.
+FilterGradeHint: Shows only soldiers of this grade. Click to cycle, right-click to go back.
+FilterTierHint: Shows only soldiers whose weapon is in this tier band. Early is white to green, Mid is orange to pink, Late is purple to yellow, Endgame is cyan and above. Click to cycle, right-click to go back.
+SortHint: Orders the roster. Click to cycle, right-click to go back.
+ClassMelee: Melee
+ClassRanged: Ranged
+ClassMagic: Magic
+ClassSummon: Summon
+ClassUnarmed: Unarmed
+TierEarly: Early
+TierMid: Mid
+TierLate: Late
+TierEndgame: Endgame
+SortRoster: Roster order
+SortClass: Class
+SortTier: Weapon tier
+SortGrade: Grade
+SortName: Name
+NoMatch: No Regulars match these filters.
+
 State: {
 	Idle: Idle
 	Follow: Following

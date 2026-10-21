@@ -90,9 +90,8 @@ FocusAttackSet: The squad attacks the marked spot.
 FocusAttackCleared: Focus attack cleared.
 HudTitle: Army
 HudHover: "{0} - {1}"
-HeartValue: Each heart is worth {0} manpower.
-StarValue: Each star is worth {0} command points.
-CpFree: "{0} command points free."
+HeartValue: Each heart is worth {0} HP.
+StarValue: Each star is worth {0} mana.
 FilterAny: All
 FilterClass: Class: {0}
 FilterGrade: Grade: {0}

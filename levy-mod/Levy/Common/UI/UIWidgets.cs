@@ -196,19 +196,25 @@ namespace Levy.Common.UI
 	}
 
 	/// <summary>
-	/// Terraria-HUD style stat row: a line of hearts (<c>star = false</c>, manpower = life) or mana stars (<c>star = true</c>, command points = mana), drawn with
+	/// Terraria-HUD style stat row: a line of hearts (<c>star = false</c>, life) or mana stars (<c>star = true</c>, mana), drawn with
 	/// the game's own Heart / Mana textures. A row holds as many icons as fit beside the small <see cref="Label"/> (the exact numbers); each icon stands for
-	/// <see cref="PerIcon"/> units, picked from <see cref="LevyConstants.UI.IconValueSteps"/> so even a big pool stays a single short row. A part-filled icon
-	/// is drawn smaller and fainter, like vanilla's partial hearts. Hovering shows <see cref="Hint"/> plus what one icon is worth.
+	/// <see cref="PerIcon"/> units, picked from <see cref="LevyConstants.UI.IconValueSteps"/> so even a big pool stays a single short row (the icon count is
+	/// also capped at what fits, so the row never spills). A part-filled icon is drawn smaller and fainter, like vanilla's partial hearts.
+	/// <see cref="Dim"/> darkens the whole row (a fallen soldier). Hovering shows <see cref="Hint"/> plus what one icon is worth.
 	/// </summary>
 	public class IconRow : UIElement
 	{
 		public int Value, Max;
 		public string Label = "", Hint = "", PerIconFormat = "";
+		/// <summary>Icon draw size and icon-to-icon pitch (px), label scale and vertical nudge; defaults are the roomy header sizes, the card sets compact ones.</summary>
+		public int IconSize = LevyConstants.UI.StatIconSize, Pitch = LevyConstants.UI.StatIconPitch, LabelDy = 2;
+		public float LabelScale = LevyConstants.UI.IconLabelScale;
+		/// <summary>Multiplier on every colour drawn (1 = normal).</summary>
+		public float Dim = 1f;
 		private readonly bool _star;
 		private int _step = 1;
 
-		public IconRow(float width, bool star) { _star = star; Width.Set(width, 0f); Height.Set(LevyConstants.UI.IconRowHeight, 0f); }
+		public IconRow(float width, bool star, float height = LevyConstants.UI.IconRowHeight) { _star = star; Width.Set(width, 0f); Height.Set(height, 0f); }
 
 		/// <summary>Units each icon stands for in the last draw.</summary>
 		public int PerIcon => _step;
@@ -225,31 +231,31 @@ namespace Levy.Common.UI
 		{
 			var r = GetDimensions().ToRectangle();
 			var font = FontAssets.MouseText.Value;
-			float labelScale = LevyConstants.UI.IconLabelScale;
+			float labelScale = LabelScale;
 			float labelW = string.IsNullOrEmpty(Label) || font == null ? 0f : font.MeasureString(Label).X * labelScale;
-			int pitch = LevyConstants.UI.StatIconPitch;
+			int pitch = Pitch;
 			int room = r.Width - (int)labelW - (labelW > 0f ? LevyConstants.UI.IconLabelGap : 0);
 			int slots = Math.Max(1, room / pitch);
 			_step = PickStep(Math.Max(0, Max), slots);
-			int n = Max <= 0 ? 0 : (Max + _step - 1) / _step;
+			int n = Max <= 0 ? 0 : Math.Min(slots, (Max + _step - 1) / _step); // even the coarsest step is clamped to what fits
 
 			var tex = (_star ? TextureAssets.Mana : TextureAssets.Heart).Value;
 			if (tex != null)
 			{
-				float baseScale = LevyConstants.UI.StatIconSize / (float)Math.Max(tex.Width, tex.Height);
+				float baseScale = IconSize / (float)Math.Max(tex.Width, tex.Height);
 				var origin = new Vector2(tex.Width * 0.5f, tex.Height * 0.5f);
 				for (int i = 0; i < n; i++)
 				{
 					var center = new Vector2(r.X + i * pitch + pitch * 0.5f, r.Y + r.Height * 0.5f);
-					spriteBatch.Draw(tex, center, null, LevyConstants.UI.IconEmptyColor, 0f, origin, baseScale, SpriteEffects.None, 0f);
+					spriteBatch.Draw(tex, center, null, LevyConstants.UI.IconEmptyColor * Dim, 0f, origin, baseScale, SpriteEffects.None, 0f);
 					float frac = MathHelper.Clamp((Value - i * _step) / (float)_step, 0f, 1f);
 					if (frac <= 0f) continue;
 					float k = LevyConstants.UI.IconPartialMinScale + (1f - LevyConstants.UI.IconPartialMinScale) * frac;
-					spriteBatch.Draw(tex, center, null, Color.White * (0.5f + 0.5f * frac), 0f, origin, baseScale * k, SpriteEffects.None, 0f);
+					spriteBatch.Draw(tex, center, null, Color.White * ((0.5f + 0.5f * frac) * Dim), 0f, origin, baseScale * k, SpriteEffects.None, 0f);
 				}
 			}
 			if (labelW > 0f)
-				Utils.DrawBorderString(spriteBatch, Label, new Vector2(r.Right - labelW, r.Y + r.Height * 0.5f + 2f), Color.White, labelScale, 0f, 0.5f);
+				Utils.DrawBorderString(spriteBatch, Label, new Vector2(r.Right - labelW, r.Y + r.Height * 0.5f + LabelDy), Color.White * Dim, labelScale, 0f, 0.5f);
 
 			if (IsMouseHovering && !string.IsNullOrEmpty(Hint))
 				HintTooltip.Queue(string.IsNullOrEmpty(PerIconFormat) ? Hint : Hint + "\n" + string.Format(PerIconFormat, _step));

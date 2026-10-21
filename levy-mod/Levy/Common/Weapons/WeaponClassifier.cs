@@ -508,6 +508,13 @@ namespace Levy.Common.Weapons
 			return 0;
 		}
 
+		/// <summary>Minions a summon staff is assumed to keep out when ranked: the kit's assumed slots (grow with the staff's rarity tier) over the staff's slot cost per minion. See <see cref="LevyConstants.SummonScoreBaseSlots"/>.</summary>
+		public static float SummonScoreMinions(Item item)
+		{
+			float slots = Math.Min(LevyConstants.SummonScoreMaxSlots, LevyConstants.SummonScoreBaseSlots + LevyConstants.SummonScoreSlotsPerTier * RarityTier(item.rare));
+			return Math.Clamp(slots / global::Levy.Content.NPCs.SoldierNPC.SlotsPerMinion(item), 1f, LevyConstants.MinionMaxPerSoldier);
+		}
+
 		/// <summary>Rank weapons for best-first issue: damage per second scaled up by rarity tier and value, so sensible high-tier weapons rank up. Higher is better.</summary>
 		public static float Score(Item item)
 		{
@@ -523,7 +530,7 @@ namespace Levy.Common.Weapons
 			}
 			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
 			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
-			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
+			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor * SummonScoreMinions(item); // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;
 			else if (p.Family == WeaponFamily.Boomerang) dps *= LevyConstants.BoomerangScoreFactor;

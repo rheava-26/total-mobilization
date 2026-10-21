@@ -100,8 +100,17 @@ namespace Levy.Common
 		public const float BoomerangSpinPerTick = 0.45f;
 
 		// ---------- Doctrine / ranking ----------
-		/// <summary>Summon-weapon score: minion damage x this (summon staves have no meaningful DPS of their own). Whips and boomerangs are scaled DPS.</summary>
-		public const float SummonScoreDamageFactor = 2.2f, WhipScoreFactor = 0.6f, BoomerangScoreFactor = 0.8f;
+		/// <summary>
+		/// Summon-staff score = item damage x SummonScoreDamageFactor (sustained DPS of ONE minion per point of damage; a minion lands a hit every ~30 ticks minus travel and misses)
+		/// x the minions the staff is assumed to field (see <see cref="SummonScoreBaseSlots"/>). Staves have no DPS of their own: useTime means nothing. Whips and boomerangs are scaled DPS.
+		/// </summary>
+		public const float SummonScoreDamageFactor = 1.2f, WhipScoreFactor = 0.8f, BoomerangScoreFactor = 0.8f;
+		/// <summary>
+		/// Minion slots a summoner kit is assumed to have when ranking a staff: SummonScoreBaseSlots + SummonScoreSlotsPerTier x the staff's rarity tier, capped at SummonScoreMaxSlots,
+		/// divided by the staff's per-minion slot cost (at least one minion, at most <see cref="MinionMaxPerSoldier"/>). Slots grow with progression (armor sets and accessories add them),
+		/// so an early staff stays modest while a late staff is valued as a real flock. The score depends only on the item, so a swap can never flip-flop.
+		/// </summary>
+		public const float SummonScoreBaseSlots = 1.5f, SummonScoreSlotsPerTier = 0.2f, SummonScoreMaxSlots = 4f;
 		/// <summary>Armor doctrine: each extra minion slot (maxMinions above the bare 1) counts like this much damage bonus.</summary>
 		public const float MinionDoctrineWeight = 0.06f;
 		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a summon weapon.</summary>

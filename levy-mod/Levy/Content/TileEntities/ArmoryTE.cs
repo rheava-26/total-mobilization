@@ -1240,8 +1240,8 @@ namespace Levy.Content.TileEntities
 		// ------------------------------------------------------------------ automatic weapon upgrade
 
 		/// <summary>
-		/// Automatic gear upgrade (server / single player): swaps the soldier's primary for a clearly better weapon he can use (ANY damage class unless
-		/// <see cref="Common.Config.LevyConfig.ClassMatchIssue"/> pins him to his own; a summon staff or sentry only ever swaps for its own role), his armor for a
+		/// Automatic gear upgrade (server / single player): swaps the soldier's primary for a clearly better weapon he can use (ANY damage class, summon staves and
+		/// sentries included, unless <see cref="Common.Config.LevyConfig.ClassMatchIssue"/> pins him to his own), his armor for a
 		/// clearly better set aimed at that weapon's class (<see cref="UpgradeArmor"/>), and his sidearm for a better one of the SAME KIND
 		/// (sentry / whip / summon staff / blade) when this armory stocks one. The candidate is drawn with
 		/// the same pick as <see cref="IssueGear"/> (<see cref="TakeVaried"/> / <see cref="TakeBest"/>), so it is a real, finite instance: the soldier's
@@ -1282,8 +1282,7 @@ namespace Levy.Content.TileEntities
 				if (sameClassOnly && WeaponClassifier.ItemDamageClass(it) != cls) return false;
 				if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 				var fam = WeaponClassifier.GetProfile(it).Family;
-				// Same role: a summon staff stays a summon staff, a sentry a sentry; anything else may change damage class.
-				if ((fam == WeaponFamily.Summon) != (curFam == WeaponFamily.Summon) || (fam == WeaponFamily.Sentry) != (curFam == WeaponFamily.Sentry)) return false;
+				// Fully fluid: a summon staff / sentry is an ordinary candidate, in or out. Only the score margin (and the swap cooldown) gate it; the armor follows the new weapon's class.
 				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < need) return false;
 				// Moving onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
 				if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
@@ -1295,6 +1294,15 @@ namespace Levy.Content.TileEntities
 			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
 			if (WeaponClassifier.ItemDamageClass(neu) != cls && IsMeleeTypeFamily(WeaponClassifier.GetProfile(neu).Family)
 				&& !g.IsLocked(SoldierGear.SlotSidearm) && !IsAir(g.Sidearm) && IsMeleeFamily(WeaponClassifier.GetProfile(g.Sidearm).Family))
+			{
+				var rem = Deposit(g.Sidearm);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+				g.Sidearm = new Item();
+			}
+			// A new summon-staff primary keeps the only flock (a staff in the off hand is dead weight): the old sidearm staff goes back to the shelf and IssueGear picks a whip / blade sidearm.
+			// A sentry sidearm stays: a sentry rides on top of a flock.
+			if (WeaponClassifier.GetProfile(neu).Family == WeaponFamily.Summon && !g.IsLocked(SoldierGear.SlotSidearm) && !IsAir(g.Sidearm)
+				&& WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Summon)
 			{
 				var rem = Deposit(g.Sidearm);
 				if (!IsAir(rem)) Spill(rem, protect: true);

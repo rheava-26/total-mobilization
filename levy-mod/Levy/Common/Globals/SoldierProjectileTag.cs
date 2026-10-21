@@ -83,6 +83,7 @@ namespace Levy.Common.Globals
 		public override void PostAI(Projectile projectile)
 		{
 			if (SoldierIndex >= 0 && projectile.type == ProjectileID.TerraBlade2Shot) projectile.ownerHitCheck = false;
+			if (SoldierIndex >= 0 && IsSporeTrap(projectile.type)) AgeSporeTrapFromSoldier(projectile);
 			// A mimic (etc.) reflecting a soldier's shot aims the bounce-back at Main.player[owner] — the commander, since soldier shots are
 			// owned by the commander. Re-aim it at the soldier that fired it instead, so the reflection comes back at the unit, not at you. Once.
 			if (SoldierIndex >= 0 && projectile.reflected && !_reflectRedirected)
@@ -116,11 +117,40 @@ namespace Levy.Common.Globals
 				return false;
 			}
 			if (SoldierIndex < 0) return true;
+			if (IsSporeTrap(projectile.type)) { _sporeAgeBefore = projectile.ai[0]; return true; } // vanilla AI runs; PostAI then re-ages it from the soldier
 			if (projectile.type == ProjectileID.FlyingKnife) { DriveSoldierFlyingKnife(projectile); return false; }
 			if (IsGuidedMissile(projectile.type)) { DriveSoldierGuidedMissile(projectile); return false; }
 			if (projectile.type == ProjectileID.SoulDrain) { DriveSoldierSoulDrain(projectile); return false; }
 			if (projectile.type == ProjectileID.MedusaHead) { DriveSoldierMedusaHead(projectile); return false; }
 			return true;
+		}
+
+		// ============================================================================================================
+		// Spore Sac traps (aiStyle 105): vanilla ages a trap by 1 a tick plus a term that grows with its distance from Main.player[owner] (and is +100 a tick when that
+		// player is not wearing the sac), so traps far from their wearer wither fast. A soldier's trap is owned by the commander, who is usually far away and wears no
+		// sac, so it would be dead within a second without ever hurting anything.
+		// ============================================================================================================
+		private float _sporeAgeBefore;
+
+		private static bool IsSporeTrap(int type) => type == ProjectileID.SporeTrap || type == ProjectileID.SporeTrap2;
+
+		/// <summary>
+		/// After the vanilla step: rewrite the age so the distance term is measured from the soldier that dropped the trap (the same formula, as a wearer of the sac).
+		/// Peers without the soldier's stat pipeline (clients) get the same result, since only the body's presence and position are read. A trap whose soldier is gone
+		/// withers at the rate vanilla gives an owner without the sac.
+		/// </summary>
+		private void AgeSporeTrapFromSoldier(Projectile p)
+		{
+			float aged = _sporeAgeBefore + 1f; // the vanilla +1; past the cap vanilla is already fading the trap and adds nothing more
+			if (aged > LevyConstants.SporeTrapMaxAge) return;
+			NPC s = SoldierIndex < Main.maxNPCs ? Main.npc[SoldierIndex] : null;
+			float extra = LevyConstants.SporeOrphanAgePerTick;
+			if (s != null && s.active && s.ModNPC is SoldierNPC)
+			{
+				extra = Vector2.Distance(p.Center, s.Center) / LevyConstants.SporeAgeDistDivisor;
+				foreach (var (over, mult) in LevyConstants.SporeAgeFalloff) if (extra > over) extra *= mult;
+			}
+			p.ai[0] = aged + extra;
 		}
 
 		/// <summary>Channel-guided aiStyle-9 missiles (Magic Missile, Flamelash, Rainbow Rod): vanilla steers them to Main.player[owner]'s cursor, which is the commander's for soldier shots.</summary>

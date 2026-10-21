@@ -49,6 +49,10 @@ namespace Levy.Content.NPCs
 		public int AttackCooldown;
 		/// <summary>Held-item animation driven by Combat (server) and mirrored on clients: ticks remaining / total of the current use.</summary>
 		public int ItemAnimation, ItemAnimationMax;
+		/// <summary>Uses (shots / swings) started inside the current <see cref="ItemAnimation"/>; Player.ItemUsesThisAnimation. Server only, not saved.</summary>
+		public int UsesThisAnimation;
+		/// <summary>The held item's reuseDelay captured when its last use began, applied as a pause when the animation ends (-1 = none recorded: use the weapon profile's). Server only, not saved.</summary>
+		public int ReuseDelayPending = -1;
 		/// <summary>Movement abilities read from gear (Movement agent fills via MovementAbilities.FromDummy after RefreshStats).</summary>
 		public Common.Movement.MovementAbilities Abilities = new();
 		public int Mana => Record?.Mana ?? 0;

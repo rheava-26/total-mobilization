@@ -20,5 +20,16 @@ namespace Levy.Common
 		public const int ClingerScanTiles = 30, ClingerMaxWallTiles = 15;
 		/// <summary>Stop marching once this close (plus the step size) to the target, in pixels.</summary>
 		public const float ClingerArrivePx = 20f;
+
+		// ---------- Spore Sac traps (ProjectileID.SporeTrap / SporeTrap2, aiStyle 105: Projectile.AI_105) ----------
+		/// <summary>A trap lives until its age passes this many ticks (90 s); it then fades and stops hurting.</summary>
+		public const float SporeTrapMaxAge = 5400f;
+		/// <summary>Besides 1 a tick, a trap ages by its distance to the wearer divided by this (in pixels).</summary>
+		public const float SporeAgeDistDivisor = 100f;
+		/// <summary>The distance-age term is multiplied by each factor in turn once it exceeds its threshold, so far-off traps wither quickly.</summary>
+		public static readonly (float over, float mult)[] SporeAgeFalloff =
+			{ (4f, 1.1f), (5f, 1.2f), (6f, 1.3f), (7f, 1.4f), (8f, 1.5f), (9f, 1.6f), (10f, 1.7f) };
+		/// <summary>Extra age per tick when no sac-wearing body backs the trap (vanilla adds this for an owner not wearing the sac): its soldier is gone.</summary>
+		public const float SporeOrphanAgePerTick = 100f;
 	}
 }

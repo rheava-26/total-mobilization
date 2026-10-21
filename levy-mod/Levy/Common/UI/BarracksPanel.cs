@@ -695,7 +695,8 @@ namespace Levy.Common.UI
 				_state.Left.Set(infoX, 0f); _info.Left.Set(infoX, 0f);
 				SetText(_state, Fit(UIActions.StateText(rec), SmallScale, infoW));
 				string info; Color infoColor = Color.White;
-				if (rec.DaysUnpaid > 0) { info = LevyUtil.T("UI.Unpaid", rec.DaysUnpaid); infoColor = rec.DaysUnpaid >= 2 ? Unpaid : Color.White; }
+				if (MutinySystem.IsMutinous(rec)) { info = LevyUtil.T("Mutiny.CardOwed", LevyUtil.Coins(MutinySystem.Remaining(rec))); infoColor = LevyConstants.Mutiny.Alarm; }
+				else if (rec.DaysUnpaid > 0) { info = LevyUtil.T("UI.Unpaid", rec.DaysUnpaid); infoColor = rec.DaysUnpaid >= 2 ? Unpaid : Color.White; }
 				else if (rec.StoodDown) { info = LevyUtil.T("UI.StoodDown"); infoColor = Muted; }
 				else info = LevyUtil.T("UI2.Kills", rec.Kills);
 				SetText(_info, Fit(info, SmallScale, infoW)); _info.TextColor = infoColor;
@@ -795,7 +796,8 @@ namespace Levy.Common.UI
 					LevyUtil.T("UI2.Kills", rec.Kills),
 					UIActions.StateText(rec),
 				};
-				if (rec.DaysUnpaid > 0) lines.Add(LevyUtil.T("UI.Unpaid", rec.DaysUnpaid));
+				if (MutinySystem.IsMutinous(rec)) lines.Add(LevyUtil.T("Mutiny.CardOwed", LevyUtil.Coins(MutinySystem.Remaining(rec))));
+				else if (rec.DaysUnpaid > 0) lines.Add(LevyUtil.T("UI.Unpaid", rec.DaysUnpaid));
 				if (rec.StoodDown) lines.Add(LevyUtil.T("UI.StoodDown"));
 				return string.Join("\n", lines);
 			}

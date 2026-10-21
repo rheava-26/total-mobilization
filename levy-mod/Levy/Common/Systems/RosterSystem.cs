@@ -149,7 +149,7 @@ namespace Levy.Common.Systems
 		private static ArmoryTE ArmoryOf(BarracksTE home) => home == null ? null : SettlementSystem.Instance.LinkedArmory(home);
 
 		/// <summary>The barracks that pays this regular: its home, or for the homeless the nearest barracks to the commander (or body).</summary>
-		private static BarracksTE PayingBarracks(SoldierRecord rec)
+		internal static BarracksTE PayingBarracks(SoldierRecord rec)
 		{
 			var home = HomeOf(rec);
 			if (home != null) return home;
@@ -584,6 +584,7 @@ namespace Levy.Common.Systems
 			}
 			if (++_feedTimer >= LevyConstants.AutoFeedIntervalTicks) { _feedTimer = 0; TickAutoFeed(); }
 			if (_spoilsSoundCd > 0) _spoilsSoundCd--;
+			MutinySystem.Tick(); // Wage Mutiny: settle back pay (no-op unless a mutineer exists)
 			if (++_spoilsTimer >= LevyConstants.SpoilsIntervalTicks) { _spoilsTimer = 0; TickSpoils(); }
 			if (LevyUtil.IsServer && ++_snapshotTimer >= LevyConstants.SnapshotIntervalTicks) { _snapshotTimer = 0; SendRosterSnapshot(); }
 		}
@@ -926,8 +927,11 @@ namespace Levy.Common.Systems
 			var wages = new Dictionary<int, long>();
 			var members = new Dictionary<int, List<SoldierRecord>>();
 			var orphans = new List<SoldierRecord>();
+			bool mutiny = MutinySystem.Enabled;
 			foreach (var rec in Regulars)
 			{
+				// Wage Mutiny: a mutineer is not on the daily payroll; his debt grows until he loots it or the treasury clears it (MutinySystem.Tick)
+				if (mutiny && MutinySystem.IsMutinous(rec)) { rec.WageOwed += EconomySystem.WagePerDay(rec.Grade, rec.StoodDown); rec.DaysUnpaid++; continue; }
 				var te = PayingBarracks(rec);
 				if (te == null) { orphans.Add(rec); continue; }
 				if (!payers.ContainsKey(te.ID)) { payers[te.ID] = te; wages[te.ID] = 0; members[te.ID] = new List<SoldierRecord>(); }
@@ -947,6 +951,7 @@ namespace Levy.Common.Systems
 				{
 					foreach (var r in list) { r.DaysUnpaid++; var b = BodyOf(r); if (b != null) DialogueSystem.Bark(b, DialogueTrigger.UNPAID); }
 					LevyUtil.Chat(LevyUtil.T("Chat.Unpaid", SettlementSystem.Instance.TownName(te)));
+					if (mutiny) MutinySystem.Begin(list, te); // unpaid = immediate mutiny
 				}
 				SyncBarracks(te);
 			}
@@ -956,7 +961,7 @@ namespace Levy.Common.Systems
 			for (int i = Regulars.Count - 1; i >= 0; i--)
 			{
 				var r = Regulars[i];
-				if (r.DaysUnpaid < 2) continue;
+				if (r.DaysUnpaid < 2 || (mutiny && r.Mutinous)) continue; // a mutineer stays and fights for his pay instead of deserting
 				float chance = LevyConstants.DesertionChanceByDaysUnpaid[Math.Min(r.DaysUnpaid, LevyConstants.DesertionChanceByDaysUnpaid.Length - 1)];
 				if (chance <= 0f || Main.rand.NextFloat() >= chance) continue;
 				Desert(r);
@@ -1012,14 +1017,25 @@ namespace Levy.Common.Systems
 			body = null;
 			if (rec.CommanderName != commander.name) return false;
 			body = BodyOf(rec);
-			if (atBarracks) return true;
-			return body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius);
+			bool picked = atBarracks || (body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius));
+			if (picked && MutinySystem.IsMutinous(rec)) { _refusedOrders++; body?.MutinyRefuse(); return false; } // Wage Mutiny: no orders until paid
+			return picked;
+		}
+
+		/// <summary>Soldiers that refused the order being issued (Wage Mutiny); reset at the start of each order, reported once at its end.</summary>
+		private int _refusedOrders;
+
+		private void ReportRefusals(Player commander)
+		{
+			if (_refusedOrders > 0) SendToPlayer(commander, LevyUtil.T("Mutiny.Refused", _refusedOrders), LevyConstants.Mutiny.Alarm);
+			_refusedOrders = 0;
 		}
 
 		public virtual void IssueOrder(Player commander, SoldierOrder order, bool atBarracks = false)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			bool any = false;
+			_refusedOrders = 0;
 			foreach (var rec in Regulars)
 			{
 				if (!Selected(rec, commander, atBarracks, out var body)) continue;
@@ -1029,6 +1045,7 @@ namespace Levy.Common.Systems
 				body?.ReceiveOrder(order);
 				any = true;
 			}
+			ReportRefusals(commander);
 			if (any) SendRosterSnapshot();
 		}
 
@@ -1036,8 +1053,9 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			int total = 0, holding = 0;
+			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
-			if (total == 0) return;
+			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
 			foreach (var rec in Regulars)
 			{
@@ -1046,6 +1064,7 @@ namespace Levy.Common.Systems
 				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
 			}
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
+			ReportRefusals(commander);
 			SendRosterSnapshot();
 		}
 
@@ -1054,8 +1073,9 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			int total = 0, spread = 0;
+			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; }
-			if (total == 0) return;
+			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = spread * 2 <= total; // majority already spread → close up; otherwise spread
 			foreach (var rec in Regulars)
 			{
@@ -1064,6 +1084,7 @@ namespace Levy.Common.Systems
 				if (body != null) body.NPC.netUpdate = true;
 			}
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.SpreadOut" : "UI.CloseUp"));
+			ReportRefusals(commander);
 			SendRosterSnapshot();
 		}
 

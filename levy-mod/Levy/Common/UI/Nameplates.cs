@@ -35,13 +35,15 @@ namespace Levy.Common.UI
 			var font = FontAssets.MouseText.Value;
 			string name = s.Record.Name ?? "";
 			bool militia = s.IsMilitia;
+			bool mutinous = s.Record.Mutinous && LevyConfig.Get.WageMutiny;
+			if (mutinous) name = LevyUtil.T("Mutiny.Tag", name);
 
 			// name (+ chevrons for regulars), centred over the head
 			float nameW = font.MeasureString(name).X * scale;
 			string chev = militia ? "" : UIActions.Chevrons(s.Grade);
 			float chevW = militia ? 0f : font.MeasureString(chev).X * scale + 4f;
 			float startX = top.X - (nameW + chevW) * 0.5f;
-			Utils.DrawBorderString(spriteBatch, name, new Vector2(startX, y), s.Record.Veteran ? new Color(255, 240, 200) : Color.White, scale, 0f, 0.5f);
+			Utils.DrawBorderString(spriteBatch, name, new Vector2(startX, y), mutinous ? LevyConstants.Mutiny.Alarm : s.Record.Veteran ? new Color(255, 240, 200) : Color.White, scale, 0f, 0.5f);
 			if (!militia) Utils.DrawBorderString(spriteBatch, chev, new Vector2(startX + nameW + 4f, y), Gold, scale, 0f, 0.5f);
 
 			// HP bar

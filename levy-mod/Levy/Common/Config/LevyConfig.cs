@@ -34,6 +34,7 @@ namespace Levy.Common.Config
 		[Range(0f, 5f)] [DefaultValue(1f)] public float WageMultiplier;
 		[DefaultValue(true)] public bool AutoMusterDefault;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
+		[DefaultValue(false)] public bool WageMutiny;
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
 		[DefaultValue(true)] public bool Spoils;
 		[DefaultValue(true)] public bool MagicStorageSupply;

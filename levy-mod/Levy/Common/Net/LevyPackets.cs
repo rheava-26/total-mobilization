@@ -42,12 +42,13 @@ namespace Levy.Common.Net
 	///  SoldierVisual: (unused: NPC SendExtraAI)
 	///  Bark: short npcIndex, byte channel (DialogueChannel), byte emoteId, string text   (Dialogue)
 	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
+	///  MutinyRob: long copper, int damage, int hitDirection, string soldierName   (Mutiny) — to the robbed player only; the client takes up to that much coin from its own pockets and banks, then takes the hit
 	/// </summary>
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
 		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge,
-		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax,
+		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 	}
 
 	public static class LevyPackets

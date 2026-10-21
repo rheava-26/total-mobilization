@@ -198,6 +198,11 @@ Mods: {
 					Tooltip: Scales every wage and fee.
 				}
 
+				WageMutiny: {
+					Label: Wage mutiny
+					Tooltip: Soldiers whose wage the treasury cannot pay revolt at once. They refuse every order, rob town NPCs, attack you and rob your pockets and banks until they have taken their back pay or the treasury pays it. Off by default.
+				}
+
 				AutoMusterDefault: {
 					Label: Auto-muster by default
 					Tooltip: New barracks call the militia when an invasion or Blood Moon starts.

@@ -10,7 +10,7 @@ namespace Levy.Common
 			// ---- panels ----
 			public const int PanelCloseDistanceTiles = 10;
 			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 520;
-			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 424;
+			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 452;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
 
@@ -69,10 +69,37 @@ namespace Levy.Common
 			public const int ArmoryColumns = 12, ArmoryRows = 10;
 			/// <summary>Gap between the storage grid and its scrollbar, and the scrollbar's width.</summary>
 			public const int ArmoryScrollGap = 6, ArmoryScrollWidth = 20;
+			/// <summary>Top of the storage grid and the issue rows (under the header and the filter row).</summary>
+			public const int ArmoryGridTop = 68;
 			public const float SlotScale = 0.6f;
 			public const int SlotPitch = 34; // 52 * 0.6 + gap
 			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory).</summary>
 			public const int ArmoryEditRangeTiles = 32;
+
+			// ---- armory search + filter ----
+			/// <summary>Search box in the header row: left edge, gap to the Sort button, height, and the left/right text inset inside it.</summary>
+			public const int ArmorySearchLeft = 84, ArmorySearchGap = 8, ArmorySearchHeight = 26, ArmorySearchInset = 8;
+			/// <summary>Filter row under the header: its top and height (rarity swatches, category button, clear button, shown count).</summary>
+			public const int ArmoryFilterTop = 36, ArmoryFilterHeight = 24;
+			/// <summary>Rarity swatch: square size and gap between swatches.</summary>
+			public const int RaritySwatchSize = 18, RaritySwatchGap = 2;
+			/// <summary>Gap between the swatch strip and the category button, and between the filter-row buttons.</summary>
+			public const int ArmoryFilterGap = 8;
+			public const int ArmoryCategoryButtonWidth = 130, ArmoryClearButtonWidth = 60;
+			/// <summary>How often (ticks) a filtered storage view re-checks the items, so a taken or swapped item drops out of it.</summary>
+			public const int ArmoryFilterRefreshTicks = 8;
+			/// <summary>Rarity values shown as swatches, in order: gray, white, blue, green, orange, red, pink, light purple, lime, yellow, cyan, dark red, purple, then Quest, Expert, Master. Any other rarity (modded) shares one extra swatch after these.</summary>
+			public static readonly int[] ArmoryRarityOrder = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -11, -12, -13 };
+			/// <summary>Localization keys (Mods.Levy.UI2.*) naming each swatch; the last one is the modded / other swatch.</summary>
+			public static readonly string[] ArmoryRarityNameKey =
+			{
+				"RarityGray", "RarityWhite", "RarityBlue", "RarityGreen", "RarityOrange", "RarityLightRed", "RarityPink", "RarityLightPurple",
+				"RarityLime", "RarityYellow", "RarityCyan", "RarityRed", "RarityPurple", "RarityQuest", "RarityExpert", "RarityMaster", "RarityOther",
+			};
+			/// <summary>Master-rarity swatch colour: green channel scales with Main.masterColor (0..1) by this much.</summary>
+			public const float MasterRarityGreenScale = 200f;
+			/// <summary>Colour of the extra swatch that stands for every modded / unlisted rarity.</summary>
+			public static readonly Color ArmoryRarityOtherColor = new Color(110, 190, 180);
 
 			// ---- bulk reforge (armory) ----
 			/// <summary>Reforge floor presets, best-of-N: a weapon qualifies once its prefix is among the top this-fraction of the prefixes THAT weapon can roll (0 = only the single best). Index = the floor button's cycle position.</summary>
@@ -84,7 +111,7 @@ namespace Levy.Common
 			/// <summary>Throw-away rolls used (once per weapon type, cached) to learn which prefixes that weapon can take and how good each is.</summary>
 			public const int ReforgeSampleRolls = 600;
 			/// <summary>Layout of the armory's bottom bar (reforge controls).</summary>
-			public const int ArmoryBarTop = 388, ArmoryBarHeight = 26;
+			public const int ArmoryBarTop = 416, ArmoryBarHeight = 26;
 
 			// ---- keybinds / radial ----
 			public const int MobilizeKeyRadiusTiles = 120;

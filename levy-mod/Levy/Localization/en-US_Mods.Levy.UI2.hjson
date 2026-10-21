@@ -7,6 +7,36 @@ ReforgeFloorGreat: Great
 ReforgeFloorSuperb: Superb
 ReforgeFloorBest: Best
 ReforgeFloorHint: Click to change the reforge floor. A weapon is rerolled until its modifier is among the top half (Good), quarter (Great) or tenth (Superb) of what that weapon can roll, or the single best (Best).
+ArmorySearch: Search...
+ArmoryCategory: Type: {0}
+ArmoryCategoryHint: Shows only this kind of item. Click to cycle, right-click to go back.
+ArmoryClear: Clear
+ArmoryClearHint: Clears the search and every filter.
+ArmoryShown: Showing {0} of {1}
+ArmoryNoMatch: No stored items match.
+RarityHint: Shows {0} items. Click to toggle; select several to combine.
+RarityGray: Gray
+RarityWhite: White
+RarityBlue: Blue
+RarityGreen: Green
+RarityOrange: Orange
+RarityLightRed: Light red
+RarityPink: Pink
+RarityLightPurple: Light purple
+RarityLime: Lime
+RarityYellow: Yellow
+RarityCyan: Cyan
+RarityRed: Red
+RarityPurple: Purple
+RarityQuest: Quest
+RarityExpert: Expert
+RarityMaster: Master
+RarityOther: modded
+CatArmor: Armor
+CatAccessory: Accessory
+CatAmmo: Ammo
+CatPotion: Potion
+CatOther: Other
 ReforgeAll: Reforge to floor
 ReforgeAllHint: Rerolls the modifier of every weapon in storage and the issue rows until it meets the floor. Each roll costs the standard reforge price from the barracks treasury. A weapon that does not reach the floor keeps the best modifier it rolled. Items are never lost.
 ReforgeNoBarracks: No barracks treasury is linked to this armory.

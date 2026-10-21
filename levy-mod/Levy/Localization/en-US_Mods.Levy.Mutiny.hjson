@@ -1,0 +1,21 @@
+# Wage Mutiny strings. Keys are relative to Mods.Levy.Mutiny (prefix comes from the file name).
+Tag: "MUTINOUS {0}"
+Begin: "MUTINY in {0}! {1} soldiers went unpaid and have turned on you. They refuse every order and are out to take {2} by force."
+BeginHint: Pay the barracks treasury to end it. Until then they rob the townsfolk, attack you and raid your pockets and banks.
+Shout: MUTINY! PAY US!
+Refuse: "No orders! Not until we're paid!"
+Refused: "{0} soldiers refuse your order. They are in mutiny until they are paid."
+Cry1: Pay up or bleed!
+Cry2: We're taking what we're owed!
+Cry3: No coin, no orders!
+Cry4: Your gold or your head!
+Calm: Paid. Back to work.
+CalmLoot: "{0} has taken the back pay and stands down."
+PaidOff: "The treasury of {0} paid the back wages: {1}. The mutiny there is over."
+Over: The mutiny is over. Every soldier is paid.
+RobbedNpc: "Robbed {0}: {1}"
+RobbedPlayer: "{0} robbed you of {1}."
+RobbedBank: "{0} raided your pockets and your bank for {1}."
+DeathReason: "{0} was cut down by {1}, who wanted his pay."
+RobbedMood: Robbed by mutinous soldiers.
+CardOwed: "MUTINY: owed {0}"

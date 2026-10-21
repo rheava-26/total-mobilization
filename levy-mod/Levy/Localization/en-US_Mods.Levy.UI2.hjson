@@ -132,4 +132,5 @@ State: {
 	Desert: Deserting
 	SearchDestroy: Hunting
 	FreeRein: Roaming free
+	Mutiny: In mutiny
 }

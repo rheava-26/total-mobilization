@@ -418,6 +418,7 @@ namespace Levy.Content.NPCs
 		public void ReceiveOrder(SoldierOrder order)
 		{
 			if (Record == null) return;
+			if (MutinySystem.IsMutinous(Record)) return; // a mutineer refuses every order until he is paid
 			Record.Order = order; HoldPosition = order == SoldierOrder.Hold;
 			if (order == SoldierOrder.Hold) Record.HoldPos = NPC.Center;
 			Brain_OnOrder(order);
@@ -452,6 +453,7 @@ namespace Levy.Content.NPCs
 			Record.Gear.ReadVisual(reader);
 			PotionSickness = reader.ReadByte() * 30;
 			Aggro = reader.ReadInt16();
+			Record.Mutinous = reader.ReadBoolean();
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

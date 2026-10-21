@@ -448,6 +448,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.BOSS_SIGHTED:
 				case DialogueTrigger.BOSS: return new Color(255, 170, 70);
 				case DialogueTrigger.COMRADE_DOWN: return new Color(255, 110, 110);
+				case DialogueTrigger.MUTINY: return new Color(255, 60, 50);
 				case DialogueTrigger.ROUTED: return new Color(255, 225, 90);
 				case DialogueTrigger.RALLIED: return new Color(150, 255, 150);
 				case DialogueTrigger.VICTORY: return new Color(255, 235, 120);

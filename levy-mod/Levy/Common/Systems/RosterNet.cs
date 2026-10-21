@@ -39,6 +39,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.SetRebase, OnSetRebase);
 			LevyPackets.Register(LevyPacket.SoldierGearSet, OnSoldierGearSet);
 			LevyPackets.Register(LevyPacket.RosterSnapshot, OnRosterSnapshot);
+			LevyPackets.Register(LevyPacket.MutinyRob, MutinySystem.OnRobPacket);
 		}
 
 		private static RosterSystem Roster => RosterSystem.Instance;

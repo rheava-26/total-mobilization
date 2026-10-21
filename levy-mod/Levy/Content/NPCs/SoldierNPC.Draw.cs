@@ -5,6 +5,7 @@ using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
 using Levy.Common;
+using Levy.Common.Config;
 using Levy.Common.UI;
 
 namespace Levy.Content.NPCs
@@ -184,6 +185,7 @@ namespace Levy.Content.NPCs
 				try
 				{
 					if (Shaken || State == SoldierState.Shaken) DrawShakenTint(sb, screenPos);
+					if (Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
 					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f);
@@ -312,6 +314,14 @@ namespace Levy.Content.NPCs
 			sb.Draw(tex, center, core, Color.White * 0.6f * fade, rotation + aiDir * 0.01f, origin, num, fx, 0f);
 			sb.Draw(tex, center, core, Color.White * 0.5f * fade, rotation + aiDir * -0.05f, origin, num * 0.8f, fx, 0f);
 			sb.Draw(tex, center, core, Color.White * 0.4f * fade, rotation + aiDir * -0.1f, origin, num * 0.6f, fx, 0f);
+		}
+
+		private void DrawMutinyTint(SpriteBatch sb, Vector2 screenPos)
+		{
+			Rectangle r = NPC.Hitbox;
+			r.Inflate(LevyConstants.Draw.ShakenTintInflatePx, LevyConstants.Draw.ShakenTintInflatePx);
+			r.X -= (int)screenPos.X; r.Y -= (int)screenPos.Y;
+			sb.Draw(TextureAssets.MagicPixel.Value, r, LevyConstants.Mutiny.Tint);
 		}
 
 		private void DrawShakenTint(SpriteBatch sb, Vector2 screenPos)

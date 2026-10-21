@@ -40,6 +40,10 @@ namespace Levy.Common.Soldiers
 		public int DaysUnpaid;
 		public bool StoodDown;
 		public bool HazardPaid;
+		/// <summary>Wage Mutiny: the soldier is in open revolt over unpaid wages. Saved and synced; only meaningful while LevyConfig.WageMutiny is on.</summary>
+		public bool Mutinous;
+		/// <summary>Wage Mutiny: back pay the soldier is owed, and how much of it he has already taken by robbery (copper). Saved and synced.</summary>
+		public long WageOwed, WageLooted;
 
 		// ---- orders ----
 		public SoldierOrder Order = SoldierOrder.Follow;
@@ -88,6 +92,7 @@ namespace Levy.Common.Soldiers
 			w.Write(Id); w.Write(Name ?? ""); w.Write((byte)Kind); w.Write((byte)Grade); w.Write((byte)Temperament); w.Write(Veteran);
 			w.Write(LifeCrystals); w.Write(LifeFruit); w.Write(ManaCrystals); w.Write(CurrentHp); w.Write(Kills); w.Write(BossFightsSurvived);
 			w.Write(HomeBarracksId); w.Write(CommanderName ?? ""); w.Write(DaysUnpaid); w.Write(StoodDown); w.Write((byte)Order); w.Write(HoldFire); w.Write(SpreadOut); w.Write(LoadoutLocked);
+			w.Write(Mutinous); w.Write(WageOwed); w.Write(WageLooted);
 			w.Write(Dead); w.Write(RespawnTimer); w.Write(Fear);
 			w.Write(Hair); w.Write(SkinVariant); w.Write(Male);
 			w.WriteRGB(HairColor); w.WriteRGB(SkinColor); w.WriteRGB(EyeColor); w.WriteRGB(ShirtColor); w.WriteRGB(UnderShirtColor); w.WriteRGB(PantsColor); w.WriteRGB(ShoeColor);
@@ -100,6 +105,7 @@ namespace Levy.Common.Soldiers
 			s.Id = r.ReadInt32(); s.Name = r.ReadString(); s.Kind = (SoldierKind)r.ReadByte(); s.Grade = (Grade)r.ReadByte(); s.Temperament = (Temperament)r.ReadByte(); s.Veteran = r.ReadBoolean();
 			s.LifeCrystals = r.ReadInt32(); s.LifeFruit = r.ReadInt32(); s.ManaCrystals = r.ReadInt32(); s.CurrentHp = r.ReadInt32(); s.Kills = r.ReadInt32(); s.BossFightsSurvived = r.ReadInt32();
 			s.HomeBarracksId = r.ReadInt32(); s.CommanderName = r.ReadString(); s.DaysUnpaid = r.ReadInt32(); s.StoodDown = r.ReadBoolean(); s.Order = (SoldierOrder)r.ReadByte(); s.HoldFire = r.ReadBoolean(); s.SpreadOut = r.ReadBoolean(); s.LoadoutLocked = r.ReadBoolean();
+			s.Mutinous = r.ReadBoolean(); s.WageOwed = r.ReadInt64(); s.WageLooted = r.ReadInt64();
 			s.Dead = r.ReadBoolean(); s.RespawnTimer = r.ReadInt32(); s.Fear = r.ReadSingle();
 			s.Hair = r.ReadInt32(); s.SkinVariant = r.ReadInt32(); s.Male = r.ReadBoolean();
 			s.HairColor = r.ReadRGB(); s.SkinColor = r.ReadRGB(); s.EyeColor = r.ReadRGB(); s.ShirtColor = r.ReadRGB(); s.UnderShirtColor = r.ReadRGB(); s.PantsColor = r.ReadRGB(); s.ShoeColor = r.ReadRGB();
@@ -115,6 +121,7 @@ namespace Levy.Common.Soldiers
 				["lc"] = LifeCrystals, ["lf"] = LifeFruit, ["mc"] = ManaCrystals, ["hp"] = CurrentHp, ["mana"] = Mana, ["kills"] = Kills, ["bosses"] = BossFightsSurvived,
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
 				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid,
+				["mutiny"] = Mutinous, ["owed"] = WageOwed, ["looted"] = WageLooted,
 				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
 				["hair"] = Hair, ["skinVar"] = SkinVariant, ["male"] = Male,
@@ -132,6 +139,7 @@ namespace Levy.Common.Soldiers
 				Kills = t.GetInt("kills"), BossFightsSurvived = t.GetInt("bosses"),
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
 				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"),
+				Mutinous = t.GetBool("mutiny"), WageOwed = t.GetLong("owed"), WageLooted = t.GetLong("looted"),
 				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
 				PatrolA = new Point16(t.GetInt("pAX"), t.GetInt("pAY")), PatrolB = new Point16(t.GetInt("pBX"), t.GetInt("pBY")),
 				Hair = t.GetInt("hair"), SkinVariant = t.GetInt("skinVar"), Male = t.GetBool("male"),

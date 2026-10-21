@@ -227,7 +227,8 @@ namespace Levy.Content.NPCs
 					break;
 				default:
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
-					if (fleeIdx >= 0) ThinkFlee(fleeIdx);
+					if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
+					else if (fleeIdx >= 0) ThinkFlee(fleeIdx);
 					else if (now < _spawnGraceUntil) ThinkSpawnGrace();
 					else if (!TryEngage(now))
 					{

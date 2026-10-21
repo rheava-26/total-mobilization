@@ -5,7 +5,7 @@ namespace Levy.Common
 	public enum SoldierKind : byte { Regular = 0, Militia = 1 }
 
 	/// <summary>Brain states. Fear states only occur while a main boss is alive.</summary>
-	public enum SoldierState : byte { Idle = 0, Follow = 1, Patrol = 2, Engage = 3, Haul = 4, Resupply = 5, Shaken = 6, Routed = 7, ReturnHome = 8, Dead = 9, Desert = 10, SearchDestroy = 11, FreeRein = 12 }
+	public enum SoldierState : byte { Idle = 0, Follow = 1, Patrol = 2, Engage = 3, Haul = 4, Resupply = 5, Shaken = 6, Routed = 7, ReturnHome = 8, Dead = 9, Desert = 10, SearchDestroy = 11, FreeRein = 12, Mutiny = 13 }
 
 	/// <summary>Standing orders for Regulars. Militia always patrol/engage at their settlement.</summary>
 	/// <summary>SearchDestroy roams outward from the settlement / commander hunting enemies (bounded leash, standoff rules intact).
@@ -27,7 +27,7 @@ namespace Levy.Common
 		ENGAGE, KILL, HURT, LOW_HP, OUT_OF_AMMO, HOLD_FIRE,
 		BOSS_SIGHTED, BOSS,
 		COMRADE_HIT, COMRADE_DOWN, SHAKEN, ROUTED, RALLIED, VICTORY, PROMOTED, VETERAN, DEATH_MESSAGE,
-		NO_ONE_LEFT
+		NO_ONE_LEFT, MUTINY
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

@@ -183,3 +183,12 @@ Configuration → Levy, and `EventBookDropDenominator` in `Common/LevyConstants.
   auto-muster can briefly disagree until the next tile-entity sync.
 * Deposit, feed-crystal and book-used packets trust the client's claim in multiplayer (treasury/flags are not re-validated
   against the server's inventory mirror). A cheating client could mint treasury; harmless in single player and co-op.
+
+## Wage Mutiny (config `Wage mutiny`, off by default)
+1. Turn it on, enlist a Regular, leave the treasury empty and let dawn pass: red chat line, "MUTINY! PAY US!" over the body, red tint and a
+   red "MUTINOUS" nameplate, roster card shows "MUTINY: owed X". Any order (radial, hold fire, spread out, War Horn orders) is refused with a chat line.
+2. The mutineer walks to a town NPC, takes up to two Levy wages (the NPC gets an anger emote; its shop prices rise 25% for a day and its mood
+   report says why), or walks at you, hits you and takes coins from pockets, then Piggy Bank, Safe, Forge, Void Vault. Only coin stacks change.
+3. Deposit enough to cover the group's back pay: all of them stand down at once and the chat says the mutiny is over. A soldier who took his whole
+   claim by robbery stands down alone. Toggling the config off clears every mutiny.
+4. Multiplayer: the robbed player's client removes its own coins (server sends MutinyRob); the server counts only coins its copy of the player shows.

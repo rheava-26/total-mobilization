@@ -13,6 +13,10 @@ namespace Levy.Common
 		/// <summary>Longest body-to-target offset a sword's launch vector is built from (a player's cursor is limited to the screen; the launch velocity is half this offset).</summary>
 		public const float ZenithMaxAimPx = 800f;
 
+		// ---------- Elf Melter (Player.ItemCheck_Shoot item 1910) ----------
+		/// <summary>Vanilla spawns the Elf Melter's Flames with ai[0] = 1, which makes them fly the full 60 ticks as blue flames (a plain Flamethrower leaves ai[0] = 0 and they burn out at 50 as orange).</summary>
+		public const float ElfMelterFlameAi0 = 1f;
+
 		// ---------- Clinger Staff (Player.ItemCheck_Shoot item 3014) ----------
 		/// <summary>Safety cap on the march from the muzzle toward the target (vanilla loops until the line is blocked or the cursor is reached).</summary>
 		public const int ClingerMarchMaxSteps = 400;

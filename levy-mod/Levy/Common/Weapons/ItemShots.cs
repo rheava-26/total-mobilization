@@ -102,6 +102,9 @@ namespace Levy.Common.Weapons
 				case ItemID.NimbusRod:
 					// The cloud flies to the point in ai[0..1] and rains there: vanilla stores the cursor, the soldier's target stands in.
 					return WeaponUse.Spawn(s, pos, vel, type, dmg, kb, cls, target.Center.X, target.Center.Y) != null;
+				case ItemID.ElfMelter:
+					// Same Flames projectile as the Flamethrower; ai[0] = 1 is what makes it a long blue flame (Projectile.AI_193_Flamethrower).
+					return WeaponUse.Spawn(s, pos, vel, type, dmg, kb, cls, LevyConstants.ElfMelterFlameAi0) != null;
 				case ItemID.ClingerStaff: return ClingerStaff(s, item, target, pos, vel, type, dmg, kb, cls);
 				case ItemID.Zenith: return Zenith(s, item, target, type, dmg, kb, cls);
 				case ItemID.IceRod:

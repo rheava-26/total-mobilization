@@ -360,6 +360,9 @@ Mods: {
 			Rallied: The horn sounds. The line rallies.
 			Rearmed: The muster re-arms from the racks.
 			RearmNone: No soldier has an Armory to draw from.
+			LoadoutsReset: Reset {0} loadouts.
+			LoadoutsResetOne: Reset 1 loadout.
+			LoadoutsResetNone: No soldier has an Armory to draw from.
 			ArmoryBroken: Armory destroyed. {0} items recovered.
 			ArmoryBrokenOne: Armory destroyed. 1 item recovered.
 			ArmoryBrokenEmpty: Armory destroyed. The racks were empty; your soldiers are carrying the gear.

@@ -125,6 +125,8 @@ namespace Levy.Common
 		public const float AutoUpgradeScoreMargin = 1.15f;
 		/// <summary>An upgrade that moves a soldier onto ammo he does not carry needs at least this many of it stocked, so a swap never leaves a gun with an empty pouch.</summary>
 		public const int AutoUpgradeMinAmmoStock = 100;
+		/// <summary>A fallback blade sidearm may only score up to this fraction of the best blade in the armory's stock (WeaponClassifier.Score). The top blades are left on the shelf for melee primaries, because stock is finite.</summary>
+		public const float SidearmScoreCapFraction = 0.5f;
 
 		// ---------- Ammo in the weapon score ----------
 		/// <summary>

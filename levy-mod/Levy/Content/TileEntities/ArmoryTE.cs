@@ -480,11 +480,41 @@ namespace Levy.Content.TileEntities
 			return true;
 		}
 
-		/// <summary>Best issuable sidearm (melee item in the sidearm slot or any supported melee); removes it. Null if none.</summary>
+		/// <summary>
+		/// Best issuable sidearm: the melee item in the dedicated sidearm slot (the player's own choice), else the best LESSER blade on the shelves
+		/// (<see cref="LesserBlade"/>, so the top blades stay in stock for melee primaries); removes it. Null if none.
+		/// </summary>
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableMelee, WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(), WeaponClassifier.Score);
+		}
+
+		/// <summary>
+		/// Best <see cref="WeaponClassifier.Score"/> among the issuable blades and spears that could be issued as a primary: the weapon rows (not the dedicated
+		/// sidearm slot), storage, the networked armories' storage and a connected Magic Storage network. 0 when none is stocked.
+		/// </summary>
+		private float TopBladeScore()
+		{
+			float best = 0f;
+			void Consider(Item it) { if (IsIssuableMelee(it) && !IsReservedRef(it)) best = Math.Max(best, WeaponClassifier.Score(it)); }
+			for (int i = 0; i < SidearmSlot; i++) Consider(IssueWeapons[i]);
+			foreach (var it in Storage) Consider(it);
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) Consider(it);
+			var ms = MsHeart();
+			if (ms != null) foreach (var it in MagicStorageBridge.Snapshot(ms)) Consider(it);
+			return best;
+		}
+
+		/// <summary>
+		/// The fallback blade a sidearm may draw: an issuable melee weapon scoring at most <see cref="LevyConstants.SidearmScoreCapFraction"/> of the best blade in stock.
+		/// Armory stock is finite, so a sidearm that took the best blade would leave the melee troopers who wield it as a primary with the leftovers; the top
+		/// of the shelf is reserved for primaries. With only top-tier blades in stock the sidearm stays empty.
+		/// </summary>
+		private Func<Item, bool> LesserBlade()
+		{
+			float cap = TopBladeScore() * LevyConstants.SidearmScoreCapFraction;
+			return it => IsIssuableMelee(it) && WeaponClassifier.Score(it) <= cap;
 		}
 
 		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
@@ -1291,17 +1321,18 @@ namespace Levy.Content.TileEntities
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
 			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
-			Func<Item, bool> pool;
+			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it
 			if (ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; } // a sentry kit wants a sentry in hand, whatever the fallback was
 			else if (fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
 			else if (fam == WeaponFamily.Whip) pool = IsIssuableWhip;
 			else if (fam == WeaponFamily.Summon) pool = IsIssuableDeployer;
-			else if (IsMeleeFamily(fam)) pool = IsIssuableMelee;
+			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
-			bool Pred(Item it) => !IsReservedRef(it) && pool(it) && WeaponClassifier.Score(it) >= need;
+			shelf ??= pool;
+			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponClassifier.Score(it) >= need;
 			// Same order as the initial pick: the dedicated sidearm slot first, then the best in the weapon row / storage / networked armories.
-			Item neu = Pred(IssueWeapons[SidearmSlot]) ? Remove(IssueWeapons, SidearmSlot) : null;
-			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, Pred, WeaponClassifier.Score);
+			Item neu = Fits(IssueWeapons[SidearmSlot], pool) ? Remove(IssueWeapons, SidearmSlot) : null;
+			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => Fits(it, shelf), WeaponClassifier.Score);
 			return neu != null && SwapIn(g, SoldierGear.SlotSidearm, neu);
 		}
 

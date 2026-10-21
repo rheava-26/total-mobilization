@@ -21,6 +21,8 @@ namespace Levy.Common
 			public const int BarracksListTop = BarracksHeaderTop + BarracksHeaderRows * BarracksRowPitch + BarracksListGap;
 			/// <summary>Gap between the filter/sort buttons, and between the manpower bar and the command-point bar; and the height of those two header bars.</summary>
 			public const int BarracksFilterGap = 4, BarracksBarGap = 10, BarracksBarH = 22;
+			/// <summary>Width of the right-anchored "Reset loadouts" button on the recruit row.</summary>
+			public const int ResetLoadoutsButtonW = 130;
 			/// <summary>Mouse-wheel scroll of the roster: the raw wheel delta (120 per notch) times this, so a notch moves about half a card.</summary>
 			public const float RosterScrollWheelScale = 0.45f;
 

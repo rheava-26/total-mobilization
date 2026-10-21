@@ -1180,13 +1180,7 @@ namespace Levy.Common.Systems
 		public virtual void Rearm(Player commander)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
-			var batch = new List<(ArmoryTE armory, SoldierRecord rec)>();
-			foreach (var rec in Regulars)
-			{
-				if (rec.CommanderName != commander.name || rec.Dead) continue;
-				var armory = ArmoryOf(HomeOf(rec));
-				if (armory != null) batch.Add((armory, rec));
-			}
+			var batch = ArmedRegulars(commander);
 			foreach (var (armory, rec) in batch) armory.ReturnGear(rec.Gear);
 			foreach (var (armory, rec) in batch)
 			{
@@ -1195,6 +1189,45 @@ namespace Levy.Common.Systems
 			}
 			int total = batch.Count + SettlementSystem.Instance.RearmMilitia();
 			SendToPlayer(commander, LevyUtil.T(total > 0 ? "Chat.Rearmed" : "Chat.RearmNone"));
+			if (batch.Count > 0) SendRosterSnapshot();
+		}
+
+		/// <summary>Every living Regular of this commander paired with the Armory it draws from; soldiers with no reachable Armory are left out.</summary>
+		private List<(ArmoryTE armory, SoldierRecord rec)> ArmedRegulars(Player commander)
+		{
+			var batch = new List<(ArmoryTE armory, SoldierRecord rec)>();
+			foreach (var rec in Regulars)
+			{
+				if (rec.CommanderName != commander.name || rec.Dead) continue;
+				var armory = ArmoryOf(HomeOf(rec));
+				if (armory != null) batch.Add((armory, rec));
+			}
+			return batch;
+		}
+
+		/// <summary>
+		/// Full loadout reset (server / single player): every living Regular of this commander gives up every hand lock (<see cref="SoldierRecord.LoadoutLocked"/> and
+		/// each per-slot lock in <see cref="SoldierGear.LockMask"/>), returns his whole kit to the home Armory, and then everyone draws again from scratch with the
+		/// normal issue pick. The locks are cleared BEFORE the return, so a hand-set item is not held back for its old owner (as a Re-arm does) and goes back into the
+		/// one shared pool. Nothing is destroyed: <see cref="ArmoryTE.ReturnGear"/> files every item and spills protected if storage is full. Soldiers with no Armory keep their kit.
+		/// </summary>
+		public virtual void ResetLoadouts(Player commander)
+		{
+			if (LevyUtil.IsClient || commander == null) return;
+			var batch = ArmedRegulars(commander);
+			foreach (var (armory, rec) in batch)
+			{
+				rec.LoadoutLocked = false;
+				rec.Gear.LockMask = 0;
+				rec.Gear.Reserved = null;
+				armory.ReturnGear(rec.Gear);
+			}
+			foreach (var (armory, rec) in batch)
+			{
+				armory.IssueGear(rec);
+				RebindBody(BodyOf(rec), rec);
+			}
+			SendToPlayer(commander, batch.Count == 0 ? LevyUtil.T("Chat.LoadoutsResetNone") : LevyUtil.T(batch.Count == 1 ? "Chat.LoadoutsResetOne" : "Chat.LoadoutsReset", batch.Count));
 			if (batch.Count > 0) SendRosterSnapshot();
 		}
 

@@ -152,6 +152,13 @@ namespace Levy.Common.UI
 			else LevyPackets.New(LevyPacket.Rearm).Send();
 		}
 
+		/// <summary>Full loadout reset for every Regular: kit returned, every hand lock cleared, fresh issue. Server authoritative.</summary>
+		public static void ResetLoadouts()
+		{
+			if (Single) RosterSystem.Instance.ResetLoadouts(Me);
+			else LevyPackets.New(LevyPacket.ResetLoadouts).Send();
+		}
+
 		/// <summary>
 		/// Order for ONE soldier. Single player: the live body takes it directly (or the record keeps it for the respawn).
 		/// Multiplayer client: there is no per-soldier order packet, so the squad Order packet is sent instead (all of the

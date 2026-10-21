@@ -95,6 +95,8 @@ NoBarracksNearby: No barracks within 120 tiles.
 MobilizeHint: Call up the militia of the nearest settlement.
 StandDownHint: Send the militia home.
 RallyHint: Steady every Regular within 30 tiles. Once a minute.
+ResetLoadouts: Reset loadouts
+ResetLoadoutsHint: Every Regular returns their whole kit to the Armory and unlocks every hand-set slot. Then each draws a fresh loadout. Nothing is destroyed.
 HoldFireHint: Soldiers stop shooting until told otherwise.
 FireAtWillHint: Soldiers engage anything hostile in reach.
 FollowHint: Regulars within 40 tiles follow you.

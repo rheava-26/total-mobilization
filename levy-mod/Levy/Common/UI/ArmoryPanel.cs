@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent.UI;
@@ -235,9 +236,35 @@ namespace Levy.Common.UI
 
 		private ItemSlotElement MakeSlot(Item[] arr, int index, byte region, Func<Item, bool> accepts, string emptyHint)
 		{
-			var slot = new ItemSlotElement(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint };
+			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint };
 			slot.OnChanged = (a, i) => { if (Te != null) UIActions.SendArmorySlot(Te, region, i); };
 			return slot;
+		}
+
+		/// <summary>
+		/// An armory cell. The UI's hover flag only moves when the UI is updated, but the grid re-lays itself out (scroll, rebuild) when it is drawn, so for a frame the flag can still name a cell
+		/// the pointer has already left. Such a cell is drawn plain (no tooltip, no click handling), so the tooltip and the click always belong to the cell under the pointer.
+		/// </summary>
+		private sealed class ArmorySlot : ItemSlotElement
+		{
+			private readonly Item[] _items;
+			private readonly int _at;
+			private readonly float _scale;
+
+			public ArmorySlot(Item[] arr, int index, float scale) : base(arr, index, scale) { _items = arr; _at = index; _scale = scale; }
+
+			protected override void DrawSelf(SpriteBatch spriteBatch)
+			{
+				if (!IsMouseHovering || ContainsPoint(Main.MouseScreen)) { base.DrawSelf(spriteBatch); return; }
+				if (_items == null || _at < 0 || _at >= _items.Length) return;
+				_items[_at] ??= new Item();
+				float oldScale = Main.inventoryScale;
+				Main.inventoryScale = _scale;
+				Item inv = _items[_at];
+				ItemSlot.Draw(spriteBatch, ref inv, Context, GetDimensions().Position());
+				_items[_at] = inv;
+				Main.inventoryScale = oldScale;
+			}
 		}
 
 		// ------------------------------------------------------------------ search + filters (view-only)
@@ -559,6 +586,16 @@ namespace Levy.Common.UI
 		{
 			if (Main.netMode != NetmodeID.MultiplayerClient || Te == null) return;
 			for (int i = 0; i < arr.Length; i++) if (SlotSnap.Differs(before, arr, i)) UIActions.SendArmorySlot(Te, 0, i);
+		}
+
+		/// <summary>
+		/// Runs before the panel's cells are drawn. The vanilla inventory and crafting list sit under this panel and have already put whatever they were hovering into the shared tooltip slot;
+		/// with the pointer on the panel only the panel's own cells may set it.
+		/// </summary>
+		protected override void DrawSelf(SpriteBatch spriteBatch)
+		{
+			base.DrawSelf(spriteBatch);
+			if (_panel != null && _panel.ContainsPoint(Main.MouseScreen)) { Main.HoverItem = new Item(); Main.hoverItemName = ""; }
 		}
 
 		public override void Update(GameTime gameTime)

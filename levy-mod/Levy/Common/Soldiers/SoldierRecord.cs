@@ -50,7 +50,7 @@ namespace Levy.Common.Soldiers
 		public bool HoldFire;
 		/// <summary>Squad stance: hold a much wider loose formation (anti-AoE). Saved; off for old saves.</summary>
 		public bool SpreadOut;
-		/// <summary>Loadout lock: while set, the soldier keeps his weapons and is skipped by automatic weapon upgrade. Saved and synced; off (auto-upgrade on) for old saves.</summary>
+		/// <summary>Loadout lock: while set, the soldier keeps his weapons and is skipped by automatic weapon and armor upgrade. Saved and synced; off (auto-upgrade on) for old saves.</summary>
 		public bool LoadoutLocked;
 		public Vector2 HoldPos;
 		public Point16 PatrolA = Point16.NegativeOne, PatrolB = Point16.NegativeOne;

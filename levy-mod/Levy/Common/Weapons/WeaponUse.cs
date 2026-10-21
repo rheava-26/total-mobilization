@@ -755,7 +755,7 @@ namespace Levy.Common.Weapons
 
 		/// <summary>
 		/// Automatic weapon upgrade (the body only ticks on the server / single player). Every <see cref="LevyConstants.AutoUpgradeCheckIntervalTicks"/> a soldier
-		/// asks his home barracks' linked armory for a clearly better weapon of his own kind (<see cref="ArmoryTE.UpgradeWeapons"/>); after a swap he waits
+		/// asks his home barracks' linked armory for a clearly better weapon (any damage class unless fixed-class companies is on) or armor set aimed at it (<see cref="ArmoryTE.UpgradeWeapons"/>); after a swap he waits
 		/// <see cref="LevyConstants.AutoUpgradeSwapCooldownTicks"/>. Skipped when switched off in the config, while the soldier's loadout is locked, and mid-fight or mid-swing.
 		/// </summary>
 		public static void WeaponUpgradeTick(SoldierNPC s)

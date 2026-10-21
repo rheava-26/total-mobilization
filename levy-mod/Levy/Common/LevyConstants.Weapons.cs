@@ -116,13 +116,23 @@ namespace Levy.Common
 		public const float WeaponVarietyTopFraction = 0.75f;
 		public const int WeaponVarietyMaxTypes = 6;
 
-		// ---------- Automatic weapon upgrade (a soldier re-checks his Armory for a better weapon of his own kind) ----------
+		// ---------- Automatic gear upgrade (a soldier re-checks his Armory for a better weapon, armor set or sidearm) ----------
 		/// <summary>How often each soldier re-checks his Armory (ticks). Each soldier's first check is offset by his id, so a muster never checks on one tick.</summary>
 		public const int AutoUpgradeCheckIntervalTicks = 60 * 5;
 		/// <summary>After a swap the soldier does not look again for this long (ticks), so a chain of near-equal weapons cannot flip-flop.</summary>
 		public const int AutoUpgradeSwapCooldownTicks = 60 * 30;
-		/// <summary>A candidate must score at least this many times the weapon in hand (WeaponClassifier.Score) to be worth a swap.</summary>
+		/// <summary>A candidate must score at least this many times the weapon in hand (WeaponClassifier.Score) to be worth a swap. Armor sets use the same margin on the whole set's score.</summary>
 		public const float AutoUpgradeScoreMargin = 1.15f;
+		/// <summary>An upgrade that moves a soldier onto ammo he does not carry needs at least this many of it stocked, so a swap never leaves a gun with an empty pouch.</summary>
+		public const int AutoUpgradeMinAmmoStock = 100;
+
+		// ---------- Ammo in the weapon score ----------
+		/// <summary>
+		/// A shooter's real output is its own damage PLUS its ammo's (Terraria adds the two), so Score credits each ammo-using weapon with a representative round
+		/// instead of ranking guns and bows on the weapon's base damage alone. Mid-game rounds: musket / silver / meteor / hellfire level. Ammo types not listed
+		/// (gel, coins, sand, solutions) add nothing.
+		/// </summary>
+		public const int AmmoScoreBulletDamage = 10, AmmoScoreArrowDamage = 10, AmmoScoreRocketDamage = 40, AmmoScoreDartDamage = 6;
 
 		// ---------- Deploy-and-persist weapons (fire once, hold fire while the soldier's own field is still working) ----------
 		/// <summary>

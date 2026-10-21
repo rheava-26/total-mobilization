@@ -16,19 +16,22 @@ namespace Levy.Common
 
 			// ---- barracks roster (resizable panel + card grid) ----
 			/// <summary>Header layout: rows of controls start at BarracksHeaderTop and step down by BarracksRowPitch (button height + a 2 px gap); BarracksHeaderRows rows
-			/// (deposit, hearts+stars, toggles, recruit, enlist, filters, roster+orders). The roster grid starts right under the last row.</summary>
+			/// (deposit, manpower + command-point bars, toggles, recruit, enlist, filters, roster+orders). The roster grid starts right under the last row.</summary>
 			public const int BarracksHeaderTop = 32, BarracksRowPitch = 26, BarracksButtonH = 24, BarracksHeaderRows = 7, BarracksListGap = 2;
 			public const int BarracksListTop = BarracksHeaderTop + BarracksHeaderRows * BarracksRowPitch + BarracksListGap;
-			/// <summary>Gap between the filter/sort buttons, and between the hearts row and the stars row.</summary>
-			public const int BarracksFilterGap = 4, BarracksIconRowGap = 10;
+			/// <summary>Gap between the filter/sort buttons, and between the manpower bar and the command-point bar; and the height of those two header bars.</summary>
+			public const int BarracksFilterGap = 4, BarracksBarGap = 10, BarracksBarH = 22;
 			/// <summary>Mouse-wheel scroll of the roster: the raw wheel delta (120 per notch) times this, so a notch moves about half a card.</summary>
 			public const float RosterScrollWheelScale = 0.45f;
 
-			// ---- hearts / stars (manpower = life, command points = mana) ----
-			/// <summary>Row height, icon draw size and icon-to-icon pitch (px). The icon count is whatever fits the row; the value per icon is picked from IconValueSteps.</summary>
+			// ---- hearts / stars on the roster cards (a soldier's HP = hearts, mana = stars) ----
+			/// <summary>Default row height, icon draw size and icon-to-icon pitch (px). The icon count is whatever fits the row; the value per icon is picked from IconValueSteps.</summary>
 			public const int IconRowHeight = 22, StatIconSize = 18, StatIconPitch = 18;
 			public const float IconLabelScale = 0.7f, IconPartialMinScale = 0.55f;
 			public const int IconLabelGap = 6;
+			/// <summary>The card's compact rows: height (two stacked rows share the strip above the gear), icon size and pitch, label scale and its vertical nudge, and the dim of an empty slot on a fallen soldier.</summary>
+			public const int CardIconRowH = 15, CardIconSize = 13, CardIconPitch = 13, CardIconLabelDy = 1;
+			public const float CardIconLabelScale = 0.58f, CardIconDeadDim = 0.55f;
 			/// <summary>Tint of an empty heart / star slot.</summary>
 			public static readonly Color IconEmptyColor = new Color(90, 90, 100) * 0.5f;
 			/// <summary>Nice per-icon values; the smallest one whose icon count fits the row is used.</summary>

@@ -37,7 +37,7 @@ namespace Levy.Common.UI
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
-		private IconRow _manpower, _cp;
+		private BarElement _manpower, _cp;
 		private CardGrid _grid;
 		private UIScrollbar _scroll;
 		private ResizeGrip _grip;
@@ -92,9 +92,9 @@ namespace Levy.Common.UI
 			_wd10 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawTenGold"), 0.7f, 78, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositLarge), wdHint), 342, y0);
 			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 0, y0);
 
-			// manpower hearts + command-point stars (widths follow the panel width, see ApplyLayout)
-			_manpower = Put(new IconRow(260, false) { PerIconFormat = LevyUtil.T("UI2.HeartValue", "{0}") }, 12, RowY(1) + 1);
-			_cp = Put(new IconRow(266, true) { PerIconFormat = LevyUtil.T("UI2.StarValue", "{0}") }, 282, RowY(1) + 1);
+			// manpower + command-point bars (widths follow the panel width, see ApplyLayout)
+			_manpower = Put(new BarElement(260, LevyConstants.UI.BarracksBarH) { Fill = new Color(90, 160, 90) }, 12, RowY(1) + 1);
+			_cp = Put(new BarElement(266, LevyConstants.UI.BarracksBarH) { Fill = new Color(170, 140, 60) }, 282, RowY(1) + 1);
 
 			// settlement toggles + extras
 			float y2 = RowY(2);
@@ -176,9 +176,9 @@ namespace Levy.Common.UI
 			_close.Left.Set(_w - 36, 0f);
 			_mobilize.Left.Set(_w - 12 - 118, 0f);
 			_hazard.Left.Set(_w - 12 - 204, 0f);
-			float barW = (_w - 24f - LevyConstants.UI.BarracksIconRowGap) * 0.5f;
+			float barW = (_w - 24f - LevyConstants.UI.BarracksBarGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);
-			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksIconRowGap, 0f); _cp.Width.Set(barW, 0f);
+			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksBarGap, 0f); _cp.Width.Set(barW, 0f);
 			float gap = LevyConstants.UI.BarracksFilterGap, fw = (_w - 24f - 3f * gap) / 4f;
 			var filters = new[] { _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn };
 			for (int i = 0; i < filters.Length; i++) { filters[i].Left.Set(12f + i * (fw + gap), 0f); filters[i].Width.Set(fw, 0f); }
@@ -263,14 +263,11 @@ namespace Levy.Common.UI
 
 			int cap = SettlementSystem.Instance.ManpowerCap(te);
 			if (cap <= 0) cap = te.ManpowerCapCached;
-			// hearts = manpower in reserve; stars = command points still free (filled stars are what you can spend, like mana)
-			_manpower.Max = Math.Max(0, cap); _manpower.Value = Math.Clamp(te.Manpower, 0, _manpower.Max);
-			_manpower.Label = _manpower.Value + "/" + _manpower.Max;
-			_manpower.Hint = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
-			int cpTotal = Math.Max(0, roster.CommandPoints), cpUsed = roster.CommandPointsUsed, cpFree = Math.Clamp(cpTotal - cpUsed, 0, cpTotal);
-			_cp.Max = cpTotal; _cp.Value = cpFree;
-			_cp.Label = cpFree + "/" + cpTotal;
-			_cp.Hint = LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal) + "\n" + LevyUtil.T("UI2.CpFree", cpFree);
+			_manpower.Fraction = cap > 0 ? te.Manpower / (float)cap : 0f;
+			_manpower.Label = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
+			int cpTotal = roster.CommandPoints, cpUsed = roster.CommandPointsUsed;
+			_cp.Fraction = cpTotal > 0 ? cpUsed / (float)cpTotal : 0f;
+			_cp.Label = LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal);
 
 			_mobilize.Set(LevyUtil.T(te.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(te.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint"));
 			_autoMuster.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI.AutoMuster"), LevyUtil.T(te.AutoMuster ? "UI2.On" : "UI2.Off")), true);
@@ -563,7 +560,7 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>
-		/// One Regular. Name and grade (the border and tint take the grade colour), an HP bar and a mana bar, the weapon / sidearm / armor icons,
+		/// One Regular. Name and grade (the border and tint take the grade colour), a row of hearts (HP) and a row of mana stars, the weapon / sidearm / armor icons,
 		/// the current state, and the per-soldier actions on two button rows. A "More" button swaps those rows for the less common actions
 		/// (assign patrol, rebase, feed crystals). Hovering the name row shows the full details.
 		/// Portrait hook: <see cref="LevyConstants.UI.CardPortraitWidth"/> reserves a left column for the soldier's live sprite; <see cref="DrawPortrait"/> is where it is drawn.
@@ -573,7 +570,7 @@ namespace Levy.Common.UI
 			public readonly SoldierRecord Rec;
 			private readonly BarracksPanel _owner;
 			private readonly Label _name, _grade, _state, _info;
-			private readonly BarElement _hp, _mp;
+			private readonly IconRow _hp, _mp;
 			private readonly GearStrip _gear;
 			private readonly LevyButton _follow, _hold, _return, _kit, _promote, _discharge, _moreBtn;
 			private readonly LevyButton _patrol, _rebase, _back, _feedLc, _feedLf, _feedMc;
@@ -585,7 +582,7 @@ namespace Levy.Common.UI
 
 			private static readonly Color CardBase = new(45, 58, 110), Vet = new(255, 240, 200), Unpaid = new(255, 150, 120), Muted = new(170, 170, 180);
 			private const float NameScale = 0.8f, SmallScale = 0.62f, CardBtnScale = 0.65f;
-			private const int Pad = 6, NameY = 3, HpY = 22, HpH = 13, MpY = 37, MpH = 11, GearY = 52, ActionY = 80, RowH = 22, RowGap = 3, BtnGap = 3;
+			private const int Pad = 6, NameY = 3, HpY = 22, MpY = HpY + LevyConstants.UI.CardIconRowH, GearY = MpY + LevyConstants.UI.CardIconRowH, ActionY = 80, RowH = 22, RowGap = 3, BtnGap = 3;
 
 			public RosterCard(BarracksPanel owner, SoldierRecord rec, bool more)
 			{
@@ -596,8 +593,8 @@ namespace Levy.Common.UI
 				hoverRow.Width.Set(0f, 1f); hoverRow.Height.Set(HpY - 2, 0f);
 				_name = Add(new Label("", NameScale), Pad, NameY);
 				_grade = Add(new Label("", SmallScale), 0, NameY + 3);
-				_hp = Add(new BarElement(10, HpH) { TextScale = SmallScale }, Pad, HpY);
-				_mp = Add(new BarElement(10, MpH) { TextScale = SmallScale - 0.05f, Fill = new Color(70, 110, 215) }, Pad, MpY);
+				_hp = Add(NewIconRow(false, "UI2.HeartValue"), Pad, HpY);
+				_mp = Add(NewIconRow(true, "UI2.StarValue"), Pad, MpY);
 				_gear = Add(new GearStrip(() => Rec), Pad, GearY);
 				_state = Add(new Label("", SmallScale), 0, GearY);
 				_info = Add(new Label("", SmallScale), 0, GearY + 13);
@@ -617,6 +614,13 @@ namespace Levy.Common.UI
 				_feedLf = Btn(LevyUtil.T("UI2.FeedLifeFruitShort"), () => UIActions.FeedCrystal(Rec, ItemID.LifeFruit), LevyUtil.T("UI2.FeedLifeFruit"));
 				_feedMc = Btn(LevyUtil.T("UI2.FeedManaCrystalShort"), () => UIActions.FeedCrystal(Rec, ItemID.ManaCrystal), LevyUtil.T("UI2.FeedManaCrystal"));
 			}
+
+			/// <summary>A compact heart (HP) or star (mana) row for the card; the owner sets its width and numbers in <see cref="Refresh"/>.</summary>
+			private static IconRow NewIconRow(bool star, string perIconKey) => new(10, star, LevyConstants.UI.CardIconRowH)
+			{
+				IconSize = LevyConstants.UI.CardIconSize, Pitch = LevyConstants.UI.CardIconPitch, LabelScale = LevyConstants.UI.CardIconLabelScale,
+				LabelDy = LevyConstants.UI.CardIconLabelDy, PerIconFormat = LevyUtil.T(perIconKey, "{0}"),
+			};
 
 			private T Add<T>(T el, float left, float top) where T : UIElement { el.Left.Set(left, 0f); el.Top.Set(top, 0f); Append(el); return el; }
 
@@ -679,15 +683,17 @@ namespace Levy.Common.UI
 				SetText(_name, Fit(rec.Name, NameScale, inner - gradeW - 8f));
 				_name.TextColor = rec.Veteran ? Vet : Color.White;
 
-				// bars
+				// hearts (HP) and mana stars; the exact numbers stay as the small label and the hover. A fallen soldier reads 0 hearts, dimmed
+				float dim = dead ? LevyConstants.UI.CardIconDeadDim : 1f;
 				_hp.Left.Set(x0, 0f); _hp.Width.Set(inner, 0f);
-				_hp.Fraction = max > 0 ? cur / (float)max : 0f;
-				_hp.Fill = Color.Lerp(new Color(190, 55, 50), new Color(80, 170, 80), _hp.Fraction);
-				_hp.Label = LevyUtil.T("UI2.Hp", cur, max);
+				_hp.Max = Math.Max(0, max); _hp.Value = Math.Clamp(cur, 0, _hp.Max); _hp.Dim = dim;
+				_hp.Label = _hp.Value + "/" + _hp.Max;
+				_hp.Hint = LevyUtil.T("UI2.Hp", cur, max);
+				int maxMana = Math.Max(0, rec.MaxMana);
 				_mp.Left.Set(x0, 0f); _mp.Width.Set(inner, 0f);
-				int maxMana = rec.MaxMana;
-				_mp.Fraction = maxMana > 0 ? Math.Clamp(rec.Mana, 0, maxMana) / (float)maxMana : 0f;
-				_mp.Label = LevyUtil.T("UI2.Mana", Math.Clamp(rec.Mana, 0, Math.Max(0, maxMana)), maxMana);
+				_mp.Max = maxMana; _mp.Value = Math.Clamp(rec.Mana, 0, maxMana); _mp.Dim = dim;
+				_mp.Label = _mp.Value + "/" + _mp.Max;
+				_mp.Hint = LevyUtil.T("UI2.Mana", _mp.Value, maxMana);
 
 				// gear + state / warnings to its right
 				_gear.Left.Set(x0, 0f);

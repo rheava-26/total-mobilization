@@ -94,6 +94,9 @@ namespace Levy.Common.Weapons
 			switch (item.type)
 			{
 				case ItemID.Starfury: return Starfury(s, target, vel, type, dmg, cls);
+				case ItemID.BlizzardStaff: return BlizzardStaff(s, target, vel, type, dmg, kb, cls);
+				case ItemID.MeteorStaff: return MeteorStaff(s, target, vel, type, dmg, kb, cls);
+				case ItemID.LunarFlareBook: return LunarFlare(s, target, vel, type, dmg, kb, cls);
 				case ItemID.LightsBane: return LightsBane(s, item, target, type, dmg, kb, cls);
 				case ItemID.BladeofGrass: return BladeOfGrass(s, target, type, dmg, kb, cls);
 				case ItemID.BeeGun: return BeeGun(s, pos, vel, dmg, kb);
@@ -126,6 +129,83 @@ namespace Levy.Common.Weapons
 			Vector2 back = (origin - target.Center).SafeNormalize(new Vector2(0f, -1f));
 			for (int guard = 0; guard < 200 && landing.Y > origin.Y && WorldGen.SolidTile(landing.ToTileCoordinates()); guard++) landing += back * 16f;
 			return WeaponUse.Spawn(s, origin, v, type, (int)(dmg * LevyConstants.StarfuryDamageFactor), 0f, cls, 0f, landing.Y) != null;
+		}
+
+		/// <summary>
+		/// Where one projectile of a sky-fall cast starts: 600 px above the soldier, at a point halfway between (the target plus a spread toward the soldier's back) and the soldier, scattered sideways,
+		/// each extra projectile higher than the last (Player.ItemCheck_Shoot, the Blizzard / Meteor / Lunar Flare branches).
+		/// </summary>
+		private static Vector2 SkyfallOrigin(SoldierNPC s, NPC target, int stack)
+		{
+			Vector2 c = s.NPC.Center;
+			int dir = s.NPC.direction == 0 ? 1 : s.NPC.direction;
+			float x = target.Center.X + s.NPC.width * 0.5f - Main.rand.Next(LevyConstants.SkyfallAimSpreadPx + 1) * dir;
+			x = (x + c.X) * 0.5f + Main.rand.Next(-LevyConstants.SkyfallScatterPx, LevyConstants.SkyfallScatterPx + 1);
+			return new Vector2(x, c.Y - LevyConstants.SkyfallDropHeightPx - LevyConstants.SkyfallStackStepPx * stack);
+		}
+
+		/// <summary>True when there is open sky above the soldier for a sky-fall cast to start from (a soldier under a roof or in a cave fires the plain shot).</summary>
+		private static bool SkyIsOpen(SoldierNPC s)
+		{
+			Vector2 c = s.NPC.Center;
+			return Collision.CanHitLine(c, 0, 0, c + new Vector2(0f, -LevyConstants.SkyfallDropHeightPx), 0, 0);
+		}
+
+		/// <summary>A random value in [-range, range] (vanilla rolls Next(-40, 41) times a small step).</summary>
+		private static float Scatter(float range) => Main.rand.Next(-40, 41) / 40f * range;
+
+		/// <summary>Vanilla's fall vector: from <paramref name="origin"/> toward the aim point at <paramref name="speed"/>, always downward and never flatter than the minimum fall.</summary>
+		private static Vector2 SkyfallVelocity(Vector2 origin, Vector2 aim, float speed, float aimScatterX = 0f)
+		{
+			float dx = aim.X - origin.X + aimScatterX, dy = Math.Abs(aim.Y - origin.Y);
+			if (dy < LevyConstants.SkyfallMinFallPx) dy = LevyConstants.SkyfallMinFallPx;
+			float len = (float)Math.Sqrt(dx * dx + dy * dy);
+			float k = Math.Max(1f, speed) / len;
+			return new Vector2(dx * k, dy * k);
+		}
+
+		/// <summary>Blizzard Staff: two hail shards fall from the sky onto the target (ai[1] = which of the 5 frames).</summary>
+		private static bool BlizzardStaff(SoldierNPC s, NPC target, Vector2 vel, int type, int dmg, float kb, DamageClass cls)
+		{
+			if (!SkyIsOpen(s)) return false;
+			float speed = vel.Length();
+			int spawned = 0;
+			for (int k = 0; k < LevyConstants.BlizzardShardCount; k++)
+			{
+				Vector2 origin = SkyfallOrigin(s, target, k);
+				Vector2 v = SkyfallVelocity(origin, target.Center, speed);
+				v.X += Scatter(LevyConstants.BlizzardVelScatter);
+				v.Y += Scatter(LevyConstants.BlizzardVelScatter);
+				if (WeaponUse.Spawn(s, origin, v, type, dmg, kb, cls, 0f, Main.rand.Next(LevyConstants.BlizzardFrameCount)) != null) spawned++;
+			}
+			return spawned > 0;
+		}
+
+		/// <summary>Meteor Staff: a meteor (one of three sizes, random scale) falls from the sky onto the target at three quarters speed (ai[1] = scale).</summary>
+		private static bool MeteorStaff(SoldierNPC s, NPC target, Vector2 vel, int type, int dmg, float kb, DamageClass cls)
+		{
+			if (!SkyIsOpen(s)) return false;
+			Vector2 origin = SkyfallOrigin(s, target, 0);
+			Vector2 v = SkyfallVelocity(origin, target.Center, vel.Length(), Scatter(LevyConstants.MeteorAimScatterPx));
+			v.Y += Scatter(LevyConstants.MeteorFallScatter);
+			v *= LevyConstants.MeteorSpeedFactor;
+			float scale = LevyConstants.MeteorScaleMin + (float)Main.rand.NextDouble() * LevyConstants.MeteorScaleRange;
+			return WeaponUse.Spawn(s, origin, v, type + Main.rand.Next(LevyConstants.MeteorVariantCount), dmg, kb, cls, 0f, scale) != null;
+		}
+
+		/// <summary>Lunar Flare: three flares fall from the sky onto the target at half speed; ai[1] = the target's height, where they start to collide with terrain.</summary>
+		private static bool LunarFlare(SoldierNPC s, NPC target, Vector2 vel, int type, int dmg, float kb, DamageClass cls)
+		{
+			if (!SkyIsOpen(s)) return false;
+			float speed = vel.Length();
+			int spawned = 0;
+			for (int k = 0; k < LevyConstants.LunarFlareCount; k++)
+			{
+				Vector2 origin = SkyfallOrigin(s, target, k);
+				Vector2 v = SkyfallVelocity(origin, target.Center, speed) * LevyConstants.LunarFlareSpeedFactor;
+				if (WeaponUse.Spawn(s, origin, v, type, dmg, kb, cls, 0f, target.Center.Y) != null) spawned++;
+			}
+			return spawned > 0;
 		}
 
 		/// <summary>Light's Bane: a slash that appears on the enemy in reach (a crit makes it bigger and doubles it before the halving).</summary>

@@ -496,6 +496,18 @@ namespace Levy.Common.Weapons
 			return Math.Clamp(rare, 0, LevyConstants.MaxRarityTier);
 		}
 
+		/// <summary>Representative damage of the ammo a weapon fires (0 for a weapon that uses none, or ammo not worth counting): the part of a shooter's output that does not sit on the weapon itself.</summary>
+		public static int AmmoScoreDamage(Item item)
+		{
+			int id = item.useAmmo;
+			if (id <= 0) return 0;
+			if (id == AmmoID.Bullet) return LevyConstants.AmmoScoreBulletDamage;
+			if (id == AmmoID.Arrow) return LevyConstants.AmmoScoreArrowDamage;
+			if (id == AmmoID.Rocket) return LevyConstants.AmmoScoreRocketDamage;
+			if (id == AmmoID.Dart) return LevyConstants.AmmoScoreDartDamage;
+			return 0;
+		}
+
 		/// <summary>Rank weapons for best-first issue: damage per second scaled up by rarity tier and value, so sensible high-tier weapons rank up. Higher is better.</summary>
 		public static float Score(Item item)
 		{
@@ -509,7 +521,8 @@ namespace Levy.Common.Weapons
 				int shots = Math.Max(1, (Math.Max(1, item.useAnimation) + (int)cadence - 1) / (int)cadence);
 				cadence = (Math.Max(1, item.useAnimation) + item.reuseDelay) / (float)shots;
 			}
-			float dps = (p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage) * p.ProjectilesPerShot * 60f / cadence;
+			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
+			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor; // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Whip) dps *= LevyConstants.WhipScoreFactor;

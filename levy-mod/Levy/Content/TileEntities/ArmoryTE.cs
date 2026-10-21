@@ -283,7 +283,7 @@ namespace Levy.Content.TileEntities
 			return t.Length >= 3 && t[0] == "Ancient" ? t[0] + " " + t[1] : t[0];
 		}
 
-		private struct ArmorCand { public ArmoryTE Src; public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; public bool Ms; }
+		private struct ArmorCand { public ArmoryTE Src; public Item[] Arr; public int Idx; public Item It; public float Score; public string Stem; public bool Fixed; public bool Ms; public bool Worn; }
 
 		// ------------------------------------------------------------------ hand-assigned gear across a Re-arm
 
@@ -551,15 +551,24 @@ namespace Levy.Content.TileEntities
 			return (OtherNetworked().Count > 0 || MsHeart() != null) && TakeArmorSetCore(soldier, true);
 		}
 
-		private bool TakeArmorSetCore(SoldierRecord soldier, bool usePool)
+		/// <summary>
+		/// Re-arms the soldier's unlocked armor slots with the strongest set on hand when it beats the worn kit by <see cref="LevyConstants.AutoUpgradeScoreMargin"/>
+		/// (the armor half of <see cref="UpgradeWeapons"/>). Same set scoring as <see cref="TakeArmorSet"/>, aimed at his CURRENT WEAPON's class, with the worn pieces
+		/// competing as candidates so an equal set never swaps. The new pieces are real finite instances drawn from this armory (or the networked ones); the old ones go
+		/// back into storage (protected spill if it is full). Locked slots stay put and count as fixed members of the set. True if anything changed.
+		/// </summary>
+		public virtual bool UpgradeArmor(SoldierRecord soldier) => TakeArmorSetCore(soldier, true, true);
+
+		private bool TakeArmorSetCore(SoldierRecord soldier, bool usePool, bool upgrade = false)
 		{
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			int[] slot = { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs };
 			Item[] cur = { g.Head, g.Body, g.Legs };
+			// Issue fills empty unlocked slots; an upgrade re-evaluates every unlocked slot, and only a soldier with a weapon (the class the armor follows) is re-armed.
 			var need = new bool[ArmorParts]; bool anyNeed = false;
-			for (int p = 0; p < ArmorParts; p++) { need[p] = !g.IsLocked(slot[p]) && IsAir(cur[p]); anyNeed |= need[p]; }
-			if (!anyNeed) return false;
+			for (int p = 0; p < ArmorParts; p++) { need[p] = !g.IsLocked(slot[p]) && (upgrade || IsAir(cur[p])); anyNeed |= need[p]; }
+			if (!anyNeed || (upgrade && !g.HasWeapon)) return false;
 
 			// Pool: the best copy of each armor type, per part (issue row first, then storage; strictly-better wins so the issue row takes ties).
 			var pool = new List<ArmorCand>[ArmorParts];
@@ -581,6 +590,13 @@ namespace Levy.Content.TileEntities
 					}
 				}
 			}
+			if (upgrade) { // the worn pieces compete first, so a tie keeps what he wears
+				for (int p = 0; p < ArmorParts; p++) {
+					if (!need[p] || IsAir(cur[p])) continue;
+					byType[p][cur[p].type] = pool[p].Count;
+					pool[p].Add(new ArmorCand { Worn = true, It = cur[p], Score = ArmorScore(cur[p]), Stem = ArmorStem(cur[p]) });
+				}
+			}
 			Scan(IssueArmor, this); Scan(Storage, this);
 			if (usePool) foreach (var o in OtherNetworked()) Scan(o.Storage, o);
 			if (msHeart != null) Scan(MagicStorageBridge.Snapshot(msHeart).FindAll(x => !x.vanity && (x.headSlot >= 0 || x.bodySlot >= 0 || x.legSlot >= 0)).ToArray(), this, true); // Magic Storage last: ties keep the armories' stock
@@ -599,20 +615,25 @@ namespace Levy.Content.TileEntities
 			}
 			if (conflict) return false; // he already wears a mixed kit: leave the rest to the per-piece pick
 
-			DamageClass wc = null;
-			if (Common.Config.LevyConfig.Get.ClassMatchIssue && g.HasWeapon) wc = WeaponClassifier.ItemDamageClass(g.Weapon);
+			// The armor follows the weapon: the set bonus should land on the class he actually fires, whichever way he was armed.
+			DamageClass wc = g.HasWeapon ? WeaponClassifier.ItemDamageClass(g.Weapon) : null;
 
 			float bestScore = float.NegativeInfinity;
 			ArmorCand[] best = null;
+			float SetScore(ArmorCand h, ArmorCand b, ArmorCand l, bool requireBonus)
+			{
+				bool full = h.It != null && b.It != null && l.It != null;
+				bool bonus = full && ArmorDoctrine.FormsSetBonus(h.It, b.It, l.It);
+				if (requireBonus && !bonus) return float.NegativeInfinity;
+				float sc = h.Score + b.Score + l.Score;
+				if (bonus) sc += LevyConstants.ArmorSetBonusScore;
+				if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
+				return sc;
+			}
 			void EvalCombos(List<ArmorCand>[] opts, bool requireBonus)
 			{
 				foreach (var h in opts[0]) foreach (var b in opts[1]) foreach (var l in opts[2]) {
-					bool full = h.It != null && b.It != null && l.It != null;
-					bool bonus = full && ArmorDoctrine.FormsSetBonus(h.It, b.It, l.It);
-					if (requireBonus && !bonus) continue;
-					float sc = h.Score + b.Score + l.Score;
-					if (bonus) sc += LevyConstants.ArmorSetBonusScore;
-					if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
+					float sc = SetScore(h, b, l, requireBonus);
 					if (sc > bestScore) { bestScore = sc; best = new[] { h, b, l }; }
 				}
 			}
@@ -655,6 +676,8 @@ namespace Levy.Content.TileEntities
 			}
 			if (taken < loose * LevyConstants.ArmorSetMinFractionOfBest) return false;
 
+			if (upgrade) return CommitArmorUpgrade(g, slot, cur, need, best, bestScore, SetScore, msHeart);
+
 			// Commit: each pick is a distinct real slot; remove it and equip it.
 			bool any = false;
 			for (int p = 0; p < ArmorParts; p++) {
@@ -673,6 +696,48 @@ namespace Levy.Content.TileEntities
 				any = true;
 			}
 			return any;
+		}
+
+		/// <summary>
+		/// Second half of <see cref="UpgradeArmor"/>: swaps in the chosen set when it is a real change and beats the set he wears (same pieces, same bonuses) by the upgrade margin.
+		/// Every new piece is drawn first; if any draw fails, the ones already drawn go back and nothing changes on the soldier.
+		/// </summary>
+		private bool CommitArmorUpgrade(SoldierGear g, int[] slot, Item[] cur, bool[] need, ArmorCand[] best, float bestScore,
+			Func<ArmorCand, ArmorCand, ArmorCand, bool, float> setScore, object msHeart)
+		{
+			bool change = false;
+			var worn = new ArmorCand[ArmorParts];
+			for (int p = 0; p < ArmorParts; p++) {
+				if (!need[p]) { worn[p] = new ArmorCand { Fixed = true, It = cur[p], Score = IsAir(cur[p]) ? 0f : ArmorScore(cur[p]) }; continue; }
+				worn[p] = IsAir(cur[p]) ? new ArmorCand() : new ArmorCand { Worn = true, It = cur[p], Score = ArmorScore(cur[p]) };
+				change |= !best[p].Worn;
+			}
+			if (!change || bestScore < setScore(worn[0], worn[1], worn[2], false) * LevyConstants.AutoUpgradeScoreMargin) return false;
+
+			var drawn = new Item[ArmorParts];
+			bool ok = true;
+			for (int p = 0; p < ArmorParts && ok; p++) {
+				if (!need[p] || best[p].Worn) continue;
+				var c = best[p];
+				if (c.Ms) { if (msHeart == null || !MagicStorageBridge.TryWithdrawExact(msHeart, c.It, 1, out var d)) ok = false; else drawn[p] = d; }
+				else if (c.Src == null || c.Arr == null || c.Idx < 0 || c.Idx >= c.Arr.Length || !ReferenceEquals(c.Arr[c.Idx], c.It)) ok = false;
+				else drawn[p] = c.Src.TakeSlot(c.Arr, c.Idx); // removes from the SOURCE armory and marks it dirty
+				if (drawn[p] == null) ok = false;
+			}
+			if (!ok) {
+				foreach (var d in drawn) if (!IsAir(d)) { var rem = Deposit(d); if (!IsAir(rem)) Spill(rem, protect: true); }
+				return false;
+			}
+			for (int p = 0; p < ArmorParts; p++) {
+				if (drawn[p] == null) continue;
+				var old = cur[p];
+				g.Set(slot[p], drawn[p]);
+				if (IsAir(old)) continue;
+				var rem = Deposit(old);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+			}
+			MarkDirty();
+			return true;
 		}
 
 		/// <summary>True when any fixed (not-needed) slot holds no piece (a locked-empty slot), so a three-piece set cannot be verified.</summary>
@@ -1038,7 +1103,8 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// Auto-issue best-first: armor, weapon (matching the armor's damage class when possible), sidearm, accessories (grade slots), ammo.
+		/// Auto-issue best-first. Fluid (default): weapon, then armor aimed at that weapon's class, sidearm, accessories (grade slots), ammo. With
+		/// <see cref="Common.Config.LevyConfig.ClassMatchIssue"/> (fixed-class companies): armor first, then a weapon of the armor's damage class when possible.
 		/// Slots the player hand-assigned (<see cref="SoldierGear.IsLocked"/>) are never replaced or emptied. Returns true if anything changed.
 		/// </summary>
 		public virtual bool IssueGear(SoldierRecord soldier)
@@ -1050,6 +1116,13 @@ namespace Levy.Content.TileEntities
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
 
+			// Fluid issue: the strongest weapon he can use comes first and the armor follows it. A thrown stack is restocked before a new pick, as below.
+			bool fluid = !Common.Config.LevyConfig.Get.ClassMatchIssue;
+			if (fluid) {
+				if (RestockThrown(soldier)) changed = true;
+				if (IssuePrimary(soldier, g)) changed = true;
+			}
+
 			// One matching set first (set bonus, aligned with his weapon); anything it could not supply is filled piece by piece below.
 			if (TakeArmorSet(soldier)) changed = true;
 
@@ -1057,20 +1130,11 @@ namespace Levy.Content.TileEntities
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotLegs) && IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
 
-			// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
-			if (RestockThrown(soldier)) changed = true;
-
-			if (!g.IsLocked(SoldierGear.SlotWeapon) && !g.HasWeapon)
-			{
-				// The armor decides doctrine: prefer a weapon of its class, else the best of anything.
-				Item w = null;
-				if (Common.Config.LevyConfig.Get.ClassMatchIssue)
-				{
-					var cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
-					if (cls != null) w = TakeBestWeaponOfClass(soldier, cls);
-				}
-				w ??= TakeBestWeapon(soldier);
-				if (w != null) { g.Weapon = w; changed = true; }
+			if (!fluid) {
+				// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
+				if (RestockThrown(soldier)) changed = true;
+				// Fixed-class companies: the armor decides doctrine, so prefer a weapon of its class, else the best of anything.
+				if (IssuePrimary(soldier, g)) changed = true;
 			}
 
 			// A melee-type primary (blade, spear, boomerang, whip) never takes a fallback blade: it takes a summon staff for a support minion, or nothing.
@@ -1127,14 +1191,32 @@ namespace Levy.Content.TileEntities
 			return changed;
 		}
 
+		/// <summary>Arms an empty, unlocked primary slot: in fixed-class mode a weapon of the worn armor's class first; otherwise (and as the fallback) the strongest weapon he can use. True if he took one.</summary>
+		private bool IssuePrimary(SoldierRecord soldier, SoldierGear g)
+		{
+			if (g.IsLocked(SoldierGear.SlotWeapon) || g.HasWeapon) return false;
+			Item w = null;
+			if (Common.Config.LevyConfig.Get.ClassMatchIssue)
+			{
+				var cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+				if (cls != null) w = TakeBestWeaponOfClass(soldier, cls);
+			}
+			w ??= TakeBestWeapon(soldier);
+			if (w == null) return false;
+			g.Weapon = w;
+			return true;
+		}
+
 		// ------------------------------------------------------------------ automatic weapon upgrade
 
 		/// <summary>
-		/// Automatic weapon upgrade (server / single player): swaps the soldier's primary and sidearm for a clearly better weapon of the SAME KIND
-		/// (damage class for a primary; sentry / whip / summon staff / blade for a sidearm) when this armory stocks one. The candidate is drawn with
+		/// Automatic gear upgrade (server / single player): swaps the soldier's primary for a clearly better weapon he can use (ANY damage class unless
+		/// <see cref="Common.Config.LevyConfig.ClassMatchIssue"/> pins him to his own; a summon staff or sentry only ever swaps for its own role), his armor for a
+		/// clearly better set aimed at that weapon's class (<see cref="UpgradeArmor"/>), and his sidearm for a better one of the SAME KIND
+		/// (sentry / whip / summon staff / blade) when this armory stocks one. The candidate is drawn with
 		/// the same pick as <see cref="IssueGear"/> (<see cref="TakeVaried"/> / <see cref="TakeBest"/>), so it is a real, finite instance: the soldier's
-		/// old weapon goes back into storage and a different soldier can never hold the same one. A candidate must score at least
-		/// <see cref="LevyConstants.AutoUpgradeScoreMargin"/> times the weapon in hand. Hand-assigned (locked) slots and
+		/// old gear goes back into storage and a different soldier can never hold the same one. A candidate must score at least
+		/// <see cref="LevyConstants.AutoUpgradeScoreMargin"/> times the gear in hand. Hand-assigned (locked) slots and
 		/// <see cref="SoldierRecord.LoadoutLocked"/> soldiers are never touched; an empty slot is left to <see cref="IssueGear"/>. True if anything changed.
 		/// </summary>
 		public virtual bool UpgradeWeapons(SoldierRecord soldier)
@@ -1143,8 +1225,9 @@ namespace Levy.Content.TileEntities
 			if (g == null || soldier.LoadoutLocked || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
+			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
-			// The new weapon may fire other ammo: IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
+			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
 			if (changed) IssueGear(soldier);
 			return changed;
 		}
@@ -1161,17 +1244,44 @@ namespace Levy.Content.TileEntities
 			var onHand = AmmoIdsOnHand();
 			var pouch = g.Ammo;
 			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped, so the new weapon must fire it
+			bool sameClassOnly = Common.Config.LevyConfig.Get.ClassMatchIssue; // fixed-class companies keep their damage class; fluid soldiers cross over
+			var stockOk = new Dictionary<int, bool>();
 			bool Pred(Item it)
 			{
-				if (!IsIssuable(it) || it.maxStack > 1 || WeaponClassifier.ItemDamageClass(it) != cls || !HasAmmoFor(it, soldier, onHand)) return false;
+				if (!IsIssuable(it) || it.maxStack > 1 || !HasAmmoFor(it, soldier, onHand)) return false;
+				if (sameClassOnly && WeaponClassifier.ItemDamageClass(it) != cls) return false;
 				if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 				var fam = WeaponClassifier.GetProfile(it).Family;
-				// Same role: a summon staff stays a summon staff, a sentry a sentry; anything else stays within its damage class.
+				// Same role: a summon staff stays a summon staff, a sentry a sentry; anything else may change damage class.
 				if ((fam == WeaponFamily.Summon) != (curFam == WeaponFamily.Summon) || (fam == WeaponFamily.Sentry) != (curFam == WeaponFamily.Sentry)) return false;
-				return fam != WeaponFamily.Thrown && WeaponClassifier.Score(it) >= need;
+				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < need) return false;
+				// Moving onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
+				if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
+				if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);
+				return enough;
 			}
 			var neu = TakeVaried(soldier, Pred);
-			return neu != null && SwapIn(g, SoldierGear.SlotWeapon, neu);
+			if (neu == null || !SwapIn(g, SoldierGear.SlotWeapon, neu)) return false;
+			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
+			if (WeaponClassifier.ItemDamageClass(neu) != cls && IsMeleeTypeFamily(WeaponClassifier.GetProfile(neu).Family)
+				&& !g.IsLocked(SoldierGear.SlotSidearm) && !IsAir(g.Sidearm) && IsMeleeFamily(WeaponClassifier.GetProfile(g.Sidearm).Family))
+			{
+				var rem = Deposit(g.Sidearm);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+				g.Sidearm = new Item();
+			}
+			return true;
+		}
+
+		/// <summary>True when this armory (issue ammo row, storage, networked armories; a Magic Storage network counts as plenty) holds at least <paramref name="min"/> of the ammo type.</summary>
+		private bool AmmoStockAtLeast(int ammoId, int min)
+		{
+			int n = 0;
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
+			var ms = MsHeart();
+			return ms != null && MagicStorageBridge.AmmoIds(ms).Contains(ammoId);
 		}
 
 		private bool UpgradeSidearm(SoldierRecord soldier)

@@ -174,13 +174,13 @@ Mods: {
 				}
 
 				ClassMatchIssue: {
-					Label: Armor decides weapon class
-					Tooltip: A soldier's armor biases the weapon they draw, so ranged armor takes guns and bows, magic armor takes staves. Falls back to best available when nothing matches.
+					Label: Fixed-class companies
+					Tooltip: Off, soldiers take the strongest weapon they can use whatever its type, and their armor follows it. On, a soldier's armor decides the weapon class he draws and his upgrades stay within that class.
 				}
 
 				AutoUpgradeWeapons: {
-					Label: Soldiers upgrade their weapons
-					Tooltip: Soldiers swap to a clearly better weapon of their own kind when one is stocked in their Armory, and put the old one back. Soldiers with Lock Loadout on are skipped.
+					Label: Soldiers upgrade their gear
+					Tooltip: Soldiers swap to a clearly better weapon or armor set when one is stocked in their Armory, and put the old one back. Soldiers with Lock Loadout on are skipped.
 				}
 
 				SoldiersTriggerPressurePlates: {

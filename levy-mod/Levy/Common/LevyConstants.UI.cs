@@ -15,8 +15,31 @@ namespace Levy.Common
 			public const int RosterRefreshTicks = 30;
 
 			// ---- barracks roster (resizable panel + card grid) ----
-			/// <summary>Where the roster grid starts below the panel top (the header of treasury / enlist / orders controls above it is fixed-height).</summary>
-			public const int BarracksListTop = 234;
+			/// <summary>Header layout: rows of controls start at BarracksHeaderTop and step down by BarracksRowPitch (button height + a 2 px gap); BarracksHeaderRows rows
+			/// (deposit, hearts+stars, toggles, recruit, enlist, filters, roster+orders). The roster grid starts right under the last row.</summary>
+			public const int BarracksHeaderTop = 32, BarracksRowPitch = 26, BarracksButtonH = 24, BarracksHeaderRows = 7, BarracksListGap = 2;
+			public const int BarracksListTop = BarracksHeaderTop + BarracksHeaderRows * BarracksRowPitch + BarracksListGap;
+			/// <summary>Gap between the filter/sort buttons, and between the hearts row and the stars row.</summary>
+			public const int BarracksFilterGap = 4, BarracksIconRowGap = 10;
+			/// <summary>Mouse-wheel scroll of the roster: the raw wheel delta (120 per notch) times this, so a notch moves about half a card.</summary>
+			public const float RosterScrollWheelScale = 0.45f;
+
+			// ---- hearts / stars (manpower = life, command points = mana) ----
+			/// <summary>Row height, icon draw size and icon-to-icon pitch (px). The icon count is whatever fits the row; the value per icon is picked from IconValueSteps.</summary>
+			public const int IconRowHeight = 22, StatIconSize = 18, StatIconPitch = 18;
+			public const float IconLabelScale = 0.7f, IconPartialMinScale = 0.55f;
+			public const int IconLabelGap = 6;
+			/// <summary>Tint of an empty heart / star slot.</summary>
+			public static readonly Color IconEmptyColor = new Color(90, 90, 100) * 0.5f;
+			/// <summary>Nice per-icon values; the smallest one whose icon count fits the row is used.</summary>
+			public static readonly int[] IconValueSteps = { 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100, 150, 200, 250, 500, 1000 };
+
+			// ---- roster filter / sort ----
+			/// <summary>Weapon tier bands over WeaponClassifier.RarityTier (white 0 .. 12): the lowest tier of each band (Early, Mid, Late, Endgame). A band runs up to the next band's start.</summary>
+			public static readonly int[] RosterTierBandMin = { 0, 3, 6, 9 };
+			/// <summary>Highlight of a filter/sort button that is currently narrowing or reordering the roster.</summary>
+			public static readonly Color ButtonLit = new Color(70, 140, 110) * 0.85f;
+
 			/// <summary>Smallest the barracks panel can be dragged to: wide enough for the header controls, tall enough for one row of cards.</summary>
 			public const int BarracksMinWidth = 560, BarracksMinHeight = 380;
 			/// <summary>Margin kept to the screen edge when the resize grip is dragged out.</summary>

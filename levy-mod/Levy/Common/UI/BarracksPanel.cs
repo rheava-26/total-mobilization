@@ -1,24 +1,28 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Terraria.UI;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
+using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Barracks management: treasury, manpower, command points, settlement toggles, militia, enlistment and the roster of
+	/// Barracks management: treasury, manpower (hearts), command points (stars), settlement toggles, militia, enlistment and the roster of
 	/// the local player's Regulars as a grid of unit cards with per-soldier actions. Everything goes through <see cref="UIActions"/>.
 	/// The panel is resizable: drag the grip in the bottom-right corner and the card grid reflows to the new size (more columns when
 	/// wider, more rows when taller, a scrollbar only when the cards overflow). The size is saved per character in <see cref="UIPlayer"/>.
+	/// The roster can be filtered by weapon class, grade and weapon tier and sorted (class / tier / grade / name) from a row of cycle buttons; the grid shows the filtered, sorted set.
 	/// </summary>
 	public class BarracksPanel : UIState
 	{
@@ -29,13 +33,19 @@ namespace Levy.Common.UI
 
 		private DraggablePanel _panel;
 		private Label _title, _treasury, _rosterTitle, _allLabel, _empty;
+		private string _titleRaw = "", _treasuryRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire;
-		private BarElement _manpower, _cp;
+		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
+		private IconRow _manpower, _cp;
 		private CardGrid _grid;
 		private UIScrollbar _scroll;
 		private ResizeGrip _grip;
 		private readonly List<RosterCard> _cards = new();
+		/// <summary>The cards the grid shows right now: <see cref="_cards"/> after the class / grade / tier filters and the sort.</summary>
+		private readonly List<RosterCard> _shown = new();
+		// roster view: 0 = no filter. Class 1..5 = melee, ranged, magic, summon, unarmed; grade 1..3 = Levy..Champion; tier 1..4 = the RosterTierBandMin bands
+		private int _fClass, _fGrade, _fTier, _sort;
 		/// <summary>Soldiers whose card is showing the "more actions" page (by id, so it survives a roster rebuild).</summary>
 		private readonly HashSet<int> _moreIds = new();
 		private int _refreshTimer;
@@ -50,6 +60,16 @@ namespace Levy.Common.UI
 
 		private const float BtnScale = LevyConstants.UI.ButtonTextScale;
 		private const int ListTop = LevyConstants.UI.BarracksListTop;
+		private const int BH = LevyConstants.UI.BarracksButtonH;
+
+		private static readonly string[] ClassKeys = { "UI2.ClassMelee", "UI2.ClassRanged", "UI2.ClassMagic", "UI2.ClassSummon", "UI2.ClassUnarmed" };
+		private static readonly string[] TierKeys = { "UI2.TierEarly", "UI2.TierMid", "UI2.TierLate", "UI2.TierEndgame" };
+		private static readonly string[] SortKeys = { "UI2.SortRoster", "UI2.SortClass", "UI2.SortTier", "UI2.SortGrade", "UI2.SortName" };
+		private const int ClassCount = 6, GradeCount = 4, SortCount = 5;
+		private static int TierCount => LevyConstants.UI.RosterTierBandMin.Length + 1;
+
+		/// <summary>Top of header row <paramref name="row"/> (0 = deposit row .. 6 = roster + orders row).</summary>
+		private static float RowY(int row) => LevyConstants.UI.BarracksHeaderTop + row * LevyConstants.UI.BarracksRowPitch;
 
 		public override void OnInitialize()
 		{
@@ -58,41 +78,52 @@ namespace Levy.Common.UI
 			_panel.Left.Set(LevyConstants.UI.PanelDefaultLeft, 0f); _panel.Top.Set(LevyConstants.UI.PanelDefaultTop, 0f);
 			_panel.BackgroundColor = new Color(33, 43, 79) * 0.9f;
 
-			_title = Put(new Label("", 1f), 12, 8);
-			_close = Put(new LevyButton("X", BtnScale, 26, 26, () => UISystem.Instance.CloseBarracks(), LevyUtil.T("UI2.Close")), 0, 6);
+			_title = Put(new Label("", 1f), 12, 6);
+			_close = Put(new LevyButton("X", BtnScale, 26, 26, () => UISystem.Instance.CloseBarracks(), LevyUtil.T("UI2.Close")), 0, 4);
 
-			// treasury
-			_treasury = Put(new Label("", 0.85f), 12, 36);
+			// treasury (right of the title, see PlaceTitle) and the deposit / withdraw row
+			_treasury = Put(new Label("", 0.85f), 0, 11);
 			string depHint = LevyUtil.T("UI2.DepositHint"), wdHint = LevyUtil.T("UI2.WithdrawHint");
-			_dep1 = Put(new LevyButton(LevyUtil.T("UI2.DepositOneGold"), 0.7f, 70, 24, () => UIActions.Deposit(Te, LevyConstants.UI.DepositSmall), depHint), 12, 58);
-			_dep10 = Put(new LevyButton(LevyUtil.T("UI2.DepositTenGold"), 0.7f, 78, 24, () => UIActions.Deposit(Te, LevyConstants.UI.DepositLarge), depHint), 86, 58);
-			_depAll = Put(new LevyButton(LevyUtil.T("UI2.DepositAll"), 0.7f, 92, 24, () => UIActions.Deposit(Te, UIActions.InventoryCoins()), depHint), 168, 58);
-			_wd1 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawOneGold"), 0.7f, 70, 24, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositSmall), wdHint), 268, 58);
-			_wd10 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawTenGold"), 0.7f, 78, 24, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositLarge), wdHint), 342, 58);
-			_mobilize = Put(new LevyButton("", BtnScale, 118, 24, () => UIActions.ToggleMobilize(Te)), 0, 58);
+			float y0 = RowY(0);
+			_dep1 = Put(new LevyButton(LevyUtil.T("UI2.DepositOneGold"), 0.7f, 70, BH, () => UIActions.Deposit(Te, LevyConstants.UI.DepositSmall), depHint), 12, y0);
+			_dep10 = Put(new LevyButton(LevyUtil.T("UI2.DepositTenGold"), 0.7f, 78, BH, () => UIActions.Deposit(Te, LevyConstants.UI.DepositLarge), depHint), 86, y0);
+			_depAll = Put(new LevyButton(LevyUtil.T("UI2.DepositAll"), 0.7f, 92, BH, () => UIActions.Deposit(Te, UIActions.InventoryCoins()), depHint), 168, y0);
+			_wd1 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawOneGold"), 0.7f, 70, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositSmall), wdHint), 268, y0);
+			_wd10 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawTenGold"), 0.7f, 78, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositLarge), wdHint), 342, y0);
+			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 0, y0);
 
-			// bars (widths follow the panel width, see ApplyLayout)
-			_manpower = Put(new BarElement(260, 20) { Fill = new Color(90, 160, 90) }, 12, 88);
-			_cp = Put(new BarElement(266, 20) { Fill = new Color(170, 140, 60) }, 282, 88);
+			// manpower hearts + command-point stars (widths follow the panel width, see ApplyLayout)
+			_manpower = Put(new IconRow(260, false) { PerIconFormat = LevyUtil.T("UI2.HeartValue", "{0}") }, 12, RowY(1) + 1);
+			_cp = Put(new IconRow(266, true) { PerIconFormat = LevyUtil.T("UI2.StarValue", "{0}") }, 282, RowY(1) + 1);
 
 			// settlement toggles + extras
-			_autoMuster = Put(new LevyButton("", 0.7f, 150, 24, () => UIActions.BarracksToggle(Te, 0, !Te.AutoMuster)), 12, 116);
-			_tax = Put(new LevyButton("", 0.7f, 170, 24, () => UIActions.BarracksToggle(Te, 1, !Te.TaxToTreasury), LevyUtil.T("UI.TaxToTreasury")), 168, 116);
-			_hazard = Put(new LevyButton("", 0.7f, 204, 24, () => UIActions.HazardPay(Te)), 0, 116);
-			_recruit = Put(new LevyButton("", 0.7f, 250, 24, () => UIActions.RecruitingDrive(Te)), 12, 146);
+			float y2 = RowY(2);
+			_autoMuster = Put(new LevyButton("", 0.7f, 150, BH, () => UIActions.BarracksToggle(Te, 0, !Te.AutoMuster)), 12, y2);
+			_tax = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.BarracksToggle(Te, 1, !Te.TaxToTreasury), LevyUtil.T("UI.TaxToTreasury")), 168, y2);
+			_hazard = Put(new LevyButton("", 0.7f, 204, BH, () => UIActions.HazardPay(Te)), 0, y2);
+			_recruit = Put(new LevyButton("", 0.7f, 250, BH, () => UIActions.RecruitingDrive(Te)), 12, RowY(3));
 
 			// enlist
-			_enlistLevy = Put(new LevyButton("", 0.7f, 170, 24, () => UIActions.Enlist(Te, Grade.Levy)), 12, 176);
-			_enlistMaa = Put(new LevyButton("", 0.7f, 182, 24, () => UIActions.Enlist(Te, Grade.ManAtArms)), 188, 176);
-			_enlistChamp = Put(new LevyButton("", 0.7f, 170, 24, () => UIActions.Enlist(Te, Grade.Champion)), 376, 176);
+			float y4 = RowY(4);
+			_enlistLevy = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.Enlist(Te, Grade.Levy)), 12, y4);
+			_enlistMaa = Put(new LevyButton("", 0.7f, 182, BH, () => UIActions.Enlist(Te, Grade.ManAtArms)), 188, y4);
+			_enlistChamp = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.Enlist(Te, Grade.Champion)), 376, y4);
+
+			// roster view: filter by class / grade / weapon tier, and a sort. Click cycles forward, right-click back.
+			float y5 = RowY(5);
+			_fClassBtn = Put(CycleButton(() => _fClass, v => _fClass = v, ClassCount, "UI2.FilterClassHint"), 12, y5);
+			_fGradeBtn = Put(CycleButton(() => _fGrade, v => _fGrade = v, GradeCount, "UI2.FilterGradeHint"), 12, y5);
+			_fTierBtn = Put(CycleButton(() => _fTier, v => _fTier = v, TierCount, "UI2.FilterTierHint"), 12, y5);
+			_sortBtn = Put(CycleButton(() => _sort, v => _sort = v, SortCount, "UI2.SortHint"), 12, y5);
 
 			// roster header + squad-wide orders (atBarracks: every Regular of the commander)
-			_rosterTitle = Put(new Label(LevyUtil.T("UI2.Roster"), 0.85f), 12, 208);
-			_allLabel = Put(new Label(LevyUtil.T("UI2.AllOrders") + ":", 0.7f), 118, 210);
-			_allFollow = Put(new LevyButton(LevyUtil.T("UI2.FollowAll"), 0.7f, 70, 24, () => UIActions.Order(SoldierOrder.Follow, true), LevyUtil.T("UI.Follow")), 212, 206);
-			_allHold = Put(new LevyButton(LevyUtil.T("UI2.HoldAll"), 0.7f, 66, 24, () => UIActions.Order(SoldierOrder.Hold, true), LevyUtil.T("UI.Hold")), 286, 206);
-			_allReturn = Put(new LevyButton(LevyUtil.T("UI2.ReturnAll"), 0.7f, 76, 24, () => UIActions.Order(SoldierOrder.ReturnToBarracks, true), LevyUtil.T("UI.Return")), 356, 206);
-			_allHoldFire = Put(new LevyButton("", 0.7f, 110, 24, () => UIActions.HoldFire(true)), 436, 206);
+			float y6 = RowY(6);
+			_rosterTitle = Put(new Label(LevyUtil.T("UI2.Roster"), 0.85f), 12, y6 + 2);
+			_allLabel = Put(new Label(LevyUtil.T("UI2.AllOrders") + ":", 0.7f), 118, y6 + 4);
+			_allFollow = Put(new LevyButton(LevyUtil.T("UI2.FollowAll"), 0.7f, 70, BH, () => UIActions.Order(SoldierOrder.Follow, true), LevyUtil.T("UI.Follow")), 212, y6);
+			_allHold = Put(new LevyButton(LevyUtil.T("UI2.HoldAll"), 0.7f, 66, BH, () => UIActions.Order(SoldierOrder.Hold, true), LevyUtil.T("UI.Hold")), 286, y6);
+			_allReturn = Put(new LevyButton(LevyUtil.T("UI2.ReturnAll"), 0.7f, 76, BH, () => UIActions.Order(SoldierOrder.ReturnToBarracks, true), LevyUtil.T("UI.Return")), 356, y6);
+			_allHoldFire = Put(new LevyButton("", 0.7f, 110, BH, () => UIActions.HoldFire(true)), 436, y6);
 
 			// roster card grid + its scrollbar
 			_scroll = new UIScrollbar();
@@ -121,6 +152,22 @@ namespace Levy.Common.UI
 			return el;
 		}
 
+		/// <summary>A filter / sort button that steps through <paramref name="count"/> states: click forward, right-click back. The text is set by <see cref="RefreshView"/>.</summary>
+		private LevyButton CycleButton(Func<int> get, Action<int> set, int count, string hintKey)
+		{
+			var b = new LevyButton("", 0.7f, 100, BH, null, LevyUtil.T(hintKey));
+			void Step(int dir)
+			{
+				set((get() + dir + count) % count);
+				_scroll.ViewPosition = 0f;
+				ApplyView();
+				RefreshView();
+			}
+			b.OnClick = () => Step(1);
+			b.OnAltClick = () => Step(-1);
+			return b;
+		}
+
 		// ------------------------------------------------------------------ size
 		/// <summary>Positions everything that depends on the panel size: the right-anchored header controls, the two bars, the grid, scrollbar and grip.</summary>
 		private void ApplyLayout()
@@ -129,9 +176,13 @@ namespace Levy.Common.UI
 			_close.Left.Set(_w - 36, 0f);
 			_mobilize.Left.Set(_w - 12 - 118, 0f);
 			_hazard.Left.Set(_w - 12 - 204, 0f);
-			float barW = (_w - 24f - 10f) * 0.5f;
+			float barW = (_w - 24f - LevyConstants.UI.BarracksIconRowGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);
-			_cp.Left.Set(12f + barW + 10f, 0f); _cp.Width.Set(barW, 0f);
+			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksIconRowGap, 0f); _cp.Width.Set(barW, 0f);
+			float gap = LevyConstants.UI.BarracksFilterGap, fw = (_w - 24f - 3f * gap) / 4f;
+			var filters = new[] { _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn };
+			for (int i = 0; i < filters.Length; i++) { filters[i].Left.Set(12f + i * (fw + gap), 0f); filters[i].Width.Set(fw, 0f); }
+			PlaceTitle();
 
 			float listH = _h - ListTop - 10f;
 			_grid.Width.Set(_w - 12 - 12 - 24, 0f); _grid.Height.Set(listH, 0f);
@@ -200,8 +251,9 @@ namespace Levy.Common.UI
 		{
 			var te = Te; if (te == null) return;
 			var roster = RosterSystem.Instance;
-			_title.SetText(LevyUtil.T("UI.Barracks", SettlementSystem.Instance.TownName(te)));
-			_treasury.SetText(LevyUtil.T("UI.Treasury", LevyUtil.Coins(te.Treasury)));
+			_titleRaw = LevyUtil.T("UI.Barracks", SettlementSystem.Instance.TownName(te));
+			_treasuryRaw = LevyUtil.T("UI.Treasury", LevyUtil.Coins(te.Treasury));
+			PlaceTitle();
 			_wd1.Enabled = te.Treasury >= LevyConstants.UI.DepositSmall;
 			_wd10.Enabled = te.Treasury >= LevyConstants.UI.DepositLarge;
 			long coins = UIActions.InventoryCoins();
@@ -211,11 +263,14 @@ namespace Levy.Common.UI
 
 			int cap = SettlementSystem.Instance.ManpowerCap(te);
 			if (cap <= 0) cap = te.ManpowerCapCached;
-			_manpower.Fraction = cap > 0 ? te.Manpower / (float)cap : 0f;
-			_manpower.Label = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
-			int cpTotal = roster.CommandPoints, cpUsed = roster.CommandPointsUsed;
-			_cp.Fraction = cpTotal > 0 ? cpUsed / (float)cpTotal : 0f;
-			_cp.Label = LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal);
+			// hearts = manpower in reserve; stars = command points still free (filled stars are what you can spend, like mana)
+			_manpower.Max = Math.Max(0, cap); _manpower.Value = Math.Clamp(te.Manpower, 0, _manpower.Max);
+			_manpower.Label = _manpower.Value + "/" + _manpower.Max;
+			_manpower.Hint = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
+			int cpTotal = Math.Max(0, roster.CommandPoints), cpUsed = roster.CommandPointsUsed, cpFree = Math.Clamp(cpTotal - cpUsed, 0, cpTotal);
+			_cp.Max = cpTotal; _cp.Value = cpFree;
+			_cp.Label = cpFree + "/" + cpTotal;
+			_cp.Hint = LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal) + "\n" + LevyUtil.T("UI2.CpFree", cpFree);
 
 			_mobilize.Set(LevyUtil.T(te.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(te.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint"));
 			_autoMuster.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI.AutoMuster"), LevyUtil.T(te.AutoMuster ? "UI2.On" : "UI2.Off")), true);
@@ -232,11 +287,8 @@ namespace Levy.Common.UI
 			bool holdFire = UIActions.MajorityHoldFire();
 			_allHoldFire.Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
 
-			bool any = _cards.Count > 0;
-			if (any && _empty.Parent != null) _empty.Remove();
-			else if (!any && _empty.Parent == null) _panel.Append(_empty);
-			string rosterText = LevyUtil.T("UI2.Roster") + (any ? " (" + _cards.Count + ")" : "");
-			if (_rosterTitle.Text != rosterText) _rosterTitle.SetText(rosterText);
+			ApplyView(); // gear may have changed a soldier's class / tier since the last look
+			RefreshView();
 
 			// facts every card needs, scanned once here instead of once per card
 			var me = Main.LocalPlayer;
@@ -279,7 +331,97 @@ namespace Levy.Common.UI
 		{
 			_cards.Clear();
 			foreach (var r in UIActions.MyRegulars()) _cards.Add(new RosterCard(this, r, _moreIds.Contains(r.Id)));
-			_grid.SetCards(_cards);
+			ApplyView(true);
+		}
+
+		// ------------------------------------------------------------------ title row
+		/// <summary>Title on the left, treasury right-aligned beside the close button; the title is trimmed with an ellipsis if the two would meet.</summary>
+		private void PlaceTitle()
+		{
+			if (_title == null) return;
+			SetText(_treasury, _treasuryRaw);
+			float tw = Measure(_treasuryRaw, 0.85f);
+			_treasury.Left.Set(Math.Max(12f, _w - 44f - tw), 0f);
+			SetText(_title, Fit(_titleRaw, 1f, Math.Max(40f, _w - 44f - tw - 12f - 16f)));
+		}
+
+		private static void SetText(Label l, string text) { if (l.Text != text) l.SetText(text); }
+
+		// ------------------------------------------------------------------ roster view (filter + sort)
+		private const int ClassUnarmed = 4;
+
+		/// <summary>Weapon class bucket of a soldier's issued weapon: 0 melee, 1 ranged, 2 magic, 3 summon, 4 unarmed (nothing issued, or a weapon the soldiers cannot use).</summary>
+		private static int ClassOf(Item weapon)
+		{
+			if (weapon == null || weapon.IsAir) return ClassUnarmed;
+			var dc = WeaponClassifier.ItemDamageClass(weapon);
+			if (dc == DamageClass.Melee) return 0;
+			if (dc == DamageClass.Ranged) return 1;
+			if (dc == DamageClass.Magic) return 2;
+			if (dc == DamageClass.Summon) return 3;
+			return ClassUnarmed;
+		}
+
+		/// <summary>Band (0-based, into <see cref="LevyConstants.UI.RosterTierBandMin"/>) a weapon tier falls in.</summary>
+		private static int TierBand(int tier)
+		{
+			var mins = LevyConstants.UI.RosterTierBandMin;
+			int band = 0;
+			for (int i = 0; i < mins.Length; i++) if (tier >= mins[i]) band = i;
+			return band;
+		}
+
+		/// <summary>
+		/// Rebuilds <see cref="_shown"/> from <see cref="_cards"/> with the current filters and sort, and hands the grid the new set when it differs
+		/// (or when <paramref name="force"/> is set, after the cards themselves were rebuilt). Class and tier come from the soldier's issued weapon:
+		/// <see cref="WeaponClassifier.ItemDamageClass"/> and <see cref="WeaponClassifier.RarityTier"/> (ties broken by <see cref="WeaponClassifier.Score"/>).
+		/// </summary>
+		private void ApplyView(bool force = false)
+		{
+			var rows = new List<(RosterCard card, int cls, int tier, float score, int idx)>(_cards.Count);
+			for (int i = 0; i < _cards.Count; i++)
+			{
+				var card = _cards[i]; var rec = card.Rec;
+				Item w = rec?.Gear?.Weapon;
+				int cls = ClassOf(w);
+				bool armed = cls != ClassUnarmed;
+				int tier = armed ? WeaponClassifier.RarityTier(w.rare) : -1;
+				if (_fClass != 0 && cls != _fClass - 1) continue;
+				if (_fGrade != 0 && rec != null && (int)rec.Grade != _fGrade - 1) continue;
+				if (_fTier != 0 && (!armed || TierBand(tier) != _fTier - 1)) continue;
+				rows.Add((card, cls, tier, armed ? WeaponClassifier.Score(w) : 0f, i));
+			}
+			IEnumerable<(RosterCard card, int cls, int tier, float score, int idx)> ordered = rows;
+			switch (_sort)
+			{
+				case 1: ordered = rows.OrderBy(r => r.cls).ThenByDescending(r => r.tier).ThenByDescending(r => r.score); break;
+				case 2: ordered = rows.OrderByDescending(r => r.tier).ThenByDescending(r => r.score); break;
+				case 3: ordered = rows.OrderByDescending(r => (int)(r.card.Rec?.Grade ?? Grade.Levy)).ThenByDescending(r => r.tier).ThenByDescending(r => r.score); break;
+				case 4: ordered = rows.OrderBy(r => r.card.Rec?.Name ?? "", StringComparer.CurrentCultureIgnoreCase); break;
+			}
+			var next = ordered.Select(r => r.card).ToList(); // OrderBy is stable, so equal keys keep roster order
+			bool same = !force && next.Count == _shown.Count;
+			if (same) for (int i = 0; i < next.Count; i++) if (!ReferenceEquals(next[i], _shown[i])) { same = false; break; }
+			if (same) return;
+			_shown.Clear(); _shown.AddRange(next);
+			_grid.SetCards(_shown);
+		}
+
+		/// <summary>Filter / sort button captions, the roster count ("Roster (N)", or "(shown/total)" while filtering) and the empty-list message.</summary>
+		private void RefreshView()
+		{
+			string any = LevyUtil.T("UI2.FilterAny");
+			_fClassBtn.Set(LevyUtil.T("UI2.FilterClass", _fClass == 0 ? any : LevyUtil.T(ClassKeys[_fClass - 1])), true);
+			_fGradeBtn.Set(LevyUtil.T("UI2.FilterGrade", _fGrade == 0 ? any : UIActions.GradeName((Grade)(_fGrade - 1))), true);
+			_fTierBtn.Set(LevyUtil.T("UI2.FilterTier", _fTier == 0 ? any : LevyUtil.T(TierKeys[_fTier - 1])), true);
+			_sortBtn.Set(LevyUtil.T("UI2.SortBy", LevyUtil.T(SortKeys[_sort])), true);
+			_fClassBtn.Lit = _fClass != 0; _fGradeBtn.Lit = _fGrade != 0; _fTierBtn.Lit = _fTier != 0; _sortBtn.Lit = _sort != 0;
+
+			int total = _cards.Count, shown = _shown.Count;
+			string empty = total == 0 ? LevyUtil.T("UI2.NoRegulars") : shown == 0 ? LevyUtil.T("UI2.NoMatch") : null;
+			if (empty == null) { if (_empty.Parent != null) _empty.Remove(); }
+			else { SetText(_empty, empty); if (_empty.Parent == null) _panel.Append(_empty); }
+			SetText(_rosterTitle, LevyUtil.T("UI2.Roster") + (total == 0 ? "" : shown == total ? " (" + total + ")" : " (" + shown + "/" + total + ")"));
 		}
 
 		private void SetMore(int id, bool more) { if (more) _moreIds.Add(id); else _moreIds.Remove(id); }
@@ -341,7 +483,7 @@ namespace Levy.Common.UI
 			public override void ScrollWheel(UIScrollWheelEvent evt)
 			{
 				base.ScrollWheel(evt);
-				_bar.ViewPosition -= evt.ScrollWheelValue;
+				_bar.ViewPosition -= evt.ScrollWheelValue * LevyConstants.UI.RosterScrollWheelScale; // a gentle step: about half a card per notch
 			}
 
 			private void Layout()
@@ -515,8 +657,6 @@ namespace Levy.Common.UI
 				base.DrawSelf(spriteBatch);
 				if (LevyConstants.UI.CardPortraitWidth > 0) DrawPortrait(spriteBatch, PortraitArea);
 			}
-
-			private static void SetText(Label l, string text) { if (l.Text != text) l.SetText(text); }
 
 			public void Refresh()
 			{

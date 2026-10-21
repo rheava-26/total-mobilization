@@ -26,6 +26,8 @@ namespace Levy.Common
 		public const float VeteranAimMult = 0.6f;
 		public const float ShakenAimMult = 2f;
 		public const float DrillMilitiaAimMult = 0.75f;
+		/// <summary>A Guide to Discipline: every soldier of the settlement shoots with this fraction of its normal aim error (jitter + lead error).</summary>
+		public const float DisciplineAimErrorMult = 0.65f;
 		public const float ShakenDamageMult = 0.6f;
 		public const int VeteranBossFights = 3;
 		public const float VeteranMaxFraction = 0.25f;
@@ -81,7 +83,6 @@ namespace Levy.Common
 		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.
 		public const int ManpowerPerNpc = 9, ManpowerPerNpcConscription = 15;
 		public const int NpcsPerManpowerRegen = 2;       // +1 per 2 town NPCs at dawn, rounded up
-		public const int DisciplineExtraRegen = 1;
 		public const int FortificationDefense = 4, FortificationRadius = 60;
 		public const float PlunderCoinMult = 1.5f;
 		public const int EventBookDropDenominator = 50;

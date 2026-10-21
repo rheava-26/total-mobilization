@@ -126,7 +126,7 @@ namespace Levy.Common.Flavor
 				case "Drill": return LevyUtil.T("Flavor.Effect.Drill", (int)Math.Round((1f - LevyConstants.DrillMilitiaAimMult) * 100f));
 				case "Plunder": return LevyUtil.T("Flavor.Effect.Plunder", (int)Math.Round((LevyConstants.PlunderCoinMult - 1f) * 100f));
 				case "Fortification": return LevyUtil.T("Flavor.Effect.Fortification", LevyConstants.FortificationRadius, LevyConstants.FortificationDefense);
-				case "Discipline": return LevyUtil.T("Flavor.Effect.Discipline", LevyConstants.DisciplineExtraRegen);
+				case "Discipline": return LevyUtil.T("Flavor.Effect.Discipline", (int)Math.Round((1f - LevyConstants.DisciplineAimErrorMult) * 100f));
 				default: return "";
 			}
 		}

@@ -364,7 +364,7 @@ namespace Levy.Common.Systems
 				var te = GetBarracks(_scratchIds[k]); if (te == null) continue;
 				int count = TownNpcsOf(te).Count;
 				int cap = ManpowerCap(te);
-				int regen = (count + LevyConstants.NpcsPerManpowerRegen - 1) / LevyConstants.NpcsPerManpowerRegen + (BookDiscipline ? LevyConstants.DisciplineExtraRegen : 0);
+				int regen = (count + LevyConstants.NpcsPerManpowerRegen - 1) / LevyConstants.NpcsPerManpowerRegen;
 				int before = te.Manpower;
 				te.Manpower = Math.Clamp(te.Manpower + regen, 0, Math.Max(0, cap));
 				if (te.Manpower != before) SyncTE(te);

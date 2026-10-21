@@ -559,13 +559,14 @@ namespace Levy.Common.Weapons
 			return Aiming.ApplyError(vel, jitter, leadErr, lead, muzzle, targetPos);
 		}
 
-		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75.</summary>
+		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65. Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
 		public static float AimErrorMultiplier(SoldierNPC s)
 		{
 			float m = 1f;
 			if (s.Record != null && s.Record.Veteran) m *= LevyConstants.VeteranAimMult;
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;
+			if (SettlementSystem.Instance != null && SettlementSystem.Instance.BookDiscipline) m *= LevyConstants.DisciplineAimErrorMult;
 			return m;
 		}
 

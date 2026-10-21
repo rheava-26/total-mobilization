@@ -75,7 +75,7 @@ Mods: {
 
 			GuideToDiscipline: {
 				DisplayName: A Guide to Discipline
-				Tooltip: Each settlement regenerates 1 extra manpower at dawn. Consumed on use, once per world.
+				Tooltip: Your soldiers aim truer. Shots are 35% tighter. Consumed on use, once per world.
 			}
 		}
 

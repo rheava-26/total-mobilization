@@ -35,5 +35,9 @@ namespace Levy.Common
 			{ (4f, 1.1f), (5f, 1.2f), (6f, 1.3f), (7f, 1.4f), (8f, 1.5f), (9f, 1.6f), (10f, 1.7f) };
 		/// <summary>Extra age per tick when no sac-wearing body backs the trap (vanilla adds this for an owner not wearing the sac): its soldier is gone.</summary>
 		public const float SporeOrphanAgePerTick = 100f;
+
+		// ---------- Spectre Mask set bonus (Projectile.ghostHurt -> ProjectileID.SpectreWrath) ----------
+		/// <summary>Vanilla keeps the wearer's recent bolt damage in Player.ghostDmg and drops 6.6666665 of it per tick (400 a second); no bolt spawns while it is above 1500 (the cap lives in Projectile.ghostHurt).</summary>
+		public const float GhostDmgDecayPerTick = 6.6666665f;
 	}
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
@@ -79,6 +80,53 @@ namespace Levy.Content.NPCs
 			{
 				foreach (Projectile p in parked) p.owner = owner;
 				parked.Clear();
+			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Spectre Mask set bonus (Player.ghostHurt). Vanilla spawns the bolt in Projectile.Damage when Main.player[owner].ghostHurt is set, but only on the
+		// !npcProj path, and the owner of a soldier shot is the commander. So the dummy's own flag (set by UpdateArmorSets in RefreshStats) is read here instead,
+		// on every hit of a soldier's projectile, and the vanilla Projectile.ghostHurt does the rest (magic-only, nearest-with-line-of-sight pick, 4-px/tick launch).
+		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>This body's own stand-in for Player.ghostDmg (vanilla's shared cooldown pool) and the tick it was last decayed at.</summary>
+		private float _ghostDmg;
+		private uint _ghostDmgAt;
+
+		/// <summary>
+		/// Called for every enemy hit by one of this soldier's projectiles (server / single player). When the soldier wears the Spectre Mask set and the hit was
+		/// magic, runs vanilla's ghostHurt with this soldier's own cooldown pool (so a squad does not share the commander's 1500-damage cap) and adopts the bolt.
+		/// </summary>
+		public void SpectreWrathOnHit(Projectile source, NPC target, int damageDone)
+		{
+			if (LevyUtil.IsClient || Dummy == null || !Dummy.ghostHurt) return;
+			// Vanilla's own gate for the on-hit effects: a real hit on a living, hurtable enemy, from a friendly shot that is not a wrath bolt itself.
+			if (damageDone <= 1 || target.lifeMax <= 5 || target.immortal || !target.canGhostHeal || !source.friendly || source.hostile || source.aiStyle == ProjAIStyleID.SpectreWrath) return;
+
+			bool[] before = _accProjBefore ??= new bool[Main.maxProjectiles];
+			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
+
+			uint now = Main.GameUpdateCount;
+			if (now > _ghostDmgAt) _ghostDmg = Math.Max(0f, _ghostDmg - (now - _ghostDmgAt) * LevyConstants.GhostDmgDecayPerTick);
+			_ghostDmgAt = now;
+
+			Player pool = Main.player[Main.myPlayer]; // ghostHurt reads and charges Main.player[Main.myPlayer].ghostDmg: lend it this body's pool for the call
+			float commanderPool = pool.ghostDmg;
+			try
+			{
+				pool.ghostDmg = _ghostDmg;
+				source.ghostHurt(damageDone, target.Center, target);
+			}
+			catch (Exception e)
+			{
+				if (_accessoryProcWarned.Add(ItemID.SpectreMask)) Levy.Instance?.Logger.Warn("Levy: Spectre Mask bolt failed on a soldier: " + e.Message);
+			}
+			finally { _ghostDmg = pool.ghostDmg; pool.ghostDmg = commanderPool; }
+
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || before[i]) continue;
+				WeaponUse.TagSoldierProjectile(this, p, DamageClass.Magic);
 			}
 		}
 

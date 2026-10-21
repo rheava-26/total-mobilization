@@ -48,6 +48,13 @@ namespace Levy.Common.Globals
 			}
 		}
 
+		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's Spectre Mask set bonus spawns its homing bolt here.</summary>
+		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
+		{
+			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
+			EnemyTargeting.LiveBody(SoldierIndex)?.SpectreWrathOnHit(projectile, target, damageDone);
+		}
+
 		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>
 		private bool _sentryParked;
 

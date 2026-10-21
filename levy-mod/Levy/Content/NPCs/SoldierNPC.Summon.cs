@@ -13,7 +13,8 @@ using Levy.Content.Projectiles;
 namespace Levy.Content.NPCs
 {
 	/// <summary>
-	/// Summoner layer: a soldier whose primary weapon is a summon weapon keeps a flock of <see cref="SoldierMinion"/>s instead of firing it.
+	/// Summoner layer: a soldier whose primary weapon is a summon weapon keeps a flock of minions instead of firing it. The minions are the staff's REAL vanilla projectiles, driven
+	/// with the soldier as their owner (see <see cref="SoldierMinions"/>); a minion that cannot be driven that way (modded ones, the Stardust Dragon) is a <see cref="SoldierMinion"/> stand-in.
 	/// The flock size is the dummy's minion capacity (armor/accessories raise <c>Player.maxMinions</c>) divided by the weapon's slot cost.
 	/// Sentry layer: a soldier carrying a sentry weapon plants ONE tower where it fights and keeps it standing (MaintainSentries).
 	/// Also owns the cleanup of every soldier-anchored projectile (minions, lashes, boomerangs, sentries) when this body dies.
@@ -22,6 +23,8 @@ namespace Levy.Content.NPCs
 	{
 		private int _minionTick, _minionSpawnCd;
 		private readonly List<int> _minionScratch = new();
+		/// <summary>The game tick this soldier's dummy minion counters were last reset on (SoldierMinions.PrepareTick).</summary>
+		internal uint MinionPrepStamp = uint.MaxValue;
 
 		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
 		public Item SummonWeapon()
@@ -66,7 +69,7 @@ namespace Levy.Content.NPCs
 			return n;
 		}
 
-		/// <summary>Kills every minion, lash, boomerang, yoyo and flail anchored to this body.</summary>
+		/// <summary>Kills every minion (real and stand-in), lash, boomerang, yoyo and flail anchored to this body.</summary>
 		public void KillAnchoredProjectiles()
 		{
 			if (LevyUtil.IsClient) return;
@@ -77,10 +80,14 @@ namespace Levy.Content.NPCs
 				if (!p.active || (int)p.ai[0] != NPC.whoAmI) continue;
 				if (p.type == minion || p.type == whip || p.type == boom || p.type == yoyo || p.type == flail) p.Kill();
 			}
+			SoldierMinions.KillAll(this);
 			KillSentries();
 		}
 
-		/// <summary>Called every combat tick: tops the flock up to capacity (one summon per cooldown), retunes its damage, and dismisses it when the summon weapon is gone.</summary>
+		/// <summary>
+		/// Called every combat tick: tops the flock up to capacity (one summon per cooldown), retunes its damage, and dismisses it when the summon weapon is gone.
+		/// A vanilla minion staff fields the staff's real projectiles (<see cref="SoldierMinions"/>); anything else keeps the <see cref="SoldierMinion"/> stand-in.
+		/// </summary>
 		private void MaintainMinions()
 		{
 			if (_minionSpawnCd > 0) _minionSpawnCd--;
@@ -89,23 +96,30 @@ namespace Levy.Content.NPCs
 			try
 			{
 				Item weapon = SummonWeapon();
-				int type = ModContent.ProjectileType<SoldierMinion>();
+				bool has = weapon != null && weapon.shoot > 0;
+				bool driven = has && SoldierMinions.CanDrive(weapon.shoot);
+				int standIn = ModContent.ProjectileType<SoldierMinion>(), me = NPC.whoAmI;
 				_minionScratch.Clear();
 				for (int i = 0; i < Main.maxProjectiles; i++)
 				{
 					Projectile p = Main.projectile[i];
-					if (p.active && p.type == type && (int)p.ai[0] == NPC.whoAmI) _minionScratch.Add(i);
+					if (!p.active) continue;
+					bool fake = p.type == standIn && (int)p.ai[0] == me;
+					bool real = !fake && SoldierMinions.OwnedBy(p, me);
+					if (!fake && !real) continue;
+					// no summon weapon any more, or a flock of the other kind / of a staff this soldier no longer carries: dismissed
+					if (!has || (fake && driven) || (real && !(driven && SoldierMinions.InFamily(weapon.shoot, p.type)))) { p.Kill(); continue; }
+					_minionScratch.Add(i);
 				}
-				if (weapon == null || weapon.shoot <= 0)
-				{
-					foreach (int i in _minionScratch) Main.projectile[i].Kill();
-					return;
-				}
+				if (!has) return;
 
-				int desired = MinionCapacity(weapon);
 				Item held = Dummy != null ? Dummy.inventory[0] : null; // WeaponDamage parks the weapon in the dummy's hand: put the real hand item back (matters for a sidearm staff)
 				int damage = Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
 				if (Dummy != null && held != null) Dummy.inventory[0] = held;
+
+				if (driven) { MaintainRealMinions(weapon, damage); return; }
+
+				int desired = MinionCapacity(weapon);
 				for (int k = 0; k < _minionScratch.Count; k++)
 				{
 					Projectile p = Main.projectile[_minionScratch[k]];
@@ -123,6 +137,45 @@ namespace Levy.Content.NPCs
 				_minionSpawnCd = LevyConstants.MinionSpawnCooldownTicks * 4;
 				Levy.Instance?.Logger.Warn("Levy: minion upkeep failed for a soldier: " + e.Message);
 			}
+		}
+
+		/// <summary>
+		/// The real-minion flock (already collected into <c>_minionScratch</c>): retunes every minion's damage, dismisses any overflow (by slot total, so a half-slot pair counts right),
+		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
+		/// </summary>
+		private void MaintainRealMinions(Item weapon, int damage)
+		{
+			int desired = SoldierMinions.Capacity(this, weapon);
+			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
+			foreach (int i in _minionScratch)
+			{
+				Projectile p = Main.projectile[i];
+				SoldierMinions.Retune(this, p, weapon, damage);
+				have += p.minionSlots;
+			}
+			while (have > want + LevyConstants.MinionSlotEpsilon)
+			{
+				int worst = -1;
+				for (int k = 0; k < _minionScratch.Count; k++)
+				{
+					Projectile p = Main.projectile[_minionScratch[k]];
+					if (p.active && p.minionSlots > 0f && (worst < 0 || _minionScratch[k] > _minionScratch[worst])) worst = k;
+				}
+				if (worst < 0) break;
+				Projectile q = Main.projectile[_minionScratch[worst]];
+				have -= q.minionSlots;
+				q.Kill();
+				_minionScratch.RemoveAt(worst);
+			}
+			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);
+			// the count guard keeps a staff whose minion reports no slot cost from casting without end
+			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
+
+			_minionSpawnCd = LevyConstants.MinionSpawnCooldownTicks;
+			if (!SoldierMinions.Summon(this, weapon, damage)) return;
+			// a short cast animation when the staff is the weapon in hand
+			if (!UsingSidearm && ItemAnimation <= 0 && ReferenceEquals(weapon, Record?.Gear?.Weapon)) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
+			if (weapon.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(weapon.UseSound.Value, NPC.Center);
 		}
 
 		private void SpawnMinion(Item weapon, int damage)

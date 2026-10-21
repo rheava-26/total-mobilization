@@ -56,6 +56,12 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Broadsword: hits in front, never behind, one hit per swing; Enchanted Sword also launches its beam.
 - [ ] Spear: a ~5-tile thrust that extends and retracts; Shortsword: a ~3-tile stab; the item sprite draws along the thrust.
 - [ ] Hand a soldier the wrong ammo (gel, coins) → the "Hand ammo" option does not appear / is refused.
+- [ ] Summoner soldiers run the REAL vanilla minions (owner = the soldier): Pygmy Staff / Pirate Staff minions WALK and jump on the ground behind the soldier (they do not fly);
+      Hornet / Imp / Optic staves fly and shoot; the Desert Tiger Staff shows gems over the soldier's head and, after a moment, a tiger that follows it and pounces.
+- [ ] Two summoner soldiers near each other: each flock follows and spaces out around its OWN soldier; the commander's own minion slots and summon damage are untouched.
+- [ ] A summoner soldier engaged with an enemy: its minions attack that enemy (and the commander's Focus Attack target); Hold Fire keeps them beside the soldier dealing no damage.
+- [ ] Kill the soldier, or swap its staff: its minions vanish. Stardust Dragon Staff and modded staves still field the old stand-in minion.
+- [ ] After a long summoner fight, press the inventory / use items normally → the commander's own player is unaffected (nothing left swapped); no Levy errors in the log.
 
 ## 7. Targeting both ways (M3)
 - [ ] Night zombies prefer whichever of you or a soldier is closer; wearing aggro gear (Flesh Knuckles) pulls them back to you.

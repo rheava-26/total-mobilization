@@ -247,7 +247,7 @@ namespace Levy.Common.Weapons
 		// only assigns ai[0..2], only sends the spawn packet and only runs Damage() when Owner == Main.myPlayer (255 on a dedicated server), so a
 		// server-spawned shot owned by a player index is a ghost: unsynced, ai[] zeroed, never hits. Town-NPC attacks use Main.myPlayer for this
 		// reason. Soldier shots therefore use Main.myPlayer (identical to the commander in single player) and loot credit goes through LootCredit.
-		public static int OwnerFor(SoldierNPC s) => Main.myPlayer;
+		public static int OwnerFor(SoldierNPC s) => SoldierMinions.TrueMyPlayer; // Main.myPlayer, except inside a real minion's single-player Update where the machine claims 255 (see SoldierMinions)
 
 		/// <summary>Spawns a tagged soldier projectile (server/single player). Returns null when the array is full.</summary>
 		public static Projectile Spawn(SoldierNPC s, Vector2 pos, Vector2 vel, int type, int damage, float knockback, DamageClass damageType, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)

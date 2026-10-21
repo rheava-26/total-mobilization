@@ -15,6 +15,8 @@ using Levy.Content.NPCs;
 namespace Levy.Content.Projectiles
 {
 	/// <summary>
+	/// STAND-IN minion, used only when a summon staff's minion cannot be run as the real vanilla projectile (see <see cref="Common.Weapons.SoldierMinions"/>): modded minions (their AI
+	/// needs a real owner's buffs), the Stardust Dragon's linked segments, and any vanilla type that threw while driven. Everything else is the real projectile.
 	/// One minion of a summoner soldier: ai[0] = soldier whoAmI, ai[1] = the summon weapon's minion projectile type (drawn as that sprite),
 	/// ai[2] = chased NPC index + 1 (0 = none). Trails behind its soldier, dives at the nearest hostile (tagged ones first), backs off after
 	/// each hit (or, for shooter minions in <see cref="RangedMinions"/>, holds a standoff range and fires instead), and goes home when it has nothing to chase. Owned by Main.myPlayer like every soldier projectile; it vanishes with its soldier.
@@ -223,7 +225,9 @@ namespace Levy.Content.Projectiles
 					? Aiming.SolveIntercept(Projectile.Center, shot.LeadSpeed, target.Center, target.velocity, false) * (shot.Speed / shot.LeadSpeed)
 					: dir * shot.Speed;
 				int dmg = Math.Max(1, (int)Math.Round(Projectile.damage * shot.DamageMult));
-				if (LevyNpcData.IsNpcTagged(target)) dmg = Math.Max(1, (int)Math.Round(dmg * (1f + LevyConstants.TagMinionDamageBonus)));
+				// a vanilla MinionShot already gets the tag bonus from SoldierProjectileTag.ModifyHitNPC; other (modded) shots get it here
+				bool tagBonusAlready = shot.Proj > 0 && shot.Proj < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[shot.Proj];
+				if (!tagBonusAlready && LevyNpcData.IsNpcTagged(target)) dmg = Math.Max(1, (int)Math.Round(dmg * (1f + LevyConstants.TagMinionDamageBonus)));
 				Projectile p = WeaponUse.Spawn(s, Projectile.Center, v, shot.Proj, dmg, Projectile.knockBack, DamageClass.Summon);
 				_fireCd = shot.CooldownTicks;
 				if (p == null) return;

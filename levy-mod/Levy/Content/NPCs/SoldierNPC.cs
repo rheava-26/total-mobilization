@@ -108,9 +108,9 @@ namespace Levy.Content.NPCs
 		/// Owner index for projectiles the soldier spawns. Must be Main.myPlayer: Projectile.NewProjectile only assigns ai[], sends the
 		/// spawn packet and runs NPC hit detection when owner == Main.myPlayer (255 on a dedicated server). Loot credit is separate: see <see cref="CreditPlayer"/>.
 		/// </summary>
-		public int ProjectileOwner => Main.myPlayer;
+		public int ProjectileOwner => Common.Weapons.SoldierMinions.TrueMyPlayer;
 		/// <summary>Player index that receives loot/banner credit for this soldier's kills (commander, else the local player in single player, else -1).</summary>
-		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Main.myPlayer : -1);
+		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Common.Weapons.SoldierMinions.TrueMyPlayer : -1);
 		public bool IsAlive => NPC.active && NPC.life > 0 && !_deathHandled;
 
 		public override string Texture => "Levy/Content/NPCs/SoldierNPC";

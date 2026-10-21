@@ -33,6 +33,13 @@ namespace Levy.Common.Globals
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
+			// A real minion being cast for a soldier is named here, before NewProjectile sends its first spawn packet, so remote screens know whose it is from the start.
+			if (SoldierMinions.PendingBody != null)
+			{
+				SoldierIndex = SoldierMinions.PendingBody.NPC.whoAmI;
+				projectile.npcProj = true;
+				projectile.noDropItem = true;
+			}
 			if (source is EntitySource_Parent { Entity: NPC npc })
 			{
 				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
@@ -45,7 +52,15 @@ namespace Levy.Common.Globals
 				SoldierIndex = parentTag.SoldierIndex;
 				projectile.npcProj = true;
 				projectile.noDropItem = true;
+				SoldierMinions.ReownChild(parent, projectile); // a real minion's stinger / spear: single player processes damage only for the real owner
 			}
+		}
+
+		/// <summary>A soldier's real minion (and the shots it fires) hits harder against an enemy a whip tagged, as the stand-in minion always did.</summary>
+		public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)
+		{
+			if (SoldierIndex < 0 || !(projectile.minion || (projectile.type > 0 && projectile.type < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[projectile.type]))) return;
+			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
 		}
 
 		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's Spectre Mask set bonus spawns its homing bolt here.</summary>

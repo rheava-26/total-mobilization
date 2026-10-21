@@ -61,7 +61,7 @@ Root causes found
 | Magic Missile, Flamelash, Rainbow Rod | cursor-guided projectile | D | channeled (`item.channel`); the classifier rejects them because the guiding reads the commander's cursor |
 | Throwing Knife, Poisoned Knife, Shuriken, Javelins, Bone Javelin | thrown consumables | D | consumable items are rejected by the classifier |
 | Sky Fracture, Star Wrath, Phantasm, Zenith, other hardmode chain items | per-item spawn patterns | D | out of the prehardmode scope; they fire a plain projectile |
-| Summon staves (Slime Staff, Finch Staff ...) | minions | A | `SoldierMinion`, not part of this path |
+| Summon staves (Slime Staff, Finch Staff, Pygmy / Pirate / Desert Tiger ...) | minions | A | the staff's real vanilla minion projectile, run with the soldier as owner (`SoldierMinions`); modded minions and the Stardust Dragon keep the `SoldierMinion` stand-in. Not part of this path |
 
 ## Sword-beam sanity check
 

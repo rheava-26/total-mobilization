@@ -28,7 +28,8 @@ namespace Levy.Common.Targeting
 			if (shooter == null) return -1;
 			int c = shooter.CommanderIndex;
 			if (c >= 0 && c < Main.maxPlayers && Main.player[c].active) return c;
-			if (Main.netMode == NetmodeID.SinglePlayer && Main.myPlayer >= 0 && Main.myPlayer < Main.maxPlayers) return Main.myPlayer;
+			int me = Weapons.SoldierMinions.TrueMyPlayer; // not Main.myPlayer: a real minion's single-player Update has it faked to 255
+			if (Main.netMode == NetmodeID.SinglePlayer && me >= 0 && me < Main.maxPlayers) return me;
 			return -1;
 		}
 
@@ -74,6 +75,8 @@ namespace Levy.Common.Targeting
 			// disguised mimics, cultist set pieces, bound NPCs, Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose.
 			// (the one exception: a critter inside the commander's Focus Attack radius)
 			if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(tag.SoldierIndex, target)) return false;
+			// a soldier told to hold fire keeps its real minions beside it but they deal nothing
+			if (Weapons.SoldierMinions.SuppressedByHoldFire(projectile, tag.SoldierIndex)) return false;
 			return null;
 		}
 

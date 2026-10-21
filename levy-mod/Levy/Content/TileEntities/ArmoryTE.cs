@@ -366,12 +366,15 @@ namespace Levy.Content.TileEntities
 		/// A strong issuable weapon for this soldier (family must be supported); removes it from the armory. Null if none.
 		/// Draws from the top tier of viable weapon types (see <see cref="TryPickVaried"/>), so a varied armory yields a mixed squad.
 		/// </summary>
-		public virtual Item TakeBestWeapon(SoldierRecord forSoldier)
+		public virtual Item TakeBestWeapon(SoldierRecord forSoldier) => TakeBestWeaponWhere(forSoldier, null);
+
+		/// <summary><see cref="TakeBestWeapon"/> restricted by <paramref name="extra"/> (null = anything issuable).</summary>
+		private Item TakeBestWeaponWhere(SoldierRecord forSoldier, Func<Item, bool> extra)
 		{
 			// Pass 1: weapons that can actually fire (no ammo needed, or ammo in the pouch / armory). Pass 2: anything issuable.
 			var onHand = AmmoIdsOnHand();
-			return CapThrown(TakeVaried(forSoldier, it => IsIssuable(it) && HasAmmoFor(it, forSoldier, onHand))
-				?? TakeVaried(forSoldier, IsIssuable));
+			return CapThrown(TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it)) && HasAmmoFor(it, forSoldier, onHand))
+				?? TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it))));
 		}
 
 		/// <summary>A thrown stack leaves the shelf at most <see cref="LevyConstants.ThrownCarryMax"/> strong (what a soldier carries); the rest goes back to storage. Any other item is returned untouched.</summary>
@@ -1221,7 +1224,7 @@ namespace Levy.Content.TileEntities
 			return changed;
 		}
 
-		/// <summary>Arms an empty, unlocked primary slot: in fixed-class mode a weapon of the worn armor's class first; otherwise (and as the fallback) the strongest weapon he can use. True if he took one.</summary>
+		/// <summary>Arms an empty, unlocked primary slot: in fixed-class mode a weapon of the worn armor's class first; otherwise the strongest weapon of a class he can armor (<see cref="ArmorableClasses"/>; any class when none is constrained). The fallback is the strongest weapon he can use. True if he took one.</summary>
 		private bool IssuePrimary(SoldierRecord soldier, SoldierGear g)
 		{
 			if (g.IsLocked(SoldierGear.SlotWeapon) || g.HasWeapon) return false;
@@ -1231,10 +1234,143 @@ namespace Levy.Content.TileEntities
 				var cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 				if (cls != null) w = TakeBestWeaponOfClass(soldier, cls);
 			}
+			else
+			{
+				var ok = ArmorableClasses(soldier, false);
+				if (ok.Count > 0) w = TakeBestWeaponInClasses(soldier, ok);
+			}
 			w ??= TakeBestWeapon(soldier);
 			if (w == null) return false;
 			g.Weapon = w;
 			return true;
+		}
+
+		// ------------------------------------------------------------------ coherent kit (a fluid soldier's weapon class follows the armor he can field)
+
+		/// <summary>The strongest issuable weapon whose damage class is in <paramref name="classes"/>; a weapon with no class at all only as a last resort. Removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
+		private Item TakeBestWeaponInClasses(SoldierRecord forSoldier, HashSet<DamageClass> classes)
+		{
+			return TakeBestWeaponWhere(forSoldier, it => { var c = WeaponClassifier.ItemDamageClass(it); return c != null && classes.Contains(c); })
+				?? TakeBestWeaponWhere(forSoldier, it => WeaponClassifier.ItemDamageClass(it) == null);
+		}
+
+		/// <summary>
+		/// The damage classes this soldier can coherently wear armor for right now: the class of the armor he already wears, plus the class of every complete set
+		/// (same-family head/body/legs, or a set the game itself calls one) the armory could hand him, scored like <see cref="TakeArmorSetCore"/> (open slots only,
+		/// worn and locked pieces fixed, a set far weaker than the best loose pieces dropped). READ-ONLY: it scans, it never takes. His own armory's stock decides
+		/// first, as in <see cref="TakeArmorSet"/>; the networked armories and Magic Storage count only when his own cannot complete a set. With no set to be had,
+		/// the class of the best loose pieces counts. <paramref name="upgrade"/> opens every unlocked slot with the worn pieces competing (the <see cref="UpgradeArmor"/> view).
+		/// Empty = nothing class-defining to match, so any weapon is fine.
+		/// </summary>
+		private HashSet<DamageClass> ArmorableClasses(SoldierRecord soldier, bool upgrade)
+		{
+			var res = new HashSet<DamageClass>();
+			var g = soldier?.Gear;
+			if (g == null) return res;
+			var worn = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (worn != null) res.Add(worn); // already on his back: always armorable, so a coherent kit never thrashes
+			int[] slot = { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs };
+			Item[] cur = { g.Head, g.Body, g.Legs };
+			var open = new bool[ArmorParts]; bool anyOpen = false, missingFixed = false;
+			string fixedStem = null; bool conflict = false;
+			for (int p = 0; p < ArmorParts; p++) {
+				open[p] = !g.IsLocked(slot[p]) && (upgrade || IsAir(cur[p]));
+				anyOpen |= open[p];
+				if (open[p]) continue;
+				if (IsAir(cur[p])) { missingFixed = true; continue; }
+				string st = ArmorStem(cur[p]);
+				if (fixedStem != null && fixedStem != st) conflict = true;
+				fixedStem ??= st;
+			}
+			if (!anyOpen) return res;
+
+			// One pass over one pool: the best copy of each armor type per open part (the same candidate set TakeArmorSetCore builds). True when it holds a usable set.
+			bool Gather(bool usePool, bool loose)
+			{
+				var pool = new Dictionary<int, Item>[ArmorParts];
+				for (int p = 0; p < ArmorParts; p++) pool[p] = new Dictionary<int, Item>();
+				void Add(int p, Item it) { if (!pool[p].TryGetValue(it.type, out var at) || ArmorScore(it) > ArmorScore(at)) pool[p][it.type] = it; }
+				void Scan(Item[] arr, ArmoryTE src)
+				{
+					for (int i = 0; i < arr.Length; i++) {
+						var it = arr[i];
+						if (IsAir(it) || it.vanity || src.IsReservedRef(it)) continue;
+						for (int p = 0; p < ArmorParts; p++) if (open[p] && WeaponClassifier.IsArmorPiece(it, p)) { Add(p, it); break; }
+					}
+				}
+				if (upgrade) for (int p = 0; p < ArmorParts; p++) if (open[p] && !IsAir(cur[p])) Add(p, cur[p]);
+				Scan(IssueArmor, this); Scan(Storage, this);
+				if (usePool) {
+					foreach (var o in OtherNetworked()) Scan(o.Storage, o);
+					var heart = MsHeart();
+					if (heart != null) Scan(MagicStorageBridge.Snapshot(heart).FindAll(x => !x.vanity && (x.headSlot >= 0 || x.bodySlot >= 0 || x.legSlot >= 0)).ToArray(), this);
+				}
+				float looseTop = 0f;
+				for (int p = 0; p < ArmorParts; p++) {
+					if (!open[p]) continue;
+					if (pool[p].Count == 0) { looseTop = -1f; break; } // a needed part has no stock at all: no complete set
+					float top = float.NegativeInfinity;
+					foreach (var c in pool[p].Values) top = Math.Max(top, ArmorScore(c));
+					looseTop += top;
+				}
+				bool found = false;
+				if (looseTop >= 0f && !conflict) {
+					// Real sets only count when they are not far weaker than the best loose pieces (the armor-follow's own gate).
+					void Eval(List<Item>[] opts, bool requireBonus)
+					{
+						foreach (var h in opts[0]) foreach (var b in opts[1]) foreach (var l in opts[2]) {
+							if (requireBonus && !ArmorDoctrine.FormsSetBonus(h, b, l)) continue;
+							float taken = 0f; Item[] pick = { h, b, l };
+							for (int p = 0; p < ArmorParts; p++) if (open[p]) taken += ArmorScore(pick[p]);
+							if (taken < looseTop * LevyConstants.ArmorSetMinFractionOfBest) continue;
+							found = true;
+							var c = ArmorDoctrine.PreferredClass(h, b, l);
+							if (c != null) res.Add(c);
+						}
+					}
+					List<Item>[] Opts(Func<int, IEnumerable<Item>> open_)
+					{
+						var o = new List<Item>[ArmorParts];
+						for (int p = 0; p < ArmorParts; p++) o[p] = open[p] ? new List<Item>(open_(p)) : new List<Item> { cur[p] };
+						return o;
+					}
+					var stems = new HashSet<string>();
+					for (int p = 0; p < ArmorParts; p++) if (open[p]) foreach (var c in pool[p].Values) stems.Add(ArmorStem(c));
+					foreach (var stem in stems) {
+						if (fixedStem != null && fixedStem != stem) continue;
+						var opts = Opts(p => { var l = new List<Item>(); foreach (var c in pool[p].Values) if (ArmorStem(c) == stem) l.Add(c); return l; });
+						bool ok = true;
+						for (int p = 0; p < ArmorParts; p++) if (open[p] && opts[p].Count == 0) ok = false;
+						if (ok) Eval(opts, false);
+					}
+					// Irregular names: the strongest pieces whose combination the game itself calls a set.
+					if (!found && !missingFixed) {
+						Eval(Opts(p => {
+							var top = new List<Item>(pool[p].Values);
+							top.Sort((a, b) => ArmorScore(b).CompareTo(ArmorScore(a)));
+							if (top.Count > LevyConstants.ArmorSetCrossSearchTop) top.RemoveRange(LevyConstants.ArmorSetCrossSearchTop, top.Count - LevyConstants.ArmorSetCrossSearchTop);
+							return top;
+						}), true);
+					}
+				}
+				if (!found && loose) {
+					// No set to be had: the per-piece pick fills each open part with its best piece, and that kit's class is what he will wear.
+					var kit = new Item[ArmorParts];
+					bool any = false;
+					for (int p = 0; p < ArmorParts; p++) {
+						kit[p] = cur[p];
+						if (!open[p]) continue;
+						float top = float.NegativeInfinity;
+						foreach (var c in pool[p].Values) if (ArmorScore(c) > top) { top = ArmorScore(c); kit[p] = c; any = true; }
+					}
+					if (any) { var c = ArmorDoctrine.PreferredClass(kit[0], kit[1], kit[2]); if (c != null) res.Add(c); }
+				}
+				return found;
+			}
+
+			if (!upgrade && Gather(false, false)) return res;
+			Gather(true, !upgrade); // upgrade never falls back to loose pieces: UpgradeArmor only swaps in a whole set
+			return res;
 		}
 
 		// ------------------------------------------------------------------ automatic weapon upgrade
@@ -1276,6 +1412,7 @@ namespace Levy.Content.TileEntities
 			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped, so the new weapon must fire it
 			bool sameClassOnly = Common.Config.LevyConfig.Get.ClassMatchIssue; // fixed-class companies keep their damage class; fluid soldiers cross over
 			var stockOk = new Dictionary<int, bool>();
+			HashSet<DamageClass> armorable = null; // computed once, only when a candidate would otherwise qualify (it scans the armor shelves)
 			bool Pred(Item it)
 			{
 				if (!IsIssuable(it) || it.maxStack > 1 || !HasAmmoFor(it, soldier, onHand)) return false;
@@ -1284,6 +1421,11 @@ namespace Levy.Content.TileEntities
 				var fam = WeaponClassifier.GetProfile(it).Family;
 				// Fully fluid: a summon staff / sentry is an ordinary candidate, in or out. Only the score margin (and the swap cooldown) gate it; the armor follows the new weapon's class.
 				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < need) return false;
+				// Coherent kit: a fluid soldier only crosses into a class he can also armor (worn, or a set on the shelves); nothing class-defining to match = any class.
+				if (!sameClassOnly) {
+					var ic = WeaponClassifier.ItemDamageClass(it);
+					if (ic != null) { armorable ??= ArmorableClasses(soldier, true); if (armorable.Count > 0 && !armorable.Contains(ic)) return false; }
+				}
 				// Moving onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
 				if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
 				if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);

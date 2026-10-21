@@ -35,7 +35,7 @@ namespace Levy.Common.UI
 		private Label _title, _treasury, _rosterTitle, _allLabel, _empty;
 		private string _titleRaw = "", _treasuryRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
-		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire;
+		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
 		private BarElement _manpower, _cp;
 		private CardGrid _grid;
@@ -102,6 +102,7 @@ namespace Levy.Common.UI
 			_tax = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.BarracksToggle(Te, 1, !Te.TaxToTreasury), LevyUtil.T("UI.TaxToTreasury")), 168, y2);
 			_hazard = Put(new LevyButton("", 0.7f, 204, BH, () => UIActions.HazardPay(Te)), 0, y2);
 			_recruit = Put(new LevyButton("", 0.7f, 250, BH, () => UIActions.RecruitingDrive(Te)), 12, RowY(3));
+			_resetLoadouts = Put(new LevyButton(LevyUtil.T("UI2.ResetLoadouts"), 0.7f, LevyConstants.UI.ResetLoadoutsButtonW, BH, UIActions.ResetLoadouts, LevyUtil.T("UI2.ResetLoadoutsHint")), 0, RowY(3));
 
 			// enlist
 			float y4 = RowY(4);
@@ -176,6 +177,7 @@ namespace Levy.Common.UI
 			_close.Left.Set(_w - 36, 0f);
 			_mobilize.Left.Set(_w - 12 - 118, 0f);
 			_hazard.Left.Set(_w - 12 - 204, 0f);
+			_resetLoadouts.Left.Set(_w - 12 - LevyConstants.UI.ResetLoadoutsButtonW, 0f);
 			float barW = (_w - 24f - LevyConstants.UI.BarracksBarGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);
 			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksBarGap, 0f); _cp.Width.Set(barW, 0f);

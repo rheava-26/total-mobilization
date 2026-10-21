@@ -19,6 +19,7 @@ namespace Levy.Common.Net
 	///  FocusAttack: bool set, float worldX, float worldY          (Roster) — commander = sender; the squad attacks that position (and hostiles/critters near it); set=false clears
 	///  Rally: (none)                                              (Roster)
 	///  Rearm: (none)                                              (Roster) — commander = sender
+	///  ResetLoadouts: (none)                                      (Roster) — commander = sender; every Regular returns its kit, loses all hand locks, and is re-issued from scratch
 	///  Mobilize: int barracksId                                   (Militia)
 	///  StandDown: int barracksId                                  (Militia)
 	///  Deposit: int barracksId, long copper                       (Roster) — client already removed the coins
@@ -47,7 +48,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 	}
 

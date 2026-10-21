@@ -898,9 +898,14 @@ namespace Levy.Common.Weapons
 		/// <summary>Cooldown, animation, aim rotation, facing and use sound shared by every family.</summary>
 		private static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
 		{
+			// A running animation keeps going (burst weapons fire several shots per animation, one every useTime); a new use starts a fresh one.
+			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation); s.UsesThisAnimation = 0; }
+			s.UsesThisAnimation++;
 			s.AttackCooldown = Math.Max(1, item.useTime);
-			// A running animation keeps going (burst weapons fire several shots per animation); the reuse delay applies when it ends.
-			if (s.ItemAnimation <= 0) s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation);
+			// useLimitPerAnimation caps the uses per animation (Player.ItemCheck_OwnerOnlyCode; the Tome of Infinite Wisdom fires 4 shots then waits out the rest of its 25-tick animation):
+			// once spent, the weapon is silent until the animation ends, then reuseDelay (applied by Combat_Update) adds its pause.
+			if (item.useLimitPerAnimation.HasValue && s.UsesThisAnimation >= item.useLimitPerAnimation.Value) s.AttackCooldown = Math.Max(s.AttackCooldown, s.ItemAnimation);
+			s.ReuseDelayPending = Math.Max(0, item.reuseDelay);
 			if (aimVel != Vector2.Zero && !aimVel.HasNaNs())
 			{
 				s.AimRotation = aimVel.ToRotation();

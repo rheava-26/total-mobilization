@@ -58,6 +58,7 @@ namespace Levy.Content.NPCs
 				Weapon = want;
 				ClearSwingHits();
 				if (ItemAnimation > 0) ItemAnimation = 0;
+				UsesThisAnimation = 0; ReuseDelayPending = -1;
 				StatsDirty = true;
 				NPC.netUpdate = true;
 			}
@@ -130,8 +131,12 @@ namespace Levy.Content.NPCs
 				if (ItemAnimation <= 0)
 				{
 					ItemAnimation = 0;
+					UsesThisAnimation = 0;
 					ClearSwingHits();
-					if (Weapon != null && Weapon.ReuseDelay > 0) AttackCooldown = Math.Max(AttackCooldown, Weapon.ReuseDelay);
+					// the reuse delay is the pause after the whole animation (Player.ApplyReuseDelay); the item that was just used supplies it
+					int reuse = ReuseDelayPending >= 0 ? ReuseDelayPending : Weapon?.ReuseDelay ?? 0;
+					ReuseDelayPending = -1;
+					if (reuse > 0) AttackCooldown = Math.Max(AttackCooldown, reuse);
 				}
 			}
 			if (State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed) _lastEngageTick = (int)Main.GameUpdateCount; // still fighting while shaken / routed

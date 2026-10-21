@@ -50,6 +50,38 @@ namespace Levy.Content.NPCs
 			for (int k = 0; k < procs.Length; k++) if (procs[k] != null) RunAccessoryProc(procs[k]);
 		}
 
+		private static List<Projectile> _sporeParked;
+
+		/// <summary>
+		/// Runs the vanilla Spore Sac step for this body alone. Vanilla caps traps at 10 and keeps them 48 px apart by counting every trap the owner owns, and every soldier
+		/// shares the commander's owner slot, so a squad of sac-wearers would share one cap of 10 (with the commander's own). Other bodies' traps are parked on a slot no
+		/// else owns for the length of the call, so each soldier gets the vanilla cap and spacing to itself.
+		/// </summary>
+		private void SporeSacOwnTraps(Player d, Item item)
+		{
+			List<Projectile> parked = _sporeParked ??= new List<Projectile>();
+			parked.Clear();
+			int owner = d.whoAmI;
+			int parkSlot = owner == Main.maxPlayers ? 0 : Main.maxPlayers; // any slot but the shared owner's (a dedicated server's owner IS 255); vanilla only counts owner == whoAmI
+			try
+			{
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile p = Main.projectile[i];
+					if (!p.active || p.owner != owner || p.aiStyle != ProjAIStyleID.SporeTrap) continue;
+					if (p.TryGetGlobalProjectile(out Common.Globals.SoldierProjectileTag tag) && tag.SoldierIndex == NPC.whoAmI) continue;
+					p.owner = parkSlot;
+					parked.Add(p);
+				}
+				d.SporeSac(item);
+			}
+			finally
+			{
+				foreach (Projectile p in parked) p.owner = owner;
+				parked.Clear();
+			}
+		}
+
 		private void RunAccessoryProc(Item item)
 		{
 			Player d = Dummy;
@@ -65,7 +97,7 @@ namespace Levy.Content.NPCs
 				switch (item.type)
 				{
 					case ItemID.VolatileGelatin: d.VolatileGelatin(item); break;
-					case ItemID.SporeSac: d.SporeSac(item); break;
+					case ItemID.SporeSac: SporeSacOwnTraps(d, item); break;
 				}
 			}
 			catch (Exception e)

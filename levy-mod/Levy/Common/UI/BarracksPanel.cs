@@ -540,7 +540,7 @@ namespace Levy.Common.UI
 				Main.inventoryScale = oldScale;
 
 				if (!IsMouseHovering) return;
-				int hover = (int)((Main.MouseScreen.X / Main.UIScale - pos.X) / pitch);
+				int hover = (int)((Main.MouseScreen.X - pos.X) / pitch); // MouseScreen and GetDimensions() share the UI-element space, so no extra /UIScale (that double-scaled the pick off 100%)
 				if (hover < 0 || hover >= Slots.Length) return;
 				Main.LocalPlayer.mouseInterface = true;
 				Item held = gear.Get(Slots[hover]);

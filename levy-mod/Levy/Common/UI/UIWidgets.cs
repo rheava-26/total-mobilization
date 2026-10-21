@@ -314,6 +314,46 @@ namespace Levy.Common.UI
 		}
 	}
 
+	/// <summary>
+	/// A small solid square in an item-rarity colour that toggles a filter. <see cref="ColorOf"/> is read every draw (so the animated Expert / Master
+	/// tiers keep shifting). <see cref="On"/> draws it bright with a white border; <see cref="Dim"/> (another swatch is on) fades it; neither is the plain "no filter" look.
+	/// <see cref="Glyph"/> optionally prints one character on it (the modded / other swatch).
+	/// </summary>
+	public class RaritySwatch : UIElement
+	{
+		public Func<Color> ColorOf = () => Color.White;
+		public bool On, Dim;
+		public string Hint = "", Glyph = "";
+		public Action OnToggle;
+
+		public RaritySwatch(int size)
+		{
+			Width.Set(size, 0f); Height.Set(size, 0f);
+			OnLeftClick += (evt, el) => { SoundEngine.PlaySound(SoundID.MenuTick); OnToggle?.Invoke(); };
+		}
+
+		public override void Update(GameTime gameTime)
+		{
+			base.Update(gameTime);
+			if (IsMouseHovering) Main.LocalPlayer.mouseInterface = true;
+		}
+
+		protected override void DrawSelf(SpriteBatch spriteBatch)
+		{
+			var r = GetDimensions().ToRectangle();
+			var px = TextureAssets.MagicPixel.Value;
+			Color c = ColorOf();
+			float fade = Dim && !IsMouseHovering ? 0.35f : 1f;
+			Color border = On ? Color.White : IsMouseHovering ? new Color(220, 225, 245) : new Color(15, 18, 35);
+			spriteBatch.Draw(px, r, border * (On || IsMouseHovering ? 1f : fade));
+			var inner = new Rectangle(r.X + 1, r.Y + 1, r.Width - 2, r.Height - 2);
+			spriteBatch.Draw(px, inner, new Color(c.R, c.G, c.B) * fade);
+			if (!string.IsNullOrEmpty(Glyph))
+				Utils.DrawBorderString(spriteBatch, Glyph, new Vector2(r.X + r.Width * 0.5f, r.Y + r.Height * 0.5f + 1f), Color.White * fade, 0.75f, 0.5f, 0.5f);
+			if (IsMouseHovering && !string.IsNullOrEmpty(Hint)) HintTooltip.Queue(Hint);
+		}
+	}
+
 	/// <summary>Plain label that never eats mouse events.</summary>
 	public class Label : UIText
 	{

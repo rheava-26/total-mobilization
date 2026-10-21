@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
+using Terraria.GameContent.UI;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
+using Terraria.Localization;
+using Terraria.ModLoader;
 using Terraria.UI;
 using Levy.Common.Util;
+using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.UI
@@ -14,6 +20,8 @@ namespace Levy.Common.UI
 	/// Armory: scrolling storage grid (12 columns, 10 rows in view, all ArmoryTE.StorageSize slots reachable) plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
 	/// "Sort", "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
 	/// ArmorySlotSet for each changed slot.
+	/// A search box, a rarity-swatch strip and a type button narrow the STORAGE grid to the matching items, packed together with no gaps. The filters are view-only:
+	/// every shown cell still points at its real <see cref="ArmoryTE.Storage"/> index, and filtering itself never edits an item or sends a packet.
 	/// </summary>
 	public class ArmoryPanel : UIState
 	{
@@ -23,14 +31,33 @@ namespace Levy.Common.UI
 		private UIElement _issue;
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
-		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge;
-		private Label _title, _treasury;
+		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge, _catBtn, _clearBtn;
+		private Label _title, _treasury, _count, _noMatch;
+		private UIPanel _searchBox;
+		private UISearchBar _search;
+		private RaritySwatch[] _swatches;
 		/// <summary>Selected bulk-reforge floor (index into LevyConstants.UI.ReforgeFloorTopFraction); kept while the panel lives.</summary>
 		private int _floorIndex;
 		private int _payerRefresh;
 		private BarracksTE _payer;
 
-		private const int GridLeft = 10, GridTop = 40, IssueLeft = 460, IssueWidth = 220, IssueColumns = 6;
+		// ---- storage view filters (view-only) ----
+		/// <summary>Search terms (the lower-cased query split on spaces; every term must appear in the item name), the rarity toggles (one bit per swatch) and the type button's state (0 = any).</summary>
+		private string[] _terms = Array.Empty<string>();
+		private uint _rarityMask;
+		private int _cat;
+		/// <summary>Set by any filter change; the next Update re-collects the matches and resets the scroll.</summary>
+		private bool _filterDirty;
+		private int _filterTick;
+		/// <summary>Real Storage indices the grid currently shows, in order; null while the full, unfiltered grid (every slot, empties included) is showing.</summary>
+		private List<int> _shown;
+		/// <summary>Item type -> type bucket (0 = not computed yet), so the type filter does not re-classify the same item every refresh.</summary>
+		private sbyte[] _catCache;
+
+		private const int CatMelee = 1, CatRanged = 2, CatMagic = 3, CatSummon = 4, CatArmor = 5, CatAccessory = 6, CatAmmo = 7, CatPotion = 8, CatOther = 9, CatCount = 10;
+		private static readonly string[] CatKeys = { "UI2.ClassMelee", "UI2.ClassRanged", "UI2.ClassMagic", "UI2.ClassSummon", "UI2.CatArmor", "UI2.CatAccessory", "UI2.CatAmmo", "UI2.CatPotion", "UI2.CatOther" };
+
+		private const int GridLeft = 10, GridTop = LevyConstants.UI.ArmoryGridTop, IssueLeft = 460, IssueWidth = 220, IssueColumns = 6;
 		private static int Pitch => LevyConstants.UI.SlotPitch;
 		private static float Scale => LevyConstants.UI.SlotScale;
 
@@ -71,6 +98,7 @@ namespace Levy.Common.UI
 			_treasury.Left.Set(GridLeft + 158 + 160, 0f); _treasury.Top.Set(LevyConstants.UI.ArmoryBarTop + 4, 0f);
 			_panel.Append(_treasury);
 			RefreshReforgeBar();
+			BuildFilterBar();
 
 			// Storage: one UIList row per grid row (only rows in view are drawn), scrolled by the wheel or the bar beside it.
 			_grid = new UIList();
@@ -103,24 +131,12 @@ namespace Levy.Common.UI
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
 			_grid.Clear();
 			_issue.RemoveAllChildren();
+			_shown = null;
+			ResetFilters();
 			if (te == null) return;
 
-			// Every storage slot, in rows of ArmoryColumns; the list culls the rows that are scrolled out of view.
-			int cols = LevyConstants.UI.ArmoryColumns;
-			var rows = new System.Collections.Generic.List<UIElement>((te.Storage.Length + cols - 1) / cols);
-			for (int start = 0; start < te.Storage.Length; start += cols)
-			{
-				var row = new UIElement();
-				row.Width.Set(cols * Pitch, 0f); row.Height.Set(Pitch, 0f);
-				for (int c = 0; c < cols && start + c < te.Storage.Length; c++)
-				{
-					var slot = MakeSlot(te.Storage, start + c, 0, null, null);
-					slot.Left.Set(c * Pitch, 0f);
-					row.Append(slot);
-				}
-				rows.Add(row);
-			}
-			_grid.AddRange(rows);
+			// A fresh open shows every storage slot (no search, no filters).
+			BuildGrid();
 
 			float y = 0f;
 			AddLabel(LevyUtil.T("UI.IssueWeapons"), y); y += 18f;
@@ -182,6 +198,34 @@ namespace Levy.Common.UI
 			_gridScroll.ViewPosition = 0f;
 		}
 
+		/// <summary>
+		/// (Re)builds the storage grid from <see cref="_shown"/>: null = every slot of <see cref="ArmoryTE.Storage"/> in order (empties included); otherwise only those real indices, packed in order.
+		/// Rows of ArmoryColumns; the list culls the rows that are scrolled out of view. Each cell is bound to its REAL index, so a drag, click or packet always acts on the item the cell shows.
+		/// </summary>
+		private void BuildGrid()
+		{
+			_grid.Clear();
+			if (Te == null) return;
+			var arr = Te.Storage;
+			int cols = LevyConstants.UI.ArmoryColumns;
+			int count = _shown?.Count ?? arr.Length;
+			var rows = new List<UIElement>((count + cols - 1) / cols);
+			for (int start = 0; start < count; start += cols)
+			{
+				var row = new UIElement();
+				row.Width.Set(cols * Pitch, 0f); row.Height.Set(Pitch, 0f);
+				for (int c = 0; c < cols && start + c < count; c++)
+				{
+					int real = _shown == null ? start + c : _shown[start + c];
+					var slot = MakeSlot(arr, real, 0, null, null);
+					slot.Left.Set(c * Pitch, 0f);
+					row.Append(slot);
+				}
+				rows.Add(row);
+			}
+			_grid.AddRange(rows);
+		}
+
 		private void AddLabel(string text, float y)
 		{
 			var l = new Label(text, 0.8f);
@@ -194,6 +238,231 @@ namespace Levy.Common.UI
 			var slot = new ItemSlotElement(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint };
 			slot.OnChanged = (a, i) => { if (Te != null) UIActions.SendArmorySlot(Te, region, i); };
 			return slot;
+		}
+
+		// ------------------------------------------------------------------ search + filters (view-only)
+		private bool Filtering => _terms.Length > 0 || _rarityMask != 0 || _cat != 0;
+
+		/// <summary>The search box (header row) and the filter row: rarity swatches, the type cycle button, Clear and the shown count.</summary>
+		private void BuildFilterBar()
+		{
+			int sortLeft = (int)_sort.Left.Pixels;
+			_searchBox = new UIPanel();
+			_searchBox.SetPadding(0);
+			_searchBox.Left.Set(LevyConstants.UI.ArmorySearchLeft, 0f); _searchBox.Top.Set(6f, 0f);
+			_searchBox.Width.Set(sortLeft - LevyConstants.UI.ArmorySearchGap - LevyConstants.UI.ArmorySearchLeft, 0f);
+			_searchBox.Height.Set(LevyConstants.UI.ArmorySearchHeight, 0f);
+			_searchBox.BackgroundColor = new Color(20, 26, 52) * 0.9f;
+			_search = new UISearchBar(Language.GetText("Mods.Levy.UI2.ArmorySearch"), LevyConstants.UI.ButtonTextScale + 0.05f);
+			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f);
+			_search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
+			_search.OnContentsChanged += OnSearchChanged;
+			_search.OnCanceledTakingInput += () => _search.SetContents("", true); // Escape drops the query
+			_search.SetContents("", true);
+			_searchBox.OnLeftClick += (evt, el) => { if (!_search.IsWritingText) _search.ToggleTakingText(); };
+			_searchBox.Append(_search);
+			_panel.Append(_searchBox);
+
+			// Rarity swatches: one per listed rarity, plus one for every other (modded) rarity. Each toggles its bit in _rarityMask.
+			var order = LevyConstants.UI.ArmoryRarityOrder;
+			int size = LevyConstants.UI.RaritySwatchSize, step = size + LevyConstants.UI.RaritySwatchGap;
+			float swY = LevyConstants.UI.ArmoryFilterTop + (LevyConstants.UI.ArmoryFilterHeight - size) / 2f;
+			_swatches = new RaritySwatch[order.Length + 1];
+			for (int i = 0; i < _swatches.Length; i++)
+			{
+				int bit = i;
+				bool other = i == order.Length;
+				int rare = other ? 0 : order[i];
+				var sw = new RaritySwatch(size)
+				{
+					Hint = LevyUtil.T("UI2.RarityHint", LevyUtil.T("UI2." + LevyConstants.UI.ArmoryRarityNameKey[i]).ToLowerInvariant()),
+					Glyph = other ? "+" : "",
+					ColorOf = other ? () => LevyConstants.UI.ArmoryRarityOtherColor : () => RarityColor(rare),
+					OnToggle = () => { _rarityMask ^= 1u << bit; FilterChanged(); },
+				};
+				sw.Left.Set(GridLeft + i * step, 0f); sw.Top.Set(swY, 0f);
+				_swatches[i] = sw;
+				_panel.Append(sw);
+			}
+			float x = GridLeft + _swatches.Length * step - LevyConstants.UI.RaritySwatchGap + LevyConstants.UI.ArmoryFilterGap;
+
+			_catBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, LevyConstants.UI.ArmoryCategoryButtonWidth, LevyConstants.UI.ArmoryFilterHeight, null, LevyUtil.T("UI2.ArmoryCategoryHint"));
+			_catBtn.OnClick = () => StepCategory(1);
+			_catBtn.OnAltClick = () => StepCategory(-1);
+			_catBtn.Left.Set(x, 0f); _catBtn.Top.Set(LevyConstants.UI.ArmoryFilterTop, 0f);
+			_panel.Append(_catBtn);
+			x += LevyConstants.UI.ArmoryCategoryButtonWidth + LevyConstants.UI.ArmoryFilterGap;
+
+			_clearBtn = new LevyButton(LevyUtil.T("UI2.ArmoryClear"), LevyConstants.UI.ButtonTextScale, LevyConstants.UI.ArmoryClearButtonWidth, LevyConstants.UI.ArmoryFilterHeight, ClearFilters, LevyUtil.T("UI2.ArmoryClearHint"));
+			_clearBtn.Left.Set(x, 0f); _clearBtn.Top.Set(LevyConstants.UI.ArmoryFilterTop, 0f);
+			_panel.Append(_clearBtn);
+			x += LevyConstants.UI.ArmoryClearButtonWidth + LevyConstants.UI.ArmoryFilterGap;
+
+			_count = new Label("", 0.75f);
+			_count.Left.Set(x, 0f); _count.Top.Set(LevyConstants.UI.ArmoryFilterTop + 5, 0f);
+			_panel.Append(_count);
+
+			_noMatch = new Label("", 0.85f);
+			_noMatch.Left.Set(GridLeft + 8, 0f); _noMatch.Top.Set(GridTop + 8, 0f);
+			_panel.Append(_noMatch);
+			RefreshFilterWidgets();
+		}
+
+		private void OnSearchChanged(string text)
+		{
+			_terms = string.IsNullOrWhiteSpace(text) ? Array.Empty<string>() : text.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			FilterChanged();
+		}
+
+		private void StepCategory(int dir)
+		{
+			_cat = (_cat + dir + CatCount) % CatCount;
+			FilterChanged();
+		}
+
+		/// <summary>Search and every filter off. The grid goes back to the full view on the next Update.</summary>
+		private void ClearFilters()
+		{
+			_rarityMask = 0; _cat = 0;
+			if (_search != null) _search.SetContents("", true);
+			FilterChanged();
+		}
+
+		/// <summary>Panel (re)opened: start from the full grid, with the search box idle and empty.</summary>
+		private void ResetFilters()
+		{
+			_rarityMask = 0; _cat = 0; _filterTick = 0;
+			if (_search != null)
+			{
+				if (_search.IsWritingText) _search.ToggleTakingText();
+				_search.SetContents("", true);
+			}
+			_terms = Array.Empty<string>();
+			_filterDirty = false;
+			RefreshFilterWidgets();
+			_count?.SetText(""); _noMatch?.SetText("");
+		}
+
+		private void FilterChanged()
+		{
+			_filterDirty = true;
+			RefreshFilterWidgets();
+		}
+
+		/// <summary>Swatch lit / dimmed state, the type button caption and the Clear button.</summary>
+		private void RefreshFilterWidgets()
+		{
+			if (_swatches == null) return;
+			for (int i = 0; i < _swatches.Length; i++)
+			{
+				bool on = (_rarityMask & (1u << i)) != 0;
+				_swatches[i].On = on;
+				_swatches[i].Dim = _rarityMask != 0 && !on;
+			}
+			_catBtn.Set(LevyUtil.T("UI2.ArmoryCategory", _cat == 0 ? LevyUtil.T("UI2.FilterAny") : LevyUtil.T(CatKeys[_cat - 1])), true);
+			_catBtn.Lit = _cat != 0;
+			_clearBtn.Enabled = Filtering;
+		}
+
+		/// <summary>Called every Update. A filter change re-collects at once and resets the scroll; while a filter is on it re-checks every few ticks so a taken, swapped or server-changed item drops out (or in).</summary>
+		private void UpdateFilterView()
+		{
+			if (_search != null && _search.IsWritingText && Main.mouseLeft && Main.mouseLeftRelease && !_searchBox.ContainsPoint(Main.MouseScreen))
+				_search.ToggleTakingText(); // a click anywhere else ends typing
+			if (Te == null || _grid == null) return;
+			if (_filterDirty) { _filterDirty = false; _filterTick = LevyConstants.UI.ArmoryFilterRefreshTicks; RefreshGrid(true); }
+			else if (Filtering && --_filterTick <= 0) { _filterTick = LevyConstants.UI.ArmoryFilterRefreshTicks; RefreshGrid(false); }
+		}
+
+		/// <summary>Re-collects the matching indices and rebuilds the grid only when they differ from what is shown.</summary>
+		private void RefreshGrid(bool resetScroll)
+		{
+			List<int> want = Filtering ? Collect() : null;
+			if (want == null) { _count.SetText(""); _noMatch.SetText(""); }
+			else
+			{
+				int stored = 0;
+				foreach (var it in Te.Storage) if (it != null && !it.IsAir) stored++;
+				_count.SetText(LevyUtil.T("UI2.ArmoryShown", want.Count, stored));
+				_noMatch.SetText(want.Count == 0 ? LevyUtil.T("UI2.ArmoryNoMatch") : "");
+			}
+			bool same = want == null ? _shown == null : _shown != null && want.SequenceEqual(_shown);
+			float pos = resetScroll ? 0f : _gridScroll.ViewPosition;
+			if (!same)
+			{
+				_shown = want;
+				BuildGrid();
+				_grid.Recalculate(); // refreshes the scrollbar's view size to the new row count; its position then clamps into range
+			}
+			_gridScroll.ViewPosition = pos;
+		}
+
+		/// <summary>Real Storage indices of every item that passes the search, the rarity toggles and the type filter, in storage order.</summary>
+		private List<int> Collect()
+		{
+			var list = new List<int>();
+			var arr = Te.Storage;
+			for (int i = 0; i < arr.Length; i++) if (Matches(arr[i])) list.Add(i);
+			return list;
+		}
+
+		private bool Matches(Item it)
+		{
+			if (it == null || it.IsAir || it.stack <= 0) return false;
+			if (_cat != 0 && CategoryCached(it) != _cat) return false;
+			if (_rarityMask != 0 && (_rarityMask & (1u << RarityBucket(it))) == 0) return false;
+			if (_terms.Length > 0)
+			{
+				string name = it.AffixName();
+				foreach (string t in _terms) if (name.IndexOf(t, StringComparison.OrdinalIgnoreCase) < 0) return false;
+			}
+			return true;
+		}
+
+		/// <summary>Swatch index of an item: its position in <see cref="LevyConstants.UI.ArmoryRarityOrder"/> (Master / Expert flags win over the number), or the last swatch for any other rarity.</summary>
+		private static int RarityBucket(Item it)
+		{
+			int rare = it.master ? ItemRarityID.Master : it.expert ? ItemRarityID.Expert : it.rare;
+			int i = Array.IndexOf(LevyConstants.UI.ArmoryRarityOrder, rare);
+			return i >= 0 ? i : LevyConstants.UI.ArmoryRarityOrder.Length;
+		}
+
+		/// <summary>The swatch colour for a rarity value: vanilla's rarity colour table (so modded rarities match too), white for 0, and the animated Expert (rainbow) and Master colours the table lacks.</summary>
+		private static Color RarityColor(int rare)
+		{
+			if (rare == ItemRarityID.Expert) return Main.DiscoColor;
+			if (rare == ItemRarityID.Master) return new Color(255, (int)(Main.masterColor * LevyConstants.UI.MasterRarityGreenScale), 0);
+			if (rare == ItemRarityID.White) return Color.White;
+			return ItemRarity.GetColor(rare);
+		}
+
+		private int CategoryCached(Item it)
+		{
+			int n = ItemLoader.ItemCount;
+			if (it.type <= 0 || it.type >= n) return CategoryOf(it);
+			if (_catCache == null || _catCache.Length < n) _catCache = new sbyte[n];
+			int c = _catCache[it.type];
+			if (c == 0) _catCache[it.type] = (sbyte)(c = CategoryOf(it));
+			return c;
+		}
+
+		/// <summary>Type bucket (CatMelee .. CatOther): armor, then accessory, ammo, a weapon by its damage class, a potion, anything else.</summary>
+		private static int CategoryOf(Item it)
+		{
+			if (IsArmor(it)) return CatArmor;
+			if (it.accessory) return CatAccessory;
+			if (it.ammo > 0 && !it.IsACoin) return CatAmmo;
+			if (it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin)
+			{
+				var dc = WeaponClassifier.ItemDamageClass(it);
+				if (dc == DamageClass.Melee) return CatMelee;
+				if (dc == DamageClass.Ranged) return CatRanged;
+				if (dc == DamageClass.Magic) return CatMagic;
+				if (dc == DamageClass.Summon) return CatSummon;
+				return CatOther;
+			}
+			if (it.consumable && (it.buffType > 0 || it.healLife > 0 || it.healMana > 0)) return CatPotion;
+			return CatOther;
 		}
 
 		// ------------------------------------------------------------------ classification
@@ -232,15 +501,18 @@ namespace Levy.Common.UI
 			if (any) SoundEngine.PlaySound(SoundID.Grab);
 		}
 
-		/// <summary>Takes everything in storage into the inventory (issue rows stay).</summary>
+		/// <summary>Takes everything in storage into the inventory (issue rows stay); with a search or filter on, only the shown items.</summary>
 		private void LootAll()
 		{
 			if (Te == null || !UIActions.IsLive(Te)) return;
 			var player = Main.LocalPlayer;
 			var before = Snapshot(Te.Storage);
 			bool any = false;
-			for (int i = 0; i < Te.Storage.Length; i++)
+			var visible = Filtering ? Collect() : null; // with a search / filter on, only what the grid shows
+			int count = visible?.Count ?? Te.Storage.Length;
+			for (int k = 0; k < count; k++)
 			{
+				int i = visible == null ? k : visible[k];
 				var it = Te.Storage[i];
 				if (it == null || it.IsAir) continue;
 				var rest = player.GetItem(Main.myPlayer, it, GetItemSettings.LootAllSettings);
@@ -297,6 +569,7 @@ namespace Levy.Common.UI
 			if (Te != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) { anyStorage = true; break; }
 			_lootAll.Enabled = anyStorage;
 			_sort.Enabled = anyStorage;
+			UpdateFilterView();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }
 			else if (Te == null) _payer = null;
 			RefreshReforgeBar();

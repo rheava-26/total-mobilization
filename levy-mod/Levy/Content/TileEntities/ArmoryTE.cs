@@ -431,13 +431,16 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>A strong issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
-		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls)
+		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls) => TakeBestWeaponOfClass(forSoldier, cls, null);
+
+		/// <summary><see cref="TakeBestWeaponOfClass(SoldierRecord, DamageClass)"/> that also satisfies <paramref name="extra"/> (null = no extra condition).</summary>
+		private Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls, Func<Item, bool> extra)
 		{
 			if (cls == null) return null;
 			var onHand = AmmoIdsOnHand();
 			// Summoners want the summon weapon itself as primary; their whip comes through the sidearm slot.
 			bool needSummon = cls == DamageClass.Summon;
-			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand)
+			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand) && (extra == null || extra(it))
 				&& (!needSummon || WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon);
 			return CapThrown(TakeVaried(forSoldier, Pred));
 		}
@@ -1163,6 +1166,9 @@ namespace Levy.Content.TileEntities
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotLegs) && IsAir(g.Legs)) { var a = TakeArmor(soldier, 2); if (a != null) { g.Legs = a; changed = true; } }
 
+			// The weapon and the armor come from separate pickers (network-wide availability vs local racks), so they can disagree: the armor now on him wins.
+			if (fluid && ReconcileWeaponToArmor(soldier)) changed = true;
+
 			if (!fluid) {
 				// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
 				if (RestockThrown(soldier)) changed = true;
@@ -1392,6 +1398,7 @@ namespace Levy.Content.TileEntities
 			bool changed = false;
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
+			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
 			if (changed) IssueGear(soldier);
@@ -1412,6 +1419,8 @@ namespace Levy.Content.TileEntities
 			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped, so the new weapon must fire it
 			bool sameClassOnly = Common.Config.LevyConfig.Get.ClassMatchIssue; // fixed-class companies keep their damage class; fluid soldiers cross over
 			var stockOk = new Dictionary<int, bool>();
+			// The worn armor defines a fluid soldier's class: with one, the weapon only upgrades within it (no cross-class chase for ReconcileWeaponToArmor to undo).
+			var armorCls = sameClassOnly ? null : ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			HashSet<DamageClass> armorable = null; // computed once, only when a candidate would otherwise qualify (it scans the armor shelves)
 			bool Pred(Item it)
 			{
@@ -1424,7 +1433,8 @@ namespace Levy.Content.TileEntities
 				// Coherent kit: a fluid soldier only crosses into a class he can also armor (worn, or a set on the shelves); nothing class-defining to match = any class.
 				if (!sameClassOnly) {
 					var ic = WeaponClassifier.ItemDamageClass(it);
-					if (ic != null) { armorable ??= ArmorableClasses(soldier, true); if (armorable.Count > 0 && !armorable.Contains(ic)) return false; }
+					if (armorCls != null) { if (ic != armorCls) return false; }
+					else if (ic != null) { armorable ??= ArmorableClasses(soldier, true); if (armorable.Count > 0 && !armorable.Contains(ic)) return false; }
 				}
 				// Moving onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
 				if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
@@ -1433,23 +1443,44 @@ namespace Levy.Content.TileEntities
 			}
 			var neu = TakeVaried(soldier, Pred);
 			if (neu == null || !SwapIn(g, SoldierGear.SlotWeapon, neu)) return false;
+			ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(neu) != cls);
+			return true;
+		}
+
+		/// <summary>After a primary swap: a melee-type primary of a new class carries no fallback blade, and a summon-staff primary keeps the only flock (a sentry sidearm stays). The sidearm goes back to the shelf; IssueGear then picks a fitting one.</summary>
+		private void ShelveSidearmForPrimary(SoldierGear g, Item neu, bool classChanged)
+		{
+			if (g.IsLocked(SoldierGear.SlotSidearm) || IsAir(g.Sidearm)) return;
+			var nf = WeaponClassifier.GetProfile(neu).Family;
+			var sf = WeaponClassifier.GetProfile(g.Sidearm).Family;
 			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
-			if (WeaponClassifier.ItemDamageClass(neu) != cls && IsMeleeTypeFamily(WeaponClassifier.GetProfile(neu).Family)
-				&& !g.IsLocked(SoldierGear.SlotSidearm) && !IsAir(g.Sidearm) && IsMeleeFamily(WeaponClassifier.GetProfile(g.Sidearm).Family))
-			{
-				var rem = Deposit(g.Sidearm);
-				if (!IsAir(rem)) Spill(rem, protect: true);
-				g.Sidearm = new Item();
-			}
 			// A new summon-staff primary keeps the only flock (a staff in the off hand is dead weight): the old sidearm staff goes back to the shelf and IssueGear picks a whip / blade sidearm.
-			// A sentry sidearm stays: a sentry rides on top of a flock.
-			if (WeaponClassifier.GetProfile(neu).Family == WeaponFamily.Summon && !g.IsLocked(SoldierGear.SlotSidearm) && !IsAir(g.Sidearm)
-				&& WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Summon)
-			{
-				var rem = Deposit(g.Sidearm);
-				if (!IsAir(rem)) Spill(rem, protect: true);
-				g.Sidearm = new Item();
-			}
+			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon))) return;
+			var rem = Deposit(g.Sidearm);
+			if (!IsAir(rem)) Spill(rem, protect: true);
+			g.Sidearm = new Item();
+		}
+
+		/// <summary>
+		/// Coherence post-condition, fluid mode only: when the armor he wears favours a damage class (<see cref="ArmorDoctrine.PreferredClass"/>) and his weapon is
+		/// another, the weapon is swapped (old one filed in storage, protected spill if full) for the best issuable weapon of the armor's class. No such weapon
+		/// in stock, no class on the armor, a locked or empty weapon slot, or fixed-class issue (which picks from the armor already) = untouched; never leaves the hand empty. True if swapped.
+		/// </summary>
+		private bool ReconcileWeaponToArmor(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null || Common.Config.LevyConfig.Get.ClassMatchIssue || g.IsLocked(SoldierGear.SlotWeapon) || !g.HasWeapon) return false;
+			var armorCls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (armorCls == null || WeaponClassifier.ItemDamageClass(g.Weapon) == armorCls) return false;
+			// Drawn while the old weapon is still in his hand, so the pick cannot be the one being returned; the swap files it afterwards.
+			// A hand-assigned pouch is never swapped, so the replacement must fire it (or use no ammo); same guard as UpgradePrimary.
+			var pouch = g.Ammo;
+			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch);
+			var neu = TakeBestWeaponOfClass(soldier, armorCls, pouchFixed ? (it => it.useAmmo <= 0 || pouch.ammo == it.useAmmo) : null);
+			if (neu == null) return false;
+			var old = g.Weapon;
+			SwapIn(g, SoldierGear.SlotWeapon, neu);
+			ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(old) != armorCls);
 			return true;
 		}
 

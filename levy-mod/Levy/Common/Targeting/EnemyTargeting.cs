@@ -122,6 +122,9 @@ namespace Levy.Common.Targeting
 		private static bool BossAllowlisted(NPC npc)
 		{
 			if (!BossAggroUnlocked(npc)) return false;
+			// Skeletron / Skeletron Prime must not be drawn onto the army once it is daytime: they enrage lethally at dawn and would
+			// endlessly massacre the deathless, respawning soldiers. At day they fight the commander as vanilla and despawn on vanilla's terms.
+			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
 			if (UsesNativeTargeting(npc)) return true;
 			int style = npc.aiStyle;
 			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
@@ -249,6 +252,12 @@ namespace Levy.Common.Targeting
 			}
 			data.SoldierTarget = best.NPC.whoAmI;
 			data.RetargetTimer = 0;
+			// This redirect may have happened inside the enemy's OWN AI call (e.g. a boss that re-runs TargetClosest every tick in its
+			// active state), not via PreAI — which is the only place that otherwise puts the dummy in slot 255. Without the dummy there,
+			// the rest of this AI call reads Main.player[255] as the inactive vanilla null player: a boss then sees "no valid target /
+			// target far away" and bolts into its flee/despawn state the instant it is redirected to a soldier. Swap the dummy in now so
+			// the live soldier is visible for the remainder of this AI call; PostAI / EnsureSlotRestored clears it as usual.
+			if (!UsesNativeTargeting(npc) && !_swapped) Swap(best);
 			return true;
 		}
 

@@ -48,6 +48,7 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
+		private static readonly HashSet<int> _eventTowers = new(LevyConstants.Targeting.EventTowerTypes);
 
 		// ---- the slot-255 swap ----
 		private static Player _backup;
@@ -84,6 +85,8 @@ namespace Levy.Common.Targeting
 			if (npc == null || !npc.active || !Enabled) return false;
 			if (npc.friendly || npc.townNPC || npc.ModNPC is SoldierNPC) return false;
 			int type = npc.type;
+			// Lunar Pillars: boss-class, but they only spawn event attacks (AI 94 reads Main.player[target] directly, swap-safe), so they take the swap without the boss unlock.
+			if (_eventTowers.Contains(type)) return true;
 			if (npc.boss) return BossAllowlisted(npc);
 			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
 			if (NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return BossAllowlisted(npc);
@@ -176,6 +179,7 @@ namespace Levy.Common.Targeting
 			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { data.SoldierTarget = -1; return false; }
 
 			float vanillaDist = float.PositiveInfinity;
+			bool vanillaIsPlayer = false;
 			if (npc.target >= 0 && npc.target < Main.maxPlayers)
 			{
 				Player p = Main.player[npc.target];
@@ -195,21 +199,30 @@ namespace Levy.Common.Targeting
 
 			// A sleeping mimic only reacts to something inside its wake radius, so soldiers compete for it only that close.
 			if (IsDisguisedMimic(npc)) maxSoldierDist = Math.Min(maxSoldierDist, LevyConstants.Targeting.MimicWakeSoldierRangePx);
+			// A pillar heals itself when its target is beyond 2000 px, so a soldier never takes it from a commander who is in range by pulling it past that.
+			if (_eventTowers.Contains(npc.type)) maxSoldierDist = Math.Min(maxSoldierDist, LevyConstants.Targeting.EventTowerSoldierRangePx);
 
-			// Same weighting vanilla applies to players (NPC.TryTrackingTarget / TargetClosestUpgraded: distance -= player.aggro): the soldier's aggro,
-			// read from its dummy's equip pass, shortens its effective distance. The range limit uses the real distance.
-			SoldierNPC best = null; float bestDist = float.PositiveInfinity;
+			// Same weighting vanilla applies to players (NPC.TryTrackingTarget / TargetClosestUpgraded: distance -= player.aggro), tilted toward the army so it soaks the
+			// aggro and the commander is the exception (see LevyConstants.Targeting):
+			//  * every soldier carries a flat SoldierBaseAggroPx discount, and its gear aggro (Flesh Knuckles) counts SoldierTauntMultiplier times;
+			//  * a fixed per-(enemy, soldier) jitter spreads enemies over the army rather than all onto the single nearest soldier;
+			//  * each soldier near the enemy (ArmyPullRadiusPx) adds ArmyPullPerSoldierPx to the commander's weighted distance, so a cluster outweighs one player.
+			// Soft weighting only: a soldier that is too far away still loses to a close commander, and with no soldier in reach the vanilla pick stands. The range limit uses the real distance.
+			SoldierNPC best = null; float bestDist = float.PositiveInfinity; int nearSoldiers = 0;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				SoldierNPC body = Bodies[i];
 				if (!body.IsAlive) continue;
 				float real = Metric(npc, center, body.NPC.Center, manhattan);
 				if (real > maxSoldierDist) continue;
-				float d = real - body.Aggro;
+				if (real <= LevyConstants.Targeting.ArmyPullRadiusPx) nearSoldiers++;
+				float d = real - SoldierPull(body.Aggro) + Spread(npc.whoAmI, body.NPC.whoAmI);
 				if (d >= bestDist) continue;
 				bestDist = d; best = body;
 			}
-			if (best == null || bestDist >= vanillaDist) { data.SoldierTarget = -1; return false; }
+			if (best == null) { data.SoldierTarget = -1; return false; }
+			if (vanillaIsPlayer) vanillaDist += Math.Min(nearSoldiers, LevyConstants.Targeting.ArmyPullMaxSoldiers) * LevyConstants.Targeting.ArmyPullPerSoldierPx;
+			if (bestDist >= vanillaDist) { data.SoldierTarget = -1; return false; }
 
 			npc.target = UsesNativeTargeting(npc) ? best.NPC.WhoAmIToTargettingIndex : SoldierNPC.DummySlot;
 			npc.targetRect = best.NPC.Hitbox;
@@ -223,6 +236,33 @@ namespace Levy.Common.Targeting
 			data.SoldierTarget = best.NPC.whoAmI;
 			data.RetargetTimer = 0;
 			return true;
+		}
+
+		/// <summary>A soldier's effective aggro in px: the flat standing advantage plus its gear aggro (positive aggro multiplied so taunt gear dominates, negative used as-is).</summary>
+		private static float SoldierPull(int gearAggro) =>
+			LevyConstants.Targeting.SoldierBaseAggroPx + (gearAggro > 0 ? gearAggro * LevyConstants.Targeting.SoldierTauntMultiplier : gearAggro);
+
+		/// <summary>Fixed pseudo-random offset in [-SpreadJitterPx, +SpreadJitterPx] for an (enemy, soldier) pair; stable, so retargets never flap.</summary>
+		private static float Spread(int npcWho, int bodyWho)
+		{
+			uint h = (uint)(npcWho * 73856093) ^ (uint)(bodyWho * 19349663);
+			h ^= h >> 13; h *= 0x5bd1e995u; h ^= h >> 15;
+			return ((h & 0xFFFF) / 65535f * 2f - 1f) * LevyConstants.Targeting.SpreadJitterPx;
+		}
+
+		/// <summary>Nearest live soldier body to a point within maxDist (real distance), or null. For event projectiles that choose a target themselves.</summary>
+		internal static SoldierNPC NearestBody(Vector2 from, float maxDist, out float dist)
+		{
+			SoldierNPC best = null; dist = float.PositiveInfinity;
+			for (int i = 0; i < Bodies.Count; i++)
+			{
+				SoldierNPC b = Bodies[i];
+				if (!b.IsAlive) continue;
+				float d = Vector2.Distance(from, b.NPC.Center);
+				if (d > maxDist || d >= dist) continue;
+				dist = d; best = b;
+			}
+			return best;
 		}
 
 		private static float Metric(NPC npc, Vector2 center, Vector2 point, bool manhattan)
@@ -321,6 +361,10 @@ namespace Levy.Common.Targeting
 		}
 
 		public override void PostUpdateNPCs() => EnemyTargeting.EnsureSlotRestored();
+
+		// Event projectiles (EventProjectileAim) swap a soldier's dummy in for one AI call too; nothing may survive past the projectile pass.
+		public override void PreUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
+		public override void PostUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
 	}
 
 	/// <summary>Puts the targeted soldier's dummy into Main.player[255] for exactly one AI call of the enemy that targets it.</summary>

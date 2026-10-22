@@ -528,10 +528,11 @@ namespace Levy.Common.Weapons
 			int naturalShots = Math.Max(1, (anim + (int)cadence - 1) / (int)cadence);
 			int shots = item.useLimitPerAnimation.HasValue && item.useLimitPerAnimation.Value > 0 ? Math.Min(item.useLimitPerAnimation.Value, naturalShots) : naturalShots;
 			if (shots < naturalShots || item.reuseDelay > 0) cadence = (anim + Math.Max(0, item.reuseDelay)) / (float)shots;
-			// A held weapon with a known real cadence (Vortex Beater) is ranked on it, undamped.
+			// A held weapon with a known real cadence (Vortex Beater, Solar Eruption, Phantasm, Last Prism) is ranked on it, undamped.
 			bool heldKnown = p.Family == WeaponFamily.HeldWeapon && LevyConstants.HeldRealCadence.TryGetValue(item.type, out int heldCadence) && heldCadence > 0;
 			if (heldKnown) cadence = LevyConstants.HeldRealCadence[item.type];
 			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
+			if (LevyConstants.ScoreShotDamageMult.TryGetValue(item.type, out float burstMult)) shotDamage *= burstMult; // a burst cast (Nebula Arcanum) does several times its listed damage
 			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor * SummonScoreMinions(item); // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing

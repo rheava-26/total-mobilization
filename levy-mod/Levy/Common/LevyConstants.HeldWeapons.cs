@@ -25,6 +25,19 @@ namespace Levy.Common
 		/// <summary>Held weapons' real cadence lives in the held AI, not useTime (Last Prism's useTime of 5 would inflate its DPS), so their rank is scaled down.</summary>
 		public const float HeldScoreFactor = 0.4f;
 		/// <summary>Held weapons whose real shot interval (ticks) is known from their held AI: ranking uses it instead of useTime and skips <see cref="HeldScoreFactor"/>, which only exists to damp unknown cadences. Vortex Beater: AI_075 fires a bullet every 5 ticks (useTime 20 would rate it at a quarter of its output).</summary>
-		public static readonly Dictionary<int, int> HeldRealCadence = new() { { ItemID.VortexBeater, 5 } };
+		/// <summary>
+		/// Pillar weapons added to it (the held AI is in Projectile.AI_075; the cadence below is ticks per full-damage hit on one target, after the soldier's own respawn gap):
+		///  * Solar Eruption (lash 611): lives 30 ticks, then dies; soldiers respawn it after <see cref="HeldRespawnMinTicks"/>/its death, so about one lash per 31 ticks. A lash hits a target every 6 ticks
+		///    (local immunity) and each hit spawns a 612 flare of equal damage; about 3 of those land per lash as it sweeps = one 105-damage hit per 10 ticks (useTime 20 would rate it at a third of that).
+		///  * Phantasm (630): a volley of 4 arrows every 24 ticks, 18 once spun up = one arrow per ~5.25 ticks; 6 allows for the spin-up.
+		///  * Last Prism (633): 6 beams that converge on a close target; counted as one beam hitting every 12 ticks (the focus ramp and the mana drain are not credited).
+		/// </summary>
+		public static readonly Dictionary<int, int> HeldRealCadence = new()
+		{
+			{ ItemID.VortexBeater, 5 },
+			{ ItemID.SolarEruption, 10 },
+			{ ItemID.Phantasm, 6 },
+			{ ItemID.LastPrism, 12 },
+		};
 	}
 }

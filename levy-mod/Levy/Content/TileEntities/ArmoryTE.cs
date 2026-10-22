@@ -464,15 +464,40 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// Extra conditions every PRIMARY weapon pick shares (null = none): (1) no whip while a summon staff is available (the flock is the weapon, the whip tags for it from the
-		/// sidearm slot; a summoner with only whips in stock still gets one); (2) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
+		/// True when the soldier is (or will be armed as) a summoner, so the summon-weapon reservation lets him draw whips, minion staves and sentries: he already
+		/// carries a summon-class weapon, he wears summon armor, or — before any armor is issued — the only armor the armory can field him is a summon set. A soldier
+		/// who already wears another class's armor is never a summoner, so a melee / ranged / magic trooper is locked out of every summon weapon.
+		/// </summary>
+		private bool IsSummonerSoldier(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null) return false;
+			if (g.HasWeapon && WeaponClassifier.ItemDamageClass(g.Weapon) == DamageClass.Summon) return true; // a summon weapon in hand makes him one, whatever his armor
+			var worn = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (worn != null) return worn == DamageClass.Summon; // armor on his back decides; another class is never a summoner
+			if (Common.Config.LevyConfig.Get.ClassMatchIssue) return false; // fixed-class and no summon armor worn: not a summoner
+			return ArmorableClasses(soldier, false).Contains(DamageClass.Summon); // fluid, no armor yet: a summon set he could field makes him one
+		}
+
+		/// <summary>
+		/// Extra conditions every PRIMARY weapon pick shares (null = none): (1) summon-class weapons (whips, minion staves, sentries) are reserved for summoners, so a
+		/// non-summoner is never handed one; (2) a summoner leads with his hard summon — while a minion staff is available his primary is a staff, never a whip or a
+		/// sentry (both move to the off-hand / fallback), and with no staff he may lead with any summon weapon; (3) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
 		/// </summary>
 		private Func<Item, bool> PrimaryRule(SoldierRecord who)
 		{
-			bool noWhip = StaffAvailableFor(who);
+			bool summoner = IsSummonerSoldier(who);
+			bool staffFirst = summoner && StaffAvailableFor(who); // a summoner with a minion staff in reach takes the staff, not a whip or a sentry
 			var steer = RangedSteer(who);
-			if (!noWhip && steer == null) return null;
-			return it => (!noWhip || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Whip) && (steer == null || steer(it));
+			if (summoner && !staffFirst && steer == null) return null; // a summoner with no staff may lead with any weapon; nothing else to restrict
+			return it =>
+			{
+				var fam = WeaponClassifier.GetProfile(it).Family;
+				bool summonWeapon = fam == WeaponFamily.Whip || fam == WeaponFamily.Summon || fam == WeaponFamily.Sentry;
+				if (summonWeapon && !summoner) return false; // reservation: summon weapons for summoners only
+				if (staffFirst && (fam == WeaponFamily.Whip || fam == WeaponFamily.Sentry)) return false; // hard summon first
+				return steer == null || steer(it);
+			};
 		}
 
 		/// <summary>
@@ -646,24 +671,39 @@ namespace Levy.Content.TileEntities
 
 		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
 
-		/// <summary>A summoner's sidearm: a whip (the sidearm slot first, then the best in the armory), else the usual melee sidearm. Removes it. Null if none.</summary>
-		public virtual Item TakeSummonerSidearm(SoldierRecord forSoldier)
-		{
-			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score) ?? TakeSidearm(forSoldier);
-		}
-
 		private static bool IsIssuableSummonStaff(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon;
 
 		private static bool IsIssuableSentry(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Sentry;
-		/// <summary>A deploy-and-forget utility weapon: a minion-summoning staff or a sentry.</summary>
-		private static bool IsIssuableDeployer(Item it) => IsIssuableSummonStaff(it) || IsIssuableSentry(it);
 
-		/// <summary>A melee-type soldier's sidearm: a minion-summoning staff or a sentry (the sidearm slot first, then the best in the armory). Never a blade. Removes it. Null if none.</summary>
-		public virtual Item TakeSummonSidearm(SoldierRecord forSoldier)
+		/// <summary>A whip in hand: the dedicated sidearm slot first, then the best whip in the racks. Removes it. Null if none in stock.</summary>
+		private Item TakeWhipSidearm()
 		{
-			if (IsIssuableDeployer(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableDeployer, WeaponClassifier.Score);
+			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score);
+		}
+
+		/// <summary>A minion-summoning staff in hand: the dedicated sidearm slot first, then the best in the racks. Removes it. Null if none in stock.</summary>
+		private Item TakeSummonStaffSidearm()
+		{
+			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponClassifier.Score);
+		}
+
+		/// <summary>
+		/// A summoner's second weapon, given the family of his primary. A whip (his attack tool) is the ideal off-hand whenever he is not already swinging one, and a
+		/// sentry-leaning kit puts the tower in hand first. Otherwise he fills a summon role he does not already field — never two weapons of the same role, never a
+		/// second sentry while a staff is available — and a lesser blade is the last resort so he is never left one-handed. Removes it. Null if the armory has nothing.
+		/// </summary>
+		public virtual Item TakeSummonerComplement(SoldierRecord forSoldier, WeaponFamily primaryFam)
+		{
+			bool haveStaff = primaryFam == WeaponFamily.Summon, haveSentry = primaryFam == WeaponFamily.Sentry, haveWhip = primaryFam == WeaponFamily.Whip;
+			if (ArmorDoctrine.HasSentryLean(forSoldier?.Gear?.Accessories) && !haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
+			if (!haveWhip) { var w = TakeWhipSidearm(); if (w != null) return w; } // the whip is the summoner's attack tool
+			if (!haveStaff) { var st = TakeSummonStaffSidearm(); if (st != null) return st; } // then a summon role he does not cover yet
+			if (!haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
+			var blade = TakeSidearm(forSoldier); // no summon weapon to spare: a lesser blade keeps an attack tool in hand
+			if (blade != null) return blade;
+			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
 
 		/// <summary>A sentry-kitted soldier's sidearm: a sentry (the sidearm slot first, then the best in the armory). Removes it. Null if the armory has none.</summary>
@@ -1297,10 +1337,11 @@ namespace Levy.Content.TileEntities
 				if (IssuePrimary(soldier, g)) changed = true;
 			}
 
-			// A melee-type primary (blade, spear, boomerang, whip) never takes a fallback blade: it takes a summon staff for a support minion, or nothing.
+			// A melee-type primary (blade, spear, boomerang) takes no fallback blade. A summoner seeks a whip + a staff — summon weapons are reserved for him; every
+			// other class may carry a lesser blade. The sidearm is chosen after the accessories so the kit can steer it (accessory choice never reads the sidearm).
 			var primaryFam = g.HasWeapon ? WeaponClassifier.Classify(g.Weapon) : WeaponFamily.None;
 			bool primaryMelee = IsMeleeTypeFamily(primaryFam);
-			bool primarySummon = primaryFam == WeaponFamily.Summon; // the flock fights; the hand carries a whip
+			bool summoner = IsSummonerSoldier(soldier);
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i) || !IsAir(g.Accessories[i])) continue;
@@ -1309,16 +1350,20 @@ namespace Levy.Content.TileEntities
 				g.Accessories[i] = a; changed = true;
 			}
 
-			// The sidearm is chosen after the accessories so the kit can steer it (accessory choice never reads the sidearm). Sentry-capacity / summoner
-			// accessories put a sentry in the hand whatever the primary is; then the usual pick for the primary's type.
+			// Reservation: a non-summoner never keeps a summon-class off-hand (a leftover from an old save or a role change goes back to the racks).
+			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.ItemDamageClass(g.Sidearm) == DamageClass.Summon)
+			{
+				var rem = Deposit(g.Sidearm);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+				g.Sidearm = new Item();
+				changed = true;
+			}
+
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm)
 			{
-				bool sentryKit = ArmorDoctrine.HasSentryLean(g.Accessories);
-				var s = sentryKit ? TakeSentrySidearm(soldier) : null;
-				s ??= primaryMelee ? TakeSummonSidearm(soldier)
-					: primarySummon ? TakeSummonerSidearm(soldier)
-					: sentryKit ? (TakeSummonSidearm(soldier) ?? TakeSidearm(soldier)) // no sentry on hand: a summon staff before a blade
-					: TakeSidearm(soldier);
+				Item s = summoner ? TakeSummonerComplement(soldier, primaryFam)
+					: primaryMelee ? null // a melee-type primary carries no fallback blade
+					: TakeSidearm(soldier); // ranged / magic: a lesser blade
 				if (s != null) { g.Sidearm = s; changed = true; }
 			}
 
@@ -1577,10 +1622,9 @@ namespace Levy.Content.TileEntities
 			if (g.IsLocked(SoldierGear.SlotSidearm) || IsAir(g.Sidearm)) return;
 			var nf = WeaponClassifier.GetProfile(neu).Family;
 			var sf = WeaponClassifier.GetProfile(g.Sidearm).Family;
-			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
-			// A whip is never carried twice (the second goes back to the shelf).
-			// A new summon-staff primary keeps the only flock (a staff in the off hand is dead weight): the old sidearm staff goes back to the shelf and IssueGear picks a whip / blade sidearm.
-			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip))) return;
+			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf.
+			// A summon weapon is never carried twice in the same role: a second whip, a second staff or a second sentry goes back to the shelf, and IssueGear re-picks the complementary one.
+			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip) || (nf == WeaponFamily.Sentry && sf == WeaponFamily.Sentry))) return;
 			var rem = Deposit(g.Sidearm);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			g.Sidearm = new Item();
@@ -1611,7 +1655,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip yields to a summon staff (the whip becomes the sidearm), and a Shroomite
+		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip or sentry yields to a minion staff (it becomes the sidearm), and a Shroomite
 		/// helmet's ranged subtype (<see cref="RangedSteer"/>) swaps an off-subtype gun / bow / launcher for the best of the favoured one. Nothing in stock = untouched. True if swapped.
 		/// </summary>
 		private bool ReconcileWithinClass(SoldierRecord soldier, DamageClass armorCls)
@@ -1622,8 +1666,9 @@ namespace Levy.Content.TileEntities
 			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // same guard as ReconcileWeaponToArmor
 			Func<Item, bool> pouchOk = pouchFixed ? (it => it.useAmmo <= 0 || pouch.ammo == it.useAmmo) : null;
 			Item neu = null;
-			if (armorCls == DamageClass.Summon && WeaponClassifier.GetProfile(old).Family == WeaponFamily.Whip)
-				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // staves only; the whip is filed and comes back as the sidearm
+			var oldFam = WeaponClassifier.GetProfile(old).Family;
+			if (armorCls == DamageClass.Summon && (oldFam == WeaponFamily.Whip || oldFam == WeaponFamily.Sentry))
+				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // a minion staff supersedes a whip or a sentry in the primary slot; the old one is filed and re-picked as the off-hand
 			else if (armorCls == DamageClass.Ranged)
 			{
 				var steer = RangedSteer(soldier);
@@ -1653,12 +1698,14 @@ namespace Levy.Content.TileEntities
 			var cur = g.Sidearm;
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
+			bool summoner = IsSummonerSoldier(soldier);
 			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
 			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it
-			if (ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; } // a sentry kit wants a sentry in hand, whatever the fallback was
-			else if (fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
-			else if (fam == WeaponFamily.Whip) pool = IsIssuableWhip;
-			else if (fam == WeaponFamily.Summon) pool = IsIssuableDeployer;
+			// Summon-class off-hands are a summoner's only (the reservation): a sentry kit wants a sentry in hand, else each summon role upgrades within itself.
+			if (summoner && ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; }
+			else if (summoner && fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
+			else if (summoner && fam == WeaponFamily.Whip) pool = IsIssuableWhip;
+			else if (summoner && fam == WeaponFamily.Summon) pool = IsIssuableSummonStaff;
 			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
 			shelf ??= pool;

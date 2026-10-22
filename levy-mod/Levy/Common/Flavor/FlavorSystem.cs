@@ -129,7 +129,7 @@ namespace Levy.Common.Flavor
 				case "Plunder": return LevyUtil.T("Flavor.Effect.Plunder", (int)Math.Round((LevyConstants.PlunderCoinMult - 1f) * 100f));
 				case "Fortification": return LevyUtil.T("Flavor.Effect.Fortification", LevyConstants.FortificationRadius, LevyConstants.FortificationDefense);
 				case "Discipline": return LevyUtil.T("Flavor.Effect.Discipline", (int)Math.Round((1f - LevyConstants.DisciplineAimErrorMult) * 100f));
-				case "Firepower": return LevyUtil.T("Flavor.Effect.Firepower", LevyConstants.FirepowerBaseHp, LevyConstants.FirepowerBaseMana, LevyConstants.FirepowerBuffShareSlots);
+				case "Firepower": return LevyUtil.T("Flavor.Effect.Firepower", LevyConstants.FirepowerBaseHp, LevyConstants.FirepowerBaseMana, LevyConstants.FirepowerBuffSlots);
 				case "Healthcare": return LevyUtil.T("Flavor.Effect.Healthcare", LevyConstants.HealthcareHpCap);
 				case "TheArcaneArts": return LevyUtil.T("Flavor.Effect.TheArcaneArts", LevyConstants.ArcaneManaCap);
 				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", LevyConstants.ExpertiseAccessorySlots);

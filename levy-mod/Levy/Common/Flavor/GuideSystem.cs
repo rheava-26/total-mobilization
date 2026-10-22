@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -17,7 +18,7 @@ namespace Levy.Common.Flavor
 	/// The four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise): army-wide, once per world, studied like the event books
 	/// (<see cref="FlavorSystem.Study"/> routes a guide key here). This system owns the four world flags (saved with the world, synced to every
 	/// client in the world-data message, only ever turning on) and every number they change: the base and cap of a soldier's HP and mana, the
-	/// accessory slots, and how many of the commander's buffs a soldier inherits. <see cref="SoldierRecord"/> and the crystal feed read these;
+	/// accessory slots, and the buff slots an Armory's potion row gains. <see cref="SoldierRecord"/> and the crystal feed read these;
 	/// guides move the base and the cap and never touch how crystals add up beneath the cap.
 	/// </summary>
 	public class GuideSystem : ModSystem
@@ -42,8 +43,8 @@ namespace Levy.Common.Flavor
 		public static int ManaCap => Instance != null && Instance.ArcaneArts ? LevyConstants.ArcaneManaCap : LevyConstants.DefaultManaCap;
 		/// <summary>Accessory slots every soldier gains on top of his grade.</summary>
 		public static int ExtraAccessorySlots => Instance != null && Instance.Expertise ? LevyConstants.ExpertiseAccessorySlots : 0;
-		/// <summary>How many of the commander's active buffs a soldier inherits.</summary>
-		public static int BuffShareSlots => LevyConstants.BuffShareSlotsBase + (Instance != null && Instance.Firepower ? LevyConstants.FirepowerBuffShareSlots : 0);
+		/// <summary>Buff slots added to every Armory's potion row (see <see cref="ArmoryTE.TargetPotionSlots"/>).</summary>
+		public static int ArmoryBuffSlots => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBuffSlots : 0;
 
 		// ---------------------------------------------------------------- keys and flags
 
@@ -122,6 +123,11 @@ namespace Levy.Common.Flavor
 					if (armory != null && armory.IssueGear(r) && r.HasBody && Main.npc[r.BodyIndex].ModNPC is SoldierNPC issued) issued.NotifyGearChanged();
 				}
 			}
+
+			// Firepower adds buff slots: every Armory grows its potion row now (clients get the new length through the tile-entity sync).
+			if (key == "Firepower")
+				foreach (TileEntity te in TileEntity.ByID.Values)
+					if (te is ArmoryTE armory && armory.FitPotions()) armory.Sync();
 
 			// WorldData carries NetSend, so one resend pushes the new flag to every client; the snapshot refreshes their HP bars.
 			if (LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);

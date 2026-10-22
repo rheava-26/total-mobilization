@@ -35,7 +35,10 @@ namespace Levy.Common.UI
 		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge, _catBtn, _clearBtn;
 		private Label _title, _treasury, _count, _noMatch, _capacity;
 		/// <summary>The storage array the grid cells are bound to. The array is replaced when Logistical Centers change its size (or a client receives a new length), and the cells must follow.</summary>
-		private Item[] _builtStorage;
+		private Item[] _builtStorage, _builtPotions;
+		/// <summary>The potion row's elements and top (issue-area coordinates), so the row can be rebuilt alone when its array is replaced.</summary>
+		private readonly List<UIElement> _potionEls = new();
+		private float _potionTop;
 		private int _shownCapacity = -1, _shownCenters = -1;
 		private UIPanel _searchBox;
 		private UISearchBar _search;
@@ -139,6 +142,7 @@ namespace Levy.Common.UI
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
 			_grid.Clear();
 			_issue.RemoveAllChildren();
+			_potionEls.Clear();
 			_shown = null;
 			ResetFilters();
 			_shownCapacity = _shownCenters = -1;
@@ -193,18 +197,33 @@ namespace Levy.Common.UI
 			y += ammoRows * Pitch + 6f;
 
 			AddLabel(LevyUtil.T("UI.IssuePotions"), y); y += 18f;
-			for (int i = 0; i < te.IssuePotions.Length; i++)
-			{
-				bool healing = i == 0;
-				var slot = MakeSlot(te.IssuePotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
-				slot.Left.Set(i * Pitch, 0f); slot.Top.Set(y, 0f);
-				_issue.Append(slot);
-				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);
-				tag.Left.Set(i * Pitch, 0f); tag.Top.Set(y + Pitch - 2f, 0f);
-				_issue.Append(tag);
-			}
+			_potionTop = y;
+			BuildPotionRow();
 			Recalculate();
 			_gridScroll.ViewPosition = 0f;
+		}
+
+		/// <summary>
+		/// (Re)builds the potion row: slot 0 healing / mana, every later slot a buff slot. The Guide to Firepower adds buff slots, which replaces the array, so this runs again then.
+		/// The row wraps after IssueColumns slots (it is never longer than that today).
+		/// </summary>
+		private void BuildPotionRow()
+		{
+			foreach (var el in _potionEls) el.Remove();
+			_potionEls.Clear();
+			_builtPotions = Te.IssuePotions;
+			for (int i = 0; i < _builtPotions.Length; i++)
+			{
+				bool healing = i == 0;
+				float x = (i % IssueColumns) * Pitch, y = _potionTop + (i / IssueColumns) * (Pitch + 12f);
+				var slot = MakeSlot(_builtPotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
+				slot.Left.Set(x, 0f); slot.Top.Set(y, 0f);
+				_issue.Append(slot); _potionEls.Add(slot);
+				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);
+				tag.Left.Set(x, 0f); tag.Top.Set(y + Pitch - 2f, 0f);
+				_issue.Append(tag); _potionEls.Add(tag);
+			}
+			_issue.Recalculate();
 		}
 
 		/// <summary>
@@ -412,11 +431,13 @@ namespace Levy.Common.UI
 
 		/// <summary>
 		/// Called by the UI system just BEFORE this panel's input is processed each frame. Logistical Centers replace the storage array when they change its size (and a client replaces it when the server
-		/// sends a new length); a cell still bound to the old array would show stale items and swallow whatever the player dropped on it, so the grid is rebuilt against the new one first.
+		/// sends a new length); a cell still bound to the old array would show stale items and swallow whatever the player dropped on it, so the grid is rebuilt against the new one first. The potion row is replaced the same way when Firepower adds buff slots.
 		/// </summary>
 		public void RefreshIfStorageReplaced()
 		{
-			if (Te == null || _grid == null || ReferenceEquals(_builtStorage, Te.Storage)) return;
+			if (Te == null || _grid == null) return;
+			if (!ReferenceEquals(_builtPotions, Te.IssuePotions)) BuildPotionRow(); // Firepower grew the buff slots
+			if (ReferenceEquals(_builtStorage, Te.Storage)) return;
 			_shown = Filtering ? Collect() : null;
 			float pos = _gridScroll.ViewPosition;
 			BuildGrid();

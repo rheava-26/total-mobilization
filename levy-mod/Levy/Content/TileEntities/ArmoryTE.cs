@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common;
+using Levy.Common.Flavor;
 using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -22,7 +23,9 @@ namespace Levy.Content.TileEntities
 	public class ArmoryTE : ModTileEntity
 	{
 		/// <summary>Base bulk storage slots (the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows. Each linked Logistical Center adds <see cref="LevyConstants.LogisticsSlotsPerCenter"/> more (see <see cref="FitStorage"/>).</summary>
-		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
+		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6;
+		/// <summary>Base potion row length: slot 0 healing / mana, slot 1 the army's one buff. The Guide to Firepower adds <see cref="LevyConstants.FirepowerBuffSlots"/> more buff slots (see <see cref="FitPotions"/>).</summary>
+		public const int PotionSlots = 2;
 		/// <summary>Armor pieces per set: head, body, legs.</summary>
 		public const int ArmorParts = 3;
 		public const int ArmorSlots = ArmorSets * ArmorParts;
@@ -40,7 +43,7 @@ namespace Levy.Content.TileEntities
 		/// <summary>ArmorSets x (head, body, legs): index = set*ArmorParts + part.</summary>
 		public Item[] IssueArmor = NewItems(ArmorSlots);
 		public Item[] IssueAmmo = NewItems(AmmoSlots);
-		/// <summary>0 = healing, 1 = buff.</summary>
+		/// <summary>Slot 0 = healing / mana, every later slot = a buff slot. Length is <see cref="TargetPotionSlots"/>; it only ever GROWS (Firepower never turns off), by replacing the array, so never cache it across a tick.</summary>
 		public Item[] IssuePotions = NewItems(PotionSlots);
 
 		private bool _dirty;
@@ -48,6 +51,26 @@ namespace Levy.Content.TileEntities
 		public static Item[] NewItems(int n) { var a = new Item[n]; for (int i = 0; i < n; i++) a[i] = new Item(); return a; }
 
 		// ------------------------------------------------------------------ expandable storage (Logistical Centers)
+
+		/// <summary>Length the potion row should have in this world: the base plus Firepower's buff slots.</summary>
+		public static int TargetPotionSlots => PotionSlots + GuideSystem.ArmoryBuffSlots;
+
+		/// <summary>
+		/// Server / single player: grows <see cref="IssuePotions"/> to <see cref="TargetPotionSlots"/>, moving the items by reference (a save written with two slots grows the same way). Never shrinks.
+		/// Returns true (and queues a sync) when the length changed.
+		/// </summary>
+		public bool FitPotions()
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			int want = TargetPotionSlots;
+			if (IssuePotions.Length >= want) return false;
+			var next = new Item[want];
+			Array.Copy(IssuePotions, next, IssuePotions.Length);
+			for (int i = IssuePotions.Length; i < want; i++) next[i] = new Item();
+			IssuePotions = next;
+			MarkDirty();
+			return true;
+		}
 
 		/// <summary>Storage slots with <paramref name="centers"/> Logistical Centers linked.</summary>
 		public static int CapacityFor(int centers) => StorageSize + Math.Max(0, centers) * LevyConstants.LogisticsSlotsPerCenter;
@@ -915,10 +938,10 @@ namespace Levy.Content.TileEntities
 			return moved;
 		}
 
-		/// <summary>Takes one potion of the given issue kind (0 healing, 1 buff). Null if none.</summary>
+		/// <summary>Takes one potion of the given issue kind (0 healing, 1.. a buff slot). Null if none.</summary>
 		public virtual Item TakePotion(int kind)
 		{
-			if (kind < 0 || kind >= PotionSlots) return null;
+			if (kind < 0 || kind >= IssuePotions.Length) return null;
 			var it = IssuePotions[kind];
 			if (IsAir(it)) return null;
 			if (kind == 0 && it.healLife <= 0 && it.healMana <= 0) return null; // slot 0 dispenses both health and mana restoratives
@@ -934,7 +957,7 @@ namespace Levy.Content.TileEntities
 		public virtual Item TakeServingPotion(int preferSlot, Func<Item, bool> serves, bool allowStorage = true)
 		{
 			if (serves == null) return null;
-			if (preferSlot >= 0 && preferSlot < PotionSlots && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
+			if (preferSlot >= 0 && preferSlot < IssuePotions.Length && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
 				return SplitOne(IssuePotions, preferSlot);
 			if (!allowStorage) return null;
 			for (int i = 0; i < Storage.Length; i++) {
@@ -1749,7 +1772,9 @@ namespace Levy.Content.TileEntities
 			// Storage is saved at its full (possibly enlarged) length; a save from before centers existed holds exactly StorageSize. The array is sized to what was saved so nothing is lost
 			// before the Logistical Centers have loaded; the first reconcile after load trims any empty tail that no center backs any more.
 			Storage = new Item[Math.Max(StorageSize, tag.GetList<TagCompound>("storage").Count)];
+			IssuePotions = new Item[Math.Max(PotionSlots, tag.GetList<TagCompound>("potions").Count)]; // old saves hold exactly PotionSlots; FitPotions grows it if Firepower is on
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
+			FitPotions(); // the world's guide flag may already be loaded; if not, the periodic reconcile in LogisticsSystem catches it
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
 				IssueWeapons[SidearmSlot] = IssueWeapons[LegacyWeaponSlots - 1];
@@ -1761,7 +1786,8 @@ namespace Levy.Content.TileEntities
 
 		public override void NetSend(BinaryWriter writer)
 		{
-			writer.Write(Storage.Length); // storage grows with Logistical Centers, so its length leads
+			writer.Write(Storage.Length); // storage grows with Logistical Centers and the potion row with Firepower, so their lengths lead
+			writer.Write(IssuePotions.Length);
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) foreach (var it in arr) ItemIO.Send(it, writer, true);
 		}
 		public override void NetReceive(BinaryReader reader)
@@ -1769,6 +1795,9 @@ namespace Levy.Content.TileEntities
 			int storageLength = reader.ReadInt32();
 			if (storageLength < StorageSize || storageLength > LevyConstants.LogisticsMaxStorageSlots) storageLength = StorageSize; // a corrupt length must not allocate gigabytes
 			if (Storage.Length != storageLength) Storage = new Item[storageLength]; // replaced, not resized: the panel rebuilds its cells against the new reference
+			int potionLength = reader.ReadInt32();
+			if (potionLength < PotionSlots || potionLength > LevyConstants.MaxPotionSlotsOnWire) potionLength = PotionSlots;
+			if (IssuePotions.Length != potionLength) IssuePotions = new Item[potionLength]; // replaced, not resized: the panel rebuilds its potion row against the new reference
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) for (int i = 0; i < arr.Length; i++) arr[i] = ItemIO.Receive(reader, true);
 		}
 	}

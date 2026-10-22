@@ -71,7 +71,9 @@ namespace Levy.Common.Systems
 			foreach (var te in TileEntity.ByID.Values)
 			{
 				if (te is not ArmoryTE a) continue;
-				if (a.FitStorage(_centers.TryGetValue(a.ID, out int n) ? n : 0)) a.Sync();
+				bool grew = a.FitStorage(_centers.TryGetValue(a.ID, out int n) ? n : 0);
+				grew |= a.FitPotions(); // Firepower's extra buff slots, for a world whose flag loaded after the armory
+				if (grew) a.Sync();
 			}
 		}
 	}

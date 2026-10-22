@@ -194,18 +194,11 @@ namespace Levy.Content.NPCs
 				if (NPC.buffType[i] <= 0 || NPC.buffTime[i] <= 0) continue;
 				regen += ApplyBuffEffect(d, NPC.buffType[i]);
 			}
-			// Buffs inherited from the commander (Guide to Firepower), skipping any the soldier already runs from his own potion so nothing stacks twice.
-			int[] shared = BuffShare.For(this);
-			for (int k = 0; k < shared.Length; k++)
-			{
-				if (NPC.HasBuff(shared[k])) continue;
-				regen += ApplyBuffEffect(d, shared[k]);
-			}
 			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
 			return regen;
 		}
 
-		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds. The cases here are exactly <see cref="BuffShare.Shareable"/>.</summary>
+		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds..</summary>
 		private static int ApplyBuffEffect(Player d, int buffType)
 		{
 			switch (buffType)
@@ -271,6 +264,9 @@ namespace Levy.Content.NPCs
 		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: issue slot 1 ONLY
 		// (intentionally never bulk storage - the buff slot is the limited buff economy, so choosing the army's buffs stays a real decision).
 		// ------------------------------------------------------------------------------------------------------
+		/// <summary>Buff types drunk so far in the current Potions pass (empty between passes).</summary>
+		private int[] _drunkBuffs = Array.Empty<int>();
+
 		private void Potions()
 		{
 			if (Record == null || _armoryRetry > 0) return;
@@ -300,10 +296,20 @@ namespace Levy.Content.NPCs
 			}
 			if (wantBuff)
 			{
-				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0, allowStorage: false); // a pure buff potion, not a restorative; issue-slot-only
-				if (potion != null && !potion.IsAir)
+				// Every buff slot (1..n; slot 0 is the restorative) gives one pure buff potion, issue-slot-only. A type already drunk this pass is skipped so two slots stocked alike do not double up.
+				bool drankBuff = false;
+				for (int slot = 1; slot < armory.IssuePotions.Length; slot++)
 				{
+					var potion = armory.TakeServingPotion(slot, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0 && Array.IndexOf(_drunkBuffs, it.buffType) < 0, allowStorage: false);
+					if (potion == null || potion.IsAir) continue;
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
+					if (drankBuff) Array.Resize(ref _drunkBuffs, _drunkBuffs.Length + 1); else _drunkBuffs = new int[1];
+					_drunkBuffs[_drunkBuffs.Length - 1] = potion.buffType;
+					drankBuff = true;
+				}
+				_drunkBuffs = Array.Empty<int>();
+				if (drankBuff)
+				{
 					StatsDirty = true;
 					_buffPotionCooldown = LevyConstants.BuffPotionIntervalTicks;
 					drank = true;

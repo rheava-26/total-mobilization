@@ -47,7 +47,7 @@ namespace Levy.Common
 		public const int HpPerLifeCrystal = 20;
 		public const int HpPerLifeFruit = 5;
 		/// <summary>Growth items a soldier can absorb (15 Life Crystals, 20 Life Fruit) and the absolute HP ceiling. What a world actually allows is the guide-set base and cap in GuideSystem (see LevyConstants.Guides.cs).</summary>
-		public const int MaxLifeCrystals = 15, MaxLifeFruit = 20, MaxSoldierHp = 500;
+		public const int MaxLifeCrystals = 15, MaxLifeFruit = 20, MaxSoldierHp = 600;
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool

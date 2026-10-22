@@ -1,7 +1,7 @@
 namespace Levy.Common
 {
 	/// <summary>
-	/// Numbers for the four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise), the buff sharing Firepower grants,
+	/// Numbers for the four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise), the armory buff slots Firepower adds,
 	/// and the Logistical Center that grows an Armory's storage. The HP / mana ladder lives here: guides move the BASE a soldier starts
 	/// from and the CAP growth crystals stack up to; crystals and fruit still add on top of the base underneath the cap.
 	/// </summary>
@@ -10,22 +10,20 @@ namespace Levy.Common
 		// ---------- HP / mana ladder ----------
 		/// <summary>Base HP: <see cref="BaseHp"/> normally, this once Firepower is studied (twice as much).</summary>
 		public const int FirepowerBaseHp = 200;
-		/// <summary>Max HP a soldier can reach with crystals / fruit: the default, and once Healthcare is studied.</summary>
-		public const int DefaultHpCap = 300, HealthcareHpCap = 400;
+		/// <summary>Max HP a soldier can reach with crystals / fruit. Default = the old ceiling (nothing regresses, tenet #1); Healthcare unlocks the true full-feed max (Firepower base 200 + 15 crystals + 20 fruit).</summary>
+		public const int DefaultHpCap = 500, HealthcareHpCap = 600;
 		/// <summary>Base mana: <see cref="BaseMana"/> normally, this once Firepower is studied (half the full pool).</summary>
 		public const int FirepowerBaseMana = 100;
-		/// <summary>Max mana a soldier can reach with mana crystals: the default, and once the Arcane Arts are studied (<see cref="MaxMana"/>).</summary>
-		public const int DefaultManaCap = 100, ArcaneManaCap = MaxMana;
+		/// <summary>Max mana a soldier can reach with mana crystals. Default = the old ceiling; the Arcane Arts push it above vanilla.</summary>
+		public const int DefaultManaCap = 200, ArcaneManaCap = 300;
 		/// <summary>Accessory slots every soldier gains from Expertise (on top of the grade's slots, up to the gear's slot count).</summary>
 		public const int ExpertiseAccessorySlots = 1;
 
-		// ---------- Buff sharing (Firepower) ----------
-		/// <summary>How many of the commander's active buffs a soldier inherits with no guide, and what Firepower adds.</summary>
-		public const int BuffShareSlotsBase = 0, FirepowerBuffShareSlots = 2;
-		/// <summary>The commander's shareable buff set is rebuilt at most this often (ticks) and is shared by every soldier of that commander.</summary>
-		public const int BuffShareRefreshTicks = 30;
-		/// <summary>A militia soldier has no commander: he inherits the buffs of the nearest player within this many tiles.</summary>
-		public const int BuffShareMilitiaRadiusTiles = 120;
+		// ---------- Armory buff slots (Firepower) ----------
+		/// <summary>Buff slots Firepower adds to every Armory's issue potions row (slot 0 stays the healing / mana slot; the rest are army-wide buff slots).</summary>
+		public const int FirepowerBuffSlots = 2;
+		/// <summary>Sanity ceiling when reading an Armory's potion row length off the wire. Not a gameplay cap.</summary>
+		public const int MaxPotionSlotsOnWire = 16;
 
 		// ---------- Guide recipes (Crystal Ball + Bookshelf) ----------
 		/// <summary>Healthcare: a Chlorophyte sink. Life Fruit and Chlorophyte Bars.</summary>

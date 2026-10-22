@@ -8,6 +8,7 @@ using Levy.Common;
 using Levy.Common.Dialogue;
 using Levy.Common.Fear;
 using Levy.Common.Globals;
+using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
@@ -191,23 +192,37 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < NPC.maxBuffs; i++)
 			{
 				if (NPC.buffType[i] <= 0 || NPC.buffTime[i] <= 0) continue;
-				switch (NPC.buffType[i])
-				{
-					case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
-					case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
-					case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
-					case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
-					case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
-					case BuffID.Regeneration: regen += LevyConstants.RegenerationLifeRegen; break;
-					case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
-					case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
-					case BuffID.AmmoReservation: d.ammoPotion = true; break;
-					case BuffID.Archery: d.archery = true; break;
-					case BuffID.Summoning: d.maxMinions++; break;
-				}
+				regen += ApplyBuffEffect(d, NPC.buffType[i]);
+			}
+			// Buffs inherited from the commander (Guide to Firepower), skipping any the soldier already runs from his own potion so nothing stacks twice.
+			int[] shared = BuffShare.For(this);
+			for (int k = 0; k < shared.Length; k++)
+			{
+				if (NPC.HasBuff(shared[k])) continue;
+				regen += ApplyBuffEffect(d, shared[k]);
 			}
 			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
 			return regen;
+		}
+
+		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds. The cases here are exactly <see cref="BuffShare.Shareable"/>.</summary>
+		private static int ApplyBuffEffect(Player d, int buffType)
+		{
+			switch (buffType)
+			{
+				case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
+				case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
+				case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
+				case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
+				case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
+				case BuffID.Regeneration: return LevyConstants.RegenerationLifeRegen;
+				case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
+				case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
+				case BuffID.AmmoReservation: d.ammoPotion = true; break;
+				case BuffID.Archery: d.archery = true; break;
+				case BuffID.Summoning: d.maxMinions++; break;
+			}
+			return 0;
 		}
 
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>

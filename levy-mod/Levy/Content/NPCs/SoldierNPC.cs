@@ -187,6 +187,27 @@ namespace Levy.Content.NPCs
 			Dummy.shirtColor = Record.ShirtColor; Dummy.underShirtColor = Record.UnderShirtColor; Dummy.pantsColor = Record.PantsColor; Dummy.shoeColor = Record.ShoeColor;
 		}
 
+		/// <summary>
+		/// Accessory slots the vanilla pipeline reads off the dummy (armor[3..7]). Slot 8 is the Demon Heart slot, gated on Expert mode and a flag, so a soldier's sixth accessory
+		/// (the Guide to Expertise's) is applied by hand after UpdateEquips instead of through a slot that may be locked.
+		/// </summary>
+		private const int DummyAccessorySlots = 5;
+
+		/// <summary>Applies the accessories beyond <see cref="DummyAccessorySlots"/> the way Player.UpdateEquips would for an unlocked slot (prefix, armor and equip effects).</summary>
+		private void ApplyExtraAccessories(Player d)
+		{
+			Item[] acc = Record.Gear.Accessories;
+			int slots = Math.Min(Record.AccessorySlots, acc.Length);
+			for (int i = DummyAccessorySlots; i < slots; i++)
+			{
+				Item it = acc[i];
+				if (it == null || it.IsAir || !it.accessory || (it.expertOnly && !Main.expertMode)) continue;
+				d.GrantPrefixBenefits(it);
+				d.GrantArmorBenefits(it);
+				d.ApplyEquipFunctional(it, false);
+			}
+		}
+
 		/// <summary>Copies gear into the dummy's equipment arrays (references, not clones).</summary>
 		private Item _blankSlot;
 		public void EquipDummy()
@@ -199,7 +220,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < Dummy.dye.Length; i++) Dummy.dye[i] = _blankSlot;
 			Dummy.armor[0] = g.Head; Dummy.armor[1] = g.Body; Dummy.armor[2] = g.Legs;
 			int slots = Record.AccessorySlots;
-			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i];
+			for (int i = 0; i < DummyAccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i]; // slots past these are applied by hand (ApplyExtraAccessories)
 			for (int i = 0; i < 3; i++) Dummy.dye[i] = g.Dyes[i];
 			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.dye[3 + i] = g.Dyes[3 + i];
 			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
@@ -232,6 +253,7 @@ namespace Levy.Content.NPCs
 					Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
 					Dummy.ResetEffects();
 					Dummy.UpdateEquips(DummySlot);
+					ApplyExtraAccessories(Dummy);
 					UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
 					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 					try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }

@@ -21,7 +21,7 @@ namespace Levy.Content.TileEntities
 	/// <summary>1000-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
 	public class ArmoryTE : ModTileEntity
 	{
-		/// <summary>Bulk storage slots (fixed array; the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows.</summary>
+		/// <summary>Base bulk storage slots (the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows. Each linked Logistical Center adds <see cref="LevyConstants.LogisticsSlotsPerCenter"/> more (see <see cref="FitStorage"/>).</summary>
 		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
 		/// <summary>Armor pieces per set: head, body, legs.</summary>
 		public const int ArmorParts = 3;
@@ -31,6 +31,10 @@ namespace Levy.Content.TileEntities
 		/// <summary>Weapon slot count of worlds saved before the issue rows were enlarged (sidearm was the last of these).</summary>
 		private const int LegacyWeaponSlots = 6;
 
+		/// <summary>
+		/// Bulk storage. Its length is <see cref="CapacityFor"/> the linked Logistical Centers (never below the base), so the array is REPLACED when it grows or shrinks: never cache it across a tick
+		/// (the panel rebuilds its cells when the reference changes; saving, packets and every loop already read <c>.Length</c>).
+		/// </summary>
 		public Item[] Storage = NewItems(StorageSize);
 		public Item[] IssueWeapons = NewItems(WeaponSlots);
 		/// <summary>ArmorSets x (head, body, legs): index = set*ArmorParts + part.</summary>
@@ -42,6 +46,43 @@ namespace Levy.Content.TileEntities
 		private bool _dirty;
 
 		public static Item[] NewItems(int n) { var a = new Item[n]; for (int i = 0; i < n; i++) a[i] = new Item(); return a; }
+
+		// ------------------------------------------------------------------ expandable storage (Logistical Centers)
+
+		/// <summary>Storage slots with <paramref name="centers"/> Logistical Centers linked.</summary>
+		public static int CapacityFor(int centers) => StorageSize + Math.Max(0, centers) * LevyConstants.LogisticsSlotsPerCenter;
+
+		/// <summary>Logistical Centers currently linked to this armory (each is linked to its nearest armory in reach). Cached; server, client and single player agree because every entity exists everywhere.</summary>
+		public int LinkedCenters => LogisticsSystem.CentersFor(this);
+
+		/// <summary>The last occupied storage index + 1 (0 when storage is empty): the shortest the array may be without losing an item.</summary>
+		public int StorageUsedLength
+		{
+			get
+			{
+				for (int i = Storage.Length - 1; i >= 0; i--) if (!IsAir(Storage[i])) return i + 1;
+				return 0;
+			}
+		}
+
+		/// <summary>
+		/// Server / single player: sizes <see cref="Storage"/> to <paramref name="centers"/> centers. Growing appends empty slots. Shrinking removes only trailing EMPTY slots: if an item
+		/// sits past the new capacity the array stays just long enough to hold it (Sort packs items to the front, and the next reconcile then trims). Items move by reference, so none is
+		/// ever cloned, dropped or duplicated. Returns true (and queues a sync) when the length changed.
+		/// </summary>
+		public bool FitStorage(int centers)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			int want = Math.Max(CapacityFor(centers), StorageUsedLength);
+			if (want == Storage.Length) return false;
+			var next = new Item[want];
+			int keep = Math.Min(want, Storage.Length);
+			Array.Copy(Storage, next, keep);
+			for (int i = keep; i < want; i++) next[i] = new Item();
+			Storage = next;
+			MarkDirty();
+			return true;
+		}
 		public Vector2 Center => new Vector2((Position.X + 1f) * 16f, (Position.Y + 1.5f) * 16f);
 
 		// ------------------------------------------------------------------ placement / validity / net
@@ -1705,6 +1746,9 @@ namespace Levy.Content.TileEntities
 		}
 		public override void LoadData(TagCompound tag)
 		{
+			// Storage is saved at its full (possibly enlarged) length; a save from before centers existed holds exactly StorageSize. The array is sized to what was saved so nothing is lost
+			// before the Logistical Centers have loaded; the first reconcile after load trims any empty tail that no center backs any more.
+			Storage = new Item[Math.Max(StorageSize, tag.GetList<TagCompound>("storage").Count)];
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
@@ -1717,10 +1761,14 @@ namespace Levy.Content.TileEntities
 
 		public override void NetSend(BinaryWriter writer)
 		{
+			writer.Write(Storage.Length); // storage grows with Logistical Centers, so its length leads
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) foreach (var it in arr) ItemIO.Send(it, writer, true);
 		}
 		public override void NetReceive(BinaryReader reader)
 		{
+			int storageLength = reader.ReadInt32();
+			if (storageLength < StorageSize || storageLength > LevyConstants.LogisticsMaxStorageSlots) storageLength = StorageSize; // a corrupt length must not allocate gigabytes
+			if (Storage.Length != storageLength) Storage = new Item[storageLength]; // replaced, not resized: the panel rebuilds its cells against the new reference
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) for (int i = 0; i < arr.Length; i++) arr[i] = ItemIO.Receive(reader, true);
 		}
 	}

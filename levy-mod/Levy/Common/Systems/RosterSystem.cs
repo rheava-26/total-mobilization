@@ -12,6 +12,7 @@ using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common.Config;
 using Levy.Common.Dialogue;
+using Levy.Common.Flavor;
 using Levy.Common.Fear;
 using Levy.Common.Movement;
 using Levy.Common.Net;
@@ -371,24 +372,15 @@ namespace Levy.Common.Systems
 		private bool ApplyCrystal(SoldierRecord rec, int itemType)
 		{
 			if (LevyUtil.IsClient || rec == null) return false;
-			int hpGain = 0;
+			if (!CanAbsorbCrystal(rec, itemType)) return false;
+			int hpBefore = rec.MaxHp;
 			switch (itemType)
 			{
-				case ItemID.LifeCrystal:
-					if (rec.LifeCrystals >= LevyConstants.MaxLifeCrystals) return false;
-					rec.LifeCrystals++; hpGain = LevyConstants.HpPerLifeCrystal;
-					break;
-				case ItemID.LifeFruit:
-					if (rec.LifeCrystals < LevyConstants.MaxLifeCrystals || rec.LifeFruit >= LevyConstants.MaxLifeFruit) return false; // vanilla: fruit only after all crystals (400 HP)
-					rec.LifeFruit++; hpGain = LevyConstants.HpPerLifeFruit;
-					break;
-				case ItemID.ManaCrystal:
-					if (rec.ManaCrystals >= (LevyConstants.MaxMana - LevyConstants.BaseMana) / LevyConstants.ManaPerCrystal) return false;
-					rec.ManaCrystals++; rec.Mana = rec.MaxMana;
-					break;
-				default:
-					return false;
+				case ItemID.LifeCrystal: rec.LifeCrystals++; break;
+				case ItemID.LifeFruit: rec.LifeFruit++; break;
+				case ItemID.ManaCrystal: rec.ManaCrystals++; rec.Mana = rec.MaxMana; break;
 			}
+			int hpGain = rec.MaxHp - hpBefore; // the cap can swallow part of the last crystal
 			int maxHp = Math.Max(1, rec.MaxHp);
 			var body = BodyOf(rec);
 			if (body != null)
@@ -688,18 +680,21 @@ namespace Levy.Common.Systems
 			if (changed) SendRosterSnapshot();
 		}
 
-		/// <summary>True when the record can still absorb one of this crystal (life crystal up to 15, life fruit only after 15 crystals up to 20, mana crystal by the mana cap).</summary>
+		/// <summary>
+		/// True when the record can still absorb one of this crystal: life crystal up to 15, life fruit only after 15 crystals up to 20, mana crystal by count; each only while the
+		/// uncapped total is still under the world's cap (guides move the base and the cap, so nothing is fed to a soldier it can no longer help).
+		/// </summary>
 		public static bool CanAbsorbCrystal(SoldierRecord rec, int itemType)
 		{
 			if (rec == null) return false;
 			switch (itemType)
 			{
 				case ItemID.LifeCrystal:
-					return rec.LifeCrystals < LevyConstants.MaxLifeCrystals;
+					return rec.LifeCrystals < LevyConstants.MaxLifeCrystals && rec.RawHp < GuideSystem.HpCap;
 				case ItemID.LifeFruit:
-					return rec.LifeCrystals >= LevyConstants.MaxLifeCrystals && rec.LifeFruit < LevyConstants.MaxLifeFruit;
+					return rec.LifeCrystals >= LevyConstants.MaxLifeCrystals && rec.LifeFruit < LevyConstants.MaxLifeFruit && rec.RawHp < GuideSystem.HpCap;
 				case ItemID.ManaCrystal:
-					return rec.MaxMana < LevyConstants.MaxMana;
+					return rec.RawMana < GuideSystem.ManaCap;
 				default:
 					return false;
 			}

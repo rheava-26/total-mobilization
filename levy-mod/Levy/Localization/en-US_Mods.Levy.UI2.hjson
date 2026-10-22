@@ -14,6 +14,9 @@ ArmoryClear: Clear
 ArmoryClearHint: Clears the search and every filter.
 ArmoryShown: Showing {0} of {1}
 ArmoryNoMatch: No stored items match.
+ArmoryCapacity: "{0} slots"
+ArmoryCapacityCenters: "{0} slots (+{1} from {2} Logistical Centers)"
+ArmoryCapacityCenter: "{0} slots (+{1} from 1 Logistical Center)"
 RarityHint: Shows {0} items. Click to toggle; select several to combine.
 RarityGray: Gray
 RarityWhite: White

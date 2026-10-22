@@ -46,10 +46,11 @@ namespace Levy.Common.Flavor
 
 		// ---------------------------------------------------------------- books
 
-		public static bool IsValidKey(string key) => Array.IndexOf(BookKeys, key) >= 0;
+		public static bool IsValidKey(string key) => Array.IndexOf(BookKeys, key) >= 0 || GuideSystem.IsGuideKey(key);
 
 		public static bool IsStudied(string key)
 		{
+			if (GuideSystem.IsGuideKey(key)) return GuideSystem.IsStudied(key); // the progression guides live on GuideSystem
 			SettlementSystem s = SettlementSystem.Instance;
 			if (s == null) return false;
 			return key switch
@@ -66,6 +67,7 @@ namespace Levy.Common.Flavor
 		/// <summary>Mirrors a flag the server announced (clients only; the server owns the truth).</summary>
 		private static void SetStudiedLocal(string key)
 		{
+			if (GuideSystem.IsGuideKey(key)) { GuideSystem.SetLocal(key); return; }
 			SettlementSystem s = SettlementSystem.Instance;
 			if (s == null) return;
 			switch (key)
@@ -85,7 +87,7 @@ namespace Levy.Common.Flavor
 		public static bool Study(string key)
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient || !IsValidKey(key)) return false;
-			if (!SettlementSystem.Instance.TrySetBook(key)) return false;
+			if (!(GuideSystem.IsGuideKey(key) ? GuideSystem.TrySet(key) : SettlementSystem.Instance.TrySetBook(key))) return false;
 			LevyUtil.Chat(LevyUtil.T("Flavor.Studied", BookName(key), EffectText(key)), NoticeColor);
 			if (Main.netMode == NetmodeID.Server) SendFlag(key);
 			return true;
@@ -127,6 +129,10 @@ namespace Levy.Common.Flavor
 				case "Plunder": return LevyUtil.T("Flavor.Effect.Plunder", (int)Math.Round((LevyConstants.PlunderCoinMult - 1f) * 100f));
 				case "Fortification": return LevyUtil.T("Flavor.Effect.Fortification", LevyConstants.FortificationRadius, LevyConstants.FortificationDefense);
 				case "Discipline": return LevyUtil.T("Flavor.Effect.Discipline", (int)Math.Round((1f - LevyConstants.DisciplineAimErrorMult) * 100f));
+				case "Firepower": return LevyUtil.T("Flavor.Effect.Firepower", LevyConstants.FirepowerBaseHp, LevyConstants.FirepowerBaseMana, LevyConstants.FirepowerBuffShareSlots);
+				case "Healthcare": return LevyUtil.T("Flavor.Effect.Healthcare", LevyConstants.HealthcareHpCap);
+				case "TheArcaneArts": return LevyUtil.T("Flavor.Effect.TheArcaneArts", LevyConstants.ArcaneManaCap);
+				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", LevyConstants.ExpertiseAccessorySlots);
 				default: return "";
 			}
 		}

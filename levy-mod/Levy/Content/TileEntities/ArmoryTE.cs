@@ -373,8 +373,69 @@ namespace Levy.Content.TileEntities
 		{
 			// Pass 1: weapons that can actually fire (no ammo needed, or ammo in the pouch / armory). Pass 2: anything issuable.
 			var onHand = AmmoIdsOnHand();
-			return CapThrown(TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it)) && HasAmmoFor(it, forSoldier, onHand))
-				?? TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it))));
+			var rule = PrimaryRule(forSoldier);
+			return CapThrown(TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it)) && (rule == null || rule(it)) && HasAmmoFor(it, forSoldier, onHand))
+				?? TakeVaried(forSoldier, it => IsIssuable(it) && (extra == null || extra(it)) && (rule == null || rule(it))));
+		}
+
+		/// <summary>Visits every unreserved item a primary pick could draw from, in <see cref="TakeVaried"/>'s reach: the weapon rows (not the dedicated sidearm slot), storage, the networked armories' storage and a connected Magic Storage network.</summary>
+		private void ForEachShelfItem(Action<Item> visit)
+		{
+			void Consider(Item it) { if (!IsAir(it) && !IsReservedRef(it)) visit(it); }
+			for (int i = 0; i < SidearmSlot; i++) Consider(IssueWeapons[i]);
+			foreach (var it in Storage) Consider(it);
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) Consider(it);
+			var ms = MsHeart();
+			if (ms != null) foreach (var it in MagicStorageBridge.Snapshot(ms)) Consider(it);
+		}
+
+		/// <summary>True when a summon staff is stocked, or already in the soldier's hand: a whip is then only ever a sidearm, never a summoner's primary.</summary>
+		private bool StaffAvailableFor(SoldierRecord who)
+		{
+			var held = who?.Gear?.Weapon;
+			if (!IsAir(held) && IsIssuableSummonStaff(held)) return true;
+			bool any = false;
+			ForEachShelfItem(it => { if (!any && IsIssuableSummonStaff(it)) any = true; });
+			return any;
+		}
+
+		/// <summary>
+		/// Extra conditions every PRIMARY weapon pick shares (null = none): (1) no whip while a summon staff is available (the flock is the weapon, the whip tags for it from the
+		/// sidearm slot; a summoner with only whips in stock still gets one); (2) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
+		/// </summary>
+		private Func<Item, bool> PrimaryRule(SoldierRecord who)
+		{
+			bool noWhip = StaffAvailableFor(who);
+			var steer = RangedSteer(who);
+			if (!noWhip && steer == null) return null;
+			return it => (!noWhip || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Whip) && (steer == null || steer(it));
+		}
+
+		/// <summary>
+		/// Soft subtype steering for a ranged soldier whose worn helmet boosts one ammo subtype (<see cref="ArmorDoctrine.FavoredRangedSubtype"/>: Shroomite bows / guns / launchers).
+		/// Null = no steering (no such helmet, or no weapon of the subtype worth it). Otherwise the returned test lets every non-ranged weapon through and ranged weapons only of
+		/// the favoured subtype. It engages when the best favoured weapon (stocked or in hand) scores at least <see cref="LevyConstants.SubtypeSteerMinScoreFraction"/> of the best
+		/// ranged weapon of any subtype, so a far stronger off-subtype weapon wins and a soldier with none of the subtype in stock keeps the best ranged weapon. The decision depends only
+		/// on the shelves, his weapon in hand and his helmet, so the primary pick, the auto-upgrade and the armor reconcile all agree and never trade a weapon back and forth.
+		/// </summary>
+		private Func<Item, bool> RangedSteer(SoldierRecord who)
+		{
+			var g = who?.Gear;
+			var sub = ArmorDoctrine.FavoredRangedSubtype(g?.Head);
+			if (sub == RangedSubtype.None) return null;
+			var onHand = AmmoIdsOnHand();
+			float top = 0f, favTop = 0f;
+			void Consider(Item it)
+			{
+				if (!IsIssuable(it) || WeaponClassifier.ItemDamageClass(it) != DamageClass.Ranged || !HasAmmoFor(it, who, onHand)) return;
+				float sc = WeaponClassifier.Score(it);
+				top = Math.Max(top, sc);
+				if (ArmorDoctrine.FitsRangedSubtype(it, sub)) favTop = Math.Max(favTop, sc);
+			}
+			ForEachShelfItem(Consider);
+			Consider(g.Weapon);
+			if (favTop <= 0f || favTop < top * LevyConstants.SubtypeSteerMinScoreFraction) return null;
+			return it => WeaponClassifier.ItemDamageClass(it) != DamageClass.Ranged || ArmorDoctrine.FitsRangedSubtype(it, sub);
 		}
 
 		/// <summary>A thrown stack leaves the shelf at most <see cref="LevyConstants.ThrownCarryMax"/> strong (what a soldier carries); the rest goes back to storage. Any other item is returned untouched.</summary>
@@ -440,7 +501,8 @@ namespace Levy.Content.TileEntities
 			var onHand = AmmoIdsOnHand();
 			// Summoners want the summon weapon itself as primary; their whip comes through the sidearm slot.
 			bool needSummon = cls == DamageClass.Summon;
-			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand) && (extra == null || extra(it))
+			var rule = PrimaryRule(forSoldier); // a Shroomite helmet's ammo subtype (Ranged only); whips are already out for Summon (staves only)
+			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand) && (extra == null || extra(it)) && (rule == null || rule(it))
 				&& (!needSummon || WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon);
 			return CapThrown(TakeVaried(forSoldier, Pred));
 		}
@@ -503,12 +565,7 @@ namespace Levy.Content.TileEntities
 		private float TopBladeScore()
 		{
 			float best = 0f;
-			void Consider(Item it) { if (IsIssuableMelee(it) && !IsReservedRef(it)) best = Math.Max(best, WeaponClassifier.Score(it)); }
-			for (int i = 0; i < SidearmSlot; i++) Consider(IssueWeapons[i]);
-			foreach (var it in Storage) Consider(it);
-			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) Consider(it);
-			var ms = MsHeart();
-			if (ms != null) foreach (var it in MagicStorageBridge.Snapshot(ms)) Consider(it);
+			ForEachShelfItem(it => { if (IsIssuableMelee(it)) best = Math.Max(best, WeaponClassifier.Score(it)); });
 			return best;
 		}
 
@@ -1422,14 +1479,17 @@ namespace Levy.Content.TileEntities
 			// The worn armor defines a fluid soldier's class: with one, the weapon only upgrades within it (no cross-class chase for ReconcileWeaponToArmor to undo).
 			var armorCls = sameClassOnly ? null : ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			HashSet<DamageClass> armorable = null; // computed once, only when a candidate would otherwise qualify (it scans the armor shelves)
+			var rule = PrimaryRule(soldier); // no whip over a staff; a ranged helmet's subtype (same rule as the first issue, so a swap is never undone by the reconcile)
 			bool Pred(Item it)
 			{
 				if (!IsIssuable(it) || it.maxStack > 1 || !HasAmmoFor(it, soldier, onHand)) return false;
+				if (rule != null && !rule(it)) return false;
 				if (sameClassOnly && WeaponClassifier.ItemDamageClass(it) != cls) return false;
 				if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 				var fam = WeaponClassifier.GetProfile(it).Family;
 				// Fully fluid: a summon staff / sentry is an ordinary candidate, in or out. Only the score margin (and the swap cooldown) gate it; the armor follows the new weapon's class.
-				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < need) return false;
+				// A whip in hand yields to any staff regardless of score (the whip moves to the sidearm slot); a staff in hand never trades for a whip (the rule above).
+				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < (curFam == WeaponFamily.Whip && fam == WeaponFamily.Summon ? 0f : need)) return false;
 				// Coherent kit: a fluid soldier only crosses into a class he can also armor (worn, or a set on the shelves); nothing class-defining to match = any class.
 				if (!sameClassOnly) {
 					var ic = WeaponClassifier.ItemDamageClass(it);
@@ -1454,8 +1514,9 @@ namespace Levy.Content.TileEntities
 			var nf = WeaponClassifier.GetProfile(neu).Family;
 			var sf = WeaponClassifier.GetProfile(g.Sidearm).Family;
 			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
+			// A whip is never carried twice (the second goes back to the shelf).
 			// A new summon-staff primary keeps the only flock (a staff in the off hand is dead weight): the old sidearm staff goes back to the shelf and IssueGear picks a whip / blade sidearm.
-			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon))) return;
+			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip))) return;
 			var rem = Deposit(g.Sidearm);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			g.Sidearm = new Item();
@@ -1471,7 +1532,8 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || Common.Config.LevyConfig.Get.ClassMatchIssue || g.IsLocked(SoldierGear.SlotWeapon) || !g.HasWeapon) return false;
 			var armorCls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
-			if (armorCls == null || WeaponClassifier.ItemDamageClass(g.Weapon) == armorCls) return false;
+			if (armorCls == null) return false;
+			if (WeaponClassifier.ItemDamageClass(g.Weapon) == armorCls) return ReconcileWithinClass(soldier, armorCls);
 			// Drawn while the old weapon is still in his hand, so the pick cannot be the one being returned; the swap files it afterwards.
 			// A hand-assigned pouch is never swapped, so the replacement must fire it (or use no ammo); same guard as UpgradePrimary.
 			var pouch = g.Ammo;
@@ -1481,6 +1543,32 @@ namespace Levy.Content.TileEntities
 			var old = g.Weapon;
 			SwapIn(g, SoldierGear.SlotWeapon, neu);
 			ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(old) != armorCls);
+			return true;
+		}
+
+		/// <summary>
+		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip yields to a summon staff (the whip becomes the sidearm), and a Shroomite
+		/// helmet's ranged subtype (<see cref="RangedSteer"/>) swaps an off-subtype gun / bow / launcher for the best of the favoured one. Nothing in stock = untouched. True if swapped.
+		/// </summary>
+		private bool ReconcileWithinClass(SoldierRecord soldier, DamageClass armorCls)
+		{
+			var g = soldier.Gear;
+			var old = g.Weapon;
+			var pouch = g.Ammo;
+			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // same guard as ReconcileWeaponToArmor
+			Func<Item, bool> pouchOk = pouchFixed ? (it => it.useAmmo <= 0 || pouch.ammo == it.useAmmo) : null;
+			Item neu = null;
+			if (armorCls == DamageClass.Summon && WeaponClassifier.GetProfile(old).Family == WeaponFamily.Whip)
+				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // staves only; the whip is filed and comes back as the sidearm
+			else if (armorCls == DamageClass.Ranged)
+			{
+				var steer = RangedSteer(soldier);
+				if (steer == null || steer(old)) return false;
+				neu = TakeBestWeaponOfClass(soldier, DamageClass.Ranged, pouchOk == null ? steer : (it => steer(it) && pouchOk(it))); // PrimaryRule inside agrees with the same steer
+			}
+			if (neu == null) return false;
+			SwapIn(g, SoldierGear.SlotWeapon, neu);
+			ShelveSidearmForPrimary(g, neu, false);
 			return true;
 		}
 

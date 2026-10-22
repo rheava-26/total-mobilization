@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Config;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Weapons
 {
+	/// <summary>Which kind of ammo a ranged-class helmet's damage bonus applies to. A pick bias WITHIN the Ranged class, never a class of its own.</summary>
+	public enum RangedSubtype { None, Bullet, Arrow, Specialist }
+
 	/// <summary>
 	/// Reads which damage class a set of armor favours, so the armory can issue a matching weapon.
 	/// Equips the three pieces on a private scratch Player, runs the vanilla equip pass, and compares the per-class damage/crit bonuses.
@@ -45,6 +49,32 @@ namespace Levy.Common.Weapons
 			idx = Compute(h, b, l);
 			_cache[key] = idx;
 			return idx >= 0 ? Classes[idx] : null;
+		}
+
+		/// <summary>Helmets that boost a single ranged ammo subtype (a per-piece bonus in vanilla: +15% damage with that ammo, +5% ranged crit). Add more steering armors here.</summary>
+		private static readonly Dictionary<int, RangedSubtype> HeadSubtype = new()
+		{
+			{ ItemID.ShroomiteHeadgear, RangedSubtype.Arrow },      // arrowDamage x1.15: bows
+			{ ItemID.ShroomiteMask, RangedSubtype.Bullet },         // bulletDamage x1.15: guns
+			{ ItemID.ShroomiteHelmet, RangedSubtype.Specialist },   // specialistDamage x1.15: rocket / dart / gel / flare launchers and the specialist weapons
+		};
+
+		/// <summary>The ranged subtype the worn helmet favours (<see cref="RangedSubtype.None"/> for no head, or a helmet that favours none).</summary>
+		public static RangedSubtype FavoredRangedSubtype(Item head) => head == null || head.IsAir ? RangedSubtype.None : HeadSubtype.GetValueOrDefault(head.type, RangedSubtype.None);
+
+		/// <summary>True when the weapon's damage is the kind the subtype's helmet boosts: its ammo is in vanilla's arrow / bullet / specialist ammo set (specialist also covers the specialist weapons that fire none).</summary>
+		public static bool FitsRangedSubtype(Item weapon, RangedSubtype sub)
+		{
+			if (weapon == null || weapon.IsAir || sub == RangedSubtype.None) return false;
+			int ammo = weapon.useAmmo;
+			bool InSet(bool[] set) => ammo > 0 && ammo < set.Length && set[ammo];
+			return sub switch
+			{
+				RangedSubtype.Arrow => InSet(AmmoID.Sets.IsArrow),
+				RangedSubtype.Bullet => InSet(AmmoID.Sets.IsBullet),
+				RangedSubtype.Specialist => InSet(AmmoID.Sets.IsSpecialist) || (weapon.type > 0 && weapon.type < ItemID.Sets.IsRangedSpecialistWeapon.Length && ItemID.Sets.IsRangedSpecialistWeapon[weapon.type]),
+				_ => false,
+			};
 		}
 
 		/// <summary>

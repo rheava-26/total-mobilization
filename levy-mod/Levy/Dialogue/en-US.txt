@@ -504,3 +504,35 @@ DEATH_MESSAGE | Any | {Name} has taken an unscheduled break
 DEATH_MESSAGE | Any | {Name} was saving up for something nice
 DEATH_MESSAGE | Any | {Name} won't be making it to the staff party
 DEATH_MESSAGE | Any | {Name} wasn't paid enough for this
+
+# ============================================================================================================
+# OFFICER ON-THE-MOVE CHATTER  (a floating line over an officer avatar while it marches with the army)
+# OFFICER_MARCH is the generic officer voice; NURSE_MARCH is the Nurse's supportive/medical voice.
+# Kept gender-neutral (they / them / it). Temperament Any so every officer can speak them.
+# ============================================================================================================
+OFFICER_MARCH | Any | Eyes forward. The dirt is not going to guard itself.
+OFFICER_MARCH | Any | Keep the line tight. Loose lines get people a bad review.
+OFFICER_MARCH | Any | Step lively. We move at the pace of the slowest complaint.
+OFFICER_MARCH | Any | I asked for a quiet life. Instead I got a hat and a commission.
+OFFICER_MARCH | Any | Officers lead from the front. I checked. It is in the fine print.
+OFFICER_MARCH | Any | Hold formation. The enemy is overwhelming, not organized.
+OFFICER_MARCH | Any | Chin up. We have survived worse meetings than this.
+OFFICER_MARCH | Any | Follow me, and try to look like we meant to do this.
+OFFICER_MARCH | Any | Mind your footing. The ground is uneven and so is morale.
+OFFICER_MARCH | Any | Stay sharp. Promotions are easy; surviving them is the trick.
+OFFICER_MARCH | Any | On me. If I fall, someone else inherits the hat.
+OFFICER_MARCH | Any | Nobody drilled us for a sky full of teeth. We improvise.
+OFFICER_MARCH | Any | Left, right, left. I learned that this morning. You are welcome.
+OFFICER_MARCH | Any | Stand together. Apart, we are just a longer menu for them.
+NURSE_MARCH | Any | Stay close. I cannot patch what I cannot reach.
+NURSE_MARCH | Any | Anyone bleeding, speak up. Modesty costs lives.
+NURSE_MARCH | Any | Keep breathing. That part is free.
+NURSE_MARCH | Any | I carry syringes and strong opinions about your posture.
+NURSE_MARCH | Any | Hold still when this one lands. It is medicine, I promise.
+NURSE_MARCH | Any | Walk it off is not medical advice. Come here instead.
+NURSE_MARCH | Any | I will keep you standing. You keep the enemy busy.
+NURSE_MARCH | Any | No heroics. A wounded hero is just extra paperwork for me.
+NURSE_MARCH | Any | Mind the gaps in the line. That is where I lose people.
+NURSE_MARCH | Any | If it hurts, that is your body filing a complaint. I will handle it.
+NURSE_MARCH | Any | Stay in reach. A syringe only flies so far.
+NURSE_MARCH | Any | Patch, march, repeat. The glamorous life they promised me.

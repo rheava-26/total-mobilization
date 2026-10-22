@@ -34,79 +34,44 @@ namespace Levy.Common.Officers
 
 		// ---- runtime (never saved) ----
 		public OfficerRuntime Rt = new();
-		/// <summary>Per-officer kit state created by <see cref="OfficerKit.CreateState"/>.</summary>
+		/// <summary>Per-officer kit state created by <see cref="OfficerKit.CreateState"/>. (Since the rework the live kit state lives on the avatar; kept for compatibility.)</summary>
 		public object KitState => Rt.KitState;
-		private bool _engaged;
 
-		/// <summary>Copies of the entity (Bestiary samples, NPC.Clone) get their own runtime; sharing the brain state between two NPCs would cross their wires.</summary>
+		/// <summary>Copies of the entity (Bestiary samples, NPC.Clone) get their own runtime so a shared targeting body never crosses wires.</summary>
 		public override GlobalNPC Clone(NPC from, NPC to)
 		{
 			var c = (OfficerGlobalNPC)MemberwiseClone();
 			c.Rt = new OfficerRuntime();
-			c._engaged = false;
 			return c;
 		}
 
 		public OfficerBody EnsureBody(NPC npc) => Rt.Body ??= new OfficerBody(npc);
 
-		/// <summary>Fresh runtime for a new commission (brain timers cleared, the kit's state recreated).</summary>
+		/// <summary>Fresh runtime for a new commission.</summary>
 		public void ResetRuntime()
 		{
 			var body = Rt.Body;
 			Rt = new OfficerRuntime { Body = body };
-			_engaged = false;
 		}
 
 		// =====================================================================================================
-		// AI takeover
+		// AI takeover: PARK the real town NPC while a live avatar marches for this commission.
+		// The avatar (a soldier in officer mode) co-locates the town NPC with itself every tick and does the fighting/kit;
+		// the town NPC is only kept alive, invisible and inert so the player can still shop with it and its name survives.
 		// =====================================================================================================
 		public override bool PreAI(NPC npc)
 		{
-			if (!Enrolled) { if (_engaged) Disengage(npc); return true; }
-			if (!OfficerRegistry.TryGet(npc.type, out OfficerDef def)) { if (_engaged) Disengage(npc); return true; } // Housekeeping clears the orphan on the server
-			int ci = LevyUtil.FindPlayerByName(Commander);
-			if (ci < 0) { if (_engaged) Disengage(npc); return true; } // commander offline: the town gets him back until they return
-			if (!_engaged) { _engaged = true; if (Rt.KitState == null) Rt.KitState = def.Kit?.CreateState(); }
-			OfficerBody body = EnsureBody(npc);
-			body.SyncDummyTransform();
-			// Clients run no brain: the server streams the NPC every tick (netAlways) and the vanilla frame code animates it from velocity / ai[0].
-			if (LevyUtil.IsClient) return false;
-			OfficerBrain.Tick(npc, this, def, Main.player[ci]);
-			return false;
-		}
-
-		/// <summary>
-		/// Hands the NPC back to the vanilla town AI: clears the AI state the brain borrowed (ai[0] doubles as the vanilla animation state), stops the per-tick
-		/// stream and, on the server, walks a stray far from his house home.
-		/// </summary>
-		public void Disengage(NPC npc)
-		{
-			_engaged = false;
-			if (npc == null || !npc.active) return;
-			npc.ai[0] = 0f; npc.ai[1] = 60f; npc.ai[2] = 0f; npc.ai[3] = 0f;
-			npc.localAI[3] = 0f; npc.frameCounter = 0.0;
-			npc.velocity.X = 0f;
-			npc.netAlways = false;
-			Rt.Reset();
-			if (LevyUtil.IsServerOrSingle)
+			if (!Enrolled) return true;
+			if (OfficerSystem.Instance.HasLiveAvatar(npc))
 			{
-				SnapHome(npc);
-				npc.netUpdate = true;
+				npc.velocity = Vector2.Zero; // the avatar co-locates it each tick; this only stops stray drift between NPC updates
+				return false;                // skip the vanilla town AI: this NPC is parked
 			}
-		}
-
-		/// <summary>A dismissed officer far from his house is placed beside it; the vanilla AI would otherwise wander at his post until night (and then teleport him anyway).</summary>
-		private static void SnapHome(NPC npc)
-		{
-			if (npc.homeless || npc.homeTileX <= 0 || npc.homeTileY <= 0) return;
-			Vector2 home = new Vector2(npc.homeTileX * 16f + 8f, npc.homeTileY * 16f);
-			if (LevyUtil.WithinTiles(npc.Center, home, LevyConstants.Officer.HomeSnapDistTiles)) return;
-			if (!FollowerTravel.FindStandingSpot(home, LevyConstants.Officer.SpotRadiusTiles, out Vector2 spot)) return;
-			OfficerBrain.Place(npc, spot);
+			return true; // enrolled but no avatar yet (commander offline, or just commissioned): live as a normal civilian until the avatar marches
 		}
 
 		// =====================================================================================================
-		// Death
+		// Death: only reachable while the town NPC is NOT parked (parked NPCs are immortal). The commission dies with it.
 		// =====================================================================================================
 		public override void OnKill(NPC npc)
 		{
@@ -157,11 +122,20 @@ namespace Levy.Common.Officers
 		}
 
 		// =====================================================================================================
-		// Draw: a small tag so the player can tell officers from civilians
+		// Draw: while a live avatar marches, the town NPC is hidden (the avatar draws its sprite and shows its name).
 		// =====================================================================================================
+		/// <summary>Hide the parked town NPC: its avatar draws the sprite at the same spot. Returning false skips the vanilla NPC draw.</summary>
+		public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+		{
+			if (Main.dedServ) return true;
+			return !(Enrolled && OfficerSystem.Instance.HasLiveAvatar(npc));
+		}
+
+		/// <summary>A small tag over an enrolled officer that is NOT currently deployed (its avatar carries the name while marching).</summary>
 		public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (!Enrolled || Main.dedServ) return;
+			if (OfficerSystem.Instance.HasLiveAvatar(npc)) return; // the avatar's nameplate shows the given name instead
 			string text = LevyUtil.T("Officers.Tag", Slot + 1);
 			Vector2 pos = npc.Top - screenPos + new Vector2(0f, -18f);
 			Utils.DrawBorderString(spriteBatch, text, pos, new Color(255, 215, 80), 0.6f, 0.5f, 1f);

@@ -245,6 +245,7 @@ namespace Levy.Content.NPCs
 		public void RefreshStats()
 		{
 			StatsDirty = false;
+			if (OfficerMode) { Officer_RefreshStats(); return; } // officers take their HP/defense from constants + the combat books, not from gear
 			if (Record == null) return;
 			EquipDummy();
 			Stations = StationBuffSystem.For(NPC.Center);
@@ -333,11 +334,26 @@ namespace Levy.Content.NPCs
 			{
 				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
 				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
+				if (OfficerMode) { Officer_ClientTick(); return; } // co-locate the parked town NPC and advance its drawn walk frame
 				if (ItemAnimation > 0) ItemAnimation--;
 				if (AttackCooldown > 0) AttackCooldown--;
 				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
 				Movement_ClientAnimate();
 				TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs)
+				return;
+			}
+			if (OfficerMode)
+			{
+				// An officer avatar reuses the soldier MOVEMENT unchanged, but posture (not the soldier brain) sets its goal, and it runs
+				// the officer kit and its own weapon instead of soldier combat. No roster coupling: the synthetic record is never listed.
+				if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; Officer_RefreshStats(); }
+				Damage_Update();
+				if (!IsAlive) return;
+				Officer_Think();
+				Movement_Update();
+				TickMovementFx();
+				Officer_Act();
+				SyncDummyTransform();
 				return;
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
@@ -364,6 +380,7 @@ namespace Levy.Content.NPCs
 			if (_deathHandled) return true;
 			_deathHandled = true;
 			if (LevyUtil.IsServerOrSingle) KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier
+			if (OfficerMode) { if (LevyUtil.IsServerOrSingle) Officer_OnDeath(); return true; } // the officer fell: end the commission, un-park the town NPC (not the roster path)
 			if (LevyUtil.IsServerOrSingle && Record != null)
 			{
 				Record.CurrentHp = 0;
@@ -397,12 +414,32 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- chat ----
-		public override bool CanChat() => Record != null && IsRegular && State != SoldierState.Engage && State != SoldierState.Routed;
-		public override string GetChat() => DialogueSystem.ChatLine(this);
+		// Officer avatars are chattable so the player's cursor catches them (they, not the hidden town NPC, are what is clicked); the actual
+		// talk is immediately re-pointed at the parked town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
+		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Engage && State != SoldierState.Routed));
+		public override string GetChat() => OfficerMode ? "" : DialogueSystem.ChatLine(this);
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
+			if (OfficerMode) return; // the town NPC the talk is redirected to supplies its own buttons
 			button = LevyUtil.T("UI.ChatOrders");
 			if (AcceptsAmmo(Main.LocalPlayer.HeldItem)) button2 = LevyUtil.T("UI.ChatHandAmmo");
+		}
+
+		/// <summary>
+		/// Client: when the local player talks to an officer avatar, re-point talkNPC at the parked (co-located) town NPC so vanilla opens THAT NPC's shop/chat.
+		/// Run after input each frame (LevyPlayer.PostUpdate), before the chat UI draws, so the avatar's own chat window is never shown.
+		/// </summary>
+		public static void RedirectOfficerShopTalk(Player player)
+		{
+			if (player == null || !player.active) return;
+			int t = player.talkNPC;
+			if (t < 0 || t >= Main.maxNPCs) return;
+			NPC n = Main.npc[t];
+			if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode)
+			{
+				NPC town = s.OfficerTownNpc;
+				if (town != null && town.active) player.SetTalkNPC(town.whoAmI); // once: next frame talkNPC is the town NPC, not an avatar
+			}
 		}
 
 		/// <summary>True when this soldier's ranged weapon can actually use the held ammo (not gel, coins, or the wrong ammo id).</summary>
@@ -416,6 +453,7 @@ namespace Levy.Content.NPCs
 
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
 		{
+			if (OfficerMode) return; // never the soldier radial for an officer; the redirect hands talk to the town NPC instead
 			if (firstButton) { Common.UI.UISystem.Instance.ToggleRadial(); return; }
 			var held = Main.LocalPlayer.HeldItem;
 			if (!AcceptsAmmo(held)) return;
@@ -466,6 +504,10 @@ namespace Levy.Content.NPCs
 			Record.Gear.WriteVisual(writer);
 			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
 			writer.Write((short)Math.Clamp(Aggro, short.MinValue, short.MaxValue)); // taunt weight, so client-side target searches weigh this soldier like the server
+			writer.Write(Record.Mutinous); // balances the ReceiveExtraAI read below; also keeps the wage-mutiny tint in sync between roster snapshots
+			// ---- officer avatar (OfficerMode only): clients need the link to co-locate/hide the town NPC and draw its sprite ----
+			writer.Write(OfficerMode);
+			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -483,6 +525,10 @@ namespace Levy.Content.NPCs
 			PotionSickness = reader.ReadByte() * 30;
 			Aggro = reader.ReadInt16();
 			Record.Mutinous = reader.ReadBoolean();
+			bool wasOfficer = OfficerMode;
+			OfficerMode = reader.ReadBoolean();
+			if (OfficerMode) { OfficerTownIndex = reader.ReadInt32(); OfficerTownType = reader.ReadInt32(); if (!wasOfficer) _offDef = null; }
+			else { OfficerTownIndex = -1; OfficerTownType = -1; }
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

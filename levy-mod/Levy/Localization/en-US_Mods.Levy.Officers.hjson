@@ -35,7 +35,7 @@ UI: {
 	Cost: Fee {0}. Wage {1} a day.
 	Available: Townsfolk who can serve
 	NoneAvailable: No one housed in this settlement can serve as an officer yet.
-	Hint: Officers fight beside the army. If one falls he is gone until he is rehoused.
+	Hint: Officers fight beside the army. If one falls they are gone until rehoused.
 	SlotsHeader: Command slots
 	SlotRole: Slot {0}: {1}
 	SlotWage: Wage {0} a day
@@ -49,9 +49,10 @@ Kit: {
 		Name: Nurse
 		Desc:
 			'''
-			Marches with the army and throws syringes at nearby enemies.
-			Heals the nearest wounded soldier within {0} tiles for {1}% of its life, once per soldier every {2} seconds.
-			Each heal is paid from the treasury, up to {3}.
+			Marches behind the line and heals the most wounded soldier within {0} tiles back to full. A syringe flies to one at range; one at its side is topped off on the spot.
+			Heals a given soldier at most once every {1} seconds.
+			Throws a syringe at any enemy that strays into reach, but never leaves the army to chase.
+			Each heal is paid from the treasury, up to {2}.
 			'''
 	}
 }

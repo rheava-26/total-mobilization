@@ -1,9 +1,16 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Terraria;
 
 namespace Levy.Common.Officers
 {
+	/// <summary>
+	/// How a kit wants the shared soldier movement to place the avatar. FRONTLINE marches at the follow distance and fights
+	/// what comes in reach (the fighter default). SUPPORT hangs behind the army near a wounded soldier and keeps clear of enemies.
+	/// </summary>
+	public enum OfficerPosture : byte { Frontline, Support }
+
 	/// <summary>
 	/// A ranged attack in the vanilla town-NPC shape (the same numbers NPC.AI_007_TownEntities hard-codes per type): one projectile, thrown at the
 	/// target after <see cref="Delay"/> ticks of the <see cref="WindUp"/> animation, then a cooldown. Add melee / magic shapes here later.
@@ -40,6 +47,10 @@ namespace Levy.Common.Officers
 		public OfficerWeapon Weapon;
 		/// <summary>The special ability, run on the server / single player every tick while the officer is active. Null = fights only.</summary>
 		public OfficerKit Kit;
+		/// <summary>How the avatar positions itself in the line (see <see cref="OfficerPosture"/>). Fighters march up; support hangs back.</summary>
+		public OfficerPosture Posture = OfficerPosture.Frontline;
+		/// <summary>The on-the-move chatter trigger this officer fires while marching (a role voice; the generic default is <see cref="DialogueTrigger.OFFICER_MARCH"/>).</summary>
+		public DialogueTrigger MarchTrigger = DialogueTrigger.OFFICER_MARCH;
 	}
 
 	/// <summary>
@@ -59,6 +70,11 @@ namespace Levy.Common.Officers
 		public virtual void OnMobilized(OfficerContext ctx) { }
 		/// <summary>Called once when the commission ends for any reason: dismissed, lapsed, killed (server). Optional.</summary>
 		public virtual void OnDismissed(OfficerContext ctx) { }
+		/// <summary>
+		/// SUPPORT posture only: a world position the avatar should hover near (e.g. a wounded soldier it is tending), so the movement AI keeps it
+		/// in reach of its work instead of glued to the commander. Return false for no preference. Server / single player.
+		/// </summary>
+		public virtual bool SupportAnchor(OfficerContext ctx, out Vector2 pos) { pos = default; return false; }
 	}
 
 	/// <summary>Everything a kit needs about the officer it runs for.</summary>

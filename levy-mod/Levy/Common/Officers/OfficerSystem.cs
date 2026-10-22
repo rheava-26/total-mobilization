@@ -10,6 +10,7 @@ using Levy.Common.Movement;
 using Levy.Common.Net;
 using Levy.Common.Systems;
 using Levy.Common.Util;
+using Levy.Content.NPCs;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.Officers
@@ -32,6 +33,8 @@ namespace Levy.Common.Officers
 		private uint _stamp = uint.MaxValue;
 		private readonly List<NPC> _enrolled = new();
 		private readonly List<OfficerBody> _active = new();
+		/// <summary>town NPC whoAmI -> its live avatar this tick (rebuilt in <see cref="Refresh"/> on every netmode; avatars are synced NPCs).</summary>
+		private readonly Dictionary<int, SoldierNPC> _avatars = new();
 		private int _lastDay = -1; private bool _dayInit;
 		private int _housekeepingTimer;
 
@@ -44,7 +47,7 @@ namespace Levy.Common.Officers
 
 		public override void OnWorldLoad() { Reset(); }
 		public override void OnWorldUnload() { Reset(); }
-		private void Reset() { _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
+		private void Reset() { _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
 
 		// =====================================================================================================
 		// Queries (safe on clients)
@@ -56,7 +59,15 @@ namespace Levy.Common.Officers
 			uint now = Main.GameUpdateCount;
 			if (_stamp == now) return;
 			_stamp = now;
-			_enrolled.Clear(); _active.Clear();
+			_enrolled.Clear(); _active.Clear(); _avatars.Clear();
+			// 1. map every live officer avatar by the town NPC it serves (runs on clients too: the avatar is a synced NPC). First wins; duplicates are culled server-side.
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode && s.NPC.life > 0 && s.OfficerTownIndex >= 0 && !_avatars.ContainsKey(s.OfficerTownIndex))
+					_avatars[s.OfficerTownIndex] = s;
+			}
+			// 2. enrolled town NPCs; bind each commission's targeting body to its avatar (only a commission with a live avatar is an active target)
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
@@ -64,8 +75,20 @@ namespace Levy.Common.Officers
 				OfficerGlobalNPC g = Data(n);
 				if (g == null || !g.Enrolled) continue;
 				_enrolled.Add(n);
-				if (n.life > 0 && OfficerRegistry.IsOfficerType(n.type) && LevyUtil.FindPlayerByName(g.Commander) >= 0) _active.Add(g.EnsureBody(n));
+				if (!OfficerRegistry.IsOfficerType(n.type) || LevyUtil.FindPlayerByName(g.Commander) < 0) continue;
+				OfficerBody body = g.EnsureBody(n);
+				_avatars.TryGetValue(n.whoAmI, out SoldierNPC avatar);
+				body.SetAvatar(avatar);
+				if (avatar != null && avatar.NPC.active && avatar.NPC.life > 0) _active.Add(body);
 			}
+		}
+
+		/// <summary>True when this enrolled town NPC has a live avatar marching for it (used by the town NPC's draw to hide itself). Valid on clients.</summary>
+		public bool HasLiveAvatar(NPC townNpc)
+		{
+			if (townNpc == null) return false;
+			Refresh();
+			return _avatars.TryGetValue(townNpc.whoAmI, out var a) && a != null && a.NPC.active && a.NPC.life > 0;
 		}
 
 		/// <summary>Every conscripted town NPC in the world, whoever commands it. Read-only; valid for the current tick.</summary>
@@ -74,13 +97,17 @@ namespace Levy.Common.Officers
 		/// <summary>Officers that are on duty this tick (alive, a registered type, commander online): the ones with a targeting body.</summary>
 		public IReadOnlyList<OfficerBody> ActiveBodies { get { Refresh(); return _active; } }
 
-		/// <summary>The targeting body of an officer that is on duty, else null.</summary>
+		/// <summary>The targeting body of an officer that is on duty, else null. The returned body points enemies at the avatar (bound this tick by <see cref="Refresh"/>).</summary>
 		public OfficerBody BodyOf(NPC npc)
 		{
 			if (npc == null || !npc.active || !npc.townNPC || npc.life <= 0) return null;
 			OfficerGlobalNPC g = Data(npc);
 			if (g == null || !g.Enrolled || !OfficerRegistry.IsOfficerType(npc.type) || LevyUtil.FindPlayerByName(g.Commander) < 0) return null;
-			return g.EnsureBody(npc);
+			Refresh(); // binds the commission's body to its current avatar
+			OfficerBody body = g.EnsureBody(npc);
+			_avatars.TryGetValue(npc.whoAmI, out SoldierNPC avatar);
+			body.SetAvatar(avatar);
+			return body;
 		}
 
 		public bool IsEnrolled(NPC npc) => Data(npc)?.Enrolled == true;
@@ -158,9 +185,7 @@ namespace Levy.Common.Officers
 			g.BarX = barracks.Position.X; g.BarY = barracks.Position.Y;
 			g.DaysUnpaid = 0;
 			g.ResetRuntime();
-			g.Rt.KitState = def.Kit?.CreateState();
-			_stamp = uint.MaxValue; // the slot is taken: the cache must see it at once
-			def.Kit?.OnMobilized(MakeContext(npc, g, def, commander));
+			_stamp = uint.MaxValue; // the slot is taken: the cache must see it at once (the avatar + its kit are created by MaintainAvatars)
 			npc.netAlways = true; npc.netUpdate = true;
 			RosterSystem.SendToPlayer(commander, LevyUtil.T("Officers.Msg.Commissioned", NameOf(npc), LevyUtil.T("Officers.Kit." + def.Key + ".Name"), LevyUtil.Coins(fee)));
 			return true;
@@ -188,21 +213,43 @@ namespace Levy.Common.Officers
 			string commanderName = g.Commander;
 			int ci = LevyUtil.FindPlayerByName(commanderName);
 			Player commander = ci >= 0 ? Main.player[ci] : null;
-			if (OfficerRegistry.TryGet(npc.type, out OfficerDef def)) def.Kit?.OnDismissed(MakeContext(npc, g, def, commander));
 			g.Enrolled = false; g.Commander = ""; g.Slot = 0; g.DaysUnpaid = 0;
-			g.Disengage(npc);
+			g.ResetRuntime();
+			RemoveAvatarFor(npc);  // despawn the avatar (fires the kit's OnDismissed) and un-park the town NPC where it stood
+			npc.netAlways = false; npc.netUpdate = true;
 			_stamp = uint.MaxValue;
 			if (commander != null && reason != "Invalid") RosterSystem.SendToPlayer(commander, LevyUtil.T("Officers.Msg." + reason, NameOf(npc)));
 		}
 
-		/// <summary>The officer was killed: tell the commander. (The commission needs no clean-up; it died with the NPC.)</summary>
+		/// <summary>The town NPC itself was killed (e.g. while the commander was offline and it walked town as a civilian): tell the commander. The commission dies with it.</summary>
 		internal void NotifyFallen(NPC npc, OfficerGlobalNPC g)
 		{
 			if (!LevyUtil.IsServerOrSingle || !g.Enrolled) return;
 			int ci = LevyUtil.FindPlayerByName(g.Commander);
 			if (ci >= 0) RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T("Officers.Msg.Fallen", NameOf(npc)));
-			if (OfficerRegistry.TryGet(npc.type, out OfficerDef def)) def.Kit?.OnDismissed(MakeContext(npc, g, def, ci >= 0 ? Main.player[ci] : null));
 			g.Enrolled = false;
+			RemoveAvatarFor(npc);
+			_stamp = uint.MaxValue;
+		}
+
+		/// <summary>
+		/// The avatar fell in battle: the officer is lost. End the commission, tell the commander (the existing "fallen" line) and un-park the town NPC where it died, so it
+		/// goes back to civilian life. Called from the avatar's death (server / single player). The avatar's kit OnDismissed has already run.
+		/// </summary>
+		internal void OnAvatarFell(NPC townNpc, SoldierNPC avatar)
+		{
+			if (!LevyUtil.IsServerOrSingle || townNpc == null) return;
+			OfficerGlobalNPC g = Data(townNpc);
+			if (g == null) { return; }
+			if (g.Enrolled)
+			{
+				int ci = LevyUtil.FindPlayerByName(g.Commander);
+				if (ci >= 0) RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T("Officers.Msg.Fallen", NameOf(townNpc)));
+				g.Enrolled = false; g.Commander = ""; g.Slot = 0; g.DaysUnpaid = 0;
+				g.ResetRuntime();
+			}
+			UnparkTownNpc(townNpc);
+			townNpc.netAlways = false; townNpc.netUpdate = true;
 			_stamp = uint.MaxValue;
 		}
 
@@ -226,12 +273,99 @@ namespace Levy.Common.Officers
 		public override void PostUpdateEverything()
 		{
 			if (!LevyUtil.IsServerOrSingle || Main.gameMenu) return;
+			MaintainAvatars();
 			// Payroll rides on the roster's day counter so officers are paid on the same dawn as the soldiers (after them: soldiers' pay is read first).
 			int day = RosterSystem.Instance.DayNumber;
 			if (!_dayInit) { _dayInit = true; _lastDay = day; }
 			else if (day != _lastDay) { _lastDay = day; PayOfficers(); }
 
 			if (++_housekeepingTimer >= 60) { _housekeepingTimer = 0; Housekeeping(); }
+		}
+
+		// =====================================================================================================
+		// Avatar lifecycle (server / single player): spawn one per enrolled + online commission, cull the rest.
+		// =====================================================================================================
+		/// <summary>
+		/// Keeps exactly one live avatar per enrolled commission whose commander is online: spawns the missing ones, and despawns any avatar whose
+		/// commission ended, whose commander left, whose town NPC is gone, or that is a duplicate. The avatar itself parks and co-locates the town NPC.
+		/// </summary>
+		private void MaintainAvatars()
+		{
+			Refresh();
+			// cull invalid / duplicate avatars (a duplicate is any officer-mode body that is not the one Refresh kept for its town NPC)
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!(n.active && n.ModNPC is SoldierNPC s && s.OfficerMode)) continue;
+				NPC town = s.OfficerTownNpc;
+				OfficerGlobalNPC g = town != null ? Data(town) : null;
+				bool valid = g != null && g.Enrolled && OfficerRegistry.IsOfficerType(town.type)
+							 && LevyUtil.FindPlayerByName(g.Commander) >= 0
+							 && _avatars.TryGetValue(town.whoAmI, out var primary) && ReferenceEquals(primary, s);
+				if (!valid) DespawnAvatar(s, town);
+			}
+			// spawn for enrolled + online commissions that have no avatar yet
+			for (int k = 0; k < _enrolled.Count; k++)
+			{
+				NPC town = _enrolled[k];
+				OfficerGlobalNPC g = Data(town);
+				if (g == null || !g.Enrolled || !OfficerRegistry.TryGet(town.type, out OfficerDef def)) continue;
+				int ci = LevyUtil.FindPlayerByName(g.Commander);
+				if (ci < 0 || _avatars.ContainsKey(town.whoAmI)) continue;
+				SpawnAvatar(town, def, Main.player[ci]);
+			}
+		}
+
+		private void SpawnAvatar(NPC town, OfficerDef def, Player commander)
+		{
+			int type = ModContent.NPCType<SoldierNPC>();
+			if (type <= 0) return;
+			int idx = NPC.NewNPC(new EntitySource_WorldEvent("Levy:OfficerAvatar"), (int)town.Center.X, (int)town.Center.Y, type);
+			if (idx < 0 || idx >= Main.maxNPCs) return;
+			NPC n = Main.npc[idx];
+			if (n.ModNPC is not SoldierNPC avatar) { n.active = false; return; }
+			avatar.OfficerSetup(town, def, commander.name);
+			n.Bottom = town.Bottom;
+			n.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
+			_avatars[town.whoAmI] = avatar;
+			_stamp = uint.MaxValue; // the next Refresh binds the body to it
+		}
+
+		/// <summary>Removes the avatar of one town NPC, if any, and un-parks it. Used when a commission ends (dismiss / lapse / the town NPC itself dies).</summary>
+		private void RemoveAvatarFor(NPC town)
+		{
+			if (town == null) return;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode && s.OfficerTownIndex == town.whoAmI) DespawnAvatar(s, town);
+			}
+			UnparkTownNpc(town);
+		}
+
+		private void DespawnAvatar(SoldierNPC avatar, NPC town)
+		{
+			if (avatar != null && avatar.NPC.active)
+			{
+				avatar.Officer_Dismissed();       // the kit's one-shot dismissal hook
+				avatar.NPC.life = 0;
+				avatar.NPC.active = false;
+				avatar.NPC.netUpdate = true;
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, avatar.NPC.whoAmI);
+			}
+			if (town != null) UnparkTownNpc(town);
+			_stamp = uint.MaxValue;
+		}
+
+		/// <summary>Hands a parked town NPC back to normal life: clears the inert flags and stops the per-tick stream.</summary>
+		private static void UnparkTownNpc(NPC town)
+		{
+			if (town == null || !town.active) return;
+			town.dontTakeDamage = false; town.dontTakeDamageFromHostiles = false; town.immortal = false;
+			town.netAlways = false;
+			town.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, town.whoAmI);
 		}
 
 		private void PayOfficers()

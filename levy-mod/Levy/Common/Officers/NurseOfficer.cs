@@ -1,22 +1,25 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Levy.Common.Config;
 using Levy.Common.Flavor;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
+using Levy.Content.Projectiles;
 using static Levy.Common.LevyConstants.Officer;
 
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE PROOF OFFICER and the template for the next one. The Nurse marches with the army, shoots a hostile that wanders into her reach with her own syringe
-	/// (the stock town-NPC attack, so she is a weak fighter), and heals the nearest wounded soldier on a cooldown, paying for it from the treasury of the barracks
-	/// that commissioned her (the vanilla Nurse price, capped). To add an officer: write a <c>Create()</c> like this one and register it in
-	/// <see cref="OfficerRegistry.RegisterAll"/>; add its Name / Desc strings under Mods.Levy.Officers.Kit.{Key} in the localization file.
+	/// THE PROOF OFFICER and the template for the next one. The Nurse is a SUPPORT officer: she marches BEHIND the line, near the army's wounded, and keeps
+	/// clear of enemies. She heals the most-hurt soldier in reach back to FULL — a syringe thrown to a soldier at range, or a direct top-off for one at her side —
+	/// paying for it from the barracks that commissioned her (the vanilla Nurse price, capped). She throws her attack syringe only at an enemy that strays into reach
+	/// (opportunistic self-defense; never a reason to advance). To add an officer: write a <c>Create()</c> like this and register it in <see cref="OfficerRegistry.RegisterAll"/>.
 	/// </summary>
 	public static class NurseOfficer
 	{
@@ -26,11 +29,13 @@ namespace Levy.Common.Officers
 			Key = "Nurse",
 			CostMult = 1f,
 			Aggro = NurseAggro,
-			// NPC.AI_007_TownEntities, type 18: Nurse Syringe (projectile 583, poisons), speed 8, damage 8, shot on the first wind-up tick, 15 + rand(10) cooldown, knockback 2.
+			Posture = OfficerPosture.Support,            // stays behind the line, near the wounded, out of enemy reach
+			MarchTrigger = DialogueTrigger.NURSE_MARCH,
+			// NPC.AI_007_TownEntities, type 18: Nurse Syringe (projectile 583, poisons), damage 8, knockback 2 — but thrown fast enough to actually reach (velocity boost).
 			Weapon = new OfficerWeapon
 			{
 				Projectile = ProjectileID.NurseSyringeHurt,
-				Speed = 8f, GravityCorrection = 10f, Damage = 8, Knockback = 2f,
+				Speed = NurseSyringeSpeed, GravityCorrection = 10f, Damage = 8, Knockback = 2f,
 				Delay = 1, Cooldown = 15, RandomCooldown = 10,
 				WindUp = Math.Max(1, NPCID.Sets.AttackTime[NPCID.Nurse]),
 				RangeTiles = Math.Max(1, NPCID.Sets.DangerDetectRange[NPCID.Nurse]) / (float)LevyConstants.TilePx,
@@ -39,7 +44,10 @@ namespace Levy.Common.Officers
 		};
 	}
 
-	/// <summary>The Nurse's ability: every <see cref="NurseCastIntervalTicks"/> she heals the nearest wounded soldier within reach, at most once per soldier per <see cref="NursePerSoldierCooldownTicks"/>.</summary>
+	/// <summary>
+	/// The Nurse's ability: every <see cref="NurseCastIntervalTicks"/> she heals the most-wounded soldier within reach to FULL — at most one per soldier per
+	/// <see cref="NursePerSoldierCooldownTicks"/>. A soldier at her side is topped off directly; one further out gets a thrown healing syringe that restores on arrival.
+	/// </summary>
 	public sealed class NurseKit : OfficerKit
 	{
 		private sealed class State
@@ -51,57 +59,89 @@ namespace Levy.Common.Officers
 
 		public override object CreateState() => new State();
 
-		// {0} reach in tiles, {1} percent of max life per heal, {2} seconds between heals of one soldier, {3} the most one heal can cost
+		// {0} reach in tiles, {1} seconds between heals of one soldier, {2} the most one heal can cost
 		public override object[] DescriptionArgs => new object[]
 		{
-			NurseHealRangeTiles, (int)Math.Round(NurseHealFrac * 100f), NursePerSoldierCooldownTicks / 60, LevyUtil.Coins(NurseMaxPriceCopper),
+			NurseHealRangeTiles, NursePerSoldierCooldownTicks / 60, LevyUtil.Coins(NurseMaxPriceCopper),
 		};
+
+		/// <summary>SUPPORT posture: hover near the most-wounded soldier within seeking range, so the heal can reach it. Null when nobody needs tending.</summary>
+		public override bool SupportAnchor(OfficerContext ctx, out Vector2 pos)
+		{
+			pos = default;
+			SoldierNPC best = MostWounded(ctx.Npc.Center, NurseHealRangeTiles * LevyConstants.TilePx, null, 0);
+			if (best == null) return false;
+			pos = best.NPC.Center;
+			return true;
+		}
 
 		public override void Tick(OfficerContext ctx)
 		{
 			if (ctx.State is not State st) return;
 			if (++st.Timer < NurseCastIntervalTicks) return;
 			st.Timer = 0;
-			if (ctx.Barracks == null || !LevyConfig.Get.NurseHealsSoldiers) return; // no settlement to pay her (or the world has Nurse healing switched off)
+			if (ctx.Barracks == null || !LevyConfig.Get.NurseHealsSoldiers) return; // no settlement to pay her (or Nurse healing switched off)
 
 			NPC nurse = ctx.Npc;
 			uint now = Main.GameUpdateCount;
-			float reach = NurseHealRangeTiles * LevyConstants.TilePx;
-			SoldierNPC best = null; float bestD = reach; int bestMissing = 0, bestKey = 0;
-			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
-			{
-				if (!s.IsAlive || s.State == SoldierState.Desert || s.State == SoldierState.Dead) continue;
-				NPC b = s.NPC;
-				int missing = b.lifeMax - b.life;
-				if (missing < Math.Max(NurseMinMissingHp, (int)(b.lifeMax * NurseMinMissingFrac))) continue;
-				float d = nurse.Distance(b.Center);
-				if (d >= bestD) continue;
-				int key = s.Record != null ? s.Record.Id : -1000 - b.whoAmI;
-				if (st.Healed.TryGetValue(key, out uint last) && now - last < (uint)NursePerSoldierCooldownTicks) continue;
-				best = s; bestD = d; bestMissing = missing; bestKey = key;
-			}
+			SoldierNPC best = MostWounded(nurse.Center, NurseHealRangeTiles * LevyConstants.TilePx, st, now);
 			if (best == null) return;
 
 			NPC body = best.NPC;
-			int heal = Math.Min(bestMissing, Math.Max(1, (int)(body.lifeMax * NurseHealFrac)));
-			long price = Math.Min(NurseMaxPriceCopper, FlavorSystem.NurseHealPrice(heal));
+			int missing = body.lifeMax - body.life;       // heal to FULL (capped at missing)
+			if (missing <= 0) return;
+			long price = Math.Min(NurseMaxPriceCopper, FlavorSystem.NurseHealPrice(missing));
 			if (!EconomySystem.TryPay(ctx.Barracks, price)) return; // the treasury cannot cover it: she does not heal on credit
 
-			body.life = Math.Min(body.lifeMax, body.life + heal);
-			if (best.Record != null) best.Record.CurrentHp = body.life;
-			body.HealEffect(heal);   // the green number; broadcast from a server
-			body.netUpdate = true;
+			int key = best.Record != null && best.Record.Id > 0 ? best.Record.Id : -1000 - body.whoAmI;
+			float dist = nurse.Distance(body.Center);
+			if (dist <= NurseProximityTiles * LevyConstants.TilePx)
+			{
+				// PROXIMITY: top the soldier off directly
+				body.life = Math.Min(body.lifeMax, body.life + missing);
+				if (best.Record != null) best.Record.CurrentHp = body.life;
+				body.HealEffect(missing, true);
+			}
+			else
+			{
+				// RANGED: throw a healing syringe that restores on arrival
+				Vector2 v = nurse.DirectionTo(body.Center) * NurseSyringeSpeed;
+				if (v.HasNaNs()) v = new Vector2(nurse.direction == 0 ? 1 : nurse.direction, -1f) * NurseSyringeSpeed;
+				Projectile.NewProjectile(nurse.GetSource_FromAI(), nurse.Center, v,
+					ModContent.ProjectileType<OfficerHealSyringe>(), 0, 0f, Common.Weapons.SoldierMinions.TrueMyPlayer, body.whoAmI, missing);
+			}
 			nurse.direction = body.Center.X < nurse.Center.X ? -1 : 1; nurse.spriteDirection = nurse.direction;
 			FlavorSystem.PlayHealSound(nurse.Center);
 			RosterSystem.SyncBarracks(ctx.Barracks); // the treasury changed: clients' barracks panel shows it
 
-			st.Healed[bestKey] = now;
+			st.Healed[key] = now;
 			if (st.Healed.Count > 48) // forget soldiers whose cooldown is long over
 			{
 				var stale = new List<int>();
 				foreach (var kv in st.Healed) if (now - kv.Value >= (uint)NursePerSoldierCooldownTicks) stale.Add(kv.Key);
 				foreach (int k in stale) st.Healed.Remove(k);
 			}
+		}
+
+		/// <summary>The most-wounded eligible soldier within <paramref name="reach"/> of <paramref name="from"/>, respecting the per-soldier cooldown when a state is given.</summary>
+		private static SoldierNPC MostWounded(Vector2 from, float reach, State st, uint now)
+		{
+			SoldierNPC best = null; int bestMissing = 0;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (!s.IsAlive || s.State == SoldierState.Desert || s.State == SoldierState.Dead) continue;
+				NPC b = s.NPC;
+				int missing = b.lifeMax - b.life;
+				if (missing < Math.Max(NurseMinMissingHp, (int)(b.lifeMax * NurseMinMissingFrac))) continue;
+				if (Vector2.Distance(from, b.Center) > reach) continue;
+				if (st != null)
+				{
+					int key = s.Record != null && s.Record.Id > 0 ? s.Record.Id : -1000 - b.whoAmI;
+					if (st.Healed.TryGetValue(key, out uint last) && now - last < (uint)NursePerSoldierCooldownTicks) continue;
+				}
+				if (missing > bestMissing) { bestMissing = missing; best = s; }
+			}
+			return best;
 		}
 	}
 }

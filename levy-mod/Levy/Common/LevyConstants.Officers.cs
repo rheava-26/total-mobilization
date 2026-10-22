@@ -69,6 +69,56 @@ namespace Levy.Common
 			public const long NurseMaxPriceCopper = 30000;
 			/// <summary>Taunt weight of the Nurse. -250 cancels the flat advantage soldiers have in enemy targeting, so enemies weigh her like the commander: she is not the first thing they chase.</summary>
 			public const int NurseAggro = -250;
+
+			// =====================================================================================================
+			// THE AVATAR — an officer fights as a reskinned soldier (reuses the soldier movement AI), its real town NPC
+			// parked and co-located so the player can still shop. These tune the transient body, not the town NPC.
+			// =====================================================================================================
+			/// <summary>Flat HP added on top of the town NPC's own max life: officers are expensive and named, so the avatar is a little sturdier than the civilian.</summary>
+			public const int AvatarBonusHp = 150;
+			/// <summary>Baseline defense of an avatar before the combat-book bonus — already more than a fresh town NPC. Tune the whole sturdiness here.</summary>
+			public const int AvatarBaseDefense = 18;
+			/// <summary>Knockback resistance of the avatar (0 = none, 1 = immovable). A touch of resist so a hit does not fling the officer off the line.</summary>
+			public const float AvatarKnockbackResist = 0.5f;
+
+			// ---- Advanced Combat Techniques (the two town-NPC combat books; vanilla values, kept tunable) ----
+			/// <summary>Defense each read combat book grants a town NPC (NPC.AI_007_TownEntities adds 6 per book). The avatar gets the same when the flags are set.</summary>
+			public const int CombatBookDefensePerBook = 6;
+			/// <summary>Damage scale each read combat book grants a town NPC (NPC.AI_007_TownEntities adds 0.2 to the damage multiple per book).</summary>
+			public const float CombatBookDamagePerBook = 0.2f;
+
+			// =====================================================================================================
+			// COMBAT POSTURE — how a kit wants the shared soldier movement to position the avatar.
+			// FRONTLINE marches at the follow distance and shoots what comes in reach. SUPPORT hangs back.
+			// =====================================================================================================
+			/// <summary>SUPPORT: tiles behind the army's leading edge (or the commander) the officer tries to stand.</summary>
+			public const int SupportRearStandoffTiles = 9;
+			/// <summary>SUPPORT: an enemy within this many tiles pushes the officer back toward the commander; she never seeks melee.</summary>
+			public const int SupportEnemyAvoidRadiusTiles = 15;
+			/// <summary>SUPPORT: she stays within this many tiles of a wounded soldier she is tending, so the heal can reach.</summary>
+			public const int SupportTendRadiusTiles = 12;
+
+			// ---- the Nurse's healing syringe (ranged heal) ----
+			/// <summary>Launch speed (px/tick) of a thrown syringe — the attack and the heal one both. A real bump over the stock 8, so the tiny-range syringe actually reaches.</summary>
+			public const float NurseSyringeSpeed = 12f;
+			/// <summary>A soldier this close (tiles) is topped off directly (proximity heal); farther wounded in reach get a thrown healing syringe.</summary>
+			public const int NurseProximityTiles = 4;
+			/// <summary>Ticks a thrown healing syringe lives before giving up (it is lightly homing, so this is a safety net).</summary>
+			public const int NurseHealSyringeLifeTicks = 180;
+
+			// ---- on-the-move chatter ----
+			/// <summary>While marching, an officer rolls a chatter line every this-to-that many ticks (so two officers do not speak in lockstep).</summary>
+			public const int MarchChatterMinTicks = 360, MarchChatterMaxTicks = 900;
+			/// <summary>Chance a march chatter roll actually speaks (the squad dialogue budget throttles it further).</summary>
+			public const float MarchChatterChance = 0.5f;
+
+			// ---- drawing the town sprite on the avatar ----
+			/// <summary>First frame of a town NPC sheet that belongs to the walk cycle (frame 0 is standing, the low frames are the attack pose).</summary>
+			public const int TownWalkStartFrame = 7;
+			/// <summary>Ticks of accumulated stride per walk frame (lower = faster leg cycle).</summary>
+			public const int TownWalkFrameTicks = 7;
+			/// <summary>Vertical nudge (px) of the drawn town sprite so its feet sit on the ground like a civilian's.</summary>
+			public const float TownDrawFootOffsetPx = 4f;
 		}
 	}
 }

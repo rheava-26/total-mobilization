@@ -180,6 +180,8 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.COMRADE_DOWN:
 				case DialogueTrigger.ROUTED:
 				case DialogueTrigger.RALLIED:
+				case DialogueTrigger.OFFICER_MARCH:
+				case DialogueTrigger.NURSE_MARCH:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:

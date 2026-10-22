@@ -261,8 +261,8 @@ namespace Levy.Content.NPCs
 		}
 
 		// ------------------------------------------------------------------------------------------------------
-		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: issue slot 1 ONLY
-		// (intentionally never bulk storage - the buff slot is the limited buff economy, so choosing the army's buffs stays a real decision).
+		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: the buff slots (1..n) ONLY
+		// (intentionally never bulk storage - the buff slots are the limited buff economy, so choosing the army's buffs stays a real decision).
 		// ------------------------------------------------------------------------------------------------------
 		/// <summary>Buff types drunk so far in the current Potions pass (empty between passes).</summary>
 		private int[] _drunkBuffs = Array.Empty<int>();

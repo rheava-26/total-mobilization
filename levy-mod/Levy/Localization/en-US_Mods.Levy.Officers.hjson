@@ -17,7 +17,7 @@ Msg: {
 	Lapsed: "{0} leaves the army. The commission has lapsed."
 	Fallen: "{0} has fallen."
 	Unpaid: "{0} was not paid at dawn. One more missed payday and the commission lapses."
-	Payday: "Officers paid: {0}."
+	Payday: Officers paid: {0}.
 }
 
 UI: {
@@ -32,7 +32,7 @@ UI: {
 	DismissHint: Sends {0} back to town life. The fee is not refunded.
 	Commission: Commission
 	CommissionHint: Costs {0} now and {1} a day.
-	Cost: "Fee {0}. Wage {1} a day."
+	Cost: Fee {0}. Wage {1} a day.
 	Available: Townsfolk who can serve
 	NoneAvailable: No one housed in this settlement can serve as an officer yet.
 	Hint: Officers fight beside the army. If one falls he is gone until he is rehoused.

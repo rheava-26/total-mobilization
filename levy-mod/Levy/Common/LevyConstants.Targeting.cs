@@ -25,6 +25,37 @@ namespace Levy.Common
 			/// <summary>Accessory-issue score per point of aggro an accessory adds (Flesh Knuckles +400 = 100, about two defense points). A tie-breaker, never a rank override.</summary>
 			public const float AccessoryAggroWeight = 0.25f;
 
+			// ---------- Army-vs-commander aggro weighting (EnemyTargeting.Compete) ----------
+			// Vanilla weighs a player as (distance - player.aggro). The soldier side gets the same formula PLUS the standing advantages below, so the army soaks fire
+			// and the commander is the exception: he is targeted mainly when alone, when no soldier is near the enemy, or when he is clearly the closest by a wide margin.
+			// All of it is a soft distance weighting (px): a far-off army never overrides a nearby commander, and with no soldier in reach the player is picked as before.
+
+			/// <summary>Flat standing aggro every soldier carries (px of distance discount): all else equal, an enemy prefers a soldier to the commander unless the commander is this much closer.</summary>
+			public const float SoldierBaseAggroPx = 250f;
+			/// <summary>Multiplier on a soldier's POSITIVE gear aggro (Flesh Knuckles +400 counts as 400 x this). Taunt gear on a soldier out-pulls a commander who wears the same gear. Negative (stealth) aggro is used as-is.</summary>
+			public const float SoldierTauntMultiplier = 2.5f;
+			/// <summary>Soldiers within this radius of the enemy pull collectively: each one adds <see cref="ArmyPullPerSoldierPx"/> to the commander's weighted distance.</summary>
+			public const float ArmyPullRadiusPx = 700f;
+			/// <summary>Penalty on the commander's weighted distance per soldier inside <see cref="ArmyPullRadiusPx"/> (a cluster of soldiers outweighs one player).</summary>
+			public const float ArmyPullPerSoldierPx = 40f;
+			/// <summary>Soldiers counted for the collective pull stop here (so the penalty tops out at this x <see cref="ArmyPullPerSoldierPx"/> px).</summary>
+			public const int ArmyPullMaxSoldiers = 8;
+			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies spread across the army instead of all picking the single nearest soldier.</summary>
+			public const float SpreadJitterPx = 120f;
+
+			// ---------- Event towers (Lunar Pillars) and event hostile projectiles ----------
+			/// <summary>
+			/// The four Lunar Pillars. They never attack directly; they spawn their event enemies / lightning only while their target is in reach. They are boss-class for loot and
+			/// shield purposes but use the swap even without the boss unlock, so soldiers standing at a pillar draw its attacks and share them with the commander.
+			/// </summary>
+			public static readonly int[] EventTowerTypes = { NPCID.LunarTowerSolar, NPCID.LunarTowerVortex, NPCID.LunarTowerNebula, NPCID.LunarTowerStardust };
+			/// <summary>A pillar heals itself when its target is more than 2000 px away, so soldiers only compete for a pillar's attention inside this distance.</summary>
+			public const float EventTowerSoldierRangePx = 1800f;
+			/// <summary>Chance that an event hostile projectile that locked on the commander is re-aimed at the nearest soldier instead (it always goes to a soldier that is closer than the commander).</summary>
+			public const float EventProjectileSoldierShare = 0.6f;
+			/// <summary>An event projectile only re-aims at a soldier within this distance of itself.</summary>
+			public const float EventProjectileShareRangePx = 1600f;
+
 			// ---------- Combat orders: Focus Attack (a designated world position) ----------
 			/// <summary>Hostiles and critters within this many tiles of the focus position are attacked (critters are otherwise never targets).</summary>
 			public const float FocusAttackRadiusTiles = 12f;

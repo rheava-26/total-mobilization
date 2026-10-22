@@ -80,8 +80,9 @@ namespace Levy.Common.UI
 			_title.Left.Set(12f, 0f); _title.Top.Set(10f, 0f);
 			_panel.Append(_title);
 
+			// Right side of the filter row (clear of the search box above and the shown-count on the left): the storage capacity + how much comes from Logistical Centers.
 			_capacity = new Label("", 0.7f);
-			_capacity.Left.Set(96f, 0f); _capacity.Top.Set(15f, 0f);
+			_capacity.Left.Set(460f, 0f); _capacity.Top.Set(LevyConstants.UI.ArmoryFilterTop + 6f, 0f);
 			_panel.Append(_capacity);
 
 			int w = LevyConstants.UI.ArmoryPanelWidth;

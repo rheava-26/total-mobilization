@@ -68,9 +68,41 @@ namespace Levy.Common.Boss
 			if (changed && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
 		}
 
+		/// <summary>
+		/// Server / single player, on world load: seed the set from Terraria's own vanilla "downed" flags so bosses beaten before this feature existed
+		/// count at once instead of needing a re-kill. Keys are the same root NPCIDs RecordKill produces, so lookups hit. The set only grows and Add is
+		/// idempotent, so a boss already recorded stays put. Modded bosses have no vanilla flag; they keep recording on kill going forward.
+		/// </summary>
+		internal static void BackfillFromVanillaFlags()
+		{
+			if (!LevyUtil.IsServerOrSingle) return;
+			bool changed = false;
+			void Seed(bool flag, params int[] ids) { if (flag) foreach (int id in ids) changed |= _downed.Add(KeyOfType(id)); }
+			Seed(NPC.downedSlimeKing, NPCID.KingSlime);
+			Seed(NPC.downedBoss1, NPCID.EyeofCthulhu);
+			Seed(NPC.downedBoss2, NPCID.EaterofWorldsHead, NPCID.BrainofCthulhu); // shared world-evil flag; can't tell which, so seed both (harmless)
+			Seed(NPC.downedBoss3, NPCID.SkeletronHead);
+			Seed(NPC.downedQueenBee, NPCID.QueenBee);
+			Seed(NPC.downedDeerclops, NPCID.Deerclops);
+			Seed(NPC.downedMechBoss1, NPCID.TheDestroyer);
+			Seed(NPC.downedMechBoss2, NPCID.Retinazer, NPCID.Spazmatism); // the Twins; RecordKill keys them separately
+			Seed(NPC.downedMechBoss3, NPCID.SkeletronPrime);
+			Seed(NPC.downedQueenSlime, NPCID.QueenSlimeBoss);
+			Seed(NPC.downedPlantBoss, NPCID.Plantera);
+			Seed(NPC.downedGolemBoss, NPCID.Golem);
+			Seed(NPC.downedFishron, NPCID.DukeFishron);
+			Seed(NPC.downedEmpressOfLight, NPCID.HallowBoss);
+			Seed(NPC.downedAncientCultist, NPCID.CultistBoss);
+			Seed(NPC.downedMoonlord, NPCID.MoonLordCore);
+			if (changed && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
+		}
+
 		public override void Unload() { _downed.Clear(); _keyCache.Clear(); }
 
 		public override void ClearWorld() => _downed.Clear();
+
+		// Runs after ClearWorld and after vanilla NPC.downedX flags are populated, so already-beaten bosses are allowlisted immediately.
+		public override void OnWorldLoad() => BackfillFromVanillaFlags();
 
 		public override void SaveWorldData(TagCompound tag)
 		{

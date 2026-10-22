@@ -306,6 +306,7 @@ namespace Levy.Content.NPCs
 				MeleeEffects.ApplyVanillaMeleeHit(this, item, n, sourceDamage, box);
 				LastMeleeHitTick = (int)Main.GameUpdateCount;
 				LootCredit.OnSoldierHit(n, this, done); // boss rule accounting, kill count, KILL bark
+				OnMeleeHit(n, done); // armor set on-hit bonuses (SoldierNPC.ArmorSets.cs)
 			}
 		}
 

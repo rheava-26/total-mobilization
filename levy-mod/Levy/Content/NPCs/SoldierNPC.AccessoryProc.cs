@@ -182,7 +182,10 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------------
 		// Spectre Mask set bonus (Player.ghostHurt). Vanilla spawns the bolt in Projectile.Damage when Main.player[owner].ghostHurt is set, but only on the
 		// !npcProj path, and the owner of a soldier shot is the commander. So the dummy's own flag (set by UpdateArmorSets in RefreshStats) is read here instead,
-		// on every hit of a soldier's projectile, and the vanilla Projectile.ghostHurt does the rest (magic-only, nearest-with-line-of-sight pick, 4-px/tick launch).
+		// on every hit of a soldier's projectile (SoldierNPC.OnProjectileHit), and the vanilla Projectile.ghostHurt does the rest (magic-only, nearest-with-line-of-sight pick, 4-px/tick launch).
+		// That flag was the long-standing failure: UpdateArmorSets matches Player.head / body / legs, which the dummy only ever got from the draw pass, so on a server (and on any
+		// soldier not yet seen on screen) the set was never recognised and ghostHurt stayed false. SoldierNPC.UpdateDummyArmorSets now fills them before the pass.
+		// The Spectre Hood's heal twin and every other set bonus live in SoldierNPC.ArmorSets.cs.
 		// ------------------------------------------------------------------------------------------------------------
 		/// <summary>This body's own stand-in for Player.ghostDmg (vanilla's shared cooldown pool) and the tick it was last decayed at.</summary>
 		private float _ghostDmg;

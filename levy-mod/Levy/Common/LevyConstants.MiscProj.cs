@@ -49,5 +49,45 @@ namespace Levy.Common
 		public const int LeafShotLeadUpdates = 180;
 		/// <summary>How often SoldierNPC tops up / trims the soldier's leaf, and the pause after a spawn.</summary>
 		public const int LeafMaintainIntervalTicks = 20, LeafSpawnCooldownTicks = 40;
+
+		// ---------- Armor set bonuses that need a body of their own (Player.UpdateArmorSets / OnHit_Inner / Hurt; SoldierNPC.ArmorSets.cs) ----------
+		/// <summary>Spectre Hood (Player.ghostHeal -> Projectile.ghostHeal): a magic hit heals 20% of its damage, less 5% per target it has already pierced, from a pool that refills 0.6 a tick (0.5 in Expert+) up to 80 (70).</summary>
+		public const float HoodHealFraction = 0.2f, HoodHealPierceDecay = 0.05f, HoodPoolMax = 80f, HoodPoolMaxExpert = 70f, HoodPoolRefill = 0.6f, HoodPoolRefillExpert = 0.5f;
+		/// <summary>The heal bolt (ProjectileID.SpiritHeal, aiStyle 52) cruises at 4 px per extra-update, steers by (v*15 + aim)/16 and lands inside 50 px.</summary>
+		public const float HoodBoltSpeed = 4f, HoodBoltArriveRangePx = 50f;
+		public const int HoodBoltTimeLeftTicks = 900;
+
+		/// <summary>Beetle armor (Player.beetleCounter): defense grows an orb every 180 ticks (max 3), each worn orb takes 15% off a hit and the hit pops one. Might builds a counter from melee damage, loses 3 a tick (plus countdown/20) and shows 1/2/3 orbs above 400 / 1600 / 5200, each worth +10% melee damage and speed.</summary>
+		public const int BeetleDefenseTicksPerOrb = 180, BeetleMaxOrbs = 3;
+		public const float BeetleDefenseReductionPerOrb = 0.15f;
+		public const float BeetleMightOrb1 = 400f, BeetleMightOrb2 = 1600f, BeetleMightOrb3 = 5200f, BeetleMightCap = 6400f, BeetleMightDecayPerTick = 3f, BeetleMightLevelUpBonus = 200f, BeetleMightBonusPerOrb = 0.1f;
+		public const int BeetleMightCountdownDivisor = 20;
+
+		/// <summary>Solar Flare armor: a shield every 180 ticks (max 3); while one is up hits are 20% lighter, and a hit pops one into a 160 px flare worth 150 melee damage.</summary>
+		public const int SolarTicksPerShield = 180, SolarMaxShields = 3;
+		public const float SolarHitScale = 0.8f, SolarFlareDamage = 150f, SolarFlareKnockback = 15f;
+		public const int SolarFlareProjectile = 608;
+
+		/// <summary>Hallowed armor (onHitDodge): a hit readies a 30 s dodge, the dodge grants 80 ticks of immunity and a 30 s cooldown.</summary>
+		public const int HallowedReadyTicks = 1800, HallowedCooldownTicks = 1800, HallowedDodgeImmuneTicks = 80;
+		/// <summary>Palladium armor (onHitRegen): +4 life-regen units a tick for 300 ticks after a hit. Nebula boosters: +6 units a tick per life level, +15% damage per damage level, 480 ticks a level.</summary>
+		public const int PalladiumRegenTicks = 300, PalladiumRegenUnits = 4, NebulaBoosterTicks = 480, NebulaLifeUnitsPerLevel = 6, NebulaMaxLevel = 3, NebulaCooldownTicks = 30, NebulaChanceDenominator = 3;
+		public const float NebulaDamagePerLevel = 0.15f;
+		/// <summary>Orichalcum armor (onHitPetal): a 36-damage petal (ProjectileID.FlowerPetal) every 20 ticks at the struck enemy, launched at 24 px a tick from some way off.</summary>
+		public const int OrichalcumPetalDamage = 36, OrichalcumPetalCooldownTicks = 20;
+		public const float OrichalcumPetalSpeed = 24f, OrichalcumPetalMinStartPx = 360f, OrichalcumPetalMaxStartPx = 620f, OrichalcumPetalSpreadPx = 320f;
+		/// <summary>Titanium armor (onHitTitaniumStorm): a hit (10 tick gap) refreshes a 600 tick storm and adds a 50-damage shard (15 knockback) to an orbit of at most 7.</summary>
+		public const int TitaniumStormTicks = 600, TitaniumShardMax = 7, TitaniumShardDamage = 50, TitaniumHitGapTicks = 10;
+		public const float TitaniumShardKnockback = 15f, TitaniumOrbitBasePx = 24f, TitaniumOrbitPerShardPx = 6f, TitaniumOrbitFlatten = 0.05f, TitaniumTurnsPer300Ticks = 6f, TitaniumFollowLerp = 0.3f;
+		/// <summary>Crimson armor: natural regeneration runs half again as fast. Frost armor: melee and ranged shots set Frostburn for 5-15 s.</summary>
+		public const float CrimsonRegenSpeedup = 1.5f;
+		public const int FrostburnBuff = 324, FrostburnMinSeconds = 5, FrostburnMaxSeconds = 15;
+		/// <summary>Shadow armor: +15% run speed. Cactus armor thorns: flat damage back (Classic / Expert / Master). Turtle armor reflects 200% of the contact hit (cap 1000).</summary>
+		public const float ShadowArmorRunSpeed = 1.15f, TurtleThornsMult = 2f;
+		public const int CactusThornsDamage = 15, CactusThornsDamageExpert = 30, CactusThornsDamageMaster = 45, ThornsDamageCap = 1000;
+		public const float ThornsKnockback = 10f;
+		/// <summary>Paladin's Shield: wearers within 800 px draw a third of the damage dealt to an ally (the ally takes 25% less); the nearest one above 25% health and out of immune time takes it.</summary>
+		public const float PaladinRangePx = 800f, PaladinHealthFloor = 0.25f, PaladinAllyScale = 0.75f, PaladinShareFraction = 1f / 3f;
+		public const int PaladinBeamDust = 12;
 	}
 }

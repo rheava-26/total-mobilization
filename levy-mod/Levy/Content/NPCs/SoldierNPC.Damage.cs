@@ -50,6 +50,7 @@ namespace Levy.Content.NPCs
 			if (_buffPotionCooldown > 0) _buffPotionCooldown--;
 			if (_armoryRetry > 0) _armoryRetry--;
 			_projectileStriking = false;
+			_hitPaladin = null; // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return;
 			if (ImmuneTime == 0) ContactDamage();
 			if (!IsAlive) return;
@@ -79,11 +80,14 @@ namespace Levy.Content.NPCs
 
 				int dir = a.Center.X < cx ? 1 : -1;
 				int raw = Math.Max(1, Main.DamageVar(a.damage * mult));
+				ReflectThorns(a, raw, -dir); // Turtle / Cactus thorns hit back whether or not the blow lands (Player.Update_NPCCollision)
+				if (TryShadowDodge()) return; // Hallowed armor's dodge: no wound, 80 ticks of immunity
 				LastAttackerIndex = i; LastAttackerType = a.type; LastAttackerName = a.GivenOrTypeName;
 				int done;
 				_contactStriking = true;
+				PendingContactScale = IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
-				finally { _contactStriking = false; }
+				finally { _contactStriking = false; PendingContactScale = 1f; }
 				AfterHit(done, i);
 				return; // one contact hit per tick; immune frames gate the rest
 			}
@@ -97,6 +101,7 @@ namespace Levy.Content.NPCs
 			_regenCounter = 0;
 			if (attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active) SoldierTargeting.NoteAttacker(attackerIndex);
 			if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
+			SetsOnHurt(damageDone, attackerIndex); // Paladin's Shield share, Solar flare burst, Beetle orb lost (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return; // the roster and FearSystem.OnComradeDied own the death
 			Fear_OnDamaged(damageDone, attackerIndex);
 			FearSystem.OnComradeHit(this, damageDone);
@@ -112,6 +117,7 @@ namespace Levy.Content.NPCs
 			if (!projectile.hostile) return;
 			modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
 			if (LevyUtil.IsClient) return;
+			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)
 			// Attribution must exist before StrikeNPC reaches checkDead; OnHitByProjectile only fires afterwards.
 			RecordProjectileAttacker(projectile);
 			_projectileStriking = true;
@@ -200,14 +206,16 @@ namespace Levy.Content.NPCs
 					case BuffID.Summoning: d.maxMinions++; break;
 				}
 			}
+			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
 			return regen;
 		}
 
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
 		private void StationRegen()
 		{
-			if (Stations == StationFlags.None && _buffLifeRegen <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
-			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen);
+			int setUnits = SetRegenUnits(); // Palladium rapid healing, Nebula life boosters
+			if (Stations == StationFlags.None && _buffLifeRegen <= 0 && setUnits <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
+			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen) + setUnits;
 			if (units > 0 && NPC.life < NPC.lifeMax)
 			{
 				_stationLifeCount += units;
@@ -231,7 +239,7 @@ namespace Levy.Content.NPCs
 		{
 			StationRegen();
 			if (NPC.life >= NPC.lifeMax || TicksSinceDamaged <= LevyConstants.RegenDelayTicks) { _regenCounter = 0; return; }
-			if (++_regenCounter < LevyConstants.RegenIntervalTicks) return;
+			if (++_regenCounter < (Dummy != null && Dummy.crimsonRegen ? (int)(LevyConstants.RegenIntervalTicks / LevyConstants.CrimsonRegenSpeedup) : LevyConstants.RegenIntervalTicks)) return; // Crimson armor: natural regeneration half again as fast
 			_regenCounter = 0;
 			int amount = LevyConstants.RegenHpPerInterval;
 			if (Record != null && Record.StoodDown)
@@ -310,7 +318,11 @@ namespace Levy.Content.NPCs
 
 		public override bool? CanBeHitByProjectile(NPC npc, Projectile projectile)
 		{
-			if (projectile.hostile && npc.ModNPC is SoldierNPC s && s.ImmuneTime > 0) return false;
+			if (projectile.hostile && npc.ModNPC is SoldierNPC s)
+			{
+				if (s.ImmuneTime > 0) return false;
+				if (!LevyUtil.IsClient && s.TryShadowDodge()) return false; // Hallowed armor's dodge turns the shot aside; its 80 immune ticks cover the rest
+			}
 			return null;
 		}
 	}

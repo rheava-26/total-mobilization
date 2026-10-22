@@ -10,6 +10,7 @@ using Levy.Common.Net;
 using Levy.Common.Fear;
 using Levy.Common.Globals;
 using Levy.Common.Systems;
+using Levy.Common.Targeting;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
@@ -63,7 +64,8 @@ namespace Levy.Common.Boss
 
 		// Vanilla TargetClosest loops Main.player[0..254] (NPC.cs 70931-70944) so slot 255 can never win on its own. During a dash
 		// swap the boss must keep targeting 255, so after vanilla has picked a player we put the dummy back. The targeting agent's
-		// own detour never touches bosses, so the two never fight over an NPC.
+		// own detour only touches a boss whose type is unlocked (BossesTargetSoldiers) and stands down for this NPC while its dash swap is active
+		// (EnemyTargeting.Compete / EnemyTargetingGlobalNPC.PreAI check IsDashSwapping / DashSwapDue), so the two never fight over an NPC or the slot.
 		private static void Hook_TargetClosest(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
 		{
 			orig(self, faceTarget);
@@ -198,13 +200,25 @@ namespace Levy.Common.Boss
 		// Dashes (slot-255 swap, allowlist only)
 		// =====================================================================================================
 
+		/// <summary>True while this boss's dash swap is active (its AI call is running with the spite target's dummy in slot 255).</summary>
+		internal static bool IsDashSwapping(NPC npc) => _swapped && npc.whoAmI == _swapNpc;
+
+		/// <summary>True when this boss's dash swap would begin on this tick's PreAI. Pure: lets the enemy-targeting swap yield the slot for that call.</summary>
+		internal static bool DashSwapDue(NPC npc) => !_swapped && TryGetDashBody(npc, out _);
+
+		private static bool TryGetDashBody(NPC npc, out SoldierNPC body)
+		{
+			body = null;
+			if (!LevyUtil.IsServerOrSingle) return false;
+			if (!BossRule.DashSet.Contains(npc.type) || !LevyConfig.Get.BossesPunishSoldiers) return false;
+			var data = LevyNpcData.Of(npc);
+			if (data.SpiteTimer <= 0 || !BossRule.IsLiveBody(data.SpiteTarget, out body)) return false;
+			return body.Dummy != null && IsDashAimTick(npc, body);
+		}
+
 		private static void TryBeginDashSwap(NPC npc)
 		{
-			if (_swapped || !LevyUtil.IsServerOrSingle) return;
-			if (!BossRule.DashSet.Contains(npc.type) || !LevyConfig.Get.BossesPunishSoldiers) return;
-			var data = LevyNpcData.Of(npc);
-			if (data.SpiteTimer <= 0 || !BossRule.IsLiveBody(data.SpiteTarget, out var body)) return;
-			if (body.Dummy == null || !IsDashAimTick(npc, body)) return;
+			if (_swapped || EnemyTargeting.IsSwapped || !TryGetDashBody(npc, out var body)) return;
 
 			body.SyncDummyTransform();
 			_backup = Main.player[SoldierNPC.DummySlot];

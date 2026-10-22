@@ -15,6 +15,7 @@ namespace Levy.Common.Config
 		[Range(0, 10)] [DefaultValue(2)] public int BossHpScalingPercentPerCp;
 		[Range(0, 200)] [DefaultValue(80)] public int BossHpScalingCapPercent;
 		[DefaultValue(true)] public bool BossesPunishSoldiers;
+		[DefaultValue(false)] public bool BossesTargetSoldiers;
 
 		[Header("Soldiers")]
 		[Range(0f, 3f)] [DefaultValue(1f)] public float FearMultiplier;

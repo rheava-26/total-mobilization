@@ -133,6 +133,16 @@ Mods: {
 					Tooltip: Bosses redirect shots and dashes at soldiers that get close or hurt them.
 				}
 
+				BossesTargetSoldiers: {
+					Label: Bosses target soldiers
+					Tooltip:
+						'''
+						Bosses you have already defeated in this world chase the nearest soldier like a player.
+						The first kill of any boss is always solo. Needs Enemies target soldiers.
+						Some boss AIs will not be fully diverted.
+						'''
+				}
+
 				FearMultiplier: {
 					Label: Fear multiplier
 					Tooltip: Scales every fear gain during boss fights.

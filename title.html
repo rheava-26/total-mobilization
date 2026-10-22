@@ -880,7 +880,7 @@
    constructors · special resources · research tree · single invasion.
    Self-contained, no dependencies. Crash-proof loop.
    ===================================================================== */
-const cv = document.getElementById('bg'), c = cv.getContext('2d');
+const cv = document.getElementById('bg'); let c = cv.getContext('2d');   /* v4.5 P — let: bakeTerrain / the minimap cache briefly point c at an offscreen context */
 let W, H;
 function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; buildStars(); layoutEarth(); cam.y = clampCamY(cam.y); }
 addEventListener('resize', resize);
@@ -1427,6 +1427,10 @@ const WORLD_W = 6000, CURVE_AMT = 92, SEA_E = 0.45;   // wider front (v1.9.8 —
 const HEAT_COLS = 80, HEAT_ROWS = 6;   // AFTER-ACTION COMBAT HEATMAP — fixed-size world-position × altitude-band grid; see G.stats.heat
 const MIN_LAND_FRAC = 0.35;   // guarantee at least this fraction of the strip is dry, buildable land — clamps pathological "waterworld" rolls (only a few tiny dry spots → one forced gigacity) WITHOUT flattening coastline variety; only ever RAISES a too-wet map, never lowers a good one
 const MIN_CITY_SPACING = 360;   // minimum gap between seeded city centres — cities that OVERLAP still fuse into a megacity (a feature), but they shouldn't ALL fuse just because they snapped onto the same scrap of land; > the ~290px merge threshold so spread seeds stay distinct
+/* ===== v4.5 P — TERRAIN LAYER CACHE. The ground (soil, strata, biome strips, highlight, scenery, scorch scars) used to be re-stroked from groundY/elevAt/noiseAt at 3px steps EVERY frame. It is now baked once into an offscreen canvas and blitted; the bake repeats only when the camera moved more than a quarter screen, the zoom or canvas size changed, TERRAIN_FORCE was bumped (new map / society), or TERRAIN_VERSION was bumped (a crater / terrain edit / scorch scar touching the cached span; rebuilt at most every 90ms). Water, the ground outline, roads, ruins, embers and snow glints stay live over it. ===== */
+let TERRAIN_VERSION = 0, TERRAIN_FORCE = 0, TERR_PX = null, TERR_EDIT = 0;   /* TERR_EDIT counts every change to the height field (see waterBounds caching in updUnits) */
+const TCACHE = { cv: null, ctx: null, ver: -1, force: -1, cz: 0, w: 0, h: 0, camX: 0, yTop: 0, px: 0, t: -1e9, x0: 1e9, x1: -1e9, glints: [], baking: false };
+function terrainTouch(lo, hi) { if (hi >= TCACHE.x0 && lo <= TCACHE.x1) TERRAIN_VERSION++; }
 let TSEED = null, MSEED = null, CLOUDLIST = [], craters = [], fills = [], levels = [], NEB = [], TBIAS = 0;   // fills = legacy mounds; levels = smooth feathered RAISE/LEVEL/SINK terrain edits; NEB = deep-space nebula clouds; TBIAS = uniform elevation lift applied to the base heightfield to enforce MIN_LAND_FRAC (preserves shape/variety, just raises the whole coastline)
 let RSEED1 = null, RSEED2 = null, METEORS = [], meteorClock = 0;   // RSEED = distant parallax mountain ridges; METEORS = shooting stars streaking through the space band
 const cam = { x: 0, y: 0, z: 1, manualT: 0 };   // y = vertical scroll (the world is taller than the viewport); z = zoom (1 = default, up to 3× in); manualT = seconds the player has manual vertical control before auto-follow resumes
@@ -1454,8 +1458,8 @@ function elevAtRaw(wx) { const base = noiseAt(TSEED, wx) + TBIAS, cr = craterAt(
 // ===== TERRAIN HEIGHT CACHE — elevAtRaw (multi-octave noise + an O(craters) loop + levels[] feathering) profiled as the #1 per-unit cost, called every unit every frame via groundY. The noise+TBIAS part is STATIC for a seed; craters/levels only change on rare, LOCAL writes (an explosion, a terrain-edit click). So: sample elevAtRaw once onto a fixed 1px table across the whole world, have elevAt() read + lerp from it, and on every crater/level add (or cap-drop) rebuild ONLY that edit's own x±r range (a few dozen samples) via rebuildTerrainRange — never the whole table. Terrain noise varies over hundreds of px and even the tightest crater feather (r>=6) is far coarser than 1px, so this matches elevAtRaw to a small fraction of a px. =====
 const TERR_STEP = 1;   // world-px between cached samples. Tried 2px first: fine everywhere EXCEPT right at a SINK terrain-edit's hard floor clamp (elevAtRaw's `Math.max(-0.45, e)`), where sea-deepening's ×2.6 amplification turns the clamp into a sharp kink — linear-interpolation error across a kink scales with step size, and at 2px it exceeded the 0.5px groundY tolerance in that one edge case (measured ~0.73px worst-case). 1px halves that kink error back under tolerance (measured ~0.3px worst-case) at the cost of ~2x more samples per local rebuild — still cheap (crater/level edits are rare, see pushCrater/pushLevel below)
 let TERR_CACHE = null;   // Float64Array, index i -> world x = i*TERR_STEP, value = elevAtRaw(x)
-function buildTerrainCache() { const n = Math.floor(WORLD_W / TERR_STEP) + 1; TERR_CACHE = new Float64Array(n); for (let i = 0; i < n; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP); }
-function rebuildTerrainRange(loX, hiX) { if (!TERR_CACHE) return; const n = TERR_CACHE.length, i0 = Math.max(0, Math.floor(loX / TERR_STEP) - 1), i1 = Math.min(n - 1, Math.ceil(hiX / TERR_STEP) + 1); for (let i = i0; i <= i1; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP); }
+function buildTerrainCache() { TERRAIN_FORCE++; TERR_EDIT++; const n = Math.floor(WORLD_W / TERR_STEP) + 1; TERR_CACHE = new Float64Array(n); for (let i = 0; i < n; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP); }
+function rebuildTerrainRange(loX, hiX) { if (!TERR_CACHE) return; TERR_EDIT++; const n = TERR_CACHE.length, i0 = Math.max(0, Math.floor(loX / TERR_STEP) - 1), i1 = Math.min(n - 1, Math.ceil(hiX / TERR_STEP) + 1); for (let i = i0; i <= i1; i++) TERR_CACHE[i] = elevAtRaw(i * TERR_STEP);  terrainTouch(loX, hiX); }
 function pushCrater(c) { craters.push(c); rebuildTerrainRange(c.x - c.r, c.x + c.r); charAdd(c.x, .25); }   // mirrors a bare craters.push(...) call site — no cap/shift, so array-growth behavior at that site is unchanged. DESTRUCTION LAYER: every crater scars the ground permanently (see charAdd)
 function capCraters() { if (craters.length > 70) { const old = craters.shift(); rebuildTerrainRange(old.x - old.r, old.x + old.r); } }   // mirrors an `if (craters.length > 70) craters.shift();` call site — also invalidates the range the dropped crater used to affect
 function pushLevel(L) { levels.push(L); rebuildTerrainRange(L.x - L.r, L.x + L.r); }
@@ -1466,7 +1470,7 @@ function capLevels() { if (levels.length > 220) { const old = levels.shift(); re
 const CHAR_CELL = 40;   // world-px per scar cell — WORLD_W/40 = 150 cells total, cheap to scan/draw in full every frame
 function charAdd(x, amt) {   // scar a ground cell — PERMANENT (no decay); also (re)starts that cell's ~2min fire window
   if (!G || !G.char) return; const n = G.char.length, i = Math.max(0, Math.min(n - 1, Math.floor(x / CHAR_CELL)));
-  G.char[i] = Math.min(1, G.char[i] + amt); G.charFedT[i] = G.time;   // charBurnT() derives the fire window from this timestamp instead of a live per-frame decay tick
+  G.char[i] = Math.min(1, G.char[i] + amt); G.charFedT[i] = G.time; terrainTouch(x - CHAR_CELL * 4, x + CHAR_CELL * 4);   // charBurnT() derives the fire window from this timestamp instead of a live per-frame decay tick
 }
 function charBurnT(i) { const fed = G.charFedT[i]; return fed == null ? 0 : Math.max(0, 1 - (G.time - fed) / 120); }   // 0..1 — how alive a heavily-scarred cell's fire still is, ~2 minutes after last fed, no ticking required to compute it
 function pushRuin(b) {   // a destroyed building leaves a permanent silhouette — shape precomputed ONCE here so drawWorld's render pass never allocates
@@ -1528,6 +1532,61 @@ function lerpHex(a, bHex, t) {   // '#rrggbb' lerp toward bHex by t (0..1) — u
   const r = Math.round(ar + (br - ar) * t), g = Math.round(ag + (bg - ag) * t), b = Math.round(ab + (bb - ab) * t);
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
+function paintTerrain(alpha, VH, x0, cz, PX, clampWX) {
+  // === TERRAIN body (visible slice) ===
+  const digDepth = cz < .6 ? 0 : UG_VIEW_PAD;   // HUD-LESS FULL-MAP VIEW (v4.0 D2) — past this zoom-out threshold, don't render the extended dirt/strata band below the nominal floor (only sky + ground line are real gameplay fields down here); mirrors clampCamY's own cz<.6 change so the camera can't pan into a clipped void either
+  c.beginPath(); c.moveTo(-PX, groundY(clampWX(wxAt(-PX))));
+  for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px))));
+  c.lineTo(W + PX, VH + digDepth); c.lineTo(-PX, VH + digDepth); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space (clipped to the nominal floor in the full-map view instead); PX over-scan fills the zoomed-out side margins
+  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + digDepth); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
+  if (cz >= .6) drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body — skipped in the full-map view (nothing to show, see digDepth above)
+  for (let px = -PX; px < W + PX; px += 3) { const wx = clampWX(wxAt(px)), y = groundY(wx), y2 = groundY(clampWX(wx + 3)); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
+  c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = -PX; px <= W + PX; px += 4) { const y = groundY(clampWX(wxAt(px))); px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight (over-scans at cz<1 so the margins aren't bare)
+  drawTerrainDetail(alpha);   // biome scenery — forests, brush, boulders, snow glints
+  if (G && G.char) {   // === DESTRUCTION LAYER — permanent scorch scars + slow-dying embers on heavily-charred ground (see charAdd/charBurnT) ===
+    const _cn = G.char.length, _ci0 = Math.max(0, Math.floor(clampWX(wxAt(-PX)) / CHAR_CELL) - 1), _ci1 = Math.min(_cn - 1, Math.ceil(clampWX(wxAt(W + PX)) / CHAR_CELL) + 1);
+    c.fillStyle = '#120c08';
+    if (cz < .35) {   // zoomed way out — one averaged strip per 4 cells instead of drawing each (well under the ~150-fill budget, still reads as scarred ground)
+      for (let i = _ci0 - (((_ci0 % 4) + 4) % 4); i <= _ci1; i += 4) { let sum = 0, cnt = 0; for (let k = Math.max(0, i); k < i + 4 && k <= _ci1 && k < _cn; k++) { sum += G.char[k]; cnt++; } if (!cnt) continue; const avg = sum / cnt; if (avg <= .05) continue; const wx = clampWX((i + 2) * CHAR_CELL), px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, avg * .55); c.fillRect(px - CHAR_CELL * 2, y, CHAR_CELL * 4, 10 + avg * 8); }
+      c.globalAlpha = alpha;
+    } else {
+      for (let i = _ci0; i <= _ci1; i++) { const ch = G.char[i]; if (ch <= .05) continue; const wx = i * CHAR_CELL + CHAR_CELL / 2, px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, ch * .55); c.fillRect(px - CHAR_CELL / 2, y, CHAR_CELL, 10 + ch * 8); }
+      c.globalAlpha = alpha;
+    }
+  }
+}
+/* the ember spawner that used to ride inside the scorch-scar draw: still runs every live frame (<=1 ember/s/cell, only on-screen cells, only with Full Effects) */
+function terrainEmbers(cz, PX, clampWX) {
+  if (!fullFx || !G || !G.char || cz < .35) return;
+  const _cn = G.char.length, _ci0 = Math.max(0, Math.floor(clampWX(wxAt(-PX)) / CHAR_CELL) - 1), _ci1 = Math.min(_cn - 1, Math.ceil(clampWX(wxAt(W + PX)) / CHAR_CELL) + 1);
+  for (let i = _ci0; i <= _ci1; i++) { if (G.char[i] <= .6 || charBurnT(i) <= 0 || G.time < G._fireNextT[i]) continue; G._fireNextT[i] = G.time + .7 + Math.random() * .6; const wx = i * CHAR_CELL + CHAR_CELL / 2 + (Math.random() - .5) * 20, gy = groundY(wx); G.parts.push({ k: 'fire', x: wx, y: gy - 2, vx: (Math.random() - .5) * 6, vy: -14 - Math.random() * 12, r: 1.3 + Math.random() * 1.6, life: .45 + Math.random() * .35 }); }   // ≤1 ember/s/cell, only on-screen, only with Full Effects on — see charBurnT for the ~2min no-decay-tick burnout window
+}
+function bakeTerrain(VH, cz, PXz, clampWX) {
+  const PXt = PXz + Math.ceil(W * .5), CW = W + 2 * PXt, digDepth = cz < .6 ? 0 : UG_VIEW_PAD;
+  let minY = 1e9; for (let px = -PXt; px <= W + PXt; px += 6) { const y = groundY(clampWX(wxAt(px))); if (y < minY) minY = y; }
+  const yTop = Math.max(0, Math.floor(minY - 80)), yBot = Math.ceil(VH + digDepth + 2), CH = yBot - yTop;
+  if (!(CW > 0) || CW > 16000 || !(CH > 0) || CH > 8000) return false;
+  let cvv = TCACHE.cv; if (!cvv) { cvv = TCACHE.cv = document.createElement('canvas'); TCACHE.ctx = cvv.getContext('2d'); }
+  if (!TCACHE.ctx) return false;
+  if (cvv.width !== CW) cvv.width = CW; if (cvv.height !== CH) cvv.height = CH;
+  const ctx = TCACHE.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.clearRect(0, 0, CW, CH);
+  const prevC = c; c = ctx; ctx.translate(PXt, -yTop); TERR_PX = PXt; TCACHE.baking = true; TCACHE.glints.length = 0;
+  try { paintTerrain(1, VH, cam.x, cz, PXt, clampWX); } finally { c = prevC; TERR_PX = null; TCACHE.baking = false; ctx.setTransform(1, 0, 0, 1, 0, 0); }
+  TCACHE.ver = TERRAIN_VERSION; TCACHE.force = TERRAIN_FORCE; TCACHE.cz = cz; TCACHE.w = W; TCACHE.h = H; TCACHE.camX = cam.x; TCACHE.yTop = yTop; TCACHE.px = PXt; TCACHE.t = performance.now();
+  TCACHE.x0 = cam.x - PXt - 40; TCACHE.x1 = cam.x + W + PXt + 40;
+  return true;
+}
+function terrainBlit(alpha, VH, x0, cz, PX, clampWX) {
+  const t0 = performance.now(); let baked = false;
+  const stale = !TCACHE.cv || TCACHE.force !== TERRAIN_FORCE || TCACHE.cz !== cz || TCACHE.w !== W || TCACHE.h !== H || Math.abs(cam.x - TCACHE.camX) > W * .25 || (TCACHE.ver !== TERRAIN_VERSION && t0 - TCACHE.t > 90);
+  if (stale) { try { baked = bakeTerrain(VH, cz, PX, clampWX); } catch (er) { baked = false; logErr(er); } if (!baked) TCACHE.cv = null; }
+  if (TCACHE.cv && TCACHE.cz === cz) {
+    c.save(); c.globalAlpha = alpha; c.drawImage(TCACHE.cv, Math.round(TCACHE.camX - TCACHE.px - cam.x), TCACHE.yTop); c.restore();
+    const gl = TCACHE.glints; if (gl.length) { c.save(); c.fillStyle = '#ffffff'; for (const g of gl) { const px = g.x - cam.x; if (px < -PX - 4 || px > W + PX + 4) continue; c.globalAlpha = alpha * (.35 + .45 * Math.sin(animClock * .003 + g.wx)); c.fillRect(px, g.gy + 2, 1.4, 1.4); } c.restore(); }
+  } else paintTerrain(alpha, VH, x0, cz, PX, clampWX);
+  terrainEmbers(cz, PX, clampWX);
+  perfAdd('terrain', baked ? performance.now() - t0 : 0);
+}
 function drawWorld(alpha) {
   if (!W || !H) return;   // no layout yet (e.g. a 0-size frame) — bail before any gradient math goes non-finite
   c.save(); c.globalAlpha = alpha;
@@ -1563,28 +1622,8 @@ function drawWorld(alpha) {
   drawRidges(alpha);        // distant parallax mountain ranges — behind the rim glow & playfield terrain
   drawAmbientHorizon(alpha);// distant background skyline (+ invasion-only drop-pod streaks & horizon muzzle-flashes) — cosmetic, see AMBIENT LIFE
   drawHorizonGlow(alpha);   // atmospheric scattering hugging the curved limb (before terrain, so the ground covers its lower half)
-  // === TERRAIN body (visible slice) ===
-  const digDepth = cz < .6 ? 0 : UG_VIEW_PAD;   // HUD-LESS FULL-MAP VIEW (v4.0 D2) — past this zoom-out threshold, don't render the extended dirt/strata band below the nominal floor (only sky + ground line are real gameplay fields down here); mirrors clampCamY's own cz<.6 change so the camera can't pan into a clipped void either
-  c.beginPath(); c.moveTo(-PX, groundY(clampWX(wxAt(-PX))));
-  for (let px = -PX; px <= W + PX; px += 3) c.lineTo(px, groundY(clampWX(wxAt(px))));
-  c.lineTo(W + PX, VH + digDepth); c.lineTo(-PX, VH + digDepth); c.closePath();   // dirt extends UG_VIEW_PAD past the nominal floor so panning down never runs out into blank space (clipped to the nominal floor in the full-map view instead); PX over-scan fills the zoomed-out side margins
-  const soil = c.createLinearGradient(0, seaBaseY() - maxElev(), 0, VH + digDepth); soil.addColorStop(0, '#6f5d40'); soil.addColorStop(.32, '#473018'); soil.addColorStop(.7, '#281708'); soil.addColorStop(1, '#0e0703'); c.fillStyle = soil; c.fill();
-  if (cz >= .6) drawStrata(x0);   // rock strata layers + mineral speckle in the subterranean body — skipped in the full-map view (nothing to show, see digDepth above)
-  for (let px = -PX; px < W + PX; px += 3) { const wx = clampWX(wxAt(px)), y = groundY(wx), y2 = groundY(clampWX(wx + 3)); c.fillStyle = biome(elevAt(wx), noiseAt(MSEED, wx)); c.beginPath(); c.moveTo(px, y); c.lineTo(px + 3, y2); c.lineTo(px + 3, y2 + 18); c.lineTo(px, y + 18); c.closePath(); c.fill(); }
-  c.strokeStyle = 'rgba(228,242,255,.16)'; c.lineWidth = 1.4; c.beginPath(); for (let px = -PX; px <= W + PX; px += 4) { const y = groundY(clampWX(wxAt(px))); px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke();   // sun-lit topsoil highlight (over-scans at cz<1 so the margins aren't bare)
-  drawTerrainDetail(alpha);   // biome scenery — forests, brush, boulders, snow glints
-  if (G && G.char) {   // === DESTRUCTION LAYER — permanent scorch scars + slow-dying embers on heavily-charred ground (see charAdd/charBurnT) ===
-    const _cn = G.char.length, _ci0 = Math.max(0, Math.floor(clampWX(wxAt(-PX)) / CHAR_CELL) - 1), _ci1 = Math.min(_cn - 1, Math.ceil(clampWX(wxAt(W + PX)) / CHAR_CELL) + 1);
-    c.fillStyle = '#120c08';
-    if (cz < .35) {   // zoomed way out — one averaged strip per 4 cells instead of drawing each (well under the ~150-fill budget, still reads as scarred ground)
-      for (let i = _ci0 - (((_ci0 % 4) + 4) % 4); i <= _ci1; i += 4) { let sum = 0, cnt = 0; for (let k = Math.max(0, i); k < i + 4 && k <= _ci1 && k < _cn; k++) { sum += G.char[k]; cnt++; } if (!cnt) continue; const avg = sum / cnt; if (avg <= .05) continue; const wx = clampWX((i + 2) * CHAR_CELL), px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, avg * .55); c.fillRect(px - CHAR_CELL * 2, y, CHAR_CELL * 4, 10 + avg * 8); }
-      c.globalAlpha = alpha;
-    } else {
-      for (let i = _ci0; i <= _ci1; i++) { const ch = G.char[i]; if (ch <= .05) continue; const wx = i * CHAR_CELL + CHAR_CELL / 2, px = wx - cam.x, y = groundY(wx); c.globalAlpha = alpha * Math.min(1, ch * .55); c.fillRect(px - CHAR_CELL / 2, y, CHAR_CELL, 10 + ch * 8); }
-      c.globalAlpha = alpha;
-      if (fullFx) for (let i = _ci0; i <= _ci1; i++) { if (G.char[i] <= .6 || charBurnT(i) <= 0 || G.time < G._fireNextT[i]) continue; G._fireNextT[i] = G.time + .7 + Math.random() * .6; const wx = i * CHAR_CELL + CHAR_CELL / 2 + (Math.random() - .5) * 20, gy = groundY(wx); G.parts.push({ k: 'fire', x: wx, y: gy - 2, vx: (Math.random() - .5) * 6, vy: -14 - Math.random() * 12, r: 1.3 + Math.random() * 1.6, life: .45 + Math.random() * .35 }); }   // ≤1 ember/s/cell, only on-screen, only with Full Effects on — see charBurnT for the ~2min no-decay-tick burnout window
-    }
-  }
+  // === TERRAIN body (visible slice) — v4.5 P: baked into an offscreen layer (see bakeTerrain) and blitted every frame ===
+  terrainBlit(alpha, VH, x0, cz, PX, clampWX);
   if (soc.tint) { c.fillStyle = soc.tint; c.fillRect(-PX, -PY, W + 2 * PX, VH + PY); }
   // GROUND LEVEL line + water in valleys
   c.strokeStyle = 'rgba(220,235,255,.22)'; c.setLineDash([7, 7]); c.beginPath(); for (let px = -PX; px <= W + PX; px += 6) c.lineTo(px, seaLevelY(clampWX(wxAt(px)))); c.stroke(); c.setLineDash([]);
@@ -1718,7 +1757,7 @@ function drawRidges(a) {
 }
 // GROUND SCENERY — deterministic trees / brush / boulders scattered along the terrain by biome (skipped inside city footprints)
 function drawTerrainDetail(a) {
-  const step = 13, cz = cam.z || 1, PX = cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0, xs = Math.floor((cam.x - PX) / step) * step;
+  const step = 13, cz = cam.z || 1, PX = TERR_PX != null ? TERR_PX : cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0, xs = Math.floor((cam.x - PX) / step) * step;
   c.save(); c.globalAlpha = a;
   for (let wx = xs - step; wx < cam.x + W + step + PX; wx += step) {
     const h = h01(wx * .613); if (h > .66) continue;   // density gate
@@ -1726,7 +1765,7 @@ function drawTerrainDetail(a) {
     if (G) { let inCity = false; for (const ct of G.cities) if (Math.abs(wx - ct.x) < ct.w * .5 + 22) { inCity = true; break; } if (inCity) continue; }
     const m = noiseAt(MSEED, wx), px = sx(wx) + (h01(wx * 1.71) - .5) * step, gy = groundY(wx + (h01(wx * 1.71) - .5) * step);
     const sc = .7 + h * .8;   // per-spot size variation
-    if (e > .82) { if (h < .2) { c.globalAlpha = a * (.35 + .45 * Math.sin(animClock * .003 + wx)); c.fillStyle = '#ffffff'; c.fillRect(px, gy + 2, 1.4, 1.4); c.globalAlpha = a; } }   // snowfield glints
+    if (e > .82) { if (h < .2) { if (TCACHE.baking) TCACHE.glints.push({ x: px + cam.x, gy, wx }); else { c.globalAlpha = a * (.35 + .45 * Math.sin(animClock * .003 + wx)); c.fillStyle = '#ffffff'; c.fillRect(px, gy + 2, 1.4, 1.4); c.globalAlpha = a; } } }   // snowfield glints
     else if (e > .70) { c.fillStyle = '#63605a'; c.beginPath(); c.moveTo(px - 3.4 * sc, gy + 1); c.lineTo(px - 1.2 * sc, gy - 2.6 * sc); c.lineTo(px + 1.6 * sc, gy - 1.8 * sc); c.lineTo(px + 3.2 * sc, gy + 1); c.closePath(); c.fill(); c.fillStyle = '#7d7a72'; c.beginPath(); c.moveTo(px - 1.2 * sc, gy - 2.6 * sc); c.lineTo(px + 1.6 * sc, gy - 1.8 * sc); c.lineTo(px + .6 * sc, gy - .4 * sc); c.closePath(); c.fill(); }   // alpine boulder w/ lit face
     else if (m > .5) {   // conifer — trunk + two canopy tiers, darker in wet lowland
       const th = (8 + h * 7) * sc, cw = th * .5, dark = e > .5;
@@ -1741,7 +1780,7 @@ function drawTerrainDetail(a) {
   c.restore(); c.globalAlpha = a;
 }
 // ROCK STRATA — darker contour bands + mineral speckle so the subterranean body reads as geology, not flat brown
-function drawStrata(x0) { const cz = cam.z || 1, PX = cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0; c.save(); for (const off of [42, 96, 168, 260]) { c.strokeStyle = off < 120 ? 'rgba(22,14,7,.4)' : 'rgba(14,9,4,.5)'; c.lineWidth = off < 120 ? 1.4 : 2; c.beginPath(); for (let px = -PX; px <= W + PX; px += 8) { const y = groundY(wxAt(px)) + off; px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke(); }
+function drawStrata(x0) { const cz = cam.z || 1, PX = TERR_PX != null ? TERR_PX : cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0; c.save(); for (const off of [42, 96, 168, 260]) { c.strokeStyle = off < 120 ? 'rgba(22,14,7,.4)' : 'rgba(14,9,4,.5)'; c.lineWidth = off < 120 ? 1.4 : 2; c.beginPath(); for (let px = -PX; px <= W + PX; px += 8) { const y = groundY(wxAt(px)) + off; px === -PX ? c.moveTo(px, y) : c.lineTo(px, y); } c.stroke(); }
   c.fillStyle = 'rgba(150,128,96,.22)'; const step = W / 42; for (let wx = Math.floor((x0 - PX) / step) * step; wx < x0 + W + PX; wx += step) { const gy = groundY(wx), d = 30 + (Math.abs(Math.sin(wx * 12.9898) * 43758.5) % 1) * 230; c.fillRect(sx(wx), gy + d, 1.6, 1.6); } c.restore(); }
 function drawRoads() { const cz = cam.z || 1, PX = cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0; c.strokeStyle = 'rgba(40,40,46,.85)'; c.lineWidth = 3; c.setLineDash([]); for (let i = 0; i < G.cities.length - 1; i++) { const a = G.cities[i], b = G.cities[i + 1]; const ax = sx(a.x), bx = sx(b.x); if (bx < -20 - PX || ax > W + 20 + PX) continue; c.beginPath(); for (let wx = a.x; wx <= b.x; wx += 12) c.lineTo(sx(wx), groundY(wx) + 2); c.stroke(); } c.lineWidth = 1; c.strokeStyle = 'rgba(180,180,150,.25)'; for (let i = 0; i < G.cities.length - 1; i++) { const a = G.cities[i], b = G.cities[i + 1]; if (sx(b.x) < -20 - PX || sx(a.x) > W + 20 + PX) continue; c.setLineDash([6, 6]); c.beginPath(); for (let wx = a.x; wx <= b.x; wx += 12) c.lineTo(sx(wx), groundY(wx) + 2); c.stroke(); c.setLineDash([]); } }
 
@@ -3385,7 +3424,7 @@ for (const k in RESEARCH) { const r = RESEARCH[k]; if (!r.root) r.cost = Math.ro
 // graph edges, derived from each node's prerequisites — used to draw connector lines
 const RES_EDGES = []; for (const k in RESEARCH) { const r = RESEARCH[k]; if (r.pre) for (const p of r.pre) RES_EDGES.push([p, k]); }
 function curTier() { return G.unlocked && G.unlocked.spaceage ? 3 : G.unlocked && G.unlocked.fusion ? 2 : 1; }
-function society(kind) {
+function society(kind) { TERRAIN_FORCE++;
   G.society = kind;
   if (kind === 'dystopia') { soc.sky = ['#0a0306', '#1a0810', '#3a1020', '#5a1828', '#7a3030', '#a05040']; soc.tint = 'rgba(120,20,20,.12)'; }
   else if (kind === 'verdant') { soc.sky = ['#04060c', '#082018', '#0f4a52', '#1f8a8a', '#5fc0a0', '#a0e0c0']; soc.tint = 'rgba(40,160,90,.10)'; }
@@ -3841,10 +3880,12 @@ const SQUAD_DRAW_CY_FRAC = 0.15;
 // slot (not the exact same static xy every frame) at slightly different spring stiffness — the cluster visibly
 // flexes/shuffles like a group of people holding a loose position, while still converging on the same formation
 // on average, so it reads as cohesive rather than random.
+const SQ_ALIVE = [];
 function stepSquadBodies(u, cfg, dt) {
-  const alive = u.members.filter(m => m.alive); if (!alive.length) return;
+  if (!lodOnScreen(u.x, u.y)) { if (((u._id || 0) + G.frameCount) & 3) return; dt *= 4; }   /* v4.5 P — body wobble is cosmetic: off-screen squads relax toward formation every 4th tick with a 4x step */
+  const alive = SQ_ALIVE; alive.length = 0; for (const m of u.members) if (m.alive) alive.push(m); if (!alive.length) return;
   const pullK0 = SQUAD_PULL_K * ((cfg.lerp || 6) / 6), t = animClock * .001;
-  for (const m of alive) {
+  for (let ai = 0; ai < alive.length; ai++) { const m = alive[ai];
     const jphase = m.jphase || 0, jspeed = m.jspeed || 1;
     const jx = m.ox + Math.sin(t * jspeed + jphase) * SQUAD_JITTER_AMP, jy = m.oy + Math.cos(t * jspeed * .82 + jphase * 1.3) * SQUAD_JITTER_AMP * .6;
     const pullK = pullK0 * (m.pullVar || 1);
@@ -3864,7 +3905,7 @@ function stepSquadBodies(u, cfg, dt) {
     }
   }
   }
-  for (const m of alive) {
+  for (let ai = 0; ai < alive.length; ai++) { const m = alive[ai];
     m.vcx = Math.max(-SQUAD_VEL_MAX, Math.min(SQUAD_VEL_MAX, m.vcx));
     m.vcy = Math.max(-SQUAD_VEL_MAX, Math.min(SQUAD_VEL_MAX, m.vcy));
     m.cx += m.vcx * dt; m.cy += m.vcy * dt;
@@ -4164,7 +4205,50 @@ const THREAT_W_DIVE = 1.7;    // mid dive-bomb / impact run (e.dives) — about 
 const THREAT_W_GROUND = 1.15; // already-landed ground unit pressing the line — mildly favored over an equally-distant airborne straggler
 const THREAT_W_GRID = 1.6;    /* v4.5 S — an anchored orbital grid body (railsat/lasersat/mender/escort) as seen by a space-domain shooter */
 function threatWeight(e, sd) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : (sd && sd.domain === 'space' && e.anchored ? THREAT_W_GRID : 1)); }
-function acquireEnemy(x, y, range, ceilFrac, filter, sd) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e, sd); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle. e.noTarget (v3.103.1) — a brief generic "can't be acquired at all" flag, currently only used by the ECM Hijacker's arrival grace window (see spawnEnemy/updEnemies), reusable for any future "just arrived, not engageable yet" enemy.
+/* ===== v4.5 P — SPATIAL GRID =====================================================================================
+   Combat used to be a linear scan of the whole opposing list for every acquisition, hit test, splash, PD sweep and
+   shrapnel check. SpatialGrid buckets a list into uniform 256px cells (x, plus y bands) once per phase; a query visits only the
+   cells under the circle's bounding box and the CALLER still does the exact distance test, so the candidate set (and,
+   via the stored list index used as the tie-break, the pick) is identical to the old linear scan. Rebuilds are lazy
+   (n = -1 marks a grid dirty; the next query rebuilds it) and reuse the cell arrays (clear-and-refill, no Map churn).
+   GRID_E = G.enemies, GRID_P = G.proj (beams skipped), GRID_F = the shared friendlies list (units + cached building
+   and district wrappers), GRID_A = the air/space units. `slack` pads every query for the few px an entity can drift
+   inside one phase. */
+const BEAMK = { beam: 1, pbeam: 1, particlebeam: 1, pdfan: 1, flakring: 1 };
+class SpatialGrid {
+  constructor(mode, slack) { this.mode = mode; this.slack = slack; this.cs = 256; this.inv = 1 / 256; this.cols = 0; this.rows = 0; this.cells = []; this.cellsI = []; this.used = []; this.ver = 0; this.src = null; this.n = -1; this.maxR = 16; this.cx0 = 0; this.cx1 = 0; this.cy0 = 0; this.cy1 = 0; }
+  _fit() { const cols = Math.ceil(WORLD_W * this.inv) + 1, rows = Math.ceil(worldH() * this.inv) + 2; if (cols !== this.cols || rows !== this.rows) { this.cols = cols; this.rows = rows; const c = new Array(cols * rows), ci = new Array(cols * rows); for (let i = 0; i < c.length; i++) { c[i] = []; ci[i] = []; } this.cells = c; this.cellsI = ci; this.used.length = 0; } }
+  build(list) { this._fit(); const u = this.used, cells = this.cells, cellsI = this.cellsI; for (let i = 0; i < u.length; i++) { cells[u[i]].length = 0; cellsI[u[i]].length = 0; } u.length = 0; this.src = list; this.maxR = 16; this.n = 0; this.ver++; this._ext(list.length); }
+  _ext(to) { const l = this.src, proj = this.mode === 1, inv = this.inv, cols = this.cols, rows = this.rows, cells = this.cells, cellsI = this.cellsI, u = this.used; let mr = this.maxR; for (let i = this.n; i < to; i++) { const el = l[i]; if (proj && BEAMK[el.k]) continue; let cx = (el.x * inv) | 0, cy = (el.y * inv) | 0; if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1; if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1; const k = cy * cols + cx, a = cells[k]; if (a.length === 0) u.push(k); a.push(el); cellsI[k].push(i); let r = el.s || el.r || 16; if (el.d && el.d.s * 2 > r) r = el.d.s * 2; if (r > mr) mr = r; } this.maxR = mr; this.n = to; this.ver++; }
+  sync() { if (this.mode === 2) { if (this.n < 0) refreshFriendlies(); return; } const l = this.mode === 0 ? G.enemies : G.proj; if (this.src !== l || this.n < 0 || l.length < this.n) this.build(l); else if (l.length > this.n) this._ext(l.length); }
+  box(x, y, r) { if (r > 20000) r = 20000; const rr = r + this.slack, inv = this.inv; let a = ((x - rr) * inv) | 0, b = ((x + rr) * inv) | 0, c = ((y - rr) * inv) | 0, d = ((y + rr) * inv) | 0; const cm = this.cols - 1, rm = this.rows - 1; if (a < 0) a = 0; if (b > cm) b = cm; if (c < 0) c = 0; if (d > rm) d = rm; this.cx0 = a; this.cx1 = b; this.cy0 = c; this.cy1 = d; }
+  forNear(x, y, r, fn) { this.sync(); this.box(x, y, r); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0; i < a.length; i++) fn(a[i], ix[i]); } }
+  collect(x, y, r, out) { this.sync(); this.box(x, y, r); const cells = this.cells, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const a = cells[cy * cols + cx]; for (let i = 0; i < a.length; i++) out.push(a[i]); } return out; }
+  /* lowest-list-index element whose hull (s||r||16) + pad covers (x,y); pad is padG for ground elements else padA; elements above ceilYmin are skipped. hitI = its list index (-1 when none). */
+  firstHit(x, y, padG, padA, ceilYmin) { this.sync(); this.hitI = -1; if (!this.src.length) return null; this.box(x, y, this.maxR + (padG > padA ? padG : padA)); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; let b = null, bi = 0; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i]; if (ceilYmin !== null && t.y < ceilYmin) continue; const rad = (t.s || t.r || 16) + (t.ground ? padG : padA), dx = t.x - x, dy = t.y - y; if (dx * dx + dy * dy < rad * rad && (b === null || ix[i] < bi)) { b = t; bi = ix[i]; } } } if (b !== null) this.hitI = bi; return b; }
+  firstAirWithin(x, y, r) { this.sync(); this.box(x, y, r); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1, r2 = r * r; let b = null, bi = 0; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i]; if (t.d.domain !== 'air') continue; const dx = t.x - x, dy = t.y - y; if (dx * dx + dy * dy < r2 && (b === null || ix[i] < bi)) { b = t; bi = ix[i]; } } } return b; }
+  shrapE(x, y) { this.sync(); this.box(x, y, this.maxR + 3); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; let b = null, bi = 0; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i], rr = (t.s + 3) ** 2; if ((t.x - x) ** 2 + (t.y - y) ** 2 < rr && (b === null || ix[i] < bi)) { b = t; bi = ix[i]; } } } return b; }
+  shrapU(x, y) { this.sync(); this.box(x, y, this.maxR + 3); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; let b = null, bi = 0; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i]; if (!t.d || t.d.builder) continue; const rr = (t.d.s * 2 + 3) ** 2; if ((t.x - x) ** 2 + (t.y - y) ** 2 < rr && (b === null || ix[i] < bi)) { b = t; bi = ix[i]; } } } return b; }
+  anyWithin(x, y, r, noRe, live) { this.sync(); this.box(x, y, r); const cells = this.cells, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1, r2 = r * r; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const a = cells[cy * cols + cx]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i]; if (noRe && t.reentry) continue; if (live && t.hp <= 0) continue; const dx = t.x - x, dy = t.y - y; if (dx * dx + dy * dy < r2) return true; } } return false; }
+  evadeNear(x, y, lim, ceilYmin) { this.box(x, y, 40); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { if (lim >= 0 && ix[i] >= lim) continue; const t = a[i]; if (ceilYmin !== null && t.y < ceilYmin) continue; if ((t.x - x) ** 2 + (t.y - y) ** 2 < 1600 && t.kind && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored) t.evadeT = 1.2; } } }
+  /* exact nearest within `range` (strict <, first-in-list wins ties); ceilY skips candidates above it, noRe skips re-entering enemies, aF is a role filter. Unbounded ranges expand 512 -> 4096 first so an early hit never scans the whole map. */
+  nearest(x, y, range, ceilY, noRe, aF) { this.sync(); if (!this.src.length) return null; if (range > 1500) { const t = this._nearest(x, y, 640, ceilY, noRe, aF); if (t) return t; } return this._nearest(x, y, range, ceilY, noRe, aF); }
+  _nearest(x, y, range, ceilY, noRe, aF) { this.box(x, y, range); const cells = this.cells, cellsI = this.cellsI, cols = this.cols, cx0 = this.cx0, cx1 = this.cx1, cy1 = this.cy1; let b = null, bd = range * range, bi = 0; for (let cy = this.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const t = a[i]; if (ceilY != null && t.y < ceilY) continue; const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d > bd) continue; if (d === bd && (b === null || ix[i] > bi)) continue; if (noRe && t.reentry) continue; if (aF && !aF(t)) continue; if (d < bd || b !== null) { bd = d; b = t; bi = ix[i]; } } } return b; }
+}
+const GRID_E = new SpatialGrid(0, 24), GRID_P = new SpatialGrid(1, 24), GRID_F = new SpatialGrid(2, 24), GRID_A = new SpatialGrid(2, 24);
+const FR_LIST = [], AIR_LIST = [], EL_MARK = [], HL_MARK = [], HM_MARK = [];   /* EL/HL/HM are marker lists updProj hands to near(): live (non-re-entering) enemies / enemies + in-flight intercept-eligible rounds / the same above the mesosphere ceiling */
+let _incNow = [];
+function gridsDirty() { GRID_E.n = -1; GRID_P.n = -1; GRID_F.n = -1; GRID_A.n = -1; }
+function friendlyWrapB(b) { let w = b._w; if (!w) w = b._w = { x: 0, y: 0, r: 0, _b: b }; w.x = b.x; w.y = b.y - b.d.h * .5; w.r = b.d.w * .5; return w; }
+function friendlyWrapD(ct, dd) { let w = dd._w; if (!w) w = dd._w = { x: 0, y: 0, r: 16, _city: ct, _dist: dd }; w._city = ct; const dx = ct.x + dd.dx; w.x = dx; w.y = groundY(dx) - 12; return w; }
+function refreshFriendlies() {
+  const a = FR_LIST, air = AIR_LIST; a.length = 0; air.length = 0;
+  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; a.push(u); if (u.d.domain === 'air' || u.d.domain === 'space') air.push(u); }
+  for (const b of G.buildings) if (!b.ug) a.push(friendlyWrapB(b));
+  for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; a.push(friendlyWrapD(ct, dd)); }
+  GRID_F.build(a); GRID_A.build(air);
+}
+function acquireEnemy(x, y, range, ceilFrac, filter, sd) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2, bi = 0, bAi = 0; const g = GRID_E; g.sync(); g.box(x, y, range); const cells = g.cells, cellsI = g.cellsI, cols = g.cols, cx0 = g.cx0, cx1 = g.cx1, cy1 = g.cy1; for (let cy = g.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const e = a[i]; if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny || (d === bdAny && bAny !== null && ix[i] < bAi)) { bdAny = d; bAny = e; bAi = ix[i]; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e, sd); if (wd < bd || (wd === bd && ix[i] < bi)) { bd = wd; b = e; bi = ix[i]; } } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle. e.noTarget (v3.103.1) — a brief generic "can't be acquired at all" flag, currently only used by the ECM Hijacker's arrival grace window (see spawnEnemy/updEnemies), reusable for any future "just arrived, not engageable yet" enemy.
 // SWARM MULTI-TARGET ACQUISITION (v3.103, made CLAIM-AWARE in a follow-up fix) — a single acquireEnemy() pick would
 // have up to 48 swarm bodies all dogpiling ONE enemy while everything else in range goes untouched (the old 3-body
 // squad never had enough bodies for this to matter). Returns up to `n` distinct in-range enemies, in ONE O(enemies)
@@ -4191,15 +4275,15 @@ function acquireEnemy(x, y, range, ceilFrac, filter, sd) { const ceil = ceilFrac
 function acquireEnemyMulti(x, y, range, ceilFrac, filter, n, weight) {
   const w = Math.max(1, weight || 1);
   const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range, unsat = [], any = [];
-  for (const e of G.enemies) {
-    if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue;
-    const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d > r2) continue;
-    const wd = d / threatWeight(e); any.push([wd, e]);
-    if (claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) unsat.push([wd, e]);
-  }
-  unsat.sort((a, b) => a[0] - b[0]);
+  GRID_E.forNear(x, y, range, (e, gi) => {
+    if (e.noTarget) return; if (e.y < ceil) return; if (filter && !filter(e)) return;
+    const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d > r2) return;
+    const wd = d / threatWeight(e); any.push([wd, e, gi]);
+    if (claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) unsat.push([wd, e, gi]);
+  });
+  unsat.sort((a, b) => a[0] - b[0] || a[2] - b[2]);
   const picks = unsat.slice(0, n).map(c => c[1]);
-  if (picks.length < n) { any.sort((a, b) => a[0] - b[0]); for (const [, e] of any) { if (picks.length >= n) break; if (picks.indexOf(e) < 0) picks.push(e); } }
+  if (picks.length < n) { any.sort((a, b) => a[0] - b[0] || a[2] - b[2]); for (const [, e] of any) { if (picks.length >= n) break; if (picks.indexOf(e) < 0) picks.push(e); } }
   for (const e of picks) { ENG.set(e, engOf(e) + w); e._lockT = .2; }
   return picks;
 }
@@ -4304,11 +4388,12 @@ function nearestHeliBase(x) { let b = null, bd = 1e9;
 const AIR_FUEL_BURN = 1;   // fuel units burned per second airborne — aircraft `fuel` values are chosen so this reads directly as flight-seconds of endurance
 const AIR_RTB_SPD_MULT = 2.4;   // the ACTUAL cruise speed cap rearmAircraft flies home at (spd * this)
 const AIR_RTB_EST_SPD_MULT = 1.5;   // a deliberately PESSIMISTIC speed used only to ESTIMATE the fuel needed to get home — real transit never averages the full 2.4x cap (it ramps up from whatever direction the unit was already flying, then has to slow into the docking approach), so the RTB trigger must assume a slower trip or its 5% reserve gets silently eaten and the aircraft crashes short of the runway
+function heliBaseOk(o) { if (o._cityBase) return o._cityBase.hp > 0 && !o._cityBase.held; return o.done !== false && o.hp > 0 && !o.captured && !o._gone; }
 function currentBase(u) {   // resolves — and RE-resolves every call — the aircraft's home: its carrier if still afloat, else the nearest surviving airbase. Never caches a dead target (a destroyed carrier/airbase is dropped immediately and the next-closest is picked up)
-  if (u.carrFrom && (u.carrFrom.hp <= 0 || G.units.indexOf(u.carrFrom) < 0)) u.carrFrom = null;   // carrier lost → fall back to an airbase
+  if (u.carrFrom && u.carrFrom.hp <= 0) u.carrFrom = null;   /* v4.5 P — a unit only leaves G.units when its hp hits 0 (the old indexOf scan was O(units) per aircraft per tick) */   // carrier lost → fall back to an airbase
   if (u.carrFrom) return u.carrFrom;
-  if (u.d.rotor) return nearestHeliBase(u.x);   // helis land at cities / heli-depots / airbases — resolved fresh each call (cities live outside G.buildings, so no caching)
-  if (!u.homeBase || u.homeBase.hp <= 0 || G.buildings.indexOf(u.homeBase) < 0) u.homeBase = nearestAirbase(u.x);
+  if (u.d.rotor) { const hb = u._hb; if (G.time < u._hbT && (!hb || heliBaseOk(hb))) return hb; const nb = nearestHeliBase(u.x); u._hb = nb; u._hbT = G.time + .5; return nb; }   /* v4.5 P — a heli re-resolves its depot twice a second, and immediately if the cached one died */   // helis land at cities / heli-depots / airbases — resolved fresh each call (cities live outside G.buildings, so no caching)
+  if (!u.homeBase || u.homeBase.hp <= 0 || u.homeBase._gone) { if (!u.homeBase && G.time < u._nbT) return null; u.homeBase = nearestAirbase(u.x); if (!u.homeBase) u._nbT = G.time + .5; }   /* v4.5 P — 'no airbase anywhere' is remembered for half a second instead of re-scanning every building per aircraft per tick */
   return u.homeBase;
 }
 function rearmAircraft(u, d, spd, dt) {   // fly home, land on a carrier deck / airbase, reload the magazine + refuel, relaunch — generalised from the carrier wing
@@ -4324,11 +4409,12 @@ function rearmAircraft(u, d, spd, dt) {   // fly home, land on a carrier deck / 
   if (!u.docked) { const adx = Math.abs(dx); if (adx > 50) u.vx += Math.sign(dx) * spd * 6 * dt; else u.vx += (dx * 9 - u.vx) * dt; u.vy += (deckY - u.y) * 5 * dt; const vm = spd * AIR_RTB_SPD_MULT; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .94; u.vy *= .88; u.x += u.vx * dt; u.y += u.vy * dt; u.facing = u.vx >= 0 ? 1 : -1; if (adx < 32 && Math.abs(u.y - deckY) < 28) { u.docked = u.maxFuel ? 3 + Math.random() * 2 : .7; u.vx = u.vy = 0; } }   // sprint home fast; fuel-bearing aircraft take a real turnaround (spool-up) on the pad, ammo-only drones a quick one
   else { u.docked -= dt; u.x += (bx - u.x) * Math.min(1, dt * 8); u.y = deckY; if (u.docked <= 0) { u.docked = 0; u.rtb = false; u.ammo = u.maxAmmo; if (u.maxFuel) u.fuel = u.maxFuel; spark(u.x, u.y - 4, 3); } }   // quick turnaround on the pad — full rearm + refuel
 }
-function airTargetsList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail && (u.d.domain === 'air' || u.d.domain === 'space')) a.push(u); return a.length ? a : friendliesList(); }
-function airOnlyList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail && (u.d.domain === 'air' || u.d.domain === 'space')) a.push(u); return a; }   // STRICT air/space-only target list — unlike airTargetsList() this does NOT fall back to ground targets, for weapons that must engage air-only (e.g. a boss's dedicated AA gun)
+function airTargetsList() { GRID_A.sync(); return AIR_LIST.length ? AIR_LIST : FR_LIST; }
+function airOnlyList() { GRID_A.sync(); return AIR_LIST; }   /* v4.5 P shared list; original note: STRICT air/space-only target list — unlike airTargetsList() this does NOT fall back to ground targets, for weapons that must engage air-only (e.g. a boss's dedicated AA gun) */
 function flakHit(t, dmg) { t.hp -= dmg; spark(t.x, t.y, 3); G.parts.push({ k: 'flash', x: t.x, y: t.y, r: 5, life: .08 }); }   // point-defense flak vs a falling lance — instant, so fast lances CAN be shot down
 function incomingList() { const a = []; for (const p of G.proj) if (p.interceptable && p.life > 0) a.push(p); return a; }   // orbital lances the player can shoot down
-function interceptableProjList() { const a = []; for (const p of G.proj) if ((p.interceptable || p.pdable) && p.life > 0) a.push(p); return a; }   // everything acquireIncoming is allowed to pick — busters/rods/decoys (interceptable) PLUS plain enemy homing missiles (pdable-only, no .interceptable) — snapshotted ONCE per tick into G._incoming so every pd-capable shooter's acquireIncoming call scans a handful of entries instead of all of G.proj. Deliberately WIDER than incomingList() (which stays interceptable-only for its own callers, e.g. homing-missile retargeting) — see the "pdable rounds aren't in incList" comment on the AMI hit-to-kill path
+const INC_ARR = [];
+function interceptableProjList() { const a = INC_ARR; a.length = 0; for (const p of G.proj) if ((p.interceptable || p.pdable) && p.life > 0) a.push(p); return a; }   // everything acquireIncoming is allowed to pick — busters/rods/decoys (interceptable) PLUS plain enemy homing missiles (pdable-only, no .interceptable) — snapshotted ONCE per tick into G._incoming so every pd-capable shooter's acquireIncoming call scans a handful of entries instead of all of G.proj. Deliberately WIDER than incomingList() (which stays interceptable-only for its own callers, e.g. homing-missile retargeting) — see the "pdable rounds aren't in incList" comment on the AMI hit-to-kill path
 function isMechanical(d) { if (d.crewed) return false; return !!(d.mech || d.drone || d.elec || d.clone || (d.capital && d.domain !== 'air')); }   // HISTORICAL cap-exemption test, NO LONGER CALLED for cap purposes anywhere (v3.98.0 — see WEIGHTED ARMY CAP above: nothing is off the army cap any more, every unit including drones/mechs/clones/capitals counts via deriveWeight/d.wt instead). Kept defined (not deleted) in case a future family-based check wants it; do not wire it back into cap logic without discussing with the designer first.
 function fortBonusAt(x) { let f = 0;   // a ground unit standing in a building's footprint GARRISONS it for cover — 2 = an economic block / bunker (deepest fortification), 1 = any other building
   if (G && G.fortBB) { const k0 = Math.round((x - FORT_MAX_R) / FORT_BS), k1 = Math.round((x + FORT_MAX_R) / FORT_BS);   // FORT GRID CACHE — see tunables comment above FORT_BS: only scan the handful of buckets that could possibly reach x, same exact per-building check as the fallback below, just fewer candidates visited
@@ -4754,9 +4840,11 @@ function ptSeg(px, py, x1, y1, x2, y2) {   // shortest distance from a point to 
 }
 function beamHit(x1, y1, x2, y2, dmg, fr, ceilY) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) { if (ceilY != null && t.y < ceilY) continue; if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'beam'; const fade = Math.max(.5, 1 - Math.max(0, (TROPO_Y() - t.y) / TROPO_Y()) * .5); hurt(t, dmg * fade); } } }   // a laser loses bite the higher it has to reach. ceilY (v4.3, read from FIRE_CTX.ceilY at the fire() call site) is a hard cutoff, not a fade — a beam is instant/hitscan, nothing to climb through and run out of energy over
 function particleHit(x1, y1, x2, y2, dmg, fr) { for (const t of (fr ? G.enemies.concat(incomingList()) : friendliesList())) { if (fr && t.reentry) continue; if (ptSeg(t.x, t.y, x1, y1, x2, y2) < (t.s || t.r || 16) + 8) { t.killBy = 'particle'; t.killX = x1; t.killY = y1; hurt(t, dmg); spark(t.x, t.y, 3); } } }   // PARTICLE CANNON — true hitscan: resolves instantly along the beam, punches through EVERYTHING on the line (no falloff at altitude — that's the whole point of it), no flight time to whiff a fast mover
-function friendliesList() { const a = []; for (const u of G.units) if (!u.d.builder && !u.onRail && !u.carried) a.push(u); for (const b of G.buildings) if (!b.ug) a.push({ x: b.x, y: b.y - b.d.h * .5, r: b.d.w * .5, _b: b }); for (const ct of G.cities) if (ct.hp > 0 && !ct.held) for (const dd of ct.districts) { if (dd.dead) continue; const dx = ct.x + dd.dx; a.push({ x: dx, y: groundY(dx) - 12, r: 16, _city: ct, _dist: dd }); } return a; }
-function near(x, y, list, range, ceilY) { let b = null, bd = range * range; for (const t of list) { if (ceilY != null && t.y < ceilY) continue; const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }   // optional ceilY (v4.3) — when given, never picks a candidate above it (world-pixel Y, top-down); every existing caller omits it and is unaffected
-function jammed(x, y) { for (const e of G.enemies) { if (!e.jammer || e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
+function friendliesList() { GRID_F.sync(); return FR_LIST; }   /* v4.5 P — one shared per-phase list (cached building/district wrappers), see refreshFriendlies; read-only for every caller */
+function gridOfList(list) { return list === G.enemies ? GRID_E : list === FR_LIST ? GRID_F : list === AIR_LIST ? GRID_A : list === G.proj ? GRID_P : null; }
+function near(x, y, list, range, ceilY) { if (list === EL_MARK) return GRID_E.nearest(x, y, range, ceilY, true); if (list === HL_MARK || list === HM_MARK) { const cy = list === HM_MARK ? Math.max(MESO_TOP(), ceilY == null ? -1e9 : ceilY) : ceilY; let b = GRID_E.nearest(x, y, range, cy), bd = b ? (b.x - x) ** 2 + (b.y - y) ** 2 : range * range; for (const t of _incNow) { if (cy != null && t.y < cy) continue; const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; } const g = gridOfList(list); if (g) return g.nearest(x, y, range, ceilY); let b = null, bd = range * range; for (const t of list) { if (ceilY != null && t.y < ceilY) continue; const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; b = t; } } return b; }   // optional ceilY (v4.3) — when given, never picks a candidate above it (world-pixel Y, top-down); every existing caller omits it and is unaffected
+const JM_LIST = []; let _jmE = null, _jmF = -1, _jmN = -1;
+function jammed(x, y) { if (_jmE !== G.enemies || _jmF !== G.frameCount || _jmN !== G.enemies.length) { JM_LIST.length = 0; for (const e of G.enemies) if (e.jammer) JM_LIST.push(e); _jmE = G.enemies; _jmF = G.frameCount; _jmN = G.enemies.length; } for (const e of JM_LIST) { if (e.reentry || e.hp <= 0) continue; const r = e.jamR || 340; if ((e.x - x) ** 2 + (e.y - y) ** 2 < r * r) return true; } return false; }   // inside a hostile EW jammer's field, YOUR homing missiles lose their lock and fly straight until they clear it
 function hurt(t, dmg, ix, iy) {
   if (t.kind && dmg > 0) t.lastHitT = 0;   // v4.2 — TIME SINCE LAST HIT: stamped for every enemy that takes any damage, whatever ultimately absorbs it (shield/dome/field/armor) — currently only the flagship's shield regen reads this, but it's a general per-enemy clock
   if (G.stats && dmg > 0) { if (t.kind) G.stats.damageDealt += dmg; else G.stats.damageTaken += dmg; }   // AFTER-ACTION — every hit attributed by side: enemies carry `.kind`, friendlies (units/city/building wrappers) never do — counts the incoming amount, same as every other hit-driven FX below, not the post-armor/shield remainder
@@ -5366,7 +5454,7 @@ function spawnShieldDome(x, gen) {   // gen: the Shield Generator enemy this dom
   G.domes.push(dm); toast('🛡 BEACHHEAD SHIELD DEPLOYED'); return dm;
 }
 function enemyDome(e) { for (const dm of G.domes) { if (dm.hp <= 0) continue; const dx = dm.x - e.x; if (Math.abs(dx) >= dm.r) continue; if (dm.y != null) { const dy = dm.y - e.y; if (dx * dx + dy * dy >= dm.r * dm.r) continue; return dm; }   /* v4.1 F J2 — a FLYING dome (dm.y set, see shieldcarrier's updEnemies block) is a full circle centered on the carrier, not the ground-anchored semicircle below */ const top = groundY(dm.x) - Math.sqrt(Math.max(0, dm.r * dm.r - dx * dx)); if (e.y >= top) return dm; } return null; }   // the active dome (if any) shielding enemy e
-function enemyField(x, y) { for (const e of G.enemies) { if (!e.breacher || e.reentry || !e.fieldOn || (e.fieldHp || 0) <= 0) continue; const r = e.fieldR || 190; if ((x - e.x) ** 2 + (y - e.y) ** 2 < r * r) return e; } return null; }   // the active enemy DEFLECTOR FIELD (a beachhead anchor's projectile-scrub bubble) covering this point, if any
+function enemyField(x, y) { if (_brKey !== G.enemies || BR_LIST.f !== G.frameCount || BR_LIST.n !== G.enemies.length) { BR_LIST.length = 0; for (const e of G.enemies) if (e.breacher) BR_LIST.push(e); _brKey = G.enemies; BR_LIST.f = G.frameCount; BR_LIST.n = G.enemies.length; } for (const e of BR_LIST) { if (!e.breacher || e.reentry || !e.fieldOn || (e.fieldHp || 0) <= 0) continue; const r = e.fieldR || 190; if ((x - e.x) ** 2 + (y - e.y) ** 2 < r * r) return e; } return null; }   // the active enemy DEFLECTOR FIELD (a beachhead anchor's projectile-scrub bubble) covering this point, if any
 function spawnEnemy(kind, atX, noEscort) {   // G1: optional 3rd arg — pass true to skip attachEscorts for THIS spawn (e.g. spawnSuper's mass-drop swarm members beyond the first two); every existing call site omits it and is unaffected
   const x = atX != null ? atX : cam.x + 40 + Math.random() * (W - 80), t = G.diff * (1 + (G.invTime || 0) / 70);
   const wxw = Math.max(40, Math.min(WORLD_W - 40, x));
@@ -5903,11 +5991,19 @@ function snapFrameCam() {
   cam.manualT = 99999;   // pin for the one frame this is used — nothing should fight this framing
 }
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
-function updateGame(dt) {
+/* ===== v4.5 P — PERF INSTRUMENTATION: 60-sample rolling averages in ms, exposed as window.__perf / G._perf ===== */
+const PERF = { upd: 0, units: 0, enemies: 0, proj: 0, parts: 0, render: 0, terrain: 0 }, PERF_R = {};
+function perfAdd(k, ms) { let r = PERF_R[k]; if (!r) r = PERF_R[k] = { b: new Float64Array(60), i: 0, s: 0, n: 0 }; r.s += ms - r.b[r.i]; r.b[r.i] = ms; r.i = (r.i + 1) % 60; if (r.n < 60) r.n++; PERF[k] = r.s / r.n; }
+let _pfT = 0;
+function perfLap(k) { const t = performance.now(); perfAdd(k, t - _pfT); _pfT = t; }
+window.__perf = PERF;
+function updateGame(dt) { const t0 = performance.now(); if (G) G._perf = PERF; try { return updateGameInner(dt); } finally { perfAdd('upd', performance.now() - t0); } }
+function updateGameInner(dt) {
   if (G.over) return; G.time += dt;
   G.frameCount = (G.frameCount || 0) + 1;   // TEMPORAL AI LOD — a plain per-tick counter (never resets) used only to STAGGER which frame each far-from-combat unit/enemy re-runs its expensive target-acquisition scan on; see LOD_N/lodShouldScan below updUnits
   if (G.stats && !G.stats.snap.start && G.time > 1.2) G.stats.snap._wantStart = true;   // AFTER-ACTION — "MOBILIZATION" snapshot; just FLAGS it here (the actual capture happens in frame(), right after renderGame() draws a complete fresh frame — capturing mid-updateGame was reading the PREVIOUS frame's buffer, a suspected cause of blank snaps on some mobile GPUs)
   updAmbient(dt);   // 🚗✈🚤 cosmetic ambient life tick — see AMBIENT LIFE (never touches gameplay state)
+  gridsDirty();   /* v4.5 P — lists were culled/changed since the last tick: spatial grids rebuild lazily on first query */
   CLAIM.clear(); ENG.clear();   // reset this frame's fire-allocation ledger + per-target engagement counts
   G.achT = (G.achT || 0) + dt; if (G.achT >= 1) { G.achT = 0; checkAchievements(); }   // evaluate achievement triggers ~1/s (no-op until any are defined)
   G.evtT = (G.evtT || 0) + dt; if (G.evtT >= 1) { G.evtT = 0; checkEvents(); }   // evaluate SUPER EVENT triggers ~1/s (mirrors checkAchievements above)
@@ -6160,7 +6256,10 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
     if (done) return end(true, it.glass ? 'YOU HELD THE LINE — THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
   G._incoming = interceptableProjList();   // PERF — one small snapshot of intercept-eligible ordnance per tick; acquireIncoming (called by every combat unit/building below) scans THIS instead of all of G.proj, and early-outs to ~zero cost whenever it's empty (the common no-bombardment case)
-  updUnits(dt); updBuildings(dt); updEnemies(dt); updSwarmSupport(dt); updProj(dt); updParts(dt);
+  GRID_F.slack = 160; _pfT = performance.now();   /* v4.5 P — units move inside updUnits, so friendlies queried there are padded; enemies move inside updEnemies */
+  updUnits(dt); perfLap('units'); updBuildings(dt); GRID_F.slack = 24; GRID_F.n = -1; GRID_A.n = -1; GRID_E.slack = 160; _pfT = performance.now();   /* units just moved: friendlies rebuild lazily; the enemy and projectile grids are still exact (appends are synced) */
+  updEnemies(dt); perfLap('enemies'); GRID_E.slack = 24; updSwarmSupport(dt); GRID_E.n = -1; _pfT = performance.now();   /* enemies just moved: their grid rebuilds lazily */
+  updProj(dt); perfLap('proj'); updParts(dt); perfLap('parts');
   // deaths
   for (const u of G.units) if (u.hp <= 0) { if (u.bg || u.bgLeader) bgDrop(u); if (u.carried && u.carrierHeli && u.carrierHeli.cargo === u) u.carrierHeli.cargo = null; if (u.drowned) drownUnitQuiet(u); else destroyUnit(u); }   // BATTLEGROUPS: bgDrop() promotes a follower on a dead leader / drops a dead follower from its roster, BEFORE the compaction filter below removes it — see bgDrop near spawnUnit. BUGFIX SAFETY NET: carried units are excluded from every damage path (see u.carried guards below), so this should be unreachable for a passenger — but if it's ever hit anyway, clear the carrier's dangling cargo pointer first so the heli doesn't spend the rest of the game trying to deliver a corpse. a unit that went under (see updUnits' DROWNING block) sinks QUIETLY — no blast, no shrapnel; everything else still gets the full wreck
   filterInPlace(G.units, u => u.hp > 0);   // PERF: in-place compaction, see filterInPlace() — was `G.units = G.units.filter(...)`
@@ -6179,6 +6278,7 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
     if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
+  gridsDirty();   /* v4.5 P — dead entities were just compacted out of the lists */
   for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24, 'collapse'); groundBurst(ct.x, 22, 'collapse'); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
     for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; const cd = u.maxHp * .45; if (u.squad) hitSquadMember(u, cd, ct.x, u.y); else u.hp -= cd; } }   // v3.67: squad-aware — a city falling is a fair "eats through several bodies" blast, but still per-body (not an instant whole-formation wipe)
@@ -7147,18 +7247,16 @@ function areaDamage(x, y, r, dmg, kb) {
   kb = kb || 'bomb';
   const core = r * .42;   // anything inside the inner core takes FULL damage — direct hits are lethal — then linear falloff to the edge
   const fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
-  for (const e of G.enemies) { const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } }
-  for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } }   // v3.67: squad-aware — see hitSquadMember (nearest-first, eats through several bodies only if the blast is genuinely big enough)
-  for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .55 * fall(dd); }
+  GRID_E.forNear(x, y, r, e => { const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } });   /* v4.5 P — grid pass; one pass over the friendlies grid handles units and (non-buried) building wrappers */
+  GRID_F.forNear(x, y, r, t => { if (t._b) { const b = t._b, dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .55 * fall(dd); return; } const u = t; if (!u.d) return; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } });   // v3.67: squad-aware — see hitSquadMember (nearest-first, eats through several bodies only if the blast is genuinely big enough)
   shallowUgHit(x, r * .8, dmg * .5);   // the blast caves in shallow tunnels under the crater
 }
 // side-aware splash (friendly hits enemies only; hostile hits your units/buildings/cities) — used by lobbed plasma
 function splashDamage(x, y, r, dmg, friendly, kb, hitReentry) {   // hitReentry: lets this specific splash also land on enemies still in their re-entry descent — off by default (nukes/MIRVs/etc. keep the reentry vulnerability window intact), opted into only by plasmaBurst (see there — plasball is explicitly allowed to detonate on & damage a re-entry target now)
   const core = r * .45, fall = dd => { const dist = Math.sqrt(dd); return dist <= core ? 1 : Math.max(0, 1 - (dist - core) / (r - core)); };
-  if (friendly) { for (const e of G.enemies) { if (e.reentry && !hitReentry) continue; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } } }
+  if (friendly) { GRID_E.forNear(x, y, r, e => { if (e.reentry && !hitReentry) return; const dd = (e.x - x) ** 2 + (e.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); e.killBy = kb; e.killX = x; e.killY = y; e._lastHit = d2; e.hp -= d2; } }); }   /* v4.5 P — grid pass */
   else {
-    for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } }   // v3.67: squad-aware — see hitSquadMember
-    for (const b of G.buildings) { if (b.ug) continue; const dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); }
+    GRID_F.forNear(x, y, r, t => { if (t._b) { const b = t._b, dd = (b.x - x) ** 2 + (b.y - y) ** 2; if (dd < r * r) b.hp -= dmg * .5 * fall(dd); return; } const u = t; if (!u.d) return; const dd = (u.x - x) ** 2 + (u.y - y) ** 2; if (dd < r * r) { const d2 = dmg * fall(dd); u.killBy = kb; u.killX = x; u.killY = y; u._lastHit = d2; if (u.squad) hitSquadMember(u, d2, x, y); else u.hp -= d2; } });   // v3.67: squad-aware — see hitSquadMember
     for (const ct of G.cities) { if (ct.hp <= 0) continue; for (const dst of ct.districts) { if (dst.dead) continue; const ddx = ct.x + dst.dx; const dd = (ddx - x) ** 2 + (groundY(ddx) - y) ** 2; if (dd < r * r) { const e2 = dmg * .4 * fall(dd); damageDistrict(ct, dst, e2); G.stab = Math.max(0, G.stab - .012 * e2); } } }
   }
 }
@@ -7351,14 +7449,9 @@ function tickAutoStrikes() {
 // O(1) average lookup per entity) so they add only a small flat overhead, never a new O(n²) scan.
 const LOD_N = 6;                 // COLD entities re-scan for a target once every this-many frames
 const LOD_ENGAGE_DIST = 700;     // px — "near enough to a foe to count as in-a-fight" even off-screen
-function lodOnScreen(x, y) {   // near-screen test — matches the same zoom-out over-scan margin drawWorld/renderGame's own culling already use, plus a modest flat pad (same order as the render loop's own ~30-160px cull margins) so an entity just off the visible edge (about to scroll into frame) still reads as HOT a beat early. Deliberately NOT a big pad — at this game's world:viewport ratio (WORLD_W=6000 vs a ~1280px viewport), even a small pad already covers a meaningful slice of the map on its own; a big pad would silently keep most of a spread-out mega-army HOT and defeat the point of the LOD.
-  const cz = cam.z || 1;
-  const padX = (cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0) + 120;
-  const padY = (cz < 1 ? Math.ceil(H * (1 / cz - 1) / 2) : 0) + 120;
-  if (x - cam.x < -padX || x - cam.x > W + padX) return false;
-  if (y < cam.y - padY || y > cam.y + H + padY) return false;
-  return true;
-}
+let _lvX0 = 0, _lvX1 = 0, _lvY0 = 0, _lvY1 = 0;
+function lodPrep() { const cz = cam.z || 1, padX = (cz < 1 ? Math.ceil(W * (1 / cz - 1) / 2) : 0) + 120, padY = (cz < 1 ? Math.ceil(H * (1 / cz - 1) / 2) : 0) + 120; _lvX0 = cam.x - padX; _lvX1 = cam.x + W + padX; _lvY0 = cam.y - padY; _lvY1 = cam.y + H + padY; }   /* v4.5 P — the camera window is computed once per updUnits/updEnemies call; lodOnScreen below is then 4 numeric compares with no property loads (it was deopt-thrashing on its rarely-taken branches) */
+function lodOnScreen(x, y) { return !(x < _lvX0 || x > _lvX1 || y < _lvY0 || y > _lvY1); }   // near-screen test — matches the same zoom-out over-scan margin drawWorld/renderGame's own culling already use, plus a modest flat pad (same order as the render loop's own ~30-160px cull margins) so an entity just off the visible edge (about to scroll into frame) still reads as HOT a beat early. Deliberately NOT a big pad — at this game's world:viewport ratio (WORLD_W=6000 vs a ~1280px viewport), even a small pad already covers a meaningful slice of the map on its own; a big pad would silently keep most of a spread-out mega-army HOT and defeat the point of the LOD.
 // A SORTED FLAT ARRAY of the opposing side's x-positions + binary search beats a Map-of-buckets here: building it
 // is one allocation + one native sort() (V8's sort is highly optimized, even for a few hundred entries), and each
 // per-entity lookup is a handful of array-index compares (~log2(n)) with none of a Map's hashing/bucket-object
@@ -7370,9 +7463,9 @@ function lodOnScreen(x, y) {   // near-screen test — matches the same zoom-out
 // still correctly separates "in that stretch of the map" from "actually within LOD_ENGAGE_DIST of a real unit"
 // for a spread-out or gappy formation.
 function lodBuildEngageIndex(list, getX) {
-  const n = list.length, xs = new Array(n); let minX = Infinity, maxX = -Infinity;
+  const n = list.length, xs = new Float64Array(n); let minX = Infinity, maxX = -Infinity;
   for (let i = 0; i < n; i++) { const gx = getX(list[i]); xs[i] = gx; if (gx < minX) minX = gx; if (gx > maxX) maxX = gx; }
-  xs.sort((a, b) => a - b);
+  xs.sort();   /* v4.5 P — typed-array numeric sort (no JS comparator) */
   return { xs, minX: minX - LOD_ENGAGE_DIST, maxX: maxX + LOD_ENGAGE_DIST };
 }
 function lodNearAny(idx, x) {
@@ -7398,7 +7491,32 @@ function lodTargetAlive(t) {
   if (t._city) return t._city.hp > 0 && !t._city.held;
   return t.hp == null || t.hp > 0;
 }
+/* ===== v4.5 P — updUnits helpers: no-closure projectile PD queries, x-sorted enemy index, retarget cooldown ===== */
+let _ct = null, _cx = 0, _cy = 0, _cr2 = 0;
+const CIWS_TMP = [];
+function _ciwsCol(q, qi) { if (q.friendly || q.life <= 0 || !q.pdable) return; const dx = q.x - _cx, dy = q.y - _cy; if (dx * dx + dy * dy > _cr2) return; _ct.push(q, qi); }
+function nearestPdProj(x, y, r) { const g = GRID_P; g.sync(); g.box(x, y, r); const cells = g.cells, cellsI = g.cellsI, cols = g.cols, cx0 = g.cx0, cx1 = g.cx1, cy1 = g.cy1; let b = null, bd = r * r, bi = 0; for (let cy = g.cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const k = cy * cols + cx, a = cells[k], ix = cellsI[k]; for (let i = 0, n = a.length; i < n; i++) { const q = a[i]; if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - x) ** 2 + (q.y - y) ** 2; if (dd < bd || (dd === bd && b !== null && ix[i] < bi)) { bd = dd; b = q; bi = ix[i]; } } } return b; }
+/* the ship CIWS used to take the FIRST `shots` in-reach incoming rounds in G.proj order: collect the reachable ones from the grid, then peel off lowest list index first */
+function shipCiwsPick(u, r, shots, out) { _ct = CIWS_TMP; _ct.length = 0; _cx = u.x; _cy = u.y; _cr2 = r * r; GRID_P.forNear(u.x, u.y, r, _ciwsCol); out.length = 0; while (shots > 0 && _ct.length) { let bj = 1; for (let j = 3; j < _ct.length; j += 2) if (_ct[j] < _ct[bj]) bj = j; out.push(_ct[bj - 1]); _ct[bj - 1] = _ct[_ct.length - 2]; _ct[bj] = _ct[_ct.length - 1]; _ct.length -= 2; shots--; } return out; }
+const CIWS_OUT = [];
+/* x-sorted index of the non-re-entering enemies — the 1-D "nearest column" scans (idle advance, air drift, naval patrol, ferry drop) become a binary search. Stable sort keeps list order within equal x, so ties resolve to the lowest list index exactly like the old first-wins linear scans. */
+const XN = { ver: -1, e: [], i: [], ord: [] };
+let _xa = null, _xad = 1e9, _xb = null, _xbd = 1e9, _xdd = 0;
+function xnBuild() { GRID_E.sync(); if (XN.ver === GRID_E.ver && XN.n === G.enemies.length) return; const l = G.enemies, ord = XN.ord, ee = XN.e, ii = XN.i; ord.length = 0; ee.length = 0; ii.length = 0; for (let i = 0; i < l.length; i++) if (!l[i].reentry) ord.push(i); ord.sort((a, b) => l[a].x - l[b].x); for (let k = 0; k < ord.length; k++) { ee.push(l[ord[k]]); ii.push(ord[k]); } XN.ver = GRID_E.ver; XN.n = l.length; }
+function xScan(x, lo, ceil) { const e = XN.e, id = XN.i, n = e.length; let rj = -1, lj = -1; for (let j = lo; j < n; j++) if (e[j].y >= ceil) { rj = j; break; } for (let j = lo - 1; j >= 0; j--) if (e[j].y >= ceil) { lj = j; const lx = e[j].x; for (let k = j - 1; k >= 0 && e[k].x === lx; k--) if (e[k].y >= ceil) lj = k; break; } if (rj < 0 && lj < 0) return -1; if (lj < 0) { _xdd = Math.abs(e[rj].x - x); return rj; } if (rj < 0) { _xdd = Math.abs(e[lj].x - x); return lj; } const dl = Math.abs(e[lj].x - x), dr = Math.abs(e[rj].x - x); if (dl < dr || (dl === dr && id[lj] < id[rj])) { _xdd = dl; return lj; } _xdd = dr; return rj; }
+function xNear(x, ceilY) { xnBuild(); _xa = null; _xad = 1e9; _xb = null; _xbd = 1e9; const e = XN.e, n = e.length; if (!n) return; let lo = 0, hi = n; while (lo < hi) { const m = (lo + hi) >>> 1; if (e[m].x < x) lo = m + 1; else hi = m; } let j = xScan(x, lo, -Infinity); if (j >= 0 && _xdd < 1e9) { _xa = e[j]; _xad = _xdd; } if (ceilY != null) { j = xScan(x, lo, ceilY); if (j >= 0 && _xdd < 1e9) { _xb = e[j]; _xbd = _xdd; } } }
+/* RETARGET COOLDOWN: a unit keeps a still-valid target (alive, in range, under its ceiling) for 0.2-0.4s instead of re-running the scan every tick; a lost target re-acquires immediately. Kept targets still count toward the per-target engagement cap so the other shooters keep spreading. */
+const NOTGT = { x: 0, y: 0, hp: 0 };   /* sentinel: 'idle, still backing off' — truthy so the caller skips the scan, then the cached-target branch re-reads u._lodTgt (null) */
+function acqKeep(u, dt, rng, ceilF, aF) { if (u._acqT - dt > 0) { u._acqT -= dt; const t = u._lodTgt; if (!t) return NOTGT; if (!(t.hp <= 0) && !(t.k !== undefined && t.life <= 0) && !t.noTarget && !(ceilF && t.y < ceilF * worldH())) { const dx = t.x - u.x, dy = t.y - u.y; if (dx * dx + dy * dy <= rng * rng && (!aF || aF(t)) && (t.k !== undefined ? claimOf(t) < (t.hp || 1) : claimOf(t) < t.hp + (t.shield || 0) && engOf(t) < ENG_CAP)) { ENG.set(t, engOf(t) + 1); t._lockT = .2; return t; } } } u._acqT = .2 + Math.random() * .2; return null; }   /* a kept target must still pass acquireEnemy's own spread-fire gates (not already claimed to death this tick, under the per-target lock cap), otherwise the unit re-scans and spreads exactly as it did per tick */
+function acqKeep2(u, dt, rng2, ceil2, wpn2Air) { if (u._acqT2 - dt > 0) { u._acqT2 -= dt; const t2 = u._lodTgt2; if (!t2) return NOTGT; if (t2.hp > 0 && !(ceil2 && t2.y < ceil2 * worldH()) && (!wpn2Air || !t2.ground) && (t2.x - u.x) ** 2 + (t2.y - u.y) ** 2 <= rng2 * rng2 && claimOf(t2) < t2.hp + (t2.shield || 0) && engOf(t2) < ENG_CAP) { ENG.set(t2, engOf(t2) + 1); t2._lockT = .2; return t2; } } u._acqT2 = .2 + Math.random() * .2; return null; }
+function huntJet(u, dt, ceilY, aF) { const h0 = u._hunt; if (u._huntT - dt > 0) { u._huntT -= dt; if (!h0) return null; if (h0.hp > 0 && !h0.reentry && (ceilY == null || h0.y >= ceilY) && (!aF || aF(h0))) return h0; } const h = GRID_E.nearest(u.x, u.y, 1e9, ceilY, true, aF); u._hunt = h; u._huntT = .2 + Math.random() * .2; return h; }
+/* the k nearest of a list, nearest first, ties by list order — partial selection, no map/sort/allocation per element */
+function kNearest(list, x, y, k, minY, noRe) { if (list === EL_MARK) { list = G.enemies; noRe = true; } const ds = [], es = []; for (let i = 0; i < list.length; i++) { const t = list[i]; if (noRe && t.reentry) continue; if (minY != null && t.y < minY) continue; const d = (t.x - x) ** 2 + (t.y - y) ** 2; let j; if (es.length < k) { j = es.length; es.push(t); ds.push(d); } else if (k > 0 && d < ds[k - 1]) j = k - 1; else continue; while (j > 0 && ds[j - 1] > d) { ds[j] = ds[j - 1]; es[j] = es[j - 1]; j--; } ds[j] = d; es[j] = t; } return es; }
+function radarBoostU(u, dt) { if ((u._rbT -= dt) > 0) return u._rb; u._rbT = .25; return (u._rb = radarBoost(u.x)); }   /* v4.5 P — the aura/EMP scan result is reused for a quarter second */
+function acqBody(m, dt, mx, my, range, ceil, filt) { if (m._acqT - dt > 0) { m._acqT -= dt; return null; } const t = acquireEnemy(mx, my, range, ceil, filt); if (!t) m._acqT = .4; return t; }
+const SEPB = new Map(), SEPPOOL = [], EMPTY_ARR = [];
 function updUnits(dt) {
+  lodPrep();
   const railHubs = G.buildings.filter(b => b.d.rail && b.done !== false);
   // TEMPORAL AI LOD — classify HOT/COLD against the enemy fleet's positions (built once, reused by every unit below)
   const _lodEngBuckets = lodBuildEngageIndex(G.enemies, e => e.x);
@@ -7430,7 +7548,7 @@ function updUnits(dt) {
   // an approximation (not real physics) and stays true with a partial neighbor set: units on the edges of a capped
   // scan still get pushed, the push cascades tick over tick, and the pile still separates — just without paying for
   // literally every one of a million same-column pairs to prove it never overlaps exactly.
-  { const SEP_BS = 150, SEP_CAP = 12, sepBuckets = new Map();
+  if (G.units.length <= 400 || (G.frameCount & 1) === 0) { const sdt = G.units.length <= 400 ? dt : dt * 2, SEP_BS = 150, SEP_CAP = 12, sepBuckets = SEPB;   /* v4.5 P — a big army separates every OTHER tick with a doubled step (same average push, half the pair tests) */ for (const arr of sepBuckets.values()) { arr.length = 0; SEPPOOL.push(arr); } sepBuckets.clear();   /* v4.5 P — persistent Map + pooled arrays (cleared every tick, so insertion order and results are identical) */
     /* PERF: this build pass already visits every active unit once — piggyback a per-unit "already in water" cache
        (_wet) onto it for GROUND units only, computed from u.x at this same fixed moment (before any separation nudge
        touches it this tick — same sub-pixel-tolerance approximation as the terrain cache/u._gy elsewhere: a unit
@@ -7439,15 +7557,15 @@ function updUnits(dt) {
        and over. Reading the cached bool instead cuts that call volume without changing which side of the OR wins:
        isWater(ux2)/isWater(ox2) (the dynamic PROPOSED post-nudge position) are genuinely per-pair and still call
        through live — only the "am I already standing in water" fallback got cached. */
-    for (const u of G.units) { if (u.onRail || u.carried) continue; if (u.d.domain === 'ground') u._wet = isWater(u.x); const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = []); a.push(u); }
+    for (const u of G.units) { if (u.onRail || u.carried) continue; u._dm = u.d.domain; if (u._dm === 'ground') u._wet = isWater(u.x); const k = Math.round(u.x / SEP_BS); let a = sepBuckets.get(k); if (!a) sepBuckets.set(k, a = SEPPOOL.pop() || []); a.push(u); }
     const sepU = (u, o) => { if (o.d.domain !== u.d.domain) return; const sep = (u.d.s + o.d.s) * 2.4 * (u.d.domain === 'air' ? AIR_SEP_MUL : 1) + 10, s2 = sep * sep;
       let dx = u.x - o.x, dy = u.y - o.y, dd = dx * dx + dy * dy; if (dd >= s2) return; if (dd < .01) { dx = (u.x > o.x ? 1 : -1) * .5 || .5; dy = 0; dd = .25; }   // perfectly stacked → nudge apart deterministically
-      const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * dt, ux2 = u.x + dx * inv * f, ox2 = o.x - dx * inv * f;
+      const dist = Math.sqrt(dd), inv = 1 / dist, f = (sep - dist) * 1.5 * sdt, ux2 = u.x + dx * inv * f, ox2 = o.x - dx * inv * f;
       if (u.d.domain !== 'ground' || !isWater(ux2) || u._wet) u.x = ux2;   // never shove a ground unit off dry land into the sea (a unit that's ALREADY in the water — a legitimate terrain-sink drown — is still free to keep drifting; checked against the SAME isWater() predicate the drowning code below uses (via the cached u._wet, same tick), not the slightly more permissive passable(), so this can never leave a unit in the strip that reads as "water" for drowning purposes)
       if (o.d.domain !== 'ground' || !isWater(ox2) || o._wet) o.x = ox2;
       if (u.d.domain === 'air' || u.d.domain === 'space') { u.y += dy * inv * f; o.y -= dy * inv * f; } };
-    for (const [k, arr] of sepBuckets) { const nxt = sepBuckets.get(k + 1) || [];
-      for (let i = 0; i < arr.length; i++) { const u = arr[i], jMax = Math.min(arr.length, i + 1 + SEP_CAP), nMax = Math.min(nxt.length, SEP_CAP); for (let j = i + 1; j < jMax; j++) sepU(u, arr[j]); for (let j = 0; j < nMax; j++) sepU(u, nxt[j]); } } }
+    for (const [k, arr] of sepBuckets) { const nxt = sepBuckets.get(k + 1) || EMPTY_ARR;
+      for (let i = 0; i < arr.length; i++) { const u = arr[i], jMax = Math.min(arr.length, i + 1 + SEP_CAP), nMax = Math.min(nxt.length, SEP_CAP); const dm = u._dm; for (let j = i + 1; j < jMax; j++) { const o = arr[j]; if (o._dm === dm) sepU(u, o); } for (let j = 0; j < nMax; j++) { const o = nxt[j]; if (o._dm === dm) sepU(u, o); } } } }   /* v4.5 P — cross-domain pairs were rejected inside sepU; now they never reach it */
   for (const u of G.units) {
     if (u.d.builder) continue;
     if (u.carried) continue;   // 🚁 FERRY PASSENGER — aboard a transport heli: no AI, no movement, no combat, not drawn. Fully restored (position + all state) the instant it's delivered or its heli is destroyed (ferryRelease/ferryEmergencyDrop)
@@ -7465,14 +7583,14 @@ function updUnits(dt) {
     }
     if (u.railCd > 0) u.railCd -= dt;
     if (u.onRail) { u.railT -= dt; const dx = u.railTo - u.x; u.x += Math.sign(dx) * Math.min(Math.abs(dx), 1000 * dt); u.y = groundY(u.x) + UG_DEPTH - 4; if (u.railT <= 0 || Math.abs(dx) < 8) { u.onRail = false; u.railCd = 6; u.x = u.railTo; u.y = groundY(u.x) - u.d.s; } continue; }   // rapid underground transit
-    const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoost(u.x) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
-    const ceilF = weaponCeil(d, d.weapon);   // ceiling keyed off the WEAPON, not the domain — see weaponCeil; the exosphere still needs railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
+    const d = u.d, rng = d.range * (d.domain === 'naval' ? 1 + G.mult.navalrng : 1) * radarBoostU(u, dt) * (1 + G.mult.range), spd = d.speed * (d.domain === 'air' ? 1 + G.mult.airspd : 1) * (d.domain === 'ground' && G.infFast ? 1.6 : 1);   // shapeshifters speed all ground troops up
+    const ceilF = d._cf !== undefined ? d._cf : (d._cf = weaponCeil(d, d.weapon));   /* v4.5 P — pure function of the def: memoised on it */   // ceiling keyed off the WEAPON, not the domain — see weaponCeil; the exosphere still needs railguns / orbital guns / particle beams / your own space fleet; SPACE units hit anything
     const aF = airFilter(d);   // interceptors → air-only · ground-attack craft → ground/low only · everything else → no restriction
     // TEMPORAL AI LOD — HOT units (on-screen or near a foe) run the exact acquisition below every frame, unchanged.
     // A COLD unit (far off-screen, nowhere near a fight) only re-runs it once every LOD_N frames (staggered by
     // _id); on the frames in between it reuses the cached result — still firing if that target is alive & in
     // range, otherwise dropping it (no fresh scan) until its next scheduled cadence. See the LOD block above.
-    const _lodScan = lodShouldScan(u.x, u.y, u._id, _lodEngBuckets);
+    const _lodScan = lodShouldScan(u.x, u.y, u._id, _lodEngBuckets) && !acqKeep(u, dt, rng, ceilF, aF);   /* v4.5 P — RETARGET COOLDOWN: a unit holding a still-valid target (or idling inside its back-off) skips the scan this tick and takes the cached-target branch below; acqKeep returns null when it is time to scan */
     let tgt = null;
     if (u.bgLeader && u.bgLeader.hp > 0) {   // BATTLEGROUPS — FOLLOWER shared brain: skip this unit's OWN acquisition scan entirely, reuse whatever the leader resolved THIS frame instead. The leader runs the unchanged branch below (same acquireEnemy/filters/ceiling any solo unit would use) — this is the ~20x AI-cost cut for a full group, see bgOnSpawn/battlegroupFollowMove near spawnUnit.
       tgt = u.bgLeader._lodTgt || null;
@@ -7489,22 +7607,22 @@ function updUnits(dt) {
     if (u.bgLeader && u.bgLeader.hp > 0) { battlegroupFollowMove(u, dt); } else {   // BATTLEGROUPS — FOLLOWER: skip the whole expensive per-domain AI block below (BVR hunt scans, idle-advance scans, CIWS) for a cheap O(1) formation-offset ease toward the leader; see battlegroupFollowMove near spawnUnit. LEADER (or any solo unit) falls through to the exact unchanged code every unit has always run.
     if (d.domain === 'air' && canIntercept(d) && !u.docked && (u.spool || 0) <= 0) {   // JET LASER CIWS — a short VISIBLE beam that swats an enemy missile chasing the jet, so you actually see the point-defence work (defensive only, low-rate — not a durability crutch)
       u.pdcd = (u.pdcd || 0) - dt;
-      if (u.pdcd <= 0) { let best = null, bd = 95 * 95; for (const q of G.proj) { if (q.friendly || q.life <= 0 || !q.pdable) continue; const dd = (q.x - u.x) ** 2 + (q.y - u.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
+      if (u.pdcd <= 0) { const best = G._incoming.length ? nearestPdProj(u.x, u.y, 95) : null;   /* v4.5 P — grid query, and nothing at all unless an enemy round is in flight */
         if (best) { u.pdcd = .6; G.proj.push({ k: 'beam', x1: u.x, y1: u.y - u.d.s * .3, x2: best.x, y2: best.y, life: .09, friendly: true, dmg: 0 }); best.hp = (best.hp || 1) - 6; if (best.hp <= 0) { best.life = 0; boom(best.x, best.y, 3); } spark(best.x, best.y, 2); } }
     }
     if ((d.capital || d.domain === 'naval') && !u.onRail) {   // ⊕ CAPITAL-SHIP CIWS — every sky-warship & naval warship mounts dedicated anti-ordnance turrets SEPARATE from its main gun: each burst swats a couple of nearby incoming rounds. Cheap (one bounded allocation-free scan on a cooldown) and sparsely VISIBLE (a short flak beam per intercept — no CIWS boom-spam)
       u.ciwsCd = (u.ciwsCd || 0) - dt;
-      if (u.ciwsCd <= 0) { u.ciwsCd = SHIP_CIWS_INTERVAL; let shots = SHIP_CIWS_SHOTS; const r2 = SHIP_CIWS_R * SHIP_CIWS_R, np = G.proj.length, sy0 = u.y - u.d.s * .4;
-        for (let qi = 0; qi < np && shots > 0; qi++) { const q = G.proj[qi]; if (q.friendly || q.life <= 0 || !q.pdable) continue; const qx = q.x - u.x, qy = q.y - u.y; if (qx * qx + qy * qy > r2) continue;
-          q.hp = (q.hp || 1) - SHIP_CIWS_DMG; G.proj.push({ k: 'beam', x1: u.x, y1: sy0, x2: q.x, y2: q.y, life: .06, friendly: true, dmg: 0 }); if (q.hp <= 0) { q.life = 0; spark(q.x, q.y, 2); } shots--; } }
+      if (u.ciwsCd <= 0) { u.ciwsCd = SHIP_CIWS_INTERVAL; let shots = SHIP_CIWS_SHOTS; const sy0 = u.y - u.d.s * .4;
+        if (G._incoming.length) for (const q of shipCiwsPick(u, SHIP_CIWS_R, shots, CIWS_OUT)) {   /* v4.5 P — grid pick of the first `shots` reachable incoming rounds, lowest list index first */
+          q.hp = (q.hp || 1) - SHIP_CIWS_DMG; G.proj.push({ k: 'beam', x1: u.x, y1: sy0, x2: q.x, y2: q.y, life: .06, friendly: true, dmg: 0 }); if (q.hp <= 0) { q.life = 0; spark(q.x, q.y, 2); } } }
     }
     if (d.domain === 'air') {   // aircraft scream across the map to INTERCEPT the nearest threat (beyond visual range), then weave & strafe — fast & agile
       if (u.evadeT > 0) u.evadeT -= dt;   /* EVASION TIMER — ticks down regardless of state; see hurt() for where it's set and the no-reachable-target branch below for where it's consumed */
       if (u.spool > 0) { u.spool -= dt; continue; }   // scrambling from the pad — freshly built/refuelled aircraft sit parked for a few seconds before they're combat-ready
       if (u.maxFuel != null && !u.docked) {   // FUEL: burns while airborne; forces RTB once only enough remains to reach a base + a 5% reserve. Running dry NO LONGER crashes — the aircraft just commits to landing.
         u.fuel -= AIR_FUEL_BURN * dt;
-        if (!u.rtb) {
-          const base = currentBase(u);
+        if (!u.rtb && !((u._fcT -= dt) > 0)) {   /* v4.5 P — RTB fuel reserve is assessed 4x a second, not every tick (fuel burns 1/s against a 5% margin) */
+          u._fcT = .25; const base = currentBase(u);
           if (base) {
             const baseY = u.carrFrom ? seaLevelY(base.x) : groundY(base.x);
             const dist = Math.hypot(base.x - u.x, baseY - u.y);
@@ -7557,7 +7675,7 @@ function updUnits(dt) {
           let destX, destY;
           if (u.cargo) {   // DELIVER — fly the passenger toward the front and set it down short of the nearest contact
             const t = u.cargo;
-            let nearE = null, ed = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < ed) { ed = dd; nearE = e; } }
+            xNear(u.x, null); const nearE = _xa;   /* v4.5 P — x-sorted index */
             let dropX = nearE ? nearE.x + (Math.sign((u.cargoFromX != null ? u.cargoFromX : u.x) - nearE.x) || 1) * FERRY_DROP_STANDOFF : u.x;   // stand off toward the side the passenger CAME from — never overshoots onto the enemy's own side; no enemies left anywhere → nothing left to deliver to, just set down here
             dropX = Math.max(20, Math.min(WORLD_W - 20, dropX));
             const amphC = t.d.amph || t.d.amphibious;
@@ -7585,8 +7703,7 @@ function updUnits(dt) {
         u.wob = (u.wob || Math.random() * 6.28) + dt * 3.4;   // fast rotor bob
         let hcur = tgt;   // in-range target the shared block will fire on
         if (!hcur) {   // no in-range foe → CRUISE toward the nearest CAS-valid (ground/low, non-reentry) target so helis actually deploy to the fight, the way ground units advance — the tropo ceilF + CAS filter keep them off high enemies
-          let best = null, bd = 1e9; const cy = ceilF * worldH();
-          for (const e of G.enemies) { if (e.reentry || e.y < cy || (aF && !aF(e))) continue; const dd = (e.x - u.x) ** 2 + (e.y - u.y) ** 2; if (dd < bd) { bd = dd; best = e; } }
+          const cy = ceilF * worldH(); const best = GRID_E.nearest(u.x, u.y, 31000, cy, true, aF);   /* v4.5 P — grid nearest */
           hcur = best;
         }
         let ty;
@@ -7605,7 +7722,7 @@ function updUnits(dt) {
       } else {
       u.wob = (u.wob || Math.random() * 6.28) + dt * 2.4;
       const ceilY = ceilF ? ceilF * worldH() : -1e9;   // FIX 2 — same altitude ceiling acquireEnemy enforces for actual firing, reused here so BVR hunting/staging never chases/orbits an enemy this unit could never physically reach (exosphere targets stay railgun/particle/orbital/space work, never missile-armed atmospheric units)
-      const hunt = u.lowAir ? tgt : near(u.x, u.y, G.enemies.filter(e => !e.reentry && e.y >= ceilY && (!aF || aF(e))), 1e9);   // jets hunt anywhere within reach (BVR), within their role & ceiling; helis stay local
+      const hunt = u.lowAir ? tgt : huntJet(u, dt, ceilY, aF);   /* v4.5 P — grid nearest, cached 0.2-0.4s, no per-jet filter copy */   // jets hunt anywhere within reach (BVR), within their role & ceiling; helis stay local
       let dy;
       if (hunt) {
         const dx = hunt.x - u.x, dist = Math.abs(dx), sdir = Math.sign(dx || 1);
@@ -7651,7 +7768,7 @@ function updUnits(dt) {
                  // ANY kind (the front) at a relaxed cruise so idle fighters flow to where the fighting is and are already
                  // on-station when a valid target appears; pure loiter only when the map is genuinely clear of enemies.
         u.wingCommit = false;   // no contact at all — reset so the next spotted enemy starts a clean rally
-        let fx = null, fd = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < fd) { fd = dd; fx = e.x; } }
+        xNear(u.x, null); const fx = _xa ? _xa.x : null, fd = _xad;
         if (fx != null && fd > AIR_PATROL_HOLD) u.vx += (Math.sign(fx - u.x) * spd * AIR_PATROL_FRAC - u.vx * .3) * dt;   // ease toward the front
         else u.vx += (Math.sin(u.wob * .5) * spd - u.vx * .3) * dt;   // on-station or no enemies at all → gentle loiter
         dy = u.patrol + Math.sin(u.wob * .7) * 24;
@@ -7686,7 +7803,7 @@ function updUnits(dt) {
       // strike fighters the fighter ai." Bounded to [SPACE_Y()-40, MESO_Y()] by the shared clamp below.
       else if (d.fighterAI) {
         if (u.evadeT > 0) u.evadeT -= dt;
-        const hunt = near(u.x, u.y, G.enemies.filter(e => !e.reentry && (!aF || aF(e))), 1e9);
+        const hunt = huntJet(u, dt, null, aF);   /* v4.5 P */
         if (hunt) { const dx = hunt.x - u.x, dist = Math.abs(dx), sdir = Math.sign(dx || 1), stand = rng * .7;
           if (dist > stand) u.vx += sdir * _spAcc * dt;   // close to ~70% of its own range
           else { const orbit = Math.min(rng * .5, 240); const ox = hunt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 2.4 * dt; }   // orbit the target, weaving
@@ -7713,7 +7830,7 @@ function updUnits(dt) {
     }
     else if (d.domain === 'naval') {
       if (isWater(u.x)) {   // AFLOAT — recompute harbour bounds LIVE every frame so a ship is never pinned to a stale, now-dry harbour (terrain can be reshaped under it)
-        const b = waterBounds(u.x); u.wx0 = b[0]; u.wx1 = b[1]; u.beached = false;
+        if (u._wbV !== TERR_EDIT || !(u.x > u.wx0 && u.x < u.wx1)) { const b = waterBounds(u.x); u.wx0 = b[0]; u.wx1 = b[1]; u._wbV = TERR_EDIT; } u.beached = false;   /* v4.5 P — harbour bounds only change when the terrain does (they used to be re-walked at 6px steps every tick) */
         if (tgt && d.speed > 0) {
           // ── RANGED HOLD (item 1, naval) — long-reach arsenal ships (missile cruisers/battleships/railgun
           // battlecruisers) settle on a fraction of their own range and hold the line instead of closing to a
@@ -7727,7 +7844,7 @@ function updUnits(dt) {
         else if (!tgt && d.speed > 0 && G.enemies.length) {   // NO target in range → patrol along the coast toward the nearest threat so the ship
           // is on the correct flank when something enters range. Stays inside its OWN body of water (waterBounds clamps
           // it — it can never sail onto land); holds station once close to the threat's column so it doesn't grind the shore.
-          let ex = null, ed = 1e9; for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (dd < ed) { ed = dd; ex = e.x; } }
+          xNear(u.x, null); const ex = _xa ? _xa.x : null, ed = _xad;
           if (ex != null && ed > NAVAL_PATROL_HOLD) { const nx = u.x + Math.sign(ex - u.x) * d.speed * NAVAL_PATROL_FRAC * dt; if (nx > u.wx0 && nx < u.wx1) u.x = nx; }
         }
         u.x = Math.max(u.wx0 + 4, Math.min(u.wx1 - 4, u.x)); u.y = seaLevelY(u.x);
@@ -7757,8 +7874,7 @@ function updUnits(dt) {
         // sits within LOD_ENGAGE_DIST of some enemy, so it's classified HOT anyway and the cache is never actually
         // consulted) while adding branch/staleness risk to the retreat/leash logic below — reverted. This loop's
         // O(enemies) cost genuinely tracks how spread out the two sides are, not something to fake away safely.
-        const ceilY = ceilF * worldH(); let best = null, bd = 1e9, anyE = null, ad = 1e9;
-        for (const e of G.enemies) { if (e.reentry) continue; const dd = Math.abs(e.x - u.x); if (e.y >= ceilY && dd < bd) { bd = dd; best = e; } if (dd < ad) { ad = dd; anyE = e; } }   // nearest enemy this unit can hit, plus nearest enemy of any kind
+        const ceilY = ceilF * worldH(); xNear(u.x, ceilY); const best = _xb, bd = _xbd, anyE = _xa, ad = _xad;   /* v4.5 P — x-sorted index (binary search) instead of a full enemy scan per idle unit */   // nearest enemy this unit can hit, plus nearest enemy of any kind
         const tx = best ? best.x : (anyE ? anyE.x : null), gap = best ? bd : ad, stop = best ? rng * .7 : 70;   // march to engage a reachable foe, else reposition under/toward the nearest threat (never idle)
         // DON'T ABANDON A DEFENDED POST — a unit garrisoning a building/city footprint (u.fort from last frame > 0)
         // holds its position rather than marching across the map after a distant incursion; only a threat that has
@@ -7798,7 +7914,7 @@ function updUnits(dt) {
       if (moved) u.entr = Math.max(0, (u.entr || 0) - dt * .6);
       else { const rate = u.fort ? .26 : .11; u.entr = Math.min(1, (u.entr || 0) + dt * rate); }   // any held position fully digs in (cap 1); a building footprint just digs in FASTER + gives deeper cover (see hurt())
       // a fully dug-in unit raises an AUTO-EMPLACEMENT — its position grows into a mini-fort (MG nests / flak / field guns), making infantry lines genuinely strong
-      if (u.empl && (u.empl.hp <= 0 || G.buildings.indexOf(u.empl) < 0)) u.empl = null;
+      if (u.empl && (u.empl.hp <= 0 || u.empl._gone)) u.empl = null;
       if (!u.empl && (u.entr || 0) >= .9 && G.buildings.length < 170) { const ex2 = Math.max(30, Math.min(WORLD_W - 30, u.x + (Math.random() < .5 ? -1 : 1) * (d.s * 2 + 6)));
         if (elevAt(ex2) >= SEA_E - .04) { const er = Math.random(), et = er < .5 ? 'mgnest' : er < .8 ? 'flaknest' : 'artnest'; u.empl = deployEmplacement(et, ex2, u); floatText(u.x, u.y - d.s * 2, '⛏ FORTIFIED', '#9cff9c'); } }   // BUGFIX: never emplace onto ground that would instantly flood — a drowned emplacement is removed, clears u.empl, and gets redeployed next frame, spamming FORTIFIED/FLOODED + a hiss every frame (a continuous roar). Guarding the deploy site breaks the loop.
       // DROWNING — a non-amphibious ground unit that ends up over open water (terrain cratered/sunk out from under it — the
@@ -7844,7 +7960,7 @@ function updUnits(dt) {
       // TEMPORAL AI LOD — same HOT/COLD gate as the primary weapon above (same unit, same frame): a COLD hull's
       // secondary turret reuses its own cached lock between scans instead of re-running acquireEnemy every frame.
       let t2; const ceil2 = weaponCeil(d, d.weapon2, true);
-      if (_lodScan) { t2 = acquireEnemy(u.x, u.y, rng2, ceil2, d.wpn2Air ? (e => !e.ground) : airFilter(d)); u._lodTgt2 = t2; }
+      if (_lodScan && !(t2 = acqKeep2(u, dt, rng2, ceil2, d.wpn2Air))) { t2 = acquireEnemy(u.x, u.y, rng2, ceil2, d.wpn2Air ? (e => !e.ground) : airFilter(d)); u._lodTgt2 = t2; }   /* v4.5 P retarget cooldown */
       else { t2 = u._lodTgt2 || null; if (t2) { const _t2cy = ceil2 * worldH(), _dx2 = t2.x - u.x, _dy2 = t2.y - u.y; if (t2.hp <= 0 || t2.y < _t2cy || _dx2 * _dx2 + _dy2 * _dy2 > rng2 * rng2) t2 = null; } }
       u.wCd2 = (u.wCd2 == null ? Math.random() * (d.rate2 || 1) : u.wCd2) - dt;
       if (t2 && u.wCd2 <= 0) { u.wCd2 = jitterCd((d.rate2 || 1) / (1 + G.mult.rof) / auraAt(u.x, 'rof'));
@@ -7924,7 +8040,7 @@ function updSquadMembers(u, dt, sharedTgt) {
     if (m.cd > 0) continue;
     let tgt;
     if (m.isAt) {   // AT/AA specialist — its own separate air-hunting channel, unaffected by whatever the riflemen are sharing
-      tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, e => !e.ground) || acquireEnemy(mx, my, m.range * rangeMod, m.ceil, e => !e.ground);
+      tgt = pickDesignated(mx, my, m.range * rangeMod, m.ceil, e => !e.ground) || acqBody(m, dt, mx, my, m.range * rangeMod, m.ceil, e => !e.ground);   /* v4.5 P — a body that found nothing backs off 0.4s */
     } else if (swarmTgts && swarmTgts.length) {   // SWARM — round-robin across the swarm's shared multi-target pool so up to 48 bodies spread across up to 6+ enemies instead of all focusing one
       let picked = null;
       for (let i = 0; i < swarmTgts.length; i++) { const cand = swarmTgts[(_rr + i) % swarmTgts.length]; if (sharedTgtUsable(cand, mx, my, m.range * rangeMod, m.ceil)) { picked = cand; break; } }
@@ -7943,7 +8059,7 @@ function updSquadMembers(u, dt, sharedTgt) {
     // acquireEnemy() scan (the exact call an ordinary lone unit already pays every idle frame) is the guaranteed
     // "never idle with an enemy in range" fallback — it only runs for a body that just exhausted every cheaper
     // option above, so it stays rare in the common case (most bodies find a usable pick in the swarm's own list).
-    if (cfg.swarm && !tgt) tgt = acquireEnemy(mx, my, m.range * rangeMod, m.ceil, null);
+    if (cfg.swarm && !tgt) tgt = acqBody(m, dt, mx, my, m.range * rangeMod, m.ceil, null);
     if (!tgt && canIntercept(m)) tgt = acquireIncoming(mx, my, m.range * rangeMod, m.ceil);
     if (!tgt) continue;
     m.tgt = tgt; m.burstLeft = m.isAt ? 1 : (cfg.burst || 1); m.burstT = .04 + Math.random() * .08;
@@ -7992,7 +8108,7 @@ function updBuildings(dt) {
   for (const b of G.buildings) {
     if (b.done === false || b.captured) continue;   // a captured building no longer answers to you (it works for the enemy — see the capture loop)
     if (b.d.shieldR) { if (b.shieldHp == null) b.shieldHp = b.d.shieldHp; else if (b.shieldHp < b.d.shieldHp) b.shieldHp = Math.min(b.d.shieldHp, b.shieldHp + 28 * dt); if (b.shieldHits && b.shieldHits.length) { for (const h of b.shieldHits) h.t += dt; if (b.shieldHits.some(h => h.t >= .5)) b.shieldHits = b.shieldHits.filter(h => h.t < .5); } }   // shield generators recharge their dome & age off spent impact ripples
-    if (b.emplace && (!b.owner || b.owner.hp <= 0 || G.units.indexOf(b.owner) < 0 || Math.abs(b.owner.x - b.x) > 150)) { b.hp -= 16 * dt; if (b.hp <= 0) continue; }   // an emplacement crumbles once its dug-in unit dies or marches off
+    if (b.emplace && (!b.owner || b.owner.hp <= 0 || Math.abs(b.owner.x - b.x) > 150)) { b.hp -= 16 * dt; if (b.hp <= 0) continue; }   // an emplacement crumbles once its dug-in unit dies or marches off
     if (b.d.strat && b.silocd > 0) b.silocd = Math.max(0, b.silocd - dt);
     if (!b.d.weapon) { if (!b.ug) populaceDefend(b, dt); continue; }   // every non-turret building defends itself at close range — the armed populace inside (rifles by default; CIWS/plasma once you build the upgrade works)
     if (b.ug && !b.d.ugFire) continue;   // BURIED-WEAPON DEFAULT — a dug-in emplacement with no ugFire flag can't fire at all from underground (defensive default; only ugFire-flagged AA — SAM/Microrocket/Aegis — can shoot from below)
@@ -8032,7 +8148,7 @@ function updBuildings(dt) {
     const baseCf = weaponCeil(b.d, b.d.weapon), wpn = plasma ? 'plasball' : b.d.weapon, cf = plasma ? Math.min(.62, baseCf) : baseCf, bdmg = b.d.dmg * (1 + G.mult.dmg) * (plasma ? 1.6 : 1);   // plasma-armed buildings reach the mesosphere (.40), same class ceiling as any other plasball weapon — not a special stratosphere exemption
     b.cd -= dt; let dmgMul = 1; if (b.key === 'massrail') { let segs = 0; for (const o of G.buildings) if (o.key === 'massrail' && o !== b && Math.abs(o.x - b.x) < 90) segs++; dmgMul = 1 + .6 * segs; }   // mass-driver railway: each adjacent segment makes the shot hit harder
     const buriedAA = b.ug && b.d.ugFire;   /* BURIED AA (B3) — a dug-in SAM/Microrocket/Aegis fires from a muzzle poking out at the surface, and may only lock targets genuinely above ground (incoming ordnance always qualifies — it has no .ground field) */
-    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = buriedAA ? groundY(b.x) - 6 : b.y - b.d.h * .5, _efiltBase = b.d.noGround ? notNearGround : null, _efilt = buriedAA ? (e => (!_efiltBase || _efiltBase(e)) && (e.k ? true : e.y < groundY(e.x) - 10)) : _efiltBase; let t = null; if (canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof') / empMul(b.x, 'bld')); const my = _emy, sdmg = bdmg * dmgMul;   /* v4.0 E PHASE 2 BLACKOUT — this gun recharges slower while blacked out (empMul<1 stretches the interval); resisted near a Psionic Relay/Data Center */ if ((t.interceptable || t.pdable) && b.d.guidedpd) { fireCeil(cf, b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t), gj = (!t.ground && !b.d.noGround && isGroundGunWeapon(wpn)) ? gunAccJitter(wpn, b.x, my, t) : 0; fireCeil(cf, b.x, my, wpn, t.x + (t.vx || 0) * lt + (Math.random() * 2 - 1) * gj, t.y + (t.vy || 0) * lt + (Math.random() * 2 - 1) * gj, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }   /* gj (v4.0 C) — GROUND/BUILDING gun accuracy falls off vs a small fast airborne target; b.d.noGround (CIWS/SAM/Aegis/AMI) is exempt, and plasma-armed (wpn:'plasball') is naturally excluded — not in isGroundGunWeapon's set */
+    const brng = b.d.range * radarBoost(b.x) * (plasma ? 1.5 : 1), _emy = buriedAA ? groundY(b.x) - 6 : b.y - b.d.h * .5, _efiltBase = b.d.noGround ? notNearGround : null, _efilt = buriedAA ? (e => (!_efiltBase || _efiltBase(e)) && (e.k ? true : e.y < groundY(e.x) - 10)) : _efiltBase; let t = null; if (b.cd <= 0 && !((b._acqT -= dt) > 0)) { if (canIntercept(b.d)) t = acquireIncoming(b.x, _emy, brng, cf, _efilt); if (!t) t = acquireEnemy(b.x, _emy, brng, cf, _efilt); if (!t) b._acqT = .2 + Math.random() * .2; }   /* v4.5 P — the shot only happens at cd<=0, so scan then; an idle gun re-scans every 0.2-0.4s */ if (t && b.cd <= 0) {   /* GATED BY AIR-CAPABILITY, NOT THE OLD `pd` FLAG (v3.88.0) — any weapon-armed emplacement that can shoot an airborne enemy here (range/ceil/_efilt, same as acquireEnemy) PRIORITIZES incoming ordnance over auto-acquiring an enemy — so a defensive grid actually answers the bombardment instead of ignoring it to plink drones. Passing `_efilt` keeps a CIWS-type (noGround) gun's altitude puzzle intact against ordnance too */   /* CIWS-type guns (noGround) refuse ground units & deck-huggers — engage aircraft & incoming ordnance only */ b.cd = jitterCd(b.d.rate / auraAt(b.x, 'rof') / empMul(b.x, 'bld')); const my = _emy, sdmg = bdmg * dmgMul;   /* v4.0 E PHASE 2 BLACKOUT — this gun recharges slower while blacked out (empMul<1 stretches the interval); resisted near a Psionic Relay/Data Center */ if ((t.interceptable || t.pdable) && b.d.guidedpd) { fireCeil(cf, b.x, my, wpn, t.x, t.y, true, sdmg, t, undefined, undefined, 'large'); } else if (t.interceptable || t.pdable) { flakHit(t, sdmg); SFX.shoot(); } else { const lt = leadTime(wpn, b.x, my, t), gj = (!t.ground && !b.d.noGround && isGroundGunWeapon(wpn)) ? gunAccJitter(wpn, b.x, my, t) : 0; fireCeil(cf, b.x, my, wpn, t.x + (t.vx || 0) * lt + (Math.random() * 2 - 1) * gj, t.y + (t.vy || 0) * lt + (Math.random() * 2 - 1) * gj, true, sdmg, undefined, undefined, undefined, 'large'); if (b.d.heavy || b.key === 'massrail') { boom(b.x, my - b.d.h * .5, 5); smoke(b.x, my - b.d.h * .4, 3); shake(3); } } claimDmg(t, sdmg); }   /* gj (v4.0 C) — GROUND/BUILDING gun accuracy falls off vs a small fast airborne target; b.d.noGround (CIWS/SAM/Aegis/AMI) is exempt, and plasma-armed (wpn:'plasball') is naturally excluded — not in isGroundGunWeapon's set */
   }
 }
 // FIRE CONTROL WAS REMOVED (never worked well, cut for good — see the game's CLAUDE.md) — pickDesignated is kept only because
@@ -8052,7 +8168,7 @@ function demolishSelected() {   // DEMOLITION — undo an overbuild without wait
   const refund = Math.round((b.d.ic || 0) * .4);
   G.ic = Math.min(1e9, G.ic + refund);
   G.stab = Math.max(0, G.stab - DEMOLISH_STAB_COST);
-  G.buildings.splice(idx, 1);
+  G.buildings.splice(idx, 1); b._gone = true;   /* v4.5 P — membership flag, replaces per-tick G.buildings.indexOf scans */
   smoke(b.x, b.ug ? groundY(b.x) : groundY(b.x) - b.d.h * .5, 6); SFX.build();
   toast('⛏ DEMOLISHED ' + b.d.name.toUpperCase() + ' — +' + refund + ' IC reclaimed, −' + DEMOLISH_STAB_COST + '% STABILITY');
   G.sel = null; refreshSel(); buildBuildBar && buildBuildBar();
@@ -8129,13 +8245,18 @@ function pdLanceHit(p) { if (p.strat && p.hp != null) { p.hp -= PD_LANCE_DMG; if
 // lines (a single G.proj 'pdfan' entry) instead of nMax separate beam projectiles — cheaper and reads as a wall.
 function pdSweep(e, r, nMax, cx2, cy2) {
   const cands = [];
-  for (const p of G.proj) {
+  if (cx2 == null) GRID_P.forNear(e.x, e.y, r, (p, i) => {   /* v4.5 P — grid pass over the in-reach rounds only */
+    if (!p.friendly || p.life <= 0 || p.pierce || PD_UNINTERCEPTABLE[p.k]) return;
+    const d = Math.hypot(p.x - e.x, p.y - e.y);
+    if (d <= r) cands.push({ p, d, i });
+  });
+  else for (const p of G.proj) {
     if (!p.friendly || p.life <= 0 || p.pierce || PD_UNINTERCEPTABLE[p.k] || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam') continue;
     const d1 = Math.hypot(p.x - e.x, p.y - e.y), d2 = (cx2 != null) ? Math.hypot(p.x - cx2, p.y - cy2) : Infinity, d = Math.min(d1, d2);
-    if (d <= r) cands.push({ p, d });
+    if (d <= r) cands.push({ p, d, i: 0 });
   }
   if (!cands.length) return;
-  cands.sort((a, b) => a.d - b.d);
+  cands.sort((a, b) => a.d - b.d || a.i - b.i);
   let n = Math.min(nMax, cands.length);
   if (e.pdBudget != null) { if (e.pdBudget < 1) return; n = Math.min(n, Math.floor(e.pdBudget)); if (n < 1) return; }   // v4.4 SATURABLE PD — a hull with an ammo pool (see PD_SAT/updEnemies) can only lance what it currently has budget for; a hull with no pool (e.pdBudget stays null) behaves exactly as before, unlimited
   const pts = [];
@@ -8155,20 +8276,20 @@ function flagshipFlakBurst(e) {
   G.parts.push({ k: 'flash', x: e.x, y: e.y, r: 26, life: .2, bloom: true });
   G.proj.push({ k: 'flakring', x: e.x, y: e.y, life: .12, friendly: false, dmg: 0 });
   const cands = [];   // v4.4 — SATURATE, don't erase: the ring only clears its nearest FLAK_CAP rounds, not literally every friendly projectile in range
-  for (const p of G.proj) {
-    if (!p.friendly || p.life <= 0 || PD_UNINTERCEPTABLE[p.k]) continue;
-    const dd = (p.x - e.x) ** 2 + (p.y - e.y) ** 2; if (dd > FLAK_R * FLAK_R) continue;
-    cands.push({ p, dd });
-  }
-  cands.sort((a, b) => a.dd - b.dd);
+  GRID_P.forNear(e.x, e.y, FLAK_R, (p, i) => {   /* v4.5 P — grid pass */
+    if (!p.friendly || p.life <= 0 || PD_UNINTERCEPTABLE[p.k]) return;
+    const dd = (p.x - e.x) ** 2 + (p.y - e.y) ** 2; if (dd > FLAK_R * FLAK_R) return;
+    cands.push({ p, dd, i });
+  });
+  cands.sort((a, b) => a.dd - b.dd || a.i - b.i);
   const cn = Math.min(FLAK_CAP, cands.length);
   for (let i = 0; i < cn; i++) { const p = cands[i].p; if (p.strat && p.hp != null) { p.hp -= FLAK_DMG; if (p.hp <= 0) p.life = 0; } else p.life = 0; }
-  for (const u of G.units) {
-    if (!u.d || u.d.domain !== 'air') continue;
-    if (Math.hypot(u.x - e.x, u.y - e.y) > FLAK_R) continue;
+  GRID_A.forNear(e.x, e.y, FLAK_R, u => {
+    if (!u.d || u.d.domain !== 'air') return;
+    if (Math.hypot(u.x - e.x, u.y - e.y) > FLAK_R) return;
     if (u.squad) hitSquadMember(u, FLAK_AIR * invT(), e.x, e.y); else u.hp -= FLAK_AIR * invT();
     spark(u.x, u.y, 2);
-  }
+  });
   shake(6); if (SFX.boom) SFX.boom();
 }
 // v4.2 — the densest cluster of the flagship's OWN fleet (enemies still up in the space band) — its engines drift
@@ -8180,6 +8301,7 @@ function densestEnemySpaceX() {
   return best;
 }
 function updEnemies(dt) {
+  lodPrep();
   // PERF: friendliesList()/airTargetsList()/airOnlyList() each walk EVERY player unit + building + city district
   // to build a fresh array. The loop below used to call them fresh for EVERY enemy (targeting, whistler dive,
   // secondary weapons, dive impact) — an O(enemies × units) rebuild every single frame. Nothing in this function
@@ -8250,7 +8372,7 @@ function updEnemies(dt) {
     // paying for a fresh scan. See the LOD block above updUnits.
     const _lodScanE = lodShouldScan(e.x, e.y, e._id, _lodEngBucketsE);
     let tgt;
-    if (_lodScanE) { tgt = near(e.x, e.y, e.airOnly ? _airOnlyList : e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) }; e._lodTgt = tgt; }   // v4.4 — e.airOnly (lasersat) hunts the STRICT air/space pool only, no ground fallback, so it never snipes your ground units
+    if (_lodScanE && !((e._acqT -= dt) > 0 && e._lodTgt && lodTargetAlive(e._lodTgt))) { e._acqT = .2 + Math.random() * .2; tgt = near(e.x, e.y, e.airOnly ? _airOnlyList : e.air ? _airTgtList : _friendlyList, 1e9) || { x: e.x, y: groundY(e.x) }; e._lodTgt = tgt; }   /* v4.5 P — retarget cooldown: a living target is kept 0.2-0.4s, a lost one re-acquires at once */   // v4.4 — e.airOnly (lasersat) hunts the STRICT air/space pool only, no ground fallback, so it never snipes your ground units
     else { tgt = e._lodTgt; if (!tgt || !lodTargetAlive(tgt)) tgt = { x: e.x, y: groundY(e.x) }; }
     // G1 — ESCORT FIGHTER: orbits its parent super-unit in a slow figure-8, snaps back if pulled too far out, and
     // engages anything that comes within 700px of the PARENT (a real mobile picket screening the super-unit, not
@@ -8468,8 +8590,10 @@ function updSwarmSupport(dt) {
     } else u.regrowing = false;
   }
 }
+const SG_LIST = [], BR_LIST = []; let _sgKey = null, _brKey = null;
 function shieldBlocks(x, y) {   // is this point inside a friendly DEFLECTOR DOME? — now a FULL bubble around a live Shield Generator, so it also reaches BELOW the surface and covers ships / the water, not just the air above
-  for (const b of G.buildings) { if (b.key !== 'shieldgen' || b.done === false || b.captured || (b.shieldHp || 0) <= 0) continue; const base = groundY(b.x), r = b.d.shieldR; if ((x - b.x) ** 2 + (y - base) ** 2 < r * r) return b; }
+  if (_sgKey !== G.buildings || SG_LIST.f !== G.frameCount || SG_LIST.n !== G.buildings.length) { SG_LIST.length = 0; for (const b of G.buildings) if (b.key === 'shieldgen') SG_LIST.push(b); _sgKey = G.buildings; SG_LIST.f = G.frameCount; SG_LIST.n = G.buildings.length; }   /* v4.5 P — candidate list rebuilt once per tick instead of scanning every building per projectile */
+  for (const b of SG_LIST) { if (b.done === false || b.captured || (b.shieldHp || 0) <= 0) continue; const base = groundY(b.x), r = b.d.shieldR; if ((x - b.x) ** 2 + (y - base) ** 2 < r * r) return b; }
   return null;
 }
 function updProj(dt) {
@@ -8484,10 +8608,10 @@ function updProj(dt) {
   // references are shared (not deep-copied), so in-flight hp/flag mutations during this same pass are still seen
   // exactly as before.
   const friendlyList = friendliesList();
-  const enemiesLive = G.enemies.filter(e => !e.reentry);
+  const enemiesLive = EL_MARK;   /* v4.5 P — marker: near() resolves it against the enemy grid, skipping re-entering hulls */
+  _incNow = incList;
   const airOnly = airOnlyList();   // STRICT player air/space-only pool — used by aaOnly:true micromissile subs (the opening anti-air salvo) so they hunt aircraft specifically, never falling back to ground targets
-  const hostileList = incList.length ? G.enemies.concat(incList) : G.enemies;
-  const hostileMeso = hostileList.filter(e => e.y >= MESO_TOP());
+  const hostileList = HL_MARK, hostileMeso = HM_MARK;   /* v4.5 P — markers (enemies + in-flight intercept-eligible rounds): near() resolves them against the enemy grid, the hit test below does its own grid pass */
   for (const p of G.proj) {
     if (p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.k === 'pdfan' || p.k === 'flakring') { p.life -= dt; continue; }   // v4.2 — pdfan/flakring are one-frame visual markers (a fan of PD lances / the flagship's flak ring), no physics of their own
     // CEILING FIZZLE (v4.3) — only rounds fire() stamped with a ceilY (player shots from a weapon with a real ceiling;
@@ -8511,7 +8635,7 @@ function updProj(dt) {
       if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9, resolveStyleAt('kinetic', p.x, p.y)); p.life = 0; continue; }   // shot down mid-air → no ground impact
       if (p.strat && p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this kinetic lance down to 0hp: it fizzles, no warhead effect
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 16) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 40 * 40) { detonateKinetic(p.x, p.y); p.life = 0; break; } }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
+      if (p.friendly && GRID_E.anyWithin(p.x, p.y, 40, true, false)) { detonateKinetic(p.x, p.y); p.life = 0; }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
       continue;
     }
@@ -8563,7 +8687,7 @@ function updProj(dt) {
       const cluster = near(p.x, p.y, tlist, 550);
       if ((p.t >= p.splitT && cluster) || p.t > .8 || p.life <= 0 || p.y >= groundY(p.x)) {
         boom(p.x, p.y, 3, resolveStyleAt('cluster', p.x, p.y)); spark(p.x, p.y, 5);
-        const pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.n).map(o => o[1]);
+        const pool = kNearest(tlist, p.x, p.y, p.n, null, false);
         for (let i = 0; i < p.n; i++) {
           const a = -1.4 + (i / Math.max(1, p.n - 1)) * 2.8 + (Math.random() - .5) * .4;
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
@@ -8589,7 +8713,7 @@ function updProj(dt) {
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 26) p.tr.shift();
       if (burning) { if (Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 }); if (Math.random() < .85) G.parts.push({ k: 'ember', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random() * 1.3, life: .16 + Math.random() * .14, tw: Math.random() * 6 }); }   // smoke trail + a brighter exhaust flare — BOTH cut out the instant the motor burns out (coasting = no plume)
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      if (p.t > p.climb) for (const e of G.enemies) { if (e.reentry) continue; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 46 * 46) { detonateStrat(p.sub, p.x, p.y); p.life = 0; break; } }   // AIRBURST on a fleet → strikes hit the air
+      if (p.t > p.climb && GRID_E.anyWithin(p.x, p.y, 46, true, false)) { detonateStrat(p.sub, p.x, p.y); p.life = 0; }   // AIRBURST on a fleet → strikes hit the air
       if (p.life > 0) { const arrived = (!aimUp && ((p.x - p.tx) ** 2 + (p.y - p.ty) ** 2 < 22 * 22)) || (p.t > p.climb && p.y >= groundY(p.x)); if (arrived) { detonateStrat(p.sub, p.x, p.air ? p.ty : groundY(p.x)); p.life = 0; } }   // burst at the aimed altitude, or ground
       continue;
     }
@@ -8609,12 +8733,12 @@ function updProj(dt) {
       const deployY = p.air ? p.ty : groundY(p.x);
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target
         boom(p.x, p.y, 4, resolveStyleAt('cluster', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
-        const tlist = G.enemies.filter(e => e.y >= SPACE_Y()), pool = tlist.map(e => [(e.x - p.x) ** 2 + (e.y - p.y) ** 2, e]).sort((a, b) => a[0] - b[0]).slice(0, p.split).map(o => o[1]);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle). NOTE: built from G.enemies, NOT the reentry-stripped enemiesLive — these are direct-hit homing missiles (same weapon class as the generic guided missile, which already reacquires reentry targets via hostileMeso), so a re-entry target that has already descended into reach (y >= SPACE_Y()) is a perfectly valid lock, not just orbital ones sitting above the line
+        const spY = SPACE_Y(), pool = kNearest(G.enemies, p.x, p.y, p.split, spY, false);   // micro-missiles are an atmospheric weapon — they never lock ORBITAL ships (that needs railguns/orbital/particle). NOTE: built from G.enemies, NOT the reentry-stripped enemiesLive — these are direct-hit homing missiles (same weapon class as the generic guided missile, which already reacquires reentry targets via hostileMeso), so a re-entry target that has already descended into reach (y >= SPACE_Y()) is a perfectly valid lock, not just orbital ones sitting above the line
         for (let i = 0; i < p.split; i++) {
           const a = -1.9 + (i / Math.max(1, p.split - 1)) * 3.8 + (Math.random() - .5) * .4;
           let vx0 = Math.cos(a) * 130, vy0 = Math.sin(a) * 130 - 16;
           if (vy0 > -30) vy0 = -30 - Math.random() * 40;   // POP UP — same fix as the microrocket split: never deploy a submunition already heading groundward (this carrier explicitly bursts AT ground level when its target isn't airborne, so this was diving straight in on detach)
-          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : (near(p.x, p.y, tlist, 1400) || near(p.x, p.y, G.enemies, 2200));   // GUARANTEE HOMING — widened fallback radius, then (if the burst point genuinely has nothing atmospheric anywhere near it) an absolute last resort over the FULL enemy list so a submunition is never left with a null target while ANY enemy is alive, even if that means briefly crossing the "atmosphere-only" intent in the rare case nothing else exists to hunt
+          const ht = pool.length ? (pool[i] || pool[i % pool.length]) : (GRID_E.nearest(p.x, p.y, 1400, spY) || near(p.x, p.y, G.enemies, 2200));   // GUARANTEE HOMING — widened fallback radius, then (if the burst point genuinely has nothing atmospheric anywhere near it) an absolute last resort over the FULL enemy list so a submunition is never left with a null target while ANY enemy is alive, even if that means briefly crossing the "atmosphere-only" intent in the rare case nothing else exists to hunt
           G.proj.push({ k: 'missile', x: p.x, y: Math.min(p.y, groundY(p.x) - 8), vx: vx0, vy: vy0, spd: Math.hypot(vx0, vy0), maxspd: 360, thrust: 640, turn: 4.6, t: 0, pop: .12, burn: MSL_BURN_MICRO, life: 4.5, friendly: true, dmg: p.dmg, tr: [], micro: true, homeTgt: ht || null });
         }
         p.life = 0;
@@ -8626,7 +8750,7 @@ function updProj(dt) {
       if (p.hp <= 0) { spark(p.x, p.y, 2); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .1 }); p.life = 0; continue; }
       p.vy += 180 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 7) p.tr.shift();
-      let hitAir = null; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'air') continue; const dd = (u.x - p.x) ** 2 + (u.y - p.y) ** 2; if (dd < 18 * 18) { hitAir = u; break; } }
+      const hitAir = GRID_A.firstAirWithin(p.x, p.y, 18);   /* v4.5 P — grid pass over the air units */
       const gy = groundY(p.x);
       if (hitAir || p.y >= gy || p.life <= 0) { detonateBomblet(p.x, hitAir ? p.y : gy, p.dmg, p.r || 90); p.life = 0; }
       continue;
@@ -8657,8 +8781,8 @@ function updProj(dt) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (p.big ? 5 : 4)) p.tr.shift();
       let hit = false, hitAir = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5, prox = (p.big ? 44 : 22);   // PROXIMITY radius — bursts NEAR the target, not only on contact
-      if (p.friendly) { for (const t of G.enemies) { const wide = !t.ground, rad = (t.s || 16) + (wide ? prox * 1.6 : prox) + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { hit = true; hitAir = wide; break; } } }   // NOTE: no `if (t.reentry) continue` here — plasma-armed units (acquireEnemy has no reentry filter, gated only by ceilF) DO acquire & fire at descending re-entry targets, so the bolt must be able to airburst on them too, or it flies straight through and whiffs. Airborne (non-ground) targets get a wider fuse — fast movers/descenders were slipping past the tight radius on a dead-straight shot; ground behavior (tanks, artillery) is untouched.
-      else { for (const t of friendlyList) { const rad = (t.s || t.r || 16) + prox + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { hit = true; break; } } }
+      if (p.friendly) { const ft = GRID_E.firstHit(p.x, p.y, prox + sweep, prox * 1.6 + sweep, null); if (ft) { hit = true; hitAir = !ft.ground; } }   // NOTE: no `if (t.reentry) continue` here — plasma-armed units (acquireEnemy has no reentry filter, gated only by ceilF) DO acquire & fire at descending re-entry targets, so the bolt must be able to airburst on them too, or it flies straight through and whiffs. Airborne (non-ground) targets get a wider fuse — fast movers/descenders were slipping past the tight radius on a dead-straight shot; ground behavior (tanks, artillery) is untouched.
+      else { if (GRID_F.firstHit(p.x, p.y, prox + sweep, prox + sweep, null)) hit = true; }
       if (hit || p.y >= groundY(p.x) || p.life <= 0) { const burstR = (p.big ? 80 : 42) + (hitAir ? 26 : 0); plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), burstR, p.dmg * (p.fade ?? 1), p.friendly); p.life = 0; }   // burst radius must comfortably exceed the proximity TRIGGER radius above, or a shot can detonate "near" a fast-moving/wide-fused airborne target yet land just outside its own blast (a trigger-without-damage near-miss) — the +26 keeps that margin now that airborne targets get a wider trigger fuse
       continue;
     }
@@ -8713,8 +8837,7 @@ function updProj(dt) {
     else if (p.k === 'amslug') { p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 5) p.tr.shift(); }   // antimatter slug: dead straight, no gravity, no homing — falls through to the shared move + collision below
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     if (p.k === 'missile' && p.prox && p.friendly && p.life > 0) {   // AIRCRAFT MISSILE PROXIMITY FUSE — a near-miss on a jinking target airbursts (splash) instead of tunnelling past; domes/fields already caught it in flight above, so this only triggers in the open
-      let best = null, bd = FIGHTER_MSL_PROX * FIGHTER_MSL_PROX;
-      for (const e of G.enemies) { if (e.reentry || e.hp <= 0) continue; const dd = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (dd < bd) { bd = dd; best = e; } }
+      const best = GRID_E.anyWithin(p.x, p.y, FIGHTER_MSL_PROX, true, true);
       if (best) { splashDamage(p.x, p.y, FIGHTER_MSL_SPLASH, p.dmg * (p.fade ?? 1), true, 'missile'); boomW(p.x, p.y, 4, boomStyleFor(p)); spark(p.x, p.y, 3); p.life = 0; continue; }
     }
     if (p.k === 'missile' && p.ami && p.friendly && p.life > 0) {   // ANTI-MISSILE INTERCEPTOR PROXIMITY FUSE — hit-to-kill: the round detonates on a NEAR MISS of the incoming ordnance it's chasing (rods/busters/enemy missiles are small & fast, so demanding pixel-perfect contact is exactly why the old interceptor whiffed). One interceptor kills one round; the finite magazine + slow rearm is the balance, not per-round survivability.
@@ -8723,15 +8846,20 @@ function updProj(dt) {
       for (const q of incList) { if (q.life <= 0) continue; const dd = (q.x - p.x) ** 2 + (q.y - p.y) ** 2; if (dd < bd) { bd = dd; best = q; } }
       if (best) { if (best.interceptable) best.hp = -1; else best.life = 0; boomW(p.x, p.y, 6); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 }); spark(p.x, p.y, 4); p.life = 0; continue; }   // HIT-TO-KILL: unlike generic flak (flakHit, which just subtracts dmg — see ~line 3420, still used by CIWS/Aegis/bunkers etc.), a locked dedicated AMI round always destroys its target in ONE hit regardless of remaining HP — so a 200-HP bunker-buster (tough BY DESIGN so cheap flak can't casually swat it) still dies to a single dedicated interceptor round, while flak alone still can't. interceptable rods/busters self-destruct via their own hp<=0 handler next tick (keeps their kill FX + counter); other pdable rounds (no hp) we finish here directly via life=0
     }
-    let list = p.friendly ? hostileList : friendlyList;
-    if (p.friendly && p.homeTgt && p.homeTgt.pdable && p.homeTgt.life > 0) list = list.concat(p.homeTgt);   // an interceptor hard-locked onto a pdable enemy missile can detonate on exactly that round (pdable rounds aren't in incList)
-    const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   // fast relentless missiles get a swept hit-radius so they don't tunnel through targets
-    if (p.heavy && p.k === 'tracer') { for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { spark(p.x, p.y, 3); break; } } }   // HEAVY GUN (v4.4) — a read-only pre-check, own small hit-scan mirroring the generic one below: Warthog autocannon / Mastodon chin gun rounds get a small impact spark; ordinary tracer/flak still spawns none (see the PERF note on the line below)
-    for (const t of list) { if (p.ceilY != null && t.y < p.ceilY - CEIL_FADE_PX) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg * (p.fade ?? 1), p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3), boomStyleFor(p)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; break; } else if (p.friendly && (p.k === 'shell' || p.k === 'rail') && t.kind && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.x - p.x) ** 2 + (t.y - p.y) ** 2 < 1600) t.evadeT = 1.2; }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit. NEAR-MISS EVASION (v4.0 C) — a heavy round (shell/rail — rod is rail with p.big) passing within 40px (1600=40²) of a live enemy AIR unit without actually hitting it still spooks it into evasive jinking, mirroring the on-hit trigger in hurt(); bosses/bulwark/shieldgen/ground/anchored never evade
+    const sweep = p.k === 'missile' ? Math.hypot(p.vx, p.vy) * dt * .6 : 0;   /* fast relentless missiles get a swept hit-radius so they don't tunnel through targets */
+    const cyMin = p.ceilY != null ? p.ceilY - CEIL_FADE_PX : null;
+    let ht = null, hi = -1;   /* v4.5 P — GENERIC HIT through the grids: lowest-list-index hull in reach (enemies first, then in-flight rounds, then an interceptor's hard-locked pdable round), one pass; the near-miss evasion and the heavy-gun spark ride the same result */
+    if (p.friendly) {
+      ht = GRID_E.firstHit(p.x, p.y, 4 + sweep, 4 + sweep, cyMin); hi = GRID_E.hitI;
+      if (!ht && incList.length) for (const t of incList) { if (cyMin !== null && t.y < cyMin) continue; const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) { ht = t; break; } }
+      if (!ht && p.homeTgt && p.homeTgt.pdable && p.homeTgt.life > 0) { const t = p.homeTgt; if (!(cyMin !== null && t.y < cyMin)) { const rad = (t.s || t.r || 16) + 4 + sweep; if ((t.x - p.x) ** 2 + (t.y - p.y) ** 2 < rad * rad) ht = t; } }
+      if (p.k === 'shell' || p.k === 'rail') GRID_E.evadeNear(p.x, p.y, ht && hi >= 0 ? hi : -1, cyMin);
+    } else ht = GRID_F.firstHit(p.x, p.y, 4 + sweep, 4 + sweep, cyMin);
+    if (ht) { const t = ht; if (p.heavy && p.k === 'tracer') spark(p.x, p.y, 3); t.killBy = p.k === 'rail' && p.big ? 'rod' : p.k; t.killX = p.x; t.killY = p.y; hurt(t, p.dmg * (p.fade ?? 1), p.x, p.y); if (p.k !== 'tracer') boomW(p.x, p.y, p.big ? 16 : (p.k === 'shell' ? 6 : 3), boomStyleFor(p)); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); p.life = 0; }   // bombs & heavy rounds also cave in shallow tunnels. PERF: CIWS/gun 'tracer' rounds spawn NO impact explosion — thousands of connecting flak rounds/sec were each spawning ~11 boom FX particles (the real phone-melting lag). The kill still registers via hurt(); the bright tracer streak IS the visible hit. NEAR-MISS EVASION (v4.0 C) — a heavy round (shell/rail — rod is rail with p.big) passing within 40px (1600=40²) of a live enemy AIR unit without actually hitting it still spooks it into evasive jinking, mirroring the on-hit trigger in hurt(); bosses/bulwark/shieldgen/ground/anchored never evade
     if (p.y >= groundY(p.x)) { p.life = 0; if (p.k === 'shell' || p.k === 'missile' || p.k === 'amslug' || p.big) boomW(p.x, groundY(p.x), p.big ? 16 : 5, boomStyleFor(p)); else if (p.heavy && p.k === 'tracer') boom(p.x, groundY(p.x), 2, 'kinetic'); if (p.bomb || p.big) shallowUgHit(p.x, 95, p.dmg); }
   }
   filterInPlace(G.proj, p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // PERF: in-place compaction, see filterInPlace() — keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
-  if (G.proj.length > 1400) G.proj.splice(0, G.proj.length - 1400);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
+  if (G.proj.length > 3000) G.proj.splice(0, G.proj.length - 3000);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
 }
 const HERO_PARTS = { fire: 1, ember: 1, ring: 1, flash: 1, molten: 1, chunk: 1, deb: 1, wreck: 1, plasma: 1, text: 1, shard: 1, plume: 1 };   /* the expensive "hero" explosion particle kinds — preserved over the cheap cosmetic ones (smoke/muzzle/spark/tracer/clod/etc.) when G.parts is over budget, see the priority cull at the end of updParts() */
 function updParts(dt) {
@@ -8746,7 +8874,7 @@ function updParts(dt) {
     if (pt.k === 'plume') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy *= .96; pt.vy -= 6 * dt; pt.r += 14 * dt; pt.life -= dt; continue; }   // a mushroom-column / dust-plume puff — rises, decelerates, keeps growing wider
     if (pt.k === 'shard') { if (pt.grav) pt.vy += pt.grav * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= .985; if (!pt.grav) pt.vy *= .985; if (pt.rot !== undefined) pt.rot += (pt.vr || 0) * dt; pt.life -= dt; continue; }   // a bright glassy/metal sliver — falls if grav is set (most families), else drifts weightless (VACUUM)
     if (pt.k === 'arc' || pt.k === 'wavefront') { pt.life -= dt; continue; }   // both are stationary — an EMP lightning bolt just fades in place, a ground WAVEFRONT expands purely in renderPart() off its elapsed life fraction
-    if (pt.k === 'shrap') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 120 * dt; pt.life -= dt; let h = null; if (pt.side !== 'hostile') for (const t of G.enemies) if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.s + 3) ** 2) { h = t; break; } if (!h && pt.side !== 'friendly') for (const t of G.units) { if (t.d.builder) continue; if ((t.x - pt.x) ** 2 + (t.y - pt.y) ** 2 < (t.d.s * 2 + 3) ** 2) { h = t; break; } } if (h) { h.killBy = h.killBy || 'shell'; hurt(h, pt.dmg, pt.x, pt.y); spark(pt.x, pt.y, 2); pt.life = 0; } continue; }
+    if (pt.k === 'shrap') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 120 * dt; pt.life -= dt; let h = null; if (pt.side !== 'hostile') h = GRID_E.shrapE(pt.x, pt.y); if (!h && pt.side !== 'friendly') h = GRID_F.shrapU(pt.x, pt.y);   /* v4.5 P — grid queries instead of two full list scans per shrapnel particle */ if (h) { h.killBy = h.killBy || 'shell'; hurt(h, pt.dmg, pt.x, pt.y); spark(pt.x, pt.y, 2); pt.life = 0; } continue; }
     if (pt.k === 'chunk' || pt.k === 'clod' || pt.k === 'molten') {
       if (pt.hot) pt.hot = Math.max(0, pt.hot - dt);
       if (!pt.settled) {
@@ -8939,7 +9067,7 @@ function renderGame() {
   // as the charge fills, with a pulsing dot on the aim itself — "a gun you SEE coming"
   for (const tl of G.teleLines) { const px1 = sx(tl.x1), px2 = sx(tl.ax); if (Math.max(px1, px2) < -PX || Math.min(px1, px2) > W + PX) continue; const prog = 1 - Math.max(0, tl.t) / tl.total, ta = .35 + .35 * prog; c.save(); c.globalAlpha = ta; c.strokeStyle = '#ff6a5a'; c.lineWidth = 2; c.setLineDash([7, 6]); c.beginPath(); c.moveTo(px1, tl.y1); c.lineTo(px2, tl.ay); c.stroke(); c.setLineDash([]); const pr = 3 + 2.4 * (.5 + .5 * Math.sin(animClock * .05)); c.fillStyle = '#ff8a6a'; c.shadowColor = '#ff5a3a'; c.shadowBlur = 8; c.beginPath(); c.arc(px2, tl.ay, pr, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }
   // particles
-  for (const pt of G.parts) { const px = sx(pt.x); if (px < -40 - PX || px > W + 40 + PX || pt.y < VY0 || pt.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; renderPart(pt, px); }
+  for (const pt of G.parts) { const px = sx(pt.x); if (px < -40 - PX || px > W + 40 + PX || pt.y < VY0 || pt.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; _glowHero = !!HERO_PARTS[pt.k]; renderPart(pt, px); } _glowHero = true;
   // placement ghost
   if (G.place) { const d = BUILD_DEFS[G.place], wx = mwx(), px = sx(wx), ug = placeUg(G.place), oy = ug ? UG_DEPTH * digLevel(G.place) : 0, gy = (d.needWater ? seaLevelY(wx) : groundY(wx)) + oy; const ok = canPlace(G.place, wx, ug) && G.ic >= d.ic && G.mp >= d.mp; c.globalAlpha = .55; if (ug) { c.strokeStyle = 'rgba(202,160,48,.5)'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, groundY(wx)); c.lineTo(px, gy - d.h * .5); c.stroke(); } if (!ug && !d.needWater) drawFoundation(wx, px, gy, d.w * .55); c.save(); c.translate(px, gy); (BART[G.place] || BART.factory)(c, d.w, d.h); c.restore(); c.strokeStyle = ok ? '#6dffb0' : '#ff5a5a'; c.lineWidth = 1.5; c.strokeRect(px - d.w / 2, gy - d.h, d.w, d.h); c.globalAlpha = 1; }
   // land-fill cursor
@@ -9194,9 +9322,11 @@ function neonBuilding(px, gy, w, h) {
 // createRadialGradient(0,0,0,0,0,1) under scale(r,r) is mathematically identical to a radius-r gradient at (px,y),
 // so the halo looks exactly the same; we just stop re-allocating it thousands of times a frame.
 const _glowCache = new Map();
+let _glowHero = true;   /* v4.5 P — false while a cheap cosmetic particle (not in HERO_PARTS) is being drawn, see the render loop */
 let _glowFrameCount = 0;   // v3.98.0 WHITE-OUT CLAMP — reset to 0 once per rendered frame (renderGame), incremented on every additive glow draw
 const GLOW_SOFT_CAP = 220;   // past this many 'lighter'-blended glow draws in ONE frame, further ones fade out — a mass-death event can dump thousands of overlapping explosion blooms into the same screen area; this stops that from ever stacking to a solid white sheet, while a normal-density fight (well under the cap) is completely unaffected
 function glow(px, y, r, col, a) { if (a <= .01 || r <= 0) return;
+  if (_glowFrameCount >= GLOW_SOFT_CAP && !_glowHero) return;   /* v4.5 P — past the soft cap a cheap particle's glow is skipped (the budget is kept for hero explosion glows, which still dim) */
   _glowFrameCount++;
   if (_glowFrameCount > GLOW_SOFT_CAP) { const over = Math.min(1, (_glowFrameCount - GLOW_SOFT_CAP) / GLOW_SOFT_CAP); a *= (1 - over * .85); if (a <= .01) return; }   // fades, never hard-cuts — a blast still flashes, it just can't pile on top of hundreds of others at full brightness
   let g = _glowCache.get(col);
@@ -9249,18 +9379,40 @@ function renderPart(pt, px) {
 }
 function bar(x, y, w, frac, enemy, col) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = col || (enemy ? (cbMode ? '#ff9a00' : '#ff6b6b') : (cbMode ? '#37b6ff' : '#7cffb0')); c.fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }   // colorblind mode: blue/orange bars instead of green/red
 const MM = { x: 0, y: 0, w: 150, h: 120 };
+function mmGeom() {
+  { let mw = Math.min(300, Math.max(150, W * .30)), mh = Math.min(170, Math.max(96, H * .26));
+    if (mw > W - 18) mw = W - 18; if (mh > H - 18) mh = H - 18;                       // never let it swallow a tiny screen
+    if (mh > mw * .95) mh = mw * .95;                                                 // keep a sane landscape-ish shape
+    MM.w = mw; MM.h = mh; }
+  MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
+}
+/* v4.5 P — the minimap panel is repainted into an offscreen canvas at 10 Hz and blitted every frame; the viewport box stays live so scrubbing the camera still tracks per frame */
+const MMC = { cv: null, ctx: null, t: -1e9, w: 0, h: 0, x: 0, y: 0 };
 function drawMinimap() {
+  mmGeom();
+  const now = performance.now(), ox = Math.floor(MM.x), oy = Math.floor(MM.y), cw = Math.ceil(MM.w) + 3, ch = Math.ceil(MM.h) + 3;
+  if (!MMC.cv) { MMC.cv = document.createElement('canvas'); MMC.ctx = MMC.cv.getContext('2d'); }
+  if (MMC.ctx) {
+    if (now - MMC.t >= 100 || MMC.w !== cw || MMC.h !== ch || MMC.x !== ox || MMC.y !== oy) {
+      if (MMC.cv.width !== cw) MMC.cv.width = cw; if (MMC.cv.height !== ch) MMC.cv.height = ch;
+      const prev = c; c = MMC.ctx; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cw, ch); c.translate(-ox, -oy);
+      try { drawMinimapBody(); } finally { c = prev; MMC.ctx.setTransform(1, 0, 0, 1, 0, 0); }
+      MMC.t = now; MMC.w = cw; MMC.h = ch; MMC.x = ox; MMC.y = oy;
+    }
+    c.drawImage(MMC.cv, ox, oy);
+  } else drawMinimapBody();
+  const sc = MM.w / WORLD_W, mx = wx => MM.x + wx * sc;
+  // VIEWPORT BOX — what you're currently looking at (tracks the visible span; zoom crops the strip around its centre)
+  c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.strokeRect(mx(cam.x + W / 2 - W / (2 * (cam.z || 1))) + .5, MM.y + 1.5, (W / (cam.z || 1)) * sc, MM.h - 3);
+}
+function drawMinimapBody() {
   // TACTICAL MINIMAP — a readable panel, not a squished world-aspect strip. The WIDTH sets the camera-scrub
   // scale (click/drag maps px→worldX linearly across MM.w, so it stays intact); the HEIGHT is DECOUPLED and
   // spent on legible ALTITUDE LAYERING — orbit at the top, air below it, the GROUND baseline, then a thin
   // subterranean band under it. Bigger, colour-coded, clearly-shaped markers replace the old 1px dots so a
   // glance reads the whole front: your forces (cool), the enemy (hot red), bosses (big pulsing), the frontline,
   // and which cities are under threat. Every marker group sets its fillStyle ONCE then loops — no per-unit alloc.
-  { let mw = Math.min(300, Math.max(150, W * .30)), mh = Math.min(170, Math.max(96, H * .26));
-    if (mw > W - 18) mw = W - 18; if (mh > H - 18) mh = H - 18;                       // never let it swallow a tiny screen
-    if (mh > mw * .95) mh = mw * .95;                                                 // keep a sane landscape-ish shape
-    MM.w = mw; MM.h = mh; }
-  MM.x = W - MM.w - 8; MM.y = H - MM.h - 8;
+  mmGeom();
   const small = MM.w < 200, legendH = small ? 0 : 13;
   const sc = MM.w / WORLD_W, mx = wx => MM.x + wx * sc;
   const skyTop = MM.y + legendH + 2, gy = MM.y + legendH + (MM.h - legendH) * .70, botY = MM.y + MM.h - 2, wH = worldH();
@@ -9332,8 +9484,6 @@ function drawMinimap() {
     c.fillStyle = '#ff2a2a'; c.beginPath(); c.moveTo(bx, by - r); c.lineTo(bx + r, by); c.lineTo(bx, by + r); c.lineTo(bx - r, by); c.closePath(); c.fill();
   }
   c.restore();
-  // VIEWPORT BOX — what you're currently looking at (tracks the visible span; zoom crops the strip around its centre)
-  c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.strokeRect(mx(cam.x + W / 2 - W / (2 * (cam.z || 1))) + .5, MM.y + 1.5, (W / (cam.z || 1)) * sc, MM.h - 3);
   // FRAME + LEGEND — a compact key up top (skipped on very narrow screens)
   c.strokeStyle = 'rgba(150,190,240,.4)'; c.lineWidth = 1; c.strokeRect(MM.x + .5, MM.y + .5, MM.w - 1, MM.h - 1);
   if (!small) {
@@ -9672,6 +9822,15 @@ function drawVignette() {
   c.fillRect(-2, -2, 4, 4);   // overcovers; beyond the gradient's last stop it just clamps to maxA, so corners never exceed it
   c.restore();
 }
+/* v4.5 P — "?perf" overlay: a tiny top-left line of the rolling sim/render timings, refreshed ~4x a second */
+const PERF_ON = /[?&]perf\b/.test(location.search); let _perfOvT = 0;
+function perfOverlay(now) {
+  if (!PERF_ON || now - _perfOvT < 250) return; _perfOvT = now;
+  let el = document.getElementById('perfOv');
+  if (!el) { el = document.createElement('div'); el.id = 'perfOv'; el.style.cssText = 'position:fixed;left:6px;top:6px;z-index:60;font:10px/1.3 Consolas,monospace;color:#9dffb0;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:3px;pointer-events:none;white-space:pre'; document.body.appendChild(el); }
+  el.textContent = perfLine();
+}
+function perfLine() { const p = PERF, f = v => v.toFixed(1); return 'sim ' + f(p.upd) + ' ms (units ' + f(p.units) + ' · enemies ' + f(p.enemies) + ' · proj ' + f(p.proj) + ' · parts ' + f(p.parts) + ') · render ' + f(p.render) + ' ms (terrain ' + f(p.terrain) + ')'; }
 function frame(now) {
   let dt = Math.min(.05, (now - last) / 1000); last = now;
   const paused = mode === 'game' && G && G.paused; if (!paused) animClock += dt * 1000;
@@ -9687,7 +9846,8 @@ function frame(now) {
     else if (mode === 'zoom') { let t = (now - zoomStart) / 1000 / ZOOM_DUR; if (t >= 1) { t = 1; enterGame(); } const ez = t * t * (3 - 2 * t), scale = 1 + ez * 70, ea = 1 - Math.min(1, Math.max(0, (t - .3) / .4)); drawEarth(scale, ea); const gv = Math.min(1, Math.max(0, (t - .45) / .5)); if (gv > 0) { c.save(); c.translate(0, -cam.y); drawWorld(gv); c.restore(); } const fl = Math.max(0, 1 - Math.abs(t - .5) / .18) * .6; if (fl > 0) { c.fillStyle = `rgba(210,230,255,${fl})`; c.fillRect(0, 0, W, H); } }
     else {
       if (G) updateCamera(dt);
-      if (G && !paused && !G.over) { try { updateGame(dt * 0.45 * G.speed); } catch (e) { logErr(e); } }
+      if (G && !paused && !G.over) { try { updateGame(dt * 0.45 * G.speed); } catch (e) { logErr(e); gridsDirty(); } }
+      const _rT0 = performance.now();
       let ox = 0, oy = 0; if (shakeAmt > .2) { ox = (Math.random() - .5) * shakeAmt; oy = (Math.random() - .5) * shakeAmt; shakeAmt = Math.max(0, shakeAmt - dt * 22); } else shakeAmt = 0;
       // POSTCARD CAMERA — if this frame is about to satisfy a pending AAR snapshot, swap in snapFrameCam()'s wide
       // nation-framing pose for JUST this one render, then restore the real (live-battle) cam right after the capture
@@ -9702,7 +9862,7 @@ function frame(now) {
       if (G && G.stats) { if (G.stats.snap._wantStart && !G.stats.snap.start) { captureSnap('start'); G.stats.snap._wantStart = false; } if (G.stats.snap._wantPrep && !G.stats.snap.prep) { captureSnap('prep'); G.stats.snap._wantPrep = false; } if (G.stats.snap._wantEnd && !G.stats.snap.end) { captureSnap('end'); G.stats.snap._wantEnd = false; } }
       if (_snapSaved) { cam.z = _snapSaved.z; cam.x = _snapSaved.x; cam.y = _snapSaved.y; cam.manualT = _snapSaved.manualT; }   // restore the real live cam — only THIS one rendered frame used the postcard pose
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
-      if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
+      if (G && !G.hideHUD) drawMinimap(); perfAdd('render', performance.now() - _rT0); perfOverlay(now);   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
       if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the guaranteed recovery ramping stability back up so the player can see they're being clawed out of it
         const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR[(G.crisisK || 1) - 1]), frac = Math.max(0, Math.min(1, G.stab / target)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
         c.save(); c.fillStyle = 'rgba(120,10,10,' + (0.30 * pulse).toFixed(2) + ')'; c.fillRect(0, 0, W, 54);
@@ -10279,6 +10439,7 @@ function openStats() {   // universal stat readout — every current modifier in
   const mults = []; for (const k in G.mult) if (G.mult[k]) mults.push([MULT_LABELS[k] || k, (k === 'capb' ? '+' + G.mult[k] : (G.mult[k] > 0 ? '+' : '') + Math.round(G.mult[k] * 100) + '%')]);
   h += `<h3 style="margin:10px 0 4px;color:var(--term)">RESEARCH BONUSES</h3>`; h += mults.length ? mults.map(p => row(p[0], p[1], '#7cffb0')).join('') : `<div class="id">No research bonuses yet.</div>`;
   const bl = bmodLines(); h += `<h3 style="margin:10px 0 4px;color:var(--term)">SPECIAL-BUILDING BUFFS</h3>`; h += bl.length ? bl.map(p => row(p[0], p[1], '#bfe9ff')).join('') : `<div class="id">Build special-resource structures (SPEC tab) to gain these.</div>`;
+  h += `<h3 style="margin:10px 0 4px;color:var(--term)">PERFORMANCE</h3>` + row('Frame budget', perfLine());
   h += `</div><div class="actions"><button class="pill" onclick="closeModal('statsModal')">CLOSE</button></div></div>`;
   mdl.innerHTML = h; mdl.classList.add('show');
 }
@@ -10560,7 +10721,8 @@ function syncHUD() {
   document.getElementById('backBtn').style.display = G.paused ? 'block' : 'none';
   { const pb = document.getElementById('btnPause'); if (pb) { pb.textContent = G.paused ? '▶' : '❚❚'; pb.classList.toggle('on', G.paused); pb.title = G.paused ? 'Resume (or press SPACE).' : 'Pause (or press SPACE).'; } }
   tickResearchUI();
-  if (G.sel) { if ((G.sel.hp !== undefined && G.sel.hp <= 0) || (G.units.indexOf(G.sel) < 0 && G.buildings.indexOf(G.sel) < 0 && G.cities.indexOf(G.sel) < 0)) { G.sel = null; refreshSel(); } else refreshSel(); }
+  if (G.sel) { const _si = G._selIdx; let _in = _si != null && (G.units[_si] === G.sel || G.buildings[_si] === G.sel || G.cities[_si] === G.sel); if (!_in) { let k = G.units.indexOf(G.sel); if (k < 0) k = G.buildings.indexOf(G.sel); if (k < 0) k = G.cities.indexOf(G.sel); G._selIdx = k < 0 ? null : k; _in = k >= 0; }   /* v4.5 P — the selection's list index is cached (re-found only when the lists compact) instead of 3 indexOf scans at 30Hz */
+    if ((G.sel.hp !== undefined && G.sel.hp <= 0) || !_in) { G.sel = null; G._selIdx = null; refreshSel(); } else refreshSel(); }
   layoutHudChrome();
 }
 // LAYOUT — keeps .subbar and the ★ READINESS dock pinned to the live bottom edge of .topbar (which itself can

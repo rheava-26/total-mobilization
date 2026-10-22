@@ -3751,6 +3751,8 @@ const CRISIS_COUNT_FORGIVE = 60; // seconds to forgive ONE crisis off the runnin
 // (the enemy advancing) or G.fleet dropping (the autofleet's pool being consumed — i.e. you making headway on it).
 // invTime units are GAME-seconds (see G.invTime += dt inside the invasion branch of updateGame), matching how the
 // rest of the invasion pacing (waves, bosses) is already timed — NOT wall-clock seconds.
+const WITHDRAW_BREAK_FRAC = .15;   // the autofleet withdraws once its fleet is fully landed and the force left on the field is at most this fraction of the fleet (min 10 hostiles)
+const WITHDRAW_NONFORCE = { bombpod: 1, decoy: 1, empburst: 1, shockwave: 1, bomblet: 1, buster: 1 };
 const STALEMATE_WINDOW  = 240;   // game-seconds with ZERO progress from either side before we call it a draw
 const STALEMATE_ABS_CAP = 900;   // absolute safety cap: an unresolved invasion this long ends in a stalemate no matter what
 function ugAllowed(d) { return !!d.rail || !!d.ugFire || (!d.needWater && !d.onNode && !d.weapon); }   // industry/population/silos can be buried; turrets & docks can't — EXCEPT the ugFire-flagged AA batteries (SAM/Microrocket/Aegis), which can dig in and still shoot upward (see updBuildings)
@@ -5879,9 +5881,11 @@ function tickPhase4(it, dt) {
 // re-entry) and is REFUNDED to G.fleet on reaching MESO_Y, never destroyed/lost; (3) SPACE PICKETS —
 // from phase 3 on, keeps 2+round(diff) picket frigates standing in the space band, topping up on a
 // 12s cooldown.
+function withdrawThreshold() { return Math.max(10, Math.round((G.fleetMax || 0) * WITHDRAW_BREAK_FRAC)); }
+function breakCount() { let n = 0; for (const e of G.enemies) if (e.hp > 0 && !WITHDRAW_NONFORCE[e.kind]) n++; return n; }
 function startWithdraw() {
   G.withdraw = { t: 0, escaped: 0 };
-  banner('☄ FLEET DESTROYED — THE AUTOFLEET WITHDRAWS', 'survivors are lifting off — finish what you can', 6);
+  banner('☄ FLEET DESTROYED — THE AUTOFLEET WITHDRAWS', 'their force is broken — survivors are lifting off, finish what you can', 6);
   toast('☄ The autofleet is spent. Survivors are lifting off.'); musDuck();
   G.stab = Math.min(100, G.stab + 15);
   G.bombard = 0; G.orbital = 0; G.busterN = 0; G.skyfallN = 0; G._skyfallDelayT = null; G._skyfallIt = null;
@@ -6242,7 +6246,7 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
       G.acqLockT -= dt; if (G.acqLockT <= 0) { const nb = G.acqOrder.find(b => !b._acqLock && b.hp > 0); if (nb) { nb._acqLock = 1; if (SFX.click) SFX.click(); } G.acqLockT = Math.max(.2, 13 / (G.acqOrder.length + 1)); }
       if (G.acqT <= 0) { G.acqPhase = false; for (const b of G.buildings) b._acqLock = 0; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
     if (!G.acqPhase) G.invTime += dt;
-    if (!G.acqPhase && !G.withdraw && !G.over && G.fleet <= 0) startWithdraw();   /* the fleet is spent: the survivors lift off and the match ends when the sky clears */
+    if (!G.acqPhase && !G.withdraw && !G.over && G.phase === 'invasion' && G.fleet <= 0 && G.invPhase >= 3 && breakCount() <= withdrawThreshold()) startWithdraw();   /* the fleet is spent: the survivors lift off and the match ends when the sky clears */
     if (!G.acqPhase) updateInvPhases(it, dt);   /* v4.0 E — THE AUTOFLEET'S PLAN: advances invPhase (screening -> blackout -> all-out -> reinforce/morale), ticks blackout-zone decay + phase-2/phase-4 ongoing effects */
     if (!G.acqPhase && !G.withdraw) tickMicroBarrage(dt);   /* v4.0.4 B — the ~400-bomblet dispersed opening barrage, phases 1-2 only (see openingMicroBarrage/tickMicroBarrage) */
     if (!G.acqPhase && !G.withdraw) tickAASalvo(dt);   /* v4.2 E2 — the 30s anti-air micromissile programme armed by openingAAsalvo (see there/tickAASalvo) */
@@ -10748,7 +10752,7 @@ function syncHUD() {
     ob.textContent = 'ENDURANCE — ' + intentLbl; ob.style.color = '';
     os.textContent = (holdLeft > 0 ? 'HOLD FOR T-' + holdLeft + 's' : '⚑ ORDNANCE EXHAUSTED — hold the line') + ' · survived ' + mmss(elapsed) + ' · BEST ' + mmss(best) + ' · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote;
   }
-  else { const pct = G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0; ob.textContent = (intentLbl || 'INVASION'); ob.style.color = ''; os.textContent = 'repelled ' + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote; }
+  else { const pct = G.fleetMax ? Math.max(0, (1 - G.fleet / G.fleetMax) * 100) : 0; ob.textContent = (intentLbl || 'INVASION'); ob.style.color = ''; os.textContent = 'repelled ' + Math.round(pct) + '% · hostiles ' + G.enemies.length + ' · cities ' + alive + '/' + G.cities.length + resNote + (G.fleet <= 0 && !G.withdraw ? ' · BREAK THEM: ' + Math.max(0, breakCount() - withdrawThreshold()) + ' left' : ''); }
   const rb = document.getElementById('btnRes'); if (rb) rb.classList.toggle('on', !!G.research);
   const rpb = document.getElementById('resProgBar'); if (rpb) { if (G.research && G.research.cost > 0) { rpb.style.display = 'block'; rpb.style.width = Math.min(100, (G.research.paid / G.research.cost) * 100) + '%'; } else rpb.style.display = 'none'; }   // research-button progress fill
   if (!G.targeting) G.pendingStrike = null; const scf = document.getElementById('strikeConfirm'); if (scf) scf.classList.toggle('show', !!(G.pendingStrike && G.targeting));   // touch strike-confirm bar tracks the aimed state

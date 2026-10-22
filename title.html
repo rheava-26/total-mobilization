@@ -3055,11 +3055,11 @@ const UNIT_DEFS = {
   fighter:  { name: '6th-Gen Fighter "Falcon"', art: 'fighter', domain: 'air', groundAtk: true, multirole: true, ic: 270, mp: 20, build: 9, hp: 55, armor: 1, range: 700, dmg: 31, rate: 1.98, weapon: 'rocket', speed: 340, s: 4, grp: 1, ammo: 14, fuel: 38, weapon2: 'tracer', dmg2: 13, rate2: 0.88, range2: 260, wpn2Air: true, ds: 'Multirole stealth fighter flight — one crewed Falcon plus two wingman drones sharing a hangar slot. Short-range autocannon for dogfights. Rearms at an airbase.' },
   strikejet:{ name: 'Strike Jet "Warthog"', art: 'warthog', domain: 'air', groundAtk: true, ic: 170, mp: 12, build: 8, hp: 70, armor: 3, range: 460, dmg: 48, rate: 3.52, weapon: 'rocket', speed: 230, s: 4.2, grp: 2, ammo: 8, fuel: 30, weapon2: 'rotary', dmg2: 26, rate2: .6, range2: 340, ceil2: .78, heavyGun: true, ds: 'Close-air-support jet. Rockets for armor and ships, a heavy autocannon that never runs dry. Rearms at an airbase.' },
   pdjet:    { name: 'Laser Interceptor "Warden"', art: 'pdjet', domain: 'air', ic: 190, mp: 14, build: 7, hp: 38, armor: 0, range: 640, dmg: 14, rate: 1.4, weapon: 'beam', speed: 340, s: 3.2, grp: 2, fuel: 34, req: 'directedenergy', ds: 'Fast, fragile interceptor, the quickest climber in the fleet, but unarmored. Duels aircraft with its beam, shoots down nearby missiles. (req Directed Energy)' },
-  satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', sat: true, ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser dominating high altitude. Needs orbital lift and a rocket part to launch. Holds station in the thermosphere. (req Orbital Ops)' },
-  missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', sat: true, ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital lift and a rocket part. Holds station in the thermosphere. (req Orbital Ops)' },
-  rods:     { name: 'Tungsten Rods "Zeus"', art: 'rods', domain: 'space', sat: true, ic: 370, mp: 8, build: 15, hp: 40, armor: 1, range: 1300, dmg: 95, rate: 6, weapon: 'rod', speed: 11, s: 4.5, grp: 1, req: 'kinetics', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital kinetic bombardment. Needs orbital lift and a rocket part. Holds station in the thermosphere. (req Kinetic Weapons)' },
-  spacefrigate:{ name: 'Orbital Frigate', art: 'spacefrig', domain: 'space', ic: 200, mp: 6, build: 9, hp: 60, armor: 2, range: 1000, dmg: 18, rate: 1.4, weapon: 'beam', speed: 16, s: 4, grp: 2, req: 'orbital', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Cheap general-purpose space warship, fielded in numbers as the backbone of a Space Age fleet. Needs orbital lift and a rocket part.' },
-  ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, fighterAI: true, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 62, rate: 2.64, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns, duels enemy strike wings. Needs orbital lift and a rocket part. Built from a Space Station. Hunts across the whole space band.' },
+  satlaser: { name: 'Laser Sat "Halo"', art: 'satlaser', domain: 'space', sat: true, airOnly: true, ic: 320, mp: 8, build: 12, hp: 50, armor: 1, range: 1200, dmg: 22, rate: 1.6, weapon: 'beam', speed: 16, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital laser dominating high altitude. Needs orbital lift and a rocket part to launch. Holds above the Space Center that launched it. (req Orbital Ops)' },
+  missilesat:{ name: 'Missile Sat "Volley"', art: 'missilesat', domain: 'space', sat: true, airOnly: true, ic: 300, mp: 10, build: 12, hp: 45, armor: 1, range: 1100, dmg: 30, rate: 3, weapon: 'rocket', speed: 15, s: 4.5, grp: 1, req: 'orbital', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital missile platform. Needs orbital lift and a rocket part. Holds above the Space Center that launched it. (req Orbital Ops)' },
+  rods:     { name: 'Tungsten Rods "Zeus"', art: 'rods', domain: 'space', sat: true, ic: 370, mp: 8, build: 15, hp: 40, armor: 1, range: 1300, dmg: 95, rate: 6, weapon: 'rod', speed: 11, s: 4.5, grp: 1, req: 'kinetics', lift: 3, comp: { rocketpart: 1 }, ds: 'Orbital kinetic bombardment. Needs orbital lift and a rocket part. Holds above the Space Center that launched it. (req Kinetic Weapons)' },
+  spacefrigate:{ name: 'Orbital Frigate', art: 'spacefrig', domain: 'space', airOnly: true, cruise: 140, ic: 200, mp: 6, build: 9, hp: 60, armor: 2, range: 1000, dmg: 18, rate: 1.4, weapon: 'beam', speed: 16, s: 4, grp: 2, req: 'orbital', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Orbital escort. Hunts enemy satellites and escorts anywhere in the sky. Beam ignores point defence. Needs orbital lift and a rocket part.' },
+  ostrikefighter:{ name: 'Orbital Strike Fighter', art: 'ostrike', domain: 'space', airOnly: true, fighterAI: true, cruise: 340, ic: 220, mp: 8, build: 9, hp: 55, armor: 2, range: 1100, dmg: 62, rate: 2.64, weapon: 'rail', speed: 40, s: 4, grp: 2, bReq: 'spacestation', elec: true, lift: 2, comp: { rocketpart: 1 }, ds: 'Space-superiority interceptor armed with railguns, duels enemy strike wings. Needs orbital lift and a rocket part. Built from a Space Station. Hunts across the whole space band.' },
   bomber:{ name: 'Lancer Heavy Bomber', art: 'lancer', domain: 'air', groundAtk: true, ammo: 6, fuel: 45, ic: 280, mp: 18, build: 13, hp: 90, armor: 4, range: 500, dmg: 60, rate: 3.4, weapon: 'bomb', speed: 180, s: 6, grp: 1, bReq: 'aeroworks', ds: 'Heavy bomber, longer range and far more payload than the Warthog, thicker hull, longest fuel tank in the fleet. Carpet-bombs targets. (build an Aero Works)' },
   // LASER PLANE "SOLARIS" — research-gated (Directed Energy), but an AERO WORKS also prodUnlocks it (demonstrates the prodUnlock mechanism — a line building making a research-gated unit buildable natively). Uses the unused 'laserjet' BART art.
   laserplane:{ name: 'Laser Plane "Solaris"', art: 'laserjet', domain: 'air', groundAtk: true, ic: 240, mp: 16, build: 9, hp: 80, armor: 3, range: 720, dmg: 30, rate: .85, weapon: 'beam', speed: 250, s: 4.8, grp: 1, fuel: 34, req: 'directedenergy', ds: 'Heavy directed-energy gunship, tanky and slow, with a belly laser raking ground, ships and aircraft. No magazine, just fuel. (Directed Energy / Aero Works)' },
@@ -3134,7 +3134,7 @@ const UNIT_DEFS = {
   psitrooper:{ name: 'Psi-Troopers', art: 'psitrooper', domain: 'ground', ic: 150, mp: 10, build: 6, hp: 90, armor: 5, range: 520, dmg: 44, rate: 2.2, weapon: 'plasma', speed: 19, s: 3.4, grp: 3, ceil: 0, req: 'psionics', ds: 'Mind-warriors hurling psychic plasma at any altitude. Their orbital reach lets them pluck bunker-busters, rods and missiles from the sky. (req Psionics)' },
   psibeam:  { name: 'Telekinetic Pylon', art: 'pylon', domain: 'ground', ic: 560, mp: 14, build: 20, hp: 300, armor: 6, range: 1150, dmg: 154, rate: 4.4, weapon: 'plasma', speed: 0, s: 6, grp: 1, ceil: 0, req: 'telekinesis', wt: 5, ds: 'Tears fleets apart with mind-force plasma at any altitude. (Superweapon)' },
   shifter:  { name: 'Shapeshifters', art: 'shifter', domain: 'ground', ic: 300, mp: 6, build: 10, hp: 260, armor: 14, range: 560, dmg: 75, rate: 1.98, weapon: 'plasma', speed: 24, s: 3.6, grp: 2, req: 'shapeshifter', crewed: true, ds: 'Living nanoswarm that becomes anything. (Triple-combo unit)' },   /* crewed:true — psionic nanoswarm are PEOPLE, so they DO eat the manpower army cap despite the mech family tag (which is only for cost economy). See isMechanical. */
-  dreadnought:{ name: 'Antimatter Dreadnought', art: 'dreadnought', domain: 'space', ic: 820, mp: 12, build: 26, hp: 600, armor: 8, range: 1400, dmg: 300, rate: 6 /* TUNABLE — a SLOW heavy siege gun, not a rapid beam: `rate` is SECONDS BETWEEN SHOTS (compare inf's rate .45 = a fast rifle), so 6 = one devastating 300-dmg hit every ~6s. Was dmg 150 / rate 3.5 (~43 DPS); now ~50 DPS but delivered as rare huge blows. Its real power is 1400 range × cheap-to-mass, not cadence — tune range/cost if it still overperforms. */, weapon: 'plasma', speed: 12, s: 7, grp: 1, req: 'antimatter', wt: 5, lift: 6, comp: { rocketpart: 3 }, ds: 'Orbital antimatter plasma lance. Deletes anything in one hit, roughly every 6s. Needs heavy orbital lift, 3 rocket parts and 40 antimatter. (Superweapon)' },
+  dreadnought:{ name: 'Antimatter Dreadnought', art: 'dreadnought', domain: 'space', cruise: 90, ic: 820, mp: 12, build: 26, hp: 600, armor: 8, range: 1400, dmg: 300, rate: 6 /* TUNABLE — a SLOW heavy siege gun, not a rapid beam: `rate` is SECONDS BETWEEN SHOTS (compare inf's rate .45 = a fast rifle), so 6 = one devastating 300-dmg hit every ~6s. Was dmg 150 / rate 3.5 (~43 DPS); now ~50 DPS but delivered as rare huge blows. Its real power is 1400 range × cheap-to-mass, not cadence — tune range/cost if it still overperforms. */, weapon: 'plasma', speed: 12, s: 7, grp: 1, req: 'antimatter', wt: 5, lift: 6, comp: { rocketpart: 3 }, ds: 'Orbital antimatter plasma lance. Deletes anything in one hit, roughly every 6s. Needs heavy orbital lift, 3 rocket parts and 40 antimatter. (Superweapon)' },
 };
 // Past the FUSION AGE your conventional line is re-armed with plasma — base units become more effective versions of themselves.
 // Each entry overrides fields of the base def; everything else (domain, ic, mp, build, s, grp, req) is inherited.
@@ -3230,7 +3230,7 @@ const BUILD_DEFS = {
   shipyard: { name: 'Shipyard', cat: 'PROD', ic: 180, mp: 105, build: 11, hp: 260, w: 23, h: 18, prod: 'naval', needWater: true, garrison: { key: 'destroyer', n: 1 }, ds: 'Coastal. Produces naval units. Keeps a guard destroyer.' },
   airbase:  { name: 'Airbase', cat: 'PROD', ic: 180, mp: 95, build: 11, hp: 240, w: 25, h: 16, prod: 'air', garrison: { unit: 'fighter', n: 3, weight: 3 }, ds: 'Produces air units and grants +6 air command (hangar slots). Keeps a standing garrison of fighters. More airbases mean cheaper aircraft and a bigger air force.' },
   helidepot:{ name: 'Heli-Depot', cat: 'PROD', ic: 140, mp: 70, build: 9, hp: 220, w: 22, h: 14, prod: 'air', rotorBase: true, garrison: { unit: 'heli', n: 1, weight: 2 }, ds: 'Rotorcraft base, no runway needed. Produces helicopters, grants +6 rotor command. Helis rearm here & at any city. Keeps a gunship-heli on patrol.' },
-  spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces orbital units, launched by rocket. Builds rocket parts and provides 5 orbital lift. Keeps a guard satellite.' },
+  spaceport:{ name: 'Space Center', cat: 'PROD', ic: 280, mp: 150, build: 16, hp: 240, w: 22, h: 24, prod: 'space', garrison: { key: 'satlaser', n: 1 }, orbcap: 5, makes: { rocketpart: .5 }, ds: 'Produces orbital units, launched by rocket. Builds rocket parts and provides 5 orbital lift. Keeps a guard satellite. Satellites hold above it. Place Space Centers where you want orbital cover.' },
   skydock:  { name: 'Sky Dock', cat: 'PROD', ic: 440, mp: 170, build: 16, hp: 320, w: 26, h: 22, req: 'airfortress', prodList: ['skypatrol', 'skydestroyer', 'skycruiser', 'skyrailgun', 'nanoforge'], makes: { alloy: .4 }, ds: 'Aerial capital shipyard — the only place sky warships are built (Nanoforge Carrier, Sky Railgun Ship, Sky Missile Cruiser, Sky Destroyer, Sky Patrol Ship). Draws no air command, carries standing upkeep.' },
   // GRAND ARSENAL — the GROUND/SEA counterpart to the Sky Dock: the single gate for the five CAPITAL-CLASS warships
   // (Land Dreadnought, Grand Battleship, Super Carrier, War Colossus, Mobile Command Fortress — see UNIT_DEFS, each
@@ -3683,11 +3683,11 @@ function unitCost(d) {
 const UG_DEPTH = 50;   // how far below the surface buried buildings & rail tunnels sit
 // ── CAPITULATION CRISIS — a RECOVERABLE emergency, never a permanent 0-stability pin (all tunable) ──
 const CRISIS_TRIGGER    = 0.5;   // EFFECTIVE stability at/below this fires a crisis (only if not already in one and not in the post-recovery grace)
-const CRISIS_MUTINY_FRAC = 0.3;  // fraction of the standing army that mutinies (goes inert) once, at the moment a crisis begins
+const CRISIS_MUTINY_FRAC = [0.30, 0.45, 0.60];   /* v4.5 S — indexed by stacked-crisis level k-1 */  // fraction of the standing army that mutinies (goes inert) once, at the moment a crisis begins
 const CRISIS_RECOVER_RATE = 8;   // stability points/sec the emergency government FORCIBLY restores during recovery — a GUARANTEED climb; from ~0 to the safe floor takes a few frozen seconds
-const CRISIS_SAFE_FLOOR = 40;    // recovery completes once stability reaches this (capped at the current cap if the cap is lower) — well clear of 0 so you emerge in fighting shape, never oscillating around the trigger
-const CRISIS_GRACE_T    = 20;    // seconds of immunity AFTER recovery: the crisis cannot re-trigger, giving you a real window to fix the root cause (retake cities, raise the cap) before it can happen again — kills the per-frame flip-flop
-const CRISIS_LOSS_COUNT = 4;     // reaching this many stacked-up crises ends the run — the loss now comes from SUSTAINED inability to hold the nation together across MULTIPLE collapses, not a per-frame dip
+const CRISIS_SAFE_FLOOR = [40, 30, 20];    // recovery completes once stability reaches this (capped at the current cap if the cap is lower) — well clear of 0 so you emerge in fighting shape, never oscillating around the trigger
+const CRISIS_GRACE_T    = [20, 12, 8];    // seconds of immunity AFTER recovery: the crisis cannot re-trigger, giving you a real window to fix the root cause (retake cities, raise the cap) before it can happen again — kills the per-frame flip-flop
+const CRISIS_LOSS_COUNT = 4;     /* PREP-phase coup only: stacked crises never end an invasion run */     // reaching this many stacked-up crises ends the run — the loss now comes from SUSTAINED inability to hold the nation together across MULTIPLE collapses, not a per-frame dip
 const CRISIS_COUNT_FORGIVE = 60; // seconds to forgive ONE crisis off the running count once you're stable again — survive and space them out and you never hit the loss; collapse repeatedly in quick succession and you do
 // ── STALEMATE WATCHDOG — the game must never soft-lock forever. If an impenetrable defense faces an unkillable
 // remainder of the fleet, neither WIN (fleet drained + all enemies dead) nor LOSE (cities gone / capitulation) can
@@ -4162,8 +4162,9 @@ const ENG_CAP = 6;   // TARGET LIMITER — at most this many weapons will LOCK o
 const THREAT_W_BOSS = 3.2;    // superweapon — worth diverting fire to over anything closer
 const THREAT_W_DIVE = 1.7;    // mid dive-bomb / impact run (e.dives) — about to land a big hit, kill it first
 const THREAT_W_GROUND = 1.15; // already-landed ground unit pressing the line — mildly favored over an equally-distant airborne straggler
-function threatWeight(e) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : 1); }
-function acquireEnemy(x, y, range, ceilFrac, filter) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle. e.noTarget (v3.103.1) — a brief generic "can't be acquired at all" flag, currently only used by the ECM Hijacker's arrival grace window (see spawnEnemy/updEnemies), reusable for any future "just arrived, not engageable yet" enemy.
+const THREAT_W_GRID = 1.6;    /* v4.5 S — an anchored orbital grid body (railsat/lasersat/mender/escort) as seen by a space-domain shooter */
+function threatWeight(e, sd) { return e.boss ? THREAT_W_BOSS : e.dives ? THREAT_W_DIVE : (e.ground ? THREAT_W_GROUND : (sd && sd.domain === 'space' && e.anchored ? THREAT_W_GRID : 1)); }
+function acquireEnemy(x, y, range, ceilFrac, filter, sd) { const ceil = ceilFrac ? ceilFrac * worldH() : -1e9, r2 = range * range; let b = null, bd = Infinity, bAny = null, bdAny = r2; for (const e of G.enemies) { if (e.noTarget) continue; if (e.y < ceil) continue; if (filter && !filter(e)) continue; const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bdAny) { bdAny = d; bAny = e; } if (d <= r2 && claimOf(e) < e.hp + (e.shield || 0) && engOf(e) < ENG_CAP) { const wd = d / threatWeight(e, sd); if (wd < bd) { bd = wd; b = e; } } } if (b) { ENG.set(b, engOf(b) + 1); b._lockT = .2; } return b || bAny; }   // highest-priority (nearest, biased toward more dangerous) target that is neither saturated by committed fire NOR already locked by ENG_CAP shooters this frame (falls back to nearest if all are). _lockT flags it for the on-screen target reticle. e.noTarget (v3.103.1) — a brief generic "can't be acquired at all" flag, currently only used by the ECM Hijacker's arrival grace window (see spawnEnemy/updEnemies), reusable for any future "just arrived, not engageable yet" enemy.
 // SWARM MULTI-TARGET ACQUISITION (v3.103, made CLAIM-AWARE in a follow-up fix) — a single acquireEnemy() pick would
 // have up to 48 swarm bodies all dogpiling ONE enemy while everything else in range goes untouched (the old 3-body
 // squad never had enough bodies for this to matter). Returns up to `n` distinct in-range enemies, in ONE O(enemies)
@@ -4292,7 +4293,7 @@ function weaponCeil(d, wkey, second) {
 function airFilter(d) { if (d._airF !== undefined) return d._airF;   // MEMOIZED PER DEF — effDef() returns an identity-stable object per key+unlock-state (see its own comment), so this closure only ever needs building ONCE per distinct def, not once per unit per tick; was allocating a brand-new (e=>...) closure on every single call (every unit, every frame) for noGround/groundAtk defs
   return d._airF = (d.noGround ? notNearGround : d.airOnly ? (e => !e.ground) : d.multirole ? null : d.groundAtk ? (e => e.ground || e.y >= TROPO_Y()) : d.weapon === 'rod' ? notSpaceStationed : null); }   // dedicated AA (noGround: SAM/Hailstorm) engages ONLY airborne foes above the deck — never ground units; MULTIROLE jets (the Falcon) engage ground AND all air; dedicated ground-attack craft (Warthog/Lancer) stay on ground + low air; ROD-armed space units (Tungsten Rods "Zeus") are kinetic GROUND bombardment — see notSpaceStationed
 function notNearGround(e) { return !e.ground && e.y < TROPO_Y(); }   // CIWS target rule: only airborne foes ABOVE the low (troposphere) band — never ground units or anything hugging the deck
-function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50 || (e.anchored && e.boss); }   // TUNGSTEN ROD target rule — v4.4: also allows a parked BOSS hull (bombarder/carrier/annihilator) even up in the exosphere, so Zeus can engage the hull itself, not just its (now-lower) grid; still excludes ordinary anchored orbital hardware (railsat/lasersat/mender/bulwark) sitting at the rod sat's own altitude — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
+function notSpaceStationed(e) { return e.ground || e.reentry || e.y >= worldH() * .50 || (e.anchored && e.boss); }   // TUNGSTEN ROD target rule: also allows a parked BOSS hull (bombarder/carrier/annihilator) even up in the exosphere, so Zeus can engage the hull itself, not just its (now-lower) grid; still excludes ordinary anchored orbital hardware sitting at or above .50 worldH (the exosphere and upper thermosphere) — kinetic orbital bombardment needs a gravity well to drop INTO: fine against landed ground units, anything still in its vulnerable high-altitude RE-ENTRY descent (the classic window every hostile is exposed through on the way down), or anything that has already settled below the exosphere line (.50 — see the atmosphere-band comment above SPACE_Y/THERMO_Y). Excludes only enemies that have finished descending AND parked in the exosphere itself (annihilator/bombarder/bulwark/railsat/lasersat/mender) — i.e. never fire a kinetic rod at another target sitting at the ROD SAT'S OWN altitude. Laser/missile sats have no weapon:'rod' and keep engaging space targets normally.
 function nearestAirbase(x) { let b = null, bd = 1e9; for (const o of G.buildings) { if (o.done === false || o.hp <= 0) continue; if (o.d.prod === 'air' || o.key === 'airwing') { const dd = Math.abs(o.x - x); if (dd < bd) { bd = dd; b = o; } } } return b; }
 // HELICOPTERS need no runway — they rearm/refuel at ANY heli-depot, airbase, or building flagged rotorBase, AND at any surviving city.
 // Cities aren't in G.buildings, so a fresh lightweight {x,hp} wrapper stands in for them (resolved every call — currentBase never caches a heli's base).
@@ -4674,7 +4675,8 @@ function fire(sxx, syy, weapon, tx, ty, friendly, dmg, homeTgt, prox, ami, msz, 
   else { for (let n = 0; n < 2; n++) { const aa = ang + (Math.random() - .5) * .045, v = 512 + Math.random() * 80; G.proj.push({ k: 'tracer', x: sxx, y: syy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, life: 1.4, friendly, dmg, fire: true }); } }   // aimed gun burst — tight spread so it reads as directed fire, not a shotgun scatter. v4.1 D rule 2: was 320+rand*50, x1.6
   _stampFireCeil(_fireProjStart);
 }
-function _stampFireCeil(from) { if (FIRE_CTX.ceilY != null) for (let i = from; i < G.proj.length; i++) G.proj[i].ceilY = FIRE_CTX.ceilY; }   // CEILING STAMP — every round THIS fire() call just pushed (microrkt CARRIER included — its submunitions split off it in updProj and inherit p.ceilY there, see the split branch) gets the shooter's firing ceiling; enemy shooters never touch FIRE_CTX so their rounds stay ceilY:undefined and fly unrestricted, same as always
+function _stampFireCeil(from) { for (let i = from; i < G.proj.length; i++) if (G.proj[i].friendly && G.proj[i].y < THERMO_Y()) G.proj[i].fromSpace = true;   /* v4.5 S — rounds launched from orbit may re-acquire the whole hostile list */
+  if (FIRE_CTX.ceilY != null) for (let i = from; i < G.proj.length; i++) G.proj[i].ceilY = FIRE_CTX.ceilY; }   // CEILING STAMP — every round THIS fire() call just pushed (microrkt CARRIER included — its submunitions split off it in updProj and inherit p.ceilY there, see the split branch) gets the shooter's firing ceiling; enemy shooters never touch FIRE_CTX so their rounds stay ceilY:undefined and fly unrestricted, same as always
 // estimate how far ahead to aim so a shot meets a moving target — EVERY projectile-firing weapon leads by its own muzzle velocity;
 // only true hitscan/instant weapons (beam, particle, tractor) are absent from PS and return 0 (they need no lead — they resolve on the same tick)
 function leadTime(weapon, sx, sy, tgt) {
@@ -6226,30 +6228,30 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
   //   GRACE    (after recovery): production resumes, mutineers stand down, and the crisis CANNOT
   //            re-trigger for CRISIS_GRACE_T seconds even if effStab dips — this is what kills the
   //            per-frame flip-flop and hands the player a window to fix the root cause.
-  // The LOSS now comes from SUSTAINED failure across MULTIPLE crises: each crisis bumps G.crisisCount,
-  // which slowly forgives itself while you're stable; stacking CRISIS_LOSS_COUNT of them close together
-  // ends the run. One collapse is a scary setback; a nation that keeps collapsing has capitulated.
+  // Each crisis bumps G.crisisCount, which slowly forgives itself while you're stable; stacked crises escalate
+  // (level k = min(3, round(count))) but only the PREP-phase coup can end the run. Invasion defeat is cities only.
   if (G.crisisGrace > 0) G.crisisGrace = Math.max(0, G.crisisGrace - dt);
   if (!G.crisis && G.crisisCount > 0) G.crisisCount = Math.max(0, G.crisisCount - dt / CRISIS_COUNT_FORGIVE);   // survived crises are forgiven over time — only crises stacked close together push you toward the loss
   if (G.crisis) {
     G.crisisT += dt;
-    const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR);   // recover to the safe floor, or all the way to the cap if the cap itself sits below it — either way well clear of the trigger
+    const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR[(G.crisisK || 1) - 1]);   // recover to the safe floor, or all the way to the cap if the cap itself sits below it — either way well clear of the trigger
     G.stab = Math.min(100, G.stab + CRISIS_RECOVER_RATE * dt);      // GUARANTEED climb — this is the whole fix: you always claw back out; the cost was the frozen tempo, never a permanent pin
     if (G.stab >= target) {
-      G.crisis = false; G.crisisT = 0; G.crisisGrace = CRISIS_GRACE_T;
+      G.crisis = false; G.crisisT = 0; G.crisisGrace = CRISIS_GRACE_T[(G.crisisK || 1) - 1];
       for (const u of G.units) u.mutiny = false;
-      toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes · ' + Math.round(CRISIS_GRACE_T) + 's emergency grace before another collapse can hit');
+      toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes · ' + Math.round(CRISIS_GRACE_T[(G.crisisK || 1) - 1]) + 's emergency grace before another collapse can hit');
     }
   } else if (effStab() <= CRISIS_TRIGGER && G.crisisGrace <= 0) {
     G.crisis = true; G.crisisT = 0; G.crisisCount += 1;
-    if (G.crisisCount >= CRISIS_LOSS_COUNT) {
-      return end(false, G.phase === 'prep' ? 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED' : 'CAPITULATION — THE NATION COLLAPSED ONE TIME TOO MANY');
+    if (G.phase === 'prep' && G.crisisCount >= CRISIS_LOSS_COUNT) {
+      return end(false, 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED');
     }
+    const k = Math.max(1, Math.min(3, Math.round(G.crisisCount))); G.crisisK = k;   /* v4.5 S — stacked crises escalate (mutiny / recovery floor / grace) but never end the invasion run */
     const pool = G.units.filter(u => !u.d.builder);   // fire the crisis cost exactly ONCE per crisis (guarded by !G.crisis above — it can't re-run frame after frame)
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-    const n = Math.round(pool.length * CRISIS_MUTINY_FRAC);
+    const n = Math.round(pool.length * CRISIS_MUTINY_FRAC[k - 1]);
     for (let i = 0; i < n; i++) pool[i].mutiny = true;
-    toast('⚠ CAPITULATION CRISIS (' + G.crisisCount + '/' + CRISIS_LOSS_COUNT + ') — government paralyzed, ' + n + ' unit(s) mutiny; production frozen while the state stabilizes');
+    toast('⚠ CAPITULATION CRISIS ×' + k + ' — government paralyzed, ' + n + ' units mutiny; the state will recover, but each collapse cuts deeper');
     shake(10); SFX.boom();
   }
 }
@@ -7476,8 +7478,9 @@ function updUnits(dt) {
       tgt = u.bgLeader._lodTgt || null;
       u._lodTgt = tgt;
     } else if (_lodScan) {
+      if (d.domain === 'space') { tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF, d); if (!tgt && canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF); } else   /* v4.5 S — space units fight the grid first, ordnance only when no enemy is in reach */
       if (canIntercept(d)) tgt = acquireIncoming(u.x, u.y, rng, ceilF, aF);   /* INTERCEPT PRIORITY, GATED BY AIR-CAPABILITY NOT THE OLD `pd` FLAG (v3.88.0) — ANY combat unit that can shoot at an airborne enemy at this position (same range/ceil/role-filter check as acquireEnemy below) breaks off to engage an in-reach incoming bunker-buster / tungsten-rod / lance / homing missile FIRST, not only as an idle fallback. During an invasion there is ALWAYS a regular enemy in reach, so a fallback-only pd line dogfights drones forever while the bombardment rains straight through it — the exact "why won't my defenses shoot the busters?" bug. Passing `aF` means a low-ceil ground unit only ever catches ordnance that's descended into ITS reach — the altitude puzzle is preserved, just no longer gated by an arbitrary flag. The claim/spread system in acquireIncoming keeps this from mobbing one shell. */
-      if (!tgt) tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF);   // auto-acquire an enemy as normal (fire-control designation was removed)
+      if (!tgt && d.domain !== 'space') tgt = acquireEnemy(u.x, u.y, rng, ceilF, aF, d);   // auto-acquire an enemy as normal (fire-control designation was removed)
       u._lodTgt = tgt;
     } else {
       tgt = u._lodTgt || null;
@@ -7671,7 +7674,7 @@ function updUnits(dt) {
       // THERMOSPHERE (SPACE_STATION_Y, just below true orbit) by default, and only climb up into the EXOSPHERE
       // when actually engaging a target up there, settling back down to the station line once it's clear.
       u.wob = (u.wob || Math.random() * 6.28) + dt * 1.4;
-      let dy;
+      let dy; const _spCruise = d.cruise || spd * 2.5, _spAcc = _spCruise * 2.55;   /* v4.5 S — steady-state cruise px/s; damping below is per-dt so speed no longer depends on frame rate */
       // TASK D — SATELLITES HOLD STATION: satlaser/missilesat/rods are fixed platforms, not ships — "friendly
       // satellites should not move ... strike fighters and frigates exist for that reason." No cruise, no chase,
       // no climb toward a target: it just sits on the station line with a tiny drift and fires at whatever comes
@@ -7685,17 +7688,27 @@ function updUnits(dt) {
         if (u.evadeT > 0) u.evadeT -= dt;
         const hunt = near(u.x, u.y, G.enemies.filter(e => !e.reentry && (!aF || aF(e))), 1e9);
         if (hunt) { const dx = hunt.x - u.x, dist = Math.abs(dx), sdir = Math.sign(dx || 1), stand = rng * .7;
-          if (dist > stand) u.vx += sdir * spd * 4 * dt;   // close to ~70% of its own range
+          if (dist > stand) u.vx += sdir * _spAcc * dt;   // close to ~70% of its own range
           else { const orbit = Math.min(rng * .5, 240); const ox = hunt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 2.4 * dt; }   // orbit the target, weaving
           dy = hunt.y - 22 + Math.sin(u.wob) * 30;
         } else if (u.evadeT > 0) { u.vx += Math.sin(u.wob * 4.5) * spd * .9 * dt; dy = SPACE_STATION_Y(); }   // took a hit, nothing to shoot back at → hard jink like the Falcon
         else { u.vx += (Math.sin(u.wob * .45) * spd * 2 - u.vx * .35) * dt; dy = SPACE_STATION_Y() + Math.sin(u.wob * .5) * 20; }   // nothing in range → return to station
       }
-      else if (tgt) { const dx = tgt.x - u.x, dist = Math.abs(dx); if (dist > rng * .8) u.vx += Math.sign(dx) * spd * 3 * dt; else { const orbit = Math.min(rng * .5, 300); const ox = tgt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 1.6 * dt; } dy = Math.min(SPACE_STATION_Y(), tgt.y) + Math.sin(u.wob * .5) * 16; }   // rise to meet the target's altitude to engage it — never settles below its own station line to chase something lower
+      else if (!tgt) {   /* v4.5 S — map-wide hunt for non-satellite, non-fighter hulls (frigate/dreadnought): re-pick the nearest valid enemy twice a second, chase like the strike fighter */
+        u._huntT = (u._huntT === undefined ? Math.random() * .5 : u._huntT) - dt;
+        if (u._huntT <= 0) { u._huntT = .5; let hb = null, hd = Infinity; for (const e of G.enemies) { if (e.reentry || e.noTarget || (aF && !aF(e))) continue; const w = e.anchored && !e.boss && !e.ground ? THREAT_W_GRID : 1, dd = ((e.x - u.x) ** 2 + (e.y - u.y) ** 2) / (w * w); if (dd < hd) { hd = dd; hb = e; } } u._hunt = hb; }   /* grid bodies outrank parked hulls as hunt targets */
+        const hunt = u._hunt && u._hunt.hp > 0 ? u._hunt : null;
+        if (hunt) { const dx = hunt.x - u.x, dist = Math.abs(dx), stand = rng * .7;
+          if (dist > stand) u.vx += Math.sign(dx || 1) * _spAcc * dt;
+          else { const orbit = Math.min(rng * .5, 240); const ox = hunt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 2.4 * dt; }
+          dy = hunt.y - 22 + Math.sin(u.wob) * 30; }
+        else { u.vx += (Math.sin(u.wob * .45) * spd * 2 - u.vx * .35) * dt; dy = SPACE_STATION_Y() + Math.sin(u.wob * .5) * 20; }
+      }
+      else if (tgt) { const dx = tgt.x - u.x, dist = Math.abs(dx); if (dist > rng * .8) u.vx += Math.sign(dx) * _spAcc * dt; else { const orbit = Math.min(rng * .5, 300); const ox = tgt.x + Math.cos(u.wob) * orbit; u.vx += (ox - u.x) * 1.6 * dt; } dy = Math.min(SPACE_STATION_Y(), tgt.y) + Math.sin(u.wob * .5) * 16; }   // rise to meet the target's altitude to engage it — never settles below its own station line to chase something lower
       else { u.vx += (Math.sin(u.wob * .45) * spd * 2 - u.vx * .35) * dt; dy = SPACE_STATION_Y() + Math.sin(u.wob * .5) * 20; }   // no target → settle back to the resting thermosphere line, slow cruise
       u.vy += (dy - u.y) * 1.6 * dt;
-      const vm = spd * 2.6; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= .96; u.vy *= .92; u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x));
-      const yLo = d.fighterAI ? SPACE_Y() - 40 : 10, yHi = d.fighterAI ? MESO_Y() : SPACE_DESCEND_Y();
+      const vm = _spCruise * 1.3; u.vx = Math.max(-vm, Math.min(vm, u.vx)); u.vx *= Math.pow(.96, dt * 60); u.vy *= Math.pow(.92, dt * 60); u.x += u.vx * dt; u.y += u.vy * dt; u.x = Math.max(20, Math.min(WORLD_W - 20, u.x));
+      const yLo = !d.sat ? SPACE_Y() - 40 : 10, yHi = !d.sat ? MESO_Y() : SPACE_DESCEND_Y();   /* v4.5 S — every mobile space hull shares the strike fighter's band so it can reach the grid */
       u.y = Math.max(yLo, Math.min(yHi, u.y)); u.facing = u.vx >= 0 ? 1 : -1;   // can climb clear to the top of the exosphere to engage, but never sinks past the thermosphere into meso — that's aircraft territory (fighter AI is instead clamped to the space band per its own rule above)
     }
     else if (d.domain === 'naval') {
@@ -8668,7 +8681,7 @@ function updProj(dt) {
       else if (!p.ami && !p.aegis && p.t < (p.pop || 0) + MSL_TURN_T) {   // 2.5: TURN PHASE (v4.0 C) — a short kick (partial thrust) while the nose PIVOTS hard onto the lead point, before the main motor lights fully; AMI/AEGIS (hot-launched, already turning hard from t=0) skip straight to ignition below, unchanged
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * MSL_TURN_THRUST_FRAC * dt;
         let cur = Math.atan2(p.vy, p.vx);
-        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? hostileMeso : (p.aaOnly ? airOnly : friendlyList), 640, p.ceilY);
+        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? (p.fromSpace ? hostileList : hostileMeso) : (p.aaOnly ? airOnly : friendlyList), 640, p.ceilY);
         if (t && !(p.friendly && jammed(p.x, p.y))) { const aimPt = mslLeadPoint(p, t); const a = Math.atan2(aimPt.y - p.y, aimPt.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * MSL_TURN_RATE_MUL * dt; cur += Math.max(-turn, Math.min(turn, da)); }
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }
@@ -8676,7 +8689,7 @@ function updProj(dt) {
         p.spd = (p.spd || Math.hypot(p.vx, p.vy)) + (p.thrust || 700) * dt;
         if (p.ami && p.spd > p.maxspd) p.spd = p.maxspd;   // ONLY the Anti-Missile Interceptor round honors its top-speed cap (normal missiles stay uncapped as before) — keeps the hypervelocity boost from running away
         let cur = Math.atan2(p.vy, p.vx);
-        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? hostileMeso : (p.aaOnly ? airOnly : friendlyList), 640, p.ceilY);   // your guided missiles can NEVER re-acquire a target above the mesosphere — no more pitching up into orbit to snipe bombardiers (orbit belongs to kinetics / space weapons). aaOnly subs (opening anti-air salvo) reacquire strictly from the player's air/space pool, never falling back to ground targets. p.ceilY (v4.3) narrows that further to THIS round's own weapon-class ceiling when it's tighter than the flat mesosphere line
+        const t = (p.homeTgt && p.homeTgt.hp > 0) ? p.homeTgt : near(p.x, p.y, p.friendly ? (p.fromSpace ? hostileList : hostileMeso) : (p.aaOnly ? airOnly : friendlyList), 640, p.ceilY);   // your guided missiles can NEVER re-acquire a target above the mesosphere — no more pitching up into orbit to snipe bombardiers (orbit belongs to kinetics / space weapons). aaOnly subs (opening anti-air salvo) reacquire strictly from the player's air/space pool, never falling back to ground targets. p.ceilY (v4.3) narrows that further to THIS round's own weapon-class ceiling when it's tighter than the flat mesosphere line
         if (t && !(p.friendly && jammed(p.x, p.y))) { const aimPt = mslLeadPoint(p, t); const a = Math.atan2(aimPt.y - p.y, aimPt.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; const turn = (p.turn || 1.6) * dt; cur += Math.max(-turn, Math.min(turn, da)); }   // a hostile EW field blinds the seeker — it stops steering and flies straight until it clears the jam. LEAD (v4.0 C) — a plain guided missile now aims at where a moving target WILL be, not where it IS (see mslLeadPoint); AMI/AEGIS/bombs keep pure pursuit
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }
@@ -9691,10 +9704,10 @@ function frame(now) {
       drawVignette();   // frame the battle — drawn before the minimap so screen-fixed UI stays crisp
       if (G && !G.hideHUD) drawMinimap();   // minimap is screen-fixed — drawn OUTSIDE the world translate; hidden with the rest of the HUD
       if (G && G.crisis && !G.over) {   // CAPITULATION CRISIS banner — clearly visible, clearly recoverable: shows the guaranteed recovery ramping stability back up so the player can see they're being clawed out of it
-        const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR), frac = Math.max(0, Math.min(1, G.stab / target)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
+        const target = Math.min(G.stabCap || 100, CRISIS_SAFE_FLOOR[(G.crisisK || 1) - 1]), frac = Math.max(0, Math.min(1, G.stab / target)), pulse = 0.55 + Math.abs(Math.sin(now / 260)) * 0.35;
         c.save(); c.fillStyle = 'rgba(120,10,10,' + (0.30 * pulse).toFixed(2) + ')'; c.fillRect(0, 0, W, 54);
-        c.textAlign = 'center'; c.font = 'bold 18px Consolas'; c.fillStyle = '#ff6a6a'; c.fillText('⚠ CAPITULATION CRISIS (' + (G.crisisCount || 1) + '/' + CRISIS_LOSS_COUNT + ') — PRODUCTION FROZEN · TROOPS MUTINYING', W / 2, 24);
-        c.font = '13px Consolas'; c.fillStyle = '#ffb0b0'; c.fillText('emergency stabilization — recovering to fighting shape (' + Math.round(frac * 100) + '%) · repeated collapses lose the run', W / 2, 44);
+        c.textAlign = 'center'; c.font = 'bold 18px Consolas'; c.fillStyle = '#ff6a6a'; c.fillText('⚠ CAPITULATION CRISIS ×' + (G.crisisK || 1) + ' — PRODUCTION FROZEN · TROOPS MUTINYING', W / 2, 24);
+        c.font = '13px Consolas'; c.fillStyle = '#ffb0b0'; c.fillText('emergency stabilization — recovering to fighting shape (' + Math.round(frac * 100) + '%) · each collapse cuts deeper', W / 2, 44);
         c.fillStyle = 'rgba(255,90,90,.35)'; c.fillRect(W / 2 - 150, 50, 300, 3); c.fillStyle = '#ff8a8a'; c.fillRect(W / 2 - 150, 50, 300 * frac, 3);
         c.textAlign = 'left'; c.restore();
       }
@@ -10826,9 +10839,9 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
   const READY_REASONS = [
     { id: 'capInsufficient', sev: 'high', why: 'Your army cap is full or over-committed — units are queued (or about to be) with no room left to hold them.', fix: 'Housing Blocks (ECON tab) raise manpower and the cap directly; Cloning Vats and Living Titans research push the cap further still.',
       check: (G, it) => (combatWeight() >= armyCap() * 0.95 && anyQueuedUnits()) || queuedWeight() > armyCap() - combatWeight() },
-    { id: 'noSpaceReach', sev: 'high', why: 'This fleet parks boss-tier hostiles up in space, and nothing you own reaches that high to touch them.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships or a strategic strike all reach clear into orbit.',
+    { id: 'noSpaceReach', sev: 'high', why: 'This fleet parks boss-tier hostiles up in space, and nothing you own reaches that high to touch them.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships or a strategic strike all reach clear into orbit. Orbital Frigates hunt the fleet on their own.',
       check: (G, it) => (it.orbital > 0 || (it.supers || []).some(s => /bombarder|annihilator/.test(s.kind || s))) && tutSpaceReachDps() < 100 },   // v4.1 F K: ×2.5 — the fleet is 3× as of 4.1
-    { id: 'noFlagshipReach', sev: 'high', why: 'Nothing you own can reach the fleet flagship in high orbit — railguns, satellites, orbital units or strategic strikes.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships, or a strategic strike all reach clear into orbit.',
+    { id: 'noFlagshipReach', sev: 'high', why: 'Nothing you own can reach the fleet flagship in high orbit — railguns, satellites, orbital units or strategic strikes.', fix: 'Railgun "Lance", Orbital Gun, Particle Cannon, Tungsten Rods satellites, railgun-armed ships, or a strategic strike all reach clear into orbit. Orbital Frigates hunt the fleet on their own.',
       check: (G, it) => tutSpaceReachDps() <= 0 },   // v4.1 F K — reuses the noSpaceReach measure, but strictly: fires on truly ZERO space reach, not just "not much"
     { id: 'noPdPierce', sev: 'med', why: 'The Bombarder deploys a point-defense grid that shreds single shots — you need real volume fire to get anything through it.', fix: 'Microrocket Batteries, a MIRV/ballistic-armed Missile Silo, and massed Railgun Lances all give you the saturation to punch through.',
       check: (G, it) => (it.supers || []).some(s => /bombarder/.test(s.kind || s)) && tutPdPierceCount() < 8 },   // v4.1 F K: ×2.5 (3 → 7.5, rounded to 8) — the fleet is 3× as of 4.1

@@ -21,6 +21,15 @@ Mods: {
 					'''
 			}
 
+			LogisticalCenterItem: {
+				DisplayName: Logistical Center
+				Tooltip:
+					'''
+					Adds 250 storage slots to the nearest Armory within 40 tiles.
+					Centers stack.
+					'''
+			}
+
 			PatrolBannerItem: {
 				DisplayName: Patrol Banner
 				Tooltip: Place two to mark a patrol line. Assign Regulars to it from the Barracks.
@@ -77,11 +86,41 @@ Mods: {
 				DisplayName: A Guide to Discipline
 				Tooltip: Your soldiers aim truer. Shots are 35% tighter. Consumed on use, once per world.
 			}
+
+			GuideToFirepower: {
+				DisplayName: A Guide to Firepower
+				Tooltip:
+					'''
+					Soldiers start with 200 health and 100 mana.
+					Every Armory gains 2 buff slots.
+					Dropped by the Wall of Flesh. Consumed on use, once per world.
+					'''
+			}
+
+			GuideToHealthcare: {
+				DisplayName: A Guide to Healthcare
+				Tooltip: Soldiers can grow to 400 health with Life Crystals. Consumed on use, once per world.
+			}
+
+			GuideToTheArcaneArts: {
+				DisplayName: A Guide to the Arcane Arts
+				Tooltip: Soldiers can grow to 200 mana with Mana Crystals. Consumed on use, once per world.
+			}
+
+			GuideToExpertise: {
+				DisplayName: A Guide to Expertise
+				Tooltip:
+					'''
+					Every soldier gains 1 accessory slot.
+					Dropped by the Lunatic Cultist. Consumed on use, once per world.
+					'''
+			}
 		}
 
 		Tiles: {
 			BarracksTile.MapEntry: Barracks
 			ArmoryTile.MapEntry: Armory
+			LogisticalCenterTile.MapEntry: Logistical Center
 			PatrolBannerTile.MapEntry: Patrol Banner
 		}
 
@@ -380,6 +419,7 @@ Mods: {
 			ArmoryBrokenOne: Armory destroyed. 1 item recovered.
 			ArmoryBrokenEmpty: Armory destroyed. The racks were empty; your soldiers are carrying the gear.
 			ArmoryNotEmpty: Empty the Armory first (Loot All) before you move it.
+			LogisticalCenterInUse: Items are stored in the {0} slots this center provides. Sort the Armory or take them out first.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
 			HazardPay: Hazard pay issued at {0}: {1}.

@@ -42,7 +42,7 @@ namespace Levy.Content.NPCs
 				int slots = Math.Min(Record.AccessorySlots, SoldierGear.AccessorySlots);
 				for (int i = 0; i < slots; i++)
 				{
-					Item it = Dummy.armor[3 + i];
+					Item it = Record.Gear.Accessories[i]; // the dummy only mirrors the first five slots
 					if (it == null || it.IsAir) continue;
 					int idx = Array.IndexOf(ProcAccessories, it.type);
 					if (idx < 0) continue;

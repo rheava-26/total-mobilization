@@ -258,7 +258,7 @@ namespace Levy.Common.UI
 			if (_armoryUI.CurrentState != null)
 			{
 				if (!PanelStillValid(CurrentArmory, CurrentArmory?.Center ?? Vector2.Zero, player)) CloseArmory();
-				else _armoryUI.Update(gameTime);
+				else { _armory?.RefreshIfStorageReplaced(); _armoryUI.Update(gameTime); }
 			}
 			if (_manualUI.CurrentState != null)
 			{

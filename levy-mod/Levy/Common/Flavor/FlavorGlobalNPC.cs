@@ -100,6 +100,20 @@ namespace Levy.Common.Flavor
 		protected override bool EventApplies(NPC npc) => Main.eclipse && IsEclipseType(npc.type);
 	}
 
+	/// <summary>A progression guide drops from its boss until that guide has been studied in this world (the Bestiary shows it with the description).</summary>
+	public sealed class GuideDropCondition : IItemDropRuleCondition
+	{
+		private readonly string _key, _descriptionKey;
+
+		public GuideDropCondition(string key, string descriptionKey) { _key = key; _descriptionKey = descriptionKey; }
+
+		public bool CanDrop(DropAttemptInfo info) => info.npc == null || (!info.npc.SpawnedFromStatue && !GuideSystem.IsStudied(_key));
+
+		public bool CanShowItemDropInUI() => true;
+
+		public string GetConditionDescription() => LevyUtil.T("Flavor.Drop." + _descriptionKey);
+	}
+
 	// ------------------------------------------------------------------ loot
 
 	/// <summary>Event-book drops, 1 in <see cref="LevyConstants.EventBookDropDenominator"/>. Only loot hooks: no per-tick cost.</summary>
@@ -110,6 +124,8 @@ namespace Levy.Common.Flavor
 		private static readonly IItemDropRuleCondition Pirates = new PirateInvasionBookCondition();
 		private static readonly IItemDropRuleCondition OldOnes = new OldOnesArmyBookCondition();
 		private static readonly IItemDropRuleCondition Eclipse = new EclipseBookCondition();
+		private static readonly IItemDropRuleCondition FirepowerDrop = new GuideDropCondition("Firepower", "WallOfFlesh");
+		private static readonly IItemDropRuleCondition ExpertiseDrop = new GuideDropCondition("Expertise", "LunaticCultist");
 
 		/// <summary>Blood Moon enemies are everything hostile, so that rule is global (the Bestiary does not list global drops).</summary>
 		public override void ModifyGlobalLoot(GlobalLoot globalLoot)
@@ -130,6 +146,11 @@ namespace Levy.Common.Flavor
 				npcLoot.Add(ItemDropRule.ByCondition(OldOnes, ModContent.ItemType<GuideToFortification>(), denominator));
 			if (EclipseBookCondition.IsEclipseType(type))
 				npcLoot.Add(ItemDropRule.ByCondition(Eclipse, ModContent.ItemType<GuideToDiscipline>(), denominator));
+			// The two boss-dropped progression guides: a sure drop until studied, in every difficulty (beside the treasure bag).
+			if (type == NPCID.WallofFlesh)
+				npcLoot.Add(ItemDropRule.ByCondition(FirepowerDrop, ModContent.ItemType<GuideToFirepower>()));
+			if (type == NPCID.CultistBoss)
+				npcLoot.Add(ItemDropRule.ByCondition(ExpertiseDrop, ModContent.ItemType<GuideToExpertise>()));
 		}
 	}
 

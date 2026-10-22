@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
+using Levy.Common.Flavor;
 
 namespace Levy.Common.Soldiers
 {
@@ -72,17 +73,19 @@ namespace Levy.Common.Soldiers
 		public bool HasBody => BodyIndex >= 0 && BodyIndex < Main.maxNPCs && Main.npc[BodyIndex].active
 			&& Main.npc[BodyIndex].ModNPC is Content.NPCs.SoldierNPC s && ReferenceEquals(s.Record, this);
 
-		public int MaxHp
-		{
-			get
-			{
-				int hp = LevyConstants.BaseHp + LevyConstants.HpPerLifeCrystal * LifeCrystals + LevyConstants.HpPerLifeFruit * LifeFruit;
-				return Math.Min(hp, LevyConstants.MaxSoldierHp);
-			}
-		}
+		/// <summary>HP before the cap: the guide-set base plus every crystal and fruit he has absorbed.</summary>
+		public int RawHp => GuideSystem.HpBase + LevyConstants.HpPerLifeCrystal * LifeCrystals + LevyConstants.HpPerLifeFruit * LifeFruit;
+		/// <summary>Mana before the cap: the guide-set base plus every mana crystal.</summary>
+		public int RawMana => GuideSystem.ManaBase + LevyConstants.ManaPerCrystal * ManaCrystals;
 
-		public int MaxMana => Math.Min(LevyConstants.BaseMana + LevyConstants.ManaPerCrystal * ManaCrystals, LevyConstants.MaxMana);
-		public int AccessorySlots => LevyConstants.GradeSlots[(int)Grade];
+		/// <summary>Max HP: base + crystals + fruit, held under the world's cap (raised by the Guide to Healthcare).</summary>
+		public int MaxHp => Math.Min(RawHp, GuideSystem.HpCap);
+
+		/// <summary>Max mana: base + mana crystals, held under the world's cap (raised by the Guide to the Arcane Arts).</summary>
+		public int MaxMana => Math.Min(RawMana, GuideSystem.ManaCap);
+
+		/// <summary>Accessory slots: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
+		public int AccessorySlots => Math.Min(LevyConstants.GradeSlots[(int)Grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
 		public int CommandPointCost => Kind == SoldierKind.Militia ? 1 : LevyConstants.GradeCpCost[(int)Grade];
 		public string RankPrefix => Veteran ? "Sgt." : "Pvt.";
 

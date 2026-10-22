@@ -8,6 +8,10 @@ Effect: {
 	Plunder: Coins hauled to the treasury are worth {0}% more.
 	Fortification: Soldiers within {0} tiles of a Barracks gain {1} defense.
 	Discipline: Your soldiers aim truer. Shots are {0}% tighter.
+	Firepower: Soldiers start with {0} health and {1} mana. Every Armory gains {2} buff slots.
+	Healthcare: Soldiers can grow to {0} health.
+	TheArcaneArts: Soldiers can grow to {0} mana.
+	Expertise: Every soldier gains {0} accessory slot.
 }
 
 Drop: {
@@ -16,4 +20,6 @@ Drop: {
 	Pirates: Drops during a Pirate invasion.
 	OldOnesArmy: Drops during the Old One's Army.
 	Eclipse: Drops during a Solar Eclipse.
+	WallOfFlesh: Dropped by the Wall of Flesh.
+	LunaticCultist: Dropped by the Lunatic Cultist.
 }

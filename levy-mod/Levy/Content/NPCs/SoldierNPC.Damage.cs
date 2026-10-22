@@ -8,6 +8,7 @@ using Levy.Common;
 using Levy.Common.Dialogue;
 using Levy.Common.Fear;
 using Levy.Common.Globals;
+using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
@@ -191,23 +192,30 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < NPC.maxBuffs; i++)
 			{
 				if (NPC.buffType[i] <= 0 || NPC.buffTime[i] <= 0) continue;
-				switch (NPC.buffType[i])
-				{
-					case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
-					case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
-					case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
-					case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
-					case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
-					case BuffID.Regeneration: regen += LevyConstants.RegenerationLifeRegen; break;
-					case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
-					case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
-					case BuffID.AmmoReservation: d.ammoPotion = true; break;
-					case BuffID.Archery: d.archery = true; break;
-					case BuffID.Summoning: d.maxMinions++; break;
-				}
+				regen += ApplyBuffEffect(d, NPC.buffType[i]);
 			}
 			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
 			return regen;
+		}
+
+		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds..</summary>
+		private static int ApplyBuffEffect(Player d, int buffType)
+		{
+			switch (buffType)
+			{
+				case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
+				case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
+				case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
+				case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
+				case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
+				case BuffID.Regeneration: return LevyConstants.RegenerationLifeRegen;
+				case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
+				case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
+				case BuffID.AmmoReservation: d.ammoPotion = true; break;
+				case BuffID.Archery: d.archery = true; break;
+				case BuffID.Summoning: d.maxMinions++; break;
+			}
+			return 0;
 		}
 
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
@@ -256,6 +264,9 @@ namespace Levy.Content.NPCs
 		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: issue slot 1 ONLY
 		// (intentionally never bulk storage - the buff slot is the limited buff economy, so choosing the army's buffs stays a real decision).
 		// ------------------------------------------------------------------------------------------------------
+		/// <summary>Buff types drunk so far in the current Potions pass (empty between passes).</summary>
+		private int[] _drunkBuffs = Array.Empty<int>();
+
 		private void Potions()
 		{
 			if (Record == null || _armoryRetry > 0) return;
@@ -285,10 +296,20 @@ namespace Levy.Content.NPCs
 			}
 			if (wantBuff)
 			{
-				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0, allowStorage: false); // a pure buff potion, not a restorative; issue-slot-only
-				if (potion != null && !potion.IsAir)
+				// Every buff slot (1..n; slot 0 is the restorative) gives one pure buff potion, issue-slot-only. A type already drunk this pass is skipped so two slots stocked alike do not double up.
+				bool drankBuff = false;
+				for (int slot = 1; slot < armory.IssuePotions.Length; slot++)
 				{
+					var potion = armory.TakeServingPotion(slot, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0 && Array.IndexOf(_drunkBuffs, it.buffType) < 0, allowStorage: false);
+					if (potion == null || potion.IsAir) continue;
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
+					if (drankBuff) Array.Resize(ref _drunkBuffs, _drunkBuffs.Length + 1); else _drunkBuffs = new int[1];
+					_drunkBuffs[_drunkBuffs.Length - 1] = potion.buffType;
+					drankBuff = true;
+				}
+				_drunkBuffs = Array.Empty<int>();
+				if (drankBuff)
+				{
 					StatsDirty = true;
 					_buffPotionCooldown = LevyConstants.BuffPotionIntervalTicks;
 					drank = true;

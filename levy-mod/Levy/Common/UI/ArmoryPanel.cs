@@ -18,7 +18,7 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Armory: scrolling storage grid (12 columns, 10 rows in view, all ArmoryTE.StorageSize slots reachable) plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
+	/// Armory: scrolling storage grid (12 columns, 10 rows in view, every storage slot reachable: the base ArmoryTE.StorageSize plus any Logistical Center's) plus the issue rows (12 weapons ending in the sidearm slot, 4 armor sets, 6 ammo, 2 potions),
 	/// "Sort", "Deposit junk" and "Loot all". Single player edits the live tile-entity arrays; a multiplayer client sends
 	/// ArmorySlotSet for each changed slot.
 	/// A search box, a rarity-swatch strip and a type button narrow the STORAGE grid to the matching items, packed together with no gaps. The filters are view-only:
@@ -33,7 +33,13 @@ namespace Levy.Common.UI
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
 		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge, _catBtn, _clearBtn;
-		private Label _title, _treasury, _count, _noMatch;
+		private Label _title, _treasury, _count, _noMatch, _capacity;
+		/// <summary>The storage array the grid cells are bound to. The array is replaced when Logistical Centers change its size (or a client receives a new length), and the cells must follow.</summary>
+		private Item[] _builtStorage, _builtPotions;
+		/// <summary>The potion row's elements and top (issue-area coordinates), so the row can be rebuilt alone when its array is replaced.</summary>
+		private readonly List<UIElement> _potionEls = new();
+		private float _potionTop;
+		private int _shownCapacity = -1, _shownCenters = -1;
 		private UIPanel _searchBox;
 		private UISearchBar _search;
 		private RaritySwatch[] _swatches;
@@ -73,6 +79,10 @@ namespace Levy.Common.UI
 			_title = new Label(LevyUtil.T("UI2.ArmoryTitle"), 1f);
 			_title.Left.Set(12f, 0f); _title.Top.Set(10f, 0f);
 			_panel.Append(_title);
+
+			_capacity = new Label("", 0.7f);
+			_capacity.Left.Set(96f, 0f); _capacity.Top.Set(15f, 0f);
+			_panel.Append(_capacity);
 
 			int w = LevyConstants.UI.ArmoryPanelWidth;
 			_close = new LevyButton("X", LevyConstants.UI.ButtonTextScale, 26, 26, () => UISystem.Instance.CloseArmory(), LevyUtil.T("UI2.Close"));
@@ -132,8 +142,10 @@ namespace Levy.Common.UI
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
 			_grid.Clear();
 			_issue.RemoveAllChildren();
+			_potionEls.Clear();
 			_shown = null;
 			ResetFilters();
+			_shownCapacity = _shownCenters = -1;
 			if (te == null) return;
 
 			// A fresh open shows every storage slot (no search, no filters).
@@ -185,18 +197,33 @@ namespace Levy.Common.UI
 			y += ammoRows * Pitch + 6f;
 
 			AddLabel(LevyUtil.T("UI.IssuePotions"), y); y += 18f;
-			for (int i = 0; i < te.IssuePotions.Length; i++)
-			{
-				bool healing = i == 0;
-				var slot = MakeSlot(te.IssuePotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
-				slot.Left.Set(i * Pitch, 0f); slot.Top.Set(y, 0f);
-				_issue.Append(slot);
-				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);
-				tag.Left.Set(i * Pitch, 0f); tag.Top.Set(y + Pitch - 2f, 0f);
-				_issue.Append(tag);
-			}
+			_potionTop = y;
+			BuildPotionRow();
 			Recalculate();
 			_gridScroll.ViewPosition = 0f;
+		}
+
+		/// <summary>
+		/// (Re)builds the potion row: slot 0 healing / mana, every later slot a buff slot. The Guide to Firepower adds buff slots, which replaces the array, so this runs again then.
+		/// The row wraps after IssueColumns slots (it is never longer than that today).
+		/// </summary>
+		private void BuildPotionRow()
+		{
+			foreach (var el in _potionEls) el.Remove();
+			_potionEls.Clear();
+			_builtPotions = Te.IssuePotions;
+			for (int i = 0; i < _builtPotions.Length; i++)
+			{
+				bool healing = i == 0;
+				float x = (i % IssueColumns) * Pitch, y = _potionTop + (i / IssueColumns) * (Pitch + 12f);
+				var slot = MakeSlot(_builtPotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
+				slot.Left.Set(x, 0f); slot.Top.Set(y, 0f);
+				_issue.Append(slot); _potionEls.Add(slot);
+				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);
+				tag.Left.Set(x, 0f); tag.Top.Set(y + Pitch - 2f, 0f);
+				_issue.Append(tag); _potionEls.Add(tag);
+			}
+			_issue.Recalculate();
 		}
 
 		/// <summary>
@@ -208,6 +235,7 @@ namespace Levy.Common.UI
 			_grid.Clear();
 			if (Te == null) return;
 			var arr = Te.Storage;
+			_builtStorage = arr;
 			int cols = LevyConstants.UI.ArmoryColumns;
 			int count = _shown?.Count ?? arr.Length;
 			var rows = new List<UIElement>((count + cols - 1) / cols);
@@ -401,6 +429,22 @@ namespace Levy.Common.UI
 			else if (Filtering && --_filterTick <= 0) { _filterTick = LevyConstants.UI.ArmoryFilterRefreshTicks; RefreshGrid(false); }
 		}
 
+		/// <summary>
+		/// Called by the UI system just BEFORE this panel's input is processed each frame. Logistical Centers replace the storage array when they change its size (and a client replaces it when the server
+		/// sends a new length); a cell still bound to the old array would show stale items and swallow whatever the player dropped on it, so the grid is rebuilt against the new one first. The potion row is replaced the same way when Firepower adds buff slots.
+		/// </summary>
+		public void RefreshIfStorageReplaced()
+		{
+			if (Te == null || _grid == null) return;
+			if (!ReferenceEquals(_builtPotions, Te.IssuePotions)) BuildPotionRow(); // Firepower grew the buff slots
+			if (ReferenceEquals(_builtStorage, Te.Storage)) return;
+			_shown = Filtering ? Collect() : null;
+			float pos = _gridScroll.ViewPosition;
+			BuildGrid();
+			_grid.Recalculate();
+			_gridScroll.ViewPosition = pos;
+		}
+
 		/// <summary>Re-collects the matching indices and rebuilds the grid only when they differ from what is shown.</summary>
 		private void RefreshGrid(bool resetScroll)
 		{
@@ -592,6 +636,19 @@ namespace Levy.Common.UI
 		/// Runs before the panel's cells are drawn. The vanilla inventory and crafting list sit under this panel and have already put whatever they were hovering into the shared tooltip slot;
 		/// with the pointer on the panel only the panel's own cells may set it.
 		/// </summary>
+		/// <summary>Shows the storage size and how much of it the linked Logistical Centers provide. Rebuilds the text only when a number changes.</summary>
+		private void UpdateCapacityLabel()
+		{
+			if (Te == null || _capacity == null) return;
+			int slots = Te.Storage.Length, centers = Te.LinkedCenters;
+			if (slots == _shownCapacity && centers == _shownCenters) return;
+			_shownCapacity = slots; _shownCenters = centers;
+			int extra = Math.Max(0, slots - ArmoryTE.StorageSize);
+			_capacity.SetText(centers <= 0 ? LevyUtil.T("UI2.ArmoryCapacity", slots)
+				: centers == 1 ? LevyUtil.T("UI2.ArmoryCapacityCenter", slots, extra)
+				: LevyUtil.T("UI2.ArmoryCapacityCenters", slots, extra, centers));
+		}
+
 		protected override void DrawSelf(SpriteBatch spriteBatch)
 		{
 			base.DrawSelf(spriteBatch);
@@ -607,6 +664,7 @@ namespace Levy.Common.UI
 			_lootAll.Enabled = anyStorage;
 			_sort.Enabled = anyStorage;
 			UpdateFilterView();
+			UpdateCapacityLabel();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }
 			else if (Te == null) _payer = null;
 			RefreshReforgeBar();

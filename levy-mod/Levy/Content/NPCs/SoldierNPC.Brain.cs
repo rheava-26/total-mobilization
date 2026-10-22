@@ -560,7 +560,33 @@ namespace Levy.Content.NPCs
 		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles * FireBuffer;
 
 		/// <summary>Ranged weapons pick targets and open fire a little past their listed range (see <see cref="LevyConstants.RangedFireRangeBuffer"/>).</summary>
-		private float FireBuffer => Weapon != null && Weapon.OpensEarly ? LevyConstants.RangedFireRangeBuffer : 1f;
+		private float FireBuffer => Weapon != null && Weapon.OpensEarly ? (IsFlamethrower ? LevyConstants.FlameOpenFireBuffer : LevyConstants.RangedFireRangeBuffer) : 1f;
+
+		// Flamethrower family cache, keyed on the profile instance (a re-issued weapon is a new profile object, so the answer is recomputed).
+		private WeaponProfile _flameFor; private bool _flameIs;
+
+		/// <summary>
+		/// A short-legged extended gun/caster whose shot is the Flamethrower AI (Flamethrower, Elf Melter): its RangeTiles is already the real
+		/// flame reach (WeaponClassifier cuts it), so it opens fire a bit past it and walks IN to that reach rather than holding a ranged standoff.
+		/// </summary>
+		private bool IsFlamethrower
+		{
+			get
+			{
+				var w = Weapon;
+				if (w == null) return false;
+				if (!ReferenceEquals(w, _flameFor))
+				{
+					_flameFor = w;
+					_flameIs = w.Extended && w.IsRanged && (w.Family == WeaponFamily.Gun || w.Family == WeaponFamily.Magic)
+						&& WeaponClassifier.ProjectileSample(w.Shoot)?.aiStyle == ProjAIStyleID.Flamethrower;
+				}
+				return _flameIs;
+			}
+		}
+
+		/// <summary>The reach a soldier plans its position against: the weapon's reach, pulled in to the close-in fraction for a flamethrower so the stream connects.</summary>
+		private float PlanningRange(NPC target) => Weapon.RangeTiles * BossRangeMult(target) * (IsFlamethrower ? LevyConstants.FlameCloseInFraction : 1f);
 
 		/// <summary>How much further this soldier's weapon reaches against <paramref name="target"/>: the weapon's boss multiplier for a boss, else 1.</summary>
 		internal float BossRangeMult(NPC target) => Weapon != null && Weapon.BossReachMult > 1f && LevyUtil.IsBossNpc(target) ? Weapon.BossReachMult : 1f;
@@ -825,8 +851,9 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private bool RangedGoal(NPC target, int now)
 		{
-			float range = Weapon.RangeTiles * BossRangeMult(target); // a boss pushes reach, standoff and approach distance out together
-			float standoff = StandoffTiles(range);
+			bool flame = IsFlamethrower;
+			float range = PlanningRange(target); // a boss pushes reach, standoff and approach distance out together; a flamethrower plans inside its real flame reach
+			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
 
@@ -846,7 +873,8 @@ namespace Levy.Content.NPCs
 
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
-			bool inReach = dT <= range * FireBuffer * LevyConstants.ShootableRangeFrac; // the same buffered reach the fire gate uses
+			// the same buffered reach the fire gate uses; a flamethrower holds only once inside its close-in range (no open-fire buffer), otherwise it keeps walking in
+			bool inReach = dT <= range * (flame ? 1f : FireBuffer) * LevyConstants.ShootableRangeFrac;
 			if (!(inReach && !los) || target.whoAmI != _noLosTarget) _noLosSinceTick = -1; // the line is back (or a new target): the blocked clock restarts
 
 			if (inReach && los)
@@ -2163,7 +2191,7 @@ namespace Levy.Content.NPCs
 			int leash = RoamLeashTiles;
 			float tilePx = LevyConstants.TilePx;
 			bool melee = PositionsAsMelee;
-			float standoff = melee ? LevyConstants.MeleeCautionTiles : StandoffTiles(Weapon.RangeTiles);
+			float standoff = melee ? LevyConstants.MeleeCautionTiles : IsFlamethrower ? LevyConstants.FlameStandoffTiles : StandoffTiles(Weapon.RangeTiles);
 			// the hostile a roaming soldier must not walk at: any threat for ranged, only a boss / lethal-contact one for melee
 			int thIdx = melee ? _dangerIdx : _threatIdx; float thTiles = melee ? _dangerTiles : _threatTiles;
 

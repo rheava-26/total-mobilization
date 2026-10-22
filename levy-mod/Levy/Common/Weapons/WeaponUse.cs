@@ -548,8 +548,13 @@ namespace Levy.Common.Weapons
 			else
 			{
 				bool gravity = WeaponClassifier.ProjectileHasGravity(projType);
-				vel = Aiming.SolveIntercept(muzzle, speed, targetPos, targetVel, gravity, gravity ? LevyConstants.ArrowGravity : 0f, gravity ? LevyConstants.ArrowGravityDelayTicks : 0);
-				float t = MathHelper.Clamp(Vector2.Distance(muzzle, targetPos) / Math.Max(0.01f, speed), 0f, LevyConstants.AimMaxLeadTicks);
+				// The projectile advances (1 + extraUpdates) times per tick (High Velocity Bullet: extraUpdates 7 = 8x), so the speed the lead must use is the spawn
+				// velocity times that, not the spawn velocity itself (which stays the shot's real magnitude). Gravity runs per update too: g x (1+e)^2 per tick^2, delay / (1+e) ticks.
+				float steps = 1f + Math.Max(0, WeaponClassifier.ProjectileSample(projType)?.extraUpdates ?? 0);
+				float leadSpeed = Math.Max(0.01f, speed) * steps;
+				vel = Aiming.SolveIntercept(muzzle, leadSpeed, targetPos, targetVel, gravity,
+					gravity ? LevyConstants.ArrowGravity * steps * steps : 0f, gravity ? (int)Math.Round(LevyConstants.ArrowGravityDelayTicks / steps) : 0) / steps;
+				float t = MathHelper.Clamp(Vector2.Distance(muzzle, targetPos) / leadSpeed, 0f, LevyConstants.AimMaxLeadTicks);
 				lead = targetVel * t;
 			}
 			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, targetPos));

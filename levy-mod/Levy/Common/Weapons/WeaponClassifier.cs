@@ -521,13 +521,16 @@ namespace Levy.Common.Weapons
 			if (item == null || item.IsAir) return 0f;
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
-			// Burst weapons (reuseDelay) fire ceil(useAnimation / useTime) shots per useAnimation + reuseDelay ticks, not one per useTime.
+			// Burst weapons fire a capped run of shots per cycle, then play out the animation + reuseDelay: a reuseDelay weapon fires ceil(useAnimation / useTime) shots per
+			// useAnimation + reuseDelay ticks, and a useLimitPerAnimation weapon (Tome of Infinite Wisdom: 4 per 25 ticks) fires min(limit, natural) then idles (see WeaponUse.FinishUse).
 			float cadence = Math.Max(1, item.useTime);
-			if (item.reuseDelay > 0)
-			{
-				int shots = Math.Max(1, (Math.Max(1, item.useAnimation) + (int)cadence - 1) / (int)cadence);
-				cadence = (Math.Max(1, item.useAnimation) + item.reuseDelay) / (float)shots;
-			}
+			int anim = Math.Max(1, item.useAnimation);
+			int naturalShots = Math.Max(1, (anim + (int)cadence - 1) / (int)cadence);
+			int shots = item.useLimitPerAnimation.HasValue && item.useLimitPerAnimation.Value > 0 ? Math.Min(item.useLimitPerAnimation.Value, naturalShots) : naturalShots;
+			if (shots < naturalShots || item.reuseDelay > 0) cadence = (anim + Math.Max(0, item.reuseDelay)) / (float)shots;
+			// A held weapon with a known real cadence (Vortex Beater) is ranked on it, undamped.
+			bool heldKnown = p.Family == WeaponFamily.HeldWeapon && LevyConstants.HeldRealCadence.TryGetValue(item.type, out int heldCadence) && heldCadence > 0;
+			if (heldKnown) cadence = LevyConstants.HeldRealCadence[item.type];
 			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
 			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor * SummonScoreMinions(item); // the minions do the work: useTime means nothing
@@ -537,7 +540,7 @@ namespace Levy.Common.Weapons
 			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;
 			else if (p.Family == WeaponFamily.Flail) dps *= LevyConstants.FlailScoreFactor;
 			else if (p.Family == WeaponFamily.Thrown) dps *= LevyConstants.ThrownScoreFactor;
-			else if (p.Family == WeaponFamily.HeldWeapon) dps *= LevyConstants.HeldScoreFactor;
+			else if (p.Family == WeaponFamily.HeldWeapon && !heldKnown) dps *= LevyConstants.HeldScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);
 			float tier = 1f + LevyConstants.WeaponRarityWeight * RarityTier(item.rare) + LevyConstants.WeaponValueWeight * (float)Math.Log10(1.0 + Math.Max(0, item.value));

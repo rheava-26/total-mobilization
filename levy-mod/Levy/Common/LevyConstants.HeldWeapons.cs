@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Terraria.ID;
+
 namespace Levy.Common
 {
 	/// <summary>Held-projectile weapons (Phantasm, Vortex Beater, Last Prism, Phantom Phoenix, Starlight...): the real vanilla held AI runs anchored to the soldier. Additive partial; see HeldWeapons.cs.</summary>
@@ -21,5 +24,7 @@ namespace Levy.Common
 		public const float HeldAimMinDistPx = 96f;
 		/// <summary>Held weapons' real cadence lives in the held AI, not useTime (Last Prism's useTime of 5 would inflate its DPS), so their rank is scaled down.</summary>
 		public const float HeldScoreFactor = 0.4f;
+		/// <summary>Held weapons whose real shot interval (ticks) is known from their held AI: ranking uses it instead of useTime and skips <see cref="HeldScoreFactor"/>, which only exists to damp unknown cadences. Vortex Beater: AI_075 fires a bullet every 5 ticks (useTime 20 would rate it at a quarter of its output).</summary>
+		public static readonly Dictionary<int, int> HeldRealCadence = new() { { ItemID.VortexBeater, 5 } };
 	}
 }

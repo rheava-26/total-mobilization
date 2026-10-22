@@ -762,7 +762,8 @@
     <b>RAIDERS.</b> A fast, twin-gun agile fighter that backbones most air waves — it evades harder and longer than an ordinary interceptor. Expect a lot of them; they hunt your aircraft first, ground second.<br>
     <b>SHIELD CARRIERS.</b> A flying shield ship that cruises to your densest anti-air cluster and drops a protective dome that follows it wherever it goes — the dome soaks incoming fire for everything under it. Shoot the carrier itself down; the dome dies with it.<br>
     <b>THE FLEET FLAGSHIP.</b> A whole battle group anchored in high orbit, not a lone hull — bombarders, frigate pickets, shield carriers and a satellite screen ride with it. A shield absorbs hits until it goes quiet, then rebuilds fast, and a periodic antimatter flak burst clears the sky in front of it. Only space-reaching weapons (railguns, satellites, orbital guns, or a strategic strike) can touch it, and killing it takes a full quarter off the fleet meter.<br>
-    <b>WITHDRAWAL TO ORBIT.</b> If the fleet's ground assault is getting wrecked, it calls the landing off — surviving beachhead troops LIFT OFF back to orbit (nothing is lost, they simply rejoin the fleet) and it leans on bombardment instead for a while, then commits ground forces again once it reads an opening.</p></details>
+    <b>WITHDRAWAL TO ORBIT.</b> If the fleet's ground assault is getting wrecked, it calls the landing off — surviving beachhead troops LIFT OFF back to orbit (nothing is lost, they simply rejoin the fleet) and it leans on bombardment instead for a while, then commits ground forces again once it reads an opening.<br>
+    Destroy the fleet and the survivors lift off. Kill what you can before they clear the sky.</p></details>
   <div class="actions"><button class="pill primary" onclick="closeModal('helpModal')">UNDERSTOOD</button></div>
 </div></div>
 
@@ -4875,7 +4876,7 @@ function hurt(t, dmg, ix, iy) {
   // ENERGY SHIELD RULE: only an active shield resists hits. Without one, units get DUMPSTERED — and the less armor, the worse: unarmored (esp. aircraft) die in a couple of hits.
   const fragile = !(t._b || t._city), rawArmor = (t.d && t.d.armor) || t.armor || 0;
   const eff = Math.max(1, dmg * (fragile ? HIT_BUFF * (rawArmor < 4 ? 2.7 : 1.9) : 1) - armor);
-  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; addDmgTaken(t.x, eff); spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (!t.kind) addDmgTaken(t.x, ev); /* v4.0 E — DAMAGE-TAKEN MAP: only PLAYER units (no .kind field; enemies always carry one) count toward where PHASE 3 picks its least-hit landing zones */ if (t.d && (t.d.domain === 'air' || t.d.fighterAI)) t.evadeT = 2; /* EVASION TRIGGER — any un-answered hit on an airborne friendly makes it skittish for ~2s; see the air-unit no-reachable-target branch in updUnits, which jinks/retreats instead of loitering while this is > 0. TASK D: also fires for the space-domain d.fighterAI unit (Orbital Strike Fighter), which reuses this same evasion behavior in its own updUnits space-block branch. */ if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; if (t.empburst && t.hp <= 0) detonateEmpBurst(t); /* B3 SHOT DOWN — an antimatter warhead killed in flight detonates at its CURRENT altitude (not just dies); detonateEmpBurst reads t.x/t.y as they stand right now, scaling the blackout radius by how far it still had to fall */ if (t.kind && t.hp > 0 && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.killBy === 'rail' || t.killBy === 'rod' || t.killBy === 'shell' || t.killBy === 'beam')) t.evadeT = 1.2; /* ENEMY EVASION (v4.0 C) — mirrors the friendly trigger just above: a heavy round (rail/rod/shell/plasma — a plasma hit lands as killBy 'beam', shared with lasers via beamHit(), so both spook it the same way) that HITS an enemy air unit and it survives spooks it into evasive jinking too (consumed in updEnemies' airborne weave branch); bosses/bulwark/shieldgen/ground/anchored never evade */ spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
+  if (t._city) { if (t._dist) damageDistrict(t._city, t._dist, eff); else hurtCity(t._city, t.x, eff); spark(t.x, t.y, 2); if (!G.withdraw) G.stab = Math.max(0, G.stab - .018 * eff); } else if (t._b) { t._b.hp -= eff; addDmgTaken(t.x, eff); spark(t.x, t.y, 2); } else { let ev = eff; if (t.key && t.d && t.d.domain === 'ground' && t.entr) ev = Math.max(1, eff * (1 - Math.min(.6, t.entr * (t.fort >= 2 ? .6 : t.fort ? .5 : .4)))); t._lastHit = ev; if (!t.kind) addDmgTaken(t.x, ev); /* v4.0 E — DAMAGE-TAKEN MAP: only PLAYER units (no .kind field; enemies always carry one) count toward where PHASE 3 picks its least-hit landing zones */ if (t.d && (t.d.domain === 'air' || t.d.fighterAI)) t.evadeT = 2; /* EVASION TRIGGER — any un-answered hit on an airborne friendly makes it skittish for ~2s; see the air-unit no-reachable-target branch in updUnits, which jinks/retreats instead of loitering while this is > 0. TASK D: also fires for the space-domain d.fighterAI unit (Orbital Strike Fighter), which reuses this same evasion behavior in its own updUnits space-block branch. */ if (t.squad) hitSquadMember(t, ev, ix, iy); else t.hp -= ev; if (t.empburst && t.hp <= 0) detonateEmpBurst(t); /* B3 SHOT DOWN — an antimatter warhead killed in flight detonates at its CURRENT altitude (not just dies); detonateEmpBurst reads t.x/t.y as they stand right now, scaling the blackout radius by how far it still had to fall */ if (t.kind && t.hp > 0 && !t.ground && !t.boss && t.kind !== 'bulwark' && t.kind !== 'shieldgen' && !t.anchored && (t.killBy === 'rail' || t.killBy === 'rod' || t.killBy === 'shell' || t.killBy === 'beam')) t.evadeT = 1.2; /* ENEMY EVASION (v4.0 C) — mirrors the friendly trigger just above: a heavy round (rail/rod/shell/plasma — a plasma hit lands as killBy 'beam', shared with lasers via beamHit(), so both spook it the same way) that HITS an enemy air unit and it survives spooks it into evasive jinking too (consumed in updEnemies' airborne weave branch); bosses/bulwark/shieldgen/ground/anchored never evade */ spark(t.x, t.y, 2); if (Math.random() < .4) smoke(t.x, t.y, 1); } }   // entrenched/garrisoned ground units soak hits (a dug-in fortified line is hard to crack). SQUADS: hitSquadMember is the sole authority on t.hp (see its own comment) — no separate aggregate subtraction, so the aggregate can never drift ahead of what the bodies actually took and get cleaned up early with a body still nominally alive
 // SQUAD FOOTPRINT DAMAGE — a round landing anywhere inside the squad's collision radius (see hurt() above) is
 // routed here and EATS THROUGH the living bodies NEAREST the actual impact point (ix,iy, defaulting to the
 // squad's own position when a caller doesn't know exactly where the round landed), nearest-first: the closest
@@ -5533,7 +5534,8 @@ function spawnEnemy(kind, atX, noEscort) {   // G1: optional 3rd arg — pass tr
   else Object.assign(e, { hp: 200 * t, s: 7, armor: 10, spd: 0, hold: landY(wxw) - 7, weapon: 'rocket', dmg: 25, rate: 3.52, dives: false, anchored: true, producer: true, prodCd: 7, harvester: true, reinforceEligible: true, art: 'eharvester' });   // harvester — lands, anchors, keeps dropping reinforcements, and (like the other anchored superweapons) calls in one support group if it survives long enough
   if (e.ground && !G._gSpawnLog) G._gSpawnLog = [];   // v4.1 F I1 — THE FLEET REACTS: timestamp log of every ground-kind spawn, pruned to the trailing 60s in scanEnemyIntel
   if (e.ground) G._gSpawnLog.push(G.invTime || 0);
-  e.hp = Math.round(e.hp); e.maxHp = e.hp; if (e.shield) e.maxShield = e.shield; if (noEscort) e.noEscort = true; G.enemies.push(e);
+  e.hp = Math.round(e.hp); e.maxHp = e.hp; if (e.shield) e.maxShield = e.shield; if (noEscort) e.noEscort = true; if (G.withdraw) { e.withdraw = true; e.reentry = false; } G.enemies.push(e);
+  if (G.withdraw) return;
   if (!e.noEscort) attachEscorts(e);   // G1 — PERSONAL PROTECTION: a no-op for any kind with no ESCORT_TABLE entry, so calling it unconditionally here is the ONE place every boss/super spawn path (opening wall, INTENT supers, wave supers, adaptive delays, mass drops) gets its contingent
 }
 // THE BEACHHEAD CLOCK — a landed/anchored superweapon (hive, leviathan, bombarder, harvester) that survives
@@ -5877,15 +5879,23 @@ function tickPhase4(it, dt) {
 // re-entry) and is REFUNDED to G.fleet on reaching MESO_Y, never destroyed/lost; (3) SPACE PICKETS —
 // from phase 3 on, keeps 2+round(diff) picket frigates standing in the space band, topping up on a
 // 12s cooldown.
+function startWithdraw() {
+  G.withdraw = { t: 0, escaped: 0 };
+  banner('☄ FLEET DESTROYED — THE AUTOFLEET WITHDRAWS', 'survivors are lifting off — finish what you can', 6);
+  toast('☄ The autofleet is spent. Survivors are lifting off.'); musDuck();
+  G.stab = Math.min(100, G.stab + 15);
+  G.bombard = 0; G.orbital = 0; G.busterN = 0; G.skyfallN = 0; G._skyfallDelayT = null; G._skyfallIt = null;
+  if (G.supersPlan) G.supersPlan.length = Math.min(G.supersPlan.length, G.superI || 0);
+  for (const e of G.enemies) { e.withdraw = true; e.liftOff = false; e.reentry = false; e.anchored = false; }
+}
 function tickFleetStance(it, dt) {
   if ((G._landingPauseT || 0) > 0) G._landingPauseT = Math.max(0, G._landingPauseT - dt);
   for (let i = G.enemies.length - 1; i >= 0; i--) {
-    const e = G.enemies[i]; if (!e.liftOff) continue;
-    e.y -= 120 * dt; e.vy = 0; e.reentry = false;
-    if (Math.random() < .5) G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s, y: e.y + e.s, vx: (Math.random() - .5) * 6, vy: 30 + Math.random() * 20, r: 1.4 + Math.random() * 2, life: .2 + Math.random() * .2 });   // thruster flame trailing DOWNWARD as it climbs
-    if (e.y <= MESO_Y()) { G.enemies.splice(i, 1); G.fleet = Math.min(G.fleetMax || 1e9, (G.fleet || 0) + 1); }   // clear of the fight and handed straight back to the fleet pool — withdrawn, not destroyed
+    const e = G.enemies[i]; if (!e.liftOff || e.withdraw) continue;
+    e.reentry = false;   /* the climb itself runs in updEnemies' lift-off path (same formula as the withdrawal) */
+    if (e.y <= MESO_Y()) { G.enemies.splice(i, 1); if (G.fleet > 0) G.fleet = Math.min(G.fleetMax || 1e9, G.fleet + 1); }   // clear of the fight and handed straight back to the fleet pool — withdrawn, not destroyed
   }
-  if ((G.invPhase || 0) >= 3) {
+  if ((G.invPhase || 0) >= 3 && !G.withdraw) {
     G._picketCd = (G._picketCd || 0) - dt;
     const wantN = 2 + Math.round(G.diff || 1);
     let liveN = 0; for (const e of G.enemies) if (e.kind === 'frigate' && e.picket && e.hp > 0) liveN++;
@@ -5899,6 +5909,7 @@ function tickFleetStance(it, dt) {
 // advances G.invPhase on the intent's own clock (RECON skips straight from 1 to a phase-4-style
 // trickle — no blackout, no all-out) and runs each phase's ongoing tick.
 function updateInvPhases(it, dt) {
+  if (G.withdraw) { tickFleetStance(it, dt); return; }   /* withdrawing: no new phases, scans, morale raids or flagship — only the lift-off climb bookkeeping */
   if (G.invPhase < 1) return;
   if (G.blackout && G.blackout.length) for (let i = G.blackout.length - 1; i >= 0; i--) { G.blackout[i].t -= dt; if (G.blackout[i].t <= 0) G.blackout.splice(i, 1); }
   if (G._skyfallDelayT != null) { G._skyfallDelayT -= dt; if (G._skyfallDelayT <= 0) { const dIt = G._skyfallIt; G._skyfallDelayT = null; G._skyfallIt = null; phase3Skyfall(dIt); } }   /* B3 — the mass wave (+ its 3 real landings) lands ~8s after the phase-3 antimatter warheads launch, so the blackout is already spreading when it arrives */
@@ -6109,7 +6120,7 @@ function updateGameInner(dt) {
       for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - bm.x) < bm.r) { u.killBy = 'beam'; const bd = 200 * dt; if (u.squad) hitSquadMember(u, bd, bm.x, u.y); else u.hp -= bd; } }   // v3.67: squad-aware, see hitSquadMember
       for (const b of G.buildings) if (!b.ug && Math.abs(b.x - bm.x) < bm.r * .8) b.hp -= 170 * dt;
       for (const ct of G.cities) if (ct.hp > 0) for (const dst of ct.districts) { if (dst.dead) continue; if (Math.abs(ct.x + dst.dx - bm.x) < bm.r) damageDistrict(ct, dst, 230 * dt); }
-      G.stab = Math.max(0, G.stab - 4 * dt);
+      if (!G.withdraw) G.stab = Math.max(0, G.stab - 4 * dt);
     } else {   // YOUR Mind-Forge — the single most powerful weapon in the game: obliterates everything in the column at ANY altitude (it will NOT fry your own forces or structures)
       for (const e of G.enemies) { if (Math.abs(e.x - bm.x) >= bm.r) continue; e.killBy = 'beam';
         if (!e.ground && e.y < groundY(e.x) - 30) { e.mfSlam = true; e.reentry = false; e.vy = 0; }   /* AIRBORNE SLAM — psionically yanked straight down, even mid re-entry/orbit; the actual drag + ground-impact kill is driven every tick in updEnemies() (see e.mfSlam there) so a target already yanked keeps falling even if it drifts out of the column or the beam expires first */
@@ -6231,14 +6242,15 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
       G.acqLockT -= dt; if (G.acqLockT <= 0) { const nb = G.acqOrder.find(b => !b._acqLock && b.hp > 0); if (nb) { nb._acqLock = 1; if (SFX.click) SFX.click(); } G.acqLockT = Math.max(.2, 13 / (G.acqOrder.length + 1)); }
       if (G.acqT <= 0) { G.acqPhase = false; for (const b of G.buildings) b._acqLock = 0; banner('☢ MISSILES LAUNCHED', 'Orbital penetrators inbound — BRACE FOR IMPACT', 3.5); shake(15); G.nukeFlash = Math.max(G.nukeFlash || 0, .3); if (SFX.boom) SFX.boom(); musDuck(); } }
     if (!G.acqPhase) G.invTime += dt;
+    if (!G.acqPhase && !G.withdraw && !G.over && G.fleet <= 0) startWithdraw();   /* the fleet is spent: the survivors lift off and the match ends when the sky clears */
     if (!G.acqPhase) updateInvPhases(it, dt);   /* v4.0 E — THE AUTOFLEET'S PLAN: advances invPhase (screening -> blackout -> all-out -> reinforce/morale), ticks blackout-zone decay + phase-2/phase-4 ongoing effects */
-    if (!G.acqPhase) tickMicroBarrage(dt);   /* v4.0.4 B — the ~400-bomblet dispersed opening barrage, phases 1-2 only (see openingMicroBarrage/tickMicroBarrage) */
-    if (!G.acqPhase) tickAASalvo(dt);   /* v4.2 E2 — the 30s anti-air micromissile programme armed by openingAAsalvo (see there/tickAASalvo) */
-    if (!G.acqPhase && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
+    if (!G.acqPhase && !G.withdraw) tickMicroBarrage(dt);   /* v4.0.4 B — the ~400-bomblet dispersed opening barrage, phases 1-2 only (see openingMicroBarrage/tickMicroBarrage) */
+    if (!G.acqPhase && !G.withdraw) tickAASalvo(dt);   /* v4.2 E2 — the 30s anti-air micromissile programme armed by openingAAsalvo (see there/tickAASalvo) */
+    if (!G.acqPhase && !G.withdraw && G.bombard > 0) { G.bombard -= dt; G.bombT = (G.bombT || 0) - dt; if (G.bombT <= 0) { G.bombT = it.glass ? .38 : .55; spawnEnemy('bombpod'); } }
     // ORBITAL BOMBARDMENT — falling lances gouge the earth & flatten anything anchored. Shoot them down with AA / railguns. In a GLASSING they rain relentlessly and target your cities.
-    if (!G.acqPhase && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
+    if (!G.acqPhase && !G.withdraw && G.orbital > 0) { G.orbital -= dt; G.orbT = (G.orbT || 0) - dt; if (G.orbT <= 0) { G.orbT = it.glass ? .1 : .14; orbitalBarrage(barrageTarget()); } }   // rains on cities & your infrastructure across the whole map (NOT the camera viewport)
     // BUNKER-BUSTER PENETRATORS — the fleet slams heat-shielded plane-sized missiles onto your highest-value structures by PRIORITY. It opens with a few SCREENING shots to gauge your defences, then scales each salvo: 1 if rounds punch straight through, up to 3-4 against a competent air-defence net.
-    if (!G.acqPhase && G.busterN > 0) { G.busterCd -= dt * (G.invPhase === 2 ? 1.6 : 1);   /* v4.0 E — PHASE 2 BLACKOUT: busters come faster while the grid is degraded */ if (G.busterCd <= 0) {
+    if (!G.acqPhase && !G.withdraw && G.busterN > 0) { G.busterCd -= dt * (G.invPhase === 2 ? 1.6 : 1);   /* v4.0 E — PHASE 2 BLACKOUT: busters come faster while the grid is degraded */ if (G.busterCd <= 0) {
       if (G.busterFired < 3) {   // RANGING SHOTS — a quick 3-shot telegraph, then the whole magazine commits (down the probes and it comes anyway)
         const tb = busterTarget(); if (tb) { spawnBuster(tb.x + (Math.random() - .5) * 34, groundY(tb.x)); G.busterN--; G.busterFired++; if (G.busterFired === 1) { toast('⚠ ORBITAL PENETRATORS — RANGING SHOTS'); musDuck(); } }
         G.busterCd = .45 + Math.random() * .35;
@@ -6250,12 +6262,12 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
       }
     } }
     // MASS SKYFALL — the giant drop right after the opening bombardment (+ flank ground landings)
-    if (!G.acqPhase && G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
+    if (!G.acqPhase && !G.withdraw && G.skyfallN > 0 && G.skyfallT >= 0) { G.skyfallT -= dt; if (G.skyfallT <= 0) { doSkyfall(it); G.skyfallN = 0; } }
     // AUTODRONE SUPERWEAPONS — boss-tier units enter on the intent's schedule (v4.0.1: G.supersPlan, a
     // per-match COPY made at the invasion transition — see above — never the shared INTENT array itself,
     // since scanEnemyIntel can push a not-yet-spawned entry's `t` later on a spaceReach-dominant read)
     const sups = G.supersPlan || (G.supersPlan = buildSupersPlan(it)); G.superI = G.superI || 0;
-    if (!G.acqPhase && G.superI < sups.length && G.invTime >= sups[G.superI].t) {
+    if (!G.acqPhase && !G.withdraw && G.superI < sups.length && G.invTime >= sups[G.superI].t) {
       const sw = sups[G.superI]; let atX = null;
       if (/bombarder|annihilator/.test(sw.kind) && G.enemyIntel && G.enemyIntel.dominant === 'spaceReach') {   // v4.0.1 — land the space-tier boss CLEAR of the player's densest anti-orbital cluster instead of a random spot
         const clusters = densestSpaceReachX();
@@ -6264,12 +6276,15 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
       spawnSuper(sw.kind, sw.capital, sw.n, atX); G.superI++;
     }
     // ENEMY WAVES — the fleet drops a whole battlegroup in ONE concentrated landing, then pauses, so your ground units get a window to push the front back (no more scattered random re-entries)
-    if (!G.acqPhase && !it.glass && G.invPhase >= 3 && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // v4.2 WAVE ORDER — gated to PHASE 3+ so no landing wave fires during screening/suppression; the first one is scheduled ~6s after phase3Skyfall (see G.waveT there), not at t=6s of the whole invasion. FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
+    if (!G.acqPhase && !G.withdraw && !it.glass && G.invPhase >= 3 && G.fleet > 0 && G.enemies.length < ESC.POP_CEIL) { G.waveT = (G.waveT == null ? 6 : G.waveT) - dt; if (G.waveT <= 0) { doWave(it); G.waveT = 22 + Math.random() * 10; } }   // v4.2 WAVE ORDER — gated to PHASE 3+ so no landing wave fires during screening/suppression; the first one is scheduled ~6s after phase3Skyfall (see G.waveT there), not at t=6s of the whole invasion. FEWER, HEAVIER LANDINGS — spaced roughly 2x further apart than before now that each one drops ~2x the units + a super-unit group
     // for glass this doubles as the ENDURANCE win: outlasting G.bombard/G.orbital (both seeded from it.bombard/it.orbital)
     // IS the "HOLD FOR" target advertised in the objective HUD (syncHUD) — reaching it is a real victory, not a milestone
     // in an endless grind, so a held-the-line run gets a clean end screen instead of "survived 9%".
     const done = G.enemies.length === 0 && G.bombard <= 0 && G.orbital <= 0 && (it.glass || G.fleet <= 0);
-    if (done) return end(true, it.glass ? 'YOU HELD THE LINE — THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
+    if (G.withdraw) {
+      G.withdraw.t += dt;
+      if (G.enemies.length === 0 || G.withdraw.t >= 15) { for (const e of G.enemies) { G.withdraw.escaped++; if (G.stats) G.stats.escaped = (G.stats.escaped || 0) + 1; } G.enemies.length = 0; return end(true, 'INVASION REPELLED — THE AUTOFLEET WITHDREW'); }
+    } else if (done) return end(true, it.glass ? 'YOU HELD THE LINE — THE FLEET EXHAUSTED ITS ORBITAL ORDNANCE' : 'INVASION REPELLED');
   }
   G._incoming = interceptableProjList();   // PERF — one small snapshot of intercept-eligible ordnance per tick; acquireIncoming (called by every combat unit/building below) scans THIS instead of all of G.proj, and early-outs to ~zero cost whenever it's empty (the common no-bombardment case)
   GRID_F.slack = 160; _pfT = performance.now();   /* v4.5 P — units move inside updUnits, so friendlies queried there are padded; enemies move inside updEnemies */
@@ -6282,20 +6297,20 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
   G._tickKills = 0;   // AFTER-ACTION — reset the this-tick kill counter destroyEnemy() feeds, then read it back below once the sweep is done
   for (const e of G.enemies) if (e.hp <= 0 && !e.deployed) destroyEnemy(e);   // e.deployed is legacy (nothing currently sets it — the Shield Generator now dies like any other structure, full blast + kill credit); kept so a future "consumed quietly" enemy type can opt in
   if (G.stats && G._tickKills > 0) G.stats.biggestKillBurst = Math.max(G.stats.biggestKillBurst, G._tickKills);   // AFTER-ACTION — largest number of enemies killed in a single simulation tick
-  filterInPlace(G.enemies, e => e.hp > 0);   // PERF: in-place compaction, see filterInPlace()
+  filterInPlace(G.enemies, e => e.hp > 0 && !e._gone);   // PERF: in-place compaction, see filterInPlace() — _gone = a withdrawing craft that cleared the top of the sky (escaped, no kill credit)
   for (const b of G.buildings) if (b.hp > 0 && !b.ug && !b.d.needWater && elevAt(b.x) < SEA_E - .04) { b.hp = 0; b.flooded = true; floatText(b.x, groundY(b.x) - 18, 'FLOODED', '#5fd0ff'); }   // a building whose ground genuinely sinks below sea level (margin, so a shallow crater at the waterline doesn't drown it) is drowned — handled as a QUIET sink below, never a blast
   for (const b of G.buildings) if (b.hp <= 0) {
     if (G.stats) G.stats.buildingsLost++;   // AFTER-ACTION — every structure that hit 0 HP this campaign (housing/flooded/emplacement/blast paths all funnel through here)
-    if (b.key === 'housing' && !b.captured) { const housingLossHit = 5 * (G.evt && G.evt.reassured ? EVT1.reassureAmplify : 1); G.stab = Math.max(0, G.stab - housingLossHit); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY. EVENT #1: if you reassured people the bunkers were safe, losing a block for real hits MUCH harder (EVT1.reassureAmplify)
+    if (b.key === 'housing' && !b.captured) { const housingLossHit = 5 * (G.evt && G.evt.reassured ? EVT1.reassureAmplify : 1); if (!G.withdraw) G.stab = Math.max(0, G.stab - housingLossHit); floatText(b.x, groundY(b.x) - 20, '🏚 DISTRICT LOST', '#ff8a6a'); }   // losing housing displaces the populace — a real hit to morale/STABILITY. EVENT #1: if you reassured people the bunkers were safe, losing a block for real hits MUCH harder (EVT1.reassureAmplify)
     if (b.flooded) { const gy = groundY(b.x); for (let i = 0; i < 10; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * b.d.w, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 8, vy: -5 - Math.random() * 10, r: 2.5 + Math.random() * 2.5, life: .7 + Math.random() * .6 }); for (let i = 0; i < 8; i++) G.parts.push({ k: 'spark', x: b.x + (Math.random() - .5) * b.d.w, y: gy, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1, life: .3 }); noise(.22, .28); }   // DROWNED building: it floods, shorts out & sinks with a hiss of steam — NOT a bomb blast, and it leaves NO crater, so a coastal sink can never chain-detonate the rest of the base
     else if (b.emplace) { const gy = groundY(b.x); for (let i = 0; i < 7; i++) G.parts.push({ k: 'smoke', x: b.x + (Math.random() - .5) * 14, y: gy - Math.random() * 6, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, r: 2 + Math.random() * 2, life: .5 + Math.random() * .4 }); for (let i = 0; i < 6; i++) G.parts.push({ k: 'clod', x: b.x + (Math.random() - .5) * 14, y: gy - 2, vx: (Math.random() - .5) * 28, vy: -10 - Math.random() * 18, r: 1.4 + Math.random() * 1.6, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 8, grav: 150, gy: gy, dom: 'ground', settled: false, life: .5 + Math.random() * .4 }); noise(.14, .22); }   // DUG-IN EMPLACEMENT crumbles when its owner moves off / dies: a foxhole caving in with a puff of dirt & clods — NOT an ammo cook-off, so it throws NO shrapnel and can never shred the friendly units standing next to it
-    else { boomW(b.x, b.y - 10, 16, 'collapse'); groundBurst(b.x, 16, 'collapse'); shrapnel(b.x, b.y - 10, 8, 4, 'friendly'); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); G.stab = Math.max(0, G.stab - 6); } }
+    else { boomW(b.x, b.y - 10, 16, 'collapse'); groundBurst(b.x, 16, 'collapse'); shrapnel(b.x, b.y - 10, 8, 4, 'friendly'); shake(7); SFX.boom(); if (b.d.fallout) { igniteFirestorm(b.x); toast('☢ FALLOUT — enrichment breach'); if (!G.withdraw) G.stab = Math.max(0, G.stab - 6); } }
     if (!b.flooded) { charAdd(b.x, .4); pushRuin(b); }   // DESTRUCTION LAYER — a flooded building just sinks quietly (no scorch/rubble); every other death leaves a permanent scar + a ruin silhouette (see charAdd/pushRuin, drawn in drawWorld)
     if (G.sel === b) { G.sel = null; refreshSel(); }
   }
   filterInPlace(G.buildings, b => b.hp > 0);   // PERF: in-place compaction, see filterInPlace()
   gridsDirty();   /* v4.5 P — dead entities were just compacted out of the lists */
-  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24, 'collapse'); groundBurst(ct.x, 22, 'collapse'); shake(12); SFX.boom(); G.stab = Math.max(0, G.stab - 12);
+  for (const ct of G.cities) if (ct.hp <= 0 && !ct.dead) { ct.dead = true; if (G.stats) G.stats.citiesLost++; boomW(ct.x, groundY(ct.x) - 10, 24, 'collapse'); groundBurst(ct.x, 22, 'collapse'); shake(12); SFX.boom(); if (!G.withdraw) G.stab = Math.max(0, G.stab - 12);
     const half = ct.w * .5 + 40;   // the fall of a city guts the defenders & infrastructure inside it
     for (const u of G.units) { if (u.d.builder || u.onRail || u.carried) continue; if (Math.abs(u.x - ct.x) < half) { u.killBy = 'bomb'; const cd = u.maxHp * .45; if (u.squad) hitSquadMember(u, cd, ct.x, u.y); else u.hp -= cd; } }   // v3.67: squad-aware — a city falling is a fair "eats through several bodies" blast, but still per-body (not an instant whole-formation wipe)
     for (const b of G.buildings) { if (b.ug) continue; if (Math.abs(b.x - ct.x) < half) b.hp -= b.maxHp * .35; }
@@ -6303,7 +6318,7 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
   // GROUND CAPTURE — enemy ground forces standing in a city take it over; your ground units retake it
   for (const ct of G.cities) { if (ct.hp <= 0) { if (ct.held) setCityCaptured(ct, false); ct.held = false; continue; } const half = ct.w * .5 + 40;
     let eg = 0, fg = 0;
-    for (const e of G.enemies) if (e.ground && !e.reentry && Math.abs(e.x - ct.x) < half) eg++;
+    for (const e of G.enemies) if (e.ground && !e.reentry && !e.withdraw && !e.liftOff && Math.abs(e.x - ct.x) < half) eg++;
     for (const u of G.units) if (u.d.domain === 'ground' && !u.d.builder && !u.onRail && !u.carried && Math.abs(u.x - ct.x) < half) fg++;
     if (eg > 0 && fg === 0) ct.capture = Math.min(100, ct.capture + (8 + eg * 3) * dt);
     else if (fg > 0 && eg === 0) ct.capture = Math.max(0, ct.capture - 16 * dt);
@@ -6311,19 +6326,19 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
     else if (ct.held && ct.capture <= 0) { ct.held = false; if (G.stats) G.stats.citiesRetaken++; setCityCaptured(ct, false); toast('✅ ' + (ct._cityName || 'CITY') + ' RETAKEN — stability penalty lifted, industry back online'); }
   }
   // OCCUPIED cities get FORTIFIED — once they hold a city the autodrones stop shelling it and instead emplace massive immobile SIEGE GUNS inside it that hammer you (retaking means clearing them out)
-  for (const ct of G.cities) { if (!ct.held || ct.hp <= 0) continue; ct.holdGunT = (ct.holdGunT == null ? 4 : ct.holdGunT) - dt;
+  for (const ct of G.cities) { if (!ct.held || ct.hp <= 0 || G.withdraw) continue; ct.holdGunT = (ct.holdGunT == null ? 4 : ct.holdGunT) - dt;
     if (ct.holdGunT <= 0) { ct.holdGunT = 9 + Math.random() * 5; const cap = 2 + Math.round((ct.w || 150) / 130); let guns = 0; for (const e of G.enemies) if (e.cityGun && Math.abs(e.x - ct.x) < ct.w * .5 + 60) guns++;
       if (guns < cap && G.enemies.length < 270) { const gx = ct.x + (Math.random() - .5) * (ct.w || 120); spawnEnemy(Math.random() < .35 ? 'earthbreaker' : 'pelter', gx); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; ne.cityGun = true; ne.spd = 0; } floatText(gx, groundY(gx) - 30, '⚙ SIEGE GUN EMPLACED', '#ff8a6a'); } } }
   // a captured city's factories/industry crank out enemy ground forces — the autodrones turn your own war economy against you
-  for (const b of G.buildings) { if (!b.captured || b.done === false || b.hp <= 0) continue; b.capT = (b.capT || 0) - dt;
+  for (const b of G.buildings) { if (!b.captured || b.done === false || b.hp <= 0 || G.withdraw) continue; b.capT = (b.capT || 0) - dt;
     if (b.capT <= 0) { b.capT = 8 + Math.random() * 4; if (G.enemies.length < 255) { const k = b.d.prod === 'air' ? 'gunship' : b.d.prod === 'naval' ? 'gtank' : (Math.random() < .5 ? 'gtank' : 'gmech'); spawnEnemy(k, b.x); const ne = G.enemies[G.enemies.length - 1]; if (ne) { ne.reentry = false; ne.y = ne.hold; } floatText(b.x, groundY(b.x) - 34, '⚙ ENEMY PRODUCTION', '#ff8a6a'); spark(b.x, groundY(b.x) - 8, 3); } } }
   // TUNNEL ASSAULT — once enemy ground forces reach a buried structure's surface position they breach the tunnels (shallow caves in fast; deep resists). Underground is safer, not invincible.
-  for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
-  if (G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
+  for (const b of G.buildings) { if (!b.ug || b.hp <= 0) continue; let atk = 0; for (const e of G.enemies) { if (!e.ground || e.reentry || e.withdraw || e.liftOff) continue; if (Math.abs(e.x - b.x) < 48) atk++; } if (atk) { const lvl = b.ugLvl || 1; b.hp -= atk * (lvl === 1 ? 9 : 4) * dt; if (Math.random() < .25) spark(b.x, groundY(b.x) + UG_DEPTH * lvl, 2); } }
+  if (!G.withdraw && G.cities.every(ct => ct.hp <= 0 || ct.held)) return end(false, 'ALL CITIES LOST OR OCCUPIED');
   // ── STALEMATE WATCHDOG — see STALEMATE_WINDOW/STALEMATE_ABS_CAP above. Runs AFTER the city-loss/capture sweep so
   // citiesBad reflects this tick's outcome. Tracked lazily on G (no newGame/phase-transition edit needed): first
   // tick of the invasion seeds the baseline, every later tick compares against it.
-  if (G.phase === 'invasion' && !G.over) {
+  if (G.phase === 'invasion' && !G.over && !G.withdraw) {
     const citiesBad = G.cities.filter(ct => ct.hp <= 0 || ct.held).length, fleetNow = G.fleet || 0;
     if (G._smBaseline == null) { G._smBaseline = true; G._smFleet = fleetNow; G._smCitiesBad = citiesBad; G.lastProgress = G.invTime || 0; }
     if (citiesBad > G._smCitiesBad || fleetNow < G._smFleet) G.lastProgress = G.invTime || 0;   // either side made headway — reset the drought timer
@@ -6357,7 +6372,7 @@ G.spawnT = 1; G.waveT = 9999; G.waveN = 0; G.bombard = it.bombard; G.orbital = i
       for (const u of G.units) u.mutiny = false;
       toast('✅ CRISIS RESOLVED — mutineers stand down, production resumes · ' + Math.round(CRISIS_GRACE_T[(G.crisisK || 1) - 1]) + 's emergency grace before another collapse can hit');
     }
-  } else if (effStab() <= CRISIS_TRIGGER && G.crisisGrace <= 0) {
+  } else if (!G.withdraw && effStab() <= CRISIS_TRIGGER && G.crisisGrace <= 0) {
     G.crisis = true; G.crisisT = 0; G.crisisCount += 1;
     if (G.phase === 'prep' && G.crisisCount >= CRISIS_LOSS_COUNT) {
       return end(false, 'COUP — THE GOVERNMENT FELL BEFORE THE FLEET EVEN ARRIVED');
@@ -7121,7 +7136,7 @@ function orbitalBarrage(x) { G.proj.push({ k: 'krod', orb: true, interceptable: 
 // the same way krod/buster are, so the general PD net (acquireIncoming) and the dedicated AMI (acquireAmiTarget) can both
 // engage it in flight. Damage, cadence and target selection are unchanged — only "can the player shoot it down" changed.
 function bombarderGroundSnipe(e) {
-  const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; grd.push(u); }
+  const grd = []; for (const u of G.units) { if (u.d.builder || u.onRail || u.carried || u.d.domain !== 'ground') continue; if (Math.abs(u.x - e.x) > 1400) continue; grd.push(u); }   /* the lance only reaches 1400 px either side */
   if (!grd.length) return;
   const t = grd[Math.floor(Math.random() * grd.length)];
   const dmg = Math.round((55 + (G.invTime || 0) * .35) * G.diff);
@@ -8341,6 +8356,12 @@ function updEnemies(dt) {
   for (const e of G.enemies) {
     if (PD_SAT[e.kind]) { const cfg = PD_SAT[e.kind]; if (e.pdBudget == null) { e.pdRate = cfg.rate; e.pdMax = cfg.max; e.pdBudget = cfg.max; } e.pdBudget = Math.min(e.pdMax, e.pdBudget + e.pdRate * dt); }   // v4.4 SATURABLE PD — every PD-capable hull regens its ammo pool every tick, whether or not it actually swept this frame; pdSweep only ever spends from it, never refills it
     if (e.mfSlam) { e.y += 2600 * dt; const gy = groundY(e.x); if (e.y >= gy) { e.y = gy; boomW(e.x, gy, 8); groundBurst(e.x, 10); e.hp = 0; e.killBy = 'beam'; } continue; }   /* MIND-FORGE SLAM — driven here every tick (not only while the beam is still overlapping it) so a yanked target reliably falls to its death even if it drifts out of the column or the 2.5s beam expires first; zeroes/overrides all normal movement while slammed */
+    if (e.withdraw || e.liftOff) {   /* LIFT-OFF — withdrawing or stance-lifting craft climb out under their own engines: no ground snap, no weapons, no producers, no point defence, no capture */
+      const vy = Math.max(160, (e.y + 80) / 12); e.y -= vy * dt; e.vy = -vy; e.x += (e.vx || 0) * dt * .3; e.reentry = false; e.anchored = false; if (e.hp > 0 && e.smartDot) { e.killBy = 'smart'; e.hp -= e.smartDot * dt; }
+      e._glT = (e._glT || 0) - dt; if (e._glT <= 0) { e._glT = .3; G.parts.push({ k: 'fire', x: e.x + (Math.random() - .5) * e.s, y: e.y + e.s, vx: (Math.random() - .5) * 6, vy: 30 + Math.random() * 20, r: 1.4 + Math.random() * 2, life: .25 + Math.random() * .2 }); }
+      if (e.withdraw && e.y < -60) { e._gone = true; if (G.withdraw) G.withdraw.escaped++; if (G.stats) G.stats.escaped = (G.stats.escaped || 0) + 1; }
+      continue;
+    }
     if (e._lockT > 0) e._lockT -= dt;   // fade the "you are being engaged" target reticle
     if (e.evadeT > 0) e.evadeT -= dt;   // EVASION TIMER (v4.0 C) — mirrors the friendly u.evadeT in hurt(): ticks down regardless of state; consumed in the airborne weave branch below
     if (e.smartDot) { e.killBy = 'smart'; e.hp -= e.smartDot * dt; if (Math.random() < .4) spark(e.x + (Math.random() - .5) * e.s, e.y + (Math.random() - .5) * e.s, 1); }   // disassembler nanites eat the hull — FIX: this used to tag the kill 'beam' (laser), so a nanite-disassembled enemy wrongly played the laser-melt wreck FX; the DoT tick is the actual weapon that finishes the target off (the round itself only latches on), so it must set the real killBy for pickStyle()
@@ -10213,7 +10234,7 @@ function renderAARCombat() {
   let html = '';
   const totalKills = st.totalKills || aarSum(st.killsByType) || G.kills || 0;
   const h = G && G.hist, mx = a => a.reduce((m, v) => v > m ? v : m, 0);
-  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Total Kills', totalKills.toLocaleString()) + aarStatRow('Superweapons Destroyed', st.bossKills || 0) + aarStatRow('Peak Simultaneous Hostiles', st.peakEnemies || (h && h.enemies ? mx(h.enemies) : 0)) + aarStatRow('Waves Repelled', G.waveN || 0) + aarStatRow('Strikes Launched', aarSum(st.strikes)) + '</div>';
+  html += '<div class="aar-stats aar-panel-wide">' + aarStatRow('Total Kills', totalKills.toLocaleString()) + aarStatRow('Superweapons Destroyed', st.bossKills || 0) + aarStatRow('Escaped', st.escaped || 0) + aarStatRow('Peak Simultaneous Hostiles', st.peakEnemies || (h && h.enemies ? mx(h.enemies) : 0)) + aarStatRow('Waves Repelled', G.waveN || 0) + aarStatRow('Strikes Launched', aarSum(st.strikes)) + '</div>';
   html += '<div class="aar-group aar-panel-wide"><h3>FIREPOWER</h3><div class="aar-stats">' + aarStatRow('Damage Dealt', Math.round(st.damageDealt || 0).toLocaleString()) + aarStatRow('Damage Taken', Math.round(st.damageTaken || 0).toLocaleString()) + aarStatRow('Ordnance Intercepted', st.ordnanceIntercepted || 0) + aarStatRow('Biggest Kill Burst', (st.biggestKillBurst || 0) + ' in one instant') + '</div></div>';
   const kbt = Object.entries(st.killsByType).sort((a, b) => b[1] - a[1]);
   html += '<div class="aar-chart aar-panel-wide"><h4>KILLS BY ENEMY TYPE</h4><div class="aar-list">';
@@ -10298,7 +10319,7 @@ function aarReportHTML() {
     '<h2>ECONOMY</h2><table>' + rows([['Earned IC', n(st.earnedIC)], ['Earned MP', n(st.earnedMP)], ['Earned Influence', n(st.earnedInf)], ['Spent IC', n(st.spentIC)], ['Spent MP', n(st.spentMP)], ['Spent Influence', n(st.spentInf)], ['Peak IC Banked', n(st.peakIC)], ['Peak MP Banked', n(st.peakMP)], ['Peak Influence Banked', n(st.peakInf)], ['Peak IC Income', (st.peakIncomeIC || 0).toFixed(1) + ' IC/s'], ['Antimatter Refined', n(st.antimatterMade)], ['Heavy Alloy Forged', n(st.componentsMade.alloy)], ['Rocket Parts Built', n(st.componentsMade.rocketpart)], ['Total Upkeep Paid', n(st.upkeepPaid) + ' IC'], ['Peak Standing Upkeep', (st.peakUpkeep || 0).toFixed(1) + ' IC/s']].concat(resRows)) + '</table>' +
     '<h2>MILITARY</h2><table>' + rows([['Total Recruited', st.totalRecruited || aarSum(st.recruited)], ['Total Lost', st.totalLost || G.unitsLost || 0], ['Ground Forces Fielded', (st.byDomain && st.byDomain.ground) || 0], ['Air Forces Fielded', (st.byDomain && st.byDomain.air) || 0], ['Naval Forces Fielded', (st.byDomain && st.byDomain.naval) || 0], ['Space Forces Fielded', (st.byDomain && st.byDomain.space) || 0], ['Capital-Class Units Built', st.capitalsBuilt || 0], ['Peak Army Size', st.peakArmy], ['Peak Army Cap', st.peakArmyCap || 0], ['Final Army Cap', typeof armyCap === 'function' ? armyCap() : '—']]) + '</table>' +
     '<div class="grid2"><div><h3>Forces Fielded</h3><table>' + rows(rec.map(([k, c]) => [UNIT_DEFS[k] ? effDef(k).name : k, '×' + c])) + '</table></div><div><h3>Losses</h3><table>' + rows(lost.map(([k, c]) => [UNIT_DEFS[k] ? effDef(k).name : k, '×' + c])) + '</table></div></div>' +
-    '<h2>COMBAT</h2><table>' + rows([['Total Kills', st.totalKills || aarSum(st.killsByType) || G.kills || 0], ['Superweapons Destroyed', st.bossKills || 0], ['Peak Simultaneous Hostiles', st.peakEnemies || 0], ['Damage Dealt', n(st.damageDealt)], ['Damage Taken', n(st.damageTaken)], ['Ordnance Intercepted', st.ordnanceIntercepted || 0], ['Biggest Kill Burst', st.biggestKillBurst || 0], ['Strikes Launched', aarSum(st.strikes)]]) + '</table>' +
+    '<h2>COMBAT</h2><table>' + rows([['Total Kills', st.totalKills || aarSum(st.killsByType) || G.kills || 0], ['Superweapons Destroyed', st.bossKills || 0], ['Escaped', st.escaped || 0], ['Peak Simultaneous Hostiles', st.peakEnemies || 0], ['Damage Dealt', n(st.damageDealt)], ['Damage Taken', n(st.damageTaken)], ['Ordnance Intercepted', st.ordnanceIntercepted || 0], ['Biggest Kill Burst', st.biggestKillBurst || 0], ['Strikes Launched', aarSum(st.strikes)]]) + '</table>' +
     '<div><h3>Kills by Enemy Type</h3><table>' + rows(kbt.map(([k, c]) => [EKIND_LABEL[k] || k, '×' + c])) + '</table></div>' +
     '<h2>RESEARCH &amp; CONSTRUCTION</h2><table>' + rows([['Doctrines Researched', st.researched.length], ['Dangerous Doctrines', st.dangerousResearched || st.researched.filter(r => RESEARCH[r.key] && RESEARCH[r.key].dang).length], ['Era Reached', ['Information', 'Fusion', 'Space'][st.eraReached != null ? st.eraReached : curEra()]], ['Society', st.society || G.society || 'Baseline'], ['Buildings Lost', st.buildingsLost || 0]]) + '</table>' +
     '<div class="grid2"><div><h3>Research Timeline</h3><table>' + rows(st.researched.map(rr => [RESEARCH[rr.key] ? RESEARCH[rr.key].name : rr.key, mmss(rr.t / (0.45 * (G.speed || 1)))])) + '</table></div><div><h3>Construction</h3><table>' + rows(blt.map(([k, c]) => [BUILD_DEFS[k] ? BUILD_DEFS[k].name : k, '×' + c])) + '</table></div></div>' +

@@ -414,12 +414,32 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- chat ----
-		public override bool CanChat() => Record != null && IsRegular && State != SoldierState.Engage && State != SoldierState.Routed;
-		public override string GetChat() => DialogueSystem.ChatLine(this);
+		// Officer avatars are chattable so the player's cursor catches them (they, not the hidden town NPC, are what is clicked); the actual
+		// talk is immediately re-pointed at the parked town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
+		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Engage && State != SoldierState.Routed));
+		public override string GetChat() => OfficerMode ? "" : DialogueSystem.ChatLine(this);
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
+			if (OfficerMode) return; // the town NPC the talk is redirected to supplies its own buttons
 			button = LevyUtil.T("UI.ChatOrders");
 			if (AcceptsAmmo(Main.LocalPlayer.HeldItem)) button2 = LevyUtil.T("UI.ChatHandAmmo");
+		}
+
+		/// <summary>
+		/// Client: when the local player talks to an officer avatar, re-point talkNPC at the parked (co-located) town NPC so vanilla opens THAT NPC's shop/chat.
+		/// Run after input each frame (LevyPlayer.PostUpdate), before the chat UI draws, so the avatar's own chat window is never shown.
+		/// </summary>
+		public static void RedirectOfficerShopTalk(Player player)
+		{
+			if (player == null || !player.active) return;
+			int t = player.talkNPC;
+			if (t < 0 || t >= Main.maxNPCs) return;
+			NPC n = Main.npc[t];
+			if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode)
+			{
+				NPC town = s.OfficerTownNpc;
+				if (town != null && town.active) player.SetTalkNPC(town.whoAmI); // once: next frame talkNPC is the town NPC, not an avatar
+			}
 		}
 
 		/// <summary>True when this soldier's ranged weapon can actually use the held ammo (not gel, coins, or the wrong ammo id).</summary>
@@ -433,6 +453,7 @@ namespace Levy.Content.NPCs
 
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
 		{
+			if (OfficerMode) return; // never the soldier radial for an officer; the redirect hands talk to the town NPC instead
 			if (firstButton) { Common.UI.UISystem.Instance.ToggleRadial(); return; }
 			var held = Main.LocalPlayer.HeldItem;
 			if (!AcceptsAmmo(held)) return;

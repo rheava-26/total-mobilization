@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 using Levy.Common.Fear;
 using Levy.Common.Systems;
 using Levy.Common.Util;
+using Levy.Content.NPCs;
 
 namespace Levy.Common.Globals
 {
@@ -19,7 +20,11 @@ namespace Levy.Common.Globals
 
 		public override void PostUpdate()
 		{
-			if (Player.whoAmI == Main.myPlayer) SoldierProjectileTag.RestoreSoldierSentries();
+			if (Player.whoAmI == Main.myPlayer)
+			{
+				SoldierProjectileTag.RestoreSoldierSentries();
+				SoldierNPC.RedirectOfficerShopTalk(Player); // talk to a deployed officer -> its parked town NPC's shop/chat
+			}
 		}
 
 		/// <summary>Runs on the server (remote deaths arrive through KillMe) and in single player; clients only report.</summary>

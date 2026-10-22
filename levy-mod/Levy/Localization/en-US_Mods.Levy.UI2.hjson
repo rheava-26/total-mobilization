@@ -64,6 +64,8 @@ Off: Off
 TaxShort: Tax to treasury
 Toggle: "{0}: {1}"
 UsedToday: used today
+RecruitingDriveUsed: A recruiting drive was already run here today. Try again tomorrow.
+HazardPayUsed: Hazard pay was already issued here today. Try again tomorrow.
 AllOrders: All Regulars
 FollowAll: Follow
 HoldAll: Hold

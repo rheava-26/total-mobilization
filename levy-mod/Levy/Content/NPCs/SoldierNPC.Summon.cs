@@ -69,16 +69,16 @@ namespace Levy.Content.NPCs
 			return n;
 		}
 
-		/// <summary>Kills every minion (real and stand-in), lash, boomerang, yoyo and flail anchored to this body.</summary>
+		/// <summary>Kills every minion (real and stand-in), lash, boomerang, yoyo, flail and Crystal Leaf anchored to this body.</summary>
 		public void KillAnchoredProjectiles()
 		{
 			if (LevyUtil.IsClient) return;
-			int minion = ModContent.ProjectileType<SoldierMinion>(), whip = ModContent.ProjectileType<SoldierWhip>(), boom = ModContent.ProjectileType<SoldierBoomerang>(), yoyo = ModContent.ProjectileType<SoldierYoyo>(), flail = ModContent.ProjectileType<SoldierFlail>();
+			int minion = ModContent.ProjectileType<SoldierMinion>(), whip = ModContent.ProjectileType<SoldierWhip>(), boom = ModContent.ProjectileType<SoldierBoomerang>(), yoyo = ModContent.ProjectileType<SoldierYoyo>(), flail = ModContent.ProjectileType<SoldierFlail>(), leaf = ModContent.ProjectileType<SoldierCrystalLeaf>();
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active || (int)p.ai[0] != NPC.whoAmI) continue;
-				if (p.type == minion || p.type == whip || p.type == boom || p.type == yoyo || p.type == flail) p.Kill();
+				if (p.type == minion || p.type == whip || p.type == boom || p.type == yoyo || p.type == flail || p.type == leaf) p.Kill();
 			}
 			SoldierMinions.KillAll(this);
 			KillSentries();

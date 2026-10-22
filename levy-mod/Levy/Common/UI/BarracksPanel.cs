@@ -35,6 +35,8 @@ namespace Levy.Common.UI
 		private DraggablePanel _panel;
 		private Label _title, _treasury, _rosterTitle, _allLabel, _empty;
 		private string _titleRaw = "", _treasuryRaw = "";
+		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
+		private string _recruitRaw = "", _hazardRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
@@ -178,8 +180,7 @@ namespace Levy.Common.UI
 			_panel.Width.Set(_w, 0f); _panel.Height.Set(_h, 0f);
 			_close.Left.Set(_w - 36, 0f);
 			_mobilize.Left.Set(_w - 12 - 118, 0f);
-			_hazard.Left.Set(_w - 12 - 204, 0f);
-			_resetLoadouts.Left.Set(_w - 12 - LevyConstants.UI.ResetLoadoutsButtonW, 0f);
+			LayoutControlRows(); // the toggle / hazard and recruit / officers / reset rows, sized from their real text so nothing overlaps
 			float barW = (_w - 24f - LevyConstants.UI.BarracksBarGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);
 			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksBarGap, 0f); _cp.Width.Set(barW, 0f);
@@ -194,6 +195,53 @@ namespace Levy.Common.UI
 			_scroll.Height.Set(_h - LevyConstants.UI.ResizeGripSize - 4f - (ListTop + 4f), 0f);
 			_grip.Left.Set(_w - LevyConstants.UI.ResizeGripSize - 2f, 0f); _grip.Top.Set(_h - LevyConstants.UI.ResizeGripSize - 2f, 0f);
 			DockRight = _panel.Left.Pixels + _w;
+		}
+
+		/// <summary>
+		/// Lays the two control-button rows out from the buttons' real rendered widths, so a long coin amount (which <see cref="UITextPanel{T}"/>
+		/// lets grow a button past its set width) can never make two buttons overlap at any panel size, down to the minimum width. Row 2 packs
+		/// Auto-muster, Tax and Hazard pay left to right; row 3 keeps Officers and Reset loadouts snug against the right edge and lets Recruiting
+		/// drive fill the room to their left (its caption is ellipsised only if the panel is too narrow to show it in full).
+		/// </summary>
+		private void LayoutControlRows()
+		{
+			if (_recruit == null) return;
+			const float pad = 12f, gap = 8f, s = 0.7f;
+
+			// row 2: toggles then hazard pay, each snug to its text; hazard is clamped so it never spills past the right edge
+			float y2 = RowY(2);
+			float x = PlaceSnug(_autoMuster, pad, y2, s) + gap;
+			x = PlaceSnug(_tax, x, y2, s) + gap;
+			PlaceFlex(_hazard, _hazardRaw, x, y2, _w - pad - x, s);
+
+			// row 3: Reset loadouts and Officers right-aligned (always full), Recruiting drive fills the rest of the row on the left
+			float y3 = RowY(3);
+			float resetW = Math.Min(Measure(_resetLoadouts.Text, s) + 16f, _w - 2f * pad);
+			float resetX = _w - pad - resetW;
+			_resetLoadouts.Left.Set(resetX, 0f); _resetLoadouts.Top.Set(y3, 0f); _resetLoadouts.Width.Set(resetW, 0f);
+			float officersW = Measure(_officers.Text, s) + 16f;
+			float officersX = resetX - gap - officersW;
+			_officers.Left.Set(officersX, 0f); _officers.Top.Set(y3, 0f); _officers.Width.Set(officersW, 0f);
+			PlaceFlex(_recruit, _recruitRaw, pad, y3, officersX - gap - pad, s);
+		}
+
+		/// <summary>Sizes a button to its own text and places it at (<paramref name="x"/>, <paramref name="y"/>); returns its right edge.</summary>
+		private static float PlaceSnug(LevyButton b, float x, float y, float scale)
+		{
+			float w = Measure(b.Text, scale) + 16f;
+			b.Left.Set(x, 0f); b.Top.Set(y, 0f); b.Width.Set(w, 0f);
+			return x + w;
+		}
+
+		/// <summary>Places <paramref name="b"/> sized to <paramref name="rawText"/> but never wider than <paramref name="room"/>, ellipsising the caption to fit — so the button can never overrun its neighbour or the panel edge.</summary>
+		private static void PlaceFlex(LevyButton b, string rawText, float x, float y, float room, float scale)
+		{
+			room = Math.Max(24f, room);
+			float want = Measure(rawText, scale) + 16f;
+			float w = Math.Min(want, room);
+			string cap = want <= room ? rawText : Fit(rawText, scale, w - 14f);
+			if (b.Text != cap) b.SetText(cap);
+			b.Left.Set(x, 0f); b.Top.Set(y, 0f); b.Width.Set(w, 0f);
 		}
 
 		/// <summary>Sets the panel size, clamped to [min, screen]; the cards reflow on the recalculate. <paramref name="persist"/> also saves it on the character.</summary>
@@ -276,11 +324,15 @@ namespace Levy.Common.UI
 			_mobilize.Set(LevyUtil.T(te.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(te.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint"));
 			_autoMuster.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI.AutoMuster"), LevyUtil.T(te.AutoMuster ? "UI2.On" : "UI2.Off")), true);
 			_tax.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI2.TaxShort"), LevyUtil.T(te.TaxToTreasury ? "UI2.On" : "UI2.Off")), true);
+			// "used today" is shown by greying the button (with a hint) instead of a text suffix, so a long coin amount cannot widen the row
 			int day = roster.DayNumber;
-			string usedToday = " (" + LevyUtil.T("UI2.UsedToday") + ")";
-			_hazard.Set(LevyUtil.T("UI.HazardPay", LevyUtil.Coins(HazardPayCost())) + (day > 0 && te.HazardPayDay == day ? usedToday : ""), true);
+			bool hazardUsed = day > 0 && te.HazardPayDay == day, recruitUsed = day > 0 && te.RecruitingDriveDay == day;
+			_hazardRaw = LevyUtil.T("UI.HazardPay", LevyUtil.Coins(HazardPayCost()));
+			_hazard.Set(_hazardRaw, !hazardUsed, hazardUsed ? LevyUtil.T("UI2.HazardPayUsed") : "");
 			_officers.Set(LevyUtil.T("Officers.UI.Open", OfficerSystem.Instance.UsedSlots(Main.LocalPlayer.name), LevyConstants.Officer.MaxSlots), true);
-			_recruit.Set(LevyUtil.T("UI.RecruitingDrive", LevyUtil.Coins(EconomySystem.RecruitingDrivePerPoint)) + (day > 0 && te.RecruitingDriveDay == day ? usedToday : ""), true);
+			_recruitRaw = LevyUtil.T("UI.RecruitingDrive", LevyUtil.Coins(EconomySystem.RecruitingDrivePerPoint));
+			_recruit.Set(_recruitRaw, !recruitUsed, recruitUsed ? LevyUtil.T("UI2.RecruitingDriveUsed") : "");
+			LayoutControlRows(); // re-flow now that the captions (and so their widths) are current
 
 			RefreshEnlist(_enlistLevy, Grade.Levy, "UI.EnlistLevy");
 			RefreshEnlist(_enlistMaa, Grade.ManAtArms, "UI.EnlistManAtArms");

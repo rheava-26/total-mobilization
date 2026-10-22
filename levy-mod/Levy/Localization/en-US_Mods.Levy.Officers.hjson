@@ -36,6 +36,12 @@ UI: {
 	Available: Townsfolk who can serve
 	NoneAvailable: No one housed in this settlement can serve as an officer yet.
 	Hint: Officers fight beside the army. If one falls he is gone until he is rehoused.
+	SlotsHeader: Command slots
+	SlotRole: Slot {0}: {1}
+	SlotWage: Wage {0} a day
+	SlotEmptyHint: No officer assigned. Commission a townsperson below.
+	UnpaidWarn: Unpaid for {0} day - pay the treasury or he leaves.
+	CandidateHead: "{0} - {1}"
 }
 
 Kit: {

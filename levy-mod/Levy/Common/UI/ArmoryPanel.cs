@@ -33,13 +33,14 @@ namespace Levy.Common.UI
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
 		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge, _catBtn, _clearBtn;
-		private Label _title, _treasury, _count, _noMatch, _capacity;
+		private Label _title, _treasury, _count, _noMatch, _capacity, _value;
 		/// <summary>The storage array the grid cells are bound to. The array is replaced when Logistical Centers change its size (or a client receives a new length), and the cells must follow.</summary>
 		private Item[] _builtStorage, _builtPotions;
 		/// <summary>The potion row's elements and top (issue-area coordinates), so the row can be rebuilt alone when its array is replaced.</summary>
 		private readonly List<UIElement> _potionEls = new();
 		private float _potionTop;
 		private int _shownCapacity = -1, _shownCenters = -1;
+		private long _shownValue = -1;
 		private UIPanel _searchBox;
 		private UISearchBar _search;
 		private RaritySwatch[] _swatches;
@@ -80,10 +81,13 @@ namespace Levy.Common.UI
 			_title.Left.Set(12f, 0f); _title.Top.Set(10f, 0f);
 			_panel.Append(_title);
 
-			// Right side of the filter row (clear of the search box above and the shown-count on the left): the storage capacity + how much comes from Logistical Centers.
-			_capacity = new Label("", 0.7f);
-			_capacity.Left.Set(460f, 0f); _capacity.Top.Set(LevyConstants.UI.ArmoryFilterTop + 6f, 0f);
+			// Dedicated status line between the filter row and the grid, where no other widget is drawn: storage capacity (and how much comes from Logistical Centers) stacked above the hoard's total worth.
+			_capacity = new Label("", 0.72f);
+			_capacity.Left.Set(GridLeft, 0f); _capacity.Top.Set(LevyConstants.UI.ArmoryStatusTop, 0f);
 			_panel.Append(_capacity);
+			_value = new Label("", 0.72f);
+			_value.Left.Set(GridLeft, 0f); _value.Top.Set(LevyConstants.UI.ArmoryStatusTop + LevyConstants.UI.ArmoryStatusLinePitch, 0f);
+			_panel.Append(_value);
 
 			int w = LevyConstants.UI.ArmoryPanelWidth;
 			_close = new LevyButton("X", LevyConstants.UI.ButtonTextScale, 26, 26, () => UISystem.Instance.CloseArmory(), LevyUtil.T("UI2.Close"));
@@ -146,7 +150,7 @@ namespace Levy.Common.UI
 			_potionEls.Clear();
 			_shown = null;
 			ResetFilters();
-			_shownCapacity = _shownCenters = -1;
+			_shownCapacity = _shownCenters = -1; _shownValue = -1;
 			if (te == null) return;
 
 			// A fresh open shows every storage slot (no search, no filters).
@@ -637,17 +641,25 @@ namespace Levy.Common.UI
 		/// Runs before the panel's cells are drawn. The vanilla inventory and crafting list sit under this panel and have already put whatever they were hovering into the shared tooltip slot;
 		/// with the pointer on the panel only the panel's own cells may set it.
 		/// </summary>
-		/// <summary>Shows the storage size and how much of it the linked Logistical Centers provide. Rebuilds the text only when a number changes.</summary>
-		private void UpdateCapacityLabel()
+		/// <summary>The status line: storage size (and how much the linked Logistical Centers provide) above the total worth of everything held. Rebuilds either row only when its number changes.</summary>
+		private void UpdateStatusLine()
 		{
 			if (Te == null || _capacity == null) return;
 			int slots = Te.Storage.Length, centers = Te.LinkedCenters;
-			if (slots == _shownCapacity && centers == _shownCenters) return;
-			_shownCapacity = slots; _shownCenters = centers;
-			int extra = Math.Max(0, slots - ArmoryTE.StorageSize);
-			_capacity.SetText(centers <= 0 ? LevyUtil.T("UI2.ArmoryCapacity", slots)
-				: centers == 1 ? LevyUtil.T("UI2.ArmoryCapacityCenter", slots, extra)
-				: LevyUtil.T("UI2.ArmoryCapacityCenters", slots, extra, centers));
+			if (slots != _shownCapacity || centers != _shownCenters)
+			{
+				_shownCapacity = slots; _shownCenters = centers;
+				int extra = Math.Max(0, slots - ArmoryTE.StorageSize);
+				_capacity.SetText(centers <= 0 ? LevyUtil.T("UI2.ArmoryCapacity", slots)
+					: centers == 1 ? LevyUtil.T("UI2.ArmoryCapacityCenter", slots, extra)
+					: LevyUtil.T("UI2.ArmoryCapacityCenters", slots, extra, centers));
+			}
+			long worth = Te.TotalSellValue();
+			if (worth != _shownValue)
+			{
+				_shownValue = worth;
+				_value.SetText(LevyUtil.T("UI2.ArmoryValue", LevyUtil.Coins(worth)));
+			}
 		}
 
 		protected override void DrawSelf(SpriteBatch spriteBatch)
@@ -665,7 +677,7 @@ namespace Levy.Common.UI
 			_lootAll.Enabled = anyStorage;
 			_sort.Enabled = anyStorage;
 			UpdateFilterView();
-			UpdateCapacityLabel();
+			UpdateStatusLine();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }
 			else if (Te == null) _payer = null;
 			RefreshReforgeBar();

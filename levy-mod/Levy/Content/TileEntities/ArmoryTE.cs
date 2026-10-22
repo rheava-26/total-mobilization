@@ -106,6 +106,15 @@ namespace Levy.Content.TileEntities
 			MarkDirty();
 			return true;
 		}
+		/// <summary>Total worth (copper) of everything held — bulk storage and every issue slot — at vanilla's sell price (value / 5). What the hoard is worth to the player.</summary>
+		public long TotalSellValue()
+		{
+			long gross = 0;
+			void Add(Item[] arr) { if (arr == null) return; foreach (var it in arr) if (!IsAir(it)) gross += (long)it.value * it.stack; }
+			Add(Storage); Add(IssueWeapons); Add(IssueArmor); Add(IssueAmmo); Add(IssuePotions);
+			return gross / 5;
+		}
+
 		public Vector2 Center => new Vector2((Position.X + 1f) * 16f, (Position.Y + 1.5f) * 16f);
 
 		// ------------------------------------------------------------------ placement / validity / net

@@ -17,6 +17,7 @@ ArmoryNoMatch: No stored items match.
 ArmoryCapacity: "{0} slots"
 ArmoryCapacityCenters: "{0} slots (+{1} from {2} Logistical Centers)"
 ArmoryCapacityCenter: "{0} slots (+{1} from 1 Logistical Center)"
+ArmoryValue: Value: {0}
 RarityHint: Shows {0} items. Click to toggle; select several to combine.
 RarityGray: Gray
 RarityWhite: White

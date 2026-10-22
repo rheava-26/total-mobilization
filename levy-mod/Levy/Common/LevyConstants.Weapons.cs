@@ -115,6 +115,8 @@ namespace Levy.Common
 		/// <summary>When issuing a primary weapon a soldier draws from the weapon types scoring within this fraction of the best viable score (at most WeaponVarietyMaxTypes types).</summary>
 		public const float WeaponVarietyTopFraction = 0.75f;
 		public const int WeaponVarietyMaxTypes = 6;
+		/// <summary>A ranged soldier whose helmet boosts one ammo subtype (Shroomite: arrows, bullets, specialist ammo) draws only that subtype while its best weapon in stock scores at least this fraction of the best ranged weapon of any subtype; a vastly stronger off-subtype weapon still wins. The helmet is worth ~15% damage plus 5 crit, so 0.6 lets a decent weapon of the right subtype beat a top off-subtype one.</summary>
+		public const float SubtypeSteerMinScoreFraction = 0.6f;
 
 		// ---------- Automatic gear upgrade (a soldier re-checks his Armory for a better weapon, armor set or sidearm) ----------
 		/// <summary>How often each soldier re-checks his Armory (ticks). Each soldier's first check is offset by his id, so a muster never checks on one tick.</summary>

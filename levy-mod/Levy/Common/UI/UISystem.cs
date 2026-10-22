@@ -42,10 +42,11 @@ namespace Levy.Common.UI
 		/// <summary>Id of the soldier whose loadout panel is open, or -1.</summary>
 		public static int CurrentLoadoutId { get; private set; } = -1;
 
-		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI, _manualUI, _loadoutUI;
+		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI, _manualUI, _loadoutUI, _officersUI;
 		private BarracksPanel _barracks;
 		private ArmoryPanel _armory;
 		private SoldierLoadoutPanel _loadout;
+		private OfficerPanel _officers;
 		private ManualPanel _manual;
 		private OrdersRadial _radial;
 		private HudStrip _hud;
@@ -70,16 +71,16 @@ namespace Levy.Common.UI
 			// Panels bake their static labels from localization in OnInitialize (via Activate), so build them after localization
 			// is fully loaded; doing this in Load would stamp raw keys like "Mods.Levy.UI2.Roster" into the buttons.
 			if (Main.dedServ) return;
-			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface();
-			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel(); _loadout = new SoldierLoadoutPanel();
-			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate();
+			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface(); _officersUI = new UserInterface();
+			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel();
+			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate(); _officers.Activate();
 		}
 
 		public override void Unload()
 		{
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
-			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = null;
-			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null;
+			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = _officersUI = null;
+			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null; _officers = null;
 			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusActive = false;
 		}
 
@@ -89,7 +90,7 @@ namespace Levy.Common.UI
 		public virtual void OpenBarracks(BarracksTE te)
 		{
 			if (Main.dedServ || te == null || _barracksUI == null) return;
-			CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout();
+			CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout(); CloseOfficers();
 			CurrentBarracks = te;
 			_barracks.Bind(te);
 			_barracksUI.SetState(_barracks);
@@ -102,7 +103,7 @@ namespace Levy.Common.UI
 		public virtual void OpenArmory(ArmoryTE te)
 		{
 			if (Main.dedServ || te == null || _armoryUI == null) return;
-			CloseBarracks(); CloseRadial(); CloseManual(); CloseSoldierLoadout();
+			CloseBarracks(); CloseRadial(); CloseManual(); CloseSoldierLoadout(); CloseOfficers();
 			CurrentArmory = te;
 			_armory.Bind(te);
 			_armoryUI.SetState(_armory);
@@ -125,7 +126,7 @@ namespace Levy.Common.UI
 		public virtual void OpenSoldierLoadout(SoldierRecord rec)
 		{
 			if (Main.dedServ || rec == null || _loadoutUI == null) return;
-			CloseArmory(); CloseRadial(); CloseManual();
+			CloseArmory(); CloseRadial(); CloseManual(); CloseOfficers();
 			CurrentLoadoutId = rec.Id;
 			_loadout.Bind(rec.Id);
 			_loadoutUI.SetState(_loadout);
@@ -133,7 +134,27 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
 
-		public virtual void CloseAll() { CloseBarracks(); CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout(); }
+		/// <summary>Opens the officer menu next to the Barracks panel (which stays open). It shares the dock with the soldier loadout panel, so each closes the other.</summary>
+		public virtual void OpenOfficers(BarracksTE te)
+		{
+			if (Main.dedServ || te == null || _officersUI == null) return;
+			CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout();
+			_officers.Bind(te);
+			_officersUI.SetState(_officers);
+			Main.playerInventory = true; Main.recBigList = false;
+			SoundEngine.PlaySound(SoundID.MenuOpen);
+		}
+
+		public bool OfficersOpen => _officersUI?.CurrentState != null;
+
+		public void CloseOfficers()
+		{
+			if (_officersUI?.CurrentState == null) return;
+			_officersUI.SetState(null);
+			SoundEngine.PlaySound(SoundID.MenuClose);
+		}
+
+		public virtual void CloseAll() { CloseBarracks(); CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout(); CloseOfficers(); }
 
 		public void CloseSoldierLoadout()
 		{
@@ -152,6 +173,7 @@ namespace Levy.Common.UI
 		public void CloseBarracks()
 		{
 			CloseSoldierLoadout(); // the loadout panel hangs off the roster
+			CloseOfficers();       // so does the officer menu
 			if (_barracksUI?.CurrentState == null) { CurrentBarracks = null; return; }
 			_barracksUI.SetState(null); CurrentBarracks = null;
 			SoundEngine.PlaySound(SoundID.MenuClose);
@@ -228,6 +250,11 @@ namespace Levy.Common.UI
 				if (CurrentBarracks == null || !Main.playerInventory || Main.gameMenu || player.dead) CloseSoldierLoadout();
 				else _loadoutUI.Update(gameTime);
 			}
+			if (_officersUI.CurrentState != null)
+			{
+				if (CurrentBarracks == null || !Main.playerInventory || Main.gameMenu || player.dead) CloseOfficers();
+				else _officersUI.Update(gameTime);
+			}
 			if (_armoryUI.CurrentState != null)
 			{
 				if (!PanelStillValid(CurrentArmory, CurrentArmory?.Center ?? Vector2.Zero, player)) CloseArmory();
@@ -267,6 +294,7 @@ namespace Levy.Common.UI
 				{
 					if (_barracksUI?.CurrentState != null) _barracksUI.Draw(Main.spriteBatch, gt);
 					if (_loadoutUI?.CurrentState != null) _loadoutUI.Draw(Main.spriteBatch, gt);
+					if (_officersUI?.CurrentState != null) _officersUI.Draw(Main.spriteBatch, gt);
 					if (_armoryUI?.CurrentState != null) _armoryUI.Draw(Main.spriteBatch, gt);
 					if (_manualUI?.CurrentState != null) _manualUI.Draw(Main.spriteBatch, gt);
 					return true;

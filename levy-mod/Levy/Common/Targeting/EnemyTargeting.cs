@@ -8,6 +8,7 @@ using Terraria.Utilities;
 using Levy.Common.Boss;
 using Levy.Common.Config;
 using Levy.Common.Globals;
+using Levy.Common.Officers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
@@ -40,8 +41,8 @@ namespace Levy.Common.Targeting
 	/// </summary>
 	public static class EnemyTargeting
 	{
-		/// <summary>Live soldier bodies this tick (rebuilt in EnemyTargetingSystem.PreUpdateNPCs on every netmode; NPC AI runs on clients too).</summary>
-		internal static readonly List<SoldierNPC> Bodies = new(64);
+		/// <summary>Live soldier bodies and active officers this tick (rebuilt in EnemyTargetingSystem.PreUpdateNPCs on every netmode; NPC AI runs on clients too).</summary>
+		internal static readonly List<ITargetBody> Bodies = new(64);
 		private static readonly HashSet<int> _swapStyles = new(LevyConstants.Targeting.SwapAiStyles);
 		private static readonly HashSet<int> _nativeStyles = new(LevyConstants.Targeting.NativeAiStyles);
 		private static readonly HashSet<int> _swapIncompatible = new(LevyConstants.Targeting.SwapIncompatibleAiStyles);
@@ -62,6 +63,19 @@ namespace Levy.Common.Targeting
 
 		/// <summary>Soldier body (live) that this enemy is locked on, or null.</summary>
 		public static SoldierNPC SoldierTargetOf(NPC npc) => npc == null || !npc.active ? null : LiveBody(LevyNpcData.Of(npc).SoldierTarget);
+
+		/// <summary>
+		/// Live target body at an NPC index: a soldier, or an active officer (a conscripted town NPC); null when the slot is empty or reused.
+		/// Soldier-only callers (loot credit, minions, projectile tags) keep using <see cref="LiveBody"/>.
+		/// </summary>
+		public static ITargetBody LiveTarget(int npcIndex)
+		{
+			if (npcIndex < 0 || npcIndex >= Main.maxNPCs) return null;
+			NPC npc = Main.npc[npcIndex];
+			if (!npc.active) return null;
+			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
+			return OfficerSystem.Instance.BodyOf(npc);
+		}
 
 		/// <summary>Live soldier body at an NPC index, or null (guards reuse of the slot by another NPC).</summary>
 		public static SoldierNPC LiveBody(int npcIndex)
@@ -208,15 +222,15 @@ namespace Levy.Common.Targeting
 			//  * a fixed per-(enemy, soldier) jitter spreads enemies over the army rather than all onto the single nearest soldier;
 			//  * each soldier near the enemy (ArmyPullRadiusPx) adds ArmyPullPerSoldierPx to the commander's weighted distance, so a cluster outweighs one player.
 			// Soft weighting only: a soldier that is too far away still loses to a close commander, and with no soldier in reach the vanilla pick stands. The range limit uses the real distance.
-			SoldierNPC best = null; float bestDist = float.PositiveInfinity; int nearSoldiers = 0;
+			ITargetBody best = null; float bestDist = float.PositiveInfinity; int nearSoldiers = 0;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
-				SoldierNPC body = Bodies[i];
+				ITargetBody body = Bodies[i];
 				if (!body.IsAlive) continue;
 				float real = Metric(npc, center, body.NPC.Center, manhattan);
 				if (real > maxSoldierDist) continue;
 				if (real <= LevyConstants.Targeting.ArmyPullRadiusPx) nearSoldiers++;
-				float d = real - SoldierPull(body.Aggro) + Spread(npc.whoAmI, body.NPC.whoAmI);
+				float d = real - SoldierPull(body.TargetAggro) + Spread(npc.whoAmI, body.NPC.whoAmI);
 				if (d >= bestDist) continue;
 				bestDist = d; best = body;
 			}
@@ -251,12 +265,12 @@ namespace Levy.Common.Targeting
 		}
 
 		/// <summary>Nearest live soldier body to a point within maxDist (real distance), or null. For event projectiles that choose a target themselves.</summary>
-		internal static SoldierNPC NearestBody(Vector2 from, float maxDist, out float dist)
+		internal static ITargetBody NearestBody(Vector2 from, float maxDist, out float dist)
 		{
-			SoldierNPC best = null; dist = float.PositiveInfinity;
+			ITargetBody best = null; dist = float.PositiveInfinity;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
-				SoldierNPC b = Bodies[i];
+				ITargetBody b = Bodies[i];
 				if (!b.IsAlive) continue;
 				float d = Vector2.Distance(from, b.NPC.Center);
 				if (d > maxDist || d >= dist) continue;
@@ -299,7 +313,7 @@ namespace Levy.Common.Targeting
 		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
 		internal static bool IsSwapped => _swapped;
 
-		internal static void Swap(SoldierNPC body)
+		internal static void Swap(ITargetBody body)
 		{
 			if (_swapped) Unswap();
 			body.SyncDummyTransform(); // active, !dead, !ghost, position/velocity of the body, whoAmI 255
@@ -358,6 +372,9 @@ namespace Levy.Common.Targeting
 			if (!EnemyTargeting.Enabled) return;
 			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
 				if (s != null && s.IsAlive && s.Dummy != null) bodies.Add(s);
+			// Officers (conscripted town NPCs) are targeted like soldiers; the list is the officer module's own per-tick cache.
+			var officers = OfficerSystem.Instance.ActiveBodies;
+			for (int i = 0; i < officers.Count; i++) bodies.Add(officers[i]);
 		}
 
 		public override void PostUpdateNPCs() => EnemyTargeting.EnsureSlotRestored();
@@ -386,7 +403,7 @@ namespace Levy.Common.Targeting
 			}
 
 			bool native = EnemyTargeting.UsesNativeTargeting(npc);
-			SoldierNPC body = EnemyTargeting.LiveBody(data.SoldierTarget);
+			ITargetBody body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 			if (body == null || !EnemyTargeting.IsAllowlisted(npc))
 			{
 				// The soldier died, despawned or the slot now holds another NPC: pick again right now so the enemy never
@@ -394,7 +411,7 @@ namespace Levy.Common.Targeting
 				int staleTarget = native ? data.SoldierTarget + 300 : SoldierNPC.DummySlot;
 				data.SoldierTarget = -1;
 				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
-				body = EnemyTargeting.LiveBody(data.SoldierTarget);
+				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 				if (body == null) return true;
 			}
 			else if (++data.RetargetTimer >= LevyConstants.Targeting.RetargetIntervalTicks)
@@ -402,7 +419,7 @@ namespace Levy.Common.Targeting
 				// Styles that only re-search when their target dies (worms, piranhas, jellyfish) would otherwise follow a soldier forever.
 				data.RetargetTimer = 0;
 				EnemyTargeting.Retarget(npc);
-				body = EnemyTargeting.LiveBody(data.SoldierTarget);
+				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 				if (body == null) return true;
 			}
 

@@ -54,7 +54,7 @@ namespace Levy.Common.Targeting
 						_pickPending = projectile.ai[0] == 0f && projectile.ai[1] == 0f; // the AI picks its player on this tick
 						if (projectile.ai[0] == 1f && (int)projectile.ai[1] == SoldierNPC.DummySlot)
 						{
-							SoldierNPC body = EnemyTargeting.NearestBody(projectile.Center, float.PositiveInfinity, out _);
+							ITargetBody body = EnemyTargeting.NearestBody(projectile.Center, float.PositiveInfinity, out _);
 							if (body != null) { EnemyTargeting.Swap(body); _swappedHere = true; }
 						}
 						break;
@@ -65,7 +65,7 @@ namespace Levy.Common.Targeting
 						if (parentIdx < 0 || parentIdx >= Main.maxNPCs) break;
 						NPC parent = Main.npc[parentIdx];
 						if (!parent.active || parent.target != SoldierNPC.DummySlot) break; // not locked on a soldier: its target is a real player
-						SoldierNPC body = EnemyTargeting.LiveBody(LevyNpcData.Of(parent).SoldierTarget);
+						ITargetBody body = EnemyTargeting.LiveTarget(LevyNpcData.Of(parent).SoldierTarget);
 						if (body != null) { EnemyTargeting.Swap(body); _swappedHere = true; }
 						break;
 					}
@@ -92,7 +92,7 @@ namespace Levy.Common.Targeting
 				if (projectile.type == ProjectileID.VortexVortexLightning)
 				{
 					if (projectile.localAI[0] != 1f) return; // the first-tick aim did not run
-					if (!ChooseSoldier(projectile, out SoldierNPC body)) return;
+					if (!ChooseSoldier(projectile, out ITargetBody body)) return;
 					Vector2 d = body.NPC.Center - projectile.Center;
 					projectile.ai[1] = (d == Vector2.Zero ? Vector2.UnitY : d).ToRotation();
 					projectile.netUpdate = true;
@@ -113,7 +113,7 @@ namespace Levy.Common.Targeting
 		}
 
 		/// <summary>The nearest soldier, when it is closer to the projectile than the nearest player (the pillar's target) or the share roll succeeds.</summary>
-		private static bool ChooseSoldier(Projectile projectile, out SoldierNPC body)
+		private static bool ChooseSoldier(Projectile projectile, out ITargetBody body)
 		{
 			body = EnemyTargeting.NearestBody(projectile.Center, LevyConstants.Targeting.EventProjectileShareRangePx, out float soldierDist);
 			if (body == null) return false;

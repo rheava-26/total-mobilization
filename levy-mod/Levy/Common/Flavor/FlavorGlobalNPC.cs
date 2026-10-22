@@ -5,6 +5,7 @@ using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Config;
+using Levy.Common.Officers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.Items.Books;
@@ -142,6 +143,7 @@ namespace Levy.Common.Flavor
 		public override void PostAI(NPC npc)
 		{
 			if (npc.type != NPCID.Nurse || Main.netMode == NetmodeID.MultiplayerClient) return;
+			if (OfficerSystem.Instance.BodyOf(npc) != null) return; // on duty as an officer: her kit heals (Officers/NurseOfficer.cs), the stand-and-heal below is the civilian Nurse
 			if ((Main.GameUpdateCount + (uint)npc.whoAmI) % LevyConstants.NurseHealIntervalTicks != 0) return;
 			if (!npc.active || npc.life <= 0 || !LevyConfig.Get.NurseHealsSoldiers) return;
 			TreatSoldiers(npc);

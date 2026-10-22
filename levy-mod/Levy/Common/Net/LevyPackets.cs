@@ -36,6 +36,7 @@ namespace Levy.Common.Net
 	///  SetRebase: int soldierId, int barracksId                   (Roster)
 	///  SoldierGearSet: int soldierId, byte slot(SoldierGear.Slot*), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the item out of its own hands (air = took the slot's item out); server validates, applies, locks/unlocks, re-syncs
 	///  BookUsed: string bookKey                                   (Flavor) — client consumed the book; server sets the world flag
+	///  OfficerCommand: byte action(0 commission,1 dismiss), int barracksId (-1 for dismiss), short npcIndex   (Officers) — commander = sender; server re-validates everything and charges the barracks treasury
 	/// Server -> client:
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
 	///  SettlementSnapshot: (unused: tile entities sync themselves via MessageID.TileEntitySharing)
@@ -48,7 +49,7 @@ namespace Levy.Common.Net
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts, OfficerCommand,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 	}
 

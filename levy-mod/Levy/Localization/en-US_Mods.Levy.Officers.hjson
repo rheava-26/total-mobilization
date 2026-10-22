@@ -1,0 +1,51 @@
+# Officer strings (town NPCs conscripted into the army). Keys are relative to Mods.Levy.Officers.
+Tag: Officer {0}
+
+Fail: {
+	Invalid: That cannot be commissioned.
+	NoDef: This townsperson cannot serve as an officer.
+	AlreadyOfficer: Already an officer.
+	NoSlot: Every command slot is filled. Dismiss an officer first.
+	NotHoused: Only townsfolk housed in this settlement can be commissioned from this Barracks.
+	TooFar: Stand closer to the Barracks.
+	NoMoney: The treasury cannot cover the commission fee.
+}
+
+Msg: {
+	Commissioned: "{0}, your {1}, is now an officer. Commission fee: {2}."
+	Dismissed: "{0} is dismissed and returns to town life."
+	Lapsed: "{0} leaves the army. The commission has lapsed."
+	Fallen: "{0} has fallen."
+	Unpaid: "{0} was not paid at dawn. One more missed payday and the commission lapses."
+	Payday: "Officers paid: {0}."
+}
+
+UI: {
+	Open: Officers {0}/{1}
+	OpenHint: Conscript townsfolk as officers. They leave their post, march with the army and bring a special skill.
+	Title: Officers - {0}
+	Sub: Command slots {0}/{1}. The fee is paid once; the wage comes from this treasury at dawn.
+	SlotEmpty: Slot {0}: empty
+	SlotLine: "{0}. {1}, {2}"
+	Unpaid: " (unpaid {0} day)"
+	Dismiss: Dismiss
+	DismissHint: Sends {0} back to town life. The fee is not refunded.
+	Commission: Commission
+	CommissionHint: Costs {0} now and {1} a day.
+	Cost: "Fee {0}. Wage {1} a day."
+	Available: Townsfolk who can serve
+	NoneAvailable: No one housed in this settlement can serve as an officer yet.
+	Hint: Officers fight beside the army. If one falls he is gone until he is rehoused.
+}
+
+Kit: {
+	Nurse: {
+		Name: Nurse
+		Desc:
+			'''
+			Marches with the army and throws syringes at nearby enemies.
+			Heals the nearest wounded soldier within {0} tiles for {1}% of its life, once per soldier every {2} seconds.
+			Each heal is paid from the treasury, up to {3}.
+			'''
+	}
+}

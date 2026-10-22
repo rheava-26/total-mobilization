@@ -9,6 +9,7 @@ using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Levy.Common.Officers;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
@@ -35,7 +36,7 @@ namespace Levy.Common.UI
 		private Label _title, _treasury, _rosterTitle, _allLabel, _empty;
 		private string _titleRaw = "", _treasuryRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
-		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts;
+		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
 		private BarElement _manpower, _cp;
 		private CardGrid _grid;
@@ -102,6 +103,7 @@ namespace Levy.Common.UI
 			_tax = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.BarracksToggle(Te, 1, !Te.TaxToTreasury), LevyUtil.T("UI.TaxToTreasury")), 168, y2);
 			_hazard = Put(new LevyButton("", 0.7f, 204, BH, () => UIActions.HazardPay(Te)), 0, y2);
 			_recruit = Put(new LevyButton("", 0.7f, 250, BH, () => UIActions.RecruitingDrive(Te)), 12, RowY(3));
+			_officers = Put(new LevyButton("", 0.7f, 130, BH, () => { if (UISystem.Instance.OfficersOpen) UISystem.Instance.CloseOfficers(); else UISystem.Instance.OpenOfficers(Te); }, LevyUtil.T("Officers.UI.OpenHint")), 268, RowY(3));
 			_resetLoadouts = Put(new LevyButton(LevyUtil.T("UI2.ResetLoadouts"), 0.7f, LevyConstants.UI.ResetLoadoutsButtonW, BH, UIActions.ResetLoadouts, LevyUtil.T("UI2.ResetLoadoutsHint")), 0, RowY(3));
 
 			// enlist
@@ -277,6 +279,7 @@ namespace Levy.Common.UI
 			int day = roster.DayNumber;
 			string usedToday = " (" + LevyUtil.T("UI2.UsedToday") + ")";
 			_hazard.Set(LevyUtil.T("UI.HazardPay", LevyUtil.Coins(HazardPayCost())) + (day > 0 && te.HazardPayDay == day ? usedToday : ""), true);
+			_officers.Set(LevyUtil.T("Officers.UI.Open", OfficerSystem.Instance.UsedSlots(Main.LocalPlayer.name), LevyConstants.Officer.MaxSlots), true);
 			_recruit.Set(LevyUtil.T("UI.RecruitingDrive", LevyUtil.Coins(EconomySystem.RecruitingDrivePerPoint)) + (day > 0 && te.RecruitingDriveDay == day ? usedToday : ""), true);
 
 			RefreshEnlist(_enlistLevy, Grade.Levy, "UI.EnlistLevy");

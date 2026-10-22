@@ -161,6 +161,22 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
       BossesPunishSoldiers, Nameplates, Tombstones, MilitiaDeathMessages, RegularDeathMessages, NurseHealsSoldiers,
       SoldiersTriggerPressurePlates, RenderCap, and the three multipliers (fear, soldier damage, wage).
 
+## 20. Officers (conscripted town NPCs) — NEW, unplayed
+Needs a Barracks with a housed Nurse and a few gold in the treasury.
+- [ ] Barracks panel (recruit row, middle) has an "Officers 0/3" button; clicking opens a panel docked beside it, closing the loadout panel if open. Closing the Barracks closes it.
+- [ ] The Nurse is listed under "Townsfolk who can serve" with her kit text, fee and wage. Commission is greyed with a reason when the treasury is short or you are far.
+- [ ] Commission: treasury drops by the fee, chat line, slot 1 shows her, a small "Officer 1" tag floats over her head, and she leaves her house and trails you 5 tiles behind (walks, runs when far, jumps 2-4 tile walls, steps ledges, opens doors).
+- [ ] Walk far / recall / use a pylon: within ~3 s of being left 70+ tiles behind (or stuck for ~6 s) she appears next to you.
+- [ ] Wound a soldier below ~85%: within a second she heals the nearest one (green number + heal sound), treasury drops by a few silver to a few gold (never above 3 gold), and the same soldier is not healed again for 5 s.
+- [ ] A hostile that comes within ~18 tiles with a clear line gets syringes (weak); she stops to throw (attack frames play), then follows again.
+- [ ] Enemies pursue her like a soldier (not first choice: Nurse taunt -250). Below 40% life she runs to you and stops starting fights until 60%.
+- [ ] Next dawn: payroll chat "Officers paid", treasury drops by the wage. Empty the treasury: warning the first dawn, "leaves the army" the second, and she goes home to normal town life.
+- [ ] Dismiss: she returns to her house (snaps home if 40+ tiles away) and wanders/sleeps normally again, no refund; the slot frees.
+- [ ] Let her die: "has fallen" chat; slot is free; when she respawns she is a plain civilian (not an officer).
+- [ ] Save and reload mid-commission: still an officer, same slot, still paid. Log out as commander (MP): she goes back to town AI; log in: she rejoins.
+- [ ] Multiplayer: second client sees her tag, walking, healing numbers; commissioning from a client takes the fee on the server; a client cannot commission the same NPC twice or fill a 4th slot.
+- [ ] The passive stand-and-heal of an on-duty Nurse does not double up with her kit heals.
+
 ## Known gaps (don't report these as bugs)
 - Multiplayer: client roster rows can lag the live body; "used today" markers don't show on clients; some packets trust the
   client (not a v1 concern). Eater of Souls / Hornets / Meteor Heads (flying AI 5) ignore soldiers. A headless server runs

@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader.IO;
 using Levy.Common.Net;
+using Levy.Common.Officers;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
@@ -82,6 +83,23 @@ namespace Levy.Common.UI
 			var p = LevyPackets.New(LevyPacket.FeedCrystal); p.Write(rec.Id); p.Write(itemType); p.Send();
 			SoundEngine.PlaySound(RosterSystem.CrystalSound(itemType, out _));
 			return true;
+		}
+
+		// ------------------------------------------------------------------ officers
+		/// <summary>Asks to conscript a housed town NPC as an officer, paid from <paramref name="te"/>. The server (or single player) validates and charges.</summary>
+		public static void OfficerCommission(BarracksTE te, NPC npc)
+		{
+			if (te == null || npc == null) return;
+			if (Single) OfficerSystem.Instance.Commission(Me, te, npc);
+			else { var p = LevyPackets.New(LevyPacket.OfficerCommand); p.Write(OfficerNet.ActionCommission); p.Write(te.ID); p.Write((short)npc.whoAmI); p.Send(); }
+		}
+
+		/// <summary>Sends one of the local commander's officers back to town life.</summary>
+		public static void OfficerDismiss(NPC npc)
+		{
+			if (npc == null) return;
+			if (Single) OfficerSystem.Instance.Dismiss(Me, npc);
+			else { var p = LevyPackets.New(LevyPacket.OfficerCommand); p.Write(OfficerNet.ActionDismiss); p.Write(-1); p.Write((short)npc.whoAmI); p.Send(); }
 		}
 
 		// ------------------------------------------------------------------ orders

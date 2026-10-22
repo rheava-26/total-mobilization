@@ -23,7 +23,7 @@ namespace Levy.Content.NPCs
 	/// the brain, movement, combat, fear, damage intake and drawing live in partial files owned by other agents and
 	/// plug in through the partial methods declared at the bottom. Logic runs on the server/single player; clients draw.
 	/// </summary>
-	public partial class SoldierNPC : ModNPC
+	public partial class SoldierNPC : ModNPC, Common.Targeting.ITargetBody
 	{
 		public const int BodyWidth = 20, BodyHeight = 42;
 		public const int DummySlot = 255; // Main.maxPlayers: the vanilla null-player slot, never a real player
@@ -112,6 +112,9 @@ namespace Levy.Content.NPCs
 		/// <summary>Player index that receives loot/banner credit for this soldier's kills (commander, else the local player in single player, else -1).</summary>
 		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Common.Weapons.SoldierMinions.TrueMyPlayer : -1);
 		public bool IsAlive => NPC.active && NPC.life > 0 && !_deathHandled;
+		// ITargetBody (enemy targeting treats soldiers and officers alike); Dummy is a field here, so the interface members forward to it.
+		Player Common.Targeting.ITargetBody.Dummy => Dummy;
+		int Common.Targeting.ITargetBody.TargetAggro => Aggro;
 
 		public override string Texture => "Levy/Content/NPCs/SoldierNPC";
 

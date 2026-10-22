@@ -39,5 +39,15 @@ namespace Levy.Common
 		// ---------- Spectre Mask set bonus (Projectile.ghostHurt -> ProjectileID.SpectreWrath) ----------
 		/// <summary>Vanilla keeps the wearer's recent bolt damage in Player.ghostDmg and drops 6.6666665 of it per tick (400 a second); no bolt spawns while it is above 1500 (the cap lives in Projectile.ghostHurt).</summary>
 		public const float GhostDmgDecayPerTick = 6.6666665f;
+
+		// ---------- Chlorophyte set bonus (Player.crystalLeaf -> ProjectileID.CrystalLeaf / CrystalLeafShot) ----------
+		/// <summary>Vanilla aiStyle 42: the leaf hangs 60 px above the wearer's centre, scans 700 px (|dx|+|dy|) for a hostile in line of sight, and fires every 40 ticks (Player.crystalLeafCooldown).</summary>
+		public const float LeafLiftPx = 60f, LeafRangePx = 700f;
+		public const int LeafCooldownTicks = 40, LeafScanRetryTicks = 6;
+		/// <summary>Shot launch speed per extra-update (the leaf shot runs 180 of them a tick) and the lead window, both vanilla's.</summary>
+		public const float LeafShotSpeed = 12f;
+		public const int LeafShotLeadUpdates = 180;
+		/// <summary>How often SoldierNPC tops up / trims the soldier's leaf, and the pause after a spawn.</summary>
+		public const int LeafMaintainIntervalTicks = 20, LeafSpawnCooldownTicks = 40;
 	}
 }

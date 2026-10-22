@@ -6,6 +6,27 @@
 
 ---
 
+## 📦 SHIPPED STATUS (2026-10-22)
+
+**Current version: `1.0.1`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation, since officers/guides/logistical-center behaviour is unverifiable headless).
+
+**1.0 batch (all built, headless-clean, delivered as test builds):**
+- **NPC Officers foundation** — conscript a town NPC into a command slot (3 slots), one-time fee + dawn wage from the barracks treasury, AI takeover server-side, data lives on the NPC (saved + extra-AI synced). Proof officer = the **Nurse** (heal kit). Registry pattern (`OfficerRegistry.RegisterAll`) ready for more kits. Full design (per-NPC kits, "every officer is a kit not one ability", summons-have-healthbars) is in the Officers section below.
+- **4 progression guides** — Firepower (WoF: HP base 100→200, mana base 20→100, +2 armory buff slots), Healthcare (Crystal Ball+Bookshelf craft: HP cap 500→600), Arcane Arts (craft: mana cap 200→300), Expertise (Lunatic Cultist: +1 accessory slot). World flags, saved + synced, study once per world.
+- **HP/MANA LADDER RETUNE (tenet #1):** the agent's first pass set default caps BELOW the old ceilings (300/100), which nerfed existing fed soldiers. Corrected: defaults = old ceilings (500 HP / 200 mana, nothing regresses), guides push ABOVE them (600 / 300). `MaxSoldierHp` clamp raised 500→600. Constants in `LevyConstants.Guides.cs`.
+- **Logistical Center** — 3×2 building, 4 Chests + 12 Iron/Lead Bars at an Anvil, links nearest armory within 40 tiles, +250 storage slots each, stacks. Armory storage is now a variable-length array (save/load/net all length-prefixed).
+- **"Buff slots" CLARIFIED (designer corrected a wrong build):** NOT soldiers inheriting the commander's buffs (that was built as `BuffShare.cs`, then DELETED — it breaks the limited buff economy). It's the armory's army-wide buff-potion slots; Firepower takes them 1→3. Soldiers now drink from every buff slot (dedup by type).
+
+**1.0.1:** boss-downed gate now backfills from Terraria's vanilla `downedX` flags on world load — already-beaten vanilla bosses count immediately, no re-kill. Modded bosses still record on kill going forward.
+
+**OPEN / PENDING:**
+- **In-game verification owed** before the `main` merge: officer movement/heal/targeting, guide study + save-reload, logistical-center resize with no item loss, buff-slot drinking, boss-aggro on backfilled bosses.
+- **Steampunker officer — PINNED/unresolved** (what does her kit do? pylons are universal so not that; she sells Clentaminator/Jetpack/Blend-O-Matic/furniture).
+- **More officer kits** — the rest of the town roster (brainstorm captured in the Officers section).
+- **Mechanical guides (post-1.0, design-only so far):** Engineering (turrets), Mechanization (mounts), the Chlorophyte expedition — all PAUSED.
+
+---
+
 ## ⭐ LEVY MOD NORTH STAR (designer, v0.9.7): "these emulate real players as much as possible"
 
 When a soldier's stats / gear / consumables diverge from how a REAL Terraria player works, the default answer is **make it match vanilla** unless there's a strong reason not to. This settled the HP question (grade no longer caps HP: 15 Life Crystals → 400, Life Fruit → 500, same for every grade, exactly like a player). Use it to settle future "why does X behave weirdly" reports. (This is the Levy-mod guiding principle; the tenet below governs the separate title.html game.)

@@ -232,7 +232,7 @@ namespace Levy.Content.NPCs
 					Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
 					Dummy.ResetEffects();
 					Dummy.UpdateEquips(DummySlot);
-					Dummy.UpdateArmorSets(DummySlot);
+					UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
 					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 					try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
 					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);

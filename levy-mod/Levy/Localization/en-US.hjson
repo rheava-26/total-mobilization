@@ -96,6 +96,8 @@ Mods: {
 			SoldierFlail.DisplayName: Flail
 			SoldierVampireKnife.DisplayName: Soldier Vampire Knife
 			SoldierCrystalLeaf.DisplayName: Soldier Crystal Leaf
+			SoldierSpectreHeal.DisplayName: Soldier Spectre Heal Bolt
+			SoldierTitaniumShard.DisplayName: Soldier Titanium Shard
 		}
 
 		Keybinds: {

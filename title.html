@@ -677,7 +677,7 @@
 
 <div class="modal-bg" id="tutDiagModal"><div class="modal" style="max-width:600px;border-color:var(--stab)">
   <h2>⚠ THE FLEET IS 20 SECONDS OUT</h2><div class="hd">// HERE'S WHAT YOU'RE LIKELY TO LOSE TO</div>
-  <div style="opacity:.7;font-size:11px;margin:2px 0 8px">Also expect an <b>EMP blackout</b> partway in — Psionic Relays and Data Centers resist it.</div>
+  <div style="opacity:.7;font-size:11px;margin:2px 0 8px">Expect <b>antimatter EMP warheads</b> on your densest air defence the moment they arrive — shoot them down high; Psionic Relays and Data Centers resist the blackout.</div>
   <div id="tutDiagGaps" style="margin:8px 0 12px"></div>
   <div id="tutDiagActions"></div>
 </div></div>
@@ -1804,7 +1804,7 @@ function drawRoads() { const cz = cam.z || 1, PX = cz < 1 ? Math.ceil(W * (1 / c
    ===================================================================== */
 const AMB_TOWN_N = 8, AMB_CAR_N = 9, AMB_BOAT_N = 6, AMB_PLANE_N = 3, AMB_POD_N = 5, AMB_FLASH_N = 9;
 const AMB_HORIZON_PAR = .40;   // parallax factor for the far background layer (towns/pods/flashes) — between the two mountain-ridge layers (.34/.60), so the skyline sits with the ridgeline
-function ambientFleeing() { return !!G && (G.phase === 'invasion' || (G.phase === 'prep' && G.warned)); }   // shared "is the population running yet?" check — mirrors the 12s ⚠ RE-ENTRY DETECTED trigger
+function ambientFleeing() { return !!G && (G.phase === 'invasion' || (G.phase === 'prep' && G.warned)); }   // shared "is the population running yet?" check — mirrors the 12s ⚠ FLEET INBOUND trigger
 function initAmbient() {
   if (!G) return;
   const towns = [];
@@ -3261,7 +3261,7 @@ const BUILD_DEFS = {
   // ECON
   powerplant:{ name: 'Power Plant', cat: 'ECON', ic: 120, mp: 55, build: 8, hp: 240, w: 19, h: 15, econ: { ic: 7 }, ds: '+7 Industrial Capacity / sec. Needs a workforce.' },
   housing:  { name: 'Housing Block', cat: 'ECON', ic: 100, mp: 26, build: 7, hp: 200, w: 18, h: 18, econ: { mp: 3, cap: 4 }, ds: '+3 Manpower/s · +4 army cap.' },
-  comms:    { name: 'Comms Tower', cat: 'ECON', ic: 130, mp: 48, build: 8, hp: 160, w: 15, h: 21, econ: { stab: 0.5 }, stabRes: 7, ds: 'The stability reserve building — banks a reserve (up to 100) that auto-refills lost stability. Also raises your cap a little. (Propaganda raises it harder.)' },
+  comms:    { name: 'Comms Tower', cat: 'ECON', ic: 130, mp: 48, build: 8, hp: 160, w: 15, h: 21, econ: { stab: 0.5 }, stabRes: 7, ds: 'Raises the stability cap a little and banks a 7-point reserve that refills lost stability. Propaganda raises the cap harder.' },
   propaganda:{ name: 'Propaganda Bureau', cat: 'ECON', ic: 140, mp: 50, build: 8, hp: 180, w: 16, h: 20, econ: { stab: 1.1 }, ds: 'The stability cap building — raises your ceiling more than anything else. A higher cap means more stability and faster research. (Comms Towers bank a reserve.)' },
   extractor:{ name: 'Extractor', cat: 'ECON', ic: 90, mp: 65, build: 7, hp: 180, w: 16, h: 18, onNode: true, econ: { ic: 4 }, ds: 'Build on a deposit to claim a Special Resource + IC.' },
   // PROD
@@ -3580,11 +3580,10 @@ function mergeCities() {   // any two cities whose footprints overlap merge into
 function recomputeCityHp(ct) { let h = 0; for (const d of ct.districts) h += Math.max(0, d.hp); ct.hp = h; }
 function damageDistrict(ct, dist, dmg) {
   if (!ct) return; if (dmg > 0 && G.moraleBombing) dmg *= 1.3;   /* v4.0 E PHASE 4 — ATTRITION BOMBING hits cities harder, the whole point of grinding morale instead of landing */ if (dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN;   // a city that is being shelled stops mustering troops for a while (see CITY AUTO-RECRUIT)
-  if (dmg > 0 && G.tut) G.tut._cityHit = true;   // LESSONS — 'firstLoss' card fires the next time it's checked
   if (!dist || dist.dead) return hurtCity(ct, dist ? ct.x + dist.dx : ct.x, dmg);
   if (dmg > 0) addDmgTaken(ct.x + dist.dx, dmg);   // v4.0 E — DAMAGE-TAKEN MAP (see pickLeastDamagedZones)
   dist.hp -= dmg;
-  if (dist.hp <= 0 && !dist.dead) { dist.dead = true; G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9, 'collapse'); groundBurst(dx, 7, 'collapse'); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
+  if (dist.hp <= 0 && !dist.dead) { dist.dead = true; if (G.tut) G.tut._cityHit = true; /* LESSONS — firstLoss fires when a district falls */ G.lostStructures = (G.lostStructures || 0) + 1; const dx = ct.x + dist.dx, gy = groundY(dx); boomW(dx, gy - 8, 9, 'collapse'); groundBurst(dx, 7, 'collapse'); smoke(dx, gy - 10, 3); shake(2); floatText(dx, gy - 20, '🏚 DISTRICT LOST — STABILITY −', '#ff7a6a'); }   // a destroyed city structure is a PERMANENT stability loss (see cityStabPenalty)
   recomputeCityHp(ct);
 }
 function hurtCity(ct, x, dmg) { if (ct && dmg > 0) ct.siegeT = CITY_SIEGE_COOLDOWN; let best = null, bd = 1e9; for (const d of ct.districts) { if (d.dead) continue; const dd = Math.abs(ct.x + d.dx - x); if (dd < bd) { bd = dd; best = d; } } if (best) damageDistrict(ct, best, dmg); else recomputeCityHp(ct); }
@@ -11069,10 +11068,10 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     { sel: tutCardSel('bunker'), onEnter: () => { curBcat = 'DEF'; buildBuildBar(); tutStepBase('bunk', tutCountB('bunker')); tutStepBase('sam', tutCountB('samsite') + tutCountU('sam')); }, title: 'BUILD: A BUNKER + A SAM', body: 'Switch to <b>DEF</b> (done for you) and place both a new <b>Bunker</b> (ground defense) and a new <b>SAM</b> (reaches into the sky). You need both — one covers the ground, the other covers the air.', done: G => tutStepGrew('bunk', tutCountB('bunker')) && tutStepGrew('sam', tutCountB('samsite') + tutCountU('sam')) },
     { sel: null, title: 'THE ALTITUDE LESSON', body: 'Here\'s the whole air-defense puzzle in one line: <b>a bomber sitting high in the sky can only be hit by weapons that reach that high.</b> A Bunker can\'t touch it. A SAM reaches up into the mesosphere. Only aircraft, railguns and orbital weapons touch the exosphere. Altitude IS cover — for them and for you.' },
     { sel: () => document.querySelector('.objwrap'), title: 'THE COUNTDOWN', body: 'That\'s your <b>PREP</b> timer. When it hits zero, the fleet re-enters — a long, slow, vulnerable fall you can shoot pieces off before it goes fully active. Every second left is worth spending.' },
-    { sel: null, title: 'RE-ENTRY', body: 'When you see <b>⚠ RE-ENTRY DETECTED</b>, that\'s your final warning — the countdown is nearly out. After that, waves never stop, and every one is a little stronger than the last. Destroy the fleet to win. I\'ll keep coaching from the corner, and watch the ★ READINESS panel too. Good luck, Commander.', last: true },
+    { sel: null, title: 'RE-ENTRY', body: 'When you see <b>⚠ FLEET INBOUND</b>, the countdown is nearly out. From then on the fleet comes in phases, each stronger than the last. Destroy the fleet to win. I\'ll keep coaching from the corner, and watch the ★ READINESS panel too. Good luck, Commander.', last: true },
   ];
   const HAND_STEPS_LIGHT = HAND_STEPS_HEAVY.slice(0, 3).concat([
-    { sel: null, title: 'YOU\'RE ON YOUR OWN FROM HERE', body: 'That\'s the core loop — power, resources, production. I won\'t walk you through the rest step by step — I\'ll step in whenever a rule first matters, starting with how the game breathes.', last: true },
+    { sel: null, title: 'YOU\'RE ON YOUR OWN FROM HERE', body: 'That\'s the start: power and resources. Production comes next — a Factory turns IC and Manpower into an army, and units cost no influence. I\'ll step in whenever a rule first matters, starting with how the game breathes.', last: true },
   ]);
 
   // ============================================================================
@@ -11091,7 +11090,7 @@ loadAchievements(); resize(); layoutEarth(); seedTerrain(); requestAnimationFram
     { id: 'momentumReset', sel: '.cell.inf', title: 'THE SNAP-BACK', when: (G, T) => T._momPrev >= 2.0 && (G.infMomentum || 1) <= 1.05, body:
       'That spend just dropped your momentum from ×PREV to ×1. Not a mistake — that\'s the price of spending. The rhythm is bank, burst, bank again: let it climb, then cash it in all at once.' },
     { id: 'manpower', sel: '.cell.mp', title: 'THE ARMY CAP', when: (G, T) => combatWeight() >= armyCap() - 0.5 || (G.mp < 60 && tutAnyQueued()), body:
-      'Your army is capped by <b>Manpower</b> — the cap is roughly 12 + manpower÷25, spent as a WEIGHT budget, not a headcount. <b>Housing Blocks</b> raise it. Manpower itself tops out at 900, so more Housing is the long-term answer, not just this cap.' },
+      'Your army is capped by <b>Manpower</b> — the cap is roughly (12 + manpower÷25) × 6, spent as a WEIGHT budget, not a headcount. <b>Housing Blocks</b> raise it. Manpower itself tops out at 900, so more Housing is the long-term answer, not just this cap.' },
     { id: 'weight', sel: '.cell.army', title: 'WEIGHT ISN\'T HEADCOUNT', when: (G, T) => !!T._heavyQueued, body:
       'That last unit weighs as much as two rifle squads against your army cap. Mass is always allowed — a big force just costs more bodies. Check the ARMY cell\'s weight/cap number before you commit to something heavy.' },
     { id: 'stability', sel: '.cell.stab', title: 'STABILITY IS THE SOURCE', when: (G, T) => effStab() <= (G.stabCap || 65) - 8 || tutCountB('comms') + tutCountB('propaganda') + tutCountB('radar') > 0, body:

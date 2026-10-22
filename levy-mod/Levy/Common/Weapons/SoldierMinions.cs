@@ -33,8 +33,15 @@ namespace Levy.Common.Weapons
 	/// SLOT 255 DISCIPLINE: Swap in try, Unswap in finally, EnsureSlotRestored in the same finally, plus PreUpdateProjectiles/PostUpdateProjectiles; Main.myPlayer and
 	/// maxMinions are restored in that finally too.
 	///
-	/// WHAT STAYS FAKE. Only vanilla minions are driven: a modded minion's own AI usually insists on its owner's ModPlayer buff and would die on the dummy. Those, the Stardust Dragon
-	/// (a chain of linked segments that find each other by owner), and any type that throws while driven (see <see cref="MarkBad"/>) keep the old stand-in, <see cref="Content.Projectiles.SoldierMinion"/>.
+	/// WHAT STAYS FAKE. Only vanilla minions are driven: a modded minion's own AI usually insists on its owner's ModPlayer buff and would die on the dummy. Those, the Stardust Guardian
+	/// (an armor-set stand, not a minion), and any type that throws while driven (see <see cref="MarkBad"/>) keep the old stand-in, <see cref="Content.Projectiles.SoldierMinion"/>.
+	///
+	/// THE STARDUST DRAGON. Head 625, two bodies 626/627 per cast, tail 628: a chain whose segments find the one ahead through <c>Projectile.GetByUUID(owner, ai[0])</c>, and vanilla refuses that
+	/// lookup for owner 255 (<c>owner >= 255</c> returns -1), so a segment owned by 255 would never follow anything. The dragon's segments are therefore owned by their OWN slot,
+	/// <see cref="DragonOwner"/> (a throwaway slot below 255), for their whole life (so spawn packets, kill packets and every vanilla owner scan stay consistent on remote screens). Each segment's
+	/// Update aliases the soldier's Dummy into that slot (<see cref="AliasDummy"/>) next to the usual slot-255 swap, fakes Main.myPlayer to that slot, and parks every OTHER soldier's segments on
+	/// <see cref="DragonParkOwner"/>, so the owner scans in Projectile.Damage (FindStardustDragonHeadOfOwner) and in the AI's relink fallback only ever see this soldier's chain.
+	/// The chain is spawned exactly like Player.ItemCheck_Shoot does it (see <see cref="SummonDragon"/>): head, then each segment's ai[0] = the previous segment, localAI[1] = the next.
 	///
 	/// CONTROLLER MINIONS. The Desert Tiger staff casts a GEM (Projectile 831); the tiger itself (833-835) is spawned by Player.UpdateStormTigerStatus from the gem count, and
 	/// Abigail's Flower casts a counter (970) that spawns Abigail (963). Neither runs on the dummy, so <see cref="MaintainCompanion"/> mirrors that rule per soldier.
@@ -44,14 +51,18 @@ namespace Levy.Common.Weapons
 		private const int Slot = SoldierNPC.DummySlot;
 		/// <summary>An owner slot nothing real uses: other soldiers' same-type minions are parked here for the length of a group-indexed minion's Update.</summary>
 		private static readonly int ParkedOwner = Main.maxPlayers - 1;
+		/// <summary>The owner slot of every Stardust Dragon segment of every soldier (vanilla's UUID lookup refuses owner 255, so the dragon cannot live on the shared minion owner). Never a real player in practice.</summary>
+		private static readonly int DragonOwner = Main.maxPlayers - 2;
+		/// <summary>Where the OTHER soldiers' dragon segments sit for the length of one segment's Update, so owner scans see only that soldier's chain.</summary>
+		private static readonly int DragonParkOwner = Main.maxPlayers - 3;
 
 		/// <summary>The soldier whose minion is being created right now; <see cref="SoldierProjectileTag.OnSpawn"/> tags the projectile before the first spawn packet is sent.</summary>
 		internal static SoldierNPC PendingBody;
 
-		/// <summary>Vanilla minions that cannot be driven by a lone dummy: the Stardust Dragon's linked segments and the Stardust Guardian (an armor-bonus stand).</summary>
+		/// <summary>Vanilla minions that cannot be driven by a lone dummy: the Stardust Guardian (an armor-bonus stand, not a minion).</summary>
 		private static readonly HashSet<int> Undriven = new()
 		{
-			ProjectileID.StardustDragon1, ProjectileID.StardustDragon2, ProjectileID.StardustDragon3, ProjectileID.StardustDragon4, ProjectileID.StardustGuardian,
+			ProjectileID.StardustGuardian,
 		};
 
 		/// <summary>Minion types whose AI sorts itself among "every projectile of my type and owner" (Projectile.AI_GetMyGroupIndexAndFillBlackList): idle slots on a circle around the owner.</summary>
@@ -63,21 +74,33 @@ namespace Levy.Common.Weapons
 		/// <summary>Types that threw while being driven this session; their staves fall back to the stand-in.</summary>
 		private static readonly HashSet<int> BadTypes = new();
 		private static readonly List<Projectile> Parked = new();
+		private static readonly List<Projectile> ParkedDragons = new();
+
+		/// <summary>The slot-aliasing bookkeeping of <see cref="AliasDummy"/>: the real Player that stood in the dragon's owner slot while the soldier's dummy took its place.</summary>
+		private static Player _aliasBackup;
+		private static int _aliasSlot = -1;
+		private static bool _aliased;
 
 		/// <summary>The real Main.myPlayer while a minion's Update has it faked to 255 (single player); children created in that window are re-owned to it.</summary>
 		private static bool _faked;
 		private static int _trueMyPlayer;
 		internal static int TrueMyPlayer => _faked ? _trueMyPlayer : Main.myPlayer;
 
-		internal static void Reset() { BadTypes.Clear(); Parked.Clear(); PendingBody = null; _faked = false; }
+		internal static void Reset() { BadTypes.Clear(); Parked.Clear(); ParkedDragons.Clear(); PendingBody = null; _faked = false; EnsureAliasRestored(); }
 
 		// =====================================================================================================
 		// Identity
 		// =====================================================================================================
 		/// <summary>A vanilla minion projectile run for a soldier: minion flag, owner 255, tagged with a soldier.</summary>
 		internal static bool IsDriven(Projectile p) =>
-			p.active && p.minion && p.owner == Slot && p.type < ProjectileID.Count
+			p.active && p.minion && p.type < ProjectileID.Count && (p.owner == Slot || (p.owner == DragonOwner && IsDragonType(p.type)))
 			&& p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
+
+		/// <summary>The four segments of the Stardust Dragon: head 625, bodies 626 / 627, tail 628.</summary>
+		internal static bool IsDragonType(int type) => type >= ProjectileID.StardustDragon1 && type <= ProjectileID.StardustDragon4;
+
+		/// <summary>The owner slot a driven minion of <paramref name="type"/> lives on: 255, except the Stardust Dragon's own slot.</summary>
+		private static int OwnerSlotFor(int type) => IsDragonType(type) ? DragonOwner : Slot;
 
 		/// <summary>True when <paramref name="p"/> is a driven minion belonging to the soldier at NPC index <paramref name="soldierIndex"/>.</summary>
 		internal static bool OwnedBy(Projectile p, int soldierIndex) =>
@@ -106,6 +129,7 @@ namespace Levy.Common.Weapons
 				ProjectileID.Retanimini => type == ProjectileID.Retanimini + 1,
 				ProjectileID.StormTigerGem => type >= ProjectileID.StormTigerTier1 && type <= ProjectileID.StormTigerTier3,
 				ProjectileID.AbigailCounter => type == ProjectileID.AbigailMinion,
+				ProjectileID.StardustDragon1 => IsDragonType(type),
 				_ => false,
 			};
 		}
@@ -127,6 +151,7 @@ namespace Levy.Common.Weapons
 			if (type == ProjectileID.Retanimini + 1) return ProjectileID.Retanimini;
 			if (type >= ProjectileID.StormTigerTier1 && type <= ProjectileID.StormTigerTier3) return ProjectileID.StormTigerGem;
 			if (type == ProjectileID.AbigailMinion) return ProjectileID.AbigailCounter;
+			if (IsDragonType(type)) return ProjectileID.StardustDragon1;
 			return type;
 		}
 
@@ -141,7 +166,20 @@ namespace Levy.Common.Weapons
 		{
 			int me = s.NPC.whoAmI;
 			for (int i = 0; i < Main.maxProjectiles; i++)
-				if (OwnedBy(Main.projectile[i], me)) Main.projectile[i].Kill();
+				if (OwnedBy(Main.projectile[i], me)) Dismiss(Main.projectile[i]);
+		}
+
+		/// <summary>
+		/// Ends a real minion. A Stardust Dragon segment is owned by a slot that is not this machine's Main.myPlayer, and vanilla broadcasts a kill only for the machine's own projectiles,
+		/// so a dedicated server claims the segment's slot for the Kill (restored in the finally) or remote screens would keep the segment forever.
+		/// </summary>
+		internal static void Dismiss(Projectile p)
+		{
+			if (!p.active) return;
+			if (Main.netMode != NetmodeID.Server || !IsDragonType(p.type) || p.owner == Main.myPlayer) { p.Kill(); return; }
+			int saved = Main.myPlayer;
+			try { Main.myPlayer = p.owner; p.Kill(); }
+			finally { Main.myPlayer = saved; }
 		}
 
 		// =====================================================================================================
@@ -151,6 +189,7 @@ namespace Levy.Common.Weapons
 		internal static bool Summon(SoldierNPC s, Item weapon, int damage)
 		{
 			int shoot = weapon.shoot;
+			if (shoot == ProjectileID.StardustDragon1) return SummonDragon(s, weapon, damage);
 			int type = shoot;
 			float ai1 = 0f, localAi0 = 0f;
 			bool pair = false;
@@ -178,18 +217,19 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// Creates one minion owned by 255 and tagged with the soldier. NewProjectile only assigns ai[] and syncs when Owner == Main.myPlayer, so the machine claims 255 for the call
-		/// (restored in the finally); the tag is applied in OnSpawn via <see cref="PendingBody"/> so the very first spawn packet already names the soldier.
+		/// Creates one minion owned by 255 (a Stardust Dragon segment: by <see cref="DragonOwner"/>) and tagged with the soldier. NewProjectile only assigns ai[] and syncs when Owner == Main.myPlayer,
+		/// so the machine claims that slot for the call (restored in the finally); the tag is applied in OnSpawn via <see cref="PendingBody"/> so the very first spawn packet already names the soldier.
+		/// <paramref name="ai0"/> is only meaningful for a dragon segment: the index of the segment ahead of it (vanilla turns it into that segment's UUID).
 		/// </summary>
-		private static Projectile NewMinion(SoldierNPC s, Vector2 pos, int type, int damage, float knockback, float ai1)
+		private static Projectile NewMinion(SoldierNPC s, Vector2 pos, int type, int damage, float knockback, float ai1, float ai0 = 0f)
 		{
-			int savedMyPlayer = Main.myPlayer;
+			int savedMyPlayer = Main.myPlayer, ownerSlot = OwnerSlotFor(type);
 			PendingBody = s;
 			try
 			{
-				if (savedMyPlayer != Slot) { _trueMyPlayer = savedMyPlayer; _faked = true; }
-				Main.myPlayer = Slot;
-				int idx = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), pos, Vector2.Zero, type, Math.Max(0, damage), knockback, Slot, 0f, ai1);
+				if (savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; }
+				Main.myPlayer = ownerSlot;
+				int idx = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), pos, Vector2.Zero, type, Math.Max(0, damage), knockback, ownerSlot, ai0, ai1);
 				if (idx < 0 || idx >= Main.maxProjectiles) return null;
 				Projectile p = Main.projectile[idx];
 				if (!p.active || p.type != type) return null;
@@ -220,6 +260,130 @@ namespace Levy.Common.Weapons
 			ratio = Math.Clamp(ratio, LevyConstants.MinionDamageRatioMin, LevyConstants.MinionDamageRatioMax);
 			int original = Math.Max(1, (int)Math.Round(desiredDamage / ratio));
 			if (p.originalDamage != original) p.originalDamage = original;
+		}
+
+		// =====================================================================================================
+		// The Stardust Dragon: a chain of linked segments
+		// =====================================================================================================
+		/// <summary>
+		/// One cast of the Stardust Dragon Staff, mirroring Player.ItemCheck_Shoot (item 3531). No dragon yet: head 625, two bodies 626 / 627 and tail 628 are created in order, each with ai[0] = the
+		/// index of the segment ahead of it (NewProjectile turns that into the UUID the AI follows) and localAI[1] = the index of the segment behind it. A dragon already out grows by two bodies
+		/// inserted just ahead of the tail. A half-built chain (a segment missing) is never extended: <see cref="DragonIntact"/> tears it down first, so this only ever sees none or a whole one.
+		/// </summary>
+		private static bool SummonDragon(SoldierNPC s, Item weapon, int damage)
+		{
+			int me = s.NPC.whoAmI, head = -1, tail = -1;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (!OwnedBy(q, me)) continue;
+				if (q.type == ProjectileID.StardustDragon1) head = i;
+				else if (q.type == ProjectileID.StardustDragon4) tail = i;
+			}
+			Vector2 at = s.NPC.Center;
+			float kb = weapon.knockBack;
+			if (head < 0 && tail < 0)
+			{
+				Projectile h = NewMinion(s, at, ProjectileID.StardustDragon1, damage, kb, 0f);
+				if (h == null) return false;
+				Projectile b1 = NewMinion(s, at, ProjectileID.StardustDragon2, damage, kb, 0f, h.whoAmI);
+				Projectile b2 = b1 == null ? null : NewMinion(s, at, ProjectileID.StardustDragon3, damage, kb, 0f, b1.whoAmI);
+				Projectile t = b2 == null ? null : NewMinion(s, at, ProjectileID.StardustDragon4, damage, kb, 0f, b2.whoAmI);
+				if (t == null)
+				{
+					// a segment could not be created (projectile table full): no half dragon is left behind
+					foreach (Projectile q in new[] { h, b1, b2 }) if (q != null) Dismiss(q);
+					return false;
+				}
+				b1.localAI[1] = b2.whoAmI;
+				b2.localAI[1] = t.whoAmI;
+				foreach (Projectile q in new[] { h, b1, b2, t }) q.netUpdate = true;
+				return true;
+			}
+			if (head < 0 || tail < 0) return false;
+
+			Projectile tl = Main.projectile[tail];
+			int ahead = Projectile.GetByUUID(DragonOwner, (int)tl.ai[0]);
+			if (ahead < 0) return false;
+			Projectile a = NewMinion(s, at, ProjectileID.StardustDragon2, damage, kb, 0f, ahead);
+			Projectile b = a == null ? null : NewMinion(s, at, ProjectileID.StardustDragon3, damage, kb, 0f, a.whoAmI);
+			if (b == null)
+			{
+				if (a != null) Dismiss(a);
+				return false;
+			}
+			a.localAI[1] = b.whoAmI;
+			b.localAI[1] = tail;
+			a.ai[1] = b.ai[1] = tl.ai[1] = 1f; // the AI clears it next tick and flags a net update (vanilla does the same after splicing)
+			tl.ai[0] = b.whoAmI; // the tail now follows the new last body
+			a.netUpdate = b.netUpdate = tl.netUpdate = true;
+			return true;
+		}
+
+		/// <summary>
+		/// True when the soldier's dragon segments (<paramref name="flock"/>, indices of its real minions) form exactly one chain: one head, one tail, and walking from the tail along each segment's
+		/// link reaches the head through every body once. An empty flock is intact. Anything else (a segment killed by something else, a stale link) is rebuilt from scratch by the caller.
+		/// </summary>
+		internal static bool DragonIntact(SoldierNPC s, List<int> flock)
+		{
+			int me = s.NPC.whoAmI, heads = 0, tails = 0, total = 0, head = -1, tail = -1;
+			foreach (int i in flock)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active || !IsDragonType(q.type)) continue;
+				total++;
+				if (q.type == ProjectileID.StardustDragon1) { heads++; head = i; }
+				else if (q.type == ProjectileID.StardustDragon4) { tails++; tail = i; }
+			}
+			if (total == 0) return true;
+			if (heads != 1 || tails != 1) return false;
+			int cur = tail, steps = 0;
+			while (cur != head)
+			{
+				if (++steps >= total) return false; // a loop, or a chain longer than the flock
+				Projectile q = Main.projectile[cur];
+				int ahead = Projectile.GetByUUID(DragonOwner, (int)q.ai[0]);
+				if (ahead < 0 || ahead == cur) return false;
+				Projectile pa = Main.projectile[ahead];
+				if (!OwnedBy(pa, me) || !IsDragonType(pa.type) || pa.type == ProjectileID.StardustDragon4) return false;
+				cur = ahead;
+			}
+			return steps == total - 1;
+		}
+
+		/// <summary>
+		/// Shortens an over-long dragon (the soldier's capacity dropped) by unlinking the body just ahead of the tail, as vanilla's overflow branch does: the tail is re-pointed at the segment
+		/// that body followed, then the body is removed. Never goes below the two bodies of one cast (a tail that follows the head directly kills the whole dragon in vanilla).
+		/// Returns the slot total after trimming; the removed segments leave <paramref name="flock"/>.
+		/// </summary>
+		internal static float TrimDragon(List<int> flock, float have, float want)
+		{
+			int bodies = 0, tailIdx = -1;
+			foreach (int i in flock)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active) continue;
+				if (q.type == ProjectileID.StardustDragon2 || q.type == ProjectileID.StardustDragon3) bodies++;
+				else if (q.type == ProjectileID.StardustDragon4) tailIdx = i;
+			}
+			while (have > want + LevyConstants.MinionSlotEpsilon && bodies > 2 && tailIdx >= 0)
+			{
+				Projectile tail = Main.projectile[tailIdx];
+				int bi = Projectile.GetByUUID(DragonOwner, (int)tail.ai[0]);
+				if (bi < 0) break;
+				Projectile body = Main.projectile[bi];
+				if (body.type != ProjectileID.StardustDragon2 && body.type != ProjectileID.StardustDragon3) break;
+				tail.ai[0] = body.ai[0];
+				tail.ai[1] = 1f;
+				tail.netUpdate = true;
+				int ahead = Projectile.GetByUUID(DragonOwner, (int)body.ai[0]);
+				if (ahead >= 0 && Main.projectile[ahead].type != ProjectileID.StardustDragon1) Main.projectile[ahead].localAI[1] = tailIdx;
+				have -= body.minionSlots;
+				bodies--;
+				Dismiss(body);
+				flock.Remove(bi);
+			}
+			return have;
 		}
 
 		/// <summary>
@@ -336,37 +500,41 @@ namespace Levy.Common.Weapons
 			if (body == null)
 			{
 				// soldier dead / dismissed / slot reused: the flock ends. A client that has not met the body yet just waits: no AI against the null player.
-				if (authority) p.Kill();
+				if (authority) Dismiss(p);
 				return;
 			}
 
 			Player d = body.Dummy;
-			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions;
-			bool swapped = false, parked = false;
+			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
+			bool swapped = false, parked = false, parkedDragons = false;
 			try
 			{
 				if (p.timeLeft < LevyConstants.MinionLifeTicks / 2) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255], at the soldier
 				swapped = true;
+				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
 				d.maxMinions = LevyConstants.MinionDriverMaxMinions;
-				if (authority && savedMyPlayer != Slot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = Slot; }
-				if (GroupIndexed.Contains(p.type)) { ParkOtherFlocks(p, body.NPC.whoAmI); parked = true; }
+				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
+				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
+				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
 				orig(p, i);
 			}
 			catch (Exception e)
 			{
 				// never take the game down for one odd minion: log it once, drop this one, and let its staff use the stand-in from now on
 				MarkBad(p, e);
-				try { if (authority && p.active) p.Kill(); } catch (Exception) { }
+				try { if (authority && p.active) Dismiss(p); } catch (Exception) { }
 				p.active = false;
 			}
 			finally
 			{
 				if (parked) UnparkOtherFlocks();
+				if (parkedDragons) UnparkOtherDragons();
 				Main.myPlayer = savedMyPlayer;
 				_faked = false;
 				d.maxMinions = savedMax;
 				if (swapped) EnemyTargeting.Unswap();
+				EnsureAliasRestored(); // never leave a dummy in the dragon's owner slot
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 
@@ -394,6 +562,50 @@ namespace Levy.Common.Weapons
 			foreach (Projectile q in Parked) q.owner = Slot;
 			Parked.Clear();
 		}
+
+		/// <summary>
+		/// Every OTHER soldier's dragon segments sit on <see cref="DragonParkOwner"/> for the length of this segment's Update. Vanilla scans by owner when a dragon segment hits something
+		/// (Projectile.Damage borrows the first head of the owner for the shared hit cooldowns) and when a link breaks (the AI's relink fallback), so without this one soldier's dragon could
+		/// borrow another's head. The direct UUID link cannot cross soldiers: UUIDs are projectile indices, unique per slot.
+		/// </summary>
+		private static void ParkOtherDragons(Projectile p, int soldierIndex)
+		{
+			ParkedDragons.Clear();
+			for (int j = 0; j < Main.maxProjectiles; j++)
+			{
+				Projectile q = Main.projectile[j];
+				if (!q.active || j == p.whoAmI || q.owner != DragonOwner || !IsDragonType(q.type)) continue;
+				if (q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == soldierIndex) continue;
+				q.owner = DragonParkOwner;
+				ParkedDragons.Add(q);
+			}
+		}
+
+		private static void UnparkOtherDragons()
+		{
+			foreach (Projectile q in ParkedDragons) q.owner = DragonOwner;
+			ParkedDragons.Clear();
+		}
+
+		/// <summary>Puts the soldier's dummy into <c>Main.player[slot]</c> (a dragon segment's owner slot), remembering the Player that stood there. Paired with <see cref="EnsureAliasRestored"/>.</summary>
+		private static void AliasDummy(int slot, Player dummy)
+		{
+			if (_aliased) EnsureAliasRestored();
+			_aliasBackup = Main.player[slot];
+			_aliasSlot = slot;
+			Main.player[slot] = dummy;
+			_aliased = true;
+		}
+
+		/// <summary>Gives the dragon's owner slot its own Player back. Idempotent; called in every finally and from the system's per-tick safety net.</summary>
+		internal static void EnsureAliasRestored()
+		{
+			if (!_aliased) return;
+			if (_aliasSlot >= 0 && _aliasSlot < Main.player.Length) Main.player[_aliasSlot] = _aliasBackup ?? new Player();
+			_aliasBackup = null;
+			_aliasSlot = -1;
+			_aliased = false;
+		}
 	}
 
 	/// <summary>Installs the Projectile.Update wrapper for real minions and the per-tick dummy preparation; keeps slot 255 clean around the projectile phase.</summary>
@@ -414,14 +626,19 @@ namespace Levy.Common.Weapons
 		public override void PreUpdateProjectiles()
 		{
 			EnemyTargeting.EnsureSlotRestored();
+			SoldierMinions.EnsureAliasRestored();
 			SoldierMinions.PrepareTick();
 		}
 
-		public override void PostUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
+		public override void PostUpdateProjectiles()
+		{
+			SoldierMinions.EnsureAliasRestored();
+			EnemyTargeting.EnsureSlotRestored();
+		}
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
-			if (self.minion && self.owner == SoldierNPC.DummySlot && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
+			if (self.minion && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		}
 	}

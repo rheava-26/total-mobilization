@@ -14,7 +14,7 @@ namespace Levy.Content.NPCs
 {
 	/// <summary>
 	/// Summoner layer: a soldier whose primary weapon is a summon weapon keeps a flock of minions instead of firing it. The minions are the staff's REAL vanilla projectiles, driven
-	/// with the soldier as their owner (see <see cref="SoldierMinions"/>); a minion that cannot be driven that way (modded ones, the Stardust Dragon) is a <see cref="SoldierMinion"/> stand-in.
+	/// with the soldier as their owner (see <see cref="SoldierMinions"/>); a minion that cannot be driven that way (modded ones, the Stardust Guardian) is a <see cref="SoldierMinion"/> stand-in.
 	/// The flock size is the dummy's minion capacity (armor/accessories raise <c>Player.maxMinions</c>) divided by the weapon's slot cost.
 	/// Sentry layer: a soldier carrying a sentry weapon plants ONE tower where it fights and keeps it standing (MaintainSentries).
 	/// Also owns the cleanup of every soldier-anchored projectile (minions, lashes, boomerangs, sentries) when this body dies.
@@ -108,7 +108,7 @@ namespace Levy.Content.NPCs
 					bool real = !fake && SoldierMinions.OwnedBy(p, me);
 					if (!fake && !real) continue;
 					// no summon weapon any more, or a flock of the other kind / of a staff this soldier no longer carries: dismissed
-					if (!has || (fake && driven) || (real && !(driven && SoldierMinions.InFamily(weapon.shoot, p.type)))) { p.Kill(); continue; }
+					if (!has || (fake && driven) || (real && !(driven && SoldierMinions.InFamily(weapon.shoot, p.type)))) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; }
 					_minionScratch.Add(i);
 				}
 				if (!has) return;
@@ -147,13 +147,21 @@ namespace Levy.Content.NPCs
 		{
 			int desired = SoldierMinions.Capacity(this, weapon);
 			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
+			bool dragon = weapon.shoot == ProjectileID.StardustDragon1;
+			// A Stardust Dragon is ONE chain (head, 2 bodies per cast, tail): a segment killed by anything else leaves the rest following a dead link, so a broken chain is torn down and recast whole.
+			if (dragon && !SoldierMinions.DragonIntact(this, _minionScratch))
+			{
+				foreach (int i in _minionScratch) SoldierMinions.Dismiss(Main.projectile[i]);
+				_minionScratch.Clear();
+			}
 			foreach (int i in _minionScratch)
 			{
 				Projectile p = Main.projectile[i];
 				SoldierMinions.Retune(this, p, weapon, damage);
 				have += p.minionSlots;
 			}
-			while (have > want + LevyConstants.MinionSlotEpsilon)
+			if (dragon) have = SoldierMinions.TrimDragon(_minionScratch, have, want); // shortened body by body from the tail end, never below one cast
+			while (!dragon && have > want + LevyConstants.MinionSlotEpsilon)
 			{
 				int worst = -1;
 				for (int k = 0; k < _minionScratch.Count; k++)
@@ -164,7 +172,7 @@ namespace Levy.Content.NPCs
 				if (worst < 0) break;
 				Projectile q = Main.projectile[_minionScratch[worst]];
 				have -= q.minionSlots;
-				q.Kill();
+				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
 			}
 			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);

@@ -163,6 +163,36 @@ namespace Levy.Content.NPCs
 			{
 				p.itemRotation = 0f;
 				p.itemLocation = p.position;
+				// Hold-style items (Nightglow's lamp: holdStyle HoldLamp, plus torches and the like) are posed by vanilla's ItemCheck_ApplyHoldStyle
+				// whenever the item is NOT mid-use; without it itemLocation stays at the body's top-left corner and the item floats on the head.
+				if (holdsItem && held.holdStyle != 0) ApplyHoldStyle(p, held);
+			}
+		}
+
+		private static System.Reflection.MethodInfo _holdStyleMethod; private static bool _holdStyleLooked, _holdStyleBroken;
+
+		/// <summary>
+		/// Runs Player.ItemCheck_ApplyHoldStyle (private in vanilla) on the dummy: sets itemLocation / itemRotation and raises the off-hand arm for the item's holdStyle.
+		/// Looked up once by reflection; any failure disables it and the item is simply drawn where it was (never throws into the draw).
+		/// </summary>
+		private static void ApplyHoldStyle(Player p, Item held)
+		{
+			if (_holdStyleBroken) return;
+			try
+			{
+				if (!_holdStyleLooked)
+				{
+					_holdStyleLooked = true;
+					_holdStyleMethod = typeof(Player).GetMethod("ItemCheck_ApplyHoldStyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+				}
+				if (_holdStyleMethod == null) { _holdStyleBroken = true; return; }
+				Rectangle frame = Item.GetDrawHitbox(held.type, p);
+				_holdStyleMethod.Invoke(p, new object[] { p.HeightOffsetHitboxCenter, held, frame });
+			}
+			catch (Exception e)
+			{
+				_holdStyleBroken = true;
+				Levy.Instance.Logger.Warn("Levy: applying a hold style to a soldier body failed; hold-style items keep the default pose: " + e);
 			}
 		}
 

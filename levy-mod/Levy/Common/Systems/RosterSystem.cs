@@ -539,7 +539,9 @@ namespace Levy.Common.Systems
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				var n = Main.npc[i];
-				if (n.active && n.ModNPC is SoldierNPC s && s.Record != null) _bodies.Add(s);
+				// Officer avatars are SoldierNPCs too, but their record is synthetic: keep them out of the roster's body cache so they never
+				// count against the render cap, spoils, auto-feed, desertion or the Nurse's heal targets, and never double-register for targeting.
+				if (n.active && n.ModNPC is SoldierNPC s && s.Record != null && !s.OfficerMode) _bodies.Add(s);
 			}
 		}
 

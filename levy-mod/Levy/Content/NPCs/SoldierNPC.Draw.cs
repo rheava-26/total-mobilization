@@ -42,6 +42,7 @@ namespace Levy.Content.NPCs
 		{
 			if (Main.dedServ || Record == null || !NPC.active) return;
 			if (!IsAlive) { drawn = true; return; } // dying bodies draw nothing while the roster handles the death
+			if (OfficerMode) { Officer_Draw(spriteBatch, screenPos, drawColor, ref drawn); return; } // an officer avatar draws the town NPC's sprite, not the player model
 			if (_rendererBroken) return;             // placeholder texture draws instead
 			EnsureDummy();
 			uint tick = Main.GameUpdateCount;

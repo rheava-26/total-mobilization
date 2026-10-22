@@ -245,6 +245,7 @@ namespace Levy.Content.NPCs
 		public void RefreshStats()
 		{
 			StatsDirty = false;
+			if (OfficerMode) { Officer_RefreshStats(); return; } // officers take their HP/defense from constants + the combat books, not from gear
 			if (Record == null) return;
 			EquipDummy();
 			Stations = StationBuffSystem.For(NPC.Center);
@@ -333,11 +334,26 @@ namespace Levy.Content.NPCs
 			{
 				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
 				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
+				if (OfficerMode) { Officer_ClientTick(); return; } // co-locate the parked town NPC and advance its drawn walk frame
 				if (ItemAnimation > 0) ItemAnimation--;
 				if (AttackCooldown > 0) AttackCooldown--;
 				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
 				Movement_ClientAnimate();
 				TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs)
+				return;
+			}
+			if (OfficerMode)
+			{
+				// An officer avatar reuses the soldier MOVEMENT unchanged, but posture (not the soldier brain) sets its goal, and it runs
+				// the officer kit and its own weapon instead of soldier combat. No roster coupling: the synthetic record is never listed.
+				if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; Officer_RefreshStats(); }
+				Damage_Update();
+				if (!IsAlive) return;
+				Officer_Think();
+				Movement_Update();
+				TickMovementFx();
+				Officer_Act();
+				SyncDummyTransform();
 				return;
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
@@ -364,6 +380,7 @@ namespace Levy.Content.NPCs
 			if (_deathHandled) return true;
 			_deathHandled = true;
 			if (LevyUtil.IsServerOrSingle) KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier
+			if (OfficerMode) { if (LevyUtil.IsServerOrSingle) Officer_OnDeath(); return true; } // the officer fell: end the commission, un-park the town NPC (not the roster path)
 			if (LevyUtil.IsServerOrSingle && Record != null)
 			{
 				Record.CurrentHp = 0;
@@ -466,6 +483,10 @@ namespace Levy.Content.NPCs
 			Record.Gear.WriteVisual(writer);
 			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
 			writer.Write((short)Math.Clamp(Aggro, short.MinValue, short.MaxValue)); // taunt weight, so client-side target searches weigh this soldier like the server
+			writer.Write(Record.Mutinous); // balances the ReceiveExtraAI read below; also keeps the wage-mutiny tint in sync between roster snapshots
+			// ---- officer avatar (OfficerMode only): clients need the link to co-locate/hide the town NPC and draw its sprite ----
+			writer.Write(OfficerMode);
+			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -483,6 +504,10 @@ namespace Levy.Content.NPCs
 			PotionSickness = reader.ReadByte() * 30;
 			Aggro = reader.ReadInt16();
 			Record.Mutinous = reader.ReadBoolean();
+			bool wasOfficer = OfficerMode;
+			OfficerMode = reader.ReadBoolean();
+			if (OfficerMode) { OfficerTownIndex = reader.ReadInt32(); OfficerTownType = reader.ReadInt32(); if (!wasOfficer) _offDef = null; }
+			else { OfficerTownIndex = -1; OfficerTownType = -1; }
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

@@ -87,13 +87,7 @@ namespace Levy.Common
 			/// Individual types that never use the swap even though their AI style is in <see cref="SwapAiStyles"/>.
 			/// Tumbleweed (Unicorn AI) despawns itself unless Main.player[target].ZoneDesert, and the soldier's dummy never stands in a desert zone.
 			/// </summary>
-			// Skeletron and Skeletron Prime (heads + their parts) are never redirected to soldiers: they flee / despawn the instant their target is not a live player
-			// (and at dawn), so the army drawing their aggro just makes them bolt. They fight the commander as vanilla. (Designer-requested daytime-despawn exception.)
-			public static readonly int[] SwapExcludedTypes = {
-				NPCID.Tumbleweed,
-				NPCID.SkeletronHead, NPCID.SkeletronHand,
-				NPCID.SkeletronPrime, NPCID.PrimeCannon, NPCID.PrimeSaw, NPCID.PrimeVice, NPCID.PrimeLaser,
-			};
+			public static readonly int[] SwapExcludedTypes = { NPCID.Tumbleweed };
 
 			// Styles deliberately left out (correctness over coverage), verified in NPC.cs:
 			//  * Flying (5: Eater of Souls, Hornets, Meteor Head, Probe, Moth, Parrot, Blood Squid, Servant of Cthulhu) reads its target through GetTargetData(),

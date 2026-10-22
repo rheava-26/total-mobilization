@@ -130,6 +130,14 @@ namespace Levy.Common
 		/// <summary>A fallback blade sidearm may only score up to this fraction of the best blade in the armory's stock (WeaponClassifier.Score). The top blades are left on the shelf for melee primaries, because stock is finite.</summary>
 		public const float SidearmScoreCapFraction = 0.5f;
 
+		// ---------- Burst weapons in the weapon score ----------
+		/// <summary>
+		/// Weapons whose single cast does several times the listed damage to one target, as a multiple of the item's damage (Score multiplies the shot by it).
+		/// Nebula Arcanum (useTime 30, damage 70): the orb bursts for 70 in a 176 px blast and throws 10-18 homing sub-bolts at 65% damage (45 each, about half land on one target), roughly 6x the
+		/// listed damage a cast; counted as 5x. Without it the slow, mana-heavy cast ranked at a fifth of Nebula Blaze.
+		/// </summary>
+		public static readonly Dictionary<int, float> ScoreShotDamageMult = new() { { ItemID.NebulaArcanum, 5f } };
+
 		// ---------- Ammo in the weapon score ----------
 		/// <summary>
 		/// A shooter's real output is its own damage PLUS its ammo's (Terraria adds the two), so Score credits each ammo-using weapon with a representative round

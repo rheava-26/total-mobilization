@@ -77,6 +77,12 @@ namespace Levy.Common
 			/// </summary>
 			public static readonly int[] SwapIncompatibleAiStyles = { NPCAIStyleID.Flying };
 
+			/// <summary>
+			/// Styles an unlocked boss (BossesTargetSoldiers) still never takes the swap for, on top of <see cref="SwapIncompatibleAiStyles"/>. Empress of Light (120) reads its
+			/// target only through GetTargetData() (12 call sites) without carrying UsesNewTargetting, so slot 255 reads as "no target" and she would idle.
+			/// </summary>
+			public static readonly int[] BossSwapIncompatibleAiStyles = { NPCAIStyleID.EmpressOfLight };
+
 			/// <summary>Boss segments that carry neither <c>boss</c> nor ShouldBeCountedAsBoss but use an allowlisted AI style (Eater of Worlds is Worm AI).</summary>
 			public static readonly int[] BossPartTypes = { NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail, NPCID.TheDestroyer, NPCID.TheDestroyerBody, NPCID.TheDestroyerTail };
 		}

@@ -34,7 +34,9 @@ namespace Levy.Common.Targeting
 		/// target == 255 or the target is dead. An enemy whose first search was won by the player (every soldier was farther than player distance + |aggro|,
 		/// or none was alive yet) therefore kept that player forever. EnemyTargetingGlobalNPC.PreAI re-runs the search for every allowlisted enemy about once
 		/// a second (staggered by whoAmI) so a de-aggroed player sheds such enemies onto the army as soon as a soldier wins the comparison.
-	/// Bosses, ShouldBeCountedAsBoss types, realLife parts of bosses and known boss segments are never allowlisted (the boss rule owns them).
+	/// Bosses, ShouldBeCountedAsBoss types, realLife parts of bosses and known boss segments are never allowlisted (the boss rule owns them),
+	/// except once BossesTargetSoldiers is on AND that boss type has been defeated in this world (BossDownedSystem): a first kill is always solo.
+	/// An unlocked boss then takes the swap for any AI style that is not swap-unsafe (BossSwapIncompatibleAiStyles), or the native route for UsesNewTargetting types.
 	/// </summary>
 	public static class EnemyTargeting
 	{
@@ -45,6 +47,7 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _swapIncompatible = new(LevyConstants.Targeting.SwapIncompatibleAiStyles);
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
+		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
 
 		// ---- the slot-255 swap ----
 		private static Player _backup;
@@ -75,20 +78,36 @@ namespace Levy.Common.Targeting
 			return type >= 0 && type < NPCID.Sets.UsesNewTargetting.Length && NPCID.Sets.UsesNewTargetting[type];
 		}
 
-		/// <summary>Config on, not a boss or boss part, not friendly, and an AI style we verified against the chosen mechanism.</summary>
+		/// <summary>Config on, not friendly, not a boss or boss part (unless its boss type is unlocked), and an AI style we verified against the chosen mechanism.</summary>
 		public static bool IsAllowlisted(NPC npc)
 		{
 			if (npc == null || !npc.active || !Enabled) return false;
-			if (npc.friendly || npc.townNPC || npc.boss || npc.ModNPC is SoldierNPC) return false;
+			if (npc.friendly || npc.townNPC || npc.ModNPC is SoldierNPC) return false;
 			int type = npc.type;
+			if (npc.boss) return BossAllowlisted(npc);
 			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
-			if (NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return false;
-			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].boss) return false;
-			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return false;
+			if (NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return BossAllowlisted(npc);
+			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].boss) return BossAllowlisted(npc);
+			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return BossAllowlisted(npc);
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
 			if (_swapIncompatible.Contains(style) || _swapExcludedTypes.Contains(type)) return false;
 			return _swapStyles.Contains(style) || ConfigAllows(style);
+		}
+
+		/// <summary>Opt-in: BossesTargetSoldiers is on and this boss (or the boss it belongs to) has been defeated in this world.</summary>
+		public static bool BossAggroUnlocked(NPC npc) => (_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers && BossDownedSystem.IsBossDowned(npc);
+
+		/// <summary>
+		/// A boss, boss part or boss segment (the four exclusion guards of <see cref="IsAllowlisted"/>) that the army may draw. Needs the unlock; then any AI style
+		/// works through the swap except the swap-unsafe ones. Native types (Deerclops, Betsy) keep the native route, whatever their style.
+		/// </summary>
+		private static bool BossAllowlisted(NPC npc)
+		{
+			if (!BossAggroUnlocked(npc)) return false;
+			if (UsesNativeTargeting(npc)) return true;
+			int style = npc.aiStyle;
+			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
 		}
 
 		/// <summary>Chest mimic (aiStyle 25) or biome Big Mimic (87) still waiting disguised: ai[0] == 0 until a target comes close or it is hurt.</summary>
@@ -152,6 +171,7 @@ namespace Levy.Common.Targeting
 		private static bool Compete(NPC npc, bool faceTarget, Vector2 center, bool manhattan, float maxSoldierDist)
 		{
 			if (!npc.active) return false;
+			if (BossRuleGlobalNPC.IsDashSwapping(npc)) return false; // the boss rule is aiming this boss's dash at its spite target through the same slot
 			LevyNpcData data = LevyNpcData.Of(npc);
 			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { data.SoldierTarget = -1; return false; }
 
@@ -236,6 +256,9 @@ namespace Levy.Common.Targeting
 		// =====================================================================================================
 		// Swap bookkeeping. AI calls are sequential, so one backup/flag pair is enough; everything else is a safety net.
 		// =====================================================================================================
+		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
+		internal static bool IsSwapped => _swapped;
+
 		internal static void Swap(SoldierNPC body)
 		{
 			if (_swapped) Unswap();
@@ -306,6 +329,8 @@ namespace Levy.Common.Targeting
 		public override bool PreAI(NPC npc)
 		{
 			if (!EnemyTargeting.Enabled) return true;
+			// Both this class and the boss rule's dash use Main.player[255] for one AI call; a boss mid-dash (or about to dash) keeps the boss rule's dummy.
+			if (BossRuleGlobalNPC.IsDashSwapping(npc) || BossRuleGlobalNPC.DashSwapDue(npc)) return true;
 			LevyNpcData data = LevyNpcData.Of(npc);
 			if (data.SoldierTarget < 0)
 			{

@@ -10,7 +10,7 @@ namespace Levy.Common
 			// ---- panels ----
 			public const int PanelCloseDistanceTiles = 10;
 			public const int BarracksPanelWidth = 560, BarracksPanelHeight = 520;
-			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 452;
+			public const int ArmoryPanelWidth = 692, ArmoryPanelHeight = 480;
 			public const int PanelDefaultLeft = 20, PanelDefaultTop = 300;
 			public const int RosterRefreshTicks = 30;
 
@@ -71,8 +71,8 @@ namespace Levy.Common
 			public const int ArmoryColumns = 12, ArmoryRows = 10;
 			/// <summary>Gap between the storage grid and its scrollbar, and the scrollbar's width.</summary>
 			public const int ArmoryScrollGap = 6, ArmoryScrollWidth = 20;
-			/// <summary>Top of the storage grid and the issue rows (under the header and the filter row).</summary>
-			public const int ArmoryGridTop = 68;
+			/// <summary>Top of the storage grid and the issue rows: under the header, the filter row and the dedicated status line (capacity + value), with nothing overlapping it.</summary>
+			public const int ArmoryGridTop = 96;
 			public const float SlotScale = 0.6f;
 			public const int SlotPitch = 34; // 52 * 0.6 + gap
 			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory).</summary>
@@ -83,6 +83,8 @@ namespace Levy.Common
 			public const int ArmorySearchLeft = 84, ArmorySearchGap = 8, ArmorySearchHeight = 26, ArmorySearchInset = 8;
 			/// <summary>Filter row under the header: its top and height (rarity swatches, category button, clear button, shown count).</summary>
 			public const int ArmoryFilterTop = 36, ArmoryFilterHeight = 24;
+			/// <summary>Dedicated status line between the filter row (ends at ArmoryFilterTop + ArmoryFilterHeight = 60) and the grid (ArmoryGridTop = 96): the storage capacity on the first row and the hoard's worth on the second, stacked by this pitch so nothing overlaps.</summary>
+			public const int ArmoryStatusTop = 62, ArmoryStatusLinePitch = 15;
 			/// <summary>Rarity swatch: square size and gap between swatches.</summary>
 			public const int RaritySwatchSize = 18, RaritySwatchGap = 2;
 			/// <summary>Gap between the swatch strip and the category button, and between the filter-row buttons.</summary>
@@ -113,7 +115,7 @@ namespace Levy.Common
 			/// <summary>Throw-away rolls used (once per weapon type, cached) to learn which prefixes that weapon can take and how good each is.</summary>
 			public const int ReforgeSampleRolls = 600;
 			/// <summary>Layout of the armory's bottom bar (reforge controls).</summary>
-			public const int ArmoryBarTop = 416, ArmoryBarHeight = 26;
+			public const int ArmoryBarTop = 444, ArmoryBarHeight = 26;
 
 			// ---- keybinds / radial ----
 			public const int MobilizeKeyRadiusTiles = 120;

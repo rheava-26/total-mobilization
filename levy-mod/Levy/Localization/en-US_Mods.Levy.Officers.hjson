@@ -55,4 +55,14 @@ Kit: {
 			Each heal is paid from the treasury, up to {2}.
 			'''
 	}
+
+	Pirate: {
+		Name: Pirate Captain
+		Desc:
+			'''
+			Conscripts a boarding crew of {0} flintlock gunners that march with the army and fire on any enemy in reach. Each gunner is a real unit with a healthbar.
+			A gunner has {1} health, and the crew's damage grows as bosses fall.
+			A fallen crewman is replaced every {2} seconds, up to the full crew.
+			'''
+	}
 }

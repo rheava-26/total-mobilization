@@ -120,5 +120,51 @@ namespace Levy.Common
 			/// <summary>Vertical nudge (px) of the drawn town sprite so its feet sit on the ground like a civilian's.</summary>
 			public const float TownDrawFootOffsetPx = 4f;
 		}
+
+		/// <summary>
+		/// SUMMON INFRASTRUCTURE — summoned combat units (real NPCs with healthbars) fielded by officer kits, and the Pirate Captain
+		/// that proves it. Pixels per tick unless the name says tiles or ticks. Appended block; owned by the summon module.
+		/// </summary>
+		public static class Summon
+		{
+			// ---- Summon infra (shared by every summon kind) ----
+			/// <summary>A unit looks for a hostile this often (ticks).</summary>
+			public const int ScanIntervalTicks = 12;
+			/// <summary>A unit idles this far (tiles) from its officer (a per-unit jitter fans the squad out).</summary>
+			public const float FollowStandoffTiles = 4f;
+			/// <summary>Inside this many tiles of its follow spot the unit stands still.</summary>
+			public const float StopDistTiles = 2f;
+			/// <summary>Farther than this from the officer (tiles) for <see cref="TeleportAfterTicks"/> and the unit is brought to him (pits, long falls).</summary>
+			public const float LeashTiles = 40f;
+			public const int TeleportAfterTicks = 180;
+			/// <summary>Walk acceleration (px/tick^2) toward the follow spot.</summary>
+			public const float AccelPx = 0.2f;
+			/// <summary>Jump: speed for an N-tile wall is sqrt(2 * gravity * (N*16 + clear)); anything taller than <see cref="MaxJumpTiles"/> is not attempted.</summary>
+			public const float Gravity = 0.3f, JumpClearPx = 10f;
+			public const int MaxJumpTiles = 4;
+			/// <summary>Healthbar drawn over each unit's head.</summary>
+			public const int HpBarWidthPx = 36, HpBarHeightPx = 5, HpBarOffsetY = 10;
+
+			// ---- Pirate (the proof officer and its boarding crew) ----
+			/// <summary>Wage/fee multiplier of the Pirate Captain (a summon officer costs more than a plain fighter).</summary>
+			public const float PirateCostMult = 1.9f;
+			/// <summary>Taunt weight of the Pirate Captain avatar (0 = weighed like a plain soldier body).</summary>
+			public const int PirateOfficerAggro = 0;
+			/// <summary>Flintlock gunners the captain keeps fielded at once.</summary>
+			public const int PirateCrewSize = 4;
+			/// <summary>Health of one crewman (flat; damage, not HP, scales with progress).</summary>
+			public const int PirateUnitHp = 200;
+			/// <summary>Base flintlock damage per crewman before the world-progress multiply.</summary>
+			public const int PirateUnitBaseDamage = 22;
+			public const float PirateFlintlockSpeed = 11f, PirateFlintlockKnockback = 2f, PirateFlintlockGravityCorrection = 5f;
+			public const int PirateFlintlockCooldownTicks = 55, PirateFlintlockRandomCooldownTicks = 35;
+			/// <summary>Flintlock reach (tiles).</summary>
+			public const float PirateRangeTiles = 28f;
+			/// <summary>Crewman walk speed cap (px/tick).</summary>
+			public const float PirateUnitMoveSpeedPx = 1.7f;
+			public const int PirateUnitAggro = 0;
+			/// <summary>A lost crewman is replaced this often (ticks) while below the crew size.</summary>
+			public const int PirateRespawnCadenceTicks = 300;
+		}
 	}
 }

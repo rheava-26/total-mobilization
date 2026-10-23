@@ -124,7 +124,10 @@ Mods: {
 			PatrolBannerTile.MapEntry: Patrol Banner
 		}
 
-		NPCs.SoldierNPC.DisplayName: Soldier
+		NPCs: {
+			SoldierNPC.DisplayName: Soldier
+			SummonedUnitNPC.DisplayName: Summoned Unit
+		}
 
 		Projectiles: {
 			SoldierThrust.DisplayName: Thrust
@@ -137,6 +140,7 @@ Mods: {
 			SoldierCrystalLeaf.DisplayName: Soldier Crystal Leaf
 			SoldierSpectreHeal.DisplayName: Soldier Spectre Heal Bolt
 			SoldierTitaniumShard.DisplayName: Soldier Titanium Shard
+			OfficerHealSyringe.DisplayName: Officer Heal Syringe
 		}
 
 		Keybinds: {

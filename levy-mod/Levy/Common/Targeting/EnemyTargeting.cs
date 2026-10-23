@@ -65,8 +65,8 @@ namespace Levy.Common.Targeting
 		public static SoldierNPC SoldierTargetOf(NPC npc) => npc == null || !npc.active ? null : LiveBody(LevyNpcData.Of(npc).SoldierTarget);
 
 		/// <summary>
-		/// Live target body at an NPC index: a soldier, or an active officer (a conscripted town NPC); null when the slot is empty or reused.
-		/// Soldier-only callers (loot credit, minions, projectile tags) keep using <see cref="LiveBody"/>.
+		/// Live target body at an NPC index: a soldier, a summoned unit, or an active officer (a conscripted town NPC); null when the slot is
+		/// empty or reused. Soldier-only callers (loot credit, minions, projectile tags) keep using <see cref="LiveBody"/>.
 		/// </summary>
 		public static ITargetBody LiveTarget(int npcIndex)
 		{
@@ -74,6 +74,7 @@ namespace Levy.Common.Targeting
 			NPC npc = Main.npc[npcIndex];
 			if (!npc.active) return null;
 			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
+			if (npc.ModNPC is Content.NPCs.SummonedUnitNPC u) return u.IsAlive ? u : null; // so an enemy sticks to a summoned unit without re-acquiring every tick
 			return OfficerSystem.Instance.BodyOf(npc);
 		}
 
@@ -384,6 +385,9 @@ namespace Levy.Common.Targeting
 			// Officers (conscripted town NPCs) are targeted like soldiers; the list is the officer module's own per-tick cache.
 			var officers = OfficerSystem.Instance.ActiveBodies;
 			for (int i = 0; i < officers.Count; i++) bodies.Add(officers[i]);
+			// Summoned units (an officer kit's squad) are targeted the same way, from their own per-tick cache.
+			var summons = Content.NPCs.SummonedUnitSystem.Instance.ActiveBodies;
+			for (int i = 0; i < summons.Count; i++) bodies.Add(summons[i]);
 		}
 
 		public override void PostUpdateNPCs() => EnemyTargeting.EnsureSlotRestored();

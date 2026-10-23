@@ -57,8 +57,12 @@ namespace Levy.Common
 		public const int ImmuneTicksOnHit = 20;
 
 		// ---------- Economy ----------
-		/// <summary>Levy daily wage by tier T1..T6 in copper.</summary>
-		public static readonly long[] TierLevyWage = { 1000, 2500, 4000, 6000, 8000, 10000 };
+		/// <summary>
+		/// Levy daily wage by tier T1..T6 in copper. Every price in the mod is a multiple of this one number (soldier wages by grade, hazard pay, militia muster,
+		/// recruiting drive, officer wages and fees), so it is kept deliberately flat: boss progress lifts per-head costs only gently and growing the army never
+		/// prices the player out of it. Difficulty comes from the enemy, not from the bill. Scale the whole economy at once with <c>LevyConfig.WageMultiplier</c>.
+		/// </summary>
+		public static readonly long[] TierLevyWage = { 1000, 1200, 1400, 1700, 2000, 2400 };
 		public const float StoodDownWageMult = 0.5f;
 		public const int MusterFeeDays = 5;
 		public const int MilitiaMusterDivisor = 5;        // L / 5 per head per event

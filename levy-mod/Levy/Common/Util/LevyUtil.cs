@@ -73,21 +73,23 @@ namespace Levy.Common.Util
 			return n.realLife >= 0 && n.realLife < Main.maxNPCs && n.realLife != n.whoAmI && Main.npc[n.realLife].active && Main.npc[n.realLife].boss;
 		}
 
-		/// <summary>True while a hostile boss is alive AND near a player, so the garrison turns out to fight it. The proximity check
-		/// stops an ambient or modded "boss" elsewhere in the world from keeping every town permanently mustered.</summary>
-		public static bool IsBossActive()
+		/// <summary>A hostile boss standing in the world right now: <c>NPC.boss</c>, or a type vanilla counts as one (the Eater of Worlds head, the lunar pillars).
+		/// Parts and segments are not counted on their own; the garrison tracks boss TYPES (see <c>SettlementSystem.BossEngaged</c>, which calls the garrison out when
+		/// one comes within <see cref="LevyConstants.BossMusterTiles"/> of a living player and holds it out for as long as that boss lives).</summary>
+		public static bool IsMusterBoss(NPC n)
 		{
-			float r2 = LevyConstants.BossMusterTiles * 16f; r2 *= r2;
-			for (int i = 0; i < Main.maxNPCs; i++)
+			if (n == null || !n.active || n.friendly) return false;
+			return n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type]);
+		}
+
+		/// <summary>True when a LIVING player stands within <paramref name="tiles"/> of this NPC (a dead player does not count, wherever the body fell).</summary>
+		public static bool IsNearLivingPlayer(NPC n, float tiles)
+		{
+			float r2 = tiles * LevyConstants.TilePx; r2 *= r2;
+			for (int p = 0; p < Main.maxPlayers; p++)
 			{
-				NPC n = Main.npc[i];
-				if (!n.active || n.friendly) continue;
-				if (!(n.boss || (n.type >= 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type]))) continue;
-				for (int p = 0; p < Main.maxPlayers; p++)
-				{
-					Player pl = Main.player[p];
-					if (pl != null && pl.active && !pl.dead && Vector2.DistanceSquared(pl.Center, n.Center) <= r2) return true;
-				}
+				Player pl = Main.player[p];
+				if (pl != null && pl.active && !pl.dead && Vector2.DistanceSquared(pl.Center, n.Center) <= r2) return true;
 			}
 			return false;
 		}

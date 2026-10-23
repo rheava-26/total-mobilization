@@ -41,6 +41,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Empty the treasury, pass two dawns → "could not cover the garrison", then a 25% desertion roll per dawn
       ("<name> has deserted, taking <weapon> and no regrets.", the body walks off the map edge and vanishes).
 - [ ] Deposit/withdraw +1 / +10 / all coins from the panel → amounts move correctly, buttons grey when they can't be afforded.
+- [ ] Prices barely climb with progress: a Levy's daily wage reads 10 silver at the start and only 12 / 14 / 17 / 20 / 24 silver after Wall of Flesh / a mechanical boss / Plantera / Golem / Moon Lord (every other price follows it).
 
 ## 5. The soldier body and rendering
 - [ ] A soldier renders with the player look: it wears the armor you issued and holds the weapon; walk/jump/idle frames animate.
@@ -96,6 +97,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Assign patrol → place two Patrol Banners, assign a Regular → it paces between them, pausing ~2 s at each end.
 - [ ] N → army strip bottom-left with heads + HP; M (fullscreen map) → gold dots for Regulars, blue for militia, hover = name.
 - [ ] Promote / Discharge / Rebase buttons in the roster do what they say; promote costs the fee difference and keeps the name.
+- [ ] Die as commander with Regulars out → no order changes: followers walk home while you are down and fall in behind you again after the respawn with no re-order; Hold and Patrol soldiers keep holding and patrolling; wages are not halved.
 
 ## 11. Boss rule and fear (M4) — do on Expert too
 - [ ] Eye of Cthulhu with 3 Levies + 1 Man-at-Arms engaging → its max HP reads base x1.12; more hits add nothing.
@@ -121,6 +123,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
       until the pool is spent; they patrol ±60 tiles; treasury drops L/5 per head (still musters when broke).
 - [ ] Lower RenderCap to 5 with manpower 10 → the 6th walks out ~2 s after one dies. Manpower 0 → "has no one left to send." once.
 - [ ] Stand down (horn again or event end) → bodies walk home and vanish, gear returns to the Armory; a stuck one vanishes after 30 s.
+- [ ] Auto-muster on, fight a boss within 250 tiles of town → the militia turns out. Die, or Recall away, while the boss lives → the militia stays out and is not mustered again; it stands down only once the boss is dead or gone. A boss that was never near a player musters no one.
 - [ ] Invasion with auto-muster on at two towns → BOTH towns turn out and each defends its own ground (militia don't march to you).
 - [ ] Recruiting drive (buy manpower) and Hazard pay (one day's wage, before a boss) → once per day each; correct chat lines.
 - [ ] Save mid-Blood-Moon and reload → the mobilized town re-streams fresh militia.
@@ -170,7 +173,7 @@ Needs a Barracks with a housed Nurse and a few gold in the treasury.
 - [ ] Wound a soldier below ~85%: within a second she heals the nearest one (green number + heal sound), treasury drops by a few silver to a few gold (never above 3 gold), and the same soldier is not healed again for 5 s.
 - [ ] A hostile that comes within ~18 tiles with a clear line gets syringes (weak); she stops to throw (attack frames play), then follows again.
 - [ ] Enemies pursue her like a soldier (not first choice: Nurse taunt -250). Below 40% life she runs to you and stops starting fights until 60%.
-- [ ] Next dawn: payroll chat "Officers paid", treasury drops by the wage. Empty the treasury: warning the first dawn, "leaves the army" the second, and she goes home to normal town life.
+- [ ] Next dawn: payroll chat "Officers paid", treasury drops by the wage. Empty the treasury: a warning the first dawn, "is off duty" the second. She keeps her slot and commission, stands down to normal town life (no avatar, no kit), and the panel card reads "Off duty". Refill the treasury: at the first dawn it can pay her, "is back on duty" and she rejoins. She is never dismissed for want of pay.
 - [ ] Dismiss: she returns to her house (snaps home if 40+ tiles away) and wanders/sleeps normally again, no refund; the slot frees.
 - [ ] Let her die: "has fallen" chat; slot is free; when she respawns she is a plain civilian (not an officer).
 - [ ] Save and reload mid-commission: still an officer, same slot, still paid. Log out as commander (MP): she goes back to town AI; log in: she rejoins.

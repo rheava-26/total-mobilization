@@ -16,7 +16,9 @@ Msg: {
 	Dismissed: "{0} is dismissed and returns to town life."
 	Lapsed: "{0} leaves the army. The commission has lapsed."
 	Fallen: "{0} has fallen."
-	Unpaid: "{0} was not paid at dawn. One more missed payday and the commission lapses."
+	Unpaid: "{0} was not paid at dawn. One more missed payday and the officer goes off duty."
+	OffDuty: "{0} is off duty: the treasury could not cover the wage. The commission is kept. Duty resumes at the first dawn the wage is paid."
+	Resumed: "{0} is back on duty."
 	Payday: Officers paid: {0}.
 }
 
@@ -40,7 +42,8 @@ UI: {
 	SlotRole: Slot {0}: {1}
 	SlotWage: Wage {0} a day
 	SlotEmptyHint: No officer assigned. Commission a townsperson below.
-	UnpaidWarn: Unpaid for {0} day - pay the treasury or he leaves.
+	UnpaidWarn: Unpaid for {0} day. Missed paydays mean off duty.
+	OffDuty: Off duty. Back at the first dawn the treasury can pay.
 	CandidateHead: "{0} - {1}"
 }
 

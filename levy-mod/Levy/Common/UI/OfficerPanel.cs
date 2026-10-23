@@ -196,7 +196,8 @@ namespace Levy.Common.UI
 			Label sub2;
 			if (g != null && g.DaysUnpaid > 0)
 			{
-				sub2 = AddTo(card, new Label(LevyUtil.T("Officers.UI.UnpaidWarn", g.DaysUnpaid), SmallScale), tx, 47);
+				string warn = OfficerSystem.IsSuspended(g) ? LevyUtil.T("Officers.UI.OffDuty") : LevyUtil.T("Officers.UI.UnpaidWarn", g.DaysUnpaid);
+				sub2 = AddTo(card, new Label(warn, SmallScale), tx, 47);
 				sub2.TextColor = Unpaid;
 			}
 			else

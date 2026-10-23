@@ -17,7 +17,7 @@ namespace Levy.Common
 			public const float WageMult = 2f;
 			/// <summary>The one-time commission fee, in days of the officer's wage (same idea as a soldier's muster fee).</summary>
 			public const int FeeDays = LevyConstants.MusterFeeDays;
-			/// <summary>Consecutive unpaid dawns after which the commission lapses and the officer goes back to town life.</summary>
+			/// <summary>Consecutive unpaid dawns after which an officer goes OFF DUTY: the commission and the slot are kept, but no avatar marches and no kit runs until a dawn payroll pays him again. A commission is never ended for want of pay.</summary>
 			public const int MaxDaysUnpaid = 2;
 			/// <summary>The commander must be this close (tiles) to the barracks to commission or dismiss (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
 			public const int ActionRangeTiles = 32;

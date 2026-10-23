@@ -119,6 +119,40 @@ namespace Levy.Common
 			public const int TownWalkFrameTicks = 7;
 			/// <summary>Vertical nudge (px) of the drawn town sprite so its feet sit on the ground like a civilian's.</summary>
 			public const float TownDrawFootOffsetPx = 4f;
+
+			// =====================================================================================================
+			// THE GUIDE + the SHRED MARK. The Guide marches with the line and hangs the mark on the single strongest enemy in reach; while
+			// it stands, every army shot (soldiers, their summons, an officer's bolt) lands harder there. The amp lives on the enemy side
+			// (Common/Mark/MarkAmpGlobalNPC); the Guide and its kit live in Common/Officers/GuideOfficer.
+			// =====================================================================================================
+			// ---- the mark (read by MarkAmpGlobalNPC on the enemy side) ----
+			/// <summary>Extra damage the whole army deals to a marked enemy, as a percent. A clean multiplier on final damage, so it stays relevant on bosses.</summary>
+			public const float MarkDamagePct = 25f;
+			/// <summary>The mark's amp as a fraction (MarkDamagePct / 100). What the amp hook multiplies final damage by, plus one.</summary>
+			public static readonly float MarkDamageFrac = MarkDamagePct / 100f;
+
+			// ---- the Guide's kit ----
+			/// <summary>Commission/wage multiplier for the Guide: a touch pricier than a plain fighter for an army-wide call for fire.</summary>
+			public const float GuideCostMult = 1.3f;
+			/// <summary>Taunt weight. A frontline spotter is not especially loud; enemies weigh it about like a soldier.</summary>
+			public const int GuideAggro = 0;
+			/// <summary>The Guide re-picks the strongest enemy and (re)hangs the mark this often (ticks): every 1.5 s, well inside the mark's life so it reads as continuous.</summary>
+			public const int GuideMarkCadenceTicks = 90;
+			/// <summary>How long one mark lasts if the Guide does not refresh it (ticks): 6 s.</summary>
+			public const int GuideMarkDurationTicks = 6 * 60;
+			/// <summary>How far (tiles) the Guide can designate a target — long enough to tag a boss from the line.</summary>
+			public const float GuideMarkRangeTiles = 42f;
+			/// <summary>Score added so a boss (or a boss part) always outranks a mob for the mark, whatever the raw max-life numbers are.</summary>
+			public const long GuideBossPriorityScore = 1_000_000_000L;
+
+			// ---- the Guide's guiding bolt (its own OfficerWeapon; the mark is the real payload, this is just a poke) ----
+			public const float GuideBoltSpeed = 11f;
+			/// <summary>Arc lift (px) a far shot is aimed above the target. Zero: a gem bolt flies straight, with no gravity to lead.</summary>
+			public const float GuideBoltGravityCorrection = 0f;
+			public const int GuideBoltDamage = 14;
+			public const float GuideBoltKnockback = 2f;
+			public const int GuideBoltCooldown = 24, GuideBoltRandomCooldown = 16;
+			public const float GuideBoltRangeTiles = 30f;
 		}
 	}
 }

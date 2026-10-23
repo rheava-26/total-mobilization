@@ -8,7 +8,7 @@
 
 ## 📦 SHIPPED STATUS (2026-10-22)
 
-**Current version: `1.0.1`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation, since officers/guides/logistical-center behaviour is unverifiable headless).
+**Current version: `1.3.0`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation). 12 officers built (Nurse, Guide, Angler, Pirate, Princess, Dryad, Goblin Tinkerer, Tax Collector, Demolitionist, Arms Dealer, Merchant, Painter) — BUT several DRIFTED from the designer's actual specs; a spec-faithful rebuild is underway (see **OFFICER RECONCILIATION** below).
 
 **1.0 batch (all built, headless-clean, delivered as test builds):**
 - **NPC Officers foundation** — conscript a town NPC into a command slot (3 slots), one-time fee + dawn wage from the barracks treasury, AI takeover server-side, data lives on the NPC (saved + extra-AI synced). Proof officer = the **Nurse** (heal kit). Registry pattern (`OfficerRegistry.RegisterAll`) ready for more kits. Full design (per-NPC kits, "every officer is a kit not one ability", summons-have-healthbars) is in the Officers section below.
@@ -24,6 +24,40 @@
 - **Steampunker officer — PINNED/unresolved** (what does her kit do? pylons are universal so not that; she sells Clentaminator/Jetpack/Blend-O-Matic/furniture).
 - **More officer kits** — the rest of the town roster (brainstorm captured in the Officers section).
 - **Mechanical guides (post-1.0, design-only so far):** Engineering (turrets), Mechanization (mounts), the Chlorophyte expedition — all PAUSED.
+
+---
+
+## 🎖 OFFICER RECONCILIATION (2026-10-23) — rebuild the kits to the designer's ACTUAL specs
+
+**The problem (designer, this session):** the 12 shipped officer kits DRIFTED from the specific ideas the designer gave (voice-dump + brainstorm, chat ~2026-10-18). They are NOT "bad" — the designer never said so — they were *genericized into weapon/aura/summon archetypes*, losing the flavor. Standing self-correction: STOP capitulating / stop calling the work bad; it's a fidelity gap, fix it.
+
+**No visual-clutter problem.** "Takes up the screen with three of them" was a mix-up over a buff-above-head display that was never proposed — nothing to thin (the mod draws no buff icons on units). The ONE real visual bug: the officer avatar draw is broken for ALL town NPCs (hand-rolled sprite) → fixed in wave 1.
+
+**Designer's ACTUAL officer specs (SOURCE OF TRUTH):**
+- **Guide** — accuracy; same-weapon soldiers *fire in sync (a volley at once)*; +morale. Flourish idea: he's the WoF, if he dies everyone opens fire. [BUILT as enemy-marker → REBUILD]
+- **Arms Dealer** — *accuracy* (ammo guy → bottomless/upgraded ammo). "Accuracy" isn't native → reduced spread + truer shots. [BUILT as rapid bullets + an **Archery** aura — Archery buffs BOWS, backwards → REBUILD]
+- **Merchant** — mobile fence: sell to him on the march at a better-than-max-happiness price; +coins/+loot; hands out ammo/basics + potions; morale lift; throws knives; own dialogue; optional item-storage while traveling. [BUILT as coin-gun + ⅛-wage treasury trickle → REBUILD]
+- **Goblin Tinkerer** — reforge weapons better *while you move* (reuse bulk reforge-to-floor). [BUILT as +dmg/crit/def aura + spiky balls → RE-HOOK]
+- **Princess** — a *morale boost* (expensive). [BUILT as 4-buff aura → COLLAPSE to one Morale buff]
+- **Dryad** — *Dryad's Blessing* on the army (follow-to-buff). [BUILT as Bane+thorns → ADD Blessing]
+- **Painter** — use his *paint gun* on enemies. [BUILT ~right + bolted-on Wrath aura → drop the aura]
+- **Nurse** — pay to follow + heal from treasury. [BUILT ~right; still owes bug fixes: stops self-healing, follows player not troops, odd syringes, dawn-unhire]
+- **Angler** — Well Fed buff. [BUILT right — leave]
+- **Demolitionist** — fire support (grenades, scale mid-game); nearby regulars occasionally lob grenades. [BUILT ~right; add the regulars touch]
+- **Witch Doctor** — venom debuff on a share of army hits. [NOT BUILT]
+- **Summoners (archetype MATCHES spec; all summons carry health):** Pirate = pirate soldiers + cannon turrets; Clothier = skeleton squad on the fly; Zoologist = summon monsters; Wizard = enchanted swords + magical creatures; Cyborg = Spelunker-effect drones (+ he sells nanites, not the Steampunker). [only Pirate's crew built]
+- **Parked/optional:** Tavernkeep (fear-resist but tipsy/worse-aim), town pets (small bonus, outside slots), Steampunker (unresolved).
+- **INVENTED by the old plan, NOT designer specs → CUT unless re-justified:** Tax Collector (built; coin-bounty folds into Merchant), Mechanic, Truffle.
+
+**Reuse hooks (confirmed by code read):** accuracy → extend `WeaponUse.AimErrorMultiplier` (WeaponUse.cs:568); bottomless ammo → officer flag in `WeaponUse.ConsumesAmmo` (:579); reforge → extract per-item loop from `ArmoryTE.ReforgeToFloor` (:1238) via public `PrefixQuality`/`IsReforgeable`/`ReforgePrice`; coin/loot → `GlobalNPC.OnKill` like `TaxBountyGlobalNPC`; morale → one `MoraleBuff : ModBuff` (copy `MarkedBuff`) + a case in `ApplyBuffEffect` (SoldierNPC.Damage.cs:202); aura-collapse → `AuraKit.BuffTypes={MoraleBuff}`; network recruiting → relax `OfficerSystem.CanCommission` (:182-183) + reuse `SettlementSystem.NearPylon`/`NetworkedArmories`. **Volley-sync** and **Merchant sell-on-the-march** are the only NET-NEW systems.
+
+**Avatar-draw fix (wave 1):** stop suppressing the parked town NPC's vanilla draw (`OfficerGlobalNPC.PreDraw:128` → return true), make the avatar body invisible, delete hand-rolled `Officer_Draw`/`Officer_AdvanceWalkFrame`; vanilla renders the co-located town NPC (correct frames/hats/packs free), avatar keeps its nameplate.
+
+**Weapon-picker fix (wave 1, GREENLIT "fix the whole class"):** soldiers bench the Last Prism for a Bubble Gun because `Score` (WeaponClassifier.cs:519) rates ramping channel-beams on listed damage. Last Prism = HeldRealCadence 12, ramp uncredited → ~500; Bubble Gun = 3 bubbles → ~900. Fix via `ScoreShotDamageMult` (LevyConstants.Weapons.cs:139) / `HeldRealCadence` so Moon-Lord weapons out-rank novelties; sanity-check Vortex Beater/Solar/Phantasm.
+
+**Build waves:** (1) avatar-draw + weapon-score [IN FLIGHT]; (2) rebuild drifted kits (Arms Dealer, Guide, Merchant t1, Goblin) + MoraleBuff/aura-collapse; (3) pylon recruiting; (4) Nurse bug-fix; (5) Merchant t2 + Witch Doctor + invented-officer cuts; (6) summoners to spec. Full plan: `/root/.claude/plans/wiggly-orbiting-pond.md`.
+
+**Milestone (2026-10-23):** the designer's levy army fought **Moon Lord** — the whole fantasy (conscripted townsfolk taking the final boss unmicroed) working in a real playtest. 🔥
 
 ---
 

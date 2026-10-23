@@ -120,7 +120,10 @@ namespace Levy.Common.Officers
 			Register(GuideOfficer.Create());
 			Register(AnglerOfficer.Create());
 			Register(PirateOfficer.Create());           // summon officer: fields a flintlock boarding crew
-			// Register(DemolitionistOfficer.Create());   <- the next officer goes here
+			Register(DemolitionistOfficer.Create());    // frontline: lobbed grenades + a periodic heavy dynamite
+			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + an Archery aura
+			Register(MerchantOfficer.Create());         // frontline: coin gun + a modest treasury trickle
+			Register(PainterOfficer.Create());          // frontline: colorful paint barrage + an inspiration aura
 		}
 	}
 }

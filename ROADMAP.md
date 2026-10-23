@@ -8,7 +8,7 @@
 
 ## 📦 SHIPPED STATUS (2026-10-22)
 
-**Current version: `1.3.0`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation). 12 officers built (Nurse, Guide, Angler, Pirate, Princess, Dryad, Goblin Tinkerer, Tax Collector, Demolitionist, Arms Dealer, Merchant, Painter) — BUT several DRIFTED from the designer's actual specs; a spec-faithful rebuild is underway (see **OFFICER RECONCILIATION** below).
+**Current version: `1.3.1`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation). **1.3.1 (test build shipped 2026-10-23)** = wave-1 of the officer reconciliation: officer avatars now render the real town NPC via vanilla (fixes broken sprites for ALL town NPCs; hats/packs/walk frames), and the weapon-picker credits ramping channel-beams (Last Prism etc.). Boots clean headless; awaiting the designer's visual confirmation of the avatars. 12 officers built (Nurse, Guide, Angler, Pirate, Princess, Dryad, Goblin Tinkerer, Tax Collector, Demolitionist, Arms Dealer, Merchant, Painter) — BUT several DRIFTED from the designer's actual specs; a spec-faithful rebuild is underway (see **OFFICER RECONCILIATION** below).
 
 **1.0 batch (all built, headless-clean, delivered as test builds):**
 - **NPC Officers foundation** — conscript a town NPC into a command slot (3 slots), one-time fee + dawn wage from the barracks treasury, AI takeover server-side, data lives on the NPC (saved + extra-AI synced). Proof officer = the **Nurse** (heal kit). Registry pattern (`OfficerRegistry.RegisterAll`) ready for more kits. Full design (per-NPC kits, "every officer is a kit not one ability", summons-have-healthbars) is in the Officers section below.
@@ -55,7 +55,7 @@
 
 **Weapon-picker fix (wave 1, GREENLIT "fix the whole class"):** soldiers bench the Last Prism for a Bubble Gun because `Score` (WeaponClassifier.cs:519) rates ramping channel-beams on listed damage. Last Prism = HeldRealCadence 12, ramp uncredited → ~500; Bubble Gun = 3 bubbles → ~900. Fix via `ScoreShotDamageMult` (LevyConstants.Weapons.cs:139) / `HeldRealCadence` so Moon-Lord weapons out-rank novelties; sanity-check Vortex Beater/Solar/Phantasm.
 
-**Build waves:** (1) avatar-draw + weapon-score [IN FLIGHT]; (2) rebuild drifted kits (Arms Dealer, Guide, Merchant t1, Goblin) + MoraleBuff/aura-collapse; (3) pylon recruiting; (4) Nurse bug-fix; (5) Merchant t2 + Witch Doctor + invented-officer cuts; (6) summoners to spec. Full plan: `/root/.claude/plans/wiggly-orbiting-pond.md`.
+**Build waves:** (1) avatar-draw + weapon-score [SHIPPED 1.3.1 test build 2026-10-23, awaiting in-game confirm]; (2) rebuild drifted kits (Arms Dealer, Guide, Merchant t1, Goblin) + MoraleBuff/aura-collapse; (3) pylon recruiting; (4) Nurse bug-fix; (5) Merchant t2 + Witch Doctor + invented-officer cuts; (6) summoners to spec. Full plan: `/root/.claude/plans/wiggly-orbiting-pond.md`.
 
 **Milestone (2026-10-23):** the designer's levy army fought **Moon Lord** — the whole fantasy (conscripted townsfolk taking the final boss unmicroed) working in a real playtest. 🔥
 

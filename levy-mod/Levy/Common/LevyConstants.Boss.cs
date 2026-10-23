@@ -10,7 +10,9 @@ namespace Levy.Common
 		/// <summary>
 		/// Boss parts that do not share a life pool with their boss, mapped to the boss root type. Parts WITH realLife
 		/// (Destroyer body/tail, Wall of Flesh eyes) resolve through realLife first; this table is their fallback and the
-		/// only route for Skeletron/Prime limbs, Golem parts, Plantera hooks, Moon Lord head/hands and Eater of Worlds segments.
+		/// only route for Skeletron/Prime limbs, Golem parts, Plantera hooks, Moon Lord head/hands/True Eyes and Eater of Worlds segments.
+		/// Membership is also what routes a part through the boss gate of EnemyTargeting.IsAllowlisted (a part with neither <c>boss</c> nor realLife,
+		/// like the True Eye, would otherwise fall through to the ordinary-enemy AI-style test and keep chasing the commander).
 		/// </summary>
 		public static readonly Dictionary<int, int> BossParts = new()
 		{
@@ -20,6 +22,8 @@ namespace Levy.Common
 			{ NPCID.GolemHead, NPCID.Golem }, { NPCID.GolemFistLeft, NPCID.Golem }, { NPCID.GolemFistRight, NPCID.Golem }, { NPCID.GolemHeadFree, NPCID.Golem },
 			{ NPCID.PlanterasHook, NPCID.Plantera }, { NPCID.PlanterasTentacle, NPCID.Plantera },
 			{ NPCID.MoonLordHead, NPCID.MoonLordCore }, { NPCID.MoonLordHand, NPCID.MoonLordCore },
+			// True Eye of Cthulhu (aiStyle 81, invulnerable, spawned when a head/hand falls): no boss flag, no realLife; ai[3] is the core (BossRule.PartParentIndex).
+			{ NPCID.MoonLordFreeEye, NPCID.MoonLordCore },
 			{ NPCID.EaterofWorldsBody, NPCID.EaterofWorldsHead }, { NPCID.EaterofWorldsTail, NPCID.EaterofWorldsHead },
 			{ NPCID.TheDestroyerBody, NPCID.TheDestroyer }, { NPCID.TheDestroyerTail, NPCID.TheDestroyer },
 			{ NPCID.WallofFleshEye, NPCID.WallofFlesh },

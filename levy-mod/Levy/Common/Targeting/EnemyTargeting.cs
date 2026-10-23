@@ -38,6 +38,8 @@ namespace Levy.Common.Targeting
 	/// Bosses, ShouldBeCountedAsBoss types, realLife parts of bosses and known boss segments are never allowlisted (the boss rule owns them),
 	/// except once BossesTargetSoldiers is on AND that boss type has been defeated in this world (BossDownedSystem): a first kill is always solo.
 	/// An unlocked boss then takes the swap for any AI style that is not swap-unsafe (BossSwapIncompatibleAiStyles), or the native route for UsesNewTargetting types.
+	/// Boss parts that carry neither a boss flag nor realLife (Moon Lord's True Eyes, Skeletron's hands…) are recognised through LevyConstants.BossParts and take the same gate.
+	/// SPREAD: Compete first decides army or commander, then which soldier; see <see cref="AggroSpread"/> for how a horde is fanned out over the army instead of stacking on the nearest man.
 	/// </summary>
 	public static class EnemyTargeting
 	{
@@ -50,6 +52,11 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
 		private static readonly HashSet<int> _eventTowers = new(LevyConstants.Targeting.EventTowerTypes);
+
+		// Scratch for one Compete call: the soldiers in reach, as (index into Bodies, NPC index, weighted distance). Compete is never re-entered, so one set is enough.
+		private static float[] _candD = new float[64];
+		private static int[] _candNpc = new int[64];
+		private static int[] _candSlot = new int[64];
 
 		// ---- the slot-255 swap ----
 		private static Player _backup;
@@ -106,6 +113,7 @@ namespace Levy.Common.Targeting
 			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
 			if (NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return BossAllowlisted(npc);
 			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].boss) return BossAllowlisted(npc);
+			// Parts with neither boss nor realLife (Skeletron hands, Prime limbs, Golem fists, Moon Lord's True Eyes…) resolve to their boss through LevyConstants.BossParts.
 			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return BossAllowlisted(npc);
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
@@ -188,13 +196,16 @@ namespace Levy.Common.Targeting
 			Compete(searcher, faceTarget, searcher.Center, manhattan: false, float.PositiveInfinity);
 		}
 
-		/// <summary>After a vanilla search: if the nearest live soldier beats vanilla's pick, point the enemy at it. Returns true when a soldier was chosen.</summary>
+		/// <summary>
+		/// After a vanilla search: decide army or commander, then which soldier, and point the enemy at the chosen soldier. Returns true when a soldier was chosen.
+		/// Step 1 compares the best soldier's weighted distance with vanilla's pick; step 2 (<see cref="AggroSpread.Pick"/>) takes the least crowded of the soldiers close to that best one.
+		/// </summary>
 		private static bool Compete(NPC npc, bool faceTarget, Vector2 center, bool manhattan, float maxSoldierDist)
 		{
 			if (!npc.active) return false;
 			if (BossRuleGlobalNPC.IsDashSwapping(npc)) return false; // the boss rule is aiming this boss's dash at its spite target through the same slot
 			LevyNpcData data = LevyNpcData.Of(npc);
-			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { data.SoldierTarget = -1; return false; }
+			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { SetLock(npc, data, -1); return false; }
 
 			float vanillaDist = float.PositiveInfinity;
 			bool vanillaIsPlayer = false;
@@ -207,6 +218,7 @@ namespace Levy.Common.Targeting
 					Vector2 point = npc.targetRect.Width > 0 ? npc.targetRect.Center.ToVector2() : p.Center;
 					vanillaDist = Metric(npc, center, point, manhattan) - p.aggro;
 					if (p.npcTypeNoAggro[npc.type] && npc.direction != 0) vanillaDist += 1000f;
+					vanillaIsPlayer = true; // the collective army pull below only ever weighs against a player
 				}
 			}
 			else if (npc.HasNPCTarget)
@@ -220,13 +232,15 @@ namespace Levy.Common.Targeting
 			// A pillar heals itself when its target is beyond 2000 px, so a soldier never takes it from a commander who is in range by pulling it past that.
 			if (_eventTowers.Contains(npc.type)) maxSoldierDist = Math.Min(maxSoldierDist, LevyConstants.Targeting.EventTowerSoldierRangePx);
 
-			// Same weighting vanilla applies to players (NPC.TryTrackingTarget / TargetClosestUpgraded: distance -= player.aggro), tilted toward the army so it soaks the
-			// aggro and the commander is the exception (see LevyConstants.Targeting):
+			// STEP 1 — army or commander. Same weighting vanilla applies to players (NPC.TryTrackingTarget / TargetClosestUpgraded: distance -= player.aggro), tilted toward the army so it
+			// soaks the aggro and the commander is the exception (see LevyConstants.Targeting):
 			//  * every soldier carries a flat SoldierBaseAggroPx discount, and its gear aggro (Flesh Knuckles) counts SoldierTauntMultiplier times;
-			//  * a fixed per-(enemy, soldier) jitter spreads enemies over the army rather than all onto the single nearest soldier;
+			//  * a fixed per-(enemy, soldier) jitter keeps enemies from all ranking the soldiers in the same order;
 			//  * each soldier near the enemy (ArmyPullRadiusPx) adds ArmyPullPerSoldierPx to the commander's weighted distance, so a cluster outweighs one player.
 			// Soft weighting only: a soldier that is too far away still loses to a close commander, and with no soldier in reach the vanilla pick stands. The range limit uses the real distance.
-			ITargetBody best = null; float bestDist = float.PositiveInfinity; int nearSoldiers = 0;
+			// The army's price here is the best soldier's distance with NO crowding in it, so how many enemies are already on the army never makes the commander the better target.
+			int ownLock = data.SoldierTarget; // the soldier this enemy is on right now (already counted in the tally; Pick leaves its own tally out)
+			int n = 0, nearSoldiers = 0, nearest = -1; float dMin = float.PositiveInfinity;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				ITargetBody body = Bodies[i];
@@ -235,12 +249,20 @@ namespace Levy.Common.Targeting
 				if (real > maxSoldierDist) continue;
 				if (real <= LevyConstants.Targeting.ArmyPullRadiusPx) nearSoldiers++;
 				float d = real - SoldierPull(body.TargetAggro) + Spread(npc.whoAmI, body.NPC.whoAmI);
-				if (d >= bestDist) continue;
-				bestDist = d; best = body;
+				if (n == _candD.Length) GrowScratch();
+				_candSlot[n] = i; _candNpc[n] = body.NPC.whoAmI; _candD[n] = d;
+				if (d < dMin) { dMin = d; nearest = n; }
+				n++;
 			}
-			if (best == null) { data.SoldierTarget = -1; return false; }
+			if (n == 0) { SetLock(npc, data, -1); return false; }
 			if (vanillaIsPlayer) vanillaDist += Math.Min(nearSoldiers, LevyConstants.Targeting.ArmyPullMaxSoldiers) * LevyConstants.Targeting.ArmyPullPerSoldierPx;
-			if (bestDist >= vanillaDist) { data.SoldierTarget = -1; return false; }
+			if (dMin >= vanillaDist) { SetLock(npc, data, -1); return false; }
+
+			// STEP 2 — which soldier: among the ones close to the best, the least crowded (see AggroSpread). A worm's trailing segment is not an attacker of its own (it follows
+			// the segment ahead), so it takes the plain nearest, as before, and stays out of the tally.
+			int pick = CountsAsEnemy(npc) ? AggroSpread.Pick(_candD, _candNpc, n, dMin, ownLock) : nearest;
+			if (pick < 0) { SetLock(npc, data, -1); return false; }
+			ITargetBody best = Bodies[_candSlot[pick]];
 
 			npc.target = UsesNativeTargeting(npc) ? best.NPC.WhoAmIToTargettingIndex : SoldierNPC.DummySlot;
 			npc.targetRect = best.NPC.Hitbox;
@@ -251,7 +273,7 @@ namespace Levy.Common.Targeting
 				npc.directionY = best.NPC.Center.Y < npc.Center.Y ? -1 : 1;
 				if (npc.confused) npc.direction *= -1;
 			}
-			data.SoldierTarget = best.NPC.whoAmI;
+			SetLock(npc, data, best.NPC.whoAmI);
 			data.RetargetTimer = 0;
 			// This redirect may have happened inside the enemy's OWN AI call (e.g. a boss that re-runs TargetClosest every tick in its
 			// active state), not via PreAI — which is the only place that otherwise puts the dummy in slot 255. Without the dummy there,
@@ -272,6 +294,48 @@ namespace Levy.Common.Targeting
 			uint h = (uint)(npcWho * 73856093) ^ (uint)(bodyWho * 19349663);
 			h ^= h >> 13; h *= 0x5bd1e995u; h ^= h >> 15;
 			return ((h & 0xFFFF) / 65535f * 2f - 1f) * LevyConstants.Targeting.SpreadJitterPx;
+		}
+
+		private static void GrowScratch()
+		{
+			int len = _candD.Length * 2;
+			Array.Resize(ref _candD, len); Array.Resize(ref _candNpc, len); Array.Resize(ref _candSlot, len);
+		}
+
+		/// <summary>
+		/// True when this enemy's lock counts as one attacker on its soldier. A worm's trailing segment does not: it follows the segment ahead (every segment re-runs the target
+		/// search, and a long worm would otherwise put dozens of phantom enemies on the soldiers). Worms mark followers with realLife (their head's index); the Eater of Worlds
+		/// clears realLife on every segment, so its body and tail are named.
+		/// </summary>
+		private static bool CountsAsEnemy(NPC npc) =>
+			!(npc.realLife >= 0 && npc.realLife != npc.whoAmI) && npc.type != NPCID.EaterofWorldsBody && npc.type != NPCID.EaterofWorldsTail;
+
+		/// <summary>
+		/// Points an enemy's soldier lock at a body (its NPC index) or at nobody (-1) and keeps the per-body tally of locked enemies in step.
+		/// Every write to <see cref="LevyNpcData.SoldierTarget"/> goes through here, so the tally the next enemy weighs is current within the same tick.
+		/// </summary>
+		internal static void SetLock(NPC npc, LevyNpcData data, int bodyIndex)
+		{
+			int prev = data.SoldierTarget;
+			if (prev == bodyIndex) return;
+			if (CountsAsEnemy(npc)) AggroSpread.Move(prev, bodyIndex);
+			data.SoldierTarget = bodyIndex;
+		}
+
+		/// <summary>
+		/// Recounts, from scratch, how many enemies are locked on each body. Once a tick (EnemyTargetingSystem.PreUpdateNPCs), so a lock that ended without passing through
+		/// SetLock — the enemy died or despawned, its slot was reused — can never leave a stale count behind.
+		/// </summary>
+		internal static void RebuildLoad()
+		{
+			AggroSpread.Clear();
+			if (Bodies.Count == 0) return;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly || !CountsAsEnemy(n)) continue;
+				AggroSpread.Count(LevyNpcData.Of(n).SoldierTarget);
+			}
 		}
 
 		/// <summary>Nearest live soldier body to a point within maxDist (real distance), or null. For event projectiles that choose a target themselves.</summary>
@@ -360,8 +424,66 @@ namespace Levy.Common.Targeting
 
 		internal static void ResetState()
 		{
-			_swapped = false; _backup = null; Bodies.Clear();
+			_swapped = false; _backup = null; Bodies.Clear(); AggroSpread.Clear();
 			_nullPlayer = Main.player[SoldierNPC.DummySlot];
+		}
+	}
+
+	/// <summary>
+	/// Fans a horde out over the army. Keeps a tally of how many enemies are locked on each body (key: the body's NPC index) and picks, among the soldiers close to an enemy's best choice,
+	/// the one with the lowest <c>weighted distance + LoadPenaltyPx x enemies already on him</c>. Plain arithmetic over arrays, no game state, so it can be exercised outside the game.
+	///  * The enemy's own lock is left out of its soldier's count, and that soldier gets <c>LockStickinessPx</c> off, so an enemy standing on a soldier neither flees him for being "crowded" by itself
+	///    nor swaps for a marginal gain when the search re-runs every tick (Fighter AIs do).
+	///  * Only soldiers within <c>LoadWindowPx</c> of the best soldier compete, so crowding hands an enemy to a neighbour but never sends it past a much nearer man to a far one.
+	///  * No cap and no diminishing returns: the more enemies on a soldier, the more the next one prefers someone else (inside the window). With nobody locked on anyone the pick is the plain nearest.
+	/// </summary>
+	internal static class AggroSpread
+	{
+		private static readonly int[] _load = new int[LevyConstants.Targeting.LoadSlots];
+
+		/// <summary>Forget every count (world change, or the start of a tally rebuild).</summary>
+		internal static void Clear() => Array.Clear(_load, 0, _load.Length);
+
+		/// <summary>One more enemy is locked on this body (tally rebuild). Out-of-range indices, including -1 for "nobody", are ignored.</summary>
+		internal static void Count(int bodyIndex)
+		{
+			if ((uint)bodyIndex < (uint)_load.Length) _load[bodyIndex]++;
+		}
+
+		/// <summary>An enemy's lock moved from one body to another (-1 = none).</summary>
+		internal static void Move(int from, int to)
+		{
+			if (from == to) return;
+			if ((uint)from < (uint)_load.Length && _load[from] > 0) _load[from]--;
+			if ((uint)to < (uint)_load.Length) _load[to]++;
+		}
+
+		/// <summary>Enemies locked on this body, not counting the asking enemy's own lock (<paramref name="ownLock"/> is the body it is on now, or -1).</summary>
+		internal static int LoadOf(int bodyIndex, int ownLock)
+		{
+			if ((uint)bodyIndex >= (uint)_load.Length) return 0;
+			int load = _load[bodyIndex] - (bodyIndex == ownLock ? 1 : 0);
+			return load > 0 ? load : 0;
+		}
+
+		/// <summary>
+		/// The candidate (index into the arrays) the enemy should take, or -1 when none qualifies. <paramref name="d"/> are the candidates' weighted distances without any crowding,
+		/// <paramref name="bodyIndex"/> their NPC indices, <paramref name="dMin"/> the smallest of the first <paramref name="n"/> distances.
+		/// </summary>
+		internal static int Pick(float[] d, int[] bodyIndex, int n, float dMin, int ownLock)
+		{
+			float reach = dMin + LevyConstants.Targeting.LoadWindowPx;
+			int best = -1; float bestScore = float.PositiveInfinity;
+			for (int k = 0; k < n; k++)
+			{
+				float dk = d[k];
+				if (dk > reach) continue;
+				int who = bodyIndex[k];
+				float score = dk + LoadOf(who, ownLock) * LevyConstants.Targeting.LoadPenaltyPx;
+				if (who == ownLock) score -= LevyConstants.Targeting.LockStickinessPx;
+				if (score < bestScore) { bestScore = score; best = k; }
+			}
+			return best;
 		}
 	}
 
@@ -379,7 +501,7 @@ namespace Levy.Common.Targeting
 			EnemyTargeting.EnsureSlotRestored();
 			var bodies = EnemyTargeting.Bodies;
 			bodies.Clear();
-			if (!EnemyTargeting.Enabled) return;
+			if (!EnemyTargeting.Enabled) { EnemyTargeting.RebuildLoad(); return; } // no bodies: just empties the tally
 			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
 				if (s != null && s.IsAlive && s.Dummy != null) bodies.Add(s);
 			// Officers (conscripted town NPCs) are targeted like soldiers; the list is the officer module's own per-tick cache.
@@ -388,6 +510,8 @@ namespace Levy.Common.Targeting
 			// Summoned units (an officer kit's squad) are targeted the same way, from their own per-tick cache.
 			var summons = Content.NPCs.SummonedUnitSystem.Instance.ActiveBodies;
 			for (int i = 0; i < summons.Count; i++) bodies.Add(summons[i]);
+			// How many enemies are on each body right now, so the enemies choosing this tick can spread over the army.
+			EnemyTargeting.RebuildLoad();
 		}
 
 		public override void PostUpdateNPCs() => EnemyTargeting.EnsureSlotRestored();
@@ -422,7 +546,7 @@ namespace Levy.Common.Targeting
 				// The soldier died, despawned or the slot now holds another NPC: pick again right now so the enemy never
 				// chases the null player at (0,0) or a stranger that inherited the index.
 				int staleTarget = native ? data.SoldierTarget + 300 : SoldierNPC.DummySlot;
-				data.SoldierTarget = -1;
+				EnemyTargeting.SetLock(npc, data, -1);
 				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 				if (body == null) return true;

@@ -661,6 +661,7 @@ namespace Levy.Common.Weapons
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
+			HangWatch.Proj(self); // diagnostic breadcrumb (see HangWatch): which projectile's Update started last
 			if (self.minion && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		}

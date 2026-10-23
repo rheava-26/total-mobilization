@@ -228,7 +228,9 @@ namespace Levy.Content.NPCs
 			if (!Record.HoldFire && _lastHoldFire) _acquireNextTick = 0; // fire resumed: look for a target at once
 			_lastHoldFire = Record.HoldFire;
 
+			HangWatch.Brain(NPC.whoAmI, 2); // diagnostic breadcrumbs (see HangWatch): which soldier's brain is where
 			ScanNpcs(out int fleeIdx, out float nearestHostileTiles);
+			HangWatch.Brain(NPC.whoAmI, 3);
 
 			switch (State)
 			{
@@ -253,6 +255,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
+			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;
 			_lastSeenState = State;
@@ -818,6 +821,7 @@ namespace Levy.Content.NPCs
 				TargetIndex = -1;
 				if (AcquireScanDue(now, lost))
 				{
+					HangWatch.Brain(NPC.whoAmI, 4);
 					// every target found unreachable (not just the last) is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
 					int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
 					if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
@@ -850,6 +854,7 @@ namespace Levy.Content.NPCs
 				}
 			}
 			if (target == null) { _engMode = EngageMode.None; _perchActive = false; return false; }
+			HangWatch.Brain(NPC.whoAmI, 5);
 
 			if (State != SoldierState.Engage && State != SoldierState.Shaken)
 			{
@@ -1114,6 +1119,7 @@ namespace Levy.Content.NPCs
 				if (_spotTarget == target.whoAmI && _spotValid && now - _spotTick < 2 * LevyConstants.EngageSpotRecheckTicks) { spot = _spot; return true; }
 				spot = default; _spotDeferred = true; return false;
 			}
+			HangWatch.Brain(NPC.whoAmI, 6);
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			bool found = SearchEngageSpot(target, seg, range, standoff, now, out spot);
 			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - t0);
@@ -1353,6 +1359,7 @@ namespace Levy.Content.NPCs
 				if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
 			}
 
+			HangWatch.Brain(NPC.whoAmI, 7);
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			bool relocating = PerchSearch(target, tc, range, standoff, now, cover);
 			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - t0);
@@ -1920,6 +1927,7 @@ namespace Levy.Content.NPCs
 
 		private void ThinkOrder(int now, float nearestHostileTiles)
 		{
+			HangWatch.Brain(NPC.whoAmI, 8);
 			if (State == SoldierState.Haul) { ThinkHaul(now, nearestHostileTiles); return; }
 
 			// Re-derive the state from the standing order every think so a returned commander, a finished walk home,

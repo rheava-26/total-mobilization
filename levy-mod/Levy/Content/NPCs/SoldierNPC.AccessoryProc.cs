@@ -35,6 +35,7 @@ namespace Levy.Content.NPCs
 		{
 			if (LevyUtil.IsClient || Record == null || Dummy == null) return;
 			MaintainCrystalLeaf(); // a standing helper, kept whether or not he is fighting
+			MaintainStardustGuardian(); // likewise (SoldierNPC.StardustGuardian.cs)
 			if (State != SoldierState.Engage) return;
 			Item[] procs = null;
 			try
@@ -199,7 +200,18 @@ namespace Levy.Content.NPCs
 		{
 			if (LevyUtil.IsClient || Dummy == null || !Dummy.ghostHurt) return;
 			// Vanilla's own gate for the on-hit effects: a real hit on a living, hurtable enemy, from a friendly shot that is not a wrath bolt itself.
-			if (damageDone <= 1 || target.lifeMax <= 5 || target.immortal || !target.canGhostHeal || !source.friendly || source.hostile || source.aiStyle == ProjAIStyleID.SpectreWrath) return;
+			if (damageDone <= 1 || target.lifeMax <= 5 || target.immortal || !source.friendly || source.hostile || source.aiStyle == ProjAIStyleID.SpectreWrath) return;
+			// ...and the two gates vanilla keeps for itself, kept here too and written to the log the first time each turns a hit down, so "nothing happened" can be traced.
+			if (!target.canGhostHeal)
+			{
+				if (SetBonusLog.First("spectremask:nogheal", target.type)) SetBonusLog.Write("Spectre Mask: " + target.GivenOrTypeName + " (npc " + target.type + ") refuses the set bonus (NPC.canGhostHeal is false); vanilla gives a player nothing off it either.");
+				return;
+			}
+			if (!source.DamageType.CountsAsClass(DamageClass.Magic))
+			{
+				if (SetBonusLog.First("spectremask:miss", source.type)) SetBonusLog.Write("Spectre Mask soldier '" + SoldierName + "' landed a non-magic hit (projectile " + source.type + ", damage class " + (source.DamageType?.Name ?? "none") + "); only magic hits loose Wrath bolts.");
+				return;
+			}
 
 			bool[] before = _accProjBefore ??= new bool[Main.maxProjectiles];
 			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
@@ -221,11 +233,29 @@ namespace Levy.Content.NPCs
 			}
 			finally { _ghostDmg = pool.ghostDmg; pool.ghostDmg = commanderPool; }
 
+			int loosed = 0;
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active || before[i]) continue;
 				WeaponUse.TagSoldierProjectile(this, p, DamageClass.Magic);
+				// The tagging arms every shot it adopts. A Wrath bolt must NOT be armed yet: vanilla spawns it unfriendly and its own AI arms it 60 sub-ticks later, after it has drifted out of the
+				// struck enemy and turned to home on another. Armed at birth it hit the very enemy it was born in on its first tick, spent itself there and was never seen to fly.
+				if (p.type == ProjectileID.SpectreWrath) { p.friendly = false; loosed++; }
+			}
+			if (loosed > 0) SpectreWrathFlash(source, target, loosed);
+			else if (SetBonusLog.First("spectremask:nobolt")) SetBonusLog.Write("Spectre Mask soldier '" + SoldierName + "' landed a magic hit but no Wrath bolt came of it (his recent bolts have used up the damage pool, or no other enemy is within reach); this is vanilla's own limit.");
+		}
+
+		/// <summary>A flash of spectral dust where the Wrath bolt leaves the struck enemy, so the proc reads at a glance; the first one of a world is written to the log.</summary>
+		private void SpectreWrathFlash(Projectile source, NPC target, int loosed)
+		{
+			if (SetBonusLog.First("spectremask:proc")) SetBonusLog.Write("Spectre Mask proc: soldier '" + SoldierName + "' landed a magic hit on " + target.GivenOrTypeName + " (projectile " + source.type + "); " + loosed + " Wrath bolt(s) loosed.");
+			if (Main.dedServ || !LevyUtil.IsOnScreen(target.Hitbox)) return;
+			for (int i = 0; i < LevyConstants.SpectreWrathFlashDust; i++)
+			{
+				Dust dust = Dust.NewDustPerfect(target.Center, DustID.SpectreStaff, Main.rand.NextVector2Circular(LevyConstants.SpectreWrathFlashSpeed, LevyConstants.SpectreWrathFlashSpeed), 100, default, 1.5f);
+				dust.noGravity = true;
 			}
 		}
 

@@ -135,8 +135,10 @@ namespace Levy.Common
 		/// Weapons whose single cast does several times the listed damage to one target, as a multiple of the item's damage (Score multiplies the shot by it).
 		/// Nebula Arcanum (useTime 30, damage 70): the orb bursts for 70 in a 176 px blast and throws 10-18 homing sub-bolts at 65% damage (45 each, about half land on one target), roughly 6x the
 		/// listed damage a cast; counted as 5x. Without it the slow, mana-heavy cast ranked at a fifth of Nebula Blaze.
+		/// Last Prism (hits at most every 5 ticks, see <see cref="HeldRealCadence"/>, so 1,200 damage a second at the listed 100): each hit is 1x while the six beams converge (none for the first 30 ticks, fully on a
+		/// lone target by about 120) and 3x after 180 ticks of channeling. Modelled from the beam AI against a lone target that averages about 2,300 damage a second over 6 s and 2,600 over 8 s, i.e. 1.9x to 2.2x the 1x rate; counted as 2x.
 		/// </summary>
-		public static readonly Dictionary<int, float> ScoreShotDamageMult = new() { { ItemID.NebulaArcanum, 5f } };
+		public static readonly Dictionary<int, float> ScoreShotDamageMult = new() { { ItemID.NebulaArcanum, 5f }, { ItemID.LastPrism, 2f } };
 
 		// ---------- Ammo in the weapon score ----------
 		/// <summary>

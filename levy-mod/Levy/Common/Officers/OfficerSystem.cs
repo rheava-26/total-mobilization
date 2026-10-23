@@ -23,8 +23,9 @@ namespace Levy.Common.Officers
 	/// Officers: town NPCs conscripted into the army. THE DATA LIVES ON THE NPC (<see cref="OfficerGlobalNPC"/>: commander, slot, paying barracks, unpaid days; saved
 	/// with the town NPC and synced through its extra-AI block), so there is no second list to drift: a dead NPC takes its commission with it, a respawned one is a
 	/// fresh civilian, and "which NPC holds which slot" is a scan of Main.npc cached once per tick (<see cref="OfficersOf"/>, <see cref="InSlot"/>).
-	/// This system owns the rules: who may be commissioned (<see cref="CanCommission"/>), the one-time fee, the dawn payroll, dismissal, lapse housekeeping and the
-	/// per-tick caches enemy targeting reads. Mutating members run on the server / single player only; clients call the read members.
+	/// This system owns the rules: who may be commissioned (<see cref="CanCommission"/>), the one-time fee, the dawn payroll, dismissal, housekeeping and the
+	/// per-tick caches enemy targeting reads. A commission is never ended for want of pay: an officer the treasury cannot pay goes OFF DUTY (<see cref="IsSuspended"/>) and
+	/// returns at the first dawn it can. Mutating members run on the server / single player only; clients call the read members.
 	/// </summary>
 	public class OfficerSystem : ModSystem
 	{
@@ -77,6 +78,7 @@ namespace Levy.Common.Officers
 				if (g == null || !g.Enrolled) continue;
 				_enrolled.Add(n);
 				if (!OfficerRegistry.IsOfficerType(n.type) || LevyUtil.FindPlayerByName(g.Commander) < 0) continue;
+				if (IsSuspended(g)) { g.Rt.Body?.SetAvatar(null); continue; } // off duty: holds its slot, but is no target and fields no body
 				OfficerBody body = g.EnsureBody(n);
 				_avatars.TryGetValue(n.whoAmI, out SoldierNPC avatar);
 				body.SetAvatar(avatar);
@@ -103,7 +105,7 @@ namespace Levy.Common.Officers
 		{
 			if (npc == null || !npc.active || !npc.townNPC || npc.life <= 0) return null;
 			OfficerGlobalNPC g = Data(npc);
-			if (g == null || !g.Enrolled || !OfficerRegistry.IsOfficerType(npc.type) || LevyUtil.FindPlayerByName(g.Commander) < 0) return null;
+			if (g == null || !g.Enrolled || !OfficerRegistry.IsOfficerType(npc.type) || LevyUtil.FindPlayerByName(g.Commander) < 0 || IsSuspended(g)) return null;
 			Refresh(); // binds the commission's body to its current avatar
 			OfficerBody body = g.EnsureBody(npc);
 			_avatars.TryGetValue(npc.whoAmI, out SoldierNPC avatar);
@@ -112,6 +114,13 @@ namespace Levy.Common.Officers
 		}
 
 		public bool IsEnrolled(NPC npc) => Data(npc)?.Enrolled == true;
+
+		/// <summary>
+		/// True when this commission is OFF DUTY: <see cref="LevyConstants.Officer.MaxDaysUnpaid"/> dawns have passed without his wage being paid. The commission, its slot and the
+		/// town NPC stay exactly as they were, but no avatar marches, no kit runs and no enemy targets him until a dawn payroll pays him again. Derived from the synced unpaid-day
+		/// count, so every machine agrees without a flag of its own.
+		/// </summary>
+		public static bool IsSuspended(OfficerGlobalNPC g) => g != null && g.Enrolled && g.DaysUnpaid >= LevyConstants.Officer.MaxDaysUnpaid;
 
 		/// <summary>The officers one commander fields.</summary>
 		public IEnumerable<NPC> OfficersOf(string commander)
@@ -340,7 +349,7 @@ namespace Levy.Common.Officers
 		// =====================================================================================================
 		/// <summary>
 		/// Keeps exactly one live avatar per enrolled commission whose commander is online: spawns the missing ones, and despawns any avatar whose
-		/// commission ended, whose commander left, whose town NPC is gone, or that is a duplicate. The avatar itself parks and co-locates the town NPC.
+		/// commission ended or went off duty, whose commander left, whose town NPC is gone, or that is a duplicate. The avatar itself parks and co-locates the town NPC.
 		/// </summary>
 		private void MaintainAvatars()
 		{
@@ -353,16 +362,16 @@ namespace Levy.Common.Officers
 				NPC town = s.OfficerTownNpc;
 				OfficerGlobalNPC g = town != null ? Data(town) : null;
 				bool valid = g != null && g.Enrolled && OfficerRegistry.IsOfficerType(town.type)
-							 && LevyUtil.FindPlayerByName(g.Commander) >= 0
+							 && LevyUtil.FindPlayerByName(g.Commander) >= 0 && !IsSuspended(g)
 							 && _avatars.TryGetValue(town.whoAmI, out var primary) && ReferenceEquals(primary, s);
 				if (!valid) DespawnAvatar(s, town);
 			}
-			// spawn for enrolled + online commissions that have no avatar yet
+			// spawn for enrolled + online commissions that have no avatar yet (an officer who is off duty for want of pay fields none)
 			for (int k = 0; k < _enrolled.Count; k++)
 			{
 				NPC town = _enrolled[k];
 				OfficerGlobalNPC g = Data(town);
-				if (g == null || !g.Enrolled || !OfficerRegistry.TryGet(town.type, out OfficerDef def)) continue;
+				if (g == null || !g.Enrolled || IsSuspended(g) || !OfficerRegistry.TryGet(town.type, out OfficerDef def)) continue;
 				int ci = LevyUtil.FindPlayerByName(g.Commander);
 				if (ci < 0 || _avatars.ContainsKey(town.whoAmI)) continue;
 				SpawnAvatar(town, def, Main.player[ci]);
@@ -422,6 +431,11 @@ namespace Levy.Common.Officers
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, town.whoAmI);
 		}
 
+		/// <summary>
+		/// The dawn payroll. Pays every enrolled officer from his barracks, after the soldiers. An officer the treasury cannot pay is warned on the first missed dawn and goes OFF
+		/// DUTY on reaching <see cref="LevyConstants.Officer.MaxDaysUnpaid"/> (see <see cref="IsSuspended"/>): the commission and the slot are kept, only the service stops. Every
+		/// later dawn tries to pay him again, and the first that succeeds puts him straight back on duty. An unpaid officer is never dismissed.
+		/// </summary>
 		private void PayOfficers()
 		{
 			Refresh();
@@ -435,17 +449,20 @@ namespace Levy.Common.Officers
 				if (!OfficerRegistry.TryGet(npc.type, out OfficerDef def)) continue; // Housekeeping clears the orphan
 				long wage = Wage(def);
 				BarracksTE b = PayingBarracks(npc, g);
+				int ci = LevyUtil.FindPlayerByName(g.Commander);
+				bool wasOffDuty = IsSuspended(g);
 				if (b != null && EconomySystem.TryPay(b, wage))
 				{
 					g.DaysUnpaid = 0; touched.Add(b);
 					paid[g.Commander] = (paid.TryGetValue(g.Commander, out long p) ? p : 0) + wage;
+					if (wasOffDuty && ci >= 0) RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T("Officers.Msg.Resumed", NameOf(npc)));
 				}
 				else
 				{
-					g.DaysUnpaid++;
-					int ci = LevyUtil.FindPlayerByName(g.Commander);
-					if (g.DaysUnpaid >= LevyConstants.Officer.MaxDaysUnpaid) Release(npc, "Lapsed");
-					else if (ci >= 0) RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T("Officers.Msg.Unpaid", NameOf(npc)));
+					if (g.DaysUnpaid < byte.MaxValue) g.DaysUnpaid++; // a byte: a long-unpaid officer must never wrap back round to "paid up"
+					// Tell the commander once per change of state (warned, then off duty); an officer who stays off duty is not re-announced every dawn.
+					if (!wasOffDuty && ci >= 0)
+						RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T(IsSuspended(g) ? "Officers.Msg.OffDuty" : "Officers.Msg.Unpaid", NameOf(npc)));
 				}
 				npc.netUpdate = true;
 			}
@@ -455,6 +472,7 @@ namespace Levy.Common.Officers
 				int ci = LevyUtil.FindPlayerByName(kv.Key);
 				if (ci >= 0 && kv.Value > 0) RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T("Officers.Msg.Payday", LevyUtil.Coins(kv.Value)));
 			}
+			_stamp = uint.MaxValue; // unpaid days decide who is on duty: the next read rebuilds the cache from them
 		}
 
 		/// <summary>Clears commissions that cannot work any more: a type that is no longer registered, a slot shared by two NPCs, or one truly out of range. The range is floored at the officers already serving (<see cref="SlotCap"/>), so a cap recompute never orphans a standing officer.</summary>

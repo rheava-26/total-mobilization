@@ -51,6 +51,9 @@ namespace Levy.Common.Systems
 		private bool _eventActive, _lastEventActive;
 		private uint _eventTick = uint.MaxValue;
 		private int _housekeepingTimer;
+		/// <summary>Boss NPC types that have called the garrison out and still live somewhere in the world (see <see cref="BossEngaged"/>). Server / single player runtime only.</summary>
+		private readonly List<int> _engagedBossTypes = new();
+		private readonly List<int> _seenBossTypes = new();
 
 		// ---- world flags set by event books (persisted here) ----
 		public bool BookConscription, BookDrill, BookPlunder, BookFortification, BookDiscipline;
@@ -94,6 +97,7 @@ namespace Levy.Common.Systems
 			_netArmories.Clear(); _netStamp = uint.MaxValue;
 			_nextMilitiaId = -1;
 			_lastEventActive = false; _eventTick = uint.MaxValue;
+			_engagedBossTypes.Clear(); _seenBossTypes.Clear();
 			_housekeepingTimer = 0;
 		}
 
@@ -497,11 +501,38 @@ namespace Levy.Common.Systems
 			if (++_housekeepingTimer >= LevyConstants.SettlementHousekeepingTicks) { _housekeepingTimer = 0; Housekeeping(); }
 		}
 
-		/// <summary>Auto-muster on the rising edge of an event, stand down on the falling edge.</summary>
+		/// <summary>
+		/// True while a boss that has called the garrison out is still alive anywhere in the world. A boss ENGAGES when it stands within
+		/// <see cref="LevyConstants.BossMusterTiles"/> of a living player; from then on it holds the garrison out by merely existing, wherever the commander is, so a commander
+		/// who dies, respawns or teleports away mid-fight does not stand the militia down while the boss still lives. The garrison stands down only once every engaged boss is
+		/// gone (killed or despawned). Engagement is tracked per boss NPC type, so a worm that splits or a pair of Twins stays one fight, and a boss that never came near a
+		/// player (an ambient or modded one) can neither call a muster nor hold one, so nothing stays mustered after a normal fight ends. Evaluated every tick.
+		/// </summary>
+		private bool BossEngaged()
+		{
+			_seenBossTypes.Clear();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!LevyUtil.IsMusterBoss(n)) continue;
+				if (!_engagedBossTypes.Contains(n.type))
+				{
+					if (!LevyUtil.IsNearLivingPlayer(n, LevyConstants.BossMusterTiles)) continue;
+					_engagedBossTypes.Add(n.type);
+				}
+				if (!_seenBossTypes.Contains(n.type)) _seenBossTypes.Add(n.type);
+			}
+			for (int k = _engagedBossTypes.Count - 1; k >= 0; k--)
+				if (!_seenBossTypes.Contains(_engagedBossTypes[k])) _engagedBossTypes.RemoveAt(k); // no NPC of that type is left: the fight is over
+			return _engagedBossTypes.Count > 0;
+		}
+
+		/// <summary>Auto-muster on the rising edge of an event or an engaged boss, stand down on the falling edge (the event over AND every engaged boss gone).</summary>
 		public override void PostUpdateInvasions()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
-			bool active = EventActive || LevyUtil.IsBossActive();
+			bool bossEngaged = BossEngaged(); // evaluated every tick even during an event, so the engagement set never goes stale
+			bool active = EventActive || bossEngaged;
 			if (active == _lastEventActive) return;
 			_lastEventActive = active;
 			CollectBarracksIds();

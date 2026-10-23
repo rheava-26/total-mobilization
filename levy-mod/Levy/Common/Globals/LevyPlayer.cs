@@ -8,7 +8,7 @@ using Levy.Content.NPCs;
 
 namespace Levy.Common.Globals
 {
-	/// <summary>Commander lifecycle hooks owned by the roster: death sends the followers home and routs the squad.</summary>
+	/// <summary>Commander lifecycle hooks owned by the roster. A death changes no orders (the army fights on and falls in again at the respawn) and routs the soldiers who can see a boss.</summary>
 	public class LevyPlayer : ModPlayer
 	{
 		// Soldier sentries are owned by the commander, so vanilla's turret cap (Player.UpdateMaxTurrets, run inside the commander's own Update) would count and cull them.
@@ -27,11 +27,11 @@ namespace Levy.Common.Globals
 			}
 		}
 
-		/// <summary>Runs on the server (remote deaths arrive through KillMe) and in single player; clients only report.</summary>
+		/// <summary>Runs on the server (remote deaths arrive through KillMe) and in single player; clients only report. Vanilla has already set <c>Player.dead</c> when this hook runs.</summary>
 		public override void Kill(double damage, int hitDirection, bool pvp, PlayerDeathReason damageSource)
 		{
 			if (LevyUtil.IsClient) return;
-			RosterSystem.Instance.OnCommanderDied(Player);
+			RosterSystem.Instance.OnCommanderDied(Player); // issues no order: the army keeps its orders through the death (see RosterSystem.OnCommanderDied)
 			FearSystem.OnPlayerDied(Player);
 		}
 	}

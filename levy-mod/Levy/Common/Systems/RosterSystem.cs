@@ -1268,10 +1268,14 @@ namespace Levy.Common.Systems
 			if (changed) SendRosterSnapshot();
 		}
 
+		/// <summary>
+		/// The commander fell (server / single player, from <c>LevyPlayer.Kill</c>). No order is issued: the roster keeps every standing order through a death, so a fight
+		/// that is still on is never abandoned by a command and nothing has to be re-ordered after the respawn. While the commander is down the brain walks a Follow
+		/// soldier home on its own, and it falls in behind again the moment he lives, with its Follow order intact (Hold, Patrol and Search orders are untouched).
+		/// Morale is the fear system's business (<c>FearSystem.OnPlayerDied</c>), not an order.
+		/// </summary>
 		public virtual void OnCommanderDied(Player commander)
 		{
-			if (LevyUtil.IsClient || commander == null) return;
-			IssueOrder(commander, SoldierOrder.ReturnToBarracks, atBarracks: true);
 		}
 
 		// =====================================================================================================

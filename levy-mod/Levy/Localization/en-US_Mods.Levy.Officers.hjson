@@ -55,4 +55,12 @@ Kit: {
 			Each heal is paid from the treasury, up to {2}.
 			'''
 	}
+	Angler: {
+		Name: Angler
+		Desc:
+			'''
+			Feeds the army. Soldiers and officers within {0} tiles stay Well Fed, lifting every stat a little.
+			Flings frost daggerfish at any enemy that strays into reach, but never leaves the line to chase.
+			'''
+	}
 }

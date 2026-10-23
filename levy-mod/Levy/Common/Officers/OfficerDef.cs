@@ -117,6 +117,7 @@ namespace Levy.Common.Officers
 		public static void RegisterAll()
 		{
 			Register(NurseOfficer.Create());
+			Register(AnglerOfficer.Create());
 			// Register(DemolitionistOfficer.Create());   <- the next officer goes here
 		}
 	}

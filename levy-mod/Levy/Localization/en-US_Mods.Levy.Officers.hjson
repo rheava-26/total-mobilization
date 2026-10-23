@@ -55,6 +55,7 @@ Kit: {
 			Each heal is paid from the treasury, up to {2}.
 			'''
 	}
+
 	Guide: {
 		Name: Guide
 		Desc:

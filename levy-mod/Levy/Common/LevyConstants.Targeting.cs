@@ -34,14 +34,29 @@ namespace Levy.Common
 			public const float SoldierBaseAggroPx = 250f;
 			/// <summary>Multiplier on a soldier's POSITIVE gear aggro (Flesh Knuckles +400 counts as 400 x this). Taunt gear on a soldier out-pulls a commander who wears the same gear. Negative (stealth) aggro is used as-is.</summary>
 			public const float SoldierTauntMultiplier = 2.5f;
-			/// <summary>Soldiers within this radius of the enemy pull collectively: each one adds <see cref="ArmyPullPerSoldierPx"/> to the commander's weighted distance.</summary>
+			/// <summary>Soldiers within this radius of the enemy pull collectively: each one adds <see cref="ArmyPullPerSoldierPx"/> to the commander's weighted distance. Only applies when vanilla's pick is a player.</summary>
 			public const float ArmyPullRadiusPx = 700f;
-			/// <summary>Penalty on the commander's weighted distance per soldier inside <see cref="ArmyPullRadiusPx"/> (a cluster of soldiers outweighs one player).</summary>
+			/// <summary>Penalty on the commander's weighted distance per soldier inside <see cref="ArmyPullRadiusPx"/> (a cluster of soldiers outweighs one player). 0 switches the collective pull off.</summary>
 			public const float ArmyPullPerSoldierPx = 40f;
 			/// <summary>Soldiers counted for the collective pull stop here (so the penalty tops out at this x <see cref="ArmyPullPerSoldierPx"/> px).</summary>
 			public const int ArmyPullMaxSoldiers = 8;
-			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies spread across the army instead of all picking the single nearest soldier.</summary>
+			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies do not all rank the soldiers in the same order. Ties and near-ties only; the load terms below do the real spreading.</summary>
 			public const float SpreadJitterPx = 120f;
+
+			// ---------- Spreading a horde over the army (EnemyTargeting.Compete, AggroSpread) ----------
+			// Choosing a soldier is two steps. 1) Army or commander: the best soldier's weighted distance (above) against the commander's. 2) Which soldier: among the soldiers close to that
+			// best one, the enemy takes the least crowded. Every enemy already locked on a soldier adds LoadPenaltyPx to that soldier's weighted distance for the next enemy to choose, so a horde
+			// fans out over the squad instead of stacking on whoever happens to be nearest. Load only enters step 2: a crowded army never looks pricier than the commander, so the commander's
+			// exposure is exactly what step 1 says. With nobody locked on anyone the pick is the plain nearest-by-weighted-distance soldier.
+
+			/// <summary>Penalty (px of weighted distance) per enemy already locked on a soldier. An enemy's own lock never counts against its current soldier, so it does not flee a soldier merely because it is standing on him.</summary>
+			public const float LoadPenaltyPx = 100f;
+			/// <summary>Only soldiers within this many px (weighted) of the best soldier compete on load. A crowded near soldier therefore hands an enemy to a neighbour, but never sends it past a much nearer man to a far one.</summary>
+			public const float LoadWindowPx = 600f;
+			/// <summary>An enemy keeps its current soldier unless another one is better by more than this many px, so the re-search that many AIs run every tick does not shuffle a settled assignment.</summary>
+			public const float LockStickinessPx = 50f;
+			/// <summary>Size of the per-body lock tally. Bodies are NPCs, so the NPC index is the key; must be at least Main.maxNPCs (200).</summary>
+			public const int LoadSlots = 256;
 
 			// ---------- Event towers (Lunar Pillars) and event hostile projectiles ----------
 			/// <summary>

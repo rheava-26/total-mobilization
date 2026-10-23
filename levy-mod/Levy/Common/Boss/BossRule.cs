@@ -85,6 +85,7 @@ namespace Levy.Common.Boss
 				case NPCID.PlanterasHook: case NPCID.PlanterasTentacle:         // aiStyle 52/53 read NPC.plantBoss
 					return NPC.plantBoss;
 				case NPCID.MoonLordHead: case NPCID.MoonLordHand:                // NPC.cs 31527: part.ai[3] = core.whoAmI
+				case NPCID.MoonLordFreeEye:                                       // NPC.cs 71343-71344: checkDead copies the fallen head/hand's ai[3] (the core) into the new True Eye; its AI (32918) despawns it when ai[3] is not an active core
 				case NPCID.TheDestroyerBody: case NPCID.TheDestroyerTail:        // NPC.cs 44155: segment.ai[3] = head.whoAmI (realLife normally wins)
 					return (int)part.ai[3];
 				case NPCID.WallofFleshEye:                                        // NPC.cs 20832: realLife = Main.wofNPCIndex (fallback here)

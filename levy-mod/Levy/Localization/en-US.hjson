@@ -471,5 +471,12 @@ Mods: {
 		}
 
 		Towns.Names: Fort Hallow|Fort Hope|Fort Nowhere|Fort Last|Millbrook|Ashford|Stonegate|Oakwall|Redfield|Brightwater|Greywatch|Ironhold|Lanternmoor|Saltmarsh|Thornby|Weststead
+
+		Buffs: {
+			MarkedBuff: {
+				DisplayName: Marked
+				Description: The whole army deals extra damage to this enemy.
+			}
+		}
 	}
 }

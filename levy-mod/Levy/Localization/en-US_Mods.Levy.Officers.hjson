@@ -55,4 +55,15 @@ Kit: {
 			Each heal is paid from the treasury, up to {2}.
 			'''
 	}
+
+	Guide: {
+		Name: Guide
+		Desc:
+			'''
+			Marches with the line and marks the single strongest enemy within {0} tiles.
+			The whole army deals {1}% more damage to the marked enemy, for {2} seconds.
+			Only one enemy carries the mark at a time; it moves to the strongest in reach.
+			Fires a guiding bolt at any enemy that comes close.
+			'''
+	}
 }

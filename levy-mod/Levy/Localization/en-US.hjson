@@ -124,7 +124,10 @@ Mods: {
 			PatrolBannerTile.MapEntry: Patrol Banner
 		}
 
-		NPCs.SoldierNPC.DisplayName: Soldier
+		NPCs: {
+			SoldierNPC.DisplayName: Soldier
+			SummonedUnitNPC.DisplayName: Summoned Unit
+		}
 
 		Projectiles: {
 			SoldierThrust.DisplayName: Thrust

@@ -76,4 +76,14 @@ Kit: {
 			Flings frost daggerfish at any enemy that strays into reach, but never leaves the line to chase.
 			'''
 	}
+
+	Pirate: {
+		Name: Pirate Captain
+		Desc:
+			'''
+			Conscripts a boarding crew of {0} flintlock gunners that march with the army and fire on any enemy in reach. Each gunner is a real unit with a healthbar.
+			A gunner has {1} health, and the crew's damage grows as bosses fall.
+			A fallen crewman is replaced every {2} seconds, up to the full crew.
+			'''
+	}
 }

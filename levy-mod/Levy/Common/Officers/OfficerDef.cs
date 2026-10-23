@@ -119,6 +119,7 @@ namespace Levy.Common.Officers
 			Register(NurseOfficer.Create());
 			Register(GuideOfficer.Create());
 			Register(AnglerOfficer.Create());
+			Register(PirateOfficer.Create());           // summon officer: fields a flintlock boarding crew
 			// Register(DemolitionistOfficer.Create());   <- the next officer goes here
 		}
 	}

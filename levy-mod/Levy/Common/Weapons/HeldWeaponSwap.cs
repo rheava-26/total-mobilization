@@ -28,8 +28,9 @@ namespace Levy.Common.Weapons
 	///  * the dummy's channel / controlUseItem (true while combat keeps feeding the holder), itemAnimationMax, selected item, mana, the pouch in ammo slot 54
 	///    (the real pouch Item, so vanilla PickAmmo consumes the soldier's own ammo) and a damage multiplier for the soldier's grade.
 	/// Projectiles the held AI spawns (arrows, the big phoenix, rockets) are re-owned and tagged exactly like every other soldier shot; a spawned held/thick-laser
-	/// child (Last Prism / Charged Blaster beam) stays owner 255 and joins the chain. Projectile.Damage of chain projectiles is wrapped the same way, because vanilla
-	/// only damages for owner == Main.myPlayer.
+	/// child (Last Prism / Charged Blaster beam) stays owner 255 and joins the chain. Projectile.Damage of chain projectiles is NOT run under the dummy: vanilla only damages
+	/// for owner == Main.myPlayer, so for that one call the projectile is handed to the real player (what every other soldier shot is owned by) and a boss-killing hit resolves
+	/// its whole death cascade in the real player context (see <see cref="RunDamage"/>).
 	/// SLOT 255 DISCIPLINE: Swap in try, Unswap in finally, EnsureSlotRestored in the finally of every wrapper plus PreUpdateProjectiles/PostUpdateProjectiles.
 	/// </summary>
 	public static class HeldWeapons
@@ -223,25 +224,29 @@ namespace Levy.Common.Weapons
 			}
 		}
 
-		/// <summary>Projectile.Damage of a chain projectile (holder contact damage, thick-laser beam): vanilla only damages for owner == Main.myPlayer, so the server/single player claims 255 for the call.</summary>
+		/// <summary>
+		/// Projectile.Damage of a chain projectile (holder contact damage, thick-laser beam). Vanilla only damages for owner == Main.myPlayer, so for the length of the call the projectile is
+		/// handed to the REAL player (<see cref="SoldierMinions.TrueMyPlayer"/>: what <see cref="WeaponUse.OwnerFor"/> gives every other soldier shot) and given back to 255 in the finally.
+		/// The dummy is deliberately NOT swapped into Main.player[255] and Main.myPlayer is left alone. A hit that kills a boss runs the whole death cascade (NPC.checkDead, NPCLoot, every mod's
+		/// OnKill, event and boss-log bookkeeping) synchronously inside orig, and it has to see the real player in the slot, exactly as for a normal soldier shot; with a fake player standing in
+		/// slot 255 that cascade hung the game.
+		/// The damage number is unaffected: it is the projectile's own damage field, which the AI pass sets (RunAi, which keeps the dummy swap; the Last Prism beam copies the holder's every tick),
+		/// and chain projectiles are npcProj, so vanilla gates every owner-derived term that could change it (crit, luck, banner buff, on-hit effects, ModPlayer hooks) behind !npcProj.
+		/// </summary>
 		internal static void RunDamage(On_Projectile.orig_Damage orig, Projectile p, HeldWeaponProjectile g)
 		{
 			SoldierNPC body = BodyOf(p, g);
 			if (body == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
-			int savedMyPlayer = Main.myPlayer;
-			bool swapped = false;
+			int savedOwner = p.owner, savedType = p.type;
 			try
 			{
-				EnemyTargeting.Swap(body);
-				swapped = true;
-				Main.myPlayer = Slot;
+				p.owner = SoldierMinions.TrueMyPlayer;
 				orig(p);
 			}
 			finally
 			{
-				Main.myPlayer = savedMyPlayer;
-				if (swapped) EnemyTargeting.Unswap();
-				EnemyTargeting.EnsureSlotRestored();
+				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
+				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
 
@@ -350,7 +355,7 @@ namespace Levy.Common.Weapons
 		}
 	}
 
-	/// <summary>Installs the Projectile.AI / Projectile.Damage wrappers and keeps slot 255 clean around the projectile phase.</summary>
+	/// <summary>Installs the Projectile.AI / Projectile.Damage wrappers (nested chain calls pass straight through) and keeps slot 255 clean around the projectile phase.</summary>
 	public class HeldWeaponSystem : ModSystem
 	{
 		public override void Load()
@@ -384,16 +389,34 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>
+		/// Re-entrancy guard shared by both detours: above zero while a chain wrapper is inside orig on this thread. A boss-death cascade runs synchronously inside the hit that caused it; if
+		/// anything in it re-enters Projectile.AI / Projectile.Damage for another chain projectile, that nested call goes straight to orig instead of opening another swap / re-owning inside
+		/// the first one, so the wrappers can never recurse into each other.
+		/// </summary>
+		[ThreadStatic] private static int _wrapDepth;
+
+		/// <summary>True when this call must be wrapped: a chain projectile (owner 255, flagged in its global) and not a nested call. The cheap owner test runs first.</summary>
+		private static bool ShouldWrap(Projectile p, out HeldWeaponProjectile g)
+		{
+			g = null;
+			return p.owner == SoldierNPC.DummySlot && _wrapDepth == 0 && p.TryGetGlobalProjectile(out g) && g.Chain;
+		}
+
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
-			if (self.owner == SoldierNPC.DummySlot && self.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain) HeldWeapons.RunAi(orig, self, g);
-			else orig(self);
+			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunAi(orig, self, g); }
+			finally { _wrapDepth--; }
 		}
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{
-			if (self.owner == SoldierNPC.DummySlot && self.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain) HeldWeapons.RunDamage(orig, self, g);
-			else orig(self);
+			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunDamage(orig, self, g); }
+			finally { _wrapDepth--; }
 		}
 	}
 }

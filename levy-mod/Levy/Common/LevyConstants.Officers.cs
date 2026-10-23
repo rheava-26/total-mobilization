@@ -177,6 +177,81 @@ namespace Levy.Common
 			public const int AnglerFishCooldown = 30, AnglerFishRandomCooldown = 20;
 			/// <summary>How far (tiles) an enemy may be and still be flung a fish at.</summary>
 			public const float AnglerFishRangeTiles = 22f;
+
+			// =====================================================================================================
+			// BUFF / DEBUFF OFFICERS (rebuild) — Princess (army-wide morale aura), Dryad (AoE shred + nature aura),
+			// Goblin Tinkerer (gear-tune aura + spiky balls), Tax Collector (AoE shred + coin bounty on a marked
+			// kill). The aura and mark infrastructure is shared (AuraKit, MarkSystem); only these numbers are new.
+			// =====================================================================================================
+
+			// ---- the Princess (army-wide morale aura; the capstone) ----
+			/// <summary>Wage/fee multiplier: the strongest force-multiplier in the roster, priced to match.</summary>
+			public const float PrincessCostMult = 2.5f;
+			/// <summary>Taunt weight: a rear support, never singled out (negative cancels the flat advantage soldiers have in enemy targeting).</summary>
+			public const int PrincessAggro = -250;
+			/// <summary>Soldiers and officers within this many tiles are kept under her morale buffs.</summary>
+			public const int PrincessAuraRadiusTiles = 26;
+			/// <summary>Ticks each application lasts — refreshed every pulse, so it holds at this and never stacks. Longer than the cadence so it never lapses.</summary>
+			public const int PrincessAuraDurationTicks = 300;
+			/// <summary>Ticks between aura pulses (re-feeds once a second).</summary>
+			public const int PrincessAuraCadenceTicks = 60;
+
+			// ---- the Dryad (AoE shred + Thorns/Regeneration nature aura) ----
+			/// <summary>Wage/fee multiplier: two army-wide effects on one body.</summary>
+			public const float DryadCostMult = 1.8f;
+			/// <summary>Taunt weight: a support caster, not a target magnet.</summary>
+			public const int DryadAggro = -200;
+			/// <summary>Dryad's Bane hangs the shred on every hostile within this many tiles.</summary>
+			public const int DryadMarkRadiusTiles = 26;
+			/// <summary>Ticks a Dryad's Bane mark lasts if not refreshed — longer than the cadence so it reads as continuous.</summary>
+			public const int DryadMarkDurationTicks = 180;
+			/// <summary>Soldiers within this many tiles are kept under the nature aura.</summary>
+			public const int DryadAuraRadiusTiles = 22;
+			/// <summary>Ticks each nature-aura application lasts (refreshed every pulse, so it holds steady and never stacks).</summary>
+			public const int DryadAuraDurationTicks = 300;
+			/// <summary>Ticks between the Dryad's pulses (one timer drives both the AoE mark and the aura).</summary>
+			public const int DryadCadenceTicks = 60;
+			/// <summary>Fraction of a contact hit a Thorns'd soldier reflects back at the attacker (capped by <see cref="LevyConstants.ThornsDamageCap"/>). Read in ApplyBuffEffect.</summary>
+			public const float DryadThornsReflectFrac = 0.5f;
+
+			// ---- the Goblin Tinkerer (gear-tune aura + thrown spiky balls) ----
+			/// <summary>Wage/fee multiplier.</summary>
+			public const float GoblinCostMult = 1.4f;
+			/// <summary>Taunt weight: a frontline fighter, weighed about like a soldier.</summary>
+			public const int GoblinAggro = 0;
+			/// <summary>Soldiers within this many tiles are kept under the gear-tune buffs.</summary>
+			public const int GoblinAuraRadiusTiles = 18;
+			/// <summary>Ticks each application lasts (refreshed every pulse).</summary>
+			public const int GoblinAuraDurationTicks = 300;
+			/// <summary>Ticks between aura pulses.</summary>
+			public const int GoblinAuraCadenceTicks = 60;
+			/// <summary>Launch speed (px/tick) of a thrown spiky ball and the arc lift (px) a far throw is aimed above the target.</summary>
+			public const float GoblinBallSpeed = 11f, GoblinBallGravityCorrection = 9f;
+			/// <summary>Base damage of a thrown spiky ball (scaled with the world's progress like a town NPC's shot).</summary>
+			public const int GoblinBallDamage = 20;
+			public const float GoblinBallKnockback = 2.5f;
+			/// <summary>Pause after a throw: fixed ticks plus a random extra.</summary>
+			public const int GoblinBallCooldown = 28, GoblinBallRandomCooldown = 18;
+			/// <summary>How far (tiles) an enemy may be and still be flung a spiky ball.</summary>
+			public const float GoblinBallRangeTiles = 20f;
+
+			// ---- the Tax Collector (AoE shred + coin bounty on a marked kill; the bounty lives on TaxBountyGlobalNPC) ----
+			/// <summary>Wage/fee multiplier.</summary>
+			public const float TaxCostMult = 1.5f;
+			/// <summary>Taunt weight: he keeps to the rear, never singled out.</summary>
+			public const int TaxAggro = -250;
+			/// <summary>He hangs the shred on every hostile within this many tiles.</summary>
+			public const int TaxMarkRadiusTiles = 22;
+			/// <summary>Ticks a tax mark lasts if not refreshed.</summary>
+			public const int TaxMarkDurationTicks = 180;
+			/// <summary>Ticks between his mark pulses.</summary>
+			public const int TaxMarkCadenceTicks = 60;
+			/// <summary>A marked enemy that dies within this many tiles of him is taxed.</summary>
+			public const int TaxBountyRadiusTiles = 30;
+			/// <summary>Copper paid per point of the slain enemy's max life, so tougher prey pays more and the bounty scales with the world.</summary>
+			public const float TaxBountyCopperPerMaxHp = 2f;
+			/// <summary>Floor and ceiling (copper) on one bounty: at least a little, at most a few gold.</summary>
+			public const long TaxBountyMinCopper = 100, TaxBountyMaxCopper = 50000;
 		}
 
 		/// <summary>

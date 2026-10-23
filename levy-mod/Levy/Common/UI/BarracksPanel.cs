@@ -329,7 +329,7 @@ namespace Levy.Common.UI
 			bool hazardUsed = day > 0 && te.HazardPayDay == day, recruitUsed = day > 0 && te.RecruitingDriveDay == day;
 			_hazardRaw = LevyUtil.T("UI.HazardPay", LevyUtil.Coins(HazardPayCost()));
 			_hazard.Set(_hazardRaw, !hazardUsed, hazardUsed ? LevyUtil.T("UI2.HazardPayUsed") : "");
-			_officers.Set(LevyUtil.T("Officers.UI.Open", OfficerSystem.Instance.UsedSlots(Main.LocalPlayer.name), LevyConstants.Officer.MaxSlots), true);
+			_officers.Set(LevyUtil.T("Officers.UI.Open", OfficerSystem.Instance.UsedSlots(Main.LocalPlayer.name), OfficerSystem.Instance.SlotCap(Main.LocalPlayer.name)), true);
 			_recruitRaw = LevyUtil.T("UI.RecruitingDrive", LevyUtil.Coins(EconomySystem.RecruitingDrivePerPoint));
 			_recruit.Set(_recruitRaw, !recruitUsed, recruitUsed ? LevyUtil.T("UI2.RecruitingDriveUsed") : "");
 			LayoutControlRows(); // re-flow now that the captions (and so their widths) are current

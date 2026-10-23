@@ -108,7 +108,7 @@ namespace Levy.Common.UI
 			var player = Main.LocalPlayer;
 			string me = player.name;
 			var sys = OfficerSystem.Instance;
-			int max = LevyConstants.Officer.MaxSlots;
+			int max = sys.SlotCap(me);  // dynamic cap, floored at officers already serving so none is ever hidden
 			var slotNpcs = new NPC[max];
 			var sb = new System.Text.StringBuilder();
 			sb.Append(SettlementSystem.Instance.TownName(_te)).Append('|').Append(sys.UsedSlots(me));

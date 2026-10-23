@@ -39,6 +39,9 @@ namespace Levy.Common.Boss
 
 		public static bool IsBossDowned(NPC npc) => npc != null && _downed.Count > 0 && _downed.Contains(BossDownedKey(npc));
 
+		/// <summary>Has a boss of this type been beaten in this world? Type-keyed lookup for progression gates (e.g. the officer command-slot cap); pass a boss's root NPCID (Plantera, Golem, a mech boss, MoonLordCore...). Valid on clients — the downed set syncs through WorldData.</summary>
+		public static bool IsTypeDowned(int type) => _downed.Count > 0 && _downed.Contains(KeyOfType(type));
+
 		/// <summary>Server / single player, from the boss's death. Parts and segments never count; only the boss itself (the last Eater of Worlds segment, both Twins).</summary>
 		internal static void RecordKill(NPC dying)
 		{

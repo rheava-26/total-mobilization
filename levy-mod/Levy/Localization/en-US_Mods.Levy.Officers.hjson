@@ -123,4 +123,41 @@ Kit: {
 			When a marked enemy falls near him he taxes its corpse into the treasury, up to {1}.
 			'''
 	}
+
+	Demolitionist: {
+		Name: Demolitionist
+		Desc:
+			'''
+			Marches with the line and lobs grenades at any enemy in reach.
+			Every {0} seconds he hurls a stick of dynamite for a heavy blast.
+			The blast grows stronger as bosses fall.
+			'''
+	}
+
+	ArmsDealer: {
+		Name: Arms Dealer
+		Desc:
+			'''
+			Marches with the line, laying down rapid rifle fire on any enemy in reach.
+			Soldiers and officers within {0} tiles gain Archery, striking harder and faster at range.
+			'''
+	}
+
+	Merchant: {
+		Name: Merchant
+		Desc:
+			'''
+			Marches with the line, firing a coin gun at any enemy in reach.
+			Every {0} seconds he banks coin into this settlement's treasury.
+			'''
+	}
+
+	Painter: {
+		Name: Painter
+		Desc:
+			'''
+			Marches with the line, loosing a colorful paint barrage at any enemy in reach.
+			Soldiers and officers within {0} tiles are inspired, striking a little harder.
+			'''
+	}
 }

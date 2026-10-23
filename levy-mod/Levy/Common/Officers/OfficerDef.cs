@@ -125,7 +125,10 @@ namespace Levy.Common.Officers
 			Register(DryadOfficer.Create());            // AoE shred mark + Thorns/Regeneration aura
 			Register(GoblinTinkererOfficer.Create());   // gear-tune aura + thrown spiky balls
 			Register(TaxCollectorOfficer.Create());     // AoE shred mark + coin bounty on a marked kill
-			// Register(DemolitionistOfficer.Create());   <- the next officer goes here
+			Register(DemolitionistOfficer.Create());    // frontline: lobbed grenades + a periodic heavy dynamite
+			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + an Archery aura
+			Register(MerchantOfficer.Create());         // frontline: coin gun + a modest treasury trickle
+			Register(PainterOfficer.Create());          // frontline: colorful paint barrage + an inspiration aura
 		}
 	}
 }

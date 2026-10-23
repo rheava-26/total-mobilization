@@ -177,6 +177,81 @@ namespace Levy.Common
 			public const int AnglerFishCooldown = 30, AnglerFishRandomCooldown = 20;
 			/// <summary>How far (tiles) an enemy may be and still be flung a fish at.</summary>
 			public const float AnglerFishRangeTiles = 22f;
+
+			// =====================================================================================================
+			// WEAPON OFFICERS (levy-weapon-rebuild). Four frontline fighters. Each: a weapon, a kit, and a cost.
+			// =====================================================================================================
+
+			// ---- the Demolitionist (lobbed grenades + a periodic heavy dynamite) ----
+			/// <summary>Wage/fee multiplier of the Demolitionist (a heavy-AoE fighter costs a premium).</summary>
+			public const float DemolitionistCostMult = 1.4f;
+			/// <summary>Taunt weight: a frontline fighter, weighed about like a soldier.</summary>
+			public const int DemolitionistAggro = 0;
+			/// <summary>His lobbed grenade: launch speed (px/tick) and the arc lift (px) a far throw is aimed above the target.</summary>
+			public const float DemoGrenadeSpeed = 10f, DemoGrenadeGravityCorrection = 16f;
+			/// <summary>Base grenade damage and knockback (scaled with the world's progress like a town NPC's shot).</summary>
+			public const int DemoGrenadeDamage = 24;
+			public const float DemoGrenadeKnockback = 4f;
+			/// <summary>Pause after a grenade: fixed ticks plus a random extra.</summary>
+			public const int DemoGrenadeCooldown = 42, DemoGrenadeRandomCooldown = 24;
+			/// <summary>How far (tiles) an enemy may be and still be lobbed a grenade.</summary>
+			public const float DemoGrenadeRangeTiles = 24f;
+			/// <summary>The kit's big dynamite: how often it is hurled (ticks) and how far it reaches (tiles).</summary>
+			public const int DemoDynamiteIntervalTicks = 360;
+			public const float DemoDynamiteRangeTiles = 26f;
+			/// <summary>The dynamite's launch arc (speed px/tick, gravity lift px), base blast damage (scaled by boss progress) and knockback.</summary>
+			public const float DemoDynamiteSpeed = 9f, DemoDynamiteGravityCorrection = 20f;
+			public const int DemoDynamiteDamage = 70;
+			public const float DemoDynamiteKnockback = 6f;
+
+			// ---- the Arms Dealer (rapid rifle + Archery aura) ----
+			/// <summary>Wage/fee multiplier of the Arms Dealer.</summary>
+			public const float ArmsDealerCostMult = 1.5f;
+			public const int ArmsDealerAggro = 0;
+			/// <summary>His rifle: fast, light bullets with a hair of gravity lead.</summary>
+			public const float ArmsDealerBulletSpeed = 13f, ArmsDealerBulletGravityCorrection = 1f;
+			/// <summary>Base bullet damage and knockback — light per shot, but fired in a rapid stream.</summary>
+			public const int ArmsDealerBulletDamage = 13;
+			public const float ArmsDealerBulletKnockback = 2f;
+			/// <summary>Pause after a shot: short, so the fire reads as rapid.</summary>
+			public const int ArmsDealerBulletCooldown = 11, ArmsDealerBulletRandomCooldown = 6;
+			public const float ArmsDealerBulletRangeTiles = 32f;
+			/// <summary>Archery aura: soldiers and officers within this many tiles are kept under Archery; refreshed every cadence, held for the duration.</summary>
+			public const int ArmsDealerAuraRadiusTiles = 22;
+			public const int ArmsDealerAuraDurationTicks = 300, ArmsDealerAuraCadenceTicks = 60;
+			/// <summary>Ranged damage the Archery buff adds as a fraction. Extends vanilla Archery (arrow weapons only) to every ranged soldier — guns included. Read by SoldierNPC.ApplyBuffEffect.</summary>
+			public const float ArmsDealerArcheryRangedDamage = 0.15f;
+
+			// ---- the Merchant (coin gun + a modest treasury trickle) ----
+			/// <summary>Wage/fee multiplier of the Merchant.</summary>
+			public const float MerchantCostMult = 1.4f;
+			public const int MerchantAggro = 0;
+			/// <summary>His coin gun: a platinum round, fast and heavy.</summary>
+			public const float MerchantCoinSpeed = 12f, MerchantCoinGravityCorrection = 4f;
+			/// <summary>Base coin-shot damage and knockback (scaled with the world's progress).</summary>
+			public const int MerchantCoinDamage = 18;
+			public const float MerchantCoinKnockback = 3f;
+			public const int MerchantCoinCooldown = 18, MerchantCoinRandomCooldown = 10;
+			public const float MerchantCoinRangeTiles = 28f;
+			/// <summary>Treasury trickle: how often (ticks) he banks coin.</summary>
+			public const int MerchantCoinIntervalTicks = 240;
+			/// <summary>Each modest deposit is <c>LevyWage / this</c>, so it scales with the world without paying for itself.</summary>
+			public const int MerchantCoinWageDivisor = 8;
+
+			// ---- the Painter (colorful paint barrage + inspiration aura) ----
+			/// <summary>Wage/fee multiplier of the Painter.</summary>
+			public const float PainterCostMult = 1.3f;
+			public const int PainterAggro = 0;
+			/// <summary>His paint barrage: vivid paintballs, quick and hard-hitting.</summary>
+			public const float PainterPaintballSpeed = 12f, PainterPaintballGravityCorrection = 2f;
+			/// <summary>Base paintball damage and knockback (scaled with the world's progress).</summary>
+			public const int PainterPaintballDamage = 28;
+			public const float PainterPaintballKnockback = 3f;
+			public const int PainterPaintballCooldown = 15, PainterPaintballRandomCooldown = 9;
+			public const float PainterPaintballRangeTiles = 30f;
+			/// <summary>Inspiration aura: soldiers and officers within this many tiles are kept under Wrath; refreshed every cadence, held for the duration.</summary>
+			public const int PainterAuraRadiusTiles = 18;
+			public const int PainterAuraDurationTicks = 300, PainterAuraCadenceTicks = 60;
 		}
 
 		/// <summary>

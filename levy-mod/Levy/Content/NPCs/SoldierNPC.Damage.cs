@@ -212,7 +212,7 @@ namespace Levy.Content.NPCs
 				case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
 				case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
 				case BuffID.AmmoReservation: d.ammoPotion = true; break;
-				case BuffID.Archery: d.archery = true; break;
+				case BuffID.Archery: d.archery = true; d.GetDamage(DamageClass.Ranged) += LevyConstants.Officer.ArmsDealerArcheryRangedDamage; break; // vanilla Archery only speeds arrows; extend it to all ranged weapons so the Arms Dealer's aura lifts gun soldiers too
 				case BuffID.Summoning: d.maxMinions++; break;
 				case BuffID.WellFed: return ApplyWellFed(d, 1);  // Well Fed
 				case BuffID.WellFed2: return ApplyWellFed(d, 2); // Plenty Satisfied

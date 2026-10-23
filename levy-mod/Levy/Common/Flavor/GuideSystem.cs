@@ -116,7 +116,7 @@ namespace Levy.Common.Flavor
 				else if (!r.Dead && hpGain > 0) r.CurrentHp = Math.Clamp(r.CurrentHp + hpGain, 1, r.MaxHp);
 
 				// Expertise opens a new accessory slot: each Regular draws one from his home Armory at once (a promotion does the same), rather than waiting for the next top-up.
-				if (key == "Expertise" && r.Kind == SoldierKind.Regular && !r.Dead)
+				if (key == "Expertise" && r.Kind == SoldierKind.Regular && !r.Dead && !r.Reserve) // a soldier in reserve draws nothing from the racks until he is recalled
 				{
 					BarracksTE home = SettlementSystem.Instance.GetBarracks(r.HomeBarracksId);
 					ArmoryTE armory = home == null ? null : SettlementSystem.Instance.LinkedArmory(home);

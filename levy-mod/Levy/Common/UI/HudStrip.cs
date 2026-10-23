@@ -11,7 +11,7 @@ using Levy.Common.Util;
 
 namespace Levy.Common.UI
 {
-	/// <summary>Bottom-left strip: one head per Regular of the local player with an HP bar; dead ones grey out with a respawn countdown. Toggled with the ArmyStrip keybind.</summary>
+	/// <summary>Bottom-left strip: one head per Regular of the local player on active duty with an HP bar; dead ones grey out with a respawn countdown, soldiers in reserve are left off. Toggled with the ArmyStrip keybind.</summary>
 	public class HudStrip : UIState
 	{
 		private StripElement _strip;
@@ -37,7 +37,7 @@ namespace Levy.Common.UI
 			private void Rebuild()
 			{
 				_recs.Clear();
-				foreach (var r in UIActions.MyRegulars()) _recs.Add(r);
+				foreach (var r in UIActions.MyRegulars()) if (!r.Reserve) _recs.Add(r);
 				int pitch = LevyConstants.UI.HudEntryPitch;
 				Width.Set(Math.Max(1, _recs.Count) * pitch + 8, 0f);
 				Height.Set(TitleHeight + LevyConstants.UI.HudHeadSize + Gap + LevyConstants.UI.HudBarHeight + 10, 0f);

@@ -25,7 +25,8 @@ namespace Levy.Common.Systems
 {
 	/// <summary>
 	/// The roster: regulars (persistent), the memorial, command points, tiers, dawn ticks, payday, desertion, respawn queue,
-	/// body deployment under the render cap, and orders. Server-authoritative: every mutating member is a no-op on a
+	/// body deployment under the render cap, orders, grades (promote and demote) and the reserve (<see cref="Demobilize"/> / <see cref="Remobilize"/>:
+	/// a Regular kept whole but off active duty). Server-authoritative: every mutating member is a no-op on a
 	/// multiplayer client; clients hold a display-only copy of <see cref="Regulars"/> fed by roster snapshots.
 	/// </summary>
 	public class RosterSystem : ModSystem
@@ -84,7 +85,11 @@ namespace Levy.Common.Systems
 			}
 		}
 
-		public virtual int CommandPointsUsed { get { int n = 0; foreach (var r in Regulars) n += r.CommandPointCost; return n; } }
+		/// <summary>Command points spent by soldiers on active duty. A soldier in reserve holds none.</summary>
+		public virtual int CommandPointsUsed { get { int n = 0; foreach (var r in Regulars) n += r.CommandPointsHeld; return n; } }
+
+		/// <summary>Soldiers in reserve across the whole roster (the world's bench, capped by <see cref="LevyConstants.ReserveMax"/>).</summary>
+		public virtual int ReserveCount { get { int n = 0; foreach (var r in Regulars) if (r.Reserve) n++; return n; } }
 
 		public virtual int Tier
 		{
@@ -207,6 +212,22 @@ namespace Levy.Common.Systems
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
 		}
 
+		/// <summary>
+		/// Takes a living body off the field WITHOUT touching its record or its kit (the reserve keeps the soldier whole): whatever it was hauling goes on the
+		/// ground, its summons and thrown weapons go with it, and the NPC is deactivated and synced. A no-op for an already inactive body.
+		/// </summary>
+		private static void RetireBody(SoldierNPC body)
+		{
+			if (body == null) return;
+			var npc = body.NPC;
+			body.DropCarriedItems();
+			body.KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier, as when he falls
+			if (!npc.active) return;
+			npc.active = false;
+			npc.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
+		}
+
 		/// <summary>Drops one item on the ground and moves it to the back of Terraria's item-slot recycling queue, so a huge kit never evicts itself or silently vanishes when the 400-item cap is reached.</summary>
 		internal static void SpillProtected(IEntitySource source, Rectangle box, Item it)
 		{
@@ -217,13 +238,16 @@ namespace Levy.Common.Systems
 		}
 
 		/// <summary>Drops the whole kit with the protected-spill path, then clears the gear. Nothing is cleared when there is nowhere to drop.</summary>
-		private static bool DropAllGear(SoldierRecord rec, IEntitySource source, Rectangle box)
+		private static bool DropAllGear(SoldierRecord rec, IEntitySource source, Rectangle box) => rec == null || DropAllGear(rec.Gear, source, box);
+
+		/// <summary>Drops every item of one gear set with the protected-spill path, then clears it. Nothing is cleared when there is nowhere to drop.</summary>
+		private static bool DropAllGear(SoldierGear gear, IEntitySource source, Rectangle box)
 		{
-			if (rec == null) return true;
+			if (gear == null) return true;
 			if (box == Rectangle.Empty) return false;
-			foreach (var it in rec.Gear.AllItems())
+			foreach (var it in gear.AllItems())
 				SpillProtected(source, box, it);
-			rec.Gear.Clear();
+			gear.Clear();
 			return true;
 		}
 
@@ -252,11 +276,17 @@ namespace Levy.Common.Systems
 		/// commander / any player. Returns false only if the kit had nowhere at all to go, in which case the gear is left untouched so the
 		/// caller must NOT drop the record. Server / single player only.
 		/// </summary>
-		private static bool ReturnKit(SoldierRecord rec, SoldierNPC body)
+		private static bool ReturnKit(SoldierRecord rec, SoldierNPC body) => rec == null || ReturnKit(rec, rec.Gear, body);
+
+		/// <summary>
+		/// <see cref="ReturnKit(SoldierRecord, SoldierNPC)"/> for any gear set a record is giving up, not only his whole kit (a demotion returns just the accessories its lower
+		/// grade has no slot for). The same destinations in the same order; the set that was passed in is cleared on success and left untouched on failure.
+		/// </summary>
+		private static bool ReturnKit(SoldierRecord rec, SoldierGear gear, SoldierNPC body)
 		{
-			if (rec == null) return true;
+			if (rec == null || gear == null) return true;
 			bool any = false;
-			foreach (var _ in rec.Gear.AllItems()) { any = true; break; }
+			foreach (var _ in gear.AllItems()) { any = true; break; }
 			if (!any) return true;
 
 			var armory = ArmoryOf(HomeOf(rec));
@@ -265,10 +295,10 @@ namespace Levy.Common.Systems
 			bool ok;
 			if (armory != null)
 			{
-				armory.ReturnGear(rec.Gear); // deposits, spills protected when storage is full, then clears the gear
+				armory.ReturnGear(gear); // deposits, spills protected when storage is full, then clears the gear
 				ok = true;
 			}
-			else ok = TryKitDropBox(rec, body, out var box) && DropAllGear(rec, new EntitySource_Misc("Levy:KitReturn"), box);
+			else ok = TryKitDropBox(rec, body, out var box) && DropAllGear(gear, new EntitySource_Misc("Levy:KitReturn"), box);
 			if (!ok) { Levy.Instance.Logger.Warn("Levy: a soldier's kit had no armory and nowhere to drop; the record was kept so nothing is lost."); return false; }
 			if (body != null && body.NPC.active) body.NotifyGearChanged();
 			return true;
@@ -327,6 +357,7 @@ namespace Levy.Common.Systems
 			int ti = (int)to;
 			if (ti >= LevyConstants.GradeCpCost.Length || to <= rec.Grade) return false;
 			var commander = OnlineCommander(rec);
+			if (rec.Reserve) { SendToPlayer(commander, LevyUtil.T("Roster.InReserve", rec.Name)); return false; } // recall him first: the command points are checked on active duty
 			if (!GradeUnlocked(to)) { SendToPlayer(commander, LevyUtil.T("UI.GradeLocked")); return false; }
 			int delta = LevyConstants.GradeCpCost[ti] - LevyConstants.GradeCpCost[(int)rec.Grade];
 			if (CommandPointsUsed + delta > CommandPoints) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
@@ -343,6 +374,127 @@ namespace Levy.Common.Systems
 			LevyUtil.Chat(LevyUtil.T("Chat.Promoted", rec.Name, GradeName(to)));
 			if (body != null) DialogueSystem.Bark(body, DialogueTrigger.PROMOTED);
 			SyncBarracks(payer);
+			SendRosterSnapshot();
+			return true;
+		}
+
+		/// <summary>Dyes[0..2] belong to the armor; the dye for accessory slot <c>i</c> sits at <c>Dyes[AccessoryDyeBase + i]</c>.</summary>
+		private const int AccessoryDyeBase = 3;
+
+		/// <summary>The first accessory slot below <paramref name="keep"/> that is empty and not already the destination of a pending move, else -1.</summary>
+		private static int FreeAccessorySlot(SoldierGear gear, int keep, List<(int from, int dest)> moves)
+		{
+			for (int j = 0; j < keep && j < SoldierGear.AccessorySlots; j++)
+			{
+				Item it = gear.Accessories[j];
+				if (it != null && !it.IsAir && it.stack > 0) continue;
+				bool taken = false;
+				for (int m = 0; m < moves.Count; m++) if (moves[m].dest == j) { taken = true; break; }
+				if (!taken) return j;
+			}
+			return -1;
+		}
+
+		/// <summary>
+		/// The inverse of <see cref="Promote"/>: lowers a Regular to a lower grade. Nothing is refunded and no command points are charged (the grade's cost is simply lower).
+		/// Name, veteran status, growth and gear stay with him. Accessories beyond the lower grade's slots slide into any free slot he keeps, and the rest go back to the Armory
+		/// (or the ground) with their dyes, so no gear is lost; if they truly have nowhere to go the demotion is refused. Works on a soldier in reserve too.
+		/// A grade that is not below his current one changes nothing, so a repeated request is a no-op. Server / single player only.
+		/// </summary>
+		public virtual bool Demote(SoldierRecord rec, Grade to)
+		{
+			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec)) return false;
+			if ((int)to < 0 || to >= rec.Grade) return false;
+			var commander = OnlineCommander(rec);
+			var body = BodyOf(rec);
+			var gear = rec.Gear;
+
+			// 1. Plan the accessories: what the lower grade has no slot for either moves into a free slot he keeps, or goes into the spare set that is returned.
+			int keep = SoldierRecord.AccessorySlotsFor(to);
+			var spare = new SoldierGear();
+			var moves = new List<(int from, int dest)>();
+			for (int i = keep; i < SoldierGear.AccessorySlots; i++)
+			{
+				Item acc = gear.Accessories[i];
+				if (acc != null && !acc.IsAir && acc.stack > 0)
+				{
+					int dest = FreeAccessorySlot(gear, keep, moves);
+					if (dest >= 0) moves.Add((i, dest)); else spare.Accessories[i] = acc;
+				}
+				Item dye = gear.Dyes[AccessoryDyeBase + i];
+				if (dye != null && !dye.IsAir && dye.stack > 0) spare.Dyes[AccessoryDyeBase + i] = dye;
+			}
+
+			// 2. Hand the spare set back BEFORE anything on the record changes, so a refusal leaves him exactly as he was.
+			if (!ReturnKit(rec, spare, body)) { SendToPlayer(commander, LevyUtil.T("Roster.DemoteBlocked", rec.Name)); return false; }
+
+			// 3. Apply: the slides keep their hand-assigned lock, the vacated slots (and their dyes and locks) are emptied. The returned instances now live in the Armory or on the ground.
+			foreach (var (from, dest) in moves)
+			{
+				gear.Accessories[dest] = gear.Accessories[from];
+				gear.SetLocked(SoldierGear.SlotAcc0 + dest, gear.IsLocked(SoldierGear.SlotAcc0 + from));
+			}
+			for (int i = keep; i < SoldierGear.AccessorySlots; i++)
+			{
+				gear.Accessories[i] = new Item();
+				gear.Dyes[AccessoryDyeBase + i] = new Item();
+				gear.SetLocked(SoldierGear.SlotAcc0 + i, false);
+			}
+
+			rec.Grade = to;
+			RebindBody(body, rec); // the live body re-reads grade, gear and stats and syncs
+			LevyUtil.Chat(LevyUtil.T("Roster.Demoted", rec.Name, GradeName(to)));
+			SendRosterSnapshot();
+			return true;
+		}
+
+		/// <summary>
+		/// Demobilize: takes a Regular off active duty WITHOUT discharging him. The record stays whole (name, grade, growth, veteran status and every item he carries),
+		/// but the body leaves the field, he takes no orders, draws no wage and holds no command points (<see cref="CommandPointsUsed"/> skips him), so the points are free
+		/// for other soldiers. He keeps his wounds until dawn, when a benched soldier is rested to full health and mana. A soldier waiting to respawn may be reserved too:
+		/// that wait pauses until he is recalled. Refused for a mutineer and when the world's reserve is full. Server / single player only; a soldier already in reserve is left alone.
+		/// </summary>
+		public virtual bool Demobilize(SoldierRecord rec)
+		{
+			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec) || rec.Reserve) return false;
+			var commander = OnlineCommander(rec);
+			if (MutinySystem.IsMutinous(rec)) { SendToPlayer(commander, LevyUtil.T("Roster.ReserveMutinous", rec.Name), LevyConstants.Mutiny.Alarm); return false; }
+			if (ReserveCount >= LevyConstants.ReserveMax) { SendToPlayer(commander, LevyUtil.T("Roster.ReserveFull", LevyConstants.ReserveMax)); return false; }
+
+			var body = BodyOf(rec);
+			if (body != null)
+			{
+				rec.CurrentHp = Math.Clamp(body.NPC.life, 1, Math.Max(1, rec.MaxHp)); // the body held the live value
+				RetireBody(body);
+			}
+			rec.BodyIndex = -1; rec.Fear = 0f; rec.EngagedBosses.Clear();
+			rec.Reserve = true;
+			// Stood down in every other respect (so nothing that reads the order can mistake him for a follower), but Reserve is what keeps him off the books.
+			rec.Order = SoldierOrder.ReturnToBarracks; rec.StoodDown = true;
+			SendToPlayer(commander, LevyUtil.T("Roster.Demobilized", rec.Name));
+			SendRosterSnapshot();
+			return true;
+		}
+
+		/// <summary>
+		/// Recall: returns a soldier from reserve to active duty. Needs the command points his grade costs. He comes back Following with everything he was demobilized with;
+		/// the Armory fills any slot that stood empty, and he walks out beside his commander (or waits for room under the render cap). A soldier who was waiting to respawn
+		/// resumes that wait. Server / single player only; a soldier already on duty is left alone.
+		/// </summary>
+		public virtual bool Remobilize(SoldierRecord rec)
+		{
+			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec) || !rec.Reserve) return false;
+			var commander = OnlineCommander(rec);
+			if (CommandPointsUsed + rec.CommandPointCost > CommandPoints) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
+
+			rec.Reserve = false;
+			rec.Order = SoldierOrder.Follow; rec.StoodDown = false;
+			if (!rec.Dead)
+			{
+				ArmoryOf(HomeOf(rec))?.IssueGear(rec);
+				if (SpawnPositionFor(rec, out var pos)) SpawnBody(rec, pos); // -1 under the render cap: the deployment loop picks him up later
+			}
+			SendToPlayer(commander, LevyUtil.T("Roster.Remobilized", rec.Name));
 			SendRosterSnapshot();
 			return true;
 		}
@@ -400,6 +552,7 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || rec == null) return;
 			TryRebase(rec, newHome);
+			if (rec.Reserve) { SendRosterSnapshot(); return; } // a benched soldier is re-homed quietly (a destroyed barracks would otherwise print a line for every one of them)
 			var commander = OnlineCommander(rec);
 			var home = HomeOf(rec);
 			if (home != null) SendToPlayer(commander, LevyUtil.T("Roster.Rebased", rec.Name, SettlementSystem.Instance.TownName(home)));
@@ -451,6 +604,7 @@ namespace Levy.Common.Systems
 		public virtual int SpawnBody(SoldierRecord rec, Vector2 position)
 		{
 			if (LevyUtil.IsClient || rec == null) return -1;
+			if (rec.Reserve) return -1; // a soldier in reserve has no body until he is recalled
 			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
@@ -653,8 +807,8 @@ namespace Levy.Common.Systems
 		private static readonly int[] AutoFeedItems = { ItemID.LifeCrystal, ItemID.LifeFruit, ItemID.ManaCrystal };
 
 		/// <summary>
-		/// Every <see cref="LevyConstants.AutoFeedIntervalTicks"/>: each living soldier whose home Armory storage holds a growth crystal
-		/// it can still absorb takes ONE (at most one per soldier per check). Server / single player only.
+		/// Every <see cref="LevyConstants.AutoFeedIntervalTicks"/>: each living soldier on active duty whose home Armory storage holds a growth crystal
+		/// it can still absorb takes ONE (at most one per soldier per check). A soldier in reserve takes none. Server / single player only.
 		/// </summary>
 		private void TickAutoFeed()
 		{
@@ -665,7 +819,7 @@ namespace Levy.Common.Systems
 			for (int i = 0; i < Regulars.Count; i++)
 			{
 				var rec = Regulars[i];
-				if (rec == null || rec.Dead) continue;
+				if (rec == null || rec.Dead || rec.Reserve) continue;
 				var armory = ArmoryOf(HomeOf(rec));
 				if (armory == null) continue;
 				for (int k = 0; k < AutoFeedItems.Length; k++)
@@ -735,7 +889,7 @@ namespace Levy.Common.Systems
 			for (int i = 0; i < Regulars.Count; i++)
 			{
 				var rec = Regulars[i];
-				if (!rec.Dead) continue;
+				if (!rec.Dead || rec.Reserve) continue; // a fallen soldier in reserve waits (timer frozen) until he is recalled
 				if (rec.RespawnTimer > 0) { rec.RespawnTimer -= ticks; if (rec.RespawnTimer > 0) continue; rec.RespawnTimer = 0; }
 				var home = HomeOf(rec);
 				if (home == null) { TryRebase(rec, null); home = HomeOf(rec); if (home == null) continue; }
@@ -752,7 +906,7 @@ namespace Levy.Common.Systems
 		private void Deploy()
 		{
 			_deployScratch.Clear();
-			foreach (var rec in Regulars) if (!rec.Dead && !rec.HasBody) _deployScratch.Add(rec);
+			foreach (var rec in Regulars) if (!rec.Dead && !rec.Reserve && !rec.HasBody) _deployScratch.Add(rec);
 			if (_deployScratch.Count == 0) return;
 			_deployScratch.Sort(DeployOrder);
 			for (int i = 0; i < _deployScratch.Count; i++)
@@ -927,6 +1081,12 @@ namespace Levy.Common.Systems
 			bool mutiny = MutinySystem.Enabled;
 			foreach (var rec in Regulars)
 			{
+				if (rec.Reserve)
+				{
+					// In reserve: off the payroll entirely (no wage, no unpaid day, no desertion roll). A benched soldier rests: he is back to full health and mana by morning.
+					if (!rec.Dead) { rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; }
+					continue;
+				}
 				// Wage Mutiny: a mutineer is not on the daily payroll; his debt grows until he loots it or the treasury clears it (MutinySystem.Tick)
 				if (mutiny && MutinySystem.IsMutinous(rec)) { rec.WageOwed += EconomySystem.WagePerDay(rec.Grade, rec.StoodDown); rec.DaysUnpaid++; continue; }
 				var te = PayingBarracks(rec);
@@ -958,7 +1118,7 @@ namespace Levy.Common.Systems
 			for (int i = Regulars.Count - 1; i >= 0; i--)
 			{
 				var r = Regulars[i];
-				if (r.DaysUnpaid < 2 || (mutiny && r.Mutinous)) continue; // a mutineer stays and fights for his pay instead of deserting
+				if (r.Reserve || r.DaysUnpaid < 2 || (mutiny && r.Mutinous)) continue; // a mutineer stays and fights for his pay instead of deserting; a soldier in reserve is not on the payroll to desert from
 				float chance = LevyConstants.DesertionChanceByDaysUnpaid[Math.Min(r.DaysUnpaid, LevyConstants.DesertionChanceByDaysUnpaid.Length - 1)];
 				if (chance <= 0f || Main.rand.NextFloat() >= chance) continue;
 				Desert(r);
@@ -1013,6 +1173,7 @@ namespace Levy.Common.Systems
 		{
 			body = null;
 			if (rec.CommanderName != commander.name) return false;
+			if (rec.Reserve) return false; // a soldier in reserve takes no orders (and must not be left Following: that would hold a formation slot open)
 			body = BodyOf(rec);
 			bool picked = atBarracks || (body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius));
 			if (picked && MutinySystem.IsMutinous(rec)) { _refusedOrders++; body?.MutinyRefuse(); return false; } // Wage Mutiny: no orders until paid
@@ -1189,13 +1350,13 @@ namespace Levy.Common.Systems
 			if (batch.Count > 0) SendRosterSnapshot();
 		}
 
-		/// <summary>Every living Regular of this commander paired with the Armory it draws from; soldiers with no reachable Armory are left out.</summary>
+		/// <summary>Every living Regular of this commander on active duty, paired with the Armory it draws from; soldiers with no reachable Armory are left out, and a soldier in reserve keeps his kit untouched.</summary>
 		private List<(ArmoryTE armory, SoldierRecord rec)> ArmedRegulars(Player commander)
 		{
 			var batch = new List<(ArmoryTE armory, SoldierRecord rec)>();
 			foreach (var rec in Regulars)
 			{
-				if (rec.CommanderName != commander.name || rec.Dead) continue;
+				if (rec.CommanderName != commander.name || rec.Dead || rec.Reserve) continue;
 				var armory = ArmoryOf(HomeOf(rec));
 				if (armory != null) batch.Add((armory, rec));
 			}
@@ -1230,7 +1391,7 @@ namespace Levy.Common.Systems
 
 		public virtual void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
 		{
-			if (LevyUtil.IsClient || rec == null) return;
+			if (LevyUtil.IsClient || rec == null || rec.Reserve) return;
 			rec.PatrolA = a; rec.PatrolB = b;
 			rec.Order = SoldierOrder.Patrol; rec.StoodDown = false;
 			BodyOf(rec)?.ReceiveOrder(SoldierOrder.Patrol);

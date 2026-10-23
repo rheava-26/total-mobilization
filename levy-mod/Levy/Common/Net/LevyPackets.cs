@@ -12,6 +12,8 @@ namespace Levy.Common.Net
 	///  Enlist: int barracksId, byte grade                         (handler: Roster)
 	///  Discharge: int soldierId                                   (Roster)
 	///  Promote: int soldierId, byte grade                         (Roster)
+	///  Demote: int soldierId, byte grade (the lower grade wanted)  (Roster) — a repeat of an applied demotion is a no-op, like Promote
+	///  Reserve: int soldierId, bool toReserve                     (Roster) — true takes the soldier off active duty, false recalls him; the packet names the wanted state, so a repeat is a no-op
 	///  Order: byte order (SoldierOrder, incl. SearchDestroy, FreeRein), bool atBarracks   (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire
@@ -50,6 +52,7 @@ namespace Levy.Common.Net
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
 		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts, OfficerCommand,
+		Demote, Reserve,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 	}
 

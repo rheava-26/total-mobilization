@@ -19,6 +19,13 @@ namespace Levy.Common
 		/// <summary>Sanity cap on roster snapshot sizes read from the network.</summary>
 		public const int MaxSnapshotRecords = 4096;
 
+		// ---------- Roster: reserve (soldiers taken off active duty, kept whole) ----------
+		/// <summary>
+		/// Most soldiers the world keeps in reserve at once. A soldier in reserve holds no command points, so nothing else bounds the bench, and the whole roster rides in one
+		/// network packet (65,535 bytes at most, about 290 bytes a soldier). With every command point spent on active duty this still leaves the packet well under the limit.
+		/// </summary>
+		public const int ReserveMax = 100;
+
 		// ---------- Roster: growth ----------
 		/// <summary>How often soldiers check their home Armory storage for a growth crystal to absorb (ticks); one crystal per soldier per check.</summary>
 		public const int AutoFeedIntervalTicks = 180;

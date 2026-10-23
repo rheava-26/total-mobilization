@@ -76,6 +76,14 @@ namespace Levy.Common.Weapons
 		private static readonly List<Projectile> Parked = new();
 		private static readonly List<Projectile> ParkedDragons = new();
 
+		// Per-tick index of the driven minions that need their neighbours parked while they update (group-indexed minion types, Stardust Dragon segments), built once by PrepareTick from the
+		// pass it already makes over the projectile array. Parking used to walk all 1000 projectile slots (and look up each one's tag) for EVERY such minion on EVERY tick; it now walks
+		// only these lists, with the owning soldier read from a parallel array instead of a per-entry lookup.
+		private static readonly List<Projectile> GroupMinionsNow = new();
+		private static readonly List<int> GroupMinionOwners = new();
+		private static readonly List<Projectile> DragonSegmentsNow = new();
+		private static readonly List<int> DragonSegmentOwners = new();
+
 		/// <summary>The slot-aliasing bookkeeping of <see cref="AliasDummy"/>: the real Player that stood in the dragon's owner slot while the soldier's dummy took its place.</summary>
 		private static Player _aliasBackup;
 		private static int _aliasSlot = -1;
@@ -86,7 +94,12 @@ namespace Levy.Common.Weapons
 		private static int _trueMyPlayer;
 		internal static int TrueMyPlayer => _faked ? _trueMyPlayer : Main.myPlayer;
 
-		internal static void Reset() { BadTypes.Clear(); Parked.Clear(); ParkedDragons.Clear(); PendingBody = null; _faked = false; EnsureAliasRestored(); }
+		internal static void Reset()
+		{
+			BadTypes.Clear(); Parked.Clear(); ParkedDragons.Clear();
+			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
+			PendingBody = null; _faked = false; EnsureAliasRestored();
+		}
 
 		// =====================================================================================================
 		// Identity
@@ -427,10 +440,19 @@ namespace Levy.Common.Weapons
 		{
 			uint now = Main.GameUpdateCount;
 			bool authority = LevyUtil.IsServerOrSingle;
+			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!IsDriven(p)) continue;
+				// index the minions whose Update parks their neighbours (see ParkOtherFlocks / ParkOtherDragons): one entry per driven minion, with its soldier read once, here
+				bool dragon = IsDragonType(p.type);
+				if (dragon || GroupIndexed.Contains(p.type))
+				{
+					int owner = p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex;
+					if (dragon) { DragonSegmentsNow.Add(p); DragonSegmentOwners.Add(owner); }
+					else { GroupMinionsNow.Add(p); GroupMinionOwners.Add(owner); }
+				}
 				SoldierNPC s = MiscProjSwap.BodyOf(p);
 				if (s == null) continue;
 				Player d = s.Dummy;
@@ -547,11 +569,12 @@ namespace Levy.Common.Weapons
 		private static void ParkOtherFlocks(Projectile p, int soldierIndex)
 		{
 			Parked.Clear();
-			for (int j = 0; j < Main.maxProjectiles; j++)
+			// walks this tick's index of group-indexed minions (PrepareTick), not the whole projectile array: cost per call is the number of such minions, not 1000 slots
+			for (int k = 0; k < GroupMinionsNow.Count; k++)
 			{
-				Projectile q = Main.projectile[j];
-				if (!q.active || j == p.whoAmI || q.type != p.type || q.owner != Slot) continue;
-				if (q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == soldierIndex) continue;
+				Projectile q = GroupMinionsNow[k];
+				if (!q.active || q.whoAmI == p.whoAmI || q.type != p.type || q.owner != Slot) continue;
+				if (GroupMinionOwners[k] == soldierIndex) continue;
 				q.owner = ParkedOwner;
 				Parked.Add(q);
 			}
@@ -571,11 +594,11 @@ namespace Levy.Common.Weapons
 		private static void ParkOtherDragons(Projectile p, int soldierIndex)
 		{
 			ParkedDragons.Clear();
-			for (int j = 0; j < Main.maxProjectiles; j++)
+			for (int k = 0; k < DragonSegmentsNow.Count; k++)
 			{
-				Projectile q = Main.projectile[j];
-				if (!q.active || j == p.whoAmI || q.owner != DragonOwner || !IsDragonType(q.type)) continue;
-				if (q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == soldierIndex) continue;
+				Projectile q = DragonSegmentsNow[k];
+				if (!q.active || q.whoAmI == p.whoAmI || q.owner != DragonOwner || !IsDragonType(q.type)) continue;
+				if (DragonSegmentOwners[k] == soldierIndex) continue;
 				q.owner = DragonParkOwner;
 				ParkedDragons.Add(q);
 			}
@@ -638,6 +661,7 @@ namespace Levy.Common.Weapons
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
+			HangWatch.Proj(self); // diagnostic breadcrumb (see HangWatch): which projectile's Update started last
 			if (self.minion && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		}

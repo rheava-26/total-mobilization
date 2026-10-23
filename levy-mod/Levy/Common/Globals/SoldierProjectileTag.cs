@@ -86,6 +86,10 @@ namespace Levy.Common.Globals
 		/// <summary>An officer / summon shot never hits something a soldier would never choose (disguised mimics, bound NPCs, critters): it passes through to its real target.</summary>
 		public override bool? CanHitNPC(Projectile projectile, NPC target)
 		{
+			// Vanilla runs this for EVERY (damaging projectile, NPC) pair before the hitbox test, and the army's own bodies fill much of the NPC array: with a sky full of soldier shots most
+			// pairs are (our shot, our friend). A friendly NPC is never a legal target for a soldier / officer / summon shot (it is a never-target, and vanilla would not hit it either), so
+			// refuse it before anything else spends time on the pair.
+			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
 			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
 			return null;
 		}

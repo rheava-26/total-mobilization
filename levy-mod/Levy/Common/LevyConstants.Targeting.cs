@@ -116,6 +116,37 @@ namespace Levy.Common
 
 			/// <summary>Boss segments that carry neither <c>boss</c> nor ShouldBeCountedAsBoss but use an allowlisted AI style (Eater of Worlds is Worm AI).</summary>
 			public static readonly int[] BossPartTypes = { NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail, NPCID.TheDestroyer, NPCID.TheDestroyerBody, NPCID.TheDestroyerTail };
+
+			// ---------- Per-tick cost governors (a big army in a crowded sky must never stall the game) ----------
+			// None of these limits what the army can field or how hard it hits: they only bound how often one body re-runs a whole-world scan or a path search,
+			// and how many path searches the whole army may start in one game tick. A body that is told "not now" simply asks again at its next think.
+
+			/// <summary>
+			/// A soldier with no target runs its full acquisition scan (every enemy slot, line of sight for the winners) at most this often, in ticks. A soldier that has just LOST a live target
+			/// (it died or left reach), was hurt this think or has a hostile within <see cref="AcquireProximityTiles"/> scans at once, so the fight never goes quiet; this only paces the idle looking-around.
+			/// A target a soldier itself wrote off as unreachable is NOT a loss: it is remembered and the next look waits out this interval (that is what stops two unreachable enemies being swapped every think).
+			/// </summary>
+			public const int AcquireScanIntervalTicks = 18;
+			/// <summary>An idle soldier with a hostile this close (tiles, from its world scan) skips the pacing and looks for a target on its very next think.</summary>
+			public const float AcquireProximityTiles = 12f;
+			/// <summary>
+			/// Each body adds 0 .. (this - 1) extra thinks (6 ticks each) to its own scan interval, chosen from its NPC index, so a squad deployed on one tick (or released from one order)
+			/// does not scan on the same tick forever after.
+			/// </summary>
+			public const int AcquireScanSpreadThinks = 3;
+			/// <summary>A beam-firing swordsman that already holds a target looks for a clearly nearer one this often (ticks).</summary>
+			public const int NearerTargetScanIntervalTicks = 24;
+			/// <summary>
+			/// Wall-clock time (microseconds) the whole army may spend per game tick on position searches (a firing spot, a perch, a cover angle, a patrol leg: candidate generation plus the path
+			/// searches that vet them). Each search is charged what it actually took and a new one only STARTS while the tick's account is not used up (one that has started always finishes). One
+			/// failed path search can burn its whole node budget (several milliseconds), so a stampede of soldiers that all lose their cached answer on one tick cannot pile up on that tick: the
+			/// rest are asked again at their next think and keep their previous answer meanwhile. Cheap searches (a fraction of a millisecond each) pass in dozens, so ordinary fights never notice.
+			/// </summary>
+			public const int PathSearchBudgetMicros = 2500;
+			/// <summary>A soldier that was told "not this tick" this many thinks in a row (6 thinks = 36 ticks) becomes eligible for the one starved search per tick that runs whatever the account says, so a late NPC index can never starve behind early ones.</summary>
+			public const int SearchMaxDeferrals = 6;
+			/// <summary>Targets a soldier remembers as unreachable at once (each for its own recheck time). With only one slot two unreachable enemies (a flying boss and an escort) trade places every think and re-run the whole search for each.</summary>
+			public const int UnreachableMemorySlots = 3;
 		}
 	}
 }

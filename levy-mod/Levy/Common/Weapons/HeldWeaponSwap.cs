@@ -355,7 +355,10 @@ namespace Levy.Common.Weapons
 		}
 	}
 
-	/// <summary>Installs the Projectile.AI / Projectile.Damage wrappers (nested chain calls pass straight through) and keeps slot 255 clean around the projectile phase.</summary>
+	/// <summary>
+	/// Installs the Projectile.AI / Projectile.Damage wrappers (nested chain calls pass straight through) and keeps slot 255 clean around the projectile phase. The Damage detour also serves the
+	/// driven minions of <see cref="SoldierMinions"/>, so there is exactly one Projectile.Damage hook in the mod.
+	/// </summary>
 	public class HeldWeaponSystem : ModSystem
 	{
 		public override void Load()
@@ -390,9 +393,9 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// Re-entrancy guard shared by both detours: above zero while a chain wrapper is inside orig on this thread. A boss-death cascade runs synchronously inside the hit that caused it; if
-		/// anything in it re-enters Projectile.AI / Projectile.Damage for another chain projectile, that nested call goes straight to orig instead of opening another swap / re-owning inside
-		/// the first one, so the wrappers can never recurse into each other.
+		/// Re-entrancy guard shared by both detours: above zero while a chain wrapper (or a driven minion's Damage wrapper) is inside orig on this thread. A boss-death cascade runs synchronously
+		/// inside the hit that caused it; if anything in it re-enters Projectile.AI / Projectile.Damage for another chain projectile or minion, that nested call goes straight to orig instead of
+		/// opening another swap / re-owning / strike window inside the first one, so the wrappers can never recurse into each other (a beam's Damage and a minion's Damage count the same).
 		/// </summary>
 		[ThreadStatic] private static int _wrapDepth;
 
@@ -411,12 +414,29 @@ namespace Levy.Common.Weapons
 			finally { _wrapDepth--; }
 		}
 
+		/// <summary>
+		/// The ONE Projectile.Damage detour of the mod. A chain projectile (held-weapon beam) is handed to the real player for the call; a driven minion in the middle of its own Update
+		/// (SoldierMinions.RunUpdate has the dummy swapped in) arms the strike window instead, so the kill cascade of a lethal hit resolves in the real-player context while the call's damage
+		/// arithmetic keeps running against the dummy, unchanged (see SoldierMinions.RunDamage / RunStrike). Everything else is vanilla.
+		/// </summary>
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{
-			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
-			_wrapDepth++;
-			try { HeldWeapons.RunDamage(orig, self, g); }
-			finally { _wrapDepth--; }
+			if (ShouldWrap(self, out HeldWeaponProjectile g))
+			{
+				_wrapDepth++;
+				try { HeldWeapons.RunDamage(orig, self, g); }
+				finally { _wrapDepth--; }
+			}
+			else if (WantsMinionWindow(self))
+			{
+				_wrapDepth++;
+				try { SoldierMinions.RunDamage(orig, self); }
+				finally { _wrapDepth--; }
+			}
+			else orig(self);
 		}
+
+		/// <summary>True for a driven minion inside its own Update on the server / single player, and not nested in another wrapper. The frame test is a single reference compare and is false for almost every call.</summary>
+		private static bool WantsMinionWindow(Projectile p) => SoldierMinions.IsFrameProjectile(p) && _wrapDepth == 0 && LevyUtil.IsServerOrSingle;
 	}
 }

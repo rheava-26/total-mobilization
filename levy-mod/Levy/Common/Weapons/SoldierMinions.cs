@@ -33,6 +33,16 @@ namespace Levy.Common.Weapons
 	/// SLOT 255 DISCIPLINE: Swap in try, Unswap in finally, EnsureSlotRestored in the same finally, plus PreUpdateProjectiles/PostUpdateProjectiles; Main.myPlayer and
 	/// maxMinions are restored in that finally too.
 	///
+	/// THE KILL CASCADE. A minion's hit ends in NPC.StrikeNPC (the only strike call in Projectile.cs), and a lethal one runs the whole death cascade (HitEffect, NPC.checkDead -> NPCLoot, every
+	/// mod's OnKill, event and boss-log bookkeeping) synchronously inside it. That has to happen on the real machine, exactly as for a normal soldier shot (owned by <see cref="TrueMyPlayer"/>): the
+	/// real Main.myPlayer and the real null player in slot 255, never a stand-in Player there (with the dummy in the slot that cascade hung the game; held-weapon beams got the same fix in
+	/// HeldWeapons.RunDamage). The projectile cannot simply be handed to the real player for its Damage call the way a beam is: vanilla reads the owner's slot for the Desert Tiger / Abigail level
+	/// terms of the damage (the dummy's ownedProjectileCounts, set by <see cref="PrepareTick"/>), for the Stardust Dragon's shared hit cooldown (an owner scan for the head) and for the per-owner
+	/// NPC hit immunity (npc.immune[owner]), which would also be shared with every other soldier shot. So the projectile keeps its owner and only the cascade moves: <see cref="RunDamage"/> arms the
+	/// minion's one Projectile.Damage call and <see cref="RunStrike"/> lifts the Update's whole context (dummy out of slot 255 and out of the dragon's owner slot, Main.myPlayer back to the real
+	/// one) for exactly the length of the NPC.StrikeNPC inside it, then puts it back in a finally. The damage number, the hit rate and everything the hit does before and after the strike still
+	/// run against the dummy, unchanged. Server / single player only.
+	///
 	/// WHAT STAYS FAKE. Only vanilla minions are driven: a modded minion's own AI usually insists on its owner's ModPlayer buff and would die on the dummy. Those, the Stardust Guardian
 	/// (an armor-set stand, not a minion), and any type that throws while driven (see <see cref="MarkBad"/>) keep the old stand-in, <see cref="Content.Projectiles.SoldierMinion"/>.
 	///
@@ -94,11 +104,28 @@ namespace Levy.Common.Weapons
 		private static int _trueMyPlayer;
 		internal static int TrueMyPlayer => _faked ? _trueMyPlayer : Main.myPlayer;
 
+		// ---- the Update frame and the strike window (see "THE KILL CASCADE" above) ----
+		/// <summary>The driven minion whose Projectile.Update is inside orig right now (dummy swap, dragon alias and faked Main.myPlayer all in place); null outside <see cref="RunUpdate"/>.</summary>
+		private static Projectile _frameProj;
+		/// <summary>The soldier that frame runs for, and the owner slot it aliased the dummy into (255, or <see cref="DragonOwner"/> for a dragon segment).</summary>
+		private static SoldierNPC _frameBody;
+		private static int _frameOwnerSlot;
+		/// <summary>True for the length of one driven minion's Projectile.Damage call on the server / single player: a StrikeNPC inside it runs in the real-player context.</summary>
+		private static bool _strikeArmed;
+		/// <summary>True while the Update's swap is lifted for a strike, so a nested strike (an on-hit hook, the cascade itself) passes straight through.</summary>
+		private static bool _realContext;
+
 		internal static void Reset()
 		{
 			BadTypes.Clear(); Parked.Clear(); ParkedDragons.Clear();
 			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
-			PendingBody = null; _faked = false; EnsureAliasRestored();
+			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
+		}
+
+		/// <summary>Nothing of a minion's Update frame or strike window may outlive the projectile phase; the per-tick safety net and every reset call this.</summary>
+		internal static void ClearFrame()
+		{
+			_frameProj = null; _frameBody = null; _frameOwnerSlot = 0; _strikeArmed = false; _realContext = false;
 		}
 
 		// =====================================================================================================
@@ -529,6 +556,7 @@ namespace Levy.Common.Weapons
 			Player d = body.Dummy;
 			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
 			bool swapped = false, parked = false, parkedDragons = false;
+			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
 			{
 				if (p.timeLeft < LevyConstants.MinionLifeTicks / 2) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
@@ -539,6 +567,7 @@ namespace Levy.Common.Weapons
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
+				_frameProj = p; _frameBody = body; _frameOwnerSlot = ownerSlot; _strikeArmed = false; _realContext = false; // the context RunStrike lifts around a strike, and puts back
 				orig(p, i);
 			}
 			catch (Exception e)
@@ -550,6 +579,7 @@ namespace Levy.Common.Weapons
 			}
 			finally
 			{
+				_frameProj = outerFrameProj; _frameBody = outerFrameBody; _frameOwnerSlot = outerFrameSlot; _strikeArmed = outerArmed; _realContext = outerReal;
 				if (parked) UnparkOtherFlocks();
 				if (parkedDragons) UnparkOtherDragons();
 				Main.myPlayer = savedMyPlayer;
@@ -563,6 +593,60 @@ namespace Levy.Common.Weapons
 			// keep remote screens honest: the server re-sends every real minion now and then (vanilla only sends when the AI flags a change)
 			if (Main.netMode == NetmodeID.Server && p.active && ((uint)p.whoAmI + Main.GameUpdateCount) % (uint)LevyConstants.MinionNetRefreshTicks == 0)
 				NetMessage.SendData(MessageID.SyncProjectile, -1, -1, null, p.whoAmI);
+		}
+
+		// =====================================================================================================
+		// The kill cascade (see the class summary): Projectile.Damage arms a window, NPC.StrikeNPC lifts the swap inside it.
+		// =====================================================================================================
+		/// <summary>True when <paramref name="p"/> is the driven minion whose Update is running under the dummy swap right now (the one cheap test the Damage detour runs first).</summary>
+		internal static bool IsFrameProjectile(Projectile p) => ReferenceEquals(p, _frameProj);
+
+		/// <summary>
+		/// The one Projectile.Damage call of a driven minion mid-Update (called from the Damage detour on the server / single player only). The projectile keeps its owner and the dummy stays in
+		/// place for all the arithmetic; the call just arms <see cref="RunStrike"/> so the NPC.StrikeNPC inside it, and the death cascade that strike runs synchronously, happens in the real-player
+		/// context. Nested-safe: the previous armed state is put back in the finally.
+		/// </summary>
+		internal static void RunDamage(On_Projectile.orig_Damage orig, Projectile p)
+		{
+			if (!ReferenceEquals(p, _frameProj) || _frameBody == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
+			bool outerArmed = _strikeArmed;
+			_strikeArmed = true;
+			try { orig(p); }
+			finally { _strikeArmed = outerArmed; }
+		}
+
+		/// <summary>
+		/// NPC.StrikeNPC detour. Outside an armed driven-minion Damage call (every other strike in the game) it is a flag test and a straight call to orig. Inside one it lifts the Update's whole
+		/// context for the length of the strike, which is where a lethal hit runs HitEffect, NPC.checkDead and NPCLoot (every mod's OnKill, event and boss-log bookkeeping) synchronously:
+		///  * Main.myPlayer goes back to the real player (single player; a dedicated server already is 255 and is left alone);
+		///  * the dummy leaves Main.player[255] (EnemyTargeting.Unswap puts the real null player back) and, for a Stardust Dragon segment, leaves its owner slot too.
+		/// The finally puts all of it back in the order <see cref="RunUpdate"/> built it, so the rest of the Damage call and of the Update see exactly what they always did. The cascade therefore
+		/// resolves as it does for a normal soldier shot. Credit is not touched here: LootCredit has already named the commander (ModifyHitNPC runs before the strike) and the strike itself is
+		/// npcProj (noPlayerInteraction), so there is no second interaction and no loot credit for slot 255.
+		/// </summary>
+		internal static int RunStrike(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC npc, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction)
+		{
+			SoldierNPC body = _frameBody;
+			if (!_strikeArmed || _realContext || body == null || body.Dummy == null) return orig(npc, hit, fromNet, noPlayerInteraction);
+
+			int ownerSlot = _frameOwnerSlot;
+			bool wasFaked = _faked;
+			int fakedMyPlayer = Main.myPlayer, trueMyPlayer = _trueMyPlayer;
+			try
+			{
+				if (wasFaked) { Main.myPlayer = trueMyPlayer; _faked = false; }
+				EnemyTargeting.Unswap();
+				EnsureAliasRestored();
+				_realContext = true;
+				return orig(npc, hit, fromNet, noPlayerInteraction);
+			}
+			finally
+			{
+				_realContext = false;
+				if (wasFaked) { _trueMyPlayer = trueMyPlayer; _faked = true; Main.myPlayer = fakedMyPlayer; }
+				EnemyTargeting.Swap(body); // dummy -> Main.player[255] again (Swap lifts any swap left over first)
+				if (ownerSlot != Slot) AliasDummy(ownerSlot, body.Dummy);
+			}
 		}
 
 		/// <summary>Other soldiers' minions of the same type sit on a throwaway owner for the length of the call, so a group-indexed AI sorts itself among ITS soldier's flock only.</summary>
@@ -631,14 +715,22 @@ namespace Levy.Common.Weapons
 		}
 	}
 
-	/// <summary>Installs the Projectile.Update wrapper for real minions and the per-tick dummy preparation; keeps slot 255 clean around the projectile phase.</summary>
+	/// <summary>
+	/// Installs the Projectile.Update wrapper for real minions and the per-tick dummy preparation; keeps slot 255 clean around the projectile phase. Also installs the NPC.StrikeNPC
+	/// interposer that runs a driven minion's kill cascade in the real-player context (armed by the Projectile.Damage detour in <see cref="HeldWeaponSystem"/>; see <see cref="SoldierMinions.RunStrike"/>).
+	/// </summary>
 	public class SoldierMinionSystem : ModSystem
 	{
-		public override void Load() => On_Projectile.Update += UpdateDetour;
+		public override void Load()
+		{
+			On_Projectile.Update += UpdateDetour;
+			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
+		}
 
 		public override void Unload()
 		{
 			On_Projectile.Update -= UpdateDetour;
+			On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour;
 			SoldierMinions.Reset();
 			EnemyTargeting.EnsureSlotRestored();
 		}
@@ -650,12 +742,14 @@ namespace Levy.Common.Weapons
 		{
 			EnemyTargeting.EnsureSlotRestored();
 			SoldierMinions.EnsureAliasRestored();
+			SoldierMinions.ClearFrame();
 			SoldierMinions.PrepareTick();
 		}
 
 		public override void PostUpdateProjectiles()
 		{
 			SoldierMinions.EnsureAliasRestored();
+			SoldierMinions.ClearFrame();
 			EnemyTargeting.EnsureSlotRestored();
 		}
 
@@ -665,5 +759,8 @@ namespace Levy.Common.Weapons
 			if (self.minion && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		}
+
+		private static int StrikeDetour(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction) =>
+			SoldierMinions.RunStrike(orig, self, hit, fromNet, noPlayerInteraction);
 	}
 }

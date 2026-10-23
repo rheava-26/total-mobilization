@@ -141,6 +141,8 @@ Mods: {
 			SoldierSpectreHeal.DisplayName: Soldier Spectre Heal Bolt
 			SoldierTitaniumShard.DisplayName: Soldier Titanium Shard
 			OfficerHealSyringe.DisplayName: Officer Heal Syringe
+			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
+			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
 		}
 
 		Keybinds: {

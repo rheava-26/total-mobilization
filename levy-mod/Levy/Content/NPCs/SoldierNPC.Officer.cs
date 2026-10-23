@@ -1,8 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
@@ -19,20 +17,22 @@ using static Levy.Common.LevyConstants.Officer;
 namespace Levy.Content.NPCs
 {
 	/// <summary>
-	/// OFFICER MODE. An officer is a conscripted town NPC, but it fights as a soldier: the real town NPC is parked (invisible, frozen,
-	/// non-colliding, non-targetable) and co-located with a transient AVATAR — this same <see cref="SoldierNPC"/> flipped into officer mode.
-	/// The avatar reuses the soldier movement AI unchanged (platforms, ledges, jumps, follow-the-commander), but draws the town NPC's sprite,
-	/// carries a SYNTHETIC record that never enters the roster (no manpower, no command points, not in the barracks list), and runs the officer
-	/// kit instead of the soldier brain/combat. The avatar is the body enemies chase; the parked town NPC is left for the player to shop with.
+	/// OFFICER MODE. An officer is a conscripted town NPC, but it fights as a soldier: the real town NPC is parked (its town AI skipped, its
+	/// physics off, non-targetable) and co-located with a transient AVATAR — this same <see cref="SoldierNPC"/> flipped into officer mode.
+	/// The avatar reuses the soldier movement AI unchanged (platforms, ledges, jumps, follow-the-commander), carries a SYNTHETIC record that
+	/// never enters the roster (no manpower, no command points, not in the barracks list), and runs the officer kit instead of the soldier
+	/// brain/combat. The avatar is the body enemies chase and draws nothing but its nameplate: VANILLA draws the parked town NPC in its place
+	/// (stock frames, party hat, texture packs), because the avatar feeds it its own velocity and facing every tick (<see cref="Officer_ParkTownNpc"/>),
+	/// so the stock idle / walk / jump frames follow the body. The town NPC is also what the player shops with.
 	/// Avatar death ends the commission ("fell"); dismissal / commander-offline removes the avatar and un-parks the town NPC.
 	/// </summary>
 	public partial class SoldierNPC
 	{
-		// ---- officer state (OfficerMode avatars only; synced so clients draw the town sprite and route clicks) ----
+		// ---- officer state (OfficerMode avatars only; synced so clients can find and drive the town NPC and route clicks) ----
 		public bool OfficerMode;
 		/// <summary>whoAmI of the parked town NPC this avatar represents (co-located with it, routes shop/chat to it).</summary>
 		public int OfficerTownIndex = -1;
-		/// <summary>Town NPC type: the texture the avatar draws, and the key the <see cref="OfficerDef"/> is looked up by on every machine.</summary>
+		/// <summary>Town NPC type: guards the link to <see cref="OfficerTownIndex"/>, and the key the <see cref="OfficerDef"/> is looked up by on every machine.</summary>
 		public int OfficerTownType = -1;
 
 		private OfficerDef _offDef;
@@ -44,8 +44,6 @@ namespace Levy.Content.NPCs
 		private bool _offDismissedCalled;
 		// march chatter throttle (server)
 		private int _offMarchTimer;
-		// walk-frame animation of the drawn town sprite (client)
-		private double _offFrameCounter; private int _offFrameY; private bool _offFrameInit;
 
 		public OfficerDef OfficerDef => _offDef ??= (OfficerTownType > 0 && OfficerRegistry.TryGet(OfficerTownType, out var d) ? d : null);
 
@@ -336,28 +334,54 @@ namespace Levy.Content.NPCs
 		}
 
 		// =====================================================================================================
-		// Parking the real town NPC: co-locate it with the avatar and keep it inert, on every machine.
+		// Parking the real town NPC: co-locate it with the avatar and drive it as a puppet, on every machine.
+		// The town NPC is what the player SEES (vanilla draws it: stock frames, party hat, texture packs); the avatar is its invisible body.
 		// =====================================================================================================
+		/// <summary>
+		/// Drives the real town NPC as a puppet of this avatar. Runs on every machine, twice a tick: from the avatar's own AI (so the town NPC's update reads fresh
+		/// inputs) and again from <see cref="OfficerSystem.PostUpdateNPCs"/> once every NPC has moved (so the drawn sprite is never a step behind the body, whichever
+		/// of the two has the lower slot). The town AI itself stays skipped by <see cref="OfficerGlobalNPC.PreAI"/>. This feeds vanilla's own FindFrame what it reads:
+		/// no velocity = the standing frame, ground speed = the stock walk cycle, vertical speed = the airborne pose. There is no frame math here.
+		/// </summary>
 		public void Officer_ParkTownNpc()
 		{
+			if (!IsAlive) return; // a dying avatar must not re-puppet the town NPC its death just released
 			NPC town = OfficerTownNpc;
-			if (town == null) return;
-			town.Center = NPC.Center;
-			town.velocity = Vector2.Zero;
-			town.direction = NPC.direction == 0 ? 1 : NPC.direction;
-			town.spriteDirection = town.direction;
+			OfficerGlobalNPC g = town != null ? OfficerSystem.Data(town) : null;
+			if (g == null || !g.Enrolled) return; // link not resolved yet, or the commission already ended: never puppet an NPC that is not this officer
+
+			// Puppet physics. Its own gravity and tile collision would re-simulate the body and fight the pin (a platform or a ledge reads as a fall, and the airborne
+			// frame would stick). Neither flag is synced, so every machine sets them here and OfficerGlobalNPC.PreAI hands them back once the avatar is gone.
+			g.Parked = true;
+			town.noGravity = true;
+			town.noTileCollide = true;
+
+			// Inert: shoppable, not hurtable (the avatar is the body enemies chase).
 			town.dontTakeDamage = true;
 			town.dontTakeDamageFromHostiles = true;
 			town.immortal = true;
-			town.gfxOffY = 0f;
+
+			// What vanilla's FindFrame reads. ai[0] = 0 is the plain idle/walk state, so no sleeping, sitting or chatting pose is carried over from before the commission.
+			// A body that is only coasting to a stop reads as standing; the horizontal speed is capped at the quickest a stock town NPC ever moves, so the stride keeps a
+			// stock cadence at the avatar's run speed (the body itself still moves at its real speed).
+			float vx = Math.Abs(NPC.velocity.X) < LevyConstants.Movement.StopBelowPx ? 0f : Math.Clamp(NPC.velocity.X, -TownStrideMaxSpeedPx, TownStrideMaxSpeedPx);
+			town.velocity = new Vector2(vx, NPC.velocity.Y);
+			town.direction = NPC.direction == 0 ? 1 : NPC.direction;
+			town.spriteDirection = town.direction;
+			town.ai[0] = 0f;
+
+			// Position last, feet on the avatar's feet: the puppet cannot drift, and vanilla's draw (which seats the sprite on Bottom) lands where the avatar stands.
+			// The avatar's smoothing offsets ride along, so the sprite eases between network corrections exactly as the body does.
+			town.Bottom = NPC.Bottom;
 			town.oldPosition = town.position;
+			town.netOffset = NPC.netOffset;
+			town.gfxOffY = NPC.gfxOffY;
 		}
 
-		/// <summary>Client tick for an officer avatar: keep the parked town NPC co-located and advance the drawn sprite's walk frame.</summary>
+		/// <summary>Client tick for an officer avatar: keep the parked town NPC driven (clients run no officer brain; vanilla animates the town NPC from what this feeds it).</summary>
 		private void Officer_ClientTick()
 		{
 			Officer_ParkTownNpc();
-			Officer_AdvanceWalkFrame();
 		}
 
 		// =====================================================================================================
@@ -379,63 +403,6 @@ namespace Levy.Content.NPCs
 			_offDef?.Kit?.OnDismissed(OfficerMakeContext());
 		}
 
-		// =====================================================================================================
-		// Draw: the town NPC's sprite, animated from the avatar's own movement (client).
-		// =====================================================================================================
-		private void Officer_AdvanceWalkFrame()
-		{
-			if (Main.dedServ) return;
-			NPC town = OfficerTownNpc;
-			if (town == null) return;
-			int frameCount = Math.Max(1, Main.npcFrameCount[town.type]);
-			if (frameCount <= 1) { _offFrameY = 0; return; }
-			if (!_offFrameInit) { _offFrameInit = true; _offFrameCounter = 0; _offFrameY = 0; }
-			bool airborne = NPC.velocity.Y != 0f;
-			float speed = Math.Abs(NPC.velocity.X);
-			// Town NPCs reserve frame 0 for standing and frames 1..last-1 for the attack pose; the WALK cycle is the trailing block of frames.
-			// Walk when moving on the ground; otherwise stand. The cadence tracks ground speed so the stride reads right at walk and run.
-			int walkStart = Math.Min(frameCount - 1, LevyConstants.Officer.TownWalkStartFrame);
-			int walkFrames = frameCount - walkStart;
-			if (!airborne && speed > 0.2f && walkFrames > 0)
-			{
-				_offFrameCounter += Math.Min(1.4f, 0.5f + speed * 0.35f);
-				if (_offFrameCounter >= LevyConstants.Officer.TownWalkFrameTicks)
-				{
-					_offFrameCounter = 0;
-					_offFrameY = walkStart + ((_offFrameY - walkStart + 1) % walkFrames);
-					if (_offFrameY < walkStart) _offFrameY = walkStart;
-				}
-			}
-			else { _offFrameCounter = 0; _offFrameY = 0; } // standing frame
-		}
-
-		/// <summary>Draws the town NPC's texture at the avatar's feet with the current walk/idle frame. Client; never throws into the NPC draw loop.</summary>
-		private void Officer_Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, ref bool drawn)
-		{
-			if (Main.dedServ) return;
-			NPC town = OfficerTownNpc;
-			if (town == null) return; // leave drawn=false: the placeholder sprite shows until the link resolves
-			try
-			{
-				Main.instance.LoadNPC(town.type);
-				Texture2D tex = TextureAssets.Npc[town.type]?.Value;
-				if (tex == null) return;
-				int frameCount = Math.Max(1, Main.npcFrameCount[town.type]);
-				int frameH = tex.Height / frameCount;
-				int fy = Math.Clamp(_offFrameY, 0, frameCount - 1);
-				Rectangle frame = new Rectangle(0, fy * frameH, tex.Width, frameH);
-				Vector2 origin = new Vector2(frame.Width / 2f, frame.Height);
-				Vector2 pos = new Vector2(NPC.Center.X, NPC.Bottom.Y + LevyConstants.Officer.TownDrawFootOffsetPx) - screenPos + new Vector2(0f, NPC.gfxOffY);
-				int sdir = NPC.direction == 0 ? 1 : NPC.direction;
-				SpriteEffects fx = sdir == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-				Color c = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
-				spriteBatch.Draw(tex, pos, frame, c, 0f, origin, town.scale, fx, 0f);
-				drawn = true;
-			}
-			catch (Exception e)
-			{
-				Levy.Instance.Logger.Warn("Levy: drawing an officer avatar's town sprite failed; it falls back to the placeholder: " + e.Message);
-			}
-		}
+		// Drawing: none. The avatar's body is invisible (SoldierNPC.Draw.cs); vanilla draws the parked town NPC, and only the nameplate is the avatar's own.
 	}
 }

@@ -42,7 +42,9 @@ namespace Levy.Content.NPCs
 		{
 			if (Main.dedServ || Record == null || !NPC.active) return;
 			if (!IsAlive) { drawn = true; return; } // dying bodies draw nothing while the roster handles the death
-			if (OfficerMode) { Officer_Draw(spriteBatch, screenPos, drawColor, ref drawn); return; } // an officer avatar draws the town NPC's sprite, not the player model
+			// An officer avatar's body is invisible: vanilla draws the parked town NPC at the same spot (stock frames, party hat, texture packs; see Officer_ParkTownNpc), and
+			// only the nameplate (Draw_PostDraw) is the avatar's own. Claiming the draw also skips the player-model path. With no town NPC resolved yet the placeholder shows.
+			if (OfficerMode) { drawn = OfficerTownNpc != null; return; }
 			if (_rendererBroken) return;             // placeholder texture draws instead
 			EnsureDummy();
 			uint tick = Main.GameUpdateCount;

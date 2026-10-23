@@ -112,13 +112,9 @@ namespace Levy.Common
 			/// <summary>Chance a march chatter roll actually speaks (the squad dialogue budget throttles it further).</summary>
 			public const float MarchChatterChance = 0.5f;
 
-			// ---- drawing the town sprite on the avatar ----
-			/// <summary>First frame of a town NPC sheet that belongs to the walk cycle (frame 0 is standing, the low frames are the attack pose).</summary>
-			public const int TownWalkStartFrame = 7;
-			/// <summary>Ticks of accumulated stride per walk frame (lower = faster leg cycle).</summary>
-			public const int TownWalkFrameTicks = 7;
-			/// <summary>Vertical nudge (px) of the drawn town sprite so its feet sit on the ground like a civilian's.</summary>
-			public const float TownDrawFootOffsetPx = 4f;
+			// ---- the parked town NPC (what vanilla draws for an officer; the avatar only feeds it a velocity and a facing) ----
+			/// <summary>The most horizontal speed (px/tick) handed to the town NPC's stock walk animation: about the quickest a stock town NPC ever moves (fleeing). Above it the legs would cycle faster than any stock town NPC's; the avatar itself still moves at its real speed.</summary>
+			public const float TownStrideMaxSpeedPx = 2f;
 
 			// =====================================================================================================
 			// THE GUIDE + the SHRED MARK. The Guide marches with the line and hangs the mark on the single strongest enemy in reach; while

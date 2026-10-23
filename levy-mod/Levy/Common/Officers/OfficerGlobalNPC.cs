@@ -14,8 +14,9 @@ namespace Levy.Common.Officers
 	/// <summary>
 	/// The commission itself, stored on the town NPC: who commands him, in which slot, which barracks pays him. Saved with the NPC (town NPCs are always saved) and
 	/// carried to clients in the NPC's extra-AI block, so every machine agrees on who is an officer without a packet of its own. While a commission is live
-	/// (<see cref="Enrolled"/> and the commander online) this class takes over the NPC's AI: vanilla town behavior is skipped and <see cref="OfficerBrain"/> runs on
-	/// the server instead. Ending the commission, or the commander leaving, hands the NPC back to the vanilla AI (<see cref="Disengage"/>).
+	/// (<see cref="Enrolled"/> and the commander online) this class takes over the NPC's AI: vanilla town behavior is skipped and the officer's avatar (a soldier in
+	/// officer mode, SoldierNPC.Officer.cs) drives the NPC instead, while vanilla still draws and animates it. Ending the commission, or the commander leaving, hands
+	/// the NPC back to the vanilla AI (<see cref="PreAI"/> sees the avatar gone and calls <see cref="EndPark"/>).
 	/// </summary>
 	public class OfficerGlobalNPC : GlobalNPC
 	{
@@ -36,6 +37,8 @@ namespace Levy.Common.Officers
 		public OfficerRuntime Rt = new();
 		/// <summary>Per-officer kit state created by <see cref="OfficerKit.CreateState"/>. (Since the rework the live kit state lives on the avatar; kept for compatibility.)</summary>
 		public object KitState => Rt.KitState;
+		/// <summary>True while an avatar is driving this town NPC as a puppet (it turned off the NPC's gravity and tile collision, which no packet carries). <see cref="PreAI"/> and <see cref="EndPark"/> hand them back. Set on every machine by SoldierNPC.Officer_ParkTownNpc.</summary>
+		public bool Parked;
 
 		/// <summary>Copies of the entity (Bestiary samples, NPC.Clone) get their own runtime so a shared targeting body never crosses wires.</summary>
 		public override GlobalNPC Clone(NPC from, NPC to)
@@ -56,18 +59,26 @@ namespace Levy.Common.Officers
 
 		// =====================================================================================================
 		// AI takeover: PARK the real town NPC while a live avatar marches for this commission.
-		// The avatar (a soldier in officer mode) co-locates the town NPC with itself every tick and does the fighting/kit;
-		// the town NPC is only kept alive, invisible and inert so the player can still shop with it and its name survives.
+		// The avatar (a soldier in officer mode) drives the town NPC every tick (SoldierNPC.Officer_ParkTownNpc: velocity, facing, position) and does the
+		// fighting/kit. The town NPC keeps its vanilla update and draw, so it is what the player sees: its stock frames follow the velocity the avatar feeds it.
+		// It is kept alive and inert, and the player can still shop with it.
 		// =====================================================================================================
 		public override bool PreAI(NPC npc)
 		{
-			if (!Enrolled) return true;
-			if (OfficerSystem.Instance.HasLiveAvatar(npc))
-			{
-				npc.velocity = Vector2.Zero; // the avatar co-locates it each tick; this only stops stray drift between NPC updates
-				return false;                // skip the vanilla town AI: this NPC is parked
-			}
-			return true; // enrolled but no avatar yet (commander offline, or just commissioned): live as a normal civilian until the avatar marches
+			if (Enrolled && OfficerSystem.Instance.HasLiveAvatar(npc))
+				return false; // skip the vanilla town AI: this NPC is parked. Its velocity is the avatar's (do not zero it: the stock walk/jump frames read it)
+			if (Parked) EndPark(npc); // the avatar is gone (dismissed, fell, commander offline): back to stock physics
+			return true; // enrolled but no avatar yet (commander offline, or just commissioned), or not an officer: live as a normal civilian
+		}
+
+		/// <summary>Hands a puppeted town NPC back to the stock town physics. Runs on every machine (the flags it undoes are not synced); a no-op unless an avatar parked it.</summary>
+		public void EndPark(NPC npc)
+		{
+			if (!Parked) return;
+			Parked = false;
+			npc.noGravity = false;
+			npc.noTileCollide = false;
+			npc.velocity.X = 0f; // the avatar's march speed is not a civilian's; the town AI picks its own pace from here
 		}
 
 		// =====================================================================================================
@@ -122,14 +133,9 @@ namespace Levy.Common.Officers
 		}
 
 		// =====================================================================================================
-		// Draw: while a live avatar marches, the town NPC is hidden (the avatar draws its sprite and shows its name).
+		// Draw: deliberately no PreDraw. While a live avatar marches, VANILLA draws the parked town NPC like any other (its real frames, party hat, texture
+		// packs, shimmer variants); the avatar's own body is invisible and carries only the nameplate (SoldierNPC.Draw.cs).
 		// =====================================================================================================
-		/// <summary>Hide the parked town NPC: its avatar draws the sprite at the same spot. Returning false skips the vanilla NPC draw.</summary>
-		public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-		{
-			if (Main.dedServ) return true;
-			return !(Enrolled && OfficerSystem.Instance.HasLiveAvatar(npc));
-		}
 
 		/// <summary>A small tag over an enrolled officer that is NOT currently deployed (its avatar carries the name while marching).</summary>
 		public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

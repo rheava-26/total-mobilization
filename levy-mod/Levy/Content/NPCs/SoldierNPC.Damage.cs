@@ -217,6 +217,7 @@ namespace Levy.Content.NPCs
 				case BuffID.WellFed: return ApplyWellFed(d, 1);  // Well Fed
 				case BuffID.WellFed2: return ApplyWellFed(d, 2); // Plenty Satisfied
 				case BuffID.WellFed3: return ApplyWellFed(d, 3); // Exquisitely Stuffed
+				case BuffID.Thorns: d.thorns += LevyConstants.Officer.DryadThornsReflectFrac; break; // Dryad's nature aura: reflect contact damage (capped in ReflectThorns)
 			}
 			return 0;
 		}

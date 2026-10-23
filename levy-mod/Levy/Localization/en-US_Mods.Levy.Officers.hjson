@@ -86,4 +86,41 @@ Kit: {
 			A fallen crewman is replaced every {2} seconds, up to the full crew.
 			'''
 	}
+
+	Princess: {
+		Name: Princess
+		Desc:
+			'''
+			Hangs behind the line and lifts the whole army at once. Soldiers and officers within {0} tiles are kept under Ironskin, Wrath, Rage and Endurance together.
+			Never fights; the army keeps her safe.
+			'''
+	}
+
+	Dryad: {
+		Name: Dryad
+		Desc:
+			'''
+			Marks every enemy within {0} tiles with Dryad's Bane. The whole army deals {1}% more damage to each marked enemy.
+			Wraps soldiers within {2} tiles in Thorns and Regeneration.
+			Casts from behind the line and never leaves it to chase.
+			'''
+	}
+
+	GoblinTinkerer: {
+		Name: Goblin Tinkerer
+		Desc:
+			'''
+			Marches with the line and tunes the gear of soldiers within {0} tiles, adding damage, crit and defense.
+			Flings spiky balls at any enemy that strays into reach.
+			'''
+	}
+
+	TaxCollector: {
+		Name: Tax Collector
+		Desc:
+			'''
+			Keeps to the rear and marks every enemy within {0} tiles, so the army hits them harder.
+			When a marked enemy falls near him he taxes its corpse into the treasury, up to {1}.
+			'''
+	}
 }

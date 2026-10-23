@@ -120,6 +120,11 @@ namespace Levy.Common.Officers
 			Register(GuideOfficer.Create());
 			Register(AnglerOfficer.Create());
 			Register(PirateOfficer.Create());           // summon officer: fields a flintlock boarding crew
+			// Buff / debuff officers (rebuild)
+			Register(PrincessOfficer.Create());         // army-wide morale aura (soldiers + officers)
+			Register(DryadOfficer.Create());            // AoE shred mark + Thorns/Regeneration aura
+			Register(GoblinTinkererOfficer.Create());   // gear-tune aura + thrown spiky balls
+			Register(TaxCollectorOfficer.Create());     // AoE shred mark + coin bounty on a marked kill
 			// Register(DemolitionistOfficer.Create());   <- the next officer goes here
 		}
 	}

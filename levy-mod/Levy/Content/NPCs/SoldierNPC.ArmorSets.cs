@@ -20,10 +20,12 @@ namespace Levy.Content.NPCs
 	/// <list type="bullet">
 	/// <item>Beetle Might / Defense and Solar Flare: vanilla draws the orbiting beetles and the flare shields as PLAYER DRAW LAYERS (not projectiles) off beetleOrbs / solarShields, and the
 	/// damage side from the same counters. They are run here every tick on the soldier's own counters and written to the dummy for the draw; the count rides NPC.ai[0] to clients.</item>
-	/// <item>On-hit sets (Palladium, Orichalcum, Titanium, Hallowed, Nebula, Frost, Spectre Hood) off <see cref="OnProjectileHit"/> / <see cref="OnMeleeHit"/>, with per-soldier cooldowns.</item>
+	/// <item>On-hit sets (Palladium, Orichalcum, Titanium, Hallowed, Nebula, Frost, Spectre Hood) off <see cref="OnProjectileHit"/> / <see cref="OnMeleeHit"/>, with per-soldier cooldowns.
+	/// A Nebula magic hit throws a booster pickup out of the enemy that flies to the soldier (<see cref="Content.Projectiles.SoldierNebulaBooster"/>), who takes it on arrival.</item>
 	/// <item>Damage intake (Solar and Beetle reduction, Paladin's Shield, Hallowed dodge, thorns) off the hooks in SoldierNPC.Damage.cs.</item>
 	/// </list>
-	/// Deferred as player-centric or owned elsewhere: Vortex stealth, Shroomite stealth, Forbidden storm, Stardust Guardian and the Squire / Apprentice / Huntress / Monk sentry bonuses.
+	/// The Spectre Mask's Wrath bolts are SoldierNPC.AccessoryProc.cs and the Stardust Guardian is SoldierNPC.StardustGuardian.cs (a standing helper, like the Chlorophyte leaf).
+	/// Deferred as player-centric or owned elsewhere: Vortex stealth, Shroomite stealth, Forbidden storm and the Squire / Apprentice / Huntress / Monk sentry bonuses.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -42,8 +44,10 @@ namespace Levy.Content.NPCs
 		private int _holyDodgeReady, _holyDodgeCooldown, _palladiumTicks, _titaniumGap, _petalGap, _nebulaGap;
 		/// <summary>Ticks of Titanium storm left; the soldier's shards (SoldierTitaniumShard) live exactly as long as this is positive.</summary>
 		public int TitaniumStormTicks;
-		/// <summary>Nebula booster levels and the ticks left on the current level: [0] life, [1] damage.</summary>
-		private readonly int[] _nebulaLevel = new int[2], _nebulaTicks = new int[2];
+		/// <summary>Nebula booster levels and the ticks left on the current level: [0] life, [1] damage, [2] mana (the same order as <see cref="LevyConstants.NebulaPickupItem"/>).</summary>
+		private readonly int[] _nebulaLevel = new int[3], _nebulaTicks = new int[3];
+		/// <summary>Mana Booster's counter (Player.nebulaManaCounter): each level adds one a tick, and a mana point is paid out whenever it reaches <see cref="LevyConstants.NebulaManaCounterPerPoint"/>.</summary>
+		private int _nebulaManaCounter;
 
 		/// <summary>Scale the next contact hit takes (set around the strike, read by <see cref="SoldierSetHitScale"/>); 1 otherwise.</summary>
 		internal float PendingContactScale = 1f;
@@ -58,7 +62,7 @@ namespace Levy.Content.NPCs
 		/// Runs Player.UpdateArmorSets on the dummy with its head / body / legs resolved from the armor slots (vanilla fills them in Player.Update, which the dummy never runs).
 		/// Two vanilla branches are kept from misfiring on a body that is not a real player: the Solar Flare shader burst (it needs the client-only GameShaders and its counter is
 		/// ours, so it is held at 0) and every "whoAmI == Main.myPlayer" branch (the Stardust Guardian spawn, Bee Gun achievement) which on a dedicated server is true of the
-		/// dummy's slot 255, so the call borrows a slot nobody holds.
+		/// dummy's slot 255, so the call borrows a slot nobody holds. (The Guardian is therefore cast by hand: SoldierNPC.StardustGuardian.cs.)
 		/// </summary>
 		private void UpdateDummyArmorSets()
 		{
@@ -77,6 +81,15 @@ namespace Levy.Content.NPCs
 				d.UpdateArmorSets(DummySlot);
 			}
 			finally { d.whoAmI = savedWho; }
+			LogRecognisedSets(d);
+		}
+
+		/// <summary>The first time a world sees the dummy recognise a set whose bonus is built by hand ("[Levy SETBONUS]" in the log), so "the set was never worn in full" can be told apart from "it was and nothing fired".</summary>
+		private void LogRecognisedSets(Player d)
+		{
+			if (d.setNebula && SetBonusLog.First("set:nebula")) SetBonusLog.Write("Nebula set recognised on soldier '" + SoldierName + "' (head " + d.head + ", body " + d.body + ", legs " + d.legs + "): magic hits can now drop boosters.");
+			if (d.ghostHurt && SetBonusLog.First("set:spectremask")) SetBonusLog.Write("Spectre Mask set recognised on soldier '" + SoldierName + "' (head " + d.head + ", body " + d.body + ", legs " + d.legs + "): magic hits can now loose Wrath bolts.");
+			if (d.setStardust && SetBonusLog.First("set:stardust")) SetBonusLog.Write("Stardust set recognised on soldier '" + SoldierName + "' (head " + d.head + ", body " + d.body + ", legs " + d.legs + "): he fields a Stardust Guardian.");
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -107,7 +120,7 @@ namespace Levy.Content.NPCs
 			if (_petalGap > 0) _petalGap--;
 			if (_nebulaGap > 0) _nebulaGap--;
 			if (TitaniumStormTicks > 0 && (!d.onHitTitaniumStorm || --TitaniumStormTicks < 0)) TitaniumStormTicks = 0;
-			for (int i = 0; i < 2; i++)
+			for (int i = 0; i < _nebulaLevel.Length; i++)
 			{
 				if (_nebulaTicks[i] > 0 && --_nebulaTicks[i] == 0)
 				{
@@ -117,7 +130,22 @@ namespace Levy.Content.NPCs
 					if (i == 1) StatsDirty = true;
 				}
 			}
-			if (!d.setNebula) { _nebulaLevel[0] = _nebulaLevel[1] = 0; _nebulaTicks[0] = _nebulaTicks[1] = 0; }
+			if (!d.setNebula)
+			{
+				if (_nebulaLevel[1] > 0) StatsDirty = true; // the damage booster's share leaves with the armor
+				for (int i = 0; i < _nebulaLevel.Length; i++) { _nebulaLevel[i] = 0; _nebulaTicks[i] = 0; }
+			}
+			// Player.UpdateManaRegen: Mana Booster pays out a mana point whenever level-summed ticks reach six (10 / 20 / 30 a second at levels 1 / 2 / 3).
+			if (_nebulaLevel[2] > 0 && Record != null && Record.MaxMana > 0)
+			{
+				_nebulaManaCounter += _nebulaLevel[2];
+				if (_nebulaManaCounter >= LevyConstants.NebulaManaCounterPerPoint)
+				{
+					_nebulaManaCounter -= LevyConstants.NebulaManaCounterPerPoint;
+					if (Record.Mana < Record.MaxMana) Record.Mana++;
+				}
+			}
+			else _nebulaManaCounter = 0;
 			_hoodPool = Math.Min(Main.expertMode ? LevyConstants.HoodPoolMaxExpert : LevyConstants.HoodPoolMax, _hoodPool + (Main.expertMode ? LevyConstants.HoodPoolRefillExpert : LevyConstants.HoodPoolRefill));
 
 			bool alive = IsAlive;
@@ -288,11 +316,15 @@ namespace Levy.Content.NPCs
 				_beetleCountdown = 0;
 			}
 
-			// Nebula armor: a magic hit sometimes drops a booster, which a soldier simply absorbs.
-			if (magic && d.setNebula && _nebulaGap == 0 && Main.rand.Next(LevyConstants.NebulaChanceDenominator) == 0)
+			// Nebula armor (Projectile.Damage): a magic hit that lands (1 in 3, no more often than every 30 ticks) throws a booster pickup out of the enemy, which flies to the soldier.
+			if (d.setNebula)
 			{
-				_nebulaGap = LevyConstants.NebulaCooldownTicks;
-				NebulaBooster(Main.rand.Next(3));
+				if (!magic) NoteNebulaMiss(proj ? source.type : -1, dc);
+				else if (damageDone > 0 && _nebulaGap == 0 && Main.rand.Next(LevyConstants.NebulaChanceDenominator) == 0)
+				{
+					_nebulaGap = LevyConstants.NebulaCooldownTicks;
+					DropNebulaBooster(target, Main.rand.Next(LevyConstants.NebulaPickupItem.Length), proj ? source.type : -1);
+				}
 			}
 
 			if (proj && IsOnHitExcluded(source.type)) return;
@@ -312,25 +344,69 @@ namespace Levy.Content.NPCs
 			}
 		}
 
-		/// <summary>A Nebula booster by kind: 0 life, 1 damage (a level up to 3, 480 ticks, stepping down as it runs out), 2 mana (a mouthful of mana).</summary>
-		private void NebulaBooster(int kind)
+		private static string NebulaKindName(int kind) => kind == 0 ? "life" : kind == 1 ? "damage" : "mana";
+
+		/// <summary>
+		/// A Nebula magic hit has rolled a booster: the pickup (life, damage or mana, one in three each) pops out of the struck enemy and flies to the soldier, who takes it on arrival
+		/// (<see cref="NebulaBoosterArrived"/>). If no projectile slot is free to carry it the soldier is given the booster on the spot, so the stat benefit never depends on the picture.
+		/// </summary>
+		private void DropNebulaBooster(NPC target, int kind, int projType)
 		{
-			if (!Main.dedServ)
+			if (SetBonusLog.First("nebula:proc"))
+				SetBonusLog.Write("Nebula booster proc: soldier '" + SoldierName + "' landed a magic hit on " + target.GivenOrTypeName + " (projectile " + projType + "); a " + NebulaKindName(kind) + " booster is on its way to him.");
+			Projectile orb = null;
+			try { orb = LaunchNebulaOrb(target, kind); }
+			catch (Exception e)
 			{
-				for (int i = 0; i < 8; i++)
+				if (_accessoryProcWarned.Add(-ItemID.NebulaBreastplate)) Levy.Instance?.Logger.Warn("Levy: Nebula booster pickup failed on a soldier: " + e.Message);
+			}
+			if (orb == null) ApplyNebulaBooster(kind);
+		}
+
+		/// <summary>Throws the pickup out of the enemy the way vanilla drops it (sideways away from the wearer and a little up or down), as the courier projectile that carries it home.</summary>
+		private Projectile LaunchNebulaOrb(NPC target, int kind)
+		{
+			int side = target.Center.X >= NPC.Center.X ? 1 : -1;
+			Vector2 pop = new Vector2(side * Main.rand.NextFloat(LevyConstants.NebulaOrbPopXMin, LevyConstants.NebulaOrbPopXMax), Main.rand.NextFloat(LevyConstants.NebulaOrbPopYMin, LevyConstants.NebulaOrbPopYMax));
+			Projectile orb = WeaponUse.Spawn(this, target.Center, pop, ModContent.ProjectileType<SoldierNebulaBooster>(), 1, 0f, DamageClass.Magic, NPC.whoAmI, kind);
+			if (orb == null) return null;
+			orb.damage = 0; orb.friendly = false; // a courier, not a hitter
+			if (!Main.dedServ && LevyUtil.IsOnScreen(target.Hitbox))
+			{
+				for (int i = 0; i < LevyConstants.NebulaOrbPopDust; i++)
 				{
-					Dust dust = Main.dust[Dust.NewDust(NPC.position, NPC.width, NPC.height, kind == 0 ? DustID.HealingPlus : DustID.Enchanted_Pink, 0f, -2f, 100, default, 1.1f)];
+					Dust dust = Dust.NewDustPerfect(target.Center, LevyConstants.NebulaPickupDust[kind], Main.rand.NextVector2Circular(3f, 3f), 100, default, 1.3f);
 					dust.noGravity = true;
 				}
 			}
-			if (kind == 2)
-			{
-				if (Record != null && Record.MaxMana > 0) { Record.Mana = Math.Min(Record.MaxMana, Record.Mana + 20); NPC.netUpdate = true; }
-				return;
-			}
+			return orb;
+		}
+
+		/// <summary>The booster pickup reached this soldier (server / single player, from SoldierNebulaBooster): Player.PickupItem -> NebulaLevelup.</summary>
+		internal void NebulaBoosterArrived(int kind)
+		{
+			if (LevyUtil.IsClient || Dummy == null || !Dummy.setNebula) return; // he took the armor off while it flew: the boost leaves with it
+			ApplyNebulaBooster(kind);
+		}
+
+		/// <summary>
+		/// Player.NebulaLevelup: a booster of this kind (0 life, 1 damage, 2 mana) goes up one level (to 3) for 480 ticks and steps down a level each time that runs out
+		/// (<see cref="TickSetState"/>). Life pays 3 HP a second a level, damage 15% a level, mana 10 points a second a level.
+		/// </summary>
+		private void ApplyNebulaBooster(int kind)
+		{
+			kind = Math.Clamp(kind, 0, _nebulaLevel.Length - 1);
 			_nebulaLevel[kind] = Math.Min(LevyConstants.NebulaMaxLevel, _nebulaLevel[kind] + 1);
 			_nebulaTicks[kind] = LevyConstants.NebulaBoosterTicks;
 			if (kind == 1) StatsDirty = true;
+			if (SetBonusLog.First("nebula:taken")) SetBonusLog.Write("Nebula booster taken: soldier '" + SoldierName + "' now has " + NebulaKindName(kind) + " booster level " + _nebulaLevel[kind] + " for " + LevyConstants.NebulaBoosterTicks / 60 + " s.");
+		}
+
+		/// <summary>A soldier in the Nebula set landed a hit that does not count as magic (as for a player, only magic damage drops boosters): written once per projectile type, so a weapon that should proc and does not is named in the log.</summary>
+		private void NoteNebulaMiss(int projType, DamageClass dc)
+		{
+			if (!SetBonusLog.First("nebula:miss", projType)) return;
+			SetBonusLog.Write("Nebula soldier '" + SoldierName + "' landed a non-magic hit (" + (projType < 0 ? "melee swing" : "projectile " + projType) + ", damage class " + (dc?.Name ?? "none") + "); only magic hits drop boosters.");
 		}
 
 		/// <summary>Titanium storm: one more shard in this soldier's ring, up to the vanilla cap.</summary>

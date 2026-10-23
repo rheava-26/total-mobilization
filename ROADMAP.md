@@ -29,6 +29,13 @@
 
 **⏳ REAL GATE: the designer's in-game freeze verdict on 1.3.3/1.3.4.** These three features don't touch the crash-fix code, so they ship regardless — but if the freeze persists, pivot to the `Levy watchdog:` / `Levy CRASH-DIAG` client.log lines before more feature work.
 
+### 1.3.5 INTEGRATION CHECKLIST (do these at the merge pass, when all 3 agents are done)
+- [x] **`levy-roster` REVIEWED (commit `fee11a07`, compiles clean).** Save format backward-compatible (key-based `["reserve"]` tag, old saves → false); network snapshot adds `Reserve` at matching write/read positions (same-version wire); packets owner-gated + server-only + idempotent; every roster-tick path guarded (payroll/desertion/respawn/deploy/autofeed/rearm/patrol/orders/rebase/hazard/SpawnBody). CP accounting via `CommandPointsHeld` (0 in reserve). SOLID.
+- [ ] **FIX at merge (A):** `RosterSystem.Demote` — when an overflow accessory *slides* into a kept slot (the `moves` loop ~L398), move its dye `gear.Dyes[AccessoryDyeBase+from] → [+dest]` too and DON'T spare that dye; today the slid accessory keeps the item+lock but its dye is shipped to the armory (cosmetic, recoverable, but a papercut). ~6 lines.
+- [ ] **FIX at merge (B):** the agent's CONTRACT-REQUEST — `SoldierNPC.Brain.FollowSlotIndex` counts every `Order==Follow`; add `&& !r.Reserve`. Safe today (Demobilize forces ReturnToBarracks) but belt-and-suspenders. 1 line in `Brain.cs` → do AFTER `levy-skydrop` lands to avoid a Brain.cs conflict.
+- **DECISIONS (designer-facing, mine to make as director):** Discharge moved to the card's "More" page = APPROVED (destructive action, good it's less fat-fingerable; Reserve is the new non-destructive primary). Wage-dodge loophole (bench-before-dawn/recall-after, ~80 clicks) = LEAVE unfixed; recall must feel free (say-yes); add a recall fee only if abuse is seen. Reserve cap 100 = a packet-size SAFETY bound, not a balance cap — if ever hit, the fix is chunking the snapshot netcode to remove it, never lowering it (tenet #1).
+- **BANKED follow-up (near-term, post-merge):** bulk "reserve all shown" button — benching a big army one-click-per-soldier is tedious and the designer hates tedium; needs a server-side batched Demobilize (one snapshot) + a packet. Overlaps roster files, so dispatch AFTER roster merges. Also: Field Manual text for demote/reserve not yet written (agent couldn't edit existing loc keys).
+
 ---
 
 ## ✅ 1.3.3 (shipped 2026-10-23 PM) — crash build + wave-1 fixes [AWAITING designer's freeze verdict]

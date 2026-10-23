@@ -293,6 +293,34 @@ namespace Levy.Common.Officers
 		};
 
 		// =====================================================================================================
+		// Per-tick, every machine: keep each parked town NPC on its avatar
+		// =====================================================================================================
+		private bool _pinWarned;
+
+		/// <summary>
+		/// After every NPC has updated, pin each parked town NPC to its avatar (and refresh the velocity/facing vanilla animates it from). Vanilla draws the town NPC, and its own
+		/// update runs before or after the avatar's depending on slot order; without this last pin the sprite would trail the body by up to a step. Clients run it too: the avatar is
+		/// a synced NPC and the town NPC is driven locally on every machine.
+		/// </summary>
+		public override void PostUpdateNPCs()
+		{
+			try
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode) s.Officer_ParkTownNpc();
+				}
+			}
+			catch (Exception e)
+			{
+				if (_pinWarned) return;
+				_pinWarned = true;
+				Levy.Instance.Logger.Warn("Levy: pinning a parked officer's town NPC to its avatar failed: " + e);
+			}
+		}
+
+		// =====================================================================================================
 		// Per-tick (server / single player): dawn payroll and housekeeping
 		// =====================================================================================================
 		public override void PostUpdateEverything()
@@ -383,10 +411,11 @@ namespace Levy.Common.Officers
 			_stamp = uint.MaxValue;
 		}
 
-		/// <summary>Hands a parked town NPC back to normal life: clears the inert flags and stops the per-tick stream.</summary>
+		/// <summary>Hands a parked town NPC back to normal life: gives back its physics, clears the inert flags and stops the per-tick stream. (Other machines give the physics back in <see cref="OfficerGlobalNPC.PreAI"/>.)</summary>
 		private static void UnparkTownNpc(NPC town)
 		{
 			if (town == null || !town.active) return;
+			Data(town)?.EndPark(town);
 			town.dontTakeDamage = false; town.dontTakeDamageFromHostiles = false; town.immortal = false;
 			town.netAlways = false;
 			town.netUpdate = true;

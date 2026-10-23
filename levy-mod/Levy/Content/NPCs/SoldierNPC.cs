@@ -334,7 +334,7 @@ namespace Levy.Content.NPCs
 			{
 				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
 				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
-				if (OfficerMode) { Officer_ClientTick(); return; } // co-locate the parked town NPC and advance its drawn walk frame
+				if (OfficerMode) { Officer_ClientTick(); return; } // drive the parked town NPC (vanilla draws and animates it from what the avatar feeds it)
 				if (ItemAnimation > 0) ItemAnimation--;
 				if (AttackCooldown > 0) AttackCooldown--;
 				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
@@ -414,8 +414,8 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- chat ----
-		// Officer avatars are chattable so the player's cursor catches them (they, not the hidden town NPC, are what is clicked); the actual
-		// talk is immediately re-pointed at the parked town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
+		// Officer avatars stay chattable so a click on an officer always lands, whichever of the two co-located bodies the cursor picks (this one, or the parked
+		// town NPC vanilla draws); a click that lands here is immediately re-pointed at the town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
 		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Engage && State != SoldierState.Routed));
 		public override string GetChat() => OfficerMode ? "" : DialogueSystem.ChatLine(this);
 		public override void SetChatButtons(ref string button, ref string button2)
@@ -505,7 +505,7 @@ namespace Levy.Content.NPCs
 			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
 			writer.Write((short)Math.Clamp(Aggro, short.MinValue, short.MaxValue)); // taunt weight, so client-side target searches weigh this soldier like the server
 			writer.Write(Record.Mutinous); // balances the ReceiveExtraAI read below; also keeps the wage-mutiny tint in sync between roster snapshots
-			// ---- officer avatar (OfficerMode only): clients need the link to co-locate/hide the town NPC and draw its sprite ----
+			// ---- officer avatar (OfficerMode only): clients need the link to find, co-locate and drive the town NPC (vanilla draws it) ----
 			writer.Write(OfficerMode);
 			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 		}

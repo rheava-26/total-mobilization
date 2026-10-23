@@ -18,7 +18,16 @@
 - **True Eyes** (MoonLordFreeEye) routed through the boss gate via `BossParts` (eye→core by `ai[3]`) + `BossRule.PartParentIndex` case. **GATED** behind the `BossesTargetSoldiers` config toggle (default still FALSE) + Moon Lord downed — eyes fight soldiers only if the designer enables the toggle. **DECISION PENDING: default BossesTargetSoldiers ON once the freeze is confirmed dead** (deferred for crash-exposure caution). **Enemy spread** FIXED: `vanillaIsPlayer` dead-code wired + per-soldier load term in `Compete` → horde fans out (nearest soldier 61%→10%, 100% coverage, harness-verified); side effect (intended per design): commander now shielded by the army (27/30→2/30; disable via `ArmyPullPerSoldierPx=0`).
 - **Banked out-of-scope finds (wave 3+):** (1) `ArmorDoctrine.Measure`/`RunLean` + `AccessoryAggro` call `UpdateArmorSets` on scratch Players with unfilled head/body/legs → set bonuses ignored when the doctrine RANKS armor (same root `UpdateDummyArmorSets` fixed for soldiers). (2) `FearSystem.AnotherMainBossAlive` counts a dying boss's own no-realLife parts (Moon Lord head/hands, Skeletron hands, Prime limbs, Golem, Plantera) as "another main boss" → `RosterSystem.OnMainBossKilled` (veteran/boss credit) + victory barks return early for those bosses; fix = skip parts whose `TryGetRoot` root is `dead`. (3) `TESTING.md:105` stale.
 
-**WAVE 3 QUEUED (feature tail):** Star Wrath + sky-drop weapon class (Blizzard Staff/Daedalus Stormbow/Meteor; `WeaponUse.cs:793` melee-shoot) · officer demote + demobilize (keep soldier, free slot) · pylon-network recruiting (relax `OfficerSystem.CanCommission`) · minimap marker for army/boss · soldier positioning (seek vantage for kitless vs airborne/burrowed boss; Follow override; keep-engaging — HELD until perf is designer-verified since it re-touches `SoldierNPC.Brain.cs`).
+**WAVE 3 — IN FLIGHT (3 parallel worktrees, non-overlapping files, merge → 1.3.5):**
+- `levy-skydrop` (agent) — Star Wrath + sky-drop weapon class: rain Star Wrath/Daedalus Stormbow/Blizzard Staff/Starfury projectiles from ABOVE the target instead of out of the soldier (`WeaponUse.cs:793` melee-shoot path).
+- `levy-roster` (agent) — officer **demote** (lower grade) + **demobilize-to-reserve** (keep the soldier, free the cap slot, resummonable).
+- `levy-minimap` (agent) — map markers: cyan army pips (aggregated on the corner minimap), gold officer pips, red boss pips; new additive `ModSystem`, no existing-file edits.
+
+**WAVE 3 — STILL BLOCKED:**
+- pylon-network recruiting (relax `OfficerSystem.CanCommission`) — overlaps `levy-roster`'s files; dispatch after it merges.
+- soldier positioning (seek vantage for kitless vs airborne/burrowed boss; Follow override; keep-engaging) — HELD until the perf rewrite is designer-verified, since it re-touches `SoldierNPC.Brain.cs`.
+
+**⏳ REAL GATE: the designer's in-game freeze verdict on 1.3.3/1.3.4.** These three features don't touch the crash-fix code, so they ship regardless — but if the freeze persists, pivot to the `Levy watchdog:` / `Levy CRASH-DIAG` client.log lines before more feature work.
 
 ---
 

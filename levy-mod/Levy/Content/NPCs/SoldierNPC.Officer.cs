@@ -121,9 +121,31 @@ namespace Levy.Content.NPCs
 			int def = AvatarBaseDefense;
 			if (Terraria.NPC.combatBookWasUsed) def += CombatBookDefensePerBook;          // Advanced Combat Techniques
 			if (Terraria.NPC.combatBookVolumeTwoWasUsed) def += CombatBookDefensePerBook;  // ...Volume Two
-			Defense = def; NPC.defense = def;
 			Endurance = 0f; MoveSpeedMult = 1f; Aggro = _offDef?.Aggro ?? 0;
+			// Aura buffs (e.g. the Angler's Well Fed) lift an officer too: the avatar never runs Player.UpdateBuffs, so fold the buff deltas in by
+			// hand through the dummy, exactly as a soldier does. ResetEffects zeroes the stat accumulators first, so nothing drifts across ticks.
+			if (Dummy != null && OfficerHasBuff())
+			{
+				try
+				{
+					Dummy.ResetEffects();
+					for (int i = 0; i < NPC.maxBuffs; i++)
+						if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0) ApplyBuffEffect(Dummy, NPC.buffType[i]);
+					def += Dummy.statDefense;
+					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
+					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed); // ResetEffects set the base to 1
+				}
+				catch (Exception e) { Levy.Instance.Logger.Warn("Levy: officer buff stats failed: " + e.Message); }
+			}
+			Defense = def; NPC.defense = def;
 			if (Record != null) Record.CurrentHp = NPC.life;
+		}
+
+		/// <summary>True when the avatar carries any active buff (an aura's, usually): the cheap guard before the buff-fold does the ResetEffects work.</summary>
+		private bool OfficerHasBuff()
+		{
+			for (int i = 0; i < NPC.maxBuffs; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0) return true;
+			return false;
 		}
 
 		/// <summary>Vanilla town-NPC damage scale (boss progression) plus the two combat books, so an officer's shots hit like a book-trained villager's.</summary>

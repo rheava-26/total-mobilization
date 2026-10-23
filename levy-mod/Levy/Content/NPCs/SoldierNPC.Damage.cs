@@ -214,8 +214,26 @@ namespace Levy.Content.NPCs
 				case BuffID.AmmoReservation: d.ammoPotion = true; break;
 				case BuffID.Archery: d.archery = true; break;
 				case BuffID.Summoning: d.maxMinions++; break;
+				case BuffID.WellFed: return ApplyWellFed(d, 1);  // Well Fed
+				case BuffID.WellFed2: return ApplyWellFed(d, 2); // Plenty Satisfied
+				case BuffID.WellFed3: return ApplyWellFed(d, 3); // Exquisitely Stuffed
 			}
 			return 0;
+		}
+
+		/// <summary>
+		/// Vanilla Well Fed and its stronger tiers (Plenty Satisfied, Exquisitely Stuffed): a minor all-stat lift plus a gentle regen. The dummy never
+		/// runs Player.UpdateBuffs, so the deltas are applied by hand. Vanilla values (Player.UpdateBuffs, buffs 26/206/207): defense and crit add
+		/// (tier+1); damage and move speed add their per-step amount x (tier+1). Returns the life-regen units it adds.
+		/// </summary>
+		private static int ApplyWellFed(Player d, int tier)
+		{
+			int step = tier + 1;                                                  // +2 / +3 / +4
+			d.statDefense += step;
+			d.GetCritChance(DamageClass.Generic) += step;
+			d.GetDamage(DamageClass.Generic) += LevyConstants.WellFedDamageStep * step;   // +0.05 / +0.075 / +0.1
+			d.moveSpeed += LevyConstants.WellFedMoveStep * step;                           // +0.2  / +0.3   / +0.4
+			return LevyConstants.WellFedRegenPerTier * tier;                              // +1    / +2     / +3 regen units
 		}
 
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>

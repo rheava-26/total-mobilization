@@ -6,6 +6,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Boss;
 using Levy.Common.Movement;
 using Levy.Common.Net;
 using Levy.Common.Systems;
@@ -129,10 +130,34 @@ namespace Levy.Common.Officers
 
 		public int UsedSlots(string commander) { int c = 0; foreach (var _ in OfficersOf(commander)) c++; return c; }
 
-		/// <summary>Lowest free command slot of this commander, or -1 when all <see cref="LevyConstants.Officer.MaxSlots"/> are taken.</summary>
+		/// <summary>
+		/// Command slots available to every commander right now: a base (<see cref="LevyConstants.Officer.OfficerBaseSlots"/>) plus one for each boss
+		/// MILESTONE this world has crossed — Wall of Flesh, any mechanical boss, Plantera, Golem, Moon Lord. World-global (boss progress is world state,
+		/// not per-player). The downed set and the hardmode flag both sync to clients and only ever grow, so the cap is the same on every machine and never
+		/// drops mid-world. Static so the UI can read it without the instance.
+		/// </summary>
+		public static int MaxSlots()
+		{
+			int n = LevyConstants.Officer.OfficerBaseSlots;
+			if (Main.hardMode || BossDownedSystem.IsTypeDowned(NPCID.WallofFlesh)) n++;          // Wall of Flesh (hardmode is the always-synced proof it fell)
+			if (BossDownedSystem.IsTypeDowned(NPCID.TheDestroyer)
+				|| BossDownedSystem.IsTypeDowned(NPCID.Retinazer)
+				|| BossDownedSystem.IsTypeDowned(NPCID.Spazmatism)
+				|| BossDownedSystem.IsTypeDowned(NPCID.SkeletronPrime)) n++;                     // any mechanical boss
+			if (BossDownedSystem.IsTypeDowned(NPCID.Plantera)) n++;
+			if (BossDownedSystem.IsTypeDowned(NPCID.Golem)) n++;
+			if (BossDownedSystem.IsTypeDowned(NPCID.MoonLordCore)) n++;
+			return n;
+		}
+
+		/// <summary>The slot cap floored at the officers this commander already fields, so a never-expected cap dip can never orphan a serving officer. Use for display and housekeeping; <see cref="MaxSlots"/> itself gates new commissions.</summary>
+		public int SlotCap(string commander) => Math.Max(MaxSlots(), UsedSlots(commander));
+
+		/// <summary>Lowest free command slot of this commander, or -1 when all <see cref="MaxSlots"/> are taken.</summary>
 		public int FreeSlot(string commander)
 		{
-			for (int s = 0; s < LevyConstants.Officer.MaxSlots; s++) if (InSlot(commander, s) == null) return s;
+			int cap = MaxSlots();
+			for (int s = 0; s < cap; s++) if (InSlot(commander, s) == null) return s;
 			return -1;
 		}
 
@@ -403,7 +428,7 @@ namespace Levy.Common.Officers
 			}
 		}
 
-		/// <summary>Clears commissions that cannot work any more: a type that is no longer registered, a slot out of range (MaxSlots lowered) or shared by two NPCs.</summary>
+		/// <summary>Clears commissions that cannot work any more: a type that is no longer registered, a slot shared by two NPCs, or one truly out of range. The range is floored at the officers already serving (<see cref="SlotCap"/>), so a cap recompute never orphans a standing officer.</summary>
 		private void Housekeeping()
 		{
 			Refresh();
@@ -415,7 +440,7 @@ namespace Levy.Common.Officers
 				OfficerGlobalNPC g = Data(npc);
 				if (g == null || !g.Enrolled) continue;
 				if (!OfficerRegistry.IsOfficerType(npc.type) || string.IsNullOrEmpty(g.Commander)) { Release(npc, "Invalid"); continue; }
-				if (g.Slot < 0 || g.Slot >= LevyConstants.Officer.MaxSlots || !seen.Add((g.Commander, g.Slot))) Release(npc, "Lapsed");
+				if (g.Slot < 0 || g.Slot >= SlotCap(g.Commander) || !seen.Add((g.Commander, g.Slot))) Release(npc, "Lapsed");
 			}
 		}
 	}

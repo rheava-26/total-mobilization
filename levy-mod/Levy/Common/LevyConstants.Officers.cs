@@ -9,8 +9,8 @@ namespace Levy.Common
 		public static class Officer
 		{
 			// ---- command slots ----
-			/// <summary>Officers one commander can field at once. Progression (more slots per boss) is a later layer: raise this or turn it into a function.</summary>
-			public const int MaxSlots = 3;
+			/// <summary>Base command slots every commander starts with. The live cap is <c>OfficerSystem.MaxSlots()</c> = this plus one per crossed boss milestone (Wall of Flesh, any mechanical boss, Plantera, Golem, Moon Lord).</summary>
+			public const int OfficerBaseSlots = 3;
 
 			// ---- economy (copper; multiples of the tier's Levy wage so it scales with the world) ----
 			/// <summary>An officer's daily wage in Levy wages (a Levy is 1x, a Man-at-Arms 3x). Paid at dawn from the barracks that commissioned him.</summary>
@@ -153,6 +153,30 @@ namespace Levy.Common
 			public const float GuideBoltKnockback = 2f;
 			public const int GuideBoltCooldown = 24, GuideBoltRandomCooldown = 16;
 			public const float GuideBoltRangeTiles = 30f;
+			// Slot growth: see OfficerBaseSlots above; the milestone set lives in OfficerSystem.MaxSlots().
+			// Aura infra: AuraKit holds no numbers of its own; each concrete aura (below) declares its own.
+			// =====================================================================================================
+
+			// ---- the Angler (the buff-aura proof officer) ----
+			/// <summary>Wage/fee multiplier on top of the standard officer cost: the aura is worth a premium.</summary>
+			public const float AnglerCostMult = 1.2f;
+			/// <summary>Soldiers and officers within this many tiles of the Angler are kept Well Fed.</summary>
+			public const int AnglerAuraRadiusTiles = 24;
+			/// <summary>Ticks each Well Fed application lasts — refreshed every pulse, so it holds at this and never stacks. A little longer than the cadence so it never lapses between pulses.</summary>
+			public const int AnglerAuraDurationTicks = 300;
+			/// <summary>Ticks between aura pulses (re-feeds once a second).</summary>
+			public const int AnglerAuraCadenceTicks = 60;
+			/// <summary>Taunt weight: a support officer, not a target magnet (negative cancels the flat advantage soldiers have, so enemies do not single him out).</summary>
+			public const int AnglerAggro = -200;
+			/// <summary>Launch speed (px/tick) of a thrown frost daggerfish and the arc lift (px) a far throw is aimed above the target.</summary>
+			public const float AnglerFishSpeed = 12f, AnglerFishGravityCorrection = 10f;
+			/// <summary>Base damage and knockback of a thrown frost daggerfish (scaled with the world's progress like a town NPC's shot).</summary>
+			public const int AnglerFishDamage = 16;
+			public const float AnglerFishKnockback = 3f;
+			/// <summary>Pause after a throw: fixed ticks plus a random extra.</summary>
+			public const int AnglerFishCooldown = 30, AnglerFishRandomCooldown = 20;
+			/// <summary>How far (tiles) an enemy may be and still be flung a fish at.</summary>
+			public const float AnglerFishRangeTiles = 22f;
 		}
 	}
 }

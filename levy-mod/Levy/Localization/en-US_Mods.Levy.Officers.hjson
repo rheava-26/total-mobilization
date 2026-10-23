@@ -64,6 +64,12 @@ Kit: {
 			The whole army deals {1}% more damage to the marked enemy, for {2} seconds.
 			Only one enemy carries the mark at a time; it moves to the strongest in reach.
 			Fires a guiding bolt at any enemy that comes close.
+	Angler: {
+		Name: Angler
+		Desc:
+			'''
+			Feeds the army. Soldiers and officers within {0} tiles stay Well Fed, lifting every stat a little.
+			Flings frost daggerfish at any enemy that strays into reach, but never leaves the line to chase.
 			'''
 	}
 }

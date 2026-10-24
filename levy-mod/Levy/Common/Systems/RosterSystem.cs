@@ -416,13 +416,18 @@ namespace Levy.Common.Systems
 			for (int i = keep; i < SoldierGear.AccessorySlots; i++)
 			{
 				Item acc = gear.Accessories[i];
+				bool moved = false;
 				if (acc != null && !acc.IsAir && acc.stack > 0)
 				{
 					int dest = FreeAccessorySlot(gear, keep, moves);
-					if (dest >= 0) moves.Add((i, dest)); else spare.Accessories[i] = acc;
+					if (dest >= 0) { moves.Add((i, dest)); moved = true; } else spare.Accessories[i] = acc;
 				}
-				Item dye = gear.Dyes[AccessoryDyeBase + i];
-				if (dye != null && !dye.IsAir && dye.stack > 0) spare.Dyes[AccessoryDyeBase + i] = dye;
+				// A slid accessory keeps its colour (its dye rides with it in step 3); a spared or absent one hands its dye back too, so nothing is lost.
+				if (!moved)
+				{
+					Item dye = gear.Dyes[AccessoryDyeBase + i];
+					if (dye != null && !dye.IsAir && dye.stack > 0) spare.Dyes[AccessoryDyeBase + i] = dye;
+				}
 			}
 
 			// 2. Hand the spare set back BEFORE anything on the record changes, so a refusal leaves him exactly as he was.
@@ -432,6 +437,7 @@ namespace Levy.Common.Systems
 			foreach (var (from, dest) in moves)
 			{
 				gear.Accessories[dest] = gear.Accessories[from];
+				gear.Dyes[AccessoryDyeBase + dest] = gear.Dyes[AccessoryDyeBase + from]; // the dye rides with its accessory into the kept slot (the vacated source dye is cleared below)
 				gear.SetLocked(SoldierGear.SlotAcc0 + dest, gear.IsLocked(SoldierGear.SlotAcc0 + from));
 			}
 			for (int i = keep; i < SoldierGear.AccessorySlots; i++)

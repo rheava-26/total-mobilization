@@ -144,9 +144,6 @@ namespace Levy.Common
 			public const int HudHeadSize = 36, HudEntryPitch = 44, HudBarHeight = 5;
 			public const float HudHeadScale = 0.8f;
 			public const int HudLeft = 20, HudBottomMargin = 46;
-
-			// ---- minimap ----
-			public const int MapDotSize = 6;
 		}
 	}
 }

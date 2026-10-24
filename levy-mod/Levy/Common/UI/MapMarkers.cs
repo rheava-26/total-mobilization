@@ -604,19 +604,4 @@ namespace Levy.Common.UI
 			if (!Main.dedServ) Main.QueueMainThreadAction(() => { foreach (Texture2D t in dead) t?.Dispose(); });
 		}
 	}
-
-	/// <summary>
-	/// Retires the older one-dot-per-soldier layer (<c>SoldierMapLayer</c>): it paints a gold or blue dot for every soldier on every map, which would sit under the new
-	/// army markers as a cloud of dots and clash with the officer pips. Hidden by name each frame through the supported hook, so deleting that file later is safe.
-	/// </summary>
-	public class MapMarkersSystem : ModSystem
-	{
-		private const string RetiredLayer = "SoldierMapLayer";
-
-		public override void PreDrawMapIconOverlay(IReadOnlyList<IMapLayer> layers, MapOverlayDrawContext mapOverlayDrawContext)
-		{
-			for (int i = 0; i < layers.Count; i++)
-				if (layers[i] is ModMapLayer layer && layer.Mod == Mod && layer.Name == RetiredLayer) layer.Visible = false;
-		}
-	}
 }

@@ -2003,7 +2003,7 @@ namespace Levy.Content.NPCs
 			int idx = 0;
 			foreach (var r in RosterSystem.Instance.Regulars)
 			{
-				if (ReferenceEquals(r, Record) || r.Order != SoldierOrder.Follow || r.Id >= Record.Id) continue;
+				if (ReferenceEquals(r, Record) || r.Reserve || r.Order != SoldierOrder.Follow || r.Id >= Record.Id) continue; // a soldier in reserve holds no formation slot
 				if (r.CommanderName == Record.CommanderName) idx++;
 			}
 			return idx;

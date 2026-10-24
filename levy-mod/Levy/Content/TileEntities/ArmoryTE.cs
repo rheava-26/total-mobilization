@@ -112,6 +112,7 @@ namespace Levy.Content.TileEntities
 			long gross = 0;
 			void Add(Item[] arr) { if (arr == null) return; foreach (var it in arr) if (!IsAir(it)) gross += (long)it.value * it.stack; }
 			Add(Storage); Add(IssueWeapons); Add(IssueArmor); Add(IssueAmmo); Add(IssuePotions);
+			foreach (var it in Lent) if (!IsAir(it)) gross += (long)it.value * it.stack; // weapons on loan to drones are still the hoard's
 			return gross / 5;
 		}
 
@@ -1029,6 +1030,142 @@ namespace Levy.Content.TileEntities
 			return one;
 		}
 
+		// ------------------------------------------------------------------ loans to combat drones
+
+		// A combat drone (Content/NPCs/DroneNPC) mounts a SURPLUS ranged or magic weapon from bulk storage. The weapon (and one round of ammo) leaves the racks but is never handed to the drone for
+		// keeps: it moves to this ledger, so the armory stays the owner of record. That is what makes the loan safe: the ledger is saved with the armory (written into the saved storage, so a reload
+		// finds the weapons on the racks and the manager re-lends them), spilled with it when the tile breaks, and returned by ReturnLent whenever the drone is destroyed, dismissed or orphaned.
+		// A drone that simply vanishes (any path) leaves its loan on the ledger for DroneSystem's reconcile pass to return. Server / single player only; clients never see the ledger.
+
+		/// <summary>Items on loan to combat drones: pulled out of storage, still owned by this armory. See the note above.</summary>
+		public readonly List<Item> Lent = new();
+
+		private struct RankEntry { public float Score; public int Slot; public bool Lendable; }
+		private static readonly List<RankEntry> _rank = new();
+
+		/// <summary>
+		/// Lends the best SURPLUS weapon a drone can mount, or null. Soldiers get first pick: every issuable weapon the army could draw (the weapon rows and bulk storage) is ranked by
+		/// <see cref="WeaponClassifier.Score"/>, the best <paramref name="reserveForSoldiers"/> of them are left alone whatever they are, and the drone takes the best mountable weapon below that
+		/// line. The issue rows are never lent from (they are the army's own first picks); only bulk storage is. A weapon on a Re-arm hold this tick is skipped. Server / single player only.
+		/// </summary>
+		public Item LendDroneWeapon(int reserveForSoldiers)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
+			List<RankEntry> rank = _rank;
+			rank.Clear();
+			for (int i = 0; i < SidearmSlot; i++)
+			{
+				Item it = IssueWeapons[i];
+				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
+				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = -1 });
+			}
+			bool anyLendable = false;
+			for (int i = 0; i < Storage.Length; i++)
+			{
+				Item it = Storage[i];
+				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
+				bool lendable = DroneArsenal.IsMountable(it);
+				anyLendable |= lendable;
+				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = i, Lendable = lendable });
+			}
+			if (!anyLendable) { rank.Clear(); return null; }
+			rank.Sort((a, b) => { int c = b.Score.CompareTo(a.Score); return c != 0 ? c : a.Slot.CompareTo(b.Slot); });
+			Item lent = null;
+			for (int k = Math.Max(0, reserveForSoldiers); k < rank.Count; k++)
+			{
+				if (!rank[k].Lendable) continue;
+				lent = Remove(Storage, rank[k].Slot); // marks the armory dirty: clients see the weapon leave the racks
+				Lent.Add(lent);
+				break;
+			}
+			rank.Clear();
+			return lent;
+		}
+
+		/// <summary>
+		/// Lends ONE round of the best ammo of this kind in bulk storage (highest damage, then rarity), or null. Only from a stack holding more than <paramref name="keepRounds"/>, so the army
+		/// keeps its last rounds. A drone fires without using rounds up; the one it borrows is its belt's pattern and comes back with it. Server / single player only.
+		/// </summary>
+		public Item LendDroneAmmo(int ammoId, int keepRounds)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient || ammoId <= 0) return null;
+			int best = -1; float bestScore = float.NegativeInfinity;
+			for (int i = 0; i < Storage.Length; i++)
+			{
+				Item it = Storage[i];
+				if (IsAir(it) || it.ammo != ammoId || it.IsACoin || it.stack <= keepRounds || IsReservedRef(it)) continue;
+				float score = it.damage * 100f + WeaponClassifier.RarityTier(it.rare);
+				if (score > bestScore) { bestScore = score; best = i; }
+			}
+			if (best < 0) return null;
+			Item one = SplitOne(Storage, best); // a one-round clone; marks dirty
+			Lent.Add(one);
+			return one;
+		}
+
+		/// <summary>True while <paramref name="it"/> (this very instance) is on loan from this armory.</summary>
+		public bool IsLent(Item it) => it != null && IndexOfRef(Lent, it) >= 0;
+
+		/// <summary>
+		/// Takes a loaned item off the ledger and files it back in storage (spilled, protected, if storage is full: nothing is ever lost). False when it was not on the ledger, so returning the same
+		/// item twice, or after a soldier already recalled it, is a harmless no-op. The item goes back as a CLONE: the drone that carried it may still hold the old instance for a few ticks, and
+		/// were the racks to take that very instance back and lend it to a new drone, the stale drone's ledger check would pass and two drones would fire one weapon. A returned item is therefore
+		/// always a new instance, so a stale reference is never on the ledger again. Server / single player only.
+		/// </summary>
+		public bool ReturnLent(Item it)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient || it == null) return false;
+			int idx = IndexOfRef(Lent, it);
+			if (idx < 0) return false;
+			Lent.RemoveAt(idx);
+			if (!IsAir(it))
+			{
+				Item rest = Deposit(it.Clone());
+				if (!IsAir(rest)) Spill(rest, protect: true);
+			}
+			MarkDirty();
+			return true;
+		}
+
+		/// <summary>
+		/// Soldiers get first pick: when a soldier with an empty hand finds nothing on the racks, the best weapon lent to a drone (here, then in the pylon-networked armories) that
+		/// <paramref name="usable"/> accepts goes back to storage so the normal pick can hand it to him. The drone sees its weapon is no longer on loan and stands down. True if one was recalled.
+		/// </summary>
+		public bool ReclaimLentWeapon(Func<Item, bool> usable)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			if (ReclaimBestLent(this, usable)) return true;
+			foreach (ArmoryTE other in OtherNetworked()) if (ReclaimBestLent(other, usable)) return true;
+			return false;
+		}
+
+		/// <summary>
+		/// <see cref="ReclaimLentWeapon"/> for a soldier with an empty hand: a drone's weapon that his own primary-pick rules allow. The rule is only built when some armory he draws from has
+		/// anything on loan, so a bare rack with no drones costs him nothing.
+		/// </summary>
+		private bool ReclaimLentWeaponFor(SoldierRecord soldier)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			bool anyLoan = Lent.Count > 0;
+			if (!anyLoan) foreach (ArmoryTE other in OtherNetworked()) if (other.Lent.Count > 0) { anyLoan = true; break; }
+			return anyLoan && ReclaimLentWeapon(PrimaryRule(soldier));
+		}
+
+		private static bool ReclaimBestLent(ArmoryTE armory, Func<Item, bool> usable)
+		{
+			if (armory.Lent.Count == 0) return false;
+			Item best = null; float bestScore = float.NegativeInfinity;
+			foreach (Item it in armory.Lent)
+			{
+				if (IsAir(it) || !IsIssuable(it) || (usable != null && !usable(it))) continue;
+				float score = WeaponClassifier.Score(it);
+				if (score > bestScore) { bestScore = score; best = it; }
+			}
+			return best != null && armory.ReturnLent(best);
+		}
+
+		private static int IndexOfRef(List<Item> list, Item it) { for (int i = 0; i < list.Count; i++) if (ReferenceEquals(list[i], it)) return i; return -1; }
+
 		// ------------------------------------------------------------------ sort
 
 		private const int GroupWeapon = 0, GroupArmor = 1, GroupAccessory = 2, GroupAmmo = 3, GroupPotion = 4, GroupOther = 5;
@@ -1475,6 +1612,8 @@ namespace Levy.Content.TileEntities
 				if (ok.Count > 0) w = TakeBestWeaponInClasses(soldier, ok);
 			}
 			w ??= TakeBestWeapon(soldier);
+			// Soldiers get first pick: nothing on the racks, but a drone is carrying a weapon he could use. It goes back to the racks and he takes it; the drone stands down.
+			if (w == null && ReclaimLentWeaponFor(soldier)) w = TakeBestWeapon(soldier);
 			if (w == null) return false;
 			g.Weapon = w;
 			return true;
@@ -1851,6 +1990,13 @@ namespace Levy.Content.TileEntities
 					stacks++;
 				}
 			}
+			// Weapons on loan to drones spill with the rest (the drones find the ledger empty and stand down without returning anything twice).
+			for (int i = 0; i < Lent.Count; i++) {
+				if (IsAir(Lent[i])) continue;
+				Spill(Lent[i]);
+				stacks++;
+			}
+			Lent.Clear();
 			return stacks;
 		}
 
@@ -1875,7 +2021,26 @@ namespace Levy.Content.TileEntities
 
 		public override void SaveData(TagCompound tag)
 		{
-			tag["storage"] = SaveList(Storage); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
+			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
+		}
+
+		/// <summary>
+		/// The saved storage list with every item on loan to a drone written into it: an empty slot takes the next loaned item, and any left over are appended (LoadData sizes the array to the saved
+		/// list). Drones are not saved, so after a reload the weapons are simply back on the racks and the garrison lends them again. Read-only: it never changes the live arrays or the ledger.
+		/// </summary>
+		private List<TagCompound> SaveStorageWithLoans()
+		{
+			if (Lent.Count == 0) return SaveList(Storage);
+			var saved = new List<TagCompound>(Storage.Length + Lent.Count);
+			int next = 0;
+			foreach (var it in Storage)
+			{
+				while (next < Lent.Count && IsAir(Lent[next])) next++;
+				if (IsAir(it) && next < Lent.Count) saved.Add(ItemIO.Save(Lent[next++]));
+				else saved.Add(ItemIO.Save(it));
+			}
+			for (; next < Lent.Count; next++) if (!IsAir(Lent[next])) saved.Add(ItemIO.Save(Lent[next]));
+			return saved;
 		}
 		public override void LoadData(TagCompound tag)
 		{

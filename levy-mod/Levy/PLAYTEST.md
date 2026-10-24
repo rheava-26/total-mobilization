@@ -180,7 +180,26 @@ Needs a Barracks with a housed Nurse and a few gold in the treasury.
 - [ ] Multiplayer: second client sees her tag, walking, healing numbers; commissioning from a client takes the fee on the server; a client cannot commission the same NPC twice or fill a 4th slot.
 - [ ] The passive stand-and-heal of an on-duty Nurse does not double up with her kit heals.
 
+## 21. Engineering combat drones — NEW, unplayed
+Needs a Barracks and an Armory in a town. Drones are a Barracks' garrison: hovering robots that each mount ONE spare ranged or magic weapon from the Armory and fire it. They cost nothing but that weapon.
+- [ ] Craft A Guide to Engineering at an Anvil (10 iron or lead bars, 2 lenses): a steel-blue book with the drone tooltip. Before you study it, no drone ever appears, whatever is in the Armory.
+- [ ] Study it → the chat line "A Guide to Engineering has been studied. Each Barracks garrisons up to 10 combat drones..." Right-click a second copy (cheat one in) → "Already studied." and the book is kept.
+- [ ] Put 12+ mixed spare weapons in the Armory STORAGE (not the issue rows): guns, bows, staves, a few swords. Within ~30 s the first drone rises from the roof of the Barracks and climbs to hover ~7 tiles above it; another follows about every 10 s, fanned out in a row of five, up to one per spare ranged/magic weapon (max 10). Each has a healthbar and its weapon sprite hung underneath. The weapons it carries are GONE from the Armory's storage grid; swords stay.
+- [ ] Soldiers first: with only a handful of weapons (about as many as your Regulars + the militia field cap, default 10) NO drone launches. Add more and drones appear only for the surplus; the best weapons stay on the racks. Enlist a Regular → he is armed first, from the racks.
+- [ ] Blow the War Horn while every spare weapon is on a drone → the militia still arm; drones stand down one at a time (a puff and gone) as each militiaman needs a weapon, and the weapon appears on him.
+- [ ] A drone hovers, bobs gently and turns its weapon toward the nearest hostile in range with a clear line, firing at the weapon's own rate: a Musket fires bullets, a bow arcs arrows, an Amethyst Staff its bolt, a Boomstick a three-pellet fan. A Rocket Launcher's rockets never break tiles. Shots do not hurt town NPCs or soldiers.
+- [ ] Kills by drones count for you (banner progress, bestiary, "defeated by", loot). Drone damage is the weapon's own damage times the town-NPC progress scale (higher after bosses; Expert scales further).
+- [ ] Enemies chase drones like soldiers (flying ones reach them); the healthbar shrinks. Destroy one → the weapon is back in the Armory's storage within a second; about 10 s later the Barracks launches a replacement. A drone left alone for a while mends itself.
+- [ ] Destroy the Barracks → its drones return their weapons to the Armory within about a second and vanish. Mine the Armory → every stored weapon, and every weapon on loan, drops on the ground; the drones vanish and nothing is returned twice.
+- [ ] Save and quit, then reload: no drones, every weapon back in the Armory exactly once (none lost, none doubled); the garrison launches again by itself.
+- [ ] Never mounted: swords, spears, whips, summon staves, sentries, boomerangs, yoyos, flails, thrown weapons, tools. Also refused: Magic Missile, Flamelash, Rainbow Rod, Flying Knife, Nimbus Rod, Crimson Rod, Ice Rod, Clinger Staff, Medusa Head, Rainbow Gun, Magnet Sphere. They stay on the racks for soldiers.
+- [ ] Approximate by design (report only if it crashes or looks broken): a held weapon (Last Prism, Laser Machinegun, Charged Blaster) fires small laser bolts at its real cadence; Phantasm / Vortex Beater / Phantom Phoenix fire their ammo's plain shots; sky-drop weapons (Daedalus Stormbow, Blizzard Staff, Meteor Staff, Lunar Flare) shoot straight from the drone instead of raining from above.
+- [ ] Gun and bow drones borrow one round of the best ammo in storage (stacks of 10 or fewer are left alone) and fire without using ammo up; with none to spare they fire a Musket Ball / Wooden Arrow. The borrowed round comes back with the weapon.
+- [ ] Performance: several Barracks with 10 drones each, a boss fight over the base: no hitch. The log line "Levy drone self-check: N checks OK" appears at load.
+- [ ] Multiplayer: second client sees the drone, its weapon sprite, aim and healthbar; shots and kills sync. (Weapon use sounds are not played for drones on a dedicated server.)
+
 ## Known gaps (don't report these as bugs)
 - Multiplayer: client roster rows can lag the live body; "used today" markers don't show on clients; some packets trust the
   client (not a v1 concern). Eater of Souls / Hornets / Meteor Heads (flying AI 5) ignore soldiers. A headless server runs
   the mod but can't drive gameplay with no client connected.
+- Drones: no map marker, no Armory-panel row for weapons on loan (they simply leave the grid), no forward-post (banner) anchors, no drone weapon sounds on a dedicated server, no Nurse healing of drones, and modded weapons' own Shoot hooks are not run.

@@ -12,6 +12,7 @@ Effect: {
 	Healthcare: Militia gain {0} health.
 	TheArcaneArts: Militia gain {0} mana.
 	Expertise: Every soldier gains {0} accessory slot.
+	Engineering: Each Barracks garrisons up to {0} combat drones, one for each spare ranged or magic weapon in its Armory.
 }
 
 Drop: {

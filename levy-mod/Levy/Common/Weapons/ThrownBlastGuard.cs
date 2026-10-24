@@ -8,7 +8,8 @@ namespace Levy.Common.Weapons
 	/// <summary>
 	/// A soldier's explosive blasts enemies but must not eat the player's base. Vanilla's explosive Kill() calls Projectile.ExplodeTiles, which asks
 	/// <see cref="GlobalTile.CanExplode"/> for every tile; this guard answers "no" for the length of a Kill() of any soldier-fired explosive (thrown bombs,
-	/// and gun ordnance such as Rocket III/IV, Mini Nukes, Cluster Rockets and their fragments). Non-soldier explosions are never touched.
+	/// and gun ordnance such as Rocket III/IV, Mini Nukes, Cluster Rockets and their fragments). Every shot a combat drone fires is guarded the same way,
+	/// explosive or not (the flag only matters when something explodes tiles). Other explosions are never touched.
 	/// </summary>
 	public class ThrownBlastGuardProjectile : GlobalProjectile
 	{
@@ -25,9 +26,9 @@ namespace Levy.Common.Weapons
 			// Always reset first: if an earlier guarded Kill was vetoed by another mod's PreKill, OnKill never ran and the flag would still be up
 			// for this (possibly legitimate, non-soldier) explosion.
 			Guarding = false;
-			if (!LevyConstants.ThrownBlastsHarmTiles && IsExplosive(projectile)
-				&& projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.IsSoldierShot)
-				Guarding = true;
+			if (!LevyConstants.ThrownBlastsHarmTiles && projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag)
+				&& (tag.DroneShot || (IsExplosive(projectile) && tag.IsSoldierShot)))
+				Guarding = true; // a drone's shot is guarded whatever it is: some rockets (the Celebration Mk2's) explode tiles through Projectile.Kill's own type list, which IsExplosive does not see
 			return true;
 		}
 

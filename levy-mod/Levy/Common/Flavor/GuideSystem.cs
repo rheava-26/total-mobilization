@@ -15,21 +15,22 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.Flavor
 {
 	/// <summary>
-	/// The four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise): army-wide, once per world, studied like the event books
-	/// (<see cref="FlavorSystem.Study"/> routes a guide key here). This system owns the four world flags (saved with the world, synced to every
+	/// The five progression guides (Firepower, Healthcare, the Arcane Arts, Expertise, Engineering): army-wide, once per world, studied like the event books
+	/// (<see cref="FlavorSystem.Study"/> routes a guide key here). This system owns the five world flags (saved with the world, synced to every
 	/// client in the world-data message, only ever turning on) and every number they change: the HP and mana a MILITIAMAN is mustered with, the
 	/// accessory slots, and the buff slots an Armory's potion row gains. The guides never touch a REGULAR's HP or mana: a regular mirrors the vanilla
 	/// player (crystals and fruit, hard-capped at <see cref="LevyConstants.MaxSoldierHp"/> HP and <see cref="LevyConstants.MaxMana"/> mana) whatever is studied.
+	/// Engineering changes no number: it switches on the combat-drone garrison (<see cref="DroneSystem"/>).
 	/// </summary>
 	public class GuideSystem : ModSystem
 	{
 		public static GuideSystem Instance => ModContent.GetInstance<GuideSystem>();
 
 		/// <summary>Book keys (the item is <c>GuideTo{key}</c>).</summary>
-		public static readonly string[] Keys = { "Firepower", "Healthcare", "TheArcaneArts", "Expertise" };
+		public static readonly string[] Keys = { "Firepower", "Healthcare", "TheArcaneArts", "Expertise", "Engineering" };
 
 		/// <summary>World flags. Persisted here; the server owns them.</summary>
-		public bool Firepower, Healthcare, ArcaneArts, Expertise;
+		public bool Firepower, Healthcare, ArcaneArts, Expertise, Engineering;
 
 		// ---------------------------------------------------------------- derived numbers (what the rest of the mod reads)
 
@@ -98,6 +99,7 @@ namespace Levy.Common.Flavor
 				"Healthcare" => g.Healthcare,
 				"TheArcaneArts" => g.ArcaneArts,
 				"Expertise" => g.Expertise,
+				"Engineering" => g.Engineering,
 				_ => false,
 			};
 		}
@@ -113,6 +115,7 @@ namespace Levy.Common.Flavor
 				case "Healthcare": g.Healthcare = true; break;
 				case "TheArcaneArts": g.ArcaneArts = true; break;
 				case "Expertise": g.Expertise = true; break;
+				case "Engineering": g.Engineering = true; break;
 			}
 		}
 
@@ -184,6 +187,7 @@ namespace Levy.Common.Flavor
 			if (Healthcare) tag["guideHealthcare"] = true;
 			if (ArcaneArts) tag["guideArcane"] = true;
 			if (Expertise) tag["guideExpertise"] = true;
+			if (Engineering) tag["guideEngineering"] = true;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
@@ -192,17 +196,18 @@ namespace Levy.Common.Flavor
 			Healthcare = tag.GetBool("guideHealthcare");
 			ArcaneArts = tag.GetBool("guideArcane");
 			Expertise = tag.GetBool("guideExpertise");
+			Engineering = tag.GetBool("guideEngineering");
 		}
 
-		public override void ClearWorld() => Firepower = Healthcare = ArcaneArts = Expertise = false;
+		public override void ClearWorld() => Firepower = Healthcare = ArcaneArts = Expertise = Engineering = false;
 
-		public override void NetSend(BinaryWriter writer) => writer.Write((byte)new BitsByte(Firepower, Healthcare, ArcaneArts, Expertise));
+		public override void NetSend(BinaryWriter writer) => writer.Write((byte)new BitsByte(Firepower, Healthcare, ArcaneArts, Expertise, Engineering));
 
 		public override void NetReceive(BinaryReader reader)
 		{
 			// Flags only ever turn on, so a late world-data message never un-studies a guide.
 			BitsByte bits = reader.ReadByte();
-			Firepower |= bits[0]; Healthcare |= bits[1]; ArcaneArts |= bits[2]; Expertise |= bits[3];
+			Firepower |= bits[0]; Healthcare |= bits[1]; ArcaneArts |= bits[2]; Expertise |= bits[3]; Engineering |= bits[4];
 		}
 	}
 }

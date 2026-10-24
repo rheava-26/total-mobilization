@@ -82,6 +82,7 @@ namespace Levy.Common.Targeting
 			if (!npc.active) return null;
 			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
 			if (npc.ModNPC is Content.NPCs.SummonedUnitNPC u) return u.IsAlive ? u : null; // so an enemy sticks to a summoned unit without re-acquiring every tick
+			if (npc.ModNPC is Content.NPCs.DroneNPC drone) return drone.IsAlive ? drone : null; // ... and to a combat drone
 			return OfficerSystem.Instance.BodyOf(npc);
 		}
 
@@ -510,6 +511,9 @@ namespace Levy.Common.Targeting
 			// Summoned units (an officer kit's squad) are targeted the same way, from their own per-tick cache.
 			var summons = Content.NPCs.SummonedUnitSystem.Instance.ActiveBodies;
 			for (int i = 0; i < summons.Count; i++) bodies.Add(summons[i]);
+			// Combat drones (a Barracks' garrison) are targeted the same way, from their own per-tick cache.
+			var drones = Content.NPCs.DroneSystem.Instance.ActiveBodies;
+			for (int i = 0; i < drones.Count; i++) bodies.Add(drones[i]);
 			// How many enemies are on each body right now, so the enemies choosing this tick can spread over the army.
 			EnemyTargeting.RebuildLoad();
 		}

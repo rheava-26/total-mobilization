@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ModLoader;
 using Levy.Content.NPCs;
@@ -16,7 +17,7 @@ namespace Levy.Common.Util
 	/// </summary>
 	public static class HangWatch
 	{
-		internal const double StallSeconds = 5.0, ReportEverySeconds = 5.0;
+		internal const double StallSeconds = 5.0, ReportEverySeconds = 5.0, FrameStallSeconds = 3.0;
 		internal const int MaxReportsPerStall = 12;
 
 		/// <summary>0 = between ticks (or paused / in a menu); otherwise the part of the tick the update thread entered last (see <see cref="PhaseName"/>).</summary>
@@ -25,6 +26,11 @@ namespace Levy.Common.Util
 		internal static volatile int NpcType = -1, NpcSlot = -1;
 		internal static volatile int ProjType = -1, ProjSlot = -1;
 		internal static volatile int BrainSlot = -1, BrainStep;
+
+		/// <summary>Stopwatch timestamp of the last rendered frame, set every frame in a draw hook. A stall ANYWHERE in the main loop — update OR draw/render — stops it advancing, so it catches hangs the phase marks miss (a draw-side hang runs with <see cref="Phase"/> 0). 0 until the first frame. (long, not volatile — a volatile long is illegal in C#; accessed through Volatile.Read/Write like PhaseSince.)</summary>
+		internal static long FrameBeat;
+		/// <summary>The per-frame heartbeat, called on the main thread from a draw hook; the watchdog thread watches it.</summary>
+		internal static void Beat() => Volatile.Write(ref FrameBeat, Stopwatch.GetTimestamp());
 
 		internal static string PhaseName(int phase) => phase switch
 		{
@@ -104,6 +110,9 @@ namespace Levy.Common.Util
 		public override void PreUpdateTime() => HangWatch.Enter(7);
 		public override void PostUpdateEverything() => HangWatch.Phase = 0;
 
+		// The per-frame heartbeat: runs every rendered frame (a paused game still draws, so this still ticks — that is how the watchdog tells a frozen game from a paused one, and how it sees a stall in draw/render, not just in the update).
+		public override void PostDrawInterface(SpriteBatch spriteBatch) => HangWatch.Beat();
+
 		private void Run()
 		{
 			long lastReport = 0; int reports = 0;
@@ -112,21 +121,33 @@ namespace Levy.Common.Util
 				try
 				{
 					Thread.Sleep(1000);
-					int phase = HangWatch.Phase;
-					if (phase == 0) { reports = 0; lastReport = 0; continue; }
 					long now = Stopwatch.GetTimestamp();
-					double stalled = (now - Volatile.Read(ref HangWatch.PhaseSince)) / (double)Stopwatch.Frequency;
-					if (stalled < HangWatch.StallSeconds) { if (lastReport != 0 && stalled < 1.0) { reports = 0; lastReport = 0; } continue; } // it moved on since the last report
+					int phase = HangWatch.Phase;
+
+					// Frame-beat (the main detector): a stall ANYWHERE in the main loop stops the per-frame heartbeat. Gated to an in-world, focused client so the main menu, a world load, or an alt-tab (the OS stops drawing) is never a false alarm.
+					long fb = Volatile.Read(ref HangWatch.FrameBeat);
+					bool live = fb != 0 && !Main.gameMenu && (Main.instance?.IsActive ?? true);
+					double frameStalled = live ? (now - fb) / (double)Stopwatch.Frequency : 0.0;
+					// Phase stall (update only, extra detail): which update phase has run too long.
+					double phaseStalled = phase != 0 ? (now - Volatile.Read(ref HangWatch.PhaseSince)) / (double)Stopwatch.Frequency : 0.0;
+
+					bool frameHang = frameStalled >= HangWatch.FrameStallSeconds;
+					bool phaseHang = phase != 0 && phaseStalled >= HangWatch.StallSeconds;
+					if (!frameHang && !phaseHang)
+					{
+						if (frameStalled < 1.0 && phaseStalled < 1.0) { reports = 0; lastReport = 0; } // healthy again: re-arm the next report
+						continue;
+					}
 					if (reports >= HangWatch.MaxReportsPerStall) continue;
 					if (lastReport != 0 && (now - lastReport) / (double)Stopwatch.Frequency < HangWatch.ReportEverySeconds) continue;
 					lastReport = now; reports++;
-					Report(phase, stalled);
+					Report(phase, frameHang ? frameStalled : phaseStalled, frameHang);
 				}
 				catch (Exception) { /* never let a diagnostic thread take the process down */ }
 			}
 		}
 
-		private void Report(int phase, double stalled)
+		private void Report(int phase, double stalled, bool frameHang)
 		{
 			int npcs = 0, soldiers = 0, projectiles = 0;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -138,9 +159,16 @@ namespace Levy.Common.Util
 			}
 			for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i] != null && Main.projectile[i].active) projectiles++;
 			string brain = HangWatch.BrainSlot >= 0 ? $"soldier slot {HangWatch.BrainSlot}, step '{HangWatch.BrainStepName(HangWatch.BrainStep)}'" : "none yet";
-			Mod.Logger.Warn($"Levy watchdog: the game update has stayed in '{HangWatch.PhaseName(phase)}' for {stalled:F0}s (tick {Main.GameUpdateCount}; {npcs} NPCs, {soldiers} of them soldiers; {projectiles} projectiles). "
+			// Phase 0 during a frame hang is the key tell: Levy's update already finished this tick, so the stall is in DRAW/render, another mod, or vanilla — NOT Levy's own AI.
+			string where = phase != 0
+				? $"the update thread is stuck in '{HangWatch.PhaseName(phase)}'"
+				: "Levy's update finished this tick, so the stall is OUTSIDE it — in draw/render, another mod, or vanilla";
+			string lead = frameHang
+				? $"Levy watchdog: no frame has been drawn in {stalled:F0}s — {where}"
+				: $"Levy watchdog: the game update has stayed in '{HangWatch.PhaseName(phase)}' for {stalled:F0}s";
+			Mod.Logger.Warn(lead + $" (tick {Main.GameUpdateCount}; {npcs} NPCs, {soldiers} of them soldiers; {projectiles} projectiles). "
 				+ $"Last NPC AI started: type {HangWatch.NpcType} slot {HangWatch.NpcSlot}. Last projectile update started: type {HangWatch.ProjType} slot {HangWatch.ProjSlot}. Brain: {brain}. "
-				+ "Identical lines a few seconds apart mean the update thread is stuck in that spot; changing numbers mean a very slow tick. (A long world save or load inside a tick can trip this once: ignore it.)");
+				+ "Identical lines a few seconds apart mean the thread is stuck in that spot; changing numbers mean a very slow stretch. (A long world save or load can trip this once: ignore it.)");
 		}
 	}
 

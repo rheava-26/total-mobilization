@@ -23,7 +23,8 @@ namespace Levy.Common.UI
 	/// the local player's Regulars as a grid of unit cards with per-soldier actions. Everything goes through <see cref="UIActions"/>.
 	/// The panel is resizable: drag the grip in the bottom-right corner and the card grid reflows to the new size (more columns when
 	/// wider, more rows when taller, a scrollbar only when the cards overflow). The size is saved per character in <see cref="UIPlayer"/>.
-	/// The roster can be filtered by weapon class, grade and weapon tier and sorted (class / tier / grade / name) from a row of cycle buttons; the grid shows the filtered, sorted set.
+	/// The roster can be filtered by weapon class, grade, weapon tier and duty (active / reserve) and sorted (class / tier / grade / name) from a row of cycle buttons; the grid shows the filtered, sorted set,
+	/// with the soldiers in reserve last. A soldier in reserve (see <see cref="RosterSystem.Demobilize"/>) is dimmed, shows only Recall / Kit / Demote / Discharge and holds no command points.
 	/// </summary>
 	public class BarracksPanel : UIState
 	{
@@ -39,7 +40,7 @@ namespace Levy.Common.UI
 		private string _recruitRaw = "", _hazardRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers;
-		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn;
+		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
 		private BarElement _manpower, _cp;
 		private CardGrid _grid;
 		private UIScrollbar _scroll;
@@ -47,8 +48,8 @@ namespace Levy.Common.UI
 		private readonly List<RosterCard> _cards = new();
 		/// <summary>The cards the grid shows right now: <see cref="_cards"/> after the class / grade / tier filters and the sort.</summary>
 		private readonly List<RosterCard> _shown = new();
-		// roster view: 0 = no filter. Class 1..5 = melee, ranged, magic, summon, unarmed; grade 1..3 = Levy..Champion; tier 1..4 = the RosterTierBandMin bands
-		private int _fClass, _fGrade, _fTier, _sort;
+		// roster view: 0 = no filter. Class 1..5 = melee, ranged, magic, summon, unarmed; grade 1..3 = Levy..Champion; tier 1..4 = the RosterTierBandMin bands; duty 1 = active, 2 = reserve
+		private int _fClass, _fGrade, _fTier, _fDuty, _sort;
 		/// <summary>Soldiers whose card is showing the "more actions" page (by id, so it survives a roster rebuild).</summary>
 		private readonly HashSet<int> _moreIds = new();
 		private int _refreshTimer;
@@ -60,6 +61,8 @@ namespace Levy.Common.UI
 		// per-refresh facts shared by every card, so a 100-soldier roster does these scans once, not once per card
 		internal bool BannersNearby, HasLifeCrystal, HasLifeFruit, HasManaCrystal;
 		internal BarracksTE OtherBarracks;
+		/// <summary>Soldiers in reserve across the world's roster (the cap is global), counted once per refresh for the cards' Reserve buttons.</summary>
+		internal int ReserveCount;
 
 		private const float BtnScale = LevyConstants.UI.ButtonTextScale;
 		private const int ListTop = LevyConstants.UI.BarracksListTop;
@@ -67,12 +70,16 @@ namespace Levy.Common.UI
 
 		private static readonly string[] ClassKeys = { "UI2.ClassMelee", "UI2.ClassRanged", "UI2.ClassMagic", "UI2.ClassSummon", "UI2.ClassUnarmed" };
 		private static readonly string[] TierKeys = { "UI2.TierEarly", "UI2.TierMid", "UI2.TierLate", "UI2.TierEndgame" };
+		private static readonly string[] DutyKeys = { "UI2.DutyActive", "UI2.DutyReserve" };
 		private static readonly string[] SortKeys = { "UI2.SortRoster", "UI2.SortClass", "UI2.SortTier", "UI2.SortGrade", "UI2.SortName" };
-		private const int ClassCount = 6, GradeCount = 4, SortCount = 5;
+		private const int ClassCount = 6, GradeCount = 4, DutyCount = 3, SortCount = 5;
 		private static int TierCount => LevyConstants.UI.RosterTierBandMin.Length + 1;
 
 		/// <summary>Top of header row <paramref name="row"/> (0 = deposit row .. 6 = roster + orders row).</summary>
 		private static float RowY(int row) => LevyConstants.UI.BarracksHeaderTop + row * LevyConstants.UI.BarracksRowPitch;
+
+		/// <summary>Width of each of the five filter / sort buttons (class, grade, tier, duty, sort) at the current panel width.</summary>
+		private float FilterButtonWidth() => (_w - 24f - 4f * LevyConstants.UI.BarracksFilterGap) / 5f;
 
 		public override void OnInitialize()
 		{
@@ -119,6 +126,7 @@ namespace Levy.Common.UI
 			_fClassBtn = Put(CycleButton(() => _fClass, v => _fClass = v, ClassCount, "UI2.FilterClassHint"), 12, y5);
 			_fGradeBtn = Put(CycleButton(() => _fGrade, v => _fGrade = v, GradeCount, "UI2.FilterGradeHint"), 12, y5);
 			_fTierBtn = Put(CycleButton(() => _fTier, v => _fTier = v, TierCount, "UI2.FilterTierHint"), 12, y5);
+			_fDutyBtn = Put(CycleButton(() => _fDuty, v => _fDuty = v, DutyCount, "UI2.FilterDutyHint"), 12, y5);
 			_sortBtn = Put(CycleButton(() => _sort, v => _sort = v, SortCount, "UI2.SortHint"), 12, y5);
 
 			// roster header + squad-wide orders (atBarracks: every Regular of the commander)
@@ -184,8 +192,8 @@ namespace Levy.Common.UI
 			float barW = (_w - 24f - LevyConstants.UI.BarracksBarGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);
 			_cp.Left.Set(12f + barW + LevyConstants.UI.BarracksBarGap, 0f); _cp.Width.Set(barW, 0f);
-			float gap = LevyConstants.UI.BarracksFilterGap, fw = (_w - 24f - 3f * gap) / 4f;
-			var filters = new[] { _fClassBtn, _fGradeBtn, _fTierBtn, _sortBtn };
+			float gap = LevyConstants.UI.BarracksFilterGap, fw = FilterButtonWidth();
+			var filters = new[] { _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn };
 			for (int i = 0; i < filters.Length; i++) { filters[i].Left.Set(12f + i * (fw + gap), 0f); filters[i].Width.Set(fw, 0f); }
 			PlaceTitle();
 
@@ -318,8 +326,9 @@ namespace Levy.Common.UI
 			_manpower.Fraction = cap > 0 ? te.Manpower / (float)cap : 0f;
 			_manpower.Label = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
 			int cpTotal = roster.CommandPoints, cpUsed = roster.CommandPointsUsed;
+			ReserveCount = roster.ReserveCount;
 			_cp.Fraction = cpTotal > 0 ? cpUsed / (float)cpTotal : 0f;
-			_cp.Label = LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal);
+			_cp.Label = ReserveCount > 0 ? LevyUtil.T("UI2.CommandPointsReserve", cpUsed, cpTotal, ReserveCount) : LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal);
 
 			_mobilize.Set(LevyUtil.T(te.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(te.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint"));
 			_autoMuster.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI.AutoMuster"), LevyUtil.T(te.AutoMuster ? "UI2.On" : "UI2.Off")), true);
@@ -355,7 +364,7 @@ namespace Levy.Common.UI
 		private long HazardPayCost()
 		{
 			long sum = 0;
-			foreach (var r in UIActions.MyRegulars()) if (!r.StoodDown) sum += EconomySystem.WagePerDay(r.Grade, false) * LevyConstants.HazardPayDays;
+			foreach (var r in UIActions.MyRegulars()) if (!r.StoodDown && !r.Reserve) sum += EconomySystem.WagePerDay(r.Grade, false) * LevyConstants.HazardPayDays;
 			return sum;
 		}
 
@@ -443,6 +452,7 @@ namespace Levy.Common.UI
 				if (_fClass != 0 && cls != _fClass - 1) continue;
 				if (_fGrade != 0 && rec != null && (int)rec.Grade != _fGrade - 1) continue;
 				if (_fTier != 0 && (!armed || TierBand(tier) != _fTier - 1)) continue;
+				if (_fDuty != 0 && rec != null && rec.Reserve != (_fDuty == 2)) continue;
 				rows.Add((card, cls, tier, armed ? WeaponClassifier.Score(w) : 0f, i));
 			}
 			IEnumerable<(RosterCard card, int cls, int tier, float score, int idx)> ordered = rows;
@@ -453,6 +463,7 @@ namespace Levy.Common.UI
 				case 3: ordered = rows.OrderByDescending(r => (int)(r.card.Rec?.Grade ?? Grade.Levy)).ThenByDescending(r => r.tier).ThenByDescending(r => r.score); break;
 				case 4: ordered = rows.OrderBy(r => r.card.Rec?.Name ?? "", StringComparer.CurrentCultureIgnoreCase); break;
 			}
+			ordered = ordered.OrderBy(r => r.card.Rec != null && r.card.Rec.Reserve ? 1 : 0); // soldiers in reserve trail the army whatever the sort (stable, so each group keeps its order)
 			var next = ordered.Select(r => r.card).ToList(); // OrderBy is stable, so equal keys keep roster order
 			bool same = !force && next.Count == _shown.Count;
 			if (same) for (int i = 0; i < next.Count; i++) if (!ReferenceEquals(next[i], _shown[i])) { same = false; break; }
@@ -465,11 +476,13 @@ namespace Levy.Common.UI
 		private void RefreshView()
 		{
 			string any = LevyUtil.T("UI2.FilterAny");
-			_fClassBtn.Set(LevyUtil.T("UI2.FilterClass", _fClass == 0 ? any : LevyUtil.T(ClassKeys[_fClass - 1])), true);
-			_fGradeBtn.Set(LevyUtil.T("UI2.FilterGrade", _fGrade == 0 ? any : UIActions.GradeName((Grade)(_fGrade - 1))), true);
-			_fTierBtn.Set(LevyUtil.T("UI2.FilterTier", _fTier == 0 ? any : LevyUtil.T(TierKeys[_fTier - 1])), true);
-			_sortBtn.Set(LevyUtil.T("UI2.SortBy", LevyUtil.T(SortKeys[_sort])), true);
-			_fClassBtn.Lit = _fClass != 0; _fGradeBtn.Lit = _fGrade != 0; _fTierBtn.Lit = _fTier != 0; _sortBtn.Lit = _sort != 0;
+			float room = FilterButtonWidth() - 13f; // five buttons share the row (6 px padding each side): a caption that would outgrow its button is ellipsised, never overlapping its neighbour
+			_fClassBtn.Set(Fit(LevyUtil.T("UI2.FilterClass", _fClass == 0 ? any : LevyUtil.T(ClassKeys[_fClass - 1])), 0.7f, room), true);
+			_fGradeBtn.Set(Fit(LevyUtil.T("UI2.FilterGrade", _fGrade == 0 ? any : UIActions.GradeName((Grade)(_fGrade - 1))), 0.7f, room), true);
+			_fTierBtn.Set(Fit(LevyUtil.T("UI2.FilterTier", _fTier == 0 ? any : LevyUtil.T(TierKeys[_fTier - 1])), 0.7f, room), true);
+			_fDutyBtn.Set(Fit(LevyUtil.T("UI2.FilterDuty", _fDuty == 0 ? any : LevyUtil.T(DutyKeys[_fDuty - 1])), 0.7f, room), true);
+			_sortBtn.Set(Fit(LevyUtil.T("UI2.SortBy", LevyUtil.T(SortKeys[_sort])), 0.7f, room), true);
+			_fClassBtn.Lit = _fClass != 0; _fGradeBtn.Lit = _fGrade != 0; _fTierBtn.Lit = _fTier != 0; _fDutyBtn.Lit = _fDuty != 0; _sortBtn.Lit = _sort != 0;
 
 			int total = _cards.Count, shown = _shown.Count;
 			string empty = total == 0 ? LevyUtil.T("UI2.NoRegulars") : shown == 0 ? LevyUtil.T("UI2.NoMatch") : null;
@@ -618,8 +631,8 @@ namespace Levy.Common.UI
 
 		/// <summary>
 		/// One Regular. Name and grade (the border and tint take the grade colour), a row of hearts (HP) and a row of mana stars, the weapon / sidearm / armor icons,
-		/// the current state, and the per-soldier actions on two button rows. A "More" button swaps those rows for the less common actions
-		/// (assign patrol, rebase, feed crystals). Hovering the name row shows the full details.
+		/// the current state, and the per-soldier actions on two button rows: orders and Kit, then Promote / Demote / Reserve. A "More" button swaps those rows for the less common
+		/// actions (assign patrol, rebase, discharge, feed crystals). A soldier in reserve is dimmed and shows Recall and Kit, then Demote and Discharge. Hovering the name row shows the full details.
 		/// Portrait hook: <see cref="LevyConstants.UI.CardPortraitWidth"/> reserves a left column for the soldier's live sprite; <see cref="DrawPortrait"/> is where it is drawn.
 		/// </summary>
 		private class RosterCard : UIPanel
@@ -629,7 +642,7 @@ namespace Levy.Common.UI
 			private readonly Label _name, _grade, _state, _info;
 			private readonly IconRow _hp, _mp;
 			private readonly GearStrip _gear;
-			private readonly LevyButton _follow, _hold, _return, _kit, _promote, _discharge, _moreBtn;
+			private readonly LevyButton _follow, _hold, _return, _kit, _promote, _demote, _reserve, _recall, _discharge, _moreBtn;
 			private readonly LevyButton _patrol, _rebase, _back, _feedLc, _feedLf, _feedMc;
 			private readonly List<LevyButton> _allButtons = new();
 			private readonly List<(LevyButton b, float fixedW)> _rowItems = new();
@@ -662,6 +675,9 @@ namespace Levy.Common.UI
 				_return = Btn(ret, () => UIActions.SoldierOrder(Rec, SoldierOrder.ReturnToBarracks), LevyUtil.T("UI.Return"));
 				_kit = Btn(LevyUtil.T("Loadout.Button"), OpenKit, LevyUtil.T("Loadout.ButtonHint"));
 				_promote = Btn("", Promote);
+				_demote = Btn(LevyUtil.T("UI2.Demote"), Demote);
+				_reserve = Btn(LevyUtil.T("UI2.Reserve"), () => UIActions.SetReserve(Rec, true));
+				_recall = Btn(LevyUtil.T("UI2.Recall"), () => UIActions.SetReserve(Rec, false));
 				_discharge = Btn(LevyUtil.T("UI.Discharge"), () => UIActions.Discharge(Rec));
 				_moreBtn = Btn(LevyUtil.T("UI2.MoreActions"), () => SetMore(true), LevyUtil.T("UI2.MoreActionsHint"));
 				_patrol = Btn(LevyUtil.T("UI.Patrol"), Patrol, LevyUtil.T("UI2.PatrolHint"));
@@ -727,9 +743,9 @@ namespace Levy.Common.UI
 				float x0 = Pad + LevyConstants.UI.CardPortraitWidth, inner = _w - x0 - Pad;
 				Color gc = UIActions.GradeColor(rec.Grade);
 				UIActions.GetHp(rec, out int cur, out int max);
-				bool dead = cur <= 0;
-				BackgroundColor = Color.Lerp(CardBase, gc, LevyConstants.UI.CardGradeTint) * (dead ? 0.55f : 0.9f);
-				BorderColor = gc * (dead ? 0.5f : 0.95f);
+				bool dead = cur <= 0, res = rec.Reserve, muted = dead || res; // a fallen soldier and one in reserve are both drawn subdued
+				BackgroundColor = Color.Lerp(CardBase, gc, LevyConstants.UI.CardGradeTint) * (muted ? 0.55f : 0.9f);
+				BorderColor = gc * (muted ? 0.5f : 0.95f);
 
 				// name + grade
 				string gradeText = UIActions.Chevrons(rec.Grade) + " " + UIActions.GradeName(rec.Grade);
@@ -741,7 +757,7 @@ namespace Levy.Common.UI
 				_name.TextColor = rec.Veteran ? Vet : Color.White;
 
 				// hearts (HP) and mana stars; the exact numbers stay as the small label and the hover. A fallen soldier reads 0 hearts, dimmed
-				float dim = dead ? LevyConstants.UI.CardIconDeadDim : 1f;
+				float dim = muted ? LevyConstants.UI.CardIconDeadDim : 1f;
 				_hp.Left.Set(x0, 0f); _hp.Width.Set(inner, 0f);
 				_hp.Max = Math.Max(0, max); _hp.Value = Math.Clamp(cur, 0, _hp.Max); _hp.Dim = dim;
 				_hp.Label = _hp.Value + "/" + _hp.Max;
@@ -758,28 +774,43 @@ namespace Levy.Common.UI
 				_state.Left.Set(infoX, 0f); _info.Left.Set(infoX, 0f);
 				SetText(_state, Fit(UIActions.StateText(rec), SmallScale, infoW));
 				string info; Color infoColor = Color.White;
-				if (MutinySystem.IsMutinous(rec)) { info = LevyUtil.T("Mutiny.CardOwed", LevyUtil.Coins(MutinySystem.Remaining(rec))); infoColor = LevyConstants.Mutiny.Alarm; }
+				if (res) { info = LevyUtil.T("UI2.ReserveInfo"); infoColor = Muted; }
+				else if (MutinySystem.IsMutinous(rec)) { info = LevyUtil.T("Mutiny.CardOwed", LevyUtil.Coins(MutinySystem.Remaining(rec))); infoColor = LevyConstants.Mutiny.Alarm; }
 				else if (rec.DaysUnpaid > 0) { info = LevyUtil.T("UI.Unpaid", rec.DaysUnpaid); infoColor = rec.DaysUnpaid >= 2 ? Unpaid : Color.White; }
 				else if (rec.StoodDown) { info = LevyUtil.T("UI.StoodDown"); infoColor = Muted; }
 				else info = LevyUtil.T("UI2.Kills", rec.Kills);
 				SetText(_info, Fit(info, SmallScale, infoW)); _info.TextColor = infoColor;
 
-				// promote
-				if (rec.Grade >= Grade.Champion) _promote.Set(LevyUtil.T("UI2.PromoteMax"), false, LevyUtil.T("UI2.PromoteMax"));
-				else
+				// promote (a soldier in reserve cannot be promoted: recall him first, the command points are checked on active duty)
+				float promoteRoom = ButtonTextRoom(inner - 3 * BtnGap - FixedW(_demote) - FixedW(_reserve) - FixedW(_moreBtn));
+				if (!res)
 				{
-					var next = (Grade)((int)rec.Grade + 1);
-					long cost = EconomySystem.PromotionCost(rec.Grade, next);
-					bool unlocked = roster.GradeUnlocked(next);
-					bool cpOk = UIActions.AvailableCp >= LevyConstants.GradeCpCost[(int)next] - LevyConstants.GradeCpCost[(int)rec.Grade];
-					var home = SettlementSystem.Instance.GetBarracks(rec.HomeBarracksId);
-					var payer = home ?? te;
-					bool moneyOk = payer.Treasury >= cost;
-					string hint = !unlocked ? LevyUtil.T("UI.GradeLocked") : !cpOk ? LevyUtil.T("UI.NotEnoughCp") : !moneyOk ? LevyUtil.T("UI.NotEnoughMoney") : UIActions.GradeName(next) + " (" + LevyUtil.Coins(cost) + ")";
-					_promote.Set(Fit(LevyUtil.T("UI.Promote", ShortCoins(cost)), CardBtnScale, ButtonTextRoom(inner - 2 * BtnGap - FixedW(_discharge) - FixedW(_moreBtn))), unlocked && cpOk && moneyOk, hint);
+					if (rec.Grade >= Grade.Champion) _promote.Set(Fit(LevyUtil.T("UI2.PromoteMax"), CardBtnScale, promoteRoom), false, LevyUtil.T("UI2.PromoteMax"));
+					else
+					{
+						var next = (Grade)((int)rec.Grade + 1);
+						long cost = EconomySystem.PromotionCost(rec.Grade, next);
+						bool unlocked = roster.GradeUnlocked(next);
+						bool cpOk = UIActions.AvailableCp >= LevyConstants.GradeCpCost[(int)next] - LevyConstants.GradeCpCost[(int)rec.Grade];
+						var home = SettlementSystem.Instance.GetBarracks(rec.HomeBarracksId);
+						var payer = home ?? te;
+						bool moneyOk = payer.Treasury >= cost;
+						string hint = !unlocked ? LevyUtil.T("UI.GradeLocked") : !cpOk ? LevyUtil.T("UI.NotEnoughCp") : !moneyOk ? LevyUtil.T("UI.NotEnoughMoney") : UIActions.GradeName(next) + " (" + LevyUtil.Coins(cost) + ")";
+						_promote.Set(Fit(LevyUtil.T("UI.Promote", ShortCoins(cost)), CardBtnScale, promoteRoom), unlocked && cpOk && moneyOk, hint);
+					}
 				}
 
-				// "more" page: patrol, rebase, crystals the player is holding
+				// demote (nothing is refunded), and the two duty buttons: Reserve on active duty, Recall in reserve
+				bool canDemote = rec.Grade > Grade.Levy;
+				var lower = (Grade)Math.Max(0, (int)rec.Grade - 1);
+				_demote.Set(LevyUtil.T("UI2.Demote"), canDemote, canDemote ? LevyUtil.T("UI2.DemoteHint", UIActions.GradeName(lower)) : LevyUtil.T("UI2.DemoteMin"));
+				bool mutinous = MutinySystem.IsMutinous(rec), reserveFull = _owner.ReserveCount >= LevyConstants.ReserveMax;
+				_reserve.Set(LevyUtil.T("UI2.Reserve"), !mutinous && !reserveFull,
+					mutinous ? LevyUtil.T("UI2.ReserveMutinous") : reserveFull ? LevyUtil.T("Roster.ReserveFull", LevyConstants.ReserveMax) : LevyUtil.T("UI2.ReserveHint"));
+				bool recallOk = UIActions.AvailableCp >= rec.CommandPointCost;
+				_recall.Set(LevyUtil.T("UI2.Recall"), recallOk, recallOk ? LevyUtil.T("UI2.RecallHint", rec.CommandPointCost) : LevyUtil.T("UI.NotEnoughCp"));
+
+				// "more" page: patrol, rebase, discharge, crystals the player is holding
 				_patrol.Set(LevyUtil.T("UI.Patrol"), _owner.BannersNearby, _owner.BannersNearby ? LevyUtil.T("UI2.PatrolHint") : LevyUtil.T("UI2.NeedTwoBanners"));
 				_feedLc.Enabled = UIActions.CanFeed(rec, ItemID.LifeCrystal);
 				_feedLf.Enabled = UIActions.CanFeed(rec, ItemID.LifeFruit);
@@ -788,9 +819,13 @@ namespace Levy.Common.UI
 				if (rec.HomeBarracksId != te.ID) rebaseText = LevyUtil.T("UI2.RebaseHere");
 				else if (_owner.OtherBarracks != null) rebaseText = LevyUtil.T("UI2.RebaseTo", SettlementSystem.Instance.TownName(_owner.OtherBarracks));
 				else showRebase = false;
-				if (showRebase) _rebase.Set(Fit(rebaseText, CardBtnScale, ButtonTextRoom(inner - BtnGap - FixedW(_patrol))), true, rebaseText);
+				if (showRebase) _rebase.Set(Fit(rebaseText, CardBtnScale, ButtonTextRoom(inner - 2 * BtnGap - FixedW(_patrol) - FixedW(_discharge))), true, rebaseText);
 
-				int sig = HashCode.Combine((int)_w, _more, showRebase, _owner.HasLifeCrystal, _owner.HasLifeFruit, _owner.HasManaCrystal, _promote.Text, _rebase.Text);
+				var layout = new HashCode(); // everything that decides which buttons are attached and how wide they are
+				layout.Add((int)_w); layout.Add(_more); layout.Add(res); layout.Add(showRebase);
+				layout.Add(_owner.HasLifeCrystal); layout.Add(_owner.HasLifeFruit); layout.Add(_owner.HasManaCrystal);
+				layout.Add(_promote.Text); layout.Add(_rebase.Text);
+				int sig = layout.ToHashCode();
 				if (sig != _sig)
 				{
 					_sig = sig;
@@ -803,23 +838,32 @@ namespace Levy.Common.UI
 
 			private static float FixedW(LevyButton b) => Measure(b.Text, CardBtnScale) + 16f;
 
-			/// <summary>Attaches and sizes the buttons of the current page (main actions or the "more" page).</summary>
+			/// <summary>Attaches and sizes the buttons of the current page: the reserve page for a soldier in reserve, else the main actions or the "more" page.</summary>
 			private void Arrange(bool showRebase)
 			{
 				foreach (var b in _allButtons) if (b.Parent != null) b.Remove();
 				float inner = _w - 2f * Pad - LevyConstants.UI.CardPortraitWidth;
 				float row2 = ActionY + RowH + RowGap;
-				if (!_more)
+				if (Rec != null && Rec.Reserve)
+				{
+					// Orders, patrol, feeding and promotion mean nothing off duty: Recall him, look at his Kit, lower his grade, or let him go.
+					_rowItems.Add((_recall, -1f)); _rowItems.Add((_kit, -1f));
+					LayoutRow(ActionY, inner);
+					_rowItems.Add((_demote, -1f)); _rowItems.Add((_discharge, FixedW(_discharge)));
+					LayoutRow(row2, inner);
+				}
+				else if (!_more)
 				{
 					_rowItems.Add((_follow, -1f)); _rowItems.Add((_hold, -1f)); _rowItems.Add((_return, -1f)); _rowItems.Add((_kit, -1f));
 					LayoutRow(ActionY, inner);
-					_rowItems.Add((_promote, -1f)); _rowItems.Add((_discharge, FixedW(_discharge))); _rowItems.Add((_moreBtn, FixedW(_moreBtn)));
+					_rowItems.Add((_promote, -1f)); _rowItems.Add((_demote, FixedW(_demote))); _rowItems.Add((_reserve, FixedW(_reserve))); _rowItems.Add((_moreBtn, FixedW(_moreBtn)));
 					LayoutRow(row2, inner);
 				}
 				else
 				{
 					_rowItems.Add((_patrol, FixedW(_patrol)));
 					if (showRebase) _rowItems.Add((_rebase, -1f));
+					_rowItems.Add((_discharge, FixedW(_discharge)));
 					LayoutRow(ActionY, inner);
 					_rowItems.Add((_back, FixedW(_back)));
 					if (_owner.HasLifeCrystal) _rowItems.Add((_feedLc, -1f));
@@ -854,14 +898,14 @@ namespace Levy.Common.UI
 				{
 					rec.Name + (rec.Veteran ? "  (" + LevyUtil.T("UI.Veteran") + ")" : ""),
 					UIActions.Chevrons(rec.Grade) + " " + UIActions.GradeName(rec.Grade),
-					LevyUtil.T("UI2.WagePerDay", LevyUtil.Coins(EconomySystem.WagePerDay(rec.Grade, rec.StoodDown))),
+					rec.Reserve ? LevyUtil.T("UI2.ReserveNoWage") : LevyUtil.T("UI2.WagePerDay", LevyUtil.Coins(EconomySystem.WagePerDay(rec.Grade, rec.StoodDown))),
 					LevyUtil.T("UI2.Home", home != null ? SettlementSystem.Instance.TownName(home) : LevyUtil.T("UI2.Homeless")),
 					LevyUtil.T("UI2.Kills", rec.Kills),
 					UIActions.StateText(rec),
 				};
 				if (MutinySystem.IsMutinous(rec)) lines.Add(LevyUtil.T("Mutiny.CardOwed", LevyUtil.Coins(MutinySystem.Remaining(rec))));
 				else if (rec.DaysUnpaid > 0) lines.Add(LevyUtil.T("UI.Unpaid", rec.DaysUnpaid));
-				if (rec.StoodDown) lines.Add(LevyUtil.T("UI.StoodDown"));
+				if (rec.StoodDown && !rec.Reserve) lines.Add(LevyUtil.T("UI.StoodDown")); // a soldier in reserve is flagged stood down underneath; the state line already says "In reserve"
 				return string.Join("\n", lines);
 			}
 
@@ -876,6 +920,12 @@ namespace Levy.Common.UI
 			{
 				if (Rec == null || Rec.Grade >= Grade.Champion) return;
 				UIActions.Promote(Rec, (Grade)((int)Rec.Grade + 1));
+			}
+
+			private void Demote()
+			{
+				if (Rec == null || Rec.Grade <= Grade.Levy) return;
+				UIActions.Demote(Rec, (Grade)((int)Rec.Grade - 1));
 			}
 
 			private void Patrol()

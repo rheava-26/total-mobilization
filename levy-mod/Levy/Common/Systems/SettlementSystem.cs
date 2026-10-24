@@ -657,12 +657,12 @@ namespace Levy.Common.Systems
 			long cost = 0; int heads = 0;
 			var regulars = RosterSystem.Instance.Regulars;
 			for (int i = 0; i < regulars.Count; i++)
-				if (regulars[i].HomeBarracksId == barracks.ID) { cost += EconomySystem.WagePerDay(regulars[i].Grade, false); heads++; }
+				if (regulars[i].HomeBarracksId == barracks.ID && !regulars[i].Reserve) { cost += EconomySystem.WagePerDay(regulars[i].Grade, false); heads++; } // a soldier in reserve is not in the field: no hazard pay
 			cost += barracks.Militia.Count * EconomySystem.LevyWage; heads += barracks.Militia.Count;
 			cost *= LevyConstants.HazardPayDays;
 			if (heads == 0) { ChatTo(by, LevyUtil.T("Militia.NoOneToPay", town)); return false; }
 			if (!EconomySystem.TryPay(barracks, cost)) { ChatTo(by, LevyUtil.T("UI.NotEnoughMoney")); return false; }
-			for (int i = 0; i < regulars.Count; i++) if (regulars[i].HomeBarracksId == barracks.ID) regulars[i].HazardPaid = true;
+			for (int i = 0; i < regulars.Count; i++) if (regulars[i].HomeBarracksId == barracks.ID && !regulars[i].Reserve) regulars[i].HazardPaid = true;
 			for (int i = 0; i < barracks.Militia.Count; i++) barracks.Militia[i].HazardPaid = true; // charged above; grant them the fear reduction (militia records are transient, no dawn reset needed)
 			barracks.HazardPayDay = day;
 			LevyUtil.Chat(LevyUtil.T("Chat.HazardPay", town, LevyUtil.Coins(cost)));

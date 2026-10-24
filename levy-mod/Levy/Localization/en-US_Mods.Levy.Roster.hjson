@@ -14,3 +14,10 @@ NoHome: That soldier has no barracks to pay from.
 RallyCooldown: The horn needs {0} more seconds.
 TaxCollected: The Tax Collector paid {0} into the treasury of {1}.
 CrystalRefused: "{0} cannot use that. It was handed back."
+Demoted: "{0} has been demoted to {1}."
+DemoteBlocked: "{0} cannot be demoted yet. The spare accessories have nowhere to go."
+Demobilized: "{0} goes to the reserve."
+Remobilized: "{0} returns to active duty."
+InReserve: "{0} is in reserve. Recall them first."
+ReserveFull: The reserve is full ({0} soldiers).
+ReserveMutinous: "{0} is in mutiny and refuses the order."

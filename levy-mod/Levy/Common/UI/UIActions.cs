@@ -47,6 +47,22 @@ namespace Levy.Common.UI
 			else { var p = LevyPackets.New(LevyPacket.Promote); p.Write(rec.Id); p.Write((byte)to); p.Send(); }
 		}
 
+		/// <summary>Lowers a Regular to the named lower grade (the card steps one grade at a time). Nothing is refunded. The packet names the wanted grade, so a double click is a no-op.</summary>
+		public static void Demote(SoldierRecord rec, Grade to)
+		{
+			if (rec == null) return;
+			if (Single) RosterSystem.Instance.Demote(rec, to);
+			else { var p = LevyPackets.New(LevyPacket.Demote); p.Write(rec.Id); p.Write((byte)to); p.Send(); }
+		}
+
+		/// <summary>Takes a Regular off active duty (<paramref name="reserve"/> true) or recalls him (false). The packet names the wanted state, so a double click is a no-op.</summary>
+		public static void SetReserve(SoldierRecord rec, bool reserve)
+		{
+			if (rec == null) return;
+			if (Single) { if (reserve) RosterSystem.Instance.Demobilize(rec); else RosterSystem.Instance.Remobilize(rec); }
+			else { var p = LevyPackets.New(LevyPacket.Reserve); p.Write(rec.Id); p.Write(reserve); p.Send(); }
+		}
+
 		public static void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
 		{
 			if (rec == null) return;
@@ -184,7 +200,7 @@ namespace Levy.Common.UI
 		/// </summary>
 		public static void SoldierOrder(SoldierRecord rec, SoldierOrder order)
 		{
-			if (rec == null) return;
+			if (rec == null || rec.Reserve) return; // a soldier in reserve takes no orders
 			if (Single)
 			{
 				var body = BodyOf(rec);
@@ -347,17 +363,18 @@ namespace Levy.Common.UI
 				if (r != null && r.Kind == SoldierKind.Regular && r.CommanderName == name) yield return r;
 		}
 
+		/// <summary>Majority view over the soldiers on active duty only: the squad toggles skip a soldier in reserve, so the button must not count him.</summary>
 		public static bool MajorityHoldFire()
 		{
 			int hold = 0, total = 0;
-			foreach (var r in MyRegulars()) { total++; if (r.HoldFire) hold++; }
+			foreach (var r in MyRegulars()) { if (r.Reserve) continue; total++; if (r.HoldFire) hold++; }
 			return total > 0 && hold * 2 > total;
 		}
 
 		public static bool MajoritySpreadOut()
 		{
 			int spread = 0, total = 0;
-			foreach (var r in MyRegulars()) { total++; if (r.SpreadOut) spread++; }
+			foreach (var r in MyRegulars()) { if (r.Reserve) continue; total++; if (r.SpreadOut) spread++; }
 			return total > 0 && spread * 2 > total;
 		}
 
@@ -417,6 +434,7 @@ namespace Levy.Common.UI
 		public static string StateText(SoldierRecord rec)
 		{
 			if (rec == null) return "";
+			if (rec.Reserve) return LevyUtil.T("UI2.InReserve");
 			var body = BodyOf(rec);
 			if (body != null) return LevyUtil.T("UI2.State." + body.State);
 			if (rec.Dead) return LevyUtil.T("UI2.DeadRespawn", System.Math.Max(0, rec.RespawnTimer) / 60);

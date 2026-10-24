@@ -154,6 +154,22 @@ SortTier: Weapon tier
 SortGrade: Grade
 SortName: Name
 NoMatch: No Regulars match these filters.
+Demote: Demote
+DemoteHint: Lowers this soldier one grade to {0}. Nothing is refunded. Accessories beyond the new slot count go back to the Armory.
+DemoteMin: Already the lowest grade.
+Reserve: Reserve
+ReserveHint: Takes this soldier off active duty. No body in the field, no wage and no command points. Name, grade, gear and veteran status are kept.
+ReserveMutinous: A soldier in mutiny takes no orders.
+Recall: Recall
+RecallHint: Returns this soldier to active duty. Command point cost: {0}.
+InReserve: In reserve
+ReserveInfo: Off the payroll
+ReserveNoWage: No wage while in reserve.
+CommandPointsReserve: Command points {0} / {1} ({2} in reserve)
+FilterDuty: Duty: {0}
+FilterDutyHint: Shows only soldiers on active duty or only soldiers in reserve. Click to cycle, right-click to go back.
+DutyActive: Active
+DutyReserve: Reserve
 
 State: {
 	Idle: Idle

@@ -37,6 +37,13 @@ namespace Levy.Common.Soldiers
 		/// <summary>Owning player's name (Regulars belong to players). Militia: empty.</summary>
 		public string CommanderName = "";
 
+		// ---- duty ----
+		/// <summary>
+		/// In reserve (demobilized): the record keeps its name, grade, gear and veteran status, but the soldier has no body, takes no orders, draws no wage and holds no
+		/// command points until he is recalled. Distinct from <see cref="StoodDown"/>, which is still on the books at half pay. Saved and synced; off for old saves.
+		/// </summary>
+		public bool Reserve;
+
 		// ---- pay ----
 		public int DaysUnpaid;
 		public bool StoodDown;
@@ -84,9 +91,13 @@ namespace Levy.Common.Soldiers
 		/// <summary>Max mana: base + mana crystals, held under the world's cap (raised by the Guide to the Arcane Arts).</summary>
 		public int MaxMana => Math.Min(RawMana, GuideSystem.ManaCap);
 
+		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
+		public static int AccessorySlotsFor(Grade grade) => Math.Min(LevyConstants.GradeSlots[(int)grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
 		/// <summary>Accessory slots: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
-		public int AccessorySlots => Math.Min(LevyConstants.GradeSlots[(int)Grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
+		public int AccessorySlots => AccessorySlotsFor(Grade);
 		public int CommandPointCost => Kind == SoldierKind.Militia ? 1 : LevyConstants.GradeCpCost[(int)Grade];
+		/// <summary>Command points this soldier occupies right now: <see cref="CommandPointCost"/>, or none while he is in reserve.</summary>
+		public int CommandPointsHeld => Reserve ? 0 : CommandPointCost;
 		public string RankPrefix => Veteran ? "Sgt." : "Pvt.";
 
 		/// <summary>Compact snapshot for clients (UI): identity, grade, hp, pay state, order, home, gear visual.</summary>
@@ -94,7 +105,7 @@ namespace Levy.Common.Soldiers
 		{
 			w.Write(Id); w.Write(Name ?? ""); w.Write((byte)Kind); w.Write((byte)Grade); w.Write((byte)Temperament); w.Write(Veteran);
 			w.Write(LifeCrystals); w.Write(LifeFruit); w.Write(ManaCrystals); w.Write(CurrentHp); w.Write(Kills); w.Write(BossFightsSurvived);
-			w.Write(HomeBarracksId); w.Write(CommanderName ?? ""); w.Write(DaysUnpaid); w.Write(StoodDown); w.Write((byte)Order); w.Write(HoldFire); w.Write(SpreadOut); w.Write(LoadoutLocked);
+			w.Write(HomeBarracksId); w.Write(CommanderName ?? ""); w.Write(DaysUnpaid); w.Write(StoodDown); w.Write((byte)Order); w.Write(HoldFire); w.Write(SpreadOut); w.Write(LoadoutLocked); w.Write(Reserve);
 			w.Write(Mutinous); w.Write(WageOwed); w.Write(WageLooted);
 			w.Write(Dead); w.Write(RespawnTimer); w.Write(Fear);
 			w.Write(Hair); w.Write(SkinVariant); w.Write(Male);
@@ -107,7 +118,7 @@ namespace Levy.Common.Soldiers
 			var s = new SoldierRecord();
 			s.Id = r.ReadInt32(); s.Name = r.ReadString(); s.Kind = (SoldierKind)r.ReadByte(); s.Grade = (Grade)r.ReadByte(); s.Temperament = (Temperament)r.ReadByte(); s.Veteran = r.ReadBoolean();
 			s.LifeCrystals = r.ReadInt32(); s.LifeFruit = r.ReadInt32(); s.ManaCrystals = r.ReadInt32(); s.CurrentHp = r.ReadInt32(); s.Kills = r.ReadInt32(); s.BossFightsSurvived = r.ReadInt32();
-			s.HomeBarracksId = r.ReadInt32(); s.CommanderName = r.ReadString(); s.DaysUnpaid = r.ReadInt32(); s.StoodDown = r.ReadBoolean(); s.Order = (SoldierOrder)r.ReadByte(); s.HoldFire = r.ReadBoolean(); s.SpreadOut = r.ReadBoolean(); s.LoadoutLocked = r.ReadBoolean();
+			s.HomeBarracksId = r.ReadInt32(); s.CommanderName = r.ReadString(); s.DaysUnpaid = r.ReadInt32(); s.StoodDown = r.ReadBoolean(); s.Order = (SoldierOrder)r.ReadByte(); s.HoldFire = r.ReadBoolean(); s.SpreadOut = r.ReadBoolean(); s.LoadoutLocked = r.ReadBoolean(); s.Reserve = r.ReadBoolean();
 			s.Mutinous = r.ReadBoolean(); s.WageOwed = r.ReadInt64(); s.WageLooted = r.ReadInt64();
 			s.Dead = r.ReadBoolean(); s.RespawnTimer = r.ReadInt32(); s.Fear = r.ReadSingle();
 			s.Hair = r.ReadInt32(); s.SkinVariant = r.ReadInt32(); s.Male = r.ReadBoolean();
@@ -123,7 +134,7 @@ namespace Levy.Common.Soldiers
 				["id"] = Id, ["name"] = Name, ["kind"] = (byte)Kind, ["grade"] = (byte)Grade, ["temp"] = (byte)Temperament, ["vet"] = Veteran,
 				["lc"] = LifeCrystals, ["lf"] = LifeFruit, ["mc"] = ManaCrystals, ["hp"] = CurrentHp, ["mana"] = Mana, ["kills"] = Kills, ["bosses"] = BossFightsSurvived,
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
-				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid,
+				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid, ["reserve"] = Reserve,
 				["mutiny"] = Mutinous, ["owed"] = WageOwed, ["looted"] = WageLooted,
 				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
@@ -141,7 +152,7 @@ namespace Levy.Common.Soldiers
 				LifeCrystals = t.GetInt("lc"), LifeFruit = t.GetInt("lf"), ManaCrystals = t.GetInt("mc"), CurrentHp = t.GetInt("hp"), Mana = t.GetInt("mana"),
 				Kills = t.GetInt("kills"), BossFightsSurvived = t.GetInt("bosses"),
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
-				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"),
+				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"), Reserve = t.GetBool("reserve"),
 				Mutinous = t.GetBool("mutiny"), WageOwed = t.GetLong("owed"), WageLooted = t.GetLong("looted"),
 				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
 				PatrolA = new Point16(t.GetInt("pAX"), t.GetInt("pAY")), PatrolB = new Point16(t.GetInt("pBX"), t.GetInt("pBY")),

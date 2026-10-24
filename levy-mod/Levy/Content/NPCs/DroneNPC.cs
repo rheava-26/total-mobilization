@@ -498,6 +498,7 @@ namespace Levy.Content.NPCs
 		public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (!IsBound || Main.dedServ) return false; // nothing to show until the sync says what it carries
+			global::Levy.Common.Util.HangWatch.DrawEnter(3); // watchdog breadcrumb: a frame stall here = a combat drone's sprite draw
 			try
 			{
 				int borrowed = D.DrawNpcType;
@@ -522,6 +523,7 @@ namespace Levy.Content.NPCs
 				Levy.Instance.Logger.Warn("Levy: drawing a combat drone failed: " + e.Message);
 				return false;
 			}
+			finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 		}
 
 		/// <summary>The mounted weapon, hung under the body and turned to its aim (kept upright when aiming left).</summary>

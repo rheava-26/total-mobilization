@@ -34,7 +34,7 @@ namespace Levy.Common.Util
 
 		/// <summary>0 = not inside an instrumented Levy draw; else which heavy Levy draw the render thread entered last and has not left (see <see cref="DrawName"/>). Set at entry, cleared at exit; a hang skips the exit, so on a frame stall this names the stuck Levy draw — or reads 0, which rules Levy's own draw out.</summary>
 		internal static volatile int DrawMark;
-		/// <summary>A heavy Levy draw is starting (<paramref name="code"/> 1 = map markers, 2 = a soldier's sprite). Cheap; cleared by <see cref="DrawExit"/>.</summary>
+		/// <summary>A heavy Levy draw is starting (<paramref name="code"/> 1 = map markers, 2 = a soldier's sprite, 3 = a combat drone's sprite). Cheap; cleared by <see cref="DrawExit"/>.</summary>
 		public static void DrawEnter(int code) => DrawMark = code;
 		/// <summary>The heavy Levy draw finished.</summary>
 		public static void DrawExit() => DrawMark = 0;
@@ -42,6 +42,7 @@ namespace Levy.Common.Util
 		{
 			1 => "Levy map markers",
 			2 => "a Levy soldier's sprite (PlayerRenderer.DrawPlayer — runs any modded armor/accessory draw layers the soldier wears)",
+			3 => "a Levy combat drone's sprite (a borrowed NPC frame + the mounted weapon's item sprite — light; no player-render)",
 			_ => "none (NOT inside a Levy draw — so a non-Levy draw, another mod, or vanilla)",
 		};
 

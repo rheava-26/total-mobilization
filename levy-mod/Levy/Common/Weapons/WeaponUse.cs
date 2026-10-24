@@ -300,7 +300,7 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
 			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback);
-			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
+			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, knockback);
 			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
 
 			if (ConsumesAmmo(s, item, pouch))
@@ -313,7 +313,7 @@ namespace Levy.Common.Weapons
 					s.NPC.netUpdate = true;
 				}
 			}
-			FinishUse(s, item, vel);
+			FinishUse(s, item, SkyDrop.HeldAim(item, muzzle, target, vel)); // the Daedalus Stormbow and Blood Rain Bow are held pointing at the sky their arrows fall from
 			return true;
 		}
 
@@ -347,12 +347,19 @@ namespace Levy.Common.Weapons
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack);
 			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
 		}
+
+		/// <summary>
+		/// The manual shot, for when the real Shoot pipeline is off or spawned nothing: a sky-drop weapon rains onto the target (<see cref="SkyDrop"/>), anything else fires the profile's
+		/// (multishot) volley from the muzzle. Returns whether something spawned.
+		/// </summary>
+		private static bool FirePlain(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback) =>
+			SkyDrop.TryFire(s, item, profile, target, muzzle, vel, projType, damage, knockback) || FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
 
 		/// <summary>Fires the manual (multishot) volley and returns how many projectiles actually spawned.</summary>
 		private static int FireSpread(SoldierNPC s, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, WeaponProfile profile)
@@ -476,60 +483,12 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
-		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: the weapon's hard-coded vanilla special, else the (multishot) default.</summary>
+		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: a sky-drop weapon's rain, else the weapon's other hard-coded vanilla special, else the (multishot) default.</summary>
 		private static void DefaultShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int damage, float knockback)
 		{
+			if (SkyDrop.TryFire(s, item, profile, target, pos, vel, type, damage, knockback)) return;
 			if (ItemShots.TryShoot(s, item, profile, target, pos, vel, type, damage, knockback)) return;
-			if (item.type == ItemID.DaedalusStormbow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, DaedalusCount(type), 201, 100, 150f, false, 40, 0.03f, 75, 150)) return;
-			if (item.type == ItemID.BloodRainBow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, BloodRainCount(), 61, 30, 150f, true, 20, 0.03f, 55, 80)) return;
 			FireSpread(s, pos, vel, type, damage, knockback, profile);
-		}
-
-		private static int DaedalusCount(int type)
-		{
-			int n = 3;
-			if (ProjectileID.Sets.FiresFewerFromDaedalusStormbow[type]) { if (Main.rand.NextBool(3)) n--; }
-			else if (Main.rand.NextBool(3)) n++;
-			return n;
-		}
-
-		private static int BloodRainCount()
-		{
-			int n = Main.rand.Next(1, 3);
-			if (Main.rand.NextBool(3)) n++;
-			return n;
-		}
-
-		/// <summary>
-		/// Vanilla's "arrows rain from the sky onto the cursor" shot (Daedalus Stormbow, Blood Rain Bow) with the target standing in for the cursor.
-		/// Returns false (so a plain shot is fired) when the sky above the soldier is blocked and the rain could not reach the target.
-		/// </summary>
-		private static bool RainShot(SoldierNPC s, WeaponProfile profile, NPC target, float speed, int type, int damage, float knockback, int count,
-			int spreadX, int jitterX, float stepY, bool randomStep, int velJitter, float velJitterScale, int mulMinPct, int mulMaxPct)
-		{
-			Vector2 c = s.NPC.Center;
-			int dir = s.NPC.direction == 0 ? 1 : s.NPC.direction;
-			Vector2 aim = target.Center;
-			if (speed < 1f) speed = 1f;
-			// need open sky above the soldier for the arrows to start from
-			if (!Collision.CanHitLine(c, 0, 0, c + new Vector2(0f, -600f), 0, 0)) return false;
-			for (int k = 0; k < count; k++)
-			{
-				var origin = new Vector2(aim.X + s.NPC.width * 0.5f + Main.rand.Next(spreadX) * -dir, c.Y - 600f);
-				origin.X = (origin.X * 10f + c.X) / 11f + Main.rand.Next(-jitterX, jitterX + 1);
-				origin.Y -= randomStep ? stepY * Main.rand.NextFloat() : stepY * k;
-				float vx = aim.X - origin.X, vy = aim.Y - origin.Y;
-				if (vy < 0f) vy = -vy;
-				if (vy < 20f) vy = 20f;
-				float scale = speed / (float)Math.Sqrt(vx * vx + vy * vy);
-				vx *= scale; vy *= scale;
-				float fx = vx + Main.rand.Next(-velJitter, velJitter + 1) * velJitterScale;
-				float fy = vy + Main.rand.Next(-40, 41) * velJitterScale;
-				fx *= Main.rand.Next(mulMinPct, mulMaxPct) * 0.01f;
-				origin.X += Main.rand.Next(-50, 51);
-				Spawn(s, origin, new Vector2(fx, fy), type, damage, knockback, profile.DamageType);
-			}
-			return true;
 		}
 
 		/// <summary>Lead, ballistics and grade error for a shot of <paramref name="projType"/>. Homing ammo flies straight at the target.</summary>
@@ -557,11 +516,20 @@ namespace Levy.Common.Weapons
 				float t = MathHelper.Clamp(Vector2.Distance(muzzle, targetPos) / leadSpeed, 0f, LevyConstants.AimMaxLeadTicks);
 				lead = targetVel * t;
 			}
-			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, targetPos));
-			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
-			float jitter = LevyConstants.GradeAimJitterDeg[grade] * errMult;
-			float leadErr = LevyConstants.GradeLeadError[grade] * errMult;
+			GradeError(s, muzzle, targetPos, out float jitter, out float leadErr);
 			return Aiming.ApplyError(vel, jitter, leadErr, lead, muzzle, targetPos);
+		}
+
+		/// <summary>
+		/// The soldier's aim error for a shot at <paramref name="targetPos"/> from <paramref name="from"/>: the grade's angle jitter (degrees) and lead error (fraction of the lead), scaled by
+		/// <see cref="AimErrorMultiplier"/> and eased at long range. Feed both to <see cref="Aiming.ApplyError(Vector2, float, float, Vector2, Vector2, Vector2)"/>.
+		/// </summary>
+		internal static void GradeError(SoldierNPC s, Vector2 from, Vector2 targetPos, out float jitterDeg, out float leadError)
+		{
+			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(from, targetPos));
+			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
+			jitterDeg = LevyConstants.GradeAimJitterDeg[grade] * errMult;
+			leadError = LevyConstants.GradeLeadError[grade] * errMult;
 		}
 
 		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65. Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
@@ -797,7 +765,8 @@ namespace Levy.Common.Weapons
 				if (item.type == ItemID.IceSickle) damage = Math.Max(1, (int)(damage * 0.67)); // Player.ItemCheck_Shoot: totalDamage * 0.67
 				Vector2 vel = Aiming.SolveIntercept(s.NPC.Center, speed, target.Center, target.velocity, WeaponClassifier.ProjectileHasGravity(item.shoot), LevyConstants.ArrowGravity, LevyConstants.ArrowGravityDelayTicks);
 				DamageClass beamType = item.DamageType ?? DamageClass.Melee;
-				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
+				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack)
+					&& !SkyDrop.TryFire(s, item, profile, target, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
 					Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, beamType);
 			}
 			// Night's Edge family: the held slash stays a swing hitbox; the one beam that flies on its own velocity (Terra Blade) is launched from the soldier.

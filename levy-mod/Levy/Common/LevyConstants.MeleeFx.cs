@@ -13,10 +13,6 @@ namespace Levy.Common
 		public const float BreakerBladeBonus = 2.5f;
 		public const float BreakerBladeHealthFraction = 0.9f;
 
-		/// <summary>Starfury: stars fall from this far above the target and hit this much harder.</summary>
-		public const float StarfuryDropHeightPx = 600f;
-		public const float StarfuryDamageFactor = 1.5f;
-		public const int StarfuryDropSpreadPx = 200;
 		/// <summary>Light's Bane slash: damage fraction (doubled first on a crit) and the pixel range in which it picks the target.</summary>
 		public const float LightsBaneDamageFactor = 0.5f;
 		/// <summary>Blade of Grass vine: damage fraction, and the radius in which a target is homed on.</summary>

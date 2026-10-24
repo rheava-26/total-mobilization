@@ -17,6 +17,7 @@ namespace Levy.Common.Officers
 	/// <see cref="OfficerWeapon"/>), and his kit is the trade: soldiers near him are handed the basic stock they can use (ammo for the weapon in hand, a potion if they would
 	/// drink one) and kept under a small Morale lift, while <see cref="MerchantFenceGlobalNPC"/> fences the loot of every kill that falls near him into the treasury.
 	/// </summary>
+	/// <remarks>DEFERRED (net-new, not built): selling to him on the march, i.e. opening his shop from the line.</remarks>
 	public static class MerchantOfficer
 	{
 		public static OfficerDef Create() => new OfficerDef

@@ -57,10 +57,11 @@ namespace Levy.Common.Officers
 
 		public override object CreateState() => new State();
 
-		// {0} reach in tiles, {1} the floor: he rerolls until the prefix is in the top this-percent of what the weapon can roll, {2} rolls he spends on one weapon per visit, {3} Levy wages he leaves in the treasury
+		// {0} reach in tiles, {1} seconds between his visits (one soldier a visit), {2} most rerolls he spends on one weapon a visit,
+		// {3} the floor: he rerolls until the prefix is in the top this-percent of what the weapon can roll, {4} Levy wages he leaves in the treasury
 		public override object[] DescriptionArgs => new object[]
 		{
-			GoblinReforgeRadiusTiles, (int)Math.Round(GoblinReforgeTopFraction * 100f), GoblinReforgeRollsPerPulse, GoblinReforgeReserveWages,
+			GoblinReforgeRadiusTiles, GoblinReforgeCadenceTicks / 60, GoblinReforgeRollsPerPulse, (int)Math.Round(GoblinReforgeTopFraction * 100f), GoblinReforgeReserveWages,
 		};
 
 		public override void Tick(OfficerContext ctx)

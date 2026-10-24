@@ -130,18 +130,18 @@ namespace Levy.Common.Officers
 		public static void RegisterAll()
 		{
 			Register(NurseOfficer.Create());
-			Register(GuideOfficer.Create());
+			Register(GuideOfficer.Create());            // frontline: guiding bolt + truer shots and Morale for the soldiers near him
 			Register(AnglerOfficer.Create());
 			Register(PirateOfficer.Create());           // summon officer: fields a flintlock boarding crew
 			// Buff / debuff officers (rebuild)
-			Register(PrincessOfficer.Create());         // army-wide morale aura (soldiers + officers)
-			Register(DryadOfficer.Create());            // AoE shred mark + Thorns/Regeneration aura
-			Register(GoblinTinkererOfficer.Create());   // gear-tune aura + thrown spiky balls
+			Register(PrincessOfficer.Create());         // army-wide Morale aura (soldiers + officers)
+			Register(DryadOfficer.Create());            // AoE shred mark + Dryad's Blessing aura
+			Register(GoblinTinkererOfficer.Create());   // frontline: reforges the army's weapons on the march + thrown spiky balls
 			Register(TaxCollectorOfficer.Create());     // AoE shred mark + coin bounty on a marked kill
 			Register(DemolitionistOfficer.Create());    // frontline: lobbed grenades + a periodic heavy dynamite
-			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + an Archery aura
-			Register(MerchantOfficer.Create());         // frontline: coin gun + a modest treasury trickle
-			Register(PainterOfficer.Create());          // frontline: colorful paint barrage + an inspiration aura
+			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + truer shots and bottomless ammo for the soldiers near him
+			Register(MerchantOfficer.Create());         // frontline: throwing knives + a fence on nearby kills + ammo and potion handouts + a small Morale lift
+			Register(PainterOfficer.Create());          // frontline: colorful paint barrage (no kit)
 		}
 	}
 }

@@ -11,6 +11,7 @@ namespace Levy.Common.Officers
 	/// pokes with a guiding bolt at anything that strays into reach. The accuracy is passive and read shot by shot (<see cref="OfficerSupport"/>); the morale is an
 	/// <see cref="AuraKit"/> keeping the single <see cref="MoraleBuff"/> on everyone in reach.
 	/// </summary>
+	/// <remarks>DEFERRED (net-new, not built): the synchronized volley, where the Guide calls a moment and the soldiers around him fire together.</remarks>
 	public static class GuideOfficer
 	{
 		public static OfficerDef Create() => new OfficerDef

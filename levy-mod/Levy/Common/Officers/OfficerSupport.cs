@@ -20,6 +20,7 @@ namespace Levy.Common.Officers
 		{
 			if (s == null) return 1f;
 			var officers = OfficerSystem.Instance.ActiveBodies;
+			if (officers.Count == 0) return 1f;                      // no officer fielded: a soldier aims exactly as he always did
 			float m = 1f;
 			for (int i = 0; i < officers.Count; i++)
 			{
@@ -37,6 +38,7 @@ namespace Levy.Common.Officers
 		{
 			if (s == null) return false;
 			var officers = OfficerSystem.Instance.ActiveBodies;
+			if (officers.Count == 0) return false;                   // no officer fielded: ammo is spent as it always was
 			for (int i = 0; i < officers.Count; i++)
 			{
 				OfficerBody b = officers[i];

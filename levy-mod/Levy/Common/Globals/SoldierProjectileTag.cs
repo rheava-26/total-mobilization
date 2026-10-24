@@ -30,6 +30,11 @@ namespace Levy.Common.Globals
 		/// Set from the firing body in <see cref="OnSpawn"/>; applied in <see cref="ModifyHitNPC"/> before the strike drops loot.
 		/// </summary>
 		public int CommanderIndex = -1;
+		/// <summary>
+		/// True for a shot (or a fragment of a shot) fired by a combat drone. A drone is not a soldier, so it has no <see cref="SoldierIndex"/>; the blast guard reads this so a drone's
+		/// rocket or grenade, like a soldier's, never eats the player's base. Server / single player only: not synced.
+		/// </summary>
+		public bool DroneShot;
 		/// <summary>Set by the boss rule when this projectile has been redirected at a spite target.</summary>
 		public bool Redirected;
 
@@ -61,6 +66,13 @@ namespace Levy.Common.Globals
 					CommanderIndex = unit.CommanderIndex;
 					projectile.npcProj = true; projectile.noDropItem = true;
 				}
+				else if (npc.ModNPC is DroneNPC drone)
+				{
+					// A combat drone: credits its commander (the nearest player to its Barracks) exactly like a summoned unit's shot, and is marked so its blasts spare the base.
+					CommanderIndex = drone.CommanderIndex;
+					DroneShot = true;
+					projectile.npcProj = true; projectile.noDropItem = true;
+				}
 			}
 			// Anything a soldier's projectile spawns (a sentry's own shots: ballista bolts, fireballs, lightning, hydra breath; Beenade bees, cluster and rocket fragments,
 			// Molotov fire, Stynger shards...) carries the soldier's tag so kills and loot credit the soldier, and is an NPC-style projectile so the commander's
@@ -80,6 +92,7 @@ namespace Levy.Common.Globals
 					projectile.npcProj = true;
 					projectile.noDropItem = true;
 				}
+				if (parentTag.DroneShot) DroneShot = true; // a drone's cluster rocket's fragments are guarded too
 			}
 		}
 

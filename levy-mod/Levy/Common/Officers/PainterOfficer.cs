@@ -5,8 +5,8 @@ using static Levy.Common.LevyConstants.Officer;
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE COLORIST. The Painter is a FRONTLINE officer that marches with the line and looses a colorful, hard-hitting paint barrage at any enemy in
-	/// reach, and whose kit is an <see cref="AuraKit"/> that inspires every friendly unit nearby to strike a little harder.
+	/// THE COLORIST. The Painter is a FRONTLINE officer that marches with the line and looses a colorful, hard-hitting paint barrage at any enemy in reach.
+	/// That is the whole officer: his paint gun is his <see cref="OfficerWeapon"/>, and he has no kit.
 	/// </summary>
 	public static class PainterOfficer
 	{
@@ -27,25 +27,7 @@ namespace Levy.Common.Officers
 				WindUp = Math.Max(1, NPCID.Sets.AttackTime[NPCID.Painter]),
 				RangeTiles = PainterPaintballRangeTiles,
 			},
-			Kit = new PainterKit(),
+			Kit = null,                                  // a fighter with a gun and nothing else: the officer runtime and the menu both treat a null kit as "fights only"
 		};
-	}
-
-	/// <summary>
-	/// The Painter's ability: a buff aura that keeps soldiers AND fellow officers within <see cref="LevyConstants.Officer.PainterAuraRadiusTiles"/>
-	/// tiles inspired (Wrath), refreshed every <see cref="LevyConstants.Officer.PainterAuraCadenceTicks"/> ticks (held steady, never stacked).
-	/// </summary>
-	public sealed class PainterKit : AuraKit
-	{
-		private static readonly int[] _buffs = { BuffID.Wrath };
-
-		protected override int[] BuffTypes => _buffs;
-		protected override int RadiusTiles => PainterAuraRadiusTiles;
-		protected override int DurationTicks => PainterAuraDurationTicks;
-		protected override int CadenceTicks => PainterAuraCadenceTicks;
-		protected override bool IncludeOfficers => true;
-
-		// {0} the aura reach in tiles
-		public override object[] DescriptionArgs => new object[] { PainterAuraRadiusTiles };
 	}
 }

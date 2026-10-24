@@ -35,23 +35,29 @@ namespace Levy.Common.Officers
 			if (ctx.State is not State st) return;
 			if (++st.Timer < CadenceTicks) return;
 			st.Timer = 0;
+			Pulse(ctx.Npc.Center, BuffTypes, RadiusTiles, DurationTicks, IncludeOfficers);
+		}
 
-			int[] buffs = BuffTypes;
+		/// <summary>
+		/// One aura pulse: refresh <paramref name="buffs"/> (for <paramref name="durationTicks"/>) on every friendly unit within <paramref name="radiusTiles"/> of <paramref name="from"/>.
+		/// Public and static so a kit with other duties — the Dryad's mark, the Merchant's handouts — can pulse an aura on its own cadence instead of being an <see cref="AuraKit"/>.
+		/// </summary>
+		public static void Pulse(Vector2 from, int[] buffs, int radiusTiles, int durationTicks, bool includeOfficers)
+		{
 			if (buffs == null || buffs.Length == 0) return;
-			float reach = RadiusTiles * LevyConstants.TilePx;
+			float reach = radiusTiles * LevyConstants.TilePx;
 			float reachSq = reach * reach;
-			Vector2 from = ctx.Npc.Center;
 
 			// The soldier rank and file — the Nurse-style scan (RosterSystem.ActiveBodies keeps officer avatars out on purpose).
 			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
 			{
 				if (s == null || !s.IsAlive) continue;
 				if (Vector2.DistanceSquared(from, s.NPC.Center) > reachSq) continue;
-				Feed(s, buffs);
+				Feed(s, buffs, durationTicks);
 			}
 
 			// Fellow officer avatars, reached only when the aura opts in (the officer module keeps its own live-avatar cache).
-			if (IncludeOfficers)
+			if (includeOfficers)
 			{
 				var officers = OfficerSystem.Instance.ActiveBodies;
 				for (int i = 0; i < officers.Count; i++)
@@ -59,16 +65,16 @@ namespace Levy.Common.Officers
 					SoldierNPC av = officers[i].Avatar;
 					if (av == null || !av.NPC.active || av.NPC.life <= 0) continue;
 					if (Vector2.DistanceSquared(from, av.NPC.Center) > reachSq) continue;
-					Feed(av, buffs);
+					Feed(av, buffs, durationTicks);
 				}
 			}
 		}
 
 		/// <summary>Refresh the aura's buffs on one body and flag its stats for a recompute, so the effect lands rather than showing a dead icon. AddBuff refreshes instead of stacking, and on the server it broadcasts the buff to clients.</summary>
-		private void Feed(SoldierNPC body, int[] buffs)
+		private static void Feed(SoldierNPC body, int[] buffs, int durationTicks)
 		{
 			for (int i = 0; i < buffs.Length; i++)
-				if (buffs[i] > 0) body.NPC.AddBuff(buffs[i], DurationTicks);
+				if (buffs[i] > 0) body.NPC.AddBuff(buffs[i], durationTicks);
 			body.StatsDirty = true;
 		}
 	}

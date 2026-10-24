@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 using Levy.Common.Config;
 using Levy.Common.Dialogue;
 using Levy.Common.Globals;
+using Levy.Common.Officers;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
 using Levy.Content.Projectiles;
@@ -532,7 +533,7 @@ namespace Levy.Common.Weapons
 			leadError = LevyConstants.GradeLeadError[grade] * errMult;
 		}
 
-		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65. Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
+		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65, and every on-duty officer whose accuracy reach covers him (the Arms Dealer ×0.6, the Guide ×0.75 — see <see cref="OfficerSupport"/>). Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
 		public static float AimErrorMultiplier(SoldierNPC s)
 		{
 			float m = 1f;
@@ -540,13 +541,15 @@ namespace Levy.Common.Weapons
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;
 			if (SettlementSystem.Instance != null && SettlementSystem.Instance.BookDiscipline) m *= LevyConstants.DisciplineAimErrorMult;
+			m *= OfficerSupport.AimErrorFactor(s); // exactly 1 with no officer in reach, so an army without them aims as it always did
 			return m;
 		}
 
-		/// <summary>Whether this shot uses up a piece of ammo: not for endless (non-consumable) ammo, and not when a hook or the weapon's own rules spare it.</summary>
+		/// <summary>Whether this shot uses up a piece of ammo: not for endless (non-consumable) ammo, not within reach of an Arms Dealer (bottomless), and not when a hook or the weapon's own rules spare it.</summary>
 		private static bool ConsumesAmmo(SoldierNPC s, Item weapon, Item pouch)
 		{
 			if (!pouch.consumable) return false;
+			if (OfficerSupport.AmmoIsFree(s)) return false; // an Arms Dealer stands close: the pouch never runs down
 			if (AmmoFreeThisShot(s, weapon, pouch)) return false;
 			if (s.Dummy != null)
 			{

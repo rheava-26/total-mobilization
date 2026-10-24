@@ -75,6 +75,19 @@ namespace Levy.Common.Officers
 		/// in reach of its work instead of glued to the commander. Return false for no preference. Server / single player.
 		/// </summary>
 		public virtual bool SupportAnchor(OfficerContext ctx, out Vector2 pos) { pos = default; return false; }
+
+		/// <summary>
+		/// PASSIVE ACCURACY. A kit that makes the soldiers around it shoot straighter returns true with its reach (tiles) and the multiplier on a soldier's aim error
+		/// (below 1 = truer shots). It is read shot by shot through <see cref="OfficerSupport.AimErrorFactor"/>, with no buff and no timer, so it holds the instant the officer
+		/// stands close and ends the instant he falls, is dismissed or goes off duty. Default: no effect.
+		/// </summary>
+		public virtual bool AimSupport(out int radiusTiles, out float errorMult) { radiusTiles = 0; errorMult = 1f; return false; }
+
+		/// <summary>
+		/// PASSIVE AMMO. A kit whose soldiers within the returned reach (tiles) never spend ammo returns true. Read shot by shot through <see cref="OfficerSupport.AmmoIsFree"/>,
+		/// like <see cref="AimSupport"/>. Default: no effect.
+		/// </summary>
+		public virtual bool BottomlessAmmo(out int radiusTiles) { radiusTiles = 0; return false; }
 	}
 
 	/// <summary>Everything a kit needs about the officer it runs for.</summary>

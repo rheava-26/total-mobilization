@@ -32,6 +32,19 @@ namespace Levy.Common.Util
 		/// <summary>The per-frame heartbeat, called on the main thread from a draw hook; the watchdog thread watches it.</summary>
 		internal static void Beat() => Volatile.Write(ref FrameBeat, Stopwatch.GetTimestamp());
 
+		/// <summary>0 = not inside an instrumented Levy draw; else which heavy Levy draw the render thread entered last and has not left (see <see cref="DrawName"/>). Set at entry, cleared at exit; a hang skips the exit, so on a frame stall this names the stuck Levy draw — or reads 0, which rules Levy's own draw out.</summary>
+		internal static volatile int DrawMark;
+		/// <summary>A heavy Levy draw is starting (<paramref name="code"/> 1 = map markers, 2 = a soldier's sprite). Cheap; cleared by <see cref="DrawExit"/>.</summary>
+		public static void DrawEnter(int code) => DrawMark = code;
+		/// <summary>The heavy Levy draw finished.</summary>
+		public static void DrawExit() => DrawMark = 0;
+		internal static string DrawName(int m) => m switch
+		{
+			1 => "Levy map markers",
+			2 => "a Levy soldier's sprite (PlayerRenderer.DrawPlayer — runs any modded armor/accessory draw layers the soldier wears)",
+			_ => "none (NOT inside a Levy draw — so a non-Levy draw, another mod, or vanilla)",
+		};
+
 		internal static string PhaseName(int phase) => phase switch
 		{
 			1 => "pre-update (ambience, entities)",
@@ -167,7 +180,7 @@ namespace Levy.Common.Util
 				? $"Levy watchdog: no frame has been drawn in {stalled:F0}s — {where}"
 				: $"Levy watchdog: the game update has stayed in '{HangWatch.PhaseName(phase)}' for {stalled:F0}s";
 			Mod.Logger.Warn(lead + $" (tick {Main.GameUpdateCount}; {npcs} NPCs, {soldiers} of them soldiers; {projectiles} projectiles). "
-				+ $"Last NPC AI started: type {HangWatch.NpcType} slot {HangWatch.NpcSlot}. Last projectile update started: type {HangWatch.ProjType} slot {HangWatch.ProjSlot}. Brain: {brain}. "
+				+ $"Last NPC AI started: type {HangWatch.NpcType} slot {HangWatch.NpcSlot}. Last projectile update started: type {HangWatch.ProjType} slot {HangWatch.ProjSlot}. Brain: {brain}. Levy draw: {HangWatch.DrawName(HangWatch.DrawMark)}. "
 				+ "Identical lines a few seconds apart mean the thread is stuck in that spot; changing numbers mean a very slow stretch. (A long world save or load can trip this once: ignore it.)");
 		}
 	}

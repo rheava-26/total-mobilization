@@ -221,7 +221,9 @@ namespace Levy.Content.NPCs
 					if (Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
 					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
-					Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f);
+					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
+					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f); }
+					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 					DrawSwordSlash(sb);
 				}
 				finally { sb.End(); }

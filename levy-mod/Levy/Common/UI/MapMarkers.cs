@@ -219,12 +219,17 @@ namespace Levy.Common.UI
 
 			// Each kind of marker is guarded on its own: a broken one must never take the map, the frame or the other markers down with it.
 			// Officers go first so an army marker (and its head-count) is never painted over by an officer's ring; bosses go last, on top of everything.
-			try { GatherOfficers(); DrawOfficers(ref context, in frame, ref text); }
-			catch (Exception e) { Warn("officers", e); }
-			try { GatherArmy(); GatherHeads(ref context, in frame); DrawArmy(ref context, in frame, ref text); }
-			catch (Exception e) { Warn("army", e); }
-			try { GatherBosses(); DrawBosses(ref context, in frame, ref text); }
-			catch (Exception e) { Warn("bosses", e); }
+			global::Levy.Common.Util.HangWatch.DrawEnter(1); // watchdog breadcrumb: a frame stall here = the map-marker draw
+			try
+			{
+				try { GatherOfficers(); DrawOfficers(ref context, in frame, ref text); }
+				catch (Exception e) { Warn("officers", e); }
+				try { GatherArmy(); GatherHeads(ref context, in frame); DrawArmy(ref context, in frame, ref text); }
+				catch (Exception e) { Warn("army", e); }
+				try { GatherBosses(); DrawBosses(ref context, in frame, ref text); }
+				catch (Exception e) { Warn("bosses", e); }
+			}
+			finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 		}
 
 		private void Warn(string what, Exception e)

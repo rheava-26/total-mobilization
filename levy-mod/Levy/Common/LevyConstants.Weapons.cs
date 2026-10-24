@@ -9,6 +9,8 @@ namespace Levy.Common
 		// ---------- Weapon reach (tiles) ----------
 		/// <summary>Effective engagement range by family: how far a soldier acquires targets and opens fire. Ranged soldiers hold and kite at this reach.</summary>
 		public const int RangeGun = 72, RangeBow = 54, RangeMagic = 40;
+		/// <summary>Zenith engagement range (tiles). Its homing swords strike from across the screen, so the soldier stands off at full-camera range and looses them rather than closing to blade reach. Matches RangeGun, the mod's longest reach.</summary>
+		public const int RangeZenith = 72;
 		/// <summary>Gun and magic soldiers reach this much further than the family numbers above (bows are held back by arrow drop and keep theirs).</summary>
 		public const float RangedRangeMult = 1.15f;
 		/// <summary>Ranged soldiers (gun / bow / magic / thrown / held ranged) pick targets and open fire out to reach x this, a touch past their listed range.</summary>

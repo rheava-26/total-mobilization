@@ -8,7 +8,9 @@
 
 ## 📦 SHIPPED STATUS (2026-10-24)
 
-**Current version: `1.3.5`** on the integration branch `worktree-levy-stardust` (NOT yet merged to `main` — holding for the designer's in-game confirmation, above all the 1.3.3/1.3.4 freeze verdict).
+**Current version: `1.3.5`** on the integration branch `worktree-levy-stardust`. **Levy ships as a `.tmod` from this branch — it does NOT merge to `main`.** `main` belongs to the OTHER project in this repo: `title.html`, the TOTAL MOBILIZATION HTML game (another session, now v4.6). Levy coexists in the same repo on its own branch; the integration branch is its source of truth and the `.tmod` is the deliverable. (Earlier notes here said "holding for a main merge" — that was a misread of the HTML-game's deploy directive; there is no Levy→main step. If the designer ever wants Levy folded into the repo main, that's a deliberate, coordinated merge — ROADMAP.md/CLAUDE.md/title.html would conflict hard — not an auto-deploy.)
+
+**✅✅ THE FREEZE IS CONFIRMED DEAD (designer, 2026-10-24).** "no crash! it went great! We utterly demolished the frost moon! wave 20 with ~6000-8000 points, mowing through every boss." That IS the scenario that used to hard-freeze (Ice Queen + Pumpking mid-moon with the biggest army). The 1.3.3 perf/minion-doorway fix WORKS. The whole crash hunt (5 investigation agents, 3 wrong theories) is closed. **Now unblocked:** `BossesTargetSoldiers` can default ON (the True Eyes fix was gated behind it for crash caution) — offered to the designer as a *scarier-enemy* challenge lever (bosses fight the army back), tenet-#1-aligned, NOT a nerf. Don't flip silently; it's her call.
 
 ## ✅ 1.3.5 (shipped 2026-10-24) — sky-drop weapons + demote/demobilize + map markers (3 parallel tracks, merged clean)
 - **Sky-drop weapons** (`levy-skydrop`, table-driven refactor): Star Wrath now **calls down stars** (was flinging them sideways from the soldier); same for Starfury, Blizzard Staff, Meteor Staff, Lunar Flare, Daedalus Stormbow, Blood Rain Bow. Found 6/7 already existed ad-hoc + 3 bugs (open-sky tested above the soldier not the target → a roof broke it; roofed Meteor fired invisible scale-0 meteors; no target leading). Unified into `SkyDrop.cs` + `LevyConstants.SkyDrop.cs` table. Verified no-regression for the other ~100 weapons (`TryFire`/`HeldAim` no-op off-table). Rain works under a roof (starts above the TARGET) and over walls (thin-ray path beats `CanHitLine`); stars/flares fly through ground. Caveats: bows still need LOS to *decide* to fire; Star Wrath can be high-volume at army scale (no cap, tenet #1).
@@ -91,7 +93,19 @@ Crash cause still UNCONFIRMED in-game (can't repro headless). `levy-crashdiag` b
 - **In-game verification owed** before the `main` merge: officer movement/heal/targeting, guide study + save-reload, logistical-center resize with no item loss, buff-slot drinking, boss-aggro on backfilled bosses.
 - **Steampunker officer — PINNED/unresolved** (what does her kit do? pylons are universal so not that; she sells Clentaminator/Jetpack/Blend-O-Matic/furniture).
 - **More officer kits** — the rest of the town roster (brainstorm captured in the Officers section).
-- **Mechanical guides (post-1.0, design-only so far):** Engineering (turrets), Mechanization (mounts), the Chlorophyte expedition — all PAUSED.
+- **Mechanical guides (post-1.0):** Mechanization (mounts), the Chlorophyte expedition — still PAUSED. **Engineering = NOW ACTIVE (designer pulled it forward 2026-10-24) → see COMBAT DRONES below.**
+
+### 🛩 GUIDE TO ENGINEERING = COMBAT DRONES (active design, 2026-10-24 — discussing, NOT yet building)
+The designer's turret idea, converged this session. **Core = armory-mounted weapon platforms with healthbars** (the "original idea," designer's words):
+- **They MOUNT your Armory weapons** (the Last-Prism-turret dream), NOT a fixed cannon. Reuse the soldier WeaponUse/Armory pipeline, not `SummonedUnitNPC`'s fixed-projectile `Fire()`. ← the real new work.
+- **Only cost = the weapon each one carries** (ties up one armory weapon). NO IC / manpower / command-points / upkeep / hard cap. "i don't want them to cost the player anything beside a weapon." The weapon IS the limiter (as many drones as you have spare weapons).
+- **Healthbars** (reuse `SummonedUnitNPC`'s healthbar/ITargetBody + enemies-target + Nurse-heals — that part is DONE). Destructible, rebuildable, medic-sustainable.
+- **DRONES, not static emplacements** (solves the designer's aesthetic worry: "not sure you could design nice looking turrets if fixed"). Hovering machines — reuse a clean vanilla drone/probe/UFO sprite; reads as automated warfare, fits the theme. Static ground-turret variant = optional later.
+- **Weapon types = RANGED + MAGIC only.** Melee / summon / whips stay on SOLDIERS (mobile wielders use them properly). Don't force every type onto a drone — the drone's identity is a ranged/magic platform. (Designer landed here too: "it'd only really make sense to use ranged or magic weapons.")
+- **PROGRESSION — the key insight:** because a drone mounts YOUR weapon, it AUTO-SCALES (early weapon = weak drone, Last Prism = devastating drone). So **unlock EARLY** (lean: hitting hardmode, or even pre-hardmode) and it stays relevant the whole game. This dissolves the designer's "post-Martian = not enough time to enjoy them" worry. Engineering = an early, easy-to-get unlock, NOT a late tier gate. The weapon tiering does the balancing.
+- **Placement = low/no micro:** auto-garrison around any barracks (zero micro, fortress fantasy) + a **banner item** anchor for forward positions (semi-auto — her idea; drop a banner, drones build up there). The drone auto-pulls the best ranged/magic weapon from the linked Armory (zero weapon-micro too).
+- **OPEN forks for the designer:** (1) drones-led aesthetic OK, or does she also want ground turrets? (2) exact unlock gate (early-hardmode vs pre-hardmode). (3) weapon on a destroyed drone — returns to armory (safe, lean) vs drops (riskier).
+- **Infra reality:** `SummonedUnitNPC` gives healthbar+targeting+Nurse-heal for free, but fires a FIXED projectile — the new work is giving the drone a weapon-from-armory path (port/adapt soldier `WeaponUse`) + a settlement/banner anchor+lifecycle (vs the current officer-owner binding) + the Engineering guide unlock.
 
 ---
 

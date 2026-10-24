@@ -63,11 +63,8 @@ Kit: {
 		Name: Guide
 		Desc:
 			'''
-			Marches with the line and marks the single strongest enemy within {0} tiles.
-			The whole army deals {1}% more damage to the marked enemy, for {2} seconds.
-			Only one enemy carries the mark at a time; it moves to the strongest in reach.
-			Fires a guiding bolt at any enemy that comes close.
-				
+			Marches with the line. Soldiers within {0} tiles aim {1}% truer and fight with Morale: {2}% more damage, {3} more defense and {4}% more critical chance.
+			Fires a guiding bolt at any enemy that strays into reach.
 			'''
 	}
 
@@ -94,7 +91,7 @@ Kit: {
 		Name: Princess
 		Desc:
 			'''
-			Hangs behind the line and lifts the whole army at once. Soldiers and officers within {0} tiles are kept under Ironskin, Wrath, Rage and Endurance together.
+			Hangs behind the line and lifts the whole army's spirits. Soldiers and officers within {0} tiles fight with Morale: {1}% more damage, {2} more defense and {3}% more critical chance.
 			Never fights; the army keeps her safe.
 			'''
 	}
@@ -104,7 +101,7 @@ Kit: {
 		Desc:
 			'''
 			Marks every enemy within {0} tiles with Dryad's Bane. The whole army deals {1}% more damage to each marked enemy.
-			Wraps soldiers within {2} tiles in Thorns and Regeneration.
+			Soldiers within {2} tiles carry Dryad's Blessing: {3} more defense, steady life regeneration, and {4}% of contact damage thrown back at the attacker.
 			Casts from behind the line and never leaves it to chase.
 			'''
 	}
@@ -113,7 +110,8 @@ Kit: {
 		Name: Goblin Tinkerer
 		Desc:
 			'''
-			Marches with the line and tunes the gear of soldiers within {0} tiles, adding damage, crit and defense.
+			Marches with the line. Every {1} seconds he reforges the weapon of one soldier within {0} tiles, rerolling up to {2} times until its modifier is in the top {3}% of what it can roll.
+			Each reroll costs the standard reforge price from the treasury, and he never takes the last {4} soldier wages.
 			Flings spiky balls at any enemy that strays into reach.
 			'''
 	}
@@ -142,7 +140,7 @@ Kit: {
 		Desc:
 			'''
 			Marches with the line, laying down rapid rifle fire on any enemy in reach.
-			Soldiers and officers within {0} tiles gain Archery, striking harder and faster at range.
+			Soldiers within {0} tiles aim {1}% truer and never spend ammo.
 			'''
 	}
 
@@ -150,8 +148,10 @@ Kit: {
 		Name: Merchant
 		Desc:
 			'''
-			Marches with the line, firing a coin gun at any enemy in reach.
-			Every {0} seconds he banks coin into this settlement's treasury.
+			Marches with the line and throws knives at any enemy in reach.
+			Each enemy that dies within {0} tiles of him adds {1}% of its coin value to the treasury, on top of what it drops.
+			Hands soldiers within {2} tiles basic ammo and potions, paid from the treasury.
+			Soldiers within {3} tiles fight with Morale.
 			'''
 	}
 
@@ -160,7 +160,6 @@ Kit: {
 		Desc:
 			'''
 			Marches with the line, loosing a colorful paint barrage at any enemy in reach.
-			Soldiers and officers within {0} tiles are inspired, striking a little harder.
 			'''
 	}
 }

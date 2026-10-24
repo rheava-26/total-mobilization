@@ -5,8 +5,9 @@ using static Levy.Common.LevyConstants.Officer;
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE GUNSLINGER. The Arms Dealer is a FRONTLINE officer that marches with the line and lays down a rapid stream of rifle fire, and whose kit
-	/// is an <see cref="AuraKit"/> keeping every friendly unit in reach under Archery — their ranged attacks hit harder and fire faster.
+	/// THE AMMO MAN. The Arms Dealer is a FRONTLINE officer that marches with the line and lays down a rapid stream of rifle fire. His kit is what a gun dealer
+	/// brings to an army: the soldiers near him shoot straighter and never run dry. Both effects are passive and read shot by shot
+	/// (<see cref="OfficerSupport"/>, called from <c>WeaponUse.AimErrorMultiplier</c> and <c>WeaponUse.ConsumesAmmo</c>), so there is no buff to track.
 	/// </summary>
 	public static class ArmsDealerOfficer
 	{
@@ -32,20 +33,19 @@ namespace Levy.Common.Officers
 	}
 
 	/// <summary>
-	/// The Arms Dealer's ability: a buff aura that keeps soldiers AND fellow officers within <see cref="LevyConstants.Officer.ArmsDealerAuraRadiusTiles"/>
-	/// tiles under Archery, refreshed every <see cref="LevyConstants.Officer.ArmsDealerAuraCadenceTicks"/> ticks (held steady, never stacked).
+	/// The Arms Dealer's ability: every soldier within <see cref="ArmsDealerSupplyRadiusTiles"/> tiles has his aim error multiplied by <see cref="ArmsDealerAimErrorMult"/>
+	/// (tighter spread, truer lead) and spends no ammo. There is nothing to run on a tick: the weapon code asks <see cref="AimSupport"/> and <see cref="BottomlessAmmo"/>
+	/// whenever a soldier fires.
 	/// </summary>
-	public sealed class ArmsDealerKit : AuraKit
+	public sealed class ArmsDealerKit : OfficerKit
 	{
-		private static readonly int[] _buffs = { BuffID.Archery };
+		// {0} reach in tiles, {1} how much less aim error a soldier in reach has (percent)
+		public override object[] DescriptionArgs => new object[] { ArmsDealerSupplyRadiusTiles, (int)Math.Round((1f - ArmsDealerAimErrorMult) * 100f) };
 
-		protected override int[] BuffTypes => _buffs;
-		protected override int RadiusTiles => ArmsDealerAuraRadiusTiles;
-		protected override int DurationTicks => ArmsDealerAuraDurationTicks;
-		protected override int CadenceTicks => ArmsDealerAuraCadenceTicks;
-		protected override bool IncludeOfficers => true;
+		public override bool AimSupport(out int radiusTiles, out float errorMult) { radiusTiles = ArmsDealerSupplyRadiusTiles; errorMult = ArmsDealerAimErrorMult; return true; }
 
-		// {0} the aura reach in tiles
-		public override object[] DescriptionArgs => new object[] { ArmsDealerAuraRadiusTiles };
+		public override bool BottomlessAmmo(out int radiusTiles) { radiusTiles = ArmsDealerSupplyRadiusTiles; return true; }
+
+		public override void Tick(OfficerContext ctx) { }
 	}
 }

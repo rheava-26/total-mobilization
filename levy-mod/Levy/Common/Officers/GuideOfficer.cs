@@ -1,21 +1,17 @@
 using System;
-using Microsoft.Xna.Framework;
-using Terraria;
 using Terraria.ID;
-using Levy.Common.Boss;
-using Levy.Common.Mark;
-using Levy.Common.Util;
+using Terraria.ModLoader;
+using Levy.Content.Buffs;
 using static Levy.Common.LevyConstants.Officer;
 
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE SPOTTER, and the proof of the army-wide mark. The Guide is a FRONTLINE officer that marches with the line and calls the army's fire
-	/// onto one enemy at a time: every cadence it finds the single strongest hostile in reach — a boss, or whatever has the most max life — and
-	/// hangs the SHRED mark on it, so the whole army deals extra damage there until a tougher target appears or the mark lapses. It also pokes with
-	/// a guiding bolt at anything that strays into reach. The mark and its amp live in <see cref="Levy.Common.Mark.MarkSystem"/> and
-	/// <see cref="Levy.Common.Mark.MarkAmpGlobalNPC"/>; this officer is just the hand that calls the shot.
+	/// THE GUIDE. A FRONTLINE officer that marches with the line and steadies the soldiers around him: they shoot straighter, and they fight with Morale. He also
+	/// pokes with a guiding bolt at anything that strays into reach. The accuracy is passive and read shot by shot (<see cref="OfficerSupport"/>); the morale is an
+	/// <see cref="AuraKit"/> keeping the single <see cref="MoraleBuff"/> on everyone in reach.
 	/// </summary>
+	/// <remarks>DEFERRED (net-new, not built): the synchronized volley, where the Guide calls a moment and the soldiers around him fire together.</remarks>
 	public static class GuideOfficer
 	{
 		public static OfficerDef Create() => new OfficerDef
@@ -25,7 +21,7 @@ namespace Levy.Common.Officers
 			CostMult = GuideCostMult,
 			Aggro = GuideAggro,
 			Posture = OfficerPosture.Frontline,          // marches with the army and fights what comes in reach
-			// The guiding bolt: a bright, straight shard thrown at whatever strays into reach. The call for fire (the mark) is the kit's job, not this.
+			// The guiding bolt: a bright, straight shard thrown at whatever strays into reach.
 			Weapon = new OfficerWeapon
 			{
 				Projectile = ProjectileID.SapphireBolt,
@@ -39,63 +35,25 @@ namespace Levy.Common.Officers
 	}
 
 	/// <summary>
-	/// The Guide's ability: every <see cref="GuideMarkCadenceTicks"/> it picks the single strongest hostile within <see cref="GuideMarkRangeTiles"/>
-	/// (a boss always outranks a mob; otherwise the highest max life) and hangs the SHRED mark on it for <see cref="GuideMarkDurationTicks"/>. Only one
-	/// enemy carries the mark at a time: taking a new target pulls the mark off the last one. The mark is a real debuff, so it ticks down on its own and
-	/// vanishes with the enemy — there is no state to leak.
+	/// The Guide's ability: every soldier within <see cref="GuideAuraRadiusTiles"/> tiles has his aim error multiplied by <see cref="GuideAimErrorMult"/> (the accuracy,
+	/// via <see cref="AimSupport"/>) and is kept under Morale (the aura, refreshed every pulse and never stacked). Soldiers and fellow officers both feel the morale.
 	/// </summary>
-	public sealed class GuideKit : OfficerKit
+	public sealed class GuideKit : AuraKit
 	{
-		private sealed class State
-		{
-			public int Timer;
-			/// <summary>NPC slot of the enemy currently marked, or -1. Only used to pull the old mark when switching; the live enemy is re-checked first.</summary>
-			public int MarkedIndex = -1;
-		}
+		private int[] _buffs;
 
-		public override object CreateState() => new State();
+		protected override int[] BuffTypes => _buffs ??= new[] { ModContent.BuffType<MoraleBuff>() };
+		protected override int RadiusTiles => GuideAuraRadiusTiles;
+		protected override int DurationTicks => GuideAuraDurationTicks;
+		protected override int CadenceTicks => GuideAuraCadenceTicks;
+		protected override bool IncludeOfficers => true;
 
-		// {0} reach in tiles, {1} damage the army adds (percent), {2} seconds the mark lasts
+		public override bool AimSupport(out int radiusTiles, out float errorMult) { radiusTiles = GuideAuraRadiusTiles; errorMult = GuideAimErrorMult; return true; }
+
+		// {0} reach in tiles, {1} how much less aim error a soldier in reach has (percent), {2} damage added (percent), {3} defense added, {4} crit chance added (points)
 		public override object[] DescriptionArgs => new object[]
 		{
-			(int)GuideMarkRangeTiles, (int)MarkDamagePct, GuideMarkDurationTicks / 60,
+			GuideAuraRadiusTiles, (int)Math.Round((1f - GuideAimErrorMult) * 100f), (int)Math.Round(MoraleDamage * 100f), MoraleDefense, (int)Math.Round(MoraleCrit),
 		};
-
-		public override void Tick(OfficerContext ctx)
-		{
-			if (ctx.State is not State st) return;
-			NPC guide = ctx.Npc;
-			if (++st.Timer < GuideMarkCadenceTicks) return;
-			st.Timer = 0;
-
-			NPC prey = StrongestInReach(guide.Center, GuideMarkRangeTiles * LevyConstants.TilePx);
-			if (prey == null) return;                          // nothing to call fire on: the old mark simply lapses
-
-			// one target at a time: when the strongest has changed, pull the mark off the previous enemy first
-			if (st.MarkedIndex >= 0 && st.MarkedIndex < Main.maxNPCs && st.MarkedIndex != prey.whoAmI)
-			{
-				NPC old = Main.npc[st.MarkedIndex];
-				if (old.active) MarkSystem.Unmark(old);
-			}
-
-			MarkSystem.Mark(prey, GuideMarkDurationTicks);     // (re)hang the mark on the strongest — refreshes it when the target is unchanged
-			st.MarkedIndex = prey.whoAmI;
-			guide.direction = prey.Center.X < guide.Center.X ? -1 : 1; guide.spriteDirection = guide.direction;
-		}
-
-		/// <summary>The single strongest hostile within <paramref name="reach"/> of <paramref name="from"/>: a boss (or boss part) always wins, else the highest max life. Null when none is in reach.</summary>
-		private static NPC StrongestInReach(Vector2 from, float reach)
-		{
-			NPC best = null; long bestScore = long.MinValue;
-			for (int i = 0; i < Main.maxNPCs; i++)
-			{
-				NPC n = Main.npc[i];
-				if (!n.active || !LevyUtil.IsHostileTarget(n)) continue;
-				if (Vector2.Distance(from, n.Center) > reach) continue;
-				long score = n.lifeMax + ((n.boss || BossRule.IsMainBoss(n)) ? GuideBossPriorityScore : 0L);
-				if (score > bestScore) { bestScore = score; best = n; }
-			}
-			return best;
-		}
 	}
 }

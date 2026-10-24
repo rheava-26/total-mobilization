@@ -12,6 +12,7 @@ using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Levy.Content.Buffs;
 
 namespace Levy.Content.NPCs
 {
@@ -201,6 +202,10 @@ namespace Levy.Content.NPCs
 		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds..</summary>
 		private static int ApplyBuffEffect(Player d, int buffType)
 		{
+			// The mod's own buffs: their types are assigned at load, so they cannot be switch cases and are matched by type here, ahead of the vanilla switch.
+			if (buffType == ModContent.BuffType<MoraleBuff>()) { MoraleBuff.Apply(d); return 0; }                      // Princess / Guide / Merchant: damage + defense + crit
+			if (buffType == ModContent.BuffType<DryadsBlessingBuff>()) return DryadsBlessingBuff.Apply(d);              // Dryad: defense + thorns + regeneration
+
 			switch (buffType)
 			{
 				case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
@@ -212,12 +217,12 @@ namespace Levy.Content.NPCs
 				case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
 				case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
 				case BuffID.AmmoReservation: d.ammoPotion = true; break;
-				case BuffID.Archery: d.archery = true; d.GetDamage(DamageClass.Ranged) += LevyConstants.Officer.ArmsDealerArcheryRangedDamage; break; // vanilla Archery only speeds arrows; extend it to all ranged weapons so the Arms Dealer's aura lifts gun soldiers too
+				case BuffID.Archery: d.archery = true; d.GetDamage(DamageClass.Ranged) += LevyConstants.Officer.ArcheryRangedDamage; break; // vanilla Archery only speeds arrows; extend it to all ranged weapons so an Archery potion lifts gun soldiers too
 				case BuffID.Summoning: d.maxMinions++; break;
 				case BuffID.WellFed: return ApplyWellFed(d, 1);  // Well Fed
 				case BuffID.WellFed2: return ApplyWellFed(d, 2); // Plenty Satisfied
 				case BuffID.WellFed3: return ApplyWellFed(d, 3); // Exquisitely Stuffed
-				case BuffID.Thorns: d.thorns += LevyConstants.Officer.DryadThornsReflectFrac; break; // Dryad's nature aura: reflect contact damage (capped in ReflectThorns)
+				case BuffID.Thorns: d.thorns += LevyConstants.Officer.DryadThornsReflectFrac; break; // the Thorns potion: reflect contact damage (capped in ReflectThorns)
 			}
 			return 0;
 		}

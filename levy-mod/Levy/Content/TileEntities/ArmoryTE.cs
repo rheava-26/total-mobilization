@@ -1223,43 +1223,97 @@ namespace Levy.Content.TileEntities
 				for (int i = 0; i < arr.Length; i++)
 				{
 					var item = arr[i];
-					if (!IsReforgeable(item)) continue;
-					if (!ContentSamples.ItemsByType.TryGetValue(item.type, out var sample) || sample == null) continue;
-					var scores = LearnPrefixScores(sample);
-					if (scores.Length == 0) continue;
-					double threshold = FloorThreshold(scores, frac) - 1e-6;
-					double bestScore = PrefixQuality(item, sample);
-					if (bestScore >= threshold) continue;
+					if (!BelowFloor(item, frac, out var sample, out double threshold, out double startScore)) continue;
 					if (res.RanDry) { res.Short++; continue; }
 
-					Item best = item, current = item;
-					bool reached = false, rolled = false;
-					int rolls = 0;
-					while (rolls < LevyConstants.UI.ReforgeMaxRollsPerWeapon)
-					{
-						long price = ReforgePrice(current);
-						if (!EconomySystem.TryPay(payer, price)) { res.RanDry = true; break; }
-						res.Spent += price;
-						res.Rolls++; rolls++; rolled = true;
-						var trial = current.Clone();
-						ItemLoader.PreReforge(trial);
-						trial.ResetPrefix();
-						trial.Prefix(-2);
-						ItemLoader.PostReforge(trial);
-						current = trial;
-						double score = PrefixQuality(trial, sample);
-						if (score > bestScore) { best = trial; bestScore = score; }
-						if (score >= threshold) { reached = true; break; }
-					}
-					if (rolled) res.Weapons++;
-					if (!ReferenceEquals(best, item)) { arr[i] = best; changed = true; }
-					if (reached) res.Reached++;
-					else { res.Short++; if (rolls >= LevyConstants.UI.ReforgeMaxRollsPerWeapon) res.Capped++; }
+					var one = RollToFloor(item, sample, threshold, startScore, payer, LevyConstants.UI.ReforgeMaxRollsPerWeapon, 0);
+					res.Spent += one.Spent;
+					res.Rolls += one.Rolls;
+					if (one.RanDry) res.RanDry = true;
+					if (one.Rolls > 0) res.Weapons++;
+					if (!ReferenceEquals(one.Best, item)) { arr[i] = one.Best; changed = true; }
+					if (one.Reached) res.Reached++;
+					else { res.Short++; if (one.Rolls >= LevyConstants.UI.ReforgeMaxRollsPerWeapon) res.Capped++; }
 				}
 			}
 			if (changed) MarkDirty();
 			if (res.Spent > 0) payer.MarkDirty();
 			return res;
+		}
+
+		/// <summary>Outcome of rerolling ONE weapon toward the floor (<see cref="TryReforgeOne"/>).</summary>
+		public struct ReforgeOneResult
+		{
+			/// <summary>The weapon to keep: the original instance when no roll beat it, else the best one rolled (never worse than before).</summary>
+			public Item Best;
+			/// <summary>Paid rolls made and the copper they cost.</summary>
+			public int Rolls;
+			public long Spent;
+			/// <summary>A roll reached the floor.</summary>
+			public bool Reached;
+			/// <summary>The treasury could not afford the next roll (or it would have dipped under the reserve).</summary>
+			public bool RanDry;
+		}
+
+		/// <summary>
+		/// Whether this weapon is worth rerolling toward the floor — it can take a prefix, has prefixes to roll, and sits BELOW the floor — and, if so, what the roll loop needs:
+		/// the item's unprefixed sample, the quality threshold it must reach and the quality it has now. The one check shared by the bulk reforge and the single-weapon reforge.
+		/// </summary>
+		private static bool BelowFloor(Item item, float topFraction, out Item sample, out double threshold, out double score)
+		{
+			threshold = 0; score = 0; sample = null;
+			if (!IsReforgeable(item)) return false;
+			if (!ContentSamples.ItemsByType.TryGetValue(item.type, out sample) || sample == null) return false;
+			var scores = LearnPrefixScores(sample);
+			if (scores.Length == 0) return false;
+			threshold = FloorThreshold(scores, topFraction) - 1e-6;
+			score = PrefixQuality(item, sample);
+			return score < threshold;
+		}
+
+		/// <summary>
+		/// The reroll loop for ONE weapon: pays <see cref="ReforgePrice"/> from <paramref name="payer"/> per roll and rerolls the prefix until it reaches <paramref name="threshold"/>, up to
+		/// <paramref name="maxRolls"/> rolls. A roll is refused when the treasury could not pay for it, or would be left under <paramref name="keepAtLeast"/> copper afterwards (0 = no reserve).
+		/// Keeps the best prefix rolled (never worse than <paramref name="startScore"/>). Does not touch the item passed in: the caller swaps in <see cref="ReforgeOneResult.Best"/>.
+		/// </summary>
+		private static ReforgeOneResult RollToFloor(Item item, Item sample, double threshold, double startScore, BarracksTE payer, int maxRolls, long keepAtLeast)
+		{
+			var r = new ReforgeOneResult { Best = item };
+			Item current = item;
+			double bestScore = startScore;
+			while (r.Rolls < maxRolls)
+			{
+				long price = ReforgePrice(current);
+				if (payer.Treasury - price < keepAtLeast || !EconomySystem.TryPay(payer, price)) { r.RanDry = true; break; }
+				r.Spent += price;
+				r.Rolls++;
+				var trial = current.Clone();
+				ItemLoader.PreReforge(trial);
+				trial.ResetPrefix();
+				trial.Prefix(-2);
+				ItemLoader.PostReforge(trial);
+				current = trial;
+				double score = PrefixQuality(trial, sample);
+				if (score > bestScore) { r.Best = trial; bestScore = score; }
+				if (score >= threshold) { r.Reached = true; break; }
+			}
+			return r;
+		}
+
+		/// <summary>
+		/// Reforge ONE weapon toward a quality floor, paid from <paramref name="payer"/>'s treasury: the per-weapon step of <see cref="ReforgeToFloor"/>, for callers that work a weapon at a time
+		/// (the Goblin Tinkerer, reforging a marching soldier's weapon). <paramref name="topFraction"/> is the floor as a fraction of the prefixes THAT weapon can roll (0.25 = the top quarter; 0 = only the
+		/// best), <paramref name="maxRolls"/> the most paid rolls to spend, <paramref name="keepAtLeast"/> copper the treasury must keep. Returns false (nothing done, <paramref name="result"/>
+		/// empty) when the weapon is not reforgeable or already clears the floor; true when it was below the floor and a reroll was tried — check <see cref="ReforgeOneResult.Rolls"/> (0 = could not
+		/// afford the first) and swap <see cref="ReforgeOneResult.Best"/> in when it is not the instance passed. Does not touch the passed item or mark anything dirty. Server / single player only.
+		/// </summary>
+		public static bool TryReforgeOne(Item item, BarracksTE payer, float topFraction, int maxRolls, long keepAtLeast, out ReforgeOneResult result)
+		{
+			result = default;
+			if (Main.netMode == NetmodeID.MultiplayerClient || payer == null) return false;
+			if (!BelowFloor(item, topFraction, out Item sample, out double threshold, out double score)) return false;
+			result = RollToFloor(item, sample, threshold, score, payer, maxRolls, keepAtLeast);
+			return true;
 		}
 
 		/// <summary>Chat lines telling the player how the bulk reforge went. Server / single player.</summary>

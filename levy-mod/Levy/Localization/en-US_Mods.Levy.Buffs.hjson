@@ -1,0 +1,10 @@
+# Officer buff strings. Keys are relative to Mods.Levy.Buffs. (The Marked buff's strings live in en-US.hjson.)
+MoraleBuff: {
+	DisplayName: Morale
+	Description: Fights with raised spirits: more damage, more defense and more critical hits.
+}
+
+DryadsBlessingBuff: {
+	DisplayName: Dryad's Blessing
+	Description: Gains defense and steady life regeneration, and throws a share of contact damage back at the attacker.
+}

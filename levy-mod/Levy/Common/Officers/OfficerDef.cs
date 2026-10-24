@@ -75,6 +75,19 @@ namespace Levy.Common.Officers
 		/// in reach of its work instead of glued to the commander. Return false for no preference. Server / single player.
 		/// </summary>
 		public virtual bool SupportAnchor(OfficerContext ctx, out Vector2 pos) { pos = default; return false; }
+
+		/// <summary>
+		/// PASSIVE ACCURACY. A kit that makes the soldiers around it shoot straighter returns true with its reach (tiles) and the multiplier on a soldier's aim error
+		/// (below 1 = truer shots). It is read shot by shot through <see cref="OfficerSupport.AimErrorFactor"/>, with no buff and no timer, so it holds the instant the officer
+		/// stands close and ends the instant he falls, is dismissed or goes off duty. Default: no effect.
+		/// </summary>
+		public virtual bool AimSupport(out int radiusTiles, out float errorMult) { radiusTiles = 0; errorMult = 1f; return false; }
+
+		/// <summary>
+		/// PASSIVE AMMO. A kit whose soldiers within the returned reach (tiles) never spend ammo returns true. Read shot by shot through <see cref="OfficerSupport.AmmoIsFree"/>,
+		/// like <see cref="AimSupport"/>. Default: no effect.
+		/// </summary>
+		public virtual bool BottomlessAmmo(out int radiusTiles) { radiusTiles = 0; return false; }
 	}
 
 	/// <summary>Everything a kit needs about the officer it runs for.</summary>
@@ -117,18 +130,18 @@ namespace Levy.Common.Officers
 		public static void RegisterAll()
 		{
 			Register(NurseOfficer.Create());
-			Register(GuideOfficer.Create());
+			Register(GuideOfficer.Create());            // frontline: guiding bolt + truer shots and Morale for the soldiers near him
 			Register(AnglerOfficer.Create());
 			Register(PirateOfficer.Create());           // summon officer: fields a flintlock boarding crew
 			// Buff / debuff officers (rebuild)
-			Register(PrincessOfficer.Create());         // army-wide morale aura (soldiers + officers)
-			Register(DryadOfficer.Create());            // AoE shred mark + Thorns/Regeneration aura
-			Register(GoblinTinkererOfficer.Create());   // gear-tune aura + thrown spiky balls
+			Register(PrincessOfficer.Create());         // army-wide Morale aura (soldiers + officers)
+			Register(DryadOfficer.Create());            // AoE shred mark + Dryad's Blessing aura
+			Register(GoblinTinkererOfficer.Create());   // frontline: reforges the army's weapons on the march + thrown spiky balls
 			Register(TaxCollectorOfficer.Create());     // AoE shred mark + coin bounty on a marked kill
 			Register(DemolitionistOfficer.Create());    // frontline: lobbed grenades + a periodic heavy dynamite
-			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + an Archery aura
-			Register(MerchantOfficer.Create());         // frontline: coin gun + a modest treasury trickle
-			Register(PainterOfficer.Create());          // frontline: colorful paint barrage + an inspiration aura
+			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + truer shots and bottomless ammo for the soldiers near him
+			Register(MerchantOfficer.Create());         // frontline: throwing knives + a fence on nearby kills + ammo and potion handouts + a small Morale lift
+			Register(PainterOfficer.Create());          // frontline: colorful paint barrage (no kit)
 		}
 	}
 }

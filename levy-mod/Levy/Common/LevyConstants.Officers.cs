@@ -1,3 +1,5 @@
+using Terraria.ID;
+
 namespace Levy.Common
 {
 	public static partial class LevyConstants
@@ -117,9 +119,8 @@ namespace Levy.Common
 			public const float TownStrideMaxSpeedPx = 2f;
 
 			// =====================================================================================================
-			// THE GUIDE + the SHRED MARK. The Guide marches with the line and hangs the mark on the single strongest enemy in reach; while
-			// it stands, every army shot (soldiers, their summons, an officer's bolt) lands harder there. The amp lives on the enemy side
-			// (Common/Mark/MarkAmpGlobalNPC); the Guide and its kit live in Common/Officers/GuideOfficer.
+			// THE SHRED MARK. The Dryad and the Tax Collector hang it on enemies in reach; while it stands, every army shot (soldiers, their
+			// summons, an officer's bolt) lands harder there. The amp lives on the enemy side (Common/Mark/MarkAmpGlobalNPC).
 			// =====================================================================================================
 			// ---- the mark (read by MarkAmpGlobalNPC on the enemy side) ----
 			/// <summary>Extra damage the whole army deals to a marked enemy, as a percent. A clean multiplier on final damage, so it stays relevant on bosses.</summary>
@@ -127,21 +128,33 @@ namespace Levy.Common
 			/// <summary>The mark's amp as a fraction (MarkDamagePct / 100). What the amp hook multiplies final damage by, plus one.</summary>
 			public static readonly float MarkDamageFrac = MarkDamagePct / 100f;
 
-			// ---- the Guide's kit ----
-			/// <summary>Commission/wage multiplier for the Guide: a touch pricier than a plain fighter for an army-wide call for fire.</summary>
-			public const float GuideCostMult = 1.3f;
-			/// <summary>Taunt weight. A frontline spotter is not especially loud; enemies weigh it about like a soldier.</summary>
-			public const int GuideAggro = 0;
-			/// <summary>The Guide re-picks the strongest enemy and (re)hangs the mark this often (ticks): every 1.5 s, well inside the mark's life so it reads as continuous.</summary>
-			public const int GuideMarkCadenceTicks = 90;
-			/// <summary>How long one mark lasts if the Guide does not refresh it (ticks): 6 s.</summary>
-			public const int GuideMarkDurationTicks = 6 * 60;
-			/// <summary>How far (tiles) the Guide can designate a target — long enough to tag a boss from the line.</summary>
-			public const float GuideMarkRangeTiles = 42f;
-			/// <summary>Score added so a boss (or a boss part) always outranks a mob for the mark, whatever the raw max-life numbers are.</summary>
-			public const long GuideBossPriorityScore = 1_000_000_000L;
+			// =====================================================================================================
+			// MORALE — the ONE morale buff (Content/Buffs/MoraleBuff) that the Princess, the Guide and the Merchant keep on the army. A single icon
+			// folding damage + defense + crit. It refreshes rather than stacks, so a soldier standing in two morale auras still carries exactly one.
+			// Read by SoldierNPC.ApplyBuffEffect through MoraleBuff.Apply.
+			// =====================================================================================================
+			/// <summary>Damage Morale adds, as a fraction (0.12 = +12%).</summary>
+			public const float MoraleDamage = 0.12f;
+			/// <summary>Defense Morale adds.</summary>
+			public const int MoraleDefense = 10;
+			/// <summary>Critical-hit chance Morale adds, in percentage points.</summary>
+			public const float MoraleCrit = 10f;
 
-			// ---- the Guide's guiding bolt (its own OfficerWeapon; the mark is the real payload, this is just a poke) ----
+			// ---- the Guide (accuracy + a Morale aura; the guiding bolt is his own OfficerWeapon) ----
+			/// <summary>Commission/wage multiplier for the Guide: a touch pricier than a plain fighter for an army-wide accuracy and morale aura.</summary>
+			public const float GuideCostMult = 1.3f;
+			/// <summary>Taunt weight. A frontline guide is not especially loud; enemies weigh it about like a soldier.</summary>
+			public const int GuideAggro = 0;
+			/// <summary>Soldiers within this many tiles of the Guide shoot straighter AND are kept under Morale: one reach for both.</summary>
+			public const int GuideAuraRadiusTiles = 20;
+			/// <summary>Ticks each Morale application lasts — refreshed every pulse, so it holds at this and never stacks. Longer than the cadence so it never lapses.</summary>
+			public const int GuideAuraDurationTicks = 300;
+			/// <summary>Ticks between Morale pulses (re-feeds once a second).</summary>
+			public const int GuideAuraCadenceTicks = 60;
+			/// <summary>Multiplier on the aim error (angle jitter + lead error) of every soldier in reach: 0.75 = 25% truer shots. Multiplies with Veteran, the Discipline book and the Arms Dealer's, so officers stack.</summary>
+			public const float GuideAimErrorMult = 0.75f;
+
+			// ---- the Guide's guiding bolt (his own OfficerWeapon: a poke at whatever strays into reach) ----
 			public const float GuideBoltSpeed = 11f;
 			/// <summary>Arc lift (px) a far shot is aimed above the target. Zero: a gem bolt flies straight, with no gravity to lead.</summary>
 			public const float GuideBoltGravityCorrection = 0f;
@@ -175,24 +188,24 @@ namespace Levy.Common
 			public const float AnglerFishRangeTiles = 22f;
 
 			// =====================================================================================================
-			// BUFF / DEBUFF OFFICERS (rebuild) — Princess (army-wide morale aura), Dryad (AoE shred + nature aura),
-			// Goblin Tinkerer (gear-tune aura + spiky balls), Tax Collector (AoE shred + coin bounty on a marked
-			// kill). The aura and mark infrastructure is shared (AuraKit, MarkSystem); only these numbers are new.
+			// BUFF / DEBUFF OFFICERS (rebuild) — Princess (army-wide Morale aura), Dryad (AoE shred + Dryad's Blessing),
+			// Goblin Tinkerer (reforges weapons on the march + spiky balls), Tax Collector (AoE shred + coin bounty on a
+			// marked kill). The aura and mark infrastructure is shared (AuraKit, MarkSystem); only these numbers are new.
 			// =====================================================================================================
 
-			// ---- the Princess (army-wide morale aura; the capstone) ----
-			/// <summary>Wage/fee multiplier: the strongest force-multiplier in the roster, priced to match.</summary>
+			// ---- the Princess (army-wide Morale aura; the capstone) ----
+			/// <summary>Wage/fee multiplier: the strongest morale lift in the roster, priced to match.</summary>
 			public const float PrincessCostMult = 2.5f;
 			/// <summary>Taunt weight: a rear support, never singled out (negative cancels the flat advantage soldiers have in enemy targeting).</summary>
 			public const int PrincessAggro = -250;
-			/// <summary>Soldiers and officers within this many tiles are kept under her morale buffs.</summary>
+			/// <summary>Soldiers and officers within this many tiles are kept under Morale. The widest morale reach in the roster: she lifts the whole army.</summary>
 			public const int PrincessAuraRadiusTiles = 26;
 			/// <summary>Ticks each application lasts — refreshed every pulse, so it holds at this and never stacks. Longer than the cadence so it never lapses.</summary>
 			public const int PrincessAuraDurationTicks = 300;
 			/// <summary>Ticks between aura pulses (re-feeds once a second).</summary>
 			public const int PrincessAuraCadenceTicks = 60;
 
-			// ---- the Dryad (AoE shred + Thorns/Regeneration nature aura) ----
+			// ---- the Dryad (AoE shred + Dryad's Blessing nature aura) ----
 			/// <summary>Wage/fee multiplier: two army-wide effects on one body.</summary>
 			public const float DryadCostMult = 1.8f;
 			/// <summary>Taunt weight: a support caster, not a target magnet.</summary>
@@ -201,26 +214,32 @@ namespace Levy.Common
 			public const int DryadMarkRadiusTiles = 26;
 			/// <summary>Ticks a Dryad's Bane mark lasts if not refreshed — longer than the cadence so it reads as continuous.</summary>
 			public const int DryadMarkDurationTicks = 180;
-			/// <summary>Soldiers within this many tiles are kept under the nature aura.</summary>
+			/// <summary>Soldiers within this many tiles are kept under Dryad's Blessing.</summary>
 			public const int DryadAuraRadiusTiles = 22;
-			/// <summary>Ticks each nature-aura application lasts (refreshed every pulse, so it holds steady and never stacks).</summary>
+			/// <summary>Ticks each Blessing application lasts (refreshed every pulse, so it holds steady and never stacks).</summary>
 			public const int DryadAuraDurationTicks = 300;
-			/// <summary>Ticks between the Dryad's pulses (one timer drives both the AoE mark and the aura).</summary>
+			/// <summary>Ticks between the Dryad's pulses (one timer drives both the AoE mark and the Blessing).</summary>
 			public const int DryadCadenceTicks = 60;
-			/// <summary>Fraction of a contact hit a Thorns'd soldier reflects back at the attacker (capped by <see cref="LevyConstants.ThornsDamageCap"/>). Read in ApplyBuffEffect.</summary>
+			/// <summary>Fraction of a contact hit a soldier under Dryad's Blessing reflects back at the attacker (capped by <see cref="LevyConstants.ThornsDamageCap"/>). Read in ApplyBuffEffect.</summary>
 			public const float DryadThornsReflectFrac = 0.5f;
+			/// <summary>Defense and life-regen units Dryad's Blessing adds. Vanilla's own Dryad's Blessing numbers (+8 defense, +6 regen); thorns is <see cref="DryadThornsReflectFrac"/>.</summary>
+			public const int DryadBlessingDefense = 8, DryadBlessingLifeRegen = 6;
 
-			// ---- the Goblin Tinkerer (gear-tune aura + thrown spiky balls) ----
+			// ---- the Goblin Tinkerer (reforges the army's weapons on the march + thrown spiky balls) ----
 			/// <summary>Wage/fee multiplier.</summary>
 			public const float GoblinCostMult = 1.4f;
 			/// <summary>Taunt weight: a frontline fighter, weighed about like a soldier.</summary>
 			public const int GoblinAggro = 0;
-			/// <summary>Soldiers within this many tiles are kept under the gear-tune buffs.</summary>
-			public const int GoblinAuraRadiusTiles = 18;
-			/// <summary>Ticks each application lasts (refreshed every pulse).</summary>
-			public const int GoblinAuraDurationTicks = 300;
-			/// <summary>Ticks between aura pulses.</summary>
-			public const int GoblinAuraCadenceTicks = 60;
+			/// <summary>He works on the weapon of the nearest soldier within this many tiles whose weapon sits below the floor.</summary>
+			public const int GoblinReforgeRadiusTiles = 18;
+			/// <summary>Ticks between his reforge pulses (one soldier per pulse): every 4 s.</summary>
+			public const int GoblinReforgeCadenceTicks = 240;
+			/// <summary>The quality floor he reforges toward: a weapon qualifies once its prefix is among the top this-fraction of the prefixes THAT weapon can roll (0.25 = the top quarter; the Armory's "Great" floor).</summary>
+			public const float GoblinReforgeTopFraction = 0.25f;
+			/// <summary>Paid rerolls he spends on one weapon per pulse before moving on; each costs the vanilla reforge price from the treasury.</summary>
+			public const int GoblinReforgeRollsPerPulse = 4;
+			/// <summary>He never takes the treasury below this many Levy wages, so a reforge can never be the reason dawn payroll fails.</summary>
+			public const int GoblinReforgeReserveWages = 20;
 			/// <summary>Launch speed (px/tick) of a thrown spiky ball and the arc lift (px) a far throw is aimed above the target.</summary>
 			public const float GoblinBallSpeed = 11f, GoblinBallGravityCorrection = 9f;
 			/// <summary>Base damage of a thrown spiky ball (scaled with the world's progress like a town NPC's shot).</summary>
@@ -273,7 +292,7 @@ namespace Levy.Common
 			public const int DemoDynamiteDamage = 70;
 			public const float DemoDynamiteKnockback = 6f;
 
-			// ---- the Arms Dealer (rapid rifle + Archery aura) ----
+			// ---- the Arms Dealer (rapid rifle + truer shots and bottomless ammo for the soldiers near him) ----
 			/// <summary>Wage/fee multiplier of the Arms Dealer.</summary>
 			public const float ArmsDealerCostMult = 1.5f;
 			public const int ArmsDealerAggro = 0;
@@ -285,29 +304,43 @@ namespace Levy.Common
 			/// <summary>Pause after a shot: short, so the fire reads as rapid.</summary>
 			public const int ArmsDealerBulletCooldown = 11, ArmsDealerBulletRandomCooldown = 6;
 			public const float ArmsDealerBulletRangeTiles = 32f;
-			/// <summary>Archery aura: soldiers and officers within this many tiles are kept under Archery; refreshed every cadence, held for the duration.</summary>
-			public const int ArmsDealerAuraRadiusTiles = 22;
-			public const int ArmsDealerAuraDurationTicks = 300, ArmsDealerAuraCadenceTicks = 60;
-			/// <summary>Ranged damage the Archery buff adds as a fraction. Extends vanilla Archery (arrow weapons only) to every ranged soldier — guns included. Read by SoldierNPC.ApplyBuffEffect.</summary>
-			public const float ArmsDealerArcheryRangedDamage = 0.15f;
+			/// <summary>Soldiers within this many tiles of him shoot straighter and never spend ammo. Checked shot by shot (Common/Officers/OfficerSupport), so there is no buff and no timer.</summary>
+			public const int ArmsDealerSupplyRadiusTiles = 22;
+			/// <summary>Multiplier on the aim error (angle jitter + lead error) of every soldier in reach: 0.6 = 40% truer shots. Multiplies with Veteran, the Discipline book and the Guide's, so officers stack.</summary>
+			public const float ArmsDealerAimErrorMult = 0.6f;
 
-			// ---- the Merchant (coin gun + a modest treasury trickle) ----
+			// ---- Archery (the buff, whoever hands it out: today the armory's Archery potions) ----
+			/// <summary>Ranged damage the Archery buff adds as a fraction. Extends vanilla Archery (arrow weapons only) to every ranged soldier — guns included. Read by SoldierNPC.ApplyBuffEffect.</summary>
+			public const float ArcheryRangedDamage = 0.15f;
+
+			// ---- the Merchant (throwing knives + a fence on nearby kills + a quartermaster's handouts + a small Morale lift) ----
 			/// <summary>Wage/fee multiplier of the Merchant.</summary>
 			public const float MerchantCostMult = 1.4f;
 			public const int MerchantAggro = 0;
-			/// <summary>His coin gun: a platinum round, fast and heavy.</summary>
-			public const float MerchantCoinSpeed = 12f, MerchantCoinGravityCorrection = 4f;
-			/// <summary>Base coin-shot damage and knockback (scaled with the world's progress).</summary>
-			public const int MerchantCoinDamage = 18;
-			public const float MerchantCoinKnockback = 3f;
-			public const int MerchantCoinCooldown = 18, MerchantCoinRandomCooldown = 10;
-			public const float MerchantCoinRangeTiles = 28f;
-			/// <summary>Treasury trickle: how often (ticks) he banks coin.</summary>
-			public const int MerchantCoinIntervalTicks = 240;
-			/// <summary>Each modest deposit is <c>LevyWage / this</c>, so it scales with the world without paying for itself.</summary>
-			public const int MerchantCoinWageDivisor = 8;
+			/// <summary>His throwing knives: launch speed (px/tick) and the arc lift (px) a far throw is aimed above the target. The vanilla Merchant throws the same knife with a lift of 16.</summary>
+			public const float MerchantKnifeSpeed = 12f, MerchantKnifeGravityCorrection = 14f;
+			/// <summary>Base knife damage and knockback (scaled with the world's progress like a town NPC's shot).</summary>
+			public const int MerchantKnifeDamage = 16;
+			public const float MerchantKnifeKnockback = 2f;
+			public const int MerchantKnifeCooldown = 22, MerchantKnifeRandomCooldown = 14;
+			public const float MerchantKnifeRangeTiles = 24f;
+			/// <summary>THE FENCE. An enemy that dies within this many tiles of him pays the treasury (the paying barracks) its own loot value times <see cref="MerchantFenceValueMult"/>, on top of what it drops.</summary>
+			public const int MerchantFenceRadiusTiles = 30;
+			/// <summary>Treasury credit per kill as a multiple of the corpse's coin value (NPC.value): 1 = the kill is worth double.</summary>
+			public const float MerchantFenceValueMult = 1f;
+			/// <summary>THE HANDOUTS. Every cadence he serves up to <see cref="MerchantServePerPulse"/> soldiers within this many tiles with the basic stock a soldier can use: ammo for the weapon in his hand, or a potion if he would drink one. Paid from the treasury at the item's price.</summary>
+			public const int MerchantSupplyRadiusTiles = 16;
+			public const int MerchantSupplyCadenceTicks = 180, MerchantServePerPulse = 3;
+			/// <summary>A soldier whose ammo pouch holds fewer rounds than this is handed <see cref="MerchantAmmoHandout"/> more (basic ammo of the kind his weapon takes).</summary>
+			public const int MerchantAmmoLowBelow = 150, MerchantAmmoHandout = 100;
+			/// <summary>Basic ammo he stocks, by the ammo class a weapon takes: parallel arrays (AmmoID, the cheap ItemID for it). Torches and rope are on his shelf too, but a soldier has no use for them.</summary>
+			public static readonly int[] MerchantAmmoClass = { AmmoID.Arrow, AmmoID.Bullet, AmmoID.Dart, AmmoID.Rocket, AmmoID.Gel, AmmoID.Flare };
+			public static readonly int[] MerchantAmmoItem = { ItemID.WoodenArrow, ItemID.MusketBall, ItemID.Seed, ItemID.RocketI, ItemID.Gel, ItemID.Flare };
+			/// <summary>THE MORALE LIFT. Soldiers within this many tiles stay under Morale: the same buff the Princess keeps on the whole army, but only for those close to his cart.</summary>
+			public const int MerchantMoraleRadiusTiles = 12;
+			public const int MerchantMoraleDurationTicks = 300, MerchantMoraleCadenceTicks = 60;
 
-			// ---- the Painter (colorful paint barrage + inspiration aura) ----
+			// ---- the Painter (colorful paint barrage; no kit) ----
 			/// <summary>Wage/fee multiplier of the Painter.</summary>
 			public const float PainterCostMult = 1.3f;
 			public const int PainterAggro = 0;
@@ -318,9 +351,6 @@ namespace Levy.Common
 			public const float PainterPaintballKnockback = 3f;
 			public const int PainterPaintballCooldown = 15, PainterPaintballRandomCooldown = 9;
 			public const float PainterPaintballRangeTiles = 30f;
-			/// <summary>Inspiration aura: soldiers and officers within this many tiles are kept under Wrath; refreshed every cadence, held for the duration.</summary>
-			public const int PainterAuraRadiusTiles = 18;
-			public const int PainterAuraDurationTicks = 300, PainterAuraCadenceTicks = 60;
 		}
 
 		/// <summary>

@@ -43,11 +43,20 @@ namespace Levy.Common
 		public const float AccessoryRarityWeight = 1000f, AccessoryDefenseWeight = 50f, AccessoryValueWeight = 30f, AccessoryPrefixBonus = 10f, AccessoryClassFitWeight = 3000f;
 
 		// ---------- HP / mana ----------
+		// A REGULAR mirrors the vanilla player exactly and no guide touches him: base HP + 20 per Life Crystal (15) + 5 per Life Fruit (20) = 500, and
+		// base mana + 20 per Mana Crystal (9) = 200. MILITIA take no crystals; their whole ladder is the three progression guides (numbers in LevyConstants.Guides.cs).
 		public const int BaseHp = 100;
 		public const int HpPerLifeCrystal = 20;
 		public const int HpPerLifeFruit = 5;
-		/// <summary>Growth items a soldier can absorb (15 Life Crystals, 20 Life Fruit) and the absolute HP ceiling. What a world actually allows is the guide-set base and cap in GuideSystem (see LevyConstants.Guides.cs).</summary>
-		public const int MaxLifeCrystals = 15, MaxLifeFruit = 20, MaxSoldierHp = 600;
+		/// <summary>
+		/// Growth items a regular can absorb (15 Life Crystals, 20 Life Fruit) and the absolute HP ceiling of EVERY soldier, regular or militia: the vanilla player's 500 life.
+		/// <see cref="MaxSoldierHp"/> is a hard cap: <c>SoldierRecord.MaxHp</c> never exceeds it, the body's <c>NPC.lifeMax</c> is pinned to that value every tick, and nothing raises it.
+		/// </summary>
+		public const int MaxLifeCrystals = 15, MaxLifeFruit = 20, MaxSoldierHp = 500;
+		/// <summary>
+		/// Mana per soldier: the base, what a Mana Crystal adds (9 of them fill a regular's pool) and the absolute ceiling of EVERY soldier, regular or militia
+		/// (<see cref="MaxMana"/>, the vanilla player's 200). <c>SoldierRecord.MaxMana</c> never exceeds it.
+		/// </summary>
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool

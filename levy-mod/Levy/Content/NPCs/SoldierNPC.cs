@@ -169,6 +169,40 @@ namespace Levy.Content.NPCs
 			NPC.netUpdate = true;
 		}
 
+		/// <summary>
+		/// A soldier's HP is its record's, never the difficulty balance's. Vanilla's own scaling (<c>NPC.ScaleStats</c>, Expert / Master / multiplayer) returns before it reaches this hook for a
+		/// friendly body with no contact damage, which is what a soldier is, so on a normal run this is never called for one. It exists so that if any path does reach it, the record's value
+		/// goes straight back (before a record is bound: the base) instead of a scaled one.
+		/// </summary>
+		public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment)
+		{
+			if (Record != null) { PinLifeMax(); return; }
+			NPC.lifeMax = LevyConstants.BaseHp; NPC.life = NPC.lifeMax;
+		}
+
+		/// <summary>
+		/// Holds this body's vitals at the record's: <c>NPC.lifeMax</c> at <see cref="SoldierRecord.MaxHp"/> (never above <see cref="LevyConstants.MaxSoldierHp"/>, the vanilla player's 500),
+		/// <c>NPC.life</c> under it, and the record's mana under <see cref="SoldierRecord.MaxMana"/> (never above <see cref="LevyConstants.MaxMana"/>, 200). Nothing outside the record decides
+		/// a soldier's maximum: another mod's NPC hook, a stale network write or difficulty scaling that raised it is put straight back. It runs at the start of every soldier tick, again
+		/// just before a hit is applied, and once every NPC (and everything else) has updated (<see cref="SoldierHpPinSystem"/>), so what damage, healing, the roster cards and the nameplates read
+		/// is always the record's value. A plain pin, not a rescale: repeated outside changes never drain or heal the soldier. An officer avatar takes its HP from the town NPC and is left alone.
+		/// A client's record is a display copy without the crystal counts (and vanilla never syncs <c>lifeMax</c>), so there it can only refuse a maximum above the hard ceiling.
+		/// </summary>
+		public void PinLifeMax()
+		{
+			if (Record == null || OfficerMode) return;
+			if (!LevyUtil.IsServerOrSingle)
+			{
+				if (NPC.lifeMax > LevyConstants.MaxSoldierHp) NPC.lifeMax = LevyConstants.MaxSoldierHp;
+				return;
+			}
+			int maxHp = Math.Max(1, Record.MaxHp);
+			if (NPC.lifeMax != maxHp) NPC.lifeMax = maxHp;
+			if (NPC.life > maxHp) NPC.life = maxHp;
+			int maxMana = Record.MaxMana;
+			if (Record.Mana > maxMana) Record.Mana = maxMana;
+		}
+
 		private void EnsureDummy()
 		{
 			if (Dummy != null) return;
@@ -282,8 +316,7 @@ namespace Levy.Content.NPCs
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			NPC.defense = Defense;
-			int maxHp = Math.Max(1, Record.MaxHp);
-			if (NPC.lifeMax != maxHp) { NPC.life = (int)Math.Clamp(NPC.life * (float)maxHp / Math.Max(1, NPC.lifeMax), 1, maxHp); NPC.lifeMax = maxHp; }
+			PinLifeMax(); // HP comes from the record, not from gear
 		}
 
 		/// <summary>Weapon damage after the dummy's stat pipeline (crit excluded). Manual fallback uses item damage.</summary>
@@ -329,6 +362,7 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) { if (LevyUtil.IsServerOrSingle) { NPC.active = false; NPC.netUpdate = true; } return; }
 			EnsureDummy();
+			PinLifeMax(); // before anything reads lifeMax (the dummy's life stats just below, damage, fear): a max another mod raised since last tick is put back first
 			SyncDummyTransform();
 			if (LevyUtil.IsClient)
 			{
@@ -370,6 +404,7 @@ namespace Levy.Content.NPCs
 
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers)
 		{
+			PinLifeMax(); // the hit lands on the record's maximum, whatever ran since the last pin
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
@@ -556,5 +591,26 @@ namespace Levy.Content.NPCs
 		partial void Damage_Update();                        // SoldierNPC.Damage.cs  — every tick (server): immunity, contact damage, regen, potions
 		partial void Draw_PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, ref bool drawn); // SoldierNPC.Draw.cs
 		partial void Draw_PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor);               // SoldierNPC.Draw.cs
+	}
+
+	/// <summary>
+	/// Re-pins every soldier body's vitals to its record (<see cref="SoldierNPC.PinLifeMax"/>) after the other hooks have run. Another mod's NPC hooks (a global HP buff for friendly or
+	/// town-like NPCs, say) run after the soldier's own <see cref="SoldierNPC.AI"/> in the same tick, so a pin inside AI alone would leave their value standing until the next tick. This
+	/// pins once all NPCs have updated (before projectiles and items apply their hits) and once more at the very end of the tick (before anything draws), so the roster cards and
+	/// nameplates never see a maximum the record did not give.
+	/// </summary>
+	public sealed class SoldierHpPinSystem : ModSystem
+	{
+		public override void PostUpdateNPCs() => PinAll();
+		public override void PostUpdateEverything() => PinAll();
+
+		private static void PinAll()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC s) s.PinLifeMax();
+			}
+		}
 	}
 }

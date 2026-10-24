@@ -91,7 +91,7 @@ Mods: {
 				DisplayName: A Guide to Firepower
 				Tooltip:
 					'''
-					Soldiers start with 200 health and 100 mana.
+					Militia gain 100 health and 80 mana.
 					Every Armory gains 2 buff slots.
 					Dropped by the Wall of Flesh. Consumed on use, once per world.
 					'''
@@ -99,12 +99,12 @@ Mods: {
 
 			GuideToHealthcare: {
 				DisplayName: A Guide to Healthcare
-				Tooltip: Soldiers can grow to 400 health with Life Crystals. Consumed on use, once per world.
+				Tooltip: Militia gain 150 health. Consumed on use, once per world.
 			}
 
 			GuideToTheArcaneArts: {
 				DisplayName: A Guide to the Arcane Arts
-				Tooltip: Soldiers can grow to 200 mana with Mana Crystals. Consumed on use, once per world.
+				Tooltip: Militia gain 60 mana. Consumed on use, once per world.
 			}
 
 			GuideToExpertise: {

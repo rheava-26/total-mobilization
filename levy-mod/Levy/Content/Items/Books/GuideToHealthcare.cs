@@ -4,7 +4,7 @@ using Levy.Common;
 
 namespace Levy.Content.Items.Books
 {
-	/// <summary>Progression guide: raises the soldier max-HP cap. Crafted at a Crystal Ball and Bookshelf from Life Fruit and Chlorophyte. Consumed on use, once per world (see GuideSystem).</summary>
+	/// <summary>Progression guide: militia are mustered with more HP. Crafted at a Crystal Ball and Bookshelf from Life Fruit and Chlorophyte. Consumed on use, once per world (see GuideSystem).</summary>
 	public class GuideToHealthcare : EventBook
 	{
 		public override string Key => "Healthcare";

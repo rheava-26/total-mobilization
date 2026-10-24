@@ -17,9 +17,9 @@ namespace Levy.Common.Flavor
 	/// <summary>
 	/// The four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise): army-wide, once per world, studied like the event books
 	/// (<see cref="FlavorSystem.Study"/> routes a guide key here). This system owns the four world flags (saved with the world, synced to every
-	/// client in the world-data message, only ever turning on) and every number they change: the base and cap of a soldier's HP and mana, the
-	/// accessory slots, and the buff slots an Armory's potion row gains. <see cref="SoldierRecord"/> and the crystal feed read these;
-	/// guides move the base and the cap and never touch how crystals add up beneath the cap.
+	/// client in the world-data message, only ever turning on) and every number they change: the HP and mana a MILITIAMAN is mustered with, the
+	/// accessory slots, and the buff slots an Armory's potion row gains. The guides never touch a REGULAR's HP or mana: a regular mirrors the vanilla
+	/// player (crystals and fruit, hard-capped at <see cref="LevyConstants.MaxSoldierHp"/> HP and <see cref="LevyConstants.MaxMana"/> mana) whatever is studied.
 	/// </summary>
 	public class GuideSystem : ModSystem
 	{
@@ -33,14 +33,52 @@ namespace Levy.Common.Flavor
 
 		// ---------------------------------------------------------------- derived numbers (what the rest of the mod reads)
 
-		/// <summary>The HP a soldier starts from before crystals and fruit.</summary>
-		public static int HpBase => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBaseHp : LevyConstants.BaseHp;
-		/// <summary>The most HP crystals and fruit can raise a soldier to.</summary>
-		public static int HpCap => Math.Min(Instance != null && Instance.Healthcare ? LevyConstants.HealthcareHpCap : LevyConstants.DefaultHpCap, LevyConstants.MaxSoldierHp);
-		/// <summary>The mana a soldier starts from before mana crystals.</summary>
-		public static int ManaBase => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBaseMana : LevyConstants.BaseMana;
-		/// <summary>The most mana crystals can raise a soldier to.</summary>
-		public static int ManaCap => Instance != null && Instance.ArcaneArts ? LevyConstants.ArcaneManaCap : LevyConstants.DefaultManaCap;
+		/// <summary>
+		/// The most HP Life Crystals and Life Fruit can raise a REGULAR to: the vanilla player's <see cref="LevyConstants.MaxSoldierHp"/>, whatever is studied (a guide never moves it).
+		/// Lives here because the crystal feed (RosterSystem.CanAbsorbCrystal) reads it from here.
+		/// </summary>
+		public static int HpCap => LevyConstants.MaxSoldierHp;
+		/// <summary>The most mana Mana Crystals can raise a REGULAR to: the vanilla player's <see cref="LevyConstants.MaxMana"/>, whatever is studied (a guide never moves it).</summary>
+		public static int ManaCap => LevyConstants.MaxMana;
+
+		/// <summary>
+		/// The HP a MILITIAMAN is mustered with: <see cref="LevyConstants.BaseHp"/> plus the bonus of each studied guide (Firepower, Healthcare), held under
+		/// <see cref="LevyConstants.MaxSoldierHp"/>. Militia take no crystals, so this is their whole ladder.
+		/// </summary>
+		public static int MilitiaHp
+		{
+			get
+			{
+				GuideSystem g = Instance;
+				int hp = LevyConstants.BaseHp;
+				if (g != null)
+				{
+					if (g.Firepower) hp += LevyConstants.FirepowerMilitiaHp;
+					if (g.Healthcare) hp += LevyConstants.HealthcareMilitiaHp;
+				}
+				return Math.Min(hp, LevyConstants.MaxSoldierHp);
+			}
+		}
+
+		/// <summary>
+		/// The mana a MILITIAMAN is mustered with: <see cref="LevyConstants.BaseMana"/> plus the bonus of each studied guide (Firepower, the Arcane Arts), held under
+		/// <see cref="LevyConstants.MaxMana"/>. Militia take no crystals, so this is their whole ladder.
+		/// </summary>
+		public static int MilitiaMana
+		{
+			get
+			{
+				GuideSystem g = Instance;
+				int mana = LevyConstants.BaseMana;
+				if (g != null)
+				{
+					if (g.Firepower) mana += LevyConstants.FirepowerMilitiaMana;
+					if (g.ArcaneArts) mana += LevyConstants.ArcaneMilitiaMana;
+				}
+				return Math.Min(mana, LevyConstants.MaxMana);
+			}
+		}
+
 		/// <summary>Accessory slots every soldier gains on top of his grade.</summary>
 		public static int ExtraAccessorySlots => Instance != null && Instance.Expertise ? LevyConstants.ExpertiseAccessorySlots : 0;
 		/// <summary>Buff slots added to every Armory's potion row (see <see cref="ArmoryTE.TargetPotionSlots"/>).</summary>
@@ -80,7 +118,7 @@ namespace Levy.Common.Flavor
 
 		/// <summary>
 		/// Server and single player: turns a guide on once per world. False when the key is unknown or the guide was already studied (so the item is not
-		/// consumed). The new headroom arrives as health and mana (a soldier at full stays at full), and every soldier recomputes his stats.
+		/// consumed). The new health and mana arrive on the militia already in the field (a militiaman at full stays at full; a regular's pools never change), and every soldier recomputes his stats.
 		/// </summary>
 		public static bool TrySet(string key)
 		{
@@ -107,9 +145,12 @@ namespace Levy.Common.Flavor
 				if (r.HasBody && Main.npc[r.BodyIndex].ModNPC is SoldierNPC body)
 				{
 					NPC npc = body.NPC;
-					npc.lifeMax = Math.Max(1, r.MaxHp);
-					npc.life = Math.Clamp(npc.life + hpGain, 1, npc.lifeMax);
-					r.CurrentHp = npc.life;
+					if (r.MaxHp != old.hp) // only a militiaman's maximum moves with a guide; a regular's body is left exactly as it is
+					{
+						npc.lifeMax = Math.Max(1, r.MaxHp);
+						npc.life = Math.Clamp(npc.life + hpGain, 1, npc.lifeMax);
+						r.CurrentHp = npc.life;
+					}
 					body.StatsDirty = true; // the accessory slots and shared buffs are re-read on the next refresh
 					npc.netUpdate = true;
 				}

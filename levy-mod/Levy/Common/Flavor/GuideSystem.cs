@@ -19,7 +19,8 @@ namespace Levy.Common.Flavor
 	/// (<see cref="FlavorSystem.Study"/> routes a guide key here). This system owns the four world flags (saved with the world, synced to every
 	/// client in the world-data message, only ever turning on) and every number they change: the base and cap of a soldier's HP and mana, the
 	/// accessory slots, and the buff slots an Armory's potion row gains. <see cref="SoldierRecord"/> and the crystal feed read these;
-	/// guides move the base and the cap and never touch how crystals add up beneath the cap.
+	/// guides move the base and the cap and never touch how crystals add up beneath the cap. No cap here can sit above the hard soldier
+	/// ceilings (<see cref="LevyConstants.MaxSoldierHp"/> HP, <see cref="LevyConstants.MaxMana"/> mana): <see cref="HpCap"/> and <see cref="ManaCap"/> are clamped to them.
 	/// </summary>
 	public class GuideSystem : ModSystem
 	{
@@ -35,12 +36,12 @@ namespace Levy.Common.Flavor
 
 		/// <summary>The HP a soldier starts from before crystals and fruit.</summary>
 		public static int HpBase => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBaseHp : LevyConstants.BaseHp;
-		/// <summary>The most HP crystals and fruit can raise a soldier to.</summary>
+		/// <summary>The most HP crystals and fruit can raise a soldier to. Never above <see cref="LevyConstants.MaxSoldierHp"/>.</summary>
 		public static int HpCap => Math.Min(Instance != null && Instance.Healthcare ? LevyConstants.HealthcareHpCap : LevyConstants.DefaultHpCap, LevyConstants.MaxSoldierHp);
 		/// <summary>The mana a soldier starts from before mana crystals.</summary>
 		public static int ManaBase => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBaseMana : LevyConstants.BaseMana;
-		/// <summary>The most mana crystals can raise a soldier to.</summary>
-		public static int ManaCap => Instance != null && Instance.ArcaneArts ? LevyConstants.ArcaneManaCap : LevyConstants.DefaultManaCap;
+		/// <summary>The most mana crystals can raise a soldier to. Never above <see cref="LevyConstants.MaxMana"/>.</summary>
+		public static int ManaCap => Math.Min(Instance != null && Instance.ArcaneArts ? LevyConstants.ArcaneManaCap : LevyConstants.DefaultManaCap, LevyConstants.MaxMana);
 		/// <summary>Accessory slots every soldier gains on top of his grade.</summary>
 		public static int ExtraAccessorySlots => Instance != null && Instance.Expertise ? LevyConstants.ExpertiseAccessorySlots : 0;
 		/// <summary>Buff slots added to every Armory's potion row (see <see cref="ArmoryTE.TargetPotionSlots"/>).</summary>

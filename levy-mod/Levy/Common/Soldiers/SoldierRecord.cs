@@ -85,11 +85,17 @@ namespace Levy.Common.Soldiers
 		/// <summary>Mana before the cap: the guide-set base plus every mana crystal.</summary>
 		public int RawMana => GuideSystem.ManaBase + LevyConstants.ManaPerCrystal * ManaCrystals;
 
-		/// <summary>Max HP: base + crystals + fruit, held under the world's cap (raised by the Guide to Healthcare).</summary>
-		public int MaxHp => Math.Min(RawHp, GuideSystem.HpCap);
+		/// <summary>
+		/// Max HP: base + crystals + fruit, held under the world's cap and, whatever that cap says, under the hard soldier ceiling
+		/// (<see cref="LevyConstants.MaxSoldierHp"/>, the vanilla player's 500). Every body's <c>NPC.lifeMax</c> is pinned to this.
+		/// </summary>
+		public int MaxHp => Math.Min(Math.Min(RawHp, GuideSystem.HpCap), LevyConstants.MaxSoldierHp);
 
-		/// <summary>Max mana: base + mana crystals, held under the world's cap (raised by the Guide to the Arcane Arts).</summary>
-		public int MaxMana => Math.Min(RawMana, GuideSystem.ManaCap);
+		/// <summary>
+		/// Max mana: base + mana crystals, held under the world's cap and, whatever that cap says, under the hard soldier ceiling
+		/// (<see cref="LevyConstants.MaxMana"/>, the vanilla player's 200).
+		/// </summary>
+		public int MaxMana => Math.Min(Math.Min(RawMana, GuideSystem.ManaCap), LevyConstants.MaxMana);
 
 		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public static int AccessorySlotsFor(Grade grade) => Math.Min(LevyConstants.GradeSlots[(int)grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);

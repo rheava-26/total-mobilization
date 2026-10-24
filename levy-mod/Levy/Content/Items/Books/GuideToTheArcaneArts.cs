@@ -4,7 +4,7 @@ using Levy.Common;
 
 namespace Levy.Content.Items.Books
 {
-	/// <summary>Progression guide: raises the soldier max-mana cap. Crafted at a Crystal Ball and Bookshelf from the mechanical boss souls. Consumed on use, once per world (see GuideSystem).</summary>
+	/// <summary>Progression guide: militia are mustered with more mana. Crafted at a Crystal Ball and Bookshelf from the mechanical boss souls. Consumed on use, once per world (see GuideSystem).</summary>
 	public class GuideToTheArcaneArts : EventBook
 	{
 		public override string Key => "TheArcaneArts";

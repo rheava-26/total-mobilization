@@ -2,27 +2,22 @@ namespace Levy.Common
 {
 	/// <summary>
 	/// Numbers for the four progression guides (Firepower, Healthcare, the Arcane Arts, Expertise), the armory buff slots Firepower adds,
-	/// and the Logistical Center that grows an Armory's storage. The HP / mana ladder lives here: guides move the BASE a soldier starts
-	/// from and crystals and fruit add on top of it, underneath the cap. A soldier is HARD-CAPPED at the vanilla player ceilings
-	/// (<see cref="LevyConstants.MaxSoldierHp"/> HP, <see cref="LevyConstants.MaxMana"/> mana) whatever is studied: no guide cap may sit above them.
+	/// and the Logistical Center that grows an Armory's storage. The guides buff the MILITIA, never the regulars: a regular mirrors the vanilla player
+	/// (see LevyConstants.cs: crystals and fruit, hard-capped at <see cref="LevyConstants.MaxSoldierHp"/> HP and <see cref="LevyConstants.MaxMana"/> mana) and no guide changes him,
+	/// while a militiaman takes no crystals, so the flat bonuses below are his whole HP / mana ladder.
 	/// </summary>
 	public static partial class LevyConstants
 	{
-		// ---------- HP / mana ladder ----------
-		/// <summary>Base HP: <see cref="BaseHp"/> normally, this once Firepower is studied (twice as much).</summary>
-		public const int FirepowerBaseHp = 200;
-		/// <summary>
-		/// Max HP a soldier can reach with crystals / fruit: the vanilla player's 500. Healthcare's cap equals the default one, so studying it does not lift the ceiling;
-		/// <see cref="LevyConstants.MaxSoldierHp"/> clamps both regardless. Firepower's higher base (<see cref="FirepowerBaseHp"/>) only gets a soldier to the cap with fewer crystals.
-		/// </summary>
-		public const int DefaultHpCap = 500, HealthcareHpCap = 500;
-		/// <summary>Base mana: <see cref="BaseMana"/> normally, this once Firepower is studied (half the full pool).</summary>
-		public const int FirepowerBaseMana = 100;
-		/// <summary>
-		/// Max mana a soldier can reach with mana crystals: the vanilla player's 200. The Arcane Arts' cap equals the default one, so studying it does not lift the ceiling;
-		/// <see cref="LevyConstants.MaxMana"/> clamps both regardless. Firepower's higher base (<see cref="FirepowerBaseMana"/>) only gets a soldier to the cap with fewer crystals.
-		/// </summary>
-		public const int DefaultManaCap = 200, ArcaneManaCap = 200;
+		// ---------- Militia HP / mana (the guides are their whole ladder) ----------
+		// A militiaman is mustered with BaseHp / BaseMana plus the bonus of every guide studied in the world, then held under MaxSoldierHp / MaxMana (a hard cap, never exceeded).
+		// At these defaults, with all three studied, a militiaman has 350 HP / 160 mana: clearly tougher than a bare conscript (100 / 20) and a notch under a maxed regular (500 / 200).
+		// TUNING: these four numbers are the only knobs. Bonuses add up independently of each other and of the order the guides are studied in.
+		/// <summary>Guide to Firepower: militia are mustered with this much more HP and mana (200 HP / 100 mana on their own).</summary>
+		public const int FirepowerMilitiaHp = 100, FirepowerMilitiaMana = 80;
+		/// <summary>Guide to Healthcare: militia are mustered with this much more HP.</summary>
+		public const int HealthcareMilitiaHp = 150;
+		/// <summary>Guide to the Arcane Arts: militia are mustered with this much more mana.</summary>
+		public const int ArcaneMilitiaMana = 60;
 		/// <summary>Accessory slots every soldier gains from Expertise (on top of the grade's slots, up to the gear's slot count).</summary>
 		public const int ExpertiseAccessorySlots = 1;
 

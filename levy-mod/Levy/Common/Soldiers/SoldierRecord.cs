@@ -80,22 +80,29 @@ namespace Levy.Common.Soldiers
 		public bool HasBody => BodyIndex >= 0 && BodyIndex < Main.maxNPCs && Main.npc[BodyIndex].active
 			&& Main.npc[BodyIndex].ModNPC is Content.NPCs.SoldierNPC s && ReferenceEquals(s.Record, this);
 
-		/// <summary>HP before the cap: the guide-set base plus every crystal and fruit he has absorbed.</summary>
-		public int RawHp => GuideSystem.HpBase + LevyConstants.HpPerLifeCrystal * LifeCrystals + LevyConstants.HpPerLifeFruit * LifeFruit;
-		/// <summary>Mana before the cap: the guide-set base plus every mana crystal.</summary>
-		public int RawMana => GuideSystem.ManaBase + LevyConstants.ManaPerCrystal * ManaCrystals;
+		/// <summary>
+		/// HP before the ceiling. A REGULAR mirrors the vanilla player: <see cref="LevyConstants.BaseHp"/> plus every Life Crystal and Life Fruit he has absorbed, and no guide changes it.
+		/// A MILITIAMAN takes no crystals: his HP is what the studied guides give him (<see cref="GuideSystem.MilitiaHp"/>). Summed as a long so a damaged save cannot wrap it.
+		/// </summary>
+		public int RawHp => Kind == SoldierKind.Militia
+			? GuideSystem.MilitiaHp
+			: (int)Math.Clamp(LevyConstants.BaseHp + (long)LevyConstants.HpPerLifeCrystal * LifeCrystals + (long)LevyConstants.HpPerLifeFruit * LifeFruit, int.MinValue, int.MaxValue);
+		/// <summary>
+		/// Mana before the ceiling. A REGULAR mirrors the vanilla player: <see cref="LevyConstants.BaseMana"/> plus every Mana Crystal he has absorbed, and no guide changes it.
+		/// A MILITIAMAN takes no crystals: his mana is what the studied guides give him (<see cref="GuideSystem.MilitiaMana"/>).
+		/// </summary>
+		public int RawMana => Kind == SoldierKind.Militia
+			? GuideSystem.MilitiaMana
+			: (int)Math.Clamp(LevyConstants.BaseMana + (long)LevyConstants.ManaPerCrystal * ManaCrystals, int.MinValue, int.MaxValue);
 
 		/// <summary>
-		/// Max HP: base + crystals + fruit, held under the world's cap and, whatever that cap says, under the hard soldier ceiling
-		/// (<see cref="LevyConstants.MaxSoldierHp"/>, the vanilla player's 500). Every body's <c>NPC.lifeMax</c> is pinned to this.
+		/// Max HP: <see cref="RawHp"/> held under the hard ceiling of every soldier, <see cref="LevyConstants.MaxSoldierHp"/> (the vanilla player's 500), and never below 1.
+		/// No path raises it: it is a pure function of the record, and a body's <c>NPC.lifeMax</c> is pinned to it every tick (see <c>SoldierNPC.PinLifeMax</c>).
 		/// </summary>
-		public int MaxHp => Math.Min(Math.Min(RawHp, GuideSystem.HpCap), LevyConstants.MaxSoldierHp);
+		public int MaxHp => Math.Clamp(RawHp, 1, LevyConstants.MaxSoldierHp);
 
-		/// <summary>
-		/// Max mana: base + mana crystals, held under the world's cap and, whatever that cap says, under the hard soldier ceiling
-		/// (<see cref="LevyConstants.MaxMana"/>, the vanilla player's 200).
-		/// </summary>
-		public int MaxMana => Math.Min(Math.Min(RawMana, GuideSystem.ManaCap), LevyConstants.MaxMana);
+		/// <summary>Max mana: <see cref="RawMana"/> held under the hard ceiling of every soldier, <see cref="LevyConstants.MaxMana"/> (the vanilla player's 200), and never below 0.</summary>
+		public int MaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);
 
 		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public static int AccessorySlotsFor(Grade grade) => Math.Min(LevyConstants.GradeSlots[(int)grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
@@ -166,6 +173,8 @@ namespace Levy.Common.Soldiers
 			};
 			if (t.ContainsKey("cHair")) { r.HairColor = t.Get<Color>("cHair"); r.SkinColor = t.Get<Color>("cSkin"); r.EyeColor = t.Get<Color>("cEye"); r.ShirtColor = t.Get<Color>("cShirt"); r.UnderShirtColor = t.Get<Color>("cUnder"); r.PantsColor = t.Get<Color>("cPants"); r.ShoeColor = t.Get<Color>("cShoe"); }
 			if (r.CurrentHp <= 0) r.CurrentHp = r.MaxHp;
+			r.CurrentHp = Math.Min(r.CurrentHp, r.MaxHp); // an older save may hold more than the hard ceiling allows
+			r.Mana = Math.Clamp(r.Mana, 0, r.MaxMana);
 			if (!t.ContainsKey("homeX")) r.HomePos = Point16.NegativeOne;
 			return r;
 		}

@@ -157,9 +157,6 @@ Kit: {
 
 	Painter: {
 		Name: Painter
-		Desc:
-			'''
-			Marches with the line, loosing a colorful paint barrage at any enemy in reach.
-			'''
+		Desc: Marches with the line, loosing a colorful paint barrage at any enemy in reach.
 	}
 }

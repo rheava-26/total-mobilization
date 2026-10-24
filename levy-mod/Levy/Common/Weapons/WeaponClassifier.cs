@@ -196,7 +196,7 @@ namespace Levy.Common.Weapons
 				else if (IsSet(ItemID.Sets.Spears, item.type)) melee = WeaponFamily.Spear;
 				else if (item.useStyle == ItemUseStyleID.Rapier) melee = WeaponFamily.Shortsword;
 				else if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) melee = WeaponFamily.Shortsword;
-				// Zenith (noMelee, its swords orbit the body): the swing hitbox is the melee damage, so it fights at blade reach like any broadsword (see MiscProjSwap for the sword anchor).
+				// Zenith (noMelee, its swords orbit the body): classed as a broadsword so the swing hitbox stays the melee damage; ApplyProjectileMelee then stands it off at full-camera range to loose its swords (see MiscProjSwap for the sword anchor).
 				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith)) melee = WeaponFamily.Broadsword;
 				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
 			}
@@ -335,8 +335,18 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static void ApplyProjectileMelee(Item src, WeaponProfile p)
 		{
-			// Zenith's swords swirl round the soldier (not a flown beam): it stays a pure blade-reach fighter.
-			if (src.type == ItemID.Zenith) return;
+			// Zenith is a long-range weapon: its homing swords strike from across the screen, so the soldier stands off at full-camera
+			// range and looses them (PositionsAsMelee turns false once FiresProjectileMelee is set, so the brain positions it like a gunner)
+			// rather than charging to blade reach. The swords are spawned by ItemShots.Zenith off item.shoot, NOT from BeamProjType, so
+			// these fields only steer POSITIONING and the fire gate -- no second projectile is ever launched. The blade hitbox
+			// (MeleeReachTiles, left at RangeMelee) stays, so point-blank still connects.
+			if (src.type == ItemID.Zenith)
+			{
+				p.FiresProjectileMelee = true;
+				p.BeamProjType = src.shoot; // ProjectileID.FinalFractal (tileCollide false): the soldier fires without a line-of-sight stall
+				p.RangeTiles = Math.Max(p.MeleeReachTiles, LevyConstants.RangeZenith);
+				return;
+			}
 			bool table = SwordBeams.HasBeam(src.type);
 			int beam = table ? SwordBeams.BeamProjectile(src.type) : src.shoot;
 			if (beam <= 0) return;

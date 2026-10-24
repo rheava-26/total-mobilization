@@ -10,8 +10,8 @@ namespace Levy.Common
 		public const float ZenithScatterPx = 150f;
 		/// <summary>A sword's ai[0] (arc width) is rolled in [-ZenithArcRoll, +ZenithArcRoll].</summary>
 		public const int ZenithArcRoll = 100;
-		/// <summary>Longest body-to-target offset a sword's launch vector is built from (a player's cursor is limited to the screen; the launch velocity is half this offset).</summary>
-		public const float ZenithMaxAimPx = 800f;
+		/// <summary>Longest body-to-target offset a sword's launch vector is built from (the launch velocity is half this offset). Set to reach the soldier's full-camera engage range (RangeZenith = 72 tiles x 16 px = 1152 px), so the swords reach as far as the soldier now stands off and fires.</summary>
+		public const float ZenithMaxAimPx = 1200f;
 
 		// ---------- Elf Melter (Player.ItemCheck_Shoot item 1910) ----------
 		/// <summary>Vanilla spawns the Elf Melter's Flames with ai[0] = 1, which makes them fly the full 60 ticks as blue flames (a plain Flamethrower leaves ai[0] = 0 and they burn out at 50 as orange).</summary>

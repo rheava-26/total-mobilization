@@ -9,10 +9,12 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Movement;
+using Levy.Common.Mark;
 using Levy.Common.Officers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Levy.Common.Venom;
 using Levy.Common.Weapons;
 
 namespace Levy.Content.NPCs
@@ -104,6 +106,7 @@ namespace Levy.Content.NPCs
 		{
 			if (kind == null) return;
 			NPC.width = kind.Width; NPC.height = kind.Height;
+			NPC.noGravity = kind.Flying; NPC.noTileCollide = kind.Flying; // a flier ignores gravity and terrain (a sword through a cave wall, a drone over a pit); every machine derives it from the kind
 		}
 
 		private void EnsureDummy()
@@ -150,18 +153,88 @@ namespace Levy.Content.NPCs
 			if (!NPC.active || NPC.life <= 0) return;
 
 			Combat();
+			if (Kind.Melee) MeleeAi(owner); else RangedAi(owner);
+			SyncDummyTransform();
+		}
+
+		/// <summary>The stand-off profile: fire at a hostile in reach without ever chasing it; otherwise hold near the officer (a post, a hover, or a walk).</summary>
+		private void RangedAi(NPC owner)
+		{
 			bool engaging = _target >= 0 && _target < Main.maxNPCs && Shootable(Main.npc[_target]);
 			if (engaging)
 			{
 				NPC t = Main.npc[_target];
 				NPC.direction = t.Center.X < NPC.Center.X ? -1 : 1; NPC.spriteDirection = NPC.direction;
-				NPC.velocity.X *= 0.8f; if (Math.Abs(NPC.velocity.X) < 0.1f) NPC.velocity.X = 0f; // stand and fight, never chase
-				if (NPC.wet && NPC.velocity.Y > -3f) NPC.velocity.Y -= 0.35f;
+				if (Kind.Flying) NPC.velocity *= LevyConstants.Summon.FlyDamp;           // hover where it is while it shoots
+				else
+				{
+					NPC.velocity.X *= 0.8f; if (Math.Abs(NPC.velocity.X) < 0.1f) NPC.velocity.X = 0f; // stand and fight, never chase
+					if (NPC.wet && NPC.velocity.Y > -3f) NPC.velocity.Y -= 0.35f;
+				}
 				if (_cooldown <= 0) { Fire(t); _cooldown = Kind.CooldownTicks + Main.rand.Next(Math.Max(1, Kind.RandomCooldownTicks)); }
 			}
-			else if (Kind.Turret) HoldPost(owner);
+			else Idle(owner);
+		}
+
+		/// <summary>
+		/// The charger profile: run (or fly) down the nearest hostile near the officer and cut it on contact, one blow per cooldown. With nothing to charge it falls back to the officer.
+		/// A ground charger works from its feet (it never leaves the ground after a flier); a flying one goes straight through the air at the target's centre and keeps pressing on it.
+		/// </summary>
+		private void MeleeAi(NPC owner)
+		{
+			bool engaging = _target >= 0 && _target < Main.maxNPCs && Shootable(Main.npc[_target]);
+			if (!engaging) { Idle(owner); return; }
+
+			NPC t = Main.npc[_target];
+			NPC.direction = t.Center.X < NPC.Center.X ? -1 : 1; NPC.spriteDirection = NPC.direction;
+			bool contact = InContact(t);
+			if (Kind.Flying) FlyToward(t.Center, Kind.MoveSpeedPx, 0f);
+			else if (contact) { NPC.velocity.X *= 0.8f; if (Math.Abs(NPC.velocity.X) < 0.1f) NPC.velocity.X = 0f; } // planted against it while it swings
+			else WalkToward(t.Center.X, NPC.width * 0.5f, Kind.MoveSpeedPx);
+
+			if (contact && _cooldown <= 0)
+			{
+				Strike(t);
+				_cooldown = Kind.CooldownTicks + Main.rand.Next(Math.Max(1, Kind.RandomCooldownTicks));
+			}
+		}
+
+		/// <summary>Nothing to fight: hold the post (a cannon), hover beside the officer (a flier) or walk beside him.</summary>
+		private void Idle(NPC owner)
+		{
+			if (Kind.Turret) HoldPost(owner);
+			else if (Kind.Flying) HoverOwner(owner);
 			else FollowOwner(owner);
-			SyncDummyTransform();
+		}
+
+		/// <summary>True when this unit's hitbox, grown by the melee reach, touches the target's.</summary>
+		private bool InContact(NPC t)
+		{
+			Rectangle mine = NPC.Hitbox;
+			mine.Inflate((int)LevyConstants.Summon.MeleeReachPx, (int)LevyConstants.Summon.MeleeReachPx);
+			return mine.Intersects(t.Hitbox);
+		}
+
+		/// <summary>
+		/// One melee blow: the same strike a soldier's sword makes. The commander is credited with the target before the blow (a killing blow drops loot synchronously inside it, and banners and
+		/// the "defeated by" line read the interaction list), the army's shred mark amps it, and the Witch Doctor's venom may land. Server / single player only (this runs inside the brain).
+		/// </summary>
+		private void Strike(NPC t)
+		{
+			SummonKind k = Kind;
+			int dmg = MarkSystem.Amp(t, ScaledDamage(k));
+			if (CommanderIndex >= 0 && CommanderIndex < Main.maxPlayers && Main.player[CommanderIndex].active) t.PlayerInteraction(CommanderIndex);
+			int dir = t.Center.X >= NPC.Center.X ? 1 : -1;
+			t.SimpleStrikeNPC(dmg, dir, false, k.Knockback, null, true, 0f, true); // noPlayerInteraction: the commander was credited above (the strike's own credit would name the dedicated server's slot)
+			if (t.active) VenomSystem.OnArmyHit(t, NPC.Center);
+		}
+
+		/// <summary>The kind's base damage after the world-progress and game-mode multipliers: what one blow or shot does right now.</summary>
+		private static int ScaledDamage(SummonKind k)
+		{
+			int dmg = (int)(k.BaseDamage * OfficerBrain.TownDamageScale());   // scales with world progress so summons stay tier-appropriate
+			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
+			return Math.Max(1, dmg);
 		}
 
 		/// <summary>The owning officer avatar if it is still a live officer-mode soldier body; else null (triggers self-despawn).</summary>
@@ -231,7 +304,20 @@ namespace Levy.Content.NPCs
 		{
 			if (!LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t)) return false;
 			if (Vector2.Distance(NPC.Center, t.Center) > Kind.RangeTiles * LevyConstants.TilePx) return false;
+			if (Kind.Melee && !CanCharge(t)) return false;
+			if (Kind.Melee && Kind.Flying) return true; // a flying charger needs no sightline: it goes straight through the terrain
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);
+		}
+
+		/// <summary>
+		/// A melee unit fights beside its officer: the target must be within the leash of him, and a ground unit also needs it at about its own height (it cannot climb the sky after a flier).
+		/// </summary>
+		private bool CanCharge(NPC t)
+		{
+			NPC owner = OwnerAvatar();
+			if (owner != null && Vector2.Distance(owner.Center, t.Center) > LevyConstants.Summon.MeleeLeashTiles * LevyConstants.TilePx) return false;
+			if (!Kind.Flying && Math.Abs(t.Center.Y - NPC.Center.Y) > LevyConstants.Summon.MeleeVerticalReachTiles * LevyConstants.TilePx + t.height * 0.5f) return false;
+			return true;
 		}
 
 		private void Fire(NPC target)
@@ -244,9 +330,7 @@ namespace Levy.Content.NPCs
 			if (!v.HasNaNs()) aim = v;
 			aim *= k.ProjectileSpeed;
 
-			int dmg = (int)(k.BaseDamage * OfficerBrain.TownDamageScale());   // scales with world progress so summons stay tier-appropriate
-			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
-			dmg = Math.Max(1, dmg);
+			int dmg = ScaledDamage(k);
 
 			float muzzle = NPC.width * 0.5f + 4f; // just past the body: 14 px for a man, the barrel's end for a cannon
 			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center.X + dir * muzzle, NPC.Center.Y - 2f,
@@ -278,30 +362,46 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- movement: hold near the owner, step ledges, hop small walls; never wander off (a far unit is brought back) ----
-		private void FollowOwner(NPC owner)
+		/// <summary>The x this unit idles at beside its officer: a few tiles off to the side it is already on, fanned out per unit so a squad does not stack.</summary>
+		private float FollowGoalX(NPC owner)
 		{
 			NPC npc = NPC;
 			float standoff = (LevyConstants.Summon.FollowStandoffTiles + (npc.whoAmI % 3)) * LevyConstants.TilePx;
 			float fromOwner = npc.Center.X - owner.Center.X;
 			if (Math.Abs(fromOwner) > 48f) _side = Math.Sign(fromOwner);
 			else if (_side == 0) _side = npc.whoAmI % 2 == 0 ? -1 : 1;
-			float goalX = owner.Center.X + _side * standoff;
-			float dx = goalX - npc.Center.X;
-			float dist = Vector2.Distance(npc.Center, owner.Center);
+			return owner.Center.X + _side * standoff;
+		}
 
-			if (dist > LevyConstants.Summon.LeashTiles * LevyConstants.TilePx)
+		/// <summary>Counts the ticks this unit has been left far behind and brings it to the officer once it has been long enough (pits, long falls). True when it was moved this tick.</summary>
+		private bool LeashTeleport(NPC owner)
+		{
+			if (Vector2.Distance(NPC.Center, owner.Center) > LevyConstants.Summon.LeashTiles * LevyConstants.TilePx)
 			{
-				if (++_farTicks >= LevyConstants.Summon.TeleportAfterTicks) { _farTicks = 0; if (TeleportNear(owner)) return; }
+				if (++_farTicks >= LevyConstants.Summon.TeleportAfterTicks) { _farTicks = 0; if (TeleportNear(owner)) return true; }
 			}
 			else _farTicks = 0;
+			return false;
+		}
 
+		private void FollowOwner(NPC owner)
+		{
+			float goalX = FollowGoalX(owner);
+			if (LeashTeleport(owner)) return;
+			WalkToward(goalX, LevyConstants.Summon.StopDistTiles * LevyConstants.TilePx, Kind.MoveSpeedPx);
+		}
+
+		/// <summary>Walk toward <paramref name="goalX"/>, stopping inside <paramref name="stopPx"/> of it; step ledges and hop walls on the way.</summary>
+		private void WalkToward(float goalX, float stopPx, float max)
+		{
+			NPC npc = NPC;
+			float dx = goalX - npc.Center.X;
 			if (_jumpCooldown > 0) _jumpCooldown--;
 			bool grounded = npc.velocity.Y == 0f;
-			if (Math.Abs(dx) > LevyConstants.Summon.StopDistTiles * LevyConstants.TilePx)
+			if (Math.Abs(dx) > stopPx)
 			{
 				int dir = dx > 0f ? 1 : -1;
 				npc.direction = dir; npc.spriteDirection = dir;
-				float max = Kind.MoveSpeedPx;
 				float vx = npc.velocity.X;
 				if (Math.Sign(vx) == -dir) vx *= 0.85f;
 				vx += dir * LevyConstants.Summon.AccelPx;
@@ -311,6 +411,28 @@ namespace Levy.Content.NPCs
 			}
 			else { npc.velocity.X *= 0.8f; if (Math.Abs(npc.velocity.X) < 0.1f) npc.velocity.X = 0f; }
 			if (npc.wet && !npc.lavaWet && npc.velocity.Y > -3f) npc.velocity.Y -= 0.35f; // swim out of water
+		}
+
+		/// <summary>A flier idling: hover above its follow spot beside the officer, bobbing, and be brought along if left far behind.</summary>
+		private void HoverOwner(NPC owner)
+		{
+			float goalX = FollowGoalX(owner);
+			if (LeashTeleport(owner)) return;
+			float bob = (float)Math.Sin(_age * 0.06 + NPC.whoAmI) * LevyConstants.Summon.FlyBobPx;
+			Vector2 goal = new Vector2(goalX, owner.Center.Y - LevyConstants.Summon.FlyHoverHeightTiles * LevyConstants.TilePx + bob);
+			FlyToward(goal, Kind.MoveSpeedPx, LevyConstants.Summon.FlyArriveDistPx);
+			if (Math.Abs(NPC.velocity.X) > 0.3f) { NPC.direction = NPC.velocity.X > 0f ? 1 : -1; NPC.spriteDirection = NPC.direction; }
+		}
+
+		/// <summary>Accelerate toward <paramref name="goal"/> up to <paramref name="max"/> px/tick; inside <paramref name="arriveDistPx"/> of it, settle (the speed bleeds off).</summary>
+		private void FlyToward(Vector2 goal, float max, float arriveDistPx)
+		{
+			Vector2 d = goal - NPC.Center;
+			float dist = d.Length();
+			if (dist <= arriveDistPx || dist < 1f) { NPC.velocity *= LevyConstants.Summon.FlyDamp; return; }
+			NPC.velocity += d / dist * LevyConstants.Summon.FlyAccelPx;
+			float sp = NPC.velocity.Length();
+			if (sp > max) NPC.velocity *= max / sp;
 		}
 
 		/// <summary>Grounded and walking: step up a ledge; hop a wall of 2..max tiles; stop at lava or a bottomless drop (the leash brings it back).</summary>
@@ -383,12 +505,19 @@ namespace Levy.Content.NPCs
 				int frames = Math.Max(1, Main.npcFrameCount[k.DrawNpcType]);
 				int frameH = tex.Height / frames;
 				Rectangle frame = new Rectangle(0, 0, tex.Width, frameH); // frame 0 (standing); no frame-layout guesswork
-				Vector2 origin = new Vector2(frame.Width / 2f, frame.Height);
-				float bob = Math.Abs(NPC.velocity.X) > 0.3f && NPC.velocity.Y == 0f ? (float)Math.Sin(Main.GameUpdateCount * 0.3) * 2f : 0f;
-				Vector2 pos = new Vector2(NPC.Center.X, NPC.Bottom.Y + 4f + bob) - screenPos + new Vector2(0f, NPC.gfxOffY);
 				int sdir = NPC.direction == 0 ? 1 : NPC.direction;
 				SpriteEffects fx = sdir == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 				Color c = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
+				if (k.Flying)
+				{
+					// A flier hangs in the air: the sprite is centred on the hitbox and leans into its motion (every machine derives the lean from the streamed velocity).
+					float lean = MathHelper.Clamp(NPC.velocity.X * 0.06f, -0.45f, 0.45f);
+					spriteBatch.Draw(tex, NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY), frame, c, lean, new Vector2(frame.Width / 2f, frame.Height / 2f), 1f, fx, 0f);
+					return false;
+				}
+				Vector2 origin = new Vector2(frame.Width / 2f, frame.Height);
+				float bob = Math.Abs(NPC.velocity.X) > 0.3f && NPC.velocity.Y == 0f ? (float)Math.Sin(Main.GameUpdateCount * 0.3) * 2f : 0f;
+				Vector2 pos = new Vector2(NPC.Center.X, NPC.Bottom.Y + 4f + bob) - screenPos + new Vector2(0f, NPC.gfxOffY);
 				spriteBatch.Draw(tex, pos, frame, c, 0f, origin, 1f, fx, 0f);
 				return false;
 			}

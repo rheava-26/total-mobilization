@@ -44,17 +44,27 @@ namespace Levy.Content.NPCs
 		public readonly float LeashTiles;
 		/// <summary>The sound played when the unit fires.</summary>
 		public readonly SoundStyle FireSound;
+		/// <summary>
+		/// MOVE PROFILE. True: a charger. It closes on the nearest hostile near its officer and strikes it on contact (its hitbox, grown by <see cref="LevyConstants.Summon.MeleeReachPx"/>, touching the target's),
+		/// every <see cref="CooldownTicks"/>, for <see cref="BaseDamage"/> scaled by world progress. <see cref="RangeTiles"/> is how far it notices a hostile; <see cref="MoveSpeedPx"/> its chase speed;
+		/// <see cref="Knockback"/> the shove. The projectile fields are unused. False: it stands off and fires <see cref="ProjectileType"/>.
+		/// </summary>
+		public readonly bool Melee;
+		/// <summary>MOVE PROFILE. True: the unit flies (no gravity, ignores terrain), hovering above its officer and closing on targets through the air. Combines with <see cref="Melee"/> (a sword) or with a shooter (a drone).</summary>
+		public readonly bool Flying;
 
 		public SummonKind(int id, string name, int maxHp, int baseDamage, int drawNpcType, int projectileType,
 			float projectileSpeed, float knockback, float gravityCorrection, int cooldownTicks, int randomCooldownTicks,
 			float rangeTiles, float moveSpeedPx, int aggro, int lifespanTicks = 0,
-			bool turret = false, int width = DefaultWidth, int height = DefaultHeight, float leashTiles = 0f, SoundStyle? fireSound = null)
+			bool turret = false, int width = DefaultWidth, int height = DefaultHeight, float leashTiles = 0f, SoundStyle? fireSound = null,
+			bool melee = false, bool flying = false)
 		{
 			Id = id; Name = name; MaxHp = maxHp; BaseDamage = baseDamage; DrawNpcType = drawNpcType; ProjectileType = projectileType;
 			ProjectileSpeed = projectileSpeed; Knockback = knockback; GravityCorrection = gravityCorrection;
 			CooldownTicks = cooldownTicks; RandomCooldownTicks = randomCooldownTicks;
 			RangeTiles = rangeTiles; MoveSpeedPx = moveSpeedPx; Aggro = aggro; LifespanTicks = lifespanTicks;
 			Turret = turret; Width = width; Height = height; LeashTiles = leashTiles; FireSound = fireSound ?? SoundID.Item11;
+			Melee = melee; Flying = flying;
 		}
 
 		/// <summary>The hitbox of a standing man (px).</summary>
@@ -106,7 +116,131 @@ namespace Levy.Content.NPCs
 			leashTiles: LevyConstants.Summon.PirateCannonLeashTiles,
 			fireSound: SoundID.Item14);
 
-		private static readonly SummonKind[] _all = { PirateCrew, PirateCannon };
+		/// <summary>The Clothier's skeleton warriors: ground chargers that run down the nearest enemy near the officer and cut it on contact.</summary>
+		public static readonly SummonKind ClothierSkeleton = new SummonKind(
+			id: 2,
+			name: "Skeleton",
+			maxHp: LevyConstants.Summon.ClothierSkeletonHp,
+			baseDamage: LevyConstants.Summon.ClothierSkeletonBaseDamage,
+			drawNpcType: NPCID.Skeleton,
+			projectileType: ProjectileID.None,
+			projectileSpeed: 0f,
+			knockback: LevyConstants.Summon.ClothierSkeletonKnockback,
+			gravityCorrection: 0f,
+			cooldownTicks: LevyConstants.Summon.ClothierSkeletonCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.ClothierSkeletonRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.ClothierSkeletonRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.ClothierSkeletonMoveSpeedPx,
+			aggro: LevyConstants.Summon.ClothierSkeletonAggro,
+			melee: true);
+
+		/// <summary>The Wizard's enchanted swords: flying chargers that dart at the nearest enemy and slash it on contact.</summary>
+		public static readonly SummonKind WizardSword = new SummonKind(
+			id: 3,
+			name: "Enchanted Sword",
+			maxHp: LevyConstants.Summon.WizardSwordHp,
+			baseDamage: LevyConstants.Summon.WizardSwordBaseDamage,
+			drawNpcType: NPCID.EnchantedSword,
+			projectileType: ProjectileID.None,
+			projectileSpeed: 0f,
+			knockback: LevyConstants.Summon.WizardSwordKnockback,
+			gravityCorrection: 0f,
+			cooldownTicks: LevyConstants.Summon.WizardSwordCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.WizardSwordRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.WizardSwordRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.WizardSwordMoveSpeedPx,
+			aggro: LevyConstants.Summon.WizardSwordAggro,
+			width: LevyConstants.Summon.WizardSwordWidthPx,
+			height: LevyConstants.Summon.WizardSwordHeightPx,
+			melee: true,
+			flying: true);
+
+		/// <summary>The Zoologist's wolves: fast ground chargers.</summary>
+		public static readonly SummonKind ZoologistWolf = new SummonKind(
+			id: 4,
+			name: "Wolf",
+			maxHp: LevyConstants.Summon.ZoologistWolfHp,
+			baseDamage: LevyConstants.Summon.ZoologistWolfBaseDamage,
+			drawNpcType: NPCID.Wolf,
+			projectileType: ProjectileID.None,
+			projectileSpeed: 0f,
+			knockback: LevyConstants.Summon.ZoologistWolfKnockback,
+			gravityCorrection: 0f,
+			cooldownTicks: LevyConstants.Summon.ZoologistWolfCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.ZoologistWolfRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.ZoologistWolfRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.ZoologistWolfMoveSpeedPx,
+			aggro: LevyConstants.Summon.ZoologistWolfAggro,
+			width: LevyConstants.Summon.ZoologistWolfWidthPx,
+			height: LevyConstants.Summon.ZoologistWolfHeightPx,
+			melee: true);
+
+		/// <summary>The Zoologist's werewolf: a slow, sturdy brute that draws the enemy's attention.</summary>
+		public static readonly SummonKind ZoologistWerewolf = new SummonKind(
+			id: 5,
+			name: "Werewolf",
+			maxHp: LevyConstants.Summon.ZoologistWerewolfHp,
+			baseDamage: LevyConstants.Summon.ZoologistWerewolfBaseDamage,
+			drawNpcType: NPCID.Werewolf,
+			projectileType: ProjectileID.None,
+			projectileSpeed: 0f,
+			knockback: LevyConstants.Summon.ZoologistWerewolfKnockback,
+			gravityCorrection: 0f,
+			cooldownTicks: LevyConstants.Summon.ZoologistWerewolfCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.ZoologistWerewolfRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.ZoologistWerewolfRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.ZoologistWerewolfMoveSpeedPx,
+			aggro: LevyConstants.Summon.ZoologistWerewolfAggro,
+			width: LevyConstants.Summon.ZoologistWerewolfWidthPx,
+			height: LevyConstants.Summon.ZoologistWerewolfHeightPx,
+			melee: true);
+
+		/// <summary>The Cyborg's combat drones: flying shooters that hover over the squad and laser the enemy from range.</summary>
+		public static readonly SummonKind CyborgDrone = new SummonKind(
+			id: 6,
+			name: "Combat Drone",
+			maxHp: LevyConstants.Summon.CyborgDroneHp,
+			baseDamage: LevyConstants.Summon.CyborgDroneBaseDamage,
+			drawNpcType: NPCID.Probe,
+			projectileType: ProjectileID.MiniRetinaLaser,
+			projectileSpeed: LevyConstants.Summon.CyborgDroneLaserSpeed,
+			knockback: LevyConstants.Summon.CyborgDroneLaserKnockback,
+			gravityCorrection: LevyConstants.Summon.CyborgDroneLaserGravityCorrection,
+			cooldownTicks: LevyConstants.Summon.CyborgDroneCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.CyborgDroneRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.CyborgDroneRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.CyborgDroneMoveSpeedPx,
+			aggro: LevyConstants.Summon.CyborgDroneAggro,
+			width: LevyConstants.Summon.CyborgDroneWidthPx,
+			height: LevyConstants.Summon.CyborgDroneHeightPx,
+			fireSound: SoundID.Item12,
+			flying: true);
+
+		/// <summary>The Witch Doctor's voodoo spirits: flying shooters that spit poison darts.</summary>
+		public static readonly SummonKind WitchDoctorSpirit = new SummonKind(
+			id: 7,
+			name: "Voodoo Spirit",
+			maxHp: LevyConstants.Summon.WitchDoctorSpiritHp,
+			baseDamage: LevyConstants.Summon.WitchDoctorSpiritBaseDamage,
+			drawNpcType: NPCID.VoodooDemon,
+			projectileType: ProjectileID.PoisonDartBlowgun,
+			projectileSpeed: LevyConstants.Summon.WitchDoctorSpiritDartSpeed,
+			knockback: LevyConstants.Summon.WitchDoctorSpiritDartKnockback,
+			gravityCorrection: LevyConstants.Summon.WitchDoctorSpiritDartGravityCorrection,
+			cooldownTicks: LevyConstants.Summon.WitchDoctorSpiritCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.WitchDoctorSpiritRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.WitchDoctorSpiritRangeTiles,
+			moveSpeedPx: LevyConstants.Summon.WitchDoctorSpiritMoveSpeedPx,
+			aggro: LevyConstants.Summon.WitchDoctorSpiritAggro,
+			width: LevyConstants.Summon.WitchDoctorSpiritWidthPx,
+			height: LevyConstants.Summon.WitchDoctorSpiritHeightPx,
+			fireSound: SoundID.Item17,
+			flying: true);
+
+		private static readonly SummonKind[] _all =
+		{
+			PirateCrew, PirateCannon, ClothierSkeleton, WizardSword, ZoologistWolf, ZoologistWerewolf, CyborgDrone, WitchDoctorSpirit,
+		};
 
 		/// <summary>The kind for a synced id, or null when the id is out of range (a stale/forward packet): the unit then waits for a valid sync.</summary>
 		public static SummonKind ById(int id) => (uint)id < (uint)_all.Length ? _all[id] : null;

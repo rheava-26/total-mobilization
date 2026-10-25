@@ -54,6 +54,7 @@ namespace Levy.Common.Targeting
 			if (target == null || body == null || body.Record == null || LevyUtil.IsClient) return;
 			Credit(target, body); // harmless repeat; keeps melee callers that only call this correct for non-lethal hits
 			BossRule.OnSoldierDamagedNpc(target, body, damageDone);
+			Venom.VenomSystem.OnArmyHit(target, body.NPC.Center); // the Witch Doctor's venom: a share of every soldier's hits (a no-op with no Witch Doctor fielded)
 			LevyNpcData.Of(target).LastHitBySoldier = body.NPC.whoAmI;
 			NPC root = LevyUtil.RootNpc(target);
 			if (root.life <= 0 || target.life <= 0)

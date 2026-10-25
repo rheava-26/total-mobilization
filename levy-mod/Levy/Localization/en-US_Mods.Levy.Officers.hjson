@@ -161,4 +161,54 @@ Kit: {
 		Name: Painter
 		Desc: Marches with the line, firing his paintball gun at any enemy in reach.
 	}
+
+	Clothier: {
+		Name: Clothier
+		Desc:
+			'''
+			Raises a squad of {0} skeleton warriors that march with the army, run down the nearest enemy and cut it on contact.
+			A skeleton has {1} health; its damage grows as bosses fall. A fallen one is raised again every {2} seconds.
+			Throws a cursed skull at any enemy that strays into reach.
+			'''
+	}
+
+	Wizard: {
+		Name: Wizard
+		Desc:
+			'''
+			Enchants {0} flying swords that hover over the army, dart at the nearest enemy and slash it on contact.
+			A sword has {1} health; its damage grows as bosses fall. A shattered one is replaced every {2} seconds.
+			Casts bolts from a diamond staff at any enemy that strays into reach.
+			'''
+	}
+
+	Zoologist: {
+		Name: Zoologist
+		Desc:
+			'''
+			Marches with a pack: {0} wolves with {1} health each and {3} werewolf with {4} health that draws the enemy's attention. They run down the nearest enemy and maul it.
+			A fallen wolf is replaced every {2} seconds and a werewolf every {5}; their damage grows as bosses fall.
+			Looses a green strike at any enemy that strays into reach.
+			'''
+	}
+
+	Cyborg: {
+		Name: Cyborg
+		Desc:
+			'''
+			Deploys {0} combat drones that hover over the army and laser the enemy from range.
+			A drone has {1} health; its damage grows as bosses fall. A downed one is rebuilt every {2} seconds.
+			While he serves, ore and treasure glow around his commander. Fires rockets at any enemy that strays into reach.
+			'''
+	}
+
+	WitchDoctor: {
+		Name: Witch Doctor
+		Desc:
+			'''
+			Soldiers, summoned units and officers within {0} tiles envenom {1}% of their hits. Venom lasts {2} seconds and deals {3} damage a second, ignoring defense; it grows as bosses fall.
+			Calls {4} voodoo spirits with {5} health each that spit poison darts. A lost spirit is replaced every {6} seconds.
+			Fires a blowgun at any enemy that strays into reach.
+			'''
+	}
 }

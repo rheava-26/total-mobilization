@@ -159,6 +159,12 @@ namespace Levy.Common.Officers
 			Register(ArmsDealerOfficer.Create());       // frontline: rapid rifle + truer shots and bottomless ammo for the soldiers near him
 			Register(MerchantOfficer.Create());         // frontline: throwing knives + a fence on nearby kills + ammo and potion handouts + a small Morale lift
 			Register(PainterOfficer.Create());          // frontline: colorful paint barrage (no kit)
+			// Summoner officers (part 2)
+			Register(ClothierOfficer.Create());         // support: a squad of skeleton warriors (melee) raised on the fly + a cursed skull
+			Register(WizardOfficer.Create());           // support: a flight of enchanted swords (flying melee) + a staff bolt
+			Register(ZoologistOfficer.Create());        // frontline: a wolf pack and a werewolf (melee) + a green strike
+			Register(CyborgOfficer.Create());           // support: combat drones (flying ranged) + a spelunker's eye on the commander + rockets
+			Register(WitchDoctorOfficer.Create());      // support: venom on a share of the army's hits + voodoo spirits + a blowgun
 		}
 	}
 }

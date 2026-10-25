@@ -38,14 +38,9 @@ namespace Mechanization.Content.Items
 			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
 
 			Vector2 spot = Main.MouseWorld;
-			int type = ModContent.NPCType<TurretNPC>();
-			if (type <= 0) return false;
-
-			int idx = NPC.NewNPC(new EntitySource_ItemUse(player, Item), (int)spot.X, (int)spot.Y, type);
-			if (idx < 0 || idx >= Main.maxNPCs) return false;
-			Main.npc[idx].netUpdate = true;
-			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
-			return true;
+			// TurretSystem spawns the turret AND registers it in the world save, so it survives a reload; a destroyed turret is dropped from that set.
+			int idx = TurretSystem.Instance?.PlaceNew(new EntitySource_ItemUse(player, Item), spot) ?? -1;
+			return idx >= 0;
 		}
 
 		public override void AddRecipes()

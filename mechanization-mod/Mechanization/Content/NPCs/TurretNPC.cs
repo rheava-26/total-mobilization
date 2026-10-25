@@ -2,34 +2,53 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.Bestiary;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Levy.Common.Util;                 // Levy.Common.Util.LevyUtil.IsHostileTarget  (cross-mod reference in content)
+using Levy.Common;                      // LevyConstants.ArrowGravity / ArrowGravityDelayTicks  (shared with the drone's aim solve)
+using Levy.Common.Globals;              // SoldierProjectileTag  (commander kill-credit, exactly as the drones tag their shots)
+using Levy.Common.Util;                 // LevyUtil.IsHostileTarget / IsClient  (cross-mod reference in content)
+using Levy.Common.Weapons;              // DroneArsenal / DroneShot / Aiming / WeaponClassifier  (the drone's proven weapon-mount + shot path, reused)
+using Levy.Content.TileEntities;        // ArmoryTE  (the Levy Armory the surplus weapon is drawn from)
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Content.NPCs
 {
 	/// <summary>
 	/// A deployable automatic turret: a friendly, non-town, <c>aiStyle = -1</c> NPC that does NOT move. It falls under
-	/// gravity until it rests on terrain, then sits still, acquires the nearest hostile in range and fires a fixed
-	/// vanilla round on a cadence. It carries its own HP and a drawn healthbar, takes contact damage from melee enemies
-	/// (vanilla applies no NPC-vs-NPC contact, so the turret applies it itself, exactly as Levy's DroneNPC does) and is
-	/// damaged by hostile projectiles, and it is destroyed when its HP reaches 0.
+	/// gravity until it rests on terrain, then sits still, acquires the nearest hostile in range and fires. It carries its
+	/// own HP and a drawn healthbar, takes contact damage from melee enemies (vanilla applies no NPC-vs-NPC contact, so the
+	/// turret applies it itself, exactly as Levy's DroneNPC does) and is damaged by hostile projectiles, and it is destroyed
+	/// when its HP reaches 0.
 	///
-	/// Modeled on <see cref="Levy.Content.NPCs"/>' combat drone, minus the Barracks/Armory garrison: the turret owns no
-	/// loan, so its whole lifecycle is simply spawn → fight → die. The hostile test reuses Levy's own
-	/// <see cref="LevyUtil.IsHostileTarget"/> — a live cross-mod call, so the turret genuinely depends on Levy at runtime.
+	/// THE GUN. The turret draws the best SURPLUS ranged weapon out of the nearest Levy Armory in reach and fires THAT
+	/// weapon's real projectile — ammo-resolved, at the weapon's own damage, cadence, speed and spread — the same light
+	/// path the combat drone uses (<see cref="DroneArsenal.BuildShot"/> over a non-consuming read of the Armory's racks; the
+	/// weapon is never removed, so the army keeps it). Kills credit the nearest player through Levy's
+	/// <see cref="SoldierProjectileTag"/>, exactly as a drone's shots do. With no Armory in reach, or nothing mountable in
+	/// it, the turret falls back to a fixed round so it is never inert.
 	///
-	/// Server / single player drives the brain and fires; clients draw the borrowed sprite (turned to the aim synced in
-	/// ai[0]) and the healthbar. Transient in v0: not saved, so a turret is lost on world reload (a later phase gives it
-	/// a tile entity / save support and, with it, Levy-Armory weapons and enemy aggro).
+	/// PERSISTENCE. The turret body is transient (<see cref="NeedSaving"/> is false), but <see cref="TurretSystem"/> saves
+	/// each placed turret's position and HP in the world and re-spawns it on load; a destroyed one is dropped from that set.
+	/// <see cref="RecordId"/> pairs this NPC to its saved record.
+	///
+	/// Server / single player drives the brain, picks the weapon and fires; clients draw the borrowed sprite (turned to the
+	/// aim synced in ai[0]) and the healthbar.
 	/// </summary>
 	public class TurretNPC : ModNPC
 	{
+		/// <summary>Id of this turret's saved record in <see cref="TurretSystem"/> (server / single player; -1 until placed or restored). Not synced: clients never touch the registry.</summary>
+		public int RecordId = -1;
+
 		// ---- brain state (server / single player) ----
-		private int _age, _immuneTime, _scan, _target = -1, _cooldown;
+		private int _age, _immuneTime, _scan, _target = -1, _cooldown, _weaponScan;
+		/// <summary>The weapon pattern the turret currently fires (the drone's prebuilt shot), or null to fire the fixed fallback round.</summary>
+		private DroneShot _shot;
+		/// <summary>The mounted weapon's firing sound (played client-side when it shoots), or null.</summary>
+		private SoundStyle? _weaponUseSound;
 		/// <summary>The drawn aim of the barrel (radians), eased toward the wanted one; a client eases it toward the synced ai[0].</summary>
 		private float _aim;
 
@@ -74,6 +93,7 @@ namespace Mechanization.Content.NPCs
 
 			_age++;
 			if (_immuneTime > 0) _immuneTime--;
+			if (--_weaponScan <= 0) { _weaponScan = T.WeaponRefreshTicks; RefreshWeapon(); } // re-pick the mounted weapon from the nearest Armory on a cadence
 
 			ApplyGravity();
 			if (_immuneTime == 0) ContactDamage();
@@ -88,7 +108,7 @@ namespace Mechanization.Content.NPCs
 				Vector2 to = t.Center - NPC.Center;
 				if (to != Vector2.Zero) wantAim = to.ToRotation();
 				if (Math.Abs(to.X) > 4f) { NPC.direction = to.X < 0f ? -1 : 1; NPC.spriteDirection = NPC.direction; }
-				if (_cooldown <= 0) { Fire(t); _cooldown = T.FireIntervalTicks; }
+				if (_cooldown <= 0) { Fire(t); _cooldown = CurrentFireInterval; }
 			}
 			else wantAim = NPC.direction < 0 ? MathHelper.Pi : 0f; // idle: barrel level, facing its last way
 
@@ -120,7 +140,8 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Nearest hostile in reach with a clear line. Range cut runs first so the hostile test and line test are only paid for the slots actually in reach.</summary>
 		private int FindTarget()
 		{
-			float rangeSq = T.RangePx * T.RangePx;
+			float range = CurrentRangePx;
+			float rangeSq = range * range;
 			Vector2 from = NPC.Center;
 			int best = -1; float bestSq = float.MaxValue;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -139,28 +160,187 @@ namespace Mechanization.Content.NPCs
 		private bool Shootable(NPC t)
 		{
 			if (!LevyUtil.IsHostileTarget(t)) return false;
-			if (Vector2.DistanceSquared(NPC.Center, t.Center) > T.RangePx * T.RangePx) return false;
+			float range = CurrentRangePx;
+			if (Vector2.DistanceSquared(NPC.Center, t.Center) > range * range) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);
 		}
 
-		/// <summary>One shot: a fixed vanilla round aimed straight at the target, friendly and owned by the real player so it behaves as a friendly projectile and syncs.</summary>
+		/// <summary>Reach, in px: the mounted weapon's range when one is up (never shorter than the turret's own base reach), else the base reach.</summary>
+		private float CurrentRangePx => _shot != null && _shot.Valid ? Math.Max(T.RangePx, _shot.RangePx) : T.RangePx;
+
+		/// <summary>Ticks between shots: the mounted weapon's own cadence when one is up, else the fallback cadence.</summary>
+		private int CurrentFireInterval => _shot != null && _shot.Valid ? _shot.IntervalTicks : T.FireIntervalTicks;
+
+		// =====================================================================================================
+		// The gun: pull the best surplus ranged weapon from the nearest Levy Armory and fire its real projectile.
+		// =====================================================================================================
+		/// <summary>Re-picks the mounted weapon from the nearest Armory in reach (a non-consuming read of its racks). Null shot = the fixed fallback round.</summary>
+		private void RefreshWeapon()
+		{
+			ArmoryTE armory = NearestArmory(NPC.Center, T.ArmoryReachPx);
+			if (armory == null) { ClearWeapon(); return; }
+			Item weapon = BestRangedSurplus(armory);
+			if (weapon == null) { ClearWeapon(); return; }
+			Item ammo = DroneArsenal.TakesAmmo(weapon) ? BestAmmoFor(armory, weapon.useAmmo) : null;
+			DroneShot shot = DroneArsenal.BuildShot(weapon, ammo); // the drone's own shot builder: projectile, speed, damage, cadence, spread, gravity, homing
+			if (shot == null || !shot.Valid) { ClearWeapon(); return; }
+			_shot = shot;
+			_weaponUseSound = weapon.UseSound;
+		}
+
+		private void ClearWeapon() { _shot = null; _weaponUseSound = null; }
+
+		/// <summary>The nearest Levy Armory tile entity within <paramref name="reachPx"/>, or null.</summary>
+		private static ArmoryTE NearestArmory(Vector2 from, float reachPx)
+		{
+			float reachSq = reachPx * reachPx;
+			ArmoryTE best = null; float bestSq = float.MaxValue;
+			foreach (TileEntity te in TileEntity.ByID.Values)
+			{
+				if (te is not ArmoryTE a) continue;
+				float d = Vector2.DistanceSquared(from, a.Center);
+				if (d < bestSq && d <= reachSq) { bestSq = d; best = a; }
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// The strongest RANGED weapon on an Armory's racks that a turret can fire: issue rows and bulk storage, scored by
+		/// <see cref="WeaponClassifier.Score"/>, filtered to ranged weapons the drone arsenal accepts as mountable. A non-consuming
+		/// read — the weapon stays the army's; the turret only mirrors its projectile. Melee and magic are excluded (a turret fires bullets, not spells or swords).
+		/// </summary>
+		private static Item BestRangedSurplus(ArmoryTE armory)
+		{
+			Item best = null; float bestScore = float.NegativeInfinity;
+			void Consider(Item it)
+			{
+				if (it == null || it.IsAir) return;
+				if (WeaponClassifier.ItemDamageClass(it) != DamageClass.Ranged) return;
+				if (!DroneArsenal.IsMountable(it)) return;
+				float s = WeaponClassifier.Score(it);
+				if (s > bestScore) { bestScore = s; best = it; }
+			}
+			foreach (Item it in armory.IssueWeapons) Consider(it);
+			foreach (Item it in armory.Storage) Consider(it);
+			return best;
+		}
+
+		/// <summary>The best stocked round of a given ammo kind (highest damage, then rarity, as the drone's ammo loan ranks it), or null to let the shot builder use the default round. Non-consuming.</summary>
+		private static Item BestAmmoFor(ArmoryTE armory, int ammoId)
+		{
+			if (ammoId <= 0) return null;
+			Item best = null; float bestScore = float.NegativeInfinity;
+			void Consider(Item it)
+			{
+				if (it == null || it.IsAir || it.ammo != ammoId || it.IsACoin) return;
+				float s = it.damage * 100f + WeaponClassifier.RarityTier(it.rare);
+				if (s > bestScore) { bestScore = s; best = it; }
+			}
+			foreach (Item it in armory.IssueAmmo) Consider(it);
+			foreach (Item it in armory.Storage) Consider(it);
+			return best;
+		}
+
+		/// <summary>One cannonade: the mounted weapon's real projectile (one to several as it fires) aimed with lead/arc at the target, else the fixed fallback round. Owned by the real player and credited to the nearest commander.</summary>
 		private void Fire(NPC target)
 		{
+			int commander = PickCommander(NPC.Center);
+			if (_shot != null && _shot.Valid) FireSurplus(target, commander);
+			else FireFixed(target, commander);
+		}
+
+		/// <summary>Fires the mounted weapon's projectile — the drone's light shot path: lead/arc aim, the weapon's multishot spread, its damage and knockback, tagged for kill-credit.</summary>
+		private void FireSurplus(NPC target, int commander)
+		{
+			DroneShot shot = _shot;
 			Vector2 from = NPC.Center;
-			Vector2 to = target.Center - from;
-			Vector2 dir = to.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
-			Vector2 vel = dir * T.ShotSpeed;
+			Vector2 vel = AimVelocity(shot, from, target);
+			Vector2 dir = vel.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
 			Vector2 muzzle = from + dir * T.MuzzleOffsetPx;
 			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from; // a muzzle buried in a tile would kill the round on spawn
 
-			int owner = Main.myPlayer; // 255 on a dedicated server: the correct owner for a server-spawned friendly projectile
-			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, T.ShotDamage, T.ShotKnockback, owner);
-			if (idx >= 0 && idx < Main.maxProjectiles)
+			int dmg = (int)Math.Round(shot.BaseDamage * T.SurplusDamageMult);
+			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
+			dmg = Math.Max(1, dmg);
+
+			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
+			for (int k = 0; k < shot.Count; k++)
 			{
-				Projectile p = Main.projectile[idx];
-				p.friendly = true; p.hostile = false;
-				p.netUpdate = true;
+				float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
+				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
+				int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
+				if (idx < 0 || idx >= Main.maxProjectiles) continue;
+				TagTurretShot(Main.projectile[idx], commander, shot.Class, shot.Crit);
 			}
+			if (Main.netMode != NetmodeID.Server && _weaponUseSound.HasValue) SoundEngine.PlaySound(_weaponUseSound.Value, NPC.Center);
+		}
+
+		/// <summary>Fires the fixed fallback round straight at the target (no Armory in reach, or nothing mountable in it), so a turret is never inert.</summary>
+		private void FireFixed(NPC target, int commander)
+		{
+			Vector2 from = NPC.Center;
+			Vector2 dir = (target.Center - from).SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
+			Vector2 vel = dir * T.ShotSpeed;
+			Vector2 muzzle = from + dir * T.MuzzleOffsetPx;
+			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from;
+
+			int owner = Main.myPlayer;
+			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, T.ShotDamage, T.ShotKnockback, owner);
+			if (idx >= 0 && idx < Main.maxProjectiles) TagTurretShot(Main.projectile[idx], commander, DamageClass.Ranged, 0);
+		}
+
+		/// <summary>
+		/// Makes a spawned round a friendly, NPC-style shot owned by the real player and credited to <paramref name="commander"/> through Levy's
+		/// <see cref="SoldierProjectileTag"/> — exactly the credit a combat drone's shot gets, set here directly since the turret is not a Levy body
+		/// its OnSpawn recognises. A piercing round gets its own hit-immunity so it does not share the owner's cooldown with every other shooter.
+		/// </summary>
+		private static void TagTurretShot(Projectile p, int commander, DamageClass cls, int crit)
+		{
+			if (!p.active) return;
+			p.friendly = true; p.hostile = false;
+			if (cls != null) p.DamageType = cls;
+			if (crit > 0) p.CritChance = crit;
+			if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity)
+			{ p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag))
+			{
+				tag.CommanderIndex = commander; // ModifyHitNPC credits this player before the kill drops loot (banners, bestiary, "defeated by")
+				tag.DroneShot = true;           // spares the player's own base from the turret's blasts, as a drone's rocket is spared
+			}
+			p.npcProj = true; p.noDropItem = true; // the commander's own on-hit item effects and drops never run for the turret's shot
+			p.netUpdate = true;
+		}
+
+		/// <summary>Lead, and the arc of a falling arrow: the same intercept solve the drone uses. Homing ammo flies straight at the target and needs no lead.</summary>
+		private Vector2 AimVelocity(DroneShot shot, Vector2 from, NPC target)
+		{
+			Vector2 at = target.Center;
+			if (shot.Homing)
+			{
+				Vector2 d = at - from;
+				if (d == Vector2.Zero) d = Vector2.UnitX;
+				return Vector2.Normalize(d) * shot.Speed;
+			}
+			float steps = shot.StepMult <= 0f ? 1f : shot.StepMult; // the shot advances this many times a tick, and gravity runs per advance
+			float leadSpeed = Math.Max(0.01f, shot.Speed) * steps;
+			return Aiming.SolveIntercept(from, leadSpeed, at, target.velocity, shot.Gravity,
+				shot.Gravity ? LevyConstants.ArrowGravity * steps * steps : 0f,
+				shot.Gravity ? (int)Math.Round(LevyConstants.ArrowGravityDelayTicks / steps) : 0) / steps;
+		}
+
+		/// <summary>The player a turret's kills are credited to: the nearest active player, a living one before a dead one. -1 when nobody is on. (A small re-implementation of the drone system's own pick, to avoid exposing a Levy internal.)</summary>
+		private static int PickCommander(Vector2 near)
+		{
+			int best = -1; float bestD = float.MaxValue;
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (p == null || !p.active) continue;
+				float d = Vector2.DistanceSquared(p.Center, near);
+				if (p.dead) d += 1e12f;
+				if (d < bestD) { bestD = d; best = i; }
+			}
+			return best;
 		}
 
 		// ---- taking contact hits (vanilla applies no NPC-vs-NPC contact, so the turret applies it itself) ----
@@ -195,7 +375,7 @@ namespace Mechanization.Content.NPCs
 		public override bool CheckDead() => true;
 		public override bool PreKill() => false;              // no vanilla loot
 		public override bool CheckActive() => false;          // a placed turret does not despawn by distance
-		public override bool NeedSaving() => false;           // transient in v0: lost on world reload
+		public override bool NeedSaving() => false;           // the NPC body is transient; TurretSystem saves the placement and re-spawns it on load
 		public override bool UsesPartyHat() => false;
 		public override bool CanChat() => false;
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;

@@ -197,7 +197,11 @@ namespace Levy.Common.Weapons
 				else if (item.useStyle == ItemUseStyleID.Rapier) melee = WeaponFamily.Shortsword;
 				else if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) melee = WeaponFamily.Shortsword;
 				// Zenith (noMelee, its swords orbit the body): classed as a broadsword so the swing hitbox stays the melee damage; ApplyProjectileMelee then stands it off at full-camera range to loose its swords (see MiscProjSwap for the sword anchor).
-				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith)) melee = WeaponFamily.Broadsword;
+				// A weapon that only reached this fallback because its DamageClass is none of melee/ranged/magic (a modded Bard/Rogue/Healer/Thrower
+				// whose standalone class is unknown to us) is NOT a sword to swing when it actually launches a projectile: let it fall through to the
+				// plain-shooter path below, where the soldier fires item.shoot and the spawned projectile carries its own modded DamageClass. A genuine
+				// melee weapon that fires on swing (sword beam, Zenith, Terra Blade) counts as Melee here (viaMeleeClass) and keeps the broadsword swing.
+				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith) && (viaMeleeClass || !FiresGenericProjectile(item, sample))) melee = WeaponFamily.Broadsword;
 				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
 			}
 
@@ -248,6 +252,16 @@ namespace Levy.Common.Weapons
 			if (!sample.friendly || sample.hostile || sample.minion || sample.sentry || sample.minionSlots > 0f) return false;
 			return sample.aiStyle == ProjAIStyleID.ThrownProjectile || sample.aiStyle == LevyConstants.ThrownStickAiStyle;
 		}
+
+		/// <summary>
+		/// The weapon launches a usable friendly projectile the plain-shooter path can fire: a set shot, not Purification Powder, with a loadable sample.
+		/// Used in the melee fallback to tell a modded projectile weapon (one whose DamageClass is none of melee/ranged/magic, so it fell through to the
+		/// fallback) apart from a true melee blade: a non-melee-class weapon that fires a projectile is routed to the shooter path instead of swung.
+		/// <paramref name="sample"/> is the already-resolved sample for <c>item.shoot</c>. Mirrors the plain-shooter fallback's own gate, so any weapon this
+		/// accepts is always caught there (becomes Magic), never left Unsupported. Minion/sentry/hook/whip/boomerang shots were rejected earlier.
+		/// </summary>
+		private static bool FiresGenericProjectile(Item item, Projectile sample) =>
+			item.shoot > ProjectileID.None && item.shoot != ProjectileID.PurificationPowder && sample != null;
 
 		/// <summary>Damage used to rank a thrown item: its own, else the blast its bomb projectile writes when it goes off.</summary>
 		public static int ThrownRankDamage(Item src) =>

@@ -31,6 +31,11 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
 		public List<int> ExtraTargetingAiStyles = new();
 
+		[Header("Targeting")]
+		/// <summary>Enemies the militia will never attack, by exact display name (case-insensitive). For boss-summoning
+		/// enemies like the Perforator Cyst, whose death spawns a boss. Add any others you run into.</summary>
+		public List<string> DoNotAttackNpcNames = new() { "Perforator Cyst" };
+
 		[Header("Economy")]
 		[Range(0f, 5f)] [DefaultValue(1f)] public float WageMultiplier;
 		[DefaultValue(true)] public bool AutoMusterDefault;

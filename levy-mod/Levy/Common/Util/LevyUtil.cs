@@ -109,6 +109,27 @@ namespace Levy.Common.Util
 			return npc;
 		}
 
-		public static bool IsHostileTarget(NPC npc) => npc.active && !npc.friendly && !npc.townNPC && npc.lifeMax > 5 && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type];
+		public static bool IsHostileTarget(NPC npc)
+		{
+			if (!(npc.active && !npc.friendly && !npc.townNPC && npc.lifeMax > 5 && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type]))
+				return false;
+			return !IsOnNoAttackList(npc);
+		}
+
+		/// <summary>True when the NPC's display name is on the commander's "leave it alone" list (config). Keeps the militia off
+		/// boss-summoning enemies like the Perforator Cyst, whose death spawns a boss nobody asked for.</summary>
+		public static bool IsOnNoAttackList(NPC npc)
+		{
+			var list = Levy.Common.Config.LevyConfig.Get?.DoNotAttackNpcNames;
+			if (list == null || list.Count == 0) return false;
+			string name = npc.TypeName;
+			for (int i = 0; i < list.Count; i++)
+			{
+				string entry = list[i];
+				if (!string.IsNullOrWhiteSpace(entry) && string.Equals(entry.Trim(), name, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+			return false;
+		}
 	}
 }

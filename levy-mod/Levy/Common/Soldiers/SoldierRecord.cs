@@ -68,6 +68,10 @@ namespace Levy.Common.Soldiers
 		public Color HairColor = new(215, 90, 55), SkinColor = new(255, 125, 90), EyeColor = new(105, 90, 75),
 			ShirtColor = new(175, 165, 140), UnderShirtColor = new(160, 180, 215), PantsColor = new(255, 230, 175), ShoeColor = new(160, 105, 60);
 
+		// ---- companion data ----
+		/// <summary>Small named integers a companion mod keeps per soldier (the Thorium compat's per-soldier Inspiration maximum). Saved with the record; not sent in the client snapshot. Empty for most soldiers.</summary>
+		public Dictionary<string, int> Ext = new();
+
 		// ---- runtime (never saved) ----
 		public int BodyIndex = -1;
 		public int RespawnTimer;
@@ -152,8 +156,16 @@ namespace Levy.Common.Soldiers
 				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
 				["hair"] = Hair, ["skinVar"] = SkinVariant, ["male"] = Male,
+				["ext"] = SaveExt(),
 				["cHair"] = HairColor, ["cSkin"] = SkinColor, ["cEye"] = EyeColor, ["cShirt"] = ShirtColor, ["cUnder"] = UnderShirtColor, ["cPants"] = PantsColor, ["cShoe"] = ShoeColor,
 			};
+		}
+
+		private TagCompound SaveExt()
+		{
+			var tag = new TagCompound();
+			if (Ext != null) foreach (var kv in Ext) tag[kv.Key] = kv.Value;
+			return tag;
 		}
 
 		public static SoldierRecord Load(TagCompound t)
@@ -172,6 +184,7 @@ namespace Levy.Common.Soldiers
 				Hair = t.GetInt("hair"), SkinVariant = t.GetInt("skinVar"), Male = t.GetBool("male"),
 			};
 			if (t.ContainsKey("cHair")) { r.HairColor = t.Get<Color>("cHair"); r.SkinColor = t.Get<Color>("cSkin"); r.EyeColor = t.Get<Color>("cEye"); r.ShirtColor = t.Get<Color>("cShirt"); r.UnderShirtColor = t.Get<Color>("cUnder"); r.PantsColor = t.Get<Color>("cPants"); r.ShoeColor = t.Get<Color>("cShoe"); }
+			if (t.ContainsKey("ext")) { foreach (var kv in t.GetCompound("ext")) if (kv.Value is int v) r.Ext[kv.Key] = v; }
 			if (r.CurrentHp <= 0) r.CurrentHp = r.MaxHp;
 			r.CurrentHp = Math.Min(r.CurrentHp, r.MaxHp); // an older save may hold more than the hard ceiling allows
 			r.Mana = Math.Clamp(r.Mana, 0, r.MaxMana);

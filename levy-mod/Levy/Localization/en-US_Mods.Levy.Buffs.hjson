@@ -4,6 +4,11 @@ MoraleBuff: {
 	Description: Fights with raised spirits: more damage, more defense and more critical hits.
 }
 
+BardEmpowermentBuff: {
+	DisplayName: Empowered
+	Description: Lifted by a bard's music with the stat bonuses of that instrument.
+}
+
 DryadsBlessingBuff: {
 	DisplayName: Dryad's Blessing
 	Description: Gains defense and steady life regeneration, and throws a share of contact damage back at the attacker.

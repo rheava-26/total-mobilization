@@ -47,6 +47,7 @@ namespace Levy.Common.Net
 	///  Bark: short npcIndex, byte channel (DialogueChannel), byte emoteId, string text   (Dialogue)
 	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
 	///  MutinyRob: long copper, int damage, int hitDirection, string soldierName   (Mutiny) — to the robbed player only; the client takes up to that much coin from its own pockets and banks, then takes the hit
+	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
 	/// </summary>
 	public enum LevyPacket : byte
 	{
@@ -54,6 +55,7 @@ namespace Levy.Common.Net
 		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts, OfficerCommand,
 		Demote, Reserve,
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
+		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 	}
 
 	public static class LevyPackets

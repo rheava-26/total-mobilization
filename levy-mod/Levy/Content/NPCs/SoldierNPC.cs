@@ -69,6 +69,9 @@ namespace Levy.Content.NPCs
 		public int Defense;
 		/// <summary>Flat defense bonus hook (Flavor: +4 near a barracks with A Guide to Fortification). Null = none.</summary>
 		public static Func<SoldierNPC, int> ExtraDefense;
+		/// <summary>Companion stat pass: called during the buff pass of RefreshStats with the dummy mid-refresh (after the equips and potion buffs, before the stats are read). A companion mod lays its own
+		/// stat deltas on the dummy and returns the life-regen units it adds (0 for none). Null = none; a throwing delegate is ignored.</summary>
+		public static Func<SoldierNPC, Player, int> ExtraBuffStats;
 		/// <summary>Tick of the last melee hit this soldier landed (Combat sets; Brain steps back after it).</summary>
 		public int LastMeleeHitTick = -1000;
 		public float MoveSpeedMult = 1f;

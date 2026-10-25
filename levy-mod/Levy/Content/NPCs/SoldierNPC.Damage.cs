@@ -196,6 +196,7 @@ namespace Levy.Content.NPCs
 				regen += ApplyBuffEffect(d, NPC.buffType[i]);
 			}
 			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
+			if (ExtraBuffStats != null) { try { regen += ExtraBuffStats(this, d); } catch (Exception) { } } // a companion mod's own stat deltas (Thorium bard empowerments)
 			return regen;
 		}
 

@@ -8,7 +8,7 @@ using Levy.Common.Util;
 namespace Levy.Common.Compat.Thorium
 {
 	/// <summary>
-	/// A soldier's healing bolt. ai[0] = the wounded soldier's NPC index, ai[1] = hit points restored. It homes onto that soldier and restores
+	/// A soldier's healing bolt. ai[0] = the wounded soldier's NPC index (or <see cref="PlayerTarget"/> for the commander player), ai[1] = hit points restored. It homes onto that ally and restores
 	/// its life on contact (server / single player), then vanishes. Deals no damage and ignores terrain, so a heal never harms an enemy
 	/// and never gets lost behind a ledge.
 	/// </summary>
@@ -32,15 +32,30 @@ namespace Levy.Common.Compat.Thorium
 		public override bool? CanDamage() => false;
 		public override bool PreDraw(ref Color lightColor) => false;
 
+		/// <summary>ai[0] value that targets a PLAYER: -(playerIndex + 1). A non-negative value is a soldier's NPC index.</summary>
+		public static float PlayerTarget(int playerIndex) => -(playerIndex + 1);
+
 		public override void AI()
 		{
-			int idx = (int)Projectile.ai[0];
-			NPC t = idx >= 0 && idx < Main.maxNPCs ? Main.npc[idx] : null;
-			if (t == null || !t.active || t.life <= 0 || t.ModNPC is not SoldierNPC) { Projectile.Kill(); return; }
+			int code = (int)Projectile.ai[0];
+			NPC t = null; Player pl = null;
+			if (code < 0)
+			{
+				int pi = -code - 1;
+				pl = pi >= 0 && pi < Main.maxPlayers ? Main.player[pi] : null;
+				if (pl == null || !pl.active || pl.dead) { Projectile.Kill(); return; }
+			}
+			else
+			{
+				t = code < Main.maxNPCs ? Main.npc[code] : null;
+				if (t == null || !t.active || t.life <= 0 || t.ModNPC is not SoldierNPC) { Projectile.Kill(); return; }
+			}
+			Vector2 center = pl != null ? pl.Center : t.Center;
+			Rectangle box = pl != null ? pl.Hitbox : t.Hitbox;
 
-			Vector2 to = t.Center - Projectile.Center;
+			Vector2 to = center - Projectile.Center;
 			float dist = to.Length();
-			if (dist < 14f || Projectile.Hitbox.Intersects(t.Hitbox)) { Arrive(t); return; }
+			if (dist < 14f || Projectile.Hitbox.Intersects(box)) { Arrive(t, pl); return; }
 
 			float speed = System.Math.Max(7f, Projectile.velocity.Length());
 			Vector2 want = to / dist * speed;
@@ -55,26 +70,31 @@ namespace Levy.Common.Compat.Thorium
 			}
 		}
 
-		private void Arrive(NPC t)
+		private void Arrive(NPC t, Player pl)
 		{
+			Vector2 at = pl != null ? pl.Center : t.Center;
 			if (LevyUtil.IsServerOrSingle)
 			{
 				int heal = System.Math.Max(0, (int)Projectile.ai[1]);
-				int before = t.life;
-				t.life = System.Math.Min(t.lifeMax, t.life + heal);
-				int gained = t.life - before;
-				if (gained > 0)
+				if (pl != null) CompanionFx.HealPlayer(pl, heal);
+				else
 				{
-					if (t.ModNPC is SoldierNPC { Record: not null } s) s.Record.CurrentHp = t.life;
-					t.HealEffect(gained, true);
-					t.netUpdate = true;
+					int before = t.life;
+					t.life = System.Math.Min(t.lifeMax, t.life + heal);
+					int gained = t.life - before;
+					if (gained > 0)
+					{
+						if (t.ModNPC is SoldierNPC { Record: not null } s) s.Record.CurrentHp = t.life;
+						t.HealEffect(gained, true);
+						t.netUpdate = true;
+					}
 				}
 			}
 			if (Main.netMode != NetmodeID.Server)
 			{
 				for (int i = 0; i < 8; i++)
 				{
-					Dust d = Dust.NewDustPerfect(t.Center, DustID.GoldFlame, Main.rand.NextVector2Circular(2.5f, 2.5f), 100, default, 1.2f);
+					Dust d = Dust.NewDustPerfect(at, DustID.GoldFlame, Main.rand.NextVector2Circular(2.5f, 2.5f), 100, default, 1.2f);
 					d.noGravity = true;
 				}
 			}

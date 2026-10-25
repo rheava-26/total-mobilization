@@ -65,6 +65,14 @@ namespace Mechanization.Common
 			public const int BodyDrawItemType = ItemID.Cannon;
 			/// <summary>Longest edge the borrowed sprite is scaled to, in px.</summary>
 			public const float BodyDrawMaxPx = 40f;
+			/// <summary>Longest edge the MOUNTED weapon's item sprite is scaled to, in px (drawn over the cannon so you can see which gun it fires).</summary>
+			public const float WeaponDrawMaxPx = 26f;
+			/// <summary>How far along the aim the mounted weapon's sprite is pushed out from the body center, in px.</summary>
+			public const float WeaponDrawOffsetPx = 8f;
+
+			// ---- enemy aggro (Levy EnemyTargeting integration) ----
+			/// <summary>Taunt weight (Player.aggro equivalent) enemies feel from a turret, so hostiles path to and attack it like a soldier or drone.</summary>
+			public const int Aggro = 0;
 
 			// ---- healthbar (2-rectangle bar, borrowed from Levy's DroneNPC pattern) ----
 			public const int HpBarWidthPx = 40, HpBarHeightPx = 5, HpBarOffsetY = 12;

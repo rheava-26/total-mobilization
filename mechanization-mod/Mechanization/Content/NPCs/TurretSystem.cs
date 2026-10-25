@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using Levy.Common.Targeting;
 using Levy.Common.Util;
 using T = Mechanization.Common.MechConstants.Turret;
 
@@ -65,6 +66,24 @@ namespace Mechanization.Content.NPCs
 			if (idx < 0) { _nextId--; return -1; } // spawn failed: do not keep a record with no NPC, and reuse the id
 			_records[rec.Id] = rec;
 			return idx;
+		}
+
+		// =====================================================================================================
+		// Enemy aggro: feed live turrets into Levy's targeting body list every tick, so hostiles path to them like a soldier or drone.
+		// =====================================================================================================
+		/// <summary>
+		/// Appends every live turret to <see cref="EnemyTargeting.Bodies"/>. Levy's own <c>EnemyTargetingSystem.PreUpdateNPCs</c> clears and
+		/// rebuilds that list earlier this tick (Mechanization sorts after Levy, so this runs after it); NPC AI runs afterwards and reads the list,
+		/// so a turret added here is a target for the remainder of the tick. Runs on every netmode — the slot-255 swap runs on clients too.
+		/// </summary>
+		public override void PreUpdateNPCs()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && n.ModNPC is TurretNPC t && t.IsAlive)
+					EnemyTargeting.Bodies.Add(t);
+			}
 		}
 
 		// =====================================================================================================

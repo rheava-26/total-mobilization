@@ -10,8 +10,10 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;                      // LevyConstants.ArrowGravity / ArrowGravityDelayTicks  (shared with the drone's aim solve)
 using Levy.Common.Globals;              // SoldierProjectileTag  (commander kill-credit, exactly as the drones tag their shots)
+using Levy.Common.Targeting;            // ITargetBody / EnemyTargeting  (hostiles path to the turret exactly as they do to a drone)
 using Levy.Common.Util;                 // LevyUtil.IsHostileTarget / IsClient  (cross-mod reference in content)
 using Levy.Common.Weapons;              // DroneArsenal / DroneShot / Aiming / WeaponClassifier  (the drone's proven weapon-mount + shot path, reused)
+using Levy.Content.NPCs;                // SoldierNPC.DummySlot  (the slot-255 swap the enemy-targeting system uses)
 using Levy.Content.TileEntities;        // ArmoryTE  (the Levy Armory the surplus weapon is drawn from)
 using T = Mechanization.Common.MechConstants.Turret;
 
@@ -36,12 +38,19 @@ namespace Mechanization.Content.NPCs
 	/// <see cref="RecordId"/> pairs this NPC to its saved record.
 	///
 	/// Server / single player drives the brain, picks the weapon and fires; clients draw the borrowed sprite (turned to the
-	/// aim synced in ai[0]) and the healthbar.
+	/// aim synced in ai[0]), the mounted weapon (its item type rides the extra-AI sync) and the healthbar.
+	///
+	/// ENEMY AGGRO. The turret is an <see cref="ITargetBody"/>, fed into Levy's <see cref="EnemyTargeting.Bodies"/> each tick by
+	/// <see cref="TurretSystem"/>, so hostiles acquire and chase it through the same slot-255 dummy swap that points them at a soldier or
+	/// a combat drone. The contact damage of an enemy that reaches it is applied by the turret itself in <see cref="ContactDamage"/>.
 	/// </summary>
-	public class TurretNPC : ModNPC
+	public class TurretNPC : ModNPC, ITargetBody
 	{
 		/// <summary>Id of this turret's saved record in <see cref="TurretSystem"/> (server / single player; -1 until placed or restored). Not synced: clients never touch the registry.</summary>
 		public int RecordId = -1;
+
+		/// <summary>Free-standing Player swapped into Main.player[255] for one enemy AI call so the enemy chases this body (never in Main.player[] otherwise).</summary>
+		public Player Dummy { get; private set; }
 
 		// ---- brain state (server / single player) ----
 		private int _age, _immuneTime, _scan, _target = -1, _cooldown, _weaponScan;
@@ -49,6 +58,8 @@ namespace Mechanization.Content.NPCs
 		private DroneShot _shot;
 		/// <summary>The mounted weapon's firing sound (played client-side when it shoots), or null.</summary>
 		private SoundStyle? _weaponUseSound;
+		/// <summary>The item type of the mounted weapon (server picks it; synced to clients so they can draw which gun it fires). 0 = none / fixed fallback round.</summary>
+		private int _weaponType;
 		/// <summary>The drawn aim of the barrel (radians), eased toward the wanted one; a client eases it toward the synced ai[0].</summary>
 		private float _aim;
 
@@ -80,15 +91,45 @@ namespace Mechanization.Content.NPCs
 			NPC.noTileCollide = false;                       // so it rests on solid ground
 			NPC.rarity = 0; NPC.value = 0f;
 			NPC.netAlways = true;                            // a stationary combat object is always relevant to nearby clients
+			EnsureDummy();
 		}
 
 		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) { }
+
+		// =====================================================================================================
+		// ITargetBody — enemies chase the turret exactly like a soldier's or a drone's body (EnemyTargeting swaps Dummy into slot 255).
+		// =====================================================================================================
+		/// <summary>Taunt weight added to this body when enemies weigh it against the commander.</summary>
+		public int TargetAggro => T.Aggro;
+		/// <summary>Active and not knocked out: a live turret draws enemy fire; a destroyed one is dropped from the body list the same tick.</summary>
+		public bool IsAlive => NPC.active && NPC.life > 0;
+
+		private void EnsureDummy()
+		{
+			if (Dummy != null) return;
+			Dummy = new Player { whoAmI = SoldierNPC.DummySlot, active = true, dead = false, ghost = false, difficulty = 0, direction = 1 };
+			Dummy.width = T.BodyWidth; Dummy.height = T.BodyHeight;
+		}
+
+		/// <summary>Moves the dummy onto the turret just before it is swapped into slot 255, so the enemy's AI reads the turret's position as its target.</summary>
+		public void SyncDummyTransform()
+		{
+			EnsureDummy();
+			Dummy.width = NPC.width; Dummy.height = NPC.height;
+			Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
+			Dummy.direction = NPC.direction == 0 ? 1 : NPC.direction;
+			Dummy.gravDir = 1f; Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
+			Dummy.statLife = NPC.life; Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, NPC.lifeMax);
+			Dummy.whoAmI = SoldierNPC.DummySlot;
+		}
 
 		// =====================================================================================================
 		// AI
 		// =====================================================================================================
 		public override void AI()
 		{
+			EnsureDummy();
+			SyncDummyTransform(); // keep the targeting dummy co-located on every netmode (NPC AI, and the slot-255 swap, run on clients too)
 			if (LevyUtil.IsClient) { _aim = EaseAngle(_aim, NPC.ai[0], T.AimTurnLerp); return; }
 
 			_age++;
@@ -179,16 +220,25 @@ namespace Mechanization.Content.NPCs
 		{
 			ArmoryTE armory = NearestArmory(NPC.Center, T.ArmoryReachPx);
 			if (armory == null) { ClearWeapon(); return; }
-			Item weapon = BestRangedSurplus(armory);
+			Item weapon = BestSurplus(armory);
 			if (weapon == null) { ClearWeapon(); return; }
 			Item ammo = DroneArsenal.TakesAmmo(weapon) ? BestAmmoFor(armory, weapon.useAmmo) : null;
 			DroneShot shot = DroneArsenal.BuildShot(weapon, ammo); // the drone's own shot builder: projectile, speed, damage, cadence, spread, gravity, homing
 			if (shot == null || !shot.Valid) { ClearWeapon(); return; }
 			_shot = shot;
 			_weaponUseSound = weapon.UseSound;
+			SetWeaponType(weapon.type); // clients draw this item's sprite over the cannon
 		}
 
-		private void ClearWeapon() { _shot = null; _weaponUseSound = null; }
+		private void ClearWeapon() { _shot = null; _weaponUseSound = null; SetWeaponType(0); }
+
+		/// <summary>Records the mounted weapon's item type and flags a sync when it changes, so clients redraw the right gun.</summary>
+		private void SetWeaponType(int type)
+		{
+			if (_weaponType == type) return;
+			_weaponType = type;
+			NPC.netUpdate = true;
+		}
 
 		/// <summary>The nearest Levy Armory tile entity within <paramref name="reachPx"/>, or null.</summary>
 		private static ArmoryTE NearestArmory(Vector2 from, float reachPx)
@@ -205,17 +255,19 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>
-		/// The strongest RANGED weapon on an Armory's racks that a turret can fire: issue rows and bulk storage, scored by
-		/// <see cref="WeaponClassifier.Score"/>, filtered to ranged weapons the drone arsenal accepts as mountable. A non-consuming
-		/// read — the weapon stays the army's; the turret only mirrors its projectile. Melee and magic are excluded (a turret fires bullets, not spells or swords).
+		/// The strongest surplus weapon on an Armory's racks that a turret can fire: issue rows and bulk storage, scored by
+		/// <see cref="WeaponClassifier.Score"/>, filtered to RANGED or MAGIC weapons the drone arsenal accepts as mountable. A non-consuming
+		/// read — the weapon stays the army's; the turret only mirrors its projectile. Melee, summon, whip and sentry are excluded by
+		/// <see cref="DroneArsenal.IsMountable"/>. A caster just fires its projectile — a turret keeps no mana economy (generous by design).
 		/// </summary>
-		private static Item BestRangedSurplus(ArmoryTE armory)
+		private static Item BestSurplus(ArmoryTE armory)
 		{
 			Item best = null; float bestScore = float.NegativeInfinity;
 			void Consider(Item it)
 			{
 				if (it == null || it.IsAir) return;
-				if (WeaponClassifier.ItemDamageClass(it) != DamageClass.Ranged) return;
+				DamageClass cls = WeaponClassifier.ItemDamageClass(it);
+				if (cls != DamageClass.Ranged && cls != DamageClass.Magic) return;
 				if (!DroneArsenal.IsMountable(it)) return;
 				float s = WeaponClassifier.Score(it);
 				if (s > bestScore) { bestScore = s; best = it; }
@@ -418,6 +470,7 @@ namespace Mechanization.Content.NPCs
 				// Flip the sprite upright when the barrel points left, so the cannon never draws upside-down.
 				SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 				spriteBatch.Draw(tex, pos, null, c, _aim, origin, scale, fx, 0f);
+				DrawMountedWeapon(spriteBatch, pos, c); // the actual gun (Megashark, gem staff...) over the cannon, so you can see what it fires
 				return false;
 			}
 			catch (Exception e)
@@ -425,6 +478,19 @@ namespace Mechanization.Content.NPCs
 				Mechanization.Instance.Logger.Warn("Mechanization: drawing a turret failed: " + e.Message);
 				return false;
 			}
+		}
+
+		/// <summary>The mounted weapon's item sprite, pushed out along the aim and turned to it (kept upright when aiming left). Nothing when no weapon is mounted — the cannon shows alone.</summary>
+		private void DrawMountedWeapon(SpriteBatch spriteBatch, Vector2 bodyPos, Color light)
+		{
+			if (_weaponType <= 0 || _weaponType >= ItemLoader.ItemCount) return;
+			Main.instance.LoadItem(_weaponType);
+			Texture2D wt = TextureAssets.Item[_weaponType]?.Value;
+			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return;
+			float scale = Math.Min(1f, T.WeaponDrawMaxPx / Math.Max(wt.Width, wt.Height));
+			Vector2 muzzle = bodyPos + new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim)) * T.WeaponDrawOffsetPx;
+			SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
+			spriteBatch.Draw(wt, muzzle, null, light, _aim, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -438,5 +504,12 @@ namespace Mechanization.Content.NPCs
 			spriteBatch.Draw(pixel, new Rectangle(bx - 1, by - 1, w + 2, h + 2), new Color(20, 20, 20, 200));
 			spriteBatch.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), Color.Lerp(Color.Red, Color.LimeGreen, frac));
 		}
+
+		// =====================================================================================================
+		// Net: clients need the mounted weapon's item type to draw the right gun. The aim rides ai[0]; life rides the vanilla NPC sync.
+		// =====================================================================================================
+		public override void SendExtraAI(System.IO.BinaryWriter writer) => writer.Write7BitEncodedInt(_weaponType);
+
+		public override void ReceiveExtraAI(System.IO.BinaryReader reader) => _weaponType = reader.Read7BitEncodedInt();
 	}
 }

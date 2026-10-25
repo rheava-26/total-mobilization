@@ -8,7 +8,15 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.4.6` + Mechanization `0.3.0` + Levy: Thorium `0.1.0`** on the integration branch `worktree-levy-stardust`. **Levy ships as a `.tmod` from this branch — it does NOT merge to `main`.**
+**Current version: Levy `1.4.7` + Mechanization `0.3.0` (→0.4.0 in flight) + Levy: Thorium `0.1.0`** on the integration branch `worktree-levy-stardust`. **Levy ships as a `.tmod` from this branch — it does NOT merge to `main`.**
+
+### ✅ 1.4.7 — DRONE PATROL (2026-10-25, merged `drone-patrol`; build+boot clean, needs live test)
+Drones follow patrol banners and engage instead of loitering (Eve's ask). In-place in Levy (NOT migrated to Mechanization — that's a later slice). `DroneNPC.cs` + `LevyConstants.Drones.cs` only (DroneSystem untouched). Resolves the nearest banner PAIR via `UIActions.FindPatrolPair`, flies a leg state machine A↔B at hover altitude (slots start on alternate ends to hold both), pursues targets but LEASHED to 22 tiles off the patrol segment (flying `PostChaseLimit`) so the line holds, stuck-climb recovery, and a graceful hover-over-barracks FALLBACK when no banners exist (then drones don't pursue — pursuit only exists to be leashed). Live-tune: route points sit ~3 tiles under a ceiling; rough terrain between banners leans on the stuck-climb.
+
+### 🔎 SUMMONER-SECONDARY BUG — diagnosed (not yet fixed), for a future slice
+Eve: "summons won't go into a secondary slot; soldiers refuse summoner secondaries." Loadout = `Gear.Weapon` (primary) + `Gear.Sidearm` (secondary) + `Gear.Ammo`; summon weapons aren't FIRED (`WeaponUse.cs:96` returns false) — kept up by `SoldierNPC.MaintainMinions` via `SummonWeapon()`. **`SummonWeapon()` (SoldierNPC.Summon.cs:30) ALREADY supports a sidearm summon (line 35: returns `g.Sidearm` when `_sideProfile.IsSummon`).** So the bug is NOT "by design" — it's likely (a) `_sideProfile` not being populated/classified as Summon for the sidearm slot, or (b) the loadout UI refusing to PLACE a summon weapon in the sidearm slot. FIX = check `_sideProfile` population + the loadout slot-assignment validation. A Levy-side slice.
+
+### ⏳ Mechanization 0.4.0 — TURRET QoL (in flight): dismantle/recover a turret, in-Armory-range indicator + see mounted weapon, and network-wide/bigger Armory reach (frontier turrets — towns suppress spawns near the base). Mechanization-only, no Levy change.
 
 ### ✅✅ 1.4.6 + LevyThorium 0.1.0 — THORIUM BARD + HEALER WORK (2026-10-25, the #1 overnight ask, merged `thorium-compat`)
 **ThoriumMod 1.7.2.8 loads on this toolchain (tML 2026.8.3.0) — so the compat was BOOTED with all 4 mods AND runtime self-tested in a sandbox (26/27, the 1 fail = over-strict test assertion).** Soldiers now use Thorium Bard + Healer weapons.

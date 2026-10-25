@@ -1,11 +1,11 @@
 using System;
 using Terraria;
+using Terraria.ModLoader;
 using ThoriumMod;
 using ThoriumMod.Items;
 using Levy.Content.NPCs;
-using LevyThorium.Content;
 
-namespace LevyThorium.Common
+namespace Levy.Common.Compat.Thorium
 {
 	/// <summary>
 	/// Thorium Bard on a Levy soldier. Levy fires the instrument's real <c>Shoot</c> on the soldier's dummy Player, but never runs the item-use
@@ -18,6 +18,7 @@ namespace LevyThorium.Common
 	/// </list>
 	/// Ally empowerments (the instrument's buff aura) are not applied: Thorium only buffs real players.
 	/// </summary>
+	[JITWhenModsEnabled("ThoriumMod")]
 	public static class BardCompat
 	{
 		public static bool IsBardWeapon(Item item) => item != null && !item.IsAir && item.ModItem is BardItem;

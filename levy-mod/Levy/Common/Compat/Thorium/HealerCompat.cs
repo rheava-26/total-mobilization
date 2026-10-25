@@ -8,9 +8,8 @@ using ThoriumMod.Items;
 using Levy.Common;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
-using LevyThorium.Content;
 
-namespace LevyThorium.Common
+namespace Levy.Common.Compat.Thorium
 {
 	/// <summary>
 	/// Thorium Healer on a Levy soldier. Thorium's own heal projectile only ever heals Players (and only on the owner's client), so a soldier
@@ -19,6 +18,7 @@ namespace LevyThorium.Common
 	/// restores the weapon's own <c>healAmount</c> on contact. The weapon's mana cost and use time apply. Never fired at enemies (see
 	/// <see cref="CompatHooks.PreFireGate"/>).
 	/// </summary>
+	[JITWhenModsEnabled("ThoriumMod")]
 	public static class HealerCompat
 	{
 		/// <summary>Heal delivered per cast as a multiple of the weapon's healAmount. 1 = exactly what the weapon says.</summary>

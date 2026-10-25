@@ -43,8 +43,13 @@ namespace Levy.Common.Targeting
 	/// </summary>
 	public static class EnemyTargeting
 	{
-		/// <summary>Live soldier bodies and active officers this tick (rebuilt in EnemyTargetingSystem.PreUpdateNPCs on every netmode; NPC AI runs on clients too).</summary>
-		internal static readonly List<ITargetBody> Bodies = new(64);
+		/// <summary>
+		/// Live soldier bodies and active officers this tick (rebuilt in EnemyTargetingSystem.PreUpdateNPCs on every netmode; NPC AI runs on clients too).
+		/// Public so a companion mod can append its own <see cref="ITargetBody"/> instances (e.g. Mechanization's turrets) AFTER this system has
+		/// rebuilt the list and before NPC AI runs — a mod that sorts after Levy does exactly that in its own PreUpdateNPCs, mirroring how
+		/// <see cref="DroneSystem"/>'s bodies are fed in here.
+		/// </summary>
+		public static readonly List<ITargetBody> Bodies = new(64);
 		private static readonly HashSet<int> _swapStyles = new(LevyConstants.Targeting.SwapAiStyles);
 		private static readonly HashSet<int> _nativeStyles = new(LevyConstants.Targeting.NativeAiStyles);
 		private static readonly HashSet<int> _swapIncompatible = new(LevyConstants.Targeting.SwapIncompatibleAiStyles);
@@ -83,6 +88,9 @@ namespace Levy.Common.Targeting
 			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
 			if (npc.ModNPC is Content.NPCs.SummonedUnitNPC u) return u.IsAlive ? u : null; // so an enemy sticks to a summoned unit without re-acquiring every tick
 			if (npc.ModNPC is Content.NPCs.DroneNPC drone) return drone.IsAlive ? drone : null; // ... and to a combat drone
+			// A companion mod's own body (e.g. a Mechanization turret): any ModNPC that implements ITargetBody resolves here, so an enemy locked
+			// on it is re-resolved each tick exactly as it is for a drone. Reached only for external types — every Levy body is handled above.
+			if (npc.ModNPC is ITargetBody ext) return ext.IsAlive ? ext : null;
 			return OfficerSystem.Instance.BodyOf(npc);
 		}
 

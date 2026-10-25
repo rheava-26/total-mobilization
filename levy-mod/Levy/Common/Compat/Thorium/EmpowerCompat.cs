@@ -24,8 +24,8 @@ namespace Levy.Common.Compat.Thorium
 	/// Its stats come from Thorium itself: <see cref="ApplyStats"/> runs each live empowerment's own <c>Update(thoriumPlayer, level)</c> on the soldier's dummy Player during the buff pass,
 	/// so every stat the empowerment gives (damage, flat damage, crit, defense, move speed, life regen...) is exactly Thorium's number. Three stats Levy does not read from Thorium's
 	/// fields are bridged by hand: damage reduction becomes the dummy's endurance, life regeneration feeds Levy's regen, attack speed shortens the weapon cooldown (see ThoriumDriver).</item>
-	/// <item>On the commander player the empowerment timer is written into the player's own Thorium empowerment data, exactly as Thorium's loader does (in multiplayer the server sends the
-	/// client a <see cref="LevyPacket.CompanionEffect"/> and the client writes it).</item>
+	/// <item>On the commander player the empowerment goes in through Thorium's own <c>EmpowermentLoader.ApplyEmpowerment</c> (see <see cref="ApplyToPlayerOwner"/>), so the player gets exactly what a Thorium
+	/// bard's tune gives him: the timer, the orbiting icons and bar, the gained notice. In multiplayer the server sends the client a <see cref="LevyPacket.CompanionEffect"/> and the client applies it.</item>
 	/// </list>
 	/// </summary>
 	[JITWhenModsEnabled("ThoriumMod")]
@@ -226,7 +226,7 @@ namespace Levy.Common.Compat.Thorium
 					pkt.Write(CompanionFx.KindEmpower); pkt.Write((byte)cmd.whoAmI); pkt.Write(type); pkt.Write(lvl); pkt.Write(dur);
 					CompanionFx.SendTo(pkt, cmd.whoAmI);
 				}
-				else WriteTimer(ttp, type, lvl, dur);
+				else ApplyToPlayerOwner(ttp, type, lvl, dur);
 			}
 		}
 
@@ -239,7 +239,49 @@ namespace Levy.Common.Compat.Thorium
 			return _dataField?.GetValue(tp) as EmpowermentData;
 		}
 
-		/// <summary>Runs on the machine that owns the player: the same timer write Thorium's <c>EmpowermentLoader.ApplyEmpowerment</c> makes, minus the combat text.</summary>
+		private delegate bool ApplyEmpowermentFn(ThoriumPlayer bard, ThoriumPlayer target, byte type, byte level, short duration);
+		private static ApplyEmpowermentFn _apply;
+		private static bool _applyLooked;
+		private static int _applyFails;
+
+		/// <summary>Thorium's own <c>EmpowermentLoader.ApplyEmpowerment(bard, target, type, level, duration)</c> (internal to Thorium, bound once by reflection); null if it cannot be reached.</summary>
+		private static ApplyEmpowermentFn RealApply()
+		{
+			if (_applyLooked) return _apply;
+			_applyLooked = true;
+			try
+			{
+				var m = typeof(EmpowermentLoader).GetMethod("ApplyEmpowerment", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic,
+					null, new[] { typeof(ThoriumPlayer), typeof(ThoriumPlayer), typeof(byte), typeof(byte), typeof(short) }, null);
+				if (m != null) _apply = (ApplyEmpowermentFn)Delegate.CreateDelegate(typeof(ApplyEmpowermentFn), m);
+			}
+			catch (Exception) { _apply = null; }
+			return _apply;
+		}
+
+		/// <summary>
+		/// Runs on the machine that owns the player. The empowerment goes in through Thorium's own entry point (the call Thorium makes when a player's instrument empowers him), so everything
+		/// Thorium does for a gained empowerment happens: the timer and its fade-in, the active list the orbiting icons are drawn from, the gained-empowerment notice and burst, the received-duration
+		/// bonus, and (in multiplayer) the packet that shows the icons to the other players. The bard is the player himself, as when he plays his own tune. Falls back to the bare timer write if that
+		/// method cannot be reached.
+		/// </summary>
+		private static void ApplyToPlayerOwner(ThoriumPlayer ttp, byte type, byte level, short duration)
+		{
+			var apply = RealApply();
+			if (apply != null)
+			{
+				try { apply(ttp, ttp, type, level, duration); return; }
+				catch (Exception e)
+				{
+					// Thorium's own method throwing (a surprise in its notice code) must not cost the player the buff: the timer is written directly this once, and after repeated failures that is the only path.
+					if (++_applyFails >= 3) _apply = null;
+					Levy.Instance.Logger.Warn("Levy/Thorium compat: Thorium's ApplyEmpowerment threw (" + e.Message + "); writing the timer directly");
+				}
+			}
+			WriteTimer(ttp, type, level, duration);
+		}
+
+		/// <summary>Fallback: the bare timer write Thorium's <c>EmpowermentLoader.ApplyEmpowerment</c> makes, minus the notice.</summary>
 		private static void WriteTimer(ThoriumPlayer ttp, byte type, byte level, short duration)
 		{
 			Empowerment emp = EmpowermentLoader.GetEmpowerment(type);
@@ -261,7 +303,7 @@ namespace Levy.Common.Compat.Thorium
 		{
 			int who = r.ReadByte(); byte type = r.ReadByte(); byte level = r.ReadByte(); short dur = r.ReadInt16();
 			if (who != Main.myPlayer || who >= Main.maxPlayers) return;
-			WriteTimer(Main.player[who].GetModPlayer<ThoriumPlayer>(), type, level, dur);
+			ApplyToPlayerOwner(Main.player[who].GetModPlayer<ThoriumPlayer>(), type, level, dur);
 		}
 
 		/// <summary>

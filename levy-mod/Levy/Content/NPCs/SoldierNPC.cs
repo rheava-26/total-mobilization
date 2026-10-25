@@ -573,7 +573,7 @@ namespace Levy.Content.NPCs
 			if (newUse && !Main.dedServ)
 			{
 				var held = Dummy.inventory[0];
-				if (held != null && !held.IsAir && held.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(held.UseSound.Value, NPC.Center);
+				if (held != null && !held.IsAir) { var useSound = WeaponUse.SoundOf(held); if (useSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(useSound.Value, NPC.Center); }
 			}
 		}
 

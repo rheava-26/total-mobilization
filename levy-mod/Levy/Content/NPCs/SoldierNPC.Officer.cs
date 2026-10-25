@@ -390,7 +390,7 @@ namespace Levy.Content.NPCs
 				if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity) { p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }
 				p.netUpdate = true;
 			}
-			if (Main.netMode != NetmodeID.Server && _offHeld != null && _offHeld.UseSound.HasValue) SoundEngine.PlaySound(_offHeld.UseSound.Value, NPC.Center);
+			if (Main.netMode != NetmodeID.Server && _offHeld != null) { var useSound = WeaponUse.SoundOf(_offHeld); if (useSound.HasValue) SoundEngine.PlaySound(useSound.Value, NPC.Center); }
 		}
 
 		/// <summary>Lead, and the arc of a falling arrow: the same intercept solve every soldier and drone shot uses, with a small officer's wobble.</summary>

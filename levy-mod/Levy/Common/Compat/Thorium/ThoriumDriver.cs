@@ -40,6 +40,7 @@ namespace Levy.Common.Compat.Thorium
 		{
 			WeaponClassifier.ExtraCombatClass = CompatHooks.ExtraCombatClass;
 			WeaponUse.PreFireGate = CompatHooks.PreFireGate;
+			WeaponUse.UseSoundFallback = CompatHooks.UseSound;
 			SoldierNPC.ExtraBuffStats = CompatHooks.ExtraBuffStats;
 			LevyPackets.Register(LevyPacket.CompanionEffect, OnCompanionPacket);
 			LevyPackets.Register(LevyPacket.CompanionRequest, OnCompanionRequest);
@@ -61,6 +62,7 @@ namespace Levy.Common.Compat.Thorium
 		{
 			WeaponClassifier.ExtraCombatClass = null;
 			WeaponUse.PreFireGate = null;
+			WeaponUse.UseSoundFallback = null;
 			SoldierNPC.ExtraBuffStats = null;
 		}
 

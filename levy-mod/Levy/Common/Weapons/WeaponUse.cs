@@ -22,6 +22,17 @@ namespace Levy.Common.Weapons
 		/// <summary>Companion per-shot veto, consulted just before a shot is dispatched: (soldier, weapon, its profile, target). Returning false makes the soldier hold this tick
 		/// (no shot). Used by companion mods for resource systems and for role weapons that must not fire at the current target. Null = none; a throwing delegate allows the shot.</summary>
 		public static Func<SoldierNPC, Item, WeaponProfile, NPC, bool> PreFireGate;
+		/// <summary>Companion hook for a weapon whose own sound is not in <c>Item.UseSound</c> (a mod that moves it elsewhere, e.g. Thorium's instruments): the sound a use of this item makes. Null = none.</summary>
+		public static Func<Item, SoundStyle?> UseSoundFallback;
+
+		/// <summary>The sound one use of <paramref name="item"/> makes: its <c>UseSound</c>, else what the companion hook says.</summary>
+		public static SoundStyle? SoundOf(Item item)
+		{
+			if (item == null) return null;
+			if (item.UseSound.HasValue) return item.UseSound;
+			if (UseSoundFallback == null) return null;
+			try { return UseSoundFallback(item); } catch (Exception) { return null; }
+		}
 		/// <summary>Ticks a vetoed soldier waits before the gate is asked again (capped by the weapon's own use time).</summary>
 		private const int GateRetryTicks = 10;
 
@@ -902,7 +913,8 @@ namespace Levy.Common.Weapons
 				s.AimRotation = aimVel.ToRotation();
 				if (Math.Abs(aimVel.X) > 0.01f) s.NPC.direction = aimVel.X < 0f ? -1 : 1;
 			}
-			if (item.UseSound.HasValue) SoundEngine.PlaySound(item.UseSound.Value, s.NPC.Center);
+			SoundStyle? useSound = SoundOf(item);
+			if (useSound.HasValue) SoundEngine.PlaySound(useSound.Value, s.NPC.Center);
 			s.NPC.netUpdate = true;
 		}
 	}

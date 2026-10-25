@@ -1,5 +1,8 @@
 using Terraria;
+using Terraria.Audio;
 using Terraria.ModLoader;
+using ThoriumMod;
+using ThoriumMod.Items;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
 
@@ -20,6 +23,18 @@ namespace Levy.Common.Compat.Thorium
 			// Radiant damage, lifesteal and hybrid (damage + heal) weapons fire at enemies like any ranged / magic weapon.
 			if (HealerCompat.VetoEnemyFire(item)) return false;
 			return true;
+		}
+
+		/// <summary>
+		/// WeaponUse.UseSoundFallback: a Thorium instrument's own sound. Thorium moves an instrument's <c>UseSound</c> into <c>BardItem.PlayedSound</c> (and nulls <c>UseSound</c>) so it can play it
+		/// itself with pitch and its volume setting; a soldier plays it the same way as any other bystander's instrument (Thorium's "others' instruments" volume).
+		/// </summary>
+		public static SoundStyle? UseSound(Item item)
+		{
+			if (item?.ModItem is not BardItem bi || !bi.PlayedSound.HasValue) return null;
+			SoundStyle sound = bi.PlayedSound.Value;
+			try { sound = sound.WithVolumeScale(ThoriumConfigClient.Instance.OthersInstrumentSoundVolume); } catch (System.Exception) { }
+			return sound;
 		}
 
 		/// <summary>SoldierNPC.ExtraBuffStats: the soldier's live bard empowerments, laid on his dummy.</summary>

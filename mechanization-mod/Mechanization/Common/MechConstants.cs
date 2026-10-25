@@ -29,13 +29,22 @@ namespace Mechanization.Common
 			public const float RangePx = RangeTiles * TilePx;
 			/// <summary>Ticks between shots (60 = 1s). 30 => two rounds a second.</summary>
 			public const int FireIntervalTicks = 30;
-			/// <summary>The fixed vanilla round the turret fires (v0: no Levy Armory integration yet).</summary>
+			/// <summary>The fallback round the turret fires when no Levy Armory with a mountable weapon is in reach, so a turret is never inert.</summary>
 			public const int ProjectileType = ProjectileID.Bullet;
 			public const int ShotDamage = 24;
 			public const float ShotKnockback = 2f;
 			public const float ShotSpeed = 11f;
 			/// <summary>How often the turret re-picks a target, in ticks (a throttled scan, not every tick).</summary>
 			public const int ScanIntervalTicks = 12;
+
+			// ---- surplus weapon (Levy Armory integration) ----
+			/// <summary>How far the turret reaches for a Levy Armory to draw a weapon pattern from, in tiles, and the same reach in pixels.</summary>
+			public const float ArmoryReachTiles = 80f;
+			public const float ArmoryReachPx = ArmoryReachTiles * TilePx;
+			/// <summary>Ticks between re-picking the mounted weapon from the nearest Armory (a throttled scan; the weapon rarely changes).</summary>
+			public const int WeaponRefreshTicks = 90;
+			/// <summary>The mounted weapon's listed damage is multiplied by this before the turret fires it. 1 = the weapon's own damage.</summary>
+			public const float SurplusDamageMult = 1f;
 
 			// ---- gravity: it falls until it rests on terrain, then sits still ----
 			public const float GravityPerTick = 0.35f;

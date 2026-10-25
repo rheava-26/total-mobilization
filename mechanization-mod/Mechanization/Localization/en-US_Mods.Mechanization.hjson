@@ -5,8 +5,9 @@ Items: {
 		DisplayName: Automatic Turret
 		Tooltip:
 			'''
-			A deployable automatic turret. Fires on hostiles within 32 tiles, twice a second.
-			Drops onto the ground where you aim. Has its own health and can be destroyed.
+			A deployable automatic turret. Reaches at least 32 tiles and guns down hostiles on its own.
+			It arms itself from the best spare ranged weapon in an armory within 80 tiles and fires that weapon's rounds; with none in reach it fires a plain bullet.
+			Drops onto the ground where you aim, survives a reload, and keeps fighting until destroyed.
 			'''
 	}
 }

@@ -137,14 +137,16 @@ namespace Levy.Common.Officers
 		// packs, shimmer variants); the avatar's own body is invisible and carries only the nameplate (SoldierNPC.Draw.cs).
 		// =====================================================================================================
 
-		/// <summary>A small tag over an enrolled officer that is NOT currently deployed (its avatar carries the name while marching).</summary>
+		/// <summary>A small tag over an enrolled officer that is NOT currently deployed (its avatar carries the name while marching); red and marked off duty while he is unpaid.</summary>
 		public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (!Enrolled || Main.dedServ) return;
 			if (OfficerSystem.Instance.HasLiveAvatar(npc)) return; // the avatar's nameplate shows the given name instead
-			string text = LevyUtil.T("Officers.Tag", Slot + 1);
+			// An officer benched for want of pay stays where the town AI leaves him, tagged so it reads "unpaid, off duty" and not "he quit".
+			bool offDuty = OfficerSystem.IsSuspended(this);
+			string text = LevyUtil.T(offDuty ? "Officers.TagOffDuty" : "Officers.Tag", Slot + 1);
 			Vector2 pos = npc.Top - screenPos + new Vector2(0f, -18f);
-			Utils.DrawBorderString(spriteBatch, text, pos, new Color(255, 215, 80), 0.6f, 0.5f, 1f);
+			Utils.DrawBorderString(spriteBatch, text, pos, offDuty ? new Color(210, 120, 110) : new Color(255, 215, 80), 0.6f, 0.5f, 1f);
 		}
 	}
 }

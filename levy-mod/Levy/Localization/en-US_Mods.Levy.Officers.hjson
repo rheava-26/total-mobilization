@@ -1,5 +1,6 @@
 # Officer strings (town NPCs conscripted into the army). Keys are relative to Mods.Levy.Officers.
 Tag: Officer {0}
+TagOffDuty: Officer {0} (off duty, unpaid)
 
 Fail: {
 	Invalid: That cannot be commissioned.
@@ -8,7 +9,7 @@ Fail: {
 	NoSlot: Every command slot is filled. Dismiss an officer first.
 	NotHoused: Only townsfolk housed in this settlement can be commissioned from this Barracks.
 	TooFar: Stand closer to the Barracks.
-	NoMoney: The treasury cannot cover the commission fee.
+	NoMoney: No treasury or stored coin in this settlement can cover the commission fee.
 }
 
 Msg: {
@@ -16,8 +17,8 @@ Msg: {
 	Dismissed: "{0} is dismissed and returns to town life."
 	Lapsed: "{0} leaves the army. The commission has lapsed."
 	Fallen: "{0} has fallen."
-	Unpaid: "{0} was not paid at dawn. One more missed payday and the officer goes off duty."
-	OffDuty: "{0} is off duty: the treasury could not cover the wage. The commission is kept. Duty resumes at the first dawn the wage is paid."
+	Unpaid: "{0} was not paid at dawn: no treasury or stored coin anywhere in the settlement covers the wage. Missed paydays: {1} of {2}, then the officer goes off duty."
+	OffDuty: "{0} is off duty: no treasury or stored coin anywhere in the settlement could cover the wage. The commission is kept. Duty resumes at the first dawn the wage is paid."
 	Resumed: "{0} is back on duty."
 	Payday: Officers paid: {0}.
 }
@@ -26,7 +27,7 @@ UI: {
 	Open: Officers {0}/{1}
 	OpenHint: Conscript townsfolk as officers. They leave their post, march with the army and bring a special skill.
 	Title: Officers - {0}
-	Sub: Command slots {0}/{1}. The fee is paid once; the wage comes from this treasury at dawn.
+	Sub: Command slots {0}/{1}. The fee is paid once; the wage comes from the settlement's treasuries and stored coin at dawn.
 	SlotEmpty: Slot {0}: empty
 	SlotLine: "{0}. {1}, {2}"
 	Unpaid: " (unpaid {0} day)"

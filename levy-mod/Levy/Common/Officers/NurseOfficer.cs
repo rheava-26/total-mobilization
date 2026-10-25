@@ -91,7 +91,7 @@ namespace Levy.Common.Officers
 			int missing = body.lifeMax - body.life;       // heal to FULL (capped at missing)
 			if (missing <= 0) return;
 			long price = Math.Min(NurseMaxPriceCopper, FlavorSystem.NurseHealPrice(missing));
-			if (!EconomySystem.TryPay(ctx.Barracks, price)) return; // the treasury cannot cover it: she does not heal on credit
+			if (!EconomySystem.TryPayNetwork(ctx.Barracks, price)) return; // the settlement cannot cover it: she does not heal on credit
 
 			int key = best.Record != null && best.Record.Id > 0 ? best.Record.Id : -1000 - body.whoAmI;
 			float dist = nurse.Distance(body.Center);

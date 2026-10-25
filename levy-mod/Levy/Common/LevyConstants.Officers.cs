@@ -15,12 +15,12 @@ namespace Levy.Common
 			public const int OfficerBaseSlots = 3;
 
 			// ---- economy (copper; multiples of the tier's Levy wage so it scales with the world) ----
-			/// <summary>An officer's daily wage in Levy wages (a Levy is 1x, a Man-at-Arms 3x). Paid at dawn from the barracks that commissioned him.</summary>
+			/// <summary>An officer's daily wage in Levy wages (a Levy is 1x, a Man-at-Arms 3x). Paid at dawn from the settlement's money (the barracks that commissioned him first, then its network).</summary>
 			public const float WageMult = 2f;
 			/// <summary>The one-time commission fee, in days of the officer's wage (same idea as a soldier's muster fee).</summary>
 			public const int FeeDays = LevyConstants.MusterFeeDays;
-			/// <summary>Consecutive unpaid dawns after which an officer goes OFF DUTY: the commission and the slot are kept, but no avatar marches and no kit runs until a dawn payroll pays him again. A commission is never ended for want of pay.</summary>
-			public const int MaxDaysUnpaid = 2;
+			/// <summary>Consecutive unpaid dawns (a grace of MaxDaysUnpaid - 1 missed paydays, each warned in chat) after which an officer goes OFF DUTY: the commission and the slot are kept, but no avatar marches and no kit runs until a dawn payroll pays him again. A commission is never ended for want of pay.</summary>
+			public const int MaxDaysUnpaid = 3;
 			/// <summary>The commander must be this close (tiles) to the barracks to commission or dismiss (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
 			public const int ActionRangeTiles = 32;
 

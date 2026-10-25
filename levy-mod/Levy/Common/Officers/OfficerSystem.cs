@@ -190,14 +190,14 @@ namespace Levy.Common.Officers
 			if (FreeSlot(commander.name) < 0) return OfficerCheck.NoSlot;
 			if (!SettlementSystem.Instance.TownNpcsOf(barracks).Contains(npc)) return OfficerCheck.NotHoused;
 			if (!LevyUtil.WithinTiles(commander.Center, barracks.Center, LevyConstants.Officer.ActionRangeTiles)) return OfficerCheck.TooFar;
-			if (!EconomySystem.CanAfford(barracks, Fee(def))) return OfficerCheck.NoMoney;
+			if (!EconomySystem.CanAffordNetwork(barracks, Fee(def))) return OfficerCheck.NoMoney; // the whole settlement's money counts, not just this barracks's wallet
 			return OfficerCheck.Ok;
 		}
 
 		// =====================================================================================================
 		// Actions (server / single player)
 		// =====================================================================================================
-		/// <summary>Conscripts <paramref name="npc"/>: charges the fee to the barracks treasury and puts him in the commander's lowest free slot. Tells the commander why on a refusal.</summary>
+		/// <summary>Conscripts <paramref name="npc"/>: charges the fee to the settlement (this barracks's treasury first, then its network) and puts him in the commander's lowest free slot. Tells the commander why on a refusal.</summary>
 		public bool Commission(Player commander, BarracksTE barracks, NPC npc)
 		{
 			if (!LevyUtil.IsServerOrSingle) return false;
@@ -210,7 +210,7 @@ namespace Levy.Common.Officers
 			OfficerDef def = OfficerRegistry.Get(npc.type);
 			OfficerGlobalNPC g = Data(npc);
 			long fee = Fee(def);
-			if (!EconomySystem.TryPay(barracks, fee)) return false; // CanCommission just said yes; never commission unpaid
+			if (!EconomySystem.TryPayNetwork(barracks, fee)) return false; // CanCommission just said yes; never commission unpaid
 			RosterSystem.SyncBarracks(barracks);
 
 			g.Enrolled = true;
@@ -432,7 +432,7 @@ namespace Levy.Common.Officers
 		}
 
 		/// <summary>
-		/// The dawn payroll. Pays every enrolled officer from his barracks, after the soldiers. An officer the treasury cannot pay is warned on the first missed dawn and goes OFF
+		/// The dawn payroll. Pays every enrolled officer from his settlement (his barracks's treasury first, then the other networked barracks, then coin items in armory storage; see <see cref="EconomySystem.TryPayNetwork"/>), after the soldiers. An officer the treasury cannot pay is warned on the first missed dawn and goes OFF
 		/// DUTY on reaching <see cref="LevyConstants.Officer.MaxDaysUnpaid"/> (see <see cref="IsSuspended"/>): the commission and the slot are kept, only the service stops. Every
 		/// later dawn tries to pay him again, and the first that succeeds puts him straight back on duty. An unpaid officer is never dismissed.
 		/// </summary>
@@ -451,7 +451,7 @@ namespace Levy.Common.Officers
 				BarracksTE b = PayingBarracks(npc, g);
 				int ci = LevyUtil.FindPlayerByName(g.Commander);
 				bool wasOffDuty = IsSuspended(g);
-				if (b != null && EconomySystem.TryPay(b, wage))
+				if (b != null && EconomySystem.TryPayNetwork(b, wage))
 				{
 					g.DaysUnpaid = 0; touched.Add(b);
 					paid[g.Commander] = (paid.TryGetValue(g.Commander, out long p) ? p : 0) + wage;
@@ -462,7 +462,7 @@ namespace Levy.Common.Officers
 					if (g.DaysUnpaid < byte.MaxValue) g.DaysUnpaid++; // a byte: a long-unpaid officer must never wrap back round to "paid up"
 					// Tell the commander once per change of state (warned, then off duty); an officer who stays off duty is not re-announced every dawn.
 					if (!wasOffDuty && ci >= 0)
-						RosterSystem.SendToPlayer(Main.player[ci], LevyUtil.T(IsSuspended(g) ? "Officers.Msg.OffDuty" : "Officers.Msg.Unpaid", NameOf(npc)));
+						RosterSystem.SendToPlayer(Main.player[ci], IsSuspended(g) ? LevyUtil.T("Officers.Msg.OffDuty", NameOf(npc)) : LevyUtil.T("Officers.Msg.Unpaid", NameOf(npc), g.DaysUnpaid, LevyConstants.Officer.MaxDaysUnpaid));
 				}
 				npc.netUpdate = true;
 			}

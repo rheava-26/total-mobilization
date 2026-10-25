@@ -264,10 +264,11 @@ namespace Levy.Common.Systems
 			return res;
 		}
 
-		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
+		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons) => NearPylon(a.Center, pylons);
+
+		private static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
 		{
 			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit;
-			Vector2 c = a.Center;
 			for (int i = 0; i < pylons.Count; i++)
 			{
 				var p = pylons[i].PositionInTiles; // top-left of the 3x4 pylon; measure from its middle
@@ -275,6 +276,34 @@ namespace Levy.Common.Systems
 				if (Vector2.DistanceSquared(c, pc) <= limit) return true;
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// The barracks that pool their money with <paramref name="from"/>: the same settlement. Two barracks are one settlement when they stand inside each other's settlement box
+		/// (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles) or are both on the pylon network (see <see cref="NetworkedArmories"/>;
+		/// pylons interconnect, so a far-flung outpost with a pylon is still part of the home settlement). <paramref name="from"/> is always first, the rest nearest-first.
+		/// A lone barracks gets just itself. Read-only use; valid for the current call.
+		/// </summary>
+		public virtual List<BarracksTE> NetworkedBarracks(BarracksTE from)
+		{
+			var res = new List<BarracksTE>(4);
+			if (from == null) return res;
+			res.Add(from);
+			var pylons = Main.PylonSystem?.Pylons;
+			bool fromOnNet = pylons != null && pylons.Count > 0 && NearPylon(from.Center, pylons);
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not BarracksTE b || ReferenceEquals(b, from)) continue;
+				bool near = Math.Abs(b.Position.X - from.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(b.Position.Y - from.Position.Y) <= LevyConstants.SettlementRadiusY;
+				if (near || (fromOnNet && NearPylon(b.Center, pylons))) res.Add(b);
+			}
+			Vector2 c = from.Center;
+			res.Sort(1, res.Count - 1, Comparer<BarracksTE>.Create((x, y) =>
+			{
+				int d = Vector2.DistanceSquared(x.Center, c).CompareTo(Vector2.DistanceSquared(y.Center, c));
+				return d != 0 ? d : x.ID.CompareTo(y.ID);
+			}));
+			return res;
 		}
 
 		public virtual ArmoryTE LinkedArmory(BarracksTE barracks) => barracks == null ? null : NearestArmory(barracks.Center, LevyConstants.ArmoryLinkRadius);

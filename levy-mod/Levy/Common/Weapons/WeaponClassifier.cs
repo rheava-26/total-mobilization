@@ -412,7 +412,8 @@ namespace Levy.Common.Weapons
 		{
 			var sample = ProjectileSample(src.shoot);
 			if (sample == null || sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
-			float speed = Math.Max(1f, src.shootSpeed) * (1 + Math.Max(0, sample.extraUpdates));
+			// timeLeft counts UPDATES, and every extra update moves the shot by its velocity AND uses up one timeLeft, so the reach is speed x timeLeft however many extra updates it runs.
+			float speed = Math.Max(1f, src.shootSpeed);
 			float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
 			return Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, familyRange);
 		}
@@ -449,12 +450,17 @@ namespace Levy.Common.Weapons
 
 		public static float ThrustReach(float shootSpeed) => Math.Max(LevyConstants.ThrustReachMinPx, shootSpeed * LevyConstants.ThrustReachPerShootSpeed);
 
-		/// <summary>Whether a projectile type falls: vanilla aiStyle 1 adds 0.1/tick after 15 ticks unless the type is on the exempt list (bullets, lasers, Jester's arrows).</summary>
+		/// <summary>
+		/// Whether a projectile type falls: vanilla aiStyle 1 adds 0.1/tick after 15 ticks unless the type is on the exempt list (bullets, lasers, Jester's arrows).
+		/// A modded shot that borrows a vanilla AI (<c>ModProjectile.AIType</c>, e.g. Thorium's bard notes run the Bullet AI) is judged by the type its AI runs as,
+		/// because vanilla's exemption test reads the borrowed type.
+		/// </summary>
 		public static bool ProjectileHasGravity(int projType)
 		{
 			var sample = ProjectileSample(projType);
 			if (sample == null) return false;
-			return sample.aiStyle == ProjAIStyleID.Arrow && !LevyConstants.AiStyle1NoGravity.Contains(projType);
+			int aiType = sample.ModProjectile != null && sample.ModProjectile.AIType > 0 ? sample.ModProjectile.AIType : projType;
+			return sample.aiStyle == ProjAIStyleID.Arrow && !LevyConstants.AiStyle1NoGravity.Contains(aiType);
 		}
 
 		/// <summary>Projectiles that swing around their owner's body as the weapon's visible blade (aiStyle NightsEdge / TrueNightsEdge): Night's Edge, Excalibur, Terra Blade, The Horseman's Blade.</summary>

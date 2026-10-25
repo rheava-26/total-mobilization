@@ -53,7 +53,7 @@ Kit: {
 		Name: Nurse
 		Desc:
 			'''
-			Marches behind the line and heals the most wounded soldier within {0} tiles back to full. A syringe flies to one at range; one at its side is topped off on the spot.
+			Stays with the soldiers, behind the line, and heals the most wounded one within {0} tiles back to full. A syringe flies to one at range; one at its side is topped off on the spot.
 			Heals a given soldier at most once every {1} seconds.
 			Throws a syringe at any enemy that strays into reach, but never leaves the army to chase.
 			Each heal is paid from the treasury, up to {2}.
@@ -65,7 +65,7 @@ Kit: {
 		Desc:
 			'''
 			Marches with the line. Soldiers within {0} tiles aim {1}% truer and fight with Morale: {2}% more damage, {3} more defense and {4}% more critical chance.
-			Fires a guiding bolt at any enemy that strays into reach.
+			Shoots any enemy that strays into reach with his wooden bow.
 			'''
 	}
 

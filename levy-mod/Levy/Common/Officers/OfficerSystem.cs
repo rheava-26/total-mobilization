@@ -43,7 +43,29 @@ namespace Levy.Common.Officers
 		public override void Load() => OfficerNet.Register();
 
 		/// <summary>Registers the officer definitions once every mod's content exists (NPCID.Sets and modded NPC types are final by now).</summary>
-		public override void PostSetupContent() { OfficerRegistry.Clear(); OfficerRegistry.RegisterAll(); }
+		public override void PostSetupContent() { OfficerRegistry.Clear(); OfficerRegistry.RegisterAll(); CheckHeldWeapons(); }
+
+		/// <summary>Boot self-check (log only): every officer's real weapon must be one the Drone Arsenal can fire, or he silently falls back to his signature weapon in play.</summary>
+		private static void CheckHeldWeapons()
+		{
+			try
+			{
+				foreach (OfficerDef def in OfficerRegistry.All)
+				{
+					OfficerHeldWeapon hw = def.HeldWeapon;
+					if (hw == null) continue;
+					var weapon = new Item(); weapon.SetDefaults(hw.Item);
+					Item round = null;
+					if (hw.Ammo > 0) { round = new Item(); round.SetDefaults(hw.Ammo); }
+					bool ok = Weapons.DroneArsenal.IsMountable(weapon) && Weapons.DroneArsenal.BuildShot(weapon, round).Valid;
+					var shot = ok ? Weapons.DroneArsenal.BuildShot(weapon, round) : null;
+					ModContent.GetInstance<Levy>()?.Logger.Info(ok
+						? $"Levy: officer '{def.Key}' wields {weapon.Name} (shot {shot.Projectile}, {shot.BaseDamage} base damage, every {shot.IntervalTicks} ticks)."
+						: $"Levy: officer '{def.Key}' real weapon {weapon.Name} is not fireable; he will use his signature weapon.");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: officer weapon check failed: " + e.Message); }
+		}
 
 		public override void Unload() { OfficerRegistry.Clear(); _enrolled.Clear(); _active.Clear(); }
 

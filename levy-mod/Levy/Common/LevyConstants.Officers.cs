@@ -54,6 +54,8 @@ namespace Levy.Common
 			public const float RetreatLifeFrac = 0.4f, ResumeLifeFrac = 0.6f;
 			/// <summary>Fraction of the vanilla town damage the officer's weapon deals (support officers fight weakly).</summary>
 			public const float AttackDamageMult = 1f;
+			/// <summary>Aim wobble (degrees of angle jitter, before the long-range easing) of an officer firing his real weapon: a town NPC shoots a little less true than a drilled soldier.</summary>
+			public const float RealShotAimJitterDeg = 1.5f;
 
 			// ---- the Nurse ----
 			/// <summary>The Nurse looks for a wounded soldier this often (ticks) and may heal at most one per look.</summary>
@@ -62,6 +64,8 @@ namespace Levy.Common
 			public const int NursePerSoldierCooldownTicks = 300;
 			/// <summary>Soldiers within this many tiles of her can be healed.</summary>
 			public const int NurseHealRangeTiles = 20;
+			/// <summary>She walks toward a wounded soldier this far away (tiles), well past her heal reach, so she is already there when a patient needs her. Nobody hurt: she keeps to the middle of the soldiers within <see cref="NurseArmyRangeTiles"/> of the commander, not at the commander's heels.</summary>
+			public const int NurseSeekRangeTiles = 40, NurseArmyRangeTiles = 30;
 			/// <summary>A soldier is worth a heal once at least this fraction of max life (and <see cref="NurseMinMissingHp"/>) is gone.</summary>
 			public const float NurseMinMissingFrac = 0.15f;
 			public const int NurseMinMissingHp = 15;

@@ -167,6 +167,7 @@ namespace Levy.Content.NPCs
 					Dummy.ResetEffects();
 					for (int i = 0; i < NPC.maxBuffs; i++)
 						if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0) ApplyBuffEffect(Dummy, NPC.buffType[i]);
+					if (ExtraBuffStats != null) { try { ExtraBuffStats(this, Dummy); } catch (Exception) { } } // a companion mod's own stat deltas (Thorium bard empowerments): defense, damage reduction, move speed
 					def += Dummy.statDefense;
 					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
 					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed); // ResetEffects set the base to 1

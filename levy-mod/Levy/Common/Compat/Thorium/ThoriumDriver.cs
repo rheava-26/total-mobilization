@@ -42,6 +42,18 @@ namespace Levy.Common.Compat.Thorium
 			WeaponUse.PreFireGate = CompatHooks.PreFireGate;
 			SoldierNPC.ExtraBuffStats = CompatHooks.ExtraBuffStats;
 			LevyPackets.Register(LevyPacket.CompanionEffect, OnCompanionPacket);
+			LevyPackets.Register(LevyPacket.CompanionRequest, OnCompanionRequest);
+			// The PLAYER's own instrument also empowering his soldiers: a detour on Thorium's per-note empower. Optional: if Thorium's internals differ the soldiers' side still works.
+			try { PlayerBardCompat.Install(); }
+			catch (System.Exception e) { Levy.Instance.Logger.Warn("Levy/Thorium compat: could not hook the player's instrument, so the player's own tunes will not empower his soldiers: " + e.Message); }
+		}
+
+		/// <summary>Server side of <see cref="LevyPacket.CompanionRequest"/>: a heal or an empowerment the commander's own Thorium cast asks the server to lay on his soldiers.</summary>
+		private static void OnCompanionRequest(BinaryReader reader, int fromWhoAmI)
+		{
+			byte kind = reader.ReadByte();
+			if (kind == CompanionRequest.KindHeal) CompanionRequest.OnHeal(reader, fromWhoAmI);
+			else if (kind == CompanionRequest.KindEmpower) EmpowerCompat.OnRequest(reader, fromWhoAmI);
 		}
 
 		/// <summary>Clear the hooks (Levy is unloading; leave nothing pointing at a dead delegate).</summary>

@@ -96,31 +96,119 @@ namespace Levy.Common.Compat.Thorium
 			{
 				byte lvl = level; short dur = baseDur;
 				try { bi.ModifyEmpowerment(btp, ttp, type, ref lvl, ref dur); } catch (Exception) { }
-				Empowerment emp = EmpowermentLoader.GetEmpowerment(type);
-				if (emp == null || type == EmpowermentLoader.NotImplementedType || lvl == 0) continue;
-				if (lvl > emp.MaxLevel) lvl = emp.MaxLevel;
-
-				if (emp is EmpowermentProlongation)
-				{
-					// Prolongation adds time to everything already running instead of being a stat of its own.
-					uint extra = (uint)(lvl * 30 + 30);
-					for (int t = 0; t < SoldierThoriumGlobalNPC.EmpSlots; t++)
-						if (ast.TicksLeft(t, now) > 0) { ast.EmpUntil[t] += extra; applied = true; }
-					continue;
-				}
-				if (dur <= 0) continue;
-				byte cur = ast.LevelOf(type, now);
-				if (cur > lvl) continue; // a lower tier never overwrites a stronger one that is still playing
-				uint until = now + (uint)dur;
-				if (cur == lvl && ast.EmpUntil[type] >= until) { applied = true; continue; } // already at least this long
-				statsChanged |= ast.SetEmp(type, lvl, until);
-				applied = true;
+				applied |= Grant(ast, type, lvl, dur, now, ref statsChanged);
 			}
+			Finish(a, ast, applied, statsChanged, now);
+		}
+
+		/// <summary>
+		/// Records one empowerment (type, level, duration) on a soldier. Returns true when it took (or was already at least that strong and long).
+		/// Prolongation adds time to everything already running instead of being a stat of its own.
+		/// </summary>
+		private static bool Grant(SoldierThoriumGlobalNPC ast, byte type, byte lvl, short dur, uint now, ref bool statsChanged)
+		{
+			Empowerment emp = EmpowermentLoader.GetEmpowerment(type);
+			if (emp == null || type == EmpowermentLoader.NotImplementedType || lvl == 0) return false;
+			if (lvl > emp.MaxLevel) lvl = emp.MaxLevel;
+
+			if (emp is EmpowermentProlongation)
+			{
+				bool any = false;
+				uint extra = (uint)(lvl * 30 + 30);
+				for (int t = 0; t < SoldierThoriumGlobalNPC.EmpSlots; t++)
+					if (ast.TicksLeft(t, now) > 0) { ast.EmpUntil[t] += extra; any = true; }
+				return any;
+			}
+			if (dur <= 0 || type >= SoldierThoriumGlobalNPC.EmpSlots) return false;
+			byte cur = ast.LevelOf(type, now);
+			if (cur > lvl) return false; // a lower tier never overwrites a stronger one that is still playing
+			uint until = now + (uint)dur;
+			if (cur == lvl && ast.EmpUntil[type] >= until) return true; // already at least this long
+			statsChanged |= ast.SetEmp(type, lvl, until);
+			return true;
+		}
+
+		/// <summary>After a soldier took empowerments: hang the Empowered buff for the longest one still running and flag his stats for a refresh.</summary>
+		private static void Finish(SoldierNPC a, SoldierThoriumGlobalNPC ast, bool applied, bool statsChanged, uint now)
+		{
 			if (!applied) return;
 			uint left = 0;
 			for (int t = 0; t < SoldierThoriumGlobalNPC.EmpSlots; t++) left = Math.Max(left, ast.TicksLeft(t, now));
 			if (left > 0) a.NPC.AddBuff(ModContent.BuffType<BardEmpowermentBuff>(), (int)Math.Min(left, int.MaxValue));
 			if (statsChanged) { a.StatsDirty = true; a.NPC.netUpdate = true; }
+		}
+
+		// ---- a PLAYER's instrument (the commander plays; his soldiers and officer avatars are empowered like any ally) ----
+
+		/// <summary>
+		/// The empowerments the player's own instrument gives, worked out on the player's machine exactly as Thorium works them out for the player: the item's pool after its virtual rules,
+		/// level and duration after <c>ModifyEmpowerment</c> and the bard's duration bonuses. <paramref name="range"/> is Thorium's reach (500 px + the bard's range boost, after the item's own rule).
+		/// Empty when the player carries the tuning accessory or the item reaches nobody.
+		/// </summary>
+		public static System.Collections.Generic.List<(byte type, byte level, short dur)> ResolveForPlayer(BardItem bi, Player bard, out float range)
+		{
+			var res = new System.Collections.Generic.List<(byte type, byte level, short dur)>();
+			range = 0f;
+			ThoriumPlayer btp = bard.GetModPlayer<ThoriumPlayer>();
+			if (btp.accPitchHelper || bi.Empowerments == null) return res;
+			range = 500 + btp.bardRangeBoost;
+			try { bi.GetEmpowermentRange(bard, bard, ref range); } catch (Exception) { }
+			if (range <= 0f) return res;
+			short baseDur = (short)Math.Clamp((int)((300 + btp.bardBuffDuration + bi.DurationBonus) * btp.bardBuffDurationX), 1, short.MaxValue);
+			foreach (var (type, level) in PoolFor(bi, bard, bard))
+			{
+				byte lvl = level; short dur = baseDur;
+				try { bi.ModifyEmpowerment(btp, btp, type, ref lvl, ref dur); } catch (Exception) { }
+				if (lvl == 0) continue;
+				res.Add((type, lvl, dur));
+			}
+			return res;
+		}
+
+		/// <summary>
+		/// Server / single player: lay a player's resolved empowerments on every soldier AND officer avatar of that commander within <paramref name="range"/> of <paramref name="from"/>.
+		/// The same grant as a bard soldier's note (so the effects are identical), minus the per-target virtual rules, which were applied on the player's machine.
+		/// </summary>
+		public static void ApplyResolved(Vector2 from, string commander, float range, System.Collections.Generic.IReadOnlyList<(byte type, byte level, short dur)> list)
+		{
+			if (list == null || list.Count == 0 || range <= 0f || Main.netMode == NetmodeID.MultiplayerClient) return;
+			uint now = Main.GameUpdateCount;
+			float r2 = range * range;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.life <= 0 || n.ModNPC is not SoldierNPC a || a.Record == null || !a.IsAlive) continue;
+				if (!string.Equals(a.Record.CommanderName ?? "", commander ?? "", StringComparison.Ordinal)) continue;
+				if (Vector2.DistanceSquared(from, n.Center) > r2) continue;
+				if (!n.TryGetGlobalNPC(out SoldierThoriumGlobalNPC ast)) continue;
+				bool statsChanged = false, applied = false;
+				for (int k = 0; k < list.Count; k++) applied |= Grant(ast, list[k].type, list[k].level, list[k].dur, now, ref statsChanged);
+				Finish(a, ast, applied, statsChanged, now);
+			}
+		}
+
+		private const int MaxRequestEntries = 16;
+
+		/// <summary>Client (multiplayer): ask the server to lay these empowerments on the local player's soldiers.</summary>
+		public static void SendRequest(float range, System.Collections.Generic.List<(byte type, byte level, short dur)> list)
+		{
+			int n = Math.Min(list.Count, MaxRequestEntries);
+			ModPacket pkt = LevyPackets.New(LevyPacket.CompanionRequest);
+			pkt.Write(CompanionRequest.KindEmpower); pkt.Write((ushort)Math.Clamp(range, 0f, 65000f)); pkt.Write((byte)n);
+			for (int i = 0; i < n; i++) { pkt.Write(list[i].type); pkt.Write(list[i].level); pkt.Write(list[i].dur); }
+			pkt.Send();
+		}
+
+		/// <summary>Server: decode an empowerment request (payload after the kind byte). The sender is the commander; everything is bounded before it is applied.</summary>
+		public static void OnRequest(BinaryReader r, int fromWhoAmI)
+		{
+			float range = r.ReadUInt16(); int n = Math.Min((int)r.ReadByte(), MaxRequestEntries);
+			var list = new System.Collections.Generic.List<(byte type, byte level, short dur)>(n);
+			for (int i = 0; i < n; i++) { byte t = r.ReadByte(), l = r.ReadByte(); short d = r.ReadInt16(); list.Add((t, l, (short)Math.Clamp((int)d, 0, 3600))); }
+			if (Main.netMode != NetmodeID.Server || !CompanionRequest.AllowEmpower(fromWhoAmI)) return;
+			Player p = Main.player[fromWhoAmI];
+			if (p == null || !p.active || p.dead) return;
+			ApplyResolved(p.Center, p.name, Math.Min(range, 4000f), list);
 		}
 
 		private static void ApplyToPlayer(BardItem bi, ThoriumPlayer btp, Player bard, Player cmd, short baseDur)

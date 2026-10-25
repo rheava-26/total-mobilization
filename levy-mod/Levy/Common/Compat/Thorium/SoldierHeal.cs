@@ -70,6 +70,23 @@ namespace Levy.Common.Compat.Thorium
 			}
 		}
 
+		/// <summary>
+		/// Server / single player: restore <paramref name="heal"/> life to a soldier (or officer avatar), with the floating number and the sync. The one place a soldier's life goes up from a heal,
+		/// shared by a soldier healer's bolt and a player's Thorium heal cast. Returns the life actually gained.
+		/// </summary>
+		public static int Restore(NPC t, int heal)
+		{
+			if (t == null || !t.active || t.life <= 0 || heal <= 0 || t.ModNPC is not SoldierNPC) return 0;
+			int before = t.life;
+			t.life = System.Math.Min(t.lifeMax, t.life + heal);
+			int gained = t.life - before;
+			if (gained <= 0) return 0;
+			if (t.ModNPC is SoldierNPC { Record: not null } s) s.Record.CurrentHp = t.life;
+			t.HealEffect(gained, true);
+			t.netUpdate = true;
+			return gained;
+		}
+
 		private void Arrive(NPC t, Player pl)
 		{
 			Vector2 at = pl != null ? pl.Center : t.Center;
@@ -77,18 +94,7 @@ namespace Levy.Common.Compat.Thorium
 			{
 				int heal = System.Math.Max(0, (int)Projectile.ai[1]);
 				if (pl != null) CompanionFx.HealPlayer(pl, heal);
-				else
-				{
-					int before = t.life;
-					t.life = System.Math.Min(t.lifeMax, t.life + heal);
-					int gained = t.life - before;
-					if (gained > 0)
-					{
-						if (t.ModNPC is SoldierNPC { Record: not null } s) s.Record.CurrentHp = t.life;
-						t.HealEffect(gained, true);
-						t.netUpdate = true;
-					}
-				}
+				else Restore(t, heal);
 			}
 			if (Main.netMode != NetmodeID.Server)
 			{

@@ -154,6 +154,7 @@ Mods: {
 			OfficerHealSyringe.DisplayName: Officer Heal Syringe
 			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
 			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
+			SoldierHeal.DisplayName: Soldier Heal
 		}
 
 		Keybinds: {

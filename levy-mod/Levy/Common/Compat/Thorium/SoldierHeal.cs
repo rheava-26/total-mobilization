@@ -5,7 +5,7 @@ using Terraria.ModLoader;
 using Levy.Content.NPCs;
 using Levy.Common.Util;
 
-namespace LevyThorium.Content
+namespace Levy.Common.Compat.Thorium
 {
 	/// <summary>
 	/// A soldier's healing bolt. ai[0] = the wounded soldier's NPC index, ai[1] = hit points restored. It homes onto that soldier and restores

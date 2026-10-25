@@ -1,10 +1,12 @@
 using Terraria;
+using Terraria.ModLoader;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
 
-namespace LevyThorium.Common
+namespace Levy.Common.Compat.Thorium
 {
-	/// <summary>The two delegates this mod hands to Levy (see <see cref="LevyThorium"/>).</summary>
+	/// <summary>The two delegates the Thorium compat hands to Levy (see <see cref="ThoriumCompatSystem"/>). JIT'd only when ThoriumMod is enabled.</summary>
+	[JITWhenModsEnabled("ThoriumMod")]
 	public static class CompatHooks
 	{
 		/// <summary>WeaponClassifier.ExtraCombatClass: Thorium Bard and Healer weapons are issuable combat weapons.</summary>

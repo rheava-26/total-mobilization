@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -15,6 +16,8 @@ using Levy.Common.Util;                 // LevyUtil.IsHostileTarget / IsClient  
 using Levy.Common.Weapons;              // DroneArsenal / DroneShot / Aiming / WeaponClassifier  (the drone's proven weapon-mount + shot path, reused)
 using Levy.Content.NPCs;                // SoldierNPC.DummySlot  (the slot-255 swap the enemy-targeting system uses)
 using Levy.Content.TileEntities;        // ArmoryTE  (the Levy Armory the surplus weapon is drawn from)
+using Mechanization.Common;             // ArmoryLink  (which armories a spot reaches)
+using Terraria.Localization;
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Content.NPCs
@@ -54,6 +57,9 @@ namespace Mechanization.Content.NPCs
 
 		// ---- brain state (server / single player) ----
 		private int _age, _immuneTime, _scan, _target = -1, _cooldown, _weaponScan;
+		/// <summary>The Armories this turret reaches, and the tick they were read (see <see cref="ArmoriesInReach"/>). Read on every netmode for display; the server also mounts from it.</summary>
+		private readonly List<ArmoryTE> _pool = new();
+		private uint _poolStamp;
 		/// <summary>The weapon pattern the turret currently fires (the drone's prebuilt shot), or null to fire the fixed fallback round.</summary>
 		private DroneShot _shot;
 		/// <summary>The mounted weapon's firing sound (played client-side when it shoots), or null.</summary>
@@ -213,16 +219,16 @@ namespace Mechanization.Content.NPCs
 		private int CurrentFireInterval => _shot != null && _shot.Valid ? _shot.IntervalTicks : T.FireIntervalTicks;
 
 		// =====================================================================================================
-		// The gun: pull the best surplus ranged weapon from the nearest Levy Armory and fire its real projectile.
+		// The gun: pull the best surplus ranged weapon from the Levy Armories in reach and fire its real projectile.
 		// =====================================================================================================
-		/// <summary>Re-picks the mounted weapon from the nearest Armory in reach (a non-consuming read of its racks). Null shot = the fixed fallback round.</summary>
+		/// <summary>Re-picks the mounted weapon from the best of the Armories in reach (a non-consuming read of their racks). Null shot = the fixed fallback round.</summary>
 		private void RefreshWeapon()
 		{
-			ArmoryTE armory = NearestArmory(NPC.Center, T.ArmoryReachPx);
-			if (armory == null) { ClearWeapon(); return; }
-			Item weapon = BestSurplus(armory);
+			List<ArmoryTE> pool = ArmoriesInReach(true);
+			if (pool.Count == 0) { ClearWeapon(); return; }
+			Item weapon = BestSurplus(pool);
 			if (weapon == null) { ClearWeapon(); return; }
-			Item ammo = DroneArsenal.TakesAmmo(weapon) ? BestAmmoFor(armory, weapon.useAmmo) : null;
+			Item ammo = DroneArsenal.TakesAmmo(weapon) ? BestAmmoFor(pool, weapon.useAmmo) : null;
 			DroneShot shot = DroneArsenal.BuildShot(weapon, ammo); // the drone's own shot builder: projectile, speed, damage, cadence, spread, gravity, homing
 			if (shot == null || !shot.Valid) { ClearWeapon(); return; }
 			_shot = shot;
@@ -240,19 +246,24 @@ namespace Mechanization.Content.NPCs
 			NPC.netUpdate = true;
 		}
 
-		/// <summary>The nearest Levy Armory tile entity within <paramref name="reachPx"/>, or null.</summary>
-		private static ArmoryTE NearestArmory(Vector2 from, float reachPx)
+		/// <summary>
+		/// Every Levy Armory this turret can draw from (see <see cref="ArmoryLink"/>: the nearest in reach, plus its whole pylon network, plus the
+		/// network when the turret stands at a pylon). Cached for <see cref="T.LinkRefreshTicks"/> so chat, hover and the brain share one read;
+		/// <paramref name="force"/> re-reads now. Do not mutate the returned list.
+		/// </summary>
+		public List<ArmoryTE> ArmoriesInReach(bool force = false)
 		{
-			float reachSq = reachPx * reachPx;
-			ArmoryTE best = null; float bestSq = float.MaxValue;
-			foreach (TileEntity te in TileEntity.ByID.Values)
+			uint now = Main.GameUpdateCount;
+			if (force || _poolStamp == 0 || now - _poolStamp >= (uint)T.LinkRefreshTicks || now < _poolStamp)
 			{
-				if (te is not ArmoryTE a) continue;
-				float d = Vector2.DistanceSquared(from, a.Center);
-				if (d < bestSq && d <= reachSq) { bestSq = d; best = a; }
+				_poolStamp = now == 0 ? 1u : now;
+				ArmoryLink.Find(NPC.Center, _pool);
 			}
-			return best;
+			return _pool;
 		}
+
+		/// <summary>The item type of the mounted weapon, or 0 when it fires the plain fallback bullet. Synced to clients.</summary>
+		public int MountedWeaponType => _weaponType;
 
 		/// <summary>
 		/// The strongest surplus weapon on an Armory's racks that a turret can fire: issue rows and bulk storage, scored by
@@ -260,7 +271,7 @@ namespace Mechanization.Content.NPCs
 		/// read — the weapon stays the army's; the turret only mirrors its projectile. Melee, summon, whip and sentry are excluded by
 		/// <see cref="DroneArsenal.IsMountable"/>. A caster just fires its projectile — a turret keeps no mana economy (generous by design).
 		/// </summary>
-		private static Item BestSurplus(ArmoryTE armory)
+		private static Item BestSurplus(List<ArmoryTE> armories)
 		{
 			Item best = null; float bestScore = float.NegativeInfinity;
 			void Consider(Item it)
@@ -272,13 +283,16 @@ namespace Mechanization.Content.NPCs
 				float s = WeaponClassifier.Score(it);
 				if (s > bestScore) { bestScore = s; best = it; }
 			}
-			foreach (Item it in armory.IssueWeapons) Consider(it);
-			foreach (Item it in armory.Storage) Consider(it);
+			foreach (ArmoryTE armory in armories)
+			{
+				foreach (Item it in armory.IssueWeapons) Consider(it);
+				foreach (Item it in armory.Storage) Consider(it);
+			}
 			return best;
 		}
 
 		/// <summary>The best stocked round of a given ammo kind (highest damage, then rarity, as the drone's ammo loan ranks it), or null to let the shot builder use the default round. Non-consuming.</summary>
-		private static Item BestAmmoFor(ArmoryTE armory, int ammoId)
+		private static Item BestAmmoFor(List<ArmoryTE> armories, int ammoId)
 		{
 			if (ammoId <= 0) return null;
 			Item best = null; float bestScore = float.NegativeInfinity;
@@ -288,8 +302,11 @@ namespace Mechanization.Content.NPCs
 				float s = it.damage * 100f + WeaponClassifier.RarityTier(it.rare);
 				if (s > bestScore) { bestScore = s; best = it; }
 			}
-			foreach (Item it in armory.IssueAmmo) Consider(it);
-			foreach (Item it in armory.Storage) Consider(it);
+			foreach (ArmoryTE armory in armories)
+			{
+				foreach (Item it in armory.IssueAmmo) Consider(it);
+				foreach (Item it in armory.Storage) Consider(it);
+			}
 			return best;
 		}
 
@@ -429,7 +446,25 @@ namespace Mechanization.Content.NPCs
 		public override bool CheckActive() => false;          // a placed turret does not despawn by distance
 		public override bool NeedSaving() => false;           // the NPC body is transient; TurretSystem saves the placement and re-spawns it on load
 		public override bool UsesPartyHat() => false;
-		public override bool CanChat() => false;
+		// Right-click opens a small panel: what it has mounted, whether an Armory is in reach, and a DISMANTLE button that hands the turret back as an item.
+		public override bool CanChat() => IsAlive;
+		public override string GetChat()
+		{
+			int n = ArmoriesInReach(true).Count;
+			if (_weaponType > 0 && _weaponType < ItemLoader.ItemCount)
+				return Language.GetTextValue("Mods.Mechanization.UI.TurretChatMounted", Lang.GetItemNameValue(_weaponType), n);
+			return Language.GetTextValue(n > 0 ? "Mods.Mechanization.UI.TurretChatNoWeapon" : "Mods.Mechanization.UI.TurretChatNoArmory");
+		}
+		public override void SetChatButtons(ref string button, ref string button2) => button = Language.GetTextValue("Mods.Mechanization.UI.TurretDismantle");
+		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
+		{
+			if (!firstButton) return;
+			Player me = Main.LocalPlayer;
+			if (LevyUtil.IsClient) MechPackets.SendDismantle(NPC.whoAmI);   // the server owns the registry and the drop
+			else TurretSystem.Instance?.Dismantle(NPC, me);
+			me.SetTalkNPC(-1);
+			Main.npcChatText = "";
+		}
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;
 		public override bool? CanBeHitByItem(Player player, Item item) => false;                 // no friendly fire from the owner's tools
 		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? false : null; // hostile projectiles hit; friendly ones do not

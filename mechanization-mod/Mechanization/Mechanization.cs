@@ -18,6 +18,8 @@ namespace Mechanization
 	{
 		public static Mechanization Instance => ModContent.GetInstance<Mechanization>();
 
+		public override void HandlePacket(System.IO.BinaryReader reader, int whoAmI) => global::Mechanization.Common.MechPackets.Handle(reader, whoAmI);
+
 		public override void Load()
 		{
 			// Build-time proof: a Levy const only compiles when Levy.dll is referenced.

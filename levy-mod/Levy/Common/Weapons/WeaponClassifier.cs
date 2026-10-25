@@ -123,7 +123,7 @@ namespace Levy.Common.Weapons
 			// Thrown consumables (knives, shuriken, javelins, grenades, bombs) are decided before the consumable / zero-damage rejections below: a bomb item has damage 0
 			// (the blast damage lives on its projectile) and every one of them is a consumable.
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
-			if (item.damage <= 0) return WeaponFamily.Unsupported;
+			if (item.damage <= 0 && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
 			if (item.pick > 0) return WeaponFamily.Unsupported;
@@ -471,9 +471,21 @@ namespace Levy.Common.Weapons
 		/// <summary>An axe or hammer that is just a melee blade: melee class, swung (useStyle Swing) and launching no projectile (shoot == 0), so nothing owner-anchored can come out of it.</summary>
 		private static bool IsPlainMeleeSwingTool(Item item) => item.CountsAsClass(DamageClass.Melee) && item.useStyle == ItemUseStyleID.Swing && item.shoot == 0;
 
+		/// <summary>Companion opt-in: a modded weapon whose damage class is none of the five vanilla combat classes is normally benched. A companion mod returns true here
+		/// to declare such a weapon issuable; a modded item it accepts is also allowed past the zero-damage rejection (support weapons such as a healing staff deal no damage).
+		/// Null = none (the default). A throwing delegate counts as false.</summary>
+		public static Func<Item, bool> ExtraCombatClass;
+
 		private static bool CountsAsAnyCombatClass(Item item) =>
 			item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)
-			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing);
+			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing)
+			|| (ExtraCombatClass != null && ExtraClassSafe(item));
+
+		private static bool ExtraClassSafe(Item item)
+		{
+			try { return ExtraCombatClass(item); }
+			catch (Exception) { return false; }
+		}
 
 		public static Projectile ProjectileSample(int projType)
 		{

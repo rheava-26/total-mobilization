@@ -19,6 +19,12 @@ namespace Levy.Common.Weapons
 	/// <summary>Per-family firing/swinging. Called from SoldierNPC.Combat every tick while engaging. OWNED BY THE WEAPONS AGENT.</summary>
 	public static class WeaponUse
 	{
+		/// <summary>Companion per-shot veto, consulted just before a shot is dispatched: (soldier, weapon, its profile, target). Returning false makes the soldier hold this tick
+		/// (no shot). Used by companion mods for resource systems and for role weapons that must not fire at the current target. Null = none; a throwing delegate allows the shot.</summary>
+		public static Func<SoldierNPC, Item, WeaponProfile, NPC, bool> PreFireGate;
+		/// <summary>Ticks a vetoed soldier waits before the gate is asked again (capped by the weapon's own use time).</summary>
+		private const int GateRetryTicks = 10;
+
 		/// <summary>Try to attack <paramref name="target"/> with the soldier's current weapon. Returns true if a shot/swing started this tick.</summary>
 		public static bool TryAttack(SoldierNPC s, NPC target)
 		{
@@ -30,6 +36,13 @@ namespace Levy.Common.Weapons
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
+			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
+			if (PreFireGate != null)
+			{
+				bool allow = true;
+				try { allow = PreFireGate(s, item, profile, seg); } catch (Exception) { }
+				if (!allow) { s.AttackCooldown = Math.Max(1, Math.Min(item.useTime, GateRetryTicks)); return false; }
+			}
 			try
 			{
 				// Right-click alternate attack: mixed in on a cadence, falling back to the primary when it cannot fire.

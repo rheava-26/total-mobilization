@@ -30,5 +30,11 @@ mechanization-mod/Mechanization/obj/
 mechanization-mod/Mechanization/bin/
 mechanization-mod/Mechanization/.vs/
 
+# Levy: Thorium — class-compatibility submod (depends on Levy + ThoriumMod), in its own box (levy-thorium-compat/)
+!levy-thorium-compat/
+levy-thorium-compat/LevyThorium/obj/
+levy-thorium-compat/LevyThorium/bin/
+levy-thorium-compat/LevyThorium/.vs/
+
 # review workflow script (dev-only, not part of the mod)
 levy-mod/tools/review2.js

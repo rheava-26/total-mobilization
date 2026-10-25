@@ -8,7 +8,10 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.4.8` + Mechanization `0.4.0` + Levy: Thorium `0.1.0`** on the integration branch `worktree-levy-stardust`. **Levy ships as a `.tmod` from this branch — it does NOT merge to `main`.**
+**Current version: Levy `1.4.9` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`. **Levy ships as a `.tmod` from this branch — it does NOT merge to `main`.** (Thorium Bard/Healer compat is now a BUILT-IN weak-reference module inside Levy — no separate `LevyThorium.tmod` anymore; it auto-activates when ThoriumMod is present and is inert otherwise. Eve must DELETE the old `LevyThorium.tmod`.)
+
+### ✅ 1.4.9 — COMPAT FOLDED INTO LEVY (chunk 1 of the morning "do everything" batch; merged `compat-fold`)
+Per Eve's correction (she wanted a module, not a 3rd mod). `levy-mod/Levy/Common/Compat/Thorium/` (namespace `Levy.Common.Compat.Thorium`). `build.txt` gains `weakReferences = ThoriumMod` (NO modReferences). Every Thorium-type-touching class carries `[JITWhenModsEnabled("ThoriumMod")]` so tML skips JIT when Thorium is absent; the `ThoriumCompatSystem` entry-point checks `ModLoader.HasMod("ThoriumMod")` and only then registers the hooks (try/catch so a Thorium problem disables the compat, never breaks Levy). Separate `levy-thorium-compat/` deleted. **Boots clean BOTH ways — no-Thorium (zero type-load errors, compat silent) AND with-Thorium (hooks register).** Bard/healer behavior unchanged from 0.1.0 (HealPotency still 3f). TOOLCHAIN NOTE: `compile.sh` now needs a `/r:` to the extracted `scratchpad/thorium-extract/ThoriumMod.dll` to compile the compat files; `tmlbuild` works directly (resolves the weakRef from the installed ThoriumMod.tmod). Future Levy builders: use tmlbuild, or compile.sh with that ref.
 
 ### 🌅 MORNING FEEDBACK (Eve, after the overnight batch) — CORRECTIONS + the "do everything" mandate
 The overnight compat/officer work was a FIRST CUT and under-delivered vs her full vision. Her corrections (authoritative — supersede prior decisions):

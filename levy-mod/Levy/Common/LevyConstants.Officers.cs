@@ -103,6 +103,18 @@ namespace Levy.Common
 			public const int SupportEnemyAvoidRadiusTiles = 15;
 			/// <summary>SUPPORT: she stays within this many tiles of a wounded soldier she is tending, so the heal can reach.</summary>
 			public const int SupportTendRadiusTiles = 12;
+			/// <summary>SUPPORT: the army she keeps behind is the commander's soldiers within this many tiles of him; the front is the nearest enemy within <see cref="SupportFrontScanTiles"/> of their middle.</summary>
+			public const int SupportArmyRangeTiles = 30, SupportFrontScanTiles = 40;
+			/// <summary>The army's middle is recomputed every this many thinks (a think is <see cref="LevyConstants.ThinkIntervalTicks"/> ticks).</summary>
+			public const int HubRefreshThinks = 3;
+
+			// ---- orders (Hold, Patrol, Return to Barracks, Search & Destroy, Free Rein): the leashes are the soldiers' own (HoldChaseLimit, PostChaseLimit, FollowChaseLimit, SearchLeashTiles, FreeRein) ----
+			/// <summary>FRONTLINE on a roaming order (Search &amp; Destroy, Free Rein): he looks for a fight this many tiles (plus his reach) from where he stands.</summary>
+			public const int SearchSeekTiles = 45;
+			/// <summary>Within this many tiles of his post he is "at" it and stands (the walk, not the march).</summary>
+			public const float SettleTiles = 2f;
+			/// <summary>A target whose feet are this many tiles above his own is treated as aloft: he meets it on the ground at his own height instead of walking at a point in the air.</summary>
+			public const int AirborneTargetRiseTiles = 6;
 
 			// ---- the Nurse's healing syringe (ranged heal) ----
 			/// <summary>Launch speed (px/tick) of a thrown syringe — the attack and the heal one both. A real bump over the stock 8, so the tiny-range syringe actually reaches.</summary>
@@ -117,6 +129,13 @@ namespace Levy.Common
 			public const int MarchChatterMinTicks = 360, MarchChatterMaxTicks = 900;
 			/// <summary>Chance a march chatter roll actually speaks (the squad dialogue budget throttles it further).</summary>
 			public const float MarchChatterChance = 0.5f;
+
+			// ---- talking to an officer (the right-click chat window) ----
+			/// <summary>An officer answers in context when an enemy stands within this many tiles of him (a boss: <see cref="ChatBossTiles"/>), when he is below <see cref="ChatHurtFrac"/> of his life, or within <see cref="ChatVictoryTicks"/> of a boss falling.</summary>
+			public const int ChatFightTiles = 40, ChatBossTiles = 80, ChatVictoryTicks = 60 * 60 * 3;
+			public const float ChatHurtFrac = 0.6f;
+			/// <summary>Chance a chat that has a context uses a contextual line; the rest are the officer's own town voice, so they stay themselves.</summary>
+			public const float ChatContextChance = 0.8f;
 
 			// ---- the parked town NPC (what vanilla draws for an officer; the avatar only feeds it a velocity and a facing) ----
 			/// <summary>The most horizontal speed (px/tick) handed to the town NPC's stock walk animation: about the quickest a stock town NPC ever moves (fleeing). Above it the legs would cycle faster than any stock town NPC's; the avatar itself still moves at its real speed.</summary>

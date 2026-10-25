@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
@@ -47,6 +48,10 @@ namespace Levy.Content.NPCs
 		private bool _offDismissedCalled;
 		// march chatter throttle (server)
 		private int _offMarchTimer;
+		// orders (server): a fresh order is read at the next tick; the patrol leg and pause; the army's middle (support officers keep to it), refreshed every few thinks
+		private bool _offThinkNow;
+		private int _offPatrolLeg, _offPatrolPauseUntil;
+		private int _offHubTimer; private Vector2 _offHub;
 
 		public OfficerDef OfficerDef => _offDef ??= (OfficerTownType > 0 && OfficerRegistry.TryGet(OfficerTownType, out var d) ? d : null);
 
@@ -195,60 +200,279 @@ namespace Levy.Content.NPCs
 		}
 
 		// =====================================================================================================
-		// Per-tick (server): posture → move goal, then the caller runs Movement_Update, then combat + kit + park.
+		// Per-tick (server): the standing ORDER + posture → move goal, then the caller runs Movement_Update, then combat + kit + park.
+		// An officer takes the same orders a soldier does (Follow / Hold / Patrol / Return to Barracks / Search & Destroy / Free Rein) and reads
+		// them the same way; posture decides how he carries them out. FRONTLINE closes on a fight inside the order's leash and holds the line
+		// at his weapon's reach. SUPPORT keeps to the rear of the army and never seeks a fight. He follows the commander only on a Follow order.
+		// Every goal here is a FEET position, like the soldier brain's.
 		// =====================================================================================================
-		/// <summary>Posture and retreat: writes HasMoveGoal/MoveGoal/State for the shared soldier movement to walk to. Server.</summary>
+		/// <summary>Order, posture and retreat: writes HasMoveGoal/MoveGoal/State for the shared soldier movement to walk to. Server.</summary>
 		private void Officer_Think()
 		{
-			Player cmd = Record != null ? Record.CommanderIndex >= 0 && Record.CommanderIndex < Main.maxPlayers && Main.player[Record.CommanderIndex].active ? Main.player[Record.CommanderIndex] : null : null;
+			Player cmd = Record != null && Record.CommanderIndex >= 0 && Record.CommanderIndex < Main.maxPlayers && Main.player[Record.CommanderIndex].active ? Main.player[Record.CommanderIndex] : null;
 			if (cmd == null) { HasMoveGoal = false; return; }
 
 			float life = NPC.life / (float)Math.Max(1, NPC.lifeMax);
 			if (_offRetreating) { if (life >= ResumeLifeFrac) _offRetreating = false; }
 			else if (life < RetreatLifeFrac) _offRetreating = true;
 
-			State = SoldierState.Follow;
-			OfficerPosture posture = _offDef?.Posture ?? OfficerPosture.Frontline;
-			Vector2 goal = posture == OfficerPosture.Support ? Officer_SupportGoal(cmd) : Officer_FrontlineGoal(cmd);
-			MoveGoal = goal; HasMoveGoal = true;
+			int now = (int)Main.GameUpdateCount;
+			if (!_offThinkNow && now % LevyConstants.ThinkIntervalTicks != ThinkOffset) return; // decide on the soldiers' cadence; the movement walks the last goal in between
+			_offThinkNow = false;
+
+			SoldierOrder order = Record.Order;
+			bool support = (_offDef?.Posture ?? OfficerPosture.Frontline) == OfficerPosture.Support;
+			Vector2 goal; SoldierState st; bool go;
+			if (_offRetreating && order != SoldierOrder.ReturnToBarracks)
+			{
+				// badly hurt: fall back to the commander's rear whatever the order says (he does not fight again until he has recovered)
+				goal = Officer_FrontlineGoal(cmd); st = SoldierState.Follow; go = true;
+			}
+			else switch (order)
+			{
+				case SoldierOrder.Hold:
+					go = Officer_ThinkPost(Record.HoldPos, LevyConstants.HoldChaseLimit, false, support, SoldierState.SearchDestroy, out goal, out st);
+					break;
+				case SoldierOrder.Patrol:
+					go = Officer_ThinkPatrol(support, now, out goal, out st);
+					break;
+				case SoldierOrder.ReturnToBarracks:
+					go = Officer_ThinkReturn(cmd, support, now, out goal, out st);
+					break;
+				case SoldierOrder.SearchDestroy:
+				case SoldierOrder.FreeRein:
+					// a roaming order: a fighter hunts inside the leash around where the order found him; support has nothing to hunt and keeps to the army
+					go = support ? Officer_ThinkFollow(cmd, true, now, out goal, out st)
+						: Officer_ThinkPost(Record.HoldPos, order == SoldierOrder.FreeRein ? LevyConstants.FreeReinLeashTiles : LevyConstants.SearchLeashTiles, true, false, SoldierState.SearchDestroy, out goal, out st);
+					break;
+				default:
+					go = Officer_ThinkFollow(cmd, support, now, out goal, out st);
+					break;
+			}
+			State = st;
+			if (go) SetGoal(goal); else ClearGoal();
 		}
 
-		/// <summary>FRONTLINE: march at the slot's follow distance behind the commander (the soldier default), fighting what comes in reach.</summary>
+		/// <summary>An order arrived from the commander (server). The avatar reads it on its next think. Hold, Search &amp; Destroy and Free Rein anchor where he stood.</summary>
+		public void Officer_ReceiveOrder(SoldierOrder order)
+		{
+			if (Record == null) return;
+			Record.Order = order;
+			Record.HoldPos = NPC.Bottom;
+			_offPatrolLeg = 0; _offPatrolPauseUntil = 0;
+			Record.PatrolA = Record.PatrolB = Point16.NegativeOne;
+			if (order == SoldierOrder.Patrol)
+			{
+				// the same banner pair a soldier is sent to: the two nearest his paying barracks (else where he stands)
+				BarracksTE home = OfficerPayingBarracks();
+				if (Common.UI.UIActions.FindPatrolPair(home != null ? home.Center : NPC.Center, LevyConstants.UI.PatrolBannerSearchTiles, out Point16 a, out Point16 b)) { Record.PatrolA = a; Record.PatrolB = b; }
+			}
+			_offThinkNow = true;
+			NPC.netUpdate = true;
+		}
+
+		/// <summary>FOLLOW: the commander's rear, as a soldier follows. A fighter breaks off to close on a fight within the soldiers' follow leash; support keeps to the rear of the army. Out of sight and far behind, he catches up.</summary>
+		private bool Officer_ThinkFollow(Player cmd, bool support, int now, out Vector2 goal, out SoldierState st)
+		{
+			st = SoldierState.Follow;
+			if (LevyUtil.TileDistance(NPC.Center, cmd.Center) > LevyConstants.TeleportDistance && now - _lastTeleportTick >= LevyConstants.TeleportCooldownTicks && !VisibleToAnyPlayer())
+			{
+				CatchUpTeleport(cmd);
+				_lastTeleportTick = now;
+				goal = NPC.Bottom;
+				return false;
+			}
+			if (support) { goal = Officer_SupportGoal(cmd); return true; }
+			float reach = Officer_ReachTiles();
+			NPC t = reach > 0f && !_offRetreating ? Officer_SeekTarget(cmd.Center, LevyConstants.FollowChaseLimit + reach) : null;
+			if (t != null) return Officer_EngageGoal(t, reach, cmd.Bottom, LevyConstants.FollowChaseLimit, out goal, out st);
+			goal = Officer_FrontlineGoal(cmd);
+			return true;
+		}
+
+		/// <summary>
+		/// HOLD a post (Hold, Search &amp; Destroy, Free Rein, and a stand-down once home): a fighter closes on a fight within <paramref name="leashTiles"/> of the post
+		/// (or, when <paramref name="seekFromSelf"/>, within sight of wherever he is) and never wanders past that leash; with nothing to fight he goes back to the post.
+		/// Support just stands at the post, stepping back from anything that comes close.
+		/// </summary>
+		private bool Officer_ThinkPost(Vector2 post, float leashTiles, bool seekFromSelf, bool support, SoldierState travel, out Vector2 goal, out SoldierState st)
+		{
+			st = travel; goal = post;
+			if (support)
+			{
+				goal = Officer_AvoidThreat(post, post.Y, post, leashTiles);
+			}
+			else
+			{
+				float reach = Officer_ReachTiles();
+				NPC t = reach > 0f && !_offRetreating
+					? (seekFromSelf ? Officer_SeekTarget(NPC.Center, SearchSeekTiles + reach, post, leashTiles + reach) : Officer_SeekTarget(post, leashTiles + reach))
+					: null;
+				if (t != null) return Officer_EngageGoal(t, reach, post, leashTiles, out goal, out st);
+			}
+			if (LevyUtil.WithinTiles(NPC.Bottom, goal, SettleTiles)) st = SoldierState.Idle;
+			return true;
+		}
+
+		/// <summary>PATROL: walk the banner pair as a soldier does, pausing at each end. A fighter closes on a fight within the soldiers' post leash of the nearest banner; support holds at it. With no banners within reach of his barracks he holds where the order found him.</summary>
+		private bool Officer_ThinkPatrol(bool support, int now, out Vector2 goal, out SoldierState st)
+		{
+			Point16 a = Record.PatrolA, b = Record.PatrolB;
+			bool hasA = a != Point16.NegativeOne, hasB = b != Point16.NegativeOne;
+			if (!hasA && !hasB) return Officer_ThinkPost(Record.HoldPos, LevyConstants.HoldChaseLimit, false, support, SoldierState.SearchDestroy, out goal, out st);
+			if (!hasA) a = b;
+			if (!hasB) b = a;
+			Vector2 wa = PatrolWorld(a), wb = PatrolWorld(b);
+			Vector2 near = Vector2.DistanceSquared(NPC.Bottom, wa) <= Vector2.DistanceSquared(NPC.Bottom, wb) ? wa : wb;
+			if (support) return Officer_ThinkPost(near, LevyConstants.PostChaseLimit, false, true, SoldierState.SearchDestroy, out goal, out st);
+
+			float reach = Officer_ReachTiles();
+			NPC t = reach > 0f && !_offRetreating ? Officer_SeekTarget(near, LevyConstants.PostChaseLimit + reach) : null;
+			if (t != null) return Officer_EngageGoal(t, reach, near, LevyConstants.PostChaseLimit, out goal, out st);
+
+			st = SoldierState.Patrol; goal = NPC.Bottom;
+			if (now < _offPatrolPauseUntil) { st = SoldierState.Idle; return false; }
+			Vector2 target = _offPatrolLeg == 0 ? wa : wb;
+			bool arrived = Math.Abs(NPC.Center.X - target.X) < LevyConstants.PatrolArriveXTiles * LevyConstants.TilePx
+				&& Math.Abs(NPC.Bottom.Y - target.Y) < LevyConstants.PatrolArriveYTiles * LevyConstants.TilePx;
+			if (arrived)
+			{
+				_offPatrolPauseUntil = now + LevyConstants.PatrolPauseTicks;
+				_offPatrolLeg ^= 1;
+				st = SoldierState.Idle;
+				return false;
+			}
+			goal = target;
+			return true;
+		}
+
+		/// <summary>RETURN TO BARRACKS (stand-down): walk to the paying barracks' muster point and hold there. A barracks-less officer falls in behind the commander, as a homeless soldier does.</summary>
+		private bool Officer_ThinkReturn(Player cmd, bool support, int now, out Vector2 goal, out SoldierState st)
+		{
+			BarracksTE home = OfficerPayingBarracks();
+			if (home == null) return Officer_ThinkFollow(cmd, support, now, out goal, out st);
+			Vector2 muster = home.MusterPoint;
+			if (LevyUtil.WithinTiles(NPC.Bottom, muster, LevyConstants.NearHomeTiles)) return Officer_ThinkPost(muster, LevyConstants.HoldChaseLimit, false, support, SoldierState.ReturnHome, out goal, out st);
+			goal = muster; st = SoldierState.ReturnHome;
+			return true;
+		}
+
+		/// <summary>The reach (tiles) he shoots at: his signature weapon's, else the real weapon's. 0 for a pure support kit with no weapon.</summary>
+		private float Officer_ReachTiles()
+		{
+			OfficerWeapon w = _offDef?.Weapon;
+			if (w != null) return w.RangeTiles;
+			return _offShot != null ? _offShot.RangePx / LevyConstants.TilePx : 0f;
+		}
+
+		/// <summary>The nearest hostile to the officer that stands within <paramref name="tiles"/> of <paramref name="around"/> (and, if given, within <paramref name="leashTiles"/> of <paramref name="leashAround"/>), or null.</summary>
+		private NPC Officer_SeekTarget(Vector2 around, float tiles, Vector2? leashAround = null, float leashTiles = 0f)
+		{
+			NPC best = null; float bestD = float.MaxValue;
+			float r = tiles * LevyConstants.TilePx; r *= r;
+			float lr = leashTiles * LevyConstants.TilePx; lr *= lr;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC t = Main.npc[i];
+				if (!t.active || !LevyUtil.IsHostileTarget(t)) continue;
+				if (Vector2.DistanceSquared(t.Center, around) > r) continue;
+				if (leashAround.HasValue && Vector2.DistanceSquared(t.Center, leashAround.Value) > lr) continue;
+				float d = Vector2.DistanceSquared(NPC.Center, t.Center);
+				if (d < bestD) { bestD = d; best = t; }
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// A fighter's approach to a fight: nothing to do once the target is in reach with a clear shot (hold the line and shoot, never walk at it), else walk to a standoff
+		/// from it, never past the leash circle around <paramref name="post"/>. A flier is met on the ground at his own height.
+		/// </summary>
+		private bool Officer_EngageGoal(NPC t, float reachTiles, Vector2 post, float leashTiles, out Vector2 goal, out SoldierState st)
+		{
+			goal = NPC.Bottom; st = SoldierState.Idle;
+			if (Officer_Shootable(t, reachTiles)) return false;
+			int dir = Math.Sign(t.Center.X - NPC.Center.X); if (dir == 0) dir = NPC.direction == 0 ? 1 : NPC.direction;
+			bool aloft = t.noGravity || t.Bottom.Y < NPC.Bottom.Y - AirborneTargetRiseTiles * LevyConstants.TilePx;
+			goal = new Vector2(t.Center.X - dir * StandoffTiles(reachTiles) * LevyConstants.TilePx, aloft ? NPC.Bottom.Y : t.Bottom.Y);
+			ClampToCircle(ref goal, post, leashTiles);
+			st = SoldierState.SearchDestroy;
+			return true;
+		}
+
+		/// <summary>FRONTLINE, following: stand at the slot's follow distance beside the commander (the soldier default), fighting what comes in reach.</summary>
 		private Vector2 Officer_FrontlineGoal(Player cmd)
 		{
 			int slot = Record != null ? Math.Max(0, OfficerSlot()) : 0;
 			float stand = (FollowDistTiles + slot * FollowSlotStepTiles) * LevyConstants.TilePx;
 			int side = NPC.Center.X <= cmd.Center.X ? -1 : 1;
 			if (Math.Abs(NPC.Center.X - cmd.Center.X) < 32f) side = slot % 2 == 0 ? -1 : 1;
-			return new Vector2(cmd.Center.X + side * stand, cmd.Center.Y);
+			return new Vector2(cmd.Center.X + side * stand, cmd.Bottom.Y);
 		}
 
 		/// <summary>
-		/// SUPPORT (the Nurse): hang behind the commander near a wounded soldier the kit points at, and back off from any enemy that gets close.
-		/// Never seeks melee, never advances to the front — her goal is behind the army, close to her work, out of enemy reach.
+		/// SUPPORT (the Nurse): hang BEHIND the commander's soldiers, near a wounded one the kit points at, and back off from any enemy that gets close.
+		/// The rear is the side of the army away from the nearest enemy (the side she is already on when there is none). Never seeks melee, never advances to the
+		/// front: her goal is behind the army, close to her work, out of enemy reach. Not glued to the commander: with soldiers about she keeps to them.
 		/// </summary>
 		private Vector2 Officer_SupportGoal(Player cmd)
 		{
 			float rear = SupportRearStandoffTiles * LevyConstants.TilePx;
-			int side = NPC.Center.X <= cmd.Center.X ? -1 : 1;
-			// anchor: the kit's current patient if any (stay in heal reach), else a standoff behind the commander
-			Vector2 goal = new Vector2(cmd.Center.X + side * rear, cmd.Center.Y);
+			Vector2 hub = Officer_ArmyHub(cmd);
+			int side = NPC.Center.X <= hub.X ? -1 : 1;
+			NPC front = Officer_NearestHostileTo(hub, SupportFrontScanTiles * LevyConstants.TilePx);
+			int back = front != null && front.Center.X != hub.X ? -Math.Sign(front.Center.X - hub.X) : side;
+			Vector2 goal = new Vector2(hub.X + back * rear, hub.Y);
+			// anchor: the kit's current patient if any (stay in heal reach), else the standoff behind the army above
 			if (_offDef?.Kit != null && _offDef.Kit.SupportAnchor(OfficerMakeContext(), out Vector2 anchor))
 			{
 				float tend = SupportTendRadiusTiles * LevyConstants.TilePx;
-				// stay within tend radius of the patient, but not on top of the enemy side of them
+				anchor.Y += NPC.height * 0.5f; // the kit hands back a body centre; goals are feet
 				goal = anchor;
-				if (Vector2.Distance(NPC.Center, anchor) < tend * 0.6f) goal = new Vector2(anchor.X + side * rear * 0.5f, anchor.Y);
+				if (Vector2.Distance(NPC.Center, anchor) < tend * 0.6f) goal = new Vector2(anchor.X + back * rear * 0.5f, anchor.Y);
 			}
-			// enemy-avoid: the nearest hostile pushes her directly away from it (toward the commander's rear)
+			return Officer_AvoidThreat(goal, hub.Y, hub, float.MaxValue);
+		}
+
+		/// <summary>The enemy-avoid rule: the nearest hostile pushes her directly away from it, but never past <paramref name="leashTiles"/> of <paramref name="leashCentre"/>.</summary>
+		private Vector2 Officer_AvoidThreat(Vector2 goal, float groundY, Vector2 leashCentre, float leashTiles)
+		{
 			NPC threat = Officer_NearestHostile(SupportEnemyAvoidRadiusTiles * LevyConstants.TilePx);
-			if (threat != null)
-			{
-				float away = Math.Sign(NPC.Center.X - threat.Center.X);
-				if (away == 0f) away = side;
-				goal = new Vector2(NPC.Center.X + away * SupportEnemyAvoidRadiusTiles * LevyConstants.TilePx, cmd.Center.Y);
-			}
+			if (threat == null) return goal;
+			float away = Math.Sign(NPC.Center.X - threat.Center.X);
+			if (away == 0f) away = NPC.direction == 0 ? 1 : -NPC.direction;
+			goal = new Vector2(NPC.Center.X + away * SupportEnemyAvoidRadiusTiles * LevyConstants.TilePx, groundY);
+			if (leashTiles < float.MaxValue) ClampToCircle(ref goal, leashCentre, leashTiles);
 			return goal;
+		}
+
+		/// <summary>The middle (feet level) of the commander's soldiers about him, else the commander's feet. Refreshed a few times a second.</summary>
+		private Vector2 Officer_ArmyHub(Player cmd)
+		{
+			if (--_offHubTimer > 0) return _offHub;
+			_offHubTimer = HubRefreshThinks;
+			float reach = SupportArmyRangeTiles * LevyConstants.TilePx;
+			Vector2 sum = Vector2.Zero; int n = 0;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (!s.IsAlive || s.OfficerMode || s.State == SoldierState.Desert || s.State == SoldierState.Dead || s.Record.CommanderName != Record.CommanderName) continue;
+				if (Vector2.Distance(cmd.Center, s.NPC.Center) > reach) continue;
+				sum += s.NPC.Bottom; n++;
+			}
+			_offHub = n > 0 ? sum / n : cmd.Bottom;
+			return _offHub;
+		}
+
+		private NPC Officer_NearestHostileTo(Vector2 around, float rangePx)
+		{
+			NPC best = null; float bestD = rangePx;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC t = Main.npc[i];
+				if (!t.active || !LevyUtil.IsHostileTarget(t)) continue;
+				float d = Vector2.Distance(around, t.Center);
+				if (d < bestD) { bestD = d; best = t; }
+			}
+			return best;
 		}
 
 		private int OfficerSlot()

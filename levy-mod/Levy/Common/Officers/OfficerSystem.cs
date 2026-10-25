@@ -71,7 +71,7 @@ namespace Levy.Common.Officers
 
 		public override void OnWorldLoad() { Reset(); }
 		public override void OnWorldUnload() { Reset(); }
-		private void Reset() { _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
+		private void Reset() { _bossWasUp = false; _lastBossFell = uint.MaxValue; _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
 
 		// =====================================================================================================
 		// Queries (safe on clients)
@@ -114,6 +114,14 @@ namespace Levy.Common.Officers
 			if (townNpc == null) return false;
 			Refresh();
 			return _avatars.TryGetValue(townNpc.whoAmI, out var a) && a != null && a.NPC.active && a.NPC.life > 0;
+		}
+
+		/// <summary>The live avatar marching for this town NPC, or null (valid on clients: the avatar is a synced NPC).</summary>
+		public SoldierNPC AvatarOf(NPC townNpc)
+		{
+			if (townNpc == null) return null;
+			Refresh();
+			return _avatars.TryGetValue(townNpc.whoAmI, out var a) && a != null && a.NPC.active && a.NPC.life > 0 ? a : null;
 		}
 
 		/// <summary>Every conscripted town NPC in the world, whoever commands it. Read-only; valid for the current tick.</summary>
@@ -247,6 +255,22 @@ namespace Levy.Common.Officers
 			return true;
 		}
 
+		/// <summary>
+		/// The commander's order reaches his officers the way it reaches his soldiers: every avatar of his that is within <see cref="LevyConstants.OrderRadius"/> of him (or all of
+		/// them, for an order given from a barracks) takes it, and obeys it by his posture (see SoldierNPC.Officer_Think). Server / single player.
+		/// </summary>
+		public void IssueOrder(Player commander, SoldierOrder order, bool atBarracks)
+		{
+			if (!LevyUtil.IsServerOrSingle || commander == null) return;
+			Refresh();
+			foreach (SoldierNPC avatar in _avatars.Values)
+			{
+				if (avatar == null || !avatar.NPC.active || avatar.Record == null || !string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)) continue;
+				if (!atBarracks && !LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius)) continue;
+				avatar.Officer_ReceiveOrder(order);
+			}
+		}
+
 		/// <summary>Sends an officer back to town life. Only his own commander may (no refund). False when he is not that player's officer.</summary>
 		public bool Dismiss(Player commander, NPC npc)
 		{
@@ -327,6 +351,10 @@ namespace Levy.Common.Officers
 		// Per-tick, every machine: keep each parked town NPC on its avatar
 		// =====================================================================================================
 		private bool _pinWarned;
+		private bool _bossWasUp; private uint _lastBossFell = uint.MaxValue;
+
+		/// <summary>True when a boss fell within the last <paramref name="ticks"/> ticks, as this machine saw it. Client chat reads it.</summary>
+		public bool BossFellRecently(int ticks) => _lastBossFell != uint.MaxValue && Main.GameUpdateCount - _lastBossFell < (uint)ticks;
 
 		/// <summary>
 		/// After every NPC has updated, pin each parked town NPC to its avatar (and refresh the velocity/facing vanilla animates it from). Vanilla draws the town NPC, and its own
@@ -337,11 +365,17 @@ namespace Levy.Common.Officers
 		{
 			try
 			{
+				bool bossUp = false;
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
-					if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode) s.Officer_ParkTownNpc();
+					if (!n.active) continue;
+					if (n.boss) bossUp = true;
+					if (n.ModNPC is SoldierNPC s && s.OfficerMode) s.Officer_ParkTownNpc();
 				}
+				// A boss that was up and now is not, while the player still stands, is a boss that fell: officers talk about it for a while (OfficerChat). Every machine sees it.
+				if (_bossWasUp && !bossUp && !Main.dedServ && !Main.LocalPlayer.dead) _lastBossFell = Main.GameUpdateCount;
+				_bossWasUp = bossUp;
 			}
 			catch (Exception e)
 			{

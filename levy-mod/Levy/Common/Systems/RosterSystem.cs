@@ -16,6 +16,7 @@ using Levy.Common.Flavor;
 using Levy.Common.Fear;
 using Levy.Common.Movement;
 using Levy.Common.Net;
+using Levy.Common.Officers;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
@@ -1209,6 +1210,7 @@ namespace Levy.Common.Systems
 				body?.ReceiveOrder(order);
 				any = true;
 			}
+			OfficerSystem.Instance.IssueOrder(commander, order, atBarracks); // his officers obey the same order, by their posture
 			ReportRefusals(commander);
 			if (any) SendRosterSnapshot();
 		}

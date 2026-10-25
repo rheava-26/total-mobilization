@@ -536,3 +536,31 @@ NURSE_MARCH | Any | Mind the gaps in the line. That is where I lose people.
 NURSE_MARCH | Any | If it hurts, that is your body filing a complaint. I will handle it.
 NURSE_MARCH | Any | Stay in reach. A syringe only flies so far.
 NURSE_MARCH | Any | Patch, march, repeat. The glamorous life they promised me.
+
+# ============================================================================================================
+# OFFICER CHAT  (what a commissioned officer says in the right-click chat window, when the moment calls for it)
+# OFFICER_CHAT_FIGHT    enemies are close.          OFFICER_CHAT_BOSS     a boss is close ({Boss} is its name).
+# OFFICER_CHAT_HURT     the officer is wounded.     OFFICER_CHAT_VICTORY  a boss fell not long ago.
+# Otherwise the officer answers in their own town voice. Kept gender-neutral. Temperament Any so every officer can speak them.
+# ============================================================================================================
+OFFICER_CHAT_FIGHT | Any | Not now. Ask me again when nothing is trying to eat us.
+OFFICER_CHAT_FIGHT | Any | Talk fast. Something out there wants a word with me more than you do.
+OFFICER_CHAT_FIGHT | Any | I can chat or I can shoot. The enemy is making the choice easy.
+OFFICER_CHAT_FIGHT | Any | Make it quick, {Player}. The line will not hold itself.
+OFFICER_CHAT_FIGHT | Any | There is a fight on. I have opinions, but they are mostly profane.
+OFFICER_CHAT_FIGHT | Any | Whatever you wanted, it is the second most urgent thing here.
+OFFICER_CHAT_BOSS | Any | That is {Boss}. I would like it noted that I never volunteered for this.
+OFFICER_CHAT_BOSS | Any | {Boss} is out there. Please do something about that before I do something brave.
+OFFICER_CHAT_BOSS | Any | Is {Boss} always this large? Nobody warned me about the size.
+OFFICER_CHAT_BOSS | Any | Tell me you have a plan for {Boss}. Even a bad one. Even a loud one.
+OFFICER_CHAT_BOSS | Any | I have faced worse than {Boss}. I cannot think of when, but I am sure of it.
+OFFICER_CHAT_HURT | Any | I have been better. I have also been worse. Not recently, though.
+OFFICER_CHAT_HURT | Any | Everything hurts, but the paperwork still says I am fit for duty.
+OFFICER_CHAT_HURT | Any | I am fine. The blood is mostly decorative.
+OFFICER_CHAT_HURT | Any | Give me a minute to stop bleeding and I will be right with you.
+OFFICER_CHAT_HURT | Any | If I fall over, that is a tactical decision.
+OFFICER_CHAT_VICTORY | Any | We won. I am told this is the part where I feel proud.
+OFFICER_CHAT_VICTORY | Any | That was close. Do not tell the others how close.
+OFFICER_CHAT_VICTORY | Any | Well fought, {Player}. I will be thinking about it for weeks, mostly with a flinch.
+OFFICER_CHAT_VICTORY | Any | It is quiet now. I do not trust it, but I will take it.
+OFFICER_CHAT_VICTORY | Any | Another one down. I am keeping count, mostly out of spite.

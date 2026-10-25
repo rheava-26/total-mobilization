@@ -67,6 +67,15 @@ namespace Levy.Common.Movement
 				if (!FindStandingSpot(commander.Center, StandingSpotRadiusTiles, out var spot)) spot = commander.Bottom;
 				Place(body, spot);
 			}
+			// his officers on a Follow order come too (one that was told to hold, patrol or stand down stays where its order has it)
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.ModNPC is not SoldierNPC avatar || !avatar.OfficerMode || !avatar.IsAlive || avatar.Record == null) continue;
+				if (avatar.Record.Order != SoldierOrder.Follow || !string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)) continue;
+				if (!FindStandingSpot(commander.Center, StandingSpotRadiusTiles, out var spot)) spot = commander.Bottom;
+				Place(avatar, spot);
+			}
 		}
 
 		/// <summary>Catch-up teleport for one body: arrives at the screen edge on its own side of the commander, or next to them. Returns false without a commander.</summary>

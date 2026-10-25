@@ -71,6 +71,26 @@ namespace Levy.Common.Officers
 			return true; // enrolled but no avatar yet (commander offline, or just commissioned), or not an officer: live as a normal civilian
 		}
 
+		/// <summary>
+		/// Vanilla counts every town NPC near a player (NPC.CheckActive adds its npcSlots to Player.townNPCs) and cuts the spawn rate and the spawn cap as that count
+		/// climbs: three of them near a player all but turn enemy spawns off. A commissioned officer is the army, not a civilian, so while a live avatar marches for him he is
+		/// left out of that count: fielding officers leaves the spawn rate exactly as it was. (CheckActive does nothing else for a town NPC, which never despawns; he still
+		/// draws, shops and chats as himself.) An officer with no avatar (commander offline, off duty) is a plain civilian again and counts as one.
+		/// </summary>
+		public override bool CheckActive(NPC npc)
+		{
+			if (Enrolled && OfficerSystem.Instance.HasLiveAvatar(npc)) return false;
+			return true;
+		}
+
+		/// <summary>Talking to an officer: when the moment has a context (a fight, a boss, a wound, a boss just down) he answers in it; otherwise vanilla's own line for his town voice stands. Client.</summary>
+		public override void GetChat(NPC npc, ref string chat)
+		{
+			if (!Enrolled || Main.dedServ) return;
+			string line = OfficerChat.ContextLine(npc);
+			if (line != null) chat = line;
+		}
+
 		/// <summary>Hands a puppeted town NPC back to the stock town physics. Runs on every machine (the flags it undoes are not synced); a no-op unless an avatar parked it.</summary>
 		public void EndPark(NPC npc)
 		{

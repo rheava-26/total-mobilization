@@ -38,13 +38,27 @@ namespace Mechanization.Common
 			public const int ScanIntervalTicks = 12;
 
 			// ---- surplus weapon (Levy Armory integration) ----
-			/// <summary>How far the turret reaches for a Levy Armory to draw a weapon pattern from, in tiles, and the same reach in pixels.</summary>
-			public const float ArmoryReachTiles = 80f;
+			/// <summary>
+			/// How far the turret reaches for a Levy Armory to draw a weapon pattern from, in tiles, and the same reach in pixels. An Armory found in this
+			/// reach also brings in its whole pylon network (Levy's networked armories), and a turret standing at a pylon reaches that network directly,
+			/// so a frontier turret far from town still refills from the base.
+			/// </summary>
+			public const float ArmoryReachTiles = 240f;
 			public const float ArmoryReachPx = ArmoryReachTiles * TilePx;
 			/// <summary>Ticks between re-picking the mounted weapon from the nearest Armory (a throttled scan; the weapon rarely changes).</summary>
 			public const int WeaponRefreshTicks = 90;
+			/// <summary>How often a turret re-reads which armories it reaches for display (chat / hover), in ticks. The server re-reads on <see cref="WeaponRefreshTicks"/>.</summary>
+			public const int LinkRefreshTicks = 30;
 			/// <summary>The mounted weapon's listed damage is multiplied by this before the turret fires it. 1 = the weapon's own damage.</summary>
 			public const float SurplusDamageMult = 1f;
+
+			// ---- dismantle / hud ----
+			/// <summary>How close (px) the player must be for the server to accept a dismantle request (a little more than the chat window's own reach).</summary>
+			public const float DismantleReachPx = 20f * TilePx;
+			/// <summary>Pixels the hover / placement hint is drawn from the cursor.</summary>
+			public const float HudOffsetX = 18f, HudOffsetY = 22f;
+			/// <summary>Ticks between re-reading armory reach for the placement hint while the turret item is held.</summary>
+			public const int HudRefreshTicks = 10;
 
 			// ---- gravity: it falls until it rests on terrain, then sits still ----
 			public const float GravityPerTick = 0.35f;

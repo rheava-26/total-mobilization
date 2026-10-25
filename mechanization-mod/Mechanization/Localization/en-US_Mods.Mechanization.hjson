@@ -6,10 +6,22 @@ Items: {
 		Tooltip:
 			'''
 			A deployable automatic turret. Reaches at least 32 tiles and guns down hostiles on its own.
-			It arms itself from the best spare ranged weapon in an armory within 80 tiles and fires that weapon's rounds; with none in reach it fires a plain bullet.
-			Drops onto the ground where you aim, survives a reload, and keeps fighting until destroyed.
+			It arms itself from the best spare ranged weapon in any armory within 240 tiles or on your pylon network, and fires that weapon's rounds; with none in reach it fires a plain bullet.
+			Right-click it to see its weapon, or to pick it back up.
 			'''
 	}
 }
 
 NPCs.TurretNPC.DisplayName: Automatic Turret
+
+UI: {
+	TurretDismantle: Dismantle
+	TurretChatMounted: Mounted weapon: {0}. Armories in reach: {1}.
+	TurretChatNoWeapon: No weapon mounted. It fires a plain bullet. No armory in reach holds a spare ranged weapon.
+	TurretChatNoArmory: No weapon mounted. It fires a plain bullet. No armory is in reach.
+	HintPlaceLinked: Armories in reach: {0}
+	HintPlaceUnlinked: No armory in reach. It will fire a plain bullet.
+	HintTurretMounted: "{0} mounted. Armories in reach: {1}"
+	HintTurretNoWeapon: No weapon mounted. Plain bullet.
+	HintTurretNoArmory: No armory in reach. Plain bullet.
+}

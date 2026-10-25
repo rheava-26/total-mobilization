@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Mechanization.Content.Items;
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Content.NPCs
@@ -66,6 +68,32 @@ namespace Mechanization.Content.NPCs
 			if (idx < 0) { _nextId--; return -1; } // spawn failed: do not keep a record with no NPC, and reuse the id
 			_records[rec.Id] = rec;
 			return idx;
+		}
+
+		// =====================================================================================================
+		// Dismantle
+		// =====================================================================================================
+		/// <summary>
+		/// Server / single player: picks <paramref name="npc"/> back up for <paramref name="player"/>. Validates the turret is live and the player is
+		/// close, hands over one <see cref="TurretItem"/> at the player's feet, drops the saved record (so it never respawns) and removes the NPC.
+		/// Returns true on success. A turret removed twice (two clients racing) pays out once: the second call sees an inactive NPC.
+		/// </summary>
+		public bool Dismantle(NPC npc, Player player)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			if (npc == null || !npc.active || npc.ModNPC is not TurretNPC t) return false;
+			if (player == null || !player.active || player.dead) return false;
+			if (Vector2.DistanceSquared(player.Center, npc.Center) > T.DismantleReachPx * T.DismantleReachPx) return false;
+
+			if (t.RecordId > 0) _records.Remove(t.RecordId);
+			int slot = npc.whoAmI;
+			npc.active = false;
+			npc.life = 0;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, slot);
+
+			Item.NewItem(new EntitySource_Misc("Mechanization:TurretDismantle"), player.getRect(), ModContent.ItemType<TurretItem>()); // the server syncs the new item itself
+			SoundEngine.PlaySound(SoundID.Item37, npc.Center);
+			return true;
 		}
 
 		// =====================================================================================================

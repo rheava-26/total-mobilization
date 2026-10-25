@@ -432,6 +432,132 @@ namespace Levy.Common
 			public const float PirateCannonLeashTiles = 26f;
 			/// <summary>A lost cannon is replaced this often (ticks) while below the cannon count: slower than a gunner, since a cannon is heavier kit.</summary>
 			public const int PirateCannonRespawnCadenceTicks = 900;
+
+			// ---- Melee and flying move profiles (shared by the skeletons, swords, beasts and drones) ----
+			/// <summary>A melee unit lands a blow when its hitbox, grown by this many px on every side, touches the target's.</summary>
+			public const float MeleeReachPx = 8f;
+			/// <summary>A ground melee unit only picks a target within this many tiles above or below it: it cannot climb into the sky after a flier.</summary>
+			public const float MeleeVerticalReachTiles = 5f;
+			/// <summary>A melee unit only picks a target within this many tiles of its officer, so the squad fights beside him and does not chase a straggler across the map.</summary>
+			public const float MeleeLeashTiles = 30f;
+			/// <summary>A flying unit idles this far (tiles) above its follow spot, bobbing by <see cref="FlyBobPx"/>.</summary>
+			public const float FlyHoverHeightTiles = 3.5f;
+			public const float FlyBobPx = 5f;
+			/// <summary>Flying acceleration (px/tick^2) toward its goal, and the share of speed kept each tick when it settles (1 = never slows).</summary>
+			public const float FlyAccelPx = 0.28f, FlyDamp = 0.9f;
+			/// <summary>A flying unit counts as arrived when this close (px) to its hover spot.</summary>
+			public const float FlyArriveDistPx = 20f;
+
+			// ---- Clothier (a skeleton squad) ----
+			/// <summary>Wage/fee multiplier of the Clothier.</summary>
+			public const float ClothierCostMult = 1.7f;
+			public const int ClothierAggro = 0;
+			/// <summary>Skeleton warriors the Clothier keeps fielded at once.</summary>
+			public const int ClothierSkeletonCount = 5;
+			/// <summary>Health of one skeleton (flat; damage, not HP, scales with progress).</summary>
+			public const int ClothierSkeletonHp = 170;
+			/// <summary>Base damage of one skeleton blow before the world-progress multiply; pause after a blow (fixed + random extra, ticks); knockback.</summary>
+			public const int ClothierSkeletonBaseDamage = 26;
+			public const int ClothierSkeletonCooldownTicks = 42, ClothierSkeletonRandomCooldownTicks = 14;
+			public const float ClothierSkeletonKnockback = 3f;
+			/// <summary>How far (tiles) a skeleton notices a hostile, and its run speed cap (px/tick).</summary>
+			public const float ClothierSkeletonRangeTiles = 22f, ClothierSkeletonMoveSpeedPx = 2.4f;
+			public const int ClothierSkeletonAggro = 0;
+			/// <summary>A lost skeleton is replaced this often (ticks) while below the squad size.</summary>
+			public const int ClothierRespawnCadenceTicks = 240;
+			/// <summary>The Clothier's own shot: the cursed skull he throws. Launch speed and arc lift (px/tick, px), base damage, knockback, cooldown (fixed + random, ticks) and reach (tiles).</summary>
+			public const float ClothierCurseSpeed = 10f, ClothierCurseGravityCorrection = 0f, ClothierCurseKnockback = 2f, ClothierCurseRangeTiles = 26f;
+			public const int ClothierCurseDamage = 16, ClothierCurseCooldown = 24, ClothierCurseRandomCooldown = 14;
+
+			// ---- Wizard (enchanted swords + a gem staff) ----
+			/// <summary>Wage/fee multiplier of the Wizard.</summary>
+			public const float WizardCostMult = 1.8f;
+			public const int WizardAggro = 0;
+			/// <summary>Enchanted swords the Wizard keeps fielded at once.</summary>
+			public const int WizardSwordCount = 4;
+			public const int WizardSwordHp = 110;
+			public const int WizardSwordBaseDamage = 24;
+			public const int WizardSwordCooldownTicks = 20, WizardSwordRandomCooldownTicks = 8;
+			public const float WizardSwordKnockback = 2.5f;
+			public const float WizardSwordRangeTiles = 26f, WizardSwordMoveSpeedPx = 5.5f;
+			public const int WizardSwordAggro = 0;
+			/// <summary>Hitbox of a sword (px).</summary>
+			public const int WizardSwordWidthPx = 22, WizardSwordHeightPx = 22;
+			public const int WizardRespawnCadenceTicks = 300;
+			/// <summary>The Wizard's own bolt: fallback fireball, and the reach and damage floor his staff fights with.</summary>
+			public const float WizardBoltSpeed = 9f, WizardBoltGravityCorrection = 0f, WizardBoltKnockback = 3f, WizardBoltRangeTiles = 30f;
+			public const int WizardBoltDamage = 24, WizardBoltCooldown = 20, WizardBoltRandomCooldown = 8;
+
+			// ---- Zoologist (a beast pack) ----
+			/// <summary>Wage/fee multiplier of the Zoologist.</summary>
+			public const float ZoologistCostMult = 1.8f;
+			public const int ZoologistAggro = 0;
+			/// <summary>Wolves the Zoologist keeps fielded at once: fast and fragile.</summary>
+			public const int ZoologistWolfCount = 3;
+			public const int ZoologistWolfHp = 140;
+			public const int ZoologistWolfBaseDamage = 22;
+			public const int ZoologistWolfCooldownTicks = 30, ZoologistWolfRandomCooldownTicks = 10;
+			public const float ZoologistWolfKnockback = 2f;
+			public const float ZoologistWolfRangeTiles = 26f, ZoologistWolfMoveSpeedPx = 3.6f;
+			public const int ZoologistWolfAggro = 0;
+			public const int ZoologistWolfWidthPx = 34, ZoologistWolfHeightPx = 26;
+			public const int ZoologistWolfRespawnCadenceTicks = 240;
+			/// <summary>Werewolves the Zoologist keeps fielded at once: slow, sturdy, and hits hard.</summary>
+			public const int ZoologistWerewolfCount = 1;
+			public const int ZoologistWerewolfHp = 420;
+			public const int ZoologistWerewolfBaseDamage = 48;
+			public const int ZoologistWerewolfCooldownTicks = 50, ZoologistWerewolfRandomCooldownTicks = 16;
+			public const float ZoologistWerewolfKnockback = 6f;
+			public const float ZoologistWerewolfRangeTiles = 22f, ZoologistWerewolfMoveSpeedPx = 2.6f;
+			public const int ZoologistWerewolfAggro = 2;
+			public const int ZoologistWerewolfWidthPx = 22, ZoologistWerewolfHeightPx = 42;
+			public const int ZoologistWerewolfRespawnCadenceTicks = 600;
+			/// <summary>The Zoologist's own shot: the green strike she looses. Launch speed and arc lift, base damage, knockback, cooldown and reach.</summary>
+			public const float ZoologistStrikeSpeed = 12f, ZoologistStrikeGravityCorrection = 0f, ZoologistStrikeKnockback = 4f, ZoologistStrikeRangeTiles = 24f;
+			public const int ZoologistStrikeDamage = 18, ZoologistStrikeCooldown = 22, ZoologistStrikeRandomCooldown = 10;
+
+			// ---- Cyborg (combat drones + a spelunker's eye) ----
+			/// <summary>Wage/fee multiplier of the Cyborg.</summary>
+			public const float CyborgCostMult = 1.8f;
+			public const int CyborgAggro = 0;
+			/// <summary>Combat drones the Cyborg keeps fielded at once.</summary>
+			public const int CyborgDroneCount = 3;
+			public const int CyborgDroneHp = 120;
+			public const int CyborgDroneBaseDamage = 20;
+			public const float CyborgDroneLaserSpeed = 14f, CyborgDroneLaserKnockback = 1f, CyborgDroneLaserGravityCorrection = 0f;
+			public const int CyborgDroneCooldownTicks = 24, CyborgDroneRandomCooldownTicks = 10;
+			public const float CyborgDroneRangeTiles = 30f, CyborgDroneMoveSpeedPx = 4.5f;
+			public const int CyborgDroneAggro = 0;
+			public const int CyborgDroneWidthPx = 24, CyborgDroneHeightPx = 24;
+			public const int CyborgRespawnCadenceTicks = 360;
+			/// <summary>The Cyborg's own shot: a rocket. Launch speed and arc lift, base damage, knockback, cooldown and reach.</summary>
+			public const float CyborgRocketSpeed = 11f, CyborgRocketGravityCorrection = 6f, CyborgRocketKnockback = 5f, CyborgRocketRangeTiles = 30f;
+			public const int CyborgRocketDamage = 30, CyborgRocketCooldown = 36, CyborgRocketRandomCooldown = 18;
+
+			// ---- Witch Doctor (venom + voodoo spirits) ----
+			/// <summary>Wage/fee multiplier of the Witch Doctor.</summary>
+			public const float WitchDoctorCostMult = 1.6f;
+			public const int WitchDoctorAggro = 0;
+			/// <summary>VENOM. A hit from a soldier, summoned unit or officer within this many tiles of the Witch Doctor envenoms its target with this chance (0..1).</summary>
+			public const int WitchDoctorVenomRadiusTiles = 36;
+			public const float WitchDoctorVenomChance = 0.35f;
+			/// <summary>Venom lasts this long (ticks); each fresh application only restarts it, never stacks.</summary>
+			public const int WitchDoctorVenomDurationTicks = 360;
+			/// <summary>Venom damage per second at the start of the game, ignoring defense; it grows with the world's progress like every officer's damage.</summary>
+			public const int WitchDoctorVenomDps = 18;
+			/// <summary>Voodoo spirits the Witch Doctor keeps fielded at once.</summary>
+			public const int WitchDoctorSpiritCount = 2;
+			public const int WitchDoctorSpiritHp = 130;
+			public const int WitchDoctorSpiritBaseDamage = 16;
+			public const float WitchDoctorSpiritDartSpeed = 11f, WitchDoctorSpiritDartKnockback = 1f, WitchDoctorSpiritDartGravityCorrection = 0f;
+			public const int WitchDoctorSpiritCooldownTicks = 40, WitchDoctorSpiritRandomCooldownTicks = 16;
+			public const float WitchDoctorSpiritRangeTiles = 28f, WitchDoctorSpiritMoveSpeedPx = 3.8f;
+			public const int WitchDoctorSpiritAggro = 0;
+			public const int WitchDoctorSpiritWidthPx = 26, WitchDoctorSpiritHeightPx = 30;
+			public const int WitchDoctorRespawnCadenceTicks = 420;
+			/// <summary>The Witch Doctor's own blowgun: fallback poison dart, and the reach and damage floor the blowgun fights with.</summary>
+			public const float WitchDoctorDartSpeed = 14f, WitchDoctorDartGravityCorrection = 4f, WitchDoctorDartKnockback = 2f, WitchDoctorDartRangeTiles = 28f;
+			public const int WitchDoctorDartDamage = 20, WitchDoctorDartCooldown = 14, WitchDoctorDartRandomCooldown = 6;
 		}
 	}
 }

@@ -13,3 +13,8 @@ DryadsBlessingBuff: {
 	DisplayName: Dryad's Blessing
 	Description: Gains defense and steady life regeneration, and throws a share of contact damage back at the attacker.
 }
+
+VenomBuff: {
+	DisplayName: Venom
+	Description: Loses life steadily, ignoring defense.
+}

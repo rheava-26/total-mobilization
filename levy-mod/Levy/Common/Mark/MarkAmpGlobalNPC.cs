@@ -48,10 +48,17 @@ namespace Levy.Common.Mark
 			if (tag.SourceNpcIndex >= 0 && tag.SourceNpcIndex < Main.maxNPCs)     // officer avatar bolts: fired BY a soldier-family NPC
 			{
 				NPC src = Main.npc[tag.SourceNpcIndex];
-				if (src.active && src.ModNPC is SoldierNPC) return true;
+				if (src.active && (src.ModNPC is SoldierNPC || src.ModNPC is SummonedUnitNPC)) return true; // a summoned unit's shot is the army's too
 			}
 			return false;
 		}
+
+		/// <summary>
+		/// A hit of <paramref name="damage"/> by one of the army's bodies that strikes directly instead of through a projectile (a summoned charger's blow), amped the way
+		/// <see cref="MarkAmpGlobalNPC"/> amps a shot: the same percent on a marked enemy, the damage untouched on any other.
+		/// </summary>
+		public static int Amp(NPC target, int damage) =>
+			target != null && target.HasBuff(BuffType) ? (int)(damage * (1f + MarkDamageFrac)) : damage;
 
 		/// <summary>Hang the mark on an enemy (server). Overrides debuff immunity so the call for fire always lands — bosses included — and syncs.</summary>
 		public static void Mark(NPC npc, int durationTicks)

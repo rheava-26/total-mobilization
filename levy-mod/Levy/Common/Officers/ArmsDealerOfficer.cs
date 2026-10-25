@@ -18,7 +18,9 @@ namespace Levy.Common.Officers
 			CostMult = ArmsDealerCostMult,
 			Aggro = ArmsDealerAggro,
 			Posture = OfficerPosture.Frontline,          // marches with the army and fights what comes in reach
-			// The rifle: fast, light bullets on a short cooldown, so the stream reads as rapid fire.
+			// His Minishark and the bullets he sells: the item's real rapid stream, at the Minishark's real cadence.
+			HeldWeapon = new OfficerHeldWeapon { Item = ItemID.Minishark, Ammo = ItemID.MusketBall },
+			// The fallback rifle (fast, light bullets on a short cooldown), and the reach and damage floor the Minishark fights with.
 			Weapon = new OfficerWeapon
 			{
 				Projectile = ProjectileID.Bullet,

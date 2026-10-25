@@ -85,6 +85,8 @@ namespace Levy.Content.NPCs
 			KindId = kind?.Id ?? -1;
 			OwnerWho = ownerWho;
 			CommanderIndex = commanderIndex;
+			ApplyBody(kind);
+			NPC.knockBackResist = kind != null && kind.Turret ? 0f : 0.5f; // an emplacement is not shoved around
 			int hp = Math.Max(1, kind?.MaxHp ?? 100);
 			NPC.lifeMax = hp; NPC.life = hp;
 			NPC.GivenName = kind?.Name ?? "";
@@ -92,6 +94,16 @@ namespace Levy.Content.NPCs
 			_deathHandled = false;
 			_side = 0; _target = -1; _cooldown = 0; _scan = 0; _farTicks = 0; _age = 0;
 			NPC.netUpdate = true;
+		}
+
+		/// <summary>
+		/// Sizes the hitbox to the kind (a standing man, or a cannon). The top-left corner stays put: that is what the position sync carries, so a client that learns the kind late still lines up
+		/// with the server, and the server places the feet itself right after <see cref="Init"/>.
+		/// </summary>
+		private void ApplyBody(SummonKind kind)
+		{
+			if (kind == null) return;
+			NPC.width = kind.Width; NPC.height = kind.Height;
 		}
 
 		private void EnsureDummy()
@@ -147,6 +159,7 @@ namespace Levy.Content.NPCs
 				if (NPC.wet && NPC.velocity.Y > -3f) NPC.velocity.Y -= 0.35f;
 				if (_cooldown <= 0) { Fire(t); _cooldown = Kind.CooldownTicks + Main.rand.Next(Math.Max(1, Kind.RandomCooldownTicks)); }
 			}
+			else if (Kind.Turret) HoldPost(owner);
 			else FollowOwner(owner);
 			SyncDummyTransform();
 		}
@@ -235,14 +248,33 @@ namespace Levy.Content.NPCs
 			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
 			dmg = Math.Max(1, dmg);
 
-			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center.X + dir * 14f, NPC.Center.Y - 2f,
+			float muzzle = NPC.width * 0.5f + 4f; // just past the body: 14 px for a man, the barrel's end for a cannon
+			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center.X + dir * muzzle, NPC.Center.Y - 2f,
 				aim.X, aim.Y, k.ProjectileType, dmg, k.Knockback, SoldierMinions.TrueMyPlayer);
 			if (idx >= 0 && idx < Main.maxProjectiles)
 			{
 				Projectile p = Main.projectile[idx];
 				p.friendly = true; p.hostile = false; p.npcProj = true; p.noDropItem = true; // CommanderIndex credit is tagged in SoldierProjectileTag.OnSpawn
 			}
-			if (Main.netMode != NetmodeID.Server) Terraria.Audio.SoundEngine.PlaySound(SoundID.Item11, NPC.Center); // a flintlock crack
+			if (Main.netMode != NetmodeID.Server) Terraria.Audio.SoundEngine.PlaySound(k.FireSound, NPC.Center);
+		}
+
+		/// <summary>
+		/// An emplacement (a cannon): never walks, so it stays where it was deployed and faces the way the officer faces. When the army marches on past the kind's leash for a few seconds it is
+		/// redeployed beside the officer (the same bring-along the foot units use), so it never gets left behind.
+		/// </summary>
+		private void HoldPost(NPC owner)
+		{
+			NPC npc = NPC;
+			npc.velocity.X *= 0.5f; if (Math.Abs(npc.velocity.X) < 0.1f) npc.velocity.X = 0f;
+			int dir = owner.direction == 0 ? 1 : owner.direction;
+			npc.direction = dir; npc.spriteDirection = dir;
+			float leash = (Kind.LeashTiles > 0f ? Kind.LeashTiles : LevyConstants.Summon.LeashTiles) * LevyConstants.TilePx;
+			if (Vector2.Distance(npc.Center, owner.Center) > leash)
+			{
+				if (++_farTicks >= LevyConstants.Summon.TeleportAfterTicks) { _farTicks = 0; TeleportNear(owner); }
+			}
+			else _farTicks = 0;
 		}
 
 		// ---- movement: hold near the owner, step ledges, hop small walls; never wander off (a far unit is brought back) ----
@@ -398,6 +430,7 @@ namespace Levy.Content.NPCs
 			SummonKind k = Kind;
 			if (k != null)
 			{
+				ApplyBody(k);
 				if (NPC.lifeMax != k.MaxHp) NPC.lifeMax = Math.Max(1, k.MaxHp); // per-instance cap is not in the vanilla sync
 				NPC.GivenName = k.Name;
 			}

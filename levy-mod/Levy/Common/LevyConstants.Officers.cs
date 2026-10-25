@@ -208,6 +208,9 @@ namespace Levy.Common
 			public const int PrincessAuraDurationTicks = 300;
 			/// <summary>Ticks between aura pulses (re-feeds once a second).</summary>
 			public const int PrincessAuraCadenceTicks = 60;
+			/// <summary>Her wand's reach, damage floor and fallback bolt (a spark), used when she holds her wand. Launch speed and arc lift in px/tick and px; knockback; cooldown (fixed + random, ticks) for the fallback only.</summary>
+			public const float PrincessWandSpeed = 11f, PrincessWandGravityCorrection = 0f, PrincessWandKnockback = 1.5f, PrincessWandRangeTiles = 24f;
+			public const int PrincessWandDamage = 16, PrincessWandCooldown = 26, PrincessWandRandomCooldown = 14;
 
 			// ---- the Dryad (AoE shred + Dryad's Blessing nature aura) ----
 			/// <summary>Wage/fee multiplier: two army-wide effects on one body.</summary>
@@ -228,6 +231,9 @@ namespace Levy.Common
 			public const float DryadThornsReflectFrac = 0.5f;
 			/// <summary>Defense and life-regen units Dryad's Blessing adds. Vanilla's own Dryad's Blessing numbers (+8 defense, +6 regen); thorns is <see cref="DryadThornsReflectFrac"/>.</summary>
 			public const int DryadBlessingDefense = 8, DryadBlessingLifeRegen = 6;
+			/// <summary>Her blowpipe's reach, damage floor and fallback seed. Launch speed and arc lift in px/tick and px; knockback; cooldown (fixed + random, ticks) for the fallback only.</summary>
+			public const float DryadSeedSpeed = 11f, DryadSeedGravityCorrection = 6f, DryadSeedKnockback = 1.5f, DryadSeedRangeTiles = 24f;
+			public const int DryadSeedDamage = 16, DryadSeedCooldown = 26, DryadSeedRandomCooldown = 14;
 
 			// ---- the Goblin Tinkerer (reforges the army's weapons on the march + thrown spiky balls) ----
 			/// <summary>Wage/fee multiplier.</summary>
@@ -401,6 +407,31 @@ namespace Levy.Common
 			public const int PirateUnitAggro = 0;
 			/// <summary>A lost crewman is replaced this often (ticks) while below the crew size.</summary>
 			public const int PirateRespawnCadenceTicks = 300;
+			/// <summary>The captain's own flintlock pistol: fallback bullet, and the reach and damage floor the pistol fights with. Launch speed and arc lift in px/tick and px; knockback; cooldown (fixed + random, ticks) for the fallback only.</summary>
+			public const float PirateCaptainShotSpeed = 12f, PirateCaptainShotGravityCorrection = 4f, PirateCaptainShotKnockback = 2f, PirateCaptainRangeTiles = 26f;
+			public const int PirateCaptainShotDamage = 18, PirateCaptainShotCooldown = 34, PirateCaptainShotRandomCooldown = 16;
+
+			// ---- Pirate cannon (an emplacement unit of the same kit) ----
+			/// <summary>Cannon emplacements the captain keeps deployed at once.</summary>
+			public const int PirateCannonCount = 1;
+			/// <summary>Health of the cannon (flat; damage, not HP, scales with progress). Sturdier than a gunner: it is the thing the enemy shoots at.</summary>
+			public const int PirateCannonHp = 400;
+			/// <summary>Base cannonball damage before the world-progress multiply. A heavy shot: the ball bursts in a blast on impact.</summary>
+			public const int PirateCannonBaseDamage = 48;
+			/// <summary>Launch speed (px/tick), knockback, and the arc lift (px) a far shot is aimed above the target (the ball flies straight for a few ticks, then falls).</summary>
+			public const float PirateCannonballSpeed = 13f, PirateCannonballKnockback = 6f, PirateCannonballGravityCorrection = 60f;
+			/// <summary>Pause after a shot (fixed + random extra), in ticks: a cannon fires slowly.</summary>
+			public const int PirateCannonCooldownTicks = 130, PirateCannonRandomCooldownTicks = 40;
+			/// <summary>Cannon reach (tiles).</summary>
+			public const float PirateCannonRangeTiles = 38f;
+			/// <summary>Taunt weight of the cannon (0 = weighed like a plain soldier body).</summary>
+			public const int PirateCannonAggro = 0;
+			/// <summary>Hitbox of the cannon (px).</summary>
+			public const int PirateCannonWidthPx = 34, PirateCannonHeightPx = 26;
+			/// <summary>The officer may march this far (tiles) from the cannon before it is redeployed beside him.</summary>
+			public const float PirateCannonLeashTiles = 26f;
+			/// <summary>A lost cannon is replaced this often (ticks) while below the cannon count: slower than a gunner, since a cannon is heavier kit.</summary>
+			public const int PirateCannonRespawnCadenceTicks = 900;
 		}
 	}
 }

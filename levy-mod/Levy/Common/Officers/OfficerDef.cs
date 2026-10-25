@@ -33,6 +33,8 @@ namespace Levy.Common.Officers
 	/// The REAL weapon a town NPC naturally wields (the Guide's wooden bow): an item and the round it takes. When an officer has one that a ranged weapon
 	/// can fire (see <see cref="Levy.Common.Weapons.DroneArsenal.IsMountable"/>), he shoots THAT item's own projectile at the item's own cadence instead of his
 	/// signature <see cref="OfficerDef.Weapon"/>, which stays as the fallback for an officer with no usable real weapon. The round is never spent.
+	/// A thrown, stackable weapon (throwing knives, grenades, spiky balls, frost daggerfish) cannot be mounted, so an officer who throws one leaves
+	/// <see cref="OfficerDef.HeldWeapon"/> null and his signature <see cref="OfficerDef.Weapon"/> IS that item's own projectile.
 	/// </summary>
 	public sealed class OfficerHeldWeapon
 	{

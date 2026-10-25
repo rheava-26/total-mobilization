@@ -7,7 +7,7 @@ using static Levy.Common.LevyConstants.Officer;
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE CAPSTONE. The Princess is a SUPPORT officer who never fights: she hangs behind the line and lifts the whole army's morale at once. Her kit is an
+	/// THE CAPSTONE. The Princess is a SUPPORT officer who hangs behind the line and lifts the whole army's morale at once, striking with her wand only what strays into reach. Her kit is an
 	/// <see cref="AuraKit"/> that keeps every soldier AND fellow officer in reach under the single <see cref="MoraleBuff"/> (damage, defense and crit under one icon).
 	/// The widest morale reach in the roster, which is why she is the priciest commission.
 	/// </summary>
@@ -19,8 +19,18 @@ namespace Levy.Common.Officers
 			Key = "Princess",
 			CostMult = PrincessCostMult,
 			Aggro = PrincessAggro,
-			Posture = OfficerPosture.Support,   // never fights; hangs back and buffs
-			Weapon = null,                       // the army protects her
+			Posture = OfficerPosture.Support,   // hangs back and buffs; she only strikes what strays into reach
+			// Her wand: she looses the item's real spark at the wand's real cadence at anything that strays into reach.
+			HeldWeapon = new OfficerHeldWeapon { Item = ItemID.WandofSparking },
+			// The fallback spark, and the reach and damage floor the wand fights with.
+			Weapon = new OfficerWeapon
+			{
+				Projectile = ProjectileID.WandOfSparkingSpark,
+				Speed = PrincessWandSpeed, GravityCorrection = PrincessWandGravityCorrection, Damage = PrincessWandDamage, Knockback = PrincessWandKnockback,
+				Delay = 1, Cooldown = PrincessWandCooldown, RandomCooldown = PrincessWandRandomCooldown,
+				WindUp = Math.Max(1, NPCID.Sets.AttackTime[NPCID.Princess]),
+				RangeTiles = PrincessWandRangeTiles,
+			},
 			Kit = new PrincessKit(),
 		};
 	}

@@ -1,3 +1,4 @@
+using Terraria.Audio;
 using Terraria.ID;
 using Levy.Common;
 
@@ -35,16 +36,29 @@ namespace Levy.Content.NPCs
 		public readonly int Aggro;
 		/// <summary>Ticks the unit lives before it despawns on its own (0 = none; the owner respawns it on cadence either way).</summary>
 		public readonly int LifespanTicks;
+		/// <summary>MOVE PROFILE. False: a foot soldier that follows its officer. True: an emplacement (a cannon) that never walks, holds the post it was deployed at, and is redeployed beside the officer when the army marches on past <see cref="LeashTiles"/>.</summary>
+		public readonly bool Turret;
+		/// <summary>Hitbox size (px). The default is a standing man.</summary>
+		public readonly int Width, Height;
+		/// <summary>How far (tiles) the officer may march from a <see cref="Turret"/> before it is redeployed beside him. 0 = the shared default (<see cref="LevyConstants.Summon.LeashTiles"/>).</summary>
+		public readonly float LeashTiles;
+		/// <summary>The sound played when the unit fires.</summary>
+		public readonly SoundStyle FireSound;
 
 		public SummonKind(int id, string name, int maxHp, int baseDamage, int drawNpcType, int projectileType,
 			float projectileSpeed, float knockback, float gravityCorrection, int cooldownTicks, int randomCooldownTicks,
-			float rangeTiles, float moveSpeedPx, int aggro, int lifespanTicks = 0)
+			float rangeTiles, float moveSpeedPx, int aggro, int lifespanTicks = 0,
+			bool turret = false, int width = DefaultWidth, int height = DefaultHeight, float leashTiles = 0f, SoundStyle? fireSound = null)
 		{
 			Id = id; Name = name; MaxHp = maxHp; BaseDamage = baseDamage; DrawNpcType = drawNpcType; ProjectileType = projectileType;
 			ProjectileSpeed = projectileSpeed; Knockback = knockback; GravityCorrection = gravityCorrection;
 			CooldownTicks = cooldownTicks; RandomCooldownTicks = randomCooldownTicks;
 			RangeTiles = rangeTiles; MoveSpeedPx = moveSpeedPx; Aggro = aggro; LifespanTicks = lifespanTicks;
+			Turret = turret; Width = width; Height = height; LeashTiles = leashTiles; FireSound = fireSound ?? SoundID.Item11;
 		}
+
+		/// <summary>The hitbox of a standing man (px).</summary>
+		public const int DefaultWidth = 20, DefaultHeight = 40;
 	}
 
 	/// <summary>
@@ -70,7 +84,29 @@ namespace Levy.Content.NPCs
 			moveSpeedPx: LevyConstants.Summon.PirateUnitMoveSpeedPx,
 			aggro: LevyConstants.Summon.PirateUnitAggro);
 
-		private static readonly SummonKind[] _all = { PirateCrew };
+		/// <summary>The pirate officer's cannon: an emplacement that lobs a cannonball with a blast. It stands where it is deployed, soaks fire like any unit, and is redeployed beside the officer when the army marches on.</summary>
+		public static readonly SummonKind PirateCannon = new SummonKind(
+			id: 1,
+			name: "Cannon",
+			maxHp: LevyConstants.Summon.PirateCannonHp,
+			baseDamage: LevyConstants.Summon.PirateCannonBaseDamage,
+			drawNpcType: NPCID.PirateShipCannon,
+			projectileType: ProjectileID.CannonballFriendly,
+			projectileSpeed: LevyConstants.Summon.PirateCannonballSpeed,
+			knockback: LevyConstants.Summon.PirateCannonballKnockback,
+			gravityCorrection: LevyConstants.Summon.PirateCannonballGravityCorrection,
+			cooldownTicks: LevyConstants.Summon.PirateCannonCooldownTicks,
+			randomCooldownTicks: LevyConstants.Summon.PirateCannonRandomCooldownTicks,
+			rangeTiles: LevyConstants.Summon.PirateCannonRangeTiles,
+			moveSpeedPx: 0f,
+			aggro: LevyConstants.Summon.PirateCannonAggro,
+			turret: true,
+			width: LevyConstants.Summon.PirateCannonWidthPx,
+			height: LevyConstants.Summon.PirateCannonHeightPx,
+			leashTiles: LevyConstants.Summon.PirateCannonLeashTiles,
+			fireSound: SoundID.Item14);
+
+		private static readonly SummonKind[] _all = { PirateCrew, PirateCannon };
 
 		/// <summary>The kind for a synced id, or null when the id is out of range (a stale/forward packet): the unit then waits for a valid sync.</summary>
 		public static SummonKind ById(int id) => (uint)id < (uint)_all.Length ? _all[id] : null;

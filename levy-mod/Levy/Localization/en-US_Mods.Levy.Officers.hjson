@@ -82,9 +82,10 @@ Kit: {
 		Name: Pirate Captain
 		Desc:
 			'''
-			Conscripts a boarding crew of {0} flintlock gunners that march with the army and fire on any enemy in reach. Each gunner is a real unit with a healthbar.
-			A gunner has {1} health, and the crew's damage grows as bosses fall.
-			A fallen crewman is replaced every {2} seconds, up to the full crew.
+			Conscripts a boarding crew of {0} flintlock gunners and {3} cannon that march with the army and fire on any enemy in reach.
+			A gunner has {1} health and a cannon {4}; their damage grows as bosses fall.
+			A fallen gunner is replaced every {2} seconds and a cannon every {5}.
+			Fires a flintlock pistol at any enemy that strays into reach.
 			'''
 	}
 
@@ -93,7 +94,7 @@ Kit: {
 		Desc:
 			'''
 			Hangs behind the line and lifts the whole army's spirits. Soldiers and officers within {0} tiles fight with Morale: {1}% more damage, {2} more defense and {3}% more critical chance.
-			Never fights; the army keeps her safe.
+			Strikes with her wand at any enemy that strays into reach.
 			'''
 	}
 
@@ -103,7 +104,7 @@ Kit: {
 			'''
 			Marks every enemy within {0} tiles with Dryad's Bane. The whole army deals {1}% more damage to each marked enemy.
 			Soldiers within {2} tiles carry Dryad's Blessing: {3} more defense, steady life regeneration, and {4}% of contact damage thrown back at the attacker.
-			Casts from behind the line and never leaves it to chase.
+			Casts from behind the line, spitting seeds from a blowpipe at any enemy that strays into reach.
 			'''
 	}
 
@@ -140,7 +141,7 @@ Kit: {
 		Name: Arms Dealer
 		Desc:
 			'''
-			Marches with the line, laying down rapid rifle fire on any enemy in reach.
+			Marches with the line, firing a Minishark at any enemy in reach.
 			Soldiers within {0} tiles aim {1}% truer and never spend ammo.
 			'''
 	}
@@ -158,6 +159,6 @@ Kit: {
 
 	Painter: {
 		Name: Painter
-		Desc: Marches with the line, loosing a colorful paint barrage at any enemy in reach.
+		Desc: Marches with the line, firing his paintball gun at any enemy in reach.
 	}
 }

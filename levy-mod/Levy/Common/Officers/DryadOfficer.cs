@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -24,7 +25,17 @@ namespace Levy.Common.Officers
 			CostMult = DryadCostMult,
 			Aggro = DryadAggro,
 			Posture = OfficerPosture.Support,   // casts from behind the line, out of melee
-			Weapon = null,
+			// Her blowpipe and the seeds she carries: she spits the item's real seed at the blowpipe's real cadence at anything that strays into reach.
+			HeldWeapon = new OfficerHeldWeapon { Item = ItemID.Blowpipe, Ammo = ItemID.Seed },
+			// The fallback seed, and the reach and damage floor the blowpipe fights with.
+			Weapon = new OfficerWeapon
+			{
+				Projectile = ProjectileID.Seed,
+				Speed = DryadSeedSpeed, GravityCorrection = DryadSeedGravityCorrection, Damage = DryadSeedDamage, Knockback = DryadSeedKnockback,
+				Delay = 1, Cooldown = DryadSeedCooldown, RandomCooldown = DryadSeedRandomCooldown,
+				WindUp = Math.Max(1, NPCID.Sets.AttackTime[NPCID.Dryad]),
+				RangeTiles = DryadSeedRangeTiles,
+			},
 			Kit = new DryadKit(),
 		};
 	}

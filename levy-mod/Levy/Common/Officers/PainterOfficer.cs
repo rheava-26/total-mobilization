@@ -17,7 +17,9 @@ namespace Levy.Common.Officers
 			CostMult = PainterCostMult,
 			Aggro = PainterAggro,
 			Posture = OfficerPosture.Frontline,          // marches with the army and fights what comes in reach
-			// The paint barrage: vivid paintballs on a short cooldown, thrown hard.
+			// His paintball gun: the item's real paintballs at the gun's real cadence.
+			HeldWeapon = new OfficerHeldWeapon { Item = ItemID.PainterPaintballGun },
+			// The fallback paint barrage (vivid paintballs on a short cooldown, thrown hard), and the reach and damage floor the paintball gun fights with.
 			Weapon = new OfficerWeapon
 			{
 				Projectile = ProjectileID.PainterPaintball,

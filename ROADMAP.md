@@ -8,7 +8,13 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.2` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.3` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.3 — OFFICER BEHAVIOR FIXES (Eve live-test: officers follow/ignore-orders, suppress spawns, want talk-to dialogue)
+- **OBEY POSTURE+ORDERS:** `Officer_Think` hardcoded follow-commander + orders never reached officers (`RosterSystem.IssueOrder` looped only soldiers). FIX: `OfficerSystem.IssueOrder` delivers to avatars; officers now obey Follow/Hold/Patrol/Return/Search&Destroy/Free-Rein (Frontline closes on enemies, Support holds behind the line; hurt<40% retreats to rear). Default = Follow (trail player out of combat until ordered).
+- **NO SPAWN SUPPRESSION:** root cause = the parked town NPC's `CheckActive` adds its slot to `Player.townNPCs` every tick (runs even with AI suppressed) → vanilla cuts spawn rate. FIX: `OfficerGlobalNPC.CheckActive` returns false while enrolled+live-avatar → skipped from the town count (still draws/shops/chats; counts as civilian when off-duty). Chose this over `EditSpawnRate` (can't undo the "player safe"/"in town" flags set before the hook). ⚠ Eve live-test: confirm officer NPC doesn't vanish AND enemies spawn again.
+- **TALK-TO DIALOGUE (minimal):** `OfficerChat.ContextLine` + 4 pools (FIGHT/BOSS/HURT/VICTORY, 21 lines); ~80% contextual on right-click chat, else vanilla voice. Floating bubbles kept.
+- **DEFERRED (flag):** Hold-Fire/Focus-Target don't reach officers; orders NOT saved across reload (avatars not persisted → reset to Follow); Return-to-Barracks has no stuck-teleport home; "recent combat" = just a nearby hostile (no real memory); boss-fall detection counts a despawn too; dialogue not keyed to which officer. All build+boot-verified only.
 
 ### ✅ 1.6.2 — BARD FX FIX (Eve live-test: "instruments don't make sounds, empowerment icons don't circle me")
 - **SOUND root cause:** Thorium's `BardItem.SetDefaults` moves the instrument sound into `BardItem.PlayedSound` and sets `Item.UseSound = null` (Thorium plays it itself via `PlayInstrument`). Levy's fire path played `UseSound` = nothing. (The old `SoundID.Item9` was the crystal-ABSORB sound, not the note.) FIX: new `WeaponUse.SoundOf`/`UseSoundFallback` hook; the Thorium side returns `BardItem.PlayedSound` at `OthersInstrumentSoundVolume`. Soldier-bards now play each instrument's real sound.

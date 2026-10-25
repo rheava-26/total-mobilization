@@ -8,7 +8,13 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.5.1` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.0` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.0 — OFFICER EXPANSION pt1 (merged `officer-expansion-1`; both boots clean). "Every officer uses a real weapon" (generalized the Guide fix per Eve).
+- **Held weapons:** Arms Dealer→Minishark, Painter→his PainterPaintballGun (now ~2x cadence — a buff, tenet #1), Dryad→Blowpipe, Princess→WandofSparking (she FINALLY fights — Desc no longer "never fights"), Pirate→FlintlockPistol. Merchant/Goblin/Demolitionist/Angler KEEP signatures (their signature IS that thrown item's own projectile — knives/spikyballs/grenades/daggerfish aren't `IsMountable`). Nurse/Guide unchanged. Damage floored at the signature so low-tier items stay relevant. **Tax Collector left unarmed** (melee rear-support, "recommend cut" — ask Eve).
+- **Summon infra was ALREADY built** (`SummonedUnitNPC`/`SummonKind`/`SummonerKit`, from cfd8644); pt1 added: `Turret` move profile + `PirateCannon` kind (400HP, fires CannonballFriendly) + multi-squad kits (`SummonSquad[] Squads`). **Pirate** = 4 flintlock gunners + 1 cannon + his own pistol.
+- **FLAGS (Eve):** Dryad+Princess are Support posture but now SHOOT enemies in reach (changes their feel — keep or revert to pure-support?). Cannon sprite may face wrong/no rotate (art parked). Cannonball arc tuned by reason not sight.
+- **⏳ pt2 IN FLIGHT (`officer-expansion-2`):** Clothier (skeletons), Wizard (enchanted swords + magic bolt), Zoologist (beasts), Cyborg (drones + Spelunker glow), Witch Doctor (venom aura + tiki summons) + a MELEE summon profile (only Follow/Turret exist). THEN ship the big batch.
 
 ### ✅ 1.5.1 — PLAYER→LEVY SYMMETRY COMPLETE (chunk 2b; merged `compat-player-side`; both boots clean + 41/41 self-test). The universal heal/buff principle is now WHOLE: you↔your levies, both directions.
 - **Player's HEAL casts reach wounded soldiers + officer avatars:** `PlayerCastGlobalProjectile` (ungated shell) attaches to Thorium projectiles; `PlayerHealCompat` detects heal projectiles by reading their IL (calls `ThoriumHeal`/`CanBeHealed`) — cached per type, no hardcoded list (found 79/1739). Heals wounded units within 30px of the bolt, amount = the ally-heal item's `healAmount` × `HealPotency`(3), shared `HealReservedUntil` so soldier-healers don't pile on. Only Ally/AllyAndPlayer items; lifesteal/self-heal give nothing to soldiers.

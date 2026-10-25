@@ -120,7 +120,7 @@ namespace Levy.Common.Util
 		/// boss-summoning enemies like the Perforator Cyst, whose death spawns a boss nobody asked for.</summary>
 		public static bool IsOnNoAttackList(NPC npc)
 		{
-			var list = Levy.Common.Config.LevyConfig.Get?.DoNotAttackNpcNames;
+			var list = global::Levy.Common.Config.LevyConfig.Get?.DoNotAttackNpcNames;
 			if (list == null || list.Count == 0) return false;
 			string name = npc.TypeName;
 			for (int i = 0; i < list.Count; i++)

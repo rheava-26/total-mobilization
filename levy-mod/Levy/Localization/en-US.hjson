@@ -175,6 +175,7 @@ Mods: {
 					Soldiers: Soldiers
 					Economy: Economy
 					Interface: Interface
+					Targeting: Targeting Header
 				}
 
 				BossHpScalingPercentPerCp: {
@@ -310,6 +311,11 @@ Mods: {
 				RegularDeathMessages: {
 					Label: Regular death messages
 					Tooltip: A chat line when a Regular dies.
+				}
+
+				DoNotAttackNpcNames: {
+					Label: Do Not Attack Npc Names
+					Tooltip: ""
 				}
 			}
 

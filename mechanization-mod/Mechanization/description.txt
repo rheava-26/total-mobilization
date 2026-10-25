@@ -1,0 +1,7 @@
+Mechanization — the machine arm of the levy.
+
+Where Levy raises soldiers, Mechanization fields drones, turrets and vehicles that
+fight alongside them. Requires the Levy mod.
+
+v0.1.0 foundation: a deployable automatic turret with its own healthbar that guns
+down hostiles in range and can be destroyed.

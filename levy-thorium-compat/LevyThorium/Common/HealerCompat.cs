@@ -22,7 +22,7 @@ namespace LevyThorium.Common
 	public static class HealerCompat
 	{
 		/// <summary>Heal delivered per cast as a multiple of the weapon's healAmount. 1 = exactly what the weapon says.</summary>
-		public const float HealPotency = 1f;
+		public const float HealPotency = 3f;
 		/// <summary>Ticks an ally is left alone after a heal is sent at it, so two healers (or one slow lob) do not overheal the same soldier.</summary>
 		private const int ReserveTicks = 40;
 

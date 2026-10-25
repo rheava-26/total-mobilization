@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
@@ -41,6 +42,8 @@ namespace Levy.Content.NPCs
 		private BarracksTE _offBarracks; private int _offBarracksTimer;
 		// combat
 		private int _offScanTimer, _offCooldown, _offTarget = -1; private bool _offRetreating;
+		// the REAL weapon in his hand (null = none; he fights with the signature OfficerWeapon): the item, the round it takes and the shot worked out from them once
+		private Item _offHeld, _offRound; private DroneShot _offShot;
 		private bool _offDismissedCalled;
 		// march chatter throttle (server)
 		private int _offMarchTimer;
@@ -95,8 +98,43 @@ namespace Levy.Content.NPCs
 			EnsureDummy();
 			Abilities = new MovementAbilities();   // plain ground mover: walk/run/3-tile jumps, no flight gear
 			Officer_RefreshStats();
+			Officer_EquipDefaultWeapon(def);
 			NPC.netAlways = true; NPC.netUpdate = true;
 			def?.Kit?.OnMobilized(OfficerMakeContext());
+		}
+
+		// =====================================================================================================
+		// The officer's REAL weapon. A town NPC that wields something (the Guide's wooden bow) fires THAT item; the signature OfficerWeapon is the fallback
+		// for one that wields nothing usable. The held item is a plain field here (never in the roster or the armory), so a later "issue a weapon to an
+		// officer" feature only has to call Officer_IssueWeapon.
+		// =====================================================================================================
+		/// <summary>True while the officer fires a real item instead of his signature weapon.</summary>
+		public bool OfficerHasRealWeapon => _offShot != null;
+
+		/// <summary>The real weapon item in his hand, or null when he fights with his signature weapon.</summary>
+		public Item OfficerHeldItem => _offHeld;
+
+		private void Officer_EquipDefaultWeapon(OfficerDef def)
+		{
+			OfficerHeldWeapon hw = def?.HeldWeapon;
+			if (hw == null || hw.Item <= 0) { Officer_IssueWeapon(null, null); return; }
+			var weapon = new Item(); weapon.SetDefaults(hw.Item);
+			Item round = null;
+			if (hw.Ammo > 0) { round = new Item(); round.SetDefaults(hw.Ammo); }
+			Officer_IssueWeapon(weapon, round);
+		}
+
+		/// <summary>
+		/// Puts <paramref name="weapon"/> (and the <paramref name="round"/> it fires, or null for the default round of its kind) in the officer's hand. If a ranged weapon cannot fire it
+		/// (<see cref="DroneArsenal.IsMountable"/>) or yields no shot, he keeps his signature weapon. Pass null to clear. Server.
+		/// </summary>
+		public void Officer_IssueWeapon(Item weapon, Item round)
+		{
+			_offHeld = null; _offRound = null; _offShot = null;
+			if (weapon == null || weapon.IsAir || !DroneArsenal.IsMountable(weapon)) return;
+			DroneShot shot = DroneArsenal.BuildShot(weapon, round);
+			if (!shot.Valid) return;
+			_offHeld = weapon; _offRound = round; _offShot = shot;
 		}
 
 		/// <summary>The name shown over the officer and used for the record: the town NPC's given name ("Claire"), else its type name.</summary>
@@ -258,17 +296,28 @@ namespace Levy.Content.NPCs
 		// ---- combat: fire the officer's own weapon at the nearest hostile in reach (fire only; movement is the posture's job) ----
 		private void Officer_Combat(OfficerWeapon w)
 		{
-			if (w == null) return;
+			DroneShot real = _offShot; // the real item in his hand, if he has a usable one: it supplies the shot and the cadence
+			if (w == null && real == null) return;
+			// Reach: the officer's own engagement range when he has one (so a real bow does not turn a frontline fighter into a sniper), else the real weapon's.
+			float reachTiles = w != null ? w.RangeTiles : real.RangePx / LevyConstants.TilePx;
 			if (_offCooldown > 0) _offCooldown--;
 			if (_offRetreating) { _offTarget = -1; return; } // badly hurt: no new fights (support officers especially)
-			if (++_offScanTimer >= ScanIntervalTicks) { _offScanTimer = 0; _offTarget = Officer_FindTarget(w); }
-			else if (_offTarget >= 0 && !Officer_Shootable(Main.npc[_offTarget], w)) _offTarget = -1;
+			if (++_offScanTimer >= ScanIntervalTicks) { _offScanTimer = 0; _offTarget = Officer_FindTarget(reachTiles); }
+			else if (_offTarget >= 0 && !Officer_Shootable(Main.npc[_offTarget], reachTiles)) _offTarget = -1;
 			if (_offCooldown > 0 || _offTarget < 0) return;
 
 			NPC t = Main.npc[_offTarget];
 			NPC.direction = t.Center.X < NPC.Center.X ? -1 : 1; NPC.spriteDirection = NPC.direction;
-			Officer_Fire(t, w);
-			_offCooldown = w.Cooldown + Main.rand.Next(Math.Max(1, w.RandomCooldown));
+			if (real != null)
+			{
+				Officer_FireReal(t, real, w);
+				_offCooldown = real.IntervalTicks; // the weapon's own cadence
+			}
+			else
+			{
+				Officer_Fire(t, w);
+				_offCooldown = w.Cooldown + Main.rand.Next(Math.Max(1, w.RandomCooldown));
+			}
 		}
 
 		private NPC Officer_NearestHostile(float rangePx)
@@ -284,7 +333,7 @@ namespace Levy.Content.NPCs
 			return best;
 		}
 
-		private int Officer_FindTarget(OfficerWeapon w)
+		private int Officer_FindTarget(float reachTiles)
 		{
 			int best = -1; float bestD = float.MaxValue;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -292,17 +341,77 @@ namespace Levy.Content.NPCs
 				NPC t = Main.npc[i];
 				if (!t.active) continue;
 				float d = Vector2.Distance(NPC.Center, t.Center);
-				if (d >= bestD || !Officer_Shootable(t, w)) continue;
+				if (d >= bestD || !Officer_Shootable(t, reachTiles)) continue;
 				bestD = d; best = i;
 			}
 			return best;
 		}
 
-		private bool Officer_Shootable(NPC t, OfficerWeapon w)
+		private bool Officer_Shootable(NPC t, float reachTiles)
 		{
 			if (!LevyUtil.IsHostileTarget(t)) return false;
-			if (Vector2.Distance(NPC.Center, t.Center) > w.RangeTiles * LevyConstants.TilePx) return false;
+			if (Vector2.Distance(NPC.Center, t.Center) > reachTiles * LevyConstants.TilePx) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);
+		}
+
+		/// <summary>
+		/// One shot of the officer's REAL weapon: the held item's own projectile (resolved with its round, as the Drone Arsenal does), led and arced at the target, one to several per shot as the
+		/// weapon fires. Damage is the item's own scaled with the world's progress like a town NPC's shot, never below the signature weapon's damage (<paramref name="floor"/>), so a starter
+		/// bow does not leave an officer a toy in the late game. Nothing is spent: an officer's quiver is bottomless.
+		/// </summary>
+		private void Officer_FireReal(NPC target, DroneShot shot, OfficerWeapon floor)
+		{
+			Vector2 from = NPC.Center + new Vector2(0f, -2f);
+			Vector2 vel = Officer_AimReal(shot, from, target);
+			Vector2 dir = vel.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
+			Vector2 muzzle = from + dir * 16f;
+			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from; // against a wall: the shot would die inside the tile, so it leaves the body
+
+			int baseDmg = Math.Max(shot.BaseDamage, floor != null ? floor.Damage : 0);
+			int dmg = (int)(baseDmg * OfficerDamageScale() * AttackDamageMult);
+			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
+			dmg = Math.Max(1, dmg);
+
+			int owner = SoldierMinions.TrueMyPlayer; // a shot owned by any other index is an unsynced ghost
+			for (int k = 0; k < shot.Count; k++)
+			{
+				float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
+				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
+				int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
+				if (idx < 0 || idx >= Main.maxProjectiles) continue;
+				Projectile p = Main.projectile[idx];
+				if (!p.active || p.type != shot.Projectile) continue;
+				p.owner = owner;
+				p.npcProj = true; p.noDropItem = true; // commander credit is tagged in SoldierProjectileTag.OnSpawn
+				p.friendly = true; p.hostile = false;
+				if (shot.Class != null) p.DamageType = shot.Class;
+				p.CritChance = shot.Crit;
+				if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity) { p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }
+				p.netUpdate = true;
+			}
+			if (Main.netMode != NetmodeID.Server && _offHeld != null && _offHeld.UseSound.HasValue) SoundEngine.PlaySound(_offHeld.UseSound.Value, NPC.Center);
+		}
+
+		/// <summary>Lead, and the arc of a falling arrow: the same intercept solve every soldier and drone shot uses, with a small officer's wobble.</summary>
+		private static Vector2 Officer_AimReal(DroneShot shot, Vector2 from, NPC target)
+		{
+			Vector2 at = target.Center;
+			Vector2 vel;
+			if (shot.Homing)
+			{
+				Vector2 d = at - from;
+				if (d == Vector2.Zero) d = Vector2.UnitX;
+				vel = Vector2.Normalize(d) * shot.Speed;
+			}
+			else
+			{
+				float steps = shot.StepMult; // the shot advances this many times a tick, and gravity runs per advance
+				float leadSpeed = Math.Max(0.01f, shot.Speed) * steps;
+				vel = Aiming.SolveIntercept(from, leadSpeed, at, target.velocity, shot.Gravity,
+					shot.Gravity ? LevyConstants.ArrowGravity * steps * steps : 0f, shot.Gravity ? (int)Math.Round(LevyConstants.ArrowGravityDelayTicks / steps) : 0) / steps;
+			}
+			float jitter = RealShotAimJitterDeg * Aiming.LongRangeErrorScale(Vector2.Distance(from, at));
+			return Aiming.ApplyError(vel, jitter, 0f, Vector2.Zero, from, at);
 		}
 
 		private void Officer_Fire(NPC target, OfficerWeapon w)

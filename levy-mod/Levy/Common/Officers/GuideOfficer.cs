@@ -8,7 +8,7 @@ namespace Levy.Common.Officers
 {
 	/// <summary>
 	/// THE GUIDE. A FRONTLINE officer that marches with the line and steadies the soldiers around him: they shoot straighter, and they fight with Morale. He also
-	/// pokes with a guiding bolt at anything that strays into reach. The accuracy is passive and read shot by shot (<see cref="OfficerSupport"/>); the morale is an
+	/// shoots anything that strays into reach with his own wooden bow (the real item, <see cref="OfficerDef.HeldWeapon"/>); the guiding bolt is only the fallback. The accuracy is passive and read shot by shot (<see cref="OfficerSupport"/>); the morale is an
 	/// <see cref="AuraKit"/> keeping the single <see cref="MoraleBuff"/> on everyone in reach.
 	/// </summary>
 	/// <remarks>DEFERRED (net-new, not built): the synchronized volley, where the Guide calls a moment and the soldiers around him fire together.</remarks>
@@ -21,7 +21,9 @@ namespace Levy.Common.Officers
 			CostMult = GuideCostMult,
 			Aggro = GuideAggro,
 			Posture = OfficerPosture.Frontline,          // marches with the army and fights what comes in reach
-			// The guiding bolt: a bright, straight shard thrown at whatever strays into reach.
+			// His own wooden bow and the arrows he carries: the Guide shoots the item's real arrow at the bow's real cadence.
+			HeldWeapon = new OfficerHeldWeapon { Item = ItemID.WoodenBow, Ammo = ItemID.WoodenArrow },
+			// The guiding bolt: the fallback when he holds no usable weapon (and the reach and damage floor the bow fights with).
 			Weapon = new OfficerWeapon
 			{
 				Projectile = ProjectileID.SapphireBolt,

@@ -65,13 +65,34 @@ namespace Levy.Common.Officers
 			NurseHealRangeTiles, NursePerSoldierCooldownTicks / 60, LevyUtil.Coins(NurseMaxPriceCopper),
 		};
 
-		/// <summary>SUPPORT posture: hover near the most-wounded soldier within seeking range, so the heal can reach it. Null when nobody needs tending.</summary>
+		/// <summary>
+		/// SUPPORT posture: she goes where the TROOPS are, not where the commander stands. She hovers near the most-wounded soldier within seeking range (wider than her heal
+		/// reach, so she walks to a patient she cannot reach yet); with nobody hurt she keeps to the middle of the soldiers around the commander. False only when there are no
+		/// soldiers at all, and she then simply keeps behind the commander.
+		/// </summary>
 		public override bool SupportAnchor(OfficerContext ctx, out Vector2 pos)
 		{
 			pos = default;
-			SoldierNPC best = MostWounded(ctx.Npc.Center, NurseHealRangeTiles * LevyConstants.TilePx, null, 0);
-			if (best == null) return false;
-			pos = best.NPC.Center;
+			SoldierNPC best = MostWounded(ctx.Npc.Center, NurseSeekRangeTiles * LevyConstants.TilePx, null, 0);
+			if (best != null) { pos = best.NPC.Center; return true; }
+			return ArmyCentre(ctx, out pos);
+		}
+
+		/// <summary>The mean position of the living soldiers within <see cref="NurseArmyRangeTiles"/> of the commander (of her own spot when no commander is near); false when there are none.</summary>
+		private static bool ArmyCentre(OfficerContext ctx, out Vector2 centre)
+		{
+			centre = default;
+			Vector2 around = ctx.Commander != null ? ctx.Commander.Center : ctx.Npc.Center;
+			float reach = NurseArmyRangeTiles * LevyConstants.TilePx;
+			Vector2 sum = Vector2.Zero; int n = 0;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (!s.IsAlive || s.State == SoldierState.Desert || s.State == SoldierState.Dead) continue;
+				if (Vector2.Distance(around, s.NPC.Center) > reach) continue;
+				sum += s.NPC.Center; n++;
+			}
+			if (n == 0) return false;
+			centre = sum / n;
 			return true;
 		}
 

@@ -30,6 +30,19 @@ namespace Levy.Common.Officers
 	}
 
 	/// <summary>
+	/// The REAL weapon a town NPC naturally wields (the Guide's wooden bow): an item and the round it takes. When an officer has one that a ranged weapon
+	/// can fire (see <see cref="Levy.Common.Weapons.DroneArsenal.IsMountable"/>), he shoots THAT item's own projectile at the item's own cadence instead of his
+	/// signature <see cref="OfficerDef.Weapon"/>, which stays as the fallback for an officer with no usable real weapon. The round is never spent.
+	/// </summary>
+	public sealed class OfficerHeldWeapon
+	{
+		/// <summary>The weapon item type (ItemID.* or a modded type).</summary>
+		public int Item;
+		/// <summary>The ammo item type it fires, or 0 for the default round of the weapon's kind (a weapon that takes no ammo ignores this).</summary>
+		public int Ammo;
+	}
+
+	/// <summary>
 	/// What makes an officer an officer: the registry entry for one town NPC type. To add the next officer, build one of these (a weapon and/or a
 	/// <see cref="OfficerKit"/>) and call <see cref="OfficerRegistry.Register"/> from <see cref="OfficerRegistry.RegisterAll"/>.
 	/// </summary>
@@ -43,8 +56,10 @@ namespace Levy.Common.Officers
 		public float CostMult = 1f;
 		/// <summary>Taunt weight for enemy targeting (see <see cref="LevyConstants.Officer.NurseAggro"/>).</summary>
 		public int Aggro;
-		/// <summary>The officer's own attack, or null for a pure support officer that never shoots.</summary>
+		/// <summary>The officer's own attack, or null for a pure support officer that never shoots. When <see cref="HeldWeapon"/> is usable this is only the fallback, plus the reach and the damage floor the real weapon fights with.</summary>
 		public OfficerWeapon Weapon;
+		/// <summary>The real weapon this town NPC wields, or null when he has none (he then fights with <see cref="Weapon"/> alone). Fired through the real item's own projectile and cadence.</summary>
+		public OfficerHeldWeapon HeldWeapon;
 		/// <summary>The special ability, run on the server / single player every tick while the officer is active. Null = fights only.</summary>
 		public OfficerKit Kit;
 		/// <summary>How the avatar positions itself in the line (see <see cref="OfficerPosture"/>). Fighters march up; support hangs back.</summary>

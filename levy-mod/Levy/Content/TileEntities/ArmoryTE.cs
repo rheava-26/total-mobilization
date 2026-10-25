@@ -716,6 +716,14 @@ namespace Levy.Content.TileEntities
 			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
 
+		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
+		private Item TakeDeployerFromSidearmSlot()
+		{
+			var it = IssueWeapons[SidearmSlot];
+			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it))) return null;
+			return Remove(IssueWeapons, SidearmSlot);
+		}
+
 		/// <summary>A sentry-kitted soldier's sidearm: a sentry (the sidearm slot first, then the best in the armory). Removes it. Null if the armory has none.</summary>
 		public virtual Item TakeSentrySidearm(SoldierRecord forSoldier)
 		{
@@ -1550,8 +1558,9 @@ namespace Levy.Content.TileEntities
 				g.Accessories[i] = a; changed = true;
 			}
 
-			// Reservation: a non-summoner never keeps a summon-class off-hand (a leftover from an old save or a role change goes back to the racks).
-			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.ItemDamageClass(g.Sidearm) == DamageClass.Summon)
+			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a
+			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
+			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
 				var rem = Deposit(g.Sidearm);
 				if (!IsAir(rem)) Spill(rem, protect: true);
@@ -1562,8 +1571,9 @@ namespace Levy.Content.TileEntities
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm)
 			{
 				Item s = summoner ? TakeSummonerComplement(soldier, primaryFam)
-					: primaryMelee ? null // a melee-type primary carries no fallback blade
-					: TakeSidearm(soldier); // ranged / magic: a lesser blade
+					: TakeDeployerFromSidearmSlot() // a staff or sentry the player put in the armory's sidearm slot: any class fields it beside his primary
+					?? (primaryMelee ? null // a melee-type primary carries no fallback blade
+					: TakeSidearm(soldier)); // ranged / magic: a lesser blade
 				if (s != null) { g.Sidearm = s; changed = true; }
 			}
 

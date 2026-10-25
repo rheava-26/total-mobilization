@@ -1,0 +1,14 @@
+# Mechanization — player-facing strings. Keys are relative to Mods.Mechanization (prefix comes from the file name).
+# Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
+Items: {
+	TurretItem: {
+		DisplayName: Automatic Turret
+		Tooltip:
+			'''
+			A deployable automatic turret. Fires on hostiles within 32 tiles, twice a second.
+			Drops onto the ground where you aim. Has its own health and can be destroyed.
+			'''
+	}
+}
+
+NPCs.TurretNPC.DisplayName: Automatic Turret

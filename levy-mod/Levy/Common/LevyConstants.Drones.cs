@@ -60,6 +60,21 @@ namespace Levy.Common
 			public const float LeashTiles = 45f;
 			public const int TeleportAfterTicks = 240;
 
+			// ---------- Patrol (two Patrol Banners near the Barracks give the garrison a line to fly) ----------
+			/// <summary>How far (tiles) from its Barracks a drone looks for a banner pair, and how often (ticks) it looks again. No pair within reach and the drone hovers over its Barracks.</summary>
+			public const float PatrolSearchTiles = 60f;
+			public const int RouteRefreshTicks = 300;
+			/// <summary>A drone this close (tiles) to the end of its leg has arrived: it hovers there for <see cref="PatrolPauseTicks"/>, then flies to the other end.</summary>
+			public const float PatrolArriveTiles = 3f;
+			public const int PatrolPauseTicks = 120;
+			/// <summary>While engaging an enemy a patrolling drone strays at most this far (tiles) from its patrol line, then returns to it once the enemy is dead or out of reach.</summary>
+			public const float PatrolLeashTiles = 22f;
+			/// <summary>A patrolling drone presses toward an enemy until it is within this fraction of its weapon's reach, then holds.</summary>
+			public const float EngageStandoffFraction = 0.6f;
+			/// <summary>A cruising drone that makes no headway (speed under <see cref="StuckSpeedPx"/> px/tick) for <see cref="StuckClimbTicks"/> climbs over the obstacle at <see cref="StuckClimbPx"/> px/tick; after <see cref="StuckGiveUpTicks"/> it abandons the leg and turns back.</summary>
+			public const float StuckSpeedPx = 0.25f, StuckClimbPx = 1.6f;
+			public const int StuckClimbTicks = 60, StuckGiveUpTicks = 360;
+
 			// ---------- Combat ----------
 			/// <summary>A drone looks for an enemy this often (ticks).</summary>
 			public const int ScanIntervalTicks = 10;

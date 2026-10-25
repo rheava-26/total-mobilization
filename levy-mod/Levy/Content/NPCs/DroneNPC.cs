@@ -12,6 +12,7 @@ using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Officers;
 using Levy.Common.Targeting;
+using Levy.Common.UI;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
@@ -31,6 +32,9 @@ namespace Levy.Content.NPCs
 	/// THE SHOT. The LIGHT approach, not the soldier weapon pipeline: <see cref="DroneArsenal.BuildShot"/> works the item's own projectile, speed, damage, cadence and spread out once; every
 	/// shot just spawns that projectile at the target, owned by the real player (an NPC-owned shot is an unsynced ghost) and tagged like a summoned unit's for the commander's credit.
 	/// A drone fires for free: no mana, no ammo used up, no IC, no upkeep.
+	///
+	/// PATROL. With two Patrol Banners near its Barracks a drone flies the line between them at hover height (pausing at each end), and engages anything in reach without straying past a leash around that line;
+	/// with no banners it hovers over the Barracks.
 	///
 	/// Server / single player drives the brain and fires; clients draw the borrowed sprite, the mounted weapon (its item type rides the NPC extra-AI sync, its aim in ai[0]) and the healthbar.
 	/// Transient: never saved. The manager re-garrisons on reload, lending the weapons again.
@@ -59,6 +63,11 @@ namespace Levy.Content.NPCs
 		private int _age, _immuneTime, _scan, _target = -1, _cooldown, _validate, _farTicks, _sinceHit, _lastLife, _regenTimer;
 		private bool _deathHandled, _loanReleased;
 		private Vector2 _anchor;
+		// patrol (server): the two hover points over the nearest Patrol Banner pair, the end currently flown to, the pause at an end, and the progress watch that spots a drone jammed on terrain
+		private bool _hasRoute, _wasEngaging;
+		private Vector2 _routeA, _routeB;
+		private int _leg, _pause, _stuck, _routeClock;
+		private float _bestDist = float.MaxValue;
 		/// <summary>The drawn aim of the mounted weapon (radians), eased toward the wanted one; on a client it eases toward the synced ai[0].</summary>
 		private float _aim;
 
@@ -107,6 +116,7 @@ namespace Levy.Content.NPCs
 			_deathHandled = false; _loanReleased = false;
 			_age = 0; _immuneTime = 0; _scan = 0; _target = -1; _cooldown = _shot.IntervalTicks / 2; _validate = 0; _farTicks = 0; _sinceHit = 0; _regenTimer = 0;
 			_aim = 0f;
+			_hasRoute = false; _wasEngaging = false; _leg = slot & 1; _pause = 0; _stuck = 0; _bestDist = float.MaxValue; _routeClock = 0;
 			NPC.netUpdate = true;
 		}
 
@@ -209,7 +219,26 @@ namespace Levy.Content.NPCs
 			if (!armory.IsLent(Weapon)) { Orphan(); return false; }          // the weapon was recalled for a soldier (or spilled): it is no longer ours to fire or return
 			if (CommanderIndex < 0 || CommanderIndex >= Main.maxPlayers || !Main.player[CommanderIndex].active) CommanderIndex = DroneSystem.PickCommander(NPC.Center);
 			_anchor = AnchorFor(barracks);
+			_routeClock += D.ValidateIntervalTicks;
+			if (_age == 1 || _routeClock >= D.RouteRefreshTicks)
+			{
+				_routeClock = _age == 1 ? NPC.whoAmI * D.ValidateIntervalTicks % D.RouteRefreshTicks : 0; // staggered, so a garrison does not all scan the banners on one tick
+				ResolveRoute(barracks);
+			}
 			return true;
+		}
+
+		/// <summary>
+		/// The patrol line: the two Patrol Banners nearest the Barracks (the pair a soldier would patrol), as two hover points. No pair means no route and the drone hovers over its Barracks.
+		/// Self-contained: only the banner pair is shared with the soldiers, none of their leg logic.
+		/// </summary>
+		private void ResolveRoute(BarracksTE barracks)
+		{
+			if (!UIActions.FindPatrolPair(barracks.Center, D.PatrolSearchTiles, out Point16 a, out Point16 b)) { _hasRoute = false; return; }
+			Vector2 pa = BannerHoverPoint(a), pb = BannerHoverPoint(b);
+			if (!_hasRoute) { _leg = Slot & 1; _pause = 0; _stuck = 0; _bestDist = float.MaxValue; } // a fresh route: the slots start at alternate ends, so the line is held at both
+			_routeA = pa; _routeB = pb;
+			_hasRoute = true;
 		}
 
 		private ArmoryTE ArmoryOrNull() => TileEntity.ByID.TryGetValue(ArmoryId, out TileEntity te) && te is ArmoryTE a ? a : null;
@@ -393,12 +422,17 @@ namespace Levy.Content.NPCs
 			return Aiming.ApplyError(vel, jitter, 0f, Vector2.Zero, from, at);
 		}
 
-		// ---- movement: hover over the Barracks in a formation slot, bob, never wander; a far drone is set back ----
+		// ---- movement: patrol the line between two Patrol Banners in a formation slot (else hover over the Barracks), bob, never wander far; a far drone is set back ----
 		/// <summary>Where a Barracks' drones hover: above its top, as high as <see cref="D.HoverHeightTiles"/> allows under any ceiling.</summary>
-		public static Vector2 AnchorFor(BarracksTE barracks)
+		public static Vector2 AnchorFor(BarracksTE barracks) => HoverPointAbove(barracks.Center.X, barracks.Position.Y);
+
+		/// <summary>The hover point over a Patrol Banner: above the row where a patrolling soldier stands, as high as <see cref="D.HoverHeightTiles"/> allows under any ceiling.</summary>
+		private static Vector2 BannerHoverPoint(Point16 banner) =>
+			HoverPointAbove((banner.X + 0.5f) * LevyConstants.TilePx, banner.Y + LevyConstants.PatrolBannerHeight);
+
+		private static Vector2 HoverPointAbove(float x, int topTile)
 		{
-			float x = barracks.Center.X;
-			int tx = (int)(x / LevyConstants.TilePx), topTile = barracks.Position.Y, free = 0;
+			int tx = (int)(x / LevyConstants.TilePx), free = 0;
 			for (int k = 1; k <= D.HoverHeightTiles; k++)
 			{
 				int ty = topTile - k;
@@ -421,24 +455,76 @@ namespace Levy.Content.NPCs
 		public static Vector2 LaunchPoint(BarracksTE barracks) =>
 			new Vector2(barracks.Center.X, barracks.Position.Y * LevyConstants.TilePx - D.BodyHeight * 0.5f - 2f);
 
+		/// <summary>
+		/// Steers the drone. With a patrol route it flies leg to leg between the two banner hover points (a pause at each end) and, while it has a target, presses toward it inside a leash around the
+		/// patrol line; with no route it hovers over its Barracks exactly as before, firing from where it hangs.
+		/// </summary>
 		private void Hover()
 		{
-			Vector2 goal = _anchor + FormationOffset(Slot);
-			goal.Y += (float)Math.Sin(_age * D.BobSpeed + NPC.whoAmI * 0.9f) * D.BobAmplitudePx;
+			bool engaging = _hasRoute && _target >= 0 && _target < Main.maxNPCs && Shootable(Main.npc[_target]);
+			if (engaging != _wasEngaging) { _wasEngaging = engaging; NPC.netUpdate = true; }
+			if (_hasRoute && !engaging) AdvanceLeg();
+
+			Vector2 station = (_hasRoute ? (_leg == 0 ? _routeA : _routeB) : _anchor) + FormationOffset(Slot);
+			float bob = (float)Math.Sin(_age * D.BobSpeed + NPC.whoAmI * 0.9f) * D.BobAmplitudePx;
+			Vector2 goal = engaging ? EngageGoal(Main.npc[_target]) : station;
+			goal.Y += bob;
 			Vector2 to = goal - NPC.Center;
 			float dist = to.Length();
 
-			if (dist > D.LeashTiles * LevyConstants.TilePx)
+			// off station: far from the hover spot (or, on patrol, far from the whole line) for too long is a drone trapped by terrain
+			float offStation = _hasRoute ? Vector2.Distance(NPC.Center, ClosestOnLine(NPC.Center)) : Vector2.Distance(NPC.Center, station + new Vector2(0f, bob));
+			if (offStation > D.LeashTiles * LevyConstants.TilePx)
 			{
-				if (++_farTicks >= D.TeleportAfterTicks) { _farTicks = 0; SetBack(goal); return; }
+				if (++_farTicks >= D.TeleportAfterTicks) { _farTicks = 0; SetBack(station); return; }
 			}
 			else _farTicks = 0;
 
 			Vector2 wanted = Vector2.Zero;
 			if (dist > 1f) wanted = to / dist * Math.Min(D.MaxSpeedPx, dist * D.ArriveGain);
+			if (_hasRoute && !engaging && _stuck >= D.StuckClimbTicks) wanted.Y -= D.StuckClimbPx; // jammed against a hillside: rise over it
 			NPC.velocity = Vector2.Lerp(NPC.velocity, wanted, D.SteerLerp);
 			if (NPC.velocity.HasNaNs()) NPC.velocity = Vector2.Zero;
 			NPC.rotation = MathHelper.Clamp(NPC.velocity.X * D.TiltPerSpeed, -D.MaxTilt, D.MaxTilt);
+		}
+
+		/// <summary>
+		/// The leg machine, run only while the drone has nothing to shoot: fly to the current end, hover there <see cref="D.PatrolPauseTicks"/>, then fly to the other. A drone that stops making
+		/// headway toward its end first climbs, then gives the leg up and turns back.
+		/// </summary>
+		private void AdvanceLeg()
+		{
+			Vector2 end = (_leg == 0 ? _routeA : _routeB) + FormationOffset(Slot);
+			float dist = Vector2.Distance(NPC.Center, end), arrive = D.PatrolArriveTiles * LevyConstants.TilePx;
+			if (dist <= arrive)
+			{
+				_stuck = 0; _bestDist = float.MaxValue;
+				if (++_pause >= D.PatrolPauseTicks) { _pause = 0; _leg ^= 1; NPC.netUpdate = true; }
+				return;
+			}
+			_pause = 0;
+			if (dist < _bestDist - 4f) { _bestDist = dist; _stuck = 0; }
+			else if (++_stuck >= D.StuckGiveUpTicks) { _stuck = 0; _bestDist = float.MaxValue; _leg ^= 1; NPC.netUpdate = true; }
+		}
+
+		/// <summary>Where a patrolling drone goes to fight <paramref name="t"/>: toward it until it is within <see cref="D.EngageStandoffFraction"/> of the weapon's reach (then it holds), never beyond the leash.</summary>
+		private Vector2 EngageGoal(NPC t)
+		{
+			Vector2 to = t.Center - NPC.Center;
+			float d = to.Length(), stand = _shot.RangePx * D.EngageStandoffFraction;
+			Vector2 want = d > stand && d > 1f ? NPC.Center + to / d * (d - stand) : NPC.Center;
+			Vector2 on = ClosestOnLine(want), off = want - on;
+			float leash = D.PatrolLeashTiles * LevyConstants.TilePx, len = off.Length();
+			return len > leash ? on + off / len * leash : want;
+		}
+
+		/// <summary>The point of the patrol line (the segment between the two hover points) nearest <paramref name="p"/>.</summary>
+		private Vector2 ClosestOnLine(Vector2 p)
+		{
+			Vector2 ab = _routeB - _routeA;
+			float l = ab.LengthSquared();
+			if (l < 1f) return _routeA;
+			return _routeA + ab * MathHelper.Clamp(Vector2.Dot(p - _routeA, ab) / l, 0f, 1f);
 		}
 
 		/// <summary>Puts a drone that could not get home (a wall trap, a pit) back on its hover spot.</summary>

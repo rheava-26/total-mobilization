@@ -8,7 +8,13 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.1` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.2` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.2 — BARD FX FIX (Eve live-test: "instruments don't make sounds, empowerment icons don't circle me")
+- **SOUND root cause:** Thorium's `BardItem.SetDefaults` moves the instrument sound into `BardItem.PlayedSound` and sets `Item.UseSound = null` (Thorium plays it itself via `PlayInstrument`). Levy's fire path played `UseSound` = nothing. (The old `SoundID.Item9` was the crystal-ABSORB sound, not the note.) FIX: new `WeaponUse.SoundOf`/`UseSoundFallback` hook; the Thorium side returns `BardItem.PlayedSound` at `OthersInstrumentSoundVolume`. Soldier-bards now play each instrument's real sound.
+- **ICONS:** root cause NOT reproduced headlessly (the old timer-write already set `orbital`/`ActiveEmpowerments`/percent that `OrbitalLayerBase` reads). Hardened anyway: commander empowerment now routes through Thorium's real internal `EmpowermentLoader.ApplyEmpowerment` (reflection-bound delegate) → adds MP3-accessory level, received-duration bonus, the gained notice + max-level burst, and MP packet 59 (shows icons to other players); falls back to the bare timer write on failure. **LIKELY REAL CAUSE if still missing: RANGE — soldier→commander empowerment only lands when the commander is within ~500px of the bard soldier at the moment of the note (Thorium's own empowerment range). Stand near your bard.**
+- **Player's OWN instrument:** confirmed NOT suppressed by our detour (sound via Thorium `PlayInstrument`, icons via `orig()` first) — no change needed.
+- Both boots clean; 14/14 self-test. Build+boot-verified only; Eve live-tests the actual sound + icons.
 
 ### ✅ 1.6.1 — OFFICER EXPANSION pt2: THE SUMMONER ROSTER (merged `officer-expansion-2`; both boots clean + 35/35 self-test). The "officer stuff from way back" is DONE.
 - **Melee + Flying summon profiles added** to `SummonKind`/`SummonedUnitNPC` (pt1 only had Follow/Turret): `MeleeAi` (charge + contact `SimpleStrikeNPC`, commander-credited), `RangedAi`, Walk/Fly/Hover split. Melee units leash to the officer (target only within 30 tiles of him) so squads fight beside him.

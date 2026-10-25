@@ -8,7 +8,17 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.0` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.1` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.1 — OFFICER EXPANSION pt2: THE SUMMONER ROSTER (merged `officer-expansion-2`; both boots clean + 35/35 self-test). The "officer stuff from way back" is DONE.
+- **Melee + Flying summon profiles added** to `SummonKind`/`SummonedUnitNPC` (pt1 only had Follow/Turret): `MeleeAi` (charge + contact `SimpleStrikeNPC`, commander-credited), `RangedAi`, Walk/Fly/Hover split. Melee units leash to the officer (target only within 30 tiles of him) so squads fight beside him.
+- **5 summoner officers** (all `SummonerKit`, HP-bearing summons scaled by `TownDamageScale`, per-commander `State` no statics, borrowed vanilla sprites): **Clothier** 1.7 (5 skeletons + skull), **Wizard** 1.8 (4 enchanted swords flying-melee + Diamond Staff), **Zoologist** 1.8 Frontline (3 wolves + 1 werewolf 420HP taunt + strike), **Cyborg** 1.8 (3 laser drones flying-ranged + Rockets + **Spelunker glow** on commander while fielded via `CyborgSensorPlayer`), **Witch Doctor** 1.6 (2 voodoo-spirit poison-dart fliers + Blowgun + the VENOM aura).
+- **Witch Doctor VENOM:** `VenomBuff`+`VenomGlobalNPC`; 35% of army hits by a body within 36 tiles of the WD envenom (6s, 18 dmg/s ×scale, ignores defense, overrides debuff immunity → lands on bosses). Delivered via `LootCredit.OnSoldierHit` (+1 line), `VenomGlobalNPC.OnHitByProjectile`, and melee calls. No static per-officer state.
+- **Touches outside officer area (flagged):** `LootCredit.cs` +1 line (`VenomSystem.OnArmyHit`); `MarkAmpGlobalNPC.IsArmyProjectile` now counts `SummonedUnitNPC` sources (so Pirate crew/cannon + all summon shots get the shred mark too) + new `MarkSystem.Amp`. Did NOT touch Thorium compat/targeting-core/Mechanization.
+- **DEFERRED/notes (Eve):** all combat NUMBERS are first-pass guesses (skeleton ~22/blow) — balance in play. Tiki summons → Voodoo Spirits (no vanilla tiki sprite). Summoners use Support posture (no "Rear" posture exists). Art parked (vanilla placeholder sprites).
+
+### 🎨 MECHANIZATION ART — RESUMED (Eve wants real pixel attempts, ~20 variants to pick direction + iterate)
+Sent a 20-variant combat-drone contact sheet (`scratchpad/sprites/drones20.png`, gen `scratchpad/sprites/drones20.py`): 8 FORMS (quad-X/quad+/osprey/heli/hexa/fixed-wing/ducted/compact) × 4 PALETTES (gunmetal+cyan/steel+amber/iron+red/iron+brass). Proposed art-bible palette (outline `#2a2d3a`, hull ramp, cyan/amber/brass accents, colored outlines + dither + 3/4 angle). AWAITING Eve's pick (form+palette) → then refine that direction + frames + variants; same treatment for turret/transport/tank/airship.
 
 ### ✅ 1.6.0 — OFFICER EXPANSION pt1 (merged `officer-expansion-1`; both boots clean). "Every officer uses a real weapon" (generalized the Guide fix per Eve).
 - **Held weapons:** Arms Dealer→Minishark, Painter→his PainterPaintballGun (now ~2x cadence — a buff, tenet #1), Dryad→Blowpipe, Princess→WandofSparking (she FINALLY fights — Desc no longer "never fights"), Pirate→FlintlockPistol. Merchant/Goblin/Demolitionist/Angler KEEP signatures (their signature IS that thrown item's own projectile — knives/spikyballs/grenades/daggerfish aren't `IsMountable`). Nurse/Guide unchanged. Damage floored at the signature so low-tier items stay relevant. **Tax Collector left unarmed** (melee rear-support, "recommend cut" — ask Eve).

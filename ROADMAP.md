@@ -8,7 +8,13 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.3` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.4` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.4 — BARD AIM FIX (Eve live-test: "what is lute guy aiming at bro can't hit a shot")
+Soldier-bards fired their notes wildly out of range and missed. Two general bugs in `WeaponClassifier` (not a Lute special-case — fixes every borrowed-AI modded shot):
+- **GRAVITY mis-judged:** `ProjectileHasGravity` judged a modded shot by its own `Projectile.type`. Thorium's Wood Lute note runs on a borrowed VANILLA AI (`ModProjectile.AIType` = Bullet, no gravity) but was treated as a dropping arrow, so the army lobbed it on an arc. FIX: when a `ModProjectile` sets `AIType`, judge gravity by that vanilla AI's type, not the mod type's id.
+- **RANGE over-estimated 3×:** `ShortShotRange` used `shootSpeed × (1+extraUpdates) × timeLeft`, so a fast multi-update note looked like it reached ~50 tiles when it actually dies at ~34 — the soldier opened fire far out of range and the note fizzled short. FIX: `speed × timeLeft` (real travel). Wood Lute `RangeTiles` 46→27.
+- Verified: headless self-test, the note now HITS at 10/20/30 tiles (old = MISS). Both boots clean. Eve live-tests the actual aim; other instruments not individually tested (per-instrument survey if any still miss).
 
 ### ✅ 1.6.3 — OFFICER BEHAVIOR FIXES (Eve live-test: officers follow/ignore-orders, suppress spawns, want talk-to dialogue)
 - **OBEY POSTURE+ORDERS:** `Officer_Think` hardcoded follow-commander + orders never reached officers (`RosterSystem.IssueOrder` looped only soldiers). FIX: `OfficerSystem.IssueOrder` delivers to avatars; officers now obey Follow/Hold/Patrol/Return/Search&Destroy/Free-Rein (Frontline closes on enemies, Support holds behind the line; hurt<40% retreats to rear). Default = Follow (trail player out of combat until ordered).

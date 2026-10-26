@@ -8,7 +8,16 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.6` + Mechanization `0.5.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.7` + Mechanization `0.6.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ Mechanization 0.6.0 + Levy 1.6.7 — COMBAT DRONES MOVE TO MECHANIZATION, LOITER, RECALL, BATTERY (Eve: "move the Levy attack drones to Mechanization and make them actually fly around above a base… recall them… a battery that slowly drains")
+Engineering only; the new side-view art is a separate job (the drone is drawn from rectangles as a placeholder). Both boots clean (Levy arsenal self-check 72 OK, Mechanization drone self-check 55 OK, turret 42 OK, zero exceptions). NOT played live.
+- **Migration:** `DroneNPC` / `DroneSystem` now live in Mechanization (`Content/NPCs/`), modelled on the turret (`ArmoryLink.OfBarracks`, `MechConstants.Drone`, `MechPackets`, `DroneWiringCheck`). Levy lost `DroneNPC`, `DroneSystem`, `LevyConstants.Drones` (kept as `LevyConstants.Arsenal`: the weapon-mount constants `DroneArsenal` still needs) and the drone branches in `EnemyTargeting` / `SoldierProjectileTag`; `DroneWiringCheck` became `ArsenalWiringCheck` (the shared pipeline + Armory ledger checks). Shot plumbing shared by turret and drone is now `Mechanization/Common/ShotKit.cs`.
+- **⚠ Old worlds:** Levy drones are gone from Levy. Saved worlds load fine (the NPCs were never saved); with Mechanization on, the garrison simply relaunches. A Levy-only install has no drones. **A Guide to Engineering stays in Levy** (the item + `GuideSystem.Engineering` world flag) as the unlock; Mechanization reads the flag. Its text now says it needs Mechanization.
+- **Loiter:** a lazy waypoint patrol in a box above the Barracks (52 tiles wide, 6–16 tiles above the roof; each slot has its own sector and altitude row), pausing at each waypoint. It presses toward enemies in reach but is leashed to the box (+22 tiles), then goes back to loitering. **Patrol Banners are dropped for drones** (the box is the only mode).
+- **Recall:** right-click a drone for Recall / Recall all (flying) or Launch / Launch all (parked); keybind `L` (rebindable) toggles the nearest Barracks. A recalled drone flies to its pad on the ground beside the Barracks, lands, files its weapon back into the Armory, and stays PARKED (unarmed) until launched. A recalled drone HOLDS its Barracks' garrison so the freed weapon isn't lent straight out again. Server-authoritative; packets `DroneCommand` / `DroneKey`.
+- **Battery (a cost, never a cap):** 600 s of flight, drains 1/s airborne, refills 40/s on the pad (full in 15 s). Below 20% (plus the trip home, timed pessimistically) it flies home, lands, recharges to 95%, takes off again armed with the same weapon. It is never weaker or slower for being low. Shown as a thin bar when hovered, charging or under 35%.
+- **Tune knobs** (all `MechConstants.Drone`): `BatterySeconds`, `DrainPerSecond`, `ChargePerSecond`, `ReturnFraction`, `ResumeFraction`, `ScrambleFraction`, `LoiterHalfWidthTiles`, `LoiterMinAltTiles` / `LoiterMaxAltTiles`, `LoiterSpeedPx`, `EngageSpeedPx`, `LeashTiles`, `PadStartTiles`.
 
 ### ✅ 1.6.6 — HEALER WEAPONS FIXED (Eve: "several early healer weapons are weird + how do you score a weapon that does no damage")
 Done by hand off a boot-time classification DUMP of all ~200 Thorium healers (`HealerDiagDump.cs`, gated off, kept for re-runs). Root causes, proven with real data:

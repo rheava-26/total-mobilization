@@ -31,7 +31,7 @@ namespace Levy.Common.Globals
 		/// </summary>
 		public int CommanderIndex = -1;
 		/// <summary>
-		/// True for a shot (or a fragment of a shot) fired by a combat drone. A drone is not a soldier, so it has no <see cref="SoldierIndex"/>; the blast guard reads this so a drone's
+		/// True for a shot (or a fragment of a shot) fired by a companion mod's machine (Mechanization's combat drones and turrets set it). A drone is not a soldier, so it has no <see cref="SoldierIndex"/>; the blast guard reads this so a drone's
 		/// rocket or grenade, like a soldier's, never eats the player's base. Server / single player only: not synced.
 		/// </summary>
 		public bool DroneShot;
@@ -64,13 +64,6 @@ namespace Levy.Common.Globals
 				else if (npc.ModNPC is SummonedUnitNPC unit)
 				{
 					CommanderIndex = unit.CommanderIndex;
-					projectile.npcProj = true; projectile.noDropItem = true;
-				}
-				else if (npc.ModNPC is DroneNPC drone)
-				{
-					// A combat drone: credits its commander (the nearest player to its Barracks) exactly like a summoned unit's shot, and is marked so its blasts spare the base.
-					CommanderIndex = drone.CommanderIndex;
-					DroneShot = true;
 					projectile.npcProj = true; projectile.noDropItem = true;
 				}
 			}

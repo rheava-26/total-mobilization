@@ -23,7 +23,7 @@ namespace Levy.Common.Weapons
 		public int Crit;
 		/// <summary>How far (px) the drone engages with this weapon.</summary>
 		public float RangePx;
-		/// <summary>The shot is a stand-in for a held weapon whose real shot is owner-anchored (see <see cref="LevyConstants.Drones.HeldStandInProjectile"/>): approximate.</summary>
+		/// <summary>The shot is a stand-in for a held weapon whose real shot is owner-anchored (see <see cref="LevyConstants.Arsenal.HeldStandInProjectile"/>): approximate.</summary>
 		public bool StandIn;
 
 		public bool Valid => Projectile > ProjectileID.None && IntervalTicks > 0;
@@ -36,8 +36,8 @@ namespace Levy.Common.Weapons
 	/// FAITHFUL: every gun, bow and launcher (the round's own projectile, resolved as Player.PickAmmo does: specific launcher matches, rocket offsets, the per-weapon swaps), every caster whose
 	/// shot is a plain projectile (staves, wands, tomes, magic guns), multi-projectile weapons through the same Multishot table soldiers use, and the weapon's own cadence.
 	/// APPROXIMATE: a held / channeled weapon never spawns its owner-anchored shot (it would grab the commander); one that fires ammo fires that ammo's shot at its real cadence, a held caster
-	/// fires <see cref="LevyConstants.Drones.HeldStandInProjectile"/>. Sky-drop weapons (Daedalus Stormbow, Blizzard Staff...) shoot straight from the drone instead of raining from above.
-	/// A modded weapon's own Shoot hook is not run. REFUSED: melee, summon, whip, sentry, thrown, boomerang, yoyo, flail, tools, and <see cref="LevyConstants.Drones.UnmountableItems"/>.
+	/// fires <see cref="LevyConstants.Arsenal.HeldStandInProjectile"/>. Sky-drop weapons (Daedalus Stormbow, Blizzard Staff...) shoot straight from the drone instead of raining from above.
+	/// A modded weapon's own Shoot hook is not run. REFUSED: melee, summon, whip, sentry, thrown, boomerang, yoyo, flail, tools, and <see cref="LevyConstants.Arsenal.UnmountableItems"/>.
 	/// </summary>
 	public static class DroneArsenal
 	{
@@ -66,7 +66,7 @@ namespace Levy.Common.Weapons
 			Item sample = ContentSamples.ItemsByType.TryGetValue(it.type, out Item s) && s != null && !s.IsAir ? s : it;
 			if (sample.damage <= 0 || sample.shoot <= ProjectileID.None) return false;
 			if (sample.maxStack > 1 || sample.consumable || sample.accessory || sample.sentry || sample.pick > 0 || sample.axe > 0 || sample.hammer > 0) return false;
-			if (LevyConstants.Drones.UnmountableItems.Contains(sample.type) || LevyConstants.DeployPersistItems.Contains(sample.type)) return false;
+			if (LevyConstants.Arsenal.UnmountableItems.Contains(sample.type) || LevyConstants.DeployPersistItems.Contains(sample.type)) return false;
 
 			WeaponProfile profile = WeaponClassifier.GetProfile(it);
 			if (!profile.Supported) return false;
@@ -132,9 +132,9 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Max life of a drone carrying this weapon type: the weapon sets the drone's toughness as it sets its damage.</summary>
 		public static int MaxHpFor(int itemType) =>
-			Math.Min(LevyConstants.Drones.HpMax, LevyConstants.Drones.HpBase + LevyConstants.Drones.HpPerRarityTier * RarityTierOf(itemType));
+			Math.Min(LevyConstants.Arsenal.HpMax, LevyConstants.Arsenal.HpBase + LevyConstants.Arsenal.HpPerRarityTier * RarityTierOf(itemType));
 
-		public static int DefenseFor(int itemType) => LevyConstants.Drones.DefenseBase + LevyConstants.Drones.DefensePerRarityTier * RarityTierOf(itemType);
+		public static int DefenseFor(int itemType) => LevyConstants.Arsenal.DefenseBase + LevyConstants.Arsenal.DefensePerRarityTier * RarityTierOf(itemType);
 
 		// ---------------------------------------------------------------------------------------------------- the shot
 
@@ -166,8 +166,8 @@ namespace Levy.Common.Weapons
 				}
 				else if (profile.Family == WeaponFamily.HeldWeapon)
 				{
-					projectile = LevyConstants.Drones.HeldStandInProjectile; // the held AI is owner-anchored: a bolt stands in for it
-					speed = LevyConstants.Drones.HeldStandInSpeed;
+					projectile = LevyConstants.Arsenal.HeldStandInProjectile; // the held AI is owner-anchored: a bolt stands in for it
+					speed = LevyConstants.Arsenal.HeldStandInSpeed;
 					shot.StandIn = true;
 				}
 				else
@@ -186,7 +186,7 @@ namespace Levy.Common.Weapons
 				shot.StepMult = 1f + Math.Max(0, sample?.extraUpdates ?? 0);
 				shot.Gravity = WeaponClassifier.ProjectileHasGravity(projectile);
 				shot.IntervalTicks = IntervalTicks(weapon, profile);
-				shot.RangePx = Math.Clamp(profile.RangeTiles, LevyConstants.Drones.RangeMinTiles, LevyConstants.Drones.RangeMaxTiles) * LevyConstants.TilePx;
+				shot.RangePx = Math.Clamp(profile.RangeTiles, LevyConstants.Arsenal.RangeMinTiles, LevyConstants.Arsenal.RangeMaxTiles) * LevyConstants.TilePx;
 			}
 			catch (Exception e)
 			{
@@ -211,7 +211,7 @@ namespace Levy.Common.Weapons
 				int shots = weapon.useLimitPerAnimation.HasValue && weapon.useLimitPerAnimation.Value > 0 ? Math.Min(weapon.useLimitPerAnimation.Value, natural) : natural;
 				if (shots < natural || weapon.reuseDelay > 0) cadence = (anim + Math.Max(0, weapon.reuseDelay)) / (float)shots;
 			}
-			return Math.Clamp((int)Math.Round(cadence), LevyConstants.Drones.MinShotIntervalTicks, LevyConstants.Drones.MaxShotIntervalTicks);
+			return Math.Clamp((int)Math.Round(cadence), LevyConstants.Arsenal.MinShotIntervalTicks, LevyConstants.Arsenal.MaxShotIntervalTicks);
 		}
 
 		/// <summary>

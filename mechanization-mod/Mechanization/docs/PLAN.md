@@ -89,6 +89,8 @@ These are the proven, public Levy symbols Mechanization already consumes or will
 
 ## 2. WORK ITEM 1 — DRONE MIGRATION + PATROL BEHAVIOR (the first concrete slice)
 
+> **STATUS (Mechanization 0.6.0 / Levy 1.6.7): BUILT, with these deliberate departures from the plan below.** The drone moved to Mechanization (`Content/NPCs/DroneNPC.cs`, `DroneSystem.cs`, `DroneControls.cs`, `DroneWiringCheck.cs`; `Common/DroneMath.cs`, `ShotKit.cs`, `MechConstants.Drone`). `DroneArsenal` and the Armory ledger stayed in Levy, public. **A Guide to Engineering stayed in Levy** as the unlock (item + `GuideSystem.Engineering` world flag; no item save-compat loss). The patrol-banner design in §2.4 was REPLACED by a **loiter box** above the Barracks (no banners), plus **recall/launch** orders (drone right-click panel + a keybind, packets `DroneCommand`/`DroneKey`) and a **battery** (a cost, never a cap). Not built from this section: the ore-chassis cost (§2.5) and the Engineering-unlock redesign.
+
 This is the designer's headline ask and the natural next step after "MP-client placement." Two coupled
 changes: **(A) re-home the combat drones from Levy into Mechanization**, and **(B) change their behavior
 from idle-hover-over-barracks to patrol-and-engage.**

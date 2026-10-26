@@ -5,7 +5,7 @@ using Terraria.DataStructures;
 using Terraria.ModLoader;
 using Levy.Common;                  // LevyConstants.PylonShareRadius / TilePx
 using Levy.Common.Systems;          // SettlementSystem.NearestArmory / NetworkedArmories
-using Levy.Content.TileEntities;    // ArmoryTE
+using Levy.Content.TileEntities;    // ArmoryTE, BarracksTE
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Common
@@ -41,6 +41,12 @@ namespace Mechanization.Common
 				if (seed != null) AddNetwork(settle, seed, pool);
 			}
 		}
+
+		/// <summary>
+		/// The one Armory a Barracks' drones borrow from: the Armory Levy links to that Barracks (the nearest within its link radius). A drone's weapon lives on THAT Armory's lend ledger and goes back to
+		/// it, so unlike the turret's read-only pool this is a single, stable Armory. Null when the Barracks has none (or is null).
+		/// </summary>
+		public static ArmoryTE OfBarracks(BarracksTE barracks) => barracks == null ? null : SettlementSystem.Instance?.LinkedArmory(barracks);
 
 		private static void AddNetwork(SettlementSystem settle, ArmoryTE seed, List<ArmoryTE> pool)
 		{

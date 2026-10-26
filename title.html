@@ -401,7 +401,7 @@
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
   body.hud-hidden .topbar, body.hud-hidden .subbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying, body.hud-hidden #drawerTab, body.hud-hidden #hudDrawer, body.hud-hidden #tutReady { display: none !important; }
-  #recDot { display: none; position: fixed; right: 52px; top: 10px; z-index: 12; pointer-events: auto; cursor: pointer; font-size: 18px; line-height: 1; padding: 7px 9px; color: #ff4040; background: rgba(14,23,38,.55); border: 1px solid var(--line); border-radius: 4px; animation: recPulse 1s ease-in-out infinite; }
+  #recDot { display: none; position: fixed; right: 52px; top: 10px; z-index: 19; pointer-events: auto; cursor: pointer; font-size: 18px; line-height: 1; padding: 7px 9px; color: #ff4040; background: rgba(14,23,38,.55); border: 1px solid var(--line); border-radius: 4px; animation: recPulse 1s ease-in-out infinite; }
   #recDot.show { display: block; }
   .hbtn.rec::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff3030; margin-right: 7px; animation: recPulse 1s ease-in-out infinite; }
   @keyframes recPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
@@ -730,7 +730,7 @@
   <details class="helpsec"><summary>🕹 CONTROLS — DESKTOP &amp; TOUCH</summary><p>
     <b>Desktop:</b> <span class="k">← → / A D</span> scroll the front · <span class="k">W S / ↑ ↓</span> or <span class="k">Shift+wheel</span> pan the tall sky · <span class="k">wheel</span> zooms toward the cursor (or the <span class="k">+ − ⌂</span> buttons) · <span class="k">click</span> selects · <span class="k">right-click / Esc</span> cancels anything · <span class="k">SPACE</span> pauses · <span class="k">M</span> toggles music · click or drag the <b>minimap</b> to jump the camera.<br>
     <b>Touch:</b> <b>drag</b> to scroll · <b>pinch</b> to zoom · <b>tap</b> to select / place · <b>long-press</b> to cancel · strategic strikes take a first tap to AIM, then a <span class="k">☢ CONFIRM</span> tap to fire — no fat-finger nukes.
-    <span class="k">R</span> records a clip to a .webm file (⏺ RECORD in the drawer).<br>
+    <span class="k">R</span> records a clip to a .webm file (⏺ RECORD in the drawer). The clip saves itself a few seconds after the match ends.<br>
     <b>Report:</b> The after-action report includes a performance timeline and worst-moment snapshots. Download it to share.<br>
     <b>Options:</b> Adaptive Effects lowers effects quality when frames run long and restores it when they recover. Turn it off to pin effects at full.<br>
     <span class="tip2">Zoomed in? The camera can reach the whole world — pan speed matches what your eye sees at any zoom.</span></p></details>
@@ -830,7 +830,6 @@
   <div id="fxChip" class="has-tip" data-tip="Effects quality. Scales down when frames run long and back up when they recover. Pin it in Options." title="Effects quality. Scales down when frames run long and back up when they recover. Pin it in Options." style="display:none;position:fixed;right:8px;bottom:6px;z-index:40;font:10px/1 monospace;letter-spacing:1px;color:#9fb6d4;background:rgba(8,14,26,.6);border:1px solid var(--line);border-radius:4px;padding:3px 6px;opacity:.8;cursor:help"></div>
   <div id="drawerTab" title="Menu">▤</div>
   <div id="hudEye" title="Show HUD (or press H)" onclick="toggleHudHidden()">👁</div>
-  <div id="recDot" title="Stop recording" onclick="recStop()">⏺</div>
   <div id="hudDrawer">
     <div class="dwsec">
       <div class="dwh">VIEW &amp; AUDIO</div>
@@ -838,7 +837,7 @@
       <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣ PLAYLIST</div>
       <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎ COVERAGE ZONES</div>
       <div class="hbtn has-tip" id="btnHideHud" data-tip="Hide the whole HUD for a clean screenshot (or press H)." onclick="toggleHudHidden()">🖥 HIDE HUD</div>
-      <div class="hbtn has-tip" id="btnRecord" data-tip="Record a clip to a .webm file. R starts and stops. Game-only mode skips the HUD and never prompts; whole-tab mode shows one browser picker and the red dot is visible in the clip (R stops without touching it)." onclick="recToggle()">⏺ RECORD</div>
+      <div class="hbtn has-tip" id="btnRecord" data-tip="Record a clip to a .webm file. R starts and stops. The clip saves itself a few seconds after the match ends. Game-only mode skips the HUD and never prompts; whole-tab mode shows one browser picker and the red dot is visible in the clip (R stops without touching it)." onclick="recToggle()">⏺ RECORD</div>
     </div>
     <div class="dwsec">
       <div class="dwh">HELP</div>
@@ -859,8 +858,9 @@
   <button class="back" id="backBtn">❚❚ MENU</button>
 </div>
 
+<div id="recDot" title="Stop recording" onclick="recStop()">⏺</div>
 <div id="endScreen"><h1 id="endTitle"></h1><div id="endRank"></div>
-  <div class="aar-topactions"><button class="pill" id="endDownload">⬇ DOWNLOAD REPORT</button><button class="pill" id="endShare">⤴ SHARE</button></div>
+  <div class="aar-topactions"><button class="pill" id="endDownload">⬇ DOWNLOAD REPORT</button><button class="pill" id="endShare">⤴ SHARE</button><button class="pill" id="endRec" style="display:none" onclick="recStop()">⏺ SAVE RECORDING</button></div>
   <div class="aar-tabs" id="aarTabs">
     <div class="aar-tab sel" data-pg="overview">OVERVIEW</div>
     <div class="aar-tab" data-pg="economy">ECONOMY</div>
@@ -6098,7 +6098,7 @@ function captureSnap(label) {
 }
 /* RECORDER — in-page clip capture. Game mode records the canvas plus the game's own audio bus; tab mode records the whole tab through the browser's picker. */
 const REC = { on: false, mode: 'game', rec: null, chunks: [], startT: 0, stream: null, dest: null, srcNodes: {}, mvolHooked: false, tracks: [] };
-function recSetUi() { const b = document.getElementById('btnRecord'), d = document.getElementById('recDot'); if (b) { b.classList.toggle('on', REC.on); b.classList.toggle('rec', REC.on); } if (d) d.classList.toggle('show', REC.on); }
+function recSetUi() { const b = document.getElementById('btnRecord'), d = document.getElementById('recDot'); if (b) { b.classList.toggle('on', REC.on); b.classList.toggle('rec', REC.on); } if (d) d.classList.toggle('show', REC.on); const er = document.getElementById('endRec'); if (er) er.style.display = REC.on ? '' : 'none'; }
 function recWrap(el, key) { if (!el || !actx) return true; if (REC.srcNodes[key]) return true; try { const n = actx.createMediaElementSource(el); n.connect(actx.destination); n.connect(REC.dest); REC.srcNodes[key] = n; return true; } catch (e) { return false; } }
 async function recStart() {
   if (REC.on || REC.starting) return;
@@ -10198,7 +10198,7 @@ function startDeploy() { closeModal('scenModal'); closeModal('optsModal'); if (m
 function enterGame() { if (mode === 'game') return; mode = 'game'; document.body.classList.remove('hud-hidden'); document.getElementById('gameHud').classList.add('show'); stopMenuTheme(); MUS.fails = 0; musPlay('prep', 2.2); setTimeout(() => { if (mode === 'game') startTutorial(TUT); }, 650);   /* startTutorial reads TUT's toggles itself — a "no thanks" TUT is a safe no-op call */
   document.getElementById('btnProd').classList.add('attn');   // playtest: the PRODUCE button went a whole game unpressed — pulse it until first use
   if (matchMedia && matchMedia('(pointer: coarse)').matches) document.getElementById('ghint').textContent = 'PREP PHASE — build Power/Housing, then Factories/Airbases. Drag to scroll · pinch to zoom · tap to select/place · long-press to cancel.'; }
-function backToTitle() { musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; playMenuTheme(); }
+function backToTitle() { clearTimeout(REC.endT); REC.endT = 0; if (REC.on) recStop(); musStop(); closeStrike(); document.getElementById('endScreen').style.display = 'none'; mode = 'title'; G = null; soc.sky = null; soc.tint = null; layoutEarth(); document.getElementById('gameHud').classList.remove('show'); document.getElementById('info').classList.remove('show'); document.getElementById('produce').classList.remove('show'); document.getElementById('ui').classList.remove('hidden'); const f = document.getElementById('footer'); f.style.opacity = ''; f.style.display = ''; playMenuTheme(); }
 function end(win, msg) {
   /* THIRD OUTCOME: win === 'stalemate' is a draw — the invasion watchdog fired because neither side could force a decision. Distinct from true (win) / false (lose); never counts as a win for achievements. */
   const isDraw = win === 'stalemate';
@@ -10207,7 +10207,7 @@ function end(win, msg) {
   // ACHIEVEMENT: record the outcome, then evaluate once more here — updateGame's ~1/s check stops firing after G.over is set. A stalemate is neither a win nor a battlefield loss, so it records nothing achievement-relevant.
   if (G.ach) { if (win === true) { G.ach.won = true; markEver('win', G.intent); } else if (!isDraw) { G.ach.lostReason = msg || ''; if (G.phase === 'prep') G.ach.couped = true; } }   // ACHIEVEMENT: a stability collapse that ends the game before the invasion phase begins is a COUP, not a battlefield loss
   try { checkAchievements(); } catch (er) {}
-  const e = document.getElementById('endScreen'); e.style.display = 'flex';
+  const e = document.getElementById('endScreen'); e.style.display = 'flex'; recSetUi(); if (REC.on) { clearTimeout(REC.endT); REC.endT = setTimeout(() => { REC.endT = 0; if (REC.on) { recStop(); toast('Recording saved.'); } }, 3000); }
   const t = document.getElementById('endTitle');
   if (isDraw) { t.textContent = 'STALEMATE — A WAR WITHOUT END'; t.style.color = '#9fb0c8'; }
   else { t.textContent = (win ? 'VICTORY — ' : 'DEFEAT — ') + msg; t.style.color = win ? 'var(--mp)' : 'var(--inf)'; }

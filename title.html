@@ -5985,7 +5985,9 @@ function perfSample() {
   perfRankWindow(row);
 }
 function perfRankWindow(row) {
-  const st = G.stats; if (!(row.rk > 0)) return;
+  const st = G.stats; if (!(row.rk > 0) || row.t < 6) return;   /* the startup terrain-bake hitch never takes a slot (row stays in perfLog) */
+  if (row.frame <= 0 && st.perfLog.some(x => x.frame > 0)) return;   /* a frame-less (paused/driven) window can't outrank a measured one */
+  if (row.frame > 0) st.perfWorst = st.perfWorst.filter(x => x.frame > 0);   /* ...and once real frames exist, frame-less entries are evicted */
   let list = st.perfWorst; const near = list.filter(x => Math.abs(x.t - row.t) < PERF_WORST_GAP);
   if (near.some(x => x.rk >= row.rk)) return;   /* a worse window within 20s already owns this stretch */
   if (!near.length && list.length >= 3 && list[list.length - 1].rk >= row.rk) return;

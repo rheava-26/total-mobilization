@@ -8386,7 +8386,7 @@ function stepGame(sec) {   // advance the sim by EXACTLY `sec` game-seconds in f
   let advanced = false;
   for (let i = 0; i < iters; i++) {
     if (G.over || G._eventOpen) break;   // an event popup mid-step demands the player's attention before the sim keeps moving
-    try { updateGame(STEP); } catch (e) { logErr(e); }
+    try { updateGame(STEP); } catch (e) { logErr(e); } try { updParts(STEP); } catch (e) { logErr(e); }   /* particles no longer step inside updateGame */
     advanced = true;
     if (G.over || G._eventOpen) break;
   }

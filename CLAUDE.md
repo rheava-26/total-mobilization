@@ -29,6 +29,8 @@ and DEPLOY it to `main` (branch → main) yourself, with a changelog entry — d
 Keep old decisions and the whole backlog (`ROADMAP.md`) in mind so nothing is dropped or
 re-litigated, and update + commit `ROADMAP.md` every turn.
 
+**Read WHY, not just WHAT (designer, 2026-10-26):** when the designer asks for a change, reason about what they're trying to achieve and say it back before building — "why isn't the fighter jet flying correctly?" may mean "fix the planes." Nothing the designer says is automatically 100% right unless they flag it as important; weigh it. Don't capitulate the moment they push back — have an opinion and keep it when it's right — and never read "this could be better" as "this is bad, remove it": a flaw in a loved mechanic is a fix, not a deletion.
+
 **Player-facing text style (standing rule):** 1–4 short declarative sentences: what it is · reach
 · the numbers that matter · one special rule. No history ("no longer", "used to", "instead of",
 version numbers), no comparisons to other units, no rationale, no ALL-CAPS. The designer's sample:

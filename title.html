@@ -654,6 +654,7 @@
   <div class="row"><label>UI Scale</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="uiScale" min="60" max="140" value="100"><span class="v" id="uiScaleV">100%</span></div></div>
   <div class="row"><label>Star Density</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="starDen" min="40" max="240" value="150"><span class="v" id="starDenV">150</span></div></div>
   <div class="row"><label>Edge Scroll</label><div class="toggle on" id="tEdge"><div class="knob"></div></div></div>
+  <div class="row"><label>Adaptive Effects <span style="opacity:.55;font-size:10px">— Effects quality scales down when frames run long and back up when they recover. Off pins it at full</span></label><div class="toggle on" id="tFxAuto"><div class="knob"></div></div></div>
   <div class="row"><label>Full Effects <span style="opacity:.55;font-size:10px">— every explosion flourish, unit shadow/glow &amp; lingering smoke. Turn off on low-end devices</span></label><div class="toggle on" id="tFullFx"><div class="knob"></div></div></div>
   <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>ACCESSIBILITY</b></div>
   <div class="row"><label>Reduced Motion <span style="opacity:.55;font-size:10px">— stills the aurora, meteors &amp; planet spin</span></label><div class="toggle" id="tMotion"><div class="knob"></div></div></div>
@@ -823,6 +824,7 @@
   <div class="buildbar" id="buildbar"><div class="bbhdr"><span>⚙ BUILD</span><span class="bbtools" id="bbtools" title="Show/hide DIG & TERRAIN tools">🛠 TOOLS</span><span class="bbmin" id="bbmin" onclick="toggleBuildBar()" title="Minimize / expand the build bar">▾</span></div><div class="ghint" id="ghint">PREP PHASE — build Power/Housing, then Factories/Airbases/Shipyards. Scroll with arrows / screen edges; pan the TALL sky with W/S, ↑/↓ or Shift+wheel; ZOOM with the mouse wheel or the +/− buttons. SPACE = pause.</div><div class="bbtabs" id="bbtabs"></div><div class="bbgrid" id="bbgrid"></div></div>
   <div id="zoomctl"><button onclick="zoomBtn(1.25)" title="Zoom in">+</button><button onclick="zoomBtn(0.8)" title="Zoom out">−</button><button onclick="zoomReset()" title="Reset zoom" style="font-size:9px">⌂</button></div>
   <!-- DRAWER — every "open when you want it" control lives here now, behind ONE right-edge tab. -->
+  <div id="fxChip" class="has-tip" data-tip="Effects quality. Scales down when frames run long and back up when they recover. Pin it in Options." title="Effects quality. Scales down when frames run long and back up when they recover. Pin it in Options." style="display:none;position:fixed;right:8px;bottom:6px;z-index:40;font:10px/1 monospace;letter-spacing:1px;color:#9fb6d4;background:rgba(8,14,26,.6);border:1px solid var(--line);border-radius:4px;padding:3px 6px;opacity:.8;cursor:help"></div>
   <div id="drawerTab" title="Menu">▤</div>
   <div id="hudEye" title="Show HUD (or press H)" onclick="toggleHudHidden()">👁</div>
   <div id="recDot" title="Stop recording" onclick="recStop()">⏺</div>
@@ -902,6 +904,23 @@ addEventListener('resize', resize);
 let mode = 'title', zoomStart = 0, reducedMotion = false, edgeScroll = true;
 let shakeOn = true, flashRed = false, cbMode = false, grainOn = true;   // accessibility: screen shake · flash reduction (photosensitivity) · colorblind-safe bar colors · film grain+vignette
 let fullFx = true;   // PERF/VISUALS — default ON: the sim is what's ever actually slow (render is cheap by comparison), so the old count-based visual cutbacks bought ~nothing and cost the game's whole appeal. ON keeps every per-unit shadow/glow/berm/shield-ring, the full explosion death-flourish set (fxHeavy()), and lets smoke linger; OFF restores the old aggressive low-end cutbacks. Toggle in OPTIONS for low-end devices.
+let FX_Q = 1, fxAuto = true;   /* ADAPTIVE EFFECTS — FX_Q in [.25,1] scales visual-only knobs (particle budget, glow budget, trail length, smoke life, explosion debris counts, shadow blur, terrain re-bake and minimap cadence) down when frames run long and back up when they recover; it never touches the simulation. Driven by fxTick() from syncHUD(). */
+let _fxPartCap = 2400, _fxLife = 1, _fxNoBlur = false, _fxTerrMul = 1, _fxMMms = 100, _fxT = 0, _fxHi = 0, _fxLo = 0, _fxChipQ = -1;
+const TRC = n => Math.max(Math.min(n, 4), Math.round(n * FX_Q));   /* trail cap scaled by FX_Q, never below 4 points */
+const FXB = b => _fxNoBlur ? 0 : b;   /* shadowBlur gate — off when effects quality is low */
+function fxDerive() { const q = fullFx ? FX_Q : 1; _fxPartCap = Math.round(2400 * q); GLOW_SOFT_CAP = Math.round(220 * q); _fxLife = .6 + .4 * q; _fxNoBlur = q < .6; _fxTerrMul = 2 - q; _fxMMms = q < .5 ? 200 : 100; }
+function fxTick() {
+  const now = performance.now(), fake = typeof window.__fakeFrameMs === 'number';
+  if (!fullFx || !fxAuto) { if (FX_Q !== 1) { FX_Q = 1; fxDerive(); } _fxHi = _fxLo = 0; _fxT = now; return; }
+  if (now - _fxT < 1000) return;
+  _fxT = now;
+  if (!fake && ((typeof G !== 'undefined' && G && G.paused) || typeof PERF === 'undefined')) { _fxHi = _fxLo = 0; return; }
+  const cost = fake ? window.__fakeFrameMs : PERF.upd * (PERF.steps || 1) + PERF.render;
+  if (cost > 20) { _fxHi++; _fxLo = 0; if (_fxHi >= 3) { _fxHi = 0; FX_Q = Math.max(.25, FX_Q - .15); } }
+  else if (cost < 12) { _fxLo++; _fxHi = 0; if (_fxLo >= 6) { _fxLo = 0; FX_Q = Math.min(1, FX_Q + .1); } }
+  else { _fxHi = _fxLo = 0; }
+  FX_Q = Math.round(FX_Q * 100) / 100; fxDerive();
+}
 const FEEDBACK_URL = '';   // feedback form link — set this to the game's feedback form URL to enable the Feedback buttons
 function openFeedback() { if (!FEEDBACK_URL) { toast('💬 Feedback form coming soon!'); return; } window.open(FEEDBACK_URL, '_blank', 'noopener'); }   // opens the feedback form in a new tab; graceful message until the URL is set
 function applySafeMode() {
@@ -1418,7 +1437,7 @@ function drawEarth(zoom, alpha) {
     for (let k = 0; k < 8; k++) { const hx = h01(ci * 13.7 + k * 3.1) * 2 - 1, hy = h01(ci * 7.9 + k * 5.3) * 2 - 1; if (hx * hx + hy * hy > .82) continue; const tw = .5 + .5 * Math.sin(performance.now() * .0035 + k * 2.2 + ci); c.globalAlpha = dark * (.3 + .6 * tw) * alpha; c.fillRect(x + hx * rx * .78, y + hy * ry * .78, 1.4, 1.4); } }
   c.globalAlpha = alpha; c.restore();
   c.strokeStyle = 'rgba(150,200,255,.5)'; c.lineWidth = 1.5; c.beginPath(); c.arc(cx, cy, R, 0, 6.28); c.stroke();
-  c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(175,218,255,${.45 * alpha})`; c.lineWidth = 2.4; c.shadowColor = 'rgba(160,210,255,.9)'; c.shadowBlur = 13; c.beginPath(); c.arc(cx, cy, R - .5, Math.PI * .82, Math.PI * 1.48); c.stroke(); c.shadowBlur = 0; c.restore();   // sunlit rim on the day side
+  c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(175,218,255,${.45 * alpha})`; c.lineWidth = 2.4; c.shadowColor = 'rgba(160,210,255,.9)'; c.shadowBlur = FXB(13); c.beginPath(); c.arc(cx, cy, R - .5, Math.PI * .82, Math.PI * 1.48); c.stroke(); c.shadowBlur = 0; c.restore();   // sunlit rim on the day side
   // drifting hardware — tiny satellites tracing slow tilted orbits (with a blinking beacon)
   { const tt = performance.now() * .001;
     for (let si = 0; si < 3; si++) { const oa = tt * (.12 + si * .045) + si * 2.1, tilt = -.35 + si * .3, orbR = R * (1.12 + si * .09);
@@ -1592,7 +1611,7 @@ function bakeTerrain(VH, cz, PXz, clampWX) {
 }
 function terrainBlit(alpha, VH, x0, cz, PX, clampWX) {
   const t0 = performance.now(); let baked = false;
-  const stale = !TCACHE.cv || TCACHE.force !== TERRAIN_FORCE || TCACHE.cz !== cz || TCACHE.w !== W || TCACHE.h !== H || Math.abs(cam.x - TCACHE.camX) > W * .25 || (TCACHE.ver !== TERRAIN_VERSION && t0 - TCACHE.t > 90);
+  const stale = !TCACHE.cv || TCACHE.force !== TERRAIN_FORCE || TCACHE.cz !== cz || TCACHE.w !== W || TCACHE.h !== H || Math.abs(cam.x - TCACHE.camX) > W * .25 || (TCACHE.ver !== TERRAIN_VERSION && t0 - TCACHE.t > 90 * _fxTerrMul);
   if (stale) { try { baked = bakeTerrain(VH, cz, PX, clampWX); } catch (er) { baked = false; logErr(er); } if (!baked) TCACHE.cv = null; }
   if (TCACHE.cv && TCACHE.cz === cz) {
     c.save(); c.globalAlpha = alpha; c.drawImage(TCACHE.cv, Math.round(TCACHE.camX - TCACHE.px - cam.x), TCACHE.yTop); c.restore();
@@ -1736,8 +1755,8 @@ function drawMeteors(a) {
 function drawNebula(a) { if (!NEB.length) { for (let i = 0; i < 5; i++) NEB.push({ nx: Math.random(), ny: .03 + Math.random() * .2, r: 130 + Math.random() * 200, h: Math.random() < .5 ? '88,72,180' : '46,120,150', t: Math.random() * 6 }); } c.save(); c.globalCompositeOperation = 'lighter'; const band = worldH(); for (const n of NEB) { const px = (((n.nx * W - cam.x * .1) % W) + W) % W, y = n.ny * band, al = (.05 + .025 * Math.sin(animClock * .0005 + n.t)) * a; const grd = c.createRadialGradient(px, y, 0, px, y, n.r); grd.addColorStop(0, `rgba(${n.h},${al})`); grd.addColorStop(.6, `rgba(${n.h},${al * .4})`); grd.addColorStop(1, `rgba(${n.h},0)`); c.fillStyle = grd; c.beginPath(); c.arc(px, y, n.r, 0, 6.28); c.fill(); } c.restore(); c.globalAlpha = a; }
 // ATMOSPHERIC RIM — a soft glow that follows the curved ground line, selling the planetary limb (lower half hidden by terrain drawn over it)
 function drawHorizonGlow(a) { c.save(); c.lineCap = 'round'; const trace = () => { c.beginPath(); for (let px = 0; px <= W; px += 6) { const y = groundY(wxAt(px)); px === 0 ? c.moveTo(px, y) : c.lineTo(px, y); } };
-  c.strokeStyle = `rgba(168,212,255,${.5 * a})`; c.shadowColor = `rgba(150,205,255,${.85 * a})`; c.shadowBlur = 42; c.lineWidth = 2; trace(); c.stroke();
-  c.strokeStyle = `rgba(255,228,184,${.34 * a})`; c.shadowColor = `rgba(255,212,150,${.7 * a})`; c.shadowBlur = 15; c.lineWidth = 2; trace(); c.stroke();
+  c.strokeStyle = `rgba(168,212,255,${.5 * a})`; c.shadowColor = `rgba(150,205,255,${.85 * a})`; c.shadowBlur = FXB(42); c.lineWidth = 2; trace(); c.stroke();
+  c.strokeStyle = `rgba(255,228,184,${.34 * a})`; c.shadowColor = `rgba(255,212,150,${.7 * a})`; c.shadowBlur = FXB(15); c.lineWidth = 2; trace(); c.stroke();
   c.shadowBlur = 0; c.restore(); c.globalAlpha = a; }
 const h01 = n => { const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); };   // cheap deterministic hash → [0,1) — stable scenery per world position
 // PARALLAX MOUNTAIN RANGES — two hazy silhouette ranges behind the playfield, scrolling at a fraction of camera speed.
@@ -1952,8 +1971,8 @@ function jetflame(x, nx, ny, len, w2) {   // flickering engine exhaust pointing 
   x.restore();
 }
 // EXOTIC crewed-jet accents — glowing edges/intakes/lenses (no per-frame allocation; call inside the sprite's local space)
-function gRect(x, col, blur, rx, ry, rw, rh) { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.fillStyle = col; x.fillRect(rx, ry, rw, rh); x.restore(); }
-function gArc(x, col, blur, cx, cy, r) { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, 6.28); x.fill(); x.restore(); }
+function gRect(x, col, blur, rx, ry, rw, rh) { x.save(); x.shadowColor = col; x.shadowBlur = FXB(blur); x.fillStyle = col; x.fillRect(rx, ry, rw, rh); x.restore(); }
+function gArc(x, col, blur, cx, cy, r) { x.save(); x.shadowColor = col; x.shadowBlur = FXB(blur); x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, 6.28); x.fill(); x.restore(); }
 function aburn(x, bx, by, len, w) {   // cool teal exotic afterburner plume (the crewed jet line runs teal, not orange)
   const p = pulseA(.05, by);
   x.save(); x.shadowColor = '#9ad8ff'; x.shadowBlur = len * 1.1; x.fillStyle = '#9ad8ff';
@@ -1964,7 +1983,7 @@ function aburn(x, bx, by, len, w) {   // cool teal exotic afterburner plume (the
 // ---- SKY WARSHIP kit (nanotech lifting-body) — extra glow palette + draw helpers ported from the approved concept sheets.
 //      NB: the game's INK/GLASS are constants and HI()/LO()/TRIM() are functions (the concept sheet used them as plain constants); GLOWC/GLOWH/NANO have no game equivalent, so they live here. Helpers are `sky`-prefixed to avoid clashing with the map-space glow() helper. ----
 const SKY_GLOWC = '#7fd4ff', SKY_GLOWH = '#9ad8ff', SKY_NANO = '#2c3e50';
-function skyGlow(x, col, blur, fn) { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.fillStyle = col; fn(); x.restore(); }
+function skyGlow(x, col, blur, fn) { x.save(); x.shadowColor = col; x.shadowBlur = FXB(blur); x.fillStyle = col; fn(); x.restore(); }
 function skyLift(x, pts, col) { x.save(); x.strokeStyle = col; x.lineWidth = 3; x.lineCap = 'round'; x.shadowColor = col; x.shadowBlur = 12; x.globalAlpha = pulseA(.02); x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); x.restore(); }   // glowing underside anti-grav lift line
 function skyBlister(x, s, bx, by, r, ang) { x.save(); x.translate(bx, by); x.rotate(ang || 0); x.fillStyle = INK; x.beginPath(); x.arc(0, 0, r, Math.PI, 0); x.fill(); x.fillStyle = LO(); x.beginPath(); x.arc(0, 0, r, Math.PI, Math.PI * 1.15); x.lineTo(0, 0); x.fill(); x.fillStyle = SKY_NANO; x.fillRect(-r * .55, -r * .28, r * 1.1, r * .12); x.fillStyle = '#0e141c'; x.fillRect(r * .15, -r * .9, r * .18, r * .9); x.fillRect(-r * .33, -r * .9, r * .18, r * .9); skyGlow(x, SKY_GLOWH, 6, () => { x.beginPath(); x.arc(0, -r * .08, r * .22, 0, 6.28); x.fill(); }); x.restore(); }   // embedded weapon blister: hull dome + twin barrels + hot core
 function skyDeckJet(x, s, dx, dy, sc) { x.save(); x.translate(dx, dy); x.scale(sc, sc); x.fillStyle = '#3a4a58'; x.beginPath(); x.moveTo(s * .55, 0); x.lineTo(-s * .1, -s * .14); x.lineTo(-s * .42, -s * .24); x.lineTo(-s * .34, -s * .05); x.lineTo(-s * .5, 0); x.lineTo(-s * .34, s * .05); x.lineTo(-s * .42, s * .24); x.lineTo(-s * .1, s * .14); x.closePath(); x.fill(); skyGlow(x, SKY_GLOWC, 3, () => { x.fillRect(s * .46, -s * .02, s * .1, .04 * s); }); x.restore(); }   // tiny parked mini-jet on the carrier deck
@@ -4940,7 +4959,7 @@ function healSquad(t, amt) {
   let sum = 0; for (const m of t.members) if (m.alive) sum += Math.max(0, m.hp);
   t.hp = Math.min(t.maxHp, sum);   // resync from the bodies (same authority rule as hitSquadMember) instead of healing the aggregate independently
 }
-function blacksmoke(x, y, n, col) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: (1.7 + Math.random() * 2.4) * _fxL, col }); }   // sooty trails that rise & fill the atmosphere — Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff for a styled boom() family — omitted (undefined) at every pre-existing call site, so the default grey/black look is completely unchanged
+function blacksmoke(x, y, n, col) { const _fxL = fullFx ? 1.8 * _fxLife : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', dark: true, x: x + (Math.random() - .5) * 6, y: y - Math.random() * 4, vx: (Math.random() - .5) * 10, vy: -8 - Math.random() * 18, r: 2.6 + Math.random() * 4.5, life: (1.7 + Math.random() * 2.4) * _fxL, col }); }   // sooty trails that rise & fill the atmosphere — Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff for a styled boom() family — omitted (undefined) at every pre-existing call site, so the default grey/black look is completely unchanged
 /* ===== EXPLOSION STYLE FAMILIES ===================================================================
    ONE system (boom/boomW), ~12 palettes keyed by weapon/size, each with a couple of randomized
    variants (ring/flash/ember scale) so the same family doesn't read identically twice. `he` is
@@ -4977,7 +4996,7 @@ function hexToRgba(h) { const n = parseInt(h.slice(1), 16); return 'rgba(' + ((n
 function emitPlume(x, y, p, mul) { const n = Math.min(10, Math.round(3 + p * .35 * mul)); for (let i = 0; i < n; i++) { const h = i / n; G.parts.push({ k: 'plume', x: x + (Math.random() - .5) * p * .5, y: y - h * p * 3, vx: (Math.random() - .5) * 8, vy: -20 - h * 40 - Math.random() * 20, r: 3 + h * p * .5 + Math.random() * 3, life: 1 + h * 1.4 + Math.random() * .6 }); } }   // a rising column of puffs, stacked with height — the mushroom column (nuke) / vertical dust plume (kinetic)
 function emitShard(x, y, p, count, col, grav) { const n = Math.round(2 + p * .4 * (count || 1)); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * p * 18; G.parts.push({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2, life: .3 + Math.random() * .35, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, grav: grav || 0, col: col || '#eaf3ff' }); } }   // bright glassy/metal slivers flung radially — grav 0 (default) drifts weightless (space/plasma), pass a value to let them fall
 function emitArc(x, y, p, count, col) { const n = Math.round(2 + count); for (let i = 0; i < n; i++) { const ang = Math.random() * 6.28, len = 14 + Math.random() * p * 2.2; G.parts.push({ k: 'arc', x, y, ang, len, life: .1 + Math.random() * .08, col: col || '#c9a6ff' }); } }   // jagged violet lightning segments radiating off an EMP burst
-function emitSpray(x, y, p) { const n = Math.round(6 + p * .8); for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.1, sp = 50 + Math.random() * p * 12; G.parts.push({ k: 'spray', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 1.8, life: .5 + Math.random() * .5 }); } }   // a plume of droplets kicked up by a WATER impact — falls under updParts' generic gravity fallback
+function emitSpray(x, y, p) { const n = Math.max(1, Math.round((6 + p * .8) * FX_Q)); for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.1, sp = 50 + Math.random() * p * 12; G.parts.push({ k: 'spray', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 1.8, life: .5 + Math.random() * .5 }); } }   // a plume of droplets kicked up by a WATER impact — falls under updParts' generic gravity fallback
 function emitMotes(x, y, p) { const n = Math.round(6 + p * .5); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 90, rr = p * 1.6; G.parts.push({ k: 'plasma', x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, r: 1.5 + Math.random() * 2.2, life: .16 + Math.random() * .18 }); } }   // ANTIMATTER — the same inward-sucking-implosion look annihilate() already uses (reuses the 'plasma' particle kind), just parameterised off the boom() power instead of a unit's size
 function emitDust(x, y, p) { for (let i = 0; i < Math.round(4 + p * .3); i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 20 + Math.random() * p * 4; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * p, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 10, r: 1 + Math.random() * 2.4, rot: Math.random() * 6, vr: (Math.random() - .5) * 6, grav: 90, gy: y + Math.random() * 4, dom: 'ground', settled: false, life: .6 + Math.random() * .6, col: '#787e88' }); } }   // COLLAPSE — grey rubble chunks (reuses 'clod', tinted concrete-grey instead of dirt-brown) settling out of a demolished structure
 function boom(x, y, p, style) {   // THE universal explosion — style (default 'he') picks a BOOM_STYLES family + a random variant of it; every non-'he' family is additive on top of the same ring/flash/deb/ember/smoke skeleton the original single-look boom() always used
@@ -5001,13 +5020,13 @@ function boom(x, y, p, style) {   // THE universal explosion — style (default 
       if (fam.afterglow) { const ag = fam.afterglow; G.parts.push({ k: 'flash', x, y, r: p * 3.4 * mul * vr.f * (ag.mul != null ? ag.mul : 1), life: ag.life, life0: ag.life, bloom: true, col: ag.col, col2: ag.col2 }); }   // NUKE — a second, slower-fading orange afterglow blooms on top of the white-hot first flash, instead of one more same-toned white layer
     }
   }
-  if (fam.deb) for (let i = 0; i < p * 1.5 * fam.deb; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * p * 14; G.parts.push({ k: 'deb', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, r: 1 + Math.random() * 2.4, life: .9 + Math.random() * 1.2, rot: Math.random() * 6, vr: (Math.random() - .5) * 12 }); }
-  if (fam.emberN) for (let i = 0; i < Math.min(12, p * 1.2) * fam.emberN * vr.e; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * p * 16; G.parts.push({ k: 'ember', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, r: .8 + Math.random() * 1.4, life: .7 + Math.random() * .9, tw: Math.random() * 6, col: ECOL }); }   // glowing embers arcing out of the blast
-  if (fam.smokeN) smoke(x, y, Math.ceil(p / 3 * fam.smokeN), SCOL);
-  if (fam.blackN) blacksmoke(x, y, Math.ceil(p / 2.5 * fam.blackN), SCOL);   // grey core puff + lingering black soot
+  if (fam.deb) for (let i = 0; i < Math.max(1, p * 1.5 * fam.deb * FX_Q); i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * p * 14; G.parts.push({ k: 'deb', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, r: 1 + Math.random() * 2.4, life: .9 + Math.random() * 1.2, rot: Math.random() * 6, vr: (Math.random() - .5) * 12 }); }
+  if (fam.emberN) for (let i = 0; i < Math.max(1, Math.min(12, p * 1.2) * fam.emberN * vr.e * FX_Q); i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * p * 16; G.parts.push({ k: 'ember', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, r: .8 + Math.random() * 1.4, life: .7 + Math.random() * .9, tw: Math.random() * 6, col: ECOL }); }   // glowing embers arcing out of the blast
+  if (fam.smokeN) smoke(x, y, Math.max(1, Math.ceil(p / 3 * fam.smokeN * FX_Q)), SCOL);
+  if (fam.blackN) blacksmoke(x, y, Math.max(1, Math.ceil(p / 2.5 * fam.blackN * FX_Q)), SCOL);   // grey core puff + lingering black soot
   if (!heavy) {   // OPTIONAL EXTRAS — plume/shard/arc/spray/motes/fires/molten/dust all skip under fxHeavy() (genuinely extreme unit counts, see fxHeavy's own comment); the core ring/flash/deb/ember/smoke skeleton above still always plays
     if (fam.plume) emitPlume(x, y, p, fam.plume);
-    if (fam.shard) emitShard(x, y, p, fam.shard, fam.ember || fam.ring, style === 'vacuum' ? 0 : 140);   // VACUUM shards drift weightless (no ground to fall to); every other family's shards fall like any other debris
+    if (fam.shard) emitShard(x, y, p, fam.shard * FX_Q, fam.ember || fam.ring, style === 'vacuum' ? 0 : 140);   // VACUUM shards drift weightless (no ground to fall to); every other family's shards fall like any other debris
     if (fam.arc) emitArc(x, y, p, fam.arc, fam.ring);
     if (fam.spray) emitSpray(x, y, p);
     if (fam.motes) emitMotes(x, y, p);
@@ -5021,7 +5040,7 @@ function boom(x, y, p, style) {   // THE universal explosion — style (default 
   else if (fam.sfx === 'blip') { if (p >= 3 && Math.random() < .5) blip(180 + Math.random() * 120, .1, 'square', .18); }
 }
 function spark(x, y, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 30 + Math.random() * 50; G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2, life: .22 }); } }
-function smoke(x, y, n, col) { const _fxL = fullFx ? 1.8 : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: (.9 + Math.random() * .9) * _fxL, col }); }   // Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff — omitted at every pre-existing call site, so the default grey look never changes
+function smoke(x, y, n, col) { const _fxL = fullFx ? 1.8 * _fxLife : 1; for (let i = 0; i < n; i++) G.parts.push({ k: 'smoke', x: x + (Math.random() - .5) * 4, y, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 14, r: 1.6 + Math.random() * 2, life: (.9 + Math.random() * .9) * _fxL, col }); }   // Full Effects lets it linger ~1.8x longer. `col` (optional) tints the puff — omitted at every pre-existing call site, so the default grey look never changes
 function floatText(x, y, txt, col) { G.parts.push({ k: 'text', x, y, vy: -26, txt, col: col || '#fff', life: 1.2 }); }   // small rising label (salvage, alerts)
 // THE AUTOFLEET'S INTENT shapes the whole invasion — difficulty is about WHY they came, not just bigger stat bars
 const INTENT = {
@@ -8795,18 +8814,18 @@ function updProj(dt) {
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const fld = enemyField(p.x, p.y); if (fld) { fld.fieldHp -= (p.dmg || 10) + (p.big ? 30 : 12); spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 7, life: .12 }); (fld.fieldHits || (fld.fieldHits = [])).push({ ang: Math.atan2(p.y - fld.y, p.x - fld.x), t: 0 }); p.life = 0; continue; } }   // ENEMY DEFLECTOR FIELD scrubs YOUR incoming rounds (incl. the AoE that bypasses armour) until it's battered down; beams & strategic strikes punch straight through it
     if (p.friendly && p.life > 0 && !p.pierce && p.k !== 'beam' && p.k !== 'pbeam' && p.k !== 'particlebeam' && p.k !== 'krodfx' && !p.strat) { const dm = enemyDome({ x: p.x, y: p.y }); if (dm) { const room = Math.max(0, (dm.frameCap != null ? dm.frameCap : 1e9) - (dm.frameAbs || 0)), applied = Math.min((p.dmg || 10) + (p.big ? 30 : 12), room); dm.hp -= applied; dm.frameAbs = (dm.frameAbs || 0) + applied; spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 8, life: .13 }); (dm.shieldHits || (dm.shieldHits = [])).push({ ang: Math.atan2(p.y - groundY(dm.x), p.x - dm.x), t: 0 }); p.life = 0; continue; } }   // BEACHHEAD SHIELD DOME — mirrors the field check above: catches YOUR incoming round IN FLIGHT (missiles, plasma, MIRV submunitions — everything that would've silently splashed via areaDamage/splashDamage, completely bypassing the dome) before it can detonate. Same per-frame DPS cap as the hurt()-side soak below; beams & strategic strikes punch straight through it, matching the field
     if ((p.k === 'tracer' || p.k === 'rotary' || p.k === 'shell') && p.y < STRATO_Y()) p.vy += 140 * dt;   /* B1 BULLET DROP — autocannon/flak/shell rounds that stray above the stratosphere line get pulled back down by gravity, so a fighter's gun can't plink targets sailing into orbit; keyed strictly on kind so missiles/beams/rods (guided, unaffected by gunfire ballistics here) never see this */
-    if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
+    if (p.k === 'nuke') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(30)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { detonateNuke(p.x, groundY(p.x)); p.life = 0; } continue; }
     if (p.k === 'krod') {
       if (p.interceptable && p.hp <= 0) { if (G.stats) G.stats.ordnanceIntercepted++; boom(p.x, p.y, 9, resolveStyleAt('kinetic', p.x, p.y)); p.life = 0; continue; }   // shot down mid-air → no ground impact
       if (p.strat && p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this kinetic lance down to 0hp: it fizzles, no warhead effect
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 16) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(16)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly && GRID_E.anyWithin(p.x, p.y, 40, true, false)) { detonateKinetic(p.x, p.y); p.life = 0; }   // AIRBURST: a kinetic lance falling through a fleet detonates among them (air-capable strike)
       { const dy = p.air ? p.ty : groundY(p.x); if (p.life > 0 && p.y >= dy) { (p.orb ? detonateOrbital : detonateKinetic)(p.x, dy); p.life = 0; } }   // bursts at the chosen altitude (air) or the ground
       continue;
     }
     if (p.k === 'plasmasnipe') {   // ORBITAL PLASMA SNIPE — a physical falling bolt now (was hitscan); straight vertical drop onto the ground unit it locked, capped fall speed, shot-downable in flight like any other orbital ordnance
       if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 8, resolveStyleAt('plasma', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .15 }); spark(p.x, p.y, 4); p.life = 0; continue; }
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(14)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; }
       continue;
     }
@@ -8816,7 +8835,7 @@ function updProj(dt) {
       p.vy = p.v0 + p.aAcc * p.t;   // vy = v0 + a·t — continuous, monotonic, never capped, never reset
       const dx = p.tx - p.x; p.vx += (dx * 1.8 - p.vx * 1.2) * dt; if (p.y >= STRATO_Y()) p.vx += Math.sin((p.y + p.jink * 40) * .04) * 55 * dt; p.vx = Math.max(-320, Math.min(320, p.vx));   // steer to target; evasive jink only in the lower atmosphere
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 18) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(18)) p.tr.shift();
       if (p.y >= STRATO_Y()) { p.flareCd -= dt; if (p.flareCd <= 0) { p.flareCd = .1; for (let f = 0; f < 2; f++) G.parts.push({ k: 'ember', x: p.x + (Math.random() - .5) * 8, y: p.y - p.s, vx: (Math.random() - .5) * 40, vy: -18 - Math.random() * 34, r: 1 + Math.random() * 1.5, life: .5 + Math.random() * .5, tw: Math.random() * 6 }); } }   // flare countermeasures — lower atmosphere only
       if (Math.random() < .6) G.parts.push({ k: 'fire', x: p.x + (Math.random() - .5) * p.s, y: p.y - p.s, vx: (Math.random() - .5) * 10, vy: -14 - Math.random() * 18, r: 1.4 + Math.random() * 2.2, life: .2 + Math.random() * .3 });   // heat-shield glow
       if (p.y >= p.ty || p.y >= groundY(p.x) || p.life <= 0) { G.busterThrough = (G.busterThrough || 0) + 1; detonateBuster(p.x, groundY(p.x)); p.life = 0; }
@@ -8828,7 +8847,7 @@ function updProj(dt) {
       p.vy = p.v0 + p.aAcc * p.t;   // vy = v0 + a·t — continuous, monotonic, never capped
       const dx = p.tx - p.x; p.vx += (dx * 1.5 - p.vx * 1.2) * dt; if (p.y >= STRATO_Y()) p.vx += Math.sin((p.y + p.jink * 40) * .05) * 70 * dt; p.vx = Math.max(-340, Math.min(340, p.vx));   // jink only in the lower atmosphere, same as the buster
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 12) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(12)) p.tr.shift();
       if (p.y >= STRATO_Y()) { p.flareCd -= dt; if (p.flareCd <= 0) { p.flareCd = .13; G.parts.push({ k: 'ember', x: p.x, y: p.y - p.s, vx: (Math.random() - .5) * 28, vy: -12 - Math.random() * 22, r: .7 + Math.random(), life: .35 + Math.random() * .4, tw: Math.random() * 6 }); } }   // flares only in the lower atmosphere too
       if (p.y >= p.ty || p.y >= groundY(p.x) || p.life <= 0) { G.parts.push({ k: 'flash', x: p.x, y: groundY(p.x), r: 8, life: .12 }); smoke(p.x, groundY(p.x), 2); p.life = 0; }   // harmless fizzle
       continue;
@@ -8837,7 +8856,7 @@ function updProj(dt) {
       p.t += dt; p.vy = Math.min((p.vy || 20) + 240 * dt, 900);
       const dx = p.tx - p.x; p.vx += (dx * 1.1 - p.vx * 1.1) * dt; p.vx = Math.max(-180, Math.min(180, p.vx));
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(14)) p.tr.shift();
       if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
       if (p.y >= MESO_Y() || p.life <= 0 || p.y >= groundY(p.x)) { boom(p.x, p.y, 3, resolveStyleAt('cluster', p.x, p.y)); spark(p.x, p.y, 5); spawnBomblets(p.x, p.y, p.vy, p.n, p.dmg, 60); p.life = 0; }
       continue;
@@ -8846,7 +8865,7 @@ function updProj(dt) {
       p.t += dt; p.spd = Math.min(420, (p.spd || 30) + 600 * dt);
       const tlist = p.friendly ? enemiesLive : (p.aaOnly ? airOnly : friendlyList);
       let cur = Math.atan2(p.vy, p.vx); const t = near(p.x, p.y, tlist, 900); if (t) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; cur += Math.max(-1.4 * dt, Math.min(1.4 * dt, da)); }
-      p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 14) p.tr.shift();
+      p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(14)) p.tr.shift();
       if (Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: 1.4 + Math.random() * 1.6, life: .4 + Math.random() * .4 });
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       const cluster = near(p.x, p.y, tlist, 550);
@@ -8875,17 +8894,17 @@ function updProj(dt) {
       let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
       if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_BURN_TURN * dt, Math.min(STRATMIS_BURN_TURN * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
       else { p.vy += 120 * dt; p.vx *= (1 - .05 * dt); p.vy *= (1 - .05 * dt); const curSpd = Math.hypot(p.vx, p.vy); let want = Math.atan2(p.ty - p.y, p.tx - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_COAST_TURN * dt, Math.min(STRATMIS_COAST_TURN * dt, da)); p.vx = Math.cos(na) * curSpd; p.vy = Math.sin(na) * curSpd; }   // COAST — fuel spent: gravity + light drag, plus a small residual correction (≤ STRATMIS_COAST_TURN) so it can still nudge onto target without chasing one that dodges
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 26) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(26)) p.tr.shift();
       if (burning) { if (Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 }); if (Math.random() < .85) G.parts.push({ k: 'ember', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random() * 1.3, life: .16 + Math.random() * .14, tw: Math.random() * 6 }); }   // smoke trail + a brighter exhaust flare — BOTH cut out the instant the motor burns out (coasting = no plume)
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.t > p.climb && GRID_E.anyWithin(p.x, p.y, 46, true, false)) { detonateStrat(p.sub, p.x, p.y); p.life = 0; }   // AIRBURST on a fleet → strikes hit the air
       if (p.life > 0) { const arrived = (!aimUp && ((p.x - p.tx) ** 2 + (p.y - p.ty) ** 2 < 22 * 22)) || (p.t > p.climb && p.y >= groundY(p.x)); if (arrived) { detonateStrat(p.sub, p.x, p.air ? p.ty : groundY(p.x)); p.life = 0; } }   // burst at the aimed altitude, or ground
       continue;
     }
-    if (p.k === 'fbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 30) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { igniteFirestorm(p.x); p.life = 0; } continue; }
+    if (p.k === 'fbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(30)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if ((p.vy > 0 && p.y >= p.ty) || p.y >= groundY(p.x) || p.life <= 0) { igniteFirestorm(p.x); p.life = 0; } continue; }
     if (p.k === 'mirv') {
       if (p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this MIRV carrier down to 0hp: it fizzles, no warheads deploy
-      p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(22)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.vy >= 0 || p.y >= groundY(p.x) || p.life <= 0) {   // DEPLOY at apex (the instant it starts to fall) — reliable, at peak altitude; then the warheads carpet the target
         boom(p.x, p.y, 5, resolveStyleAt('cluster', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 14, life: .18 });
         const ground = groundY(p.x), fall = Math.max(.5, Math.sqrt(2 * Math.max(60, ground - p.y) / 240));
@@ -8894,7 +8913,7 @@ function updProj(dt) {
       } continue; }
     if (p.k === 'micromis') {   // MICROMISSILE BARRAGE carrier — lobs over the target, then BURSTS into a swarm of independently-homing micro-missiles
       if (p.friendly && p.hp != null && p.hp <= 0) { spark(p.x, p.y, 3); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 6, life: .12 }); p.life = 0; continue; }   // v4.2 — enemy PD chewed this carrier down to 0hp: it fizzles, no burst
-      p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 22) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(22)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       const deployY = p.air ? p.ty : groundY(p.x);
       if (p.vy >= 0 || p.y >= deployY || p.life <= 0) {   // deploy at apex / over the target
         boom(p.x, p.y, 4, resolveStyleAt('cluster', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .16 });
@@ -8910,7 +8929,7 @@ function updProj(dt) {
       }
       continue;
     }
-    if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 8) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9, 'cluster'); groundBurst(p.x, 8, 'cluster'); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
+    if (p.k === 'subbomb') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(8)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.y >= groundY(p.x) || p.life <= 0) { boomW(p.x, groundY(p.x), 9, 'cluster'); groundBurst(p.x, 8, 'cluster'); areaDamage(p.x, groundY(p.x), 74, 210, 'bomb'); p.life = 0; } continue; }
     if (p.k === 'bomblet') {   // v4.0.4 B — unguided cluster/micromissile submunition: no homing, just ballistic; see spawnBomblets. Deliberately excluded from interceptable/pdable (see there) — a proximity fuse still lets it swat a player aircraft it flies close past, not just on ground impact
       if (p.hp <= 0) { spark(p.x, p.y, 2); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 5, life: .1 }); p.life = 0; continue; }
       p.vy += 180 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -8944,7 +8963,7 @@ function updProj(dt) {
     if (p.k === 'plasball') {   // PLASMA bolt — flies DEAD STRAIGHT (heavy arty variant arcs under gravity); it does NOT home. It has a PROXIMITY FUSE and airbursts as soon as it gets near an enemy, so it never needs a pinpoint hit on a fast mover (a contained plasma slug that detonates in proximity — matches the lore, and fixes the "terrible aim")
       if (p.grav) p.vy += p.grav * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (p.big ? 5 : 4)) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(p.big ? 5 : 4)) p.tr.shift();
       let hit = false, hitAir = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5, prox = (p.big ? 44 : 22);   // PROXIMITY radius — bursts NEAR the target, not only on contact
       if (p.friendly) { const ft = GRID_E.firstHit(p.x, p.y, prox + sweep, prox * 1.6 + sweep, null); if (ft) { hit = true; hitAir = !ft.ground; } }   // NOTE: no `if (t.reentry) continue` here — plasma-armed units (acquireEnemy has no reentry filter, gated only by ceilF) DO acquire & fire at descending re-entry targets, so the bolt must be able to airburst on them too, or it flies straight through and whiffs. Airborne (non-ground) targets get a wider fuse — fast movers/descenders were slipping past the tight radius on a dead-straight shot; ground behavior (tanks, artillery) is untouched.
       else { if (GRID_F.firstHit(p.x, p.y, prox + sweep, prox + sweep, null)) hit = true; }
@@ -8955,7 +8974,7 @@ function updProj(dt) {
       let cur = Math.atan2(p.vy, p.vx);
       const t = near(p.x, p.y, p.friendly ? enemiesLive : friendlyList, 640);
       if (t && !(p.friendly && jammed(p.x, p.y))) { const a = Math.atan2(t.y - p.y, t.x - p.x); let da = a - cur; while (da > Math.PI) da -= 6.28; while (da < -Math.PI) da += 6.28; cur += Math.max(-4 * dt, Math.min(4 * dt, da)); }
-      p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 10) p.tr.shift();
+      p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(10)) p.tr.shift();
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.friendly) for (const e of G.enemies) { if (e.reentry) continue; const rad = (e.s || 10) + 6; if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < rad * rad) { e.smartDot = Math.max(e.smartDot || 0, 22 + (p.dmg || 0)); floatText(e.x, e.y - e.s, 'NANITES', '#7cffb0'); p.life = 0; break; } }
       continue;
@@ -8995,7 +9014,7 @@ function updProj(dt) {
         p.spd = Math.hypot(p.vx, p.vy);
       }
       p.trCap = p.lit ? 20 : Math.max(0, (p.trCap != null ? p.trCap : 20) - 40 * dt);   /* motor's cold (burned out OR still in the pre-ignition pop-up) — the trail's ALLOWED length collapses toward 0 over about a second instead of holding at 20, so a coasting missile visibly stops dragging a streak. Leaves in-burn behavior (p.lit true) untouched. */
-      p.tr.push({ x: p.x, y: p.y }); while (p.tr.length > p.trCap) p.tr.shift();
+      p.tr.push({ x: p.x, y: p.y }); while (p.tr.length > TRC(p.trCap)) p.tr.shift();
       if (!p.aegis && p.lit && Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 9, vy: (Math.random() - .5) * 9 - 3, r: 1.5 + Math.random() * 2.2, life: .4 + Math.random() * .55 });   // billowing cloud contrail — ONLY while the motor's lit (the sleek AEGIS interceptor leaves a clean cyan streak instead — no smoke either way)
     }
     else if (p.k === 'shell') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 6) p.tr.shift(); }
@@ -9059,10 +9078,10 @@ function updParts(dt) {
     pt.vy += 150 * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; if (pt.rot !== undefined) pt.rot += pt.vr * dt;
   }
   filterInPlace(G.parts, p => p.life > 0);   // PERF: in-place compaction, see filterInPlace()
-  const _partCap = fullFx ? 2400 : 1300;   // Full Effects raises the budget so lingering smoke isn't evicted the instant a fight gets big — still a HARD cap either way, particles can never grow unbounded
+  const _partCap = fullFx ? _fxPartCap : 1300;   // Full Effects raises the budget so lingering smoke isn't evicted the instant a fight gets big — still a HARD cap either way, particles can never grow unbounded
   if (G.parts.length > _partCap) {   /* PRIORITY CULL — a barrage flooding in cheap smoke/muzzle/spark/tracer/clod particles must NOT evict the still-burning hero fire/ember/ring/etc. of an explosion that started a moment ago. Walk oldest-first and drop cheap kinds until back under budget; only fall back to oldest-first-overall (the old behavior) if there aren't enough cheap ones to cut. O(n), no allocation. */
     let toCut = G.parts.length - _partCap, w = 0;
-    for (let i = 0; i < G.parts.length; i++) { const p = G.parts[i]; if (toCut > 0 && !HERO_PARTS[p.k]) { toCut--; continue; } G.parts[w++] = p; }
+    for (let i = 0; i < G.parts.length; i++) { const p = G.parts[i]; if (toCut > 0 && !HERO_PARTS[p.k] && (p.k !== 'shrap' || FX_Q >= 1)) { toCut--; continue; } G.parts[w++] = p; }
     G.parts.length = w;
     if (toCut > 0) G.parts.splice(0, toCut);   /* ran out of cheap particles — reluctantly cut the oldest hero ones too */
   }
@@ -9489,7 +9508,7 @@ function neonBuilding(px, gy, w, h) {
 const _glowCache = new Map();
 let _glowHero = true;   /* v4.5 P — false while a cheap cosmetic particle (not in HERO_PARTS) is being drawn, see the render loop */
 let _glowFrameCount = 0;   // v3.98.0 WHITE-OUT CLAMP — reset to 0 once per rendered frame (renderGame), incremented on every additive glow draw
-const GLOW_SOFT_CAP = 220;   // past this many 'lighter'-blended glow draws in ONE frame, further ones fade out — a mass-death event can dump thousands of overlapping explosion blooms into the same screen area; this stops that from ever stacking to a solid white sheet, while a normal-density fight (well under the cap) is completely unaffected
+let GLOW_SOFT_CAP = 220;   // past this many 'lighter'-blended glow draws in ONE frame, further ones fade out — a mass-death event can dump thousands of overlapping explosion blooms into the same screen area; this stops that from ever stacking to a solid white sheet, while a normal-density fight (well under the cap) is completely unaffected
 function glow(px, y, r, col, a) { if (a <= .01 || r <= 0) return;
   if (_glowFrameCount >= GLOW_SOFT_CAP && !_glowHero) return;   /* v4.5 P — past the soft cap a cheap particle's glow is skipped (the budget is kept for hero explosion glows, which still dim) */
   _glowFrameCount++;
@@ -9558,7 +9577,7 @@ function drawMinimap() {
   const now = performance.now(), ox = Math.floor(MM.x), oy = Math.floor(MM.y), cw = Math.ceil(MM.w) + 3, ch = Math.ceil(MM.h) + 3;
   if (!MMC.cv) { MMC.cv = document.createElement('canvas'); MMC.ctx = MMC.cv.getContext('2d'); }
   if (MMC.ctx) {
-    if (now - MMC.t >= 100 || MMC.w !== cw || MMC.h !== ch || MMC.x !== ox || MMC.y !== oy) {
+    if (now - MMC.t >= _fxMMms || MMC.w !== cw || MMC.h !== ch || MMC.x !== ox || MMC.y !== oy) {
       if (MMC.cv.width !== cw) MMC.cv.width = cw; if (MMC.cv.height !== ch) MMC.cv.height = ch;
       const prev = c; c = MMC.ctx; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cw, ch); c.translate(-ox, -oy);
       try { drawMinimapBody(); } finally { c = prev; MMC.ctx.setTransform(1, 0, 0, 1, 0, 0); }
@@ -10904,6 +10923,8 @@ cv.addEventListener('touchend', e => {
 cv.addEventListener('touchcancel', () => { clearTimeout(TCH.lp); TCH.lp = null; TCH.id = null; TCH.pinch = null; TCH.mm = false; }, { passive: true });
 
 function syncHUD() {
+  fxTick();
+  { const ch = document.getElementById('fxChip'); if (ch && _fxChipQ !== FX_Q) { _fxChipQ = FX_Q; ch.style.display = FX_Q < 1 ? '' : 'none'; ch.textContent = 'FX ' + Math.round(FX_Q * 100) + '%'; } }
   if (!G) return;
   document.getElementById('hIc').textContent = Math.floor(G.ic);
   { const icEl = document.getElementById('icR'); if (G.icFloored) icEl.innerHTML = '+' + Math.round(G.icR) + '/s <span style="color:#ff8a6a" title="Upkeep exceeds gross production — true net is ' + Math.round(G.icRRaw) + '/s. A small floor keeps you from stalling out completely; Power Plants ARE helping, it just won’t show here until you climb back to net-positive.">⚠' + Math.round(G.icRRaw) + '/s</span>'; else icEl.textContent = '+' + Math.round(G.icR) + '/s'; }   // IC FLOOR LEGIBILITY — when the floor is masking a real deficit, show the TRUE net rate too so a Power Plant's contribution is never an invisible-then-120-IC-jump illusion
@@ -10979,7 +11000,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, recTab: REC.mode === 'tab' })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab' })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -10988,10 +11009,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; REC.mode = o.recTab ? 'tab' : 'game';
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game';
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tRecTab', REC.mode === 'tab');
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab');
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -11015,6 +11036,7 @@ bindToggle('tFlash', v => flashRed = v);
 bindToggle('tCb', v => cbMode = v);
 bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
 bindToggle('tFullFx', v => fullFx = v);
+bindToggle('tFxAuto', v => { fxAuto = v; if (!v) { FX_Q = 1; fxDerive(); } });
 bindToggle('tRecTab', v => { REC.mode = v ? 'tab' : 'game'; });
 loadOpts();
 addEventListener('keydown', e => {

@@ -85,6 +85,13 @@ namespace Levy.Common.Weapons
 			DamageClass cls = WeaponClassifier.ItemDamageClass(it);
 			if (cls != DamageClass.Ranged && cls != DamageClass.Magic) return false;
 			if (sample.useAmmo > 0 && DefaultAmmoType(sample.useAmmo) <= 0) return false; // takes ammo of a kind nothing supplies
+			// A caster whose own shot grows a LINE anchored to its spawn point (Vilethorn / Nettle Burst / Crystal Vile Shard: aiStyle Vilethorn) needs the weapon's own Shoot to aim it.
+			// A turret / drone fires the raw projectile with no such setup, so the thorn line grows in a fixed direction straight through terrain and never stops. Not mountable.
+			if (sample.useAmmo == AmmoID.None && profile.Family != WeaponFamily.HeldWeapon && sample.shoot > ProjectileID.None)
+			{
+				Projectile shotSample = WeaponClassifier.ProjectileSample(sample.shoot);
+				if (shotSample != null && !shotSample.tileCollide && shotSample.aiStyle == ProjAIStyleID.Vilethorn) return false;
+			}
 			return true;
 		}
 

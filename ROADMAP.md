@@ -8,7 +8,12 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.7` + Mechanization `0.6.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.8` + Mechanization `0.6.0`** on the integration branch `worktree-levy-stardust`.
+
+### 🐛 1.6.8 — TURRET/DRONE "SHOOTS A LINE DOWN FOREVER" FIX (Eve live-test, turrets AND drones)
+Found with a boot diagnostic over every mountable weapon: the real signal was `tileCollide=false` + `aiStyle Vilethorn(4)` — the **Vilethorn / Nettle Burst / Crystal Vile Shard** thorn-line casters (green muzzle flash in the clip = Nettle Burst). A turret/drone fires the RAW projectile (no weapon `Shoot` setup), so the thorn line grows in a fixed direction straight through terrain and never stops as it re-fires. FIX: `DroneArsenal.ComputeMountable` now refuses a caster whose shot is a spawn-anchored Vilethorn-style line. The turret/drone mounts its next-best normal weapon instead.
+- ⚠ **If it was a *modded* weapon** (Thorium has anchored barrier/beam casters with custom AI the aiStyle check can't see), the line will persist — Eve: hover the turret to read its mounted weapon and tell me the name; I'll blocklist that type. **Proper long-term fix (tenet #1, so even a Nettle Burst works on a turret):** fire mounted weapons through the full weapon pipeline like soldiers do, instead of raw `NewProjectile`. Flagged, not built.
+
 
 ### ✅ Mechanization 0.6.0 + Levy 1.6.7 — COMBAT DRONES MOVE TO MECHANIZATION, LOITER, RECALL, BATTERY (Eve: "move the Levy attack drones to Mechanization and make them actually fly around above a base… recall them… a battery that slowly drains")
 Engineering only; the new side-view art is a separate job (the drone is drawn from rectangles as a placeholder). Both boots clean (Levy arsenal self-check 72 OK, Mechanization drone self-check 55 OK, turret 42 OK, zero exceptions). NOT played live.

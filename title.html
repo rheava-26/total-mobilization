@@ -6014,8 +6014,12 @@ function perfRankWindow(row) {
   if (near.some(x => x.rk >= row.rk)) return;   /* a worse window within 20s already owns this stretch */
   if (!near.length && list.length >= 3 && list[list.length - 1].rk >= row.rk) return;
   list = list.filter(x => near.indexOf(x) < 0); list.push(row); list.sort((a, b) => b.rk - a.rk); if (list.length > 3) list.length = 3;
-  st.perfWorst = list; if (list.indexOf(row) < 0) return;
-  capturePerfSnaps(row);
+  st.perfWorst = list; if (list.indexOf(row) < 0) return;   /* ranking numbers update every window; evicted windows drop out of the list, taking their images with them */
+  /* SNAPSHOT POLICY — captures cost ~100ms, so at most one per 20 game-seconds, and only when this window is >=25% worse than the lowest-ranked window that already holds images */
+  if (G.time - (st._perfCapT == null ? -1e9 : st._perfCapT) < PERF_WORST_GAP) return;
+  let lowHold = Infinity; for (const x of list) if (x !== row && x.imgs && x.rk < lowHold) lowHold = x.rk;
+  if (lowHold !== Infinity && row.rk < lowHold * 1.25) return;
+  st._perfCapT = G.time; const _c0 = performance.now(); capturePerfSnaps(row); st._perfCapMs = performance.now() - _c0;
   let tot = 0; for (const x of list) if (x.imgs) for (const im of x.imgs) tot += im.length;
   for (let i = list.length - 1; i >= 0 && tot > PERF_IMG_BUDGET; i--) { const x = list[i]; if (x.imgs) { for (const im of x.imgs) tot -= im.length; x.imgs = null; } }
 }
@@ -6025,7 +6029,7 @@ function capturePerfSnaps(row) {
   const saved = { x: cam.x, y: cam.y, z: cam.z, manualT: cam.manualT }, imgs = [];
   try {
     if (!_perfSnapCv) _perfSnapCv = document.createElement('canvas');
-    const sw = Math.max(320, Math.round(cv.width * .5)), sh = Math.max(1, Math.round(cv.height * .5)); if (_perfSnapCv.width !== sw || _perfSnapCv.height !== sh) { _perfSnapCv.width = sw; _perfSnapCv.height = sh; }
+    const sw = Math.max(240, Math.round(cv.width * .35)), sh = Math.max(1, Math.round(cv.height * .35)); if (_perfSnapCv.width !== sw || _perfSnapCv.height !== sh) { _perfSnapCv.width = sw; _perfSnapCv.height = sh; }
     const octx = _perfSnapCv.getContext('2d');
     for (const f of [1 / 6, 1 / 2, 5 / 6]) {
       /* wide pose: zoomed out to ~half the map so the three shots tile the world; surface two-thirds down so the sky (where the load is) fills the top */
@@ -6033,7 +6037,7 @@ function capturePerfSnaps(row) {
       cam.x = clampCam(cx - W / 2); cam.y = groundY(cx) - H / 2 - .16 * H / cam.z; cam.manualT = 99999;
       c.save(); c.clearRect(0, 0, W, H); c.fillStyle = (soc.sky ? soc.sky[0] : '#01030c'); c.fillRect(0, 0, W, H);
       const cz = cam.z; c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); c.translate(0, -cam.y); drawWorld(1); renderGame(); c.restore();
-      octx.drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, sw, sh); imgs.push(_perfSnapCv.toDataURL('image/jpeg', .5));
+      octx.drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, sw, sh); imgs.push(_perfSnapCv.toDataURL('image/jpeg', .45));
     }
     row.imgs = imgs;
   } catch (er) { row.imgs = null; try { c.restore(); } catch (e2) {} }
@@ -10506,7 +10510,7 @@ function aarPerfHTML() {
     h += '<h3 style="margin:12px 0 2px;font:600 11px Consolas,monospace;color:#6dffb0;letter-spacing:1px">WORST WINDOW #' + (i + 1) + ' — ' + aarMMSS(w.t) + '</h3>';
     h += '<table><tr><th>time</th><th>sim ms</th><th>render ms</th><th>frame ms</th><th>fps</th><th>units</th><th>hostiles</th><th>projectiles</th><th>particles</th><th>effects</th></tr>' + tr([aarMMSS(w.t), f1(w.sim) + (w.steps > 1.05 ? ' ×' + f1(w.steps) : ''), f1(w.render), w.frame ? f1(w.frame) : '—', w.fps ? f1(w.fps) : '—', w.units, w.enemies, w.proj, w.parts, w.fxq]) + '</table>';
     if (w.sec) h += '<table><tr><th>section</th>' + Object.keys(w.sec).map(k => '<th>' + esc(k) + '</th>').join('') + '</tr>' + tr(['avg ms'].concat(Object.keys(w.sec).map(k => f1(w.sec[k])))) + '</table>';
-    if (w.imgs && w.imgs.length === 3) h += '<div class="pimgs">' + w.imgs.map((u, j) => '<figure><img src="' + u + '"><figcaption>' + ['west', 'centre', 'east'][j] + '</figcaption></figure>').join('') + '</div>';
+    if (!w.imgs || w.imgs.length !== 3) h += '<p>No snapshot for this window.</p>'; else h += '<div class="pimgs">' + w.imgs.map((u, j) => '<figure><img src="' + u + '"><figcaption>' + ['west', 'centre', 'east'][j] + '</figcaption></figure>').join('') + '</div>';
   });
   return h + '</div>';
 }

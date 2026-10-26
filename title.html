@@ -863,6 +863,7 @@
     <div class="aar-tab" data-pg="combat">COMBAT</div>
     <div class="aar-tab" data-pg="research">RESEARCH &amp; CONSTRUCTION</div>
     <div class="aar-tab" data-pg="world">WORLD</div>
+    <div class="aar-tab" data-pg="perf">PERFORMANCE</div>
   </div>
   <div id="endScroll">
     <div class="aar-page sel" data-pg="overview"><div id="endStats"></div><div id="endMeta"></div><div id="endCharts"></div></div>
@@ -871,6 +872,7 @@
     <div class="aar-page" data-pg="combat" id="pgCombat"></div>
     <div class="aar-page" data-pg="research" id="pgResearch"></div>
     <div class="aar-page" data-pg="world" id="pgWorld"></div>
+    <div class="aar-page" data-pg="perf" id="pgPerf"></div>
   </div>
 <button class="pill primary" id="endReturn">RETURN TO COMMAND</button></div>
 <div class="tip" id="tip"></div>
@@ -5957,9 +5959,66 @@ function filterInPlace(arr, pred) { let w = 0; for (let i = 0; i < arr.length; i
 // per-shot timing jitter so a formation doesn't fire in robotic lock-step — up to ±0.3s, scaled down for already-rapid
 // weapons so point-defence stays effective; floored so nothing ends up with a zero/negative reload
 function jitterCd(base) { return Math.max(.03, base + (Math.random() * .6 - .3) * Math.min(1, base / .6)); }
+/* ===== PERFORMANCE TIMELINE — one G.stats.perfLog row per sampleHist tick (~2 game-seconds): sim/render ms, real frame intervals, entity counts, plus whole-map snapshots at the 3 worst windows.
+   Real frame intervals are measured in perfOverlay(now) (called once per rendered frame with the RAF timestamp). Everything here is read-only instrumentation and fully try/guarded. ===== */
+const PW_F = { s: 0, n: 0, worst: 0, prev: 0 }, HZ_MIN = [], HZ_STEPS = [30, 60, 75, 90, 120, 144, 165, 240]; let PERF_HZ = 0;
+function perfFrameTick(now) {   /* a handful of arithmetic ops per frame; gaps over 250ms (tab hidden, load hitch outside the sim) and paused frames are not counted */
+  const p = PW_F.prev; PW_F.prev = now; if (!p) return;
+  const d = now - p; if (d > 250 || d <= 0 || (G && G.paused)) return;
+  PW_F.s += d; PW_F.n++; if (d > PW_F.worst) PW_F.worst = d;
+  if (d > 3 && (HZ_MIN.length < 15 || d < HZ_MIN[HZ_MIN.length - 1])) { HZ_MIN.push(d); HZ_MIN.sort((a, b) => a - b); if (HZ_MIN.length > 15) HZ_MIN.pop(); const m = HZ_MIN[HZ_MIN.length >> 1], hz = 1000 / m; let best = HZ_STEPS[0]; for (const z of HZ_STEPS) if (Math.abs(z - hz) < Math.abs(best - hz)) best = z; PERF_HZ = best; }
+}
+const PERF_WORST_GAP = 20, PERF_IMG_BUDGET = 1.5e6;
+function perfSample() {
+  const st = G && G.stats; if (!st) return;
+  const log = st.perfLog || (st.perfLog = []); if (!st.perfWorst) st.perfWorst = [];
+  const pw = k => { const w = PW[k]; return w && w.n ? w.s / w.n : 0; };
+  const fn = PW_F.n, frame = fn ? PW_F.s / fn : 0, sim = pw('upd'), render = pw('render');
+  const row = { t: G.time || 0, sim: +sim.toFixed(2), steps: PW.steps && PW.steps.n ? +pw('steps').toFixed(2) : 1, render: +render.toFixed(2), frame: +frame.toFixed(2), worst: +PW_F.worst.toFixed(1), fps: frame > 0 ? +(1000 / frame).toFixed(1) : 0, hz: PERF_HZ,
+    units: G.units ? G.units.length : 0, enemies: G.enemies ? G.enemies.length : 0, proj: G.proj ? G.proj.length : 0, parts: G.parts ? G.parts.length : 0, buildings: G.buildings ? G.buildings.length : 0, fxq: typeof FX_Q !== 'undefined' ? FX_Q : 1 };
+  for (const k in PW) { if (k === 'upd' || k === 'render' || k === 'steps') continue; if (PW[k].n) { (row.sec || (row.sec = {}))[k] = +(PW[k].s / PW[k].n).toFixed(2); } }
+  for (const k in PW) { PW[k].s = 0; PW[k].n = 0; } PW_F.s = 0; PW_F.n = 0; PW_F.worst = 0;
+  /* ranking key: real avg frame ms when frames were measured, else the sim+render estimate (headless/driven sims have no frames) */
+  row.rk = frame > 0 ? frame : (sim * row.steps + render);
+  if (log.length >= 1200) { for (let i = 1, w = 1; i < log.length; i += 2) log[w++] = log[i]; log.length = log.length >> 1; }   /* drop every other row when full */
+  log.push(row);
+  perfRankWindow(row);
+}
+function perfRankWindow(row) {
+  const st = G.stats; if (!(row.rk > 0)) return;
+  let list = st.perfWorst; const near = list.filter(x => Math.abs(x.t - row.t) < PERF_WORST_GAP);
+  if (near.some(x => x.rk >= row.rk)) return;   /* a worse window within 20s already owns this stretch */
+  if (!near.length && list.length >= 3 && list[list.length - 1].rk >= row.rk) return;
+  list = list.filter(x => near.indexOf(x) < 0); list.push(row); list.sort((a, b) => b.rk - a.rk); if (list.length > 3) list.length = 3;
+  st.perfWorst = list; if (list.indexOf(row) < 0) return;
+  capturePerfSnaps(row);
+  let tot = 0; for (const x of list) if (x.imgs) for (const im of x.imgs) tot += im.length;
+  for (let i = list.length - 1; i >= 0 && tot > PERF_IMG_BUDGET; i--) { const x = list[i]; if (x.imgs) { for (const im of x.imgs) tot -= im.length; x.imgs = null; } }
+}
+let _perfSnapCv = null;
+function capturePerfSnaps(row) {
+  if (typeof cv === 'undefined' || !cv || !G || mode !== 'game') return;
+  const saved = { x: cam.x, y: cam.y, z: cam.z, manualT: cam.manualT }, imgs = [];
+  try {
+    if (!_perfSnapCv) _perfSnapCv = document.createElement('canvas');
+    const sw = Math.max(320, Math.round(cv.width * .5)), sh = Math.max(1, Math.round(cv.height * .5)); if (_perfSnapCv.width !== sw || _perfSnapCv.height !== sh) { _perfSnapCv.width = sw; _perfSnapCv.height = sh; }
+    const octx = _perfSnapCv.getContext('2d');
+    for (const f of [1 / 6, 1 / 2, 5 / 6]) {
+      /* wide pose: zoomed out to ~half the map so the three shots tile the world; surface two-thirds down so the sky (where the load is) fills the top */
+      cam.z = Math.max(W / (WORLD_W * 1.04), .6); const cx = WORLD_W * f;
+      cam.x = clampCam(cx - W / 2); cam.y = groundY(cx) - H / 2 - .16 * H / cam.z; cam.manualT = 99999;
+      c.save(); c.clearRect(0, 0, W, H); c.fillStyle = (soc.sky ? soc.sky[0] : '#01030c'); c.fillRect(0, 0, W, H);
+      const cz = cam.z; c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); c.translate(0, -cam.y); drawWorld(1); renderGame(); c.restore();
+      octx.drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, sw, sh); imgs.push(_perfSnapCv.toDataURL('image/jpeg', .5));
+    }
+    row.imgs = imgs;
+  } catch (er) { row.imgs = null; try { c.restore(); } catch (e2) {} }
+  finally { cam.x = saved.x; cam.y = saved.y; cam.z = saved.z; cam.manualT = saved.manualT; }
+}
 // AFTER-ACTION TIME-SERIES — one bounded snapshot of the war's key stats, taken ~every 2 game-seconds (see updateGame's histT tick). Feeds the end-screen graphs. Capped so a marathon match can't grow the arrays without bound.
 function sampleHist() {
   const h = G && G.hist; if (!h) return;
+  try { perfSample(); } catch (er) {}   /* PERFORMANCE TIMELINE — see perfSample; independent of the h.t ceiling below */
   if (h.t.length >= 1200) return;   // ~40 min of sim at 2s cadence — a hard ceiling; matches never run this long, but never leak memory if they do
   h.t.push(G.time || 0);
   h.ic.push(Math.max(0, G.ic || 0));
@@ -6085,7 +6144,9 @@ function snapFrameCam() {
 const IC_FLOOR = 8;   // MINIMUM CIVILIAN ECONOMY — see updateGame's icR clamp below: net IC income can never go net-negative, however heavy the standing upkeep. A bombed-out nation always slowly accrues IC to rebuild — a small safety floor, not free money (still far too little to sustain an upkeep-heavy army on its own)
 /* ===== v4.5 P — PERF INSTRUMENTATION: 60-sample rolling averages in ms, exposed as window.__perf / G._perf ===== */
 const PERF = { upd: 0, units: 0, enemies: 0, proj: 0, parts: 0, render: 0, terrain: 0 }, PERF_R = {};
-function perfAdd(k, ms) { let r = PERF_R[k]; if (!r) r = PERF_R[k] = { b: new Float64Array(60), i: 0, s: 0, n: 0 }; r.s += ms - r.b[r.i]; r.b[r.i] = ms; r.i = (r.i + 1) % 60; if (r.n < 60) r.n++; PERF[k] = r.s / r.n; }
+function perfAdd(k, ms) { let r = PERF_R[k]; if (!r) r = PERF_R[k] = { b: new Float64Array(60), i: 0, s: 0, n: 0 }; r.s += ms - r.b[r.i]; r.b[r.i] = ms; r.i = (r.i + 1) % 60; if (r.n < 60) r.n++; PERF[k] = r.s / r.n;
+  const w = PW[k] || (PW[k] = { s: 0, n: 0 }); w.s += ms; w.n++; }   /* PERF TIMELINE — per-key sum/count since the last 2s perfLog row (reset in perfSample) */
+const PW = {};
 let _pfT = 0;
 function perfLap(k) { const t = performance.now(); perfAdd(k, t - _pfT); _pfT = t; }
 window.__perf = PERF;
@@ -9927,6 +9988,7 @@ function drawVignette() {
 /* v4.5 P — "?perf" overlay: a tiny top-left line of the rolling sim/render timings, refreshed ~4x a second */
 const PERF_ON = /[?&]perf\b/.test(location.search); let _perfOvT = 0;
 function perfOverlay(now) {
+  perfFrameTick(now);   /* PERFORMANCE TIMELINE — real frame-interval accounting, runs even without ?perf */
   if (!PERF_ON || now - _perfOvT < 250) return; _perfOvT = now;
   let el = document.getElementById('perfOv');
   if (!el) { el = document.createElement('div'); el.id = 'perfOv'; el.style.cssText = 'position:fixed;left:6px;top:6px;z-index:60;font:10px/1.3 Consolas,monospace;color:#9dffb0;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:3px;pointer-events:none;white-space:pre'; document.body.appendChild(el); }
@@ -10138,6 +10200,7 @@ function end(win, msg) {
   try { renderAARCombat(); } catch (er) { logErr && logErr(er); }
   try { renderAARResearch(); } catch (er) { logErr && logErr(er); }
   try { renderAARWorld(); } catch (er) { logErr && logErr(er); }
+  try { renderAARPerf(); } catch (er) { logErr && logErr(er); }
   aarShowTab('overview');
 }
 // ── AFTER-ACTION TAB SWITCHING — the dossier is a tabbed, multi-page report; one page visible at a time inside the shared scroll region ──
@@ -10351,6 +10414,55 @@ function renderAARWorld() {
   host.innerHTML = html;
   aarHeatCanvas(document.getElementById('aarHeatCv'), st.heat);
 }
+// ── PERFORMANCE PAGE — sim/render timeline + the three worst windows with whole-map snapshots (data: G.stats.perfLog / perfWorst, see perfSample) ──
+const PERF_BUDGET_MS = 1000 / 60;
+function aarPerfCanvas(cv, log, worst) {
+  const ctx = cv.getContext('2d'), cw = cv.width, ch = cv.height, X0 = 44, X1 = cw - 48, Y0 = 16, Y1 = ch - 36, n = log.length;
+  ctx.fillStyle = '#050a16'; ctx.fillRect(0, 0, cw, ch);
+  const t0 = log[0].t, t1 = Math.max(log[n - 1].t, t0 + 1), xAt = t => X0 + (X1 - X0) * (t - t0) / (t1 - t0);
+  let mxMs = PERF_BUDGET_MS * 1.5, mxN = 1; for (const r of log) { mxMs = Math.max(mxMs, r.sim * 1.1, r.render * 1.1); mxN = Math.max(mxN, r.units, r.enemies); }
+  const yMs = v => Y1 - (Y1 - Y0) * Math.min(1, v / mxMs), yN = v => Y1 - (Y1 - Y0) * v / mxN;
+  ctx.font = '10px Consolas, monospace'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(150,190,240,.12)'; ctx.lineWidth = 1; ctx.fillStyle = '#7fa8d8'; ctx.textAlign = 'right';
+  for (let g = 0; g <= 4; g++) { const y = Y0 + (Y1 - Y0) * g / 4; ctx.beginPath(); ctx.moveTo(X0, y); ctx.lineTo(X1, y); ctx.stroke(); ctx.fillText((mxMs * (1 - g / 4)).toFixed(0) + ' ms', X0 - 4, y); }
+  ctx.textAlign = 'left'; for (let g = 0; g <= 4; g++) { const y = Y0 + (Y1 - Y0) * g / 4; ctx.fillText(aarFmt(mxN * (1 - g / 4)), X1 + 4, y); }
+  const area = (key, col) => { ctx.beginPath(); ctx.moveTo(xAt(log[0].t), Y1); for (const r of log) ctx.lineTo(xAt(r.t), yN(r[key])); ctx.lineTo(xAt(log[n - 1].t), Y1); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); };
+  area('units', 'rgba(93,255,141,.10)'); area('enemies', 'rgba(255,90,90,.12)');
+  const line = (key, col) => { ctx.beginPath(); log.forEach((r, i) => { const x = xAt(r.t), y = yMs(r[key]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.stroke(); };
+  line('sim', '#4ea8ff'); line('render', '#ffd23f');
+  const yb = yMs(PERF_BUDGET_MS); ctx.setLineDash([6, 4]); ctx.strokeStyle = '#ff8a5a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X0, yb); ctx.lineTo(X1, yb); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#ff8a5a'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('60 fps budget (16.7 ms)', X0 + 6, yb - 2);
+  ctx.fillStyle = '#ffd86b'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  worst.forEach((w, i) => { const x = xAt(w.t); ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, Y1); ctx.lineTo(x, Y1 + 7); ctx.stroke(); ctx.fillText('#' + (i + 1), x, Y1 + 8); });
+  ctx.fillStyle = '#7fa8d8'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(aarMMSS(t0), X0, Y1 + 20); ctx.textAlign = 'right'; ctx.fillText(aarMMSS(t1), X1, Y1 + 20);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; let lx = X0 + 6; for (const [nm, col] of [['sim ms / step', '#4ea8ff'], ['render ms', '#ffd23f'], ['your units', 'rgba(93,255,141,.6)'], ['hostiles', 'rgba(255,90,90,.6)']]) { ctx.fillStyle = col; ctx.fillRect(lx, 4, 10, 4); ctx.fillStyle = '#9fb6d4'; ctx.fillText(nm, lx + 14, 1); lx += 24 + nm.length * 6; }
+}
+function aarPerfUA() {
+  const ua = navigator.userAgent || '', m = /(Edg|OPR|Firefox|Chrome|Version)\/(\d+)/.exec(ua);
+  const br = m ? ({ Edg: 'Edge', OPR: 'Opera', Version: /Safari/.test(ua) ? 'Safari' : 'Browser' }[m[1]] || m[1]) + ' ' + m[2] : 'Browser';
+  const os = /Windows/.test(ua) ? 'Windows' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Mac OS X/.test(ua) ? 'macOS' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : '';
+  return (br + (os ? ' on ' + os : '')).slice(0, 80);
+}
+/* shared by the end-screen page and the downloaded report: returns the section's inner HTML (chart as a PNG data URL) */
+function aarPerfHTML() {
+  const st = G && G.stats, log = st && st.perfLog; if (!log || !log.length) return '<div class="aar-empty">No performance data.</div>';
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])), worst = st.perfWorst || [];
+  let img = ''; try { const pc = document.createElement('canvas'); pc.width = 960; pc.height = 260; aarPerfCanvas(pc, log, worst); img = pc.toDataURL('image/png'); } catch (er) {}
+  const fr = log.filter(r => r.frame > 0); let avg = 0, wst = 0, over = 0; for (const r of fr) { avg += r.frame; wst = Math.max(wst, r.worst); if (r.frame > PERF_BUDGET_MS) over++; } avg = fr.length ? avg / fr.length : 0;
+  const hz = PERF_HZ || (log[log.length - 1].hz), mach = (navigator.hardwareConcurrency || '?') + ' cores · pixel ratio ' + (window.devicePixelRatio || 1) + ' · viewport ' + innerWidth + '×' + innerHeight + ' · ' + (hz ? 'about ' + hz + ' Hz display' : 'refresh rate unknown') + ' · ' + esc(aarPerfUA());
+  const sum = fr.length ? 'Average frame ' + avg.toFixed(1) + ' ms (' + (1000 / avg).toFixed(0) + ' fps). Worst single frame ' + wst.toFixed(0) + ' ms. ' + Math.round(over / fr.length * 100) + '% of the match ran slower than 60 fps.' : 'No rendered frames were timed this match; only simulation cost was recorded.';
+  const f1 = v => (+v).toFixed(1), tr = a => '<tr>' + a.map((x, i) => (i ? '<td class="v">' : '<td>') + esc(x) + '</td>').join('') + '</tr>';
+  let h = '<style>.aar-perf p{margin:4px 0;font:12px Consolas,monospace;color:#9fb6d4}.aar-perf table{width:100%;border-collapse:collapse;margin:6px 0 8px}.aar-perf td,.aar-perf th{padding:3px 8px;border-bottom:1px dashed rgba(150,190,240,.15);font:12px Consolas,monospace;text-align:right;color:#d8ecff}.aar-perf th{color:#7fa8d8;font-weight:600}.aar-perf td:first-child,.aar-perf th:first-child{text-align:left}.aar-perf .pimgs{display:flex;gap:6px;margin-bottom:14px}.aar-perf figure{flex:1;margin:0;min-width:0}.aar-perf figure img{width:100%;max-width:100%;display:block;border-radius:5px;border:1px solid #1a2c46}.aar-perf figcaption{font:10px Consolas,monospace;color:#9fb6d4;text-align:center;margin-top:3px}.aar-perf img.pchart{width:100%;max-width:100%;display:block;border-radius:6px;border:1px solid #1a2c46}</style><div class="aar-perf">';
+  h += '<p>' + esc(sum) + '</p><p>' + mach + '</p>' + (img ? '<img class="pchart" src="' + img + '" alt="performance timeline">' : '');
+  worst.forEach((w, i) => {
+    h += '<h3 style="margin:12px 0 2px;font:600 11px Consolas,monospace;color:#6dffb0;letter-spacing:1px">WORST WINDOW #' + (i + 1) + ' — ' + aarMMSS(w.t) + '</h3>';
+    h += '<table><tr><th>time</th><th>sim ms</th><th>render ms</th><th>frame ms</th><th>fps</th><th>units</th><th>hostiles</th><th>projectiles</th><th>particles</th><th>effects</th></tr>' + tr([aarMMSS(w.t), f1(w.sim) + (w.steps > 1.05 ? ' ×' + f1(w.steps) : ''), f1(w.render), w.frame ? f1(w.frame) : '—', w.fps ? f1(w.fps) : '—', w.units, w.enemies, w.proj, w.parts, w.fxq]) + '</table>';
+    if (w.sec) h += '<table><tr><th>section</th>' + Object.keys(w.sec).map(k => '<th>' + esc(k) + '</th>').join('') + '</tr>' + tr(['avg ms'].concat(Object.keys(w.sec).map(k => f1(w.sec[k])))) + '</table>';
+    if (w.imgs && w.imgs.length === 3) h += '<div class="pimgs">' + w.imgs.map((u, j) => '<figure><img src="' + u + '"><figcaption>' + ['west', 'centre', 'east'][j] + '</figcaption></figure>').join('') + '</div>';
+  });
+  return h + '</div>';
+}
+function renderAARPerf() { const host = document.getElementById('pgPerf'); if (host) host.innerHTML = aarPerfHTML(); }
 // ── DOWNLOAD REPORT — a fully self-contained standalone HTML document (no external assets, no script dependency)
 // with every stat, both snapshots and the heatmap baked in as static tables + embedded images. Opens on its own
 // in any browser, forever, independent of this session.
@@ -10363,6 +10475,7 @@ function aarReportHTML() {
   const titleEl = document.getElementById('endTitle'), rankEl = document.getElementById('endRank');
   const title = titleEl ? titleEl.textContent : 'AFTER-ACTION REPORT', rankTxt = rankEl ? rankEl.textContent : '';
   let heatImg = ''; try { const hc = document.createElement('canvas'); hc.width = 800; hc.height = 120; aarHeatCanvas(hc, st.heat); heatImg = hc.toDataURL('image/png'); } catch (er) {}
+  let perfHTML = ''; try { perfHTML = aarPerfHTML().replace('<div class="aar-empty">No performance data.</div>', '<p>No performance data.</p>'); } catch (er) {}
   const secsD = Math.max(0, Math.round(G.invTime || 0)), durTxt = Math.floor(secsD / 60) + ':' + String(secsD % 60).padStart(2, '0');
   const citiesAlive = G.cities ? G.cities.filter(c => c.hp > 0 && !c.held).length : 0, citiesTot = G.cities ? G.cities.length : 0;
   const kbt = Object.entries(st.killsByType).sort((a, b) => b[1] - a[1]);
@@ -10390,6 +10503,7 @@ function aarReportHTML() {
     '<div class="grid2"><div><h3>Research Timeline</h3><table>' + rows(st.researched.map(rr => [RESEARCH[rr.key] ? RESEARCH[rr.key].name : rr.key, mmss(rr.t / (0.45 * (G.speed || 1)))])) + '</table></div><div><h3>Construction</h3><table>' + rows(blt.map(([k, c]) => [BUILD_DEFS[k] ? BUILD_DEFS[k].name : k, '×' + c])) + '</table></div></div>' +
     '<h2>WORLD</h2><div>' + (snapsHTML || '<p>No map snapshots captured this campaign.</p>') + '</div>' +
     '<div class="heat"><h3>Where The War Was Fought</h3>' + (heatImg ? '<img src="' + heatImg + '">' : '<p>No heatmap data.</p>') + '</div>' +
+    '<h2>PERFORMANCE</h2>' + (perfHTML || '<p>No performance data.</p>') +
     '<footer>Generated by TOTAL MOBILIZATION — https://rheava-26.github.io/total-mobilization/</footer>' +
     '</body></html>';
 }

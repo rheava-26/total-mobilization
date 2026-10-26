@@ -106,6 +106,8 @@ namespace Levy.Common
 		public const int ShortShotRangeMinTiles = 8;
 		/// <summary>A projectile whose default lifetime exceeds this many ticks is treated as long-range (no reach clamp).</summary>
 		public const int LongShotLifetimeTicks = 240;
+		/// <summary>A flamethrower flame's real lifetime in updates: its projectile sample reports a misleading timeLeft (3600), but the Flamethrower AI burns it out in about this many updates. Used to size the real flame reach.</summary>
+		public const int FlameLifetimeUpdates = 50;
 		/// <summary>A weapon that spawned nothing (hooks fired no projectile / threw) waits this many ticks before the soldier tries again, so a dud never spams hooks every tick.</summary>
 		public const int DudWeaponRetryTicks = 30;
 		/// <summary>Rarity tier given to Expert / Master items (negative item.rare values) when ranking.</summary>

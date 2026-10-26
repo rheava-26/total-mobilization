@@ -416,10 +416,14 @@ namespace Levy.Common.Weapons
 		private static int ShortShotRange(Item src, int familyRange)
 		{
 			var sample = ProjectileSample(src.shoot);
-			if (sample == null || sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
+			if (sample == null) return familyRange;
+			// A flamethrower flame reports a misleading timeLeft (3600) but its AI burns out in ~FlameLifetimeUpdates, so it is sized by that real flame life, not left at full gun range (it would open fire far past its flames).
+			bool flame = sample.aiStyle == ProjAIStyleID.Flamethrower;
+			if (!flame && sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
 			// timeLeft counts UPDATES, and every extra update moves the shot by its velocity AND uses up one timeLeft, so the reach is speed x timeLeft however many extra updates it runs.
+			int life = flame ? LevyConstants.FlameLifetimeUpdates : sample.timeLeft;
 			float speed = Math.Max(1f, src.shootSpeed);
-			float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
+			float tiles = speed * Math.Max(1, life) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
 			return Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, familyRange);
 		}
 

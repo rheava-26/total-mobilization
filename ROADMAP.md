@@ -8,7 +8,15 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.4` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.5` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.5 — PER-OFFICER REACTIVE DIALOGUE (Eve: "their dialogue should change as you move around, as open-shop dialogue, and each officer should feel different")
+Every officer now has its OWN voice, and talk-to lines shift with what the officer is doing — not one shared pool for all 17.
+- **Per-officer pools:** line-pool keys are now `OFFICER_<Key>_<STATE>` (e.g. `OFFICER_Nurse_FIGHT`), resolved in `OfficerChat.ContextLine` with fallback to the generic `OFFICER_CHAT_<STATE>` pool so an un-voiced officer still speaks. Reuses the existing string-keyed pool system (same mechanism as per-boss `BOSS_<name>` lines) — no enum churn except 3 appended `DialogueTrigger` values (network-safe). `DialogueSystem.PickLine(string poolKey,...)` overload shares the filter/placeholder/repeat logic with the trigger path.
+- **New reactive states (the "changes as you move" ask):** MARCH (Follow order, no enemies), HOLD (Hold/Patrol/SearchDestroy/FreeRein, no enemies), IDLE (at ease) — on top of BOSS/FIGHT/HURT/VICTORY. Priority: BOSS→FIGHT→HURT→VICTORY→(MARCH if following, else HOLD)→IDLE. Urgent states (BOSS/FIGHT/HURT) fire a line 95%; quiet states 80% (else vanilla town voice).
+- **391 new lines, 23 per officer, all 17 voiced** (Nurse clipped-triage, Merchant mercenary, Pirate heavy dialect, Wizard cryptic, Cyborg terse-machine, WitchDoctor ominous, TaxCollector dour-ghostly, etc.) + generic MARCH/HOLD/IDLE fallback pools. Designer-editable in `Dialogue/en-US.txt`.
+- Parser (`DialogueTable.TryParseKey`) accepts `OFFICER_<voice>_<STATE>`, validating the STATE suffix (bad suffix logged+skipped). Boot self-check `OfficerDialogueCheck` confirms 17 officers × 7 states resolve + fallback + parser-reject. Both boots clean, 823 dialogue lines in 193 pools, no parse warnings.
+- **Eve tune knobs:** `ChatPostureShare` 0.6 (MARCH/HOLD vs IDLE split on a quiet chat — IDLE rarely fires otherwise since every active order maps to MARCH/HOLD; set 1.0 for strict priority), `ChatUrgentChance` 0.95, `ChatContextChance` 0.8. Pirate dialect + longer Guide/Princess/Painter lines are first-pass voice — say if any officer's voice is off.
 
 ### ✅ 1.6.4 — BARD AIM FIX (Eve live-test: "what is lute guy aiming at bro can't hit a shot")
 Soldier-bards fired their notes wildly out of range and missed. Two general bugs in `WeaponClassifier` (not a Lute special-case — fixes every borrowed-AI modded shot):

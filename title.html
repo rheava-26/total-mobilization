@@ -401,6 +401,10 @@
   }
   /* HIDE-HUD (screenshot / cinematic mode) — H toggles it; the toast still shows the hint */
   body.hud-hidden .topbar, body.hud-hidden .subbar, body.hud-hidden #ghint, body.hud-hidden #buildbar, body.hud-hidden #zoomctl, body.hud-hidden #produce, body.hud-hidden .info, body.hud-hidden #backBtn, body.hud-hidden #strikeConfirm, body.hud-hidden #nowPlaying, body.hud-hidden #drawerTab, body.hud-hidden #hudDrawer, body.hud-hidden #tutReady { display: none !important; }
+  #recDot { display: none; position: fixed; right: 52px; top: 10px; z-index: 12; pointer-events: auto; cursor: pointer; font-size: 18px; line-height: 1; padding: 7px 9px; color: #ff4040; background: rgba(14,23,38,.55); border: 1px solid var(--line); border-radius: 4px; animation: recPulse 1s ease-in-out infinite; }
+  #recDot.show { display: block; }
+  .hbtn.rec::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff3030; margin-right: 7px; animation: recPulse 1s ease-in-out infinite; }
+  @keyframes recPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 </style>
 </head>
 <body>
@@ -656,6 +660,7 @@
   <div class="row"><label>Flash Reduction <span style="opacity:.55;font-size:10px">— dims nuke &amp; muzzle flashes (photosensitivity)</span></label><div class="toggle" id="tFlash"><div class="knob"></div></div></div>
   <div class="row"><label>Colorblind-Friendly Bars <span style="opacity:.55;font-size:10px">— blue/orange instead of green/red</span></label><div class="toggle" id="tCb"><div class="knob"></div></div></div>
   <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
+  <div class="row"><label>Recording mode <span style="opacity:.55;font-size:10px">— off: game only, no HUD, no prompt · on: whole tab with HUD, one browser picker</span></label><div class="toggle" id="tRecTab"><div class="knob"></div></div></div>
   <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
   <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
   <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>TUTORIAL &amp; GUIDANCE</b></div>
@@ -722,6 +727,7 @@
   <details class="helpsec"><summary>🕹 CONTROLS — DESKTOP &amp; TOUCH</summary><p>
     <b>Desktop:</b> <span class="k">← → / A D</span> scroll the front · <span class="k">W S / ↑ ↓</span> or <span class="k">Shift+wheel</span> pan the tall sky · <span class="k">wheel</span> zooms toward the cursor (or the <span class="k">+ − ⌂</span> buttons) · <span class="k">click</span> selects · <span class="k">right-click / Esc</span> cancels anything · <span class="k">SPACE</span> pauses · <span class="k">M</span> toggles music · click or drag the <b>minimap</b> to jump the camera.<br>
     <b>Touch:</b> <b>drag</b> to scroll · <b>pinch</b> to zoom · <b>tap</b> to select / place · <b>long-press</b> to cancel · strategic strikes take a first tap to AIM, then a <span class="k">☢ CONFIRM</span> tap to fire — no fat-finger nukes.
+    <span class="k">R</span> records a clip to a .webm file (⏺ RECORD in the drawer).<br>
     <span class="tip2">Zoomed in? The camera can reach the whole world — pan speed matches what your eye sees at any zoom.</span></p></details>
   <details class="helpsec"><summary>① ECONOMY — IC · MANPOWER · STABILITY → INFLUENCE</summary><p>
     <b>IND. CAP</b> builds everything. <b>MANPOWER</b> crews it. <b>INFLUENCE</b> buys research &amp; raises your army cap — and it flows from <b>STABILITY alone</b>: the higher your stability, the faster influence accrues.<br><br>
@@ -818,6 +824,7 @@
   <!-- DRAWER — every "open when you want it" control lives here now, behind ONE right-edge tab. -->
   <div id="drawerTab" title="Menu">▤</div>
   <div id="hudEye" title="Show HUD (or press H)" onclick="toggleHudHidden()">👁</div>
+  <div id="recDot" title="Stop recording" onclick="recStop()">⏺</div>
   <div id="hudDrawer">
     <div class="dwsec">
       <div class="dwh">VIEW &amp; AUDIO</div>
@@ -825,6 +832,7 @@
       <div class="hbtn has-tip" id="btnPlaylist" data-tip="Playlist — paste YouTube links into your peacetime / combat soundtrack.">≣ PLAYLIST</div>
       <div class="hbtn has-tip" id="btnZones" data-tip="Show coverage zones — radar range, fire-rate & repair auras (key: V)." onclick="toggleZones()">◎ COVERAGE ZONES</div>
       <div class="hbtn has-tip" id="btnHideHud" data-tip="Hide the whole HUD for a clean screenshot (or press H)." onclick="toggleHudHidden()">🖥 HIDE HUD</div>
+      <div class="hbtn has-tip" id="btnRecord" data-tip="Record a clip to a .webm file. R starts and stops. Game-only mode skips the HUD and never prompts; whole-tab mode shows one browser picker and the red dot is visible in the clip (R stops without touching it)." onclick="recToggle()">⏺ RECORD</div>
     </div>
     <div class="dwsec">
       <div class="dwh">HELP</div>
@@ -6000,6 +6008,57 @@ function captureSnap(label) {
     G.stats.snap[label] = _snapCv.toDataURL('image/jpeg', 0.5);
   } catch (er) {}
 }
+/* RECORDER — in-page clip capture. Game mode records the canvas plus the game's own audio bus; tab mode records the whole tab through the browser's picker. */
+const REC = { on: false, mode: 'game', rec: null, chunks: [], startT: 0, stream: null, dest: null, srcNodes: {}, mvolHooked: false, tracks: [] };
+function recSetUi() { const b = document.getElementById('btnRecord'), d = document.getElementById('recDot'); if (b) { b.classList.toggle('on', REC.on); b.classList.toggle('rec', REC.on); } if (d) d.classList.toggle('show', REC.on); }
+function recWrap(el, key) { if (!el || !actx) return true; if (REC.srcNodes[key]) return true; try { const n = actx.createMediaElementSource(el); n.connect(actx.destination); n.connect(REC.dest); REC.srcNodes[key] = n; return true; } catch (e) { return false; } }
+async function recStart() {
+  if (REC.on || REC.starting) return;
+  if (typeof MediaRecorder === 'undefined' || !cv || !cv.captureStream) { toast('Recording needs Chrome, Edge or Firefox'); return; }
+  let stream = null; REC.starting = true;
+  try {
+    if (REC.mode === 'tab') {
+      try { stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60 }, audio: true, preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude', systemAudio: 'exclude' }); } catch (e) { toast('Recording cancelled'); return; }
+      const vt = stream.getVideoTracks()[0]; if (vt) vt.onended = () => recStop();
+    } else {
+      const vs = cv.captureStream(60);
+      if (!actx) initAudio();
+      const tracks = [...vs.getVideoTracks()];
+      if (actx && mvol) {
+        if (!REC.dest) REC.dest = actx.createMediaStreamDestination();
+        mvol.connect(REC.dest); REC.mvolHooked = true;
+        if (MUS.mode === 'yt') toast('YouTube music is not recorded — use a local playlist to capture music');
+        else if (MUS.mode === 'local' && MUS.audio) { if (!recWrap(MUS.audio, 'mus')) toast('Music could not be captured'); }
+        if (mode === 'title' && typeof menuThemeAudio !== 'undefined' && menuThemeAudio) { if (!recWrap(menuThemeAudio, 'menu')) toast('Music could not be captured'); }
+        tracks.push(...REC.dest.stream.getAudioTracks());
+      }
+      stream = new MediaStream(tracks);
+    }
+    const mt = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const rec = new MediaRecorder(stream, mt ? { mimeType: mt, videoBitsPerSecond: 12e6 } : { videoBitsPerSecond: 12e6 });
+    REC.chunks = []; REC.stream = stream; REC.rec = rec; REC.startT = performance.now(); REC.tracks = stream.getTracks().map(t => t.kind);
+    rec.ondataavailable = e => { if (e.data && e.data.size) REC.chunks.push(e.data); };
+    rec.onstop = () => {
+      const type = rec.mimeType || mt || 'video/webm', blob = new Blob(REC.chunks, { type }), secs = Math.round((performance.now() - REC.startT) / 1000);
+      const d = new Date(), p = n => String(n).padStart(2, '0'), name = 'total-mobilization-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + '.webm';
+      const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+      REC.lastType = type; toast('⏺ Saved ' + (blob.size / 1048576).toFixed(1) + ' MB · ' + Math.floor(secs / 60) + ':' + p(secs % 60));
+      REC.chunks = [];
+    };
+    rec.start(1000); REC.on = true; recSetUi();
+  } catch (e) { if (stream) stream.getTracks().forEach(t => t.stop()); REC.on = false; REC.rec = null; recSetUi(); toast('Recording failed'); }
+  finally { REC.starting = false; }
+}
+function recStop() {
+  if (!REC.on) return; REC.on = false; recSetUi();
+  const rec = REC.rec, st = REC.stream; REC.rec = null; REC.stream = null;
+  try { if (rec && rec.state !== 'inactive') rec.stop(); } catch (e) {}
+  if (st) st.getTracks().forEach(t => { try { t.onended = null; t.stop(); } catch (e) {} });
+  if (REC.mvolHooked && mvol && REC.dest) { try { mvol.disconnect(REC.dest); } catch (e) {} REC.mvolHooked = false; }
+}
+function recToggle() { if (REC.on) recStop(); else recStart(); }
+window.recStart = recStart; window.recStop = recStop; window.recToggle = recToggle; window.REC = REC;
 // POSTCARD CAMERA — a wide, level "portrait of the nation" framing used ONLY for the instant an AFTER-ACTION snapshot is
 // captured (see frame()'s save/apply/capture/restore around the _want* flags). The LIVE battle camera can be sitting
 // anywhere (often low, mostly-underground, right after the opening zoom) — this computes a totally separate cam pose
@@ -10803,7 +10862,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, recTab: REC.mode === 'tab' })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -10812,10 +10871,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false;
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; REC.mode = o.recTab ? 'tab' : 'game';
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx);
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tRecTab', REC.mode === 'tab');
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -10839,14 +10898,16 @@ bindToggle('tFlash', v => flashRed = v);
 bindToggle('tCb', v => cbMode = v);
 bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
 bindToggle('tFullFx', v => fullFx = v);
+bindToggle('tRecTab', v => { REC.mode = v ? 'tab' : 'game'; });
 loadOpts();
 addEventListener('keydown', e => {
+  if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.toLowerCase() === 'r' && !/^(input|textarea|select)$/i.test((e.target && e.target.tagName) || '') && !(e.target && e.target.isContentEditable)) recToggle();
   // HIDE-HUD toggle (H). While hidden, any non-navigation keypress flashes a reminder of how to bring it back.
   if (mode === 'game' && G && !e.repeat && !/^(input|textarea)$/i.test((e.target && e.target.tagName) || '')) {
     const kk = (e.key || '').toLowerCase();
     if (kk === 'h') { toggleHudHidden(); }
     else if (kk === 'v') { toggleZones(); }
-    else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta']; if (!nav.includes(kk)) toast('press H to show HUD'); }
+    else if (G.hideHUD) { const nav = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', '+', '=', '-', '_', ' ', 'm', 'escape', 'shift', 'control', 'alt', 'meta', 'r']; if (!nav.includes(kk)) toast('press H to show HUD'); }
   }
   if (e.code === 'Space' && mode === 'game' && G && !G.over) { e.preventDefault(); if (!G.turnMode) G.paused = !G.paused; } if (!e.repeat && e.key && e.key.toLowerCase() === 'm' && mode === 'game') musToggle(); if (e.key === 'Escape') { closeModal('optsModal'); closeModal('scenModal'); closeModal('resModal'); const dw = document.getElementById('hudDrawer'); if (dw && dw.classList.contains('open')) setDrawerOpen(false); if (G) { G.place = null; G.targeting = null; G.sel = null; closeStrike(); buildBuildBar && buildBuildBar(); refreshSel(); } } });
 // DRAWER wiring — tab toggles it; a click outside the open drawer (and off its tab) closes it; state persists across sessions.

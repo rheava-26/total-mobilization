@@ -8,19 +8,21 @@ using Terraria.ModLoader.IO;
 using Levy.Common.Flavor;
 using Levy.Common.Soldiers;
 using Levy.Content.Items.Books;
-using Levy.Content.NPCs;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.Weapons
 {
 	/// <summary>
-	/// Boot-time self-check of the combat-drone feature, in the style of <see cref="WeaponWiringCheck"/>. A headless boot cannot run a drone's AI (no world, no enemies), so this checks what can
-	/// be checked without one, and logs one summary line (or the failures): which weapons a drone will and will not mount, the ammo and projectile each kind resolves to, the
-	/// Armory's loan ledger on a detached Armory (lend, return, the soldier reserve, the save round trip, the recall for a soldier) and the Engineering guide's wiring and text.
-	/// Inspect-and-log only: it touches no world state and never throws (a gap logs a warning and the mod still loads).
+	/// Boot-time self-check of the weapon-mount pipeline and the Armory's lend ledger that the Mechanization companion's drones and turrets build on, in the style of <see cref="WeaponWiringCheck"/>.
+	/// A headless boot cannot run a machine's AI (no world, no enemies), so this checks what can be checked without one, and logs one summary line (or the failures): which weapons a machine will
+	/// and will not mount, the ammo and projectile each kind resolves to, the Armory's loan ledger on a detached Armory (lend, return, the soldier reserve, the save round trip, the recall for a
+	/// soldier) and the Engineering guide's wiring and text. Inspect-and-log only: it touches no world state and never throws (a gap logs a warning and the mod still loads).
 	/// </summary>
-	public class DroneWiringCheck : ModSystem
+	public class ArsenalWiringCheck : ModSystem
 	{
+		/// <summary>The keep line the ledger check lends ammo against (a stack must hold more than this to lend a round); the Mechanization drone system passes its own.</summary>
+		private const int KeepRounds = 10;
+
 		/// <summary>Weapons a drone must mount (faithful or approximate) and weapons it must refuse; one stable vanilla probe each.</summary>
 		private static readonly int[] MustMount =
 		{
@@ -87,13 +89,13 @@ namespace Levy.Common.Weapons
 				DroneShot flame = DroneArsenal.BuildShot(Make(ItemID.Flamethrower), null);
 				Check(flame.Valid && flame.Projectile == ProjectileID.Flames, "Flamethrower fires flames");
 				DroneShot prism = DroneArsenal.BuildShot(Make(ItemID.LastPrism), null);
-				Check(prism.Valid && prism.StandIn && prism.Projectile == LevyConstants.Drones.HeldStandInProjectile && prism.IntervalTicks == LevyConstants.HeldRealCadence[ItemID.LastPrism],
+				Check(prism.Valid && prism.StandIn && prism.Projectile == LevyConstants.Arsenal.HeldStandInProjectile && prism.IntervalTicks == LevyConstants.HeldRealCadence[ItemID.LastPrism],
 					"Last Prism is an approximate stand-in bolt at its real cadence");
 				DroneShot phantasm = DroneArsenal.BuildShot(Make(ItemID.Phantasm), null);
 				Check(phantasm.Valid && phantasm.Count == 4 && phantasm.Gravity, "Phantasm fires its four-arrow volley as plain arrows");
 				Check(!DroneArsenal.BuildShot(Make(ItemID.CopperBroadsword), null).Valid, "a blade has no drone shot");
 				Check(DroneArsenal.MaxHpFor(ItemID.LastPrism) > DroneArsenal.MaxHpFor(ItemID.WoodenBow), "a better weapon makes a tougher drone");
-				Check(DroneArsenal.MaxHpFor(ItemID.LastPrism) <= LevyConstants.Drones.HpMax, "drone life stays under its cap");
+				Check(DroneArsenal.MaxHpFor(ItemID.LastPrism) <= LevyConstants.Arsenal.HpMax, "drone life stays under its cap");
 			});
 
 			// 3. The Armory's loan ledger, on a detached Armory.
@@ -104,8 +106,7 @@ namespace Levy.Common.Weapons
 			{
 				Check(GuideSystem.IsGuideKey("Engineering") && FlavorSystem.IsValidKey("Engineering"), "Engineering is a guide key the study path accepts");
 				Check(ModContent.ItemType<GuideToEngineering>() > 0, "the Engineering book item is registered");
-				Check(ModContent.NPCType<DroneNPC>() > 0, "the drone NPC is registered");
-				foreach (string key in new[] { "Items.GuideToEngineering.DisplayName", "Items.GuideToEngineering.Tooltip", "NPCs.DroneNPC.DisplayName", "Flavor.Effect.Engineering" })
+				foreach (string key in new[] { "Items.GuideToEngineering.DisplayName", "Items.GuideToEngineering.Tooltip", "Flavor.Effect.Engineering" })
 					Check(Language.Exists("Mods.Levy." + key), "localization key Mods.Levy." + key + " exists");
 			});
 
@@ -127,11 +128,11 @@ namespace Levy.Common.Weapons
 
 			try
 			{
-				if (failures.Count == 0) Mod.Logger.Info($"Levy drone self-check: {ok} checks OK; {mountable} of {weapons} vanilla projectile weapons are drone-mountable");
+				if (failures.Count == 0) Mod.Logger.Info($"Levy arsenal self-check: {ok} checks OK; {mountable} of {weapons} vanilla projectile weapons are drone-mountable");
 				else
 				{
-					Mod.Logger.Warn($"Levy drone self-check: {failures.Count} FAILURE(S) ({ok} checks OK) !!!");
-					foreach (string f in failures) Mod.Logger.Warn("Levy drone self-check FAILED: " + f);
+					Mod.Logger.Warn($"Levy arsenal self-check: {failures.Count} FAILURE(S) ({ok} checks OK) !!!");
+					foreach (string f in failures) Mod.Logger.Warn("Levy arsenal self-check FAILED: " + f);
 				}
 			}
 			catch (Exception) { }
@@ -172,7 +173,7 @@ namespace Levy.Common.Weapons
 			check(found == 3 && reloaded.Lent.Count == 0, "a save with three weapons on loan reloads them on the racks, once each (found " + found + ")");
 
 			// Ammo: one round of the best stack above the keep line, borrowed and returned whole.
-			Item round = armory.LendDroneAmmo(AmmoID.Bullet, LevyConstants.Drones.AmmoKeepRounds);
+			Item round = armory.LendDroneAmmo(AmmoID.Bullet, KeepRounds);
 			check(round != null && round.type == ItemID.MusketBall && round.stack == 1, "a drone borrows one round of the stack that can spare it");
 			int ballsLeft = 0; foreach (Item it in armory.Storage) if (it != null && !it.IsAir && it.type == ItemID.MusketBall) ballsLeft += it.stack;
 			check(ballsLeft == 49, "the borrowed round left the stack (" + ballsLeft + " left)");

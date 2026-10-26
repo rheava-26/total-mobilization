@@ -45,9 +45,8 @@ namespace Levy.Common.Targeting
 	{
 		/// <summary>
 		/// Live soldier bodies and active officers this tick (rebuilt in EnemyTargetingSystem.PreUpdateNPCs on every netmode; NPC AI runs on clients too).
-		/// Public so a companion mod can append its own <see cref="ITargetBody"/> instances (e.g. Mechanization's turrets) AFTER this system has
-		/// rebuilt the list and before NPC AI runs — a mod that sorts after Levy does exactly that in its own PreUpdateNPCs, mirroring how
-		/// <see cref="DroneSystem"/>'s bodies are fed in here.
+		/// Public so a companion mod can append its own <see cref="ITargetBody"/> instances (e.g. Mechanization's turrets and combat drones) AFTER this
+		/// system has rebuilt the list and before NPC AI runs — a mod that sorts after Levy does exactly that in its own PreUpdateNPCs.
 		/// </summary>
 		public static readonly List<ITargetBody> Bodies = new(64);
 		private static readonly HashSet<int> _swapStyles = new(LevyConstants.Targeting.SwapAiStyles);
@@ -87,9 +86,8 @@ namespace Levy.Common.Targeting
 			if (!npc.active) return null;
 			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
 			if (npc.ModNPC is Content.NPCs.SummonedUnitNPC u) return u.IsAlive ? u : null; // so an enemy sticks to a summoned unit without re-acquiring every tick
-			if (npc.ModNPC is Content.NPCs.DroneNPC drone) return drone.IsAlive ? drone : null; // ... and to a combat drone
-			// A companion mod's own body (e.g. a Mechanization turret): any ModNPC that implements ITargetBody resolves here, so an enemy locked
-			// on it is re-resolved each tick exactly as it is for a drone. Reached only for external types — every Levy body is handled above.
+			// A companion mod's own body (a Mechanization turret or combat drone): any ModNPC that implements ITargetBody resolves here, so an enemy locked
+			// on it is re-resolved each tick exactly as it is for a summoned unit. Reached only for external types — every Levy body is handled above.
 			if (npc.ModNPC is ITargetBody ext) return ext.IsAlive ? ext : null;
 			return OfficerSystem.Instance.BodyOf(npc);
 		}
@@ -519,9 +517,6 @@ namespace Levy.Common.Targeting
 			// Summoned units (an officer kit's squad) are targeted the same way, from their own per-tick cache.
 			var summons = Content.NPCs.SummonedUnitSystem.Instance.ActiveBodies;
 			for (int i = 0; i < summons.Count; i++) bodies.Add(summons[i]);
-			// Combat drones (a Barracks' garrison) are targeted the same way, from their own per-tick cache.
-			var drones = Content.NPCs.DroneSystem.Instance.ActiveBodies;
-			for (int i = 0; i < drones.Count; i++) bodies.Add(drones[i]);
 			// How many enemies are on each body right now, so the enemies choosing this tick can spread over the army.
 			EnemyTargeting.RebuildLoad();
 		}

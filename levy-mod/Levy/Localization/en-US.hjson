@@ -120,7 +120,7 @@ Mods: {
 				DisplayName: A Guide to Engineering
 				Tooltip:
 					'''
-					Each Barracks garrisons up to 10 combat drones.
+					Unlocks combat drones at every Barracks. Needs the Mechanization mod.
 					A drone mounts one spare ranged or magic weapon from the Armory and fires it at nearby enemies.
 					A destroyed drone returns its weapon. Consumed on use, once per world.
 					'''
@@ -137,7 +137,6 @@ Mods: {
 		NPCs: {
 			SoldierNPC.DisplayName: Soldier
 			SummonedUnitNPC.DisplayName: Summoned Unit
-			DroneNPC.DisplayName: Combat Drone
 		}
 
 		Projectiles: {
@@ -467,7 +466,7 @@ Mods: {
 
 				6. Growth. Feed soldiers Life Crystals for more health, or leave Life Crystals, Life Fruit and Mana Crystals in the Armory and they take them on their own. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
 
-				7. Drones. Craft A Guide to Engineering at an Anvil and study it. Each Barracks then launches combat drones, one for every spare ranged or magic weapon in its Armory, up to 10. A drone hovers over the Barracks, mounts the weapon and fires it at nearby enemies. A destroyed drone returns its weapon to the Armory. Soldiers always take weapons first; drones only get what the army can spare.
+				7. Drones. They need the Mechanization mod. Craft A Guide to Engineering at an Anvil and study it. Each Barracks then launches combat drones, one for every spare ranged or magic weapon in its Armory, up to 10. A drone patrols above the Barracks, mounts the weapon and fires it at nearby enemies. Right-click a drone, or press the drone key, to recall it to its pad and hand its weapon back to the Armory. A destroyed drone returns its weapon too. Soldiers always take weapons first; drones only get what the army can spare.
 
 				They are morons. They die like players. They cost money. Watch them fight.
 				'''

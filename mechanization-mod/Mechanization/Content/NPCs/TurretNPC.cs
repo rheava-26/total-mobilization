@@ -373,7 +373,7 @@ namespace Mechanization.Content.NPCs
 		/// <summary>One cannonade: the mounted weapon's real projectile (one to several as it fires) aimed with lead/arc at the target, else the fixed fallback round. Owned by the real player and credited to the nearest commander.</summary>
 		private void Fire(NPC target)
 		{
-			int commander = PickCommander(NPC.Center);
+			int commander = ShotKit.PickCommander(NPC.Center);
 			if (_shot != null && _shot.Valid) FireSurplus(target, commander);
 			else FireFixed(target, commander);
 			_shotSeq++;
@@ -389,26 +389,18 @@ namespace Mechanization.Content.NPCs
 			SoundEngine.PlaySound(style ?? SoundID.Item11, NPC.Center);
 		}
 
-		/// <summary>The damage a round is fired for: <paramref name="baseDamage"/> scaled with world progress exactly as the combat drone's rounds are, and by the game mode's town-NPC multiplier.</summary>
-		private static int ScaledDamage(float baseDamage)
-		{
-			float dmg = baseDamage * OfficerBrain.TownDamageScale();
-			if (Main.expertMode) dmg *= Main.GameModeInfo.TownNPCDamageMultiplier;
-			return Math.Max(1, (int)Math.Round(dmg));
-		}
-
 		/// <summary>Fires the mounted weapon's projectile — the drone's light shot path: lead/arc aim, the weapon's multishot spread, its damage and knockback, tagged for kill-credit.</summary>
 		private void FireSurplus(NPC target, int commander)
 		{
 			DroneShot shot = _shot;
 			Vector2 from = NPC.Center;
-			Vector2 vel = AimVelocity(shot, from, target);
+			Vector2 vel = ShotKit.AimVelocity(shot, from, target);
 			Vector2 dir = vel.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
 			Vector2 muzzle = from + dir * T.MuzzleOffsetPx;
 			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from; // a muzzle buried in a tile would kill the round on spawn
 			_aim = NPC.ai[0] = dir.ToRotation(); // the barrel is always pointing where the round leaves (it had only eased toward it)
 
-			int dmg = ScaledDamage(shot.BaseDamage * T.SurplusDamageMult);
+			int dmg = ShotKit.ScaledDamage(shot.BaseDamage * T.SurplusDamageMult);
 
 			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
 			for (int k = 0; k < shot.Count; k++)
@@ -417,7 +409,7 @@ namespace Mechanization.Content.NPCs
 				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
 				int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
 				if (idx < 0 || idx >= Main.maxProjectiles) continue;
-				TagTurretShot(Main.projectile[idx], commander, shot.Class, shot.Crit);
+				ShotKit.TagShot(Main.projectile[idx], commander, shot.Class, shot.Crit);
 			}
 		}
 
@@ -432,62 +424,8 @@ namespace Mechanization.Content.NPCs
 			_aim = NPC.ai[0] = dir.ToRotation();
 
 			int owner = Main.myPlayer;
-			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, ScaledDamage(T.ShotDamage), T.ShotKnockback, owner);
-			if (idx >= 0 && idx < Main.maxProjectiles) TagTurretShot(Main.projectile[idx], commander, DamageClass.Ranged, 0);
-		}
-
-		/// <summary>
-		/// Makes a spawned round a friendly, NPC-style shot owned by the real player and credited to <paramref name="commander"/> through Levy's
-		/// <see cref="SoldierProjectileTag"/> — exactly the credit a combat drone's shot gets, set here directly since the turret is not a Levy body
-		/// its OnSpawn recognises. A piercing round gets its own hit-immunity so it does not share the owner's cooldown with every other shooter.
-		/// </summary>
-		private static void TagTurretShot(Projectile p, int commander, DamageClass cls, int crit)
-		{
-			if (!p.active) return;
-			p.friendly = true; p.hostile = false;
-			if (cls != null) p.DamageType = cls;
-			if (crit > 0) p.CritChance = crit;
-			if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity)
-			{ p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }
-			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag))
-			{
-				tag.CommanderIndex = commander; // ModifyHitNPC credits this player before the kill drops loot (banners, bestiary, "defeated by")
-				tag.DroneShot = true;           // spares the player's own base from the turret's blasts, as a drone's rocket is spared
-			}
-			p.npcProj = true; p.noDropItem = true; // the commander's own on-hit item effects and drops never run for the turret's shot
-			p.netUpdate = true;
-		}
-
-		/// <summary>Lead, and the arc of a falling arrow: the same intercept solve the drone uses. Homing ammo flies straight at the target and needs no lead.</summary>
-		private Vector2 AimVelocity(DroneShot shot, Vector2 from, NPC target)
-		{
-			Vector2 at = target.Center;
-			if (shot.Homing)
-			{
-				Vector2 d = at - from;
-				if (d == Vector2.Zero) d = Vector2.UnitX;
-				return Vector2.Normalize(d) * shot.Speed;
-			}
-			float steps = shot.StepMult <= 0f ? 1f : shot.StepMult; // the shot advances this many times a tick, and gravity runs per advance
-			float leadSpeed = Math.Max(0.01f, shot.Speed) * steps;
-			return Aiming.SolveIntercept(from, leadSpeed, at, target.velocity, shot.Gravity,
-				shot.Gravity ? LevyConstants.ArrowGravity * steps * steps : 0f,
-				shot.Gravity ? (int)Math.Round(LevyConstants.ArrowGravityDelayTicks / steps) : 0) / steps;
-		}
-
-		/// <summary>The player a turret's kills are credited to: the nearest active player, a living one before a dead one. -1 when nobody is on. (A small re-implementation of the drone system's own pick, to avoid exposing a Levy internal.)</summary>
-		private static int PickCommander(Vector2 near)
-		{
-			int best = -1; float bestD = float.MaxValue;
-			for (int i = 0; i < Main.maxPlayers; i++)
-			{
-				Player p = Main.player[i];
-				if (p == null || !p.active) continue;
-				float d = Vector2.DistanceSquared(p.Center, near);
-				if (p.dead) d += 1e12f;
-				if (d < bestD) { bestD = d; best = i; }
-			}
-			return best;
+			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, ShotKit.ScaledDamage(T.ShotDamage), T.ShotKnockback, owner);
+			if (idx >= 0 && idx < Main.maxProjectiles) ShotKit.TagShot(Main.projectile[idx], commander, DamageClass.Ranged, 0);
 		}
 
 		// ---- taking contact hits (vanilla applies no NPC-vs-NPC contact, so the turret applies it itself) ----

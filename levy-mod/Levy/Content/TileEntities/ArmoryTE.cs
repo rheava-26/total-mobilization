@@ -1040,10 +1040,10 @@ namespace Levy.Content.TileEntities
 
 		// ------------------------------------------------------------------ loans to combat drones
 
-		// A combat drone (Content/NPCs/DroneNPC) mounts a SURPLUS ranged or magic weapon from bulk storage. The weapon (and one round of ammo) leaves the racks but is never handed to the drone for
+		// A combat drone (the Mechanization mod's DroneNPC) mounts a SURPLUS ranged or magic weapon from bulk storage. The weapon (and one round of ammo) leaves the racks but is never handed to the drone for
 		// keeps: it moves to this ledger, so the armory stays the owner of record. That is what makes the loan safe: the ledger is saved with the armory (written into the saved storage, so a reload
 		// finds the weapons on the racks and the manager re-lends them), spilled with it when the tile breaks, and returned by ReturnLent whenever the drone is destroyed, dismissed or orphaned.
-		// A drone that simply vanishes (any path) leaves its loan on the ledger for DroneSystem's reconcile pass to return. Server / single player only; clients never see the ledger.
+		// A drone that simply vanishes (any path) leaves its loan on the ledger for Mechanization's DroneSystem reconcile pass to return. Server / single player only; clients never see the ledger.
 
 		/// <summary>Items on loan to combat drones: pulled out of storage, still owned by this armory. See the note above.</summary>
 		public readonly List<Item> Lent = new();

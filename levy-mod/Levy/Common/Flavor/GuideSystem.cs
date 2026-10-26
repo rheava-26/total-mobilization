@@ -20,7 +20,7 @@ namespace Levy.Common.Flavor
 	/// client in the world-data message, only ever turning on) and every number they change: the HP and mana a MILITIAMAN is mustered with, the
 	/// accessory slots, and the buff slots an Armory's potion row gains. The guides never touch a REGULAR's HP or mana: a regular mirrors the vanilla
 	/// player (crystals and fruit, hard-capped at <see cref="LevyConstants.MaxSoldierHp"/> HP and <see cref="LevyConstants.MaxMana"/> mana) whatever is studied.
-	/// Engineering changes no number: it switches on the combat-drone garrison (<see cref="DroneSystem"/>).
+	/// Engineering changes no number: it records the unlock the Mechanization mod's combat-drone garrison reads.
 	/// </summary>
 	public class GuideSystem : ModSystem
 	{

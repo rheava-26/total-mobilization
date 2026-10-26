@@ -12,7 +12,12 @@ Items: {
 	}
 }
 
-NPCs.TurretNPC.DisplayName: Automatic Turret
+NPCs: {
+	TurretNPC.DisplayName: Automatic Turret
+	DroneNPC.DisplayName: Combat Drone
+}
+
+Keybinds.RecallDrones.DisplayName: Mechanization: Recall or launch drones
 
 UI: {
 	TurretDismantle: Dismantle
@@ -25,4 +30,18 @@ UI: {
 	HintTurretMounted: "{0} mounted. Reach {2} tiles. Armories in reach: {1}"
 	HintTurretNoWeapon: No weapon mounted. Plain bullet, reach {0} tiles.
 	HintTurretNoArmory: No armory in reach. Plain bullet, reach {0} tiles.
+	DroneRecall: Recall
+	DroneLaunch: Launch
+	DroneRecallAll: Recall all
+	DroneLaunchAll: Launch all
+	DroneChatLoiter: Patrolling above its Barracks with {0}. Battery {1}%.
+	DroneChatRefuel: Battery low. Returning to its pad to recharge. Battery {0}%.
+	DroneChatCharging: Recharging on its pad with {0}. Battery {1}%.
+	DroneChatRecall: Returning to its pad. It hands its weapon back to the Armory when it lands.
+	DroneChatParked: Landed and unarmed. Battery {0}%. Launch it to arm it with the best spare weapon.
+	DroneRecalling: Drones recalled: {0}.
+	DroneLaunching: Drones launched: {0}.
+	DroneNoSpare: No spare weapon to arm a drone with. It launches when one is stocked.
+	DroneKeyNoBarracks: No Barracks within reach.
+	DroneNone: This Barracks has no drones.
 }

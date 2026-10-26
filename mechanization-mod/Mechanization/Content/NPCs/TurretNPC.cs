@@ -10,6 +10,7 @@ using Terraria.GameContent.Bestiary;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;                      // LevyConstants.ArrowGravity / ArrowGravityDelayTicks  (shared with the drone's aim solve)
+using Levy.Common.Officers;             // OfficerBrain.TownDamageScale  (world-progress damage scale, as the drones use)
 using Levy.Common.Globals;              // SoldierProjectileTag  (commander kill-credit, exactly as the drones tag their shots)
 using Levy.Common.Targeting;            // ITargetBody / EnemyTargeting  (hostiles path to the turret exactly as they do to a drone)
 using Levy.Common.Util;                 // LevyUtil.IsHostileTarget / IsClient  (cross-mod reference in content)
@@ -62,10 +63,15 @@ namespace Mechanization.Content.NPCs
 		private uint _poolStamp;
 		/// <summary>The weapon pattern the turret currently fires (the drone's prebuilt shot), or null to fire the fixed fallback round.</summary>
 		private DroneShot _shot;
-		/// <summary>The mounted weapon's firing sound (played client-side when it shoots), or null.</summary>
-		private SoundStyle? _weaponUseSound;
 		/// <summary>The item type of the mounted weapon (server picks it; synced to clients so they can draw which gun it fires). 0 = none / fixed fallback round.</summary>
 		private int _weaponType;
+		/// <summary>How far (px) the turret engages with what it has mounted. The server works it out; it rides the extra-AI sync so a client can draw the reach ring and read it back.</summary>
+		private float _reachPx = T.RangePx;
+		/// <summary>Counts shots fired. Rides the extra-AI sync so a remote client hears each volley and kicks the barrel back (the projectiles themselves are synced separately).</summary>
+		private int _shotSeq;
+		private bool _seqSeen;
+		/// <summary>Barrel kick-back, px, decaying to 0 (drawn only).</summary>
+		private float _recoil;
 		/// <summary>The drawn aim of the barrel (radians), eased toward the wanted one; a client eases it toward the synced ai[0].</summary>
 		private float _aim;
 
@@ -136,6 +142,7 @@ namespace Mechanization.Content.NPCs
 		{
 			EnsureDummy();
 			SyncDummyTransform(); // keep the targeting dummy co-located on every netmode (NPC AI, and the slot-255 swap, run on clients too)
+			if (_recoil > 0f) _recoil = Math.Max(0f, _recoil - T.RecoilReturnPx);
 			if (LevyUtil.IsClient) { _aim = EaseAngle(_aim, NPC.ai[0], T.AimTurnLerp); return; }
 
 			_age++;
@@ -155,14 +162,21 @@ namespace Mechanization.Content.NPCs
 				Vector2 to = t.Center - NPC.Center;
 				if (to != Vector2.Zero) wantAim = to.ToRotation();
 				if (Math.Abs(to.X) > 4f) { NPC.direction = to.X < 0f ? -1 : 1; NPC.spriteDirection = NPC.direction; }
-				if (_cooldown <= 0) { Fire(t); _cooldown = CurrentFireInterval; }
+				if (_cooldown <= 0)
+				{
+					Fire(t);
+					_cooldown = CurrentFireInterval;
+					if (_cooldown >= T.AimSyncTicks) NPC.netUpdate = true; // a slow gun: sync each shot now (a fast one rides the aim-sync cadence below)
+				}
 			}
 			else wantAim = NPC.direction < 0 ? MathHelper.Pi : 0f; // idle: barrel level, facing its last way
 
 			_aim = EaseAngle(_aim, wantAim, T.AimTurnLerp);
 			NPC.ai[0] = _aim; // rides the NPC sync so clients draw the barrel where the server aims it
 
-			if ((Main.GameUpdateCount + (uint)NPC.whoAmI) % 30u == 0) NPC.netUpdate = true;
+			// While engaging, push the aim (and the shot counter) to clients often so the barrel tracks and the volleys are heard; idle, a slow heartbeat is plenty.
+			uint clock = Main.GameUpdateCount + (uint)NPC.whoAmI;
+			if (engaging ? clock % (uint)T.AimSyncTicks == 0 : clock % 30u == 0) NPC.netUpdate = true;
 		}
 
 		private static float EaseAngle(float from, float to, float t) => MathHelper.WrapAngle(from + MathHelper.WrapAngle(to - from) * t);
@@ -180,11 +194,18 @@ namespace Mechanization.Content.NPCs
 		private void Combat()
 		{
 			if (_cooldown > 0) _cooldown--;
-			if (++_scan >= T.ScanIntervalTicks) { _scan = 0; _target = FindTarget(); }
-			else if (_target >= 0 && (_target >= Main.maxNPCs || !Shootable(Main.npc[_target]))) _target = -1;
+			// A turret holds the target it has while that target stays shootable, and only swaps for a hostile clearly closer: no flip-flopping between two enemies at the same range.
+			if (_target >= 0 && (_target >= Main.maxNPCs || !Shootable(Main.npc[_target]))) { _target = -1; _scan = T.ScanIntervalTicks; } // lost it: look again this tick
+			if (++_scan < T.ScanIntervalTicks) return;
+			_scan = 0;
+			int best = FindTarget();
+			if (best == _target || best < 0) return;
+			if (_target < 0) { _target = best; return; }
+			float dCur = Vector2.Distance(NPC.Center, Main.npc[_target].Center), dBest = Vector2.Distance(NPC.Center, Main.npc[best].Center);
+			if (dBest < dCur * T.RetargetCloserFraction) _target = best;
 		}
 
-		/// <summary>Nearest hostile in reach with a clear line. Range cut runs first so the hostile test and line test are only paid for the slots actually in reach.</summary>
+		/// <summary>Nearest legitimate target in reach with a clear line. Range cut runs first so the never-target and line tests are only paid for the slots actually in reach.</summary>
 		private int FindTarget()
 		{
 			float range = CurrentRangePx;
@@ -197,7 +218,7 @@ namespace Mechanization.Content.NPCs
 				if (!t.active) continue;
 				float dSq = Vector2.DistanceSquared(from, t.Center);
 				if (dSq >= bestSq || dSq > rangeSq) continue;
-				if (!LevyUtil.IsHostileTarget(t)) continue;   // Levy's proven hostile filter (cross-mod)
+				if (SoldierTargeting.IsNeverTarget(t)) continue; // Levy's proven filter (hostile, not a set piece / bound NPC / projectile-NPC / flee target), the same one the drones use
 				if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height)) continue;
 				bestSq = dSq; best = i;
 			}
@@ -206,17 +227,48 @@ namespace Mechanization.Content.NPCs
 
 		private bool Shootable(NPC t)
 		{
-			if (!LevyUtil.IsHostileTarget(t)) return false;
+			if (!t.active || SoldierTargeting.IsNeverTarget(t)) return false;
 			float range = CurrentRangePx;
 			if (Vector2.DistanceSquared(NPC.Center, t.Center) > range * range) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);
 		}
 
-		/// <summary>Reach, in px: the mounted weapon's range when one is up (never shorter than the turret's own base reach), else the base reach.</summary>
-		private float CurrentRangePx => _shot != null && _shot.Valid ? Math.Max(T.RangePx, _shot.RangePx) : T.RangePx;
+		/// <summary>Reach, in px: the mounted weapon's real reach when one is up (see <see cref="ReachFor"/>), else the plain bullet's.</summary>
+		private float CurrentRangePx => _reachPx;
+
+		/// <summary>Reach in whole tiles (what the hover text and the chat panel say).</summary>
+		public int ReachTiles => (int)Math.Round(_reachPx / LevyConstants.TilePx);
+		/// <summary>Reach in px, for drawing the reach ring.</summary>
+		public float ReachPx => _reachPx;
 
 		/// <summary>Ticks between shots: the mounted weapon's own cadence when one is up, else the fallback cadence.</summary>
 		private int CurrentFireInterval => _shot != null && _shot.Valid ? _shot.IntervalTicks : T.FireIntervalTicks;
+
+		/// <summary>
+		/// How far (px) a turret should engage with <paramref name="weapon"/>'s <paramref name="shot"/>: the reach Levy's own classifier gives a soldier carrying it (so a long gun is
+		/// not cut to a drone's tighter leash), cut down to where the round really flies when it dies young (flames, short bolts), never below <see cref="T.MinReachTiles"/>. A fixed
+		/// floor used to make a flamethrower open fire on targets its flames could never reach.
+		/// </summary>
+		public static float ReachFor(Item weapon, DroneShot shot)
+		{
+			float reach = shot != null ? shot.RangePx : T.RangePx;
+			try
+			{
+				WeaponProfile profile = WeaponClassifier.GetProfile(weapon);
+				if (profile != null && profile.RangeTiles > 0) reach = profile.RangeTiles * LevyConstants.TilePx;
+				Projectile sample = shot != null ? WeaponClassifier.ProjectileSample(shot.Projectile) : null;
+				if (shot != null && sample != null && !shot.Homing)
+				{
+					// A flamethrower's flames list a long lifetime that their AI cuts to a few dozen updates; any other short-lived round just runs out its own. Velocity and lifetime both count in
+					// updates (an extra-update projectile moves AND ages that many times a tick), so the distance flown is speed x lifetime with no extra-update factor.
+					int life = sample.aiStyle == ProjAIStyleID.Flamethrower ? Math.Min(sample.timeLeft, T.FlameLifetimeUpdates) : sample.timeLeft;
+					if (life <= LevyConstants.LongShotLifetimeTicks)
+						reach = Math.Min(reach, Math.Max(1f, shot.Speed) * Math.Max(1, life) * LevyConstants.ShortShotReachFraction);
+				}
+			}
+			catch (Exception) { /* keep the shot's own reach */ }
+			return Math.Max(reach, T.MinReachTiles * LevyConstants.TilePx);
+		}
 
 		// =====================================================================================================
 		// The gun: pull the best surplus ranged weapon from the Levy Armories in reach and fire its real projectile.
@@ -232,11 +284,19 @@ namespace Mechanization.Content.NPCs
 			DroneShot shot = DroneArsenal.BuildShot(weapon, ammo); // the drone's own shot builder: projectile, speed, damage, cadence, spread, gravity, homing
 			if (shot == null || !shot.Valid) { ClearWeapon(); return; }
 			_shot = shot;
-			_weaponUseSound = weapon.UseSound;
-			SetWeaponType(weapon.type); // clients draw this item's sprite over the cannon
+			_cooldown = Math.Min(_cooldown, shot.IntervalTicks); // a slow gun's leftover delay never holds back a quick one that replaces it
+			SetReach(ReachFor(weapon, shot));
+			SetWeaponType(weapon.type); // clients draw this item's sprite on the barrel
 		}
 
-		private void ClearWeapon() { _shot = null; _weaponUseSound = null; SetWeaponType(0); }
+		private void ClearWeapon() { _shot = null; SetReach(T.RangePx); SetWeaponType(0); }
+
+		private void SetReach(float px)
+		{
+			if (Math.Abs(_reachPx - px) < 1f) return;
+			_reachPx = px;
+			NPC.netUpdate = true;
+		}
 
 		/// <summary>Records the mounted weapon's item type and flags a sync when it changes, so clients redraw the right gun.</summary>
 		private void SetWeaponType(int type)
@@ -316,6 +376,25 @@ namespace Mechanization.Content.NPCs
 			int commander = PickCommander(NPC.Center);
 			if (_shot != null && _shot.Valid) FireSurplus(target, commander);
 			else FireFixed(target, commander);
+			_shotSeq++;
+			_recoil = T.RecoilPx;
+			if (Main.netMode == NetmodeID.SinglePlayer) PlayFireSound(); // a remote client hears it from the synced shot counter instead
+		}
+
+		/// <summary>The thump of a shot: the mounted weapon's own use sound, else the plain bullet's.</summary>
+		private void PlayFireSound()
+		{
+			SoundStyle? style = null;
+			if (_weaponType > 0 && _weaponType < ItemLoader.ItemCount && ContentSamples.ItemsByType.TryGetValue(_weaponType, out Item sample) && sample != null) style = sample.UseSound;
+			SoundEngine.PlaySound(style ?? SoundID.Item11, NPC.Center);
+		}
+
+		/// <summary>The damage a round is fired for: <paramref name="baseDamage"/> scaled with world progress exactly as the combat drone's rounds are, and by the game mode's town-NPC multiplier.</summary>
+		private static int ScaledDamage(float baseDamage)
+		{
+			float dmg = baseDamage * OfficerBrain.TownDamageScale();
+			if (Main.expertMode) dmg *= Main.GameModeInfo.TownNPCDamageMultiplier;
+			return Math.Max(1, (int)Math.Round(dmg));
 		}
 
 		/// <summary>Fires the mounted weapon's projectile — the drone's light shot path: lead/arc aim, the weapon's multishot spread, its damage and knockback, tagged for kill-credit.</summary>
@@ -327,10 +406,9 @@ namespace Mechanization.Content.NPCs
 			Vector2 dir = vel.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
 			Vector2 muzzle = from + dir * T.MuzzleOffsetPx;
 			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from; // a muzzle buried in a tile would kill the round on spawn
+			_aim = NPC.ai[0] = dir.ToRotation(); // the barrel is always pointing where the round leaves (it had only eased toward it)
 
-			int dmg = (int)Math.Round(shot.BaseDamage * T.SurplusDamageMult);
-			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
-			dmg = Math.Max(1, dmg);
+			int dmg = ScaledDamage(shot.BaseDamage * T.SurplusDamageMult);
 
 			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
 			for (int k = 0; k < shot.Count; k++)
@@ -341,20 +419,20 @@ namespace Mechanization.Content.NPCs
 				if (idx < 0 || idx >= Main.maxProjectiles) continue;
 				TagTurretShot(Main.projectile[idx], commander, shot.Class, shot.Crit);
 			}
-			if (Main.netMode != NetmodeID.Server && _weaponUseSound.HasValue) SoundEngine.PlaySound(_weaponUseSound.Value, NPC.Center);
 		}
 
 		/// <summary>Fires the fixed fallback round straight at the target (no Armory in reach, or nothing mountable in it), so a turret is never inert.</summary>
 		private void FireFixed(NPC target, int commander)
 		{
 			Vector2 from = NPC.Center;
-			Vector2 dir = (target.Center - from).SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
-			Vector2 vel = dir * T.ShotSpeed;
+			Vector2 vel = Aiming.SolveIntercept(from, T.ShotSpeed, target.Center, target.velocity, false); // leads a moving target, like the mounted weapons do
+			Vector2 dir = vel.SafeNormalize(Vector2.UnitX * (NPC.direction == 0 ? 1 : NPC.direction));
 			Vector2 muzzle = from + dir * T.MuzzleOffsetPx;
 			if (Collision.SolidCollision(muzzle - new Vector2(2f, 2f), 4, 4)) muzzle = from;
+			_aim = NPC.ai[0] = dir.ToRotation();
 
 			int owner = Main.myPlayer;
-			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, T.ShotDamage, T.ShotKnockback, owner);
+			int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, vel.X, vel.Y, T.ProjectileType, ScaledDamage(T.ShotDamage), T.ShotKnockback, owner);
 			if (idx >= 0 && idx < Main.maxProjectiles) TagTurretShot(Main.projectile[idx], commander, DamageClass.Ranged, 0);
 		}
 
@@ -452,8 +530,8 @@ namespace Mechanization.Content.NPCs
 		{
 			int n = ArmoriesInReach(true).Count;
 			if (_weaponType > 0 && _weaponType < ItemLoader.ItemCount)
-				return Language.GetTextValue("Mods.Mechanization.UI.TurretChatMounted", Lang.GetItemNameValue(_weaponType), n);
-			return Language.GetTextValue(n > 0 ? "Mods.Mechanization.UI.TurretChatNoWeapon" : "Mods.Mechanization.UI.TurretChatNoArmory");
+				return Language.GetTextValue("Mods.Mechanization.UI.TurretChatMounted", Lang.GetItemNameValue(_weaponType), n, ReachTiles);
+			return Language.GetTextValue(n > 0 ? "Mods.Mechanization.UI.TurretChatNoWeapon" : "Mods.Mechanization.UI.TurretChatNoArmory", ReachTiles);
 		}
 		public override void SetChatButtons(ref string button, ref string button2) => button = Language.GetTextValue("Mods.Mechanization.UI.TurretDismantle");
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
@@ -494,18 +572,29 @@ namespace Mechanization.Content.NPCs
 			if (Main.dedServ) return false;
 			try
 			{
-				int item = T.BodyDrawItemType;
-				Main.instance.LoadItem(item);
-				Texture2D tex = TextureAssets.Item[item]?.Value;
-				if (tex == null || tex.Width <= 0 || tex.Height <= 0) return false;
-				float scale = Math.Min(1f, T.BodyDrawMaxPx / Math.Max(tex.Width, tex.Height));
-				Vector2 origin = new Vector2(tex.Width, tex.Height) * 0.5f;
-				Vector2 pos = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
-				Color c = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
-				// Flip the sprite upright when the barrel points left, so the cannon never draws upside-down.
-				SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
-				spriteBatch.Draw(tex, pos, null, c, _aim, origin, scale, fx, 0f);
-				DrawMountedWeapon(spriteBatch, pos, c); // the actual gun (Megashark, gem staff...) over the cannon, so you can see what it fires
+				Texture2D px = TextureAssets.MagicPixel.Value;
+				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
+				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
+
+				// The fixed plinth: a wide slab with a pedestal on it. It never turns; only the gun does, so the thing always reads as an emplacement standing on the ground.
+				float bottom = c.Y + NPC.height * 0.5f;
+				float slabTop = bottom - T.PlinthHeightPx, pedTop = slabTop - T.PedestalHeightPx;
+				Rect(spriteBatch, px, c.X - T.PlinthWidthPx * 0.5f, slabTop, T.PlinthWidthPx, T.PlinthHeightPx, Lit(new Color(62, 67, 76), light));
+				Rect(spriteBatch, px, c.X - T.PlinthWidthPx * 0.5f, slabTop, T.PlinthWidthPx, 1, Lit(new Color(122, 130, 144), light));
+				Rect(spriteBatch, px, c.X - T.PedestalWidthPx * 0.5f, pedTop, T.PedestalWidthPx, T.PedestalHeightPx, Lit(new Color(84, 90, 102), light));
+
+				// The gun: a steel barrel that turns on a pivot atop the pedestal, kicks back on a shot, with the mounted weapon's own sprite on it.
+				Vector2 pivot = new Vector2(c.X, pedTop - T.PivotUpPx);
+				Vector2 dir = new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim));
+				Vector2 basePos = pivot - dir * _recoil;
+				spriteBatch.Draw(px, basePos, null, Lit(new Color(104, 112, 126), light), _aim, new Vector2(0f, 0.5f), new Vector2(T.BarrelLengthPx, T.BarrelThicknessPx), SpriteEffects.None, 0f);
+				DrawMountedWeapon(spriteBatch, basePos, dir, light);
+				Rect(spriteBatch, px, pivot.X - 4f, pivot.Y - 4f, 8, 8, Lit(new Color(58, 63, 72), light)); // the pivot hub
+				if (_recoil > T.RecoilPx * 0.6f) // muzzle flash, only for the first frames after a shot
+				{
+					Vector2 tip = basePos + dir * (T.WeaponDrawOffsetPx + T.WeaponDrawMaxPx * 0.5f);
+					spriteBatch.Draw(px, tip, null, new Color(255, 220, 140, 0), _aim, new Vector2(0.5f, 0.5f), new Vector2(9f, 5f), SpriteEffects.None, 0f);
+				}
 				return false;
 			}
 			catch (Exception e)
@@ -515,17 +604,33 @@ namespace Mechanization.Content.NPCs
 			}
 		}
 
-		/// <summary>The mounted weapon's item sprite, pushed out along the aim and turned to it (kept upright when aiming left). Nothing when no weapon is mounted — the cannon shows alone.</summary>
-		private void DrawMountedWeapon(SpriteBatch spriteBatch, Vector2 bodyPos, Color light)
+		private static void Rect(SpriteBatch sb, Texture2D px, float x, float y, int w, int h, Color col) =>
+			sb.Draw(px, new Rectangle((int)Math.Round(x), (int)Math.Round(y), w, h), col);
+
+		/// <summary>A flat colour dimmed by the light at the turret's spot.</summary>
+		private static Color Lit(Color baseColor, Color light) => new Color(baseColor.R * light.R / 255, baseColor.G * light.G / 255, baseColor.B * light.B / 255, (int)baseColor.A);
+
+		/// <summary>
+		/// The mounted weapon's item sprite, pushed out along the aim and turned to it (kept upright when aiming left). A staff's sprite points up and to the right, so it is turned a further
+		/// 45 degrees (and mirrored, not flipped, when aiming left) to point down the barrel. Nothing when no weapon is mounted — the bare barrel shows alone.
+		/// </summary>
+		private void DrawMountedWeapon(SpriteBatch spriteBatch, Vector2 basePos, Vector2 dir, Color light)
 		{
 			if (_weaponType <= 0 || _weaponType >= ItemLoader.ItemCount) return;
 			Main.instance.LoadItem(_weaponType);
 			Texture2D wt = TextureAssets.Item[_weaponType]?.Value;
 			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return;
 			float scale = Math.Min(1f, T.WeaponDrawMaxPx / Math.Max(wt.Width, wt.Height));
-			Vector2 muzzle = bodyPos + new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim)) * T.WeaponDrawOffsetPx;
-			SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
-			spriteBatch.Draw(wt, muzzle, null, light, _aim, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
+			Vector2 at = basePos + dir * T.WeaponDrawOffsetPx;
+			bool left = dir.X < 0f;
+			float rot = _aim;
+			SpriteEffects fx = left ? SpriteEffects.FlipVertically : SpriteEffects.None;
+			if (_weaponType < Item.staff.Length && Item.staff[_weaponType])
+			{
+				rot = _aim + (left ? 3f : 1f) * MathHelper.PiOver4;
+				fx = left ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+			}
+			spriteBatch.Draw(wt, at, null, light, rot, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -543,8 +648,20 @@ namespace Mechanization.Content.NPCs
 		// =====================================================================================================
 		// Net: clients need the mounted weapon's item type to draw the right gun. The aim rides ai[0]; life rides the vanilla NPC sync.
 		// =====================================================================================================
-		public override void SendExtraAI(System.IO.BinaryWriter writer) => writer.Write7BitEncodedInt(_weaponType);
+		public override void SendExtraAI(System.IO.BinaryWriter writer)
+		{
+			writer.Write7BitEncodedInt(_weaponType);
+			writer.Write7BitEncodedInt((int)Math.Round(_reachPx));
+			writer.Write7BitEncodedInt(_shotSeq);
+		}
 
-		public override void ReceiveExtraAI(System.IO.BinaryReader reader) => _weaponType = reader.Read7BitEncodedInt();
+		public override void ReceiveExtraAI(System.IO.BinaryReader reader)
+		{
+			_weaponType = reader.Read7BitEncodedInt();
+			_reachPx = reader.Read7BitEncodedInt();
+			int seq = reader.Read7BitEncodedInt();
+			if (_seqSeen && seq != _shotSeq) { _recoil = T.RecoilPx; PlayFireSound(); } // the server fired since the last sync: kick and thump (the first read after joining stays quiet)
+			_shotSeq = seq; _seqSeen = true;
+		}
 	}
 }

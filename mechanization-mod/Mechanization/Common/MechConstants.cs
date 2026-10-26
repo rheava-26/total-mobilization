@@ -35,7 +35,19 @@ namespace Mechanization.Common
 			public const float ShotKnockback = 2f;
 			public const float ShotSpeed = 11f;
 			/// <summary>How often the turret re-picks a target, in ticks (a throttled scan, not every tick).</summary>
-			public const int ScanIntervalTicks = 12;
+			public const int ScanIntervalTicks = 8;
+			/// <summary>
+			/// A turret holds its current target until it dies or leaves reach, and only swaps to a new nearest hostile that is closer than this fraction of the current
+			/// one's distance (so two enemies at about the same range do not make the barrel flip between them every scan).
+			/// </summary>
+			public const float RetargetCloserFraction = 0.7f;
+			/// <summary>
+			/// Shortest reach, in tiles, a turret will claim for a weapon whose round dies young (a flamethrower's flames, a short bolt): it engages only out to where the round
+			/// really flies (speed x lifetime x Levy's short-shot fraction), never past it, but never below this.
+			/// </summary>
+			public const float MinReachTiles = 8f;
+			/// <summary>How many updates a flamethrower's flames (the Flamethrower projectile AI) fly before they burn out when the turret fires them (vanilla: 50). Their projectile lists a far longer lifetime that the AI cuts short.</summary>
+			public const int FlameLifetimeUpdates = 50;
 
 			// ---- surplus weapon (Levy Armory integration) ----
 			/// <summary>
@@ -51,6 +63,16 @@ namespace Mechanization.Common
 			public const int LinkRefreshTicks = 30;
 			/// <summary>The mounted weapon's listed damage is multiplied by this before the turret fires it. 1 = the weapon's own damage.</summary>
 			public const float SurplusDamageMult = 1f;
+
+			// ---- placement ----
+			/// <summary>How far (px) from the placing player the server accepts a turret being set down (a generous screen-and-a-half; this only rejects a spoofed packet).</summary>
+			public const float PlaceReachPx = 90f * TilePx;
+			/// <summary>A spot that is buried in the ground is lifted up to this many tiles to the first open space; if there is none the item is not used up.</summary>
+			public const int PlaceLiftTiles = 8;
+			/// <summary>A turret set down in the air is settled onto the ground below it, searching up to this many tiles, so it never spends its first seconds falling.</summary>
+			public const int PlaceDropTiles = 120;
+			/// <summary>Minimum ticks between two accepted placement requests from one player (a held item cannot spawn a stack of turrets from a burst of packets).</summary>
+			public const int PlaceMinGapTicks = 10;
 
 			// ---- dismantle / hud ----
 			/// <summary>How close (px) the player must be for the server to accept a dismantle request (a little more than the chat window's own reach).</summary>
@@ -72,17 +94,27 @@ namespace Mechanization.Common
 
 			// ---- aim / draw ----
 			/// <summary>Barrel turn easing toward the wanted angle per tick (0..1).</summary>
-			public const float AimTurnLerp = 0.18f;
+			public const float AimTurnLerp = 0.3f;
+			/// <summary>While engaging, how often (ticks) the aim and fire counter ride a network sync, so a remote client sees the barrel track and hears the shots.</summary>
+			public const int AimSyncTicks = 8;
+			/// <summary>Barrel kick-back on each shot (px) and how fast it returns (px per tick). Purely visual.</summary>
+			public const float RecoilPx = 4f, RecoilReturnPx = 0.7f;
 			/// <summary>Muzzle stand-off from the body center along the aim (px): where the round is born.</summary>
 			public const float MuzzleOffsetPx = 20f;
-			/// <summary>The vanilla item sprite borrowed as the turret's body/barrel (no new art). Drawn rotated to the aim.</summary>
+			/// <summary>A valid vanilla asset the NPC registers as its texture. The body itself is drawn from plain rectangles (a fixed plinth and a turning barrel) in <c>PreDraw</c>.</summary>
 			public const int BodyDrawItemType = ItemID.Cannon;
-			/// <summary>Longest edge the borrowed sprite is scaled to, in px.</summary>
-			public const float BodyDrawMaxPx = 40f;
-			/// <summary>Longest edge the MOUNTED weapon's item sprite is scaled to, in px (drawn over the cannon so you can see which gun it fires).</summary>
-			public const float WeaponDrawMaxPx = 26f;
-			/// <summary>How far along the aim the mounted weapon's sprite is pushed out from the body center, in px.</summary>
-			public const float WeaponDrawOffsetPx = 8f;
+			/// <summary>The fixed plinth (px): its slab width/height, the narrower pedestal width/height above it, and how far above the body centre the barrel pivots.</summary>
+			public const int PlinthWidthPx = 32, PlinthHeightPx = 7, PedestalWidthPx = 14, PedestalHeightPx = 7;
+			public const float PivotUpPx = 2f;
+			/// <summary>The bare barrel (px) shown under the mounted weapon, or alone when the turret fires the plain bullet.</summary>
+			public const int BarrelLengthPx = 22, BarrelThicknessPx = 6;
+			/// <summary>Longest edge the MOUNTED weapon's item sprite is scaled to, in px (drawn over the barrel so you can see which gun it fires).</summary>
+			public const float WeaponDrawMaxPx = 34f;
+			/// <summary>How far along the aim the mounted weapon's sprite is pushed out from the pivot, in px.</summary>
+			public const float WeaponDrawOffsetPx = 12f;
+
+			// ---- reach ring (drawn round a hovered or chatted turret) ----
+			public const int RingDots = 96;
 
 			// ---- enemy aggro (Levy EnemyTargeting integration) ----
 			/// <summary>Taunt weight (Player.aggro equivalent) enemies feel from a turret, so hostiles path to and attack it like a soldier or drone.</summary>

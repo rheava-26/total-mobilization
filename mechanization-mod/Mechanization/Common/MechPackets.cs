@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -11,6 +12,8 @@ namespace Mechanization.Common
 	{
 		/// <summary>Client asks the server to dismantle a turret. Payload: int NPC slot.</summary>
 		Dismantle = 0,
+		/// <summary>Client asks the server to set a turret down. Payload: float x, float y (the cursor spot).</summary>
+		Place = 1,
 	}
 
 	public static class MechPackets
@@ -25,6 +28,17 @@ namespace Mechanization.Common
 			p.Send();
 		}
 
+		/// <summary>Client: ask the server to set a turret down at world position <paramref name="spot"/> (it validates, places it, and refunds the item if there is no room).</summary>
+		public static void SendPlace(Vector2 spot)
+		{
+			if (Main.netMode != NetmodeID.MultiplayerClient) return;
+			ModPacket p = Mechanization.Instance.GetPacket();
+			p.Write((byte)MechPacket.Place);
+			p.Write(spot.X);
+			p.Write(spot.Y);
+			p.Send();
+		}
+
 		/// <summary>Server: handles one request. <paramref name="whoAmI"/> is the sending player's slot.</summary>
 		public static void Handle(BinaryReader reader, int whoAmI)
 		{
@@ -36,6 +50,11 @@ namespace Mechanization.Common
 					if (Main.netMode != NetmodeID.Server || whoAmI < 0 || whoAmI >= Main.maxPlayers) return;
 					if (idx < 0 || idx >= Main.maxNPCs) return;
 					TurretSystem.Instance?.Dismantle(Main.npc[idx], Main.player[whoAmI]);
+					break;
+				case MechPacket.Place:
+					float x = reader.ReadSingle(), y = reader.ReadSingle();
+					if (Main.netMode != NetmodeID.Server || whoAmI < 0 || whoAmI >= Main.maxPlayers) return;
+					TurretSystem.Instance?.PlaceFor(Main.player[whoAmI], new Vector2(x, y));
 					break;
 			}
 		}

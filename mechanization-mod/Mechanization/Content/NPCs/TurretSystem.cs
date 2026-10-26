@@ -8,6 +8,7 @@ using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Mechanization.Common;
 using Mechanization.Content.Items;
 using T = Mechanization.Common.MechConstants.Turret;
 
@@ -35,6 +36,8 @@ namespace Mechanization.Content.NPCs
 			public int Id;
 			public Vector2 Position;
 			public int Life;
+			/// <summary>True when the NPC could not be spawned yet (no free NPC slot on load): the record is kept and the spawn retried, never dropped as "destroyed".</summary>
+			public bool Pending;
 		}
 
 		private readonly Dictionary<int, TurretRecord> _records = new();
@@ -57,8 +60,67 @@ namespace Mechanization.Content.NPCs
 		// Placement
 		// =====================================================================================================
 		/// <summary>
-		/// Server / single player: registers a new turret and spawns its NPC at <paramref name="spot"/> (where the player aimed). The NPC falls
-		/// to rest under its own gravity; its settled position is captured at save time. Returns the NPC slot, or -1 on failure (no record is kept).
+		/// Where a turret set down at <paramref name="spot"/> (the bottom-centre of its body) actually rests: a spot buried in terrain is lifted to the first open space above it
+		/// (up to <see cref="T.PlaceLiftTiles"/>), then the turret is settled onto the ground beneath, so it never starts life inside a tile or spends its first seconds falling.
+		/// False when there is no room (buried too deep, or off the edge of the world).
+		/// </summary>
+		public static bool FindRestSpot(Vector2 spot, out Vector2 rest)
+		{
+			rest = spot;
+			if (!WorldGen.InWorld((int)(spot.X / Levy.Common.LevyConstants.TilePx), (int)(spot.Y / Levy.Common.LevyConstants.TilePx), 10)) return false;
+			bool Blocked(Vector2 bc) => Collision.SolidCollision(new Vector2(bc.X - T.BodyWidth * 0.5f, bc.Y - T.BodyHeight), T.BodyWidth, T.BodyHeight);
+
+			Vector2 pos = spot;
+			int lifted = 0;
+			while (Blocked(pos))
+			{
+				pos.Y -= MechConstants.TilePx;
+				if (++lifted > T.PlaceLiftTiles) return false;
+			}
+			for (int i = 0; i < T.PlaceDropTiles; i++)
+			{
+				Vector2 next = pos + new Vector2(0f, MechConstants.TilePx);
+				if (Blocked(next) || !WorldGen.InWorld((int)(next.X / MechConstants.TilePx), (int)(next.Y / MechConstants.TilePx), 10)) break;
+				pos = next;
+			}
+			for (int i = 0; i < MechConstants.TilePx; i++) // the last sub-tile: down to the surface
+			{
+				Vector2 next = pos + new Vector2(0f, 1f);
+				if (Blocked(next)) break;
+				pos = next;
+			}
+			rest = pos;
+			return true;
+		}
+
+		/// <summary>Server / single player: <see cref="FindRestSpot"/> then <see cref="PlaceNew"/>. Returns the NPC slot, or -1 when there is no room or no slot.</summary>
+		public int TryPlace(IEntitySource source, Vector2 spot) => FindRestSpot(spot, out Vector2 rest) ? PlaceNew(source, rest) : -1;
+
+		private static readonly uint[] _lastPlace = new uint[Main.maxPlayers + 1];
+
+		/// <summary>
+		/// Server: a client asked to set a turret down at <paramref name="spot"/>. Validates the sender (alive, near the spot, holding the turret, not spamming), places it, and when it
+		/// cannot be placed hands the item back (the client already spent it) with a word on why. Returns true when a turret was placed.
+		/// </summary>
+		public bool PlaceFor(Player player, Vector2 spot)
+		{
+			if (Main.netMode != NetmodeID.Server || player == null || !player.active || player.dead) return false;
+			if (float.IsNaN(spot.X) || float.IsNaN(spot.Y) || float.IsInfinity(spot.X) || float.IsInfinity(spot.Y)) return false;
+			if (Vector2.DistanceSquared(player.Center, spot) > T.PlaceReachPx * T.PlaceReachPx) return false;
+			if (player.HeldItem == null || player.HeldItem.type != ModContent.ItemType<TurretItem>()) return false;
+			uint now = Main.GameUpdateCount;
+			if (now - _lastPlace[player.whoAmI] < (uint)T.PlaceMinGapTicks && now >= _lastPlace[player.whoAmI]) return false;
+			_lastPlace[player.whoAmI] = now;
+
+			if (TryPlace(new EntitySource_ItemUse(player, player.HeldItem), spot) >= 0) return true;
+			Item.NewItem(new EntitySource_Misc("Mechanization:TurretRefund"), player.getRect(), ModContent.ItemType<TurretItem>());
+			Terraria.Chat.ChatHelper.SendChatMessageToClient(Terraria.Localization.NetworkText.FromKey("Mods.Mechanization.UI.TurretNoRoom"), new Color(255, 190, 110), player.whoAmI);
+			return false;
+		}
+
+		/// <summary>
+		/// Server / single player: registers a new turret and spawns its NPC with its body's bottom-centre at <paramref name="spot"/>. The NPC falls
+		/// to rest under its own gravity if it is not already on the ground; its settled position is captured at save time. Returns the NPC slot, or -1 on failure (no record is kept).
 		/// </summary>
 		public int PlaceNew(IEntitySource source, Vector2 spot)
 		{
@@ -131,8 +193,9 @@ namespace Mechanization.Content.NPCs
 			foreach (TurretRecord rec in _records.Values)
 			{
 				if (LiveNpcFor(rec.Id) != null) continue;
-				Vector2 spot = rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight); // approx bottom-center; Spawn then sets the exact top-left
+				Vector2 spot = rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight); // bottom-centre of the saved top-left
 				if (Spawn(new EntitySource_WorldEvent("Mechanization:TurretRestore"), rec, spot) >= 0) spawned++;
+				else rec.Pending = true; // no free NPC slot right now: keep the record and try again, do not let the reconcile pass call it destroyed
 			}
 			Mechanization.Instance.Logger.Info($"Mechanization: turret registry restored {_records.Count} saved turret(s); re-spawned {spawned}.");
 		}
@@ -149,11 +212,24 @@ namespace Mechanization.Content.NPCs
 			}
 			if (_liveIds.Count == _records.Count) return; // every record still has its NPC
 			List<int> gone = null;
-			foreach (int id in _records.Keys) if (!_liveIds.Contains(id)) (gone ??= new List<int>()).Add(id);
+			foreach (KeyValuePair<int, TurretRecord> kv in _records)
+			{
+				if (_liveIds.Contains(kv.Key)) { kv.Value.Pending = false; continue; }
+				if (kv.Value.Pending)
+				{
+					if (Main.GameUpdateCount % 60u == 0u)
+					{
+						TurretRecord rec = kv.Value;
+						Spawn(new EntitySource_WorldEvent("Mechanization:TurretRestore"), rec, rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight));
+					}
+					continue;
+				}
+				(gone ??= new List<int>()).Add(kv.Key);
+			}
 			if (gone != null) foreach (int id in gone) _records.Remove(id);
 		}
 
-		/// <summary>Spawns one turret NPC bound to <paramref name="rec"/> at <paramref name="spot"/> (bottom-center), then pins its exact saved position and restores its HP. Returns the slot, or -1.</summary>
+		/// <summary>Spawns one turret NPC bound to <paramref name="rec"/> with its body's bottom-centre at <paramref name="spot"/> and restores its HP. Returns the slot, or -1.</summary>
 		private static int Spawn(IEntitySource source, TurretRecord rec, Vector2 spot)
 		{
 			int type = ModContent.NPCType<TurretNPC>();

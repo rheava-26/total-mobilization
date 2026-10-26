@@ -108,7 +108,7 @@ namespace Levy.Common.Weapons
 			// A MELEE owner-locker (Serpent's Spear) is thrown as a Levy SoldierBoomerang: its own projectile, drawn with the item's shot sprite, returning to the soldier, so the commander is never pinned.
 			// A non-melee one (a gun or magic bolt) cannot sensibly be thrown and stays Unsupported.
 			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword || family == WeaponFamily.ThrownMelee || family == WeaponFamily.Thrown)
-				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
+				&& item.shoot > 0 && !AiDrivenHealerSafe(item) && OwnerLockProbe.LocksOwner(item.shoot)) // a heal weapon never fires its own shot (the heal AI spawns a SoldierHeal), so its projectile locking its owner is moot
 			{
 				extended = false;
 				return item.CountsAsClass(DamageClass.Melee) ? WeaponFamily.Boomerang : WeaponFamily.Unsupported;
@@ -123,6 +123,9 @@ namespace Levy.Common.Weapons
 			// Thrown consumables (knives, shuriken, javelins, grenades, bombs) are decided before the consumable / zero-damage rejections below: a bomb item has damage 0
 			// (the blast damage lives on its projectile) and every one of them is a consumable.
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
+			// A heal-driven Thorium weapon (ally-heal / self-heal / hybrid) is run by a heal AI that lobs its heal at the wounded; the soldier never aims it at an enemy. Classify it as a
+			// standoff caster so it is issuable, ahead of the consumable / zero-damage / useStyle gates below that otherwise bench a bandage, a syringe or a thrown-at-ally cleric staff.
+			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item)) { extended = false; return WeaponFamily.Magic; }
 			if (item.damage <= 0 && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
@@ -336,6 +339,8 @@ namespace Levy.Common.Weapons
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
+			// A heal weapon stands off at a generous, consistent heal reach, not the short range its heal projectile's own flight would clamp a caster to.
+			if (AiDrivenHealerSafe(src)) { p.RangeTiles = LevyConstants.RangeHeal; p.Gravity = false; }
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			ApplyLongReach(src, p);
@@ -493,6 +498,26 @@ namespace Levy.Common.Weapons
 			catch (Exception) { return false; }
 		}
 
+		/// <summary>Compat hook: a heal-driven weapon (ally-heal / self-heal / hybrid) whose soldier runs it on a heal AI rather than aiming it at an enemy. It is classified as a
+		/// standoff caster (Magic, heal reach) past the consumable / useStyle / zero-damage gates that otherwise bench it (a bandage, a syringe, a thrown-at-ally cleric staff),
+		/// and scored by <see cref="HealerScore"/> rather than by the -1 damage Thorium stamps on a pure healer. Null = none (the default).</summary>
+		public static Func<Item, bool> AiDrivenHealer;
+		/// <summary>Compat hook: a heal weapon's healing-value Score (0 for anything that is not a heal-driven weapon), so a medic weapon ranks among real weapons instead of below an empty hand. Null = none.</summary>
+		public static Func<Item, float> HealerScore;
+
+		private static bool AiDrivenHealerSafe(Item item)
+		{
+			if (AiDrivenHealer == null) return false;
+			try { return AiDrivenHealer(item); }
+			catch (Exception) { return false; }
+		}
+		private static float HealerScoreSafe(Item item)
+		{
+			if (HealerScore == null) return 0f;
+			try { return HealerScore(item); }
+			catch (Exception) { return 0f; }
+		}
+
 		public static Projectile ProjectileSample(int projType)
 		{
 			if (projType <= 0) return null;
@@ -563,6 +588,8 @@ namespace Levy.Common.Weapons
 			if (item == null || item.IsAir) return 0f;
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
+			float heal = HealerScoreSafe(item);
+			if (heal > 0f) return heal; // a medic weapon ranks by its healing value, not the -1 damage Thorium stamps on a pure healer (which would score below an empty hand)
 			// Burst weapons fire a capped run of shots per cycle, then play out the animation + reuseDelay: a reuseDelay weapon fires ceil(useAnimation / useTime) shots per
 			// useAnimation + reuseDelay ticks, and a useLimitPerAnimation weapon (Tome of Infinite Wisdom: 4 per 25 ticks) fires min(limit, natural) then idles (see WeaponUse.FinishUse).
 			float cadence = Math.Max(1, item.useTime);

@@ -39,6 +39,8 @@ namespace Levy.Common.Compat.Thorium
 		public static void Register()
 		{
 			WeaponClassifier.ExtraCombatClass = CompatHooks.ExtraCombatClass;
+			WeaponClassifier.AiDrivenHealer = HealerCompat.IsHealWeapon; // heal-driven weapons classify as standoff casters past the consumable / useStyle gates
+			WeaponClassifier.HealerScore = HealerCompat.HealingScore;    // and rank by healing value, not the -1 damage Thorium stamps on them
 			WeaponUse.PreFireGate = CompatHooks.PreFireGate;
 			WeaponUse.UseSoundFallback = CompatHooks.UseSound;
 			SoldierNPC.ExtraBuffStats = CompatHooks.ExtraBuffStats;
@@ -61,6 +63,8 @@ namespace Levy.Common.Compat.Thorium
 		public static void Unregister()
 		{
 			WeaponClassifier.ExtraCombatClass = null;
+			WeaponClassifier.AiDrivenHealer = null;
+			WeaponClassifier.HealerScore = null;
 			WeaponUse.PreFireGate = null;
 			WeaponUse.UseSoundFallback = null;
 			SoldierNPC.ExtraBuffStats = null;

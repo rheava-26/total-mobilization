@@ -9,6 +9,12 @@ namespace Levy.Common
 		// ---------- Weapon reach (tiles) ----------
 		/// <summary>Effective engagement range by family: how far a soldier acquires targets and opens fire. Ranged soldiers hold and kite at this reach.</summary>
 		public const int RangeGun = 72, RangeBow = 54, RangeMagic = 40;
+		/// <summary>Reach (tiles) of a heal-driven weapon: how close a medic soldier stands to a wounded ally before it lobs a heal. A standoff range, matching RangeMagic.</summary>
+		public const int RangeHeal = 40;
+		/// <summary>Weapon Score per point of healing-per-second a heal weapon does (heal amount x potency x casts/sec), capped at <see cref="HealScoreMax"/>. Tunes where a medic ranks among real weapons.</summary>
+		public const float HealScoreWeight = 8f;
+		/// <summary>A heal weapon never scores above this, so a strong healer never out-ranks a soldier's good damage weapon and steal him off the firing line.</summary>
+		public const float HealScoreMax = 240f;
 		/// <summary>Zenith engagement range (tiles). Its homing swords strike from across the screen, so the soldier stands off at full-camera range and looses them rather than closing to blade reach. Matches RangeGun, the mod's longest reach.</summary>
 		public const int RangeZenith = 72;
 		/// <summary>Gun and magic soldiers reach this much further than the family numbers above (bows are held back by arrow drop and keep theirs).</summary>
@@ -92,7 +98,7 @@ namespace Levy.Common
 		public const int ThrustDefaultLifeTicks = 30;
 		public const int ThrustLocalHitCooldownTicks = 20;
 		public const int ThrustHitboxPx = 18;
-		public const int ThrustRangeMinTiles = 2, ThrustRangeMaxTiles = 6;
+		public const int ThrustRangeMinTiles = 2, ThrustRangeMaxTiles = 8;
 
 		// ---------- Wider weapon compatibility ----------
 		/// <summary>Ammo weapons whose projectile dies young (flamethrowers, short-lived shots) engage only at their real reach: speed x lifetime x this fraction, clamped to [min, RangeGun].</summary>

@@ -69,7 +69,7 @@ namespace Levy.Common.Compat.Thorium
 			switch (ti.healType)
 			{
 				case HealType.Ally:
-				case HealType.AllyAndPlayer: return dmg ? HealerRole.Hybrid : HealerRole.AllyHeal;
+				case HealType.AllyAndPlayer: return dmg && !item.consumable ? HealerRole.Hybrid : HealerRole.AllyHeal; // a consumable thrown-at-ally cleric tool only heals: firing its heal shot at an enemy would do nothing and waste it
 				case HealType.LifeSteal: return HealerRole.Damage;
 				default: return dmg ? HealerRole.Damage : HealerRole.Support;
 			}
@@ -89,6 +89,19 @@ namespace Levy.Common.Compat.Thorium
 		{
 			HealerRole r = RoleOf(item);
 			return r == HealerRole.AllyHeal || r == HealerRole.Hybrid || r == HealerRole.SelfHeal;
+		}
+
+		/// <summary>
+		/// A heal weapon's value as a Levy weapon Score: its healing throughput (heal per cast x casts per second x <see cref="HealPotency"/>) scaled to a damage-equivalent, capped so a
+		/// medic never out-ranks a soldier's good damage weapon. 0 for anything that is not a heal-driven weapon — a radiant-damage or lifesteal weapon keeps its normal damage score. This
+		/// is what lets a medic be issued at all: a pure healer carries damage -1, so Levy's damage-based Score would rank it below an empty hand.
+		/// </summary>
+		public static float HealingScore(Item item)
+		{
+			if (item == null || item.IsAir || item.ModItem is not ThoriumItem ti || !IsHealWeapon(item)) return 0f;
+			float perCast = Math.Max(1, ti.healAmount) * HealPotency;
+			float perSec = perCast * 60f / Math.Max(1, item.useTime);
+			return Math.Min(LevyConstants.HealScoreMax, perSec * LevyConstants.HealScoreWeight);
 		}
 
 		/// <summary>True when Levy's brain must NOT fire this item at an enemy (it is a heal, self-heal or support tool).</summary>

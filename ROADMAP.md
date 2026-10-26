@@ -8,7 +8,17 @@
 
 ## 📦 SHIPPED STATUS (2026-10-25)
 
-**Current version: Levy `1.6.5` + Mechanization `0.4.0`** on the integration branch `worktree-levy-stardust`.
+**Current version: Levy `1.6.6` + Mechanization `0.5.0`** on the integration branch `worktree-levy-stardust`.
+
+### ✅ 1.6.6 — HEALER WEAPONS FIXED (Eve: "several early healer weapons are weird + how do you score a weapon that does no damage")
+Done by hand off a boot-time classification DUMP of all ~200 Thorium healers (`HealerDiagDump.cs`, gated off, kept for re-runs). Root causes, proven with real data:
+- **Healers scored NEGATIVE, not zero.** Thorium stamps a pure healer `damage = -1`; Levy's damage×rate Score made them rank *below an empty hand*, so the Armory auto-issue could never pick a medic → "healers feel random." FIX: new `WeaponClassifier.HealerScore` hook → the compat scores a healer by **healing throughput** (healAmount × potency × casts/sec), capped `HealScoreMax=240` so a medic never out-ranks a soldier's good gun. Celestial Wand −3→189, Divine Staff −4→240, Recovery Wand −2→80.
+- **A whole shelf classified `Unsupported` (un-holdable) or wrong-family.** The `consumable`/`useStyle`/damage≤0 gates benched heal weapons before the heal path; Giga Needle read as a Spear, Prophecy as a Boomerang. FIX: new `WeaponClassifier.AiDrivenHealer` hook → a heal-driven weapon (ally-heal/self-heal/hybrid) classifies as a standoff caster (**Magic, reach 40**) ahead of those gates, and is exempt from the owner-lock flip (the heal AI spawns its own `SoldierHeal`, never fires the weapon's shot). Now holdable: Gauze, Syringe, Rotten Cod, Sacred Bludgeon, The Effuser, Morning Dew, The Giga Needle, Prophecy, Li'l Cherub's Wand.
+- **Consumable thrown-at-ally clerics** (Rotten Cod etc.): `RoleOf` now makes a *consumable* Ally/AllyAndPlayer weapon a pure AllyHeal (never fired at an enemy — its heal shot would do nothing to one).
+- **Emergent medics, no micro:** because each healer is one item and scores modestly (≤240, below good weapons), stocking N healer weapons makes ~N of your weakest-armed soldiers pick them up and become medics — you control medic count by what you stock. (Intentional medic-by-ARMOR — cleric armor → medic, reserving healers for them — is the clean next refinement; flagged, not built. Current: healers get used when they're a soldier's best available option.)
+- **Rotted Fork:** confirmed a plain vanilla melee **Spear**, natural 6-tile thrust — nothing special to fix (Eve landed there too). Bumped `ThrustRangeMaxTiles` 6→8 so genuinely long spears reach a touch further.
+- **Eve tune knobs:** `HealScoreWeight=8`, `HealScoreMax=240` (several healers tie at the cap — raise it to separate them), `HealPotency=3`, `RangeHeal=40`.
+- **⚠ BANKED Levy bug (turret agent spotted):** `WeaponClassifier.ShortShotRange` over-counts a flamethrower's reach (`sample.timeLeft=3600`, and it multiplies speed by the extra-update count when timeLeft already ticks per-update) → flamethrower soldiers likely open fire far past their flames. Same family as the Lute fix. FIX LATER.
 
 ### ✅ 1.6.5 — PER-OFFICER REACTIVE DIALOGUE (Eve: "their dialogue should change as you move around, as open-shop dialogue, and each officer should feel different")
 Every officer now has its OWN voice, and talk-to lines shift with what the officer is doing — not one shared pool for all 17.

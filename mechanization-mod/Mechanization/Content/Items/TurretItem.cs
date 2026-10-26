@@ -2,18 +2,20 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
+using Mechanization.Common;
 using Mechanization.Content.NPCs;
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Content.Items
 {
 	/// <summary>
-	/// Deploys a <see cref="TurretNPC"/> at the cursor. The turret drops onto the terrain below the spot and begins
-	/// gunning down hostiles in range. Craftable from cheap metal at a workbench for testing.
+	/// Deploys a <see cref="TurretNPC"/> at the cursor. The turret is set down on the ground at the spot (a spot buried in terrain is lifted to open air; with no room the item
+	/// is not used up) and begins gunning down hostiles in range. Craftable from cheap metal at a workbench.
 	///
-	/// v0 placement is single-player / server-authoritative: a dedicated-multiplayer CLIENT cannot spawn an authoritative
-	/// NPC without a spawn packet, which is a deferred next-phase item, so the item is simply inert on an MP client.
+	/// Placement is server-authoritative: single player places it directly; a multiplayer client sends a request packet (<see cref="MechPackets.SendPlace"/>) and the server
+	/// validates it, places the turret, and hands the item back if there turned out to be no room.
 	/// </summary>
 	public class TurretItem : ModItem
 	{
@@ -29,17 +31,16 @@ namespace Mechanization.Content.Items
 			Item.UseSound = SoundID.Item44; // a heavy mechanical clunk
 		}
 
-		/// <summary>v0: only single player / server may place (an MP client has no authoritative spawn yet). Blocking use here also keeps the item from being consumed with no effect.</summary>
-		public override bool CanUseItem(Player player) => Main.netMode != NetmodeID.MultiplayerClient;
-
 		public override bool? UseItem(Player player)
 		{
 			if (player.whoAmI != Main.myPlayer) return true;   // only the using client decides the spot
-			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
 
 			Vector2 spot = Main.MouseWorld;
-			// TurretSystem spawns the turret AND registers it in the world save, so it survives a reload; a destroyed turret is dropped from that set.
-			int idx = TurretSystem.Instance?.PlaceNew(new EntitySource_ItemUse(player, Item), spot) ?? -1;
+			if (Main.netMode == NetmodeID.MultiplayerClient) { MechPackets.SendPlace(spot); return true; } // the server places it (and refunds the item if there is no room)
+
+			// TurretSystem settles the turret onto the ground AND registers it in the world save, so it survives a reload; a destroyed turret is dropped from that set.
+			int idx = TurretSystem.Instance?.TryPlace(new EntitySource_ItemUse(player, Item), spot) ?? -1;
+			if (idx < 0) Main.NewText(Language.GetTextValue("Mods.Mechanization.UI.TurretNoRoom"), 255, 190, 110);
 			return idx >= 0;
 		}
 

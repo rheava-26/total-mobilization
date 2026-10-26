@@ -68,6 +68,12 @@ namespace Levy.Common.Dialogue
 			return Pick(trigger, rec, ctx, null, false, -1, out _);
 		}
 
+		/// <summary>A filled line from an explicit string-keyed pool (e.g. "OFFICER_Nurse_FIGHT"), or null when the pool is missing or nothing in it fits. Same filter, placeholder and repeat rules as the trigger overload.</summary>
+		public static string PickLine(string poolKey, SoldierRecord rec, DialogueContext ctx = null, bool ignoreRepeat = false)
+		{
+			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, ignoreRepeat, -1, out _, true);
+		}
+
 		/// <summary>Right-click chat text for a soldier. Never null or empty.</summary>
 		public static string ChatLine(SoldierNPC s)
 		{

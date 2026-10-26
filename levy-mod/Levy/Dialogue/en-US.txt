@@ -538,10 +538,20 @@ NURSE_MARCH | Any | Stay in reach. A syringe only flies so far.
 NURSE_MARCH | Any | Patch, march, repeat. The glamorous life they promised me.
 
 # ============================================================================================================
-# OFFICER CHAT  (what a commissioned officer says in the right-click chat window, when the moment calls for it)
-# OFFICER_CHAT_FIGHT    enemies are close.          OFFICER_CHAT_BOSS     a boss is close ({Boss} is its name).
-# OFFICER_CHAT_HURT     the officer is wounded.     OFFICER_CHAT_VICTORY  a boss fell not long ago.
-# Otherwise the officer answers in their own town voice. Kept gender-neutral. Temperament Any so every officer can speak them.
+# OFFICER CHAT  (what a commissioned officer says in the right-click chat window, by situation)
+#   BOSS     a boss is close ({Boss} is its name).      FIGHT    enemies are close.
+#   HURT     the officer is wounded.                    VICTORY  a boss fell not long ago.
+#   MARCH    marching with the commander, all quiet.    HOLD     holding a post (Hold, Patrol, Search and Destroy, Free Rein), all quiet.
+#   IDLE     at ease (also the commander's stand-down and recall orders).
+# Most of the time he picks BOSS, FIGHT or HURT when they apply; the quiet states are rolled, and a failed roll leaves vanilla's own town voice.
+#
+# TWO LAYERS OF POOLS
+#   OFFICER_CHAT_<STATE>       the generic pool. Any officer without lines of his own for a state speaks these. Kept gender-neutral.
+#   OFFICER_<Officer>_<STATE>  one officer's own voice, e.g. OFFICER_Nurse_FIGHT. <Officer> is the officer's Key (Nurse, Guide, Merchant, ArmsDealer,
+#                              Demolitionist, GoblinTinkerer, Princess, Dryad, Painter, Angler, Pirate, Clothier, Wizard, Zoologist, Cyborg, WitchDoctor,
+#                              TaxCollector). <STATE> must be one of BOSS FIGHT HURT VICTORY MARCH HOLD IDLE; anything else is rejected at load.
+#   Add a pool for a state and that officer uses it instead of the generic one. {Player} is the commander; {Boss} only works in BOSS pools.
+# Temperament Any everywhere, so every officer can speak every line.
 # ============================================================================================================
 OFFICER_CHAT_FIGHT | Any | Not now. Ask me again when nothing is trying to eat us.
 OFFICER_CHAT_FIGHT | Any | Talk fast. Something out there wants a word with me more than you do.
@@ -564,3 +574,445 @@ OFFICER_CHAT_VICTORY | Any | That was close. Do not tell the others how close.
 OFFICER_CHAT_VICTORY | Any | Well fought, {Player}. I will be thinking about it for weeks, mostly with a flinch.
 OFFICER_CHAT_VICTORY | Any | It is quiet now. I do not trust it, but I will take it.
 OFFICER_CHAT_VICTORY | Any | Another one down. I am keeping count, mostly out of spite.
+OFFICER_CHAT_MARCH | Any | Keep pace, {Player}. I am told the enemy does not wait for stragglers.
+OFFICER_CHAT_MARCH | Any | All quiet so far. I mention it only so it can be proven wrong.
+OFFICER_CHAT_MARCH | Any | I am marching, I am listening, and I am regretting my boots. Pick one for the conversation.
+OFFICER_CHAT_MARCH | Any | Lead on. I will be the one behind you, nodding gravely.
+OFFICER_CHAT_HOLD | Any | I have been standing here a while. The post and I have come to an understanding.
+OFFICER_CHAT_HOLD | Any | Nothing has come at us yet. I keep looking at the horizon to be polite.
+OFFICER_CHAT_HOLD | Any | Orders were to hold. So I am holding, with real dedication.
+OFFICER_CHAT_HOLD | Any | This spot is mine now. Anything that wants it can ask nicely first.
+OFFICER_CHAT_IDLE | Any | At ease, {Player}. That is a polite way of saying I am bored.
+OFFICER_CHAT_IDLE | Any | Nothing to report. I wrote that down twice, just to feel busy.
+OFFICER_CHAT_IDLE | Any | If you came for orders, I am the wrong one. If you came for company, I am slightly better.
+OFFICER_CHAT_IDLE | Any | Quiet day. I would call it peaceful, but that tends to be tempting fate.
+
+# ============================================================================================================
+# OFFICER VOICES  (OFFICER_<Officer>_<STATE> - one distinct character each; see the OFFICER CHAT notes above)
+# Each voice has IDLE x5, MARCH x4, HOLD x3, FIGHT x4, BOSS x3, HURT x2, VICTORY x2. Add more lines to any pool freely.
+# ============================================================================================================
+
+# ---- NURSE: clipped, exhausted triage humor ----
+OFFICER_Nurse_IDLE | Any | Sit down, {Player}. Not you, the wound you have not mentioned yet.
+OFFICER_Nurse_IDLE | Any | I have been awake for three days. Ask me anything. I will answer in triage categories.
+OFFICER_Nurse_IDLE | Any | Slow shift. Nobody is bleeding. I am suspicious of that.
+OFFICER_Nurse_IDLE | Any | Bandages counted. Syringes counted. Patience not counted, because it ran out.
+OFFICER_Nurse_IDLE | Any | Coffee would help. I do not have any. I have a strong opinion about that.
+OFFICER_Nurse_MARCH | Any | Keep up, {Player}. I do not carry stretchers for people who dawdle.
+OFFICER_Nurse_MARCH | Any | Walking is exercise. Use it now, before you need me.
+OFFICER_Nurse_MARCH | Any | Stay close to the line. I can reach a wounded soldier or a distant one, not both.
+OFFICER_Nurse_MARCH | Any | Left foot, right foot, minor blood loss. Marching is mostly that.
+OFFICER_Nurse_HOLD | Any | We hold. I check pulses. It is the same job at a slower pace.
+OFFICER_Nurse_HOLD | Any | Quiet is when the injuries come in late. I am preparing the ward in my head.
+OFFICER_Nurse_HOLD | Any | Nobody has fainted yet. I keep a list of who is likely.
+OFFICER_Nurse_FIGHT | Any | Triage first, talking never. Stand over there and bleed in an orderly fashion.
+OFFICER_Nurse_FIGHT | Any | Bad moment. If you can speak, you are not dying, so go away.
+OFFICER_Nurse_FIGHT | Any | I treat the loudest wound last. It is always the least serious.
+OFFICER_Nurse_FIGHT | Any | Duck first, then talk. In that order.
+OFFICER_Nurse_BOSS | Any | That is {Boss}. I am going to need a lot more bandages and a different job.
+OFFICER_Nurse_BOSS | Any | {Boss} will hurt people. I am already counting the cots.
+OFFICER_Nurse_BOSS | Any | If {Boss} hits you, lie still and think of me. I will do the rest.
+OFFICER_Nurse_HURT | Any | I patch people. Do I look like I have time to be patched?
+OFFICER_Nurse_HURT | Any | I would treat myself, but the patient is rude and refuses to sit.
+OFFICER_Nurse_VICTORY | Any | It is down. Now come the casualties. That is my part of the victory.
+OFFICER_Nurse_VICTORY | Any | Good work. Everyone stand in a line so I can see what is missing.
+
+# ---- MERCHANT: mercenary, always selling, counts coins ----
+OFFICER_Merchant_IDLE | Any | Every conversation costs me something. Today I am calling it an investment.
+OFFICER_Merchant_IDLE | Any | Business is good when the world is ending. Do not tell anyone I said so.
+OFFICER_Merchant_IDLE | Any | I have a fine sale on torches, arrows and mild regret. Everything must go.
+OFFICER_Merchant_IDLE | Any | Count the coins, {Player}. Then count them again. Then count the enemy, if you must.
+OFFICER_Merchant_IDLE | Any | I would give you a discount, but I would have to like you a little less first.
+OFFICER_Merchant_MARCH | Any | Keep walking, {Player}. Every step without a sale is a step wasted.
+OFFICER_Merchant_MARCH | Any | A marching army eats. I have been thinking about who sells the food.
+OFFICER_Merchant_MARCH | Any | Mind the road. I hear it charges tolls to the unlucky.
+OFFICER_Merchant_MARCH | Any | I follow where the money goes. Right now that is you, loudly.
+OFFICER_Merchant_HOLD | Any | A fixed position is a storefront. I am open for business, hours negotiable.
+OFFICER_Merchant_HOLD | Any | I counted the coins twice. The first count was optimistic.
+OFFICER_Merchant_HOLD | Any | Standing guard is unpaid work. I remind everyone of this, usually near payday.
+OFFICER_Merchant_FIGHT | Any | Ask me after the shooting. Dead customers pay very poorly.
+OFFICER_Merchant_FIGHT | Any | Make it quick. Every second I spend talking is a second I am not charging for.
+OFFICER_Merchant_FIGHT | Any | If you survive this, remember I was in front. I will be sending a bill.
+OFFICER_Merchant_FIGHT | Any | Buy something or duck. Both are good for my health.
+OFFICER_Merchant_BOSS | Any | {Boss} has no coin purse that I can see. That is an insult to commerce.
+OFFICER_Merchant_BOSS | Any | I priced {Boss} on the way in. The number was very high and I am not selling.
+OFFICER_Merchant_BOSS | Any | If {Boss} falls, I want the loot catalogued before anyone touches it.
+OFFICER_Merchant_HURT | Any | That cost me more than I intended. I am keeping the receipt.
+OFFICER_Merchant_HURT | Any | I am bleeding and nobody has offered to pay for it. Typical.
+OFFICER_Merchant_VICTORY | Any | A good day for the books. A great day if you ignore the repair costs.
+OFFICER_Merchant_VICTORY | Any | It fell. Now, who owes me for the ammunition?
+
+# ---- ARMS DEALER: gun-nut, loves ordnance ----
+OFFICER_ArmsDealer_IDLE | Any | Listen to that. Nothing. It is the sound of a barrel that needs firing.
+OFFICER_ArmsDealer_IDLE | Any | I cleaned every piece I own today. Twice. The second time was for fun.
+OFFICER_ArmsDealer_IDLE | Any | If it goes bang, I have named it. If it goes bang loudly, I have named it twice.
+OFFICER_ArmsDealer_IDLE | Any | There is no problem that more caliber cannot at least help with, {Player}.
+OFFICER_ArmsDealer_IDLE | Any | Ask me about muzzle velocity. Go on. I have been waiting to be asked since breakfast.
+OFFICER_ArmsDealer_MARCH | Any | I carry enough lead to sink a small boat. Do not ask why I need a small boat sunk.
+OFFICER_ArmsDealer_MARCH | Any | Pace yourself. A tired shooter shoots high, and high is where friends stand.
+OFFICER_ArmsDealer_MARCH | Any | Smell that? Gun oil and optimism. My two favorite smells.
+OFFICER_ArmsDealer_MARCH | Any | Keep the barrels pointed away from me, {Player}. Away, and at something worthwhile.
+OFFICER_ArmsDealer_HOLD | Any | Hold the line? Gladly. I have a lot of rounds that want to be held with me.
+OFFICER_ArmsDealer_HOLD | Any | Good field of fire here. I have been counting the places a target could stand.
+OFFICER_ArmsDealer_HOLD | Any | Stand watch, count rounds, repeat. It is the closest thing I have to poetry.
+OFFICER_ArmsDealer_FIGHT | Any | Talk later. Right now my guns are the loudest members of this conversation.
+OFFICER_ArmsDealer_FIGHT | Any | Not now. I am reloading, and reloading is sacred.
+OFFICER_ArmsDealer_FIGHT | Any | Hear that noise? That is the sound of me being busy. Step back.
+OFFICER_ArmsDealer_FIGHT | Any | Down, down, down. I do not want to explain brass on your hat.
+OFFICER_ArmsDealer_BOSS | Any | That is {Boss}. Finally, a target worthy of the good ammunition.
+OFFICER_ArmsDealer_BOSS | Any | {Boss} is huge. I cannot miss. It is the best day of my life.
+OFFICER_ArmsDealer_BOSS | Any | Do not worry about {Boss}. I brought plenty of bullets, and most of them are fast.
+OFFICER_ArmsDealer_HURT | Any | It winged me. I will remember that when I am pulling the trigger.
+OFFICER_ArmsDealer_HURT | Any | I can still hold a rifle, so I count it as a scratch. A loud scratch.
+OFFICER_ArmsDealer_VICTORY | Any | That is what a sustained burst can do. I want it framed.
+OFFICER_ArmsDealer_VICTORY | Any | It is down. I will be picking up brass for the rest of the week and loving every minute.
+
+# ---- DEMOLITIONIST: gleeful about explosions ----
+OFFICER_Demolitionist_IDLE | Any | Everything is a problem if you look at it as a wall. I always look at it as a wall.
+OFFICER_Demolitionist_IDLE | Any | I have all ten fingers today. That is my best week in a long time.
+OFFICER_Demolitionist_IDLE | Any | The best part of a quiet day is the planning. The best part of the planning is the boom.
+OFFICER_Demolitionist_IDLE | Any | Do not stand there. Or there. Actually, the whole area is a bad idea. Hello, {Player}!
+OFFICER_Demolitionist_IDLE | Any | Patience is a virtue. Patience with a fuse is a better one.
+OFFICER_Demolitionist_MARCH | Any | Careful where you step. Not because of me. This time.
+OFFICER_Demolitionist_MARCH | Any | I packed light, in that all of it fits in one extremely large bag.
+OFFICER_Demolitionist_MARCH | Any | Keep your distance, {Player}. I will keep mine too, from the bag.
+OFFICER_Demolitionist_MARCH | Any | Marching is fine. Marching toward something that deserves a boom is better.
+OFFICER_Demolitionist_HOLD | Any | Waiting is the hard part. I have set up a few surprises to help the time pass.
+OFFICER_Demolitionist_HOLD | Any | If anything walks up the hill, it gets a hello from me. A very loud hello.
+OFFICER_Demolitionist_HOLD | Any | Do not wander off the path. I have not told anyone what is beyond the path.
+OFFICER_Demolitionist_FIGHT | Any | Not now! The fuse is lit! Well, in spirit. Mostly.
+OFFICER_Demolitionist_FIGHT | Any | Duck! No, lower than that. Ducking is a team effort.
+OFFICER_Demolitionist_FIGHT | Any | Shout all you like. The explosions will win.
+OFFICER_Demolitionist_FIGHT | Any | Cover your ears and talk to me after. Or do not. The ringing is a gift.
+OFFICER_Demolitionist_BOSS | Any | {Boss} is the biggest thing I have ever seen. I need a bigger fuse.
+OFFICER_Demolitionist_BOSS | Any | {Boss}! Finally, a target that deserves a proper amount of dynamite. All of it.
+OFFICER_Demolitionist_BOSS | Any | Everyone back up. {Boss} is about to learn what a cheerful amount of gunpowder looks like.
+OFFICER_Demolitionist_HURT | Any | Ha! That one was close. Closer than my dynamite would have been, even.
+OFFICER_Demolitionist_HURT | Any | I have been singed worse. That counts as an ordinary Tuesday.
+OFFICER_Demolitionist_VICTORY | Any | Beautiful. I cannot wait to do it again, only larger.
+OFFICER_Demolitionist_VICTORY | Any | It is down, and the crater is lovely. Do come and see.
+
+# ---- GOBLIN TINKERER: tinkerer, fussy about gear, outcast pride ----
+OFFICER_GoblinTinkerer_IDLE | Any | Your gear is a mess, {Player}. I have noticed three problems and I have only looked once.
+OFFICER_GoblinTinkerer_IDLE | Any | My people were called thieves and tinkerers. Only one of those was an insult.
+OFFICER_GoblinTinkerer_IDLE | Any | Do not touch that. It is not a weapon, it is a very delicate argument.
+OFFICER_GoblinTinkerer_IDLE | Any | Everything can be improved. Even me. Especially the people who stare at me.
+OFFICER_GoblinTinkerer_IDLE | Any | A reforge takes patience. Most of this army has none, which is where I come in.
+OFFICER_GoblinTinkerer_MARCH | Any | Watch the straps. A loose strap is a lost rifle, and a lost rifle is a lost afternoon.
+OFFICER_GoblinTinkerer_MARCH | Any | My tools rattle when we march. Do not tell the tools. They like the sound.
+OFFICER_GoblinTinkerer_MARCH | Any | Eyes on the road. And on the gear. Mostly the gear.
+OFFICER_GoblinTinkerer_MARCH | Any | I walk with the humans because they need me. Not because I like it. A little because I like it.
+OFFICER_GoblinTinkerer_HOLD | Any | We hold? Good. I will use the time to fix the rifle that has been bothering me.
+OFFICER_GoblinTinkerer_HOLD | Any | This post is poorly designed. I have seven improvements ready.
+OFFICER_GoblinTinkerer_HOLD | Any | The tinkering never stops. It only gets quieter when the army stands still.
+OFFICER_GoblinTinkerer_FIGHT | Any | Not now! Hand me the wrench! No, the other one!
+OFFICER_GoblinTinkerer_FIGHT | Any | Whatever you need, it is less urgent than this bolt I have to tighten.
+OFFICER_GoblinTinkerer_FIGHT | Any | Stay behind me. I know what breaks, and I know where.
+OFFICER_GoblinTinkerer_FIGHT | Any | Fight, fix, fight. I do not complain. Much.
+OFFICER_GoblinTinkerer_BOSS | Any | {Boss} is a design flaw with teeth. Somebody should patch it.
+OFFICER_GoblinTinkerer_BOSS | Any | Look at the size of {Boss}. I would like to see how it is built. After it is dead.
+OFFICER_GoblinTinkerer_BOSS | Any | Whoever made {Boss} had no respect for tolerances.
+OFFICER_GoblinTinkerer_HURT | Any | I am cracked, not broken. A bandage, a bolt and I will be right again.
+OFFICER_GoblinTinkerer_HURT | Any | That hurt. It also exposed a weakness in my plating, which I find interesting.
+OFFICER_GoblinTinkerer_VICTORY | Any | Excellent. Now let me check what that did to the equipment. All of it.
+OFFICER_GoblinTinkerer_VICTORY | Any | A fine win. I will mend the damage while everyone else celebrates.
+
+# ---- GUIDE: earnest, over-explains ----
+OFFICER_Guide_IDLE | Any | Allow me to explain how to talk to me. First you say hello, then I say hello back, which is what is happening now.
+OFFICER_Guide_IDLE | Any | I have been thinking about the importance of preparation, {Player}. It goes back several chapters.
+OFFICER_Guide_IDLE | Any | Did you know most injuries are avoidable? I have a list. Would you like the list?
+OFFICER_Guide_IDLE | Any | A good plan has three parts. I have only come up with two. The third is pending.
+OFFICER_Guide_IDLE | Any | Please ask me anything. I have notes. They are very long, and mostly accurate.
+OFFICER_Guide_MARCH | Any | Walking uses the legs, {Player}. I read about it. It is quite reliable.
+OFFICER_Guide_MARCH | Any | Stay on the path where possible. I have drawn a diagram. I have also drawn a diagram of the diagram.
+OFFICER_Guide_MARCH | Any | A tip on marching. If the ground ends, stop. This is considered good practice.
+OFFICER_Guide_MARCH | Any | I do worry about the road ahead. In detail, and at length, in my notes.
+OFFICER_Guide_HOLD | Any | To hold a position, one must remain in it. I find that saying it aloud helps.
+OFFICER_Guide_HOLD | Any | I have prepared a short briefing on our surroundings. It is nine pages. I will summarize it, slowly.
+OFFICER_Guide_HOLD | Any | Standing still is an active strategy. I wrote that down so I will not forget it.
+OFFICER_Guide_FIGHT | Any | Now is not a good time for a lesson. Though if there were one, it would be about ducking.
+OFFICER_Guide_FIGHT | Any | Please stay behind cover. I will explain why later, with illustrations.
+OFFICER_Guide_FIGHT | Any | A fight! Remember, aim first, then shoot, then run if it goes badly.
+OFFICER_Guide_FIGHT | Any | I can talk and shoot. I would prefer not to, as my first sentence is usually the longest.
+OFFICER_Guide_BOSS | Any | That is {Boss}. Please remember everything I told you about it. If I told you nothing, I am sorry.
+OFFICER_Guide_BOSS | Any | {Boss}! According to my notes, this is the part where we should all be very careful.
+OFFICER_Guide_BOSS | Any | I read about {Boss} once. The chapter was short, and most of it was warnings.
+OFFICER_Guide_HURT | Any | I have been injured, {Player}. According to the book, I should sit down, and I will.
+OFFICER_Guide_HURT | Any | It hurts, which I find helpful, because it confirms the manual.
+OFFICER_Guide_VICTORY | Any | We did it! I will be recording the whole account, starting with the part where I was brave.
+OFFICER_Guide_VICTORY | Any | A success, {Player}. Let us review what went well. And what went loudly.
+
+# ---- PRINCESS: regal, slightly oblivious to danger, morale-focused ----
+OFFICER_Princess_IDLE | Any | Ah, {Player}. You may approach. Do mind the carpet. Carpets are important to morale.
+OFFICER_Princess_IDLE | Any | A kingdom is only as strong as its smile. Mine is currently set to formidable.
+OFFICER_Princess_IDLE | Any | I have decided to be gracious today. It is going to be exhausting for everyone.
+OFFICER_Princess_IDLE | Any | The army looks splendid. A little more polish on the boots and they would be perfect.
+OFFICER_Princess_IDLE | Any | Do you think the soldiers would enjoy a speech? I have prepared a long one.
+OFFICER_Princess_MARCH | Any | Walking is so much more refined when everyone does it together, {Player}.
+OFFICER_Princess_MARCH | Any | Do keep the banners high. Nobody has ever lost a battle under a good banner.
+OFFICER_Princess_MARCH | Any | I shall lead the march by waving. It is a very effective form of leadership.
+OFFICER_Princess_MARCH | Any | Morale, dear {Player}. It is the one thing you cannot pack, but you must carry.
+OFFICER_Princess_HOLD | Any | Holding the line is a most dignified thing to do. Do tell the soldiers I said so.
+OFFICER_Princess_HOLD | Any | We shall wait here with great elegance. Elegance is a defense in itself.
+OFFICER_Princess_HOLD | Any | Is that a tragedy in the distance? I cannot tell. I have chosen to call it scenery.
+OFFICER_Princess_FIGHT | Any | Oh, how dreadful. Please make it stop, {Player}, as quickly and as politely as you can.
+OFFICER_Princess_FIGHT | Any | Chin up, everyone! There is nothing to fear but a poor attitude.
+OFFICER_Princess_FIGHT | Any | Not now, dear. I am inspiring people, and it takes my full attention.
+OFFICER_Princess_FIGHT | Any | Do you hear that? I believe it is applause for the enemy. Terrible manners.
+OFFICER_Princess_BOSS | Any | Goodness, {Boss}. What a rude guest. We did not send an invitation.
+OFFICER_Princess_BOSS | Any | {Boss} is rather large. Never mind. A true royal is not intimidated by size.
+OFFICER_Princess_BOSS | Any | Do not worry, {Player}. {Boss} cannot be as terrible as the paperwork at court.
+OFFICER_Princess_HURT | Any | I am not hurt. A princess merely rests in a dignified horizontal position.
+OFFICER_Princess_HURT | Any | Oh. Well. That was unexpected. Do carry on, I shall bleed in a very tasteful manner.
+OFFICER_Princess_VICTORY | Any | Magnificent! I shall make sure the story is told at court. Heavily improved.
+OFFICER_Princess_VICTORY | Any | Victory suits us. Do ask someone to bring me a nice chair.
+
+# ---- DRYAD: nature-mystic, speaks of the land ----
+OFFICER_Dryad_IDLE | Any | The land is listening, {Player}. It is very quiet now, and quiet is its own kind of message.
+OFFICER_Dryad_IDLE | Any | Every root remembers something. Most of what they remember is the sound of boots.
+OFFICER_Dryad_IDLE | Any | Walk gently on this ground. It has been hurt, and it keeps careful account.
+OFFICER_Dryad_IDLE | Any | The wind speaks. This morning it speaks of weather, and a little of you.
+OFFICER_Dryad_IDLE | Any | I feel the seeds waiting. They are patient. They have seen worse than this war.
+OFFICER_Dryad_MARCH | Any | The earth bends under so many feet. It remembers each of them, kindly or otherwise.
+OFFICER_Dryad_MARCH | Any | Follow the green, {Player}. It always knows which way the water runs.
+OFFICER_Dryad_MARCH | Any | This path is old. Older than the road, older than the reason for it.
+OFFICER_Dryad_MARCH | Any | I walk, and the ground hums. Do not mind it. It is saying hello.
+OFFICER_Dryad_HOLD | Any | I have put down roots, in a manner of speaking. This place is mine to keep.
+OFFICER_Dryad_HOLD | Any | The land is calm. I will keep it that way, even if I must ask it nicely.
+OFFICER_Dryad_HOLD | Any | Stillness is a strength, {Player}. The oldest trees know that better than any soldier.
+OFFICER_Dryad_FIGHT | Any | The forest knows what comes. It does not like it. Neither do I.
+OFFICER_Dryad_FIGHT | Any | Speak later, {Player}. The soil is shaking and I must listen.
+OFFICER_Dryad_FIGHT | Any | This ground will not forgive them. I will make sure of that.
+OFFICER_Dryad_FIGHT | Any | Leaf and thorn, hear me. Strike at what trespasses.
+OFFICER_Dryad_BOSS | Any | {Boss} walks without respect for the roots. The land trembles under it.
+OFFICER_Dryad_BOSS | Any | The earth cries out against {Boss}. I will answer, as best I can.
+OFFICER_Dryad_BOSS | Any | {Boss} is not natural. The soil can tell. It is rather insulted.
+OFFICER_Dryad_HURT | Any | Wounds heal, as seasons turn. Please do not turn them too quickly.
+OFFICER_Dryad_HURT | Any | The land aches with me. It is a strange kind of company.
+OFFICER_Dryad_VICTORY | Any | The ground breathes again. Thank you, {Player}. It will not forget this.
+OFFICER_Dryad_VICTORY | Any | A hard winter ends. Something green will grow where that thing fell.
+
+# ---- PAINTER: artsy, sees the battle as a canvas ----
+OFFICER_Painter_IDLE | Any | Look at the light on that hill, {Player}. I have been staring at it for an hour. No one asked me to stop.
+OFFICER_Painter_IDLE | Any | I have a new palette. Mostly red. Do not ask what the red is made of.
+OFFICER_Painter_IDLE | Any | Every army is a mural in motion. I am only here to catch the drips.
+OFFICER_Painter_IDLE | Any | Do hold still. Your expression says wartime and I want to remember it.
+OFFICER_Painter_IDLE | Any | Inspiration comes late and leaves early. Today it came late and brought snacks.
+OFFICER_Painter_MARCH | Any | The line of soldiers makes a stroke across the land. A very long, very shaky stroke.
+OFFICER_Painter_MARCH | Any | Walk a little slower, {Player}. The scenery is doing something remarkable.
+OFFICER_Painter_MARCH | Any | I will paint this march someday. In my head it is mostly composition and sore feet.
+OFFICER_Painter_MARCH | Any | Watch the color of the sky. The enemy is going to ruin it.
+OFFICER_Painter_HOLD | Any | A still battlefield is a still life. I find the exhausted look quite lovely.
+OFFICER_Painter_HOLD | Any | I have been mixing grays for the fog. They are not as good as the real thing.
+OFFICER_Painter_HOLD | Any | Standing guard gives me time to study the shadows. They are looking fabulous.
+OFFICER_Painter_FIGHT | Any | Oh, the colors! Terrible, loud and wonderful. Please do not talk, I am memorizing.
+OFFICER_Painter_FIGHT | Any | Not now, {Player}. The canvas is wet and the composition is changing rapidly.
+OFFICER_Painter_FIGHT | Any | Everyone is moving so quickly. I cannot get the lines down. How inconsiderate.
+OFFICER_Painter_FIGHT | Any | Splatter! Spray! It is chaos, and I mean that as the highest praise.
+OFFICER_Painter_BOSS | Any | {Boss}, you are an enormous mistake in the composition. We shall have to paint over you.
+OFFICER_Painter_BOSS | Any | Look at the scale of {Boss}! Terrifying, yes, but the shading is superb.
+OFFICER_Painter_BOSS | Any | {Boss} would make a splendid subject. Preferably from very far away.
+OFFICER_Painter_HURT | Any | I am bleeding red. At least it is a good color for this scene.
+OFFICER_Painter_HURT | Any | I have been marked by the work. Finally, an authentic artist.
+OFFICER_Painter_VICTORY | Any | A masterpiece in smoke and ash. I would sign it, but it is hardly mine.
+OFFICER_Painter_VICTORY | Any | It is over, and the scene is stunning. I am keeping every drop of it.
+
+# ---- ANGLER: obsessive fisher-kid, food and bait ----
+OFFICER_Angler_IDLE | Any | Hey, {Player}! You have bait? Good bait? Do not lie to me about the bait.
+OFFICER_Angler_IDLE | Any | I caught a fish yesterday that was this big. No, bigger. The record is mine.
+OFFICER_Angler_IDLE | Any | I could be fishing right now. I am talking to you instead. You owe me a fish.
+OFFICER_Angler_IDLE | Any | Fish do not talk back. You should take lessons from them.
+OFFICER_Angler_IDLE | Any | Have you ever fished on a full stomach? Terrible idea. I only eat when I am done.
+OFFICER_Angler_MARCH | Any | Are we there yet? Is there water there? If not, I do not care.
+OFFICER_Angler_MARCH | Any | I will follow you, {Player}, but only if you promise there is a pond somewhere.
+OFFICER_Angler_MARCH | Any | Walking is boring. Fishing is boring in a much better way.
+OFFICER_Angler_MARCH | Any | Keep your voice down. You are scaring the fish out of the next county.
+OFFICER_Angler_HOLD | Any | Hold this post? Fine. As long as a puddle counts as a lake.
+OFFICER_Angler_HOLD | Any | I have been standing here so long that a bird tried to land on me.
+OFFICER_Angler_HOLD | Any | If someone gives me a line and a bobber, I will hold it forever.
+OFFICER_Angler_FIGHT | Any | Not now! I almost had a bite! Forget it, I did not, but it was close!
+OFFICER_Angler_FIGHT | Any | Whatever that is, it is scaring the fish. I take that personally.
+OFFICER_Angler_FIGHT | Any | Make it quick, {Player}. I have a lot of fish to be mad at later.
+OFFICER_Angler_FIGHT | Any | Keep the noise down! No, wait. Make more noise. I am tired of listening to it.
+OFFICER_Angler_BOSS | Any | {Boss} is the biggest catch I have ever seen. I have no net for that.
+OFFICER_Angler_BOSS | Any | {Boss} is too large to fit in a bucket. I measured with my eyes.
+OFFICER_Angler_BOSS | Any | If {Boss} were a fish, I would be famous. As it is, I am only scared.
+OFFICER_Angler_HURT | Any | I got hit! I want a bandage and a snack, and the snack has to be good.
+OFFICER_Angler_HURT | Any | It hurts, {Player}! I only fish, I do not do this!
+OFFICER_Angler_VICTORY | Any | We caught it! Me and you. Mostly you. But I am telling everyone it was me.
+OFFICER_Angler_VICTORY | Any | Best catch of the year. Probably. I am going to say it was.
+
+# ---- PIRATE: yarr, crew, plunder ----
+OFFICER_Pirate_IDLE | Any | Ahoy, {Player}! Ye be on dry land, so I assume ye be lost.
+OFFICER_Pirate_IDLE | Any | Plunder be a fine thing, but a quiet afternoon be finer. Don't tell the crew I said so.
+OFFICER_Pirate_IDLE | Any | Me parrot said somethin' rude about ye. I'm not sayin' what.
+OFFICER_Pirate_IDLE | Any | A fair wind, a full hold and a crew that don't ask questions. That be the dream.
+OFFICER_Pirate_IDLE | Any | Ye ever notice the sea don't hold grudges? The land does. So do I.
+OFFICER_Pirate_MARCH | Any | Step lively, crew! The treasure won't carry itself, and neither will I.
+OFFICER_Pirate_MARCH | Any | Keep an eye on the horizon, {Player}. Ye never know where the next ship be hidin'.
+OFFICER_Pirate_MARCH | Any | Heave, ho, and all that. Marchin' on land be just sailin' with worse scenery.
+OFFICER_Pirate_MARCH | Any | I'll follow ye anywhere, so long as there be loot at the end of it.
+OFFICER_Pirate_HOLD | Any | We hold this port till the tide turns, or the enemy does.
+OFFICER_Pirate_HOLD | Any | Dry land again. Me legs be wobblin' worse than me morals.
+OFFICER_Pirate_HOLD | Any | Anchored we be. Any scallywag wantin' past answers to me crew.
+OFFICER_Pirate_FIGHT | Any | Not now, {Player}! The deck be pitchin' and me cutlass be hungry!
+OFFICER_Pirate_FIGHT | Any | Man the guns, ye sea dogs! Conversation be for the harbor!
+OFFICER_Pirate_FIGHT | Any | Boardin' time! Aye, I'll talk once nothin' on the other side be breathin'.
+OFFICER_Pirate_FIGHT | Any | Look lively, ye landlubber! There be teeth off the starboard side!
+OFFICER_Pirate_BOSS | Any | Blow me down, {Boss}! Biggest thing I've seen since the last time I was drunk.
+OFFICER_Pirate_BOSS | Any | {Boss} would make fine plunder if it weren't tryin' to eat us.
+OFFICER_Pirate_BOSS | Any | Hoist the colors, crew! That {Boss} be a worthy foe, and I be a worthy fool.
+OFFICER_Pirate_HURT | Any | Arr, I've taken a hit. Nothin' a bottle and a bad decision can't fix.
+OFFICER_Pirate_HURT | Any | Don't fuss, {Player}. A pirate's scars be just the ship's repairs.
+OFFICER_Pirate_VICTORY | Any | Hah! Down she goes! Break out the rum and don't tell the captain.
+OFFICER_Pirate_VICTORY | Any | Victory be sweeter than a full hold, {Player}. Nearly.
+
+# ---- CLOTHIER: wry, death jokes, skeletons ----
+OFFICER_Clothier_IDLE | Any | Ah, {Player}. I have been dead before. It was rather a snug fit.
+OFFICER_Clothier_IDLE | Any | The skeletons and I get on quite well. They never complain about the tailoring.
+OFFICER_Clothier_IDLE | Any | I would offer you a coat, but the best ones have a few holes in them. Atmospheric.
+OFFICER_Clothier_IDLE | Any | A quiet afternoon. Almost as quiet as the grave. Almost.
+OFFICER_Clothier_IDLE | Any | I once cursed a man over a hat. Not my finest hour, but the hat was horrible.
+OFFICER_Clothier_MARCH | Any | March on, {Player}. The dead are keeping up better than the living, I notice.
+OFFICER_Clothier_MARCH | Any | Keep stepping. Every stride is one closer to the afterlife, and not one closer to a tailor.
+OFFICER_Clothier_MARCH | Any | My skeletons set a fine pace. No lungs, no sore feet, no complaints.
+OFFICER_Clothier_MARCH | Any | Death is only a long march that does not end. I am simply practicing.
+OFFICER_Clothier_HOLD | Any | We hold. The dead are used to waiting, and I have picked up the habit.
+OFFICER_Clothier_HOLD | Any | A good post. The ground here is soft enough to dig a nice hole in.
+OFFICER_Clothier_HOLD | Any | I am quite comfortable here. Graveyard comfortable. It is a specific kind.
+OFFICER_Clothier_FIGHT | Any | Not now. I am busy raising a few helpers, and they do not talk back.
+OFFICER_Clothier_FIGHT | Any | Plenty of corpses incoming. Not all of them will be ours. Probably.
+OFFICER_Clothier_FIGHT | Any | Mind the bones, {Player}. Half of them are friendly. The other half are mine.
+OFFICER_Clothier_FIGHT | Any | Go on, fight. I will be here, stitching people up and down.
+OFFICER_Clothier_BOSS | Any | {Boss}! I have met larger skeletons. But never one so rude.
+OFFICER_Clothier_BOSS | Any | I would curse {Boss}, but it seems to have collected quite a few already.
+OFFICER_Clothier_BOSS | Any | {Boss} will make a lovely addition to the family. In pieces.
+OFFICER_Clothier_HURT | Any | I have been better, and also worse. Dead, mostly. That was worse.
+OFFICER_Clothier_HURT | Any | Oh dear. Has anyone got a needle? I need to repair the sleeve. And the arm.
+OFFICER_Clothier_VICTORY | Any | Splendid. Another fine batch of customers for the afterlife.
+OFFICER_Clothier_VICTORY | Any | It is down. I did say the dead were good company. No one believed me.
+
+# ---- WIZARD: cryptic, arcane, tired of mortals ----
+OFFICER_Wizard_IDLE | Any | Ah. {Player}. I foresaw this conversation, and it was no better then.
+OFFICER_Wizard_IDLE | Any | The stars suggest I should be left alone. I ignore them, as usual.
+OFFICER_Wizard_IDLE | Any | Mortals ask the same questions every century. The answers remain disappointing.
+OFFICER_Wizard_IDLE | Any | Do not touch the orb. I have said this many times, and yet the orb is always warm.
+OFFICER_Wizard_IDLE | Any | I have forgotten more spells than you will ever learn. Some were worth remembering.
+OFFICER_Wizard_MARCH | Any | We walk, as walking is what the future has decided. I did not vote.
+OFFICER_Wizard_MARCH | Any | The weave bends toward the battlefield. It is annoying how quickly it does.
+OFFICER_Wizard_MARCH | Any | My swords follow me. Unlike the rest of you, they never ask where we are going.
+OFFICER_Wizard_MARCH | Any | Step lightly, {Player}. The old magic dislikes heavy feet.
+OFFICER_Wizard_HOLD | Any | Time moves slowly when one waits. I have been waiting for rather a long time.
+OFFICER_Wizard_HOLD | Any | The ley lines here are weak. I am working on it. Mostly I am sighing.
+OFFICER_Wizard_HOLD | Any | We hold. The mystics call it patience. I call it a long, tedious curse.
+OFFICER_Wizard_FIGHT | Any | Not now, mortal. I am performing a calculation that ends in screaming.
+OFFICER_Wizard_FIGHT | Any | Step back. Unfortunate things are about to happen to inattentive people.
+OFFICER_Wizard_FIGHT | Any | I would explain, but there are only a few seconds left before this becomes complicated.
+OFFICER_Wizard_FIGHT | Any | The blades are restless. I suggest you move.
+OFFICER_Wizard_BOSS | Any | {Boss}. I recall a prophecy about it. The prophecy was boring, and so, I imagine, will be the fight.
+OFFICER_Wizard_BOSS | Any | {Boss} is old magic poorly used. How disappointing for everyone.
+OFFICER_Wizard_BOSS | Any | Stand behind me, {Player}. Not for safety. For the dramatic effect.
+OFFICER_Wizard_HURT | Any | A mortal wound, perhaps. How tedious. I shall consult the stars about my feelings.
+OFFICER_Wizard_HURT | Any | It hurts. Wisdom, it seems, is not the same as armor.
+OFFICER_Wizard_VICTORY | Any | Predicted, naturally. I did not mention it, to preserve the surprise.
+OFFICER_Wizard_VICTORY | Any | The thing is dead. How pleasantly mundane. I may nap now.
+
+# ---- ZOOLOGIST: beast-lover, feral enthusiasm ----
+OFFICER_Zoologist_IDLE | Any | Hi, {Player}! Have you met the wolves? They have met you, and they have thoughts.
+OFFICER_Zoologist_IDLE | Any | Did you know a werewolf and a dog are basically cousins? Emotionally, I mean. Come here, boy!
+OFFICER_Zoologist_IDLE | Any | Every creature is wonderful. Even the ones that try to eat me. Especially those.
+OFFICER_Zoologist_IDLE | Any | Sniff the air. Smell that? Rain, fur and a really excellent day.
+OFFICER_Zoologist_IDLE | Any | I could talk about animals all day. I frequently do. Ask the animals.
+OFFICER_Zoologist_MARCH | Any | Look at everyone go! Even the pack is in a good mood. I can tell by the tails.
+OFFICER_Zoologist_MARCH | Any | Stay with the group, {Player}. Strays get sniffed at, and not in a friendly way.
+OFFICER_Zoologist_MARCH | Any | Fresh air, open ground and a few mean teeth in the lineup. Perfect.
+OFFICER_Zoologist_MARCH | Any | Do you hear that? The wolves are howling. It means they like you. Or they are hungry.
+OFFICER_Zoologist_HOLD | Any | We stay put. The pack rests, the pack listens. Mostly the pack scratches.
+OFFICER_Zoologist_HOLD | Any | This is a good den. I could curl up here and be happy forever.
+OFFICER_Zoologist_HOLD | Any | Easy, easy. Everyone calm down. That includes you, {Player}.
+OFFICER_Zoologist_FIGHT | Any | Oh, the pack is on edge! I am too! Stay close, {Player}, and keep your fingers!
+OFFICER_Zoologist_FIGHT | Any | Not now! Growling is happening! Talk after the biting stops!
+OFFICER_Zoologist_FIGHT | Any | Go on, boys! Get them! No, not me! The other ones!
+OFFICER_Zoologist_FIGHT | Any | I love a hunt. I just hate when it hunts back.
+OFFICER_Zoologist_BOSS | Any | That is the biggest animal I have ever seen! {Boss}! Can I pet it? No? Fine.
+OFFICER_Zoologist_BOSS | Any | {Boss}! Look at the teeth! What a magnificent, murderous creature!
+OFFICER_Zoologist_BOSS | Any | I wonder what {Boss} eats. Probably us. Oh, I hope not.
+OFFICER_Zoologist_HURT | Any | A bite! A real one! I am fine, I am just shocked and also impressed.
+OFFICER_Zoologist_HURT | Any | It hurts, but I have had worse from the pup. Do not tell him I said that.
+OFFICER_Zoologist_VICTORY | Any | Good boys! Good, good boys! And you too, {Player}!
+OFFICER_Zoologist_VICTORY | Any | We got it! The pack is thrilled. Listen to them howl.
+
+# ---- CYBORG: terse, machine-logic, sensors ----
+OFFICER_Cyborg_IDLE | Any | Status nominal. Mood approximated. Greeting: hello, {Player}.
+OFFICER_Cyborg_IDLE | Any | Scanning. Nothing of note. A disappointing result for a scanner.
+OFFICER_Cyborg_IDLE | Any | Query received. Response: I am in no mood. Mood is a function I did not write.
+OFFICER_Cyborg_IDLE | Any | I do not require rest. The rest of you are weak. This is a tactical observation.
+OFFICER_Cyborg_IDLE | Any | Parts are aging. Repairs are scheduled. They are scheduled for never.
+OFFICER_Cyborg_MARCH | Any | Pace: acceptable. Threat level: low. Conversation: unrequested.
+OFFICER_Cyborg_MARCH | Any | Tracking movement. Mostly ours. Mostly.
+OFFICER_Cyborg_MARCH | Any | Moving at optimal efficiency. Unlike some of you.
+OFFICER_Cyborg_MARCH | Any | Sensors report no hostiles. Sensors have been wrong before. Rarely.
+OFFICER_Cyborg_HOLD | Any | Position held. Probability of a surprise: unquantifiable, therefore insulting.
+OFFICER_Cyborg_HOLD | Any | Idle cycle in progress. I will tolerate it for a short while.
+OFFICER_Cyborg_HOLD | Any | Perimeter scan complete. Scanning again. It is the only thing to do.
+OFFICER_Cyborg_FIGHT | Any | Hostiles detected. Conversation deferred.
+OFFICER_Cyborg_FIGHT | Any | Not now. Targeting. Everything else is noise.
+OFFICER_Cyborg_FIGHT | Any | Bad timing, {Player}. I am calculating. The answer is violence.
+OFFICER_Cyborg_FIGHT | Any | Threat proximity: critical. Social subroutines: disabled.
+OFFICER_Cyborg_BOSS | Any | Target: {Boss}. Threat rating: excessive. Recommendation: retreat. Decision: ignored.
+OFFICER_Cyborg_BOSS | Any | {Boss} detected. Size: large. Odds: poor. I will note it in the log.
+OFFICER_Cyborg_BOSS | Any | Scanning {Boss}. Weakness unknown. I will find one. Slowly, and probably loudly.
+OFFICER_Cyborg_HURT | Any | Damage taken. Efficiency reduced. Frustration: unspecified, but present.
+OFFICER_Cyborg_HURT | Any | Systems compromised. I will repair them. Eventually, and with spite.
+OFFICER_Cyborg_VICTORY | Any | Target eliminated. Satisfaction level: adequate.
+OFFICER_Cyborg_VICTORY | Any | Threat cleared. I am logging this as acceptable.
+
+# ---- WITCH DOCTOR: ominous, venom and spirits ----
+OFFICER_WitchDoctor_IDLE | Any | The spirits whisper your name, {Player}. They are not saying anything kind.
+OFFICER_WitchDoctor_IDLE | Any | I have a new venom. It has not been tested. Volunteers are welcome. Or not.
+OFFICER_WitchDoctor_IDLE | Any | Sit and listen. The jungle has stories, and most of them end in a funeral.
+OFFICER_WitchDoctor_IDLE | Any | Do not worry about the masks. The masks worry about you.
+OFFICER_WitchDoctor_IDLE | Any | What the eye does not see, the spirit already knows. The spirit is a gossip.
+OFFICER_WitchDoctor_MARCH | Any | The spirits walk with us, {Player}. Do not step on them.
+OFFICER_WitchDoctor_MARCH | Any | I smell blood on the wind. It is not ours. Yet.
+OFFICER_WitchDoctor_MARCH | Any | The old ones follow. They are patient. They have all the time in the world, being dead.
+OFFICER_WitchDoctor_MARCH | Any | Keep walking. The shadows behind us are growing hungry.
+OFFICER_WitchDoctor_HOLD | Any | We wait. The spirits do not mind waiting. It is the only thing they are good at.
+OFFICER_WitchDoctor_HOLD | Any | This ground has seen death before. It will see it again. I have prepared.
+OFFICER_WitchDoctor_HOLD | Any | Stay near the circle, {Player}. What lies beyond it prefers you outside of it.
+OFFICER_WitchDoctor_FIGHT | Any | Stay back. The spirits are hungry and they do not like distractions.
+OFFICER_WitchDoctor_FIGHT | Any | Not now. I am whispering to the venom. It is shy.
+OFFICER_WitchDoctor_FIGHT | Any | The dead are restless and so am I. Go on, {Player}. Make some more.
+OFFICER_WitchDoctor_FIGHT | Any | They bleed. They breathe. Soon they will do neither.
+OFFICER_WitchDoctor_BOSS | Any | {Boss}. A spirit more terrible than most. The others are afraid, and I am pleased.
+OFFICER_WitchDoctor_BOSS | Any | I have a venom for {Boss}. It is slow, and cruel, and very polite.
+OFFICER_WitchDoctor_BOSS | Any | {Boss} walks in the world of the living. How rude. The dead will have a word.
+OFFICER_WitchDoctor_HURT | Any | Blood spilled. The spirits are listening. Do be careful what you wish for.
+OFFICER_WitchDoctor_HURT | Any | I am wounded. The spirits will not forgive whoever did it.
+OFFICER_WitchDoctor_VICTORY | Any | It is done. The spirits are pleased. That is a rare and slightly frightening thing.
+OFFICER_WitchDoctor_VICTORY | Any | The great one is dead. The jungle sighs, and I sigh with it.
+
+# ---- TAX COLLECTOR: dour, ghostly, obsessed with debts owed ----
+OFFICER_TaxCollector_IDLE | Any | You owe me, {Player}. I do not recall the amount. I will think of one.
+OFFICER_TaxCollector_IDLE | Any | Everyone owes someone. Yes, even the dead. Particularly the dead, in fact.
+OFFICER_TaxCollector_IDLE | Any | I keep a ledger of grievances. The ledger has a ledger. I am extremely thorough.
+OFFICER_TaxCollector_IDLE | Any | A quiet day. It makes my debts easier to count, and my hopes easier to ignore.
+OFFICER_TaxCollector_IDLE | Any | Do not worry about my mood. I have not had one in a very long time.
+OFFICER_TaxCollector_MARCH | Any | Walk faster, {Player}. Interest accrues on every idle step.
+OFFICER_TaxCollector_MARCH | Any | The road is long and the debts are longer. At least the debts are certain.
+OFFICER_TaxCollector_MARCH | Any | Someone in this army has not paid their dues. I am looking at everyone.
+OFFICER_TaxCollector_MARCH | Any | I follow you for the bounty. And for the rent. Mostly the rent.
+OFFICER_TaxCollector_HOLD | Any | We hold. And I count. And I frown. It is a very productive afternoon.
+OFFICER_TaxCollector_HOLD | Any | A fixed post. Just the thing for a long conversation about unpaid taxes.
+OFFICER_TaxCollector_HOLD | Any | I intend to stand here until everyone settles up. Which may be a while.
+OFFICER_TaxCollector_FIGHT | Any | Not now. I am collecting, and the creditors are very noisy.
+OFFICER_TaxCollector_FIGHT | Any | They can attack all they like. They still owe me.
+OFFICER_TaxCollector_FIGHT | Any | The enemy has no receipts. I find that deeply offensive.
+OFFICER_TaxCollector_FIGHT | Any | Whatever that is, it will be audited.
+OFFICER_TaxCollector_BOSS | Any | {Boss}. An astonishing amount of unpaid debt walks upright in that thing.
+OFFICER_TaxCollector_BOSS | Any | I have a long list of reasons to dislike {Boss}. Number one is the size.
+OFFICER_TaxCollector_BOSS | Any | {Boss} will not be paying. I will make a note, and then I will make a corpse.
+OFFICER_TaxCollector_HURT | Any | Bleeding is an expense. I will be billing whoever is responsible.
+OFFICER_TaxCollector_HURT | Any | Injured, yes. Unpaid, still. The second one hurts worse.
+OFFICER_TaxCollector_VICTORY | Any | It fell. I will tally what it owed and who now holds the loot. Both lists are short.
+OFFICER_TaxCollector_VICTORY | Any | A successful audit. The enemy has been settled in full.

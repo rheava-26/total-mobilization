@@ -133,6 +133,10 @@ namespace Levy.Common.Officers
 		public static bool TryGet(int npcType, out OfficerDef def) => _byType.TryGetValue(npcType, out def);
 		public static OfficerDef Get(int npcType) => _byType.TryGetValue(npcType, out var d) ? d : null;
 		public static bool IsOfficerType(int npcType) => _byType.ContainsKey(npcType);
+		/// <summary>The officer def for a town NPC (null for a non-officer or a null NPC).</summary>
+		public static OfficerDef DefFor(NPC town) => town != null && _byType.TryGetValue(town.type, out var d) ? d : null;
+		/// <summary>The officer def for a town NPC type (null when that type is not an officer).</summary>
+		public static OfficerDef DefFor(int npcType) => _byType.TryGetValue(npcType, out var d) ? d : null;
 
 		public static void Register(OfficerDef def)
 		{

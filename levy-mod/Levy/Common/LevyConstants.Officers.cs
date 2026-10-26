@@ -134,8 +134,12 @@ namespace Levy.Common
 			/// <summary>An officer answers in context when an enemy stands within this many tiles of him (a boss: <see cref="ChatBossTiles"/>), when he is below <see cref="ChatHurtFrac"/> of his life, or within <see cref="ChatVictoryTicks"/> of a boss falling.</summary>
 			public const int ChatFightTiles = 40, ChatBossTiles = 80, ChatVictoryTicks = 60 * 60 * 3;
 			public const float ChatHurtFrac = 0.6f;
-			/// <summary>Chance a chat that has a context uses a contextual line; the rest are the officer's own town voice, so they stay themselves.</summary>
+			/// <summary>Chance an AMBIENT chat (just won, marching, holding a post, at ease) uses the officer's own line; the rest are vanilla's town voice, so they stay themselves.</summary>
 			public const float ChatContextChance = 0.8f;
+			/// <summary>Chance an URGENT chat (a boss near, a fight on, the officer wounded) uses the contextual line. Almost always: the moment is too loud for small talk.</summary>
+			public const float ChatUrgentChance = 0.95f;
+			/// <summary>On a quiet chat, the chance he talks about where he is posted (marching with the commander, or holding a station) rather than plain at-ease small talk.</summary>
+			public const float ChatPostureShare = 0.6f;
 
 			// ---- the parked town NPC (what vanilla draws for an officer; the avatar only feeds it a velocity and a facing) ----
 			/// <summary>The most horizontal speed (px/tick) handed to the town NPC's stock walk animation: about the quickest a stock town NPC ever moves (fleeing). Above it the legs would cycle faster than any stock town NPC's; the avatar itself still moves at its real speed.</summary>

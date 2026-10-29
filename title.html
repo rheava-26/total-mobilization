@@ -918,7 +918,7 @@ function fxTick() {
   if (now - _fxT < 1000) return;
   _fxT = now;
   if (!fake && ((typeof G !== 'undefined' && G && G.paused) || typeof PERF === 'undefined')) { _fxHi = _fxLo = 0; return; }
-  const cost = fake ? window.__fakeFrameMs : PERF.upd * (PERF.steps || 1) + PERF.render;
+  const cost = fake ? window.__fakeFrameMs : (PERF.frame > 0 ? PERF.frame : PERF.upd * (PERF.steps || 1) + PERF.render);   /* reacts to the REAL frame interval the player sees (PERF.frame, rolling average of the last 60 unpaused frames under 250ms, fed by perfFrameTick); falls back to the timer sum only when no real frames exist (driven bench). It cannot help when the time is outside drawing (the perf report's gap column shows that) — then the chip reaching 25% with no improvement is itself the diagnosis. */
   if (cost > 20) { _fxHi++; _fxLo = 0; if (_fxHi >= 3) { _fxHi = 0; FX_Q = Math.max(.25, FX_Q - .15); } }
   else if (cost < 12) { _fxLo++; _fxHi = 0; if (_fxLo >= 6) { _fxLo = 0; FX_Q = Math.min(1, FX_Q + .1); } }
   else { _fxHi = _fxLo = 0; }
@@ -5987,7 +5987,7 @@ const PW_F = { s: 0, n: 0, worst: 0, prev: 0 }, HZ_MIN = [], HZ_STEPS = [30, 60,
 function perfFrameTick(now) {   /* a handful of arithmetic ops per frame; gaps over 250ms (tab hidden, load hitch outside the sim) and paused frames are not counted */
   const p = PW_F.prev; PW_F.prev = now; if (!p) return;
   const d = now - p; if (d > 250 || d <= 0 || (G && G.paused)) return;
-  PW_F.s += d; PW_F.n++; if (d > PW_F.worst) PW_F.worst = d;
+  PW_F.s += d; PW_F.n++; if (d > PW_F.worst) PW_F.worst = d; perfAdd('frame', d);
   if (d > 3 && (HZ_MIN.length < 15 || d < HZ_MIN[HZ_MIN.length - 1])) { HZ_MIN.push(d); HZ_MIN.sort((a, b) => a - b); if (HZ_MIN.length > 15) HZ_MIN.pop(); const m = HZ_MIN[HZ_MIN.length >> 1], hz = 1000 / m; let best = HZ_STEPS[0]; for (const z of HZ_STEPS) if (Math.abs(z - hz) < Math.abs(best - hz)) best = z; PERF_HZ = best; }
 }
 const PERF_WORST_GAP = 20, PERF_IMG_BUDGET = 1.5e6;

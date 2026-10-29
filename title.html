@@ -5998,7 +5998,10 @@ function perfSample() {
   const fn = PW_F.n, frame = fn ? PW_F.s / fn : 0, sim = pw('upd'), render = pw('render');
   const row = { t: G.time || 0, sim: +sim.toFixed(2), steps: PW.steps && PW.steps.n ? +pw('steps').toFixed(2) : 1, render: +render.toFixed(2), frame: +frame.toFixed(2), worst: +PW_F.worst.toFixed(1), fps: frame > 0 ? +(1000 / frame).toFixed(1) : 0, hz: PERF_HZ,
     units: G.units ? G.units.length : 0, enemies: G.enemies ? G.enemies.length : 0, proj: G.proj ? G.proj.length : 0, parts: G.parts ? G.parts.length : 0, buildings: G.buildings ? G.buildings.length : 0, fxq: typeof FX_Q !== 'undefined' ? FX_Q : 1 };
-  for (const k in PW) { if (k === 'upd' || k === 'render' || k === 'steps') continue; if (PW[k].n) { (row.sec || (row.sec = {}))[k] = +(PW[k].s / PW[k].n).toFixed(2); } }
+  try { row.js = +pw('js').toFixed(2); row.hud = +pw('hud').toFixed(2); row.gap = frame > 0 ? +Math.max(0, frame - row.js).toFixed(2) : 0; row.rec = !!(REC && REC.on); row.zoom = +((cam && cam.z) || 1).toFixed(2); row.sel = G.sel ? 1 : 0; row.dom = document.getElementsByTagName('*').length; row.music = !!(MUS && MUS.on);
+    const L = PERF_LOAF; row.loafN = L.n; row.loafDur = +L.dur.toFixed(1); row.loafBlock = +L.block.toFixed(1); row.loafStyle = +L.style.toFixed(1); row.loafPre = +L.pre.toFixed(1); row.loafScript = +L.script.toFixed(1);
+    row.loafTop = Object.keys(L.top).map(k => [k, +L.top[k].toFixed(1)]).sort((a, b) => b[1] - a[1]).slice(0, 3); L.n = 0; L.dur = 0; L.block = 0; L.style = 0; L.pre = 0; L.script = 0; L.top = {}; } catch (er) {}
+  for (const k in PW) { if (k === 'upd' || k === 'render' || k === 'steps' || k === 'js' || k === 'hud') continue; if (PW[k].n) { (row.sec || (row.sec = {}))[k] = +(PW[k].s / PW[k].n).toFixed(2); } }
   for (const k in PW) { PW[k].s = 0; PW[k].n = 0; } PW_F.s = 0; PW_F.n = 0; PW_F.worst = 0;
   /* ranking key: real avg frame ms when frames were measured, else the sim+render estimate (headless/driven sims have no frames) */
   row.rk = frame > 0 ? frame : (sim * row.steps + render);
@@ -6178,6 +6181,20 @@ const PW = {};
 let _pfT = 0;
 function perfLap(k) { const t = performance.now(); perfAdd(k, t - _pfT); _pfT = t; }
 window.__perf = PERF;
+/* WRAPPERS — time the whole frame() callback ('js') and syncHUD() ('hud') without touching their bodies. Both are plain function declarations bound to globals, and every requestAnimationFrame(frame) reads the binding at call time, so it resolves to the wrapper. */
+const _frameInner = frame; frame = function (now) { const t0 = performance.now(); try { return _frameInner(now); } finally { perfAdd('js', performance.now() - t0); } };
+const _syncHUDInner = syncHUD; syncHUD = function () { const t0 = performance.now(); try { return _syncHUDInner.apply(this, arguments); } finally { perfAdd('hud', performance.now() - t0); } };
+/* LONG ANIMATION FRAMES — accumulated per 2s window (reset in perfSample). One handful of additions per long frame. */
+const PERF_LOAF = { n: 0, dur: 0, block: 0, style: 0, pre: 0, script: 0, top: {}, seen: 0, ok: false };
+try { if (window.PerformanceObserver && PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.indexOf('long-animation-frame') >= 0) {
+  new PerformanceObserver(list => { try { const L = PERF_LOAF; for (const e of list.getEntries()) { L.seen++; L.n++; L.dur += e.duration; L.block += e.blockingDuration || 0; const end = e.startTime + e.duration;
+    if (e.styleAndLayoutStart > 0) L.style += Math.max(0, end - e.styleAndLayoutStart); if (e.styleAndLayoutStart > 0 && e.renderStart > 0) L.pre += Math.max(0, e.styleAndLayoutStart - e.renderStart);
+    const sc = e.scripts || []; for (let i = 0; i < sc.length; i++) { const x = sc[i]; L.script += x.duration; const nm = String(x.invoker || x.sourceFunctionName || (x.sourceURL || '').split('/').pop() || 'script').slice(0, 60); L.top[nm] = (L.top[nm] || 0) + x.duration; } } } catch (er) {} }).observe({ type: 'long-animation-frame', buffered: true }); PERF_LOAF.ok = true; } } catch (er) {}
+function perfMachine() {   /* computed once, cached on G.stats.machine: WebGL unmasked renderer (software rasterizers mean hardware acceleration is off) and device memory */
+  const st = G && G.stats; if (st && st.machine) return st.machine; let ren = 'unknown';
+  try { const gl = document.createElement('canvas').getContext('webgl'), ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); if (ext) ren = String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)); else if (!gl) ren = 'no WebGL'; const lose = gl && gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext(); } catch (er) {}
+  const m = { gpu: ren.slice(0, 120), soft: /swiftshader|software|llvmpipe|mesa offscreen/i.test(ren), mem: navigator.deviceMemory || 0 }; if (st) st.machine = m; return m;
+}
 function updateGame(dt) { const t0 = performance.now(); if (G) G._perf = PERF; try { return updateGameInner(dt); } finally { perfAdd('upd', performance.now() - t0); } }
 function updateGameInner(dt) {
   if (G.over) return; G.time += dt;
@@ -10475,7 +10492,7 @@ function aarPerfCanvas(cv, log, worst) {
   const ctx = cv.getContext('2d'), cw = cv.width, ch = cv.height, X0 = 44, X1 = cw - 48, Y0 = 16, Y1 = ch - 36, n = log.length;
   ctx.fillStyle = '#050a16'; ctx.fillRect(0, 0, cw, ch);
   const t0 = log[0].t, t1 = Math.max(log[n - 1].t, t0 + 1), xAt = t => X0 + (X1 - X0) * (t - t0) / (t1 - t0);
-  let mxMs = PERF_BUDGET_MS * 1.5, mxN = 1; for (const r of log) { mxMs = Math.max(mxMs, r.sim * 1.1, r.render * 1.1); mxN = Math.max(mxN, r.units, r.enemies); }
+  let mxMs = PERF_BUDGET_MS * 1.5, mxN = 1; for (const r of log) { mxMs = Math.max(mxMs, r.sim * 1.1, r.render * 1.1, (r.gap || 0) * 1.1); mxN = Math.max(mxN, r.units, r.enemies); }
   const yMs = v => Y1 - (Y1 - Y0) * Math.min(1, v / mxMs), yN = v => Y1 - (Y1 - Y0) * v / mxN;
   ctx.font = '10px Consolas, monospace'; ctx.textBaseline = 'middle';
   ctx.strokeStyle = 'rgba(150,190,240,.12)'; ctx.lineWidth = 1; ctx.fillStyle = '#7fa8d8'; ctx.textAlign = 'right';
@@ -10484,13 +10501,19 @@ function aarPerfCanvas(cv, log, worst) {
   const area = (key, col) => { ctx.beginPath(); ctx.moveTo(xAt(log[0].t), Y1); for (const r of log) ctx.lineTo(xAt(r.t), yN(r[key])); ctx.lineTo(xAt(log[n - 1].t), Y1); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); };
   area('units', 'rgba(93,255,141,.10)'); area('enemies', 'rgba(255,90,90,.12)');
   const line = (key, col) => { ctx.beginPath(); log.forEach((r, i) => { const x = xAt(r.t), y = yMs(r[key]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.stroke(); };
-  line('sim', '#4ea8ff'); line('render', '#ffd23f');
+  line('sim', '#4ea8ff'); line('render', '#ffd23f'); ctx.setLineDash([5, 3]); line('gap', '#ff7ad9'); ctx.setLineDash([]);
   const yb = yMs(PERF_BUDGET_MS); ctx.setLineDash([6, 4]); ctx.strokeStyle = '#ff8a5a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X0, yb); ctx.lineTo(X1, yb); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = '#ff8a5a'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('60 fps budget (16.7 ms)', X0 + 6, yb - 2);
   ctx.fillStyle = '#ffd86b'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   worst.forEach((w, i) => { const x = xAt(w.t); ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, Y1); ctx.lineTo(x, Y1 + 7); ctx.stroke(); ctx.fillText('#' + (i + 1), x, Y1 + 8); });
   ctx.fillStyle = '#7fa8d8'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(aarMMSS(t0), X0, Y1 + 20); ctx.textAlign = 'right'; ctx.fillText(aarMMSS(t1), X1, Y1 + 20);
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; let lx = X0 + 6; for (const [nm, col] of [['sim ms / step', '#4ea8ff'], ['render ms', '#ffd23f'], ['your units', 'rgba(93,255,141,.6)'], ['hostiles', 'rgba(255,90,90,.6)']]) { ctx.fillStyle = col; ctx.fillRect(lx, 4, 10, 4); ctx.fillStyle = '#9fb6d4'; ctx.fillText(nm, lx + 14, 1); lx += 24 + nm.length * 6; }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; let lx = X0 + 6; for (const [nm, col] of [['sim ms / step', '#4ea8ff'], ['render ms', '#ffd23f'], ['outside our code (gap)', '#ff7ad9'], ['your units', 'rgba(93,255,141,.6)'], ['hostiles', 'rgba(255,90,90,.6)']]) { ctx.fillStyle = col; ctx.fillRect(lx, 4, 10, 4); ctx.fillStyle = '#9fb6d4'; ctx.fillText(nm, lx + 14, 1); lx += 24 + nm.length * 6; }
+}
+/* LoAF breakdown for one window. 'outside script and layout' = loafDur - script sum - style/layout - pre-paint, floored at 0: what is left of the long frames after JS, style+layout and pre-paint work, i.e. raster, compositing and GPU wait. */
+function aarLoafLine(w) {
+  if (!(w.loafN > 0)) return '<p>Long frames: ' + (PERF_LOAF.ok ? 'none in this window.' : 'not measured in this browser.') + '</p>';
+  const o = Math.max(0, w.loafDur - (w.loafScript || 0) - w.loafStyle - w.loafPre), top = (w.loafTop || []).map(x => String(x[0]).replace(/[&<>]/g, '') + ' (' + x[1].toFixed(0) + ' ms)').join(', ');
+  return '<p>Long frames: ' + w.loafN + ' · script ' + (w.loafScript || 0).toFixed(0) + ' ms · style/layout ' + w.loafStyle.toFixed(0) + ' ms · pre-paint ' + w.loafPre.toFixed(0) + ' ms · outside script and layout ' + o.toFixed(0) + ' ms (raster, compositing, GPU)' + (top ? ' · top scripts: ' + top : '') + '</p>';
 }
 function aarPerfUA() {
   const ua = navigator.userAgent || '', m = /(Edg|OPR|Firefox|Chrome|Version)\/(\d+)/.exec(ua);
@@ -10504,14 +10527,15 @@ function aarPerfHTML() {
   const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])), worst = st.perfWorst || [];
   let img = ''; try { const pc = document.createElement('canvas'); pc.width = 960; pc.height = 260; aarPerfCanvas(pc, log, worst); img = pc.toDataURL('image/png'); } catch (er) {}
   const fr = log.filter(r => r.frame > 0); let avg = 0, wst = 0, over = 0; for (const r of fr) { avg += r.frame; wst = Math.max(wst, r.worst); if (r.frame > PERF_BUDGET_MS) over++; } avg = fr.length ? avg / fr.length : 0;
-  const hz = PERF_HZ || (log[log.length - 1].hz), mach = (navigator.hardwareConcurrency || '?') + ' cores · pixel ratio ' + (window.devicePixelRatio || 1) + ' · viewport ' + innerWidth + '×' + innerHeight + ' · ' + (hz ? 'about ' + hz + ' Hz display' : 'refresh rate unknown') + ' · ' + esc(aarPerfUA());
-  const sum = fr.length ? 'Average frame ' + avg.toFixed(1) + ' ms (' + (1000 / avg).toFixed(0) + ' fps). Worst single frame ' + wst.toFixed(0) + ' ms. ' + Math.round(over / fr.length * 100) + '% of the match ran slower than 60 fps.' : 'No rendered frames were timed this match; only simulation cost was recorded.';
+  const hz = PERF_HZ || (log[log.length - 1].hz); let mach = (navigator.hardwareConcurrency || '?') + ' cores · pixel ratio ' + (window.devicePixelRatio || 1) + ' · viewport ' + innerWidth + '×' + innerHeight + ' · ' + (hz ? 'about ' + hz + ' Hz display' : 'refresh rate unknown') + ' · ' + esc(aarPerfUA());
+  const mc = perfMachine(); mach += ' · GPU: ' + esc(mc.gpu) + (mc.soft ? ' <span style="color:#ff8a5a">— hardware acceleration is OFF</span>' : '') + (mc.mem ? ' · ' + mc.mem + ' GB memory' : '');
+  const sum = fr.length ? 'Average frame ' + avg.toFixed(1) + ' ms (' + (1000 / avg).toFixed(0) + ' fps). Worst single frame ' + wst.toFixed(0) + ' ms. ' + Math.round(over / fr.length * 100) + '% of the match ran slower than 60 fps. Hardware acceleration: ' + (perfMachine().soft ? 'OFF' : 'on') + '.' : 'No rendered frames were timed this match; only simulation cost was recorded.';
   const f1 = v => (+v).toFixed(1), tr = a => '<tr>' + a.map((x, i) => (i ? '<td class="v">' : '<td>') + esc(x) + '</td>').join('') + '</tr>';
   let h = '<style>.aar-perf p{margin:4px 0;font:12px Consolas,monospace;color:#9fb6d4}.aar-perf table{width:100%;border-collapse:collapse;margin:6px 0 8px}.aar-perf td,.aar-perf th{padding:3px 8px;border-bottom:1px dashed rgba(150,190,240,.15);font:12px Consolas,monospace;text-align:right;color:#d8ecff}.aar-perf th{color:#7fa8d8;font-weight:600}.aar-perf td:first-child,.aar-perf th:first-child{text-align:left}.aar-perf .pimgs{display:flex;gap:6px;margin-bottom:14px}.aar-perf figure{flex:1;margin:0;min-width:0}.aar-perf figure img{width:100%;max-width:100%;display:block;border-radius:5px;border:1px solid #1a2c46}.aar-perf figcaption{font:10px Consolas,monospace;color:#9fb6d4;text-align:center;margin-top:3px}.aar-perf img.pchart{width:100%;max-width:100%;display:block;border-radius:6px;border:1px solid #1a2c46}</style><div class="aar-perf">';
   h += '<p>' + esc(sum) + '</p><p>' + mach + '</p>' + (img ? '<img class="pchart" src="' + img + '" alt="performance timeline">' : '');
   worst.forEach((w, i) => {
     h += '<h3 style="margin:12px 0 2px;font:600 11px Consolas,monospace;color:#6dffb0;letter-spacing:1px">WORST WINDOW #' + (i + 1) + ' — ' + aarMMSS(w.t) + '</h3>';
-    h += '<table><tr><th>time</th><th>sim ms</th><th>render ms</th><th>frame ms</th><th>fps</th><th>units</th><th>hostiles</th><th>projectiles</th><th>particles</th><th>effects</th></tr>' + tr([aarMMSS(w.t), f1(w.sim) + (w.steps > 1.05 ? ' ×' + f1(w.steps) : ''), f1(w.render), w.frame ? f1(w.frame) : '—', w.fps ? f1(w.fps) : '—', w.units, w.enemies, w.proj, w.parts, w.fxq]) + '</table>';
+    h += '<table><tr><th>time</th><th>sim ms</th><th>render ms</th><th>frame ms</th><th>fps</th><th>units</th><th>hostiles</th><th>projectiles</th><th>particles</th><th>effects</th><th>js ms</th><th>hud ms</th><th>gap ms</th><th>rec</th><th>zoom</th><th>sel</th><th>dom</th></tr>' + tr([aarMMSS(w.t), f1(w.sim) + (w.steps > 1.05 ? ' ×' + f1(w.steps) : ''), f1(w.render), w.frame ? f1(w.frame) : '—', w.fps ? f1(w.fps) : '—', w.units, w.enemies, w.proj, w.parts, w.fxq, f1(w.js || 0), f1(w.hud || 0), f1(w.gap || 0), w.rec ? 'on' : 'off', w.zoom == null ? '—' : w.zoom, w.sel == null ? '—' : w.sel, w.dom == null ? '—' : w.dom]) + '</table>' + aarLoafLine(w);
     if (w.sec) h += '<table><tr><th>section</th>' + Object.keys(w.sec).map(k => '<th>' + esc(k) + '</th>').join('') + '</tr>' + tr(['avg ms'].concat(Object.keys(w.sec).map(k => f1(w.sec[k])))) + '</table>';
     if (!w.imgs || w.imgs.length !== 3 || !w.imgs.every(Boolean)) h += '<p>No snapshot for this window.</p>'; else h += '<div class="pimgs">' + w.imgs.map((u, j) => '<figure><img src="' + u + '"><figcaption>' + ['west', 'centre', 'east'][j] + '</figcaption></figure>').join('') + '</div>';
   });

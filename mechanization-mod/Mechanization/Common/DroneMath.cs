@@ -46,6 +46,18 @@ namespace Mechanization.Common
 			return side * (D.PadStartTiles + (slot >> 1) * D.PadSpacingTiles);
 		}
 
+		/// <summary>
+		/// Where slot <paramref name="slot"/> sits on its Armory roof: pixels right of the roof's centre and pixels above the roof line to the body's centre offset (0 = body resting on the roof).
+		/// Slots fill a row of <see cref="D.PerchPerRow"/> across the roof, then stack upward row by row.
+		/// </summary>
+		public static void PerchOffsetPx(int slot, out float dxPx, out float riseAboveRestPx)
+		{
+			int per = Math.Max(1, D.PerchPerRow);
+			int s = Math.Max(0, slot);
+			dxPx = (s % per - (per - 1) * 0.5f) * D.PerchColSpacingPx;
+			riseAboveRestPx = (s / per) * D.PerchRowSpacingPx;
+		}
+
 		/// <summary>The centre, in tiles from the Barracks centre, of the loiter sector slot <paramref name="slot"/> wanders in.</summary>
 		public static float SectorCenterTiles(int slot)
 		{

@@ -121,6 +121,23 @@ namespace Mechanization.Content.NPCs
 				}
 				Check(clear && left && right, "every pad is on its own patch of ground, left and right of the Barracks, clear of its neighbours");
 				Check(D.PadStartTiles > 1.5f + need * 0.5f, "the first pad clears the Barracks wall");
+
+				// armory perches: every slot has its own spot on or above the roof, no two bodies overlap, and the first row sits on the roof
+				bool perchClear = true, onRoof = true;
+				for (int a = 0; a < D.PerBarracksCap; a++)
+				{
+					DroneFlight.PerchOffsetPx(a, out float ax, out float ay);
+					onRoof &= ay >= 0f && (a >= D.PerchPerRow || ay == 0f);
+					for (int b = a + 1; b < D.PerBarracksCap; b++)
+					{
+						DroneFlight.PerchOffsetPx(b, out float bx, out float by);
+						perchClear &= Math.Abs(ax - bx) >= D.BodyWidth || Math.Abs(ay - by) >= D.BodyHeight;
+					}
+				}
+				Check(perchClear && onRoof, "every armory perch is its own spot, clear of its neighbours, the first row on the roof");
+				Check(D.LoiterHalfWidthTiles >= 100f && D.LoiterMinAltTiles >= 20 && D.LoiterMaxAltTiles >= 45, "the loiter box is wide and high");
+				float farthestTrip = (float)Math.Sqrt(Math.Pow((D.LoiterHalfWidthTiles + D.LeashTiles) * MechConstants.TilePx, 2) + Math.Pow((D.LoiterMaxAltTiles + D.LeashTiles) * MechConstants.TilePx, 2));
+				Check(DroneBattery.ReturnThreshold(farthestTrip) < DroneBattery.Capacity * D.ScrambleFraction, "the farthest trip home turns back well under the scramble level");
 			});
 
 			Guard("armory link and recall", () =>

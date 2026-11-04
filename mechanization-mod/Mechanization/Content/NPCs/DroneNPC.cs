@@ -36,10 +36,10 @@ namespace Mechanization.Content.NPCs
 	/// LOITER. The drone flies a lazy patrol inside a box above its Barracks: it picks a waypoint in its own sector of the box (and altitude row), drifts there, hangs a moment and picks the next, so a
 	/// garrison covers the whole base. It presses toward an enemy that comes in reach but never strays past a leash around the box, and returns to loitering when the enemy is dead or out of reach.
 	///
-	/// BATTERY. Flying drains it slowly; sitting on a pad refills it fast. A low battery (<see cref="DroneBattery.ReturnThreshold"/>) sends the drone home to land and recharge, then it takes off again
+	/// BATTERY. Flying drains it slowly; sitting on its perch refills it fast. A low battery (<see cref="DroneBattery.ReturnThreshold"/>) sends the drone home to land and recharge, then it takes off again
 	/// armed with the same weapon. A flat battery is a refuel trip and nothing worse: the drone is never weaker, slower, capped or destroyed for it.
 	///
-	/// RECALL. Ordered from the chat panel or the keybind (<see cref="DroneSystem"/>): the drone flies to its pad beside the Barracks, lands, and files its weapon back into the Armory
+	/// RECALL. Ordered from the chat panel or the keybind (<see cref="DroneSystem"/>): the drone flies (through terrain) to its perch on its Armory's roof, lands, and files its weapon back into the Armory
 	/// (<see cref="DronePhase.Parked"/>), so the player can swap what the Armory holds. A parked drone stays on its pad until a launch order re-arms it with the best spare weapon.
 	///
 	/// Server / single player drives the brain and fires; clients draw the hand-built side view (phase in ai[1], battery in ai[2], bound flag in ai[3], weapon type and shot counter on the extra-AI sync),
@@ -133,7 +133,7 @@ namespace Mechanization.Content.NPCs
 		/// </summary>
 		public bool Bind(BarracksTE barracks, int armoryId, Item weapon, Item ammo, int slot, int commander)
 		{
-			BarracksId = barracks.ID; Slot = slot; CommanderIndex = commander;
+			BarracksId = barracks.ID; ArmoryId = armoryId; Slot = slot; CommanderIndex = commander;
 			RefreshBase(barracks);
 			NPC.Center = _pad;
 			NPC.velocity = Vector2.Zero;
@@ -207,6 +207,7 @@ namespace Mechanization.Content.NPCs
 		public override void AI()
 		{
 			EnsureDummy();
+			NPC.noTileCollide = IsBound && (Phase == DronePhase.Refuel || Phase == DronePhase.Recall); // the run home ignores blocks; everything else collides again
 			SyncDummyTransform();
 			if (_recoil > 0f) _recoil = Math.Max(0f, _recoil - D.RecoilReturnPx);
 			if (!IsBound) return; // not yet bound / synced
@@ -284,7 +285,7 @@ namespace Mechanization.Content.NPCs
 		{
 			_baseX = barracks.Center.X;
 			_roofY = barracks.Position.Y * MechConstants.TilePx;
-			_pad = PadFor(barracks, Slot);
+			_pad = PadFor(barracks, ArmoryOrNull() ?? ArmoryLink.OfBarracks(barracks), Slot);
 		}
 
 		/// <summary>Files the weapon and the borrowed round back into the Armory (idempotent: a second call, or one after a soldier already took the weapon, changes nothing), then forgets them and goes unarmed.</summary>
@@ -519,10 +520,23 @@ namespace Mechanization.Content.NPCs
 		private static bool SolidAt(int tx, int ty) => WorldGen.InWorld(tx, ty, 4) && WorldGen.SolidTile(tx, ty);
 
 		/// <summary>
-		/// Where a drone in formation slot <paramref name="slot"/> rests (its body centre): on the ground beside the Barracks, slots alternating left and right and fanning outward. The ground is found by
-		/// climbing out of any solid at the pad's column and then dropping to the first thing to stand on; with none the pad is a hover point at the roof line.
+		/// Where a drone in formation slot <paramref name="slot"/> rests (its body centre): on the roof of its <paramref name="armory"/>, in rows (<see cref="DroneFlight.PerchOffsetPx"/>). With no Armory (or a
+		/// roof walled in by solid tiles) it falls back to the ground pad beside the Barracks.
 		/// </summary>
-		public static Vector2 PadFor(BarracksTE barracks, int slot)
+		public static Vector2 PadFor(BarracksTE barracks, ArmoryTE armory, int slot)
+		{
+			if (armory != null)
+			{
+				DroneFlight.PerchOffsetPx(slot, out float dx, out float rise);
+				float px = armory.Center.X + dx;
+				float py = armory.Position.Y * MechConstants.TilePx - D.BodyHeight * 0.5f - 1f - rise;
+				if (!SolidAt((int)(px / MechConstants.TilePx), (int)(py / MechConstants.TilePx))) return new Vector2(px, py);
+			}
+			return GroundPadFor(barracks, slot);
+		}
+
+		/// <summary>The old landing spot: on the ground beside the Barracks, slots alternating left and right and fanning outward. The ground is found by climbing out of any solid at the pad's column and dropping to the first thing to stand on; with none the pad is a hover point at the roof line.</summary>
+		private static Vector2 GroundPadFor(BarracksTE barracks, int slot)
 		{
 			float x = barracks.Center.X + DroneFlight.PadOffsetTiles(slot) * MechConstants.TilePx;
 			int tx = (int)(x / MechConstants.TilePx);
@@ -541,10 +555,13 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>The leash box: the loiter box widened by <see cref="D.LeashTiles"/> out the sides and up, and reaching <see cref="D.LeashDownTiles"/> below the roof line.</summary>
+		/// <summary>The highest a drone is sent (px from the world's top edge), so a tall loiter band over a high base stays inside the world.</summary>
+		private const float MinFlightY = 8f * MechConstants.TilePx;
+
 		private Vector2 ClampToLeash(Vector2 p)
 		{
 			float hx = (D.LoiterHalfWidthTiles + D.LeashTiles) * MechConstants.TilePx;
-			float top = _roofY - (D.LoiterMaxAltTiles + D.LeashTiles) * MechConstants.TilePx, bottom = _roofY + D.LeashDownTiles * MechConstants.TilePx;
+			float top = Math.Max(MinFlightY, _roofY - (D.LoiterMaxAltTiles + D.LeashTiles) * MechConstants.TilePx), bottom = _roofY + D.LeashDownTiles * MechConstants.TilePx;
 			return new Vector2(MathHelper.Clamp(p.X, _baseX - hx, _baseX + hx), MathHelper.Clamp(p.Y, top, bottom));
 		}
 
@@ -554,7 +571,7 @@ namespace Mechanization.Content.NPCs
 			DroneFlight.PickWaypointTiles(Slot, Main.rand, out float dx, out float alt);
 			float x = _baseX + dx * MechConstants.TilePx;
 			int tx = (int)(x / MechConstants.TilePx);
-			int ty = (int)((_roofY - alt * MechConstants.TilePx) / MechConstants.TilePx);
+			int ty = Math.Max((int)(MinFlightY / MechConstants.TilePx) + 1, (int)((_roofY - alt * MechConstants.TilePx) / MechConstants.TilePx));
 			int lifted = 0;
 			while (lifted < 24 && (SolidAt(tx, ty) || SolidAt(tx, ty - 1) || SolidAt(tx, ty + 1))) { ty--; lifted++; }
 			if (lifted >= 24) return new Vector2(_baseX, _roofY - D.LoiterMinAltTiles * MechConstants.TilePx);
@@ -575,7 +592,7 @@ namespace Mechanization.Content.NPCs
 				case DronePhase.Refuel:
 				case DronePhase.Recall:
 					MoveHome();
-					break;
+					return; // flying through terrain: it cannot be trapped
 				default:
 					MoveLoiter(engaging);
 					break;
@@ -639,7 +656,7 @@ namespace Mechanization.Content.NPCs
 			float hd = Math.Abs(NPC.Center.X - _pad.X);
 			bool approach = hd > 24f;
 			Vector2 goal = approach ? _pad + new Vector2(0f, -D.ApproachAltTiles * MechConstants.TilePx) : _pad;
-			Steer(goal, approach ? D.ReturnSpeedPx : D.LandSpeedPx, approach);
+			Steer(goal, approach ? D.ReturnSpeedPx : D.LandSpeedPx, false); // no terrain assist: the run home passes through blocks
 		}
 
 		private void Touchdown()

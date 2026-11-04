@@ -474,8 +474,10 @@ namespace Levy.Common.Weapons
 			int savedWho = d.whoAmI, savedDir = d.direction; Vector2 savedCenter = d.Center; bool savedUse = d.controlUseItem;
 			Vector2 pos = muzzle, v = vel; int type = projType, dmg = damage; float kb = knockback;
 			bool useDefault = false, threw = false;
+			object thoriumPrev = null;
 			try
 			{
+				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): Thorium's local-player cache -> the dummy's ThoriumPlayer
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
 				d.whoAmI = OwnerFor(s);
 				d.Center = s.NPC.Center;
@@ -489,7 +491,7 @@ namespace Levy.Common.Weapons
 				useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
 			}
 			catch (Exception) { threw = true; }
-			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
+			finally { OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
 
 			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
 			int adopted = 0;

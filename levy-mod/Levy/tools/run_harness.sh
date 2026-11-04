@@ -16,15 +16,15 @@ while getopts "o:f:m:t:s:r:cT:p:kNC:A:u:" o; do case $o in
   o) OUT=$OPTARG;; f) FILTER=$OPTARG;; m) MOD=$OPTARG;; t) TICKS=$OPTARG;; s) SHARD=$OPTARG;; r) RANGES=$OPTARG;; c) SKIPC=1;; T) TMO=$OPTARG;; p) PORT=$OPTARG;; k) KEEPCFG=1;; N) NEW=1;; C) CLASSES=$OPTARG;; A) ARMOR=$OPTARG;; u) SETUP=$OPTARG;;
 esac; done
 if [ -n "$NEW" ]; then
-  TML=/home/user/tml-bin/tml-2026.10
-  DATA=/home/user/tml-save-2026.10
+  TML=${HARNESS_TML:-/home/user/tml-bin/tml-2026.10}   # override both for a PRIVATE install + save dir (no collisions with other agents)
+  DATA=${HARNESS_DATA:-/home/user/tml-save-2026.10}
   EXTRA=(-tmlsavedirectory "$DATA")
   if [ "$MOD" = "CalamityMod" ]; then LIST="[\"CalamityModMusic\",\"CalamityMod\",\"Levy\",\"Mechanization\"]"; else LIST="[\"$MOD\",\"Levy\",\"Mechanization\"]"; fi
   LOGF=$TML/tModLoader-Logs/server.log
 else
-  TML=/home/user/tml-bin/tml
-  DATA=/root/.local/share/Terraria/tModLoader
-  EXTRA=()
+  TML=${HARNESS_TML:-/home/user/tml-bin/tml}
+  DATA=${HARNESS_DATA:-/root/.local/share/Terraria/tModLoader}
+  EXTRA=(); [ -n "${HARNESS_DATA:-}" ] && EXTRA=(-tmlsavedirectory "$DATA")   # private save dir for the old toolchain
   LIST="[\"Levy\",\"Mechanization\",\"$MOD\"]"
   LOGF=$TML/tModLoader-Logs/server.log
 fi

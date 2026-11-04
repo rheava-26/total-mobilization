@@ -13,6 +13,10 @@ while getopts "o:f:m:t:s:r:cT:p:k" o; do case $o in
 esac; done
 TML=/home/user/tml-bin/tml
 DATA=/root/.local/share/Terraria/tModLoader
+# LEVY_TML_SAVE=<dir>: use a PRIVATE tModLoader save dir (Mods/, Worlds/ under it; passed as -tmlsavedirectory) so concurrent builders never share a Mods dir.
+# Needs <dir>/Mods/{Levy,<mod>}.tmod and a copy of LevyTest.wld/.twld in <dir>/Worlds. Mechanization is not enabled in this mode.
+SAVEARG=""; MODS_EXTRA=",\"Mechanization\""
+if [ -n "${LEVY_TML_SAVE:-}" ]; then DATA=$LEVY_TML_SAVE; SAVEARG="-tmlsavedirectory $LEVY_TML_SAVE"; MODS_EXTRA=""; mkdir -p "$DATA/Worlds"; [ -f "$DATA/Worlds/LevyTest.wld" ] || cp /root/.local/share/Terraria/tModLoader/Worlds/LevyTest.wld /root/.local/share/Terraria/tModLoader/Worlds/LevyTest.twld "$DATA/Worlds/"; fi
 WORLDS=$DATA/Worlds
 ENABLED=$DATA/Mods/enabled.json
 RUN=$(date +%s)_$$
@@ -21,7 +25,7 @@ mkdir -p "$SCR"
 [ -z "$OUT" ] && OUT=$SCR/run_$RUN.tsv
 WNAME=HarnessScratch_$RUN
 cp "$WORLDS/LevyTest.wld" "$WORLDS/$WNAME.wld" && cp "$WORLDS/LevyTest.twld" "$WORLDS/$WNAME.twld" || { echo "cannot copy test world"; exit 1; }
-if [ -z "$KEEPCFG" ]; then echo "[\"Levy\",\"Mechanization\",\"$MOD\"]" > "$ENABLED"; fi
+if [ -z "$KEEPCFG" ]; then echo "[\"Levy\"$MODS_EXTRA,\"$MOD\"]" > "$ENABLED"; fi
 export DOTNET_ROOT=/home/user/dotnet PATH=/home/user/dotnet:$PATH
 export LEVY_HARNESS=1 LEVY_HARNESS_OUT="$OUT" LEVY_HARNESS_MOD="$MOD"
 [ -n "$FILTER" ] && export LEVY_HARNESS_FILTER="$FILTER"
@@ -32,9 +36,9 @@ export LEVY_HARNESS=1 LEVY_HARNESS_OUT="$OUT" LEVY_HARNESS_MOD="$MOD"
 LOG=$SCR/server_$RUN.log
 cd "$TML" || exit 1
 echo "world copy: $WORLDS/$WNAME.wld   log: $LOG   out: $OUT"
-timeout "$TMO" dotnet tModLoader.dll -server -nosteam -port "$PORT" -world "$WORLDS/$WNAME.wld" > "$LOG" 2>&1 < /dev/null
+timeout "$TMO" dotnet tModLoader.dll -server -nosteam $SAVEARG -port "$PORT" -world "$WORLDS/$WNAME.wld" > "$LOG" 2>&1 < /dev/null
 RC=$?
-if [ -z "$KEEPCFG" ]; then echo '["Levy","Mechanization"]' > "$ENABLED"; fi
+if [ -z "$KEEPCFG" ]; then echo "[\"Levy\"$MODS_EXTRA]" > "$ENABLED"; fi
 rm -f "$WORLDS/$WNAME".wld* "$WORLDS/$WNAME".twld*
 echo "server exit=$RC (124 = timed out)"
 echo "enabled.json: $(cat "$ENABLED")"

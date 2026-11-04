@@ -44,6 +44,13 @@ namespace Levy.Common.Testing
 		private static string[] _filter;
 		private static int _runTicks = 360, _shardK = 0, _shardN = 1;
 		private static bool _skipControls;
+		// ---- ally-heal scenario switches (all default off = the original behaviour) ----
+		// LEVY_HARNESS_AIM=enemy        a heal-class weapon in the PLAYER baseline is aimed at the enemy (not at the wounded ally), so on-hit "heals allies" effects fire
+		// LEVY_HARNESS_ALLYHP=<percent> start health of the wounded ally soldier (default 30; above 75 a soldier healer's own AI abstains, so only Thorium's own effect can heal him)
+		// LEVY_HARNESS_ONLYLEVIES=1     the stand-in commander is at full health and there is no second stand-in player: the only wounded ally is the soldier
+		// LEVY_HARNESS_SPSWAP=1         the SOLDIER window updates Thorium projectiles owned by the commander with Main.myPlayer = the commander, as in single player (a dedicated server has no local player)
+		private static bool _aimEnemy, _onlyLevies, _spSwap;
+		private static int _allyHpPct = 30;
 		private static int[] _ranges = { 4, 7, 15, 25, 40 };
 		private const int WalkTicks = 1300;          // walk-in window: target walks 40 tiles at ~2 tiles/s (0.5333 px/tick)
 		private const float WalkPxPerTick = 0.5333f;
@@ -101,6 +108,10 @@ namespace Levy.Common.Testing
 				string sh = Environment.GetEnvironmentVariable("LEVY_HARNESS_SHARD");
 				if (!string.IsNullOrWhiteSpace(sh) && sh.Contains('/')) { var p = sh.Split('/'); if (int.TryParse(p[0], out int k) && int.TryParse(p[1], out int n) && n > 0) { _shardK = k; _shardN = n; } }
 				_skipControls = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_SKIPCONTROLS"));
+				_aimEnemy = string.Equals(Environment.GetEnvironmentVariable("LEVY_HARNESS_AIM"), "enemy", StringComparison.OrdinalIgnoreCase);
+				_onlyLevies = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_ONLYLEVIES"));
+				_spSwap = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_SPSWAP"));
+				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_ALLYHP"), out int ahp) && ahp >= 1 && ahp <= 100) _allyHpPct = ahp;
 				string rg = Environment.GetEnvironmentVariable("LEVY_HARNESS_RANGES");
 				if (!string.IsNullOrWhiteSpace(rg))
 				{
@@ -110,6 +121,7 @@ namespace Levy.Common.Testing
 				}
 				if (Main.dedServ) Main.OnTickForThirdPartySoftwareOnly += DriveServer;
 				On_Projectile.Update += OnProjUpdate;
+				if (_spSwap) On_NPC.UpdateNPC += OnNpcUpdate;
 				On_NetMessage.SendStrikeNPC += OnSendStrike;
 				On_NetMessage.SendData += OnSendData;
 				On_Player.KillMe += OnPlayerKillMe;
@@ -118,7 +130,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Enabled = false; Mod.Logger.Warn("HARNESS: load failed, disabled: " + e.Message); }
 		}
 
-		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
 
 		public override void OnWorldLoad()
 		{
@@ -489,7 +501,7 @@ namespace Levy.Common.Testing
 				}
 
 				bool companion = _cur.Kind != "" || t.Control == "negc";
-				PlaceCommander(companion);
+				PlaceCommander(companion && !_onlyLevies);
 
 				if (_stage == 1) { SetupPlayer(w, t, companion); return; }
 
@@ -534,7 +546,7 @@ namespace Levy.Common.Testing
 		{
 			var ar = MakeRecord("Pvt. Wounded");
 			ar.Order = SoldierOrder.Hold; ar.HoldFire = true; ar.LoadoutLocked = true;
-			ar.CurrentHp = Math.Max(1, (int)(ar.MaxHp * 0.30f)); ar.Mana = ar.MaxMana;
+			ar.CurrentHp = Math.Max(1, (int)(ar.MaxHp * (_allyHpPct / 100f))); ar.Mana = ar.MaxMana;
 			RosterSystem.Instance.Regulars.Add(ar);
 			_cur.AllyRec = ar;
 			Vector2 aat = at + new Vector2(-7 * 16f, 0f);
@@ -561,9 +573,9 @@ namespace Levy.Common.Testing
 				else _cur.Ammo = "NONE FOUND for useAmmo " + w.useAmmo;
 			}
 			p.noItems = false; p.itemAnimation = 0; p.itemTime = 0; p.controlUseItem = false; p.channel = false;
-			_cur.AimAtAlly = _cur.Kind == "healer:AllyHeal" || _cur.Kind == "healer:Hybrid";
+			_cur.AimAtAlly = _cur.Kind == "healer:AllyHeal" || (_cur.Kind == "healer:Hybrid" && !_aimEnemy);
 			Vector2 at = SoldierX0Bottom;
-			if (companion) { SpawnAlly(at); SetupPlayer2(); }
+			if (companion) { SpawnAlly(at); if (!_onlyLevies) SetupPlayer2(); }
 			if (_cur.Kind == "bard") { try { HarnessThoriumProbe.PrimePlayerBard(p); } catch (Exception e) { _cur.Exceptions.Add("prime:" + e.Message); } }
 			_cur.SetupOk = true;
 		}
@@ -586,10 +598,25 @@ namespace Levy.Common.Testing
 		/// Baseline window only: a PLAYER's projectile damages NPCs only when Main.myPlayer == its owner (damage is owner-authoritative in vanilla), so the baseline player's own projectiles
 		/// are updated with Main.myPlayer = 0. Every other projectile (and every other window) updates untouched.
 		/// </summary>
+		/// <summary>SPSWAP only: a soldier's body updates as it would in single player, where the machine's local player (Main.myPlayer) is the commander - so his shots are owned by the commander, as in play.</summary>
+		private static void OnNpcUpdate(On_NPC.orig_UpdateNPC orig, NPC self, int i)
+		{
+			var h = Enabled ? Instance : null;
+			if (h != null && _spSwap && h._ph == Ph.Run && h._stage == 0 && self.ModNPC is SoldierNPC)
+			{
+				int saved = Main.myPlayer;
+				Main.myPlayer = 0;
+				try { orig(self, i); } finally { Main.myPlayer = saved; }
+			}
+			else orig(self, i);
+		}
+
 		private static void OnProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			var h = Enabled ? Instance : null;
-			if (h != null && h._stage == 1 && h._ph == Ph.Run && self.owner == 0 && self.friendly)
+			// the stand-in player's own projectiles AND Thorium's heal projectiles (which are not "friendly" but only act when Main.myPlayer == owner); with SPSWAP the soldier window does the same, as single player would
+			bool thor = self.owner == 0 && self.ModProjectile != null && self.ModProjectile.Mod.Name == "ThoriumMod";
+			if (h != null && h._ph == Ph.Run && self.owner == 0 && ((h._stage == 1 && (self.friendly || thor)) || (_spSwap && h._stage == 0 && thor)))
 			{
 				int saved = Main.myPlayer;
 				Main.myPlayer = 0;
@@ -805,7 +832,7 @@ namespace Levy.Common.Testing
 				Player p = Main.player[0];
 				bool companion = c.Kind != "" || c.T.Control == "negc";
 				p.statLifeMax = 500; p.statLifeMax2 = 500;
-				p.statLife = companion ? 250 : 500;
+				p.statLife = companion && !_onlyLevies ? 250 : 500;
 				c.CmdBefore = c.CmdMax = c.CmdAfter = p.statLife; c.CmdPrev = p.statLife;
 				if (c.AllyIdx >= 0 && Main.npc[c.AllyIdx].active) { c.AllyBefore = c.AllyMax = c.AllyAfter = Main.npc[c.AllyIdx].life; }
 				if (c.IsBaseline)

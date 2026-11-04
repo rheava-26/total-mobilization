@@ -69,6 +69,13 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## ✅ MERGED, NOT SHIPPED (2026-11-04 late): drones 61f41c2, bard renown a23d23a, share-based progression 07c1d7e (+6f208a8)
+- **Progression:** levies = per-tier SHARE of known bosses beaten × config targets (20 end pre-HM / 40 end HM / 60 post-ML, max 60). Vanilla-only worlds reproduce the old CP exactly (2^17 subsets checked). Mod bosses DILUTE: with Calamity + Boss Checklist, all vanilla pre-HM down and no Calamity bosses down = 9 levies, not 20. **Eve to confirm this is the intended feel.**
+- Boss Checklist: I checked against its real source (JavidPack/BossChecklist EntryInfo.cs:89-109): the dictionary has no `internalName`; key = "modSource internalName". Fixed in 6f208a8. Still never run with BC loaded.
+- No high-water mark: removing a boss mod or lowering a target can drop the cap below fielded levies (unresolved, low priority).
+- **Bard renown:** pool max = crystals + renown points (4000·n^1.5 bard damage, 30 points, cap 40). Raw damage, so it fills faster in HM, left uncapped (tenet #1). Levies picking up real Inspiration Notes: feasible, NOT built (OnPickup(dummy) + net sync).
+- **Drones:** loiter 20-45 tiles up, ±110 tiles; noclip on Refuel/Recall; perch rows on armory roof. Status text de-parroted. Vertical lines still UNEXPLAINED (no Mechanization draw path can make them). Next evidence: which weapon a lined drone has mounted. Side find: DrawWeapon uses a null source rect, so animated item sheets draw as the whole squashed sheet (an art-suspect, not the line).
+
 ## 🐛 OPEN: on-hit effects come from the PLAYER, not the soldier (Eve video 2026-11-04, Thorium + Calamity)
 - **Observed (video):** Eve hovering high above the army holding Mystic Thorium Heavy Scythe; long white jagged streaks run between Eve's position and enemies near the soldiers.
 - **Code fact:** every soldier shot is owned by the real commander (`WeaponUse.cs:275 OwnerFor => TrueMyPlayer`), so OnHit code reading `Main.player[owner]` sees Eve.

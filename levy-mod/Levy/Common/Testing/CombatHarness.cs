@@ -265,6 +265,8 @@ namespace Levy.Common.Testing
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = CommanderName;
+			// the server resets a player slot that has no network client (max life fell back to 100 in the first run), so re-assert the maxima every tick
+			p.statLifeMax = 500; p.statLifeMax2 = 500; p.statManaMax = 200; p.statManaMax2 = 200;
 			p.position = new Vector2(_cx * 16f - 4 * 16f, FloorY * 16f - p.height);
 			p.velocity = Vector2.Zero;
 			p.statMana = p.statManaMax2;
@@ -367,6 +369,7 @@ namespace Levy.Common.Testing
 			public long Damage; public int Hits;
 			public int AnimTicks, FirstFire = -1, EngageTicks, AcquiredTicks, AliveTicks, DeadTicks; public float MinDist = 9999f, StartDist;
 			public int CmdBefore, CmdAfter, CmdMax, AllyBefore, AllyAfter, AllyMax, AllyMaxLife;
+			public int CmdPrev = -1, AllyPrev = -1, CmdBig, AllyBig, CmdGainSum, AllyGainSum; // per-tick life rises; 'Big' = a single-tick rise of 3+ (natural regen rises 1 at a time)
 			public int InspStart = -1, InspEnd = -1, InspSpent, InspPrev = -1, InspMax = -1;
 			public uint EmpUnion, AllyEmpUnion;
 			public HashSet<string> CmdBuffNames = new();
@@ -538,7 +541,10 @@ namespace Levy.Common.Testing
 			try
 			{
 				Player p = Main.player[0];
-				c.CmdBefore = c.CmdMax = c.CmdAfter = p.statLife;
+				bool companion = c.Kind != "" || c.T.Control == "negc";
+				p.statLifeMax = 500; p.statLifeMax2 = 500;
+				p.statLife = companion ? 250 : 500;
+				c.CmdBefore = c.CmdMax = c.CmdAfter = p.statLife; c.CmdPrev = p.statLife;
 				if (c.AllyIdx >= 0 && Main.npc[c.AllyIdx].active) { c.AllyBefore = c.AllyMax = c.AllyAfter = Main.npc[c.AllyIdx].life; }
 				var body = Main.npc[c.BodyIdx].ModNPC as SoldierNPC;
 				c.ManaStart = c.ManaMin = c.Rec.Mana;
@@ -587,6 +593,8 @@ namespace Levy.Common.Testing
 
 				// healing
 				Player p = Main.player[0];
+				if (c.CmdPrev >= 0 && p.statLife > c.CmdPrev) { int g = p.statLife - c.CmdPrev; c.CmdGainSum += g; if (g >= 3) c.CmdBig++; }
+				c.CmdPrev = p.statLife;
 				c.CmdAfter = p.statLife; if (p.statLife > c.CmdMax) c.CmdMax = p.statLife;
 				foreach (int b in p.buffType) if (b > 0) c.CmdBuffNames.Add(BuffLoader.GetBuff(b)?.Name ?? ("buff" + b));
 				if (c.AllyIdx >= 0)
@@ -594,6 +602,8 @@ namespace Levy.Common.Testing
 					NPC an = Main.npc[c.AllyIdx];
 					if (an.active && an.ModNPC is SoldierNPC)
 					{
+						if (c.AllyPrev >= 0 && an.life > c.AllyPrev) { int g = an.life - c.AllyPrev; c.AllyGainSum += g; if (g >= 3) c.AllyBig++; }
+						c.AllyPrev = an.life;
 						c.AllyAfter = an.life; if (an.life > c.AllyMax) c.AllyMax = an.life;
 						if (an.TryGetGlobalNPC(out SoldierThoriumGlobalNPC ag)) c.AllyEmpUnion |= ag.EmpMask;
 					}
@@ -674,6 +684,7 @@ namespace Levy.Common.Testing
 				c.Damage.ToString(), c.Hits.ToString(),
 				c.AllyIdx >= 0 || c.Kind.StartsWith("healer") || c.Kind == "bard" ? $"{c.CmdBefore}>{c.CmdAfter}(max{c.CmdMax})" : "-",
 				c.AllyIdx >= 0 ? $"{c.AllyBefore}>{c.AllyAfter}(max{c.AllyMax}/{c.AllyMaxLife})" : "-",
+				c.AllyIdx >= 0 ? $"cmd+{c.CmdGainSum}/big{c.CmdBig} ally+{c.AllyGainSum}/big{c.AllyBig}" : "-",
 				c.InspStart < 0 ? "-" : $"{c.InspStart}>{c.InspEnd}/{c.InspMax}", c.Kind == "bard" ? c.InspSpent.ToString() : "-",
 				c.EmpUnion == 0 ? "-" : "0x" + c.EmpUnion.ToString("x"), c.AllyEmpUnion == 0 ? "-" : "0x" + c.AllyEmpUnion.ToString("x"),
 				c.CmdBuffNames.Count == 0 ? "-" : string.Join(",", c.CmdBuffNames.OrderBy(x => x)),
@@ -686,7 +697,7 @@ namespace Levy.Common.Testing
 
 		private static string Clean(string s) => (s ?? "").Replace("\t", " ").Replace("\r", " ").Replace("\n", " ");
 
-		private const string Header = "kind\tweapon\titemType\tinternal\tmod\tclassifier\tcompanionKind\tissued\theldIn\tammoGiven\trangeTiles\tsetupOk\taliveTicks\tstates\tengageTicks\ttargetAcquiredTicks\tminDistTiles\tstartDistTiles\tsoldierMovedPx\tfired(proj)\tprojectiles\tprojTypes\tprojUntagged\titemAnimTicks\tfirstAnimTick\tdamageToTarget\ttargetHitTicks\tcommanderHp\tallyHp\tinspiration(start>end/max)\tinspSpent\tempowermentsSoldier\tempowermentsAlly\tcommanderBuffs\tmana(start>end)\texceptions\tnotes";
+		private const string Header = "kind\tweapon\titemType\tinternal\tmod\tclassifier\tcompanionKind\tissued\theldIn\tammoGiven\trangeTiles\tsetupOk\taliveTicks\tstates\tengageTicks\ttargetAcquiredTicks\tminDistTiles\tstartDistTiles\tsoldierMovedPx\tfired(proj)\tprojectiles\tprojTypes\tprojUntagged\titemAnimTicks\tfirstAnimTick\tdamageToTarget\ttargetHitTicks\tcommanderHp\tallyHp\tlifeRises\tinspiration(start>end/max)\tinspSpent\tempowermentsSoldier\tempowermentsAlly\tcommanderBuffs\tmana(start>end)\texceptions\tnotes";
 
 		private void WriteTsv()
 		{

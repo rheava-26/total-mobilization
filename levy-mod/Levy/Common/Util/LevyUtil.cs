@@ -109,9 +109,13 @@ namespace Levy.Common.Util
 			return npc;
 		}
 
+		/// <summary>True for the damageable "projectile" NPCs (Chaos Ball, Water Sphere, Burning Sphere, spores...) that a player can shoot down.</summary>
+		public static bool IsProjectileNpc(int type) => type > 0 && type < NPCID.Sets.ProjectileNPC.Length && NPCID.Sets.ProjectileNPC[type];
+
 		public static bool IsHostileTarget(NPC npc)
 		{
-			if (!(npc.active && !npc.friendly && !npc.townNPC && npc.lifeMax > 5 && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type]))
+			// lifeMax <= 5 marks a critter-sized target, except the damageable orbs casters throw (NPCID.Sets.ProjectileNPC, lifeMax 1): those are real, shootable threats.
+			if (!(npc.active && !npc.friendly && !npc.townNPC && (npc.lifeMax > 5 || IsProjectileNpc(npc.type)) && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type]))
 				return false;
 			return !IsOnNoAttackList(npc);
 		}

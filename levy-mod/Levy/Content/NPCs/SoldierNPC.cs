@@ -225,6 +225,7 @@ namespace Levy.Content.NPCs
 			Dummy.Male = Record.Male; Dummy.skinVariant = Record.SkinVariant; Dummy.hair = Record.Hair;
 			Dummy.hairColor = Record.HairColor; Dummy.skinColor = Record.SkinColor; Dummy.eyeColor = Record.EyeColor;
 			Dummy.shirtColor = Record.ShirtColor; Dummy.underShirtColor = Record.UnderShirtColor; Dummy.pantsColor = Record.PantsColor; Dummy.shoeColor = Record.ShoeColor;
+			NPC.HitSound = Record.Male ? SoundID.PlayerHit : SoundID.FemaleHit; // vanilla Player.Hurt: Male ? PlayerHit : FemaleHit (SetDefaults only sets the male one)
 		}
 
 		/// <summary>

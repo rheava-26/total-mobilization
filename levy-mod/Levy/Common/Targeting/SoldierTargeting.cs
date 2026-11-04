@@ -59,7 +59,7 @@ namespace Levy.Common.Targeting
 				if (distSq > rangeSq) continue;
 				if (IsIn(alsoExclude, i) || IsNeverTarget(npc)) continue;
 				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
-				bool attacking = !preferNearest && IsAttackingUs(npc); // nearest-only: every candidate ranks as priority 2, so distance alone decides
+				bool attacking = !preferNearest && (IsAttackingUs(npc) || LevyUtil.IsProjectileNpc(npc.type)); // an orb in reach is a threat to the line: priority 1 // nearest-only: every candidate ranks as priority 2, so distance alone decides
 				if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
 				if (attacking == bestAttacking && distSq >= bestDistSq) continue;
 				if (!Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
@@ -231,7 +231,7 @@ namespace Levy.Common.Targeting
 			if (npc.ModNPC is SoldierNPC) return true;
 			int type = npc.type;
 			if (type < 0) return true;
-			if (type < NPCID.Sets.ProjectileNPC.Length && NPCID.Sets.ProjectileNPC[type]) return true;
+			// Projectile-NPCs (the orbs casters throw) are damageable and shootable: they are legal targets. Undamageable ones were already rejected by IsHostileTarget above.
 			if (type < NPCID.Sets.IsTownPet.Length && NPCID.Sets.IsTownPet[type]) return true;
 			if (IsFleeTarget(npc)) return true;
 			switch (type)

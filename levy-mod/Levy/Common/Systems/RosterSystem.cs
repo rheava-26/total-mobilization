@@ -60,31 +60,8 @@ namespace Levy.Common.Systems
 		// =====================================================================================================
 		private static bool AnyMechDown => NPC.downedMechBossAny || NPC.downedMechBoss1 || NPC.downedMechBoss2 || NPC.downedMechBoss3;
 
-		public virtual int CommandPoints
-		{
-			get
-			{
-				int cp = LevyConstants.CommandPointsBase;
-				if (NPC.downedSlimeKing) cp += LevyConstants.CpKingSlime;
-				if (NPC.downedBoss1) cp += LevyConstants.CpEyeOfCthulhu;
-				if (NPC.downedBoss2) cp += LevyConstants.CpEaterOrBrain;
-				if (NPC.downedQueenBee) cp += LevyConstants.CpQueenBee;
-				if (NPC.downedBoss3) cp += LevyConstants.CpSkeletron;
-				if (NPC.downedDeerclops) cp += LevyConstants.CpDeerclops;
-				if (Main.hardMode) cp += LevyConstants.CpWallOfFlesh;
-				if (NPC.downedQueenSlime) cp += LevyConstants.CpQueenSlime;
-				if (NPC.downedMechBoss1) cp += LevyConstants.CpEachMech;
-				if (NPC.downedMechBoss2) cp += LevyConstants.CpEachMech;
-				if (NPC.downedMechBoss3) cp += LevyConstants.CpEachMech;
-				if (NPC.downedPlantBoss) cp += LevyConstants.CpPlantera;
-				if (NPC.downedGolemBoss) cp += LevyConstants.CpGolem;
-				if (NPC.downedEmpressOfLight) cp += LevyConstants.CpEmpress;
-				if (NPC.downedFishron) cp += LevyConstants.CpFishron;
-				if (NPC.downedAncientCultist) cp += LevyConstants.CpCultist;
-				if (NPC.downedMoonlord) cp += LevyConstants.CpMoonLord;
-				return cp;
-			}
-		}
+		/// <summary>Levies (command points) this world allows, from <see cref="LevyProgression"/>: server-computed share-of-tier-bosses, synced to clients.</summary>
+		public virtual int CommandPoints => LevyProgressionSystem.Levies;
 
 		/// <summary>Command points spent by soldiers on active duty. A soldier in reserve holds none.</summary>
 		public virtual int CommandPointsUsed { get { int n = 0; foreach (var r in Regulars) n += r.CommandPointsHeld; return n; } }

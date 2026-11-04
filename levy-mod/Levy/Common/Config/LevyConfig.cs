@@ -45,6 +45,12 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool Spoils;
 		[DefaultValue(true)] public bool MagicStorageSupply;
 
+		[Header("Progression")]
+		[Range(4, 200)] [DefaultValue(20)] public int LeviesByEndOfPreHardmode;
+		[Range(4, 200)] [DefaultValue(40)] public int LeviesByEndOfHardmode;
+		[Range(4, 200)] [DefaultValue(60)] public int LeviesByEndOfPostMoonLord;
+		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
+
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;

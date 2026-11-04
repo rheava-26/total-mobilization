@@ -39,6 +39,9 @@ Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testi
 - QoL: exclude-specific-weapons filter; sell excess to the best-paying merchant (designed carefully, NOT a dumb sell-all button).
 - Offhand/park: torches, building platforms in designated areas, mining/resource outposts (perf), usable cannons, NPC-only weapons like the pirate captain's gun (maybe another mod), mana crystal star cost.
 
+## ✅ Levy progression, mod-agnostic share-based tiers (2026-11-04, unreleased, build.txt not bumped)
+Levies (= command points) now come from `LevyProgressionSystem` (`Common/Systems/LevyProgression.cs`): per tier, share of that tier's bosses defeated (vanilla keep their old CP as weights, any other boss = tier mean weight) scales linearly between tier targets. Config "Levy progression": pre-HM 20, HM 40, post-ML 60, max 60. Tier source: Boss Checklist registry if loaded (unverified against a real BC), else tier learned at first kill and saved per world. Reward hooks (accessory slot at Moon Lord, Plantera life-fruit analogue) not built. Officer slots (`OfficerSystem.MaxSlots`) are a separate system and untouched.
+
 ## 🐛 OPEN: biome bosses "run away" when levies are around (Eve, 2026-11-04) — NOT diagnosed yet
 
 > **Levy 1.6.11 / Mechanization 0.6.2 (candidate fix, unverified in play):** every target-body dummy now copies its commander's biome (zone1..5, height zones, modBiomeFlags) in SyncDummyTransform via `Common/Targeting/BiomeMirror.cs`. Headless cannot reproduce the flee; confirm in play before closing this item.

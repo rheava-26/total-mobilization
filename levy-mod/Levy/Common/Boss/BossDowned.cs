@@ -4,6 +4,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using Levy.Common.Systems;
 using Levy.Common.Util;
 
 namespace Levy.Common.Boss
@@ -28,7 +29,7 @@ namespace Levy.Common.Boss
 			return KeyOfType(type);
 		}
 
-		private static string KeyOfType(int type)
+		internal static string KeyOfType(int type)
 		{
 			if (_keyCache.TryGetValue(type, out string key)) return key;
 			ModNPC mod = type >= NPCID.Count ? NPCLoader.GetNPC(type) : null;
@@ -61,12 +62,14 @@ namespace Levy.Common.Boss
 					changed |= _downed.Add(KeyOfType(other));
 				}
 				changed |= _downed.Add(KeyOfType(rootType));
+				LevyProgressionSystem.OnBossRecorded(KeyOfType(rootType), rootType);
 			}
 			else
 			{
 				if (!dying.boss && !NPCID.Sets.ShouldBeCountedAsBoss[type]) return;
 				if (!ReferenceEquals(LevyUtil.RootNpc(dying), dying)) return; // a segment of a larger boss; its head records the kill
 				changed |= _downed.Add(BossDownedKey(dying));
+				LevyProgressionSystem.OnBossRecorded(BossDownedKey(dying), LevyUtil.RootNpc(dying).type);
 			}
 			if (changed && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
 		}

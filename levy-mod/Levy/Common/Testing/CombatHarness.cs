@@ -35,9 +35,10 @@ namespace Levy.Common.Testing
 	///
 	/// ENV VARS: LEVY_HARNESS (enable), LEVY_HARNESS_OUT (TSV path), LEVY_HARNESS_MOD (mod whose items are tested, default ThoriumMod), LEVY_HARNESS_FILTER (comma list of
 	/// case-insensitive substrings of item name / internal name), LEVY_HARNESS_TICKS (run ticks per range, default 360), LEVY_HARNESS_SHARD ("k/n": only weapons whose index % n == k),
-	/// LEVY_HARNESS_SKIPCONTROLS (any value: skip the vanilla controls), LEVY_HARNESS_RANGES (comma list of tile distances, default 10,25,40).
+	/// LEVY_HARNESS_SKIPCONTROLS (any value: skip the vanilla controls), LEVY_HARNESS_RANGES (comma list of tile distances, default 10,25,40),
+	/// LEVY_HARNESS_SCENARIO ("platform": run the platform-drop movement scenario instead of the weapon trials; see CombatHarness.Movement.cs).
 	/// </summary>
-	public class CombatHarness : ModSystem
+	public partial class CombatHarness : ModSystem
 	{
 		internal static bool Enabled;
 		internal static string OutPath, TestMod;
@@ -58,7 +59,7 @@ namespace Levy.Common.Testing
 		private const int CleanupTicks = 6;
 		private const string CommanderName = "LevyTester";
 
-		private enum Ph { Boot, Setup, Run, Cleanup, Done }
+		private enum Ph { Boot, Setup, Run, Cleanup, Done, Scenario }
 		private Ph _ph = Ph.Boot;
 		private int _phTick, _bootTick;
 		private int _cx;
@@ -95,6 +96,7 @@ namespace Levy.Common.Testing
 				if (!Enabled) return;
 				OutPath = Environment.GetEnvironmentVariable("LEVY_HARNESS_OUT") ?? "levy_harness.tsv";
 				TestMod = Environment.GetEnvironmentVariable("LEVY_HARNESS_MOD") ?? "ThoriumMod";
+				Scenario = Environment.GetEnvironmentVariable("LEVY_HARNESS_SCENARIO");
 				string f = Environment.GetEnvironmentVariable("LEVY_HARNESS_FILTER");
 				if (!string.IsNullOrWhiteSpace(f)) _filter = f.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_TICKS"), out int t) && t >= 60) _runTicks = t;
@@ -180,6 +182,9 @@ namespace Levy.Common.Testing
 					if (++_bootTick < 180) return;
 					BootInit();
 					return;
+				case Ph.Scenario:
+					StepScenario();
+					return;
 				case Ph.Setup:
 					if (_phTick == 0)
 					{
@@ -220,6 +225,7 @@ namespace Levy.Common.Testing
 			TryAttachCapture();
 			BuildRange();
 			PlaceCommander(false);
+			if (!string.IsNullOrEmpty(Scenario)) { if (BeginScenario()) { _ph = Ph.Scenario; _phTick = 0; return; } Finish("unknown LEVY_HARNESS_SCENARIO '" + Scenario + "'"); return; }
 			BuildTrials();
 			Mod.Logger.Info($"HARNESS: range built at x={_cx - HalfWidth}..{_cx + HalfWidth}, floor y={FloorY}; world {Main.maxTilesX}x{Main.maxTilesY}; {_trials.Count} trials queued; thoriumActive={ThoriumCompatSystem.Active}; netMode={Main.netMode}");
 			if (_trials.Count == 0) { Finish("no trials"); return; }

@@ -28,8 +28,9 @@ namespace Levy.Common.Weapons
 	///  * the dummy's channel / controlUseItem (true while combat keeps feeding the holder), itemAnimationMax, selected item, mana, the pouch in ammo slot 54
 	///    (the real pouch Item, so vanilla PickAmmo consumes the soldier's own ammo) and a damage multiplier for the soldier's grade.
 	/// Projectiles the held AI spawns (arrows, the big phoenix, rockets) are re-owned and tagged exactly like every other soldier shot; a spawned held/thick-laser
-	/// child (Last Prism / Charged Blaster beam) stays owner 255 and joins the chain. Projectile.Damage of chain projectiles is wrapped the same way, because vanilla
-	/// only damages for owner == Main.myPlayer.
+	/// child (Last Prism / Charged Blaster beam) stays owner 255 and joins the chain. Projectile.Damage of chain projectiles is NOT run under the dummy: vanilla only damages
+	/// for owner == Main.myPlayer, so for that one call the projectile is handed to the real player (what every other soldier shot is owned by) and a boss-killing hit resolves
+	/// its whole death cascade in the real player context (see <see cref="RunDamage"/>).
 	/// SLOT 255 DISCIPLINE: Swap in try, Unswap in finally, EnsureSlotRestored in the finally of every wrapper plus PreUpdateProjectiles/PostUpdateProjectiles.
 	/// </summary>
 	public static class HeldWeapons
@@ -223,25 +224,29 @@ namespace Levy.Common.Weapons
 			}
 		}
 
-		/// <summary>Projectile.Damage of a chain projectile (holder contact damage, thick-laser beam): vanilla only damages for owner == Main.myPlayer, so the server/single player claims 255 for the call.</summary>
+		/// <summary>
+		/// Projectile.Damage of a chain projectile (holder contact damage, thick-laser beam). Vanilla only damages for owner == Main.myPlayer, so for the length of the call the projectile is
+		/// handed to the REAL player (<see cref="SoldierMinions.TrueMyPlayer"/>: what <see cref="WeaponUse.OwnerFor"/> gives every other soldier shot) and given back to 255 in the finally.
+		/// The dummy is deliberately NOT swapped into Main.player[255] and Main.myPlayer is left alone. A hit that kills a boss runs the whole death cascade (NPC.checkDead, NPCLoot, every mod's
+		/// OnKill, event and boss-log bookkeeping) synchronously inside orig, and it has to see the real player in the slot, exactly as for a normal soldier shot; with a fake player standing in
+		/// slot 255 that cascade hung the game.
+		/// The damage number is unaffected: it is the projectile's own damage field, which the AI pass sets (RunAi, which keeps the dummy swap; the Last Prism beam copies the holder's every tick),
+		/// and chain projectiles are npcProj, so vanilla gates every owner-derived term that could change it (crit, luck, banner buff, on-hit effects, ModPlayer hooks) behind !npcProj.
+		/// </summary>
 		internal static void RunDamage(On_Projectile.orig_Damage orig, Projectile p, HeldWeaponProjectile g)
 		{
 			SoldierNPC body = BodyOf(p, g);
 			if (body == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
-			int savedMyPlayer = Main.myPlayer;
-			bool swapped = false;
+			int savedOwner = p.owner, savedType = p.type;
 			try
 			{
-				EnemyTargeting.Swap(body);
-				swapped = true;
-				Main.myPlayer = Slot;
+				p.owner = SoldierMinions.TrueMyPlayer;
 				orig(p);
 			}
 			finally
 			{
-				Main.myPlayer = savedMyPlayer;
-				if (swapped) EnemyTargeting.Unswap();
-				EnemyTargeting.EnsureSlotRestored();
+				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
+				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
 
@@ -350,7 +355,10 @@ namespace Levy.Common.Weapons
 		}
 	}
 
-	/// <summary>Installs the Projectile.AI / Projectile.Damage wrappers and keeps slot 255 clean around the projectile phase.</summary>
+	/// <summary>
+	/// Installs the Projectile.AI / Projectile.Damage wrappers (nested chain calls pass straight through) and keeps slot 255 clean around the projectile phase. The Damage detour also serves the
+	/// driven minions of <see cref="SoldierMinions"/>, so there is exactly one Projectile.Damage hook in the mod.
+	/// </summary>
 	public class HeldWeaponSystem : ModSystem
 	{
 		public override void Load()
@@ -384,16 +392,51 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>
+		/// Re-entrancy guard shared by both detours: above zero while a chain wrapper (or a driven minion's Damage wrapper) is inside orig on this thread. A boss-death cascade runs synchronously
+		/// inside the hit that caused it; if anything in it re-enters Projectile.AI / Projectile.Damage for another chain projectile or minion, that nested call goes straight to orig instead of
+		/// opening another swap / re-owning / strike window inside the first one, so the wrappers can never recurse into each other (a beam's Damage and a minion's Damage count the same).
+		/// </summary>
+		[ThreadStatic] private static int _wrapDepth;
+
+		/// <summary>True when this call must be wrapped: a chain projectile (owner 255, flagged in its global) and not a nested call. The cheap owner test runs first.</summary>
+		private static bool ShouldWrap(Projectile p, out HeldWeaponProjectile g)
+		{
+			g = null;
+			return p.owner == SoldierNPC.DummySlot && _wrapDepth == 0 && p.TryGetGlobalProjectile(out g) && g.Chain;
+		}
+
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
-			if (self.owner == SoldierNPC.DummySlot && self.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain) HeldWeapons.RunAi(orig, self, g);
+			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunAi(orig, self, g); }
+			finally { _wrapDepth--; }
+		}
+
+		/// <summary>
+		/// The ONE Projectile.Damage detour of the mod. A chain projectile (held-weapon beam) is handed to the real player for the call; a driven minion in the middle of its own Update
+		/// (SoldierMinions.RunUpdate has the dummy swapped in) arms the strike window instead, so the kill cascade of a lethal hit resolves in the real-player context while the call's damage
+		/// arithmetic keeps running against the dummy, unchanged (see SoldierMinions.RunDamage / RunStrike). Everything else is vanilla.
+		/// </summary>
+		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
+		{
+			if (ShouldWrap(self, out HeldWeaponProjectile g))
+			{
+				_wrapDepth++;
+				try { HeldWeapons.RunDamage(orig, self, g); }
+				finally { _wrapDepth--; }
+			}
+			else if (WantsMinionWindow(self))
+			{
+				_wrapDepth++;
+				try { SoldierMinions.RunDamage(orig, self); }
+				finally { _wrapDepth--; }
+			}
 			else orig(self);
 		}
 
-		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
-		{
-			if (self.owner == SoldierNPC.DummySlot && self.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain) HeldWeapons.RunDamage(orig, self, g);
-			else orig(self);
-		}
+		/// <summary>True for a driven minion inside its own Update on the server / single player, and not nested in another wrapper. The frame test is a single reference compare and is false for almost every call.</summary>
+		private static bool WantsMinionWindow(Projectile p) => SoldierMinions.IsFrameProjectile(p) && _wrapDepth == 0 && LevyUtil.IsServerOrSingle;
 	}
 }

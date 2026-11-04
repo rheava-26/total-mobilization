@@ -23,7 +23,7 @@ namespace Levy.Content.NPCs
 	/// the brain, movement, combat, fear, damage intake and drawing live in partial files owned by other agents and
 	/// plug in through the partial methods declared at the bottom. Logic runs on the server/single player; clients draw.
 	/// </summary>
-	public partial class SoldierNPC : ModNPC
+	public partial class SoldierNPC : ModNPC, Common.Targeting.ITargetBody
 	{
 		public const int BodyWidth = 20, BodyHeight = 42;
 		public const int DummySlot = 255; // Main.maxPlayers: the vanilla null-player slot, never a real player
@@ -69,6 +69,9 @@ namespace Levy.Content.NPCs
 		public int Defense;
 		/// <summary>Flat defense bonus hook (Flavor: +4 near a barracks with A Guide to Fortification). Null = none.</summary>
 		public static Func<SoldierNPC, int> ExtraDefense;
+		/// <summary>Companion stat pass: called during the buff pass of RefreshStats with the dummy mid-refresh (after the equips and potion buffs, before the stats are read). A companion mod lays its own
+		/// stat deltas on the dummy and returns the life-regen units it adds (0 for none). Null = none; a throwing delegate is ignored.</summary>
+		public static Func<SoldierNPC, Player, int> ExtraBuffStats;
 		/// <summary>Tick of the last melee hit this soldier landed (Combat sets; Brain steps back after it).</summary>
 		public int LastMeleeHitTick = -1000;
 		public float MoveSpeedMult = 1f;
@@ -108,10 +111,13 @@ namespace Levy.Content.NPCs
 		/// Owner index for projectiles the soldier spawns. Must be Main.myPlayer: Projectile.NewProjectile only assigns ai[], sends the
 		/// spawn packet and runs NPC hit detection when owner == Main.myPlayer (255 on a dedicated server). Loot credit is separate: see <see cref="CreditPlayer"/>.
 		/// </summary>
-		public int ProjectileOwner => Main.myPlayer;
+		public int ProjectileOwner => Common.Weapons.SoldierMinions.TrueMyPlayer;
 		/// <summary>Player index that receives loot/banner credit for this soldier's kills (commander, else the local player in single player, else -1).</summary>
-		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Main.myPlayer : -1);
+		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Common.Weapons.SoldierMinions.TrueMyPlayer : -1);
 		public bool IsAlive => NPC.active && NPC.life > 0 && !_deathHandled;
+		// ITargetBody (enemy targeting treats soldiers and officers alike); Dummy is a field here, so the interface members forward to it.
+		Player Common.Targeting.ITargetBody.Dummy => Dummy;
+		int Common.Targeting.ITargetBody.TargetAggro => Aggro;
 
 		public override string Texture => "Levy/Content/NPCs/SoldierNPC";
 
@@ -166,6 +172,40 @@ namespace Levy.Content.NPCs
 			NPC.netUpdate = true;
 		}
 
+		/// <summary>
+		/// A soldier's HP is its record's, never the difficulty balance's. Vanilla's own scaling (<c>NPC.ScaleStats</c>, Expert / Master / multiplayer) returns before it reaches this hook for a
+		/// friendly body with no contact damage, which is what a soldier is, so on a normal run this is never called for one. It exists so that if any path does reach it, the record's value
+		/// goes straight back (before a record is bound: the base) instead of a scaled one.
+		/// </summary>
+		public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment)
+		{
+			if (Record != null) { PinLifeMax(); return; }
+			NPC.lifeMax = LevyConstants.BaseHp; NPC.life = NPC.lifeMax;
+		}
+
+		/// <summary>
+		/// Holds this body's vitals at the record's: <c>NPC.lifeMax</c> at <see cref="SoldierRecord.MaxHp"/> (never above <see cref="LevyConstants.MaxSoldierHp"/>, the vanilla player's 500),
+		/// <c>NPC.life</c> under it, and the record's mana under <see cref="SoldierRecord.MaxMana"/> (never above <see cref="LevyConstants.MaxMana"/>, 200). Nothing outside the record decides
+		/// a soldier's maximum: another mod's NPC hook, a stale network write or difficulty scaling that raised it is put straight back. It runs at the start of every soldier tick, again
+		/// just before a hit is applied, and once every NPC (and everything else) has updated (<see cref="SoldierHpPinSystem"/>), so what damage, healing, the roster cards and the nameplates read
+		/// is always the record's value. A plain pin, not a rescale: repeated outside changes never drain or heal the soldier. An officer avatar takes its HP from the town NPC and is left alone.
+		/// A client's record is a display copy without the crystal counts (and vanilla never syncs <c>lifeMax</c>), so there it can only refuse a maximum above the hard ceiling.
+		/// </summary>
+		public void PinLifeMax()
+		{
+			if (Record == null || OfficerMode) return;
+			if (!LevyUtil.IsServerOrSingle)
+			{
+				if (NPC.lifeMax > LevyConstants.MaxSoldierHp) NPC.lifeMax = LevyConstants.MaxSoldierHp;
+				return;
+			}
+			int maxHp = Math.Max(1, Record.MaxHp);
+			if (NPC.lifeMax != maxHp) NPC.lifeMax = maxHp;
+			if (NPC.life > maxHp) NPC.life = maxHp;
+			int maxMana = Record.MaxMana;
+			if (Record.Mana > maxMana) Record.Mana = maxMana;
+		}
+
 		private void EnsureDummy()
 		{
 			if (Dummy != null) return;
@@ -187,6 +227,27 @@ namespace Levy.Content.NPCs
 			Dummy.shirtColor = Record.ShirtColor; Dummy.underShirtColor = Record.UnderShirtColor; Dummy.pantsColor = Record.PantsColor; Dummy.shoeColor = Record.ShoeColor;
 		}
 
+		/// <summary>
+		/// Accessory slots the vanilla pipeline reads off the dummy (armor[3..7]). Slot 8 is the Demon Heart slot, gated on Expert mode and a flag, so a soldier's sixth accessory
+		/// (the Guide to Expertise's) is applied by hand after UpdateEquips instead of through a slot that may be locked.
+		/// </summary>
+		private const int DummyAccessorySlots = 5;
+
+		/// <summary>Applies the accessories beyond <see cref="DummyAccessorySlots"/> the way Player.UpdateEquips would for an unlocked slot (prefix, armor and equip effects).</summary>
+		private void ApplyExtraAccessories(Player d)
+		{
+			Item[] acc = Record.Gear.Accessories;
+			int slots = Math.Min(Record.AccessorySlots, acc.Length);
+			for (int i = DummyAccessorySlots; i < slots; i++)
+			{
+				Item it = acc[i];
+				if (it == null || it.IsAir || !it.accessory || (it.expertOnly && !Main.expertMode)) continue;
+				d.GrantPrefixBenefits(it);
+				d.GrantArmorBenefits(it);
+				d.ApplyEquipFunctional(it, false);
+			}
+		}
+
 		/// <summary>Copies gear into the dummy's equipment arrays (references, not clones).</summary>
 		private Item _blankSlot;
 		public void EquipDummy()
@@ -199,7 +260,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < Dummy.dye.Length; i++) Dummy.dye[i] = _blankSlot;
 			Dummy.armor[0] = g.Head; Dummy.armor[1] = g.Body; Dummy.armor[2] = g.Legs;
 			int slots = Record.AccessorySlots;
-			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i];
+			for (int i = 0; i < DummyAccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i]; // slots past these are applied by hand (ApplyExtraAccessories)
 			for (int i = 0; i < 3; i++) Dummy.dye[i] = g.Dyes[i];
 			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.dye[3 + i] = g.Dyes[3 + i];
 			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
@@ -221,6 +282,7 @@ namespace Levy.Content.NPCs
 		public void RefreshStats()
 		{
 			StatsDirty = false;
+			if (OfficerMode) { Officer_RefreshStats(); return; } // officers take their HP/defense from constants + the combat books, not from gear
 			if (Record == null) return;
 			EquipDummy();
 			Stations = StationBuffSystem.For(NPC.Center);
@@ -232,7 +294,8 @@ namespace Levy.Content.NPCs
 					Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
 					Dummy.ResetEffects();
 					Dummy.UpdateEquips(DummySlot);
-					Dummy.UpdateArmorSets(DummySlot);
+					ApplyExtraAccessories(Dummy);
+					UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
 					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 					try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
 					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
@@ -256,8 +319,7 @@ namespace Levy.Content.NPCs
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			NPC.defense = Defense;
-			int maxHp = Math.Max(1, Record.MaxHp);
-			if (NPC.lifeMax != maxHp) { NPC.life = (int)Math.Clamp(NPC.life * (float)maxHp / Math.Max(1, NPC.lifeMax), 1, maxHp); NPC.lifeMax = maxHp; }
+			PinLifeMax(); // HP comes from the record, not from gear
 		}
 
 		/// <summary>Weapon damage after the dummy's stat pipeline (crit excluded). Manual fallback uses item damage.</summary>
@@ -303,16 +365,32 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) { if (LevyUtil.IsServerOrSingle) { NPC.active = false; NPC.netUpdate = true; } return; }
 			EnsureDummy();
+			PinLifeMax(); // before anything reads lifeMax (the dummy's life stats just below, damage, fear): a max another mod raised since last tick is put back first
 			SyncDummyTransform();
 			if (LevyUtil.IsClient)
 			{
 				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
 				// between net updates (SendExtraAI carries ItemAnimation/ItemAnimationMax on every netUpdate).
+				if (OfficerMode) { Officer_ClientTick(); return; } // drive the parked town NPC (vanilla draws and animates it from what the avatar feeds it)
 				if (ItemAnimation > 0) ItemAnimation--;
 				if (AttackCooldown > 0) AttackCooldown--;
 				if (PotionSickness > 0) PotionSickness--; // mirrored cooldown for the nameplate pip; resynced on every netUpdate
 				Movement_ClientAnimate();
 				TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs)
+				return;
+			}
+			if (OfficerMode)
+			{
+				// An officer avatar reuses the soldier MOVEMENT unchanged, but posture (not the soldier brain) sets its goal, and it runs
+				// the officer kit and its own weapon instead of soldier combat. No roster coupling: the synthetic record is never listed.
+				if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; Officer_RefreshStats(); }
+				Damage_Update();
+				if (!IsAlive) return;
+				Officer_Think();
+				Movement_Update();
+				TickMovementFx();
+				Officer_Act();
+				SyncDummyTransform();
 				return;
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
@@ -329,6 +407,7 @@ namespace Levy.Content.NPCs
 
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers)
 		{
+			PinLifeMax(); // the hit lands on the record's maximum, whatever ran since the last pin
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
@@ -339,6 +418,7 @@ namespace Levy.Content.NPCs
 			if (_deathHandled) return true;
 			_deathHandled = true;
 			if (LevyUtil.IsServerOrSingle) KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier
+			if (OfficerMode) { if (LevyUtil.IsServerOrSingle) Officer_OnDeath(); return true; } // the officer fell: end the commission, un-park the town NPC (not the roster path)
 			if (LevyUtil.IsServerOrSingle && Record != null)
 			{
 				Record.CurrentHp = 0;
@@ -372,12 +452,32 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- chat ----
-		public override bool CanChat() => Record != null && IsRegular && State != SoldierState.Engage && State != SoldierState.Routed;
-		public override string GetChat() => DialogueSystem.ChatLine(this);
+		// Officer avatars stay chattable so a click on an officer always lands, whichever of the two co-located bodies the cursor picks (this one, or the parked
+		// town NPC vanilla draws); a click that lands here is immediately re-pointed at the town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
+		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Engage && State != SoldierState.Routed));
+		public override string GetChat() => OfficerMode ? "" : DialogueSystem.ChatLine(this);
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
+			if (OfficerMode) return; // the town NPC the talk is redirected to supplies its own buttons
 			button = LevyUtil.T("UI.ChatOrders");
 			if (AcceptsAmmo(Main.LocalPlayer.HeldItem)) button2 = LevyUtil.T("UI.ChatHandAmmo");
+		}
+
+		/// <summary>
+		/// Client: when the local player talks to an officer avatar, re-point talkNPC at the parked (co-located) town NPC so vanilla opens THAT NPC's shop/chat.
+		/// Run after input each frame (LevyPlayer.PostUpdate), before the chat UI draws, so the avatar's own chat window is never shown.
+		/// </summary>
+		public static void RedirectOfficerShopTalk(Player player)
+		{
+			if (player == null || !player.active) return;
+			int t = player.talkNPC;
+			if (t < 0 || t >= Main.maxNPCs) return;
+			NPC n = Main.npc[t];
+			if (n.active && n.ModNPC is SoldierNPC s && s.OfficerMode)
+			{
+				NPC town = s.OfficerTownNpc;
+				if (town != null && town.active) player.SetTalkNPC(town.whoAmI); // once: next frame talkNPC is the town NPC, not an avatar
+			}
 		}
 
 		/// <summary>True when this soldier's ranged weapon can actually use the held ammo (not gel, coins, or the wrong ammo id).</summary>
@@ -391,6 +491,7 @@ namespace Levy.Content.NPCs
 
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
 		{
+			if (OfficerMode) return; // never the soldier radial for an officer; the redirect hands talk to the town NPC instead
 			if (firstButton) { Common.UI.UISystem.Instance.ToggleRadial(); return; }
 			var held = Main.LocalPlayer.HeldItem;
 			if (!AcceptsAmmo(held)) return;
@@ -441,6 +542,10 @@ namespace Levy.Content.NPCs
 			Record.Gear.WriteVisual(writer);
 			writer.Write((byte)Math.Min(255, (PotionSickness + 29) / 30)); // potion sickness, whole seconds remaining (rounded up)
 			writer.Write((short)Math.Clamp(Aggro, short.MinValue, short.MaxValue)); // taunt weight, so client-side target searches weigh this soldier like the server
+			writer.Write(Record.Mutinous); // balances the ReceiveExtraAI read below; also keeps the wage-mutiny tint in sync between roster snapshots
+			// ---- officer avatar (OfficerMode only): clients need the link to find, co-locate and drive the town NPC (vanilla draws it) ----
+			writer.Write(OfficerMode);
+			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -458,13 +563,17 @@ namespace Levy.Content.NPCs
 			PotionSickness = reader.ReadByte() * 30;
 			Aggro = reader.ReadInt16();
 			Record.Mutinous = reader.ReadBoolean();
+			bool wasOfficer = OfficerMode;
+			OfficerMode = reader.ReadBoolean();
+			if (OfficerMode) { OfficerTownIndex = reader.ReadInt32(); OfficerTownType = reader.ReadInt32(); if (!wasOfficer) _offDef = null; }
+			else { OfficerTownIndex = -1; OfficerTownType = -1; }
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();
 			if (newUse && !Main.dedServ)
 			{
 				var held = Dummy.inventory[0];
-				if (held != null && !held.IsAir && held.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(held.UseSound.Value, NPC.Center);
+				if (held != null && !held.IsAir) { var useSound = WeaponUse.SoundOf(held); if (useSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(useSound.Value, NPC.Center); }
 			}
 		}
 
@@ -485,5 +594,26 @@ namespace Levy.Content.NPCs
 		partial void Damage_Update();                        // SoldierNPC.Damage.cs  — every tick (server): immunity, contact damage, regen, potions
 		partial void Draw_PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, ref bool drawn); // SoldierNPC.Draw.cs
 		partial void Draw_PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor);               // SoldierNPC.Draw.cs
+	}
+
+	/// <summary>
+	/// Re-pins every soldier body's vitals to its record (<see cref="SoldierNPC.PinLifeMax"/>) after the other hooks have run. Another mod's NPC hooks (a global HP buff for friendly or
+	/// town-like NPCs, say) run after the soldier's own <see cref="SoldierNPC.AI"/> in the same tick, so a pin inside AI alone would leave their value standing until the next tick. This
+	/// pins once all NPCs have updated (before projectiles and items apply their hits) and once more at the very end of the tick (before anything draws), so the roster cards and
+	/// nameplates never see a maximum the record did not give.
+	/// </summary>
+	public sealed class SoldierHpPinSystem : ModSystem
+	{
+		public override void PostUpdateNPCs() => PinAll();
+		public override void PostUpdateEverything() => PinAll();
+
+		private static void PinAll()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && n.ModNPC is SoldierNPC s) s.PinLifeMax();
+			}
+		}
 	}
 }

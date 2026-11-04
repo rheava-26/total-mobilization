@@ -50,6 +50,51 @@ namespace Levy.Common
 			public const int AerialEngageMinTiles = 5;
 			public const int AerialClimbBenefitTiles = 3;
 
+			// ---- readier flight (an equipped soldier takes to the air for a target above it) ----
+			// AerialClimbBenefitTiles stays at the height a plain jump reaches: below it a "climb" is only a hop, so a lower value would bunny-hop soldiers, not fly them.
+			// The gates that decide how soon a soldier commits are below: the reach test, the squad share, the wait between flights and how much of the standoff the hover point holds.
+			/// <summary>
+			/// An equipped soldier starts its climb once the target is within weapon reach x this (it climbs while it closes), and keeps the climb up to reach x <see cref="AerialHoldRangeMult"/> (never less than the start, so the latch cannot flap).
+			/// Kept modest: a ground path search cannot start from mid-air, so a soldier that is up while its target is still out of reach has no new firing spot to look for. A target hanging in the air is pursued much further out (FlyPursuitRangeMult).
+			/// </summary>
+			public const float AerialCommitRangeMult = 1.2f, AerialHoldRangeMult = 1.3f;
+			/// <summary>Fraction of the soldiers with sustained flight (wings or rocket boots; stable per body) that take to the air after a target hanging above them. The rest fight from the ground.</summary>
+			public const float AerialPursuitAppetite = 0.9f;
+			/// <summary>
+			/// A soldier that can hover holds only this fraction of its standoff by altitude (the hover point sits that far below a target it stands under); the rest of the standoff
+			/// is kept sideways by the ordinary step-away, so a flier ends level with a boss at the standoff. 1 = the whole standoff is held by staying low.
+			/// </summary>
+			public const float AerialStandoffAltitudeFrac = 0.6f;
+			/// <summary>A grounded soldier with a solid tile this close above its head (tiles) does not ask for altitude: it is in a room or under an overhang, and a climb would only spend the flight on the ceiling.</summary>
+			public const int RoofProbeTiles = 10;
+
+			// ---- seeking height (a soldier on foot climbs terrain toward a target far overhead) ----
+			// All of it runs inside the brain's budgeted position searches (SearchMayStart / ChargeSearch) at their existing rechecks; nothing here is a per-tick scan.
+			/// <summary>A target whose centre is this many tiles above the soldier's feet is "overhead": the firing-spot search looks for footing under the sky instead of on the line to it, and height keeps paying.</summary>
+			public const int OverheadTargetMinTiles = 10;
+			/// <summary>Merit per tile of extra height once a spot is already further below its target than PerchElevationCapTiles (no upper bound: what matters is the difference between two spots). Under 1, so tiles near the target stay the most valuable.</summary>
+			public const float OverheadElevationWeight = 0.75f;
+			/// <summary>Footing is looked for this many tiles below a mid-air sample point when no standable tile lies within EngageSpotSearchRadius of it (stops at the first solid ground).</summary>
+			public const int OverheadDropScanTiles = 70;
+			/// <summary>Columns searched either side of the soldier for a perch against an overhead target (the usual reach is PerchSearchRadiusTiles).</summary>
+			public const int OverheadPerchRadiusTiles = 28;
+			/// <summary>Best-scoring perches kept against an overhead target (usual PerchCandidates), and how many of those perches, and of the approach spots, get a path search (usual PerchPathChecks / EngageSpotCandidates).</summary>
+			public const int OverheadPerchCandidates = 6, OverheadPerchPathChecks = 2, OverheadApproachPathChecks = 2;
+			/// <summary>
+			/// Node cap of those path searches (usual PathMaxNodes): a climb that needs a long detour is not worth a failed search. About 2 microseconds a node, so a failure costs at most
+			/// 1.2 ms and one whole search at most OverheadPerchPathChecks x that; the usual caps allow 5 ms a check.
+			/// </summary>
+			public const int OverheadPathMaxNodes = 600;
+			/// <summary>After an open perch search against an overhead target vetted spots and reached none of them, the next one waits this long (ticks; the usual recheck is EngageSpotRecheckTicks).</summary>
+			public const int OverheadFailRecheckTicks = 60 * 4;
+			/// <summary>A soldier on foot climbs about this many tiles per column of slope on top of its jump; a spot steeper than that loses <see cref="SteepClimbPenalty"/> merit per excess tile (overhead searches only).</summary>
+			public const float WalkClimbTilesPerColumn = 0.5f;
+			public const float SteepClimbPenalty = 0.6f;
+			/// <summary>Perches a path search could not reach are remembered (this many, each for this long) and not tried again, so the next search tries the next best instead of repeating the failure. A spot within PerchBadRadiusTiles of one counts as it.</summary>
+			public const int PerchBadMemory = 8, PerchBadMemoryTicks = 60 * 40, PerchBadRadiusTiles = 3;
+			/// <summary>The memory belongs to one patch of ground: a soldier that has moved this many columns from where it was recorded forgets it (a cliff top out of reach from the valley may be easy from the hill).</summary>
+			public const int PerchBadForgetMoveTiles = 12;
+
 			// ---- goal-jump debounce (only a jump that keeps landing without gaining height; a clean ledge jump never meets these) ----
 			/// <summary>After a goal-jump that did not gain height, the next one waits until the goal is this close (tiles across) instead of the full reach.</summary>
 			public const int GoalJumpRetryReachTiles = 2;
@@ -159,8 +204,8 @@ namespace Levy.Common
 			public const int RocketBurstTicks = 10;
 			/// <summary>Fraction of a thrust source's theoretical climb that a plan can count on (acceleration, hover, drift).</summary>
 			public const float AerialReachEfficiency = 0.6f;
-			/// <summary>After a flight ran dry the soldier lands and waits this long before climbing again (no bouncing).</summary>
-			public const int AerialRelaunchCooldownTicks = 180;
+			/// <summary>After a flight ran dry the soldier lands and waits this long before climbing again (no bouncing). Wings refill on touching down, so the wait is only to stop a landing-and-launching flutter.</summary>
+			public const int AerialRelaunchCooldownTicks = 90;
 			/// <summary>Extra jump impulse (px/tick up). Peaks about 3.75 tiles higher at gravity 0.3.</summary>
 			public const float AirJumpImpulsePx = 6f;
 			/// <summary>An extra jump is spent only once the body is no longer rising faster than this (px/tick, negative = up): near the apex.</summary>

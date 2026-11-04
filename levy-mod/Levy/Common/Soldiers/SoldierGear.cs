@@ -9,8 +9,11 @@ namespace Levy.Common.Soldiers
 	/// <summary>Everything a soldier carries. Items are real Item instances (prefixes, stacks, mod data preserved).</summary>
 	public class SoldierGear
 	{
-		public const int AccessorySlots = 5;
-		public const int DyeSlots = 8; // 0..2 armor, 3..7 accessories
+		/// <summary>Most accessories a soldier can carry (the Champion's 5 plus the Guide to Expertise's 1). Open slots are limited by grade; see <see cref="SoldierRecord.AccessorySlots"/>.</summary>
+		public const int AccessorySlots = 6;
+		/// <summary>Accessory slot count of worlds saved before the sixth was added (the ammo lock bit sat right after them).</summary>
+		private const int LegacyAccessorySlots = 5;
+		public const int DyeSlots = 3 + AccessorySlots; // 0..2 armor, then one per accessory
 
 		public Item Weapon = new Item();
 		public Item Sidearm = new Item();
@@ -180,6 +183,7 @@ namespace Levy.Common.Soldiers
 			var dyes = new List<TagCompound>(); foreach (var d in Dyes) dyes.Add(ItemIO.Save(d)); tag["dyes"] = dyes;
 			if (ThrownRestockType > 0) tag["thrownType"] = ThrownRestockType;
 			if (LockMask != 0) tag["locks"] = LockMask; // absent in old saves: loads as 0 (nothing locked)
+			tag["slotCount"] = SlotCount; // lock bits shifted when accessory slots were added; this tells the loader which layout the mask is in
 			return tag;
 		}
 
@@ -193,7 +197,14 @@ namespace Levy.Common.Soldiers
 			var acc = tag.GetList<TagCompound>("acc"); for (int i = 0; i < AccessorySlots && i < acc.Count; i++) g.Accessories[i] = ItemIO.Load(acc[i]);
 			var dyes = tag.GetList<TagCompound>("dyes"); for (int i = 0; i < DyeSlots && i < dyes.Count; i++) g.Dyes[i] = ItemIO.Load(dyes[i]);
 			g.ThrownRestockType = tag.GetInt("thrownType");
-			g.LockMask = tag.GetInt("locks") & ((1 << SlotCount) - 1);
+			int locks = tag.GetInt("locks");
+			if (!tag.ContainsKey("slotCount"))
+			{
+				// Saved with five accessory slots: the ammo lock bit sat at SlotAcc0 + 5 and now belongs to the sixth accessory.
+				int oldAmmoBit = 1 << (SlotAcc0 + LegacyAccessorySlots);
+				if ((locks & oldAmmoBit) != 0) locks = (locks & ~oldAmmoBit) | (1 << SlotAmmo);
+			}
+			g.LockMask = locks & ((1 << SlotCount) - 1);
 			for (int s = 0; s < SlotCount; s++) if (g.IsLocked(s) && g.Get(s).IsAir) g.SetLocked(s, false); // a lock on an empty slot means nothing
 			return g;
 		}

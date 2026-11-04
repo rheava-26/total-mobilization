@@ -12,6 +12,8 @@ namespace Levy.Common.Net
 	///  Enlist: int barracksId, byte grade                         (handler: Roster)
 	///  Discharge: int soldierId                                   (Roster)
 	///  Promote: int soldierId, byte grade                         (Roster)
+	///  Demote: int soldierId, byte grade (the lower grade wanted)  (Roster) — a repeat of an applied demotion is a no-op, like Promote
+	///  Reserve: int soldierId, bool toReserve                     (Roster) — true takes the soldier off active duty, false recalls him; the packet names the wanted state, so a repeat is a no-op
 	///  Order: byte order (SoldierOrder, incl. SearchDestroy, FreeRein), bool atBarracks   (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire
@@ -36,6 +38,8 @@ namespace Levy.Common.Net
 	///  SetRebase: int soldierId, int barracksId                   (Roster)
 	///  SoldierGearSet: int soldierId, byte slot(SoldierGear.Slot*), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the item out of its own hands (air = took the slot's item out); server validates, applies, locks/unlocks, re-syncs
 	///  BookUsed: string bookKey                                   (Flavor) — client consumed the book; server sets the world flag
+	///  OfficerCommand: byte action(0 commission,1 dismiss), int barracksId (-1 for dismiss), short npcIndex   (Officers) — commander = sender; server re-validates everything and charges the barracks treasury
+	///  CompanionRequest: byte kind, then a payload the companion defines                  (Compat) — sender = the commander; the server re-validates every target
 	/// Server -> client:
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
 	///  SettlementSnapshot: (unused: tile entities sync themselves via MessageID.TileEntitySharing)
@@ -44,12 +48,16 @@ namespace Levy.Common.Net
 	///  Bark: short npcIndex, byte channel (DialogueChannel), byte emoteId, string text   (Dialogue)
 	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
 	///  MutinyRob: long copper, int damage, int hitDirection, string soldierName   (Mutiny) — to the robbed player only; the client takes up to that much coin from its own pockets and banks, then takes the hit
+	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
 	/// </summary>
 	public enum LevyPacket : byte
 	{
 		Enlist = 1, Discharge, Promote, Order, HoldFire, Mobilize, StandDown, Rally, Deposit, Withdraw, RecruitingDrive, HazardPay,
-		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts,
+		ArmorySlotSet, BarracksToggle, HandAmmo, AssignPatrol, FeedCrystal, SetRebase, BookUsed, Rearm, SoldierGearSet, SpreadOut, FocusTarget, ArmorySort, FocusAttack, ArmoryReforge, ResetLoadouts, OfficerCommand,
+		Demote, Reserve,
+		CompanionRequest, // client -> server: a Thorium cast the local player just made, for the companion to lay on that player's soldiers; its own handler decodes the payload
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
+		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 	}
 
 	public static class LevyPackets

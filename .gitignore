@@ -24,5 +24,11 @@ levy-mod/Levy/obj/
 levy-mod/Levy/bin/
 levy-mod/Levy/.vs/
 
+# Mechanization — companion tModLoader mod (depends on Levy), in its own box (mechanization-mod/)
+!mechanization-mod/
+mechanization-mod/Mechanization/obj/
+mechanization-mod/Mechanization/bin/
+mechanization-mod/Mechanization/.vs/
+
 # review workflow script (dev-only, not part of the mod)
 levy-mod/tools/review2.js

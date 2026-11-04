@@ -25,6 +25,52 @@ namespace Levy.Common
 			/// <summary>Accessory-issue score per point of aggro an accessory adds (Flesh Knuckles +400 = 100, about two defense points). A tie-breaker, never a rank override.</summary>
 			public const float AccessoryAggroWeight = 0.25f;
 
+			// ---------- Army-vs-commander aggro weighting (EnemyTargeting.Compete) ----------
+			// Vanilla weighs a player as (distance - player.aggro). The soldier side gets the same formula PLUS the standing advantages below, so the army soaks fire
+			// and the commander is the exception: he is targeted mainly when alone, when no soldier is near the enemy, or when he is clearly the closest by a wide margin.
+			// All of it is a soft distance weighting (px): a far-off army never overrides a nearby commander, and with no soldier in reach the player is picked as before.
+
+			/// <summary>Flat standing aggro every soldier carries (px of distance discount): all else equal, an enemy prefers a soldier to the commander unless the commander is this much closer.</summary>
+			public const float SoldierBaseAggroPx = 250f;
+			/// <summary>Multiplier on a soldier's POSITIVE gear aggro (Flesh Knuckles +400 counts as 400 x this). Taunt gear on a soldier out-pulls a commander who wears the same gear. Negative (stealth) aggro is used as-is.</summary>
+			public const float SoldierTauntMultiplier = 2.5f;
+			/// <summary>Soldiers within this radius of the enemy pull collectively: each one adds <see cref="ArmyPullPerSoldierPx"/> to the commander's weighted distance. Only applies when vanilla's pick is a player.</summary>
+			public const float ArmyPullRadiusPx = 700f;
+			/// <summary>Penalty on the commander's weighted distance per soldier inside <see cref="ArmyPullRadiusPx"/> (a cluster of soldiers outweighs one player). 0 switches the collective pull off.</summary>
+			public const float ArmyPullPerSoldierPx = 40f;
+			/// <summary>Soldiers counted for the collective pull stop here (so the penalty tops out at this x <see cref="ArmyPullPerSoldierPx"/> px).</summary>
+			public const int ArmyPullMaxSoldiers = 8;
+			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies do not all rank the soldiers in the same order. Ties and near-ties only; the load terms below do the real spreading.</summary>
+			public const float SpreadJitterPx = 120f;
+
+			// ---------- Spreading a horde over the army (EnemyTargeting.Compete, AggroSpread) ----------
+			// Choosing a soldier is two steps. 1) Army or commander: the best soldier's weighted distance (above) against the commander's. 2) Which soldier: among the soldiers close to that
+			// best one, the enemy takes the least crowded. Every enemy already locked on a soldier adds LoadPenaltyPx to that soldier's weighted distance for the next enemy to choose, so a horde
+			// fans out over the squad instead of stacking on whoever happens to be nearest. Load only enters step 2: a crowded army never looks pricier than the commander, so the commander's
+			// exposure is exactly what step 1 says. With nobody locked on anyone the pick is the plain nearest-by-weighted-distance soldier.
+
+			/// <summary>Penalty (px of weighted distance) per enemy already locked on a soldier. An enemy's own lock never counts against its current soldier, so it does not flee a soldier merely because it is standing on him.</summary>
+			public const float LoadPenaltyPx = 100f;
+			/// <summary>Only soldiers within this many px (weighted) of the best soldier compete on load. A crowded near soldier therefore hands an enemy to a neighbour, but never sends it past a much nearer man to a far one.</summary>
+			public const float LoadWindowPx = 600f;
+			/// <summary>An enemy keeps its current soldier unless another one is better by more than this many px, so the re-search that many AIs run every tick does not shuffle a settled assignment.</summary>
+			public const float LockStickinessPx = 50f;
+			/// <summary>Size of the per-body lock tally. Bodies are NPCs, so the NPC index is the key; must be at least Main.maxNPCs (200).</summary>
+			public const int LoadSlots = 256;
+
+			// ---------- Event towers (Lunar Pillars) and event hostile projectiles ----------
+			/// <summary>
+			/// The four Lunar Pillars. They never attack directly; they spawn their event enemies / lightning only while their target is in reach. They are boss-class for loot and
+			/// shield purposes but use the swap even without the boss unlock, so soldiers standing at a pillar draw its attacks and share them with the commander.
+			/// </summary>
+			public static readonly int[] EventTowerTypes = { NPCID.LunarTowerSolar, NPCID.LunarTowerVortex, NPCID.LunarTowerNebula, NPCID.LunarTowerStardust };
+			/// <summary>A pillar heals itself when its target is more than 2000 px away, so soldiers only compete for a pillar's attention inside this distance.</summary>
+			public const float EventTowerSoldierRangePx = 1800f;
+			/// <summary>Chance that an event hostile projectile that locked on the commander is re-aimed at the nearest soldier instead (it always goes to a soldier that is closer than the commander).</summary>
+			public const float EventProjectileSoldierShare = 0.6f;
+			/// <summary>An event projectile only re-aims at a soldier within this distance of itself.</summary>
+			public const float EventProjectileShareRangePx = 1600f;
+
 			// ---------- Combat orders: Focus Attack (a designated world position) ----------
 			/// <summary>Hostiles and critters within this many tiles of the focus position are attacked (critters are otherwise never targets).</summary>
 			public const float FocusAttackRadiusTiles = 12f;
@@ -85,6 +131,37 @@ namespace Levy.Common
 
 			/// <summary>Boss segments that carry neither <c>boss</c> nor ShouldBeCountedAsBoss but use an allowlisted AI style (Eater of Worlds is Worm AI).</summary>
 			public static readonly int[] BossPartTypes = { NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail, NPCID.TheDestroyer, NPCID.TheDestroyerBody, NPCID.TheDestroyerTail };
+
+			// ---------- Per-tick cost governors (a big army in a crowded sky must never stall the game) ----------
+			// None of these limits what the army can field or how hard it hits: they only bound how often one body re-runs a whole-world scan or a path search,
+			// and how many path searches the whole army may start in one game tick. A body that is told "not now" simply asks again at its next think.
+
+			/// <summary>
+			/// A soldier with no target runs its full acquisition scan (every enemy slot, line of sight for the winners) at most this often, in ticks. A soldier that has just LOST a live target
+			/// (it died or left reach), was hurt this think or has a hostile within <see cref="AcquireProximityTiles"/> scans at once, so the fight never goes quiet; this only paces the idle looking-around.
+			/// A target a soldier itself wrote off as unreachable is NOT a loss: it is remembered and the next look waits out this interval (that is what stops two unreachable enemies being swapped every think).
+			/// </summary>
+			public const int AcquireScanIntervalTicks = 18;
+			/// <summary>An idle soldier with a hostile this close (tiles, from its world scan) skips the pacing and looks for a target on its very next think.</summary>
+			public const float AcquireProximityTiles = 12f;
+			/// <summary>
+			/// Each body adds 0 .. (this - 1) extra thinks (6 ticks each) to its own scan interval, chosen from its NPC index, so a squad deployed on one tick (or released from one order)
+			/// does not scan on the same tick forever after.
+			/// </summary>
+			public const int AcquireScanSpreadThinks = 3;
+			/// <summary>A beam-firing swordsman that already holds a target looks for a clearly nearer one this often (ticks).</summary>
+			public const int NearerTargetScanIntervalTicks = 24;
+			/// <summary>
+			/// Wall-clock time (microseconds) the whole army may spend per game tick on position searches (a firing spot, a perch, a cover angle, a patrol leg: candidate generation plus the path
+			/// searches that vet them). Each search is charged what it actually took and a new one only STARTS while the tick's account is not used up (one that has started always finishes). One
+			/// failed path search can burn its whole node budget (several milliseconds), so a stampede of soldiers that all lose their cached answer on one tick cannot pile up on that tick: the
+			/// rest are asked again at their next think and keep their previous answer meanwhile. Cheap searches (a fraction of a millisecond each) pass in dozens, so ordinary fights never notice.
+			/// </summary>
+			public const int PathSearchBudgetMicros = 2500;
+			/// <summary>A soldier that was told "not this tick" this many thinks in a row (6 thinks = 36 ticks) becomes eligible for the one starved search per tick that runs whatever the account says, so a late NPC index can never starve behind early ones.</summary>
+			public const int SearchMaxDeferrals = 6;
+			/// <summary>Targets a soldier remembers as unreachable at once (each for its own recheck time). With only one slot two unreachable enemies (a flying boss and an escort) trade places every think and re-run the whole search for each.</summary>
+			public const int UnreachableMemorySlots = 3;
 		}
 	}
 }

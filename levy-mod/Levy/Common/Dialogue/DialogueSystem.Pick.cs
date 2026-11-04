@@ -101,8 +101,13 @@ namespace Levy.Common.Dialogue
 		/// </summary>
 		internal static string Pick(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark = true)
 		{
+			return PickFromPool(PoolFor(trigger, ctx), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark);
+		}
+
+		/// <summary>The shared picker: filter, placeholders and repeat cooldown over an explicit pool (a trigger's, a boss's or an officer's).</summary>
+		private static string PickFromPool(List<DialogueLine> pool, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark)
+		{
 			picked = null;
-			List<DialogueLine> pool = PoolFor(trigger, ctx);
 			if (pool == null) return null;
 
 			int now = Now;

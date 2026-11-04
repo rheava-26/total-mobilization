@@ -45,6 +45,10 @@ namespace Levy.Common.Dialogue
 	public static class DialogueTable
 	{
 		public const string BossPrefix = "BOSS_";
+		/// <summary>Per-officer pools are OFFICER_&lt;officer Key&gt;_&lt;STATE&gt; (e.g. OFFICER_Nurse_FIGHT); the generic fallbacks are OFFICER_CHAT_&lt;STATE&gt;.</summary>
+		public const string OfficerPrefix = "OFFICER_";
+		/// <summary>The situations an officer talks in. The suffix of every per-officer pool key must be one of these.</summary>
+		public static readonly string[] OfficerStates = { "BOSS", "FIGHT", "HURT", "VICTORY", "MARCH", "HOLD", "IDLE" };
 
 		/// <summary>Keys are case-insensitive: "EyeofCthulhu" and "EyeOfCthulhu" are the same boss.</summary>
 		public static readonly Dictionary<string, List<DialogueLine>> Lines = new(StringComparer.OrdinalIgnoreCase);
@@ -190,7 +194,7 @@ namespace Levy.Common.Dialogue
 			return Enum.TryParse(s, true, out filter) && Enum.IsDefined(typeof(LineFilter), filter);
 		}
 
-		/// <summary>Trigger column to pool key: a DialogueTrigger name, or BOSS_&lt;npc internal name&gt;.</summary>
+		/// <summary>Trigger column to pool key: a DialogueTrigger name, BOSS_&lt;npc internal name&gt;, or OFFICER_&lt;officer Key&gt;_&lt;STATE&gt;.</summary>
 		private static bool TryParseKey(string s, out string key, out string problem)
 		{
 			key = null; problem = null;
@@ -204,6 +208,20 @@ namespace Levy.Common.Dialogue
 			if (s.StartsWith(BossPrefix, StringComparison.OrdinalIgnoreCase) && s.Length > BossPrefix.Length)
 			{
 				key = BossPrefix + s.Substring(BossPrefix.Length);
+				return true;
+			}
+			if (s.StartsWith(OfficerPrefix, StringComparison.OrdinalIgnoreCase))
+			{
+				// OFFICER_<voice>_<STATE>: the voice is any officer Key (not checked here, so a modded officer can have one too); the STATE is checked so a typo is caught.
+				int us = s.LastIndexOf('_');
+				string voice = us > OfficerPrefix.Length ? s.Substring(OfficerPrefix.Length, us - OfficerPrefix.Length) : "";
+				string state = us >= 0 ? s.Substring(us + 1) : "";
+				if (voice.Length == 0) { problem = "'" + s + "' needs an officer name: OFFICER_<officer>_<" + string.Join("|", OfficerStates) + ">"; return false; }
+				string canon = null;
+				foreach (string st in OfficerStates) if (string.Equals(st, state, StringComparison.OrdinalIgnoreCase)) { canon = st; break; }
+				if (canon == null) { problem = "unknown officer state '" + state + "' in '" + s + "' (use " + string.Join(", ", OfficerStates) + ")"; return false; }
+				foreach (char c in voice) if (!char.IsLetterOrDigit(c)) { problem = "officer name '" + voice + "' in '" + s + "' may only hold letters and digits"; return false; }
+				key = OfficerPrefix + voice + "_" + canon;
 				return true;
 			}
 			problem = "unknown trigger '" + s + "'";

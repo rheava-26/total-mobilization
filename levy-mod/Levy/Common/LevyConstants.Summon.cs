@@ -36,6 +36,28 @@ namespace Levy.Common
 		/// <summary>Fallback minion slot cost when the summon weapon's projectile reports none.</summary>
 		public const float MinionDefaultSlots = 1f;
 
+		// ---------- Real (vanilla-driven) minions: see SoldierMinions ----------
+		/// <summary>Slack (slots) when comparing a flock's slot total with the soldier's capacity.</summary>
+		public const float MinionSlotEpsilon = 0.01f;
+		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>
+		public const float MinionSpawnScatterPx = 36f;
+		/// <summary>Size (px) of the box tested for wall overlap at a fresh real minion's scattered spawn point; a blocked point falls back to the soldier's centre.</summary>
+		public static readonly Microsoft.Xna.Framework.Vector2 MinionSpawnProbe = new(16f, 16f);
+		/// <summary>The dummy's maxMinions while a real minion runs its Update, so vanilla's own cap check (which would kill the overflow) never fires: the soldier's upkeep owns the count.</summary>
+		public const int MinionDriverMaxMinions = 1000;
+		/// <summary>Gem / counter controllers (Desert Tiger gems, Abigail's counters) are level markers, not a flock: they may stack past <see cref="MinionMaxPerSoldier"/>.</summary>
+		public const int MinionControllerMaxPerSoldier = 12;
+		/// <summary>Desert Tiger rank thresholds: more gems than this many promote the tiger to tier 2 / tier 3 (vanilla Player.GetDesiredStormTigerMinionRank).</summary>
+		public const int TigerTier2GemsOver = 3, TigerTier3GemsOver = 6;
+		/// <summary>Pygmy staff cast: the pygmy's ai[1] and its localAI[0] at spawn (vanilla SpawnMinionOnCursor / ItemCheck_Shoot).</summary>
+		public const float PygmySpawnAi1 = 60f, PygmySpawnLocalAi0 = 30f;
+		/// <summary>The Desert Tiger's localAI[0] at spawn (its first special-attack delay).</summary>
+		public const float TigerSpawnLocalAi0 = 60f;
+		/// <summary>The server re-sends every real minion this often (ticks, staggered by projectile index) so remote screens keep their walkers and flyers where they are.</summary>
+		public const int MinionNetRefreshTicks = 20;
+		/// <summary>The ratio of the dummy's summon damage that vanilla re-applies to a minion's originalDamage every tick is divided back out within these bounds, so the soldier's own gear sets what its minions deal.</summary>
+		public const float MinionDamageRatioMin = 0.1f, MinionDamageRatioMax = 10f;
+
 		// ---------- Sentries ----------
 		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a sentry.</summary>
 		public const int RangeSentry = 36;

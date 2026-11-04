@@ -51,6 +51,9 @@ namespace Levy.Common.Systems
 		private bool _eventActive, _lastEventActive;
 		private uint _eventTick = uint.MaxValue;
 		private int _housekeepingTimer;
+		/// <summary>Boss NPC types that have called the garrison out and still live somewhere in the world (see <see cref="BossEngaged"/>). Server / single player runtime only.</summary>
+		private readonly List<int> _engagedBossTypes = new();
+		private readonly List<int> _seenBossTypes = new();
 
 		// ---- world flags set by event books (persisted here) ----
 		public bool BookConscription, BookDrill, BookPlunder, BookFortification, BookDiscipline;
@@ -94,6 +97,7 @@ namespace Levy.Common.Systems
 			_netArmories.Clear(); _netStamp = uint.MaxValue;
 			_nextMilitiaId = -1;
 			_lastEventActive = false; _eventTick = uint.MaxValue;
+			_engagedBossTypes.Clear(); _seenBossTypes.Clear();
 			_housekeepingTimer = 0;
 		}
 
@@ -260,10 +264,11 @@ namespace Levy.Common.Systems
 			return res;
 		}
 
-		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
+		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons) => NearPylon(a.Center, pylons);
+
+		private static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
 		{
 			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit;
-			Vector2 c = a.Center;
 			for (int i = 0; i < pylons.Count; i++)
 			{
 				var p = pylons[i].PositionInTiles; // top-left of the 3x4 pylon; measure from its middle
@@ -271,6 +276,34 @@ namespace Levy.Common.Systems
 				if (Vector2.DistanceSquared(c, pc) <= limit) return true;
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// The barracks that pool their money with <paramref name="from"/>: the same settlement. Two barracks are one settlement when they stand inside each other's settlement box
+		/// (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles) or are both on the pylon network (see <see cref="NetworkedArmories"/>;
+		/// pylons interconnect, so a far-flung outpost with a pylon is still part of the home settlement). <paramref name="from"/> is always first, the rest nearest-first.
+		/// A lone barracks gets just itself. Read-only use; valid for the current call.
+		/// </summary>
+		public virtual List<BarracksTE> NetworkedBarracks(BarracksTE from)
+		{
+			var res = new List<BarracksTE>(4);
+			if (from == null) return res;
+			res.Add(from);
+			var pylons = Main.PylonSystem?.Pylons;
+			bool fromOnNet = pylons != null && pylons.Count > 0 && NearPylon(from.Center, pylons);
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not BarracksTE b || ReferenceEquals(b, from)) continue;
+				bool near = Math.Abs(b.Position.X - from.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(b.Position.Y - from.Position.Y) <= LevyConstants.SettlementRadiusY;
+				if (near || (fromOnNet && NearPylon(b.Center, pylons))) res.Add(b);
+			}
+			Vector2 c = from.Center;
+			res.Sort(1, res.Count - 1, Comparer<BarracksTE>.Create((x, y) =>
+			{
+				int d = Vector2.DistanceSquared(x.Center, c).CompareTo(Vector2.DistanceSquared(y.Center, c));
+				return d != 0 ? d : x.ID.CompareTo(y.ID);
+			}));
+			return res;
 		}
 
 		public virtual ArmoryTE LinkedArmory(BarracksTE barracks) => barracks == null ? null : NearestArmory(barracks.Center, LevyConstants.ArmoryLinkRadius);
@@ -497,11 +530,38 @@ namespace Levy.Common.Systems
 			if (++_housekeepingTimer >= LevyConstants.SettlementHousekeepingTicks) { _housekeepingTimer = 0; Housekeeping(); }
 		}
 
-		/// <summary>Auto-muster on the rising edge of an event, stand down on the falling edge.</summary>
+		/// <summary>
+		/// True while a boss that has called the garrison out is still alive anywhere in the world. A boss ENGAGES when it stands within
+		/// <see cref="LevyConstants.BossMusterTiles"/> of a living player; from then on it holds the garrison out by merely existing, wherever the commander is, so a commander
+		/// who dies, respawns or teleports away mid-fight does not stand the militia down while the boss still lives. The garrison stands down only once every engaged boss is
+		/// gone (killed or despawned). Engagement is tracked per boss NPC type, so a worm that splits or a pair of Twins stays one fight, and a boss that never came near a
+		/// player (an ambient or modded one) can neither call a muster nor hold one, so nothing stays mustered after a normal fight ends. Evaluated every tick.
+		/// </summary>
+		private bool BossEngaged()
+		{
+			_seenBossTypes.Clear();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!LevyUtil.IsMusterBoss(n)) continue;
+				if (!_engagedBossTypes.Contains(n.type))
+				{
+					if (!LevyUtil.IsNearLivingPlayer(n, LevyConstants.BossMusterTiles)) continue;
+					_engagedBossTypes.Add(n.type);
+				}
+				if (!_seenBossTypes.Contains(n.type)) _seenBossTypes.Add(n.type);
+			}
+			for (int k = _engagedBossTypes.Count - 1; k >= 0; k--)
+				if (!_seenBossTypes.Contains(_engagedBossTypes[k])) _engagedBossTypes.RemoveAt(k); // no NPC of that type is left: the fight is over
+			return _engagedBossTypes.Count > 0;
+		}
+
+		/// <summary>Auto-muster on the rising edge of an event or an engaged boss, stand down on the falling edge (the event over AND every engaged boss gone).</summary>
 		public override void PostUpdateInvasions()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
-			bool active = EventActive || LevyUtil.IsBossActive();
+			bool bossEngaged = BossEngaged(); // evaluated every tick even during an event, so the engagement set never goes stale
+			bool active = EventActive || bossEngaged;
 			if (active == _lastEventActive) return;
 			_lastEventActive = active;
 			CollectBarracksIds();
@@ -626,12 +686,12 @@ namespace Levy.Common.Systems
 			long cost = 0; int heads = 0;
 			var regulars = RosterSystem.Instance.Regulars;
 			for (int i = 0; i < regulars.Count; i++)
-				if (regulars[i].HomeBarracksId == barracks.ID) { cost += EconomySystem.WagePerDay(regulars[i].Grade, false); heads++; }
+				if (regulars[i].HomeBarracksId == barracks.ID && !regulars[i].Reserve) { cost += EconomySystem.WagePerDay(regulars[i].Grade, false); heads++; } // a soldier in reserve is not in the field: no hazard pay
 			cost += barracks.Militia.Count * EconomySystem.LevyWage; heads += barracks.Militia.Count;
 			cost *= LevyConstants.HazardPayDays;
 			if (heads == 0) { ChatTo(by, LevyUtil.T("Militia.NoOneToPay", town)); return false; }
 			if (!EconomySystem.TryPay(barracks, cost)) { ChatTo(by, LevyUtil.T("UI.NotEnoughMoney")); return false; }
-			for (int i = 0; i < regulars.Count; i++) if (regulars[i].HomeBarracksId == barracks.ID) regulars[i].HazardPaid = true;
+			for (int i = 0; i < regulars.Count; i++) if (regulars[i].HomeBarracksId == barracks.ID && !regulars[i].Reserve) regulars[i].HazardPaid = true;
 			for (int i = 0; i < barracks.Militia.Count; i++) barracks.Militia[i].HazardPaid = true; // charged above; grant them the fear reduction (militia records are transient, no dawn reset needed)
 			barracks.HazardPayDay = day;
 			LevyUtil.Chat(LevyUtil.T("Chat.HazardPay", town, LevyUtil.Coins(cost)));

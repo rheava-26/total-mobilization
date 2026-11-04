@@ -29,6 +29,13 @@ namespace Levy.Common
 		public const float KiteMaxRangeFrac = 0.90f;
 		/// <summary>A target inside reach x this with a clear shot is simply shot at: no approach, no walking toward it.</summary>
 		public const float ShootableRangeFrac = 0.98f;
+		// ---------- Flamethrower family (short-reach extended guns whose shot is the Flamethrower AI) ----------
+		/// <summary>A flamethrower soldier opens fire (and picks targets) at reach x this, well past the bare flame reach, so the stream is already running as it closes.</summary>
+		public const float FlameOpenFireBuffer = 1.35f;
+		/// <summary>A flamethrower soldier plans its position at reach x this (it walks in to about 0.9 of this and holds inside it), so the flames actually land.</summary>
+		public const float FlameCloseInFraction = 0.70f;
+		/// <summary>Floor of a flamethrower's standoff: it only steps away from a hostile inside this many tiles (a gunner's standoff would keep it out of its own reach).</summary>
+		public const int FlameStandoffTiles = 2;
 		/// <summary>Once retreating, a ranged soldier keeps backing off until the threat is this far past the standoff (tiles).</summary>
 		public const float StandoffHysteresisTiles = 2f;
 		/// <summary>The in-range lateral shuffle only happens with this much room past the standoff (tiles).</summary>

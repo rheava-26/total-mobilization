@@ -69,7 +69,20 @@ namespace Levy.Content.NPCs
 		private int _threatIdx = -1;
 		private float _threatTiles = float.MaxValue;
 		private int _retreatDir;
-		private int _unreachIdx = -1, _unreachUntil;
+		// Targets this body found unreachable, each ignored until its own tick (a small ring, see LevyConstants.Targeting.UnreachableMemorySlots: with a single slot two unreachable enemies
+		// trade places on every think and each swap re-runs the whole firing-spot search). Use MarkUnreachable / IsUnreachable / UnreachableNow.
+		private readonly int[] _unreachSlot = new int[LevyConstants.Targeting.UnreachableMemorySlots];
+		private readonly int[] _unreachSlotUntil = new int[LevyConstants.Targeting.UnreachableMemorySlots];
+		private readonly int[] _unreachScratch = new int[LevyConstants.Targeting.UnreachableMemorySlots];
+		// ---- per-tick cost governors (see LevyConstants.Targeting: acquisition pacing and the army-wide path-probe budget) ----
+		/// <summary>Earliest tick this body may run its next idle acquisition scan (0 = at once). A body that just lost its target or was hurt scans regardless.</summary>
+		private int _acquireNextTick;
+		/// <summary>Distance (tiles) to the nearest hostile as of this think's world scan (float.MaxValue when none).</summary>
+		private float _nearestHostileTiles = float.MaxValue;
+		/// <summary>Earliest tick a beam-firing swordsman holding a target looks for a nearer one.</summary>
+		private int _nearerNextTick;
+		/// <summary>The firing-spot search was told "not this tick" (the army's path-probe budget was spent): the target is neither reachable nor unreachable yet, so it must not be written off.</summary>
+		private bool _spotDeferred;
 		/// <summary>Focus Attack: this think's engagement is against the bare focus position (Combat fires at it). Reset at the start of every think.</summary>
 		private bool _focusBare;
 		/// <summary>The bare focus position found no route / firing line: leave it alone until this tick.</summary>
@@ -88,6 +101,11 @@ namespace Levy.Content.NPCs
 		/// <summary>Earliest tick of the next perch evaluation; -1 until the first one is staggered per soldier.</summary>
 		private int _perchNextTick = -1;
 		private int _nudgeNextTick;
+		// Perches a path search could not reach (feet tiles, each until its own tick), so the next search tries the next best spot instead of failing the same one again.
+		// The memory belongs to one patch of ground: it is dropped once the soldier has moved well away from where it was recorded (see PrepareBadPerches).
+		private readonly Point[] _perchBadTile = new Point[LevyConstants.Movement.PerchBadMemory];
+		private readonly int[] _perchBadUntil = new int[LevyConstants.Movement.PerchBadMemory];
+		private int _perchBadAnchorX = int.MinValue;
 		// ---- engaging from cover (in reach, no firing line) ----
 		/// <summary>Tick the line to the current target was first seen blocked while in reach; -1 while there is a line (or no target).</summary>
 		private int _noLosSinceTick = -1, _noLosTarget = -1;
@@ -105,8 +123,8 @@ namespace Levy.Content.NPCs
 		private static int _friendN;
 		/// <summary>From the last <see cref="GatherFriends"/>: friends mid gear-climb, and friends standing clearly higher than this soldier.</summary>
 		private static int _friendClimbers, _friendHigher;
-		private static readonly Vector2[] _candPos = new Vector2[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
-		private static readonly float[] _candScore = new float[Math.Max(LevyConstants.CoverCandidates, Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
+		private static readonly Vector2[] _candPos = new Vector2[Math.Max(Math.Max(LevyConstants.CoverCandidates, LevyConstants.Movement.OverheadPerchCandidates), Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
+		private static readonly float[] _candScore = new float[Math.Max(Math.Max(LevyConstants.CoverCandidates, LevyConstants.Movement.OverheadPerchCandidates), Math.Max(LevyConstants.PerchCandidates, LevyConstants.EngageSpotCandidates))];
 		private static int _candN;
 		private const int HashMulX = 73856093, HashMulY = 19349663, HashMulId = 83492791;
 		private const uint HashMix = 1274126177u;
@@ -168,6 +186,7 @@ namespace Levy.Content.NPCs
 		partial void Brain_OnOrder(SoldierOrder order)
 		{
 			TargetIndex = -1;
+			_acquireNextTick = 0; // a new order from the commander is acted on at the next think, not after the idle-scan pacing
 			HasMoveGoal = false; WantsToFallThrough = false;
 			_haulTargetItem = -1;
 			_idleAnchorSet = false;
@@ -211,9 +230,12 @@ namespace Levy.Content.NPCs
 
 			// Hold-fire edge: drop the target and say so.
 			if (Record.HoldFire && !_lastHoldFire) { TargetIndex = -1; DialogueSystem.Bark(this, DialogueTrigger.HOLD_FIRE, MakeContext()); }
+			if (!Record.HoldFire && _lastHoldFire) _acquireNextTick = 0; // fire resumed: look for a target at once
 			_lastHoldFire = Record.HoldFire;
 
+			HangWatch.Brain(NPC.whoAmI, 2); // diagnostic breadcrumbs (see HangWatch): which soldier's brain is where
 			ScanNpcs(out int fleeIdx, out float nearestHostileTiles);
+			HangWatch.Brain(NPC.whoAmI, 3);
 
 			switch (State)
 			{
@@ -238,6 +260,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
+			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;
 			_lastSeenState = State;
@@ -266,9 +289,12 @@ namespace Levy.Content.NPCs
 			_haulTargetItem = -1; _haulCooldownUntil = 0; _haulStartedTick = 0;
 			_lastTeleportTick = -100000; _lastEngageBarkTick = -100000; _commanderLookupTick = -100000;
 			_engMode = EngageMode.None; _engPathOk = false; _threatIdx = -1; _threatTiles = float.MaxValue; _retreatDir = 0;
-			_unreachIdx = -1; _unreachUntil = 0; _spotTarget = -1; _spotTick = -100000; _spotValid = false;
+			for (int k = 0; k < _unreachSlot.Length; k++) { _unreachSlot[k] = -1; _unreachSlotUntil[k] = 0; }
+			_acquireNextTick = 0; _nearerNextTick = 0; _spotDeferred = false; _searchDeferrals = 0;
+			_spotTarget = -1; _spotTick = -100000; _spotValid = false;
 			WantsAltitude = false; _altHeld = false;
 			_perchActive = false; _perchTarget = -1; _perchNextTick = -1; _nudgeNextTick = 0;
+			ForgetBadPerches();
 			_noLosSinceTick = -1; _noLosTarget = -1; _coverNextTick = 0; _mimicNearValid = false;
 			_crowdAway = 0f; _crowdCount = 0; _crowdNearestTiles = float.MaxValue;
 			_searchAnchorSet = false; _searchDir = 0; _searchGoalTick = 0; _searchPauseUntil = 0;
@@ -316,6 +342,108 @@ namespace Levy.Content.NPCs
 
 		private static bool ValidNpc(int idx) => idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active;
 
+		// =====================================================================================================
+		// Per-tick cost governors. They bound how often one body re-runs a whole-world scan or a path search and how many path
+		// searches the whole army may start in one tick; nothing here limits what the army fields or how hard it hits.
+		// =====================================================================================================
+
+		/// <summary>Ignore NPC <paramref name="idx"/> as a target until tick <paramref name="until"/> (it was found unreachable).</summary>
+		private void MarkUnreachable(int idx, int until)
+		{
+			if (idx < 0) return;
+			int slot = -1, soonest = 0;
+			for (int k = 0; k < _unreachSlot.Length; k++)
+			{
+				if (_unreachSlot[k] == idx) { slot = k; break; }
+				if (_unreachSlotUntil[k] < _unreachSlotUntil[soonest]) soonest = k;
+			}
+			if (slot < 0) slot = soonest; // the entry that runs out first (an expired one wins) makes room
+			_unreachSlot[slot] = idx; _unreachSlotUntil[slot] = until;
+		}
+
+		/// <summary>True while NPC <paramref name="idx"/> is remembered as unreachable.</summary>
+		private bool IsUnreachable(int idx, int now)
+		{
+			if (idx < 0) return false;
+			for (int k = 0; k < _unreachSlot.Length; k++)
+				if (_unreachSlot[k] == idx && now < _unreachSlotUntil[k]) return true;
+			return false;
+		}
+
+		/// <summary>The NPC indices currently remembered as unreachable, for the pick functions to skip (a view over a per-body scratch array: use it at once).</summary>
+		private ReadOnlySpan<int> UnreachableNow(int now)
+		{
+			int n = 0;
+			for (int k = 0; k < _unreachSlot.Length; k++)
+				if (now < _unreachSlotUntil[k]) _unreachScratch[n++] = _unreachSlot[k];
+			return new ReadOnlySpan<int>(_unreachScratch, 0, n);
+		}
+
+		/// <summary>
+		/// Ticks added to a scan interval for this body: 0, 1 or 2 whole thinks chosen from its NPC index, so bodies that were deployed (or given an order) on the same tick drift apart
+		/// instead of all scanning on the same tick forever.
+		/// </summary>
+		private int ScanSpreadTicks() => NPC.whoAmI / LevyConstants.ThinkIntervalTicks % LevyConstants.Targeting.AcquireScanSpreadThinks * LevyConstants.ThinkIntervalTicks;
+
+		/// <summary>
+		/// Whether this think may run a full acquisition scan. A body that just lost a live target (<paramref name="lost"/>: it died or left reach), was hurt in the last think or has a
+		/// hostile within <see cref="LevyConstants.Targeting.AcquireProximityTiles"/> scans at once, so a fight never goes quiet and a close threat is never ignored; a body that is merely looking
+		/// around for something to shoot scans at most every <see cref="LevyConstants.Targeting.AcquireScanIntervalTicks"/>
+		/// (plus its own spread), so a big army does not sweep every enemy slot on every think. Calling it with a "yes" answer books the next scan.
+		/// </summary>
+		private bool AcquireScanDue(int now, bool lost)
+		{
+			if (!lost && TicksSinceDamaged > LevyConstants.ThinkIntervalTicks && _nearestHostileTiles >= LevyConstants.Targeting.AcquireProximityTiles && now < _acquireNextTick) return false;
+			_acquireNextTick = now + LevyConstants.Targeting.AcquireScanIntervalTicks + ScanSpreadTicks();
+			return true;
+		}
+
+		private static uint _searchStamp;
+		private static long _searchSpentTicks;
+		private static readonly long SearchBudgetTicks = LevyConstants.Targeting.PathSearchBudgetMicros * System.Diagnostics.Stopwatch.Frequency / 1_000_000L;
+
+		/// <summary>
+		/// True while the army may still START a position search (firing spot, perch, cover angle, patrol leg) this tick: the time the tick's searches have already taken is under
+		/// <see cref="LevyConstants.Targeting.PathSearchBudgetMicros"/>. One failed path search can burn its whole node budget (milliseconds), so searches that every soldier wants on the same
+		/// tick (a fight starting, a target switching) are spread over the next thinks instead of landing on one tick. A search that has started always finishes, so the cost of one tick is
+		/// bounded by the budget plus one search. The brain is single threaded; the account is shared by every body.
+		/// </summary>
+		private static bool SearchesAvailable()
+		{
+			uint stamp = Main.GameUpdateCount + 1u;
+			return _searchStamp != stamp || _searchSpentTicks < SearchBudgetTicks;
+		}
+
+		/// <summary>How many thinks in a row this body has been told "not this tick" for a position search.</summary>
+		private int _searchDeferrals;
+
+		private static uint _forcedStamp;
+
+		/// <summary>
+		/// Whether this body may start a position search now: while the army's account for the tick is open, or - for a body that has been put off <see cref="LevyConstants.Targeting.SearchMaxDeferrals"/>
+		/// thinks in a row, so a late NPC index never starves behind early ones - through a single "starved" lane that lets ONE such search per tick through whatever the account says (letting
+		/// every starved body through at once would just rebuild the stampede). Call it only when the search would otherwise run; a "no" is counted.
+		/// </summary>
+		private bool SearchMayStart()
+		{
+			if (SearchesAvailable()) { _searchDeferrals = 0; return true; }
+			if (_searchDeferrals >= LevyConstants.Targeting.SearchMaxDeferrals)
+			{
+				uint stamp = Main.GameUpdateCount + 1u;
+				if (_forcedStamp != stamp) { _forcedStamp = stamp; _searchDeferrals = 0; return true; }
+			}
+			_searchDeferrals++;
+			return false;
+		}
+
+		/// <summary>Charges a finished search (a <see cref="System.Diagnostics.Stopwatch.GetTimestamp"/> span) against this tick's account.</summary>
+		private static void ChargeSearch(long ticks)
+		{
+			uint stamp = Main.GameUpdateCount + 1u;
+			if (_searchStamp != stamp) { _searchStamp = stamp; _searchSpentTicks = 0; }
+			_searchSpentTicks += ticks;
+		}
+
 		/// <summary>One pass over the NPC array: the nearest flee-list NPC inside the flee scan and the nearest hostile distance.</summary>
 		private void ScanNpcs(out int fleeIdx, out float nearestHostileTiles)
 		{
@@ -338,6 +466,13 @@ namespace Levy.Content.NPCs
 				var n = Main.npc[i];
 				if (!n.active || i == NPC.whoAmI) continue;
 				float dsq = Vector2.DistanceSquared(c, n.Center);
+				if (n.friendly)
+				{
+					// Our own side (comrades, town NPCs, pets) is never a flee target, a hostile, a threat, a danger or a mimic: only crowding reads it. Skipping the rest here saves most of the
+					// per-slot work for the army's own bodies, which fill a large part of the NPC array in a big muster.
+					if (dsq < crowdSq && n.type == NPC.type && n.ModNPC is SoldierNPC mate && mate.State != SoldierState.Dead) AccumulateCrowd(n);
+					continue;
+				}
 				if (dsq < fleeScanSq && dsq < fleeBest && SoldierTargeting.IsFleeTarget(n)) { fleeBest = dsq; fleeIdx = i; }
 				if (dsq < hostileBest && LevyUtil.IsHostileTarget(n)) hostileBest = dsq;
 				if (dsq < crowdSq && n.type == NPC.type && n.ModNPC is SoldierNPC friend && friend.State != SoldierState.Dead) AccumulateCrowd(n);
@@ -361,6 +496,7 @@ namespace Levy.Content.NPCs
 			_threatIdx = threatIdx;
 			_threatTiles = threatIdx < 0 ? float.MaxValue : MathF.Sqrt(threatBest) / LevyConstants.TilePx;
 			nearestHostileTiles = hostileBest == float.MaxValue ? float.MaxValue : MathF.Sqrt(hostileBest) / LevyConstants.TilePx;
+			_nearestHostileTiles = nearestHostileTiles; // read by AcquireScanDue: something this close is looked at on the very next think
 		}
 
 		/// <summary>The state the standing order asks for right now (no fear, no target, nothing to haul).</summary>
@@ -506,7 +642,9 @@ namespace Levy.Content.NPCs
 				var t = Main.npc[TargetIndex];
 				if (t.life > 0 && !SoldierTargeting.IsNeverTarget(t) && LevyUtil.WithinTiles(NPC.Center, t.Center, range * LevyConstants.TargetKeepRangeMult)) return;
 			}
+			bool lost = TargetIndex >= 0;
 			TargetIndex = -1;
+			if (!AcquireScanDue(now, lost)) return; // looking around is paced; a lost target is replaced at once
 			int pick = SoldierTargeting.PickTarget(this, range, preferNearest: FiresBeamMelee);
 			if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick])) TargetIndex = pick;
 		}
@@ -560,7 +698,33 @@ namespace Levy.Content.NPCs
 		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles * FireBuffer;
 
 		/// <summary>Ranged weapons pick targets and open fire a little past their listed range (see <see cref="LevyConstants.RangedFireRangeBuffer"/>).</summary>
-		private float FireBuffer => Weapon != null && Weapon.OpensEarly ? LevyConstants.RangedFireRangeBuffer : 1f;
+		private float FireBuffer => Weapon != null && Weapon.OpensEarly ? (IsFlamethrower ? LevyConstants.FlameOpenFireBuffer : LevyConstants.RangedFireRangeBuffer) : 1f;
+
+		// Flamethrower family cache, keyed on the profile instance (a re-issued weapon is a new profile object, so the answer is recomputed).
+		private WeaponProfile _flameFor; private bool _flameIs;
+
+		/// <summary>
+		/// A short-legged extended gun/caster whose shot is the Flamethrower AI (Flamethrower, Elf Melter): its RangeTiles is already the real
+		/// flame reach (WeaponClassifier cuts it), so it opens fire a bit past it and walks IN to that reach rather than holding a ranged standoff.
+		/// </summary>
+		private bool IsFlamethrower
+		{
+			get
+			{
+				var w = Weapon;
+				if (w == null) return false;
+				if (!ReferenceEquals(w, _flameFor))
+				{
+					_flameFor = w;
+					_flameIs = w.Extended && w.IsRanged && (w.Family == WeaponFamily.Gun || w.Family == WeaponFamily.Magic)
+						&& WeaponClassifier.ProjectileSample(w.Shoot)?.aiStyle == ProjAIStyleID.Flamethrower;
+				}
+				return _flameIs;
+			}
+		}
+
+		/// <summary>The reach a soldier plans its position against: the weapon's reach, pulled in to the close-in fraction for a flamethrower so the stream connects.</summary>
+		private float PlanningRange(NPC target) => Weapon.RangeTiles * BossRangeMult(target) * (IsFlamethrower ? LevyConstants.FlameCloseInFraction : 1f);
 
 		/// <summary>How much further this soldier's weapon reaches against <paramref name="target"/>: the weapon's boss multiplier for a boss, else 1.</summary>
 		internal float BossRangeMult(NPC target) => Weapon != null && Weapon.BossReachMult > 1f && LevyUtil.IsBossNpc(target) ? Weapon.BossReachMult : 1f;
@@ -584,7 +748,10 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private int NearerBeamTarget(NPC current, float rangeTiles, int now)
 		{
-			int pick = SoldierTargeting.PickTarget(this, rangeTiles, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, preferNearest: true);
+			// a full scan with line of sight, so it is paced: the held target is only reconsidered every NearerTargetScanIntervalTicks (it used to be every think, for every beam swordsman)
+			if (now < _nearerNextTick) return -1;
+			_nearerNextTick = now + LevyConstants.Targeting.NearerTargetScanIntervalTicks + ScanSpreadTicks();
+			int pick = SoldierTargeting.PickTarget(this, rangeTiles, useFocus: false, preferNearest: true, alsoExclude: UnreachableNow(now));
 			if (pick < 0 || pick == TargetIndex || !ValidNpc(pick)) return -1;
 			var n = Main.npc[pick];
 			if (n.life <= 0 || SoldierTargeting.IsNeverTarget(n) || !WithinChaseBounds(n, rangeTiles)) return -1;
@@ -621,13 +788,14 @@ namespace Levy.Content.NPCs
 			if (!IsRegular) return -1;
 			int idx = SoldierTargeting.FocusTargetFor(this, rangeTiles);
 			if (idx < 0) return -1;
-			if (idx == _unreachIdx && now < _unreachUntil) return -1;
+			if (IsUnreachable(idx, now)) return -1;
 			return WithinChaseBounds(Main.npc[idx], rangeTiles * BossRangeMult(Main.npc[idx])) ? idx : -1;
 		}
 
 		private bool TryEngage(int now)
 		{
 			_engPathOk = false;
+			_spotDeferred = false; // set again by FindEngageSpot only if the army's path searches for this tick are used up
 			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false; return false; }
 			float range = AcquireRangeTiles();
 			if (Roaming) range *= FreeReining ? LevyConstants.FreeReinAcquireRangeMult : LevyConstants.SearchAcquireRangeMult; // hunters run enemies down
@@ -644,33 +812,42 @@ namespace Levy.Content.NPCs
 			}
 			if (focus >= 0) { TargetIndex = focus; target = Main.npc[focus]; } // the commander's designated target outranks everything
 			else if (fhostile >= 0) { TargetIndex = fhostile; target = Main.npc[fhostile]; }
-			else if (!(TargetIndex == _unreachIdx && now < _unreachUntil) && TargetStillValid(TargetIndex, range))
+			else if (!IsUnreachable(TargetIndex, now) && TargetStillValid(TargetIndex, range))
 			{
+				// the held target costs nothing to keep: it is re-validated here (alive, legal, in reach, inside the order's bounds) and only replaced when that fails
 				target = Main.npc[TargetIndex];
 				if (FiresBeamMelee) { int near = NearerBeamTarget(target, range, now); if (near >= 0) { TargetIndex = near; target = Main.npc[near]; } } // a closer threat steals the beam
 			}
 			else
 			{
+				// No valid target. A body that just LOST one (it died or left reach), was hurt or has a hostile close by looks again at once; one that is only looking around is paced
+				// (AcquireScanDue), because each look sweeps every enemy slot and tests line of sight for the winners. A target it wrote off as unreachable was already cleared
+				// (TargetIndex -1), so that is not a loss: it waits out the pacing, with the written-off target remembered and skipped.
+				bool lost = TargetIndex >= 0;
 				TargetIndex = -1;
-				// the target found unreachable is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
-				int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, preferNearest: FiresBeamMelee);
-				if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
+				if (AcquireScanDue(now, lost))
 				{
-					TargetIndex = pick; target = Main.npc[pick];
-				}
-				else if (Weapon.BossReachMult > 1f && !PositionsAsMelee)
-				{
-					// nothing else in reach: a boss further out is still shot at from the long reach it earns
-					float bossRange = range * Weapon.BossReachMult;
-					int boss = SoldierTargeting.PickTarget(this, bossRange, useFocus: false, excludeIdx: now < _unreachUntil ? _unreachIdx : -1, bossesOnly: true, preferNearest: FiresBeamMelee);
-					if (ValidNpc(boss) && Main.npc[boss].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[boss]) && WithinChaseBounds(Main.npc[boss], bossRange))
+					HangWatch.Brain(NPC.whoAmI, 4);
+					// every target found unreachable (not just the last) is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
+					int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
+					if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
 					{
-						TargetIndex = boss; target = Main.npc[boss];
+						TargetIndex = pick; target = Main.npc[pick];
+					}
+					else if (Weapon.BossReachMult > 1f && !PositionsAsMelee && SoldierTargeting.AnyBossNpcActive())
+					{
+						// nothing else in reach: a boss further out is still shot at from the long reach it earns (the scan is skipped when no boss exists: it could only return -1)
+						float bossRange = range * Weapon.BossReachMult;
+						int boss = SoldierTargeting.PickTarget(this, bossRange, useFocus: false, bossesOnly: true, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
+						if (ValidNpc(boss) && Main.npc[boss].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[boss]) && WithinChaseBounds(Main.npc[boss], bossRange))
+						{
+							TargetIndex = boss; target = Main.npc[boss];
+						}
 					}
 				}
 			}
 			// a melee target the body could not path to is left alone for a while
-			if (target != null && TargetIndex == _unreachIdx && now < _unreachUntil) { TargetIndex = -1; target = null; }
+			if (target != null && IsUnreachable(TargetIndex, now)) { TargetIndex = -1; target = null; }
 			if (target == null && hasFocusPos)
 			{
 				// nothing else to fight: a critter in the focus radius, else the bare spot itself (ranged weapons only: a blade cannot hit an empty point)
@@ -683,6 +860,7 @@ namespace Levy.Content.NPCs
 				}
 			}
 			if (target == null) { _engMode = EngageMode.None; _perchActive = false; return false; }
+			HangWatch.Brain(NPC.whoAmI, 5);
 
 			if (State != SoldierState.Engage && State != SoldierState.Shaken)
 			{
@@ -705,7 +883,7 @@ namespace Levy.Content.NPCs
 			// nothing to shoot from here and nowhere to shoot from: drop it so the soldier carries on with its order
 			// (ignored until the cached "no route" answer expires, so the state does not flap every think)
 			if (_focusBare) { _focusBare = false; _focusBareUnreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks; } // the bare spot has no index to remember
-			else { _unreachIdx = TargetIndex; _unreachUntil = _spotTick + LevyConstants.EngageSpotRecheckTicks; }
+			else MarkUnreachable(TargetIndex, _spotTick + LevyConstants.EngageSpotRecheckTicks);
 			TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false;
 			WantsAltitude = false; _altHeld = false;
 			return false;
@@ -717,7 +895,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private int FocusAttackNpc(Vector2 fpos, float range, int now, bool critters)
 		{
-			int idx = SoldierTargeting.PickFocusAttackNpc(this, fpos, critters, now < _unreachUntil ? _unreachIdx : -1);
+			int idx = SoldierTargeting.PickFocusAttackNpc(this, fpos, critters, -1, UnreachableNow(now));
 			return idx >= 0 && WithinChaseBounds(Main.npc[idx], range) ? idx : -1;
 		}
 
@@ -726,7 +904,8 @@ namespace Levy.Content.NPCs
 		/// altitude instead of shooting up from the ground. Written every think; Movement owns the climb, hover and budget.
 		/// The altitude is the target's level less FiringAltitudeBelowTargetTiles, pushed further below it while the target is closer
 		/// than the standoff (so the standoff holds in 2D), capped by the kit's reach, MaxAltitudeTiles over the last solid ground and the
-		/// top of the world. A latch (VerticalEngageExitTiles) stops the intent flickering on the threshold.
+		/// top of the world. A latch (VerticalEngageExitTiles) stops the intent flickering on the threshold. The climb starts a little
+		/// before the target is in reach (AerialCommitRangeMult: the soldier climbs while it closes) and is kept a little past it.
 		/// </summary>
 		private void UpdateAltitudeIntent(NPC seg, float rangeTiles, float standoffTiles, bool melee)
 		{
@@ -738,8 +917,8 @@ namespace Levy.Content.NPCs
 			if (sepTiles < need) { _altHeld = false; return; }
 			if (!melee)
 			{
-				float reach = rangeTiles * LevyConstants.ShootableRangeFrac * (_altHeld ? LevyConstants.AerialRangeKeepMult : 1f);
-				if (Aiming.TilesToHitbox(NPC.Center, seg) > reach) { _altHeld = false; return; } // not close enough yet: the ground approach handles it
+				float reach = rangeTiles * LevyConstants.ShootableRangeFrac * (_altHeld ? LevyConstants.Movement.AerialHoldRangeMult : LevyConstants.Movement.AerialCommitRangeMult);
+				if (Aiming.TilesToHitbox(NPC.Center, seg) > reach) { _altHeld = false; return; } // not close enough yet: the approach handles it
 			}
 
 			float capped = FiringAltitude(seg, standoffTiles, melee, out bool truncated);
@@ -747,13 +926,26 @@ namespace Levy.Content.NPCs
 			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
 			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
 			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
+			if (RoofOverhead()) { _altHeld = false; return; } // indoors: the ground rules (and the way out) apply
 			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+		}
+
+		/// <summary>A grounded body with a solid tile within RoofProbeTiles above its head: it is in a room or under an overhang, and a climb would only spend the flight on the ceiling. (A handful of tile reads per think, only for a soldier that is about to commit to a climb.)</summary>
+		private bool RoofOverhead()
+		{
+			if (NPC.velocity.Y != 0f) return false; // already aloft: Movement ends a climb that meets a ceiling
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			for (int i = 0; i < LevyConstants.Movement.RoofProbeTiles; i++)
+				if (TileNav.IsSolid(feet.X, feet.Y - 3 - i)) return true;
+			return false;
 		}
 
 		/// <summary>
 		/// The world Y of the feet to hold to shoot <paramref name="seg"/> from the air: its level less FiringAltitudeBelowTargetTiles (pushed further
 		/// below while the target is inside the standoff, plus this soldier's own altitude slot), capped by the kit's reach, MaxAltitudeTiles over the last
 		/// solid ground and the top of the world. <paramref name="truncated"/> is set when the cap kept the body well short of the wanted level.
+		/// A soldier that can hover holds only AerialStandoffAltitudeFrac of the standoff by altitude; the rest is kept sideways by the step-away, so a flier
+		/// ends level with a boss at the standoff instead of parked on the floor under it.
 		/// </summary>
 		private float FiringAltitude(NPC seg, float standoffTiles, bool melee, out bool truncated)
 		{
@@ -763,7 +955,8 @@ namespace Levy.Content.NPCs
 			else
 			{
 				float dxTiles = Math.Abs(seg.Center.X - NPC.Center.X) / tilePx;
-				if (dxTiles < standoffTiles) belowTiles = Math.Max(belowTiles, MathF.Sqrt(standoffTiles * standoffTiles - dxTiles * dxTiles));
+				float holdTiles = AerialSustained ? standoffTiles * LevyConstants.Movement.AerialStandoffAltitudeFrac : standoffTiles;
+				if (dxTiles < holdTiles) belowTiles = Math.Max(belowTiles, MathF.Sqrt(holdTiles * holdTiles - dxTiles * dxTiles));
 				belowTiles += SlotFrac(SlotSaltAltitude) * LevyConstants.DispersionAltitudeSpreadTiles * SpreadMult; // hovering squads fan out in altitude, only ever further from the target
 			}
 			float bottom = seg.Center.Y + belowTiles * tilePx + BodyHeight * 0.5f;
@@ -784,22 +977,24 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>
-		/// Taking to the air after an airborne target that no ground spot can shoot. Only for a soldier whose kit sustains flight (wings or rocket boots;
-		/// a jump-only body has no hover), a stable fraction of the squad, with the flight budget and relaunch cooldown intact. Closes to a fraction of the
+		/// Taking to the air after a target hanging above the soldier that is out of its reach. Only for a soldier whose kit sustains flight (wings or rocket boots;
+		/// a jump-only body has no hover), a stable fraction of the squad (AerialPursuitAppetite), with the flight budget and relaunch cooldown intact. Closes to a fraction of the
 		/// weapon's reach (never inside the standoff) and asks Movement for the firing altitude; the order's chase clamp still bounds the flight. When the
 		/// budget runs dry the body lands and the normal rules (and the relaunch cooldown) apply, so an over-committed flyer is brave, not stuck.
+		/// It is tried BEFORE the ground search: it costs no search, and the equipped soldier flies rather than first walking to a spot on the floor.
 		/// </summary>
 		private bool TryAerialPursuit(NPC seg, float range, float standoff)
 		{
 			if (!AerialSustained || AerialMaxReachTiles < LevyConstants.Movement.AerialClimbBenefitTiles) return false;
 			if (_aerialSpent || (NPC.velocity.Y == 0f && _aerialCooldown > 0)) return false;
-			if (SlotFrac(SlotSaltFly) >= LevyConstants.FlyPursuitAppetite) return false;
+			if (SlotFrac(SlotSaltFly) >= LevyConstants.Movement.AerialPursuitAppetite) return false;
 			if (Aiming.TilesToHitbox(NPC.Center, seg) > range * LevyConstants.FlyPursuitRangeMult) return false;
 			if (!TargetIsAirborne(seg)) return false;
 			float tilePx = LevyConstants.TilePx;
 			float capped = FiringAltitude(seg, standoff, false, out _);
 			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
 			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) return false; // it is not above us: nothing to climb to
+			if (RoofOverhead()) return false; // indoors: walk out first
 			float dxTiles = Math.Abs(seg.Center.X - NPC.Center.X) / tilePx;
 			float holdTiles = Math.Max(range * LevyConstants.FlyPursuitHoldFrac, standoff + LevyConstants.FlyPursuitStandoffMarginTiles);
 			float side = seg.Center.X >= NPC.Center.X ? 1f : -1f;
@@ -825,8 +1020,9 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private bool RangedGoal(NPC target, int now)
 		{
-			float range = Weapon.RangeTiles * BossRangeMult(target); // a boss pushes reach, standoff and approach distance out together
-			float standoff = StandoffTiles(range);
+			bool flame = IsFlamethrower;
+			float range = PlanningRange(target); // a boss pushes reach, standoff and approach distance out together; a flamethrower plans inside its real flame reach
+			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
 
@@ -846,7 +1042,8 @@ namespace Levy.Content.NPCs
 
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
-			bool inReach = dT <= range * FireBuffer * LevyConstants.ShootableRangeFrac; // the same buffered reach the fire gate uses
+			// the same buffered reach the fire gate uses; a flamethrower holds only once inside its close-in range (no open-fire buffer), otherwise it keeps walking in
+			bool inReach = dT <= range * (flame ? 1f : FireBuffer) * LevyConstants.ShootableRangeFrac;
 			if (!(inReach && !los) || target.whoAmI != _noLosTarget) _noLosSinceTick = -1; // the line is back (or a new target): the blocked clock restarts
 
 			if (inReach && los)
@@ -902,6 +1099,10 @@ namespace Levy.Content.NPCs
 
 			if (_perchActive) AbandonPerch(now); // out of reach or no line from here: the approach search takes over
 
+			// A soldier with wings or rocket boots whose target hangs in the air takes to the air first. That costs no search at all, and a ground search cannot
+			// do better against a target that far overhead.
+			if (TryAerialPursuit(seg, range, standoff)) return true;
+
 			if (FindEngageSpot(target, seg, range, standoff, now, out Vector2 spot))
 			{
 				ApplyChaseClamp(ref spot);
@@ -909,8 +1110,13 @@ namespace Levy.Content.NPCs
 				SetGoal(spot);
 				return true;
 			}
-			// Nothing on the ground gets a shot at an airborne target: a soldier with wings or rocket boots takes to the air after it.
-			if (TryAerialPursuit(seg, range, standoff)) return true;
+			// The army's path searches for this tick are used up: the target is neither reachable nor unreachable yet. Keep it (it is NOT written off), carry on walking if a route is
+			// already under way, and ask again at the next think.
+			if (_spotDeferred)
+			{
+				if (_engMode != EngageMode.Approach) _engMode = EngageMode.Hold;
+				return true;
+			}
 			// No route to a firing line (or the target is across a gap out of reach): stand here rather than walk into the gap.
 			if (_engMode == EngageMode.Approach) ClearGoal();
 			_engMode = EngageMode.Hold;
@@ -925,10 +1131,31 @@ namespace Levy.Content.NPCs
 		/// A handful of candidates on the line from the target toward us (shifted sideways by this soldier's own slot so a squad
 		/// does not converge on one tile), each SCORED (<see cref="SpotMerit"/>: height, ledge, platform, travel, crowding); the best
 		/// get one path search each, in score order. The answer is cached per target for EngageSpotRecheckTicks.
+		/// Against a target far overhead that line runs through the sky, so a sample with no footing near it gets the footing found
+		/// straight below it (<see cref="FootingBelow"/>): the soldier closes on the target along the ground, and the higher footing wins.
 		/// </summary>
 		private bool FindEngageSpot(NPC target, NPC seg, float range, float standoff, int now, out Vector2 spot)
 		{
 			if (_spotTarget == target.whoAmI && now - _spotTick < LevyConstants.EngageSpotRecheckTicks) { spot = _spot; return _spotValid; }
+			// A new search is due. It builds candidates and path-searches them, and the whole army only gets a few milliseconds of that per tick (LevyConstants.Targeting.PathSearchBudgetMicros):
+			// once the tick's account is used up a new search waits for the next think. Meanwhile keep walking to the last good spot for this target if there is one, else report "not
+			// decided yet" (the caller neither writes the target off nor gives up on it). A search that has started always finishes: cutting it short would throw its work away and repeat it.
+			if (!SearchMayStart())
+			{
+				// (the old answer is only trusted while it is not much older than the recheck interval: a spot from long ago may no longer face the target)
+				if (_spotTarget == target.whoAmI && _spotValid && now - _spotTick < 2 * LevyConstants.EngageSpotRecheckTicks) { spot = _spot; return true; }
+				spot = default; _spotDeferred = true; return false;
+			}
+			HangWatch.Brain(NPC.whoAmI, 6);
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			bool found = SearchEngageSpot(target, seg, range, standoff, now, out spot);
+			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+			return found;
+		}
+
+		/// <summary>The search itself (see <see cref="FindEngageSpot"/>, which caches its answer and meters its cost).</summary>
+		private bool SearchEngageSpot(NPC target, NPC seg, float range, float standoff, int now, out Vector2 spot)
+		{
 			_spotTarget = target.whoAmI; _spotTick = now; _spotValid = false; _spot = default;
 			spot = default;
 
@@ -940,6 +1167,7 @@ namespace Levy.Content.NPCs
 			float nearest = Math.Min(standoff + 2f, holdMax);
 			int n = Math.Max(2, LevyConstants.EngageSpotCandidates);
 			bool ignoresTiles = ShotIgnoresTiles();
+			bool overhead = IsOverhead(tc);
 			GatherFriends();
 			float slotPx = SlotOffsetTiles(0f, LevyConstants.DispersionSpreadTiles * SpreadMult) * LevyConstants.TilePx;
 			for (int pass = 0; pass < 2; pass++)
@@ -953,16 +1181,26 @@ namespace Levy.Content.NPCs
 					float distTiles = MathHelper.Lerp(holdMax, nearest, k / (float)(n - 1));
 					Vector2 pt = tc + toUs * distTiles * LevyConstants.TilePx;
 					pt.X += shift;
-					if (!TileNav.NearestStandable((int)(pt.X / 16f), (int)(pt.Y / 16f), LevyConstants.EngageSpotSearchRadius, out Point tile)) continue;
+					int px = (int)(pt.X / 16f), py = (int)(pt.Y / 16f);
+					if (!TileNav.NearestStandable(px, py, LevyConstants.EngageSpotSearchRadius, out Point tile)
+						&& !(overhead && FootingBelow(px, py, LevyConstants.Movement.OverheadDropScanTiles, out tile))) continue;
 					Vector2 bottom = TileNav.BottomCentre(tile.X, tile.Y);
 					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ignoresTiles)) continue;
-					InsertCandidate(bottom, SpotMerit(bottom, tc), n);
+					if (overhead && !WithinChaseClamp(bottom)) continue; // a spot the order's leash would drag into mid-air is no spot (the perch search filters the same way)
+					InsertCandidate(bottom, SpotMerit(bottom, tc, overhead), n);
 				}
+				int checks = 0;
 				for (int i = 0; i < _candN; i++)
 				{
 					Vector2 bottom = _candPos[i];
 					bool here = Vector2.Distance(NPC.Bottom, bottom) < 2f * LevyConstants.TilePx;
-					if (!here && !Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath)) continue;
+					if (!here)
+					{
+						// against an overhead target the spots are speculative (footing under the sky, not on the line to it): fewer, cheaper checks than the usual ones
+						if (overhead && checks >= LevyConstants.Movement.OverheadApproachPathChecks) break;
+						checks++;
+						if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath, overhead ? LevyConstants.Movement.OverheadPathMaxNodes : LevyConstants.Movement.PathMaxNodes)) continue;
+					}
 					_spot = bottom; _spotValid = true; spot = bottom;
 					return true;
 				}
@@ -1040,17 +1278,56 @@ namespace Levy.Content.NPCs
 			return pen;
 		}
 
+		/// <summary>The target's centre hangs at least OverheadTargetMinTiles above this soldier's feet: far enough up that the climb is worth scoring and the sky-line sampling cannot find footing.</summary>
+		private bool IsOverhead(Vector2 tc) => (NPC.Bottom.Y - tc.Y) / LevyConstants.TilePx >= LevyConstants.Movement.OverheadTargetMinTiles;
+
+		/// <summary>
+		/// Footing under a point in mid-air: in column <paramref name="x"/> or the one either side, the first standable tile going down (the highest of the three),
+		/// stopping where a column enters solid ground, so it never reports a cave floor. Used for the samples of a line that runs through the sky.
+		/// </summary>
+		private static bool FootingBelow(int x, int y, int maxDrop, out Point found)
+		{
+			int bestY = int.MaxValue, bestX = x;
+			for (int k = 0; k < 3; k++)
+			{
+				int cx = x + (k == 0 ? 0 : k == 1 ? 1 : -1);
+				for (int ty = y; ty <= y + maxDrop && ty < bestY; ty++)
+				{
+					if (!TileNav.InBounds(cx, ty) || TileNav.IsSolid(cx, ty)) break;
+					if (TileNav.IsFloor(cx, ty + 1) && TileNav.IsStandable(cx, ty)) { bestY = ty; bestX = cx; break; }
+				}
+			}
+			found = new Point(bestX, bestY == int.MaxValue ? y : bestY);
+			return bestY != int.MaxValue;
+		}
+
 		/// <summary>
 		/// How good a spot to shoot from is (higher is better), ignoring range and line of sight: height over the target, a ledge over
 		/// open ground below, a platform underfoot, minus the walk there and any friends already standing around it, plus per-soldier
 		/// noise that splits near-equal spots between soldiers. <see cref="GatherFriends"/> must have run for this search.
+		/// Height counts up to PerchElevationCapTiles under the target's level and keeps counting (at OverheadElevationWeight) beyond that, so against a
+		/// target far overhead every tile of climb still scores. With <paramref name="overhead"/> a spot steeper than a soldier on foot can climb loses merit
+		/// (the walk there would fail), so the shortlist favours slopes and ledges the path search can actually reach.
 		/// </summary>
-		private float SpotMerit(Vector2 bottom, Vector2 tc)
+		private float SpotMerit(Vector2 bottom, Vector2 tc, bool overhead = false)
 		{
 			float tilePx = LevyConstants.TilePx;
 			float bodyY = bottom.Y - BodyHeight * 0.5f;
 			float cap = LevyConstants.PerchElevationCapTiles;
-			float merit = LevyConstants.PerchElevationWeight * MathHelper.Clamp((tc.Y - bodyY) / tilePx, -cap, cap);
+			float elevation = (tc.Y - bodyY) / tilePx; // tiles the spot's body sits above (+) or below (-) the target's centre
+			float merit = LevyConstants.PerchElevationWeight * MathHelper.Clamp(elevation, -cap, cap);
+			if (elevation < -cap) merit -= LevyConstants.Movement.OverheadElevationWeight * (-cap - elevation);
+			if (overhead)
+			{
+				float rise = (NPC.Bottom.Y - bottom.Y) / tilePx;
+				if (rise > 0f)
+				{
+					// what this body can climb: its jump (a kit's gear reach for a flier) plus a gentle slope's worth per column of distance
+					float climb = HasFlightKit ? Math.Max(Abilities.JumpTiles, AerialMaxReachTiles * LevyConstants.AirPerchReachUseFrac) : Abilities.JumpTiles;
+					float excess = rise - climb - Math.Abs(bottom.X - NPC.Bottom.X) / tilePx * LevyConstants.Movement.WalkClimbTilesPerColumn;
+					if (excess > 0f) merit -= LevyConstants.Movement.SteepClimbPenalty * excess;
+				}
+			}
 			Point feet = TileNav.FeetTile(bottom);
 			int below = TileNav.DropDepth(feet.X, feet.Y + 1); // empty tiles under this floor before the next one; -1 none within the scan, -2 lava
 			float gap = below == -1 ? LevyConstants.PerchLedgeCapTiles : below < 0 ? 0f : Math.Min(below, LevyConstants.PerchLedgeCapTiles);
@@ -1130,10 +1407,12 @@ namespace Levy.Content.NPCs
 				bool stalled = !air && now - _perchStartTick > LevyConstants.PerchStallGraceTicks && _blockedHard && _path.Count == 0 && _pathFailTimer > 0;
 				// a gear climb that never left the ground, ran out of flight budget, or took too long is written off
 				bool airFailed = air && (_aerialSpent || (NPC.velocity.Y == 0f && !_aerial && now - _perchStartTick > LevyConstants.AirPerchLaunchGraceTicks));
-				if (target.whoAmI != _perchTarget || stalled || airFailed
-					|| now - _perchStartTick > (air ? LevyConstants.AirPerchTimeoutTicks : LevyConstants.PerchTravelTimeoutTicks)
+				bool timedOut = now - _perchStartTick > (air ? LevyConstants.AirPerchTimeoutTicks : LevyConstants.PerchTravelTimeoutTicks);
+				if (target.whoAmI != _perchTarget || stalled || airFailed || timedOut
 					|| !SpotFires(_perchGoal, tc, range, standoff, LevyConstants.ShootableRangeFrac, 0f, ShotIgnoresTiles()))
 				{
+					// a walk that stalled or never got there was a perch this body cannot reach: do not offer it again for a while
+					if (!air && (stalled || timedOut)) MarkBadPerch(TileNav.FeetTile(_perchGoal), now);
 					AbandonPerch(now);
 					return false;
 				}
@@ -1147,26 +1426,49 @@ namespace Levy.Content.NPCs
 			{
 				if (now < _coverNextTick) return false;
 				if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
+				if (!SearchMayStart()) return false;    // the army's search time for this tick is used up: the search waits for the next think (its timer is left untouched)
 				_coverNextTick = now + LevyConstants.CoverFailCooldownTicks; // provisional; a found angle extends it below
 			}
 			else
 			{
 				if (_perchNextTick < 0) { _perchNextTick = now + (int)(SlotFrac(SlotSaltPhase) * LevyConstants.EngageSpotRecheckTicks); return false; } // stagger the first look
 				if (now < _perchNextTick) return false;
+				if (!SearchMayStart()) return false;    // as above: not this tick, ask again at the next think
 				_perchNextTick = now + LevyConstants.EngageSpotRecheckTicks;
 				if (NPC.velocity.Y != 0f) return false; // only judge footing while standing on it
 			}
 
+			HangWatch.Brain(NPC.whoAmI, 7);
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			bool relocating = PerchSearch(target, tc, range, standoff, now, cover);
+			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+			return relocating;
+		}
+
+		/// <summary>
+		/// The candidate scan and path vetting of <see cref="TryPerch"/> (its cooldowns are already booked; the cost is metered by the caller).
+		/// Against a target far overhead (<see cref="IsOverhead"/>) the open high-ground search looks further, keeps more candidates and vets them
+		/// with a capped path search (a failed one is cheap); every perch a path search could not reach is remembered, so the next search tries the next
+		/// best instead of failing the same cliff top again. A spot only enters the shortlist once it has a firing line from where it stands.
+		/// </summary>
+		private bool PerchSearch(NPC target, Vector2 tc, float range, float standoff, int now, bool cover)
+		{
+			float tilePx = LevyConstants.TilePx;
 			GatherFriends();
 			bool ignoresTiles = ShotIgnoresTiles();
-			float current = SpotMerit(NPC.Bottom, tc);
+			bool overhead = IsOverhead(tc);   // height keeps paying and spots too steep to walk are discounted
+			bool wide = overhead && !cover;   // the open high-ground search against such a target looks further, keeps more and vets cheaply
+			float current = SpotMerit(NPC.Bottom, tc, overhead);
 			float need = current + LevyConstants.PerchMinImprovement;
 			// already well above the target: only a clear win is worth the walk (no pointless climbing)
 			if ((tc.Y - (NPC.Bottom.Y - BodyHeight * 0.5f)) / tilePx >= LevyConstants.PerchGoodElevationTiles) need += LevyConstants.PerchGoodSpotExtraImprovement;
 			if (cover) need = float.NegativeInfinity;
 			Point feet = TileNav.FeetTile(NPC.Bottom);
-			int r = cover ? LevyConstants.CoverSearchRadiusTiles : LevyConstants.PerchSearchRadiusTiles, step = Math.Max(1, LevyConstants.PerchColumnStepTiles);
+			int r = cover ? LevyConstants.CoverSearchRadiusTiles : wide ? Math.Max(LevyConstants.PerchSearchRadiusTiles, LevyConstants.Movement.OverheadPerchRadiusTiles) : LevyConstants.PerchSearchRadiusTiles;
+			int step = Math.Max(1, LevyConstants.PerchColumnStepTiles);
+			int keep = cover ? LevyConstants.CoverCandidates : wide ? LevyConstants.Movement.OverheadPerchCandidates : LevyConstants.PerchCandidates;
 			int phase = (int)(SlotFrac(SlotSaltPhase) * step);
+			PrepareBadPerches(feet.X);
 			_candN = 0;
 			for (int cx = feet.X - r + phase; cx <= feet.X + r; cx += step)
 			{
@@ -1175,27 +1477,39 @@ namespace Levy.Content.NPCs
 					if (Math.Abs(cx - feet.X) <= 1 && Math.Abs(cy - feet.Y) <= 1) continue;
 					if (!TileNav.InBounds(cx, cy) || !TileNav.IsStandable(cx, cy)) continue;
 					Vector2 bottom = TileNav.BottomCentre(cx, cy);
-					// cover mode wants a firing line from the very first test; the high-ground search only checks it for the best few
+					// cover mode wants a firing line from the very first test; the high-ground search checks it once a spot would make the shortlist
 					if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, cover ? ignoresTiles : true, cover)) continue;
 					if (!WithinChaseClamp(bottom)) continue;
-					float merit = SpotMerit(bottom, tc);
-					if (merit >= need) InsertCandidate(bottom, merit, cover ? LevyConstants.CoverCandidates : LevyConstants.PerchCandidates);
+					float merit = SpotMerit(bottom, tc, overhead);
+					if (merit < need) continue;
+					if (!cover)
+					{
+						if (_candN >= keep && merit <= _candScore[_candN - 1]) continue; // would not make the shortlist: no line-of-sight test for it
+						if (IsBadPerch(cx, cy, now)) continue;
+						if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, ignoresTiles)) continue; // a firing line from the spot itself
+					}
+					InsertCandidate(bottom, merit, keep);
 				}
 			}
 
 			int pathChecks = 0;
+			int maxChecks = cover ? LevyConstants.CoverPathChecks : wide ? LevyConstants.Movement.OverheadPerchPathChecks : LevyConstants.PerchPathChecks;
+			int nodeCap = wide ? LevyConstants.Movement.OverheadPathMaxNodes : LevyConstants.Movement.PathMaxNodes;
 			for (int i = 0; i < _candN; i++)
 			{
 				Vector2 bottom = _candPos[i];
-				if (!SpotFires(bottom, tc, range, standoff, LevyConstants.PerchRangeFrac, LevyConstants.PerchStandoffMarginTiles, ignoresTiles)) continue;
 				// Walkable (or flyable) by the path search, else - in the open high-ground search only - reachable on the soldier's own gear.
 				bool viaAir = false;
-				if (pathChecks < (cover ? LevyConstants.CoverPathChecks : LevyConstants.PerchPathChecks))
+				if (pathChecks < maxChecks)
 				{
 					pathChecks++;
-					if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath))
+					if (!Pathfinder.FindPath(NPC.Bottom, bottom, Abilities, _probePath, nodeCap))
 					{
-						if (cover || !AirPerchFeasible(bottom, _candScore[i], need)) continue;
+						if (cover || !AirPerchFeasible(bottom, _candScore[i], need))
+						{
+							if (!cover) MarkBadPerch(TileNav.FeetTile(bottom), now); // out of this body's reach: the next search starts below it
+							continue;
+						}
 						viaAir = true;
 					}
 				}
@@ -1209,7 +1523,40 @@ namespace Levy.Content.NPCs
 				SetGoal(bottom);
 				return true;
 			}
+			// the vetting found nothing walkable: the shortlist is remembered as out of reach, and the next look waits a little longer than the usual recheck
+			if (wide && pathChecks > 0) _perchNextTick = Math.Max(_perchNextTick, now + LevyConstants.Movement.OverheadFailRecheckTicks);
 			return false;
+		}
+
+		/// <summary>Forgets the unreachable perches once this soldier has moved well away from the patch of ground they were recorded on (a cliff top out of reach from the valley may be easy from the hill).</summary>
+		private void PrepareBadPerches(int feetX)
+		{
+			if (_perchBadAnchorX != int.MinValue && Math.Abs(feetX - _perchBadAnchorX) > LevyConstants.Movement.PerchBadForgetMoveTiles) ForgetBadPerches();
+		}
+
+		private void ForgetBadPerches()
+		{
+			for (int k = 0; k < _perchBadUntil.Length; k++) _perchBadUntil[k] = 0;
+			_perchBadAnchorX = int.MinValue;
+		}
+
+		/// <summary>True while a perch within PerchBadRadiusTiles of (<paramref name="tx"/>, <paramref name="ty"/>) is remembered as out of this body's reach.</summary>
+		private bool IsBadPerch(int tx, int ty, int now)
+		{
+			for (int k = 0; k < _perchBadUntil.Length; k++)
+				if (now < _perchBadUntil[k] && Math.Abs(_perchBadTile[k].X - tx) <= LevyConstants.Movement.PerchBadRadiusTiles && Math.Abs(_perchBadTile[k].Y - ty) <= LevyConstants.Movement.PerchBadRadiusTiles) return true;
+			return false;
+		}
+
+		/// <summary>Remembers a perch (feet tile) as out of reach; the entry that runs out first makes room.</summary>
+		private void MarkBadPerch(Point tile, int now)
+		{
+			int feetX = TileNav.FeetTile(NPC.Bottom).X;
+			PrepareBadPerches(feetX);
+			if (_perchBadAnchorX == int.MinValue) _perchBadAnchorX = feetX;
+			int slot = 0;
+			for (int k = 1; k < _perchBadUntil.Length; k++) if (_perchBadUntil[k] < _perchBadUntil[slot]) slot = k;
+			_perchBadTile[slot] = tile; _perchBadUntil[slot] = now + LevyConstants.Movement.PerchBadMemoryTicks;
 		}
 
 		/// <summary>
@@ -1388,7 +1735,7 @@ namespace Levy.Content.NPCs
 			{
 				if (_blockedHard && _path.Count == 0 && _pathFailTimer > 0)
 				{
-					_unreachIdx = TargetIndex; _unreachUntil = now + LevyConstants.UnreachableIgnoreTicks;
+					MarkUnreachable(TargetIndex, now + LevyConstants.UnreachableIgnoreTicks);
 					TargetIndex = -1; _engMode = EngageMode.Hold;
 					ClearGoal();
 					return;
@@ -1444,7 +1791,7 @@ namespace Levy.Content.NPCs
 				if (!n.active || n.life <= 0 || i == NPC.whoAmI || SoldierTargeting.IsNeverTarget(n)) continue;
 				float dsq = Vector2.DistanceSquared(c, n.Center);
 				if (dsq >= bestSq || IsMeleeLethal(n)) continue;
-				if (i == _unreachIdx && now < _unreachUntil) continue;
+				if (IsUnreachable(i, now)) continue;
 				if (!WithinChaseBounds(n, rangeTiles)) continue;
 				best = i; bestSq = dsq;
 			}
@@ -1714,6 +2061,7 @@ namespace Levy.Content.NPCs
 
 		private void ThinkOrder(int now, float nearestHostileTiles)
 		{
+			HangWatch.Brain(NPC.whoAmI, 8);
 			if (State == SoldierState.Haul) { ThinkHaul(now, nearestHostileTiles); return; }
 
 			// Re-derive the state from the standing order every think so a returned commander, a finished walk home,
@@ -1789,7 +2137,7 @@ namespace Levy.Content.NPCs
 			int idx = 0;
 			foreach (var r in RosterSystem.Instance.Regulars)
 			{
-				if (ReferenceEquals(r, Record) || r.Order != SoldierOrder.Follow || r.Id >= Record.Id) continue;
+				if (ReferenceEquals(r, Record) || r.Reserve || r.Order != SoldierOrder.Follow || r.Id >= Record.Id) continue; // a soldier in reserve holds no formation slot
 				if (r.CommanderName == Record.CommanderName) idx++;
 			}
 			return idx;
@@ -2163,7 +2511,7 @@ namespace Levy.Content.NPCs
 			int leash = RoamLeashTiles;
 			float tilePx = LevyConstants.TilePx;
 			bool melee = PositionsAsMelee;
-			float standoff = melee ? LevyConstants.MeleeCautionTiles : StandoffTiles(Weapon.RangeTiles);
+			float standoff = melee ? LevyConstants.MeleeCautionTiles : IsFlamethrower ? LevyConstants.FlameStandoffTiles : StandoffTiles(Weapon.RangeTiles);
 			// the hostile a roaming soldier must not walk at: any threat for ranged, only a boss / lethal-contact one for melee
 			int thIdx = melee ? _dangerIdx : _threatIdx; float thTiles = melee ? _dangerTiles : _threatTiles;
 
@@ -2218,6 +2566,8 @@ namespace Levy.Content.NPCs
 			int attempts = free ? 3 : 1;
 			bool underworldBase = anchor.Y / tilePx >= Main.UnderworldLayer - LevyConstants.FreeReinUnderworldMarginTiles;
 			Vector2 bottom = default; bool found = false;
+			if (!SearchMayStart()) return; // the army's search time for this tick is used up: pick the next waypoint at the next think
+			long searchStart = System.Diagnostics.Stopwatch.GetTimestamp();
 			for (int t = 0; t < attempts && !found; t++)
 			{
 				float mult = t == 0 ? 1f : t == 1 ? LevyConstants.FreeReinStepRetryMult1 : LevyConstants.FreeReinStepRetryMult2;
@@ -2230,6 +2580,7 @@ namespace Levy.Content.NPCs
 				if (!Pathfinder.FindPath(NPC.Bottom, cand, Abilities, _probePath)) continue;
 				bottom = cand; found = true;
 			}
+			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - searchStart);
 			if (!found) { SearchTurnAround(now); return; }
 			_searchGoal = bottom; _searchGoalTick = now; _freeLegs++;
 			SetGoal(bottom);

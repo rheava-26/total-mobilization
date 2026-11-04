@@ -30,6 +30,9 @@ namespace Levy.Common
 		// ---------- potion buffs (vanilla values, applied to the dummy Player because it never runs UpdateBuffs) ----------
 		public const int IronskinDefense = 8, RegenerationLifeRegen = 4;
 		public const float SwiftnessMoveSpeed = 0.25f, WrathDamage = 0.1f, RageCrit = 10f, EnduranceReduction = 0.1f, MagicPowerDamage = 0.2f;
+		/// <summary>Well Fed (and Plenty Satisfied / Exquisitely Stuffed): a minor all-stat lift that scales by tier. Damage and move speed add these per (tier+1); defense and crit add (tier+1) itself; a gentle flat regen is granted per tier.</summary>
+		public const float WellFedDamageStep = 0.025f, WellFedMoveStep = 0.1f;
+		public const int WellFedRegenPerTier = 1;
 		/// <summary>Damage reduction from the dummy's endurance (Endurance potion, Worm Scarf, Brain of Confusion...) never exceeds this.</summary>
 		public const float MaxEndurance = 0.9f;
 

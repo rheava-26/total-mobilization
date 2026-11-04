@@ -9,6 +9,14 @@ namespace Levy.Common
 		// ---------- Weapon reach (tiles) ----------
 		/// <summary>Effective engagement range by family: how far a soldier acquires targets and opens fire. Ranged soldiers hold and kite at this reach.</summary>
 		public const int RangeGun = 72, RangeBow = 54, RangeMagic = 40;
+		/// <summary>Reach (tiles) of a heal-driven weapon: how close a medic soldier stands to a wounded ally before it lobs a heal. A standoff range, matching RangeMagic.</summary>
+		public const int RangeHeal = 40;
+		/// <summary>Weapon Score per point of healing-per-second a heal weapon does (heal amount x potency x casts/sec), capped at <see cref="HealScoreMax"/>. Tunes where a medic ranks among real weapons.</summary>
+		public const float HealScoreWeight = 8f;
+		/// <summary>A heal weapon never scores above this, so a strong healer never out-ranks a soldier's good damage weapon and steal him off the firing line.</summary>
+		public const float HealScoreMax = 240f;
+		/// <summary>Zenith engagement range (tiles). Its homing swords strike from across the screen, so the soldier stands off at full-camera range and looses them rather than closing to blade reach. Matches RangeGun, the mod's longest reach.</summary>
+		public const int RangeZenith = 72;
 		/// <summary>Gun and magic soldiers reach this much further than the family numbers above (bows are held back by arrow drop and keep theirs).</summary>
 		public const float RangedRangeMult = 1.15f;
 		/// <summary>Ranged soldiers (gun / bow / magic / thrown / held ranged) pick targets and open fire out to reach x this, a touch past their listed range.</summary>
@@ -90,7 +98,7 @@ namespace Levy.Common
 		public const int ThrustDefaultLifeTicks = 30;
 		public const int ThrustLocalHitCooldownTicks = 20;
 		public const int ThrustHitboxPx = 18;
-		public const int ThrustRangeMinTiles = 2, ThrustRangeMaxTiles = 6;
+		public const int ThrustRangeMinTiles = 2, ThrustRangeMaxTiles = 8;
 
 		// ---------- Wider weapon compatibility ----------
 		/// <summary>Ammo weapons whose projectile dies young (flamethrowers, short-lived shots) engage only at their real reach: speed x lifetime x this fraction, clamped to [min, RangeGun].</summary>
@@ -98,6 +106,8 @@ namespace Levy.Common
 		public const int ShortShotRangeMinTiles = 8;
 		/// <summary>A projectile whose default lifetime exceeds this many ticks is treated as long-range (no reach clamp).</summary>
 		public const int LongShotLifetimeTicks = 240;
+		/// <summary>A flamethrower flame's real lifetime in updates: its projectile sample reports a misleading timeLeft (3600), but the Flamethrower AI burns it out in about this many updates. Used to size the real flame reach.</summary>
+		public const int FlameLifetimeUpdates = 50;
 		/// <summary>A weapon that spawned nothing (hooks fired no projectile / threw) waits this many ticks before the soldier tries again, so a dud never spams hooks every tick.</summary>
 		public const int DudWeaponRetryTicks = 30;
 		/// <summary>Rarity tier given to Expert / Master items (negative item.rare values) when ranking.</summary>
@@ -129,6 +139,16 @@ namespace Levy.Common
 		public const int AutoUpgradeMinAmmoStock = 100;
 		/// <summary>A fallback blade sidearm may only score up to this fraction of the best blade in the armory's stock (WeaponClassifier.Score). The top blades are left on the shelf for melee primaries, because stock is finite.</summary>
 		public const float SidearmScoreCapFraction = 0.5f;
+
+		// ---------- Burst weapons in the weapon score ----------
+		/// <summary>
+		/// Weapons whose single cast does several times the listed damage to one target, as a multiple of the item's damage (Score multiplies the shot by it).
+		/// Nebula Arcanum (useTime 30, damage 70): the orb bursts for 70 in a 176 px blast and throws 10-18 homing sub-bolts at 65% damage (45 each, about half land on one target), roughly 6x the
+		/// listed damage a cast; counted as 5x. Without it the slow, mana-heavy cast ranked at a fifth of Nebula Blaze.
+		/// Last Prism (hits at most every 5 ticks, see <see cref="HeldRealCadence"/>, so 1,200 damage a second at the listed 100): each hit is 1x while the six beams converge (none for the first 30 ticks, fully on a
+		/// lone target by about 120) and 3x after 180 ticks of channeling. Modelled from the beam AI against a lone target that averages about 2,300 damage a second over 6 s and 2,600 over 8 s, i.e. 1.9x to 2.2x the 1x rate; counted as 2x.
+		/// </summary>
+		public static readonly Dictionary<int, float> ScoreShotDamageMult = new() { { ItemID.NebulaArcanum, 5f }, { ItemID.LastPrism, 2f } };
 
 		// ---------- Ammo in the weapon score ----------
 		/// <summary>

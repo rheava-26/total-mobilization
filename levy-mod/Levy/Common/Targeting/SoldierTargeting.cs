@@ -36,25 +36,29 @@ namespace Levy.Common.Targeting
 		/// <summary>
 		/// Best enemy within <paramref name="rangeTiles"/> with line of sight, or -1. With <paramref name="useFocus"/> the commander's focus
 		/// target (see <see cref="FocusTargetFor"/>) beats everything else.
-		/// <paramref name="excludeIdx"/> (an NPC index, or -1) is never returned and never beats a reachable enemy: it is skipped before the line-of-sight test,
-		/// so a target the soldier found unreachable does not blank the pick while others stand in reach.
+		/// <paramref name="excludeIdx"/> (an NPC index, or -1) and every index in <paramref name="alsoExclude"/> are never returned and never beat a reachable enemy: they are skipped before the
+		/// line-of-sight test, so targets the soldier found unreachable do not blank the pick while others stand in reach.
 		/// With <paramref name="preferNearest"/> the attacker priority is ignored and the closest legal enemy in sight wins (every other filter still applies).
+		/// COST: one pass over the NPC slots. The range cut runs FIRST (a few float ops) so the never-target test and the attacker lookup are only paid for the handful of slots that are
+		/// actually in reach; the line-of-sight test (the expensive one) only for a candidate that would beat the best so far. Callers pace how often they scan at all (see the brain's acquisition interval).
 		/// </summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false, bool preferNearest = false)
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false, bool preferNearest = false, ReadOnlySpan<int> alsoExclude = default)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
 			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
 			Vector2 from = s.NPC.Center;
 			float rangePx = rangeTiles * LevyConstants.TilePx;
 			float rangeSq = rangePx * rangePx;
+			int self = s.NPC.whoAmI;
 			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC npc = Main.npc[i];
-				if (!npc.active || i == s.NPC.whoAmI || i == excludeIdx || IsNeverTarget(npc)) continue;
-				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
+				if (!npc.active || i == self || i == excludeIdx) continue;
 				float distSq = Vector2.DistanceSquared(from, npc.Center);
 				if (distSq > rangeSq) continue;
+				if (IsIn(alsoExclude, i) || IsNeverTarget(npc)) continue;
+				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
 				bool attacking = !preferNearest && IsAttackingUs(npc); // nearest-only: every candidate ranks as priority 2, so distance alone decides
 				if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
 				if (attacking == bestAttacking && distSq >= bestDistSq) continue;
@@ -62,6 +66,37 @@ namespace Levy.Common.Targeting
 				best = i; bestDistSq = distSq; bestAttacking = attacking;
 			}
 			return best;
+		}
+
+		private static bool IsIn(ReadOnlySpan<int> set, int value)
+		{
+			for (int k = 0; k < set.Length; k++) if (set[k] == value) return true;
+			return false;
+		}
+
+		// A boss is the only reason for a ranged soldier's second, long-reach, boss-only scan. The answer is the same for every soldier in a tick, so it is computed once per tick.
+		private static uint _bossScanStamp;
+		private static bool _bossScanValue;
+
+		/// <summary>
+		/// True when any active NPC is a boss or counts as one (boss flag, ShouldBeCountedAsBoss); false means a boss-only pick can only return -1 and need not be run. A superset of
+		/// <see cref="LevyUtil.IsBossNpc"/> (boss parts always have a boss root that is itself flagged). The Pumpkin / Frost Moon minibosses are not boss-flagged, so during those events this is false.
+		/// One pass over the NPC slots per game tick, shared by every soldier.
+		/// </summary>
+		public static bool AnyBossNpcActive()
+		{
+			uint stamp = Main.GameUpdateCount + 1u; // 0 = never computed
+			if (_bossScanStamp == stamp) return _bossScanValue;
+			bool any = false;
+			var counted = NPCID.Sets.ShouldBeCountedAsBoss;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active) continue;
+				if (n.boss || (n.type >= 0 && n.type < counted.Length && counted[n.type])) { any = true; break; }
+			}
+			_bossScanStamp = stamp; _bossScanValue = any;
+			return any;
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -102,9 +137,9 @@ namespace Levy.Common.Targeting
 
 		/// <summary>
 		/// The nearest (to the soldier) legal hostile (<paramref name="critters"/> false) or critter (true) inside the focus radius of <paramref name="pos"/>, or -1.
-		/// <paramref name="excludeIdx"/> is skipped (a target recently found unreachable).
+		/// <paramref name="excludeIdx"/> and every index in <paramref name="alsoExclude"/> are skipped (targets recently found unreachable).
 		/// </summary>
-		public static int PickFocusAttackNpc(SoldierNPC s, Vector2 pos, bool critters, int excludeIdx)
+		public static int PickFocusAttackNpc(SoldierNPC s, Vector2 pos, bool critters, int excludeIdx, ReadOnlySpan<int> alsoExclude = default)
 		{
 			float radiusPx = LevyConstants.Targeting.FocusAttackRadiusTiles * LevyConstants.TilePx;
 			float radiusSq = radiusPx * radiusPx;
@@ -115,6 +150,7 @@ namespace Levy.Common.Targeting
 				NPC npc = Main.npc[i];
 				if (!npc.active || i == excludeIdx || i == s.NPC.whoAmI || npc.life <= 0) continue;
 				if (Vector2.DistanceSquared(pos, npc.Center) > radiusSq) continue;
+				if (IsIn(alsoExclude, i)) continue;
 				if (critters ? !IsFocusCritter(npc) : IsNeverTarget(npc)) continue;
 				float d = Vector2.DistanceSquared(from, npc.Center);
 				if (d < bestSq) { bestSq = d; best = i; }
@@ -164,10 +200,33 @@ namespace Levy.Common.Targeting
 			return _phantom;
 		}
 
-		/// <summary>Things a soldier never shoots at: non-hostiles, invulnerable set pieces, disguised mimics, bound NPCs, boss hooks, projectile-NPCs, flee targets.</summary>
+		// IsNeverTarget is asked for every (soldier shot, NPC) pair by vanilla's projectile hit loop (the CanHitNPC hooks run before the hitbox test), by every soldier's world scan and by the
+		// minions: with a sky full of shots that is hundreds of thousands of calls a tick for a few hundred distinct answers. Each NPC slot's answer is therefore computed once per game tick.
+		// The answer depends on slow-moving NPC state (flags, type, a mimic's wake flag), so being up to a tick old changes nothing the player can see.
+		private static readonly uint[] _neverStamp = new uint[Main.maxNPCs];
+		private static readonly int[] _neverType = new int[Main.maxNPCs];
+		private static readonly bool[] _neverValue = new bool[Main.maxNPCs];
+
+		/// <summary>Things a soldier never shoots at: non-hostiles, invulnerable set pieces, disguised mimics, bound NPCs, boss hooks, projectile-NPCs, summoned blades, flee targets.</summary>
 		public static bool IsNeverTarget(NPC npc)
 		{
 			if (npc == null || !npc.active) return true;
+			int i = npc.whoAmI;
+			// only a real slot of Main.npc is cached (the focus stand-in has a negative index; a stray NPC instance never matches the array entry)
+			if ((uint)i < (uint)Main.maxNPCs && ReferenceEquals(Main.npc[i], npc))
+			{
+				uint stamp = Main.GameUpdateCount + 1u; // 0 = never computed
+				int type = npc.type;
+				if (_neverStamp[i] == stamp && _neverType[i] == type) return _neverValue[i];
+				bool value = ComputeNeverTarget(npc);
+				_neverStamp[i] = stamp; _neverType[i] = type; _neverValue[i] = value;
+				return value;
+			}
+			return ComputeNeverTarget(npc);
+		}
+
+		private static bool ComputeNeverTarget(NPC npc)
+		{
 			if (!LevyUtil.IsHostileTarget(npc)) return true;          // friendly, townNPC, critter, dontTakeDamage, immortal, lifeMax <= 5
 			if (npc.ModNPC is SoldierNPC) return true;
 			int type = npc.type;
@@ -177,6 +236,9 @@ namespace Levy.Common.Targeting
 			if (IsFleeTarget(npc)) return true;
 			switch (type)
 			{
+				// The Pumpking's two scythes are weapons on a leash, not enemies: they cannot be hurt and exist only to be dodged. (Already excluded above through dontTakeDamage; named here so
+				// the rule survives even if a script or another mod makes them damageable, and so the list says what it means.)
+				case NPCID.PumpkingBlade:
 				case NPCID.DD2EterniaCrystal:
 				case NPCID.TargetDummy:
 				case NPCID.CultistTablet:

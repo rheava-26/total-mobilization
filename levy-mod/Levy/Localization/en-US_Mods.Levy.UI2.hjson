@@ -14,6 +14,10 @@ ArmoryClear: Clear
 ArmoryClearHint: Clears the search and every filter.
 ArmoryShown: Showing {0} of {1}
 ArmoryNoMatch: No stored items match.
+ArmoryCapacity: "{0} slots"
+ArmoryCapacityCenters: "{0} slots (+{1} from {2} Logistical Centers)"
+ArmoryCapacityCenter: "{0} slots (+{1} from 1 Logistical Center)"
+ArmoryValue: Value: {0}
 RarityHint: Shows {0} items. Click to toggle; select several to combine.
 RarityGray: Gray
 RarityWhite: White
@@ -61,6 +65,8 @@ Off: Off
 TaxShort: Tax to treasury
 Toggle: "{0}: {1}"
 UsedToday: used today
+RecruitingDriveUsed: A recruiting drive was already run here today. Try again tomorrow.
+HazardPayUsed: Hazard pay was already issued here today. Try again tomorrow.
 AllOrders: All Regulars
 FollowAll: Follow
 HoldAll: Hold
@@ -148,6 +154,22 @@ SortTier: Weapon tier
 SortGrade: Grade
 SortName: Name
 NoMatch: No Regulars match these filters.
+Demote: Demote
+DemoteHint: Lowers this soldier one grade to {0}. Nothing is refunded. Accessories beyond the new slot count go back to the Armory.
+DemoteMin: Already the lowest grade.
+Reserve: Reserve
+ReserveHint: Takes this soldier off active duty. No body in the field, no wage and no command points. Name, grade, gear and veteran status are kept.
+ReserveMutinous: A soldier in mutiny takes no orders.
+Recall: Recall
+RecallHint: Returns this soldier to active duty. Command point cost: {0}.
+InReserve: In reserve
+ReserveInfo: Off the payroll
+ReserveNoWage: No wage while in reserve.
+CommandPointsReserve: Command points {0} / {1} ({2} in reserve)
+FilterDuty: Duty: {0}
+FilterDutyHint: Shows only soldiers on active duty or only soldiers in reserve. Click to cycle, right-click to go back.
+DutyActive: Active
+DutyReserve: Reserve
 
 State: {
 	Idle: Idle

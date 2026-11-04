@@ -108,7 +108,7 @@ namespace Levy.Common.Weapons
 			// A MELEE owner-locker (Serpent's Spear) is thrown as a Levy SoldierBoomerang: its own projectile, drawn with the item's shot sprite, returning to the soldier, so the commander is never pinned.
 			// A non-melee one (a gun or magic bolt) cannot sensibly be thrown and stays Unsupported.
 			if ((family == WeaponFamily.Gun || family == WeaponFamily.Bow || family == WeaponFamily.Magic || family == WeaponFamily.Broadsword || family == WeaponFamily.ThrownMelee || family == WeaponFamily.Thrown)
-				&& item.shoot > 0 && OwnerLockProbe.LocksOwner(item.shoot))
+				&& item.shoot > 0 && !AiDrivenHealerSafe(item) && OwnerLockProbe.LocksOwner(item.shoot)) // a heal weapon never fires its own shot (the heal AI spawns a SoldierHeal), so its projectile locking its owner is moot
 			{
 				extended = false;
 				return item.CountsAsClass(DamageClass.Melee) ? WeaponFamily.Boomerang : WeaponFamily.Unsupported;
@@ -123,7 +123,10 @@ namespace Levy.Common.Weapons
 			// Thrown consumables (knives, shuriken, javelins, grenades, bombs) are decided before the consumable / zero-damage rejections below: a bomb item has damage 0
 			// (the blast damage lives on its projectile) and every one of them is a consumable.
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
-			if (item.damage <= 0) return WeaponFamily.Unsupported;
+			// A heal-driven Thorium weapon (ally-heal / self-heal / hybrid) is run by a heal AI that lobs its heal at the wounded; the soldier never aims it at an enemy. Classify it as a
+			// standoff caster so it is issuable, ahead of the consumable / zero-damage / useStyle gates below that otherwise bench a bandage, a syringe or a thrown-at-ally cleric staff.
+			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item)) { extended = false; return WeaponFamily.Magic; }
+			if (item.damage <= 0 && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
 			if (item.pick > 0) return WeaponFamily.Unsupported;
@@ -196,8 +199,12 @@ namespace Levy.Common.Weapons
 				else if (IsSet(ItemID.Sets.Spears, item.type)) melee = WeaponFamily.Spear;
 				else if (item.useStyle == ItemUseStyleID.Rapier) melee = WeaponFamily.Shortsword;
 				else if (sample != null && sample.aiStyle == ProjAIStyleID.ShortSword) melee = WeaponFamily.Shortsword;
-				// Zenith (noMelee, its swords orbit the body): the swing hitbox is the melee damage, so it fights at blade reach like any broadsword (see MiscProjSwap for the sword anchor).
-				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith)) melee = WeaponFamily.Broadsword;
+				// Zenith (noMelee, its swords orbit the body): classed as a broadsword so the swing hitbox stays the melee damage; ApplyProjectileMelee then stands it off at full-camera range to loose its swords (see MiscProjSwap for the sword anchor).
+				// A weapon that only reached this fallback because its DamageClass is none of melee/ranged/magic (a modded Bard/Rogue/Healer/Thrower
+				// whose standalone class is unknown to us) is NOT a sword to swing when it actually launches a projectile: let it fall through to the
+				// plain-shooter path below, where the soldier fires item.shoot and the spawned projectile carries its own modded DamageClass. A genuine
+				// melee weapon that fires on swing (sword beam, Zenith, Terra Blade) counts as Melee here (viaMeleeClass) and keeps the broadsword swing.
+				else if (item.useStyle == ItemUseStyleID.Swing && (!item.noMelee || item.type == ItemID.Zenith) && (viaMeleeClass || !FiresGenericProjectile(item, sample))) melee = WeaponFamily.Broadsword;
 				if (melee != WeaponFamily.Unsupported) { extended = !viaMeleeClass; return melee; }
 			}
 
@@ -248,6 +255,16 @@ namespace Levy.Common.Weapons
 			if (!sample.friendly || sample.hostile || sample.minion || sample.sentry || sample.minionSlots > 0f) return false;
 			return sample.aiStyle == ProjAIStyleID.ThrownProjectile || sample.aiStyle == LevyConstants.ThrownStickAiStyle;
 		}
+
+		/// <summary>
+		/// The weapon launches a usable friendly projectile the plain-shooter path can fire: a set shot, not Purification Powder, with a loadable sample.
+		/// Used in the melee fallback to tell a modded projectile weapon (one whose DamageClass is none of melee/ranged/magic, so it fell through to the
+		/// fallback) apart from a true melee blade: a non-melee-class weapon that fires a projectile is routed to the shooter path instead of swung.
+		/// <paramref name="sample"/> is the already-resolved sample for <c>item.shoot</c>. Mirrors the plain-shooter fallback's own gate, so any weapon this
+		/// accepts is always caught there (becomes Magic), never left Unsupported. Minion/sentry/hook/whip/boomerang shots were rejected earlier.
+		/// </summary>
+		private static bool FiresGenericProjectile(Item item, Projectile sample) =>
+			item.shoot > ProjectileID.None && item.shoot != ProjectileID.PurificationPowder && sample != null;
 
 		/// <summary>Damage used to rank a thrown item: its own, else the blast its bomb projectile writes when it goes off.</summary>
 		public static int ThrownRankDamage(Item src) =>
@@ -322,6 +339,8 @@ namespace Levy.Common.Weapons
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
+			// A heal weapon stands off at a generous, consistent heal reach, not the short range its heal projectile's own flight would clamp a caster to.
+			if (AiDrivenHealerSafe(src)) { p.RangeTiles = LevyConstants.RangeHeal; p.Gravity = false; }
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			ApplyLongReach(src, p);
@@ -335,8 +354,18 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static void ApplyProjectileMelee(Item src, WeaponProfile p)
 		{
-			// Zenith's swords swirl round the soldier (not a flown beam): it stays a pure blade-reach fighter.
-			if (src.type == ItemID.Zenith) return;
+			// Zenith is a long-range weapon: its homing swords strike from across the screen, so the soldier stands off at full-camera
+			// range and looses them (PositionsAsMelee turns false once FiresProjectileMelee is set, so the brain positions it like a gunner)
+			// rather than charging to blade reach. The swords are spawned by ItemShots.Zenith off item.shoot, NOT from BeamProjType, so
+			// these fields only steer POSITIONING and the fire gate -- no second projectile is ever launched. The blade hitbox
+			// (MeleeReachTiles, left at RangeMelee) stays, so point-blank still connects.
+			if (src.type == ItemID.Zenith)
+			{
+				p.FiresProjectileMelee = true;
+				p.BeamProjType = src.shoot; // ProjectileID.FinalFractal (tileCollide false): the soldier fires without a line-of-sight stall
+				p.RangeTiles = Math.Max(p.MeleeReachTiles, LevyConstants.RangeZenith);
+				return;
+			}
 			bool table = SwordBeams.HasBeam(src.type);
 			int beam = table ? SwordBeams.BeamProjectile(src.type) : src.shoot;
 			if (beam <= 0) return;
@@ -387,9 +416,14 @@ namespace Levy.Common.Weapons
 		private static int ShortShotRange(Item src, int familyRange)
 		{
 			var sample = ProjectileSample(src.shoot);
-			if (sample == null || sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
-			float speed = Math.Max(1f, src.shootSpeed) * (1 + Math.Max(0, sample.extraUpdates));
-			float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
+			if (sample == null) return familyRange;
+			// A flamethrower flame reports a misleading timeLeft (3600) but its AI burns out in ~FlameLifetimeUpdates, so it is sized by that real flame life, not left at full gun range (it would open fire far past its flames).
+			bool flame = sample.aiStyle == ProjAIStyleID.Flamethrower;
+			if (!flame && sample.timeLeft > LevyConstants.LongShotLifetimeTicks) return familyRange;
+			// timeLeft counts UPDATES, and every extra update moves the shot by its velocity AND uses up one timeLeft, so the reach is speed x timeLeft however many extra updates it runs.
+			int life = flame ? LevyConstants.FlameLifetimeUpdates : sample.timeLeft;
+			float speed = Math.Max(1f, src.shootSpeed);
+			float tiles = speed * Math.Max(1, life) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
 			return Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, familyRange);
 		}
 
@@ -425,12 +459,17 @@ namespace Levy.Common.Weapons
 
 		public static float ThrustReach(float shootSpeed) => Math.Max(LevyConstants.ThrustReachMinPx, shootSpeed * LevyConstants.ThrustReachPerShootSpeed);
 
-		/// <summary>Whether a projectile type falls: vanilla aiStyle 1 adds 0.1/tick after 15 ticks unless the type is on the exempt list (bullets, lasers, Jester's arrows).</summary>
+		/// <summary>
+		/// Whether a projectile type falls: vanilla aiStyle 1 adds 0.1/tick after 15 ticks unless the type is on the exempt list (bullets, lasers, Jester's arrows).
+		/// A modded shot that borrows a vanilla AI (<c>ModProjectile.AIType</c>, e.g. Thorium's bard notes run the Bullet AI) is judged by the type its AI runs as,
+		/// because vanilla's exemption test reads the borrowed type.
+		/// </summary>
 		public static bool ProjectileHasGravity(int projType)
 		{
 			var sample = ProjectileSample(projType);
 			if (sample == null) return false;
-			return sample.aiStyle == ProjAIStyleID.Arrow && !LevyConstants.AiStyle1NoGravity.Contains(projType);
+			int aiType = sample.ModProjectile != null && sample.ModProjectile.AIType > 0 ? sample.ModProjectile.AIType : projType;
+			return sample.aiStyle == ProjAIStyleID.Arrow && !LevyConstants.AiStyle1NoGravity.Contains(aiType);
 		}
 
 		/// <summary>Projectiles that swing around their owner's body as the weapon's visible blade (aiStyle NightsEdge / TrueNightsEdge): Night's Edge, Excalibur, Terra Blade, The Horseman's Blade.</summary>
@@ -447,9 +486,41 @@ namespace Levy.Common.Weapons
 		/// <summary>An axe or hammer that is just a melee blade: melee class, swung (useStyle Swing) and launching no projectile (shoot == 0), so nothing owner-anchored can come out of it.</summary>
 		private static bool IsPlainMeleeSwingTool(Item item) => item.CountsAsClass(DamageClass.Melee) && item.useStyle == ItemUseStyleID.Swing && item.shoot == 0;
 
+		/// <summary>Companion opt-in: a modded weapon whose damage class is none of the five vanilla combat classes is normally benched. A companion mod returns true here
+		/// to declare such a weapon issuable; a modded item it accepts is also allowed past the zero-damage rejection (support weapons such as a healing staff deal no damage).
+		/// Null = none (the default). A throwing delegate counts as false.</summary>
+		public static Func<Item, bool> ExtraCombatClass;
+
 		private static bool CountsAsAnyCombatClass(Item item) =>
 			item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)
-			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing);
+			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing)
+			|| (ExtraCombatClass != null && ExtraClassSafe(item));
+
+		private static bool ExtraClassSafe(Item item)
+		{
+			try { return ExtraCombatClass(item); }
+			catch (Exception) { return false; }
+		}
+
+		/// <summary>Compat hook: a heal-driven weapon (ally-heal / self-heal / hybrid) whose soldier runs it on a heal AI rather than aiming it at an enemy. It is classified as a
+		/// standoff caster (Magic, heal reach) past the consumable / useStyle / zero-damage gates that otherwise bench it (a bandage, a syringe, a thrown-at-ally cleric staff),
+		/// and scored by <see cref="HealerScore"/> rather than by the -1 damage Thorium stamps on a pure healer. Null = none (the default).</summary>
+		public static Func<Item, bool> AiDrivenHealer;
+		/// <summary>Compat hook: a heal weapon's healing-value Score (0 for anything that is not a heal-driven weapon), so a medic weapon ranks among real weapons instead of below an empty hand. Null = none.</summary>
+		public static Func<Item, float> HealerScore;
+
+		private static bool AiDrivenHealerSafe(Item item)
+		{
+			if (AiDrivenHealer == null) return false;
+			try { return AiDrivenHealer(item); }
+			catch (Exception) { return false; }
+		}
+		private static float HealerScoreSafe(Item item)
+		{
+			if (HealerScore == null) return 0f;
+			try { return HealerScore(item); }
+			catch (Exception) { return 0f; }
+		}
 
 		public static Projectile ProjectileSample(int projType)
 		{
@@ -521,6 +592,8 @@ namespace Levy.Common.Weapons
 			if (item == null || item.IsAir) return 0f;
 			var p = GetProfile(item);
 			if (!p.Supported) return 0f;
+			float heal = HealerScoreSafe(item);
+			if (heal > 0f) return heal; // a medic weapon ranks by its healing value, not the -1 damage Thorium stamps on a pure healer (which would score below an empty hand)
 			// Burst weapons fire a capped run of shots per cycle, then play out the animation + reuseDelay: a reuseDelay weapon fires ceil(useAnimation / useTime) shots per
 			// useAnimation + reuseDelay ticks, and a useLimitPerAnimation weapon (Tome of Infinite Wisdom: 4 per 25 ticks) fires min(limit, natural) then idles (see WeaponUse.FinishUse).
 			float cadence = Math.Max(1, item.useTime);
@@ -528,10 +601,11 @@ namespace Levy.Common.Weapons
 			int naturalShots = Math.Max(1, (anim + (int)cadence - 1) / (int)cadence);
 			int shots = item.useLimitPerAnimation.HasValue && item.useLimitPerAnimation.Value > 0 ? Math.Min(item.useLimitPerAnimation.Value, naturalShots) : naturalShots;
 			if (shots < naturalShots || item.reuseDelay > 0) cadence = (anim + Math.Max(0, item.reuseDelay)) / (float)shots;
-			// A held weapon with a known real cadence (Vortex Beater) is ranked on it, undamped.
+			// A held weapon with a known real cadence (Vortex Beater, Solar Eruption, Phantasm, Last Prism) is ranked on it, undamped.
 			bool heldKnown = p.Family == WeaponFamily.HeldWeapon && LevyConstants.HeldRealCadence.TryGetValue(item.type, out int heldCadence) && heldCadence > 0;
 			if (heldKnown) cadence = LevyConstants.HeldRealCadence[item.type];
 			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
+			if (LevyConstants.ScoreShotDamageMult.TryGetValue(item.type, out float burstMult)) shotDamage *= burstMult; // a burst cast (Nebula Arcanum) does several times its listed damage
 			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor * SummonScoreMinions(item); // the minions do the work: useTime means nothing
 			else if (p.Family == WeaponFamily.Sentry) dps = item.damage * LevyConstants.SentryScoreDamageFactor; // the tower does the work: useTime means nothing

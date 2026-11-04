@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common;
+using Levy.Common.Flavor;
 using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -21,8 +22,10 @@ namespace Levy.Content.TileEntities
 	/// <summary>1000-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
 	public class ArmoryTE : ModTileEntity
 	{
-		/// <summary>Bulk storage slots (fixed array; the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows.</summary>
-		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6, PotionSlots = 2;
+		/// <summary>Base bulk storage slots (the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows. Each linked Logistical Center adds <see cref="LevyConstants.LogisticsSlotsPerCenter"/> more (see <see cref="FitStorage"/>).</summary>
+		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6;
+		/// <summary>Base potion row length: slot 0 healing / mana, slot 1 the army's one buff. The Guide to Firepower adds <see cref="LevyConstants.FirepowerBuffSlots"/> more buff slots (see <see cref="FitPotions"/>).</summary>
+		public const int PotionSlots = 2;
 		/// <summary>Armor pieces per set: head, body, legs.</summary>
 		public const int ArmorParts = 3;
 		public const int ArmorSlots = ArmorSets * ArmorParts;
@@ -31,17 +34,88 @@ namespace Levy.Content.TileEntities
 		/// <summary>Weapon slot count of worlds saved before the issue rows were enlarged (sidearm was the last of these).</summary>
 		private const int LegacyWeaponSlots = 6;
 
+		/// <summary>
+		/// Bulk storage. Its length is <see cref="CapacityFor"/> the linked Logistical Centers (never below the base), so the array is REPLACED when it grows or shrinks: never cache it across a tick
+		/// (the panel rebuilds its cells when the reference changes; saving, packets and every loop already read <c>.Length</c>).
+		/// </summary>
 		public Item[] Storage = NewItems(StorageSize);
 		public Item[] IssueWeapons = NewItems(WeaponSlots);
 		/// <summary>ArmorSets x (head, body, legs): index = set*ArmorParts + part.</summary>
 		public Item[] IssueArmor = NewItems(ArmorSlots);
 		public Item[] IssueAmmo = NewItems(AmmoSlots);
-		/// <summary>0 = healing, 1 = buff.</summary>
+		/// <summary>Slot 0 = healing / mana, every later slot = a buff slot. Length is <see cref="TargetPotionSlots"/>; it only ever GROWS (Firepower never turns off), by replacing the array, so never cache it across a tick.</summary>
 		public Item[] IssuePotions = NewItems(PotionSlots);
 
 		private bool _dirty;
 
 		public static Item[] NewItems(int n) { var a = new Item[n]; for (int i = 0; i < n; i++) a[i] = new Item(); return a; }
+
+		// ------------------------------------------------------------------ expandable storage (Logistical Centers)
+
+		/// <summary>Length the potion row should have in this world: the base plus Firepower's buff slots.</summary>
+		public static int TargetPotionSlots => PotionSlots + GuideSystem.ArmoryBuffSlots;
+
+		/// <summary>
+		/// Server / single player: grows <see cref="IssuePotions"/> to <see cref="TargetPotionSlots"/>, moving the items by reference (a save written with two slots grows the same way). Never shrinks.
+		/// Returns true (and queues a sync) when the length changed.
+		/// </summary>
+		public bool FitPotions()
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			int want = TargetPotionSlots;
+			if (IssuePotions.Length >= want) return false;
+			var next = new Item[want];
+			Array.Copy(IssuePotions, next, IssuePotions.Length);
+			for (int i = IssuePotions.Length; i < want; i++) next[i] = new Item();
+			IssuePotions = next;
+			MarkDirty();
+			return true;
+		}
+
+		/// <summary>Storage slots with <paramref name="centers"/> Logistical Centers linked.</summary>
+		public static int CapacityFor(int centers) => StorageSize + Math.Max(0, centers) * LevyConstants.LogisticsSlotsPerCenter;
+
+		/// <summary>Logistical Centers currently linked to this armory (each is linked to its nearest armory in reach). Cached; server, client and single player agree because every entity exists everywhere.</summary>
+		public int LinkedCenters => LogisticsSystem.CentersFor(this);
+
+		/// <summary>The last occupied storage index + 1 (0 when storage is empty): the shortest the array may be without losing an item.</summary>
+		public int StorageUsedLength
+		{
+			get
+			{
+				for (int i = Storage.Length - 1; i >= 0; i--) if (!IsAir(Storage[i])) return i + 1;
+				return 0;
+			}
+		}
+
+		/// <summary>
+		/// Server / single player: sizes <see cref="Storage"/> to <paramref name="centers"/> centers. Growing appends empty slots. Shrinking removes only trailing EMPTY slots: if an item
+		/// sits past the new capacity the array stays just long enough to hold it (Sort packs items to the front, and the next reconcile then trims). Items move by reference, so none is
+		/// ever cloned, dropped or duplicated. Returns true (and queues a sync) when the length changed.
+		/// </summary>
+		public bool FitStorage(int centers)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			int want = Math.Max(CapacityFor(centers), StorageUsedLength);
+			if (want == Storage.Length) return false;
+			var next = new Item[want];
+			int keep = Math.Min(want, Storage.Length);
+			Array.Copy(Storage, next, keep);
+			for (int i = keep; i < want; i++) next[i] = new Item();
+			Storage = next;
+			MarkDirty();
+			return true;
+		}
+		/// <summary>Total worth (copper) of everything held — bulk storage and every issue slot — at vanilla's sell price (value / 5). What the hoard is worth to the player.</summary>
+		public long TotalSellValue()
+		{
+			long gross = 0;
+			void Add(Item[] arr) { if (arr == null) return; foreach (var it in arr) if (!IsAir(it)) gross += (long)it.value * it.stack; }
+			Add(Storage); Add(IssueWeapons); Add(IssueArmor); Add(IssueAmmo); Add(IssuePotions);
+			foreach (var it in Lent) if (!IsAir(it)) gross += (long)it.value * it.stack; // weapons on loan to drones are still the hoard's
+			return gross / 5;
+		}
+
 		public Vector2 Center => new Vector2((Position.X + 1f) * 16f, (Position.Y + 1.5f) * 16f);
 
 		// ------------------------------------------------------------------ placement / validity / net
@@ -400,15 +474,40 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// Extra conditions every PRIMARY weapon pick shares (null = none): (1) no whip while a summon staff is available (the flock is the weapon, the whip tags for it from the
-		/// sidearm slot; a summoner with only whips in stock still gets one); (2) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
+		/// True when the soldier is (or will be armed as) a summoner, so the summon-weapon reservation lets him draw whips, minion staves and sentries: he already
+		/// carries a summon-class weapon, he wears summon armor, or — before any armor is issued — the only armor the armory can field him is a summon set. A soldier
+		/// who already wears another class's armor is never a summoner, so a melee / ranged / magic trooper is locked out of every summon weapon.
+		/// </summary>
+		private bool IsSummonerSoldier(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null) return false;
+			if (g.HasWeapon && WeaponClassifier.ItemDamageClass(g.Weapon) == DamageClass.Summon) return true; // a summon weapon in hand makes him one, whatever his armor
+			var worn = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (worn != null) return worn == DamageClass.Summon; // armor on his back decides; another class is never a summoner
+			if (Common.Config.LevyConfig.Get.ClassMatchIssue) return false; // fixed-class and no summon armor worn: not a summoner
+			return ArmorableClasses(soldier, false).Contains(DamageClass.Summon); // fluid, no armor yet: a summon set he could field makes him one
+		}
+
+		/// <summary>
+		/// Extra conditions every PRIMARY weapon pick shares (null = none): (1) summon-class weapons (whips, minion staves, sentries) are reserved for summoners, so a
+		/// non-summoner is never handed one; (2) a summoner leads with his hard summon — while a minion staff is available his primary is a staff, never a whip or a
+		/// sentry (both move to the off-hand / fallback), and with no staff he may lead with any summon weapon; (3) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
 		/// </summary>
 		private Func<Item, bool> PrimaryRule(SoldierRecord who)
 		{
-			bool noWhip = StaffAvailableFor(who);
+			bool summoner = IsSummonerSoldier(who);
+			bool staffFirst = summoner && StaffAvailableFor(who); // a summoner with a minion staff in reach takes the staff, not a whip or a sentry
 			var steer = RangedSteer(who);
-			if (!noWhip && steer == null) return null;
-			return it => (!noWhip || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Whip) && (steer == null || steer(it));
+			if (summoner && !staffFirst && steer == null) return null; // a summoner with no staff may lead with any weapon; nothing else to restrict
+			return it =>
+			{
+				var fam = WeaponClassifier.GetProfile(it).Family;
+				bool summonWeapon = fam == WeaponFamily.Whip || fam == WeaponFamily.Summon || fam == WeaponFamily.Sentry;
+				if (summonWeapon && !summoner) return false; // reservation: summon weapons for summoners only
+				if (staffFirst && (fam == WeaponFamily.Whip || fam == WeaponFamily.Sentry)) return false; // hard summon first
+				return steer == null || steer(it);
+			};
 		}
 
 		/// <summary>
@@ -582,24 +681,47 @@ namespace Levy.Content.TileEntities
 
 		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
 
-		/// <summary>A summoner's sidearm: a whip (the sidearm slot first, then the best in the armory), else the usual melee sidearm. Removes it. Null if none.</summary>
-		public virtual Item TakeSummonerSidearm(SoldierRecord forSoldier)
-		{
-			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score) ?? TakeSidearm(forSoldier);
-		}
-
 		private static bool IsIssuableSummonStaff(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon;
 
 		private static bool IsIssuableSentry(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Sentry;
-		/// <summary>A deploy-and-forget utility weapon: a minion-summoning staff or a sentry.</summary>
-		private static bool IsIssuableDeployer(Item it) => IsIssuableSummonStaff(it) || IsIssuableSentry(it);
 
-		/// <summary>A melee-type soldier's sidearm: a minion-summoning staff or a sentry (the sidearm slot first, then the best in the armory). Never a blade. Removes it. Null if none.</summary>
-		public virtual Item TakeSummonSidearm(SoldierRecord forSoldier)
+		/// <summary>A whip in hand: the dedicated sidearm slot first, then the best whip in the racks. Removes it. Null if none in stock.</summary>
+		private Item TakeWhipSidearm()
 		{
-			if (IsIssuableDeployer(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableDeployer, WeaponClassifier.Score);
+			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score);
+		}
+
+		/// <summary>A minion-summoning staff in hand: the dedicated sidearm slot first, then the best in the racks. Removes it. Null if none in stock.</summary>
+		private Item TakeSummonStaffSidearm()
+		{
+			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponClassifier.Score);
+		}
+
+		/// <summary>
+		/// A summoner's second weapon, given the family of his primary. A whip (his attack tool) is the ideal off-hand whenever he is not already swinging one, and a
+		/// sentry-leaning kit puts the tower in hand first. Otherwise he fills a summon role he does not already field — never two weapons of the same role, never a
+		/// second sentry while a staff is available — and a lesser blade is the last resort so he is never left one-handed. Removes it. Null if the armory has nothing.
+		/// </summary>
+		public virtual Item TakeSummonerComplement(SoldierRecord forSoldier, WeaponFamily primaryFam)
+		{
+			bool haveStaff = primaryFam == WeaponFamily.Summon, haveSentry = primaryFam == WeaponFamily.Sentry, haveWhip = primaryFam == WeaponFamily.Whip;
+			if (ArmorDoctrine.HasSentryLean(forSoldier?.Gear?.Accessories) && !haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
+			if (!haveWhip) { var w = TakeWhipSidearm(); if (w != null) return w; } // the whip is the summoner's attack tool
+			if (!haveStaff) { var st = TakeSummonStaffSidearm(); if (st != null) return st; } // then a summon role he does not cover yet
+			if (!haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
+			var blade = TakeSidearm(forSoldier); // no summon weapon to spare: a lesser blade keeps an attack tool in hand
+			if (blade != null) return blade;
+			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
+		}
+
+		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
+		private Item TakeDeployerFromSidearmSlot()
+		{
+			var it = IssueWeapons[SidearmSlot];
+			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it))) return null;
+			return Remove(IssueWeapons, SidearmSlot);
 		}
 
 		/// <summary>A sentry-kitted soldier's sidearm: a sentry (the sidearm slot first, then the best in the armory). Removes it. Null if the armory has none.</summary>
@@ -874,10 +996,10 @@ namespace Levy.Content.TileEntities
 			return moved;
 		}
 
-		/// <summary>Takes one potion of the given issue kind (0 healing, 1 buff). Null if none.</summary>
+		/// <summary>Takes one potion of the given issue kind (0 healing, 1.. a buff slot). Null if none.</summary>
 		public virtual Item TakePotion(int kind)
 		{
-			if (kind < 0 || kind >= PotionSlots) return null;
+			if (kind < 0 || kind >= IssuePotions.Length) return null;
 			var it = IssuePotions[kind];
 			if (IsAir(it)) return null;
 			if (kind == 0 && it.healLife <= 0 && it.healMana <= 0) return null; // slot 0 dispenses both health and mana restoratives
@@ -893,7 +1015,7 @@ namespace Levy.Content.TileEntities
 		public virtual Item TakeServingPotion(int preferSlot, Func<Item, bool> serves, bool allowStorage = true)
 		{
 			if (serves == null) return null;
-			if (preferSlot >= 0 && preferSlot < PotionSlots && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
+			if (preferSlot >= 0 && preferSlot < IssuePotions.Length && !IsAir(IssuePotions[preferSlot]) && serves(IssuePotions[preferSlot]))
 				return SplitOne(IssuePotions, preferSlot);
 			if (!allowStorage) return null;
 			for (int i = 0; i < Storage.Length; i++) {
@@ -915,6 +1037,142 @@ namespace Levy.Content.TileEntities
 			MarkDirty();
 			return one;
 		}
+
+		// ------------------------------------------------------------------ loans to combat drones
+
+		// A combat drone (the Mechanization mod's DroneNPC) mounts a SURPLUS ranged or magic weapon from bulk storage. The weapon (and one round of ammo) leaves the racks but is never handed to the drone for
+		// keeps: it moves to this ledger, so the armory stays the owner of record. That is what makes the loan safe: the ledger is saved with the armory (written into the saved storage, so a reload
+		// finds the weapons on the racks and the manager re-lends them), spilled with it when the tile breaks, and returned by ReturnLent whenever the drone is destroyed, dismissed or orphaned.
+		// A drone that simply vanishes (any path) leaves its loan on the ledger for Mechanization's DroneSystem reconcile pass to return. Server / single player only; clients never see the ledger.
+
+		/// <summary>Items on loan to combat drones: pulled out of storage, still owned by this armory. See the note above.</summary>
+		public readonly List<Item> Lent = new();
+
+		private struct RankEntry { public float Score; public int Slot; public bool Lendable; }
+		private static readonly List<RankEntry> _rank = new();
+
+		/// <summary>
+		/// Lends the best SURPLUS weapon a drone can mount, or null. Soldiers get first pick: every issuable weapon the army could draw (the weapon rows and bulk storage) is ranked by
+		/// <see cref="WeaponClassifier.Score"/>, the best <paramref name="reserveForSoldiers"/> of them are left alone whatever they are, and the drone takes the best mountable weapon below that
+		/// line. The issue rows are never lent from (they are the army's own first picks); only bulk storage is. A weapon on a Re-arm hold this tick is skipped. Server / single player only.
+		/// </summary>
+		public Item LendDroneWeapon(int reserveForSoldiers)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
+			List<RankEntry> rank = _rank;
+			rank.Clear();
+			for (int i = 0; i < SidearmSlot; i++)
+			{
+				Item it = IssueWeapons[i];
+				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
+				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = -1 });
+			}
+			bool anyLendable = false;
+			for (int i = 0; i < Storage.Length; i++)
+			{
+				Item it = Storage[i];
+				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
+				bool lendable = DroneArsenal.IsMountable(it);
+				anyLendable |= lendable;
+				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = i, Lendable = lendable });
+			}
+			if (!anyLendable) { rank.Clear(); return null; }
+			rank.Sort((a, b) => { int c = b.Score.CompareTo(a.Score); return c != 0 ? c : a.Slot.CompareTo(b.Slot); });
+			Item lent = null;
+			for (int k = Math.Max(0, reserveForSoldiers); k < rank.Count; k++)
+			{
+				if (!rank[k].Lendable) continue;
+				lent = Remove(Storage, rank[k].Slot); // marks the armory dirty: clients see the weapon leave the racks
+				Lent.Add(lent);
+				break;
+			}
+			rank.Clear();
+			return lent;
+		}
+
+		/// <summary>
+		/// Lends ONE round of the best ammo of this kind in bulk storage (highest damage, then rarity), or null. Only from a stack holding more than <paramref name="keepRounds"/>, so the army
+		/// keeps its last rounds. A drone fires without using rounds up; the one it borrows is its belt's pattern and comes back with it. Server / single player only.
+		/// </summary>
+		public Item LendDroneAmmo(int ammoId, int keepRounds)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient || ammoId <= 0) return null;
+			int best = -1; float bestScore = float.NegativeInfinity;
+			for (int i = 0; i < Storage.Length; i++)
+			{
+				Item it = Storage[i];
+				if (IsAir(it) || it.ammo != ammoId || it.IsACoin || it.stack <= keepRounds || IsReservedRef(it)) continue;
+				float score = it.damage * 100f + WeaponClassifier.RarityTier(it.rare);
+				if (score > bestScore) { bestScore = score; best = i; }
+			}
+			if (best < 0) return null;
+			Item one = SplitOne(Storage, best); // a one-round clone; marks dirty
+			Lent.Add(one);
+			return one;
+		}
+
+		/// <summary>True while <paramref name="it"/> (this very instance) is on loan from this armory.</summary>
+		public bool IsLent(Item it) => it != null && IndexOfRef(Lent, it) >= 0;
+
+		/// <summary>
+		/// Takes a loaned item off the ledger and files it back in storage (spilled, protected, if storage is full: nothing is ever lost). False when it was not on the ledger, so returning the same
+		/// item twice, or after a soldier already recalled it, is a harmless no-op. The item goes back as a CLONE: the drone that carried it may still hold the old instance for a few ticks, and
+		/// were the racks to take that very instance back and lend it to a new drone, the stale drone's ledger check would pass and two drones would fire one weapon. A returned item is therefore
+		/// always a new instance, so a stale reference is never on the ledger again. Server / single player only.
+		/// </summary>
+		public bool ReturnLent(Item it)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient || it == null) return false;
+			int idx = IndexOfRef(Lent, it);
+			if (idx < 0) return false;
+			Lent.RemoveAt(idx);
+			if (!IsAir(it))
+			{
+				Item rest = Deposit(it.Clone());
+				if (!IsAir(rest)) Spill(rest, protect: true);
+			}
+			MarkDirty();
+			return true;
+		}
+
+		/// <summary>
+		/// Soldiers get first pick: when a soldier with an empty hand finds nothing on the racks, the best weapon lent to a drone (here, then in the pylon-networked armories) that
+		/// <paramref name="usable"/> accepts goes back to storage so the normal pick can hand it to him. The drone sees its weapon is no longer on loan and stands down. True if one was recalled.
+		/// </summary>
+		public bool ReclaimLentWeapon(Func<Item, bool> usable)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			if (ReclaimBestLent(this, usable)) return true;
+			foreach (ArmoryTE other in OtherNetworked()) if (ReclaimBestLent(other, usable)) return true;
+			return false;
+		}
+
+		/// <summary>
+		/// <see cref="ReclaimLentWeapon"/> for a soldier with an empty hand: a drone's weapon that his own primary-pick rules allow. The rule is only built when some armory he draws from has
+		/// anything on loan, so a bare rack with no drones costs him nothing.
+		/// </summary>
+		private bool ReclaimLentWeaponFor(SoldierRecord soldier)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+			bool anyLoan = Lent.Count > 0;
+			if (!anyLoan) foreach (ArmoryTE other in OtherNetworked()) if (other.Lent.Count > 0) { anyLoan = true; break; }
+			return anyLoan && ReclaimLentWeapon(PrimaryRule(soldier));
+		}
+
+		private static bool ReclaimBestLent(ArmoryTE armory, Func<Item, bool> usable)
+		{
+			if (armory.Lent.Count == 0) return false;
+			Item best = null; float bestScore = float.NegativeInfinity;
+			foreach (Item it in armory.Lent)
+			{
+				if (IsAir(it) || !IsIssuable(it) || (usable != null && !usable(it))) continue;
+				float score = WeaponClassifier.Score(it);
+				if (score > bestScore) { bestScore = score; best = it; }
+			}
+			return best != null && armory.ReturnLent(best);
+		}
+
+		private static int IndexOfRef(List<Item> list, Item it) { for (int i = 0; i < list.Count; i++) if (ReferenceEquals(list[i], it)) return i; return -1; }
 
 		// ------------------------------------------------------------------ sort
 
@@ -1110,43 +1368,97 @@ namespace Levy.Content.TileEntities
 				for (int i = 0; i < arr.Length; i++)
 				{
 					var item = arr[i];
-					if (!IsReforgeable(item)) continue;
-					if (!ContentSamples.ItemsByType.TryGetValue(item.type, out var sample) || sample == null) continue;
-					var scores = LearnPrefixScores(sample);
-					if (scores.Length == 0) continue;
-					double threshold = FloorThreshold(scores, frac) - 1e-6;
-					double bestScore = PrefixQuality(item, sample);
-					if (bestScore >= threshold) continue;
+					if (!BelowFloor(item, frac, out var sample, out double threshold, out double startScore)) continue;
 					if (res.RanDry) { res.Short++; continue; }
 
-					Item best = item, current = item;
-					bool reached = false, rolled = false;
-					int rolls = 0;
-					while (rolls < LevyConstants.UI.ReforgeMaxRollsPerWeapon)
-					{
-						long price = ReforgePrice(current);
-						if (!EconomySystem.TryPay(payer, price)) { res.RanDry = true; break; }
-						res.Spent += price;
-						res.Rolls++; rolls++; rolled = true;
-						var trial = current.Clone();
-						ItemLoader.PreReforge(trial);
-						trial.ResetPrefix();
-						trial.Prefix(-2);
-						ItemLoader.PostReforge(trial);
-						current = trial;
-						double score = PrefixQuality(trial, sample);
-						if (score > bestScore) { best = trial; bestScore = score; }
-						if (score >= threshold) { reached = true; break; }
-					}
-					if (rolled) res.Weapons++;
-					if (!ReferenceEquals(best, item)) { arr[i] = best; changed = true; }
-					if (reached) res.Reached++;
-					else { res.Short++; if (rolls >= LevyConstants.UI.ReforgeMaxRollsPerWeapon) res.Capped++; }
+					var one = RollToFloor(item, sample, threshold, startScore, payer, LevyConstants.UI.ReforgeMaxRollsPerWeapon, 0);
+					res.Spent += one.Spent;
+					res.Rolls += one.Rolls;
+					if (one.RanDry) res.RanDry = true;
+					if (one.Rolls > 0) res.Weapons++;
+					if (!ReferenceEquals(one.Best, item)) { arr[i] = one.Best; changed = true; }
+					if (one.Reached) res.Reached++;
+					else { res.Short++; if (one.Rolls >= LevyConstants.UI.ReforgeMaxRollsPerWeapon) res.Capped++; }
 				}
 			}
 			if (changed) MarkDirty();
 			if (res.Spent > 0) payer.MarkDirty();
 			return res;
+		}
+
+		/// <summary>Outcome of rerolling ONE weapon toward the floor (<see cref="TryReforgeOne"/>).</summary>
+		public struct ReforgeOneResult
+		{
+			/// <summary>The weapon to keep: the original instance when no roll beat it, else the best one rolled (never worse than before).</summary>
+			public Item Best;
+			/// <summary>Paid rolls made and the copper they cost.</summary>
+			public int Rolls;
+			public long Spent;
+			/// <summary>A roll reached the floor.</summary>
+			public bool Reached;
+			/// <summary>The treasury could not afford the next roll (or it would have dipped under the reserve).</summary>
+			public bool RanDry;
+		}
+
+		/// <summary>
+		/// Whether this weapon is worth rerolling toward the floor — it can take a prefix, has prefixes to roll, and sits BELOW the floor — and, if so, what the roll loop needs:
+		/// the item's unprefixed sample, the quality threshold it must reach and the quality it has now. The one check shared by the bulk reforge and the single-weapon reforge.
+		/// </summary>
+		private static bool BelowFloor(Item item, float topFraction, out Item sample, out double threshold, out double score)
+		{
+			threshold = 0; score = 0; sample = null;
+			if (!IsReforgeable(item)) return false;
+			if (!ContentSamples.ItemsByType.TryGetValue(item.type, out sample) || sample == null) return false;
+			var scores = LearnPrefixScores(sample);
+			if (scores.Length == 0) return false;
+			threshold = FloorThreshold(scores, topFraction) - 1e-6;
+			score = PrefixQuality(item, sample);
+			return score < threshold;
+		}
+
+		/// <summary>
+		/// The reroll loop for ONE weapon: pays <see cref="ReforgePrice"/> from <paramref name="payer"/> per roll and rerolls the prefix until it reaches <paramref name="threshold"/>, up to
+		/// <paramref name="maxRolls"/> rolls. A roll is refused when the treasury could not pay for it, or would be left under <paramref name="keepAtLeast"/> copper afterwards (0 = no reserve).
+		/// Keeps the best prefix rolled (never worse than <paramref name="startScore"/>). Does not touch the item passed in: the caller swaps in <see cref="ReforgeOneResult.Best"/>.
+		/// </summary>
+		private static ReforgeOneResult RollToFloor(Item item, Item sample, double threshold, double startScore, BarracksTE payer, int maxRolls, long keepAtLeast)
+		{
+			var r = new ReforgeOneResult { Best = item };
+			Item current = item;
+			double bestScore = startScore;
+			while (r.Rolls < maxRolls)
+			{
+				long price = ReforgePrice(current);
+				if (payer.Treasury - price < keepAtLeast || !EconomySystem.TryPay(payer, price)) { r.RanDry = true; break; }
+				r.Spent += price;
+				r.Rolls++;
+				var trial = current.Clone();
+				ItemLoader.PreReforge(trial);
+				trial.ResetPrefix();
+				trial.Prefix(-2);
+				ItemLoader.PostReforge(trial);
+				current = trial;
+				double score = PrefixQuality(trial, sample);
+				if (score > bestScore) { r.Best = trial; bestScore = score; }
+				if (score >= threshold) { r.Reached = true; break; }
+			}
+			return r;
+		}
+
+		/// <summary>
+		/// Reforge ONE weapon toward a quality floor, paid from <paramref name="payer"/>'s treasury: the per-weapon step of <see cref="ReforgeToFloor"/>, for callers that work a weapon at a time
+		/// (the Goblin Tinkerer, reforging a marching soldier's weapon). <paramref name="topFraction"/> is the floor as a fraction of the prefixes THAT weapon can roll (0.25 = the top quarter; 0 = only the
+		/// best), <paramref name="maxRolls"/> the most paid rolls to spend, <paramref name="keepAtLeast"/> copper the treasury must keep. Returns false (nothing done, <paramref name="result"/>
+		/// empty) when the weapon is not reforgeable or already clears the floor; true when it was below the floor and a reroll was tried — check <see cref="ReforgeOneResult.Rolls"/> (0 = could not
+		/// afford the first) and swap <see cref="ReforgeOneResult.Best"/> in when it is not the instance passed. Does not touch the passed item or mark anything dirty. Server / single player only.
+		/// </summary>
+		public static bool TryReforgeOne(Item item, BarracksTE payer, float topFraction, int maxRolls, long keepAtLeast, out ReforgeOneResult result)
+		{
+			result = default;
+			if (Main.netMode == NetmodeID.MultiplayerClient || payer == null) return false;
+			if (!BelowFloor(item, topFraction, out Item sample, out double threshold, out double score)) return false;
+			result = RollToFloor(item, sample, threshold, score, payer, maxRolls, keepAtLeast);
+			return true;
 		}
 
 		/// <summary>Chat lines telling the player how the bulk reforge went. Server / single player.</summary>
@@ -1233,10 +1545,11 @@ namespace Levy.Content.TileEntities
 				if (IssuePrimary(soldier, g)) changed = true;
 			}
 
-			// A melee-type primary (blade, spear, boomerang, whip) never takes a fallback blade: it takes a summon staff for a support minion, or nothing.
+			// A melee-type primary (blade, spear, boomerang) takes no fallback blade. A summoner seeks a whip + a staff — summon weapons are reserved for him; every
+			// other class may carry a lesser blade. The sidearm is chosen after the accessories so the kit can steer it (accessory choice never reads the sidearm).
 			var primaryFam = g.HasWeapon ? WeaponClassifier.Classify(g.Weapon) : WeaponFamily.None;
 			bool primaryMelee = IsMeleeTypeFamily(primaryFam);
-			bool primarySummon = primaryFam == WeaponFamily.Summon; // the flock fights; the hand carries a whip
+			bool summoner = IsSummonerSoldier(soldier);
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i) || !IsAir(g.Accessories[i])) continue;
@@ -1245,16 +1558,22 @@ namespace Levy.Content.TileEntities
 				g.Accessories[i] = a; changed = true;
 			}
 
-			// The sidearm is chosen after the accessories so the kit can steer it (accessory choice never reads the sidearm). Sentry-capacity / summoner
-			// accessories put a sentry in the hand whatever the primary is; then the usual pick for the primary's type.
+			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a
+			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
+			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
+			{
+				var rem = Deposit(g.Sidearm);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+				g.Sidearm = new Item();
+				changed = true;
+			}
+
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm)
 			{
-				bool sentryKit = ArmorDoctrine.HasSentryLean(g.Accessories);
-				var s = sentryKit ? TakeSentrySidearm(soldier) : null;
-				s ??= primaryMelee ? TakeSummonSidearm(soldier)
-					: primarySummon ? TakeSummonerSidearm(soldier)
-					: sentryKit ? (TakeSummonSidearm(soldier) ?? TakeSidearm(soldier)) // no sentry on hand: a summon staff before a blade
-					: TakeSidearm(soldier);
+				Item s = summoner ? TakeSummonerComplement(soldier, primaryFam)
+					: TakeDeployerFromSidearmSlot() // a staff or sentry the player put in the armory's sidearm slot: any class fields it beside his primary
+					?? (primaryMelee ? null // a melee-type primary carries no fallback blade
+					: TakeSidearm(soldier)); // ranged / magic: a lesser blade
 				if (s != null) { g.Sidearm = s; changed = true; }
 			}
 
@@ -1303,6 +1622,8 @@ namespace Levy.Content.TileEntities
 				if (ok.Count > 0) w = TakeBestWeaponInClasses(soldier, ok);
 			}
 			w ??= TakeBestWeapon(soldier);
+			// Soldiers get first pick: nothing on the racks, but a drone is carrying a weapon he could use. It goes back to the racks and he takes it; the drone stands down.
+			if (w == null && ReclaimLentWeaponFor(soldier)) w = TakeBestWeapon(soldier);
 			if (w == null) return false;
 			g.Weapon = w;
 			return true;
@@ -1513,10 +1834,9 @@ namespace Levy.Content.TileEntities
 			if (g.IsLocked(SoldierGear.SlotSidearm) || IsAir(g.Sidearm)) return;
 			var nf = WeaponClassifier.GetProfile(neu).Family;
 			var sf = WeaponClassifier.GetProfile(g.Sidearm).Family;
-			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf (IssueGear then picks a summon sidearm, if any).
-			// A whip is never carried twice (the second goes back to the shelf).
-			// A new summon-staff primary keeps the only flock (a staff in the off hand is dead weight): the old sidearm staff goes back to the shelf and IssueGear picks a whip / blade sidearm.
-			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip))) return;
+			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf.
+			// A summon weapon is never carried twice in the same role: a second whip, a second staff or a second sentry goes back to the shelf, and IssueGear re-picks the complementary one.
+			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip) || (nf == WeaponFamily.Sentry && sf == WeaponFamily.Sentry))) return;
 			var rem = Deposit(g.Sidearm);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			g.Sidearm = new Item();
@@ -1547,7 +1867,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip yields to a summon staff (the whip becomes the sidearm), and a Shroomite
+		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip or sentry yields to a minion staff (it becomes the sidearm), and a Shroomite
 		/// helmet's ranged subtype (<see cref="RangedSteer"/>) swaps an off-subtype gun / bow / launcher for the best of the favoured one. Nothing in stock = untouched. True if swapped.
 		/// </summary>
 		private bool ReconcileWithinClass(SoldierRecord soldier, DamageClass armorCls)
@@ -1558,8 +1878,9 @@ namespace Levy.Content.TileEntities
 			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // same guard as ReconcileWeaponToArmor
 			Func<Item, bool> pouchOk = pouchFixed ? (it => it.useAmmo <= 0 || pouch.ammo == it.useAmmo) : null;
 			Item neu = null;
-			if (armorCls == DamageClass.Summon && WeaponClassifier.GetProfile(old).Family == WeaponFamily.Whip)
-				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // staves only; the whip is filed and comes back as the sidearm
+			var oldFam = WeaponClassifier.GetProfile(old).Family;
+			if (armorCls == DamageClass.Summon && (oldFam == WeaponFamily.Whip || oldFam == WeaponFamily.Sentry))
+				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // a minion staff supersedes a whip or a sentry in the primary slot; the old one is filed and re-picked as the off-hand
 			else if (armorCls == DamageClass.Ranged)
 			{
 				var steer = RangedSteer(soldier);
@@ -1589,12 +1910,14 @@ namespace Levy.Content.TileEntities
 			var cur = g.Sidearm;
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
+			bool summoner = IsSummonerSoldier(soldier);
 			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
 			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it
-			if (ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; } // a sentry kit wants a sentry in hand, whatever the fallback was
-			else if (fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
-			else if (fam == WeaponFamily.Whip) pool = IsIssuableWhip;
-			else if (fam == WeaponFamily.Summon) pool = IsIssuableDeployer;
+			// Summon-class off-hands are a summoner's only (the reservation): a sentry kit wants a sentry in hand, else each summon role upgrades within itself.
+			if (summoner && ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; }
+			else if (summoner && fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
+			else if (summoner && fam == WeaponFamily.Whip) pool = IsIssuableWhip;
+			else if (summoner && fam == WeaponFamily.Summon) pool = IsIssuableSummonStaff;
 			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
 			shelf ??= pool;
@@ -1677,6 +2000,13 @@ namespace Levy.Content.TileEntities
 					stacks++;
 				}
 			}
+			// Weapons on loan to drones spill with the rest (the drones find the ledger empty and stand down without returning anything twice).
+			for (int i = 0; i < Lent.Count; i++) {
+				if (IsAir(Lent[i])) continue;
+				Spill(Lent[i]);
+				stacks++;
+			}
+			Lent.Clear();
 			return stacks;
 		}
 
@@ -1701,11 +2031,35 @@ namespace Levy.Content.TileEntities
 
 		public override void SaveData(TagCompound tag)
 		{
-			tag["storage"] = SaveList(Storage); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
+			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
+		}
+
+		/// <summary>
+		/// The saved storage list with every item on loan to a drone written into it: an empty slot takes the next loaned item, and any left over are appended (LoadData sizes the array to the saved
+		/// list). Drones are not saved, so after a reload the weapons are simply back on the racks and the garrison lends them again. Read-only: it never changes the live arrays or the ledger.
+		/// </summary>
+		private List<TagCompound> SaveStorageWithLoans()
+		{
+			if (Lent.Count == 0) return SaveList(Storage);
+			var saved = new List<TagCompound>(Storage.Length + Lent.Count);
+			int next = 0;
+			foreach (var it in Storage)
+			{
+				while (next < Lent.Count && IsAir(Lent[next])) next++;
+				if (IsAir(it) && next < Lent.Count) saved.Add(ItemIO.Save(Lent[next++]));
+				else saved.Add(ItemIO.Save(it));
+			}
+			for (; next < Lent.Count; next++) if (!IsAir(Lent[next])) saved.Add(ItemIO.Save(Lent[next]));
+			return saved;
 		}
 		public override void LoadData(TagCompound tag)
 		{
+			// Storage is saved at its full (possibly enlarged) length; a save from before centers existed holds exactly StorageSize. The array is sized to what was saved so nothing is lost
+			// before the Logistical Centers have loaded; the first reconcile after load trims any empty tail that no center backs any more.
+			Storage = new Item[Math.Max(StorageSize, tag.GetList<TagCompound>("storage").Count)];
+			IssuePotions = new Item[Math.Max(PotionSlots, tag.GetList<TagCompound>("potions").Count)]; // old saves hold exactly PotionSlots; FitPotions grows it if Firepower is on
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
+			FitPotions(); // the world's guide flag may already be loaded; if not, the periodic reconcile in LogisticsSystem catches it
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
 				IssueWeapons[SidearmSlot] = IssueWeapons[LegacyWeaponSlots - 1];
@@ -1717,10 +2071,18 @@ namespace Levy.Content.TileEntities
 
 		public override void NetSend(BinaryWriter writer)
 		{
+			writer.Write(Storage.Length); // storage grows with Logistical Centers and the potion row with Firepower, so their lengths lead
+			writer.Write(IssuePotions.Length);
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) foreach (var it in arr) ItemIO.Send(it, writer, true);
 		}
 		public override void NetReceive(BinaryReader reader)
 		{
+			int storageLength = reader.ReadInt32();
+			if (storageLength < StorageSize || storageLength > LevyConstants.LogisticsMaxStorageSlots) storageLength = StorageSize; // a corrupt length must not allocate gigabytes
+			if (Storage.Length != storageLength) Storage = new Item[storageLength]; // replaced, not resized: the panel rebuilds its cells against the new reference
+			int potionLength = reader.ReadInt32();
+			if (potionLength < PotionSlots || potionLength > LevyConstants.MaxPotionSlotsOnWire) potionLength = PotionSlots;
+			if (IssuePotions.Length != potionLength) IssuePotions = new Item[potionLength]; // replaced, not resized: the panel rebuilds its potion row against the new reference
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) for (int i = 0; i < arr.Length; i++) arr[i] = ItemIO.Receive(reader, true);
 		}
 	}

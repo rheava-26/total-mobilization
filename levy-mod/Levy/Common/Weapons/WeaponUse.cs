@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 using Levy.Common.Config;
 using Levy.Common.Dialogue;
 using Levy.Common.Globals;
+using Levy.Common.Officers;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
 using Levy.Content.Projectiles;
@@ -18,6 +19,23 @@ namespace Levy.Common.Weapons
 	/// <summary>Per-family firing/swinging. Called from SoldierNPC.Combat every tick while engaging. OWNED BY THE WEAPONS AGENT.</summary>
 	public static class WeaponUse
 	{
+		/// <summary>Companion per-shot veto, consulted just before a shot is dispatched: (soldier, weapon, its profile, target). Returning false makes the soldier hold this tick
+		/// (no shot). Used by companion mods for resource systems and for role weapons that must not fire at the current target. Null = none; a throwing delegate allows the shot.</summary>
+		public static Func<SoldierNPC, Item, WeaponProfile, NPC, bool> PreFireGate;
+		/// <summary>Companion hook for a weapon whose own sound is not in <c>Item.UseSound</c> (a mod that moves it elsewhere, e.g. Thorium's instruments): the sound a use of this item makes. Null = none.</summary>
+		public static Func<Item, SoundStyle?> UseSoundFallback;
+
+		/// <summary>The sound one use of <paramref name="item"/> makes: its <c>UseSound</c>, else what the companion hook says.</summary>
+		public static SoundStyle? SoundOf(Item item)
+		{
+			if (item == null) return null;
+			if (item.UseSound.HasValue) return item.UseSound;
+			if (UseSoundFallback == null) return null;
+			try { return UseSoundFallback(item); } catch (Exception) { return null; }
+		}
+		/// <summary>Ticks a vetoed soldier waits before the gate is asked again (capped by the weapon's own use time).</summary>
+		private const int GateRetryTicks = 10;
+
 		/// <summary>Try to attack <paramref name="target"/> with the soldier's current weapon. Returns true if a shot/swing started this tick.</summary>
 		public static bool TryAttack(SoldierNPC s, NPC target)
 		{
@@ -29,6 +47,13 @@ namespace Levy.Common.Weapons
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
+			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
+			if (PreFireGate != null)
+			{
+				bool allow = true;
+				try { allow = PreFireGate(s, item, profile, seg); } catch (Exception) { }
+				if (!allow) { s.AttackCooldown = Math.Max(1, Math.Min(item.useTime, GateRetryTicks)); return false; }
+			}
 			try
 			{
 				// Right-click alternate attack: mixed in on a cadence, falling back to the primary when it cannot fire.
@@ -247,7 +272,7 @@ namespace Levy.Common.Weapons
 		// only assigns ai[0..2], only sends the spawn packet and only runs Damage() when Owner == Main.myPlayer (255 on a dedicated server), so a
 		// server-spawned shot owned by a player index is a ghost: unsynced, ai[] zeroed, never hits. Town-NPC attacks use Main.myPlayer for this
 		// reason. Soldier shots therefore use Main.myPlayer (identical to the commander in single player) and loot credit goes through LootCredit.
-		public static int OwnerFor(SoldierNPC s) => Main.myPlayer;
+		public static int OwnerFor(SoldierNPC s) => SoldierMinions.TrueMyPlayer; // Main.myPlayer, except inside a real minion's single-player Update where the machine claims 255 (see SoldierMinions)
 
 		/// <summary>Spawns a tagged soldier projectile (server/single player). Returns null when the array is full.</summary>
 		public static Projectile Spawn(SoldierNPC s, Vector2 pos, Vector2 vel, int type, int damage, float knockback, DamageClass damageType, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
@@ -300,7 +325,7 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
 			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback);
-			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
+			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, knockback);
 			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
 
 			if (ConsumesAmmo(s, item, pouch))
@@ -313,7 +338,7 @@ namespace Levy.Common.Weapons
 					s.NPC.netUpdate = true;
 				}
 			}
-			FinishUse(s, item, vel);
+			FinishUse(s, item, SkyDrop.HeldAim(item, muzzle, target, vel)); // the Daedalus Stormbow and Blood Rain Bow are held pointing at the sky their arrows fall from
 			return true;
 		}
 
@@ -347,12 +372,19 @@ namespace Levy.Common.Weapons
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired && !_altActive) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack);
 			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
 		}
+
+		/// <summary>
+		/// The manual shot, for when the real Shoot pipeline is off or spawned nothing: a sky-drop weapon rains onto the target (<see cref="SkyDrop"/>), anything else fires the profile's
+		/// (multishot) volley from the muzzle. Returns whether something spawned.
+		/// </summary>
+		private static bool FirePlain(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback) =>
+			SkyDrop.TryFire(s, item, profile, target, muzzle, vel, projType, damage, knockback) || FireSpread(s, muzzle, vel, projType, damage, knockback, profile) > 0;
 
 		/// <summary>Fires the manual (multishot) volley and returns how many projectiles actually spawned.</summary>
 		private static int FireSpread(SoldierNPC s, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, WeaponProfile profile)
@@ -476,60 +508,12 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
-		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: the weapon's hard-coded vanilla special, else the (multishot) default.</summary>
+		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: a sky-drop weapon's rain, else the weapon's other hard-coded vanilla special, else the (multishot) default.</summary>
 		private static void DefaultShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, Vector2 pos, Vector2 vel, int type, int damage, float knockback)
 		{
+			if (SkyDrop.TryFire(s, item, profile, target, pos, vel, type, damage, knockback)) return;
 			if (ItemShots.TryShoot(s, item, profile, target, pos, vel, type, damage, knockback)) return;
-			if (item.type == ItemID.DaedalusStormbow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, DaedalusCount(type), 201, 100, 150f, false, 40, 0.03f, 75, 150)) return;
-			if (item.type == ItemID.BloodRainBow && RainShot(s, profile, target, vel.Length(), type, damage, knockback, BloodRainCount(), 61, 30, 150f, true, 20, 0.03f, 55, 80)) return;
 			FireSpread(s, pos, vel, type, damage, knockback, profile);
-		}
-
-		private static int DaedalusCount(int type)
-		{
-			int n = 3;
-			if (ProjectileID.Sets.FiresFewerFromDaedalusStormbow[type]) { if (Main.rand.NextBool(3)) n--; }
-			else if (Main.rand.NextBool(3)) n++;
-			return n;
-		}
-
-		private static int BloodRainCount()
-		{
-			int n = Main.rand.Next(1, 3);
-			if (Main.rand.NextBool(3)) n++;
-			return n;
-		}
-
-		/// <summary>
-		/// Vanilla's "arrows rain from the sky onto the cursor" shot (Daedalus Stormbow, Blood Rain Bow) with the target standing in for the cursor.
-		/// Returns false (so a plain shot is fired) when the sky above the soldier is blocked and the rain could not reach the target.
-		/// </summary>
-		private static bool RainShot(SoldierNPC s, WeaponProfile profile, NPC target, float speed, int type, int damage, float knockback, int count,
-			int spreadX, int jitterX, float stepY, bool randomStep, int velJitter, float velJitterScale, int mulMinPct, int mulMaxPct)
-		{
-			Vector2 c = s.NPC.Center;
-			int dir = s.NPC.direction == 0 ? 1 : s.NPC.direction;
-			Vector2 aim = target.Center;
-			if (speed < 1f) speed = 1f;
-			// need open sky above the soldier for the arrows to start from
-			if (!Collision.CanHitLine(c, 0, 0, c + new Vector2(0f, -600f), 0, 0)) return false;
-			for (int k = 0; k < count; k++)
-			{
-				var origin = new Vector2(aim.X + s.NPC.width * 0.5f + Main.rand.Next(spreadX) * -dir, c.Y - 600f);
-				origin.X = (origin.X * 10f + c.X) / 11f + Main.rand.Next(-jitterX, jitterX + 1);
-				origin.Y -= randomStep ? stepY * Main.rand.NextFloat() : stepY * k;
-				float vx = aim.X - origin.X, vy = aim.Y - origin.Y;
-				if (vy < 0f) vy = -vy;
-				if (vy < 20f) vy = 20f;
-				float scale = speed / (float)Math.Sqrt(vx * vx + vy * vy);
-				vx *= scale; vy *= scale;
-				float fx = vx + Main.rand.Next(-velJitter, velJitter + 1) * velJitterScale;
-				float fy = vy + Main.rand.Next(-40, 41) * velJitterScale;
-				fx *= Main.rand.Next(mulMinPct, mulMaxPct) * 0.01f;
-				origin.X += Main.rand.Next(-50, 51);
-				Spawn(s, origin, new Vector2(fx, fy), type, damage, knockback, profile.DamageType);
-			}
-			return true;
 		}
 
 		/// <summary>Lead, ballistics and grade error for a shot of <paramref name="projType"/>. Homing ammo flies straight at the target.</summary>
@@ -557,14 +541,23 @@ namespace Levy.Common.Weapons
 				float t = MathHelper.Clamp(Vector2.Distance(muzzle, targetPos) / leadSpeed, 0f, LevyConstants.AimMaxLeadTicks);
 				lead = targetVel * t;
 			}
-			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(muzzle, targetPos));
-			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
-			float jitter = LevyConstants.GradeAimJitterDeg[grade] * errMult;
-			float leadErr = LevyConstants.GradeLeadError[grade] * errMult;
+			GradeError(s, muzzle, targetPos, out float jitter, out float leadErr);
 			return Aiming.ApplyError(vel, jitter, leadErr, lead, muzzle, targetPos);
 		}
 
-		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65. Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
+		/// <summary>
+		/// The soldier's aim error for a shot at <paramref name="targetPos"/> from <paramref name="from"/>: the grade's angle jitter (degrees) and lead error (fraction of the lead), scaled by
+		/// <see cref="AimErrorMultiplier"/> and eased at long range. Feed both to <see cref="Aiming.ApplyError(Vector2, float, float, Vector2, Vector2, Vector2)"/>.
+		/// </summary>
+		internal static void GradeError(SoldierNPC s, Vector2 from, Vector2 targetPos, out float jitterDeg, out float leadError)
+		{
+			float errMult = AimErrorMultiplier(s) * Aiming.LongRangeErrorScale(Vector2.Distance(from, targetPos));
+			int grade = Math.Clamp((int)s.Grade, 0, LevyConstants.GradeAimJitterDeg.Length - 1);
+			jitterDeg = LevyConstants.GradeAimJitterDeg[grade] * errMult;
+			leadError = LevyConstants.GradeLeadError[grade] * errMult;
+		}
+
+		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65, and every on-duty officer whose accuracy reach covers him (the Arms Dealer ×0.6, the Guide ×0.75 — see <see cref="OfficerSupport"/>). Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
 		public static float AimErrorMultiplier(SoldierNPC s)
 		{
 			float m = 1f;
@@ -572,13 +565,15 @@ namespace Levy.Common.Weapons
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;
 			if (SettlementSystem.Instance != null && SettlementSystem.Instance.BookDiscipline) m *= LevyConstants.DisciplineAimErrorMult;
+			m *= OfficerSupport.AimErrorFactor(s); // exactly 1 with no officer in reach, so an army without them aims as it always did
 			return m;
 		}
 
-		/// <summary>Whether this shot uses up a piece of ammo: not for endless (non-consumable) ammo, and not when a hook or the weapon's own rules spare it.</summary>
+		/// <summary>Whether this shot uses up a piece of ammo: not for endless (non-consumable) ammo, not within reach of an Arms Dealer (bottomless), and not when a hook or the weapon's own rules spare it.</summary>
 		private static bool ConsumesAmmo(SoldierNPC s, Item weapon, Item pouch)
 		{
 			if (!pouch.consumable) return false;
+			if (OfficerSupport.AmmoIsFree(s)) return false; // an Arms Dealer stands close: the pouch never runs down
 			if (AmmoFreeThisShot(s, weapon, pouch)) return false;
 			if (s.Dummy != null)
 			{
@@ -797,7 +792,8 @@ namespace Levy.Common.Weapons
 				if (item.type == ItemID.IceSickle) damage = Math.Max(1, (int)(damage * 0.67)); // Player.ItemCheck_Shoot: totalDamage * 0.67
 				Vector2 vel = Aiming.SolveIntercept(s.NPC.Center, speed, target.Center, target.velocity, WeaponClassifier.ProjectileHasGravity(item.shoot), LevyConstants.ArrowGravity, LevyConstants.ArrowGravityDelayTicks);
 				DamageClass beamType = item.DamageType ?? DamageClass.Melee;
-				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
+				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack)
+					&& !SkyDrop.TryFire(s, item, profile, target, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
 					Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, beamType);
 			}
 			// Night's Edge family: the held slash stays a swing hitbox; the one beam that flies on its own velocity (Terra Blade) is launched from the soldier.
@@ -917,7 +913,8 @@ namespace Levy.Common.Weapons
 				s.AimRotation = aimVel.ToRotation();
 				if (Math.Abs(aimVel.X) > 0.01f) s.NPC.direction = aimVel.X < 0f ? -1 : 1;
 			}
-			if (item.UseSound.HasValue) SoundEngine.PlaySound(item.UseSound.Value, s.NPC.Center);
+			SoundStyle? useSound = SoundOf(item);
+			if (useSound.HasValue) SoundEngine.PlaySound(useSound.Value, s.NPC.Center);
 			s.NPC.netUpdate = true;
 		}
 	}

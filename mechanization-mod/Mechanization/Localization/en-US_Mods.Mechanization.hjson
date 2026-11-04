@@ -1,0 +1,47 @@
+# Mechanization — player-facing strings. Keys are relative to Mods.Mechanization (prefix comes from the file name).
+# Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
+Items: {
+	TurretItem: {
+		DisplayName: Automatic Turret
+		Tooltip:
+			'''
+			A deployable automatic turret. Guns down hostiles on its own, out to the reach of its weapon.
+			It arms itself from the best spare ranged weapon in any armory within 240 tiles or on your pylon network, and fires that weapon's rounds. With none in reach it fires a plain bullet out to 32 tiles.
+			Right-click it to see its weapon and reach, or to pick it back up.
+			'''
+	}
+}
+
+NPCs: {
+	TurretNPC.DisplayName: Automatic Turret
+	DroneNPC.DisplayName: Combat Drone
+}
+
+Keybinds.RecallDrones.DisplayName: Mechanization: Recall or launch drones
+
+UI: {
+	TurretDismantle: Dismantle
+	TurretChatMounted: Mounted weapon: {0}. Reach: {2} tiles. Armories in reach: {1}.
+	TurretChatNoWeapon: No weapon mounted. It fires a plain bullet, reach {0} tiles. No armory in reach holds a spare ranged weapon.
+	TurretChatNoArmory: No weapon mounted. It fires a plain bullet, reach {0} tiles. No armory is in reach.
+	TurretNoRoom: There is no room to set a turret down there.
+	HintPlaceLinked: Armories in reach: {0}
+	HintPlaceUnlinked: No armory in reach. It will fire a plain bullet.
+	HintTurretMounted: "{0} mounted. Reach {2} tiles. Armories in reach: {1}"
+	HintTurretNoWeapon: No weapon mounted. Plain bullet, reach {0} tiles.
+	HintTurretNoArmory: No armory in reach. Plain bullet, reach {0} tiles.
+	DroneRecall: Recall
+	DroneLaunch: Launch
+	DroneRecallAll: Recall all
+	DroneLaunchAll: Launch all
+	DroneChatLoiter: Patrolling above its Barracks with {0}. Battery {1}%.
+	DroneChatRefuel: Battery low. Returning to its pad to recharge. Battery {0}%.
+	DroneChatCharging: Recharging on its pad with {0}. Battery {1}%.
+	DroneChatRecall: Returning to its pad. It hands its weapon back to the Armory when it lands.
+	DroneChatParked: Landed and unarmed. Battery {0}%. Launch it to arm it with the best spare weapon.
+	DroneRecalling: Drones recalled: {0}.
+	DroneLaunching: Drones launched: {0}.
+	DroneNoSpare: No spare weapon to arm a drone with. It launches when one is stocked.
+	DroneKeyNoBarracks: No Barracks within reach.
+	DroneNone: This Barracks has no drones.
+}

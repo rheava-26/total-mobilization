@@ -24,6 +24,17 @@ namespace Levy.Common.Globals
 		public int SoldierIndex = -1;
 		/// <summary>NPC type/index that spawned this (hostile) projectile, from the entity source, or -1.</summary>
 		public int SourceNpcType = -1, SourceNpcIndex = -1;
+		/// <summary>
+		/// Player to credit for an OFFICER's or a SUMMONED UNIT's shot — banners, bestiary and the "defeated by" line (the commander), or -1.
+		/// Those bodies are not soldiers with a roster record, so they carry the commander directly instead of through <see cref="SoldierIndex"/>.
+		/// Set from the firing body in <see cref="OnSpawn"/>; applied in <see cref="ModifyHitNPC"/> before the strike drops loot.
+		/// </summary>
+		public int CommanderIndex = -1;
+		/// <summary>
+		/// True for a shot (or a fragment of a shot) fired by a companion mod's machine (Mechanization's combat drones and turrets set it). A drone is not a soldier, so it has no <see cref="SoldierIndex"/>; the blast guard reads this so a drone's
+		/// rocket or grenade, like a soldier's, never eats the player's base. Server / single player only: not synced.
+		/// </summary>
+		public bool DroneShot;
 		/// <summary>Set by the boss rule when this projectile has been redirected at a spite target.</summary>
 		public bool Redirected;
 
@@ -33,26 +44,77 @@ namespace Levy.Common.Globals
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
-			if (source is EntitySource_Parent { Entity: NPC npc })
+			// A real minion being cast for a soldier is named here, before NewProjectile sends its first spawn packet, so remote screens know whose it is from the start.
+			if (SoldierMinions.PendingBody != null)
 			{
-				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
-			}
-			// Anything a soldier's projectile spawns (a sentry's own shots: ballista bolts, fireballs, lightning, hydra breath; Beenade bees, cluster and rocket fragments,
-			// Molotov fire, Stynger shards...) carries the soldier's tag so kills and loot credit the soldier, and is an NPC-style projectile so the commander's
-			// on-hit effects and item drops never run for it.
-			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.TryGetGlobalProjectile(out SoldierProjectileTag parentTag) && parentTag.SoldierIndex >= 0)
-			{
-				SoldierIndex = parentTag.SoldierIndex;
+				SoldierIndex = SoldierMinions.PendingBody.NPC.whoAmI;
 				projectile.npcProj = true;
 				projectile.noDropItem = true;
 			}
+			if (source is EntitySource_Parent { Entity: NPC npc })
+			{
+				SourceNpcType = npc.type; SourceNpcIndex = npc.whoAmI;
+				// An officer avatar or a summoned unit fired this: it is not a roster soldier, so credit its commander directly (banners, bestiary, "defeated by").
+				// Marked as an NPC-style projectile so the commander's own on-hit item effects and drops never run for it (as with soldier shots).
+				if (npc.ModNPC is SoldierNPC { OfficerMode: true } officer && officer.Record != null)
+				{
+					CommanderIndex = officer.CommanderIndex;
+					projectile.npcProj = true; projectile.noDropItem = true;
+				}
+				else if (npc.ModNPC is SummonedUnitNPC unit)
+				{
+					CommanderIndex = unit.CommanderIndex;
+					projectile.npcProj = true; projectile.noDropItem = true;
+				}
+			}
+			// Anything a soldier's projectile spawns (a sentry's own shots: ballista bolts, fireballs, lightning, hydra breath; Beenade bees, cluster and rocket fragments,
+			// Molotov fire, Stynger shards...) carries the soldier's tag so kills and loot credit the soldier, and is an NPC-style projectile so the commander's
+			// on-hit effects and item drops never run for it. Officer / summon child projectiles likewise inherit the commander credit.
+			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.TryGetGlobalProjectile(out SoldierProjectileTag parentTag))
+			{
+				if (parentTag.SoldierIndex >= 0)
+				{
+					SoldierIndex = parentTag.SoldierIndex;
+					projectile.npcProj = true;
+					projectile.noDropItem = true;
+					SoldierMinions.ReownChild(parent, projectile); // a real minion's stinger / spear: single player processes damage only for the real owner
+				}
+				if (parentTag.CommanderIndex >= 0)
+				{
+					CommanderIndex = parentTag.CommanderIndex;
+					projectile.npcProj = true;
+					projectile.noDropItem = true;
+				}
+				if (parentTag.DroneShot) DroneShot = true; // a drone's cluster rocket's fragments are guarded too
+			}
 		}
 
-		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's Spectre Mask set bonus spawns its homing bolt here.</summary>
+		/// <summary>An officer / summon shot never hits something a soldier would never choose (disguised mimics, bound NPCs, critters): it passes through to its real target.</summary>
+		public override bool? CanHitNPC(Projectile projectile, NPC target)
+		{
+			// Vanilla runs this for EVERY (damaging projectile, NPC) pair before the hitbox test, and the army's own bodies fill much of the NPC array: with a sky full of soldier shots most
+			// pairs are (our shot, our friend). A friendly NPC is never a legal target for a soldier / officer / summon shot (it is a never-target, and vanilla would not hit it either), so
+			// refuse it before anything else spends time on the pair.
+			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
+			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
+			return null;
+		}
+
+		/// <summary>A soldier's real minion (and the shots it fires) hits harder against an enemy a whip tagged, as the stand-in minion always did.</summary>
+		public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)
+		{
+			// Credit the officer's / summon's commander with the enemy BEFORE StrikeNPC runs checkDead -> NPCLoot, so a killing blow counts for banners and the "defeated by" line.
+			if (CommanderIndex >= 0 && CommanderIndex < Main.maxPlayers && LevyUtil.IsServerOrSingle && Main.player[CommanderIndex].active)
+				target.PlayerInteraction(CommanderIndex);
+			if (SoldierIndex < 0 || !(projectile.minion || (projectile.type > 0 && projectile.type < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[projectile.type]))) return;
+			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
+		}
+
+		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's armor set bonuses (Spectre Mask / Hood bolts, Titanium, Orichalcum, Hallowed, Palladium, Nebula, Frost, Beetle Might) run here against his own timers.</summary>
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{
 			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
-			EnemyTargeting.LiveBody(SoldierIndex)?.SpectreWrathOnHit(projectile, target, damageDone);
+			EnemyTargeting.LiveBody(SoldierIndex)?.OnProjectileHit(projectile, target, damageDone);
 		}
 
 		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>
@@ -510,11 +572,11 @@ namespace Levy.Common.Globals
 
 		public override void SendExtraAI(Projectile projectile, BitWriter bitWriter, BinaryWriter binaryWriter)
 		{
-			binaryWriter.Write((short)SoldierIndex); binaryWriter.Write((short)SourceNpcIndex);
+			binaryWriter.Write((short)SoldierIndex); binaryWriter.Write((short)SourceNpcIndex); binaryWriter.Write((short)CommanderIndex);
 		}
 		public override void ReceiveExtraAI(Projectile projectile, BitReader bitReader, BinaryReader binaryReader)
 		{
-			SoldierIndex = binaryReader.ReadInt16(); SourceNpcIndex = binaryReader.ReadInt16();
+			SoldierIndex = binaryReader.ReadInt16(); SourceNpcIndex = binaryReader.ReadInt16(); CommanderIndex = binaryReader.ReadInt16();
 			if (SourceNpcIndex >= 0 && SourceNpcIndex < Main.maxNPCs) SourceNpcType = Main.npc[SourceNpcIndex].type;
 		}
 	}

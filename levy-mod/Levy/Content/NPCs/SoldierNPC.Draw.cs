@@ -42,6 +42,9 @@ namespace Levy.Content.NPCs
 		{
 			if (Main.dedServ || Record == null || !NPC.active) return;
 			if (!IsAlive) { drawn = true; return; } // dying bodies draw nothing while the roster handles the death
+			// An officer avatar's body is invisible: vanilla draws the parked town NPC at the same spot (stock frames, party hat, texture packs; see Officer_ParkTownNpc), and
+			// only the nameplate (Draw_PostDraw) is the avatar's own. Claiming the draw also skips the player-model path. With no town NPC resolved yet the placeholder shows.
+			if (OfficerMode) { drawn = OfficerTownNpc != null; return; }
 			if (_rendererBroken) return;             // placeholder texture draws instead
 			EnsureDummy();
 			uint tick = Main.GameUpdateCount;
@@ -163,6 +166,36 @@ namespace Levy.Content.NPCs
 			{
 				p.itemRotation = 0f;
 				p.itemLocation = p.position;
+				// Hold-style items (Nightglow's lamp: holdStyle HoldLamp, plus torches and the like) are posed by vanilla's ItemCheck_ApplyHoldStyle
+				// whenever the item is NOT mid-use; without it itemLocation stays at the body's top-left corner and the item floats on the head.
+				if (holdsItem && held.holdStyle != 0) ApplyHoldStyle(p, held);
+			}
+		}
+
+		private static System.Reflection.MethodInfo _holdStyleMethod; private static bool _holdStyleLooked, _holdStyleBroken;
+
+		/// <summary>
+		/// Runs Player.ItemCheck_ApplyHoldStyle (private in vanilla) on the dummy: sets itemLocation / itemRotation and raises the off-hand arm for the item's holdStyle.
+		/// Looked up once by reflection; any failure disables it and the item is simply drawn where it was (never throws into the draw).
+		/// </summary>
+		private static void ApplyHoldStyle(Player p, Item held)
+		{
+			if (_holdStyleBroken) return;
+			try
+			{
+				if (!_holdStyleLooked)
+				{
+					_holdStyleLooked = true;
+					_holdStyleMethod = typeof(Player).GetMethod("ItemCheck_ApplyHoldStyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+				}
+				if (_holdStyleMethod == null) { _holdStyleBroken = true; return; }
+				Rectangle frame = Item.GetDrawHitbox(held.type, p);
+				_holdStyleMethod.Invoke(p, new object[] { p.HeightOffsetHitboxCenter, held, frame });
+			}
+			catch (Exception e)
+			{
+				_holdStyleBroken = true;
+				Levy.Instance.Logger.Warn("Levy: applying a hold style to a soldier body failed; hold-style items keep the default pose: " + e);
 			}
 		}
 
@@ -188,7 +221,9 @@ namespace Levy.Content.NPCs
 					if (Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
 					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
-					Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f);
+					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
+					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f); }
+					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 					DrawSwordSlash(sb);
 				}
 				finally { sb.End(); }

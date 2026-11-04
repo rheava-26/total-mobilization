@@ -8,9 +8,11 @@ using Levy.Common;
 using Levy.Common.Dialogue;
 using Levy.Common.Fear;
 using Levy.Common.Globals;
+using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Levy.Content.Buffs;
 
 namespace Levy.Content.NPCs
 {
@@ -50,6 +52,7 @@ namespace Levy.Content.NPCs
 			if (_buffPotionCooldown > 0) _buffPotionCooldown--;
 			if (_armoryRetry > 0) _armoryRetry--;
 			_projectileStriking = false;
+			_hitPaladin = null; // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return;
 			if (ImmuneTime == 0) ContactDamage();
 			if (!IsAlive) return;
@@ -79,11 +82,14 @@ namespace Levy.Content.NPCs
 
 				int dir = a.Center.X < cx ? 1 : -1;
 				int raw = Math.Max(1, Main.DamageVar(a.damage * mult));
+				ReflectThorns(a, raw, -dir); // Turtle / Cactus thorns hit back whether or not the blow lands (Player.Update_NPCCollision)
+				if (TryShadowDodge()) return; // Hallowed armor's dodge: no wound, 80 ticks of immunity
 				LastAttackerIndex = i; LastAttackerType = a.type; LastAttackerName = a.GivenOrTypeName;
 				int done;
 				_contactStriking = true;
+				PendingContactScale = IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
-				finally { _contactStriking = false; }
+				finally { _contactStriking = false; PendingContactScale = 1f; }
 				AfterHit(done, i);
 				return; // one contact hit per tick; immune frames gate the rest
 			}
@@ -97,6 +103,7 @@ namespace Levy.Content.NPCs
 			_regenCounter = 0;
 			if (attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active) SoldierTargeting.NoteAttacker(attackerIndex);
 			if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
+			SetsOnHurt(damageDone, attackerIndex); // Paladin's Shield share, Solar flare burst, Beetle orb lost (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return; // the roster and FearSystem.OnComradeDied own the death
 			Fear_OnDamaged(damageDone, attackerIndex);
 			FearSystem.OnComradeHit(this, damageDone);
@@ -112,6 +119,7 @@ namespace Levy.Content.NPCs
 			if (!projectile.hostile) return;
 			modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
 			if (LevyUtil.IsClient) return;
+			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)
 			// Attribution must exist before StrikeNPC reaches checkDead; OnHitByProjectile only fires afterwards.
 			RecordProjectileAttacker(projectile);
 			_projectileStriking = true;
@@ -185,29 +193,62 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < NPC.maxBuffs; i++)
 			{
 				if (NPC.buffType[i] <= 0 || NPC.buffTime[i] <= 0) continue;
-				switch (NPC.buffType[i])
-				{
-					case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
-					case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
-					case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
-					case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
-					case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
-					case BuffID.Regeneration: regen += LevyConstants.RegenerationLifeRegen; break;
-					case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
-					case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
-					case BuffID.AmmoReservation: d.ammoPotion = true; break;
-					case BuffID.Archery: d.archery = true; break;
-					case BuffID.Summoning: d.maxMinions++; break;
-				}
+				regen += ApplyBuffEffect(d, NPC.buffType[i]);
 			}
+			ApplySetStats(d); // armor set bonuses vanilla applies through buffs (SoldierNPC.ArmorSets.cs)
+			if (ExtraBuffStats != null) { try { regen += ExtraBuffStats(this, d); } catch (Exception) { } } // a companion mod's own stat deltas (Thorium bard empowerments)
 			return regen;
+		}
+
+		/// <summary>One potion buff's stat effect on the dummy. Returns the life-regen units it adds..</summary>
+		private static int ApplyBuffEffect(Player d, int buffType)
+		{
+			// The mod's own buffs: their types are assigned at load, so they cannot be switch cases and are matched by type here, ahead of the vanilla switch.
+			if (buffType == ModContent.BuffType<MoraleBuff>()) { MoraleBuff.Apply(d); return 0; }                      // Princess / Guide / Merchant: damage + defense + crit
+			if (buffType == ModContent.BuffType<DryadsBlessingBuff>()) return DryadsBlessingBuff.Apply(d);              // Dryad: defense + thorns + regeneration
+
+			switch (buffType)
+			{
+				case BuffID.Ironskin: d.statDefense += LevyConstants.IronskinDefense; break;
+				case BuffID.Swiftness: d.moveSpeed += LevyConstants.SwiftnessMoveSpeed; break;
+				case BuffID.Wrath: d.GetDamage(DamageClass.Generic) += LevyConstants.WrathDamage; break;
+				case BuffID.Rage: d.GetCritChance(DamageClass.Generic) += LevyConstants.RageCrit; break;
+				case BuffID.Endurance: d.endurance += LevyConstants.EnduranceReduction; break;
+				case BuffID.Regeneration: return LevyConstants.RegenerationLifeRegen;
+				case BuffID.MagicPower: d.GetDamage(DamageClass.Magic) += LevyConstants.MagicPowerDamage; break;
+				case BuffID.ManaRegeneration: d.manaRegenBuff = true; break;
+				case BuffID.AmmoReservation: d.ammoPotion = true; break;
+				case BuffID.Archery: d.archery = true; d.GetDamage(DamageClass.Ranged) += LevyConstants.Officer.ArcheryRangedDamage; break; // vanilla Archery only speeds arrows; extend it to all ranged weapons so an Archery potion lifts gun soldiers too
+				case BuffID.Summoning: d.maxMinions++; break;
+				case BuffID.WellFed: return ApplyWellFed(d, 1);  // Well Fed
+				case BuffID.WellFed2: return ApplyWellFed(d, 2); // Plenty Satisfied
+				case BuffID.WellFed3: return ApplyWellFed(d, 3); // Exquisitely Stuffed
+				case BuffID.Thorns: d.thorns += LevyConstants.Officer.DryadThornsReflectFrac; break; // the Thorns potion: reflect contact damage (capped in ReflectThorns)
+			}
+			return 0;
+		}
+
+		/// <summary>
+		/// Vanilla Well Fed and its stronger tiers (Plenty Satisfied, Exquisitely Stuffed): a minor all-stat lift plus a gentle regen. The dummy never
+		/// runs Player.UpdateBuffs, so the deltas are applied by hand. Vanilla values (Player.UpdateBuffs, buffs 26/206/207): defense and crit add
+		/// (tier+1); damage and move speed add their per-step amount x (tier+1). Returns the life-regen units it adds.
+		/// </summary>
+		private static int ApplyWellFed(Player d, int tier)
+		{
+			int step = tier + 1;                                                  // +2 / +3 / +4
+			d.statDefense += step;
+			d.GetCritChance(DamageClass.Generic) += step;
+			d.GetDamage(DamageClass.Generic) += LevyConstants.WellFedDamageStep * step;   // +0.05 / +0.075 / +0.1
+			d.moveSpeed += LevyConstants.WellFedMoveStep * step;                           // +0.2  / +0.3   / +0.4
+			return LevyConstants.WellFedRegenPerTier * tier;                              // +1    / +2     / +3 regen units
 		}
 
 		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
 		private void StationRegen()
 		{
-			if (Stations == StationFlags.None && _buffLifeRegen <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
-			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen);
+			int setUnits = SetRegenUnits(); // Palladium rapid healing, Nebula life boosters
+			if (Stations == StationFlags.None && _buffLifeRegen <= 0 && setUnits <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
+			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen) + setUnits;
 			if (units > 0 && NPC.life < NPC.lifeMax)
 			{
 				_stationLifeCount += units;
@@ -231,7 +272,7 @@ namespace Levy.Content.NPCs
 		{
 			StationRegen();
 			if (NPC.life >= NPC.lifeMax || TicksSinceDamaged <= LevyConstants.RegenDelayTicks) { _regenCounter = 0; return; }
-			if (++_regenCounter < LevyConstants.RegenIntervalTicks) return;
+			if (++_regenCounter < (Dummy != null && Dummy.crimsonRegen ? (int)(LevyConstants.RegenIntervalTicks / LevyConstants.CrimsonRegenSpeedup) : LevyConstants.RegenIntervalTicks)) return; // Crimson armor: natural regeneration half again as fast
 			_regenCounter = 0;
 			int amount = LevyConstants.RegenHpPerInterval;
 			if (Record != null && Record.StoodDown)
@@ -245,9 +286,12 @@ namespace Levy.Content.NPCs
 		}
 
 		// ------------------------------------------------------------------------------------------------------
-		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: issue slot 1 ONLY
-		// (intentionally never bulk storage - the buff slot is the limited buff economy, so choosing the army's buffs stays a real decision).
+		// Potions from the nearest armory. Heal/mana: issue slot 0 first, then bulk storage. Buffs: the buff slots (1..n) ONLY
+		// (intentionally never bulk storage - the buff slots are the limited buff economy, so choosing the army's buffs stays a real decision).
 		// ------------------------------------------------------------------------------------------------------
+		/// <summary>Buff types drunk so far in the current Potions pass (empty between passes).</summary>
+		private int[] _drunkBuffs = Array.Empty<int>();
+
 		private void Potions()
 		{
 			if (Record == null || _armoryRetry > 0) return;
@@ -277,10 +321,20 @@ namespace Levy.Content.NPCs
 			}
 			if (wantBuff)
 			{
-				var potion = armory.TakeServingPotion(1, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0, allowStorage: false); // a pure buff potion, not a restorative; issue-slot-only
-				if (potion != null && !potion.IsAir)
+				// Every buff slot (1..n; slot 0 is the restorative) gives one pure buff potion, issue-slot-only. A type already drunk this pass is skipped so two slots stocked alike do not double up.
+				bool drankBuff = false;
+				for (int slot = 1; slot < armory.IssuePotions.Length; slot++)
 				{
+					var potion = armory.TakeServingPotion(slot, it => it.buffType > 0 && it.healLife <= 0 && it.healMana <= 0 && Array.IndexOf(_drunkBuffs, it.buffType) < 0, allowStorage: false);
+					if (potion == null || potion.IsAir) continue;
 					NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime));
+					if (drankBuff) Array.Resize(ref _drunkBuffs, _drunkBuffs.Length + 1); else _drunkBuffs = new int[1];
+					_drunkBuffs[_drunkBuffs.Length - 1] = potion.buffType;
+					drankBuff = true;
+				}
+				_drunkBuffs = Array.Empty<int>();
+				if (drankBuff)
+				{
 					StatsDirty = true;
 					_buffPotionCooldown = LevyConstants.BuffPotionIntervalTicks;
 					drank = true;
@@ -310,7 +364,11 @@ namespace Levy.Content.NPCs
 
 		public override bool? CanBeHitByProjectile(NPC npc, Projectile projectile)
 		{
-			if (projectile.hostile && npc.ModNPC is SoldierNPC s && s.ImmuneTime > 0) return false;
+			if (projectile.hostile && npc.ModNPC is SoldierNPC s)
+			{
+				if (s.ImmuneTime > 0) return false;
+				if (!LevyUtil.IsClient && s.TryShadowDodge()) return false; // Hallowed armor's dodge turns the shot aside; its 80 immune ticks cover the rest
+			}
 			return null;
 		}
 	}

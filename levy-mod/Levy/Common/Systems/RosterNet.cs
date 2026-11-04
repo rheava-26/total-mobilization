@@ -23,6 +23,8 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.Enlist, OnEnlist);
 			LevyPackets.Register(LevyPacket.Discharge, OnDischarge);
 			LevyPackets.Register(LevyPacket.Promote, OnPromote);
+			LevyPackets.Register(LevyPacket.Demote, OnDemote);
+			LevyPackets.Register(LevyPacket.Reserve, OnReserve);
 			LevyPackets.Register(LevyPacket.Order, OnOrder);
 			LevyPackets.Register(LevyPacket.HoldFire, OnHoldFire);
 			LevyPackets.Register(LevyPacket.SpreadOut, OnSpreadOut);
@@ -78,6 +80,25 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var rec = Owned(soldierId, Sender(whoAmI));
 			if (rec != null && grade < LevyConstants.GradeCpCost.Length) Roster.Promote(rec, (Grade)grade);
+		}
+
+		/// <summary>Server: lower a soldier to the named grade. Payload: int soldierId, byte grade. The system ignores a grade that is not below the soldier's current one.</summary>
+		private static void OnDemote(BinaryReader r, int whoAmI)
+		{
+			int soldierId = r.ReadInt32(); byte grade = r.ReadByte();
+			if (!LevyUtil.IsServer) return;
+			var rec = Owned(soldierId, Sender(whoAmI));
+			if (rec != null && grade < LevyConstants.GradeCpCost.Length) Roster.Demote(rec, (Grade)grade);
+		}
+
+		/// <summary>Server: take a soldier off active duty (true) or recall him (false). Payload: int soldierId, bool toReserve. The packet names the wanted state, so a repeat changes nothing.</summary>
+		private static void OnReserve(BinaryReader r, int whoAmI)
+		{
+			int soldierId = r.ReadInt32(); bool toReserve = r.ReadBoolean();
+			if (!LevyUtil.IsServer) return;
+			var rec = Owned(soldierId, Sender(whoAmI));
+			if (rec == null) return;
+			if (toReserve) Roster.Demobilize(rec); else Roster.Remobilize(rec);
 		}
 
 		private static void OnOrder(BinaryReader r, int whoAmI)
@@ -262,7 +283,7 @@ namespace Levy.Common.Systems
 			overflow = null;
 			if (rec == null || rec.Gear == null) return false;
 			if (!rec.Gear.TrySet(slot, item, rec.AccessorySlots, out overflow)) return false;
-			if (!rec.Gear.Get(slot).IsAir)
+			if (!rec.Gear.Get(slot).IsAir && !rec.Reserve) // a soldier in reserve keeps exactly what he was given: he draws nothing more from the racks
 			{
 				var home = SettlementSystem.Instance.GetBarracks(rec.HomeBarracksId);
 				var armory = home == null ? null : SettlementSystem.Instance.LinkedArmory(home);

@@ -21,6 +21,15 @@ Mods: {
 					'''
 			}
 
+			LogisticalCenterItem: {
+				DisplayName: Logistical Center
+				Tooltip:
+					'''
+					Adds 250 storage slots to the nearest Armory within 40 tiles.
+					Centers stack.
+					'''
+			}
+
 			PatrolBannerItem: {
 				DisplayName: Patrol Banner
 				Tooltip: Place two to mark a patrol line. Assign Regulars to it from the Barracks.
@@ -77,15 +86,58 @@ Mods: {
 				DisplayName: A Guide to Discipline
 				Tooltip: Your soldiers aim truer. Shots are 35% tighter. Consumed on use, once per world.
 			}
+
+			GuideToFirepower: {
+				DisplayName: A Guide to Firepower
+				Tooltip:
+					'''
+					Militia gain 100 health and 80 mana.
+					Every Armory gains 2 buff slots.
+					Dropped by the Wall of Flesh. Consumed on use, once per world.
+					'''
+			}
+
+			GuideToHealthcare: {
+				DisplayName: A Guide to Healthcare
+				Tooltip: Militia gain 150 health. Consumed on use, once per world.
+			}
+
+			GuideToTheArcaneArts: {
+				DisplayName: A Guide to the Arcane Arts
+				Tooltip: Militia gain 60 mana. Consumed on use, once per world.
+			}
+
+			GuideToExpertise: {
+				DisplayName: A Guide to Expertise
+				Tooltip:
+					'''
+					Every soldier gains 1 accessory slot.
+					Dropped by the Lunatic Cultist. Consumed on use, once per world.
+					'''
+			}
+
+			GuideToEngineering: {
+				DisplayName: A Guide to Engineering
+				Tooltip:
+					'''
+					Unlocks combat drones at every Barracks. Needs the Mechanization mod.
+					A drone mounts one spare ranged or magic weapon from the Armory and fires it at nearby enemies.
+					A destroyed drone returns its weapon. Consumed on use, once per world.
+					'''
+			}
 		}
 
 		Tiles: {
 			BarracksTile.MapEntry: Barracks
 			ArmoryTile.MapEntry: Armory
+			LogisticalCenterTile.MapEntry: Logistical Center
 			PatrolBannerTile.MapEntry: Patrol Banner
 		}
 
-		NPCs.SoldierNPC.DisplayName: Soldier
+		NPCs: {
+			SoldierNPC.DisplayName: Soldier
+			SummonedUnitNPC.DisplayName: Summoned Unit
+		}
 
 		Projectiles: {
 			SoldierThrust.DisplayName: Thrust
@@ -95,6 +147,13 @@ Mods: {
 			SoldierYoyo.DisplayName: Yoyo
 			SoldierFlail.DisplayName: Flail
 			SoldierVampireKnife.DisplayName: Soldier Vampire Knife
+			SoldierCrystalLeaf.DisplayName: Soldier Crystal Leaf
+			SoldierSpectreHeal.DisplayName: Soldier Spectre Heal Bolt
+			SoldierTitaniumShard.DisplayName: Soldier Titanium Shard
+			OfficerHealSyringe.DisplayName: Officer Heal Syringe
+			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
+			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
+			SoldierHeal.DisplayName: Soldier Heal
 		}
 
 		Keybinds: {
@@ -116,6 +175,7 @@ Mods: {
 					Soldiers: Soldiers
 					Economy: Economy
 					Interface: Interface
+					Targeting: Targeting Header
 				}
 
 				BossHpScalingPercentPerCp: {
@@ -252,6 +312,11 @@ Mods: {
 					Label: Regular death messages
 					Tooltip: A chat line when a Regular dies.
 				}
+
+				DoNotAttackNpcNames: {
+					Label: Do Not Attack Npc Names
+					Tooltip: ""
+				}
 			}
 
 			TombstoneMode: {
@@ -377,6 +442,7 @@ Mods: {
 			ArmoryBrokenOne: Armory destroyed. 1 item recovered.
 			ArmoryBrokenEmpty: Armory destroyed. The racks were empty; your soldiers are carrying the gear.
 			ArmoryNotEmpty: Empty the Armory first (Loot All) before you move it.
+			LogisticalCenterInUse: Items are stored in the {0} slots this center provides. Sort the Armory or take them out first.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
 			HazardPay: Hazard pay issued at {0}: {1}.
@@ -399,6 +465,8 @@ Mods: {
 				5. Orders. Right-click the War Horn for the radial. Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally, N army overview. The radial also has Search & destroy (roam outward and hunt, never into contact), Free rein (the same hunt with no leash: they range across the whole region on their own, out of your sight, and follow the fighting), Spread out (a wide loose line against area attacks) and Focus attack (click an enemy and the squad fires on it until it dies, or click a critter or a spot and the squad attacks it).
 
 				6. Growth. Feed soldiers Life Crystals for more health, or leave Life Crystals, Life Fruit and Mana Crystals in the Armory and they take them on their own. Promote Regulars to Man-at-Arms after any mechanical boss, Champion after Golem. Accessories you give them do what they would on you; wings take a slot.
+
+				7. Drones. They need the Mechanization mod. Craft A Guide to Engineering at an Anvil and study it. Each Barracks then launches combat drones, one for every spare ranged or magic weapon in its Armory, up to 10. A drone patrols above the Barracks, mounts the weapon and fires it at nearby enemies. Right-click a drone, or press the drone key, to recall it to its pad and hand its weapon back to the Armory. A destroyed drone returns its weapon too. Soldiers always take weapons first; drones only get what the army can spare.
 
 				They are morons. They die like players. They cost money. Watch them fight.
 				'''
@@ -427,5 +495,12 @@ Mods: {
 		}
 
 		Towns.Names: Fort Hallow|Fort Hope|Fort Nowhere|Fort Last|Millbrook|Ashford|Stonegate|Oakwall|Redfield|Brightwater|Greywatch|Ironhold|Lanternmoor|Saltmarsh|Thornby|Weststead
+
+		Buffs: {
+			MarkedBuff: {
+				DisplayName: Marked
+				Description: The whole army deals extra damage to this enemy.
+			}
+		}
 	}
 }

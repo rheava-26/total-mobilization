@@ -1,0 +1,214 @@
+# Officer strings (town NPCs conscripted into the army). Keys are relative to Mods.Levy.Officers.
+Tag: Officer {0}
+TagOffDuty: Officer {0} (off duty, unpaid)
+
+Fail: {
+	Invalid: That cannot be commissioned.
+	NoDef: This townsperson cannot serve as an officer.
+	AlreadyOfficer: Already an officer.
+	NoSlot: Every command slot is filled. Dismiss an officer first.
+	NotHoused: Only townsfolk housed in this settlement can be commissioned from this Barracks.
+	TooFar: Stand closer to the Barracks.
+	NoMoney: No treasury or stored coin in this settlement can cover the commission fee.
+}
+
+Msg: {
+	Commissioned: "{0}, your {1}, is now an officer. Commission fee: {2}."
+	Dismissed: "{0} is dismissed and returns to town life."
+	Lapsed: "{0} leaves the army. The commission has lapsed."
+	Fallen: "{0} has fallen."
+	Unpaid: "{0} was not paid at dawn: no treasury or stored coin anywhere in the settlement covers the wage. Missed paydays: {1} of {2}, then the officer goes off duty."
+	OffDuty: "{0} is off duty: no treasury or stored coin anywhere in the settlement could cover the wage. The commission is kept. Duty resumes at the first dawn the wage is paid."
+	Resumed: "{0} is back on duty."
+	Payday: Officers paid: {0}.
+}
+
+UI: {
+	Open: Officers {0}/{1}
+	OpenHint: Conscript townsfolk as officers. They leave their post, march with the army and bring a special skill.
+	Title: Officers - {0}
+	Sub: Command slots {0}/{1}. The fee is paid once; the wage comes from the settlement's treasuries and stored coin at dawn.
+	SlotEmpty: Slot {0}: empty
+	SlotLine: "{0}. {1}, {2}"
+	Unpaid: " (unpaid {0} day)"
+	Dismiss: Dismiss
+	DismissHint: Sends {0} back to town life. The fee is not refunded.
+	Commission: Commission
+	CommissionHint: Costs {0} now and {1} a day.
+	Cost: Fee {0}. Wage {1} a day.
+	Available: Townsfolk who can serve
+	NoneAvailable: No one housed in this settlement can serve as an officer yet.
+	Hint: Officers fight beside the army. If one falls they are gone until rehoused.
+	SlotsHeader: Command slots
+	SlotRole: Slot {0}: {1}
+	SlotWage: Wage {0} a day
+	SlotEmptyHint: No officer assigned. Commission a townsperson below.
+	UnpaidWarn: Unpaid for {0} day. Missed paydays mean off duty.
+	OffDuty: Off duty. Back at the first dawn the treasury can pay.
+	CandidateHead: "{0} - {1}"
+}
+
+Kit: {
+	Nurse: {
+		Name: Nurse
+		Desc:
+			'''
+			Stays with the soldiers, behind the line, and heals the most wounded one within {0} tiles back to full. A syringe flies to one at range; one at its side is topped off on the spot.
+			Heals a given soldier at most once every {1} seconds.
+			Throws a syringe at any enemy that strays into reach, but never leaves the army to chase.
+			Each heal is paid from the treasury, up to {2}.
+			'''
+	}
+
+	Guide: {
+		Name: Guide
+		Desc:
+			'''
+			Marches with the line. Soldiers within {0} tiles aim {1}% truer and fight with Morale: {2}% more damage, {3} more defense and {4}% more critical chance.
+			Shoots any enemy that strays into reach with his wooden bow.
+			'''
+	}
+
+	Angler: {
+		Name: Angler
+		Desc:
+			'''
+			Feeds the army. Soldiers and officers within {0} tiles stay Well Fed, lifting every stat a little.
+			Flings frost daggerfish at any enemy that strays into reach, but never leaves the line to chase.
+			'''
+	}
+
+	Pirate: {
+		Name: Pirate Captain
+		Desc:
+			'''
+			Conscripts a boarding crew of {0} flintlock gunners and {3} cannon that march with the army and fire on any enemy in reach.
+			A gunner has {1} health and a cannon {4}; their damage grows as bosses fall.
+			A fallen gunner is replaced every {2} seconds and a cannon every {5}.
+			Fires a flintlock pistol at any enemy that strays into reach.
+			'''
+	}
+
+	Princess: {
+		Name: Princess
+		Desc:
+			'''
+			Hangs behind the line and lifts the whole army's spirits. Soldiers and officers within {0} tiles fight with Morale: {1}% more damage, {2} more defense and {3}% more critical chance.
+			Strikes with her wand at any enemy that strays into reach.
+			'''
+	}
+
+	Dryad: {
+		Name: Dryad
+		Desc:
+			'''
+			Marks every enemy within {0} tiles with Dryad's Bane. The whole army deals {1}% more damage to each marked enemy.
+			Soldiers within {2} tiles carry Dryad's Blessing: {3} more defense, steady life regeneration, and {4}% of contact damage thrown back at the attacker.
+			Casts from behind the line, spitting seeds from a blowpipe at any enemy that strays into reach.
+			'''
+	}
+
+	GoblinTinkerer: {
+		Name: Goblin Tinkerer
+		Desc:
+			'''
+			Marches with the line. Every {1} seconds he reforges the weapon of one soldier within {0} tiles, rerolling up to {2} times until its modifier is in the top {3}% of what it can roll.
+			Each reroll costs the standard reforge price from the treasury, and he never takes the last {4} soldier wages.
+			Flings spiky balls at any enemy that strays into reach.
+			'''
+	}
+
+	TaxCollector: {
+		Name: Tax Collector
+		Desc:
+			'''
+			Keeps to the rear and marks every enemy within {0} tiles, so the army hits them harder.
+			When a marked enemy falls near him he taxes its corpse into the treasury, up to {1}.
+			'''
+	}
+
+	Demolitionist: {
+		Name: Demolitionist
+		Desc:
+			'''
+			Marches with the line and lobs grenades at any enemy in reach.
+			Every {0} seconds he hurls a stick of dynamite for a heavy blast.
+			The blast grows stronger as bosses fall.
+			'''
+	}
+
+	ArmsDealer: {
+		Name: Arms Dealer
+		Desc:
+			'''
+			Marches with the line, firing a Minishark at any enemy in reach.
+			Soldiers within {0} tiles aim {1}% truer and never spend ammo.
+			'''
+	}
+
+	Merchant: {
+		Name: Merchant
+		Desc:
+			'''
+			Marches with the line and throws knives at any enemy in reach.
+			Each enemy that dies within {0} tiles of him adds {1}% of its coin value to the treasury, on top of what it drops.
+			Hands soldiers within {2} tiles basic ammo and potions, paid from the treasury.
+			Soldiers within {3} tiles fight with Morale.
+			'''
+	}
+
+	Painter: {
+		Name: Painter
+		Desc: Marches with the line, firing his paintball gun at any enemy in reach.
+	}
+
+	Clothier: {
+		Name: Clothier
+		Desc:
+			'''
+			Raises a squad of {0} skeleton warriors that march with the army, run down the nearest enemy and cut it on contact.
+			A skeleton has {1} health; its damage grows as bosses fall. A fallen one is raised again every {2} seconds.
+			Throws a cursed skull at any enemy that strays into reach.
+			'''
+	}
+
+	Wizard: {
+		Name: Wizard
+		Desc:
+			'''
+			Enchants {0} flying swords that hover over the army, dart at the nearest enemy and slash it on contact.
+			A sword has {1} health; its damage grows as bosses fall. A shattered one is replaced every {2} seconds.
+			Casts bolts from a diamond staff at any enemy that strays into reach.
+			'''
+	}
+
+	Zoologist: {
+		Name: Zoologist
+		Desc:
+			'''
+			Marches with a pack: {0} wolves with {1} health each and {3} werewolf with {4} health that draws the enemy's attention. They run down the nearest enemy and maul it.
+			A fallen wolf is replaced every {2} seconds and a werewolf every {5}; their damage grows as bosses fall.
+			Looses a green strike at any enemy that strays into reach.
+			'''
+	}
+
+	Cyborg: {
+		Name: Cyborg
+		Desc:
+			'''
+			Deploys {0} combat drones that hover over the army and laser the enemy from range.
+			A drone has {1} health; its damage grows as bosses fall. A downed one is rebuilt every {2} seconds.
+			While he serves, ore and treasure glow around his commander. Fires rockets at any enemy that strays into reach.
+			'''
+	}
+
+	WitchDoctor: {
+		Name: Witch Doctor
+		Desc:
+			'''
+			Soldiers, summoned units and officers within {0} tiles envenom {1}% of their hits. Venom lasts {2} seconds and deals {3} damage a second, ignoring defense; it grows as bosses fall.
+			Calls {4} voodoo spirits with {5} health each that spit poison darts. A lost spirit is replaced every {6} seconds.
+			Fires a blowgun at any enemy that strays into reach.
+			'''
+	}
+}

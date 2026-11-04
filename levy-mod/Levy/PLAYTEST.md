@@ -41,6 +41,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Empty the treasury, pass two dawns → "could not cover the garrison", then a 25% desertion roll per dawn
       ("<name> has deserted, taking <weapon> and no regrets.", the body walks off the map edge and vanishes).
 - [ ] Deposit/withdraw +1 / +10 / all coins from the panel → amounts move correctly, buttons grey when they can't be afforded.
+- [ ] Prices barely climb with progress: a Levy's daily wage reads 10 silver at the start and only 12 / 14 / 17 / 20 / 24 silver after Wall of Flesh / a mechanical boss / Plantera / Golem / Moon Lord (every other price follows it).
 
 ## 5. The soldier body and rendering
 - [ ] A soldier renders with the player look: it wears the armor you issued and holds the weapon; walk/jump/idle frames animate.
@@ -56,6 +57,12 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Broadsword: hits in front, never behind, one hit per swing; Enchanted Sword also launches its beam.
 - [ ] Spear: a ~5-tile thrust that extends and retracts; Shortsword: a ~3-tile stab; the item sprite draws along the thrust.
 - [ ] Hand a soldier the wrong ammo (gel, coins) → the "Hand ammo" option does not appear / is refused.
+- [ ] Summoner soldiers run the REAL vanilla minions (owner = the soldier): Pygmy Staff / Pirate Staff minions WALK and jump on the ground behind the soldier (they do not fly);
+      Hornet / Imp / Optic staves fly and shoot; the Desert Tiger Staff shows gems over the soldier's head and, after a moment, a tiger that follows it and pounces.
+- [ ] Two summoner soldiers near each other: each flock follows and spaces out around its OWN soldier; the commander's own minion slots and summon damage are untouched.
+- [ ] A summoner soldier engaged with an enemy: its minions attack that enemy (and the commander's Focus Attack target); Hold Fire keeps them beside the soldier dealing no damage.
+- [ ] Kill the soldier, or swap its staff: its minions vanish. Stardust Dragon Staff and modded staves still field the old stand-in minion.
+- [ ] After a long summoner fight, press the inventory / use items normally → the commander's own player is unaffected (nothing left swapped); no Levy errors in the log.
 
 ## 7. Targeting both ways (M3)
 - [ ] Night zombies prefer whichever of you or a soldier is closer; wearing aggro gear (Flesh Knuckles) pulls them back to you.
@@ -90,6 +97,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
 - [ ] Assign patrol → place two Patrol Banners, assign a Regular → it paces between them, pausing ~2 s at each end.
 - [ ] N → army strip bottom-left with heads + HP; M (fullscreen map) → gold dots for Regulars, blue for militia, hover = name.
 - [ ] Promote / Discharge / Rebase buttons in the roster do what they say; promote costs the fee difference and keeps the name.
+- [ ] Die as commander with Regulars out → no order changes: followers walk home while you are down and fall in behind you again after the respawn with no re-order; Hold and Patrol soldiers keep holding and patrolling; wages are not halved.
 
 ## 11. Boss rule and fear (M4) — do on Expert too
 - [ ] Eye of Cthulhu with 3 Levies + 1 Man-at-Arms engaging → its max HP reads base x1.12; more hits add nothing.
@@ -115,6 +123,7 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
       until the pool is spent; they patrol ±60 tiles; treasury drops L/5 per head (still musters when broke).
 - [ ] Lower RenderCap to 5 with manpower 10 → the 6th walks out ~2 s after one dies. Manpower 0 → "has no one left to send." once.
 - [ ] Stand down (horn again or event end) → bodies walk home and vanish, gear returns to the Armory; a stuck one vanishes after 30 s.
+- [ ] Auto-muster on, fight a boss within 250 tiles of town → the militia turns out. Die, or Recall away, while the boss lives → the militia stays out and is not mustered again; it stands down only once the boss is dead or gone. A boss that was never near a player musters no one.
 - [ ] Invasion with auto-muster on at two towns → BOTH towns turn out and each defends its own ground (militia don't march to you).
 - [ ] Recruiting drive (buy manpower) and Hazard pay (one day's wage, before a boss) → once per day each; correct chat lines.
 - [ ] Save mid-Blood-Moon and reload → the mobilized town re-streams fresh militia.
@@ -155,7 +164,48 @@ Legend: [ ] to tick. Priority tags: (M0) = the core gate, do first. (MP) = multi
       BossesPunishSoldiers, Nameplates, Tombstones, MilitiaDeathMessages, RegularDeathMessages, NurseHealsSoldiers,
       SoldiersTriggerPressurePlates, RenderCap, and the three multipliers (fear, soldier damage, wage).
 
+## 20. Officers (conscripted town NPCs) — NEW, unplayed
+Needs a Barracks with a housed Nurse and a few gold in the treasury.
+- [ ] Barracks panel (recruit row, middle) has an "Officers 0/3" button; clicking opens a panel docked beside it, closing the loadout panel if open. Closing the Barracks closes it.
+- [ ] The Nurse is listed under "Townsfolk who can serve" with her kit text, fee and wage. Commission is greyed with a reason when the treasury is short or you are far.
+- [ ] Commission: treasury drops by the fee, chat line, slot 1 shows her, a small "Officer 1" tag floats over her head, and she leaves her house and trails you 5 tiles behind (walks, runs when far, jumps 2-4 tile walls, steps ledges, opens doors).
+- [ ] Walk far / recall / use a pylon: within ~3 s of being left 70+ tiles behind (or stuck for ~6 s) she appears next to you.
+- [ ] Wound a soldier below ~85%: within a second she heals the nearest one (green number + heal sound), treasury drops by a few silver to a few gold (never above 3 gold), and the same soldier is not healed again for 5 s.
+- [ ] A hostile that comes within ~18 tiles with a clear line gets syringes (weak); she stops to throw (attack frames play), then follows again.
+- [ ] Enemies pursue her like a soldier (not first choice: Nurse taunt -250). Below 40% life she runs to you and stops starting fights until 60%.
+- [ ] Next dawn: payroll chat "Officers paid", treasury drops by the wage. Empty the treasury: a warning the first dawn, "is off duty" the second. She keeps her slot and commission, stands down to normal town life (no avatar, no kit), and the panel card reads "Off duty". Refill the treasury: at the first dawn it can pay her, "is back on duty" and she rejoins. She is never dismissed for want of pay.
+- [ ] Dismiss: she returns to her house (snaps home if 40+ tiles away) and wanders/sleeps normally again, no refund; the slot frees.
+- [ ] Let her die: "has fallen" chat; slot is free; when she respawns she is a plain civilian (not an officer).
+- [ ] Save and reload mid-commission: still an officer, same slot, still paid. Log out as commander (MP): she goes back to town AI; log in: she rejoins.
+- [ ] Multiplayer: second client sees her tag, walking, healing numbers; commissioning from a client takes the fee on the server; a client cannot commission the same NPC twice or fill a 4th slot.
+- [ ] The passive stand-and-heal of an on-duty Nurse does not double up with her kit heals.
+
+## 21. Engineering combat drones — NEW, unplayed
+**The drones now live in the Mechanization mod (0.6.0): enable BOTH mods to test this section.** Differences from the lines below: a drone launches from a pad on the ground beside the Barracks and then LOITERS (a lazy wander in a box ~26 tiles each side and 6-16 tiles above the roof) instead of hovering at one point; there are no Patrol Banners for drones. Extra checks for the new behaviour:
+- [ ] Loiter: drones drift between waypoints above the base, pausing at each, spread over the whole width and two altitude rows; they do not stack on one point. An enemy coming into reach draws the nearest drone(s) toward it, but they never wander more than ~22 tiles past the box, and they return to loitering when it dies.
+- [ ] Recall: right-click a flying drone -> Recall. It flies to a pad on the ground by the Barracks, lands, and its weapon is back in the Armory storage. Its right-click now offers Launch / Launch all. Launch re-arms it with the best spare weapon and it lifts off. "Recall all" does this for every drone of that Barracks. Press L (rebindable, "Mechanization: Recall or launch drones") near the Barracks: recalls the flying ones, or launches the parked ones.
+- [ ] A recalled drone holds its Barracks: no new drone launches and no parked drone is re-armed until you Launch (the freed weapon is not lent straight out again). Take the weapon out of the Armory while it is parked, then Launch: the drone takes the next-best spare weapon (or waits parked, unheld, until one is stocked).
+- [ ] Battery: hover a drone (or look at one charging): a thin blue bar over its healthbar. It drains slowly (600 s of flight); at about 20% the drone flies home, lands, the bar refills in ~15 s, and it takes off again with the same weapon. A low battery never makes it weaker or slower. A charging drone scrambles early if an enemy comes in reach and it is over 40%.
+- [ ] Multiplayer: a second client sees the drone's phase (landed rotors still vs flying), battery bar and weapon; Recall/Launch from a client works through the server; the L key works from a client.
+Needs a Barracks and an Armory in a town. Drones are a Barracks' garrison: hovering robots that each mount ONE spare ranged or magic weapon from the Armory and fire it. They cost nothing but that weapon.
+- [ ] Craft A Guide to Engineering at an Anvil (10 iron or lead bars, 2 lenses): a steel-blue book with the drone tooltip. Before you study it, no drone ever appears, whatever is in the Armory.
+- [ ] Study it → the chat line "A Guide to Engineering has been studied. Each Barracks garrisons up to 10 combat drones..." Right-click a second copy (cheat one in) → "Already studied." and the book is kept.
+- [ ] Put 12+ mixed spare weapons in the Armory STORAGE (not the issue rows): guns, bows, staves, a few swords. Within ~30 s the first drone rises from the roof of the Barracks and climbs to hover ~7 tiles above it; another follows about every 10 s, fanned out in a row of five, up to one per spare ranged/magic weapon (max 10). Each has a healthbar and its weapon sprite hung underneath. The weapons it carries are GONE from the Armory's storage grid; swords stay.
+- [ ] Soldiers first: with only a handful of weapons (about as many as your Regulars + the militia field cap, default 10) NO drone launches. Add more and drones appear only for the surplus; the best weapons stay on the racks. Enlist a Regular → he is armed first, from the racks.
+- [ ] Blow the War Horn while every spare weapon is on a drone → the militia still arm; drones stand down one at a time (a puff and gone) as each militiaman needs a weapon, and the weapon appears on him.
+- [ ] A drone hovers, bobs gently and turns its weapon toward the nearest hostile in range with a clear line, firing at the weapon's own rate: a Musket fires bullets, a bow arcs arrows, an Amethyst Staff its bolt, a Boomstick a three-pellet fan. A Rocket Launcher's rockets never break tiles. Shots do not hurt town NPCs or soldiers.
+- [ ] Kills by drones count for you (banner progress, bestiary, "defeated by", loot). Drone damage is the weapon's own damage times the town-NPC progress scale (higher after bosses; Expert scales further).
+- [ ] Enemies chase drones like soldiers (flying ones reach them); the healthbar shrinks. Destroy one → the weapon is back in the Armory's storage within a second; about 10 s later the Barracks launches a replacement. A drone left alone for a while mends itself.
+- [ ] Destroy the Barracks → its drones return their weapons to the Armory within about a second and vanish. Mine the Armory → every stored weapon, and every weapon on loan, drops on the ground; the drones vanish and nothing is returned twice.
+- [ ] Save and quit, then reload: no drones, every weapon back in the Armory exactly once (none lost, none doubled); the garrison launches again by itself.
+- [ ] Never mounted: swords, spears, whips, summon staves, sentries, boomerangs, yoyos, flails, thrown weapons, tools. Also refused: Magic Missile, Flamelash, Rainbow Rod, Flying Knife, Nimbus Rod, Crimson Rod, Ice Rod, Clinger Staff, Medusa Head, Rainbow Gun, Magnet Sphere. They stay on the racks for soldiers.
+- [ ] Approximate by design (report only if it crashes or looks broken): a held weapon (Last Prism, Laser Machinegun, Charged Blaster) fires small laser bolts at its real cadence; Phantasm / Vortex Beater / Phantom Phoenix fire their ammo's plain shots; sky-drop weapons (Daedalus Stormbow, Blizzard Staff, Meteor Staff, Lunar Flare) shoot straight from the drone instead of raining from above.
+- [ ] Gun and bow drones borrow one round of the best ammo in storage (stacks of 10 or fewer are left alone) and fire without using ammo up; with none to spare they fire a Musket Ball / Wooden Arrow. The borrowed round comes back with the weapon.
+- [ ] Performance: several Barracks with 10 drones each, a boss fight over the base: no hitch. The log line "Levy drone self-check: N checks OK" appears at load.
+- [ ] Multiplayer: second client sees the drone, its weapon sprite, aim and healthbar; shots and kills sync. (Weapon use sounds are not played for drones on a dedicated server.)
+
 ## Known gaps (don't report these as bugs)
 - Multiplayer: client roster rows can lag the live body; "used today" markers don't show on clients; some packets trust the
   client (not a v1 concern). Eater of Souls / Hornets / Meteor Heads (flying AI 5) ignore soldiers. A headless server runs
   the mod but can't drive gameplay with no client connected.
+- Drones (Mechanization): no map marker, no Armory-panel row for weapons on loan (they simply leave the grid), no Patrol Banner anchors, no Nurse healing of drones, a recalled/parked state is not saved (a reload relaunches the garrison), and modded weapons' own Shoot hooks are not run. The drone's look is a rectangle placeholder until the new art lands.

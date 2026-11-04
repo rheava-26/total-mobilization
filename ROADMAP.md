@@ -6,6 +6,25 @@
 
 ---
 
+## 🧭 WORKING AGREEMENT WITH EVE (2026-10-27 → 11-04) — read before diagnosing anything
+Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testing it, ships a fix on it, and pins new bugs on whatever was just discussed (Rotted Fork: Calamity→projectile→broadsword→"it's a spear"; the turret "line": Vilethorn beam → actually the weapon's sprite). Agreed practice:
+- List EVERY plausible cause before acting (not 2-3). Separate what is observed from what is guessed. Never ship a fix on an unconfirmed cause. Don't pin a new bug on the most recent topic. Widen, don't re-narrow, when corrected.
+- Weight messages: an offhand aside is not a 13-sentence bug report. Don't over-scope a change.
+- Put the falsifiable claim at the TOP of a message so a wrong one is caught in line one (Claude Code has no edit/rewind). Open prose, not list-skeletons. Less relentlessly upbeat when she's stressed.
+- Direction (Eve): **USE THE EXISTING SYSTEMS** as closely as possible. Units should hold and use the real item the way a player/vanilla town NPC does; no single bolted-on projectile standing in for a whole class (healer). Healer must be functional or Thorium healer gets cut. Eve expects an architecture rewrite of the weapon-use layer eventually; sustainability over patches.
+- Open, unresolved: the 1.6.8 "Vilethorn" turret/drone fix was a wrong diagnosis — Eve says the line is the mounted weapon's SPRITE. Not re-diagnosed yet. Rotted Fork: still not understood (spear with a red energy effect on the blade); Eve says low priority.
+
+## 🔬 COMPAT FIDELITY HARNESS (2026-11-04) — measure, don't guess
+`levy-mod/Levy/Common/Testing/CombatHarness.cs` (+ `HarnessThoriumProbe.cs`, `HarnessCommanderPlayer.cs`), runners `levy-mod/Levy/tools/run_harness.sh` / `run_harness_sharded.sh`. Inert unless `LEVY_HARNESS` is set. Headless server on a copy of LevyTest, stand-in commander in slot 0, sky firing range, one real soldier per weapon at 4/7/15/25/40 tiles + a walk-in target; a PLAYER BASELINE runs the same item through vanilla `Player.ItemCheck` (cursor on target) and diffs projectile types. `LEVY_HARNESS_MOD=CalamityMod` reuses it. Data: scratchpad/harness/thorium_run2.tsv; per-weapon fidelity script scratchpad/fidelity.py.
+**Thorium run-2 facts (692 issued weapons; observations, NOT diagnoses):**
+- 394 fire the SAME projectile types as a player. Of those, 47 fire >3× as often as the player (e.g. Grand Piano ~17×, 35 vs 2, with zero inspiration spent; Bagpipe 8×), 21 fire <1/3 as often (mostly short-range weapons — partly geometry, soldier only engages in range).
+- 116 SUBSTITUTED (soldier fires entirely different projectiles): all 39 ally-heal weapons → Levy `SoldierHeal` instead of the weapon's own (Heart Wand: player `HeartWandPro`, soldier `SoldierHeal`); spears/pikes/halberds → Levy `SoldierThrust` instead of their real projectile; boomerangs/hammers/even a thrown tambourine → Levy `SoldierBoomerang`; whips → `SoldierWhip`; summon staves → soldier animates but spawns NO summon projectile at all (player does); some swords (Lodestone Claymore, Valadium Slicer) → soldier fires Thorium's `DummyPro`, player fires nothing.
+- 83 SOLDIER_EXTRA: soldier makes the player's projectiles PLUS extra variants (Pro2/Pro3) — consistent with soldiers alt-firing (`AltUseChance` 0.8) while the baseline only used primary; hybrids add `SoldierHeal`.
+- 20 SOLDIER_MISSING_SOME: the player gets secondary/on-hit spawns the soldier never does (Yew Wood shrapnel, Demon Blood `BloodBoom`, Blood Transfusion's return projectile, Mycelium spores, Siren's Lyre face…).
+- 3 never fire anywhere: Recuperate, Harpy Staff, Living Wood Acorn. Run-1's 18 "never-fired" bards were test geometry (all fire in range).
+- Exceptions: The Lullaby / Test Needle KeyNotFound('ThoriumMod') happens for the PLAYER too (not Levy's). Tranquilizer Gun / Lodestone Staff only seen on the soldier, but stochastic — undetermined.
+- Harness blind spots: heals/empowerments on another player can't be observed client-less (baseline heal columns weak; projectile-type diff is the reliable signal); 13 yoyos + ~10 staves baseline failed; baseline never alt-fires; aim has no lead/drop.
+
 ## 📦 SHIPPED STATUS (2026-10-25)
 
 **Current version: Levy `1.6.8` + Mechanization `0.6.0`** on the integration branch `worktree-levy-stardust`.

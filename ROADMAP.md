@@ -81,6 +81,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Code-confirmed path B (owner on-hit):** `ThoriumPlayer.OnHitNPCWithProj` sets techRecharge on the projectile owner for thrown hits. Levy shots are owned by Eve, so Eve's Technique bar fills.
 - Calamity's stealth meter only draws when the local player wears rogue armor (StealthUI.cs:59), so if Eve wasn't wearing rogue armor it isn't Calamity's meter. Which bar is in the screenshot is unconfirmed.
 - Constraint for any fix: many modded Shoot hooks only spawn when `player.whoAmI == Main.myPlayer`. That's why the dummy borrows it. The fix must not make those shots vanish. A candidate is to point Thorium's `localThoriumPlayer` at the dummy's instance during hooks, and check Calamity for similar caches. Folded into the on-hit investigation and the real-owner study.
+- **Eve (observed in play):** path A is real: the Exhaustion bar fills on her, and "it falls from you instead". What "it" is is unclear: particles, or the throw itself.
 - This likely shares a root with the on-hit-at-player bug: levy fire borrows Eve's identity in two places.
 
 ## 🐛 OPEN: on-hit effects come from the PLAYER, not the soldier (Eve video 2026-11-04, Thorium + Calamity)

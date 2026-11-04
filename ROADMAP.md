@@ -87,6 +87,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Observed (video):** Eve hovering high above the army holding Mystic Thorium Heavy Scythe; long white jagged streaks run between Eve's position and enemies near the soldiers.
 - **Code fact:** every soldier shot is owned by the real commander (`WeaponUse.cs:275 OwnerFor => TrueMyPlayer`), so OnHit code reading `Main.player[owner]` sees Eve.
 - **Candidates, none tested:** (1) weapon projectile OnHitNPC spawns follow-ups at the owner; (2) Eve's OWN gear/set bonus/held scythe procs on every soldier hit via ModPlayer.OnHitNPCWithProj; (3) Thorium/Calamity Global on-hit hooks keyed to owner; (4) Thorium heal-on-damage visual lines; (5) Levy held-swap or substitute families; (6) other.
+- **Eve (observed in play):** it IS the weapon's own follow-up effect spawning at the owner, across a huge number of Thorium/Calamity weapons. Fix must be ONE generic mechanism, no per-weapon lists. Leading candidate: during a soldier projectile's hit pass, puppet the owner's Center/direction to the soldier and restore it in a finally block. Its limit is follow-ups that keep reading the owner every tick, which go to the real-owner study.
 - **Running:** a harness probe separating weapon procs from commander-gear procs. The real-owner feasibility study is told to include this case. Design question for Eve once measured: should the commander's accessories proc from soldier hits at all?
 
 ## 🔬 CALAMITY ROGUE STEALTH RUN (2026-11-04, Statigel rogue set worn by soldier AND player baseline)

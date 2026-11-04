@@ -112,12 +112,13 @@ namespace Levy.Common.Testing
 				On_Projectile.Update += OnProjUpdate;
 				On_NetMessage.SendStrikeNPC += OnSendStrike;
 				On_NetMessage.SendData += OnSendData;
+				On_Player.KillMe += OnPlayerKillMe;
 				Mod.Logger.Info($"HARNESS: ENABLED (LEVY_HARNESS set). out={OutPath} mod={TestMod} filter={(f ?? "-")} ticks={_runTicks} shard={_shardK}/{_shardN} skipControls={_skipControls} ranges={string.Join(",", _ranges)}");
 			}
 			catch (Exception e) { Enabled = false; Mod.Logger.Warn("HARNESS: load failed, disabled: " + e.Message); }
 		}
 
-		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
 
 		public override void OnWorldLoad()
 		{
@@ -215,6 +216,7 @@ namespace Levy.Common.Testing
 		private void BootInit()
 		{
 			_cx = Main.maxTilesX / 2;
+			try { Main.autoSave = false; } catch { } // the autosave worker saves Main.player[Main.myPlayer]; with the baseline's brief myPlayer swap it once hit the client-less slot and crashed a shard
 			TryAttachCapture();
 			BuildRange();
 			PlaceCommander(false);
@@ -437,7 +439,7 @@ namespace Levy.Common.Testing
 			public HashSet<string> AllyBuffNames = new();
 			public uint PlayerEmpUnion;
 			public float EngageDist = -1f, FirstShotDist = -1f;  // center-to-center tiles at first Engage state / first shot or item animation
-			public bool AimAtAlly; public string BaselineNote = ""; public int PlayInstrNre, StrikePackets;
+			public bool AimAtAlly; public string BaselineNote = ""; public int PlayInstrNre, StrikePackets, KillsSuppressed;
 			public Dictionary<int, int> Packets = new(); public int PacketHeals; public bool Player2; public int P2Before, P2After, P2Max, P2Prev = -1, P2Big, P2GainSum;
 		}
 		private Cur _cur;
@@ -645,6 +647,22 @@ namespace Levy.Common.Testing
 				}
 			}
 			orig(msgType, remoteClient, ignoreClient, text, number, number2, number3, number4, number5, number6, number7);
+		}
+
+		/// <summary>
+		/// The stand-in players must survive their own item (a self-sacrifice item such as a life-for-power chalice would otherwise run the local-player death path, which saves and quits the game).
+		/// The death is suppressed and counted; the player is left alive.
+		/// </summary>
+		private static void OnPlayerKillMe(On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int hitDirection, bool pvp)
+		{
+			var h = Enabled ? Instance : null;
+			if (h != null && self.whoAmI < 2 && (self.name == "LevyTester" || self.name == "LevyTester2"))
+			{
+				if (h._cur != null) h._cur.KillsSuppressed++;
+				self.statLife = Math.Max(1, self.statLife); self.dead = false;
+				return;
+			}
+			orig(self, reason, dmg, hitDirection, pvp);
 		}
 
 		private static System.Reflection.MethodInfo _itemCheck;
@@ -907,7 +925,6 @@ namespace Levy.Common.Testing
 				if (c.P2Prev >= 0 && q.statLife > c.P2Prev) { int g = q.statLife - c.P2Prev; c.P2GainSum += g; if (g >= 3) c.P2Big++; }
 				c.P2Prev = q.statLife; c.P2After = q.statLife; if (q.statLife > c.P2Max) c.P2Max = q.statLife;
 				foreach (int b in q.buffType) if (b > 0) c.CmdBuffNames.Add("P2:" + (BuffLoader.GetBuff(b)?.Name ?? ("buff" + b)));
-				if (c.Kind != "") c.AllyEmpUnion |= HarnessThoriumProbe.PlayerEmpMask(q);
 			}
 			ResolvePending();
 		}
@@ -1049,7 +1066,7 @@ namespace Levy.Common.Testing
 				f.Add(Names(pl.CmdBuffNames)); f.Add(Names(pl.AllyBuffNames));
 				f.Add(pl.Items.Count == 0 ? "-" : Fmt(pl.Items));
 				f.Add(pl.Exceptions.Count == 0 ? "-" : string.Join(" || ", pl.Exceptions.Take(6).Select(Clean)) + (pl.Exceptions.Count > 6 ? " ||(+" + (pl.Exceptions.Count - 6) + " more)" : ""));
-				f.Add((string.IsNullOrEmpty(pl.BaselineNote) ? "" : pl.BaselineNote) + (pl.Kind.StartsWith("healer") && !Big(pl) ? "NO player life rise observed: a heal on another player is applied by the target player's client / mod packet, which a client-less server baseline cannot deliver;" : "") + (pl.StrikePackets > 0 ? "strike packets applied locally x" + pl.StrikePackets + ";" : "") + (pl.PlayInstrNre > 0 ? "ItemCheck_PlayInstruments NRE x" + pl.PlayInstrNre + " (server has no audio; ignored);" : "") is string nn && nn != "" ? nn : "-");
+				f.Add((string.IsNullOrEmpty(pl.BaselineNote) ? "" : pl.BaselineNote) + (pl.Kind.StartsWith("healer") && !Big(pl) ? "NO player life rise observed: a heal on another player is applied by the target player's client / mod packet, which a client-less server baseline cannot deliver;" : "") + (pl.KillsSuppressed > 0 ? "PLAYER DEATH SUPPRESSED x" + pl.KillsSuppressed + ";" : "") + (pl.StrikePackets > 0 ? "strike packets applied locally x" + pl.StrikePackets + ";" : "") + (pl.PlayInstrNre > 0 ? "ItemCheck_PlayInstruments NRE x" + pl.PlayInstrNre + " (server has no audio; ignored);" : "") is string nn && nn != "" ? nn : "-");
 				f.Add(pl.AimAtAlly ? "ally" : "target");
 				f.Add(Names(pl.Proj.Keys.Where(k => !c.Proj.ContainsKey(k))));
 				f.Add(pl.Packets.Count == 0 ? "-" : string.Join(";", pl.Packets.OrderBy(k => k.Key).Select(k => k.Key + "x" + k.Value)) + (pl.PacketHeals > 0 ? " (heal packets applied: " + pl.PacketHeals + ")" : ""));

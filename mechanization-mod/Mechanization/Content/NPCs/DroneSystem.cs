@@ -224,7 +224,7 @@ namespace Mechanization.Content.NPCs
 		{
 			int type = ModContent.NPCType<DroneNPC>();
 			if (type <= 0) return -1;
-			Vector2 pad = DroneNPC.PadFor(barracks, slot);
+			Vector2 pad = DroneNPC.PadFor(barracks, armory, slot);
 			int idx = NPC.NewNPC(new EntitySource_WorldEvent("Mechanization:Drone"), (int)pad.X, (int)(pad.Y + D.BodyHeight * 0.5f), type);
 			if (idx < 0 || idx >= Main.maxNPCs) return -1;
 			NPC n = Main.npc[idx];

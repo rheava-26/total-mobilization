@@ -158,17 +158,17 @@ namespace Mechanization.Common
 
 			// ---------- loiter: a lazy patrol inside a box above the base ----------
 			/// <summary>Half the width (tiles) of the box the garrison loiters in, centred over the Barracks.</summary>
-			public const float LoiterHalfWidthTiles = 26f;
+			public const float LoiterHalfWidthTiles = 110f;
 			/// <summary>The loiter band, in tiles above the Barracks roof. Slots 0..4 fly the lower half of the band, 5..9 the upper half, so a full garrison is stacked, not tangled.</summary>
-			public const int LoiterMinAltTiles = 6, LoiterMaxAltTiles = 16;
+			public const int LoiterMinAltTiles = 20, LoiterMaxAltTiles = 45;
 			/// <summary>The box is split into this many sectors across; a slot wanders inside its own sector (widened by <see cref="SectorSpreadTiles"/> each way) so the garrison covers the whole base.</summary>
 			public const int LoiterSectors = 5;
-			public const float SectorSpreadTiles = 9f;
+			public const float SectorSpreadTiles = 22f;
 			/// <summary>A drone within this many tiles of its waypoint has arrived; it hangs there a random dwell (ticks) and then picks the next.</summary>
 			public const float WaypointArriveTiles = 2.5f;
 			public const int DwellMinTicks = 20, DwellMaxTicks = 110;
 			/// <summary>Cruise speeds (px/tick): a lazy loiter, a fast pursuit, and the run home to land.</summary>
-			public const float LoiterSpeedPx = 1.9f, EngageSpeedPx = 4.0f, ReturnSpeedPx = 3.6f;
+			public const float LoiterSpeedPx = 2.8f, EngageSpeedPx = 4.0f, ReturnSpeedPx = 3.6f;
 			/// <summary>How quickly velocity eases toward the wanted one (0..1 per tick), and the arrival gain (wanted speed = distance x gain, capped at cruise), so a drone slows smoothly as it closes in.</summary>
 			public const float SteerLerp = 0.07f, ArriveGain = 0.08f;
 			/// <summary>Idle bob: amplitude (px) and angular speed (radians per tick).</summary>
@@ -183,14 +183,19 @@ namespace Mechanization.Common
 
 			// ---------- engaging (leashed to the loiter box) ----------
 			/// <summary>While chasing, a drone strays at most this many tiles outside the loiter box (out the sides and up), and <see cref="LeashDownTiles"/> below the roof line. It returns to loitering once the enemy is dead or out of reach.</summary>
-			public const float LeashTiles = 22f, LeashDownTiles = 8f;
+			public const float LeashTiles = 30f, LeashDownTiles = 8f;
 			/// <summary>A drone presses toward an enemy until it is within this fraction of its weapon's reach, then holds.</summary>
 			public const float EngageStandoffFraction = 0.6f;
 			/// <summary>A drone this far (tiles) outside the leash box for <see cref="SetBackAfterTicks"/> is trapped (a wall, a pit) and is put back over its Barracks.</summary>
 			public const float SetBackFarTiles = 30f;
 			public const int SetBackAfterTicks = 240;
 
-			// ---------- the pad: where a drone lands, on the ground beside its Barracks ----------
+			// ---------- the perch: where a drone lands, on top of the Armory it borrows from ----------
+			/// <summary>Landed drones sit in rows on the Armory roof: this many per row, centred on the roof, <see cref="PerchColSpacingPx"/> apart across and <see cref="PerchRowSpacingPx"/> apart going up (both clear the body size, so landed drones never overlap).</summary>
+			public const int PerchPerRow = 3;
+			public const float PerchColSpacingPx = 40f, PerchRowSpacingPx = 32f;
+
+			// ---------- the ground pad: where a drone lands, beside its Barracks, when it has no Armory ----------
 			/// <summary>Pads fan out left and right of the Barracks: the first this many tiles from its centre, each next one this far further out (alternating sides). Spacing must clear the body width.</summary>
 			public const float PadStartTiles = 3f, PadSpacingTiles = 2.5f;
 			/// <summary>Searching for the ground at a pad: up through this many tiles of solid (a pad dug into a slope), then down through this many open tiles.</summary>

@@ -540,11 +540,83 @@ namespace Levy.Content.TileEntities
 		/// <summary>A thrown stack leaves the shelf at most <see cref="LevyConstants.ThrownCarryMax"/> strong (what a soldier carries); the rest goes back to storage. Any other item is returned untouched.</summary>
 		private Item CapThrown(Item w)
 		{
-			if (IsAir(w) || w.stack <= LevyConstants.ThrownCarryMax || WeaponClassifier.GetProfile(w).Family != WeaponFamily.Thrown) return w;
-			var rest = w.Clone(); rest.stack = w.stack - LevyConstants.ThrownCarryMax; w.stack = LevyConstants.ThrownCarryMax;
+			if (IsAir(w) || w.stack <= Math.Min(LevyConstants.ThrownFairShareFloor, LevyConstants.ThrownCarryMax) || WeaponClassifier.GetProfile(w).Family != WeaponFamily.Thrown) return w;
+			// w is already off the shelf: its stack joins the pool, and the receiving soldier counts as one more user.
+			int limit = FairThrownLimit(w.type, 1, w.stack);
+			if (w.stack <= limit) return w;
+			var rest = w.Clone(); rest.stack = w.stack - limit; w.stack = limit;
 			var left = Deposit(rest);
 			if (!IsAir(left)) Spill(left, protect: true);
 			return w;
+		}
+
+		// ------------------------------------------------------------------ fair share of scarce ammo / throwables
+
+		private static uint _servedTick = uint.MaxValue;
+		private static int _servedFor = -1;
+		private static readonly List<SoldierRecord> ServedCache = new();
+
+		/// <summary>
+		/// The soldiers this armory network supplies: active Regulars and militia whose home barracks links to this armory or one on its pylon network. Cached for the
+		/// tick. Server/single only (a client holds a display copy of the roster); a client gets an empty list, so no limit applies there.
+		/// </summary>
+		private List<SoldierRecord> ServedSoldiers()
+		{
+			uint now = Main.GameUpdateCount;
+			if (_servedTick == now && _servedFor == ID) return ServedCache;
+			_servedTick = now; _servedFor = ID; ServedCache.Clear();
+			if (Main.netMode == NetmodeID.MultiplayerClient) return ServedCache;
+			var sys = SettlementSystem.Instance;
+			var roster = RosterSystem.Instance;
+			if (sys == null || roster == null) return ServedCache;
+			var mine = new HashSet<int> { ID };
+			foreach (var o in OtherNetworked()) mine.Add(o.ID);
+			var barracksIds = new HashSet<int>();
+			foreach (var te in TileEntity.ByID.Values) {
+				if (te is not BarracksTE b) continue;
+				var linked = sys.LinkedArmory(b);
+				if (linked == null || !mine.Contains(linked.ID)) continue;
+				barracksIds.Add(b.ID);
+				foreach (var m in b.Militia) if (m != null && !m.Reserve) ServedCache.Add(m);
+			}
+			foreach (var r in roster.Regulars) if (r != null && !r.Reserve && barracksIds.Contains(r.HomeBarracksId)) ServedCache.Add(r);
+			return ServedCache;
+		}
+
+		/// <summary>The most a soldier may hold of this ammo class right now: <see cref="AmmoShare.Limit"/> over (reachable stock + what the users already carry) and the soldiers whose weapon fires it. A Magic Storage network holding it counts as plenty.</summary>
+		private int FairAmmoLimit(int ammoId, int max)
+		{
+			var ms = MsHeart();
+			if (ms != null && MagicStorageBridge.AmmoIds(ms).Contains(ammoId)) return max;
+			long pool = 0;
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
+			int users = 0;
+			foreach (var s in ServedSoldiers()) {
+				var g = s.Gear;
+				if (g == null || !g.HasWeapon || g.Weapon.useAmmo != ammoId) continue;
+				users++;
+				if (!IsAir(g.Ammo) && g.Ammo.ammo == ammoId) pool += g.Ammo.stack;
+			}
+			return AmmoShare.Limit(pool, users, max, LevyConstants.AmmoFairShareFloor);
+		}
+
+		/// <summary>The most a soldier may hold of one throwable: <see cref="AmmoShare.Limit"/> over (shelf stock + the users' stacks + <paramref name="extraPool"/>) and the soldiers carrying it (+ <paramref name="extraUsers"/> not yet counted).</summary>
+		private int FairThrownLimit(int type, int extraUsers, long extraPool)
+		{
+			long pool = extraPool;
+			foreach (var it in IssueWeapons) if (!IsAir(it) && it.type == type) pool += it.stack;
+			foreach (var it in Storage) if (!IsAir(it) && it.type == type) pool += it.stack;
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.type == type) pool += it.stack;
+			int users = extraUsers;
+			foreach (var s in ServedSoldiers()) {
+				var g = s.Gear;
+				if (g == null) continue;
+				if (g.HasWeapon) { if (g.Weapon.type != type) continue; pool += g.Weapon.stack; users++; }
+				else if (g.ThrownRestockType == type) users++;
+			}
+			return AmmoShare.Limit(pool, users, LevyConstants.ThrownCarryMax, LevyConstants.ThrownFairShareFloor);
 		}
 
 		/// <summary>
@@ -576,6 +648,7 @@ namespace Levy.Content.TileEntities
 			bool wasAir = IsAir(stack);
 			if (wasAir) { stack.SetDefaults(type); stack.stack = 0; }
 			else if (stack.type != type) return 0;
+			max = Math.Min(max, FairThrownLimit(type, 0, 0)); // scarce throwables are split evenly among the soldiers carrying them
 			int want = Math.Min(max, stack.maxStack) - stack.stack;
 			if (want <= 0) { if (wasAir) stack.TurnToAir(); return 0; }
 			int moved = DrainType(IssueWeapons, type, stack, want);
@@ -967,6 +1040,7 @@ namespace Levy.Content.TileEntities
 		{
 			if (pouch == null || ammoId <= 0 || max <= 0) return 0;
 			if (!IsAir(pouch) && pouch.ammo != ammoId) return 0;
+			max = Math.Min(max, FairAmmoLimit(ammoId, max)); // scarce stock is split evenly; a pouch already above the share is simply not topped up (Drain never takes back)
 			int moved = Drain(IssueAmmo, ammoId, pouch, max);
 			moved += Drain(Storage, ammoId, pouch, max);
 			if (moved > 0) MarkDirty();

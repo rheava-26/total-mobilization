@@ -83,6 +83,9 @@ namespace Levy.Content.NPCs
 
 			CloseDoorBehind();
 			NudgeOffPlayers();
+			// The brain's drop request (SetGoal: goal well below) is read here, then the flag is rewritten from the armed ticks alone: the request does not drop him by itself,
+			// it only stands in for the goal-below test of the platform-drop block below, which still checks the floor and lava under him before arming.
+			bool brainDropRequest = WantsToFallThrough && _fallThroughTicks <= 0;
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
@@ -149,15 +152,7 @@ namespace Levy.Content.NPCs
 				else { _blocked = true; _blockedHard = true; }
 			}
 			// goal well below while standing on a platform: drop through it when the floor below is safe
-			if (!air && grounded && dy > PlatformDropBelowPx)
-			{
-				Point feet = TileNav.FeetTile(npc.Bottom);
-				if (TileNav.IsPlatform(feet.X, feet.Y + 1) && !TileNav.IsSolid(feet.X, feet.Y + 1))
-				{
-					int depth = TileNav.DropDepth(feet.X, feet.Y + 1);
-					if (depth >= 0 && (Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles)) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
-				}
-			}
+			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
@@ -1006,6 +1001,30 @@ namespace Levy.Content.NPCs
 
 		private bool UsesPath => State == SoldierState.Follow || State == SoldierState.Haul || State == SoldierState.Resupply || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein || State == SoldierState.Mutiny
 			|| (_engPathOk && (State == SoldierState.Engage || State == SoldierState.Shaken));
+
+		/// <summary>
+		/// The body stands on a platform it can drop through, and the fall is safe. Looks at every tile column under the body's full width (not just the centre one): at least one must be a
+		/// platform and none may be a solid block (it would hold him up). Refused when any column has lava below (<see cref="TileNav.DropDepth"/> -2), when no column has a floor
+		/// within the scan (-1), or when the shallowest drop is deeper than a jump plus <see cref="DropMarginTiles"/> and he has no wings.
+		/// </summary>
+		private bool PlatformDropIsSafe()
+		{
+			var npc = NPC;
+			int fy = TileNav.FeetTile(npc.Bottom).Y;
+			int x0 = (int)(npc.position.X / 16f), x1 = (int)((npc.position.X + npc.width - 1f) / 16f);
+			bool platform = false;
+			int depth = int.MaxValue;
+			for (int x = x0; x <= x1; x++)
+			{
+				if (TileNav.IsSolid(x, fy + 1)) return false;
+				if (TileNav.IsPlatform(x, fy + 1)) platform = true;
+				int d = TileNav.DropDepth(x, fy + 1);
+				if (d == -2) return false; // lava below: stays refused
+				if (d >= 0 && d < depth) depth = d;
+			}
+			if (!platform || depth == int.MaxValue) return false;
+			return Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles;
+		}
 
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>
 		private Vector2 ResolveLocalGoal()

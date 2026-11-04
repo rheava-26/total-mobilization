@@ -11,6 +11,8 @@ namespace Levy.Common
 		public const int RangeThrown = 20;
 		/// <summary>The most of one throwable a soldier carries in his weapon slot (the rest stays on the armory shelf).</summary>
 		public const int ThrownCarryMax = 60;
+		/// <summary>When a throwable is scarce each carrier's stack is capped at an equal share of the stock, but never below this and never above ThrownCarryMax.</summary>
+		public const int ThrownFairShareFloor = 12;
 		/// <summary>A soldier walking past an armory with fewer than this fraction of ThrownCarryMax left has the stack topped up; checked at most every ThrownRestockIntervalTicks.</summary>
 		public const float ThrownTopUpBelowFraction = 0.34f;
 		public const int ThrownRestockIntervalTicks = 120;

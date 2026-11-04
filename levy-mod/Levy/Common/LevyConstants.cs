@@ -118,6 +118,8 @@ namespace Levy.Common
 		public const int HaulNoEnemyRadius = 25, HaulPickupRadius = 6, HaulPlayerExclusion = 8;
 		public const int ResupplyArmoryRadius = 40;
 		public const int AmmoPouchMax = 999;
+		/// <summary>When ammo is scarce each soldier's pouch is capped at an equal share of the reachable stock, but never below this (a short fight) and never above AmmoPouchMax.</summary>
+		public const int AmmoFairShareFloor = 25;
 		public const int OrderRadius = 40;
 		public const int RallyRadius = 30;
 		public const int RallyCooldownTicks = 60 * 60;

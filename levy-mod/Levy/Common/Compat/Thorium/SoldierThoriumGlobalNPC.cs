@@ -32,6 +32,8 @@ namespace Levy.Common.Compat.Thorium
 		// ---- synced for display (written by the server, read by every client's draw) ----
 		/// <summary>A bard's current / maximum Inspiration (0 max = not a bard).</summary>
 		public byte InspCur, InspMax;
+		/// <summary>The bard's own maximum without the over-max band (Thorium's <c>bardResourceMax</c>; <see cref="InspMax"/> is <c>bardResourceMax2</c>): what the wheel's ring count is drawn from.</summary>
+		public byte InspBase;
 		/// <summary>Bit n set = the soldier is under empowerment type n.</summary>
 		public uint EmpMask;
 
@@ -99,12 +101,12 @@ namespace Levy.Common.Compat.Thorium
 
 		public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
 		{
-			binaryWriter.Write(InspCur); binaryWriter.Write(InspMax); binaryWriter.Write(EmpMask);
+			binaryWriter.Write(InspCur); binaryWriter.Write(InspMax); binaryWriter.Write(InspBase); binaryWriter.Write(EmpMask);
 		}
 
 		public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
 		{
-			InspCur = binaryReader.ReadByte(); InspMax = binaryReader.ReadByte(); EmpMask = binaryReader.ReadUInt32();
+			InspCur = binaryReader.ReadByte(); InspMax = binaryReader.ReadByte(); InspBase = binaryReader.ReadByte(); EmpMask = binaryReader.ReadUInt32();
 		}
 
 		public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

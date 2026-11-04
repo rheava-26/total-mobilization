@@ -22,7 +22,7 @@ namespace Levy.Common.Compat.Thorium
 			var gear = s.Record.Gear;
 			if (gear == null) return;
 			if (BardCompat.IsBardWeapon(gear.Weapon) || BardCompat.IsBardWeapon(gear.Sidearm)) BardCompat.Tick(s, state);
-			else if (state.InspMax != 0) { state.InspMax = 0; state.InspCur = 0; s.NPC.netUpdate = true; } // no longer carries an instrument: the bar goes
+			else if (state.InspMax != 0) { state.InspMax = 0; state.InspCur = 0; state.InspBase = 0; s.NPC.netUpdate = true; } // no longer carries an instrument: the bar goes
 
 			EmpowerCompat.Tick(s, state);
 			// Attack-speed empowerments: the weapon's cooldown runs down faster by the bonus (extra ticks, spread by chance so +9% is +9% on average).

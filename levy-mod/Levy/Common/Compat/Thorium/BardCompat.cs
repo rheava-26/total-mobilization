@@ -27,6 +27,9 @@ namespace Levy.Common.Compat.Thorium
 	{
 		public static bool IsBardWeapon(Item item) => item != null && !item.IsAir && item.ModItem is BardItem;
 
+		/// <summary>True for a shot of Thorium's Bard damage class (an instrument's note), whoever fired it: what the army's <see cref="BardRenown"/> counts.</summary>
+		public static bool IsBardShot(Projectile p) => p != null && p.CountsAsClass<BardDamage>();
+
 		/// <summary>Inspiration cost of one play of this instrument for this soldier (Thorium's own formula, run on the dummy).</summary>
 		public static int CostOf(Item item, Player dummy)
 		{
@@ -69,9 +72,12 @@ namespace Levy.Common.Compat.Thorium
 		/// <summary>Ticks between a bard's checks of the Armory for an Inspiration item.</summary>
 		private const int FeedIntervalTicks = 180;
 
-		/// <summary>The soldier's permanent Inspiration maximum, 10..40.</summary>
+		/// <summary>The maximum the soldier's OWN crystals have earned (kept on his record), 10..40. The army's renown comes on top: see <see cref="PoolMax"/>.</summary>
 		public static int StoredMax(SoldierRecord rec) =>
 			rec != null && rec.Ext != null && rec.Ext.TryGetValue(MaxKey, out int v) ? Math.Clamp(v, BaseMax, CapMax) : BaseMax;
+
+		/// <summary>The soldier's Inspiration maximum right now: his crystals plus the army's bard renown, never above Thorium's player cap.</summary>
+		public static int PoolMax(SoldierRecord rec) => BardRenown.EffectiveMax(StoredMax(rec), BardRenown.Bonus);
 
 		/// <summary>The Thorium item that raises a maximum of <paramref name="max"/> by one (Fragment 10-19, Shard 20-29, Crystal 30-39), or 0 at the cap.</summary>
 		private static int FeedItemFor(int max) => max < 20 ? ModContent.ItemType<InspirationFragment>() : max < 30 ? ModContent.ItemType<InspirationShard>() : max < CapMax ? ModContent.ItemType<InspirationCrystalNew>() : 0;
@@ -105,9 +111,9 @@ namespace Levy.Common.Compat.Thorium
 			if (d == null) return;
 			ThoriumPlayer tp = d.GetModPlayer<ThoriumPlayer>();
 
-			// Pool size: this soldier's OWN permanent maximum (10 + the Inspiration items he has absorbed, kept on his record), grown from the home Armory's storage.
+			// Pool size: this soldier's OWN permanent maximum (10 + the Inspiration items he has absorbed from his home Armory, kept on his record) plus the army's bard renown.
 			FeedCrystals(s, state);
-			tp.bardResourceMax = StoredMax(s.Record);
+			tp.bardResourceMax = PoolMax(s.Record);
 			tp.bardResourceMax2 = Math.Clamp(Math.Max(tp.bardResourceMax2, tp.bardResourceMax), tp.bardResourceMax, Math.Min(60, tp.bardResourceMax + 20));
 
 			// A soldier is handed a full pool the first time this runs; after that only the regen wheel (and the spend) move it.
@@ -131,10 +137,10 @@ namespace Levy.Common.Compat.Thorium
 			}
 
 			// What clients draw over his head: current / maximum Inspiration, re-synced when it moves (at most a few times a second).
-			byte cur = (byte)Math.Clamp(tp.bardResource, 0, 255), max = (byte)Math.Clamp(tp.bardResourceMax2, 0, 255);
-			if ((state.InspCur != cur || state.InspMax != max) && Main.GameUpdateCount - state.LastDisplayNet >= 15)
+			byte cur = (byte)Math.Clamp(tp.bardResource, 0, 255), max = (byte)Math.Clamp(tp.bardResourceMax2, 0, 255), baseMax = (byte)Math.Clamp(tp.bardResourceMax, 0, 255);
+			if ((state.InspCur != cur || state.InspMax != max || state.InspBase != baseMax) && Main.GameUpdateCount - state.LastDisplayNet >= 15)
 			{
-				state.InspCur = cur; state.InspMax = max;
+				state.InspCur = cur; state.InspMax = max; state.InspBase = baseMax;
 				state.LastDisplayNet = Main.GameUpdateCount;
 				s.NPC.netUpdate = true;
 			}

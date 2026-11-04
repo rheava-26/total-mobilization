@@ -76,6 +76,13 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Bard renown:** pool max = crystals + renown points (4000·n^1.5 bard damage, 30 points, cap 40). Raw damage, so it fills faster in HM, left uncapped (tenet #1). Levies picking up real Inspiration Notes: feasible, NOT built (OnPickup(dummy) + net sync).
 - **Drones:** loiter 20-45 tiles up, ±110 tiles; noclip on Refuel/Recall; perch rows on armory roof. Status text de-parroted. Vertical lines still UNEXPLAINED (no Mechanization draw path can make them). Next evidence: which weapon a lined drone has mounted. Side find: DrawWeapon uses a null source rect, so animated item sheets draw as the whole squashed sheet (an art-suspect, not the line).
 
+## 🐛 OPEN: levy rogue/thrower weapons fill the PLAYER's meter (Eve screenshot 2026-11-04)
+- **Code-confirmed path A (Shoot cache):** Thorium `GetThoriumPlayer()` (PlayerHelper.cs:43) returns the cached LOCAL ThoriumPlayer when `player.whoAmI == Main.myPlayer`. Levy `TryRealShoot` (WeaponUse.cs ~480) sets the dummy's whoAmI = Main.myPlayer before ModifyShootStats/Shoot. Result: `ThoriumGlobalItem.Shoot` adds `throwerExhaustion += useTime*2` to EVE's Exhaustion bar on every levy throw, and any other Thorium Shoot-time state lands on Eve too.
+- **Code-confirmed path B (owner on-hit):** `ThoriumPlayer.OnHitNPCWithProj` sets techRecharge on the projectile owner for thrown hits. Levy shots are owned by Eve, so Eve's Technique bar fills.
+- Calamity's stealth meter only draws when the local player wears rogue armor (StealthUI.cs:59), so if Eve wasn't wearing rogue armor it isn't Calamity's meter. Which bar is in the screenshot is unconfirmed.
+- Constraint for any fix: many modded Shoot hooks only spawn when `player.whoAmI == Main.myPlayer`. That's why the dummy borrows it. The fix must not make those shots vanish. A candidate is to point Thorium's `localThoriumPlayer` at the dummy's instance during hooks, and check Calamity for similar caches. Folded into the on-hit investigation and the real-owner study.
+- This likely shares a root with the on-hit-at-player bug: levy fire borrows Eve's identity in two places.
+
 ## 🐛 OPEN: on-hit effects come from the PLAYER, not the soldier (Eve video 2026-11-04, Thorium + Calamity)
 - **Observed (video):** Eve hovering high above the army holding Mystic Thorium Heavy Scythe; long white jagged streaks run between Eve's position and enemies near the soldiers.
 - **Code fact:** every soldier shot is owned by the real commander (`WeaponUse.cs:275 OwnerFor => TrueMyPlayer`), so OnHit code reading `Main.player[owner]` sees Eve.

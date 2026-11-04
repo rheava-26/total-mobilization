@@ -61,6 +61,12 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 🐛 OPEN: on-hit effects come from the PLAYER, not the soldier (Eve video 2026-11-04, Thorium + Calamity)
+- **Observed (video):** Eve hovering high above the army holding Mystic Thorium Heavy Scythe; long white jagged streaks run between Eve's position and enemies near the soldiers.
+- **Code fact:** every soldier shot is owned by the real commander (`WeaponUse.cs:275 OwnerFor => TrueMyPlayer`), so OnHit code reading `Main.player[owner]` sees Eve.
+- **Candidates, none tested:** (1) weapon projectile OnHitNPC spawns follow-ups at the owner; (2) Eve's OWN gear/set bonus/held scythe procs on every soldier hit via ModPlayer.OnHitNPCWithProj; (3) Thorium/Calamity Global on-hit hooks keyed to owner; (4) Thorium heal-on-damage visual lines; (5) Levy held-swap or substitute families; (6) other.
+- **Running:** a harness probe separating weapon procs from commander-gear procs. The real-owner feasibility study is told to include this case. Design question for Eve once measured: should the commander's accessories proc from soldier hits at all?
+
 ## 🔬 CALAMITY ROGUE STEALTH RUN (2026-11-04, Statigel rogue set worn by soldier AND player baseline)
 - **Observed:** 148 rogue weapons, 833 trials. The armor took on the soldier (rogueStealthMax reads 0.90 on both sides). The soldier's stealth sat at **0.00 in every single trial — it never accrued at all.** The player baseline accrued ~0.20 per short trial and landed stealth strikes on 12 weapons; the soldier landed 0.
 - **Not yet known (candidates, none tested):** Calamity's stealth regen runs in a ModPlayer update hook (PostUpdateMiscEffects or similar) that never runs on a soldier's Dummy player because Player.Update isn't called for it; regen is gated on Main.myPlayer / whoAmI; regen requires "not attacking / standing still" and the soldier is always mid-use; the harness reads the field at a point where Calamity resets it; ResetEffects zeroes it each tick on the dummy; trial length too short (ruled out as sole cause: player gains, soldier gains literally nothing).

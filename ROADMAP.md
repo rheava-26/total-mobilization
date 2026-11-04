@@ -61,6 +61,11 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 🔬 CALAMITY ROGUE STEALTH RUN (2026-11-04, Statigel rogue set worn by soldier AND player baseline)
+- **Observed:** 148 rogue weapons, 833 trials. The armor took on the soldier (rogueStealthMax reads 0.90 on both sides). The soldier's stealth sat at **0.00 in every single trial — it never accrued at all.** The player baseline accrued ~0.20 per short trial and landed stealth strikes on 12 weapons; the soldier landed 0.
+- **Not yet known (candidates, none tested):** Calamity's stealth regen runs in a ModPlayer update hook (PostUpdateMiscEffects or similar) that never runs on a soldier's Dummy player because Player.Update isn't called for it; regen is gated on Main.myPlayer / whoAmI; regen requires "not attacking / standing still" and the soldier is always mid-use; the harness reads the field at a point where Calamity resets it; ResetEffects zeroes it each tick on the dummy; trial length too short (ruled out as sole cause: player gains, soldier gains literally nothing).
+- **Next:** a probe that logs the dummy's rogueStealth before/after each hook, then fix. Not a code change yet.
+
 ## 🔬 CALAMITY RUN 1 (2026-11-04, tML 2026.10.2.3, harness v3) — observations
 753 Calamity weapons (4 shards; shard 0 died once and was re-run), 647 issued. Data: scratchpad/harness/calamity_run1.tsv. Harness v3 code recovered + committed on `combat-harness` (d7a6fc1): Calamity probe (`HarnessCalamityProbe.cs`), runner `-N` (new toolchain), `-C` class filter, `-A` worn armor.
 - Fidelity: SAME 374, SUBSTITUTED 156, SOLDIER_MISSING_SOME 30, SOLDIER_EXTRA 28, melee-no-proj 23, baseline failed 36.

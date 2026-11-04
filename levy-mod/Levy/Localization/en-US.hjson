@@ -176,6 +176,7 @@ Mods: {
 					Economy: Economy
 					Interface: Interface
 					Targeting: Targeting Header
+					Progression: Levy progression
 				}
 
 				BossHpScalingPercentPerCp: {
@@ -281,6 +282,26 @@ Mods: {
 				MilitiaFieldCap: {
 					Label: Militia on the field at once
 					Tooltip: How many militia a town fields simultaneously. Manpower is the deeper reserve they draw from as they fall; this keeps the active crowd small.
+				}
+
+				LeviesByEndOfPreHardmode: {
+					Label: Levies by the Wall of Flesh
+					Tooltip: How many levies you can field once every pre-hardmode boss is beaten. Progress through the tier is the share of its bosses defeated, from any mod.
+				}
+
+				LeviesByEndOfHardmode: {
+					Label: Levies by Moon Lord
+					Tooltip: How many levies you can field once every hardmode boss is beaten.
+				}
+
+				LeviesByEndOfPostMoonLord: {
+					Label: Levies by the end of post-Moon Lord
+					Tooltip: How many levies you can field once every boss beyond Moon Lord is beaten. Worlds with no such bosses stay at the Moon Lord number.
+				}
+
+				MaxLevies: {
+					Label: Maximum levies
+					Tooltip: The most levies you can ever field, whatever the other numbers say.
 				}
 
 				NurseHealsSoldiers: {

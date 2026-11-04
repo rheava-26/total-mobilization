@@ -61,6 +61,13 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 🔬 CALAMITY RUN 1 (2026-11-04, tML 2026.10.2.3, harness v3) — observations
+753 Calamity weapons (4 shards; shard 0 died once and was re-run), 647 issued. Data: scratchpad/harness/calamity_run1.tsv. Harness v3 code recovered + committed on `combat-harness` (d7a6fc1): Calamity probe (`HarnessCalamityProbe.cs`), runner `-N` (new toolchain), `-C` class filter, `-A` worn armor.
+- Fidelity: SAME 374, SUBSTITUTED 156, SOLDIER_MISSING_SOME 30, SOLDIER_EXTRA 28, melee-no-proj 23, baseline failed 36.
+- By class: magic 96/117 same; ranged 97/121 same; rogue 123/137 same projectiles; MELEE 72/175 substituted (Levy SoldierThrust/Boomerang/etc. — same as Thorium); SUMMON 71/97 substituted (summons broken in Calamity too).
+- Shot-rate outliers (soldier vs player, same projectiles): Rebounding Rainbow 20×, Urchin Mace 18×, Sparkling Empress 18×, Titanium Railgun 10×…; underfiring list is mostly sentries/summons/short-range.
+- **Rogue stealth: NOT MEASURED YET** — stealth max was 0 for soldier AND player because nobody wore armor; Calamity stealth comes from rogue armor set bonuses. Re-running the 137 rogue weapons wearing Statigel rogue armor (`StatigelHeadRogue,StatigelArmor,StatigelGreaves`) → scratchpad/harness/calamity_rogue_statigel.tsv.
+
 ## 🔬 COMPAT FIDELITY HARNESS (2026-11-04) — measure, don't guess
 `levy-mod/Levy/Common/Testing/CombatHarness.cs` (+ `HarnessThoriumProbe.cs`, `HarnessCommanderPlayer.cs`), runners `levy-mod/Levy/tools/run_harness.sh` / `run_harness_sharded.sh`. Inert unless `LEVY_HARNESS` is set. Headless server on a copy of LevyTest, stand-in commander in slot 0, sky firing range, one real soldier per weapon at 4/7/15/25/40 tiles + a walk-in target; a PLAYER BASELINE runs the same item through vanilla `Player.ItemCheck` (cursor on target) and diffs projectile types. `LEVY_HARNESS_MOD=CalamityMod` reuses it. Data: scratchpad/harness/thorium_run2.tsv; per-weapon fidelity script scratchpad/fidelity.py.
 **Thorium run-2 facts (692 issued weapons; observations, NOT diagnoses):**

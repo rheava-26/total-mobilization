@@ -50,6 +50,7 @@ namespace Levy.Common.Officers
 			Dummy.gravDir = 1f; Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
 			Dummy.statLife = body.life; Dummy.statLifeMax = Dummy.statLifeMax2 = System.Math.Max(1, body.lifeMax);
 			Dummy.whoAmI = SoldierNPC.DummySlot;
+			global::Levy.Common.Targeting.BiomeMirror.Apply(Dummy, -1, body.Center); // an officer serves the town: nearest real player's biome
 		}
 	}
 }

@@ -359,6 +359,7 @@ namespace Levy.Content.NPCs
 			Dummy.gravDir = 1f; Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
 			Dummy.statLife = NPC.life; Dummy.statLifeMax2 = Math.Max(1, NPC.lifeMax);
 			Dummy.whoAmI = DummySlot;
+			global::Levy.Common.Targeting.BiomeMirror.Apply(Dummy, CommanderIndex, NPC.Center);
 			SyncDummyMana();
 		}
 

@@ -153,7 +153,8 @@ namespace Levy.Common.Systems
 					{
 						Key = de.Key as string ?? "",
 						Source = Get<string>(info, "modSource") ?? "",
-						Internal = Get<string>(info, "internalName") ?? "",
+						// Boss Checklist's dictionary has no "internalName" field; its key is "<modSource> <internalName>" (EntryInfo.cs:221).
+						Internal = Get<string>(info, "internalName") ?? InternalFromKey(de.Key as string, Get<string>(info, "modSource")),
 						Progression = Get<float>(info, "progression"),
 						Downed = Get<Func<bool>>(info, "downed"),
 					};
@@ -164,6 +165,14 @@ namespace Levy.Common.Systems
 				Levy.Instance.Logger.Info($"Levy progression: Boss Checklist registry read, {list.Count} bosses");
 			}
 			catch (Exception e) { _bc = null; Levy.Instance.Logger.Warn("Levy progression: Boss Checklist read failed, using learned tiers: " + e.Message); }
+		}
+
+		private static string InternalFromKey(string key, string source)
+		{
+			if (string.IsNullOrEmpty(key)) return "";
+			if (!string.IsNullOrEmpty(source) && key.StartsWith(source + " ", StringComparison.Ordinal)) return key.Substring(source.Length + 1);
+			int sp = key.IndexOf(' ');
+			return sp >= 0 ? key.Substring(sp + 1) : key;
 		}
 
 		private static T Get<T>(IDictionary d, string k) { try { return d.Contains(k) && d[k] is T t ? t : default; } catch { return default; } }

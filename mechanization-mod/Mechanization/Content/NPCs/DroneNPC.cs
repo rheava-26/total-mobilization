@@ -96,7 +96,6 @@ namespace Mechanization.Content.NPCs
 		private bool _seqSeen;
 		private float _recoil;
 
-		public override string Texture => "Terraria/Images/Item_" + D.BodyDrawItemType; // a valid vanilla asset; the real body is drawn from rectangles in PreDraw
 
 		public override void SetStaticDefaults()
 		{
@@ -765,7 +764,7 @@ namespace Mechanization.Content.NPCs
 		}
 
 		// =====================================================================================================
-		// Draw: a functional side-view built from rectangles (placeholder until the sprites land), the mounted weapon, and two bars.
+		// Draw: the body sprite (two rotor frames, art faces left), the mounted weapon, and two bars.
 		// =====================================================================================================
 		public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
@@ -777,21 +776,13 @@ namespace Mechanization.Content.NPCs
 				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
 				float rot = NPC.rotation;
 				int sd = NPC.direction == 0 ? 1 : NPC.direction;
-				bool landed = Landed;
 
-				// parts are laid out facing +x and mirrored by sd; every part turns with the body's tilt
-				void Part(float x, float y, float w, float h, Color col) =>
-					spriteBatch.Draw(px, c + new Vector2(x * sd, y).RotatedBy(rot), null, col, rot, new Vector2(0.5f, 0.5f), new Vector2(w, h), SpriteEffects.None, 0f);
+				// The art faces LEFT (sensor head on the left), so mirror it when the drone faces right. Two stacked frames: rotor wide / rotor short; landed holds frame 0, airborne alternates.
+				Texture2D body = ModContent.Request<Texture2D>(Texture).Value;
+				int fw = body.Width, fh = body.Height / 2;
+				int frame = Landed ? 0 : (((Main.GameUpdateCount + (uint)NPC.whoAmI) & 2u) == 0u ? 0 : 1);
+				spriteBatch.Draw(body, c, new Rectangle(0, frame * fh, fw, fh), light, rot, new Vector2(fw * 0.5f, fh * 0.5f), 1f, sd == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
 
-				Color steel = Lit(new Color(88, 96, 110), light), dark = Lit(new Color(54, 60, 70), light), edge = Lit(new Color(136, 146, 162), light);
-				Part(0f, 11f, 26f, 2f, dark);                                       // skid bar
-				Part(-9f, 7f, 2f, 7f, dark); Part(9f, 7f, 2f, 7f, dark);            // skid struts
-				Part(-16f, -2f, 11f, 3f, dark);                                     // tail boom
-				Part(-20f, -6f, 3f, 7f, steel);                                     // tail fin
-				Part(0f, 0f, 24f, 10f, steel);                                      // hull
-				Part(0f, -4f, 24f, 1f, edge);                                       // hull highlight
-				Part(12f, 1f, 6f, 6f, Lit(new Color(70, 170, 200), light));         // nose sensor
-				Part(0f, -8f, 3f, 5f, dark);                                        // rotor mast
 				Color led = Phase switch
 				{
 					DronePhase.Loiter => new Color(110, 235, 130),
@@ -800,13 +791,8 @@ namespace Mechanization.Content.NPCs
 					DronePhase.Recall => new Color(110, 170, 255),
 					_ => new Color(150, 150, 160),
 				};
-				Part(-6f, -1f, 3f, 3f, led);                                        // status light
-				if (landed) Part(0f, -11f, 32f, 2f, dark);                          // rotor at rest
-				else
-				{
-					Part(0f, -11f, 34f, 2f, new Color(190, 200, 212, 150));         // rotor, a flickering disc
-					if (((Main.GameUpdateCount + (uint)NPC.whoAmI) & 2u) == 0u) Part(0f, -11f, 40f, 1f, new Color(190, 200, 212, 80));
-				}
+				// status light: a 2x2 dot on the hull, toward the tail (the side opposite the head), turned with the body's tilt
+				spriteBatch.Draw(px, c + new Vector2(-8f * sd, 0f).RotatedBy(rot), null, Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
 				DrawWeapon(spriteBatch, c, rot, light);
 				return false;
 			}

@@ -243,9 +243,7 @@ namespace Mechanization.Common
 			/// <summary>Weapon recoil kick (px) and return (px per tick). Purely visual.</summary>
 			public const float RecoilPx = 3f, RecoilReturnPx = 0.5f;
 
-			// ---------- draw (a hand-drawn side view from rectangles; no art asset) ----------
-			/// <summary>A valid vanilla asset the NPC registers as its texture. The body itself is drawn from rectangles in PreDraw.</summary>
-			public const int BodyDrawItemType = ItemID.Cog;
+			// ---------- draw (the body is Content/NPCs/DroneNPC.png) ----------
 			public const int HpBarWidthPx = 36, HpBarHeightPx = 5, HpBarOffsetY = 12;
 			public const int BatteryBarWidthPx = 30, BatteryBarHeightPx = 3, BatteryBarGapPx = 3;
 			/// <summary>The mounted weapon is drawn under the body, scaled so its longer side is this many px, this far below the centre.</summary>

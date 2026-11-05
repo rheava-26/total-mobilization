@@ -130,9 +130,9 @@ namespace Levy.Common.Weapons
 			}
 		}
 
-		/// <summary>His own weapon counts as a basis for comparison only while it is still his and is acceptable at this stage.</summary>
+		/// <summary>His own weapon counts as a basis for comparison while it is still his; a classed levy's must also be of the class this stage deals (a mismatched one is corrected, whatever it scores), an unclassed levy's always counts.</summary>
 		private static bool Usable(AllocLevy l, Func<AllocLevy, AllocCand, bool> accept)
-			=> l.Own != null && !l.Own.Used && l.Own.Owner == l && accept(l, l.Own); // what he already holds stays his whatever its ammo or the rules say; those only gate what he is dealt
+			=> l.Own != null && !l.Own.Used && l.Own.Owner == l && (l.Cls == null || accept(l, l.Own)); // what he already holds stays his whatever its ammo or the rules say; those only gate what he is dealt
 
 		private static void Keep(AllocLevy l) { l.Target = l.Own; l.Own.Used = true; }
 

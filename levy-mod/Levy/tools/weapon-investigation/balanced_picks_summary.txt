@@ -1,0 +1,56 @@
+
+### HM_old_stock_then_fresh_crafts
+  [SellPrice]
+    after first issue: melee:Night's Edge; ranged:Minishark; magic:Flamelash; summon:Slime Staff; melee:Enchanted Sword; ranged:Hellwing Bow; magic:Flower of Fire; melee:Muramasa; ranged:Phoenix Blaster
+    after UpgradeWeapons: melee:Night's Edge; ranged:Minishark; magic:Crystal Storm; summon:Slime Staff; melee:Enchanted Sword; ranged:Hellwing Bow; magic:Flower of Fire; melee:Muramasa; ranged:Phoenix Blaster
+  [Balanced]
+    after first issue: melee:Night's Edge; ranged:Phoenix Blaster; magic:Flamelash; summon:Slime Staff; melee:Enchanted Sword; ranged:Hellwing Bow; magic:Flower of Fire; melee:Muramasa; ranged:Minishark
+    after UpgradeWeapons: melee:Night's Edge; ranged:Phoenix Blaster; magic:Crystal Storm; summon:Slime Staff; melee:Mythril Sword; ranged:Palladium Repeater; magic:Flower of Fire; melee:Palladium Sword; ranged:Minishark
+
+### HM_old_stock_fresh_is_a_day_old
+  [SellPrice]
+    after first issue: melee:Night's Edge; ranged:Minishark; magic:Water Bolt; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Space Gun; melee:Volcano; ranged:Phoenix Blaster
+    after UpgradeWeapons: melee:Night's Edge; ranged:Minishark; magic:Water Bolt; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Space Gun; melee:Mythril Sword; ranged:Phoenix Blaster
+  [Balanced]
+    after first issue: melee:Night's Edge; ranged:Phoenix Blaster; magic:Water Bolt; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Space Gun; melee:Volcano; ranged:Minishark
+    after UpgradeWeapons: melee:Night's Edge; ranged:Phoenix Blaster; magic:Water Bolt; summon:Slime Staff; melee:Mythril Sword; ranged:Hellwing Bow; magic:Space Gun; melee:Cobalt Sword; ranged:Minishark
+
+### PreWoF_after_Skeletron_minishark
+  [SellPrice]
+    after first issue: melee:Night's Edge; ranged:Minishark; magic:Flamelash; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Water Bolt; melee:Volcano; ranged:Phoenix Blaster
+    after UpgradeWeapons: melee:Night's Edge; ranged:Minishark; magic:Flamelash; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Water Bolt; melee:Volcano; ranged:Phoenix Blaster
+  [Balanced]
+    after first issue: melee:Night's Edge; ranged:Minishark; magic:Flamelash; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Water Bolt; melee:Blade of Grass; ranged:Phoenix Blaster
+    after UpgradeWeapons: melee:Night's Edge; ranged:Minishark; magic:Flamelash; summon:Slime Staff; melee:Muramasa; ranged:Hellwing Bow; magic:Water Bolt; melee:Blade of Grass; ranged:Phoenix Blaster
+
+### PreBoss_new_world_fresh_iron
+  [SellPrice]
+    after first issue: melee:Copper Broadsword; ranged:Musket; magic:Vilethorn; summon:Wooden Bow; melee:Copper Shortsword; ranged:Copper Bow; magic:Wand of Sparking; melee:Wooden Sword; ranged:Handgun
+    after UpgradeWeapons: melee:Copper Broadsword; ranged:Musket; magic:Vilethorn; summon:Copper Shortsword; melee:Iron Broadsword; ranged:Silver Bow; magic:Wand of Sparking; melee:Silver Broadsword; ranged:Handgun
+  [Balanced]
+    after first issue: melee:Copper Broadsword; ranged:Musket; magic:Vilethorn; summon:Wooden Bow; melee:Copper Shortsword; ranged:Copper Bow; magic:Wand of Sparking; melee:Wooden Sword; ranged:Handgun
+    after UpgradeWeapons: melee:Copper Broadsword; ranged:Musket; magic:Vilethorn; summon:Copper Shortsword; melee:Iron Broadsword; ranged:Silver Bow; magic:Wand of Sparking; melee:Silver Broadsword; ranged:Handgun
+
+### HM_copper_and_cobalt_melee_only
+  [SellPrice]
+    after first issue: melee:Cobalt Sword; melee:Iron Broadsword; melee:Copper Broadsword
+    after UpgradeWeapons: melee:Cobalt Sword; melee:Iron Broadsword; melee:Copper Broadsword
+  [Balanced]
+    after first issue: melee:Cobalt Sword; melee:Iron Broadsword; melee:Copper Broadsword
+    after UpgradeWeapons: melee:Cobalt Sword; melee:Iron Broadsword; melee:Copper Broadsword
+
+### HM_fresh_junk_vs_old_good
+  [SellPrice]
+    after first issue: melee:Night's Edge; ranged:Mythril Repeater; melee:Mythril Sword; ranged:Cobalt Repeater; melee:Cobalt Sword
+    after UpgradeWeapons: melee:Night's Edge; ranged:Mythril Repeater; melee:Mythril Sword; ranged:Cobalt Repeater; melee:Cobalt Sword
+  [Balanced]
+    after first issue: melee:Night's Edge; ranged:Mythril Repeater; melee:Mythril Sword; ranged:Cobalt Repeater; melee:Cobalt Sword
+    after UpgradeWeapons: melee:Night's Edge; ranged:Mythril Repeater; melee:Mythril Sword; ranged:Cobalt Repeater; melee:Cobalt Sword
+
+### PostGolem_old_guns_vs_endgame
+  [SellPrice]
+    after first issue: melee:Terra Blade; ranged:Chain Gun; melee:Night's Edge; ranged:Minishark; ranged:Megashark
+    after UpgradeWeapons: melee:Terra Blade; ranged:Chain Gun; melee:Night's Edge; ranged:Minishark; ranged:Megashark
+  [Balanced]
+    after first issue: melee:Terra Blade; ranged:Chain Gun; melee:Night's Edge; ranged:Venus Magnum; ranged:Megashark
+    after UpgradeWeapons: melee:Terra Blade; ranged:Chain Gun; melee:Night's Edge; ranged:Venus Magnum; ranged:Megashark

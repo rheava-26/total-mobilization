@@ -714,7 +714,7 @@ namespace Levy.Common.Systems
 				TickRespawns(LevyConstants.DeployIntervalTicks);
 				Deploy();
 			}
-			if (++_feedTimer >= LevyConstants.AutoFeedIntervalTicks) { _feedTimer = 0; TickAutoFeed(); }
+			if (++_feedTimer >= LevyConstants.AutoFeedIntervalTicks) { _feedTimer = 0; TickAutoFeed(); TickStarMana(); }
 			if (_spoilsSoundCd > 0) _spoilsSoundCd--;
 			MutinySystem.Tick(); // Wage Mutiny: settle back pay (no-op unless a mutineer exists)
 			if (++_spoilsTimer >= LevyConstants.SpoilsIntervalTicks) { _spoilsTimer = 0; TickSpoils(); }
@@ -816,6 +816,35 @@ namespace Levy.Common.Systems
 					PlayCrystalSound(type, body != null ? body.NPC.Center : armory.Center);
 					break;
 				}
+			}
+			if (changed) SendRosterSnapshot();
+		}
+
+		/// <summary>
+		/// Fallen Stars into levy mana (<see cref="StarMana"/>), at the auto-feed interval: each Armory turns the stars in its storage into Mana Crystals for its magic levies, worst-supplied first,
+		/// unless a weapon there or in a levy's hands fires them. Server / single player only.
+		/// </summary>
+		private void TickStarMana()
+		{
+			if (LevyUtil.IsClient) return;
+			var cfg = LevyConfig.Get;
+			if (cfg == null || !cfg.ArmoryTurnsStarsIntoMana) return;
+			var byArmory = new Dictionary<ArmoryTE, List<SoldierRecord>>();
+			for (int i = 0; i < Regulars.Count; i++)
+			{
+				var rec = Regulars[i]; if (rec == null) continue;
+				var armory = ArmoryOf(HomeOf(rec)); if (armory == null) continue;
+				if (!byArmory.TryGetValue(armory, out var list)) byArmory[armory] = list = new List<SoldierRecord>();
+				list.Add(rec);
+			}
+			bool changed = false;
+			foreach (var kv in byArmory)
+			{
+				int given = StarMana.Convert(kv.Key, kv.Value, StarMana.Ratio, CanAbsorbCrystal, r => ApplyCrystal(r, ItemID.ManaCrystal));
+				if (given <= 0) continue;
+				changed = true;
+				var mage = kv.Value.Find(r => BodyOf(r) != null);
+				PlayCrystalSound(ItemID.ManaCrystal, mage != null ? BodyOf(mage).NPC.Center : kv.Key.Center);
 			}
 			if (changed) SendRosterSnapshot();
 		}

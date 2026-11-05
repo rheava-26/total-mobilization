@@ -151,6 +151,27 @@ namespace Levy.Content.TileEntities
 		public override void Update()
 		{
 			if (_dirty) Sync();
+			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
+		}
+
+		private const int StampIntervalTicks = 30;
+		private int _stampTimer;
+		/// <summary>Set while loading a save written before deposit times existed: its weapons are stamped as old, not as new.</summary>
+		private bool _stampAdopt;
+
+		/// <summary>
+		/// Records the deposit time (<see cref="DepositStamp"/>) of every weapon on the racks or in storage that has none. A weapon already in the armory when the stamps were introduced is stamped as old, so a
+		/// reloaded save does not treat its whole hoard as new. A weapon that already has a stamp keeps it, wherever it has been since. Server / single player; returns how many it stamped.
+		/// </summary>
+		public int StampNew()
+		{
+			int n = 0;
+			long stamp = _stampAdopt ? DepositStamp.Adopted : -1;
+			foreach (var arr in new[] { Storage, IssueWeapons })
+				foreach (var it in arr)
+					if (!IsAir(it) && DepositStamp.Stamp(it, stamp)) n++;
+			_stampAdopt = false;
+			return n;
 		}
 
 		// ------------------------------------------------------------------ helpers
@@ -1589,6 +1610,44 @@ namespace Levy.Content.TileEntities
 			return false;
 		}
 
+		/// <summary>Removes up to <paramref name="count"/> items of this type from bulk storage; returns how many were removed.</summary>
+		public int TakeUpTo(int itemType, int count)
+		{
+			int taken = 0;
+			for (int i = 0; i < Storage.Length && taken < count; i++) {
+				var it = Storage[i];
+				if (IsAir(it) || it.type != itemType) continue;
+				int n = Math.Min(it.stack, count - taken);
+				it.stack -= n; taken += n;
+				if (it.stack <= 0) Storage[i] = new Item();
+			}
+			if (taken > 0) MarkDirty();
+			return taken;
+		}
+
+		/// <summary>How many items of this type bulk storage holds.</summary>
+		public int CountInStorage(int itemType)
+		{
+			long n = 0;
+			foreach (var it in Storage) if (!IsAir(it) && it.type == itemType) n += it.stack;
+			return (int)Math.Min(n, int.MaxValue);
+		}
+
+		/// <summary>True when a weapon on the racks or in storage fires the given ammo kind (a Star Cannon fires Fallen Stars).</summary>
+		public bool HoldsWeaponUsing(int ammoKind)
+		{
+			foreach (var arr in new[] { IssueWeapons, Storage })
+				foreach (var it in arr) if (!IsAir(it) && it.useAmmo == ammoKind && it.damage > 0) return true;
+			return false;
+		}
+
+		/// <summary>A levy's weapon going back to storage: one nobody has stamped is old, so being handed back never makes it look new. (A weapon the player deposits is stamped by <see cref="StampNew"/>.)</summary>
+		private Item DepositOld(Item item)
+		{
+			DepositStamp.Stamp(item, DepositStamp.Adopted);
+			return Deposit(item);
+		}
+
 		/// <summary>Puts an item into bulk storage (stacking); returns what did not fit (or null).</summary>
 		public virtual Item Deposit(Item item)
 		{
@@ -1671,7 +1730,7 @@ namespace Levy.Content.TileEntities
 			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
 			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
-				var rem = Deposit(g.Sidearm);
+				var rem = DepositOld(g.Sidearm);
 				if (!IsAir(rem)) Spill(rem, protect: true);
 				g.Sidearm = new Item();
 				changed = true;
@@ -1928,7 +1987,7 @@ namespace Levy.Content.TileEntities
 			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf.
 			// A summon weapon is never carried twice in the same role: a second whip, a second staff or a second sentry goes back to the shelf, and IssueGear re-picks the complementary one.
 			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip) || (nf == WeaponFamily.Sentry && sf == WeaponFamily.Sentry))) return;
-			var rem = Deposit(g.Sidearm);
+			var rem = DepositOld(g.Sidearm);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			g.Sidearm = new Item();
 		}
@@ -2025,7 +2084,7 @@ namespace Levy.Content.TileEntities
 			var old = g.Get(slot);
 			g.Set(slot, neu);
 			if (slot == SoldierGear.SlotWeapon) g.ThrownRestockType = 0;
-			var rem = Deposit(old);
+			var rem = DepositOld(old);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			MarkDirty();
 			return true;
@@ -2051,7 +2110,7 @@ namespace Levy.Content.TileEntities
 			}
 			var items = new List<Item>(gear.AllItems());
 			foreach (var it in items) {
-				var rem = Deposit(it);
+				var rem = DepositOld(it);
 				if (!IsAir(rem)) Spill(rem, protect: true); // storage truly full: never lose gear, keep it on the ground, protected from slot recycling
 			}
 			gear.Clear();
@@ -2122,6 +2181,7 @@ namespace Levy.Content.TileEntities
 
 		public override void SaveData(TagCompound tag)
 		{
+			tag["depV1"] = true;
 			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
 		}
 
@@ -2145,6 +2205,7 @@ namespace Levy.Content.TileEntities
 		}
 		public override void LoadData(TagCompound tag)
 		{
+			_stampAdopt = !tag.ContainsKey("depV1");
 			// Storage is saved at its full (possibly enlarged) length; a save from before centers existed holds exactly StorageSize. The array is sized to what was saved so nothing is lost
 			// before the Logistical Centers have loaded; the first reconcile after load trims any empty tail that no center backs any more.
 			Storage = new Item[Math.Max(StorageSize, tag.GetList<TagCompound>("storage").Count)];

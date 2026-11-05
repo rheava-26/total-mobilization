@@ -1,0 +1,703 @@
+# Levy weapon-choice probe. Levy 1.7.6
+
+################ CONFIG ranking=SellPrice skipArmored=False
+
+## SCENARIO HM_old_stock_then_fresh_crafts   [ranking SellPrice skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3696.9] side=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Starfury[Broadsword/melee sc=123 rk=1946.6] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Enchanted Sword[Broadsword/melee sc=81 rk=4200.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3696.9] side=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Enchanted Sword x1, Hellwing Bow x1, Flower of Fire x1, Muramasa x1, Phoenix Blaster x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=5137.1] side=Palladium Sword[Broadsword/melee sc=192 rk=2983.0] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Enchanted Sword[Broadsword/melee sc=81 rk=4200.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Starfury[Broadsword/melee sc=123 rk=1946.6] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3696.9] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Crystal Storm x1, Slime Staff x1, Enchanted Sword x1, Hellwing Bow x1, Flower of Fire x1, Muramasa x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=5137.1] side=Palladium Sword[Broadsword/melee sc=192 rk=2983.0] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Enchanted Sword[Broadsword/melee sc=81 rk=4200.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Starfury[Broadsword/melee sc=123 rk=1946.6] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3696.9] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Crystal Storm x1, Slime Staff x1, Enchanted Sword x1, Hellwing Bow x1, Flower of Fire x1, Muramasa x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=5137.1] side=Palladium Sword[Broadsword/melee sc=192 rk=2983.0] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Enchanted Sword[Broadsword/melee sc=81 rk=4200.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Starfury[Broadsword/melee sc=123 rk=1946.6] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3696.9] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Crystal Storm x1, Slime Staff x1, Enchanted Sword x1, Hellwing Bow x1, Flower of Fire x1, Muramasa x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7600.6 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Crystal Storm | Magic/magic | 32 7 0 4 200000 | 398.3 (swing only 398.3) | 5137.1 | 225000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4678.7 | 125000
+    Enchanted Sword | Broadsword/melee | 23 45 0 2 150000 | 81.4 (swing only 40.7) | 4200.1 | 0
+    Flamelash | Magic/magic | 32 30 0 3 125000 | 88.6 (swing only 88.6) | 3696.9 | 0
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3696.9 | 0
+    Flower of Fire | Magic/magic | 48 16 0 3 125000 | 249.1 (swing only 249.1) | 3696.9 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3162.3 | 0
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 2937.4 | 220000
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 2880.1 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 2880.1 | 0
+    Palladium Repeater | Bow/ranged | 37 22 0 4 80000 | 184.1 (swing only 184.1) | 2705.0 | 162000
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2585.5 | 0
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 2585.5 | 0
+    Demon Scythe | Magic/magic | 35 20 0 3 75000 | 144.4 (swing only 144.4) | 2585.5 | 0
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 2211.6 | 105000
+    Molten Fury | Bow/ranged | 31 22 0 3 27000 | 151.8 (swing only 151.8) | 1264.6 | 56250
+    Imp Staff | Summon/summon | 17 36 2 3 27000 | 58.1 (swing only 58.1) | 1264.6 | 63750
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 1025.0 | 60000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 190.0 | 12000
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 72.0 | 4500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 60.4 | 5250
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 25.1 | 0
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 25.1 | 0
+  left on shelves: Iron Broadsword[Broadsword/melee sc=41 rk=190.0] | Copper Shortsword[Shortsword/melee sc=25 rk=60.4] | Copper Broadsword[Broadsword/melee sc=30 rk=72.0] | Wooden Sword[Broadsword/melee sc=23 rk=25.1] | Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] | Mythril Repeater[Bow/ranged sc=211 rk=2937.4] | Palladium Repeater[Bow/ranged sc=184 rk=2705.0] | Flamelash[Magic/magic sc=89 rk=3696.9] | Musket[Gun/ranged sc=96 rk=2585.5] | Boomstick[Gun/ranged sc=143 rk=3162.3] | Molten Fury[Bow/ranged sc=152 rk=1264.6] | Handgun[Gun/ranged sc=190 rk=2880.1] | Copper Bow[Bow/ranged sc=36 rk=60.4] | Wooden Bow[Bow/ranged sc=30 rk=25.1] | Water Bolt[Magic/magic sc=88 rk=2585.5] | Space Gun[Magic/magic sc=74 rk=1025.0] | Demon Scythe[Magic/magic sc=144 rk=2585.5] | Imp Staff[Summon/summon sc=58 rk=1264.6]
+
+## SCENARIO HM_old_stock_fresh_is_a_day_old   [ranking SellPrice skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=1025.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Volcano[Broadsword/melee sc=81 rk=1264.6] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Water Bolt x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Space Gun x1, Volcano x1, Phoenix Blaster x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=1025.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Water Bolt x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Space Gun x1, Mythril Sword x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=1025.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Water Bolt x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Space Gun x1, Mythril Sword x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=1025.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Water Bolt x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Space Gun x1, Mythril Sword x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7600.6 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4678.7 | 125000
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3696.9 | 0
+    Mythril Sword | Broadsword/melee | 50 20 0 4 103500 | 216.1 (swing only 216.1) | 3239.4 | 176000
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 2937.4 | 220000
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 2880.1 | 0
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 2585.5 | 0
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 2211.6 | 105000
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 1025.0 | 60000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 190.0 | 12000
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+  left on shelves: Iron Broadsword[Broadsword/melee sc=41 rk=190.0] | Copper Shortsword[Shortsword/melee sc=25 rk=60.4] | Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] | Mythril Repeater[Bow/ranged sc=211 rk=2937.4]
+
+## SCENARIO PreWoF_after_Skeletron_minishark   [ranking SellPrice skip=False stage=0 defense=8 progress=5.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3696.9] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Volcano[Broadsword/melee sc=81 rk=1264.6] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Volcano x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3696.9] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Volcano[Broadsword/melee sc=81 rk=1264.6] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Volcano x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3696.9] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2880.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3696.9] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Volcano[Broadsword/melee sc=81 rk=1264.6] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Volcano x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7600.6 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4678.7 | 125000
+    Flamelash | Magic/magic | 32 30 0 3 125000 | 88.6 (swing only 88.6) | 3696.9 | 0
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3696.9 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3162.3 | 0
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 2880.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2585.5 | 0
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 2585.5 | 0
+    Molten Fury | Bow/ranged | 31 22 0 3 27000 | 151.8 (swing only 151.8) | 1264.6 | 56250
+    Volcano | Broadsword/melee | 40 40 0 3 27000 | 81.4 (swing only 81.4) | 1264.6 | 75000
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 1025.0 | 60000
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 60.4 | 5250
+  left on shelves: Musket[Gun/ranged sc=96 rk=2585.5] | Boomstick[Gun/ranged sc=143 rk=3162.3] | Molten Fury[Bow/ranged sc=152 rk=1264.6] | Copper Bow[Bow/ranged sc=36 rk=60.4] | Space Gun[Magic/magic sc=74 rk=1025.0]
+
+## SCENARIO PreBoss_new_world_fresh_iron   [ranking SellPrice skip=False stage=0 defense=8 progress=0.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=25.1] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Copper Bow[Bow/ranged sc=36 rk=60.4] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Wooden Sword[Broadsword/melee sc=23 rk=25.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Wooden Bow x1, Copper Shortsword x1, Copper Bow x1, Wand of Sparking x1, Wooden Sword x1, Handgun x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=302.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=360.8] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=302.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=360.8] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=302.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=360.8] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 2880.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2585.5 | 0
+    Vilethorn | Magic/magic | 10 28 0 1 75000 | 26.9 (swing only 26.9) | 2585.5 | 0
+    Wand of Sparking | Magic/magic | 14 26 0 1 10000 | 39.4 (swing only 39.4) | 631.0 | 0
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 360.8 | 24000
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 302.6 | 21000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 190.0 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 159.3 | 10500
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 72.0 | 4500
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 60.4 | 5250
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 25.1 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=25.1] | Iron Bow[Bow/ranged sc=43 rk=159.3] | Copper Bow[Bow/ranged sc=36 rk=60.4]
+
+## SCENARIO HM_copper_and_cobalt_melee_only   [ranking SellPrice skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=190.0] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Cobalt Sword | Broadsword/melee | 40 19 0 4 69000 | 181.1 (swing only 181.1) | 2438.9 | 84000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 190.0 | 12000
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 72.0 | 4500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 25.1 | 0
+  left on shelves: Copper Shortsword[Shortsword/melee sc=25 rk=60.4] | Wooden Sword[Broadsword/melee sc=23 rk=25.1]
+
+## SCENARIO HM_fresh_junk_vs_old_good   [ranking SellPrice skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Mythril Sword | Broadsword/melee | 50 20 0 4 103500 | 216.1 (swing only 216.1) | 3239.4 | 176000
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 2937.4 | 220000
+    Cobalt Sword | Broadsword/melee | 40 19 0 4 69000 | 181.1 (swing only 181.1) | 2438.9 | 84000
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 2211.6 | 105000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 190.0 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 159.3 | 10500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 60.4 | 5250
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 25.1 | 0
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 25.1 | 0
+  left on shelves: Copper Shortsword[Shortsword/melee sc=25 rk=60.4] | Iron Broadsword[Broadsword/melee sc=41 rk=190.0] | Wooden Sword[Broadsword/melee sc=23 rk=25.1] | Copper Bow[Bow/ranged sc=36 rk=60.4] | Iron Bow[Bow/ranged sc=43 rk=159.3] | Wooden Bow[Bow/ranged sc=30 rk=25.1]
+
+## SCENARIO PostGolem_old_guns_vs_endgame   [ranking SellPrice skip=False stage=0 defense=8 progress=13.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5] side=Muramasa[Broadsword/melee sc=105 rk=2880.1] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=7600.6] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5] side=Muramasa[Broadsword/melee sc=105 rk=2880.1] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=7600.6] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5] side=Muramasa[Broadsword/melee sc=105 rk=2880.1] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7600.6] side=Volcano[Broadsword/melee sc=81 rk=1264.6] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=7600.6] side=Copper Shortsword[Shortsword/melee sc=25 rk=60.4] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Terra Blade | Broadsword/melee | 85 18 0 8 1000000 | 974.7 (swing only 487.3) | 15848.9 | 4234400
+    Chain Gun | Gun/ranged | 31 4 0 8 450000 | 1049.3 (swing only 1049.3) | 9062.5 | 0
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7600.6 | 0
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 7600.6 | 1351000
+    Venus Magnum | Gun/ranged | 50 9 0 7 250000 | 654.4 (swing only 654.4) | 6005.6 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4678.7 | 125000
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3162.3 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 2880.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2585.5 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=2585.5] | Boomstick[Gun/ranged sc=143 rk=3162.3] | Handgun[Gun/ranged sc=190 rk=2880.1] | Phoenix Blaster[Gun/ranged sc=238 rk=4678.7] | Venus Magnum[Gun/ranged sc=654 rk=6005.6]
+
+################ CONFIG ranking=Balanced skipArmored=False
+
+## SCENARIO HM_old_stock_then_fresh_crafts   [ranking Balanced skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1208.3 tier=4.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3532.3 tier=4.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=26.5 tier=0.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Enchanted Sword[Broadsword/melee sc=81 rk=2585.9 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] side=Starfury[Broadsword/melee sc=123 rk=1198.5 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3532.3 tier=4.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=22.2 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Flamelash x1, Slime Staff x1, Enchanted Sword x1, Hellwing Bow x1, Flower of Fire x1, Muramasa x1, Minishark x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Cobalt Sword[Broadsword/melee sc=181 rk=3898.6 tier=7.0 bst=1.60] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=8211.7 tier=7.0 bst=1.60] side=Enchanted Sword[Broadsword/melee sc=81 rk=2585.9 tier=1.5 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=5178.1 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Palladium Repeater[Bow/ranged sc=184 rk=4323.9 tier=7.0 bst=1.60] side=Starfury[Broadsword/melee sc=123 rk=1198.5 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3532.3 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Palladium Sword[Broadsword/melee sc=192 rk=4768.3 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1208.3 tier=4.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Crystal Storm x1, Slime Staff x1, Mythril Sword x1, Palladium Repeater x1, Flower of Fire x1, Palladium Sword x1, Minishark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Cobalt Sword[Broadsword/melee sc=181 rk=3898.6 tier=7.0 bst=1.60] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=8211.7 tier=7.0 bst=1.60] side=Enchanted Sword[Broadsword/melee sc=81 rk=2585.9 tier=1.5 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=5178.1 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Palladium Repeater[Bow/ranged sc=184 rk=4323.9 tier=7.0 bst=1.60] side=Starfury[Broadsword/melee sc=123 rk=1198.5 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3532.3 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Palladium Sword[Broadsword/melee sc=192 rk=4768.3 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1208.3 tier=4.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Crystal Storm x1, Slime Staff x1, Mythril Sword x1, Palladium Repeater x1, Flower of Fire x1, Palladium Sword x1, Minishark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Cobalt Sword[Broadsword/melee sc=181 rk=3898.6 tier=7.0 bst=1.60] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Crystal Storm[Magic/magic sc=398 rk=8211.7 tier=7.0 bst=1.60] side=Enchanted Sword[Broadsword/melee sc=81 rk=2585.9 tier=1.5 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=5178.1 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Palladium Repeater[Bow/ranged sc=184 rk=4323.9 tier=7.0 bst=1.60] side=Starfury[Broadsword/melee sc=123 rk=1198.5 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Flower of Fire[Magic/magic sc=249 rk=3532.3 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Palladium Sword[Broadsword/melee sc=192 rk=4768.3 tier=7.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1208.3 tier=4.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Crystal Storm x1, Slime Staff x1, Mythril Sword x1, Palladium Repeater x1, Flower of Fire x1, Palladium Sword x1, Minishark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Crystal Storm | Magic/magic | 32 7 0 4 200000 | 398.3 (swing only 398.3) | 8211.7 | 225000
+    Mythril Sword | Broadsword/melee | 50 20 0 4 103500 | 216.1 (swing only 216.1) | 5178.1 | 176000
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5018.7 | 319400
+    Palladium Sword | Broadsword/melee | 49 22 0 4 92000 | 192.2 (swing only 192.2) | 4768.3 | 135000
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 4695.5 | 220000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 4679.4 | 0
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4570.9 | 125000
+    Palladium Repeater | Bow/ranged | 37 22 0 4 80000 | 184.1 (swing only 184.1) | 4323.9 | 162000
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 3535.2 | 105000
+    Flamelash | Magic/magic | 32 30 0 3 125000 | 88.6 (swing only 88.6) | 3532.3 | 0
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3532.3 | 0
+    Flower of Fire | Magic/magic | 48 16 0 3 125000 | 249.1 (swing only 249.1) | 3532.3 | 0
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Demon Scythe | Magic/magic | 35 20 0 3 75000 | 144.4 (swing only 144.4) | 2470.4 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 1946.9 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 1773.2 | 0
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 1591.8 | 0
+    Molten Fury | Bow/ranged | 31 22 0 3 27000 | 151.8 (swing only 151.8) | 1235.5 | 56250
+    Imp Staff | Summon/summon | 17 36 2 3 27000 | 58.1 (swing only 58.1) | 1235.5 | 63750
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 1161.0 | 0
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 712.0 | 60000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 69.9 | 12000
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 26.5 | 4500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 22.2 | 3750
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 22.2 | 5250
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 9.2 | 0
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 9.2 | 0
+  left on shelves: Flamelash[Magic/magic sc=89 rk=3532.3 tier=4.5 bst=1.00] | Copper Broadsword[Broadsword/melee sc=30 rk=26.5 tier=0.0 bst=1.00] | Copper Shortsword[Shortsword/melee sc=25 rk=22.2 tier=0.0 bst=1.00] | Wooden Sword[Broadsword/melee sc=23 rk=9.2 tier=0.0 bst=1.00] | Cobalt Repeater[Bow/ranged sc=168 rk=3535.2 tier=7.0 bst=1.60] | Mythril Repeater[Bow/ranged sc=211 rk=4695.5 tier=7.0 bst=1.60] | Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] | Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] | Musket[Gun/ranged sc=96 rk=1161.0 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=1946.9 tier=1.5 bst=1.00] | Molten Fury[Bow/ranged sc=152 rk=1235.5 tier=5.0 bst=1.00] | Handgun[Gun/ranged sc=190 rk=1773.2 tier=1.5 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=22.2 tier=0.0 bst=1.00] | Wooden Bow[Bow/ranged sc=30 rk=9.2 tier=0.0 bst=1.00] | Water Bolt[Magic/magic sc=88 rk=1591.8 tier=1.5 bst=1.00] | Space Gun[Magic/magic sc=74 rk=712.0 tier=2.0 bst=1.00] | Demon Scythe[Magic/magic sc=144 rk=2470.4 tier=4.5 bst=1.00] | Imp Staff[Summon/summon sc=58 rk=1235.5 tier=5.0 bst=1.00]
+
+## SCENARIO HM_old_stock_fresh_is_a_day_old   [ranking Balanced skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=22.2 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=1591.8 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=712.0 tier=2.0 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Water Bolt x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Space Gun x1, Volcano x1, Minishark x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=1591.8 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3954.4 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=712.0 tier=2.0 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2977.2 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Water Bolt x1, Slime Staff x1, Mythril Sword x1, Hellwing Bow x1, Space Gun x1, Cobalt Sword x1, Minishark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=1591.8 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3954.4 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=712.0 tier=2.0 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2977.2 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Water Bolt x1, Slime Staff x1, Mythril Sword x1, Hellwing Bow x1, Space Gun x1, Cobalt Sword x1, Minishark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4570.9 tier=5.0 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=1773.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Water Bolt[Magic/magic sc=88 rk=1591.8 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1235.5 tier=5.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3954.4 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3532.3 tier=4.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Space Gun[Magic/magic sc=74 rk=712.0 tier=2.0 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2977.2 tier=7.0 bst=1.22] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Minishark[Gun/ranged sc=161 rk=4679.4 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Phoenix Blaster x1, Water Bolt x1, Slime Staff x1, Mythril Sword x1, Hellwing Bow x1, Space Gun x1, Cobalt Sword x1, Minishark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5018.7 | 319400
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 4679.4 | 0
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4570.9 | 125000
+    Mythril Sword | Broadsword/melee | 50 20 0 4 103500 | 216.1 (swing only 216.1) | 3954.4 | 176000
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 3585.8 | 220000
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3532.3 | 0
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Cobalt Sword | Broadsword/melee | 40 19 0 4 69000 | 181.1 (swing only 181.1) | 2977.2 | 84000
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 2699.8 | 105000
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 1591.8 | 0
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 712.0 | 60000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 69.9 | 12000
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 22.2 | 3750
+  left on shelves: Copper Shortsword[Shortsword/melee sc=25 rk=22.2 tier=0.0 bst=1.00] | Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] | Cobalt Repeater[Bow/ranged sc=168 rk=2699.8 tier=7.0 bst=1.22] | Mythril Repeater[Bow/ranged sc=211 rk=3585.8 tier=7.0 bst=1.22]
+
+## SCENARIO PreWoF_after_Skeletron_minishark   [ranking Balanced skip=False stage=0 defense=8 progress=5.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=6707.5 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=132.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3695.5 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1264.6 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2541.7 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3695.5 tier=4.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=41.9 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2281.7 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.1 tier=4.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Blade of Grass x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=6707.5 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=132.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3695.5 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1264.6 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2541.7 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3695.5 tier=4.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=41.9 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2281.7 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.1 tier=4.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Blade of Grass x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5137.1 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=6707.5 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=132.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Flamelash[Magic/magic sc=89 rk=3695.5 tier=4.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=1264.6 tier=5.0 bst=1.00] armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Slime Staff[Summon/summon sc=32 rk=3162.3 tier=7.0 bst=1.00] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105 rk=2541.7 tier=1.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Hellwing Bow[Bow/ranged sc=204 rk=3695.5 tier=4.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=41.9 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Water Bolt[Magic/magic sc=88 rk=2281.7 tier=1.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.1 tier=4.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=4678.7 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Night's Edge x1, Minishark x1, Flamelash x1, Slime Staff x1, Muramasa x1, Hellwing Bow x1, Water Bolt x1, Blade of Grass x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 6707.5 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5137.1 | 319400
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 4678.7 | 125000
+    Flamelash | Magic/magic | 32 30 0 3 125000 | 88.6 (swing only 88.6) | 3695.5 | 0
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 3695.5 | 0
+    Slime Staff | Summon/summon | 8 28 2 4 100000 | 31.8 (swing only 31.8) | 3162.3 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 2790.7 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 2541.7 | 0
+    Water Bolt | Magic/magic | 19 17 0 2 75000 | 88.2 (swing only 88.2) | 2281.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 1982.3 | 0
+    Molten Fury | Bow/ranged | 31 22 0 3 27000 | 151.8 (swing only 151.8) | 1264.6 | 56250
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.1 | 6900
+    Space Gun | Magic/magic | 17 17 0 1 20000 | 73.9 (swing only 73.9) | 947.4 | 60000
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 41.9 | 5250
+  left on shelves: Musket[Gun/ranged sc=96 rk=1982.3 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=2790.7 tier=1.5 bst=1.00] | Molten Fury[Bow/ranged sc=152 rk=1264.6 tier=5.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=41.9 tier=0.0 bst=1.00] | Space Gun[Magic/magic sc=74 rk=947.4 tier=2.0 bst=1.00]
+
+## SCENARIO PreBoss_new_world_fresh_iron   [ranking Balanced skip=False stage=0 defense=8 progress=0.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=25.1 tier=0.0 bst=1.00] side=- armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Copper Bow[Bow/ranged sc=36 rk=60.4 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Wooden Sword[Broadsword/melee sc=23 rk=25.1 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Wooden Bow x1, Copper Shortsword x1, Copper Bow x1, Wand of Sparking x1, Wooden Sword x1, Handgun x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4 tier=0.0 bst=1.00] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1 tier=0.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=303.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=483.7 tier=0.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=576.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4 tier=0.0 bst=1.00] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1 tier=0.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=303.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=483.7 tier=0.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=576.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=72.0 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Vilethorn[Magic/magic sc=27 rk=2585.5 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 103: weapon=Copper Shortsword[Shortsword/melee sc=25 rk=60.4 tier=0.0 bst=1.00] side=Wooden Sword[Broadsword/melee sc=23 rk=25.1 tier=0.0 bst=1.00] armorClass=summon head=Stardust Helmet
+  soldier 104: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=303.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=483.7 tier=0.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 106: weapon=Wand of Sparking[Magic/magic sc=39 rk=631.0 tier=0.5 bst=1.00] side=- armorClass=magic head=Nebula Helmet
+  soldier 107: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=576.7 tier=0.0 bst=1.60] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 108: weapon=Handgun[Gun/ranged sc=190 rk=2880.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Copper Broadsword x1, Musket x1, Vilethorn x1, Copper Shortsword x1, Iron Broadsword x1, Silver Bow x1, Wand of Sparking x1, Silver Broadsword x1, Handgun x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 2880.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2585.5 | 0
+    Vilethorn | Magic/magic | 10 28 0 1 75000 | 26.9 (swing only 26.9) | 2585.5 | 0
+    Wand of Sparking | Magic/magic | 14 26 0 1 10000 | 39.4 (swing only 39.4) | 631.0 | 0
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 576.7 | 24000
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 483.7 | 21000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 303.7 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 254.7 | 10500
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 72.0 | 4500
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 60.4 | 5250
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 60.4 | 3750
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 25.1 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=25.1 tier=0.0 bst=1.00] | Iron Bow[Bow/ranged sc=43 rk=254.7 tier=0.0 bst=1.60] | Copper Bow[Bow/ranged sc=36 rk=60.4 tier=0.0 bst=1.00]
+
+## SCENARIO HM_copper_and_cobalt_melee_only   [ranking Balanced skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=26.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=26.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=69.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 102: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=26.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Cobalt Sword x1, Iron Broadsword x1, Copper Broadsword x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Cobalt Sword | Broadsword/melee | 40 19 0 4 69000 | 181.1 (swing only 181.1) | 2438.9 | 84000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 69.9 | 12000
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 26.5 | 4500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 22.2 | 3750
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 9.2 | 0
+  left on shelves: Copper Shortsword[Shortsword/melee sc=25 rk=22.2 tier=0.0 bst=1.00] | Wooden Sword[Broadsword/melee sc=23 rk=9.2 tier=0.0 bst=1.00]
+
+## SCENARIO HM_fresh_junk_vs_old_good   [ranking Balanced skip=False stage=0 defense=8 progress=7.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Night's Edge[Broadsword/melee sc=134 rk=5018.7 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Mythril Repeater[Bow/ranged sc=211 rk=2937.4 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Mythril Sword[Broadsword/melee sc=216 rk=3239.4 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Cobalt Repeater[Bow/ranged sc=168 rk=2211.6 tier=7.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Cobalt Sword[Broadsword/melee sc=181 rk=2438.9 tier=7.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  tally: Night's Edge x1, Mythril Repeater x1, Mythril Sword x1, Cobalt Repeater x1, Cobalt Sword x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 5018.7 | 319400
+    Mythril Sword | Broadsword/melee | 50 20 0 4 103500 | 216.1 (swing only 216.1) | 3239.4 | 176000
+    Mythril Repeater | Bow/ranged | 39 20 0 4 90000 | 211.4 (swing only 211.4) | 2937.4 | 220000
+    Cobalt Sword | Broadsword/melee | 40 19 0 4 69000 | 181.1 (swing only 181.1) | 2438.9 | 84000
+    Cobalt Repeater | Bow/ranged | 35 23 0 4 60000 | 168.0 (swing only 168.0) | 2211.6 | 105000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 111.7 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 93.7 | 10500
+    Copper Shortsword | Shortsword/melee | 5 13 0 0 350 | 25.4 (swing only 25.4) | 35.5 | 3750
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 35.5 | 5250
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 14.8 | 0
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 14.8 | 0
+  left on shelves: Copper Shortsword[Shortsword/melee sc=25 rk=35.5 tier=0.0 bst=1.60] | Iron Broadsword[Broadsword/melee sc=41 rk=111.7 tier=0.0 bst=1.60] | Wooden Sword[Broadsword/melee sc=23 rk=14.8 tier=0.0 bst=1.60] | Copper Bow[Bow/ranged sc=36 rk=35.5 tier=0.0 bst=1.60] | Iron Bow[Bow/ranged sc=43 rk=93.7 tier=0.0 bst=1.60] | Wooden Bow[Bow/ranged sc=30 rk=14.8 tier=0.0 bst=1.60]
+
+## SCENARIO PostGolem_old_guns_vs_endgame   [ranking Balanced skip=False stage=0 defense=8 progress=13.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9 tier=13.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5 tier=13.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=284.2 tier=5.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=1154.6 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Venus Magnum[Gun/ranged sc=654 rk=6003.4 tier=12.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=34.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=6707.5 tier=9.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=1.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Venus Magnum x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9 tier=13.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5 tier=13.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=284.2 tier=5.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=1154.6 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Venus Magnum[Gun/ranged sc=654 rk=6003.4 tier=12.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=34.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=6707.5 tier=9.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=1.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Venus Magnum x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Terra Blade[Broadsword/melee sc=975 rk=15848.9 tier=13.5 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Chain Gun[Gun/ranged sc=1049 rk=9062.5 tier=13.5 bst=1.00] side=Volcano[Broadsword/melee sc=81 rk=284.2 tier=5.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Night's Edge[Broadsword/melee sc=134 rk=1154.6 tier=5.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 103: weapon=Venus Magnum[Gun/ranged sc=654 rk=6003.4 tier=12.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=34.2 tier=1.5 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 104: weapon=Megashark[Gun/ranged sc=457 rk=6707.5 tier=9.5 bst=1.00] side=Copper Shortsword[Shortsword/melee sc=25 rk=1.0 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  tally: Terra Blade x1, Chain Gun x1, Night's Edge x1, Venus Magnum x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Terra Blade | Broadsword/melee | 85 18 0 8 1000000 | 974.7 (swing only 487.3) | 15848.9 | 4234400
+    Chain Gun | Gun/ranged | 31 4 0 8 450000 | 1049.3 (swing only 1049.3) | 9062.5 | 0
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 6707.5 | 1351000
+    Venus Magnum | Gun/ranged | 50 9 0 7 250000 | 654.4 (swing only 654.4) | 6003.4 | 0
+    Night's Edge | Broadsword/melee | 40 25 0 3 200000 | 133.6 (swing only 133.6) | 1154.6 | 319400
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1051.6 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 90.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 37.5 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 34.2 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 8.7 | 0
+  left on shelves: Minishark[Gun/ranged sc=161 rk=90.2 tier=1.5 bst=1.00] | Musket[Gun/ranged sc=96 rk=8.7 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=37.5 tier=1.5 bst=1.00] | Handgun[Gun/ranged sc=190 rk=34.2 tier=1.5 bst=1.00] | Phoenix Blaster[Gun/ranged sc=238 rk=1051.6 tier=5.0 bst=1.00]

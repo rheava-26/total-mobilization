@@ -5,6 +5,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Soldiers;
+using Levy.Common.Systems;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.Weapons
@@ -32,7 +33,10 @@ namespace Levy.Common.Weapons
 			Guard("real recipes", () => CheckRealRecipes(Check));
 			Guard("sword shots", () => CheckSwordShots(Check));
 			Guard("armor skip", () => CheckArmorSkip(Check));
-			foreach (var (mode, skip) in new[] { (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, true), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
+			Guard("balanced curves", () => CheckBalancedCurves(Check));
+			Guard("balanced picks", () => CheckBalancedRanks(Check));
+			Guard("star conversion", () => CheckStarMana(Check));
+			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.Balanced, true), (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, true), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
 			{
 				WeaponRank.Force(mode, skip);
 				try { Guard($"mode consistency {mode}/skip={skip}", () => CheckConsistency(Check, mode)); }
@@ -185,6 +189,127 @@ namespace Levy.Common.Weapons
 				}
 			}
 			finally { WeaponRank.ForceStage = savedStage; WeaponRank.Release(); }
+		}
+
+		// ------------------------------------------------------------------ Balanced: the stage discount and the recency boost
+
+		private static void CheckBalancedCurves(Action<bool, string> check)
+		{
+			check(WeaponRank.StageDiscount(-3f) == 1f && WeaponRank.StageDiscount(0f) == 1f, "a weapon at or ahead of the world is not discounted");
+			check(WeaponRank.StageDiscount(1f) > 0.99f && WeaponRank.StageDiscount(2f) > 0.97f, "one or two stages behind is barely touched (" + WeaponRank.StageDiscount(1f).ToString("F3") + ", " + WeaponRank.StageDiscount(2f).ToString("F3") + ")");
+			float mini = WeaponRank.StageDiscount(5.5f);
+			check(mini > 0.55f && mini < 0.7f, "a Minishark (tier 1.5) in early Hardmode keeps about three fifths (" + mini.ToString("F3") + ")");
+			check(Math.Abs(WeaponRank.StageDiscount(7f) - (float)Math.Exp(-1)) < 1e-4f, "seven stages behind is down to 1/e");
+			check(WeaponRank.StageDiscount(10f) < 0.06f && WeaponRank.StageDiscount(14f) < 0.001f && WeaponRank.StageDiscount(14f) > 0f, "many stages behind is heavily discounted, never zero");
+			bool mono = true; float prev = 1f;
+			for (float g = 0f; g <= 25f; g += 0.25f) { float f = WeaponRank.StageDiscount(g); if (f > prev + 1e-7f || f <= 0f) mono = false; prev = f; }
+			check(mono, "the discount only ever falls as the gap grows, and stays positive");
+
+			float day = LevyClock.TicksPerDay;
+			check(Math.Abs(WeaponRank.RecencyBoost(0) - 1.6f) < 1e-5f && WeaponRank.RecencyBoost(-500) == WeaponRank.RecencyBoost(0), "a weapon deposited now is boosted x1.6");
+			check(WeaponRank.RecencyBoost((long)(day * 0.5)) > 1.4f && WeaponRank.RecencyBoost((long)(day * 0.5)) < 1.5f, "half a day on it is still x1.4 or more (" + WeaponRank.RecencyBoost((long)(day * 0.5)).ToString("F3") + ")");
+			float one = WeaponRank.RecencyBoost((long)day), two = WeaponRank.RecencyBoost((long)(day * 2));
+			check(one > LevyConstants.AutoUpgradeScoreMargin && one < 1.3f, "after one day the boost is still above the swap margin (" + one.ToString("F3") + ")");
+			check(two < 1.02f && WeaponRank.RecencyBoost((long)(day * 5)) < 1.0001f, "after two days it is gone (" + two.ToString("F4") + ")");
+			bool fall = true; prev = 2f;
+			for (long t = 0; t <= (long)(day * 4); t += 3000) { float b = WeaponRank.RecencyBoost(t); if (b > prev + 1e-7f || b < 1f) fall = false; prev = b; }
+			check(fall, "the boost only ever fades, and never below 1");
+
+			// the stamp on an item
+			try
+			{
+				LevyClock.Force(50 * LevyClock.TicksPerDay);
+				var w = Make(ItemID.IronBroadsword);
+				check(DepositStamp.Of(w) == 0 && DepositStamp.Boost(w) == 1f, "a weapon nobody has stamped has no boost");
+				check(DepositStamp.Stamp(w) && DepositStamp.Of(w) == LevyClock.Now && !DepositStamp.Stamp(w), "a weapon is stamped once, with the clock");
+				check(Math.Abs(DepositStamp.Boost(w) - 1.6f) < 1e-5f, "a freshly stamped weapon is boosted x1.6");
+				LevyClock.Force(52 * LevyClock.TicksPerDay);
+				check(DepositStamp.Boost(w) < 1.02f, "two days later the stamp has run out");
+				var clone = w.Clone();
+				check(DepositStamp.Of(clone) == DepositStamp.Of(w), "a clone of the item carries its stamp");
+				var old = Make(ItemID.IronBroadsword); DepositStamp.Stamp(old, DepositStamp.Adopted);
+				check(DepositStamp.Boost(old) == 1f, "a weapon adopted from an old save is not new");
+			}
+			finally { LevyClock.Force(null); }
+		}
+
+		/// <summary>Real items against a made-up tier table: a Copper Shortsword tier 0, a Minishark 1.5, Cobalt and Mythril swords 7.</summary>
+		private static void CheckBalancedRanks(Action<bool, string> check)
+		{
+			var table = new float[ItemLoader.ItemCount]; for (int i = 0; i < table.Length; i++) table[i] = ProgressionTier.Inf;
+			table[ItemID.CopperShortsword] = 0f; table[ItemID.Minishark] = 1.5f; table[ItemID.CobaltSword] = 7f; table[ItemID.MythrilSword] = 7f; table[ItemID.WoodenSword] = 0f;
+			ProgressionTier.SetForTest(table);
+			WeaponRank.Force(WeaponRankMode.Balanced, false);
+			try
+			{
+				LevyClock.Force(100 * LevyClock.TicksPerDay);
+				var copper = Make(ItemID.CopperShortsword); var mini = Make(ItemID.Minishark); var cobalt = Make(ItemID.CobaltSword); var mythril = Make(ItemID.MythrilSword);
+				float price(Item it) => (float)Math.Pow(Math.Max(1, it.value), WeaponRank.PriceExponent);
+				WeaponRank.ForceProgress = 7f; // early Hardmode
+				check(WeaponRank.Of(copper) < 0.4f * price(copper), "a Copper Shortsword in Hardmode keeps under 40% of its price rank (" + WeaponRank.Of(copper).ToString("F1") + " of " + price(copper).ToString("F1") + ")");
+				check(WeaponRank.Of(mini) > 0.55f * price(mini), "a Minishark in early Hardmode keeps more than half its price rank (" + (WeaponRank.Of(mini) / price(mini)).ToString("F2") + ")");
+				check(WeaponRank.Of(cobalt) == price(cobalt) && WeaponRank.Of(mythril) == price(mythril), "on-tier weapons rank by price alone");
+				WeaponRank.ForceProgress = 0f;
+				check(WeaponRank.Of(mini) == price(mini) && WeaponRank.Of(copper) == price(copper), "before the first boss nothing is discounted");
+				WeaponRank.ForceProgress = 13f; // after Golem
+				check(WeaponRank.Of(mini) < 0.1f * price(mini) && WeaponRank.Of(copper) >= 1f, "a Minishark after Golem is heavily discounted, and no rank is below 1");
+				// recency
+				WeaponRank.ForceProgress = 7f;
+				float oldCobalt = WeaponRank.Of(cobalt), oldMythril = WeaponRank.Of(mythril);
+				DepositStamp.Stamp(cobalt);
+				check(WeaponRank.Of(cobalt) >= oldCobalt * LevyConstants.AutoUpgradeScoreMargin * 1.3f, "a fresh weapon clears the upgrade margin over an identical old one");
+				check(WeaponRank.Of(cobalt) > oldMythril && oldMythril > oldCobalt, "a fresh Cobalt Sword is preferred to an old Mythril Sword of similar rank");
+				var freshWood = Make(ItemID.WoodenSword); DepositStamp.Stamp(freshWood);
+				check(WeaponRank.Of(freshWood) < oldCobalt * 0.5f, "a fresh Wooden Sword does not beat a much better old weapon");
+				var freshCopper = Make(ItemID.CopperShortsword); DepositStamp.Stamp(freshCopper);
+				check(WeaponRank.Of(freshCopper) < oldCobalt * 0.25f, "a fresh Copper Shortsword in Hardmode is nowhere near an old Cobalt Sword");
+				check(WeaponRank.Of(mini) > 0 && WeaponRank.Of(Make(ItemID.IronBroadsword)) >= 1f, "ranks stay at least 1");
+			}
+			finally { WeaponRank.ForceProgress = -1f; WeaponRank.Release(); LevyClock.Force(null); ProgressionTier.Reset(); }
+		}
+
+		// ------------------------------------------------------------------ Fallen Stars into mana
+
+		private static void CheckStarMana(Action<bool, string> check)
+		{
+			check(StarMana.CrystalsFor(5, 5) == 1 && StarMana.CrystalsFor(4, 5) == 0 && StarMana.CrystalsFor(10, 5) == 2 && StarMana.CrystalsFor(999, 5) == 199, "at 5 stars per crystal: 5 make 1, 4 make none, 10 make 2");
+			check(StarMana.CrystalsFor(9, 2) == 4 && StarMana.CrystalsFor(7, 3) == 2 && StarMana.CrystalsFor(1, 1) == 1 && StarMana.CrystalsFor(0, 3) == 0 && StarMana.CrystalsFor(-4, 3) == 0, "at 2 stars: 9 make 4; at 3 stars: 7 make 2; at 1 star: 1 makes 1; none make none");
+			check(StarMana.CrystalsFor(10, 0) == 10 && StarMana.CrystalsFor(10, 9) == 2, "a ratio outside 1..5 is held to the range");
+			var a = StarMana.Distribute(5, new[] { 0, 0, 0 }, new[] { 10, 10, 10 });
+			check(a[0] + a[1] + a[2] == 5 && a.Max() - a.Min() <= 1 && a[0] >= a[2], "five crystals among three equal mages go 2, 2, 1");
+			var b = StarMana.Distribute(4, new[] { 3, 0, 1 }, new[] { 5, 5, 5 });
+			check(b[0] == 0 && b[1] == 3 && b[2] == 1, "worst-supplied first: 4 crystals among 3, 0 and 1 go 0, 3, 1 (got " + string.Join(",", b) + ")");
+			var c = StarMana.Distribute(10, new[] { 9, 0, 2 }, new[] { 0, 1, 5 });
+			check(c[0] == 0 && c[1] == 1 && c[2] == 5 && c.Sum() == 6, "no mage is given more than he has room for, and a mage at the cap gets none (got " + string.Join(",", c) + ")");
+			check(StarMana.Distribute(3, new int[0], new int[0]).Length == 0 && StarMana.Distribute(0, new[] { 1 }, new[] { 4 })[0] == 0, "nothing to give or nobody to give it to is fine");
+			var te = new ArmoryTE();
+			te.Storage[0] = new Item(); te.Storage[0].SetDefaults(ItemID.FallenStar); te.Storage[0].stack = 12;
+			te.Storage[3] = new Item(); te.Storage[3].SetDefaults(ItemID.FallenStar); te.Storage[3].stack = 4;
+			check(te.CountInStorage(ItemID.FallenStar) == 16, "the armory counts its stars across stacks");
+			check(te.TakeUpTo(ItemID.FallenStar, 15) == 15 && te.CountInStorage(ItemID.FallenStar) == 1, "taking stars empties stacks in order and leaves the remainder");
+			check(te.TakeUpTo(ItemID.FallenStar, 15) == 1 && te.CountInStorage(ItemID.FallenStar) == 0, "taking more than there is takes what is there");
+			check(!te.HoldsWeaponUsing(AmmoID.FallenStar), "an armory without a Star Cannon holds nothing that fires stars");
+			te.Storage[5] = Make(ItemID.StarCannon);
+			check(te.HoldsWeaponUsing(AmmoID.FallenStar) && StarMana.StarsAreAmmo(te, new List<SoldierRecord>()), "a Star Cannon in storage keeps the stars");
+			// the whole conversion on throwaway levies: 23 stars at 5 per crystal = 4 crystals, worst-supplied mages first, melee levies and capped mages skipped
+			SoldierRecord Mage(int id, int crystals) { var r = new SoldierRecord { Id = id, ManaCrystals = crystals }; r.Gear.Weapon = Make(ItemID.WaterBolt); return r; }
+			var armory = new ArmoryTE(); armory.Storage[0] = Make(ItemID.FallenStar); armory.Storage[0].stack = 23;
+			var m1 = Mage(1, 0); var m2 = Mage(2, 0); var m3 = Mage(3, 2); var capped = Mage(4, 9); var fighter = new SoldierRecord { Id = 5 }; fighter.Gear.Weapon = Make(ItemID.IronBroadsword);
+			var squad = new List<SoldierRecord> { fighter, capped, m3, m2, m1 };
+			int made = StarMana.Convert(armory, squad, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; });
+			check(made == 4 && m1.ManaCrystals == 2 && m2.ManaCrystals == 2 && m3.ManaCrystals == 2 && capped.ManaCrystals == 9 && fighter.ManaCrystals == 0, "23 stars at 5 per crystal give 4 crystals to the two worst-supplied mages (got " + made + ": " + m1.ManaCrystals + "," + m2.ManaCrystals + "," + m3.ManaCrystals + ")");
+			check(armory.CountInStorage(ItemID.FallenStar) == 3, "exactly 20 stars were spent and the remainder of 3 stays (" + armory.CountInStorage(ItemID.FallenStar) + " left)");
+			check(m1.MaxMana == 60 && m1.RawMana == 60, "two crystals make a levy's maximum 60 mana (20 + 2 x 20)");
+			int one = StarMana.Convert(armory, squad, 1, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; });
+			check(one == 3 && armory.CountInStorage(ItemID.FallenStar) == 0, "at 1 star per crystal the last 3 stars make 3 crystals (" + one + ")");
+			var armory2 = new ArmoryTE(); armory2.Storage[0] = Make(ItemID.FallenStar); armory2.Storage[0].stack = 40; armory2.Storage[1] = Make(ItemID.StarCannon);
+			check(StarMana.Convert(armory2, new List<SoldierRecord> { Mage(7, 0) }, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; }) == 0 && armory2.CountInStorage(ItemID.FallenStar) == 40, "stars are kept while a Star Cannon is stocked");
+			var armory3 = new ArmoryTE(); armory3.Storage[0] = Make(ItemID.FallenStar); armory3.Storage[0].stack = 40;
+			check(StarMana.Convert(armory3, new List<SoldierRecord> { fighter, capped }, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; }) == 0 && armory3.CountInStorage(ItemID.FallenStar) == 40, "with no mage who can take a crystal no star is spent");
+			var armory4 = new ArmoryTE(); armory4.Storage[0] = Make(ItemID.FallenStar); armory4.Storage[0].stack = 10;
+			check(StarMana.Convert(armory4, new List<SoldierRecord> { Mage(8, 0) }, 5, RosterSystem.CanAbsorbCrystal, r => false) == 0 && armory4.CountInStorage(ItemID.FallenStar) == 10, "a crystal that is refused gives its stars back");
+			var te2 = new ArmoryTE(); var holder = new SoldierRecord { Id = 1 }; holder.Gear.Weapon = Make(ItemID.SuperStarCannon);
+			check(!te2.HoldsWeaponUsing(AmmoID.FallenStar) && StarMana.StarsAreAmmo(te2, new List<SoldierRecord> { holder }), "a levy holding a Super Star Cannon keeps the stars");
 		}
 
 		// ------------------------------------------------------------------ every pick path uses the same key

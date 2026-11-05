@@ -94,6 +94,24 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - NOT in it: ammo fair-share + platform drop-through. That agent was stopped mid-work; its uncommitted work is saved as f89280e on origin `ammo-platform-wip`, unverified. On-hit-at-player and the Thorium local-player cache fix are still being measured.
 - Owner-lab feasibility (75c5aa2, harness-only, NOT merged) is reported below.
 
+## 🧪 OWNER-LAB FEASIBILITY (75c5aa2 on worktree-agent-aec6f7211ca0a1ea7, harness-only, NOT merged)
+- **Verdict: feasible.** Swap the soldier Dummy into a player slot, fake Main.myPlayer, aim the cursor, run vanilla Player.ItemCheck, and wrap the spawned projectiles' Update in the same swap. Real Thorium/vanilla code then runs unmodified.
+- **Measured on a dedicated server:**
+  - 44/44 summon staves spawn the real minion, which follows the SOLDIER; 38/44 deal damage.
+  - Spears 25/25, boomerangs 21/21, flails 5/5, whips 5/5. Yoyos 18/18 once the cursor is swapped per soldier.
+  - Ally-heal staves 36/37 spawn the real projectile, with real heals of +195 to +250 on a wounded player.
+  - On-hit children spawn at the soldier: HeartWandPro2 5/5.
+  - The commander's fingerprint is unchanged across 140 weapons.
+  - Cost: ~0.3–0.6 ms/tick at 40 soldiers.
+- **Blocker:** all soldiers sharing owner 255 behave like ONE player. Spear damage stays flat as soldiers are added, boomerangs collapse to 1 alive, minions get culled. A per-soldier virtual owner slot fixes the scaling, but minions then die repeatedly (undiagnosed). Must be solved before army-scale use.
+- **Hazards:**
+  - Life-spending items run KillMe on the Dummy, which crashed the server in the lab. Needs a guard.
+  - Thorium GetThoriumPlayer cache: confirmed. A Tambourine soldier drained the commander's bard resource 10→0. Fixed by `PlayerHelper.SetLocalThoriumPlayer(dummy)` swapped in and out per frame, 600/600.
+  - Persistent real player slots are not viable: +2.6 ms/tick, and they wipe minion flags.
+- **Fact:** soldier shots are npcProj today, so NO ModPlayer on-hit hooks fire for them, neither the commander's nor the soldier's. Under real ownership, clearing npcProj would let the SOLDIER's own gear proc. **Eve decides the npcProj policy.**
+- **Not verified:** true single-player/client, MP sync, draw, Calamity, Dummies wearing real gear, controller minions (Desert Tiger, Abigail), 3 Thorium zero-damage summons.
+- **Recommended:** a "real use" path in WeaponUse for summon/spear/boomerang/yoyo/flail/whip/ally-heal that retires the stand-ins; a generalized Update swap; per-soldier owner ids; a per-mod local-player-cache shim; a KillMe guard.
+
 ## ✅ MERGED (now shipped in 1.7.0) (2026-11-04 late): drones 61f41c2, bard renown a23d23a, share-based progression 07c1d7e (+6f208a8)
 - **Progression:** levies = per-tier SHARE of known bosses beaten × config targets (20 end pre-HM / 40 end HM / 60 post-ML, max 60). Vanilla-only worlds reproduce the old CP exactly (2^17 subsets checked). Mod bosses DILUTE: with Calamity + Boss Checklist, all vanilla pre-HM down and no Calamity bosses down = 9 levies, not 20. **Eve to confirm this is the intended feel.**
 - Boss Checklist: I checked against its real source (JavidPack/BossChecklist EntryInfo.cs:89-109): the dictionary has no `internalName`; key = "modSource internalName". Fixed in 6f208a8. Still never run with BC loaded.

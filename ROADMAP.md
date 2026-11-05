@@ -207,6 +207,28 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🪝 HOOKS (lab: hooks-lab 7a23d9f FEASIBLE; production: `hooks-prod`, building)
+- **Lab results:**
+  - Real hook items cast from the Dummy's `miscEquips[4]` via `QuickGrapple` inside the owner frame, and latch tiles: all 38 vanilla/Thorium hooks plus the Calamity hooks.
+  - Vanilla `GrappleMovement` on the Dummy drives the soldier. 15-tile ceiling: latches at tick 20, reels at 11 px/tick, arrives at tick 41.
+  - Releasing mid-reel keeps momentum like a player (gap crossings and ledge landings measured).
+- **Mandatory:**
+  - Per-soldier owner slots (on slot 255 only 1/40 casts work).
+  - NetLock on a dedicated server (0/40 hooks survive without it).
+  - A ballistic state after release (the walking AI's Decelerate otherwise kills momentum).
+  - Reset grappling[]/grapCount every tick.
+  - A raycast planner.
+- **Cost:** 40 soldiers reeling ≈ 0.12 ms/tick; idle soldiers cost 0.
+- **Production plan (building):**
+  - Common/Owner/{SoldierOwner, OwnerSlots, NetThreadGuard} as the first slice of the real-owner infrastructure.
+  - A hook gear slot.
+  - SoldierNPC.Hook state machine.
+  - HookPlanner.
+  - Triggers: goal above, gap, fleeing, high enemies.
+  - MP suppression.
+  - Config "Levies use grappling hooks" (default on).
+- **Later on the same frame:** dashes, dodges, accessories; then migrating weapon families to real ownership.
+
 ## 🧭 EVE DECISIONS (2026-11-05, after 1.7.4)
 - **Lifesteal like vanilla:** it heals whoever dealt the damage, and each dealer has its OWN pool, at 1:1 (no ×3). Building on `rank-mode`.
 - **Weapon ranking is a config choice:** Sell price (DEFAULT) / Sell price + materials / Damage. My addition: a toggle "Skip weapons that barely hurt armored enemies", default ON (Eve can turn it off). Sword projectile credit (Starfury, Enchanted Sword) comes with it. Building on `rank-mode`.

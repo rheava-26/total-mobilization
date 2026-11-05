@@ -182,6 +182,7 @@ namespace Levy.Common.Testing
 					return r;
 				}
 				ArmorDoctrine.Reset();
+				ArmoryTE.TestServed = souls; // the army this armory serves (the allocator and the fair-share limits read it)
 				LevyConfig.Get.ClassMatchIssue = false;
 				void Stock(string[] t)
 				{
@@ -242,6 +243,7 @@ namespace Levy.Common.Testing
 				sb.AppendLine("  left on shelves: " + string.Join(" | ", left));
 			}
 			LevyConfig.Get.ClassMatchIssue = oldCm;
+			ArmoryTE.TestServed = null;
 		}
 	}
 }

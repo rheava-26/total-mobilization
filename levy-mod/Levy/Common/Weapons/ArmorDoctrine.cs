@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -24,7 +25,9 @@ namespace Levy.Common.Weapons
 		public const float MinLead = 0.02f;
 		private const float CritWeight = 0.005f; // 10 crit points count like 5% damage
 
-		private static readonly DamageClass[] Classes = { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon };
+		private static DamageClass[] _classes;
+		/// <summary>The classes armor can favour: the four vanilla ones, then any loaded rogue / bard / healer class (<see cref="ExtraDamageClasses"/>; Calamity and Thorium stay optional).</summary>
+		private static DamageClass[] Classes => _classes ??= new[] { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon }.Concat(ExtraDamageClasses.All).ToArray();
 		private static readonly Dictionary<(int, int, int), int> _cache = new(); // value: index into Classes, or -1 for no preference
 		private static readonly Dictionary<(int, int, int), bool> _setCache = new();
 		private static readonly Dictionary<int, float[]> _accCache = new();
@@ -36,7 +39,7 @@ namespace Levy.Common.Weapons
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
+		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)

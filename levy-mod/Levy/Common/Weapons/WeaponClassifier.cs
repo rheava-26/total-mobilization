@@ -551,6 +551,8 @@ namespace Levy.Common.Weapons
 		public static DamageClass ItemDamageClass(Item item)
 		{
 			if (item == null || item.IsAir) return null;
+			var extra = ExtraDamageClasses.Of(item); // a rogue / bard / healer weapon is its own class, whatever shape it is (Calamity / Thorium; found by name, never referenced)
+			if (extra != null) return extra;
 			var f = GetProfile(item).Family;
 			if (f == WeaponFamily.HeldWeapon) return item.CountsAsClass(DamageClass.Magic) ? DamageClass.Magic : item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Ranged : DamageClass.Melee;
 			if (f == WeaponFamily.Thrown) return item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) ? DamageClass.Melee : DamageClass.Ranged;

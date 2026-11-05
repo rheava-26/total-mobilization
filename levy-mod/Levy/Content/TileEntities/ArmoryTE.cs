@@ -20,7 +20,7 @@ using Levy.Content.Tiles;
 namespace Levy.Content.TileEntities
 {
 	/// <summary>1000-slot storage plus issue rows. Soldiers take from issue slots first, storage second, best-first by damage.</summary>
-	public class ArmoryTE : ModTileEntity
+	public partial class ArmoryTE : ModTileEntity
 	{
 		/// <summary>Base bulk storage slots (the panel scrolls). Sized so a full hoard of non-stacking gear (40+ armor sets, hundreds of weapons, ammo) never overflows. Each linked Logistical Center adds <see cref="LevyConstants.LogisticsSlotsPerCenter"/> more (see <see cref="FitStorage"/>).</summary>
 		public const int StorageSize = 1000, WeaponSlots = 12, ArmorSets = 4, AmmoSlots = 6;
@@ -683,16 +683,35 @@ namespace Levy.Content.TileEntities
 			return CapThrown(TakeVaried(forSoldier, Pred));
 		}
 
-		/// <summary>Issue weapon slots first, bulk storage second; within each, a varied pick among the top-scoring weapon types.</summary>
+		/// <summary>
+		/// A varied pick among the top-scoring weapon types across EVERYTHING this armory can issue from: the weapon rack, bulk storage and the networked armories' storage are ranked together,
+		/// so a better weapon in storage beats a weaker one on the rack. The rack (then storage, then the networked armories) is only a tie preference between equal scores. A connected Magic
+		/// Storage network is the last resort.
+		/// </summary>
 		private Item TakeVaried(SoldierRecord who, Func<Item, bool> userPred)
 		{
-			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
-			if (TryPickVaried(IssueWeapons, pred, who, 0, SidearmSlot, out int idx)) return Remove(IssueWeapons, idx);
-			if (TryPickVaried(Storage, pred, who, 0, Storage.Length, out idx)) return Remove(Storage, idx);
-			foreach (var o in OtherNetworked()) {
-				var src = o;
-				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
-				if (TryPickVaried(src.Storage, opred, who, 0, src.Storage.Length, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
+			var segs = new List<(ArmoryTE owner, Item[] arr, int to)> { (this, IssueWeapons, SidearmSlot), (this, Storage, Storage.Length) };
+			foreach (var o in OtherNetworked()) segs.Add((o, o.Storage, o.Storage.Length));
+			var byType = new Dictionary<int, (int seg, int idx, float score)>();
+			for (int s = 0; s < segs.Count; s++) {
+				var (owner, arr, to) = segs[s];
+				for (int i = 0; i < to && i < arr.Length; i++) {
+					var it = arr[i];
+					if (IsAir(it) || owner.IsReservedRef(it) || !userPred(it)) continue;
+					float sc = WeaponClassifier.Score(it);
+					if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (s, i, sc); // strict >: on a tie the earlier source (rack first) stays
+				}
+			}
+			if (byType.Count > 0) {
+				var list = new List<(int seg, int idx, float score)>(byType.Values);
+				list.Sort((a, b) => { int c = b.score.CompareTo(a.score); if (c != 0) return c; c = a.seg.CompareTo(b.seg); return c != 0 ? c : a.idx.CompareTo(b.idx); });
+				float cutoff = list[0].score * LevyConstants.WeaponVarietyTopFraction;
+				int tier = 1;
+				while (tier < list.Count && tier < LevyConstants.WeaponVarietyMaxTypes && list[tier].score >= cutoff) tier++;
+				var pick = list[(int)((uint)(who?.Id ?? 0) % (uint)tier)];
+				var (powner, parr, _) = segs[pick.seg];
+				var taken = powner.TakeSlot(parr, pick.idx);
+				if (taken != null) return taken;
 			}
 			return MsTakeVaried(userPred, who); // last resort: a connected Magic Storage network
 		}
@@ -726,12 +745,12 @@ namespace Levy.Content.TileEntities
 
 		/// <summary>
 		/// Best issuable sidearm: the melee item in the dedicated sidearm slot (the player's own choice), else the best LESSER blade on the shelves
-		/// (<see cref="LesserBlade"/>, so the top blades stay in stock for melee primaries); removes it. Null if none.
+		/// (<see cref="LesserBlade"/>: only blades the army's weapon plan has not spoken for, so no melee levy goes short); removes it. Null if none.
 		/// </summary>
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(), WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(forSoldier), WeaponClassifier.Score);
 		}
 
 		/// <summary>
@@ -746,12 +765,14 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// The fallback blade a sidearm may draw: an issuable melee weapon scoring at most <see cref="LevyConstants.SidearmScoreCapFraction"/> of the best blade in stock.
-		/// Armory stock is finite, so a sidearm that took the best blade would leave the melee troopers who wield it as a primary with the leftovers; the top
-		/// of the shelf is reserved for primaries. With only top-tier blades in stock the sidearm stays empty.
+		/// The blades a sidearm may draw: issuable melee weapons the army's weapon plan has NOT spoken for (<see cref="ClaimedWeapons"/>), i.e. blades no melee levy wants. A sidearm never takes
+		/// a blade a melee levy is to be dealt, now or as an upgrade. With no army known to plan for, it falls back to the old reserve: a blade scoring at most
+		/// <see cref="LevyConstants.SidearmScoreCapFraction"/> of the best blade in stock.
 		/// </summary>
-		private Func<Item, bool> LesserBlade()
+		private Func<Item, bool> LesserBlade(SoldierRecord forSoldier)
 		{
+			var claimed = ClaimedWeapons(forSoldier);
+			if (claimed != null) return it => IsIssuableMelee(it) && !claimed.Contains(it);
 			float cap = TopBladeScore() * LevyConstants.SidearmScoreCapFraction;
 			return it => IsIssuableMelee(it) && WeaponClassifier.Score(it) <= cap;
 		}
@@ -1688,6 +1709,10 @@ namespace Levy.Content.TileEntities
 		private bool IssuePrimary(SoldierRecord soldier, SoldierGear g)
 		{
 			if (g.IsLocked(SoldierGear.SlotWeapon) || g.HasWeapon) return false;
+			// The army's weapons are dealt together (see WeaponAllocator): class-matched levies first, the unclassed from what is left. Anything it cannot supply (a thrown stack, ammo-less
+			// stock, a weapon on loan to a drone) falls through to the per-soldier pick below.
+			if (AllocateArmy(soldier, false) && g.HasWeapon) return true;
+			if (g.HasWeapon) return true;
 			Item w = null;
 			if (Common.Config.LevyConfig.Get.ClassMatchIssue)
 			{
@@ -1725,6 +1750,16 @@ namespace Levy.Content.TileEntities
 		/// Empty = nothing class-defining to match, so any weapon is fine.
 		/// </summary>
 		private HashSet<DamageClass> ArmorableClasses(SoldierRecord soldier, bool upgrade)
+		{
+			var g = soldier?.Gear;
+			if (g == null || _armorableMemo == null) return ArmorableClassesCore(soldier, upgrade);
+			int locks = (g.IsLocked(SoldierGear.SlotHead) ? 1 : 0) | (g.IsLocked(SoldierGear.SlotBody) ? 2 : 0) | (g.IsLocked(SoldierGear.SlotLegs) ? 4 : 0);
+			var key = (IsAir(g.Head) ? 0 : g.Head.type, IsAir(g.Body) ? 0 : g.Body.type, IsAir(g.Legs) ? 0 : g.Legs.type, locks, upgrade);
+			if (!_armorableMemo.TryGetValue(key, out var hit)) _armorableMemo[key] = hit = ArmorableClassesCore(soldier, upgrade);
+			return new HashSet<DamageClass>(hit);
+		}
+
+		private HashSet<DamageClass> ArmorableClassesCore(SoldierRecord soldier, bool upgrade)
 		{
 			var res = new HashSet<DamageClass>();
 			var g = soldier?.Gear;
@@ -1861,49 +1896,17 @@ namespace Levy.Content.TileEntities
 			return changed;
 		}
 
+		/// <summary>
+		/// The primary-weapon half of the auto-upgrade: re-deals the whole army's primaries (<see cref="AllocateArmy"/>) and reports whether THIS soldier's changed. A weapon with no damage class at all
+		/// (a rogue, bard or healer weapon with its mod absent, or any other class-less weapon) is upgradeable like any other: within its class, or to anything better when it has none.
+		/// Thrown stacks are restocked, not swapped, and an empty hand is IssueGear's job.
+		/// </summary>
 		private bool UpgradePrimary(SoldierRecord soldier)
 		{
-			var g = soldier.Gear;
-			var cur = g.Weapon;
-			if (IsAir(cur) || cur.maxStack > 1) return false; // empty hand: IssueGear's job; thrown stacks are restocked, not swapped
-			var curFam = WeaponClassifier.GetProfile(cur).Family;
-			var cls = WeaponClassifier.ItemDamageClass(cur);
-			if (curFam == WeaponFamily.Thrown || cls == null) return false;
-			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
-			var onHand = AmmoIdsOnHand();
-			var pouch = g.Ammo;
-			bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped, so the new weapon must fire it
-			bool sameClassOnly = Common.Config.LevyConfig.Get.ClassMatchIssue; // fixed-class companies keep their damage class; fluid soldiers cross over
-			var stockOk = new Dictionary<int, bool>();
-			// The worn armor defines a fluid soldier's class: with one, the weapon only upgrades within it (no cross-class chase for ReconcileWeaponToArmor to undo).
-			var armorCls = sameClassOnly ? null : ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
-			HashSet<DamageClass> armorable = null; // computed once, only when a candidate would otherwise qualify (it scans the armor shelves)
-			var rule = PrimaryRule(soldier); // no whip over a staff; a ranged helmet's subtype (same rule as the first issue, so a swap is never undone by the reconcile)
-			bool Pred(Item it)
-			{
-				if (!IsIssuable(it) || it.maxStack > 1 || !HasAmmoFor(it, soldier, onHand)) return false;
-				if (rule != null && !rule(it)) return false;
-				if (sameClassOnly && WeaponClassifier.ItemDamageClass(it) != cls) return false;
-				if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
-				var fam = WeaponClassifier.GetProfile(it).Family;
-				// Fully fluid: a summon staff / sentry is an ordinary candidate, in or out. Only the score margin (and the swap cooldown) gate it; the armor follows the new weapon's class.
-				// A whip in hand yields to any staff regardless of score (the whip moves to the sidearm slot); a staff in hand never trades for a whip (the rule above).
-				if (fam == WeaponFamily.Thrown || WeaponClassifier.Score(it) < (curFam == WeaponFamily.Whip && fam == WeaponFamily.Summon ? 0f : need)) return false;
-				// Coherent kit: a fluid soldier only crosses into a class he can also armor (worn, or a set on the shelves); nothing class-defining to match = any class.
-				if (!sameClassOnly) {
-					var ic = WeaponClassifier.ItemDamageClass(it);
-					if (armorCls != null) { if (ic != armorCls) return false; }
-					else if (ic != null) { armorable ??= ArmorableClasses(soldier, true); if (armorable.Count > 0 && !armorable.Contains(ic)) return false; }
-				}
-				// Moving onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
-				if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
-				if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);
-				return enough;
-			}
-			var neu = CapThrown(TakeVaried(soldier, Pred)); // a throwable stack is capped like every other issue path
-			if (neu == null || !SwapIn(g, SoldierGear.SlotWeapon, neu)) return false;
-			ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(neu) != cls);
-			return true;
+			var cur = soldier.Gear.Weapon;
+			if (IsAir(cur) || cur.maxStack > 1) return false;
+			if (WeaponClassifier.GetProfile(cur).Family == WeaponFamily.Thrown) return false;
+			return AllocateArmy(soldier, true);
 		}
 
 		/// <summary>After a primary swap: a melee-type primary of a new class carries no fallback blade, and a summon-staff primary keeps the only flock (a sentry sidearm stays). The sidearm goes back to the shelf; IssueGear then picks a fitting one.</summary>
@@ -1996,7 +1999,7 @@ namespace Levy.Content.TileEntities
 			else if (summoner && fam == WeaponFamily.Sentry) pool = IsIssuableSentry;
 			else if (summoner && fam == WeaponFamily.Whip) pool = IsIssuableWhip;
 			else if (summoner && fam == WeaponFamily.Summon) pool = IsIssuableSummonStaff;
-			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
+			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(soldier); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
 			shelf ??= pool;
 			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponClassifier.Score(it) >= need;

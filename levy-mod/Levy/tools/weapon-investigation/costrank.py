@@ -42,5 +42,5 @@ def sp(a,b):
         return r
     ra,rb=rk(a),rk(b); n=len(a); ma=sum(ra)/n; mb=sum(rb)/n
     return sum((x-ma)*(y-mb) for x,y in zip(ra,rb))/math.sqrt(sum((x-ma)**2 for x in ra)*sum((y-mb)**2 for y in rb))
-rs=[r for r in cand if not r['routeSrc'].startswith('sig')]
+rs=[r for r in cand if not r['routeSrc'].startswith('unknown')]
 print("\nSpearman vs route tier: value %.2f, cost(value+mats) %.2f ; vs effDps: value %.2f, cost %.2f, current score %.2f"%(sp([r['R'] for r in rs],[r['val'] for r in rs]),sp([r['R'] for r in rs],[r['cost'] for r in rs]),sp([r['effDps'] for r in rs],[r['val'] for r in rs]),sp([r['effDps'] for r in rs],[r['cost'] for r in rs]),sp([r['effDps'] for r in rs],[r['score'] for r in rs])))

@@ -1,0 +1,6 @@
+[N]
+SOLDIERS 0
+WHODROPS Vanilla/Keybrand
+WHODROPS Vanilla/Katana
+WHODROPS Vanilla/Flymeal
+STAGE

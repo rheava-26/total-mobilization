@@ -1,0 +1,11 @@
+[R_routes]
+SOLDIERS 0
+ROUTE Vanilla/FieryGreatsword
+ROUTE Vanilla/Flymeal
+ROUTE ThoriumMod/Bellerose
+ROUTE Vanilla/Keybrand
+ROUTE Vanilla/HellstoneBar
+ROUTE Vanilla/Hellstone
+ROUTE Vanilla/Katana
+ROUTE Vanilla/GoldBroadsword
+STAGE

@@ -148,6 +148,11 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Ranking refined (Eve):** primary key = SELL VALUE + TOTAL MATERIAL COST (recursive ingredient value), so long-lived early weapons like the Minishark keep ranking while on-tier weapons still get used. Acquisition tier is secondary.
 - **ALLOCATION IS GREEDY (Eve):** given a stock of Terra Blade, Influx Waver, Horseman's Blade, Razorblade Typhoon, Laser Machinegun, Xenopopper and Daybreak, a few levies grab the best items regardless of class and the melee levies are left with pumpkin and wooden swords. Wanted: allocate by who needs it most, class-matched, with variety. Also: levies prefer Zombie Arms over Chlorophyte gear and jackhammers. All folded into `weapon-choice-investigation`; a global assignment proposal is due.
 - **Barracks loadout (Eve wish):** from a barracks, see each levy's weapon and swap it directly from the armory: click the weapon in their hand, put a new one in. Backlog. Good fit once allocation is rebuilt.
+- **Eve: "Enchanted Sword, Starfury aren't even listed?"**
+  - Enchanted Sword IS listed: #2–3 by cost at post-EoC and post-Skeletron. It is NOT pre-boss, because the green rarity floor (1.5) pushes shrine and chest items a stage late.
+  - Starfury makes no top 10 in any ordering: tiers.tsv gives a dpsAdj of 37.5 and a score of 49, and Enchanted Sword gets 30.7 / 40.7. These are SWING-ONLY numbers. Neither the score nor effDps credits a sword's projectile (Enchanted Sword's beam, Starfury's falling stars).
+  - **Scoring bug to fix with the ranking rework:** credit the item.shoot projectile on broadswords, including stars from the sky.
+  - The rarity floor is too strict for world-gen chest/shrine loot.
 - **Chart regenerated (weapon-choice-investigation b531764):**
   - Fixes: a fixpoint tier solver (recipe cycles had poisoned Hellstone, Wood and Stone); unknown routes never become tier 0; a rarity floor; shop conditions honoured (Travelling Merchant pool gives no route); Remix-seed drops ignored (King Slime had "dropped" Keybrand); gated enemy drops modelled.
   - Keybrand is now 13.5 (post-Plantera).

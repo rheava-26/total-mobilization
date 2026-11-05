@@ -102,6 +102,21 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 📦 SHIPPED 2026-11-05: Levy 1.7.3 + Mechanization 0.7.1 (boots clean: Levy+Mech, Thorium+Levy+Mech)
+- **Weapon allocator (weapon-alloc f91f381):**
+  - Rogue, bard and healer are real classes. Wulfrum and other class-less weapons now upgrade.
+  - Rack and storage are ranked together.
+  - Global, class-matched allocation: in the 20-levy, melee-last case, 3 unarmed and 3 mismatched became 0/0, and the melee minimum rose 0→59.
+  - Mana NOT changed (report saved: a 20-mana pool is under two median casts; Eve decides).
+- **Gear upkeep (gear-upkeep 76a2b02):**
+  - Frame on slot 255 with Main.myPlayer=255, `dedServ` forced true and sound muted, so Calamity's local-player texture/UI/sound blocks can't fire in single player.
+  - Statigel stealth 0→0.90 with stealth strikes.
+- **Drone art A (drone-art 0293cc3):** Eve said "do whatever you want" on drones. Shipped as is.
+- **Unverified:** real single-player client, MP.
+- **Still running:** heal-both-ways.
+- **Pending Eve:** ranking key (cost + damage floor), mage mana, boss-aggro/anti-cheese design.
+- **To check:** do levies holding rogue weapons actually equip stocked rogue armor? (ArmorDoctrine now knows rogue.)
+
 ## ⚙️ GEAR UPKEEP (gear-upkeep 990a356): built, NOT merged yet, in a single-player verification round
 - **Per tick, on the Dummy, only for soldiers with tick-dependent gear:** timers, then ResetEffects (restore owned counts/minions), then mod buffs, then UpdateEquips, then the set pass, then PostUpdateEquips, then PostUpdateMiscEffects. Thorium cache swapped. Spawns adopted. Life and mana written back. GearOnHurt from AfterHit (Star Cloak). Config `RealGearUpkeep`, default on.
 - **Measured on a dedicated server:**

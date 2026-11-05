@@ -1,0 +1,6 @@
+hook|V:GrapplingHook|60|400|ceil=15,nohook
+hook|V:GrapplingHook|20|400|ceil=15
+hook|V:GrapplingHook|40|400|ceil=15
+hook|V:GrapplingHook|60|400|ceil=15
+hook|V:LunarHook|60|400|ceil=15,press=4,aim=-2:-16/-1:-16/1:-16/2:-16
+hook|V:GrapplingHook|60|400|ceil=15

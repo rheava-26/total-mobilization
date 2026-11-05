@@ -1,0 +1,17 @@
+# failure modes
+hook|V:GrapplingHook|1|150|ceil=15
+hook|V:GrapplingHook|1|150|ceil=15,nonet
+hook|V:GrapplingHook|1|150|ceil=15,noframe
+hook|V:GrapplingHook|1|150|ceil=15,slot=255
+hook|V:GrapplingHook|10|150|ceil=15
+hook|V:GrapplingHook|10|150|ceil=15,nonet
+hook|V:GrapplingHook|10|150|ceil=15,noreset
+hook|V:DualHook|1|200|ceil=15,press=2,aim=-6:-16/6:-16
+hook|V:DualHook|1|200|ceil=15,press=2,aim=-6:-16/6:-16,noreset
+hook|V:GrapplingHook|1|150|free,aim=0:-40
+hook|V:GrapplingHook|1|150|ceil=15,killat=70
+hook|V:GrapplingHook|1|200|ceil=15,rel=20,relmode=jump
+# cost
+hook|V:GrapplingHook|40|300|ceil=15,nohook
+hook|V:GrapplingHook|40|300|ceil=15
+hook|V:LunarHook|40|300|ceil=15,press=4,aim=-6:-16/-2:-16/2:-16/6:-16

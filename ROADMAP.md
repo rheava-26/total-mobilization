@@ -222,6 +222,24 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🎯 ALT-FIRE SURVEY DONE (altfire-survey fbe9838; tables in levy-mod/Levy/tools/altfire/)
+- **Coverage:** 102 Calamity + 89 Thorium alt-click items, each with a pattern and a WHEN policy.
+  - Biggest Calamity groups: HELD_VARIANT 19, ALT_SHOT_HEAVY 13, ALT_SHOT_AOE 12, RESOURCE_SPECIAL 11, DEFENSIVE_PARRY 10.
+- **Reach:** today `AltEligible` only lets Gun/Bow/Magic weapons alt-fire, so 70/102 Calamity alts (all holdouts and sword alts) are unreachable.
+- **Measured (16 Calamity weapons, boss + pack):** today's 80% random alt averages neutral but ranges 0.21×–1.71× per weapon. Policy vs left-only: boss 1.13, pack 1.11 (in-sample, noisy).
+  - Big alt wins: Septic Skewer, Animosity, Leviatitan, Vesuvius (left did 0).
+  - Big alt losses: Corinth Prime grenade (−75%), plasma turbo, Nullification Pistol.
+- **Gotchas:**
+  - The AltFunctionUse probe has side effects (Hydra launches heads), so the policy gate must run BEFORE the probe.
+  - Cursor-placed alts need an aim point (Levy never sets MouseWorld for soldiers).
+  - Coin-alt weapons fail (the dummy has no money).
+- **Dark Gate (Eve's "Dark Staff"):** left-click places a gate pair; teleport happens when the cursor is near a gate (not a true alt).
+  - Policy: use it to retreat or regroup.
+  - Never use it while the commander has ChaosState, is within 6 tiles of a gate, or holds a Dark Gate.
+  - Only place one when the player has none.
+- **Proposed code:** an `AltPolicies` registry loaded from an embedded TSV keyed by item (rows skipped for unloaded mods), replacing the AltUseChance roll in TryAltAttack, plus hooks HoldVariant (mouseRight), AimPoint and state readers.
+- Slots into the "weapon use" phase.
+
 ## 📦 SHIPPED Levy 1.7.8 + Mechanization 0.7.2 (p0-fixes 6130703 + levy-speed); boots clean both ways
 - **Armory deposit under a filter:** the filtered view packed only matching items, so there was no empty cell to deposit into. A filtered view now always ends with one empty storage cell.
 - **Drones/turrets hold fire on unbeaten bosses:** applies to bosses and their parts; minions are still shot. Config `FireOnUnbeatenBosses` defaults off.

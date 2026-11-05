@@ -207,6 +207,18 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 📦 Levy 1.7.5 (rank-mode 4381337 / 9d3ec9d), booting
+- **Lifesteal pools:** each levy has its own vanilla pool (80 at +0.6/tick in Normal; 70 at +0.5 in Expert/Master; Calamity's reduction read).
+  - Routed life with 1/2/4/8/16 levies: 645/630/525/555/555 → 585/1245/2310/4605/7935.
+  - The commander's pool is untouched.
+- **Ranking config:** Sell price (default) / Sell price + materials / Damage. One key, `WeaponRank.Of`, everywhere. Price modes use value^0.7 so the 1.15×, 0.75 and 0.5 ratios keep their meaning.
+- **MaterialCost:** a fixpoint over recipes with loop anchoring (Hellstone keeps 1250).
+- **"Skip weapons that barely hurt armored enemies":** default ON, per-HIT. A hit that keeps <25% of itself after stage defense gets demoted.
+  - Demotes the Calamity Minishark from stage 2.
+  - **FLAMETHROWERS demoted from stage 3, because the rule ignores fire rate. Ask Eve whether to weight by fire rate.**
+- **Price mode trade-off:** price modes hand out Flamelash and Hellwing Bow ahead of Mythril Sword. That's how price ranking behaves; the Damage mode and the skip toggle are the counterweights.
+- **Sword projectile credit:** Starfury 49→123, Enchanted Sword 41→81, Terra Blade 516→1032.
+
 ## 🪝 HOOKS (lab: hooks-lab 7a23d9f FEASIBLE; production: `hooks-prod`, building)
 - **Lab results:**
   - Real hook items cast from the Dummy's `miscEquips[4]` via `QuickGrapple` inside the owner frame, and latch tiles: all 38 vanilla/Thorium hooks plus the Calamity hooks.

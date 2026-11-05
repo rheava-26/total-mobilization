@@ -174,17 +174,21 @@ namespace Levy.Content.NPCs
 		// frame does to "the local player" lands on the dummy. Sounds are muted for the length (a levy's gear is not a sound the listener should hear 40 times a tick). On a dedicated server
 		// Main.myPlayer already is 255 and only the array slot is lent.
 		// ------------------------------------------------------------------------------------------------------------
-		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken; public float Volume; public bool Active; }
+		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken; public float Volume; public bool Active, Ded; }
 
 		private FrameSlot EnterFrameSlot()
 		{
 			if (GearUpkeep.LegacySlot) { Dummy.whoAmI = WeaponUse.OwnerFor(this); return default; } // HARNESS A/B only (env LEVY_UPKEEP_LEGACYSLOT=1): the first version's borrowed commander slot
-			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume };
+			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume, Ded = Main.dedServ };
 			Dummy.whoAmI = DummySlot;
 			Main.player[DummySlot] = Dummy;
 			f.FakeToken = SoldierMinions.BeginFake(f.MyPlayer);
 			Main.myPlayer = DummySlot;
-			if (!Main.dedServ) Main.soundVolume = 0f;
+			// Local-player blocks also write PROCESS-WIDE state the dummy has no business touching: Calamity swaps TextureAssets.FlyingCarpet / the buff icons and sets BossHealthBarManager flags under
+			// "!Main.dedServ && whoAmI == Main.myPlayer"; sounds, dust, shaders and UI sit behind the same test. The frame runs as a dedicated server does (which is how every measurement here was taken) so
+			// none of that fires; restored in the finally. The frame is synchronous on the main thread.
+			Main.dedServ = true;
+			if (!f.Ded) Main.soundVolume = 0f;
 			return f;
 		}
 
@@ -194,6 +198,7 @@ namespace Levy.Content.NPCs
 			Main.myPlayer = f.MyPlayer;
 			SoldierMinions.EndFake(f.FakeToken);
 			Main.player[DummySlot] = f.Backup ?? Main.player[DummySlot];
+			Main.dedServ = f.Ded;
 			Main.soundVolume = f.Volume;
 			Dummy.whoAmI = DummySlot;
 		}

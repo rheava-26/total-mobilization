@@ -79,6 +79,7 @@ namespace Levy.Common.Testing
 			public int OwnerNon255; public Dictionary<int, int> OwnerHist = new();
 			public int HealTicks, PlayInstrNre, DummyDeaths, TpToCmd, TpToSelf, TpOther; public int ChildAtSol, ChildAtCmd, ChildAtTgt, ChildOther, CmdProcs, OtherProcs, DummyProcs;
 			public long StopTsAtStart;
+			public Dictionary<string, int> KillTrace = new(); public Dictionary<string, string> KillSample = new(); public int SilentDeaths, NetClears, NetThreadPasses;
 		}
 
 		private static Sc _sc;
@@ -96,6 +97,7 @@ namespace Levy.Common.Testing
 		internal static bool Flag(string f) => _sc != null && _sc.Flags.Contains(f);
 		internal static bool Legacy => _sc != null && _sc.Flags.Contains("legacy");
 		internal static void NoteHitProc(int who) { var s = _sc; if (s == null || _stage != 1) return; if (who == 0) s.CmdProcs++; else s.OtherProcs++; }
+		internal static void NoteNetPass() { var s = _sc; if (s != null) s.NetThreadPasses++; }
 		internal static bool InScenario => _sc != null && _stage == 1;
 
 		// ---------------------------------------------------------------------------------------------
@@ -466,6 +468,9 @@ namespace Levy.Common.Testing
 		// ---------------------------------------------------------------------------------------------
 		internal static SoldierNPC FrameBody; internal static int FrameSlot = -1; internal static Sc_Info Pending;
 		internal sealed class Sc_Info { public SoldierNPC Body; }
+		/// <summary>Held while a soldier's Dummy stands in a real player slot (&lt; 255); Netplay.UpdateConnectedClients takes it too (OwnerLabSystem.NetDetour).</summary>
+		internal static readonly object NetLock = new object();
+		internal static volatile int FrameDepth;
 		private static bool _lifted;
 		private static int _trueMy;
 		private static int _targetIdxForFrame = -1;
@@ -473,7 +478,8 @@ namespace Levy.Common.Testing
 		/// <summary>Puts the soldier's Dummy where its owner reads it. Returns the saved Main.myPlayer.</summary>
 		private static int Enter(Sc s, Sol sol)
 		{
-			int saved = Main.myPlayer;
+			int saved = Main.myPlayer; FrameDepth++;
+			if (Has(s, "netlock") && (Has(s, "vslot") || Has(s, "slots"))) System.Threading.Monitor.Enter(NetLock);
 			if (Has(s, "vslot"))
 			{
 				// VIRTUAL PER-SOLDIER OWNER: the soldier owns slot 100+k for good (projectile.owner = that slot), but the dummy is only swapped INTO the slot for the length of a frame
@@ -503,10 +509,11 @@ namespace Levy.Common.Testing
 
 		private static void Leave(Sc s, Sol sol, int savedMy)
 		{
-			Main.myPlayer = savedMy;
+			Main.myPlayer = savedMy; FrameDepth--;
 			if (Has(s, "vslot")) { Main.player[sol.SlotIdx] = sol.Bk ?? new Player(); sol.Bk = null; sol.Body.Dummy.whoAmI = Slot; }
 			else if (!Has(s, "slots")) { EnemyTargeting.Unswap(); EnemyTargeting.EnsureSlotRestored(); }
 			if (Has(s, "tpcache")) TpSetLocal(Main.player[Main.myPlayer]); // put the real local player's cached ThoriumPlayer back
+			if (Has(s, "netlock") && (Has(s, "vslot") || Has(s, "slots"))) System.Threading.Monitor.Exit(NetLock);
 		}
 
 		private static void TpSetLocal(Player p) { try { if (ModLoader.HasMod("ThoriumMod")) LabThorium.SetLocal(p); } catch (Exception) { } }
@@ -736,7 +743,14 @@ namespace Levy.Common.Testing
 				if (Has(s, "clearimm") && s.TargetIdx >= 0) Main.npc[s.TargetIdx].immune[Slot] = 0; // diagnostic: is the sublinear scaling the shared npc.immune[255]?
 				if (sol.HasAim) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)sol.Aim.X; Main.mouseY = (int)sol.Aim.Y; } // the soldier's cursor, as a player's mouse is for yoyos / channelled items
 				t1 = Stopwatch.GetTimestamp();
+				bool wasActive = p.active; int killsBefore = KillCount(s);
 				orig(p, i);
+				if (!d.active) { s.NetClears++; d.active = true; }
+				if (Has(s, "trace") && wasActive && !p.active && KillCount(s) == killsBefore)
+				{
+					s.SilentDeaths++; string key = (p.minion ? "M:" : "P:") + TypeName(p.type) + " | SILENT active=false (no Kill call)";
+					s.KillTrace[key] = s.KillTrace.TryGetValue(key, out int c0) ? c0 + 1 : 1; if (!s.KillSample.ContainsKey(key)) s.KillSample[key] = DeathState(p, sol, "silent");
+				}
 			}
 			finally
 			{
@@ -775,6 +789,72 @@ namespace Levy.Common.Testing
 			}
 		}
 
+
+		// ---------------------------------------------------------------------------------------------
+		// minion-death tracing (flag "trace")
+		// ---------------------------------------------------------------------------------------------
+		private static FieldInfo[] _minionFlagFields;
+		private static FieldInfo[] MinionFlagFields()
+		{
+			if (_minionFlagFields != null) return _minionFlagFields;
+			var l = new List<FieldInfo>();
+			foreach (var fi in typeof(Player).GetFields(BindingFlags.Instance | BindingFlags.Public))
+				if (fi.FieldType == typeof(bool) && fi.Name.Contains("Minion")) l.Add(fi);
+			return _minionFlagFields = l.ToArray();
+		}
+
+		/// <summary>Everything a projectile's death could depend on, at the moment it dies.</summary>
+		private static string DeathState(Projectile p, Sol sol, string how)
+		{
+			var d = sol?.Body?.Dummy;
+			var sb = new StringBuilder();
+			sb.Append(how).Append(" owner=").Append(p.owner).Append(" myPlayer=").Append(Main.myPlayer);
+			Player op = (p.owner >= 0 && p.owner < Main.player.Length) ? Main.player[p.owner] : null;
+			sb.Append(" slotActive=").Append(op != null && op.active ? 1 : 0).Append(" slotIsDummy=").Append(op != null && d != null && ReferenceEquals(op, d) ? 1 : 0);
+			sb.Append(" dummyActive=").Append(d != null && d.active ? 1 : 0).Append(" dummyDead=").Append(d != null && d.dead ? 1 : 0);
+			sb.Append(" timeLeft=").Append(p.timeLeft).Append(" ai0=").Append(p.ai[0].ToString("0.#")).Append(" minionSlots=").Append(p.minionSlots);
+			if (op != null) sb.Append(" slotsMinions=").Append(op.slotsMinions.ToString("0.##")).Append(" max=").Append(op.maxMinions).Append(" num=").Append(op.numMinions).Append(" owned=").Append(p.type < op.ownedProjectileCounts.Length ? op.ownedProjectileCounts[p.type] : -1);
+			sb.Append(" overCap=").Append(op != null && op.slotsMinions + p.minionSlots > op.maxMinions ? 1 : 0);
+			if (op != null) { sb.Append(" flags["); foreach (var fi in MinionFlagFields()) { try { if ((bool)fi.GetValue(op)) sb.Append(fi.Name).Append(' '); } catch { } } sb.Append(']'); }
+			if (op != null) sb.Append(" buffs[").Append(string.Join(",", Enumerable.Range(0, op.buffType.Length).Where(b => op.buffType[b] > 0).Select(b => op.buffType[b] + ":" + op.buffTime[b]))).Append(']');
+			return sb.ToString();
+		}
+
+		private static string StackKey()
+		{
+			var st = new StackTrace(2, false);
+			var parts = new List<string>();
+			foreach (var fr in st.GetFrames())
+			{
+				var m = fr.GetMethod(); if (m == null) continue;
+				string tn = m.DeclaringType?.Name ?? "?";
+				if (tn.Contains("hook_") || tn.StartsWith("DMD") || tn.Contains("OwnerLab") || tn.Contains("DynamicClass")) continue;
+				parts.Add(tn + "." + m.Name);
+				if (parts.Count >= 4) break;
+			}
+			return string.Join(" < ", parts);
+		}
+
+		private static int KillCount(Sc s) { int n = 0; foreach (var v in s.KillTrace.Values) n += v; return n; }
+
+		internal static void RunKill(On_Projectile.orig_Kill orig, Projectile p, LabTag tag)
+		{
+			var s = _sc;
+			if (s != null && _stage == 1 && Has(s, "trace") && p.active)
+			{
+				try
+				{
+					Sol sol = FindSol(s, tag.Soldier);
+					string how = p.timeLeft <= 0 ? "timeLeft<=0" : "kill";
+					string key = (p.minion ? "M:" : "P:") + TypeName(p.type) + " | " + how + " | " + StackKey();
+					s.KillTrace[key] = s.KillTrace.TryGetValue(key, out int c) ? c + 1 : 1;
+					if (!s.KillSample.ContainsKey(key)) s.KillSample[key] = DeathState(p, sol, how);
+				}
+				catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("trace:" + Short(e)); }
+			}
+			orig(p);
+		}
+
 		internal static void NoteSpawn(Projectile p, LabTag tag)
 		{
 			var s = _sc; if (s == null) return;
@@ -809,7 +889,7 @@ namespace Levy.Common.Testing
 
 		private const string Header = "kind\titem\tname\tfam\tN\tticks\tflags\tnote\taliveStart>End\tuses\tuseExc\tprojSpawnedByUse\tchildSpawned\tmaxLiveTagged\tminionsEnd\tdmgTotal\tdmgIdle\tdmgActive\thitTicks\tavgDistSoldier\tavgDistCommander\tavgDistTargetActive\tdummyEnd\tdummyBuffs\tcmdDiff\tcmdManaMin\tcmdLifeMin\tcmdLifeGain\titems\townerHist\torphanKills\tbossDeadTick\texceptions"
 			+ "\tchildAtSoldier\tchildAtCommander\tchildAtTarget\tchildElsewhere\tcmdModPlayerHitProcs\totherModPlayerHitProcs"
-			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj";
+			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj\tnetClears\tnetThreadPassesInFrame\tkillTrace";
 
 		private static string Row(Sc s)
 		{
@@ -830,6 +910,8 @@ namespace Levy.Common.Testing
 				(s.Exc.Count == 0 ? "-" : string.Join(" || ", s.Exc.Take(6))) + (s.PlayInstrNre > 0 ? " [benign server-only NRE (PlayInstruments/Achievements) x" + s.PlayInstrNre + "]" : "") + (s.DummyDeaths > 0 ? " [DUMMY KillMe SUPPRESSED x" + s.DummyDeaths + "]" : "") + (s.TpToCmd + s.TpToSelf + s.TpOther > 0 ? $" [GetThoriumPlayer(dummy) during use resolved: commander={s.TpToCmd} self={s.TpToSelf} other={s.TpOther}]" : ""),
 				s.ChildAtSol.ToString(), s.ChildAtCmd.ToString(), s.ChildAtTgt.ToString(), s.ChildOther.ToString(), s.CmdProcs.ToString(), s.OtherProcs.ToString(),
 				F(useTot), F(useIC), F(useOv), F(projOrig), F(projOv), F(prep), F((double)s.ProjUpdates / tk), F(whole), F(usPerProj),
+					s.NetClears.ToString(), s.NetThreadPasses.ToString(),
+					s.KillTrace.Count == 0 ? "-" : string.Join(" ## ", s.KillTrace.OrderByDescending(k => k.Value).Select(k => k.Value + "x " + k.Key + " => " + (s.KillSample.TryGetValue(k.Key, out var smp) ? smp : ""))),
 			};
 			return string.Join("\t", f.Select(Clean));
 		}
@@ -905,6 +987,8 @@ namespace Levy.Common.Testing
 			OwnerLab.ReadEnv();
 			if (!OwnerLab.Active || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS"))) { OwnerLab.Active = false; return; }
 			On_Projectile.Update += UpdateDetour;
+			On_Projectile.Kill += KillTraceDetour;
+			On_Netplay.UpdateConnectedClients += NetDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
 			On_Player.KillMe += KillMeDetour;
 			On_Player.ItemCheck_PlayInstruments += PlayInstrDetour;
@@ -923,7 +1007,7 @@ namespace Levy.Common.Testing
 
 		public override void Unload()
 		{
-			if (OwnerLab.Active) { try { On_Projectile.Update -= UpdateDetour; On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour; On_Player.KillMe -= KillMeDetour; On_Player.ItemCheck_PlayInstruments -= PlayInstrDetour; On_AchievementsHelper.HandleSpecialEvent -= AchDetour; } catch { } }
+			if (OwnerLab.Active) { try { On_Projectile.Update -= UpdateDetour; On_Projectile.Kill -= KillTraceDetour; On_Netplay.UpdateConnectedClients -= NetDetour; On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour; On_Player.KillMe -= KillMeDetour; On_Player.ItemCheck_PlayInstruments -= PlayInstrDetour; On_AchievementsHelper.HandleSpecialEvent -= AchDetour; } catch { } }
 			OwnerLab.Active = false;
 		}
 
@@ -934,6 +1018,23 @@ namespace Levy.Common.Testing
 		{
 			if (OwnerLab.InScenario && self.TryGetGlobalProjectile(out LabTag tag) && tag.Soldier >= 0) OwnerLab.RunUpdate(orig, self, i, tag);
 			else orig(self, i);
+		}
+
+		/// <summary>The dedicated server's Netplay.ServerLoop thread clears Main.player[i].active for every client-less slot i &lt; 255, continuously. A soldier Dummy swapped into such a slot is deactivated mid-frame, and vanilla Projectile.Update then kills any projectile whose owner is inactive.</summary>
+		private static void NetDetour(On_Netplay.orig_UpdateConnectedClients orig)
+		{
+			if (OwnerLab.Active && OwnerLab.InScenario)
+			{
+				if (OwnerLab.FrameDepth > 0) OwnerLab.NoteNetPass();
+				if (OwnerLab.Flag("netlock")) { lock (OwnerLab.NetLock) orig(); return; }
+			}
+			orig();
+		}
+
+		private static void KillTraceDetour(On_Projectile.orig_Kill orig, Projectile self)
+		{
+			if (OwnerLab.InScenario && self.active && self.TryGetGlobalProjectile(out LabTag tag) && tag.Soldier >= 0) OwnerLab.RunKill(orig, self, tag);
+			else orig(self);
 		}
 
 		private static int StrikeDetour(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction) =>

@@ -4,17 +4,21 @@
 #   spec: ';'-separated  kind|item|N|ticks|flags   (see OwnerLab.cs header)
 # Never touches the shared Mods dir. Build first with:  dotnet tModLoader.dll -server -nosteam -tmlsavedirectory $SAVE -build <Levy dir>
 set -u
-SPEC=""; OUT=""; MOD="ThoriumMod"; PORT=7821; TMO=1800; SAVE=/home/user/tml-save-owner
-while getopts "s:o:m:p:T:S:" o; do case $o in s) SPEC=$OPTARG;; o) OUT=$OPTARG;; m) MOD=$OPTARG;; p) PORT=$OPTARG;; T) TMO=$OPTARG;; S) SAVE=$OPTARG;; esac; done
-TML=/home/user/tml-bin/tml
+SPEC=""; OUT=""; MOD="ThoriumMod"; PORT=7821; TMO=1800; SAVE=/home/user/tml-save-owner2; NEW=""; EXTRAMODS=""
+while getopts "s:o:m:p:T:S:Nx:" o; do case $o in s) SPEC=$OPTARG;; o) OUT=$OPTARG;; m) MOD=$OPTARG;; p) PORT=$OPTARG;; T) TMO=$OPTARG;; S) SAVE=$OPTARG;; N) NEW=1;; x) EXTRAMODS=$OPTARG;; esac; done
+# -N: NEW toolchain (tML 2026.10, needed for Calamity); -x "A,B": extra mods enabled BEFORE Levy (e.g. CalamityModMusic)
+case "$SPEC" in @*) SPEC=$(grep -v '^#' "${SPEC#@}" | grep -v '^$' | tr '\n' ';');; esac   # -s @file : one scenario per line
+TML=/home/user/tml-bin/tml; [ -n "$NEW" ] && TML=/home/user/tml-bin/tml-2026.10
 SRC=/root/.local/share/Terraria/tModLoader/Worlds
 SCR=${LAB_SCRATCH:-/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/lab}
 mkdir -p "$SCR" "$SAVE/Worlds" "$SAVE/Mods"
 RUN=$(date +%s)_$$
 [ -z "$OUT" ] && OUT=$SCR/lab_$RUN.tsv
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT";; esac
 W=LabScratch_$RUN
 cp "$SRC/LevyTest.wld" "$SAVE/Worlds/$W.wld" && cp "$SRC/LevyTest.twld" "$SAVE/Worlds/$W.twld" || { echo "cannot copy world"; exit 1; }
-if [ "$MOD" = none ]; then echo '["Levy"]' > "$SAVE/Mods/enabled.json"; else echo "[\"Levy\",\"$MOD\"]" > "$SAVE/Mods/enabled.json"; fi
+PRE=""; if [ -n "$EXTRAMODS" ]; then for m in ${EXTRAMODS//,/ }; do PRE="$PRE\"$m\","; done; fi
+if [ "$MOD" = none ]; then echo "[${PRE}\"Levy\"]" > "$SAVE/Mods/enabled.json"; else echo "[${PRE}\"$MOD\",\"Levy\"]" > "$SAVE/Mods/enabled.json"; fi
 export DOTNET_ROOT=/home/user/dotnet PATH=/home/user/dotnet:$PATH
 export LEVY_HARNESS=1 LEVY_HARNESS_OUT="$OUT" LEVY_HARNESS_MOD="$MOD" LEVY_HARNESS_LAB="$SPEC" LEVY_HARNESS_TICKS=120
 LOG=$SCR/server_$RUN.log

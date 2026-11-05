@@ -214,6 +214,28 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🧭 EVE DUMP (2026-11-05 evening): PRIORITY = core bugs + core balance first, nothing major. Eve's Max plan ends at month end, so be economical with agents.
+**Building now:**
+- `balanced-rank`: a new DEFAULT mode "Balanced" = sell price × relevance to current progression (smooth discount for weapons many tiers behind; never by per-hit damage) + a RECENCY boost for weapons recently deposited in the armory. The armor skip goes default OFF (Eve dislikes it: fast weapons like the Minishark and endgame ranger guns).
+- Same branch: mana. Config "Fallen Stars per levy mana crystal" (1–5, default 5), plus "Armory turns Fallen Stars into levy mana" (default on; never eats stars needed as Star Cannon ammo).
+- `levy-speed`: investigate why levies are slower than a player in the same boots (they lose to the Wall of Flesh). Candidates are listed in the brief; fix only confirmed causes.
+
+**Eve's design notes, NOT building yet:**
+- Against per-mod class slots (+1 bard, +1 rogue).
+- **Boss fights:**
+  - First-time fight with "bosses target levies" on → maybe a boss bonus, since hooks make levies mobile.
+  - Already-beaten bosses → normal targeting.
+  - Levies die in one hit and don't read telegraphs.
+  - Ideas: DR/dodge chance, limited respawns per fight, "targeted but they don't respawn until the round ends", a start-of-world settings popup ("customize difficulty").
+  - My lean: "a boss fight is one life" (the dead stay down until it ends), plus projectile-aware dodging as the next AI piece.
+- **Hooks must be used WELL:** grapple to save themselves from falls, dodge with hooks, follow the player. Multi-hook "stationary turret" perches (Eve unsure; micro).
+- **Hand-fix the handful of utility weapons that don't work,** one subagent each. Example: Thorium Dark Staff (a healer portal at the cursor) — levies should right-click the portal, and not use it when the player is.
+- **Off-screen test never run:** do far-away levies keep acting? Ideas: cell phone + radio to watch or command remote levies.
+- **Vanity sets for levies:** wanted, but worried about visual noise. Pets: no.
+- **Drones shouldn't engage bosses** unless the boss is already beaten (Eve's statement; confirm before building).
+- **Outposts/militia buildings** (melee/ranged/bard outposts holding 3 militia, turret-perch on top; OOA event Tavernkeep outposts bought with Defender Medals). Eve: fun, but "better in a different mod"; Levy is in a good spot. BACKLOG only.
+- Thorium feels weak; Eve may play a single-mod world next.
+
 ## 📦 SHIPPED as part of Levy 1.7.6: ranking/lifesteal (rank-mode 4381337 / 9d3ec9d)
 - **Lifesteal pools:** each levy has its own vanilla pool (80 at +0.6/tick in Normal; 70 at +0.5 in Expert/Master; Calamity's reduction read).
   - Routed life with 1/2/4/8/16 levies: 645/630/525/555/555 → 585/1245/2310/4605/7935.

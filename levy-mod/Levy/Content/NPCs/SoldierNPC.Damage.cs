@@ -105,6 +105,7 @@ namespace Levy.Content.NPCs
 			if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
 			SetsOnHurt(damageDone, attackerIndex); // Paladin's Shield share, Solar flare burst, Beetle orb lost (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return; // the roster and FearSystem.OnComradeDied own the death
+			GearOnHurt(damageDone, attackerIndex); // hurt-driven gear (Star Cloak, mod on-hurt hooks) via the dummy's own Player.Hurt (SoldierNPC.GearUpkeep.cs)
 			Fear_OnDamaged(damageDone, attackerIndex);
 			FearSystem.OnComradeHit(this, damageDone);
 			DialogueSystem.Bark(this, NPC.life * 4 < NPC.lifeMax ? DialogueTrigger.LOW_HP : DialogueTrigger.HURT);

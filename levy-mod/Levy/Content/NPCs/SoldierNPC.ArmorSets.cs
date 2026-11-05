@@ -64,7 +64,7 @@ namespace Levy.Content.NPCs
 		/// ours, so it is held at 0) and every "whoAmI == Main.myPlayer" branch (the Stardust Guardian spawn, Bee Gun achievement) which on a dedicated server is true of the
 		/// dummy's slot 255, so the call borrows a slot nobody holds. (The Guardian is therefore cast by hand: SoldierNPC.StardustGuardian.cs.)
 		/// </summary>
-		private void UpdateDummyArmorSets()
+		private void UpdateDummyArmorSets(int who = DummySlot - 2)
 		{
 			Player d = Dummy;
 			d.head = d.armor[0].headSlot;
@@ -77,8 +77,8 @@ namespace Levy.Content.NPCs
 			int savedWho = d.whoAmI;
 			try
 			{
-				d.whoAmI = DummySlot - 2;
-				d.UpdateArmorSets(DummySlot);
+				d.whoAmI = who;
+				d.UpdateArmorSets(who == DummySlot - 2 ? DummySlot : who);
 			}
 			finally { d.whoAmI = savedWho; }
 			LogRecognisedSets(d);

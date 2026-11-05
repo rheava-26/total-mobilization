@@ -47,6 +47,7 @@ namespace Levy.Content.NPCs
 					if (it == null || it.IsAir) continue;
 					int idx = Array.IndexOf(ProcAccessories, it.type);
 					if (idx < 0) continue;
+					if (it.type == ItemID.VolatileGelatin && RealGelatin) continue; // the real UpdateEquips step now drives the counter (SoldierNPC.GearUpkeep.cs): the hand-made twin would double it
 					(procs ??= new Item[ProcAccessories.Length])[idx] = it;
 				}
 			}

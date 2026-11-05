@@ -331,6 +331,7 @@ namespace Levy.Common.Testing
 
 		private static void Teardown(Sc s)
 		{
+			GearUpkeep.SetOverride(-1);
 			RestoreSlots(s);
 			_h.LabClearAll();
 			try { Main.player[1].active = false; } catch { }
@@ -380,6 +381,7 @@ namespace Levy.Common.Testing
 		private static void BeginRun(Sc s)
 		{
 			Array.Clear(SubT, 0, SubT.Length);
+			GearUpkeep.ResetCounters(); GearUpkeep.SetOverride(UpkMode(s)); _modeMin.Clear(); _modeMax.Clear();
 			s.Alive0 = s.Sols.Count(x => x.Body != null && x.Body.NPC.active && x.Body.IsAlive);
 			if (s.Flags.Contains("gm")) { _savedGameMenu = Main.gameMenu; Main.gameMenu = false; } // a dedicated server has gameMenu = true, which turns Thorium's local-player cache off; SP / client have it false
 			if (s.Flags.Contains("spsim") && !_spsimOn) { _savedMyForSim = Main.myPlayer; Main.myPlayer = 0; _spsimOn = true; }
@@ -391,6 +393,7 @@ namespace Levy.Common.Testing
 		private static void EndRun(Sc s)
 		{
 			Array.Copy(SubT, s.SubBreak, SubT.Length);
+			s.Note = UpkNote(s);
 			s.AliveEnd = s.Sols.Count(x => x.Body != null && x.Body.NPC.active && x.Body.IsAlive);
 			// end state of the first dummy
 			var d0 = s.Sols.FirstOrDefault(x => x.Body?.Dummy != null)?.Body?.Dummy;
@@ -457,6 +460,7 @@ namespace Levy.Common.Testing
 			// target debuffs
 			if (s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active) { NPC tn = Main.npc[s.TargetIdx]; for (int b = 0; b < NPC.maxBuffs; b++) if (tn.buffType[b] > 0) s.TargetBuffs.Add(tn.buffType[b]); }
 			foreach (var sol in s.Sols) SampleDummy(s, sol);
+			UpkSample(s);
 			if (s.HurtEvery > 0 && s.Tick > 0 && s.Tick % s.HurtEvery == 0) foreach (var sol in s.Sols) if (sol.Body != null && sol.Body.NPC.active) HurtOnce(s, sol);
 
 			// drive soldiers
@@ -682,6 +686,50 @@ namespace Levy.Common.Testing
 				catch (Exception) { }
 			}
 		}
+		// ---- gear-upkeep measurement (flags: upk=0|1|2 sets GearUpkeep.Mode for the scenario, phurt=N calls the soldier's hurt-gear step every N ticks) ----
+		private static readonly Dictionary<string, float> _modeMin = new(), _modeMax = new();
+		private static readonly Dictionary<Type, FieldInfo[]> _modeFields = new();
+		private static int UpkMode(Sc s) { foreach (var f in s.Flags) if (f.StartsWith("upk=") && int.TryParse(f.Substring(4), out int m)) return m; return -1; }
+		private static int PHurt(Sc s) { foreach (var f in s.Flags) if (f.StartsWith("phurt=") && int.TryParse(f.Substring(6), out int m)) return m; return 0; }
+		private static void UpkSample(Sc s)
+		{
+			// every soldier-tagged projectile seen for the first time, by type (the doubling / adoption evidence)
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag t) || !t.IsSoldierShot) continue;
+				if (!s.SeenProj.Add(p.identity)) continue;
+				string n = TypeName(p.type); s.Child[n] = s.Child.TryGetValue(n, out int c) ? c + 1 : 1;
+				if (p.owner != Main.myPlayer) s.OwnerNon255++;
+			}
+			int ph = PHurt(s);
+			if (ph > 0 && s.Tick > 0 && s.Tick % ph == 0) foreach (var sol in s.Sols) if (sol.Body != null && sol.Body.NPC.active && sol.Body.IsAlive) { try { sol.Body.GearOnHurt(25, -1); } catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("phurt:" + Short(e)); } }
+			// ModPlayer fields of the first soldier's dummy that MOVE during the run: the timers / counters / meters the upkeep advances
+			var d = s.Sols.FirstOrDefault(x => x.Body?.Dummy != null)?.Body?.Dummy; if (d == null) return;
+			foreach (ModPlayer mp in d.ModPlayers)
+			{
+				string mn = mp.Mod.Name; if (mn != "ThoriumMod" && mn != "CalamityMod") continue;
+				var t = mp.GetType();
+				if (!_modeFields.TryGetValue(t, out var fs)) _modeFields[t] = fs = t.GetFields(BindingFlags.Instance | BindingFlags.Public).Where(f => f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(bool)).ToArray();
+				foreach (var f in fs)
+				{
+					float v; try { object o = f.GetValue(mp); v = o is bool b ? (b ? 1f : 0f) : Convert.ToSingle(o); } catch { continue; }
+					string key = t.Name + "." + f.Name;
+					if (!_modeMin.TryGetValue(key, out float lo)) { _modeMin[key] = v; _modeMax[key] = v; continue; }
+					if (v < lo) _modeMin[key] = v;
+					if (v > _modeMax[key]) _modeMax[key] = v;
+				}
+			}
+		}
+		private static string UpkNote(Sc s)
+		{
+			var moved = _modeMin.Where(k => _modeMax[k.Key] != k.Value).Select(k => k.Key + "[" + k.Value.ToString("0.##") + ".." + _modeMax[k.Key].ToString("0.##") + "]").Take(24);
+			double us = GearUpkeep.Frames > 0 ? GearUpkeep.Ticks * 1e6 / Stopwatch.Frequency / GearUpkeep.Frames : 0;
+			int tk = Math.Max(1, s.Tick);
+			double msTick = GearUpkeep.Ticks * 1000.0 / Stopwatch.Frequency / tk;
+			return "upk mode=" + GearUpkeep.Mode + " frames=" + GearUpkeep.Frames + " us/frame=" + us.ToString("0.0") + " ms/tick=" + msTick.ToString("0.000") + " adopted=" + GearUpkeep.Adopted + "{" + string.Join(",", GearUpkeep.AdoptedByType.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} dropped{" + string.Join(",", GearUpkeep.Dropped.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} fails=" + GearUpkeep.Failures + " hookfails=" + GearUpkeep.HookFailures + " lifeWB=" + GearUpkeep.LifeWriteBacks + " manaWB=" + GearUpkeep.ManaWriteBacks + " hurts=" + GearUpkeep.HurtCalls + " moved{" + string.Join(" ", moved) + "}";
+		}
+
 		private static bool HarnessCalamityOn => ModLoader.HasMod("CalamityMod");
 
 		private static void HurtOnce(Sc s, Sol sol)

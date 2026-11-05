@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Generates gear_thorium.spec and gear_cal.spec: modded accessories / sets x {npcProj=true, real owner, real owner + Player.Update subset s2}; each weapon also gets a no-gear control."""
-MODES = [("np_pu0", "", ""), ("real_pu0", "nonpc", ""), ("real_s2", "nonpc", "pu=s2")]
+MODES = [("np_pu0", "", ""), ("real_pu0", "nonpc", ""), ("real_s2", "nonpc", "pu=s2"), ("real_s3", "nonpc", "pu=s3")]
 BASE = "vslot,netlock,halflife,hurt=150"
 
 THOR = [
@@ -28,11 +28,11 @@ CAL = [
     ("ToxicHeart", "C:ToxicHeart", "V:Musket", "fam=other,dist=14"),
     ("GladiatorsLocket", "C:GladiatorsLocket", "V:Musket", "fam=other,dist=14"),
     ("NuclearFuelRod", "C:NuclearFuelRod", "V:Musket", "fam=other,dist=14"),
-    ("VampiricTalisman", "C:VampiricTalisman", "C:AdamantiteThrowingAxe", "fam=other,dist=10"),
-    ("Nanotech", "C:Nanotech", "C:AdamantiteThrowingAxe", "fam=other,dist=10"),
-    ("Statigel rogue set", "S:CalamityMod/StatigelHeadRogue", "C:AdamantiteThrowingAxe", "fam=other,dist=10"),
-    ("Statigel rogue set (skewer)", "S:CalamityMod/StatigelHeadRogue", "C:AntlionSkewer", "fam=other,dist=10"),
-    ("Tarragon rogue set", "S:CalamityMod/TarragonHeadRogue", "C:AdamantiteThrowingAxe", "fam=other,dist=10"),
+    ("VampiricTalisman", "C:VampiricTalisman", "C:AdamantiteThrowingAxe", "fam=other,dist=10,every=150"),
+    ("Nanotech", "C:Nanotech", "C:AdamantiteThrowingAxe", "fam=other,dist=10,every=150"),
+    ("Statigel rogue set", "S:CalamityMod/StatigelHeadRogue", "C:AdamantiteThrowingAxe", "fam=other,dist=10,every=150"),
+    ("Statigel rogue set (skewer)", "S:CalamityMod/StatigelHeadRogue", "C:AntlionSkewer", "fam=other,dist=10,every=150"),
+    ("Tarragon rogue set", "S:CalamityMod/TarragonHeadRogue", "C:AdamantiteThrowingAxe", "fam=other,dist=10,every=150"),
 ]
 
 
@@ -41,7 +41,7 @@ def emit(fname, rows):
     for name, gear, weapon, fam in rows:
         for mname, a, b in MODES:
             flags = ",".join([x for x in [fam, BASE, "g=" + gear, a, b] if x])
-            out.append(f"gear|{weapon}|1|600|{flags}")
+            out.append(f"gear|{weapon}|1|{900 if "every=" in fam else 600}|{flags}")
     weapons = []
     for _, _, w, fam in rows:
         if (w, fam) not in weapons:
@@ -49,7 +49,7 @@ def emit(fname, rows):
     for w, fam in weapons:
         for mname, a, b in MODES:
             flags = ",".join([x for x in [fam, BASE, "refresh", a, b] if x])
-            out.append(f"gear|{w}|1|600|{flags}")
+            out.append(f"gear|{w}|1|{900 if "every=" in fam else 600}|{flags}")
     open(fname, "w").write("\n".join(out) + "\n")
     print(fname, len(out))
 

@@ -87,7 +87,7 @@ namespace Levy.Common.Testing
 			public Dictionary<string, int[]> Loc = new();
 			public int HookProjCmd, HookProjOther, HookItemCmd, HookItemOther, HookKillCmd, HookKillOther, HookHurtCmd, HookHurtOther;
 			public float StealthStart = -1f, StealthMax, StealthPeak; public HashSet<int> StealthProjs = new(); public int ProjsTotal; public HashSet<int> SeenProj = new();
-			public int HurtCalls; public string GearNote = "";
+			public long[] SubBreak = new long[8]; public int HurtCalls; public string GearNote = "", DummyTp0 = "", DummyTp1 = "";
 		}
 
 		private static Sc _sc;
@@ -280,6 +280,7 @@ namespace Levy.Common.Testing
 			}
 			// commander
 			Player c = Main.player[0];
+			for (int ai = 0; ai < c.armor.Length; ai++) c.armor[ai] = new Item();
 			if (s.CmdGearKeys.Count > 0) EquipCommander(s, c);
 			bool heal = s.Fam == "heal";
 			c.active = true; c.dead = false; c.name = "LevyTester"; c.statLifeMax = c.statLifeMax2 = 500; c.statLife = heal ? 250 : 500;
@@ -369,16 +370,18 @@ namespace Levy.Common.Testing
 		// ---------------------------------------------------------------------------------------------
 		private static void BeginRun(Sc s)
 		{
+			Array.Clear(SubT, 0, SubT.Length);
 			s.Alive0 = s.Sols.Count(x => x.Body != null && x.Body.NPC.active && x.Body.IsAlive);
 			if (s.Flags.Contains("gm")) { _savedGameMenu = Main.gameMenu; Main.gameMenu = false; } // a dedicated server has gameMenu = true, which turns Thorium's local-player cache off; SP / client have it false
 			if (s.Flags.Contains("spsim") && !_spsimOn) { _savedMyForSim = Main.myPlayer; Main.myPlayer = 0; _spsimOn = true; }
 			if (s.Flags.Contains("slots")) PlaceSlots(s);
-			s.CmdPrevLife = Main.player[0].statLife;
+			s.CmdPrevLife = Main.player[0].statLife; { var dd = s.Sols.FirstOrDefault(x => x.Body?.Dummy != null)?.Body?.Dummy; if (dd != null) s.DummyTp0 = TpSnap(dd); }
 			_prepStamp = uint.MaxValue;
 		}
 
 		private static void EndRun(Sc s)
 		{
+			Array.Copy(SubT, s.SubBreak, SubT.Length);
 			s.AliveEnd = s.Sols.Count(x => x.Body != null && x.Body.NPC.active && x.Body.IsAlive);
 			// end state of the first dummy
 			var d0 = s.Sols.FirstOrDefault(x => x.Body?.Dummy != null)?.Body?.Dummy;
@@ -392,6 +395,7 @@ namespace Levy.Common.Testing
 				s.DummyEnd = sb.ToString();
 				s.BuffsEnd = string.Join(",", Enumerable.Range(0, d0.buffType.Length).Where(b => d0.buffType[b] > 0).Select(b => (BuffLoader.GetBuff(d0.buffType[b])?.Name ?? ("buff" + d0.buffType[b])) + ":" + d0.buffTime[b]));
 			}
+			if (d0 != null) s.DummyTp1 = TpSnap(d0);
 			s.Fp1 = Fp(Main.player[0]); s.Tp1 = TpSnap(Main.player[0]);
 			s.CmdDiff = (s.Fp0 == s.Fp1 ? "none" : "BEFORE " + s.Fp0 + " || AFTER " + s.Fp1) + (s.Tp0 == s.Tp1 ? "" : " || THORIUMPLAYER(commander) BEFORE " + s.Tp0 + " AFTER " + s.Tp1);
 		}
@@ -598,6 +602,7 @@ namespace Levy.Common.Testing
 		// Player.Update subsets (flag pu=s1|s2|full), run inside the soldier's swap once per tick
 		// ---------------------------------------------------------------------------------------------
 		private static int[] _cntScratch;
+		private static readonly long[] SubT = new long[8];
 		private static MethodInfo _ppPreUpdate, _ppPostUpdate, _ppPreBuffs, _ppPostBuffs, _ppPostEquips, _ppPostMisc, _updEquips, _updArmorSets, _updDyes, _updLife, _updMana;
 		private static void RunSubset(Sc s, Sol sol, string mode)
 		{
@@ -631,23 +636,28 @@ namespace Levy.Common.Testing
 			_cntScratch ??= new int[d.ownedProjectileCounts.Length];
 			Array.Copy(d.ownedProjectileCounts, _cntScratch, _cntScratch.Length); int hs = d.highestStormTigerGemOriginalDamage, ha = d.highestAbigailCounterOriginalDamage;
 			if (mode == "s3") _ppPreUpdate?.Invoke(null, new object[] { d });
+			long t0 = Stopwatch.GetTimestamp();
 			d.ResetEffects();
 			Array.Copy(_cntScratch, d.ownedProjectileCounts, _cntScratch.Length); d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
+			long t1 = Stopwatch.GetTimestamp(); SubT[0] += t1 - t0;
 			if (mode == "s2" || mode == "s3")
 			{
 				_ppPreBuffs?.Invoke(null, new object[] { d });
 				if (d.buffType.Any(b => b > 0)) _updateBuffs.Invoke(d, new object[] { slot });
 				_ppPostBuffs?.Invoke(null, new object[] { d });
 			}
+			long t2 = Stopwatch.GetTimestamp(); SubT[1] += t2 - t1;
 			d.head = d.armor[0].headSlot; d.body = d.armor[1].bodySlot; d.legs = d.armor[2].legSlot;
 			_updEquips.Invoke(d, new object[] { slot });
+			long t3 = Stopwatch.GetTimestamp(); SubT[2] += t3 - t2;
 			_updArmorSets.Invoke(d, new object[] { slot });
-			if (mode == "s2" || mode == "s3")
-			{
-				_ppPostEquips?.Invoke(null, new object[] { d });
-				_ppPostMisc?.Invoke(null, new object[] { d });
-			}
+			long t4 = Stopwatch.GetTimestamp(); SubT[3] += t4 - t3;
+			if (mode == "s2" || mode == "s3") _ppPostEquips?.Invoke(null, new object[] { d });
+			long t5 = Stopwatch.GetTimestamp(); SubT[4] += t5 - t4;
+			if (mode == "s2" || mode == "s3") _ppPostMisc?.Invoke(null, new object[] { d });
+			long t6 = Stopwatch.GetTimestamp(); SubT[5] += t6 - t5;
 			if (mode == "s3") _ppPostUpdate?.Invoke(null, new object[] { d });
+			SubT[6] += Stopwatch.GetTimestamp() - t6;
 		}
 
 		private static void SampleDummy(Sc s, Sol sol)
@@ -1240,7 +1250,7 @@ namespace Levy.Common.Testing
 
 		private const string Header = "kind\titem\tname\tfam\tN\tticks\tflags\tnote\taliveStart>End\tuses\tuseExc\tprojSpawnedByUse\tchildSpawned\tmaxLiveTagged\tminionsEnd\tdmgTotal\tdmgIdle\tdmgActive\thitTicks\tavgDistSoldier\tavgDistCommander\tavgDistTargetActive\tdummyEnd\tdummyBuffs\tcmdDiff\tcmdManaMin\tcmdLifeMin\tcmdLifeGain\titems\townerHist\torphanKills\tbossDeadTick\texceptions"
 			+ "\tchildAtSoldier\tchildAtCommander\tchildAtTarget\tchildElsewhere\tcmdModPlayerHitProcs\totherModPlayerHitProcs"
-			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj\tnetClears\tnetThreadPassesInFrame\tkillTrace\tflagsOn\tcmdFlagsOn\tdummyLifeGain\ttargetBuffs\tspawnLoc\thooksProj(cmd/other)\thooksMelee(cmd/other)\thooksHurt(cmd/other)\tms_subset/tick\tms_refresh/call\tsubsetCalls\tstealth(start/max/peak)\tstealthStrikeProjs/projs\thurtCalls\tgearNote";
+			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj\tnetClears\tnetThreadPassesInFrame\tkillTrace\tflagsOn\tcmdFlagsOn\tdummyLifeGain\ttargetBuffs\tspawnLoc\thooksProj(cmd/other)\thooksMelee(cmd/other)\thooksHurt(cmd/other)\tms_subset/tick\tms_refresh/call\tsubsetCalls\tstealth(start/max/peak)\tstealthStrikeProjs/projs\thurtCalls\tgearNote\tdummyThorium(start>end)\tsubsetBreakdown(ms/tick: reset|buffs|equips|armorSets|postEquips|postMisc|postUpdate)";
 
 		private static string Row(Sc s)
 		{
@@ -1266,7 +1276,7 @@ namespace Levy.Common.Testing
 					s.FlagsOn == "" ? "-" : s.FlagsOn, s.CmdFlagsOn == "" ? "-" : s.CmdFlagsOn, s.DummyLifeGain.ToString(), s.TargetBuffs.Count == 0 ? "-" : string.Join(",", s.TargetBuffs.OrderBy(b => b).Select(b => BuffLoader.GetBuff(b)?.Name ?? (BuffID.Search.TryGetName(b, out string bn) ? bn : "buff" + b))),
 					s.Loc.Count == 0 ? "-" : string.Join(";", s.Loc.OrderBy(k => k.Key).Select(k => k.Key + " S" + k.Value[0] + " C" + k.Value[1] + " T" + k.Value[2] + " O" + k.Value[3])),
 					s.HookProjCmd + "/" + s.HookProjOther, s.HookItemCmd + "/" + s.HookItemOther, s.HookHurtCmd + "/" + s.HookHurtOther, F(Ms(s.SubsetTs, tk)), F(s.RefreshCalls > 0 ? s.RefreshTs * 1000.0 / Stopwatch.Frequency / s.RefreshCalls : 0),
-					s.SubsetCalls.ToString(), s.StealthStart.ToString("0.00") + "/" + s.StealthMax.ToString("0.00") + "/" + s.StealthPeak.ToString("0.00"), s.StealthProjs.Count + "/" + s.ProjsTotal, s.HurtCalls.ToString(), s.GearNote == "" ? "-" : s.GearNote,
+					s.SubsetCalls.ToString(), s.StealthStart.ToString("0.00") + "/" + s.StealthMax.ToString("0.00") + "/" + s.StealthPeak.ToString("0.00"), s.StealthProjs.Count + "/" + s.ProjsTotal, s.HurtCalls.ToString(), s.GearNote == "" ? "-" : s.GearNote, s.DummyTp0 + " > " + s.DummyTp1, string.Join("|", Enumerable.Range(0, 7).Select(i => F(Ms(s.SubBreak[i], tk)))),
 			};
 			return string.Join("\t", f.Select(Clean));
 		}

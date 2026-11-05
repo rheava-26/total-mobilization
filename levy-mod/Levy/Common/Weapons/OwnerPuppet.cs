@@ -85,7 +85,7 @@ namespace Levy.Common.Weapons
 		{
 			// bit 8 (Thorium cache) rides along with Damage / Kill: GetThoriumPlayer(Main.player[owner]) would otherwise resolve to the commander's ThoriumPlayer for a soldier's hit
 			int m = Mask;
-			bool moveTransform = (m & bit) != 0, swapCache = (m & 8) != 0 && bit != 4, inherit = (m & 16) != 0, route = (m & 32) != 0;
+			bool moveTransform = (m & bit) != 0, swapCache = (m & 8) != 0 && bit != 4, inherit = (m & 16) != 0, route = (m & 32) != 0 && self.type != ProjectileID.SpiritHeal; // a Spectre-armor spirit bolt goes to the most wounded ALLY (an ally heal, not the wearer's lifesteal): left as it was
 			if (!(moveTransform || swapCache || inherit || route) || _depth >= MaxFrames || !Puppetable(self, out Player p, out SoldierNPC body)) return false;
 			ref Frame f = ref _stack[_depth];
 			f.Moved = moveTransform; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction;

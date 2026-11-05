@@ -53,12 +53,13 @@ namespace Levy.Common.Testing
 		// LEVY_HARNESS_CMDHP=<percent>  start health of the commander in a companion trial (default 50; 100 = full)   LEVY_HARNESS_SELFHP=<percent>  start health of the SHOOTING soldier (default 100)
 		// LEVY_HARNESS_ACC=<ModItem names in the tested mod>  accessories worn by the shooting soldier AND the baseline player (e.g. MedicalBag: +1 heal bonus, so a heal-bonus orb heals at all)
 		// LEVY_HARNESS_VANPROBE=1  the shooting soldier's hit also spawns vanilla's own lifesteal bolt (VampireHeal, type 305, 8 life) at the target every 25 ticks, so vanilla's lifesteal arrival (statLife += on the owner) is exercised directly (Levy's soldiers throw their own SoldierVampireKnife, which never spawns it)
+		// LEVY_HARNESS_ORBPROBE=1  follow every Thorium healing orb: how close to the wounded ally it came and how it ended (in the medbag column)
 		// LEVY_HARNESS_MEDBAG=1  record the Medical Bag arrow/pick state of the commander each tick of the window (needs LEVY_HARNESS_ACC=MedicalBag)
 		// LEVY_HARNESS_NOWALK=1 / LEVY_HARNESS_NOBASE=1  drop the walk-in trial / the player baseline window.   LEVY_HARNESS_HEALAIM=ally  a soldier-window heal-class weapon targets the wounded ally (not the enemy)
 		private static bool _aimEnemy, _onlyLevies, _spSwap, _forceCompanion, _noWalk, _noBase;
 		private static int _allyHpPct = 30, _cmdHpPct = -1, _selfHpPct = 100;
 		private static string[] _vanilla, _accNames;
-		private static bool _medBag, _vanProbe;
+		private static bool _medBag, _vanProbe, _orbProbe;
 		private static string[] _classFilter, _armorNames;
 		private static int[] _ranges = { 4, 7, 15, 25, 40 };
 		private const int WalkTicks = 1300;          // walk-in window: target walks 40 tiles at ~2 tiles/s (0.5333 px/tick)
@@ -132,6 +133,7 @@ namespace Levy.Common.Testing
 				if (!string.IsNullOrWhiteSpace(accs)) _accNames = accs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				_medBag = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_MEDBAG"));
 				_vanProbe = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_VANPROBE"));
+				_orbProbe = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_ORBPROBE"));
 				string vn = Environment.GetEnvironmentVariable("LEVY_HARNESS_VANILLA");
 				if (!string.IsNullOrWhiteSpace(vn)) _vanilla = vn.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_SETUP"), out int su) && su >= 10 && su <= 2000) SetupTicks = su;
@@ -149,6 +151,7 @@ namespace Levy.Common.Testing
 				if (Main.dedServ) Main.OnTickForThirdPartySoftwareOnly += DriveServer;
 				On_Projectile.Update += OnProjUpdate;
 				if (_vanProbe) On_Projectile.vampireHeal += VampireHealProbe;
+				if (_orbProbe) On_Projectile.Kill += OrbKillProbe;
 				if (_spSwap) On_NPC.UpdateNPC += OnNpcUpdate;
 				On_NetMessage.SendStrikeNPC += OnSendStrike;
 				On_NetMessage.SendData += OnSendData;
@@ -159,6 +162,19 @@ namespace Levy.Common.Testing
 		}
 
 		private static readonly Dictionary<int, (int id, float dist, int timeLeft)> _vbSeen = new(); private static int _vbGone; private static float _vbLastDist, _vbLastTime;
+		private static readonly Dictionary<int, (int id, float min, int timeLeft, int age)> _orbSeen = new(); private static int _orbTraceId = -1; private static string _orbTrace = ""; private static int _orbN, _orbEnded, _orbNear, _orbKilledEarly; private static float _orbMinSum;
+		private static int _orbKillLogged;
+		private static void OrbKillProbe(On_Projectile.orig_Kill orig, Projectile self)
+		{
+			if (self.ModProjectile != null && self.ModProjectile.Name.StartsWith("HealingOrb") && _orbKillLogged < 6)
+			{
+				_orbKillLogged++;
+				var st = new System.Diagnostics.StackTrace(1, false).GetFrames();
+				string where = string.Join(" < ", st.Take(9).Select(f => f.GetMethod()?.DeclaringType?.Name + "." + f.GetMethod()?.Name));
+				Instance?.Mod.Logger.Info($"ORBKILL timeLeft={self.timeLeft} penetrate={self.penetrate} pos={self.Center} :: {where}");
+			}
+			orig(self);
+		}
 		private static int _vhCalls; private static string _vhLast = "";
 		private static void VampireHealProbe(On_Projectile.orig_vampireHeal orig, Projectile self, int dmg, Vector2 pos, Entity victim)
 		{
@@ -172,7 +188,7 @@ namespace Levy.Common.Testing
 		}
 		internal static string VampireProbeState => $"vampireHeal calls={_vhCalls} last[{_vhLast}] boltsGone={_vbGone} avgLastDistPx={(_vbGone > 0 ? _vbLastDist / _vbGone : 0):0} avgLastTimeLeft={(_vbGone > 0 ? _vbLastTime / _vbGone : 0):0}";
 
-		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_Projectile.vampireHeal -= VampireHealProbe; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_Projectile.vampireHeal -= VampireHealProbe; On_Projectile.Kill -= OrbKillProbe; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
 
 		public override void OnWorldLoad()
 		{
@@ -215,6 +231,10 @@ namespace Levy.Common.Testing
 		/// <summary>Medical Bag probe: the commander's accessory pass runs after the players update and before the projectiles do, so drive it here (a real client's order).</summary>
 		public override void PreUpdateProjectiles()
 		{
+			// The server drops a player slot that has no connected client during the player pass, and vanilla kills every projectile whose owner is not active (Projectile.Update: owner < 255 && !Main.player[owner].active).
+			// The stand-in commander is only re-asserted at the end of the tick, so without this most of its (and its soldiers') projectiles died within a few ticks of spawning. Measurement artifact; keep the stand-in up for the projectile pass.
+			if (Enabled && _ph != Ph.Done && _ph != Ph.Boot) { Player sp = Main.player[0]; if (sp.name == CommanderName) { sp.active = true; sp.dead = false; } }
+			if (Enabled && _accNames != null && _ph == Ph.Run && ModLoader.HasMod("ThoriumMod") && ThoriumCompatSystem.Active) HarnessThoriumProbe.SetHealBonus(Main.player[0], 1); // the player pass zeroes it; a Medical Bag gives +1
 			if (!Enabled || !_medBag || _ph != Ph.Run || Main.netMode == NetmodeID.MultiplayerClient || !ModLoader.HasMod("ThoriumMod") || !ThoriumCompatSystem.Active) return;
 			string me = HarnessThoriumProbe.MedBagDrive(Main.player[0]);
 			if (me != "" && _cur != null && !_cur.Notes.Contains(me)) _cur.Notes += "medbag drive " + me;
@@ -776,7 +796,7 @@ namespace Levy.Common.Testing
 		{
 			var h = Enabled ? Instance : null;
 			// the stand-in player's own projectiles AND Thorium's heal projectiles (which are not "friendly" but only act when Main.myPlayer == owner); with SPSWAP the soldier window does the same, as single player would
-			bool thor = self.owner == 0 && ((self.ModProjectile != null && self.ModProjectile.Mod.Name == "ThoriumMod") || (_vanProbe && self.type == ProjectileID.VampireHeal));
+			bool thor = self.owner == 0 && ((self.ModProjectile != null && (self.ModProjectile.Mod.Name == "ThoriumMod" || self.ModProjectile.Mod.Name == "CalamityMod")) || (_vanProbe && self.type == ProjectileID.VampireHeal));
 			if (h != null && h._ph == Ph.Run && self.owner == 0 && ((h._stage == 1 && (self.friendly || thor)) || (_spSwap && h._stage == 0 && thor)))
 			{
 				int saved = Main.myPlayer;
@@ -1112,6 +1132,7 @@ namespace Levy.Common.Testing
 					if (tn.active && dNow < c.MinDist) c.MinDist = dNow;
 					c.MovedX = bn.Center.X - c.StartX;
 					c.ManaEnd = c.Rec.Mana; if (c.Rec.Mana < c.ManaMin) c.ManaMin = c.Rec.Mana;
+					if (_orbProbe) TrackOrbs(c, bn.Center);
 					if (_vanProbe)
 					{
 						// follow every vanilla heal bolt: how close to the soldier it was when it vanished (it vanishes on arrival, or times out)
@@ -1143,6 +1164,28 @@ namespace Levy.Common.Testing
 			catch (Exception e) { c.Exceptions.Add("sample:" + e.GetType().Name + ":" + e.Message); }
 		}
 
+		private void TrackOrbs(Cur c, Vector2 fallback)
+		{
+						Vector2 ally = c.AllyIdx >= 0 && Main.npc[c.AllyIdx].active ? Main.npc[c.AllyIdx].Center : fallback;
+			for (int pi = 0; pi < Main.maxProjectiles; pi++)
+			{
+				Projectile q = Main.projectile[pi];
+				bool isOrb = q.active && q.ModProjectile != null && q.ModProjectile.Name.StartsWith("HealingOrb");
+				if (isOrb)
+				{
+					float dd = Vector2.Distance(q.Center, ally);
+					if (!_orbSeen.TryGetValue(pi, out var o) || o.id != q.identity) { _orbSeen[pi] = (q.identity, dd, q.timeLeft, 0); _orbN++; if (_orbTraceId < 0) { _orbTraceId = q.identity; _orbTrace = ""; } }
+					else { _orbSeen[pi] = (o.id, Math.Min(o.min, dd), q.timeLeft, o.age + 1); if (q.identity == _orbTraceId && o.age % 15 == 0 && _orbTrace.Length < 700) _orbTrace += $" [{o.age}t d{dd:0} v{q.velocity.Length():0.0}]"; }
+				}
+				else if (_orbSeen.TryGetValue(pi, out var last))
+				{
+					if (last.id == _orbTraceId) _orbTraceId = -1;
+					_orbEnded++; if (last.min <= 40f) _orbNear++; if (last.timeLeft > 20) _orbKilledEarly++; _orbMinSum += last.min; _orbSeen.Remove(pi);
+				}
+			}
+					
+		}
+
 		private void SamplePlayerTick()
 		{
 			var c = _cur;
@@ -1153,6 +1196,7 @@ namespace Levy.Common.Testing
 				Player p = Main.player[0];
 				CalSample(c, p);
 				if (p.itemAnimation > 0) { c.AnimTicks++; if (c.FirstFire < 0) c.FirstFire = c.ActiveTick; }
+				if (_orbProbe) TrackOrbs(c, p.Center);
 				if (c.Kind == "bard")
 				{
 					int r = HarnessThoriumProbe.PlayerBardResource(p);
@@ -1369,7 +1413,7 @@ namespace Levy.Common.Testing
 			f.Add(_armorNames == null ? "-" : string.Join("+", _armorNames));
 			f.Add(c.SelfLifeMax > 0 ? $"{c.SelfBefore}>{c.SelfAfter}(max{c.SelfMax}/{c.SelfLifeMax})" : "-");
 			f.Add(c.SelfLifeMax > 0 ? $"self+{c.SelfGainSum}/big{c.SelfBig}" : "-");
-			f.Add((c.MedTicks == 0 ? "-" : $"arrowAtPick {c.MedAimed}/{c.MedTicks} | {c.Med}") + (_vanProbe ? " || " + VampireProbeState + " routed=" + StaticInt("RoutedHeals") + "/" + StaticInt("RoutedLife") + " healTextOpenUnrouted=" + StaticInt("HealTextOpenUnrouted") + " healTextOutside=" + StaticInt("HealTextOutside") : ""));
+			f.Add((c.MedTicks == 0 ? "-" : $"arrowAtPick {c.MedAimed}/{c.MedTicks} | {c.Med}") + (_orbProbe ? $" || orbs spawned={_orbN} ended={_orbEnded} endedWithin40px={_orbNear} endedBeforeTimeout={_orbKilledEarly} avgClosestPx={(_orbEnded > 0 ? _orbMinSum / _orbEnded : 0):0} trace:{_orbTrace}" : "") + (_vanProbe ? " || " + VampireProbeState + " routed=" + StaticInt("RoutedHeals") + "/" + StaticInt("RoutedLife") + " healTextOpenUnrouted=" + StaticInt("HealTextOpenUnrouted") + " healTextOutside=" + StaticInt("HealTextOutside") : ""));
 			return string.Join("\t", f.Select(Clean));
 		}
 

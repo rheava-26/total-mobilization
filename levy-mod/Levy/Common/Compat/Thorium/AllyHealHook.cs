@@ -151,6 +151,7 @@ namespace Levy.Common.Compat.Thorium
 				if (owner != Main.LocalPlayer || radius <= 0f) return;
 				SoldierNPC caster = CasterOf(projectile);
 				int bonus = BonusOf(owner, caster);
+				Player who = caster?.Dummy ?? owner; // the weapon's own rule reads its wielder's heal bonus: for a soldier's cast that is the soldier's gear, not the commander's
 				PlayerHealCompat.HealAround(owner, projectile.Center, radius, n =>
 				{
 					int heals = healAmount + (bonusHealing ? bonus : 0), selfHeals = 0;
@@ -158,7 +159,7 @@ namespace Levy.Common.Compat.Thorium
 					{
 						// the weapon's own rule (it scales or caps the heal for the target) run for the soldier's stand-in Player, exactly as it runs for a Player
 						Player target = n.ModNPC is SoldierNPC s && s.Dummy != null ? s.Dummy : owner;
-						object[] args = { owner, target, heals, selfHeals };
+						object[] args = { who, target, heals, selfHeals };
 						try { custom.DynamicInvoke(args); heals = (int)args[2]; } catch (Exception) { heals = healAmount + (bonusHealing ? bonus : 0); }
 					}
 					return PlayerHealCompat.ScaleForSoldier(heals);
@@ -169,7 +170,7 @@ namespace Levy.Common.Compat.Thorium
 					int heals = healAmount + (bonusHealing ? bonus : 0), selfHeals = 0;
 					if (customHealing is Delegate custom)
 					{
-						object[] args = { owner, owner, heals, selfHeals };
+						object[] args = { who, owner, heals, selfHeals };
 						try { custom.DynamicInvoke(args); heals = (int)args[2]; } catch (Exception) { heals = healAmount + (bonusHealing ? bonus : 0); }
 					}
 					return PlayerHealCompat.ScaleForSoldier(heals);

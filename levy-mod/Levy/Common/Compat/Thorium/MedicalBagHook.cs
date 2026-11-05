@@ -47,7 +47,7 @@ namespace Levy.Common.Compat.Thorium
 			if (typeof(ThoriumPlayer).GetField("accMedicalBag") == null || typeof(ThoriumPlayer).GetField("accMedicalBagBoost") == null) throw new MissingMemberException("ThoriumPlayer.accMedicalBag(Boost)");
 
 			Postfix(handle, nameof(LowestPost));
-			MonoModHooks.Add(equips, new Action<Action<ThoriumPlayer>, ThoriumPlayer>((orig, self) => { orig(self); EquipsPost(self); })); // a detour, not an IL edit: the method is ~9000 instructions long and never reaches an appended call
+			MonoModHooks.Add(equips, new Action<Action<ThoriumPlayer>, ThoriumPlayer>((orig, self) => { orig(self); EquipsPost(self); })); // a detour, not an IL postfix: an appended call before this ~9000-instruction method's single ret was measured never to run (method entered 603 times, appended call 0)
 			Postfix(symbol, nameof(SymbolPost));
 			Installed = true;
 		}

@@ -92,6 +92,54 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
+
+## 🔎 WEAPON-CHOICE FINDINGS (weapon-choice-investigation 01efba1 + 69c0e78; measured, Calamity+Thorium, tML 2026.10)
+- **Wulfrum stickiness (CONFIRMED):**
+  - Calamity rogue weapons (130/148) and Thorium bard/healer weapons have damage class null.
+  - `UpgradePrimary` returns early on `cls == null` (ArmoryTE.cs:1793), so a levy holding one NEVER upgrades.
+  - Wulfrum was picked while the armory was small, then stuck.
+- **Rack before storage (CONFIRMED):** `TakeVaried` (ArmoryTE.cs:613) reads the 12 rack slots before storage. A Zombie Arm in the rack beats a Chlorophyte Saber in storage. Jackhammers and drills are never issued (Unsupported, tools).
+- **Greedy, class-blind allocation (CONFIRMED):**
+  - Unarmored or other-class levies take the top melee items.
+  - Sidearms drain the mid-tier blades.
+  - 20 levies with melee enlisted last: 3 melee levies UNARMED, others holding Water Bolt, Space Gun and Musket.
+- **No 8-class split exists.** Composition is the top-N by score plus the 75% variety band. Rogue, bard and healer aren't classes at all.
+- **Calamity rebalances vanilla:** Minishark is 4 damage (vanilla 6); Cobalt, Mythril and Palladium swords are buffed. So vanilla swords dominate early HM in Calamity, and the Minishark really is weak there.
+- **Mages:** soldiers have combat mana regen of 6/s and a 20-mana pool, so magic weapons sustain a median 0.23 of their scored rate. Mages that win the ranking then idle.
+  - Design question: give mage levies player-like mana (from gear plus a progression base) rather than lowering mage scores. Tenet #1.
+- **Cost-primary ranking (Eve's idea) prototyped:**
+  - It keeps the Minishark at #3 at early HM (score ranks it #30).
+  - It tracks progression (Spearman 0.85) but not damage (0.71).
+  - Failures: rich zero-damage items (TheWand 30M, Vortexpopper, Piranha Gun); per-unit priced throwables; Calamity price buckets.
+  - Recommendation: cost as the stage key with an effective-damage floor.
+  - **Decision pending (Eve).**
+- **Building now (`weapon-alloc`):**
+  - Rogue, bard and healer become real classes; class-less weapons can upgrade.
+  - Rack and storage are ranked together.
+  - Global class-matched assignment: worst-equipped of a class first, armorless levies last, sidearms only from unwanted blades.
+  - Ranking key unchanged until Eve decides.
+
+## 🧪 OWNER-LAB PHASE 2 (owner-lab-2 fce7e8b, harness only)
+- **Minion deaths under per-soldier slots, ROOT CAUSE:**
+  - The server net thread (`Netplay.UpdateConnectedClients`) deactivates client-less slots mid-frame.
+  - `Projectile.Update` then kills projectiles whose owner is inactive.
+  - Fixed in the lab by holding NetLock for the frame on a dedicated server; single player has no net thread.
+- **With per-soldier slots, damage now scales with soldier count:**
+  - At N=10: boomerang 8.5×, yoyo 9.3×, whip 10.5×, Hornet 10.0×, Storm-Hatchling 9.8×.
+  - Spider Staff 1.4× is vanilla per-NPC immunity; consider overriding it (tenet #1).
+- **Gear:**
+  - With `npcProj=false` and a real owner, the levy's OWN ModPlayer gear procs on its own hits. The commander's gear never procs on soldier hits.
+  - Confirmed working: Spectre Hood heals and Mask bolts, Frost set, Thorium Dragon/Pyromancer/Cryomancer/Vampire Gland, Calamity Nanotech, Tarragon, Vampiric Talisman.
+- **Per-tick Dummy upkeep ("s2"):**
+  - Contents: timers, ResetEffects (re-apply ownedProjectileCounts!), buffs, UpdateEquips, ArmorSets, PostUpdateEquips, PostUpdateMiscEffects.
+  - It makes timer- and tick-driven gear work: Chlorophyte leaf 2→25 shots, Volatile Gelatin, Stardust Guardian, Calamity STEALTH (0→0.90 plus stealth strikes).
+  - Cost at N=40, all geared: 1.2 ms Thorium, 2.9 ms Calamity.
+  - **Building now as `gear-upkeep` (no ownership change).**
+- **Server limit:** real sword swings never hit on a dedicated server (`ItemCheck_ApplyUseStyle_Inner` returns on dedServ), so SoldierSwing stays there.
+- **Production plan:** a SoldierOwner Enter/Leave frame, a slot allocator downward from 254, a NetThreadGuard, OwnerProjectiles replacing OwnerPuppet, then summons → spear/boomerang/yoyo/flail/whip → heal staves → gear, then hurt-driven gear.
+  - Open risks: MP clients killing virtual-slot projectiles; Calamity's Main.LocalPlayer reads.
+
 ## 🧭 EVE DECISIONS + ASKS (2026-11-05)
 - **DECIDED, full player emulation:** every weapon, accessory and armor set works for a levy exactly as for a player. A levy's own gear procs on its own hits (e.g. 60 levies in Chlorophyte all get the Crystal Leaf); Eve's gear procs on Eve's hits. Supersedes the hand-made procs in SoldierNPC.AccessoryProc/ArmorSets/StardustGuardian over time. Owner-lab phase 2 (`owner-lab-2`) is measuring this.
 - **DECIDED, healing both ways:** Eve's ally heals heal levies (shipped 1.7.0). Levy ally heals must heal Eve AND all other levies. Lifesteal heals the levy that hit. The ×3 soldier heal potency stays. Building on `heal-both-ways`, which also makes Medical Bag and homing heals target the lowest-HP levy.

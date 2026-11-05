@@ -29,6 +29,8 @@ namespace Levy.Common.Testing
 	{
 		internal static readonly string Mode = (Environment.GetEnvironmentVariable("LEVY_ALT_MODE") ?? "").Trim().ToLowerInvariant();
 		internal static readonly int CrowdN = Math.Max(1, Math.Min(12, int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_CROWD"), out int cn) ? cn : 1));
+		/// <summary>LEVY_ALT_TOUGH=0/1 forces the "boss or tough target" condition (the harness target has a million life, so it would always read tough).</summary>
+		internal static readonly int ToughEnv = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ALT_TOUGH"), out int te) ? te : -1;
 		private static bool Active => CombatHarness.Enabled && Mode != "";
 
 		private sealed class Row { public string Policy = "ALT_MIX"; public Dictionary<string, string> P = new(StringComparer.OrdinalIgnoreCase); }
@@ -45,19 +47,23 @@ namespace Levy.Common.Testing
 				{
 					string path = Environment.GetEnvironmentVariable("LEVY_ALT_TABLE");
 					if (!string.IsNullOrEmpty(path) && File.Exists(path))
+					{
+						int ci = 0, cp = 6, cq = 7; // columns by header name: item, policy, params (tools/altfire/*_altfire_items.tsv)
 						foreach (string line in File.ReadAllLines(path))
 						{
-							if (line.StartsWith("#") || line.StartsWith("item\t")) continue;
+							if (line.StartsWith("#")) continue;
 							string[] c = line.Split('\t');
-							if (c.Length < 6 || c[0].Length == 0) continue;
-							var r = new Row { Policy = c[4].Trim() };
-							foreach (string kv in c[5].Split(';', StringSplitOptions.RemoveEmptyEntries))
+							if (c[0] == "item") { ci = Array.IndexOf(c, "item"); cp = Array.IndexOf(c, "policy"); cq = Array.IndexOf(c, "params"); continue; }
+							if (c.Length <= cq || c[ci].Length == 0) continue;
+							var r = new Row { Policy = c[cp].Trim() };
+							foreach (string kv in c[cq].Split(';', StringSplitOptions.RemoveEmptyEntries))
 							{
 								int eq = kv.IndexOf('=');
 								if (eq > 0) r.P[kv.Substring(0, eq).Trim()] = kv.Substring(eq + 1).Trim();
 							}
-							_table[c[0].Trim()] = r;
+							_table[c[ci].Trim()] = r;
 						}
+					}
 				}
 				catch (Exception) { }
 			}
@@ -93,7 +99,7 @@ namespace Levy.Common.Testing
 				if (dd < bd) { bd = dd; best = n; }
 			}
 			if (best == null) return c;
-			c.Has = true; c.Dist = (float)Math.Sqrt(bd) / 16f; c.Tough = best.lifeMax >= 600 || best.boss;
+			c.Has = true; c.Dist = (float)Math.Sqrt(bd) / 16f; c.Tough = ToughEnv >= 0 ? ToughEnv == 1 : (best.lifeMax >= 600 || best.boss);
 			float r2 = crowdRadiusTiles * 16f; r2 *= r2;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
@@ -121,6 +127,8 @@ namespace Levy.Common.Testing
 				case "ALT_HEAVY": return x.Tough && x.Dist >= minD && x.Dist <= maxD;
 				case "ALT_AOE": return x.Crowd >= (int)F(r, "minEnemies", 3f) && x.Dist >= minD && x.Dist <= maxD;
 				case "ALT_RATE": return x.Dist <= maxD;
+				case "ALT_FAR": return x.Dist >= minD;
+				case "ALT_ALWAYS": return true;
 				case "TOGGLE_N": { PrimSince.TryGetValue(name, out int n); if (n >= (int)F(r, "afterShots", 8f)) { PrimSince[name] = 0; return true; } return false; }
 				case "DETONATE": return r.P.TryGetValue("proj", out string pn) && CountProj(pn) >= (int)F(r, "minOut", 1f);
 				case "PLACE": return r.P.TryGetValue("proj", out string pp) && CountProj(pp) < (int)F(r, "maxOut", 1f) && x.Dist <= maxD;

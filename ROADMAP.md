@@ -92,6 +92,15 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 🧭 EVE DECISIONS + ASKS (2026-11-05)
+- **DECIDED, full player emulation:** every weapon, accessory and armor set works for a levy exactly as for a player. A levy's own gear procs on its own hits (e.g. 60 levies in Chlorophyte all get the Crystal Leaf); Eve's gear procs on Eve's hits. Supersedes the hand-made procs in SoldierNPC.AccessoryProc/ArmorSets/StardustGuardian over time. Owner-lab phase 2 (`owner-lab-2`) is measuring this.
+- **DECIDED, healing both ways:** Eve's ally heals heal levies (shipped 1.7.0). Levy ally heals must heal Eve AND all other levies. Lifesteal heals the levy that hit. The ×3 soldier heal potency stays. Building on `heal-both-ways`, which also makes Medical Bag and homing heals target the lowest-HP levy.
+- **DECIDED, more levies:** modded bosses must ADD levies, never dilute. Eve is at 9 levies. Building on `progression-additive`.
+- **Ammo/platform:** Eve did NOT stop that builder. It has been restarted from f89280e on `ammo-platform`.
+- **Investigating (no fix yet):** levies wielding Wulfrum Knives in early HM ("throwing paper clips"); "barely use Calamity". Branch `weapon-choice-investigation`.
+- **DESIGN OPEN, discuss before building:** an option for bosses to target levies first (for a Thorium healer playstyle, even on first kills). Eve's anti-cheese concern: respawning militia and levies farm a boss that is meant to be survived in one life. Eve's ideas: respawn time that grows with army size; a fixed boss arena; levies need Wormhole Potions to rejoin a fight.
+- **Fact (Calamity source):** the Brain of Cthulhu rework is gated on `CalamityWorld.revenge || BossRush` (CalamityVanillaAIOverrideNPC.cs:144). With Revengeance off, the vanilla BoC AI runs. I know of no mod that reverts only BoC.
+
 ## 📦 SHIPPED 2026-11-05: Levy 1.7.1 (Mechanization stays 0.7.0). Boots clean with Levy+Mech and Thorium+Levy+Mech; log "OWNERPUPPET: enabled mask=31 (config)"
 - On-hit/exhaustion fix (onhit-fix 1d172ab), default ON via config "Weapon effects start at the soldier".
 - Measured on flagged sets: Thorium 34→7, Calamity 24→4 weapons acting at the commander; Thorium throwers leaking into the commander's state 50→0.

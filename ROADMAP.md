@@ -207,7 +207,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
-## 🩹 Levy 1.7.4 (heal-both-ways 8bc8f09), booting
+## 📦 SHIPPED Levy 1.7.4 (heal-both-ways 8bc8f09); boots clean Levy+Mech and Thorium+Levy+Mech; Mechanization stays 0.7.1
 - **Levy-cast ally heals reach the commander** (the caster is the healer, so the commander is an ally). Commander healing went 0→60–120 across Hippocrati-crossbow, Cosmic Flux, Balance Bloom, Iridescent, Coral Purifier, Life Disperser and Sacred Lyre.
 - **Weapon heals no longer throttled** by the 40-tick reservation (Eve's Sacred Lyre on levies: 43→96).
 - **Seek-heal bolts steer to wounded levies** using Thorium's own speed and inertia (Life Surge 22→96).

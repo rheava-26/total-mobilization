@@ -168,6 +168,11 @@ Mods: {
 
 		Configs: {
 			WeaponRankMode: {
+				Balanced: {
+					Label: Balanced
+					Tooltip: Weapons rank by sell price. Weapons far behind your world's progress rank lower, and weapons recently added to the Armory rank higher.
+				}
+
 				SellPrice: {
 					Label: Sell price
 					Tooltip: Weapons rank by their sell price.
@@ -258,6 +263,16 @@ Mods: {
 					Tooltip: Soldiers draw Life Crystals, Life Fruit and Mana Crystals from their Armory's storage, one at a time, until they reach their grade limit.
 				}
 
+				FallenStarsPerManaCrystal: {
+					Label: Fallen Stars per levy mana crystal
+					Tooltip: Fallen Stars the Armory turns into one Mana Crystal for a levy. Vanilla uses 5.
+				}
+
+				ArmoryTurnsStarsIntoMana: {
+					Label: Armory turns Fallen Stars into levy mana
+					Tooltip: Fallen Stars in an Armory's storage raise the mana of its magic levies, worst-supplied first. Stars are kept while any weapon there or in a levy's hands fires them.
+				}
+
 				RealWeaponShoot: {
 					Label: Real weapon effects
 					Tooltip: Soldiers fire through the game's own shooting code, so special weapons keep their effects. Turn off to use the simpler fallback.
@@ -275,7 +290,7 @@ Mods: {
 
 				SkipArmoredWeapons: {
 					Label: Skip weapons that barely hurt armored enemies
-					Tooltip: A weapon whose hits do almost nothing to the enemies at your world's progress ranks below every weapon that does real damage. Applies to the two price rankings.
+					Tooltip: A weapon whose hits do almost nothing to the enemies at your world's progress ranks below every weapon that does real damage. Applies to the price rankings.
 				}
 
 				AutoUpgradeWeapons: {

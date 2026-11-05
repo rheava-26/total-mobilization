@@ -67,7 +67,7 @@ namespace Levy.Common.Testing
 		{
 			if (it == null || it.IsAir) return "-";
 			var p = WeaponClassifier.GetProfile(it);
-			return $"{(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)}[{p.Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} sc={WeaponClassifier.Score(it):F0} rk={WeaponRank.Of(it):F1}{(WeaponRank.Mode != WeaponRankMode.Damage && WeaponRank.SkipArmored && WeaponRank.Negligible(it) ? " NEGL" : "")}{(it.stack > 1 ? " x" + it.stack : "")}]";
+			return $"{(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)}[{p.Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} sc={WeaponClassifier.Score(it):F0} rk={WeaponRank.Of(it):F1}{(WeaponRank.Mode == WeaponRankMode.Balanced ? $" tier={ProgressionTier.Of(it.type):F1} bst={DepositStamp.Boost(it):F2}" : "")}{(WeaponRank.Mode != WeaponRankMode.Damage && WeaponRank.SkipArmored && WeaponRank.Negligible(it) ? " NEGL" : "")}{(it.stack > 1 ? " x" + it.stack : "")}]";
 		}
 
 		private void Run(StringBuilder sb)
@@ -77,7 +77,7 @@ namespace Levy.Common.Testing
 			string rk = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_RANK");
 			if (!string.IsNullOrEmpty(rk))
 			{
-				var m = rk == "damage" ? WeaponRankMode.Damage : rk == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : WeaponRankMode.SellPrice;
+				var m = rk == "damage" ? WeaponRankMode.Damage : rk == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : rk == "balanced" ? WeaponRankMode.Balanced : WeaponRankMode.SellPrice;
 				bool skip = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_SKIP") != "0";
 				WeaponRank.Force(m, skip);
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_PICKPROBE_STAGE"), out int st)) WeaponRank.ForceStage = st;
@@ -99,11 +99,11 @@ namespace Levy.Common.Testing
 					foreach (var cfg in matrix.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
 					{
 						var kv = cfg.Split(':'); string mm = kv[0]; bool sk = kv.Length < 2 || kv[1] != "0";
-						WeaponRank.Force(mm == "damage" ? WeaponRankMode.Damage : mm == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : WeaponRankMode.SellPrice, sk);
+						WeaponRank.Force(mm == "damage" ? WeaponRankMode.Damage : mm == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : mm == "balanced" ? WeaponRankMode.Balanced : WeaponRankMode.SellPrice, sk);
 						sb.AppendLine($"\n################ CONFIG ranking={WeaponRank.Mode} skipArmored={WeaponRank.SkipArmored}");
 						foreach (var f in files) if (File.Exists(f)) Scenarios(sb, File.ReadAllLines(f));
 					}
-				WeaponRank.ForceStage = -1; WeaponRank.Release();
+				WeaponRank.ForceStage = -1; WeaponRank.ForceProgress = -1f; WeaponRank.Release(); LevyClock.Force(null);
 			}
 		}
 
@@ -253,11 +253,13 @@ namespace Levy.Common.Testing
 				cur?.Lines.Add(l);
 			}
 			bool oldCm = LevyConfig.Get.ClassMatchIssue;
+			ProgressionTier.EnsureBuilt(m => sb.AppendLine("# " + m));
 			foreach (var sc in scens)
 			{
-				WeaponRank.ForceStage = -1;
-				foreach (var rl in sc.Lines) if (rl.StartsWith("RANKSTAGE ")) WeaponRank.ForceStage = int.Parse(rl.Substring(10).Trim());
-				sb.AppendLine("\n## SCENARIO " + sc.Name + $"   [ranking {WeaponRank.Mode} skip={WeaponRank.SkipArmored} stage={WeaponRank.Stage()} defense={WeaponRank.StageDefenseNow()}]");
+				WeaponRank.ForceStage = -1; WeaponRank.ForceProgress = -1f;
+				LevyClock.Force(10 * LevyClock.TicksPerDay); double stampAge = -1; // CLOCK d / AGE d / OLD: weapons stocked after an AGE line were deposited d game days before the pinned clock
+				foreach (var rl in sc.Lines) { if (rl.StartsWith("RANKSTAGE ")) WeaponRank.ForceStage = int.Parse(rl.Substring(10).Trim()); if (rl.StartsWith("RANKPROGRESS ")) WeaponRank.ForceProgress = float.Parse(rl.Substring(13).Trim(), System.Globalization.CultureInfo.InvariantCulture); }
+				sb.AppendLine("\n## SCENARIO " + sc.Name + $"   [ranking {WeaponRank.Mode} skip={WeaponRank.SkipArmored} stage={WeaponRank.Stage()} defense={WeaponRank.StageDefenseNow()} progress={WeaponRank.Progress():F1} tiersReady={ProgressionTier.Ready}]");
 				var te = new ArmoryTE();
 				int nSold = 9; var souls = new List<SoldierRecord>(); bool staged = false; var mix = new List<string>(); string order = "interleave";
 				SoldierRecord NewSoldier(int i)
@@ -277,6 +279,7 @@ namespace Levy.Common.Testing
 					for (int c = 0; c < count; c++)
 					{
 						var cp = c == 0 ? it : Make(spec, 1);
+						if (stampAge >= 0) DepositStamp.Set(cp, LevyClock.Now - (long)(stampAge * LevyClock.TicksPerDay));
 						int slot = Array.FindIndex(te.Storage, x => x == null || x.IsAir);
 						te.Storage[slot] = cp;
 					}
@@ -297,7 +300,9 @@ namespace Levy.Common.Testing
 					var t = l.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 					switch (t[0])
 					{
-						case "RANKSTAGE": break;
+						case "RANKSTAGE": case "RANKPROGRESS": break;
+						case "AGE": stampAge = double.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture); break;
+						case "OLD": stampAge = -1; break;
 						case "SOLDIERS": nSold = int.Parse(t[1]); break;
 						case "MIX": { mix = BuildMix(t.Skip(2).ToArray(), t[1]); nSold = mix.Count; break; } // MIX <order> melee=5 ranged=4 magic=3 summon=1 none=2
 						case "ROUTE": { ProgressionTierProbe.EnsureBuilt(sb); var ri = Make(t[1]); if (ri == null) sb.AppendLine("  ROUTE cannot resolve " + t[1]); else { sb.AppendLine("  ROUTE " + t[1]); ProgressionTierProbe.Dump(ri.type, sb); } break; }
@@ -330,7 +335,7 @@ namespace Levy.Common.Testing
 				var left = te.Storage.Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).Select(x => Describe(x));
 				sb.AppendLine("  left on shelves: " + string.Join(" | ", left));
 			}
-			LevyConfig.Get.ClassMatchIssue = oldCm;
+			LevyConfig.Get.ClassMatchIssue = oldCm; LevyClock.Force(null); WeaponRank.ForceProgress = -1f;
 		}
 	}
 }

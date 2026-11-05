@@ -33,11 +33,13 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;
 		[DefaultValue(true)] public bool UseVanillaStatPipeline;
 		[DefaultValue(false)] public bool ClassMatchIssue;
-		[DefaultValue(global::Levy.Common.Weapons.WeaponRankMode.SellPrice)] [DrawTicks] public global::Levy.Common.Weapons.WeaponRankMode WeaponRanking;
-		[DefaultValue(true)] public bool SkipArmoredWeapons;
+		[DefaultValue(global::Levy.Common.Weapons.WeaponRankMode.Balanced)] [DrawTicks] public global::Levy.Common.Weapons.WeaponRankMode WeaponRanking;
+		[DefaultValue(false)] public bool SkipArmoredWeapons;
 		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool RealWeaponShoot;
 		[DefaultValue(true)] public bool AutoFeedCrystals;
+		[Range(1, 5)] [DefaultValue(5)] public int FallenStarsPerManaCrystal;
+		[DefaultValue(true)] public bool ArmoryTurnsStarsIntoMana;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
 		[DefaultValue(true)] public bool SoldierEffectsAtSoldier;
 		[DefaultValue(true)] public bool RealGearUpkeep;

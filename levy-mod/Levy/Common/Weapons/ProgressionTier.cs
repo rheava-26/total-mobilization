@@ -150,6 +150,9 @@ namespace Levy.Common.Weapons
 			return false;
 		}
 
+		/// <summary>A shop condition that is a special event or world seed (the Princess's anniversary stock, Halloween, Christmas, a party): no progression route.</summary>
+		private static bool EventOnly(string k) => k.Contains("Anniversary") || k.Contains("Halloween") || k.Contains("Xmas") || k.Contains("Christmas") || k.Contains("Party") || k.Contains("Celebration") || k.Contains("Remix") || k.Contains("Drunk") || k.Contains("NotTheBees") || k.Contains("ForTheWorthy") || k.Contains("TheConstant") || k.Contains("DontStarve") || k.Contains("GetFixed") || k.Contains("TenthAnniversary");
+
 		private static float CondP(IEnumerable<Condition> conds)
 		{
 			float p = 0f;
@@ -210,7 +213,7 @@ namespace Levy.Common.Weapons
 					var item = e.Item; if (item == null || item.IsAir) continue;
 					float p = CondP(e.Conditions);
 					bool unknownMod = e.Conditions != null && e.Conditions.Any(c => (c.Description?.Key ?? "").StartsWith("Mods.") && CondKeyP(c.Description.Key) <= 0f);
-					if (unknownMod) continue;
+					if (unknownMod || e.Conditions != null && e.Conditions.Any(c => EventOnly(c.Description?.Key ?? ""))) continue;
 					if (randomPool && p <= 0f) continue;
 					if (arrival < 0f && p <= 0f) continue;
 					p = Math.Max(p, Math.Max(0f, arrival));

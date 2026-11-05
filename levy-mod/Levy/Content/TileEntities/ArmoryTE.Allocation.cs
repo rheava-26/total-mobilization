@@ -160,7 +160,7 @@ namespace Levy.Content.TileEntities
 				var rec = (SoldierRecord)l.Tag; var g = rec.Gear;
 				var old = g.Weapon;
 				g.Weapon = neu; g.ThrownRestockType = 0;
-				if (!IsAir(old)) { var rem = Deposit(old); if (!IsAir(rem)) Spill(rem, protect: true); }
+				if (!IsAir(old)) { var rem = DepositOld(old); if (!IsAir(rem)) Spill(rem, protect: true); }
 				ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(old) != WeaponClassifier.ItemDamageClass(neu));
 				Touch(rec);
 				if (ReferenceEquals(rec, requester)) requesterChanged = true;

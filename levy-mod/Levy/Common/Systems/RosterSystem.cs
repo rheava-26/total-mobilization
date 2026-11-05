@@ -840,33 +840,11 @@ namespace Levy.Common.Systems
 			bool changed = false;
 			foreach (var kv in byArmory)
 			{
-				var armory = kv.Key; int ratio = StarMana.Ratio;
-				int crystals = StarMana.CrystalsFor(armory.CountInStorage(ItemID.FallenStar), ratio);
-				if (crystals <= 0 || StarMana.StarsAreAmmo(armory, kv.Value)) continue;
-				var mages = kv.Value.FindAll(r => !r.Dead && !r.Reserve && StarMana.IsMage(r));
-				if (mages.Count == 0) continue;
-				mages.Sort((a, b) => a.Id.CompareTo(b.Id));
-				var have = new int[mages.Count]; var room = new int[mages.Count];
-				for (int k = 0; k < mages.Count; k++)
-				{
-					have[k] = mages[k].ManaCrystals;
-					room[k] = Math.Max(0, (int)Math.Ceiling((GuideSystem.ManaCap - mages[k].RawMana) / (double)LevyConstants.ManaPerCrystal));
-					if (!CanAbsorbCrystal(mages[k], ItemID.ManaCrystal)) room[k] = 0;
-				}
-				var given = StarMana.Distribute(crystals, have, room);
-				int used = 0;
-				for (int k = 0; k < mages.Count; k++) used += given[k];
-				if (used <= 0) continue;
-				int taken = armory.TakeUpTo(ItemID.FallenStar, used * ratio);
-				if (taken < used * ratio) { used = taken / ratio; if (used <= 0) continue; for (int k = 0; k < given.Length; k++) given[k] = Math.Min(given[k], used); } // storage changed under us: never give more than was paid for
-				for (int k = 0; k < mages.Count; k++)
-					for (int c = 0; c < given[k]; c++)
-					{
-						if (!ApplyCrystal(mages[k], ItemID.ManaCrystal)) break;
-						changed = true;
-					}
-				var anyBody = BodyOf(mages[0]);
-				PlayCrystalSound(ItemID.ManaCrystal, anyBody != null ? anyBody.NPC.Center : armory.Center);
+				int given = StarMana.Convert(kv.Key, kv.Value, StarMana.Ratio, CanAbsorbCrystal, r => ApplyCrystal(r, ItemID.ManaCrystal));
+				if (given <= 0) continue;
+				changed = true;
+				var mage = kv.Value.Find(r => BodyOf(r) != null);
+				PlayCrystalSound(ItemID.ManaCrystal, mage != null ? BodyOf(mage).NPC.Center : kv.Key.Center);
 			}
 			if (changed) SendRosterSnapshot();
 		}

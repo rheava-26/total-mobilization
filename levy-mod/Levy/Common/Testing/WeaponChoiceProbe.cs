@@ -301,6 +301,7 @@ namespace Levy.Common.Testing
 					switch (t[0])
 					{
 						case "RANKSTAGE": case "RANKPROGRESS": break;
+						case "GLOBAL": ArmoryTE.TestServed = souls; break; // the whole army is planned together, as in the game (default: each levy alone)
 						case "AGE": stampAge = double.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture); break;
 						case "OLD": stampAge = -1; break;
 						case "SOLDIERS": nSold = int.Parse(t[1]); break;
@@ -332,6 +333,7 @@ namespace Levy.Common.Testing
 				sb.AppendLine("  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost");
 				foreach (var it in te.Storage.Concat(souls.Select(x => x.Gear.Weapon)).Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).GroupBy(x => x.type).Select(g => g.First()).OrderByDescending(x => WeaponRank.Of(x)))
 					sb.AppendLine($"    {(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)} | {WeaponClassifier.GetProfile(it).Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} | {it.damage} {it.useTime} {it.reuseDelay} {it.rare} {it.value} | {WeaponClassifier.Score(it):F1} (swing only {SwingOnlyScore(it):F1}) | {WeaponRank.Of(it):F1}{(WeaponRank.Mode != WeaponRankMode.Damage && WeaponRank.SkipArmored && WeaponRank.Negligible(it) ? " NEGL" : "")} | {MaterialCost.Of(it.type):F0}");
+				ArmoryTE.TestServed = null;
 				var left = te.Storage.Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).Select(x => Describe(x));
 				sb.AppendLine("  left on shelves: " + string.Join(" | ", left));
 			}

@@ -1641,6 +1641,13 @@ namespace Levy.Content.TileEntities
 			return false;
 		}
 
+		/// <summary>A levy's weapon going back to storage: one nobody has stamped is old, so being handed back never makes it look new. (A weapon the player deposits is stamped by <see cref="StampNew"/>.)</summary>
+		private Item DepositOld(Item item)
+		{
+			DepositStamp.Stamp(item, DepositStamp.Adopted);
+			return Deposit(item);
+		}
+
 		/// <summary>Puts an item into bulk storage (stacking); returns what did not fit (or null).</summary>
 		public virtual Item Deposit(Item item)
 		{
@@ -1655,7 +1662,6 @@ namespace Levy.Content.TileEntities
 			// 2. first empty slot takes the instance itself
 			for (int i = 0; i < Storage.Length; i++) {
 				if (!IsAir(Storage[i])) continue;
-				DepositStamp.Stamp(item);
 				Storage[i] = item;
 				MarkDirty();
 				return null;
@@ -1724,7 +1730,7 @@ namespace Levy.Content.TileEntities
 			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
 			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
-				var rem = Deposit(g.Sidearm);
+				var rem = DepositOld(g.Sidearm);
 				if (!IsAir(rem)) Spill(rem, protect: true);
 				g.Sidearm = new Item();
 				changed = true;
@@ -1981,7 +1987,7 @@ namespace Levy.Content.TileEntities
 			// A melee-type primary carries no fallback blade: a blade left from a ranged or magic kit goes back to the shelf.
 			// A summon weapon is never carried twice in the same role: a second whip, a second staff or a second sentry goes back to the shelf, and IssueGear re-picks the complementary one.
 			if (!((classChanged && IsMeleeTypeFamily(nf) && IsMeleeFamily(sf)) || (nf == WeaponFamily.Summon && sf == WeaponFamily.Summon) || (nf == WeaponFamily.Whip && sf == WeaponFamily.Whip) || (nf == WeaponFamily.Sentry && sf == WeaponFamily.Sentry))) return;
-			var rem = Deposit(g.Sidearm);
+			var rem = DepositOld(g.Sidearm);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			g.Sidearm = new Item();
 		}
@@ -2078,7 +2084,7 @@ namespace Levy.Content.TileEntities
 			var old = g.Get(slot);
 			g.Set(slot, neu);
 			if (slot == SoldierGear.SlotWeapon) g.ThrownRestockType = 0;
-			var rem = Deposit(old);
+			var rem = DepositOld(old);
 			if (!IsAir(rem)) Spill(rem, protect: true);
 			MarkDirty();
 			return true;
@@ -2104,7 +2110,7 @@ namespace Levy.Content.TileEntities
 			}
 			var items = new List<Item>(gear.AllItems());
 			foreach (var it in items) {
-				var rem = Deposit(it);
+				var rem = DepositOld(it);
 				if (!IsAir(rem)) Spill(rem, protect: true); // storage truly full: never lose gear, keep it on the ground, protected from slot recycling
 			}
 			gear.Clear();

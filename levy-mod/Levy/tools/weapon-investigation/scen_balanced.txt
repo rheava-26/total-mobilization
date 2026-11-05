@@ -1,0 +1,170 @@
+# Balanced ranking scenarios (vanilla + Thorium rig). GLOBAL plans the whole army together, as the game does. RANKPROGRESS pins the world progress on the Boss Checklist scale (7 = just entered Hardmode, 5 = after Skeletron, 0 = new world).
+# The probe pins the world clock at day 10. AGE d: weapons stocked after it were deposited d game days earlier (0.05 = just crafted); OLD: weapons stocked after it carry no stamp.
+# Armored classes: MIX gives each levy a class armor set (melee 3, ranged 3, magic 2, summon 1).
+
+[HM_old_stock_then_fresh_crafts]
+GLOBAL
+RANKPROGRESS 7
+MIX interleave melee=3 ranged=3 magic=2 summon=1
+W Vanilla/CopperShortsword
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/WoodenSword
+W Vanilla/Muramasa
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/NightsEdge
+W Vanilla/Starfury
+W Vanilla/EnchantedSword
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/PhoenixBlaster
+W Vanilla/HellwingBow
+W Vanilla/MoltenFury
+W Vanilla/Handgun
+W Vanilla/CopperBow
+W Vanilla/WoodenBow
+W Vanilla/WaterBolt
+W Vanilla/Flamelash
+W Vanilla/SpaceGun
+W Vanilla/DemonScythe
+W Vanilla/FlowerofFire
+W Vanilla/SlimeStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+AGE 0.05
+W Vanilla/CobaltSword
+W Vanilla/MythrilSword
+W Vanilla/PalladiumSword
+W Vanilla/CobaltRepeater
+W Vanilla/MythrilRepeater
+W Vanilla/PalladiumRepeater
+W Vanilla/CrystalStorm
+STAGE
+
+[HM_old_stock_fresh_is_a_day_old]
+GLOBAL
+RANKPROGRESS 7
+MIX interleave melee=3 ranged=3 magic=2 summon=1
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/FieryGreatsword
+W Vanilla/NightsEdge
+W Vanilla/Minishark
+W Vanilla/PhoenixBlaster
+W Vanilla/HellwingBow
+W Vanilla/WaterBolt
+W Vanilla/SpaceGun
+W Vanilla/SlimeStaff
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+AGE 1.0
+W Vanilla/CobaltSword
+W Vanilla/MythrilSword
+W Vanilla/CobaltRepeater
+W Vanilla/MythrilRepeater
+STAGE
+
+[PreWoF_after_Skeletron_minishark]
+GLOBAL
+RANKPROGRESS 5
+MIX interleave melee=3 ranged=3 magic=2 summon=1
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/NightsEdge
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/PhoenixBlaster
+W Vanilla/HellwingBow
+W Vanilla/MoltenFury
+W Vanilla/CopperBow
+W Vanilla/WaterBolt
+W Vanilla/Flamelash
+W Vanilla/SpaceGun
+W Vanilla/SlimeStaff
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+
+[PreBoss_new_world_fresh_iron]
+GLOBAL
+RANKPROGRESS 0
+MIX interleave melee=3 ranged=3 magic=2 summon=1
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/CopperBroadsword
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/Vilethorn
+W Vanilla/WandofSparking
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+AGE 0.05
+W Vanilla/IronBroadsword
+W Vanilla/IronBow
+W Vanilla/SilverBroadsword
+W Vanilla/SilverBow
+STAGE
+
+[HM_copper_and_cobalt_melee_only]
+GLOBAL
+RANKPROGRESS 7
+MIX interleave melee=3
+W Vanilla/CopperShortsword
+W Vanilla/CopperBroadsword
+W Vanilla/WoodenSword
+W Vanilla/IronBroadsword
+W Vanilla/CobaltSword
+STAGE
+
+[HM_fresh_junk_vs_old_good]
+GLOBAL
+RANKPROGRESS 7
+MIX interleave melee=3 ranged=2
+W Vanilla/CobaltSword
+W Vanilla/MythrilSword
+W Vanilla/NightsEdge
+W Vanilla/CobaltRepeater
+W Vanilla/MythrilRepeater
+M Vanilla/WoodenArrow x999
+STAGE
+AGE 0.05
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/WoodenSword
+W Vanilla/CopperBow
+W Vanilla/IronBow
+W Vanilla/WoodenBow
+STAGE
+
+[PostGolem_old_guns_vs_endgame]
+GLOBAL
+RANKPROGRESS 13
+MIX interleave melee=2 ranged=3
+W Vanilla/CopperShortsword
+W Vanilla/Muramasa
+W Vanilla/FieryGreatsword
+W Vanilla/NightsEdge
+W Vanilla/TerraBlade
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/Megashark
+W Vanilla/ChainGun
+W Vanilla/VenusMagnum
+M Vanilla/MusketBall x999
+STAGE

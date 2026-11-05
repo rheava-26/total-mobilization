@@ -47,6 +47,51 @@ namespace Levy.Common.Systems
 			return given;
 		}
 
+		/// <summary>
+		/// One armory's conversion: the stars in its storage make whole crystals at <paramref name="ratio"/>, dealt to its magic levies (<paramref name="canAbsorb"/> says whether a levy can still take one;
+		/// <paramref name="apply"/> gives it to him and returns false if refused). Stars are taken only for crystals actually given. Does nothing while something fires the stars. Returns the crystals given.
+		/// </summary>
+		public static int Convert(ArmoryTE armory, List<SoldierRecord> levies, int ratio, Func<SoldierRecord, int, bool> canAbsorb, Func<SoldierRecord, bool> apply)
+		{
+			ratio = Math.Clamp(ratio, MinRatio, MaxRatio);
+			int crystals = CrystalsFor(armory.CountInStorage(ItemID.FallenStar), ratio);
+			if (crystals <= 0 || StarsAreAmmo(armory, levies)) return 0;
+			var mages = levies.FindAll(r => r != null && !r.Dead && !r.Reserve && IsMage(r) && canAbsorb(r, ItemID.ManaCrystal));
+			if (mages.Count == 0) return 0;
+			mages.Sort((a, b) => a.Id.CompareTo(b.Id));
+			var have = new int[mages.Count]; var room = new int[mages.Count];
+			for (int k = 0; k < mages.Count; k++)
+			{
+				have[k] = mages[k].ManaCrystals;
+				room[k] = Math.Max(0, (int)Math.Ceiling((LevyConstants.MaxMana - mages[k].RawMana) / (double)LevyConstants.ManaPerCrystal));
+			}
+			var plan = Distribute(crystals, have, room);
+			int want = 0; foreach (int n in plan) want += n;
+			if (want <= 0) return 0;
+			int cost = want * ratio, taken = armory.TakeUpTo(ItemID.FallenStar, cost);
+			if (taken < cost)
+			{
+				Refund(armory, taken);
+				return 0; // the stars were not all there after all: nothing is given and nothing is lost
+			}
+			int given = 0;
+			for (int k = 0; k < mages.Count; k++)
+				for (int c = 0; c < plan[k]; c++)
+				{
+					if (!apply(mages[k])) { Refund(armory, ratio * (plan[k] - c)); break; } // refused: that crystal's stars go back
+					given++;
+				}
+			return given;
+		}
+
+		private static void Refund(ArmoryTE armory, int stars)
+		{
+			if (stars <= 0) return;
+			var back = new Item(); back.SetDefaults(ItemID.FallenStar); back.stack = stars;
+			var rem = armory.Deposit(back);
+			if (rem != null && !rem.IsAir) Item.NewItem(new Terraria.DataStructures.EntitySource_Misc("LevyStarMana"), armory.Center, rem);
+		}
+
 		/// <summary>True for a levy who fights as a mage: his armor's class is magic, or, with no armor class, so is his weapon.</summary>
 		public static bool IsMage(SoldierRecord r)
 		{

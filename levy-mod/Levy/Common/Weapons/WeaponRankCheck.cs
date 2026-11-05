@@ -291,6 +291,23 @@ namespace Levy.Common.Weapons
 			check(!te.HoldsWeaponUsing(AmmoID.FallenStar), "an armory without a Star Cannon holds nothing that fires stars");
 			te.Storage[5] = Make(ItemID.StarCannon);
 			check(te.HoldsWeaponUsing(AmmoID.FallenStar) && StarMana.StarsAreAmmo(te, new List<SoldierRecord>()), "a Star Cannon in storage keeps the stars");
+			// the whole conversion on throwaway levies: 23 stars at 5 per crystal = 4 crystals, worst-supplied mages first, melee levies and capped mages skipped
+			SoldierRecord Mage(int id, int crystals) { var r = new SoldierRecord { Id = id, ManaCrystals = crystals }; r.Gear.Weapon = Make(ItemID.WaterBolt); return r; }
+			var armory = new ArmoryTE(); armory.Storage[0] = Make(ItemID.FallenStar); armory.Storage[0].stack = 23;
+			var m1 = Mage(1, 0); var m2 = Mage(2, 0); var m3 = Mage(3, 2); var capped = Mage(4, 9); var fighter = new SoldierRecord { Id = 5 }; fighter.Gear.Weapon = Make(ItemID.IronBroadsword);
+			var squad = new List<SoldierRecord> { fighter, capped, m3, m2, m1 };
+			int made = StarMana.Convert(armory, squad, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; });
+			check(made == 4 && m1.ManaCrystals == 2 && m2.ManaCrystals == 2 && m3.ManaCrystals == 2 && capped.ManaCrystals == 9 && fighter.ManaCrystals == 0, "23 stars at 5 per crystal give 4 crystals to the two worst-supplied mages (got " + made + ": " + m1.ManaCrystals + "," + m2.ManaCrystals + "," + m3.ManaCrystals + ")");
+			check(armory.CountInStorage(ItemID.FallenStar) == 3, "exactly 20 stars were spent and the remainder of 3 stays (" + armory.CountInStorage(ItemID.FallenStar) + " left)");
+			check(m1.MaxMana == 60 && m1.RawMana == 60, "two crystals make a levy's maximum 60 mana (20 + 2 x 20)");
+			int one = StarMana.Convert(armory, squad, 1, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; });
+			check(one == 3 && armory.CountInStorage(ItemID.FallenStar) == 0, "at 1 star per crystal the last 3 stars make 3 crystals (" + one + ")");
+			var armory2 = new ArmoryTE(); armory2.Storage[0] = Make(ItemID.FallenStar); armory2.Storage[0].stack = 40; armory2.Storage[1] = Make(ItemID.StarCannon);
+			check(StarMana.Convert(armory2, new List<SoldierRecord> { Mage(7, 0) }, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; }) == 0 && armory2.CountInStorage(ItemID.FallenStar) == 40, "stars are kept while a Star Cannon is stocked");
+			var armory3 = new ArmoryTE(); armory3.Storage[0] = Make(ItemID.FallenStar); armory3.Storage[0].stack = 40;
+			check(StarMana.Convert(armory3, new List<SoldierRecord> { fighter, capped }, 5, RosterSystem.CanAbsorbCrystal, r => { r.ManaCrystals++; return true; }) == 0 && armory3.CountInStorage(ItemID.FallenStar) == 40, "with no mage who can take a crystal no star is spent");
+			var armory4 = new ArmoryTE(); armory4.Storage[0] = Make(ItemID.FallenStar); armory4.Storage[0].stack = 10;
+			check(StarMana.Convert(armory4, new List<SoldierRecord> { Mage(8, 0) }, 5, RosterSystem.CanAbsorbCrystal, r => false) == 0 && armory4.CountInStorage(ItemID.FallenStar) == 10, "a crystal that is refused gives its stars back");
 			var te2 = new ArmoryTE(); var holder = new SoldierRecord { Id = 1 }; holder.Gear.Weapon = Make(ItemID.SuperStarCannon);
 			check(!te2.HoldsWeaponUsing(AmmoID.FallenStar) && StarMana.StarsAreAmmo(te2, new List<SoldierRecord> { holder }), "a levy holding a Super Star Cannon keeps the stars");
 		}

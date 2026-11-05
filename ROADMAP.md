@@ -222,6 +222,27 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🧭 EVE (2026-11-06): plan OK; Armory 2.0 started
+- **Portal healer weapon** = Thorium **Dark Gate** (ThoriumMod.Items.Donate/DarkGate.cs). Eve's description matches the code:
+  - The portal is placed at the cursor; it needs line of sight (`Collision.CanHit` to MouseWorld).
+  - Travelling through it heals.
+  - Only one use per ChaosState cooldown. Eve remembers ~8 s; the code says ~12 s.
+  - No other Thorium healer portal item exists.
+- **OOA "sentry staff" idea, CLARIFIED:** spending Etherian Mana on a sentry lets a LEVY spawn there. Place as many as you can afford, one levy per sentry. NOT class-specific, NOT militia-specific.
+- **ON HOLD (Eve):**
+  - Emplacements, buildable barracks, militia housing, walls.
+  - Anything added later must be a TOGGLE: "militia from nearby NPCs" (current) vs "barracks + housing requirements".
+  - Walls are pointless as-is because enemies spawn on both sides. A possible later angle: barracks push enemy spawns away, like town NPCs do.
+- **Future emplacement = a heavy stationary weapon levies MUST man** (machine-gun mount), NOT an auto-firing turret.
+- **Militia vs levies, as Eve frames it:**
+  - Militia = garrison: a station spawns ~3 "innocent little baby militias" that sit there. Later: class towers (wizard tower → mage militia in mage gear, summoner tower, …).
+  - Levies = the regulars who follow you.
+  - Eve also likes the current call-on militia.
+- **Running:**
+  - `armory2-rules`: per-armory rule list (class balance weights/min/max/fixed; category soft/hard/at-least-N; allow/deny), Rules UI, item info side panel with rank breakdown, override and tag editing.
+  - `banners`: banner buffs for levies; investigating the returned-Phoenix-Blaster shelf bug.
+- **Armory 2.0 still to come:** targeted reforging, vanity always-wear, new-world setup popup.
+
 ## 🎯 ALT-FIRE SURVEY DONE (altfire-survey fbe9838; tables in levy-mod/Levy/tools/altfire/)
 - **Coverage:** 102 Calamity + 89 Thorium alt-click items, each with a pattern and a WHEN policy.
   - Biggest Calamity groups: HELD_VARIANT 19, ALT_SHOT_HEAVY 13, ALT_SHOT_AOE 12, RESOURCE_SPECIAL 11, DEFENSIVE_PARRY 10.

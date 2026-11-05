@@ -52,7 +52,7 @@ namespace Levy.Common.Compat.Thorium
 		public const float SelfHealBelow = 0.85f, HybridSelfHealBelow = 0.6f;
 
 		/// <summary>Main.GameUpdateCount until which a healer leaves each player alone (a heal is already flying at them).</summary>
-		private static readonly uint[] PlayerReservedUntil = new uint[Main.maxPlayers + 1];
+		internal static readonly uint[] PlayerReservedUntil = new uint[Main.maxPlayers + 1];
 
 		/// <summary>Self-heal tools that do not set <c>HealType.Player</c>. Name -> how the heal is sized (mana converted 1:1).</summary>
 		private static bool IsNamedSelfHeal(Item item) => item.ModItem != null && item.ModItem.Name == "Recuperate";
@@ -115,6 +115,8 @@ namespace Levy.Common.Compat.Thorium
 		private static float ReachPx(SoldierNPC s, Item item)
 		{
 			WeaponProfile prof = s.Weapon != null && s.Weapon.ItemType == item.type ? s.Weapon : WeaponClassifier.GetProfile(item);
+			// a hybrid that is a melee swing fights at sword reach but still heals at the generous heal reach
+			if (prof != null && (prof.Family == WeaponFamily.Broadsword || prof.Family == WeaponFamily.Spear || prof.Family == WeaponFamily.Shortsword) && WeaponClassifier.IsSwungHybrid(item)) return LevyConstants.RangeHeal * LevyConstants.TilePx;
 			return Math.Clamp(prof?.RangeTiles ?? 20, 8, 40) * LevyConstants.TilePx;
 		}
 

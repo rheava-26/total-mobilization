@@ -49,8 +49,16 @@ namespace Levy.Common.Testing
 		// LEVY_HARNESS_ALLYHP=<percent> start health of the wounded ally soldier (default 30; above 75 a soldier healer's own AI abstains, so only Thorium's own effect can heal him)
 		// LEVY_HARNESS_ONLYLEVIES=1     the stand-in commander is at full health and there is no second stand-in player: the only wounded ally is the soldier
 		// LEVY_HARNESS_SPSWAP=1         the SOLDIER window updates Thorium projectiles owned by the commander with Main.myPlayer = the commander, as in single player (a dedicated server has no local player)
-		private static bool _aimEnemy, _onlyLevies, _spSwap;
-		private static int _allyHpPct = 30;
+		// LEVY_HARNESS_VANILLA=<names|ids>  extra VANILLA items to test (e.g. "Vampire Knives"); LEVY_HARNESS_COMPANION=1 gives every trial a wounded ally + wounded commander (non-healer weapons too)
+		// LEVY_HARNESS_CMDHP=<percent>  start health of the commander in a companion trial (default 50; 100 = full)   LEVY_HARNESS_SELFHP=<percent>  start health of the SHOOTING soldier (default 100)
+		// LEVY_HARNESS_ACC=<ModItem names in the tested mod>  accessories worn by the shooting soldier AND the baseline player (e.g. MedicalBag: +1 heal bonus, so a heal-bonus orb heals at all)
+		// LEVY_HARNESS_VANPROBE=1  the shooting soldier's hit also spawns vanilla's own lifesteal bolt (VampireHeal, type 305, 8 life) at the target every 25 ticks, so vanilla's lifesteal arrival (statLife += on the owner) is exercised directly (Levy's soldiers throw their own SoldierVampireKnife, which never spawns it)
+		// LEVY_HARNESS_MEDBAG=1  record the Medical Bag arrow/pick state of the commander each tick of the window (needs LEVY_HARNESS_ACC=MedicalBag)
+		// LEVY_HARNESS_NOWALK=1 / LEVY_HARNESS_NOBASE=1  drop the walk-in trial / the player baseline window.   LEVY_HARNESS_HEALAIM=ally  a soldier-window heal-class weapon targets the wounded ally (not the enemy)
+		private static bool _aimEnemy, _onlyLevies, _spSwap, _forceCompanion, _noWalk, _noBase;
+		private static int _allyHpPct = 30, _cmdHpPct = -1, _selfHpPct = 100;
+		private static string[] _vanilla, _accNames;
+		private static bool _medBag, _vanProbe;
 		private static string[] _classFilter, _armorNames;
 		private static int[] _ranges = { 4, 7, 15, 25, 40 };
 		private const int WalkTicks = 1300;          // walk-in window: target walks 40 tiles at ~2 tiles/s (0.5333 px/tick)
@@ -115,6 +123,17 @@ namespace Levy.Common.Testing
 				_onlyLevies = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_ONLYLEVIES"));
 				_spSwap = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_SPSWAP"));
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_ALLYHP"), out int ahp) && ahp >= 1 && ahp <= 100) _allyHpPct = ahp;
+				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_CMDHP"), out int chp) && chp >= 1 && chp <= 100) _cmdHpPct = chp;
+				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_SELFHP"), out int shp) && shp >= 1 && shp <= 100) _selfHpPct = shp;
+				_forceCompanion = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_COMPANION"));
+				_noWalk = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_NOWALK"));
+				_noBase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_NOBASE"));
+				string accs = Environment.GetEnvironmentVariable("LEVY_HARNESS_ACC");
+				if (!string.IsNullOrWhiteSpace(accs)) _accNames = accs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				_medBag = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_MEDBAG"));
+				_vanProbe = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_VANPROBE"));
+				string vn = Environment.GetEnvironmentVariable("LEVY_HARNESS_VANILLA");
+				if (!string.IsNullOrWhiteSpace(vn)) _vanilla = vn.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_SETUP"), out int su) && su >= 10 && su <= 2000) SetupTicks = su;
 				string cf = Environment.GetEnvironmentVariable("LEVY_HARNESS_CLASS");
 				if (!string.IsNullOrWhiteSpace(cf)) _classFilter = cf.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -129,6 +148,7 @@ namespace Levy.Common.Testing
 				}
 				if (Main.dedServ) Main.OnTickForThirdPartySoftwareOnly += DriveServer;
 				On_Projectile.Update += OnProjUpdate;
+				if (_vanProbe) On_Projectile.vampireHeal += VampireHealProbe;
 				if (_spSwap) On_NPC.UpdateNPC += OnNpcUpdate;
 				On_NetMessage.SendStrikeNPC += OnSendStrike;
 				On_NetMessage.SendData += OnSendData;
@@ -138,7 +158,21 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Enabled = false; Mod.Logger.Warn("HARNESS: load failed, disabled: " + e.Message); }
 		}
 
-		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
+		private static readonly Dictionary<int, (int id, float dist, int timeLeft)> _vbSeen = new(); private static int _vbGone; private static float _vbLastDist, _vbLastTime;
+		private static int _vhCalls; private static string _vhLast = "";
+		private static void VampireHealProbe(On_Projectile.orig_vampireHeal orig, Projectile self, int dmg, Vector2 pos, Entity victim)
+		{
+			_vhCalls++; _vhLast = $"dmg{dmg} myPlayer{Main.myPlayer} owner{self.owner} lifeSteal{Main.player[Main.myPlayer].lifeSteal} commanderLife{Main.player[0].statLife}/{Main.player[0].statLifeMax2} pos({Main.player[0].Center.X:0},{Main.player[0].Center.Y:0})";
+			orig(self, dmg, pos, victim);
+		}
+		private static string StaticInt(string name)
+		{
+			var f = typeof(OwnerPuppet).GetField(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+			return f == null ? "n/a" : f.GetValue(null)?.ToString() ?? "?";
+		}
+		internal static string VampireProbeState => $"vampireHeal calls={_vhCalls} last[{_vhLast}] boltsGone={_vbGone} avgLastDistPx={(_vbGone > 0 ? _vbLastDist / _vbGone : 0):0} avgLastTimeLeft={(_vbGone > 0 ? _vbLastTime / _vbGone : 0):0}";
+
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_Projectile.vampireHeal -= VampireHealProbe; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
 
 		public override void OnWorldLoad()
 		{
@@ -176,6 +210,14 @@ namespace Levy.Common.Testing
 			}
 			catch (Exception e) { Instance?.Mod.Logger.Warn("HARNESS: world update threw: " + (e is System.Reflection.TargetInvocationException t && t.InnerException != null ? t.InnerException : e)); }
 			finally { _inDrive = false; }
+		}
+
+		/// <summary>Medical Bag probe: the commander's accessory pass runs after the players update and before the projectiles do, so drive it here (a real client's order).</summary>
+		public override void PreUpdateProjectiles()
+		{
+			if (!Enabled || !_medBag || _ph != Ph.Run || Main.netMode == NetmodeID.MultiplayerClient || !ModLoader.HasMod("ThoriumMod") || !ThoriumCompatSystem.Active) return;
+			string me = HarnessThoriumProbe.MedBagDrive(Main.player[0]);
+			if (me != "" && _cur != null && !_cur.Notes.Contains(me)) _cur.Notes += "medbag drive " + me;
 		}
 
 		public override void PostUpdateEverything()
@@ -315,6 +357,10 @@ namespace Levy.Common.Testing
 			p.active = true; p.dead = false; p.name = CommanderName;
 			// the server resets a player slot that has no network client (max life fell back to 100 in the first run), so re-assert the maxima every tick
 			p.statLifeMax = 500; p.statLifeMax2 = 500; p.statManaMax = 200; p.statManaMax2 = 200;
+			if (_vanProbe) p.lifeSteal = 80f; // vanilla's lifesteal pool (a spawned player starts with it full); the stand-in was never spawned
+			if (_accNames != null && ModLoader.HasMod("ThoriumMod") && ThoriumCompatSystem.Active) HarnessThoriumProbe.SetHealBonus(p, 1);
+ // what a Medical Bag gives; the stand-in's gear is never updated
+			p.lifeRegenTime = 0; p.lifeRegenCount = 0; // natural regeneration speeds up the longer a player goes unhurt; pin it so every window sees the same slow regen and a heal stands out
 			p.position = new Vector2(_cx * 16f - (_stage == 1 ? 10f : 4 * 16f) , FloorY * 16f - p.height);
 			if (HarnessOnHit.Enabled && _stage == 0 && HarnessOnHit.FarTiles > 0) p.position = new Vector2(_cx * 16f - HarnessOnHit.FarTiles * 16f, HarnessOnHit.FarY * 16f); // far and high above the soldier
 			p.velocity = Vector2.Zero;
@@ -418,7 +464,14 @@ namespace Levy.Common.Testing
 			int idx = 0;
 			int count = ItemLoader.ItemCount;
 			var seen = new HashSet<int>();
-			for (int t = ItemID.Count; t < count; t++)
+			if (_vanilla != null)
+				foreach (string vname in _vanilla)
+				{
+					int vt = int.TryParse(vname, out int vid) ? vid : -1;
+					if (vt < 0) { for (int k = 1; k < ItemID.Count; k++) if (Lang.GetItemNameValue(k).Equals(vname, StringComparison.OrdinalIgnoreCase)) { vt = k; break; } }
+					if (vt > 0 && seen.Add(vt)) AddWeaponTrials(vt, "", null, 0);
+				}
+			for (int t = _vanilla != null ? count : ItemID.Count; t < count; t++)
 			{
 				Item it = new Item();
 				try { it.SetDefaults(t); } catch { continue; }
@@ -486,8 +539,8 @@ namespace Levy.Common.Testing
 				_trials.Add(new Trial { ItemType = itemType, Control = control, Range = usable ? 25 : 0, Key = key, NoSoldier = true, Baseline = usable });
 				return;
 			}
-			foreach (int r in _ranges) _trials.Add(new Trial { ItemType = itemType, Control = control, Range = r, Key = key, AmmoName = ammoName ?? "", Baseline = itemType != 0 });
-			_trials.Add(new Trial { ItemType = itemType, Control = control, Range = 40, Walk = true, Key = key, AmmoName = ammoName ?? "", Baseline = false });
+			foreach (int r in _ranges) _trials.Add(new Trial { ItemType = itemType, Control = control, Range = r, Key = key, AmmoName = ammoName ?? "", Baseline = itemType != 0 && !_noBase });
+			if (!_noWalk) _trials.Add(new Trial { ItemType = itemType, Control = control, Range = 40, Walk = true, Key = key, AmmoName = ammoName ?? "", Baseline = false });
 		}
 
 		/// <summary>Plain 'tool/weapon' items a player can hold and swing/shoot: not armor, accessories, potions or consumable buffs.</summary>
@@ -514,6 +567,8 @@ namespace Levy.Common.Testing
 			public long Damage; public int Hits;
 			public int AnimTicks, FirstFire = -1, EngageTicks, AcquiredTicks, AliveTicks, DeadTicks; public float MinDist = 9999f, StartDist;
 			public int CmdBefore, CmdAfter, CmdMax, AllyBefore, AllyAfter, AllyMax, AllyMaxLife;
+			public string Med = ""; public int MedAimed, MedTicks;
+			public int SelfBefore, SelfAfter, SelfMax, SelfPrev = -1, SelfGainSum, SelfBig, SelfLifeMax; // the SHOOTING soldier's own life (lifesteal / self-heal)
 			public int CmdPrev = -1, AllyPrev = -1, CmdBig, AllyBig, CmdGainSum, AllyGainSum; // per-tick life rises; 'Big' = a single-tick rise of 3+ (natural regen rises 1 at a time)
 			public int InspStart = -1, InspEnd = -1, InspSpent, InspPrev = -1, InspMax = -1;
 			public uint EmpUnion, AllyEmpUnion;
@@ -581,7 +636,7 @@ namespace Levy.Common.Testing
 					return;
 				}
 
-				bool companion = _cur.Kind != "" || t.Control == "negc";
+				bool companion = _cur.Kind != "" || t.Control == "negc" || _forceCompanion;
 				PlaceCommander(companion && !_onlyLevies);
 				if (HarnessOnHit.Enabled && _stage == 0) HarnessOnHit.ApplyLoadout(Main.player[0], t.Gear);
 
@@ -613,6 +668,16 @@ namespace Levy.Common.Testing
 						if (gear.CanHold(slot, a)) { gear.Set(slot, a); gear.SetLocked(slot, true); _cur.Notes += "armor:" + a.Name + ";"; }
 						else _cur.Notes += "armor " + a.Name + " CanHold false;";
 					}
+				if (_accNames != null)
+				{
+					int ak = 0;
+					foreach (Item a in AccItems())
+					{
+						int slot = SoldierGear.SlotAcc0 + ak;
+						if (gear.CanHold(slot, a)) { gear.Set(slot, a); gear.SetLocked(slot, true); _cur.Notes += "acc:" + a.Name + ";"; ak++; }
+						else _cur.Notes += "acc " + a.Name + " CanHold false;";
+					}
+				}
 				rec.LoadoutLocked = true;
 				rec.Order = HarnessOnHit.Enabled && HarnessOnHit.FarTiles > 0 ? HarnessOnHit.FarOrder : SoldierOrder.Follow;
 				rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
@@ -660,6 +725,7 @@ namespace Levy.Common.Testing
 					int ai = a.headSlot >= 0 ? 0 : a.bodySlot >= 0 ? 1 : 2;
 					p.armor[ai] = a; _cur.BaselineNote += "armor:" + a.Name + ";";
 				}
+			if (_accNames != null) { int ak = 0; foreach (Item a in AccItems()) { if (3 + ak < 8) p.armor[3 + ak++] = a; _cur.BaselineNote += "acc:" + a.Name + ";"; } }
 			_cur.Where = "player slot0";
 			if (w.useAmmo > 0)
 			{
@@ -710,7 +776,7 @@ namespace Levy.Common.Testing
 		{
 			var h = Enabled ? Instance : null;
 			// the stand-in player's own projectiles AND Thorium's heal projectiles (which are not "friendly" but only act when Main.myPlayer == owner); with SPSWAP the soldier window does the same, as single player would
-			bool thor = self.owner == 0 && self.ModProjectile != null && self.ModProjectile.Mod.Name == "ThoriumMod";
+			bool thor = self.owner == 0 && ((self.ModProjectile != null && self.ModProjectile.Mod.Name == "ThoriumMod") || (_vanProbe && self.type == ProjectileID.VampireHeal));
 			if (h != null && h._ph == Ph.Run && self.owner == 0 && ((h._stage == 1 && (self.friendly || thor)) || (_spSwap && h._stage == 0 && thor)))
 			{
 				int saved = Main.myPlayer;
@@ -930,6 +996,17 @@ namespace Levy.Common.Testing
 			return list;
 		}
 
+		private static List<Item> AccItems()
+		{
+			var list = new List<Item>();
+			foreach (string n in _accNames)
+			{
+				if (!ModContent.TryFind<ModItem>(TestMod + "/" + n, out ModItem mi)) continue;
+				Item it = new Item(); it.SetDefaults(mi.Type); list.Add(it);
+			}
+			return list;
+		}
+
 		private static bool CalAvail()
 		{
 			try { return ModLoader.HasMod("CalamityMod") && HarnessCalamityProbe.Available; } catch (Exception) { return false; }
@@ -970,9 +1047,9 @@ namespace Levy.Common.Testing
 			try
 			{
 				Player p = Main.player[0];
-				bool companion = c.Kind != "" || c.T.Control == "negc";
+				bool companion = c.Kind != "" || c.T.Control == "negc" || _forceCompanion;
 				p.statLifeMax = 500; p.statLifeMax2 = 500;
-				p.statLife = companion && !_onlyLevies ? 250 : 500;
+				p.statLife = companion && !_onlyLevies ? (_cmdHpPct > 0 ? 500 * _cmdHpPct / 100 : 250) : 500;
 				c.CmdBefore = c.CmdMax = c.CmdAfter = p.statLife; c.CmdPrev = p.statLife;
 				if (c.AllyIdx >= 0 && Main.npc[c.AllyIdx].active) { c.AllyBefore = c.AllyMax = c.AllyAfter = Main.npc[c.AllyIdx].life; }
 				if (c.IsBaseline)
@@ -994,6 +1071,8 @@ namespace Levy.Common.Testing
 					return;
 				}
 				var body = Main.npc[c.BodyIdx].ModNPC as SoldierNPC;
+				if (_selfHpPct < 100) { int nl = Math.Max(1, body.NPC.lifeMax * _selfHpPct / 100); body.NPC.life = nl; c.Rec.CurrentHp = nl; }
+				c.SelfLifeMax = body.NPC.lifeMax; c.SelfBefore = c.SelfAfter = c.SelfMax = c.SelfPrev = body.NPC.life;
 				float rangeT = c.T.Walk ? 40f : c.T.Range;
 				float dx2 = TargetDx(rangeT, body.NPC.Center.Y);
 				SpawnTarget(body.NPC.Center.X + dx2);
@@ -1022,6 +1101,8 @@ namespace Levy.Common.Testing
 				{
 					c.AliveTicks++;
 					var s = (SoldierNPC)bn.ModNPC;
+					if (c.SelfPrev >= 0 && bn.life > c.SelfPrev) { int sg = bn.life - c.SelfPrev; c.SelfGainSum += sg; if (sg >= 3) c.SelfBig++; }
+					c.SelfPrev = bn.life; c.SelfAfter = bn.life; if (bn.life > c.SelfMax) c.SelfMax = bn.life;
 					NPC tn = Main.npc[c.TargetIdx];
 					float dNow = tn.active ? Vector2.Distance(bn.Center, tn.Center) / 16f : -1f;
 					if (s.ItemAnimation > 0) { c.AnimTicks++; if (c.FirstFire < 0) c.FirstFire = c.ActiveTick; if (c.FirstShotDist < 0) c.FirstShotDist = dNow; }
@@ -1031,6 +1112,23 @@ namespace Levy.Common.Testing
 					if (tn.active && dNow < c.MinDist) c.MinDist = dNow;
 					c.MovedX = bn.Center.X - c.StartX;
 					c.ManaEnd = c.Rec.Mana; if (c.Rec.Mana < c.ManaMin) c.ManaMin = c.Rec.Mana;
+					if (_vanProbe)
+					{
+						// follow every vanilla heal bolt: how close to the soldier it was when it vanished (it vanishes on arrival, or times out)
+						for (int pi = 0; pi < Main.maxProjectiles; pi++)
+						{
+							Projectile q = Main.projectile[pi];
+							if (q.active && q.type == ProjectileID.VampireHeal) { _vbSeen[pi] = (q.identity, Vector2.Distance(q.Center, bn.Center), q.timeLeft); }
+							else if (_vbSeen.TryGetValue(pi, out var last)) { _vbGone++; _vbLastDist += last.dist; _vbLastTime += last.timeLeft; _vbSeen.Remove(pi); }
+						}
+					}
+					if (_vanProbe && c.ActiveTick % 25 == 0 && tn.active)
+					{
+						// vanilla's own lifesteal bolt (what Projectile.vampireHeal spawns on a vanilla knife's hit), born at the enemy, owner = the commander, 8 life: it homes on Main.player[owner] and does statLife += 8 on arrival
+						int sm = Main.myPlayer; Main.myPlayer = 0; // as in single player: the soldier's shot is owned by the commander
+						Projectile vb; try { vb = WeaponUse.Spawn(s, tn.Center, Vector2.Zero, ProjectileID.VampireHeal, 1, 0f, null, 0f, 8f); } finally { Main.myPlayer = sm; }
+						if (vb != null) { vb.friendly = false; vb.damage = 0; } // a heal bolt, not a shot: it must not hit the enemy it is born on
+					}
 					if (bn.TryGetGlobalNPC(out SoldierThoriumGlobalNPC g)) c.EmpUnion |= g.EmpMask;
 					CalSample(c, s.Dummy);
 					if (c.Kind == "bard")
@@ -1100,6 +1198,7 @@ namespace Levy.Common.Testing
 				c.P2Prev = q.statLife; c.P2After = q.statLife; if (q.statLife > c.P2Max) c.P2Max = q.statLife;
 				foreach (int b in q.buffType) if (b > 0) c.CmdBuffNames.Add("P2:" + (BuffLoader.GetBuff(b)?.Name ?? ("buff" + b)));
 			}
+			if (_medBag) { try { HarnessThoriumProbe.MedBag(c, out c.Med, out bool aimed); c.MedTicks++; if (aimed) c.MedAimed++; } catch (Exception e) { c.Med = "err:" + e.Message; } }
 			ResolvePending();
 		}
 
@@ -1268,6 +1367,9 @@ namespace Levy.Common.Testing
 				f.Add(pl.RA0 == null || pl.RA1 == null ? "-" : $"rage {pl.RA0[0]:0}>{pl.RA1[0]:0}/{pl.RA0[1]:0} adr {pl.RA0[2]:0}>{pl.RA1[2]:0}/{pl.RA0[3]:0}");
 			}
 			f.Add(_armorNames == null ? "-" : string.Join("+", _armorNames));
+			f.Add(c.SelfLifeMax > 0 ? $"{c.SelfBefore}>{c.SelfAfter}(max{c.SelfMax}/{c.SelfLifeMax})" : "-");
+			f.Add(c.SelfLifeMax > 0 ? $"self+{c.SelfGainSum}/big{c.SelfBig}" : "-");
+			f.Add((c.MedTicks == 0 ? "-" : $"arrowAtPick {c.MedAimed}/{c.MedTicks} | {c.Med}") + (_vanProbe ? " || " + VampireProbeState + " routed=" + StaticInt("RoutedHeals") + "/" + StaticInt("RoutedLife") + " healTextOpenUnrouted=" + StaticInt("HealTextOpenUnrouted") + " healTextOutside=" + StaticInt("HealTextOutside") : ""));
 			return string.Join("\t", f.Select(Clean));
 		}
 
@@ -1275,7 +1377,7 @@ namespace Levy.Common.Testing
 
 		private const string Header = "kind\tweapon\titemType\tinternal\tmod\tclassifier\tcompanionKind\tissued\theldIn\tammoGiven\trangeTiles\tsetupOk\taliveTicks\tstates\tengageTicks\ttargetAcquiredTicks\tminDistTiles\tstartDistTiles\tsoldierMovedPx\tengageDistTiles\tfirstShotDistTiles\tfired(proj)\tprojectiles\tprojTypes\tprojUntagged\titemAnimTicks\tfirstAnimTick\tdamageToTarget\ttargetHitTicks\tcommanderHp\tallyHp\tlifeRises\tinspiration(start>end/max)\tinspSpent\tempowermentsSoldier\tempowermentsAlly\tcommanderBuffs\tallyBuffs\titemsSpawned\tmana(start>end)\texceptions\tnotes"
 			+ "\tpl_status\tpl_startDistTiles\tpl_itemAnimTicks\tpl_projectiles\tpl_projTypes\tpl_projNotOwner\tpl_damage\tpl_targetHitTicks\tpl_commanderHp\tpl_allyHp\tpl_lifeRises\tpl_inspiration\tpl_inspSpent\tpl_empowermentsPlayer\tpl_empowermentsAlly\tpl_playerBuffs\tpl_allyBuffs\tpl_itemsSpawned\tpl_exceptions\tpl_notes\tpl_aimedAt\tprojOnlyPlayer\tpl_vanillaPackets\tpl_player2Hp"
-			+ "\tprojOnlySoldier\thealMechPlayer\thealMechSoldier\tverdict\tdmgClass\tstealth(start>end/max,peak)\tstealthFilled\tstealthStrikes\tstealthSubProj\tstealthAvailTicks\tpl_stealth\tpl_stealthFilled\tpl_stealthStrikes\tpl_stealthSubProj\tpl_stealthAvailTicks\tpl_rageAdrenaline\tarmor";
+			+ "\tprojOnlySoldier\thealMechPlayer\thealMechSoldier\tverdict\tdmgClass\tstealth(start>end/max,peak)\tstealthFilled\tstealthStrikes\tstealthSubProj\tstealthAvailTicks\tpl_stealth\tpl_stealthFilled\tpl_stealthStrikes\tpl_stealthSubProj\tpl_stealthAvailTicks\tpl_rageAdrenaline\tarmor\tshooterHp\tshooterRises\tmedbag";
 
 		private void WriteTsv()
 		{

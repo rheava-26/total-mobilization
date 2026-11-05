@@ -15,6 +15,8 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public static class MeleeEffects
 	{
+		/// <summary>The soldier whose swing is being struck right now (null otherwise): Thorium's on-hit sweeps run with his stand-in as the healer, which they must be able to attribute to him.</summary>
+		public static SoldierNPC Striker;
 		private static bool[] _hookBefore;
 		private static readonly Point[] _tentacleBuffer = new Point[LevyConstants.JavelinBarbsPerTarget];
 		private static readonly Point[] _butcherBuffer = new Point[LevyConstants.JavelinBarbsPerTarget];
@@ -37,6 +39,7 @@ namespace Levy.Common.Weapons
 
 			int savedWho = d.whoAmI, savedDir = d.direction; Vector2 savedCenter = d.Center;
 			int done = 0; bool struck = false;
+			SoldierNPC prevStriker = Striker; Striker = s;
 			try
 			{
 				// Hooks spawn projectiles with player.whoAmI as the owner: make it the soldier owner so ai[] is assigned and the spawn is synced (as TryRealShoot does).
@@ -62,7 +65,7 @@ namespace Levy.Common.Weapons
 			{
 				if (!struck) done = n.SimpleStrikeNPC(damage, dir, crit, knockback, cls, true, 0f, true);
 			}
-			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; }
+			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; Striker = prevStriker; }
 
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{

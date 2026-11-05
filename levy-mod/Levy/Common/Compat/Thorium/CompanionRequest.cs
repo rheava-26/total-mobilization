@@ -20,6 +20,8 @@ namespace Levy.Common.Compat.Thorium
 		public const byte KindHeal = 1, KindEmpower = 2;
 		/// <summary>Ticks a soldier is left alone by other healers after a heal lands on it.</summary>
 		public const int ReserveTicks = 40;
+		/// <summary>Server: requests for the same soldier closer together than this are one hit's duplicates.</summary>
+		public const int MinGapTicks = 5;
 		/// <summary>Furthest a soldier may be from the casting player for the server to accept a request about him.</summary>
 		public const float MaxReachPx = 3200f;
 		/// <summary>Most life one request may restore, and most targets one packet carries (sanity bounds on client-supplied numbers).</summary>
@@ -70,7 +72,7 @@ namespace Levy.Common.Compat.Thorium
 				NPC t = Main.npc[idx[i]];
 				if (!t.active || t.life <= 0 || t.life >= t.lifeMax || t.ModNPC is not SoldierNPC s || !Serves(s, p)) continue;
 				if (Microsoft.Xna.Framework.Vector2.DistanceSquared(p.Center, t.Center) > MaxReachPx * MaxReachPx) continue;
-				if (t.TryGetGlobalNPC(out SoldierThoriumGlobalNPC g) && g.HealReservedUntil > now) continue;
+				if (t.TryGetGlobalNPC(out SoldierThoriumGlobalNPC g) && g.HealReservedUntil > now + ReserveTicks - MinGapTicks) continue; // a weapon's heal is not throttled like a soldier healer's: only a duplicate of the same hit's request is refused
 				HealSoldier(t, amt[i]);
 			}
 		}

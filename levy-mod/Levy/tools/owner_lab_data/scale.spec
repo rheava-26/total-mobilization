@@ -1,0 +1,16 @@
+cost|V:Spear|1|600|fam=spear
+cost|V:EnchantedBoomerang|1|600|fam=boom
+cost|V:HornetStaff|1|600|fam=summon
+cost|V:BlandWhip|1|600|fam=whip
+cost|V:Spear|2|600|fam=spear
+cost|V:EnchantedBoomerang|2|600|fam=boom
+cost|V:HornetStaff|2|600|fam=summon
+cost|V:BlandWhip|2|600|fam=whip
+cost|V:Spear|5|600|fam=spear
+cost|V:EnchantedBoomerang|5|600|fam=boom
+cost|V:HornetStaff|5|600|fam=summon
+cost|V:BlandWhip|5|600|fam=whip
+cost|V:Spear|10|600|fam=spear
+cost|V:EnchantedBoomerang|10|600|fam=boom
+cost|V:HornetStaff|10|600|fam=summon
+cost|V:BlandWhip|10|600|fam=whip

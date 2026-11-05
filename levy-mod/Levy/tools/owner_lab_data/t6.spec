@@ -1,0 +1,15 @@
+ctl|none|1|500|fam=heal
+fid|T:MartyrChalice|1|500|fam=heal
+fid|T:MistWeaver|1|500|fam=heal
+fid|T:Prophecy|1|500|fam=heal
+fid|T:RecoveryWand|1|500|fam=heal
+fid|T:StaffofSol|1|500|fam=heal
+fid|T:TheGigaNeedle|1|500|fam=heal
+fid|T:PocketGuardian|1|500|fam=heal
+fid|V:WoodYoyo|1|600|fam=yoyo
+fid|V:Cascade|1|600|fam=yoyo
+fid|V:Rally|1|600|fam=yoyo
+fid|V:Kraken|1|600|fam=yoyo
+fid|T:Aerial|1|600|fam=yoyo
+fid|T:Salivation|1|600|fam=yoyo
+fid|V:Cascade|1|600|fam=yoyo,dist=3

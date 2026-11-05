@@ -1,0 +1,12 @@
+casc|V:HornetStaff|6|1500|fam=summon,boss=4,hp=300
+casc|V:HornetStaff|6|1500|fam=summon,boss=4,hp=300,nolift
+casc|V:HornetStaff|6|1500|fam=summon,boss=4,hp=300,spsim
+casc|V:HornetStaff|6|1500|fam=summon,boss=4,hp=300,spsim,nolift
+casc|V:HornetStaff|6|1500|fam=summon,boss=4,hp=300,slots
+casc|V:Spear|3|900|fam=spear,boss=4,hp=300
+casc|V:Spear|3|900|fam=spear,boss=4,hp=300,nolift
+casc|T:StormHatchlingStaff|6|1500|fam=summon,boss=50,hp=400
+casc|T:StormHatchlingStaff|6|1500|fam=summon,boss=50,hp=400,nolift
+casc|T:StormHatchlingStaff|6|1500|fam=summon,boss=4,hp=400,spsim,nolift
+casc|V:EnchantedBoomerang|3|900|fam=boom,boss=50,hp=300
+casc|V:Cascade|3|900|fam=yoyo,boss=50,hp=300

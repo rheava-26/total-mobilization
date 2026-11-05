@@ -1,0 +1,151 @@
+# P0 scenarios: found weapons vs crafted, and the Minishark sanity check. Balanced ranking, vanilla + Thorium rig, GLOBAL planning as in the game.
+# AGE 0.05 = just crafted/deposited; no AGE line = old stock. RANKPROGRESS on the Boss Checklist scale (0 new world, 2 Eye of Cthulhu, 5 Skeletron, 7 Hardmode, 12 Plantera).
+
+[P0_preboss_enchanted_vs_precious_swords_new_world]
+GLOBAL
+RANKPROGRESS 0
+MIX interleave melee=3
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/EnchantedSword
+STAGE
+AGE 0.05
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+STAGE
+
+[P0_preboss_enchanted_vs_precious_swords_after_eye]
+GLOBAL
+RANKPROGRESS 2
+MIX interleave melee=3
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/EnchantedSword
+STAGE
+AGE 0.05
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+STAGE
+
+[P0_preboss_enchanted_one_levy]
+GLOBAL
+RANKPROGRESS 1
+MIX interleave melee=1
+AGE 0.05
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+OLD
+W Vanilla/EnchantedSword
+STAGE
+
+[P0_preboss_found_vs_better_crafted_after_skeletron]
+GLOBAL
+RANKPROGRESS 5
+MIX interleave melee=4
+W Vanilla/EnchantedSword
+W Vanilla/Starfury
+W Vanilla/Muramasa
+W Vanilla/BladeofGrass
+W Vanilla/ShadowFlameKnife
+AGE 0.05
+W Vanilla/FieryGreatsword
+W Vanilla/LightsBane
+W Vanilla/BloodButcherer
+W Vanilla/GoldBroadsword
+STAGE
+
+[P0_preboss_found_vs_better_crafted_ranged_after_eye]
+GLOBAL
+RANKPROGRESS 2
+MIX interleave ranged=3
+W Vanilla/Boomstick
+W Vanilla/Musket
+W Vanilla/Handgun
+AGE 0.05
+W Vanilla/GoldBow
+W Vanilla/PlatinumBow
+W Vanilla/DemoniteBow
+STAGE
+
+[P0_routes]
+ROUTE Vanilla/EnchantedSword
+ROUTE Vanilla/Muramasa
+ROUTE Vanilla/Starfury
+ROUTE Vanilla/BladeofGrass
+ROUTE Vanilla/Boomstick
+ROUTE Vanilla/Handgun
+ROUTE Vanilla/Minishark
+ROUTE Vanilla/Megashark
+ROUTE Vanilla/ThunderSpear
+ROUTE Vanilla/GoldBroadsword
+ROUTE Vanilla/CopperShortsword
+ROUTE Vanilla/WandofSparking
+ROUTE Vanilla/SlimeStaff
+ROUTE Vanilla/CobaltSword
+ROUTE Vanilla/NightsEdge
+ROUTE Vanilla/Flamarang
+ROUTE Vanilla/WaterBolt
+
+[P0_minishark_post_plantera_megashark_in_stock]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=4
+OLD
+W Vanilla/Minishark
+W Vanilla/Megashark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+W Vanilla/Handgun
+M Vanilla/MusketBall x999
+M Vanilla/HighVelocityBullet x999
+STAGE
+
+[P0_minishark_post_plantera_megashark_fresh]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+
+[P0_minishark_post_plantera_megashark_only_one_levy]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=1
+OLD
+W Vanilla/Minishark
+W Vanilla/Megashark
+M Vanilla/MusketBall x999
+STAGE
+
+[P0_minishark_post_plantera_megashark_and_chaingun_mixed_with_melee]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave melee=2 ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Megashark
+W Vanilla/Boomstick
+W Vanilla/NightsEdge
+W Vanilla/Muramasa
+W Vanilla/FieryGreatsword
+M Vanilla/MusketBall x999
+STAGE
+
+[P0_minishark_post_plantera_stage_pinned_only_megashark_for_one_of_two]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=2
+OLD
+W Vanilla/Minishark
+W Vanilla/Minishark
+W Vanilla/Megashark
+M Vanilla/MusketBall x999
+STAGE

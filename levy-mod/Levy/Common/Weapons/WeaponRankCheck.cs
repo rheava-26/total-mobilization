@@ -35,6 +35,8 @@ namespace Levy.Common.Weapons
 			Guard("armor skip", () => CheckArmorSkip(Check));
 			Guard("balanced curves", () => CheckBalancedCurves(Check));
 			Guard("balanced picks", () => CheckBalancedRanks(Check));
+			Guard("found boost", () => CheckFoundBoost(Check));
+			Guard("aim accuracy", () => CheckAimAccuracy(Check));
 			Guard("star conversion", () => CheckStarMana(Check));
 			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.Balanced, true), (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, true), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
 			{
@@ -266,6 +268,52 @@ namespace Levy.Common.Weapons
 				check(WeaponRank.Of(mini) > 0 && WeaponRank.Of(Make(ItemID.IronBroadsword)) >= 1f, "ranks stay at least 1");
 			}
 			finally { WeaponRank.ForceProgress = -1f; WeaponRank.Release(); LevyClock.Force(null); ProgressionTier.Reset(); }
+		}
+
+		/// <summary>Found weapons (no recipe, not sold) rank a little above crafted ones: Enchanted Sword over Gold and Platinum Broadswords before any boss, never over a clearly better crafted weapon.</summary>
+		private static void CheckFoundBoost(Action<bool, string> check)
+		{
+			var table = new float[ItemLoader.ItemCount]; for (int i = 0; i < table.Length; i++) table[i] = ProgressionTier.Inf;
+			var found = new bool[table.Length];
+			table[ItemID.EnchantedSword] = 1.5f; found[ItemID.EnchantedSword] = true;
+			table[ItemID.GoldBroadsword] = 0f; table[ItemID.PlatinumBroadsword] = 0f; table[ItemID.IronBroadsword] = 0f;
+			ProgressionTier.SetForTest(table, found);
+			WeaponRank.Force(WeaponRankMode.Balanced, false);
+			try
+			{
+				LevyClock.Force(100 * LevyClock.TicksPerDay);
+				WeaponRank.ForceProgress = 1f; // before the Eye of Cthulhu
+				float price(Item it) => (float)Math.Pow(Math.Max(1, it.value), WeaponRank.PriceExponent);
+				var ench = Make(ItemID.EnchantedSword); var gold = Make(ItemID.GoldBroadsword); var plat = Make(ItemID.PlatinumBroadsword); var iron = Make(ItemID.IronBroadsword);
+				check(ProgressionTier.IsFound(ItemID.EnchantedSword) && !ProgressionTier.IsFound(ItemID.GoldBroadsword), "found flag: Enchanted Sword yes, Gold Broadsword no");
+				check(Math.Abs(WeaponRank.Of(ench) / price(ench) - WeaponRank.FoundBoost) < 1e-3f, "a found weapon ranks " + WeaponRank.FoundBoost + " x its price rank (" + (WeaponRank.Of(ench) / price(ench)).ToString("F3") + ")");
+				check(Math.Abs(WeaponRank.Of(gold) - price(gold)) < 1e-3f, "a crafted weapon ranks by price alone");
+				check(WeaponRank.FoundBoost > 1.02f && WeaponRank.FoundBoost < LevyConstants.AutoUpgradeScoreMargin, "the boost is small and under the swap margin (" + WeaponRank.FoundBoost + " < " + LevyConstants.AutoUpgradeScoreMargin + ")");
+				DepositStamp.Stamp(gold); DepositStamp.Stamp(plat); // freshly crafted
+				check(WeaponRank.Of(ench) > WeaponRank.Of(gold) * LevyConstants.AutoUpgradeScoreMargin && WeaponRank.Of(ench) > WeaponRank.Of(plat) * LevyConstants.AutoUpgradeScoreMargin, "an old Enchanted Sword beats fresh Gold and Platinum Broadswords by more than the swap margin (" + WeaponRank.Of(ench).ToString("F0") + " vs " + WeaponRank.Of(plat).ToString("F0") + ")");
+				// never over a clearly better crafted weapon: a crafted weapon 15% or more above the raw price rank still wins
+				var better = Make(ItemID.PlatinumBroadsword); better.value = (int)(ench.value * 1.25f);
+				check(WeaponRank.Of(better) > WeaponRank.Of(ench), "a crafted weapon whose price rank is 15% higher outranks the found one");
+			}
+			finally { WeaponRank.ForceProgress = -1f; WeaponRank.Release(); LevyClock.Force(null); ProgressionTier.Reset(); }
+		}
+
+		/// <summary>The "Levy aim accuracy" option divides aim error: 1 leaves it exactly alone.</summary>
+		private static void CheckAimAccuracy(Action<bool, string> check)
+		{
+			float configured = Common.Config.LevyConfig.Get?.AimAccuracy ?? 1f;
+			try
+			{
+				WeaponUse.SetAimAccuracy(1f);
+				check(WeaponUse.AimAccuracyFactor == 1f, "accuracy 1 leaves aim error exactly unchanged");
+				WeaponUse.SetAimAccuracy(2f);
+				check(Math.Abs(WeaponUse.AimAccuracyFactor - 0.5f) < 1e-6f, "accuracy 2 halves aim error");
+				WeaponUse.SetAimAccuracy(0.5f);
+				check(Math.Abs(WeaponUse.AimAccuracyFactor - 2f) < 1e-6f, "accuracy 0.5 doubles aim error");
+				WeaponUse.SetAimAccuracy(0f);
+				check(Math.Abs(WeaponUse.AimAccuracyFactor - 10f) < 1e-4f, "accuracy is floored at 0.1, so error never goes infinite");
+			}
+			finally { WeaponUse.SetAimAccuracy(configured); }
 		}
 
 		// ------------------------------------------------------------------ Fallen Stars into mana

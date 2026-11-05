@@ -363,7 +363,7 @@ namespace Levy.Common.UI
 			_panel.Append(_count);
 
 			_noMatch = new Label("", 0.85f);
-			_noMatch.Left.Set(GridLeft + 8, 0f); _noMatch.Top.Set(GridTop + 8, 0f);
+			_noMatch.Left.Set(GridLeft + Pitch + 8, 0f); _noMatch.Top.Set(GridTop + 8, 0f);
 			_panel.Append(_noMatch);
 			RefreshFilterWidgets();
 		}
@@ -443,7 +443,7 @@ namespace Levy.Common.UI
 			if (Te == null || _grid == null) return;
 			if (!ReferenceEquals(_builtPotions, Te.IssuePotions)) BuildPotionRow(); // Firepower grew the buff slots
 			if (ReferenceEquals(_builtStorage, Te.Storage)) return;
-			_shown = Filtering ? Collect() : null;
+			_shown = Filtering ? ArmoryView.WithDepositCell(Te.Storage, Collect()) : null;
 			float pos = _gridScroll.ViewPosition;
 			BuildGrid();
 			_grid.Recalculate();
@@ -453,14 +453,15 @@ namespace Levy.Common.UI
 		/// <summary>Re-collects the matching indices and rebuilds the grid only when they differ from what is shown.</summary>
 		private void RefreshGrid(bool resetScroll)
 		{
-			List<int> want = Filtering ? Collect() : null;
-			if (want == null) { _count.SetText(""); _noMatch.SetText(""); }
+			List<int> matches = Filtering ? Collect() : null;
+			List<int> want = matches == null ? null : ArmoryView.WithDepositCell(Te.Storage, matches); // the last cell is an empty slot, so anything can be put back
+			if (matches == null) { _count.SetText(""); _noMatch.SetText(""); }
 			else
 			{
 				int stored = 0;
 				foreach (var it in Te.Storage) if (it != null && !it.IsAir) stored++;
-				_count.SetText(LevyUtil.T("UI2.ArmoryShown", want.Count, stored));
-				_noMatch.SetText(want.Count == 0 ? LevyUtil.T("UI2.ArmoryNoMatch") : "");
+				_count.SetText(LevyUtil.T("UI2.ArmoryShown", matches.Count, stored));
+				_noMatch.SetText(matches.Count == 0 ? LevyUtil.T("UI2.ArmoryNoMatch") : "");
 			}
 			bool same = want == null ? _shown == null : _shown != null && want.SequenceEqual(_shown);
 			float pos = resetScroll ? 0f : _gridScroll.ViewPosition;
@@ -476,10 +477,7 @@ namespace Levy.Common.UI
 		/// <summary>Real Storage indices of every item that passes the search, the rarity toggles and the type filter, in storage order.</summary>
 		private List<int> Collect()
 		{
-			var list = new List<int>();
-			var arr = Te.Storage;
-			for (int i = 0; i < arr.Length; i++) if (Matches(arr[i])) list.Add(i);
-			return list;
+			return ArmoryView.Matches(Te.Storage, Matches);
 		}
 
 		private bool Matches(Item it)

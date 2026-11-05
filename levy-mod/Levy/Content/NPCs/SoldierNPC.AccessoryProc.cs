@@ -34,8 +34,11 @@ namespace Levy.Content.NPCs
 		private void MaintainAccessoryProjectiles()
 		{
 			if (LevyUtil.IsClient || Record == null || Dummy == null) return;
-			MaintainCrystalLeaf(); // a standing helper, kept whether or not he is fighting
-			MaintainStardustGuardian(); // likewise (SoldierNPC.StardustGuardian.cs)
+			if (!(GearUpkeep.Mode == 3 && UpkeepActive)) // mode 3 is the harness experiment that measures the vanilla leaf / Guardian instead
+			{
+				MaintainCrystalLeaf(); // a standing helper, kept whether or not he is fighting
+				MaintainStardustGuardian(); // likewise (SoldierNPC.StardustGuardian.cs)
+			}
 			if (State != SoldierState.Engage) return;
 			Item[] procs = null;
 			try

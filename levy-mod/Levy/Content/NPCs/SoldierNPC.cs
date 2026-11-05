@@ -243,6 +243,7 @@ namespace Levy.Content.NPCs
 			{
 				Item it = acc[i];
 				if (it == null || it.IsAir || !it.accessory || (it.expertOnly && !Main.expertMode)) continue;
+				if (it.type == ItemID.SporeSac && ReferenceEquals(GearUpkeep.Body, this) && GearUpkeep.Mode != 3) continue; // its trap step is hand-made (AccessoryProc.cs); the gear frame does not run it a second time
 				d.GrantPrefixBenefits(it);
 				d.GrantArmorBenefits(it);
 				d.ApplyEquipFunctional(it, false);

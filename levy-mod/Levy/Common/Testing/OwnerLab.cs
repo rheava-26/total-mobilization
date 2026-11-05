@@ -266,6 +266,7 @@ namespace Levy.Common.Testing
 		private static void Setup(Sc s)
 		{
 			_h.LabClearAll();
+			GearUpkeep.SetOverride(UpkMode(s)); // the setup ticks run in the scenario's mode too
 			if (s.Kind == "list") { try { RunList(s); } catch (Exception e) { s.Exc.Add("list:" + Short(e)); } s.Note = "list"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
 			if (s.Kind == "scan") { try { RunScan(s); } catch (Exception e) { s.Exc.Add("scan:" + Short(e)); } s.Note = "scan"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
 			s.ItemType = s.Kind == "ctl" ? 0 : ResolveItem(s.ItemKey);
@@ -296,6 +297,7 @@ namespace Levy.Common.Testing
 						var w = new Item(); w.SetDefaults(wt); rec.Gear.Weapon = w;
 						int at = AmmoFor(w); if (at > 0) { var a = new Item(); a.SetDefaults(at); a.stack = 999; rec.Gear.Ammo = a; }
 						rec.HoldFire = false;
+						sol.Body?.NotifyGearChanged();
 					}
 				}
 			}
@@ -343,7 +345,7 @@ namespace Levy.Common.Testing
 
 		private static void Teardown(Sc s)
 		{
-			GearUpkeep.SetOverride(-1);
+			GearUpkeep.SetOverride(-1); GearUpkeep.CountSpawns = false;
 			RestoreSlots(s);
 			_h.LabClearAll();
 			try { Main.player[1].active = false; } catch { }
@@ -374,6 +376,7 @@ namespace Levy.Common.Testing
 				if (!n.active) continue;
 				n.position.X = sol.PinX - n.width / 2f; n.velocity = new Vector2(0f, n.velocity.Y);
 				n.Bottom = new Vector2(sol.PinX, CombatHarness.FloorY * 16f);
+				if (s.Flags.Any(f => f.StartsWith("wpn=")) && s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active) { sol.Body.State = SoldierState.Engage; sol.Body.TargetIndex = s.TargetIdx; } // armed scenarios: keep the soldier engaged on the target (the lab has no brain run for a Hold soldier here)
 				if (Has(s, "halflife")) { sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp / 2; n.life = n.lifeMax / 2; } else { sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp; n.life = n.lifeMax; }
 			}
 			// sweep stray hostiles
@@ -393,7 +396,7 @@ namespace Levy.Common.Testing
 		private static void BeginRun(Sc s)
 		{
 			Array.Clear(SubT, 0, SubT.Length);
-			GearUpkeep.ResetCounters(); GearUpkeep.SetOverride(UpkMode(s)); _modeMin.Clear(); _modeMax.Clear();
+			GearUpkeep.ResetCounters(); GearUpkeep.CountSpawns = s.Flags.Any(f => f.StartsWith("upk=")); GearUpkeep.SetOverride(UpkMode(s)); _modeMin.Clear(); _modeMax.Clear();
 			s.Alive0 = s.Sols.Count(x => x.Body != null && x.Body.NPC.active && x.Body.IsAlive);
 			if (s.Flags.Contains("gm")) { _savedGameMenu = Main.gameMenu; Main.gameMenu = false; } // a dedicated server has gameMenu = true, which turns Thorium's local-player cache off; SP / client have it false
 			if (s.Flags.Contains("spsim") && !_spsimOn) { _savedMyForSim = Main.myPlayer; Main.myPlayer = 0; _spsimOn = true; }
@@ -700,6 +703,7 @@ namespace Levy.Common.Testing
 		}
 		// ---- gear-upkeep measurement (flags: upk=0|1|2 sets GearUpkeep.Mode for the scenario, phurt=N calls the soldier's hurt-gear step every N ticks) ----
 		private static readonly Dictionary<string, float> _modeMin = new(), _modeMax = new();
+		private static bool[] _pa; private static int[] _pt, _pid;
 		private static readonly Dictionary<Type, FieldInfo[]> _modeFields = new();
 		private static int UpkMode(Sc s) { foreach (var f in s.Flags) if (f.StartsWith("upk=") && int.TryParse(f.Substring(4), out int m)) return m; return -1; }
 		private static int PHurt(Sc s) { foreach (var f in s.Flags) if (f.StartsWith("phurt=") && int.TryParse(f.Substring(6), out int m)) return m; return 0; }
@@ -709,8 +713,11 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
-				if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag t) || !t.IsSoldierShot) continue;
-				if (!s.SeenProj.Add(p.identity)) continue;
+				_pa ??= new bool[Main.maxProjectiles]; _pt ??= new int[Main.maxProjectiles]; _pid ??= new int[Main.maxProjectiles];
+				bool tagged = p.active && p.TryGetGlobalProjectile(out SoldierProjectileTag t0) && t0.IsSoldierShot;
+				bool fresh = tagged && (!_pa[i] || _pt[i] != p.type || _pid[i] != p.identity);
+				_pa[i] = tagged; _pt[i] = tagged ? p.type : 0; _pid[i] = tagged ? p.identity : 0;
+				if (!fresh) continue;
 				string n = TypeName(p.type); s.Child[n] = s.Child.TryGetValue(n, out int c) ? c + 1 : 1;
 				if (p.owner != Main.myPlayer) s.OwnerNon255++;
 			}
@@ -739,7 +746,9 @@ namespace Levy.Common.Testing
 			double us = GearUpkeep.Frames > 0 ? GearUpkeep.Ticks * 1e6 / Stopwatch.Frequency / GearUpkeep.Frames : 0;
 			int tk = Math.Max(1, s.Tick);
 			double msTick = GearUpkeep.Ticks * 1000.0 / Stopwatch.Frequency / tk;
-			return "upk mode=" + GearUpkeep.Mode + " frames=" + GearUpkeep.Frames + " us/frame=" + us.ToString("0.0") + " ms/tick=" + msTick.ToString("0.000") + " adopted=" + GearUpkeep.Adopted + "{" + string.Join(",", GearUpkeep.AdoptedByType.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} dropped{" + string.Join(",", GearUpkeep.Dropped.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} fails=" + GearUpkeep.Failures + " hookfails=" + GearUpkeep.HookFailures + " lifeWB=" + GearUpkeep.LifeWriteBacks + " manaWB=" + GearUpkeep.ManaWriteBacks + " hurts=" + GearUpkeep.HurtCalls + " moved{" + string.Join(" ", moved) + "}";
+			var b0 = s.Sols.FirstOrDefault(x => x.Body != null)?.Body;
+			string st = b0 == null ? "nobody" : $"state={b0.State} tgt={b0.TargetIndex} weapon={(b0.Weapon != null ? b0.Weapon.ItemType.ToString() : "null")} hold={b0.Record?.HoldFire} order={b0.Record?.Order} useSignals={GearUpkeep.UseSignals} ";
+			return st + "upk mode=" + GearUpkeep.Mode + " frames=" + GearUpkeep.Frames + " us/frame=" + us.ToString("0.0") + " ms/tick=" + msTick.ToString("0.000") + " adopted=" + GearUpkeep.Adopted + "{" + string.Join(",", GearUpkeep.AdoptedByType.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} dropped{" + string.Join(",", GearUpkeep.Dropped.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} ownerBound{" + string.Join(",", GearUpkeep.OwnerBoundTypes.Select(k => TypeName(k.Key) + "x" + k.Value)) + "} spawned{" + string.Join(",", GearUpkeep.SpawnCounts.OrderByDescending(k => k.Value).Take(14).Select(k => TypeName(k.Key) + "x" + k.Value)) + "} fails=" + GearUpkeep.Failures + " hookfails=" + GearUpkeep.HookFailures + " lifeWB=" + GearUpkeep.LifeWriteBacks + " manaWB=" + GearUpkeep.ManaWriteBacks + " hurts=" + GearUpkeep.HurtCalls + " moved{" + string.Join(" ", moved) + "}";
 		}
 
 		private static bool HarnessCalamityOn => ModLoader.HasMod("CalamityMod");

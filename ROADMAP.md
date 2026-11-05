@@ -119,6 +119,24 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Bard renown:** pool max = crystals + renown points (4000·n^1.5 bard damage, 30 points, cap 40). Raw damage, so it fills faster in HM, left uncapped (tenet #1). Levies picking up real Inspiration Notes: feasible, NOT built (OnPickup(dummy) + net sync).
 - **Drones:** loiter 20-45 tiles up, ±110 tiles; noclip on Refuel/Recall; perch rows on armory roof. Status text de-parroted. Vertical lines still UNEXPLAINED (no Mechanization draw path can make them). Next evidence: which weapon a lined drone has mounted. Side find: DrawWeapon uses a null source rect, so animated item sheets draw as the whole squashed sheet (an art-suspect, not the line).
 
+## 🔧 ON-HIT + EXHAUSTION FIX: measured (onhit-investigation d15ae1f); being productionized as `onhit-fix`, default ON
+- **Measured, no fix:**
+  - Thorium: 37/692 weapons spawn at the commander, 36 fly home to it. Calamity: 31/647 spawn there, 55 fly home.
+  - Commander-gear procs on levy hits = 0. Levy shots are npcProj, so ModPlayer hooks never fire. The exception is untagged derived shots (Blackhole Cannon, Grave Grimreaver).
+  - 47–54 Thorium thrower weapons fill the commander's throwerExhaustion; the penalty dust spawns at `player.position`, which is Eve's "falls from you".
+- **Fix (OwnerPuppet):**
+  - Move the owner's transform to the soldier during Damage/Kill/Update of soldier shots; restore it in a finally.
+  - Point Thorium's `SetLocalThoriumPlayer` at the dummy during TryRealShoot and the puppeted passes.
+  - Untagged children inherit the soldier tag.
+- **Results:**
+  - Mask 15: Thorium 37→4, Calamity 31→5, no damage drop, exhaustion leak → 0.
+  - Mask 31 also zeroes the commander hook calls from untagged children.
+- **Left over:**
+  - Still at the commander: GraniteBarrier, Light Bringer's Warhammer, Gel Glove, Morning Dew, Ice Breaker; Alpha Draconis, Violence, Astral Staff, Typhon's Greed.
+  - Lifesteal still heals EVE, with its "+N" text over the soldier. That needs real ownership; design question for Eve.
+  - Calamity reads Main.LocalPlayer directly in 142 files. That is an unmeasured leak hazard.
+- "Mystic Thorium Heavy Scythe" doesn't exist in our Thorium 1.7.2.8. Eve may be on a different Thorium version; ask.
+
 ## 🐛 OPEN: levy rogue/thrower weapons fill the PLAYER's meter (Eve screenshot 2026-11-04)
 - **Code-confirmed path A (Shoot cache):** Thorium `GetThoriumPlayer()` (PlayerHelper.cs:43) returns the cached LOCAL ThoriumPlayer when `player.whoAmI == Main.myPlayer`. Levy `TryRealShoot` (WeaponUse.cs ~480) sets the dummy's whoAmI = Main.myPlayer before ModifyShootStats/Shoot. Result: `ThoriumGlobalItem.Shoot` adds `throwerExhaustion += useTime*2` to EVE's Exhaustion bar on every levy throw, and any other Thorium Shoot-time state lands on Eve too.
 - **Code-confirmed path B (owner on-hit):** `ThoriumPlayer.OnHitNPCWithProj` sets techRecharge on the projectile owner for thrown hits. Levy shots are owned by Eve, so Eve's Technique bar fills.

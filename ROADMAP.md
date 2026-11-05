@@ -207,6 +207,17 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🩹 Levy 1.7.4 (heal-both-ways 8bc8f09), booting
+- **Levy-cast ally heals reach the commander** (the caster is the healer, so the commander is an ally). Commander healing went 0→60–120 across Hippocrati-crossbow, Cosmic Flux, Balance Bloom, Iridescent, Coral Purifier, Life Disperser and Sacred Lyre.
+- **Weapon heals no longer throttled** by the 40-tick reservation (Eve's Sacred Lyre on levies: 43→96).
+- **Seek-heal bolts steer to wounded levies** using Thorium's own speed and inertia (Life Surge 22→96).
+- **Medical Bag:** the arrow and run boost point at the most-wounded levy (291/291 ticks).
+- **Lifesteal heals the levy that hit** (OwnerPuppet bit 32). Vanilla heal bolt: commander +128→0, levy +13→+157.
+- **Hybrid heal swords** (Heretic Breaker) now swing and their heal sweeps fire.
+- **Weak spot:** LEVY-cast healing orbs rarely heal (about 2 per 23); cause unknown.
+- **Knobs for Eve:** the vanilla lifesteal pool is shared across the whole army; lifesteal is 1:1, not ×3.
+- **Untested:** Calamity lifesteal, MP.
+
 ## 📦 SHIPPED 2026-11-05: Levy 1.7.3 + Mechanization 0.7.1 (boots clean: Levy+Mech, Thorium+Levy+Mech)
 - **Weapon allocator (weapon-alloc f91f381):**
   - Rogue, bard and healer are real classes. Wulfrum and other class-less weapons now upgrade.

@@ -134,7 +134,7 @@ namespace Levy.Content.NPCs
 				npc.direction = face; npc.spriteDirection = face;
 				bool close = Math.Abs(dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step
 				bool walk = reversing || close || State == SoldierState.Idle || State == SoldierState.Patrol;
-				maxSpeed = (walk ? WalkSpeedPx : Abilities.MaxRunSpeed) * Abilities.WalkSpeed;
+				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
 				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
 				accel = walk ? WalkAccel : RunAccel;
 				Point feet = TileNav.FeetTile(npc.Bottom);

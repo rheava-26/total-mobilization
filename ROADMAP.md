@@ -222,6 +222,70 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🚀 LEVY 2.0 — Eve's follow-up (2026-11-05 late night), SUPERSEDES the "Proposed phases" below where they conflict
+**Process:**
+- Eve's interrupt stopped both builders. Their partial work was saved as WIP (p0-fixes 3e960ee, altfire-survey 146561d) and both were relaunched from it, at Eve's request.
+
+**Progression QoL:**
+- IN Levy, as an optional "progression assistance" section. No submod.
+- Purpose: so a player doesn't have to grind for hours to equip levies ("throw in whatever crap they have").
+- Eve's specific pain points:
+  - Dark Shards need an evil desert → desert/fragment shimmer options.
+  - Contaminator access.
+  - Chlorophyte cost.
+  - Glorified/Hallowed armor issues. Eve's view: Hallowed is the best armor when you get it (free dodge) but expensive; keep Spectre/Shroomite/Spooky the same so they stay worth using; maybe an option for cheaper Hallowed.
+  - Arrow and ammo recipes.
+- A FACTORY: put in a bulk amount (e.g. 10 Unicorn Horns) and get 20–30% more.
+- All toggles, vanilla defaults, with a note that the mod is designed around vanilla progression.
+
+**Class distribution:**
+- NOT a toggle you must turn on. Fully customizable, and can be turned off.
+- Per class: weights, minimums, maximums, and "always have N of class X".
+
+**Category preferences with HARD options:**
+- "bows always over guns"
+- "bows always + guns used"
+- "at least 7 of weapon type X"
+- weights
+- It works like coding with blocks: rules you stack and edit.
+
+**Reforge control:**
+- Choose which weapons get reforged: recently added, chosen ones, by category.
+- "Reforge to floor" currently hits EVERY weapon ever given, which is absurd. Make it targeted.
+
+**Vanity:**
+- "Always wear X" per class/levy.
+
+**Auto-buy:**
+- The armory auto-buys from shopkeepers (X guns, X ammo).
+- Chained with auto-crafting: buy ammo + chlorophyte, then craft chlorophyte bullets into the armory.
+- Up front: built around Magic Storage, but parts must work without it.
+
+**Barracks:**
+- Small placeable blocks.
+- Militia housing with special requirements.
+- Preset throwable bases, Luiafk-style: wizard towers that produce wizards, etc.
+
+**Emplacements:**
+- Walls levies shoot out of, and can be shot through.
+- Static weapons: a craftable tower-top machine gun that stationary levies man.
+
+**Dialogue & talking:**
+- Levy dialogue is weird; Eve may rewrite it, with me editing slightly.
+- Combat chat as a bar above the head: blue background that fills with text (like the mod in the video Eve sent).
+- Talk to levies DURING combat.
+- The "close up" order makes them clump near you.
+- From the talk window: edit their inventory/loadout directly, and take items from them.
+
+**Officers (still broken):**
+- They must HOLD and use their weapon like vanilla town NPCs, not spawn projectiles.
+- They don't follow orders.
+- Bring back the old UNIQUE kit effects Eve specced, instead of generic stat effects.
+- Painter: the paint gun covers enemies in paint and applies an Ichor-like debuff (defense/damage down), not a generic buff.
+
+**Banners:**
+- Banner defense buffs apply to levies too.
+
 ## 🚀 LEVY 2.0 — Eve's big batch (2026-11-05 night). "Big batch, talk before you commit." Art refs saved in scratchpad/art-refs/ (potion tier list + potion recipe sheet).
 **Decided and running now:**
 - Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it).

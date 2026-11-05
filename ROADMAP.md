@@ -59,6 +59,9 @@ Two Thorium facts that matter: (a) most of these hybrids' own heal is only `heal
 - QoL: exclude-specific-weapons filter; sell excess to the best-paying merchant (designed carefully, NOT a dumb sell-all button).
 - Offhand/park: torches, building platforms in designated areas, mining/resource outposts (perf), usable cannons, NPC-only weapons like the pirate captain's gun (maybe another mod), mana crystal star cost.
 
+## ✅ Weapon effects start at the levy (2026-11-05, branch `onhit-fix`, unreleased, build.txt not bumped)
+`OwnerPuppet` (`Common/Weapons/OwnerPuppet.cs`) is now ON by default via server config `SoldierEffectsAtSoldier` (en-US localized), equal to env mask 31. Env `LEVY_ONHIT_FIX=<mask>` still wins when set (0 = unfixed, for before/after). Nested calls use a saved-state stack (depth up to 3 observed), the Thorium cache token restores the enclosing soldier's, and player-state net messages 4/13 sent mid-swap go out with the real transform. Flagged-subset re-measure on the 2026.10 toolchain: Thorium at-commander 35 -> 7, Calamity 23 -> 4, thrower commander-hook weapons 0. NOT verified: true multiplayer, draw/camera. Residual: Energy Projector (Granite Barrier AI dust), a few Calamity/Thorium ones.
+
 ## ✅ Levy progression, mod-agnostic share-based tiers (2026-11-04, unreleased, build.txt not bumped)
 Levies (= command points) now come from `LevyProgressionSystem` (`Common/Systems/LevyProgression.cs`): per tier, share of that tier's bosses defeated (vanilla keep their old CP as weights, any other boss = tier mean weight) scales linearly between tier targets. Config "Levy progression": pre-HM 20, HM 40, post-ML 60, max 60. Tier source: Boss Checklist registry if loaded (unverified against a real BC), else tier learned at first kill and saved per world. Reward hooks (accessory slot at Moon Lord, Plantera life-fruit analogue) not built. Officer slots (`OfficerSystem.MaxSlots`) are a separate system and untouched.
 

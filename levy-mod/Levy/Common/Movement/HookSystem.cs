@@ -114,7 +114,7 @@ namespace Levy.Common.Movement
 		{
 			long t0 = Stopwatch.GetTimestamp();
 			NPC n = Main.npc[tag.Soldier];
-			if (!n.active || n.ModNPC is not SoldierNPC sn || n.life <= 0 || !sn.HookOwns(p.whoAmI)) { p.active = false; p.timeLeft = 0; OrphanKills++; return; } // the soldier is gone, or is not hooking (a stray hook from a reload)
+			if (!n.active || n.ModNPC is not SoldierNPC sn || n.life <= 0 || !sn.HookOwns(p.whoAmI)) { if (Debug) Levy.Instance?.Logger.Info($"HOOKDBG orphan hook #{p.whoAmI} of npc {tag.Soldier}: npcActive={n.active} life={n.life} soldier={(n.ModNPC as SoldierNPC)?.HookState} owns={(n.ModNPC as SoldierNPC)?.HookOwns(p.whoAmI)} tick={Main.GameUpdateCount}"); p.active = false; p.timeLeft = 0; OrphanKills++; return; } // the soldier is gone, or is not hooking (a stray hook from a reload)
 			using var f = SoldierOwner.Enter(sn, default);
 			if (!f.Ok) return;                      // no slot or lock this tick: the hook simply waits (a frame that cannot open changes nothing)
 			Player d = sn.Dummy;

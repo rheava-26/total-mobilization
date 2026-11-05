@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 			public Vector2? Goal; public string Force = "";
 			public long WholeTs; public int WholeSamples;
 			public long TickTs0, ProjTs0, PlanTs0; public int TickCalls0, ProjCalls0, Plans0, Found0, Casts0, CastsOk0, Latches0, Releases0, Landings0, Aborts0, Orphans0, Sup0, Tele0;
-			public int KillsInactive, KillsTotal; public long Frames0, Refused0; public int MaxSlots, ActiveTicks; public long ActiveTs; public string FpBefore = "", FpAfter = "";
+			public int KillsInactive, KillsTotal; public long Frames0, Refused0; public int MaxSlots, ActiveTicks, OrphansAtEnd; public long ActiveTs; public string FpBefore = "", FpAfter = "";
 			public int TargetIdx = -1; public List<string> Exc = new(); public int EventNote;
 			public int NetSkip0;
 		}
@@ -318,7 +318,7 @@ namespace Levy.Common.Testing
 			s.Frames0 = SoldierOwner.Frames; s.Refused0 = SoldierOwner.Refused;
 		}
 
-		private static void End(Sc s) { s.FpAfter = Fp(Main.player[0]); }
+		private static void End(Sc s) { s.FpAfter = Fp(Main.player[0]); s.OrphansAtEnd = SoldierHooks.OrphanKills; }
 
 		private static void Teardown(Sc s)
 		{
@@ -441,7 +441,7 @@ namespace Levy.Common.Testing
 			long prodTs = (SoldierHooks.TickTs - s.TickTs0) + (SoldierHooks.ProjTs - s.ProjTs0);
 			int casts = SoldierHooks.Casts - s.Casts0, castOk = SoldierHooks.CastsOk - s.CastsOk0;
 			return string.Join("\t", idx, s.ItemName, flags, s.N, reached + "/" + s.Sols.Count(x => x.Body != null), a.ReachTick, F(a.PeakUp),
-				casts, castOk, SoldierHooks.Latches - s.Latches0, SoldierHooks.Releases - s.Releases0, SoldierHooks.Landings - s.Landings0, SoldierHooks.Aborts - s.Aborts0, SoldierHooks.OrphanKills - s.Orphans0, s.KillsInactive, s.KillsTotal,
+				casts, castOk, SoldierHooks.Latches - s.Latches0, SoldierHooks.Releases - s.Releases0, SoldierHooks.Landings - s.Landings0, SoldierHooks.Aborts - s.Aborts0, s.OrphansAtEnd - s.Orphans0, s.KillsInactive, s.KillsTotal,
 				a.MinGoalDist == float.MaxValue ? "-" : F(a.MinGoalDist), a.Body != null ? F((a.Body.NPC.Bottom.X - a.Start.X) / 16f) : "-", a.Body != null ? F((a.Body.NPC.Bottom.Y - a.Start.Y) / 16f) : "-", a.FirstStateTick,
 				s.MaxSlots, SoldierOwner.Frames - s.Frames0, SoldierOwner.Refused - s.Refused0, F(Ms(prodTs, ticks)), F(Ms(prodTs, Math.Max(1, s.ActiveTicks))), F(Ms(SoldierHooks.PlanTs - s.PlanTs0, Math.Max(1, SoldierHooks.Plans - s.Plans0))), SoldierHooks.Plans - s.Plans0, SoldierHooks.PlansFound - s.Found0,
 				(SoldierHooks.TickCalls - s.TickCalls0) + (SoldierHooks.ProjCalls - s.ProjCalls0), F(Ms(s.WholeTs, s.WholeSamples)), SoldierHooks.NetSuppressed - s.Sup0, s.FpBefore == s.FpAfter ? "yes" : "NO:" + s.FpBefore + " != " + s.FpAfter,

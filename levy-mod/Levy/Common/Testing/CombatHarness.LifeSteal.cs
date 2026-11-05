@@ -155,7 +155,7 @@ namespace Levy.Common.Testing
 			_lsCase++; _lsTick = -1;
 		}
 
-		private string LsLive() { int n = 0; foreach (var b in _lsBodies) if (b != null && b.NPC.active && Levy.Common.Targeting.EnemyTargeting.LiveBody(b.NPC.whoAmI) != null) n++; return n.ToString(); }
+		private string LsLive() { int n = 0; foreach (var b in _lsBodies) if (b != null && b.NPC.active && global::Levy.Common.Targeting.EnemyTargeting.LiveBody(b.NPC.whoAmI) != null) n++; return n.ToString(); }
 		private static int _lsSavedMy = int.MinValue;
 
 		private static Item LsMakeItem(string spec)

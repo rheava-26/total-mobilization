@@ -17,19 +17,30 @@ namespace Levy.Common.Weapons
 	{
 		private static Item Make(int type) { var it = new Item(); it.SetDefaults(type); return it; }
 
-		public override void PostAddRecipes()
+		public override void PostSetupRecipes()
 		{
+			MaterialCost.Ensure();
 			var failures = new List<string>();
 			int ok = 0;
-			void Check(bool cond, string what) { if (cond) ok++; else failures.Add(what); }
+			string tag = "";
+			void Check(bool cond, string what) { if (cond) ok++; else failures.Add(what + tag); }
 			void Guard(string name, Action body)
 			{
 				try { body(); }
-				catch (Exception e) { failures.Add($"{name} threw {e.GetType().Name}: {e.Message}"); }
+				catch (Exception e) { failures.Add($"{name} threw {e.GetType().Name}: {e.Message}{tag}"); }
 			}
-			Guard("pure allocator", () => CheckPure(Check));
-			Guard("armory issue", () => CheckArmory(Check));
-			Guard("extra classes", () => CheckExtraClasses(Check));
+			// The same checks under every ranking mode (the price modes with the armored-enemy skip on, at the starting stage).
+			foreach (var (mode, skip) in new[] { (WeaponRankMode.Damage, false), (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPricePlusMaterials, true) })
+			{
+				WeaponRank.Force(mode, skip); tag = " [" + mode + "]";
+				try
+				{
+					Guard("pure allocator", () => CheckPure(Check));
+					Guard("armory issue", () => CheckArmory(Check));
+					Guard("extra classes", () => CheckExtraClasses(Check));
+				}
+				finally { WeaponRank.Release(); tag = ""; }
+			}
 			try {
 				if (failures.Count == 0) Mod.Logger.Info($"Levy weapon allocator self-check: {ok} checks OK");
 				else {
@@ -221,7 +232,7 @@ namespace Levy.Common.Weapons
 					var ex = ExtraDamageClasses.Of(it);
 					if (ex == null) continue;
 					check(WeaponClassifier.ItemDamageClass(it) == ex, $"{m}/{mi.Name} reports its {ex.Name} class");
-					if (sample == null || WeaponClassifier.Score(it) < WeaponClassifier.Score(sample)) sample = it; // the weakest, so Mythril Sword is a clear upgrade
+					if (sample == null || WeaponRank.Of(it) < WeaponRank.Of(sample)) sample = it; // the weakest, so Mythril Sword is a clear upgrade
 				}
 			}
 			if (sample == null) return;

@@ -28,6 +28,13 @@ namespace Levy.Common.Weapons
 
 		public static bool HasBeam(int itemType) => Table.ContainsKey(itemType);
 
+		/// <summary>The beam's shots per swing and its damage as a multiple of the item's, for a table beam.</summary>
+		public static bool TryGetShots(int itemType, out int count, out float damageMult)
+		{
+			if (Table.TryGetValue(itemType, out BeamSpec spec)) { count = spec.Count; damageMult = spec.DamageMult; return true; }
+			count = 1; damageMult = 1f; return false;
+		}
+
 		/// <summary>The projectile type the item's table beam launches, or 0 when the item has none.</summary>
 		public static int BeamProjectile(int itemType) => Table.TryGetValue(itemType, out BeamSpec spec) ? spec.ProjType : 0;
 

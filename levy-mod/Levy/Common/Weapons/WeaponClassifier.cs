@@ -594,6 +594,37 @@ namespace Levy.Common.Weapons
 			return Math.Clamp(slots / global::Levy.Content.NPCs.SoldierNPC.SlotsPerMinion(item), 1f, LevyConstants.MinionMaxPerSoldier);
 		}
 
+		/// <summary>
+		/// What the projectile of a broadsword that launches one adds to each swing: the shot's damage times the shots per swing (0 for a sword that launches nothing that flies, and for the Zenith, whose
+		/// swords are already the swing count). A sky-drop sword (Starfury) uses its table row's damage factor and average star count; a table beam (Terra Blade) its row's; any other beam is one shot at the sword's damage.
+		/// <paramref name="perShot"/> is a single shot's damage (the hit that lands on an enemy).
+		/// </summary>
+		public static float SwordShotDamage(Item item, WeaponProfile p, out float perShot)
+		{
+			perShot = 0f;
+			if (p == null || p.Family != WeaponFamily.Broadsword || !p.FiresProjectileMelee || item.type == ItemID.Zenith || item.damage <= 0) return 0f;
+			float dmg = item.damage, count = 1f;
+			if (LevyConstants.SkyDropWeapons.TryGetValue(item.type, out var sd)) { dmg *= sd.DamageFactor; count = sd.Count + sd.CountExtra * 0.5f + (sd.BonusOneIn > 0 ? 1f / sd.BonusOneIn : 0f); }
+			else if (SwordBeams.TryGetShots(item.type, out int n, out float mult)) { dmg *= mult; count = n; }
+			perShot = dmg;
+			return dmg * count;
+		}
+
+		/// <summary>The damage of one hit of this weapon before the enemy's defense: the shot (the weapon plus a representative round of its ammo, a thrown item's blast), or a sword's projectile when that is more. 0 for a weapon that deals none.</summary>
+		public static float PerHitDamage(Item item)
+		{
+			if (item == null || item.IsAir) return 0f;
+			var p = GetProfile(item);
+			if (!p.Supported) return 0f;
+			float shot = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : Math.Max(0, item.damage) + (item.damage > 0 ? AmmoScoreDamage(item) : 0);
+			if (LevyConstants.ScoreShotDamageMult.TryGetValue(item.type, out float burstMult)) shot *= burstMult;
+			SwordShotDamage(item, p, out float proj);
+			return Math.Max(shot, proj);
+		}
+
+		/// <summary>The healing value the compat layer gives a heal-driven weapon (0 for anything else, or when no compat is loaded).</summary>
+		public static float HealScore(Item item) => HealerScoreSafe(item);
+
 		/// <summary>Rank weapons for best-first issue: damage per second scaled up by rarity tier and value, so sensible high-tier weapons rank up. Higher is better.</summary>
 		public static float Score(Item item)
 		{
@@ -613,6 +644,7 @@ namespace Levy.Common.Weapons
 			bool heldKnown = p.Family == WeaponFamily.HeldWeapon && LevyConstants.HeldRealCadence.TryGetValue(item.type, out int heldCadence) && heldCadence > 0;
 			if (heldKnown) cadence = LevyConstants.HeldRealCadence[item.type];
 			float shotDamage = p.Family == WeaponFamily.Thrown ? ThrownRankDamage(item) : item.damage + AmmoScoreDamage(item); // a shooter's round adds to the weapon's own damage
+			shotDamage += SwordShotDamage(item, p, out _); // a sword that also launches a shot (Enchanted Sword's beam, Starfury's stars, Terra Blade) deals the blow plus the shot
 			if (LevyConstants.ScoreShotDamageMult.TryGetValue(item.type, out float burstMult)) shotDamage *= burstMult; // a burst cast (Nebula Arcanum) does several times its listed damage
 			float dps = shotDamage * p.ProjectilesPerShot * 60f / cadence;
 			if (p.Family == WeaponFamily.Summon) dps = item.damage * LevyConstants.SummonScoreDamageFactor * SummonScoreMinions(item); // the minions do the work: useTime means nothing

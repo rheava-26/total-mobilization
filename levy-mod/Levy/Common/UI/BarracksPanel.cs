@@ -453,7 +453,7 @@ namespace Levy.Common.UI
 				if (_fGrade != 0 && rec != null && (int)rec.Grade != _fGrade - 1) continue;
 				if (_fTier != 0 && (!armed || TierBand(tier) != _fTier - 1)) continue;
 				if (_fDuty != 0 && rec != null && rec.Reserve != (_fDuty == 2)) continue;
-				rows.Add((card, cls, tier, armed ? WeaponClassifier.Score(w) : 0f, i));
+				rows.Add((card, cls, tier, armed ? WeaponRank.Of(w) : 0f, i));
 			}
 			IEnumerable<(RosterCard card, int cls, int tier, float score, int idx)> ordered = rows;
 			switch (_sort)

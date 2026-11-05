@@ -11,8 +11,13 @@ namespace Levy.Common.Config
 		public override ConfigScope Mode => ConfigScope.ServerSide;
 		public static LevyConfig Get => ModContent.GetInstance<LevyConfig>();
 
-		public override void OnLoaded() => global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
-		public override void OnChanged() => global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
+		public override void OnLoaded() => Apply();
+		public override void OnChanged() => Apply();
+		private void Apply()
+		{
+			global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
+			global::Levy.Common.Weapons.WeaponRank.SetConfig(WeaponRanking, SkipArmoredWeapons);
+		}
 
 		[Header("Bosses")]
 		[Range(0, 10)] [DefaultValue(2)] public int BossHpScalingPercentPerCp;
@@ -28,6 +33,8 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;
 		[DefaultValue(true)] public bool UseVanillaStatPipeline;
 		[DefaultValue(false)] public bool ClassMatchIssue;
+		[DefaultValue(global::Levy.Common.Weapons.WeaponRankMode.SellPrice)] [DrawTicks] public global::Levy.Common.Weapons.WeaponRankMode WeaponRanking;
+		[DefaultValue(true)] public bool SkipArmoredWeapons;
 		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool RealWeaponShoot;
 		[DefaultValue(true)] public bool AutoFeedCrystals;

@@ -151,7 +151,7 @@ namespace Levy.Common.Weapons
 			// Soldiers get first pick: a reserve as big as the shelf lends nothing; a reserve of one never lends the very best weapon.
 			check(armory.LendDroneWeapon(4) == null, "a reserve covering every weapon on the racks lends nothing");
 			Item best = null; float bestScore = float.NegativeInfinity;
-			foreach (Item it in armory.Storage) if (it != null && !it.IsAir && WeaponClassifier.IsIssuableWeapon(it) && WeaponClassifier.Score(it) > bestScore) { best = it; bestScore = WeaponClassifier.Score(it); }
+			foreach (Item it in armory.Storage) if (it != null && !it.IsAir && WeaponClassifier.IsIssuableWeapon(it) && WeaponRank.Of(it) > bestScore) { best = it; bestScore = WeaponRank.Of(it); }
 			Item first = armory.LendDroneWeapon(1);
 			check(first != null && !ReferenceEquals(first, best) && armory.IsLent(first), "with a reserve of one, a drone never takes the army's best weapon");
 			if (first != null) armory.ReturnLent(first);

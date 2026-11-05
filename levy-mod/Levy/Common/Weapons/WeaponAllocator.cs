@@ -72,7 +72,7 @@ namespace Levy.Common.Weapons
 	internal static class WeaponAllocator
 	{
 		/// <summary>The ranking key. Kept in one place so the ranking decision (the current score, or another) is a one-line change.</summary>
-		internal static Func<Item, float> RankOf = WeaponClassifier.Score;
+		internal static Func<Item, float> RankOf = WeaponRank.Of;
 
 		/// <summary>How much claim a levy has on a weapon: 2 = it is his armor's class, 1 = he has no armor class, 0 = a classed levy holding another class's weapon.</summary>
 		private static int Entitle(AllocLevy lev, AllocCand c) => lev.Cls != null ? (c.Cls == lev.Cls ? 2 : 0) : 1;

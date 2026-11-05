@@ -527,7 +527,7 @@ namespace Levy.Content.TileEntities
 			void Consider(Item it)
 			{
 				if (!IsIssuable(it) || WeaponClassifier.ItemDamageClass(it) != DamageClass.Ranged || !HasAmmoFor(it, who, onHand)) return;
-				float sc = WeaponClassifier.Score(it);
+				float sc = WeaponRank.Of(it);
 				top = Math.Max(top, sc);
 				if (ArmorDoctrine.FitsRangedSubtype(it, sub)) favTop = Math.Max(favTop, sc);
 			}
@@ -698,7 +698,7 @@ namespace Levy.Content.TileEntities
 				for (int i = 0; i < to && i < arr.Length; i++) {
 					var it = arr[i];
 					if (IsAir(it) || owner.IsReservedRef(it) || !userPred(it)) continue;
-					float sc = WeaponClassifier.Score(it);
+					float sc = WeaponRank.Of(it);
 					if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (s, i, sc); // strict >: on a tie the earlier source (rack first) stays
 				}
 			}
@@ -729,7 +729,7 @@ namespace Levy.Content.TileEntities
 			{
 				var it = arr[i];
 				if (IsAir(it) || !pred(it)) continue;
-				float sc = WeaponClassifier.Score(it);
+				float sc = WeaponRank.Of(it);
 				if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (i, sc);
 			}
 			if (byType.Count == 0) return false;
@@ -750,17 +750,17 @@ namespace Levy.Content.TileEntities
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(forSoldier), WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(forSoldier), WeaponRank.Of);
 		}
 
 		/// <summary>
-		/// Best <see cref="WeaponClassifier.Score"/> among the issuable blades and spears that could be issued as a primary: the weapon rows (not the dedicated
+		/// Best <see cref="WeaponRank.Of"/> among the issuable blades and spears that could be issued as a primary: the weapon rows (not the dedicated
 		/// sidearm slot), storage, the networked armories' storage and a connected Magic Storage network. 0 when none is stocked.
 		/// </summary>
 		private float TopBladeScore()
 		{
 			float best = 0f;
-			ForEachShelfItem(it => { if (IsIssuableMelee(it)) best = Math.Max(best, WeaponClassifier.Score(it)); });
+			ForEachShelfItem(it => { if (IsIssuableMelee(it)) best = Math.Max(best, WeaponRank.Of(it)); });
 			return best;
 		}
 
@@ -774,7 +774,7 @@ namespace Levy.Content.TileEntities
 			var claimed = ClaimedWeapons(forSoldier);
 			if (claimed != null) return it => IsIssuableMelee(it) && !claimed.Contains(it);
 			float cap = TopBladeScore() * LevyConstants.SidearmScoreCapFraction;
-			return it => IsIssuableMelee(it) && WeaponClassifier.Score(it) <= cap;
+			return it => IsIssuableMelee(it) && WeaponRank.Of(it) <= cap;
 		}
 
 		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
@@ -787,14 +787,14 @@ namespace Levy.Content.TileEntities
 		private Item TakeWhipSidearm()
 		{
 			if (IsIssuableWhip(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableWhip, WeaponRank.Of);
 		}
 
 		/// <summary>A minion-summoning staff in hand: the dedicated sidearm slot first, then the best in the racks. Removes it. Null if none in stock.</summary>
 		private Item TakeSummonStaffSidearm()
 		{
 			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponRank.Of);
 		}
 
 		/// <summary>
@@ -826,7 +826,7 @@ namespace Levy.Content.TileEntities
 		public virtual Item TakeSentrySidearm(SoldierRecord forSoldier)
 		{
 			if (IsIssuableSentry(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSentry, WeaponClassifier.Score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSentry, WeaponRank.Of);
 		}
 
 		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>
@@ -1152,7 +1152,7 @@ namespace Levy.Content.TileEntities
 
 		/// <summary>
 		/// Lends the best SURPLUS weapon a drone can mount, or null. Soldiers get first pick: every issuable weapon the army could draw (the weapon rows and bulk storage) is ranked by
-		/// <see cref="WeaponClassifier.Score"/>, the best <paramref name="reserveForSoldiers"/> of them are left alone whatever they are, and the drone takes the best mountable weapon below that
+		/// <see cref="WeaponRank.Of"/>, the best <paramref name="reserveForSoldiers"/> of them are left alone whatever they are, and the drone takes the best mountable weapon below that
 		/// line. The issue rows are never lent from (they are the army's own first picks); only bulk storage is. A weapon on a Re-arm hold this tick is skipped. Server / single player only.
 		/// </summary>
 		public Item LendDroneWeapon(int reserveForSoldiers)
@@ -1164,7 +1164,7 @@ namespace Levy.Content.TileEntities
 			{
 				Item it = IssueWeapons[i];
 				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
-				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = -1 });
+				rank.Add(new RankEntry { Score = WeaponRank.Of(it), Slot = -1 });
 			}
 			bool anyLendable = false;
 			for (int i = 0; i < Storage.Length; i++)
@@ -1173,7 +1173,7 @@ namespace Levy.Content.TileEntities
 				if (IsAir(it) || IsReservedRef(it) || !IsIssuable(it)) continue;
 				bool lendable = DroneArsenal.IsMountable(it);
 				anyLendable |= lendable;
-				rank.Add(new RankEntry { Score = WeaponClassifier.Score(it), Slot = i, Lendable = lendable });
+				rank.Add(new RankEntry { Score = WeaponRank.Of(it), Slot = i, Lendable = lendable });
 			}
 			if (!anyLendable) { rank.Clear(); return null; }
 			rank.Sort((a, b) => { int c = b.Score.CompareTo(a.Score); return c != 0 ? c : a.Slot.CompareTo(b.Slot); });
@@ -1265,7 +1265,7 @@ namespace Levy.Content.TileEntities
 			foreach (Item it in armory.Lent)
 			{
 				if (IsAir(it) || !IsIssuable(it) || (usable != null && !usable(it))) continue;
-				float score = WeaponClassifier.Score(it);
+				float score = WeaponRank.Of(it);
 				if (score > bestScore) { bestScore = score; best = it; }
 			}
 			return best != null && armory.ReturnLent(best);
@@ -1992,7 +1992,7 @@ namespace Levy.Content.TileEntities
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
 			bool summoner = IsSummonerSoldier(soldier);
-			float need = WeaponClassifier.Score(cur) * LevyConstants.AutoUpgradeScoreMargin;
+			float need = WeaponRank.Of(cur) * LevyConstants.AutoUpgradeScoreMargin;
 			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it
 			// Summon-class off-hands are a summoner's only (the reservation): a sentry kit wants a sentry in hand, else each summon role upgrades within itself.
 			if (summoner && ArmorDoctrine.HasSentryLean(g.Accessories)) { pool = IsIssuableSentry; if (fam != WeaponFamily.Sentry) need = 0f; }
@@ -2002,10 +2002,10 @@ namespace Levy.Content.TileEntities
 			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(soldier); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
 			shelf ??= pool;
-			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponClassifier.Score(it) >= need;
+			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponRank.Of(it) >= need;
 			// Same order as the initial pick: the dedicated sidearm slot first, then the best in the weapon row / storage / networked armories.
 			Item neu = Fits(IssueWeapons[SidearmSlot], pool) ? Remove(IssueWeapons, SidearmSlot) : null;
-			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => Fits(it, shelf), WeaponClassifier.Score);
+			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => Fits(it, shelf), WeaponRank.Of);
 			return neu != null && SwapIn(g, SoldierGear.SlotSidearm, neu);
 		}
 

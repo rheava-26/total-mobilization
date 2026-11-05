@@ -89,7 +89,10 @@ namespace Levy.Content.NPCs
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
+			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
 			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
+			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
+			if (_hkAltSeen != 0 && _hkPhase == HookPhase.Idle && Main.GameUpdateCount - _hkAltSeen <= 12u) { _hkGoalNow = new Vector2(_hkAltX, _hkAltY); HookTrigger(HookReason.Altitude); }
 
 			if (!HasMoveGoal)
 			{
@@ -103,6 +106,7 @@ namespace Levy.Content.NPCs
 			}
 
 			Vector2 goal = ResolveLocalGoal();
+			_hkGoalNow = goal;
 			float dx = goal.X - npc.Center.X;
 			float dy = goal.Y - npc.Bottom.Y; // > 0: goal below the feet
 			if (Math.Abs(dx) < ArriveXPx && (air || Math.Abs(dy) < ArriveYPx)) // aloft the goal's Y is the ground spot below: only X counts
@@ -149,7 +153,7 @@ namespace Levy.Content.NPCs
 					if (jt > jumpTiles && GoalJumpAllowed()) { jumpTiles = jt; goalJump = true; }
 				}
 				else if (Abilities.HasWings) wantFly = true;
-				else { _blocked = true; _blockedHard = true; }
+				else { _blocked = true; _blockedHard = true; HookTrigger(HookReason.GoalAbove); }
 			}
 			// goal well below while standing on a platform: drop through it when the floor below is safe
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
@@ -188,6 +192,7 @@ namespace Levy.Content.NPCs
 
 		partial void Movement_OnTeleported()
 		{
+			if (!_hkTeleportApplying) HookReset(false); // a teleport takes the soldier off its hook
 			_path.Clear(); _pathTimer = 0; _pathFailTimer = 0;
 			ResetStuck(); _stuckTotal = 0;
 			_goalJumpStreak = 0; _goalJumpHold = 0; _goalJumpIdle = 0;
@@ -232,7 +237,7 @@ namespace Levy.Content.NPCs
 			{
 				// an overhang at chest or head height: the body cannot duck under it and cannot jump onto it
 				_blocked = true; _blockedHard = true;
-				if (Abilities.HasWings) { wantFly = true; flyUp = true; }
+				if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall);
 				return;
 			}
 			if (h >= 2)
@@ -241,7 +246,7 @@ namespace Levy.Content.NPCs
 				bool headroom = true;
 				for (int k = 1; k <= h && headroom; k++) if (TileNav.IsSolid(feetX, fy - 2 - k)) headroom = false;
 				if (h <= Abilities.JumpTiles && clearAbove && headroom) { if (h > jumpTiles) jumpTiles = h; }
-				else { _blocked = true; _blockedHard = true; if (Abilities.HasWings) { wantFly = true; flyUp = true; } }
+				else { _blocked = true; _blockedHard = true; if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall); }
 				return;
 			}
 			if (h == 1) return; // a single step: Collision.StepUp carries the body over it
@@ -252,11 +257,11 @@ namespace Levy.Content.NPCs
 				int depth = TileNav.DropDepth(ax, fy);
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
-				if (depth < 0) { _blocked = true; _blockedHard = true; return; }
+				if (depth < 0) { _blocked = true; _blockedHard = true; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; } // a gap wider than a jump: a hook may span it
 				if (depth > Abilities.JumpTiles + DropMarginTiles)
 				{
 					if (Abilities.HasWings) wantFly = true;
-					else { _blocked = true; _blockedHard = true; }
+					else { _blocked = true; _blockedHard = true; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); }
 				}
 			}
 		}

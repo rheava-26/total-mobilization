@@ -76,6 +76,7 @@ namespace Levy.Content.NPCs
 		{
 			if (Main.dedServ || Record == null || !IsAlive) return;
 			Nameplates.Draw(this, spriteBatch, screenPos);
+			HookDrawChain(spriteBatch, screenPos);
 		}
 
 		/// <summary>Re-equips the dummy when the visible gear changed. Allocation-free unless something changed.</summary>

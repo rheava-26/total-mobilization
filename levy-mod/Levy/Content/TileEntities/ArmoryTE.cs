@@ -838,6 +838,10 @@ namespace Levy.Content.TileEntities
 			return TakeBest(IssueArmor, part, ArmorSlots, ArmorParts, Pred, ArmorScore);
 		}
 
+		/// <summary>The best grappling hook on hand (reach first, then pull); removes it. Null if none.</summary>
+		public virtual Item TakeHook(SoldierRecord forSoldier)
+			=> TakeBest(null, 0, 0, 1, it => Common.Movement.HookInfo.Of(it).Usable, it => Common.Movement.HookInfo.Of(it).Score);
+
 		/// <summary>Best accessory not already worn; removes it. Null if none.</summary>
 		public virtual Item TakeAccessory(SoldierRecord forSoldier)
 		{
@@ -1655,6 +1659,12 @@ namespace Levy.Content.TileEntities
 				var a = TakeAccessory(soldier);
 				if (a == null) break;
 				g.Accessories[i] = a; changed = true;
+			}
+
+			// The hook slot: the best grappling hook in stock (levies cross gaps and climb with it; see SoldierNPC.Hook.cs).
+			if (Common.Config.LevyConfig.Get.SoldiersUseHooks && !g.IsLocked(SoldierGear.SlotHook) && IsAir(g.Hook)) {
+				var hk = TakeHook(soldier);
+				if (hk != null) { g.Hook = hk; changed = true; }
 			}
 
 			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a

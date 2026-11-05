@@ -210,6 +210,7 @@ namespace Levy.Content.NPCs
 		{
 			if (Dummy != null) return;
 			Dummy = new Player();
+			Common.Owner.SoldierOwner.RegisterDummy(Dummy);
 			Dummy.whoAmI = DummySlot;
 			Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
 			Dummy.width = BodyWidth; Dummy.height = BodyHeight;
@@ -265,6 +266,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < DummyAccessorySlots && i < slots; i++) Dummy.armor[3 + i] = g.Accessories[i]; // slots past these are applied by hand (ApplyExtraAccessories)
 			for (int i = 0; i < 3; i++) Dummy.dye[i] = g.Dyes[i];
 			for (int i = 0; i < SoldierGear.AccessorySlots && i < slots; i++) Dummy.dye[3 + i] = g.Dyes[3 + i];
+			Dummy.miscEquips[4] = g.HasHook ? g.Hook : _blankSlot; // the hook slot (QuickGrapple reads it)
 			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
 			Dummy.selectedItem = 0;
 			Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, Record.MaxHp);
@@ -435,7 +437,7 @@ namespace Levy.Content.NPCs
 		{
 			if (_deathHandled) return true;
 			_deathHandled = true;
-			if (LevyUtil.IsServerOrSingle) KillAnchoredProjectiles(); // minions, lashes and boomerangs go with their soldier
+			if (LevyUtil.IsServerOrSingle) { KillAnchoredProjectiles(); HookOnDeath(); } // minions, lashes, boomerangs and hooks go with their soldier
 			if (OfficerMode) { if (LevyUtil.IsServerOrSingle) Officer_OnDeath(); return true; } // the officer fell: end the commission, un-park the town NPC (not the roster path)
 			if (LevyUtil.IsServerOrSingle && Record != null)
 			{
@@ -564,6 +566,7 @@ namespace Levy.Content.NPCs
 			// ---- officer avatar (OfficerMode only): clients need the link to find, co-locate and drive the town NPC (vanilla draws it) ----
 			writer.Write(OfficerMode);
 			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
+			HookWriteNet(writer); // grappled: clients draw the chain
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -585,6 +588,7 @@ namespace Levy.Content.NPCs
 			OfficerMode = reader.ReadBoolean();
 			if (OfficerMode) { OfficerTownIndex = reader.ReadInt32(); OfficerTownType = reader.ReadInt32(); if (!wasOfficer) _offDef = null; }
 			else { OfficerTownIndex = -1; OfficerTownType = -1; }
+			HookReadNet(reader);
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

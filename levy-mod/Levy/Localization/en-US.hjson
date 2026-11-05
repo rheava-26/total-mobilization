@@ -269,6 +269,11 @@ Mods: {
 					Tooltip: A levy's accessories and armor run their per-tick effects, as a player's do.
 				}
 
+				SoldiersUseHooks: {
+					Label: Levies use grappling hooks
+					Tooltip: Levies carry the best grappling hook in the armory. They swing across gaps and climb cliffs with it.
+				}
+
 				ExtraTargetingAiStyles: {
 					Label: Extra targeting AI styles
 					Tooltip: Additional NPC aiStyle numbers that may target soldiers.

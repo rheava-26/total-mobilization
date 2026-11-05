@@ -19,6 +19,8 @@ namespace Levy.Common.Movement
 		public bool NoFallDamage = true;
 		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
 		public bool HasDash;
+		/// <summary>A usable grappling hook is in the dummy's hook slot (miscEquips[4]); its reach and reel speed in px, and how many hooks it holds.</summary>
+		public bool HasHook; public float HookReachPx, HookPullPx; public int HookCount;
 
 		/// <summary>
 		/// Reads the dummy's stats. Balloons add to jumpSpeedBoost in UpdateEquips; Frog Leg, Empress Brooch and Moon Lord
@@ -58,6 +60,8 @@ namespace Levy.Common.Movement
 			a.CanGlide = a.HasWings;
 			a.NoFallDamage = true;
 			a.HasDash = dummy.dashType > 0;
+			var hook = HookInfo.Of(dummy.miscEquips != null && dummy.miscEquips.Length > 4 ? dummy.miscEquips[4] : null);
+			if (hook.Usable) { a.HasHook = true; a.HookReachPx = hook.ReachPx; a.HookPullPx = hook.PullPx; a.HookCount = hook.Count; }
 			return a;
 		}
 	}

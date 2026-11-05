@@ -1,0 +1,17 @@
+cost|V:Spear|10|600|fam=spear,dist=3.5,vslot,netlock
+cost|V:Spear|10|600|fam=spear,dist=9,vslot,netlock
+cost|V:Spear|10|600|fam=spear,dist=9,vslot,netlock,localimm
+cost|V:Spear|1|600|fam=spear,dist=3.5,vslot,netlock
+gear|V:Spear|1|600|fam=spear,vslot,netlock,cg=V:MagmaStone+V:FrostHelmet+V:FrostBreastplate+V:FrostLeggings+V:VolatileGelatin+V:BoneGlove,refresh
+gear|V:Spear|1|600|fam=spear,vslot,netlock,nonpc,cg=V:MagmaStone+V:FrostHelmet+V:FrostBreastplate+V:FrostLeggings+V:VolatileGelatin+V:BoneGlove,refresh
+gear|V:Spear|1|600|fam=spear,vslot,netlock,nonpc,pu=s2,cg=V:MagmaStone+V:FrostHelmet+V:FrostBreastplate+V:FrostLeggings+V:VolatileGelatin+V:BoneGlove,refresh
+gear|V:Spear|1|600|fam=spear,vslot,netlock,nonpc,pu=s2,refresh
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,refresh
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,refresh,nonpc,pu=s3
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:FrostburnPouch
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:FrostburnPouch,nonpc
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:FrostburnPouch,nonpc,pu=s2
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:FrostburnPouch,nonpc,pu=s3
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:BlizzardPouch,nonpc,pu=s3
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:SandshroudPouch,nonpc,pu=s3
+gear|T:HarpiesBarrage|1|600|fam=other,dist=14,vslot,netlock,halflife,hurt=150,g=T:ShinobiSigil,nonpc,pu=s3

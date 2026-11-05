@@ -1,0 +1,12 @@
+fid|V:HornetStaff|1|600|fam=summon,slots
+fid|T:StormHatchlingStaff|1|600|fam=summon,slots
+fid|V:Spear|1|600|fam=spear,slots
+fid|V:EnchantedBoomerang|1|600|fam=boom,slots
+fid|V:Cascade|1|600|fam=yoyo,slots
+fid|T:HeartWand|1|600|fam=heal,slots
+ctl|none|10|600|fam=other,slots
+cost|V:HornetStaff|10|600|fam=summon,slots
+cost|V:Spear|10|600|fam=spear,slots
+ctl|none|40|600|fam=other,slots
+cost|V:HornetStaff|40|600|fam=summon,slots
+cost|V:Spear|40|600|fam=spear,slots

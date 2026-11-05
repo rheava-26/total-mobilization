@@ -33,6 +33,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool AutoFeedCrystals;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
 		[DefaultValue(true)] public bool SoldierEffectsAtSoldier;
+		[DefaultValue(true)] public bool RealGearUpkeep;
 		public List<int> ExtraTargetingAiStyles = new();
 
 		[Header("Targeting")]

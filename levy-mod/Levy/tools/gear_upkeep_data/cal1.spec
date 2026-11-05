@@ -1,0 +1,9 @@
+ctl|x|1|600|dist=14,g=C:StatigelHeadRogue+C:StatigelArmor+C:StatigelGreaves,upk=0,wpn=V:Musket
+ctl|x|1|600|dist=14,g=C:StatigelHeadRogue+C:StatigelArmor+C:StatigelGreaves,upk=2,wpn=V:Musket
+ctl|x|1|900|dist=14,g=C:BlunderBooster,upk=0,wpn=V:Musket
+ctl|x|1|900|dist=14,g=C:BlunderBooster,upk=2,wpn=V:Musket
+ctl|x|1|900|dist=14,g=C:PlaguedFuelPack,upk=0,wpn=V:Musket
+ctl|x|1|900|dist=14,g=C:PlaguedFuelPack,upk=2,wpn=V:Musket
+ctl|x|40|600|dist=14,g=C:StatigelHeadRogue+C:StatigelArmor+C:StatigelGreaves,upk=0
+ctl|x|40|600|dist=14,g=C:StatigelHeadRogue+C:StatigelArmor+C:StatigelGreaves,upk=2
+ctl|x|40|600|dist=14,upk=2

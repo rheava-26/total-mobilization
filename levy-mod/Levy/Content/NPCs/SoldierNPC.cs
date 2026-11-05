@@ -243,6 +243,7 @@ namespace Levy.Content.NPCs
 			{
 				Item it = acc[i];
 				if (it == null || it.IsAir || !it.accessory || (it.expertOnly && !Main.expertMode)) continue;
+				if (it.type == ItemID.SporeSac && ReferenceEquals(GearUpkeep.Body, this) && GearUpkeep.Mode != 3) continue; // its trap step is hand-made (AccessoryProc.cs); the gear frame does not run it a second time
 				d.GrantPrefixBenefits(it);
 				d.GrantArmorBenefits(it);
 				d.ApplyEquipFunctional(it, false);
@@ -287,18 +288,32 @@ namespace Levy.Content.NPCs
 			if (Record == null) return;
 			EquipDummy();
 			Stations = StationBuffSystem.For(NPC.Center);
+			_upkeepGear = ComputeUpkeepNeed();
 			bool ok = false;
 			if (PipelineOk)
 			{
 				try
 				{
 					Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
-					Dummy.ResetEffects();
-					Dummy.UpdateEquips(DummySlot);
-					ApplyExtraAccessories(Dummy);
-					UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
-					try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
-					try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
+					bool framed = false;
+					if (UpkeepActive)
+					{
+						// the per-tick gear frame (SoldierNPC.GearUpkeep.cs) IS the stat pass for these soldiers: same steps, plus the timers, buffs and the mod hooks Player.Update runs
+						GearUpkeep.PrepareCountsOncePerTick();
+						long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+						try { GearFrame(); _upkeepFails = 0; framed = true; }
+						catch (Exception e) { UpkeepFailed(e); }
+						GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++;
+					}
+					if (!framed)
+					{
+						Dummy.ResetEffects();
+						Dummy.UpdateEquips(DummySlot);
+						ApplyExtraAccessories(Dummy);
+						UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
+						try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
+						try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
+					}
 					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
 					Defense = Dummy.statDefense;
 					MoveSpeedMult = Math.Max(0.5f, Dummy.moveSpeed);
@@ -396,6 +411,7 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
+			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			Damage_Update();
 			if (!IsAlive) return;
 			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset) Brain_Think();

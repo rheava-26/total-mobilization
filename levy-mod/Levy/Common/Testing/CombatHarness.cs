@@ -67,7 +67,7 @@ namespace Levy.Common.Testing
 		private const int CleanupTicks = 6;
 		private const string CommanderName = "LevyTester";
 
-		private enum Ph { Boot, Setup, Run, Cleanup, Done, Scenario }
+		private enum Ph { Boot, Setup, Run, Cleanup, Done, Scenario, Lab }
 		private Ph _ph = Ph.Boot;
 		private int _phTick, _bootTick;
 		private int _cx;
@@ -129,6 +129,7 @@ namespace Levy.Common.Testing
 					foreach (var s in rg.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) if (int.TryParse(s, out int r) && r >= 3 && r <= 90) list.Add(r);
 					if (list.Count > 0) _ranges = list.ToArray();
 				}
+				OwnerLab.ReadEnv();
 				if (Main.dedServ) Main.OnTickForThirdPartySoftwareOnly += DriveServer;
 				On_Projectile.Update += OnProjUpdate;
 				if (_spSwap) On_NPC.UpdateNPC += OnNpcUpdate;
@@ -209,6 +210,9 @@ namespace Levy.Common.Testing
 				case Ph.Scenario:
 					StepScenario();
 					return;
+				case Ph.Lab:
+					OwnerLab.Tick(this);
+					return;
 				case Ph.Setup:
 					if (_phTick == 0)
 					{
@@ -250,6 +254,7 @@ namespace Levy.Common.Testing
 			BuildRange();
 			PlaceCommander(false);
 			if (!string.IsNullOrEmpty(Scenario)) { if (BeginScenario()) { _ph = Ph.Scenario; _phTick = 0; return; } Finish("unknown LEVY_HARNESS_SCENARIO '" + Scenario + "'"); return; }
+			if (OwnerLab.Active) { _ph = Ph.Lab; OwnerLab.Boot(this); return; } // owner-lab feasibility study (OwnerLab.cs): its own scenario driver replaces the trial list
 			BuildTrials();
 			Mod.Logger.Info($"HARNESS: range built at x={_cx - HalfWidth}..{_cx + HalfWidth}, floor y={FloorY}; world {Main.maxTilesX}x{Main.maxTilesY}; {_trials.Count} trials queued; thoriumActive={ThoriumCompatSystem.Active}; netMode={Main.netMode}");
 			if (_trials.Count == 0) { Finish("no trials"); return; }
@@ -851,6 +856,12 @@ namespace Levy.Common.Testing
 			p.direction = aim.X >= p.Center.X ? 1 : -1;
 		}
 
+		// ---- owner-lab hooks (harness-only; see OwnerLab.cs) ----
+		internal int Cx => _cx;
+		internal SoldierRecord LabMakeRecord(string name) => MakeRecord(name);
+		internal void LabClearAll() => ClearAll();
+		internal void LabFinish(string why) => Finish(why);
+
 		private SoldierRecord MakeRecord(string name)
 		{
 			var rec = new SoldierRecord
@@ -1329,7 +1340,7 @@ namespace Levy.Common.Testing
 			if (_ph == Ph.Done) return;
 			_ph = Ph.Done;
 			try { ClearAll(); } catch { }
-			WriteTsv();
+			if (!OwnerLab.Active) WriteTsv(); // the owner lab writes its own TSV
 			Mod.Logger.Info($"HARNESS: DONE ({why}); {_rows.Count} rows -> {OutPath}");
 			Mod.Logger.Info("HARNESS: shutting the server down WITHOUT saving the world.");
 			try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { }

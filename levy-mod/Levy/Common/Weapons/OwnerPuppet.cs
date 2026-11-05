@@ -161,9 +161,9 @@ namespace Levy.Common.Weapons
 		private static ModPlayer _curTp;
 
 		/// <summary>Points Thorium's local-player cache at the dummy's ThoriumPlayer (the dummy's whoAmI is Main.myPlayer for the call, which SetLocalThoriumPlayer requires). Returns a token for RestoreThorium; null when off / unavailable.</summary>
-		internal static object SwapThorium(Player dummy)
+		internal static object SwapThorium(Player dummy, bool force = false)
 		{
-			if ((Mask & 8) == 0 || dummy == null) return null;
+			if ((!force && (Mask & 8) == 0) || dummy == null) return null;
 			try
 			{
 				if (!EnsureThorium()) return null;

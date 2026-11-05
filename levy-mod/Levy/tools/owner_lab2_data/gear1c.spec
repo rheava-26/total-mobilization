@@ -1,0 +1,9 @@
+gear|V:Musket|1|600|fam=other,dist=14,vslot,netlock,hurt=120,refresh
+gear|V:Musket|1|600|fam=other,dist=14,vslot,netlock,hurt=120,refresh,nonpc
+gear|V:Musket|1|600|fam=other,dist=14,vslot,netlock,hurt=120,refresh,nonpc,pu=s2
+gear|V:AmethystStaff|1|600|fam=other,dist=12,vslot,netlock,halflife,hurt=120,refresh
+gear|V:AmethystStaff|1|600|fam=other,dist=12,vslot,netlock,halflife,hurt=120,refresh,nonpc
+gear|V:AmethystStaff|1|600|fam=other,dist=12,vslot,netlock,halflife,hurt=120,refresh,nonpc,pu=s2
+gear|V:Spear|1|600|fam=spear,vslot,netlock,hurt=120,refresh
+gear|V:Spear|1|600|fam=spear,vslot,netlock,hurt=120,refresh,nonpc
+gear|V:Spear|1|600|fam=spear,vslot,netlock,hurt=120,refresh,nonpc,pu=s2

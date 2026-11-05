@@ -80,6 +80,14 @@ namespace Levy.Common.Testing
 			public int HealTicks, PlayInstrNre, DummyDeaths, TpToCmd, TpToSelf, TpOther; public int ChildAtSol, ChildAtCmd, ChildAtTgt, ChildOther, CmdProcs, OtherProcs, DummyProcs;
 			public long StopTsAtStart;
 			public Dictionary<string, int> KillTrace = new(); public Dictionary<string, string> KillSample = new(); public int SilentDeaths, NetClears, NetThreadPasses;
+			public List<string> GearKeys = new(), CmdGearKeys = new(); public int HurtEvery, Every;
+			public string FlagsOn = "", CmdFlagsOn = "";
+			public long DummyLifeGain, DummyManaGain; public HashSet<int> TargetBuffs = new();
+			public long SubsetTs, RefreshTs; public int SubsetCalls, RefreshCalls;
+			public Dictionary<string, int[]> Loc = new();
+			public int HookProjCmd, HookProjOther, HookItemCmd, HookItemOther, HookKillCmd, HookKillOther, HookHurtCmd, HookHurtOther;
+			public float StealthStart = -1f, StealthMax, StealthPeak; public HashSet<int> StealthProjs = new(); public int ProjsTotal; public HashSet<int> SeenProj = new();
+			public int HurtCalls; public string GearNote = "";
 		}
 
 		private static Sc _sc;
@@ -96,7 +104,8 @@ namespace Levy.Common.Testing
 		internal static void NoteDummyDeath() { if (_sc != null) _sc.DummyDeaths++; }
 		internal static bool Flag(string f) => _sc != null && _sc.Flags.Contains(f);
 		internal static bool Legacy => _sc != null && _sc.Flags.Contains("legacy");
-		internal static void NoteHitProc(int who) { var s = _sc; if (s == null || _stage != 1) return; if (who == 0) s.CmdProcs++; else s.OtherProcs++; }
+		internal static void NoteHitProc(int who) { var s = _sc; if (s == null || _stage != 1) return; if (who == 0) { s.CmdProcs++; s.HookProjCmd++; } else { s.OtherProcs++; s.HookProjOther++; } }
+		internal static void NoteHook(int kind, int who) { var s = _sc; if (s == null || _stage != 1) return; bool c = who == 0; if (kind == 1) { if (c) s.HookItemCmd++; else s.HookItemOther++; } else if (kind == 2) { if (c) s.HookKillCmd++; else s.HookKillOther++; } else if (kind == 3) { if (c) s.HookHurtCmd++; else s.HookHurtOther++; } }
 		internal static void NoteNetPass() { var s = _sc; if (s != null) s.NetThreadPasses++; }
 		internal static bool InScenario => _sc != null && _stage == 1;
 
@@ -128,6 +137,10 @@ namespace Levy.Common.Testing
 					else if (f.StartsWith("cmd=") && float.TryParse(f.Substring(4), out float cd)) s.CmdDist = cd;
 					else if (f.StartsWith("boss=") && int.TryParse(f.Substring(5), out int b)) s.BossId = b;
 					else if (f.StartsWith("hp=") && int.TryParse(f.Substring(3), out int hp)) s.Hp = hp;
+						else if (f.StartsWith("g=")) s.GearKeys.AddRange(f.Substring(2).Split('+', StringSplitOptions.RemoveEmptyEntries));
+						else if (f.StartsWith("cg=")) s.CmdGearKeys.AddRange(f.Substring(3).Split('+', StringSplitOptions.RemoveEmptyEntries));
+						else if (f.StartsWith("hurt=") && int.TryParse(f.Substring(5), out int he)) s.HurtEvery = he;
+						else if (f.StartsWith("every=") && int.TryParse(f.Substring(6), out int ev)) s.Every = ev;
 					else s.Flags.Add(f);
 				}
 				s.Dist = explicitDist > 0 ? explicitDist : DefaultDist(s.Fam);
@@ -173,6 +186,7 @@ namespace Levy.Common.Testing
 				{
 					case 0:
 						if (_stageTick == 0) Setup(_sc);
+						if (_stageTick == 12 && (_sc.GearKeys.Count > 0 || Has(_sc, "refresh"))) RefreshGear(_sc);
 						KeepSite(_sc);
 						if (++_stageTick >= 30) { _stage = 1; _stageTick = 0; _lastTickTs = 0; BeginRun(_sc); }
 						break;
@@ -243,6 +257,8 @@ namespace Levy.Common.Testing
 		private static void Setup(Sc s)
 		{
 			_h.LabClearAll();
+			if (s.Kind == "list") { try { RunList(s); } catch (Exception e) { s.Exc.Add("list:" + Short(e)); } s.Note = "list"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
+			if (s.Kind == "scan") { try { RunScan(s); } catch (Exception e) { s.Exc.Add("scan:" + Short(e)); } s.Note = "scan"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
 			s.ItemType = s.Kind == "ctl" ? 0 : ResolveItem(s.ItemKey);
 			if (s.Kind != "ctl" && s.ItemType <= 0) { s.Note = "ITEM NOT FOUND"; s.Done = true; s.Ticks = 0; }
 			s.Sols.Clear();
@@ -260,9 +276,11 @@ namespace Levy.Common.Testing
 				if (s.ItemType > 0) { sol.Weapon = new Item(); sol.Weapon.SetDefaults(s.ItemType); }
 				sol.SlotIdx = (slots || Has(s, "vslot")) ? 100 + k : Slot;
 				s.Sols.Add(sol);
+				if (s.GearKeys.Count > 0) EquipGear(s, rec);
 			}
 			// commander
 			Player c = Main.player[0];
+			if (s.CmdGearKeys.Count > 0) EquipCommander(s, c);
 			bool heal = s.Fam == "heal";
 			c.active = true; c.dead = false; c.name = "LevyTester"; c.statLifeMax = c.statLifeMax2 = 500; c.statLife = heal ? 250 : 500;
 			c.position = new Vector2(CxPx - CmdDistOf(s) * 16f, CombatHarness.FloorY * 16f - c.height); c.velocity = Vector2.Zero;
@@ -333,7 +351,7 @@ namespace Levy.Common.Testing
 				if (!n.active) continue;
 				n.position.X = sol.PinX - n.width / 2f; n.velocity = new Vector2(0f, n.velocity.Y);
 				n.Bottom = new Vector2(sol.PinX, CombatHarness.FloorY * 16f);
-				sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp; n.life = n.lifeMax;
+				if (Has(s, "halflife")) { sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp / 2; n.life = n.lifeMax / 2; } else { sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp; n.life = n.lifeMax; }
 			}
 			// sweep stray hostiles
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -423,6 +441,11 @@ namespace Levy.Common.Testing
 				else if (!t.active && s.BossId > 0 && !s.BossDead) { s.BossDead = true; s.BossDeadTick = s.Tick; s.Done = true; }
 			}
 
+			// target debuffs
+			if (s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active) { NPC tn = Main.npc[s.TargetIdx]; for (int b = 0; b < NPC.maxBuffs; b++) if (tn.buffType[b] > 0) s.TargetBuffs.Add(tn.buffType[b]); }
+			foreach (var sol in s.Sols) SampleDummy(s, sol);
+			if (s.HurtEvery > 0 && s.Tick > 0 && s.Tick % s.HurtEvery == 0) foreach (var sol in s.Sols) if (sol.Body != null && sol.Body.NPC.active) HurtOnce(s, sol);
+
 			// drive soldiers
 			if (s.Kind != "ctl" && s.ItemType > 0)
 			{
@@ -441,6 +464,8 @@ namespace Levy.Common.Testing
 				Projectile p = Main.projectile[i];
 				if (!p.active || !p.TryGetGlobalProjectile(out LabTag t) || t.Soldier < 0) continue;
 				live++;
+				if (s.SeenProj.Add(p.identity)) s.ProjsTotal++;
+				if (HarnessCalamityOn) { try { if (HarnessCalamityProbe.IsStealthStrike(p, out _)) s.StealthProjs.Add(p.identity); } catch (Exception) { } }
 				s.OwnerHist[p.owner] = s.OwnerHist.TryGetValue(p.owner, out int c) ? c + 1 : 1;
 				if (p.minion && s.Fam == "summon")
 				{
@@ -454,6 +479,296 @@ namespace Levy.Common.Testing
 				}
 			}
 			if (live > s.MaxLive) s.MaxLive = live;
+		}
+
+
+		// ---------------------------------------------------------------------------------------------
+		// gear
+		// ---------------------------------------------------------------------------------------------
+		private static void EquipGear(Sc s, SoldierRecord rec)
+		{
+			rec.Grade = Grade.Champion; // 5 accessory slots
+			var g = rec.Gear; int acc = 0; var notes = new List<string>();
+			foreach (string key in s.GearKeys)
+			{
+				if (key.StartsWith("S:")) { if (!ResolveSet(key.Substring(2), g, notes)) notes.Add("NOSET:" + key); continue; } // S:Mod/HeadPiece = the whole armor set that piece belongs to
+				int t = ResolveItem(key);
+				if (t <= 0) { notes.Add("NOTFOUND:" + key); continue; }
+				var it = new Item(); it.SetDefaults(t);
+				if (it.headSlot >= 0 && !it.accessory) g.Head = it;
+				else if (it.bodySlot >= 0 && !it.accessory) g.Body = it;
+				else if (it.legSlot >= 0 && !it.accessory) g.Legs = it;
+				else if (it.accessory && acc < g.Accessories.Length) g.Accessories[acc++] = it;
+				else notes.Add("NOSLOT:" + key);
+			}
+			if (notes.Count > 0) s.GearNote = string.Join(",", notes);
+		}
+
+
+		/// <summary>Finds body and legs pieces that complete the set the given head piece belongs to (ModItem.IsArmorSet) and puts all three on the gear.</summary>
+		private static bool ResolveSet(string headName, SoldierGear g, List<string> notes)
+		{
+			if (!ModContent.TryFind<ModItem>(headName, out var hm)) return false;
+			var head = new Item(); head.SetDefaults(hm.Type);
+			var bodies = ModContent.GetContent<ModItem>().Where(m => m.Mod == hm.Mod && ContentSamples.ItemsByType.TryGetValue(m.Type, out var it) && it.bodySlot >= 0 && !it.accessory).ToList();
+			var legs = ModContent.GetContent<ModItem>().Where(m => m.Mod == hm.Mod && ContentSamples.ItemsByType.TryGetValue(m.Type, out var it) && it.legSlot >= 0 && !it.accessory).ToList();
+			foreach (var b in bodies)
+			{
+				var bi = new Item(); bi.SetDefaults(b.Type);
+				foreach (var l in legs)
+				{
+					var li = new Item(); li.SetDefaults(l.Type);
+					bool ok = false; try { ok = hm.IsArmorSet(head, bi, li); } catch (Exception) { }
+					if (ok) { g.Head = head; g.Body = bi; g.Legs = li; notes.Add("SET:" + hm.Name + "+" + b.Name + "+" + l.Name); return true; }
+				}
+			}
+			return false;
+		}
+
+		private static void EquipCommander(Sc s, Player c)
+		{
+			int acc = 0;
+			foreach (string key in s.CmdGearKeys)
+			{
+				int t = ResolveItem(key); if (t <= 0) continue;
+				var it = new Item(); it.SetDefaults(t);
+				if (it.headSlot >= 0 && !it.accessory) c.armor[0] = it;
+				else if (it.bodySlot >= 0 && !it.accessory) c.armor[1] = it;
+				else if (it.legSlot >= 0 && !it.accessory) c.armor[2] = it;
+				else if (it.accessory && acc < 5) c.armor[3 + acc++] = it;
+			}
+		}
+
+		private static HashSet<string> _cleanTrue, _cleanModTrue;
+		private static readonly Dictionary<Type, FieldInfo[]> _mpBools = new();
+		/// <summary>"Type.field" of every bool field that is true on any of this player's ModPlayers from Thorium / Calamity.</summary>
+		private static HashSet<string> ModTrue(Player p)
+		{
+			var res = new HashSet<string>();
+			foreach (ModPlayer mp in p.ModPlayers)
+			{
+				string mn = mp.Mod.Name; if (mn != "ThoriumMod" && mn != "CalamityMod") continue;
+				var t = mp.GetType();
+				if (!_mpBools.TryGetValue(t, out var fs)) _mpBools[t] = fs = t.GetFields(BindingFlags.Instance | BindingFlags.Public).Where(f => f.FieldType == typeof(bool)).ToArray();
+				foreach (var f in fs) { try { if ((bool)f.GetValue(mp)) res.Add(t.Name + "." + f.Name); } catch { } }
+			}
+			return res;
+		}
+		private static List<FieldInfo> _boolFields;
+		/// <summary>Public bool fields of Player that are true now and are not true on a freshly reset player: the flags a piece of gear switched on.</summary>
+		private static string FlagsOnOf(Player p)
+		{
+			try
+			{
+				if (_boolFields == null) _boolFields = typeof(Player).GetFields(BindingFlags.Instance | BindingFlags.Public).Where(f => f.FieldType == typeof(bool)).ToList();
+				if (_cleanTrue == null)
+				{
+					var clean = new Player(); clean.ResetEffects();
+					_cleanTrue = new HashSet<string>(_boolFields.Where(f => (bool)f.GetValue(clean)).Select(f => f.Name));
+				}
+				var modOn = new List<string>();
+				try
+				{
+					_cleanModTrue ??= ModTrue(new Player());
+					foreach (var kv in ModTrue(p)) if (!_cleanModTrue.Contains(kv)) modOn.Add(kv);
+				}
+				catch (Exception) { }
+				var on = _boolFields.Where(f => { try { return (bool)f.GetValue(p); } catch { return false; } }).Select(f => f.Name).Where(n => !_cleanTrue.Contains(n) && n != "active" && n != "dead" && n != "ghost" && n != "Male" && n != "releaseUseItem" && n != "mouseInterface" && n != "controlLeft").ToList();
+				on.AddRange(modOn);
+				return string.Join(" ", on);
+			}
+			catch (Exception e) { return "?" + e.Message; }
+		}
+
+		private static void RefreshGear(Sc s)
+		{
+			foreach (var sol in s.Sols)
+			{
+				if (sol.Body == null) continue;
+				long t0 = Stopwatch.GetTimestamp();
+				try { sol.Body.RefreshStats(); } catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("refresh:" + Short(e)); }
+				s.RefreshTs += Stopwatch.GetTimestamp() - t0; s.RefreshCalls++;
+			}
+			var d0 = s.Sols.FirstOrDefault(x => x.Body?.Dummy != null)?.Body?.Dummy;
+			if (d0 != null) s.FlagsOn = FlagsOnOf(d0);
+			s.CmdFlagsOn = FlagsOnOf(Main.player[0]);
+		}
+
+		// ---------------------------------------------------------------------------------------------
+		// Player.Update subsets (flag pu=s1|s2|full), run inside the soldier's swap once per tick
+		// ---------------------------------------------------------------------------------------------
+		private static int[] _cntScratch;
+		private static MethodInfo _ppPreUpdate, _ppPostUpdate, _ppPreBuffs, _ppPostBuffs, _ppPostEquips, _ppPostMisc, _updEquips, _updArmorSets, _updDyes, _updLife, _updMana;
+		private static void RunSubset(Sc s, Sol sol, string mode)
+		{
+			Player d = sol.Body.Dummy;
+			const BindingFlags F = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+			if (_updEquips == null)
+			{
+				_updEquips = typeof(Player).GetMethod("UpdateEquips", F, null, new[] { typeof(int) }, null);
+				_updArmorSets = typeof(Player).GetMethod("UpdateArmorSets", F, null, new[] { typeof(int) }, null);
+				_updateBuffs ??= typeof(Player).GetMethod("UpdateBuffs", F, null, new[] { typeof(int) }, null);
+				var pl = typeof(PlayerLoader);
+				_ppPreUpdate = pl.GetMethod("PreUpdate", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				_ppPostUpdate = pl.GetMethod("PostUpdate", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				_ppPreBuffs = pl.GetMethod("PreUpdateBuffs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				_ppPostBuffs = pl.GetMethod("PostUpdateBuffs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				_ppPostEquips = pl.GetMethod("PostUpdateEquips", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				_ppPostMisc = pl.GetMethod("PostUpdateMiscEffects", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			}
+			int slot = d.whoAmI;
+			if (mode == "full")
+			{
+				d.Update(slot);
+				return;
+			}
+			// what Player.Update decrements every tick and the dummy never ran
+			if (d.petalTimer > 0) d.petalTimer--;
+			if (d.shadowDodgeTimer > 0) d.shadowDodgeTimer--;
+			if (d.boneGloveTimer > 0) d.boneGloveTimer--;
+			if (d.crystalLeafCooldown > 0) d.crystalLeafCooldown--;
+			// ResetEffects ends with ResetProjectileCaches (it zeroes ownedProjectileCounts); Player.Update re-counts right after it, so the counts PrepareTick just made are put back
+			_cntScratch ??= new int[d.ownedProjectileCounts.Length];
+			Array.Copy(d.ownedProjectileCounts, _cntScratch, _cntScratch.Length); int hs = d.highestStormTigerGemOriginalDamage, ha = d.highestAbigailCounterOriginalDamage;
+			if (mode == "s3") _ppPreUpdate?.Invoke(null, new object[] { d });
+			d.ResetEffects();
+			Array.Copy(_cntScratch, d.ownedProjectileCounts, _cntScratch.Length); d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
+			if (mode == "s2" || mode == "s3")
+			{
+				_ppPreBuffs?.Invoke(null, new object[] { d });
+				if (d.buffType.Any(b => b > 0)) _updateBuffs.Invoke(d, new object[] { slot });
+				_ppPostBuffs?.Invoke(null, new object[] { d });
+			}
+			d.head = d.armor[0].headSlot; d.body = d.armor[1].bodySlot; d.legs = d.armor[2].legSlot;
+			_updEquips.Invoke(d, new object[] { slot });
+			_updArmorSets.Invoke(d, new object[] { slot });
+			if (mode == "s2" || mode == "s3")
+			{
+				_ppPostEquips?.Invoke(null, new object[] { d });
+				_ppPostMisc?.Invoke(null, new object[] { d });
+			}
+			if (mode == "s3") _ppPostUpdate?.Invoke(null, new object[] { d });
+		}
+
+		private static void SampleDummy(Sc s, Sol sol)
+		{
+			var d = sol.Body?.Dummy; if (d == null) return;
+			if (HarnessCalamityOn)
+			{
+				try
+				{
+					float[] st = HarnessCalamityProbe.Stealth(d);
+					if (st != null) { if (s.StealthStart < 0) s.StealthStart = st[0]; if (st[1] > s.StealthMax) s.StealthMax = st[1]; if (st[0] > s.StealthPeak) s.StealthPeak = st[0]; }
+				}
+				catch (Exception) { }
+			}
+		}
+		private static bool HarnessCalamityOn => ModLoader.HasMod("CalamityMod");
+
+		private static void HurtOnce(Sc s, Sol sol)
+		{
+			int savedMy = Enter(s, sol);
+			PendingBodySet(null);
+			SoldierNPC of = FrameBody; FrameBody = sol.Body; FrameSlot = sol.SlotIdx;
+			try
+			{
+				Player d = sol.Body.Dummy;
+				var info = new Player.HurtInfo { DamageSource = Terraria.DataStructures.PlayerDeathReason.ByCustomReason(Terraria.Localization.NetworkText.FromLiteral("lab")), Damage = 25, HitDirection = 1, CooldownCounter = -1, Dodgeable = false, Knockback = 0f, PvP = false, SoundDisabled = true, DustDisabled = true };
+				d.immune = false; d.immuneTime = 0;
+				d.Hurt(info, true);
+				s.HurtCalls++;
+			}
+			catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("hurt:" + Short(e)); }
+			finally { FrameBody = of; Leave(s, sol, savedMy); }
+		}
+
+
+		// ---------------------------------------------------------------------------------------------
+		// IL scan (kind "scan"): which accessories / armor sets set a ModPlayer field that an on-hit hook of the same mod reads?
+		// ---------------------------------------------------------------------------------------------
+		private static Dictionary<short, System.Reflection.Emit.OpCode> _ops;
+		private static void FieldsTouched(MethodBase m, bool store, HashSet<FieldInfo> into, HashSet<MethodBase> seen, int depth)
+		{
+			if (m == null || !seen.Add(m) || depth < 0) return;
+			MethodBody body; try { body = m.GetMethodBody(); } catch { return; }
+			byte[] il = body?.GetILAsByteArray(); if (il == null) return;
+			if (_ops == null)
+			{
+				_ops = new();
+				foreach (var f in typeof(System.Reflection.Emit.OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
+					if (f.GetValue(null) is System.Reflection.Emit.OpCode oc) _ops[oc.Value] = oc;
+			}
+			int i = 0;
+			while (i < il.Length)
+			{
+				short v = il[i++]; if (v == 0xFE && i < il.Length) v = (short)(0xFE00 | il[i++]);
+				if (!_ops.TryGetValue(v, out var op)) return;
+				int size = op.OperandType switch
+				{
+					System.Reflection.Emit.OperandType.InlineNone => 0,
+					System.Reflection.Emit.OperandType.ShortInlineBrTarget or System.Reflection.Emit.OperandType.ShortInlineI or System.Reflection.Emit.OperandType.ShortInlineVar => 1,
+					System.Reflection.Emit.OperandType.InlineVar => 2,
+					System.Reflection.Emit.OperandType.InlineI8 or System.Reflection.Emit.OperandType.InlineR => 8,
+					System.Reflection.Emit.OperandType.InlineSwitch => 4 + 4 * BitConverter.ToInt32(il, i),
+					_ => 4,
+				};
+				if (op.OperandType == System.Reflection.Emit.OperandType.InlineField && i + 4 <= il.Length)
+				{
+					bool isStore = op == System.Reflection.Emit.OpCodes.Stfld;
+					bool isLoad = op == System.Reflection.Emit.OpCodes.Ldfld || op == System.Reflection.Emit.OpCodes.Ldflda;
+					if ((store && isStore) || (!store && isLoad)) { try { var fi = m.Module.ResolveField(BitConverter.ToInt32(il, i), m.DeclaringType?.IsGenericType == true ? m.DeclaringType.GetGenericArguments() : null, null); if (fi != null) into.Add(fi); } catch { } }
+				}
+				else if ((op == System.Reflection.Emit.OpCodes.Call || op == System.Reflection.Emit.OpCodes.Callvirt) && depth > 0 && i + 4 <= il.Length)
+				{
+					try { var cm = m.Module.ResolveMethod(BitConverter.ToInt32(il, i)); if (cm != null && cm.DeclaringType != null && cm.DeclaringType.Assembly == m.DeclaringType.Assembly) FieldsTouched(cm, store, into, seen, depth - 1); } catch { }
+				}
+				i += size;
+			}
+		}
+
+
+		private static void RunList(Sc s)
+		{
+			string modName = s.ItemKey; if (!ModLoader.TryGetMod(modName, out Mod mod)) return;
+			var sb = new StringBuilder();
+			foreach (ModItem mi in ModContent.GetContent<ModItem>().Where(m => m.Mod == mod))
+			{
+				if (!ContentSamples.ItemsByType.TryGetValue(mi.Type, out var it)) continue;
+				string kind = it.accessory ? "acc" : it.headSlot >= 0 ? "head" : it.bodySlot >= 0 ? "body" : it.legSlot >= 0 ? "legs" : it.damage > 0 && it.shoot > 0 ? "weapon" : it.damage > 0 ? "melee" : "other";
+				sb.AppendLine($"{mi.Name}\t{kind}\t{it.DamageType?.Name}\tdmg{it.damage}\tuse{it.useStyle}\tshoot{it.shoot}\tammo{it.useAmmo}\tmana{it.mana}\trarity{it.rare}");
+			}
+			File.WriteAllText(CombatHarness.OutPath + ".list." + modName + ".txt", sb.ToString());
+		}
+
+		private static void RunScan(Sc s)
+		{
+			string modName = s.ItemKey; if (!ModLoader.TryGetMod(modName, out Mod mod)) { s.Exc.Add("scan: mod not loaded " + modName); return; }
+			var hooks = new HashSet<FieldInfo>();
+			string[] hookNames = { "OnHitNPC", "OnHitNPCWithProj", "OnHitNPCWithItem", "ModifyHitNPC", "ModifyHitNPCWithProj", "ModifyHitNPCWithItem", "OnHurt", "OnHitByNPC", "OnHitByProjectile", "OnHitAnything", "OnKillNPC" };
+			var sb = new StringBuilder();
+			foreach (ModPlayer mp in ModContent.GetContent<ModPlayer>().Where(m => m.Mod == mod))
+			{
+				var t = mp.GetType();
+				foreach (var mi in t.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+					if (hookNames.Contains(mi.Name)) FieldsTouched(mi, false, hooks, new HashSet<MethodBase>(), 2);
+			}
+			var hookFields = new HashSet<FieldInfo>(hooks.Where(f => f.DeclaringType != null && typeof(ModPlayer).IsAssignableFrom(f.DeclaringType) && (f.FieldType == typeof(bool) || f.FieldType == typeof(int) || f.FieldType == typeof(float))));
+			sb.AppendLine("# on-hit-read ModPlayer fields: " + hookFields.Count);
+			foreach (ModItem mi in ModContent.GetContent<ModItem>().Where(m => m.Mod == mod))
+			{
+				Item it = ContentSamples.ItemsByType.TryGetValue(mi.Type, out var sample) ? sample : null; if (it == null) continue;
+				bool acc = it.accessory, armor = it.headSlot >= 0 || it.bodySlot >= 0 || it.legSlot >= 0;
+				if (!acc && !armor) continue;
+				var stores = new HashSet<FieldInfo>();
+				var seen = new HashSet<MethodBase>();
+				var t = mi.GetType();
+				foreach (var name in new[] { "UpdateAccessory", "UpdateArmorSet", "UpdateEquip" })
+					foreach (var m in t.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(x => x.Name == name))
+						FieldsTouched(m, true, stores, seen, 2);
+				var hit = stores.Where(f => hookFields.Contains(f)).Select(f => f.DeclaringType.Name + "." + f.Name).Distinct().ToList();
+				if (hit.Count > 0) sb.AppendLine($"{(acc ? "ACC" : "ARMOR")}\t{mod.Name}/{mi.Name}\tslots h{it.headSlot} b{it.bodySlot} l{it.legSlot}\t{string.Join(",", hit)}");
+			}
+			File.WriteAllText(CombatHarness.OutPath + ".scan." + modName + ".txt", sb.ToString());
 		}
 
 		private static string Short(Exception e)
@@ -540,7 +855,7 @@ namespace Levy.Common.Testing
 				int want = Math.Max(1, (int)Math.Floor(Cap(s) / Math.Max(0.5f, Slots(w)) + 0.001f));
 				press = owned < want && (s.Tick % 30 < 3);
 			}
-			else press = phaseB && (hold ? (s.Tick % 45 != 0) : (s.Tick % 2 == 0));
+			else press = phaseB && (s.Every > 0 ? s.Tick % s.Every == 0 : (hold ? (s.Tick % 45 != 0) : (s.Tick % 2 == 0)));
 
 			sol.Aim = aim; sol.HasAim = true;
 			int savedMy = Enter(s, sol);
@@ -564,10 +879,14 @@ namespace Levy.Common.Testing
 				Main.mouseLeft = press; Main.mouseLeftRelease = !press;
 				try { Terraria.GameInput.PlayerInput.Triggers.Current.MouseLeft = press; } catch { }
 				long c0 = Stopwatch.GetTimestamp();
+				int life0 = d.statLife, mana0 = d.statMana;
+				if (d.itemAnimation == 0 && (d.lastVisualizedSelectedItem == null || d.lastVisualizedSelectedItem.type != d.HeldItem.type)) d.lastVisualizedSelectedItem = d.HeldItem.Clone(); // what Player.ItemCheckWrapped keeps; without it the melee use-style/hitbox sees an air item
+				bool savedDed = Main.dedServ; if (Has(s, "ded0")) Main.dedServ = false; // diagnostic: Player.ItemCheck_ApplyUseStyle_Inner returns at once on a dedicated server
 				try { _itemCheck.Invoke(d, null); }
 				catch (TargetInvocationException tie) when ((tie.InnerException?.StackTrace ?? "").Contains("ItemCheck_PlayInstruments") || (tie.InnerException?.StackTrace ?? "").Contains("AchievementsHelper")) { s.PlayInstrNre++; } // server has no audio engine; vanilla's own baseline hits it too
-				finally { icTs = Stopwatch.GetTimestamp() - c0; s.UseTs += icTs; }
+				finally { Main.dedServ = savedDed; if (d.itemAnimation == 0) d.lastVisualizedSelectedItem = d.HeldItem.Clone(); icTs = Stopwatch.GetTimestamp() - c0; s.UseTs += icTs; if (d.statLife > life0) s.DummyLifeGain += d.statLife - life0; }
 				if (press) sol.Uses++;
+				if (Has(s, "diag") && s.Tick % 30 == 2 && s.TargetIdx >= 0) { var tn = Main.npc[s.TargetIdx]; _h.Mod.Logger.Info($"LABDIAG tick{s.Tick} anim={d.itemAnimation}/{d.itemAnimationMax} itemTime={d.itemTime} loc={d.itemLocation} rot={d.itemRotation} noMelee={d.inventory[0].noMelee} useStyle={d.inventory[0].useStyle} dummyPos={d.position} dir={d.direction} tgt={tn.Hitbox} immune={tn.immune[Math.Min(d.whoAmI, 254)]} tgtLife={tn.life}/{tn.lifeMax} dmgItem={d.GetWeaponDamage(d.inventory[0])} myP={Main.myPlayer} slotP={d.whoAmI} press={press}"); }
 			}
 			finally
 			{
@@ -686,16 +1005,28 @@ namespace Levy.Common.Testing
 				bool phaseB = s.Fam != "summon" || s.Tick >= s.Ticks / 2;
 				d.MinionAttackTargetNPC = phaseB ? s.TargetIdx : -1;
 				d.miscCounter = (int)(Main.GameUpdateCount % 300u);
-				if (buffs && d.buffType.Any(b => b > 0))
+				string pu = Has(s, "pu=s1") ? "s1" : Has(s, "pu=s2") ? "s2" : Has(s, "pu=s3") ? "s3" : Has(s, "pu=full") ? "full" : null;
+				if (pu != null)
+				{
+					long ts0 = Stopwatch.GetTimestamp();
+					int savedMy = Enter(s, sol);
+					SoldierNPC of = FrameBody; FrameBody = sol.Body; FrameSlot = sol.SlotIdx;
+					try { RunSubset(s, sol, pu); }
+					catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("subset:" + Short(e)); }
+					finally { FrameBody = of; Leave(s, sol, savedMy); }
+					s.SubsetTs += Stopwatch.GetTimestamp() - ts0; s.SubsetCalls++;
+				}
+				else if (buffs && d.buffType.Any(b => b > 0))
 				{
 					int savedMy = Enter(s, sol);
+					SoldierNPC of = FrameBody; FrameBody = sol.Body; FrameSlot = sol.SlotIdx;
 					try
 					{
 						_updateBuffs ??= typeof(Player).GetMethod("UpdateBuffs", BindingFlags.Instance | BindingFlags.Public, null, new[] { typeof(int) }, null);
 						_updateBuffs.Invoke(d, new object[] { d.whoAmI });
 					}
 					catch (Exception e) { if (s.Exc.Count < 8) s.Exc.Add("buffs:" + Short(e)); }
-					finally { Leave(s, sol, savedMy); }
+					finally { FrameBody = of; Leave(s, sol, savedMy); }
 				}
 			}
 			s.PrepTs += Stopwatch.GetTimestamp() - t0; s.PrepCalls++;
@@ -743,8 +1074,9 @@ namespace Levy.Common.Testing
 				if (Has(s, "clearimm") && s.TargetIdx >= 0) Main.npc[s.TargetIdx].immune[Slot] = 0; // diagnostic: is the sublinear scaling the shared npc.immune[255]?
 				if (sol.HasAim) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)sol.Aim.X; Main.mouseY = (int)sol.Aim.Y; } // the soldier's cursor, as a player's mouse is for yoyos / channelled items
 				t1 = Stopwatch.GetTimestamp();
-				bool wasActive = p.active; int killsBefore = KillCount(s);
+				bool wasActive = p.active; int killsBefore = KillCount(s); int lifeB = d.statLife;
 				orig(p, i);
+				if (d.statLife > lifeB) s.DummyLifeGain += d.statLife - lifeB;
 				if (!d.active) { s.NetClears++; d.active = true; }
 				if (Has(s, "trace") && wasActive && !p.active && KillCount(s) == killsBefore)
 				{
@@ -867,6 +1199,15 @@ namespace Levy.Common.Testing
 				bool atT = s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active && Vector2.Distance(cc, Main.npc[s.TargetIdx].Center) < rS;
 				if (atC && !atS) s.ChildAtCmd++; else if (atS) s.ChildAtSol++; else if (atT) s.ChildAtTgt++; else s.ChildOther++;
 			}
+			if (tag.Soldier >= 0 && Main.npc[tag.Soldier].active)
+			{
+				Vector2 cc2 = p.Center; float r2 = 5 * 16f;
+				bool aS = Vector2.Distance(cc2, Main.npc[tag.Soldier].Center) < r2, aC = Vector2.Distance(cc2, Main.player[0].Center) < r2;
+				bool aT = s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active && Vector2.Distance(cc2, Main.npc[s.TargetIdx].Center) < r2;
+				string lk = nm + (child ? " (child)" : " (use)");
+				if (!s.Loc.TryGetValue(lk, out var la)) s.Loc[lk] = la = new int[4];
+				la[aC && !aS ? 1 : aS ? 0 : aT ? 2 : 3]++;
+			}
 			var dict = child ? s.Child : s.Proj;
 			dict[nm] = dict.TryGetValue(nm, out int c) ? c + 1 : 1;
 			s.Spawned++;
@@ -875,6 +1216,16 @@ namespace Levy.Common.Testing
 		internal static void NoteItem(Item it)
 		{
 			var s = _sc; if (s == null || _stage != 1) return;
+			try
+			{
+				string nm0 = it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : (ItemID.Search.TryGetName(it.type, out string vn0) ? vn0 : "item" + it.type);
+				Vector2 ic = it.Center; var sol0 = s.Sols.FirstOrDefault(x => x.Body != null && x.Body.NPC.active);
+				bool aS = sol0 != null && Vector2.Distance(ic, sol0.Body.NPC.Center) < 80f, aC = Vector2.Distance(ic, Main.player[0].Center) < 80f;
+				bool aT = s.TargetIdx >= 0 && Main.npc[s.TargetIdx].active && Vector2.Distance(ic, Main.npc[s.TargetIdx].Center) < 80f;
+				string lk = "item:" + nm0; if (!s.Loc.TryGetValue(lk, out var la)) s.Loc[lk] = la = new int[4];
+				la[aC && !aS ? 1 : aS ? 0 : aT ? 2 : 3]++;
+			}
+			catch (Exception) { }
 			string n = it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : (ItemID.Search.TryGetName(it.type, out string vn) ? vn : "item" + it.type);
 			s.Items[n] = s.Items.TryGetValue(n, out int c) ? c + it.stack : it.stack;
 		}
@@ -889,7 +1240,7 @@ namespace Levy.Common.Testing
 
 		private const string Header = "kind\titem\tname\tfam\tN\tticks\tflags\tnote\taliveStart>End\tuses\tuseExc\tprojSpawnedByUse\tchildSpawned\tmaxLiveTagged\tminionsEnd\tdmgTotal\tdmgIdle\tdmgActive\thitTicks\tavgDistSoldier\tavgDistCommander\tavgDistTargetActive\tdummyEnd\tdummyBuffs\tcmdDiff\tcmdManaMin\tcmdLifeMin\tcmdLifeGain\titems\townerHist\torphanKills\tbossDeadTick\texceptions"
 			+ "\tchildAtSoldier\tchildAtCommander\tchildAtTarget\tchildElsewhere\tcmdModPlayerHitProcs\totherModPlayerHitProcs"
-			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj\tnetClears\tnetThreadPassesInFrame\tkillTrace";
+			+ "\tms_useTotal/tick\tms_useItemCheck/tick\tms_useOverhead/tick\tms_projOrig/tick\tms_projSwapOverhead/tick\tms_prep/tick\tprojUpdates/tick\tms_wholeTick\tus_swapPerProj\tnetClears\tnetThreadPassesInFrame\tkillTrace\tflagsOn\tcmdFlagsOn\tdummyLifeGain\ttargetBuffs\tspawnLoc\thooksProj(cmd/other)\thooksMelee(cmd/other)\thooksHurt(cmd/other)\tms_subset/tick\tms_refresh/call\tsubsetCalls\tstealth(start/max/peak)\tstealthStrikeProjs/projs\thurtCalls\tgearNote";
 
 		private static string Row(Sc s)
 		{
@@ -901,7 +1252,7 @@ namespace Levy.Common.Testing
 			double usPerProj = s.ProjUpdates > 0 ? s.ProjOverheadTs * 1e6 / Stopwatch.Frequency / s.ProjUpdates : 0;
 			var f = new List<string>
 			{
-				s.Kind, s.ItemKey, name, s.Fam, s.N.ToString(), s.Tick.ToString(), string.Join(",", s.Flags.OrderBy(x => x)), s.Note == "" ? "-" : s.Note,
+				s.Kind, s.ItemKey, name, s.Fam, s.N.ToString(), s.Tick.ToString(), string.Join(",", s.Flags.OrderBy(x => x)) + (s.GearKeys.Count > 0 ? ",g=" + string.Join("+", s.GearKeys) : "") + (s.CmdGearKeys.Count > 0 ? ",cg=" + string.Join("+", s.CmdGearKeys) : ""), s.Note == "" ? "-" : s.Note,
 				$"{s.Alive0}>{s.AliveEnd}", s.Sols.Sum(x => x.Uses).ToString(), s.Sols.Sum(x => x.UseExc).ToString(), Fmt(s.Proj), Fmt(s.Child), s.MaxLive.ToString(), s.MinionsEnd.ToString(),
 				s.Dmg.ToString(), s.DmgA.ToString(), s.DmgB.ToString(), s.HitTicks.ToString(),
 				s.DistSamples > 0 ? (s.SumDistSol / s.DistSamples).ToString("0.0") : "-", s.DistSamples > 0 ? (s.SumDistCmd / s.DistSamples).ToString("0.0") : "-", s.DistTgtSamples > 0 ? (s.SumDistTgt / s.DistTgtSamples).ToString("0.0") : "-",
@@ -912,6 +1263,10 @@ namespace Levy.Common.Testing
 				F(useTot), F(useIC), F(useOv), F(projOrig), F(projOv), F(prep), F((double)s.ProjUpdates / tk), F(whole), F(usPerProj),
 					s.NetClears.ToString(), s.NetThreadPasses.ToString(),
 					s.KillTrace.Count == 0 ? "-" : string.Join(" ## ", s.KillTrace.OrderByDescending(k => k.Value).Select(k => k.Value + "x " + k.Key + " => " + (s.KillSample.TryGetValue(k.Key, out var smp) ? smp : ""))),
+					s.FlagsOn == "" ? "-" : s.FlagsOn, s.CmdFlagsOn == "" ? "-" : s.CmdFlagsOn, s.DummyLifeGain.ToString(), s.TargetBuffs.Count == 0 ? "-" : string.Join(",", s.TargetBuffs.OrderBy(b => b).Select(b => BuffLoader.GetBuff(b)?.Name ?? (BuffID.Search.TryGetName(b, out string bn) ? bn : "buff" + b))),
+					s.Loc.Count == 0 ? "-" : string.Join(";", s.Loc.OrderBy(k => k.Key).Select(k => k.Key + " S" + k.Value[0] + " C" + k.Value[1] + " T" + k.Value[2] + " O" + k.Value[3])),
+					s.HookProjCmd + "/" + s.HookProjOther, s.HookItemCmd + "/" + s.HookItemOther, s.HookHurtCmd + "/" + s.HookHurtOther, F(Ms(s.SubsetTs, tk)), F(s.RefreshCalls > 0 ? s.RefreshTs * 1000.0 / Stopwatch.Frequency / s.RefreshCalls : 0),
+					s.SubsetCalls.ToString(), s.StealthStart.ToString("0.00") + "/" + s.StealthMax.ToString("0.00") + "/" + s.StealthPeak.ToString("0.00"), s.StealthProjs.Count + "/" + s.ProjsTotal, s.HurtCalls.ToString(), s.GearNote == "" ? "-" : s.GearNote,
 			};
 			return string.Join("\t", f.Select(Clean));
 		}
@@ -973,6 +1328,8 @@ namespace Levy.Common.Testing
 	public class LabHitProbe : ModPlayer
 	{
 		public override void OnHitNPCWithProj(Projectile proj, NPC target, NPC.HitInfo hit, int damageDone) { if (OwnerLab.Active) OwnerLab.NoteHitProc(Player.whoAmI); }
+		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) { if (OwnerLab.Active) OwnerLab.NoteHook(1, Player.whoAmI); }
+		public override void OnHurt(Player.HurtInfo info) { if (OwnerLab.Active) OwnerLab.NoteHook(3, Player.whoAmI); }
 	}
 
 	public class LabItemWatch : GlobalItem

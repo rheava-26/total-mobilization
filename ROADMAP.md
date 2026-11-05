@@ -222,6 +222,55 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🚀 LEVY 2.0 — Eve's big batch (2026-11-05 night). "Big batch, talk before you commit." Art refs saved in scratchpad/art-refs/ (potion tier list + potion recipe sheet).
+**Decided and running now:**
+- Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it).
+- `p0-fixes`:
+  - BUG: an item filtered out of the armory can't be put back.
+  - Drones/turrets hold fire on bosses not yet beaten (config, default off = hold fire).
+  - Found/dropped weapons rank a bit above crafted ones (Enchanted Sword > Gold/Platinum).
+  - Aim accuracy config.
+  - Minishark post-Plantera sanity check (Megashark should win).
+- `altfire-survey`: every Calamity alt-click weapon catalogued, grouped into patterns, with a levy WHEN-to-right-click policy table ("code slots" active only when held). Thorium pass if time.
+
+**Proposed phases, pending Eve:**
+- **ARMORY 2.0:**
+  - "Balanced class distribution" toggle plus per-class weights.
+  - Category preferences (bows/guns/staves…) as weights, not forced.
+  - Item side panel: stats, score, tags, manual score override.
+  - Vanity screen with a row per set.
+- **SETTINGS 2.0:**
+  - New-world setup popup with presets.
+  - Config categories: boss behaviour, levy/militia counts. Counts use Boss Checklist anchors (WoF 20, ML 40, final boss +20), auto-assign per-boss points, give "too few/too many" guidance, and add milestone rewards such as an accessory slot.
+  - Aim, potions.
+- **ALT-FIRE + BROKEN WEAPONS:** implement the survey table. Hand-fix the known-broken utility weapons from the harness lists (Thorium Dark Staff portal: right-click it, don't use it when the player is).
+- **LOGISTICS (Magic Storage):**
+  - Armory Heart (an MS component).
+  - "Craft into armory" ORDERS: split ratios, bucket vs random, auto-resume when materials arrive, a total-materials checklist.
+  - Mass sell to the happiest NPC on the pylon network (select by drag, by type, by progression tier).
+  - Shimmer-back to ore.
+  - Bulk potion station.
+- **COMMAND & OBSERVE:**
+  - Radio: shift-click the map to send levies there.
+  - GoPro item a levy carries (spectate them).
+  - Static cameras for arena views.
+  - Spectator Potion: invisible to enemies, weapons off, can't use after recent damage, tethered area, 20 min. White builder-shape bottle. Recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water.
+  - Guide to Autonomy (Slime Rain drop): Spectator gives levies a buff and enables map orders.
+  - Seeker Potion: highlights only the chosen ore (e.g. chlorophyte). Inverted-triangle deep-purple bottle with a centre hole. Recipe: Moonglow + Blinkroot + Spelunker + Water. 12 min. Eve wants cheaper alternatives.
+  - CONCEPT ART FIRST.
+- **AI:**
+  - Read attack telegraphs / dodge patterns.
+  - Hooks used well: catch falls; on platforms; not onto slopes.
+  - Fall damage for levies.
+  - (Eve: by hardmode players barely hook.)
+- **BUILDABLES:**
+  - Class barracks that limit militia per class and place them where you want.
+  - OOA: spend 5 Etherian Mana to put levies in a mini sentry.
+- **FLAVOUR:** Tavernkeep drinks / drunk levies.
+- **PROGRESSION QoL toggles** (Eve's list: life fruit/fallen star/gem→mana crystal recipes, ectoplasm/soul rates, chlorophyte, once-only boss drops, desert shimmer, crate ore, levy armor cost, spider armor, slots/mobility timing, ammo per craft, buying chlorophyte bullets). My view: split. Keep the army-economy ones in Levy (levy armor cost, ammo yield, bulk ammo, bulk potions); the general ones are scope creep and other QoL mods already do them. Eve decides.
+
+**Facts:** levies DO act off-screen (Eve has seen it via the map); enemies don't spawn far from players. Thorium is balanced for vanilla and Calamity is brutal; mixing them makes the player feel weak.
+
 ## 📦 SHIPPED Levy 1.7.7 (balanced-rank 139bbec): Balanced default ranking, armored-skip default OFF, star mana. Boots clean both ways. Mechanization stays 0.7.1.
 - **Formula:** rank = value^0.7 × exp(−(gap/7)³) × (1 + 0.6·exp(−days²)), where gap = world tier − weapon tier.
   - Copper Shortsword in HM: ×0.37, never picked while anything else exists.

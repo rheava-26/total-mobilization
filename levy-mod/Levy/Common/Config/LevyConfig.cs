@@ -17,6 +17,7 @@ namespace Levy.Common.Config
 		{
 			global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
 			global::Levy.Common.Weapons.WeaponRank.SetConfig(WeaponRanking, SkipArmoredWeapons);
+			global::Levy.Common.Weapons.WeaponUse.SetAimAccuracy(AimAccuracy);
 		}
 
 		[Header("Bosses")]
@@ -35,6 +36,7 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool ClassMatchIssue;
 		[DefaultValue(global::Levy.Common.Weapons.WeaponRankMode.Balanced)] [DrawTicks] public global::Levy.Common.Weapons.WeaponRankMode WeaponRanking;
 		[DefaultValue(false)] public bool SkipArmoredWeapons;
+		[Range(0.1f, 5f)] [Increment(0.1f)] [DefaultValue(1f)] public float AimAccuracy;
 		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool RealWeaponShoot;
 		[DefaultValue(true)] public bool AutoFeedCrystals;

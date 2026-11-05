@@ -19,9 +19,10 @@ namespace Levy.Common.Weapons
 	/// platinum, a spread about 1.45x wider in log terms for weapons at the same point in progression (the standard deviation of ln(value) over the 1,640 vanilla, Calamity and Thorium weapons is 1.99 against
 	/// 1.38 for ln(Score); per mod 0.54, 0.83 and 0.69). The price modes therefore rank by value^<see cref="PriceExponent"/> (0.7), which leaves the order alone and puts the same margins and band at
 	/// the same distance in progression: a 15% better weapon is worth a swap, and the band covers weapons within about a third of the best's price.
-	/// BALANCED. rank = max(1, value^0.7 x StageDiscount(world progress - weapon tier) x RecencyBoost(age in the armory)).
+	/// BALANCED. rank = max(1, value^0.7 x StageDiscount(world progress - weapon tier) x RecencyBoost(age in the armory) x FoundBoost if the weapon is found).
 	///   Tier is <see cref="ProgressionTier"/> (Boss Checklist scale); world progress is <see cref="Progress"/> (the furthest boss downed, same scale). Damage never enters, so a fast weak weapon is not punished.
 	///   StageDiscount(g) = exp(-(g/7)^3) for g > 0: 1 at the current stage, 0.997 one stage behind, 0.977 two, 0.92 three, 0.61 at 5.5 (a Minishark in early Hardmode), 0.37 at 7 (a Copper Shortsword in Hardmode), 0.05 at 10.
+	///   FoundBoost = 1.12 for a weapon with no recipe that no shop sells (drops, chests, shrines, fishing): a little above a crafted weapon of the same price, and below the 1.15 swap margin so a clearly better crafted weapon still wins.
 	///   RecencyBoost(a) = 1 + 0.6 x exp(-a^2), a in game days since deposit: x1.6 at once, x1.47 after half a day, x1.22 after one, x1.06 after a day and a half, x1.01 after two. 1.6 clears the 1.15 swap margin with room,
 	///   and on the value^0.7 scale it is worth a 1.96x sell price: a fresh weapon beats an older one down to about half its price, while a fresh weapon a quarter of the price (rank 0.38 x 1.6 = 0.6) loses to it.
 	/// ARMOR. With <see cref="SkipArmored"/> (price modes only) a weapon whose hit mostly bounces off the defense of enemies at the world's stage ranks below every weapon that does real damage; see <see cref="Negligible"/>.
@@ -34,6 +35,8 @@ namespace Levy.Common.Weapons
 		public const float StageScale = 7f, StageSharpness = 3f;
 		/// <summary>Balanced: a weapon deposited just now ranks this much higher (x1.6), fading as a Gaussian over <see cref="RecentDays"/> game days.</summary>
 		public const float RecentBoostMax = 0.6f, RecentDays = 1f;
+		/// <summary>Balanced: a weapon nobody crafts or sells (<see cref="ProgressionTier.IsFound"/>: a drop, a chest or shrine find, a catch) ranks this much higher than a crafted weapon of the same price. Kept under the 1.15 swap margin, so a crafted weapon that is clearly better still wins.</summary>
+		public const float FoundBoost = 1.12f;
 		/// <summary>A weapon whose hit lands less than this share of its damage on an enemy at the world's stage defense is negligible.</summary>
 		public const float NegligibleShare = 0.25f;
 		/// <summary>Defense of the tougher ordinary enemies by progression stage: before Eye of Cthulhu, after it, after Skeletron, Hardmode, after the mechanical bosses, after Plantera, after Golem.</summary>
@@ -67,6 +70,7 @@ namespace Levy.Common.Weapons
 			{
 				float tier = ProgressionTier.Of(it.type);
 				if (tier >= 0f) r *= StageDiscount(Progress() - tier);
+				if (ProgressionTier.IsFound(it.type)) r *= FoundBoost;
 				r = Math.Max(1f, r * DepositStamp.Boost(it));
 			}
 			if (SkipArmored && Negligible(it)) return 0.5f * r / (r + 1f); // below every real weapon (those rank 1 and up), still ordered among themselves

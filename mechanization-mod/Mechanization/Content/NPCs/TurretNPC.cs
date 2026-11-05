@@ -219,7 +219,7 @@ namespace Mechanization.Content.NPCs
 				if (!t.active) continue;
 				float dSq = Vector2.DistanceSquared(from, t.Center);
 				if (dSq >= bestSq || dSq > rangeSq) continue;
-				if (SoldierTargeting.IsNeverTarget(t)) continue; // Levy's proven filter (hostile, not a set piece / bound NPC / projectile-NPC / flee target), the same one the drones use
+				if (SoldierTargeting.IsNeverTarget(t) || global::Mechanization.Common.BossHoldFire.Holds(t)) continue; // Levy's proven filter (hostile, not a set piece / bound NPC / projectile-NPC / flee target), the same one the drones use
 				if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height)) continue;
 				bestSq = dSq; best = i;
 			}
@@ -228,7 +228,7 @@ namespace Mechanization.Content.NPCs
 
 		private bool Shootable(NPC t)
 		{
-			if (!t.active || SoldierTargeting.IsNeverTarget(t)) return false;
+			if (!t.active || SoldierTargeting.IsNeverTarget(t) || global::Mechanization.Common.BossHoldFire.Holds(t)) return false;
 			float range = CurrentRangePx;
 			if (Vector2.DistanceSquared(NPC.Center, t.Center) > range * range) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);

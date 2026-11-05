@@ -559,10 +559,16 @@ namespace Levy.Common.Weapons
 			leadError = LevyConstants.GradeLeadError[grade] * errMult;
 		}
 
+		private static float _aimAccuracy = 1f;
+		/// <summary>Config seam: aim error is divided by this (1 = unchanged, 2 = half the error, 0.5 = double). Clamped to 0.1 and up.</summary>
+		internal static void SetAimAccuracy(float accuracy) { _aimAccuracy = accuracy < 0.1f || float.IsNaN(accuracy) ? 0.1f : accuracy; }
+		/// <summary>The factor the config puts on every aim error: 1 / accuracy.</summary>
+		internal static float AimAccuracyFactor => 1f / _aimAccuracy;
+
 		/// <summary>Veteran ×0.6, Shaken ×2, militia with A Guide to Drill ×0.75, any soldier with A Guide to Discipline ×0.65, and every on-duty officer whose accuracy reach covers him (the Arms Dealer ×0.6, the Guide ×0.75 — see <see cref="OfficerSupport"/>). Routed (×3) is applied on top via Aiming.ExtraErrorScale.</summary>
 		public static float AimErrorMultiplier(SoldierNPC s)
 		{
-			float m = 1f;
+			float m = AimAccuracyFactor; // the server's "Levy aim accuracy": exactly 1 at the default
 			if (s.Record != null && s.Record.Veteran) m *= LevyConstants.VeteranAimMult;
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;

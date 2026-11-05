@@ -22,6 +22,7 @@ namespace Levy.Common.Weapons
 	{
 		public const float Inf = 1e9f;
 		private static float[] _t;
+		private static bool[] _found;
 		private static bool _built;
 		internal static double BuildMs; internal static int BossRoutes, ShopRoutes, Recipes;
 
@@ -35,6 +36,16 @@ namespace Levy.Common.Weapons
 			return t != null && type > 0 && type < t.Length && t[type] < Inf ? t[type] : -1f;
 		}
 
+		/// <summary>
+		/// True for a damaging item the player does not craft or buy: no recipe makes it and no shop sells it (any shop, any condition), so it is found: a boss or enemy drop, a chest or shrine, fishing.
+		/// False when the table is not built. <see cref="WeaponRank"/> ranks such a weapon a little above crafted ones of the same price.
+		/// </summary>
+		public static bool IsFound(int type)
+		{
+			var f = _found;
+			return f != null && type > 0 && type < f.Length && f[type];
+		}
+
 		/// <summary>Builds the table (once per session). Never throws; on failure the table stays empty and nothing is discounted.</summary>
 		public static void EnsureBuilt(Action<string> log = null)
 		{
@@ -42,15 +53,15 @@ namespace Levy.Common.Weapons
 			_built = true;
 			var sw = Stopwatch.StartNew();
 			try { _t = Solve(Gather()); }
-			catch (Exception e) { _t = null; log?.Invoke("progression tiers failed: " + e.GetType().Name + ": " + e.Message); return; }
+			catch (Exception e) { _t = null; _found = null; log?.Invoke("progression tiers failed: " + e.GetType().Name + ": " + e.Message); return; }
 			BuildMs = sw.Elapsed.TotalMilliseconds;
 			log?.Invoke($"progression tiers: {BossRoutes} boss-loot items, {ShopRoutes} shop items, {Recipes} recipes, {BuildMs:F0} ms");
 		}
 
-		internal static void Reset() { _t = null; _built = false; }
+		internal static void Reset() { _t = null; _found = null; _built = false; }
 
-		/// <summary>Self-check seam: installs a made-up table.</summary>
-		internal static void SetForTest(float[] table) { _t = table; _built = true; }
+		/// <summary>Self-check seam: installs a made-up table (and, optionally, which types count as found).</summary>
+		internal static void SetForTest(float[] table, bool[] found = null) { _t = table; _found = found; _built = true; }
 
 		// ------------------------------------------------------------------ data
 
@@ -74,6 +85,12 @@ namespace Levy.Common.Weapons
 			("TheGrandThunderBird", 1.4f), ("GraniteEnergyStorm", 6.4f), ("TheBuriedChampion", 6.5f), ("TheStarScouter", 6.9f), ("BoreanStrider", 8.2f), ("FallenBeholder", 9.2f), ("CoznixTheFallenBeholder", 9.2f),
 			("Lich", 11.6f), ("TheLich", 11.6f), ("Abyssion", 14.2f), ("ForgottenOne", 14.2f), ("TheQueenJellyfish", 3.4f), ("QueenJellyfish", 3.4f), ("Viscount", 4.4f), ("TheViscount", 4.4f),
 			("BuriedChampion", 6.5f), ("StarScouter", 6.9f), ("LichHeadless", 11.6f), ("Primordials", 19.5f), ("RealityBreaker", 19.5f), ("ThePrimordials", 19.5f), ("DreamEater", 19.5f), ("Omnicide", 19.5f), ("SlagFury", 19.5f),
+		};
+
+		// Weapons that come only from chests, whose rarity floor puts them too early. Dungeon chests open after Skeletron; no drop table or recipe says so, so the table does.
+		private static readonly int[] DungeonChestWeapons =
+		{
+			ItemID.Muramasa, ItemID.Handgun, ItemID.WaterBolt, ItemID.AquaScepter, ItemID.BlueMoon, ItemID.MagicMissile, ItemID.Valor,
 		};
 
 		// When a town NPC can first be expected, so its shop is no earlier.
@@ -180,6 +197,7 @@ namespace Levy.Common.Weapons
 		private sealed class Data
 		{
 			public Dictionary<int, float> Boss = new(), Shop = new();
+			public HashSet<int> Sold = new(); // sold by any shop, whatever its conditions
 			public Dictionary<int, List<Recipe>> RecipesFor = new();
 			public Dictionary<int, List<int>> TileItems = new();
 		}
@@ -211,6 +229,7 @@ namespace Levy.Common.Weapons
 				foreach (var e in shop.ActiveEntries)
 				{
 					var item = e.Item; if (item == null || item.IsAir) continue;
+					d.Sold.Add(item.type);
 					float p = CondP(e.Conditions);
 					bool unknownMod = e.Conditions != null && e.Conditions.Any(c => (c.Description?.Key ?? "").StartsWith("Mods.") && CondKeyP(c.Description.Key) <= 0f);
 					if (unknownMod || e.Conditions != null && e.Conditions.Any(c => EventOnly(c.Description?.Key ?? ""))) continue;
@@ -244,7 +263,7 @@ namespace Levy.Common.Weapons
 		private static float[] Solve(Data d)
 		{
 			int N = ItemLoader.ItemCount;
-			var T = new float[N]; var floors = new float[N]; var samples = new Item[N];
+			var T = new float[N]; var floors = new float[N]; var samples = new Item[N]; var found = new bool[N];
 			for (int t = 0; t < N; t++) { T[t] = Inf; floors[t] = -1f; }
 			for (int t = 1; t < N; t++)
 			{
@@ -254,11 +273,14 @@ namespace Levy.Common.Weapons
 				float best = Inf; bool raw = false;
 				if (d.Boss.TryGetValue(t, out float bp)) best = Math.Min(best, bp);
 				if (d.Shop.TryGetValue(t, out float sp)) best = Math.Min(best, sp);
+				if (Array.IndexOf(DungeonChestWeapons, t) >= 0 && !d.RecipesFor.ContainsKey(t)) best = Math.Min(best, 5f);
 				float rt = RawTier(samples[t]); if (rt >= 0f && rt < best) { best = rt; raw = true; }
 				// a plain common material (no damage, common rarity) that a boss happens to drop is not itself late
 				if (best < Inf && !raw && samples[t].damage <= 0 && floors[t] >= 0f && floors[t] <= 2f && best > floors[t] + 4f) best = floors[t];
 				if (best < Inf) T[t] = Math.Max(best, floors[t]);
+				found[t] = samples[t].damage > 0 && !d.RecipesFor.ContainsKey(t) && !d.Sold.Contains(t) && !raw;
 			}
+			_found = found;
 			var recs = new List<Rec>();
 			foreach (var kv in d.RecipesFor)
 				foreach (var r in kv.Value)

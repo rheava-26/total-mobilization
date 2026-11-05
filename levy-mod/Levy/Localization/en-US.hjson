@@ -293,6 +293,11 @@ Mods: {
 					Tooltip: A weapon whose hits do almost nothing to the enemies at your world's progress ranks below every weapon that does real damage. Applies to the price rankings.
 				}
 
+				AimAccuracy: {
+					Label: Levy aim accuracy
+					Tooltip: Higher values make levies aim better, lower values worse. This strongly affects how strong levies are.
+				}
+
 				AutoUpgradeWeapons: {
 					Label: Soldiers upgrade their gear
 					Tooltip: Soldiers swap to a clearly better weapon or armor set when one is stocked in their Armory, and put the old one back. Soldiers with Lock Loadout on are skipped.

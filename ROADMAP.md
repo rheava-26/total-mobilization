@@ -26,6 +26,111 @@ Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testi
 - Loiter box: half-width 26 -> 110 tiles, altitude 6-16 -> 20-45 tiles above the Barracks roof, sector spread 9 -> 22, leash 22 -> 30, loiter speed 1.9 -> 2.8.
 - Refuel/Recall phases set `noTileCollide` (also on clients, from synced ai[1]) and fly straight home with no terrain assist; collision returns on landing/loiter. Landing spot is the roof of the linked Armory (`DroneNPC.PadFor(barracks, armory, slot)`), 3 per row, 40px apart, rows stack 32px upward; falls back to the old ground pads with no Armory or a walled-in roof.
 - Drone/turret status text rewritten to plain status (no rationale). Vertical-lines-under-drones: investigation only, NOT fixed (see session report); not verifiable headlessly.
+## 🩹🩹 HEAL BOTH WAYS (branch `heal-both-ways`, based on 1.7.1 = 3c056e0; unreleased; build.txt NOT bumped) — OBSERVED vs INFERRED kept apart
+**Eve's rule:** levies are allies as much as you are. A heal-allies weapon Eve uses heals levies; one a levy uses heals Eve AND the other levies; lifesteal heals whoever dealt the hit. Four gaps from 1.7.0/1.7.1, all fixed generically (no per-item lists). Harness switches added (all in `CombatHarness.cs` header): `LEVY_HARNESS_COMPANION/CMDHP/SELFHP/ACC/MEDBAG/VANILLA/VANPROBE/ORBDIRECT/ORBPROBE/NOWALK/NOBASE`, new columns `shooterHp, shooterRises, medbag`. Before = the 1.7.1 base commit + the same harness; after = this branch. Raw TSVs: scratchpad `heal2/`. Natural regeneration is pinned (lifeRegenTime=0) so a heal stands out; a levy at 76% and the commander at 76% so the soldier healer AI (hybrids heal below 75%) abstains and only the Thorium hooks can heal.
+
+### Gap 1 — a levy's ally heal never healed the commander
+- **Mechanism (OBSERVED):** `WeaponUse.cs:275 OwnerFor` makes every levy shot owned by the commander; Thorium's `ProjectileHelper.CanBeHealed` (`ProjectileHelper.cs:123`) with the default `ignoreHealer` rejects `healer == target`, so the commander (the "healer") is never in the loop and his levy's bolts skip him. Table A "commander before" = 0 for every weapon.
+- **Fix:** `AllyHealHook.ThoriumHealPost` (:143) / `CanBeHealedPost` (:184) / `Sweep` (:251) pass the casting soldier (`SoldierProjectileTag` -> `AllyHealHook.CasterOf`, or `OwnerPuppet.CasterOf` inside a puppeted pass, or `MeleeEffects.Striker` for a swing) to `PlayerHealCompat.HealAround(..., caster, includeCaster, commanderAmount)` (`PlayerHealCompat.cs:69`): the caster is the healer (left out), the COMMANDER is an ally (`HealCommander` :113) healed at his real position and real life (the transform/vitals are the soldier's during a pass: `OwnerPuppet.RealCenter/RealLife/BeginAllow`), by the same amount (Thorium's, +heal bonus of the CASTER's gear, weapon's own rule, x`HealPotency` 3).
+- Also: `HealAround` and `CompanionRequest.OnHeal` no longer throttle a weapon heal with the soldier healers' 40-tick reservation (a Player's weapon heals a Player on every hit; the reservation is still SET so soldier healers do not pile on; server keeps a 5-tick duplicate guard). **This strengthens the 1.7.0 Eve->levy heals too** (Sacred Lyre 61 -> 96, Balance Bloom 85 -> 96 in Table A).
+
+### Gap 2 — homing seek-and-heal bolts and healing orbs never steered to levies; Medical Bag
+- **Medical Bag, what it really does in Thorium 1.7.2.8 (decompile):** +1 heal bonus; with the Head Mirror it shows a `HealerSymbol` arrow over the wearer toward `ThoriumPlayer.LowestPlayer` (kept by `HandleLowestLifeAlly`, ThoriumPlayer.cs:3787: the Player with the MOST LIFE LOST); `PostUpdateEquips` (:3829) gives +0.2 move speed/+1 max run when running toward that Player; a healed ally in combat gets a 5 s life-recovery effect. It never "pointed" at a levy because the pick loops `Main.player[0..254]`. **Fixed** (`MedicalBagHook.cs`): `HandleLowestLifeAlly` IL postfix `LowestPost` makes the commander's most-wounded levy (same measure: most life lost, the wearer counts) the pick when he beats the Player Thorium chose; `HealerSymbol.AI` IL postfix `SymbolPost` points the arrow at him; `PostUpdateEquips` DETOUR `EquipsPost` gives the run boost toward him with Thorium's own numbers. **OBSERVED: an IL postfix on PostUpdateEquips never ran (method entered 603x, appended call 0x), so it is a MonoModHooks.Add detour.** Not covered: Inner Flame / Prydwen read the same pick unchanged; the bag's 5 s life-recovery buff on a healed ally is a Player buff and does not reach levies.
+- **Seekers, generic:** every Thorium seek-heal projectile picks among Players through `CanBeHealed(proj, healer, player, radius 0)` (`HomingPro.CheckPlayer` for orbs/Turtle Life/Pocket Guardian; an inline loop in `LifeSurgeHeal`). `CanBeHealedPost` notes the tick and the nearest eligible Player (`PlayerCastGlobalProjectile.SeekTick/SeekBest`); `PlayerCastGlobalProjectile.PostAI` -> `AllyHealHook.SeekPost` (:267) then considers the commander's wounded levies (and, for a levy's cast, the commander at his real place) as candidates, and if one is NEARER than anything Thorium found it restores the pre-AI velocity and steers there with Thorium's own Speed/Inertia (HomingPro) or 7.5/20 (others), delivering the heal the way that projectile does (a HomingPro runs its own `Heal()`; any other seeker heals with its weapon's heal amount). `HomingPro.PlayerCanBeHomedInOn` is asked about the levy's stand-in, so a heal that targets one particular Player (Turtle Life = owner, Pocket Guardian = pocketTarget) says no, as it should.
+- **A soldier-cast heal's "wielder" is the soldier** (`WielderRule` :237): `CanBeHealed(healer==target)` for the commander is false under the default `ignoreHealer`, and for a self-serving heal (orbs: `ignoreHealer:false`; Turtle Life: `specificPlayer = owner`) it means the CASTER levy self-heal, judged by HIS life. The weapon's own `customHealing` rule is run with the soldier's stand-in as the wielder, so a levy's orb reads the LEVY's heal bonus.
+
+### Gap 3 — lifesteal healed the commander
+- **Mechanism (OBSERVED, vanilla VampireHeal bolt driven directly; Thorium Vampire Scepter / Blood Belcher / Blood Clot Staff):** since 1.7.1 `OwnerPuppet` moves the owner's TRANSFORM to the soldier for a soldier shot's Damage/Kill/Update, but the owner's life stays the commander's; every `statLife +=`/`Player.Heal`/`HealLife` in that pass lands on the commander (the "+N" text shows on the levy because it is spawned from the moved position). Before (Table V): commander +128, the levy regen only.
+- **Fix, one choke point (`OwnerPuppet.cs`, new bit 32, on by default; env `LEVY_ONHIT_FIX=31` = off):** for the length of a puppeted pass the owner's life and max life ARE the soldier's (so "below half health", "already full" and the clamp at max read the soldier's: Calamity's `SpawnLifeStealProjectile` clamps to the missing life of whoever the owner is), and whatever the pass raised them by is the soldier's gain: `Enter` (:84) / `CloseRoute` (:124) restore the commander's life untouched and `GiveToSoldier` (:135) gives the soldier the gain via `SoldierHeal.Restore` (MP client: `CompanionRequest.SendHeal`). `HealEffectDetour` (:213) and the `SendData` guard drop the commander's heal text/packets while routing. Ally heals meant for the commander run inside `BeginAllow` (:182), which puts his real life/position back. A VampireHeal bolt whose soldier is gone ends (`SoldierProjectileTag.PreAI`) instead of flying to the commander: **OBSERVED leak (4 of 16 bolts healed him) before that kill**.
+- **Distinguished:** a Spectre-armor spirit bolt (`SpiritHeal`, "heal the most wounded ally") is NOT routed. Ally heals use `BeginAllow`/the Gap 1 path.
+- **Vanilla Vampire Knives (INFERRED/READ):** a levy never throws the vanilla knife: `WeaponUse.FireVampireKnives` throws Levy's own `SoldierVampireKnife` (`Content/Projectiles/SoldierVampireKnife.cs`) which already heals the soldier, so the lead's vanilla-knife example never reached the commander; vanilla `Projectile.vampireHeal` was not called at all for a levy-thrown vanilla knife in the harness (calls=0). The routing is for everything else, shown by driving vanilla's own heal bolt (type 305) directly and by three Thorium lifesteal weapons.
+
+### Gap 4 — melee swings of hybrid heal weapons
+- **OBSERVED, two causes in a chain:** (a) `WeaponClassifier.ClassifyFamily` classified EVERY heal-driven Thorium weapon as a stand-off Magic caster (range 40), so a plain swing hybrid (Heretic Breaker: damage 14, no shot) never swung (`itemAnimTicks` 0, damage 0 in 900 ticks); (b) once swinging, `MeleeEffects.StrikeNpc` DOES pass `ModifyPlayerHitNPCWithItem`/`OnPlayerHitNPCWithItem`, but the weapon's sweep calls `CanBeHealed(null, healer = the soldier's STAND-IN player, ...)` and `CanBeHealedPost` only accepted `Main.LocalPlayer`. A/B in the harness (`LEVY_NOSTRIKER`): swinging but no stand-in recognition = no heal.
+- **Fix:** `WeaponClassifier.IsSwungHybrid` (damage, no shot, Swing, no mana/ammo) keeps such a weapon a Broadsword with melee range (its heal AI keeps the 40-tile heal reach: `HealerCompat.ReachPx`); `MeleeEffects.Striker` (set around `StrikeNpc`) lets `CanBeHealedPost` recognise the stand-in as the healer (caster = the swinging soldier).
+
+### Before / after (HP gained in the window; commander 76%, wounded levy 76%, natural regen pinned; "-" = not measured)
+**Table A — ally-heal weapons (hybrids). Gap 1.** "levy-cast" = the soldier holds it and fights the enemy (window 600 ticks, enemy 7 tiles away); "Eve-cast" = the stand-in commander uses it aimed at the wounded levy (Eve herself is never her own ally-heal target: 0 is Thorium). Saturating at the levy's max (+96) or commander max (+120).
+
+| weapon | levy-cast: commander + before | levy-cast: commander + after | levy-cast: wounded levy + before | levy-cast: wounded levy + after | Eve-cast: wounded levy + before | Eve-cast: wounded levy + after | Eve-cast: Eve + before | Eve-cast: Eve + after |
+|---|---|---|---|---|---|---|---|---|
+| Balance Bloom | 0 | 108 | 79 | 96 | 73 | 96 | 0 | 0 |
+| Coral Purifier | 0 | 60 | 96 | 96 | 96 | 96 | 0 | 0 |
+| Cosmic Flux Staff | 0 | 120 | 96 | 96 | 96 | 96 | 0 | 0 |
+| Hippocrati-crossbow | 0 | 120 | 96 | 96 | 96 | 96 | 0 | 0 |
+| Iridescent Staff | 0 | 102 | 43 | 96 | 13 | 13 | 0 | 0 |
+| Life Disperser | 0 | 60 | 40 | 73 | 13 | 13 | 0 | 0 |
+| Sacred Lyre | 0 | 24 | 79 | 96 | 43 | 96 | 0 | 0 |
+
+**Gap 4 — melee swing hybrid (Heretic Breaker, 900 ticks, enemy 4 tiles).** Before: classified Magic/rng40, never swung (itemAnim 0, damage 0). After: Broadsword/rng3, 881 anim ticks, 410 damage. A/B with the stand-in recognition off (`LEVY_NOSTRIKER`): swings and damages (443) but commander +0, levy +4 (regen).
+
+| weapon | commander + before | commander + after | wounded levy + before | wounded levy + after |
+|---|---|---|---|---|
+| Heretic Breaker | 0 | 51 | 20 | 74 |
+
+**Table B1 — seek-heal bolt and orbs, only levies wounded (Gap 2).** Orb weapons carry a Medical Bag (heal bonus +1, so an orb heals min(1,4)=1, x3 potency = 3). 1000 ticks, natural regen = +22.
+
+| weapon | levy-cast: wounded levy + before | levy-cast: wounded levy + after | Eve-cast: wounded levy + before | Eve-cast: wounded levy + after |
+|---|---|---|---|---|
+| Life Surge Staff | 22 | 96 | 22 | 96 |
+| Rotten Cod | 22 | 22 | 22 | 96 |
+| Sacred Bludgeon | 22 | 25 | 22 | 96 |
+| Templar's Judgement | 22 | 22 | 22 | 96 |
+| The Effuser | 22 | 28 | 22 | 96 |
+| The Stalker | 22 | 22 | 22 | 82 |
+
+**Table B2 — commander wounded (76%), levy full.** Eve-cast column = Thorium's native orbs onto Eve (unchanged: noise 21-89).
+
+| weapon | levy-cast: commander + before | levy-cast: commander + after | Eve-cast: Eve + before | Eve-cast: Eve + after |
+|---|---|---|---|---|
+| Life Surge Staff | 0 | 120 | 0 | 0 |
+| Rotten Cod | 0 | 0 | 33 | 27 |
+| Sacred Bludgeon | 0 | 0 | 35 | 49 |
+| Templar's Judgement | 0 | 6 | 28 | 48 |
+| The Effuser | 0 | 9 | 89 | 21 |
+| The Stalker | 0 | 0 | 44 | 25 |
+
+**Table L — Thorium lifesteal (Gap 3), commander 50%, shooter 50%, 900 ticks, enemy 4 tiles.** Natural regen of the shooter = +19 (Vampire Scepter before: no hit in that window).
+
+| weapon | commander + before | commander + after | shooter + before | shooter + after | target dmg before | target dmg after |
+|---|---|---|---|---|---|---|
+| Blood Belcher | 3 | 0 | 19 | 23 | 365 | 411 |
+| Blood Clot Staff | 3 | 0 | 19 | 23 | 393 | 502 |
+| Flesh Mace | 0 | 0 | 19 | 19 | 0 | 0 |
+| Vampire Scepter | 0 | 0 | 19 | 25 | 0 | 48 |
+
+**Table V — vanilla lifesteal path driven directly (Gap 3): VampireHeal bolts (type 305, 8 life) dropped at the enemy every 25 ticks, owner = commander, tagged as the soldier's, 600 ticks.**
+
+| weapon | commander + before | commander + after | shooter + before | shooter + after |
+|---|---|---|---|---|
+| Copper Shortsword | 128 | 0 | 13 | 157 |
+
+**Table O — a Thorium healing orb dropped 5-9 tiles from the wounded levy every 40 ticks (34 orbs, 700 ticks; Medical Bag +1).**
+
+| scenario | who | before | after |
+|---|---|---|---|
+| only the levy wounded | Eve-cast orbs -> wounded levy | +0 | +45 |
+| only the levy wounded | levy-cast orbs -> wounded levy | +0 | +0 (one earlier identical run: +6) |
+| commander wounded, levy full | levy-cast orbs -> commander | +0 | +24 |
+
+**Table M — Medical Bag (Head Mirror), levy at 166/400, Eve full; 300 ticks, driven in the order a real client runs it.**
+
+| | before | after |
+|---|---|---|
+| Thorium's pick (LowestPlayer) | the wearer (arrow hidden) | the wearer; Levy pick = the wounded levy |
+| arrow visible AND within 6 degrees of the levy | 0 / 300 ticks | 278 / 300 (291 ticks had a pick; every one of them aimed) |
+| run boost toward him (facing him) | 0 | 291 of 291 ticks with a pick |
+
+### What remains unfixed / untested
+- **Orbs are slow by Thorium's design** (speed ramps from 0, inertia 20, tiny heal = min(heal bonus, 4)); a levy's orb that is not already near a wounded ally often orbits it without ever being inside the 30 px heal radius. OBSERVED: Eve-cast orbs reach and heal (B1: 22 -> 96 saturated), but in the full weapon runs levy-cast orbs rarely do (about 2 heals per 23 orbs), while a levy-cast orb dropped near the commander does heal him (Table O). UNEXPLAINED gap between Eve-cast and levy-cast orbs in the weapon runs; the code paths are the same except `caster != null`. Candidates: soldier orbs accumulating up to Thorium's 10-orb cap (they are not consumed), orb spawn position/velocity from a soldier's slower hits, the levy's smaller heal bonus (x1 instead of the stand-in's), harness stand-in artifacts. Not chased further.
+- **Turtle Life / Pocket Guardian** (self- or pocketTarget-only seekers) deliberately do not steer to levies; Turtle Life is spawned by an armor set bonus, a levy would need the set.
+- **Inner Flame / Prydwen** read `LowestPlayer` and ignore levies. The Medical Bag's 5 s life-recovery buff and the other `onHealEffects` buffs (Forgotten Cross Necklace, set blooms, ...) are Player buffs and do not reach levies.
+- **Vanilla lifesteal pool:** `Projectile.vampireHeal` / Calamity `SpawnLifeStealProjectile` spend ONE pool (`Player.lifeSteal`, refills ~0.5-0.6/tick up to 70-80) shared by the commander and every levy; it throttles the aggregate. NOT changed (a per-levy pool is a one-line swap in the puppeted pass if wanted; tenet #1 argues for it). Lifesteal amounts are 1:1, NOT multiplied by `HealPotency` (a knob).
+- **Calamity:** boots clean with Calamity + CalamityModMusic + Thorium + Levy on tML 2026.10.2.3 (0 exception lines, all hooks installed). Lifesteal on Calamity weapons was NOT demonstrated: Essence Flayer damaged (24k) but no lifesteal showed before or after (Calamity's projectile owner check needs the single-player swap the harness only does for Thorium + Calamity projectiles now; the lifesteal there is conditional I did not read further). Inferred, not measured: `SpawnLifeStealProjectile` clamps to `player.statLifeMax2 - statLife`, which is now the levy's.
+- **Multiplayer:** untested. The commander heal runs on the owning client only (`HealCommander`), a routed levy heal on an MP client asks the server (`CompanionRequest.SendHeal`). In dedicated MP the soldier shots are owned by 255, which `OwnerPuppet.Puppetable` refuses (as before), so life routing is single-player / listen-host only, like the rest of the puppet.
+- **Origin moved while I worked:** `origin/worktree-levy-stardust` is now 1.7.3 (bc1f53a); `git merge-tree` of this branch against it is conflict-free. My before-numbers are from the 1.7.1 base commit 3c056e0.
+- Natural-regen noise: commander regen is pinned in the harness; a real player regenerates faster the longer unhurt, so in play a small heal is less visible.
+
 ## 🩹 HEALER: radiant "heals allies" weapons now heal levies (candidate, unreleased; build.txt NOT bumped) — OBSERVED vs INFERRED kept apart
 **Eve:** a radiant weapon that "heals allies" does nothing for her levies however much damage she does.
 
@@ -37,14 +142,14 @@ Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testi
 | M1 | **Area heal by a heal projectile**: `ProjectileHelper.ThoriumHeal(proj, amount, radius, ..., specificPlayer=-1)` called from the projectile's AI (Balance Bloom, Hippocrati-crossbow, Coral Purifier, Lethal Injection, Life and Death, Sacred Lyre, Heavenly Cloud Scepter, Gauze, every pure healer bolt; ~55 projectile classes) [h] | owner's client only (`proj.owner == Main.myPlayer`) | `for i<255: CanBeHealed(proj, owner, Main.player[i], radius)` then `HealLife` + `proj.penetrate--` | loops `Main.player[]` only |
 | M2 | **On-hit sweep -> heal proxy**: a damage weapon's `OnHitNPC`/`OnFirstHit` loops `Main.player[0..254]`, tests `CanBeHealed` + a distance (radius arg 400/500/..., or an INLINE `DistanceSQ < 250000f`-style literal: Heretic Breaker 450 from the healer, Smiting Hammer 250, Iridescent set 500, ThoriumPlayer on-hurt 800), and spawns `Heal`/`HealNoEffects`/`HealNoBonus`/`HealNoBonusNoEffects` AT that player with ai0=amount, ai1=player index; the proxy's AI calls `ThoriumHeal(..., specificPlayer=that player)`. Morning Dew, Life Disperser, Iridescent Staff, Heretic Breaker, Smiting Hammer, Iridescent helmet set bonus [h: Iridescent, Life Disperser] | owner's client | same player loop | a soldier is never in the loop; when the commander is UNHURT no player passes and no proxy exists at all (the Eve case) |
 | M3 | **Contact sweep from a heal bolt's own AI** (`CanBeHealed(proj, owner, p, 30)` -> proxy): Cosmic Flux Staff, Giga Needle, Prophecy, Life Orb, Pocket Guardian, Healing Beam, Flan Platter, Unbound Fantasy (800-1200), Valhalla (200), Moonlight (400) [h: Cosmic Flux] | owner's client | player loop around the bolt | as M2 |
-| M4 | **Healing orbs** (`HealingOrb`: Rotten Cod, Sacred Bludgeon, Templar's Judgement, The Effuser, The Stalker): spawned on hit, `HomingPro` homes on the OWNER (single player: `CheckPlayer(owner, owner)` only; multiplayer: every player), heals `min(healBonus, 4)` via M1 | owner's client | nearest eligible Player | orbs never home on a soldier; the heal itself is tiny (healBonus-capped) - NOT changed |
-| M5 | **Homing seek-and-heal bolts** (Life Surge Staff / Extra, Turtle Life): the bolt steers to the nearest eligible PLAYER, then spawns a proxy at it | owner's client | `CanBeHealed` + `Collision.CanHit` over players | not changed (would need the bolt to steer to soldiers) - OPEN |
+| M4 (steers to levies: HEAL BOTH WAYS Gap 2) | **Healing orbs** (`HealingOrb`: Rotten Cod, Sacred Bludgeon, Templar's Judgement, The Effuser, The Stalker): spawned on hit, `HomingPro` homes on the OWNER (single player: `CheckPlayer(owner, owner)` only; multiplayer: every player), heals `min(healBonus, 4)` via M1 | owner's client | nearest eligible Player | orbs never home on a soldier; the heal itself is tiny (healBonus-capped) - NOT changed |
+| M5 (steers to levies: HEAL BOTH WAYS Gap 2) | **Homing seek-and-heal bolts** (Life Surge Staff / Extra, Turtle Life): the bolt steers to the nearest eligible PLAYER, then spawns a proxy at it | owner's client | `CanBeHealed` + `Collision.CanHit` over players | not changed (would need the bolt to steer to soldiers) - OPEN |
 | M6 | Direct `HealLife`/NPC heals: Grave Good (`HealLife(Heal, healer)` on players), Banner of Morale, Sentinel/Defender Wand and Bitey Baby (heal NPCs), set bonuses/accessories (many self-heals: life steal, Phylactery, Soul Essence, ...) | various | players/NPCs | not changed: lifesteal/self-heals are the player's own by design |
 `HandleLowestLifeAlly` (ThoriumPlayer.PreUpdate) only maintains `LowestPlayer`/`lostLife` for the Inner Flame/Prydwen accessories (picks among Players); it heals nothing.
 Two Thorium facts that matter: (a) most of these hybrids' own heal is only `healBonus` (item healAmount 0 for Heretic Breaker, Iridescent, Life Disperser, Morning Dew, the orb weapons) - so for the PLAYER too they heal a few HP on gear without heal bonus; (b) a LEVY's shots are owned by `Main.myPlayer` (the commander), so Thorium treats the commander as the healer and (default `ignoreHealer`) never heals him with his levies' bolts.
 
 **WHAT WAS DONE (hooks the shared helpers; no per-item code):** `AllyHealHook` (new, JIT-gated, installed from `ThoriumDriver.Register` under try/catch -> a Thorium change logs one warning and the feature goes off) = two IL postfixes via `MonoModHooks.Modify`: (1) `ThoriumHeal` -> M1: wounded soldiers/officer avatars of the owner within the SAME radius of the SAME projectile get Thorium's amount (+healBonus if it applies, + the weapon's custom rule run for the soldier's stand-in Player) x `HealPotency` 3; spends the projectile's hits like a Player would. (2) `CanBeHealed` -> M3 (a heal projectile that tests a radius: that exact radius around that projectile, amount = the weapon's heal amount) and M2 (a sweep with no radius of its own, inside the hit of an ally-heal weapon: soldiers within the radius, else 450 px default, of the hit projectile/healer). `PlayerCastGlobalProjectile` (+ new `PlayerCastGlobalItem`) now only record the weapon's heal amount and open the "this tick's hit" window; the old per-tick IL-scan `Tick` is gone (superseded; it healed only within 30 px of ANY projectile that merely called CanBeHealed). A soldier's shot takes its amount from the weapon IN HIS HAND (was: the commander's held item). MP: owning client -> `CompanionRequest` (unchanged; NOT testable headless).
-**Direction 3 (a LEVY wields one):** before: nobody healed. After: his shots heal the commander's OTHER wounded levies (table above, SOLDIER window). The commander himself is still NOT healed by his levies' hybrid shots (Thorium excludes the healer; observed: commander rise = control regen) - the soldier healer AI (`SoldierHeal`) already heals him separately. OPEN.
+**Direction 3 (a LEVY wields one):** before: nobody healed. After: his shots heal the commander's OTHER wounded levies (table above, SOLDIER window). The commander himself is still NOT healed by his levies' hybrid shots (Thorium excludes the healer; observed: commander rise = control regen) - the soldier healer AI (`SoldierHeal`) already heals him separately. **FIXED in HEAL BOTH WAYS above (Gap 1).**
 **NOT covered / unverified:** M4 orbs and M5 homing bolts (see above); melee swings by a LEVY (Heretic Breaker: soldier never hit in the harness; Levy melee does not go through ItemLoader.ModifyHitNPC - unverified); M2 inline-radius sweeps use 450 px (Smiting Hammer is really 250, ThoriumPlayer on-hurt 800) - could be read from the caller's IL if it matters; set-bonus sweeps (Iridescent helmet) have no weapon amount so give levies nothing; heal amounts keep the existing x3 soldier potency and a minimum of 1 base heal (Thorium's own number for a weapon with healAmount 0 is just healBonus). Multiplayer path untested.
 
 ## 🗣 EVE DESIGN DUMP (2026-11-04, late) — the underlying asks, not the examples

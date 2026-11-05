@@ -23,6 +23,22 @@ namespace Levy.Common.Compat.Thorium
 		/// <summary>Game tick of the last contact heal this projectile gave soldiers (a Thorium heal bolt tests its radius every tick; the soldiers get one heal per tick at most).</summary>
 		public uint ContactTick = uint.MaxValue;
 
+		/// <summary>Seek-and-heal projectiles (a homing orb, a bolt that steers to the nearest ally): the tick this projectile last picked among Players, the nearest eligible Player it saw (px, float.MaxValue = none) and whether the
+		/// pick excluded its healer. <see cref="PreVelocity"/> is the velocity before its own AI steered it. AllyHealHook reads them in <see cref="PostAI"/> to steer to a nearer wounded soldier.</summary>
+		public uint SeekTick = uint.MaxValue;
+		public float SeekBest = float.MaxValue;
+		public bool SeekIgnoreHealer = true;
+		public Microsoft.Xna.Framework.Vector2 PreVelocity;
+
+		public override bool PreAI(Projectile projectile) { PreVelocity = projectile.velocity; return true; }
+
+		public override void PostAI(Projectile projectile)
+		{
+			if (SeekTick != Main.GameUpdateCount) return;
+			try { AllyHealHook.SeekPost(projectile, this); }
+			catch (Exception e) { Mod.Logger.Warn("Levy/Thorium compat: steering a seek-heal projectile threw: " + e.Message); SeekTick = uint.MaxValue; }
+		}
+
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
 			try { BaseHeal = PlayerHealCompat.AmountFromSource(projectile, source); }

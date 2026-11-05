@@ -116,6 +116,10 @@ namespace Levy.Common.Weapons
 			return family;
 		}
 
+		/// <summary>A heal-driven weapon that also damages, and is nothing but a melee swing: a plain swing with no shot, no mana and no ammo.</summary>
+		public static bool IsSwungHybrid(Item item) =>
+			item != null && item.damage > 0 && item.shoot <= 0 && item.useStyle == ItemUseStyleID.Swing && !item.noMelee && item.mana <= 0 && item.useAmmo == AmmoID.None && !item.consumable;
+
 		private static WeaponFamily ClassifyFamily(Item item, out bool extended)
 		{
 			extended = false;
@@ -125,7 +129,9 @@ namespace Levy.Common.Weapons
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
 			// A heal-driven Thorium weapon (ally-heal / self-heal / hybrid) is run by a heal AI that lobs its heal at the wounded; the soldier never aims it at an enemy. Classify it as a
 			// standoff caster so it is issuable, ahead of the consumable / zero-damage / useStyle gates below that otherwise bench a bandage, a syringe or a thrown-at-ally cleric staff.
-			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item)) { extended = false; return WeaponFamily.Magic; }
+			// EXCEPT a hybrid that is a plain melee swing (Heretic Breaker: damage, ally heal on hit, no shot): as a "caster" it had nothing to fire, so its soldier stood off at heal range and never swung. It is a sword like any other
+			// (the swing's on-hit heal sweep is what heals), the heal AI keeps its long reach (HealerCompat.ReachPx).
+			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item) && !IsSwungHybrid(item)) { extended = false; return WeaponFamily.Magic; }
 			if (item.damage <= 0 && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
@@ -340,7 +346,7 @@ namespace Levy.Common.Weapons
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}
 			// A heal weapon stands off at a generous, consistent heal reach, not the short range its heal projectile's own flight would clamp a caster to.
-			if (AiDrivenHealerSafe(src)) { p.RangeTiles = LevyConstants.RangeHeal; p.Gravity = false; }
+			if (AiDrivenHealerSafe(src) && !IsSwungHybrid(src)) { p.RangeTiles = LevyConstants.RangeHeal; p.Gravity = false; }
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			ApplyLongReach(src, p);

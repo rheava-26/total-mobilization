@@ -38,13 +38,17 @@ namespace Levy.Common.Compat.Thorium
 		}
 
 		/// <summary>Runs on the machine that owns <paramref name="p"/>: raise life, show the number, tell the server.</summary>
-		private static void ApplyHeal(Player p, int amount)
+		private static void ApplyHeal(Player p, int amount) => ApplyHealNow(p, amount);
+
+		/// <summary>Raise <paramref name="p"/>'s life by up to <paramref name="amount"/> right here (the player's own machine), show the number, tell the server. Returns the life gained.</summary>
+		public static int ApplyHealNow(Player p, int amount)
 		{
 			int gained = Math.Min(amount, Math.Max(0, p.statLifeMax2 - p.statLife));
-			if (gained <= 0) return;
+			if (gained <= 0) return 0;
 			p.statLife += gained;
 			p.HealEffect(gained, true);
 			if (Main.netMode == NetmodeID.MultiplayerClient && p.whoAmI == Main.myPlayer) NetMessage.SendData(MessageID.PlayerLifeMana, -1, -1, null, p.whoAmI);
+			return gained;
 		}
 
 		/// <summary>Client side of the heal kind (payload after the kind byte: byte player, int amount).</summary>

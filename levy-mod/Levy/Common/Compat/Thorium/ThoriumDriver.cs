@@ -52,6 +52,9 @@ namespace Levy.Common.Compat.Thorium
 			// The PLAYER's "heal allies" (bolts, auras, orbs, and the radiant weapons that heal allies when they deal damage) also healing his soldiers: IL postfixes on Thorium's shared ThoriumHeal / CanBeHealed. Optional too.
 			try { AllyHealHook.Install(); Levy.Instance.Logger.Info("Levy/Thorium compat: ally-heal hooks installed (ThoriumHeal, CanBeHealed) - Thorium heals now reach the player's soldiers."); }
 			catch (System.Exception e) { Levy.Instance.Logger.Warn("Levy/Thorium compat: could not hook Thorium's ally heals, so the player's heal-allies weapons will not heal his soldiers: " + e.Message); }
+			// The Medical Bag / Head Mirror pointing at the most wounded ally, soldiers included. Optional too.
+			try { MedicalBagHook.Install(); Levy.Instance.Logger.Info("Levy/Thorium compat: most-wounded-ally hooks installed (HandleLowestLifeAlly, HealerSymbol, Medical Bag) - the Medical Bag points at the commander's wounded soldiers."); }
+			catch (System.Exception e) { Levy.Instance.Logger.Warn("Levy/Thorium compat: could not hook Thorium's most-wounded-ally pick, so the Medical Bag ignores soldiers: " + e.Message); }
 		}
 
 		/// <summary>Server side of <see cref="LevyPacket.CompanionRequest"/>: a heal or an empowerment the commander's own Thorium cast asks the server to lay on his soldiers.</summary>

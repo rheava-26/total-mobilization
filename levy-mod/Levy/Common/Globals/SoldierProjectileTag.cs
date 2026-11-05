@@ -188,6 +188,13 @@ namespace Levy.Common.Globals
 				return false;
 			}
 			if (SoldierIndex < 0) return true;
+			// A lifesteal bolt (VampireHeal) homes on, and heals, whoever its owner currently is. While its soldier lives the owner is puppeted to him and the heal is his (OwnerPuppet bit 32);
+			// once he is gone nobody earns it, and it would fly to the commander and heal HIM, so it ends with its soldier. (SpiritHeal, a Spectre-armor ally heal, is left alone.)
+			if (projectile.type == ProjectileID.VampireHeal && Main.netMode != NetmodeID.MultiplayerClient && EnemyTargeting.LiveBody(SoldierIndex) == null)
+			{
+				projectile.Kill();
+				return false;
+			}
 			if (IsSporeTrap(projectile.type)) { _sporeAgeBefore = projectile.ai[0]; return true; } // vanilla AI runs; PostAI then re-ages it from the soldier
 			if (projectile.type == ProjectileID.FlyingKnife) { DriveSoldierFlyingKnife(projectile); return false; }
 			if (IsGuidedMissile(projectile.type)) { DriveSoldierGuidedMissile(projectile); return false; }

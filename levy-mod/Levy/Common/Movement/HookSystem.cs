@@ -72,6 +72,8 @@ namespace Levy.Common.Movement
 			}
 		}
 		private static int _override = -1;
+		/// <summary>Logs every plan (env LEVY_HOOKDBG=1).</summary>
+		public static readonly bool Debug = Environment.GetEnvironmentVariable("LEVY_HOOKDBG") == "1";
 		internal static void SetOverride(int v) { _override = v; }
 
 		/// <summary>True while the army has plan budget left this tick (the fan and the simulations are the costly part, so only a couple start per tick).</summary>

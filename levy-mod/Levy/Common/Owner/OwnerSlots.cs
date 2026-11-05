@@ -17,6 +17,8 @@ namespace Levy.Common.Owner
 	{
 		/// <summary>The highest slot a soldier is given: below the three SoldierMinions parks (254, 253, 252).</summary>
 		public const int Top = 251;
+		/// <summary>Slots kept for clients on a server whose player limit was left at 255.</summary>
+		public const int UnconfiguredReserve = 16;
 		private static readonly Dictionary<SoldierNPC, int> _byBody = new();
 		private static readonly bool[] _used = new bool[256];
 		private static readonly List<SoldierNPC> _scratch = new();
@@ -27,7 +29,9 @@ namespace Levy.Common.Owner
 		/// <summary>The lowest slot index that is NOT available to soldiers: at or below it a real client could be (or is). Single player: slot 0 and any active player.</summary>
 		public static int RealFloor()
 		{
-			int f = Main.netMode == NetmodeID.Server ? Math.Max(1, Main.maxNetPlayers) : 1;
+			// A server with its player limit configured keeps exactly that many slots for clients; one left at the default of 255 keeps the first UnconfiguredReserve (a joining client takes the lowest free slot).
+			int f = 1;
+			if (Main.netMode == NetmodeID.Server) f = Main.maxNetPlayers >= 200 ? UnconfiguredReserve : Math.Max(1, Main.maxNetPlayers);
 			for (int i = 0; i < Top; i++)
 			{
 				Player p = Main.player[i];

@@ -56,8 +56,8 @@ namespace Levy.Common.Movement
 	public sealed class HookPlan
 	{
 		public readonly List<Vector2> Anchors = new();
-		/// <summary>Where to aim each cast (the anchor tile centres).</summary>
-		public List<Vector2> Aims => Anchors;
+		/// <summary>Where to aim each cast: a point on the fan ray that found the anchor (the hook flies the same straight line, so it sticks where the planner said).</summary>
+		public readonly List<Vector2> Aims = new();
 		/// <summary>Reel ticks until the release (counted from the tick every planned hook is latched).</summary>
 		public int ReleaseTick;
 		/// <summary>Distance (px, body centre to the anchors' centroid) at which to let go.</summary>
@@ -68,6 +68,7 @@ namespace Levy.Common.Movement
 		/// <summary>An altitude plan: hang at the anchor until told to let go (the drop was checked safe).</summary>
 		public bool Hang;
 		public float GoalDist, Gain, Score;
+		public List<Vector2> Path;
 		public int ReelTicks, FlightTicks;
 		public HookGoalKind Kind;
 		public bool Beats(float arrivePx, float minGainPx) => (Landed || Hang) && (GoalDist <= arrivePx || Gain >= minGainPx);
@@ -84,31 +85,37 @@ namespace Levy.Common.Movement
 	public static class HookPlanner
 	{
 		public static long LastSteps;
+		/// <summary>Harness: keep the bottom-centre path (reel, then flight) on each plan.</summary>
+		public static bool Trace;
+		/// <summary>Why candidates were dropped in the last plan (harness diagnostics): anchors, reel sims, releases tried, landings missed, lava, deep drops, unstandable.</summary>
+		public static int DAnchors, DSims, DReleases, DNoLand, DLava, DDeep, DUnstand, DReelShort;
+		public static string Describe() => $"anchors={DAnchors} sims={DSims} rel={DReleases} noLand={DNoLand} lava={DLava} deep={DDeep} unstand={DUnstand} reelShort={DReelShort}";
 
 		public static HookPlan Plan(IHookWorld w, Vector2 bottom, in HookParams p, Vector2 goalBottom, HookGoalKind kind, float goalDistNow)
 		{
 			if (p.ReachPx < 64f || p.PullPx <= 0f || p.Kind == HookKind.StandOff || p.Kind == HookKind.Spring) return null;
-			LastSteps = 0;
+			LastSteps = 0; DAnchors = DSims = DReleases = DNoLand = DLava = DDeep = DUnstand = DReelShort = 0;
 			Vector2 c0 = bottom - new Vector2(0f, p.BodyH * 0.5f);
 			var anchors = FanAnchors(w, c0, p, goalBottom, kind);
+			DAnchors = anchors.Count;
 			if (anchors.Count == 0) return null;
 			HookPlan best = null;
 			// singles
 			for (int i = 0; i < anchors.Count; i++)
 			{
-				var one = new List<Vector2>(1) { anchors[i] };
+				var one = new List<(Vector2, Vector2)>(1) { anchors[i] };
 				var cand = Simulate(w, bottom, p, one, goalBottom, kind, goalDistNow);
 				if (cand != null && (best == null || cand.Score < best.Score)) best = cand;
 			}
 			// pairs for a multi-hook item: the two nearest-to-best singles around the winner
 			if (p.MaxHooks >= 2 && p.Count >= 2 && best != null)
 			{
-				var chosen = best.Anchors[0];
+				var chosen = (best.Anchors[0], best.Aims[0]);
 				for (int i = 0; i < anchors.Count; i++)
 				{
-					if ((anchors[i] - chosen).LengthSquared() < 48f * 48f) continue;       // a second anchor at least three tiles off
-					if ((anchors[i] - chosen).LengthSquared() > 224f * 224f) continue;     // and not so far the pair pulls somewhere new
-					var two = new List<Vector2>(2) { chosen, anchors[i] };
+					if ((anchors[i].a - chosen.Item1).LengthSquared() < 48f * 48f) continue;       // a second anchor at least three tiles off
+					if ((anchors[i].a - chosen.Item1).LengthSquared() > 224f * 224f) continue;     // and not so far the pair pulls somewhere new
+					var two = new List<(Vector2, Vector2)>(2) { chosen, anchors[i] };
 					var cand = Simulate(w, bottom, p, two, goalBottom, kind, goalDistNow);
 					if (cand != null && cand.Score < best.Score - 4f) best = cand;           // a pair has to be clearly better to be worth the second cast
 				}
@@ -119,9 +126,9 @@ namespace Levy.Common.Movement
 		// ---------------------------------------------------------------------------------------------
 		// the fan
 		// ---------------------------------------------------------------------------------------------
-		private static List<Vector2> FanAnchors(IHookWorld w, Vector2 c0, in HookParams p, Vector2 goal, HookGoalKind kind)
+		private static List<(Vector2 a, Vector2 aim)> FanAnchors(IHookWorld w, Vector2 c0, in HookParams p, Vector2 goal, HookGoalKind kind)
 		{
-			var found = new List<(Vector2 a, float h)>(p.Rays);
+			var found = new List<(Vector2 a, Vector2 aim, float h)>(p.Rays);
 			var seen = new HashSet<long>();
 			for (int k = 0; k < p.Rays; k++)
 			{
@@ -130,20 +137,28 @@ namespace Levy.Common.Movement
 				for (float t = 10f; t <= p.ReachPx; t += 6f)
 				{
 					Vector2 pt = c0 + dir * t;
-					int tx = (int)MathF.Floor(pt.X / 16f), ty = (int)MathF.Floor(pt.Y / 16f);
-					if (!w.Latchable(tx, ty)) continue;
+					// the hook AI latches onto a tile its 10 px box overlaps (the box is centre -5 .. +5, a tile is 16 wide), so a tile within 5 px of the point sticks it
+					int bx0 = (int)MathF.Floor((pt.X - 5f) / 16f), bx1 = (int)MathF.Floor((pt.X + 5f) / 16f), by0 = (int)MathF.Floor((pt.Y - 5f) / 16f), by1 = (int)MathF.Floor((pt.Y + 5f) / 16f);
+					int tx = 0, ty = 0; float bd = float.MaxValue; bool hit = false;
+					for (int x = bx0; x <= bx1; x++) for (int y = by0; y <= by1; y++)
+					{
+						if (!w.Latchable(x, y)) continue;
+						float d2 = Vector2.DistanceSquared(pt, new Vector2(x * 16f + 8f, y * 16f + 8f));
+						if (d2 < bd) { bd = d2; tx = x; ty = y; hit = true; }
+					}
+					if (!hit) continue;
 					long key = ((long)tx << 32) ^ (uint)ty;
 					if (seen.Add(key))
 					{
 						Vector2 a = new(tx * 16f + 8f, ty * 16f + 8f);
-						found.Add((a, Heuristic(a, goal, c0, kind)));
+						if (Vector2.Distance(a, c0) <= p.ReachPx + 8f) found.Add((a, pt, Heuristic(a, goal, c0, kind)));
 					}
 					break; // the first latchable tile on the ray is where the hook sticks
 				}
 			}
 			found.Sort((x, y) => x.h.CompareTo(y.h));
-			var res = new List<Vector2>(Math.Min(found.Count, p.MaxAnchors));
-			for (int i = 0; i < found.Count && res.Count < p.MaxAnchors; i++) res.Add(found[i].a);
+			var res = new List<(Vector2 a, Vector2 aim)>(Math.Min(found.Count, p.MaxAnchors));
+			for (int i = 0; i < found.Count && res.Count < p.MaxAnchors; i++) res.Add((found[i].a, found[i].aim));
 			return res;
 		}
 
@@ -182,6 +197,7 @@ namespace Levy.Common.Movement
 				if (Blocked(w, x + sx, y, bw, bh))
 				{
 					if (!Blocked(w, x + sx, y - 16f, bw, bh) && !Blocked(w, x, y - 16f, bw, bh) && vy >= 0f && Blocked(w, x, y + 1f, bw, bh)) { y -= 16f; x += sx; continue; } // a one-tile step up, as Collision.StepUp does for a walker
+					float cs = MathF.Sign(sx); while (!Blocked(w, x + cs, y, bw, bh)) x += cs; // creep up to the wall
 					vx = 0f; break;
 				}
 				x += sx;
@@ -191,7 +207,11 @@ namespace Levy.Common.Movement
 			float sy = vy / ny;
 			for (int i = 0; i < ny; i++)
 			{
-				if (Blocked(w, x, y + sy, bw, bh)) { if (vy > 0f) landed = true; vy = 0f; break; }
+				if (Blocked(w, x, y + sy, bw, bh))
+				{
+					float cs = MathF.Sign(sy); while (!Blocked(w, x, y + cs, bw, bh)) y += cs; // creep up to the surface
+					if (vy > 0f) landed = true; vy = 0f; break;
+				}
 				if (sy > 0f)
 				{
 					int rowOld = (int)MathF.Floor((y + bh) / 16f), rowNew = (int)MathF.Floor((y + sy + bh) / 16f);
@@ -227,12 +247,22 @@ namespace Levy.Common.Movement
 		// ---------------------------------------------------------------------------------------------
 		private struct ReelState { public float X, Y, Vx, Vy, Dist, DesVx, DesVy; }
 
-		private static HookPlan Simulate(IHookWorld w, Vector2 bottom, in HookParams p, List<Vector2> anchors, Vector2 goalBottom, HookGoalKind kind, float goalDistNow)
+		/// <summary>Re-plans from the anchors a cast REALLY latched onto (they can differ from the planned tiles when a ray grazes an edge): a single simulation. Null when those anchors cannot do the job.</summary>
+		public static HookPlan Replan(IHookWorld w, Vector2 bottom, in HookParams p, List<Vector2> actualAnchors, Vector2 goalBottom, HookGoalKind kind, float goalDistNow)
 		{
+			var list = new List<(Vector2, Vector2)>(actualAnchors.Count);
+			foreach (var a in actualAnchors) list.Add((a, a));
+			return Simulate(w, bottom, p, list, goalBottom, kind, goalDistNow);
+		}
+
+		private static HookPlan Simulate(IHookWorld w, Vector2 bottom, in HookParams p, List<(Vector2 a, Vector2 aim)> cands, Vector2 goalBottom, HookGoalKind kind, float goalDistNow)
+		{
+			var anchors = new List<Vector2>(cands.Count); foreach (var c in cands) anchors.Add(c.a);
+			DSims++;
 			float bw = p.BodyW, bh = p.BodyH;
 			Vector2 centroid = Vector2.Zero; for (int i = 0; i < anchors.Count; i++) centroid += anchors[i]; centroid /= anchors.Count;
 			float x = bottom.X - bw / 2f, y = bottom.Y - bh;
-			var states = new List<ReelState>(64);
+			var states = new List<ReelState>(64); List<Vector2> reelPath = Trace ? new List<Vector2>() : null;
 			float lastDist = float.MaxValue; int stall = 0;
 			for (int t = 0; t < LevyConstants.Hooks.PlanReelSimTicks; t++)
 			{
@@ -247,12 +277,13 @@ namespace Levy.Common.Movement
 				Move(w, ref x, ref y, ref vx, ref vy, bw, bh);
 				c = new Vector2(x + bw / 2f, y + bh / 2f);
 				float dist = Vector2.Distance(centroid, c);
+				reelPath?.Add(new Vector2(x + bw / 2f, y + bh));
 				states.Add(new ReelState { X = x, Y = y, Vx = vx, Vy = vy, Dist = dist, DesVx = desVx, DesVy = desVy });
 				if (dist > lastDist - LevyConstants.Hooks.ReelProgressPx) { if (++stall >= 6) break; } else stall = 0;
 				lastDist = Math.Min(lastDist, dist);
 				if (dist < 6f) break;
 			}
-			if (states.Count < 3) return null;
+			if (states.Count < 3) { DReelShort++; return null; }
 			// the realised velocities carry the body after a release; use a velocity that kept the body's own motion (post-collision) and the desired one for the kick test
 			HookPlan best = null;
 			int last = states.Count - 1;
@@ -261,46 +292,49 @@ namespace Levy.Common.Movement
 			{
 				int idx = Math.Clamp((int)MathF.Round(last * (0.15f + 0.85f * k / Math.Max(1, p.ReleaseCandidates - 1))), 1, last);
 				if (!tried.Add(idx)) continue;
+				DReleases++;
 				ReelState s = states[idx];
-				var plan = kind == HookGoalKind.Altitude ? null : Ballistic(w, p, s, idx, goalBottom, goalDistNow, bottom, anchors);
+				var plan = kind == HookGoalKind.Altitude ? null : Ballistic(w, p, s, idx, goalBottom, goalDistNow, bottom, anchors, reelPath, cands);
 				if (plan != null && (best == null || plan.Score < best.Score)) best = plan;
 			}
 			if (kind == HookGoalKind.Altitude)
 			{
 				ReelState e = states[last];
-				best = HangPlan(w, p, e, last, goalBottom, goalDistNow, bottom, anchors);
+				best = HangPlan(w, p, e, last, goalBottom, goalDistNow, bottom, anchors, cands);
 			}
 			return best;
 		}
 
-		private static HookPlan Ballistic(IHookWorld w, in HookParams p, ReelState s, int idx, Vector2 goalBottom, float goalDistNow, Vector2 start, List<Vector2> anchors)
+		private static HookPlan Ballistic(IHookWorld w, in HookParams p, ReelState s, int idx, Vector2 goalBottom, float goalDistNow, Vector2 start, List<Vector2> anchors, List<Vector2> reelPath, List<(Vector2 a, Vector2 aim)> cands)
 		{
 			float bw = p.BodyW, bh = p.BodyH;
 			float x = s.X, y = s.Y, vx = s.DesVx, vy = s.DesVy; // the release hands the body the reel's full velocity (Player.GrappleMovement sets it before it lets go)
 			if (MathF.Abs(s.DesVy) < 1e-4f) vy = -p.JumpSpeed; // vanilla: a level reel gives the jump kick on release
 			Vector2 relPos = new(x + bw / 2f, y + bh);
 			bool landed = false; int ticks = 0;
-			float startRow = start.Y;
+			float startRow = start.Y; List<Vector2> fl = reelPath != null ? new List<Vector2>(reelPath.GetRange(0, Math.Min(idx + 1, reelPath.Count))) : null;
 			for (int t = 0; t < LevyConstants.Hooks.PlanBallisticSimTicks; t++)
 			{
 				ticks = t + 1;
 				vy = Math.Min(LevyConstants.Hooks.TerminalVelocityPx, vy + p.Gravity);
 				if (MathF.Abs(vx) > LevyConstants.Hooks.AirDragPx) vx -= MathF.Sign(vx) * LevyConstants.Hooks.AirDragPx; else vx = 0f;
 				bool rest = Move(w, ref x, ref y, ref vx, ref vy, bw, bh);
-				if (TouchesLava(w, x, y, bw, bh)) return null;
-				if (y + bh > startRow + LevyConstants.Hooks.MaxDropBelowStartTiles * 16f && y + bh > goalBottom.Y + 48f) return null; // a deep drop
+				fl?.Add(new Vector2(x + bw / 2f, y + bh));
+				if (TouchesLava(w, x, y, bw, bh)) { DLava++; return null; }
+				if (y + bh > startRow + LevyConstants.Hooks.MaxDropBelowStartTiles * 16f && y + bh > goalBottom.Y + 48f) { DDeep++; return null; } // a deep drop
 				if (rest) { landed = true; break; }
 			}
-			if (!landed || !StandableAt(w, x, y, bw, bh)) return null;
+			if (!landed) { DNoLand++; return null; }
+			if (!StandableAt(w, x, y, bw, bh)) { DUnstand++; return null; }
 			Vector2 land = new(x + bw / 2f, y + bh);
 			float gd = Vector2.Distance(land, goalBottom) + Math.Abs(land.Y - goalBottom.Y) * 0.5f;
 			var plan = new HookPlan { Kind = HookGoalKind.Ground, ReleaseTick = idx, ReleaseDist = Math.Max(0f, s.Dist), ReleasePos = relPos, Landing = land, Landed = true, GoalDist = gd, Gain = goalDistNow - gd, ReelTicks = idx, FlightTicks = idx + ticks };
-			plan.Anchors.AddRange(anchors);
+			plan.Anchors.AddRange(anchors); plan.Path = fl; foreach (var c in cands) plan.Aims.Add(c.aim);
 			plan.Score = gd + 0.35f * (idx + ticks);
 			return plan;
 		}
 
-		private static HookPlan HangPlan(IHookWorld w, in HookParams p, ReelState e, int idx, Vector2 goalBottom, float goalDistNow, Vector2 start, List<Vector2> anchors)
+		private static HookPlan HangPlan(IHookWorld w, in HookParams p, ReelState e, int idx, Vector2 goalBottom, float goalDistNow, Vector2 start, List<Vector2> anchors, List<(Vector2 a, Vector2 aim)> cands)
 		{
 			float bw = p.BodyW, bh = p.BodyH;
 			Vector2 hangBottom = new(e.X + bw / 2f, e.Y + bh);
@@ -316,7 +350,7 @@ namespace Levy.Common.Movement
 			Vector2 land = new(x + bw / 2f, y + bh);
 			float gd = Vector2.Distance(hangBottom, goalBottom);
 			var plan = new HookPlan { Kind = HookGoalKind.Altitude, ReleaseTick = idx, ReleaseDist = Math.Max(0f, e.Dist), ReleasePos = hangBottom, Landing = land, Landed = true, Hang = true, GoalDist = gd, Gain = goalDistNow - gd, ReelTicks = idx, FlightTicks = idx };
-			plan.Anchors.AddRange(anchors);
+			plan.Anchors.AddRange(anchors); foreach (var c in cands) plan.Aims.Add(c.aim);
 			plan.Score = gd + 0.2f * idx;
 			return plan;
 		}

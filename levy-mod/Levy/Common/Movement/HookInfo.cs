@@ -66,7 +66,7 @@ namespace Levy.Common.Movement
 					_ => 18f * 16f,
 				};
 				float pull = t == 315 ? 14f : t == 487 ? 12f : (t >= 646 && t <= 649) ? 16f : 11f;
-				int count = t switch { 165 => 8, 256 => 2, 372 => 2, 652 => 1, 73 => 2, >= 646 and <= 649 => 4, _ => 3 };
+				int count = ProjectileID.Sets.SingleGrappleHook[t] ? 1 : t switch { 165 => 8, 256 => 2, 372 => 2, 652 => 1, 73 => 2, >= 646 and <= 649 => 4, _ => 3 }; // a single-hook type: QuickGrapple kills the old hook when a new one is cast
 				HookKind kind = t == 446 ? HookKind.StandOff : t == 652 ? HookKind.Steered : HookKind.Normal;
 				if (kind == HookKind.Steered) pull = 6f;
 				return new HookInfo(true, reach * 0.97f, pull, count, kind);
@@ -92,6 +92,7 @@ namespace Levy.Common.Movement
 			}
 			int n = 3;
 			try { var sample = ContentSamples.ProjectilesByType[t]; ProjectileLoader.NumGrappleHooks(sample, new Player(), ref n); } catch (Exception) { }
+			if (ProjectileID.Sets.SingleGrappleHook[t]) n = 1;
 			return new HookInfo(true, reachTiles * 16f * 0.97f, pullPx, Math.Max(1, n), k);
 		}
 	}

@@ -92,6 +92,68 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
+
+## ⚙️ GEAR UPKEEP (gear-upkeep 990a356): built, NOT merged yet, in a single-player verification round
+- **Per tick, on the Dummy, only for soldiers with tick-dependent gear:** timers, then ResetEffects (restore owned counts/minions), then mod buffs, then UpdateEquips, then the set pass, then PostUpdateEquips, then PostUpdateMiscEffects. Thorium cache swapped. Spawns adopted. Life and mana written back. GearOnHurt from AfterHit (Star Cloak). Config `RealGearUpkeep`, default on.
+- **Measured on a dedicated server:**
+  - Calamity Statigel stealth: peak 0→0.90, stealth strikes fire and stealth is spent.
+  - Volatile Gelatin runs the real cadence; the hand-made twin is disabled.
+  - Star Cloak: 87 stars.
+  - Thorium Metronome and other timers advance.
+  - Calamity Amalgamated Brain / Amidia's Pendant spawn their effects.
+  - Commander fingerprint unchanged.
+  - Cost at N=40 is 1.05 ms (Thorium) / 2.65 ms (Calamity); ungeared soldiers cost 0.
+- **Calamity stealth spend:** Calamity spends stealth on the first frame of an item use, and the Dummy never runs ItemCheck. The fix is a synthetic first-use frame from WeaponUse.FinishUse.
+- **Still needs real ownership:** the real Crystal Leaf, Stardust Guardian and Blunder Booster aura die every tick under the commander owner, so the hand-made leaf and Guardian stay. A churn breaker drops any type respawned more than 30 times per 120 ticks.
+- **RISK being checked before merge:** in single player the frame's Dummy has whoAmI == Main.myPlayer, so `whoAmI==myPlayer` blocks could write local-player or global state (screen shake, UI, music). Everything so far ran on a dedicated server.
+
+## 🔎 WEAPON-CHOICE FINDINGS (weapon-choice-investigation 01efba1 + 69c0e78; measured, Calamity+Thorium, tML 2026.10)
+- **Wulfrum stickiness (CONFIRMED):**
+  - Calamity rogue weapons (130/148) and Thorium bard/healer weapons have damage class null.
+  - `UpgradePrimary` returns early on `cls == null` (ArmoryTE.cs:1793), so a levy holding one NEVER upgrades.
+  - Wulfrum was picked while the armory was small, then stuck.
+- **Rack before storage (CONFIRMED):** `TakeVaried` (ArmoryTE.cs:613) reads the 12 rack slots before storage. A Zombie Arm in the rack beats a Chlorophyte Saber in storage. Jackhammers and drills are never issued (Unsupported, tools).
+- **Greedy, class-blind allocation (CONFIRMED):**
+  - Unarmored or other-class levies take the top melee items.
+  - Sidearms drain the mid-tier blades.
+  - 20 levies with melee enlisted last: 3 melee levies UNARMED, others holding Water Bolt, Space Gun and Musket.
+- **No 8-class split exists.** Composition is the top-N by score plus the 75% variety band. Rogue, bard and healer aren't classes at all.
+- **Calamity rebalances vanilla:** Minishark is 4 damage (vanilla 6); Cobalt, Mythril and Palladium swords are buffed. So vanilla swords dominate early HM in Calamity, and the Minishark really is weak there.
+- **Mages:** soldiers have combat mana regen of 6/s and a 20-mana pool, so magic weapons sustain a median 0.23 of their scored rate. Mages that win the ranking then idle.
+  - Design question: give mage levies player-like mana (from gear plus a progression base) rather than lowering mage scores. Tenet #1.
+- **Cost-primary ranking (Eve's idea) prototyped:**
+  - It keeps the Minishark at #3 at early HM (score ranks it #30).
+  - It tracks progression (Spearman 0.85) but not damage (0.71).
+  - Failures: rich zero-damage items (TheWand 30M, Vortexpopper, Piranha Gun); per-unit priced throwables; Calamity price buckets.
+  - Recommendation: cost as the stage key with an effective-damage floor.
+  - **Decision pending (Eve).**
+- **Building now (`weapon-alloc`):**
+  - Rogue, bard and healer become real classes; class-less weapons can upgrade.
+  - Rack and storage are ranked together.
+  - Global class-matched assignment: worst-equipped of a class first, armorless levies last, sidearms only from unwanted blades.
+  - Ranking key unchanged until Eve decides.
+
+## 🧪 OWNER-LAB PHASE 2 (owner-lab-2 fce7e8b, harness only)
+- **Minion deaths under per-soldier slots, ROOT CAUSE:**
+  - The server net thread (`Netplay.UpdateConnectedClients`) deactivates client-less slots mid-frame.
+  - `Projectile.Update` then kills projectiles whose owner is inactive.
+  - Fixed in the lab by holding NetLock for the frame on a dedicated server; single player has no net thread.
+- **With per-soldier slots, damage now scales with soldier count:**
+  - At N=10: boomerang 8.5×, yoyo 9.3×, whip 10.5×, Hornet 10.0×, Storm-Hatchling 9.8×.
+  - Spider Staff 1.4× is vanilla per-NPC immunity; consider overriding it (tenet #1).
+- **Gear:**
+  - With `npcProj=false` and a real owner, the levy's OWN ModPlayer gear procs on its own hits. The commander's gear never procs on soldier hits.
+  - Confirmed working: Spectre Hood heals and Mask bolts, Frost set, Thorium Dragon/Pyromancer/Cryomancer/Vampire Gland, Calamity Nanotech, Tarragon, Vampiric Talisman.
+- **Per-tick Dummy upkeep ("s2"):**
+  - Contents: timers, ResetEffects (re-apply ownedProjectileCounts!), buffs, UpdateEquips, ArmorSets, PostUpdateEquips, PostUpdateMiscEffects.
+  - It makes timer- and tick-driven gear work: Chlorophyte leaf 2→25 shots, Volatile Gelatin, Stardust Guardian, Calamity STEALTH (0→0.90 plus stealth strikes).
+  - Cost at N=40, all geared: 1.2 ms Thorium, 2.9 ms Calamity.
+  - **Building now as `gear-upkeep` (no ownership change).**
+- **Server limit:** real sword swings never hit on a dedicated server (`ItemCheck_ApplyUseStyle_Inner` returns on dedServ), so SoldierSwing stays there.
+- **Production plan:** a SoldierOwner Enter/Leave frame, a slot allocator downward from 254, a NetThreadGuard, OwnerProjectiles replacing OwnerPuppet, then summons → spear/boomerang/yoyo/flail/whip → heal staves → gear, then hurt-driven gear.
+  - Open risks: MP clients killing virtual-slot projectiles; Calamity's Main.LocalPlayer reads.
+
 ## 🧭 EVE DECISIONS + ASKS (2026-11-05)
 - **DECIDED, full player emulation:** every weapon, accessory and armor set works for a levy exactly as for a player. A levy's own gear procs on its own hits (e.g. 60 levies in Chlorophyte all get the Crystal Leaf); Eve's gear procs on Eve's hits. Supersedes the hand-made procs in SoldierNPC.AccessoryProc/ArmorSets/StardustGuardian over time. Owner-lab phase 2 (`owner-lab-2`) is measuring this.
 - **DECIDED, healing both ways:** Eve's ally heals heal levies (shipped 1.7.0). Levy ally heals must heal Eve AND all other levies. Lifesteal heals the levy that hit. The ×3 soldier heal potency stays. Building on `heal-both-ways`, which also makes Medical Bag and homing heals target the lowest-HP levy.
@@ -100,6 +162,19 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Ranking refined (Eve):** primary key = SELL VALUE + TOTAL MATERIAL COST (recursive ingredient value), so long-lived early weapons like the Minishark keep ranking while on-tier weapons still get used. Acquisition tier is secondary.
 - **ALLOCATION IS GREEDY (Eve):** given a stock of Terra Blade, Influx Waver, Horseman's Blade, Razorblade Typhoon, Laser Machinegun, Xenopopper and Daybreak, a few levies grab the best items regardless of class and the melee levies are left with pumpkin and wooden swords. Wanted: allocate by who needs it most, class-matched, with variety. Also: levies prefer Zombie Arms over Chlorophyte gear and jackhammers. All folded into `weapon-choice-investigation`; a global assignment proposal is due.
 - **Barracks loadout (Eve wish):** from a barracks, see each levy's weapon and swap it directly from the armory: click the weapon in their hand, put a new one in. Backlog. Good fit once allocation is rebuilt.
+- **Eve: "Enchanted Sword, Starfury aren't even listed?"**
+  - Enchanted Sword IS listed: #2–3 by cost at post-EoC and post-Skeletron. It is NOT pre-boss, because the green rarity floor (1.5) pushes shrine and chest items a stage late.
+  - Starfury makes no top 10 in any ordering: tiers.tsv gives a dpsAdj of 37.5 and a score of 49, and Enchanted Sword gets 30.7 / 40.7. These are SWING-ONLY numbers. Neither the score nor effDps credits a sword's projectile (Enchanted Sword's beam, Starfury's falling stars).
+  - **Scoring bug to fix with the ranking rework:** credit the item.shoot projectile on broadswords, including stars from the sky.
+  - The rarity floor is too strict for world-gen chest/shrine loot.
+- **Chart regenerated (weapon-choice-investigation b531764):**
+  - Fixes: a fixpoint tier solver (recipe cycles had poisoned Hellstone, Wood and Stone); unknown routes never become tier 0; a rarity floor; shop conditions honoured (Travelling Merchant pool gives no route); Remix-seed drops ignored (King Slime had "dropped" Keybrand); gated enemy drops modelled.
+  - Keybrand is now 13.5 (post-Plantera).
+  - Still off: chest loot sits at rarity 1 (Flaming Mace, Ball O' Hurt and similar show as pre-boss); Thorium end-game items cap near 12.8 because Thorium's custom rarity gives no floor; donator/joke items with huge value rank high; Shark Storm may be early.
+- **Chart bug (Eve caught it):** "pre-boss" listed Keybrand (rarity 8, post-Plantera) and other post-WoF items. tiers.tsv shows Keybrand route=0 via the Travelling Merchant shop, with rarity ignored; unknown or modded routes default to tier 0. The same bug would hit a live tier-based picker. Fixing the calculator so an unknown route never means tier 0, rarity sets a floor, shop conditions apply, and enemy drops are modelled; then the chart gets regenerated.
+- **Weapon ranking chart for Eve:** https://claude.ai/artifact/SGLKrXUhFtepLWY3mJ61Zf (from weapon-choice-investigation cost_tables.txt). Ranking-key decision still pending.
+- **Drones:** Eve gave up on directing them ("do whatever you want"). My call: ship variant A as built (drone-art 0293cc3) with the next matched pair, and stop asking Eve about drones unless something breaks.
+- **Drone art preview sent to Eve (drone-art 0293cc3, NOT merged):** variants A Osprey (wired in), B long boom + nacelle pods, C compact + staggered rotors. 2×2 blocks, warm gunmetal, layered (body tilts up to 18°, rotors stay level and spin). DrawWeapon now draws one animation frame. Hitbox is still 36×28, so the tail ring overhangs it. Waiting on Eve's pick/corrections before merging.
 - **Drone art (re-spec, `drone-art`):** from Eve's concept (scratchpad/drone_concept/concept0.png): a long slender fuselage, a tail boom ending in a ring/ducted tail fan, and two rotors mounted on the SIDES of the body (Osprey-like). In side view the rotors are edge-on horizontal discs on masts. Rotors stay level and spin; the BODY tilts with speed (separate draw layers). Longer, skinnier, darker, 2×2 pixel blocks. A preview with variants goes to Eve BEFORE it ships. Also fixing DrawWeapon's whole-sheet draw. Eve also says drones "aren't performing like I want"; unspecified, ask what.
 - **Eve may restart as a Calamity Rogue playthrough** (Thorium feels weak). That makes levy rogue STEALTH a priority: it never accrues on levies (rogue Statigel run). Owner-lab-2 is measuring rogue armor stealth.
 - **Weapon choice (Eve's observations):** a Minishark is in the armory but levies use pre-boss weapons; mages are almost never seen. Eve proposes ranking by a blend of stats + sell value + rarity + damage + class. Folded into `weapon-choice-investigation`. My view: value and rarity are a good tier prior or floor next to measured DPS, but shouldn't replace it, because shop items and mod value conventions can mislead.

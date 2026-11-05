@@ -20,7 +20,7 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
-		private static readonly (string name, int[] item)[] SpeedLoadouts = { ("none", new int[0]), ("Hermes", new int[] { ItemID.HermesBoots }), ("Lightning", new int[] { ItemID.LightningBoots }), ("Terraspark", new int[] { ItemID.TerrasparkBoots }), ("TerraMagi", new int[] { ItemID.TerrasparkBoots, ItemID.Magiluminescence }) };
+		private static readonly (string name, int[] item)[] SpeedLoadouts = { ("none", new int[0]), ("Hermes", new int[] { ItemID.HermesBoots }), ("Lightning", new int[] { ItemID.LightningBoots }), ("Terraspark", new int[] { ItemID.TerrasparkBoots }), ("TerraMagi", new int[] { ItemID.TerrasparkBoots, ItemID.Magiluminescence }), ("NoneSwift", new int[] { -1 }), ("HermesSwift", new int[] { ItemID.HermesBoots, -1 }), ("TerraSwift", new int[] { ItemID.TerrasparkBoots, -1 }) }; // -1 = a Swiftness potion (+0.25 moveSpeed)
 		private sealed class SpeedTrial { public string Label; public int[] Boots; public string Kind; public float HazV; public bool Armed; }
 		private readonly List<SpeedTrial> _spTrials = new();
 		private int _spI = -1, _spTick;
@@ -95,9 +95,11 @@ namespace Levy.Common.Testing
 		{
 			var p = new Player();
 			p.whoAmI = SoldierNPC.DummySlot; p.active = true; p.width = 20; p.height = 42; p.direction = 1;
-			for (int bi = 0; bi < boots.Length; bi++) { var it = new Item(); it.SetDefaults(boots[bi]); p.armor[3 + bi] = it; }
+			bool swift = Array.IndexOf(boots, -1) >= 0; int ai = 0;
+			for (int bi = 0; bi < boots.Length; bi++) { if (boots[bi] < 0) continue; var it = new Item(); it.SetDefaults(boots[bi]); p.armor[3 + ai++] = it; }
 			p.ResetEffects();
 			p.UpdateEquips(SoldierNPC.DummySlot);
+			if (swift) p.moveSpeed += 0.25f; // vanilla Swiftness buff
 			float accBeforeScale = p.accRunSpeed, maxBefore = p.maxRunSpeed, ms = p.moveSpeed, ra = p.runAcceleration;
 			// the run-speed part of Player.Update that follows UpdateEquips (Player.cs ~23009 and ~23440-23574): moveSpeed scaling, then the flag multipliers, then the mod hook
 			p.runAcceleration *= p.moveSpeed; p.maxRunSpeed *= p.moveSpeed; // not accRunSpeed
@@ -197,7 +199,8 @@ namespace Levy.Common.Testing
 				var rec = MakeRecord("Pvt. Speed");
 				var gear = rec.Gear;
 				if (tr.Boots.Length > 1) rec.Grade = Grade.Champion; // a Levy-grade soldier has one accessory slot; the stack loadouts need the Champion's five
-				for (int bi = 0; bi < tr.Boots.Length; bi++) { var b = new Item(); b.SetDefaults(tr.Boots[bi]); if (gear.CanHold(SoldierGear.SlotAcc0 + bi, b)) { gear.Set(SoldierGear.SlotAcc0 + bi, b); gear.SetLocked(SoldierGear.SlotAcc0 + bi, true); } else Mod.Logger.Warn("HARNESS-SPEED: accessory CanHold false"); }
+				int ai = 0;
+				for (int bi = 0; bi < tr.Boots.Length; bi++) { if (tr.Boots[bi] < 0) continue; var b = new Item(); b.SetDefaults(tr.Boots[bi]); if (gear.CanHold(SoldierGear.SlotAcc0 + ai, b)) { gear.Set(SoldierGear.SlotAcc0 + ai, b); gear.SetLocked(SoldierGear.SlotAcc0 + ai, true); } else Mod.Logger.Warn("HARNESS-SPEED: accessory CanHold false"); ai++; }
 				if (tr.Armed)
 				{
 					var w = new Item(); w.SetDefaults(ItemID.Handgun);
@@ -213,6 +216,7 @@ namespace Levy.Common.Testing
 				if (_spBody < 0 || !rec.HasBody) { Mod.Logger.Warn("HARNESS-SPEED: SpawnBody failed for " + tr.Label); _spI++; _spStarted = false; return; }
 				var sn = (SoldierNPC)Main.npc[_spBody].ModNPC; sn.NPC.Bottom = at; sn.NPC.velocity = Vector2.Zero;
 				_spX0 = sn.NPC.Center.X;
+				if (Array.IndexOf(tr.Boots, -1) >= 0) { sn.NPC.AddBuff(BuffID.Swiftness, 60 * 600); sn.StatsDirty = true; }
 				_spHazIdx = -1; _spTargetIdx = -1;
 				if (tr.Kind == "runshoot") _spTargetIdx = SpSpawnTarget((_cx - 50) * 16f, 64, 96, 0);
 				if (haz) _spHazIdx = SpSpawnTarget((_cx + 90) * 16f, 120, 480, 120);

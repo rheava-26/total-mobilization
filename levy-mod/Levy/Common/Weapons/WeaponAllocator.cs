@@ -27,6 +27,8 @@ namespace Levy.Common.Weapons
 		public Func<Item, bool> Fires;
 		/// <summary>A bare-handed levy takes a weapon that cannot fire yet (its class beats a gun with no bullets) when nothing that fires fits; a levy with a weapon never trades for one.</summary>
 		public bool AllowDry;
+		/// <summary>Weapons that replace his current one whatever they score (a whip in hand yields to any minion staff). Null = none.</summary>
+		public Func<AllocCand, bool> Yields;
 		/// <summary>Fixed-class companies: while he holds a classed weapon he only ever trades within that class.</summary>
 		public DamageClass ClassLock;
 
@@ -158,14 +160,16 @@ namespace Levy.Common.Weapons
 			float cutoff = float.NegativeInfinity;
 			for (int i = 0; i < cands.Count; i++) {
 				var c = cands[i];
-				if (c.Rank < floor || c.Rank < cutoff) break;
+				bool yields = l.Yields != null && usable && l.Yields(c);
+				if (c.Rank < cutoff || (c.Rank < floor && l.Yields == null)) break;
+				if (c.Rank < floor && !yields) continue;
 				if (!Avail(l, c) || !accept(l, c)) continue;
 				if (l.Ok != null && !l.Ok(c.It)) continue;
 				if (requireFire && !l.Fires(c.It)) continue;
 				if (l.ClassLock != null && c.Cls != l.ClassLock) continue;
 				if (ReferenceEquals(c, l.Own)) continue;
 				if (c.Slot == AllocSlot.Sidearm && c.Phys == l) continue;
-				if (band.Count == 0) cutoff = Math.Max(floor, c.Rank * LevyConstants.WeaponVarietyTopFraction);
+				if (band.Count == 0) cutoff = Math.Max(yields ? 0f : floor, c.Rank * LevyConstants.WeaponVarietyTopFraction);
 				bool seen = false;
 				for (int k = 0; k < band.Count; k++) if (band[k].Type == c.Type) { seen = true; break; }
 				if (seen) continue;

@@ -78,6 +78,8 @@ namespace Levy.Content.TileEntities
 						if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);
 						return enough;
 					};
+					if (hasW && WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Whip)
+						lev.Yields = c => WeaponClassifier.GetProfile(c.It).Family == WeaponFamily.Summon; // a whip in hand yields to any minion staff regardless of score (the whip becomes the off-hand)
 					lev.Fires = it => HasAmmoFor(it, self, onHand);
 					lev.AllowDry = !hasW; // an issue falls back to a gun with no bullets before it crosses class; an upgrade never trades onto one
 					plan.Levies.Add(lev);

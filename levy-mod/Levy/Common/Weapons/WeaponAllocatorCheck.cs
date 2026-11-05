@@ -112,6 +112,15 @@ namespace Levy.Common.Weapons
 				check(flex.Target != null && flex.Target != flex.Own, "a levy holding a class-less weapon upgrades to anything better");
 				check(armored.Target != null && armored.Target != armored.Own && armored.Target.Cls == DamageClass.Melee, "a classed levy holding a class-less weapon is moved into his class");
 			}
+			// A whip in hand yields to a minion staff whatever the staff scores.
+			{
+				var whip = Make(ItemID.ThornWhip); var staff = Make(ItemID.SlimeStaff);
+				var l = Lv(1, null, whip);
+				l.Yields = c => WeaponClassifier.GetProfile(c.It).Family == WeaponFamily.Summon;
+				var levies = new List<AllocLevy> { l };
+				WeaponAllocator.Plan(levies, Cands(levies, staff));
+				check(l.Target != null && l.Target.It == staff, "a whip in hand yields to a minion staff");
+			}
 			// c) variety: three melee levies facing three close blades each get a different type.
 			{
 				var items = new[] { Make(ItemID.CobaltSword), Make(ItemID.PalladiumSword), Make(ItemID.MythrilSword) };

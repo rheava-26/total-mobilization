@@ -1,0 +1,18 @@
+[L_zombie_in_rack_chlorophyte_in_storage]
+SOLDIERS 4
+WI Vanilla/ZombieArm
+WI Vanilla/WoodenSword
+W Vanilla/ChlorophyteSaber
+W Vanilla/ChlorophyteClaymore
+W Vanilla/ChlorophytePartisan
+W Vanilla/ChlorophyteWarhammer
+STAGE
+[M_all_in_storage]
+SOLDIERS 4
+W Vanilla/ZombieArm
+W Vanilla/WoodenSword
+W Vanilla/ChlorophyteSaber
+W Vanilla/ChlorophyteClaymore
+W Vanilla/ChlorophytePartisan
+W Vanilla/ChlorophyteWarhammer
+STAGE

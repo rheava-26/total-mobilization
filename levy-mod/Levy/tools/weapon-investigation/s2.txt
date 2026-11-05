@@ -1,0 +1,810 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## CATALOGUE
+mod	name	family	class	extended	issuable	damage	useTime	useAnim	reuse	limit	shots	projPerShot	rare	value	consumable	maxStack	mana	useAmmo	damageType	rangeTiles	score	locksOwner
+Vanilla	IronBroadsword	Broadsword	melee	False	True	12	20	20	0	-1	1	1	0	1800	False	1	0	0	TrueMeleeDamageClass	3	40.7	False
+Vanilla	IronShortsword	Shortsword	melee	False	True	10	12	12	0	-1	1	1	0	1400	False	1	0	0	TrueMeleeDamageClass	3	56.3	False
+Vanilla	WoodenSword	Broadsword	melee	False	True	7	20	20	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	22.7	False
+Vanilla	WoodenBow	Bow	ranged	False	True	4	30	30	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	30.2	False
+Vanilla	Shuriken	Thrown	ranged	False	True	10	15	15	0	-1	1	1	0	15	True	9999	0	0	RangedDamageClass	20	12.6	False
+Vanilla	DemonBow	Bow	ranged	False	True	12	25	25	0	-1	1	1	1	18000	False	1	0	40	RangedDamageClass	54	65.0	False
+Vanilla	LightsBane	Broadsword	melee	False	True	16	20	20	0	-1	1	1	1	13500	False	1	0	0	MeleeDamageClass	8	58.8	False
+Vanilla	EnchantedBoomerang	Boomerang	melee	False	True	21	20	20	0	-1	1	1	1	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	62.9	False
+Vanilla	Vilethorn	Magic	magic	False	True	10	28	28	0	-1	1	1	1	75000	False	1	10	0	MagicDamageClass	46	26.9	False
+Vanilla	Starfury	Broadsword	melee	False	True	25	40	20	0	-1	1	1	2	50000	False	1	0	0	MeleeDamageClass	40	49.0	False
+Vanilla	PurificationPowder	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	75	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	VilePowder	Unsupported	none	False	False	0	15	15	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GrapplingHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FlintlockPistol	Gun	ranged	False	True	13	16	16	0	-1	1	1	1	50000	False	1	0	97	RangedDamageClass	83	107.6	False
+Vanilla	Musket	Gun	ranged	False	True	22	32	32	0	-1	1	1	1	75000	False	1	0	97	RangedDamageClass	83	75.3	False
+Vanilla	Minishark	Gun	ranged	False	True	4	8	8	0	-1	1	1	2	350000	False	1	0	97	RangedDamageClass	83	140.9	False
+Vanilla	IronBow	Bow	ranged	False	True	8	28	28	0	-1	1	1	0	1400	False	1	0	40	RangedDamageClass	54	43.4	False
+Vanilla	FlowerofFire	Magic	magic	False	True	37	16	16	0	-1	1	1	3	125000	False	1	12	0	MagicDamageClass	46	192.0	False
+Vanilla	MagicMissile	Magic	magic	False	True	23	10	20	0	-1	2	1	2	87500	False	1	14	0	MagicDamageClass	46	181.8	False
+Vanilla	DirtRod	Unsupported	none	False	False	-1	20	20	0	-1	1	1	1	50000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ShadowOrb	Unsupported	none	False	False	0	20	20	0	-1	1	1	1	75000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Flamarang	Boomerang	melee	False	True	40	20	20	0	-1	1	1	3	100000	False	1	0	0	MeleeNoSpeedDamageClass	22	132.5	False
+Vanilla	MoltenFury	Bow	ranged	False	True	31	28	28	0	-1	1	1	3	27000	False	1	0	40	RangedDamageClass	54	119.2	False
+Vanilla	FieryGreatsword	Broadsword	melee	False	True	40	40	40	0	-1	1	1	3	27000	False	1	0	0	TrueMeleeDamageClass	3	81.4	False
+Vanilla	SpaceGun	Magic	magic	False	True	23	17	17	0	-1	1	1	1	20000	False	1	6	0	MagicDamageClass	46	100.0	False
+Vanilla	Bone	Thrown	ranged	False	True	20	12	12	0	-1	1	1	0	50	True	9999	0	0	RangedDamageClass	20	32.0	False
+Vanilla	Muramasa	Broadsword	melee	False	True	24	18	17	0	-1	1	1	2	87500	False	1	0	0	TrueMeleeDamageClass	3	105.4	False
+Vanilla	AquaScepter	Magic	magic	False	True	24	8	16	0	-1	2	1	2	87500	False	1	7	0	MagicDamageClass	46	237.2	False
+Vanilla	Harpoon	Unsupported	none	False	False	25	30	30	0	-1	1	1	2	27000	False	1	0	0	RangedDamageClass	3	0.0	False
+Vanilla	SpikyBall	Thrown	ranged	False	True	16	15	15	0	-1	1	1	0	80	True	9999	0	0	RangedDamageClass	20	20.7	False
+Vanilla	BallOHurt	Flail	melee	False	True	15	45	45	0	-1	1	1	1	75000	False	1	0	0	MeleeNoSpeedDamageClass	8	20.1	False
+Vanilla	BlueMoon	Flail	melee	False	True	27	45	45	0	-1	1	1	2	87500	False	1	0	0	MeleeNoSpeedDamageClass	8	37.9	False
+Vanilla	Handgun	Gun	ranged	False	True	26	20	20	0	-1	1	1	2	87500	False	1	0	97	RangedDamageClass	83	142.3	False
+Vanilla	WaterBolt	Magic	magic	False	True	23	17	17	0	-1	1	1	2	75000	False	1	10	0	MagicDamageClass	46	106.7	False
+Vanilla	Bomb	Thrown	ranged	False	True	0	25	25	0	-1	1	1	0	300	True	9999	0	0	DefaultDamageClass	20	79.1	False
+Vanilla	Dynamite	Thrown	ranged	False	True	-1	40	40	0	-1	1	1	1	2000	True	9999	0	0	DefaultDamageClass	20	134.1	False
+Vanilla	Grenade	Thrown	ranged	False	True	60	45	45	0	-1	1	1	0	75	True	9999	0	0	RangedDamageClass	20	25.8	False
+Vanilla	IvyWhip	Unsupported	none	False	False	0	0	0	0	-1	1	1	3	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BreathingReed	Broadsword	melee	False	True	10	19	27	0	-1	2	1	1	10000	False	1	0	0	TrueMeleeDamageClass	3	38.5	False
+Vanilla	BladeofGrass	Broadsword	melee	False	True	18	20	20	0	-1	1	1	3	27000	False	1	0	0	MeleeDamageClass	40	73.3	False
+Vanilla	ThornChakram	Boomerang	melee	False	True	25	15	15	0	-1	1	1	3	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	109.4	False
+Vanilla	StarCannon	Gun	ranged	True	True	55	18	18	0	-1	1	1	2	500000	False	1	0	75	RangedDamageClass	83	247.1	False
+Vanilla	BluePhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	RedPhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	GreenPhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	PurplePhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	WhitePhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	YellowPhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	Flamelash	Magic	magic	False	True	36	30	30	0	-1	1	1	3	125000	False	1	21	0	MagicDamageClass	46	99.6	False
+Vanilla	PhoenixBlaster	Gun	ranged	False	True	30	20	20	0	-1	1	1	3	175000	False	1	0	97	RangedDamageClass	83	166.8	False
+Vanilla	Sunfury	Flail	melee	False	True	32	45	45	0	-1	1	1	3	125000	False	1	0	0	MeleeNoSpeedDamageClass	8	47.2	False
+Vanilla	StickyBomb	Thrown	ranged	False	True	0	25	25	0	-1	1	1	0	500	True	9999	0	0	DefaultDamageClass	20	79.8	False
+Vanilla	Sandgun	Gun	ranged	True	True	30	20	20	0	-1	1	1	2	10000	False	1	0	169	RangedDamageClass	83	115.2	False
+Vanilla	DemonScythe	Magic	magic	False	True	28	20	20	0	-1	1	1	3	75000	False	1	14	0	MagicDamageClass	46	115.5	False
+Vanilla	NightsEdge	Broadsword	melee	False	True	45	25	25	0	-1	1	1	3	200000	False	1	0	0	TrueMeleeDamageClass	3	150.3	False
+Vanilla	DarkLance	Spear	melee	False	True	34	22	22	0	-1	1	1	3	125000	False	1	0	0	TrueMeleeDamageClass	8	128.3	False
+Vanilla	Trident	Spear	melee	False	True	20	31	31	0	-1	1	1	1	10000	False	1	0	0	TrueMeleeDamageClass	6	47.2	False
+Vanilla	ThrowingKnife	Thrown	ranged	False	True	12	15	15	0	-1	1	1	0	50	True	9999	0	0	RangedDamageClass	20	15.4	False
+Vanilla	Spear	Spear	melee	False	True	14	31	31	0	-1	1	1	0	1000	False	1	0	0	TrueMeleeDamageClass	6	30.3	False
+Vanilla	Blowpipe	Gun	ranged	True	True	9	25	25	0	-1	1	1	0	10000	False	1	0	283	RangedDamageClass	83	41.8	False
+Vanilla	Glowstick	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	10	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WoodenBoomerang	Boomerang	melee	False	True	16	20	20	0	-1	1	1	1	100	False	1	0	0	MeleeNoSpeedDamageClass	22	43.8	False
+Vanilla	StickyGlowstick	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	20	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PoisonedKnife	Thrown	ranged	False	True	14	15	15	0	-1	1	1	0	60	True	9999	0	0	RangedDamageClass	20	18.0	False
+Vanilla	Excalibur	Broadsword	melee	False	True	170	20	20	0	-1	1	1	5	230000	False	1	0	0	TrueMeleeDamageClass	3	772.4	False
+Vanilla	DaoofPow	Flail	melee	False	True	85	45	45	0	-1	1	1	5	144000	False	1	0	0	MeleeNoSpeedDamageClass	10	136.6	False
+Vanilla	MythrilHalberd	Spear	melee	False	True	65	8	8	0	-1	1	1	4	67500	False	1	0	0	TrueMeleeDamageClass	8	698.7	False
+Vanilla	AdamantiteGlaive	Spear	melee	False	True	66	7	7	0	-1	1	1	4	90000	False	1	0	0	TrueMeleeDamageClass	8	813.6	False
+Vanilla	HolyWater	Thrown	ranged	False	True	20	15	15	0	-1	1	1	3	200	True	9999	0	0	DefaultDamageClass	20	30.5	False
+Vanilla	UnholyWater	Thrown	ranged	False	True	20	15	15	0	-1	1	1	3	100	True	9999	0	0	DefaultDamageClass	20	30.2	False
+Vanilla	BreakerBlade	Broadsword	melee	False	True	160	35	35	0	-1	1	1	4	150000	False	1	0	0	TrueMeleeDamageClass	3	396.9	False
+Vanilla	ClockworkAssaultRifle	Gun	ranged	False	True	24	4	12	14	-1	3	1	4	150000	False	1	0	97	RangedDamageClass	83	340.6	False
+Vanilla	CobaltRepeater	Bow	ranged	False	True	35	17	17	0	-1	1	1	4	60000	False	1	0	40	RangedDamageClass	54	227.3	False
+Vanilla	MythrilRepeater	Bow	ranged	False	True	39	16	16	0	-1	1	1	4	90000	False	1	0	40	RangedDamageClass	54	264.3	False
+Vanilla	DualHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	4	150000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	AdamantiteRepeater	Bow	ranged	False	True	42	14	14	0	-1	1	1	4	120000	False	1	0	40	RangedDamageClass	54	321.6	False
+Vanilla	AdamantiteSword	Broadsword	melee	False	True	72	7	7	0	-1	1	1	4	138000	False	1	0	0	TrueMeleeDamageClass	3	892.1	False
+Vanilla	CobaltSword	Broadsword	melee	False	True	69	9	9	0	-1	1	1	4	69000	False	1	0	0	TrueMeleeDamageClass	3	659.4	False
+Vanilla	MythrilSword	Broadsword	melee	False	True	70	8	8	0	-1	1	1	4	103500	False	1	0	0	TrueMeleeDamageClass	3	756.3	False
+Vanilla	Ruler	Shortsword	melee	False	True	12	5	20	0	-1	4	1	1	1000	False	1	0	0	TrueMeleeDamageClass	4	169.9	False
+Vanilla	MagicalHarp	Magic	magic	False	True	50	12	12	0	-1	1	1	5	200000	False	1	5	0	MagicDamageClass	46	378.0	False
+Vanilla	RainbowRod	Magic	magic	False	True	40	25	25	0	-1	1	1	5	200000	False	1	21	0	MagicDamageClass	46	145.2	False
+Vanilla	IceRod	Magic	magic	False	True	28	6	6	0	-1	1	1	4	500000	False	1	6	0	MagicDamageClass	46	411.0	False
+Vanilla	Flamethrower	Gun	ranged	True	True	21	6	30	0	-1	5	1	5	500000	False	1	0	23	RangedDamageClass	25	200.5	False
+Vanilla	LaserRifle	Magic	magic	False	True	46	12	12	0	-1	1	1	4	150000	False	1	8	0	MagicDamageClass	46	332.8	False
+Vanilla	MagicDagger	Magic	magic	False	True	35	8	8	0	-1	1	1	4	250000	False	1	6	0	MagicDamageClass	46	382.2	False
+Vanilla	CrystalStorm	Magic	magic	False	True	40	7	7	0	-1	1	1	4	200000	False	1	5	0	MagicDamageClass	46	497.8	False
+Vanilla	CursedFlames	Magic	magic	False	True	55	15	15	0	-1	1	1	4	200000	False	1	9	0	MagicDamageClass	46	319.4	False
+Vanilla	Megashark	Gun	ranged	False	True	25	7	7	0	-1	1	1	5	350000	False	1	0	97	RangedDamageClass	83	456.5	False
+Vanilla	Shotgun	Gun	ranged	False	True	36	45	45	0	-1	1	4	4	250000	False	1	0	97	RangedDamageClass	83	357.2	False
+Vanilla	CobaltNaginata	Spear	melee	False	True	60	9	9	0	-1	1	1	4	45000	False	1	0	0	TrueMeleeDamageClass	8	570.5	False
+Vanilla	Gungnir	Spear	melee	False	True	130	22	22	0	-1	1	1	5	230000	False	1	0	0	TrueMeleeDamageClass	8	536.9	False
+Vanilla	LightDisc	Boomerang	melee	False	True	80	14	14	0	-1	1	1	5	750000	False	1	0	0	MeleeNoSpeedDamageClass	22	421.0	False
+Vanilla	HallowedRepeater	Bow	ranged	False	True	50	12	12	0	-1	1	1	4	200000	False	1	0	40	RangedDamageClass	54	435.6	False
+Vanilla	Carrot	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	0	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EbonwoodSword	Broadsword	melee	False	True	11	19	19	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	37.5	False
+Vanilla	EbonwoodBow	Bow	ranged	False	True	8	28	28	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	41.7	False
+Vanilla	RichMahoganySword	Broadsword	melee	False	True	8	19	19	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	27.3	False
+Vanilla	RichMahoganyBow	Bow	ranged	False	True	6	29	29	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	35.8	False
+Vanilla	PearlwoodSword	Broadsword	melee	False	True	45	15	14	0	-1	1	1	4	100	False	1	0	0	TrueMeleeDamageClass	3	237.6	False
+Vanilla	PearlwoodBow	Bow	ranged	False	True	32	20	20	0	-1	1	1	4	100	False	1	0	40	RangedDamageClass	54	166.3	False
+Vanilla	Fish	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	IceBoomerang	Boomerang	melee	False	True	21	25	25	0	-1	1	1	1	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	50.3	False
+Vanilla	Keybrand	Broadsword	melee	False	True	105	20	19	0	-1	1	1	8	200000	False	1	0	0	TrueMeleeDamageClass	3	533.0	False
+Vanilla	Cutlass	Broadsword	melee	False	True	90	11	11	0	-1	1	1	4	180000	False	1	0	0	TrueMeleeDamageClass	3	711.9	False
+Vanilla	TrueExcalibur	Broadsword	melee	False	True	105	18	18	0	-1	1	1	8	500000	False	1	0	0	TrueMeleeDamageClass	3	597.8	False
+Vanilla	TrueNightsEdge	Broadsword	melee	False	True	99	32	32	0	-1	1	1	8	500000	False	1	0	0	MeleeDamageClass	3	317.0	False
+Vanilla	Frostbrand	Broadsword	melee	False	True	110	30	22	0	-1	1	1	5	250000	False	1	0	0	MeleeDamageClass	40	333.5	False
+Vanilla	TacticalShotgun	Gun	ranged	False	True	34	34	34	0	-1	1	6	8	400000	False	1	0	97	RangedDamageClass	83	793.9	False
+Vanilla	Marrow	Bow	ranged	False	True	60	19	19	0	-1	1	1	5	27000	False	1	0	40	RangedDamageClass	54	326.6	False
+Vanilla	UnholyTrident	Magic	magic	False	True	80	17	17	0	-1	1	1	6	500000	False	1	19	0	MagicDamageClass	46	448.4	False
+Vanilla	BeamSword	Broadsword	melee	False	True	131	35	40	0	-1	2	1	4	150000	False	1	0	0	MeleeDamageClass	40	325.0	False
+Vanilla	IceBlade	Broadsword	melee	False	True	17	55	19	0	-1	1	1	1	20000	False	1	0	0	MeleeDamageClass	40	22.8	False
+Vanilla	IceBow	Bow	ranged	False	True	39	14	14	0	-1	1	1	5	250000	False	1	0	40	RangedDamageClass	54	318.3	False
+Vanilla	FrostStaff	Magic	magic	False	True	46	12	12	0	-1	1	1	5	200000	False	1	12	0	MagicDamageClass	46	347.8	False
+Vanilla	AmethystStaff	Magic	magic	False	True	15	37	37	0	-1	1	1	0	2000	False	1	2	0	MagicDamageClass	46	27.5	False
+Vanilla	TopazStaff	Magic	magic	False	True	16	36	36	0	-1	1	1	0	3000	False	1	2	0	MagicDamageClass	46	30.4	False
+Vanilla	SapphireStaff	Magic	magic	False	True	25	34	34	0	-1	1	1	1	10000	False	1	6	0	MagicDamageClass	46	53.8	False
+Vanilla	EmeraldStaff	Magic	magic	False	True	27	32	32	0	-1	1	1	1	15000	False	1	6	0	MagicDamageClass	46	62.1	False
+Vanilla	RubyStaff	Magic	magic	False	True	21	28	28	0	-1	1	1	1	20000	False	1	7	0	MagicDamageClass	46	55.4	False
+Vanilla	DiamondStaff	Magic	magic	False	True	23	26	26	0	-1	1	1	2	30000	False	1	8	0	MagicDamageClass	46	69.0	False
+Vanilla	Seaweed	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MushroomSpear	Spear	melee	False	True	100	32	32	0	-1	1	1	7	700000	False	1	0	0	TrueMeleeDamageClass	8	310.1	False
+Vanilla	TerraBlade	Broadsword	melee	False	True	90	18	18	0	-1	1	1	8	1000000	False	1	0	0	MeleeDamageClass	40	516.0	False
+Vanilla	GrenadeLauncher	Gun	ranged	True	True	105	20	20	0	-1	1	1	8	350000	False	1	0	771	RangedDamageClass	83	740.3	False
+Vanilla	RocketLauncher	Gun	ranged	True	True	60	30	30	0	-1	1	1	8	400000	False	1	0	771	RangedDamageClass	83	340.8	False
+Vanilla	ProximityMineLauncher	Gun	ranged	True	True	80	50	50	0	-1	1	1	8	350000	False	1	0	771	RangedDamageClass	83	245.1	False
+Vanilla	Clentaminator	Unsupported	none	False	False	-1	5	30	0	-1	6	1	5	2000000	False	1	0	780	DefaultDamageClass	3	0.0	False
+Vanilla	NettleBurst	Magic	magic	False	True	65	25	25	0	-1	1	1	7	200000	False	1	12	0	MagicDamageClass	46	254.6	False
+Vanilla	BloodButcherer	Broadsword	melee	False	True	22	25	25	0	-1	1	1	1	13500	False	1	0	0	TrueMeleeDamageClass	3	64.7	False
+Vanilla	TendonBow	Bow	ranged	False	True	17	30	30	0	-1	1	1	1	18000	False	1	0	40	RangedDamageClass	54	66.4	False
+Vanilla	TheUndertaker	Gun	ranged	False	True	15	20	20	0	-1	1	1	1	75000	False	1	0	97	RangedDamageClass	83	94.1	False
+Vanilla	TheMeatball	Flail	melee	False	True	24	45	45	0	-1	1	1	1	27000	False	1	0	0	MeleeNoSpeedDamageClass	8	31.7	False
+Vanilla	TheRottedFork	Spear	melee	False	True	20	31	31	0	-1	1	1	1	75000	False	1	0	0	TrueMeleeDamageClass	6	48.6	False
+Vanilla	BeachBall	Unsupported	none	False	False	-1	20	20	0	-1	1	1	0	20	True	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CactusSword	Broadsword	melee	False	True	10	30	30	0	-1	1	1	0	1800	False	1	0	0	TrueMeleeDamageClass	3	22.6	False
+Vanilla	CoinGun	Unsupported	none	False	False	0	12	12	0	-1	1	1	6	300000	False	1	0	71	RangedDamageClass	3	0.0	False
+Vanilla	ShadewoodSword	Broadsword	melee	False	True	11	19	19	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	37.5	False
+Vanilla	ShadewoodBow	Bow	ranged	False	True	8	28	28	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	41.7	False
+Vanilla	Cannonball	Unsupported	none	False	False	300	20	20	0	-1	1	1	0	1500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FlareGun	Gun	ranged	True	True	2	18	18	0	-1	1	1	1	5000	False	1	0	931	DefaultDamageClass	83	8.1	False
+Vanilla	WebSlinger	Unsupported	none	False	False	0	0	0	0	-1	1	1	2	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Umbrella	Unsupported	none	False	False	10	22	22	0	-1	1	1	1	10000	False	1	0	0	TrueMeleeDamageClass	3	0.0	False
+Vanilla	Boomstick	Gun	ranged	False	True	11	40	40	0	-1	1	3	2	100000	False	1	0	97	RangedDamageClass	83	124.7	False
+Vanilla	RopeCoil	Unsupported	none	False	False	0	20	20	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Blowgun	Gun	ranged	True	True	40	35	35	0	-1	1	1	3	50000	False	1	0	283	RangedDamageClass	83	107.9	False
+Vanilla	EnchantedSword	Broadsword	melee	False	True	23	45	20	0	-1	1	1	2	150000	False	1	0	0	MeleeDamageClass	40	40.7	False
+Vanilla	EatersBone	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	375000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ConfettiGun	Unsupported	none	False	False	0	15	15	0	-1	1	1	0	100	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	BeeGun	Magic	magic	False	True	11	12	12	0	-1	1	1	2	100000	False	1	5	0	MagicDamageClass	46	72.6	False
+Vanilla	PossessedHatchet	Boomerang	melee	False	True	135	14	14	0	-1	1	1	7	350000	False	1	0	0	MeleeNoSpeedDamageClass	22	759.9	False
+Vanilla	BeeKeeper	Broadsword	melee	False	True	30	20	19	0	-1	1	1	3	100000	False	1	0	0	TrueMeleeDamageClass	3	124.2	False
+Vanilla	Beenade	Thrown	ranged	False	True	12	22	15	0	-1	1	1	0	2500	True	9999	0	0	RangedDamageClass	20	11.2	False
+Vanilla	WaspGun	Magic	magic	False	True	41	18	18	0	-1	1	1	8	500000	False	1	10	0	MagicDamageClass	46	233.4	False
+Vanilla	PiranhaGun	Magic	ranged	True	True	38	30	30	0	-1	1	1	8	1000000	False	1	0	0	RangedDamageClass	46	130.7	False
+Vanilla	PygmyStaff	Summon	summon	False	True	60	28	28	2	-1	1	1	7	350000	False	1	10	0	SummonDamageClass	36	342.8	False
+Vanilla	BoneSword	Broadsword	melee	False	True	25	22	22	0	-1	1	1	3	9000	False	1	0	0	TrueMeleeDamageClass	3	91.2	False
+Vanilla	SmokeBomb	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	20	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BoneKey	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Nectar	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	150000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	TikiTotem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	2000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	LizardEgg	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	LeafBlower	Magic	magic	False	True	61	7	7	0	-1	1	1	7	300000	False	1	5	0	MagicDamageClass	46	857.0	False
+Vanilla	ParrotCracker	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	3750000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StrangeGlowingMushroom	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	450000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Seedling	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WispinaBottle	Unsupported	none	False	False	0	20	20	0	-1	1	1	8	275000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PalladiumSword	Broadsword	melee	False	True	150	22	21	0	-1	1	1	4	92000	False	1	0	0	TrueMeleeDamageClass	3	588.5	False
+Vanilla	PalladiumPike	Spear	melee	False	True	120	27	27	0	-1	1	1	4	60000	False	1	0	0	TrueMeleeDamageClass	8	381.6	False
+Vanilla	PalladiumRepeater	Bow	ranged	False	True	48	22	22	0	-1	1	1	4	80000	False	1	0	40	RangedDamageClass	54	227.2	False
+Vanilla	OrichalcumSword	Broadsword	melee	False	True	175	22	21	0	-1	1	1	4	126500	False	1	0	0	TrueMeleeDamageClass	3	689.2	False
+Vanilla	OrichalcumHalberd	Spear	melee	False	True	128	25	25	0	-1	1	1	4	82500	False	1	0	0	TrueMeleeDamageClass	8	441.3	False
+Vanilla	OrichalcumRepeater	Bow	ranged	False	True	50	19	19	0	-1	1	1	4	110000	False	1	0	40	RangedDamageClass	54	273.2	False
+Vanilla	TitaniumSword	Broadsword	melee	False	True	185	20	19	0	-1	1	1	4	161000	False	1	0	0	TrueMeleeDamageClass	3	803.8	False
+Vanilla	TitaniumTrident	Spear	melee	False	True	144	23	23	0	-1	1	1	4	105000	False	1	0	0	TrueMeleeDamageClass	8	541.3	False
+Vanilla	TitaniumRepeater	Bow	ranged	False	True	52	17	17	0	-1	1	1	4	140000	False	1	0	40	RangedDamageClass	54	316.4	False
+Vanilla	ChlorophyteClaymore	Broadsword	melee	False	True	180	45	45	0	-1	1	1	7	276000	False	1	0	0	MeleeDamageClass	40	393.0	False
+Vanilla	ChlorophyteSaber	Broadsword	melee	False	True	92	10	10	0	-1	1	1	7	276000	False	1	0	0	MeleeDamageClass	40	904.0	False
+Vanilla	ChlorophytePartisan	Spear	melee	False	True	80	23	23	0	-1	1	1	7	180000	False	1	0	0	MeleeDamageClass	8	340.2	False
+Vanilla	ChlorophyteShotbow	Bow	ranged	False	True	34	19	19	0	-1	1	1	7	240000	False	1	0	40	RangedDamageClass	54	227.2	False
+Vanilla	AmethystHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	TopazHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SapphireHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EmeraldHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	RubyHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DiamondHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	AmberMosquito	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	375000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	NimbusRod	Magic	magic	False	True	30	22	22	0	-1	1	1	6	175000	False	1	30	0	MagicDamageClass	46	128.4	False
+Vanilla	SniperRifle	Gun	ranged	False	True	185	36	36	0	-1	1	1	8	400000	False	1	0	97	RangedDamageClass	83	553.8	False
+Vanilla	VenusMagnum	Gun	ranged	False	True	50	9	9	0	-1	1	1	7	250000	False	1	0	97	RangedDamageClass	83	654.4	False
+Vanilla	CrimsonRod	Magic	magic	False	True	12	24	24	0	-1	1	1	1	75000	False	1	30	0	MagicDamageClass	46	37.7	False
+Vanilla	Stynger	Gun	ranged	True	True	75	22	22	0	-1	1	1	7	350000	False	1	0	1261	RangedDamageClass	83	335.8	False
+Vanilla	FlowerPow	Flail	melee	False	True	80	40	40	0	-1	1	1	7	300000	False	1	0	0	MeleeNoSpeedDamageClass	11	157.4	False
+Vanilla	RainbowGun	Magic	magic	False	True	60	40	40	0	-1	1	1	8	1000000	False	1	20	0	MagicDamageClass	46	154.8	False
+Vanilla	FlowerofFrost	Magic	magic	False	True	60	12	12	0	-1	1	1	5	250000	False	1	11	0	MagicDamageClass	46	454.8	False
+Vanilla	Uzi	Gun	ranged	False	True	30	8	8	0	-1	1	1	7	350000	False	1	0	97	RangedDamageClass	83	492.5	False
+Vanilla	MagnetSphere	Magic	magic	False	True	48	20	20	0	-1	1	1	8	500000	False	1	14	0	MagicDamageClass	46	245.9	False
+Vanilla	SkeletronHand	Unsupported	none	False	False	-1	0	0	0	-1	1	1	2	45000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	HeatRay	Magic	magic	False	True	90	10	10	0	-1	1	1	7	350000	False	1	8	0	MagicDamageClass	46	886.6	False
+Vanilla	StaffofEarth	Magic	magic	False	True	150	24	24	0	-1	1	1	7	350000	False	1	18	0	MagicDamageClass	46	615.7	False
+Vanilla	GolemFist	Unsupported	none	False	False	150	24	24	0	-1	1	1	7	350000	False	1	0	0	MeleeNoSpeedDamageClass	3	0.0	False
+Vanilla	ZombieArm	Broadsword	melee	False	True	15	22	22	0	-1	1	1	0	2000	False	1	0	0	TrueMeleeDamageClass	3	46.3	False
+Vanilla	IceSickle	Broadsword	melee	False	True	75	25	25	0	-1	1	1	5	250000	False	1	0	0	MeleeDamageClass	40	272.9	False
+Vanilla	PoisonStaff	Magic	magic	False	True	57	36	36	0	-1	1	1	6	200000	False	1	22	0	MagicDamageClass	46	149.3	False
+Vanilla	SlimeStaff	Summon	summon	False	True	8	28	28	2	-1	1	1	4	100000	False	1	10	0	SummonDamageClass	36	31.8	False
+Vanilla	EyeSpring	Unsupported	none	False	False	0	20	20	0	-1	1	1	6	150000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ToySled	Unsupported	none	False	False	0	20	20	0	-1	1	1	6	125000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BookofSkulls	Magic	magic	False	True	29	26	26	0	-1	1	1	2	75000	False	1	18	0	MagicDamageClass	46	88.0	False
+Vanilla	KOCannon	Unsupported	none	False	False	120	28	28	0	-1	1	1	4	175000	False	1	0	0	MeleeNoSpeedDamageClass	3	0.0	False
+Vanilla	SnowballCannon	Gun	ranged	True	True	10	19	19	0	-1	1	1	1	100000	False	1	0	949	RangedDamageClass	83	39.8	False
+Vanilla	Bananarang	Boomerang	melee	False	True	60	11	11	0	-1	1	1	5	600000	False	1	0	0	MeleeNoSpeedDamageClass	22	400.9	False
+Vanilla	ChainKnife	Unsupported	none	False	False	16	20	20	0	-1	1	1	1	12500	False	1	0	0	MeleeNoSpeedDamageClass	3	0.0	False
+Vanilla	DeathSickle	Broadsword	melee	False	True	65	25	24	0	-1	1	1	6	375000	False	1	0	0	MeleeDamageClass	40	246.9	False
+Vanilla	GoldenShower	Magic	magic	False	True	30	6	18	0	-1	3	1	4	200000	False	1	7	0	MagicDamageClass	46	435.6	False
+Vanilla	ExplosiveBunny	Unsupported	none	False	False	350	20	20	0	-1	1	1	0	3500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ShadowbeamStaff	Magic	magic	False	True	100	15	15	0	-1	1	1	8	300000	False	1	7	0	MagicDamageClass	46	679.6	False
+Vanilla	InfernoFork	Magic	magic	False	True	83	30	30	0	-1	1	1	8	300000	False	1	18	0	MagicDamageClass	46	282.0	False
+Vanilla	SpectreStaff	Magic	magic	False	True	72	24	24	0	-1	1	1	8	300000	False	1	15	0	MagicDamageClass	46	305.8	False
+Vanilla	PaladinsHammer	Boomerang	melee	False	True	95	15	15	0	-1	1	1	8	500000	False	1	0	0	MeleeNoSpeedDamageClass	22	519.2	False
+Vanilla	SDMG	Gun	ranged	False	True	85	5	5	0	-1	1	1	10	750000	False	1	0	97	RangedDamageClass	83	2091.9	False
+Vanilla	VampireKnives	ThrownMelee	melee	False	True	29	16	16	0	-1	1	5	8	1000000	False	1	0	0	MeleeNoSpeedDamageClass	14	935.2	False
+Vanilla	ScourgeoftheCorruptor	ThrownMelee	melee	False	True	63	20	20	0	-1	1	1	8	1000000	False	1	0	0	MeleeNoSpeedDamageClass	14	325.1	False
+Vanilla	StaffoftheFrostHydra	Sentry	summon	False	True	100	30	30	0	-1	1	1	8	1000000	False	1	20	0	SummonDamageClass	36	258.0	False
+Vanilla	CandyCornRifle	Gun	ranged	True	True	80	9	9	0	-1	1	1	8	500000	False	1	0	1783	RangedDamageClass	83	910.9	False
+Vanilla	JackOLanternLauncher	Gun	ranged	True	True	65	25	25	0	-1	1	1	8	500000	False	1	0	1785	RangedDamageClass	83	266.4	False
+Vanilla	Sickle	Broadsword	melee	False	True	9	24	23	0	-1	1	1	0	6000	False	1	0	0	TrueMeleeDamageClass	3	25.9	False
+Vanilla	SpiderEgg	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MagicalPumpkinSeed	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BatHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	3	75000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BatScepter	Magic	magic	False	True	50	12	12	0	-1	1	1	8	500000	False	1	6	0	MagicDamageClass	46	427.0	False
+Vanilla	RavenStaff	Summon	summon	False	True	36	28	28	2	-1	1	1	8	500000	False	1	10	0	SummonDamageClass	36	228.7	False
+Vanilla	RottenEgg	Thrown	ranged	False	True	13	19	19	0	-1	1	1	0	0	True	9999	0	0	RangedDamageClass	20	12.3	False
+Vanilla	UnluckyYarn	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BloodyMachete	Boomerang	melee	False	True	24	15	15	0	-1	1	1	2	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	100.5	False
+Vanilla	TheHorsemansBlade	Broadsword	melee	False	True	150	26	26	0	-1	1	1	8	500000	False	1	0	0	TrueMeleeDamageClass	3	591.2	False
+Vanilla	BladedGlove	Broadsword	melee	False	True	14	8	7	0	-1	1	1	2	50000	False	1	0	0	TrueMeleeDamageClass	3	137.3	False
+Vanilla	SpookyHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	7	200000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StakeLauncher	Gun	ranged	True	True	75	12	12	0	-1	1	1	8	500000	False	1	0	1836	RangedDamageClass	83	640.5	False
+Vanilla	CursedSapling	Unsupported	none	False	False	-1	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	RedRyder	Gun	ranged	False	True	24	38	38	0	-1	1	1	1	100000	False	1	0	97	RangedDamageClass	83	67.6	False
+Vanilla	CandyCaneSword	Broadsword	melee	False	True	19	27	27	0	-1	1	1	1	13500	False	1	0	0	TrueMeleeDamageClass	3	51.7	False
+Vanilla	ElfMelter	Gun	ranged	True	True	53	6	30	0	-1	5	1	8	500000	False	1	0	23	RangedDamageClass	34	769.4	False
+Vanilla	StarAnise	Thrown	ranged	False	True	14	15	15	0	-1	1	1	0	25	True	9999	0	0	RangedDamageClass	20	17.8	False
+Vanilla	CandyCaneHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	7	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ChristmasHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	7	200000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FruitcakeChakram	Boomerang	melee	False	True	19	15	15	0	-1	1	1	1	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	75.9	False
+Vanilla	DogWhistle	Unsupported	none	False	False	-1	20	20	0	-1	1	1	3	0	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ChristmasTreeSword	Broadsword	melee	False	True	80	30	30	0	-1	1	1	8	500000	False	1	0	0	MeleeDamageClass	40	273.3	False
+Vanilla	ChainGun	Gun	ranged	False	True	35	4	4	0	-1	1	1	8	450000	False	1	0	97	RangedDamageClass	83	1151.6	False
+Vanilla	Razorpine	Magic	magic	False	True	40	8	8	0	-1	1	1	8	450000	False	1	5	0	MagicDamageClass	46	511.8	False
+Vanilla	BlizzardStaff	Magic	magic	False	True	41	5	10	0	-1	2	1	8	450000	False	1	9	0	MagicDamageClass	46	839.4	False
+Vanilla	SnowmanCannon	Gun	ranged	True	True	67	15	15	0	-1	1	1	8	450000	False	1	0	771	RangedDamageClass	83	730.2	False
+Vanilla	NorthPole	Spear	melee	False	True	80	30	30	0	-1	1	1	7	450000	False	1	0	0	MeleeDamageClass	7	263.4	False
+Vanilla	BabyGrinchMischiefWhistle	Unsupported	none	False	False	-1	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	VenomStaff	Magic	magic	False	True	44	30	30	0	-1	1	1	7	350000	False	1	25	0	MagicDamageClass	46	144.5	False
+Vanilla	PulseBow	Bow	ranged	False	True	80	20	20	0	-1	1	1	8	450000	False	1	0	40	RangedDamageClass	54	460.7	False
+Vanilla	Revolver	Gun	ranged	False	True	20	22	22	0	-1	1	1	2	100000	False	1	0	97	RangedDamageClass	83	108.0	False
+Vanilla	Gatligator	Gun	ranged	False	True	21	6	6	0	-1	1	1	4	350000	False	1	0	97	RangedDamageClass	83	453.1	False
+Vanilla	WaterGun	Unsupported	none	False	False	0	20	20	0	-1	1	1	0	15000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Katana	Broadsword	melee	False	True	18	100	19	0	-1	1	1	1	100000	False	1	0	0	TrueMeleeDamageClass	3	13.6	False
+Vanilla	WoodFishingPole	Unsupported	none	False	False	-1	8	8	0	-1	1	1	0	300	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ReinforcedFishingPole	Unsupported	none	False	False	-1	8	8	0	-1	1	1	0	12000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FiberglassFishingPole	Unsupported	none	False	False	-1	8	8	0	-1	1	1	2	50000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FisherofSouls	Unsupported	none	False	False	-1	8	8	0	-1	1	1	1	120000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GoldenFishingRod	Unsupported	none	False	False	-1	8	8	0	-1	1	1	3	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MechanicsRod	Unsupported	none	False	False	-1	8	8	0	-1	1	1	2	200000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SittingDucksFishingRod	Unsupported	none	False	False	-1	8	8	0	-1	1	1	2	350000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PurpleClubberfish	Broadsword	melee	False	True	35	35	34	0	-1	1	1	1	50000	False	1	0	0	TrueMeleeDamageClass	3	74.9	False
+Vanilla	ObsidianSwordfish	Spear	melee	False	True	70	20	20	0	-1	1	1	7	50000	False	1	0	0	TrueMeleeDamageClass	6	337.7	False
+Vanilla	Swordfish	Spear	melee	False	True	21	20	20	0	-1	1	1	2	25000	False	1	0	0	TrueMeleeDamageClass	6	81.6	False
+Vanilla	LovePotion	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	200	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StinkPotion	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	200	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FishHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	3	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	HornetStaff	Summon	summon	False	True	12	22	22	2	-1	1	1	3	35000	False	1	10	0	SummonDamageClass	36	41.2	False
+Vanilla	ImpStaff	Summon	summon	False	True	17	36	36	2	-1	1	1	3	27000	False	1	10	0	SummonDamageClass	36	58.1	False
+Vanilla	QueenSpiderStaff	Sentry	summon	False	True	26	30	30	0	-1	1	1	4	250000	False	1	10	0	SummonDamageClass	36	56.8	False
+Vanilla	ZephyrFish	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	150000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Fleshcatcher	Unsupported	none	False	False	-1	8	8	0	-1	1	1	1	156000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	HotlineFishingHook	Unsupported	none	False	False	-1	8	8	0	-1	1	1	3	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Anchor	Boomerang	melee	False	True	107	20	20	0	-1	1	1	3	50000	False	1	0	0	MeleeNoSpeedDamageClass	22	351.3	False
+Vanilla	PalmWoodBow	Bow	ranged	False	True	6	29	29	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	35.8	False
+Vanilla	PalmWoodSword	Broadsword	melee	False	True	8	19	19	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	27.3	False
+Vanilla	OpticStaff	Summon	summon	False	True	24	36	36	2	-1	1	1	5	100000	False	1	10	0	SummonDamageClass	36	108.0	False
+Vanilla	SpiderStaff	Summon	summon	False	True	26	36	36	2	-1	1	1	4	50000	False	1	10	0	SummonDamageClass	36	102.5	False
+Vanilla	PirateStaff	Summon	summon	False	True	40	36	36	2	-1	1	1	5	50000	False	1	10	0	SummonDamageClass	36	178.6	False
+Vanilla	SlimeHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	3	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StickyGrenade	Thrown	ranged	False	True	60	45	45	0	-1	1	1	0	75	True	9999	0	0	RangedDamageClass	20	25.8	False
+Vanilla	TartarSauce	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MolotovCocktail	Unsupported	none	False	False	23	40	40	0	-1	1	1	1	500	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	FalconBlade	Broadsword	melee	False	True	25	13	13	0	-1	1	1	4	10000	False	1	0	0	TrueMeleeDamageClass	3	161.5	False
+Vanilla	SlimeGun	Unsupported	none	False	False	0	12	11	0	-1	1	1	0	15000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Flairon	Magic	melee	True	True	66	20	20	0	-1	1	1	8	250000	False	1	0	0	MeleeNoSpeedDamageClass	46	335.8	False
+Vanilla	TempestStaff	Summon	summon	False	True	50	36	36	2	-1	1	1	8	250000	False	1	10	0	SummonDamageClass	36	315.4	False
+Vanilla	RazorbladeTyphoon	Magic	magic	False	True	103	40	40	0	-1	1	1	8	250000	False	1	20	0	MagicDamageClass	46	262.0	False
+Vanilla	BubbleGun	Magic	magic	False	True	70	9	9	0	-1	1	3	8	250000	False	1	5	0	MagicDamageClass	46	2374.3	False
+Vanilla	Tsunami	Bow	ranged	False	True	45	24	24	0	-1	1	5	8	250000	False	1	0	40	RangedDamageClass	54	1165.9	False
+Vanilla	BorealWoodSword	Broadsword	melee	False	True	8	20	20	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	25.9	False
+Vanilla	BorealWoodBow	Bow	ranged	False	True	6	29	29	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	35.8	False
+Vanilla	XenoStaff	Summon	summon	False	True	36	36	36	2	-1	1	1	8	500000	False	1	10	0	SummonDamageClass	36	228.7	False
+Vanilla	MeteorStaff	Magic	magic	False	True	50	10	10	0	-1	1	1	5	100000	False	1	9	0	MagicDamageClass	46	450.0	False
+Vanilla	LaserMachinegun	HeldWeapon	magic	False	True	49	20	20	0	-1	1	1	8	500000	False	1	6	0	MagicDamageClass	46	1004.3	False
+Vanilla	ElectrosphereLauncher	Gun	ranged	True	True	40	12	12	0	-1	1	1	8	500000	False	1	0	771	RangedDamageClass	83	683.2	False
+Vanilla	Xenopopper	Gun	ranged	False	True	45	21	21	0	-1	1	4	8	500000	False	1	0	97	RangedDamageClass	83	1073.6	False
+Vanilla	AntiGravityHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	7	125000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	InfluxWaver	Broadsword	melee	False	True	80	25	25	0	-1	1	1	8	500000	False	1	0	0	MeleeDamageClass	40	327.9	False
+Vanilla	ChargedBlasterCannon	HeldWeapon	magic	False	True	100	20	20	0	-1	1	1	8	500000	False	1	14	0	MagicDamageClass	46	1138.6	False
+Vanilla	ViciousPowder	Unsupported	none	False	False	0	15	15	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BeesKnees	Bow	ranged	False	True	21	35	35	0	-1	1	1	3	100000	False	1	0	40	RangedDamageClass	54	73.3	False
+Vanilla	StickyDynamite	Thrown	ranged	False	True	-1	40	40	0	-1	1	1	1	2000	True	9999	0	0	DefaultDamageClass	20	134.1	False
+Vanilla	SpelunkerGlowstick	Unsupported	none	False	False	-1	15	15	0	-1	1	1	1	150	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	VineRopeCoil	Unsupported	none	False	False	0	20	20	0	-1	1	1	0	0	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SoulDrain	Magic	magic	False	True	38	12	12	0	-1	1	1	5	400000	False	1	10	0	MagicDamageClass	46	289.6	False
+Vanilla	DartPistol	Gun	ranged	True	True	28	22	22	0	-1	1	1	5	400000	False	1	0	283	RangedDamageClass	83	141.3	False
+Vanilla	DartRifle	Gun	ranged	True	True	52	38	38	0	-1	1	1	5	400000	False	1	0	283	RangedDamageClass	83	139.6	False
+Vanilla	ChainGuillotines	Unsupported	none	False	False	75	14	14	0	-1	1	1	5	400000	False	1	0	0	MeleeNoSpeedDamageClass	3	0.0	False
+Vanilla	FetidBaghnakhs	Broadsword	melee	False	True	60	8	7	0	-1	1	1	5	400000	False	1	0	0	TrueMeleeDamageClass	3	685.8	False
+Vanilla	ClingerStaff	Magic	magic	False	True	43	24	24	0	-1	1	1	5	400000	False	1	40	0	MagicDamageClass	46	163.8	False
+Vanilla	Seedler	Broadsword	melee	False	True	45	23	22	0	-1	1	1	5	500000	False	1	0	0	MeleeDamageClass	40	179.4	False
+Vanilla	HellwingBow	Bow	ranged	False	True	22	13	13	0	-1	1	1	3	125000	False	1	0	40	RangedDamageClass	54	204.4	False
+Vanilla	TendonHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	6	300000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ThornHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	6	300000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	IlluminantHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	6	300000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WormHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	6	300000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DaedalusStormbow	Bow	ranged	False	True	30	19	19	0	-1	1	1	6	400000	False	1	0	40	RangedDamageClass	54	200.1	False
+Vanilla	FlyingKnife	Magic	melee	True	True	45	15	15	0	-1	1	1	6	400000	False	1	0	0	MeleeNoSpeedDamageClass	46	285.1	False
+Vanilla	MagicLantern	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CrystalVileShard	Magic	magic	False	True	35	33	33	0	-1	1	1	5	400000	False	1	13	0	MagicDamageClass	46	97.0	False
+Vanilla	ShadowFlameBow	Bow	ranged	False	True	55	20	20	0	-1	1	1	5	100000	False	1	0	40	RangedDamageClass	54	292.5	False
+Vanilla	ShadowFlameHexDoll	Magic	magic	False	True	40	7	21	0	-1	3	1	5	100000	False	1	6	0	MagicDamageClass	46	514.3	False
+Vanilla	ShadowFlameKnife	ThrownMelee	melee	False	True	43	12	12	0	-1	1	1	5	100000	False	1	0	0	MeleeNoSpeedDamageClass	14	322.5	False
+Vanilla	BoneRattle	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	375000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CrimsonHeart	Unsupported	none	False	False	0	20	20	0	-1	1	1	1	75000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Meowmere	Broadsword	melee	False	True	200	14	13	0	-1	1	1	10	1000000	False	1	0	0	MeleeDamageClass	40	1577.1	False
+Vanilla	StarWrath	Broadsword	melee	False	True	170	16	15	0	-1	1	1	10	1000000	False	1	0	0	MeleeDamageClass	40	1173.0	False
+Vanilla	WandofSparking	Magic	magic	False	True	14	26	26	0	-1	1	1	1	10000	False	1	2	0	MagicDamageClass	46	39.4	False
+Vanilla	SilkRopeCoil	Unsupported	none	False	False	0	20	20	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WebRopeCoil	Unsupported	none	False	False	0	20	20	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Javelin	Thrown	ranged	False	True	17	24	24	0	-1	1	1	0	25	True	9999	0	0	RangedDamageClass	20	13.5	False
+Vanilla	ToxicFlask	Magic	magic	False	True	62	33	33	0	-1	1	1	8	500000	False	1	30	0	MagicDamageClass	46	192.5	False
+Vanilla	PsychoKnife	Broadsword	melee	False	True	200	11	11	0	-1	1	1	8	500000	False	1	0	0	TrueMeleeDamageClass	3	1863.2	False
+Vanilla	NailGun	Gun	ranged	True	True	77	15	15	0	-1	1	1	8	500000	False	1	0	3108	RangedDamageClass	83	526.1	False
+Vanilla	BouncyGlowstick	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	10	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BouncyBomb	Thrown	ranged	False	True	0	25	25	0	-1	1	1	0	400	True	9999	0	0	DefaultDamageClass	20	79.5	False
+Vanilla	BouncyGrenade	Thrown	ranged	False	True	65	40	40	0	-1	1	1	0	100	True	9999	0	0	RangedDamageClass	20	31.6	False
+Vanilla	BombFish	Thrown	ranged	False	True	0	25	25	0	-1	1	1	1	1000	True	9999	0	0	DefaultDamageClass	20	85.0	False
+Vanilla	FrostDaggerfish	Thrown	ranged	False	True	17	13	13	0	-1	1	1	1	80	True	9999	0	0	RangedDamageClass	20	26.7	False
+Vanilla	CrystalSerpent	Magic	magic	False	True	40	29	29	0	-1	1	1	5	200000	False	1	9	0	MagicDamageClass	46	125.1	False
+Vanilla	Toxikarp	Magic	ranged	True	True	43	9	9	0	-1	1	1	5	200000	False	1	0	0	RangedDamageClass	46	433.5	False
+Vanilla	Bladetongue	Broadsword	melee	False	True	120	22	22	0	-1	1	1	5	200000	False	1	0	0	TrueMeleeDamageClass	3	494.8	False
+Vanilla	MoneyTrough	Unsupported	none	False	False	-1	28	28	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DeadlySphereStaff	Summon	summon	False	True	50	36	36	2	-1	1	1	8	500000	False	1	10	0	SummonDamageClass	36	317.7	False
+Vanilla	SlapHand	Broadsword	melee	False	True	120	20	19	0	-1	1	1	4	250000	False	1	0	0	TrueMeleeDamageClass	3	524.1	False
+Vanilla	Code1	Yoyo	melee	False	True	21	25	25	0	-1	1	1	2	50000	False	1	0	0	MeleeNoSpeedDamageClass	20	52.7	False
+Vanilla	MedusaHead	Magic	magic	False	True	75	20	20	10	-1	1	1	4	200000	False	1	15	0	MagicDamageClass	18	217.8	False
+Vanilla	WoodYoyo	Yoyo	melee	False	True	9	25	25	0	-1	1	1	0	500	False	1	0	0	MeleeNoSpeedDamageClass	15	19.1	False
+Vanilla	CorruptYoyo	Yoyo	melee	False	True	20	25	25	0	-1	1	1	1	50000	False	1	0	0	MeleeNoSpeedDamageClass	18	47.9	False
+Vanilla	CrimsonYoyo	Yoyo	melee	False	True	20	25	25	0	-1	1	1	1	50000	False	1	0	0	MeleeNoSpeedDamageClass	18	47.9	False
+Vanilla	JungleYoyo	Yoyo	melee	False	True	18	25	25	0	-1	1	1	3	65000	False	1	0	0	MeleeNoSpeedDamageClass	20	47.4	False
+Vanilla	Cascade	Yoyo	melee	False	True	31	25	25	0	-1	1	1	3	90000	False	1	0	0	MeleeNoSpeedDamageClass	24	82.0	False
+Vanilla	Chik	Yoyo	melee	False	True	39	25	25	0	-1	1	1	4	200000	False	1	0	0	MeleeNoSpeedDamageClass	25	108.7	False
+Vanilla	Code2	Yoyo	melee	False	True	43	25	25	0	-1	1	1	5	250000	False	1	0	0	MeleeNoSpeedDamageClass	26	125.2	False
+Vanilla	Rally	Yoyo	melee	False	True	18	25	25	0	-1	1	1	1	25000	False	1	0	0	MeleeNoSpeedDamageClass	17	42.7	False
+Vanilla	Yelets	Yoyo	melee	False	True	53	25	25	0	-1	1	1	7	250000	False	1	0	0	MeleeNoSpeedDamageClass	25	166.5	False
+Vanilla	RedsYoyo	Yoyo	melee	False	True	48	25	25	0	-1	1	1	9	200000	False	1	0	0	MeleeNoSpeedDamageClass	26	161.5	False
+Vanilla	ValkyrieYoyo	Yoyo	melee	False	True	48	25	25	0	-1	1	1	9	200000	False	1	0	0	MeleeNoSpeedDamageClass	26	161.5	False
+Vanilla	Amarok	Yoyo	melee	False	True	43	25	25	0	-1	1	1	4	200000	False	1	0	0	MeleeNoSpeedDamageClass	26	119.9	False
+Vanilla	HelFire	Yoyo	melee	False	True	41	25	25	0	-1	1	1	4	200000	False	1	0	0	MeleeNoSpeedDamageClass	22	114.3	False
+Vanilla	Kraken	Yoyo	melee	False	True	65	25	25	0	-1	1	1	8	550000	False	1	0	0	MeleeNoSpeedDamageClass	26	213.4	False
+Vanilla	TheEyeOfCthulhu	Yoyo	melee	False	True	80	25	25	0	-1	1	1	8	625000	False	1	0	0	MeleeNoSpeedDamageClass	26	262.9	False
+Vanilla	FormatC	Yoyo	melee	False	True	39	25	25	0	-1	1	1	3	200000	False	1	0	0	MeleeNoSpeedDamageClass	24	104.2	False
+Vanilla	Gradient	Yoyo	melee	False	True	39	25	25	0	-1	1	1	3	200000	False	1	0	0	MeleeNoSpeedDamageClass	24	104.2	False
+Vanilla	Valor	Yoyo	melee	False	True	28	25	25	0	-1	1	1	3	87500	False	1	0	0	MeleeNoSpeedDamageClass	25	74.1	False
+Vanilla	DyeTradersScimitar	Broadsword	melee	False	True	24	18	18	0	-1	1	1	2	25000	False	1	0	0	TrueMeleeDamageClass	3	103.7	False
+Vanilla	PainterPaintballGun	Magic	ranged	True	True	12	9	24	0	-1	3	1	2	25000	False	1	0	0	RangedDamageClass	46	103.7	False
+Vanilla	TaxCollectorsStickOfDoom	Broadsword	melee	False	True	80	10	10	0	-1	1	1	2	25000	False	1	0	0	TrueMeleeDamageClass	3	622.0	False
+Vanilla	StylistKilLaKillScissorsIWish	Broadsword	melee	False	True	21	12	12	0	-1	1	1	2	25000	False	1	0	0	TrueMeleeDamageClass	3	136.1	False
+Vanilla	Arkhalis	HeldWeapon	melee	False	True	25	15	25	0	-1	2	1	9	250000	False	1	0	0	TrueMeleeNoSpeedDamageClass	7	70.2	False
+Vanilla	AmberStaff	Magic	magic	False	True	21	18	36	15	-1	2	1	1	20000	False	1	7	0	MagicDamageClass	46	60.9	False
+Vanilla	BoneJavelin	Thrown	ranged	False	True	20	25	25	0	-1	1	1	1	50	True	9999	0	0	RangedDamageClass	20	16.2	False
+Vanilla	BoneDagger	Thrown	ranged	False	True	14	14	14	0	-1	1	1	1	50	True	9999	0	0	RangedDamageClass	20	20.3	False
+Vanilla	PortalGun	Unsupported	none	False	False	-1	20	20	0	-1	1	1	8	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Terrarian	Yoyo	melee	False	True	90	25	25	0	-1	1	1	10	500000	False	1	0	0	MeleeNoSpeedDamageClass	26	315.9	False
+Vanilla	SolarEruption	HeldWeapon	melee	False	True	105	20	20	0	-1	1	1	10	500000	False	1	0	0	MeleeNoSpeedDamageClass	7	1151.6	False
+Vanilla	StardustCellStaff	Summon	summon	False	True	60	36	36	2	-1	1	1	10	500000	False	1	10	0	SummonDamageClass	36	460.6	False
+Vanilla	VortexBeater	HeldWeapon	ranged	False	True	50	20	20	0	-1	1	1	10	500000	False	1	0	97	RangedDamageClass	83	1316.1	False
+Vanilla	NebulaArcanum	Magic	magic	False	True	70	30	30	0	-1	1	1	10	500000	False	1	30	0	MagicDamageClass	46	1279.6	False
+Vanilla	BloodWater	Thrown	ranged	False	True	20	15	15	0	-1	1	1	3	100	True	9999	0	0	DefaultDamageClass	20	30.2	False
+Vanilla	PlatinumBow	Bow	ranged	False	True	13	25	25	0	-1	1	1	0	10500	False	1	0	40	RangedDamageClass	54	64.1	False
+Vanilla	PlatinumShortsword	Shortsword	melee	False	True	18	10	10	0	-1	1	1	0	10500	False	1	0	0	TrueMeleeDamageClass	3	125.4	False
+Vanilla	PlatinumBroadsword	Broadsword	melee	False	True	16	20	17	0	-1	1	1	0	13500	False	1	0	0	TrueMeleeDamageClass	3	55.9	False
+Vanilla	TungstenBow	Bow	ranged	False	True	10	26	26	0	-1	1	1	0	5250	False	1	0	40	RangedDamageClass	54	53.0	False
+Vanilla	TungstenShortsword	Shortsword	melee	False	True	15	11	11	0	-1	1	1	0	5250	False	1	0	0	TrueMeleeDamageClass	3	94.0	False
+Vanilla	TungstenBroadsword	Broadsword	melee	False	True	14	20	19	0	-1	1	1	0	6750	False	1	0	0	TrueMeleeDamageClass	3	48.4	False
+Vanilla	LeadBow	Bow	ranged	False	True	9	27	27	0	-1	1	1	0	2100	False	1	0	40	RangedDamageClass	54	47.8	False
+Vanilla	LeadShortsword	Shortsword	melee	False	True	11	12	12	0	-1	1	1	0	2100	False	1	0	0	TrueMeleeDamageClass	3	62.3	False
+Vanilla	LeadBroadsword	Broadsword	melee	False	True	13	20	20	0	-1	1	1	0	2700	False	1	0	0	TrueMeleeDamageClass	3	44.4	False
+Vanilla	TinBow	Bow	ranged	False	True	7	28	28	0	-1	1	1	0	525	False	1	0	40	RangedDamageClass	54	40.4	False
+Vanilla	TinShortsword	Shortsword	melee	False	True	7	12	12	0	-1	1	1	0	525	False	1	0	0	TrueMeleeDamageClass	3	38.8	False
+Vanilla	TinBroadsword	Broadsword	melee	False	True	10	20	20	0	-1	1	1	0	675	False	1	0	0	TrueMeleeDamageClass	3	33.4	False
+Vanilla	CopperBow	Bow	ranged	False	True	6	29	29	0	-1	1	1	0	350	False	1	0	40	RangedDamageClass	54	36.5	False
+Vanilla	CopperShortsword	Shortsword	melee	False	True	5	13	13	0	-1	1	1	0	350	False	1	0	0	TrueMeleeDamageClass	3	25.4	False
+Vanilla	CopperBroadsword	Broadsword	melee	False	True	9	20	21	0	-1	2	1	0	450	False	1	0	0	TrueMeleeDamageClass	3	29.9	False
+Vanilla	SilverBow	Bow	ranged	False	True	9	27	27	0	-1	1	1	0	3500	False	1	0	40	RangedDamageClass	54	48.2	False
+Vanilla	SilverShortsword	Shortsword	melee	False	True	14	12	12	0	-1	1	1	0	3500	False	1	0	0	TrueMeleeDamageClass	3	79.9	False
+Vanilla	SilverBroadsword	Broadsword	melee	False	True	14	20	20	0	-1	1	1	0	4500	False	1	0	0	TrueMeleeDamageClass	3	48.1	False
+Vanilla	GoldBow	Bow	ranged	False	True	11	26	26	0	-1	1	1	0	7000	False	1	0	40	RangedDamageClass	54	55.9	False
+Vanilla	GoldShortsword	Shortsword	melee	False	True	17	11	11	0	-1	1	1	0	7000	False	1	0	0	TrueMeleeDamageClass	3	107.0	False
+Vanilla	GoldBroadsword	Broadsword	melee	False	True	15	20	18	0	-1	1	1	0	9000	False	1	0	0	TrueMeleeDamageClass	3	52.1	False
+Vanilla	StardustDragonStaff	Summon	summon	False	True	24	36	36	2	-1	1	1	10	500000	False	1	10	0	SummonDamageClass	36	184.3	False
+Vanilla	Phantasm	HeldWeapon	ranged	False	True	50	12	12	0	-1	1	4	10	500000	False	1	0	40	RangedDamageClass	54	1316.1	False
+Vanilla	LastPrism	HeldWeapon	magic	False	True	57	10	10	5	-1	1	1	10	500000	False	1	12	0	MagicDamageClass	46	2500.6	False
+Vanilla	NebulaBlaze	Magic	magic	False	True	130	12	12	0	-1	1	1	10	500000	False	1	12	0	MagicDamageClass	46	1188.2	False
+Vanilla	DayBreak	ThrownMelee	melee	False	True	125	22	22	0	-1	1	1	10	500000	False	1	0	0	MeleeNoSpeedDamageClass	14	623.2	False
+Vanilla	FireworksLauncher	Gun	ranged	True	True	50	25	25	0	-1	1	1	8	800000	False	1	0	771	RangedDamageClass	83	370.7	False
+Vanilla	BouncyDynamite	Thrown	ranged	False	True	-1	40	40	0	-1	1	1	1	2000	True	9999	0	0	DefaultDamageClass	20	134.1	False
+Vanilla	PartyGirlGrenade	Thrown	ranged	False	True	30	20	20	0	-1	1	1	2	250	True	9999	0	0	RangedDamageClass	20	32.8	False
+Vanilla	MoonlordTurretStaff	Sentry	summon	False	True	50	30	30	0	-1	1	1	10	500000	False	1	10	0	SummonDamageClass	36	137.1	False
+Vanilla	LunarFlareBook	Magic	magic	False	True	110	10	10	0	-1	1	1	10	500000	False	1	9	0	MagicDamageClass	46	1206.5	False
+Vanilla	RainbowCrystalStaff	Sentry	summon	False	True	130	30	30	0	-1	1	1	10	500000	False	1	10	0	SummonDamageClass	36	356.5	False
+Vanilla	LunarHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	10	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SuspiciousLookingTentacle	Unsupported	none	False	False	0	20	20	0	-1	1	1	10	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WireKite	Unsupported	none	False	False	-1	10	10	0	-1	1	1	2	200000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StaticHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	10	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CompanionCube	Unsupported	none	False	False	0	20	20	0	-1	1	1	1	5000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BluePhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	RedPhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	GreenPhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	PurplePhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	WhitePhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	YellowPhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	AntlionClaw	Broadsword	melee	False	True	16	10	10	0	-1	1	1	2	5000	False	1	0	0	TrueMeleeDamageClass	3	121.7	False
+Vanilla	SpiritFlame	Magic	magic	False	True	85	20	20	0	-1	1	1	4	50000	False	1	14	0	MagicDamageClass	46	364.1	False
+Vanilla	SkyFracture	Magic	magic	False	True	46	4	12	18	-1	3	1	4	300000	False	1	17	0	MagicDamageClass	46	402.7	False
+Vanilla	OnyxBlaster	Gun	ranged	False	True	24	48	48	0	-1	1	5	4	250000	False	1	0	97	RangedDamageClass	83	309.4	False
+Vanilla	DD2FlameburstTowerT1Popper	Sentry	summon	False	True	17	30	30	0	-1	1	1	3	50000	False	1	5	0	SummonDamageClass	36	34.9	False
+Vanilla	DD2FlameburstTowerT2Popper	Sentry	summon	False	True	42	30	30	0	-1	1	1	5	250000	False	1	10	0	SummonDamageClass	36	95.5	False
+Vanilla	DD2FlameburstTowerT3Popper	Sentry	summon	False	True	88	30	30	0	-1	1	1	8	750000	False	1	15	0	SummonDamageClass	36	226.4	False
+Vanilla	AleThrowingGlove	Gun	ranged	True	True	20	40	40	0	-1	1	1	1	500	False	1	0	353	RangedDamageClass	83	35.0	False
+Vanilla	DD2SquireDemonSword	Broadsword	melee	False	True	95	20	19	0	-1	1	1	5	50000	False	1	0	0	TrueMeleeDamageClass	3	424.1	False
+Vanilla	DD2BallistraTowerT1Popper	Sentry	summon	False	True	30	30	30	0	-1	1	1	3	50000	False	1	5	0	SummonDamageClass	36	61.6	False
+Vanilla	DD2BallistraTowerT2Popper	Sentry	summon	False	True	74	30	30	0	-1	1	1	5	250000	False	1	10	0	SummonDamageClass	36	168.3	False
+Vanilla	DD2BallistraTowerT3Popper	Sentry	summon	False	True	156	30	30	0	-1	1	1	8	750000	False	1	15	0	SummonDamageClass	36	401.3	False
+Vanilla	DD2SquireBetsySword	Broadsword	melee	False	True	150	20	19	0	-1	1	1	8	250000	False	1	0	0	MeleeDamageClass	40	763.2	False
+Vanilla	DD2LightningAuraT1Popper	Sentry	summon	False	True	4	30	30	0	-1	1	1	3	50000	False	1	5	0	SummonDamageClass	36	8.2	False
+Vanilla	DD2LightningAuraT2Popper	Sentry	summon	False	True	11	30	30	0	-1	1	1	5	250000	False	1	10	0	SummonDamageClass	36	25.0	False
+Vanilla	DD2LightningAuraT3Popper	Sentry	summon	False	True	34	30	30	0	-1	1	1	8	750000	False	1	15	0	SummonDamageClass	36	87.5	False
+Vanilla	DD2ExplosiveTrapT1Popper	Sentry	summon	False	True	24	30	30	0	-1	1	1	3	50000	False	1	5	0	SummonDamageClass	36	49.2	False
+Vanilla	DD2ExplosiveTrapT2Popper	Sentry	summon	False	True	59	30	30	0	-1	1	1	5	250000	False	1	10	0	SummonDamageClass	36	134.2	False
+Vanilla	DD2ExplosiveTrapT3Popper	Sentry	summon	False	True	126	30	30	0	-1	1	1	8	750000	False	1	15	0	SummonDamageClass	36	324.1	False
+Vanilla	MonkStaffT1	Spear	melee	False	True	83	30	30	0	-1	1	1	5	50000	False	1	0	0	TrueMeleeNoSpeedDamageClass	8	247.0	False
+Vanilla	MonkStaffT2	Spear	melee	False	True	90	27	27	0	-1	1	1	5	50000	False	1	0	0	TrueMeleeDamageClass	8	297.6	False
+Vanilla	BookStaff	Magic	magic	False	True	36	3	25	0	4	9	1	5	50000	False	1	20	0	MagicDamageClass	46	514.2	False
+Vanilla	DD2PhoenixBow	HeldWeapon	ranged	False	True	32	18	18	0	-1	1	1	5	50000	False	1	0	40	RangedDamageClass	54	83.3	False
+Vanilla	DD2PetGato	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DD2PetGhost	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DD2PetDragon	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MonkStaffT3	Spear	melee	False	True	225	30	30	0	-1	1	1	8	250000	False	1	0	0	MeleeDamageClass	8	763.2	False
+Vanilla	DD2BetsyBow	Bow	ranged	False	True	42	30	30	0	-1	1	3	8	250000	False	1	0	40	RangedDamageClass	54	529.1	False
+Vanilla	ApprenticeStaffT3	Magic	magic	False	True	100	20	20	10	-1	1	1	8	250000	False	1	14	0	MagicDamageClass	46	339.2	False
+Vanilla	Celeb2	HeldWeapon	ranged	False	True	50	6	6	0	-1	1	1	10	500000	False	1	0	771	RangedDamageClass	46	658.1	False
+Vanilla	GolfClubIron	Unsupported	none	False	False	-1	12	12	0	-1	1	1	2	10000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SkeletonBow	None	none	False	False	8	17	17	0	-1	1	1	3	100000	False	1	0	40	RangedDamageClass	3	0.0	False
+Vanilla	SuperStarCannon	Gun	ranged	True	True	60	18	18	0	-1	1	1	3	500000	False	1	0	75	RangedDamageClass	83	281.6	False
+Vanilla	ThunderSpear	Spear	melee	False	True	14	28	28	0	-1	1	1	1	15000	False	1	0	0	MeleeDamageClass	5	36.8	False
+Vanilla	ThunderStaff	Magic	magic	False	True	15	17	17	0	-1	1	1	1	15000	False	1	7	0	MagicDamageClass	46	65.0	False
+Vanilla	GolfClubPutter	Unsupported	none	False	False	-1	12	12	0	-1	1	1	2	10000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubWedge	Unsupported	none	False	False	-1	12	12	0	-1	1	1	2	10000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubDriver	Unsupported	none	False	False	-1	12	12	0	-1	1	1	2	10000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	VoidLens	Unsupported	none	False	False	-1	28	28	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Terragrim	HeldWeapon	melee	False	True	13	15	25	0	-1	2	1	2	250000	False	1	0	0	TrueMeleeNoSpeedDamageClass	7	27.8	False
+Vanilla	AmberHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	OrangePhaseblade	Broadsword	melee	False	True	36	18	18	0	-1	1	1	1	27000	False	1	0	0	TrueMeleeDamageClass	3	148.5	False
+Vanilla	OrangePhasesaber	Broadsword	melee	False	True	132	16	15	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	706.8	False
+Vanilla	MysticCoilSnake	Unsupported	none	False	False	-1	90	90	0	-1	1	1	1	50000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SanguineStaff	Summon	summon	False	True	35	36	36	2	-1	1	1	4	250000	False	1	10	0	SummonDamageClass	36	140.6	False
+Vanilla	SharpTears	Magic	magic	False	True	49	11	33	0	-1	3	1	4	200000	False	1	20	0	MagicDamageClass	46	388.1	False
+Vanilla	DripplerFlail	Flail	melee	False	True	55	40	40	0	-1	1	1	4	200000	False	1	0	0	MeleeNoSpeedDamageClass	11	95.8	False
+Vanilla	VampireFrogStaff	Summon	summon	False	True	11	36	36	2	-1	1	1	3	50000	False	1	10	0	SummonDamageClass	36	37.9	False
+Vanilla	BabyBirdStaff	Summon	summon	False	True	7	36	36	2	-1	1	1	1	50000	False	1	10	0	SummonDamageClass	36	17.8	False
+Vanilla	BloodFishingRod	Unsupported	none	False	False	-1	8	8	0	-1	1	1	2	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PaperAirplaneA	Unsupported	none	False	False	4	17	17	0	-1	1	1	0	5000	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	PaperAirplaneB	Unsupported	none	False	False	4	17	17	0	-1	1	1	0	5000	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	ZapinatorGray	Magic	magic	False	True	42	36	36	0	-1	1	1	2	170000	False	1	16	0	MagicDamageClass	46	93.0	False
+Vanilla	ZapinatorOrange	Magic	magic	False	True	100	36	36	0	-1	1	1	5	500000	False	1	16	0	MagicDamageClass	46	254.7	False
+Vanilla	CelestialWand	Unsupported	none	False	False	0	20	20	0	-1	1	1	5	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EucaluptusSap	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBlue	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBlueAndYellow	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteRed	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteRedAndYellow	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteYellow	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteWyvern	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BloodRainBow	Bow	ranged	False	True	14	19	19	0	-1	1	1	3	50000	False	1	0	40	RangedDamageClass	54	103.7	False
+Vanilla	Geode	Unsupported	none	False	False	-1	15	15	0	-1	1	1	2	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ScarabBomb	Thrown	ranged	False	True	-1	25	25	0	-1	1	1	1	1500	True	9999	0	0	DefaultDamageClass	20	85.5	False
+Vanilla	SharkBait	Unsupported	none	False	False	0	20	20	0	-1	1	1	5	50000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ScarabFishingRod	Unsupported	none	False	False	-1	8	8	0	-1	1	1	1	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Gladius	Shortsword	melee	False	True	15	7	21	0	-1	3	1	1	15000	False	1	0	0	TrueMeleeDamageClass	4	157.8	False
+Vanilla	BambooLeaf	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	HellCake	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubStoneIron	Unsupported	none	False	False	-1	12	12	0	-1	1	1	1	1000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubRustyPutter	Unsupported	none	False	False	-1	12	12	0	-1	1	1	1	1000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubBronzeWedge	Unsupported	none	False	False	-1	12	12	0	-1	1	1	1	1000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubWoodDriver	Unsupported	none	False	False	-1	12	12	0	-1	1	1	1	1000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubMythrilIron	Unsupported	none	False	False	-1	12	12	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubLeadPutter	Unsupported	none	False	False	-1	12	12	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubGoldWedge	Unsupported	none	False	False	-1	12	12	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubPearlwoodDriver	Unsupported	none	False	False	-1	12	12	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubTitaniumIron	Unsupported	none	False	False	-1	12	12	0	-1	1	1	4	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubShroomitePutter	Unsupported	none	False	False	-1	12	12	0	-1	1	1	4	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubDiamondWedge	Unsupported	none	False	False	-1	12	12	0	-1	1	1	4	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolfClubChlorophyteDriver	Unsupported	none	False	False	-1	12	12	0	-1	1	1	4	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BirdieRattle	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ExoticEasternChewToy	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BedazzledNectar	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	1000000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	StormTigerStaff	Summon	summon	False	True	49	36	36	2	-1	1	1	8	1000000	False	1	10	0	SummonDamageClass	36	313.5	False
+Vanilla	ChumBucket	Unsupported	none	False	False	-1	19	19	0	-1	1	1	1	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBoneSerpent	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteWorldFeeder	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBunny	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KitePigron	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteManEater	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteJellyfishBlue	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteJellyfishPink	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteShark	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteSandShark	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBunnyCorrupt	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteBunnyCrimson	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BlandWhip	Whip	summon	False	True	14	30	30	0	-1	1	1	1	100000	False	1	0	0	SummonMeleeSpeedDamageClass	10	28.2	False
+Vanilla	KiteGoldfish	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteAngryTrapper	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteKoi	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteCrawltipede	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SwordWhip	Whip	summon	False	True	55	28	28	0	-1	1	1	5	230000	False	1	0	0	SummonMeleeSpeedDamageClass	10	142.8	False
+Vanilla	MaceWhip	Whip	summon	False	True	165	35	35	0	-1	1	1	8	300000	False	1	0	0	SummonMeleeSpeedDamageClass	10	384.5	False
+Vanilla	ScytheWhip	Whip	summon	False	True	100	27	27	0	-1	1	1	8	500000	False	1	0	0	SummonMeleeSpeedDamageClass	10	303.6	False
+Vanilla	KiteSpectrum	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ReleaseDoves	Unsupported	none	False	False	-1	25	25	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteWanderingEye	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	KiteUnicorn	Unsupported	none	False	False	-1	30	30	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MudBud	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	ReleaseLantern	Unsupported	none	False	False	-1	25	25	0	-1	1	1	0	100	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	QuadBarrelShotgun	Gun	ranged	False	True	14	55	55	0	-1	1	4	3	350000	False	1	0	97	RangedDamageClass	83	146.8	False
+Vanilla	TragicUmbrella	Unsupported	none	False	False	15	22	22	0	-1	1	1	2	100000	False	1	0	0	TrueMeleeDamageClass	3	0.0	False
+Vanilla	GravediggerShovel	Broadsword	melee	False	True	12	14	21	0	-1	2	1	1	5000	False	1	0	0	TrueMeleeDamageClass	3	62.1	False
+Vanilla	SparkleGuitar	Magic	magic	False	True	85	6	12	0	-1	2	1	5	500000	False	1	12	0	MagicDamageClass	46	1298.8	False
+Vanilla	FirstFractal	None	none	False	False	190	7	35	0	-1	5	1	10	1000000	False	1	0	0	MeleeNoSpeedDamageClass	3	0.0	False
+Vanilla	BallOfFuseWire	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FullMoonSqueakyToy	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	300000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	OrnateShadowKey	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Football	Unsupported	none	False	False	0	15	15	0	-1	1	1	0	20	True	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Smolstar	Summon	summon	False	True	9	36	36	2	-1	1	1	5	50000	False	1	10	0	SummonDamageClass	36	40.2	False
+Vanilla	SquirrelHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	1	20000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BouncingShield	Boomerang	melee	False	True	80	36	36	0	-1	1	1	5	350000	False	1	0	0	MeleeNoSpeedDamageClass	22	162.3	False
+Vanilla	Shroomerang	Boomerang	melee	False	True	23	20	20	0	-1	1	1	1	30000	False	1	0	0	MeleeNoSpeedDamageClass	22	68.4	False
+Vanilla	TreeGlobe	Unsupported	none	False	False	-1	20	20	0	-1	1	1	2	30000	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	WorldGlobe	Unsupported	none	False	False	-1	20	20	0	-1	1	1	2	30000	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	FairyGlowstick	Unsupported	none	False	False	-1	15	15	0	-1	1	1	1	75	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	LightningCarrot	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	500000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	JoustingLance	Spear	melee	False	True	60	24	24	0	-1	1	1	4	60000	False	1	0	0	TrueMeleeDamageClass	5	214.7	False
+Vanilla	ShadowJoustingLance	Spear	melee	False	True	130	24	24	0	-1	1	1	8	500000	False	1	0	0	TrueMeleeDamageClass	5	555.1	False
+Vanilla	HallowJoustingLance	Spear	melee	False	True	90	24	24	0	-1	1	1	5	230000	False	1	0	0	TrueMeleeDamageClass	5	340.8	False
+Vanilla	KingSlimePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EyeOfCthulhuPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EaterOfWorldsPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	BrainOfCthulhuPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SkeletronPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	QueenBeePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DestroyerPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	TwinsPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SkeletronPrimePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PlanteraPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GolemPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DukeFishronPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	LunaticCultistPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MoonLordPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	FairyQueenPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PumpkingPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EverscreamPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	IceQueenPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	MartianPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DD2OgrePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DD2BetsyPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CombatWrench	Boomerang	melee	False	True	25	15	15	0	-1	1	1	2	25000	False	1	0	0	MeleeNoSpeedDamageClass	22	103.7	False
+Vanilla	WetBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	LavaBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	HoneyBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DryBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	2500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DirtBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DirtStickyBomb	Unsupported	none	False	False	-1	25	25	0	-1	1	1	1	500	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	CoolWhip	Whip	summon	False	True	45	30	30	0	-1	1	1	4	200000	False	1	0	0	SummonMeleeSpeedDamageClass	10	104.5	False
+Vanilla	FireWhip	Whip	summon	False	True	37	30	30	0	-1	1	1	4	150000	False	1	0	0	SummonMeleeSpeedDamageClass	10	85.7	False
+Vanilla	ThornWhip	Whip	summon	False	True	18	30	30	0	-1	1	1	3	50000	False	1	0	0	SummonMeleeSpeedDamageClass	10	39.4	False
+Vanilla	RainbowWhip	Whip	summon	False	True	180	30	30	0	-1	1	1	8	250000	False	1	0	0	SummonMeleeSpeedDamageClass	10	488.4	False
+Vanilla	PiercingStarlight	HeldWeapon	melee	False	True	80	6	18	0	-1	3	1	8	250000	False	1	0	0	TrueMeleeDamageClass	7	542.7	False
+Vanilla	FairyQueenMagicItem	Magic	magic	False	True	54	2	36	0	4	18	1	8	250000	False	1	23	0	MagicDamageClass	46	610.5	False
+Vanilla	FairyQueenRangedItem	Bow	ranged	False	True	50	2	30	0	5	15	1	8	250000	False	1	0	40	RangedDamageClass	54	1017.6	False
+Vanilla	Zenith	Broadsword	melee	False	True	210	10	30	0	-1	3	1	12	1000000	False	1	0	0	MeleeNoSpeedDamageClass	72	2469.6	False
+Vanilla	QueenSlimePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	QueenSlimeHook	Unsupported	none	False	False	0	0	0	0	-1	1	1	5	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GelBalloon	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	200	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	EmpressBlade	Summon	summon	False	True	68	36	36	2	-1	1	1	5	1000000	False	1	10	0	SummonDamageClass	36	314.2	False
+Vanilla	Mace	Flail	melee	False	True	9	45	45	0	-1	1	1	1	100000	False	1	0	0	MeleeNoSpeedDamageClass	8	12.1	False
+Vanilla	FlamingMace	Flail	melee	False	True	9	45	45	0	-1	1	1	1	100000	False	1	0	0	MeleeNoSpeedDamageClass	8	12.1	False
+Vanilla	PrincessWeapon	Magic	magic	False	True	80	25	25	0	-1	1	1	5	500000	False	1	18	0	MagicDamageClass	46	293.4	False
+Vanilla	FlinxStaff	Summon	summon	False	True	8	36	36	2	-1	1	1	3	25000	False	1	5	0	SummonDamageClass	36	27.3	False
+Vanilla	BoneWhip	Whip	summon	False	True	27	30	30	0	-1	1	1	2	75000	False	1	0	0	SummonMeleeSpeedDamageClass	12	56.8	False
+Vanilla	BerniePetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GlommerPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	DeerclopsPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	PigPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	50000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	TentacleSpike	Broadsword	melee	False	True	20	21	21	0	-1	1	1	2	25000	False	1	0	0	TrueMeleeDamageClass	3	74.1	False
+Vanilla	HamBat	Broadsword	melee	False	True	57	20	19	0	-1	1	1	4	50000	False	1	0	0	TrueMeleeDamageClass	3	244.2	False
+Vanilla	BatBat	Broadsword	melee	False	True	36	45	45	0	-1	1	1	2	12500	False	1	0	0	TrueMeleeDamageClass	3	61.6	False
+Vanilla	ChesterPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	AbigailsFlower	Summon	summon	False	True	6	36	36	2	-1	1	1	3	25000	False	1	10	0	SummonDamageClass	36	20.5	False
+Vanilla	PewMaticHorn	Gun	ranged	False	True	25	15	15	0	-1	1	1	2	75000	False	1	0	97	RangedDamageClass	83	184.1	False
+Vanilla	WeatherPain	Magic	magic	False	True	13	45	45	0	-1	1	1	2	75000	False	1	30	0	MagicDamageClass	46	22.8	False
+Vanilla	HoundiusShootius	Sentry	summon	False	True	24	30	30	0	-1	1	1	2	75000	False	1	20	0	SummonDamageClass	36	47.3	False
+Vanilla	Flymeal	Broadsword	melee	False	True	15	17	17	0	-1	1	1	2	17500	False	1	0	0	TrueMeleeDamageClass	3	68.3	False
+Vanilla	ResplendentDessert	Unsupported	none	False	False	0	20	20	0	-1	1	1	-13	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Clentaminator2	Unsupported	none	False	False	-1	5	30	0	-1	6	1	10	2000000	False	1	0	780	DefaultDamageClass	3	0.0	False
+Vanilla	WandofFrosting	Magic	magic	False	True	15	26	26	0	-1	1	1	1	7500	False	1	2	0	MagicDamageClass	46	42.1	False
+Vanilla	JunimoPetItem	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	10000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	AshWoodBow	Bow	ranged	False	True	10	25	25	0	-1	1	1	0	100	False	1	0	40	RangedDamageClass	54	51.8	False
+Vanilla	AshWoodSword	Broadsword	melee	False	True	13	17	17	0	-1	1	1	0	100	False	1	0	0	TrueMeleeDamageClass	3	49.6	False
+Vanilla	MoonGlobe	Unsupported	none	False	False	-1	20	20	0	-1	1	1	2	30000	True	9999	0	0	RangedDamageClass	3	0.0	False
+Vanilla	HiveFive	Yoyo	melee	False	True	27	25	25	0	-1	1	1	3	35000	False	1	0	0	MeleeNoSpeedDamageClass	20	70.6	False
+Vanilla	BlueEgg	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	250000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Trimarang	Boomerang	melee	False	True	21	20	20	0	-1	1	1	3	100000	False	1	0	0	MeleeNoSpeedDamageClass	22	69.6	False
+Vanilla	ClosedVoidBag	Unsupported	none	False	False	-1	28	28	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	SpiffoPlush	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	GlowTulip	Unsupported	none	False	False	0	20	20	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	WaffleIron	Broadsword	melee	False	True	50	23	22	0	-1	1	1	5	150000	False	1	0	0	MeleeDamageClass	40	196.6	False
+Vanilla	DirtiestBlock	Unsupported	none	False	False	0	20	20	0	-1	1	1	1	1000	False	1	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	Fertilizer	Unsupported	none	False	False	-1	15	15	0	-1	1	1	0	50	True	9999	0	0	DefaultDamageClass	3	0.0	False
+Vanilla	JimsDrone	Unsupported	none	False	False	-1	32	32	0	-1	1	1	3	100000	False	1	0	0	DefaultDamageClass	3	0.0	False
+
+## SCENARIO F_weak_then_strong
+  -- after first issue
+  soldier 100: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=Starfury[Broadsword/melee sc=49] armorClass=none head=-
+  soldier 101: weapon=CalamityMod/Archerfish[Gun/ranged sc=194] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/Cinquedea[Magic/none sc=145] side=- armorClass=none head=-
+  soldier 103: weapon=Space Gun[Magic/magic sc=100] side=- armorClass=none head=-
+  soldier 104: weapon=Muramasa[Broadsword/melee sc=105] side=- armorClass=none head=-
+  soldier 105: weapon=Blade of Grass[Broadsword/melee sc=73] side=- armorClass=none head=-
+  soldier 106: weapon=Demon Bow[Bow/ranged sc=65] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/WulfrumProsthesis[Magic/magic sc=55] side=- armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: ShinobiBlade x1, Archerfish x1, Cinquedea x1, Space Gun x1, Muramasa x1, Blade of Grass x1, Demon Bow x1, WulfrumProsthesis x1, WulfrumKnife x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=none head=-
+  soldier 101: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/Cinquedea[Magic/none sc=145] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 105: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 106: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 107: weapon=ThoriumMod/PalladiumSMG[Gun/ranged sc=284] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: ShinobiBlade x1, Cobalt Sword x1, Cinquedea x1, Palladium Sword x1, Mythril Sword x1, Cobalt Naginata x1, MythrilStaff x1, PalladiumSMG x1, WulfrumKnife x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=none head=-
+  soldier 101: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/Cinquedea[Magic/none sc=145] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 105: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 106: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 107: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: ShinobiBlade x1, Cobalt Sword x1, Cinquedea x1, Palladium Sword x1, Mythril Sword x1, Cobalt Naginata x1, MythrilStaff x1, Clockwork Assault Rifle x1, WulfrumKnife x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=none head=-
+  soldier 101: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/Cinquedea[Magic/none sc=145] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 105: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 106: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 107: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: ShinobiBlade x1, Cobalt Sword x1, Cinquedea x1, Palladium Sword x1, Mythril Sword x1, Cobalt Naginata x1, MythrilStaff x1, Clockwork Assault Rifle x1, WulfrumKnife x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Avalanche | Broadsword/melee | 75 35 0 5 200000 | 194.4
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    ThoriumMod/BackStabber | Broadsword/melee | 29 14 0 4 75000 | 178.4
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    Night's Edge | Broadsword/melee | 45 25 0 3 200000 | 150.3
+    ThoriumMod/PinkPhaseblade | Broadsword/melee | 36 18 0 1 27000 | 148.5
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 73.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 58.8
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 49.0
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Musket[Gun/ranged sc=75] | Minishark[Gun/ranged sc=141] | Minishark[Gun/ranged sc=141] | Light's Bane[Broadsword/melee sc=59] | Musket[Gun/ranged sc=75] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | Boomstick[Gun/ranged sc=125] | Phoenix Blaster[Gun/ranged sc=167] | Muramasa[Broadsword/melee sc=105] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/Kylie[Magic/none sc=35] | Night's Edge[Broadsword/melee sc=150] | Bee Keeper[Broadsword/melee sc=124] | CalamityMod/GildedDagger[Magic/none sc=57] | Light's Bane[Broadsword/melee sc=59] | Starfury[Broadsword/melee sc=49] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Flower of Fire[Magic/magic sc=192] | CalamityMod/Archerfish[Gun/ranged sc=194] | Muramasa[Broadsword/melee sc=105] | Cobalt Repeater[Bow/ranged sc=227] | Mythril Repeater[Bow/ranged sc=264] | Blade of Grass[Broadsword/melee sc=73] | Space Gun[Magic/magic sc=100] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/ShinobiBlade[Magic/none sc=197] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | Starfury[Broadsword/melee sc=49] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | CalamityMod/Avalanche[Broadsword/melee sc=194] | CalamityMod/SpeedBlaster[Magic/ranged sc=363] | CalamityMod/Needler[Gun/ranged sc=298] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | Demon Bow[Bow/ranged sc=65] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | ThoriumMod/ThoriumWand[Magic/none sc=240] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/HoneySuckle[Magic/none sc=240] | ThoriumMod/BackStabber[Broadsword/melee sc=178] | ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148]
+
+## SCENARIO G_prehm_only
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=141] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/Mycoroot[Magic/none sc=155] side=- armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/BurntSienna[Broadsword/melee sc=98] side=- armorClass=none head=-
+  soldier 104: weapon=Space Gun[Magic/magic sc=100] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/StormSurge[Magic/ranged sc=78] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/GildedDagger[Magic/none sc=57] side=- armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=65] side=- armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=73] side=- armorClass=none head=-
+  tally: Minishark x1, Mycoroot x1, Muramasa x1, BurntSienna x1, Space Gun x1, StormSurge x1, GildedDagger x1, Demon Bow x1, Blade of Grass x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=141] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/Mycoroot[Magic/none sc=155] side=- armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/BurntSienna[Broadsword/melee sc=98] side=- armorClass=none head=-
+  soldier 104: weapon=Space Gun[Magic/magic sc=100] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/StormSurge[Magic/ranged sc=78] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/GildedDagger[Magic/none sc=57] side=- armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=65] side=- armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=73] side=- armorClass=none head=-
+  tally: Minishark x1, Mycoroot x1, Muramasa x1, BurntSienna x1, Space Gun x1, StormSurge x1, GildedDagger x1, Demon Bow x1, Blade of Grass x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=141] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/Mycoroot[Magic/none sc=155] side=- armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/BurntSienna[Broadsword/melee sc=98] side=- armorClass=none head=-
+  soldier 104: weapon=Space Gun[Magic/magic sc=100] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/StormSurge[Magic/ranged sc=78] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/GildedDagger[Magic/none sc=57] side=- armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=65] side=- armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=73] side=- armorClass=none head=-
+  tally: Minishark x1, Mycoroot x1, Muramasa x1, BurntSienna x1, Space Gun x1, StormSurge x1, GildedDagger x1, Demon Bow x1, Blade of Grass x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 73.3
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 58.8
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Musket[Gun/ranged sc=75] | Light's Bane[Broadsword/melee sc=59] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/Fungicide[Gun/ranged sc=102]

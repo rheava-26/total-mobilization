@@ -1,0 +1,41 @@
+[K_chlorophyte_vs_zombie_5]
+SOLDIERS 5
+W Vanilla/ChlorophyteSaber
+W Vanilla/ChlorophyteClaymore
+W Vanilla/ChlorophytePartisan
+W Vanilla/ChlorophyteShotbow
+W Vanilla/ChlorophyteWarhammer
+W Vanilla/ChlorophyteJackhammer
+W Vanilla/ChlorophyteDrill
+W Vanilla/ChlorophytePickaxe
+W Vanilla/ChlorophyteChainsaw
+W Vanilla/Drax
+W Vanilla/ZombieArm
+W Vanilla/IronBroadsword
+W Vanilla/Musket
+W Vanilla/SpaceGun
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+
+[K_zombie_only_extra]
+SOLDIERS 3
+W Vanilla/ZombieArm
+W Vanilla/ChlorophyteSaber
+W Vanilla/Musket
+M Vanilla/MusketBall x999
+STAGE
+
+[K_armor_chlorophyte]
+SOLDIERS 3
+W Vanilla/ZombieArm
+W Vanilla/WoodenSword
+A Vanilla/ChlorophyteMask
+A Vanilla/ChlorophytePlateMail
+A Vanilla/ChlorophyteGreaves
+A Vanilla/ChlorophyteHeadgear
+A Vanilla/CobaltHelmet
+A Vanilla/CobaltBreastplate
+A Vanilla/CobaltLeggings
+A Vanilla/ZombieArm
+STAGE

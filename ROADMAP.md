@@ -207,6 +207,12 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 🧭 EVE DECISIONS (2026-11-05, after 1.7.4)
+- **Lifesteal like vanilla:** it heals whoever dealt the damage, and each dealer has its OWN pool, at 1:1 (no ×3). Building on `rank-mode`.
+- **Weapon ranking is a config choice:** Sell price (DEFAULT) / Sell price + materials / Damage. My addition: a toggle "Skip weapons that barely hurt armored enemies", default ON (Eve can turn it off). Sword projectile credit (Starfury, Enchanted Sword) comes with it. Building on `rank-mode`.
+- **AI rework (grappling hooks): NOT started before now** (it was only a backlog line). Eve asked. Hooks need the real-owner frame because the vanilla hook AI reads the owner Player. Feasibility lab on `hooks-lab`: real hook items fired via the owner frame, plus vanilla GrappleMovement driving the soldier.
+- **Still open for Eve:** mage mana (player-like); boss-aggro/anti-cheese design.
+
 ## 📦 SHIPPED Levy 1.7.4 (heal-both-ways 8bc8f09); boots clean Levy+Mech and Thorium+Levy+Mech; Mechanization stays 0.7.1
 - **Levy-cast ally heals reach the commander** (the caster is the healer, so the commander is an ally). Commander healing went 0→60–120 across Hippocrati-crossbow, Cosmic Flux, Balance Bloom, Iridescent, Coral Purifier, Life Disperser and Sacred Lyre.
 - **Weapon heals no longer throttled** by the 40-tick reservation (Eve's Sacred Lyre on levies: 43→96).

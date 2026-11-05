@@ -123,6 +123,7 @@ namespace Levy.Common.Testing
 		// ---------------------------------------------------------------------------------------------
 		internal static void Boot(CombatHarness h)
 		{
+			if (HooksLab.Active && HooksLab.Claims(Spec)) { _h = h; HooksLab.Boot(h); return; } // hooks lab (HooksLab.cs) has its own driver
 			_h = h; _queue = Parse(Spec); _qi = 0; _stage = 0; _stageTick = 0; _bootDone = true; _sc = null;
 			h.Mod.Logger.Info($"LAB: {_queue.Count} scenarios queued");
 			StartWatchdog();
@@ -179,6 +180,7 @@ namespace Levy.Common.Testing
 		internal static void Tick(CombatHarness h)
 		{
 			_h = h;
+			if (HooksLab.Running) { HooksLab.Tick(h); return; }
 			long now = Stopwatch.GetTimestamp();
 			if (_sc != null && _stage == 1 && _lastTickTs != 0) { _sc.WholeTs += now - _lastTickTs; _sc.WholeSamples++; }
 			_lastTickTs = now;

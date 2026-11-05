@@ -1,0 +1,8 @@
+# ledge top 10 tiles up starting 9 tiles right; ceiling 19 up. Hook the ceiling above the ledge, reel past the lip, release on arrival
+hook|V:GrapplingHook|1|300|ledge=10,ledgex=9,ceil=19,aim=11:-20,rel=arr:2,after=ballistic
+hook|V:GrapplingHook|1|300|ledge=10,ledgex=9,ceil=19,aim=13:-20,rel=arr:2,after=ballistic
+hook|V:GrapplingHook|1|300|ledge=10,ledgex=9,ceil=19,aim=15:-20,rel=arr:2,after=ballistic
+hook|V:GrapplingHook|1|300|ledge=10,ledgex=9,ceil=19,aim=15:-20,rel=arr:2,after=ai,goal=25
+hook|V:LunarHook|1|300|ledge=10,ledgex=9,ceil=19,aim=13:-20,rel=arr:2,after=ballistic
+hook|V:LunarHook|1|300|ledge=10,ledgex=9,ceil=19,aim=13:-20,rel=y:10,after=ballistic
+hook|V:LunarHook|1|300|ledge=10,ledgex=9,ceil=19,aim=13:-20,rel=y:8,after=ballistic

@@ -218,6 +218,15 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 **Building now:**
 - `balanced-rank`: a new DEFAULT mode "Balanced" = sell price × relevance to current progression (smooth discount for weapons many tiers behind; never by per-hit damage) + a RECENCY boost for weapons recently deposited in the armory. The armor skip goes default OFF (Eve dislikes it: fast weapons like the Minishark and endgame ranger guns).
 - Same branch: mana. Config "Fallen Stars per levy mana crystal" (1–5, default 5), plus "Armory turns Fallen Stars into levy mana" (default on; never eats stars needed as Star Cannon ammo).
+- **levy-speed RESULT (e8b8213, NOT merged; waiting on Eve):**
+  - Swiftness DOES apply to levies, and boots parity holds: Hermes, Lightning and Terraspark run as fast as a player or faster.
+  - REAL GAP: levies only drink buff potions within 40 tiles of an armory, so away from base (the Wall of Flesh) they never have Swiftness. They do not carry potions.
+  - Two parity bugs fixed on the branch:
+    - (a) `moveSpeed` was also multiplied onto the boots' sprint, which a player doesn't get. Terraspark ran at 7.29 vs the player's 6.77. Fixing it makes some loadouts SLOWER.
+    - (b) Magiluminescence, Shadow armor and ModPlayer.PostUpdateRunSpeeds were ignored. Fixing it makes those loadouts faster.
+  - DECISION for Eve: accept exact parity (a slowdown for Lightning/Terraspark/Swiftness+boots), or keep the old over-speed.
+  - My recommendation: parity + let levies CARRY the armory's buff potions and re-drink them in the field, as a player does.
+  - Wall of Flesh facts: late Expert can reach ~8 px/tick; armed levies kite at a ~14-tile standoff; WoF is not in the flee list.
 - `levy-speed`, NARROWED by Eve: boots work, and levies run while shooting fine. They were only slightly slower, because Eve had a Swiftness Potion and they did not; the Wall of Flesh barely outran them. Checking whether movement buffs (Swiftness etc.) reach levies, plus a quick boots-parity check.
 
 **Eve's design notes, NOT building yet:**

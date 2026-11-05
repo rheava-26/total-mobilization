@@ -23,6 +23,26 @@ namespace Levy.Common.Movement
 		public bool HasHook; public float HookReachPx, HookPullPx; public int HookCount;
 
 		/// <summary>
+		/// The top ground speed (px/tick) a real player with the dummy's gear reaches. UpdateEquips leaves the raw boot numbers; Player.Update then turns them into the speeds
+		/// <c>HorizontalMovement</c> uses, in this order, which the dummy never runs: <c>maxRunSpeed *= moveSpeed</c> (accRunSpeed, the boots' sprint, is NOT scaled by moveSpeed),
+		/// the flag multipliers (Magiluminescence, Shadow armor: x1.15 on both), then every ModPlayer.PostUpdateRunSpeeds. The player tops out at the larger of the two.
+		/// The dummy's own fields are left as they were (a second read must not scale twice).
+		/// </summary>
+		public static float PlayerTopRunSpeed(Player dummy)
+		{
+			float maxRun0 = dummy.maxRunSpeed, accRun0 = dummy.accRunSpeed, accel0 = dummy.runAcceleration, slow0 = dummy.runSlowdown;
+			try
+			{
+				dummy.runAcceleration *= dummy.moveSpeed; dummy.maxRunSpeed *= dummy.moveSpeed;
+				if (dummy.hasMagiluminescence) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }
+				if (dummy.shadowArmor) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }
+				try { PlayerLoader.PostUpdateRunSpeeds(dummy); } catch { } // a mod's own run-speed rule (boots, armor sets, accessories); one that throws on the dummy simply does not count
+				return Math.Max(dummy.maxRunSpeed, dummy.accRunSpeed);
+			}
+			finally { dummy.maxRunSpeed = maxRun0; dummy.accRunSpeed = accRun0; dummy.runAcceleration = accel0; dummy.runSlowdown = slow0; }
+		}
+
+		/// <summary>
 		/// Reads the dummy's stats. Balloons add to jumpSpeedBoost in UpdateEquips; Frog Leg, Empress Brooch and Moon Lord
 		/// Legs only add theirs in Player.UpdateJumpHeight (not run for the dummy), so their flags are added here.
 		/// </summary>
@@ -32,8 +52,7 @@ namespace Levy.Common.Movement
 			if (dummy == null) return a;
 
 			a.WalkSpeed = MathHelper.Clamp(dummy.moveSpeed, LevyConstants.Movement.MinWalkSpeedMult, LevyConstants.Movement.MaxWalkSpeedMult);
-			float run = Math.Max(dummy.maxRunSpeed, dummy.accRunSpeed);
-			a.MaxRunSpeed = MathHelper.Clamp(run, LevyConstants.Movement.MinRunSpeed, LevyConstants.Movement.MaxRunSpeed);
+			a.MaxRunSpeed = MathHelper.Clamp(PlayerTopRunSpeed(dummy), LevyConstants.Movement.MinRunSpeed, LevyConstants.Movement.MaxRunSpeed);
 
 			float boost = dummy.jumpSpeedBoost;
 			if (dummy.frogLegJumpBoost) boost += LevyConstants.Movement.FrogLegBoost;

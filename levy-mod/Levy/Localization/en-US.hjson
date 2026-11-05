@@ -295,7 +295,7 @@ Mods: {
 
 				AimAccuracy: {
 					Label: Levy aim accuracy
-					Tooltip: Scales how well levies aim. 1 is normal, 2 halves their aim error, 0.5 doubles it. This strongly affects how strong levies are.
+					Tooltip: Higher values make levies aim better, lower values worse. This strongly affects how strong levies are.
 				}
 
 				AutoUpgradeWeapons: {

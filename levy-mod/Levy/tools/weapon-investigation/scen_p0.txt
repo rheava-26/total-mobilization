@@ -149,3 +149,41 @@ W Vanilla/Minishark
 W Vanilla/Megashark
 M Vanilla/MusketBall x999
 STAGE
+
+# Two levies, two Megasharks and a Minishark: the Minishark must stay on the shelf.
+[P0_minishark_post_plantera_two_megasharks_two_levies]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=2
+OLD
+W Vanilla/Minishark
+W Vanilla/Megashark
+W Vanilla/Megashark
+M Vanilla/MusketBall x999
+STAGE
+
+# A levy holds the Minishark; a Megashark is deposited later: it must take the Megashark.
+[P0_minishark_post_plantera_held_then_megashark_deposited]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=1
+OLD
+W Vanilla/Minishark
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+
+# Same, with an older stock of better guns on the shelf (Phoenix Blaster) and no Megashark.
+[P0_minishark_post_plantera_held_then_phoenix_deposited]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=1
+OLD
+W Vanilla/Minishark
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/PhoenixBlaster
+STAGE

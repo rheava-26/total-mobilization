@@ -87,6 +87,12 @@ namespace Levy.Common.Weapons
 			("BuriedChampion", 6.5f), ("StarScouter", 6.9f), ("LichHeadless", 11.6f), ("Primordials", 19.5f), ("RealityBreaker", 19.5f), ("ThePrimordials", 19.5f), ("DreamEater", 19.5f), ("Omnicide", 19.5f), ("SlagFury", 19.5f),
 		};
 
+		// Weapons that come only from chests, whose rarity floor puts them too early. Dungeon chests open after Skeletron; no drop table or recipe says so, so the table does.
+		private static readonly int[] DungeonChestWeapons =
+		{
+			ItemID.Muramasa, ItemID.Handgun, ItemID.WaterBolt, ItemID.AquaScepter, ItemID.BlueMoon, ItemID.MagicMissile, ItemID.Valor,
+		};
+
 		// When a town NPC can first be expected, so its shop is no earlier.
 		private static readonly Dictionary<string, float> NpcArrival = new()
 		{
@@ -267,6 +273,7 @@ namespace Levy.Common.Weapons
 				float best = Inf; bool raw = false;
 				if (d.Boss.TryGetValue(t, out float bp)) best = Math.Min(best, bp);
 				if (d.Shop.TryGetValue(t, out float sp)) best = Math.Min(best, sp);
+				if (Array.IndexOf(DungeonChestWeapons, t) >= 0 && !d.RecipesFor.ContainsKey(t)) best = Math.Min(best, 5f);
 				float rt = RawTier(samples[t]); if (rt >= 0f && rt < best) { best = rt; raw = true; }
 				// a plain common material (no damage, common rarity) that a boss happens to drop is not itself late
 				if (best < Inf && !raw && samples[t].damage <= 0 && floors[t] >= 0f && floors[t] <= 2f && best > floors[t] + 4f) best = floors[t];

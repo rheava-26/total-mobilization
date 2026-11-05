@@ -569,7 +569,6 @@ namespace Levy.Common.Weapons
 		public static float AimErrorMultiplier(SoldierNPC s)
 		{
 			float m = AimAccuracyFactor; // the server's "Levy aim accuracy": exactly 1 at the default
-
 			if (s.Record != null && s.Record.Veteran) m *= LevyConstants.VeteranAimMult;
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;

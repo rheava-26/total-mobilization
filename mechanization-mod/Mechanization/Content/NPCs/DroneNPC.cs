@@ -444,7 +444,7 @@ namespace Mechanization.Content.NPCs
 				if (!t.active) continue;
 				float dSq = Vector2.DistanceSquared(from, t.Center);
 				if (dSq >= bestSq || dSq > rangeSq) continue;
-				if (!LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t)) continue;
+				if (!LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t) || global::Mechanization.Common.BossHoldFire.Holds(t)) continue;
 				if (!WithinLeashReach(t)) continue;
 				if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height)) continue;
 				bestSq = dSq; best = i;
@@ -454,7 +454,7 @@ namespace Mechanization.Content.NPCs
 
 		private bool Shootable(NPC t)
 		{
-			if (!t.active || !LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t)) return false;
+			if (!t.active || !LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t) || global::Mechanization.Common.BossHoldFire.Holds(t)) return false;
 			if (Vector2.DistanceSquared(NPC.Center, t.Center) > _shot.RangePx * _shot.RangePx) return false;
 			if (!WithinLeashReach(t)) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);

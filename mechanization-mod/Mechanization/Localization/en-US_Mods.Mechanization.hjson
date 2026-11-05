@@ -18,6 +18,17 @@ NPCs: {
 
 Keybinds.RecallDrones.DisplayName: Mechanization: Recall or launch drones
 
+Configs: {
+	MechConfig: {
+		DisplayName: Mechanization
+
+		FireOnUnbeatenBosses: {
+			Label: Drones and turrets fire on bosses you haven't beaten
+			Tooltip: Off, drones and turrets hold fire on a boss, and its parts, until you have defeated that boss once. A boss's minions are always fair game.
+		}
+	}
+}
+
 UI: {
 	TurretDismantle: Dismantle
 	TurretChatMounted: Weapon: {0}. Reach {2} tiles. Armories: {1}.

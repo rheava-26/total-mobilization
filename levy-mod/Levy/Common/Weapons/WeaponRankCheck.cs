@@ -287,7 +287,7 @@ namespace Levy.Common.Weapons
 				var ench = Make(ItemID.EnchantedSword); var gold = Make(ItemID.GoldBroadsword); var plat = Make(ItemID.PlatinumBroadsword); var iron = Make(ItemID.IronBroadsword);
 				check(ProgressionTier.IsFound(ItemID.EnchantedSword) && !ProgressionTier.IsFound(ItemID.GoldBroadsword), "found flag: Enchanted Sword yes, Gold Broadsword no");
 				check(Math.Abs(WeaponRank.Of(ench) / price(ench) - WeaponRank.FoundBoost) < 1e-3f, "a found weapon ranks " + WeaponRank.FoundBoost + " x its price rank (" + (WeaponRank.Of(ench) / price(ench)).ToString("F3") + ")");
-				check(Math.Abs(WeaponRank.Of(gold) - price(gold)) < 1e-3f, "a crafted weapon ranks by price alone");
+				check(Math.Abs(WeaponRank.Of(gold) / price(gold) - 1f) < 0.01f, "a crafted weapon ranks by price (stage discount under 1%), no found boost (" + (WeaponRank.Of(gold) / price(gold)).ToString("F3") + ")");
 				check(WeaponRank.FoundBoost > 1.02f && WeaponRank.FoundBoost < LevyConstants.AutoUpgradeScoreMargin, "the boost is small and under the swap margin (" + WeaponRank.FoundBoost + " < " + LevyConstants.AutoUpgradeScoreMargin + ")");
 				DepositStamp.Stamp(gold); DepositStamp.Stamp(plat); // freshly crafted
 				check(WeaponRank.Of(ench) > WeaponRank.Of(gold) * LevyConstants.AutoUpgradeScoreMargin && WeaponRank.Of(ench) > WeaponRank.Of(plat) * LevyConstants.AutoUpgradeScoreMargin, "an old Enchanted Sword beats fresh Gold and Platinum Broadswords by more than the swap margin (" + WeaponRank.Of(ench).ToString("F0") + " vs " + WeaponRank.Of(plat).ToString("F0") + ")");

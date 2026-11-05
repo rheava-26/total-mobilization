@@ -36,6 +36,15 @@ namespace Levy.Common.Testing
 	/// SPEC (LEVY_HARNESS_LAB): ';'-separated scenarios  kind|item|N|ticks|flags   kind: fid (fidelity) | cost | casc (kill a boss with it) | ctl (N soldiers, no item: cost control)
 	///   item: V:Name (ItemID name) | T:Name (ThoriumMod item) | M:Mod/Name   flags (comma): fam=summon|spear|yoyo|flail|boom|whip|heal|other  dist=tiles  nolift  slots  spsim  nobuffs  keepalive  boss=npcId  hp=N
 	/// OUT: LEVY_HARNESS_OUT (TSV).
+	///
+	/// PHASE 2 (owner-lab-2) additions. Kinds: gear (a run with worn gear) | scan (IL scan: accessories / armor that set a ModPlayer field an on-hit hook reads) | list (dump a mod's items).
+	///   flags: vslot netlock = per-soldier owner slot 100+k, and NetLock held while the Dummy stands in it (Netplay.ServerLoop clears Main.player[i].active for client-less slots; vanilla Projectile.Update kills a projectile whose owner is inactive)
+	///          trace = log every kill / silent deactivation of a tagged projectile with the stack and the owner state at that moment
+	///          nonpc = npcProj false on soldier projectiles (the owner's ModPlayer on-hit hooks and vanilla Main.player[owner] on-hit flags then run)
+	///          g=A+B+C (worn gear: V:/T:/C:/M: item keys; S:Mod/HeadPiece = the whole armor set)  cg=... (the same on the commander)  refresh (RefreshStats once at setup)  halflife  hurt=N (Dummy.Hurt every N ticks)  every=N (press cadence)
+	///          pu=s1|s2|s3|full = per-tick Player.Update subset run inside the soldier's swap: s1 = timers + ResetEffects + UpdateEquips + UpdateArmorSets; s2 = s1 + PreUpdateBuffs/UpdateBuffs/PostUpdateBuffs + PostUpdateEquips + PostUpdateMiscEffects; s3 = s2 + PlayerLoader.PreUpdate/PostUpdate; full = Player.Update
+	///          diag = melee diagnostics every 30 ticks   ded0 = flip Main.dedServ off around ItemCheck (crashes in asset loading; kept as a record of the attempt)
+	/// Viewers: tools/lab_show.py, lab_scale.py, lab_gearmatrix.py.  Runner: tools/run_lab.sh (-N new toolchain for Calamity, -x CalamityModMusic).  Build: tools/lab_build.sh [-N].
 	/// </summary>
 	public static class OwnerLab
 	{

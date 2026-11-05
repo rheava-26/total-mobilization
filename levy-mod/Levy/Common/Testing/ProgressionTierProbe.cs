@@ -146,7 +146,7 @@ namespace Levy.Common.Testing
 
 		public static void Build(StringBuilder log)
 		{
-			_route.Clear(); _src.Clear(); _busy.Clear(); _bossLoot.Clear(); _shop.Clear(); _bossLootSrc.Clear(); _shopSrc.Clear(); _tileTier.Clear(); _recipesFor.Clear(); _tileItems.Clear(); _condKeys.Clear(); Notes.Clear();
+			_route.Clear(); _src.Clear(); _busy.Clear(); _bossLoot.Clear(); _shop.Clear(); _bossLootSrc.Clear(); _shopSrc.Clear(); _tileTier.Clear(); _recipesFor.Clear(); _tileItems.Clear(); _leaf.Clear(); _condKeys.Clear(); Notes.Clear();
 			// boss loot
 			int bosses = 0; var unmapped = new List<string>();
 			for (int t = 1; t < NPCLoader.NPCCount; t++)
@@ -212,6 +212,39 @@ namespace Levy.Common.Testing
 			// vanilla stations whose placing item is cheap but whose recipes are the real gate are covered by their own item routes
 			_tileTier[tile] = best;
 			return best;
+		}
+
+		private static readonly Dictionary<int, double> _leaf = new(); private static readonly HashSet<int> _leafBusy = new();
+		/// <summary>Total material cost (copper): the cheapest recipe's ingredients expanded recursively down to items nothing crafts, summed at their own item.value (a stack counts stack x value). An item with no recipe costs its own value.</summary>
+		public static double LeafCost(int type)
+		{
+			if (_leaf.TryGetValue(type, out double c)) return c;
+			Item samp = ContentSamples.ItemsByType.TryGetValue(type, out var q) ? q : null;
+			double own = samp?.value ?? 0;
+			if (!_leafBusy.Add(type)) return own;
+			double best = double.MaxValue;
+			if (_recipesFor.TryGetValue(type, out var recs))
+			{
+				foreach (var rec in recs)
+				{
+					double sum = 0;
+					foreach (var ing in rec.requiredItem)
+					{
+						double b = LeafCost(ing.type);
+						foreach (var gid in rec.acceptedGroups)
+						{
+							if (!RecipeGroup.recipeGroups.TryGetValue(gid, out var grp) || !grp.ContainsItem(ing.type)) continue;
+							foreach (var alt in grp.ValidItems) b = Math.Min(b, LeafCost(alt));
+						}
+						sum += b * ing.stack;
+					}
+					sum /= Math.Max(1, rec.createItem.stack);
+					if (sum > 0 && sum < best) best = sum;
+				}
+			}
+			_leafBusy.Remove(type);
+			double res = best == double.MaxValue ? own : best;
+			_leaf[type] = res; return res;
 		}
 
 		/// <summary>Route tier of an item type (min over its routes), Inf when nothing reaches it. src names the winning route.</summary>

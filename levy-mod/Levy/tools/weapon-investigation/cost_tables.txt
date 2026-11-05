@@ -1,0 +1,1032 @@
+
+######## STAGE pre-boss (149 weapons reachable by tier <= 0.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   ThoriumMod/Bellerose           cost=   152500 (val    50000 + mats   102500) tier= 0.00 rare=21 cur=  130.1 tierRank=  25.1 effDps=  51.8
+   Vanilla/FieryGreatsword        cost=   102000 (val    27000 + mats    75000) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.4 effDps=  44.2
+   Vanilla/Katana                 cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   13.6 tierRank=  19.3 effDps=   7.2
+   Vanilla/Flymeal                cost=    90500 (val    17500 + mats    73000) tier= 0.00 rare= 2 cur=   68.3 tierRank=  22.3 effDps=  31.7
+   Vanilla/PlatinumBroadsword     cost=    85500 (val    13500 + mats    72000) tier= 0.00 rare= 0 cur=   55.9 tierRank=  14.3 effDps=  30.0
+   Vanilla/PlatinumShortsword     cost=    64500 (val    10500 + mats    54000) tier= 0.00 rare= 0 cur=  125.4 tierRank=  16.6 effDps=  72.0
+   Vanilla/GoldBroadsword         cost=    57000 (val     9000 + mats    48000) tier= 0.00 rare= 0 cur=   52.1 tierRank=  13.1 effDps=  27.0
+   Vanilla/GoldShortsword         cost=    43000 (val     7000 + mats    36000) tier= 0.00 rare= 0 cur=  107.0 tierRank=  15.0 effDps=  60.0
+   Vanilla/TungstenBroadsword     cost=    42750 (val     6750 + mats    36000) tier= 0.00 rare= 0 cur=   48.4 tierRank=  12.1 effDps=  24.0
+-- class melee: TIER-primary top10 (blend)
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   CalamityMod/MonolithSword      cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  339.5 tierRank=  36.7 effDps= 167.1
+   Vanilla/PearlwoodSword         cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  237.6 tierRank=  36.0 effDps= 138.0
+   Vanilla/FieryGreatsword        cost=   102000 (val    27000 + mats    75000) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.4 effDps=  44.2
+   Vanilla/DyeTradersScimitar     cost=    25000 (val    25000 + mats        0) tier= 0.00 rare= 2 cur=  103.7 tierRank=  25.2 effDps=  60.0
+   ThoriumMod/Bellerose           cost=   152500 (val    50000 + mats   102500) tier= 0.00 rare=21 cur=  130.1 tierRank=  25.1 effDps=  51.8
+   ThoriumMod/eDarksteelBroadSwor cost=    17350 (val    17000 + mats      350) tier= 0.00 rare= 2 cur=   98.4 tierRank=  24.3 effDps=  60.0
+   Vanilla/Flymeal                cost=    90500 (val    17500 + mats    73000) tier= 0.00 rare= 2 cur=   68.3 tierRank=  22.3 effDps=  31.7
+   Vanilla/Katana                 cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   13.6 tierRank=  19.3 effDps=   7.2
+   Vanilla/PlatinumShortsword     cost=    64500 (val    10500 + mats    54000) tier= 0.00 rare= 0 cur=  125.4 tierRank=  16.6 effDps=  72.0
+-- class melee: CURRENT Score top10
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   CalamityMod/MonolithSword      cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  339.5 tierRank=  36.7 effDps= 167.1
+   Vanilla/PearlwoodSword         cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  237.6 tierRank=  36.0 effDps= 138.0
+   ThoriumMod/Bellerose           cost=   152500 (val    50000 + mats   102500) tier= 0.00 rare=21 cur=  130.1 tierRank=  25.1 effDps=  51.8
+   Vanilla/PlatinumShortsword     cost=    64500 (val    10500 + mats    54000) tier= 0.00 rare= 0 cur=  125.4 tierRank=  16.6 effDps=  72.0
+   Vanilla/GoldShortsword         cost=    43000 (val     7000 + mats    36000) tier= 0.00 rare= 0 cur=  107.0 tierRank=  15.0 effDps=  60.0
+   Vanilla/DyeTradersScimitar     cost=    25000 (val    25000 + mats        0) tier= 0.00 rare= 2 cur=  103.7 tierRank=  25.2 effDps=  60.0
+   ThoriumMod/eDarksteelBroadSwor cost=    17350 (val    17000 + mats      350) tier= 0.00 rare= 2 cur=   98.4 tierRank=  24.3 effDps=  60.0
+   Vanilla/TungstenShortsword     cost=    32250 (val     5250 + mats    27000) tier= 0.00 rare= 0 cur=   94.0 tierRank=  13.7 effDps=  49.1
+   Vanilla/FieryGreatsword        cost=   102000 (val    27000 + mats    75000) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.4 effDps=  44.2
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/Sandgun                cost=   229250 (val    10000 + mats   219250) tier= 0.00 rare= 2 cur=  115.2 tierRank=  23.7 effDps=  72.0
+   Vanilla/Revolver               cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 2 cur=  108.0 tierRank=  28.8 effDps=  65.4
+   Vanilla/MoltenFury             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=  119.2 tierRank=  34.7 effDps=  65.4
+   Vanilla/PlatinumBow            cost=    73500 (val    10500 + mats    63000) tier= 0.00 rare= 0 cur=   64.1 tierRank=  14.7 effDps=  40.8
+   Vanilla/FlintlockPistol        cost=    50000 (val    50000 + mats        0) tier= 0.00 rare= 1 cur=  107.6 tierRank=  23.5 effDps=  63.7
+   ThoriumMod/Trapper             cost=    50000 (val    50000 + mats        0) tier= 0.00 rare= 1 cur=   65.5 tierRank=  21.7 effDps=  37.5
+   Vanilla/GoldBow                cost=    49000 (val     7000 + mats    42000) tier= 0.00 rare= 0 cur=   55.9 tierRank=  13.2 effDps=  34.6
+   ThoriumMod/Slugger             cost=    47000 (val    25000 + mats    22000) tier= 0.00 rare= 2 cur=   68.0 tierRank=  24.0 effDps=  41.2
+-- class ranged: TIER-primary top10 (blend)
+   CalamityMod/MonolithBow        cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  204.2 tierRank=  34.7 effDps=  98.7
+   Vanilla/MoltenFury             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=  119.2 tierRank=  34.7 effDps=  65.4
+   Vanilla/PearlwoodBow           cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  166.3 tierRank=  34.6 effDps=  94.5
+   ThoriumMod/GrassStringBow      cost=    32200 (val    27000 + mats     5200) tier= 0.00 rare= 3 cur=  106.5 tierRank=  34.1 effDps=  54.3
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/Revolver               cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 2 cur=  108.0 tierRank=  28.8 effDps=  65.4
+   ThoriumMod/gDarkSteelCrossBow  cost=    17350 (val    17000 + mats      350) tier= 0.00 rare= 2 cur=   85.1 tierRank=  24.2 effDps=  57.0
+   ThoriumMod/Slugger             cost=    47000 (val    25000 + mats    22000) tier= 0.00 rare= 2 cur=   68.0 tierRank=  24.0 effDps=  41.2
+   Vanilla/PainterPaintballGun    cost=    25000 (val    25000 + mats        0) tier= 0.00 rare= 2 cur=  103.7 tierRank=  23.9 effDps=  40.0
+-- class ranged: CURRENT Score top10
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   CalamityMod/MonolithBow        cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  204.2 tierRank=  34.7 effDps=  98.7
+   Vanilla/PearlwoodBow           cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  166.3 tierRank=  34.6 effDps=  94.5
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/MoltenFury             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=  119.2 tierRank=  34.7 effDps=  65.4
+   Vanilla/Sandgun                cost=   229250 (val    10000 + mats   219250) tier= 0.00 rare= 2 cur=  115.2 tierRank=  23.7 effDps=  72.0
+   Vanilla/Revolver               cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 2 cur=  108.0 tierRank=  28.8 effDps=  65.4
+   Vanilla/FlintlockPistol        cost=    50000 (val    50000 + mats        0) tier= 0.00 rare= 1 cur=  107.6 tierRank=  23.5 effDps=  63.7
+   ThoriumMod/GrassStringBow      cost=    32200 (val    27000 + mats     5200) tier= 0.00 rare= 3 cur=  106.5 tierRank=  34.1 effDps=  54.3
+   Vanilla/PainterPaintballGun    cost=    25000 (val    25000 + mats        0) tier= 0.00 rare= 2 cur=  103.7 tierRank=  23.9 effDps=  40.0
+
+-- class magic: COST-primary top10 (value + total material cost)
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   Vanilla/DiamondStaff           cost=   240000 (val    30000 + mats   210000) tier= 0.00 rare= 2 cur=   69.0 tierRank=  24.3 effDps=  39.2
+   Vanilla/RubyStaff              cost=   170000 (val    20000 + mats   150000) tier= 0.00 rare= 1 cur=   55.4 tierRank=  19.1 effDps=  32.1
+   Vanilla/ZapinatorGray          cost=   170000 (val   170000 + mats        0) tier= 0.00 rare= 2 cur=   93.0 tierRank=  29.7 effDps=  60.0
+   Vanilla/EmeraldStaff           cost=   120000 (val    15000 + mats   105000) tier= 0.00 rare= 1 cur=   62.1 tierRank=  19.0 effDps=  39.4
+   CalamityMod/FlareBolt          cost=    99250 (val    50000 + mats    49250) tier= 0.00 rare= 3 cur=   41.0 tierRank=  32.7 effDps=  22.1
+   CalamityMod/HellwingStaff      cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   57.5 tierRank=  32.6 effDps=  21.0
+   Vanilla/SapphireStaff          cost=    85000 (val    10000 + mats    75000) tier= 0.00 rare= 1 cur=   53.8 tierRank=  17.6 effDps=  33.5
+   ThoriumMod/InfernoStaff        cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=   50.9 tierRank=  31.6 effDps=  24.4
+   ThoriumMod/AquamarineStaff     cost=    70000 (val     7500 + mats    62500) tier= 0.00 rare= 0 cur=   33.7 tierRank=  11.7 effDps=  18.8
+-- class magic: TIER-primary top10 (blend)
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   CalamityMod/FlareBolt          cost=    99250 (val    50000 + mats    49250) tier= 0.00 rare= 3 cur=   41.0 tierRank=  32.7 effDps=  22.1
+   CalamityMod/HellwingStaff      cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   57.5 tierRank=  32.6 effDps=  21.0
+   ThoriumMod/InfernoStaff        cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=   50.9 tierRank=  31.6 effDps=  24.4
+   Vanilla/ZapinatorGray          cost=   170000 (val   170000 + mats        0) tier= 0.00 rare= 2 cur=   93.0 tierRank=  29.7 effDps=  60.0
+   Vanilla/DiamondStaff           cost=   240000 (val    30000 + mats   210000) tier= 0.00 rare= 2 cur=   69.0 tierRank=  24.3 effDps=  39.2
+   CalamityMod/FrostBolt          cost=    25825 (val    20000 + mats     5825) tier= 0.00 rare= 2 cur=   64.6 tierRank=  23.2 effDps=  38.0
+   ThoriumMod/BloodyWand          cost=    16275 (val    14875 + mats     1400) tier= 0.00 rare=21 cur=  177.2 tierRank=  21.5 effDps=  62.6
+   ThoriumMod/ObsidianStaff       cost=    37500 (val    15000 + mats    22500) tier= 0.00 rare=21 cur=  147.2 tierRank=  21.4 effDps=  60.0
+   Vanilla/RubyStaff              cost=   170000 (val    20000 + mats   150000) tier= 0.00 rare= 1 cur=   55.4 tierRank=  19.1 effDps=  32.1
+-- class magic: CURRENT Score top10
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   ThoriumMod/BloodyWand          cost=    16275 (val    14875 + mats     1400) tier= 0.00 rare=21 cur=  177.2 tierRank=  21.5 effDps=  62.6
+   ThoriumMod/ObsidianStaff       cost=    37500 (val    15000 + mats    22500) tier= 0.00 rare=21 cur=  147.2 tierRank=  21.4 effDps=  60.0
+   CalamityMod/IcicleStaff        cost=    10300 (val    10000 + mats      300) tier= 0.00 rare= 1 cur=  104.6 tierRank=  17.7 effDps=  34.3
+   Vanilla/ZapinatorGray          cost=   170000 (val   170000 + mats        0) tier= 0.00 rare= 2 cur=   93.0 tierRank=  29.7 effDps=  60.0
+   Vanilla/DiamondStaff           cost=   240000 (val    30000 + mats   210000) tier= 0.00 rare= 2 cur=   69.0 tierRank=  24.3 effDps=  39.2
+   CalamityMod/FrostBolt          cost=    25825 (val    20000 + mats     5825) tier= 0.00 rare= 2 cur=   64.6 tierRank=  23.2 effDps=  38.0
+   Vanilla/EmeraldStaff           cost=   120000 (val    15000 + mats   105000) tier= 0.00 rare= 1 cur=   62.1 tierRank=  19.0 effDps=  39.4
+   CalamityMod/HellwingStaff      cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   57.5 tierRank=  32.6 effDps=  21.0
+   Vanilla/RubyStaff              cost=   170000 (val    20000 + mats   150000) tier= 0.00 rare= 1 cur=   55.4 tierRank=  19.1 effDps=  32.1
+
+-- class summon: COST-primary top10 (value + total material cost)
+   Vanilla/BlandWhip              cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   28.2 tierRank=  20.4 effDps=  12.8
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   CalamityMod/CinderBlossomStaff cost=    88000 (val    50000 + mats    38000) tier= 0.00 rare= 3 cur=   55.2 tierRank=  31.6 effDps=  13.9
+   CalamityMod/SunSpiritStaff     cost=    85150 (val    10000 + mats    75150) tier= 0.00 rare= 1 cur=   54.8 tierRank=  17.5 effDps=  32.7
+   ThoriumMod/InfernalAnimator    cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare=21 cur=   51.2 tierRank=  19.8 effDps=  18.0
+   Vanilla/BoneWhip               cost=    79500 (val    75000 + mats     4500) tier= 0.00 rare= 2 cur=   56.8 tierRank=  25.9 effDps=  33.6
+   Vanilla/BabyBirdStaff          cost=    52500 (val    50000 + mats     2500) tier= 0.00 rare= 1 cur=   17.8 tierRank=  16.2 effDps=   2.0
+   CalamityMod/FrostBlossomStaff  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   37.3 tierRank=  15.9 effDps=  18.4
+   CalamityMod/WulfrumController  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   47.3 tierRank=  16.9 effDps=  26.5
+   ThoriumMod/AntlionStaff        cost=    10200 (val    10000 + mats      200) tier= 0.00 rare= 0 cur=   24.4 tierRank=  11.3 effDps=  12.0
+-- class summon: TIER-primary top10 (blend)
+   CalamityMod/CinderBlossomStaff cost=    88000 (val    50000 + mats    38000) tier= 0.00 rare= 3 cur=   55.2 tierRank=  31.6 effDps=  13.9
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   Vanilla/BoneWhip               cost=    79500 (val    75000 + mats     4500) tier= 0.00 rare= 2 cur=   56.8 tierRank=  25.9 effDps=  33.6
+   Vanilla/BlandWhip              cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   28.2 tierRank=  20.4 effDps=  12.8
+   ThoriumMod/InfernalAnimator    cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare=21 cur=   51.2 tierRank=  19.8 effDps=  18.0
+   CalamityMod/SunSpiritStaff     cost=    85150 (val    10000 + mats    75150) tier= 0.00 rare= 1 cur=   54.8 tierRank=  17.5 effDps=  32.7
+   CalamityMod/WulfrumController  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   47.3 tierRank=  16.9 effDps=  26.5
+   Vanilla/BabyBirdStaff          cost=    52500 (val    50000 + mats     2500) tier= 0.00 rare= 1 cur=   17.8 tierRank=  16.2 effDps=   2.0
+   CalamityMod/FrostBlossomStaff  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   37.3 tierRank=  15.9 effDps=  18.4
+   ThoriumMod/AntlionStaff        cost=    10200 (val    10000 + mats      200) tier= 0.00 rare= 0 cur=   24.4 tierRank=  11.3 effDps=  12.0
+-- class summon: CURRENT Score top10
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   Vanilla/BoneWhip               cost=    79500 (val    75000 + mats     4500) tier= 0.00 rare= 2 cur=   56.8 tierRank=  25.9 effDps=  33.6
+   CalamityMod/CinderBlossomStaff cost=    88000 (val    50000 + mats    38000) tier= 0.00 rare= 3 cur=   55.2 tierRank=  31.6 effDps=  13.9
+   CalamityMod/SunSpiritStaff     cost=    85150 (val    10000 + mats    75150) tier= 0.00 rare= 1 cur=   54.8 tierRank=  17.5 effDps=  32.7
+   ThoriumMod/InfernalAnimator    cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare=21 cur=   51.2 tierRank=  19.8 effDps=  18.0
+   CalamityMod/WulfrumController  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   47.3 tierRank=  16.9 effDps=  26.5
+   CalamityMod/FrostBlossomStaff  cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   37.3 tierRank=  15.9 effDps=  18.4
+   Vanilla/BlandWhip              cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   28.2 tierRank=  20.4 effDps=  12.8
+   ThoriumMod/AntlionStaff        cost=    10200 (val    10000 + mats      200) tier= 0.00 rare= 0 cur=   24.4 tierRank=  11.3 effDps=  12.0
+   Vanilla/BabyBirdStaff          cost=    52500 (val    50000 + mats     2500) tier= 0.00 rare= 1 cur=   17.8 tierRank=  16.2 effDps=   2.0
+
+-- class none: COST-primary top10 (value + total material cost)
+   CalamityMod/GleamingDagger     cost=   118000 (val    10000 + mats   108000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+   CalamityMod/InfernalKris       cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   95.8 tierRank=  34.1 effDps=  35.0
+   ThoriumMod/PlatinumBugleHorn   cost=    85500 (val    13500 + mats    72000) tier= 0.00 rare= 0 cur=   14.5 tierRank=  10.9 effDps=   6.7
+   ThoriumMod/HotHorn             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.0 effDps=  39.0
+   CalamityMod/GildedDagger       cost=    82000 (val    10000 + mats    72000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+   ThoriumMod/Bongos              cost=    76000 (val    27000 + mats    49000) tier= 0.00 rare= 3 cur=   36.3 tierRank=  30.6 effDps=  17.1
+   ThoriumMod/GoldBugleHorn       cost=    57000 (val     9000 + mats    48000) tier= 0.00 rare= 0 cur=   11.8 tierRank=   9.4 effDps=   4.6
+   ThoriumMod/PoisonPrickler      cost=    52500 (val    27000 + mats    25500) tier= 0.00 rare= 3 cur=   66.6 tierRank=  31.1 effDps=  20.5
+   ThoriumMod/SongofIceAndFire    cost=    41500 (val    27000 + mats    14500) tier= 0.00 rare= 2 cur=  129.7 tierRank=  26.2 effDps=  76.0
+   ThoriumMod/GrandPiano          cost=    29000 (val     5000 + mats    24000) tier= 0.00 rare= 1 cur=   94.2 tierRank=  16.7 effDps=  42.0
+-- class none: TIER-primary top10 (blend)
+   CalamityMod/InfernalKris       cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   95.8 tierRank=  34.1 effDps=  35.0
+   ThoriumMod/HotHorn             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.0 effDps=  39.0
+   ThoriumMod/PoisonPrickler      cost=    52500 (val    27000 + mats    25500) tier= 0.00 rare= 3 cur=   66.6 tierRank=  31.1 effDps=  20.5
+   ThoriumMod/Bongos              cost=    76000 (val    27000 + mats    49000) tier= 0.00 rare= 3 cur=   36.3 tierRank=  30.6 effDps=  17.1
+   ThoriumMod/BoneTrumpet         cost=    26250 (val    25000 + mats     1250) tier= 0.00 rare= 2 cur=  140.9 tierRank=  26.5 effDps=  86.3
+   ThoriumMod/SongofIceAndFire    cost=    41500 (val    27000 + mats    14500) tier= 0.00 rare= 2 cur=  129.7 tierRank=  26.2 effDps=  76.0
+   CalamityMod/Pumpkaboom         cost=    26125 (val    20000 + mats     6125) tier= 0.00 rare= 2 cur=   18.8 tierRank=  19.6 effDps=   9.4
+   ThoriumMod/ObsidianRackett     cost=    13000 (val    13000 + mats        0) tier= 0.00 rare= 1 cur=   82.7 tierRank=  19.1 effDps=  45.0
+   CalamityMod/GildedDagger       cost=    82000 (val    10000 + mats    72000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+   CalamityMod/GleamingDagger     cost=   118000 (val    10000 + mats   108000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+-- class none: CURRENT Score top10
+   ThoriumMod/BoneTrumpet         cost=    26250 (val    25000 + mats     1250) tier= 0.00 rare= 2 cur=  140.9 tierRank=  26.5 effDps=  86.3
+   ThoriumMod/SongofIceAndFire    cost=    41500 (val    27000 + mats    14500) tier= 0.00 rare= 2 cur=  129.7 tierRank=  26.2 effDps=  76.0
+   CalamityMod/InfernalKris       cost=    87500 (val    50000 + mats    37500) tier= 0.00 rare= 3 cur=   95.8 tierRank=  34.1 effDps=  35.0
+   ThoriumMod/GrandPiano          cost=    29000 (val     5000 + mats    24000) tier= 0.00 rare= 1 cur=   94.2 tierRank=  16.7 effDps=  42.0
+   ThoriumMod/ObsidianRackett     cost=    13000 (val    13000 + mats        0) tier= 0.00 rare= 1 cur=   82.7 tierRank=  19.1 effDps=  45.0
+   ThoriumMod/HotHorn             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=   81.4 tierRank=  33.0 effDps=  39.0
+   CalamityMod/WulfrumKnife       cost=    10500 (val    10000 + mats      500) tier= 0.00 rare= 1 cur=   71.0 tierRank=  16.9 effDps=  26.5
+   ThoriumMod/PoisonPrickler      cost=    52500 (val    27000 + mats    25500) tier= 0.00 rare= 3 cur=   66.6 tierRank=  31.1 effDps=  20.5
+   CalamityMod/GildedDagger       cost=    82000 (val    10000 + mats    72000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+   CalamityMod/GleamingDagger     cost=   118000 (val    10000 + mats   108000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+
+######## STAGE post-EoC (372 weapons reachable by tier <= 2.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   Vanilla/CrimsonYoyo            cost=   284000 (val    50000 + mats   234000) tier= 2.00 rare= 1 cur=   47.9 tierRank=  34.0 effDps=  18.2
+   Vanilla/EnchantedSword         cost=   253250 (val   150000 + mats   103250) tier= 1.60 rare= 2 cur=   40.7 tierRank=  37.1 effDps=  16.7
+   ThoriumMod/MeleeThorHammer     cost=   242000 (val    27000 + mats   215000) tier= 1.00 rare= 3 cur=  122.2 tierRank=  41.8 effDps=  63.8
+   Vanilla/CorruptYoyo            cost=   230000 (val    50000 + mats   180000) tier= 2.00 rare= 1 cur=   47.9 tierRank=  34.0 effDps=  18.2
+   Vanilla/WhitePhaseblade        cost=   222000 (val    27000 + mats   195000) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/OrangePhaseblade       cost=   222000 (val    27000 + mats   195000) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/BloodButcherer         cost=   208500 (val    13500 + mats   195000) tier= 2.00 rare= 1 cur=   64.7 tierRank=  32.1 effDps=  27.6
+   Vanilla/FlamingMace            cost=   200165 (val   100000 + mats   100165) tier= 1.00 rare= 1 cur=   12.1 tierRank=  18.4 effDps=   1.1
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   CalamityMod/ClamCrusher        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  217.7 tierRank=  71.4 effDps= 126.7
+-- class melee: TIER-primary top10 (blend)
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   CalamityMod/ClamCrusher        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  217.7 tierRank=  71.4 effDps= 126.7
+   CalamityMod/MycelialClaws      cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  310.1 tierRank=  47.5 effDps= 150.0
+   ThoriumMod/Moonlight           cost=   111250 (val   100000 + mats    11250) tier= 2.00 rare=21 cur=  119.5 tierRank=  47.0 effDps=  38.9
+   Vanilla/TaxCollectorsStickOfDo cost=    25000 (val    25000 + mats        0) tier= 2.00 rare= 2 cur=  622.0 tierRank=  46.9 effDps= 417.0
+   ThoriumMod/MeleeThorHammer     cost=   242000 (val    27000 + mats   215000) tier= 1.00 rare= 3 cur=  122.2 tierRank=  41.8 effDps=  63.8
+   CalamityMod/InfestedClawmerang cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=   55.8 tierRank=  40.5 effDps=  18.0
+   Vanilla/BloodyMachete          cost=    50000 (val    50000 + mats        0) tier= 2.00 rare= 2 cur=  100.5 tierRank=  40.2 effDps=  43.2
+   CalamityMod/TeardropCleaver    cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=  106.6 tierRank=  38.9 effDps=  56.2
+   Vanilla/BlueMoon               cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   37.9 tierRank=  38.8 effDps=  17.6
+-- class melee: CURRENT Score top10
+   Vanilla/TaxCollectorsStickOfDo cost=    25000 (val    25000 + mats        0) tier= 2.00 rare= 2 cur=  622.0 tierRank=  46.9 effDps= 417.0
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   CalamityMod/MonolithSword      cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  339.5 tierRank=  36.7 effDps= 167.1
+   CalamityMod/MycelialClaws      cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  310.1 tierRank=  47.5 effDps= 150.0
+   Vanilla/PearlwoodSword         cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  237.6 tierRank=  36.0 effDps= 138.0
+   CalamityMod/ClamCrusher        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  217.7 tierRank=  71.4 effDps= 126.7
+   Vanilla/Gladius                cost=    15000 (val    15000 + mats        0) tier= 1.00 rare= 1 cur=  157.8 tierRank=  28.5 effDps=  77.2
+   Vanilla/BluePhaseblade         cost=   128250 (val    27000 + mats   101250) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/RedPhaseblade          cost=   184500 (val    27000 + mats   157500) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/GreenPhaseblade        cost=   147000 (val    27000 + mats   120000) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/PhoenixBlaster         cost=   300000 (val   175000 + mats   125000) tier= 2.00 rare= 3 cur=  166.8 tierRank=  54.6 effDps=  88.5
+   Vanilla/Sandgun                cost=   229250 (val    10000 + mats   219250) tier= 0.00 rare= 2 cur=  115.2 tierRank=  23.7 effDps=  72.0
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   Vanilla/TendonBow              cost=   174000 (val    18000 + mats   156000) tier= 2.00 rare= 1 cur=   66.4 tierRank=  33.3 effDps=  33.0
+   ThoriumMod/AquaPelter          cost=   162500 (val    15000 + mats   147500) tier= 2.00 rare= 2 cur=  115.8 tierRank=  35.9 effDps=  27.0
+   Vanilla/DemonBow               cost=   138000 (val    18000 + mats   120000) tier= 2.00 rare= 1 cur=   65.0 tierRank=  32.8 effDps=  27.6
+   Vanilla/Boomstick              cost=   100000 (val   100000 + mats        0) tier= 2.00 rare= 2 cur=  124.7 tierRank=  42.1 effDps=  47.2
+-- class ranged: TIER-primary top10 (blend)
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   Vanilla/PhoenixBlaster         cost=   300000 (val   175000 + mats   125000) tier= 2.00 rare= 3 cur=  166.8 tierRank=  54.6 effDps=  88.5
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   CalamityMod/Fungicide          cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  102.2 tierRank=  43.6 effDps=  50.5
+   Vanilla/Handgun                cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=  142.3 tierRank=  43.4 effDps=  76.5
+   Vanilla/Boomstick              cost=   100000 (val   100000 + mats        0) tier= 2.00 rare= 2 cur=  124.7 tierRank=  42.1 effDps=  47.2
+   ThoriumMod/StreamSting         cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=  118.6 tierRank=  42.0 effDps=  50.6
+   CalamityMod/Shellshooter       cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   55.4 tierRank=  37.2 effDps=  33.9
+   CalamityMod/Toxibow            cost=    23600 (val    20000 + mats     3600) tier= 2.00 rare= 2 cur=   69.2 tierRank=  37.0 effDps=  31.1
+   CalamityMod/CrackshotColt      cost=    68420 (val    20000 + mats    48420) tier= 2.00 rare= 2 cur=   62.0 tierRank=  36.9 effDps=  30.0
+-- class ranged: CURRENT Score top10
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   CalamityMod/MonolithBow        cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  204.2 tierRank=  34.7 effDps=  98.7
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   Vanilla/PhoenixBlaster         cost=   300000 (val   175000 + mats   125000) tier= 2.00 rare= 3 cur=  166.8 tierRank=  54.6 effDps=  88.5
+   Vanilla/PearlwoodBow           cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  166.3 tierRank=  34.6 effDps=  94.5
+   Vanilla/Handgun                cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=  142.3 tierRank=  43.4 effDps=  76.5
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/Boomstick              cost=   100000 (val   100000 + mats        0) tier= 2.00 rare= 2 cur=  124.7 tierRank=  42.1 effDps=  47.2
+   Vanilla/MoltenFury             cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare= 3 cur=  119.2 tierRank=  34.7 effDps=  65.4
+
+-- class magic: COST-primary top10 (value + total material cost)
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   Vanilla/DiamondStaff           cost=   240000 (val    30000 + mats   210000) tier= 0.00 rare= 2 cur=   69.0 tierRank=  24.3 effDps=  39.2
+   CalamityMod/Poseidon           cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=   96.3 tierRank=  67.5 effDps=  41.7
+   ThoriumMod/GeyserStaff         cost=   171250 (val    15000 + mats   156250) tier= 2.00 rare= 2 cur=   45.6 tierRank=  35.2 effDps=  21.2
+   Vanilla/RubyStaff              cost=   170000 (val    20000 + mats   150000) tier= 0.00 rare= 1 cur=   55.4 tierRank=  19.1 effDps=  32.1
+   Vanilla/ZapinatorGray          cost=   170000 (val   170000 + mats        0) tier= 0.00 rare= 2 cur=   93.0 tierRank=  29.7 effDps=  60.0
+   ThoriumMod/VesselBuster        cost=   169500 (val    13500 + mats   156000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+   Vanilla/AmberStaff             cost=   140000 (val    20000 + mats   120000) tier= 1.00 rare= 1 cur=   60.9 tierRank=  26.6 effDps=  35.3
+   ThoriumMod/DarkWave            cost=   133500 (val    13500 + mats   120000) tier= 2.00 rare= 1 cur=   66.8 tierRank=  31.9 effDps=  25.9
+   Vanilla/EmeraldStaff           cost=   120000 (val    15000 + mats   105000) tier= 0.00 rare= 1 cur=   62.1 tierRank=  19.0 effDps=  39.4
+-- class magic: TIER-primary top10 (blend)
+   CalamityMod/Poseidon           cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=   96.3 tierRank=  67.5 effDps=  41.7
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   CalamityMod/HyphaeRod          cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=   71.1 tierRank=  41.8 effDps=  28.8
+   ThoriumMod/WaterwickCandle     cost=    41001 (val    25000 + mats    16001) tier= 2.00 rare= 2 cur=  169.6 tierRank=  41.5 effDps= 102.3
+   ThoriumMod/HighTide            cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   65.9 tierRank=  39.7 effDps=  23.8
+   ThoriumMod/DetachedBlaster     cost=    25000 (val    25000 + mats        0) tier= 2.00 rare= 2 cur=   77.8 tierRank=  38.1 effDps=  37.5
+   ThoriumMod/BubbleConch         cost=    15000 (val    15000 + mats        0) tier= 2.00 rare= 2 cur=  126.9 tierRank=  38.1 effDps=  53.6
+   ThoriumMod/BloomingStaff       cost=    19000 (val    15000 + mats     4000) tier= 2.00 rare= 2 cur=  109.7 tierRank=  36.7 effDps=  35.5
+   CalamityMod/AcidGun            cost=    23600 (val    20000 + mats     3600) tier= 2.00 rare= 2 cur=   69.8 tierRank=  36.0 effDps=  22.5
+   CalamityMod/Waywasher          cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   82.7 tierRank=  36.0 effDps=  22.0
+-- class magic: CURRENT Score top10
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   ThoriumMod/BloodyWand          cost=    16275 (val    14875 + mats     1400) tier= 0.00 rare=21 cur=  177.2 tierRank=  21.5 effDps=  62.6
+   ThoriumMod/WaterwickCandle     cost=    41001 (val    25000 + mats    16001) tier= 2.00 rare= 2 cur=  169.6 tierRank=  41.5 effDps= 102.3
+   ThoriumMod/ObsidianStaff       cost=    37500 (val    15000 + mats    22500) tier= 0.00 rare=21 cur=  147.2 tierRank=  21.4 effDps=  60.0
+   ThoriumMod/BubbleConch         cost=    15000 (val    15000 + mats        0) tier= 2.00 rare= 2 cur=  126.9 tierRank=  38.1 effDps=  53.6
+   ThoriumMod/VesselBuster        cost=   169500 (val    13500 + mats   156000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+   ThoriumMod/BloomingStaff       cost=    19000 (val    15000 + mats     4000) tier= 2.00 rare= 2 cur=  109.7 tierRank=  36.7 effDps=  35.5
+   CalamityMod/IcicleStaff        cost=    10300 (val    10000 + mats      300) tier= 0.00 rare= 1 cur=  104.6 tierRank=  17.7 effDps=  34.3
+   Vanilla/SpaceGun               cost=    80000 (val    20000 + mats    60000) tier= 2.00 rare= 1 cur=  100.0 tierRank=  34.5 effDps=  44.1
+   CalamityMod/Poseidon           cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=   96.3 tierRank=  67.5 effDps=  41.7
+
+-- class summon: COST-primary top10 (value + total material cost)
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   Vanilla/SlimeStaff             cost=   100200 (val   100000 + mats      200) tier= 1.00 rare= 4 cur=   31.8 tierRank=  19.0 effDps=   2.8
+   Vanilla/BlandWhip              cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   28.2 tierRank=  20.4 effDps=  12.8
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   Vanilla/FlinxStaff             cost=    88000 (val    25000 + mats    63000) tier= 1.00 rare= 3 cur=   27.3 tierRank=  18.9 effDps=   2.5
+   CalamityMod/CinderBlossomStaff cost=    88000 (val    50000 + mats    38000) tier= 0.00 rare= 3 cur=   55.2 tierRank=  31.6 effDps=  13.9
+   ThoriumMod/NanoClamCane        cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   23.7 tierRank=  18.8 effDps=   2.2
+   ThoriumMod/StrongestLink       cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   67.2 tierRank=  40.8 effDps=  35.2
+   CalamityMod/SunSpiritStaff     cost=    85150 (val    10000 + mats    75150) tier= 0.00 rare= 1 cur=   54.8 tierRank=  17.5 effDps=  32.7
+   ThoriumMod/InfernalAnimator    cost=    83250 (val    27000 + mats    56250) tier= 0.00 rare=21 cur=   51.2 tierRank=  19.8 effDps=  18.0
+-- class summon: TIER-primary top10 (blend)
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/StrangeSkull        cost=    33500 (val    25000 + mats     8500) tier= 2.00 rare=21 cur=   79.6 tierRank=  40.9 effDps=  26.2
+   ThoriumMod/StrongestLink       cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   67.2 tierRank=  40.8 effDps=  35.2
+   ThoriumMod/ArsenalStaff        cost=    63100 (val    50000 + mats    13100) tier= 2.00 rare=21 cur=  107.2 tierRank=  40.3 effDps=   7.0
+   ThoriumMod/TotemCaller         cost=    50000 (val    50000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  38.9 effDps=  29.2
+   CalamityMod/PuffShroom         cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=   41.2 tierRank=  38.7 effDps=   8.0
+   ThoriumMod/SpittingFish        cost=    50000 (val    50000 + mats        0) tier= 2.00 rare= 2 cur=   35.3 tierRank=  36.5 effDps=  11.2
+   CalamityMod/DeathstareRod      cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+   CalamityMod/EnchantedConch     cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+   CalamityMod/CinderBlossomStaff cost=    88000 (val    50000 + mats    38000) tier= 0.00 rare= 3 cur=   55.2 tierRank=  31.6 effDps=  13.9
+-- class summon: CURRENT Score top10
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/ArsenalStaff        cost=    63100 (val    50000 + mats    13100) tier= 2.00 rare=21 cur=  107.2 tierRank=  40.3 effDps=   7.0
+   ThoriumMod/PrehistoricAmberSta cost=    45000 (val    15000 + mats    30000) tier= 1.00 rare=21 cur=  106.0 tierRank=  29.1 effDps=  28.1
+   ThoriumMod/StrangeSkull        cost=    33500 (val    25000 + mats     8500) tier= 2.00 rare=21 cur=   79.6 tierRank=  40.9 effDps=  26.2
+   ThoriumMod/StrongestLink       cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   67.2 tierRank=  40.8 effDps=  35.2
+   CalamityMod/DeathstareRod      cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+   CalamityMod/EnchantedConch     cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+   ThoriumMod/TotemCaller         cost=    50000 (val    50000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  38.9 effDps=  29.2
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   Vanilla/BoneWhip               cost=    79500 (val    75000 + mats     4500) tier= 0.00 rare= 2 cur=   56.8 tierRank=  25.9 effDps=  33.6
+
+-- class none: COST-primary top10 (value + total material cost)
+   ThoriumMod/Embowelment         cost=   480000 (val   200000 + mats   280000) tier= 2.00 rare= 3 cur=   77.1 tierRank=  51.4 effDps=  31.2
+   ThoriumMod/LightAnguish        cost=   444000 (val   200000 + mats   244000) tier= 2.00 rare= 3 cur=   90.5 tierRank=  52.1 effDps=  38.8
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   ThoriumMod/SamsaraLotus        cost=   200000 (val   200000 + mats        0) tier= 2.00 rare= 2 cur=   32.0 tierRank=  39.8 effDps=  11.4
+   ThoriumMod/ShadeWoodTambourine cost=   178500 (val    13500 + mats   165000) tier= 2.00 rare= 1 cur=  117.6 tierRank=  32.6 effDps=  33.0
+   ThoriumMod/LastingPliers       cost=   162500 (val    12500 + mats   150000) tier= 2.00 rare= 1 cur=   22.9 tierRank=  18.7 effDps=   1.9
+   ThoriumMod/EbonWoodTambourine  cost=   142500 (val    13500 + mats   129000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+   ThoriumMod/ScubaCurva          cost=   122500 (val    15000 + mats   107500) tier= 2.00 rare= 2 cur=   26.3 tierRank=  33.0 effDps=   7.8
+   CalamityMod/GleamingDagger     cost=   118000 (val    10000 + mats   108000) tier= 0.00 rare= 1 cur=   56.9 tierRank=  16.9 effDps=  26.7
+   ThoriumMod/GelGlove            cost=   100000 (val   100000 + mats        0) tier= 1.00 rare=21 cur=   89.6 tierRank=  33.5 effDps=  11.7
+-- class none: TIER-primary top10 (blend)
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   ThoriumMod/AcousticGuitar      cost=    94000 (val    75000 + mats    19000) tier= 1.00 rare= 4 cur=  239.2 tierRank=  55.8 effDps= 131.7
+   ThoriumMod/LightAnguish        cost=   444000 (val   200000 + mats   244000) tier= 2.00 rare= 3 cur=   90.5 tierRank=  52.1 effDps=  38.8
+   ThoriumMod/Embowelment         cost=   480000 (val   200000 + mats   280000) tier= 2.00 rare= 3 cur=   77.1 tierRank=  51.4 effDps=  31.2
+   CalamityMod/Mycoroot           cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  155.0 tierRank=  40.0 effDps=  15.0
+   ThoriumMod/SamsaraLotus        cost=   200000 (val   200000 + mats        0) tier= 2.00 rare= 2 cur=   32.0 tierRank=  39.8 effDps=  11.4
+   ThoriumMod/ForestOcarina       cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   84.0 tierRank=  39.7 effDps=  24.4
+   ThoriumMod/NaiadShiv           cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   64.7 tierRank=  39.2 effDps=  20.5
+   ThoriumMod/RivetingTadpole     cost=    25000 (val    25000 + mats        0) tier= 2.00 rare= 2 cur=   83.1 tierRank=  38.8 effDps=  46.4
+   ThoriumMod/Omen                cost=    94250 (val    17500 + mats    76750) tier= 1.00 rare= 3 cur=   70.2 tierRank=  38.5 effDps=  31.0
+-- class none: CURRENT Score top10
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   ThoriumMod/AcousticGuitar      cost=    94000 (val    75000 + mats    19000) tier= 1.00 rare= 4 cur=  239.2 tierRank=  55.8 effDps= 131.7
+   ThoriumMod/CoralPurifier       cost=    16625 (val     9625 + mats     7000) tier= 1.60 rare= 1 cur=  221.5 tierRank=  31.6 effDps=  72.7
+   CalamityMod/Mycoroot           cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  155.0 tierRank=  40.0 effDps=  15.0
+   ThoriumMod/BoneTrumpet         cost=    26250 (val    25000 + mats     1250) tier= 0.00 rare= 2 cur=  140.9 tierRank=  26.5 effDps=  86.3
+   ThoriumMod/SongofIceAndFire    cost=    41500 (val    27000 + mats    14500) tier= 0.00 rare= 2 cur=  129.7 tierRank=  26.2 effDps=  76.0
+   ThoriumMod/MarineWineGlass     cost=    95000 (val    15000 + mats    80000) tier= 2.00 rare= 2 cur=  121.3 tierRank=  37.8 effDps=  49.3
+   ThoriumMod/SteelDrum           cost=    15000 (val    15000 + mats        0) tier= 2.00 rare= 2 cur=  118.2 tierRank=  36.9 effDps=  38.2
+   ThoriumMod/ShadeWoodTambourine cost=   178500 (val    13500 + mats   165000) tier= 2.00 rare= 1 cur=  117.6 tierRank=  32.6 effDps=  33.0
+   ThoriumMod/EbonWoodTambourine  cost=   142500 (val    13500 + mats   129000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+
+######## STAGE post-Skeletron (498 weapons reachable by tier <= 5.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   Vanilla/CrimsonYoyo            cost=   284000 (val    50000 + mats   234000) tier= 2.00 rare= 1 cur=   47.9 tierRank=  34.0 effDps=  18.2
+   Vanilla/EnchantedSword         cost=   253250 (val   150000 + mats   103250) tier= 1.60 rare= 2 cur=   40.7 tierRank=  37.1 effDps=  16.7
+   ThoriumMod/MeleeThorHammer     cost=   242000 (val    27000 + mats   215000) tier= 1.00 rare= 3 cur=  122.2 tierRank=  41.8 effDps=  63.8
+   Vanilla/CorruptYoyo            cost=   230000 (val    50000 + mats   180000) tier= 2.00 rare= 1 cur=   47.9 tierRank=  34.0 effDps=  18.2
+   Vanilla/TheMeatball            cost=   225750 (val    27000 + mats   198750) tier= 3.00 rare= 1 cur=   31.7 tierRank=  39.2 effDps=  14.4
+   Vanilla/WhitePhaseblade        cost=   222000 (val    27000 + mats   195000) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/OrangePhaseblade       cost=   222000 (val    27000 + mats   195000) tier= 2.00 rare= 1 cur=  148.5 tierRank=  37.4 effDps=  85.0
+   Vanilla/BloodButcherer         cost=   208500 (val    13500 + mats   195000) tier= 2.00 rare= 1 cur=   64.7 tierRank=  32.1 effDps=  27.6
+   Vanilla/FlamingMace            cost=   200165 (val   100000 + mats   100165) tier= 1.00 rare= 1 cur=   12.1 tierRank=  18.4 effDps=   1.1
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+-- class melee: TIER-primary top10 (blend)
+   Vanilla/ShadowFlameKnife       cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  322.5 tierRank=  82.6 effDps= 125.0
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   Vanilla/Anchor                 cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  351.3 tierRank=  72.9 effDps= 213.6
+   CalamityMod/ClamCrusher        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  217.7 tierRank=  71.4 effDps= 126.7
+   Vanilla/DarkLance              cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  128.3 tierRank=  69.3 effDps=  43.6
+   CalamityMod/OldLordClaymore    cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   73.0 tierRank=  67.2 effDps=  43.7
+   CalamityMod/BrokenBiomeBlade   cost=   177600 (val    50000 + mats   127600) tier= 4.50 rare= 3 cur=  104.0 tierRank=  66.9 effDps=  40.0
+   Vanilla/Cascade                cost=    90000 (val    90000 + mats        0) tier= 4.50 rare= 3 cur=   82.0 tierRank=  66.9 effDps=  25.0
+   CalamityMod/WindBlade          cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=  111.9 tierRank=  66.3 effDps=  32.7
+   Vanilla/Sunfury                cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=   47.2 tierRank=  66.3 effDps=  14.9
+-- class melee: CURRENT Score top10
+   Vanilla/TaxCollectorsStickOfDo cost=    25000 (val    25000 + mats        0) tier= 2.00 rare= 2 cur=  622.0 tierRank=  46.9 effDps= 417.0
+   Vanilla/Keybrand               cost=   200000 (val   200000 + mats        0) tier= 0.00 rare= 8 cur=  533.0 tierRank=  76.9 effDps= 261.0
+   Vanilla/Anchor                 cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  351.3 tierRank=  72.9 effDps= 213.6
+   CalamityMod/MonolithSword      cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  339.5 tierRank=  36.7 effDps= 167.1
+   Vanilla/ShadowFlameKnife       cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  322.5 tierRank=  82.6 effDps= 125.0
+   CalamityMod/MycelialClaws      cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  310.1 tierRank=  47.5 effDps= 150.0
+   Vanilla/PearlwoodSword         cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  237.6 tierRank=  36.0 effDps= 138.0
+   CalamityMod/ClamCrusher        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  217.7 tierRank=  71.4 effDps= 126.7
+   Vanilla/Ruler                  cost=     1000 (val     1000 + mats        0) tier= 3.30 rare= 1 cur=  169.9 tierRank=  34.2 effDps=  18.0
+   Vanilla/Gladius                cost=    15000 (val    15000 + mats        0) tier= 1.00 rare= 1 cur=  157.8 tierRank=  28.5 effDps=  77.2
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   Vanilla/Minishark              cost=   350000 (val   350000 + mats        0) tier= 0.00 rare= 2 cur=  140.9 tierRank=  31.4 effDps=  60.0
+   Vanilla/QuadBarrelShotgun      cost=   350000 (val   350000 + mats        0) tier= 5.00 rare= 3 cur=  146.8 tierRank=  73.8 effDps=  26.2
+   Vanilla/PhoenixBlaster         cost=   300000 (val   175000 + mats   125000) tier= 2.00 rare= 3 cur=  166.8 tierRank=  54.6 effDps=  88.5
+   Vanilla/Sandgun                cost=   229250 (val    10000 + mats   219250) tier= 0.00 rare= 2 cur=  115.2 tierRank=  23.7 effDps=  72.0
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   ThoriumMod/EternalNight        cost=   200000 (val   200000 + mats        0) tier= 4.50 rare= 3 cur=  111.4 tierRank=  70.5 effDps=  44.0
+   CalamityMod/AquashardShotgun   cost=   193000 (val    50000 + mats   143000) tier= 4.50 rare= 3 cur=   60.2 tierRank=  62.8 effDps=   8.0
+   Vanilla/TendonBow              cost=   174000 (val    18000 + mats   156000) tier= 2.00 rare= 1 cur=   66.4 tierRank=  33.3 effDps=  33.0
+-- class ranged: TIER-primary top10 (blend)
+   Vanilla/ShadowFlameBow         cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  292.5 tierRank=  83.0 effDps= 141.0
+   Vanilla/QuadBarrelShotgun      cost=   350000 (val   350000 + mats        0) tier= 5.00 rare= 3 cur=  146.8 tierRank=  73.8 effDps=  26.2
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   Vanilla/HellwingBow            cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  204.4 tierRank=  70.7 effDps=  64.6
+   ThoriumMod/EternalNight        cost=   200000 (val   200000 + mats        0) tier= 4.50 rare= 3 cur=  111.4 tierRank=  70.5 effDps=  44.0
+   CalamityMod/Archerfish         cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  194.0 tierRank=  67.2 effDps=  43.6
+   ThoriumMod/ElephantGun         cost=    75000 (val    75000 + mats        0) tier= 4.50 rare= 3 cur=   79.9 tierRank=  66.4 effDps=  24.4
+   Vanilla/BloodRainBow           cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  103.7 tierRank=  64.7 effDps=  18.9
+   Vanilla/Blowgun                cost=    50000 (val    50000 + mats        0) tier= 4.00 rare= 3 cur=  107.9 tierRank=  64.7 effDps=  60.9
+   ThoriumMod/RangedThorHammer    cost=    27000 (val    27000 + mats        0) tier= 4.50 rare= 3 cur=   65.1 tierRank=  64.6 effDps=  30.0
+-- class ranged: CURRENT Score top10
+   Vanilla/ShadowFlameBow         cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  292.5 tierRank=  83.0 effDps= 141.0
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   CalamityMod/ClamorRifle        cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  278.2 tierRank=  70.9 effDps= 112.0
+   Vanilla/HellwingBow            cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  204.4 tierRank=  70.7 effDps=  64.6
+   CalamityMod/MonolithBow        cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  204.2 tierRank=  34.7 effDps=  98.7
+   CalamityMod/Archerfish         cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  194.0 tierRank=  67.2 effDps=  43.6
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   Vanilla/PhoenixBlaster         cost=   300000 (val   175000 + mats   125000) tier= 2.00 rare= 3 cur=  166.8 tierRank=  54.6 effDps=  88.5
+   Vanilla/PearlwoodBow           cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  166.3 tierRank=  34.6 effDps=  94.5
+   Vanilla/QuadBarrelShotgun      cost=   350000 (val   350000 + mats        0) tier= 5.00 rare= 3 cur=  146.8 tierRank=  73.8 effDps=  26.2
+
+-- class magic: COST-primary top10 (value + total material cost)
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   Vanilla/DiamondStaff           cost=   240000 (val    30000 + mats   210000) tier= 0.00 rare= 2 cur=   69.0 tierRank=  24.3 effDps=  39.2
+   CalamityMod/Poseidon           cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=   96.3 tierRank=  67.5 effDps=  41.7
+   ThoriumMod/GeyserStaff         cost=   171250 (val    15000 + mats   156250) tier= 2.00 rare= 2 cur=   45.6 tierRank=  35.2 effDps=  21.2
+   Vanilla/RubyStaff              cost=   170000 (val    20000 + mats   150000) tier= 0.00 rare= 1 cur=   55.4 tierRank=  19.1 effDps=  32.1
+   Vanilla/ZapinatorGray          cost=   170000 (val   170000 + mats        0) tier= 0.00 rare= 2 cur=   93.0 tierRank=  29.7 effDps=  60.0
+   ThoriumMod/VesselBuster        cost=   169500 (val    13500 + mats   156000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+   Vanilla/AmberStaff             cost=   140000 (val    20000 + mats   120000) tier= 1.00 rare= 1 cur=   60.9 tierRank=  26.6 effDps=  35.3
+   CalamityMod/Tradewinds         cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=  125.9 tierRank=  64.9 effDps=  20.0
+   ThoriumMod/DarkWave            cost=   133500 (val    13500 + mats   120000) tier= 2.00 rare= 1 cur=   66.8 tierRank=  31.9 effDps=  25.9
+-- class magic: TIER-primary top10 (blend)
+   Vanilla/ShadowFlameHexDoll     cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  514.3 tierRank=  84.1 effDps= 188.6
+   Vanilla/FlowerofFire           cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  192.0 tierRank=  71.0 effDps=  71.3
+   Vanilla/Flamelash              cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=   99.6 tierRank=  68.7 effDps=  36.0
+   CalamityMod/Poseidon           cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=   96.3 tierRank=  67.5 effDps=  41.7
+   Vanilla/DemonScythe            cost=    75000 (val    75000 + mats        0) tier= 4.50 rare= 3 cur=  115.5 tierRank=  67.0 effDps=  30.0
+   CalamityMod/AbyssShocker       cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  129.6 tierRank=  66.7 effDps=  37.9
+   ThoriumMod/MagicThorHammer     cost=    27000 (val    27000 + mats        0) tier= 4.50 rare= 3 cur=  100.2 tierRank=  66.2 effDps=  49.6
+   CalamityMod/BlackAnurian       cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  109.4 tierRank=  64.9 effDps=  20.0
+   CalamityMod/Tradewinds         cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=  125.9 tierRank=  64.9 effDps=  20.0
+   CalamityMod/BloodBath          cost=    50000 (val    50000 + mats        0) tier= 3.99 rare= 3 cur=  131.3 tierRank=  64.2 effDps=  54.0
+-- class magic: CURRENT Score top10
+   Vanilla/ShadowFlameHexDoll     cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  514.3 tierRank=  84.1 effDps= 188.6
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   Vanilla/FlowerofFire           cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  192.0 tierRank=  71.0 effDps=  71.3
+   ThoriumMod/BloodyWand          cost=    16275 (val    14875 + mats     1400) tier= 0.00 rare=21 cur=  177.2 tierRank=  21.5 effDps=  62.6
+   ThoriumMod/WaterwickCandle     cost=    41001 (val    25000 + mats    16001) tier= 2.00 rare= 2 cur=  169.6 tierRank=  41.5 effDps= 102.3
+   ThoriumMod/ObsidianStaff       cost=    37500 (val    15000 + mats    22500) tier= 0.00 rare=21 cur=  147.2 tierRank=  21.4 effDps=  60.0
+   CalamityMod/BloodBath          cost=    50000 (val    50000 + mats        0) tier= 3.99 rare= 3 cur=  131.3 tierRank=  64.2 effDps=  54.0
+   CalamityMod/AbyssShocker       cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  129.6 tierRank=  66.7 effDps=  37.9
+   ThoriumMod/BubbleConch         cost=    15000 (val    15000 + mats        0) tier= 2.00 rare= 2 cur=  126.9 tierRank=  38.1 effDps=  53.6
+   CalamityMod/Tradewinds         cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=  125.9 tierRank=  64.9 effDps=  20.0
+
+-- class summon: COST-primary top10 (value + total material cost)
+   ThoriumMod/ButterflyStaff      cost=   563000 (val    15000 + mats   548000) tier= 4.50 rare= 1 cur=   30.0 tierRank=  19.1 effDps=   3.1
+   ThoriumMod/BleedingHeartStaff  cost=   290000 (val    50000 + mats   240000) tier= 3.00 rare= 1 cur=   22.5 tierRank=  18.8 effDps=   2.2
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/DevourerStaff       cost=   194000 (val    10000 + mats   184000) tier= 3.00 rare= 1 cur=   29.3 tierRank=  35.7 effDps=   8.2
+   CalamityMod/ScabRipper         cost=   124250 (val    20000 + mats   104250) tier= 3.00 rare= 2 cur=   29.5 tierRank=  18.8 effDps=   2.3
+   Vanilla/SlimeStaff             cost=   100200 (val   100000 + mats      200) tier= 1.00 rare= 4 cur=   31.8 tierRank=  19.0 effDps=   2.8
+   Vanilla/BlandWhip              cost=   100000 (val   100000 + mats        0) tier= 0.00 rare= 1 cur=   28.2 tierRank=  20.4 effDps=  12.8
+   CalamityMod/VileFeeder         cost=    99500 (val    20000 + mats    79500) tier= 3.00 rare= 2 cur=   29.5 tierRank=  18.8 effDps=   2.3
+   Vanilla/ImpStaff               cost=    90750 (val    27000 + mats    63750) tier= 0.00 rare= 3 cur=   58.1 tierRank=  30.5 effDps=  16.4
+   Vanilla/FlinxStaff             cost=    88000 (val    25000 + mats    63000) tier= 1.00 rare= 3 cur=   27.3 tierRank=  18.9 effDps=   2.5
+-- class summon: TIER-primary top10 (blend)
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   Vanilla/DD2BallistraTowerT1Pop cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   61.6 tierRank=  64.6 effDps=  18.0
+   CalamityMod/StaffOfNecrosteocy cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   86.2 tierRank=  64.5 effDps=  17.6
+   Vanilla/DD2ExplosiveTrapT1Popp cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   49.2 tierRank=  63.0 effDps=   9.0
+   ThoriumMod/WeedEater           cost=    25000 (val    25000 + mats        0) tier= 4.50 rare= 3 cur=   40.7 tierRank=  62.4 effDps=  14.2
+   CalamityMod/BelladonnaSpiritSt cost=    56100 (val    50000 + mats     6100) tier= 4.00 rare= 3 cur=   75.8 tierRank=  62.3 effDps=  29.0
+   Vanilla/ThornWhip              cost=    57200 (val    50000 + mats     7200) tier= 4.00 rare= 3 cur=   39.4 tierRank=  60.0 effDps=  12.0
+   CalamityMod/FleshOfInfidelity  cost=    50000 (val    50000 + mats        0) tier= 3.99 rare= 3 cur=   48.3 tierRank=  59.3 effDps=   8.8
+   ThoriumMod/CreepingVineStaff   cost=    32600 (val    27000 + mats     5600) tier= 4.00 rare= 3 cur=   30.5 tierRank=  57.5 effDps=   6.8
+   ThoriumMod/ViscountCane        cost=    20000 (val    20000 + mats        0) tier= 4.40 rare= 2 cur=   27.9 tierRank=  51.2 effDps=   9.0
+-- class summon: CURRENT Score top10
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/ArsenalStaff        cost=    63100 (val    50000 + mats    13100) tier= 2.00 rare=21 cur=  107.2 tierRank=  40.3 effDps=   7.0
+   ThoriumMod/PrehistoricAmberSta cost=    45000 (val    15000 + mats    30000) tier= 1.00 rare=21 cur=  106.0 tierRank=  29.1 effDps=  28.1
+   CalamityMod/StaffOfNecrosteocy cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   86.2 tierRank=  64.5 effDps=  17.6
+   ThoriumMod/StrangeSkull        cost=    33500 (val    25000 + mats     8500) tier= 2.00 rare=21 cur=   79.6 tierRank=  40.9 effDps=  26.2
+   CalamityMod/BelladonnaSpiritSt cost=    56100 (val    50000 + mats     6100) tier= 4.00 rare= 3 cur=   75.8 tierRank=  62.3 effDps=  29.0
+   ThoriumMod/StrongestLink       cost=    87500 (val    87500 + mats        0) tier= 2.00 rare= 2 cur=   67.2 tierRank=  40.8 effDps=  35.2
+   Vanilla/DD2BallistraTowerT1Pop cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   61.6 tierRank=  64.6 effDps=  18.0
+   CalamityMod/DeathstareRod      cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+   CalamityMod/EnchantedConch     cost=    20000 (val    20000 + mats        0) tier= 2.00 rare= 2 cur=   58.9 tierRank=  35.9 effDps=  21.7
+
+-- class none: COST-primary top10 (value + total material cost)
+   ThoriumMod/Embowelment         cost=   480000 (val   200000 + mats   280000) tier= 2.00 rare= 3 cur=   77.1 tierRank=  51.4 effDps=  31.2
+   ThoriumMod/LightAnguish        cost=   444000 (val   200000 + mats   244000) tier= 2.00 rare= 3 cur=   90.5 tierRank=  52.1 effDps=  38.8
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   CalamityMod/BurningStrife      cost=   200000 (val   200000 + mats        0) tier= 3.40 rare= 5 cur=  264.9 tierRank=  84.4 effDps= 132.0
+   ThoriumMod/SamsaraLotus        cost=   200000 (val   200000 + mats        0) tier= 2.00 rare= 2 cur=   32.0 tierRank=  39.8 effDps=  11.4
+   ThoriumMod/ShadeWoodTambourine cost=   178500 (val    13500 + mats   165000) tier= 2.00 rare= 1 cur=  117.6 tierRank=  32.6 effDps=  33.0
+   ThoriumMod/LastingPliers       cost=   162500 (val    12500 + mats   150000) tier= 2.00 rare= 1 cur=   22.9 tierRank=  18.7 effDps=   1.9
+   ThoriumMod/EbonWoodTambourine  cost=   142500 (val    13500 + mats   129000) tier= 2.00 rare= 1 cur=  110.3 tierRank=  32.0 effDps=  27.0
+   CalamityMod/FeatherKnife       cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=   60.2 tierRank=  62.8 effDps=   8.0
+   CalamityMod/Turbulance         cost=   140000 (val    50000 + mats    90000) tier= 4.50 rare= 3 cur=   91.2 tierRank=  62.5 effDps=   6.7
+-- class none: TIER-primary top10 (blend)
+   CalamityMod/BurningStrife      cost=   200000 (val   200000 + mats        0) tier= 3.40 rare= 5 cur=  264.9 tierRank=  84.4 effDps= 132.0
+   ThoriumMod/ShadowflameWarhorn  cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  204.0 tierRank=  81.8 effDps= 100.0
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   ThoriumMod/Nocturne            cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  159.7 tierRank=  71.1 effDps=  73.9
+   CalamityMod/Cinquedea          cost=   100000 (val   100000 + mats        0) tier= 4.50 rare= 3 cur=  144.9 tierRank=  69.3 effDps=  51.0
+   ThoriumMod/LightsLament        cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=   70.6 tierRank=  67.5 effDps=  24.0
+   CalamityMod/ShinobiBlade       cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  197.0 tierRank=  66.6 effDps=  36.0
+   CalamityMod/Lionfish           cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  104.2 tierRank=  66.5 effDps=  34.6
+   CalamityMod/AshenStalactite    cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=   72.1 tierRank=  65.7 effDps=  27.1
+   ThoriumMod/LifeDisperser       cost=    37500 (val    37500 + mats        0) tier= 4.50 rare= 3 cur=   90.0 tierRank=  65.5 effDps=  31.3
+-- class none: CURRENT Score top10
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+   CalamityMod/BurningStrife      cost=   200000 (val   200000 + mats        0) tier= 3.40 rare= 5 cur=  264.9 tierRank=  84.4 effDps= 132.0
+   ThoriumMod/AcousticGuitar      cost=    94000 (val    75000 + mats    19000) tier= 1.00 rare= 4 cur=  239.2 tierRank=  55.8 effDps= 131.7
+   ThoriumMod/CoralPurifier       cost=    16625 (val     9625 + mats     7000) tier= 1.60 rare= 1 cur=  221.5 tierRank=  31.6 effDps=  72.7
+   ThoriumMod/ShadowflameWarhorn  cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  204.0 tierRank=  81.8 effDps= 100.0
+   CalamityMod/ShinobiBlade       cost=    50000 (val    50000 + mats        0) tier= 4.50 rare= 3 cur=  197.0 tierRank=  66.6 effDps=  36.0
+   ThoriumMod/Nocturne            cost=   125000 (val   125000 + mats        0) tier= 4.50 rare= 3 cur=  159.7 tierRank=  71.1 effDps=  73.9
+   CalamityMod/Mycoroot           cost=    20000 (val    20000 + mats        0) tier= 2.70 rare= 2 cur=  155.0 tierRank=  40.0 effDps=  15.0
+   CalamityMod/Cinquedea          cost=   100000 (val   100000 + mats        0) tier= 4.50 rare= 3 cur=  144.9 tierRank=  69.3 effDps=  51.0
+   ThoriumMod/HoneyRecorder       cost=    40000 (val    10000 + mats    30000) tier= 4.00 rare= 3 cur=  144.7 tierRank=  59.9 effDps=  45.0
+
+######## STAGE early HM (post-WoF) (742 weapons reachable by tier <= 7.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   Vanilla/TitaniumSword          cost=   603000 (val   161000 + mats   442000) tier= 7.00 rare= 4 cur=  803.8 tierRank= 105.8 effDps= 478.5
+   Vanilla/TitaniumTrident        cost=   547000 (val   105000 + mats   442000) tier= 7.00 rare= 4 cur=  541.3 tierRank= 103.1 effDps= 309.2
+   ThoriumMod/CyanPhasesaber      cost=   545000 (val    50000 + mats   495000) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   ThoriumMod/PinkPhasesaber      cost=   538750 (val    50000 + mats   488750) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/NightsEdge             cost=   520400 (val   200000 + mats   320400) tier= 6.70 rare= 3 cur=  150.3 tierRank=  87.6 effDps=  64.8
+   Vanilla/AdamantiteSword        cost=   498000 (val   138000 + mats   360000) tier= 7.00 rare= 4 cur=  892.1 tierRank= 104.7 effDps= 398.5
+   Vanilla/BouncingShield         cost=   480000 (val   350000 + mats   130000) tier= 7.00 rare= 5 cur=  162.3 tierRank= 109.5 effDps=  72.7
+   Vanilla/AdamantiteGlaive       cost=   450000 (val    90000 + mats   360000) tier= 7.00 rare= 4 cur=  813.6 tierRank= 103.2 effDps= 347.1
+   Vanilla/WhitePhasesaber        cost=   445000 (val    50000 + mats   395000) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/OrangePhasesaber       cost=   445000 (val    50000 + mats   395000) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+-- class melee: TIER-primary top10 (blend)
+   ThoriumMod/ShipsHelm           cost=   100000 (val   100000 + mats        0) tier= 7.70 rare= 5 cur=  208.8 tierRank= 111.8 effDps=  78.0
+   Vanilla/Cutlass                cost=   180000 (val   180000 + mats        0) tier= 7.70 rare= 4 cur=  711.9 tierRank= 109.9 effDps= 351.8
+   Vanilla/BouncingShield         cost=   480000 (val   350000 + mats   130000) tier= 7.00 rare= 5 cur=  162.3 tierRank= 109.5 effDps=  72.7
+   ThoriumMod/TheJuggernaut       cost=   100000 (val   100000 + mats        0) tier= 7.70 rare= 5 cur=   84.0 tierRank= 107.8 effDps=  22.0
+   Vanilla/TitaniumSword          cost=   603000 (val   161000 + mats   442000) tier= 7.00 rare= 4 cur=  803.8 tierRank= 105.8 effDps= 478.5
+   Vanilla/SlapHand               cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  524.1 tierRank= 104.8 effDps= 283.5
+   Vanilla/AdamantiteSword        cost=   498000 (val   138000 + mats   360000) tier= 7.00 rare= 4 cur=  892.1 tierRank= 104.7 effDps= 398.5
+   Vanilla/OrichalcumSword        cost=   386500 (val   126500 + mats   260000) tier= 7.00 rare= 4 cur=  689.2 tierRank= 104.6 effDps= 407.8
+   Vanilla/MythrilSword           cost=   279500 (val   103500 + mats   176000) tier= 7.00 rare= 4 cur=  756.3 tierRank= 103.3 effDps= 333.8
+   Vanilla/AdamantiteGlaive       cost=   450000 (val    90000 + mats   360000) tier= 7.00 rare= 4 cur=  813.6 tierRank= 103.2 effDps= 347.1
+-- class melee: CURRENT Score top10
+   Vanilla/AdamantiteSword        cost=   498000 (val   138000 + mats   360000) tier= 7.00 rare= 4 cur=  892.1 tierRank= 104.7 effDps= 398.5
+   Vanilla/AdamantiteGlaive       cost=   450000 (val    90000 + mats   360000) tier= 7.00 rare= 4 cur=  813.6 tierRank= 103.2 effDps= 347.1
+   Vanilla/TitaniumSword          cost=   603000 (val   161000 + mats   442000) tier= 7.00 rare= 4 cur=  803.8 tierRank= 105.8 effDps= 478.5
+   Vanilla/MythrilSword           cost=   279500 (val   103500 + mats   176000) tier= 7.00 rare= 4 cur=  756.3 tierRank= 103.3 effDps= 333.8
+   Vanilla/Cutlass                cost=   180000 (val   180000 + mats        0) tier= 7.70 rare= 4 cur=  711.9 tierRank= 109.9 effDps= 351.8
+   Vanilla/BluePhasesaber         cost=   351250 (val    50000 + mats   301250) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/RedPhasesaber          cost=   407500 (val    50000 + mats   357500) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/GreenPhasesaber        cost=   370000 (val    50000 + mats   320000) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/PurplePhasesaber       cost=   313750 (val    50000 + mats   263750) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+   Vanilla/WhitePhasesaber        cost=   445000 (val    50000 + mats   395000) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   Vanilla/TitaniumRepeater       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.4 tierRank= 100.4 effDps= 128.8
+   ThoriumMod/TitaniumRifle       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.0 tierRank= 101.3 effDps= 163.9
+   CalamityMod/TitaniumRailgun    cost=   580000 (val   200000 + mats   380000) tier= 7.00 rare= 5 cur= 1291.1 tierRank= 117.3 effDps= 795.0
+   CalamityMod/SpeedBlaster       cost=   535000 (val   200000 + mats   335000) tier= 7.00 rare= 5 cur=  362.9 tierRank= 108.8 effDps=  87.0
+   ThoriumMod/SharkStorm          cost=   535000 (val   250000 + mats   285000) tier= 2.00 rare= 2 cur=  170.3 tierRank=  44.3 effDps=  48.8
+   ThoriumMod/ChargedSplasher     cost=   480600 (val   250000 + mats   230600) tier= 7.00 rare=21 cur=  503.3 tierRank=  68.8 effDps=  10.0
+   Vanilla/AdamantiteRepeater     cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  321.6 tierRank=  99.6 effDps= 113.6
+   ThoriumMod/AdamantiteCarbine   cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  288.6 tierRank= 100.6 effDps= 149.0
+   Vanilla/OrichalcumRepeater     cost=   422000 (val   110000 + mats   312000) tier= 7.00 rare= 4 cur=  273.2 tierRank=  99.2 effDps= 109.0
+-- class ranged: TIER-primary top10 (blend)
+   CalamityMod/TitaniumRailgun    cost=   580000 (val   200000 + mats   380000) tier= 7.00 rare= 5 cur= 1291.1 tierRank= 117.3 effDps= 795.0
+   CalamityMod/SpeedBlaster       cost=   535000 (val   200000 + mats   335000) tier= 7.00 rare= 5 cur=  362.9 tierRank= 108.8 effDps=  87.0
+   ThoriumMod/HandCannon          cost=   100000 (val   100000 + mats        0) tier= 7.70 rare= 5 cur=   90.0 tierRank= 107.8 effDps=  21.8
+   Vanilla/Marrow                 cost=    27000 (val    27000 + mats        0) tier= 7.00 rare= 5 cur=  326.6 tierRank= 105.9 effDps= 140.6
+   ThoriumMod/TitaniumRifle       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.0 tierRank= 101.3 effDps= 163.9
+   Vanilla/Shotgun                cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  357.2 tierRank= 101.2 effDps= 109.3
+   ThoriumMod/AdamantiteCarbine   cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  288.6 tierRank= 100.6 effDps= 149.0
+   Vanilla/TitaniumRepeater       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.4 tierRank= 100.4 effDps= 128.8
+   Vanilla/AdamantiteRepeater     cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  321.6 tierRank=  99.6 effDps= 113.6
+   Vanilla/Gatligator             cost=   350000 (val   350000 + mats        0) tier= 7.00 rare= 4 cur=  453.1 tierRank=  99.5 effDps=  55.0
+-- class ranged: CURRENT Score top10
+   CalamityMod/TitaniumRailgun    cost=   580000 (val   200000 + mats   380000) tier= 7.00 rare= 5 cur= 1291.1 tierRank= 117.3 effDps= 795.0
+   CalamityMod/P90                cost=   350000 (val   350000 + mats        0) tier= 7.00 rare= 4 cur=  701.6 tierRank=  97.6 effDps=  30.0
+   ThoriumMod/ChargedSplasher     cost=   480600 (val   250000 + mats   230600) tier= 7.00 rare=21 cur=  503.3 tierRank=  68.8 effDps=  10.0
+   Vanilla/Gatligator             cost=   350000 (val   350000 + mats        0) tier= 7.00 rare= 4 cur=  453.1 tierRank=  99.5 effDps=  55.0
+   CalamityMod/SpeedBlaster       cost=   535000 (val   200000 + mats   335000) tier= 7.00 rare= 5 cur=  362.9 tierRank= 108.8 effDps=  87.0
+   Vanilla/Shotgun                cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  357.2 tierRank= 101.2 effDps= 109.3
+   Vanilla/ClockworkAssaultRifle  cost=   150000 (val   150000 + mats        0) tier= 7.00 rare= 4 cur=  340.6 tierRank=  97.8 effDps=  58.9
+   Vanilla/Marrow                 cost=    27000 (val    27000 + mats        0) tier= 7.00 rare= 5 cur=  326.6 tierRank= 105.9 effDps= 140.6
+   ThoriumMod/TommyGun            cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  322.9 tierRank=  94.3 effDps=  33.8
+   Vanilla/AdamantiteRepeater     cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  321.6 tierRank=  99.6 effDps= 113.6
+
+-- class magic: COST-primary top10 (value + total material cost)
+   ThoriumMod/UselessStaff        cost=   690000 (val   250000 + mats   440000) tier= 7.00 rare=21 cur=  211.2 tierRank= 101.3 effDps=  39.5
+   ThoriumMod/TitaniumStaff       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  104.1 tierRank=  95.8 effDps=  33.8
+   Vanilla/IceRod                 cost=   500000 (val   500000 + mats        0) tier= 7.00 rare= 4 cur=  411.0 tierRank=  97.9 effDps=  25.0
+   Vanilla/ZapinatorOrange        cost=   500000 (val   500000 + mats        0) tier= 7.00 rare= 5 cur=  254.7 tierRank= 112.3 effDps= 124.2
+   ThoriumMod/AdamantiteStaff     cost=   480000 (val   120000 + mats   360000) tier= 7.00 rare= 4 cur=  179.8 tierRank=  97.6 effDps=  65.8
+   ThoriumMod/OmegaBlaster        cost=   439500 (val   150000 + mats   289500) tier= 7.00 rare=21 cur=  227.4 tierRank= 102.4 effDps=  92.5
+   Vanilla/CrystalStorm           cost=   425000 (val   200000 + mats   225000) tier= 7.00 rare= 4 cur=  497.8 tierRank= 101.1 effDps= 124.3
+   ThoriumMod/OrichalcumStaff     cost=   422000 (val   110000 + mats   312000) tier= 7.00 rare= 4 cur=  470.6 tierRank=  98.2 effDps=  81.6
+   CalamityMod/NightsRay          cost=   412670 (val   100000 + mats   312670) tier= 7.00 rare= 4 cur=   86.4 tierRank=  19.0 effDps=   3.0
+   Vanilla/GoldenShower           cost=   355000 (val   200000 + mats   155000) tier= 7.00 rare= 4 cur=  435.6 tierRank=  97.5 effDps=  45.0
+-- class magic: TIER-primary top10 (blend)
+   Vanilla/ZapinatorOrange        cost=   500000 (val   500000 + mats        0) tier= 7.00 rare= 5 cur=  254.7 tierRank= 112.3 effDps= 124.2
+   CalamityMod/WyvernsCall        cost=   345000 (val   200000 + mats   145000) tier= 7.00 rare= 5 cur=  256.4 tierRank= 109.4 effDps= 103.1
+   Vanilla/MeteorStaff            cost=   175000 (val   100000 + mats    75000) tier= 7.00 rare= 5 cur=  450.0 tierRank= 109.1 effDps= 147.0
+   ThoriumMod/DutchmansAvarice    cost=   100000 (val   100000 + mats        0) tier= 7.70 rare= 5 cur=   99.5 tierRank= 108.3 effDps=  26.0
+   ThoriumMod/Cyclone             cost=   260000 (val   200000 + mats    60000) tier= 7.00 rare= 5 cur=   95.3 tierRank= 104.7 effDps=  24.8
+   ThoriumMod/OmegaBlaster        cost=   439500 (val   150000 + mats   289500) tier= 7.00 rare=21 cur=  227.4 tierRank= 102.4 effDps=  92.5
+   ThoriumMod/UselessStaff        cost=   690000 (val   250000 + mats   440000) tier= 7.00 rare=21 cur=  211.2 tierRank= 101.3 effDps=  39.5
+   Vanilla/SharpTears             cost=   200000 (val   200000 + mats        0) tier= 7.00 rare= 4 cur=  388.1 tierRank= 101.2 effDps= 128.2
+   Vanilla/CrystalStorm           cost=   425000 (val   200000 + mats   225000) tier= 7.00 rare= 4 cur=  497.8 tierRank= 101.1 effDps= 124.3
+   Vanilla/CursedFlames           cost=   345000 (val   200000 + mats   145000) tier= 7.00 rare= 4 cur=  319.4 tierRank= 100.9 effDps= 118.0
+-- class magic: CURRENT Score top10
+   Vanilla/ShadowFlameHexDoll     cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  514.3 tierRank=  84.1 effDps= 188.6
+   Vanilla/CrystalStorm           cost=   425000 (val   200000 + mats   225000) tier= 7.00 rare= 4 cur=  497.8 tierRank= 101.1 effDps= 124.3
+   ThoriumMod/OrichalcumStaff     cost=   422000 (val   110000 + mats   312000) tier= 7.00 rare= 4 cur=  470.6 tierRank=  98.2 effDps=  81.6
+   Vanilla/MeteorStaff            cost=   175000 (val   100000 + mats    75000) tier= 7.00 rare= 5 cur=  450.0 tierRank= 109.1 effDps= 147.0
+   Vanilla/GoldenShower           cost=   355000 (val   200000 + mats   155000) tier= 7.00 rare= 4 cur=  435.6 tierRank=  97.5 effDps=  45.0
+   Vanilla/IceRod                 cost=   500000 (val   500000 + mats        0) tier= 7.00 rare= 4 cur=  411.0 tierRank=  97.9 effDps=  25.0
+   CalamityMod/EldritchTome       cost=   100000 (val   100000 + mats        0) tier= 6.70 rare= 4 cur=  395.0 tierRank=  94.5 effDps=  55.7
+   Vanilla/SharpTears             cost=   200000 (val   200000 + mats        0) tier= 7.00 rare= 4 cur=  388.1 tierRank= 101.2 effDps= 128.2
+   Vanilla/MagicDagger            cost=   250000 (val   250000 + mats        0) tier= 0.00 rare= 4 cur=  382.2 tierRank=  52.7 effDps= 183.8
+   ThoriumMod/VileSpitter         cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  360.1 tierRank=  98.4 effDps= 111.8
+
+-- class summon: COST-primary top10 (value + total material cost)
+   ThoriumMod/ButterflyStaff      cost=   563000 (val    15000 + mats   548000) tier= 4.50 rare= 1 cur=   30.0 tierRank=  19.1 effDps=   3.1
+   CalamityMod/TundraFlameBlossom cost=   348500 (val   200000 + mats   148500) tier= 7.00 rare= 5 cur=  101.6 tierRank= 105.9 effDps=  36.6
+   Vanilla/QueenSpiderStaff       cost=   310000 (val   250000 + mats    60000) tier= 7.00 rare= 4 cur=   56.8 tierRank=  18.6 effDps=   1.5
+   CalamityMod/CausticStaff       cost=   300000 (val   100000 + mats   200000) tier= 7.00 rare= 4 cur=   71.5 tierRank=  19.0 effDps=   2.8
+   ThoriumMod/BleedingHeartStaff  cost=   290000 (val    50000 + mats   240000) tier= 3.00 rare= 1 cur=   22.5 tierRank=  18.8 effDps=   2.2
+   CalamityMod/EyeOfNight         cost=   274350 (val    50000 + mats   224350) tier= 6.70 rare= 3 cur=   82.7 tierRank=  80.0 effDps=  15.1
+   Vanilla/SanguineStaff          cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  140.6 tierRank=  96.4 effDps=  26.2
+   ThoriumMod/BlobhornCoralStaff  cost=   200150 (val   100000 + mats   100150) tier= 7.00 rare= 4 cur=  111.3 tierRank=  68.1 effDps=   6.9
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/DevourerStaff       cost=   194000 (val    10000 + mats   184000) tier= 3.00 rare= 1 cur=   29.3 tierRank=  35.7 effDps=   8.2
+-- class summon: TIER-primary top10 (blend)
+   Vanilla/PirateStaff            cost=    50000 (val    50000 + mats        0) tier= 7.70 rare= 5 cur=  178.6 tierRank= 108.2 effDps=  43.5
+   CalamityMod/TundraFlameBlossom cost=   348500 (val   200000 + mats   148500) tier= 7.00 rare= 5 cur=  101.6 tierRank= 105.9 effDps=  36.6
+   Vanilla/SanguineStaff          cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  140.6 tierRank=  96.4 effDps=  26.2
+   ThoriumMod/MortarStaff         cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  116.2 tierRank=  95.1 effDps=  42.8
+   ThoriumMod/Thrombosis          cost=    99000 (val    75000 + mats    24000) tier= 7.00 rare= 4 cur=  105.6 tierRank=  94.2 effDps=  32.8
+   Vanilla/FireWhip               cost=   150000 (val   150000 + mats        0) tier= 7.00 rare= 4 cur=   85.7 tierRank=  94.2 effDps=  18.4
+   ThoriumMod/HailBomber          cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  126.7 tierRank=  92.5 effDps=  17.9
+   CalamityMod/EyeOfNight         cost=   274350 (val    50000 + mats   224350) tier= 6.70 rare= 3 cur=   82.7 tierRank=  80.0 effDps=  15.1
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   ThoriumMod/BlobhornCoralStaff  cost=   200150 (val   100000 + mats   100150) tier= 7.00 rare= 4 cur=  111.3 tierRank=  68.1 effDps=   6.9
+-- class summon: CURRENT Score top10
+   ThoriumMod/DraconicMagmaStaff  cost=   111500 (val   100000 + mats    11500) tier= 7.00 rare=21 cur=  224.6 tierRank=  19.5 effDps=   4.7
+   ThoriumMod/LadyLight           cost=   125500 (val    15000 + mats   110500) tier= 7.00 rare=21 cur=  194.3 tierRank=  19.5 effDps=   4.7
+   Vanilla/PirateStaff            cost=    50000 (val    50000 + mats        0) tier= 7.70 rare= 5 cur=  178.6 tierRank= 108.2 effDps=  43.5
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+   Vanilla/SanguineStaff          cost=   250000 (val   250000 + mats        0) tier= 7.00 rare= 4 cur=  140.6 tierRank=  96.4 effDps=  26.2
+   ThoriumMod/HailBomber          cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  126.7 tierRank=  92.5 effDps=  17.9
+   ThoriumMod/MortarStaff         cost=    75000 (val    75000 + mats        0) tier= 7.00 rare= 4 cur=  116.2 tierRank=  95.1 effDps=  42.8
+   ThoriumMod/BlobhornCoralStaff  cost=   200150 (val   100000 + mats   100150) tier= 7.00 rare= 4 cur=  111.3 tierRank=  68.1 effDps=   6.9
+   ThoriumMod/ArsenalStaff        cost=    63100 (val    50000 + mats    13100) tier= 2.00 rare=21 cur=  107.2 tierRank=  40.3 effDps=   7.0
+   ThoriumMod/PrehistoricAmberSta cost=    45000 (val    15000 + mats    30000) tier= 1.00 rare=21 cur=  106.0 tierRank=  29.1 effDps=  28.1
+
+-- class none: COST-primary top10 (value + total material cost)
+   ThoriumMod/TitaniumCimbasso    cost=   562000 (val   120000 + mats   442000) tier= 7.00 rare= 4 cur=  332.5 tierRank=  99.4 effDps= 108.0
+   ThoriumMod/Embowelment         cost=   480000 (val   200000 + mats   280000) tier= 2.00 rare= 3 cur=   77.1 tierRank=  51.4 effDps=  31.2
+   ThoriumMod/AdamantiteKlaxon    cost=   470000 (val   110000 + mats   360000) tier= 7.00 rare= 4 cur=  129.7 tierRank=  96.3 effDps=  47.5
+   CalamityMod/ConsecratedWater   cost=   469000 (val   200000 + mats   269000) tier= 7.00 rare= 5 cur=  150.2 tierRank= 106.7 effDps=  46.5
+   ThoriumMod/LightAnguish        cost=   444000 (val   200000 + mats   244000) tier= 2.00 rare= 3 cur=   90.5 tierRank=  52.1 effDps=  38.8
+   CalamityMod/TitaniumShuriken   cost=   440000 (val   100000 + mats   340000) tier= 7.00 rare= 4 cur=  364.8 tierRank=  98.0 effDps=  83.3
+   ThoriumMod/OrichalcumSlideWhis cost=   422000 (val   110000 + mats   312000) tier= 7.00 rare= 4 cur=  144.2 tierRank=  93.0 effDps=  15.0
+   CalamityMod/AdamantiteThrowing cost=   400000 (val   100000 + mats   300000) tier= 7.00 rare= 4 cur=  376.5 tierRank= 100.2 effDps= 152.1
+   CalamityMod/DesecratedWater    cost=   384000 (val   200000 + mats   184000) tier= 7.00 rare= 5 cur=  172.1 tierRank= 107.6 effDps=  61.0
+   ThoriumMod/SacredLyre          cost=   361133 (val   350000 + mats    11133) tier= 7.00 rare= 4 cur=  144.0 tierRank=  98.1 effDps=  35.7
+-- class none: TIER-primary top10 (blend)
+   ThoriumMod/SteamFlute          cost=   274000 (val   250000 + mats    24000) tier= 7.00 rare= 5 cur=  409.3 tierRank= 111.1 effDps= 142.5
+   ThoriumMod/TwentyFourCaratTuba cost=   100000 (val   100000 + mats        0) tier= 7.70 rare= 5 cur=  138.0 tierRank= 109.7 effDps=  41.0
+   ThoriumMod/GreedfulGurdy       cost=   100000 (val   100000 + mats        0) tier= 7.70 rare=21 cur=  334.1 tierRank= 108.3 effDps=  97.5
+   CalamityMod/DesecratedWater    cost=   384000 (val   200000 + mats   184000) tier= 7.00 rare= 5 cur=  172.1 tierRank= 107.6 effDps=  61.0
+   CalamityMod/ConsecratedWater   cost=   469000 (val   200000 + mats   269000) tier= 7.00 rare= 5 cur=  150.2 tierRank= 106.7 effDps=  46.5
+   ThoriumMod/HellBell            cost=   148000 (val   100000 + mats    48000) tier= 7.00 rare= 5 cur=  160.7 tierRank= 105.4 effDps=  52.5
+   ThoriumMod/ResonatorsArm       cost=   113000 (val   100000 + mats    13000) tier= 7.00 rare=21 cur=  396.8 tierRank= 102.0 effDps= 121.7
+   ThoriumMod/Xylophone           cost=   260000 (val   100000 + mats   160000) tier= 7.00 rare= 4 cur=  535.7 tierRank= 101.6 effDps= 219.0
+   CalamityMod/MythrilKnife       cost=   320000 (val   100000 + mats   220000) tier= 7.00 rare= 4 cur=  475.2 tierRank= 101.3 effDps= 202.5
+   CalamityMod/AdamantiteThrowing cost=   400000 (val   100000 + mats   300000) tier= 7.00 rare= 4 cur=  376.5 tierRank= 100.2 effDps= 152.1
+-- class none: CURRENT Score top10
+   ThoriumMod/Xylophone           cost=   260000 (val   100000 + mats   160000) tier= 7.00 rare= 4 cur=  535.7 tierRank= 101.6 effDps= 219.0
+   CalamityMod/MythrilKnife       cost=   320000 (val   100000 + mats   220000) tier= 7.00 rare= 4 cur=  475.2 tierRank= 101.3 effDps= 202.5
+   ThoriumMod/SteamFlute          cost=   274000 (val   250000 + mats    24000) tier= 7.00 rare= 5 cur=  409.3 tierRank= 111.1 effDps= 142.5
+   ThoriumMod/ResonatorsArm       cost=   113000 (val   100000 + mats    13000) tier= 7.00 rare=21 cur=  396.8 tierRank= 102.0 effDps= 121.7
+   CalamityMod/AdamantiteThrowing cost=   400000 (val   100000 + mats   300000) tier= 7.00 rare= 4 cur=  376.5 tierRank= 100.2 effDps= 152.1
+   CalamityMod/TitaniumShuriken   cost=   440000 (val   100000 + mats   340000) tier= 7.00 rare= 4 cur=  364.8 tierRank=  98.0 effDps=  83.3
+   CalamityMod/CobaltKunai        cost=   205000 (val   100000 + mats   105000) tier= 7.00 rare= 4 cur=  352.8 tierRank=  99.3 effDps= 117.5
+   ThoriumMod/GreedfulGurdy       cost=   100000 (val   100000 + mats        0) tier= 7.70 rare=21 cur=  334.1 tierRank= 108.3 effDps=  97.5
+   ThoriumMod/TitaniumCimbasso    cost=   562000 (val   120000 + mats   442000) tier= 7.00 rare= 4 cur=  332.5 tierRank=  99.4 effDps= 108.0
+   CalamityMod/WaveSkipper        cost=   287500 (val   200000 + mats    87500) tier= 2.00 rare= 5 cur=  329.9 tierRank=  75.3 effDps= 169.1
+
+######## STAGE post-mech (979 weapons reachable by tier <= 11.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   Vanilla/LightDisc              cost=  2245000 (val   750000 + mats  1495000) tier= 9.00 rare= 5 cur=  421.0 tierRank= 128.8 effDps= 171.4
+   ThoriumMod/BloodyHighClaws     cost=  1420000 (val   500000 + mats   920000) tier= 9.50 rare=21 cur=  876.6 tierRank= 135.4 effDps= 225.0
+   Vanilla/TrueNightsEdge         cost=  1180400 (val   500000 + mats   680400) tier= 9.00 rare= 8 cur=  317.0 tierRank= 141.2 effDps= 129.4
+   Vanilla/TrueExcalibur          cost=  1148000 (val   500000 + mats   648000) tier=11.00 rare= 8 cur=  597.8 tierRank= 157.9 effDps= 235.0
+   CalamityMod/Pwnagehammer       cost=   917000 (val   350000 + mats   567000) tier= 9.00 rare= 6 cur=  265.7 tierRank= 133.3 effDps= 132.0
+   CalamityMod/Brimlash           cost=   862000 (val   450000 + mats   412000) tier=11.70 rare= 7 cur=  197.5 tierRank= 153.5 effDps=  51.0
+   ThoriumMod/GoldenLocks         cost=   789850 (val   300000 + mats   489850) tier= 9.50 rare=21 cur=  930.8 tierRank= 131.3 effDps= 120.0
+   Vanilla/MushroomSpear          cost=   700000 (val   700000 + mats        0) tier=11.00 rare= 7 cur=  310.1 tierRank= 152.6 effDps= 122.8
+   Vanilla/ChlorophyteClaymore    cost=   636000 (val   276000 + mats   360000) tier=11.00 rare= 7 cur=  393.0 tierRank= 152.1 effDps= 194.0
+   Vanilla/ChlorophyteSaber       cost=   636000 (val   276000 + mats   360000) tier=11.00 rare= 7 cur=  904.0 tierRank= 154.4 effDps= 345.0
+-- class melee: TIER-primary top10 (blend)
+   Vanilla/TheEyeOfCthulhu        cost=   625000 (val   625000 + mats        0) tier=11.50 rare= 8 cur=  262.9 tierRank= 158.3 effDps=  87.4
+   Vanilla/TrueExcalibur          cost=  1148000 (val   500000 + mats   648000) tier=11.00 rare= 8 cur=  597.8 tierRank= 157.9 effDps= 235.0
+   Vanilla/ChlorophyteSaber       cost=   636000 (val   276000 + mats   360000) tier=11.00 rare= 7 cur=  904.0 tierRank= 154.4 effDps= 345.0
+   CalamityMod/Brimlash           cost=   862000 (val   450000 + mats   412000) tier=11.70 rare= 7 cur=  197.5 tierRank= 153.5 effDps=  51.0
+   Vanilla/MushroomSpear          cost=   700000 (val   700000 + mats        0) tier=11.00 rare= 7 cur=  310.1 tierRank= 152.6 effDps= 122.8
+   Vanilla/ChlorophyteClaymore    cost=   636000 (val   276000 + mats   360000) tier=11.00 rare= 7 cur=  393.0 tierRank= 152.1 effDps= 194.0
+   ThoriumMod/TheGreenTambourine  cost=   554000 (val   250000 + mats   304000) tier=11.00 rare= 7 cur=  510.4 tierRank= 151.5 effDps= 174.0
+   ThoriumMod/SoulRender          cost=   250000 (val   250000 + mats        0) tier=11.60 rare= 6 cur=  343.8 tierRank= 151.0 effDps= 124.1
+   Vanilla/ChlorophytePartisan    cost=   540000 (val   180000 + mats   360000) tier=11.00 rare= 7 cur=  340.2 tierRank= 149.3 effDps= 118.7
+   Vanilla/DeathSickle            cost=   375000 (val   375000 + mats        0) tier=11.50 rare= 6 cur=  246.9 tierRank= 149.3 effDps=  73.2
+-- class melee: CURRENT Score top10
+   ThoriumMod/GoldenLocks         cost=   789850 (val   300000 + mats   489850) tier= 9.50 rare=21 cur=  930.8 tierRank= 131.3 effDps= 120.0
+   Vanilla/ChlorophyteSaber       cost=   636000 (val   276000 + mats   360000) tier=11.00 rare= 7 cur=  904.0 tierRank= 154.4 effDps= 345.0
+   Vanilla/AdamantiteSword        cost=   498000 (val   138000 + mats   360000) tier= 7.00 rare= 4 cur=  892.1 tierRank= 104.7 effDps= 398.5
+   ThoriumMod/BloodyHighClaws     cost=  1420000 (val   500000 + mats   920000) tier= 9.50 rare=21 cur=  876.6 tierRank= 135.4 effDps= 225.0
+   Vanilla/AdamantiteGlaive       cost=   450000 (val    90000 + mats   360000) tier= 7.00 rare= 4 cur=  813.6 tierRank= 103.2 effDps= 347.1
+   Vanilla/TitaniumSword          cost=   603000 (val   161000 + mats   442000) tier= 7.00 rare= 4 cur=  803.8 tierRank= 105.8 effDps= 478.5
+   Vanilla/Excalibur              cost=   518000 (val   230000 + mats   288000) tier= 9.00 rare= 5 cur=  772.4 tierRank= 129.5 effDps= 420.0
+   Vanilla/MythrilSword           cost=   279500 (val   103500 + mats   176000) tier= 7.00 rare= 4 cur=  756.3 tierRank= 103.3 effDps= 333.8
+   Vanilla/Cutlass                cost=   180000 (val   180000 + mats        0) tier= 7.70 rare= 4 cur=  711.9 tierRank= 109.9 effDps= 351.8
+   Vanilla/BluePhasesaber         cost=   351250 (val    50000 + mats   301250) tier= 7.00 rare= 4 cur=  706.8 tierRank= 102.3 effDps= 399.4
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   Vanilla/Megashark              cost=  1701000 (val   350000 + mats  1351000) tier= 9.00 rare= 5 cur=  456.5 tierRank= 122.1 effDps=  42.9
+   Vanilla/Flamethrower           cost=  1530000 (val   500000 + mats  1030000) tier= 9.00 rare= 5 cur=  200.5 tierRank=  67.9 effDps=   6.2
+   ThoriumMod/HellfireMinigun     cost=   956250 (val   350000 + mats   606250) tier= 0.00 rare=21 cur=  282.9 tierRank=  32.2 effDps=  55.7
+   Vanilla/PulseBow               cost=   930000 (val   450000 + mats   480000) tier=10.00 rare= 8 cur=  460.7 tierRank= 149.1 effDps= 166.5
+   CalamityMod/Arbalest           cost=   830500 (val   200000 + mats   630500) tier= 9.00 rare= 5 cur=  202.8 tierRank= 119.5 effDps=  28.2
+   ThoriumMod/LittleRed           cost=   784250 (val   300000 + mats   484250) tier= 9.50 rare=21 cur=  354.6 tierRank= 131.8 effDps= 140.0
+   CalamityMod/DarkechoGreatbow   cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  151.2 tierRank= 124.6 effDps=  45.5
+   Vanilla/ChlorophyteShotbow     cost=   600000 (val   240000 + mats   360000) tier=11.00 rare= 7 cur=  227.2 tierRank= 145.3 effDps=  30.0
+   Vanilla/TitaniumRepeater       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.4 tierRank= 100.4 effDps= 128.8
+   ThoriumMod/TitaniumRifle       cost=   582000 (val   140000 + mats   442000) tier= 7.00 rare= 4 cur=  316.0 tierRank= 101.3 effDps= 163.9
+-- class ranged: TIER-primary top10 (blend)
+   CalamityMod/Animosity          cost=   450000 (val   450000 + mats        0) tier=11.70 rare= 7 cur=  118.0 tierRank= 150.8 effDps=  21.2
+   Vanilla/PulseBow               cost=   930000 (val   450000 + mats   480000) tier=10.00 rare= 8 cur=  460.7 tierRank= 149.1 effDps= 166.5
+   Vanilla/ChlorophyteShotbow     cost=   600000 (val   240000 + mats   360000) tier=11.00 rare= 7 cur=  227.2 tierRank= 145.3 effDps=  30.0
+   Vanilla/DaedalusStormbow       cost=   400000 (val   400000 + mats        0) tier=11.50 rare= 6 cur=  200.1 tierRank= 145.0 effDps=  17.4
+   ThoriumMod/DecayingSorrow      cost=   256000 (val   100000 + mats   156000) tier=11.60 rare=21 cur=  187.2 tierRank= 144.4 effDps=  32.8
+   ThoriumMod/LittleRed           cost=   784250 (val   300000 + mats   484250) tier= 9.50 rare=21 cur=  354.6 tierRank= 131.8 effDps= 140.0
+   ThoriumMod/DestroyersRage      cost=   540000 (val   300000 + mats   240000) tier= 9.00 rare= 6 cur=  355.3 tierRank= 130.8 effDps=  75.0
+   Vanilla/DD2PhoenixBow          cost=    50000 (val    50000 + mats        0) tier=11.01 rare= 5 cur=   83.3 tierRank= 129.2 effDps=  16.0
+   ThoriumMod/OgreSnotGun         cost=    50000 (val    50000 + mats        0) tier=11.01 rare= 5 cur=  133.9 tierRank= 129.0 effDps=  15.0
+   ThoriumMod/TitanBow            cost=   164000 (val    76000 + mats    88000) tier= 9.00 rare= 6 cur=  320.8 tierRank= 128.4 effDps=  93.7
+-- class ranged: CURRENT Score top10
+   CalamityMod/TitaniumRailgun    cost=   580000 (val   200000 + mats   380000) tier= 7.00 rare= 5 cur= 1291.1 tierRank= 117.3 effDps= 795.0
+   CalamityMod/P90                cost=   350000 (val   350000 + mats        0) tier= 7.00 rare= 4 cur=  701.6 tierRank=  97.6 effDps=  30.0
+   ThoriumMod/ChargedSplasher     cost=   480600 (val   250000 + mats   230600) tier= 7.00 rare=21 cur=  503.3 tierRank=  68.8 effDps=  10.0
+   Vanilla/PulseBow               cost=   930000 (val   450000 + mats   480000) tier=10.00 rare= 8 cur=  460.7 tierRank= 149.1 effDps= 166.5
+   Vanilla/Megashark              cost=  1701000 (val   350000 + mats  1351000) tier= 9.00 rare= 5 cur=  456.5 tierRank= 122.1 effDps=  42.9
+   Vanilla/Gatligator             cost=   350000 (val   350000 + mats        0) tier= 7.00 rare= 4 cur=  453.1 tierRank=  99.5 effDps=  55.0
+   Vanilla/HallowedRepeater       cost=   488000 (val   200000 + mats   288000) tier= 9.00 rare= 4 cur=  435.6 tierRank= 116.7 effDps= 172.5
+   Vanilla/Toxikarp               cost=   200000 (val   200000 + mats        0) tier= 9.50 rare= 5 cur=  433.5 tierRank= 126.8 effDps=  86.7
+   ThoriumMod/Trigun              cost=   518000 (val   230000 + mats   288000) tier= 9.00 rare= 5 cur=  408.9 tierRank= 124.7 effDps= 120.0
+   ThoriumMod/BulletStorm         cost=   145000 (val   145000 + mats        0) tier= 9.50 rare= 5 cur=  406.7 tierRank= 123.8 effDps=  45.0
+
+-- class magic: COST-primary top10 (value + total material cost)
+   CalamityMod/ArtAttack          cost=  1474750 (val   450000 + mats  1024750) tier=11.70 rare= 7 cur=  493.8 tierRank= 158.7 effDps= 213.8
+   ThoriumMod/BlackholeCannon     cost=  1220000 (val   300000 + mats   920000) tier= 9.20 rare= 6 cur=   82.4 tierRank= 127.1 effDps=  13.1
+   Vanilla/MagicalHarp            cost=   978000 (val   200000 + mats   778000) tier= 9.00 rare= 5 cur=  378.0 tierRank= 123.7 effDps= 100.0
+   Vanilla/VenomStaff             cost=   970000 (val   350000 + mats   620000) tier=11.50 rare= 7 cur=  144.5 tierRank= 148.5 effDps=  19.0
+   Vanilla/RainbowRod             cost=   923000 (val   200000 + mats   723000) tier= 9.00 rare= 5 cur=  145.2 tierRank= 119.0 effDps=  24.0
+   CalamityMod/ShadecrystalBarrag cost=   857000 (val   200000 + mats   657000) tier= 9.50 rare= 5 cur=   69.1 tierRank=  18.7 effDps=   1.9
+   ThoriumMod/SnowWhite           cost=   781250 (val   300000 + mats   481250) tier= 9.50 rare=21 cur=  368.4 tierRank= 127.5 effDps=  40.0
+   ThoriumMod/UselessStaff        cost=   690000 (val   250000 + mats   440000) tier= 7.00 rare=21 cur=  211.2 tierRank= 101.3 effDps=  39.5
+   ThoriumMod/BassBooster         cost=   640000 (val   300000 + mats   340000) tier= 9.00 rare=21 cur=  698.1 tierRank= 123.7 effDps=  60.0
+   ThoriumMod/Razorlash           cost=   630000 (val   200000 + mats   430000) tier=11.00 rare=21 cur=  150.7 tierRank= 141.6 effDps=  43.5
+-- class magic: TIER-primary top10 (blend)
+   CalamityMod/ArtAttack          cost=  1474750 (val   450000 + mats  1024750) tier=11.70 rare= 7 cur=  493.8 tierRank= 158.7 effDps= 213.8
+   CalamityMod/LashesofChaos      cost=   450000 (val   450000 + mats        0) tier=11.70 rare= 7 cur=  279.1 tierRank= 156.7 effDps= 124.6
+   Vanilla/UnholyTrident          cost=   500000 (val   500000 + mats        0) tier=11.50 rare= 6 cur=  448.4 tierRank= 152.8 effDps= 160.6
+   Vanilla/VenomStaff             cost=   970000 (val   350000 + mats   620000) tier=11.50 rare= 7 cur=  144.5 tierRank= 148.5 effDps=  19.0
+   ThoriumMod/ChlorophyteStaff    cost=   600000 (val   240000 + mats   360000) tier=11.00 rare= 7 cur=  392.5 tierRank= 147.9 effDps=  67.5
+   CalamityMod/ArcticBearPaw      cost=   350000 (val   350000 + mats        0) tier=11.00 rare= 6 cur=  271.2 tierRank= 146.5 effDps=  97.5
+   CalamityMod/Cryophobia         cost=   350000 (val   350000 + mats        0) tier=11.00 rare= 6 cur=  227.8 tierRank= 146.3 effDps=  92.2
+   Vanilla/PoisonStaff            cost=   200000 (val   200000 + mats        0) tier=11.50 rare= 6 cur=  149.3 tierRank= 145.6 effDps=  37.5
+   ThoriumMod/WitherStaff         cost=   250000 (val   250000 + mats        0) tier=11.60 rare= 6 cur=  120.8 tierRank= 144.9 effDps=  19.2
+   ThoriumMod/DarkFlame           cost=   622000 (val   200000 + mats   422000) tier=11.00 rare=21 cur=  289.8 tierRank= 144.2 effDps=  92.5
+-- class magic: CURRENT Score top10
+   ThoriumMod/BassBooster         cost=   640000 (val   300000 + mats   340000) tier= 9.00 rare=21 cur=  698.1 tierRank= 123.7 effDps=  60.0
+   Vanilla/ShadowFlameHexDoll     cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  514.3 tierRank=  84.1 effDps= 188.6
+   Vanilla/BookStaff              cost=    50000 (val    50000 + mats        0) tier=11.01 rare= 5 cur=  514.2 tierRank= 133.0 effDps=  57.6
+   Vanilla/CrystalStorm           cost=   425000 (val   200000 + mats   225000) tier= 7.00 rare= 4 cur=  497.8 tierRank= 101.1 effDps= 124.3
+   CalamityMod/ArtAttack          cost=  1474750 (val   450000 + mats  1024750) tier=11.70 rare= 7 cur=  493.8 tierRank= 158.7 effDps= 213.8
+   ThoriumMod/OrichalcumStaff     cost=   422000 (val   110000 + mats   312000) tier= 7.00 rare= 4 cur=  470.6 tierRank=  98.2 effDps=  81.6
+   ThoriumMod/HydromancerCatalyst cost=   400000 (val   400000 + mats        0) tier= 9.50 rare= 5 cur=  457.2 tierRank=  68.8 effDps=  10.0
+   Vanilla/FlowerofFrost          cost=   250000 (val   250000 + mats        0) tier= 9.50 rare= 5 cur=  454.8 tierRank= 129.3 effDps= 150.0
+   Vanilla/MeteorStaff            cost=   175000 (val   100000 + mats    75000) tier= 7.00 rare= 5 cur=  450.0 tierRank= 109.1 effDps= 147.0
+   Vanilla/UnholyTrident          cost=   500000 (val   500000 + mats        0) tier=11.50 rare= 6 cur=  448.4 tierRank= 152.8 effDps= 160.6
+
+-- class summon: COST-primary top10 (value + total material cost)
+   ThoriumMod/ValkyrieBlade       cost=  1270000 (val   250000 + mats  1020000) tier= 9.00 rare=21 cur=  172.1 tierRank= 119.5 effDps=  18.7
+   CalamityMod/VengefulSunStaff   cost=  1160150 (val   350000 + mats   810150) tier= 9.50 rare= 6 cur=  194.7 tierRank= 131.4 effDps=  25.9
+   Vanilla/OpticStaff             cost=   906000 (val   100000 + mats   806000) tier= 9.00 rare= 5 cur=  108.0 tierRank=  19.0 effDps=   3.0
+   CalamityMod/DaedalusGolemStaff cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  317.5 tierRank= 128.0 effDps= 120.0
+   ThoriumMod/ButterflyStaff      cost=   563000 (val    15000 + mats   548000) tier= 4.50 rare= 1 cur=   30.0 tierRank=  19.1 effDps=   3.1
+   Vanilla/SwordWhip              cost=   518000 (val   230000 + mats   288000) tier= 9.00 rare= 5 cur=  142.8 tierRank= 121.1 effDps=  42.9
+   CalamityMod/EntropysVigil      cost=   450000 (val   450000 + mats        0) tier=11.70 rare= 7 cur=  108.8 tierRank=  67.9 effDps=   6.1
+   CalamityMod/IgneousExaltation  cost=   428000 (val   200000 + mats   228000) tier=10.50 rare= 5 cur=  136.1 tierRank=  19.0 effDps=   3.0
+   CalamityMod/CryogenicStaff     cost=   350000 (val   350000 + mats        0) tier=11.00 rare= 6 cur=   71.2 tierRank=  18.6 effDps=   1.5
+   CalamityMod/TundraFlameBlossom cost=   348500 (val   200000 + mats   148500) tier= 7.00 rare= 5 cur=  101.6 tierRank= 105.9 effDps=  36.6
+-- class summon: TIER-primary top10 (blend)
+   CalamityMod/VengefulSunStaff   cost=  1160150 (val   350000 + mats   810150) tier= 9.50 rare= 6 cur=  194.7 tierRank= 131.4 effDps=  25.9
+   CalamityMod/DormantBrimseeker  cost=   200000 (val   200000 + mats        0) tier=10.50 rare= 5 cur=  190.5 tierRank= 131.0 effDps=  36.0
+   CalamityMod/DaedalusGolemStaff cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  317.5 tierRank= 128.0 effDps= 120.0
+   Vanilla/DD2BallistraTowerT2Pop cost=   250000 (val   250000 + mats        0) tier= 9.00 rare= 5 cur=  168.3 tierRank= 122.8 effDps=  66.0
+   Vanilla/DD2ExplosiveTrapT2Popp cost=   250000 (val   250000 + mats        0) tier= 9.00 rare= 5 cur=  134.2 tierRank= 121.4 effDps=  43.5
+   Vanilla/SwordWhip              cost=   518000 (val   230000 + mats   288000) tier= 9.00 rare= 5 cur=  142.8 tierRank= 121.1 effDps=  42.9
+   ThoriumMod/ValkyrieBlade       cost=  1270000 (val   250000 + mats  1020000) tier= 9.00 rare=21 cur=  172.1 tierRank= 119.5 effDps=  18.7
+   ThoriumMod/BeholderStaff       cost=   150000 (val   150000 + mats        0) tier= 9.20 rare= 5 cur=   99.5 tierRank= 119.4 effDps=  21.0
+   Vanilla/DD2FlameburstTowerT2Po cost=   250000 (val   250000 + mats        0) tier= 9.00 rare= 5 cur=   95.5 tierRank= 118.8 effDps=  18.0
+   CalamityMod/GlacialEmbrace     cost=   200000 (val   200000 + mats        0) tier= 8.50 rare= 5 cur=  217.7 tierRank= 118.0 effDps=  54.0
+-- class summon: CURRENT Score top10
+   CalamityMod/DaedalusGolemStaff cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  317.5 tierRank= 128.0 effDps= 120.0
+   ThoriumMod/DraconicMagmaStaff  cost=   111500 (val   100000 + mats    11500) tier= 7.00 rare=21 cur=  224.6 tierRank=  19.5 effDps=   4.7
+   CalamityMod/GlacialEmbrace     cost=   200000 (val   200000 + mats        0) tier= 8.50 rare= 5 cur=  217.7 tierRank= 118.0 effDps=  54.0
+   CalamityMod/VengefulSunStaff   cost=  1160150 (val   350000 + mats   810150) tier= 9.50 rare= 6 cur=  194.7 tierRank= 131.4 effDps=  25.9
+   ThoriumMod/LadyLight           cost=   125500 (val    15000 + mats   110500) tier= 7.00 rare=21 cur=  194.3 tierRank=  19.5 effDps=   4.7
+   CalamityMod/DormantBrimseeker  cost=   200000 (val   200000 + mats        0) tier=10.50 rare= 5 cur=  190.5 tierRank= 131.0 effDps=  36.0
+   Vanilla/PirateStaff            cost=    50000 (val    50000 + mats        0) tier= 7.70 rare= 5 cur=  178.6 tierRank= 108.2 effDps=  43.5
+   ThoriumMod/ValkyrieBlade       cost=  1270000 (val   250000 + mats  1020000) tier= 9.00 rare=21 cur=  172.1 tierRank= 119.5 effDps=  18.7
+   Vanilla/DD2BallistraTowerT2Pop cost=   250000 (val   250000 + mats        0) tier= 9.00 rare= 5 cur=  168.3 tierRank= 122.8 effDps=  66.0
+   CalamityMod/ShellfishStaff     cost=   200000 (val   200000 + mats        0) tier= 1.61 rare= 5 cur=  158.8 tierRank=  69.6 effDps=  78.0
+
+-- class none: COST-primary top10 (value + total material cost)
+   ThoriumMod/TerraKnife          cost=  1732000 (val  1000000 + mats   732000) tier=11.50 rare= 8 cur=  498.8 tierRank= 160.5 effDps= 117.5
+   CalamityMod/KelvinCatalyst     cost=  1220000 (val   200000 + mats  1020000) tier= 9.50 rare= 5 cur=  151.2 tierRank= 124.2 effDps=  40.0
+   CalamityMod/SpearofDestiny     cost=  1218000 (val   350000 + mats   868000) tier= 9.00 rare= 6 cur=  162.0 tierRank= 130.3 effDps=  58.5
+   CalamityMod/Exorcism           cost=  1190000 (val   350000 + mats   840000) tier= 9.00 rare= 6 cur=  219.5 tierRank= 132.9 effDps= 120.0
+   ThoriumMod/TrueCarnwennan      cost=   888000 (val   500000 + mats   388000) tier=11.50 rare= 8 cur=  195.6 tierRank= 153.1 effDps=  20.4
+   ThoriumMod/TrueEmbowelment     cost=   880000 (val   500000 + mats   380000) tier=11.50 rare= 8 cur=  162.3 tierRank=  68.5 effDps=   8.8
+   ThoriumMod/TrueLightAnguish    cost=   844000 (val   500000 + mats   344000) tier=11.50 rare= 8 cur=  186.3 tierRank= 152.3 effDps=  15.0
+   ThoriumMod/HadronCollider      cost=   780000 (val   300000 + mats   480000) tier= 9.00 rare=21 cur=  281.2 tierRank= 124.2 effDps=  70.0
+   ThoriumMod/MindMelter          cost=   712100 (val   230000 + mats   482100) tier= 9.00 rare= 5 cur=  302.9 tierRank= 121.6 effDps=  50.0
+   CalamityMod/CrystalPiercer     cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  379.4 tierRank= 129.3 effDps= 169.1
+-- class none: TIER-primary top10 (blend)
+   ThoriumMod/TerraKnife          cost=  1732000 (val  1000000 + mats   732000) tier=11.50 rare= 8 cur=  498.8 tierRank= 160.5 effDps= 117.5
+   ThoriumMod/TrueCarnwennan      cost=   888000 (val   500000 + mats   388000) tier=11.50 rare= 8 cur=  195.6 tierRank= 153.1 effDps=  20.4
+   ThoriumMod/TrueLightAnguish    cost=   844000 (val   500000 + mats   344000) tier=11.50 rare= 8 cur=  186.3 tierRank= 152.3 effDps=  15.0
+   CalamityMod/TerrorTalons       cost=   600200 (val   450000 + mats   150200) tier=11.00 rare= 7 cur=  663.2 tierRank= 151.1 effDps= 107.2
+   ThoriumMod/SoulCleaver         cost=   250000 (val   250000 + mats        0) tier=11.60 rare= 6 cur=  283.7 tierRank= 148.6 effDps=  65.0
+   ThoriumMod/StalkersSnippers    cost=   250000 (val   250000 + mats        0) tier=11.50 rare= 6 cur=  278.1 tierRank= 147.3 effDps=  54.7
+   ThoriumMod/CadaverCornet       cost=   250000 (val   250000 + mats        0) tier=11.60 rare= 6 cur=  150.2 tierRank= 146.5 effDps=  34.4
+   CalamityMod/FrostyFlare        cost=   350000 (val   350000 + mats        0) tier=11.00 rare= 6 cur=  270.1 tierRank= 140.1 effDps=  11.5
+   ThoriumMod/Hippocraticrossbow  cost=    50000 (val    50000 + mats        0) tier=11.01 rare=21 cur=  240.0 tierRank= 138.4 effDps=  68.6
+   CalamityMod/BlazingStar        cost=   338750 (val   200000 + mats   138750) tier=10.50 rare= 5 cur=  453.6 tierRank= 136.7 effDps= 180.0
+-- class none: CURRENT Score top10
+   ThoriumMod/MidnightBassBooster cost=   555000 (val   300000 + mats   255000) tier= 9.00 rare= 6 cur=  710.6 tierRank= 133.4 effDps= 150.0
+   CalamityMod/TerrorTalons       cost=   600200 (val   450000 + mats   150200) tier=11.00 rare= 7 cur=  663.2 tierRank= 151.1 effDps= 107.2
+   ThoriumMod/Xylophone           cost=   260000 (val   100000 + mats   160000) tier= 7.00 rare= 4 cur=  535.7 tierRank= 101.6 effDps= 219.0
+   ThoriumMod/TerraKnife          cost=  1732000 (val  1000000 + mats   732000) tier=11.50 rare= 8 cur=  498.8 tierRank= 160.5 effDps= 117.5
+   CalamityMod/MythrilKnife       cost=   320000 (val   100000 + mats   220000) tier= 7.00 rare= 4 cur=  475.2 tierRank= 101.3 effDps= 202.5
+   CalamityMod/BlazingStar        cost=   338750 (val   200000 + mats   138750) tier=10.50 rare= 5 cur=  453.6 tierRank= 136.7 effDps= 180.0
+   ThoriumMod/SteamFlute          cost=   274000 (val   250000 + mats    24000) tier= 7.00 rare= 5 cur=  409.3 tierRank= 111.1 effDps= 142.5
+   ThoriumMod/ResonatorsArm       cost=   113000 (val   100000 + mats    13000) tier= 7.00 rare=21 cur=  396.8 tierRank= 102.0 effDps= 121.7
+   CalamityMod/CrystalPiercer     cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  379.4 tierRank= 129.3 effDps= 169.1
+   CalamityMod/AdamantiteThrowing cost=   400000 (val   100000 + mats   300000) tier= 7.00 rare= 4 cur=  376.5 tierRank= 100.2 effDps= 152.1
+
+######## STAGE post-Plantera (1148 weapons reachable by tier <= 12.99) ########
+
+-- class melee: COST-primary top10 (value + total material cost)
+   ThoriumMod/TerrariansLastKnife cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 3682.3 tierRank= 180.0 effDps=1565.6
+   CalamityMod/VanishingPoint     cost=  4103000 (val  1200000 + mats  2903000) tier=12.81 rare=11 cur=  609.0 tierRank= 189.6 effDps= 265.0
+   CalamityMod/Lightspeed         cost=  4020000 (val  1200000 + mats  2820000) tier=12.81 rare=11 cur= 1141.9 tierRank= 191.9 effDps= 476.2
+   CalamityMod/Swordsplosion      cost=  3835000 (val  1200000 + mats  2635000) tier=12.81 rare=11 cur=  182.7 tierRank= 179.8 effDps=  13.5
+   CalamityMod/StellarContempt    cost=  3829000 (val  1200000 + mats  2629000) tier=12.81 rare=11 cur= 1249.0 tierRank= 192.8 effDps= 604.6
+   CalamityMod/SolsticeClaymore   cost=  3352000 (val  1200000 + mats  2152000) tier=12.81 rare=11 cur= 1677.2 tierRank= 193.6 effDps= 726.5
+   Vanilla/TerraBlade             cost=  3003400 (val  1000000 + mats  2003400) tier=12.00 rare= 8 cur=  516.0 tierRank= 165.8 effDps= 185.0
+   CalamityMod/PulseDragon        cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1416.3 tierRank= 197.1 effDps= 621.0
+   Vanilla/LightDisc              cost=  2245000 (val   750000 + mats  1495000) tier= 9.00 rare= 5 cur=  421.0 tierRank= 128.8 effDps= 171.4
+   ThoriumMod/QuakeGauntlet       cost=  1975000 (val   625000 + mats  1350000) tier=12.81 rare=21 cur= 3630.4 tierRank= 176.7 effDps=1241.2
+-- class melee: TIER-primary top10 (blend)
+   CalamityMod/PulseDragon        cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1416.3 tierRank= 197.1 effDps= 621.0
+   CalamityMod/SolsticeClaymore   cost=  3352000 (val  1200000 + mats  2152000) tier=12.81 rare=11 cur= 1677.2 tierRank= 193.6 effDps= 726.5
+   CalamityMod/StellarContempt    cost=  3829000 (val  1200000 + mats  2629000) tier=12.81 rare=11 cur= 1249.0 tierRank= 192.8 effDps= 604.6
+   CalamityMod/RemsRevenge        cost=  1647500 (val  1200000 + mats   447500) tier=12.81 rare=11 cur= 1431.2 tierRank= 192.7 effDps= 587.0
+   CalamityMod/GreatswordofJudgem cost=  1676000 (val  1200000 + mats   476000) tier=12.81 rare=11 cur= 1284.6 tierRank= 192.5 effDps= 551.2
+   CalamityMod/Lightspeed         cost=  4020000 (val  1200000 + mats  2820000) tier=12.81 rare=11 cur= 1141.9 tierRank= 191.9 effDps= 476.2
+   CalamityMod/VanishingPoint     cost=  4103000 (val  1200000 + mats  2903000) tier=12.81 rare=11 cur=  609.0 tierRank= 189.6 effDps= 265.0
+   CalamityMod/StellarStriker     cost=  1605000 (val  1200000 + mats   405000) tier=12.81 rare=11 cur=  326.3 tierRank= 186.0 effDps= 100.7
+   ThoriumMod/TerrariansLastKnife cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 3682.3 tierRank= 180.0 effDps=1565.6
+   CalamityMod/Swordsplosion      cost=  3835000 (val  1200000 + mats  2635000) tier=12.81 rare=11 cur=  182.7 tierRank= 179.8 effDps=  13.5
+-- class melee: CURRENT Score top10
+   ThoriumMod/TerrariansLastKnife cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 3682.3 tierRank= 180.0 effDps=1565.6
+   ThoriumMod/QuakeGauntlet       cost=  1975000 (val   625000 + mats  1350000) tier=12.81 rare=21 cur= 3630.4 tierRank= 176.7 effDps=1241.2
+   CalamityMod/SolsticeClaymore   cost=  3352000 (val  1200000 + mats  2152000) tier=12.81 rare=11 cur= 1677.2 tierRank= 193.6 effDps= 726.5
+   CalamityMod/RemsRevenge        cost=  1647500 (val  1200000 + mats   447500) tier=12.81 rare=11 cur= 1431.2 tierRank= 192.7 effDps= 587.0
+   CalamityMod/PulseDragon        cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1416.3 tierRank= 197.1 effDps= 621.0
+   CalamityMod/GreatswordofJudgem cost=  1676000 (val  1200000 + mats   476000) tier=12.81 rare=11 cur= 1284.6 tierRank= 192.5 effDps= 551.2
+   CalamityMod/StellarContempt    cost=  3829000 (val  1200000 + mats  2629000) tier=12.81 rare=11 cur= 1249.0 tierRank= 192.8 effDps= 604.6
+   CalamityMod/Lightspeed         cost=  4020000 (val  1200000 + mats  2820000) tier=12.81 rare=11 cur= 1141.9 tierRank= 191.9 effDps= 476.2
+   CalamityMod/TitanArm           cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  987.7 tierRank= 167.7 effDps= 496.5
+   ThoriumMod/GoldenLocks         cost=   789850 (val   300000 + mats   489850) tier= 9.50 rare=21 cur=  930.8 tierRank= 131.3 effDps= 120.0
+
+-- class ranged: COST-primary top10 (value + total material cost)
+   ThoriumMod/QuasarsFlare        cost= 12297500 (val  1250000 + mats 11047500) tier=12.81 rare=21 cur= 3387.7 tierRank= 179.6 effDps=1415.6
+   CalamityMod/PlanetaryAnnihilat cost=  3919250 (val  1200000 + mats  2719250) tier=12.81 rare=11 cur=  394.5 tierRank= 185.8 effDps=  94.8
+   CalamityMod/PridefulHuntersPla cost=  3100000 (val  1200000 + mats  1900000) tier=12.81 rare=11 cur= 2032.6 tierRank= 192.6 effDps= 573.0
+   CalamityMod/BarracudaGun       cost=  2500400 (val  1200000 + mats  1300400) tier=12.81 rare=11 cur=  296.9 tierRank= 182.1 effDps=  32.2
+   ThoriumMod/SpiritBreaker       cost=  2271250 (val   900000 + mats  1371250) tier=12.00 rare=21 cur=  910.5 tierRank= 154.0 effDps=  15.0
+   CalamityMod/OnyxChainBlaster   cost=  2219000 (val  1200000 + mats  1019000) tier=12.81 rare=11 cur=  517.7 tierRank= 186.2 effDps= 107.0
+   CalamityMod/AstrealDefeat      cost=  1922000 (val  1200000 + mats   722000) tier=12.81 rare=11 cur= 4853.1 tierRank= 197.4 effDps=1931.2
+   CalamityMod/Shredder           cost=  1738200 (val  1200000 + mats   538200) tier=12.81 rare=11 cur=  790.8 tierRank= 186.6 effDps= 120.0
+   Vanilla/Megashark              cost=  1701000 (val   350000 + mats  1351000) tier= 9.00 rare= 5 cur=  456.5 tierRank= 122.1 effDps=  42.9
+   Vanilla/Flamethrower           cost=  1530000 (val   500000 + mats  1030000) tier= 9.00 rare= 5 cur=  200.5 tierRank=  67.9 effDps=   6.2
+-- class ranged: TIER-primary top10 (blend)
+   CalamityMod/AstrealDefeat      cost=  1922000 (val  1200000 + mats   722000) tier=12.81 rare=11 cur= 4853.1 tierRank= 197.4 effDps=1931.2
+   CalamityMod/PridefulHuntersPla cost=  3100000 (val  1200000 + mats  1900000) tier=12.81 rare=11 cur= 2032.6 tierRank= 192.6 effDps= 573.0
+   CalamityMod/Shredder           cost=  1738200 (val  1200000 + mats   538200) tier=12.81 rare=11 cur=  790.8 tierRank= 186.6 effDps= 120.0
+   CalamityMod/OnyxChainBlaster   cost=  2219000 (val  1200000 + mats  1019000) tier=12.81 rare=11 cur=  517.7 tierRank= 186.2 effDps= 107.0
+   CalamityMod/PlanetaryAnnihilat cost=  3919250 (val  1200000 + mats  2719250) tier=12.81 rare=11 cur=  394.5 tierRank= 185.8 effDps=  94.8
+   CalamityMod/BarracudaGun       cost=  2500400 (val  1200000 + mats  1300400) tier=12.81 rare=11 cur=  296.9 tierRank= 182.1 effDps=  32.2
+   ThoriumMod/QuasarsFlare        cost= 12297500 (val  1250000 + mats 11047500) tier=12.81 rare=21 cur= 3387.7 tierRank= 179.6 effDps=1415.6
+   CalamityMod/Arietes41          cost=   850000 (val   600000 + mats   250000) tier=12.81 rare= 8 cur=  687.1 tierRank= 170.9 effDps= 211.1
+   CalamityMod/AuroraBlazer       cost=   450000 (val   450000 + mats        0) tier=12.81 rare= 7 cur= 1363.0 tierRank= 169.2 effDps= 414.0
+   CalamityMod/Leviatitan         cost=   450000 (val   450000 + mats        0) tier=12.80 rare= 7 cur=  543.2 tierRank= 166.6 effDps= 215.0
+-- class ranged: CURRENT Score top10
+   CalamityMod/AstrealDefeat      cost=  1922000 (val  1200000 + mats   722000) tier=12.81 rare=11 cur= 4853.1 tierRank= 197.4 effDps=1931.2
+   ThoriumMod/QuasarsFlare        cost= 12297500 (val  1250000 + mats 11047500) tier=12.81 rare=21 cur= 3387.7 tierRank= 179.6 effDps=1415.6
+   CalamityMod/PridefulHuntersPla cost=  3100000 (val  1200000 + mats  1900000) tier=12.81 rare=11 cur= 2032.6 tierRank= 192.6 effDps= 573.0
+   CalamityMod/AuroraBlazer       cost=   450000 (val   450000 + mats        0) tier=12.81 rare= 7 cur= 1363.0 tierRank= 169.2 effDps= 414.0
+   CalamityMod/TitaniumRailgun    cost=   580000 (val   200000 + mats   380000) tier= 7.00 rare= 5 cur= 1291.1 tierRank= 117.3 effDps= 795.0
+   ThoriumMod/SpiritBreaker       cost=  2271250 (val   900000 + mats  1371250) tier=12.00 rare=21 cur=  910.5 tierRank= 154.0 effDps=  15.0
+   CalamityMod/Shredder           cost=  1738200 (val  1200000 + mats   538200) tier=12.81 rare=11 cur=  790.8 tierRank= 186.6 effDps= 120.0
+   ThoriumMod/MicroLauncher       cost=   350000 (val   350000 + mats        0) tier=12.00 rare= 8 cur=  764.0 tierRank= 163.6 effDps= 199.2
+   ThoriumMod/ShroomachineGun     cost=   860000 (val   500000 + mats   360000) tier=12.00 rare= 8 cur=  743.0 tierRank= 164.0 effDps= 176.2
+   Vanilla/GrenadeLauncher        cost=   350000 (val   350000 + mats        0) tier=12.00 rare= 8 cur=  740.3 tierRank= 165.6 effDps= 331.5
+
+-- class magic: COST-primary top10 (value + total material cost)
+   ThoriumMod/NorthernLight       cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 1178.3 tierRank= 175.7 effDps= 517.5
+   CalamityMod/Nucleosynthesis    cost=  3515920 (val  1200000 + mats  2315920) tier=12.81 rare=11 cur= 1065.8 tierRank= 189.1 effDps= 230.0
+   CalamityMod/AuguroftheVoid     cost=  2630000 (val  1200000 + mats  1430000) tier=12.81 rare=11 cur= 4986.3 tierRank= 197.1 effDps=1795.0
+   CalamityMod/CosmicRainbow      cost=  2590000 (val  1200000 + mats  1390000) tier=12.81 rare=11 cur= 1336.0 tierRank= 191.7 effDps= 454.5
+   CalamityMod/UltraLiquidator    cost=  2450000 (val  1200000 + mats  1250000) tier=12.81 rare=11 cur= 2283.8 tierRank= 193.9 effDps= 787.5
+   CalamityMod/PlasmaCaster       cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1849.0 tierRank= 198.5 effDps= 885.0
+   CalamityMod/NuclearFury        cost=  1950000 (val  1200000 + mats   750000) tier=12.81 rare=11 cur=  415.7 tierRank= 186.6 effDps= 119.4
+   CalamityMod/Effervescence      cost=  1750000 (val  1200000 + mats   550000) tier=12.81 rare=11 cur=  456.8 tierRank= 184.9 effDps=  75.0
+   CalamityMod/Photosynthesis     cost=  1685920 (val   600000 + mats  1085920) tier=12.00 rare= 8 cur=  361.8 tierRank= 162.7 effDps= 112.8
+   CalamityMod/ArtAttack          cost=  1474750 (val   450000 + mats  1024750) tier=11.70 rare= 7 cur=  493.8 tierRank= 158.7 effDps= 213.8
+-- class magic: TIER-primary top10 (blend)
+   CalamityMod/PlasmaCaster       cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1849.0 tierRank= 198.5 effDps= 885.0
+   CalamityMod/AuguroftheVoid     cost=  2630000 (val  1200000 + mats  1430000) tier=12.81 rare=11 cur= 4986.3 tierRank= 197.1 effDps=1795.0
+   CalamityMod/UltraLiquidator    cost=  2450000 (val  1200000 + mats  1250000) tier=12.81 rare=11 cur= 2283.8 tierRank= 193.9 effDps= 787.5
+   CalamityMod/CosmicRainbow      cost=  2590000 (val  1200000 + mats  1390000) tier=12.81 rare=11 cur= 1336.0 tierRank= 191.7 effDps= 454.5
+   CalamityMod/Nucleosynthesis    cost=  3515920 (val  1200000 + mats  2315920) tier=12.81 rare=11 cur= 1065.8 tierRank= 189.1 effDps= 230.0
+   CalamityMod/NuclearFury        cost=  1950000 (val  1200000 + mats   750000) tier=12.81 rare=11 cur=  415.7 tierRank= 186.6 effDps= 119.4
+   CalamityMod/Effervescence      cost=  1750000 (val  1200000 + mats   550000) tier=12.81 rare=11 cur=  456.8 tierRank= 184.9 effDps=  75.0
+   ThoriumMod/NorthernLight       cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 1178.3 tierRank= 175.7 effDps= 517.5
+   CalamityMod/EvergladeSpray     cost=  1095000 (val   450000 + mats   645000) tier=12.50 rare= 7 cur= 1070.0 tierRank= 165.8 effDps= 305.0
+   CalamityMod/Atlantis           cost=   450000 (val   450000 + mats        0) tier=12.80 rare= 7 cur=  320.0 tierRank= 164.2 effDps= 111.6
+-- class magic: CURRENT Score top10
+   CalamityMod/AuguroftheVoid     cost=  2630000 (val  1200000 + mats  1430000) tier=12.81 rare=11 cur= 4986.3 tierRank= 197.1 effDps=1795.0
+   CalamityMod/UltraLiquidator    cost=  2450000 (val  1200000 + mats  1250000) tier=12.81 rare=11 cur= 2283.8 tierRank= 193.9 effDps= 787.5
+   CalamityMod/PlasmaCaster       cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1849.0 tierRank= 198.5 effDps= 885.0
+   CalamityMod/CosmicRainbow      cost=  2590000 (val  1200000 + mats  1390000) tier=12.81 rare=11 cur= 1336.0 tierRank= 191.7 effDps= 454.5
+   ThoriumMod/NorthernLight       cost= 12397500 (val  1250000 + mats 11147500) tier=12.81 rare=21 cur= 1178.3 tierRank= 175.7 effDps= 517.5
+   CalamityMod/EvergladeSpray     cost=  1095000 (val   450000 + mats   645000) tier=12.50 rare= 7 cur= 1070.0 tierRank= 165.8 effDps= 305.0
+   CalamityMod/Nucleosynthesis    cost=  3515920 (val  1200000 + mats  2315920) tier=12.81 rare=11 cur= 1065.8 tierRank= 189.1 effDps= 230.0
+   Vanilla/LeafBlower             cost=   300000 (val   300000 + mats        0) tier=12.00 rare= 7 cur=  857.0 tierRank= 160.1 effDps= 227.2
+   ThoriumMod/BassBooster         cost=   640000 (val   300000 + mats   340000) tier= 9.00 rare=21 cur=  698.1 tierRank= 123.7 effDps=  60.0
+   Vanilla/ShadowFlameHexDoll     cost=   100000 (val   100000 + mats        0) tier= 3.40 rare= 5 cur=  514.3 tierRank=  84.1 effDps= 188.6
+
+-- class summon: COST-primary top10 (value + total material cost)
+   CalamityMod/LegionofCelestia   cost=  2904350 (val  1200000 + mats  1704350) tier=12.81 rare=11 cur=  422.5 tierRank= 182.7 effDps=  38.8
+   CalamityMod/FlowersOfMortality cost=  2591000 (val  1200000 + mats  1391000) tier=12.81 rare=11 cur=  197.2 tierRank= 183.0 effDps=  42.5
+   CalamityMod/SnakeEyes          cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1472.9 tierRank= 196.6 effDps= 555.8
+   CalamityMod/TacticalPlagueEngi cost=  2200000 (val  1200000 + mats  1000000) tier=12.81 rare=11 cur=  929.5 tierRank= 190.2 effDps= 305.2
+   ThoriumMod/ValkyrieBlade       cost=  1270000 (val   250000 + mats  1020000) tier= 9.00 rare=21 cur=  172.1 tierRank= 119.5 effDps=  18.7
+   CalamityMod/VengefulSunStaff   cost=  1160150 (val   350000 + mats   810150) tier= 9.50 rare= 6 cur=  194.7 tierRank= 131.4 effDps=  25.9
+   CalamityMod/PlantationStaff    cost=  1124350 (val   600000 + mats   524350) tier=12.00 rare= 8 cur=  123.1 tierRank= 158.2 effDps=  29.1
+   CalamityMod/ViralSprout        cost=   950000 (val   450000 + mats   500000) tier=12.50 rare= 7 cur=  137.5 tierRank=  19.2 effDps=   3.5
+   ThoriumMod/BloodyPaganStaff    cost=   930000 (val    30000 + mats   900000) tier=12.90 rare=21 cur=  320.0 tierRank= 156.7 effDps=  87.8
+   Vanilla/OpticStaff             cost=   906000 (val   100000 + mats   806000) tier= 9.00 rare= 5 cur=  108.0 tierRank=  19.0 effDps=   3.0
+-- class summon: TIER-primary top10 (blend)
+   CalamityMod/SnakeEyes          cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1472.9 tierRank= 196.6 effDps= 555.8
+   CalamityMod/TacticalPlagueEngi cost=  2200000 (val  1200000 + mats  1000000) tier=12.81 rare=11 cur=  929.5 tierRank= 190.2 effDps= 305.2
+   CalamityMod/FlowersOfMortality cost=  2591000 (val  1200000 + mats  1391000) tier=12.81 rare=11 cur=  197.2 tierRank= 183.0 effDps=  42.5
+   CalamityMod/LegionofCelestia   cost=  2904350 (val  1200000 + mats  1704350) tier=12.81 rare=11 cur=  422.5 tierRank= 182.7 effDps=  38.8
+   CalamityMod/GastricBelcherStaf cost=   450000 (val   450000 + mats        0) tier=12.80 rare= 7 cur=  286.4 tierRank= 161.6 effDps=  53.9
+   CalamityMod/AbandonedSlimeStaf cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  320.8 tierRank= 160.6 effDps=  74.8
+   CalamityMod/HivePod            cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  185.2 tierRank= 159.9 effDps=  60.8
+   CalamityMod/SandSharknadoStaff cost=   758500 (val   450000 + mats   308500) tier=12.09 rare= 7 cur=  343.7 tierRank= 158.2 effDps=  88.7
+   CalamityMod/PlantationStaff    cost=  1124350 (val   600000 + mats   524350) tier=12.00 rare= 8 cur=  123.1 tierRank= 158.2 effDps=  29.1
+   Vanilla/PygmyStaff             cost=   350000 (val   350000 + mats        0) tier=12.00 rare= 7 cur=  342.8 tierRank= 157.0 effDps=  88.7
+-- class summon: CURRENT Score top10
+   CalamityMod/SnakeEyes          cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur= 1472.9 tierRank= 196.6 effDps= 555.8
+   CalamityMod/TacticalPlagueEngi cost=  2200000 (val  1200000 + mats  1000000) tier=12.81 rare=11 cur=  929.5 tierRank= 190.2 effDps= 305.2
+   CalamityMod/LegionofCelestia   cost=  2904350 (val  1200000 + mats  1704350) tier=12.81 rare=11 cur=  422.5 tierRank= 182.7 effDps=  38.8
+   CalamityMod/SandSharknadoStaff cost=   758500 (val   450000 + mats   308500) tier=12.09 rare= 7 cur=  343.7 tierRank= 158.2 effDps=  88.7
+   Vanilla/PygmyStaff             cost=   350000 (val   350000 + mats        0) tier=12.00 rare= 7 cur=  342.8 tierRank= 157.0 effDps=  88.7
+   CalamityMod/AbandonedSlimeStaf cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  320.8 tierRank= 160.6 effDps=  74.8
+   ThoriumMod/BloodyPaganStaff    cost=   930000 (val    30000 + mats   900000) tier=12.90 rare=21 cur=  320.0 tierRank= 156.7 effDps=  87.8
+   CalamityMod/DaedalusGolemStaff cost=   632000 (val   200000 + mats   432000) tier= 9.50 rare= 5 cur=  317.5 tierRank= 128.0 effDps= 120.0
+   CalamityMod/GastricBelcherStaf cost=   450000 (val   450000 + mats        0) tier=12.80 rare= 7 cur=  286.4 tierRank= 161.6 effDps=  53.9
+   ThoriumMod/DraconicMagmaStaff  cost=   111500 (val   100000 + mats    11500) tier= 7.00 rare=21 cur=  224.6 tierRank=  19.5 effDps=   4.7
+
+-- class none: COST-primary top10 (value + total material cost)
+   ThoriumMod/BlackMIDI           cost= 11921500 (val  1250000 + mats 10671500) tier=12.81 rare=21 cur= 2121.0 tierRank= 177.5 effDps= 832.5
+   CalamityMod/ReboundingRainbow  cost=  2801000 (val  1200000 + mats  1601000) tier=12.81 rare=11 cur=  656.6 tierRank= 188.3 effDps= 190.3
+   CalamityMod/WavePounder        cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur=  158.1 tierRank= 186.6 effDps=  36.2
+   ThoriumMod/TerraKnife          cost=  1732000 (val  1000000 + mats   732000) tier=11.50 rare= 8 cur=  498.8 tierRank= 160.5 effDps= 117.5
+   CalamityMod/LunarKunai         cost=  1500000 (val  1200000 + mats   300000) tier=12.81 rare=11 cur= 1164.7 tierRank= 190.9 effDps= 364.5
+   CalamityMod/PhantasmalRuin     cost=  1239250 (val   600000 + mats   639250) tier=12.00 rare= 8 cur=  479.1 tierRank= 165.1 effDps= 211.0
+   CalamityMod/KelvinCatalyst     cost=  1220000 (val   200000 + mats  1020000) tier= 9.50 rare= 5 cur=  151.2 tierRank= 124.2 effDps=  40.0
+   CalamityMod/SpearofDestiny     cost=  1218000 (val   350000 + mats   868000) tier= 9.00 rare= 6 cur=  162.0 tierRank= 130.3 effDps=  58.5
+   CalamityMod/Exorcism           cost=  1190000 (val   350000 + mats   840000) tier= 9.00 rare= 6 cur=  219.5 tierRank= 132.9 effDps= 120.0
+   CalamityMod/SamsaraSlicer      cost=  1171000 (val   600000 + mats   571000) tier=12.09 rare= 8 cur=  273.8 tierRank= 162.6 effDps=  91.0
+-- class none: TIER-primary top10 (blend)
+   CalamityMod/LunarKunai         cost=  1500000 (val  1200000 + mats   300000) tier=12.81 rare=11 cur= 1164.7 tierRank= 190.9 effDps= 364.5
+   CalamityMod/ReboundingRainbow  cost=  2801000 (val  1200000 + mats  1601000) tier=12.81 rare=11 cur=  656.6 tierRank= 188.3 effDps= 190.3
+   CalamityMod/WavePounder        cost=  2345000 (val  1500000 + mats   845000) tier=12.81 rare=19 cur=  158.1 tierRank= 186.6 effDps=  36.2
+   ThoriumMod/BlackMIDI           cost= 11921500 (val  1250000 + mats 10671500) tier=12.81 rare=21 cur= 2121.0 tierRank= 177.5 effDps= 832.5
+   CalamityMod/Apoctolith         cost=   572000 (val   450000 + mats   122000) tier=12.50 rare= 7 cur=  702.8 tierRank= 166.3 effDps= 347.3
+   CalamityMod/PhantasmalRuin     cost=  1239250 (val   600000 + mats   639250) tier=12.00 rare= 8 cur=  479.1 tierRank= 165.1 effDps= 211.0
+   CalamityMod/DeepWounder        cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  521.5 tierRank= 164.8 effDps= 234.0
+   CalamityMod/StellarKnife       cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  757.2 tierRank= 164.7 effDps= 230.0
+   ThoriumMod/Thunderstruck       cost=   200000 (val   200000 + mats        0) tier=12.60 rare=21 cur=  662.4 tierRank= 164.5 effDps= 269.0
+   ThoriumMod/IdolsMicrophone     cost=   543000 (val   250000 + mats   293000) tier=12.50 rare=21 cur=  696.9 tierRank= 164.4 effDps= 273.8
+-- class none: CURRENT Score top10
+   ThoriumMod/BlackMIDI           cost= 11921500 (val  1250000 + mats 10671500) tier=12.81 rare=21 cur= 2121.0 tierRank= 177.5 effDps= 832.5
+   CalamityMod/LunarKunai         cost=  1500000 (val  1200000 + mats   300000) tier=12.81 rare=11 cur= 1164.7 tierRank= 190.9 effDps= 364.5
+   CalamityMod/StellarKnife       cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  757.2 tierRank= 164.7 effDps= 230.0
+   ThoriumMod/VuvuzelaBlue        cost=   250000 (val   250000 + mats        0) tier=12.00 rare= 7 cur=  736.2 tierRank= 160.5 effDps= 277.5
+   ThoriumMod/VuvuzelaGreen       cost=   250000 (val   250000 + mats        0) tier=12.00 rare= 7 cur=  736.2 tierRank= 160.5 effDps= 277.5
+   ThoriumMod/VuvuzelaRed         cost=   250000 (val   250000 + mats        0) tier=12.00 rare= 7 cur=  736.2 tierRank= 160.5 effDps= 277.5
+   ThoriumMod/VuvuzelaYellow      cost=   250000 (val   250000 + mats        0) tier=12.00 rare= 7 cur=  736.2 tierRank= 160.5 effDps= 277.5
+   ThoriumMod/StrawberryHeart     cost=   530000 (val   250000 + mats   280000) tier=12.50 rare=21 cur=  730.1 tierRank= 163.7 effDps= 229.3
+   ThoriumMod/MidnightBassBooster cost=   555000 (val   300000 + mats   255000) tier= 9.00 rare= 6 cur=  710.6 tierRank= 133.4 effDps= 150.0
+   CalamityMod/Apoctolith         cost=   572000 (val   450000 + mats   122000) tier=12.50 rare= 7 cur=  702.8 tierRank= 166.3 effDps= 347.3

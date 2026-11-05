@@ -104,7 +104,7 @@ namespace Levy.Common.Testing
 		{
 			ProgressionTierProbe.Build(sb);
 			sb.AppendLine("\n## TIERS");
-			sb.AppendLine("mod\tname\tfamily\tclass\tdmg\tperHit\thitsPerSec\tdpsAdj\tpierce\trare\tvalue\tscore\troute\trouteSrc\tuseAmmo\tmana");
+			sb.AppendLine("mod\tname\tfamily\tclass\tdmg\tperHit\thitsPerSec\tdpsAdj\tpierce\trare\tvalue\tscore\troute\trouteSrc\tuseAmmo\tmana\tleafCost\tisTool");
 			foreach (var mod in mods)
 			{
 				IEnumerable<(int type, string name)> src;
@@ -128,9 +128,33 @@ namespace Levy.Common.Testing
 					var ps = WeaponClassifier.ProjectileSample(it.shoot); int pen = ps != null ? ps.penetrate : 1;
 					float t = ProgressionTierProbe.Tier(mtype, out string rs);
 					sb.AppendLine(string.Join("\t", mod.Trim(), mname, p.Family, ClsName(WeaponClassifier.ItemDamageClass(it)), it.damage, perHit.ToString("F1"), hps.ToString("F2"), (score / tm).ToString("F1"), pen, it.rare, it.value, score.ToString("F1"),
-						t >= ProgressionTierProbe.Inf ? "-1" : t.ToString("F2"), rs, it.useAmmo, it.mana));
+						t >= ProgressionTierProbe.Inf ? "-1" : t.ToString("F2"), rs, it.useAmmo, it.mana, ((long)ProgressionTierProbe.LeafCost(mtype)).ToString(), it.pick > 0 || it.hammer > 0 || it.axe > 0));
 				}
 			}
+		}
+
+		private static readonly Dictionary<string, string[]> Sets = new()
+		{
+			{ "melee", new[] { "SolarFlareHelmet", "SolarFlareBreastplate", "SolarFlareLeggings" } },
+			{ "ranged", new[] { "VortexHelmet", "VortexBreastplate", "VortexLeggings" } },
+			{ "magic", new[] { "NebulaHelmet", "NebulaBreastplate", "NebulaLeggings" } },
+			{ "summon", new[] { "StardustHelmet", "StardustBreastplate", "StardustLeggings" } },
+		};
+		private static void WearSet(SoldierRecord r, string cls)
+		{
+			if (!Sets.TryGetValue(cls, out var set)) return;
+			r.Gear.Head = Make("Vanilla/" + set[0]); r.Gear.Body = Make("Vanilla/" + set[1]); r.Gear.Legs = Make("Vanilla/" + set[2]);
+		}
+		/// <summary>Class list for the army: "interleave" cycles the classes, "meleelast" enlists melee last, "meleefirst" first.</summary>
+		private static List<string> BuildMix(string[] counts, string order)
+		{
+			var left = new Dictionary<string, int>();
+			foreach (var c in counts) { var kv = c.Split('='); left[kv[0]] = int.Parse(kv[1]); }
+			var res = new List<string>();
+			string[] cyc = order == "meleelast" ? new[] { "ranged", "magic", "summon", "none", "melee" } : order == "meleefirst" ? new[] { "melee", "ranged", "magic", "summon", "none" } : new[] { "melee", "ranged", "magic", "summon", "none" };
+			if (order == "interleave") { while (left.Values.Sum() > 0) foreach (var c in cyc) if (left.GetValueOrDefault(c) > 0) { res.Add(c); left[c]--; } }
+			else foreach (var c in cyc) while (left.GetValueOrDefault(c) > 0) { res.Add(c); left[c]--; }
+			return res;
 		}
 
 		private sealed class Scen { public string Name; public List<string> Lines = new(); }
@@ -150,7 +174,13 @@ namespace Levy.Common.Testing
 			{
 				sb.AppendLine("\n## SCENARIO " + sc.Name);
 				var te = new ArmoryTE();
-				int nSold = 9; var souls = new List<SoldierRecord>(); bool staged = false;
+				int nSold = 9; var souls = new List<SoldierRecord>(); bool staged = false; var mix = new List<string>(); string order = "interleave";
+				SoldierRecord NewSoldier(int i)
+				{
+					var r = new SoldierRecord { Id = 100 + i };
+					if (mix.Count > 0 && i < mix.Count) WearSet(r, mix[i]);
+					return r;
+				}
 				ArmorDoctrine.Reset();
 				LevyConfig.Get.ClassMatchIssue = false;
 				void Stock(string[] t)
@@ -183,12 +213,15 @@ namespace Levy.Common.Testing
 					switch (t[0])
 					{
 						case "SOLDIERS": nSold = int.Parse(t[1]); break;
+						case "MIX": { mix = BuildMix(t.Skip(2).ToArray(), t[1]); nSold = mix.Count; break; } // MIX <order> melee=5 ranged=4 magic=3 summon=1 none=2
+						case "SHOW": { var si = Make(t[1]); sb.AppendLine("  SHOW " + t[1] + ": " + (si == null ? "cannot resolve" : $"{Describe(si)} issuable={WeaponClassifier.IsIssuableWeapon(si)} dmg={si.damage} pick={si.pick} hammer={si.hammer} axe={si.axe} useTime={si.useTime} rare={si.rare} value={si.value} noMelee={si.noMelee} shoot={si.shoot}")); break; }
 						case "CFG": { var kv = t[1].Split('='); if (kv[0] == "ClassMatchIssue") LevyConfig.Get.ClassMatchIssue = bool.Parse(kv[1]); break; }
 						case "W": case "A": case "M": Stock(t); break;
+						case "WI": { var wi = Make(t[1]); int slot = Array.FindIndex(te.IssueWeapons, 0, ArmoryTE.SidearmSlot, x => x == null || x.IsAir); if (wi == null || slot < 0) sb.AppendLine("  !! cannot place " + t[1]); else te.IssueWeapons[slot] = wi; break; } // the player's own weapon rack (issue row)
 						case "STAGE":
 							if (!staged)
 							{
-								for (int i = 0; i < nSold; i++) { var r = new SoldierRecord { Id = 100 + i }; souls.Add(r); te.IssueGear(r); }
+								for (int i = 0; i < nSold; i++) { var r = NewSoldier(i); souls.Add(r); te.IssueGear(r); }
 								Show("after first issue");
 								staged = true;
 							}
@@ -200,7 +233,7 @@ namespace Levy.Common.Testing
 							break;
 					}
 				}
-				if (!staged) { for (int i = 0; i < nSold; i++) { var r = new SoldierRecord { Id = 100 + i }; souls.Add(r); te.IssueGear(r); } Show("issue"); }
+				if (!staged) { for (int i = 0; i < nSold; i++) { var r = NewSoldier(i); souls.Add(r); te.IssueGear(r); } Show("issue"); }
 				else { foreach (var s in souls) te.UpgradeWeapons(s); Show("after UpgradeWeapons"); for (int k = 0; k < 2; k++) foreach (var s in souls) te.UpgradeWeapons(s); Show("after 2 more upgrade rounds"); }
 				sb.AppendLine("  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score");
 				foreach (var it in te.Storage.Concat(souls.Select(x => x.Gear.Weapon)).Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).GroupBy(x => x.type).Select(g => g.First()).OrderByDescending(x => WeaponClassifier.Score(x)))

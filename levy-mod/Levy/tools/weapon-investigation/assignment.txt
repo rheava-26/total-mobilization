@@ -1,0 +1,94 @@
+
+===== H_eveStock_9_interleave: 9 levies {'melee': 4, 'ranged': 2, 'magic': 2, 'summon': 1}, classes in enlist order: m,r,m,s,m,r,m,m,m
+CURRENT (real ArmoryTE.IssueGear, soldier-by-soldier): melee n=4 min=41 mean=369; ranged n=2 min=167 mean=620; magic n=2 min=262 mean=633; summon n=1 min=58 mean=58
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 41
+PROPOSED global (class-matched, worst-equipped first, key=score): melee n=4 min=105 mean=384; ranged n=2 min=166 mean=619; magic n=2 min=262 mean=633; summon n=1 min=58 mean=58
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 58, leftover weapons: Flower of Fire, Handgun, Minishark, Boomstick, Demon Scythe, Water Bolt, Space Gun, Volcano, Musket,
+PROPOSED global (class-matched, worst-equipped first, key=cost): melee n=4 min=59 mean=373; ranged n=2 min=140 mean=606; magic n=2 min=262 mean=633; summon n=1 min=31 mean=31
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 31, leftover weapons: Phoenix Blaster, Muramasa, Water Bolt, Flower of Fire, Boomstick, Imp Staff, Handgun, Space Gun, Dem
+   per levy (armor | current weapon sc | proposed(score-key) weapon sc):
+     100 melee   | The Horseman's Blade       591 | The Horseman's Blade       591
+     101 ranged  | Xenopopper                1074 | Xenopopper                1073
+     102 magic   | Laser Machinegun          1004 | Laser Machinegun          1004
+     103 summon  | Imp Staff                   58 | Imp Staff                   58
+     104 melee   | Terra Blade                516 | Terra Blade                516
+     105 ranged  | Phoenix Blaster            167 | Phoenix Blaster            166
+     106 magic   | Razorblade Typhoon         262 | Razorblade Typhoon         262
+     107 melee   | Influx Waver               328 | Influx Waver               327
+     108 melee   | Iron Broadsword             41 | Muramasa                   105
+
+===== H_eveStock_9_meleelast: 9 levies {'melee': 4, 'ranged': 2, 'magic': 2, 'summon': 1}, classes in enlist order: r,r,m,m,s,m,m,m,m
+CURRENT (real ArmoryTE.IssueGear, soldier-by-soldier): melee n=4 min=41 mean=369; ranged n=2 min=141 mean=607; magic n=2 min=262 mean=633; summon n=1 min=58 mean=58
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 41
+PROPOSED global (class-matched, worst-equipped first, key=score): melee n=4 min=105 mean=384; ranged n=2 min=166 mean=619; magic n=2 min=262 mean=633; summon n=1 min=58 mean=58
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 58, leftover weapons: Flower of Fire, Handgun, Minishark, Boomstick, Demon Scythe, Water Bolt, Space Gun, Volcano, Musket,
+PROPOSED global (class-matched, worst-equipped first, key=cost): melee n=4 min=59 mean=373; ranged n=2 min=140 mean=606; magic n=2 min=262 mean=633; summon n=1 min=31 mean=31
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 31, leftover weapons: Phoenix Blaster, Muramasa, Water Bolt, Flower of Fire, Boomstick, Imp Staff, Handgun, Space Gun, Dem
+   per levy (armor | current weapon sc | proposed(score-key) weapon sc):
+     100 ranged  | Xenopopper                1074 | Xenopopper                1073
+     101 ranged  | Minishark                  141 | Phoenix Blaster            166
+     102 magic   | Laser Machinegun          1004 | Laser Machinegun          1004
+     103 magic   | Razorblade Typhoon         262 | Razorblade Typhoon         262
+     104 summon  | Imp Staff                   58 | Imp Staff                   58
+     105 melee   | Terra Blade                516 | The Horseman's Blade       591
+     106 melee   | The Horseman's Blade       591 | Terra Blade                516
+     107 melee   | Influx Waver               328 | Influx Waver               327
+     108 melee   | Iron Broadsword             41 | Muramasa                   105
+
+===== H_eveStock_20_interleave: 20 levies {'melee': 7, 'ranged': 5, 'magic': 4, 'summon': 2, 'none': 2}, classes in enlist order: m,r,m,s,n,m,r,m,s,n,m,r,m,m,r,m,m,r,m,m
+CURRENT (real ArmoryTE.IssueGear, soldier-by-soldier): melee n=7 min=30 mean=173; ranged n=5 min=125 mean=329; magic n=4 min=100 mean=368; summon n=2 min=41 mean=49; none n=2 min=192 mean=354
+   class-mismatched primaries: 1, unarmed: 0, worst armed score: 30
+PROPOSED global (class-matched, worst-equipped first, key=score): melee n=7 min=58 mean=250; ranged n=5 min=124 mean=329; magic n=4 min=115 mean=393; summon n=2 min=41 mean=49; none n=2 min=100 mean=103
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 41, leftover weapons: Musket, Trident, Iron Broadsword, Slime Staff, Spear, Copper Shortsword, Wooden Sword
+PROPOSED global (class-matched, worst-equipped first, key=cost): melee n=7 min=40 mean=244; ranged n=5 min=124 mean=329; magic n=4 min=106 mean=391; summon n=2 min=31 mean=44; none n=2 min=100 mean=107
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 31, leftover weapons: Musket, Hornet Staff, Trident, Copper Shortsword, Spear, Wooden Sword, Volcano
+   per levy (armor | current weapon sc | proposed(score-key) weapon sc):
+     100 melee   | The Horseman's Blade       591 | The Horseman's Blade       591
+     101 ranged  | Xenopopper                1074 | Xenopopper                1073
+     102 magic   | Laser Machinegun          1004 | Laser Machinegun          1004
+     103 summon  | Imp Staff                   58 | Imp Staff                   58
+     104 none    | Terra Blade                516 | Water Bolt                 106
+     105 melee   | Influx Waver               328 | Terra Blade                516
+     106 ranged  | Handgun                    142 | Phoenix Blaster            166
+     107 magic   | Razorblade Typhoon         262 | Razorblade Typhoon         262
+     108 summon  | Hornet Staff                41 | Hornet Staff                41
+     109 none    | Flower of Fire             192 | Space Gun                  100
+     110 melee   | Light's Bane                59 | Influx Waver               327
+     111 ranged  | Minishark                  141 | Handgun                    142
+     112 magic   | Water Bolt                 107 | Flower of Fire             192
+     113 melee   | Iron Broadsword             41 | Muramasa                   105
+     114 ranged  | Phoenix Blaster            167 | Minishark                  140
+     115 magic   | Space Gun                  100 | Demon Scythe               115
+     116 melee   | Trident                     47 | Volcano                     81
+     117 ranged  | Boomstick                  125 | Boomstick                  124
+     118 melee   | Spear                       30 | Blade of Grass              73
+     119 melee   | Demon Scythe               116 | Light's Bane                58
+
+===== H_eveStock_20_meleelast: 20 levies {'melee': 7, 'ranged': 5, 'magic': 4, 'summon': 2, 'none': 2}, classes in enlist order: r,r,r,r,r,m,m,m,m,s,s,n,n,m,m,m,m,m,m,m
+CURRENT (real ArmoryTE.IssueGear, soldier-by-soldier): melee n=7 min=0 mean=87; ranged n=5 min=125 mean=329; magic n=4 min=116 mean=393; summon n=2 min=41 mean=49; none n=2 min=516 mean=553
+   class-mismatched primaries: 3, unarmed: 3, worst armed score: 41
+PROPOSED global (class-matched, worst-equipped first, key=score): melee n=7 min=59 mean=250; ranged n=5 min=124 mean=329; magic n=4 min=115 mean=393; summon n=2 min=41 mean=49; none n=2 min=100 mean=103
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 41, leftover weapons: Musket, Trident, Iron Broadsword, Slime Staff, Spear, Copper Shortsword, Wooden Sword
+PROPOSED global (class-matched, worst-equipped first, key=cost): melee n=7 min=41 mean=244; ranged n=5 min=124 mean=329; magic n=4 min=106 mean=391; summon n=2 min=31 mean=44; none n=2 min=100 mean=107
+   class-mismatched primaries: 0, unarmed: 0, worst armed score: 31, leftover weapons: Musket, Hornet Staff, Trident, Copper Shortsword, Spear, Wooden Sword, Volcano
+   per levy (armor | current weapon sc | proposed(score-key) weapon sc):
+     100 ranged  | Xenopopper                1074 | Xenopopper                1073
+     101 ranged  | Minishark                  141 | Phoenix Blaster            166
+     102 ranged  | Phoenix Blaster            167 | Handgun                    142
+     103 ranged  | Boomstick                  125 | Minishark                  140
+     104 ranged  | Handgun                    142 | Boomstick                  124
+     105 magic   | Laser Machinegun          1004 | Laser Machinegun          1004
+     106 magic   | Razorblade Typhoon         262 | Razorblade Typhoon         262
+     107 magic   | Flower of Fire             192 | Flower of Fire             192
+     108 magic   | Demon Scythe               116 | Demon Scythe               115
+     109 summon  | Imp Staff                   58 | Imp Staff                   58
+     110 summon  | Hornet Staff                41 | Hornet Staff                41
+     111 none    | Terra Blade                516 | Water Bolt                 106
+     112 none    | The Horseman's Blade       591 | Space Gun                  100
+     113 melee   | Influx Waver               328 | The Horseman's Blade       591
+     114 melee   | Water Bolt                 107 | Terra Blade                516
+     115 melee   | Space Gun                  100 | Influx Waver               327
+     116 melee   | Musket                      75 | Muramasa                   105
+     117 melee   | -                            0 | Volcano                     81
+     118 melee   | -                            0 | Blade of Grass              73
+     119 melee   | -                            0 | Light's Bane                59

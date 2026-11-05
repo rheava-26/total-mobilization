@@ -51,6 +51,7 @@ namespace Levy.Common.Testing
 		// LEVY_HARNESS_SPSWAP=1         the SOLDIER window updates Thorium projectiles owned by the commander with Main.myPlayer = the commander, as in single player (a dedicated server has no local player)
 		private static bool _aimEnemy, _onlyLevies, _spSwap;
 		private static int _allyHpPct = 30;
+		private static string[] _classFilter, _armorNames;
 		private static int[] _ranges = { 4, 7, 15, 25, 40 };
 		private const int WalkTicks = 1300;          // walk-in window: target walks 40 tiles at ~2 tiles/s (0.5333 px/tick)
 		private const float WalkPxPerTick = 0.5333f;
@@ -61,7 +62,7 @@ namespace Levy.Common.Testing
 		internal const int FloorY = 120;           // top row of the floor
 		internal const int ClearTop = 60;          // rows ClearTop..FloorY-1 are air
 		internal const int HalfWidth = 100;        // range spans cx-HalfWidth .. cx+HalfWidth
-		private const int SetupTicks = 30;
+		private static int SetupTicks = 30; // LEVY_HARNESS_SETUP overrides (idle ticks before the target appears; lets Calamity stealth fill)
 		private const int CleanupTicks = 6;
 		private const string CommanderName = "LevyTester";
 
@@ -85,6 +86,8 @@ namespace Levy.Common.Testing
 			public bool Walk;               // walk-in trial: target starts 40 tiles away and approaches
 			public bool NoSoldier;          // not issuable: skip the soldier window, run only the player baseline
 			public bool Baseline = true;    // run a player baseline window after the soldier window
+			public int[] Gear;              // ON-HIT PROBE: commander gear for this trial (item types)
+			public string GearLabel = "";
 			public string Key;
 		}
 
@@ -112,6 +115,11 @@ namespace Levy.Common.Testing
 				_onlyLevies = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_ONLYLEVIES"));
 				_spSwap = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_HARNESS_SPSWAP"));
 				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_ALLYHP"), out int ahp) && ahp >= 1 && ahp <= 100) _allyHpPct = ahp;
+				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_SETUP"), out int su) && su >= 10 && su <= 2000) SetupTicks = su;
+				string cf = Environment.GetEnvironmentVariable("LEVY_HARNESS_CLASS");
+				if (!string.IsNullOrWhiteSpace(cf)) _classFilter = cf.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				string ar = Environment.GetEnvironmentVariable("LEVY_HARNESS_ARMOR");
+				if (!string.IsNullOrWhiteSpace(ar)) _armorNames = ar.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				string rg = Environment.GetEnvironmentVariable("LEVY_HARNESS_RANGES");
 				if (!string.IsNullOrWhiteSpace(rg))
 				{
@@ -159,7 +167,11 @@ namespace Levy.Common.Testing
 				_update ??= typeof(Main).GetMethod("Update", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, new[] { typeof(GameTime) }, null);
 				for (int i = 0; i < StepsPerTurn && h._ph != Ph.Done; i++)
 				{
-					_update.Invoke(Main.instance, new object[] { new GameTime() });
+					bool emu = HarnessOnHit.Enabled && HarnessOnHit.Emulate && h._stage == 0 && h._ph != Ph.Boot;
+					int savedMy = Main.myPlayer;
+					if (emu) Main.myPlayer = 0; // single-player emulation: soldier shots are owned by the commander, as in a real single-player game
+					try { _update.Invoke(Main.instance, new object[] { new GameTime() }); }
+					finally { if (emu) Main.myPlayer = savedMy; }
 				}
 			}
 			catch (Exception e) { Instance?.Mod.Logger.Warn("HARNESS: world update threw: " + (e is System.Reflection.TargetInvocationException t && t.InnerException != null ? t.InnerException : e)); }
@@ -292,6 +304,7 @@ namespace Levy.Common.Testing
 			p.statLife = wounded ? 250 : 500;
 			p.statMana = 200;
 			p.position = new Vector2(_cx * 16f - 4 * 16f, FloorY * 16f - p.height);
+			if (HarnessOnHit.Enabled && _stage == 0 && HarnessOnHit.FarTiles > 0) p.position = new Vector2(_cx * 16f - HarnessOnHit.FarTiles * 16f, HarnessOnHit.FarY * 16f);
 			p.velocity = Vector2.Zero;
 			for (int b = 0; b < p.buffType.Length; b++) { p.buffType[b] = 0; p.buffTime[b] = 0; }
 		}
@@ -303,6 +316,7 @@ namespace Levy.Common.Testing
 			// the server resets a player slot that has no network client (max life fell back to 100 in the first run), so re-assert the maxima every tick
 			p.statLifeMax = 500; p.statLifeMax2 = 500; p.statManaMax = 200; p.statManaMax2 = 200;
 			p.position = new Vector2(_cx * 16f - (_stage == 1 ? 10f : 4 * 16f) , FloorY * 16f - p.height);
+			if (HarnessOnHit.Enabled && _stage == 0 && HarnessOnHit.FarTiles > 0) p.position = new Vector2(_cx * 16f - HarnessOnHit.FarTiles * 16f, HarnessOnHit.FarY * 16f); // far and high above the soldier
 			p.velocity = Vector2.Zero;
 			p.statMana = p.statManaMax2;
 			if (p.statLife < 1) p.statLife = 1;
@@ -338,6 +352,29 @@ namespace Levy.Common.Testing
 		// =========================================================================================================
 		// Trial list
 		// =========================================================================================================
+		/// <summary>rogue / summon / magic / ranged / melee / other, from the item's damage class (Calamity's rogue class is matched by name).</summary>
+		internal static string ClassGroup(Item it)
+		{
+			DamageClass d = it.DamageType;
+			if (d == null) return "other";
+			string n = d.GetType().Name;
+			if (n.Contains("Rogue") || n.Contains("Stealth")) return "rogue";
+			if (d.CountsAsClass(DamageClass.Summon)) return "summon";
+			if (d.CountsAsClass(DamageClass.Magic)) return "magic";
+			if (d.CountsAsClass(DamageClass.Ranged)) return "ranged";
+			if (d.CountsAsClass(DamageClass.Melee)) return "melee";
+			if (d.CountsAsClass(DamageClass.Throwing)) return "throwing";
+			return "other";
+		}
+
+		private static bool ClassMatches(Item it)
+		{
+			if (_classFilter == null) return true;
+			string g = ClassGroup(it);
+			foreach (var f in _classFilter) if (string.Equals(f, g, StringComparison.OrdinalIgnoreCase)) return true;
+			return false;
+		}
+
 		private static bool NameMatches(Item it)
 		{
 			if (_filter == null) return true;
@@ -370,6 +407,7 @@ namespace Levy.Common.Testing
 
 		private void BuildTrials()
 		{
+			if (HarnessOnHit.Enabled) { BuildOnHitTrials(); return; }
 			if (!_skipControls)
 			{
 				AddWeaponTrials(ItemID.Musket, "pos", "Musket Ball", ItemID.MusketBall);
@@ -386,9 +424,50 @@ namespace Levy.Common.Testing
 				try { it.SetDefaults(t); } catch { continue; }
 				if (it.IsAir || !seen.Add(t)) continue;
 				if (!IsWeaponCandidate(it, out _)) continue;
-				if (!NameMatches(it)) continue;
+				if (!NameMatches(it) || !ClassMatches(it)) continue;
 				if ((idx++ % _shardN) != _shardK) continue;
 				AddWeaponTrials(t, "", null, 0);
+			}
+		}
+
+		/// <summary>ON-HIT PROBE trial list: one soldier window per trial (no walk-in, no player baseline), commander far away. Gear scan: per gear one idle control + one trial per reference weapon; otherwise one trial per issuable weapon.</summary>
+		private void BuildOnHitTrials()
+		{
+			int range = _ranges.Length > 0 ? _ranges[Math.Min(_ranges.Length - 1, _ranges.Length / 2)] : 15;
+			var rangeList = _ranges;
+			void Add(int itemType, int[] gear, string gearLabel, int r)
+			{
+				string name = itemType == 0 ? "(no weapon)" : ContentSamples.ItemsByType[itemType].Name;
+				string key = (itemType == 0 ? "NEG" : itemType.ToString()) + "/" + (gearLabel == "" ? "-" : gearLabel) + "/r" + r;
+				_weaponOrder.Add(key);
+				_agg[key] = new WeaponAgg { Name = name + (gearLabel == "" ? "" : " + " + gearLabel), Issued = itemType == 0 ? 0 : 1 };
+				_trials.Add(new Trial { ItemType = itemType, Control = itemType == 0 ? "neg" : "", Range = r, Key = key, Baseline = HarnessOnHit.WithBaseline && itemType > 0 && gear == null, Gear = gear, GearLabel = gearLabel });
+			}
+			if (HarnessOnHit.GearScanMods != null)
+			{
+				var gears = HarnessOnHit.EnumerateGear(); var refs = HarnessOnHit.ResolveRefs();
+				Mod.Logger.Info($"ONHIT: gear scan {gears.Count} gear entries x ({refs.Count} refs + idle) at {range} tiles");
+				Add(0, null, "", range); // idle control with only the fixed loadout
+				foreach (var g in gears)
+				{
+					Add(0, g.Types, g.Label, range);
+					foreach (int rw in refs) Add(rw, g.Types, g.Label, range);
+				}
+				return;
+			}
+			Add(0, null, "", range);
+			_agg["NEGC"] = new WeaponAgg { Name = "(no weapon, companion)" }; _weaponOrder.Add("NEGC");
+			_trials.Add(new Trial { ItemType = 0, Control = "negc", Range = range, Key = "NEGC", Baseline = false }); // idle control with a wounded ally + 50% commander (natural-regen noise for healer / bard weapons)
+			int idx = 0; var seen = new HashSet<int>();
+			for (int t = ItemID.Count; t < ItemLoader.ItemCount; t++)
+			{
+				Item it = new Item();
+				try { it.SetDefaults(t); } catch { continue; }
+				if (it.IsAir || !seen.Add(t)) continue;
+				if (!IsWeaponCandidate(it, out _) || !WeaponClassifier.IsIssuableWeapon(it)) continue;
+				if (!NameMatches(it) || !ClassMatches(it)) continue;
+				if ((idx++ % _shardN) != _shardK) continue;
+				foreach (int r in rangeList) Add(t, null, "", r);
 			}
 		}
 
@@ -447,6 +526,8 @@ namespace Levy.Common.Testing
 			public HashSet<string> States = new();
 			public int HealProjSeen;
 			public bool IsBaseline, SkipRun;
+			public bool CalOn; public float StealthStart = -1f, StealthEnd = -1f, StealthMax, StealthPeak; public bool StealthFilled; public int StealthStrikes, StealthSubs, StealthAvailTicks;
+			public float[] RA0, RA1;
 			public Dictionary<string, int> Items = new();       // items that appeared in the world during the window (name -> count)
 			public HashSet<string> AllyBuffNames = new();
 			public uint PlayerEmpUnion;
@@ -502,6 +583,7 @@ namespace Levy.Common.Testing
 
 				bool companion = _cur.Kind != "" || t.Control == "negc";
 				PlaceCommander(companion && !_onlyLevies);
+				if (HarnessOnHit.Enabled && _stage == 0) HarnessOnHit.ApplyLoadout(Main.player[0], t.Gear);
 
 				if (_stage == 1) { SetupPlayer(w, t, companion); return; }
 
@@ -524,8 +606,15 @@ namespace Levy.Common.Testing
 						else _cur.Ammo = ammo == null ? "NONE FOUND for useAmmo " + w.useAmmo : ammo.Name + " (CanHold false)";
 					}
 				}
+				if (_armorNames != null)
+					foreach (Item a in ArmorItems())
+					{
+						int slot = a.headSlot >= 0 ? SoldierGear.SlotHead : a.bodySlot >= 0 ? SoldierGear.SlotBody : SoldierGear.SlotLegs;
+						if (gear.CanHold(slot, a)) { gear.Set(slot, a); gear.SetLocked(slot, true); _cur.Notes += "armor:" + a.Name + ";"; }
+						else _cur.Notes += "armor " + a.Name + " CanHold false;";
+					}
 				rec.LoadoutLocked = true;
-				rec.Order = SoldierOrder.Follow;
+				rec.Order = HarnessOnHit.Enabled && HarnessOnHit.FarTiles > 0 ? HarnessOnHit.FarOrder : SoldierOrder.Follow;
 				rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 				RosterSystem.Instance.Regulars.Add(rec);
 				_cur.Rec = rec;
@@ -565,6 +654,12 @@ namespace Levy.Common.Testing
 			Item held = w.Clone();
 			if (held.consumable || WeaponClassifier.Classify(held) == WeaponFamily.Thrown) held.stack = Math.Min(held.maxStack > 1 ? held.maxStack : 999, 999);
 			p.inventory[0] = held; p.selectedItem = 0;
+			if (_armorNames != null)
+				foreach (Item a in ArmorItems())
+				{
+					int ai = a.headSlot >= 0 ? 0 : a.bodySlot >= 0 ? 1 : 2;
+					p.armor[ai] = a; _cur.BaselineNote += "armor:" + a.Name + ";";
+				}
 			_cur.Where = "player slot0";
 			if (w.useAmmo > 0)
 			{
@@ -823,6 +918,51 @@ namespace Levy.Common.Testing
 			return (float)Math.Sqrt(Math.Max(0f, r * r - dy * dy));
 		}
 
+		/// <summary>LEVY_HARNESS_ARMOR: ModItem internal names (in the tested mod) of head/body/legs pieces both the soldier and the player baseline wear.</summary>
+		private static List<Item> ArmorItems()
+		{
+			var list = new List<Item>();
+			foreach (string n in _armorNames)
+			{
+				if (!ModContent.TryFind<ModItem>(TestMod + "/" + n, out ModItem mi)) continue;
+				Item it = new Item(); it.SetDefaults(mi.Type); list.Add(it);
+			}
+			return list;
+		}
+
+		private static bool CalAvail()
+		{
+			try { return ModLoader.HasMod("CalamityMod") && HarnessCalamityProbe.Available; } catch (Exception) { return false; }
+		}
+
+		private static void CalStart(Cur c, Player p)
+		{
+			try
+			{
+				if (!CalAvail()) return;
+				c.CalOn = true;
+				float[] st = HarnessCalamityProbe.Stealth(p);
+				if (st != null) { c.StealthStart = st[0]; c.StealthEnd = st[0]; c.StealthMax = st[1]; c.StealthPeak = st[0]; }
+				if (c.IsBaseline) c.RA0 = HarnessCalamityProbe.RageAdrenaline(p);
+			}
+			catch (Exception e) { c.Exceptions.Add("calstart:" + e.Message); }
+		}
+
+		private static void CalSample(Cur c, Player p)
+		{
+			if (!c.CalOn) return;
+			try
+			{
+				float[] st = HarnessCalamityProbe.Stealth(p);
+				if (st == null) return;
+				c.StealthEnd = st[0]; if (st[1] > c.StealthMax) c.StealthMax = st[1]; if (st[0] > c.StealthPeak) c.StealthPeak = st[0];
+				if (st[1] > 0f && st[0] >= st[1] * 0.999f) c.StealthFilled = true;
+				if (HarnessCalamityProbe.StealthStrikeAvailable(p)) c.StealthAvailTicks++;
+				if (c.IsBaseline) c.RA1 = HarnessCalamityProbe.RageAdrenaline(p);
+			}
+			catch (Exception e) { if (c.Exceptions.Count < 3) c.Exceptions.Add("calsample:" + e.Message); }
+		}
+
 		private void StartRun()
 		{
 			var c = _cur;
@@ -848,7 +988,9 @@ namespace Levy.Common.Testing
 					Main.npc[c.TargetIdx].GetGlobalNPC<HarnessTarget>().Pin = Main.npc[c.TargetIdx].position;
 					if (c.Kind == "bard") { c.InspStart = c.InspPrev = HarnessThoriumProbe.PlayerBardResource(p); c.InspMax = HarnessThoriumProbe.PlayerBardMax(p); }
 					c.StartDist = Vector2.Distance(p.Center, Main.npc[c.TargetIdx].Center) / 16f;
+					CalStart(c, p);
 					_pendingProj.Clear();
+					if (HarnessOnHit.Enabled) HarnessOnHit.BeginWindow(c.Weapon?.Name ?? (c.T.Control == "negc" ? "(no weapon) COMPANION" : "(no weapon)"), c.T.GearLabel, c.T.Range.ToString(), 1);
 					return;
 				}
 				var body = Main.npc[c.BodyIdx].ModNPC as SoldierNPC;
@@ -859,7 +1001,9 @@ namespace Levy.Common.Testing
 				c.ManaStart = c.ManaMin = c.Rec.Mana;
 				if (c.Kind == "bard") { c.InspStart = c.InspPrev = HarnessThoriumProbe.BardResource(body); c.InspMax = HarnessThoriumProbe.BardMax(body); }
 				c.StartDist = Vector2.Distance(Main.npc[c.BodyIdx].Center, Main.npc[c.TargetIdx].Center) / 16f;
+				CalStart(c, body.Dummy);
 				_pendingProj.Clear();
+				if (HarnessOnHit.Enabled) { SetKeepAlive(true); HarnessOnHit.BeginWindow(c.Weapon?.Name ?? (c.T.Control == "negc" ? "(no weapon) COMPANION" : "(no weapon)"), c.T.GearLabel, c.T.Range.ToString(), 0); }
 			}
 			catch (Exception e) { c.Exceptions.Add("startrun:" + e.GetType().Name + ":" + e.Message); }
 		}
@@ -888,6 +1032,7 @@ namespace Levy.Common.Testing
 					c.MovedX = bn.Center.X - c.StartX;
 					c.ManaEnd = c.Rec.Mana; if (c.Rec.Mana < c.ManaMin) c.ManaMin = c.Rec.Mana;
 					if (bn.TryGetGlobalNPC(out SoldierThoriumGlobalNPC g)) c.EmpUnion |= g.EmpMask;
+					CalSample(c, s.Dummy);
 					if (c.Kind == "bard")
 					{
 						int r = HarnessThoriumProbe.BardResource(s);
@@ -908,6 +1053,7 @@ namespace Levy.Common.Testing
 			{
 				c.ActiveTick++; c.AliveTicks++;
 				Player p = Main.player[0];
+				CalSample(c, p);
 				if (p.itemAnimation > 0) { c.AnimTicks++; if (c.FirstFire < 0) c.FirstFire = c.ActiveTick; }
 				if (c.Kind == "bard")
 				{
@@ -926,6 +1072,7 @@ namespace Levy.Common.Testing
 		private void SampleCommon(Cur c)
 		{
 			NPC t = Main.npc[c.TargetIdx];
+			if (HarnessOnHit.Enabled) HarnessOnHit.Tick(c.BodyIdx >= 0 && Main.npc[c.BodyIdx].active ? Main.npc[c.BodyIdx].Center : Main.player[0].Center, t.Center);
 			if (t.active && t.life < t.lifeMax) { c.Damage += t.lifeMax - t.life; c.Hits++; t.life = t.lifeMax; }
 			if (!t.active) c.Exceptions.Add("target vanished @tick" + c.ActiveTick);
 
@@ -975,6 +1122,7 @@ namespace Levy.Common.Testing
 					if (c.FirstShotDist < 0 && !c.IsBaseline && c.BodyIdx >= 0 && c.TargetIdx >= 0 && Main.npc[c.BodyIdx].active && Main.npc[c.TargetIdx].active)
 						c.FirstShotDist = Vector2.Distance(Main.npc[c.BodyIdx].Center, Main.npc[c.TargetIdx].Center) / 16f;
 					if (name.EndsWith("SoldierHeal")) c.HealProjSeen++;
+					if (c.CalOn && HarnessCalamityProbe.IsStealthStrike(p, out bool subStrike)) { if (subStrike) c.StealthSubs++; else c.StealthStrikes++; }
 				}
 				else c.ProjOther++;
 			}
@@ -986,6 +1134,7 @@ namespace Levy.Common.Testing
 			var c = _cur;
 			if (c == null) return;
 			if (c.SetupOk) ResolvePending();
+			if (HarnessOnHit.Enabled && HarnessOnHit.Active) HarnessOnHit.EndWindow(c.Damage, c.Hits, c.ProjTotal, Main.player[0].statDefense);
 			SetKeepAlive(false); _p2Alive = false;
 			var cap = _capture?.End();
 			if (cap != null) foreach (var m in cap) c.Exceptions.Add("log:" + m);
@@ -1032,6 +1181,7 @@ namespace Levy.Common.Testing
 		{
 			if (pl == null) return "-";
 			if (!pl.SetupOk) return "BASELINE_FAILED(setup)";
+			if (pl.Exceptions.Any(x => x.Contains("AchievementsHelper"))) return "BASELINE_FAILED(server has no achievements: ItemCheck_Shoot aborted)";
 			if (pl.AnimTicks == 0 && pl.ProjTotal == 0) return "BASELINE_FAILED(player never began item use)";
 			bool S = s != null && s.SetupOk && Something(s), P = Something(pl);
 			if (!S && !P) return "BOTH_NOTHING";
@@ -1043,6 +1193,7 @@ namespace Levy.Common.Testing
 			return same ? "SAME" : "DIFFERENT";
 		}
 
+		private static string StealthCell(Cur c) => !c.CalOn || c.StealthStart < 0f ? "-" : $"{c.StealthStart:0.00}>{c.StealthEnd:0.00}/max{c.StealthMax:0.00},peak{c.StealthPeak:0.00}";
 		private static string Mask(uint m) => m == 0 ? "-" : "0x" + m.ToString("x");
 		private static string Names(IEnumerable<string> n) { var l = n.OrderBy(x => x).ToList(); return l.Count == 0 ? "-" : string.Join(",", l); }
 
@@ -1099,6 +1250,7 @@ namespace Levy.Common.Testing
 				f.Add(pl.Packets.Count == 0 ? "-" : string.Join(";", pl.Packets.OrderBy(k => k.Key).Select(k => k.Key + "x" + k.Value)) + (pl.PacketHeals > 0 ? " (heal packets applied: " + pl.PacketHeals + ")" : ""));
 				f.Add(pl.Player2 ? $"{pl.P2Before}>{pl.P2After}(max{pl.P2Max}) +{pl.P2GainSum}/big{pl.P2Big}" : "-");
 			}
+			// ---- Calamity / class columns (appended after the verdict block) ----
 			// ---- diff columns ----
 			if (pl == null) f.AddRange(Enumerable.Repeat("-", 4));
 			else
@@ -1107,6 +1259,15 @@ namespace Levy.Common.Testing
 				f.Add(Mech(pl)); f.Add(Mech(c));
 				f.Add(Verdict(c, pl));
 			}
+			f.Add(w == null ? "-" : ClassGroup(w) + "/" + (w.DamageType?.GetType().Name ?? "?"));
+			f.Add(StealthCell(c)); f.Add(c.CalOn ? (c.StealthFilled ? "Y" : "N") : "-"); f.Add(c.CalOn ? c.StealthStrikes.ToString() : "-"); f.Add(c.CalOn ? c.StealthSubs.ToString() : "-"); f.Add(c.CalOn ? c.StealthAvailTicks.ToString() : "-");
+			if (pl == null) f.AddRange(Enumerable.Repeat("-", 6));
+			else
+			{
+				f.Add(StealthCell(pl)); f.Add(pl.CalOn ? (pl.StealthFilled ? "Y" : "N") : "-"); f.Add(pl.CalOn ? pl.StealthStrikes.ToString() : "-"); f.Add(pl.CalOn ? pl.StealthSubs.ToString() : "-"); f.Add(pl.CalOn ? pl.StealthAvailTicks.ToString() : "-");
+				f.Add(pl.RA0 == null || pl.RA1 == null ? "-" : $"rage {pl.RA0[0]:0}>{pl.RA1[0]:0}/{pl.RA0[1]:0} adr {pl.RA0[2]:0}>{pl.RA1[2]:0}/{pl.RA0[3]:0}");
+			}
+			f.Add(_armorNames == null ? "-" : string.Join("+", _armorNames));
 			return string.Join("\t", f.Select(Clean));
 		}
 
@@ -1114,7 +1275,7 @@ namespace Levy.Common.Testing
 
 		private const string Header = "kind\tweapon\titemType\tinternal\tmod\tclassifier\tcompanionKind\tissued\theldIn\tammoGiven\trangeTiles\tsetupOk\taliveTicks\tstates\tengageTicks\ttargetAcquiredTicks\tminDistTiles\tstartDistTiles\tsoldierMovedPx\tengageDistTiles\tfirstShotDistTiles\tfired(proj)\tprojectiles\tprojTypes\tprojUntagged\titemAnimTicks\tfirstAnimTick\tdamageToTarget\ttargetHitTicks\tcommanderHp\tallyHp\tlifeRises\tinspiration(start>end/max)\tinspSpent\tempowermentsSoldier\tempowermentsAlly\tcommanderBuffs\tallyBuffs\titemsSpawned\tmana(start>end)\texceptions\tnotes"
 			+ "\tpl_status\tpl_startDistTiles\tpl_itemAnimTicks\tpl_projectiles\tpl_projTypes\tpl_projNotOwner\tpl_damage\tpl_targetHitTicks\tpl_commanderHp\tpl_allyHp\tpl_lifeRises\tpl_inspiration\tpl_inspSpent\tpl_empowermentsPlayer\tpl_empowermentsAlly\tpl_playerBuffs\tpl_allyBuffs\tpl_itemsSpawned\tpl_exceptions\tpl_notes\tpl_aimedAt\tprojOnlyPlayer\tpl_vanillaPackets\tpl_player2Hp"
-			+ "\tprojOnlySoldier\thealMechPlayer\thealMechSoldier\tverdict";
+			+ "\tprojOnlySoldier\thealMechPlayer\thealMechSoldier\tverdict\tdmgClass\tstealth(start>end/max,peak)\tstealthFilled\tstealthStrikes\tstealthSubProj\tstealthAvailTicks\tpl_stealth\tpl_stealthFilled\tpl_stealthStrikes\tpl_stealthSubProj\tpl_stealthAvailTicks\tpl_rageAdrenaline\tarmor";
 
 		private void WriteTsv()
 		{
@@ -1218,6 +1379,7 @@ namespace Levy.Common.Testing
 		{
 			if (!CombatHarness.Enabled) return;
 			CombatHarness.Instance?.NoteItem(item, source);
+			HarnessOnHit.OnItemSpawn(item, source);
 		}
 	}
 

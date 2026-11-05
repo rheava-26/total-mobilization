@@ -44,6 +44,8 @@ namespace Levy.Common.Globals
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
+			// experiment (harness-gated, OwnerPuppet bit 16): a projectile spawned inside a soldier shot's puppeted Update / Damage / Kill with no parent tag still belongs to that soldier
+			if (SoldierIndex < 0 && OwnerPuppet.TryInherit(projectile, out SoldierNPC ctxBody)) { SoldierIndex = ctxBody.NPC.whoAmI; projectile.npcProj = true; projectile.noDropItem = true; OwnerPuppet.Inherited++; }
 			// A real minion being cast for a soldier is named here, before NewProjectile sends its first spawn packet, so remote screens know whose it is from the start.
 			if (SoldierMinions.PendingBody != null)
 			{

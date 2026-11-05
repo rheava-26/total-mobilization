@@ -40,6 +40,8 @@ namespace Levy.Content.NPCs
 		private int _upkeepFails; private uint _upkeepPausedUntil;
 		private bool _upkeepWarned;
 		private int[] _upkeepCounts;
+		/// <summary>Tick (Main.GameUpdateCount) a weapon use last began for this soldier (WeaponUse.FinishUse). The next frame lets the dummy see it as the first frame of an item use.</summary>
+		internal uint LastUseTick;
 
 		/// <summary>The soldier's gear is tick-dependent and the real upkeep is enabled (config / harness mode), the stat pipeline is up, and the soldier is not paused after failures.</summary>
 		public bool UpkeepActive => _upkeepGear && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
@@ -136,7 +138,18 @@ namespace Levy.Content.NPCs
 
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
 				RunHook(() => PlayerLoader.PostUpdateEquips(d));
+				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
+				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
+				Item held = d.inventory[d.selectedItem];
+				if (LastUseTick != 0 && Main.GameUpdateCount - LastUseTick == 1 && held != null && !held.IsAir)
+				{
+					d.itemAnimationMax = Math.Max(1, held.useAnimation); d.itemAnimation = d.itemAnimationMax - 1;
+					d.itemTime = Math.Max(1, (int)(held.useTime / Math.Max(0.1f, d.GetTotalAttackSpeed(held.DamageType))));
+					GearUpkeep.UseSignals++;
+				}
+				else { d.itemAnimation = 0; d.itemAnimationMax = 0; d.itemTime = 0; }
 				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
+				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
 			}
 			finally
 			{
@@ -211,7 +224,7 @@ namespace Levy.Content.NPCs
 			if (_inGearHurt || damage <= 0 || !UpkeepActive || LevyUtil.IsClient || !IsAlive) return;
 			_inGearHurt = true;
 			Player d = Dummy;
-			int savedWho = d.whoAmI; Vector2 savedCenter = d.Center; int savedLife = d.statLife;
+			int savedWho = d.whoAmI; Vector2 savedCenter = d.Center; int savedLife = d.statLife, savedOrbs = d.beetleOrbs, savedShields = d.solarShields;
 			object thorium = null;
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
@@ -221,6 +234,7 @@ namespace Levy.Content.NPCs
 				thorium = OwnerPuppet.SwapThorium(d, true);
 				int room = Math.Max(d.statLifeMax2, 1) + damage + 1000;
 				d.statLife = room; d.immune = false; d.immuneTime = 0; d.dead = false;
+				savedOrbs = d.beetleOrbs; savedShields = d.solarShields; d.beetleOrbs = 0; d.solarShields = 0; // the beetle orb / solar shield losses on a hit are built by hand (SetsOnHurt): vanilla's own would count twice
 				NPC src = attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active ? Main.npc[attackerIndex] : null;
 				var reason = src != null ? PlayerDeathReason.ByNPC(src.whoAmI) : PlayerDeathReason.ByCustomReason(Terraria.Localization.NetworkText.FromLiteral(SoldierName));
 				var info = new Player.HurtInfo { DamageSource = reason, Damage = damage, HitDirection = src != null && src.Center.X > NPC.Center.X ? -1 : 1, CooldownCounter = -1, Dodgeable = false, Knockback = 0f, PvP = false, SoundDisabled = true, DustDisabled = true };
@@ -236,7 +250,7 @@ namespace Levy.Content.NPCs
 			}
 			finally
 			{
-				d.whoAmI = savedWho; d.Center = savedCenter; d.statLife = NPC.life > 0 ? NPC.life : savedLife; d.dead = false; d.immune = false; d.immuneTime = 0;
+				d.whoAmI = savedWho; d.Center = savedCenter; d.statLife = NPC.life > 0 ? NPC.life : savedLife; d.beetleOrbs = savedOrbs; d.solarShields = savedShields; d.dead = false; d.immune = false; d.immuneTime = 0;
 				OwnerPuppet.RestoreThorium(thorium);
 				GearUpkeep.Body = prev;
 				AdoptUpkeepSpawns(spawnStart);
@@ -267,11 +281,11 @@ namespace Levy.Content.NPCs
 		internal static readonly List<int> Spawned = new();
 
 		// counters (harness)
-		public static long Ticks; public static int Frames, Failures, HookFailures, Adopted, LifeWriteBacks, ManaWriteBacks, HurtCalls;
+		public static long Ticks; public static int Frames, Failures, HookFailures, Adopted, LifeWriteBacks, ManaWriteBacks, HurtCalls, UseSignals;
 		public static readonly Dictionary<int, int> Dropped = new(), AdoptedByType = new();
 		private static readonly HashSet<string> _warned = new();
 		internal static bool WarnOnce(Exception e) => _warned.Add(e.GetType().Name + "@" + (e.StackTrace ?? "").Split('\n')[0].Trim());
-		internal static void ResetCounters() { Ticks = 0; Frames = Failures = HookFailures = Adopted = LifeWriteBacks = ManaWriteBacks = HurtCalls = 0; Dropped.Clear(); AdoptedByType.Clear(); }
+		internal static void ResetCounters() { Ticks = 0; Frames = Failures = HookFailures = Adopted = LifeWriteBacks = ManaWriteBacks = HurtCalls = UseSignals = 0; Dropped.Clear(); AdoptedByType.Clear(); }
 
 		/// <summary>Projectiles whose job a hand-made twin already does (the leaf and the Guardian are bound to the commander in vanilla; Spore Sac keeps its per-soldier trap cap by hand).</summary>
 		internal static bool CoveredByHandMade(Projectile p) => p.type == ProjectileID.CrystalLeaf || p.type == ProjectileID.StardustGuardian || p.aiStyle == ProjAIStyleID.SporeTrap;

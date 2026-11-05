@@ -906,6 +906,7 @@ namespace Levy.Common.Weapons
 			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation); s.UsesThisAnimation = 0; }
 			s.UsesThisAnimation++;
 			s.AttackCooldown = Math.Max(1, item.useTime);
+			s.LastUseTick = Main.GameUpdateCount; // gear upkeep shows the dummy a "first frame of a use" next tick (Calamity consumes stealth off it)
 			// useLimitPerAnimation caps the uses per animation (Player.ItemCheck_OwnerOnlyCode; the Tome of Infinite Wisdom fires 4 shots then waits out the rest of its 25-tick animation):
 			// once spent, the weapon is silent until the animation ends, then reuseDelay (applied by Combat_Update) adds its pause.
 			if (item.useLimitPerAnimation.HasValue && s.UsesThisAnimation >= item.useLimitPerAnimation.Value) s.AttackCooldown = Math.Max(s.AttackCooldown, s.ItemAnimation);

@@ -286,6 +286,18 @@ namespace Levy.Common.Testing
 				sol.SlotIdx = (slots || Has(s, "vslot")) ? 100 + k : Slot;
 				s.Sols.Add(sol);
 				if (s.GearKeys.Count > 0) EquipGear(s, rec);
+				string wk = s.Flags.FirstOrDefault(f => f.StartsWith("wpn="));
+				if (wk != null)
+				{
+					// an armed, engaged soldier (the production brain and combat run): the hand-made accessory procs and the leaf only act while he fights
+					int wt = ResolveItem(wk.Substring(4));
+					if (wt > 0)
+					{
+						var w = new Item(); w.SetDefaults(wt); rec.Gear.Weapon = w;
+						int at = AmmoFor(w); if (at > 0) { var a = new Item(); a.SetDefaults(at); a.stack = 999; rec.Gear.Ammo = a; }
+						rec.HoldFire = false;
+					}
+				}
 			}
 			// commander
 			Player c = Main.player[0];
@@ -1050,7 +1062,7 @@ namespace Levy.Common.Testing
 		internal static void PrepareTick()
 		{
 			var s = _sc;
-			if (s == null || _stage != 1 || s.Sols.Count == 0) return;
+			if (s == null || _stage != 1 || s.Sols.Count == 0 || UpkMode(s) >= 0) return; // upk scenarios run the PRODUCTION upkeep: none of the lab's own per-tick prep
 			long t0 = Stopwatch.GetTimestamp();
 			bool buffs = !Has(s, "nobuffs");
 			// count each soldier's projectiles in one pass

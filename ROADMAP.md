@@ -11,6 +11,7 @@
 - **Hand-made twins disabled:** Volatile Gelatin only. **Kept (real one cannot live under a shared owner):** Crystal Leaf, Stardust Guardian (real ones respawn every tick/20 ticks and die), Spore Sac (per-soldier trap cap), Spectre/Nebula (hit-driven), Beetle/Solar draw-layer upkeep.
 - **Owner-bound helper types** (Calamity Blunder Booster aura etc.) are dropped by a churn breaker until soldiers own their shots (the later ownership step).
 - **Calamity rogue:** stealth now builds (was always 0) and is spent through Calamity's own first-use-frame check (fed by `LastUseTick`).
+- **Single-player safety:** the frame runs in slot 255 with `Main.myPlayer` faked to 255 (`SoldierMinions.BeginFake` keeps `OwnerFor` answering with the real commander) and `Main.dedServ` forced on, so `whoAmI == Main.myPlayer` blocks hit the dummy and process-wide writes (sounds, Calamity TextureAssets.FlyingCarpet / buff icons / BossHealthBarManager, dust, shaders) are skipped. Unverified on a real SP client.
 - Lab: `OwnerLab` kind `ctl` with flags `upk=0..3`, `wpn=`, `phurt=`; Calamity via `tools/lab_build.sh -N`.
 
 ## 🧭 WORKING AGREEMENT WITH EVE (2026-10-27 → 11-04) — read before diagnosing anything

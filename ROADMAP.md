@@ -218,7 +218,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 **Building now:**
 - `balanced-rank`: a new DEFAULT mode "Balanced" = sell price × relevance to current progression (smooth discount for weapons many tiers behind; never by per-hit damage) + a RECENCY boost for weapons recently deposited in the armory. The armor skip goes default OFF (Eve dislikes it: fast weapons like the Minishark and endgame ranger guns).
 - Same branch: mana. Config "Fallen Stars per levy mana crystal" (1–5, default 5), plus "Armory turns Fallen Stars into levy mana" (default on; never eats stars needed as Star Cannon ammo).
-- `levy-speed`: investigate why levies are slower than a player in the same boots (they lose to the Wall of Flesh). Candidates are listed in the brief; fix only confirmed causes.
+- `levy-speed`, NARROWED by Eve: boots work, and levies run while shooting fine. They were only slightly slower, because Eve had a Swiftness Potion and they did not; the Wall of Flesh barely outran them. Checking whether movement buffs (Swiftness etc.) reach levies, plus a quick boots-parity check.
 
 **Eve's design notes, NOT building yet:**
 - Against per-mod class slots (+1 bard, +1 rogue).

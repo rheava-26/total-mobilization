@@ -259,6 +259,11 @@ Mods: {
 					Tooltip: Off by default.
 				}
 
+				SoldierEffectsAtSoldier: {
+					Label: Weapon effects start at the soldier
+					Tooltip: Weapon effects a levy triggers start at the levy.
+				}
+
 				ExtraTargetingAiStyles: {
 					Label: Extra targeting AI styles
 					Tooltip: Additional NPC aiStyle numbers that may target soldiers.

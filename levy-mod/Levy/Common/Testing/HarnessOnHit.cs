@@ -245,7 +245,7 @@ namespace Levy.Common.Testing
 				foreach (Track t in _tracks) Finalize(t);
 				_tracks.Clear();
 				string head = $"{_label}";
-				_rows.Add(Row("TRIAL", "-", "-", "-", "-", "-", "-", $"dmg={damage};hitTicks={hitTicks};soldierProj={projTotal};projHits={_hits};taggedHits={_hitsTagged};derivedHits={_derivedHits};cmdDef={cmdDefense};puppetSwaps={OwnerPuppet.Swaps};thoriumSwaps={OwnerPuppet.ThSwaps};inherited={OwnerPuppet.Inherited}", 1, 0, -1f, Vector2.Zero, "-"));
+				_rows.Add(Row("TRIAL", "-", "-", "-", "-", "-", "-", $"dmg={damage};hitTicks={hitTicks};soldierProj={projTotal};projHits={_hits};taggedHits={_hitsTagged};derivedHits={_derivedHits};cmdDef={cmdDefense};puppetSwaps={OwnerPuppet.Swaps};thoriumSwaps={OwnerPuppet.ThSwaps};inherited={OwnerPuppet.Inherited};netGuards={OwnerPuppet.NetGuards};maxDepth={OwnerPuppet.MaxDepth}", 1, 0, -1f, Vector2.Zero, "-"));
 				foreach (var kv in _state.Where(k => k.Value.Last != k.Value.Start || k.Value.Min != k.Value.Max).OrderBy(k => k.Key))
 					_rows.Add(Row("STATE", kv.Key, "-", "CMD", "-", "-", "-", $"{kv.Value.Start:0.###}>{kv.Value.Last:0.###} (min {kv.Value.Min:0.###} max {kv.Value.Max:0.###})", kv.Value.NFire + kv.Value.NHit + kv.Value.NOther, kv.Value.First, -1f, Vector2.Zero, $"changes: onFireTick={kv.Value.NFire} afterHit={kv.Value.NHit} other={kv.Value.NOther}"));
 				foreach (var kv in CmdCnt) _rows.Add(Row("CMDHOOK", kv.Key.Split('|')[0], "-", "CMD", "-", kv.Key.Split('|')[1], "-", "ModPlayer(commander)", kv.Value, 0, -1f, Vector2.Zero, "-"));

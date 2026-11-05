@@ -11,6 +11,9 @@ namespace Levy.Common.Config
 		public override ConfigScope Mode => ConfigScope.ServerSide;
 		public static LevyConfig Get => ModContent.GetInstance<LevyConfig>();
 
+		public override void OnLoaded() => global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
+		public override void OnChanged() => global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
+
 		[Header("Bosses")]
 		[Range(0, 10)] [DefaultValue(2)] public int BossHpScalingPercentPerCp;
 		[Range(0, 200)] [DefaultValue(80)] public int BossHpScalingCapPercent;
@@ -29,6 +32,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool RealWeaponShoot;
 		[DefaultValue(true)] public bool AutoFeedCrystals;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
+		[DefaultValue(true)] public bool SoldierEffectsAtSoldier;
 		public List<int> ExtraTargetingAiStyles = new();
 
 		[Header("Targeting")]

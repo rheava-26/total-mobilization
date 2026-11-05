@@ -5,6 +5,7 @@ using Terraria.ID;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
+using Levy.Content.TileEntities;
 
 namespace Levy.Common.Testing
 {
@@ -28,6 +29,7 @@ namespace Levy.Common.Testing
 
 		private bool BeginScenario()
 		{
+			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { _scTrial = int.MaxValue; _scTick = -1; return true; }
 			if (!string.Equals(Scenario, "platform", StringComparison.OrdinalIgnoreCase)) return false;
 			_scTrial = 0; _scTick = -1;
 			Mod.Logger.Info($"HARNESS-MOVE: platform scenario; platform row y={FloorY - PlatformHeightTiles} ({PlatformHeightTiles} tiles above the floor); trials={Trials.Length}; max {ScenarioMaxTicks} ticks");
@@ -63,6 +65,7 @@ namespace Levy.Common.Testing
 
 		private void StepScenario()
 		{
+			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { RunAmmoScenario(); Finish("ammo scenario complete"); return; }
 			if (_scTrial >= Trials.Length) { Finish("platform scenario complete"); return; }
 			if (_scTick < 0)
 			{
@@ -99,6 +102,39 @@ namespace Levy.Common.Testing
 				Mod.Logger.Info($"HARNESS-MOVE: offset={Trials[_scTrial].off}t ledge={Trials[_scTrial].ledge} control={Trials[_scTrial].control} pinX={Trials[_scTrial].pin} lavaBelow={Trials[_scTrial].lava} firstDropTick={_scFirstDrop} wantFallThroughTicks={_scWantTicks} result={(_scLandTick >= 0 ? "REACHED_FLOOR" : "STUCK_ON_PLATFORM")} landTick={_scLandTick} ({land}) sidewaysTravel={dxTiles:0.0}t finalBottomY={bot} state={st}");
 				_scTrial++; _scTick = -1;
 			}
+		}
+
+		/// <summary>
+		/// AMMO FAIR-SHARE (LEVY_HARNESS_SCENARIO=ammo). A detached ArmoryTE (never placed) with a fixed served list of soldiers, each holding a bullet gun and an empty pouch,
+		/// is asked for ammo by soldier 0..N-1 in turn, each requesting AmmoPouchMax exactly as the Brain does. One "HARNESS-AMMO" line per case, fair share off (old) then on (new).
+		/// </summary>
+		private void RunAmmoScenario()
+		{
+			int[] stocks = { 300, 2000, 9990, 50000 };
+			int users = 10;
+			foreach (bool off in new[] { true, false })
+				foreach (int stock in stocks)
+				{
+					var te = new ArmoryTE();
+					ArmoryTE.FairShareOff = off;
+					var served = new System.Collections.Generic.List<SoldierRecord>();
+					for (int i = 0; i < users; i++)
+					{
+						var r = MakeRecord("Ammo" + i);
+						r.Gear.Weapon = new Item(); r.Gear.Weapon.SetDefaults(ItemID.Musket);
+						served.Add(r);
+					}
+					ArmoryTE.TestServed = served;
+					var ammo = new Item(); ammo.SetDefaults(ItemID.MusketBall); ammo.stack = Math.Min(stock, ammo.maxStack); int left = stock - ammo.stack;
+					te.IssueAmmo[0] = ammo;
+					for (int s = 0; left > 0 && s < te.Storage.Length; s++) { var it = new Item(); it.SetDefaults(ItemID.MusketBall); it.stack = Math.Min(left, it.maxStack); left -= it.stack; te.Storage[s] = it; }
+					var got = new int[users];
+					for (int i = 0; i < users; i++) got[i] = te.TakeAmmo(AmmoID.Bullet, served[i].Gear.Ammo, LevyConstants.AmmoPouchMax);
+					long rem = 0; foreach (var it in te.IssueAmmo) if (!it.IsAir) rem += it.stack; foreach (var it in te.Storage) if (!it.IsAir) rem += it.stack;
+					int soldiersFed = 0; foreach (int g in got) if (g > 0) soldiersFed++;
+					Mod.Logger.Info($"HARNESS-AMMO: fairShare={(off ? "OFF(old)" : "ON(new)")} stock={stock} soldiers={users} gotPerSoldier=[{string.Join(",", got)}] soldiersFed={soldiersFed} stockLeft={rem}");
+				}
+			ArmoryTE.TestServed = null; ArmoryTE.FairShareOff = false;
 		}
 	}
 }

@@ -542,7 +542,7 @@ namespace Levy.Content.TileEntities
 		{
 			if (IsAir(w) || w.stack <= Math.Min(LevyConstants.ThrownFairShareFloor, LevyConstants.ThrownCarryMax) || WeaponClassifier.GetProfile(w).Family != WeaponFamily.Thrown) return w;
 			// w is already off the shelf: its stack joins the pool, and the receiving soldier counts as one more user.
-			int limit = FairThrownLimit(w.type, 1, w.stack);
+			int limit = FairShareOff ? LevyConstants.ThrownCarryMax : FairThrownLimit(w.type, 1, w.stack);
 			if (w.stack <= limit) return w;
 			var rest = w.Clone(); rest.stack = w.stack - limit; w.stack = limit;
 			var left = Deposit(rest);
@@ -552,6 +552,9 @@ namespace Levy.Content.TileEntities
 
 		// ------------------------------------------------------------------ fair share of scarce ammo / throwables
 
+		/// <summary>Test seams (harness only): a fixed served-soldier list, and a switch that turns the fair-share limits off so the old behaviour can be measured.</summary>
+		internal static List<SoldierRecord> TestServed;
+		internal static bool FairShareOff;
 		private static uint _servedTick = uint.MaxValue;
 		private static int _servedFor = -1;
 		private static readonly List<SoldierRecord> ServedCache = new();
@@ -562,6 +565,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		private List<SoldierRecord> ServedSoldiers()
 		{
+			if (TestServed != null) return TestServed;
 			uint now = Main.GameUpdateCount;
 			if (_servedTick == now && _servedFor == ID) return ServedCache;
 			_servedTick = now; _servedFor = ID; ServedCache.Clear();
@@ -648,7 +652,7 @@ namespace Levy.Content.TileEntities
 			bool wasAir = IsAir(stack);
 			if (wasAir) { stack.SetDefaults(type); stack.stack = 0; }
 			else if (stack.type != type) return 0;
-			max = Math.Min(max, FairThrownLimit(type, 0, 0)); // scarce throwables are split evenly among the soldiers carrying them
+			if (!FairShareOff) max = Math.Min(max, FairThrownLimit(type, 0, 0)); // scarce throwables are split evenly among the soldiers carrying them
 			int want = Math.Min(max, stack.maxStack) - stack.stack;
 			if (want <= 0) { if (wasAir) stack.TurnToAir(); return 0; }
 			int moved = DrainType(IssueWeapons, type, stack, want);
@@ -1040,7 +1044,7 @@ namespace Levy.Content.TileEntities
 		{
 			if (pouch == null || ammoId <= 0 || max <= 0) return 0;
 			if (!IsAir(pouch) && pouch.ammo != ammoId) return 0;
-			max = Math.Min(max, FairAmmoLimit(ammoId, max)); // scarce stock is split evenly; a pouch already above the share is simply not topped up (Drain never takes back)
+			if (!FairShareOff) max = Math.Min(max, FairAmmoLimit(ammoId, max)); // scarce stock is split evenly; a pouch already above the share is simply not topped up (Drain never takes back)
 			int moved = Drain(IssueAmmo, ammoId, pouch, max);
 			moved += Drain(Storage, ammoId, pouch, max);
 			if (moved > 0) MarkDirty();
@@ -1896,7 +1900,7 @@ namespace Levy.Content.TileEntities
 				if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);
 				return enough;
 			}
-			var neu = TakeVaried(soldier, Pred);
+			var neu = CapThrown(TakeVaried(soldier, Pred)); // a throwable stack is capped like every other issue path
 			if (neu == null || !SwapIn(g, SoldierGear.SlotWeapon, neu)) return false;
 			ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(neu) != cls);
 			return true;

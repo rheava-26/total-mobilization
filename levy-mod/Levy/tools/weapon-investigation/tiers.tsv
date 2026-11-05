@@ -1,0 +1,1670 @@
+mod	name	family	class	dmg	perHit	hitsPerSec	dpsAdj	pierce	rare	value	score	route	routeSrc	useAmmo	mana
+Vanilla	IronBroadsword	Broadsword	melee	12	12.0	3.00	36.0	1	0	1800	40.7	0.00	recipe<-	0	0
+Vanilla	IronShortsword	Shortsword	melee	10	10.0	5.00	50.0	-1	0	1400	56.3	0.00	recipe<-	0	0
+Vanilla	WoodenSword	Broadsword	melee	7	7.0	3.00	21.0	1	0	100	22.7	0.00	recipe<-	0	0
+Vanilla	WoodenBow	Bow	ranged	4	14.0	2.00	28.0	1	0	100	30.2	0.00	recipe<-	40	0
+Vanilla	Shuriken	Thrown	ranged	10	10.0	4.00	12.0	4	0	15	12.6	0.00	shop:Terraria/Merchant/Shop	0	0
+Vanilla	DemonBow	Bow	ranged	12	22.0	2.40	52.8	1	1	18000	65.0	2.00	recipe<-Demonite Bar	40	0
+Vanilla	LightsBane	Broadsword	melee	16	16.0	3.00	48.0	2	1	13500	58.8	2.00	recipe<-Demonite Bar	0	0
+Vanilla	EnchantedBoomerang	Boomerang	melee	21	21.0	3.00	50.4	-1	1	50000	62.9	12.81	recipe<-Fallen Star	0	0
+Vanilla	Vilethorn	Magic	magic	10	10.0	2.14	21.4	-1	1	75000	26.9	1.00	recipe<-Crimson Rod	0	10
+Vanilla	Starfury	Broadsword	melee	25	25.0	1.50	37.5	2	2	50000	49.0	12.81	recipe<-Fallen Star	0	0
+Vanilla	FlintlockPistol	Gun	ranged	13	23.0	3.75	86.2	1	1	50000	107.6	0.00	shop:Terraria/ArmsDealer/Shop	97	0
+Vanilla	Musket	Gun	ranged	22	32.0	1.88	60.0	-1	1	75000	75.3	1.00	recipe<-The Undertaker	97	0
+Vanilla	Minishark	Gun	ranged	4	14.0	7.50	105.0	-1	2	350000	140.9	0.00	shop:Terraria/ArmsDealer/Shop	97	0
+Vanilla	IronBow	Bow	ranged	8	18.0	2.14	38.6	1	0	1400	43.4	0.00	recipe<-	40	0
+Vanilla	FlowerofFire	Magic	magic	37	37.0	3.75	138.8	1	3	125000	192.0	4.50	sig:rarity	0	12
+Vanilla	MagicMissile	Magic	magic	23	23.0	6.00	138.0	1	2	87500	181.8	7.00	shop:Terraria/Wizard/Shop	0	14
+Vanilla	Flamarang	Boomerang	melee	40	40.0	3.00	96.0	-1	3	100000	132.5	12.81	recipe<-Enchanted Boomerang	0	0
+Vanilla	MoltenFury	Bow	ranged	31	41.0	2.14	87.9	1	3	27000	119.2	0.00	recipe<-	40	0
+Vanilla	FieryGreatsword	Broadsword	melee	40	40.0	1.50	60.0	1	3	27000	81.4	0.00	recipe<-	0	0
+Vanilla	SpaceGun	Magic	magic	23	23.0	3.53	81.2	3	1	20000	100.0	2.00	recipe<-Meteorite Bar	0	6
+Vanilla	Bone	Thrown	ranged	20	20.0	5.00	30.0	1	0	50	32.0	0.00	recipe<-	0	0
+Vanilla	Muramasa	Broadsword	melee	24	24.0	3.33	80.0	1	2	87500	105.4	4.50	recipe<-Aerialite Bar	0	0
+Vanilla	AquaScepter	Magic	magic	24	24.0	7.50	180.0	5	2	87500	237.2	14.00	boss:Duke Fishron@14	0	7
+Vanilla	SpikyBall	Thrown	ranged	16	16.0	4.00	19.2	7	0	80	20.7	3.30	shop:Terraria/GoblinTinkerer/Shop	0	0
+Vanilla	BallOHurt	Flail	melee	15	15.0	1.33	16.0	-1	1	75000	20.1	1.00	recipe<-The Rotted Fork	0	0
+Vanilla	BlueMoon	Flail	melee	27	27.0	1.33	28.8	-1	2	87500	37.9	2.00	sig:rarity	0	0
+Vanilla	Handgun	Gun	ranged	26	36.0	3.00	108.0	1	2	87500	142.3	2.00	sig:rarity	97	0
+Vanilla	WaterBolt	Magic	magic	23	23.0	3.53	81.2	10	2	75000	106.7	7.00	recipe<-Spell Tome	0	10
+Vanilla	Grenade	Thrown	ranged	60	60.0	1.33	24.0	-1	0	75	25.8	0.00	shop:Terraria/Demolitionist/Shop	0	0
+Vanilla	BreathingReed	Broadsword	melee	10	10.0	3.16	31.6	1	1	10000	38.5	1.00	sig:rarity	0	0
+Vanilla	BladeofGrass	Broadsword	melee	18	18.0	3.00	54.0	2	3	27000	73.3	4.00	recipe<-Stinger	0	0
+Vanilla	ThornChakram	Boomerang	melee	25	25.0	4.00	80.0	-1	3	50000	109.4	4.00	recipe<-Stinger	0	0
+Vanilla	StarCannon	Gun	ranged	55	55.0	3.33	183.3	-1	2	500000	247.1	12.81	recipe<-Fallen Star	75	0
+Vanilla	BluePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	RedPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	GreenPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	PurplePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	WhitePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	YellowPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	Flamelash	Magic	magic	36	36.0	2.00	72.0	2	3	125000	99.6	4.50	sig:rarity	0	21
+Vanilla	PhoenixBlaster	Gun	ranged	30	40.0	3.00	120.0	1	3	175000	166.8	2.00	recipe<-Handgun	97	0
+Vanilla	Sunfury	Flail	melee	32	32.0	1.33	34.1	-1	3	125000	47.2	4.50	sig:rarity	0	0
+Vanilla	Sandgun	Gun	ranged	30	30.0	3.00	90.0	1	2	10000	115.2	0.00	recipe<-	169	0
+Vanilla	DemonScythe	Magic	magic	28	28.0	3.00	84.0	5	3	75000	115.5	4.50	sig:rarity	0	14
+Vanilla	NightsEdge	Broadsword	melee	45	45.0	2.40	108.0	2	3	200000	150.3	6.70	recipe<-Purified Gel	0	0
+Vanilla	DarkLance	Spear	melee	34	34.0	2.73	92.7	-1	3	125000	128.3	4.50	sig:rarity	0	0
+Vanilla	Trident	Spear	melee	20	20.0	1.94	38.7	-1	1	10000	47.2	1.00	sig:rarity	0	0
+Vanilla	ThrowingKnife	Thrown	ranged	12	12.0	4.00	14.4	2	0	50	15.4	2.50	shop:Terraria/Merchant/Shop:Conditions.BloodMoon	0	0
+Vanilla	Spear	Spear	melee	14	14.0	1.94	27.1	-1	0	1000	30.3	0.00	sig:rarity	0	0
+Vanilla	Blowpipe	Gun	ranged	9	15.0	2.40	36.0	-1	0	10000	41.8	0.00	sig:rarity	283	0
+Vanilla	WoodenBoomerang	Boomerang	melee	16	16.0	3.00	38.4	-1	1	100	43.8	0.00	shop:Terraria/SkeletonMerchant/Shop	0	0
+Vanilla	PoisonedKnife	Thrown	ranged	14	14.0	4.00	16.8	2	0	60	18.0	2.50	recipe<-Throwing Knife	0	0
+Vanilla	Excalibur	Broadsword	melee	170	170.0	3.00	510.0	3	5	230000	772.4	9.00	recipe<-Hallowed Bar	0	0
+Vanilla	DaoofPow	Flail	melee	85	85.0	1.33	90.7	-1	5	144000	136.6	12.09	recipe<-Dark Shard	0	0
+Vanilla	MythrilHalberd	Spear	melee	65	65.0	7.50	487.5	-1	4	67500	698.7	7.00	recipe<-Mythril Bar	0	0
+Vanilla	AdamantiteGlaive	Spear	melee	66	66.0	8.57	565.7	-1	4	90000	813.6	7.00	recipe<-Adamantite Bar	0	0
+Vanilla	HolyWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	200	30.5	7.00	recipe<-Hallowed Seeds	0	0
+Vanilla	UnholyWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	100	30.2	0.00	recipe<-	0	0
+Vanilla	BreakerBlade	Broadsword	melee	160	160.0	1.71	274.3	1	4	150000	396.9	7.00	boss:Wall of Flesh@7	0	0
+Vanilla	ClockworkAssaultRifle	Gun	ranged	24	34.0	6.92	235.4	-1	4	150000	340.6	7.00	boss:Wall of Flesh@7	97	0
+Vanilla	CobaltRepeater	Bow	ranged	35	45.0	3.53	158.8	1	4	60000	227.3	7.00	recipe<-Cobalt Bar	40	0
+Vanilla	MythrilRepeater	Bow	ranged	39	49.0	3.75	183.8	1	4	90000	264.3	7.00	recipe<-Mythril Bar	40	0
+Vanilla	AdamantiteRepeater	Bow	ranged	42	52.0	4.29	222.9	1	4	120000	321.6	7.00	recipe<-Adamantite Bar	40	0
+Vanilla	AdamantiteSword	Broadsword	melee	72	72.0	8.57	617.1	1	4	138000	892.1	7.00	recipe<-Adamantite Bar	0	0
+Vanilla	CobaltSword	Broadsword	melee	69	69.0	6.67	460.0	1	4	69000	659.4	7.00	recipe<-Cobalt Bar	0	0
+Vanilla	MythrilSword	Broadsword	melee	70	70.0	7.50	525.0	1	4	103500	756.3	7.00	recipe<-Mythril Bar	0	0
+Vanilla	Ruler	Shortsword	melee	12	12.0	12.00	144.0	-1	1	1000	169.9	3.30	shop:Terraria/GoblinTinkerer/Shop	0	0
+Vanilla	MagicalHarp	Magic	magic	50	50.0	5.00	250.0	-1	5	200000	378.0	9.00	recipe<-Soul of Sight	0	5
+Vanilla	RainbowRod	Magic	magic	40	40.0	2.40	96.0	3	5	200000	145.2	9.00	recipe<-Soul of Sight	0	21
+Vanilla	IceRod	Magic	magic	28	28.0	10.00	280.0	1	4	500000	411.0	7.00	shop:Terraria/Wizard/Shop	0	6
+Vanilla	Flamethrower	Gun	ranged	21	21.0	10.00	131.2	4	5	500000	200.5	9.00	recipe<-Soul of Fright	23	0
+Vanilla	LaserRifle	Magic	magic	46	46.0	5.00	230.0	3	4	150000	332.8	7.00	boss:Wall of Flesh@7	0	8
+Vanilla	MagicDagger	Magic	magic	35	35.0	7.50	262.5	2	4	250000	382.2	0.00	shop:Terraria/SkeletonMerchant/Shop	0	6
+Vanilla	CrystalStorm	Magic	magic	40	40.0	8.57	342.9	1	4	200000	497.8	7.00	recipe<-Spell Tome	0	5
+Vanilla	CursedFlames	Magic	magic	55	55.0	4.00	220.0	2	4	200000	319.4	7.00	recipe<-Spell Tome	0	9
+Vanilla	Megashark	Gun	ranged	25	35.0	8.57	300.0	-1	5	350000	456.5	9.00	recipe<-Soul of Might	97	0
+Vanilla	Shotgun	Gun	ranged	36	46.0	5.33	245.3	-1	4	250000	357.2	7.00	shop:Terraria/ArmsDealer/Shop:Conditions.InHardmode	97	0
+Vanilla	CobaltNaginata	Spear	melee	60	60.0	6.67	400.0	-1	4	45000	570.5	7.00	recipe<-Cobalt Bar	0	0
+Vanilla	Gungnir	Spear	melee	130	130.0	2.73	354.5	-1	5	230000	536.9	9.00	recipe<-Hallowed Bar	0	0
+Vanilla	LightDisc	Boomerang	melee	80	80.0	4.29	274.3	-1	5	750000	421.0	9.00	recipe<-Hallowed Bar	0	0
+Vanilla	HallowedRepeater	Bow	ranged	50	60.0	5.00	300.0	1	4	200000	435.6	9.00	recipe<-Hallowed Bar	40	0
+Vanilla	EbonwoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	recipe<-	0	0
+Vanilla	EbonwoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	recipe<-	40	0
+Vanilla	RichMahoganySword	Broadsword	melee	8	8.0	3.16	25.3	1	0	100	27.3	0.00	recipe<-	0	0
+Vanilla	RichMahoganyBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	recipe<-	40	0
+Vanilla	PearlwoodSword	Broadsword	melee	45	45.0	4.00	180.0	1	4	100	237.6	0.00	recipe<-	0	0
+Vanilla	PearlwoodBow	Bow	ranged	32	42.0	3.00	126.0	1	4	100	166.3	0.00	recipe<-	40	0
+Vanilla	IceBoomerang	Boomerang	melee	21	21.0	2.40	40.3	-1	1	50000	50.3	1.00	sig:rarity	0	0
+Vanilla	Keybrand	Broadsword	melee	105	105.0	3.00	315.0	1	8	200000	533.0	0.00	shop:Terraria/TravellingMerchant/Shop	0	0
+Vanilla	Cutlass	Broadsword	melee	90	90.0	5.45	490.9	1	4	180000	711.9	7.70	boss:Flying Dutchman@7.7	0	0
+Vanilla	TrueExcalibur	Broadsword	melee	105	105.0	3.33	350.0	6	8	500000	597.8	11.00	recipe<-Chlorophyte Bar	0	0
+Vanilla	TrueNightsEdge	Broadsword	melee	99	99.0	1.88	185.6	4	8	500000	317.0	9.00	recipe<-Soul of Fright	0	0
+Vanilla	Frostbrand	Broadsword	melee	110	110.0	2.00	220.0	3	5	250000	333.5	9.50	sig:rarity	0	0
+Vanilla	TacticalShotgun	Gun	ranged	34	44.0	10.59	465.9	-1	8	400000	793.9	13.50	sig:rarity	97	0
+Vanilla	Marrow	Bow	ranged	60	70.0	3.16	221.1	1	5	27000	326.6	7.00	shop:Terraria/SkeletonMerchant/Shop:Conditions.InHardmode	40	0
+Vanilla	UnholyTrident	Magic	magic	80	80.0	3.53	282.4	3	6	500000	448.4	11.50	sig:rarity	0	19
+Vanilla	BeamSword	Broadsword	melee	131	131.0	1.71	224.6	1	4	150000	325.0	7.00	sig:rarity	0	0
+Vanilla	IceBlade	Broadsword	melee	17	17.0	1.09	18.5	1	1	20000	22.8	1.00	sig:rarity	0	0
+Vanilla	IceBow	Bow	ranged	39	49.0	4.29	210.0	1	5	250000	318.3	9.50	sig:rarity	40	0
+Vanilla	FrostStaff	Magic	magic	46	46.0	5.00	230.0	2	5	200000	347.8	9.50	sig:rarity	0	12
+Vanilla	AmethystStaff	Magic	magic	15	15.0	1.62	24.3	1	0	2000	27.5	0.00	recipe<-	0	2
+Vanilla	TopazStaff	Magic	magic	16	16.0	1.67	26.7	1	0	3000	30.4	0.00	recipe<-	0	2
+Vanilla	SapphireStaff	Magic	magic	25	25.0	1.76	44.1	1	1	10000	53.8	0.00	recipe<-	0	6
+Vanilla	EmeraldStaff	Magic	magic	27	27.0	1.88	50.6	1	1	15000	62.1	0.00	recipe<-	0	6
+Vanilla	RubyStaff	Magic	magic	21	21.0	2.14	45.0	2	1	20000	55.4	0.00	recipe<-	0	7
+Vanilla	DiamondStaff	Magic	magic	23	23.0	2.31	53.1	2	2	30000	69.0	0.00	recipe<-	0	8
+Vanilla	MushroomSpear	Spear	melee	100	100.0	1.88	187.5	-1	7	700000	310.1	11.00	shop:Terraria/Truffle/Shop:Conditions.DownedMechBossAny	0	0
+Vanilla	TerraBlade	Broadsword	melee	90	90.0	3.33	300.0	-1	8	1000000	516.0	12.00	recipe<-Living Shard	0	0
+Vanilla	GrenadeLauncher	Gun	ranged	105	145.0	3.00	435.0	-1	8	350000	740.3	12.00	boss:Plantera@12	771	0
+Vanilla	RocketLauncher	Gun	ranged	60	100.0	2.00	200.0	-1	8	400000	340.8	13.50	sig:rarity	771	0
+Vanilla	ProximityMineLauncher	Gun	ranged	80	120.0	1.20	144.0	-1	8	350000	245.1	12.00	shop:Terraria/Cyborg/Shop:Conditions.InHardmode	771	0
+Vanilla	NettleBurst	Magic	magic	65	65.0	2.40	156.0	-1	7	200000	254.6	12.00	boss:Plantera@12	0	12
+Vanilla	BloodButcherer	Broadsword	melee	22	22.0	2.40	52.8	1	1	13500	64.7	2.00	recipe<-Crimtane Bar	0	0
+Vanilla	TendonBow	Bow	ranged	17	27.0	2.00	54.0	1	1	18000	66.4	2.00	recipe<-Crimtane Bar	40	0
+Vanilla	TheUndertaker	Gun	ranged	15	25.0	3.00	75.0	1	1	75000	94.1	1.00	sig:rarity	97	0
+Vanilla	TheMeatball	Flail	melee	24	24.0	1.33	25.6	-1	1	27000	31.7	3.00	recipe<-Tissue Sample	0	0
+Vanilla	TheRottedFork	Spear	melee	20	20.0	1.94	38.7	-1	1	75000	48.6	1.00	sig:rarity	0	0
+Vanilla	CactusSword	Broadsword	melee	10	10.0	2.00	20.0	1	0	1800	22.6	0.00	recipe<-	0	0
+Vanilla	ShadewoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	recipe<-	0	0
+Vanilla	ShadewoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	recipe<-	40	0
+Vanilla	FlareGun	Gun	ranged	2	2.0	3.33	6.7	-1	1	5000	8.1	1.00	sig:rarity	931	0
+Vanilla	Boomstick	Gun	ranged	11	21.0	4.50	94.5	-1	2	100000	124.7	2.00	sig:rarity	97	0
+Vanilla	Blowgun	Gun	ranged	40	46.0	1.71	78.9	-1	3	50000	107.9	4.00	shop:Terraria/WitchDoctor/Shop	283	0
+Vanilla	EnchantedSword	Broadsword	melee	23	23.0	1.33	30.7	1	2	150000	40.7	1.60	recipe<-Pearl Shard	0	0
+Vanilla	BeeGun	Magic	magic	11	11.0	5.00	55.0	2	2	100000	72.6	4.00	boss:Queen Bee@4	0	5
+Vanilla	PossessedHatchet	Boomerang	melee	135	135.0	4.29	462.9	10	7	350000	759.9	13.00	boss:Golem@13	0	0
+Vanilla	BeeKeeper	Broadsword	melee	30	30.0	3.00	90.0	1	3	100000	124.2	4.00	boss:Queen Bee@4	0	0
+Vanilla	Beenade	Thrown	ranged	12	12.0	2.73	9.8	1	0	2500	11.2	4.00	boss:Queen Bee@4	0	0
+Vanilla	WaspGun	Magic	magic	41	41.0	3.33	136.7	2	8	500000	233.4	12.00	boss:Plantera@12	0	10
+Vanilla	PiranhaGun	Magic	ranged	38	38.0	2.00	76.0	-1	8	1000000	130.7	13.50	sig:rarity	0	0
+Vanilla	PygmyStaff	Summon	summon	60	60.0	2.00	208.8	-1	7	350000	342.8	12.00	boss:Plantera@12	0	10
+Vanilla	BoneSword	Broadsword	melee	25	25.0	2.73	68.2	1	3	9000	91.2	4.50	sig:rarity	0	0
+Vanilla	LeafBlower	Magic	magic	61	61.0	8.57	522.9	1	7	300000	857.0	12.00	boss:Plantera@12	0	5
+Vanilla	PalladiumSword	Broadsword	melee	150	150.0	2.73	409.1	1	4	92000	588.5	7.00	recipe<-Palladium Bar	0	0
+Vanilla	PalladiumPike	Spear	melee	120	120.0	2.22	266.7	-1	4	60000	381.6	7.00	recipe<-Palladium Bar	0	0
+Vanilla	PalladiumRepeater	Bow	ranged	48	58.0	2.73	158.2	1	4	80000	227.2	7.00	recipe<-Palladium Bar	40	0
+Vanilla	OrichalcumSword	Broadsword	melee	175	175.0	2.73	477.3	1	4	126500	689.2	7.00	recipe<-Orichalcum Bar	0	0
+Vanilla	OrichalcumHalberd	Spear	melee	128	128.0	2.40	307.2	-1	4	82500	441.3	7.00	recipe<-Orichalcum Bar	0	0
+Vanilla	OrichalcumRepeater	Bow	ranged	50	60.0	3.16	189.5	1	4	110000	273.2	7.00	recipe<-Orichalcum Bar	40	0
+Vanilla	TitaniumSword	Broadsword	melee	185	185.0	3.00	555.0	1	4	161000	803.8	7.00	recipe<-Titanium Bar	0	0
+Vanilla	TitaniumTrident	Spear	melee	144	144.0	2.61	375.7	-1	4	105000	541.3	7.00	recipe<-Titanium Bar	0	0
+Vanilla	TitaniumRepeater	Bow	ranged	52	62.0	3.53	218.8	1	4	140000	316.4	7.00	recipe<-Titanium Bar	40	0
+Vanilla	ChlorophyteClaymore	Broadsword	melee	180	180.0	1.33	240.0	1	7	276000	393.0	11.00	recipe<-Chlorophyte Bar	0	0
+Vanilla	ChlorophyteSaber	Broadsword	melee	92	92.0	6.00	552.0	-1	7	276000	904.0	11.00	recipe<-Chlorophyte Bar	0	0
+Vanilla	ChlorophytePartisan	Spear	melee	80	80.0	2.61	208.7	-1	7	180000	340.2	11.00	recipe<-Chlorophyte Bar	0	0
+Vanilla	ChlorophyteShotbow	Bow	ranged	34	44.0	3.16	138.9	1	7	240000	227.2	11.00	recipe<-Chlorophyte Bar	40	0
+Vanilla	NimbusRod	Magic	magic	30	30.0	2.73	81.8	-1	6	175000	128.4	11.50	sig:rarity	0	30
+Vanilla	SniperRifle	Gun	ranged	185	195.0	1.67	325.0	-1	8	400000	553.8	13.50	sig:rarity	97	0
+Vanilla	VenusMagnum	Gun	ranged	50	60.0	6.67	400.0	1	7	250000	654.4	12.00	boss:Plantera@12	97	0
+Vanilla	CrimsonRod	Magic	magic	12	12.0	2.50	30.0	-1	1	75000	37.7	1.00	sig:rarity	0	30
+Vanilla	Stynger	Gun	ranged	75	75.0	2.73	204.5	1	7	350000	335.8	13.00	boss:Golem@13	1261	0
+Vanilla	FlowerPow	Flail	melee	80	80.0	1.50	96.0	-1	7	300000	157.4	12.00	boss:Plantera@12	0	0
+Vanilla	RainbowGun	Magic	magic	60	60.0	1.50	90.0	-1	8	1000000	154.8	13.50	sig:rarity	0	20
+Vanilla	FlowerofFrost	Magic	magic	60	60.0	5.00	300.0	1	5	250000	454.8	9.50	sig:rarity	0	11
+Vanilla	Uzi	Gun	ranged	30	40.0	7.50	300.0	1	7	350000	492.5	12.00	shop:Terraria/ArmsDealer/Shop:Conditions.DownedPlantera	97	0
+Vanilla	MagnetSphere	Magic	magic	48	48.0	3.00	144.0	1	8	500000	245.9	13.50	sig:rarity	0	14
+Vanilla	HeatRay	Magic	magic	90	90.0	6.00	540.0	1	7	350000	886.6	13.00	boss:Golem@13	0	8
+Vanilla	StaffofEarth	Magic	magic	150	150.0	2.50	375.0	6	7	350000	615.7	13.00	boss:Golem@13	0	18
+Vanilla	ZombieArm	Broadsword	melee	15	15.0	2.73	40.9	1	0	2000	46.3	0.00	sig:rarity	0	0
+Vanilla	IceSickle	Broadsword	melee	75	75.0	2.40	180.0	4	5	250000	272.9	9.50	sig:rarity	0	0
+Vanilla	PoisonStaff	Magic	magic	57	57.0	1.67	95.0	3	6	200000	149.3	11.50	sig:rarity	0	22
+Vanilla	SlimeStaff	Summon	summon	8	8.0	2.00	22.1	-1	4	100000	31.8	1.00	recipe<-Gel	0	10
+Vanilla	BookofSkulls	Magic	magic	29	29.0	2.31	66.9	3	2	75000	88.0	5.00	boss:Skeletron@5	0	18
+Vanilla	SnowballCannon	Gun	ranged	10	10.0	3.16	31.6	1	1	100000	39.8	1.00	sig:rarity	949	0
+Vanilla	Bananarang	Boomerang	melee	60	60.0	5.45	261.8	-1	5	600000	400.9	9.50	sig:rarity	0	0
+Vanilla	DeathSickle	Broadsword	melee	65	65.0	2.40	156.0	5	6	375000	246.9	11.50	sig:rarity	0	0
+Vanilla	GoldenShower	Magic	magic	30	30.0	10.00	300.0	2	4	200000	435.6	7.00	recipe<-Spell Tome	0	7
+Vanilla	ShadowbeamStaff	Magic	magic	100	100.0	4.00	400.0	-1	8	300000	679.6	13.50	sig:rarity	0	7
+Vanilla	InfernoFork	Magic	magic	83	83.0	2.00	166.0	1	8	300000	282.0	13.50	sig:rarity	0	18
+Vanilla	SpectreStaff	Magic	magic	72	72.0	2.50	180.0	3	8	300000	305.8	13.50	sig:rarity	0	15
+Vanilla	PaladinsHammer	Boomerang	melee	95	95.0	4.00	304.0	-1	8	500000	519.2	13.50	recipe<-Holy Knight's Alloy	0	0
+Vanilla	SDMG	Gun	ranged	85	95.0	12.00	1140.0	-1	10	750000	2091.9	18.00	boss:Moon Lord's Core@18	97	0
+Vanilla	VampireKnives	ThrownMelee	melee	29	29.0	18.75	543.8	1	8	1000000	935.2	13.50	sig:rarity	0	0
+Vanilla	ScourgeoftheCorruptor	ThrownMelee	melee	63	63.0	3.00	189.0	1	8	1000000	325.1	13.50	sig:rarity	0	0
+Vanilla	StaffoftheFrostHydra	Sentry	summon	100	100.0	2.00	150.0	1	8	1000000	258.0	13.50	sig:rarity	0	20
+Vanilla	CandyCornRifle	Gun	ranged	80	80.0	6.67	533.3	3	8	500000	910.9	13.25	boss:Pumpking@13.25	1783	0
+Vanilla	JackOLanternLauncher	Gun	ranged	65	65.0	2.40	156.0	1	8	500000	266.4	13.25	boss:Pumpking@13.25	1785	0
+Vanilla	Sickle	Broadsword	melee	9	9.0	2.50	22.5	1	0	6000	25.9	0.00	shop:Terraria/Merchant/Shop	0	0
+Vanilla	BatScepter	Magic	magic	50	50.0	5.00	250.0	1	8	500000	427.0	13.25	boss:Pumpking@13.25	0	6
+Vanilla	RavenStaff	Summon	summon	36	36.0	2.00	133.9	1	8	500000	228.7	13.25	boss:Pumpking@13.25	0	10
+Vanilla	RottenEgg	Thrown	ranged	13	13.0	3.16	12.3	1	0	0	12.3	0.00	sig:rarity	0	0
+Vanilla	BloodyMachete	Boomerang	melee	24	24.0	4.00	76.8	-1	2	50000	100.5	2.00	sig:rarity	0	0
+Vanilla	TheHorsemansBlade	Broadsword	melee	150	150.0	2.31	346.2	3	8	500000	591.2	13.25	boss:Pumpking@13.25	0	0
+Vanilla	BladedGlove	Broadsword	melee	14	14.0	7.50	105.0	1	2	50000	137.3	2.00	sig:rarity	0	0
+Vanilla	StakeLauncher	Gun	ranged	75	75.0	5.00	375.0	10	8	500000	640.5	13.25	boss:Mourning Wood@13.25	1836	0
+Vanilla	RedRyder	Gun	ranged	24	34.0	1.58	53.7	-1	1	100000	67.6	1.00	sig:rarity	97	0
+Vanilla	CandyCaneSword	Broadsword	melee	19	19.0	2.22	42.2	1	1	13500	51.7	1.00	sig:rarity	0	0
+Vanilla	ElfMelter	Gun	ranged	53	53.0	10.00	450.5	4	8	500000	769.4	13.50	boss:Santa-NK1@13.5	23	0
+Vanilla	StarAnise	Thrown	ranged	14	14.0	4.00	16.8	6	0	25	17.8	0.00	sig:rarity	0	0
+Vanilla	FruitcakeChakram	Boomerang	melee	19	19.0	4.00	60.8	-1	1	50000	75.9	1.00	sig:rarity	0	0
+Vanilla	ChristmasTreeSword	Broadsword	melee	80	80.0	2.00	160.0	2	8	500000	273.3	13.50	boss:Everscream@13.5	0	0
+Vanilla	ChainGun	Gun	ranged	35	45.0	15.00	675.0	-1	8	450000	1151.6	13.50	boss:Santa-NK1@13.5	97	0
+Vanilla	Razorpine	Magic	magic	40	40.0	7.50	300.0	1	8	450000	511.8	13.50	boss:Everscream@13.5	0	5
+Vanilla	BlizzardStaff	Magic	magic	41	41.0	12.00	492.0	1	8	450000	839.4	13.50	boss:Ice Queen@13.5	0	9
+Vanilla	SnowmanCannon	Gun	ranged	67	107.0	4.00	428.0	-1	8	450000	730.2	13.50	boss:Ice Queen@13.5	771	0
+Vanilla	NorthPole	Spear	melee	80	80.0	2.00	160.0	-1	7	450000	263.4	13.50	boss:Ice Queen@13.5	0	0
+Vanilla	VenomStaff	Magic	magic	44	44.0	2.00	88.0	5	7	350000	144.5	11.50	recipe<-Poison Staff	0	25
+Vanilla	PulseBow	Bow	ranged	80	90.0	3.00	270.0	-1	8	450000	460.7	10.00	shop:Terraria/TravellingMerchant/Shop:Conditions.DownedDestroyer	40	0
+Vanilla	Revolver	Gun	ranged	20	30.0	2.73	81.8	1	2	100000	108.0	0.00	shop:Terraria/TravellingMerchant/Shop	97	0
+Vanilla	Gatligator	Gun	ranged	21	31.0	10.00	310.0	-1	4	350000	453.1	7.00	shop:Terraria/TravellingMerchant/Shop:Conditions.InHardmode	97	0
+Vanilla	Katana	Broadsword	melee	18	18.0	0.60	10.8	1	1	100000	13.6	0.00	shop:Terraria/TravellingMerchant/Shop	0	0
+Vanilla	PurpleClubberfish	Broadsword	melee	35	35.0	1.71	60.0	1	1	50000	74.9	1.00	sig:rarity	0	0
+Vanilla	ObsidianSwordfish	Spear	melee	70	70.0	3.00	210.0	-1	7	50000	337.7	12.50	sig:rarity	0	0
+Vanilla	Swordfish	Spear	melee	21	21.0	3.00	63.0	-1	2	25000	81.6	2.00	sig:rarity	0	0
+Vanilla	HornetStaff	Summon	summon	12	12.0	2.50	30.2	-1	3	35000	41.2	4.00	recipe<-Bee Wax	0	10
+Vanilla	ImpStaff	Summon	summon	17	17.0	1.58	42.8	-1	3	27000	58.1	0.00	recipe<-	0	10
+Vanilla	QueenSpiderStaff	Sentry	summon	26	26.0	2.00	39.0	1	4	250000	56.8	7.00	recipe<-Spider Fang	0	10
+Vanilla	Anchor	Boomerang	melee	107	107.0	3.00	256.8	-1	3	50000	351.3	4.50	sig:rarity	0	0
+Vanilla	PalmWoodBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	recipe<-	40	0
+Vanilla	PalmWoodSword	Broadsword	melee	8	8.0	3.16	25.3	1	0	100	27.3	0.00	recipe<-	0	0
+Vanilla	OpticStaff	Summon	summon	24	24.0	1.58	72.0	-1	5	100000	108.0	9.00	recipe<-Lens	0	10
+Vanilla	SpiderStaff	Summon	summon	26	26.0	1.58	71.8	-1	4	50000	102.5	7.00	recipe<-Spider Fang	0	10
+Vanilla	PirateStaff	Summon	summon	40	40.0	1.58	120.0	-1	5	50000	178.6	7.70	boss:Flying Dutchman@7.7	0	10
+Vanilla	StickyGrenade	Thrown	ranged	60	60.0	1.33	24.0	-1	0	75	25.8	1.00	recipe<-Gel	0	0
+Vanilla	FalconBlade	Broadsword	melee	25	25.0	4.62	115.4	1	4	10000	161.5	7.00	sig:rarity	0	0
+Vanilla	Flairon	Magic	melee	66	66.0	3.00	198.0	-1	8	250000	335.8	14.00	boss:Duke Fishron@14	0	0
+Vanilla	TempestStaff	Summon	summon	50	50.0	1.58	186.0	-1	8	250000	315.4	14.00	boss:Duke Fishron@14	0	10
+Vanilla	RazorbladeTyphoon	Magic	magic	103	103.0	1.50	154.5	-1	8	250000	262.0	14.00	boss:Duke Fishron@14	0	20
+Vanilla	BubbleGun	Magic	magic	70	70.0	20.00	1400.0	1	8	250000	2374.3	14.00	boss:Duke Fishron@14	0	5
+Vanilla	Tsunami	Bow	ranged	45	55.0	12.50	687.5	1	8	250000	1165.9	14.00	boss:Duke Fishron@14	40	0
+Vanilla	BorealWoodSword	Broadsword	melee	8	8.0	3.00	24.0	1	0	100	25.9	0.00	recipe<-	0	0
+Vanilla	BorealWoodBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	recipe<-	40	0
+Vanilla	XenoStaff	Summon	summon	36	36.0	1.58	133.9	-1	8	500000	228.7	13.75	boss:Martian Saucer@13.75	0	10
+Vanilla	MeteorStaff	Magic	magic	50	50.0	6.00	300.0	1	5	100000	450.0	7.00	recipe<-Soul of Light	0	9
+Vanilla	LaserMachinegun	HeldWeapon	magic	49	49.0	3.00	588.0	-1	8	500000	1004.3	13.75	boss:Martian Saucer@13.75	0	6
+Vanilla	ElectrosphereLauncher	Gun	ranged	40	80.0	5.00	400.0	1	8	500000	683.2	13.75	boss:Martian Saucer@13.75	771	0
+Vanilla	Xenopopper	Gun	ranged	45	55.0	11.43	628.6	1	8	500000	1073.6	13.75	boss:Martian Saucer@13.75	97	0
+Vanilla	InfluxWaver	Broadsword	melee	80	80.0	2.40	192.0	3	8	500000	327.9	13.75	boss:Martian Saucer@13.75	0	0
+Vanilla	ChargedBlasterCannon	HeldWeapon	magic	100	100.0	3.00	666.7	-1	8	500000	1138.6	13.50	sig:rarity	0	14
+Vanilla	BeesKnees	Bow	ranged	21	31.0	1.71	53.1	1	3	100000	73.3	4.00	boss:Queen Bee@4	40	0
+Vanilla	SoulDrain	Magic	magic	38	38.0	5.00	190.0	-1	5	400000	289.6	9.50	recipe<-Clinger Staff	0	10
+Vanilla	DartPistol	Gun	ranged	28	34.0	2.73	92.7	-1	5	400000	141.3	9.50	recipe<-Dart Rifle	283	0
+Vanilla	DartRifle	Gun	ranged	52	58.0	1.58	91.6	-1	5	400000	139.6	9.50	sig:rarity	283	0
+Vanilla	FetidBaghnakhs	Broadsword	melee	60	60.0	7.50	450.0	1	5	400000	685.8	9.50	recipe<-Chain Guillotines	0	0
+Vanilla	ClingerStaff	Magic	magic	43	43.0	2.50	107.5	-1	5	400000	163.8	9.50	sig:rarity	0	40
+Vanilla	Seedler	Broadsword	melee	45	45.0	2.61	117.4	1	5	500000	179.4	12.00	boss:Plantera@12	0	0
+Vanilla	HellwingBow	Bow	ranged	22	32.0	4.62	147.7	-1	3	125000	204.4	4.50	sig:rarity	40	0
+Vanilla	DaedalusStormbow	Bow	ranged	30	40.0	3.16	126.3	1	6	400000	200.1	11.50	sig:rarity	40	0
+Vanilla	FlyingKnife	Magic	melee	45	45.0	4.00	180.0	-1	6	400000	285.1	11.50	sig:rarity	0	0
+Vanilla	CrystalVileShard	Magic	magic	35	35.0	1.82	63.6	-1	5	400000	97.0	9.50	sig:rarity	0	13
+Vanilla	ShadowFlameBow	Bow	ranged	55	65.0	3.00	195.0	3	5	100000	292.5	3.40	boss:Goblin Warlock@3.4	40	0
+Vanilla	ShadowFlameHexDoll	Magic	magic	40	40.0	8.57	342.9	3	5	100000	514.3	3.40	boss:Goblin Warlock@3.4	0	6
+Vanilla	ShadowFlameKnife	ThrownMelee	melee	43	43.0	5.00	215.0	3	5	100000	322.5	3.40	boss:Goblin Warlock@3.4	0	0
+Vanilla	Meowmere	Broadsword	melee	200	200.0	4.29	857.1	3	10	1000000	1577.1	18.00	boss:Moon Lord's Core@18	0	0
+Vanilla	StarWrath	Broadsword	melee	170	170.0	3.75	637.5	1	10	1000000	1173.0	18.00	boss:Moon Lord's Core@18	0	0
+Vanilla	WandofSparking	Magic	magic	14	14.0	2.31	32.3	2	1	10000	39.4	0.00	shop:Terraria/SkeletonMerchant/Shop	0	2
+Vanilla	Javelin	Thrown	ranged	17	17.0	2.50	12.8	3	0	25	13.5	0.00	sig:rarity	0	0
+Vanilla	ToxicFlask	Magic	magic	62	62.0	1.82	112.7	1	8	500000	192.5	13.50	sig:rarity	0	30
+Vanilla	PsychoKnife	Broadsword	melee	200	200.0	5.45	1090.9	1	8	500000	1863.2	13.50	sig:rarity	0	0
+Vanilla	NailGun	Gun	ranged	77	77.0	4.00	308.0	3	8	500000	526.1	13.50	sig:rarity	3108	0
+Vanilla	BouncyGrenade	Thrown	ranged	65	65.0	1.50	29.3	-1	0	100	31.6	3.40	recipe<-Pink Gel	0	0
+Vanilla	FrostDaggerfish	Thrown	ranged	17	17.0	4.62	23.5	3	1	80	26.7	1.00	sig:rarity	0	0
+Vanilla	CrystalSerpent	Magic	magic	40	40.0	2.07	82.8	1	5	200000	125.1	9.50	sig:rarity	0	9
+Vanilla	Toxikarp	Magic	ranged	43	43.0	6.67	286.7	1	5	200000	433.5	9.50	sig:rarity	0	0
+Vanilla	Bladetongue	Broadsword	melee	120	120.0	2.73	327.3	1	5	200000	494.8	9.50	sig:rarity	0	0
+Vanilla	DeadlySphereStaff	Summon	summon	50	50.0	1.58	186.0	-1	8	500000	317.7	13.50	sig:rarity	0	10
+Vanilla	SlapHand	Broadsword	melee	120	120.0	3.00	360.0	1	4	250000	524.1	7.00	shop:Terraria/SkeletonMerchant/Shop:Conditions.InHardmode	0	0
+Vanilla	Code1	Yoyo	melee	21	21.0	2.40	40.3	-1	2	50000	52.7	2.00	shop:Terraria/TravellingMerchant/Shop:Conditions.DownedEyeOfCthulhu	0	0
+Vanilla	MedusaHead	Magic	magic	75	75.0	2.00	150.0	-1	4	200000	217.8	7.00	sig:rarity	0	15
+Vanilla	WoodYoyo	Yoyo	melee	9	9.0	2.40	17.3	-1	0	500	19.1	0.00	recipe<-	0	0
+Vanilla	CorruptYoyo	Yoyo	melee	20	20.0	2.40	38.4	-1	1	50000	47.9	2.00	recipe<-Demonite Bar	0	0
+Vanilla	CrimsonYoyo	Yoyo	melee	20	20.0	2.40	38.4	-1	1	50000	47.9	2.00	recipe<-Crimtane Bar	0	0
+Vanilla	JungleYoyo	Yoyo	melee	18	18.0	2.40	34.6	-1	3	65000	47.4	4.00	recipe<-Stinger	0	0
+Vanilla	Cascade	Yoyo	melee	31	31.0	2.40	59.5	-1	3	90000	82.0	4.50	sig:rarity	0	0
+Vanilla	Chik	Yoyo	melee	39	39.0	2.40	74.9	-1	4	200000	108.7	7.00	recipe<-Crystal Shard	0	0
+Vanilla	Code2	Yoyo	melee	43	43.0	2.40	82.6	-1	5	250000	125.2	9.00	shop:Terraria/TravellingMerchant/Shop:Conditions.DownedMechBossAny	0	0
+Vanilla	Rally	Yoyo	melee	18	18.0	2.40	34.6	-1	1	25000	42.7	1.00	sig:rarity	0	0
+Vanilla	Yelets	Yoyo	melee	53	53.0	2.40	101.8	-1	7	250000	166.5	12.50	sig:rarity	0	0
+Vanilla	RedsYoyo	Yoyo	melee	48	48.0	2.40	92.2	-1	9	200000	161.5	16.00	sig:rarity	0	0
+Vanilla	ValkyrieYoyo	Yoyo	melee	48	48.0	2.40	92.2	-1	9	200000	161.5	16.00	sig:rarity	0	0
+Vanilla	Amarok	Yoyo	melee	43	43.0	2.40	82.6	-1	4	200000	119.9	7.00	sig:rarity	0	0
+Vanilla	HelFire	Yoyo	melee	41	41.0	2.40	78.7	-1	4	200000	114.3	7.00	sig:rarity	0	0
+Vanilla	Kraken	Yoyo	melee	65	65.0	2.40	124.8	-1	8	550000	213.4	13.50	sig:rarity	0	0
+Vanilla	TheEyeOfCthulhu	Yoyo	melee	80	80.0	2.40	153.6	-1	8	625000	262.9	11.50	boss:Mothron@11.5	0	0
+Vanilla	FormatC	Yoyo	melee	39	39.0	2.40	74.9	-1	3	200000	104.2	7.00	shop:Terraria/SkeletonMerchant/Shop:Conditions.InHardmode	0	0
+Vanilla	Gradient	Yoyo	melee	39	39.0	2.40	74.9	-1	3	200000	104.2	7.00	shop:Terraria/SkeletonMerchant/Shop:Conditions.InHardmode	0	0
+Vanilla	Valor	Yoyo	melee	28	28.0	2.40	53.8	-1	3	87500	74.1	4.50	sig:rarity	0	0
+Vanilla	DyeTradersScimitar	Broadsword	melee	24	24.0	3.33	80.0	1	2	25000	103.7	0.00	shop:Terraria/DyeTrader/Shop	0	0
+Vanilla	PainterPaintballGun	Magic	ranged	12	12.0	6.67	80.0	1	2	25000	103.7	0.00	shop:Terraria/Painter/Shop	0	0
+Vanilla	TaxCollectorsStickOfDoom	Broadsword	melee	80	80.0	6.00	480.0	1	2	25000	622.0	2.00	sig:rarity	0	0
+Vanilla	StylistKilLaKillScissorsIWish	Broadsword	melee	21	21.0	5.00	105.0	1	2	25000	136.1	3.00	shop:Terraria/Stylist/Shop	0	0
+Vanilla	Arkhalis	HeldWeapon	melee	25	25.0	4.00	40.0	-1	9	250000	70.2	16.00	sig:rarity	0	0
+Vanilla	AmberStaff	Magic	magic	21	21.0	2.35	49.4	2	1	20000	60.9	1.00	recipe<-Sturdy Fossil	0	7
+Vanilla	BoneJavelin	Thrown	ranged	20	20.0	2.40	14.4	-1	1	50	16.2	1.00	recipe<-Sturdy Fossil	0	0
+Vanilla	BoneDagger	Thrown	ranged	14	14.0	4.29	18.0	6	1	50	20.3	1.00	recipe<-Sturdy Fossil	0	0
+Vanilla	Terrarian	Yoyo	melee	90	90.0	2.40	172.8	-1	10	500000	315.9	18.00	boss:Moon Lord's Core@18	0	0
+Vanilla	SolarEruption	HeldWeapon	melee	105	105.0	3.00	630.0	-1	10	500000	1151.6	17.50	recipe<-Solar Fragment	0	0
+Vanilla	StardustCellStaff	Summon	summon	60	60.0	1.58	252.0	-1	10	500000	460.6	17.50	recipe<-Stardust Fragment	0	10
+Vanilla	VortexBeater	HeldWeapon	ranged	50	60.0	3.00	720.0	-1	10	500000	1316.1	17.50	recipe<-Vortex Fragment	97	0
+Vanilla	NebulaArcanum	Magic	magic	70	70.0	2.00	700.0	3	10	500000	1279.6	17.50	recipe<-Nebula Fragment	0	30
+Vanilla	BloodWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	100	30.2	0.00	recipe<-	0	0
+Vanilla	PlatinumBow	Bow	ranged	13	23.0	2.40	55.2	1	0	10500	64.1	0.00	recipe<-	40	0
+Vanilla	PlatinumShortsword	Shortsword	melee	18	18.0	6.00	108.0	-1	0	10500	125.4	0.00	recipe<-	0	0
+Vanilla	PlatinumBroadsword	Broadsword	melee	16	16.0	3.00	48.0	1	0	13500	55.9	0.00	recipe<-	0	0
+Vanilla	TungstenBow	Bow	ranged	10	20.0	2.31	46.2	1	0	5250	53.0	0.00	recipe<-	40	0
+Vanilla	TungstenShortsword	Shortsword	melee	15	15.0	5.45	81.8	-1	0	5250	94.0	0.00	recipe<-	0	0
+Vanilla	TungstenBroadsword	Broadsword	melee	14	14.0	3.00	42.0	1	0	6750	48.4	0.00	recipe<-	0	0
+Vanilla	LeadBow	Bow	ranged	9	19.0	2.22	42.2	1	0	2100	47.8	0.00	recipe<-	40	0
+Vanilla	LeadShortsword	Shortsword	melee	11	11.0	5.00	55.0	-1	0	2100	62.3	0.00	recipe<-	0	0
+Vanilla	LeadBroadsword	Broadsword	melee	13	13.0	3.00	39.0	1	0	2700	44.4	0.00	recipe<-	0	0
+Vanilla	TinBow	Bow	ranged	7	17.0	2.14	36.4	1	0	525	40.4	0.00	recipe<-	40	0
+Vanilla	TinShortsword	Shortsword	melee	7	7.0	5.00	35.0	-1	0	525	38.8	0.00	recipe<-	0	0
+Vanilla	TinBroadsword	Broadsword	melee	10	10.0	3.00	30.0	1	0	675	33.4	0.00	recipe<-	0	0
+Vanilla	CopperBow	Bow	ranged	6	16.0	2.07	33.1	1	0	350	36.5	0.00	recipe<-	40	0
+Vanilla	CopperShortsword	Shortsword	melee	5	5.0	4.62	23.1	-1	0	350	25.4	0.00	recipe<-	0	0
+Vanilla	CopperBroadsword	Broadsword	melee	9	9.0	3.00	27.0	1	0	450	29.9	0.00	recipe<-	0	0
+Vanilla	SilverBow	Bow	ranged	9	19.0	2.22	42.2	1	0	3500	48.2	0.00	recipe<-	40	0
+Vanilla	SilverShortsword	Shortsword	melee	14	14.0	5.00	70.0	-1	0	3500	79.9	0.00	recipe<-	0	0
+Vanilla	SilverBroadsword	Broadsword	melee	14	14.0	3.00	42.0	1	0	4500	48.1	0.00	recipe<-	0	0
+Vanilla	GoldBow	Bow	ranged	11	21.0	2.31	48.5	1	0	7000	55.9	0.00	recipe<-	40	0
+Vanilla	GoldShortsword	Shortsword	melee	17	17.0	5.45	92.7	-1	0	7000	107.0	0.00	recipe<-	0	0
+Vanilla	GoldBroadsword	Broadsword	melee	15	15.0	3.00	45.0	1	0	9000	52.1	0.00	recipe<-	0	0
+Vanilla	StardustDragonStaff	Summon	summon	24	24.0	1.58	100.8	-1	10	500000	184.3	17.50	recipe<-Stardust Fragment	0	10
+Vanilla	Phantasm	HeldWeapon	ranged	50	60.0	20.00	720.0	-1	10	500000	1316.1	17.50	recipe<-Vortex Fragment	40	0
+Vanilla	LastPrism	HeldWeapon	magic	57	57.0	4.00	1368.0	-1	10	500000	2500.6	18.00	boss:Moon Lord's Core@18	0	12
+Vanilla	NebulaBlaze	Magic	magic	130	130.0	5.00	650.0	1	10	500000	1188.2	17.50	recipe<-Nebula Fragment	0	12
+Vanilla	DayBreak	ThrownMelee	melee	125	125.0	2.73	340.9	-1	10	500000	623.2	17.50	recipe<-Solar Fragment	0	0
+Vanilla	FireworksLauncher	Gun	ranged	50	90.0	2.40	216.0	-1	8	800000	370.7	13.00	shop:Terraria/PartyGirl/Shop:Conditions.DownedGolem	771	0
+Vanilla	PartyGirlGrenade	Thrown	ranged	30	30.0	3.00	27.0	-1	2	250	32.8	2.00	sig:rarity	0	0
+Vanilla	MoonlordTurretStaff	Sentry	summon	50	50.0	2.00	75.0	1	10	500000	137.1	18.00	boss:Moon Lord's Core@18	0	10
+Vanilla	LunarFlareBook	Magic	magic	110	110.0	6.00	660.0	-1	10	500000	1206.5	18.00	boss:Moon Lord's Core@18	0	9
+Vanilla	RainbowCrystalStaff	Sentry	summon	130	130.0	2.00	195.0	1	10	500000	356.5	18.00	boss:Moon Lord's Core@18	0	10
+Vanilla	BluePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	RedPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	GreenPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	PurplePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	WhitePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	YellowPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	AntlionClaw	Broadsword	melee	16	16.0	6.00	96.0	1	2	5000	121.7	2.00	sig:rarity	0	0
+Vanilla	SpiritFlame	Magic	magic	85	85.0	3.00	255.0	-1	4	50000	364.1	12.09	recipe<-Forbidden Fragment	0	14
+Vanilla	SkyFracture	Magic	magic	46	46.0	6.00	276.0	1	4	300000	402.7	12.09	recipe<-Light Shard	0	17
+Vanilla	OnyxBlaster	Gun	ranged	24	34.0	6.25	212.5	-1	4	250000	309.4	12.09	recipe<-Dark Shard	97	0
+Vanilla	DD2FlameburstTowerT1Popper	Sentry	summon	17	17.0	2.00	25.5	1	3	50000	34.9	4.50	sig:rarity	0	5
+Vanilla	DD2FlameburstTowerT2Popper	Sentry	summon	42	42.0	2.00	63.0	1	5	250000	95.5	9.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedMechBossAny	0	10
+Vanilla	DD2FlameburstTowerT3Popper	Sentry	summon	88	88.0	2.00	132.0	1	8	750000	226.4	13.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedGolem	0	15
+Vanilla	AleThrowingGlove	Gun	ranged	20	20.0	1.50	30.0	1	1	500	35.0	1.00	sig:rarity	353	0
+Vanilla	DD2SquireDemonSword	Broadsword	melee	95	95.0	3.00	285.0	1	5	50000	424.1	11.01	boss:Ogre@11.01	0	0
+Vanilla	DD2BallistraTowerT1Popper	Sentry	summon	30	30.0	2.00	45.0	1	3	50000	61.6	4.50	sig:rarity	0	5
+Vanilla	DD2BallistraTowerT2Popper	Sentry	summon	74	74.0	2.00	111.0	1	5	250000	168.3	9.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedMechBossAny	0	10
+Vanilla	DD2BallistraTowerT3Popper	Sentry	summon	156	156.0	2.00	234.0	1	8	750000	401.3	13.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedGolem	0	15
+Vanilla	DD2SquireBetsySword	Broadsword	melee	150	150.0	3.00	450.0	3	8	250000	763.2	16.00	boss:Betsy@16	0	0
+Vanilla	DD2LightningAuraT1Popper	Sentry	summon	4	4.0	2.00	6.0	-1	3	50000	8.2	4.50	sig:rarity	0	5
+Vanilla	DD2LightningAuraT2Popper	Sentry	summon	11	11.0	2.00	16.5	-1	5	250000	25.0	9.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedMechBossAny	0	10
+Vanilla	DD2LightningAuraT3Popper	Sentry	summon	34	34.0	2.00	51.0	-1	8	750000	87.5	13.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedGolem	0	15
+Vanilla	DD2ExplosiveTrapT1Popper	Sentry	summon	24	24.0	2.00	36.0	-1	3	50000	49.2	4.50	sig:rarity	0	5
+Vanilla	DD2ExplosiveTrapT2Popper	Sentry	summon	59	59.0	2.00	88.5	-1	5	250000	134.2	9.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedMechBossAny	0	10
+Vanilla	DD2ExplosiveTrapT3Popper	Sentry	summon	126	126.0	2.00	189.0	-1	8	750000	324.1	13.00	shop:Terraria/DD2Bartender/Shop:Conditions.DownedGolem	0	15
+Vanilla	MonkStaffT1	Spear	melee	83	83.0	2.00	166.0	-1	5	50000	247.0	11.01	boss:Ogre@11.01	0	0
+Vanilla	MonkStaffT2	Spear	melee	90	90.0	2.22	200.0	-1	5	50000	297.6	11.01	boss:Ogre@11.01	0	0
+Vanilla	BookStaff	Magic	magic	36	36.0	9.60	345.6	1	5	50000	514.2	11.01	boss:Ogre@11.01	0	20
+Vanilla	DD2PhoenixBow	HeldWeapon	ranged	32	42.0	3.33	56.0	-1	5	50000	83.3	11.01	boss:Ogre@11.01	40	0
+Vanilla	MonkStaffT3	Spear	melee	225	225.0	2.00	450.0	-1	8	250000	763.2	16.00	boss:Betsy@16	0	0
+Vanilla	DD2BetsyBow	Bow	ranged	42	52.0	6.00	312.0	1	8	250000	529.1	16.00	boss:Betsy@16	40	0
+Vanilla	ApprenticeStaffT3	Magic	magic	100	100.0	2.00	200.0	1	8	250000	339.2	16.00	boss:Betsy@16	0	14
+Vanilla	Celeb2	HeldWeapon	ranged	50	90.0	10.00	360.0	-1	10	500000	658.1	18.00	boss:Moon Lord's Core@18	771	0
+Vanilla	SuperStarCannon	Gun	ranged	60	60.0	3.33	200.0	-1	3	500000	281.6	12.81	recipe<-Star Cannon	75	0
+Vanilla	ThunderSpear	Spear	melee	14	14.0	2.14	30.0	-1	1	15000	36.8	1.00	sig:rarity	0	0
+Vanilla	ThunderStaff	Magic	magic	15	15.0	3.53	52.9	2	1	15000	65.0	1.00	sig:rarity	0	7
+Vanilla	Terragrim	HeldWeapon	melee	13	13.0	4.00	20.8	-1	2	250000	27.8	12.00	shop:Terraria/Princess/Shop:Conditions.BloodMoon	0	0
+Vanilla	OrangePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+Vanilla	OrangePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+Vanilla	SanguineStaff	Summon	summon	35	35.0	1.58	96.6	-1	4	250000	140.6	7.00	sig:rarity	0	10
+Vanilla	SharpTears	Magic	magic	49	49.0	5.45	267.3	4	4	200000	388.1	7.00	sig:rarity	0	20
+Vanilla	DripplerFlail	Flail	melee	55	55.0	1.50	66.0	-1	4	200000	95.8	7.00	sig:rarity	0	0
+Vanilla	VampireFrogStaff	Summon	summon	11	11.0	1.58	27.7	-1	3	50000	37.9	4.50	sig:rarity	0	10
+Vanilla	BabyBirdStaff	Summon	summon	7	7.0	1.58	14.3	-1	1	50000	17.8	0.00	recipe<-	0	10
+Vanilla	ZapinatorGray	Magic	magic	42	42.0	1.67	70.0	8	2	170000	93.0	0.00	shop:Terraria/TravellingMerchant/Shop	0	16
+Vanilla	ZapinatorOrange	Magic	magic	100	100.0	1.67	166.7	8	5	500000	254.7	7.00	shop:Terraria/TravellingMerchant/Shop:Conditions.InHardmode	0	16
+Vanilla	BloodRainBow	Bow	ranged	14	24.0	3.16	75.8	1	3	50000	103.7	4.50	sig:rarity	40	0
+Vanilla	Gladius	Shortsword	melee	15	15.0	8.57	128.6	-1	1	15000	157.8	1.00	sig:rarity	0	0
+Vanilla	StormTigerStaff	Summon	summon	49	49.0	1.58	182.3	-1	8	1000000	313.5	13.50	sig:rarity	0	10
+Vanilla	BlandWhip	Whip	summon	14	14.0	2.00	22.4	-1	1	100000	28.2	0.00	shop:Terraria/BestiaryGirl/Shop	0	0
+Vanilla	SwordWhip	Whip	summon	55	55.0	2.14	94.3	-1	5	230000	142.8	9.00	recipe<-Hallowed Bar	0	0
+Vanilla	MaceWhip	Whip	summon	165	165.0	1.71	226.3	-1	8	300000	384.5	13.50	sig:rarity	0	0
+Vanilla	ScytheWhip	Whip	summon	100	100.0	2.22	177.8	-1	8	500000	303.6	13.25	boss:Pumpking@13.25	0	0
+Vanilla	QuadBarrelShotgun	Gun	ranged	14	24.0	4.36	104.7	1	3	350000	146.8	5.00	shop:Terraria/ArmsDealer/Shop:Conditions.DownedSkeletron	97	0
+Vanilla	GravediggerShovel	Broadsword	melee	12	12.0	4.29	51.4	1	1	5000	62.1	0.00	recipe<-	0	0
+Vanilla	SparkleGuitar	Magic	magic	85	85.0	10.00	850.0	1	5	500000	1298.8	15.00	boss:Empress of Light@15	0	12
+Vanilla	Smolstar	Summon	summon	9	9.0	1.58	27.0	-1	5	50000	40.2	8.00	boss:Queen Slime@8	0	10
+Vanilla	BouncingShield	Boomerang	melee	80	80.0	1.67	106.7	5	5	350000	162.3	7.00	shop:Terraria/TravellingMerchant/Shop:Conditions.InHardmode	0	0
+Vanilla	Shroomerang	Boomerang	melee	23	23.0	3.00	55.2	-1	1	30000	68.4	1.00	sig:rarity	0	0
+Vanilla	JoustingLance	Spear	melee	60	60.0	2.50	150.0	-1	4	60000	214.7	7.00	shop:Terraria/BestiaryGirl/Shop:Conditions.InHardmode	0	0
+Vanilla	ShadowJoustingLance	Spear	melee	130	130.0	2.50	325.0	-1	8	500000	555.1	13.50	sig:rarity	0	0
+Vanilla	HallowJoustingLance	Spear	melee	90	90.0	2.50	225.0	-1	5	230000	340.8	9.00	recipe<-Hallowed Bar	0	0
+Vanilla	CombatWrench	Boomerang	melee	25	25.0	4.00	80.0	-1	2	25000	103.7	5.00	shop:Terraria/Mechanic/Shop	0	0
+Vanilla	CoolWhip	Whip	summon	45	45.0	2.00	72.0	-1	4	200000	104.5	9.50	recipe<-Frost Core	0	0
+Vanilla	FireWhip	Whip	summon	37	37.0	2.00	59.2	-1	4	150000	85.7	7.00	boss:Wall of Flesh@7	0	0
+Vanilla	ThornWhip	Whip	summon	18	18.0	2.00	28.8	-1	3	50000	39.4	4.00	recipe<-Stinger	0	0
+Vanilla	RainbowWhip	Whip	summon	180	180.0	2.00	288.0	-1	8	250000	488.4	15.00	boss:Empress of Light@15	0	0
+Vanilla	PiercingStarlight	HeldWeapon	melee	80	80.0	10.00	320.0	-1	8	250000	542.7	15.00	boss:Empress of Light@15	0	0
+Vanilla	FairyQueenMagicItem	Magic	magic	54	54.0	6.67	360.0	3	8	250000	610.5	15.00	boss:Empress of Light@15	0	23
+Vanilla	FairyQueenRangedItem	Bow	ranged	50	60.0	10.00	600.0	1	8	250000	1017.6	15.00	boss:Empress of Light@15	40	0
+Vanilla	Zenith	Broadsword	melee	210	210.0	6.00	1260.0	-1	12	1000000	2469.6	22.00	recipe<-Auric Bar	0	0
+Vanilla	EmpressBlade	Summon	summon	68	68.0	1.58	204.0	-1	5	1000000	314.2	15.00	boss:Empress of Light@15	0	10
+Vanilla	Mace	Flail	melee	9	9.0	1.33	9.6	-1	1	100000	12.1	1.00	sig:rarity	0	0
+Vanilla	FlamingMace	Flail	melee	9	9.0	1.33	9.6	-1	1	100000	12.1	1.00	recipe<-Mace	0	0
+Vanilla	PrincessWeapon	Magic	magic	80	80.0	2.40	192.0	-1	5	500000	293.4	12.00	shop:Terraria/Princess/Shop:Conditions.InHardmode	0	18
+Vanilla	FlinxStaff	Summon	summon	8	8.0	1.58	20.2	-1	3	25000	27.3	1.00	recipe<-Flinx Fur	0	5
+Vanilla	BoneWhip	Whip	summon	27	27.0	2.00	43.2	-1	2	75000	56.8	0.00	recipe<-	0	0
+Vanilla	TentacleSpike	Broadsword	melee	20	20.0	2.86	57.1	1	2	25000	74.1	2.00	sig:rarity	0	0
+Vanilla	HamBat	Broadsword	melee	57	57.0	3.00	171.0	1	4	50000	244.2	7.00	sig:rarity	0	0
+Vanilla	BatBat	Broadsword	melee	36	36.0	1.33	48.0	1	2	12500	61.6	2.00	sig:rarity	0	0
+Vanilla	AbigailsFlower	Summon	summon	6	6.0	1.58	15.1	-1	3	25000	20.5	4.50	sig:rarity	0	10
+Vanilla	PewMaticHorn	Gun	ranged	25	35.0	4.00	140.0	1	2	75000	184.1	6.00	boss:Deerclops@6	97	0
+Vanilla	WeatherPain	Magic	magic	13	13.0	1.33	17.3	15	2	75000	22.8	6.00	boss:Deerclops@6	0	30
+Vanilla	HoundiusShootius	Sentry	summon	24	24.0	2.00	36.0	1	2	75000	47.3	6.00	boss:Deerclops@6	0	20
+Vanilla	Flymeal	Broadsword	melee	15	15.0	3.53	52.9	1	2	17500	68.3	0.00	recipe<-	0	0
+Vanilla	WandofFrosting	Magic	magic	15	15.0	2.31	34.6	2	1	7500	42.1	0.00	recipe<-	0	2
+Vanilla	AshWoodBow	Bow	ranged	10	20.0	2.40	48.0	1	0	100	51.8	0.00	recipe<-	40	0
+Vanilla	AshWoodSword	Broadsword	melee	13	13.0	3.53	45.9	1	0	100	49.6	0.00	recipe<-	0	0
+Vanilla	HiveFive	Yoyo	melee	27	27.0	2.40	51.8	-1	3	35000	70.6	4.00	recipe<-Bee Wax	0	0
+Vanilla	Trimarang	Boomerang	melee	21	21.0	3.00	50.4	-1	3	100000	69.6	12.81	recipe<-Enchanted Boomerang	0	0
+Vanilla	WaffleIron	Broadsword	melee	50	50.0	2.61	130.4	1	5	150000	196.6	9.00	boss:Retinazer@9	0	0
+CalamityMod	DragoonDrizzlefish	Magic	ranged	18	18.0	3.00	54.0	5	3	50000	73.9	4.50	sig:rarity	0	0
+CalamityMod	SparklingEmpress	Magic	magic	10	10.0	3.00	30.0	-1	2	20000	38.8	2.00	sig:rarity	0	5
+CalamityMod	AerialTracker	Magic	none	16	16.0	1.50	24.0	-1	3	50000	32.8	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	AqueousHunterDrone	Summon	summon	18	18.0	1.67	21.6	-1	3	50000	29.5	19.00	recipe<-Mysterious Circuitry	0	10
+CalamityMod	Auger	Boomerang	melee	55	55.0	5.00	220.0	-1	3	50000	301.0	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	GalvanizingGlaive	Spear	melee	130	130.0	2.86	371.4	-1	8	600000	635.6	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	MountedScanner	Summon	summon	24	24.0	1.67	72.0	-1	5	200000	108.9	19.00	recipe<-Mysterious Circuitry	0	10
+CalamityMod	Phaseslayer	Magic	melee	1350	1350.0	2.50	3375.0	-1	14	2000000	6655.6	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	PlasmaCaster	Magic	magic	705	705.0	1.33	940.0	1	19	1500000	1849.0	12.81	boss:CalamityMod/AstrumAureus@12.81	0	36
+CalamityMod	PlasmaGrenade	Magic	none	860	860.0	2.00	1720.0	1	14	2000000	3391.9	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	PoleWarper	Summon	summon	207	207.0	2.50	968.8	-1	14	2000000	1910.4	21.00	recipe<-Cosmilite Bar	0	12
+CalamityMod	PulseDragon	Boomerang	melee	300	300.0	3.00	720.0	-1	19	1500000	1416.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	PulseGrenade	Magic	none	123	123.0	0.80	98.4	1	5	200000	148.8	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	PulsePistol	Magic	magic	42	42.0	0.94	39.4	-1	3	50000	53.9	19.00	recipe<-Mysterious Circuitry	0	25
+CalamityMod	PulseRifle	Magic	ranged	530	530.0	1.09	578.2	-1	14	2000000	1140.2	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	PulseTurretRemote	Sentry	summon	150	150.0	2.00	225.0	-1	8	600000	385.0	19.00	recipe<-Mysterious Circuitry	0	10
+CalamityMod	ShortCircuit	Magic	ranged	11	11.0	7.50	82.5	2	3	50000	112.9	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	SnakeEyes	Summon	summon	160	160.0	2.50	748.8	-1	19	1500000	1472.9	12.81	boss:CalamityMod/AstrumAureus@12.81	0	12
+CalamityMod	SystemBane	Magic	none	45	45.0	4.00	180.0	-1	8	600000	308.0	19.00	recipe<-Mysterious Circuitry	0	0
+CalamityMod	TeslaCannon	Magic	magic	1200	1200.0	0.67	800.0	1	14	2000000	1577.6	21.00	recipe<-Cosmilite Bar	0	120
+CalamityMod	WavePounder	Magic	none	75	75.0	1.07	80.4	1	19	1500000	158.1	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	AbyssalTome	Magic	magic	22	22.0	2.40	52.8	2	4	100000	76.0	6.70	boss:CalamityMod/SlimeGodCore@6.7	0	15
+CalamityMod	AbyssShocker	Magic	magic	30	30.0	3.16	94.7	5	3	50000	129.6	4.50	sig:rarity	0	14
+CalamityMod	AcidGun	Magic	magic	18	18.0	3.00	54.0	2	2	20000	69.8	2.00	recipe<-Sulphuric Scale	0	12
+CalamityMod	AethersWhisper	Magic	magic	600	600.0	2.50	1500.0	1	19	1500000	2950.6	19.62	recipe<-Twisting Nether	0	30
+CalamityMod	AlphaDraconis	Magic	magic	150	150.0	5.00	750.0	5	18	1750000	1477.3	20.00	recipe<-Ruinous Soul	0	16
+CalamityMod	AlulaAustralis	Magic	magic	65	65.0	3.53	229.4	1	7	450000	377.6	12.81	boss:CalamityMod/AstrumAureus@12.81	0	15
+CalamityMod	AnahitasArpeggio	Magic	magic	60	60.0	2.73	163.6	5	7	450000	269.4	12.80	boss:CalamityMod/Anahita@12.8	0	7
+CalamityMod	Apathanull	Magic	magic	63	63.0	6.43	405.0	-1	10	1000000	745.2	17.50	recipe<-Meld Blob	0	26
+CalamityMod	Apotheosis	Magic	magic	222	222.0	0.36	79.8	-1	17	2800000	157.8	23.00	recipe<-Shadowspec Bar	0	277
+CalamityMod	AquamarineStaff	Magic	magic	17	17.0	2.73	46.4	1	2	20000	59.9	2.00	recipe<-Sea Prism	0	10
+CalamityMod	ArchAmaryllis	Magic	magic	58	58.0	2.61	151.3	1	10	1000000	278.4	17.50	recipe<-Nebula Fragment	0	23
+CalamityMod	ArcticBearPaw	Magic	magic	80	80.0	2.14	171.4	5	6	350000	271.2	11.00	shop:CalamityMod/Archmage/Shop:Conditions.DownedMechBossAll	0	18
+CalamityMod	ArtAttack	Magic	magic	120	120.0	2.50	300.0	1	7	450000	493.8	11.70	recipe<-Ashes of Calamity	0	60
+CalamityMod	AstralachneaStaff	Magic	magic	55	55.0	2.86	157.1	1	7	450000	258.7	12.50	sig:rarity	0	16
+CalamityMod	AstralStaff	Magic	magic	245	245.0	3.33	816.7	2	9	800000	1450.5	17.00	recipe<-Astral Bar	0	26
+CalamityMod	Atlantis	Magic	magic	81	81.0	2.40	194.4	4	7	450000	320.0	12.80	boss:CalamityMod/Anahita@12.8	0	15
+CalamityMod	AuguroftheVoid	Magic	magic	131	131.0	20.00	2620.0	1	11	1200000	4986.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	14
+CalamityMod	BelchingSaxophone	Magic	magic	32	32.0	5.00	160.0	1	5	200000	241.9	9.50	sig:rarity	0	16
+CalamityMod	Biofusillade	Magic	magic	118	118.0	20.00	2360.0	2	19	1500000	4642.2	19.00	recipe<-Uelibloom Bar	0	4
+CalamityMod	BlackAnurian	Magic	magic	24	24.0	3.33	80.0	1	3	50000	109.4	4.50	sig:rarity	0	13
+CalamityMod	BloodBath	Magic	magic	24	24.0	4.00	96.0	2	3	50000	131.3	3.99	boss:CalamityMod/PerforatorHive@3.99	0	12
+CalamityMod	BrimroseStaff	Magic	magic	45	45.0	3.75	168.8	-1	5	200000	255.2	9.50	recipe<-Unholy Core	0	12
+CalamityMod	ClothiersWrath	Magic	magic	36	36.0	2.73	98.2	3	4	100000	141.4	7.00	sig:rarity	0	15
+CalamityMod	CoralSpout	Magic	magic	9	9.0	2.31	20.8	1	2	20000	26.8	1.60	recipe<-Sea Remains	0	30
+CalamityMod	CosmicRainbow	Magic	magic	117	117.0	6.00	702.0	-1	11	1200000	1336.0	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10
+CalamityMod	Cryophobia	Magic	magic	96	96.0	1.50	144.0	3	6	350000	227.8	11.00	shop:CalamityMod/Archmage/Shop:Conditions.DownedMechBossAll	0	22
+CalamityMod	DeathValleyDuster	Magic	magic	130	130.0	1.20	156.0	-1	4	100000	224.6	7.00	recipe<-Spell Tome	0	38
+CalamityMod	Downpour	Magic	magic	50	50.0	4.00	200.0	-1	5	200000	302.4	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	10
+CalamityMod	Effervescence	Magic	magic	60	60.0	4.00	240.0	-1	11	1200000	456.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	20
+CalamityMod	EidolicWail	Magic	magic	943	943.0	2.57	2424.9	11	18	1750000	4776.3	19.00	sig:rarity	0	90
+CalamityMod	EidolonStaff	Magic	magic	180	180.0	3.33	600.0	1	18	1750000	1181.8	19.00	sig:rarity	0	24
+CalamityMod	EldritchTome	Magic	magic	32	32.0	8.57	274.3	2	4	100000	395.0	6.70	boss:CalamityMod/SlimeGodCore@6.7	0	13
+CalamityMod	EventHorizon	Magic	magic	138	138.0	1.33	184.0	-1	19	1500000	361.9	19.60	recipe<-Dark Plasma	0	45
+CalamityMod	EvergladeSpray	Magic	magic	65	65.0	10.00	650.0	3	7	450000	1070.0	12.50	recipe<-Perennial Bar	0	7
+CalamityMod	FaceMelter	Magic	magic	130	130.0	6.00	780.0	2	14	2000000	1538.2	21.00	recipe<-Cosmilite Bar	0	14
+CalamityMod	FatesReveal	Magic	magic	120	120.0	3.75	450.0	1	18	1750000	886.4	20.00	boss:CalamityMod/Polterghast@20	0	20
+CalamityMod	FlareBolt	Magic	magic	40	40.0	0.75	30.0	-1	3	50000	41.0	0.00	recipe<-	0	40
+CalamityMod	ForbiddenSun	Magic	magic	80	80.0	2.00	160.0	1	8	600000	273.8	13.50	recipe<-Scoria Bar	0	33
+CalamityMod	FrigidflashBolt	Magic	magic	95	95.0	3.00	285.0	5	4	100000	410.4	10.50	recipe<-Essence of Havoc	0	20
+CalamityMod	FrostBolt	Magic	magic	25	25.0	2.00	50.0	3	2	20000	64.6	0.00	recipe<-	0	8
+CalamityMod	GleamingMagnolia	Magic	magic	53	53.0	2.22	117.8	1	6	350000	186.3	12.81	recipe<-Mana Rose	0	15
+CalamityMod	GloriousEnd	Magic	magic	60	60.0	2.00	120.0	1	4	100000	172.8	7.00	sig:rarity	0	60
+CalamityMod	GruesomeEminence	Magic	magic	666	666.0	2.22	1480.0	-1	13	2400000	2923.3	19.00	sig:rarity	0	30
+CalamityMod	HellwingStaff	Magic	magic	21	21.0	2.00	42.0	1	3	50000	57.5	0.00	recipe<-	0	18
+CalamityMod	Hematemesis	Magic	magic	75	75.0	2.73	204.5	1	8	600000	350.0	16.50	boss:CalamityMod/RavagerBody@16.5	0	14
+CalamityMod	HyperdeathRiftScepter	Magic	magic	4100	4100.0	1.20	4920.0	-1	14	2000000	9702.4	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	50
+CalamityMod	HyphaeRod	Magic	magic	22	22.0	2.50	55.0	1	2	20000	71.1	2.70	boss:CalamityMod/Crabulon@2.7	0	10
+CalamityMod	IceBarrage	Gun	ranged	2250	2250.0	0.17	375.0	-1	14	2000000	739.5	21.00	recipe<-Cosmilite Bar	5836	300
+CalamityMod	IcicleStaff	Magic	magic	10	10.0	8.57	85.7	1	1	10000	104.6	0.00	recipe<-	0	6
+CalamityMod	IcicleTrident	Magic	magic	69	69.0	2.40	165.6	2	5	200000	250.4	9.50	sig:rarity	0	21
+CalamityMod	InfernalRift	Magic	magic	50	50.0	13.64	681.8	1	8	600000	1166.7	13.50	recipe<-Scoria Bar	0	25
+CalamityMod	Keelhaul	Magic	magic	55	55.0	2.00	110.0	1	8	600000	188.2	13.50	sig:rarity	0	40
+CalamityMod	LashesofChaos	Magic	magic	130	130.0	1.30	169.6	1	7	450000	279.1	11.70	boss:CalamityMod/CalamitasClone@11.7	0	28
+CalamityMod	LightGodsBrilliance	Magic	magic	111	111.0	10.00	1110.0	1	14	2000000	2189.0	21.00	recipe<-Cosmilite Bar	0	6
+CalamityMod	MadAlchemistsCocktailGlove	Magic	magic	240	240.0	4.00	960.0	1	11	1200000	1827.0	18.00	recipe<-Effulgent Feather	0	12
+CalamityMod	MagneticMeltdown	Magic	magic	200	200.0	1.62	324.3	1	19	1500000	638.0	19.62	recipe<-Twisting Nether	0	45
+CalamityMod	ManaRose	Magic	magic	20	20.0	1.58	31.6	1	3	50000	43.2	12.81	recipe<-Mana Crystal	0	15
+CalamityMod	Miasma	Magic	magic	40	40.0	2.22	88.9	10	5	200000	134.4	11.50	recipe<-Nimbus Rod	0	22
+CalamityMod	Mistlestorm	Magic	magic	59	59.0	10.00	590.0	1	19	1500000	1160.6	19.60	recipe<-Dark Plasma	0	7
+CalamityMod	NightsRay	Magic	magic	20	20.0	3.00	60.0	10	4	100000	86.4	7.00	recipe<-Magic Missile	0	15
+CalamityMod	NuclearFury	Magic	magic	91	91.0	2.40	218.4	3	11	1200000	415.7	12.81	boss:CalamityMod/AstrumAureus@12.81	0	30
+CalamityMod	Nucleosynthesis	Magic	magic	70	70.0	8.00	560.0	1	11	1200000	1065.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	30
+CalamityMod	ParasiticSceptor	Magic	magic	12	12.0	1.71	20.6	-1	2	20000	26.6	2.00	recipe<-Sulphuric Scale	0	12
+CalamityMod	PhantasmalFury	Magic	magic	190	190.0	7.50	1425.0	-1	18	1750000	2806.9	20.00	recipe<-Ruinous Soul	0	120
+CalamityMod	PhoenixFlameBarrage	Magic	magic	140	140.0	4.00	560.0	1	12	2400000	1106.1	22.00	boss:CalamityMod/Yharon@22	0	40
+CalamityMod	Photosynthesis	Magic	magic	74	74.0	2.86	211.4	-1	8	600000	361.8	12.00	recipe<-Living Shard	0	10
+CalamityMod	PlagueStaff	Magic	magic	70	70.0	2.86	200.0	6	8	600000	342.2	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	22
+CalamityMod	PlasmaRifle	Magic	magic	120	120.0	1.50	180.0	-1	10	1000000	331.2	17.50	recipe<-Vortex Fragment	0	40
+CalamityMod	PlasmaRod	Magic	magic	8	8.0	3.00	24.0	1	2	20000	31.0	2.00	sig:rarity	0	10
+CalamityMod	Poseidon	Magic	magic	52	52.0	1.22	63.7	6	5	200000	96.3	1.61	boss:CalamityMod/GiantClam@1.61	0	30
+CalamityMod	PrimordialAncient	Magic	magic	3825	3825.0	0.83	3187.5	-1	14	2000000	6285.9	21.00	recipe<-Cosmilite Bar	0	104
+CalamityMod	PrimordialEarth	Magic	magic	205	205.0	0.88	180.9	-1	8	600000	309.5	13.50	recipe<-Ectoplasm	0	48
+CalamityMod	Rancor	Magic	magic	333	333.0	2.40	799.2	-1	13	2400000	1578.6	19.00	sig:rarity	0	25
+CalamityMod	RecitationoftheBeast	Magic	magic	60	60.0	2.73	163.6	2	19	1500000	321.9	19.00	recipe<-Bloodstone	0	22
+CalamityMod	RelicofRuin	Magic	magic	21	21.0	1.71	36.0	1	5	200000	54.4	12.09	recipe<-Forbidden Fragment	0	16
+CalamityMod	RougeSlash	Magic	magic	119	119.0	3.16	375.8	3	11	1200000	715.2	18.00	sig:rarity	0	30
+CalamityMod	SandstreamScepter	Magic	magic	16	16.0	3.00	48.0	-1	2	20000	62.0	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	7
+CalamityMod	SanguineFlare	Magic	magic	1050	1050.0	2.40	2520.0	1	19	1500000	4957.0	19.00	recipe<-Bloodstone	0	36
+CalamityMod	SeethingDischarge	Magic	magic	40	40.0	1.00	40.0	1	5	200000	60.5	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	30
+CalamityMod	Serpentine	Magic	magic	10	10.0	1.71	17.1	5	4	100000	24.7	7.00	sig:rarity	0	22
+CalamityMod	ShadecrystalBarrage	Magic	magic	24	24.0	1.90	45.7	1	5	200000	69.1	9.50	recipe<-Cryonic Bar	0	40
+CalamityMod	ShaderainStaff	Magic	magic	19	19.0	1.76	33.5	1	3	50000	45.9	3.98	boss:CalamityMod/HiveMind@3.98	0	14
+CalamityMod	ShadowboltStaff	Magic	magic	285	285.0	3.33	950.0	-1	18	1750000	1871.2	20.00	recipe<-Ruinous Soul	0	72
+CalamityMod	ShiftingSands	Magic	magic	81	81.0	2.00	162.0	3	7	450000	266.7	12.09	recipe<-Grand Scale	0	20
+CalamityMod	SHPC	Magic	magic	117	117.0	1.00	117.0	1	6	350000	185.1	19.00	recipe<-Prototype Plasma Drive	0	30
+CalamityMod	SkyGlaze	Magic	magic	10	10.0	2.40	24.0	3	2	20000	31.0	2.00	sig:rarity	0	9
+CalamityMod	SlitheringEels	Magic	magic	50	50.0	1.50	75.0	-1	5	200000	113.4	9.50	sig:rarity	0	20
+CalamityMod	SnowstormStaff	Magic	magic	39	39.0	0.86	33.4	-1	5	200000	50.5	8.50	boss:CalamityMod/Cryogen@8.5	0	40
+CalamityMod	SoulPiercer	Magic	magic	235	235.0	2.40	564.0	-1	14	2000000	1112.2	21.00	recipe<-Cosmilite Bar	0	30
+CalamityMod	StarShower	Magic	magic	60	60.0	4.29	257.1	1	9	800000	456.7	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	15
+CalamityMod	Sylvestaff	Magic	magic	140	140.0	3.00	420.0	-1	17	2800000	830.7	23.00	recipe<-Shadowspec Bar	0	30
+CalamityMod	TacticiansTrumpCard	Magic	magic	248	248.0	5.00	1240.0	3	19	1500000	2439.1	19.60	recipe<-Dark Plasma	0	20
+CalamityMod	TearsofHeaven	Magic	magic	43	43.0	3.00	129.0	2	8	600000	220.7	13.50	recipe<-Ectoplasm	0	15
+CalamityMod	Teslastaff	Magic	magic	166	166.0	0.86	142.3	-1	19	1500000	279.9	19.61	recipe<-Armored Shell	0	10
+CalamityMod	TheDanceofLight	Magic	magic	515	515.0	18.46	9507.7	2	17	2800000	18805.1	23.00	recipe<-Shadowspec Bar	0	26
+CalamityMod	ThePrince	Magic	magic	180	180.0	2.86	514.3	4	19	1500000	1011.6	19.00	recipe<-Divine Geode	0	16
+CalamityMod	TheSwarmer	Magic	magic	36	36.0	5.00	180.0	2	10	1000000	331.2	17.50	recipe<-Stardust Fragment	0	14
+CalamityMod	TheWand	Magic	magic	1	1.0	3.16	3.2	1	12	15000000	6.3	19.00	sig:rarity	0	200
+CalamityMod	ThornBlossom	Magic	magic	120	120.0	2.61	313.0	1	19	1500000	615.8	19.00	recipe<-Uelibloom Bar	0	27
+CalamityMod	Tradewinds	Magic	magic	23	23.0	4.00	92.0	2	3	50000	125.9	4.50	recipe<-Aerialite Bar	0	6
+CalamityMod	UltraLiquidator	Magic	magic	120	120.0	10.00	1200.0	1	11	1200000	2283.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	25
+CalamityMod	UndinesRetribution	Magic	magic	44	44.0	3.33	146.7	1	7	450000	241.4	12.50	recipe<-Depth Cells	0	15
+CalamityMod	VeeringWind	Magic	magic	16	16.0	1.67	26.7	2	2	20000	34.5	12.81	recipe<-Fallen Star	0	14
+CalamityMod	VenusianTrident	Magic	magic	1150	1150.0	0.92	1061.5	1	18	1750000	2090.9	20.00	recipe<-Ruinous Soul	0	90
+CalamityMod	Vesuvius	Magic	magic	55	55.0	4.00	220.0	1	8	600000	376.4	16.50	boss:CalamityMod/RavagerBody@16.5	0	8
+CalamityMod	Viscera	Magic	magic	229	229.0	3.87	886.5	7	19	1500000	1743.7	19.00	recipe<-Bloodstone	0	18
+CalamityMod	VividClarity	Magic	magic	162	162.0	7.50	1215.0	1	16	2400000	2399.9	22.99	recipe<-Miracle Matter	0	54
+CalamityMod	VoidVortex	Magic	magic	210	210.0	1.22	257.1	-1	12	2400000	507.9	22.00	recipe<-Auric Bar	0	70
+CalamityMod	VoltaicClimax	Magic	magic	215	215.0	1.76	379.4	-1	14	2000000	748.2	21.00	recipe<-Cosmilite Bar	0	45
+CalamityMod	Waywasher	Magic	magic	16	16.0	4.00	64.0	2	2	20000	82.7	2.00	sig:rarity	0	4
+CalamityMod	WintersFury	Magic	magic	65	65.0	5.00	325.0	1	8	600000	556.1	13.50	sig:rarity	0	7
+CalamityMod	WulfrumProsthesis	Magic	magic	18	18.0	2.50	45.0	1	1	10000	54.9	0.00	recipe<-	0	10
+CalamityMod	WyvernsCall	Magic	magic	65	65.0	2.61	169.6	5	5	200000	256.4	7.00	recipe<-Mythril Bar	0	14
+CalamityMod	AbsoluteZero	Broadsword	melee	75	75.0	3.00	225.0	1	8	600000	385.0	13.50	sig:rarity	0	0
+CalamityMod	AbyssBlade	Boomerang	melee	114	114.0	0.92	84.2	-1	7	450000	138.6	12.50	recipe<-Depth Cells	0	0
+CalamityMod	AcidwoodSword	Broadsword	melee	12	12.0	3.33	40.0	1	0	100	43.2	0.00	recipe<-	0	0
+CalamityMod	AegisBlade	Broadsword	melee	152	152.0	3.75	570.0	1	8	600000	975.3	13.00	boss:Golem@13	0	0
+CalamityMod	AirSpinner	Yoyo	melee	29	29.0	2.73	63.3	-1	3	50000	86.6	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	AmidiasTrident	Spear	melee	12	12.0	3.53	42.4	-1	2	20000	54.7	2.00	sig:rarity	0	0
+CalamityMod	AnarchyBlade	Broadsword	melee	120	120.0	3.16	378.9	1	8	600000	648.4	13.50	recipe<-Core of Calamity	0	0
+CalamityMod	Aorta	Yoyo	melee	31	31.0	2.73	67.6	-1	3	50000	92.5	3.99	boss:CalamityMod/PerforatorHive@3.99	0	0
+CalamityMod	AstralPike	Spear	melee	90	90.0	4.62	415.4	-1	9	800000	737.8	17.00	recipe<-Astral Bar	0	0
+CalamityMod	AstralScythe	Broadsword	melee	80	80.0	3.00	240.0	8	7	450000	395.1	12.50	sig:rarity	0	0
+CalamityMod	Ataraxia	Broadsword	melee	325	325.0	6.00	1950.0	1	12	2400000	3851.7	22.00	recipe<-Auric Bar	0	0
+CalamityMod	Avalanche	Broadsword	melee	75	75.0	1.71	128.6	1	5	200000	194.4	8.50	boss:CalamityMod/Cryogen@8.5	0	0
+CalamityMod	BalefulHarvester	Boomerang	melee	150	150.0	0.67	80.0	-1	10	1000000	147.2	17.50	recipe<-Stardust Fragment	0	0
+CalamityMod	BallOFugu	Magic	melee	25	25.0	3.00	75.0	-1	3	50000	102.6	4.50	sig:rarity	0	0
+CalamityMod	BansheeHook	Spear	melee	250	250.0	2.86	714.3	-1	18	1750000	1406.9	20.00	boss:CalamityMod/Polterghast@20	0	0
+CalamityMod	Basher	Magic	melee	65	65.0	2.00	52.0	-1	2	20000	67.2	2.00	recipe<-Sulphuric Scale	0	0
+CalamityMod	BladecrestOathsword	Boomerang	melee	35	35.0	1.13	31.7	-1	3	50000	43.4	4.50	sig:rarity	0	0
+CalamityMod	BlightedCleaver	Broadsword	melee	52	52.0	2.14	111.4	-1	8	600000	190.7	12.00	recipe<-Vial of Venom	0	0
+CalamityMod	Bonebreaker	Magic	melee	55	55.0	2.61	143.5	-1	5	200000	216.9	9.50	recipe<-Corroded Fossil	0	0
+CalamityMod	BotanicPiercer	Spear	melee	80	80.0	3.53	282.4	-1	8	600000	483.1	12.00	recipe<-Living Shard	0	0
+CalamityMod	Brimlance	Spear	melee	50	50.0	3.16	157.9	-1	5	200000	238.7	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	0
+CalamityMod	Brimlash	Broadsword	melee	60	60.0	2.00	120.0	-1	7	450000	197.5	11.70	recipe<-Ashes of Calamity	0	0
+CalamityMod	BrimstoneSword	Broadsword	melee	70	70.0	2.14	150.0	5	5	200000	226.8	9.50	recipe<-Unholy Core	0	0
+CalamityMod	BrinyBaron	Broadsword	melee	182	182.0	3.00	546.0	3	8	600000	934.3	14.00	boss:Duke Fishron@14	0	0
+CalamityMod	BrokenBiomeBlade	Broadsword	melee	38	38.0	2.00	76.0	-1	3	50000	104.0	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	BurningRevelation	Yoyo	melee	300	300.0	3.00	720.0	-1	19	1500000	1416.3	19.00	boss:CalamityMod/Providence@19	0	0
+CalamityMod	BurntSienna	Broadsword	melee	32	32.0	2.50	80.0	1	1	10000	97.6	1.00	sig:rarity	0	0
+CalamityMod	Carnage	Broadsword	melee	130	130.0	2.86	371.4	1	4	100000	534.9	7.00	boss:Wall of Flesh@7	0	0
+CalamityMod	CelestialClaymore	Broadsword	melee	50	50.0	2.50	125.0	1	5	200000	189.0	9.50	sig:rarity	0	0
+CalamityMod	ClamCrusher	Boomerang	melee	150	150.0	1.20	144.0	-1	5	200000	217.7	1.61	boss:CalamityMod/GiantClam@1.61	0	0
+CalamityMod	CometQuasher	Boomerang	melee	45	45.0	1.58	56.8	-1	4	100000	81.9	13.00	recipe<-Essence of Sunlight	0	0
+CalamityMod	CosmicDischarge	Boomerang	melee	450	450.0	4.00	1440.0	-1	14	2000000	2839.7	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0
+CalamityMod	CosmicShiv	Shortsword	melee	155	155.0	2.00	310.0	-1	14	2000000	611.3	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	CrescentMoon	Magic	melee	1000	1000.0	3.33	3333.3	-1	18	1750000	6565.7	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	DarklightGreatsword	Broadsword	melee	60	60.0	2.00	120.0	-1	5	200000	181.4	9.50	recipe<-Cryonic Bar	0	0
+CalamityMod	DeathsAscension	Boomerang	melee	500	500.0	2.50	1000.0	-1	18	1750000	1969.7	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	DefiledGreatsword	Broadsword	melee	111	111.0	2.14	237.9	-1	19	1500000	467.9	19.00	recipe<-Uelibloom Bar	0	0
+CalamityMod	DepthCrusher	Boomerang	melee	48	48.0	0.92	35.4	-1	3	50000	48.5	4.50	sig:rarity	0	0
+CalamityMod	DevilsDevastation	Boomerang	melee	333	333.0	1.33	355.2	-1	14	2000000	700.5	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	DevilsSunrise	Boomerang	melee	420	420.0	12.00	4032.0	-1	19	1500000	7931.1	19.00	recipe<-Bloodstone	0	0
+CalamityMod	DraconicDestruction	Broadsword	melee	350	350.0	1.76	617.6	-1	17	2800000	1221.6	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	DragonPow	Boomerang	melee	333	333.0	3.00	799.2	-1	12	2400000	1578.6	22.00	recipe<-Auric Bar	0	0
+CalamityMod	DragonRage	Magic	melee	888	888.0	2.40	2131.2	-1	12	2400000	4209.6	22.00	boss:CalamityMod/Yharon@22	0	0
+CalamityMod	DriftwoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	recipe<-	0	0
+CalamityMod	Earth	Boomerang	melee	4200	4200.0	1.43	4800.0	-1	17	2800000	9493.9	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	EarthenPike	Spear	melee	85	85.0	2.40	204.0	-1	5	200000	308.5	9.50	sig:rarity	0	0
+CalamityMod	EmpyreanKnives	Magic	melee	110	110.0	4.00	440.0	1	19	1500000	865.5	19.62	recipe<-Twisting Nether	0	0
+CalamityMod	EntropicClaymore	Broadsword	melee	90	90.0	2.00	180.0	5	10	1000000	331.2	17.50	recipe<-Meld Blob	0	0
+CalamityMod	EssenceFlayer	Broadsword	melee	220	220.0	3.16	694.7	5	14	2000000	1370.0	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	ExaltedOathblade	Boomerang	melee	90	90.0	1.33	96.0	-1	8	600000	164.3	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	Exoblade	Broadsword	melee	915	915.0	1.22	1120.4	-1	16	2400000	2213.0	22.99	recipe<-Miracle Matter	0	0
+CalamityMod	FallenPaladinsHammer	Magic	melee	315	315.0	1.05	331.6	-1	8	600000	567.4	13.50	recipe<-Paladin's Hammer	0	0
+CalamityMod	FaultLine	Yoyo	melee	75	75.0	2.73	163.6	-1	8	600000	280.0	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	FeralthornClaymore	Broadsword	melee	109	109.0	4.62	503.1	1	7	450000	828.1	12.50	recipe<-Perennial Bar	0	0
+CalamityMod	FlarefrostBlade	Broadsword	melee	125	125.0	2.07	258.6	1	5	200000	391.0	9.50	recipe<-Cryonic Bar	0	0
+CalamityMod	Floodtide	Broadsword	melee	85	85.0	2.50	212.5	1	7	450000	349.8	12.50	recipe<-Depth Cells	0	0
+CalamityMod	ForbiddenOathblade	Boomerang	melee	58	58.0	1.20	55.7	-1	5	200000	84.2	10.50	recipe<-Essence of Havoc	0	0
+CalamityMod	ForsakenSaber	Broadsword	melee	80	80.0	4.00	320.0	1	5	200000	483.9	12.09	recipe<-Forbidden Fragment	0	0
+CalamityMod	FourSeasonsGalaxia	Broadsword	melee	250	250.0	2.00	500.0	-1	19	1500000	983.5	19.62	recipe<-Twisting Nether	0	0
+CalamityMod	GaelsGreatsword	Broadsword	melee	850	850.0	4.62	3923.1	1	13	2400000	7748.9	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0
+CalamityMod	GalactusBlade	Broadsword	melee	185	185.0	2.22	411.1	-1	19	1500000	808.7	19.00	recipe<-Divine Geode	0	0
+CalamityMod	GalaxySmasher	Magic	melee	1100	1100.0	1.25	1375.0	-1	14	2000000	2711.6	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	GalileoGladius	Boomerang	melee	600	600.0	7.50	3600.0	-1	18	1750000	7091.0	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	GeliticBlade	Broadsword	melee	38	38.0	2.00	76.0	-1	4	100000	109.4	6.70	recipe<-Purified Gel	0	0
+CalamityMod	GildedProboscis	Boomerang	melee	2090	2090.0	0.92	1543.4	-1	11	1200000	2937.3	18.00	sig:rarity	0	0
+CalamityMod	GoldplumeSpear	Spear	melee	26	26.0	2.40	62.4	-1	3	50000	85.4	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	GrandDad	Magic	melee	5577	5577.0	0.78	1738.3	-1	18	1750000	3423.9	19.00	sig:rarity	0	0
+CalamityMod	GrandGuardian	Boomerang	melee	360	360.0	1.71	493.7	-1	10	1000000	908.4	17.50	recipe<-Nebula Fragment	0	0
+CalamityMod	GreatswordofJudgement	Broadsword	melee	225	225.0	3.00	675.0	-1	11	1200000	1284.6	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	Greentide	Broadsword	melee	81	81.0	2.00	162.0	1	7	450000	266.7	12.80	boss:CalamityMod/Anahita@12.8	0	0
+CalamityMod	HellfireFlamberge	Broadsword	melee	90	90.0	3.00	270.0	1	8	600000	462.0	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	HellionFlowerSpear	Spear	melee	100	100.0	3.00	300.0	-1	7	450000	493.8	12.50	recipe<-Perennial Bar	0	0
+CalamityMod	Hellkite	Boomerang	melee	570	570.0	0.85	385.4	-1	8	600000	659.4	13.50	sig:rarity	0	0
+CalamityMod	HolyCollider	Boomerang	melee	2200	2200.0	1.33	2346.7	-1	19	1500000	4616.0	19.00	boss:CalamityMod/Providence@19	0	0
+CalamityMod	IllustriousKnives	Magic	melee	525	525.0	7.50	3937.5	1	17	2800000	7787.9	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	InsidiousImpaler	Magic	melee	250	250.0	4.62	1153.8	-1	18	1750000	2272.8	20.50	boss:CalamityMod/OldDuke@20.5	0	0
+CalamityMod	Lacerator	Yoyo	melee	222	222.0	3.00	532.8	-1	19	1500000	1048.0	19.00	recipe<-Bloodstone	0	0
+CalamityMod	LifehuntScythe	Broadsword	melee	156	156.0	3.33	520.0	5	19	1500000	1022.9	19.00	recipe<-Uelibloom Bar	0	0
+CalamityMod	Lightspeed	Magic	melee	200	200.0	3.00	600.0	-1	11	1200000	1141.9	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	LionHeart	Broadsword	melee	960	960.0	4.00	3840.0	1	18	1750000	7563.7	19.00	sig:rarity	0	0
+CalamityMod	Lucrecia	Boomerang	melee	124	124.0	1.76	175.1	-1	8	600000	299.5	13.50	recipe<-Life Alloy	0	0
+CalamityMod	MajesticGuard	Boomerang	melee	270	270.0	1.20	259.2	-1	5	200000	391.9	13.00	recipe<-Essence of Sunlight	0	0
+CalamityMod	MantisClaws	Boomerang	melee	75	75.0	2.40	144.0	-1	7	450000	237.0	12.50	sig:rarity	0	0
+CalamityMod	MawOfInfinity	Boomerang	melee	2080	2080.0	1.82	3025.5	-1	14	2000000	5966.3	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0
+CalamityMod	MirrorBlade	Boomerang	melee	600	600.0	1.50	720.0	-1	19	1500000	1416.3	19.60	boss:CalamityMod/CeaselessVoid@19.6	0	0
+CalamityMod	MonolithSword	Broadsword	melee	30	30.0	8.57	257.1	1	4	100	339.5	0.00	recipe<-	0	0
+CalamityMod	MonstrousKnives	ThrownMelee	melee	8	8.0	2.86	22.9	1	2	20000	29.5	2.50	recipe<-Throwing Knife	0	0
+CalamityMod	Mourningstar	Boomerang	melee	112	112.0	6.00	537.6	-1	19	1500000	1057.5	19.00	recipe<-Divine Geode	0	0
+CalamityMod	Murasama	Boomerang	melee	2200	2200.0	12.00	21120.0	-1	14	2000000	41649.5	19.00	sig:rarity	0	0
+CalamityMod	MycelialClaws	Broadsword	melee	28	28.0	8.57	240.0	1	2	20000	310.1	2.70	boss:CalamityMod/Crabulon@2.7	0	0
+CalamityMod	Nadir	Spear	melee	365	365.0	3.33	1216.7	-1	12	2400000	2403.2	22.00	recipe<-Auric Bar	0	0
+CalamityMod	Nebulash	Boomerang	melee	85	85.0	3.33	226.7	-1	7	450000	373.1	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	NeptunesBounty	Boomerang	melee	420	420.0	0.92	310.2	-1	18	1750000	610.9	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	Oblivion	Yoyo	melee	35	35.0	2.73	76.4	-1	7	450000	125.7	11.70	boss:CalamityMod/CalamitasClone@11.7	0	0
+CalamityMod	OldLordClaymore	Boomerang	melee	100	100.0	0.67	53.3	-1	3	50000	73.0	4.50	sig:rarity	0	0
+CalamityMod	OmegaBiomeBlade	Broadsword	melee	150	150.0	3.33	500.0	-1	9	800000	888.1	17.00	recipe<-Astral Bar	0	0
+CalamityMod	Omniblade	Boomerang	melee	100	100.0	5.00	400.0	-1	8	600000	684.5	13.50	recipe<-Life Alloy	0	0
+CalamityMod	Orderbringer	Broadsword	melee	700	700.0	3.75	2625.0	-1	12	2400000	5184.9	22.00	recipe<-Auric Bar	0	0
+CalamityMod	Ozzathoth	Yoyo	melee	145	145.0	3.00	348.0	-1	17	2800000	688.3	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	Pandemic	Yoyo	melee	125	125.0	2.73	272.7	-1	8	600000	466.7	14.50	recipe<-Infected Armor Plating	0	0
+CalamityMod	PerfectDark	Broadsword	melee	24	24.0	2.50	60.0	-1	3	50000	82.1	3.98	boss:CalamityMod/HiveMind@3.98	0	0
+CalamityMod	PhosphorescentGauntlet	Magic	melee	3200	3200.0	1.50	4800.0	-1	18	1750000	9454.7	19.00	sig:rarity	0	0
+CalamityMod	PrismaticBreaker	Boomerang	melee	425	425.0	1.40	474.4	1	14	2000000	935.6	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	Pwnagehammer	Magic	melee	140	140.0	1.20	168.0	1	6	350000	265.7	9.00	recipe<-Hallowed Bar	0	0
+CalamityMod	Quagmire	Yoyo	melee	54	54.0	2.73	117.8	-1	7	450000	193.9	12.50	recipe<-Perennial Bar	0	0
+CalamityMod	RedSun	Broadsword	melee	400	400.0	6.00	2400.0	1	17	2800000	4746.9	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	RemsRevenge	Magic	melee	188	188.0	4.00	752.0	-1	11	1200000	1431.2	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	Riptide	Yoyo	melee	12	12.0	2.40	23.0	-1	2	20000	29.8	2.00	recipe<-Sea Prism	0	0
+CalamityMod	Roxcalibur	Magic	melee	180	180.0	1.20	216.0	-1	4	100000	311.0	10.50	recipe<-Essence of Havoc	0	0
+CalamityMod	SaharaSlicers	Magic	melee	20	20.0	5.00	100.0	2	2	20000	129.2	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	0
+CalamityMod	SausageMaker	Spear	melee	27	27.0	3.00	81.0	-1	3	50000	110.8	3.99	boss:CalamityMod/PerforatorHive@3.99	0	0
+CalamityMod	ScourgeoftheCosmos	Magic	melee	380	380.0	3.75	1425.0	1	14	2000000	2810.2	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	SeashineSword	Broadsword	melee	22	22.0	1.50	33.0	1	2	20000	42.6	2.00	recipe<-Sea Prism	0	0
+CalamityMod	SeekingScorcher	Boomerang	melee	1170	1170.0	1.09	1021.1	-1	19	1500000	2008.5	19.00	recipe<-Divine Geode	0	0
+CalamityMod	Shimmerspark	Yoyo	melee	41	41.0	2.40	78.7	-1	5	200000	119.0	9.50	recipe<-Cryonic Bar	0	0
+CalamityMod	SkytideDragoon	Boomerang	melee	365	365.0	1.71	500.6	-1	19	1500000	984.6	19.61	boss:CalamityMod/StormWeaverHead@19.61	0	0
+CalamityMod	SmokingComet	Yoyo	melee	17	17.0	2.40	32.6	-1	2	20000	42.2	12.81	recipe<-Fallen Star	0	0
+CalamityMod	SolsticeClaymore	Broadsword	melee	235	235.0	3.75	881.2	1	11	1200000	1677.2	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	SoulHarvester	Broadsword	melee	77	77.0	2.73	210.0	3	8	600000	359.3	14.50	recipe<-Plague Cell Canister	0	0
+CalamityMod	SpineOfThanatos	Boomerang	melee	128	128.0	2.50	256.0	-1	16	2400000	505.7	22.99	boss:CalamityMod/Apollo@22.99	0	0
+CalamityMod	StarnightLance	Spear	melee	80	80.0	2.61	208.7	-1	5	200000	315.6	9.50	recipe<-Cryonic Bar	0	0
+CalamityMod	StellarContempt	Magic	melee	525	525.0	1.25	656.2	-1	11	1200000	1249.0	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	StellarStriker	Boomerang	melee	100	100.0	2.14	171.4	-1	11	1200000	326.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	StormRuler	Broadsword	melee	80	80.0	2.40	192.0	1	10	1000000	353.3	17.50	recipe<-Vortex Fragment	0	0
+CalamityMod	StormSaber	Broadsword	melee	38	38.0	2.61	99.1	1	5	200000	149.9	9.50	sig:rarity	0	0
+CalamityMod	StreamGouge	Boomerang	melee	470	470.0	3.16	1187.4	-1	14	2000000	2341.5	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	StygianShield	Boomerang	melee	180	180.0	1.50	216.0	-1	8	600000	369.6	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	SubmarineShocker	Shortsword	melee	90	90.0	3.75	337.5	-1	5	200000	510.3	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0
+CalamityMod	SulphurousGrabber	Yoyo	melee	40	40.0	2.40	76.8	-1	5	200000	116.1	9.50	sig:rarity	0	0
+CalamityMod	Swordsplosion	Broadsword	melee	48	48.0	2.00	96.0	3	11	1200000	182.7	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	TaintedBlade	Broadsword	melee	48	48.0	2.22	106.7	1	3	50000	145.9	3.00	recipe<-Shadow Scale	0	0
+CalamityMod	TeardropCleaver	Broadsword	melee	33	33.0	2.50	82.5	1	2	20000	106.6	2.00	boss:Eye of Cthulhu@2	0	0
+CalamityMod	TenebreusTides	Spear	melee	120	120.0	4.29	514.3	-1	10	1000000	946.3	17.00	recipe<-tile412	0	0
+CalamityMod	Terratomere	Boomerang	melee	120	120.0	2.86	274.3	-1	19	1500000	539.5	19.00	recipe<-Uelibloom Bar	0	0
+CalamityMod	TerrorBlade	Broadsword	melee	560	560.0	3.33	1866.7	4	18	1750000	3676.8	20.00	boss:CalamityMod/Polterghast@20	0	0
+CalamityMod	TheBurningSky	Magic	melee	147	147.0	7.50	1102.5	1	12	2400000	2177.7	22.00	boss:CalamityMod/Yharon@22	0	0
+CalamityMod	TheDarkMaster	Broadsword	melee	50	50.0	2.31	115.4	2	4	100000	166.2	10.50	recipe<-Essence of Havoc	0	0
+CalamityMod	TheGodsGambit	Yoyo	melee	28	28.0	2.86	64.0	-1	4	100000	92.2	6.70	recipe<-Purified Gel	0	0
+CalamityMod	TheLastMourning	Broadsword	melee	600	600.0	3.00	1800.0	1	18	1750000	3545.5	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	TheMicrowave	Yoyo	melee	111	111.0	2.73	242.2	-1	9	800000	430.1	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	0
+CalamityMod	TheMutilator	Boomerang	melee	1005	1005.0	2.00	1608.0	-1	19	1500000	3163.0	19.00	recipe<-Bloodstone	0	0
+CalamityMod	TheObliterator	Yoyo	melee	370	370.0	3.00	888.0	-1	14	2000000	1751.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0
+CalamityMod	TheOracle	Yoyo	melee	201	201.0	3.00	482.4	-1	12	2400000	952.8	22.00	recipe<-Auric Bar	0	0
+CalamityMod	TitanArm	Broadsword	melee	200	200.0	3.00	600.0	1	7	450000	987.7	12.50	sig:rarity	0	0
+CalamityMod	TriactisTruePaladinianMageHammerofMight	Magic	melee	2000	2000.0	2.40	4800.0	-1	17	2800000	9493.9	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	TrueBiomeBlade	Broadsword	melee	115	115.0	2.86	328.6	-1	6	350000	519.7	12.81	recipe<-Starblight Soot	0	0
+CalamityMod	TrueCausticEdge	Broadsword	melee	100	100.0	2.14	214.3	3	4	100000	308.6	7.00	recipe<-Spider Fang	0	0
+CalamityMod	Tumbleweed	Magic	melee	78	78.0	3.00	234.0	-1	7	450000	385.2	12.09	recipe<-Grand Scale	0	0
+CalamityMod	TyphonsGreed	Magic	melee	60	60.0	2.00	120.0	-1	7	450000	197.5	12.50	recipe<-Depth Cells	0	0
+CalamityMod	UltimusCleaver	Broadsword	melee	130	130.0	3.00	390.0	2	8	600000	667.3	16.50	boss:CalamityMod/RavagerBody@16.5	0	0
+CalamityMod	UrchinMace	Magic	melee	15	15.0	3.16	47.4	-1	2	20000	61.2	1.60	recipe<-Sea Remains	0	0
+CalamityMod	VanishingPoint	Spear	melee	240	240.0	1.33	320.0	-1	11	1200000	609.0	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	VeinBurster	Broadsword	melee	38	38.0	1.46	55.6	-1	3	50000	76.1	3.99	boss:CalamityMod/PerforatorHive@3.99	0	0
+CalamityMod	Violence	Magic	melee	485	485.0	2.40	1164.0	1	13	2400000	2299.1	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0
+CalamityMod	Virulence	Broadsword	melee	100	100.0	4.00	400.0	-1	8	600000	684.5	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0
+CalamityMod	VoidEdge	Broadsword	melee	210	210.0	2.50	525.0	1	18	1750000	1034.1	20.00	recipe<-Necroplasm	0	0
+CalamityMod	VulcaniteLance	Spear	melee	90	90.0	2.73	245.5	-1	8	600000	420.0	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	WindBlade	Broadsword	melee	30	30.0	2.73	81.8	2	3	50000	111.9	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	WulfrumScrewdriver	Boomerang	melee	12	12.0	2.50	24.0	-1	1	10000	29.3	0.00	recipe<-	0	0
+CalamityMod	YateveoBloom	Magic	melee	30	30.0	2.73	81.8	-1	3	50000	111.9	4.00	recipe<-Stinger	0	0
+CalamityMod	YinYo	Yoyo	melee	44	44.0	2.40	84.5	-1	5	200000	127.7	12.09	recipe<-Dark Shard	0	0
+CalamityMod	AcesHigh	Gun	ranged	325	335.0	12.00	4020.0	1	12	2400000	7940.3	22.00	recipe<-Auric Bar	97	0
+CalamityMod	AcidwoodBow	Bow	ranged	9	19.0	2.22	42.2	1	0	100	45.6	0.00	recipe<-	40	0
+CalamityMod	Alluvion	Bow	ranged	96	106.0	4.00	424.0	1	14	2000000	836.1	21.00	recipe<-Cosmilite Bar	40	0
+CalamityMod	AngelicShotgun	Gun	ranged	92	102.0	2.31	235.4	-1	19	1500000	463.0	19.00	recipe<-Divine Geode	97	0
+CalamityMod	Animosity	Gun	ranged	39	49.0	1.46	71.7	-1	7	450000	118.0	11.70	boss:CalamityMod/CalamitasClone@11.7	97	0
+CalamityMod	AntiMaterielRifle	Gun	ranged	1818	1828.0	1.00	1828.0	1	14	2000000	3604.9	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	AquashardShotgun	Gun	ranged	12	22.0	2.00	44.0	1	3	50000	60.2	4.50	recipe<-Aerialite Bar	97	0
+CalamityMod	Arbalest	Bow	ranged	28	38.0	3.53	134.1	-1	5	200000	202.8	9.00	recipe<-Soul of Sight	40	0
+CalamityMod	Archerfish	Gun	ranged	16	26.0	5.45	141.8	2	3	50000	194.0	4.50	sig:rarity	97	0
+CalamityMod	Arietes41	Gun	ranged	77	87.0	4.62	401.5	-1	8	600000	687.1	12.81	recipe<-Fallen Star	97	0
+CalamityMod	ArterialAssault	Bow	ranged	256	266.0	6.00	1596.0	1	19	1500000	3139.4	19.00	recipe<-Bloodstone	40	0
+CalamityMod	AstralBlaster	Gun	ranged	150	160.0	4.00	640.0	1	9	800000	1136.7	17.00	recipe<-Astral Bar	97	0
+CalamityMod	AstrealDefeat	Bow	ranged	160	170.0	15.00	2550.0	1	11	1200000	4853.1	12.81	boss:CalamityMod/AstrumAureus@12.81	40	0
+CalamityMod	Auralis	Gun	ranged	695	705.0	2.00	1410.0	5	19	1500000	2773.5	19.00	recipe<-Uelibloom Bar	97	0
+CalamityMod	AuroraBlazer	Gun	ranged	69	69.0	12.00	828.0	-1	7	450000	1363.0	12.81	boss:CalamityMod/AstrumAureus@12.81	23	0
+CalamityMod	Barinade	Bow	ranged	5	15.0	2.50	37.5	1	2	20000	48.5	1.60	boss:CalamityMod/DesertScourgeHead@1.6	40	0
+CalamityMod	Barinautical	Bow	ranged	32	42.0	5.62	236.2	1	5	200000	357.2	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	40	0
+CalamityMod	BarracudaGun	Magic	ranged	52	52.0	3.00	156.0	-1	11	1200000	296.9	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	BladedgeRailbow	Bow	ranged	30	40.0	2.14	85.7	-1	7	450000	141.1	12.50	recipe<-Perennial Bar	40	0
+CalamityMod	BlightSpewer	Gun	ranged	52	52.0	3.16	164.2	-1	8	600000	281.0	14.50	recipe<-Infected Armor Plating	23	0
+CalamityMod	BloodBoiler	Magic	ranged	120	120.0	12.00	1440.0	-1	19	1500000	2832.5	19.00	recipe<-Bloodstone	0	0
+CalamityMod	BlossomFlux	Bow	ranged	18	28.0	15.00	420.0	1	7	450000	691.4	12.00	boss:Plantera@12	40	0
+CalamityMod	BrimstoneFury	Bow	ranged	21	31.0	2.73	84.5	3	5	200000	127.8	9.50	recipe<-Unholy Core	40	0
+CalamityMod	BulletFilledShotgun	Gun	ranged	1	11.0	0.80	8.8	1	3	50000	12.0	4.50	recipe<-Aerialite Bar	97	0
+CalamityMod	ClamorRifle	Gun	ranged	36	46.0	4.00	184.0	1	5	200000	278.2	1.61	boss:CalamityMod/GiantClam@1.61	97	0
+CalamityMod	CleansingBlaze	Gun	ranged	275	275.0	20.00	5500.0	7	14	2000000	10846.2	21.00	recipe<-Cosmilite Bar	23	0
+CalamityMod	Condemnation	Bow	ranged	2130	2140.0	2.73	5836.4	1	13	2400000	11528.0	23.00	boss:CalamityMod/SupremeCalamitas@23	40	0
+CalamityMod	ConferenceCall	Gun	ranged	53	63.0	1.43	90.0	-1	10	1000000	165.6	17.50	recipe<-Vortex Fragment	97	0
+CalamityMod	ContinentalGreatbow	Bow	ranged	45	55.0	2.50	137.5	1	8	600000	235.3	13.50	recipe<-Scoria Bar	40	0
+CalamityMod	CorinthPrime	Gun	ranged	140	150.0	2.00	300.0	1	19	1500000	590.1	19.61	recipe<-Armored Shell	97	0
+CalamityMod	CorrodedCaustibow	Bow	ranged	75	85.0	1.33	113.3	5	5	200000	171.4	9.50	recipe<-Corroded Fossil	40	0
+CalamityMod	CrackshotColt	Gun	ranged	18	28.0	1.71	48.0	-1	2	20000	62.0	2.00	recipe<-Blood Orb	97	0
+CalamityMod	DarkechoGreatbow	Bow	ranged	45	55.0	1.82	100.0	-1	5	200000	151.2	9.50	recipe<-Cryonic Bar	40	0
+CalamityMod	DeadSunsWind	Gun	ranged	115	115.0	2.73	313.6	1	10	1000000	577.1	17.50	recipe<-Meld Blob	23	0
+CalamityMod	DeepcoreGK2	Gun	ranged	45	55.0	4.29	235.7	1	5	200000	356.4	9.00	shop:Terraria/Demolitionist/Shop:Conditions.DownedMechBossAny	97	0
+CalamityMod	DriftwoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	recipe<-	40	0
+CalamityMod	EternalBlizzard	Bow	ranged	67	77.0	3.33	256.7	-1	8	600000	439.2	13.50	sig:rarity	40	0
+CalamityMod	Eviscerator	Gun	ranged	60	70.0	1.00	70.0	1	3	50000	95.8	3.99	boss:CalamityMod/PerforatorHive@3.99	97	0
+CalamityMod	FlarewingBow	Bow	ranged	31	41.0	1.71	70.3	1	4	100000	101.2	13.00	recipe<-Essence of Sunlight	40	0
+CalamityMod	FrostbiteBlaster	Gun	ranged	50	60.0	2.40	144.0	1	5	200000	217.7	9.50	sig:rarity	97	0
+CalamityMod	Fungicide	Gun	ranged	19	29.0	2.73	79.1	1	2	20000	102.2	2.70	boss:CalamityMod/Crabulon@2.7	97	0
+CalamityMod	Galeforce	Bow	ranged	13	23.0	3.00	69.0	1	3	50000	94.4	4.50	recipe<-Aerialite Bar	40	0
+CalamityMod	GoldenEagle	Gun	ranged	88	98.0	3.33	326.7	1	11	1200000	621.7	18.00	sig:rarity	97	0
+CalamityMod	Goobow	Bow	ranged	33	43.0	1.94	83.2	1	4	100000	119.8	6.70	recipe<-Purified Gel	40	0
+CalamityMod	GunkShot	Gun	ranged	22	32.0	1.71	54.9	-1	4	100000	79.0	6.70	recipe<-Purified Gel	97	0
+CalamityMod	HalibutCannon	Gun	ranged	100	110.0	6.00	660.0	1	17	2800000	1305.4	19.00	sig:rarity	97	0
+CalamityMod	HandheldTank	Gun	ranged	740	780.0	0.81	632.4	1	19	1500000	1244.0	19.00	recipe<-Divine Geode	771	0
+CalamityMod	HavocsBreath	Gun	ranged	62	62.0	7.64	307.7	-1	7	450000	506.6	12.50	sig:rarity	23	0
+CalamityMod	HeavenlyGale	Bow	ranged	256	266.0	1.50	399.0	1	16	2400000	788.1	22.99	recipe<-Miracle Matter	40	0
+CalamityMod	Helstorm	Gun	ranged	33	43.0	6.67	286.7	-1	8	600000	490.5	13.50	recipe<-Scoria Bar	97	0
+CalamityMod	HoarfrostBow	Bow	ranged	36	46.0	2.07	95.2	1	5	200000	143.9	8.50	boss:CalamityMod/Cryogen@8.5	40	0
+CalamityMod	Hydra	Gun	ranged	44	54.0	0.91	49.1	1	8	600000	84.0	12.00	recipe<-Nanites	97	0
+CalamityMod	Infinity	Gun	ranged	75	85.0	60.00	5100.0	-1	14	2000000	10057.4	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	Karasawa	Gun	ranged	2400	2410.0	1.15	2780.8	-1	14	2000000	5483.8	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	Leviatitan	Gun	ranged	89	99.0	3.33	330.0	1	7	450000	543.2	12.80	boss:CalamityMod/Anahita@12.8	97	0
+CalamityMod	LunarianBow	Bow	ranged	27	37.0	2.73	100.9	1	4	100000	145.3	6.70	recipe<-Purified Gel	40	0
+CalamityMod	MagnomalyCannon	Gun	ranged	279	319.0	4.00	1276.0	1	16	2400000	2520.4	22.99	recipe<-Miracle Matter	771	0
+CalamityMod	Malevolence	Bow	ranged	56	66.0	3.33	220.0	1	8	600000	376.4	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	40	0
+CalamityMod	MarksmanBow	Bow	ranged	39	49.0	7.20	352.8	-1	8	600000	603.7	13.50	recipe<-Ectoplasm	40	0
+CalamityMod	Meowthrower	Gun	ranged	29	29.0	7.50	157.7	3	4	100000	227.1	7.00	boss:Wall of Flesh@7	23	0
+CalamityMod	MidasPrime	Gun	ranged	81	91.0	1.88	170.6	-1	5	200000	258.0	9.50	sig:rarity	97	0
+CalamityMod	MonolithBow	Bow	ranged	19	29.0	5.33	154.7	1	4	100	204.2	0.00	recipe<-	40	0
+CalamityMod	Monsoon	Bow	ranged	156	166.0	3.00	498.0	1	18	1750000	980.9	19.00	recipe<-Reaper Tooth	40	0
+CalamityMod	Needler	Gun	ranged	52	62.0	3.33	206.7	-1	4	100000	297.6	7.00	sig:rarity	97	0
+CalamityMod	NettlevineGreatbow	Bow	ranged	73	83.0	3.33	276.7	-1	19	1500000	544.2	19.00	recipe<-Uelibloom Bar	40	0
+CalamityMod	NitroExpressRifle	Gun	ranged	210	220.0	0.86	188.6	1	4	100000	271.5	13.00	recipe<-Essence of Sunlight	97	0
+CalamityMod	NullificationPistol	Magic	ranged	190	190.0	3.33	633.3	-1	8	600000	1083.7	13.50	sig:rarity	0	0
+CalamityMod	OnyxChainBlaster	Gun	ranged	58	68.0	4.00	272.0	1	11	1200000	517.7	12.81	boss:CalamityMod/AstrumAureus@12.81	97	0
+CalamityMod	Onyxia	Gun	ranged	90	100.0	6.00	600.0	1	14	2000000	1183.2	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	OverloadedBlaster	Gun	ranged	19	19.0	2.14	40.7	-1	4	100000	58.6	6.70	boss:CalamityMod/SlimeGodCore@6.7	23	0
+CalamityMod	P90	Gun	ranged	6	16.0	30.00	480.0	1	4	350000	701.6	7.00	shop:Terraria/ArmsDealer/Shop:Conditions.InHardmode	97	0
+CalamityMod	PearlGod	Gun	ranged	160	170.0	6.67	1133.3	-1	18	1750000	2232.4	20.00	recipe<-Ruinous Soul	97	0
+CalamityMod	PestilentDefiler	Gun	ranged	105	115.0	1.62	186.5	1	8	600000	319.1	14.50	recipe<-Infected Armor Plating	97	0
+CalamityMod	Photoviscerator	Gun	ranged	495	495.0	6.00	2970.0	1	16	2400000	5866.4	22.99	recipe<-Miracle Matter	23	0
+CalamityMod	PlagueTaintedSMG	Gun	ranged	78	88.0	5.00	440.0	1	8	600000	752.9	14.50	recipe<-Infected Armor Plating	97	0
+CalamityMod	PlanetaryAnnihilation	Bow	ranged	66	76.0	2.73	207.3	1	11	1200000	394.5	12.81	boss:CalamityMod/AstrumAureus@12.81	40	0
+CalamityMod	PolarisParrotfish	Magic	ranged	35	35.0	6.67	175.0	-1	5	200000	264.6	9.50	sig:rarity	0	0
+CalamityMod	PridefulHuntersPlanarRipper	Gun	ranged	79	89.0	12.00	1068.0	1	11	1200000	2032.6	12.81	boss:CalamityMod/AstrumAureus@12.81	97	0
+CalamityMod	PristineFury	Gun	ranged	60	60.0	20.00	1200.0	1	19	1500000	2360.5	19.00	boss:CalamityMod/Providence@19	23	0
+CalamityMod	RealmRavager	Gun	ranged	54	64.0	2.73	174.5	1	8	600000	298.7	16.50	boss:CalamityMod/RavagerBody@16.5	97	0
+CalamityMod	ReedBlowgun	Magic	ranged	25	25.0	1.88	46.9	3	2	20000	60.6	1.60	recipe<-Sea Remains	0	0
+CalamityMod	RubicoPrime	Gun	ranged	450	460.0	0.80	368.0	5	8	600000	629.7	13.50	recipe<-Scoria Bar	97	0
+CalamityMod	Sandblaster	Gun	ranged	70	70.0	3.33	233.3	1	7	450000	384.1	12.09	recipe<-Grand Scale	169	0
+CalamityMod	SDFMG	Gun	ranged	118	128.0	20.00	2560.0	-1	14	2000000	5048.4	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	SeasSearing	Magic	ranged	40	40.0	4.62	184.6	1	5	200000	279.1	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0
+CalamityMod	SepticSkewer	Magic	ranged	933	933.0	2.00	1866.0	-1	18	1750000	3675.5	20.50	boss:CalamityMod/OldDuke@20.5	0	0
+CalamityMod	Shadethrower	Gun	ranged	21	21.0	6.00	75.6	3	3	50000	103.4	3.98	boss:CalamityMod/HiveMind@3.98	23	0
+CalamityMod	Shellshooter	Bow	ranged	40	50.0	0.86	42.9	5	2	20000	55.4	2.00	sig:rarity	40	0
+CalamityMod	Shredder	Gun	ranged	48	58.0	7.16	415.5	1	11	1200000	790.8	12.81	boss:CalamityMod/AstrumAureus@12.81	97	0
+CalamityMod	Shroomer	Gun	ranged	150	160.0	1.71	274.3	1	10	1000000	504.7	17.50	recipe<-Stardust Fragment	97	0
+CalamityMod	SlagMagnum	Gun	ranged	36	46.0	4.00	184.0	1	5	200000	278.2	9.50	sig:rarity	97	0
+CalamityMod	SomaPrime	Gun	ranged	705	715.0	12.00	8580.0	3	17	2800000	16970.3	23.00	recipe<-Shadowspec Bar	97	0
+CalamityMod	SparkSpreader	Gun	ranged	16	16.0	4.00	40.0	3	1	10000	48.8	1.00	recipe<-Gel	23	0
+CalamityMod	SpeedBlaster	Magic	ranged	40	40.0	6.00	240.0	-1	5	200000	362.9	7.00	recipe<-Mythril Bar	0	0
+CalamityMod	Spyker	Gun	ranged	210	220.0	4.62	1015.4	3	19	1500000	1997.3	19.00	recipe<-Uelibloom Bar	97	0
+CalamityMod	Starfleet	Gun	ranged	3170	3170.0	0.86	2717.1	3	18	1750000	5352.0	20.00	recipe<-Ruinous Soul	75	0
+CalamityMod	Starmada	Gun	ranged	4900	4900.0	0.86	4200.0	5	12	2400000	8295.9	22.00	recipe<-Auric Bar	75	0
+CalamityMod	StarSputter	Gun	ranged	138	138.0	5.62	776.3	1	9	800000	1378.7	17.50	boss:CalamityMod/AstrumDeusHead@17.5	75	0
+CalamityMod	StellarCannon	Magic	ranged	180	180.0	1.50	270.0	1	7	450000	444.5	12.50	sig:rarity	0	0
+CalamityMod	StormSurge	Magic	ranged	18	18.0	3.33	60.0	2	2	20000	77.5	2.00	recipe<-Sea Prism	0	0
+CalamityMod	SulphuricAcidCannon	Gun	ranged	550	590.0	1.71	1011.4	-1	18	1750000	1992.2	19.00	sig:rarity	771	0
+CalamityMod	SurgeDriver	Gun	ranged	140	150.0	2.14	321.4	-1	16	2400000	634.9	22.99	boss:CalamityMod/Apollo@22.99	97	0
+CalamityMod	Svantechnical	Gun	ranged	232	242.0	60.00	14520.0	-1	17	2800000	28718.9	23.00	recipe<-Shadowspec Bar	97	0
+CalamityMod	TelluricGlare	Bow	ranged	83	93.0	20.00	1860.0	-1	19	1500000	3658.7	19.00	boss:CalamityMod/Providence@19	40	0
+CalamityMod	TheBallista	Bow	ranged	88	98.0	2.14	210.0	2	8	600000	359.3	13.50	recipe<-Ectoplasm	40	0
+CalamityMod	TheJailor	Magic	ranged	235	235.0	2.14	503.6	-1	16	2400000	994.7	22.99	boss:CalamityMod/Apollo@22.99	0	0
+CalamityMod	ThePack	Gun	ranged	1000	1040.0	1.13	1177.4	-1	14	2000000	2321.8	21.00	recipe<-Cosmilite Bar	771	0
+CalamityMod	ThermoclineBlaster	Gun	ranged	45	55.0	3.75	206.2	-1	4	100000	297.0	10.50	recipe<-Essence of Havoc	97	0
+CalamityMod	TheStorm	Bow	ranged	40	50.0	30.00	1500.0	3	19	1500000	2950.6	19.61	boss:CalamityMod/StormWeaverHead@19.61	40	0
+CalamityMod	ThreadOfEradication	Bow	ranged	1500	1510.0	1.33	2013.3	-1	14	2000000	3970.4	21.00	boss:CalamityMod/DevourerofGodsHead@21	40	0
+CalamityMod	TitaniumRailgun	Magic	ranged	370	370.0	2.31	853.8	1	5	200000	1291.1	7.00	recipe<-Titanium Bar	0	0
+CalamityMod	Toxibow	Bow	ranged	15	25.0	2.14	53.6	-1	2	20000	69.2	2.00	recipe<-Sulphuric Scale	40	0
+CalamityMod	TyrannysEnd	Gun	ranged	2150	2160.0	1.00	2160.0	3	12	2400000	4266.5	22.00	recipe<-Auric Bar	97	0
+CalamityMod	UniversalGenesis	Gun	ranged	180	190.0	2.31	438.5	1	14	2000000	864.7	21.00	recipe<-Cosmilite Bar	97	0
+CalamityMod	VernalBolter	Bow	ranged	35	45.0	3.00	135.0	1	8	600000	231.0	12.00	recipe<-Living Shard	40	0
+CalamityMod	Vortexpopper	Gun	ranged	30	40.0	2.86	114.3	1	10	1000000	210.3	17.50	recipe<-Vortex Fragment	97	0
+CalamityMod	WulfrumBlunderbuss	Magic	ranged	11	11.0	1.09	12.0	1	1	10000	14.6	0.00	recipe<-	0	0
+CalamityMod	AdamantiteThrowingAxe	Magic	none	61	61.0	4.29	261.4	3	4	100000	376.5	7.00	recipe<-Adamantite Bar	0	0
+CalamityMod	AntlionSkewer	Magic	none	19	19.0	2.14	40.7	2	2	20000	52.6	2.00	sig:rarity	0	0
+CalamityMod	Apoctolith	Magic	none	185	185.0	2.31	426.9	1	7	450000	702.8	12.50	recipe<-Lumenyl	0	0
+CalamityMod	AshenStalactite	Magic	none	37	37.0	3.00	52.7	1	3	50000	72.1	4.50	sig:rarity	0	0
+CalamityMod	AuroradicalThrow	Magic	none	48	48.0	2.00	60.0	-1	7	450000	98.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	BallisticPoisonBomb	Magic	none	57	57.0	2.31	131.5	-1	7	450000	216.5	12.50	recipe<-Depth Cells	0	0
+CalamityMod	BlastBarrel	Magic	none	32	32.0	2.73	87.3	-1	4	100000	125.7	7.00	boss:Wall of Flesh@7	0	0
+CalamityMod	BlazingStar	Magic	none	75	75.0	4.00	300.0	6	5	200000	453.6	10.50	recipe<-Essence of Havoc	0	0
+CalamityMod	BloodsoakedCrasher	Magic	none	245	245.0	2.50	612.5	6	19	1500000	1204.8	19.00	recipe<-Bloodstone	0	0
+CalamityMod	BouncingEyeball	Magic	none	16	16.0	2.61	41.7	2	3	50000	57.1	4.50	sig:rarity	0	0
+CalamityMod	Brimblade	Boomerang	melee	28	28.0	3.33	74.7	-1	5	200000	112.9	9.50	recipe<-Unholy Core	0	0
+CalamityMod	BurningStrife	Magic	none	73	73.0	2.40	175.2	1	5	200000	264.9	3.40	boss:Goblin Warlock@3.4	0	0
+CalamityMod	CelestialReaper	Magic	none	140	140.0	1.94	271.0	6	11	3000000	520.0	18.00	shop:CalamityMod/Bandit/Shop:Conditions.DownedMoonLord	0	0
+CalamityMod	Celestus	Magic	none	280	280.0	2.73	763.6	-1	16	2400000	1508.3	22.99	recipe<-Miracle Matter	0	0
+CalamityMod	Cinquedea	Magic	none	35	35.0	3.00	105.0	2	3	100000	144.9	4.50	sig:rarity	0	0
+CalamityMod	CobaltKunai	Magic	none	49	49.0	5.00	245.0	2	4	100000	352.8	7.00	recipe<-Cobalt Bar	0	0
+CalamityMod	ConsecratedWater	Magic	none	48	48.0	2.07	99.3	1	5	200000	150.2	7.00	recipe<-Holy Water	0	0
+CalamityMod	ContaminatedBile	Magic	none	16	16.0	1.50	24.0	1	1	10000	29.3	1.00	sig:rarity	0	0
+CalamityMod	CorpusAvertor	Magic	none	98	98.0	4.00	392.0	1	8	600000	670.8	16.50	boss:CalamityMod/RavagerBody@16.5	0	0
+CalamityMod	CosmicKunai	Magic	none	110	110.0	18.46	2030.8	1	19	1500000	3994.6	19.62	boss:CalamityMod/Signus@19.62	0	0
+CalamityMod	CraniumSmasher	Magic	none	140	140.0	3.00	420.0	5	8	600000	718.7	16.50	boss:CalamityMod/RavagerBody@16.5	0	0
+CalamityMod	CrushsawCrasher	Magic	none	57	57.0	3.33	190.0	2	7	450000	312.8	12.50	sig:rarity	0	0
+CalamityMod	Crystalline	Magic	none	16	16.0	3.33	53.3	1	2	20000	68.9	12.81	recipe<-Fallen Star	0	0
+CalamityMod	CrystalPiercer	Magic	none	92	92.0	2.73	250.9	-1	5	200000	379.4	9.50	recipe<-Cryonic Bar	0	0
+CalamityMod	CursedDagger	Magic	none	45	45.0	3.33	150.0	2	4	100000	216.0	7.00	sig:rarity	0	0
+CalamityMod	DeepSeaDumbbell	Magic	none	466	466.0	2.40	1118.4	1	18	1750000	2202.9	19.00	sig:rarity	0	0
+CalamityMod	DeepWounder	Magic	none	132	132.0	2.40	316.8	3	7	450000	521.5	12.50	sig:rarity	0	0
+CalamityMod	DefectiveSphere	Boomerang	melee	85	85.0	4.62	313.8	-1	8	600000	537.0	13.50	sig:rarity	0	0
+CalamityMod	DesecratedWater	Magic	none	55	55.0	2.07	113.8	1	5	200000	172.1	7.00	recipe<-Adamantite Bar	0	0
+CalamityMod	DimensionTearingDisk	Magic	none	725	725.0	2.22	1611.1	-1	14	2000000	3177.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0
+CalamityMod	DoomsdayDevice	Magic	none	240	240.0	1.09	261.8	-1	8	600000	448.0	13.50	sig:rarity	0	0
+CalamityMod	DukesDecapitator	Magic	none	90	90.0	2.00	180.0	-1	8	600000	308.0	14.00	boss:Duke Fishron@14	0	0
+CalamityMod	DynamicPursuer	Magic	none	2000	2000.0	1.43	2857.1	-1	12	2400000	5643.5	22.00	recipe<-Auric Bar	0	0
+CalamityMod	EclipsesFall	Magic	none	700	700.0	2.50	1750.0	1	12	2000000	3451.1	22.00	recipe<-Auric Bar	0	0
+CalamityMod	EnchantedAxe	Magic	none	19	19.0	3.16	60.0	-1	3	50000	82.1	12.81	recipe<-Fallen Star	0	0
+CalamityMod	EpidemicShredder	Magic	none	80	80.0	3.75	300.0	6	8	600000	513.3	14.50	recipe<-Plague Cell Canister	0	0
+CalamityMod	ExecutionersBlade	Magic	none	165	165.0	20.00	3300.0	1	14	2000000	6507.7	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	Exorcism	Magic	none	222	222.0	0.62	138.8	-1	6	350000	219.5	9.00	recipe<-Hallowed Bar	0	0
+CalamityMod	FantasyTalisman	Magic	none	45	45.0	2.40	108.0	-1	8	600000	184.8	13.50	recipe<-Ectoplasm	0	0
+CalamityMod	FeatherKnife	Magic	none	22	22.0	2.00	44.0	1	3	50000	60.2	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	FrostcrushValari	Magic	none	81	81.0	3.16	255.8	-1	8	600000	437.7	13.50	recipe<-Ectoplasm	0	0
+CalamityMod	FrostyFlare	Magic	none	37	37.0	4.62	170.8	-1	6	350000	270.1	11.00	shop:CalamityMod/Archmage/Shop:Conditions.DownedMechBossAll	0	0
+CalamityMod	GacruxianMollusk	Magic	none	36	36.0	2.31	83.1	1	5	200000	125.6	9.50	sig:rarity	0	0
+CalamityMod	GelDart	Magic	none	21	21.0	5.45	114.5	4	4	100000	164.9	6.70	recipe<-Purified Gel	0	0
+CalamityMod	GhoulishGouger	Magic	none	204	204.0	6.86	1398.9	-1	18	1750000	2755.4	20.00	boss:CalamityMod/Polterghast@20	0	0
+CalamityMod	GildedDagger	Magic	none	14	14.0	3.33	46.7	2	1	10000	56.9	0.00	recipe<-	0	0
+CalamityMod	Glaive	Magic	none	19	19.0	2.73	51.8	4	3	100000	71.5	4.50	sig:rarity	0	0
+CalamityMod	GleamingDagger	Magic	none	14	14.0	3.33	46.7	2	1	10000	56.9	0.00	recipe<-	0	0
+CalamityMod	GodsParanoia	Magic	none	163	163.0	2.07	337.2	-1	14	2000000	665.1	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	GraveGrimreaver	Magic	none	84	84.0	1.25	105.0	1	5	200000	158.8	9.00	recipe<-Soul of Fright	0	0
+CalamityMod	HardenedHoneycomb	Magic	none	19	19.0	3.33	63.3	1	3	50000	86.6	4.00	boss:Queen Bee@4	0	0
+CalamityMod	HeavenfallenStardisk	Magic	none	160	160.0	1.50	240.0	1	8	600000	410.7	13.50	sig:rarity	0	0
+CalamityMod	Hypothermia	Magic	none	148	148.0	13.85	2049.2	1	14	2000000	4041.2	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	Icebreaker	Boomerang	melee	60	60.0	4.29	205.7	-1	5	200000	311.0	8.50	boss:CalamityMod/Cryogen@8.5	0	0
+CalamityMod	IceStar	Magic	none	35	35.0	3.53	123.5	3	5	200000	186.8	9.50	sig:rarity	0	0
+CalamityMod	IchorSpear	Magic	none	120	120.0	1.54	184.6	6	4	100000	265.8	7.00	sig:rarity	0	0
+CalamityMod	InfernalKris	Magic	none	21	21.0	3.33	70.0	2	3	50000	95.8	0.00	recipe<-	0	0
+CalamityMod	InfestedClawmerang	Boomerang	melee	18	18.0	3.00	43.2	-1	2	20000	55.8	2.70	boss:CalamityMod/Crabulon@2.7	0	0
+CalamityMod	IronFrancisca	Magic	none	9	9.0	3.00	27.0	2	0	5000	31.0	0.00	recipe<-	0	0
+CalamityMod	JawsOfOblivion	Magic	none	159	159.0	4.00	636.0	-1	18	1750000	1252.7	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	KelvinCatalyst	Magic	none	50	50.0	2.00	100.0	-1	5	200000	151.2	9.50	recipe<-Ice Star	0	0
+CalamityMod	Kylie	Magic	none	12	12.0	2.40	28.8	-1	1	10000	35.1	1.00	sig:rarity	0	0
+CalamityMod	LeadTomahawk	Magic	none	9	9.0	3.00	27.0	2	0	5000	31.0	0.00	recipe<-	0	0
+CalamityMod	LeonidProgenitor	Magic	none	57	57.0	4.00	228.0	1	7	450000	375.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	LeviathanTeeth	Magic	none	43	43.0	6.67	286.7	-1	7	450000	471.9	12.80	boss:CalamityMod/Anahita@12.8	0	0
+CalamityMod	Lionfish	Magic	none	33	33.0	2.31	76.2	-1	3	50000	104.2	4.50	sig:rarity	0	0
+CalamityMod	LunarKunai	Magic	none	102	102.0	6.00	612.0	1	11	1200000	1164.7	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	Malachite	Magic	none	52	52.0	4.29	222.9	3	8	600000	381.3	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0
+CalamityMod	MangroveChakram	Boomerang	melee	84	84.0	4.29	288.0	-1	7	450000	474.1	12.50	recipe<-Perennial Bar	0	0
+CalamityMod	MetalMonstrosity	Magic	none	28	28.0	1.33	37.3	1	3	50000	51.1	3.30	recipe<-Spiky Ball	0	0
+CalamityMod	MeteorFist	Magic	none	31	31.0	2.40	74.4	2	2	20000	96.1	2.00	recipe<-Meteorite Bar	0	0
+CalamityMod	MoltenAmputator	Magic	none	200	200.0	2.40	480.0	-1	19	1500000	944.2	19.00	boss:CalamityMod/Providence@19	0	0
+CalamityMod	Mycoroot	Magic	none	12	12.0	10.00	120.0	1	2	20000	155.0	2.70	boss:CalamityMod/Crabulon@2.7	0	0
+CalamityMod	MythrilKnife	Magic	none	66	66.0	5.00	330.0	1	4	100000	475.2	7.00	recipe<-Mythril Bar	0	0
+CalamityMod	NanoblackReaper	Magic	none	555	555.0	3.16	1752.6	-1	17	2800000	3466.5	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	NastyCholla	Magic	none	10	10.0	3.00	30.0	-1	0	5000	34.4	0.00	recipe<-	0	0
+CalamityMod	OrichalcumSpikedGemstone	Magic	none	40	40.0	4.62	184.6	3	4	100000	265.8	7.00	recipe<-Orichalcum Bar	0	0
+CalamityMod	PalladiumJavelin	Magic	none	81	81.0	2.50	202.5	2	4	100000	291.6	7.00	recipe<-Palladium Bar	0	0
+CalamityMod	Penumbra	Magic	none	725	725.0	1.71	1242.9	1	14	2000000	2451.0	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	PhantasmalRuin	Magic	none	140	140.0	2.00	280.0	1	8	600000	479.1	12.00	recipe<-Spectre Bar	0	0
+CalamityMod	Plaguenade	Magic	none	63	63.0	4.00	252.0	1	8	600000	431.2	14.50	recipe<-Plague Cell Canister	0	0
+CalamityMod	Prismalline	Magic	none	36	36.0	3.00	108.0	-1	5	200000	163.3	12.81	recipe<-Crystalline	0	0
+CalamityMod	ProfanedPartisan	Magic	none	300	300.0	2.86	857.1	1	11	1200000	1631.3	18.50	recipe<-Unholy Essence	0	0
+CalamityMod	Pumpkaboom	Magic	none	17	17.0	0.86	14.6	-1	2	20000	18.8	0.00	recipe<-	0	0
+CalamityMod	RadiantStar	Magic	none	55	55.0	5.00	275.0	4	9	800000	488.4	17.00	recipe<-Astral Bar	0	0
+CalamityMod	RealityRupture	Magic	none	420	420.0	1.62	681.1	1	19	1500000	1339.7	19.62	recipe<-Twisting Nether	0	0
+CalamityMod	ReboundingRainbow	Magic	none	92	92.0	3.75	345.0	-1	11	1200000	656.6	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+CalamityMod	RefractionRotor	Magic	none	240	240.0	1.50	360.0	-1	16	2400000	711.1	22.99	boss:CalamityMod/Apollo@22.99	0	0
+CalamityMod	RegulusRiot	Magic	none	100	100.0	2.50	250.0	3	9	800000	444.0	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	0
+CalamityMod	RotBall	Magic	none	16	16.0	3.75	60.0	3	3	50000	82.1	3.98	boss:CalamityMod/HiveMind@3.98	0	0
+CalamityMod	Sacrifice	Magic	none	300	300.0	6.67	2000.0	-1	13	2400000	3950.4	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0
+CalamityMod	SamsaraSlicer	Magic	none	80	80.0	2.00	160.0	-1	8	600000	273.8	12.09	recipe<-Equanimity	0	0
+CalamityMod	SandDollar	Boomerang	melee	26	26.0	4.00	83.2	-1	2	20000	107.5	2.00	sig:rarity	0	0
+CalamityMod	ScarletDevil	Magic	none	8800	8800.0	1.00	8800.0	5	17	2800000	17405.4	23.00	recipe<-Shadowspec Bar	0	0
+CalamityMod	ScourgeoftheDesert	Magic	none	12	12.0	2.50	30.0	2	2	20000	38.8	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	0
+CalamityMod	ScourgeoftheSeas	Magic	none	50	50.0	2.50	125.0	1	5	200000	189.0	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0
+CalamityMod	SeafoamBomb	Magic	none	12	12.0	2.40	28.8	1	2	20000	37.2	2.00	recipe<-Sea Prism	0	0
+CalamityMod	Seraphim	Magic	none	280	280.0	4.62	1292.3	-1	12	2400000	2552.6	22.00	recipe<-Auric Bar	0	0
+CalamityMod	ShardofAntumbra	Magic	none	111	111.0	3.53	391.8	-1	10	1000000	720.8	17.50	recipe<-Meld Blob	0	0
+CalamityMod	ShatteredDawn	Magic	none	80	80.0	5.00	400.0	4	19	1500000	786.8	19.00	recipe<-Divine Geode	0	0
+CalamityMod	ShinobiBlade	Magic	none	24	24.0	6.00	144.0	1	3	50000	197.0	4.50	sig:rarity	0	0
+CalamityMod	SkyfinBombers	Magic	none	46	46.0	1.71	78.9	1	5	200000	119.2	9.50	recipe<-Corroded Fossil	0	0
+CalamityMod	SludgeSplotch	Magic	none	30	30.0	3.33	100.0	1	2	20000	129.2	3.00	recipe<-Shadow Scale	0	0
+CalamityMod	SnapClam	Magic	none	14	14.0	2.40	33.6	-1	2	20000	43.4	2.00	sig:rarity	0	0
+CalamityMod	SpearofDestiny	Magic	none	70	70.0	1.46	102.4	1	6	350000	162.0	9.00	recipe<-Hallowed Bar	0	0
+CalamityMod	SpearofPaleolith	Magic	none	70	70.0	2.22	155.6	1	5	200000	235.2	12.09	recipe<-Forbidden Fragment	0	0
+CalamityMod	SpentFuelContainer	Magic	none	80	80.0	1.20	96.0	1	5	200000	145.2	9.52	boss:CalamityMod/CragmawMire@9.52	0	0
+CalamityMod	SporeKnife	Magic	none	18	18.0	3.00	54.0	1	3	50000	73.9	4.00	recipe<-Stinger	0	0
+CalamityMod	StarofDestruction	Magic	none	400	400.0	0.67	266.7	-1	10	1000000	490.7	17.50	recipe<-Meld Blob	0	0
+CalamityMod	StellarKnife	Magic	none	69	69.0	6.67	460.0	1	7	450000	757.2	12.50	sig:rarity	0	0
+CalamityMod	StormfrontRazor	Magic	none	38	38.0	3.00	114.0	1	5	200000	172.4	13.00	recipe<-Essence of Sunlight	0	0
+CalamityMod	SubductionSlicer	Boomerang	melee	95	95.0	3.00	228.0	5	8	600000	390.1	13.50	recipe<-Scoria Bar	0	0
+CalamityMod	TarragonThrowingDart	Magic	none	380	380.0	5.45	2072.7	6	19	1500000	4077.1	19.00	recipe<-Uelibloom Bar	0	0
+CalamityMod	TerrorTalons	Magic	none	47	47.0	8.57	402.9	1	7	450000	663.2	11.00	recipe<-Chlorophyte Bar	0	0
+CalamityMod	TheAtomSplitter	Magic	none	296	296.0	2.40	710.4	2	16	2400000	1403.2	22.99	boss:CalamityMod/Apollo@22.99	0	0
+CalamityMod	TheSyringe	Magic	none	60	60.0	4.00	240.0	1	8	600000	410.7	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0
+CalamityMod	TimeBolt	Magic	none	303	303.0	3.00	909.0	6	14	1750000	1790.5	21.00	recipe<-Cosmilite Bar	0	0
+CalamityMod	TitaniumShuriken	Magic	none	38	38.0	6.67	253.3	3	4	100000	364.8	7.00	recipe<-Titanium Bar	0	0
+CalamityMod	ToothBall	Magic	none	16	16.0	3.75	60.0	3	3	50000	82.1	3.99	boss:CalamityMod/PerforatorHive@3.99	0	0
+CalamityMod	TotalityBreakers	Magic	none	64	64.0	2.14	137.1	1	7	450000	225.8	12.50	recipe<-Solar Veil	0	0
+CalamityMod	ToxicantTwister	Magic	none	272	272.0	1.50	408.0	-1	18	1750000	803.6	20.50	boss:CalamityMod/OldDuke@20.5	0	0
+CalamityMod	Turbulance	Magic	none	20	20.0	3.33	66.7	1	3	50000	91.2	4.50	recipe<-Aerialite Bar	0	0
+CalamityMod	TwistingThunder	Magic	none	466	466.0	2.86	1331.4	1	19	1500000	2619.0	19.61	recipe<-Armored Shell	0	0
+CalamityMod	UrchinStinger	Magic	none	13	13.0	3.53	45.9	2	1	10000	56.0	1.00	sig:rarity	0	0
+CalamityMod	UtensilPoker	Magic	none	333	333.0	3.00	999.0	1	10	1000000	1838.2	18.00	boss:Moon Lord's Core@18	0	0
+CalamityMod	Valediction	Magic	none	243	243.0	3.53	857.6	-1	18	1750000	1689.3	19.00	sig:rarity	0	0
+CalamityMod	Vega	Magic	none	500	500.0	3.00	1500.0	1	18	1750000	2954.6	20.00	recipe<-Ruinous Soul	0	0
+CalamityMod	WaveSkipper	Magic	none	80	80.0	2.73	218.2	6	5	200000	329.9	2.00	recipe<-Sea Prism	0	0
+CalamityMod	WebBall	Magic	none	11	11.0	3.00	33.0	3	0	5000	37.9	0.00	recipe<-	0	0
+CalamityMod	Whitewater	Magic	none	80	80.0	1.76	141.2	-1	7	450000	232.4	12.80	boss:CalamityMod/Anahita@12.8	0	0
+CalamityMod	Wrathwing	Magic	none	592	592.0	4.62	2732.3	1	12	2400000	5396.9	22.00	boss:CalamityMod/Yharon@22	0	0
+CalamityMod	WulfrumKnife	Magic	none	11	11.0	5.29	58.2	1	1	10000	71.0	0.00	recipe<-	0	0
+CalamityMod	AbandonedSlimeStaff	Summon	summon	56	56.0	1.67	194.9	-1	7	450000	320.8	12.50	sig:rarity	0	40
+CalamityMod	AncientIceChunk	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	sig:rarity	0	10
+CalamityMod	AquasScepter	Sentry	summon	65	65.0	2.00	97.5	-1	19	1500000	191.8	19.61	recipe<-Armored Shell	0	50
+CalamityMod	AresExoskeleton	Summon	summon	550	550.0	2.50	858.0	-1	16	2400000	1694.7	22.99	boss:CalamityMod/Apollo@22.99	0	80
+CalamityMod	AtlasMunitionsBeacon	Sentry	summon	200	200.0	2.00	300.0	1	16	2400000	592.6	22.99	boss:CalamityMod/Apollo@22.99	0	10
+CalamityMod	BelladonnaSpiritStaff	Summon	summon	22	22.0	1.67	55.4	-1	3	50000	75.8	4.00	recipe<-Stinger	0	10
+CalamityMod	BlackHawkRemote	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	boss:Wall of Flesh@7	0	10
+CalamityMod	BlightedSlimeStaff	Summon	summon	18	18.0	1.67	49.7	-1	4	100000	71.5	6.70	boss:CalamityMod/SlimeGodCore@6.7	0	10
+CalamityMod	BorealisBomber	Summon	summon	34	34.0	3.00	118.3	1	7	450000	194.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10
+CalamityMod	BrittleStarStaff	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	10
+CalamityMod	CadaverousCarrion	Sentry	summon	384	384.0	2.00	576.0	-1	18	1750000	1134.6	20.50	boss:CalamityMod/OldDuke@20.5	0	10
+CalamityMod	CalamarisLament	Summon	summon	120	120.0	2.50	561.6	-1	18	1750000	1106.2	19.00	sig:rarity	0	10
+CalamityMod	CausticCroakerStaff	Sentry	summon	8	8.0	2.00	12.0	-1	2	20000	15.5	2.00	sig:rarity	0	10
+CalamityMod	CausticStaff	Summon	summon	18	18.0	1.67	49.7	-1	4	100000	71.5	7.00	recipe<-Soul of Night	0	10
+CalamityMod	CinderBlossomStaff	Summon	summon	16	16.0	1.67	40.3	-1	3	50000	55.2	0.00	recipe<-	0	10
+CalamityMod	CindersOfLament	Summon	summon	1666	1666.0	0.75	7796.9	-1	13	2400000	15400.5	19.00	sig:rarity	0	10
+CalamityMod	CorvidHarbringerStaff	Summon	summon	99	99.0	2.50	463.3	-1	14	2000000	913.7	21.00	recipe<-Cosmilite Bar	0	10
+CalamityMod	CosmicImmaterializer	Summon	summon	560	560.0	2.50	672.0	-1	16	2400000	1327.3	22.99	recipe<-Miracle Matter	0	10
+CalamityMod	CosmicViperEngine	Summon	summon	255	255.0	2.50	1193.4	-1	14	2000000	2353.4	21.00	recipe<-Cosmilite Bar	0	10
+CalamityMod	Cosmilamp	Summon	summon	95	95.0	2.50	444.6	-1	19	1500000	874.5	19.62	boss:CalamityMod/Signus@19.62	0	10
+CalamityMod	CryogenicStaff	Sentry	summon	30	30.0	2.00	45.0	1	6	350000	71.2	11.00	shop:CalamityMod/Archmage/Shop:Conditions.DownedMechBossAll	0	10
+CalamityMod	DaedalusGolemStaff	Summon	summon	70	70.0	1.67	210.0	-1	5	200000	317.5	9.50	recipe<-Cryonic Bar	0	10
+CalamityMod	DankStaff	Summon	summon	10	10.0	1.67	25.2	-1	3	50000	34.5	3.98	boss:CalamityMod/HiveMind@3.98	0	10
+CalamityMod	DazzlingStabberStaff	Summon	summon	69	69.0	2.50	322.9	-1	19	1500000	635.2	19.00	boss:CalamityMod/Providence@19	0	10
+CalamityMod	DeathstareRod	Summon	summon	20	20.0	1.67	45.6	-1	2	20000	58.9	2.00	boss:Eye of Cthulhu@2	0	10
+CalamityMod	DeepseaStaff	Summon	summon	32	32.0	1.67	96.0	-1	5	200000	145.2	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	10
+CalamityMod	DormantBrimseeker	Summon	summon	42	42.0	1.67	126.0	1	5	200000	190.5	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	10
+CalamityMod	DragonbloodDisgorger	Summon	summon	222	222.0	2.50	266.4	-1	19	1500000	524.0	19.00	recipe<-Bloodstone	0	10
+CalamityMod	DreadmineStaff	Sentry	summon	40	40.0	2.00	60.0	-1	7	450000	98.8	12.50	recipe<-Depth Cells	0	10
+CalamityMod	EnchantedConch	Summon	summon	20	20.0	1.67	45.6	-1	2	20000	58.9	2.00	sig:rarity	0	10
+CalamityMod	EnchantedKnifeStaff	Summon	summon	10	10.0	4.00	20.4	-1	1	10000	24.9	1.00	sig:rarity	0	10
+CalamityMod	Endogenesis	Summon	summon	1300	1300.0	2.50	1560.0	-1	17	2800000	3085.5	23.00	recipe<-Shadowspec Bar	0	80
+CalamityMod	EndoHydraStaff	Summon	summon	190	190.0	2.50	889.2	-1	14	2000000	1753.5	21.00	recipe<-Cosmilite Bar	0	10
+CalamityMod	EntropysVigil	Summon	summon	38	38.0	1.67	66.1	-1	7	450000	108.8	11.70	boss:CalamityMod/CalamitasClone@11.7	0	10
+CalamityMod	EtherealSubjugator	Summon	summon	160	160.0	2.50	748.8	-1	18	1750000	1474.9	20.00	boss:CalamityMod/Polterghast@20	0	10
+CalamityMod	EyeOfNight	Summon	summon	24	24.0	1.67	60.5	-1	3	50000	82.7	6.70	recipe<-Purified Gel	0	10
+CalamityMod	FleshOfInfidelity	Summon	summon	14	14.0	1.67	35.3	-1	3	50000	48.3	3.99	boss:CalamityMod/PerforatorHive@3.99	0	10
+CalamityMod	FlowersOfMortality	Summon	summon	70	70.0	2.50	103.6	-1	11	1200000	197.2	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10
+CalamityMod	ForgottenApexWand	Summon	summon	46	46.0	1.67	138.0	-1	5	200000	208.7	12.09	recipe<-Forbidden Fragment	0	10
+CalamityMod	FrostBlossomStaff	Summon	summon	15	15.0	1.67	30.6	-1	1	10000	37.3	0.00	recipe<-	0	10
+CalamityMod	FuelCellBundle	Summon	summon	22	22.0	1.67	81.8	-1	8	600000	140.0	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	10
+CalamityMod	GammaHeart	Summon	summon	93	93.0	2.50	435.2	-1	18	1750000	857.3	19.00	sig:rarity	0	10
+CalamityMod	GastricBelcherStaff	Summon	summon	50	50.0	1.67	174.0	-1	7	450000	286.4	12.80	boss:CalamityMod/Anahita@12.8	0	10
+CalamityMod	GlacialEmbrace	Summon	summon	48	48.0	1.67	144.0	1	5	200000	217.7	8.50	boss:CalamityMod/Cryogen@8.5	0	10
+CalamityMod	GuidelightofOblivion	Sentry	summon	75	75.0	2.00	112.5	-1	19	1500000	221.3	19.00	sig:rarity	0	10
+CalamityMod	HauntedScroll	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	recipe<-Soul of Light	0	10
+CalamityMod	HerringStaff	Summon	summon	15	15.0	1.67	37.8	-1	3	50000	51.7	4.50	sig:rarity	0	10
+CalamityMod	HivePod	Sentry	summon	75	75.0	2.00	112.5	-1	7	450000	185.2	12.50	sig:rarity	0	10
+CalamityMod	IgneousExaltation	Summon	summon	30	30.0	1.67	90.0	-1	5	200000	136.1	10.50	recipe<-Essence of Havoc	0	10
+CalamityMod	InfectedRemote	Summon	summon	50	50.0	1.67	62.0	-1	8	600000	106.1	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	10
+CalamityMod	KingofConstellationsTenryu	Summon	summon	175	175.0	2.50	210.0	-1	19	1500000	413.1	19.62	recipe<-Twisting Nether	0	10
+CalamityMod	LegionofCelestia	Summon	summon	50	50.0	2.50	222.0	-1	11	1200000	422.5	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10
+CalamityMod	LiliesOfFinality	Summon	summon	512	512.0	2.50	1198.1	-1	12	2400000	2366.5	19.00	sig:rarity	0	10
+CalamityMod	Metastasis	Summon	summon	400	400.0	2.50	480.0	-1	13	2400000	948.1	19.00	sig:rarity	0	10
+CalamityMod	MidnightSunBeacon	Summon	summon	176	176.0	2.50	823.7	1	12	2400000	1626.9	22.00	recipe<-Auric Bar	0	10
+CalamityMod	MirrorofKalandra	Summon	summon	256	256.0	2.50	1198.1	-1	14	2000000	2362.7	21.00	recipe<-Cosmilite Bar	0	10
+CalamityMod	MutatedTruffle	Summon	summon	250	250.0	2.50	390.0	-1	18	1750000	768.2	20.50	boss:CalamityMod/OldDuke@20.5	0	10
+CalamityMod	Perdition	Sentry	summon	375	375.0	2.00	562.5	-1	13	2400000	1111.1	23.00	boss:CalamityMod/SupremeCalamitas@23	0	10
+CalamityMod	PlantationStaff	Summon	summon	58	58.0	1.67	71.9	-1	8	600000	123.1	12.00	recipe<-Living Shard	0	10
+CalamityMod	PolypLauncher	Sentry	summon	12	12.0	2.00	18.0	-1	2	20000	23.3	2.00	sig:rarity	0	10
+CalamityMod	PuffShroom	Summon	summon	14	14.0	1.67	31.9	-1	2	20000	41.2	2.70	boss:CalamityMod/Crabulon@2.7	0	10
+CalamityMod	ResurrectionButterfly	Summon	summon	66	66.0	1.67	122.8	-1	8	600000	210.1	13.50	recipe<-Life Alloy	0	10
+CalamityMod	RustyBeaconPrototype	Sentry	summon	7	7.0	2.00	10.5	-1	1	10000	12.8	1.00	sig:rarity	0	10
+CalamityMod	SanctifiedSpark	Sentry	summon	100	100.0	2.00	150.0	-1	11	1200000	285.5	18.00	sig:rarity	0	100
+CalamityMod	SandSharknadoStaff	Summon	summon	60	60.0	1.67	208.8	-1	7	450000	343.7	12.09	recipe<-Forgotten Apex Wand	0	10
+CalamityMod	SarosPossession	Summon	summon	66	66.0	2.50	308.9	-1	12	2400000	610.1	22.00	recipe<-Auric Bar	0	10
+CalamityMod	ScabRipper	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	3.00	recipe<-Tissue Sample	0	10
+CalamityMod	ShellfishStaff	Summon	summon	70	70.0	1.67	105.0	-1	5	200000	158.8	1.61	boss:CalamityMod/GiantClam@1.61	0	10
+CalamityMod	Sirius	Summon	summon	90	90.0	2.50	421.2	-1	18	1750000	829.6	20.00	recipe<-Ruinous Soul	0	10
+CalamityMod	SlimePuppetStaff	Summon	summon	10	10.0	2.07	27.6	1	4	100000	39.7	6.70	recipe<-Purified Gel	0	10
+CalamityMod	SpikecragStaff	Sentry	summon	25	25.0	2.00	37.5	-1	8	600000	64.2	16.50	boss:CalamityMod/RavagerBody@16.5	0	10
+CalamityMod	SquirrelSquireStaff	Sentry	summon	8	8.0	2.00	12.0	-1	0	5000	13.8	0.00	recipe<-	0	10
+CalamityMod	StaffOfNecrosteocytes	Summon	summon	25	25.0	1.67	63.0	-1	3	50000	86.2	4.50	sig:rarity	0	10
+CalamityMod	StarspawnHelixStaff	Summon	summon	103	103.0	1.67	407.9	-1	9	800000	724.4	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	10
+CalamityMod	StellarTorusStaff	Summon	summon	132	132.0	2.50	617.8	-1	19	1500000	1215.2	19.61	recipe<-Armored Shell	0	10
+CalamityMod	StormjawStaff	Summon	summon	11	11.0	1.67	25.1	-1	2	20000	32.4	2.00	sig:rarity	0	10
+CalamityMod	SunSpiritStaff	Summon	summon	22	22.0	1.67	44.9	-1	1	10000	54.8	0.00	recipe<-	0	10
+CalamityMod	TacticalPlagueEngine	Summon	summon	110	110.0	2.50	488.4	-1	11	1200000	929.5	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10
+CalamityMod	TemporalUmbrella	Summon	summon	193	193.0	2.50	231.6	-1	17	2800000	458.1	23.00	recipe<-Shadowspec Bar	0	99
+CalamityMod	TundraFlameBlossomsStaff	Summon	summon	56	56.0	1.67	67.2	-1	5	200000	101.6	7.00	recipe<-Mythril Bar	0	10
+CalamityMod	UniverseSplitter	Summon	summon	9000	9000.0	6.00	42120.0	1	17	2800000	83308.6	23.00	recipe<-Shadowspec Bar	0	300
+CalamityMod	VengefulSunStaff	Summon	summon	38	38.0	1.67	123.1	-1	6	350000	194.7	9.50	recipe<-Moon Stone	0	10
+CalamityMod	Vigilance	Summon	summon	115	115.0	2.50	538.2	-1	13	2400000	1063.1	23.00	boss:CalamityMod/SupremeCalamitas@23	0	10
+CalamityMod	VileFeeder	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	3.00	recipe<-Shadow Scale	0	10
+CalamityMod	ViralSprout	Summon	summon	24	24.0	1.67	83.5	-1	7	450000	137.5	12.50	recipe<-Perennial Bar	0	10
+CalamityMod	ViridVanguard	Summon	summon	55	55.0	2.50	257.4	-1	19	1500000	506.3	19.00	recipe<-Uelibloom Bar	0	10
+CalamityMod	VoidConcentrationStaff	Summon	summon	200	200.0	2.50	240.0	-1	19	1500000	472.1	19.60	boss:CalamityMod/CeaselessVoid@19.6	0	10
+CalamityMod	VoidEaterMarionette	Summon	summon	110	110.0	2.50	514.8	-1	14	2000000	1015.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	10
+CalamityMod	WarloksMoonFist	Summon	summon	450	450.0	2.50	540.0	-1	18	1750000	1063.6	20.00	recipe<-Ruinous Soul	0	10
+CalamityMod	WitherBlossomsStaff	Summon	summon	50	50.0	1.67	93.0	-1	8	600000	159.1	14.50	recipe<-Plague Cell Canister	0	10
+CalamityMod	WulfrumController	Summon	summon	19	19.0	1.67	38.8	-1	1	10000	47.3	0.00	recipe<-	0	10
+CalamityMod	YharonsKindleStaff	Summon	summon	325	325.0	2.50	390.0	-1	12	2400000	770.3	22.00	boss:CalamityMod/Yharon@22	0	10
+ThoriumMod	Aerial	Yoyo	melee	16	16.0	2.40	30.7	-1	2	15000	39.5	1.00	recipe<-tile1936	0	0
+ThoriumMod	BloomingBlade	Broadsword	melee	22	22.0	2.73	60.0	1	2	15000	77.2	2.00	recipe<-Petal	0	0
+ThoriumMod	BloomingBow	Bow	ranged	10	20.0	3.33	66.7	1	2	15000	85.8	2.00	recipe<-Petal	40	0
+ThoriumMod	BloomingStaff	Magic	magic	18	18.0	4.74	85.3	1	2	15000	109.7	2.00	recipe<-Petal	0	10
+ThoriumMod	FeatherFoe	Bow	ranged	16	26.0	2.40	62.4	1	2	15000	80.3	1.00	recipe<-tile1936	40	0
+ThoriumMod	GoblinWarpipe	Gun	ranged	17	23.0	2.40	55.2	-1	2	15000	71.0	2.00	sig:rarity	283	0
+ThoriumMod	GoblinWarSpear	Thrown	ranged	18	18.0	2.73	14.7	1	2	75	17.6	1.00	recipe<-tile1936	0	0
+ThoriumMod	HarpyPelter	Gun	ranged	12	22.0	3.33	73.3	1	2	15000	94.4	1.00	recipe<-tile1936	97	0
+ThoriumMod	HarpyStaff	Summon	summon	20	20.0	7.50	36.0	-1	-1	5000	41.3	12.00	sig:rarity	0	0
+ThoriumMod	RodofFlocking	Magic	magic	18	18.0	3.00	54.0	-1	2	15000	69.5	1.00	recipe<-tile1936	0	10
+ThoriumMod	ShadowflameStaff	Magic	magic	20	20.0	2.00	40.0	4	2	15000	51.5	1.00	recipe<-tile1936	0	10
+ThoriumMod	YewWoodBow	Bow	ranged	16	26.0	2.50	65.0	1	2	15000	83.7	1.00	recipe<-tile1936	40	0
+ThoriumMod	YewWoodFlintlock	Gun	ranged	12	22.0	3.75	82.5	1	2	65000	108.3	1.00	recipe<-tile1936	97	0
+ThoriumMod	AcousticGuitar	Magic	none	50	50.0	3.33	166.7	-1	4	75000	239.2	1.00	recipe<-Unicorn Horn	0	0
+ThoriumMod	AdamantiteKlaxon	Magic	none	54	54.0	1.67	90.0	10	4	110000	129.7	7.00	recipe<-Adamantite Bar	0	0
+ThoriumMod	Alphorn	Magic	none	7	7.0	2.40	6.7	3	1	10000	8.2	12.81	recipe<-Fallen Star	0	0
+ThoriumMod	AntlionMaraca	Magic	none	7	7.0	2.50	7.0	1	0	10000	8.1	0.00	recipe<-	0	0
+ThoriumMod	Bagpipe	Magic	none	17	17.0	2.61	44.3	1	4	75000	63.6	7.00	recipe<-Blood Cell	0	0
+ThoriumMod	Bassoon	Magic	none	74	74.0	3.33	246.7	-1	8	250000	418.3	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	BetsysBellow	Magic	none	82	82.0	4.50	147.6	-1	8	250000	250.3	16.00	boss:Betsy@16	0	0
+ThoriumMod	BloomingBell	Magic	none	18	18.0	1.50	27.0	-1	2	15000	34.8	2.00	recipe<-Petal	0	0
+ThoriumMod	BoneTrumpet	Magic	none	29	29.0	3.75	108.8	3	2	25000	140.9	0.00	recipe<-	0	0
+ThoriumMod	Bongos	Magic	none	29	29.0	2.31	26.8	-1	3	27000	36.3	0.00	recipe<-	0	0
+ThoriumMod	Buisine	Magic	none	70	70.0	2.00	126.0	-1	8	500000	215.2	13.50	recipe<-Holy Knight's Alloy	0	0
+ThoriumMod	Calaveras	Magic	none	20	20.0	3.00	60.0	-1	2	25000	77.8	2.00	recipe<-Spirit Droplet	0	0
+ThoriumMod	ChronoOcarina	Magic	none	32	32.0	3.00	96.0	1	4	75000	137.8	12.09	recipe<-Forbidden Fragment	0	0
+ThoriumMod	Clarinet	Magic	none	62	62.0	2.73	67.6	1	8	250000	114.7	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	CobaltGong	Magic	none	72	72.0	1.00	28.8	-1	4	60000	41.2	7.00	recipe<-Cobalt Bar	0	0
+ThoriumMod	Concertina	Magic	none	30	30.0	1.33	40.0	-1	5	100000	60.0	9.50	sig:rarity	0	0
+ThoriumMod	DragonsWail	Magic	none	40	40.0	3.00	120.0	5	4	100000	172.8	7.00	recipe<-Green Dragon Scale	0	0
+ThoriumMod	DrumMallet	Magic	none	9	9.0	2.73	24.5	-1	0	150	26.7	0.00	recipe<-	0	0
+ThoriumMod	DukesRegalCarnyx	Magic	none	60	60.0	4.00	240.0	1	8	250000	407.0	14.00	boss:Duke Fishron@14	0	0
+ThoriumMod	DynastyGuzheng	Magic	none	14	14.0	1.67	23.3	-1	1	12500	28.6	12.81	recipe<-Fallen Star	0	0
+ThoriumMod	EbonWoodTambourine	Magic	none	15	15.0	6.00	90.0	-1	1	13500	110.3	2.00	recipe<-Demonite Bar	0	0
+ThoriumMod	Fishbone	Magic	none	66	66.0	6.00	396.0	-1	8	1000000	681.1	13.50	sig:rarity	0	0
+ThoriumMod	FleshHorn	Magic	none	82	82.0	1.67	136.7	-1	4	100000	196.8	7.00	recipe<-Unfathomable Flesh	0	0
+ThoriumMod	Flute	Magic	none	10	10.0	3.00	27.0	1	1	10000	32.9	1.00	sig:rarity	0	0
+ThoriumMod	ForestOcarina	Magic	none	17	17.0	3.75	63.8	1	2	87500	84.0	2.00	sig:rarity	0	0
+ThoriumMod	FrostwindCymbals	Magic	none	52	52.0	1.33	69.3	-1	4	75000	99.5	9.50	recipe<-Frost Core	0	0
+ThoriumMod	GeodeSaxophone	Magic	none	36	36.0	2.31	83.1	1	4	100000	119.6	7.00	recipe<-Crystal Geode	0	0
+ThoriumMod	GhastlyFrenchHorn	Magic	none	96	96.0	1.50	144.0	-1	8	250000	244.2	12.00	recipe<-Spectre Bar	0	0
+ThoriumMod	GoldBugleHorn	Magic	none	11	11.0	2.31	10.2	1	0	9000	11.8	0.00	recipe<-	0	0
+ThoriumMod	GrandPiano	Magic	none	13	13.0	6.00	78.0	-1	1	5000	94.2	0.00	recipe<-	0	0
+ThoriumMod	GraniteBoomBox	Magic	none	12	12.0	2.00	24.0	-1	3	25000	32.5	6.40	recipe<-Granite Energy Core	0	0
+ThoriumMod	HallowedMegaphone	Magic	none	64	64.0	3.33	213.3	-1	5	230000	323.1	9.00	recipe<-Hallowed Bar	0	0
+ThoriumMod	Harmonica	Magic	none	10	10.0	2.00	20.0	1	0	1500	22.5	0.00	recipe<-	0	0
+ThoriumMod	HauntingBassDrum	Magic	none	94	94.0	2.00	75.2	-1	8	500000	128.4	13.25	boss:Pumpking@13.25	0	0
+ThoriumMod	HellBell	Magic	none	50	50.0	2.14	107.1	-1	5	100000	160.7	7.00	recipe<-Bell	0	0
+ThoriumMod	HoneyRecorder	Magic	none	18	18.0	6.00	108.0	1	3	10000	144.7	4.00	recipe<-Bee Wax	0	0
+ThoriumMod	HotHorn	Magic	none	30	30.0	2.00	60.0	-1	3	27000	81.4	0.00	recipe<-	0	0
+ThoriumMod	IcyPiccolo	Magic	none	12	12.0	3.75	45.0	1	0	3000	51.3	0.00	recipe<-	0	0
+ThoriumMod	JarOMayo	Magic	none	22	22.0	2.73	60.0	1	2	50000	78.5	3.00	shop:ThoriumMod/Cook/Shop:Conditions.DownedBoss2	0	0
+ThoriumMod	JingleBells	Magic	none	82	82.0	6.00	492.0	1	8	450000	839.4	13.50	boss:Santa-NK1@13.5	0	0
+ThoriumMod	Kazoo	Magic	none	32	32.0	3.75	72.0	-1	5	350000	109.6	9.20	shop:Terraria/PartyGirl/Shop:Mods.ThoriumMod.Conditions.DownedFallenBeholder	0	0
+ThoriumMod	LightningClaves	Magic	none	10	10.0	1.67	16.7	-1	1	10000	20.3	1.00	sig:rarity	0	0
+ThoriumMod	LodestoneRadio	Magic	none	34	34.0	2.00	68.0	-1	5	100000	102.0	9.50	recipe<-Lodestone Ingot	0	0
+ThoriumMod	MarineWineGlass	Magic	none	22	22.0	4.29	94.3	1	2	15000	121.3	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	MeteoriteOboe	Magic	none	19	19.0	2.00	38.0	-1	1	20000	46.8	2.00	recipe<-Meteorite Bar	0	0
+ThoriumMod	Microphone	Magic	none	25	25.0	2.00	27.5	-1	2	125000	36.4	5.00	shop:Terraria/Mechanic/Shop	0	0
+ThoriumMod	MidnightBassBooster	Magic	none	45	45.0	10.00	450.0	1	6	300000	710.6	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	MythrilMelodica	Magic	none	38	38.0	4.50	171.0	1	4	90000	245.9	7.00	recipe<-Mythril Bar	0	0
+ThoriumMod	Nocturne	Magic	none	50	50.0	2.31	115.4	1	3	125000	159.7	4.50	sig:rarity	0	0
+ThoriumMod	ObsidianRackett	Magic	none	18	18.0	3.75	67.5	1	1	13000	82.7	0.00	recipe<-	0	0
+ThoriumMod	Organ	Magic	none	34	34.0	3.33	113.3	2	8	250000	192.2	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	OrichalcumSlideWhistle	Magic	none	30	30.0	3.33	100.0	-1	4	110000	144.2	7.00	recipe<-Orichalcum Bar	0	0
+ThoriumMod	PalladiumCowbell	Magic	none	38	38.0	4.29	65.1	2	4	80000	93.6	7.00	recipe<-Palladium Bar	0	0
+ThoriumMod	Panflute	Magic	none	21	21.0	6.00	50.4	1	3	27000	68.4	4.00	recipe<-Stinger	0	0
+ThoriumMod	PlatinumBugleHorn	Magic	none	13	13.0	2.40	12.5	1	0	13500	14.5	0.00	recipe<-	0	0
+ThoriumMod	PrimeRoar	Magic	none	100	100.0	1.36	136.4	1	6	300000	215.3	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	Pungi	Magic	none	75	75.0	6.67	500.0	1	8	250000	848.0	13.50	recipe<-Solar Pebble	0	0
+ThoriumMod	RiffWeaver	Magic	none	60	60.0	2.31	138.5	-1	4	100000	199.4	7.00	recipe<-Spider Fang	0	0
+ThoriumMod	RivetingTadpole	Magic	none	38	38.0	1.88	64.1	-1	2	25000	83.1	2.00	sig:rarity	0	0
+ThoriumMod	ScholarsHarp	Magic	none	32	32.0	6.00	192.0	-1	4	250000	279.5	7.00	shop:Terraria/Wizard/Shop	0	0
+ThoriumMod	ScubaCurva	Magic	none	17	17.0	3.00	20.4	-1	2	15000	26.3	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	SeashellCastanettes	Magic	none	18	18.0	1.50	27.0	-1	0	11000	31.4	1.60	recipe<-Coral	0	0
+ThoriumMod	SerpentsCry	Magic	none	48	48.0	2.50	120.0	1	4	100000	172.8	7.00	recipe<-Abyssal Chitin	0	0
+ThoriumMod	ShadeWoodTambourine	Magic	none	16	16.0	6.00	96.0	-1	1	13500	117.6	2.00	recipe<-Crimtane Bar	0	0
+ThoriumMod	ShadowflameWarhorn	Magic	none	68	68.0	2.00	136.0	10	5	100000	204.0	3.40	boss:Goblin Warlock@3.4	0	0
+ThoriumMod	ShootingStarBlastGuitar	Magic	none	172	172.0	2.50	430.0	-1	10	500000	786.0	17.00	recipe<-Shooting Star Fragment	0	0
+ThoriumMod	Sitar	Magic	none	18	18.0	2.40	43.2	-1	1	15000	53.0	1.00	recipe<-Sturdy Fossil	0	0
+ThoriumMod	SkywareLute	Magic	none	14	14.0	3.00	42.0	-1	1	5000	50.7	12.81	recipe<-Fallen Star	0	0
+ThoriumMod	SnowstormBanjo	Magic	none	72	72.0	3.00	216.0	-1	4	75000	310.0	7.00	sig:rarity	0	0
+ThoriumMod	SongofIceAndFire	Magic	none	25	25.0	4.00	100.0	1	2	27000	129.7	0.00	recipe<-	0	0
+ThoriumMod	SonicAmplifier	Magic	none	275	275.0	5.62	1546.9	1	10	500000	2827.6	18.00	boss:Moon Lord's Core@18	0	0
+ThoriumMod	SoundSageLament	Magic	none	96	96.0	1.50	144.0	5	10	500000	263.2	17.00	recipe<-Shooting Star Fragment	0	0
+ThoriumMod	SteamFlute	Magic	none	54	54.0	5.00	270.0	1	5	250000	409.3	7.00	recipe<-tile134	0	0
+ThoriumMod	SteelDrum	Magic	none	18	18.0	6.00	91.8	-1	2	15000	118.2	2.00	sig:rarity	0	0
+ThoriumMod	SunflareGuitar	Magic	none	64	64.0	2.50	160.0	-1	5	250000	242.5	9.50	sig:rarity	0	0
+ThoriumMod	Tambourine	Boomerang	melee	11	11.0	3.00	26.4	-1	0	500	29.3	0.00	recipe<-	0	0
+ThoriumMod	TerrariumAutoharp	Magic	none	72	72.0	8.57	617.1	1	22	675000	1205.4	17.00	recipe<-Terrarium Core	0	0
+ThoriumMod	TheGreenTambourine	Boomerang	melee	78	78.0	5.00	312.0	-1	7	250000	510.4	11.00	recipe<-Chlorophyte Bar	0	0
+ThoriumMod	TheLullaby	Magic	none	56	56.0	2.31	129.2	-1	4	100000	186.1	7.00	sig:rarity	0	0
+ThoriumMod	TheMaw	Magic	none	79	79.0	3.00	237.0	-1	7	250000	387.7	12.00	recipe<-Bloom Weave	0	0
+ThoriumMod	TheTriangle	Magic	none	94	94.0	1.50	56.4	-1	8	500000	96.3	13.75	boss:Martian Saucer@13.75	0	0
+ThoriumMod	TitaniumCimbasso	Magic	none	48	48.0	4.80	230.4	2	4	120000	332.5	7.00	recipe<-Titanium Bar	0	0
+ThoriumMod	Trombone	Magic	none	30	30.0	3.00	90.0	-1	4	100000	129.6	12.09	recipe<-Forbidden Fragment	0	0
+ThoriumMod	TuningFork	Magic	none	28	28.0	4.29	120.0	3	3	25000	162.7	6.50	recipe<-Bronze Alloy Fragments	0	0
+ThoriumMod	Turntable	Magic	none	105	105.0	1.88	78.8	-1	8	500000	134.5	13.75	boss:Martian Saucer@13.75	0	0
+ThoriumMod	TwentyFourCaratTuba	Magic	none	46	46.0	2.00	92.0	1	5	100000	138.0	7.70	boss:Flying Dutchman@7.7	0	0
+ThoriumMod	Ukulele	Magic	none	10	10.0	2.73	20.5	-1	0	100	22.1	1.60	recipe<-Starfish	0	0
+ThoriumMod	ValadiumTheremin	Magic	none	42	42.0	2.00	33.6	-1	5	100000	50.4	9.50	recipe<-Valadium Ingot	0	0
+ThoriumMod	VinylRecord	Magic	none	58	58.0	2.31	133.8	5	4	100000	192.7	7.00	recipe<-Soul of Night	0	0
+ThoriumMod	Violin	Magic	none	56	56.0	4.29	216.0	-1	4	100000	311.0	12.09	recipe<-Light Shard	0	0
+ThoriumMod	VuvuzelaBlue	Magic	none	90	90.0	5.00	450.0	1	7	250000	736.2	12.00	boss:Plantera@12	0	0
+ThoriumMod	VuvuzelaGreen	Magic	none	90	90.0	5.00	450.0	1	7	250000	736.2	12.00	boss:Plantera@12	0	0
+ThoriumMod	VuvuzelaRed	Magic	none	90	90.0	5.00	450.0	1	7	250000	736.2	12.00	boss:Plantera@12	0	0
+ThoriumMod	VuvuzelaYellow	Magic	none	90	90.0	5.00	450.0	1	7	250000	736.2	12.00	boss:Plantera@12	0	0
+ThoriumMod	WindChimes	Magic	none	48	48.0	5.00	240.0	1	4	100000	345.6	9.00	recipe<-Rain Cloud	0	0
+ThoriumMod	WoodenWhistle	Magic	none	7	7.0	3.75	26.2	1	0	100	28.4	0.00	recipe<-	0	0
+ThoriumMod	Xylophone	Magic	none	62	62.0	6.00	372.0	-1	4	100000	535.7	7.00	recipe<-Crystal Geode	0	0
+ThoriumMod	YewWoodLute	Magic	none	20	20.0	3.00	40.5	-1	2	15000	52.1	1.00	recipe<-tile1936	0	0
+ThoriumMod	IceFairyStaff	Summon	summon	22	22.0	1.67	60.7	-1	4	75000	87.1	7.00	sig:rarity	0	10
+ThoriumMod	BoreanFangStaff	Magic	magic	58	58.0	4.29	248.6	1	5	100000	372.9	8.20	boss:ThoriumMod/BoreanStrider@8.2	0	10
+ThoriumMod	FreezeRay	Gun	ranged	25	35.0	3.67	128.6	1	5	100000	192.9	8.20	boss:ThoriumMod/BoreanStrider@8.2	97	0
+ThoriumMod	GlacialSting	Bow	ranged	48	58.0	3.00	174.0	3	5	100000	261.0	8.20	boss:ThoriumMod/BoreanStrider@8.2	40	0
+ThoriumMod	Glacier	Broadsword	melee	50	50.0	2.14	107.1	1	5	100000	160.7	8.20	boss:ThoriumMod/BoreanStrider@8.2	0	0
+ThoriumMod	TheCryoFang	Magic	none	28	28.0	2.50	70.0	1	5	100000	105.0	8.20	boss:ThoriumMod/BoreanStrider@8.2	0	0
+ThoriumMod	ChampionBomberStaff	Magic	magic	24	24.0	2.00	48.0	1	3	25000	65.1	6.50	boss:ThoriumMod/BuriedChampion@6.5	0	10
+ThoriumMod	ChampionsGodHand	Magic	none	33	33.0	2.73	90.0	1	3	25000	122.0	6.50	boss:ThoriumMod/BuriedChampion@6.5	0	0
+ThoriumMod	ChampionsTrifectaShot	Bow	ranged	40	50.0	3.00	150.0	1	3	25000	203.4	6.50	boss:ThoriumMod/BuriedChampion@6.5	40	0
+ThoriumMod	ChampionSwiftBlade	Broadsword	melee	30	30.0	3.00	90.0	1	3	25000	122.0	6.50	boss:ThoriumMod/BuriedChampion@6.5	0	0
+ThoriumMod	BeholderStaff	Summon	summon	44	44.0	1.67	66.0	-1	5	150000	99.5	9.20	boss:ThoriumMod/FallenBeholder@9.2	0	10
+ThoriumMod	Cello	Magic	none	68	68.0	2.50	170.0	-1	5	150000	256.2	9.20	boss:ThoriumMod/FallenBeholder@9.2	0	0
+ThoriumMod	HellishHalberd	Spear	melee	35	35.0	2.50	87.5	-1	5	150000	131.9	9.20	boss:ThoriumMod/FallenBeholder@9.2	0	0
+ThoriumMod	HellRoller	Magic	none	37	37.0	3.33	123.3	1	5	150000	185.9	9.20	boss:ThoriumMod/FallenBeholder@9.2	0	0
+ThoriumMod	Obliterator	Gun	ranged	22	32.0	2.00	64.0	1	5	150000	96.5	9.20	boss:ThoriumMod/FallenBeholder@9.2	97	0
+ThoriumMod	PyroclastStaff	Magic	magic	33	33.0	2.50	82.5	1	5	150000	124.3	9.20	boss:ThoriumMod/FallenBeholder@9.2	0	12
+ThoriumMod	MantisShrimpPunch	Magic	melee	115	115.0	1.33	153.3	-1	8	500000	261.9	14.20	boss:ThoriumMod/ForgottenOne@14.2	0	0
+ThoriumMod	OldGodsVision	Magic	magic	60	60.0	2.50	150.0	-1	8	500000	256.2	14.20	boss:ThoriumMod/ForgottenOne@14.2	0	25
+ThoriumMod	SirensLyre	Magic	none	94	94.0	4.00	376.0	1	8	500000	642.2	14.20	boss:ThoriumMod/ForgottenOne@14.2	0	0
+ThoriumMod	TheIncubator	Sentry	summon	42	42.0	1.67	63.0	-1	8	500000	107.6	14.20	boss:ThoriumMod/ForgottenOne@14.2	0	15
+ThoriumMod	TrenchSpitter	Gun	ranged	65	75.0	6.00	450.0	1	8	500000	768.6	14.20	boss:ThoriumMod/ForgottenOne@14.2	97	0
+ThoriumMod	BoulderProbeStaff	Sentry	summon	22	22.0	1.88	33.0	-1	3	25000	44.7	6.40	boss:ThoriumMod/GraniteEnergyStorm@6.4	0	15
+ThoriumMod	EnergyProjector	Magic	magic	12	12.0	2.00	24.0	-1	3	25000	32.5	6.40	boss:ThoriumMod/GraniteEnergyStorm@6.4	0	15
+ThoriumMod	EnergyStormBolter	Gun	ranged	18	28.0	6.00	168.0	1	3	25000	227.8	6.40	boss:ThoriumMod/GraniteEnergyStorm@6.4	97	0
+ThoriumMod	EnergyStormPartisan	Spear	melee	24	24.0	2.73	65.5	-1	3	25000	88.8	6.40	boss:ThoriumMod/GraniteEnergyStorm@6.4	0	0
+ThoriumMod	CadaverCornet	Magic	none	54	54.0	1.76	95.3	1	6	250000	150.2	11.60	boss:ThoriumMod/Lich@11.6	0	0
+ThoriumMod	SoulCleaver	Magic	none	54	54.0	3.33	180.0	3	6	250000	283.7	11.60	boss:ThoriumMod/Lich@11.6	0	0
+ThoriumMod	SoulRender	Broadsword	melee	80	80.0	2.73	218.2	1	6	250000	343.8	11.60	boss:ThoriumMod/Lich@11.6	0	0
+ThoriumMod	WitherStaff	Magic	magic	46	46.0	1.67	76.7	-1	6	250000	120.8	11.60	boss:ThoriumMod/Lich@11.6	0	5
+ThoriumMod	DevilDagger	Magic	magic	40	40.0	3.75	150.0	2	5	400000	228.6	9.50	sig:rarity	0	8
+ThoriumMod	DutchmansAvarice	Magic	magic	42	42.0	1.58	66.3	-1	5	100000	99.5	7.70	boss:Flying Dutchman@7.7	0	10
+ThoriumMod	Funggat	Gun	ranged	30	40.0	6.00	240.0	1	5	400000	365.8	9.50	sig:rarity	97	0
+ThoriumMod	GraveBuster	Magic	magic	12	12.0	2.00	24.0	-1	1	20000	29.6	1.00	sig:rarity	0	6
+ThoriumMod	HandCannon	Gun	ranged	40	40.0	1.50	60.0	1	5	100000	90.0	7.70	boss:Flying Dutchman@7.7	8744	0
+ThoriumMod	HydromancerCatalyst	Magic	magic	30	30.0	10.00	300.0	-1	5	400000	457.2	9.50	sig:rarity	0	40
+ThoriumMod	MyceliumWhip	Magic	melee	45	45.0	1.33	60.0	-1	5	400000	91.4	9.50	sig:rarity	0	0
+ThoriumMod	PoseidonCharge	Spear	melee	38	38.0	2.14	81.4	-1	5	400000	124.1	9.50	sig:rarity	0	0
+ThoriumMod	Schmelze	Magic	melee	42	42.0	3.00	126.0	1	5	400000	192.0	9.50	sig:rarity	0	0
+ThoriumMod	Scorn	Gun	ranged	22	32.0	2.25	72.0	1	5	400000	109.7	9.50	sig:rarity	97	0
+ThoriumMod	ShipsHelm	Boomerang	melee	58	58.0	3.00	139.2	-1	5	100000	208.8	7.70	boss:Flying Dutchman@7.7	0	0
+ThoriumMod	SSDevastator	Gun	ranged	18	28.0	6.00	168.0	1	5	400000	256.0	9.50	sig:rarity	97	0
+ThoriumMod	TheJuggernaut	Magic	melee	42	42.0	1.33	56.0	-1	5	100000	84.0	7.70	boss:Flying Dutchman@7.7	0	0
+ThoriumMod	WeedEater	Sentry	summon	20	20.0	3.00	30.0	-1	3	25000	40.7	4.50	sig:rarity	0	15
+ThoriumMod	BuccaneerBlunderBuss	Gun	ranged	10	20.0	1.58	31.6	1	2	15000	40.6	3.40	boss:ThoriumMod/QueenJellyfish@3.4	97	0
+ThoriumMod	ConchShell	Magic	none	28	28.0	2.73	30.5	-1	2	15000	39.3	3.40	boss:ThoriumMod/QueenJellyfish@3.4	0	0
+ThoriumMod	GiantGlowstick	Boomerang	melee	30	30.0	5.00	120.0	-1	2	15000	154.4	3.40	boss:ThoriumMod/QueenJellyfish@3.4	0	0
+ThoriumMod	JellyPondWand	Magic	magic	15	15.0	2.31	34.6	-1	2	15000	44.6	3.40	boss:ThoriumMod/QueenJellyfish@3.4	0	15
+ThoriumMod	SparkingJellyBall	Magic	melee	21	21.0	1.33	28.0	-1	2	15000	36.0	3.40	boss:ThoriumMod/QueenJellyfish@3.4	0	0
+ThoriumMod	DistressCaller	Sentry	summon	22	22.0	1.67	33.0	-1	3	27000	44.8	6.90	boss:ThoriumMod/StarScouter@6.9	0	15
+ThoriumMod	GaussFlinger	Magic	none	30	30.0	2.73	81.8	2	3	27000	111.0	6.90	boss:ThoriumMod/StarScouter@6.9	0	0
+ThoriumMod	HitScanner	Gun	ranged	26	36.0	5.00	180.0	1	3	27000	244.3	6.90	boss:ThoriumMod/StarScouter@6.9	97	0
+ThoriumMod	ParticleWhip	Magic	magic	36	36.0	1.67	60.0	-1	3	27000	81.4	6.90	boss:ThoriumMod/StarScouter@6.9	0	12
+ThoriumMod	Roboboe	Magic	none	34	34.0	3.33	113.3	-1	3	27000	153.8	6.90	boss:ThoriumMod/StarScouter@6.9	0	0
+ThoriumMod	StarTrail	Magic	melee	31	31.0	2.00	62.0	-1	3	27000	84.1	6.90	boss:ThoriumMod/StarScouter@6.9	0	0
+ThoriumMod	Didgeridoo	Magic	none	14	14.0	2.00	25.2	4	1	10000	30.7	1.40	boss:ThoriumMod/TheGrandThunderBird@1.4	0	0
+ThoriumMod	StormHatchlingStaff	Summon	summon	15	15.0	1.67	30.6	-1	1	10000	37.3	1.40	boss:ThoriumMod/TheGrandThunderBird@1.4	0	10
+ThoriumMod	TalonBurst	Bow	ranged	5	15.0	2.00	30.0	1	1	10000	36.6	1.40	boss:ThoriumMod/TheGrandThunderBird@1.4	40	0
+ThoriumMod	ThunderTalon	Broadsword	melee	12	12.0	2.73	32.7	1	1	10000	39.9	1.40	boss:ThoriumMod/TheGrandThunderBird@1.4	0	0
+ThoriumMod	DeitysTrefork	Magic	none	200	200.0	3.33	666.7	1	20	1000000	1306.7	19.50	recipe<-Ocean Essence	0	0
+ThoriumMod	OceansJudgement	Boomerang	melee	325	325.0	6.00	1560.0	-1	20	1000000	3057.6	19.50	recipe<-Ocean Essence	0	0
+ThoriumMod	SevenSeasDevastator	Magic	melee	275	275.0	1.33	366.7	-1	20	1000000	718.7	19.50	recipe<-Ocean Essence	0	0
+ThoriumMod	TidalWave	Magic	none	135	135.0	2.31	311.5	-1	20	1000000	610.6	19.50	recipe<-Ocean Essence	0	0
+ThoriumMod	Lucidity	Magic	none	235	235.0	5.00	1175.0	-1	20	1000000	2303.0	19.50	recipe<-Inferno Essence	0	10
+ThoriumMod	OmniBow	Bow	ranged	140	150.0	6.00	900.0	-1	20	1000000	1764.0	19.50	recipe<-Death Essence	40	0
+ThoriumMod	OmniCannon	Gun	ranged	120	130.0	12.86	1671.4	1	20	1000000	3276.0	19.50	recipe<-Death Essence	97	0
+ThoriumMod	TheJavelin	Gun	ranged	1750	1790.0	1.58	2826.3	-1	20	1000000	5539.6	19.50	recipe<-Death Essence	771	0
+ThoriumMod	WyrmDecimator	Gun	ranged	125	125.0	20.00	2500.0	4	20	1000000	4900.0	19.50	recipe<-Death Essence	23	0
+ThoriumMod	EdgeofImagination	Magic	none	175	175.0	4.29	750.0	-1	20	1000000	1470.0	19.50	recipe<-Inferno Essence	0	0
+ThoriumMod	Holophonor	Magic	none	100	100.0	3.75	375.0	1	20	1000000	735.0	19.50	recipe<-Inferno Essence	0	0
+ThoriumMod	Sousaphone	Magic	none	150	150.0	3.00	450.0	-1	20	1000000	882.0	19.50	recipe<-Inferno Essence	0	0
+ThoriumMod	TheSet	Magic	none	275	275.0	2.14	324.1	-1	20	1000000	635.2	19.50	recipe<-Inferno Essence	0	0
+ThoriumMod	AlmanacofAgony	Magic	magic	275	275.0	8.57	2357.1	1	20	1000000	4620.0	19.50	recipe<-Inferno Essence	0	14
+ThoriumMod	DevilsClaw	Magic	magic	325	325.0	6.00	1950.0	-1	20	1000000	3822.0	19.50	recipe<-Inferno Essence	0	5
+ThoriumMod	EmberStaff	Summon	summon	150	150.0	2.00	351.0	-1	20	1000000	688.0	19.50	recipe<-Inferno Essence	0	26
+ThoriumMod	PrometheanStaff	Sentry	summon	100	100.0	1.50	150.0	-1	20	1000000	294.0	19.50	recipe<-Inferno Essence	0	15
+ThoriumMod	BatWing	Yoyo	melee	25	25.0	2.40	48.0	-1	2	20000	62.0	4.40	boss:ThoriumMod/Viscount@4.4	0	0
+ThoriumMod	DraculaFang	Thrown	ranged	18	18.0	3.00	16.2	1	2	20	19.0	4.40	boss:ThoriumMod/Viscount@4.4	0	0
+ThoriumMod	GuanoGunner	Gun	ranged	18	28.0	1.58	44.2	1	2	20000	57.1	4.40	boss:ThoriumMod/Viscount@4.4	97	0
+ThoriumMod	SonarCannon	Magic	none	22	22.0	2.00	44.0	-1	2	20000	56.8	4.40	boss:ThoriumMod/Viscount@4.4	0	0
+ThoriumMod	VampireScepter	Magic	magic	26	26.0	2.14	55.7	1	2	20000	72.0	4.40	boss:ThoriumMod/Viscount@4.4	0	10
+ThoriumMod	ViscountCane	Summon	summon	18	18.0	1.67	21.6	-1	2	20000	27.9	4.40	boss:ThoriumMod/Viscount@4.4	0	20
+ThoriumMod	GorgonGazeStaff	Magic	magic	14	14.0	2.14	30.0	-1	3	25000	40.7	6.50	recipe<-Bronze Alloy Fragments	0	10
+ThoriumMod	GorgonsEye	Yoyo	melee	24	24.0	2.40	46.1	-1	3	25000	62.5	6.50	recipe<-Bronze Alloy Fragments	0	0
+ThoriumMod	CoralCrossbow	Bow	ranged	13	23.0	1.50	34.5	1	0	9625	40.0	1.60	recipe<-Coral	40	0
+ThoriumMod	CoralPolearm	Spear	melee	10	10.0	2.14	21.4	-1	0	12375	24.9	1.60	recipe<-Coral	0	0
+ThoriumMod	CoralSlasher	Broadsword	melee	11	11.0	2.73	30.0	1	0	11000	34.8	1.60	recipe<-Coral	0	0
+ThoriumMod	SeahorseWand	Summon	summon	7	7.0	1.67	12.6	-1	0	5000	14.5	1.60	recipe<-Coral	0	10
+ThoriumMod	AncientFlame	Magic	magic	52	52.0	2.50	130.0	1	9	500000	229.8	17.00	boss:Lunatic Cultist@17	0	25
+ThoriumMod	AncientFrost	Magic	magic	68	68.0	1.67	113.3	-1	9	500000	200.4	17.00	boss:Lunatic Cultist@17	0	20
+ThoriumMod	AncientLight	Magic	magic	76	76.0	1.88	142.5	1	9	500000	251.9	17.00	boss:Lunatic Cultist@17	0	15
+ThoriumMod	AncientSpark	Magic	magic	70	70.0	2.00	140.0	-1	9	500000	247.5	17.00	boss:Lunatic Cultist@17	0	30
+ThoriumMod	eDarksteelBroadSword	Broadsword	melee	28	28.0	2.73	76.4	-1	2	17000	98.4	0.00	recipe<-	0	0
+ThoriumMod	gDarkSteelCrossBow	Bow	ranged	34	44.0	1.50	66.0	1	2	17000	85.1	0.00	recipe<-	40	0
+ThoriumMod	DarkTome	Magic	magic	20	20.0	2.00	40.0	1	2	15000	51.5	3.70	boss:Dark Mage@3.7	0	14
+ThoriumMod	OgreSnotGun	Gun	ranged	36	36.0	2.50	90.0	1	5	50000	133.9	11.01	boss:Ogre@11.01	8950	0
+ThoriumMod	TabooWand	Summon	summon	20	20.0	1.67	24.0	-1	2	15000	30.9	3.70	boss:Dark Mage@3.7	0	10
+ThoriumMod	DemonBloodBow	Bow	ranged	82	92.0	2.50	230.0	1	8	182000	388.8	13.50	recipe<-Demon Blood Shard	40	0
+ThoriumMod	DemonBloodCrossBow	Bow	ranged	72	82.0	4.00	328.0	1	8	182000	554.5	13.50	recipe<-Demon Blood Shard	40	0
+ThoriumMod	DemonBloodSpear	Spear	melee	78	78.0	2.73	212.7	-1	8	234000	360.5	13.50	recipe<-Demon Blood Shard	0	0
+ThoriumMod	DemonBloodStaff	Magic	magic	68	68.0	2.50	170.0	1	8	208000	287.8	13.50	recipe<-Demon Blood Shard	0	5
+ThoriumMod	DemonBloodSword	Broadsword	melee	86	86.0	3.33	286.7	10	8	208000	485.2	13.50	recipe<-Demon Blood Shard	0	0
+ThoriumMod	AquaPelter	Magic	ranged	15	15.0	6.00	90.0	1	2	15000	115.8	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	BlobhornCoralStaff	Summon	summon	28	28.0	1.67	77.3	-1	4	100000	111.3	7.00	recipe<-Abyssal Chitin	0	10
+ThoriumMod	BubbleConch	Magic	magic	23	23.0	4.29	98.6	1	2	15000	126.9	2.00	sig:rarity	0	20
+ThoriumMod	DrenchedDirk	Magic	melee	18	18.0	6.00	43.2	1	2	15000	55.6	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	GeyserStaff	Magic	magic	26	26.0	1.36	35.5	-1	2	15000	45.6	2.00	recipe<-Aquaite Bar	0	14
+ThoriumMod	Illustrious	Yoyo	melee	24	24.0	2.40	46.1	-1	2	15000	59.3	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	NagaRecurve	Bow	ranged	30	40.0	2.50	100.0	1	4	100000	144.0	7.00	recipe<-Abyssal Chitin	40	0
+ThoriumMod	NanoClamCane	Sentry	summon	12	12.0	3.00	18.0	-1	2	87500	23.7	2.00	sig:rarity	0	15
+ThoriumMod	PearlPike	Spear	melee	22	22.0	2.00	44.0	-1	2	15000	56.6	2.00	recipe<-Aquaite Bar	0	0
+ThoriumMod	SeaFoamScepter	Magic	magic	24	24.0	10.00	240.0	-1	4	100000	345.6	7.00	recipe<-Abyssal Chitin	0	8
+ThoriumMod	SharkStorm	Gun	ranged	7	17.0	7.50	127.5	1	2	250000	170.3	2.00	recipe<-Aquaite Bar	97	0
+ThoriumMod	AeonStaff	Sentry	summon	55	55.0	3.00	82.5	-1	21	400000	160.4	13.96	sig:value	0	15
+ThoriumMod	ArsenalStaff	Summon	summon	12	12.0	1.67	56.2	-1	21	50000	107.2	2.00	recipe<-Spirit Droplet	0	10
+ThoriumMod	Arthropod	Yoyo	melee	40	40.0	2.40	76.8	-1	21	100000	147.5	11.25	sig:value	0	0
+ThoriumMod	BalanceBloom	Magic	none	40	40.0	2.73	67.9	1	21	170000	130.9	12.09	recipe<-Light Shard	0	10
+ThoriumMod	BaritoneSaxophone	Magic	none	54	54.0	1.30	70.4	1	21	200000	136.1	12.60	sig:value	0	0
+ThoriumMod	BassBooster	Magic	magic	36	36.0	10.00	360.0	1	21	300000	698.1	9.00	recipe<-Strange Plating	0	8
+ThoriumMod	BeetleBlaster	Gun	ranged	36	46.0	15.00	690.0	1	21	600000	1346.3	13.50	recipe<-Chain Gun	97	0
+ThoriumMod	Bellerose	Broadsword	melee	25	25.0	2.73	68.2	10	21	50000	130.1	0.00	recipe<-	0	0
+ThoriumMod	BlackMIDI	Magic	none	180	180.0	6.00	1080.0	1	21	1250000	2121.0	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+ThoriumMod	Blitzzard	Broadsword	melee	32	32.0	3.33	106.7	1	21	75000	204.3	10.69	sig:value	0	0
+ThoriumMod	BloodDrinker	Broadsword	melee	44	44.0	4.29	188.6	200	21	75000	361.1	7.00	recipe<-Blood Cell	0	0
+ThoriumMod	BloodGlory	Boomerang	melee	135	135.0	2.73	294.5	-1	21	625000	574.9	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+ThoriumMod	BloodyHighClaws	Broadsword	melee	60	60.0	7.50	450.0	1	21	500000	876.6	9.50	recipe<-Fetid Baghnakhs	0	0
+ThoriumMod	BloodyPaganStaff	Summon	summon	72	72.0	1.67	168.5	-1	21	30000	320.0	13.00	recipe<-Sun Stone	0	10
+ThoriumMod	BloodyWand	Magic	magic	18	18.0	5.22	93.9	1	21	14875	177.2	0.00	recipe<-	0	14
+ThoriumMod	BowofLight	Magic	ranged	300	300.0	10.00	3000.0	-1	21	2500000	5927.8	19.50	boss:ThoriumMod/DreamEater@19.5	0	0
+ThoriumMod	Brinefang	Magic	none	80	80.0	2.73	218.2	-1	21	250000	422.4	14.00	boss:Duke Fishron@14	0	0
+ThoriumMod	BuffaloLauncher	Gun	ranged	78	118.0	2.31	272.3	-1	21	187500	525.8	13.50	recipe<-Rocket Launcher	771	0
+ThoriumMod	CallofCthulhu	Magic	none	102	102.0	1.67	170.0	-1	21	400000	330.5	17.00	recipe<-tile412	0	0
+ThoriumMod	CatsEyeGreatStaff	Magic	magic	110	110.0	3.00	330.0	-1	21	500000	642.8	17.50	recipe<-Nebula Fragment	0	50
+ThoriumMod	ChargedSplasher	Magic	ranged	26	26.0	10.00	260.0	-1	21	250000	503.3	7.00	recipe<-tile134	0	0
+ThoriumMod	CharonsBeacon	Magic	magic	60	60.0	6.00	360.0	1	21	500000	701.3	13.25	boss:Mourning Wood@13.25	0	20
+ThoriumMod	ClericsCross	Magic	none	10	10.0	2.50	25.0	-1	21	500	45.7	1.00	recipe<-Purified Shards	0	5
+ThoriumMod	ClimbersIceAxe	Boomerang	melee	70	70.0	3.33	186.7	-1	21	300000	362.0	9.50	recipe<-Frost Core	0	0
+ThoriumMod	CorrodlingStaff	Summon	summon	56	56.0	2.00	262.1	-1	21	500000	510.5	14.40	sig:value	0	10
+ThoriumMod	CosmicDagger	Magic	none	70	70.0	3.00	84.0	-1	21	500000	163.6	13.75	boss:Martian Saucer@13.75	0	0
+ThoriumMod	CosmicFluxStaff	Magic	none	108	108.0	6.00	123.2	2	21	500000	240.0	17.00	boss:Lunatic Cultist@17	0	15
+ThoriumMod	CupidString	Bow	ranged	44	54.0	3.33	180.0	1	21	100000	345.6	12.09	recipe<-Light Shard	40	0
+ThoriumMod	DarkFlame	Magic	magic	90	90.0	1.67	150.0	-1	21	200000	289.8	11.00	recipe<-Chlorophyte Bar	0	18
+ThoriumMod	DarkGrip	Magic	magic	50	50.0	6.00	300.0	-1	21	250000	580.8	13.50	recipe<-Dark Matter	0	10
+ThoriumMod	DecayingSorrow	Bow	ranged	42	52.0	1.88	97.5	1	21	100000	187.2	11.60	recipe<-Cursed Cloth	40	0
+ThoriumMod	DMR	Gun	ranged	140	150.0	3.00	450.0	1	21	500000	876.6	13.50	recipe<-Sniper Rifle	97	0
+ThoriumMod	DraconicMagmaStaff	Summon	summon	25	25.0	1.67	117.0	-1	21	100000	224.6	7.00	recipe<-tile134	0	10
+ThoriumMod	EclipseFang	Broadsword	melee	120	120.0	4.62	553.8	1	21	500000	1078.9	17.00	boss:Lunatic Cultist@17	0	0
+ThoriumMod	EmperorsWill	Gun	ranged	125	135.0	9.47	1278.9	1	21	300000	2480.0	17.50	recipe<-Stardust Fragment	97	0
+ThoriumMod	EruptingFlare	Magic	magic	74	74.0	2.73	201.8	-1	21	250000	390.7	13.50	recipe<-Solar Pebble	0	15
+ThoriumMod	EssenceofFlame	Broadsword	melee	230	230.0	3.00	690.0	5	21	500000	1344.1	17.50	recipe<-Solar Fragment	0	0
+ThoriumMod	EyeofOdin	Summon	summon	44	44.0	1.67	205.9	-1	21	250000	398.6	13.50	recipe<-Concentrated Thorium	0	10
+ThoriumMod	FireAxe	Magic	none	120	120.0	2.00	240.0	1	21	500000	467.5	14.40	sig:value	0	0
+ThoriumMod	FriendlyFireStaff	Magic	none	60	60.0	3.75	225.0	1	21	250000	435.6	12.00	recipe<-Spectre Bar	0	15
+ThoriumMod	GelGlove	Magic	none	14	14.0	3.33	46.7	-1	21	100000	89.6	1.00	boss:King Slime@1	0	0
+ThoriumMod	GeomancersBrush	Magic	magic	66	66.0	2.50	165.0	-1	21	90000	316.5	7.00	recipe<-Soul of Light	0	12
+ThoriumMod	GoldenLocks	Shortsword	melee	40	40.0	12.00	480.0	1	21	300000	930.8	9.50	recipe<-Steam Battery	0	0
+ThoriumMod	GolemsGaze	Yoyo	melee	80	80.0	2.40	153.6	-1	21	300000	297.8	13.50	recipe<-Solar Pebble	0	0
+ThoriumMod	GreedfulGurdy	Magic	none	58	58.0	3.00	174.0	-1	21	100000	334.1	7.70	boss:Flying Dutchman@7.7	0	0
+ThoriumMod	GrimFlayer	Broadsword	melee	30	30.0	4.29	128.6	1	21	100000	246.9	11.25	sig:value	0	0
+ThoriumMod	GuiltyPleasure	Magic	none	28	28.0	1.67	46.7	-1	21	250000	90.3	9.00	recipe<-Soul of Sight	0	0
+ThoriumMod	HadronCollider	Magic	none	58	58.0	2.50	145.0	1	21	300000	281.2	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	Heartstriker	Magic	melee	24	24.0	1.43	34.3	-1	21	50000	65.4	9.90	sig:value	0	0
+ThoriumMod	HeavensGate	Magic	magic	24	24.0	3.00	72.0	1	21	100000	138.2	12.09	recipe<-Forbidden Fragment	0	20
+ThoriumMod	HellfireMinigun	Gun	ranged	7	17.0	8.57	145.7	1	21	350000	282.9	0.00	recipe<-	97	0
+ThoriumMod	Hippocraticrossbow	Magic	none	56	66.0	2.14	125.8	1	21	50000	240.0	11.01	boss:Ogre@11.01	40	0
+ThoriumMod	HolyHammer	Boomerang	melee	60	60.0	3.75	180.0	-1	21	500000	350.6	13.50	recipe<-Holy Knight's Alloy	0	40
+ThoriumMod	HydroPump	Gun	ranged	86	86.0	10.00	860.0	6	21	750000	1681.3	15.19	sig:value	126	0
+ThoriumMod	IdolsMicrophone	Magic	none	144	144.0	2.50	360.0	-1	21	250000	696.9	12.50	recipe<-Illumite Ingot	0	0
+ThoriumMod	InfernalAnimator	Sentry	summon	18	18.0	2.50	27.0	-1	21	27000	51.2	0.00	recipe<-	0	10
+ThoriumMod	LadyLight	Summon	summon	22	22.0	1.67	103.0	-1	21	15000	194.3	7.00	recipe<-Crystal Shard	0	10
+ThoriumMod	LaunchJumper	Gun	ranged	55	95.0	2.00	190.0	-1	21	500000	370.1	14.40	sig:value	771	0
+ThoriumMod	Legacy	Magic	magic	60	60.0	4.29	257.1	1	21	250000	497.8	13.50	recipe<-Dark Matter	0	12
+ThoriumMod	LifeQuartzClaymore	Broadsword	melee	12	12.0	2.00	24.0	1	21	25000	45.5	1.00	recipe<-Life Quartz	0	0
+ThoriumMod	LightningStaff	Magic	magic	85	85.0	2.73	231.8	-1	21	250000	448.8	13.50	recipe<-Magnet Sphere	0	10
+ThoriumMod	LingeringWill	Magic	melee	204	204.0	1.58	128.8	-1	21	500000	251.0	13.50	recipe<-Holy Knight's Alloy	0	0
+ThoriumMod	LittleRed	Gun	ranged	118	128.0	1.43	182.9	1	21	300000	354.6	9.50	recipe<-Steam Battery	97	0
+ThoriumMod	ManHacker	Gun	ranged	18	18.0	2.14	38.6	5	21	15000	72.8	0.00	recipe<-	9313	0
+ThoriumMod	MantisCane	Summon	summon	24	24.0	2.00	112.3	-1	21	150000	216.4	12.04	sig:value	0	10
+ThoriumMod	MidasGavel	Broadsword	melee	48	48.0	2.00	96.0	10	21	5000000	190.8	18.00	sig:value	0	0
+ThoriumMod	MineralLauncher	Gun	ranged	38	38.0	2.14	32.6	-1	21	75000	62.4	7.00	recipe<-tile134	12	0
+ThoriumMod	Moonlight	Spear	melee	28	28.0	2.22	62.2	-1	21	100000	119.5	2.00	recipe<-Spirit Droplet	0	0
+ThoriumMod	NebulaReflection	Summon	summon	125	125.0	1.67	292.5	-1	21	500000	569.8	17.50	recipe<-Nebula Fragment	0	20
+ThoriumMod	NightStaff	Magic	magic	30	30.0	2.73	81.8	1	21	75000	156.7	7.00	recipe<-Soul of Night	0	10
+ThoriumMod	NorthernLight	Magic	magic	300	300.0	2.00	600.0	-1	21	1250000	1178.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	50
+ThoriumMod	NovaRifle	Gun	ranged	400	410.0	1.43	585.7	1	21	500000	1140.9	13.50	recipe<-Sniper Rifle	97	0
+ThoriumMod	ObsidianStaff	Magic	magic	26	26.0	3.00	78.0	-1	21	15000	147.2	0.00	recipe<-	0	14
+ThoriumMod	OmegaBlaster	Magic	magic	118	118.0	1.00	118.0	-1	21	150000	227.4	7.00	recipe<-Adamantite Bar	0	25
+ThoriumMod	Omniwrench	Magic	none	52	52.0	3.33	173.3	-1	21	100000	332.8	12.09	recipe<-Dark Shard	0	0
+ThoriumMod	OnemanQuartet	Magic	none	30	30.0	1.67	50.0	-1	21	200000	96.6	12.60	sig:value	0	0
+ThoriumMod	PhantomArmCannon	Gun	ranged	50	90.0	3.33	300.0	-1	21	250000	580.8	13.50	recipe<-Dark Matter	771	0
+ThoriumMod	PhantomCamera	Magic	magic	48	48.0	2.00	96.0	-1	21	25000	182.0	9.00	recipe<-Lens	0	14
+ThoriumMod	PillPopper	Gun	ranged	52	52.0	5.00	260.0	1	21	500000	506.5	13.50	recipe<-Solar Tablet Fragment	9599	0
+ThoriumMod	PlasmaStaff	Magic	magic	42	42.0	2.14	90.0	1	21	72500	172.3	9.00	recipe<-Hallowed Bar	0	10
+ThoriumMod	PLG	Magic	magic	72	72.0	2.00	144.0	-1	21	500000	280.5	14.40	sig:value	0	25
+ThoriumMod	PollenPike	Spear	melee	22	22.0	1.76	38.8	-1	21	100000	74.5	4.00	recipe<-Bee Wax	0	0
+ThoriumMod	PortableWintergatan	Magic	none	54	54.0	1.67	36.0	8	21	250000	69.7	9.00	recipe<-Hallowed Bar	0	0
+ThoriumMod	PrehistoricAmberStaff	Summon	summon	12	12.0	1.67	56.2	-1	21	15000	106.0	1.00	recipe<-Sturdy Fossil	0	10
+ThoriumMod	QuakeGauntlet	Shortsword	melee	124	124.0	15.00	1860.0	1	21	625000	3630.4	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+ThoriumMod	QuasarsFlare	Bow	ranged	220	230.0	7.50	1725.0	1	21	1250000	3387.7	12.81	boss:CalamityMod/AstrumAureus@12.81	40	0
+ThoriumMod	Razorlash	Magic	magic	78	78.0	1.00	78.0	-1	21	200000	150.7	11.00	recipe<-Chlorophyte Bar	0	20
+ThoriumMod	ResonatorsArm	Magic	none	62	62.0	3.33	206.7	1	21	100000	396.8	7.00	recipe<-Soul of Night	0	0
+ThoriumMod	RifleSpear	Boomerang	melee	36	36.0	3.75	108.0	-1	21	75000	206.8	7.00	recipe<-Blood Cell	0	0
+ThoriumMod	RudeWand	Sentry	summon	48	48.0	1.50	72.0	-1	21	250000	139.4	12.00	recipe<-Nanites	0	20
+ThoriumMod	Saba	Broadsword	melee	34	34.0	1.15	39.2	3	21	75000	75.1	7.00	recipe<-Soul of Night	0	0
+ThoriumMod	ShadowFlareBow	Bow	ranged	54	64.0	3.33	213.3	-1	21	500000	415.6	13.50	recipe<-Shadowbeam Staff	40	0
+ThoriumMod	Shockbuster	Gun	ranged	18	18.0	3.75	67.5	3	21	250000	130.7	9.00	recipe<-Hallowed Bar	9858	0
+ThoriumMod	ShusWrath	Bow	ranged	68	78.0	1.58	123.2	1	21	100000	236.5	12.09	recipe<-Forbidden Fragment	40	0
+ThoriumMod	SinisterHonk	Magic	none	20	20.0	2.50	50.0	3	21	14000	94.3	1.00	recipe<-tile1936	0	0
+ThoriumMod	Skadoosh	Yoyo	melee	150	150.0	2.40	288.0	-1	21	500000	561.0	17.50	recipe<-Solar Fragment	0	0
+ThoriumMod	SmitingHammer	Boomerang	melee	52	52.0	3.75	156.0	-1	21	230000	301.8	9.00	recipe<-Hallowed Bar	0	12
+ThoriumMod	SnarkyGun	Gun	ranged	38	48.0	3.75	180.0	1	21	250000	348.5	13.04	sig:value	97	0
+ThoriumMod	SnowWhite	Magic	magic	38	38.0	5.00	190.0	-1	21	300000	368.4	9.50	recipe<-Steam Battery	0	10
+ThoriumMod	SoulReaver	Magic	melee	72	72.0	3.33	240.0	3	21	250000	464.6	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	Spearmint	Magic	melee	68	68.0	4.29	291.4	1	21	250000	564.2	13.04	sig:value	0	0
+ThoriumMod	SpiritBreaker	Gun	ranged	31	31.0	15.00	465.0	4	21	900000	910.5	12.00	recipe<-Spectre Bar	23	0
+ThoriumMod	StaticProd	Magic	magic	32	32.0	4.29	137.1	-1	21	250000	265.5	9.00	recipe<-Hallowed Bar	0	15
+ThoriumMod	SteamgunnerController	Summon	summon	15	15.0	2.00	35.1	-1	21	500000	68.4	14.40	sig:value	0	15
+ThoriumMod	StrangeSkull	Sentry	summon	28	28.0	3.00	42.0	-1	21	25000	79.6	2.00	recipe<-Spirit Droplet	0	10
+ThoriumMod	StrawberryHeart	Magic	none	88	88.0	4.29	377.1	-1	21	250000	730.1	12.50	recipe<-Illumite Ingot	0	0
+ThoriumMod	SuperPlasmaCannon	Magic	magic	58	58.0	1.67	96.7	-1	21	500000	188.3	13.75	boss:Martian Saucer@13.75	0	10
+ThoriumMod	SupersonicBomber	Gun	ranged	74	114.0	3.33	380.0	-1	21	350000	737.9	13.70	sig:value	771	0
+ThoriumMod	TeleologicImposition	Magic	magic	145	145.0	2.50	362.5	1	21	500000	706.1	17.50	recipe<-Nebula Fragment	0	50
+ThoriumMod	TerrariansLastKnife	Broadsword	melee	250	250.0	7.50	1875.0	-1	21	1250000	3682.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0
+ThoriumMod	Teslanator	Gun	ranged	38	38.0	1.76	67.1	-1	21	350000	130.2	13.70	sig:value	9858	0
+ThoriumMod	TheBopper	Magic	none	74	74.0	3.00	210.9	3	21	250000	408.3	13.04	sig:value	0	0
+ThoriumMod	TheDigester	Magic	none	30	30.0	1.58	47.4	1	21	75000	90.7	10.69	sig:value	0	20
+ThoriumMod	TheMassacre	Gun	ranged	110	150.0	1.50	225.0	-1	21	400000	437.4	17.00	recipe<-tile412	771	0
+ThoriumMod	TheWhirlpool	Yoyo	melee	74	74.0	2.40	142.1	-1	21	500000	276.8	14.40	sig:value	0	0
+ThoriumMod	Thunderstruck	Magic	none	160	160.0	2.14	342.9	-1	21	200000	662.4	12.60	sig:value	0	0
+ThoriumMod	TurtleDrum	Magic	none	108	108.0	2.31	99.7	-1	21	250000	193.0	12.50	recipe<-Turtle Shell	0	0
+ThoriumMod	UmbraBlaster	Gun	ranged	32	42.0	2.00	84.0	1	21	400000	163.3	13.50	recipe<-Dark Matter	97	0
+ThoriumMod	UselessStaff	Magic	magic	40	40.0	2.73	109.1	-1	21	250000	211.2	7.00	recipe<-Mythril Bar	0	15
+ThoriumMod	ValkyrieBlade	Summon	summon	38	38.0	1.67	88.9	-1	21	250000	172.1	9.00	recipe<-Hallowed Bar	0	10
+ThoriumMod	ViciousMockery	Magic	none	18	18.0	1.58	25.6	2	21	50000	48.8	9.90	sig:value	0	0
+ThoriumMod	WondrousWand	Magic	magic	56	56.0	2.50	140.0	1	21	250000	271.0	9.50	recipe<-Frost Core	0	14
+ThoriumMod	WyvernSlayer	Broadsword	melee	135	135.0	2.14	289.3	-1	21	500000	563.5	14.40	sig:value	0	0
+ThoriumMod	YarnBall	Summon	summon	16	16.0	1.67	74.9	-1	21	100000	143.8	11.25	sig:value	0	10
+ThoriumMod	Zunpet	Magic	none	40	40.0	3.00	120.0	-1	21	250000	232.3	12.09	recipe<-Light Shard	0	0
+ThoriumMod	DragonsBreath	Magic	magic	25	25.0	10.00	250.0	-1	4	100000	360.0	7.00	recipe<-Spell Tome	0	8
+ThoriumMod	DragonsGaze	Gun	ranged	27	37.0	3.33	123.3	1	4	100000	177.6	7.00	recipe<-Green Dragon Scale	97	0
+ThoriumMod	DragonTalon	Spear	melee	35	35.0	2.40	84.0	-1	4	100000	121.0	7.00	recipe<-Green Dragon Scale	0	0
+ThoriumMod	DragonTooth	Broadsword	melee	36	36.0	2.73	98.2	1	4	100000	141.4	7.00	recipe<-Green Dragon Scale	0	0
+ThoriumMod	DreadBlaster	Magic	magic	55	55.0	2.00	110.0	1	8	96000	184.7	13.50	recipe<-Dread Soul	0	12
+ThoriumMod	DreadFork	Spear	melee	50	50.0	2.14	107.1	-1	8	108000	180.1	13.50	recipe<-Dread Soul	0	0
+ThoriumMod	DreadLauncher	Gun	ranged	54	94.0	1.88	176.2	-1	8	108000	296.3	13.50	recipe<-Dread Soul	771	0
+ThoriumMod	DreadRazor	Broadsword	melee	64	64.0	3.75	240.0	1	8	84000	402.5	13.50	recipe<-Dread Soul	0	0
+ThoriumMod	Charm	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Confuse	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Dissolve	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Freeze	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Ignite	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	MagickStaff	Magic	magic	11	11.0	6.00	66.0	1	2	10000	84.5	12.81	recipe<-Siphon	0	5
+ThoriumMod	Pierce	Magic	magic	13	13.0	2.50	32.5	3	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Poison	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Siphon	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	Stun	Magic	magic	13	13.0	2.50	32.5	1	1	1200	38.5	12.81	recipe<-Fallen Star	0	3
+ThoriumMod	BloodBelcher	Gun	ranged	28	38.0	3.00	114.0	1	4	100000	164.2	7.00	recipe<-Unfathomable Flesh	97	0
+ThoriumMod	BloodClotStaff	Magic	magic	38	38.0	2.50	95.0	-1	4	100000	136.8	7.00	recipe<-Unfathomable Flesh	0	10
+ThoriumMod	FleshBow	Bow	ranged	33	43.0	2.73	117.3	1	4	100000	168.9	7.00	recipe<-Unfathomable Flesh	40	0
+ThoriumMod	FleshMace	Magic	melee	45	45.0	1.33	60.0	-1	4	100000	86.4	7.00	recipe<-Unfathomable Flesh	0	0
+ThoriumMod	FleshSkewer	Spear	melee	33	33.0	2.40	79.2	-1	4	100000	114.0	7.00	recipe<-Unfathomable Flesh	0	0
+ThoriumMod	ToothOfTheConsumer	Broadsword	melee	32	32.0	2.86	91.4	1	4	100000	131.7	7.00	recipe<-Unfathomable Flesh	0	0
+ThoriumMod	GraniteCrossbow	Bow	ranged	22	32.0	2.31	73.8	1	3	25000	100.1	6.40	recipe<-Granite Energy Core	40	0
+ThoriumMod	GraniteReflector	Boomerang	melee	30	30.0	3.00	72.0	-1	3	25000	97.6	6.40	recipe<-Granite Energy Core	0	0
+ThoriumMod	BloodTransfusion	Magic	none	26	26.0	5.00	130.0	1	4	75000	186.6	7.00	recipe<-Spell Tome	0	8
+ThoriumMod	Bonesaw	Magic	none	14	14.0	2.50	35.0	1	1	3250	42.0	0.00	recipe<-	0	0
+ThoriumMod	CoralPurifier	Magic	none	10	10.0	2.31	181.7	1	1	9625	221.5	1.60	recipe<-Coral	0	6
+ThoriumMod	DarkContagion	Magic	none	30	30.0	1.67	50.0	4	4	75000	71.8	7.00	recipe<-Spell Tome	0	20
+ThoriumMod	DeepStaff	Magic	none	20	20.0	3.00	60.0	1	3	17500	81.0	4.50	sig:rarity	0	5
+ThoriumMod	FeatherBarrierRod	Magic	none	15	15.0	2.00	30.0	1	2	15000	38.6	1.00	recipe<-tile1936	0	15
+ThoriumMod	HallowedBlessing	Magic	none	35	35.0	2.73	95.5	1	5	230000	144.6	9.00	recipe<-Hallowed Bar	0	15
+ThoriumMod	HeavenlyCloudScepter	Magic	none	30	30.0	1.43	23.5	1	4	250000	34.3	7.00	shop:ThoriumMod/Spiritualist/Shop:Conditions.InHardmode	0	50
+ThoriumMod	HereticBreaker	Magic	none	14	14.0	2.50	49.9	1	1	3750	60.0	1.00	recipe<-Purified Shards	0	0
+ThoriumMod	HolyFire	Magic	none	30	30.0	2.31	27.7	-1	4	75000	39.7	7.00	recipe<-Spell Tome	0	35
+ThoriumMod	IridescentStaff	Magic	none	25	25.0	1.76	29.5	1	4	75000	42.4	7.00	recipe<-tile134	0	15
+ThoriumMod	LeechBolt	Magic	none	12	12.0	3.00	36.0	2	1	8000	43.8	1.00	sig:rarity	0	6
+ThoriumMod	LethalInjection	Magic	none	42	42.0	7.50	141.3	-1	8	300000	240.0	12.00	shop:Terraria/Cyborg/Shop	9634	0
+ThoriumMod	LifeAndDeath	Magic	none	80	80.0	2.73	131.3	5	10	500000	240.0	18.00	boss:Moon Lord's Core@18	0	20
+ThoriumMod	LifeDisperser	Magic	none	20	20.0	3.75	66.0	1	3	37500	90.0	4.50	sig:rarity	0	10
+ThoriumMod	LifeSurgeStaff	Magic	none	40	40.0	2.50	159.3	2	5	150000	240.0	9.00	recipe<-Strange Plating	0	25
+ThoriumMod	LightBringerWarhammer	Magic	none	64	64.0	1.76	73.4	-1	8	500000	125.4	13.50	recipe<-Holy Knight's Alloy	0	35
+ThoriumMod	LightsLament	Magic	none	34	34.0	1.50	51.0	-1	3	125000	70.6	4.50	sig:rarity	0	25
+ThoriumMod	MidnightStaff	Magic	none	20	20.0	1.50	30.0	-1	4	75000	43.1	12.09	recipe<-Dark Shard	0	35
+ThoriumMod	MindMelter	Magic	none	40	40.0	5.00	200.0	-1	5	230000	302.9	9.00	recipe<-Hallowed Bar	0	5
+ThoriumMod	MorningDew	Magic	none	35	35.0	2.73	40.5	-1	7	87500	65.5	12.50	recipe<-Bio Matter	0	0
+ThoriumMod	Omen	Magic	none	26	26.0	2.00	52.0	-1	3	17500	70.2	1.00	recipe<-Unholy Shards	0	5
+ThoriumMod	PaganGrasp	Magic	none	84	84.0	2.31	193.8	-1	8	500000	331.1	13.25	boss:Mourning Wood@13.25	0	10
+ThoriumMod	PalmCross	Magic	none	10	10.0	2.00	20.0	-1	1	10000	24.4	12.81	recipe<-Fallen Star	0	5
+ThoriumMod	PoisonPrickler	Magic	none	18	18.0	2.73	49.1	-1	3	27000	66.6	0.00	recipe<-	0	20
+ThoriumMod	RottenCod	Magic	none	11	11.0	2.00	39.6	-1	1	6500	48.0	1.00	sig:rarity	0	0
+ThoriumMod	SacredBludgeon	Magic	none	38	38.0	2.50	42.3	-1	4	27500	60.0	7.00	recipe<-Hallowed Charm	0	0
+ThoriumMod	SacredLyre	Magic	none	40	40.0	3.00	98.5	2	4	350000	144.0	7.00	recipe<-Hallowed Charm	0	12
+ThoriumMod	SamsaraLotus	Magic	none	20	20.0	1.20	24.0	1	2	200000	32.0	2.00	sig:rarity	0	50
+ThoriumMod	ShadowWand	Magic	none	15	15.0	3.00	45.0	3	2	15000	57.9	1.00	recipe<-Unholy Shards	0	5
+ThoriumMod	SpiritBendersStaff	Magic	none	42	42.0	4.29	72.0	1	8	300000	122.3	12.00	recipe<-Spectre Bar	0	12
+ThoriumMod	SpiritBlastWand	Magic	none	18	18.0	0.83	15.0	-1	2	25000	19.4	2.00	recipe<-Spirit Droplet	0	25
+ThoriumMod	TemplarJudgment	Magic	none	26	26.0	2.14	40.0	-1	2	15000	51.4	1.00	recipe<-Life Quartz	0	0
+ThoriumMod	TheEffuser	Magic	none	46	46.0	3.00	44.7	-1	7	57500	72.0	12.50	recipe<-Bio Matter	0	0
+ThoriumMod	TheStalker	Magic	none	15	15.0	2.00	39.5	-1	1	7500	48.0	3.00	boss:Brain of Cthulhu@3	0	0
+ThoriumMod	TwilightStaff	Magic	none	16	16.0	2.31	167.2	-1	4	75000	240.0	12.09	recipe<-Light Shard	0	20
+ThoriumMod	WildUmbra	Magic	none	28	28.0	3.00	75.6	1	4	75000	108.5	7.00	recipe<-Spell Tome	0	5
+ThoriumMod	ColdFront	Boomerang	melee	10	10.0	2.40	19.2	-1	0	2625	21.8	0.00	recipe<-	0	0
+ThoriumMod	Flurry	Magic	magic	9	9.0	5.00	45.0	2	0	1750	50.8	7.00	recipe<-Book	0	3
+ThoriumMod	FrostFury	Bow	ranged	8	18.0	2.00	36.0	1	0	2625	40.9	0.00	recipe<-	40	0
+ThoriumMod	FrostPelter	Gun	ranged	2	2.0	1.25	1.9	1	0	3000	2.1	0.00	recipe<-	949	0
+ThoriumMod	IceBreaker	Magic	melee	5	5.0	2.00	10.0	-1	0	3000	11.4	0.00	recipe<-	0	0
+ThoriumMod	IceCube	Magic	magic	12	12.0	3.00	36.0	2	0	2625	40.9	0.00	recipe<-	0	5
+ThoriumMod	IceLance	Spear	melee	9	9.0	2.14	19.3	-1	0	3000	22.0	0.00	recipe<-	0	0
+ThoriumMod	TheSnowball	Magic	melee	8	8.0	1.33	10.7	-1	0	3000	12.2	0.00	recipe<-	0	0
+ThoriumMod	IllumiteBarrage	Gun	ranged	44	84.0	3.33	280.0	-1	7	187500	456.7	12.50	recipe<-Illumite Ingot	771	0
+ThoriumMod	IllumiteBlade	Broadsword	melee	58	58.0	3.00	174.0	1	7	200000	284.0	12.50	recipe<-Illumite Ingot	0	0
+ThoriumMod	IllumiteBlaster	Gun	ranged	40	50.0	5.00	250.0	1	7	187500	407.7	12.50	recipe<-Illumite Ingot	97	0
+ThoriumMod	IllumiteShotbow	Bow	ranged	42	52.0	4.29	222.9	1	7	187500	363.5	12.50	recipe<-Illumite Ingot	40	0
+ThoriumMod	IllumiteSpear	Spear	melee	48	48.0	2.00	96.0	-1	7	108000	155.6	12.50	recipe<-Illumite Ingot	0	0
+ThoriumMod	LodeStoneBow	Bow	ranged	74	84.0	2.00	168.0	1	5	100000	252.0	9.50	recipe<-Lodestone Ingot	40	0
+ThoriumMod	LodeStoneBreaker	Magic	melee	56	56.0	1.33	74.7	-1	5	100000	112.0	9.50	recipe<-Lodestone Ingot	0	0
+ThoriumMod	LodeStoneClaymore	Broadsword	melee	42	42.0	2.73	114.5	1	5	100000	171.8	9.50	recipe<-Lodestone Ingot	0	0
+ThoriumMod	LodestoneSlugger	Gun	ranged	21	31.0	1.67	51.7	1	5	100000	77.5	9.50	recipe<-Lodestone Ingot	97	0
+ThoriumMod	LodeStoneStaff	Magic	magic	34	34.0	1.00	34.0	-1	5	100000	51.0	9.50	recipe<-Lodestone Ingot	0	50
+ThoriumMod	AdamantiteStaff	Magic	magic	54	54.0	2.31	124.6	-1	4	120000	179.8	7.00	recipe<-Adamantite Bar	0	10
+ThoriumMod	BlackholeCannon	Magic	magic	40	40.0	1.30	52.2	-1	6	300000	82.4	9.20	recipe<-Void Heart	0	75
+ThoriumMod	ChlorophyteStaff	Magic	magic	48	48.0	5.00	240.0	1	7	240000	392.5	11.00	recipe<-Chlorophyte Bar	0	20
+ThoriumMod	ChromaticFury	Magic	magic	42	42.0	1.43	60.0	-1	8	250000	101.8	15.00	shop:Terraria/Princess/Shop:Conditions.DownedEmpressOfLight	0	20
+ThoriumMod	CobaltStaff	Magic	magic	40	40.0	3.33	133.3	6	4	60000	190.8	7.00	recipe<-Cobalt Bar	0	8
+ThoriumMod	Cyclone	Magic	magic	42	42.0	1.50	63.0	-1	5	200000	95.3	7.00	recipe<-Spell Tome	0	20
+ThoriumMod	DarkWave	Magic	magic	20	20.0	2.73	54.5	3	1	13500	66.8	2.00	recipe<-Demonite Bar	0	8
+ThoriumMod	DynastyWarFan	Magic	magic	18	18.0	2.50	45.0	1	4	90000	64.7	7.00	recipe<-Soul of Light	0	10
+ThoriumMod	EnchantedStaff	Magic	magic	14	14.0	2.14	30.0	3	1	50000	37.4	1.00	sig:rarity	0	4
+ThoriumMod	HallowedStaff	Magic	magic	24	24.0	1.33	32.0	-1	5	230000	48.5	9.00	recipe<-Hallowed Bar	0	20
+ThoriumMod	HighTide	Magic	magic	20	20.0	2.50	50.0	1	2	87500	65.9	2.00	sig:rarity	0	10
+ThoriumMod	InfernoStaff	Magic	magic	30	30.0	1.25	37.5	1	3	27000	50.9	0.00	recipe<-	0	16
+ThoriumMod	Joyeuse	Magic	magic	38	38.0	1.58	60.0	-1	4	200000	87.1	7.00	recipe<-Hallowed Charm	0	28
+ThoriumMod	JunglesWrath	Magic	magic	17	17.0	2.00	34.0	1	3	27000	46.1	4.00	recipe<-Stinger	0	14
+ThoriumMod	MythrilStaff	Magic	magic	40	40.0	6.00	240.0	1	4	90000	345.2	7.00	recipe<-Mythril Bar	0	15
+ThoriumMod	OrichalcumStaff	Magic	magic	34	34.0	9.60	326.4	1	4	110000	470.6	7.00	recipe<-Orichalcum Bar	0	15
+ThoriumMod	PalladiumStaff	Magic	magic	44	44.0	2.50	110.0	-1	4	80000	158.0	7.00	recipe<-Palladium Bar	0	10
+ThoriumMod	SpineBreaker	Magic	magic	18	18.0	1.30	23.5	-1	3	27000	31.9	4.50	sig:rarity	0	15
+ThoriumMod	Spores	Magic	magic	75	75.0	3.33	250.0	1	8	175000	422.4	12.00	recipe<-Shroomite Bar	0	15
+ThoriumMod	Stalagmite	Magic	magic	34	34.0	2.14	72.9	-1	4	100000	104.9	7.00	recipe<-Spell Tome	0	12
+ThoriumMod	TimeGate	Magic	magic	42	42.0	2.00	84.0	-1	8	250000	142.5	13.50	recipe<-Dark Matter	0	75
+ThoriumMod	TitaniumStaff	Magic	magic	48	48.0	1.50	72.0	3	4	140000	104.1	7.00	recipe<-Titanium Bar	0	10
+ThoriumMod	VesselBuster	Magic	magic	15	15.0	6.00	90.0	-1	1	13500	110.3	2.00	recipe<-Crimtane Bar	0	5
+ThoriumMod	WaterwickCandle	Magic	magic	48	48.0	2.73	130.9	-1	2	25000	169.6	2.00	recipe<-Spirit Droplet	0	15
+ThoriumMod	DestroyersRage	Magic	ranged	45	45.0	5.00	225.0	1	6	300000	355.3	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	EyeoftheDestroyer	Yoyo	melee	48	48.0	2.40	92.2	-1	6	300000	145.5	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	PrimesFury	Broadsword	melee	90	90.0	3.00	270.0	5	6	300000	426.4	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	SparkTaser	Magic	none	42	42.0	3.00	126.0	10	6	300000	199.0	9.00	recipe<-Strange Plating	0	0
+ThoriumMod	TwinsIre	Magic	magic	44	44.0	2.00	88.0	1	6	300000	139.0	9.00	recipe<-Strange Plating	0	20
+ThoriumMod	CyanPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+ThoriumMod	CyanPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+ThoriumMod	DoomFireAxe	Broadsword	melee	42	42.0	2.14	90.0	1	4	100000	129.6	7.00	recipe<-tile134	0	0
+ThoriumMod	HeadSpinner	Yoyo	melee	34	34.0	2.40	65.3	-1	4	54000	93.3	7.00	recipe<-Soul of Night	0	0
+ThoriumMod	PinkPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0
+ThoriumMod	PinkPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0
+ThoriumMod	Salivation	Yoyo	melee	32	32.0	2.40	61.4	-1	4	54000	87.8	7.00	recipe<-Soul of Night	0	0
+ThoriumMod	SolScorchedSlab	Broadsword	melee	94	94.0	3.00	282.0	1	8	250000	478.2	13.50	recipe<-Solar Pebble	0	0
+ThoriumMod	AquamarineStaff	Magic	magic	17	17.0	1.71	29.1	2	0	7500	33.7	0.00	recipe<-	0	5
+ThoriumMod	OpalStaff	Magic	magic	16	16.0	1.71	27.4	1	0	5000	31.5	0.00	recipe<-	0	5
+ThoriumMod	ArmorBane	Gun	ranged	64	74.0	3.00	222.0	1	5	160000	334.8	9.50	sig:rarity	97	0
+ThoriumMod	BackStabber	Broadsword	melee	29	29.0	4.29	124.3	1	4	75000	178.4	7.00	sig:rarity	0	0
+ThoriumMod	BentZombieArm	Boomerang	melee	12	12.0	3.33	32.0	-1	1	1500	38.0	1.00	sig:rarity	0	0
+ThoriumMod	BoneFlayerTail	Magic	melee	48	48.0	1.33	64.0	-1	4	75000	91.8	7.00	sig:rarity	0	0
+ThoriumMod	BulletStorm	Gun	ranged	26	36.0	7.50	270.0	1	5	145000	406.7	9.50	sig:rarity	97	0
+ThoriumMod	DetachedBlaster	Magic	magic	28	28.0	2.14	60.0	2	2	25000	77.8	2.00	sig:rarity	0	10
+ThoriumMod	EbonHammer	Broadsword	melee	22	22.0	2.14	47.1	-1	1	125000	59.6	1.00	sig:rarity	0	0
+ThoriumMod	EbonyTail	Magic	melee	48	48.0	1.33	64.0	-1	4	75000	91.8	7.00	sig:rarity	0	0
+ThoriumMod	Eelrod	Magic	magic	13	13.0	2.50	32.5	1	2	70000	42.7	5.00	shop:ThoriumMod/Diverman/Shop:Conditions.DownedSkeletron	0	10
+ThoriumMod	EighthPlagueStaff	Magic	magic	10	10.0	7.50	75.0	1	1	13500	91.9	1.00	sig:rarity	0	10
+ThoriumMod	Executioner	Broadsword	melee	46	46.0	2.31	106.2	1	5	100000	159.2	9.50	sig:rarity	0	0
+ThoriumMod	Fork	Spear	melee	12	12.0	2.14	25.7	-1	1	10000	31.4	2.00	shop:ThoriumMod/Cook/Shop:Conditions.DownedEyeOfCthulhu	0	0
+ThoriumMod	FrostPlagueStaff	Magic	magic	24	24.0	1.67	40.0	1	4	75000	57.4	7.00	sig:rarity	0	10
+ThoriumMod	HailBomber	Summon	summon	32	32.0	2.31	88.3	-1	4	75000	126.7	7.00	sig:rarity	0	12
+ThoriumMod	HexWand	Magic	magic	6	6.0	1.88	11.2	1	4	65000	16.1	7.00	shop:ThoriumMod/Druid/Shop:Conditions.InHardmode	0	25
+ThoriumMod	HotPot	Magic	none	34	34.0	3.00	102.0	-1	4	75000	146.4	7.00	sig:rarity	0	0
+ThoriumMod	KineticKnife	Magic	magic	36	36.0	4.29	154.3	-1	5	125000	232.0	9.50	sig:rarity	0	4
+ThoriumMod	Knife	Broadsword	melee	18	18.0	2.73	49.1	1	1	10000	59.9	2.00	shop:ThoriumMod/Cook/Shop:Conditions.DownedEyeOfCthulhu	0	0
+ThoriumMod	Kunai	Thrown	ranged	27	27.0	3.53	28.6	2	4	65	37.5	7.00	shop:ThoriumMod/DesertAcolyte/Shop:Conditions.InHardmode	0	0
+ThoriumMod	LastingPliers	Magic	none	10	10.0	1.88	18.8	-1	1	12500	22.9	2.00	recipe<-Legendary Helmet	0	0
+ThoriumMod	LivewireCrasher	Magic	melee	63	63.0	1.33	84.0	-1	8	500000	143.5	13.75	boss:Martian Saucer@13.75	0	0
+ThoriumMod	MarineLauncher	Gun	ranged	20	20.0	2.31	46.2	1	2	65000	60.6	5.00	shop:ThoriumMod/Diverman/Shop:Conditions.DownedSkeletron	9920	0
+ThoriumMod	PrismStaff	Magic	magic	30	30.0	3.00	90.0	-1	4	75000	129.2	7.00	sig:rarity	0	5
+ThoriumMod	Rapier	Spear	melee	32	32.0	8.57	274.3	-1	5	100000	411.4	9.50	sig:rarity	0	0
+ThoriumMod	RedHourglass	Yoyo	melee	15	15.0	2.40	28.8	-1	1	15000	35.3	1.00	sig:rarity	0	0
+ThoriumMod	Scalper	Broadsword	melee	52	52.0	2.14	111.4	-1	5	100000	167.1	9.50	sig:rarity	0	0
+ThoriumMod	Scorpain	Yoyo	melee	13	13.0	2.40	25.0	-1	1	8500	30.4	1.00	sig:rarity	0	0
+ThoriumMod	SpineBuster	Gun	ranged	38	48.0	2.00	96.0	-1	4	75000	137.8	7.00	sig:rarity	97	0
+ThoriumMod	Spoon	Broadsword	melee	15	15.0	2.31	34.6	1	1	10000	42.2	2.00	shop:ThoriumMod/Cook/Shop:Conditions.DownedEyeOfCthulhu	0	0
+ThoriumMod	SpudBomber	Gun	ranged	12	12.0	2.14	25.7	1	1	12500	31.5	2.00	shop:ThoriumMod/Cook/Shop:Conditions.DownedEyeOfCthulhu	9946	0
+ThoriumMod	SteamFlail	Magic	melee	56	56.0	1.33	74.7	-1	5	400000	113.8	9.00	shop:Terraria/Steampunker/Shop:Conditions.InHardmode	0	0
+ThoriumMod	TheSeaMine	Magic	melee	48	48.0	1.33	64.0	-1	5	180000	96.7	9.20	shop:ThoriumMod/Diverman/Shop:Mods.ThoriumMod.Conditions.DownedFallenBeholder	0	0
+ThoriumMod	TommyGun	Gun	ranged	20	30.0	7.50	225.0	1	4	75000	322.9	7.00	sig:rarity	97	0
+ThoriumMod	VegaPhaser	Gun	ranged	30	40.0	2.14	85.7	1	4	75000	123.0	7.00	sig:rarity	97	0
+ThoriumMod	VileSpitter	Magic	magic	46	46.0	5.45	250.9	1	4	75000	360.1	7.00	sig:rarity	0	8
+ThoriumMod	WhirlpoolSaber	Broadsword	melee	16	16.0	2.00	32.0	6	2	85000	42.1	5.00	shop:ThoriumMod/Diverman/Shop:Conditions.DownedSkeletron	0	0
+ThoriumMod	AdamantiteCarbine	Gun	ranged	90	100.0	2.00	200.0	1	4	120000	288.6	7.00	recipe<-Adamantite Bar	97	0
+ThoriumMod	CinderString	Bow	ranged	30	40.0	2.00	80.0	1	4	100000	115.2	7.00	recipe<-tile134	40	0
+ThoriumMod	CobaltRevolver	Gun	ranged	32	42.0	4.29	180.0	1	4	60000	257.6	7.00	recipe<-Cobalt Bar	97	0
+ThoriumMod	CometCrossfire	Bow	ranged	28	38.0	2.50	95.0	1	4	100000	136.8	7.00	recipe<-Soul of Night	40	0
+ThoriumMod	ElephantGun	Gun	ranged	25	31.0	1.88	58.1	-1	3	75000	79.9	4.50	sig:rarity	283	0
+ThoriumMod	EternalNight	Bow	ranged	30	40.0	2.00	80.0	1	3	200000	111.4	4.50	sig:rarity	40	0
+ThoriumMod	GrassStringBow	Bow	ranged	24	34.0	2.31	78.5	1	3	27000	106.5	0.00	recipe<-	40	0
+ThoriumMod	MicroLauncher	Gun	ranged	22	62.0	7.24	449.0	-1	8	350000	764.0	12.00	shop:Terraria/Cyborg/Shop	771	0
+ThoriumMod	MythrilPelter	Gun	ranged	42	52.0	3.33	173.3	1	4	90000	249.3	7.00	recipe<-Mythril Bar	97	0
+ThoriumMod	OrichalcumPopper	Gun	ranged	26	36.0	6.00	216.0	1	4	110000	311.4	7.00	recipe<-Orichalcum Bar	97	0
+ThoriumMod	PalladiumSMG	Gun	ranged	23	33.0	6.00	198.0	1	4	80000	284.4	7.00	recipe<-Palladium Bar	97	0
+ThoriumMod	RejectsBlowpipe	Gun	ranged	62	68.0	5.00	340.0	-1	8	250000	576.6	13.50	sig:rarity	283	0
+ThoriumMod	ShroomachineGun	Gun	ranged	48	58.0	7.50	435.0	1	8	500000	743.0	12.00	recipe<-Shroomite Bar	97	0
+ThoriumMod	Slugger	Gun	ranged	18	28.0	1.88	52.5	1	2	25000	68.0	0.00	recipe<-	97	0
+ThoriumMod	StreamSting	Bow	ranged	14	24.0	3.75	90.0	1	2	87500	118.6	2.00	sig:rarity	40	0
+ThoriumMod	TheZapper	Magic	ranged	23	23.0	2.14	29.6	-1	2	20000	38.2	2.00	sig:rarity	0	0
+ThoriumMod	TitaniumRifle	Gun	ranged	92	102.0	2.14	218.6	1	4	140000	316.0	7.00	recipe<-Titanium Bar	97	0
+ThoriumMod	TranquilizerGun	Gun	ranged	35	41.0	2.14	87.9	-1	4	100000	126.5	7.00	sig:rarity	283	0
+ThoriumMod	Trapper	Gun	ranged	15	21.0	2.50	52.5	-1	1	50000	65.5	0.00	shop:Terraria/SkeletonMerchant/Shop	283	0
+ThoriumMod	Trigun	Gun	ranged	44	54.0	5.00	270.0	1	5	230000	408.9	9.00	recipe<-Hallowed Bar	97	0
+ThoriumMod	Webgun	Gun	ranged	16	16.0	2.31	36.9	1	2	50000	48.3	2.00	sig:rarity	150	0
+ThoriumMod	dSandStoneScimtar	Broadsword	melee	14	14.0	4.29	60.0	1	1	4000	72.2	1.40	recipe<-Sandstone Ingot	0	0
+ThoriumMod	eSandStoneBow	Bow	ranged	12	22.0	2.73	60.0	1	1	4000	72.2	1.40	recipe<-Sandstone Ingot	40	0
+ThoriumMod	fSandStoneSpear	Spear	melee	10	10.0	2.31	23.1	-1	1	4000	27.8	1.40	recipe<-Sandstone Ingot	0	0
+ThoriumMod	WindGust	Magic	magic	16	16.0	2.73	43.6	10	1	4100	52.6	7.00	recipe<-Book	0	5
+ThoriumMod	DurasteelBlade	Broadsword	melee	38	38.0	3.00	114.0	1	4	125000	164.6	7.00	shop:ThoriumMod/Blacksmith/Shop:Conditions.InHardmode	0	0
+ThoriumMod	DurasteelRepeater	Bow	ranged	32	42.0	2.73	114.5	1	4	125000	165.4	7.00	shop:ThoriumMod/Blacksmith/Shop:Conditions.InHardmode	40	0
+ThoriumMod	DurasteelThrowingSpear	Thrown	ranged	34	34.0	3.00	30.6	1	4	75	40.2	7.00	shop:ThoriumMod/Blacksmith/Shop:Conditions.InHardmode	0	0
+ThoriumMod	SteelBlade	Broadsword	melee	20	20.0	2.50	50.0	1	1	12500	61.2	1.00	sig:rarity	0	0
+ThoriumMod	SteelBow	Bow	ranged	13	23.0	2.50	57.5	1	1	12500	70.4	1.00	sig:rarity	40	0
+ThoriumMod	AntlionStaff	Sentry	summon	14	14.0	3.00	21.0	-1	0	10000	24.4	0.00	recipe<-	0	15
+ThoriumMod	BleedingHeartStaff	Sentry	summon	12	12.0	1.50	18.0	-1	1	50000	22.5	3.00	recipe<-Tissue Sample	0	15
+ThoriumMod	ButterflyStaff	Summon	summon	12	12.0	1.67	24.5	-1	1	15000	30.0	4.50	recipe<-Gold Butterfly	0	10
+ThoriumMod	CorruptlingStaff	Summon	summon	28	28.0	1.67	77.3	-1	4	100000	111.3	12.09	recipe<-Dark Shard	0	10
+ThoriumMod	CreepingVineStaff	Sentry	summon	15	15.0	2.00	22.5	-1	3	27000	30.5	4.00	recipe<-Stinger	0	15
+ThoriumMod	CrimsonHoundStaff	Summon	summon	27	27.0	1.67	74.5	-1	4	100000	107.3	12.09	recipe<-Dark Shard	0	10
+ThoriumMod	DevourerStaff	Sentry	summon	16	16.0	3.00	24.0	-1	1	10000	29.3	3.00	recipe<-Shadow Scale	0	15
+ThoriumMod	EnchantedCane	Summon	summon	18	18.0	2.00	36.7	-1	1	50000	45.8	1.00	sig:rarity	0	10
+ThoriumMod	FungalCane	Sentry	summon	28	28.0	3.00	42.0	-1	5	150000	63.3	9.50	sig:rarity	0	15
+ThoriumMod	LivingWoodAcorn	Summon	summon	10	10.0	7.50	18.0	-1	0	5000	20.7	12.81	recipe<-Fallen Star	0	0
+ThoriumMod	MeteorHeadStaff	Summon	summon	15	15.0	1.67	30.6	-1	1	20000	37.7	2.00	recipe<-Meteorite Bar	0	10
+ThoriumMod	MortarStaff	Sentry	summon	54	54.0	3.00	81.0	-1	4	75000	116.2	7.00	sig:rarity	0	15
+ThoriumMod	SpittingFish	Sentry	summon	18	18.0	2.00	27.0	-1	2	50000	35.3	2.00	sig:rarity	0	15
+ThoriumMod	StrongestLink	Sentry	summon	34	34.0	2.00	51.0	-1	2	87500	67.2	2.00	sig:rarity	0	15
+ThoriumMod	Thrombosis	Whip	summon	46	46.0	2.00	73.6	-1	4	75000	105.6	7.00	recipe<-Blood Cell	0	0
+ThoriumMod	VoidLance	Sentry	summon	40	40.0	1.67	60.0	-1	5	100000	90.0	9.20	recipe<-Void Heart	0	15
+ThoriumMod	VoltModule	Sentry	summon	74	74.0	3.00	111.0	-1	8	500000	189.6	13.50	sig:rarity	0	15
+ThoriumMod	TerrariumBomber	Gun	ranged	82	122.0	6.00	732.0	-1	22	675000	1429.7	17.00	recipe<-Terrarium Core	771	0
+ThoriumMod	TerrariumEnigmaStaff	Summon	summon	60	60.0	2.00	280.8	-1	22	675000	548.5	17.00	recipe<-Terrarium Core	0	20
+ThoriumMod	TerrariumHyperDisc	Magic	melee	104	104.0	4.29	445.7	-1	22	600000	869.6	17.00	recipe<-Terrarium Core	0	0
+ThoriumMod	TerrariumLongbow	Bow	ranged	68	78.0	3.75	292.5	1	22	675000	571.3	17.00	recipe<-Terrarium Core	40	0
+ThoriumMod	TerrariumPulseRifle	Gun	ranged	74	84.0	10.00	840.0	1	22	675000	1640.7	17.00	recipe<-Terrarium Core	97	0
+ThoriumMod	TerrariumRippleKnife	Magic	none	88	88.0	7.50	660.0	1	22	600000	1287.7	17.00	recipe<-Terrarium Core	0	0
+ThoriumMod	TerrariumSaber	Broadsword	melee	115	115.0	6.00	690.0	1	22	675000	1347.7	17.00	recipe<-Terrarium Core	0	0
+ThoriumMod	TerrariumSageStaff	Magic	magic	80	80.0	2.50	200.0	-1	22	675000	390.6	17.00	recipe<-Terrarium Core	0	10
+ThoriumMod	TerrariumSpear	Spear	melee	120	120.0	6.00	720.0	-1	22	675000	1406.3	17.00	recipe<-Terrarium Core	0	0
+ThoriumMod	MagicThorHammer	Magic	magic	32	32.0	2.31	73.8	3	3	27000	100.2	4.50	sig:rarity	0	8
+ThoriumMod	MeleeThorHammer	Broadsword	melee	36	36.0	2.50	90.0	1	3	27000	122.2	1.00	recipe<-Thorium Bar	0	0
+ThoriumMod	RangedThorHammer	Boomerang	ranged	28	28.0	2.14	48.0	-1	3	27000	65.1	4.50	sig:rarity	0	0
+ThoriumMod	ThoriumBlade	Broadsword	melee	18	18.0	3.33	60.0	1	1	14000	73.6	1.00	recipe<-Thorium Bar	0	0
+ThoriumMod	ThoriumBoomerang	Boomerang	melee	15	15.0	4.00	48.0	-1	1	12500	58.7	1.00	recipe<-Thorium Bar	0	0
+ThoriumMod	ThoriumBow	Bow	ranged	14	24.0	2.40	57.6	1	1	12500	70.5	1.00	recipe<-Thorium Bar	40	0
+ThoriumMod	ThoriumRevolver	Gun	ranged	12	22.0	2.50	55.0	1	1	12500	67.3	1.00	sig:rarity	97	0
+ThoriumMod	ThoriumSpear	Spear	melee	13	13.0	1.94	25.2	-1	1	14000	30.8	1.00	recipe<-Thorium Bar	0	0
+ThoriumMod	ThoriumStaff	Magic	magic	12	12.0	2.00	24.0	1	1	14000	29.4	1.00	recipe<-Thorium Bar	0	6
+ThoriumMod	AngelsEnd	Magic	none	280	280.0	2.73	763.6	3	10	500000	1395.9	18.00	boss:Moon Lord's Core@18	0	0
+ThoriumMod	BaseballBat	Gun	ranged	18	18.0	3.75	67.5	-1	0	25000	79.4	0.00	shop:Terraria/Merchant/Shop	10879	0
+ThoriumMod	Carnwennan	Magic	none	38	38.0	2.73	103.6	1	5	230000	157.0	9.00	recipe<-Hallowed Bar	0	0
+ThoriumMod	CobaltThrowingSpear	Thrown	ranged	34	34.0	3.33	34.0	1	4	50	44.5	7.00	recipe<-Cobalt Bar	0	0
+ThoriumMod	DragonFang	Magic	none	75	75.0	3.33	250.0	1	8	250000	424.0	16.00	boss:Betsy@16	0	0
+ThoriumMod	Embowelment	Magic	none	24	24.0	2.31	55.4	2	3	200000	77.1	2.00	recipe<-Crimtane Tomahawk	0	0
+ThoriumMod	FungalPopper	Thrown	ranged	22	22.0	3.75	24.8	1	4	50	32.4	7.00	recipe<-Cerulean Morel	0	0
+ThoriumMod	LightAnguish	Magic	none	26	26.0	2.50	65.0	2	3	200000	90.5	2.00	recipe<-Demonite Tomahawk	0	0
+ThoriumMod	LihzahrdKukri	Thrown	ranged	64	64.0	3.75	72.0	-1	8	500	114.3	13.50	recipe<-Solar Pebble	0	0
+ThoriumMod	NaiadShiv	Magic	none	18	18.0	2.73	49.1	3	2	87500	64.7	2.00	sig:rarity	0	0
+ThoriumMod	PalladiumThrowingSpear	Thrown	ranged	36	36.0	3.33	36.0	1	4	50	47.1	7.00	recipe<-Palladium Bar	0	0
+ThoriumMod	PharaohsSlab	Magic	none	58	58.0	2.00	116.0	1	8	1000000	199.5	13.50	sig:rarity	0	0
+ThoriumMod	RiftTearer	Magic	none	40	40.0	1.88	75.0	-1	6	212500	118.0	9.20	recipe<-Void Heart	0	0
+ThoriumMod	RocketFist	Magic	none	42	42.0	2.14	90.0	1	4	100000	129.6	7.00	recipe<-tile134	0	0
+ThoriumMod	ShadeKunai	Thrown	ranged	72	72.0	5.00	108.0	8	8	250	170.2	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	ShadeKusarigama	Magic	none	100	100.0	2.73	272.7	-1	8	250000	462.5	13.50	recipe<-Dark Matter	0	0
+ThoriumMod	SpikeBomb	Thrown	ranged	20	20.0	3.33	20.0	1	2	200	24.2	2.00	sig:rarity	0	0
+ThoriumMod	StalkersSnippers	Magic	none	50	50.0	3.53	176.5	3	6	250000	278.1	11.50	sig:rarity	0	0
+ThoriumMod	StarEater	Magic	none	88	88.0	5.00	440.0	3	10	500000	804.3	17.00	recipe<-tile412	0	0
+ThoriumMod	StoneThrowingSpear	Thrown	ranged	9	9.0	2.00	5.4	1	0	5	5.6	0.00	recipe<-	0	0
+ThoriumMod	SwampSpike	Magic	none	55	55.0	4.00	220.0	3	5	250000	333.5	9.50	sig:rarity	0	0
+ThoriumMod	TerraKnife	Magic	none	58	58.0	5.00	290.0	1	8	1000000	498.8	11.50	recipe<-True Carnwennan	0	0
+ThoriumMod	TestNeedle	Magic	none	6	6.0	3.33	12.0	1	0	500	13.3	0.00	sig:rarity	0	0
+ThoriumMod	TrueCarnwennan	Magic	none	42	42.0	2.73	114.5	1	8	500000	195.6	11.50	recipe<-Broken Hero Fragment	0	0
+ThoriumMod	TrueEmbowelment	Magic	none	38	38.0	2.50	95.0	1	8	500000	162.3	11.50	recipe<-Broken Hero Fragment	0	0
+ThoriumMod	TrueLightAnguish	Magic	none	40	40.0	2.73	109.1	1	8	500000	186.3	11.50	recipe<-Broken Hero Fragment	0	0
+ThoriumMod	VenomKunai	Thrown	ranged	33	33.0	3.53	34.9	2	4	50	45.7	7.00	recipe<-Kunai	0	0
+ThoriumMod	VoltHatchet	Magic	none	54	54.0	3.75	202.5	-1	4	75000	290.6	7.00	sig:rarity	0	0
+ThoriumMod	Witchblade	Magic	none	74	74.0	3.33	246.7	3	8	500000	421.3	13.25	boss:Pumpking@13.25	0	0
+ThoriumMod	TitanBoomerang	Boomerang	melee	48	48.0	3.75	144.0	-1	6	76000	224.0	9.00	recipe<-Titanic Bar	0	0
+ThoriumMod	TitanBow	Bow	ranged	45	55.0	3.75	206.2	1	6	76000	320.8	9.00	recipe<-Titanic Bar	40	0
+ThoriumMod	TitanSword	Broadsword	melee	52	52.0	3.75	195.0	1	6	76000	303.3	9.00	recipe<-Titanic Bar	0	0
+ThoriumMod	CursedHammer	Magic	none	44	44.0	3.75	66.0	-1	4	60000	94.5	7.00	sig:rarity	0	0
+ThoriumMod	GodKiller	Magic	magic	48	48.0	3.00	144.0	-1	8	150000	242.9	13.50	sig:rarity	0	5
+ThoriumMod	IcyGaze	Magic	magic	38	38.0	1.58	60.0	-1	5	80000	89.8	9.50	sig:rarity	0	15
+ThoriumMod	RosySlimeStaff	Summon	summon	12	12.0	2.31	24.5	-1	1	30000	30.3	1.00	sig:rarity	0	10
+ThoriumMod	TheBlackBlade	Broadsword	melee	50	50.0	5.00	250.0	-1	8	250000	424.0	13.50	sig:rarity	0	0
+ThoriumMod	TheBlackBow	Bow	ranged	20	30.0	5.14	154.3	1	8	250000	261.7	13.50	sig:rarity	40	0
+ThoriumMod	TheBlackCane	Summon	summon	35	35.0	1.67	130.2	-1	8	250000	220.8	13.50	sig:rarity	0	10
+ThoriumMod	TheBlackDagger	Magic	none	20	20.0	5.00	100.0	3	8	250000	169.6	13.50	sig:rarity	0	0
+ThoriumMod	TheBlackOtamatone	Magic	none	20	20.0	2.31	46.2	-1	8	250000	78.3	13.50	sig:rarity	0	0
+ThoriumMod	TheBlackStaff	Magic	magic	22	22.0	2.31	50.8	-1	8	250000	86.1	13.50	sig:rarity	0	10
+ThoriumMod	TotemCaller	Sentry	summon	30	30.0	1.50	45.0	-1	2	50000	58.9	2.00	sig:rarity	0	20
+ThoriumMod	TrackersSkinningBlade	Broadsword	melee	16	16.0	3.33	53.3	1	1	20000	65.7	1.00	sig:rarity	0	0
+ThoriumMod	Whip	Magic	melee	20	20.0	2.00	40.0	-1	2	50000	52.3	2.00	sig:rarity	0	0
+ThoriumMod	ValadiumBlaster	Gun	ranged	26	36.0	5.29	190.6	1	5	100000	285.9	9.50	recipe<-Valadium Ingot	97	0
+ThoriumMod	ValadiumBow	Bow	ranged	38	48.0	4.29	205.7	1	5	100000	308.6	9.50	recipe<-Valadium Ingot	40	0
+ThoriumMod	ValadiumSlicer	Broadsword	melee	40	40.0	3.00	120.0	1	5	100000	180.0	9.50	recipe<-Valadium Ingot	0	0
+ThoriumMod	ValadiumSpear	Spear	melee	40	40.0	2.73	109.1	-1	5	100000	163.6	9.50	recipe<-Valadium Ingot	0	0
+ThoriumMod	ValadiumStaff	Magic	magic	38	38.0	1.30	49.6	-1	5	100000	74.3	9.50	recipe<-Valadium Ingot	0	20
+ThoriumMod	ArcaneSpike	Magic	magic	250	250.0	7.50	1875.0	-1	20	25000000	3779.8	18.00	sig:value	0	5

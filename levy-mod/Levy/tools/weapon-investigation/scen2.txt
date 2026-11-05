@@ -1,0 +1,114 @@
+[F_weak_then_strong]
+SOLDIERS 9
+W Vanilla/Musket
+W Vanilla/Minishark
+W Vanilla/BladeofGrass
+W Vanilla/LightsBane
+W Vanilla/DemonBow
+W Vanilla/SpaceGun
+W Vanilla/Boomstick
+W Vanilla/Starfury
+W Vanilla/Muramasa
+W CalamityMod/WulfrumKnife x2
+W CalamityMod/Kylie
+W CalamityMod/ShinobiBlade
+W CalamityMod/Cinquedea
+W CalamityMod/WulfrumProsthesis
+W CalamityMod/GildedDagger
+W CalamityMod/Archerfish
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/ClockworkAssaultRifle
+W Vanilla/PhoenixBlaster
+W Vanilla/FieryGreatsword
+W Vanilla/Muramasa
+W Vanilla/NightsEdge
+W Vanilla/BladeofGrass
+W Vanilla/BeeKeeper
+W Vanilla/LightsBane
+W Vanilla/Starfury
+W Vanilla/DemonBow
+W Vanilla/MoltenFury
+W Vanilla/HellwingBow
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/DemonScythe
+W Vanilla/BeeGun
+W Vanilla/Flamelash
+W Vanilla/FlowerofFire
+W Vanilla/CobaltSword
+W Vanilla/MythrilSword
+W Vanilla/CobaltRepeater
+W Vanilla/MythrilRepeater
+W Vanilla/CobaltNaginata
+W Vanilla/PalladiumSword
+W Vanilla/Boomstick
+W CalamityMod/WulfrumKnife
+W CalamityMod/WulfrumBlunderbuss
+W CalamityMod/WulfrumProsthesis
+W CalamityMod/WulfrumScrewdriver
+W CalamityMod/Kylie
+W CalamityMod/GildedDagger
+W CalamityMod/UrchinStinger
+W CalamityMod/ShinobiBlade
+W CalamityMod/Cinquedea
+W CalamityMod/SludgeSplotch
+W CalamityMod/Mycoroot
+W CalamityMod/Archerfish
+W CalamityMod/Shadethrower
+W CalamityMod/Fungicide
+W CalamityMod/Eviscerator
+W CalamityMod/MycelialClaws
+W CalamityMod/TaintedBlade
+W CalamityMod/BloodBath
+W CalamityMod/AbyssShocker
+W CalamityMod/Tradewinds
+W CalamityMod/BlackAnurian
+W CalamityMod/StormSurge
+W CalamityMod/SaharaSlicers
+W CalamityMod/TeardropCleaver
+W CalamityMod/WindBlade
+W CalamityMod/BurntSienna
+W CalamityMod/Avalanche
+W CalamityMod/SpeedBlaster
+W CalamityMod/Needler
+W ThoriumMod/HitScanner
+W ThoriumMod/EnergyStormBolter
+W ThoriumMod/ChampionsTrifectaShot
+W ThoriumMod/CobaltRevolver
+W ThoriumMod/CobaltStaff
+W ThoriumMod/MythrilStaff
+W ThoriumMod/PalladiumSMG
+W ThoriumMod/ThoriumWand
+W ThoriumMod/DarkMageStaff
+W ThoriumMod/HoneySuckle
+W ThoriumMod/BackStabber
+W ThoriumMod/PinkPhaseblade
+STAGE
+
+[G_prehm_only]
+SOLDIERS 9
+W Vanilla/Musket
+W Vanilla/BladeofGrass
+W Vanilla/LightsBane
+W Vanilla/DemonBow
+W Vanilla/SpaceGun
+W Vanilla/Boomstick
+W Vanilla/Muramasa
+W Vanilla/Minishark
+W CalamityMod/WulfrumKnife x3
+W CalamityMod/Kylie
+W CalamityMod/GildedDagger
+W CalamityMod/WulfrumProsthesis
+W CalamityMod/WulfrumBlunderbuss
+W CalamityMod/BurntSienna
+W CalamityMod/UrchinStinger
+W CalamityMod/StormSurge
+W CalamityMod/Fungicide
+W CalamityMod/Mycoroot
+M Vanilla/MusketBall x999
+M Vanilla/WoodenArrow x999
+STAGE

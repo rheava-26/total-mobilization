@@ -782,8 +782,13 @@ namespace Mechanization.Content.NPCs
 		}
 
 		// =====================================================================================================
-		// Draw: the body sprite (two rotor frames, art faces left), the mounted weapon, and two bars.
+		// Draw, in layers: the far rotor, the BODY (tail ring + boom + hull, tilted with sideways speed), the status light and weapon on the hull, then the near rotor.
+		// The rotors are drawn LEVEL (never rotated) at mast points computed from the tilted body, so they stay attached while the body leans under them.
+		// The body art faces RIGHT and is mirrored for a drone facing left.
 		// =====================================================================================================
+		private float _tilt;
+		private uint _tiltTick;
+
 		public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (!IsBound || Main.dedServ) return false; // nothing to show until the sync says it is bound
@@ -792,14 +797,32 @@ namespace Mechanization.Content.NPCs
 				Texture2D px = TextureAssets.MagicPixel.Value;
 				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
 				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
-				float rot = NPC.rotation;
 				int sd = NPC.direction == 0 ? 1 : NPC.direction;
+				SpriteEffects fx = sd == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-				// The art faces LEFT (sensor head on the left), so mirror it when the drone faces right. Two stacked frames: rotor wide / rotor short; landed holds frame 0, airborne alternates.
+				// Body tilt: eased toward the sideways speed once per game tick (positive = clockwise = nose down when travelling right; the mirrored art leans the same way when travelling left).
+				if (_tiltTick != Main.GameUpdateCount)
+				{
+					_tiltTick = Main.GameUpdateCount;
+					float target = Landed ? 0f : MathHelper.Clamp(NPC.velocity.X * D.TiltPerSpeed, -D.MaxTilt, D.MaxTilt);
+					_tilt += (target - _tilt) * D.TiltSmooth;
+				}
+				float rot = _tilt;
+				float cos = (float)Math.Cos(rot), sin = (float)Math.Sin(rot);
+				Vector2 Local(float lx, float ly) { lx *= sd; return c + new Vector2(lx * cos - ly * sin, lx * sin + ly * cos); }   // body-local px -> screen
+
+				// Spin: four blur frames while airborne, still when landed; the fan in the tail ring turns on the same clock.
+				int spin = (int)(((Main.GameUpdateCount >> 1) + (uint)NPC.whoAmI) & 3u);
 				Texture2D body = ModContent.Request<Texture2D>(Texture).Value;
-				int fw = body.Width, fh = body.Height / 2;
-				int frame = Landed ? 0 : (((Main.GameUpdateCount + (uint)NPC.whoAmI) & 2u) == 0u ? 0 : 1);
-				spriteBatch.Draw(body, c, new Rectangle(0, frame * fh, fw, fh), light, rot, new Vector2(fw * 0.5f, fh * 0.5f), 1f, sd == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
+				Texture2D rotor = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/DroneRotor").Value;
+				int bw = body.Width, bh = body.Height / D.BodyFrames, rw = rotor.Width, rh = rotor.Height / D.RotorFrames;
+				Rectangle bSrc = new Rectangle(0, (Landed ? 0 : spin) * bh, bw, bh);
+				Rectangle rSrc = new Rectangle(0, (Landed ? D.RotorFrames - 1 : spin) * rh, rw, rh);
+				Vector2 rOrigin = new Vector2(rw * 0.5f, rh);   // mast base, bottom centre
+
+				for (int i = D.RotorMastX.Length - 1; i >= 1; i--)   // far rotors first (behind the hull)
+					spriteBatch.Draw(rotor, Local(D.RotorMastX[i], D.RotorMastY[i]), rSrc, Dim(light, D.RotorTint[i]), 0f, rOrigin, 1f, fx, 0f);
+				spriteBatch.Draw(body, c, bSrc, light, rot, new Vector2(bw * 0.5f, bh * 0.5f), 1f, fx, 0f);
 
 				Color led = Phase switch
 				{
@@ -809,9 +832,10 @@ namespace Mechanization.Content.NPCs
 					DronePhase.Recall => new Color(110, 170, 255),
 					_ => new Color(150, 150, 160),
 				};
-				// status light: a 2x2 dot on the hull, toward the tail (the side opposite the head), turned with the body's tilt
-				spriteBatch.Draw(px, c + new Vector2(-8f * sd, 0f).RotatedBy(rot), null, Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
-				DrawWeapon(spriteBatch, c, rot, light);
+				// status light: a 2x2 dot on the hull's rear shoulder, turned with the body
+				spriteBatch.Draw(px, Local(D.LedX, D.LedY), null, Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
+				DrawWeapon(spriteBatch, Local(D.WeaponDrawOffsetX, 0f) + new Vector2(-D.WeaponDrawOffsetY * sin, D.WeaponDrawOffsetY * cos), light);
+				spriteBatch.Draw(rotor, Local(D.RotorMastX[0], D.RotorMastY[0]), rSrc, light, 0f, rOrigin, 1f, fx, 0f);   // near rotor in front
 				return false;
 			}
 			catch (Exception e)
@@ -821,20 +845,28 @@ namespace Mechanization.Content.NPCs
 			}
 		}
 
+		private static Color Dim(Color c, float f) => new Color((int)(c.R * f), (int)(c.G * f), (int)(c.B * f), (int)c.A);
+
 		private static Color Lit(Color baseColor, Color light) => new Color(baseColor.R * light.R / 255, baseColor.G * light.G / 255, baseColor.B * light.B / 255, (int)baseColor.A);
 
-		/// <summary>The mounted weapon, hung under the body and turned to its aim (kept upright when aiming left), kicking back on a shot.</summary>
-		private void DrawWeapon(SpriteBatch spriteBatch, Vector2 c, float rot, Color light)
+		/// <summary>The mounted weapon, hung under the body (<paramref name="hang"/> is the hang point on the tilted hull) and turned to its aim (kept upright when aiming left), kicking back on a shot. An animated item sheet draws one frame.</summary>
+		private void DrawWeapon(SpriteBatch spriteBatch, Vector2 hang, Color light)
 		{
 			if (WeaponType <= 0 || WeaponType >= ItemLoader.ItemCount) return;
 			Main.instance.LoadItem(WeaponType);
 			Texture2D wt = TextureAssets.Item[WeaponType]?.Value;
 			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return;
-			float scale = Math.Min(1f, D.WeaponDrawMaxPx / Math.Max(wt.Width, wt.Height));
+			Rectangle? src = null;
+			int fw = wt.Width, fh = wt.Height;
+			if (Main.itemAnimations[WeaponType] != null)
+			{
+				src = Main.itemAnimations[WeaponType].GetFrame(wt);   // the item's current animation frame, not the whole sheet
+				fw = src.Value.Width; fh = src.Value.Height;
+			}
+			float scale = Math.Min(1f, D.WeaponDrawMaxPx / Math.Max(fw, fh));
 			SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 			Vector2 kick = new Vector2((float)-Math.Cos(_aim), (float)-Math.Sin(_aim)) * _recoil;
-			Vector2 at = c + new Vector2(0f, D.WeaponDrawOffsetY).RotatedBy(rot) + kick;
-			spriteBatch.Draw(wt, at, null, light, _aim, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
+			spriteBatch.Draw(wt, hang + kick, src, light, _aim, new Vector2(fw, fh) * 0.5f, scale, fx, 0f);
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

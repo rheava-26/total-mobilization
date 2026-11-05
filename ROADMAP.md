@@ -222,6 +222,18 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 📦 SHIPPED Levy 1.7.7 (balanced-rank 139bbec): Balanced default ranking, armored-skip default OFF, star mana. Boots clean both ways. Mechanization stays 0.7.1.
+- **Formula:** rank = value^0.7 × exp(−(gap/7)³) × (1 + 0.6·exp(−days²)), where gap = world tier − weapon tier.
+  - Copper Shortsword in HM: ×0.37, never picked while anything else exists.
+  - Minishark is still picked pre-WoF and in early HM.
+  - Fresh on-tier gear wins over old gear; fresh junk does not.
+- **Limits:**
+  - Chest/shrine loot uses the rarity floor (Muramasa sits at 1.5).
+  - No enemy-drop route.
+  - Magic Storage items never get a deposit stamp.
+  - Star conversion is verified only in a self-check.
+- **Speed parity (levy-speed e8b8213) NOT included;** waiting on Eve's decision.
+
 ## 🧭 EVE DUMP (2026-11-05 evening): PRIORITY = core bugs + core balance first, nothing major. Eve's Max plan ends at month end, so be economical with agents.
 **Building now:**
 - `balanced-rank`: a new DEFAULT mode "Balanced" = sell price × relevance to current progression (smooth discount for weapons many tiers behind; never by per-hit damage) + a RECENCY boost for weapons recently deposited in the armory. The armor skip goes default OFF (Eve dislikes it: fast weapons like the Minishark and endgame ranger guns).

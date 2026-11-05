@@ -94,6 +94,20 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## ⚙️ GEAR UPKEEP (gear-upkeep 990a356): built, NOT merged yet, in a single-player verification round
+- **Per tick, on the Dummy, only for soldiers with tick-dependent gear:** timers, then ResetEffects (restore owned counts/minions), then mod buffs, then UpdateEquips, then the set pass, then PostUpdateEquips, then PostUpdateMiscEffects. Thorium cache swapped. Spawns adopted. Life and mana written back. GearOnHurt from AfterHit (Star Cloak). Config `RealGearUpkeep`, default on.
+- **Measured on a dedicated server:**
+  - Calamity Statigel stealth: peak 0→0.90, stealth strikes fire and stealth is spent.
+  - Volatile Gelatin runs the real cadence; the hand-made twin is disabled.
+  - Star Cloak: 87 stars.
+  - Thorium Metronome and other timers advance.
+  - Calamity Amalgamated Brain / Amidia's Pendant spawn their effects.
+  - Commander fingerprint unchanged.
+  - Cost at N=40 is 1.05 ms (Thorium) / 2.65 ms (Calamity); ungeared soldiers cost 0.
+- **Calamity stealth spend:** Calamity spends stealth on the first frame of an item use, and the Dummy never runs ItemCheck. The fix is a synthetic first-use frame from WeaponUse.FinishUse.
+- **Still needs real ownership:** the real Crystal Leaf, Stardust Guardian and Blunder Booster aura die every tick under the commander owner, so the hand-made leaf and Guardian stay. A churn breaker drops any type respawned more than 30 times per 120 ticks.
+- **RISK being checked before merge:** in single player the frame's Dummy has whoAmI == Main.myPlayer, so `whoAmI==myPlayer` blocks could write local-player or global state (screen shake, UI, music). Everything so far ran on a dedicated server.
+
 ## 🔎 WEAPON-CHOICE FINDINGS (weapon-choice-investigation 01efba1 + 69c0e78; measured, Calamity+Thorium, tML 2026.10)
 - **Wulfrum stickiness (CONFIRMED):**
   - Calamity rogue weapons (130/148) and Thorium bard/healer weapons have damage class null.

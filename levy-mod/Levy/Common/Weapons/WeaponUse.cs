@@ -474,6 +474,7 @@ namespace Levy.Common.Weapons
 			int savedWho = d.whoAmI, savedDir = d.direction; Vector2 savedCenter = d.Center; bool savedUse = d.controlUseItem;
 			Vector2 pos = muzzle, v = vel; int type = projType, dmg = damage; float kb = knockback;
 			bool useDefault = false, threw = false;
+			object thoriumPrev = null;
 			try
 			{
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
@@ -482,6 +483,7 @@ namespace Levy.Common.Weapons
 				d.direction = s.NPC.direction == 0 ? 1 : s.NPC.direction;
 				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
 				d.selectedItem = 0;
+				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): SetLocalThoriumPlayer(dummy's) AFTER d.whoAmI == Main.myPlayer (its own guard)
 				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
 				// Hold-to-fire weapons (modded channeled guns) only spawn their shot while the owner's use button is down: the soldier is firing.
 				d.controlUseItem = true;
@@ -489,7 +491,7 @@ namespace Levy.Common.Weapons
 				useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
 			}
 			catch (Exception) { threw = true; }
-			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
+			finally { OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
 
 			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
 			int adopted = 0;

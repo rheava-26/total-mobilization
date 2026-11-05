@@ -1,0 +1,115 @@
+mod	weapon	path_classes(event counts)	first_call_site	projectiles_reaching_commander	still_at_commander_with_hit+kill+update_puppet_and_thorium_cache
+ThoriumMod	Concertina	{}		ThoriumMod/ConcertinaEffect,ThoriumMod/ConcertinaPro	traj-only
+ThoriumMod	Flesh Horn	{'KILL': 60}	ThoriumMod.Projectiles.Bard.FleshHornPro.OnKill		none
+ThoriumMod	Frostwind Cymbals	{}		ThoriumMod/FrostwindCymbalsEffect,ThoriumMod/FrostwindCymbalsPro	none
+ThoriumMod	Granite Boom Box	{}		ThoriumMod/GraniteBoomBoxPro	traj-only
+ThoriumMod	Lodestone Radio	{}		ThoriumMod/LodestoneRadioPro	traj-only
+ThoriumMod	Orichalcum Slide Whistle	{'KILL': 5}	ThoriumMod.Projectiles.Bard.OrichalcumSlideWhistlePro.OnKill		none
+ThoriumMod	Seashell Castanets	{}		ThoriumMod/SeashellCastanettessEffect,ThoriumMod/SeashellCastanettessPro	traj-only
+ThoriumMod	Shadewood Tambourine	{}		ThoriumMod/ShadeWoodTambourinePro	none
+ThoriumMod	The Maw	{}		ThoriumMod/TheMawPro	none
+ThoriumMod	Borean Fang Staff	{'HIT': 12}	TML.ProjectileLoader.OnSpawn	ThoriumMod/BoreanFangStaffPro2	traj-only
+ThoriumMod	Energy Projector	{'AI': 13248, 'KILL': 870, 'SHOOT': 390}	ThoriumMod.Projectiles.GraniteBarrier.OnKill; ThoriumMod.Projectiles.GraniteBarrier.AI	ThoriumMod/GraniteBarrier	{'AI': 8409, 'KILL': 410, 'SHOOT': 330}
+ThoriumMod	Mycelium Whip	{}		ThoriumMod/MyceliumWhipPro	none
+ThoriumMod	Seven Seas' Devastator	{}		ThoriumMod/SevenSeasDevastatorPro	none
+ThoriumMod	Vampire Scepter	{'HIT': 7}	CombatText.NewText		none
+ThoriumMod	Demon Blood Staff	{'HIT': 1}	CombatText.NewText		none
+ThoriumMod	Black MIDI	{'HIT': 11}	CombatText.NewText		none
+ThoriumMod	Bow of Light	{'AI': 3494, 'KILL': 47}	ThoriumMod.Projectiles.BowofLightPro2.AI; TML.ProjectileLoader.OnSpawn	ThoriumMod/BowofLightPro,ThoriumMod/BowofLightPro2	none
+ThoriumMod	Dark Flame	{'KILL': 160}	ThoriumMod.Projectiles.DarkFlamePro.OnKill		none
+ThoriumMod	Gel Glove	{'AI': 80, 'KILL': 20}	ThoriumMod.Projectiles.Thrower.GelGlovePro.AI; ThoriumMod.Projectiles.Thrower.GelGlovePro.OnKill	ThoriumMod/GelGlovePro	none
+ThoriumMod	Heartstriker	{}		ThoriumMod/HeartstrikerPro	none
+ThoriumMod	Lingering Will	{}		ThoriumMod/LingeringWillPro	none
+ThoriumMod	Obsidian Staff	{'AI': 180}	ThoriumMod.Projectiles.ObsidianStaffPro.AI; TML.ProjectileLoader.OnSpawn	ThoriumMod/ObsidianStaffPro2	none
+ThoriumMod	Omega Blaster	{'KILL': 100}	ThoriumMod.Projectiles.OmegaBlasterPro.OnKill		none
+ThoriumMod	Omniwrench	{}		ThoriumMod/OmniwrenchPro	none
+ThoriumMod	Phantom Arm Cannon	{'AI': 143, 'KILL': 10}	ThoriumMod.Projectiles.PhantomArmCannonPro.AI; ThoriumMod.Projectiles.PhantomArmCannonPro2.OnKill	ThoriumMod/PhantomArmCannonPro2	none
+ThoriumMod	P.L.G. 8999	{'AI': 3}	ThoriumMod.Projectiles.PLGPro.AI		none
+ThoriumMod	Resonator's Arm	{}		ThoriumMod/ResonatorsArmPro3	none
+ThoriumMod	Soul Reaver	{'AI': 2}	ThoriumMod.Projectiles.SoulReaverPro2.AI		none
+ThoriumMod	Super Plasma Cannon	{'AI': 1}	ThoriumMod.Projectiles.SuperPlasmaCannonPro.AI		none
+ThoriumMod	The Digester	{'HIT': 6}	CombatText.NewText		none
+ThoriumMod	Thunderstruck	{'KILL': 70}	ThoriumMod.Projectiles.Bard.ThunderstruckPro.OnKill		none
+ThoriumMod	Umbra Blaster	{}		Bullet	traj-only
+ThoriumMod	Zunpet	{'HIT': 220}	ThoriumMod.Projectiles.Bard.ZunpetPro.BardOnHitNPC		none
+ThoriumMod	Dragon's Breath	{}		ThoriumMod/Breath	none
+ThoriumMod	Dread Blaster	{'AI': 3040, 'HIT': 36}	ThoriumMod.Projectiles.DreadParticle.AI; TML.ProjectileLoader.OnSpawn	ThoriumMod/DreadParticle,ThoriumMod/DreadPulse	none
+ThoriumMod	Dread Launcher	{'AI': 726, 'HIT': 5}	ThoriumMod.Projectiles.DreadParticle.AI; TML.ProjectileLoader.OnSpawn	ThoriumMod/DreadBomb1,ThoriumMod/DreadParticle	none
+ThoriumMod	Siphon	{'HIT': 18}	CombatText.NewText; ThoriumMod.Projectiles.SiphonPro.OnHitNPC		none
+ThoriumMod	Blood Belcher	{'HIT': 2}	CombatText.NewText		none
+ThoriumMod	Blood Clot Staff	{'HIT': 3}	CombatText.NewText		none
+ThoriumMod	Blood Transfusion	{'AI': 252}	CombatText.NewText; ThoriumMod.Utilities.ProjectileHelper.ThoriumHealTarget	ThoriumMod/BloodTransfusionProReturn	none
+ThoriumMod	Feather Barrier Rod	{'KILL': 140}	ThoriumMod.Projectiles.Healer.FeatherBarrier.OnKill	ThoriumMod/FeatherBarrier	{'SHOOT': 30, 'KILL': 10}
+ThoriumMod	Leech Bolt	{'HIT': 55}	Player.HealEffect; ThoriumMod.Projectiles.Healer.LeechBoltPro.OnHitNPC		none
+ThoriumMod	Light Bringer's Warhammer	{'SHOOT': 40, 'KILL': 40}	ThoriumMod.Projectiles.Healer.LightBringerWarhammerPro.OnKill	ThoriumMod/LightBringerWarhammerPro	{'KILL': 30, 'SHOOT': 30}
+ThoriumMod	Morning Dew	{'AI': 1076}	ThoriumMod.Projectiles.Scythe.ScythePro.SpawnDust	ThoriumMod/MorningDewPro	{'AI': 4}
+ThoriumMod	Omen	{'AI': 23}	ThoriumMod.Projectiles.Healer.OmenPro.AI	ThoriumMod/OmenPro	none
+ThoriumMod	Spirit Blast Wand	{'KILL': 40}	ThoriumMod.Projectiles.Healer.SpiritBlastWandPro.OnKill		none
+ThoriumMod	Ice Breaker	{'AI': 82}	ThoriumMod.Projectiles.OctopodPro.AI	ThoriumMod/IceBreakerPro	none
+ThoriumMod	Joyeuse	{'AI': 32}	ThoriumMod.Projectiles.JoyeusePro.AI		none
+ThoriumMod	Ebon Hammer	{}		ThoriumMod/EbonHammerPro	traj-only
+ThoriumMod	Scalper	{}		ThoriumMod/ScalperDagger	none
+ThoriumMod	Terrarium Hyper Disc	{}		ThoriumMod/TerrariumHyperDiscPro	none
+ThoriumMod	Embowelment	{'HIT': 10}	Player.HealEffect		none
+ThoriumMod	True Embowelment	{'HIT': 45}	Player.HealEffect; TML.ProjectileLoader.OnSpawn	ThoriumMod/TrueEmbowelmentPro2	none
+ThoriumMod	True Light's Anguish	{'HIT': 36}	TML.ProjectileLoader.OnSpawn	ThoriumMod/TrueLightAnguishPro2	none
+ThoriumMod	Volt Hatchet	{}		ThoriumMod/VoltHatchetPro	none
+ThoriumMod	Witchblade	{'SHOOT': 40}	ThoriumMod.ThoriumPlayer.SetWitchDashTimer		none
+ThoriumMod	Whip	{}		ThoriumMod/WhipPro	none
+CalamityMod	P-LSR: Aerial Tracker	{}		CalamityMod/AerialTrackerProjectile	none
+CalamityMod	P-TSL: Short Circuit	{}		CalamityMod/ShortCircuitHook	none
+CalamityMod	Alpha Draconis	{'AI': 23, 'KILL': 8, 'SHOOT': 15}	CalamityMod.Projectiles.Magic.AlphaDraconisStar.AI; CalamityMod.Projectiles.Magic.AlphaDraconisStar.OnKill	CalamityMod/AlphaDraconisStar	{'AI': 18, 'SHOOT': 15}
+CalamityMod	Anahita's Arpeggio	{}		CalamityMod/AnahitasArpeggioNote	none
+CalamityMod	Astral Staff	{'AI': 7}	CalamityMod.Projectiles.Magic.AstralCrystal.AI	CalamityMod/AstralCrystalInvisibleExplosion	{'AI': 18}
+CalamityMod	Coral Spout	{'AI': 42, 'KILL': 11}	CalamityMod.Projectiles.Magic.CoralSpike.AI; TML.ProjectileLoader.OnSpawn	CalamityMod/CoralSpike,CalamityMod/CoralSpoutHoldout,CalamityMod/ManaChargedCoral	traj-only
+CalamityMod	Cryophobia	{}		Blizzard	none
+CalamityMod	Frost Bolt	{'AI': 140}	CalamityMod.Projectiles.Magic.FrostBoltProjectile.OnTileCollide; TML.ProjectileLoader.OnSpawn	CalamityMod/BasicBurst	none
+CalamityMod	Glorious End	{'AI': 132}	TML.ProjectileLoader.OnSpawn; CalamityMod.Projectiles.Magic.MeteorStar.Explode	CalamityMod/MeteorStarExplosion	none
+CalamityMod	Gruesome Eminence	{'AI': 11}	CalamityMod.Projectiles.Magic.GruesomeEminenceHoldout.AI		none
+CalamityMod	Infernal Rift	{'KILL': 5}	CalamityMod.Projectiles.Magic.InfernalBlade.OnKill	CalamityMod/InfernalBlade	traj-only
+CalamityMod	Phantasmal Fury	{'KILL': 14, 'AI': 204}	CalamityMod.Projectiles.Magic.PhantasmalFuryProj.OnKill; CalamityMod.Projectiles.Magic.Phantom.OnKill	CalamityMod/PhantasmalFuryProj,CalamityMod/Phantom	none
+CalamityMod	Primordial Ancient	{'AI': 164, 'KILL': 25}	CalamityMod.Projectiles.Magic.PrimordialAncientProjectile.AI; CalamityMod.Projectiles.Magic.PrimordialAncientProjectile.OnKill	CalamityMod/PrimordialAncientExplosion,CalamityMod/PrimordialAncientProjectile	none
+CalamityMod	SHPC	{}		CalamityMod/SHPV	none
+CalamityMod	Slithering Eels	{'KILL': 23, 'AI': 3}	CalamityMod.Projectiles.Magic.SlitheringEelProjectile.OnKill; TML.ProjectileLoader.OnSpawn	CalamityMod/EelDrop,CalamityMod/SlitheringEelProjectile	none
+CalamityMod	Fallen Paladin's Hammer	{'AI': 93}	CalamityMod.Projectiles.Melee.FallenPaladinsHammerProj.AI; CalamityMod.Projectiles.Melee.FallenPaladinsHammerEcho.AI	CalamityMod/FallenPaladinsHammerEcho,CalamityMod/FallenPaladinsHammerProj	none
+CalamityMod	Galaxy Smasher	{'AI': 161}	CalamityMod.Projectiles.Melee.GalaxySmasherHammer.AI	CalamityMod/GalaxySmasherHammer	none
+CalamityMod	Phosphorescent Gauntlet	{}		CalamityMod/PhosphorescentGauntletPunches	none
+CalamityMod	Sahara Slicers	{'AI': 138}	CalamityMod.Projectiles.Melee.Shortswords.SaharaSlicersBladeAlt.ExtraBehavior; CalamityMod.Projectiles.Melee.Shortswords.SaharaSlicersBlade.ExtraBehavior	CalamityMod/SaharaSlicersBlade,CalamityMod/SaharaSlicersBladeAlt	none
+CalamityMod	Stellar Contempt	{'AI': 132}	CalamityMod.Projectiles.Melee.StellarContemptHammer.AI	CalamityMod/StellarContemptHammer	none
+CalamityMod	Storm Saber	{}		CalamityMod/StormBeam	traj-only
+CalamityMod	Triactis' True Paladinian Mage-Hammer of Might	{'AI': 25}	CalamityMod.Projectiles.Melee.TriactisHammerProj.AI	CalamityMod/TriactisHammerProj	none
+CalamityMod	Typhon's Greed	{'AI': 666, 'KILL': 42}	CalamityMod.Projectiles.Melee.TyphonsGreedStaff.AI; CalamityMod.Projectiles.Melee.TyphonsGreedBubble.OnKill	CalamityMod/TyphonsGreedBubble,CalamityMod/TyphonsGreedStaff	{'AI': 4}
+CalamityMod	Violence	{'AI': 750, 'SHOOT': 3}	CalamityMod.Projectiles.Melee.ViolenceThrownProjectile.ReturnToOwner; TML.ProjectileLoader.OnSpawn	CalamityMod/ViolenceThrownProjectile	{'SHOOT': 3}
+CalamityMod	Yateveo Bloom	{'AI': 2}	CalamityMod.Projectiles.Melee.Spears.YateveoBloomSpear.ExtraBehavior		none
+CalamityMod	Barracuda Gun	{}		CalamityMod/MechanicalBarracuda	none
+CalamityMod	Blood Boiler	{'AI': 253}	CalamityMod.Projectiles.Ranged.BloodBoilerFire.AI	CalamityMod/BloodBoilerFire	none
+CalamityMod	Darkecho Greatbow	{}		CrystalDart	none
+CalamityMod	Reed Blowgun	{'AI': 768}	CalamityMod.Projectiles.Ranged.PressurizedBubbleStream.AI	CalamityMod/PressurizedBubbleStream	none
+CalamityMod	Shredder	{}		CalamityMod/ChargedBlast,CalamityMod/ChargedBlastSplit	traj-only
+CalamityMod	Surge Driver	{}		CalamityMod/SurgeDriverHoldout	none
+CalamityMod	Svantechnical	{}		Bullet,CalamityMod/ChargedBlast,CalamityMod/ChargedBlastSplit	none
+CalamityMod	Blazing Star	{}		CalamityMod/BlazingStarProj	traj-only
+CalamityMod	Celestus	{}		CalamityMod/CelestusProj	none
+CalamityMod	Deep Sea Dumbbell	{}		CalamityMod/DeepSeaDumbbellWeight	none
+CalamityMod	Dimension-Tearing Disk	{}		CalamityMod/DimensionTearingDiskProjectile	none
+CalamityMod	Dynamic Pursuer	{}		CalamityMod/DynamicPursuerProjectile	none
+CalamityMod	Enchanted Axe	{}		CalamityMod/EnchantedAxeProj	none
+CalamityMod	Epidemic Shredder	{}		CalamityMod/EpidemicShredderProjectile	none
+CalamityMod	Exorcism	{}		CalamityMod/ExorcismProj	none
+CalamityMod	Frostcrush Valari	{'AI': 13}	CalamityMod.Projectiles.Rogue.ValariBoomerang.AI	CalamityMod/ValariBoomerang	none
+CalamityMod	Ghoulish Gouger	{}		CalamityMod/GhoulishGougerBoomerang	none
+CalamityMod	Grave Grimreaver	{}		CalamityMod/GrimreaverBat	traj-only
+CalamityMod	Kelvin Catalyst	{'AI': 42}	CalamityMod.Projectiles.Rogue.KelvinCatalystBoomerang.VisualAudioEffects	CalamityMod/KelvinCatalystBoomerang	none
+CalamityMod	Kylie	{'AI': 5}	CalamityMod.Projectiles.Rogue.KylieBoomerang.AI	CalamityMod/KylieBoomerang	none
+CalamityMod	Meteor Fist	{'AI': 60}	CalamityMod.Projectiles.Rogue.MeteorFistProj.AI	CalamityMod/MeteorFistProj	none
+CalamityMod	Molten Amputator	{'AI': 32}	CalamityMod.Projectiles.Rogue.MoltenAmputatorProj.AI	CalamityMod/MoltenAmputatorProj	none
+CalamityMod	Nanoblack Reaper	{'AI': 17}	CalamityMod.Projectiles.Rogue.NanoblackMain.InFlightVisualEffects; TML.ProjectileLoader.OnSpawn	CalamityMod/NanoblackMain,CalamityMod/NanoblackTesselation	none
+CalamityMod	Rebounding Rainbow	{'AI': 1}	CalamityMod.Projectiles.Rogue.ReboundingRainbowProj.LightingAndDust	CalamityMod/ReboundingRainbowProj	none
+CalamityMod	Samsara Slicer	{}		CalamityMod/SamsaraSlicerProjectile	none
+CalamityMod	Seraphim	{}		CalamityMod/SeraphimDagger	traj-only
+CalamityMod	Shard of Antumbra	{}		CalamityMod/AntumbraShardProjectile	traj-only
+CalamityMod	Star of Destruction	{'AI': 56, 'KILL': 1}	CalamityMod.Projectiles.Rogue.DestructionStar.AI; CalamityMod.Projectiles.Rogue.DestructionBolt.AI	CalamityMod/DestructionBolt,CalamityMod/DestructionStar	none
+CalamityMod	Toxicant Twister	{'AI': 350, 'KILL': 55}	CalamityMod.Projectiles.Rogue.ToxicantTwisterProj.OnKill; CalamityMod.Projectiles.Rogue.ToxicantTwisterProj.AI	CalamityMod/ToxicantTwisterProj	none
+CalamityMod	Valediction	{'KILL': 252}	CalamityMod.Projectiles.Rogue.ValedictionBoomerang.OnKill	CalamityMod/ValedictionBoomerang	none
+CalamityMod	Whitewater	{'AI': 130}	CalamityMod.Projectiles.Rogue.WhitewaterProj.AI	CalamityMod/WhitewaterProj	none
+CalamityMod	Perdition	{}		CalamityMod/PerditionBeacon	none

@@ -31,6 +31,17 @@ namespace Levy.Common.Testing
 			try { return s?.Dummy == null ? -1 : s.Dummy.GetModPlayer<ThoriumPlayer>().bardResourceMax2; } catch (Exception) { return -1; }
 		}
 
+		/// <summary>Drops a Thorium healing orb at <paramref name="pos"/> (HealingOrbYellow), owner 0, no damage; returns it. The caller tags it as a soldier's when a soldier 'cast' it.</summary>
+		public static Projectile SpawnOrb(Vector2 pos, SoldierNPC caster)
+		{
+			int type = ModContent.ProjectileType<ThoriumMod.Projectiles.Healer.HealingOrbYellow>();
+			Projectile q;
+			if (caster != null) q = global::Levy.Common.Weapons.WeaponUse.Spawn(caster, pos, Vector2.Zero, type, 1, 0f, null, 0f, 0f);
+			else { int i = Projectile.NewProjectile(null, pos, Vector2.Zero, type, 0, 0f, 0); q = i >= 0 && i < Main.maxProjectiles ? Main.projectile[i] : null; }
+			if (q != null) { q.friendly = false; q.damage = 0; }
+			return q;
+		}
+
 		private static Item _bagItem;
 		internal static string DriveErr = "";
 		internal static int DriveTicks, DrivePick, DriveVisible, DriveAimed, DriveBoth, DriveBoost;

@@ -1,0 +1,9 @@
+cost|V:EnchantedBoomerang|1|600|fam=boom,localimm,clearimm
+cost|V:HornetStaff|1|600|fam=summon,localimm,clearimm
+cost|V:SpiderStaff|1|600|fam=summon,localimm,clearimm
+cost|V:EnchantedBoomerang|5|600|fam=boom,localimm,clearimm
+cost|V:HornetStaff|5|600|fam=summon,localimm,clearimm
+cost|V:SpiderStaff|5|600|fam=summon,localimm,clearimm
+cost|V:EnchantedBoomerang|10|600|fam=boom,localimm,clearimm
+cost|V:HornetStaff|10|600|fam=summon,localimm,clearimm
+cost|V:SpiderStaff|10|600|fam=summon,localimm,clearimm

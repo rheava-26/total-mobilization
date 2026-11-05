@@ -1,0 +1,13 @@
+gear|V:Musket|5|300|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s2
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s1
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s2
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s3
+ctl|none|40|600|vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,refresh,nonpc,pu=s2
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s1
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s2
+gear|V:Musket|40|600|fam=other,dist=14,vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,nonpc,pu=s3
+ctl|none|40|600|vslot,netlock,g=V:ChlorophyteMask+V:ChlorophytePlateMail+V:ChlorophyteGreaves+V:VolatileGelatin+V:MagmaStone+V:BoneGlove+V:StarCloak+V:WormScarf,refresh,nonpc,pu=s2

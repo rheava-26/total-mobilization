@@ -1,4 +1,5 @@
 [K_chlorophyte_vs_zombie_5]
+RANKSTAGE 5
 SOLDIERS 5
 W Vanilla/ChlorophyteSaber
 W Vanilla/ChlorophyteClaymore
@@ -19,6 +20,7 @@ M Vanilla/WoodenArrow x999
 STAGE
 
 [K_zombie_only_extra]
+RANKSTAGE 5
 SOLDIERS 3
 W Vanilla/ZombieArm
 W Vanilla/ChlorophyteSaber
@@ -27,6 +29,7 @@ M Vanilla/MusketBall x999
 STAGE
 
 [K_armor_chlorophyte]
+RANKSTAGE 5
 SOLDIERS 3
 W Vanilla/ZombieArm
 W Vanilla/WoodenSword

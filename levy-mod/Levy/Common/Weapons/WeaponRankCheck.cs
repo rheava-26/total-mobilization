@@ -156,6 +156,8 @@ namespace Levy.Common.Weapons
 				var mini = Make(ItemID.Minishark); var terra = Make(ItemID.TerraBlade); var wood = Make(ItemID.WoodenSword);
 				WeaponRank.ForceStage = 0;
 				check(!WeaponRank.Negligible(mini) && !WeaponRank.Negligible(wood), "at the start of the game neither a Minishark nor a Wooden Sword is negligible");
+				var tiny = Make(ItemID.WoodenSword); tiny.damage = 2;
+				check(WeaponRank.Negligible(tiny), "a 2-damage weapon is negligible even at the start (the armor swallows the hit)");
 				WeaponRank.ForceStage = 3;
 				check(WeaponRank.Negligible(mini) && WeaponRank.Negligible(wood), "at Hardmode a Minishark and a Wooden Sword barely hurt armored enemies");
 				check(!WeaponRank.Negligible(terra), "a Terra Blade never does");
@@ -168,6 +170,19 @@ namespace Levy.Common.Weapons
 				check(WeaponRank.Of(mini) >= 1f, "with the skip off the Minishark ranks by its price");
 				WeaponRank.Force(WeaponRankMode.Damage, true);
 				check(WeaponRank.Of(mini) == WeaponClassifier.Score(mini), "Damage mode is the damage score whatever the skip says");
+				// a heal weapon ranks by what it heals in Damage mode, by its price in the price modes, and the armor skip never demotes it
+				Item healer = null;
+				if (ModLoader.TryGetMod("ThoriumMod", out var th))
+					foreach (var mi in th.GetContent<ModItem>()) { var h = Make(mi.Type); if (h.value > 0 && WeaponClassifier.IsIssuableWeapon(h) && WeaponClassifier.HealScore(h) > 0f) { healer = h; break; } }
+				if (healer != null)
+				{
+					WeaponRank.ForceStage = 6;
+					check(!WeaponRank.Negligible(healer), $"{healer.Name} (a heal weapon) is never negligible");
+					WeaponRank.Force(WeaponRankMode.Damage, true);
+					check(WeaponRank.Of(healer) == WeaponClassifier.HealScore(healer), $"{healer.Name} ranks by its healing in Damage mode");
+					WeaponRank.Force(WeaponRankMode.SellPrice, true);
+					check(Math.Abs(WeaponRank.Of(healer) - (float)Math.Pow(Math.Max(1, healer.value), WeaponRank.PriceExponent)) < 0.01f, $"{healer.Name} ranks by its price in the price modes");
+				}
 			}
 			finally { WeaponRank.ForceStage = savedStage; WeaponRank.Release(); }
 		}

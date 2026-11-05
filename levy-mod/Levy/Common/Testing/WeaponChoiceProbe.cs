@@ -56,22 +56,105 @@ namespace Levy.Common.Testing
 			var it = new Item(); it.SetDefaults(type); it.stack = Math.Min(stack, Math.Max(1, it.maxStack)); return it;
 		}
 
+		/// <summary>The score as it was before a sword's projectile was credited: the shot's share of the per-swing damage taken back out.</summary>
+		private static float SwingOnlyScore(Item it)
+		{
+			float shot = WeaponClassifier.SwordShotDamage(it, WeaponClassifier.GetProfile(it), out _);
+			return shot <= 0f ? WeaponClassifier.Score(it) : WeaponClassifier.Score(it) * it.damage / (it.damage + shot);
+		}
+
 		private static string Describe(Item it)
 		{
 			if (it == null || it.IsAir) return "-";
 			var p = WeaponClassifier.GetProfile(it);
-			return $"{(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)}[{p.Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} sc={WeaponClassifier.Score(it):F0}{(it.stack > 1 ? " x" + it.stack : "")}]";
+			return $"{(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)}[{p.Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} sc={WeaponClassifier.Score(it):F0} rk={WeaponRank.Of(it):F1}{(WeaponRank.Mode != WeaponRankMode.Damage && WeaponRank.SkipArmored && WeaponRank.Negligible(it) ? " NEGL" : "")}{(it.stack > 1 ? " x" + it.stack : "")}]";
 		}
 
 		private void Run(StringBuilder sb)
 		{
 			sb.AppendLine("# Levy weapon-choice probe. Levy " + Mod.Version);
+			// LEVY_PICKPROBE_RANK=damage|price|pricemat  LEVY_PICKPROBE_SKIP=0|1  LEVY_PICKPROBE_STAGE=0..6 (default: the world's): the ranking the probe runs under
+			string rk = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_RANK");
+			if (!string.IsNullOrEmpty(rk))
+			{
+				var m = rk == "damage" ? WeaponRankMode.Damage : rk == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : WeaponRankMode.SellPrice;
+				bool skip = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_SKIP") != "0";
+				WeaponRank.Force(m, skip);
+				if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_PICKPROBE_STAGE"), out int st)) WeaponRank.ForceStage = st;
+				sb.AppendLine($"# ranking: {m} skipArmored={skip} stage={WeaponRank.Stage()} defense={WeaponRank.StageDefenseNow()} expert={Main.expertMode}");
+			}
+			if (Environment.GetEnvironmentVariable("LEVY_PICKPROBE_SKIPTABLE") == "1") SkipTable(sb);
 			string cat = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_CATALOG");
 			if (!string.IsNullOrEmpty(cat)) Catalog(sb, cat.Split(','));
 			string tiers = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_TIERS");
 			if (!string.IsNullOrEmpty(tiers)) { TierTable(sb, tiers.Split(',')); foreach (var n in ProgressionTierProbe.Notes) sb.AppendLine("# NOTE " + n); }
 			string scen = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_SCEN");
-			if (!string.IsNullOrEmpty(scen) && File.Exists(scen)) Scenarios(sb, File.ReadAllLines(scen));
+			// LEVY_PICKPROBE_MATRIX=damage:0,price:1,price:0,pricemat:1,pricemat:0 : run every scenario file once per ranking (mode:skipArmored). A scenario's "RANKSTAGE n" line pins the world stage it is judged at.
+			string matrix = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_MATRIX");
+			if (!string.IsNullOrEmpty(scen))
+			{
+				var files = scen.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				if (string.IsNullOrEmpty(matrix)) { foreach (var f in files) if (File.Exists(f)) Scenarios(sb, File.ReadAllLines(f)); }
+				else
+					foreach (var cfg in matrix.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+					{
+						var kv = cfg.Split(':'); string mm = kv[0]; bool sk = kv.Length < 2 || kv[1] != "0";
+						WeaponRank.Force(mm == "damage" ? WeaponRankMode.Damage : mm == "pricemat" ? WeaponRankMode.SellPricePlusMaterials : WeaponRankMode.SellPrice, sk);
+						sb.AppendLine($"\n################ CONFIG ranking={WeaponRank.Mode} skipArmored={WeaponRank.SkipArmored}");
+						foreach (var f in files) if (File.Exists(f)) Scenarios(sb, File.ReadAllLines(f));
+					}
+				WeaponRank.ForceStage = -1; WeaponRank.Release();
+			}
+		}
+
+		/// <summary>What the armored-enemy skip changes: per stage, how many issuable weapons are negligible, the priciest negligible ones, and which weapons are negligible at every stage.</summary>
+		private void SkipTable(StringBuilder sb)
+		{
+			sb.AppendLine("\n## ARMORED-ENEMY SKIP: per world stage (defense " + string.Join(", ", WeaponRank.StageDefense) + "), normal mode and expert mode");
+			var all = new List<(string mod, string name, Item it)>();
+			foreach (var mod in new[] { "Vanilla", "CalamityMod", "ThoriumMod" })
+			{
+				IEnumerable<(int type, string name)> src;
+				if (mod == "Vanilla") src = Enumerable.Range(1, ItemID.Count - 1).Select(t => (t, ItemID.Search.TryGetName(t, out var n) ? n : "?"));
+				else if (ModLoader.TryGetMod(mod, out var m)) src = m.GetContent<ModItem>().Select(x => (x.Type, x.Name));
+				else continue;
+				foreach (var (t, nm) in src)
+				{
+					var it = new Item(); it.SetDefaults(t);
+					if (it.accessory || it.headSlot >= 0 || it.bodySlot >= 0 || it.legSlot >= 0 || it.ammo > 0 || it.createTile >= 0 || it.pick > 0 || it.axe > 0 || it.hammer > 0) continue;
+					if (!WeaponClassifier.IsIssuableWeapon(it)) continue;
+					all.Add((mod, nm, it));
+				}
+			}
+			sb.AppendLine($"issuable weapons: {all.Count} ({all.Count(a => a.mod == "Vanilla")} vanilla, {all.Count(a => a.mod == "CalamityMod")} Calamity, {all.Count(a => a.mod == "ThoriumMod")} Thorium)");
+			int savedMode = Main.GameMode;
+			foreach (bool expert in new[] { false, true })
+			{
+				Main.GameMode = expert ? GameModeID.Expert : GameModeID.Normal;
+				sb.AppendLine($"\n# {(expert ? "EXPERT / MASTER (three quarters of defense)" : "NORMAL (half of defense)")}");
+				for (int stage = 0; stage < 7; stage++)
+				{
+					WeaponRank.ForceStage = stage;
+					var neg = all.Where(a => WeaponRank.Negligible(a.it)).ToList();
+					sb.AppendLine($"stage {stage} (defense {WeaponRank.StageDefenseNow()}): {neg.Count} of {all.Count} negligible; by mod V/C/T = {neg.Count(a => a.mod == "Vanilla")}/{neg.Count(a => a.mod == "CalamityMod")}/{neg.Count(a => a.mod == "ThoriumMod")}");
+					if (!expert) foreach (var a in neg.OrderByDescending(a => a.it.value).Take(8)) sb.AppendLine($"    {a.mod}/{a.name}: dmg {a.it.damage} hit {WeaponClassifier.PerHitDamage(a.it):F0} value {a.it.value}");
+				}
+			}
+			Main.GameMode = GameModeID.Normal;
+			WeaponRank.ForceStage = 0;
+			var permanent = all.Where(a => { bool every = true; for (int s2 = 0; s2 < 7 && every; s2++) { WeaponRank.ForceStage = s2; every = WeaponRank.Negligible(a.it); } return every; }).OrderByDescending(a => a.it.value).ToList();
+			sb.AppendLine($"\n# negligible at EVERY stage (normal mode): {permanent.Count}; the priciest 25");
+			foreach (var a in permanent.Take(25)) sb.AppendLine($"    {a.mod}/{a.name}: dmg {a.it.damage} hit {WeaponClassifier.PerHitDamage(a.it):F0} value {a.it.value} shoot={a.it.shoot} family={WeaponClassifier.GetProfile(a.it).Family}");
+			sb.AppendLine("\n# key weapons by stage (N = negligible)   stage:  0 1 2 3 4 5 6");
+			foreach (var key in new[] { "Vanilla/Minishark", "CalamityMod/Minishark", "Vanilla/Musket", "Vanilla/WoodenSword", "Vanilla/IronBroadsword", "Vanilla/CobaltSword", "Vanilla/MythrilSword", "Vanilla/Megashark", "Vanilla/TerraBlade", "Vanilla/Zenith", "Vanilla/Starfury", "Vanilla/EnchantedSword", "Vanilla/Boomstick", "Vanilla/BladeofGrass", "Vanilla/PhoenixBlaster" })
+			{
+				var a = all.FirstOrDefault(x => (x.mod + "/" + x.name) == key || (x.mod == "Vanilla" && "Vanilla/" + x.name == key));
+				if (a.it == null) { Item it2 = null; var sp = key.Split('/'); if (sp[0] == "Vanilla" && typeof(ItemID).GetField(sp[1]) != null) { it2 = new Item(); it2.SetDefaults((int)(short)typeof(ItemID).GetField(sp[1]).GetValue(null)); } if (it2 == null) continue; a = ("Vanilla", sp[1], it2); }
+				var row = new StringBuilder();
+				for (int s2 = 0; s2 < 7; s2++) { WeaponRank.ForceStage = s2; row.Append(WeaponRank.Negligible(a.it) ? " N" : " ."); }
+				sb.AppendLine($"    {key,-28} dmg {a.it.damage,3} hit {WeaponClassifier.PerHitDamage(a.it),5:F0}  {row}");
+			}
+			WeaponRank.ForceStage = -1; Main.GameMode = savedMode;
 		}
 
 		private void Catalog(StringBuilder sb, string[] mods)
@@ -172,7 +255,9 @@ namespace Levy.Common.Testing
 			bool oldCm = LevyConfig.Get.ClassMatchIssue;
 			foreach (var sc in scens)
 			{
-				sb.AppendLine("\n## SCENARIO " + sc.Name);
+				WeaponRank.ForceStage = -1;
+				foreach (var rl in sc.Lines) if (rl.StartsWith("RANKSTAGE ")) WeaponRank.ForceStage = int.Parse(rl.Substring(10).Trim());
+				sb.AppendLine("\n## SCENARIO " + sc.Name + $"   [ranking {WeaponRank.Mode} skip={WeaponRank.SkipArmored} stage={WeaponRank.Stage()} defense={WeaponRank.StageDefenseNow()}]");
 				var te = new ArmoryTE();
 				int nSold = 9; var souls = new List<SoldierRecord>(); bool staged = false; var mix = new List<string>(); string order = "interleave";
 				SoldierRecord NewSoldier(int i)
@@ -212,6 +297,7 @@ namespace Levy.Common.Testing
 					var t = l.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 					switch (t[0])
 					{
+						case "RANKSTAGE": break;
 						case "SOLDIERS": nSold = int.Parse(t[1]); break;
 						case "MIX": { mix = BuildMix(t.Skip(2).ToArray(), t[1]); nSold = mix.Count; break; } // MIX <order> melee=5 ranged=4 magic=3 summon=1 none=2
 						case "ROUTE": { ProgressionTierProbe.EnsureBuilt(sb); var ri = Make(t[1]); if (ri == null) sb.AppendLine("  ROUTE cannot resolve " + t[1]); else { sb.AppendLine("  ROUTE " + t[1]); ProgressionTierProbe.Dump(ri.type, sb); } break; }
@@ -238,9 +324,9 @@ namespace Levy.Common.Testing
 				}
 				if (!staged) { for (int i = 0; i < nSold; i++) { var r = NewSoldier(i); souls.Add(r); te.IssueGear(r); } Show("issue"); }
 				else { foreach (var s in souls) te.UpgradeWeapons(s); Show("after UpgradeWeapons"); for (int k = 0; k < 2; k++) foreach (var s in souls) te.UpgradeWeapons(s); Show("after 2 more upgrade rounds"); }
-				sb.AppendLine("  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score");
-				foreach (var it in te.Storage.Concat(souls.Select(x => x.Gear.Weapon)).Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).GroupBy(x => x.type).Select(g => g.First()).OrderByDescending(x => WeaponClassifier.Score(x)))
-					sb.AppendLine($"    {(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)} | {WeaponClassifier.GetProfile(it).Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} | {it.damage} {it.useTime} {it.reuseDelay} {it.rare} {it.value} | {WeaponClassifier.Score(it):F1}");
+				sb.AppendLine("  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost");
+				foreach (var it in te.Storage.Concat(souls.Select(x => x.Gear.Weapon)).Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).GroupBy(x => x.type).Select(g => g.First()).OrderByDescending(x => WeaponRank.Of(x)))
+					sb.AppendLine($"    {(it.ModItem != null ? it.ModItem.Mod.Name + "/" + it.ModItem.Name : it.Name)} | {WeaponClassifier.GetProfile(it).Family}/{ClsName(WeaponClassifier.ItemDamageClass(it))} | {it.damage} {it.useTime} {it.reuseDelay} {it.rare} {it.value} | {WeaponClassifier.Score(it):F1} (swing only {SwingOnlyScore(it):F1}) | {WeaponRank.Of(it):F1}{(WeaponRank.Mode != WeaponRankMode.Damage && WeaponRank.SkipArmored && WeaponRank.Negligible(it) ? " NEGL" : "")} | {MaterialCost.Of(it.type):F0}");
 				var left = te.Storage.Where(x => x != null && !x.IsAir && WeaponClassifier.IsIssuableWeapon(x)).Select(x => Describe(x));
 				sb.AppendLine("  left on shelves: " + string.Join(" | ", left));
 			}

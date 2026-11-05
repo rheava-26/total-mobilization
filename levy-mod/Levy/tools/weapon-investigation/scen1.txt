@@ -1,4 +1,5 @@
 [A_noArmor_ammoYes]
+RANKSTAGE 3
 SOLDIERS 9
 W Vanilla/Minishark
 W Vanilla/Musket
@@ -73,6 +74,7 @@ M Vanilla/WoodenArrow x999
 STAGE
 
 [B_noArmor_NOammo]
+RANKSTAGE 3
 SOLDIERS 9
 W Vanilla/Minishark
 W Vanilla/Musket
@@ -145,6 +147,7 @@ W ThoriumMod/PinkPhaseblade
 STAGE
 
 [C_classArmors_ammoYes]
+RANKSTAGE 3
 SOLDIERS 9
 W Vanilla/Minishark
 W Vanilla/Musket
@@ -231,6 +234,7 @@ A Vanilla/BeeGreaves
 STAGE
 
 [D_rogueOnlyStock_then_upgrade]
+RANKSTAGE 3
 SOLDIERS 9
 W CalamityMod/WulfrumKnife x12
 STAGE
@@ -307,6 +311,7 @@ M Vanilla/WoodenArrow x999
 STAGE
 
 [E_meleeArmorOnly]
+RANKSTAGE 3
 SOLDIERS 9
 W Vanilla/Minishark
 W Vanilla/Musket

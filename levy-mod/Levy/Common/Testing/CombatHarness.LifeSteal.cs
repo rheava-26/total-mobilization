@@ -28,9 +28,9 @@ namespace Levy.Common.Testing
 		internal static bool LsDirect; internal static int LsHitDamage = 200;
 		private int[] _lsCounts; private int _lsCase = -1, _lsTick, _lsPeriod = 10, _lsTicks = 900; private string _lsItem = "";
 		private readonly List<SoldierNPC> _lsBodies = new(); private readonly List<int> _lsTargets = new();
-		internal static int LsCalls, LsHeals, LsSpentMilli; internal static float LsCmdPoolSeenMax;
+		internal static int LsCalls, LsHeals, LsSpentMilli;
 		private int _lsRoutedStart; private int _lsCmdFalls; private float _lsCmdFallSum, _lsCmdPrev, _lsCmdMin, _lsCmdMax;
-		private int _lsHealStart, _lsOpensStart; private int _lsFirstCalls; private bool _lsHooked;
+		private int _lsHealStart, _lsOpensStart, _lsShotTicks, _lsUnpOwner, _lsUnpBody; private string _lsWpn = ""; private bool _lsHooked;
 
 		private bool BeginLifeSteal()
 		{
@@ -107,19 +107,20 @@ namespace Levy.Common.Testing
 							if (w.useAmmo > 0) { Item ammo = FindAmmo(w, ""); if (ammo != null && rec.Gear.CanHold(SoldierGear.SlotAmmo, ammo)) { rec.Gear.Ammo = ammo; rec.Gear.SetLocked(SoldierGear.SlotAmmo, true); } }
 						}
 					}
-					rec.LoadoutLocked = true; rec.Order = SoldierOrder.Hold; rec.HoldFire = LsDirect;
+					rec.LoadoutLocked = true; rec.Order = LsDirect ? SoldierOrder.Hold : SoldierOrder.Follow; rec.HoldFire = LsDirect;
 					rec.CurrentHp = Math.Max(1, (int)(rec.MaxHp * 0.4f)); rec.Mana = rec.MaxMana;
 					RosterSystem.Instance.Regulars.Add(rec);
 					float x = _cx * 16f + 8f + (i - n / 2) * 6 * 16f; // spread so each levy has his own corner of the range
 					Vector2 at = new Vector2(x, FloorY * 16f);
 					int idx = RosterSystem.Instance.SpawnBody(rec, at);
 					if (idx < 0 || !rec.HasBody) { Mod.Logger.Warn("HARNESS-LS: SpawnBody failed"); continue; }
-					var body = (SoldierNPC)Main.npc[idx].ModNPC; body.NPC.Bottom = at; body.ReceiveOrder(SoldierOrder.Hold);
+					var body = (SoldierNPC)Main.npc[idx].ModNPC; body.NPC.Bottom = at; if (LsDirect) body.ReceiveOrder(SoldierOrder.Hold);
 					_lsBodies.Add(body);
-					_lsTargets.Add(SpawnLsTarget(x + 5 * 16f));
+					_lsTargets.Add(SpawnLsTarget(x + (LsDirect ? 5f : 2.5f) * 16f));
 				}
 				LsCalls = LsHeals = LsSpentMilli = 0;
 				_lsRoutedStart = OwnerPuppet.RoutedLife; _lsHealStart = OwnerPuppet.RoutedHeals; _lsOpensStart = OwnerPuppet.PoolOpens;
+				_lsUnpOwner = OwnerPuppet.UnpuppetedOwner; _lsUnpBody = OwnerPuppet.UnpuppetedBody; _lsShotTicks = 0; _lsWpn = _lsBodies.Count > 0 && _lsBodies[0].Record != null && _lsBodies[0].Record.Gear.HasWeapon ? _lsBodies[0].Record.Gear.Weapon.Name + "/" + WeaponClassifier.GetProfile(_lsBodies[0].Record.Gear.Weapon).Family : "none";
 				_lsCmdFalls = 0; _lsCmdFallSum = 0f; _lsCmdPrev = cmd.lifeSteal; _lsCmdMin = _lsCmdMax = cmd.lifeSteal;
 				_lsTick = 0;
 				return;
@@ -129,6 +130,7 @@ namespace Levy.Common.Testing
 			cmd.position = new Vector2(_cx * 16f - 4 * 16f, FloorY * 16f - cmd.height);
 			if (cmd.lifeSteal < _lsCmdPrev - 0.001f) { _lsCmdFalls++; _lsCmdFallSum += _lsCmdPrev - cmd.lifeSteal; if (_lsCmdFalls <= 3) Mod.Logger.Info($"HARNESS-LS: commander pool fell {_lsCmdPrev:F1}->{cmd.lifeSteal:F1} at tick {_lsTick} depth={OwnerPuppet.DebugDepth}"); }
 			_lsCmdPrev = cmd.lifeSteal; _lsCmdMin = Math.Min(_lsCmdMin, cmd.lifeSteal); _lsCmdMax = Math.Max(_lsCmdMax, cmd.lifeSteal);
+			for (int pi = 0; pi < Main.maxProjectiles; pi++) { Projectile q = Main.projectile[pi]; if (q.active && q.TryGetGlobalProjectile(out SoldierProjectileTag qt) && qt.IsSoldierShot) _lsShotTicks++; }
 			for (int k = 0; k < _lsBodies.Count; k++)
 			{
 				var b = _lsBodies[k];
@@ -149,9 +151,9 @@ namespace Levy.Common.Testing
 			foreach (var b in _lsBodies) if (!float.IsNaN(b.LifeStealPool)) { used++; poolSum += b.LifeStealPool; poolMin = Math.Min(poolMin, b.LifeStealPool); }
 			int routed = OwnerPuppet.RoutedLife - _lsRoutedStart;
 			Mod.Logger.Info(string.Format(CultureInfo.InvariantCulture,
-				"HARNESS-LS-RESULT: N={0} ticks={1} mode={2} shared={3} vampireHealCalls={4} poolSpendingCalls={5} poolSpent={6:F1} lifeRoutedToLevies={7} routedHeals={8} levyPoolsUsed={9}/{10} levyPoolAvgEnd={11:F1} levyPoolMinEnd={12:F1} cmdPoolFalls={13} cmdPoolFallSum={14:F1} cmdPoolEnd={15:F1} cmdPoolMin={16:F1} cmdPoolMax={17:F1} poolOpens={18}",
+				"HARNESS-LS-RESULT: N={0} ticks={1} mode={2} shared={3} vampireHealCalls={4} poolSpendingCalls={5} poolSpent={6:F1} lifeRoutedToLevies={7} routedHeals={8} levyPoolsUsed={9}/{10} levyPoolAvgEnd={11:F1} levyPoolMinEnd={12:F1} cmdPoolFalls={13} cmdPoolFallSum={14:F1} cmdPoolEnd={15:F1} cmdPoolMin={16:F1} cmdPoolMax={17:F1} poolOpens={18} weapon={19} soldierShotTicks={20} unpuppetedOwnerInactive={21} unpuppetedNoBody={22}",
 				n2, _lsTicks, LsDirect ? "direct" : _lsItem, LifeStealPool.SharedForTest, LsCalls, LsHeals, LsSpentMilli / 1000f, routed, OwnerPuppet.RoutedHeals - _lsHealStart, used, n2, used > 0 ? poolSum / used : float.NaN, used > 0 ? poolMin : float.NaN,
-				_lsCmdFalls, _lsCmdFallSum, cmd.lifeSteal, _lsCmdMin, _lsCmdMax, OwnerPuppet.PoolOpens - _lsOpensStart));
+				_lsCmdFalls, _lsCmdFallSum, cmd.lifeSteal, _lsCmdMin, _lsCmdMax, OwnerPuppet.PoolOpens - _lsOpensStart, _lsWpn, _lsShotTicks, OwnerPuppet.UnpuppetedOwner - _lsUnpOwner, OwnerPuppet.UnpuppetedBody - _lsUnpBody));
 			_lsCase++; _lsTick = -1;
 		}
 

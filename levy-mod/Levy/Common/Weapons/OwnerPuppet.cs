@@ -33,6 +33,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Effective bit mask, read on the hot path. Written only by <see cref="Refresh"/>.</summary>
 		internal static int Mask = 63;
 		private static bool _envSet; private static int _envMask; private static bool _cfgOn = true; private static bool _hooked;
+		internal static int UnpuppetedOwner, UnpuppetedBody; // soldier shots seen with no active owner / no live body (harness diagnostics)
 		internal static int Swaps, Restores, ThSwaps, Inherited, NetGuards, MaxDepth; // counters for the harness
 		/// <summary>The soldier whose projectile is inside a puppeted call right now (null otherwise).</summary>
 		internal static SoldierNPC Context;
@@ -69,9 +70,11 @@ namespace Levy.Common.Weapons
 			owner = null; body = null;
 			if (p.owner < 0 || p.owner >= Main.maxPlayers || !p.TryGetGlobalProjectile(out SoldierProjectileTag t) || !t.IsSoldierShot) return false;
 			owner = Main.player[p.owner];
-			if (owner == null || !owner.active || owner.whoAmI != p.owner) return false; // a real, active player only
+			if (owner == null || !owner.active || owner.whoAmI != p.owner) { UnpuppetedOwner++; return false; } // a real, active player only
 			body = EnemyTargeting.LiveBody(t.SoldierIndex);
-			return body != null && body.NPC.active && !ReferenceEquals(body.Dummy, owner);
+			bool ok = body != null && body.NPC.active && !ReferenceEquals(body.Dummy, owner);
+			if (!ok) UnpuppetedBody++;
+			return ok;
 		}
 
 		/// <summary>One open swap: what the owner's transform and the Thorium cache were when this call entered.</summary>

@@ -1,0 +1,49 @@
+[S_prehm_blades_and_guns]
+RANKSTAGE 2
+SOLDIERS 4
+W Vanilla/EnchantedSword
+W Vanilla/Starfury
+W Vanilla/Muramasa
+W Vanilla/NightsEdge
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/LightsBane
+W Vanilla/BeeKeeper
+W Vanilla/Volcano
+W Vanilla/IronBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+W Vanilla/HellwingBow
+W Vanilla/MoltenFury
+W Vanilla/FlowerofFire
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/DemonBow
+W Vanilla/Boomstick
+M Vanilla/MusketBall x300
+M Vanilla/WoodenArrow x300
+[S_hardmode_blades]
+RANKSTAGE 5
+SOLDIERS 4
+W Vanilla/TerraBlade
+W Vanilla/TrueExcalibur
+W Vanilla/Excalibur
+W Vanilla/Keybrand
+W Vanilla/BeamSword
+W Vanilla/IceBlade
+W Vanilla/EnchantedSword
+W Vanilla/Starfury
+W Vanilla/MythrilSword
+W Vanilla/CobaltSword
+W Vanilla/NightsEdge
+W Vanilla/TrueNightsEdge
+W Vanilla/Muramasa
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/BreakerBlade
+W Vanilla/Seedler
+W Vanilla/Zenith
+W Vanilla/ChlorophyteSaber
+W Vanilla/Meowmere

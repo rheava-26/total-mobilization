@@ -1,0 +1,849 @@
+
+=== A_noArmor_ammoYes
+  [Damage skip=False] Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=none
+      101  w=Cobalt Naginata[sc=570 rk=570.5]  side=-  armor=none
+      102  w=Cobalt Sword[sc=659 rk=659.4]  side=-  armor=none
+      103  w=Palladium Sword[sc=588 rk=588.5]  side=-  armor=none
+      104  w=Clockwork Assault Rifle[sc=341 rk=340.6]  side=CalamityMod/MycelialClaws[sc=310 rk=310.1]  armor=none
+      105  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      106  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      107  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+  [SellPrice skip=True] Night's Edge x1, SpeedBlaster x1, Hellwing Bow x1, Flower of Fire x1, Flamelash x1, Clockwork Assault Rifle x1, BackStabber x1, Water Bolt x1, Cinquedea x1
+      100  w=Night's Edge[sc=150 rk=5137.1]  side=-  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=Flamelash[sc=100 rk=3696.9]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Clockwork Assault Rifle[sc=341 rk=4200.1]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=ThoriumMod/BackStabber[sc=178 rk=2585.5]  side=-  armor=none
+      107  w=Water Bolt[sc=107 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPrice skip=False] Minishark x1, SpeedBlaster x1, Hellwing Bow x1, Flower of Fire x1, Cinquedea x1, Bee Gun x1, Flamelash x1, Demon Scythe x1, MythrilStaff x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Bee Gun[sc=73 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=Flamelash[sc=100 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPricePlusMaterials skip=True] SpeedBlaster x1, Palladium Sword x1, Phoenix Blaster x1, MythrilStaff x1, Mythril Repeater x1, CobaltStaff x1, Water Bolt x1, PinkPhaseblade x1, Cobalt Naginata x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=none
+      102  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      105  w=ThoriumMod/CobaltStaff[sc=191 rk=4081.8]  side=Cobalt Sword[sc=659 rk=4258.8]  armor=none
+      106  w=Water Bolt[sc=107 rk=3826.4]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      107  w=ThoriumMod/PinkPhaseblade[sc=148 rk=3503.2]  side=-  armor=none
+      108  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] SpeedBlaster x1, Phoenix Blaster x1, Mythril Repeater x1, MythrilStaff x1, Cobalt Sword x1, Cobalt Naginata x1, Tradewinds x1, Flamelash x1, Starfury x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=Mythril Repeater[sc=264 rk=6981.6]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      107  w=Flamelash[sc=100 rk=3696.9]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      108  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+
+=== B_noArmor_NOammo
+  [Damage skip=False] Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, MycelialClaws x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=none
+      101  w=Cobalt Naginata[sc=570 rk=570.5]  side=-  armor=none
+      102  w=Cobalt Sword[sc=659 rk=659.4]  side=-  armor=none
+      103  w=Palladium Sword[sc=588 rk=588.5]  side=-  armor=none
+      104  w=CalamityMod/MycelialClaws[sc=310 rk=310.1]  side=-  armor=none
+      105  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      106  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      107  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+  [SellPrice skip=True] Avalanche x1, SpeedBlaster x1, Flamelash x1, Bee Keeper x1, Muramasa x1, Cinquedea x1, Flower of Fire x1, Demon Scythe x1, MythrilStaff x1
+      100  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      102  w=Flamelash[sc=100 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Bee Keeper[sc=124 rk=3162.3]  side=-  armor=none
+      104  w=Muramasa[sc=105 rk=2880.1]  side=-  armor=none
+      105  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPrice skip=False] Avalanche x1, SpeedBlaster x1, Flamelash x1, Bee Keeper x1, Cinquedea x1, Bee Gun x1, Flower of Fire x1, Demon Scythe x1, MythrilStaff x1
+      100  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      102  w=Flamelash[sc=100 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Bee Keeper[sc=124 rk=3162.3]  side=-  armor=none
+      104  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Bee Gun[sc=73 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPricePlusMaterials skip=True] SpeedBlaster x1, Palladium Sword x1, MythrilStaff x1, Starfury x1, Muramasa x1, CobaltStaff x1, Tradewinds x1, WindBlade x1, Avalanche x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=none
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      103  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+      104  w=Muramasa[sc=105 rk=4219.7]  side=-  armor=none
+      105  w=ThoriumMod/CobaltStaff[sc=191 rk=4081.8]  side=Cobalt Sword[sc=659 rk=4258.8]  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Cobalt Naginata[sc=570 rk=4200.1]  armor=none
+      107  w=CalamityMod/WindBlade[sc=224 rk=4002.1]  side=-  armor=none
+      108  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] SpeedBlaster x1, Palladium Sword x1, MythrilStaff x1, Light's Bane x1, Cobalt Sword x1, Cobalt Naginata x1, Tradewinds x1, WindBlade x1, Avalanche x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=none
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      103  w=Light's Bane[sc=118 rk=4461.3]  side=-  armor=none
+      104  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      107  w=CalamityMod/WindBlade[sc=224 rk=4002.1]  side=-  armor=none
+      108  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=none
+
+=== C_classArmors_ammoYes
+  [Damage skip=False] Mythril Sword x1, MythrilStaff x1, Needler x1, Cobalt Naginata x1, SpeedBlaster x1, HoneySuckle x1, Mythril Repeater x1, DarkMageStaff x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=melee
+      101  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=Cobalt Sword[sc=659 rk=659.4]  armor=magic
+      102  w=CalamityMod/Needler[sc=298 rk=297.6]  side=Palladium Sword[sc=588 rk=588.5]  armor=ranged
+      103  w=Cobalt Naginata[sc=570 rk=570.5]  side=CalamityMod/MycelialClaws[sc=310 rk=310.1]  armor=summon
+      104  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      105  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      106  w=Mythril Repeater[sc=264 rk=264.3]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      107  w=ThoriumMod/DarkMageStaff[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=ThoriumMod/PinkPhaseblade[sc=148 rk=148.5]  armor=none
+  [SellPrice skip=True] Night's Edge x1, Clockwork Assault Rifle x1, Flamelash x1, SpeedBlaster x1, Cinquedea x1, Hellwing Bow x1, Flower of Fire x1, Demon Scythe x1, MythrilStaff x1
+      100  w=Night's Edge[sc=150 rk=5137.1]  side=-  armor=melee
+      101  w=Clockwork Assault Rifle[sc=341 rk=4200.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=ranged
+      102  w=Flamelash[sc=100 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=magic
+      103  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Bee Keeper[sc=124 rk=3162.3]  armor=summon
+      104  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Hellwing Bow[sc=204 rk=3696.9]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPrice skip=False] Minishark x1, Avalanche x1, Bee Gun x1, SpeedBlaster x1, Flower of Fire x1, Hellwing Bow x1, Cinquedea x1, MythrilStaff x1, Flamelash x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Night's Edge[sc=150 rk=5137.1]  armor=ranged
+      101  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=melee
+      102  w=Bee Gun[sc=73 rk=3162.3]  side=Mythril Sword[sc=756 rk=3239.4]  armor=magic
+      103  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Bee Keeper[sc=124 rk=3162.3]  armor=summon
+      104  w=Flower of Fire[sc=192 rk=3696.9]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Hellwing Bow[sc=204 rk=3696.9]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=Flamelash[sc=100 rk=3696.9]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPricePlusMaterials skip=True] SpeedBlaster x1, Palladium Sword x1, MythrilStaff x1, Phoenix Blaster x1, Mythril Repeater x1, CobaltStaff x1, Water Bolt x1, PinkPhaseblade x1, Cobalt Naginata x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=ranged
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=melee
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Mythril Sword[sc=756 rk=6493.3]  armor=magic
+      103  w=Phoenix Blaster[sc=167 rk=6823.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=summon
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      105  w=ThoriumMod/CobaltStaff[sc=191 rk=4081.8]  side=Cobalt Sword[sc=659 rk=4258.8]  armor=none
+      106  w=Water Bolt[sc=107 rk=3826.4]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      107  w=ThoriumMod/PinkPhaseblade[sc=148 rk=3503.2]  side=-  armor=none
+      108  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] SpeedBlaster x1, Palladium Sword x1, MythrilStaff x1, Phoenix Blaster x1, Mythril Repeater x1, Cobalt Naginata x1, Tradewinds x1, Flamelash x1, Cobalt Sword x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=ranged
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=melee
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Mythril Sword[sc=756 rk=6493.3]  armor=magic
+      103  w=Phoenix Blaster[sc=167 rk=6823.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=summon
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      107  w=Flamelash[sc=100 rk=3696.9]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      108  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+
+=== D_rogueOnlyStock_then_upgrade
+  [Damage skip=False] Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=none
+      101  w=Cobalt Naginata[sc=570 rk=570.5]  side=-  armor=none
+      102  w=Cobalt Sword[sc=659 rk=659.4]  side=-  armor=none
+      103  w=Palladium Sword[sc=588 rk=588.5]  side=-  armor=none
+      104  w=Clockwork Assault Rifle[sc=341 rk=340.6]  side=CalamityMod/MycelialClaws[sc=310 rk=310.1]  armor=none
+      105  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      106  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      107  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+  [SellPrice skip=True] Night's Edge x1, SpeedBlaster x1, Hellwing Bow x1, Flower of Fire x1, Flamelash x1, Clockwork Assault Rifle x1, BackStabber x1, Water Bolt x1, Cinquedea x1
+      100  w=Night's Edge[sc=150 rk=5137.1]  side=-  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=Flamelash[sc=100 rk=3696.9]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Clockwork Assault Rifle[sc=341 rk=4200.1]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=ThoriumMod/BackStabber[sc=178 rk=2585.5]  side=-  armor=none
+      107  w=Water Bolt[sc=107 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPrice skip=False] Minishark x1, SpeedBlaster x1, Hellwing Bow x1, Flower of Fire x1, Cinquedea x1, Bee Gun x1, Flamelash x1, Demon Scythe x1, MythrilStaff x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Bee Gun[sc=73 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=Flamelash[sc=100 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPricePlusMaterials skip=True] SpeedBlaster x1, Palladium Sword x1, Phoenix Blaster x1, MythrilStaff x1, Mythril Repeater x1, CobaltStaff x1, Water Bolt x1, PinkPhaseblade x1, Cobalt Naginata x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Palladium Sword[sc=588 rk=5613.3]  side=-  armor=none
+      102  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      105  w=ThoriumMod/CobaltStaff[sc=191 rk=4081.8]  side=Cobalt Sword[sc=659 rk=4258.8]  armor=none
+      106  w=Water Bolt[sc=107 rk=3826.4]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      107  w=ThoriumMod/PinkPhaseblade[sc=148 rk=3503.2]  side=-  armor=none
+      108  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] SpeedBlaster x1, Phoenix Blaster x1, Mythril Repeater x1, MythrilStaff x1, Cobalt Sword x1, Cobalt Naginata x1, Tradewinds x1, Flamelash x1, Starfury x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=Mythril Repeater[sc=264 rk=6981.6]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      107  w=Flamelash[sc=100 rk=3696.9]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      108  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+
+=== E_meleeArmorOnly
+  [Damage skip=False] Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=melee
+      101  w=Cobalt Naginata[sc=570 rk=570.5]  side=-  armor=none
+      102  w=Cobalt Sword[sc=659 rk=659.4]  side=-  armor=none
+      103  w=Palladium Sword[sc=588 rk=588.5]  side=-  armor=none
+      104  w=Clockwork Assault Rifle[sc=341 rk=340.6]  side=CalamityMod/MycelialClaws[sc=310 rk=310.1]  armor=none
+      105  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      106  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      107  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+  [SellPrice skip=True] Night's Edge x1, SpeedBlaster x1, Hellwing Bow x1, Flower of Fire x1, Flamelash x1, Clockwork Assault Rifle x1, BackStabber x1, Water Bolt x1, Cinquedea x1
+      100  w=Night's Edge[sc=150 rk=5137.1]  side=-  armor=melee
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=Flamelash[sc=100 rk=3696.9]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Clockwork Assault Rifle[sc=341 rk=4200.1]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=ThoriumMod/BackStabber[sc=178 rk=2585.5]  side=-  armor=none
+      107  w=Water Bolt[sc=107 rk=2585.5]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPrice skip=False] Night's Edge x1, Minishark x1, SpeedBlaster x1, Flamelash x1, Bee Gun x1, Hellwing Bow x1, Cinquedea x1, MythrilStaff x1, Flower of Fire x1
+      100  w=Night's Edge[sc=150 rk=5137.1]  side=-  armor=melee
+      101  w=Minishark[sc=141 rk=7600.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flamelash[sc=100 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=Bee Gun[sc=73 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Hellwing Bow[sc=204 rk=3696.9]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      107  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=Flower of Fire[sc=192 rk=3696.9]  side=Starfury[sc=123 rk=1946.6]  armor=none
+  [SellPricePlusMaterials skip=True] Night's Edge x1, SpeedBlaster x1, Phoenix Blaster x1, MythrilStaff x1, Mythril Repeater x1, CobaltStaff x1, Water Bolt x1, PinkPhaseblade x1, Cobalt Naginata x1
+      100  w=Night's Edge[sc=150 rk=10033.1]  side=-  armor=melee
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      105  w=ThoriumMod/CobaltStaff[sc=191 rk=4081.8]  side=Cobalt Sword[sc=659 rk=4258.8]  armor=none
+      106  w=Water Bolt[sc=107 rk=3826.4]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      107  w=ThoriumMod/PinkPhaseblade[sc=148 rk=3503.2]  side=-  armor=none
+      108  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Night's Edge x1, SpeedBlaster x1, MythrilStaff x1, Phoenix Blaster x1, Mythril Repeater x1, Cobalt Naginata x1, Tradewinds x1, Flamelash x1, Cobalt Sword x1
+      100  w=Night's Edge[sc=150 rk=10033.1]  side=-  armor=melee
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=Phoenix Blaster[sc=167 rk=6823.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Mythril Repeater[sc=264 rk=6981.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      107  w=Flamelash[sc=100 rk=3696.9]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      108  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+
+=== F_weak_then_strong
+  [Damage skip=False] Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+      100  w=Mythril Sword[sc=756 rk=756.3]  side=-  armor=none
+      101  w=Cobalt Naginata[sc=570 rk=570.5]  side=-  armor=none
+      102  w=Cobalt Sword[sc=659 rk=659.4]  side=-  armor=none
+      103  w=Palladium Sword[sc=588 rk=588.5]  side=-  armor=none
+      104  w=Clockwork Assault Rifle[sc=341 rk=340.6]  side=CalamityMod/MycelialClaws[sc=310 rk=310.1]  armor=none
+      105  w=ThoriumMod/MythrilStaff[sc=345 rk=345.2]  side=CalamityMod/WindBlade[sc=224 rk=223.8]  armor=none
+      106  w=CalamityMod/SpeedBlaster[sc=363 rk=362.9]  side=CalamityMod/Avalanche[sc=194 rk=194.4]  armor=none
+      107  w=ThoriumMod/HoneySuckle[sc=240 rk=240.0]  side=ThoriumMod/BackStabber[sc=178 rk=178.4]  armor=none
+      108  w=ThoriumMod/ThoriumWand[sc=240 rk=240.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+  [SellPrice skip=True] Avalanche x1, SpeedBlaster x1, Flamelash x1, Clockwork Assault Rifle x1, Muramasa x1, Palladium Sword x1, MythrilStaff x1, Hellwing Bow x1, Flower of Fire x1
+      100  w=CalamityMod/Avalanche[sc=194 rk=5137.1]  side=-  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      102  w=Flamelash[sc=100 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Clockwork Assault Rifle[sc=341 rk=4200.1]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=Muramasa[sc=105 rk=2880.1]  side=-  armor=none
+      105  w=Palladium Sword[sc=588 rk=2983.0]  side=-  armor=none
+      106  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      107  w=Hellwing Bow[sc=204 rk=3696.9]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+      108  w=Flower of Fire[sc=192 rk=3696.9]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+  [SellPrice skip=False] Minishark x1, SpeedBlaster x1, Flamelash x1, Flower of Fire x1, Cinquedea x2, Hellwing Bow x1, Bee Gun x1, MythrilStaff x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      101  w=CalamityMod/SpeedBlaster[sc=363 rk=5137.1]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      102  w=Flamelash[sc=100 rk=3696.9]  side=Mythril Sword[sc=756 rk=3239.4]  armor=none
+      103  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      104  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=Palladium Sword[sc=588 rk=2983.0]  armor=none
+      105  w=Hellwing Bow[sc=204 rk=3696.9]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      106  w=Bee Gun[sc=73 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      107  w=ThoriumMod/MythrilStaff[sc=345 rk=2937.4]  side=Cobalt Sword[sc=659 rk=2438.9]  armor=none
+      108  w=CalamityMod/Cinquedea[sc=145 rk=3162.3]  side=ThoriumMod/BackStabber[sc=178 rk=2585.5]  armor=none
+  [SellPricePlusMaterials skip=True] SpeedBlaster x1, Phoenix Blaster x1, MythrilStaff x1, Starfury x1, Cobalt Sword x1, Mythril Repeater x1, Tradewinds x1, Flamelash x1, Muramasa x1
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+      104  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+      105  w=Mythril Repeater[sc=264 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Starfury[sc=123 rk=4451.8]  armor=none
+      107  w=Flamelash[sc=100 rk=3696.9]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      108  w=Muramasa[sc=105 rk=4219.7]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] SpeedBlaster x1, Phoenix Blaster x1, Mythril Repeater x1, MythrilStaff x1, Cobalt Sword x1, Cobalt Naginata x1, Tradewinds x1, Starfury x2
+      100  w=CalamityMod/SpeedBlaster[sc=363 rk=10229.3]  side=Night's Edge[sc=150 rk=10033.1]  armor=none
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Mythril Sword[sc=756 rk=6493.3]  armor=none
+      102  w=Mythril Repeater[sc=264 rk=6981.6]  side=Palladium Sword[sc=588 rk=5613.3]  armor=none
+      103  w=ThoriumMod/MythrilStaff[sc=345 rk=6981.6]  side=CalamityMod/Avalanche[sc=194 rk=5137.1]  armor=none
+      104  w=Cobalt Sword[sc=659 rk=4258.8]  side=-  armor=none
+      105  w=Cobalt Naginata[sc=570 rk=4200.1]  side=-  armor=none
+      106  w=CalamityMod/Tradewinds[sc=126 rk=4002.1]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      107  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+      108  w=Starfury[sc=123 rk=4451.8]  side=-  armor=none
+
+=== G_prehm_only
+  [Damage skip=False] Mycoroot x1, Light's Bane x1, Minishark x1, BurntSienna x1, Space Gun x1, StormSurge x1, Demon Bow x1, WulfrumKnife x2
+      100  w=CalamityMod/Mycoroot[sc=155 rk=155.0]  side=Blade of Grass[sc=147 rk=146.6]  armor=none
+      101  w=Light's Bane[sc=118 rk=117.6]  side=-  armor=none
+      102  w=Minishark[sc=141 rk=140.9]  side=Muramasa[sc=105 rk=105.4]  armor=none
+      103  w=CalamityMod/BurntSienna[sc=98 rk=97.6]  side=-  armor=none
+      104  w=Space Gun[sc=100 rk=100.0]  side=-  armor=none
+      105  w=CalamityMod/StormSurge[sc=78 rk=77.5]  side=-  armor=none
+      106  w=Demon Bow[sc=65 rk=65.0]  side=-  armor=none
+      107  w=CalamityMod/WulfrumKnife[sc=71 rk=71.0]  side=-  armor=none
+      108  w=CalamityMod/WulfrumKnife[sc=71 rk=71.0]  side=-  armor=none
+  [SellPrice skip=True] Muramasa x1, Boomstick x1, Demon Bow x1, StormSurge x1, Space Gun x1, WulfrumProsthesis x1, WulfrumBlunderbuss x1, Kylie x1, Mycoroot x1
+      100  w=Muramasa[sc=105 rk=2880.1]  side=-  armor=none
+      101  w=Boomstick[sc=125 rk=3162.3]  side=Blade of Grass[sc=147 rk=1264.6]  armor=none
+      102  w=Demon Bow[sc=65 rk=952.1]  side=Light's Bane[sc=118 rk=778.5]  armor=none
+      103  w=CalamityMod/StormSurge[sc=78 rk=1025.0]  side=CalamityMod/BurntSienna[sc=98 rk=631.0]  armor=none
+      104  w=Space Gun[sc=100 rk=1025.0]  side=-  armor=none
+      105  w=CalamityMod/WulfrumProsthesis[sc=55 rk=631.0]  side=-  armor=none
+      106  w=CalamityMod/WulfrumBlunderbuss[sc=15 rk=0.5]  side=-  armor=none
+      107  w=CalamityMod/Kylie[sc=35 rk=0.5]  side=-  armor=none
+      108  w=CalamityMod/Mycoroot[sc=155 rk=0.5]  side=-  armor=none
+  [SellPrice skip=False] Minishark x1, Space Gun x1, Mycoroot x1, StormSurge x1, Blade of Grass x1, Demon Bow x1, WulfrumBlunderbuss x1, GildedDagger x1, WulfrumKnife x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      101  w=Space Gun[sc=100 rk=1025.0]  side=Light's Bane[sc=118 rk=778.5]  armor=none
+      102  w=CalamityMod/Mycoroot[sc=155 rk=1025.0]  side=CalamityMod/BurntSienna[sc=98 rk=631.0]  armor=none
+      103  w=CalamityMod/StormSurge[sc=78 rk=1025.0]  side=-  armor=none
+      104  w=Blade of Grass[sc=147 rk=1264.6]  side=-  armor=none
+      105  w=Demon Bow[sc=65 rk=952.1]  side=-  armor=none
+      106  w=CalamityMod/WulfrumBlunderbuss[sc=15 rk=631.0]  side=-  armor=none
+      107  w=CalamityMod/GildedDagger[sc=57 rk=631.0]  side=-  armor=none
+      108  w=CalamityMod/WulfrumKnife[sc=71 rk=631.0]  side=-  armor=none
+  [SellPricePlusMaterials skip=True] Light's Bane x1, Demon Bow x1, Musket x1, Space Gun x1, StormSurge x1, WulfrumProsthesis x1, Kylie x1, WulfrumKnife x1, WulfrumBlunderbuss x1
+      100  w=Light's Bane[sc=118 rk=4461.3]  side=-  armor=none
+      101  w=Demon Bow[sc=65 rk=3962.0]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      102  w=Musket[sc=75 rk=4200.1]  side=Blade of Grass[sc=147 rk=1483.0]  armor=none
+      103  w=Space Gun[sc=100 rk=2705.0]  side=CalamityMod/BurntSienna[sc=98 rk=631.0]  armor=none
+      104  w=CalamityMod/StormSurge[sc=78 rk=1641.7]  side=-  armor=none
+      105  w=CalamityMod/WulfrumProsthesis[sc=55 rk=652.9]  side=-  armor=none
+      106  w=CalamityMod/Kylie[sc=35 rk=0.5]  side=-  armor=none
+      107  w=CalamityMod/WulfrumKnife[sc=71 rk=0.5]  side=-  armor=none
+      108  w=CalamityMod/WulfrumBlunderbuss[sc=15 rk=0.5]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Minishark x1, Demon Bow x1, GildedDagger x1, Space Gun x1, StormSurge x1, Mycoroot x1, WulfrumProsthesis x1, UrchinStinger x1, WulfrumKnife x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      101  w=Demon Bow[sc=65 rk=3962.0]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      102  w=CalamityMod/GildedDagger[sc=57 rk=2752.1]  side=Blade of Grass[sc=147 rk=1483.0]  armor=none
+      103  w=Space Gun[sc=100 rk=2705.0]  side=CalamityMod/BurntSienna[sc=98 rk=631.0]  armor=none
+      104  w=CalamityMod/StormSurge[sc=78 rk=1641.7]  side=-  armor=none
+      105  w=CalamityMod/Mycoroot[sc=155 rk=1025.0]  side=-  armor=none
+      106  w=CalamityMod/WulfrumProsthesis[sc=55 rk=652.9]  side=-  armor=none
+      107  w=CalamityMod/UrchinStinger[sc=56 rk=631.0]  side=-  armor=none
+      108  w=CalamityMod/WulfrumKnife[sc=71 rk=652.9]  side=-  armor=none
+
+=== H_eveStock_9_interleave
+  [Damage skip=False] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Imp Staff x1, Light's Bane x1, Phoenix Blaster x1, Razorblade Typhoon x1, Iron Broadsword x1, Trident x1
+      100  w=Terra Blade[sc=1032 rk=1032.0]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=1073.6]  side=Influx Waver[sc=656 rk=655.9]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=1004.3]  side=The Horseman's Blade[sc=591 rk=591.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=58.1]  side=Blade of Grass[sc=147 rk=146.6]  armor=summon
+      104  w=Light's Bane[sc=118 rk=117.6]  side=-  armor=melee
+      105  w=Phoenix Blaster[sc=167 rk=166.8]  side=Muramasa[sc=105 rk=105.4]  armor=ranged
+      106  w=Razorblade Typhoon[sc=262 rk=262.0]  side=Volcano[sc=81 rk=81.4]  armor=magic
+      107  w=Iron Broadsword[sc=41 rk=40.7]  side=-  armor=melee
+      108  w=Trident[sc=47 rk=47.2]  side=-  armor=melee
+  [SellPrice skip=True] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Hornet Staff x1, Light's Bane x1, Phoenix Blaster x1, Razorblade Typhoon x1, Spear x1, Trident x1
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Hornet Staff[sc=41 rk=0.5]  side=Volcano[sc=81 rk=1264.6]  armor=summon
+      104  w=Light's Bane[sc=118 rk=0.5]  side=-  armor=melee
+      105  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Muramasa[sc=105 rk=0.5]  armor=ranged
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=0.5]  armor=magic
+      107  w=Spear[sc=30 rk=0.5]  side=-  armor=melee
+      108  w=Trident[sc=47 rk=0.5]  side=-  armor=melee
+  [SellPrice skip=False] Terra Blade x1, Minishark x1, Laser Machinegun x1, Slime Staff x1, Blade of Grass x1, Xenopopper x1, Razorblade Typhoon x1, Trident x1, Iron Broadsword x1
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=melee
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Slime Staff[sc=32 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=summon
+      104  w=Blade of Grass[sc=147 rk=1264.6]  side=-  armor=melee
+      105  w=Xenopopper[sc=1074 rk=9756.2]  side=Volcano[sc=81 rk=1264.6]  armor=ranged
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Light's Bane[sc=118 rk=778.5]  armor=magic
+      107  w=Trident[sc=47 rk=631.0]  side=-  armor=melee
+      108  w=Iron Broadsword[sc=41 rk=190.0]  side=-  armor=melee
+  [SellPricePlusMaterials skip=True] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Imp Staff x1, Blade of Grass x1, Phoenix Blaster x1, Razorblade Typhoon x1, Copper Shortsword x1, Iron Broadsword x1
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=0.5]  side=Volcano[sc=81 rk=3206.4]  armor=summon
+      104  w=Blade of Grass[sc=147 rk=0.5]  side=-  armor=melee
+      105  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Light's Bane[sc=118 rk=0.5]  armor=ranged
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=0.5]  armor=magic
+      107  w=Copper Shortsword[sc=25 rk=0.5]  side=-  armor=melee
+      108  w=Iron Broadsword[sc=41 rk=0.5]  side=-  armor=melee
+  [SellPricePlusMaterials skip=False] Terra Blade x1, Minishark x1, Laser Machinegun x1, Imp Staff x1, Muramasa x1, Xenopopper x1, Razorblade Typhoon x1, Trident x1, Iron Broadsword x1
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=melee
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=2954.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=summon
+      104  w=Muramasa[sc=105 rk=4219.7]  side=-  armor=melee
+      105  w=Xenopopper[sc=1074 rk=9756.2]  side=Volcano[sc=81 rk=3206.4]  armor=ranged
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=1483.0]  armor=magic
+      107  w=Trident[sc=47 rk=631.0]  side=-  armor=melee
+      108  w=Iron Broadsword[sc=41 rk=790.5]  side=-  armor=melee
+
+=== H_eveStock_9_meleelast
+  [Damage skip=False] Xenopopper x1, Minishark x1, Laser Machinegun x1, Razorblade Typhoon x1, Imp Staff x1, Volcano x1, Muramasa x1, Iron Broadsword x1, Trident x1
+      100  w=Xenopopper[sc=1074 rk=1073.6]  side=Terra Blade[sc=1032 rk=1032.0]  armor=ranged
+      101  w=Minishark[sc=141 rk=140.9]  side=Influx Waver[sc=656 rk=655.9]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=1004.3]  side=The Horseman's Blade[sc=591 rk=591.2]  armor=magic
+      103  w=Razorblade Typhoon[sc=262 rk=262.0]  side=Blade of Grass[sc=147 rk=146.6]  armor=magic
+      104  w=Imp Staff[sc=58 rk=58.1]  side=Light's Bane[sc=118 rk=117.6]  armor=summon
+      105  w=Volcano[sc=81 rk=81.4]  side=-  armor=melee
+      106  w=Muramasa[sc=105 rk=105.4]  side=-  armor=melee
+      107  w=Iron Broadsword[sc=41 rk=40.7]  side=-  armor=melee
+      108  w=Trident[sc=47 rk=47.2]  side=-  armor=melee
+  [SellPrice skip=True] Xenopopper x1, Phoenix Blaster x1, Laser Machinegun x1, Razorblade Typhoon x1, Imp Staff x1, Iron Broadsword x1, Copper Shortsword x1, Trident x1, Blade of Grass x1
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=15848.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Volcano[sc=81 rk=1264.6]  armor=magic
+      104  w=Imp Staff[sc=58 rk=0.5]  side=Muramasa[sc=105 rk=0.5]  armor=summon
+      105  w=Iron Broadsword[sc=41 rk=0.5]  side=-  armor=melee
+      106  w=Copper Shortsword[sc=25 rk=0.5]  side=-  armor=melee
+      107  w=Trident[sc=47 rk=0.5]  side=-  armor=melee
+      108  w=Blade of Grass[sc=147 rk=0.5]  side=-  armor=melee
+  [SellPrice skip=False] Xenopopper x1, Minishark x1, Laser Machinegun x1, Razorblade Typhoon x1, Slime Staff x1, Volcano x1, Light's Bane x1, Trident x1, Iron Broadsword x1
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=15848.9]  armor=ranged
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=2880.1]  armor=magic
+      104  w=Slime Staff[sc=32 rk=3162.3]  side=Blade of Grass[sc=147 rk=1264.6]  armor=summon
+      105  w=Volcano[sc=81 rk=1264.6]  side=-  armor=melee
+      106  w=Light's Bane[sc=118 rk=778.5]  side=-  armor=melee
+      107  w=Trident[sc=47 rk=631.0]  side=-  armor=melee
+      108  w=Iron Broadsword[sc=41 rk=190.0]  side=-  armor=melee
+  [SellPricePlusMaterials skip=True] Xenopopper x1, Phoenix Blaster x1, Laser Machinegun x1, Razorblade Typhoon x1, Hornet Staff x1, Trident x1, Spear x1, Iron Broadsword x1, Muramasa x1
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=34223.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Volcano[sc=81 rk=3206.4]  armor=magic
+      104  w=Hornet Staff[sc=41 rk=0.5]  side=Light's Bane[sc=118 rk=0.5]  armor=summon
+      105  w=Trident[sc=47 rk=0.5]  side=-  armor=melee
+      106  w=Spear[sc=30 rk=0.5]  side=-  armor=melee
+      107  w=Iron Broadsword[sc=41 rk=0.5]  side=-  armor=melee
+      108  w=Muramasa[sc=105 rk=0.5]  side=-  armor=melee
+  [SellPricePlusMaterials skip=False] Xenopopper x1, Phoenix Blaster x1, Laser Machinegun x1, Razorblade Typhoon x1, Slime Staff x1, Volcano x1, Blade of Grass x1, Trident x1, Iron Broadsword x1
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=34223.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=magic
+      104  w=Slime Staff[sc=32 rk=3166.7]  side=Muramasa[sc=105 rk=4219.7]  armor=summon
+      105  w=Volcano[sc=81 rk=3206.4]  side=-  armor=melee
+      106  w=Blade of Grass[sc=147 rk=1483.0]  side=-  armor=melee
+      107  w=Trident[sc=47 rk=631.0]  side=-  armor=melee
+      108  w=Iron Broadsword[sc=41 rk=790.5]  side=-  armor=melee
+
+=== H_eveStock_20_interleave
+  [Damage skip=False] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Imp Staff x1, Razorblade Typhoon x1, Volcano x1, Handgun x1, Flower of Fire x1, Hornet Staff x1, Water Bolt x1, Copper Shortsword x1, Minishark x1, Demon Scythe x1, Space Gun x1, Phoenix Blaster x1, Boomstick x1, Musket x1, (none) x3
+      100  w=Terra Blade[sc=1032 rk=1032.0]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=1073.6]  side=Influx Waver[sc=656 rk=655.9]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=1004.3]  side=The Horseman's Blade[sc=591 rk=591.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=58.1]  side=Blade of Grass[sc=147 rk=146.6]  armor=summon
+      104  w=Razorblade Typhoon[sc=262 rk=262.0]  side=Light's Bane[sc=118 rk=117.6]  armor=none
+      105  w=Volcano[sc=81 rk=81.4]  side=-  armor=melee
+      106  w=Handgun[sc=142 rk=142.3]  side=Muramasa[sc=105 rk=105.4]  armor=ranged
+      107  w=Flower of Fire[sc=192 rk=192.0]  side=Trident[sc=47 rk=47.2]  armor=magic
+      108  w=Hornet Staff[sc=41 rk=41.2]  side=Iron Broadsword[sc=41 rk=40.7]  armor=summon
+      109  w=Water Bolt[sc=107 rk=106.7]  side=Spear[sc=30 rk=30.3]  armor=none
+      110  w=Copper Shortsword[sc=25 rk=25.4]  side=-  armor=melee
+      111  w=Minishark[sc=141 rk=140.9]  side=Wooden Sword[sc=23 rk=22.7]  armor=ranged
+      112  w=Demon Scythe[sc=116 rk=115.5]  side=-  armor=magic
+      113  w=Space Gun[sc=100 rk=100.0]  side=-  armor=melee
+      114  w=Phoenix Blaster[sc=167 rk=166.8]  side=-  armor=ranged
+      115  w=Boomstick[sc=125 rk=124.7]  side=-  armor=magic
+      116  w=Musket[sc=75 rk=75.3]  side=-  armor=melee
+      117  w=-  side=-  armor=ranged
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPrice skip=True] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Hornet Staff x1, Razorblade Typhoon x1, Iron Broadsword x1, Phoenix Blaster x1, Flower of Fire x1, Slime Staff x1, Demon Scythe x1, Copper Shortsword x1, Musket x1, Water Bolt x1, Space Gun x1, Handgun x1, Boomstick x1, Minishark x1, (none) x3
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Hornet Staff[sc=41 rk=0.5]  side=Volcano[sc=81 rk=1264.6]  armor=summon
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=0.5]  armor=none
+      105  w=Iron Broadsword[sc=41 rk=0.5]  side=-  armor=melee
+      106  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Blade of Grass[sc=147 rk=0.5]  armor=ranged
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Light's Bane[sc=118 rk=0.5]  armor=magic
+      108  w=Slime Staff[sc=32 rk=0.5]  side=Trident[sc=47 rk=0.5]  armor=summon
+      109  w=Demon Scythe[sc=116 rk=0.5]  side=Spear[sc=30 rk=0.5]  armor=none
+      110  w=Copper Shortsword[sc=25 rk=0.5]  side=-  armor=melee
+      111  w=Musket[sc=75 rk=2585.5]  side=Wooden Sword[sc=23 rk=0.5]  armor=ranged
+      112  w=Water Bolt[sc=107 rk=0.5]  side=-  armor=magic
+      113  w=Space Gun[sc=100 rk=0.5]  side=-  armor=melee
+      114  w=Handgun[sc=142 rk=2880.1]  side=-  armor=ranged
+      115  w=Boomstick[sc=125 rk=0.5]  side=-  armor=magic
+      116  w=Minishark[sc=141 rk=0.5]  side=-  armor=melee
+      117  w=-  side=-  armor=ranged
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPrice skip=False] Terra Blade x1, Minishark x1, Laser Machinegun x1, Slime Staff x1, Razorblade Typhoon x1, Volcano x1, Xenopopper x1, Flower of Fire x1, Hornet Staff x1, Demon Scythe x1, Copper Shortsword x1, Phoenix Blaster x1, Water Bolt x1, Space Gun x1, Boomstick x1, Musket x1, Handgun x1, (none) x3
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=melee
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Slime Staff[sc=32 rk=3162.3]  side=Muramasa[sc=105 rk=2880.1]  armor=summon
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=1264.6]  armor=none
+      105  w=Volcano[sc=81 rk=1264.6]  side=-  armor=melee
+      106  w=Xenopopper[sc=1074 rk=9756.2]  side=Light's Bane[sc=118 rk=778.5]  armor=ranged
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Trident[sc=47 rk=631.0]  armor=magic
+      108  w=Hornet Staff[sc=41 rk=1516.5]  side=Iron Broadsword[sc=41 rk=190.0]  armor=summon
+      109  w=Demon Scythe[sc=116 rk=2585.5]  side=Spear[sc=30 rk=125.9]  armor=none
+      110  w=Copper Shortsword[sc=25 rk=60.4]  side=-  armor=melee
+      111  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Wooden Sword[sc=23 rk=25.1]  armor=ranged
+      112  w=Water Bolt[sc=107 rk=2585.5]  side=-  armor=magic
+      113  w=Space Gun[sc=100 rk=1025.0]  side=-  armor=melee
+      114  w=Boomstick[sc=125 rk=3162.3]  side=-  armor=ranged
+      115  w=Musket[sc=75 rk=2585.5]  side=-  armor=magic
+      116  w=Handgun[sc=142 rk=2880.1]  side=-  armor=melee
+      117  w=-  side=-  armor=ranged
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPricePlusMaterials skip=True] Terra Blade x1, Xenopopper x1, Laser Machinegun x1, Imp Staff x1, Razorblade Typhoon x1, Trident x1, Phoenix Blaster x1, Flower of Fire x1, Slime Staff x1, Space Gun x1, Spear x1, Musket x1, Water Bolt x1, Demon Scythe x1, Handgun x1, Boomstick x1, Minishark x1, (none) x3
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=melee
+      101  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=0.5]  side=Volcano[sc=81 rk=3206.4]  armor=summon
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Light's Bane[sc=118 rk=0.5]  armor=none
+      105  w=Trident[sc=47 rk=0.5]  side=-  armor=melee
+      106  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Muramasa[sc=105 rk=0.5]  armor=ranged
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Blade of Grass[sc=147 rk=0.5]  armor=magic
+      108  w=Slime Staff[sc=32 rk=0.5]  side=Iron Broadsword[sc=41 rk=0.5]  armor=summon
+      109  w=Space Gun[sc=100 rk=0.5]  side=Copper Shortsword[sc=25 rk=0.5]  armor=none
+      110  w=Spear[sc=30 rk=0.5]  side=-  armor=melee
+      111  w=Musket[sc=75 rk=4200.1]  side=Wooden Sword[sc=23 rk=0.5]  armor=ranged
+      112  w=Water Bolt[sc=107 rk=0.5]  side=-  armor=magic
+      113  w=Demon Scythe[sc=116 rk=0.5]  side=-  armor=melee
+      114  w=Handgun[sc=142 rk=2880.1]  side=-  armor=ranged
+      115  w=Boomstick[sc=125 rk=0.5]  side=-  armor=magic
+      116  w=Minishark[sc=141 rk=0.5]  side=-  armor=melee
+      117  w=-  side=-  armor=ranged
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPricePlusMaterials skip=False] Terra Blade x1, Minishark x1, Laser Machinegun x1, Imp Staff x1, Razorblade Typhoon x1, Volcano x1, Xenopopper x1, Flower of Fire x1, Slime Staff x1, Water Bolt x1, Spear x1, Phoenix Blaster x1, Space Gun x1, Demon Scythe x1, Musket x1, Handgun x1, Boomstick x1, (none) x3
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=melee
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Laser Machinegun[sc=1004 rk=9756.2]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=magic
+      103  w=Imp Staff[sc=58 rk=2954.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=summon
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      105  w=Volcano[sc=81 rk=3206.4]  side=-  armor=melee
+      106  w=Xenopopper[sc=1074 rk=9756.2]  side=Blade of Grass[sc=147 rk=1483.0]  armor=ranged
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Iron Broadsword[sc=41 rk=790.5]  armor=magic
+      108  w=Slime Staff[sc=32 rk=3166.7]  side=Trident[sc=47 rk=631.0]  armor=summon
+      109  w=Water Bolt[sc=107 rk=3826.4]  side=Copper Shortsword[sc=25 rk=338.0]  armor=none
+      110  w=Spear[sc=30 rk=125.9]  side=-  armor=melee
+      111  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Wooden Sword[sc=23 rk=25.1]  armor=ranged
+      112  w=Space Gun[sc=100 rk=2705.0]  side=-  armor=magic
+      113  w=Demon Scythe[sc=116 rk=2585.5]  side=-  armor=melee
+      114  w=Musket[sc=75 rk=4200.1]  side=-  armor=ranged
+      115  w=Handgun[sc=142 rk=2880.1]  side=-  armor=magic
+      116  w=Boomstick[sc=125 rk=3162.3]  side=-  armor=melee
+      117  w=-  side=-  armor=ranged
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+
+=== H_eveStock_20_meleelast
+  [Damage skip=False] Xenopopper x1, Minishark x1, Phoenix Blaster x1, Boomstick x1, Handgun x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Demon Scythe x1, Imp Staff x1, Hornet Staff x1, Space Gun x1, Water Bolt x1, Musket x1, (none) x6
+      100  w=Xenopopper[sc=1074 rk=1073.6]  side=Terra Blade[sc=1032 rk=1032.0]  armor=ranged
+      101  w=Minishark[sc=141 rk=140.9]  side=Influx Waver[sc=656 rk=655.9]  armor=ranged
+      102  w=Phoenix Blaster[sc=167 rk=166.8]  side=The Horseman's Blade[sc=591 rk=591.2]  armor=ranged
+      103  w=Boomstick[sc=125 rk=124.7]  side=Blade of Grass[sc=147 rk=146.6]  armor=ranged
+      104  w=Handgun[sc=142 rk=142.3]  side=Light's Bane[sc=118 rk=117.6]  armor=ranged
+      105  w=Laser Machinegun[sc=1004 rk=1004.3]  side=Muramasa[sc=105 rk=105.4]  armor=magic
+      106  w=Razorblade Typhoon[sc=262 rk=262.0]  side=Volcano[sc=81 rk=81.4]  armor=magic
+      107  w=Flower of Fire[sc=192 rk=192.0]  side=Trident[sc=47 rk=47.2]  armor=magic
+      108  w=Demon Scythe[sc=116 rk=115.5]  side=Iron Broadsword[sc=41 rk=40.7]  armor=magic
+      109  w=Imp Staff[sc=58 rk=58.1]  side=Spear[sc=30 rk=30.3]  armor=summon
+      110  w=Hornet Staff[sc=41 rk=41.2]  side=Copper Shortsword[sc=25 rk=25.4]  armor=summon
+      111  w=Space Gun[sc=100 rk=100.0]  side=Wooden Sword[sc=23 rk=22.7]  armor=none
+      112  w=Water Bolt[sc=107 rk=106.7]  side=-  armor=none
+      113  w=Musket[sc=75 rk=75.3]  side=-  armor=melee
+      114  w=-  side=-  armor=melee
+      115  w=-  side=-  armor=melee
+      116  w=-  side=-  armor=melee
+      117  w=-  side=-  armor=melee
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPrice skip=True] Xenopopper x1, Phoenix Blaster x1, Handgun x1, Musket x1, Minishark x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Hornet Staff x1, Slime Staff x1, Demon Scythe x1, Space Gun x1, Boomstick x1, (none) x6
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=15848.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Handgun[sc=142 rk=2880.1]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=ranged
+      103  w=Musket[sc=75 rk=2585.5]  side=Volcano[sc=81 rk=1264.6]  armor=ranged
+      104  w=Minishark[sc=141 rk=0.5]  side=Muramasa[sc=105 rk=0.5]  armor=ranged
+      105  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Blade of Grass[sc=147 rk=0.5]  armor=magic
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Light's Bane[sc=118 rk=0.5]  armor=magic
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Trident[sc=47 rk=0.5]  armor=magic
+      108  w=Water Bolt[sc=107 rk=0.5]  side=Iron Broadsword[sc=41 rk=0.5]  armor=magic
+      109  w=Hornet Staff[sc=41 rk=0.5]  side=Spear[sc=30 rk=0.5]  armor=summon
+      110  w=Slime Staff[sc=32 rk=0.5]  side=Copper Shortsword[sc=25 rk=0.5]  armor=summon
+      111  w=Demon Scythe[sc=116 rk=0.5]  side=Wooden Sword[sc=23 rk=0.5]  armor=none
+      112  w=Space Gun[sc=100 rk=0.5]  side=-  armor=none
+      113  w=Boomstick[sc=125 rk=0.5]  side=-  armor=melee
+      114  w=-  side=-  armor=melee
+      115  w=-  side=-  armor=melee
+      116  w=-  side=-  armor=melee
+      117  w=-  side=-  armor=melee
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPrice skip=False] Xenopopper x1, Minishark x1, Phoenix Blaster x1, Handgun x1, Boomstick x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Slime Staff x1, Hornet Staff x1, Demon Scythe x1, Space Gun x1, Musket x1, (none) x6
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=15848.9]  armor=ranged
+      101  w=Minishark[sc=141 rk=7600.6]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Phoenix Blaster[sc=167 rk=4678.7]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=ranged
+      103  w=Handgun[sc=142 rk=2880.1]  side=Muramasa[sc=105 rk=2880.1]  armor=ranged
+      104  w=Boomstick[sc=125 rk=3162.3]  side=Blade of Grass[sc=147 rk=1264.6]  armor=ranged
+      105  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Volcano[sc=81 rk=1264.6]  armor=magic
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Light's Bane[sc=118 rk=778.5]  armor=magic
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Trident[sc=47 rk=631.0]  armor=magic
+      108  w=Water Bolt[sc=107 rk=2585.5]  side=Iron Broadsword[sc=41 rk=190.0]  armor=magic
+      109  w=Slime Staff[sc=32 rk=3162.3]  side=Spear[sc=30 rk=125.9]  armor=summon
+      110  w=Hornet Staff[sc=41 rk=1516.5]  side=Copper Shortsword[sc=25 rk=60.4]  armor=summon
+      111  w=Demon Scythe[sc=116 rk=2585.5]  side=Wooden Sword[sc=23 rk=25.1]  armor=none
+      112  w=Space Gun[sc=100 rk=1025.0]  side=-  armor=none
+      113  w=Musket[sc=75 rk=2585.5]  side=-  armor=melee
+      114  w=-  side=-  armor=melee
+      115  w=-  side=-  armor=melee
+      116  w=-  side=-  armor=melee
+      117  w=-  side=-  armor=melee
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPricePlusMaterials skip=True] Xenopopper x1, Phoenix Blaster x1, Musket x1, Handgun x1, Minishark x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Imp Staff x1, Slime Staff x1, Space Gun x1, Demon Scythe x1, Boomstick x1, (none) x6
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=34223.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Musket[sc=75 rk=4200.1]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=ranged
+      103  w=Handgun[sc=142 rk=2880.1]  side=Volcano[sc=81 rk=3206.4]  armor=ranged
+      104  w=Minishark[sc=141 rk=0.5]  side=Light's Bane[sc=118 rk=0.5]  armor=ranged
+      105  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Muramasa[sc=105 rk=0.5]  armor=magic
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=0.5]  armor=magic
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Iron Broadsword[sc=41 rk=0.5]  armor=magic
+      108  w=Water Bolt[sc=107 rk=0.5]  side=Trident[sc=47 rk=0.5]  armor=magic
+      109  w=Imp Staff[sc=58 rk=0.5]  side=Copper Shortsword[sc=25 rk=0.5]  armor=summon
+      110  w=Slime Staff[sc=32 rk=0.5]  side=Spear[sc=30 rk=0.5]  armor=summon
+      111  w=Space Gun[sc=100 rk=0.5]  side=Wooden Sword[sc=23 rk=0.5]  armor=none
+      112  w=Demon Scythe[sc=116 rk=0.5]  side=-  armor=none
+      113  w=Boomstick[sc=125 rk=0.5]  side=-  armor=melee
+      114  w=-  side=-  armor=melee
+      115  w=-  side=-  armor=melee
+      116  w=-  side=-  armor=melee
+      117  w=-  side=-  armor=melee
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+  [SellPricePlusMaterials skip=False] Xenopopper x1, Phoenix Blaster x1, Minishark x1, Boomstick x1, Musket x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Imp Staff x1, Slime Staff x1, Demon Scythe x1, Space Gun x1, Handgun x1, (none) x6
+      100  w=Xenopopper[sc=1074 rk=9756.2]  side=Terra Blade[sc=1032 rk=34223.9]  armor=ranged
+      101  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Influx Waver[sc=656 rk=9756.2]  armor=ranged
+      102  w=Minishark[sc=141 rk=7600.6]  side=The Horseman's Blade[sc=591 rk=9756.2]  armor=ranged
+      103  w=Boomstick[sc=125 rk=3162.3]  side=Light's Bane[sc=118 rk=4461.3]  armor=ranged
+      104  w=Musket[sc=75 rk=4200.1]  side=Muramasa[sc=105 rk=4219.7]  armor=ranged
+      105  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Volcano[sc=81 rk=3206.4]  armor=magic
+      106  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=1483.0]  armor=magic
+      107  w=Flower of Fire[sc=192 rk=3696.9]  side=Iron Broadsword[sc=41 rk=790.5]  armor=magic
+      108  w=Water Bolt[sc=107 rk=3826.4]  side=Trident[sc=47 rk=631.0]  armor=magic
+      109  w=Imp Staff[sc=58 rk=2954.6]  side=Copper Shortsword[sc=25 rk=338.0]  armor=summon
+      110  w=Slime Staff[sc=32 rk=3166.7]  side=Spear[sc=30 rk=125.9]  armor=summon
+      111  w=Demon Scythe[sc=116 rk=2585.5]  side=Wooden Sword[sc=23 rk=25.1]  armor=none
+      112  w=Space Gun[sc=100 rk=2705.0]  side=-  armor=none
+      113  w=Handgun[sc=142 rk=2880.1]  side=-  armor=melee
+      114  w=-  side=-  armor=melee
+      115  w=-  side=-  armor=melee
+      116  w=-  side=-  armor=melee
+      117  w=-  side=-  armor=melee
+      118  w=-  side=-  armor=melee
+      119  w=-  side=-  armor=melee
+
+=== I_eveStock_9_noArmor
+  [Damage skip=False] Terra Blade x1, Laser Machinegun x1, Xenopopper x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Demon Scythe x1, Space Gun x1, Iron Broadsword x1
+      100  w=Terra Blade[sc=1032 rk=1032.0]  side=-  armor=none
+      101  w=Laser Machinegun[sc=1004 rk=1004.3]  side=Influx Waver[sc=656 rk=655.9]  armor=none
+      102  w=Xenopopper[sc=1074 rk=1073.6]  side=The Horseman's Blade[sc=591 rk=591.2]  armor=none
+      103  w=Razorblade Typhoon[sc=262 rk=262.0]  side=Blade of Grass[sc=147 rk=146.6]  armor=none
+      104  w=Flower of Fire[sc=192 rk=192.0]  side=Light's Bane[sc=118 rk=117.6]  armor=none
+      105  w=Water Bolt[sc=107 rk=106.7]  side=Muramasa[sc=105 rk=105.4]  armor=none
+      106  w=Demon Scythe[sc=116 rk=115.5]  side=Volcano[sc=81 rk=81.4]  armor=none
+      107  w=Space Gun[sc=100 rk=100.0]  side=Trident[sc=47 rk=47.2]  armor=none
+      108  w=Iron Broadsword[sc=41 rk=40.7]  side=-  armor=none
+  [SellPrice skip=True] Terra Blade x1, The Horseman's Blade x1, Influx Waver x1, Xenopopper x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Spear x1, Water Bolt x1
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=none
+      101  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+      102  w=Influx Waver[sc=656 rk=9756.2]  side=-  armor=none
+      103  w=Xenopopper[sc=1074 rk=9756.2]  side=Volcano[sc=81 rk=1264.6]  armor=none
+      104  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Muramasa[sc=105 rk=0.5]  armor=none
+      105  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=0.5]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=Light's Bane[sc=118 rk=0.5]  armor=none
+      107  w=Spear[sc=30 rk=0.5]  side=-  armor=none
+      108  w=Water Bolt[sc=107 rk=0.5]  side=Trident[sc=47 rk=0.5]  armor=none
+  [SellPrice skip=False] Terra Blade x1, The Horseman's Blade x1, Xenopopper x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Water Bolt x1, Demon Scythe x1, Space Gun x1
+      100  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=none
+      101  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+      102  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=none
+      103  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Blade of Grass[sc=147 rk=1264.6]  armor=none
+      105  w=Flower of Fire[sc=192 rk=3696.9]  side=Volcano[sc=81 rk=1264.6]  armor=none
+      106  w=Water Bolt[sc=107 rk=2585.5]  side=Light's Bane[sc=118 rk=778.5]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Trident[sc=47 rk=631.0]  armor=none
+      108  w=Space Gun[sc=100 rk=1025.0]  side=Iron Broadsword[sc=41 rk=190.0]  armor=none
+  [SellPricePlusMaterials skip=True] Terra Blade x1, The Horseman's Blade x1, Influx Waver x1, Xenopopper x1, Laser Machinegun x1, Razorblade Typhoon x1, Flower of Fire x1, Copper Shortsword x1, Water Bolt x1
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=none
+      101  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+      102  w=Influx Waver[sc=656 rk=9756.2]  side=-  armor=none
+      103  w=Xenopopper[sc=1074 rk=9756.2]  side=Volcano[sc=81 rk=3206.4]  armor=none
+      104  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Light's Bane[sc=118 rk=0.5]  armor=none
+      105  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=0.5]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=Blade of Grass[sc=147 rk=0.5]  armor=none
+      107  w=Copper Shortsword[sc=25 rk=0.5]  side=-  armor=none
+      108  w=Water Bolt[sc=107 rk=0.5]  side=Iron Broadsword[sc=41 rk=0.5]  armor=none
+  [SellPricePlusMaterials skip=False] Terra Blade x1, The Horseman's Blade x1, Xenopopper x1, Laser Machinegun x1, Razorblade Typhoon x1, Water Bolt x1, Flower of Fire x1, Demon Scythe x1, Space Gun x1
+      100  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=none
+      101  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+      102  w=Xenopopper[sc=1074 rk=9756.2]  side=Influx Waver[sc=656 rk=9756.2]  armor=none
+      103  w=Laser Machinegun[sc=1004 rk=9756.2]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      104  w=Razorblade Typhoon[sc=262 rk=6005.6]  side=Muramasa[sc=105 rk=4219.7]  armor=none
+      105  w=Water Bolt[sc=107 rk=3826.4]  side=Volcano[sc=81 rk=3206.4]  armor=none
+      106  w=Flower of Fire[sc=192 rk=3696.9]  side=Blade of Grass[sc=147 rk=1483.0]  armor=none
+      107  w=Demon Scythe[sc=116 rk=2585.5]  side=Iron Broadsword[sc=41 rk=790.5]  armor=none
+      108  w=Space Gun[sc=100 rk=2705.0]  side=Trident[sc=47 rk=631.0]  armor=none
+
+=== J_show
+  [Damage skip=False] 
+  [SellPrice skip=True] 
+  [SellPrice skip=False] 
+  [SellPricePlusMaterials skip=True] 
+  [SellPricePlusMaterials skip=False] 
+
+=== L_zombie_in_rack_chlorophyte_in_storage
+  [Damage skip=False] Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Saber[sc=1808 rk=1808.0]  side=-  armor=none
+      101  w=Chlorophyte Claymore[sc=786 rk=786.1]  side=-  armor=none
+      102  w=Chlorophyte Warhammer[sc=980 rk=980.0]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=340.2]  side=-  armor=none
+  [SellPrice skip=True] Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Claymore[sc=786 rk=6436.3]  side=-  armor=none
+      101  w=Chlorophyte Warhammer[sc=980 rk=5421.5]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=6436.3]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=4771.9]  side=-  armor=none
+  [SellPrice skip=False] Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Claymore[sc=786 rk=6436.3]  side=-  armor=none
+      101  w=Chlorophyte Warhammer[sc=980 rk=5421.5]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=6436.3]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=4771.9]  side=-  armor=none
+  [SellPricePlusMaterials skip=True] Chlorophyte Warhammer x1, Chlorophyte Partisan x1, Chlorophyte Saber x1, Chlorophyte Claymore x1
+      100  w=Chlorophyte Warhammer[sc=980 rk=13030.6]  side=-  armor=none
+      101  w=Chlorophyte Partisan[sc=340 rk=10296.2]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=11545.7]  side=-  armor=none
+      103  w=Chlorophyte Claymore[sc=786 rk=11545.7]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Chlorophyte Warhammer x1, Chlorophyte Partisan x1, Chlorophyte Saber x1, Chlorophyte Claymore x1
+      100  w=Chlorophyte Warhammer[sc=980 rk=13030.6]  side=-  armor=none
+      101  w=Chlorophyte Partisan[sc=340 rk=10296.2]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=11545.7]  side=-  armor=none
+      103  w=Chlorophyte Claymore[sc=786 rk=11545.7]  side=-  armor=none
+
+=== M_all_in_storage
+  [Damage skip=False] Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Saber[sc=1808 rk=1808.0]  side=-  armor=none
+      101  w=Chlorophyte Claymore[sc=786 rk=786.1]  side=-  armor=none
+      102  w=Chlorophyte Warhammer[sc=980 rk=980.0]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=340.2]  side=-  armor=none
+  [SellPrice skip=True] Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Claymore[sc=786 rk=6436.3]  side=-  armor=none
+      101  w=Chlorophyte Warhammer[sc=980 rk=5421.5]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=6436.3]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=4771.9]  side=-  armor=none
+  [SellPrice skip=False] Chlorophyte Claymore x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Partisan x1
+      100  w=Chlorophyte Claymore[sc=786 rk=6436.3]  side=-  armor=none
+      101  w=Chlorophyte Warhammer[sc=980 rk=5421.5]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=6436.3]  side=-  armor=none
+      103  w=Chlorophyte Partisan[sc=340 rk=4771.9]  side=-  armor=none
+  [SellPricePlusMaterials skip=True] Chlorophyte Warhammer x1, Chlorophyte Partisan x1, Chlorophyte Saber x1, Chlorophyte Claymore x1
+      100  w=Chlorophyte Warhammer[sc=980 rk=13030.6]  side=-  armor=none
+      101  w=Chlorophyte Partisan[sc=340 rk=10296.2]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=11545.7]  side=-  armor=none
+      103  w=Chlorophyte Claymore[sc=786 rk=11545.7]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Chlorophyte Warhammer x1, Chlorophyte Partisan x1, Chlorophyte Saber x1, Chlorophyte Claymore x1
+      100  w=Chlorophyte Warhammer[sc=980 rk=13030.6]  side=-  armor=none
+      101  w=Chlorophyte Partisan[sc=340 rk=10296.2]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=11545.7]  side=-  armor=none
+      103  w=Chlorophyte Claymore[sc=786 rk=11545.7]  side=-  armor=none
+
+=== S_prehm_blades_and_guns
+  [Damage skip=False] Flower of Fire x1, Phoenix Blaster x1, Hellwing Bow x1, Muramasa x1
+      100  w=Flower of Fire[sc=192 rk=192.0]  side=Night's Edge[sc=150 rk=150.3]  armor=none
+      101  w=Phoenix Blaster[sc=167 rk=166.8]  side=Blade of Grass[sc=147 rk=146.6]  armor=none
+      102  w=Hellwing Bow[sc=204 rk=204.4]  side=Bee Keeper[sc=124 rk=124.2]  armor=none
+      103  w=Muramasa[sc=105 rk=105.4]  side=-  armor=none
+  [SellPrice skip=True] Phoenix Blaster x1, Hellwing Bow x1, Flower of Fire x1, Water Bolt x1
+      100  w=Phoenix Blaster[sc=167 rk=4678.7]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      101  w=Hellwing Bow[sc=204 rk=3696.9]  side=Enchanted Sword[sc=81 rk=4200.1]  armor=none
+      102  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      103  w=Water Bolt[sc=107 rk=2585.5]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+  [SellPrice skip=False] Minishark x1, Hellwing Bow x1, Flower of Fire x1, Water Bolt x1
+      100  w=Minishark[sc=141 rk=7600.6]  side=Night's Edge[sc=150 rk=5137.1]  armor=none
+      101  w=Hellwing Bow[sc=204 rk=3696.9]  side=Enchanted Sword[sc=81 rk=4200.1]  armor=none
+      102  w=Flower of Fire[sc=192 rk=3696.9]  side=Bee Keeper[sc=124 rk=3162.3]  armor=none
+      103  w=Water Bolt[sc=107 rk=2585.5]  side=Muramasa[sc=105 rk=2880.1]  armor=none
+  [SellPricePlusMaterials skip=True] Night's Edge x1, Enchanted Sword x1, Phoenix Blaster x1, Muramasa x1
+      100  w=Night's Edge[sc=150 rk=10033.1]  side=-  armor=none
+      101  w=Enchanted Sword[sc=81 rk=5806.6]  side=-  armor=none
+      102  w=Phoenix Blaster[sc=167 rk=6823.1]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      103  w=Muramasa[sc=105 rk=4219.7]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Night's Edge x1, Enchanted Sword x1, Minishark x1, Muramasa x1
+      100  w=Night's Edge[sc=150 rk=10033.1]  side=-  armor=none
+      101  w=Enchanted Sword[sc=81 rk=5806.6]  side=-  armor=none
+      102  w=Minishark[sc=141 rk=7600.6]  side=Light's Bane[sc=118 rk=4461.3]  armor=none
+      103  w=Muramasa[sc=105 rk=4219.7]  side=-  armor=none
+
+=== S_hardmode_blades
+  [Damage skip=False] Meowmere x1, Zenith x1, Chlorophyte Saber x1, Terra Blade x1
+      100  w=Meowmere[sc=3154 rk=3154.3]  side=-  armor=none
+      101  w=Zenith[sc=2470 rk=2469.6]  side=-  armor=none
+      102  w=Chlorophyte Saber[sc=1808 rk=1808.0]  side=-  armor=none
+      103  w=Terra Blade[sc=1032 rk=1032.0]  side=-  armor=none
+  [SellPrice skip=True] Zenith x1, Meowmere x1, Terra Blade x1, The Horseman's Blade x1
+      100  w=Zenith[sc=2470 rk=15848.9]  side=-  armor=none
+      101  w=Meowmere[sc=3154 rk=15848.9]  side=-  armor=none
+      102  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=none
+      103  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+  [SellPrice skip=False] Zenith x1, Meowmere x1, Terra Blade x1, The Horseman's Blade x1
+      100  w=Zenith[sc=2470 rk=15848.9]  side=-  armor=none
+      101  w=Meowmere[sc=3154 rk=15848.9]  side=-  armor=none
+      102  w=Terra Blade[sc=1032 rk=15848.9]  side=-  armor=none
+      103  w=The Horseman's Blade[sc=591 rk=9756.2]  side=-  armor=none
+  [SellPricePlusMaterials skip=True] Zenith x1, Terra Blade x1, True Night's Edge x1, Meowmere x1
+      100  w=Zenith[sc=2470 rk=69768.9]  side=-  armor=none
+      101  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=none
+      102  w=True Night's Edge[sc=317 rk=17800.0]  side=-  armor=none
+      103  w=Meowmere[sc=3154 rk=15848.9]  side=-  armor=none
+  [SellPricePlusMaterials skip=False] Zenith x1, Terra Blade x1, True Night's Edge x1, Meowmere x1
+      100  w=Zenith[sc=2470 rk=69768.9]  side=-  armor=none
+      101  w=Terra Blade[sc=1032 rk=34223.9]  side=-  armor=none
+      102  w=True Night's Edge[sc=317 rk=17800.0]  side=-  armor=none
+      103  w=Meowmere[sc=3154 rk=15848.9]  side=-  armor=none

@@ -58,7 +58,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// True when the weapon's hit barely hurts an enemy at the world's stage defense: after defense (half of it in Normal, three quarters in Expert and Master, at least 1 damage left) less than
+		/// True when the weapon's hit barely hurts an enemy at the world's stage defense: after defense (half of it in Normal, three quarters in Expert and Master) less than
 		/// <see cref="NegligibleShare"/> of the hit remains. A weapon that deals no damage at all is negligible too, except a healer (ranked by what it heals) and a summon staff or sentry (the minions hit for the staff's damage).
 		/// </summary>
 		public static bool Negligible(Item it)
@@ -67,8 +67,8 @@ namespace Levy.Common.Weapons
 			float hit = WeaponClassifier.PerHitDamage(it);
 			if (hit <= 0f) return true;
 			float c = Main.expertMode ? 0.75f : 0.5f;
-			float net = Math.Max(1f, hit - StageDefenseNow() * c);
-			return net / hit < NegligibleShare;
+			float share = Math.Max(0f, hit - StageDefenseNow() * c) / hit; // the share of the hit that gets through (vanilla's 1-damage floor is not counted: a hit the armor swallows is a hit that does nothing)
+			return share < NegligibleShare;
 		}
 
 		/// <summary>The defense of enemies at the world's progression stage (see <see cref="StageDefense"/>).</summary>

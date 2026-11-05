@@ -1,4 +1,5 @@
 [F_weak_then_strong]
+RANKSTAGE 3
 SOLDIERS 9
 W Vanilla/Musket
 W Vanilla/Minishark
@@ -90,6 +91,7 @@ W ThoriumMod/PinkPhaseblade
 STAGE
 
 [G_prehm_only]
+RANKSTAGE 2
 SOLDIERS 9
 W Vanilla/Musket
 W Vanilla/BladeofGrass

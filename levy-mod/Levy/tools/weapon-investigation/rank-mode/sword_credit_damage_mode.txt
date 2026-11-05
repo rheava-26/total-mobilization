@@ -1,0 +1,49 @@
+## SCENARIO S_prehm_blades_and_guns   [ranking Damage skip=False stage=2 defense=24]
+  !! cannot resolve Vanilla/Volcano
+  -- issue
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4 (swing only 204.4) | 204.4 | 0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0 (swing only 192.0) | 192.0 | 0
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8 (swing only 166.8) | 166.8 | 125000
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9 (swing only 140.9) | 140.9 | 0
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7 (swing only 124.7) | 124.7 | 0
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 122.6 (swing only 49.0) | 122.6 | 113000
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2 (swing only 119.2) | 119.2 | 56250
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 117.6 (swing only 58.8) | 117.6 | 150000
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7 (swing only 106.7) | 106.7 | 56302
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 105.4 | 63500
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0 (swing only 100.0) | 100.0 | 60000
+    Volcano | Broadsword/melee | 40 40 0 3 27000 | 81.4 (swing only 81.4) | 81.4 | 75000
+    Enchanted Sword | Broadsword/melee | 23 45 0 2 150000 | 81.4 (swing only 40.7) | 81.4 | 88250
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3 (swing only 75.3) | 75.3 | 75000
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0 (swing only 65.0) | 65.0 | 120000
+    Gold Broadsword | Broadsword/melee | 15 20 0 0 9000 | 52.1 (swing only 52.1) | 52.1 | 48000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 40.7 | 12000
+  left on shelves: Enchanted Sword[Broadsword/melee sc=81 rk=81.4] | Starfury[Broadsword/melee sc=123 rk=122.6] | Volcano[Broadsword/melee sc=81 rk=81.4] | Light's Bane[Broadsword/melee sc=118 rk=117.6] | Iron Broadsword[Broadsword/melee sc=41 rk=40.7] | Gold Broadsword[Broadsword/melee sc=52 rk=52.1] | Minishark[Gun/ranged sc=141 rk=140.9] | Musket[Gun/ranged sc=75 rk=75.3] | Molten Fury[Bow/ranged sc=119 rk=119.2] | Space Gun[Magic/magic sc=100 rk=100.0] | Water Bolt[Magic/magic sc=107 rk=106.7] | Demon Bow[Bow/ranged sc=65 rk=65.0] | Boomstick[Gun/ranged sc=125 rk=124.7]
+
+## SCENARIO S_hardmode_blades   [ranking Damage skip=False stage=5 defense=46]
+  -- issue
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Meowmere | Broadsword/melee | 200 14 0 10 1000000 | 3154.3 (swing only 1577.1) | 3154.3 | 0
+    Zenith | Broadsword/melee | 210 10 0 12 1000000 | 2469.6 (swing only 2469.6) | 2469.6 | 7308400
+    Chlorophyte Saber | Broadsword/melee | 92 10 0 7 276000 | 1808.0 (swing only 904.0) | 1808.0 | 360000
+    Terra Blade | Broadsword/melee | 90 18 0 8 1000000 | 1032.0 (swing only 516.0) | 1032.0 | 2003400
+    Excalibur | Broadsword/melee | 170 20 0 5 230000 | 772.4 (swing only 772.4) | 772.4 | 288000
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3 (swing only 756.3) | 756.3 | 176000
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4 (swing only 659.4) | 659.4 | 84000
+    Influx Waver | Broadsword/melee | 80 25 0 8 500000 | 655.9 (swing only 327.9) | 655.9 | 0
+    Beam Sword | Broadsword/melee | 131 35 0 4 150000 | 649.9 (swing only 325.0) | 649.9 | 0
+    True Excalibur | Broadsword/melee | 105 18 0 8 500000 | 597.8 (swing only 597.8) | 597.8 | 648000
+    The Horseman's Blade | Broadsword/melee | 150 26 0 8 500000 | 591.2 (swing only 591.2) | 591.2 | 0
+    Keybrand | Broadsword/melee | 105 20 0 8 200000 | 533.0 (swing only 533.0) | 533.0 | 0
+    Breaker Blade | Broadsword/melee | 160 35 0 4 150000 | 396.9 (swing only 396.9) | 396.9 | 0
+    Seedler | Broadsword/melee | 45 23 0 5 500000 | 358.7 (swing only 179.4) | 358.7 | 0
+    True Night's Edge | Broadsword/melee | 99 32 0 8 500000 | 317.0 (swing only 317.0) | 317.0 | 680400
+    Night's Edge | Broadsword/melee | 45 25 0 3 200000 | 150.3 (swing only 150.3) | 150.3 | 320400
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 122.6 (swing only 49.0) | 122.6 | 113000
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 105.4 | 63500
+    Enchanted Sword | Broadsword/melee | 23 45 0 2 150000 | 81.4 (swing only 40.7) | 81.4 | 88250
+    Ice Blade | Broadsword/melee | 17 55 0 1 20000 | 45.7 (swing only 22.8) | 45.7 | 0
+  left on shelves: True Excalibur[Broadsword/melee sc=598 rk=597.8] | Excalibur[Broadsword/melee sc=772 rk=772.4] | Keybrand[Broadsword/melee sc=533 rk=533.0] | Beam Sword[Broadsword/melee sc=650 rk=649.9] | Ice Blade[Broadsword/melee sc=46 rk=45.7] | Enchanted Sword[Broadsword/melee sc=81 rk=81.4] | Starfury[Broadsword/melee sc=123 rk=122.6] | Mythril Sword[Broadsword/melee sc=756 rk=756.3] | Cobalt Sword[Broadsword/melee sc=659 rk=659.4] | Night's Edge[Broadsword/melee sc=150 rk=150.3] | True Night's Edge[Broadsword/melee sc=317 rk=317.0] | Muramasa[Broadsword/melee sc=105 rk=105.4] | Influx Waver[Broadsword/melee sc=656 rk=655.9] | The Horseman's Blade[Broadsword/melee sc=591 rk=591.2] | Breaker Blade[Broadsword/melee sc=397 rk=396.9] | Seedler[Broadsword/melee sc=359 rk=358.7]
+
+################ CONFIG ranking=SellPrice skipArmored=True

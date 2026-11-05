@@ -222,6 +222,16 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 📦 SHIPPED Levy 1.7.8 + Mechanization 0.7.2 (p0-fixes 6130703 + levy-speed); boots clean both ways
+- **Armory deposit under a filter:** the filtered view packed only matching items, so there was no empty cell to deposit into. A filtered view now always ends with one empty storage cell.
+- **Drones/turrets hold fire on unbeaten bosses:** applies to bosses and their parts; minions are still shot. Config `FireOnUnbeatenBosses` defaults off.
+- **Found-weapon boost:** ×1.12 for found weapons; dungeon-chest weapons (Muramasa etc.) moved to tier 5.
+- **Aim accuracy:** config, 0.1–5.
+- **Minishark post-Plantera:** check passes.
+- **Exact speed parity:** shipped.
+- **OPEN:** a Phoenix Blaster stays on the shelf while a levy holds a Minishark after a weapon is returned by another levy (seen in the P0 probe). Not investigated.
+- **Note:** GitHub pushes failed for a while with "fatal error in commit_refs_rules" (server side); this later cleared.
+
 ## 🚀 LEVY 2.0 — Eve's follow-up (2026-11-05 late night), SUPERSEDES the "Proposed phases" below where they conflict
 **Process:**
 - Eve's interrupt stopped both builders. Their partial work was saved as WIP (p0-fixes 3e960ee, altfire-survey 146561d) and both were relaunched from it, at Eve's request.

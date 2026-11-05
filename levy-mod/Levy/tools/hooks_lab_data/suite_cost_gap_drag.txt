@@ -1,0 +1,17 @@
+# cost, each soldier hooks straight up
+hook|V:GrapplingHook|40|300|ceil=15,nohook
+hook|V:GrapplingHook|10|300|ceil=15
+hook|V:GrapplingHook|40|300|ceil=15
+hook|V:LunarHook|40|300|ceil=15,press=4,aim=-2:-16/-1:-16/1:-16/2:-16
+hook|V:GrapplingHook|40|300|ceil=15,nonet
+hook|V:GrapplingHook|40|300|ceil=15,slot=255
+# gap, with 0.1 drag (player-like) and without
+hook|V:GrapplingHook|1|300|gap=20,rel=x:3,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:5,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:3,after=ballistic,drag=0
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ballistic,drag=0
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ai
+# 20-tile gap needing a longer hook: Lunar hook aimed far
+hook|V:LunarHook|1|300|gap=20,rel=x:7,aim=14:-15,after=ballistic
+hook|V:LunarHook|1|300|gap=20,rel=none,aim=14:-15

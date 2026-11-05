@@ -1,0 +1,32 @@
+# 15-tile ceiling climb (altitude hang), 10-tile ledge, 20-tile gap, with the walking AI active
+hook|V:GrapplingHook|1|700|ceil=15,alt=14
+hook|V:LunarHook|1|700|ceil=15,alt=14
+hook|V:GrapplingHook|1|800|ledge=10,ledgex=9,ceil=19
+hook|V:LunarHook|1|800|ledge=10,ledgex=9,ceil=19
+hook|V:LunarHook|1|900|gap=20
+hook|V:GrapplingHook|1|900|gap=20
+hook|V:WebSlinger|1|900|gap=20
+# controls: no hook, config off
+hook|V:GrapplingHook|1|800|ledge=10,ledgex=9,ceil=19,nohook
+hook|V:GrapplingHook|1|800|ledge=10,ledgex=9,ceil=19,off
+hook|V:LunarHook|1|900|gap=20,nohook
+# N soldiers at once
+hook|V:GrapplingHook|10|700|ceil=15,alt=14
+hook|V:GrapplingHook|40|700|ceil=15,alt=14
+hook|V:LunarHook|40|700|ceil=15,alt=14
+# idle army (hook in the slot, no trigger)
+hook|V:GrapplingHook|40|500|ceil=15,idle
+# multi-hook
+hook|V:DualHook|1|500|ceil=15,alt=14,pair
+hook|V:WebSlinger|1|500|ceil=15,alt=14,pair
+hook|V:LunarHook|1|500|ceil=15,alt=14,pair
+# triggers: wall (ledge above), gap, flee, altitude (stand-in and real brain), goal above
+hook|V:GrapplingHook|1|800|ledge=10,ledgex=9,ceil=19
+hook|V:LunarHook|1|900|gap=20,fleeing
+hook|V:GrapplingHook|1|900|gap=20,fleeing
+hook|V:LunarHook|1|900|ceil=22,altf=1,alt=12
+hook|V:GrapplingHook|1|600|plat=8,ceil=19
+# events
+hook|V:GrapplingHook|1|400|ceil=15,alt=14,killat=120
+hook|V:GrapplingHook|1|400|ceil=15,alt=14,freezeat=120
+hook|V:GrapplingHook|1|400|ceil=15,alt=14,teleat=120

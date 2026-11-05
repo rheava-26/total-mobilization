@@ -910,6 +910,7 @@ namespace Levy.Content.NPCs
 		private void UpdateAltitudeIntent(NPC seg, float rangeTiles, float standoffTiles, bool melee)
 		{
 			WantsAltitude = false;
+			HookAltitudeIntent(seg, rangeTiles, melee); // no flight kit but a hook: climb by hook (SoldierNPC.Hook.cs)
 			if (!HasFlightKit || AerialMaxReachTiles < LevyConstants.Movement.AerialClimbBenefitTiles) { _altHeld = false; return; }
 			float tilePx = LevyConstants.TilePx;
 			float sepTiles = (NPC.Center.Y - seg.Center.Y) / tilePx; // > 0: the target is above the body centre

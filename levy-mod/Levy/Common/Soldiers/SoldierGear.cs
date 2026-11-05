@@ -24,12 +24,15 @@ namespace Levy.Common.Soldiers
 		public Item[] Dyes = NewArray(DyeSlots);
 		/// <summary>Ammo pouch: one ammo type, up to <see cref="LevyConstants.AmmoPouchMax"/>.</summary>
 		public Item Ammo = new Item();
+		/// <summary>The grappling hook (the dummy's hook slot, miscEquips[4]). Issued from the armory like any other gear.</summary>
+		public Item Hook = new Item();
 
 		// ---- hand-assigned ("locked") slots ----
 		// Slot indices used by the loadout menu, the lock mask and the SoldierGearSet packet.
 		public const int SlotWeapon = 0, SlotSidearm = 1, SlotHead = 2, SlotBody = 3, SlotLegs = 4, SlotAcc0 = 5;
 		public const int SlotAmmo = SlotAcc0 + AccessorySlots;
-		public const int SlotCount = SlotAmmo + 1;
+		public const int SlotHook = SlotAmmo + 1;
+		public const int SlotCount = SlotHook + 1;
 
 		/// <summary>One bit per slot (see Slot*): set while the player hand-placed the item there. Auto-issue never replaces a locked slot.</summary>
 		public int LockMask;
@@ -61,6 +64,7 @@ namespace Levy.Common.Soldiers
 			if (slot == SlotBody) return Body ??= new Item();
 			if (slot == SlotLegs) return Legs ??= new Item();
 			if (slot == SlotAmmo) return Ammo ??= new Item();
+			if (slot == SlotHook) return Hook ??= new Item();
 			int a = slot - SlotAcc0;
 			if (a >= 0 && a < AccessorySlots) return Accessories[a] ??= new Item();
 			return null;
@@ -76,6 +80,7 @@ namespace Levy.Common.Soldiers
 			else if (slot == SlotBody) Body = item;
 			else if (slot == SlotLegs) Legs = item;
 			else if (slot == SlotAmmo) Ammo = item;
+			else if (slot == SlotHook) Hook = item;
 			else { int a = slot - SlotAcc0; if (a >= 0 && a < AccessorySlots) Accessories[a] = item; }
 		}
 
@@ -91,6 +96,7 @@ namespace Levy.Common.Soldiers
 		{
 			if (Empty(item)) return slot >= 0 && slot < SlotCount;
 			if (slot == SlotAmmo) return item.ammo > 0 && !item.IsACoin;
+			if (slot == SlotHook) return global::Levy.Common.Movement.HookInfo.IsHookItem(item) && item.stack <= 1;
 			// Only a thrown consumable may be a stack: it is carried (and used up) as one. Every other weapon is a single item.
 			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
@@ -139,6 +145,7 @@ namespace Levy.Common.Soldiers
 		public bool HasWeapon => Weapon != null && !Weapon.IsAir;
 		public bool HasSidearm => Sidearm != null && !Sidearm.IsAir;
 		public bool HasAmmo => Ammo != null && !Ammo.IsAir && Ammo.stack > 0;
+		public bool HasHook => Hook != null && !Hook.IsAir;
 
 		/// <summary>All non-air items, for dropping or returning to the armory.</summary>
 		public IEnumerable<Item> AllItems()
@@ -151,12 +158,13 @@ namespace Levy.Common.Soldiers
 			foreach (var a in Accessories) if (!a.IsAir) yield return a;
 			foreach (var d in Dyes) if (!d.IsAir) yield return d;
 			if (HasAmmo) yield return Ammo;
+			if (HasHook) yield return Hook;
 		}
 
 		public void Clear()
 		{
 			LockMask = 0; Reserved = null; ThrownRestockType = 0;
-			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item();
+			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item(); Hook = new Item();
 			Accessories = NewArray(AccessorySlots); Dyes = NewArray(DyeSlots);
 		}
 
@@ -165,7 +173,7 @@ namespace Levy.Common.Soldiers
 			var g = new SoldierGear
 			{
 				LockMask = LockMask, ThrownRestockType = ThrownRestockType,
-				Weapon = Weapon.Clone(), Sidearm = Sidearm.Clone(), Head = Head.Clone(), Body = Body.Clone(), Legs = Legs.Clone(), Ammo = Ammo.Clone(),
+				Weapon = Weapon.Clone(), Sidearm = Sidearm.Clone(), Head = Head.Clone(), Body = Body.Clone(), Legs = Legs.Clone(), Ammo = Ammo.Clone(), Hook = (Hook ?? new Item()).Clone(),
 			};
 			for (int i = 0; i < AccessorySlots; i++) g.Accessories[i] = Accessories[i].Clone();
 			for (int i = 0; i < DyeSlots; i++) g.Dyes[i] = Dyes[i].Clone();
@@ -179,6 +187,7 @@ namespace Levy.Common.Soldiers
 				["weapon"] = ItemIO.Save(Weapon), ["sidearm"] = ItemIO.Save(Sidearm), ["head"] = ItemIO.Save(Head), ["body"] = ItemIO.Save(Body),
 				["legs"] = ItemIO.Save(Legs), ["ammo"] = ItemIO.Save(Ammo),
 			};
+			if (HasHook) tag["hook"] = ItemIO.Save(Hook);
 			var acc = new List<TagCompound>(); foreach (var a in Accessories) acc.Add(ItemIO.Save(a)); tag["acc"] = acc;
 			var dyes = new List<TagCompound>(); foreach (var d in Dyes) dyes.Add(ItemIO.Save(d)); tag["dyes"] = dyes;
 			if (ThrownRestockType > 0) tag["thrownType"] = ThrownRestockType;
@@ -194,6 +203,7 @@ namespace Levy.Common.Soldiers
 			g.Weapon = ItemIO.Load(tag.GetCompound("weapon")); g.Sidearm = ItemIO.Load(tag.GetCompound("sidearm"));
 			g.Head = ItemIO.Load(tag.GetCompound("head")); g.Body = ItemIO.Load(tag.GetCompound("body")); g.Legs = ItemIO.Load(tag.GetCompound("legs"));
 			g.Ammo = ItemIO.Load(tag.GetCompound("ammo"));
+			if (tag.ContainsKey("hook")) g.Hook = ItemIO.Load(tag.GetCompound("hook"));
 			var acc = tag.GetList<TagCompound>("acc"); for (int i = 0; i < AccessorySlots && i < acc.Count; i++) g.Accessories[i] = ItemIO.Load(acc[i]);
 			var dyes = tag.GetList<TagCompound>("dyes"); for (int i = 0; i < DyeSlots && i < dyes.Count; i++) g.Dyes[i] = ItemIO.Load(dyes[i]);
 			g.ThrownRestockType = tag.GetInt("thrownType");

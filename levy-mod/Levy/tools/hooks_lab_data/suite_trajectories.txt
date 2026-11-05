@@ -1,0 +1,34 @@
+# odd hooks
+hook|T:SpringHook|1|200|ceil=15
+hook|T:ZephyrsGrip|1|200|ceil=7
+hook|V:StaticHook|1|200|ceil=15,steer=up
+hook|V:StaticHook|1|200|ceil=15
+# vertical reel + release (Web Slinger, 22T ceiling): momentum kept?
+hook|V:WebSlinger|1|260|ceil=22,rel=none
+hook|V:WebSlinger|1|260|ceil=22,rel=y:2,after=ballistic
+hook|V:WebSlinger|1|260|ceil=22,rel=y:4,after=ballistic
+hook|V:WebSlinger|1|260|ceil=22,rel=y:6,after=ballistic
+hook|V:WebSlinger|1|260|ceil=22,rel=y:4,after=ai
+hook|V:WebSlinger|1|260|ceil=22,rel=y:6,after=ai
+hook|V:WebSlinger|1|260|ceil=22,rel=y:4,after=ballistic,relmode=drop
+# gap 20
+hook|V:GrapplingHook|1|300|gap=20,rel=none
+hook|V:GrapplingHook|1|300|gap=20,rel=x:3,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:5,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:9,after=ballistic
+hook|V:GrapplingHook|1|300|gap=20,rel=x:5,after=ai
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ai
+# wall
+hook|V:GrapplingHook|1|250|wall=8,rel=none
+hook|V:GrapplingHook|1|250|wall=8,rel=arr,after=ballistic
+hook|V:GrapplingHook|1|250|wall=8,rel=5,after=ballistic
+# multi-hook
+hook|V:DualHook|1|200|ceil=15,press=2,aim=-6:-16/6:-16
+hook|V:DualHook|1|200|ceil=15,press=2,aim=-6:-16/6:-16,noreset
+hook|V:WebSlinger|1|200|ceil=15,press=3,aim=-8:-16/0:-16/8:-16
+hook|V:LunarHook|1|200|ceil=15,press=4,aim=-6:-16/-2:-16/2:-16/6:-16
+# normal movement AI after release, with and without a goal beyond the gap (goal=34 tiles right)
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ai,goal=34
+hook|V:GrapplingHook|1|300|gap=20,rel=x:7,after=ballistic,goal=34
+hook|V:WebSlinger|1|260|ceil=22,rel=y:4,after=ai

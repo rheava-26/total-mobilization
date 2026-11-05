@@ -1,0 +1,64 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## SCENARIO N
+  WHODROPS Vanilla/Keybrand
+    npc 50 King Slime boss=True bossP=1 rule=LeadingConditionRule conds=NotExpert[]+SimpleItemDropRuleCondition[Drops: In a Remix world]
+    npc 269 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 269 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 270 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 270 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 271 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 271 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 272 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 272 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 273 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 273 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 274 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 274 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 275 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 275 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 276 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 276 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 277 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 277 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 278 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 278 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 279 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 279 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+    npc 280 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 280 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=NotRemixSeed[]+NotExpert[]
+  WHODROPS Vanilla/Katana
+    npc 50 King Slime boss=True bossP=1 rule=LeadingConditionRule conds=NotExpert[]+SimpleItemDropRuleCondition[Drops: Not in a Remix world]
+    npc 269 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 269 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 270 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 270 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 271 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 271 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 272 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 272 Rusty Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 273 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 273 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 274 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 274 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 275 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 275 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 276 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 276 Blue Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 277 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 277 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 278 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 278 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 279 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 279 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+    npc 280 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+IsExpert[This is an Expert Mode drop rate]
+    npc 280 Hell Armored Bones boss=False bossP=-1 rule=LeadingConditionRule conds=RemixSeed[]+NotExpert[]
+  WHODROPS Vanilla/Flymeal
+  -- after first issue
+  tally: 
+  -- after UpgradeWeapons
+  tally: 
+  -- after 2 more upgrade rounds
+  tally: 
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+  left on shelves: 

@@ -1,0 +1,41 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## SCENARIO R_routes
+# boss NPCs mapped with a progression: 91; boss-flag NPCs with NO mapping (25): Moon Lord, Moon Lord's Hand, The Torch God, CalamityMod/AstrumDeusBody, CalamityMod/AstrumDeusTail, CalamityMod/Dragonfolly, CalamityMod/DesertScourgeBody, CalamityMod/DesertScourgeTail, CalamityMod/DevourerofGodsBody, CalamityMod/DevourerofGodsTail, CalamityMod/AresGaussNuke, CalamityMod/AresLaserCannon, CalamityMod/AresPlasmaFlamethrower, CalamityMod/AresTeslaCannon, CalamityMod/ThanatosBody1, CalamityMod/ThanatosBody2, CalamityMod/ThanatosTail, CalamityMod/THELORDE, CalamityMod/PrimordialWyrmHead, CalamityMod/StormWeaverBody, CalamityMod/StormWeaverTail, CalamityMod/BrainIllusion, CalamityMod/FalseBrain, ThoriumMod/BossDummy, ThoriumMod/Aquaius
+# shop condition keys seen: Conditions.AnotherTownNPCNearby x385 ->0; Conditions.HappyEnoughForPylons x283 ->0; Conditions.NotInEvilBiome x280 ->0; Conditions.InHardmode x174 ->7; Mods.ThoriumMod.Conditions.DonatorItemToggled x93 ->0; Conditions.InJungle x44 ->0; Conditions.InHallow x43 ->0; Conditions.InDesert x41 ->0; Conditions.BirthdayParty x41 ->0; Conditions.InSnow x40 ->0; Conditions.InBeach x40 ->0; Conditions.InGlowshroom x36 ->0; Conditions.ForestPylon x35 ->0; Conditions.UndergroundPylon x35 ->0; Mods.CalamityMod.Condition.InAstral x35 ->0; Mods.CalamityMod.Condition.InSulph x35 ->0; Mods.CalamityMod.Condition.InSunken x35 ->0; Conditions.InGraveyard x31 ->0; Conditions.DownedMechBossAny x31 ->9; Conditions.BloodMoon x27 ->2.5; Mods.ThoriumMod.Conditions.CompletedMonsterContract x26 ->0; Conditions.DownedSkeletron x24 ->5; Conditions.DownedGolem x24 ->13; Conditions.GolfScoreOver x23 ->0; Conditions.BestiaryPercentage x21 ->0; Conditions.PlayerCarriesItem x18 ->0; Conditions.DownedPlantera x18 ->12; Conditions.TimeNight x17 ->0; Conditions.WorldNotRemix x17 ->0; Mods.ThoriumMod.Conditions.CompletedCookRecipe x17 ->0; Conditions.Halloween x16 ->0; Conditions.FullMoon x15 ->0; Conditions.NpcIsPresent x12 ->0; Conditions.PreHardmode x12 ->0; Conditions.DownedEyeOfCthulhu x12 ->2; Conditions.SolarEclipse x12 ->11.5; Mods.ThoriumMod.Conditions.DownedFallenBeholder x12 ->9.2; Conditions.Christmas x12 ->0; Conditions.MoonPhasesQuarter0 x11 ->0; Conditions.MoonPhasesQuarter1 x11 ->0; Conditions.MoonPhasesQuarter2 x11 ->0; Conditions.MoonPhasesQuarter3 x11 ->0; Conditions.TimeDay x10 ->0; Conditions.DownedMoonLord x10 ->18; Conditions.WorldCrimson x9 ->0; Conditions.WorldCorrupt x9 ->0; Conditions.WorldAnniversary x9 ->0; Conditions.MoonPhasesOdd x8 ->0; Mods.CalamityMod.Condition.Drops.DownedDoG x7 ->21; Conditions.DownedMechBossAll x7 ->11; Conditions.NotInGraveyard x7 ->0; Conditions.DownedPirates x6 ->7.7; Conditions.NewMoon x6 ->0; Conditions.DownedBoss2 x6 ->3; Conditions.DownedMartians x6 ->13.75; Conditions.MoonPhasesEven x6 ->0; Conditions.DownedGoblinArmy x6 ->3.3; Conditions.NotBloodMoon x5 ->0; Conditions.DownedQueenBee x4 ->4; Mods.ThoriumMod.Conditions.DownedBoreanStrider x4 ->0
+  ROUTE Vanilla/FieryGreatsword
+  item 121: route=5 src=recipe<-Hellstone Bar; shop=-; boss=-
+    recipe: Hellstone Barx20=5.0(recipe<-Hellstone) | tile16=0.0 groups=0 cond=[] -> 0.0
+  ROUTE Vanilla/Flymeal
+  item 5129: route=1.5 src=recipe<-+rarityfloor1.5; shop=-; boss=-
+    recipe: Platinum Broadswordx1=0.0(recipe<-), Stinkbugx5=0.0(unknown:rarity) |  groups=0 cond=[Conditions.NearHoney] -> 0.0
+    recipe: Gold Broadswordx1=0.0(recipe<-), Stinkbugx5=0.0(unknown:rarity) |  groups=0 cond=[Conditions.NearHoney] -> 0.0
+  ROUTE ThoriumMod/Bellerose
+  item 9088: route=4.947683 src=unknown:value/2; shop=-; boss=-
+    recipe: Gold Barx16=0.0(recipe<-), Obsidianx20=3.0(raw), Umbrellax1=0.5(unknown:rarity) | tile16=0.0 groups=1 cond=[Mods.ThoriumMod.Conditions.DonatorItemToggled] -> 0.0
+  ROUTE Vanilla/Keybrand
+  item 671: route=13.5 src=boss:King Slime@1+rarityfloor13.5; shop=-; boss=1 King Slime@1
+    (no recipes)
+  ROUTE Vanilla/HellstoneBar
+  item 175: route=5 src=recipe<-Hellstone; shop=-; boss=-
+    recipe: Hellstonex3=5.0(raw), Obsidianx1=3.0(raw) | tile77=0.0 groups=0 cond=[] -> 0.0
+  ROUTE Vanilla/Hellstone
+  item 174: route=5 src=raw; shop=9 ThoriumMod/Blacksmith/Shop:DownedMechBossAny; boss=-
+    recipe: Ember Wallx4=5.0(recipe<-Hellstone) | tile18=0.0 groups=0 cond=[] -> 0.0
+    recipe: Cinder Wallx4=5.0(recipe<-Hellstone) | tile18=0.0 groups=0 cond=[] -> 0.0
+    recipe: Magma Wallx4=5.0(recipe<-Hellstone) | tile18=0.0 groups=0 cond=[] -> 0.0
+    recipe: Smouldering Stone Wallx4=5.0(recipe<-Hellstone) | tile18=0.0 groups=0 cond=[] -> 0.0
+  ROUTE Vanilla/Katana
+  item 2273: route=1 src=boss:King Slime@1; shop=-; boss=1 King Slime@1
+    (no recipes)
+  ROUTE Vanilla/GoldBroadsword
+  item 3520: route=0 src=recipe<-; shop=-; boss=-
+    recipe: Gold Barx8=0.0(recipe<-) | tile16=0.0 groups=0 cond=[] -> 0.0
+  -- after first issue
+  tally: 
+  -- after UpgradeWeapons
+  tally: 
+  -- after 2 more upgrade rounds
+  tally: 
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+  left on shelves: 

@@ -90,6 +90,9 @@ namespace Levy.Content.NPCs
 		public bool PipelineOk => LevyConfig.Get.UseVanillaStatPipeline && Main.GameUpdateCount >= _pipelineRetryAt;
 		/// <summary>Damage reduction (0..<see cref="LevyConstants.MaxEndurance"/>) read from the dummy's endurance stat (Endurance potion, accessories). Server only.</summary>
 		public float Endurance;
+		/// <summary>This levy's own lifesteal budget (vanilla's Player.lifeSteal) and the tick it was last brought up to date; NaN = never used, a full pool. See <see cref="Common.Weapons.LifeStealPool"/>.</summary>
+		internal float LifeStealPool = float.NaN;
+		internal uint LifeStealStamp;
 		/// <summary>Life regen units contributed by potion buffs (Regeneration); Damage.StationRegen adds it to the station counter.</summary>
 		private int _buffLifeRegen;
 

@@ -1,27 +1,27 @@
 == cost-primary key facts ==
-Vanilla/Minishark                cost=   350000 val=  350000 mats=       0 tier= 0.00 cur=  140.9 effDps=   60.0
-Vanilla/Megashark                cost=  1701000 val=  350000 mats= 1351000 tier= 9.00 cur=  456.5 effDps=   42.9
+Vanilla/Minishark                cost=   350000 val=  350000 mats=       0 tier= 1.50 cur=  140.9 effDps=   26.2
+Vanilla/Megashark                cost=  1701000 val=  350000 mats= 1351000 tier= 9.50 cur=  456.5 effDps=   42.9
 Vanilla/ClockworkAssaultRifle    cost=   150000 val=  150000 mats=       0 tier= 7.00 cur=  340.6 effDps=   58.9
 Vanilla/MythrilSword             cost=   279500 val=  103500 mats=  176000 tier= 7.00 cur=  756.3 effDps=  333.8
-Vanilla/ChlorophyteSaber         cost=   636000 val=  276000 mats=  360000 tier=11.00 cur=  904.0 effDps=  345.0
-Vanilla/ChlorophyteClaymore      cost=   636000 val=  276000 mats=  360000 tier=11.00 cur=  393.0 effDps=  194.0
+Vanilla/ChlorophyteSaber         cost=   636000 val=  276000 mats=  360000 tier=12.50 cur=  904.0 effDps=  345.0
+Vanilla/ChlorophyteClaymore      cost=   636000 val=  276000 mats=  360000 tier=12.50 cur=  393.0 effDps=  194.0
 Vanilla/ZombieArm                cost=     2000 val=    2000 mats=       0 tier= 0.00 cur=   46.3 effDps=   24.5
-Vanilla/TerraBlade               cost=  3003400 val= 1000000 mats= 2003400 tier=12.00 cur=  516.0 effDps=  185.0
+Vanilla/TerraBlade               cost=  3003400 val= 1000000 mats= 2003400 tier=13.50 cur=  516.0 effDps=  162.5
 Vanilla/Xenopopper               cost=   500000 val=  500000 mats=       0 tier=13.75 cur= 1073.6 effDps=  157.2
 Vanilla/LaserMachinegun          cost=   500000 val=  500000 mats=       0 tier=13.75 cur= 1004.3 effDps=   93.0
 Vanilla/InfluxWaver              cost=   500000 val=  500000 mats=       0 tier=13.75 cur=  327.9 effDps=   93.0
 Vanilla/RazorbladeTyphoon        cost=   250000 val=  250000 mats=       0 tier=14.00 cur=  262.0 effDps=   92.6
-Vanilla/TheHorsemansBlade        cost=   500000 val=  500000 mats=       0 tier=13.25 cur=  591.2 effDps=  251.0
-Vanilla/Muramasa                 cost=   151000 val=   87500 mats=   63500 tier= 4.50 cur=  105.4 effDps=   45.0
-Vanilla/BladeofGrass             cost=    33900 val=   27000 mats=    6900 tier= 4.00 cur=   73.3 effDps=   22.5
+Vanilla/TheHorsemansBlade        cost=   500000 val=  500000 mats=       0 tier=13.50 cur=  591.2 effDps=  251.0
+Vanilla/Muramasa                 cost=   151000 val=   87500 mats=   63500 tier= 5.00 cur=  105.4 effDps=   45.0
+Vanilla/BladeofGrass             cost=    33900 val=   27000 mats=    6900 tier= 4.50 cur=   73.3 effDps=   22.5
 Vanilla/WoodenSword              cost=      100 val=     100 mats=       0 tier= 0.00 cur=   22.7 effDps=    3.0
-CalamityMod/WulfrumKnife         cost=    10500 val=   10000 mats=     500 tier= 0.00 cur=   71.0 effDps=   26.5
+CalamityMod/WulfrumKnife         cost=    10500 val=   10000 mats=     500 tier= 0.50 cur=   71.0 effDps=   26.5
 CalamityMod/MycelialClaws        cost=    20000 val=   20000 mats=       0 tier= 2.70 cur=  310.1 effDps=  150.0
 CalamityMod/Needler              cost=   100000 val=  100000 mats=       0 tier= 7.00 cur=  297.6 effDps=  121.7
-CalamityMod/SpeedBlaster         cost=   535000 val=  200000 mats=  335000 tier= 7.00 cur=  362.9 effDps=   87.0
+CalamityMod/SpeedBlaster         cost=   535000 val=  200000 mats=  335000 tier= 9.50 cur=  362.9 effDps=   60.0
 current Score        top9: MythrilSword, CobaltSword, PalladiumSword, CobaltNaginata, SpeedBlaster, MythrilStaff, ClockworkAssaultRifle, MycelialClaws, Needler | Minishark #30, Wulfrum #56
 cost-primary         top9: SpeedBlaster, NightsEdge, Minishark, MythrilRepeater, MythrilStaff, PhoenixBlaster, MythrilSword, PalladiumSMG, PalladiumSword | Minishark #3, Wulfrum #59
-tier-primary blend   top9: Avalanche, SpeedBlaster, MythrilSword, PalladiumSword, CobaltSword, CobaltNaginata, Needler, MythrilRepeater, MythrilStaff | Minishark #54, Wulfrum #63
+tier-primary blend   top9: Avalanche, SpeedBlaster, MythrilSword, PalladiumSword, CobaltSword, CobaltNaginata, Needler, MythrilRepeater, MythrilStaff | Minishark #47, Wulfrum #60
 
 cost-primary absurdly HIGH (top 12 by cost among weapons with effDps < 5):
    CalamityMod/TheWand            cost= 15000000 (val 15000000 + mats        0) tier=19.00 rare=12 cur=    6.3 tierRank=  19.1 effDps=   3.2
@@ -31,12 +31,11 @@ cost-primary absurdly HIGH (top 12 by cost among weapons with effDps < 5):
    CalamityMod/ShadecrystalBarrag cost=   857000 (val   200000 + mats   657000) tier= 9.50 rare= 5 cur=   69.1 tierRank=  18.7 effDps=   1.9
    ThoriumMod/TimeGate            cost=   600000 (val   250000 + mats   350000) tier=13.50 rare= 8 cur=  142.5 tierRank=  18.7 effDps=   2.0
    ThoriumMod/Shockbuster         cost=   545000 (val   250000 + mats   295000) tier= 9.00 rare=21 cur=  130.7 tierRank=  19.3 effDps=   3.8
-   ThoriumMod/HallowedStaff       cost=   518000 (val   230000 + mats   288000) tier= 9.00 rare= 5 cur=   48.5 tierRank=  18.5 effDps=   1.3
+   ThoriumMod/HallowedStaff       cost=   518000 (val   230000 + mats   288000) tier= 9.50 rare= 5 cur=   48.5 tierRank=  18.5 effDps=   1.3
+   Vanilla/WaspGun                cost=   500000 (val   500000 + mats        0) tier=13.50 rare= 8 cur=  233.4 tierRank=  19.2 effDps=   3.3
    CalamityMod/RelicofRuin        cost=   500000 (val   200000 + mats   300000) tier=12.09 rare= 5 cur=   54.4 tierRank=  18.6 effDps=   1.7
-   CalamityMod/Oblivion           cost=   450000 (val   450000 + mats        0) tier=11.70 rare= 7 cur=  125.7 tierRank=  18.8 effDps=   2.2
+   CalamityMod/Oblivion           cost=   450000 (val   450000 + mats        0) tier=12.50 rare= 7 cur=  125.7 tierRank=  18.8 effDps=   2.2
    CalamityMod/NightsRay          cost=   412670 (val   100000 + mats   312670) tier= 7.00 rare= 4 cur=   86.4 tierRank=  19.0 effDps=   3.0
-   CalamityMod/BrimstoneFury      cost=   412000 (val   200000 + mats   212000) tier= 9.50 rare= 5 cur=  127.8 tierRank=  19.0 effDps=   2.7
 cost-primary absurdly LOW (cost < 20000 but effDps > 150):
-   CalamityMod/MonolithSword      cost=      100 (val      100 + mats        0) tier= 0.00 rare= 4 cur=  339.5 tierRank=  36.7 effDps= 167.1
 
-Spearman vs route tier: value 0.89, cost(value+mats) 0.85 ; vs effDps: value 0.71, cost 0.71, current score 0.91
+Spearman vs route tier: value 0.92, cost(value+mats) 0.86 ; vs effDps: value 0.71, cost 0.71, current score 0.90

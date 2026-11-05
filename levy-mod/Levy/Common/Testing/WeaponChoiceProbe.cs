@@ -69,7 +69,7 @@ namespace Levy.Common.Testing
 			string cat = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_CATALOG");
 			if (!string.IsNullOrEmpty(cat)) Catalog(sb, cat.Split(','));
 			string tiers = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_TIERS");
-			if (!string.IsNullOrEmpty(tiers)) TierTable(sb, tiers.Split(','));
+			if (!string.IsNullOrEmpty(tiers)) { TierTable(sb, tiers.Split(',')); foreach (var n in ProgressionTierProbe.Notes) sb.AppendLine("# NOTE " + n); }
 			string scen = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_SCEN");
 			if (!string.IsNullOrEmpty(scen) && File.Exists(scen)) Scenarios(sb, File.ReadAllLines(scen));
 		}
@@ -182,7 +182,6 @@ namespace Levy.Common.Testing
 					return r;
 				}
 				ArmorDoctrine.Reset();
-				ArmoryTE.TestServed = souls; // the army this armory serves (the allocator and the fair-share limits read it)
 				LevyConfig.Get.ClassMatchIssue = false;
 				void Stock(string[] t)
 				{
@@ -215,6 +214,9 @@ namespace Levy.Common.Testing
 					{
 						case "SOLDIERS": nSold = int.Parse(t[1]); break;
 						case "MIX": { mix = BuildMix(t.Skip(2).ToArray(), t[1]); nSold = mix.Count; break; } // MIX <order> melee=5 ranged=4 magic=3 summon=1 none=2
+						case "ROUTE": { ProgressionTierProbe.EnsureBuilt(sb); var ri = Make(t[1]); if (ri == null) sb.AppendLine("  ROUTE cannot resolve " + t[1]); else { sb.AppendLine("  ROUTE " + t[1]); ProgressionTierProbe.Dump(ri.type, sb); } break; }
+						case "NPCDROPS": { sb.AppendLine("  NPCDROPS " + t[1]); ProgressionTierProbe.DumpNpc(int.Parse(t[1]), sb); break; }
+						case "WHODROPS": { var wi2 = Make(t[1]); sb.AppendLine("  WHODROPS " + t[1]); if (wi2 != null) ProgressionTierProbe.WhoDrops(wi2.type, sb); break; }
 						case "SHOW": { var si = Make(t[1]); sb.AppendLine("  SHOW " + t[1] + ": " + (si == null ? "cannot resolve" : $"{Describe(si)} issuable={WeaponClassifier.IsIssuableWeapon(si)} dmg={si.damage} pick={si.pick} hammer={si.hammer} axe={si.axe} useTime={si.useTime} rare={si.rare} value={si.value} noMelee={si.noMelee} shoot={si.shoot}")); break; }
 						case "CFG": { var kv = t[1].Split('='); if (kv[0] == "ClassMatchIssue") LevyConfig.Get.ClassMatchIssue = bool.Parse(kv[1]); break; }
 						case "W": case "A": case "M": Stock(t); break;
@@ -243,7 +245,6 @@ namespace Levy.Common.Testing
 				sb.AppendLine("  left on shelves: " + string.Join(" | ", left));
 			}
 			LevyConfig.Get.ClassMatchIssue = oldCm;
-			ArmoryTE.TestServed = null;
 		}
 	}
 }

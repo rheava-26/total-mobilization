@@ -20,7 +20,7 @@ namespace Levy.Common.Weapons
 	///   bit 16: a friendly projectile that spawns INSIDE one of these puppeted calls with no soldier tag of its own inherits the soldier's tag
 	///   bit 32: LIFE ROUTING. For the length of the pass the owner's life and max life ARE the soldier's (so "below half health", "already full" and the clamp at max all read the soldier's), and whatever the pass
 	///          raised them by - lifesteal: vanilla Vampire Knives' VampireHeal bolt, Thorium HealLife on its weapon hit, Player.Heal, a bare statLife += - is the soldier's own gain: the commander's real life is put back
-	///          untouched and the soldier is given the gain (with the floating "+N" on him). Heals meant for the commander (a soldier's ally heal) run inside <see cref="BeginAllow"/>, which puts his real life and place back.
+	///          untouched and the soldier is given the gain (with the floating "+N" on him). The owner's lifesteal budget (Player.lifeSteal) is the soldier's own for the pass (<see cref="LifeStealPool"/>) and the commander's is put back in the finally. Heals meant for the commander (a soldier's ally heal) run inside <see cref="BeginAllow"/>, which puts his real life and place back.
 	///   bit 8: Thorium's cached "local ThoriumPlayer" (PlayerHelper.localThoriumPlayer) is pointed at the soldier dummy's ThoriumPlayer around the Shoot hooks in WeaponUse.TryRealShoot and inside puppeted Damage / Kill
 	///          (GetThoriumPlayer returns that cache for any player whose whoAmI == Main.myPlayer, which the dummy is given for the call).
 	/// Only the transform is moved: the Player object, its ModPlayers, buffs and life stay the commander's, so loot credit and boss-kill resolution still run under the real player.
@@ -61,7 +61,7 @@ namespace Levy.Common.Weapons
 		public override void Unload()
 		{
 			if (_hooked) { On_Projectile.Damage -= DamageDetour; On_Projectile.Kill -= KillDetour; On_Projectile.Update -= UpdateDetour; On_NetMessage.SendData -= SendDataDetour; On_Player.HealEffect -= HealEffectDetour; }
-			_hooked = false; _envSet = false; _cfgOn = true; Mask = 63; _depth = 0; Context = null; _curTp = null;
+			_hooked = false; _envSet = false; _cfgOn = true; Mask = 63; _depth = 0; Context = null; _curTp = null; LifeStealPool.Unload();
 		}
 
 		private static bool Puppetable(Projectile p, out Player owner, out SoldierNPC body)
@@ -75,11 +75,12 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>One open swap: what the owner's transform and the Thorium cache were when this call entered.</summary>
-		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; }
+		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer; }
 
 		private const int MaxFrames = 32;
 		private static readonly Frame[] _stack = new Frame[MaxFrames];
 		private static int _depth;
+		internal static int DebugDepth => _depth;
 
 		private static bool Enter(Projectile self, int bit)
 		{
@@ -97,6 +98,7 @@ namespace Levy.Common.Weapons
 				f.SolLife = Math.Max(1, body.NPC.life);
 				p.statLifeMax2 = Math.Max(1, body.NPC.lifeMax); p.statLife = Math.Min(f.SolLife, p.statLifeMax2);
 				RouteOpens++;
+				OpenPool(ref f, p, body);
 			}
 			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
 			Context = body;
@@ -113,12 +115,53 @@ namespace Levy.Common.Weapons
 				if (f.Moved) { f.P.position = f.Pos; f.P.velocity = f.Vel; f.P.oldPosition = f.Old; f.P.direction = f.Dir; Restores++; }
 				if (f.Route) CloseRoute(ref f);
 			}
-			finally { RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
+			finally { if (f.Route) ClosePool(ref f); RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
 		}
 
 
 		// ---- bit 32: life routing ----
 		internal static int RouteOpens, RoutedHeals, RoutedLife, HealTextOpenUnrouted, HealTextOutside;
+
+		// ---- bit 32: the dealing levy's own lifesteal budget ----
+		internal static int PoolOpens;
+
+		/// <summary>
+		/// For the pass the owner's <c>lifeSteal</c> IS the levy's own budget (<see cref="LifeStealPool"/>). Vanilla's spend reads <c>Main.player[Main.myPlayer]</c>, Calamity's the owner: both fields hold the levy's value.
+		/// Passes nest (Update -> Damage -> a child's Kill): a pass inside another pass of the SAME levy keeps the field as it is (the enclosing pass writes it back); inside another levy's pass it first files that
+		/// levy's live value, swaps in its own and, on the way out, puts the enclosing levy's current value back.
+		/// </summary>
+		private static void OpenPool(ref Frame f, Player owner, SoldierNPC body)
+		{
+			f.MyP = null; f.Pool = float.NaN; f.Outer = null;
+			if (LifeStealPool.SharedForTest) return;
+			SoldierNPC outer = null;
+			for (int k = _depth - 1; k >= 0; k--)
+				if (_stack[k].Route && ReferenceEquals(_stack[k].P, owner) && !float.IsNaN(_stack[k].Pool)) { outer = _stack[k].Body; break; }
+			if (outer != null && ReferenceEquals(outer, body)) return; // the enclosing pass of this very levy holds his budget in the field
+			if (outer != null) LifeStealPool.Store(outer, owner.lifeSteal);
+			float pool = LifeStealPool.Current(body);
+			f.Outer = outer; f.Pool = owner.lifeSteal; owner.lifeSteal = pool;
+			if (Main.myPlayer >= 0 && Main.myPlayer < Main.maxPlayers)
+			{
+				Player my = Main.player[Main.myPlayer];
+				if (my != null && !ReferenceEquals(my, owner)) { f.MyP = my; f.MyPool = my.lifeSteal; my.lifeSteal = pool; }
+			}
+			PoolOpens++;
+		}
+
+		/// <summary>What the pass spent comes off the levy's budget; the value that was in the field before (the commander's own, or the enclosing levy's current one) is put back.</summary>
+		private static void ClosePool(ref Frame f)
+		{
+			if (float.IsNaN(f.Pool)) return; // this pass kept the field as it found it (inside the same levy's pass, or the test seam)
+			Player owner = f.P;
+			float left = owner.lifeSteal;
+			if (f.MyP != null) left = Math.Min(left, f.MyP.lifeSteal);
+			LifeStealPool.Store(f.Body, left);
+			float back = f.Outer != null ? f.Outer.LifeStealPool : f.Pool;
+			owner.lifeSteal = back;
+			if (f.MyP != null) { f.MyP.lifeSteal = f.Outer != null ? back : f.MyPool; f.MyP = null; }
+			f.Outer = null;
+		}
 
 		/// <summary>The pass is over: what the owner's life gained while the transform sat on the soldier is the soldier's gain. Put the commander's life back and give the soldier what he earned.</summary>
 		private static void CloseRoute(ref Frame f)

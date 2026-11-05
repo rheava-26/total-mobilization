@@ -3,7 +3,7 @@ exec(open("/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-3
 # route-confidence cap: a recipe/sig route may not outrun the item's own rarity/value signal by more than 4 stages (stops one unrouted modded ingredient poisoning a whole tree)
 for r in rows:
     own = max(r['RP'] if r['RP'] is not None else 0, r['VP'])
-    if r['routeSrc'].startswith('recipe') or r['routeSrc'].startswith('sig'):
+    if r['routeSrc'].startswith('recipe') or r['routeSrc'].startswith('unknown'):
         r['R']=min(r['R'], own+4)
     custom = (r['rare']>11 or r['rare']<-1) and r['mod']!='CalamityMod'
     r['P']=(W_R*r['R']+W_RP*r['RP']+W_V*r['VP']) if not custom else (0.85*r['R']+0.15*r['VP'])

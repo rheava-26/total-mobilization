@@ -92,6 +92,11 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - Verified: CalamityModMusic + CalamityMod 2.2.2 + ThoriumMod 1.7.2.8 + Levy 1.6.8 + Mechanization 0.6.0 all finalize together on 2026.10.2.3 with 0 exceptions. Levy built on 2026.8.3.0 loads on 2026.10.2.3, and Levy also compiles clean with 2026.10.2.3's builder.
 - Correction: the old toolchain's 372 Calamity errors were the BUILD METHOD (old compiler, no publicizer), not proof Eve's tML is newer. Eve's actual tML version is still unknown — ask.
 
+## 📦 SHIPPED 2026-11-05: Levy 1.7.1 (Mechanization stays 0.7.0). Boots clean with Levy+Mech and Thorium+Levy+Mech; log "OWNERPUPPET: enabled mask=31 (config)"
+- On-hit/exhaustion fix (onhit-fix 1d172ab), default ON via config "Weapon effects start at the soldier".
+- Measured on flagged sets: Thorium 34→7, Calamity 24→4 weapons acting at the commander; Thorium throwers leaking into the commander's state 50→0.
+- Unverified: camera/draw in real play, real MP clients.
+
 ## 📦 SHIPPED 2026-11-05: Levy 1.7.0 + Mechanization 0.7.0 (old toolchain 2026.8.3.0; boots clean Levy+Mech and Thorium+Levy+Mech)
 - Contents: biome mirror (c1f00d7), drones (61f41c2), bard renown (a23d23a), share-based progression (07c1d7e + 6f208a8 BC key fix), Thorium radiant heal-allies hooks (f9be7e5).
 - NOT in it: ammo fair-share + platform drop-through. That agent was stopped mid-work; its uncommitted work is saved as f89280e on origin `ammo-platform-wip`, unverified. On-hit-at-player and the Thorium local-player cache fix are still being measured.

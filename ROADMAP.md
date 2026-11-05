@@ -6,6 +6,13 @@
 
 ---
 
+## 🧰 GEAR UPKEEP (branch `gear-upkeep`, unreleased, build.txt not bumped)
+- **What:** `SoldierNPC.GearUpkeep.cs` runs the per-tick slice of `Player.Update` on the Dummy for soldiers whose gear is tick-dependent (any modded armor/accessory, or Volatile Gelatin / Star Cloak family). Frame = timers, ResetEffects (+ owned counts put back), mod buffs, UpdateEquips, extras, set pass, station/potion deltas, PostUpdateEquips, PostUpdateMiscEffects. RefreshStats runs the same frame once a second. Borrows the soldier owner slot + Thorium local cache; spawns caught by `GearUpkeepSpawnCatcher` and adopted. Config `RealGearUpkeep` (default on); env `LEVY_UPKEEP=0|1|2|3` for A/B (3 = harness experiment).
+- **Hand-made twins disabled:** Volatile Gelatin only. **Kept (real one cannot live under a shared owner):** Crystal Leaf, Stardust Guardian (real ones respawn every tick/20 ticks and die), Spore Sac (per-soldier trap cap), Spectre/Nebula (hit-driven), Beetle/Solar draw-layer upkeep.
+- **Owner-bound helper types** (Calamity Blunder Booster aura etc.) are dropped by a churn breaker until soldiers own their shots (the later ownership step).
+- **Calamity rogue:** stealth now builds (was always 0) and is spent through Calamity's own first-use-frame check (fed by `LastUseTick`).
+- Lab: `OwnerLab` kind `ctl` with flags `upk=0..3`, `wpn=`, `phurt=`; Calamity via `tools/lab_build.sh -N`.
+
 ## 🧭 WORKING AGREEMENT WITH EVE (2026-10-27 → 11-04) — read before diagnosing anything
 Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testing it, ships a fix on it, and pins new bugs on whatever was just discussed (Rotted Fork: Calamity→projectile→broadsword→"it's a spear"; the turret "line": Vilethorn beam → actually the weapon's sprite). Agreed practice:
 - List EVERY plausible cause before acting (not 2-3). Separate what is observed from what is guessed. Never ship a fix on an unconfirmed cause. Don't pin a new bug on the most recent topic. Widen, don't re-narrow, when corrected.

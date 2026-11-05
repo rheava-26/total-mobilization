@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 		// ---- commander state tracker: every numeric field of the commander's Thorium / Calamity ModPlayers (+ a few vanilla stats), start / end / min / max, and WHEN it changed ----
 		private sealed class Fld { public double Start, Last, Min, Max; public int NFire, NHit, NOther, First = -1; }
 		private static Dictionary<string, Fld> _state = new();
-		private static List<(ModPlayer tmpl, FieldInfo f, string name)> _stateFields;
+		private static List<(ModPlayer tmpl, MemberInfo f, string name)> _stateFields;
 		private static readonly HashSet<int> _spawnTicks = new(), _hitTicks = new();
 		private static Dictionary<string, double> Snap()
 		{
@@ -79,6 +79,13 @@ namespace Levy.Common.Testing
 						if (t == typeof(int) || t == typeof(float) || t == typeof(double) || t == typeof(bool) || t == typeof(short) || t == typeof(byte) || t == typeof(uint) || t == typeof(long))
 							_stateFields.Add((m, f, mn + "." + m.GetType().Name + "." + f.Name));
 					}
+					foreach (PropertyInfo pi in m.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+					{
+						Type t = pi.PropertyType;
+						if (!pi.CanRead || pi.GetIndexParameters().Length > 0 || pi.DeclaringType != m.GetType()) continue;
+						if (t == typeof(int) || t == typeof(float) || t == typeof(double) || t == typeof(bool) || t == typeof(short) || t == typeof(byte) || t == typeof(uint) || t == typeof(long))
+							_stateFields.Add((m, pi, mn + "." + m.GetType().Name + "." + pi.Name + "()"));
+					}
 				}
 			}
 			var d = new Dictionary<string, double>(_stateFields.Count + 8);
@@ -87,7 +94,7 @@ namespace Levy.Common.Testing
 			int nb = 0; foreach (int b in p.buffType) if (b > 0) nb++; d["Player.buffCount"] = nb;
 			foreach (var (tmpl, f, name) in _stateFields)
 			{
-				try { ModPlayer inst = p.GetModPlayer(tmpl); object v = f.GetValue(inst); d[name] = v is bool b ? (b ? 1 : 0) : Convert.ToDouble(v); } catch (Exception) { }
+				try { ModPlayer inst = p.GetModPlayer(tmpl); object v = f is FieldInfo fi ? fi.GetValue(inst) : ((PropertyInfo)f).GetValue(inst); d[name] = v is bool b ? (b ? 1 : 0) : Convert.ToDouble(v); } catch (Exception) { }
 			}
 			return d;
 		}
@@ -187,6 +194,7 @@ namespace Levy.Common.Testing
 				_agg = new(); _tracks.Clear(); _tick = 0; _lastHitTick = -100; _hits = _hitsTagged = _derivedHits = 0; _stackBudget = 4000;
 				CmdCnt.Clear(); _state = new(); _spawnTicks.Clear(); _hitTicks.Clear();
 				try { foreach (var kv in Snap()) _state[kv.Key] = new Fld { Start = kv.Value, Last = kv.Value, Min = kv.Value, Max = kv.Value }; } catch (Exception) { }
+				if (Emulate && stage == 0) global::Levy.Common.Weapons.OwnerPuppet.EmulateClientCache(Main.player[0]); // path A needs the client's local-player cache
 				Active = true;
 			}
 		}
@@ -298,7 +306,8 @@ namespace Levy.Common.Testing
 				if (it.headSlot >= 0) p.armor[0] = it;
 				else if (it.bodySlot >= 0) p.armor[1] = it;
 				else if (it.legSlot >= 0) p.armor[2] = it;
-				else if (acc < 10) p.armor[acc++] = it;
+				else if (it.accessory) { if (acc < 10) p.armor[acc++] = it; }
+				else p.inventory[0] = it; // a held item (scan kind 'held'): selected hotbar slot 0
 			}
 			p.selectedItem = 0;
 			if (FixedHeld != "") { Item h = MakeItem(FixedHeld); if (h != null) p.inventory[0] = h; }
@@ -471,9 +480,11 @@ namespace Levy.Common.Testing
 
 		// ---- commander ModPlayer hook counters ----
 		private static readonly Dictionary<string, int> CmdCnt = new();
-		internal static void NoteCmdHook(string hook, Projectile p)
+		internal static void NoteCmdHook(string hook, Projectile p, Player who)
 		{
 			if (!Active) return;
+			// a soldier's stat dummy is a separate Player object whose whoAmI defaults to 0 as well: only the stand-in commander (Main.player[0]) counts as the commander
+			hook += ReferenceEquals(who, Main.player[0]) ? "[commander]" : "[dummy/other]";
 			lock (Lock)
 			{
 				bool tagged = p != null && p.TryGetGlobalProjectile(out SoldierProjectileTag tg) && tg.IsSoldierShot;
@@ -499,6 +510,7 @@ namespace Levy.Common.Testing
 				string full = it.ModItem.Mod.Name + "/" + it.ModItem.Name;
 				if (GearFilter != null && !GearFilter.Any(x => full.IndexOf(x, StringComparison.OrdinalIgnoreCase) >= 0 || (it.Name ?? "").IndexOf(x, StringComparison.OrdinalIgnoreCase) >= 0)) continue;
 				if (it.vanity) continue;
+				if (GearKind == "held" && !it.accessory && it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0 && it.damage > 0 && it.useStyle > 0) list.Add(new GearSet { Types = new[] { t }, Label = "held:" + full });
 				if ((GearKind == "acc" || GearKind == "both") && it.accessory && it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0) list.Add(new GearSet { Types = new[] { t }, Label = full });
 				if (GearKind == "armor" || GearKind == "both")
 				{
@@ -561,15 +573,15 @@ namespace Levy.Common.Testing
 	{
 		public override void OnHitNPCWithProj(Projectile proj, NPC target, NPC.HitInfo hit, int damageDone)
 		{
-			if (HarnessOnHit.Enabled && Player.whoAmI == 0) HarnessOnHit.NoteCmdHook("OnHitNPCWithProj", proj);
+			if (HarnessOnHit.Enabled) HarnessOnHit.NoteCmdHook("OnHitNPCWithProj", proj, Player);
 		}
 		public override void ModifyHitNPCWithProj(Projectile proj, NPC target, ref NPC.HitModifiers modifiers)
 		{
-			if (HarnessOnHit.Enabled && Player.whoAmI == 0) HarnessOnHit.NoteCmdHook("ModifyHitNPCWithProj", proj);
+			if (HarnessOnHit.Enabled) HarnessOnHit.NoteCmdHook("ModifyHitNPCWithProj", proj, Player);
 		}
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
 		{
-			if (HarnessOnHit.Enabled && Player.whoAmI == 0) HarnessOnHit.NoteCmdHook("OnHitNPC(item/melee)", null);
+			if (HarnessOnHit.Enabled) HarnessOnHit.NoteCmdHook("OnHitNPC(item/melee)", null, Player);
 		}
 	}
 }

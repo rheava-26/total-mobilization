@@ -69,35 +69,56 @@ namespace Levy.Common.Weapons
 		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self) => Run(self, () => orig(self), 2);
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) => Run(self, () => orig(self), 4);
 
-		// ---- Thorium local-player cache (reflection: no compile-time Thorium dependency) ----
-		private static FieldInfo _cache; private static ModPlayer _tpl; private static bool _tried;
-		/// <summary>Points Thorium's cached local ThoriumPlayer at <paramref name="dummy"/>'s; returns the previous value to hand back to <see cref="RestoreThorium"/>. Null when unavailable / disabled.</summary>
+		// ---- Thorium local-player cache: PlayerHelper.SetLocalThoriumPlayer (Thorium's own API; reflection so Levy has no compile-time Thorium dependency) ----
+		private static MethodInfo _setLocal; private static ModPlayer _tpl; private static bool _tried;
+		private static bool EnsureThorium()
+		{
+			if (!_tried)
+			{
+				_tried = true;
+				try
+				{
+					if (ModLoader.TryGetMod("ThoriumMod", out Mod th))
+					{
+						_setLocal = th.Code.GetType("ThoriumMod.Utilities.PlayerHelper")?.GetMethod("SetLocalThoriumPlayer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+						foreach (ModPlayer m in ModContent.GetContent<ModPlayer>()) if (m.Mod == th && m.GetType().Name == "ThoriumPlayer") _tpl = m;
+					}
+				}
+				catch (Exception) { }
+			}
+			return _setLocal != null && _tpl != null;
+		}
+
+		/// <summary>HARNESS ONLY: a real client's local player update calls SetLocalThoriumPlayer(commander); the stand-in commander on a dedicated server never does, so do it here.</summary>
+		internal static void EmulateClientCache(Player commander)
+		{
+			try { if (EnsureThorium()) _setLocal.Invoke(null, new object[] { commander.GetModPlayer(_tpl) }); } catch (Exception) { }
+		}
+
+		private static readonly object Marker = new();
+		/// <summary>Points Thorium's local-player cache at the dummy's ThoriumPlayer (the dummy's whoAmI is Main.myPlayer for the call, which SetLocalThoriumPlayer requires). Returns a token for RestoreThorium; null when off / unavailable.</summary>
 		internal static object SwapThorium(Player dummy)
 		{
 			if ((Mask & 8) == 0 || dummy == null) return null;
 			try
 			{
-				if (!_tried)
-				{
-					_tried = true;
-					if (ModLoader.TryGetMod("ThoriumMod", out Mod th))
-					{
-						_cache = th.Code.GetType("ThoriumMod.Utilities.PlayerHelper")?.GetField("localThoriumPlayer", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-						foreach (ModPlayer m in ModContent.GetContent<ModPlayer>()) if (m.Mod == th && m.GetType().Name == "ThoriumPlayer") _tpl = m;
-					}
-				}
-				if (_cache == null || _tpl == null) return null;
-				object prev = _cache.GetValue(null);
-				_cache.SetValue(null, dummy.GetModPlayer(_tpl));
-				return prev ?? Missing;
+				if (!EnsureThorium()) return null;
+				_setLocal.Invoke(null, new object[] { dummy.GetModPlayer(_tpl) });
+				return Marker;
 			}
 			catch (Exception) { return null; }
 		}
-		private static readonly object Missing = new();
-		internal static void RestoreThorium(object prev)
+
+		/// <summary>Hands the cache back to the commander (Main.player[Main.myPlayer]).</summary>
+		internal static void RestoreThorium(object token)
 		{
-			if (prev == null || _cache == null) return;
-			try { _cache.SetValue(null, ReferenceEquals(prev, Missing) ? null : prev); } catch (Exception) { }
+			if (token == null || !EnsureThorium()) return;
+			try
+			{
+				Player c = Main.player[Main.myPlayer];
+				if (c != null && c.active) _setLocal.Invoke(null, new object[] { c.GetModPlayer(_tpl) });
+			}
+			catch (Exception) { }
 		}
 	}
 }

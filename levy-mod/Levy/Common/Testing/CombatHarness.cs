@@ -444,6 +444,8 @@ namespace Levy.Common.Testing
 				return;
 			}
 			Add(0, null, "", range);
+			_agg["NEGC"] = new WeaponAgg { Name = "(no weapon, companion)" }; _weaponOrder.Add("NEGC");
+			_trials.Add(new Trial { ItemType = 0, Control = "negc", Range = range, Key = "NEGC", Baseline = false }); // idle control with a wounded ally + 50% commander (natural-regen noise for healer / bard weapons)
 			int idx = 0; var seen = new HashSet<int>();
 			for (int t = ItemID.Count; t < ItemLoader.ItemCount; t++)
 			{
@@ -961,7 +963,7 @@ namespace Levy.Common.Testing
 					c.StartDist = Vector2.Distance(p.Center, Main.npc[c.TargetIdx].Center) / 16f;
 					CalStart(c, p);
 					_pendingProj.Clear();
-					if (HarnessOnHit.Enabled) HarnessOnHit.BeginWindow(c.Weapon?.Name ?? "(no weapon)", c.T.GearLabel, c.T.Range.ToString(), 1);
+					if (HarnessOnHit.Enabled) HarnessOnHit.BeginWindow(c.Weapon?.Name ?? (c.T.Control == "negc" ? "(no weapon) COMPANION" : "(no weapon)"), c.T.GearLabel, c.T.Range.ToString(), 1);
 					return;
 				}
 				var body = Main.npc[c.BodyIdx].ModNPC as SoldierNPC;
@@ -974,7 +976,7 @@ namespace Levy.Common.Testing
 				c.StartDist = Vector2.Distance(Main.npc[c.BodyIdx].Center, Main.npc[c.TargetIdx].Center) / 16f;
 				CalStart(c, body.Dummy);
 				_pendingProj.Clear();
-				if (HarnessOnHit.Enabled) { SetKeepAlive(true); HarnessOnHit.BeginWindow(c.Weapon?.Name ?? "(no weapon)", c.T.GearLabel, c.T.Range.ToString(), 0); }
+				if (HarnessOnHit.Enabled) { SetKeepAlive(true); HarnessOnHit.BeginWindow(c.Weapon?.Name ?? (c.T.Control == "negc" ? "(no weapon) COMPANION" : "(no weapon)"), c.T.GearLabel, c.T.Range.ToString(), 0); }
 			}
 			catch (Exception e) { c.Exceptions.Add("startrun:" + e.GetType().Name + ":" + e.Message); }
 		}

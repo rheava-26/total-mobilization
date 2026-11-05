@@ -27,7 +27,15 @@ namespace Levy.Common.Owner
 		private static bool _warned;
 
 		/// <summary>The lowest slot index that is NOT available to soldiers: at or below it a real client could be (or is). Single player: slot 0 and any active player.</summary>
+		private static uint _floorTick = uint.MaxValue; private static int _floor;
 		public static int RealFloor()
+		{
+			if (_floorTick == Main.GameUpdateCount) return _floor;      // once a tick: a frame asks for it every time
+			_floorTick = Main.GameUpdateCount; _floor = ComputeFloor();
+			return _floor;
+		}
+
+		private static int ComputeFloor()
 		{
 			// A server with its player limit configured keeps exactly that many slots for clients; one left at the default of 255 keeps the first UnconfiguredReserve (a joining client takes the lowest free slot).
 			int f = 1;

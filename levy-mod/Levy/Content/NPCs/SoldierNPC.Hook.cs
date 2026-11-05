@@ -37,7 +37,7 @@ namespace Levy.Content.NPCs
 		private int _hkTicks, _hkCasted, _hkStall, _hkLost, _hkFirstLatch, _hkHang, _hkFailStreak, _hkNetTick;
 		private float _hkBestDist;
 		private uint _hkNextAllowed;
-		private HookReason _hkReason, _hkTrigReason; private int _hkTrigTicks; private uint _hkTrigLast; private Vector2 _hkTrigGoal;
+		private HookReason _hkReason, _hkTrigReason; private int _hkTrigTicks, _hkTrigNeed = int.MaxValue; private uint _hkTrigLast; private Vector2 _hkTrigGoal;
 		private bool _hkTeleportApplying; private Vector2 _hkTrigGoalUsed;
 		/// <summary>Set by the brain each think (UpdateAltitudeIntent): the soldier has no flight kit and a target hangs far above it. The goal is a standing height at the target's x.</summary>
 		private uint _hkAltSeen; private float _hkAltY, _hkAltX;
@@ -146,9 +146,11 @@ namespace Levy.Content.NPCs
 			if (_hkPhase != HookPhase.Idle || !HookUsable || Abilities.HasWings) return;
 			if (Retreating && r != HookReason.Altitude) r = HookReason.Flee;
 			uint now = Main.GameUpdateCount;
-			if (r == _hkTrigReason && now - _hkTrigLast <= (uint)H.TriggerGraceTicks) _hkTrigTicks += (int)Math.Max(1, now - _hkTrigLast);
-			else _hkTrigTicks = 1;
-			_hkTrigReason = r; _hkTrigLast = now; _hkTrigGoal = _hkGoalNow;
+			int need = TriggerTicksFor(r);
+			if (now == _hkTrigLast) { if (need < _hkTrigNeed) { _hkTrigNeed = need; _hkTrigReason = r; } }          // two branches asked in one tick: one tick of blockage, the shorter wait counts
+			else if (now - _hkTrigLast <= (uint)H.TriggerGraceTicks) { _hkTrigTicks += (int)(now - _hkTrigLast); if (need < _hkTrigNeed) { _hkTrigNeed = need; _hkTrigReason = r; } }
+			else { _hkTrigTicks = 1; _hkTrigNeed = need; _hkTrigReason = r; }
+			_hkTrigLast = now; _hkTrigGoal = _hkGoalNow;
 		}
 
 		private static int TriggerTicksFor(HookReason r) => r switch
@@ -162,23 +164,30 @@ namespace Levy.Content.NPCs
 		{
 			uint now = Main.GameUpdateCount;
 			if (now - _hkTrigLast > (uint)H.TriggerGraceTicks) { _hkTrigTicks = 0; return; }
-			if (_hkTrigTicks < TriggerTicksFor(_hkTrigReason) || now < _hkNextAllowed) return;
+			if (_hkTrigTicks < _hkTrigNeed || now < _hkNextAllowed) return;
 			if (_hkTrigReason != HookReason.Flee && _hkTrigReason != HookReason.Altitude && HasPath) return; // the walking AI has a route: it wins
 			if (NPC.velocity.Y != 0f || NPC.wet || _flying) return;                                          // cast from the ground
 			if (!SoldierHooks.TakePlanBudget()) return;
-			HookStart(_hkTrigReason, _hkTrigGoal);
+			try { HookStart(_hkTrigReason, _hkTrigGoal); }
+			catch (Exception e)
+			{
+				if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: hook planning failed on soldier '" + SoldierName + "': " + e);
+				try { HookReset(true); } catch (Exception) { }
+				HookBackoff();
+			}
 			_hkTrigTicks = 0;
 		}
 
 		/// <summary>The brain's altitude intent for a target far overhead: a soldier with no flight kit climbs by hook (the aerial pursuit needs wings or boots).</summary>
 		private void HookAltitudeIntent(NPC seg, float rangeTiles, bool melee)
 		{
+			if (SoldierHooks.Debug && (Main.GameUpdateCount & 63) == 1) HookDbg($"altitude intent called: usable={HookUsable} flightKit={HasFlightKit} sep={(NPC.Center.Y - seg.Center.Y) / 16f:0.0}T range={rangeTiles:0.0}");
 			if (!HookUsable || HasFlightKit) { _hkAltSeen = 0; return; }
 			float tilePx = LevyConstants.TilePx;
 			float sepTiles = (NPC.Center.Y - seg.Center.Y) / tilePx;
 			if (sepTiles < H.AltitudeMinTiles) { _hkAltSeen = 0; return; }
-			if (!melee && Aiming.TilesToHitbox(NPC.Center, seg) > rangeTiles * LevyConstants.ShootableRangeFrac * LevyConstants.Movement.AerialHoldRangeMult) { _hkAltSeen = 0; return; }
-			if (RoofOverhead()) { _hkAltSeen = 0; return; }
+			if (!melee && Aiming.TilesToHitbox(NPC.Center, seg) > rangeTiles * LevyConstants.ShootableRangeFrac * LevyConstants.Movement.AerialHoldRangeMult) { if (SoldierHooks.Debug && (Main.GameUpdateCount & 63) == 0) HookDbg($"altitude intent: target out of reach ({Aiming.TilesToHitbox(NPC.Center, seg):0.0}T > {rangeTiles * LevyConstants.ShootableRangeFrac * LevyConstants.Movement.AerialHoldRangeMult:0.0}T)"); _hkAltSeen = 0; return; }
+			if (!IsHooking && RoofOverhead()) { _hkAltSeen = 0; return; }   // on the hook the ceiling above IS the anchor
 			_hkAltSeen = Main.GameUpdateCount;
 			_hkAltY = seg.Center.Y + (melee ? 0f : LevyConstants.FiringAltitudeBelowTargetTiles * tilePx) + BodyHeight * 0.5f;
 			_hkAltX = seg.Center.X;
@@ -202,6 +211,7 @@ namespace Levy.Content.NPCs
 			HookParams hp = HookParams.For(info, NPC.width, NPC.height, js, Gravity());
 			HookPlan plan = HookPlanner.Plan(TileHookWorld.Instance, bottom, hp, goalBottom, altitude ? HookGoalKind.Altitude : HookGoalKind.Ground, nowDist);
 			SoldierHooks.PlanTs += Stopwatch.GetTimestamp() - t0; SoldierHooks.Plans++;
+			if (SoldierHooks.Debug && plan == null || (SoldierHooks.Debug && Environment.GetEnvironmentVariable("LEVY_HOOKDBG2") == "1")) foreach (var l in HookPlanner.DiagLog.Take(60)) Levy.Instance?.Logger.Info("HOOKDBG2 " + l);
 			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
 			if (plan == null || !plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)) { HookBackoff(); return; }
 			SoldierHooks.PlansFound++;
@@ -268,7 +278,11 @@ namespace Levy.Content.NPCs
 			if (_hkPhase == HookPhase.Cooldown) { if (now >= _hkNextAllowed) _hkPhase = HookPhase.Idle; return false; }
 			if (!HookUsable || !IsAlive) { HookReset(true); return false; }
 			// frozen, webbed or stoned: let go at once (the hook AI also kills itself, the real body is not pulled)
-			if (npc.HasBuff(BuffID.Frozen) || npc.HasBuff(BuffID.Webbed) || npc.HasBuff(BuffID.Stoned)) { HookLetGo(grounded, true); return false; }
+			if (npc.HasBuff(BuffID.Frozen) || npc.HasBuff(BuffID.Webbed) || npc.HasBuff(BuffID.Stoned))
+			{
+				if (_hkPhase == HookPhase.Ballistic) return false;                       // already let go: the body just falls
+				HookLetGo(grounded, true); return false;
+			}
 			_hkTicks++;
 			if ((++_hkNetTick & 3) == 0) npc.netUpdate = true; // clients see the body at the rate it is moving
 			switch (_hkPhase)
@@ -346,7 +360,7 @@ namespace Levy.Content.NPCs
 				release = (_hkHang > 0 && !keep) || _hkHang > H.HangMaxTicks || _hkTicks > H.ReelMaxTicks + H.HangMaxTicks;
 			}
 			else release = dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx || _hkTicks >= _hkPlan.ReleaseTick + 14 || _hkStall >= H.ReelStallTicks || _hkTicks > H.ReelMaxTicks;
-			if (_hkTicks > H.ReelMaxTicks + 40) release = true;
+			if (_hkTicks > H.ReelMaxTicks + 40 + (_hkPlan.Hang ? H.HangMaxTicks : 0)) release = true;
 
 			if (!HookReelFrame(release, centroid)) { HookLetGo(false, true); return true; }
 			if (release)
@@ -366,7 +380,7 @@ namespace Levy.Content.NPCs
 		/// <summary>One reel tick: the real Player.GrappleMovement on the dummy standing on the soldier. On a release tick it presses jump so vanilla lets go itself.</summary>
 		private bool HookReelFrame(bool release, Vector2 centroid)
 		{
-			using var f = SoldierOwner.Enter(this, new OwnerFrameOptions { FullSync = true });
+			using var f = SoldierOwner.Enter(this, default); // position, velocity and facing are all GrappleMovement reads
 			if (!f.Ok) return false;
 			Player d = Dummy;
 			d.controlJump = release; d.releaseJump = release;

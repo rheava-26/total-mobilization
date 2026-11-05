@@ -32,14 +32,14 @@ namespace Levy.Common
 			public const float HookTeleportPx = 40f;
 
 			// ---- planner ----
-			public const int FanRays = 24, ReleaseCandidates = 6, MaxAnchorsSimulated = 8, MaxHooksPerPlan = 2;
+			public const int FanRays = 24, ReleaseCandidates = 7, MaxAnchorsSimulated = 8, MaxHooksPerPlan = 2;
 			public const int PlanReelSimTicks = 130, PlanBallisticSimTicks = 170;
 			/// <summary>A landing this many tiles below where the soldier started is a deep drop and is refused (unless the goal itself is lower).</summary>
 			public const int MaxDropBelowStartTiles = 12;
 			/// <summary>A plan has to land this much closer to the goal (tiles) than the soldier is now, or end within <see cref="ArriveTiles"/> of it.</summary>
 			public const float MinGainTiles = 4f, ArriveTiles = 3f;
 			/// <summary>Plans started in one tick across the whole army (the search is the costly part).</summary>
-			public const int PlansPerTick = 2;
+			public const int PlansPerTick = 1;
 			/// <summary>Cheapest hook a soldier will bother to carry (reach tiles).</summary>
 			public const float MinUsefulReachTiles = 8f;
 			/// <summary>A soldier whose target hangs this many tiles above it climbs by hook (no flight kit).</summary>

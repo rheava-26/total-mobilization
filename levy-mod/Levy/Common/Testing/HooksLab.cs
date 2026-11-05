@@ -28,6 +28,7 @@ namespace Levy.Common.Testing
 	///   goal=dx:dy  tile offset from the soldier's feet tile (a standing spot); held as the MoveGoal every tick (the walking AI runs; defaults per course)
 	///   force=goalabove|wall|gap|flee   start a plan at tick 'at' toward the goal without waiting for the trigger's hold time (the matrix of hook items)
 	///   alt=dy  altitude intent for a hang dy tiles above the floor (stands in for the brain's UpdateAltitudeIntent output); altf=1 instead raises a real target for the brain
+	///   pair (a multi-hook item casts two hooks whenever it can)  all (stand-off and Spring hooks count as usable)
 	///   at=T (first start, 20)  nohook (no hook in the slot: the control run)  off (config off)  idle (hook, no goal, no trigger: cost of an idle army)  fleeing (State Routed + goal: the flee trigger)
 	///   killat=T  freezeat=T  teleat=T  (events on soldier 0)  trace
 	/// OUT: LEVY_HARNESS_OUT (summary TSV) and OUT.trace.tsv (per-tick trace of soldier 0).
@@ -57,18 +58,18 @@ namespace Levy.Common.Testing
 			public string ItemKey = ""; public int N = 1, Ticks = 300; public Dictionary<string, string> F = new();
 			public int ItemType = -1; public string ItemName = "";
 			public List<HS> Sols = new(); public int Tick; public bool Done; public string Note = "";
-			public int CeilH, GapG, WallD, BeamH = 14, LedgeH; public int At = 20;
+			public int CeilH, GapG, WallD, BeamH = 14, LedgeH, PlatH; public int At = 20;
 			public Vector2? Goal; public string Force = "";
 			public long WholeTs; public int WholeSamples;
 			public long TickTs0, ProjTs0, PlanTs0; public int TickCalls0, ProjCalls0, Plans0, Found0, Casts0, CastsOk0, Latches0, Releases0, Landings0, Aborts0, Orphans0, Sup0, Tele0;
-			public int KillsInactive, KillsTotal; public long Frames0, Refused0; public int MaxSlots; public string FpBefore = "", FpAfter = "";
+			public int KillsInactive, KillsTotal; public long Frames0, Refused0; public int MaxSlots, ActiveTicks; public long ActiveTs; public string FpBefore = "", FpAfter = "";
 			public int TargetIdx = -1; public List<string> Exc = new(); public int EventNote;
 			public int NetSkip0;
 		}
 
 		private static List<Sc> _queue = new(); private static int _qi, _stage, _stageTick; private static Sc _sc; private static CombatHarness _h;
 		private static readonly List<string> _rows = new(); private static readonly StringBuilder _trace = new(); private static long _lastTick;
-		private static string RowHeader = "idx\titem\tflags\tN\treached\treachTick0\tpeakUpT0\tcasts\tcastOk\tlatches\treleases\tlandings\taborts\torphans\tkillsOwnerInactive\tkillsTotal\tminGoalDistT0\tendDxT0\tendDyT0\tstateTick0\tmaxSlots\tframes\trefused\tprodMsPerTick\tplanMs\tplans\tplansFound\tidleCalls\twholeMsTick\tnetSuppressed\tfpUnchanged\texceptions\tnote";
+		private static string RowHeader = "idx\titem\tflags\tN\treached\treachTick0\tpeakUpT0\tcasts\tcastOk\tlatches\treleases\tlandings\taborts\torphans\tkillsOwnerInactive\tkillsTotal\tminGoalDistT0\tendDxT0\tendDyT0\tstateTick0\tmaxSlots\tframes\trefused\tprodMsPerTick\tprodMsPerHookingTick\tplanMs\tplans\tplansFound\tidleCalls\twholeMsTick\tnetSuppressed\tfpUnchanged\texceptions\tnote";
 
 		internal static void Boot(CombatHarness h)
 		{
@@ -95,9 +96,9 @@ namespace Levy.Common.Testing
 				}
 				string G(string k, string d) => s.F.TryGetValue(k, out var v) ? v : d;
 				int GI(string k, int d) => int.TryParse(G(k, ""), out int v) ? v : d;
-				s.CeilH = GI("ceil", 0); s.GapG = GI("gap", 0); s.WallD = GI("wall", 0); s.LedgeH = GI("ledge", 0); s.BeamH = GI("beamh", 14); s.At = GI("at", 20); s.Force = G("force", "");
-				if (s.CeilH == 0 && s.GapG == 0 && s.WallD == 0 && s.LedgeH == 0 && !s.F.ContainsKey("free")) s.CeilH = 15;
-				if (s.ItemKey == "ALL") foreach (int it in AllHookItems()) { var c = new Sc { ItemKey = "#" + it, N = s.N, Ticks = s.Ticks, F = new Dictionary<string, string>(s.F), CeilH = s.CeilH, GapG = s.GapG, WallD = s.WallD, BeamH = s.BeamH, LedgeH = s.LedgeH, At = s.At, Force = s.Force }; l.Add(c); }
+				s.CeilH = GI("ceil", 0); s.GapG = GI("gap", 0); s.WallD = GI("wall", 0); s.LedgeH = GI("ledge", 0); s.PlatH = GI("plat", 0); s.BeamH = GI("beamh", 14); s.At = GI("at", 20); s.Force = G("force", "");
+				if (s.CeilH == 0 && s.GapG == 0 && s.WallD == 0 && s.LedgeH == 0 && s.PlatH == 0 && !s.F.ContainsKey("free")) s.CeilH = 15;
+				if (s.ItemKey == "ALL") foreach (int it in AllHookItems()) { var c = new Sc { ItemKey = "#" + it, N = s.N, Ticks = s.Ticks, F = new Dictionary<string, string>(s.F), CeilH = s.CeilH, GapG = s.GapG, WallD = s.WallD, BeamH = s.BeamH, LedgeH = s.LedgeH, PlatH = s.PlatH, At = s.At, Force = s.Force }; l.Add(c); }
 				else l.Add(s);
 			}
 			return l;
@@ -219,6 +220,7 @@ namespace Levy.Common.Testing
 			}
 			if (s.WallD > 0) Fill(cx + s.WallD, Fy - 80, cx + s.WallD + 2, fy - 1, true);
 			if (s.LedgeH > 0) Fill(cx + LedgeX(s), fy - s.LedgeH, cx + 70, fy - 1, true);
+			if (s.PlatH > 0) Fill(cx - 1, fy - s.PlatH - 1, cx + 1, fy - s.PlatH, true);                 // a small floating platform right over the soldier, its top PlatH above the floor
 			// goal (a standing spot, feet bottom): tile offsets from the feet tile (cx, floor row)
 			string g = s.F.TryGetValue("goal", out var gv) ? gv : null;
 			if (g == null)
@@ -226,6 +228,7 @@ namespace Levy.Common.Testing
 				if (s.LedgeH > 0) g = $"{LedgeX(s) + 10}:{-s.LedgeH}";
 				else if (s.GapG > 0) g = $"{s.GapG + 12}:0";
 				else if (s.WallD > 0) g = $"{s.WallD + 8}:0";
+				else if (s.PlatH > 0) g = $"0:{-s.PlatH - 1}";
 			}
 			if (g != null && !s.F.ContainsKey("idle"))
 			{
@@ -243,14 +246,21 @@ namespace Levy.Common.Testing
 			if (s.ItemType <= 0) { s.Note = "ITEM NOT FOUND"; s.Done = true; s.Ticks = 0; return; }
 			BuildCourse(s);
 			SoldierHooks.SetOverride(s.F.ContainsKey("off") ? 0 : -1);
+			HookPlanner.PairMargin = s.F.ContainsKey("pair") ? -100000f : 4f; HookInfo.LabAllowAll = s.F.ContainsKey("all");
 			int cx = Cx;
 			Player c = Main.player[0];
 			c.active = true; c.dead = false; c.name = "LevyTester"; c.statLifeMax = c.statLifeMax2 = 500; c.statLife = 500;
-			c.position = new Vector2((cx - 90) * 16f, Fy * 16f - c.height); c.velocity = Vector2.Zero;
+			c.position = new Vector2((cx - (s.F.ContainsKey("altf") ? 4 : 90)) * 16f, Fy * 16f - c.height); c.velocity = Vector2.Zero;
 			for (int k = 0; k < s.N; k++)
 			{
 				var rec = _h.LabMakeRecord("Pvt. Lab" + k);
 				rec.LoadoutLocked = true; rec.Order = SoldierOrder.Hold; rec.HoldFire = true; rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
+				if (s.F.ContainsKey("altf"))
+				{
+					var wpn = new Item(); wpn.SetDefaults(ItemID.Minishark); rec.Gear.Weapon = wpn; rec.Gear.SetLocked(SoldierGear.SlotWeapon, true);
+					var ammo = new Item(); ammo.SetDefaults(ItemID.MusketBall); ammo.stack = 999; rec.Gear.Ammo = ammo;
+					rec.HoldFire = false; rec.Order = SoldierOrder.Follow;
+				}
 				var hook = new Item(); hook.SetDefaults(s.ItemType);
 				if (!s.F.ContainsKey("nohook")) { rec.Gear.Hook = hook; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				RosterSystem.Instance.Regulars.Add(rec);
@@ -282,7 +292,7 @@ namespace Levy.Common.Testing
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = "LevyTester"; p.statLife = p.statLifeMax2 = 500;
-			p.position = new Vector2((Cx - 90) * 16f, Fy * 16f - p.height); p.velocity = Vector2.Zero;
+			p.position = new Vector2((Cx - (s.F.ContainsKey("altf") ? 4 : 90)) * 16f, Fy * 16f - p.height); p.velocity = Vector2.Zero;
 			if (_stage == 0)
 				foreach (var sol in s.Sols) if (sol.Body != null && sol.Body.NPC.active) { sol.Body.Record.CurrentHp = sol.Body.Record.MaxHp; sol.Body.NPC.life = sol.Body.NPC.lifeMax; }
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -312,9 +322,10 @@ namespace Levy.Common.Testing
 
 		private static void Teardown(Sc s)
 		{
-			SoldierHooks.SetOverride(-1);
+			SoldierHooks.SetOverride(-1); HookPlanner.PairMargin = 4f; HookInfo.LabAllowAll = false;
 			foreach (var sol in s.Sols) { try { if (sol.Body?.NPC != null) sol.Body.NPC.noGravity = false; } catch { } }
 			_h.LabClearAll();
+			OwnerSlots.Sweep();
 			global::Levy.Common.Targeting.EnemyTargeting.EnsureSlotRestored();
 		}
 
@@ -341,7 +352,9 @@ namespace Levy.Common.Testing
 
 		private static void RunTick(Sc s)
 		{
-			if (SoldierHooks.TickCalls >= 0 && OwnerSlots.InUse > s.MaxSlots) s.MaxSlots = OwnerSlots.InUse;
+			PostEvents(s);
+			if (OwnerSlots.InUse > s.MaxSlots) s.MaxSlots = OwnerSlots.InUse;
+			{ bool any = false; for (int q = 0; q < s.Sols.Count && !any; q++) any = s.Sols[q].Body != null && s.Sols[q].Body.NPC.active && s.Sols[q].Body.IsHooking; if (any) s.ActiveTicks++; }
 			for (int si = 0; si < s.Sols.Count; si++)
 			{
 				var sol = s.Sols[si];
@@ -384,7 +397,6 @@ namespace Levy.Common.Testing
 					if (s.F.TryGetValue("killat", out var kv) && int.TryParse(kv, out int kt))
 					{
 						if (s.Tick == kt) { s.Note += $"preKill(state={st},slots={OwnerSlots.InUse}) "; try { n.SimpleStrikeNPC(99999, 0, false, 0f, null, false, 0f, true); } catch (Exception e) { s.Exc.Add("kill:" + e.Message); } }
-						if (s.Tick == kt + 6) s.Note += $"afterDeath(npcActive={n.active},hooksAlive={AnyHooks()},slots={OwnerSlots.InUse}) ";
 					}
 					if (s.F.TryGetValue("freezeat", out var fv) && int.TryParse(fv, out int ft))
 					{
@@ -397,6 +409,16 @@ namespace Levy.Common.Testing
 						if (s.Tick == tt + 4) s.Note += $"afterTele(state={b.HookState},hooksAlive={AnyHooks()}) ";
 					}
 				}
+			}
+		}
+
+		/// <summary>Events that outlive the soldier: after a kill the hooks must be gone and the slot free.</summary>
+		private static void PostEvents(Sc s)
+		{
+			if (s.F.TryGetValue("killat", out var kv) && int.TryParse(kv, out int kt) && s.Tick == kt + 6)
+			{
+				var b = s.Sols.Count > 0 ? s.Sols[0].Body : null;
+				s.Note += $"afterDeath(npcActive={b?.NPC.active},hooksAlive={AnyHooks()},slotsInUse={OwnerSlots.InUse}) ";
 			}
 		}
 
@@ -421,9 +443,9 @@ namespace Levy.Common.Testing
 			return string.Join("\t", idx, s.ItemName, flags, s.N, reached + "/" + s.Sols.Count(x => x.Body != null), a.ReachTick, F(a.PeakUp),
 				casts, castOk, SoldierHooks.Latches - s.Latches0, SoldierHooks.Releases - s.Releases0, SoldierHooks.Landings - s.Landings0, SoldierHooks.Aborts - s.Aborts0, SoldierHooks.OrphanKills - s.Orphans0, s.KillsInactive, s.KillsTotal,
 				a.MinGoalDist == float.MaxValue ? "-" : F(a.MinGoalDist), a.Body != null ? F((a.Body.NPC.Bottom.X - a.Start.X) / 16f) : "-", a.Body != null ? F((a.Body.NPC.Bottom.Y - a.Start.Y) / 16f) : "-", a.FirstStateTick,
-				s.MaxSlots, SoldierOwner.Frames - s.Frames0, SoldierOwner.Refused - s.Refused0, F(Ms(prodTs, ticks)), F(Ms(SoldierHooks.PlanTs - s.PlanTs0, Math.Max(1, SoldierHooks.Plans - s.Plans0))), SoldierHooks.Plans - s.Plans0, SoldierHooks.PlansFound - s.Found0,
+				s.MaxSlots, SoldierOwner.Frames - s.Frames0, SoldierOwner.Refused - s.Refused0, F(Ms(prodTs, ticks)), F(Ms(prodTs, Math.Max(1, s.ActiveTicks))), F(Ms(SoldierHooks.PlanTs - s.PlanTs0, Math.Max(1, SoldierHooks.Plans - s.Plans0))), SoldierHooks.Plans - s.Plans0, SoldierHooks.PlansFound - s.Found0,
 				(SoldierHooks.TickCalls - s.TickCalls0) + (SoldierHooks.ProjCalls - s.ProjCalls0), F(Ms(s.WholeTs, s.WholeSamples)), SoldierHooks.NetSuppressed - s.Sup0, s.FpBefore == s.FpAfter ? "yes" : "NO:" + s.FpBefore + " != " + s.FpAfter,
-				s.Exc.Count == 0 ? "-" : Clean(string.Join(" | ", s.Exc)), Clean(s.Note + $"maxHooksAlive={a.MaxHooksAlive} maxSpeed={F(a.MaxSpeed)} " + (s.F.ContainsKey("nohook") ? "" : $"sol0:casts={a.Body?.HkCasts} latch={a.Body?.HkLatches} rel={a.Body?.HkReleases} land={a.Body?.HkLandings} abort={a.Body?.HkAborts} ") + $"netSkip={NetThreadGuard.SkippedPasses}"));
+				s.Exc.Count == 0 ? "-" : Clean(string.Join(" | ", s.Exc)), Clean(s.Note + $"maxHooksAlive={a.MaxHooksAlive} maxSpeed={F(a.MaxSpeed)} " + (s.F.ContainsKey("nohook") ? "" : $"reason={a.Body?.HookLastReason} sol0:casts={a.Body?.HkCasts} latch={a.Body?.HkLatches} rel={a.Body?.HkReleases} land={a.Body?.HkLandings} abort={a.Body?.HkAborts} ") + $"netSkip={NetThreadGuard.SkippedPasses}"));
 		}
 
 		private static void Write()

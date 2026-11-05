@@ -29,7 +29,9 @@ namespace Levy.Common.Movement
 		public HookInfo(bool isHook, float reachPx, float pullPx, int count, HookKind kind) { IsHook = isHook; ReachPx = reachPx; PullPx = pullPx; Count = count; Kind = kind; }
 
 		/// <summary>A hook a soldier can plan with.</summary>
-		public bool Usable => IsHook && Kind != HookKind.StandOff && Kind != HookKind.Spring && ReachPx >= LevyConstants.Hooks.MinUsefulReachTiles * 16f;
+		public bool Usable => IsHook && (LabAllowAll || (Kind != HookKind.StandOff && Kind != HookKind.Spring)) && ReachPx >= LevyConstants.Hooks.MinUsefulReachTiles * 16f;
+		/// <summary>HARNESS: treat the stand-off and Spring hooks as usable too (to exercise their code paths).</summary>
+		public static bool LabAllowAll;
 
 		/// <summary>Armory ranking: reach first, then pull, then how many hooks it holds.</summary>
 		public float Score => !Usable ? -1f : ReachPx + PullPx * 8f + Math.Min(Count, LevyConstants.Hooks.MaxHooksPerPlan) * 12f;

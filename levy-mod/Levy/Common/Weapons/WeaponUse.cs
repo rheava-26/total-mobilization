@@ -477,13 +477,13 @@ namespace Levy.Common.Weapons
 			object thoriumPrev = null;
 			try
 			{
-				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): Thorium's local-player cache -> the dummy's ThoriumPlayer
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
 				d.whoAmI = OwnerFor(s);
 				d.Center = s.NPC.Center;
 				d.direction = s.NPC.direction == 0 ? 1 : s.NPC.direction;
 				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
 				d.selectedItem = 0;
+				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): SetLocalThoriumPlayer(dummy's) AFTER d.whoAmI == Main.myPlayer (its own guard)
 				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
 				// Hold-to-fire weapons (modded channeled guns) only spawn their shot while the owner's use button is down: the soldier is firing.
 				d.controlUseItem = true;

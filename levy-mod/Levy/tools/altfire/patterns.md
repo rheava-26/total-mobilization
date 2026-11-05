@@ -33,6 +33,7 @@ So today the alt is chosen by dice, not by the situation. Whether that is good d
 * **Many "alt" weapons never reach the alt.** 70 of the 102 Calamity rows are not in Gun/Bow/Magic, so `AltEligible` is false. Examples: all Draedon holdouts (Nidhogg, Vulcan, Phalanx Surge, Auger...), the Biome Blade family, Ark family, Exoblade, Hellkite, Ontological Despoiler, Hellborn, Drataliornus.
 * **19 Calamity items use the right mouse button without `AltFunctionUse`** (they read `CalamityPlayer.mouseRight`: Omicron, Wingman, Scorpio, Halley's Inferno, Oathblades, Devil's Devastation, Molten Amputator, Nanoblack Reaper, Firestorm/Spectralstorm Cannon, Perdition, Wulfrum Controller, ...). `AltFunctionUse` is false for them, so the alt path ignores them. Reaching them needs a separate "set mouseRight on the dummy" hook (see `HOLD_VARIANT`).
 * **Holdout weapons read `mouseRight` when the holdout spawns** (Nidhogg, Phalanx Surge, Hellborn, Surge Driver, Photoviscerator, Apoctosis Array, Ion Blaster...). Setting `altFunctionUse = 2` is not enough; the Calamity player's `mouseRight` flag must also be true during the Shoot call. The prototype sets it by reflection.
+* **Mouse-position alts are aimed at nothing.** Levy never sets `Main.MouseWorld` or `CalamityPlayer.mouseWorld` for the dummy. Items that read them (Frigidflash Bolt steers its ball to the cursor, Face Melter places its amplifier at `ClampedMouseWorld`, Alpha Draconis, Chrono/Forest Ocarina, Holophonor, Valadium Slicer, Glacial Embrace...) misbehave: Frigidflash Bolt did 0 damage with either button in the harness and Face Melter's amplifier alt measured -17% to -24%. Policy rows for `PLACE_TARGET` items are only as good as an **aim-point hook** that sets both values to the soldier's target around the Shoot call.
 * **Coin weapons** (Crackshot Colt, Midas Prime) need `player.CanAfford(...)` for the alt. The dummy has no money, so the alt is always refused and silently falls back to the primary. That is harmless but the ricochet combo (toss coin, then shoot it) never happens.
 * **Wulfrum Knife** has `AltFunctionUse => false`; its recall is a `controlUseTile` check in `HoldItem`. Not reachable through the alt path.
 * **Dark Gate (Thorium)** does not use `AltFunctionUse` either: see section 6.
@@ -102,9 +103,9 @@ One policy per pattern. All use `Ready` and, for magic, the existing mana-save r
 
 | Policy | Fires the alt when | Why | Fits `AltUseChance` path? |
 |---|---|---|---|
-| `ALT_HEAVY` | `Tough` and `minDist <= Dist <= maxDist`. Against trash: 10% | Slow/bigger shots are for armoured or boss targets; vs small enemies the fast primary kills more per second | **Yes** (replace the dice by a gate) |
-| `ALT_AOE` | `Crowd(radius) >= minEnemies` and `minDist <= Dist <= maxDist`. Self-centred rings use `maxDist` small | Grenades, rings and clouds are wasted on one target | **Yes** |
-| `ALT_RATE` | `Dist <= maxDist` (inside the accuracy range of the turbo mode) | A cadence alt is a strict gain inside its range | **Yes** |
+| `ALT_HEAVY` | `Tough` and `minDist <= Dist <= maxDist`. Against trash: 10% | Slow/bigger shots are for armoured or boss targets. Harness: Animosity's marking round gained as much against a pack (+71%) as against a boss (+29%), so rows are set from the measurement, not from the label (`ALT_MIX p=0.8`) | **Yes** (replace the dice by a gate) |
+| `ALT_AOE` | `Crowd(radius) >= minEnemies` and `minDist <= Dist <= maxDist`. Self-centred rings use `maxDist` small | Grenades, rings and clouds are wasted on one target. Harness: Corinth Prime's grenade loses 75-79% even against a six-enemy pack, so it is `NEVER`; Leviatitan's meteor wins by 23-34% in both | **Yes** |
+| `ALT_RATE` | `Dist <= maxDist` | Intended for cadence alts. **The harness disproved the assumption that a turbo alt is a gain**: Plasma Caster and Plasma Rifle lose 23-31% when the alt is used, so their rows are `NEVER`. Keep the policy id for weapons where a measurement shows a gain | **Yes** |
 | `ALT_FAR` | `Dist >= minDist` | Melee swords: the alt is a ranged poke for when the target is out of reach | **Yes**, once melee is eligible |
 | `ALT_ALWAYS` | Always | The alt is the weapon's only ranged attack (Terrarian's Last Knife) | **Yes** |
 | `ALT_MIX` | Probability `p` each time the dice allow it | Generic default for unlisted alts and for "same as left" alts. p = 0.4 | **Yes** (this is today's behaviour with a lower p) |
@@ -123,9 +124,9 @@ One policy per pattern. All use `Ready` and, for magic, the existing mana-save r
 
 Summary of what needs what, over the 191 rows:
 
-* **A** (fits the existing path with a gate, no new state): 67 rows (25 Calamity, 42 Thorium) that are reachable today.
-* **B** (needs a hook): 8 reachable rows (meters, holdouts, coins, portal).
-* **C** (not reachable until melee/held/summon families are alt-eligible): 116 rows.
+* **A** (reachable today, fits the existing path with a gate and no new state): 67 rows (25 Calamity, 42 Thorium).
+* **B** (reachable today, needs a hook: meters, holdouts, coins, portal): 8 rows (7 Calamity, 1 Thorium).
+* **C** (not reachable through the alt path: the item is not Gun/Bow/Magic, has no `AltFunctionUse`, or is a mouseRight-only item): 116 rows (70 Calamity, 46 Thorium). A few of these are Gun/Bow/Magic items whose only right-click is a mode cycler or utility (policy `NEVER`).
 
 ## 5. Proposed C# shape
 
@@ -170,7 +171,8 @@ if (s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg ?? s.Target)) return f
 The two extra hooks:
 
 1. `HoldVariant`: `AltPolicies.BeforeShoot(s, item)` and `AfterShoot` set/clear `CalamityPlayer.mouseRight` on the dummy around `TryRealShoot` (one reflection-cached field accessor; the same shape as the existing owner-puppet bits).
-2. `MeterReady`/`ManaRefill`/`AllyHeal`/`PortalUse` read soldier or ally state. Meter names come from the TSV, resolved by reflection once per item type.
+2. `AimPoint`: set `Main.mouseX/Y` (or `Main.MouseWorld` source) and `CalamityPlayer.mouseWorld` on the dummy to the target during the Shoot call, so every cursor-placed alt lands on the enemy.
+3. `MeterReady`/`ManaRefill`/`AllyHeal`/`PortalUse` read soldier or ally state. Meter names come from the TSV, resolved by reflection once per item type.
 
 Data file: embed `tools/altfire/*_altfire_items.tsv` columns `item, mod, policy, params` as `Common/Weapons/AltPolicies.tsv`. Editing policy is then a data change, not a code change. A generic ALT_MIX default means a new alt weapon works with no row at all.
 
@@ -201,7 +203,7 @@ Implementation notes: needs a small `PortalUse` hook (find `DarkGatePro` project
 ## 7. What to ship first
 
 1. Move the dice into `AltPolicies.Want` with the **generic default** only (`ALT_MIX p=0.4`) and the `NEVER` list (mode cyclers and dismiss-only alts: Aura Staff, Midnight Staff, Feather Barrier Rod, War Forger, Snow White...). That alone removes the cases where a levy cancels its own support.
-2. Add the A-class rows (`ALT_AOE`, `ALT_HEAVY`, `ALT_RATE`, `DETONATE`, `PLACE`) for the 33 Calamity and 42 Thorium reachable weapons, tuned by `harness_results.md`.
+2. Add the A-class rows (`ALT_AOE`, `ALT_HEAVY`, `ALT_RATE`, `DETONATE`, `PLACE`) for the 25 Calamity and 42 Thorium reachable A-class weapons, set per weapon from `harness_results.md` (the 16 measured rows already are).
 3. Gate-before-probe fix for Hydra and any future side-effect probe.
 4. Hooks: `HoldVariant`, `MeterReady`, then `PortalUse`.
 5. Only then open melee/held eligibility for `GUARD`, `DASH_CLOSE`, `ALT_FAR`.

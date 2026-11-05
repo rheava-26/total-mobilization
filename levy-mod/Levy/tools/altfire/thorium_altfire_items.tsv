@@ -44,13 +44,13 @@ GatewayGlass	ThoriumMod	Utility	Unsupported	N	UTILITY	NEVER		teleport home/spawn
 WishingGlass	ThoriumMod	Utility	?	N	UTILITY	NEVER		teleport to chosen target	choose target	none	C
 SoulAnchor	ThoriumMod	Utility	Unsupported	N	UTILITY	NEVER		set anchor	teleport back to the anchor	anchorLocation set; no RevivalExhaustion	C
 BloomingBow	ThoriumMod	Ranged	Bow	Y	DETONATE_RECALL	DETONATE	proj=BloomingBowPro;minOut=3	flower arrows	pop the planted flowers (no ammo)	flowers out	A
-OmniCannon	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_HEAVY	tough=1;minDist=8;maxDist=40	rapid bursts (2 tick)	slow 20-tick heavy shot	ammo	A
+OmniCannon	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_MIX	p=0.4	rapid bursts (2 tick)	slow 20-tick heavy shot	ammo	A
 BuffaloLauncher	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=8;minDist=8	rockets	slower alternate rocket projectile	rocket ammo	A
 LittleRed	ThoriumMod	Ranged	Gun	Y	HELD_VARIANT	NEVER		pistol shots	channelled charge shot with no ammo	channel	A
 PhantomArmCannon	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	channelled burst cannon	single shot (30 tick reuse)	channel on left	A
 PillPopper	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_HEAVY	tough=1;minDist=6;maxDist=35	pill shots	slower variant, 32 tick reuse	pill ammo	A
 Shockbuster	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	rifle shot	alternate shock shot	battery ammo	A
-SnarkyGun	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_RATE	maxDist=20	bullets	2x fire rate, no ammo used	none	A
+SnarkyGun	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_MIX	p=0.4	bullets	2x fire rate, no ammo used	none	A
 TranquilizerGun	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	NEVER		dart	25% damage tranquilizer dart (crowd control)	dart ammo	A
 OmegaBlaster	ThoriumMod	Magic	Magic	Y	RESOURCE_SPECIAL	METER_READY	meter=itemOmegaBlasterCharge;min=600;tough=1	channelled beam	release the stored charge	charge>=600; not already active	A
 BoreanFangStaff	ThoriumMod	Magic	Magic	Y	DETONATE_RECALL	DETONATE	proj=BoreanFangStaffPro2;minOut=2;needEnemyAtCursor=1	fang volley	detonate planted fangs on an enemy near the cursor	fangs out and an enemy near the cursor	A

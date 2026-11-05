@@ -1,0 +1,520 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## SCENARIO A_noArmor_ammoYes
+  -- after first issue
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/MycelialClaws | Broadsword/melee | 28 7 0 2 20000 | 310.1
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Avalanche | Broadsword/melee | 75 35 0 5 200000 | 194.4
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    ThoriumMod/BackStabber | Broadsword/melee | 29 14 0 4 75000 | 178.4
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 58.8
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 49.0
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Minishark[Gun/ranged sc=141] | Musket[Gun/ranged sc=75] | Phoenix Blaster[Gun/ranged sc=167] | Muramasa[Broadsword/melee sc=105] | Bee Keeper[Broadsword/melee sc=124] | Light's Bane[Broadsword/melee sc=59] | Starfury[Broadsword/melee sc=49] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Flower of Fire[Magic/magic sc=192] | Cobalt Repeater[Bow/ranged sc=227] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/ShinobiBlade[Magic/none sc=197] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | CalamityMod/Avalanche[Broadsword/melee sc=194] | CalamityMod/Needler[Gun/ranged sc=298] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | ThoriumMod/ThoriumWand[Magic/none sc=240] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/HoneySuckle[Magic/none sc=240] | ThoriumMod/BackStabber[Broadsword/melee sc=178]
+
+## SCENARIO B_noArmor_NOammo
+  -- after first issue
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 105: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 107: weapon=Flower of Fire[Magic/magic sc=192] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/ThoriumWand[Magic/none sc=240] side=Starfury[Broadsword/melee sc=49] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, MycelialClaws x1, MythrilStaff x1, SpeedBlaster x1, Flower of Fire x1, ThoriumWand x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 105: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 107: weapon=ThoriumMod/HoneySuckle[Magic/none sc=240] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/ThoriumWand[Magic/none sc=240] side=Starfury[Broadsword/melee sc=49] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, MycelialClaws x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=none head=-
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 105: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 107: weapon=ThoriumMod/HoneySuckle[Magic/none sc=240] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/ThoriumWand[Magic/none sc=240] side=Starfury[Broadsword/melee sc=49] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, MycelialClaws x1, MythrilStaff x1, SpeedBlaster x1, HoneySuckle x1, ThoriumWand x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/MycelialClaws | Broadsword/melee | 28 7 0 2 20000 | 310.1
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Avalanche | Broadsword/melee | 75 35 0 5 200000 | 194.4
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    ThoriumMod/BackStabber | Broadsword/melee | 29 14 0 4 75000 | 178.4
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    Night's Edge | Broadsword/melee | 45 25 0 3 200000 | 150.3
+    ThoriumMod/PinkPhaseblade | Broadsword/melee | 36 18 0 1 27000 | 148.5
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Minishark[Gun/ranged sc=141] | Musket[Gun/ranged sc=75] | Clockwork Assault Rifle[Gun/ranged sc=341] | Phoenix Blaster[Gun/ranged sc=167] | Flower of Fire[Magic/magic sc=192] | Muramasa[Broadsword/melee sc=105] | Night's Edge[Broadsword/melee sc=150] | Bee Keeper[Broadsword/melee sc=124] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Cobalt Repeater[Bow/ranged sc=227] | Mythril Repeater[Bow/ranged sc=264] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/ShinobiBlade[Magic/none sc=197] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | CalamityMod/Avalanche[Broadsword/melee sc=194] | CalamityMod/Needler[Gun/ranged sc=298] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/BackStabber[Broadsword/melee sc=178] | ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148]
+
+## SCENARIO C_classArmors_ammoYes
+  -- after first issue
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=magic head=Mythril Hood
+  soldier 102: weapon=CalamityMod/Needler[Gun/ranged sc=298] side=CalamityMod/Avalanche[Broadsword/melee sc=194] armorClass=ranged head=Mythril Hat
+  soldier 103: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=ThoriumMod/BackStabber[Broadsword/melee sc=178] armorClass=summon head=Bee Headgear
+  soldier 104: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 105: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 106: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=Mythril Repeater[Bow/ranged sc=264] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  tally: Mythril Sword x1, MythrilStaff x1, Needler x1, ShinobiBlade x1, Cobalt Naginata x1, Palladium Sword x1, Cobalt Sword x1, SpeedBlaster x1, Mythril Repeater x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=magic head=Mythril Hood
+  soldier 102: weapon=CalamityMod/Needler[Gun/ranged sc=298] side=CalamityMod/Avalanche[Broadsword/melee sc=194] armorClass=ranged head=Mythril Hat
+  soldier 103: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=ThoriumMod/BackStabber[Broadsword/melee sc=178] armorClass=summon head=Bee Headgear
+  soldier 104: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 105: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 106: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=Mythril Repeater[Bow/ranged sc=264] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  tally: Mythril Sword x1, MythrilStaff x1, Needler x1, ShinobiBlade x1, Cobalt Naginata x1, Palladium Sword x1, Cobalt Sword x1, SpeedBlaster x1, Mythril Repeater x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=CalamityMod/MycelialClaws[Broadsword/melee sc=310] armorClass=magic head=Mythril Hood
+  soldier 102: weapon=CalamityMod/Needler[Gun/ranged sc=298] side=CalamityMod/Avalanche[Broadsword/melee sc=194] armorClass=ranged head=Mythril Hat
+  soldier 103: weapon=CalamityMod/ShinobiBlade[Magic/none sc=197] side=ThoriumMod/BackStabber[Broadsword/melee sc=178] armorClass=summon head=Bee Headgear
+  soldier 104: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 105: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 106: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  soldier 108: weapon=Mythril Repeater[Bow/ranged sc=264] side=Light's Bane[Broadsword/melee sc=59] armorClass=none head=-
+  tally: Mythril Sword x1, MythrilStaff x1, Needler x1, ShinobiBlade x1, Cobalt Naginata x1, Palladium Sword x1, Cobalt Sword x1, SpeedBlaster x1, Mythril Repeater x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    Night's Edge | Broadsword/melee | 45 25 0 3 200000 | 150.3
+    ThoriumMod/PinkPhaseblade | Broadsword/melee | 36 18 0 1 27000 | 148.5
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    Volcano | Broadsword/melee | 40 40 0 3 27000 | 81.4
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 49.0
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Minishark[Gun/ranged sc=141] | Musket[Gun/ranged sc=75] | Clockwork Assault Rifle[Gun/ranged sc=341] | Phoenix Blaster[Gun/ranged sc=167] | Volcano[Broadsword/melee sc=81] | Muramasa[Broadsword/melee sc=105] | Night's Edge[Broadsword/melee sc=150] | Bee Keeper[Broadsword/melee sc=124] | Starfury[Broadsword/melee sc=49] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Flower of Fire[Magic/magic sc=192] | Cobalt Repeater[Bow/ranged sc=227] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | ThoriumMod/ThoriumWand[Magic/none sc=240] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/HoneySuckle[Magic/none sc=240] | ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148]
+
+## SCENARIO D_rogueOnlyStock_then_upgrade
+  -- after first issue
+  soldier 100: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: WulfrumKnife x9
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: WulfrumKnife x9
+  -- after UpgradeWeapons
+  soldier 100: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: WulfrumKnife x9
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 101: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 102: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 103: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 104: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 105: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 106: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 107: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  soldier 108: weapon=CalamityMod/WulfrumKnife[Magic/none sc=71] side=- armorClass=none head=-
+  tally: WulfrumKnife x9
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/MycelialClaws | Broadsword/melee | 28 7 0 2 20000 | 310.1
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Avalanche | Broadsword/melee | 75 35 0 5 200000 | 194.4
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    ThoriumMod/BackStabber | Broadsword/melee | 29 14 0 4 75000 | 178.4
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    Night's Edge | Broadsword/melee | 45 25 0 3 200000 | 150.3
+    ThoriumMod/PinkPhaseblade | Broadsword/melee | 36 18 0 1 27000 | 148.5
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    Volcano | Broadsword/melee | 40 40 0 3 27000 | 81.4
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 73.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 58.8
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 49.0
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Minishark[Gun/ranged sc=141] | Musket[Gun/ranged sc=75] | Clockwork Assault Rifle[Gun/ranged sc=341] | Phoenix Blaster[Gun/ranged sc=167] | Volcano[Broadsword/melee sc=81] | Muramasa[Broadsword/melee sc=105] | Night's Edge[Broadsword/melee sc=150] | Blade of Grass[Broadsword/melee sc=73] | Bee Keeper[Broadsword/melee sc=124] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumKnife[Magic/none sc=71] | Light's Bane[Broadsword/melee sc=59] | Starfury[Broadsword/melee sc=49] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Flower of Fire[Magic/magic sc=192] | Cobalt Sword[Broadsword/melee sc=659] | Mythril Sword[Broadsword/melee sc=756] | Cobalt Repeater[Bow/ranged sc=227] | Mythril Repeater[Bow/ranged sc=264] | Cobalt Naginata[Spear/melee sc=570] | Palladium Sword[Broadsword/melee sc=588] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/ShinobiBlade[Magic/none sc=197] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | CalamityMod/MycelialClaws[Broadsword/melee sc=310] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | CalamityMod/Avalanche[Broadsword/melee sc=194] | CalamityMod/SpeedBlaster[Magic/ranged sc=363] | CalamityMod/Needler[Gun/ranged sc=298] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | ThoriumMod/MythrilStaff[Magic/magic sc=345] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | ThoriumMod/ThoriumWand[Magic/none sc=240] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/HoneySuckle[Magic/none sc=240] | ThoriumMod/BackStabber[Broadsword/melee sc=178] | ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148]
+
+## SCENARIO E_meleeArmorOnly
+  -- after first issue
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Mythril Sword[Broadsword/melee sc=756] side=- armorClass=melee head=Mythril Helmet
+  soldier 101: weapon=Cobalt Naginata[Spear/melee sc=570] side=- armorClass=none head=-
+  soldier 102: weapon=Cobalt Sword[Broadsword/melee sc=659] side=- armorClass=none head=-
+  soldier 103: weapon=Palladium Sword[Broadsword/melee sc=588] side=- armorClass=none head=-
+  soldier 104: weapon=Clockwork Assault Rifle[Gun/ranged sc=341] side=Night's Edge[Broadsword/melee sc=150] armorClass=none head=-
+  soldier 105: weapon=CalamityMod/SpeedBlaster[Magic/ranged sc=363] side=ThoriumMod/PinkPhaseblade[Broadsword/melee sc=148] armorClass=none head=-
+  soldier 106: weapon=CalamityMod/MycelialClaws[Broadsword/melee sc=310] side=- armorClass=none head=-
+  soldier 107: weapon=Mythril Repeater[Bow/ranged sc=264] side=Volcano[Broadsword/melee sc=81] armorClass=none head=-
+  soldier 108: weapon=ThoriumMod/MythrilStaff[Magic/magic sc=345] side=Blade of Grass[Broadsword/melee sc=73] armorClass=none head=-
+  tally: Mythril Sword x1, Cobalt Naginata x1, Cobalt Sword x1, Palladium Sword x1, Clockwork Assault Rifle x1, SpeedBlaster x1, MycelialClaws x1, Mythril Repeater x1, MythrilStaff x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Mythril Sword | Broadsword/melee | 70 8 0 4 103500 | 756.3
+    Cobalt Sword | Broadsword/melee | 69 9 0 4 69000 | 659.4
+    Palladium Sword | Broadsword/melee | 150 22 0 4 92000 | 588.5
+    Cobalt Naginata | Spear/melee | 60 9 0 4 45000 | 570.5
+    CalamityMod/SpeedBlaster | Magic/ranged | 40 10 0 5 200000 | 362.9
+    ThoriumMod/MythrilStaff | Magic/magic | 40 3 28 4 90000 | 345.2
+    Clockwork Assault Rifle | Gun/ranged | 24 4 14 4 150000 | 340.6
+    CalamityMod/MycelialClaws | Broadsword/melee | 28 7 0 2 20000 | 310.1
+    CalamityMod/Needler | Gun/ranged | 52 18 0 4 100000 | 297.6
+    ThoriumMod/PalladiumSMG | Gun/ranged | 23 10 0 4 80000 | 284.4
+    Mythril Repeater | Bow/ranged | 39 16 0 4 90000 | 264.3
+    ThoriumMod/CobaltRevolver | Gun/ranged | 32 14 0 4 60000 | 257.6
+    ThoriumMod/HitScanner | Gun/ranged | 26 12 0 3 27000 | 244.3
+    ThoriumMod/ThoriumWand | Magic/none | -1 22 0 1 14000 | 240.0
+    ThoriumMod/DarkMageStaff | Magic/none | -1 10 0 2 15000 | 240.0
+    ThoriumMod/HoneySuckle | Magic/none | -1 24 0 3 10000 | 240.0
+    ThoriumMod/EnergyStormBolter | Gun/ranged | 18 10 0 3 25000 | 227.8
+    Cobalt Repeater | Bow/ranged | 35 17 0 4 60000 | 227.3
+    Hellwing Bow | Bow/ranged | 22 13 0 3 125000 | 204.4
+    ThoriumMod/ChampionsTrifectaShot | Bow/ranged | 40 20 0 3 25000 | 203.4
+    CalamityMod/ShinobiBlade | Magic/none | 24 10 0 3 50000 | 197.0
+    CalamityMod/Avalanche | Broadsword/melee | 75 35 0 5 200000 | 194.4
+    CalamityMod/Archerfish | Gun/ranged | 16 11 0 3 50000 | 194.0
+    Flower of Fire | Magic/magic | 37 16 0 3 125000 | 192.0
+    ThoriumMod/CobaltStaff | Magic/magic | 40 18 0 4 60000 | 190.8
+    ThoriumMod/BackStabber | Broadsword/melee | 29 14 0 4 75000 | 178.4
+    Phoenix Blaster | Gun/ranged | 30 20 0 3 175000 | 166.8
+    CalamityMod/Mycoroot | Magic/none | 12 6 0 2 20000 | 155.0
+    CalamityMod/TaintedBlade | Broadsword/melee | 48 27 0 3 50000 | 145.9
+    CalamityMod/Cinquedea | Magic/none | 35 20 0 3 100000 | 144.9
+    Minishark | Gun/ranged | 4 8 0 2 350000 | 140.9
+    CalamityMod/BloodBath | Magic/magic | 24 15 0 3 50000 | 131.3
+    CalamityMod/AbyssShocker | Magic/magic | 30 19 0 3 50000 | 129.6
+    CalamityMod/SludgeSplotch | Magic/none | 30 18 0 2 20000 | 129.2
+    CalamityMod/SaharaSlicers | Magic/melee | 20 12 0 2 20000 | 129.2
+    CalamityMod/Tradewinds | Magic/magic | 23 15 0 3 50000 | 125.9
+    Boomstick | Gun/ranged | 11 40 0 2 100000 | 124.7
+    Bee Keeper | Broadsword/melee | 30 20 0 3 100000 | 124.2
+    Molten Fury | Bow/ranged | 31 28 0 3 27000 | 119.2
+    Demon Scythe | Magic/magic | 28 20 0 3 75000 | 115.5
+    CalamityMod/WindBlade | Broadsword/melee | 30 22 0 3 50000 | 111.9
+    CalamityMod/BlackAnurian | Magic/magic | 24 18 0 3 50000 | 109.4
+    Water Bolt | Magic/magic | 23 17 0 2 75000 | 106.7
+    CalamityMod/TeardropCleaver | Broadsword/melee | 33 24 0 2 20000 | 106.6
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4
+    CalamityMod/Shadethrower | Gun/ranged | 21 10 0 3 50000 | 103.4
+    CalamityMod/Fungicide | Gun/ranged | 19 22 0 2 20000 | 102.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Flamelash | Magic/magic | 36 30 0 3 125000 | 99.6
+    CalamityMod/BurntSienna | Broadsword/melee | 32 24 0 1 10000 | 97.6
+    CalamityMod/Eviscerator | Gun/ranged | 60 60 0 3 50000 | 95.8
+    CalamityMod/StormSurge | Magic/ranged | 18 18 0 2 20000 | 77.5
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Bee Gun | Magic/magic | 11 12 0 2 100000 | 72.6
+    CalamityMod/WulfrumKnife | Magic/none | 11 4 24 1 10000 | 71.0
+    Demon Bow | Bow/ranged | 12 25 0 1 18000 | 65.0
+    Light's Bane | Broadsword/melee | 16 20 0 1 13500 | 58.8
+    CalamityMod/GildedDagger | Magic/none | 14 18 0 1 10000 | 56.9
+    CalamityMod/UrchinStinger | Magic/none | 13 17 0 1 10000 | 56.0
+    CalamityMod/WulfrumProsthesis | Magic/magic | 18 24 0 1 10000 | 54.9
+    Starfury | Broadsword/melee | 25 40 0 2 50000 | 49.0
+    CalamityMod/Kylie | Magic/none | 12 25 0 1 10000 | 35.1
+    CalamityMod/WulfrumScrewdriver | Boomerang/melee | 12 24 0 1 10000 | 29.3
+    CalamityMod/WulfrumBlunderbuss | Magic/ranged | 11 55 0 1 10000 | 14.6
+  left on shelves: Minishark[Gun/ranged sc=141] | Musket[Gun/ranged sc=75] | Phoenix Blaster[Gun/ranged sc=167] | Muramasa[Broadsword/melee sc=105] | Bee Keeper[Broadsword/melee sc=124] | Light's Bane[Broadsword/melee sc=59] | Starfury[Broadsword/melee sc=49] | Demon Bow[Bow/ranged sc=65] | Molten Fury[Bow/ranged sc=119] | Hellwing Bow[Bow/ranged sc=204] | Space Gun[Magic/magic sc=100] | Water Bolt[Magic/magic sc=107] | Demon Scythe[Magic/magic sc=116] | Bee Gun[Magic/magic sc=73] | Flamelash[Magic/magic sc=100] | Flower of Fire[Magic/magic sc=192] | Cobalt Repeater[Bow/ranged sc=227] | Boomstick[Gun/ranged sc=125] | CalamityMod/WulfrumKnife[Magic/none sc=71] | CalamityMod/WulfrumBlunderbuss[Magic/ranged sc=15] | CalamityMod/WulfrumProsthesis[Magic/magic sc=55] | CalamityMod/WulfrumScrewdriver[Boomerang/melee sc=29] | CalamityMod/Kylie[Magic/none sc=35] | CalamityMod/GildedDagger[Magic/none sc=57] | CalamityMod/UrchinStinger[Magic/none sc=56] | CalamityMod/ShinobiBlade[Magic/none sc=197] | CalamityMod/Cinquedea[Magic/none sc=145] | CalamityMod/SludgeSplotch[Magic/none sc=129] | CalamityMod/Mycoroot[Magic/none sc=155] | CalamityMod/Archerfish[Gun/ranged sc=194] | CalamityMod/Shadethrower[Gun/ranged sc=103] | CalamityMod/Fungicide[Gun/ranged sc=102] | CalamityMod/Eviscerator[Gun/ranged sc=96] | CalamityMod/TaintedBlade[Broadsword/melee sc=146] | CalamityMod/BloodBath[Magic/magic sc=131] | CalamityMod/AbyssShocker[Magic/magic sc=130] | CalamityMod/Tradewinds[Magic/magic sc=126] | CalamityMod/BlackAnurian[Magic/magic sc=109] | CalamityMod/StormSurge[Magic/ranged sc=78] | CalamityMod/SaharaSlicers[Magic/melee sc=129] | CalamityMod/TeardropCleaver[Broadsword/melee sc=107] | CalamityMod/WindBlade[Broadsword/melee sc=112] | CalamityMod/BurntSienna[Broadsword/melee sc=98] | CalamityMod/Avalanche[Broadsword/melee sc=194] | CalamityMod/Needler[Gun/ranged sc=298] | ThoriumMod/HitScanner[Gun/ranged sc=244] | ThoriumMod/EnergyStormBolter[Gun/ranged sc=228] | ThoriumMod/ChampionsTrifectaShot[Bow/ranged sc=203] | ThoriumMod/CobaltRevolver[Gun/ranged sc=258] | ThoriumMod/CobaltStaff[Magic/magic sc=191] | ThoriumMod/PalladiumSMG[Gun/ranged sc=284] | ThoriumMod/ThoriumWand[Magic/none sc=240] | ThoriumMod/DarkMageStaff[Magic/none sc=240] | ThoriumMod/HoneySuckle[Magic/none sc=240] | ThoriumMod/BackStabber[Broadsword/melee sc=178]

@@ -1,0 +1,57 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## SCENARIO L_zombie_in_rack_chlorophyte_in_storage
+  -- after first issue
+  soldier 100: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=none head=-
+  soldier 101: weapon=Wooden Sword[Broadsword/melee sc=23] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  tally: Zombie Arm x1, Wooden Sword x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  tally: Chlorophyte Claymore x1, Chlorophyte Partisan x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  tally: Chlorophyte Claymore x1, Chlorophyte Partisan x1, Chlorophyte Warhammer x1, Chlorophyte Saber x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Chlorophyte Warhammer | Broadsword/melee | 80 8 0 7 216000 | 980.0
+    Chlorophyte Saber | Broadsword/melee | 92 10 0 7 276000 | 904.0
+    Chlorophyte Claymore | Broadsword/melee | 180 45 0 7 276000 | 393.0
+    Chlorophyte Partisan | Spear/melee | 80 23 0 7 180000 | 340.2
+    Zombie Arm | Broadsword/melee | 15 22 0 0 2000 | 46.3
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7
+  left on shelves: Zombie Arm[Broadsword/melee sc=46] | Wooden Sword[Broadsword/melee sc=23]
+
+## SCENARIO M_all_in_storage
+  -- after first issue
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Chlorophyte Warhammer | Broadsword/melee | 80 8 0 7 216000 | 980.0
+    Chlorophyte Saber | Broadsword/melee | 92 10 0 7 276000 | 904.0
+    Chlorophyte Claymore | Broadsword/melee | 180 45 0 7 276000 | 393.0
+    Chlorophyte Partisan | Spear/melee | 80 23 0 7 180000 | 340.2
+    Zombie Arm | Broadsword/melee | 15 22 0 0 2000 | 46.3
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7
+  left on shelves: Zombie Arm[Broadsword/melee sc=46] | Wooden Sword[Broadsword/melee sc=23]

@@ -1,0 +1,48 @@
+== KEY ITEMS ==
+Vanilla/Minishark              R= 0.00 rare= 2 val=  350000  cur=  140.9  P*= 1.97 D= 8 eff=0.57 effDps=   60.0 rank=  31.4 [shop:Terraria/ArmsDealer/Sho]
+Vanilla/Musket                 R= 1.00 rare= 1 val=   75000  cur=   75.3  P*= 1.97 D= 8 eff=0.81 effDps=   48.8 rank=  30.7 [recipe<-The Undertaker]
+Vanilla/ClockworkAssaultRifle  R= 7.00 rare= 4 val=  150000  cur=  340.6  P*= 7.50 D=34 eff=0.25 effDps=   58.9 rank=  97.8 [boss:Wall of Flesh@7]
+Vanilla/PhoenixBlaster         R= 2.00 rare= 3 val=  175000  cur=  166.8  P*= 3.78 D=14 eff=0.74 effDps=   88.5 rank=  54.6 [recipe<-Handgun]
+Vanilla/Boomstick              R= 2.00 rare= 2 val=  100000  cur=  124.7  P*= 2.92 D=14 eff=0.50 effDps=   47.2 rank=  42.1 [sig:rarity]
+Vanilla/Megashark              R= 9.00 rare= 5 val=  350000  cur=  456.5  P*= 9.62 D=40 eff=0.14 effDps=   42.9 rank= 122.1 [recipe<-Soul of Might]
+Vanilla/Muramasa               R= 4.50 rare= 2 val=   87500  cur=  105.4  P*= 4.40 D=14 eff=0.56 effDps=   45.0 rank=  59.6 [recipe<-Aerialite Bar]
+Vanilla/NightsEdge             R= 6.70 rare= 3 val=  200000  cur=  150.3  P*= 6.63 D=24 eff=0.60 effDps=   64.8 rank=  87.6 [recipe<-Purified Gel]
+Vanilla/BladeofGrass           R= 4.00 rare= 3 val=   27000  cur=   73.3  P*= 4.62 D=14 eff=0.42 effDps=   22.5 rank=  60.1 [recipe<-Stinger]
+Vanilla/Starfury               R=12.81 rare= 2 val=   50000  cur=   49.0  P*= 9.28 D=40 eff=0.04 effDps=    1.5 rank= 111.9 [recipe<-Fallen Star]
+Vanilla/CobaltSword            R= 7.00 rare= 4 val=   69000  cur=  659.4  P*= 7.35 D=34 eff=0.63 effDps=  290.0 rank= 101.8 [recipe<-Cobalt Bar]
+Vanilla/MythrilSword           R= 7.00 rare= 4 val=  103500  cur=  756.3  P*= 7.43 D=34 eff=0.64 effDps=  333.8 rank= 103.3 [recipe<-Mythril Bar]
+Vanilla/TerraBlade             R=12.00 rare= 8 val= 1000000  cur=  516.0  P*=12.82 D=46 eff=0.62 effDps=  185.0 rank= 165.8 [recipe<-Living Shard]
+Vanilla/Zenith                 R=19.75 rare=12 val= 1000000  cur= 2469.6  P*=19.15 D=55 eff=0.80 effDps= 1012.5 rank= 248.3 [recipe<-Auric Bar]
+CalamityMod/WulfrumKnife       R= 0.00 rare= 1 val=   10000  cur=   71.0  P*= 0.98 D= 8 eff=0.45 effDps=   26.5 rank=  16.9 [recipe<-]
+CalamityMod/WulfrumBlunderbuss R= 0.00 rare= 1 val=   10000  cur=   14.6  P*= 0.98 D= 8 eff=0.45 effDps=    5.5 rank=  13.4 [recipe<-]
+CalamityMod/Kylie              R= 1.00 rare= 1 val=   10000  cur=   35.1  P*= 1.57 D= 8 eff=0.50 effDps=   14.4 rank=  22.5 [sig:rarity]
+CalamityMod/ShinobiBlade       R= 4.50 rare= 3 val=   50000  cur=  197.0  P*= 5.04 D=24 eff=0.25 effDps=   36.0 rank=  66.6 [sig:rarity]
+CalamityMod/Archerfish         R= 4.50 rare= 3 val=   50000  cur=  194.0  P*= 5.04 D=24 eff=0.31 effDps=   43.6 rank=  67.2 [sig:rarity]
+CalamityMod/MycelialClaws      R= 2.70 rare= 2 val=   20000  cur=  310.1  P*= 3.03 D=14 eff=0.62 effDps=  150.0 rank=  47.5 [boss:CalamityMod/Crabulon@2.]
+CalamityMod/BurntSienna        R= 1.00 rare= 1 val=   10000  cur=   97.6  P*= 1.57 D= 8 eff=0.81 effDps=   65.0 rank=  27.0 [sig:rarity]
+CalamityMod/SpeedBlaster       R= 7.00 rare= 5 val=  200000  cur=  362.9  P*= 8.31 D=34 eff=0.36 effDps=   87.0 rank= 108.8 [recipe<-Mythril Bar]
+CalamityMod/Needler            R= 7.00 rare= 4 val=  100000  cur=  297.6  P*= 7.43 D=34 eff=0.59 effDps=  121.7 rank=  99.4 [sig:rarity]
+CalamityMod/Avalanche          R= 8.50 rare= 5 val=  200000  cur=  194.4  P*= 9.21 D=40 eff=0.60 effDps=   77.2 rank= 119.2 [boss:CalamityMod/Cryogen@8.5]
+CalamityMod/TitaniumRailgun    R= 7.00 rare= 5 val=  200000  cur= 1291.1  P*= 8.31 D=34 eff=0.93 effDps=  795.0 rank= 117.3 [recipe<-Titanium Bar]
+CalamityMod/MythrilKnife       R= 7.00 rare= 4 val=  100000  cur=  475.2  P*= 7.43 D=34 eff=0.61 effDps=  202.5 rank= 101.3 [recipe<-Mythril Bar]
+ThoriumMod/HitScanner          R= 6.90 rare= 3 val=   27000  cur=  244.3  P*= 6.36 D=24 eff=0.50 effDps=   90.0 rank=  85.5 [boss:ThoriumMod/StarScouter@]
+ThoriumMod/MythrilStaff        R= 7.00 rare= 4 val=   90000  cur=  345.2  P*= 7.40 D=34 eff=0.36 effDps=   87.0 rank=  97.9 [recipe<-Mythril Bar]
+ThoriumMod/CobaltStaff         R= 7.00 rare= 4 val=   60000  cur=  190.8  P*= 7.33 D=34 eff=0.36 effDps=   48.3 rank=  95.0 [recipe<-Cobalt Bar]
+ThoriumMod/ThoriumWand (missing)
+ThoriumMod/CobaltRevolver      R= 7.00 rare= 4 val=   60000  cur=  257.6  P*= 7.33 D=34 eff=0.39 effDps=   70.7 rank=  96.3 [recipe<-Cobalt Bar]
+ThoriumMod/TommyGun            R= 7.00 rare= 4 val=   75000  cur=  322.9  P*= 7.37 D=34 eff=0.15 effDps=   33.8 rank=  94.3 [sig:rarity]
+ThoriumMod/PalladiumSMG        R= 7.00 rare= 4 val=   80000  cur=  284.4  P*= 7.38 D=34 eff=0.23 effDps=   45.0 rank=  95.4 [recipe<-Palladium Bar]
+Vanilla/FlowerofFire           R= 4.50 rare= 3 val=  125000  cur=  192.0  P*= 5.22 D=24 eff=0.51 effDps=   71.3 rank=  71.0 [sig:rarity]
+Vanilla/DemonScythe            R= 4.50 rare= 3 val=   75000  cur=  115.5  P*= 5.12 D=24 eff=0.36 effDps=   30.0 rank=  67.0 [sig:rarity]
+Vanilla/SpaceGun               R= 2.00 rare= 1 val=   20000  cur=  100.0  P*= 2.31 D=14 eff=0.54 effDps=   44.1 rank=  34.5 [recipe<-Meteorite Bar]
+Vanilla/WaterBolt              R= 7.00 rare= 2 val=   75000  cur=  106.7  P*= 5.87 D=24 eff=0.22 effDps=   17.7 rank=  74.5 [recipe<-Spell Tome]
+
+== ARMORY (early-HM stock of 65 weapons), 9 levies best-first ==
+CURRENT score order : MythrilSword, CobaltSword, PalladiumSword, CobaltNaginata, SpeedBlaster, MythrilStaff, ClockworkAssaultRifle, MycelialClaws, Needler
+BLENDED rank order  : Avalanche, Starfury, SpeedBlaster, MythrilSword, PalladiumSword, CobaltSword, CobaltNaginata, Needler, MythrilRepeater
+
+Minishark rank position among 65: current #30, blended #55
+class-pref delta=0 pts (0.0 stages): melee->Avalanche; ranged->Avalanche (overall); magic->Avalanche (overall); summon->Avalanche; none->Avalanche (overall)
+class-pref delta=12 pts (1.0 stages): melee->Avalanche; ranged->SpeedBlaster; magic->Avalanche (overall); summon->Avalanche; none->Avalanche (overall)
+class-pref delta=18 pts (1.5 stages): melee->Avalanche; ranged->SpeedBlaster; magic->Avalanche (overall); summon->Avalanche; none->Avalanche (overall)
+class-pref delta=30 pts (2.5 stages): melee->Avalanche; ranged->SpeedBlaster; magic->MythrilStaff; summon->Avalanche; none->Avalanche (overall)

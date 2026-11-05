@@ -1,0 +1,203 @@
+[H_eveStock_9_interleave]
+MIX interleave melee=4 ranged=2 magic=2 summon=1
+W Vanilla/TerraBlade
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/RazorbladeTyphoon
+W Vanilla/LaserMachinegun
+W Vanilla/Xenopopper
+W Vanilla/Daybreak
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/LightsBane
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/Spear
+W Vanilla/Trident
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Minishark
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/FlowerofFire
+W Vanilla/DemonScythe
+W Vanilla/SlimeStaff
+W Vanilla/HornetStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/Gel x999
+M Vanilla/RocketI x999
+STAGE
+
+[H_eveStock_9_meleelast]
+MIX meleelast melee=4 ranged=2 magic=2 summon=1
+W Vanilla/TerraBlade
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/RazorbladeTyphoon
+W Vanilla/LaserMachinegun
+W Vanilla/Xenopopper
+W Vanilla/Daybreak
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/LightsBane
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/Spear
+W Vanilla/Trident
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Minishark
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/FlowerofFire
+W Vanilla/DemonScythe
+W Vanilla/SlimeStaff
+W Vanilla/HornetStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/Gel x999
+M Vanilla/RocketI x999
+STAGE
+
+[H_eveStock_20_interleave]
+MIX interleave melee=7 ranged=5 magic=4 summon=2 none=2
+W Vanilla/TerraBlade
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/RazorbladeTyphoon
+W Vanilla/LaserMachinegun
+W Vanilla/Xenopopper
+W Vanilla/Daybreak
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/LightsBane
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/Spear
+W Vanilla/Trident
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Minishark
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/FlowerofFire
+W Vanilla/DemonScythe
+W Vanilla/SlimeStaff
+W Vanilla/HornetStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/Gel x999
+M Vanilla/RocketI x999
+STAGE
+
+[H_eveStock_20_meleelast]
+MIX meleelast melee=7 ranged=5 magic=4 summon=2 none=2
+W Vanilla/TerraBlade
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/RazorbladeTyphoon
+W Vanilla/LaserMachinegun
+W Vanilla/Xenopopper
+W Vanilla/Daybreak
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/LightsBane
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/Spear
+W Vanilla/Trident
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Minishark
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/FlowerofFire
+W Vanilla/DemonScythe
+W Vanilla/SlimeStaff
+W Vanilla/HornetStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/Gel x999
+M Vanilla/RocketI x999
+STAGE
+
+[I_eveStock_9_noArmor]
+SOLDIERS 9
+W Vanilla/TerraBlade
+W Vanilla/InfluxWaver
+W Vanilla/TheHorsemansBlade
+W Vanilla/RazorbladeTyphoon
+W Vanilla/LaserMachinegun
+W Vanilla/Xenopopper
+W Vanilla/Daybreak
+W Vanilla/WoodenSword
+W Vanilla/CopperShortsword
+W Vanilla/IronBroadsword
+W Vanilla/Muramasa
+W Vanilla/LightsBane
+W Vanilla/BladeofGrass
+W Vanilla/FieryGreatsword
+W Vanilla/Spear
+W Vanilla/Trident
+W Vanilla/Musket
+W Vanilla/Boomstick
+W Vanilla/Minishark
+W Vanilla/Handgun
+W Vanilla/PhoenixBlaster
+W Vanilla/SpaceGun
+W Vanilla/WaterBolt
+W Vanilla/FlowerofFire
+W Vanilla/DemonScythe
+W Vanilla/SlimeStaff
+W Vanilla/HornetStaff
+W Vanilla/ImpStaff
+M Vanilla/MusketBall x999
+M Vanilla/Gel x999
+M Vanilla/RocketI x999
+STAGE
+
+[J_show]
+SOLDIERS 0
+SHOW Vanilla/ZombieArm
+SHOW Vanilla/ChlorophyteClaymore
+SHOW Vanilla/ChlorophyteSaber
+SHOW Vanilla/ChlorophytePartisan
+SHOW Vanilla/ChlorophyteShotbow
+SHOW Vanilla/ChlorophyteJackhammer
+SHOW Vanilla/ChlorophyteDrill
+SHOW Vanilla/ChlorophytePickaxe
+SHOW Vanilla/ChlorophyteWarhammer
+SHOW Vanilla/ChlorophyteChainsaw
+SHOW Vanilla/Drax
+SHOW Vanilla/Pwnhammer
+SHOW Vanilla/Hammush
+SHOW Vanilla/TheAxe
+SHOW Vanilla/Chlorophyte
+SHOW Vanilla/Minishark
+SHOW Vanilla/TerraBlade
+SHOW Vanilla/Daybreak
+SHOW Vanilla/Xenopopper
+SHOW Vanilla/LaserMachinegun
+SHOW Vanilla/InfluxWaver
+SHOW Vanilla/RazorbladeTyphoon
+SHOW Vanilla/TheHorsemansBlade
+SHOW Vanilla/WoodenSword
+SHOW Vanilla/CopperShortsword
+STAGE

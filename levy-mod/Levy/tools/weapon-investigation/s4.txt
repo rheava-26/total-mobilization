@@ -1,0 +1,78 @@
+# Levy weapon-choice probe. Levy 1.7.1
+
+## SCENARIO K_chlorophyte_vs_zombie_5
+  -- after first issue
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  soldier 104: weapon=Chlorophyte Shotbow[Bow/ranged sc=227] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1, Chlorophyte Shotbow x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  soldier 104: weapon=Chlorophyte Shotbow[Bow/ranged sc=227] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1, Chlorophyte Shotbow x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Chlorophyte Warhammer[Broadsword/melee sc=980] side=- armorClass=none head=-
+  soldier 101: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 102: weapon=Chlorophyte Claymore[Broadsword/melee sc=393] side=- armorClass=none head=-
+  soldier 103: weapon=Chlorophyte Partisan[Spear/melee sc=340] side=- armorClass=none head=-
+  soldier 104: weapon=Chlorophyte Shotbow[Bow/ranged sc=227] side=- armorClass=none head=-
+  tally: Chlorophyte Warhammer x1, Chlorophyte Saber x1, Chlorophyte Claymore x1, Chlorophyte Partisan x1, Chlorophyte Shotbow x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Chlorophyte Warhammer | Broadsword/melee | 80 8 0 7 216000 | 980.0
+    Chlorophyte Saber | Broadsword/melee | 92 10 0 7 276000 | 904.0
+    Chlorophyte Claymore | Broadsword/melee | 180 45 0 7 276000 | 393.0
+    Chlorophyte Partisan | Spear/melee | 80 23 0 7 180000 | 340.2
+    Chlorophyte Shotbow | Bow/ranged | 34 19 0 7 240000 | 227.2
+    Space Gun | Magic/magic | 23 17 0 1 20000 | 100.0
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Zombie Arm | Broadsword/melee | 15 22 0 0 2000 | 46.3
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7
+  left on shelves: Zombie Arm[Broadsword/melee sc=46] | Iron Broadsword[Broadsword/melee sc=41] | Musket[Gun/ranged sc=75] | Space Gun[Magic/magic sc=100]
+
+## SCENARIO K_zombie_only_extra
+  -- after first issue
+  soldier 100: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 101: weapon=Musket[Gun/ranged sc=75] side=- armorClass=none head=-
+  soldier 102: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=none head=-
+  tally: Chlorophyte Saber x1, Musket x1, Zombie Arm x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 101: weapon=Musket[Gun/ranged sc=75] side=- armorClass=none head=-
+  soldier 102: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=none head=-
+  tally: Chlorophyte Saber x1, Musket x1, Zombie Arm x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Chlorophyte Saber[Broadsword/melee sc=904] side=- armorClass=none head=-
+  soldier 101: weapon=Musket[Gun/ranged sc=75] side=- armorClass=none head=-
+  soldier 102: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=none head=-
+  tally: Chlorophyte Saber x1, Musket x1, Zombie Arm x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Chlorophyte Saber | Broadsword/melee | 92 10 0 7 276000 | 904.0
+    Musket | Gun/ranged | 22 32 0 1 75000 | 75.3
+    Zombie Arm | Broadsword/melee | 15 22 0 0 2000 | 46.3
+  left on shelves: 
+
+## SCENARIO K_armor_chlorophyte
+  -- after first issue
+  soldier 100: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Chlorophyte Mask
+  soldier 101: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Cobalt Helmet
+  soldier 102: weapon=Wooden Sword[Broadsword/melee sc=23] side=- armorClass=magic head=Chlorophyte Headgear
+  tally: Zombie Arm x2, Wooden Sword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Chlorophyte Mask
+  soldier 101: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Cobalt Helmet
+  soldier 102: weapon=Wooden Sword[Broadsword/melee sc=23] side=- armorClass=magic head=Chlorophyte Headgear
+  tally: Zombie Arm x2, Wooden Sword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Chlorophyte Mask
+  soldier 101: weapon=Zombie Arm[Broadsword/melee sc=46] side=- armorClass=melee head=Cobalt Helmet
+  soldier 102: weapon=Wooden Sword[Broadsword/melee sc=23] side=- armorClass=magic head=Chlorophyte Headgear
+  tally: Zombie Arm x2, Wooden Sword x1
+  STOCK TABLE (all stocked weapons, by Score): name | family/class | dmg useTime reuse rare value | score
+    Zombie Arm | Broadsword/melee | 15 22 0 0 2000 | 46.3
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7
+  left on shelves: 

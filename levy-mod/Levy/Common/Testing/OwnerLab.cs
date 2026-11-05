@@ -267,6 +267,9 @@ namespace Levy.Common.Testing
 		{
 			_h.LabClearAll();
 			GearUpkeep.SetOverride(UpkMode(s)); // the setup ticks run in the scenario's mode too
+			// single-player emulation from the first setup tick: the commander is Main.myPlayer and the game menu is off (a dedicated server has myPlayer 255 and gameMenu on)
+			if (s.Flags.Contains("gm") && !_gmOn) { _savedGameMenu = Main.gameMenu; Main.gameMenu = false; _gmOn = true; }
+			if (s.Flags.Contains("spsim") && !_spsimOn) { _savedMyForSim = Main.myPlayer; Main.myPlayer = 0; _spsimOn = true; }
 			if (s.Kind == "list") { try { RunList(s); } catch (Exception e) { s.Exc.Add("list:" + Short(e)); } s.Note = "list"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
 			if (s.Kind == "scan") { try { RunScan(s); } catch (Exception e) { s.Exc.Add("scan:" + Short(e)); } s.Note = "scan"; s.Done = true; s.Ticks = 0; s.ItemType = 0; return; }
 			s.ItemType = s.Kind == "ctl" ? 0 : ResolveItem(s.ItemKey);
@@ -312,7 +315,7 @@ namespace Levy.Common.Testing
 			Array.Clear(c.ownedProjectileCounts, 0, c.ownedProjectileCounts.Length);
 			// target
 			SpawnTarget(s, s.Fam == "summon" ? 90f : s.Dist);
-			s.Fp0 = Fp(c); s.Tp0 = TpSnap(c);
+			s.Fp0 = Fp(c); s.Tp0 = TpSnap(c); _snap0 = CmdSnap(c);
 		}
 
 		private static void SpawnTarget(Sc s, float distTiles)
@@ -353,7 +356,34 @@ namespace Levy.Common.Testing
 			if (s.Flags.Contains("spsim") && _spsimOn) { Main.myPlayer = _savedMyForSim; _spsimOn = false; }
 		}
 
-		private static bool _spsimOn, _savedGameMenu; private static int _savedMyForSim;
+		private static bool _spsimOn, _gmOn, _savedGameMenu; private static int _savedMyForSim;
+		/// <summary>Everything about the commander (and the machine) a gear frame must not touch: vitals, transform, buffs, every numeric / bool field of the Thorium and Calamity ModPlayers, and the global statics.</summary>
+		private static Dictionary<string, string> CmdSnap(Player c)
+		{
+			var d = new Dictionary<string, string>();
+			d["statLife"] = c.statLife.ToString(); d["statMana"] = c.statMana.ToString(); d["pos"] = c.position.ToString(); d["vel"] = c.velocity.ToString();
+			d["defense"] = c.statDefense.ToString(); d["whoAmI"] = c.whoAmI.ToString(); d["active"] = c.active.ToString(); d["dead"] = c.dead.ToString();
+			d["buffs"] = string.Join(",", Enumerable.Range(0, c.buffType.Length).Where(b => c.buffType[b] > 0).Select(b => c.buffType[b] + ":" + c.buffTime[b]));
+			d["soundVolume"] = Main.soundVolume.ToString(); d["musicVolume"] = Main.musicVolume.ToString(); d["myPlayer"] = Main.myPlayer.ToString();
+			d["slot255"] = Main.player[255] != null ? (Main.player[255].active ? "active" : "idle") : "null"; d["gameMenu"] = Main.gameMenu.ToString();
+			d["screenPos"] = Main.screenPosition.ToString(); d["screenShake"] = "n/a";
+			try { d["activeFilters"] = string.Join(",", Terraria.Graphics.Effects.Filters.Scene == null ? new string[0] : new string[] { Terraria.Graphics.Effects.Filters.Scene.GetType().Name }); } catch (Exception) { d["activeFilters"] = "?"; }
+			foreach (ModPlayer mp in c.ModPlayers)
+			{
+				string mn = mp.Mod.Name; if (mn != "ThoriumMod" && mn != "CalamityMod") continue;
+				var t = mp.GetType();
+				foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public).Where(f => f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(bool)))
+				{ try { d[t.Name + "." + f.Name] = Convert.ToString(f.GetValue(mp), System.Globalization.CultureInfo.InvariantCulture); } catch { } }
+			}
+			return d;
+		}
+		private static string SnapDiff(Dictionary<string, string> a, Dictionary<string, string> b)
+		{
+			var ch = new List<string>();
+			foreach (var k in a.Keys) if (b.TryGetValue(k, out var v) && v != a[k]) ch.Add(k + ":" + a[k] + ">" + v);
+			return ch.Count == 0 ? "" : " || COMMANDER/GLOBAL CHANGED{" + string.Join("; ", ch.Take(20)) + "}";
+		}
+		private static Dictionary<string, string> _snap0;
 
 		private static void KeepSite(Sc s)
 		{
@@ -424,7 +454,8 @@ namespace Levy.Common.Testing
 			}
 			if (d0 != null) s.DummyTp1 = TpSnap(d0);
 			s.Fp1 = Fp(Main.player[0]); s.Tp1 = TpSnap(Main.player[0]);
-			s.CmdDiff = (s.Fp0 == s.Fp1 ? "none" : "BEFORE " + s.Fp0 + " || AFTER " + s.Fp1) + (s.Tp0 == s.Tp1 ? "" : " || THORIUMPLAYER(commander) BEFORE " + s.Tp0 + " AFTER " + s.Tp1);
+			string snapDiff = _snap0 == null ? "" : SnapDiff(_snap0, CmdSnap(Main.player[0]));
+			s.CmdDiff = (snapDiff == "" ? "" : "LEAK" + snapDiff + " | ") + (s.Fp0 == s.Fp1 ? "none" : "BEFORE " + s.Fp0 + " || AFTER " + s.Fp1) + (s.Tp0 == s.Tp1 ? "" : " || THORIUMPLAYER(commander) BEFORE " + s.Tp0 + " AFTER " + s.Tp1);
 		}
 
 		private static string TypeName(int type)

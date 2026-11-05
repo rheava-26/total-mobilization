@@ -95,14 +95,15 @@ namespace Levy.Content.NPCs
 			int savedWho = d.whoAmI; Vector2 savedCenter = d.Center;
 			float savedSlots = d.slotsMinions; int savedNum = d.numMinions;
 			int hs = d.highestStormTigerGemOriginalDamage, ha = d.highestAbigailCounterOriginalDamage;
-			int ownerSlot = WeaponUse.OwnerFor(this);
+			const int ownerSlot = DummySlot; // the frame runs in slot 255, NEVER the commander's (see EnterFrameSlot)
 			object thorium = null;
+			FrameSlot fs = default;
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			try
 			{
-				d.whoAmI = ownerSlot;
 				d.Center = NPC.Center;
+				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
 
 				// The timers Player.Update counts down once a tick.
@@ -157,12 +158,44 @@ namespace Levy.Content.NPCs
 			}
 			finally
 			{
+				ExitFrameSlot(fs); // the real Main.myPlayer / Main.player[255] first: RestoreThorium finds the commander through them
 				d.whoAmI = savedWho; d.Center = savedCenter;
 				OwnerPuppet.RestoreThorium(thorium);
 				GearUpkeep.Body = prev;
 				AdoptUpkeepSpawns(spawnStart);
 				WriteBackVitals(d, life0, mana0);
 			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// The frame slot. In single player (and for a host who also plays) Main.myPlayer is the commander, and vanilla / mod code in the equip pass has "whoAmI == Main.myPlayer" blocks that read and
+		// write Main.LocalPlayer, play sounds and touch other local-player state. Borrowing the commander's slot would aim every one of them at the REAL commander. So the frame stands the dummy in slot 255
+		// (the null-player slot, as the soldier minions do), makes 255 the machine's player for its length, and lets WeaponUse.OwnerFor keep answering with the real one (SoldierMinions fake). Whatever the
+		// frame does to "the local player" lands on the dummy. Sounds are muted for the length (a levy's gear is not a sound the listener should hear 40 times a tick). On a dedicated server
+		// Main.myPlayer already is 255 and only the array slot is lent.
+		// ------------------------------------------------------------------------------------------------------------
+		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken; public float Volume; public bool Active; }
+
+		private FrameSlot EnterFrameSlot()
+		{
+			if (GearUpkeep.LegacySlot) { Dummy.whoAmI = WeaponUse.OwnerFor(this); return default; } // HARNESS A/B only (env LEVY_UPKEEP_LEGACYSLOT=1): the first version's borrowed commander slot
+			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume };
+			Dummy.whoAmI = DummySlot;
+			Main.player[DummySlot] = Dummy;
+			f.FakeToken = SoldierMinions.BeginFake(f.MyPlayer);
+			Main.myPlayer = DummySlot;
+			if (!Main.dedServ) Main.soundVolume = 0f;
+			return f;
+		}
+
+		private void ExitFrameSlot(FrameSlot f)
+		{
+			if (!f.Active) return;
+			Main.myPlayer = f.MyPlayer;
+			SoldierMinions.EndFake(f.FakeToken);
+			Main.player[DummySlot] = f.Backup ?? Main.player[DummySlot];
+			Main.soundVolume = f.Volume;
+			Dummy.whoAmI = DummySlot;
 		}
 
 		private void RunHook(Action a)
@@ -230,11 +263,13 @@ namespace Levy.Content.NPCs
 			Player d = Dummy;
 			int savedWho = d.whoAmI; Vector2 savedCenter = d.Center; int savedLife = d.statLife, savedOrbs = d.beetleOrbs, savedShields = d.solarShields;
 			object thorium = null;
+			FrameSlot fs = default;
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			try
 			{
-				d.whoAmI = WeaponUse.OwnerFor(this); d.Center = NPC.Center;
+				d.Center = NPC.Center;
+				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
 				int room = Math.Max(d.statLifeMax2, 1) + damage + 1000;
 				d.statLife = room; d.immune = false; d.immuneTime = 0; d.dead = false;
@@ -254,6 +289,7 @@ namespace Levy.Content.NPCs
 			}
 			finally
 			{
+				ExitFrameSlot(fs);
 				d.whoAmI = savedWho; d.Center = savedCenter; d.statLife = NPC.life > 0 ? NPC.life : savedLife; d.beetleOrbs = savedOrbs; d.solarShields = savedShields; d.dead = false; d.immune = false; d.immuneTime = 0;
 				OwnerPuppet.RestoreThorium(thorium);
 				GearUpkeep.Body = prev;
@@ -281,6 +317,7 @@ namespace Levy.Content.NPCs
 				return _cfgMode;
 			}
 		}
+		internal static readonly bool LegacySlot = Environment.GetEnvironmentVariable("LEVY_UPKEEP_LEGACYSLOT") == "1";
 		internal static void SetOverride(int mode) { _override = mode; }
 
 		/// <summary>The soldier whose frame is running (the projectile catcher records into <see cref="Spawned"/> only then).</summary>

@@ -103,6 +103,14 @@ namespace Levy.Common.Weapons
 		private static bool _faked;
 		private static int _trueMyPlayer;
 		internal static int TrueMyPlayer => _faked ? _trueMyPlayer : Main.myPlayer;
+		/// <summary>Lets another frame (the gear upkeep) make slot 255 the machine's player while <see cref="TrueMyPlayer"/> still answers with the real one. Returns a token for <see cref="EndFake"/> (bit 1 = was already faked, bit 2 = this call faked it; upper bits keep the previous real slot).</summary>
+		internal static int BeginFake(int trueMy)
+		{
+			int tok = (_faked ? 1 : 0) | (_trueMyPlayer << 2);
+			if (trueMy != Slot) { if (!_faked) tok |= 2; _trueMyPlayer = _faked ? _trueMyPlayer : trueMy; _faked = true; }
+			return tok;
+		}
+		internal static void EndFake(int tok) { _faked = (tok & 1) != 0; _trueMyPlayer = tok >> 2; }
 
 		// ---- the Update frame and the strike window (see "THE KILL CASCADE" above) ----
 		/// <summary>The driven minion whose Projectile.Update is inside orig right now (dummy swap, dragon alias and faked Main.myPlayer all in place); null outside <see cref="RunUpdate"/>.</summary>

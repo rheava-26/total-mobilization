@@ -214,7 +214,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
-## 📦 Levy 1.7.5 (rank-mode 4381337 / 9d3ec9d), booting
+## 📦 SHIPPED as part of Levy 1.7.6: ranking/lifesteal (rank-mode 4381337 / 9d3ec9d)
 - **Lifesteal pools:** each levy has its own vanilla pool (80 at +0.6/tick in Normal; 70 at +0.5 in Expert/Master; Calamity's reduction read).
   - Routed life with 1/2/4/8/16 levies: 645/630/525/555/555 → 585/1245/2310/4605/7935.
   - The commander's pool is untouched.
@@ -226,7 +226,7 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 - **Price mode trade-off:** price modes hand out Flamelash and Hellwing Bow ahead of Mythril Sword. That's how price ranking behaves; the Damage mode and the skip toggle are the counterweights.
 - **Sword projectile credit:** Starfury 49→123, Enchanted Sword 41→81, Terra Blade 516→1032.
 
-## 🪝 HOOKS (lab: hooks-lab 7a23d9f FEASIBLE; production: `hooks-prod`, building)
+## 🪝 HOOKS: SHIPPED in Levy 1.7.6 (hooks-prod bb3be52; boots clean Levy+Mech, Thorium+Levy+Mech). Single player and MP UNVERIFIED. Not built yet: step-back repositioning under tall ledges, Pathfinder hook edges, a loadout-panel hook slot.
 - **Lab results:**
   - Real hook items cast from the Dummy's `miscEquips[4]` via `QuickGrapple` inside the owner frame, and latch tiles: all 38 vanilla/Thorium hooks plus the Calamity hooks.
   - Vanilla `GrappleMovement` on the Dummy drives the soldier. 15-tile ceiling: latches at tick 20, reels at 11 px/tick, arrives at tick 41.

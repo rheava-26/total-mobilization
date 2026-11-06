@@ -143,7 +143,7 @@ namespace Levy.Common.UI
 		private void Go(int index)
 		{
 			int n = GuidePages.All.Length;
-			if (n == 0) return;
+			if (!_built || n == 0) return;
 			_current = Math.Clamp(index, 0, n - 1);
 			_lastPage = _current;
 			var page = GuidePages.All[_current];

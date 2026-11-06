@@ -76,7 +76,14 @@ namespace Levy.Common.UI
 			if (Main.dedServ) return;
 			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface(); _officersUI = new UserInterface(); _setupUI = new UserInterface();
 			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new GuidePanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel(); _setup = new SetupPanel();
-			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate(); _officers.Activate(); _setup.Activate();
+			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); TryActivateGuide(); _loadout.Activate(); _officers.Activate(); _setup.Activate();
+		}
+
+		/// <summary>The Field Manual is optional UI: if building it throws, log and leave the book unavailable instead of failing the mod load.</summary>
+		private void TryActivateGuide()
+		{
+			try { _manual.Activate(); }
+			catch (System.Exception e) { Mod.Logger.Error("[GuidePanel] failed to build, the Field Manual is unavailable: " + e); _manual = null; }
 		}
 
 		public override void Unload()
@@ -118,9 +125,10 @@ namespace Levy.Common.UI
 
 		public virtual void OpenManual()
 		{
-			if (Main.dedServ || _manualUI == null) return;
+			if (Main.dedServ || _manualUI == null || _manual == null) return;
 			CloseBarracks(); CloseArmory(); CloseRadial(); CloseSoldierLoadout();
-			_manual.Open();
+			try { _manual.Open(); }
+			catch (System.Exception e) { Mod.Logger.Error("[GuidePanel] open failed: " + e); return; }
 			_manualUI.SetState(_manual);
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}

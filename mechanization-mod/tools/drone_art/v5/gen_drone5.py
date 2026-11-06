@@ -12,8 +12,8 @@ from PIL import Image
 
 # pod boxes (logical px, inclusive x0,x1,y0,y1): near pod in front of the hull at its forward-middle, far pod 2 up and 3 back
 NEAR = (20, 28, 2, 9)
-FAR = (NEAR[0] - 3, NEAR[1] - 3, NEAR[2] - 2, NEAR[3] - 2)
-BANDS = ['s', 'h', 'm', 'm', 'd', 'm']
+FAR = (NEAR[0] - 4, NEAR[1] - 4, NEAR[2] - 3, NEAR[3] - 3)
+BANDS = ['s', 'h', 'h', 'm', 'm', 'd']      # near pod cowling: distinctly lighter than the hull
 DARKER = {'s': 'h', 'h': 'm', 'm': 'd', 'd': 'd', 'o': 'o'}
 
 
@@ -41,25 +41,40 @@ def draw_pod(cv, x0, x1, y0, y1, k, far):
         # side-on cylinder: bands run along the pod, brightest at the top-left, a bounce row under the belly
         rowk = int((ny + 1) / 2 * len(BANDS)); c = BANDS[min(len(BANDS) - 1, max(0, rowk))]
         nx = (x + .5 - (x0 + x1 + 1) / 2) / ((x1 - x0 + 1) / 2)
-        if nx < -0.55 and c in ('h', 'm'): c = 's' if c == 'h' else 'h'     # the left end catches the light
-        if nx > 0.6 and c == 's': c = 'h'
+        if nx > 0.1 and c == 'h' and y == ty + 1: c = 's'     # horizontal bands only; the top highlight strip brightens toward the front
         put(x, y, c)
     for (px, py) in mask - inner: cv.put(px, py, 'o')     # the box is the whole pod including its outline
     # intake lip at the nose (right) end: a darker ring (graphite, not the outline black) so it reads as a lip, not a grille
     xin = max(p[0] for p in inner)
     for (x, y) in inner:
-        if x == xin: put(x, y, 'd' if ty + 2 <= y <= by - 2 else 'm')
+        pass
     # exhaust ring at the back (left) end: one dark column and a hot-metal column inside it
     xb = min(p[0] for p in inner)
     for (x, y) in inner:
         if x == xb: put(x, y, 'd')
-        elif x == xb + 1 and ty + 2 <= y <= by - 2: put(x, y, 'm')
     # animation: a glint travelling the top rim and a shimmer in the exhaust
     gx = xb + 2 + (k * 2) % max(1, (xin - xb - 3))
     if (gx, ty + 1) in inner: put(gx, ty + 1, 's' if k % 2 == 0 else 'h')
     ex = (xb, (ty + by) // 2)
     if ex in inner: put(ex[0], ex[1], ['m', 'd', 'h', 'd'][k])
+    if not far: draw_intake(cv, x1 - 0.8, cy, 1.9, ry + 0.1, far, mask)   # only the near pod shows an intake oval
     return mask
+
+
+def draw_intake(cv, cx, cy, rx, ry, far, podmask):
+    """The intake seen slightly from the front: a bright oval rim round a dark opening, outlined where it overlaps the cowling."""
+    oval = {(x, y) for y in range(cv.h) for x in range(cv.w) if ((x + .5 - cx) / rx) ** 2 + ((y + .5 - cy) / ry) ** 2 <= 1.0}
+    pal = g.GRAPHITE if far else g.GUNMETAL
+    for (x, y) in oval:
+        d = math.hypot((x + .5 - cx) / rx, (y + .5 - cy) / ry)
+        t = -((x + .5 - cx) / rx) * .6 - ((y + .5 - cy) / ry) * .8      # 1 = top-left of the rim
+        if d > 0.45:
+            c = 's' if t > 0.2 else 'h'
+            if far: c = 'h' if c == 's' else 'm'
+            cv.put(x, y, pal[c])
+        else:
+            cv.put(x, y, pal['d'] if (x + .5 > cx and y + .5 > cy) else pal['o'])
+    cv.outline(oval)
 
 
 def draw_ring_cowl(cv, cx, cy, r, far, k):

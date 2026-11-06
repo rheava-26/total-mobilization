@@ -276,6 +276,9 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - **Dialogue:** it was already one file (`Dialogue/en-US.txt`, 830 lines); the mutiny lines were moved in. `/levydialogue export|reload|path` gives Eve an editable copy in the save folder that overrides the packed one.
 - **Unverified:** all UI, combat behaviour, MP.
 
+**RADIO, FINAL (Eve):** the Command Radio = the art2 walkie-talkie B, exactly that design, scaled UP to fill the current CommandRadio canvas (it was too small) and redrawn on the 2×2 grid. No other radio options.
+**STYLE DIAGNOSIS (Eve):** our art lacks CURVES (vanilla rounds silhouettes and corners), has FLAT shading (vanilla uses curved 3–5 step ramps and rim light), and isn't strictly 2×2. Both art4 builders must study 70+ wiki sprites (weapons, enemies, accessories, furniture) first and copy the palettes exactly.
+
 **ART v4 (Eve, 2026-11-06): full art refresh using wiki vanilla refs + EXACT vanilla palettes.**
 - **`art4` (Levy):** Barracks/Armory/Logistical Center/Patrol Banner tiles + items; ALL 10 guide books + Field Manual + Guide to Autonomy (new art); War Horn.
 - **Command Radio:** 2 options. Eve prefers the original radio's bigger look, OR the walkie-talkie drawn bigger. AMBIGUOUS, so both are offered.

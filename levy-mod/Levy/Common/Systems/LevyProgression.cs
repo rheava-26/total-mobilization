@@ -16,14 +16,18 @@ namespace Levy.Common.Systems
 	public readonly struct TierBoss
 	{
 		public readonly int Tier; public readonly float Weight; public readonly bool Downed;
-		public TierBoss(int tier, float weight, bool downed) { Tier = tier; Weight = weight; Downed = downed; }
+		/// <summary>Where the boss sits in the game's progression (Boss Checklist scale: King Slime 1 ... Wall of Flesh 7). 0 = unknown.</summary>
+		public readonly float Progress;
+		public TierBoss(int tier, float weight, bool downed, float progress = 0f) { Tier = tier; Weight = weight; Downed = downed; Progress = progress; }
 	}
 
 	/// <summary>
 	/// PURE tier math (no game state), so the boot self-check can drive it. Three tiers: 0 pre-hardmode (anchor Wall of Flesh), 1 hardmode (anchor Moon Lord), 2 post-Moon Lord.
 	/// Levies = base + sum over tiers of share(tier) x (target(tier) - target(tier-1)), where share = weight of the tier's defeated bosses / weight of all known bosses of the tier.
 	/// Vanilla bosses carry their classic command-point value as weight, so a vanilla-only world reproduces the old numbers exactly; any other boss is "unweighted" and is
-	/// worth the mean weight of its tier's vanilla bosses, so a mod adding bosses dilutes each boss's share and never raises the end-of-tier total. A tier with no known bosses contributes 0.
+	/// worth the mean weight of its tier's vanilla bosses, so a mod adding bosses never raises the end-of-tier total. A tier with no known bosses contributes 0.
+	/// PRE-HARDMODE also has a positional floor once a mod registers bosses with a known progression: the tier's share is the larger of the boss-by-boss share above and the position of the furthest boss
+	/// beaten (any mod) along the vanilla weight curve. Unbeaten modded bosses therefore never hold back an early vanilla boss, and the Wall of Flesh always lands on the full target.
 	/// </summary>
 	public static class LevyTierMath
 	{
@@ -31,13 +35,15 @@ namespace Levy.Common.Systems
 
 		public static int Compute(IEnumerable<TierBoss> bosses, int baseLevies, int preTarget, int hmTarget, int postTarget, int max)
 		{
+			var all = bosses as IList<TierBoss> ?? new List<TierBoss>(bosses);
 			float[] total = new float[TierCount], down = new float[TierCount], weighted = new float[TierCount];
 			int[] weightedCount = new int[TierCount], unweighted = new int[TierCount], unweightedDown = new int[TierCount];
-			foreach (var b in bosses)
+			bool positional = false;
+			foreach (var b in all)
 			{
 				int t = Math.Clamp(b.Tier, 0, TierCount - 1);
-				if (b.Weight > 0f) { weightedCount[t]++; weighted[t] += b.Weight; total[t] += b.Weight; if (b.Downed) down[t] += b.Weight; }
-				else { unweighted[t]++; if (b.Downed) unweightedDown[t]++; }
+				if (b.Weight > 0f) { total[t] += b.Weight; weighted[t] += b.Weight; weightedCount[t]++; if (b.Downed) down[t] += b.Weight; }
+				else { unweighted[t]++; if (b.Downed) unweightedDown[t]++; if (t == 0 && b.Progress > 0f) positional = true; }
 			}
 			float t0 = baseLevies, t1 = Math.Max(preTarget, t0), t2 = Math.Max(hmTarget, t1), t3 = Math.Max(postTarget, t2);
 			float[] span = { t1 - t0, t2 - t1, t3 - t2 };
@@ -46,9 +52,35 @@ namespace Levy.Common.Systems
 			{
 				float mean = weightedCount[t] > 0 ? weighted[t] / weightedCount[t] : 1f;
 				float tot = total[t] + unweighted[t] * mean, dn = down[t] + unweightedDown[t] * mean;
-				if (tot > 0f) levies += span[t] * (dn / tot);
+				float share = tot > 0f ? dn / tot : 0f;
+				if (t == 0 && positional) share = Math.Max(share, PositionShare(all));
+				levies += span[t] * share;
 			}
 			return Math.Clamp((int)Math.Floor(levies + 0.5f + 1e-3f), 1, Math.Max(1, max));
+		}
+
+		/// <summary>Pre-hardmode share from the furthest boss beaten: the vanilla bosses' cumulative weight, read at that boss's progression and interpolated between vanilla bosses.</summary>
+		public static float PositionShare(IList<TierBoss> bosses)
+		{
+			var anchors = new List<(float p, float w)>();
+			float furthest = 0f, sum = 0f;
+			foreach (var b in bosses)
+			{
+				if (Math.Clamp(b.Tier, 0, TierCount - 1) != 0 || b.Progress <= 0f) continue;
+				if (b.Weight > 0f) { anchors.Add((b.Progress, b.Weight)); sum += b.Weight; }
+				if (b.Downed && b.Progress > furthest) furthest = b.Progress;
+			}
+			if (sum <= 0f || furthest <= 0f) return 0f;
+			anchors.Sort((x, y) => x.p.CompareTo(y.p));
+			float prevP = 0f, prevC = 0f, cum = 0f;
+			foreach (var (p, w) in anchors)
+			{
+				cum += w;
+				float c = cum / sum;
+				if (furthest <= p) return prevC + (c - prevC) * ((furthest - prevP) / Math.Max(1e-4f, p - prevP));
+				prevP = p; prevC = c;
+			}
+			return 1f;
 		}
 	}
 
@@ -78,9 +110,18 @@ namespace Levy.Common.Systems
 			get
 			{
 				if (!_haveValue && LevyUtil.IsServerOrSingle) Recompute(false);
-				return _haveValue ? _levies : LevyConstants.CommandPointsBase;
+				return _haveValue ? _levies : StartLevies;
 			}
 		}
+
+		/// <summary>Levies a fresh world starts with (the "Levies at the start" setting).</summary>
+		public static int StartLevies { get { try { return LevyConfig.Get.LeviesAtStart; } catch (Exception) { return LevyConstants.DefaultLeviesAtStart; } } }
+
+		// Boss Checklist progression of the vanilla pre-hardmode bosses (King Slime 1 ... Wall of Flesh 7); the position curve for a world with modded bosses reads these.
+		private static float VanillaProgress(string id) => id switch
+		{
+			"KingSlime" => 1f, "EyeOfCthulhu" => 2f, "EaterOrBrain" => 3f, "QueenBee" => 4f, "Skeletron" => 5f, "Deerclops" => 6f, "WallOfFlesh" => 7f, _ => 0f,
+		};
 
 		/// <summary>Accessory slots every levy gains from the boss milestones reached so far (synced to clients with the levy count).</summary>
 		public static int MilestoneSlots => _milestoneSlots;
@@ -207,7 +248,7 @@ namespace Levy.Common.Systems
 		private static List<TierBoss> BuildBosses()
 		{
 			var list = new List<TierBoss>(32);
-			foreach (var v in Vanilla) list.Add(new TierBoss(v.Tier, v.Weight, v.Downed()));
+			foreach (var v in Vanilla) list.Add(new TierBoss(v.Tier, v.Weight, v.Downed(), v.Tier == 0 ? VanillaProgress(v.Id) : 0f));
 			var covered = new HashSet<int>();
 			foreach (var v in Vanilla) foreach (int t in v.Types) covered.Add(t);
 			var coveredKeys = new HashSet<string>();
@@ -224,7 +265,7 @@ namespace Levy.Common.Systems
 					bool down = false;
 					try { down = b.Downed != null && b.Downed(); } catch { }
 					foreach (int t in b.Npcs) { coveredKeys.Add(BossDownedSystem.KeyOfType(t)); if (!down && BossDownedSystem.IsTypeDowned(t)) down = true; }
-					list.Add(new TierBoss(tier, 0f, down));
+					list.Add(new TierBoss(tier, 0f, down, tier == 0 ? Math.Max(0f, b.Progression) : 0f));
 				}
 			}
 			// learned tiers: every defeated boss not already accounted for by Boss Checklist
@@ -238,7 +279,7 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServerOrSingle) return;
 			LevyConfig cfg = null; try { cfg = LevyConfig.Get; } catch { }
 			int pre = cfg?.LeviesByEndOfPreHardmode ?? 20, hm = cfg?.LeviesByEndOfHardmode ?? 40, post = cfg?.LeviesByEndOfPostMoonLord ?? 60, max = cfg?.MaxLevies ?? 60;
-			int value = LevyTierMath.Compute(BuildBosses(), LevyConstants.CommandPointsBase, pre, hm, post, max);
+			int value = LevyTierMath.Compute(BuildBosses(), cfg?.LeviesAtStart ?? LevyConstants.DefaultLeviesAtStart, pre, hm, post, max);
 			int mSlots = 0, mLevies = 0;
 			if (cfg?.MilestoneRewards != null) MilestoneMath.Apply(cfg.MilestoneRewards, BossReached, out mSlots, out mLevies);
 			value = Math.Clamp(value + mLevies, 1, 65535); // milestone levies come on top of the maximum
@@ -276,7 +317,7 @@ namespace Levy.Common.Systems
 			}
 		}
 
-		public override void NetSend(BinaryWriter writer) { writer.Write((ushort)Math.Clamp(_haveValue ? _levies : LevyConstants.CommandPointsBase, 0, 65535)); writer.Write((byte)Math.Clamp(_milestoneSlots, 0, 6)); }
+		public override void NetSend(BinaryWriter writer) { writer.Write((ushort)Math.Clamp(_haveValue ? _levies : StartLevies, 0, 65535)); writer.Write((byte)Math.Clamp(_milestoneSlots, 0, 6)); }
 
 		public override void NetReceive(BinaryReader reader) { _levies = reader.ReadUInt16(); _milestoneSlots = reader.ReadByte(); _haveValue = true; }
 
@@ -314,6 +355,36 @@ namespace Levy.Common.Systems
 				int a = LevyTierMath.Compute(V(true, true), B, 20, 40, 60, 60), b = LevyTierMath.Compute(p2, B, 20, 40, 60, 60), c = LevyTierMath.Compute(pAll, B, 20, 40, 60, 60), d2 = LevyTierMath.Compute(pAll, B, 20, 40, 60, 50);
 				int e0 = LevyTierMath.Compute(p0, B, 20, 40, 60, 60);
 				if (a != 40 || e0 != 40 || b != 48 || c != 60 || d2 != 50) fails.Add($"post-ML expected 40/40/48/60/50, got {a}/{e0}/{b}/{c}/{d2}");
+				// 4. the configurable start: anchors S/20/40, and pre-hardmode growth follows POSITION when a mod registers bosses with a known progression
+				{
+					int S = LevyConstants.DefaultLeviesAtStart;
+					int s0 = LevyTierMath.Compute(V(false, false), S, 20, 40, 60, 60), s1 = LevyTierMath.Compute(V(true, false), S, 20, 40, 60, 60), s2 = LevyTierMath.Compute(V(true, true), S, 20, 40, 60, 60);
+					if (s0 != S || s1 != 20 || s2 != 40) fails.Add($"start {S}: anchors {S}/20/40 expected, got {s0}/{s1}/{s2}");
+					if (LevyTierMath.Compute(V(false, false), 30, 20, 40, 60, 60) != 30) fails.Add("start above the Wall of Flesh target must hold");
+					float[] prog = { 1, 2, 3, 4, 5, 6, 7 };
+					float[] modP = { 1.6f, 2.7f, 3.98f, 3.99f, 6.7f }; // Calamity's pre-hardmode Boss Checklist entries
+					List<TierBoss> Pos(int upTo, bool modsKilled, bool withMods)
+					{
+						var l = new List<TierBoss>(); float pm = upTo < 1 ? 0f : prog[upTo - 1];
+						for (int i = 0; i < Vanilla.Length; i++) l.Add(new TierBoss(tier[i], w[i], tier[i] == 0 ? prog[i] <= pm : false, tier[i] == 0 ? prog[i] : 0f));
+						if (withMods) foreach (float mp in modP) l.Add(new TierBoss(0, 0f, modsKilled && mp <= pm, mp));
+						return l;
+					}
+					var row = new System.Text.StringBuilder(); int worse = 0;
+					for (int k = 0; k <= 7; k++)
+					{
+						int plain = LevyTierMath.Compute(Pos(k, false, false), S, 20, 40, 60, 60);
+						int skip = LevyTierMath.Compute(Pos(k, false, true), S, 20, 40, 60, 60), killed = LevyTierMath.Compute(Pos(k, true, true), S, 20, 40, 60, 60);
+						if (skip != plain || killed < plain) worse++;
+						row.Append(plain).Append(k < 7 ? "/" : "");
+					}
+					if (worse != 0) fails.Add($"registered modded pre-HM bosses changed or lowered the vanilla result at {worse} of 8 milestones");
+					if (LevyTierMath.Compute(Pos(7, false, true), S, 20, 40, 60, 60) != 20) fails.Add("Wall of Flesh with undefeated modded pre-HM bosses must reach 20");
+					if (LevyTierMath.Compute(Pos(0, false, true), S, 20, 40, 60, 60) != S) fails.Add("no boss beaten must stay at the start");
+					var onlyMod = Pos(0, false, true); onlyMod[onlyMod.Count - 5] = new TierBoss(0, 0f, true, 1.6f);
+					if (LevyTierMath.Compute(onlyMod, S, 20, 40, 60, 60) <= S) fails.Add("a modded pre-HM boss beaten alone must add levies");
+					Mod.Logger.Info($"Levy progression start {S}: levies at start/KS/EoC/EoW/QB/Skel/Deer/WoF = {row}");
+				}
 				Mod.Logger.Info($"Levy progression math: vanilla 4/20/40 ({subsets} subsets match legacy), +17 modded pre-HM all down={modAll} diluted={modSkip}, post-ML none/5known-0down/2of5/all/max50={a}/{e0}/{b}/{c}/{d2}");
 			}
 			catch (Exception e) { fails.Add("threw " + e.GetType().Name + ": " + e.Message); }

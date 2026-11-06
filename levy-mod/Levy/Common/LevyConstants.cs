@@ -12,7 +12,9 @@ namespace Levy.Common
 		public const int TilePx = 16;
 
 		// ---------- Command points ----------
+		/// <summary>The old fixed start. Kept only so the boot self-check can prove the boss-by-boss math still reproduces the original numbers.</summary>
 		public const int CommandPointsBase = 4;
+		public const int DefaultLeviesAtStart = 10;
 		public const int CpKingSlime = 1, CpEyeOfCthulhu = 2, CpEaterOrBrain = 2, CpQueenBee = 1, CpSkeletron = 2, CpDeerclops = 1,
 			CpWallOfFlesh = 7, CpQueenSlime = 1, CpEachMech = 2, CpPlantera = 3, CpGolem = 3, CpEmpress = 1, CpFishron = 1, CpCultist = 2, CpMoonLord = 3;
 

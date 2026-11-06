@@ -592,6 +592,28 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 💬 Eve's design talk (2026-11-06): class roles, gearing, count curve, bottlenecks, Calamity Rev
+- **Class AI roles:** NOT reworking yet. Eve wants hooks/double jump/Hermes in and tested first.
+  - My view: Terraria bosses ignore aggro and pass through, so "melee tank" can't work. Melee's real role is close-range burst plus beam weapons.
+  - Summoners: mid-range minions, whip only when an enemy is close.
+  - Standing still + walking off platform edges → sent to field-ai-3 as metrics.
+- **Gearing:** Eve wants new gear to go to the WORST-equipped levies ("raise the floor"), while the best weapon still goes to the best-suited class. Branch `gear-audit`: a structured progression audit (junk → ore → Ninja → Shadow → … → Chlorophyte), a fishy-list, worst-first fix if needed.
+- **Count curve:** Eve leans 10→25→40→60 (pre-HM has 7 bosses; HM ~10). Holding until boss-trials' count-curve experiment (4/6/8/10/12/15/20/30, identical loadouts) shows whether the CP boss-HP scaling cancels extra levies.
+- **Bottlenecks: DONE, sourced → levy-mod/Levy/docs/BOTTLENECKS.md** (the first pass from memory was discarded; the wiki was fetched via curl).
+  - Hallowed: 54 bars/set, 15–30/mech kill → ~48 kills for 20 sets.
+  - Spectre: 27 Ecto/set ≈ 234 dungeon kills.
+  - Lunar: ~36 ML kills for 20 sets.
+  - Shroomite: 810 mushrooms/set.
+  - Chlorophyte growth is capped by local density.
+  - Turtle Shell 1/12.
+  - Ore armor: Copper 6 → Platinum 20 def; only Platinum/Molten are worth it.
+  - **Already covered** by progression config: Ecto/Soul/Mob drop multipliers, Chlorophyte growth/chunk/ore-per-bar/recipe, Hallowed/Chlorophyte/Spider armor cost %.
+  - **GAPS** (proposed toggles, awaiting Eve): mech-boss Hallowed Bar drop multiplier, Dungeon Spirit spawn rate, Turtle Shell/Beetle Husk, Luminite/fragment multipliers, Shroomite mushroom cost, Chlorophyte density cap, Ninja armor drop rate, a Militia Kit bulk recipe for low ores.
+- **Calamity Revengeance:** branch `calrev`:
+  - Do levies get Rage/Adrenaline? Make them work if not (auto-activate when full in boss fights).
+  - Expert vs Rev on KS/EoC/BoC with the same loadouts.
+  - Propose a Calamity balance patch backed by the data.
+
 ## 📈 Early-game levy count + mobility (Eve, 2026-11-06)
 - **Count:**
   - Eve: 4 levies at start is too few; early items sit unused. Militia at ~12 feels right. "Maybe even fewer with more mods."
@@ -614,6 +636,22 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - Thorium: 23 aura/bard/scythe effects.
   - 17 not patched, with reasons.
   - Harness team 25/0 on both toolchains. MP packet paths untested live.
+
+## 📦 SHIPPED Levy 2.0.5, at scratchpad/ship-2.0.5
+- **levy-count 0aa3e42:** LeviesAtStart (default 10; presets 10/14/6), setup popup row, warnings, guide text.
+- **Measured:** no dilution at the start. Dilution of early growth happens ONLY with Boss Checklist loaded and modded bosses unbeaten (Calamity: 9 vs 12 at Skeletron; Cal+Thorium: 7). Fixed with position-based pre-HM share (max of the old and positional).
+- Boss Checklist is NOT installed in Eve-like saves; that path is unchanged (modded kills only add).
+- New curve: 10/11/12/13/14/15/16/20 at start/KS/EoC/EoW/QB/Skel/Deer/WoF.
+- **Boots:** Thorium+MS+Mech and Calamity, 0 exceptions, all checks OK. Merge conflict in LevySettings.FrozenFields resolved (no FallenStars field, + LeviesAtStart).
+- **Running:** boss-trials (EoC experiment, controls, beam-melee appeal), field-ai-3 (mobility matrix).
+- **Eve's revised trial design (sent to boss-trials + field-ai-3):**
+  - The commander drinks SPECTATOR, so the boss targets the levies; no fake moving player.
+  - Varied rolled stats (pre-Eye ~100–200 HP, mages high mana; post-Eye ~200 HP and plenty of mana).
+  - Batches of 3, then roll new accessories/loadouts/class mix and repeat.
+  - Bosses: King Slime, Eye (pre-boss gear) → Brain of Cthulhu (post-Eye gear).
+  - Campfire + heart lantern (honey optional); Lesser → regular healing potions.
+  - BIG arena with platform rows and clear ground, plus flat and natural variants.
+  - Intent: levies shouldn't be crippled; find what it takes to win.
 
 ## 📦 SHIPPED Levy 2.0.4 (Mechanization stays 0.8.1), at scratchpad/ship-2.0.4
 - Contents: guide-ui (30-page Field Manual book), teamitems (35 team effects patched both ways), armory-alloc (shift-click intake, thrown stacks/Molotov, sidearm fill, class-less spread, mana→magic, ONE "Fallen Stars per Mana Crystal" setting).

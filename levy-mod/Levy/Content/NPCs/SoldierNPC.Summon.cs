@@ -28,6 +28,9 @@ namespace Levy.Content.NPCs
 		internal uint MinionPrepStamp = uint.MaxValue;
 		/// <summary>Hits this soldier's projectiles have landed (server / single player), and the value / idle time the modded-flock liveness check last saw.</summary>
 		internal int MinionHits;
+		/// <summary>Projectiles this soldier's minions have created (flood guard tally), the value the last upkeep pass saw, and the live count that pass found.</summary>
+		internal int ChildSpawns;
+		private int _childSpawnsSeen, _childrenAlive, _lastTi = -1, _lastTiLife;
 		private int _minionHitsSeen, _minionIdleTicks;
 
 		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
@@ -104,13 +107,14 @@ namespace Levy.Content.NPCs
 				bool driven = has && SoldierMinions.CanDrive(weapon.shoot);
 				int standIn = ModContent.ProjectileType<SoldierMinion>(), me = NPC.whoAmI;
 				_minionScratch.Clear();
+				_childrenAlive = 0;
 				for (int i = 0; i < Main.maxProjectiles; i++)
 				{
 					Projectile p = Main.projectile[i];
 					if (!p.active) continue;
 					bool fake = p.type == standIn && (int)p.ai[0] == me;
 					bool real = !fake && SoldierMinions.OwnedBy(p, me);
-					if (!fake && !real) continue;
+					if (!fake && !real) { if (driven && weapon.shoot >= ProjectileID.Count && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == me) _childrenAlive++; continue; }
 					// a minion-flagged child a modded minion's own AI made (a summoner's babies, a beacon's UFOs): driven, and part of the flock only through the slots it takes
 					if (real && !SoldierMinions.IsCast(p) && !(driven && p.minionSlots > SoldierMinions.ChildSlotMin)) continue;
 					// no summon weapon any more, or a flock of the other kind / of a staff this soldier no longer carries: dismissed
@@ -151,8 +155,16 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private void MaintainRealMinions(Item weapon, int damage)
 		{
+			if (weapon.shoot >= ProjectileID.Count)
+			{
+				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
+				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
+			}
 			if (weapon.shoot >= ProjectileID.Count && _minionScratch.Count > 0)
 			{
+				// progress also counts the target losing life (a field that damages without a projectile hit, like the Universe Splitter's)
+				int ti = TargetIndex;
+				if (ti >= 0 && ti < Main.maxNPCs) { NPC tn = Main.npc[ti]; if (ti == _lastTi && tn.life < _lastTiLife) MinionHits++; _lastTi = ti; _lastTiLife = tn.life; } else _lastTi = -1;
 				if (MinionHits != _minionHitsSeen) { _minionHitsSeen = MinionHits; _minionIdleTicks = 0; }
 				else if (SoldierMinions.AttackTarget(this) >= 0)
 				{

@@ -76,14 +76,14 @@ namespace Levy.Common.Testing
 				if (self != null && self._ph == Ph.Scenario && self._mnStarted && src is Terraria.DataStructures.EntitySource_Parent par && par.Entity is Projectile pp && pp.minion)
 				{
 					string key = (pp.ModProjectile?.Name ?? pp.type.ToString()) + "->" + (idx >= 0 && idx < Main.maxProjectiles ? (Main.projectile[idx].ModProjectile?.Name ?? Main.projectile[idx].type.ToString()) : type.ToString()) + "(owner" + owner + ")";
-					self._mnChildren[key] = self._mnChildren.GetValueOrDefault(key) + 1;
+					self._mnChildren[key] = self._mnChildren.GetValueOrDefault(key) + 1; self._mnWin++; self._mnWinSec++;
 				}
 			}
 			catch (Exception) { }
 			return idx;
 		}
 
-		private int _mnSpawns, _mnKillLogs, _mnShoot, _mnPrevReal; private string _mnPrevDesc = "";
+		private int _mnWinSec, _mnWin, _mnPeakRate, _mnPeakPass, _mnPass, _mnPeakKids, _mnSpawns, _mnKillLogs, _mnShoot, _mnPrevReal; private string _mnPrevDesc = "";
 		private static void MnKill(On_Projectile.orig_Kill orig, Projectile self)
 		{
 			try
@@ -111,7 +111,7 @@ namespace Levy.Common.Testing
 			if (!_mnStarted)
 			{
 				ClearAll(); SpBuildFloor("run");
-				_mnMaxReal = _mnMaxStand = 0; _mnSpawns = 0; _mnKillLogs = 0; { var tmp = new Item(); tmp.SetDefaults(type); _mnShoot = tmp.shoot; } _mnIdentReal.Clear(); _mnIdentStand.Clear(); _mnChildren.Clear(); _mnRealTypes.Clear(); _mnSamples = ""; _mnFirstReal = _mnFirstStand = -1;
+				_mnMaxReal = _mnMaxStand = 0; _mnSpawns = 0; _mnPeakKids = 0; _mnWin = _mnWinSec = _mnPeakRate = _mnPeakPass = _mnPass = 0; _mnKillLogs = 0; { var tmp = new Item(); tmp.SetDefaults(type); _mnShoot = tmp.shoot; } _mnIdentReal.Clear(); _mnIdentStand.Clear(); _mnChildren.Clear(); _mnRealTypes.Clear(); _mnSamples = ""; _mnFirstReal = _mnFirstStand = -1;
 				MnPin();
 				var rec = MakeRecord("Pvt. Summoner");
 				Item w = new Item(); w.SetDefaults(type);
@@ -131,22 +131,25 @@ namespace Levy.Common.Testing
 			}
 			MnPin();
 			_mnTick++;
+			if (_mnTick % 20 == 0) { _mnPeakPass = Math.Max(_mnPeakPass, _mnWin - _mnPass); _mnPass = _mnWin; }
+			if (_mnTick % 60 == 0) { _mnPeakRate = Math.Max(_mnPeakRate, _mnWinSec); _mnWinSec = 0; }
 			int standType = ModContent.ProjectileType<SoldierMinion>();
-			int real = 0, stand = 0;
+			int real = 0, stand = 0, nKids = 0;
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active) continue;
+				if (p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == _mnBody && !p.minion && p.type != standType) nKids++;
 				if (p.type == standType && (int)p.ai[0] == _mnBody) { stand++; _mnIdentStand.Add(p.identity); }
 				else if (SoldierMinions.OwnedBy(p, _mnBody)) { real++; _mnIdentReal.Add(p.identity); _mnRealTypes.Add((p.ModProjectile?.Name ?? ("v" + p.type)) + (SoldierMinions.IsCast(p) ? "" : "(child)")); }
 			}
 			if (_mnPrevReal > 0 && real == 0 && _mnKillLogs++ < 6) Mod.Logger.Info($"HARNESS-MINION-DBG vanished at t{_mnTick}: last={_mnPrevDesc}");
 			_mnPrevReal = real; _mnPrevDesc = "";
 			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && SoldierMinions.OwnedBy(q, _mnBody)) _mnPrevDesc += $"[{q.ModProjectile?.Name ?? q.type.ToString()} slot={i} timeLeft={q.timeLeft} ai={q.ai[0]}/{q.ai[1]}/{q.ai[2]} dmg={q.damage} slots={q.minionSlots} pos={(q.Center - Main.npc[_mnBody].Center)} vel={q.velocity} friendly={q.friendly}]"; }
-			_mnMaxReal = Math.Max(_mnMaxReal, real); _mnMaxStand = Math.Max(_mnMaxStand, stand);
+			_mnPeakKids = Math.Max(_mnPeakKids, nKids); _mnMaxReal = Math.Max(_mnMaxReal, real); _mnMaxStand = Math.Max(_mnMaxStand, stand);
 			if (real > 0 && _mnFirstReal < 0) _mnFirstReal = _mnTick;
 			if (stand > 0 && _mnFirstStand < 0) _mnFirstStand = _mnTick;
-			if (_mnTick == 60 || _mnTick == 180 || _mnTick == 360 || _mnTick == 600 || _mnTick == 900 || _mnTick == 1500 || _mnTick == 1900) _mnSamples += $"t{_mnTick}:r{real}/s{stand} ";
+			if (_mnTick == 60 || _mnTick == 180 || _mnTick == 360 || _mnTick == 300 || _mnTick == 450 || _mnTick == 600 || _mnTick == 750 || _mnTick == 900 || _mnTick == 1500 || _mnTick == 1900) _mnSamples += $"t{_mnTick}:r{real}/s{stand}/d{_mnTargetLife0 - Main.npc[_mnTarget].life} ";
 			if (_mnTick == 200 || _mnTick == 500 || _mnTick == 850) Mod.Logger.Info($"HARNESS-MINION-DBG state t{_mnTick} target@{(Main.npc[_mnTarget].Center - Main.npc[_mnBody].Center)} {_mnPrevDesc}");
 			if (_mnTick < (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_MNTICKS"), out int mt) ? mt : 900)) return;
 			NPC tg = Main.npc[_mnTarget];
@@ -155,7 +158,7 @@ namespace Levy.Common.Testing
 			var prof = WeaponClassifier.GetProfile(it);
 			string path = _mnMaxReal > 0 ? "REAL" : _mnMaxStand > 0 ? "STAND-IN" : "NONE";
 			string kids = _mnChildren.Count == 0 ? "-" : string.Join(",", _mnChildren.Select(kv => kv.Key + "x" + kv.Value));
-			Mod.Logger.Info($"HARNESS-MINION: item={it.Name} family={prof.Family} canDrive={SoldierMinions.CanDrive(it.shoot)} path={path} firstReal=t{_mnFirstReal} firstStand=t{_mnFirstStand} maxReal={_mnMaxReal} maxStand={_mnMaxStand} castSpawns={_mnSpawns} realTypes=[{string.Join("/", _mnRealTypes)}] samples=[{_mnSamples.Trim()}] targetDamage={dmg} childProjectiles=[{kids}]");
+			Mod.Logger.Info($"HARNESS-MINION: item={it.Name} family={prof.Family} canDrive={SoldierMinions.CanDrive(it.shoot)} path={path} firstReal=t{_mnFirstReal} firstStand=t{_mnFirstStand} maxReal={_mnMaxReal} maxStand={_mnMaxStand} castSpawns={_mnSpawns} peakKids={_mnPeakKids} peakPerSec={_mnPeakRate} peakPer20={_mnPeakPass} realTypes=[{string.Join("/", _mnRealTypes)}] samples=[{_mnSamples.Trim()}] targetDamage={dmg} childProjectiles=[{kids}]");
 			_mnI++; _mnStarted = false;
 		}
 	}

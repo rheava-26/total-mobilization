@@ -85,6 +85,7 @@ namespace Levy.Common.Globals
 					SoldierIndex = parentTag.SoldierIndex;
 					projectile.npcProj = true;
 					projectile.noDropItem = true;
+					if (parent.minion && LevyUtil.IsServerOrSingle) { SoldierNPC pb = EnemyTargeting.LiveBody(parentTag.SoldierIndex); if (pb != null) pb.ChildSpawns++; } // flood guard tally
 					SoldierMinions.ReownChild(parent, projectile); // a real minion's stinger / spear: single player processes damage only for the real owner
 				}
 				if (parentTag.CommanderIndex >= 0)

@@ -254,6 +254,23 @@ namespace Levy.Common.Weapons
 			KillAll(s);
 		}
 
+		/// <summary>
+		/// A modded flock whose minions flood the world with projectiles (more than <see cref="LevyConstants.ModdedMinionMaxChildSpawnsPerPass"/> created in one upkeep pass, or more than
+		/// <see cref="LevyConstants.ModdedMinionMaxChildrenAlive"/> alive): the excess projectiles are ended now and the staff uses the stand-in from then on (remembered per staff, logged once).
+		/// </summary>
+		internal static void FloodGuard(SoldierNPC s, Item weapon, int spawned, int alive)
+		{
+			if (BadTypes.Add(weapon.shoot))
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " flooded the world with projectiles (" + spawned + " created in one pass, " + alive + " alive); its staff falls back to the stand-in minion.");
+			KillAll(s);
+			int me = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (q.active && !q.minion && q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == me) q.timeLeft = Math.Min(q.timeLeft, 1);
+			}
+		}
+
 		/// <summary>Removes every real minion (and companion) this soldier has out. Server / single player.</summary>
 		internal static void KillAll(SoldierNPC s)
 		{

@@ -46,6 +46,7 @@ namespace Levy.Common.Config
 
 		// ---- Levy & militia counts --------------------------------------------------------------------------
 		[Header("LevyCounts")]
+		[Range(4, 200)] [DefaultValue(10)] public int LeviesAtStart;
 		[Range(4, 200)] [DefaultValue(20)] public int LeviesByEndOfPreHardmode;
 		[Range(4, 200)] [DefaultValue(40)] public int LeviesByEndOfHardmode;
 		[Range(4, 200)] [DefaultValue(60)] public int LeviesByEndOfPostMoonLord;

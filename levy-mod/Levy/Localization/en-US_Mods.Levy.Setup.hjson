@@ -17,7 +17,8 @@ HostOnly: Only the host of a single player world can change the Levy setup. Use 
 Done: "{0} settings applied."
 DoneCustom: Your settings are applied.
 Skipped: Setup skipped. Type /levysetup to reopen it.
-Anchors: Levies start at 4. Every pre-hardmode boss beaten counts toward {0} levies at the Wall of Flesh, and the bosses in between share the points. Hardmode bosses carry you to {1} at Moon Lord. Every boss after Moon Lord up to the final boss adds the last {2}.
+Anchors: Levies start at {0}. Pre-hardmode bosses carry you to {1} at the Wall of Flesh. Hardmode bosses carry you to {2} at Moon Lord. Every boss after Moon Lord adds the last {3}.
+CountStart: At the start: {0}  (recommended {1} to {2})
 CountPre: By the Wall of Flesh: {0}  (recommended {1} to {2})
 CountHardmode: By Moon Lord: {0}  (recommended {1} to {2})
 CountPost: By the final boss: {0}  (recommended {1} to {2})
@@ -27,7 +28,7 @@ PunishOn: Bosses punish levies that get close
 PunishOff: Bosses ignore levies that get close
 TargetHint: Bosses you have already beaten chase the nearest levy like a player. A first kill is always solo.
 PunishHint: Bosses redirect shots and dashes at levies that get close or hurt them.
-PresetNumbers: Levies: {0} / {1} / {2}
+PresetNumbers: Levies: {0} / {1} / {2} / {3}
 
 Preset: {
 	Default: Default
@@ -39,6 +40,8 @@ Preset: {
 }
 
 Warn: {
+	StartFew: Too few levies at the start. Early game will feel lonely.
+	StartAbovePre: The starting levies are above the Wall of Flesh count. The count holds until hardmode.
 	PreFew: Too few levies by the Wall of Flesh. Early bosses will feel lonely.
 	PreMany: Too many levies by the Wall of Flesh. Early bosses will fall quickly.
 	HardmodeFew: Too few levies by Moon Lord. Hardmode bosses will feel lonely.

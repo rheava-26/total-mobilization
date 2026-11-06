@@ -426,9 +426,14 @@ Mods: {
 					Tooltip: How many militia a town fields simultaneously. Manpower is the deeper reserve they draw from as they fall; this keeps the active crowd small.
 				}
 
+				LeviesAtStart: {
+					Label: Levies at the start
+					Tooltip: Levies you can field in a new world, before any boss is beaten. Recommended 6 to 20.
+				}
+
 				LeviesByEndOfPreHardmode: {
 					Label: Levies by the Wall of Flesh
-					Tooltip: Levies you can field once every pre-hardmode boss is beaten. Recommended 12 to 30. Each boss beaten adds its share, by Boss Checklist order, from any mod.
+					Tooltip: Levies you can field once every pre-hardmode boss is beaten. Recommended 12 to 30. Each boss beaten adds its share. Modded bosses count by their Boss Checklist position.
 				}
 
 				LeviesByEndOfHardmode: {

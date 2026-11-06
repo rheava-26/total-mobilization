@@ -222,6 +222,13 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## ✅ MERGED (not yet shipped): banners b404ace
+- **Banners work for levies.** The commander's banner buff (vanilla BannerStrength) applies to every levy hit and every hit a levy takes. This covers modded banners: Thorium banner tiles write SceneMetrics in their own NearbyEffects, and those are captured.
+- **Measured, Classic:** gun ×1.51 dealt, ×0.72 taken. Expert ×2.0 / ×0.5. Thorium Ancient Archer banner verified.
+- **"Returned weapon stays on shelf" was really AMMO:** the first levy issued took the entire 999-bullet stack, and dry levies were never planned a gun.
+  - Fix: `ReclaimExcessAmmo` pulls over-share ammo back when stock is scarce. This changes live behaviour when ammo is scarce.
+  - Follow-up (the dry-gun trade-up gate in Allocation.cs) handed to the armory2 builder.
+
 ## 🧭 EVE (2026-11-06): plan OK; Armory 2.0 started
 - **Portal healer weapon** = Thorium **Dark Gate** (ThoriumMod.Items.Donate/DarkGate.cs). Eve's description matches the code:
   - The portal is placed at the cursor; it needs line of sight (`Collision.CanHit` to MouseWorld).

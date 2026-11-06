@@ -20,8 +20,8 @@ namespace Levy.Common.Progression
 		/// <summary>Edits applied to vanilla recipes (for the log / self-check).</summary>
 		public static int EditedBarRecipes, EditedAmmoRecipes, EditedArmorRecipes;
 
-		/// <summary>Every non-Levy recipe as it was when this mod's PostAddRecipes ran, before any edit: recipe index to (result stack, ingredient stacks).</summary>
-		public static readonly Dictionary<int, (int result, int[] ing)> Snapshot = new();
+		/// <summary>Every non-Levy recipe as it was when this mod's PostAddRecipes ran, before Levy's edits: the recipe object (its index changes when other mods reorder recipes later) to (result stack, ingredient stacks).</summary>
+		public static readonly Dictionary<Recipe, (int result, int[] ing)> Snapshot = new(ReferenceEqualityComparer.Instance);
 
 		public override void AddRecipeGroups()
 		{
@@ -75,7 +75,7 @@ namespace Levy.Common.Progression
 			{
 				Recipe rec = Main.recipe[r];
 				if (rec == null || rec.Mod == Mod) continue;
-				Snapshot[r] = (rec.createItem.stack, rec.requiredItem.Select(i => i.stack).ToArray());
+				Snapshot[rec] = (rec.createItem.stack, rec.requiredItem.Select(i => i.stack).ToArray());
 			}
 			if (c == null) return;
 

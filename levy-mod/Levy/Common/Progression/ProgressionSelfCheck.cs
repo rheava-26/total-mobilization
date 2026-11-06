@@ -92,15 +92,22 @@ namespace Levy.Common.Progression
 			var bars = Enumerable.Range(0, Recipe.numRecipes).Select(r => Main.recipe[r]).Where(x => x != null && x.Mod != Mod && x.createItem.type == ItemID.ChlorophyteBar).ToList();
 			Check("chlorophyte bar recipes found", bars.Count > 0, bars.Count.ToString());
 			int expectOre = c.ChlorophyteOrePerBar;
-			Check("chlorophyte ore per bar = option", bars.All(b => b.TryGetIngredient(ItemID.ChlorophyteOre, out var o) && o.stack == expectOre), $"expected {expectOre}");
+			// Expected is the pre-Levy cost (another mod may already have changed it) capped by the option.
+			bool BarOreOk(Recipe b)
+			{
+				if (!b.TryGetIngredient(ItemID.ChlorophyteOre, out var o)) return false;
+				int baseOre = ProgressionRecipes.Snapshot.TryGetValue(b, out var sn) ? sn.ing[b.requiredItem.IndexOf(o)] : o.stack;
+				return o.stack == (expectOre < 5 ? Math.Min(baseOre, expectOre) : baseOre);
+			}
+			Check("chlorophyte ore per bar = option", bars.All(BarOreOk), $"option {expectOre}");
 			Check("edited bar recipes count matches", ProgressionRecipes.EditedBarRecipes == (c.ChlorophyteOrePerBar < 5 ? bars.Count : 0), ProgressionRecipes.EditedBarRecipes.ToString());
 
 			// Ammo and armor: compare every vanilla/other-mod recipe against its pre-edit snapshot.
 			int ammoOk = 0, ammoBad = 0, armorOk = 0, armorBad = 0, other = 0, otherBad = 0, protectedBad = 0;
 			foreach (var kv in ProgressionRecipes.Snapshot)
 			{
-				Recipe rec = Main.recipe[kv.Key];
-				if (rec == null || rec.createItem == null) continue;
+				Recipe rec = kv.Key;
+				if (rec == null || rec.createItem == null || rec.Disabled) continue;   // disabled recipes (e.g. replaced by another mod) are never edited
 				Item res = rec.createItem;
 				bool isAmmo = ProgressionRecipes.IsAmmo(res);
 				bool isArmor = ProgressionRecipes.IsArmorPiece(res);
@@ -260,10 +267,10 @@ namespace Levy.Common.Progression
 		// ---- vanilla facts for the report --------------------------------------------------------------------------
 		void LogVanilla()
 		{
-			string Describe(int r) { var rec = Main.recipe[r]; return $"{rec.createItem.Name} x{ProgressionRecipes.Snapshot[r].result} <= " + string.Join(" + ", rec.requiredItem.Select((i, k) => $"{ProgressionRecipes.Snapshot[r].ing[k]} {i.Name}")); }
+			string Describe(Recipe rec) { var snap = ProgressionRecipes.Snapshot[rec]; return $"{rec.createItem.Name} x{snap.result} <= " + string.Join(" + ", rec.requiredItem.Select((i, k) => $"{(k < snap.ing.Length ? snap.ing[k] : i.stack)} {i.Name}")); }
 			var want = new HashSet<int>(ProgConst.ChlorophyteArmor.Concat(ProgConst.HallowedArmor).Concat(ProgConst.SpiderArmor).Concat(new int[] { ItemID.ChlorophyteBar, ItemID.WoodenArrow, ItemID.MusketBall, ItemID.LifeCrystal, ItemID.ManaCrystal }));
 			foreach (var kv in ProgressionRecipes.Snapshot)
-				if (kv.Key < Main.recipe.Length && Main.recipe[kv.Key] != null && want.Contains(Main.recipe[kv.Key].createItem.type))
+				if (kv.Key.createItem != null && want.Contains(kv.Key.createItem.type))
 					Mod.Logger.Info("[ProgCheck] VANILLA " + Describe(kv.Key));
 			var bullet = Fresh(ItemID.ChlorophyteBullet);
 			Mod.Logger.Info($"[ProgCheck] VANILLA Chlorophyte Bullet value={bullet.value} copper");

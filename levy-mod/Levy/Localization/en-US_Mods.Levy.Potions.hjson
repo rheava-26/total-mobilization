@@ -1,0 +1,50 @@
+# Spectator and Seeker potions, the Guide to Autonomy and their buffs. Keys are relative to Mods.Levy.Potions.
+SpectatorPotion: {
+	DisplayName: Spectator Potion
+	Tooltip:
+		'''
+		Lasts 20 minutes. Enemies and bosses ignore you, and your weapons, summons and building tools stop working.
+		You stay within 60 tiles of where you drank it. Cannot be drunk within 5 seconds of taking damage.
+		Taking damage ends it. Cameras and observing items still work.
+		'''
+}
+
+SeekerPotion: {
+	DisplayName: Seeker Potion
+	Tooltip:
+		'''
+		Lasts 12 minutes. Choose one item when you drink it.
+		Tiles and chests that hold it glow, and an arrow points to the nearest.
+		'''
+}
+
+GuideToAutonomy: {
+	DisplayName: A Guide to Autonomy
+	Tooltip:
+		'''
+		While the Spectator potion is active your levies are Autonomous: +10% damage and +10% move speed.
+		You can give map orders without the Command Radio.
+		Dropped by any enemy in Slime Rain. Consumed on use, once per world.
+		'''
+}
+
+SpectatorBuff: {
+	DisplayName: Spectator
+	Description: Enemies ignore you. Your weapons and building tools are off. You cannot leave the area.
+}
+
+SeekerBuff: {
+	DisplayName: Seeker
+	Description: The item you chose glows in the world and in chests.
+}
+
+AutonomousBuff: {
+	DisplayName: Autonomous
+	Description: +10% damage and +10% move speed while your commander spectates.
+}
+
+SpectatorRefused: Too soon after damage.
+SeekerPrompt: Choose an item to find.
+SeekerClose: Close
+DropSlimeRain: Drops during Slime Rain.
+EffectAutonomy: While the Spectator potion is active your levies gain {0}% damage and {1}% move speed. You can give map orders without the Command Radio.

@@ -1,0 +1,58 @@
+using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+using Levy.Common.Potions;
+
+namespace Levy.Content.Buffs
+{
+	/// <summary>Spectator: nothing targets the holder; the holder's weapons and building are off and they are tethered to the spot they drank it. All logic lives in <see cref="SpectatorPlayer"/>.</summary>
+	public class SpectatorBuff : ModBuff
+	{
+		public override string LocalizationCategory => "Potions";
+		public override string Texture => "Terraria/Images/Buff_" + BuffID.Invisibility;
+
+		public override void SetStaticDefaults()
+		{
+			Main.debuff[Type] = false;
+			Main.pvpBuff[Type] = false;
+			Main.buffNoSave[Type] = true; // the tether anchor is not saved, so the buff is not either
+		}
+	}
+
+	/// <summary>Seeker: highlights the one item chosen when the potion was drunk. Drawn by <see cref="SeekerSystem"/>.</summary>
+	public class SeekerBuff : ModBuff
+	{
+		public override string LocalizationCategory => "Potions";
+		public override string Texture => "Terraria/Images/Buff_" + BuffID.Spelunker;
+
+		public override void SetStaticDefaults()
+		{
+			Main.debuff[Type] = false;
+			Main.pvpBuff[Type] = false;
+			Main.buffNoSave[Type] = true;
+		}
+	}
+
+	/// <summary>Autonomous: levies of a Spectator who studied the Guide to Autonomy deal more damage and move faster. Applied on the levy's dummy by <see cref="Apply"/>.</summary>
+	public class AutonomousBuff : ModBuff
+	{
+		public override string LocalizationCategory => "Potions";
+		public override string Texture => "Terraria/Images/Buff_" + BuffID.Swiftness;
+
+		public override void SetStaticDefaults()
+		{
+			Main.debuff[Type] = false;
+			Main.pvpBuff[Type] = false;
+			Main.buffNoSave[Type] = true;
+		}
+
+		public static void Apply(Player d)
+		{
+			d.GetDamage(DamageClass.Generic) += PotionConstants.AutonomousDamage;
+			d.moveSpeed += PotionConstants.AutonomousMoveSpeed;
+		}
+
+		// Only meant for levies; shed it at once on a real player.
+		public override void Update(Player player, ref int buffIndex) { player.DelBuff(buffIndex); buffIndex--; }
+	}
+}

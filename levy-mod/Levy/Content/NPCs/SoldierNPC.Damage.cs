@@ -207,6 +207,7 @@ namespace Levy.Content.NPCs
 		{
 			// The mod's own buffs: their types are assigned at load, so they cannot be switch cases and are matched by type here, ahead of the vanilla switch.
 			if (buffType == ModContent.BuffType<MoraleBuff>()) { MoraleBuff.Apply(d); return 0; }                      // Princess / Guide / Merchant: damage + defense + crit
+			if (buffType == ModContent.BuffType<AutonomousBuff>()) { AutonomousBuff.Apply(d); return 0; }                // Spectator + Guide to Autonomy: damage + move speed
 			if (buffType == ModContent.BuffType<DryadsBlessingBuff>()) return DryadsBlessingBuff.Apply(d);              // Dryad: defense + thorns + regeneration
 
 			switch (buffType)

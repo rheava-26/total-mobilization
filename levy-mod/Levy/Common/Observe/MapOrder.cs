@@ -154,7 +154,7 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ || !Main.mapFullscreen) { MapOrder.PickMode = false; _wasLeft = Main.mouseLeft; return; }
 			var me = Main.LocalPlayer;
-			bool radio = CommandRadio.Has(me), pick = MapOrder.PickMode;
+			bool radio = CommandRadio.Has(me) || Levy.Common.Potions.AutonomySystem.CanCommandWithoutRadio(me), pick = MapOrder.PickMode;
 			bool shift = Main.keyState.IsKeyDown(Keys.LeftShift) || Main.keyState.IsKeyDown(Keys.RightShift);
 			bool armed = (radio && shift) || pick;
 			bool click = Main.mouseLeft && !_wasLeft;

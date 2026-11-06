@@ -27,10 +27,10 @@ namespace Levy.Common.Flavor
 		public static GuideSystem Instance => ModContent.GetInstance<GuideSystem>();
 
 		/// <summary>Book keys (the item is <c>GuideTo{key}</c>).</summary>
-		public static readonly string[] Keys = { "Firepower", "Healthcare", "TheArcaneArts", "Expertise", "Engineering" };
+		public static readonly string[] Keys = { "Firepower", "Healthcare", "TheArcaneArts", "Expertise", "Engineering", "Autonomy" };
 
 		/// <summary>World flags. Persisted here; the server owns them.</summary>
-		public bool Firepower, Healthcare, ArcaneArts, Expertise, Engineering;
+		public bool Firepower, Healthcare, ArcaneArts, Expertise, Engineering, Autonomy;
 
 		// ---------------------------------------------------------------- derived numbers (what the rest of the mod reads)
 
@@ -101,6 +101,7 @@ namespace Levy.Common.Flavor
 				"TheArcaneArts" => g.ArcaneArts,
 				"Expertise" => g.Expertise,
 				"Engineering" => g.Engineering,
+				"Autonomy" => g.Autonomy,
 				_ => false,
 			};
 		}
@@ -117,6 +118,7 @@ namespace Levy.Common.Flavor
 				case "TheArcaneArts": g.ArcaneArts = true; break;
 				case "Expertise": g.Expertise = true; break;
 				case "Engineering": g.Engineering = true; break;
+				case "Autonomy": g.Autonomy = true; break;
 			}
 		}
 
@@ -189,6 +191,7 @@ namespace Levy.Common.Flavor
 			if (ArcaneArts) tag["guideArcane"] = true;
 			if (Expertise) tag["guideExpertise"] = true;
 			if (Engineering) tag["guideEngineering"] = true;
+			if (Autonomy) tag["guideAutonomy"] = true;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
@@ -198,17 +201,18 @@ namespace Levy.Common.Flavor
 			ArcaneArts = tag.GetBool("guideArcane");
 			Expertise = tag.GetBool("guideExpertise");
 			Engineering = tag.GetBool("guideEngineering");
+			Autonomy = tag.GetBool("guideAutonomy");
 		}
 
-		public override void ClearWorld() => Firepower = Healthcare = ArcaneArts = Expertise = Engineering = false;
+		public override void ClearWorld() => Firepower = Healthcare = ArcaneArts = Expertise = Engineering = Autonomy = false;
 
-		public override void NetSend(BinaryWriter writer) => writer.Write((byte)new BitsByte(Firepower, Healthcare, ArcaneArts, Expertise, Engineering));
+		public override void NetSend(BinaryWriter writer) => writer.Write((byte)new BitsByte(Firepower, Healthcare, ArcaneArts, Expertise, Engineering, Autonomy));
 
 		public override void NetReceive(BinaryReader reader)
 		{
 			// Flags only ever turn on, so a late world-data message never un-studies a guide.
 			BitsByte bits = reader.ReadByte();
-			Firepower |= bits[0]; Healthcare |= bits[1]; ArcaneArts |= bits[2]; Expertise |= bits[3]; Engineering |= bits[4];
+			Firepower |= bits[0]; Healthcare |= bits[1]; ArcaneArts |= bits[2]; Expertise |= bits[3]; Engineering |= bits[4]; Autonomy |= bits[5];
 		}
 	}
 }

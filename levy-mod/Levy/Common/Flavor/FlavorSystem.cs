@@ -118,7 +118,7 @@ namespace Levy.Common.Flavor
 			else if (Main.netMode == NetmodeID.MultiplayerClient) SetStudiedLocal(key);
 		}
 
-		private static string BookName(string key) => Language.GetTextValue("Mods.Levy.Items.GuideTo" + key + ".DisplayName");
+		private static string BookName(string key) => ModContent.TryFind<ModItem>("Levy/GuideTo" + key, out ModItem book) ? book.DisplayName.Value : key;
 
 		private static string EffectText(string key)
 		{
@@ -134,6 +134,7 @@ namespace Levy.Common.Flavor
 				case "TheArcaneArts": return LevyUtil.T("Flavor.Effect.TheArcaneArts", LevyConstants.ArcaneMilitiaMana);
 				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", Systems.LevySlotMath.ExpertiseSlots);
 				case "Engineering": return LevyUtil.T("Flavor.Effect.Engineering");
+				case "Autonomy": return LevyUtil.T("Potions.EffectAutonomy", (int)Math.Round(Potions.PotionConstants.AutonomousDamage * 100f), (int)Math.Round(Potions.PotionConstants.AutonomousMoveSpeed * 100f));
 				default: return "";
 			}
 		}

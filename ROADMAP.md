@@ -264,6 +264,29 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED (2026-11-06 04:20): art4, art4-mech, command-observe (70cbdfe).** Integration build compiles 0 errors and boots clean with Thorium + Levy + Mechanization.
+- command-observe: GoPro, static cameras, arena zoom, radio map orders, mind control. Packets ObserveRequest/MindControlSet/MindInput/MapOrder and ObserveList/ObservePos appended.
+- CommandRadio.png kept at art4's version until `art5` lands the walkie-talkie redraw.
+- Drone check (I looked; this corrects my earlier note): there is NO mast. The side view matches Eve's concept (slender fuselage, thin boom, ring fan). What's missing is the two side rotors, which should read edge-on as a flat disc at body height (`-=--`). `art5` adds them.
+**ART CORRECTIONS (Eve, 2026-11-06 04:40):**
+- Guide books: revert to the pre-art4 versions ("items looked fine earlier"). Any future tomes copy vanilla spell tomes almost 1:1.
+- Guide to Autonomy: the art2 C slime original.
+- Armory + Barracks (art4): Eve likes them. KEEP.
+- OOA staves: still weird. Redo, modelled ~1:1 on vanilla Ballista Rod/Cane/Staff, with the house head.
+- Static camera: Eve prefers the OLD camera, art2 B.
+- Command Radio: the art2 original walkie-talkie, 2× nearest (48×72). BIG items. Never smaller.
+- Patrol Banner must sway in the wind like vanilla banners.
+- Drone: ducted-fan nacelles on the sides at body height, airliner-engine style. Turret: a mount that holds the weapon.
+**RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
+
+**RUNNING (2026-11-06 04:30):**
+- `art5`: Command Radio = art2 walkie-talkie B redrawn on the 2×2 grid with curves and real shading, at command-radio size; art4 GoPro/MovieCamera sprites wired over the observe placeholders (tile frame format checked); drone side rotors.
+- `potions`: STOPPED by Eve mid-work; WIP saved (22afa4e). Its Autonomy brief was wrong (radio-less map orders, generic stat buff). See the corrected checklist line.
+- `ms-live`: Magic Storage + SerousCommonLib now BUILT (Eve asked me to retry; it worked). MS tag v0.7.0.11, SCL 1.0.7, both toolchains. Builder is compiling Levy's MS half against the real thing.
+- MERGED officers2 + ooa-tavern (8775ed9); compiles 0 errors; boot pending.
+- Still running: officers2, field-ai, ooa-tavern.
+- After these land, ship ONE build: Levy 2.0.0 + Mechanization bump.
+
 **MERGED: armory2-reforge 01580f2 (targeted reforge + vanity)**
 - **Reforge modes:** In hand / Recent (N days) / Picked (click in grid) / By group (class + type).
 - **Goal:** a floor or a specific valid prefix.
@@ -461,7 +484,10 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - [x] Alt-fire policy registry from the survey (branch altfire-impl): AltPolicies registry + embedded table, all fired families, aim point, held-variant hook, gate before the probe.
 - [x] Dark Gate PORTAL_USE (altfire-impl): 12/12 harness cases pass (use, yield to the commander, place only when the player owns no pair).
 - [~] Interaction/utility weapons (altfire-impl): generic place/detonate/recall/portal mechanism with player-conflict guards done; still broken: Frigidflash Bolt (owner-anchored projectile), Photoviscerator/Violence/Lightspeed (0 damage), Wulfrum Knife recall (controlUseTile), teleport glasses, sentry/summon right-click commands. See the altfire-impl hand-back.
-- [ ] Officers: hold and use their weapon like vanilla town NPCs; follow orders (investigate); restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+- [x] (branch `officers2`, awaiting Eve's in-game look) Officers: hold and use their weapon like vanilla town NPCs; follow orders; restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+  - Cause found: `Officer_ParkTownNpc` forced the parked town NPC's `ai[0]=0` every tick, so vanilla's attack draw (gun in hand = ai[0] 12, throw 10, magic 14, swing 15) never ran. Now the avatar carries a synced pose clock (`ItemAnimation`/`AimRotation`) and feeds the stock `ai[0..2]`; `OfficerGlobalNPC.DrawTownAttackGun` swaps in the weapon he really fires (Minishark, Paintball Gun, wooden bow).
+  - Orders: Follow/Hold/Patrol/Return/Search/Free Rein already reached officers; added Hold Fire, Spread Out / Close Up, Focus Target / Focus Attack (RosterSystem toggles now vote and apply to officers).
+  - Kits redone around identity (no generic stat buffs): Painter = paint-soaked debuff; Guide = accuracy + called volley (Morale aura dropped); Merchant = march prices (+67% sell, -40% buy) with fence and handouts (Morale lift dropped); Demolitionist = nearby soldiers lob his grenades. Lab: `LEVY_HARNESS_SCENARIO=officer` (`CombatHarness.Officer.cs`).
 
 **TALKING TO LEVIES:**
 - [ ] Combat chat as a blue bar above the head that fills with text.
@@ -487,7 +513,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 20 min
   - white builder-shape bottle, thick square box
   - recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water
-- [ ] Guide to Autonomy (Slime Rain drop): with Spectator, levies get a buff and you can order them on the map. Optional.
+- [ ] Guide to Autonomy (Slime Rain drop, 1/50, art2 C slime sprite): a PREREQUISITE unlock, like Demon Heart needing WoF. (a) Map orders (radio shift-click AND Barracks "send to map point") need Autonomy learned; the radio/Barracks are still the tools. (b) With Autonomy, drinking Spectator gives levies "Autonomous": no fear/routing, fall back to heal when low, go for the biggest threat. No flat stat buff. (Eve approved this pitch 2026-11-06.)
 - [ ] Seeker Potion:
   - inverted equilateral triangle bottle, deep purple, centre hole
   - Moonglow + Blinkroot + Spelunker + Water; 12 min
@@ -2764,3 +2790,9 @@ WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons
 - **Item panel:** hover a weapon in the Items tab. Rank breakdown (base price, stage discount, recency, found, rules, override), tier and stage, class and category; per-item rank override (Auto / Set N / Never / Prefer) and class / category tag edits, stored per item type per armory. `WeaponRank.Of`, the allocator and `IsIssuable` all read them.
 - **Prove-it:** `tools/weapon-investigation/scen_rules.txt` (+ `scen_rules_thorium.txt`), outputs `rules_probe_output.txt` / `rules_probe_thorium_output.txt`; boot self-check `Levy armory rules self-check` (72 checks, round trips, evaluation, conflicts, census of derived tags).
 - **Not done / next:** reforge targeting, vanity, setup popup, alt-fire (other agents). A MP client has no progression tier table (it never ranks), so its item panel shows "No tier known" and no stage discount. In-use counts per rule are not shown (the preview is stock-based); a server-side plan summary would need a synced stat.
+
+## OOA LEVY STAVES + TAVERNKEEP (branch ooa-tavern, resumed from WIP 09397c8)
+- **Measured:** the vanilla Tavernkeep shop is 3 plain + 37 slot-reserving entries = exactly 40/40 once Golem is down (Thorium adds nothing; Calamity: see below). There is NO spare slot, so the WIP "lay into free slots" approach could never have worked (0 free at boot). Removed.
+- **Solution:** a SECOND SHOP PAGE `Terraria/DD2Bartender/LevyWares` (6 entries: Rod always, Cane after a mech boss, Staff after Golem, plus Ale/Stout/Rum for coins). Opened by the Bartender's second chat button (vanilla help text still shows; label gets " / Levy Wares" via reflection on `UI.BartenderHelp`). GlobalNPC cannot add a chat button in tML 1.4.4, hence the reuse.
+- Levies per sentry 1/2/3; Etherian Mana per sentry 5/8/12 (`LevyConstants.OoaEtherianManaPerTier`; Eve said "5 per sentry" - flat 5 is a one-constant change if wanted).
+- Unverified headless: the actual chat button/shop panel UI, planting a sentry in a live OOA wave, MP.

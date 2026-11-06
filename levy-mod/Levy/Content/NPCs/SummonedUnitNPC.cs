@@ -305,6 +305,7 @@ namespace Levy.Content.NPCs
 
 		private bool Shootable(NPC t)
 		{
+			if (OwnerAvatar()?.ModNPC is SoldierNPC boss && boss.Record != null && boss.Record.HoldFire) return false; // the commander said hold fire: the officer's crew, drones and spirits hold too
 			if (!LevyUtil.IsHostileTarget(t) || SoldierTargeting.IsNeverTarget(t)) return false;
 			if (Vector2.Distance(NPC.Center, t.Center) > Kind.RangeTiles * LevyConstants.TilePx) return false;
 			if (Kind.Melee && !CanCharge(t)) return false;

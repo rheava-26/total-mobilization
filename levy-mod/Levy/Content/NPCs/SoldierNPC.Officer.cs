@@ -46,6 +46,8 @@ namespace Levy.Content.NPCs
 		// the REAL weapon in his hand (null = none; he fights with the signature OfficerWeapon): the item, the round it takes and the shot worked out from them once
 		private Item _offHeld, _offRound; private DroneShot _offShot;
 		private bool _offDismissedCalled;
+		// the raised-weapon pose (every machine): bucketed aim last sent, and last tick's pose clock (a jump up restarts the throw / swing animation)
+		private int _offPoseBucket = -9, _offPrevPose;
 		// march chatter throttle (server)
 		private int _offMarchTimer;
 		// orders (server): a fresh order is read at the next tick; the patrol leg and pause; the army's middle (support officers keep to it), refreshed every few thinks
@@ -284,6 +286,7 @@ namespace Levy.Content.NPCs
 			}
 			if (support) { goal = Officer_SupportGoal(cmd); return true; }
 			float reach = Officer_ReachTiles();
+			if (reach > 0f && !_offRetreating && Officer_FocusGoal(reach, cmd.Bottom, out goal, out st)) return true;
 			NPC t = reach > 0f && !_offRetreating ? Officer_SeekTarget(cmd.Center, LevyConstants.FollowChaseLimit + reach) : null;
 			if (t != null) return Officer_EngageGoal(t, reach, cmd.Bottom, LevyConstants.FollowChaseLimit, out goal, out st);
 			goal = Officer_FrontlineGoal(cmd);
@@ -305,6 +308,7 @@ namespace Levy.Content.NPCs
 			else
 			{
 				float reach = Officer_ReachTiles();
+				if (seekFromSelf && reach > 0f && !_offRetreating && Officer_FocusGoal(reach, post, out goal, out st)) return true; // Search & Destroy / Free Rein go where the commander points
 				NPC t = reach > 0f && !_offRetreating
 					? (seekFromSelf ? Officer_SeekTarget(NPC.Center, SearchSeekTiles + reach, post, leashTiles + reach) : Officer_SeekTarget(post, leashTiles + reach))
 					: null;
@@ -399,11 +403,30 @@ namespace Levy.Content.NPCs
 			return true;
 		}
 
+		/// <summary>
+		/// FOCUS (the commander's Focus Target / Focus Attack): a fighter walks to a standoff from the designated enemy, or to the designated spot, as a soldier does. False when the
+		/// commander designated nothing, or the designated enemy is already in reach with a clear shot (he stands and shoots it).
+		/// </summary>
+		private bool Officer_FocusGoal(float reachTiles, Vector2 post, out Vector2 goal, out SoldierState st)
+		{
+			goal = NPC.Bottom; st = SoldierState.Idle;
+			string who = Record?.CommanderName;
+			int f = RosterSystem.FocusTargetOf(who);
+			if (f >= 0) { Officer_EngageGoal(Main.npc[f], reachTiles, post, LevyConstants.FollowChaseLimit * 3f, out goal, out st); return true; } // in reach: the goal is where he stands, so he holds the line and shoots
+			if (RosterSystem.FocusPositionOf(who, out Vector2 pos))
+			{
+				if (Vector2.Distance(NPC.Center, pos) <= reachTiles * LevyConstants.TilePx * 0.8f) return false;
+				goal = new Vector2(pos.X, NPC.Bottom.Y); st = SoldierState.SearchDestroy;   // walk toward its X on his own ground
+				return true;
+			}
+			return false;
+		}
+
 		/// <summary>FRONTLINE, following: stand at the slot's follow distance beside the commander (the soldier default), fighting what comes in reach.</summary>
 		private Vector2 Officer_FrontlineGoal(Player cmd)
 		{
 			int slot = Record != null ? Math.Max(0, OfficerSlot()) : 0;
-			float stand = (FollowDistTiles + slot * FollowSlotStepTiles) * LevyConstants.TilePx;
+			float stand = (FollowDistTiles + slot * FollowSlotStepTiles) * LevyConstants.TilePx * (Record != null && Record.SpreadOut ? LevyConstants.SpreadOutMult : 1f); // Spread Out widens the line, Close Up (the default) tightens it
 			int side = NPC.Center.X <= cmd.Center.X ? -1 : 1;
 			if (Math.Abs(NPC.Center.X - cmd.Center.X) < 32f) side = slot % 2 == 0 ? -1 : 1;
 			return new Vector2(cmd.Center.X + side * stand, cmd.Bottom.Y);
@@ -521,18 +544,22 @@ namespace Levy.Content.NPCs
 		// ---- combat: fire the officer's own weapon at the nearest hostile in reach (fire only; movement is the posture's job) ----
 		private void Officer_Combat(OfficerWeapon w)
 		{
+			if (ItemAnimation > 0) ItemAnimation--; // the raised-weapon pose clock (clients count it down themselves, Officer_ClientTick)
 			DroneShot real = _offShot; // the real item in his hand, if he has a usable one: it supplies the shot and the cadence
 			if (w == null && real == null) return;
 			// Reach: the officer's own engagement range when he has one (so a real bow does not turn a frontline fighter into a sniper), else the real weapon's.
 			float reachTiles = w != null ? w.RangeTiles : real.RangePx / LevyConstants.TilePx;
 			if (_offCooldown > 0) _offCooldown--;
-			if (_offRetreating) { _offTarget = -1; return; } // badly hurt: no new fights (support officers especially)
+			if (_offRetreating || (Record != null && Record.HoldFire)) { _offTarget = -1; return; } // badly hurt, or the commander said hold fire: no new fights (and the weapon comes down)
 			if (++_offScanTimer >= ScanIntervalTicks) { _offScanTimer = 0; _offTarget = Officer_FindTarget(reachTiles); }
 			else if (_offTarget >= 0 && !Officer_Shootable(Main.npc[_offTarget], reachTiles)) _offTarget = -1;
-			if (_offCooldown > 0 || _offTarget < 0) return;
+			if (_offTarget < 0) return;
 
 			NPC t = Main.npc[_offTarget];
 			NPC.direction = t.Center.X < NPC.Center.X ? -1 : 1; NPC.spriteDirection = NPC.direction;
+			int holdTicks = real != null ? real.IntervalTicks : (w != null ? w.Cooldown : 0);
+			Officer_RaiseWeapon(t, shot: false, holdTicks);       // the gun comes up while there is something to shoot at, and stays up between shots
+			if (_offCooldown > 0) return;
 			if (real != null)
 			{
 				Officer_FireReal(t, real, w);
@@ -543,6 +570,47 @@ namespace Levy.Content.NPCs
 				Officer_Fire(t, w);
 				_offCooldown = w.Cooldown + Main.rand.Next(Math.Max(1, w.RandomCooldown));
 			}
+			Officer_RaiseWeapon(t, shot: true, holdTicks);
+		}
+
+		// ---- the raised weapon (server decides, every machine draws) ----
+		/// <summary>
+		/// Puts the officer in the stock town-NPC attack pose for the weapon he is firing. The pose is carried by the synced <see cref="ItemAnimation"/> clock and <see cref="AimRotation"/> (here the aim's
+		/// vertical component, -0.5..0.5, exactly what vanilla's ai[2] holds for a shooter); <see cref="Officer_ParkTownNpc"/> turns it into the parked town NPC's ai[0..2] on every machine, and vanilla's own
+		/// frame and held-item draw does the rest (the gun in the hand for a shooter, the throw frames for a thrower, the swing, the magic aura). A shooter's pose is held while a target stands in reach and
+		/// between shots; a thrower's and a swinger's restarts on each shot.
+		/// </summary>
+		private void Officer_RaiseWeapon(NPC target, bool shot, int cadenceTicks)
+		{
+			NPC town = OfficerTownNpc;
+			int at = town != null ? NPCID.Sets.AttackType[town.type] : -1;
+			if (at < 0 || at > 3) return;                                             // this town NPC has no stock attack pose (a pet, a vendor-only type)
+			if ((at == 0 || at == 3) && !shot) return;                                // thrown and swung attacks pose once per attack, not while merely aiming
+			Vector2 d = target.Center - NPC.Center;
+			float aimY = d.LengthSquared() < 1f ? 0f : MathHelper.Clamp(d.Y / d.Length(), -0.5f, 0.5f);
+			int hold = at == 1 ? Math.Clamp(cadenceTicks + 12, OfficerPoseMinHoldTicks, OfficerPoseMaxHoldTicks) : Math.Clamp(NPCID.Sets.AttackTime[town.type], OfficerPoseMinHoldTicks, OfficerPoseMaxHoldTicks); // a long stock cast (the Dryad's 600) would hold the pose for ten seconds
+			int bucket = (int)Math.Round(aimY * 10f);
+			bool raise = ItemAnimation <= 0 || (shot && (at == 0 || at == 3));
+			if (raise || ItemAnimation < OfficerPoseResyncBelowTicks || bucket != _offPoseBucket) NPC.netUpdate = true; // tell the clients: a fresh pose, a pose about to lapse on their clock, or a new aim
+			_offPoseBucket = bucket;
+			AimRotation = aimY;
+			ItemAnimationMax = hold; ItemAnimation = hold;
+		}
+
+		/// <summary>
+		/// The vanilla town-NPC ai[0] attack state that draws a town NPC's weapon (10 throw, 12 gun, 14 magic, 15 swing) for the pose the avatar carries, or 0 when the weapon is down.
+		/// Fills <paramref name="ai1"/> (the stock countdown, which the swing's frame reads) and <paramref name="ai2"/> (the aim a shooter's frame and held gun read).
+		/// </summary>
+		public static float OfficerPoseState(int townType, int itemAnimation, int itemAnimationMax, float aimRotation, out float ai1, out float ai2)
+		{
+			ai1 = 0f; ai2 = 0f;
+			if (itemAnimation <= 0 || townType < 0 || townType >= NPCID.Sets.AttackType.Length) return 0f;
+			int at = NPCID.Sets.AttackType[townType];
+			if (at < 0 || at > 3) return 0f;
+			int attackTime = Math.Max(1, NPCID.Sets.AttackTime[townType]);
+			ai1 = itemAnimationMax > 0 ? attackTime * (itemAnimation / (float)itemAnimationMax) : attackTime;
+			ai2 = at == 1 ? MathHelper.Clamp(aimRotation, -0.5f, 0.5f) : 0f;
+			return at == 0 ? 10f : at == 1 ? 12f : at == 2 ? 14f : 15f;
 		}
 
 		private NPC Officer_NearestHostile(float rangePx)
@@ -702,7 +770,11 @@ namespace Levy.Content.NPCs
 			town.velocity = new Vector2(vx, NPC.velocity.Y);
 			town.direction = NPC.direction == 0 ? 1 : NPC.direction;
 			town.spriteDirection = town.direction;
-			town.ai[0] = 0f;
+			// The stock attack pose while he has a weapon up (the held gun, the throw, the swing, the magic aura): the same ai[0..2] the town AI would have set, so vanilla draws it.
+			town.ai[0] = OfficerPoseState(town.type, ItemAnimation, ItemAnimationMax, AimRotation, out float poseAi1, out float poseAi2);
+			town.ai[1] = poseAi1; town.ai[2] = poseAi2;
+			if (ItemAnimation > _offPrevPose) town.frameCounter = 0.0; // a fresh pose (or the next throw) restarts the stock animation from its first frame
+			_offPrevPose = ItemAnimation;
 
 			// Position last, feet on the avatar's feet: the puppet cannot drift, and vanilla's draw (which seats the sprite on Bottom) lands where the avatar stands.
 			// The avatar's smoothing offsets ride along, so the sprite eases between network corrections exactly as the body does.
@@ -715,6 +787,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Client tick for an officer avatar: keep the parked town NPC driven (clients run no officer brain; vanilla animates the town NPC from what this feeds it).</summary>
 		private void Officer_ClientTick()
 		{
+			if (ItemAnimation > 0) ItemAnimation--; // the pose clock runs down between server updates, each update re-sends it
 			Officer_ParkTownNpc();
 		}
 

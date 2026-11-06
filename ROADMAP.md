@@ -592,6 +592,15 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📦 SHIPPED Levy 2.0.7, at scratchpad/ship-2.0.7
+- Contents:
+  - drops 2a0f354: all options OFF except Dungeon Spirit ×3. NEW: levy kills now roll Dungeon Spirits (vanilla required a player target, so levy kills never rolled).
+  - calbugs: Wulfrum idle range; rogue armor class.
+  - The guide Settings page trimmed.
+- **Boots:**
+  - Thorium+MS: 0 exceptions; ProgCheck 90/0, Guide 363/0, allocator 591.
+  - Calamity: 0 exceptions; minions 82/82, allocator 489.
+
 ## 🔬 Boss trials PARTIAL results (raw data on origin/boss-trials, docs/boss_trials/raw; pre-mobility baseline, Spectator conditions, big arena)
 - **Classic, on-tier, 10 levies (3R/3M/2Me/2S):** KS 100% ~42s ~3 deaths; Eye 100% ~22s; Brain 100% ~13s.
 - **Classic, 4 levies:** all bosses won (KS ~98s, Eye ~56s, Brain ~46s).

@@ -34,13 +34,13 @@ namespace Levy.Common.UI
 			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f); _search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
 			_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); Changed?.Invoke(); Refresh(); };
 			_search.OnCanceledTakingInput += () => _search.SetContents("", true);
-			_search.SetContents("", true);
 			_box.OnLeftClick += (e, el) => { if (!_search.IsWritingText) _search.ToggleTakingText(); };
 			_box.Append(_search); Append(_box);
 			_typeBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, TypeWidth, LevyConstants.UI.ArmoryFilterHeight, () => Step(1), LevyUtil.T("UI2.ArmoryCategoryHint")) { OnAltClick = () => Step(-1) };
 			_typeBtn.Left.Set(width - TypeWidth - ClearWidth - Gap, 0f); _typeBtn.Top.Set(1, 0f); Append(_typeBtn);
 			_clearBtn = new LevyButton(LevyUtil.T("UI2.ArmoryClear"), LevyConstants.UI.ButtonTextScale, ClearWidth, LevyConstants.UI.ArmoryFilterHeight, Clear, LevyUtil.T("UI2.ArmoryClearHint"));
 			_clearBtn.Left.Set(width - ClearWidth, 0f); _clearBtn.Top.Set(1, 0f); Append(_clearBtn);
+			_search.SetContents("", true); // only after the buttons exist: SetContents fires OnContentsChanged -> Refresh
 			Refresh();
 		}
 
@@ -52,6 +52,7 @@ namespace Levy.Common.UI
 
 		private void Refresh()
 		{
+			if (_typeBtn == null || _clearBtn == null) return; // UISearchBar can fire OnContentsChanged during construction
 			_typeBtn.SetText(LevyUtil.T("UI2.ArmoryCategory", _idx == 0 ? LevyUtil.T("UI2.FilterAny") : LevyUtil.T("Logistics.Kind" + Cat)));
 			_typeBtn.Lit = _idx != 0; _clearBtn.Enabled = Active;
 		}

@@ -583,6 +583,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
 - A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
 
+## 🚑 SHIPPED HOTFIX Levy 2.0.3 + Mechanization 0.8.1, at scratchpad/ship-2.0.3
+- **CRASH ON LOAD in 2.0.1/2.0.2 (Eve's client log):**
+  - What happened: NullReferenceException in ItemFilterBar.Refresh. UISearchBar.SetContents in the ctor fires OnContentsChanged → Refresh before _typeBtn/_clearBtn exist.
+  - Fix: SetContents moved after the buttons, plus a null guard in Refresh.
+- **LESSON:** headless server boots NEVER construct UI (UISystem skips on dedServ), so UI ctor bugs ship. Every UI change needs a read-through of construction order. A real client can't run here (no vanilla Content assets).
+- **Drone green line:**
+  - What happened: the status LED drawn with TextureAssets.MagicPixel (1×1000) and no source rect → a 2×2000 px line.
+  - Same bug fixed in TurretNPC muzzle flash, TurretNPC line helper and TurretHud dots: source Rectangle(0,0,1,1).
+- **Boots:** Thorium+MS+Levy 2.0.3 0 exceptions; Thorium+MS+Levy+Mech 0.8.1 0 exceptions.
+
 ## 📦 SHIPPED Levy 2.0.2 (Mechanization 0.8.0), at scratchpad/ship-2.0.2
 - Real modded minions (modsummons) + the flood guard; Calamity recipe-check fix (calrecipes).
 - **Boots:**

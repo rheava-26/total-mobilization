@@ -831,7 +831,7 @@ namespace Mechanization.Content.NPCs
 					_ => new Color(150, 150, 160),
 				};
 				// status light: a 2x2 dot on the hull's rear shoulder, turned with the body
-				spriteBatch.Draw(px, Local(D.LedX, D.LedY), null, Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
+				spriteBatch.Draw(px, Local(D.LedX, D.LedY), new Rectangle(0, 0, 1, 1), Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
 				DrawWeapon(spriteBatch, Local(D.WeaponDrawOffsetX, 0f) + new Vector2(-D.WeaponDrawOffsetY * sin, D.WeaponDrawOffsetY * cos), light);
 				return false;
 			}

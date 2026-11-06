@@ -49,6 +49,7 @@ namespace Levy.Common.Testing
 			if (want.Contains("fallcatch")) foreach (bool lava in new[] { true, false }) foreach (bool hook in new[] { false, true }) _fa.Add(FaCatch(lava, hook));
 			if (want.Contains("follow")) { foreach (string kind in new[] { "gap", "gapswing", "climb" }) foreach (bool hook in new[] { false, true }) _fa.Add(FaFollow(kind, hook ? ItemID.GrapplingHook : 0)); _fa.Add(FaFollow("gapwide", ItemID.GrapplingHook)); _fa.Add(FaFollow("gapwide", ItemID.IvyWhip)); }
 			if (want.Contains("fall")) { _fa.Add(FaFall(1)); _fa.Add(FaFall(0)); }
+			if (want.Contains("real")) FaAddReal();
 			if (want.Contains("gravflip")) foreach (int fd in new[] { 1, 0 }) foreach (bool lavaFloor in new[] { false, true }) _fa.Add(FaGravFlip(fd, lavaFloor));
 			if (want.Contains("cost")) foreach (int mode in new[] { 0, 1, 2 }) _fa.Add(FaCost(mode));
 			_faI = -1; _faTick = 0;
@@ -63,7 +64,7 @@ namespace Levy.Common.Testing
 			{
 				FaKeep(); string fpAfter = HooksLab.Fp(Main.player[0]);
 				Mod.Logger.Info($"FIELDAI: commander fingerprint unchanged={_faFpBefore == fpAfter}" + (_faFpBefore == fpAfter ? "" : " BEFORE " + _faFpBefore + " AFTER " + fpAfter));
-				SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = -1; HookPlanner.SlopeDragCost = 14f;
+				SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = -1; HookPlanner.SlopeDragCost = 14f; _faReal = false; RealOn = false;
 				Finish("fieldai complete");
 				return;
 			}
@@ -71,7 +72,8 @@ namespace Levy.Common.Testing
 			if (_faFpBefore == null && _faI == 0 && _faTick == 8) _faFpBefore = HooksLab.Fp(Main.player[0]);   // after the server has updated the stand-in once
 			if (_faTick < 0)
 			{
-				ClearAll(); _faSol.Clear(); _faStandin = -1; _faFired = 0; _faCmdPos = null; _faCmdGrap = 0; _faCmdGrav = 1f;
+				ClearAll(); for (int q = 0; q < Main.maxNPCs; q++) { NPC hn = Main.npc[q]; if (hn.active && !hn.townNPC && !(hn.ModNPC is SoldierNPC)) hn.active = false; }
+				_faSol.Clear(); _faStandin = -1; _faFired = 0; _faCmdPos = null; _faCmdGrap = 0; _faCmdGrav = 1f;
 				FaArena();
 				t.Setup?.Invoke();
 				_faTick = 0; return;
@@ -115,7 +117,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || i == _faStandin) continue;
+				if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || i == _faStandin || _faReal) continue;
 				if (!n.friendly || n.type == NPCID.TargetDummy) n.active = false;
 			}
 		}

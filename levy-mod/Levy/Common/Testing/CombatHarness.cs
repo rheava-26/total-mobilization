@@ -264,7 +264,7 @@ namespace Levy.Common.Testing
 		{
 			if (_ph == Ph.Done) return;
 			// frozen sunny noon: no night spawns, no events
-			Main.dayTime = true; Main.time = 27000; Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
+			Main.dayTime = !_faReal; Main.time = _faReal ? 16200 : 27000; Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
 			if (Main.invasionType != 0) Main.invasionType = 0;
 
 			switch (_ph)

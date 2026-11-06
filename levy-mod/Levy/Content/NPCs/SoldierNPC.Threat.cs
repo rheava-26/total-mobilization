@@ -17,6 +17,8 @@ namespace Levy.Content.NPCs
 	{
 		/// <summary>0 = no dodging, 1 = the old closest-approach flinch, 2 = threat-field dodging (default). The harness flips it to compare.</summary>
 		internal static int DodgeMode = 2;
+		/// <summary>0 = the dodge moves of the threat field alone, 1 = plus the mobility moves (double jump, hook to a ledge, diagonal dash). Harness flips it for before/after.</summary>
+		internal static int MobilityMode = 1;
 		internal static bool DodgeDebug = Environment.GetEnvironmentVariable("LEVY_DODGEDBG") == "1";
 		private const int ThreatHorizon = 40, ThreatScanInterval = 4, ThreatCooldown = 10, ThreatBudgetPerTick = 14;
 		private int _dodgeHold; private int _dodgeBusy; private int _dodgePend, _dodgePendTiles;
@@ -24,6 +26,8 @@ namespace Levy.Content.NPCs
 		private static readonly List<Threat> _thrNear = new(32);
 		internal int DodgeManeuvers, DodgeStays, DodgeSteps, DodgeJumps, DodgeDashes, DodgeDrops, DodgeScansDone;
 		internal long DodgeTs;
+		/// <summary>Harness: the dodge layer's internal timers (cooldown, hold, queued hop, walking sidestep ticks left).</summary>
+		internal (int cooldown, int hold, int pend, int stepTicks) DodgeTimers => (_dodgeCooldown, _dodgeHold, _dodgePend, _dodgeTicks);
 
 		private bool TickDodge(bool grounded, bool air)
 		{

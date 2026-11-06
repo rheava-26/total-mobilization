@@ -592,6 +592,34 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 🔁 Eve's interrupt stopped ALL FOUR builders (2026-11-06 22:30)
+- WIP was saved and pushed; all four were restarted with full accumulated briefs:
+  - boss-trials (61a4615): Spectator conditions, rolled stats, KS/EoC/BoC, count curve.
+  - field-ai-3 (9e5f6b7): mobility moves already in (hook climb, double jump, dash combos, lava guard, strafing).
+  - gear-audit (1de1b73).
+  - calrev (e760c74): Rage/Adrenaline for levies already in.
+- Orphaned harness tML processes killed.
+- Builders are now told to push every ~30 minutes.
+
+## 🧪 Eve round (2026-11-06 22:30): chlorophyte, ectoplasm, set bonuses, class audit
+- **Bottlenecks:** Eve's verdict:
+  - Hallowed is FINE.
+  - CHLOROPHYTE is the bottleneck (Spectre/Shroomite/Chloro/bullets/event summons all need it; the only source is mining).
+  - DUNGEON SPIRITS too (~20 ecto in 20 minutes even with super spawn potions); Luminite as well.
+  - Branch `drops`:
+    - CP-scaled army loot bonus (+1%/CP on boss bags and drops; optional rare-chance boost);
+    - Dungeon Spirit spawn ×3;
+    - chlorophyte sources (Extractinator from mud post-mechs, jungle enemies post-Plantera, moon/lunar events) and a density-cap lift;
+    - Luminite/fragments ×2;
+    - "Restore vanilla Spooky armor recipe" (another mod made it need bars; not Calamity/Thorium/Levy per my check).
+- **BUG: armor set bonuses never worked for levies** (Spectre heal especially). Branch `setbonus`: full vanilla set-bonus audit with measured effects + fixes, plus a Calamity/Thorium spot-check.
+- **Melee preference REVISED:** penalize TRUE melee (no projectile) rather than boosting projectile weapons; any projectile melee counts (Starfury etc.); yoyos/boomerangs/flails keep their standing; never absurdly outdated (Chlorophyte Saber post-Providence). Folded into boss-trials part C.
+- **Class equipment audit** (research, scratchpad/CLASS_AUDIT.md), per stage × vanilla/Calamity/Thorium:
+  - bulk-ease of armor per class (e.g. early-HM summoner: Spider is hard);
+  - weapon counts;
+  - functionally required items (Yoyo Bag, whips + staff for summoners, Shield of Cthulhu, wings), checked against Levy's slots and support (does a summoner levy use whip + staff?);
+  - GENERAL fixes preferred (e.g. an accessory slot at a boss milestone).
+
 ## 💬 Eve's design talk (2026-11-06): class roles, gearing, count curve, bottlenecks, Calamity Rev
 - **Class AI roles:** NOT reworking yet. Eve wants hooks/double jump/Hermes in and tested first.
   - My view: Terraria bosses ignore aggro and pass through, so "melee tank" can't work. Melee's real role is close-range burst plus beam weapons.

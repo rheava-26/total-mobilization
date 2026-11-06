@@ -37,8 +37,8 @@ namespace Levy.Common.Events
 			{
 				Check(OldOnesArmySystem.LeviesFor(1) == 1 && OldOnesArmySystem.LeviesFor(2) == 2 && OldOnesArmySystem.LeviesFor(3) == 3, "levies per tier are 1/2/3");
 				Check(OldOnesArmySystem.ManaFor(1) == 5, "tier 1 costs 5 Etherian Mana");
-				Check(OldOnesArmySystem.ManaFor(2) > OldOnesArmySystem.ManaFor(1) && OldOnesArmySystem.ManaFor(3) > OldOnesArmySystem.ManaFor(2), "mana rises with tier");
-				Check(OldOnesArmySystem.Pay(4, 1) == -1 && OldOnesArmySystem.Pay(5, 1) == 0 && OldOnesArmySystem.Pay(23, 2) == 15 && OldOnesArmySystem.Pay(11, 3) == -1 && OldOnesArmySystem.Pay(12, 3) == 0, "Pay(): refuses when short, leaves the remainder");
+				Check(OldOnesArmySystem.ManaFor(2) == 5 && OldOnesArmySystem.ManaFor(3) == 5, "every tier costs 5 Etherian Mana");
+				Check(OldOnesArmySystem.Pay(4, 1) == -1 && OldOnesArmySystem.Pay(5, 1) == 0 && OldOnesArmySystem.Pay(23, 2) == 18 && OldOnesArmySystem.Pay(4, 3) == -1 && OldOnesArmySystem.Pay(5, 3) == 0, "Pay(): refuses when short, leaves the remainder");
 				// 20 crystals buy four Rods = four sentries = four levies; the ledger is simply repeated payment
 				int have = 20, placed = 0;
 				while (OldOnesArmySystem.Pay(have, 1) >= 0) { have = OldOnesArmySystem.Pay(have, 1); placed++; }

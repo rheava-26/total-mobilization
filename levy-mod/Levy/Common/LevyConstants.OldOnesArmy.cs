@@ -6,7 +6,7 @@ namespace Levy.Common
 		/// <summary>Levies a sentry of tier 1 / 2 / 3 (Rod / Cane / Staff) calls up.</summary>
 		public static readonly int[] OoaLeviesPerTier = { 1, 2, 3 };
 		/// <summary>Etherian Mana (the Old One's Army crystal item) one sentry of each tier costs: 5 per levy for the Rod, a little less per levy above it.</summary>
-		public static readonly int[] OoaEtherianManaPerTier = { 5, 8, 12 };
+		public static readonly int[] OoaEtherianManaPerTier = { 5, 5, 5 }; // Eve: every tier costs 5; higher tiers just call up more levies
 		/// <summary>Defender Medals the Tavernkeep asks for each staff.</summary>
 		public static readonly int[] OoaMedalPricePerTier = { 10, 25, 50 };
 		/// <summary>How far from the cursor (tiles) a sentry may be planted from the player, and how far below the cursor it looks for ground.</summary>

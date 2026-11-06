@@ -810,21 +810,16 @@ namespace Mechanization.Content.NPCs
 				}
 				// The body sheet holds pre-tilted columns (levels -2..+2, nose down positive for a right-facing drone; the flip mirrors it), so the sprite itself is never rotated.
 				int level = Math.Clamp((int)Math.Round(_tilt * sd / D.TiltStep), -(D.TiltLevels / 2), D.TiltLevels / 2);
-				float rot = level * D.TiltStep * sd;   // only places the masts, light and weapon on the turned hull
+				float rot = level * D.TiltStep * sd;   // only places the light and weapon on the turned hull
 				float cos = (float)Math.Cos(rot), sin = (float)Math.Sin(rot);
 				Vector2 Local(float lx, float ly) { lx *= sd; return new Vector2((float)Math.Round(c.X + lx * cos - ly * sin), (float)Math.Round(c.Y + lx * sin + ly * cos)); }   // body-local px -> screen
 
 				// Spin: four blur frames while airborne, still when landed; the fan in the tail ring turns on the same clock.
 				int spin = (int)(((Main.GameUpdateCount >> 1) + (uint)NPC.whoAmI) & 3u);
 				Texture2D body = ModContent.Request<Texture2D>(Texture).Value;
-				Texture2D rotor = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/DroneRotor").Value;
-				int bw = body.Width / D.TiltLevels, bh = body.Height / D.BodyFrames, rw = rotor.Width, rh = rotor.Height / D.RotorFrames;
+				int bw = body.Width / D.TiltLevels, bh = body.Height / D.BodyFrames;
 				Rectangle bSrc = new Rectangle((level + D.TiltLevels / 2) * bw, (Landed ? 0 : spin) * bh, bw, bh);
-				Rectangle rSrc = new Rectangle(0, (Landed ? D.RotorFrames - 1 : spin) * rh, rw, rh);
-				Vector2 rOrigin = new Vector2(rw * 0.5f, rh);   // mast base, bottom centre
 
-				for (int i = D.RotorMastX.Length - 1; i >= 1; i--)   // far rotors first (behind the hull)
-					spriteBatch.Draw(rotor, Local(D.RotorMastX[i], D.RotorMastY[i]), rSrc, Dim(light, D.RotorTint[i]), 0f, rOrigin, 1f, fx, 0f);
 				spriteBatch.Draw(body, c, bSrc, light, 0f, new Vector2(bw * 0.5f, bh * 0.5f), 1f, fx, 0f);
 
 				Color led = Phase switch
@@ -838,7 +833,6 @@ namespace Mechanization.Content.NPCs
 				// status light: a 2x2 dot on the hull's rear shoulder, turned with the body
 				spriteBatch.Draw(px, Local(D.LedX, D.LedY), null, Lit(led, light), rot, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), SpriteEffects.None, 0f);
 				DrawWeapon(spriteBatch, Local(D.WeaponDrawOffsetX, 0f) + new Vector2(-D.WeaponDrawOffsetY * sin, D.WeaponDrawOffsetY * cos), light);
-				spriteBatch.Draw(rotor, Local(D.RotorMastX[0], D.RotorMastY[0]), rSrc, light, 0f, rOrigin, 1f, fx, 0f);   // near rotor in front
 				return false;
 			}
 			catch (Exception e)

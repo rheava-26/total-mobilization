@@ -592,6 +592,25 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📋 CLASS AUDIT done → levy-mod/Levy/docs/CLASS_AUDIT.md (cumulative vanilla → +Calamity → +Thorium; E/M/H bulk grades)
+- **Levy support, from code:**
+  - Accessory slots: Levy 1 / Man-at-Arms 3 / Champion 5, cap 6; milestone slots default OFF.
+  - Summoner: whip + staff both used.
+  - **Yoyo Bag: does nothing** for levies (YoyoMaxOut 1).
+  - Mana Flower: dead (levies drink potions).
+  - **Shield of Cthulhu dash: unused** (field-ai-3 is adding dash dodges).
+  - The drop multiplier skips boss drops except ecto and souls.
+- **Top gaps:**
+  1. Early-HM summoner minion slots (Spider only: ~2,080 recluse kills for 20 levies; Calamity's Fathom Swarmer partly fills).
+  2. Hallowed (Eve: fine).
+  3. Lunar tier (Calamity fills post-ML).
+  4. Pumpkin-Moon summoner kit.
+  5. Unscalable boss drops (Bee Wax, Beetle Husk).
+  6. **WoF emblems: 1 per kill, no recipe.**
+  7. Accessory slot starvation.
+  8. Non-functional "required" items (Yoyo Bag, SoC dash).
+- **Proposed to Eve (awaiting picks):** an opt-in BossDropMultiplier (general); emblem Shimmer/recipe; a Yoyo Glove second yoyo for levies; an earlier accessory-slot milestone (Queen Bee) / milestones on; a bulk-batch station (the paused factory) as the general fix for Spider/Bee/etc.
+
 ## ✏️ Eve corrections (2026-11-06 22:45)
 - **drops:**
   - All options default OFF except Dungeon Spirit ×3 (default ON).

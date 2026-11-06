@@ -224,6 +224,8 @@ namespace Levy.Content.NPCs
 		{
 			SummonKind k = Kind;
 			int dmg = MarkSystem.Amp(t, ScaledDamage(k));
+			float banner = global::Levy.Common.Util.BannerBuffs.Offense(CommanderIndex, t); // the commander's banner for this enemy
+			if (banner != 1f) dmg = Math.Max(1, (int)Math.Round(dmg * banner));
 			if (CommanderIndex >= 0 && CommanderIndex < Main.maxPlayers && Main.player[CommanderIndex].active) t.PlayerInteraction(CommanderIndex);
 			int dir = t.Center.X >= NPC.Center.X ? 1 : -1;
 			t.SimpleStrikeNPC(dmg, dir, false, k.Knockback, null, true, 0f, true); // noPlayerInteraction: the commander was credited above (the strike's own credit would name the dedicated server's slot)
@@ -271,7 +273,7 @@ namespace Levy.Content.NPCs
 				if (!mine.Intersects(rect)) continue;
 
 				int dir = a.Center.X < cx ? 1 : -1;
-				int raw = Math.Max(1, Main.DamageVar(a.damage * mult));
+				int raw = Math.Max(1, (int)Math.Round(Main.DamageVar(a.damage * mult) * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a))); // the commander's banner for this attacker
 				NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); // ModifyIncomingHit applies the player-defense formula; the server broadcasts the strike
 				_immuneTime = LevyConstants.ImmuneTicksOnHit;
 				if (NPC.active && NPC.life > 0) NPC.netUpdate = true;

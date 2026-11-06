@@ -1,0 +1,30 @@
+HARNESS-BANNER: enemy=Green Slime (type -3) bannerId=119 other bannerId=87 expert=False
+HARNESS-BANNER: gun     banner=none  hits=158 mean=25.85 min=22 max=30 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: gun     banner=own   hits=161 mean=38.92 min=33 max=45 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: gun     banner=other hits=157 mean=26.08 min=22 max=30 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: sword   banner=none  hits=122 mean=9.13 min=8 max=20 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: sword   banner=own   hits=122 mean=14.33 min=11 max=28 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: sword   banner=other hits=122 mean=9.43 min=8 max=20 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: contact banner=none  hits=204 mean=40.04 min=22 max=46 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: contact banner=own   hits=204 mean=28.97 min=25 max=45 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: contact banner=other hits=204 mean=39.80 min=22 max=46 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: enemy=Green Slime (type -3) bannerId=119 other bannerId=87 expert=True
+HARNESS-BANNER: gun     banner=none  hits= 95 mean=25.73 min=22 max=30 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: gun     banner=own   hits= 92 mean=52.59 min=44 max=60 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: gun     banner=other hits= 93 mean=25.75 min=22 max=30 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: sword   banner=none  hits= 72 mean=9.15 min=8 max=18 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: sword   banner=own   hits= 72 mean=18.71 min=15 max=36 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: sword   banner=other hits= 71 mean=9.46 min=8 max=20 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: contact banner=none  hits=120 mean=39.77 min=22 max=46 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: contact banner=own   hits=120 mean=19.67 min=17 max=60 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: contact banner=other hits=120 mean=39.55 min=22 max=46 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: enemy=Ancient Archer (type 689) bannerId=689 other bannerId=87 expert=False
+HARNESS-BANNER: gun     banner=none  hits= 96 mean=25.88 min=22 max=30 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: gun     banner=own   hits= 93 mean=38.91 min=33 max=45 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: gun     banner=other hits= 92 mean=25.61 min=22 max=30 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: sword   banner=none  hits= 72 mean=9.21 min=8 max=20 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: sword   banner=own   hits= 72 mean=13.88 min=11 max=30 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: sword   banner=other hits= 71 mean=9.37 min=8 max=20 commanderHasBanner(own)=False (other)=True
+HARNESS-BANNER: contact banner=none  hits=120 mean=39.53 min=22 max=46 commanderHasBanner(own)=False (other)=False
+HARNESS-BANNER: contact banner=own   hits=120 mean=29.02 min=25 max=45 commanderHasBanner(own)=True (other)=False
+HARNESS-BANNER: contact banner=other hits=120 mean=40.58 min=22 max=46 commanderHasBanner(own)=False (other)=True

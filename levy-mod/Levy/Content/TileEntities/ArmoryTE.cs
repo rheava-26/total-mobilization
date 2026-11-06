@@ -1096,7 +1096,12 @@ namespace Levy.Content.TileEntities
 		{
 			if (pouch == null || ammoId <= 0 || max <= 0) return 0;
 			if (!IsAir(pouch) && pouch.ammo != ammoId) return 0;
-			if (!FairShareOff) max = Math.Min(max, FairAmmoLimit(ammoId, max)); // scarce stock is split evenly; a pouch already above the share is simply not topped up (Drain never takes back)
+			if (!FairShareOff)
+			{
+				int fair = FairAmmoLimit(ammoId, max);
+				if (fair < max) ReclaimExcessAmmo(ammoId, pouch, fair); // scarce stock: the levy who filled his pouch first does not keep the army's whole stock
+				max = Math.Min(max, fair); // scarce stock is split evenly; the asker's own pouch above the share is simply not topped up (Drain never takes back)
+			}
 			int moved = Drain(IssueAmmo, ammoId, pouch, max);
 			moved += Drain(Storage, ammoId, pouch, max);
 			if (moved > 0) MarkDirty();
@@ -1107,6 +1112,29 @@ namespace Levy.Content.TileEntities
 			}
 			if (MagicStorageBridge.Enabled) moved += MsTakeAmmo(ammoId, pouch, max); // then a connected Magic Storage network
 			return moved;
+		}
+
+		/// <summary>
+		/// Scarce ammo only (<paramref name="fair"/> is below a full pouch): every other served soldier's pouch of this ammo above the equal share goes back to storage, so a levy who filled his
+		/// pouch while he was the only user cannot leave the rest of the army with none (and with nothing to upgrade onto: the allocation never plans a gun the levy has no ammo for).
+		/// A hand-assigned pouch is the player's call and is left alone; if storage is full the excess stays where it was.
+		/// </summary>
+		private void ReclaimExcessAmmo(int ammoId, Item asker, int fair)
+		{
+			foreach (var s in ServedSoldiers()) {
+				var g = s?.Gear;
+				var p = g?.Ammo;
+				if (g == null || ReferenceEquals(p, asker) || IsAir(p) || p.ammo != ammoId || p.stack <= fair || g.IsLocked(SoldierGear.SlotAmmo)) continue;
+				var back = p.Clone();
+				int excess = p.stack - fair;
+				back.stack = excess;
+				var rest = Deposit(back); // stacks into the shelf; hands back whatever did not fit
+				int returned = excess - (IsAir(rest) ? 0 : rest.stack);
+				if (returned <= 0) continue;
+				p.stack -= returned;
+				MarkDirty();
+				if (s.HasBody && Main.npc[s.BodyIndex].ModNPC is Content.NPCs.SoldierNPC sn) sn.NotifyGearChanged();
+			}
 		}
 
 		private static int Drain(Item[] arr, int ammoId, Item pouch, int max)

@@ -32,6 +32,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { _scTrial = int.MaxValue; _scTick = -1; return true; }
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) return BeginLifeSteal();
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) return BeginSpeed();
+			if (string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase)) return BeginBanner();
 			if (!string.Equals(Scenario, "platform", StringComparison.OrdinalIgnoreCase)) return false;
 			_scTrial = 0; _scTick = -1;
 			Mod.Logger.Info($"HARNESS-MOVE: platform scenario; platform row y={FloorY - PlatformHeightTiles} ({PlatformHeightTiles} tiles above the floor); trials={Trials.Length}; max {ScenarioMaxTicks} ticks");
@@ -70,6 +71,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { RunAmmoScenario(); Finish("ammo scenario complete"); return; }
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) { StepLifeSteal(); return; }
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) { StepSpeed(); return; }
+			if (string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase)) { StepBanner(); return; }
 			if (_scTrial >= Trials.Length) { Finish("platform scenario complete"); return; }
 			if (_scTick < 0)
 			{

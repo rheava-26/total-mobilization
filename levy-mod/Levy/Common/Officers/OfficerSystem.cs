@@ -271,6 +271,60 @@ namespace Levy.Common.Officers
 			}
 		}
 
+		/// <summary>Adds this commander's in-reach officer avatars to a Hold Fire / Spread Out vote (their count and how many already have the stance). Server / single player.</summary>
+		public void CountStance(Player commander, bool atBarracks, bool spread, ref int total, ref int have)
+		{
+			if (!LevyUtil.IsServerOrSingle || commander == null) return;
+			Refresh();
+			foreach (SoldierNPC a in _avatars.Values)
+			{
+				if (!OwnedInReach(a, commander, atBarracks)) continue;
+				total++; if (spread ? a.Record.SpreadOut : a.Record.HoldFire) have++;
+			}
+		}
+
+		/// <summary>Applies a Hold Fire / Spread Out decision to this commander's in-reach officer avatars (they obey the same stances the soldiers do). Server / single player.</summary>
+		public void SetStance(Player commander, bool atBarracks, bool spread, bool value)
+		{
+			if (!LevyUtil.IsServerOrSingle || commander == null) return;
+			Refresh();
+			foreach (SoldierNPC a in _avatars.Values)
+			{
+				if (!OwnedInReach(a, commander, atBarracks)) continue;
+				if (spread) a.Record.SpreadOut = value; else a.Record.HoldFire = value;
+				a.NPC.netUpdate = true;
+			}
+		}
+
+		/// <summary>Counts this commander's in-reach officer avatars into the formation vote (Normal / Spread out / Close up). Server / single player.</summary>
+		public void CountFormation(Player commander, bool atBarracks, ref int total, ref int spread, ref int close)
+		{
+			if (!LevyUtil.IsServerOrSingle || commander == null) return;
+			Refresh();
+			foreach (SoldierNPC a in _avatars.Values)
+			{
+				if (!OwnedInReach(a, commander, atBarracks)) continue;
+				total++; if (a.Record.SpreadOut) spread++; else if (a.Record.CloseUp) close++;
+			}
+		}
+
+		/// <summary>Puts this commander's in-reach officer avatars into the squad's chosen formation, as the soldiers are. Server / single player.</summary>
+		public void ApplyFormation(Player commander, bool atBarracks, global::Levy.Common.Soldiers.FormationMode mode)
+		{
+			if (!LevyUtil.IsServerOrSingle || commander == null) return;
+			Refresh();
+			foreach (SoldierNPC a in _avatars.Values)
+			{
+				if (!OwnedInReach(a, commander, atBarracks)) continue;
+				global::Levy.Common.Soldiers.Formation.Apply(a.Record, mode);
+				a.NPC.netUpdate = true;
+			}
+		}
+
+		private static bool OwnedInReach(SoldierNPC avatar, Player commander, bool atBarracks) =>
+			avatar != null && avatar.NPC.active && avatar.Record != null && string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)
+			&& (atBarracks || LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius));
+
 		/// <summary>Sends an officer back to town life. Only his own commander may (no refund). False when he is not that player's officer.</summary>
 		public bool Dismiss(Player commander, NPC npc)
 		{

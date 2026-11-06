@@ -51,22 +51,36 @@ namespace Levy.Content.Projectiles
 			}
 		}
 
+		/// <summary>ai[0] below zero is a PLAYER: -(player index + 1), the commander (the bolt goes to the most wounded ally in reach, vanilla's pick).</summary>
+		private Player TargetPlayer
+		{
+			get
+			{
+				int code = (int)Projectile.ai[0];
+				if (code >= 0) return null;
+				int pi = -code - 1;
+				return pi >= 0 && pi < Main.maxPlayers && Main.player[pi].active && !Main.player[pi].dead ? Main.player[pi] : null;
+			}
+		}
+
 		public override void AI()
 		{
 			bool authority = Main.netMode != NetmodeID.MultiplayerClient;
-			SoldierNPC s = Soldier;
-			if (s == null || (authority && !s.IsAlive))
+			Player pl = TargetPlayer;
+			SoldierNPC s = pl == null ? Soldier : null;
+			if (pl == null && (s == null || (authority && !s.IsAlive)))
 			{
 				// A client may see the bolt before the body arrives: let the server decide when it is really gone.
 				if (authority) Projectile.Kill();
 				return;
 			}
 
-			Vector2 aim = s.NPC.Center - Projectile.Center;
+			Vector2 aim = (pl != null ? pl.Center : s.NPC.Center) - Projectile.Center;
 			float dist = aim.Length();
-			if (authority && dist < LevyConstants.HoodBoltArriveRangePx && Projectile.Hitbox.Intersects(s.NPC.Hitbox))
+			if (authority && dist < LevyConstants.HoodBoltArriveRangePx && Projectile.Hitbox.Intersects(pl != null ? pl.Hitbox : s.NPC.Hitbox))
 			{
-				Deliver(s);
+				if (pl != null) Common.Team.TeamNet.Heal(pl, (int)Projectile.ai[1]); else Deliver(s);
+				Common.Team.TeamSpectre.LevyDelivered++;
 				Projectile.Kill();
 				return;
 			}

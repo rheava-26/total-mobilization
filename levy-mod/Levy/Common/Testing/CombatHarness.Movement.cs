@@ -36,6 +36,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "fieldai", StringComparison.OrdinalIgnoreCase)) return BeginFieldAi();
 			if (string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase)) return BeginGate();
 			if (string.Equals(Scenario, "officer", StringComparison.OrdinalIgnoreCase)) return BeginOfficer();
+			if (string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase)) return BeginTeam();
 			if (!string.Equals(Scenario, "platform", StringComparison.OrdinalIgnoreCase)) return false;
 			_scTrial = 0; _scTick = -1;
 			Mod.Logger.Info($"HARNESS-MOVE: platform scenario; platform row y={FloorY - PlatformHeightTiles} ({PlatformHeightTiles} tiles above the floor); trials={Trials.Length}; max {ScenarioMaxTicks} ticks");
@@ -78,6 +79,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "fieldai", StringComparison.OrdinalIgnoreCase)) { StepFieldAi(); return; }
 			if (string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase)) { StepGate(); return; }
 			if (string.Equals(Scenario, "officer", StringComparison.OrdinalIgnoreCase)) { StepOfficer(); return; }
+			if (string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase)) { StepTeam(); return; }
 			if (_scTrial >= Trials.Length) { Finish("platform scenario complete"); return; }
 			if (_scTick < 0)
 			{

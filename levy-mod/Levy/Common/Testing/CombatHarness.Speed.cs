@@ -45,11 +45,11 @@ namespace Levy.Common.Testing
 		private static int _dbgPreOff, _dbgPostOff, _dbgPre;
 		public override void PreUpdateNPCs()
 		{
-			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName) { _dbgPre++; if (!sp.active) _dbgPreOff++; sp.active = true; sp.dead = false; } }
+			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName) { _dbgPre++; if (!sp.active) _dbgPreOff++; sp.active = true; sp.dead = false; } }
 		}
 		public override void PostUpdateNPCs()
 		{
-			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName && !sp.active) _dbgPostOff++; }
+			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName && !sp.active) _dbgPostOff++; }
 		}
 
 		private delegate void OrigUpdateConnectedClients();

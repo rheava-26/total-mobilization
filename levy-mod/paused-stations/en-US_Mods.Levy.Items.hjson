@@ -1,0 +1,18 @@
+# Keys here are relative to Mods.Levy.Items (bulk stations).
+BulkFactoryItem: {
+	DisplayName: Bulk Factory
+	Tooltip:
+		'''
+		Craft in batches while standing near it.
+		Right-click it to pick a batch size. Big batches make extra items.
+		'''
+}
+
+BulkPotionStationItem: {
+	DisplayName: Bulk Potion Station
+	Tooltip:
+		'''
+		Counts as an Alchemy Table and Bottles.
+		Right-click it to pick a batch size. Big batches of potions make extra potions.
+		'''
+}

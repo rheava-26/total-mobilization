@@ -33,7 +33,7 @@ namespace Levy.Common.Progression
 		// ---- Chlorophyte ---------------------------------------------------------------------------------------
 		[Header("Chlorophyte")]
 		[Range(1, 10)] [DefaultValue(1)] public int ChlorophyteGrowthMultiplier;
-		[Range(1f, 10f)] [Increment(0.5f)] [DefaultValue(1f)] public float ChlorophyteChunkScale;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float ChlorophyteChunkScale;
 
 		// ---- Boss weapons / shimmer / crates -------------------------------------------------------------------
 		[Header("Items")]
@@ -53,5 +53,29 @@ namespace Levy.Common.Progression
 		[DefaultValue(false)] public bool ArmsDealerBulkAmmo;
 		[Range(50, 9999)] [DefaultValue(ProgConst.BulkAmmoUnlockDefault)] public int BulkAmmoUnlockAmount;
 		[Range(50, 400)] [DefaultValue(ProgConst.BulkAmmoPriceDefault)] public int BulkAmmoPricePercent;
+
+		// ---- Army loot -----------------------------------------------------------------------------------------
+		[Header("ArmyLoot")]
+		[Range(0f, 10f)] [Increment(0.25f)] [DefaultValue(0f)] public float ArmyLootPercentPerCp;
+		[DefaultValue(false)] public bool ArmyLootRareChance;
+
+		// ---- Dungeon Spirits -----------------------------------------------------------------------------------
+		[Header("DungeonSpirits")]
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(3f)] public float DungeonSpiritMultiplier;
+		[Range(0f, 10f)] [Increment(0.25f)] [DefaultValue(0f)] public float DungeonSpiritPercentPerCp;
+
+		// ---- Chlorophyte sources -------------------------------------------------------------------------------
+		[Header("ChlorophyteSources")]
+		[ReloadRequired] [DefaultValue(false)] public bool ExtractinatorChlorophyte;
+		[Range(1f, 100f)] [Increment(1f)] [DefaultValue(25f)] public float ExtractinatorChlorophytePercent;
+		[DefaultValue(false)] public bool JungleChlorophyteDrop;
+		[Range(1f, 100f)] [Increment(1f)] [DefaultValue(8f)] public float JungleChlorophyteChance;
+		[DefaultValue(false)] public bool EventChlorophyteDrop;
+		[Range(1f, 100f)] [Increment(1f)] [DefaultValue(15f)] public float EventChlorophyteChance;
+
+		// ---- Lunar ---------------------------------------------------------------------------------------------
+		[Header("Lunar")]
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float LuminiteDropMultiplier;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float LunarFragmentDropMultiplier;
 	}
 }

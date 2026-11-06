@@ -36,7 +36,7 @@ namespace Levy.Common.Progression
 			Mod.Logger.Info("[ProgCheck] START config: " + Newtonsoft.Json.JsonConvert.SerializeObject(c));
 			try
 			{
-				Math_(); Recipes(c); Shimmer(c); Localization_(c); Shop(c);
+				ProgressionDropsSystem.Ensure(); Math_(); Recipes(c); Drops(c); Shimmer(c); Localization_(c); Shop(c);
 				if (Environment.GetEnvironmentVariable("LEVY_PROGCHECK_DIFF") == "1") Loot(c);
 				LogVanilla();
 			}
@@ -77,6 +77,28 @@ namespace Levy.Common.Progression
 			Check("10 stars at option 2 craft 5 mana crystals", ProgMath.AffordableCrafts(new[] { ProgMath.ManaCrystalStars(5, 2) }, new[] { 10 }, 99) == 5);
 			Check("10 stars at vanilla craft 2 mana crystals", ProgMath.AffordableCrafts(new[] { ProgMath.ManaCrystalStars(5, 5) }, new[] { 10 }, 99) == 2);
 			Check("bulk ammo price 100% = item value", ProgMath.BulkAmmoPrice(50, 100) == 50);
+			// army loot
+			Check("army bonus: 10 CP at 1% = 0.10", Math.Abs(ProgMath.ArmyBonus(10, 1f) - 0.10) < 1e-9);
+			Check("army bonus: 0 CP or 0% = 0", ProgMath.ArmyBonus(0, 1f) == 0 && ProgMath.ArmyBonus(40, 0f) == 0);
+			Check("rare reroll: p=1/10 bonus 0.1 gives total p x 1.1", Math.Abs((0.1 + 0.9 * ProgMath.RareRerollChance(1, 10, 0.1)) - 0.11) < 1e-9);
+			Check("rare reroll: never above certain, none at bonus 0 or p=1", ProgMath.RareRerollChance(1, 2, 50) == 1.0 && ProgMath.RareRerollChance(1, 10, 0) == 0 && ProgMath.RareRerollChance(1, 1, 1) == 0);
+			Check("stochastic round: 2.3 -> 3 below .3, 2 above", ProgMath.RoundStochastic(2.3, 0.29) == 3 && ProgMath.RoundStochastic(2.3, 0.31) == 2 && ProgMath.RoundStochastic(0, 0.1) == 0);
+			double mean = 0; int N = 100000; var rr = new Random(7); for (int i = 0; i < N; i++) mean += ProgMath.RoundStochastic(8.0, rr.NextDouble()) + ProgMath.RoundStochastic(0.37, rr.NextDouble());
+			Check("stochastic round keeps the mean (8 + 0.37)", Math.Abs(mean / N - 8.37) < 0.02, $"{mean / N:F3}");
+			// dungeon spirits
+			var sp = ProgMath.SpiritTrials(3f, 0f, 0, true);
+			Check("spirit x3, vanilla rolled: 2 extra rolls", sp.whole == 2 && sp.frac < 1e-9, sp.ToString());
+			sp = ProgMath.SpiritTrials(3f, 1f, 10, true);
+			Check("spirit x3 with 10 CP at 1%: x3.3 = 2.3 extra rolls", sp.whole == 2 && Math.Abs(sp.frac - 0.3) < 1e-9, sp.ToString());
+			sp = ProgMath.SpiritTrials(3f, 0f, 0, false);
+			Check("spirit, monster fought levies: vanilla roll added (3 rolls)", sp.whole == 3, sp.ToString());
+			sp = ProgMath.SpiritTrials(1f, 0f, 0, true);
+			Check("spirit x1: no extra rolls (vanilla)", sp.whole == 0 && sp.frac == 0);
+			// chlorophyte
+			Check("chlorophyte caps: scale 1 is vanilla 40/130, scale 4 is 160/520", ProgMath.ChlorophyteCaps(40, 130, 1f) == (40, 130) && ProgMath.ChlorophyteCaps(40, 130, 4f) == (160, 520));
+			Check("extractinator mud: before mechs the mud comes back", ProgMath.ExtractMud(false, 100f, 0.0, 2) == (ItemID.MudBlock, 1));
+			Check("extractinator mud: after mechs a roll under the percent gives ore", ProgMath.ExtractMud(true, 25f, 0.24, 2) == (ItemID.ChlorophyteOre, 2));
+			Check("extractinator mud: a roll over the percent gives nothing", ProgMath.ExtractMud(true, 25f, 0.26, 2).item == -1);
 			Check("bulk ammo price 150% of 50 = 75", ProgMath.BulkAmmoPrice(50, 150) == 75);
 		}
 
@@ -154,6 +176,63 @@ namespace Levy.Common.Progression
 			else Mod.Logger.Info($"[ProgCheck] INFO edited recipes: bar={ProgressionRecipes.EditedBarRecipes} mana={ProgressionRecipes.EditedManaCrystalRecipes} ammo={ProgressionRecipes.EditedAmmoRecipes} armor={ProgressionRecipes.EditedArmorRecipes}");
 		}
 
+		// ---- drops: army loot, lunar items, chlorophyte sources, dungeon spirits, extractinator -----------------------
+		static int Chains<T>(IEnumerable<IItemDropRule> roots) where T : IItemDropRule
+		{
+			var all = new List<IItemDropRule>(); ProgressionLootNpc.Collect(roots, all);
+			int n = 0;
+			foreach (var r in all) if (r.ChainedRules != null) foreach (var ch in r.ChainedRules) if (ch.RuleToChain is T) n++;
+			return n;
+		}
+
+		void Drops(LevyProgressionConfig c)
+		{
+			var db = Main.ItemDropsDB;
+			Check("drop database exists", db != null);
+			if (db == null) return;
+			Check("army loot hook registered on bosses and bags", ProgressionDropsSystem.ArmyRules > 0, $"{ProgressionDropsSystem.ArmyRules} material rules");
+			Check("rare-chance reroll registered on boss drops", ProgressionDropsSystem.RareRules > 0, $"{ProgressionDropsSystem.RareRules} rules");
+			Check("Moon Lord Luminite carries the bonus rule (drop + bag)", Chains<ExtraAmountRule>(db.GetRulesForNPCID(NPCID.MoonLordCore, false)) >= 1 && Chains<ExtraAmountRule>(db.GetRulesForItemID(ItemID.MoonLordBossBag)) >= 1, $"{ProgressionDropsSystem.LuminiteRules} luminite rules");
+			bool frag = true;
+			foreach (int pillar in new[] { NPCID.LunarTowerSolar, NPCID.LunarTowerVortex, NPCID.LunarTowerNebula, NPCID.LunarTowerStardust }) frag &= Chains<ExtraAmountRule>(db.GetRulesForNPCID(pillar, false)) >= 1;
+			Check("each lunar pillar carries the fragment bonus rule", frag, $"{ProgressionDropsSystem.FragmentRules} fragment rules");
+			Check("a vanilla boss (Skeletron Prime) has its rare drops rerolled", Chains<RareRerollRule>(db.GetRulesForNPCID(NPCID.SkeletronPrime, false)) >= 1);
+			Check("ordinary monsters get no army bonus or reroll", Chains<ExtraAmountRule>(db.GetRulesForNPCID(NPCID.Zombie, false)) + Chains<RareRerollRule>(db.GetRulesForNPCID(NPCID.Zombie, false)) == 0);
+			Check("Chlorophyte global drop rules registered (jungle + event)", ProgressionGlobalNpc.GlobalRules >= 2 && db.GetRulesForNPCID(NPCID.Zombie, true).OfType<ChlorophyteSourceRule>().Count() == 2, ProgressionGlobalNpc.GlobalRules.ToString());
+			Check("extractinator: mud mode iff option", ProgressionExtractinatorSystem.Registered == c.ExtractinatorChlorophyte && (!c.ExtractinatorChlorophyte || ItemID.Sets.ExtractinatorMode[ItemID.MudBlock] == ItemID.MudBlock), $"mode {ItemID.Sets.ExtractinatorMode[ItemID.MudBlock]}");
+			Check("hooks present: dungeon spirit OnKill, extractinator", ModContent.GetInstance<ProgressionGlobalNpc>() != null && ModContent.GetInstance<ProgressionExtractinator>() != null);
+			// The drop conditions against a fake kill (no world needed).
+			var zombie = new NPC(); zombie.SetDefaults(NPCID.Zombie);
+			var p = new Player();
+			var info = new DropAttemptInfo { npc = zombie, player = p };
+			bool saveP = NPC.downedPlantBoss, saveH = Main.hardMode, savePm = Main.pumpkinMoon;
+			try
+			{
+				NPC.downedPlantBoss = true; Main.hardMode = true; p.ZoneJungle = true;
+				Check("jungle Chlorophyte condition follows the option", new JungleChlorophyteCondition().CanDrop(info) == c.JungleChlorophyteDrop);
+				p.ZoneJungle = false;
+				Check("jungle Chlorophyte condition needs the jungle", !new JungleChlorophyteCondition().CanDrop(info));
+				p.ZoneJungle = true; NPC.downedPlantBoss = false;
+				Check("jungle Chlorophyte condition needs Plantera down", !new JungleChlorophyteCondition().CanDrop(info));
+				Main.pumpkinMoon = true;
+				Check("event Chlorophyte condition follows the option (Pumpkin Moon)", new EventChlorophyteCondition().CanDrop(info) == c.EventChlorophyteDrop);
+				Main.pumpkinMoon = false;
+				var corite = new NPC(); corite.SetDefaults(NPCID.SolarCorite);
+				Check("event Chlorophyte condition: lunar event enemy yes", new EventChlorophyteCondition().CanDrop(new DropAttemptInfo { npc = corite, player = p }) == c.EventChlorophyteDrop, $"value {corite.value} life {corite.lifeMax} friendly {corite.friendly} town {corite.townNPC} statue {corite.SpawnedFromStatue} boss {corite.boss}");
+				Check("event Chlorophyte condition: ordinary zombie no (no event running)", !new EventChlorophyteCondition().CanDrop(info), $"pumpkin {Main.pumpkinMoon} snow {Main.snowMoon}");
+				var bossNpc = new NPC(); bossNpc.SetDefaults(NPCID.EyeofCthulhu); Main.pumpkinMoon = true;
+				Check("event Chlorophyte condition excludes bosses", !new EventChlorophyteCondition().CanDrop(new DropAttemptInfo { npc = bossNpc, player = p }));
+			}
+			finally { NPC.downedPlantBoss = saveP; Main.hardMode = saveH; Main.pumpkinMoon = savePm; }
+			Check("army CP of a player with no soldiers is 0", ArmyCp.Of(p) == 0);
+			var ex = new ExtraAmountRule { ItemId = ItemID.LunarOre, Luminite = true, Average = () => 80 };
+			Check("luminite bonus = multiplier - 1 (no army)", Math.Abs(ex.Bonus(p) - Math.Max(0f, c.LuminiteDropMultiplier - 1f)) < 1e-9, $"x{c.LuminiteDropMultiplier}");
+			var ex2 = new ExtraAmountRule { ItemId = ItemID.FragmentSolar, Fragment = true, Average = () => 40 };
+			Check("fragment bonus = multiplier - 1 (no army)", Math.Abs(ex2.Bonus(p) - Math.Max(0f, c.LunarFragmentDropMultiplier - 1f)) < 1e-9);
+			Check("ore, bar and fragment are boss materials; boss mask and coin are not", ProgressionDropsSystem.IsMaterial(ItemID.ChlorophyteOre) && ProgressionDropsSystem.IsMaterial(ItemID.HallowedBar) && ProgressionDropsSystem.IsMaterial(ItemID.FragmentNebula) && !ProgressionDropsSystem.IsMaterial(ItemID.SkeletronPrimeMask) && !ProgressionDropsSystem.IsMaterial(ItemID.GoldCoin), $"ore {ProgressionDropsSystem.IsMaterial(ItemID.ChlorophyteOre)} bar {ProgressionDropsSystem.IsMaterial(ItemID.HallowedBar)} frag {ProgressionDropsSystem.IsMaterial(ItemID.FragmentNebula)} sword {ProgressionDropsSystem.IsMaterial(ItemID.SkeletronPrimeMask)} coin {ProgressionDropsSystem.IsMaterial(ItemID.GoldCoin)}");
+			Check("chlorophyte density cap follows config", ProgMath.ChlorophyteCaps(40, 130, c.ChlorophyteChunkScale).nearCap == (int)(40 * c.ChlorophyteChunkScale), $"scale {c.ChlorophyteChunkScale}, growth x{c.ChlorophyteGrowthMultiplier}");
+		}
+
 		// ---- shimmer -----------------------------------------------------------------------------------------------
 		void Shimmer(LevyProgressionConfig c)
 		{
@@ -210,9 +289,9 @@ namespace Levy.Common.Progression
 					if (!Language.Exists(key)) missing.Add(key);
 				}
 			}
-			foreach (var h in new[] { "Note", "DropRates", "Chlorophyte", "Items", "ArmorCosts", "ArmsDealer"})
+			foreach (var h in new[] { "Note", "DropRates", "Chlorophyte", "Items", "ArmorCosts", "ArmsDealer", "ArmyLoot", "DungeonSpirits", "ChlorophyteSources", "Lunar" })
 				if (!Language.Exists("Mods.Levy.Configs.LevyProgressionConfig.Headers." + h)) missing.Add("Headers." + h);
-			foreach (var k in new[] { "Mods.Levy.Progression.PlanteraRepeat" })
+			foreach (var k in new[] { "Mods.Levy.Progression.PlanteraRepeat", "Mods.Levy.Progression.JungleChlorophyte", "Mods.Levy.Progression.EventChlorophyte" })
 				if (!Language.Exists(k)) missing.Add(k);
 			Check("every progression string has text", missing.Count == 0, string.Join(", ", missing));
 		}
@@ -231,7 +310,7 @@ namespace Levy.Common.Progression
 			{
 				var a = new List<IItemDropRule>(); var b = new List<IItemDropRule>();
 				ProgressionLootNpc.Collect(vanilla.GetRulesForNPCID(id, true), a);
-				ProgressionLootNpc.Collect(ours.GetRulesForNPCID(id, true), b);
+				ProgressionLootNpc.Collect(ours.GetRulesForNPCID(id, true), b); b.RemoveAll(r => r is ChlorophyteSourceRule);
 				int compared = 0, bad = 0; string firstBad = "";
 				if (a.Count != b.Count) { Check($"loot rule structure NPC {id}", false, $"{a.Count} vs {b.Count}"); continue; }
 				for (int k = 0; k < a.Count; k++)

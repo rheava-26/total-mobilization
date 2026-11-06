@@ -48,7 +48,7 @@ namespace Levy.Common.Progression
 		public static bool Allowed(int i, int j, float scale)
 		{
 			Limits(j, out int near, out int far, out int nearR, out int farR);
-			int nearCap = (int)(near * scale), farCap = (int)(far * scale);
+			var (nearCap, farCap) = ProgMath.ChlorophyteCaps(near, far, scale);
 			int n = 0;
 			for (int x = i - nearR; x < i + nearR; x++)
 				for (int y = j - nearR; y < j + nearR; y++)

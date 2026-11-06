@@ -12,7 +12,7 @@ namespace Levy.Common.Potions
 	/// <summary>
 	/// The Spectator potion's rules.
 	///  * Targeting. Vanilla picks targets in NPC.TargetClosest / TargetClosestUpgraded, which skip a player that is <c>!active || dead || ghost</c>, and boss/enemy AIs re-pick when
-	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. A boss with nobody else to fight behaves as if the target died (it leaves).
+	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. Only NPCs the soldier swap cannot serve use this (see SpectatorNpcHide); for the rest EnemyTargeting excludes spectators from its search and the levies are the target (a spectator also unlocks boss aggro on soldiers).
 	///    The flags are restored right after, and again in PreUpdate as a safety net, so the player's own update never sees them.
 	///  * Damage. Contact and projectile hits are refused (CanBeHitByNPC / CanBeHitByProjectile). Any damage that still lands (lava, fall, drowning) ends the buff.
 	///  * Items. <see cref="CanUseItem"/> refuses damage items, summons, sentries and anything that touches the world (see <see cref="Blocked"/>), except the Observe items.
@@ -34,8 +34,38 @@ namespace Levy.Common.Potions
 
 		// ------------------------------------------------------------------ targeting window
 
-		internal void Hide() { if (_hidden) return; _hidden = true; _savedDead = Player.dead; _savedGhost = Player.ghost; Player.dead = true; Player.ghost = true; }
-		internal void Unhide() { if (!_hidden) return; _hidden = false; Player.dead = _savedDead; Player.ghost = _savedGhost; }
+		private int _hideDepth;
+		internal void Hide() { if (_hideDepth++ > 0) return; _hidden = true; _savedDead = Player.dead; _savedGhost = Player.ghost; Player.dead = true; Player.ghost = true; }
+		internal void Release() { if (_hideDepth > 0 && --_hideDepth == 0) Unhide(); }
+		internal void Unhide() { _hideDepth = 0; if (!_hidden) return; _hidden = false; Player.dead = _savedDead; Player.ghost = _savedGhost; }
+
+		internal static void InvalidateCache() => _anyStamp = uint.MaxValue;
+		private static uint _anyStamp = uint.MaxValue; private static bool _any;
+		/// <summary>True when any player has the Spectator buff (cached per tick). Enemy targeting opts in to the army when this is true.</summary>
+		public static bool AnyActive
+		{
+			get
+			{
+				if (_anyStamp == Main.GameUpdateCount) return _any;
+				_anyStamp = Main.GameUpdateCount; _any = false;
+				for (int i = 0; i < Main.maxPlayers; i++) if (IsSpectator(Main.player[i])) { _any = true; break; }
+				return _any;
+			}
+		}
+
+		/// <summary>Hides every spectator from a vanilla search or AI (re-entrant: pair with <see cref="ReleaseAll"/>).</summary>
+		public static void HideAll()
+		{
+			if (!AnyActive) return;
+			for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].TryGetModPlayer(out SpectatorPlayer sp) && sp.Active) sp.Hide();
+		}
+
+		public static void ReleaseAll()
+		{
+			if (!_any) return;
+			for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].TryGetModPlayer(out SpectatorPlayer sp)) sp.Release();
+		}
+
 		internal bool Hidden => _hidden;
 
 		public override void PreUpdate()
@@ -138,7 +168,7 @@ namespace Levy.Common.Potions
 	}
 
 	/// <summary>
-	/// Brackets each hostile NPC's AI so spectators are invisible to it (see <see cref="SpectatorPlayer"/>). Per NPC rather than around the whole NPC update, because the levies
+	/// Fallback only: brackets the AI of hostile NPCs the soldier swap cannot serve so spectators are invisible to it (see <see cref="SpectatorPlayer"/>). Per NPC rather than around the whole NPC update, because the levies
 	/// read their commander's dead flag and must keep seeing a living commander. A safety-net unhide runs after the NPC update.
 	/// </summary>
 	public class SpectatorNpcWindow : ModSystem
@@ -160,14 +190,19 @@ namespace Levy.Common.Potions
 		public override bool PreAI(NPC npc)
 		{
 			if (npc.friendly || npc.townNPC || npc.ModNPC is global::Levy.Content.NPCs.SoldierNPC) return true;
-			for (int i = 0; i < Main.maxPlayers; i++)
-			{
-				Player p = Main.player[i];
-				if (p.active && p.TryGetModPlayer(out SpectatorPlayer s) && s.Active) s.Hide();
-			}
+			// An NPC the soldier swap can serve gets its targets through EnemyTargeting (spectators are excluded from its search and the army fights instead).
+			// Only the rest (swap-unsafe styles, no levies out) fall back to seeing the spectator as dead.
+			if (global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(npc) && global::Levy.Common.Targeting.EnemyTargeting.Bodies.Count > 0) return true;
+			if (!_hiding.Add(npc.whoAmI)) return true;
+			SpectatorPlayer.HideAll();
 			return true;
 		}
 
-		public override void PostAI(NPC npc) => SpectatorNpcWindow.UnhideAll();
+		private static readonly System.Collections.Generic.HashSet<int> _hiding = new();
+
+		public override void PostAI(NPC npc)
+		{
+			if (_hiding.Remove(npc.whoAmI)) SpectatorPlayer.ReleaseAll();
+		}
 	}
 }

@@ -69,7 +69,7 @@ namespace Levy.Common.Targeting
 		private static Player _nullPlayer;
 		private static LevyConfig _cfg;
 
-		internal static bool Enabled => (_cfg ??= LevyConfig.Get) != null && _cfg.EnemiesTargetSoldiers;
+		internal static bool Enabled => (_cfg ??= LevyConfig.Get) != null && (_cfg.EnemiesTargetSoldiers || Potions.SpectatorPlayer.AnyActive); // a Spectator opts in to "my army fights this"
 		internal static void RefreshConfig() => _cfg = LevyConfig.Get;
 
 		/// <summary>Soldier body (live) that this enemy is locked on, or null.</summary>
@@ -129,7 +129,7 @@ namespace Levy.Common.Targeting
 		}
 
 		/// <summary>Opt-in: BossesTargetSoldiers is on and this boss (or the boss it belongs to) has been defeated in this world.</summary>
-		public static bool BossAggroUnlocked(NPC npc) => (_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers && BossDownedSystem.IsBossDowned(npc);
+		public static bool BossAggroUnlocked(NPC npc) => Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers && BossDownedSystem.IsBossDowned(npc)); // a Spectator overrides the config and the downed check
 
 		/// <summary>
 		/// A boss, boss part or boss segment (the four exclusion guards of <see cref="IsAllowlisted"/>) that the army may draw. Needs the unlock; then any AI style
@@ -177,30 +177,42 @@ namespace Levy.Common.Targeting
 		private static void TargetClosest_Detour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
 		{
 			bool netBefore = self.netUpdate;
-			orig(self, faceTarget);
-			// TryTrackingTarget measures |dx| + |dy| (with vanilla's own position/width quirk); mirror it so the comparison is fair.
-			if (Compete(self, faceTarget, self.Center, manhattan: true, float.PositiveInfinity)
-				&& self.target == self.oldTarget && self.direction == self.oldDirection && self.directionY == self.oldDirectionY)
-				self.netUpdate = netBefore; // vanilla flagged a sync only because its interim player pick differed from the soldier we kept
+			Potions.SpectatorPlayer.HideAll(); // a Spectator is not a candidate
+			try
+			{
+				orig(self, faceTarget);
+				// TryTrackingTarget measures |dx| + |dy| (with vanilla's own position/width quirk); mirror it so the comparison is fair.
+				if (Compete(self, faceTarget, self.Center, manhattan: true, float.PositiveInfinity)
+					&& self.target == self.oldTarget && self.direction == self.oldDirection && self.directionY == self.oldDirectionY)
+					self.netUpdate = netBefore; // vanilla flagged a sync only because its interim player pick differed from the soldier we kept
+			}
+			finally { Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestUpgraded_Detour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
 		{
-			orig(self, faceTarget, checkPosition);
-			Compete(self, faceTarget, checkPosition ?? self.Center, manhattan: false, float.PositiveInfinity);
+			Potions.SpectatorPlayer.HideAll();
+			try { orig(self, faceTarget, checkPosition); Compete(self, faceTarget, checkPosition ?? self.Center, manhattan: false, float.PositiveInfinity); }
+			finally { Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestOldOnes_Detour(On_NPCUtils.orig_TargetClosestOldOnesInvasion orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
-			orig(searcher, faceTarget, checkPosition);
-			// Vanilla only lets players within 200 px distract an Old One's Army enemy from the crystal; soldiers get the same rule.
-			Compete(searcher, faceTarget, searcher.Center, manhattan: false, LevyConstants.Targeting.OldOnesSoldierRangePx);
+			Potions.SpectatorPlayer.HideAll();
+			try
+			{
+				orig(searcher, faceTarget, checkPosition);
+				// Vanilla only lets players within 200 px distract an Old One's Army enemy from the crystal; soldiers get the same rule.
+				Compete(searcher, faceTarget, searcher.Center, manhattan: false, LevyConstants.Targeting.OldOnesSoldierRangePx);
+			}
+			finally { Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestNonBees_Detour(On_NPCUtils.orig_TargetClosestNonBees orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
-			orig(searcher, faceTarget, checkPosition);
-			Compete(searcher, faceTarget, searcher.Center, manhattan: false, float.PositiveInfinity);
+			Potions.SpectatorPlayer.HideAll();
+			try { orig(searcher, faceTarget, checkPosition); Compete(searcher, faceTarget, searcher.Center, manhattan: false, float.PositiveInfinity); }
+			finally { Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		/// <summary>
@@ -371,10 +383,13 @@ namespace Levy.Common.Targeting
 		internal static bool ShouldPollForSoldier(NPC npc)
 		{
 			if (Bodies.Count == 0) return false;
-			if ((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)LevyConstants.Targeting.RetargetIntervalTicks != 0) return false;
+			if (!TargetsSpectator(npc) && (Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)LevyConstants.Targeting.RetargetIntervalTicks != 0) return false; // a spectator target is re-searched at once
 			if (npc.realLife >= 0 && npc.realLife != npc.whoAmI) return false;
 			return IsAllowlisted(npc);
 		}
+
+		/// <summary>True when the enemy's current target is a player with the Spectator buff.</summary>
+		internal static bool TargetsSpectator(NPC npc) => npc.target >= 0 && npc.target < Main.maxPlayers && Potions.SpectatorPlayer.IsSpectator(Main.player[npc.target]);
 
 		/// <summary>Re-run the vanilla search this enemy uses (the detours decide soldier vs player again). faceTarget false: never turns the sprite.</summary>
 		internal static void Retarget(NPC npc)

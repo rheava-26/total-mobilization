@@ -1,0 +1,37 @@
+# Armory 2.0 rule-list scenarios that need Thorium (bard and healer are real classes only when it is loaded). Run with enabled mods ["ThoriumMod","Levy"].
+
+[T1_class_fixed_bard2_healer1_melee_weight_8_levies]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 8
+RCLASS bard=fix2 healer=fix1 melee=w1
+W ThoriumMod/Ukulele
+W ThoriumMod/WoodenWhistle
+W ThoriumMod/DrumMallet
+W ThoriumMod/Harmonica
+W ThoriumMod/ClericsCross
+W ThoriumMod/Bonesaw
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+RPREVIEW
+STAGE
+
+[T2_tag_edit_bard_instrument_counted_as_a_staff_for_a_staff_minimum]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 4
+RMIN staff 2
+TAG ThoriumMod/Ukulele +staff -wand
+W ThoriumMod/Ukulele
+W Vanilla/AmethystStaff
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+RPREVIEW
+STAGE

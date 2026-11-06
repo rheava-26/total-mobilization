@@ -31,6 +31,10 @@ namespace Levy.Common.Weapons
 		public Func<AllocCand, bool> Yields;
 		/// <summary>Fixed-class companies: while he holds a classed weapon he only ever trades within that class.</summary>
 		public DamageClass ClassLock;
+		/// <summary>True when <see cref="Cls"/> was assigned by the army's class balance rather than worn (the levy has no armor class of his own).</summary>
+		public bool Virtual;
+		/// <summary>True once the class balance has counted this free levy against the class of the weapon he is to have.</summary>
+		public bool Counted;
 
 		// ---- plan output
 		/// <summary>The weapon he should end up with (null = nothing to give him; he keeps what he has). Equal to his own <see cref="Cand"/> when unchanged.</summary>
@@ -45,6 +49,8 @@ namespace Levy.Common.Weapons
 		public Item It;
 		public float Rank;
 		public DamageClass Cls;
+		/// <summary>The weapon's category ids under the armory's rules (never null).</summary>
+		public string[] Cats = Array.Empty<string>();
 		public int Type;
 		/// <summary>Tie preference among equal ranks: lower first (0 = the player's weapon rack, then storage, then networked armories).</summary>
 		public int Pref;
@@ -62,6 +68,8 @@ namespace Levy.Common.Weapons
 	/// <summary>
 	/// The army's weapon assignment, as pure logic over levies and candidate weapons (the armory builds both and carries out the result).
 	/// One pass decides every levy's primary at once, instead of each levy taking the best item at the moment he asks:
+	///  r) RULES FIRST. The armory's hard rules (<see cref="ArmoryRules"/>) run in block order before anything else: a minimum or include drafts levies onto a category, the class balance spreads the free levies over the
+	///     classes, and a hard order (bows over guns) filters every pick. Where two rules disagree the EARLIER block wins. Soft weights and hand-set ranks are already in the rank.
 	///  a) CLASS-MATCHED FIRST. Levies are grouped by the damage class of their armor; within a class the stock of that class is dealt out, bare-handed and worst-equipped levies first.
 	///  b) UNCLASSED LEVIES LAST. Levies with no armor class (and any classed levy whose class has nothing left) are served after every classed levy, from what remains.
 	///  c) VARIETY. Each pick is made as <c>TryPickVaried</c> always has: the best copy of each weapon type within <see cref="LevyConstants.WeaponVarietyTopFraction"/> of the best, chosen by the levy's stable id.
@@ -88,29 +96,177 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Builds a candidate (rank, class) for a weapon; <paramref name="owner"/> is its physical holder (null on a shelf).</summary>
 		internal static AllocCand MakeCand(Item it, int pref, int seq, AllocSlot slot, AllocLevy holder, object src)
-			=> new AllocCand { It = it, Rank = RankOf(it), Cls = WeaponClassifier.ItemDamageClass(it), Type = it.type, Pref = pref, Seq = seq, Slot = slot, Phys = holder, Owner = holder, Src = src };
+			=> new AllocCand { It = it, Rank = RankOf(it), Cls = WeaponClassifier.ItemDamageClass(it), Cats = ArmoryRules.CatsFor(it), Type = it.type, Pref = pref, Seq = seq, Slot = slot, Phys = holder, Owner = holder, Src = src };
 
-		/// <summary>Decides every levy's <see cref="AllocLevy.Target"/>. <paramref name="cands"/> may be in any order and is sorted in place.</summary>
-		internal static void Plan(List<AllocLevy> levies, List<AllocCand> cands)
+		/// <summary>The hard rules of the plan being made (null = none). Set for the length of <see cref="Plan"/>.</summary>
+		private static AllocRules _rules;
+		/// <summary>The live head count per class while a class balance or a minimum is in force (null = none); a class at its maximum is closed to free levies.</summary>
+		private static ClassBook _book;
+
+		/// <summary>Decides every levy's <see cref="AllocLevy.Target"/>. <paramref name="cands"/> may be in any order and is sorted in place. <paramref name="rules"/> are the armory's hard rules (null = none).</summary>
+		internal static void Plan(List<AllocLevy> levies, List<AllocCand> cands, AllocRules rules = null)
 		{
 			cands.Sort((a, b) => { int c = b.Rank.CompareTo(a.Rank); if (c != 0) return c; c = a.Pref.CompareTo(b.Pref); return c != 0 ? c : a.Seq.CompareTo(b.Seq); });
 			foreach (var l in levies) { l.Target = null; l.Own = null; }
 			foreach (var c in cands) { c.Used = false; c.Owner = c.Phys; if (c.Phys != null && c.Slot == AllocSlot.Primary) c.Phys.Own = c; }
+			_rules = rules != null && rules.Active ? rules : null;
+			try {
+				if (_rules != null) RuleStage(levies, cands, _rules);
 
-			// a) class-matched: each class's levies are dealt that class's stock.
-			var order = new List<DamageClass>();
-			foreach (var l in levies) if (l.Cls != null && !order.Contains(l.Cls)) order.Add(l.Cls);
-			foreach (var cls in order) {
-				var group = levies.FindAll(l => l.Cls == cls);
-				Serve(group, cands, (l, c) => c.Cls == l.Cls);
+				// a) class-matched: each class's levies are dealt that class's stock.
+				var order = new List<DamageClass>();
+				foreach (var l in levies) if (l.Cls != null && !order.Contains(l.Cls)) order.Add(l.Cls);
+				foreach (var cls in order) {
+					var group = levies.FindAll(l => l.Cls == cls);
+					Serve(group, cands, (l, c) => c.Cls == l.Cls);
+				}
+				// b) everyone still without a weapon: classed levies whose class ran out first, then the unclassed, from what remains.
+				Serve(levies.FindAll(l => l.Cls != null && l.Target == null), cands, (l, c) => true);
+				var unclassed = levies.FindAll(l => l.Cls == null);
+				Serve(unclassed, cands, (l, c) => l.Flex == null || l.Flex.Count == 0 || (c.Cls != null && l.Flex.Contains(c.Cls)));
+				Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => c.Cls == null);
+				Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => true);
+				// c) a class maximum gives way before a levy is left bare-handed: whoever still has nothing takes what is left, whatever its class.
+				if (_book != null) {
+					_book = null;
+					Serve(levies.FindAll(l => l.Target == null), cands, (l, c) => true);
+				}
 			}
-			// b) everyone still without a weapon: classed levies whose class ran out first, then the unclassed, from what remains.
-			Serve(levies.FindAll(l => l.Cls != null && l.Target == null), cands, (l, c) => true);
-			var unclassed = levies.FindAll(l => l.Cls == null);
-			Serve(unclassed, cands, (l, c) => l.Flex == null || l.Flex.Count == 0 || (c.Cls != null && l.Flex.Contains(c.Cls)));
-			Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => c.Cls == null);
-			Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => true);
+			finally { _rules = null; _book = null; }
 		}
+
+		// ------------------------------------------------------------------ the rule stage: minimums, includes and the class balance, in block order (the earlier block wins)
+
+		/// <summary>Per-class head count of the levies the plan has settled on a class (worn, locked or assigned), and the most the class balance allows.</summary>
+		private sealed class ClassBook
+		{
+			public readonly Dictionary<DamageClass, int> Count = new();
+			public readonly Dictionary<DamageClass, int> Hi = new();
+			public int Of(DamageClass c) => c != null && Count.TryGetValue(c, out var n) ? n : 0;
+			public void Add(DamageClass c, int d) { if (c != null) Count[c] = Of(c) + d; }
+		}
+
+		private static void RuleStage(List<AllocLevy> levies, List<AllocCand> cands, AllocRules rules)
+		{
+			var book = _book = new ClassBook();
+			foreach (var l in levies) book.Add(l.Cls ?? l.ClassLock, 1);
+			var steps = new List<(int block, MinRule min, ClassPlanRule cls)>();
+			foreach (var m in rules.Mins) steps.Add((m.Block, m, null));
+			if (rules.Class != null) steps.Add((rules.Class.Block, null, rules.Class));
+			steps.Sort((a, b) => a.block.CompareTo(b.block));
+			foreach (var st in steps) {
+				if (st.min != null) ClaimMin(levies, cands, st.min, book, rules.Class != null && rules.Class.Block < st.min.Block);
+				else AssignClasses(levies, cands, st.cls, book);
+			}
+		}
+
+		/// <summary>Gives the levy <paramref name="c"/>'s class when he has none of his own (a free levy), keeping the head counts right.</summary>
+		private static void Reclass(AllocLevy l, DamageClass c, ClassBook book)
+		{
+			if (c == null || l.Cls == c) return;
+			if (l.Cls != null && !l.Virtual) return;
+			if (l.Cls != null) book.Add(l.Cls, -1);
+			l.Cls = c; l.Virtual = true; book.Add(c, 1);
+		}
+
+		/// <summary>True when the levy may be dealt <paramref name="c"/> by a minimum rule: his armor class matches, or he is free and the class has room under a class maximum that came earlier.</summary>
+		private static bool MinCanTake(AllocLevy l, AllocCand c, ClassBook book, bool classFirst)
+		{
+			if (l.ClassLock != null && c.Cls != l.ClassLock) return false;
+			if (l.Cls != null && !l.Virtual) return c.Cls == l.Cls;
+			if (c.Cls == null) return l.Cls == null;
+			if (l.Cls == c.Cls) return true;
+			if (classFirst && book.Hi.TryGetValue(c.Cls, out var hi) && book.Of(c.Cls) >= hi) return false;
+			return true;
+		}
+
+		/// <summary>At least <see cref="MinRule.Count"/> levies carry a weapon of the category (every stocked one for an include). Holders keep theirs first; the rest are drafted, bare-handed and weakest first.</summary>
+		private static void ClaimMin(List<AllocLevy> levies, List<AllocCand> cands, MinRule m, ClassBook book, bool classFirst)
+		{
+			int have = 0;
+			foreach (var l in levies) if (l.Target != null && ArmoryRules.Has(l.Target.Cats, m.Cat)) have++;
+			var holders = levies.FindAll(l => l.Target == null && l.Own != null && !l.Own.Used && l.Own.Owner == l && ArmoryRules.Has(l.Own.Cats, m.Cat) && MinCanTake(l, l.Own, book, classFirst));
+			holders.Sort((a, b) => { int c = b.Own.Rank.CompareTo(a.Own.Rank); return c != 0 ? c : a.Id.CompareTo(b.Id); });
+			foreach (var l in holders) {
+				if (have >= m.Count) break;
+				Reclass(l, l.Own.Cls, book); Keep(l); have++;
+			}
+			if (have >= m.Count) return;
+			var open = levies.FindAll(l => l.Target == null);
+			open.Sort((a, b) => { float ra = a.Own == null ? -1f : a.Own.Rank, rb = b.Own == null ? -1f : b.Own.Rank; int c = ra.CompareTo(rb); return c != 0 ? c : a.Id.CompareTo(b.Id); });
+			foreach (var l in open) {
+				if (have >= m.Count) break;
+				var pick = Pick(l, cands, (lv, c) => MinCanTake(lv, c, book, classFirst), true, m.Block, c => ArmoryRules.Has(c.Cats, m.Cat));
+				if (pick == null) continue;
+				Take(l, pick); Reclass(l, pick.Cls, book); have++;
+			}
+		}
+
+		/// <summary>Spreads the free levies (no armor class) over the classes: minimums and fixed counts first, then the weights, then whatever is left is held under the maximums.</summary>
+		private static void AssignClasses(List<AllocLevy> levies, List<AllocCand> cands, ClassPlanRule plan, ClassBook book)
+		{
+			int total = levies.Count;
+			var free = levies.FindAll(l => l.Cls == null && l.ClassLock == null && l.Target == null);
+			var entries = new List<(DamageClass cls, int lo, int hi, float w)>();
+			foreach (var e in plan.Entries) {
+				var cls = WeaponTags.ClassFromKey(e.Class);
+				if (cls == null) continue;
+				int lo = e.Fixed >= 0 ? e.Fixed : Math.Max(0, e.Min);
+				int hi = e.Fixed >= 0 ? e.Fixed : e.Max >= 0 ? e.Max : total;
+				hi = Math.Max(lo, hi);
+				entries.Add((cls, lo, hi, e.Weight));
+				book.Hi[cls] = hi;
+			}
+			// weapons each class could still be dealt: the shelf stock, the blades carried as sidearms, and what free levies hold (they give it up when they are re-classed).
+			var supply = new Dictionary<DamageClass, int>();
+			var freeSet = new HashSet<AllocLevy>(free);
+			foreach (var c in cands) {
+				if (c.Used || c.Cls == null) continue;
+				if (c.Slot == AllocSlot.Shelf || c.Slot == AllocSlot.Sidearm || (c.Slot == AllocSlot.Primary && c.Phys != null && freeSet.Contains(c.Phys))) supply[c.Cls] = (supply.TryGetValue(c.Cls, out var n) ? n : 0) + 1;
+			}
+			var given = new Dictionary<DamageClass, int>();
+			int Left(DamageClass c) => (supply.TryGetValue(c, out var n) ? n : 0) - (given.TryGetValue(c, out var g) ? g : 0);
+			void Give(DamageClass cls, int k)
+			{
+				// holders of that class first, then the bare, then the weakest weapon, then the id
+				free.Sort((a, b) => {
+					int ka = a.Own != null && a.Own.Cls == cls ? 0 : a.Own == null ? 1 : 2, kb = b.Own != null && b.Own.Cls == cls ? 0 : b.Own == null ? 1 : 2;
+					int c = ka.CompareTo(kb); if (c != 0) return c;
+					float ra = a.Own == null ? 0f : a.Own.Rank, rb = b.Own == null ? 0f : b.Own.Rank;
+					c = ra.CompareTo(rb); return c != 0 ? c : a.Id.CompareTo(b.Id);
+				});
+				for (int i = 0; i < k && free.Count > 0; i++) {
+					var l = free[0]; free.RemoveAt(0);
+					l.Cls = cls; l.Virtual = true; book.Add(cls, 1);
+					given[cls] = (given.TryGetValue(cls, out var g) ? g : 0) + 1;
+				}
+			}
+			// 1. floors (minimums and fixed counts), in the order the classes are listed: the earlier entry is served first.
+			foreach (var (cls, lo, hi, w) in entries) {
+				int need = lo - book.Of(cls);
+				if (need > 0 && Left(cls) > 0) Give(cls, Math.Min(Math.Min(need, Left(cls)), free.Count));
+			}
+			// 2. weights: the whole army is spread by the shares; the largest shortfall is served first.
+			float sum = 0f;
+			foreach (var e in entries) if (e.w > 0f) sum += e.w;
+			if (sum > 0f && free.Count > 0) {
+				var want = new List<(DamageClass cls, float deficit)>();
+				foreach (var (cls, lo, hi, w) in entries) if (w > 0f) want.Add((cls, total * w / sum - book.Of(cls)));
+				for (int guard = 0; guard < total && free.Count > 0; guard++) {
+					want.Sort((a, b) => b.deficit.CompareTo(a.deficit));
+					int pick = -1;
+					for (int i = 0; i < want.Count; i++) {
+						var cls = want[i].cls;
+						if (want[i].deficit > 0f && book.Of(cls) < book.Hi[cls] && Left(cls) > 0) { pick = i; break; }
+					}
+					if (pick < 0) break;
+					Give(want[pick].cls, 1);
+					want[pick] = (want[pick].cls, want[pick].deficit - 1f);
+				}
+			}
+		}
+
+		// ------------------------------------------------------------------ the standard stages
 
 		/// <summary>Serves a group in two passes: levies whose weapon cannot be improved keep it (strongest first), then the rest are dealt picks worst-equipped first.</summary>
 		private static void Serve(List<AllocLevy> group, List<AllocCand> cands, Func<AllocLevy, AllocCand, bool> accept)
@@ -121,7 +277,7 @@ namespace Levy.Common.Weapons
 			var holders = open.FindAll(l => Usable(l, accept));
 			holders.Sort((a, b) => { int c = b.Own.Rank.CompareTo(a.Own.Rank); return c != 0 ? c : a.Id.CompareTo(b.Id); });
 			foreach (var l in holders)
-				if (Pick(l, cands, accept) == null) Keep(l);
+				if (Pick(l, cands, accept) == null && !CapBlocks(l, l.Own)) Keep(l);
 			// Pass 2 - worst-equipped first (bare-handed ahead of everyone), by the stable id.
 			var rest = open.FindAll(l => l.Target == null);
 			rest.Sort((a, b) => { float ra = Usable(a, accept) ? a.Own.Rank : -1f, rb = Usable(b, accept) ? b.Own.Rank : -1f; int c = ra.CompareTo(rb); return c != 0 ? c : a.Id.CompareTo(b.Id); });
@@ -136,48 +292,89 @@ namespace Levy.Common.Weapons
 		private static bool Usable(AllocLevy l, Func<AllocLevy, AllocCand, bool> accept)
 			=> l.Own != null && !l.Own.Used && l.Own.Owner == l && (l.Cls == null || accept(l, l.Own)); // what he already holds stays his whatever its ammo or the rules say; those only gate what he is dealt
 
-		private static void Keep(AllocLevy l) { l.Target = l.Own; l.Own.Used = true; }
+		private static void Keep(AllocLevy l) { l.Target = l.Own; l.Own.Used = true; Commit(l, l.Own); }
 
 		private static void Take(AllocLevy l, AllocCand c)
 		{
 			l.Target = c; c.Used = true;
 			if (l.Own != null && l.Own != c) l.Own.Owner = null; // his old weapon is released to the pool
+			Commit(l, c);
 		}
 
-		/// <summary>The varied pick for a levy: the best copy of each weapon type within the variety band of the best candidate he can take, chosen by his id. Null when nothing qualifies (or nothing beats what he has by the upgrade margin).</summary>
-		private static AllocCand Pick(AllocLevy l, List<AllocCand> cands, Func<AllocLevy, AllocCand, bool> accept)
+		/// <summary>A free levy (no class of his own) is counted against the class of the weapon he is to have, so a class maximum holds for the levies served after him.</summary>
+		private static void Commit(AllocLevy l, AllocCand c)
 		{
-			var pick = Pick(l, cands, accept, l.Fires != null);
-			return pick ?? (l.AllowDry && l.Fires != null ? Pick(l, cands, accept, false) : null);
+			if (_book == null || l.Cls != null || l.Counted || c.Cls == null) return;
+			_book.Add(c.Cls, 1); l.Counted = true;
 		}
 
-		private static AllocCand Pick(AllocLevy l, List<AllocCand> cands, Func<AllocLevy, AllocCand, bool> accept, bool requireFire)
+		/// <summary>True when a class maximum closes <paramref name="c"/>'s class to this levy: he has no class of his own (or was assigned one) and the class is full.</summary>
+		private static bool CapBlocks(AllocLevy l, AllocCand c)
+			=> _book != null && c != null && c.Cls != null && (l.Cls == null || l.Virtual) && l.Cls != c.Cls && _book.Hi.TryGetValue(c.Cls, out var hi) && _book.Of(c.Cls) >= hi;
+
+		/// <summary>The varied pick for a levy: the best copy of each weapon type within the variety band of the best candidate he can take, chosen by his id. Null when nothing qualifies (or nothing beats what he has by the upgrade margin).
+		/// <paramref name="ignoreFloor"/> drops the upgrade margin (a minimum rule drafting him); <paramref name="limit"/> is the last block whose hard order still applies.</summary>
+		private static AllocCand Pick(AllocLevy l, List<AllocCand> cands, Func<AllocLevy, AllocCand, bool> accept, bool ignoreFloor = false, int limit = int.MaxValue, Func<AllocCand, bool> require = null)
 		{
+			var pick = Pick(l, cands, accept, l.Fires != null, ignoreFloor, limit, require);
+			return pick ?? (l.AllowDry && l.Fires != null ? Pick(l, cands, accept, false, ignoreFloor, limit, require) : null);
+		}
+
+		private static AllocCand Pick(AllocLevy l, List<AllocCand> cands, Func<AllocLevy, AllocCand, bool> accept, bool requireFire, bool ignoreFloor, int limit, Func<AllocCand, bool> require)
+		{
+			var rules = _rules;
+			bool ordered = rules != null && rules.HasOrders; // hard orders need every candidate in view, so the scan cannot stop at the edge of the band
 			float floor = 0f;
 			bool usable = Usable(l, accept);
-			if (usable) floor = l.Own.Rank * LevyConstants.AutoUpgradeScoreMargin;
+			if (usable && !ignoreFloor) floor = l.Own.Rank * LevyConstants.AutoUpgradeScoreMargin;
+			var own = usable ? l.Own : null;
 			var band = new List<AllocCand>(LevyConstants.WeaponVarietyMaxTypes);
+			List<(AllocCand c, bool yields)> seen = ordered ? new List<(AllocCand, bool)>() : null;
+			HashSet<int> types = ordered ? new HashSet<int>() : null;
 			float cutoff = float.NegativeInfinity;
 			for (int i = 0; i < cands.Count; i++) {
 				var c = cands[i];
-				bool yields = l.Yields != null && usable && l.Yields(c);
-				if (c.Rank < cutoff || (c.Rank < floor && l.Yields == null)) break;
+				bool yields = (l.Yields != null && usable && l.Yields(c)) || (ordered && own != null && rules.Beats(c.Cats, own.Cats, limit));
+				if (!ordered && (c.Rank < cutoff || (c.Rank < floor && l.Yields == null))) break;
 				if (c.Rank < floor && !yields) continue;
 				if (!Avail(l, c) || !accept(l, c)) continue;
 				if (l.Ok != null && !l.Ok(c.It)) continue;
 				if (requireFire && !l.Fires(c.It)) continue;
 				if (l.ClassLock != null && c.Cls != l.ClassLock) continue;
-				if (ReferenceEquals(c, l.Own)) continue;
+				if (CapBlocks(l, c)) continue;
+				if (c.Rank <= 0f || ReferenceEquals(c, l.Own)) continue; // rank 0 = barred by the armory's rules
 				if (c.Slot == AllocSlot.Sidearm && c.Phys == l) continue;
+				if (ordered) { if (types.Add(c.Type)) seen.Add((c, yields)); continue; }
+				if (require != null && !require(c)) continue;
 				if (band.Count == 0) cutoff = Math.Max(yields ? 0f : floor, c.Rank * LevyConstants.WeaponVarietyTopFraction);
-				bool seen = false;
-				for (int k = 0; k < band.Count; k++) if (band[k].Type == c.Type) { seen = true; break; }
-				if (seen) continue;
+				bool dup = false;
+				for (int k = 0; k < band.Count; k++) if (band[k].Type == c.Type) { dup = true; break; }
+				if (dup) continue;
 				band.Add(c);
 				if (band.Count >= LevyConstants.WeaponVarietyMaxTypes) break;
 			}
-			if (band.Count == 0) return null;
-			return band[(int)((uint)l.Id % (uint)band.Count)];
+			if (ordered) {
+				// Hard orders, earliest block first: where an "over" rule's first category is on offer (or already in his hand), the second category is not.
+				foreach (var o in rules.Orders) {
+					if (o.Block > limit) continue;
+					bool anyA = own != null && ArmoryRules.Has(own.Cats, o.A);
+					if (!anyA) foreach (var (c, _) in seen) if (ArmoryRules.Has(c.Cats, o.A)) { anyA = true; break; }
+					if (anyA) seen.RemoveAll(x => ArmoryRules.Has(x.c.Cats, o.B) && !ArmoryRules.Has(x.c.Cats, o.A));
+				}
+				if (require != null) seen.RemoveAll(x => !require(x.c)); // a minimum's own category is asked for only after the orders have had their say
+				foreach (var (c, yields) in seen) {
+					if (band.Count == 0) cutoff = Math.Max(yields ? 0f : floor, c.Rank * LevyConstants.WeaponVarietyTopFraction);
+					else if (c.Rank < cutoff) break;
+					band.Add(c);
+					if (band.Count >= LevyConstants.WeaponVarietyMaxTypes) break;
+				}
+			}
+			var chosen = band.Count == 0 ? null : band[(int)((uint)l.Id % (uint)band.Count)];
+			Trace?.Invoke($"pick levy {l.Id} cls={(l.Cls == null ? "-" : l.Cls.Name)} fire={requireFire} floor={floor:F0} ordered={ordered} limit={limit} -> {(chosen == null ? "none" : chosen.It.Name + " (" + chosen.Rank.ToString("F0") + ")")} of band [{string.Join(", ", band.ConvertAll(x => x.It.Name))}]");
+			return chosen;
 		}
+
+		/// <summary>Probe seam: when set, every pick reports what it chose (TEST-only).</summary>
+		internal static Action<string> Trace;
 	}
 }

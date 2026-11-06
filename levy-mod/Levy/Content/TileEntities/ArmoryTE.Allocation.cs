@@ -71,7 +71,7 @@ namespace Levy.Content.TileEntities
 						if (rule != null && !rule(it)) return false;
 						if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 						if (!hasW) return true;
-						if (!HasAmmoFor(it, self, onHand)) return false;
+						if (!HasAmmoFor(it, self, onHand) && !(it.useAmmo > 0 && g.Weapon.useAmmo == it.useAmmo)) return false; // a dry gun may trade up to a better gun of the same ammo
 						if (WeaponClassifier.GetProfile(it).Family == WeaponFamily.Thrown) return false;
 						// An upgrade onto ammo he does not carry needs a real stock of it, so a swap never leaves a gun with an empty pouch.
 						if (it.useAmmo <= 0 || (!IsAir(pouch) && pouch.ammo == it.useAmmo)) return true;
@@ -80,7 +80,7 @@ namespace Levy.Content.TileEntities
 					};
 					if (hasW && WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Whip)
 						lev.Yields = c => WeaponClassifier.GetProfile(c.It).Family == WeaponFamily.Summon; // a whip in hand yields to any minion staff regardless of score (the whip becomes the off-hand)
-					lev.Fires = it => HasAmmoFor(it, self, onHand);
+					lev.Fires = it => HasAmmoFor(it, self, onHand) || (hasW && it.useAmmo > 0 && g.Weapon.useAmmo == it.useAmmo);
 					lev.AllowDry = !hasW; // an issue falls back to a gun with no bullets before it crosses class; an upgrade never trades onto one
 					plan.Levies.Add(lev);
 					if (ReferenceEquals(rec, requester)) plan.Requester = lev;
@@ -118,9 +118,10 @@ namespace Levy.Content.TileEntities
 		{
 			if (_allocating || requester?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			_allocating = true;
+			using var _rs = ArmoryRules.Enter(Rules);
 			try {
 				var plan = BuildAllocation(requester);
-				WeaponAllocator.Plan(plan.Levies, plan.Cands);
+				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
 				return Carry(plan, requester, upgrade);
 			}
 			catch (Exception e) {
@@ -185,10 +186,11 @@ namespace Levy.Content.TileEntities
 		private HashSet<object> ClaimedWeapons(SoldierRecord who)
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
+			using var _rs = ArmoryRules.Enter(Rules);
 			try {
 				var plan = BuildAllocation(who);
 				if (plan.Levies.Count == 0) return null;
-				WeaponAllocator.Plan(plan.Levies, plan.Cands);
+				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
 				var set = new HashSet<object>(ReferenceEqualityComparer.Instance);
 				foreach (var c in plan.Cands) if (c.Used) set.Add(c.It);
 				return set;

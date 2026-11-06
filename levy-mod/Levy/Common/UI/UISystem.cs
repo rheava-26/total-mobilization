@@ -11,6 +11,7 @@ using Terraria.UI;
 using Levy.Common.Net;
 using Levy.Common.Soldiers;
 using Levy.Common.Util;
+using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.UI
@@ -64,6 +65,7 @@ namespace Levy.Common.UI
 
 			LevyPackets.Register(LevyPacket.ArmorySlotSet, HandleArmorySlotSet);
 			LevyPackets.Register(LevyPacket.ArmorySort, HandleArmorySort);
+			LevyPackets.Register(LevyPacket.ArmoryRulesSet, HandleArmoryRulesSet);
 		}
 
 		public override void PostSetupContent()
@@ -327,6 +329,20 @@ namespace Levy.Common.UI
 			if (fromWhoAmI < 0 || fromWhoAmI >= Main.maxPlayers || !Main.player[fromWhoAmI].active) return;
 			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
 			armory.SortStorage();
+			armory.Sync();
+		}
+
+		/// <summary>Server: a client sent its edited rule list. Payload: int armoryId, int length, bytes. The list is re-read and clamped here; the sender must stand near the armory like any other armory edit.</summary>
+		private static void HandleArmoryRulesSet(BinaryReader reader, int fromWhoAmI)
+		{
+			int armoryId = reader.ReadInt32();
+			int len = reader.ReadInt32();
+			byte[] bytes = len > 0 && len <= ArmoryRules.MaxWireBytes ? reader.ReadBytes(len) : null;
+			if (Main.netMode != NetmodeID.Server || bytes == null) return;
+			if (!TileEntity.ByID.TryGetValue(armoryId, out var te) || te is not ArmoryTE armory) return;
+			if (fromWhoAmI < 0 || fromWhoAmI >= Main.maxPlayers || !Main.player[fromWhoAmI].active) return;
+			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
+			armory.SetRules(ArmoryRules.FromBytes(bytes));
 			armory.Sync();
 		}
 

@@ -1,0 +1,1001 @@
+# Levy weapon-choice probe. Levy 1.7.8
+# ranking: Balanced skipArmored=False stage=0 defense=8 expert=False
+
+## SCENARIO A0_baseline_no_rules_10_bows_10_swords_6_guns_12_levies   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Demon Bow x1, Blade of Grass x1, Platinum Bow x1, Platinum Broadsword x1, Gold Broadsword x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Demon Bow x1, Blade of Grass x1, Platinum Bow x1, Platinum Broadsword x1, Gold Broadsword x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Demon Bow x1, Blade of Grass x1, Platinum Bow x1, Platinum Broadsword x1, Gold Broadsword x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Demon Bow | Bow/ranged | 14 25 0 1 18000 | 70.9 (swing only 70.9) | 949.3 | 120000
+    Platinum Broadsword | Broadsword/melee | 16 20 0 0 13500 | 55.9 (swing only 55.9) | 719.5 | 72000
+    Platinum Bow | Bow/ranged | 13 25 0 0 10500 | 64.1 (swing only 64.1) | 603.5 | 63000
+    Gold Broadsword | Broadsword/melee | 15 20 0 0 9000 | 52.1 (swing only 52.1) | 541.7 | 48000
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] | Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] | Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] | Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] | Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] | Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] | Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00]
+
+## SCENARIO A1_at_least_7_bows_with_10_bows_in_stock   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 12 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Min bow 7  =>  7 bows wanted, 10 in stock.
+     stock by category: bow 10, sword 10, gun 6
+     stock by class: ranged 16, melee 10
+  -- after first issue
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1
+  by category: bow x7, gun x4, sword x1
+  by class:    ranged x11, melee x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1
+  by category: bow x7, gun x4, sword x1
+  by class:    ranged x11, melee x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1
+  by category: bow x7, gun x4, sword x1
+  by class:    ranged x11, melee x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Demon Bow | Bow/ranged | 14 25 0 1 18000 | 70.9 (swing only 70.9) | 949.3 | 120000
+    Platinum Bow | Bow/ranged | 13 25 0 0 10500 | 64.1 (swing only 64.1) | 603.5 | 63000
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] | Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] | The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00]
+
+## SCENARIO A2_at_least_7_bows_with_only_3_bows_in_stock   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 12 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Min bow 7  =>  7 bows wanted, 3 in stock.  [WARN]
+     stock by category: sword 10, gun 6, bow 3
+     stock by class: melee 10, ranged 9
+  -- after first issue
+  soldier 100: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Blade of Grass x1, Gold Broadsword x1
+  by category: gun x6, bow x3, sword x3
+  by class:    ranged x9, melee x3
+  -- after UpgradeWeapons
+  soldier 100: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Blade of Grass x1, Platinum Broadsword x1
+  by category: gun x6, bow x3, sword x3
+  by class:    ranged x9, melee x3
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 110: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1, Boomstick x1, Handgun x1, Muramasa x1, Musket x1, The Undertaker x1, Flintlock Pistol x1, Blade of Grass x1, Platinum Broadsword x1
+  by category: gun x6, bow x3, sword x3
+  by class:    ranged x9, melee x3
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Platinum Broadsword | Broadsword/melee | 16 20 0 0 13500 | 55.9 (swing only 55.9) | 719.5 | 72000
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: 
+
+## SCENARIO B1_bows_over_guns_4_bows_6_guns_6_levies   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 6 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Over bow > gun  =>  Bows come before guns. 4 bows and 6 guns in stock.
+     stock by category: gun 6, bow 4
+     stock by class: ranged 10
+  -- after first issue
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1
+  by category: bow x4, gun x2
+  by class:    ranged x6
+  -- after UpgradeWeapons
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1
+  by category: bow x4, gun x2
+  by class:    ranged x6
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1
+  by category: bow x4, gun x2
+  by class:    ranged x6
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] | The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00]
+
+## SCENARIO B2_bows_over_guns_10_bows_6_guns_5_levies_no_gun_is_used   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 5 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Over bow > gun  =>  Bows come before guns. 10 bows and 6 guns in stock.
+     stock by category: bow 10, gun 6
+     stock by class: ranged 16
+  -- after first issue
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1
+  by category: bow x5
+  by class:    ranged x5
+  -- after UpgradeWeapons
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1
+  by category: bow x5
+  by class:    ranged x5
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Demon Bow[Bow/ranged sc=71 rk=949.3 tier=2.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Platinum Bow[Bow/ranged sc=64 rk=603.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Demon Bow x1, Gold Bow x1, Platinum Bow x1, Silver Bow x1, Tungsten Bow x1
+  by category: bow x5
+  by class:    ranged x5
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Demon Bow | Bow/ranged | 14 25 0 1 18000 | 70.9 (swing only 70.9) | 949.3 | 120000
+    Platinum Bow | Bow/ranged | 13 25 0 0 10500 | 64.1 (swing only 64.1) | 603.5 | 63000
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] | Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] | Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] | Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] | Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] | Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] | Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] | The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00]
+
+## SCENARIO B3_include_bows_all_4_bows_used_guns_also_used   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 8 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Include bow  =>  All 4 bows are used.
+     stock by category: gun 6, bow 4, sword 2
+     stock by class: ranged 10, melee 2
+  -- after first issue
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1, Boomstick x1, The Undertaker x1
+  by category: bow x4, gun x4
+  by class:    ranged x8
+  -- after UpgradeWeapons
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1, Boomstick x1, The Undertaker x1
+  by category: bow x4, gun x4
+  by class:    ranged x8
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  tally: Iron Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1, Minishark x1, Handgun x1, Boomstick x1, The Undertaker x1
+  by category: bow x4, gun x4
+  by class:    ranged x8
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00]
+
+## SCENARIO C1_class_weights_melee3_ranged2_magic1_12_levies   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 12 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class melee[w3 min0 max-1 fix-1] ranged[w2 min0 max-1 fix-1] magic[w1 min0 max-1 fix-1]  =>  Among 12 levies without armor: 6 melee, 4 ranged, 2 magic.
+     stock by category: sword 10, bow 8, staff 6, wand 1
+     stock by class: melee 10, ranged 8, magic 7
+  -- after first issue
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Muramasa x1, Gold Bow x1, Blade of Grass x1, Diamond Staff x1, Tungsten Bow x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Bow x1, Ruby Staff x1, Tungsten Broadsword x1, Lead Bow x1, Silver Broadsword x1
+  by category: sword x6, bow x4, staff x2
+  by class:    melee x6, ranged x4, magic x2
+  -- after UpgradeWeapons
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Muramasa x1, Gold Bow x1, Blade of Grass x1, Diamond Staff x1, Tungsten Bow x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Bow x1, Ruby Staff x1, Tungsten Broadsword x1, Lead Bow x1, Silver Broadsword x1
+  by category: sword x6, bow x4, staff x2
+  by class:    melee x6, ranged x4, magic x2
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Muramasa x1, Gold Bow x1, Blade of Grass x1, Diamond Staff x1, Tungsten Bow x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Bow x1, Ruby Staff x1, Tungsten Broadsword x1, Lead Bow x1, Silver Broadsword x1
+  by category: sword x6, bow x4, staff x2
+  by class:    melee x6, ranged x4, magic x2
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Diamond Staff | Magic/magic | 23 26 0 2 30000 | 69.0 (swing only 69.0) | 1348.1 | 210000
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Ruby Staff | Magic/magic | 21 28 0 1 20000 | 55.4 (swing only 55.4) | 979.3 | 150000
+    Emerald Staff | Magic/magic | 19 32 0 1 15000 | 43.7 (swing only 43.7) | 800.7 | 105000
+    Platinum Broadsword | Broadsword/melee | 16 20 0 0 13500 | 55.9 (swing only 55.9) | 719.5 | 72000
+    Sapphire Staff | Magic/magic | 18 34 0 1 10000 | 38.8 (swing only 38.8) | 602.9 | 75000
+    Wand of Sparking | Magic/magic | 14 26 0 1 10000 | 39.4 (swing only 39.4) | 602.9 | 0
+    Gold Broadsword | Broadsword/melee | 15 20 0 0 9000 | 52.1 (swing only 52.1) | 541.7 | 48000
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Broadsword | Broadsword/melee | 14 20 0 0 6750 | 48.4 (swing only 48.4) | 442.9 | 36000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Topaz Staff | Magic/magic | 16 36 0 0 3000 | 30.4 (swing only 30.4) | 251.1 | 41250
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Amethyst Staff | Magic/magic | 15 37 0 0 2000 | 27.5 (swing only 27.5) | 189.0 | 22500
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] | Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] | Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] | Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] | Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00] | Sapphire Staff[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00] | Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] | Wand of Sparking[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00]
+
+## SCENARIO C2_class_fixed_magic3_max_melee2_rest_ranged_10_levies   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 10 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class magic[w0 min0 max-1 fix3] melee[w0 min0 max2 fix-1] ranged[w1 min0 max-1 fix-1]  =>  Among 10 levies without armor: 7 ranged, 3 magic.
+     stock by category: sword 10, bow 8, staff 6, wand 1
+     stock by class: melee 10, ranged 8, magic 7
+  -- after first issue
+  soldier 100: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Diamond Staff x1, Emerald Staff x1, Ruby Staff x1, Tungsten Bow x1, Gold Bow x1, Silver Bow x1, Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1
+  by category: bow x7, staff x3
+  by class:    ranged x7, magic x3
+  -- after UpgradeWeapons
+  soldier 100: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Diamond Staff x1, Emerald Staff x1, Ruby Staff x1, Tungsten Bow x1, Gold Bow x1, Silver Bow x1, Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1
+  by category: bow x7, staff x3
+  by class:    ranged x7, magic x3
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Diamond Staff[Magic/magic sc=69 rk=1348.1 tier=1.5 bst=1.00] side=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Ruby Staff[Magic/magic sc=55 rk=979.3 tier=0.5 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Diamond Staff x1, Emerald Staff x1, Ruby Staff x1, Tungsten Bow x1, Gold Bow x1, Silver Bow x1, Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1
+  by category: bow x7, staff x3
+  by class:    ranged x7, magic x3
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Diamond Staff | Magic/magic | 23 26 0 2 30000 | 69.0 (swing only 69.0) | 1348.1 | 210000
+    Ruby Staff | Magic/magic | 21 28 0 1 20000 | 55.4 (swing only 55.4) | 979.3 | 150000
+    Emerald Staff | Magic/magic | 19 32 0 1 15000 | 43.7 (swing only 43.7) | 800.7 | 105000
+    Sapphire Staff | Magic/magic | 18 34 0 1 10000 | 38.8 (swing only 38.8) | 602.9 | 75000
+    Wand of Sparking | Magic/magic | 14 26 0 1 10000 | 39.4 (swing only 39.4) | 602.9 | 0
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Topaz Staff | Magic/magic | 16 36 0 0 3000 | 30.4 (swing only 30.4) | 251.1 | 41250
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Amethyst Staff | Magic/magic | 15 37 0 0 2000 | 27.5 (swing only 27.5) | 189.0 | 22500
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] | Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00] | Sapphire Staff[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00] | Wand of Sparking[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00]
+
+## SCENARIO C3_class_min_melee2_max_melee2_10_levies_swords_top_of_the_ranking   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 10 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class melee[w0 min2 max2 fix-1] ranged[w1 min0 max-1 fix-1]  =>  Among 10 levies without armor: 2 melee, 8 ranged.
+     stock by category: sword 10, bow 8, staff 2
+     stock by class: melee 10, ranged 8, magic 2
+  -- after first issue
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Muramasa x1, Blade of Grass x1, Gold Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1
+  by category: bow x8, sword x2
+  by class:    ranged x8, melee x2
+  -- after UpgradeWeapons
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Muramasa x1, Blade of Grass x1, Gold Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1
+  by category: bow x8, sword x2
+  by class:    ranged x8, melee x2
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Gold Bow[Bow/ranged sc=56 rk=454.3 tier=0.0 bst=1.00] side=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Silver Bow[Bow/ranged sc=48 rk=279.7 tier=0.0 bst=1.00] side=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 104: weapon=Tungsten Bow[Bow/ranged sc=53 rk=371.5 tier=0.0 bst=1.00] side=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 105: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 108: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  tally: Muramasa x1, Blade of Grass x1, Gold Bow x1, Silver Bow x1, Tungsten Bow x1, Iron Bow x1, Lead Bow x1, Copper Bow x1, Tin Bow x1, Wooden Bow x1
+  by category: bow x8, sword x2
+  by class:    ranged x8, melee x2
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Gold Bow | Bow/ranged | 11 26 0 0 7000 | 55.9 (swing only 55.9) | 454.3 | 42000
+    Tungsten Bow | Bow/ranged | 10 26 0 0 5250 | 53.0 (swing only 53.0) | 371.5 | 31500
+    Silver Bow | Bow/ranged | 9 27 0 0 3500 | 48.2 (swing only 48.2) | 279.7 | 21000
+    Topaz Staff | Magic/magic | 16 36 0 0 3000 | 30.4 (swing only 30.4) | 251.1 | 41250
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Amethyst Staff | Magic/magic | 15 37 0 0 2000 | 27.5 (swing only 27.5) | 189.0 | 22500
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] | Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00]
+
+## SCENARIO D1_deny_list_minishark_and_musket_barred   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 6 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Never 2 items  =>  2 items are never used.
+     stock by category: gun 4
+     stock by class: ranged 4
+  -- after first issue
+  soldier 100: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=- side=- armorClass=none head=-
+  soldier 105: weapon=- side=- armorClass=none head=-
+  tally: Handgun x1, The Undertaker x1, Boomstick x1, Flintlock Pistol x1, (none) x2
+  by category: gun x4, (bare) x2
+  by class:    ranged x4
+  -- after UpgradeWeapons
+  soldier 100: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=- side=- armorClass=none head=-
+  soldier 105: weapon=- side=- armorClass=none head=-
+  tally: Handgun x1, The Undertaker x1, Boomstick x1, Flintlock Pistol x1, (none) x2
+  by category: gun x4, (bare) x2
+  by class:    ranged x4
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=- side=- armorClass=none head=-
+  soldier 105: weapon=- side=- armorClass=none head=-
+  tally: Handgun x1, The Undertaker x1, Boomstick x1, Flintlock Pistol x1, (none) x2
+  by category: gun x4, (bare) x2
+  by class:    ranged x4
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 0.0 | 0
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 0.0 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=0.0 tier=0.5 bst=1.00] | Minishark[Gun/ranged sc=161 rk=0.0 tier=1.5 bst=1.00]
+
+## SCENARIO E1_rank_override_wooden_sword_preferred_and_muramasa_never   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (1 blocks, 2 item overrides, 3 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     stock by category: sword 5
+     stock by class: melee 5
+  -- after first issue
+  soldier 100: weapon=Wooden Sword[Broadsword/melee sc=23 rk=10000023.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Wooden Sword x1, Blade of Grass x1, Silver Broadsword x1
+  by category: sword x3
+  by class:    melee x3
+  -- after UpgradeWeapons
+  soldier 100: weapon=Wooden Sword[Broadsword/melee sc=23 rk=10000023.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Wooden Sword x1, Blade of Grass x1, Silver Broadsword x1
+  by category: sword x3
+  by class:    melee x3
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Wooden Sword[Broadsword/melee sc=23 rk=10000023.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Wooden Sword x1, Blade of Grass x1, Silver Broadsword x1
+  by category: sword x3
+  by class:    melee x3
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Wooden Sword | Broadsword/melee | 7 20 0 0 100 | 22.7 (swing only 22.7) | 10000023.0 | 0
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 66.5 | 4500
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 0.0 | 0
+  left on shelves: Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] | Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] | Muramasa[Broadsword/melee sc=105 rk=0.0 tier=5.0 bst=1.00]
+
+## SCENARIO E2_rank_override_set_a_number_copper_broadsword_set_to_1e6   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (1 blocks, 1 item overrides, 3 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     stock by category: sword 5
+     stock by class: melee 5
+  -- after first issue
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=1000000.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  tally: Copper Broadsword x1, Muramasa x1, Blade of Grass x1
+  by category: sword x3
+  by class:    melee x3
+  -- after UpgradeWeapons
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=1000000.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  tally: Copper Broadsword x1, Muramasa x1, Blade of Grass x1
+  by category: sword x3
+  by class:    melee x3
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=1000000.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Blade of Grass[Broadsword/melee sc=147 rk=1264.6 tier=4.5 bst=1.00] side=- armorClass=none head=-
+  tally: Copper Broadsword x1, Muramasa x1, Blade of Grass x1
+  by category: sword x3
+  by class:    melee x3
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 1000000.0 | 4500
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Blade of Grass | Broadsword/melee | 18 20 0 3 27000 | 146.6 (swing only 73.3) | 1264.6 | 6900
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+  left on shelves: Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] | Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00]
+
+## SCENARIO F1_tag_edit_musket_retagged_as_a_bow_for_a_bows_minimum   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 1 item overrides, 4 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Min bow 2  =>  2 bows wanted, 2 in stock.
+     stock by category: sword 4, bow 2
+     stock by class: melee 4, ranged 2
+  -- after first issue
+  soldier 100: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Wooden Bow x1, Muramasa x1, Silver Broadsword x1
+  by category: bow x2, sword x2
+  by class:    ranged x2, melee x2
+  -- after UpgradeWeapons
+  soldier 100: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Wooden Bow x1, Muramasa x1, Silver Broadsword x1
+  by category: bow x2, sword x2
+  by class:    ranged x2, melee x2
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Muramasa[Broadsword/melee sc=105 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Wooden Bow x1, Muramasa x1, Silver Broadsword x1
+  by category: bow x2, sword x2
+  by class:    ranged x2, melee x2
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Muramasa | Broadsword/melee | 24 18 0 2 87500 | 105.4 (swing only 105.4) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: 
+
+## SCENARIO F2_tag_edit_class_musket_counted_as_melee_class_fixed_melee2   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 1 item overrides, 4 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class melee[w0 min0 max-1 fix2] ranged[w1 min0 max-1 fix-1]  =>  Among 4 levies without armor: 2 melee, 2 ranged.
+     stock by category: bow 3, sword 2, gun 1
+     stock by class: melee 3, ranged 3
+  -- after first issue
+  soldier 100: weapon=Musket[Gun/melee sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Iron Broadsword x1, Tin Bow x1, Copper Bow x1
+  by category: bow x2, gun x1, sword x1
+  by class:    melee x2, ranged x2
+  -- after UpgradeWeapons
+  soldier 100: weapon=Musket[Gun/melee sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Iron Broadsword x1, Tin Bow x1, Copper Bow x1
+  by category: bow x2, gun x1, sword x1
+  by class:    melee x2, ranged x2
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Musket[Gun/melee sc=96 rk=2766.8 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Musket x1, Iron Broadsword x1, Tin Bow x1, Copper Bow x1
+  by category: bow x2, gun x1, sword x1
+  by class:    melee x2, ranged x2
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Musket | Gun/melee | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00]
+
+## SCENARIO G1_conflict_earlier_order_beats_later_minimum_bows_over_guns_then_at_least_3_guns   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (3 blocks, 0 item overrides, 6 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Over bow > gun  =>  Bows come before guns. 5 bows and 6 guns in stock.
+     3. Min gun 3  =>  3 guns wanted, 6 in stock. Block 2 puts bows before guns.  [WARN]
+     stock by category: gun 6, bow 5
+     stock by class: ranged 11
+  -- after first issue
+  soldier 100: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  tally: Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1
+  by category: bow x5, gun x1
+  by class:    ranged x6
+  -- after UpgradeWeapons
+  soldier 100: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  tally: Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1
+  by category: bow x5, gun x1
+  by class:    ranged x6
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  tally: Lead Bow x1, Iron Bow x1, Tin Bow x1, Copper Bow x1, Wooden Bow x1, Minishark x1
+  by category: bow x5, gun x1
+  by class:    ranged x6
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] | Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] | The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] | Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00]
+
+## SCENARIO G2_conflict_reversed_minimum_first_then_order_the_minimum_wins   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (3 blocks, 0 item overrides, 6 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Min gun 3  =>  3 guns wanted, 6 in stock.
+     3. Over bow > gun  =>  Bows come before guns. 5 bows and 6 guns in stock.
+     stock by category: gun 6, bow 5
+     stock by class: ranged 11
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Iron Bow x1, Lead Bow x1, Copper Bow x1
+  by category: gun x3, bow x3
+  by class:    ranged x6
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Iron Bow x1, Lead Bow x1, Tin Bow x1
+  by category: gun x3, bow x3
+  by class:    ranged x6
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Lead Bow[Bow/ranged sc=48 rk=195.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, Iron Bow x1, Lead Bow x1, Tin Bow x1
+  by category: gun x3, bow x3
+  by class:    ranged x6
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Lead Bow | Bow/ranged | 9 27 0 0 2100 | 47.8 (swing only 47.8) | 195.6 | 15750
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] | Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] | Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] | The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00]
+
+## SCENARIO H1_rules_added_to_a_running_army_gunners_swap_to_new_bows   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Handgun x1, Boomstick x1, The Undertaker x1, Musket x1, Flintlock Pistol x1, Iron Broadsword x1, Copper Broadsword x1
+  -- rules (2 blocks, 0 item overrides, 8 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Over bow > gun  =>  Bows come before guns. 4 bows and 0 guns in stock.
+     stock by category: bow 4
+     stock by class: ranged 4
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Musket x1, Boomstick x1, Tin Bow x1, Wooden Bow x1, Copper Bow x1, Copper Broadsword x1, Iron Bow x1
+  by category: bow x4, gun x3, sword x1
+  by class:    ranged x7, melee x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Copper Bow x1, Boomstick x1, Tin Bow x1, Handgun x1, Wooden Bow x1, Copper Broadsword x1, Iron Bow x1
+  by category: bow x4, gun x3, sword x1
+  by class:    ranged x7, melee x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=7526.2 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 102: weapon=Boomstick[Gun/ranged sc=143 rk=3507.1 tier=1.5 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=The Undertaker[Gun/ranged sc=109 rk=2766.8 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Minishark x1, Copper Broadsword x1, Boomstick x1, Tin Bow x1, Wooden Bow x1, The Undertaker x1, Copper Bow x1, Iron Bow x1
+  by category: bow x4, gun x3, sword x1
+  by class:    ranged x7, melee x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 7526.2 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 3507.1 | 0
+    Handgun | Gun/ranged | 26 15 0 2 87500 | 189.7 (swing only 189.7) | 3225.7 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 2766.8 | 0
+    The Undertaker | Gun/ranged | 19 20 0 1 75000 | 109.2 (swing only 109.2) | 2766.8 | 0
+    Flintlock Pistol | Gun/ranged | 13 16 0 1 50000 | 107.6 (swing only 107.6) | 1859.9 | 0
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 66.5 | 4500
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: Handgun[Gun/ranged sc=190 rk=3225.7 tier=5.0 bst=1.00] | Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] | Flintlock Pistol[Gun/ranged sc=108 rk=1859.9 tier=0.5 bst=1.00] | Musket[Gun/ranged sc=96 rk=2766.8 tier=0.5 bst=1.00]
+
+## SCENARIO C4_class_fixed_magic3_with_armored_levies_armor_class_stays_and_free_levies_fill_the_rest   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 12 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class magic[w0 min0 max-1 fix3] melee[w0 min0 max3 fix-1]  =>  Among 12 levies without armor: 3 magic.
+     stock by category: sword 6, bow 4, staff 4
+     stock by class: melee 6, ranged 4, magic 4
+  -- after first issue
+  soldier 100: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 104: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 105: weapon=Sapphire Staff[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 108: weapon=Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tungsten Broadsword x1, Iron Bow x1, Amethyst Staff x1, Silver Broadsword x1, Tin Bow x1, Sapphire Staff x1, Lead Broadsword x1, Copper Bow x1, Topaz Staff x1, Wooden Bow x1, Emerald Staff x1, Iron Broadsword x1
+  by category: sword x4, bow x4, staff x4
+  by class:    melee x4, ranged x4, magic x4
+  -- after UpgradeWeapons
+  soldier 100: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 104: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 105: weapon=Sapphire Staff[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 108: weapon=Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tungsten Broadsword x1, Iron Bow x1, Amethyst Staff x1, Silver Broadsword x1, Tin Bow x1, Sapphire Staff x1, Lead Broadsword x1, Copper Bow x1, Topaz Staff x1, Wooden Bow x1, Emerald Staff x1, Iron Broadsword x1
+  by category: sword x4, bow x4, staff x4
+  by class:    melee x4, ranged x4, magic x4
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 101: weapon=Iron Bow[Bow/ranged sc=43 rk=147.3 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 104: weapon=Tin Bow[Bow/ranged sc=40 rk=74.1 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=ranged head=Vortex Helmet
+  soldier 105: weapon=Sapphire Staff[Magic/magic sc=39 rk=602.9 tier=0.5 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 106: weapon=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] side=- armorClass=melee head=Solar Flare Helmet
+  soldier 107: weapon=Copper Bow[Bow/ranged sc=36 rk=55.8 tier=0.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 108: weapon=Topaz Staff[Magic/magic sc=30 rk=251.1 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 109: weapon=Wooden Bow[Bow/ranged sc=30 rk=23.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 110: weapon=Emerald Staff[Magic/magic sc=44 rk=800.7 tier=0.5 bst=1.00] side=- armorClass=none head=-
+  soldier 111: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Tungsten Broadsword x1, Iron Bow x1, Amethyst Staff x1, Silver Broadsword x1, Tin Bow x1, Sapphire Staff x1, Lead Broadsword x1, Copper Bow x1, Topaz Staff x1, Wooden Bow x1, Emerald Staff x1, Iron Broadsword x1
+  by category: sword x4, bow x4, staff x4
+  by class:    melee x4, ranged x4, magic x4
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Emerald Staff | Magic/magic | 19 32 0 1 15000 | 43.7 (swing only 43.7) | 800.7 | 105000
+    Sapphire Staff | Magic/magic | 18 34 0 1 10000 | 38.8 (swing only 38.8) | 602.9 | 75000
+    Tungsten Broadsword | Broadsword/melee | 14 20 0 0 6750 | 48.4 (swing only 48.4) | 442.9 | 36000
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    Topaz Staff | Magic/magic | 16 36 0 0 3000 | 30.4 (swing only 30.4) | 251.1 | 41250
+    Lead Broadsword | Broadsword/melee | 13 20 0 0 2700 | 44.4 (swing only 44.4) | 233.2 | 18000
+    Amethyst Staff | Magic/magic | 15 37 0 0 2000 | 27.5 (swing only 27.5) | 189.0 | 22500
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+    Iron Bow | Bow/ranged | 8 28 0 0 1400 | 43.4 (swing only 43.4) | 147.3 | 10500
+    Tin Bow | Bow/ranged | 7 28 0 0 525 | 40.4 (swing only 40.4) | 74.1 | 7875
+    Copper Bow | Bow/ranged | 6 29 0 0 350 | 36.5 (swing only 36.5) | 55.8 | 5250
+    Wooden Bow | Bow/ranged | 4 30 0 0 100 | 30.2 (swing only 30.2) | 23.2 | 0
+  left on shelves: 

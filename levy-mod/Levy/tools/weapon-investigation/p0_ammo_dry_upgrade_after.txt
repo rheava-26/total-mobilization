@@ -1,0 +1,245 @@
+# Levy weapon-choice probe. Levy 1.7.8
+# ranking: Balanced skipArmored=False stage=0 defense=8 expert=False
+
+## SCENARIO V0_original   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1721.2 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO V1_three_ammo_stacks   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1721.2 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO V2_fresh_phoenix_three_levies_same_ammo   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Boomstick x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Boomstick x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Boomstick x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Boomstick x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 2751.3 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 121.2 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO V3_fresh_phoenix_one_levy   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 2751.3 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+  left on shelves: Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00]
+
+## SCENARIO V4_returned_phoenix_ammo_in_every_pouch_by_second_issue_order   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1721.2 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO W1_original_but_bullets_arrive_with_the_megashark   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1721.2 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO W2_original_but_phoenix_arrives_fresh_too_no_returned_weapon_stamp_involved   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Boomstick x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 2751.3 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Boomstick | Gun/ranged | 14 40 0 2 100000 | 142.6 (swing only 142.6) | 121.2 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Boomstick[Gun/ranged sc=143 rk=121.2 tier=1.5 bst=1.00] | Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO W3_no_ranged_armor_split_one_levy_holds_all_bullets_and_a_dry_levy_with_minishark   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=2751.3 tier=5.0 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Minishark x1, Phoenix Blaster x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 2751.3 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]
+
+## SCENARIO X1_original_then_bullets_arrive_in_a_third_stage   [ranking Balanced skip=False stage=0 defense=8 progress=12.0 tiersReady=True]
+  -- after first issue
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Musket x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons (round)
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Phoenix Blaster[Gun/ranged sc=238 rk=1721.2 tier=5.0 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 101: weapon=Minishark[Gun/ranged sc=161 rk=260.1 tier=1.5 bst=1.00] side=- armorClass=ranged head=Vortex Helmet
+  soldier 102: weapon=Megashark[Gun/ranged sc=457 rk=11608.5 tier=9.5 bst=1.60] side=- armorClass=ranged head=Vortex Helmet
+  tally: Phoenix Blaster x1, Minishark x1, Megashark x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Megashark | Gun/ranged | 25 7 0 5 350000 | 456.5 (swing only 456.5) | 11608.5 | 1351000
+    Phoenix Blaster | Gun/ranged | 30 14 0 3 175000 | 238.2 (swing only 238.2) | 1721.2 | 125000
+    Minishark | Gun/ranged | 6 8 0 2 350000 | 161.0 (swing only 161.0) | 260.1 | 0
+    Musket | Gun/ranged | 31 32 0 1 75000 | 96.5 (swing only 96.5) | 34.4 | 0
+  left on shelves: Musket[Gun/ranged sc=96 rk=34.4 tier=0.5 bst=1.00]

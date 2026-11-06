@@ -49,6 +49,17 @@ namespace Levy.Common.UI
 		private int _payerRefresh;
 		private BarracksTE _payer;
 
+		// ---- rules tab and item panel
+		private LevyButton _tabItems, _tabRules;
+		private RulesView _rulesView;
+		private ItemInfoPanel _info;
+		/// <summary>The elements that make up the Items tab; they leave the panel while the Rules tab shows.</summary>
+		private readonly List<UIElement> _itemsTabEls = new();
+		private int _tab;
+		/// <summary>Ticks until the edited rule list is sent to the server (a multiplayer client); 0 = nothing waiting. Edits made in quick succession go out as one packet.</summary>
+		private int _sendIn;
+		private int _rulesHash, _hashTick;
+
 		// ---- storage view filters (view-only) ----
 		/// <summary>Search terms (the lower-cased query split on spaces; every term must appear in the item name), the rarity toggles (one bit per swatch) and the type button's state (0 = any).</summary>
 		private string[] _terms = Array.Empty<string>();
@@ -135,14 +146,118 @@ namespace Levy.Common.UI
 			_issue.Width.Set(IssueWidth, 0f); _issue.Height.Set(LevyConstants.UI.ArmoryRows * Pitch, 0f);
 			_panel.Append(_issue);
 
+			// Tabs: the Items tab is the storage grid and issue rows; the Rules tab is the rule list (RulesView). The item panel opens beside the armory when a weapon is pointed at.
+			_tabItems = new LevyButton(LevyUtil.T("Rules.TabItems"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(0), LevyUtil.T("Rules.TabItemsHint"));
+			_tabItems.Left.Set(w - 10 - 70 - 76, 0f); _tabItems.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_tabItems);
+			_tabRules = new LevyButton(LevyUtil.T("Rules.TabRules"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(1), LevyUtil.T("Rules.TabRulesHint"));
+			_tabRules.Left.Set(w - 10 - 70, 0f); _tabRules.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_tabRules);
+			_rulesView = new RulesView(this);
+			_rulesView.Left.Set(GridLeft, 0f); _rulesView.Top.Set(36f, 0f);
+			_info = new ItemInfoPanel(this);
+			foreach (var el in new UIElement[] { _lootAll, _depositJunk, _sort, _floor, _reforge, _treasury, _searchBox, _catBtn, _clearBtn, _count, _noMatch, _capacity, _value, _grid, _gridScroll, _issue }) _itemsTabEls.Add(el);
+			if (_swatches != null) _itemsTabEls.AddRange(_swatches);
+			RefreshTabs();
+
 			Append(_panel);
+		}
+
+		// ------------------------------------------------------------------ tabs, rule edits, the item panel
+
+		private void SetTab(int tab)
+		{
+			if (_tab == tab || _panel == null) return;
+			_tab = tab;
+			if (tab == 1)
+			{
+				foreach (var el in _itemsTabEls) if (_panel.HasChild(el)) _panel.RemoveChild(el);
+				_panel.Append(_rulesView);
+				_rulesView.Build();
+				_rulesHash = HashOf(Te?.Rules);
+			}
+			else
+			{
+				_panel.RemoveChild(_rulesView);
+				foreach (var el in _itemsTabEls) if (!_panel.HasChild(el)) _panel.Append(el);
+			}
+			_panel.Recalculate();
+			RefreshTabs();
+		}
+
+		private void RefreshTabs()
+		{
+			if (_tabItems == null) return;
+			_tabItems.Lit = _tab == 0;
+			_tabRules.Lit = _tab == 1;
+		}
+
+		/// <summary>The rule list or an item override was edited in place: the compiled rules are dropped at once (single player and the server's own copy read them next pick), and the packet is queued.</summary>
+		public void RulesEdited()
+		{
+			if (Te == null) return;
+			Te.Rules.Changed();
+			_rulesHash = HashOf(Te.Rules);
+			_sendIn = 10;
+			Te.RulesHeldBack = true;
+		}
+
+		/// <summary>Sends a queued edit now (the panel is closing, or the debounce ran out).</summary>
+		private void FlushRules()
+		{
+			if (_sendIn > 0 && Te != null) { _sendIn = 0; UIActions.SendArmoryRules(Te); }
+			if (Te != null) Te.RulesHeldBack = _rulesView != null && _rulesView.Typing;
+		}
+
+		public override void OnDeactivate()
+		{
+			base.OnDeactivate();
+			FlushRules();
+			if (Te != null) Te.RulesHeldBack = false;
+		}
+
+		private static int HashOf(ArmoryRules r)
+		{
+			if (r == null) return 0;
+			int h = unchecked((int)2166136261);
+			foreach (byte b in r.ToBytes()) h = unchecked((h ^ b) * 16777619);
+			return h;
+		}
+
+		private void ShowInfo(Item it)
+		{
+			if (_info == null || it == null || it.IsAir) return;
+			if (!HasChild(_info)) Append(_info);
+			_info.Show(it);
+		}
+
+		public void CloseInfo()
+		{
+			if (_info != null && HasChild(_info)) RemoveChild(_info);
+		}
+
+		private void PlaceInfo()
+		{
+			if (_info == null || !HasChild(_info) || _panel == null) return;
+			float sw = Main.screenWidth / Main.UIScale;
+			float x = _panel.Left.Pixels + LevyConstants.UI.ArmoryPanelWidth + 6f;
+			if (x + ItemInfoPanel.PanelWidth > sw) x = Math.Max(0f, _panel.Left.Pixels - ItemInfoPanel.PanelWidth - 6f);
+			if (Math.Abs(_info.Left.Pixels - x) > 0.5f || Math.Abs(_info.Top.Pixels - _panel.Top.Pixels) > 0.5f)
+			{
+				_info.Left.Set(x, 0f); _info.Top.Set(_panel.Top.Pixels, 0f);
+				_info.Recalculate();
+			}
 		}
 
 		/// <summary>Point the panel at a tile entity and rebuild every slot element against its arrays.</summary>
 		public void Bind(ArmoryTE te)
 		{
+			FlushRules();
 			Te = te;
 			if (_grid == null) return;
+			if (_tab != 0) SetTab(0);
+			CloseInfo();
+			_sendIn = 0;
 			float sh = Main.screenHeight / Main.UIScale;
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - LevyConstants.UI.ArmoryPanelHeight - 10f)), 0f);
 			_grid.Clear();
@@ -269,7 +384,7 @@ namespace Levy.Common.UI
 
 		private ItemSlotElement MakeSlot(Item[] arr, int index, byte region, Func<Item, bool> accepts, string emptyHint)
 		{
-			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint };
+			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint, OnHover = ShowInfo };
 			slot.OnChanged = (a, i) => { if (Te != null) UIActions.SendArmorySlot(Te, region, i); };
 			return slot;
 		}
@@ -283,11 +398,18 @@ namespace Levy.Common.UI
 			private readonly Item[] _items;
 			private readonly int _at;
 			private readonly float _scale;
+			/// <summary>Called every frame the pointer is on a weapon in this cell (the item panel follows it).</summary>
+			public Action<Item> OnHover;
 
 			public ArmorySlot(Item[] arr, int index, float scale) : base(arr, index, scale) { _items = arr; _at = index; _scale = scale; }
 
 			protected override void DrawSelf(SpriteBatch spriteBatch)
 			{
+				if (OnHover != null && IsMouseHovering && ContainsPoint(Main.MouseScreen) && _items != null && _at >= 0 && _at < _items.Length)
+				{
+					var held = _items[_at];
+					if (held != null && !held.IsAir && IsWeaponShaped(held)) OnHover(held);
+				}
 				if (!IsMouseHovering || ContainsPoint(Main.MouseScreen)) { base.DrawSelf(spriteBatch); return; }
 				if (_items == null || _at < 0 || _at >= _items.Length) return;
 				_items[_at] ??= new Item();
@@ -674,6 +796,18 @@ namespace Levy.Common.UI
 			if (Te != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) { anyStorage = true; break; }
 			_lootAll.Enabled = anyStorage;
 			_sort.Enabled = anyStorage;
+			if (Te != null)
+			{
+				if (_sendIn > 0 && --_sendIn == 0) UIActions.SendArmoryRules(Te);
+				Te.RulesHeldBack = _sendIn > 0 || (_rulesView != null && _rulesView.Typing);
+				if (_tab == 1 && !Te.RulesHeldBack && ++_hashTick >= 10)
+				{
+					_hashTick = 0;
+					int h = HashOf(Te.Rules);
+					if (h != _rulesHash) { _rulesHash = h; _rulesView.Build(); } // another player (or the server) changed the list
+				}
+			}
+			PlaceInfo();
 			UpdateFilterView();
 			UpdateStatusLine();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }

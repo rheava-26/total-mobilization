@@ -1,0 +1,96 @@
+# Levy weapon-choice probe. Levy 1.7.8
+# ranking: Balanced skipArmored=False stage=0 defense=8 expert=False
+
+## SCENARIO T1_class_fixed_bard2_healer1_melee_weight_8_levies   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 0 item overrides, 8 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. class bard[w0 min0 max-1 fix2] healer[w0 min0 max-1 fix1] melee[w1 min0 max-1 fix-1]  =>  Among 8 levies without armor: 5 melee, 2 bard, 1 healer.
+     stock by category: sword 8, wand 6
+     stock by class: melee 8, bard 4, healer 2
+  -- after first issue
+  soldier 100: weapon=ThoriumMod/Harmonica[Magic/BardDamage sc=23 rk=154.6 tier=0.0 bst=1.00] side=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/DrumMallet[Magic/BardDamage sc=27 rk=30.8 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=ThoriumMod/Bonesaw[Magic/HealerDamage sc=42 rk=274.5 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Harmonica x1, DrumMallet x1, Bonesaw x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Broadsword x1, Tungsten Broadsword x1, Iron Broadsword x1
+  by category: sword x5, wand x3
+  by class:    melee x5, bard x2, healer x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=ThoriumMod/Harmonica[Magic/BardDamage sc=23 rk=154.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/DrumMallet[Magic/BardDamage sc=27 rk=30.8 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=ThoriumMod/Bonesaw[Magic/HealerDamage sc=42 rk=274.5 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Harmonica x1, DrumMallet x1, Bonesaw x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Broadsword x1, Tungsten Broadsword x1, Lead Broadsword x1
+  by category: sword x5, wand x3
+  by class:    melee x5, bard x2, healer x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=ThoriumMod/Harmonica[Magic/BardDamage sc=23 rk=154.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/DrumMallet[Magic/BardDamage sc=27 rk=30.8 tier=0.0 bst=1.00] side=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=ThoriumMod/Bonesaw[Magic/HealerDamage sc=42 rk=274.5 tier=0.5 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 103: weapon=Gold Broadsword[Broadsword/melee sc=52 rk=541.7 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 104: weapon=Platinum Broadsword[Broadsword/melee sc=56 rk=719.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 105: weapon=Silver Broadsword[Broadsword/melee sc=48 rk=333.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 106: weapon=Tungsten Broadsword[Broadsword/melee sc=48 rk=442.9 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 107: weapon=Lead Broadsword[Broadsword/melee sc=44 rk=233.2 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Harmonica x1, DrumMallet x1, Bonesaw x1, Gold Broadsword x1, Platinum Broadsword x1, Silver Broadsword x1, Tungsten Broadsword x1, Lead Broadsword x1
+  by category: sword x5, wand x3
+  by class:    melee x5, bard x2, healer x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Platinum Broadsword | Broadsword/melee | 16 20 0 0 13500 | 55.9 (swing only 55.9) | 719.5 | 72000
+    Gold Broadsword | Broadsword/melee | 15 20 0 0 9000 | 52.1 (swing only 52.1) | 541.7 | 48000
+    Tungsten Broadsword | Broadsword/melee | 14 20 0 0 6750 | 48.4 (swing only 48.4) | 442.9 | 36000
+    Silver Broadsword | Broadsword/melee | 14 20 0 0 4500 | 48.1 (swing only 48.1) | 333.5 | 24000
+    ThoriumMod/Bonesaw | Magic/HealerDamage | 14 24 0 1 3250 | 42.0 (swing only 42.0) | 274.5 | 12250
+    Lead Broadsword | Broadsword/melee | 13 20 0 0 2700 | 44.4 (swing only 44.4) | 233.2 | 18000
+    ThoriumMod/Harmonica | Magic/BardDamage | 10 30 0 0 1500 | 22.5 (swing only 22.5) | 154.6 | 12000
+    ThoriumMod/ClericsCross | Magic/HealerDamage | 10 24 0 13 500 | 45.7 (swing only 45.7) | 73.8 | 2800
+    Copper Broadsword | Broadsword/melee | 9 20 0 0 450 | 29.9 (swing only 29.9) | 66.5 | 4500
+    ThoriumMod/DrumMallet | Magic/BardDamage | 9 22 0 0 150 | 26.7 (swing only 26.7) | 30.8 | 0
+    ThoriumMod/Ukulele | Magic/BardDamage | 10 22 0 0 100 | 22.1 (swing only 22.1) | 23.2 | 5000
+    ThoriumMod/WoodenWhistle | Magic/BardDamage | 7 16 0 0 100 | 28.4 (swing only 28.4) | 23.2 | 0
+  left on shelves: ThoriumMod/Ukulele[Magic/BardDamage sc=22 rk=23.2 tier=0.0 bst=1.00] | ThoriumMod/WoodenWhistle[Magic/BardDamage sc=28 rk=23.2 tier=0.0 bst=1.00] | Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] | ThoriumMod/ClericsCross[Magic/HealerDamage sc=46 rk=73.8 tier=0.4 bst=1.00]
+
+## SCENARIO T2_tag_edit_bard_instrument_counted_as_a_staff_for_a_staff_minimum   [ranking Balanced skip=False stage=0 defense=8 progress=3.0 tiersReady=True]
+  -- rules (2 blocks, 1 item overrides, 4 levies served)
+     1. class   =>  No numbers set. Armor and stock decide.
+     2. Min staff 2  =>  2 staves wanted, 2 in stock.
+     stock by category: sword 3, staff 2
+     stock by class: melee 3, bard 1, magic 1
+  -- after first issue
+  soldier 100: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/Ukulele[Magic/BardDamage sc=22 rk=23.2 tier=0.0 bst=1.00] side=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Amethyst Staff x1, Ukulele x1, Iron Broadsword x1, Copper Broadsword x1
+  by category: staff x2, sword x2
+  by class:    melee x2, magic x1, bard x1
+  -- after UpgradeWeapons
+  soldier 100: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/Ukulele[Magic/BardDamage sc=22 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Amethyst Staff x1, Ukulele x1, Iron Broadsword x1, Tin Broadsword x1
+  by category: staff x2, sword x2
+  by class:    melee x2, magic x1, bard x1
+  -- after 2 more upgrade rounds
+  soldier 100: weapon=Amethyst Staff[Magic/magic sc=28 rk=189.0 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 101: weapon=ThoriumMod/Ukulele[Magic/BardDamage sc=22 rk=23.2 tier=0.0 bst=1.00] side=Copper Broadsword[Broadsword/melee sc=30 rk=66.5 tier=0.0 bst=1.00] armorClass=none head=-
+  soldier 102: weapon=Iron Broadsword[Broadsword/melee sc=41 rk=175.6 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  soldier 103: weapon=Tin Broadsword[Broadsword/melee sc=33 rk=88.4 tier=0.0 bst=1.00] side=- armorClass=none head=-
+  tally: Amethyst Staff x1, Ukulele x1, Iron Broadsword x1, Tin Broadsword x1
+  by category: staff x2, sword x2
+  by class:    melee x2, magic x1, bard x1
+  STOCK TABLE (all stocked weapons, by rank): name | family/class | dmg useTime reuse rare value | score | rank | material cost
+    Amethyst Staff | Magic/magic | 15 37 0 0 2000 | 27.5 (swing only 27.5) | 189.0 | 22500
+    Iron Broadsword | Broadsword/melee | 12 20 0 0 1800 | 40.7 (swing only 40.7) | 175.6 | 12000
+    Tin Broadsword | Broadsword/melee | 10 20 0 0 675 | 33.4 (swing only 33.4) | 88.4 | 6750
+    ThoriumMod/Ukulele | Magic/BardDamage | 10 22 0 0 100 | 22.1 (swing only 22.1) | 23.2 | 5000
+  left on shelves: 

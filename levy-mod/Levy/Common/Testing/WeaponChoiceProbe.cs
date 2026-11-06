@@ -19,6 +19,7 @@ namespace Levy.Common.Testing
 	///  2. SCENARIOS (LEVY_PICKPROBE_SCEN=path): builds an in-memory ArmoryTE, stocks it, issues N soldiers through the REAL IssueGear / UpgradeWeapons, logs every pick.
 	///     File format, one directive per line:  [name] starts a scenario;  W Mod/Item [xN] weapon;  A Mod/Item armor;  M Mod/Item xN ammo;  SOLDIERS n;  STAGE (issue now, then keep reading: later
 	///     W/A/M lines add MORE stock and the soldiers then run UpgradeWeapons);  CFG ClassMatchIssue=true|false;  # comment. Vanilla items are written as Vanilla/ItemIDName.
+	///     Armory rule directives (RULES, RCLASS, RWEIGHT, ROVER, RINCLUDE, RMIN, RDENY, RONLY, OVERRIDE, TAG, RPREVIEW, MS) are described in <see cref="RulesProbe"/>; LEVY_PICKPROBE_TRACE=1 logs every allocator pick.
 	/// Output goes to LEVY_PICKPROBE_OUT. The server exits afterwards without saving.
 	/// </summary>
 	public class WeaponChoiceProbe : ModSystem
@@ -44,6 +45,8 @@ namespace Levy.Common.Testing
 		}
 
 		private static string ClsName(DamageClass c) => c == null ? "none" : c == DamageClass.Melee ? "melee" : c == DamageClass.Ranged ? "ranged" : c == DamageClass.Magic ? "magic" : c == DamageClass.Summon ? "summon" : c.Name;
+
+		internal static Item MakeItem(string spec) => Make(spec);
 
 		private static Item Make(string spec, int stack = 1)
 		{
@@ -259,8 +262,10 @@ namespace Levy.Common.Testing
 				WeaponRank.ForceStage = -1; WeaponRank.ForceProgress = -1f;
 				LevyClock.Force(10 * LevyClock.TicksPerDay); double stampAge = -1; // CLOCK d / AGE d / OLD: weapons stocked after an AGE line were deposited d game days before the pinned clock
 				foreach (var rl in sc.Lines) { if (rl.StartsWith("RANKSTAGE ")) WeaponRank.ForceStage = int.Parse(rl.Substring(10).Trim()); if (rl.StartsWith("RANKPROGRESS ")) WeaponRank.ForceProgress = float.Parse(rl.Substring(13).Trim(), System.Globalization.CultureInfo.InvariantCulture); }
+				WeaponAllocator.Trace = Environment.GetEnvironmentVariable("LEVY_PICKPROBE_TRACE") == "1" ? (m => sb.AppendLine("   [trace] " + m)) : null;
 				sb.AppendLine("\n## SCENARIO " + sc.Name + $"   [ranking {WeaponRank.Mode} skip={WeaponRank.SkipArmored} stage={WeaponRank.Stage()} defense={WeaponRank.StageDefenseNow()} progress={WeaponRank.Progress():F1} tiersReady={ProgressionTier.Ready}]");
 				var te = new ArmoryTE();
+				using var rulesScope = ArmoryRules.Enter(te.Rules); // the whole scenario reads ranks, classes and tags the way this armory does
 				int nSold = 9; var souls = new List<SoldierRecord>(); bool staged = false; var mix = new List<string>(); string order = "interleave";
 				SoldierRecord NewSoldier(int i)
 				{
@@ -294,6 +299,7 @@ namespace Levy.Common.Testing
 					}
 					var tally = souls.GroupBy(s => s.Gear.HasWeapon ? (s.Gear.Weapon.ModItem != null ? s.Gear.Weapon.ModItem.Name : s.Gear.Weapon.Name) : "(none)").Select(g => g.Key + " x" + g.Count());
 					sb.AppendLine("  tally: " + string.Join(", ", tally));
+					RulesProbe.Summarize(sb, te, souls);
 				}
 				foreach (var l in sc.Lines)
 				{
@@ -301,6 +307,7 @@ namespace Levy.Common.Testing
 					switch (t[0])
 					{
 						case "RANKSTAGE": case "RANKPROGRESS": break;
+						case "RULES": case "RCLASS": case "RWEIGHT": case "ROVER": case "RINCLUDE": case "RMIN": case "RDENY": case "RONLY": case "OVERRIDE": case "TAG": case "RPREVIEW": RulesProbe.Levies = nSold; RulesProbe.Apply(te, t, sb); break;
 						case "GLOBAL": ArmoryTE.TestServed = souls; break; // the whole army is planned together, as in the game (default: each levy alone)
 						case "AGE": stampAge = double.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture); break;
 						case "OLD": stampAge = -1; break;
@@ -312,6 +319,7 @@ namespace Levy.Common.Testing
 						case "SHOW": { var si = Make(t[1]); sb.AppendLine("  SHOW " + t[1] + ": " + (si == null ? "cannot resolve" : $"{Describe(si)} issuable={WeaponClassifier.IsIssuableWeapon(si)} dmg={si.damage} pick={si.pick} hammer={si.hammer} axe={si.axe} useTime={si.useTime} rare={si.rare} value={si.value} noMelee={si.noMelee} shoot={si.shoot}")); break; }
 						case "CFG": { var kv = t[1].Split('='); if (kv[0] == "ClassMatchIssue") LevyConfig.Get.ClassMatchIssue = bool.Parse(kv[1]); break; }
 						case "W": case "A": case "M": Stock(t); break;
+						case "MS": for (int k = 0; k < int.Parse(t[2]); k++) Stock(new[] { "M", t[1], "x999" }); break; // MS <ammo> <n>: n full stacks (every soldier's pouch takes a stack)
 						case "WI": { var wi = Make(t[1]); int slot = Array.FindIndex(te.IssueWeapons, 0, ArmoryTE.SidearmSlot, x => x == null || x.IsAir); if (wi == null || slot < 0) sb.AppendLine("  !! cannot place " + t[1]); else te.IssueWeapons[slot] = wi; break; } // the player's own weapon rack (issue row)
 						case "STAGE":
 							if (!staged)

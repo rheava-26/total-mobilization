@@ -592,6 +592,34 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 🔬 Boss trials PARTIAL results (raw data on origin/boss-trials, docs/boss_trials/raw; pre-mobility baseline, Spectator conditions, big arena)
+- **Classic, on-tier, 10 levies (3R/3M/2Me/2S):** KS 100% ~42s ~3 deaths; Eye 100% ~22s; Brain 100% ~13s.
+- **Classic, 4 levies:** all bosses won (KS ~98s, Eye ~56s, Brain ~46s).
+- **Expert:**
+  - 10 levies: Eye 100% ~56s ~3 deaths.
+  - 4 levies: Eye 83% ~214s, KS 83%.
+  - Brain: 100%.
+- **Loadout tiers:**
+  - Expert junk = 0% wins vs the Eye at every comp (gear matters).
+  - Classic junk: 10 levies win ~125s.
+- **Count curve (identical loadouts, Eye Classic):** 4→29s, 6→20s, 8→11s, 10–30→~10s plateau. CP boss-HP scaling cancels extra levies past ~8–10.
+- **Expert:** 4 mages 0% (20 mana), 6 mages 67%; 4 rangers 100%.
+- **Observations:**
+  - King Slime is the deadliest early boss for levies.
+  - The Brain looks suspiciously trivial (verify the creeper phase in the harness).
+- **Pending:** the player-reference DPS ratio, melee change rows, the final doc.
+
+## ✅ setbonus c1cbbb0 (NOT yet merged; next build)
+- Passive set bonuses: 65/65 working; the old complaint predates the fixes.
+- Spectre Hood heal WORKS (14/14 bolts; it heals only off MAGIC damage).
+- **Activated abilities were NEVER used → fixed:** levies press the Armor Set Bonus key (KeyDoubleTap on the dummy): Forbidden storm, Vortex stealth, Cal Desert Prowler smoke (+ its crit now credited), Tarragon/Omega Blue/Demonshade/Brimflame/Bloodflare/Prismatic, Rage auto.
+- Not done: Thorium techniques/bard abilities, Cal accessory hotkeys beyond Rage, Adrenaline unverified.
+- "Roadrunner" is not in the Calamity source; ask Eve.
+
+## 🐞 calbugs MERGED (in 2.0.7)
+- **Wulfrum:** the 15 s "no hit" give-up fired at 450–760 px (the droid's aggro is 450 px, the leash 760) → staff marked bad. Now idle-checked only within 320 px; a rearm resets liveness.
+- **Rogue:** Calamity rogue armor boosts ThrowingDamageClass (the parent), so ArmorDoctrine read 0 → rogue levies were treated as class-less (and the spread excludes rogue). Fixed: rogue sets now read as rogue; class-less levies take rogue only as a last resort.
+
 ## 📦 SHIPPED Levy 2.0.6 (gear-audit e975ce5), at scratchpad/ship-2.0.6
 - **Observed before:**
   - Armor was first-come by timer order: 45 not-worst-first flags; the floor stuck at wood/cactus/copper through step 6.

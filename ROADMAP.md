@@ -256,6 +256,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**UPDATE (Eve, later 2026-11-06):**
+- **Potions APPROVED from v2:** Seeker = B (slot hole); Spectator = A (plain white box) with the dots/glints shuffled so it isn't a Builder clone.
+- **Command Radio** gets the walkie-talkie sprite (art2 radio B → vanilla-style final).
+- The v1 concepts are "fine"; art3 is making them vanilla-accurate.
+- **FACTORY PAUSED.** Corrected intent: cheaper BULK crafting of things you make in huge numbers (ammo, ore, potions, AND weapons), e.g. 1,500 Holy Arrows with fewer Unicorn Horns. An optional "ammo bench" is the simplest form. Revisit later.
+- **Tavernkeep:** NOT removed. Eve worries his compact shop will overflow. `ooa-tavern` resumed from WIP, with shop space as the key requirement (count the slots, pick a no-overflow solution).
+- **Eve asked why I can't look up references.** Wiki fetch works (terraria.wiki.gg true-scale sprites); art3 is using it. The test server's tML install has a stripped texture set, so spawning items there doesn't show the art.
+
 **ART + STATION DECISIONS (Eve, 2026-11-06):**
 - **Art style:**
   - Match vanilla exactly: 2×2 grid, MESSIER and more clumped, not neat.

@@ -11,7 +11,7 @@ using Levy.Common.Util;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// The new-world setup popup. Page 1: three presets (Default, Relaxed, Hardcore), Customize and Skip. Page 2 (Customize): the three levy counts, whether bosses target and punish levies,
+	/// The new-world setup popup. Page 1: three presets (Default, Relaxed, Hardcore), Customize and Skip. Page 2 (Customize): the four levy counts (start, Wall of Flesh, Moon Lord, final boss), whether bosses target and punish levies,
 	/// the live "too few / too many" notes, and a pointer to the full config. Single player only; answering is saved per world. Client only.
 	/// </summary>
 	public class SetupPanel : UIState
@@ -22,18 +22,18 @@ namespace Levy.Common.UI
 		private readonly LevyButton[] _presetBtn = new LevyButton[3];
 		private readonly UIText[] _presetBlurb = new UIText[3];
 		private LevyButton _customize, _skip, _apply, _back, _close;
-		private readonly LevyButton[] _minus = new LevyButton[3], _plus = new LevyButton[3];
-		private readonly Label[] _countLabel = new Label[3];
+		private readonly LevyButton[] _minus = new LevyButton[4], _plus = new LevyButton[4];
+		private readonly Label[] _countLabel = new Label[4];
 		private LevyButton _targetBtn, _punishBtn;
 		private UIText _anchors, _warn;
 		private uint _openedTick;
 		private bool _onCustom;
 
 		// working values for the customize page
-		private int _pre, _hm, _post, _max;
+		private int _start, _pre, _hm, _post, _max;
 		private bool _target, _punish;
 
-		private const int W = 540, H = 440, Margin = 16;
+		private const int W = 540, H = 480, Margin = 16;
 		private static readonly Color Parchment = new(235, 220, 170);
 		private static readonly Color WarnColor = new(240, 200, 110);
 
@@ -80,8 +80,7 @@ namespace Levy.Common.UI
 			_anchors = new UIText("", 0.8f) { IsWrapped = true, TextColor = Parchment, WrappedTextBottomPadding = 0f };
 			_anchors.Left.Set(Margin, 0f); _anchors.Top.Set(44, 0f); _anchors.Width.Set(W - Margin * 2, 0f); _anchors.Height.Set(60, 0f);
 			_page1.Append(_anchors);
-			string[] keys = { "Setup.CountPre", "Setup.CountHardmode", "Setup.CountPost" };
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				int t = i;
 				float y = 112 + i * 36;
@@ -95,12 +94,12 @@ namespace Levy.Common.UI
 				_page1.Append(_minus[i]); _page1.Append(_plus[i]);
 			}
 			_targetBtn = new LevyButton("", 0.8f, W - Margin * 2, 30, () => { _target = !_target; Refresh(); }, LevyUtil.T("Setup.TargetHint"));
-			_targetBtn.Left.Set(Margin, 0f); _targetBtn.Top.Set(228, 0f);
+			_targetBtn.Left.Set(Margin, 0f); _targetBtn.Top.Set(264, 0f);
 			_punishBtn = new LevyButton("", 0.8f, W - Margin * 2, 30, () => { _punish = !_punish; Refresh(); }, LevyUtil.T("Setup.PunishHint"));
-			_punishBtn.Left.Set(Margin, 0f); _punishBtn.Top.Set(264, 0f);
+			_punishBtn.Left.Set(Margin, 0f); _punishBtn.Top.Set(300, 0f);
 			_page1.Append(_targetBtn); _page1.Append(_punishBtn);
 			_warn = new UIText("", 0.78f) { IsWrapped = true, TextColor = WarnColor, WrappedTextBottomPadding = 0f };
-			_warn.Left.Set(Margin, 0f); _warn.Top.Set(304, 0f); _warn.Width.Set(W - Margin * 2, 0f); _warn.Height.Set(60, 0f);
+			_warn.Left.Set(Margin, 0f); _warn.Top.Set(340, 0f); _warn.Width.Set(W - Margin * 2, 0f); _warn.Height.Set(60, 0f);
 			_page1.Append(_warn);
 			_footer = new Label(LevyUtil.T("Setup.MoreOptions"), 0.72f) { TextColor = new Color(170, 185, 220) };
 			_footer.Left.Set(Margin, 0f); _footer.Top.Set(H - 82, 0f);
@@ -123,12 +122,12 @@ namespace Levy.Common.UI
 			_panel.Left.Set(Math.Max(0f, (sw - W) * 0.5f), 0f);
 			_panel.Top.Set(Math.Max(0f, (sh - H) * 0.5f), 0f);
 			var c = LevyConfig.Get;
-			_pre = c.LeviesByEndOfPreHardmode; _hm = c.LeviesByEndOfHardmode; _post = c.LeviesByEndOfPostMoonLord; _max = c.MaxLevies;
+			_start = c.LeviesAtStart; _pre = c.LeviesByEndOfPreHardmode; _hm = c.LeviesByEndOfHardmode; _post = c.LeviesByEndOfPostMoonLord; _max = c.MaxLevies;
 			_target = c.BossesTargetSoldiers; _punish = c.BossesPunishSoldiers;
 			for (int i = 0; i < 3; i++)
 			{
 				var v = SetupPresets.Of((SetupPreset)i);
-				_presetBlurb[i].SetText(SetupPresets.Blurb((SetupPreset)i) + "\n" + LevyUtil.T("Setup.PresetNumbers", v.Pre, v.Hm, v.Post));
+				_presetBlurb[i].SetText(SetupPresets.Blurb((SetupPreset)i) + "\n" + LevyUtil.T("Setup.PresetNumbers", v.Start, v.Pre, v.Hm, v.Post));
 			}
 			ShowPresets();
 		}
@@ -154,26 +153,26 @@ namespace Levy.Common.UI
 
 		private void Step(int tier, int delta)
 		{
-			if (tier == 0) _pre = Math.Clamp(_pre + delta, 4, 200);
-			else if (tier == 1) _hm = Math.Clamp(_hm + delta, 4, 200);
-			else _post = Math.Clamp(_post + delta, 4, 200);
-			if (_hm < _pre) { if (tier == 0) _hm = _pre; else _pre = _hm; }
-			if (_post < _hm) { if (tier == 2) _hm = Math.Min(_hm, _post); else _post = _hm; }
-			if (_hm < _pre) _pre = _hm;
+			int[] v = { _start, _pre, _hm, _post };
+			v[tier] = Math.Clamp(v[tier] + delta, 4, 200);
+			for (int j = tier + 1; j < 4; j++) v[j] = Math.Max(v[j], v[j - 1]);
+			for (int j = tier - 1; j >= 0; j--) v[j] = Math.Min(v[j], v[j + 1]);
+			_start = v[0]; _pre = v[1]; _hm = v[2]; _post = v[3];
 			Refresh();
 		}
 
 		private void Refresh()
 		{
-			_anchors.SetText(LevyAnchors.Explain(_pre, _hm, _post));
-			int[] v = { _pre, _hm, _post };
-			for (int i = 0; i < 3; i++)
-				_countLabel[i].SetText(LevyUtil.T("Setup.Count" + LevyAnchors.TierKeys[i], v[i], LevyAnchors.RecommendedLow[i], LevyAnchors.RecommendedHigh[i]));
+			_anchors.SetText(LevyAnchors.Explain(_start, _pre, _hm, _post));
+			int[] v = { _start, _pre, _hm, _post };
+			_countLabel[0].SetText(LevyUtil.T("Setup.CountStart", _start, LevyAnchors.StartLow, LevyAnchors.StartHigh));
+			for (int i = 1; i < 4; i++)
+				_countLabel[i].SetText(LevyUtil.T("Setup.Count" + LevyAnchors.TierKeys[i - 1], v[i], LevyAnchors.RecommendedLow[i - 1], LevyAnchors.RecommendedHigh[i - 1]));
 			_targetBtn.SetText(LevyUtil.T(_target ? "Setup.TargetOn" : "Setup.TargetOff"));
 			_targetBtn.Lit = _target;
 			_punishBtn.SetText(LevyUtil.T(_punish ? "Setup.PunishOn" : "Setup.PunishOff"));
 			_punishBtn.Lit = _punish;
-			var notes = LevyAnchors.Warnings(_pre, _hm, _post, Math.Max(_max, _post));
+			var notes = LevyAnchors.Warnings(_start, _pre, _hm, _post, Math.Max(_max, _post));
 			var sb = new System.Text.StringBuilder();
 			foreach (var k in notes) { if (sb.Length > 0) sb.Append('\n'); sb.Append(LevyUtil.T(k)); }
 			_warn.SetText(sb.ToString());
@@ -182,7 +181,7 @@ namespace Levy.Common.UI
 
 		private void ApplyCustom()
 		{
-			var v = new SetupPresets.Values(_pre, _hm, _post, Math.Max(_max, _post), _target, _punish);
+			var v = new SetupPresets.Values(_start, _pre, _hm, _post, Math.Max(_max, _post), _target, _punish);
 			Finish(SetupState.Answered, SetupPreset.Default, true, v);
 		}
 

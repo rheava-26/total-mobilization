@@ -17,13 +17,17 @@ namespace Levy.Common.Systems
 	{
 		/// <summary>Inclusive recommended range of the end-of-tier count: pre-hardmode (Wall of Flesh), hardmode (Moon Lord), post-Moon Lord (the final boss).</summary>
 		public static readonly int[] RecommendedLow = { 12, 28, 40 };
+		/// <summary>Recommended range of the starting count.</summary>
+		public const int StartLow = 6, StartHigh = 20;
 		public static readonly int[] RecommendedHigh = { 30, 60, 90 };
 		public static readonly string[] TierKeys = { "Pre", "Hardmode", "Post" };
 
 		/// <summary>Localization keys (under Mods.Levy) of every note that applies, in tier order. Empty when everything sits inside the recommended ranges.</summary>
-		public static List<string> Warnings(int pre, int hm, int post, int max)
+		public static List<string> Warnings(int start, int pre, int hm, int post, int max)
 		{
 			var w = new List<string>();
+			if (start < StartLow) w.Add("Setup.Warn.StartFew");
+			else if (start > pre) w.Add("Setup.Warn.StartAbovePre");
 			int[] v = { pre, hm, post };
 			for (int t = 0; t < 3; t++)
 			{
@@ -34,10 +38,10 @@ namespace Levy.Common.Systems
 			return w;
 		}
 
-		public static List<string> Warnings(LevyConfig c) => Warnings(c.LeviesByEndOfPreHardmode, c.LeviesByEndOfHardmode, c.LeviesByEndOfPostMoonLord, c.MaxLevies);
+		public static List<string> Warnings(LevyConfig c) => Warnings(c.LeviesAtStart, c.LeviesByEndOfPreHardmode, c.LeviesByEndOfHardmode, c.LeviesByEndOfPostMoonLord, c.MaxLevies);
 
 		/// <summary>The one-paragraph explanation of how the three numbers work, with this config's values.</summary>
-		public static string Explain(int pre, int hm, int post) => LevyUtil.T("Setup.Anchors", pre, hm, Math.Max(0, post - hm));
+		public static string Explain(int start, int pre, int hm, int post) => LevyUtil.T("Setup.Anchors", start, pre, hm, Math.Max(0, post - hm));
 	}
 
 	/// <summary>Accessory slot arithmetic. Pure.</summary>
@@ -95,20 +99,20 @@ namespace Levy.Common.Systems
 	{
 		public readonly struct Values
 		{
-			public readonly int Pre, Hm, Post, Max; public readonly bool BossesTarget, BossesPunish;
-			public Values(int pre, int hm, int post, int max, bool target, bool punish) { Pre = pre; Hm = hm; Post = post; Max = max; BossesTarget = target; BossesPunish = punish; }
+			public readonly int Start, Pre, Hm, Post, Max; public readonly bool BossesTarget, BossesPunish;
+			public Values(int start, int pre, int hm, int post, int max, bool target, bool punish) { Start = start; Pre = pre; Hm = hm; Post = post; Max = max; BossesTarget = target; BossesPunish = punish; }
 		}
 
 		public static Values Of(SetupPreset p) => p switch
 		{
-			SetupPreset.Relaxed => new Values(30, 60, 90, 90, false, false),
-			SetupPreset.Hardcore => new Values(14, 30, 45, 45, true, true),
-			_ => new Values(20, 40, 60, 60, false, true),
+			SetupPreset.Relaxed => new Values(14, 30, 60, 90, 90, false, false),
+			SetupPreset.Hardcore => new Values(6, 14, 30, 45, 45, true, true),
+			_ => new Values(10, 20, 40, 60, 60, false, true),
 		};
 
 		public static void Apply(LevyConfig c, Values v)
 		{
-			c.LeviesByEndOfPreHardmode = v.Pre; c.LeviesByEndOfHardmode = v.Hm; c.LeviesByEndOfPostMoonLord = v.Post; c.MaxLevies = Math.Max(v.Max, v.Post);
+			c.LeviesAtStart = v.Start; c.LeviesByEndOfPreHardmode = v.Pre; c.LeviesByEndOfHardmode = v.Hm; c.LeviesByEndOfPostMoonLord = v.Post; c.MaxLevies = Math.Max(v.Max, v.Post);
 			c.BossesTargetSoldiers = v.BossesTarget; c.BossesPunishSoldiers = v.BossesPunish;
 		}
 
@@ -212,7 +216,7 @@ namespace Levy.Common.Systems
 			"BossHpScalingPercentPerCp", "BossHpScalingCapPercent", "BossesPunishSoldiers", "BossesTargetSoldiers", "FearMultiplier", "SoldierDamageMultiplier", "RenderCap", "Tombstones",
 			"EnemiesTargetSoldiers", "UseVanillaStatPipeline", "ClassMatchIssue", "WeaponRanking", "SkipArmoredWeapons", "AimAccuracy", "AutoUpgradeWeapons", "RealWeaponShoot", "AutoFeedCrystals",
 			"ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
-			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesByEndOfPreHardmode",
+			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesAtStart", "LeviesByEndOfPreHardmode",
 			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages",
 		};
 
@@ -231,24 +235,26 @@ namespace Levy.Common.Systems
 
 				if (typeof(ConfigManager).GetMethod("Save", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new[] { typeof(ModConfig) }, null) == null) fails.Add("ConfigManager.Save(ModConfig) not found: presets would not persist to disk");
 				// 2. anchor math + recommended-range warnings
-				if (LevyAnchors.Warnings(20, 40, 60, 60).Count != 0) fails.Add("default counts should raise no note");
-				var few = LevyAnchors.Warnings(6, 40, 60, 60); if (few.Count != 1 || few[0] != "Setup.Warn.PreFew") fails.Add("6/40/60 should note PreFew");
-				var many = LevyAnchors.Warnings(20, 40, 150, 200); if (many.Count != 1 || many[0] != "Setup.Warn.PostMany") fails.Add("20/40/150 should note PostMany");
-				var mx = LevyAnchors.Warnings(20, 40, 60, 50); if (mx.Count != 1 || mx[0] != "Setup.Warn.MaxBelowPost") fails.Add("max 50 below post 60 should note MaxBelowPost");
+				if (LevyAnchors.Warnings(10, 20, 40, 60, 60).Count != 0) fails.Add("default counts should raise no note");
+				var few = LevyAnchors.Warnings(6, 6, 40, 60, 60); if (few.Count != 1 || few[0] != "Setup.Warn.PreFew") fails.Add("6/40/60 should note PreFew");
+				var many = LevyAnchors.Warnings(10, 20, 40, 150, 200); if (many.Count != 1 || many[0] != "Setup.Warn.PostMany") fails.Add("20/40/150 should note PostMany");
+				var mx = LevyAnchors.Warnings(10, 20, 40, 60, 50); if (mx.Count != 1 || mx[0] != "Setup.Warn.MaxBelowPost") fails.Add("max 50 below post 60 should note MaxBelowPost");
+				var sf = LevyAnchors.Warnings(4, 20, 40, 60, 60); if (sf.Count != 1 || sf[0] != "Setup.Warn.StartFew") fails.Add("start 4 should note StartFew");
+				var sa = LevyAnchors.Warnings(25, 20, 40, 60, 60); if (sa.Count != 1 || sa[0] != "Setup.Warn.StartAbovePre") fails.Add("start 25 above pre 20 should note StartAbovePre");
 				foreach (SetupPreset p in Enum.GetValues(typeof(SetupPreset)))
 				{
 					var v = SetupPresets.Of(p);
-					if (LevyAnchors.Warnings(v.Pre, v.Hm, v.Post, v.Max).Count != 0) fails.Add("preset " + p + " raises a range note");
-					if (v.Pre > v.Hm || v.Hm > v.Post || v.Max < v.Post) fails.Add("preset " + p + " counts out of order");
+					if (LevyAnchors.Warnings(v.Start, v.Pre, v.Hm, v.Post, v.Max).Count != 0) fails.Add("preset " + p + " raises a range note");
+					if (v.Start > v.Pre || v.Pre > v.Hm || v.Hm > v.Post || v.Max < v.Post) fails.Add("preset " + p + " counts out of order");
 				}
 				// vanilla end-of-tier anchors under each preset: killing every boss of a tier lands exactly on its target
 				{
 					var v = SetupPresets.Of(SetupPreset.Relaxed);
 					var all = new List<TierBoss> { new(0, 2f, true), new(0, 3f, true), new(1, 2f, true), new(1, 2f, true), new(2, 0f, true) };
-					int endAll = LevyTierMath.Compute(all, LevyConstants.CommandPointsBase, v.Pre, v.Hm, v.Post, v.Max);
+					int endAll = LevyTierMath.Compute(all, v.Start, v.Pre, v.Hm, v.Post, v.Max);
 					if (endAll != v.Post) fails.Add($"Relaxed: every boss down expected {v.Post}, got {endAll}");
 					var preOnly = new List<TierBoss> { new(0, 2f, true), new(0, 3f, true), new(1, 2f, false), new(1, 2f, false) };
-					int endPre = LevyTierMath.Compute(preOnly, LevyConstants.CommandPointsBase, v.Pre, v.Hm, v.Post, v.Max);
+					int endPre = LevyTierMath.Compute(preOnly, v.Start, v.Pre, v.Hm, v.Post, v.Max);
 					if (endPre != v.Pre) fails.Add($"Relaxed: pre-hardmode cleared expected {v.Pre}, got {endPre}");
 				}
 
@@ -286,9 +292,10 @@ namespace Levy.Common.Systems
 				if (SetupState.Read(tag2, out _, out _) != SetupState.Skipped) fails.Add("skipped did not round-trip");
 				// preset application on a bare config object
 				var bare = new LevyConfig(); SetupPresets.Apply(bare, SetupPreset.Hardcore);
-				if (bare.LeviesByEndOfPreHardmode != 14 || !bare.BossesTargetSoldiers || bare.MaxLevies < bare.LeviesByEndOfPostMoonLord) fails.Add("Hardcore preset did not apply");
+				if (bare.LeviesAtStart != 6 || bare.LeviesByEndOfPreHardmode != 14 || !bare.BossesTargetSoldiers || bare.MaxLevies < bare.LeviesByEndOfPostMoonLord) fails.Add("Hardcore preset did not apply");
 				SetupPresets.Apply(bare, SetupPreset.Relaxed);
-				if (bare.BossesTargetSoldiers || bare.BossesPunishSoldiers || bare.LeviesByEndOfPostMoonLord != 90) fails.Add("Relaxed preset did not apply");
+				if (bare.BossesTargetSoldiers || bare.BossesPunishSoldiers || bare.LeviesByEndOfPostMoonLord != 90 || bare.LeviesAtStart != 14) fails.Add("Relaxed preset did not apply");
+				if (SetupPresets.Of(SetupPreset.Default).Start != LevyConstants.DefaultLeviesAtStart) fails.Add("Default preset start must equal the config default");
 			}
 			catch (Exception e) { fails.Add("threw " + e.GetType().Name + ": " + e.Message); }
 			if (fails.Count == 0) Mod.Logger.Info("Levy settings self-check: OK");

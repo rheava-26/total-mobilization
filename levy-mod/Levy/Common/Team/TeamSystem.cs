@@ -21,9 +21,16 @@ namespace Levy.Common.Team
 				TeamSpectre.Install();
 				TeamNebula.Install();
 				TeamInfo.Install();
+				if (ModLoader.HasMod("ThoriumMod")) InstallThorium();
 				Mod.Logger.Info("Levy team items: " + TeamItems.BuildReport);
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy team items: setup failed, team items stay off for levies: " + e); }
+		}
+
+		private void InstallThorium()
+		{
+			try { TeamThorium.Install(); }
+			catch (Exception e) { Mod.Logger.Warn("Levy team items: Thorium bard share hook failed, it stays off: " + e.Message); }
 		}
 
 		/// <summary>After every mod's content and recipes exist: the boot self-check (a throw-away Player runs a mod buff through the dummy path).</summary>
@@ -42,7 +49,7 @@ namespace Levy.Common.Team
 			TeamSpectre.Uninstall();
 			TeamNebula.Uninstall();
 			TeamInfo.Uninstall();
-			TeamItems.Auras.Clear(); TeamItems.StatBuffs.Clear(); TeamItems.ProjAuras.Clear();
+			TeamItems.Auras.Clear(); TeamItems.StatBuffs.Clear(); TeamItems.ProjAuras.Clear(); TeamItems.HitAuras.Clear(); TeamItems.FrameBuffs.Clear();
 		}
 	}
 }

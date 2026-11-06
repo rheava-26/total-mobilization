@@ -27,7 +27,11 @@ namespace Levy.Common.Team
 		{
 			"CalamityMod/AbsorberAura", "CalamityMod/PinkJellyAura", "CalamityMod/GreenJellyAura", "CalamityMod/BlueJellyAura", "CalamityMod/DeathValleyDusterProjectile", "CalamityMod/PrimordialEarthProjectile",
 			"CalamityMod/PrimordialAncientProjectile", "CalamityMod/BlazingStarHeal", "CalamityMod/CorpusAvertorStealth",
+			"CalamityMod/WhitewaterAura", "CalamityMod/RelicOfConvergenceCrystal",
 			"ThoriumMod/AuraDefense", "ThoriumMod/DreamWeaversMaskEffectPro",
+			"ThoriumMod/DragonZone", "ThoriumMod/Nullzone", "ThoriumMod/RaPro2", "ThoriumMod/SerpentsBubbleWandPro", "ThoriumMod/CurePro", "ThoriumMod/ZunpetPro3", "ThoriumMod/DreamCatcherPro",
+			"ThoriumMod/ShroomBooster", "ThoriumMod/AirStrikeShieldPro",
+			"ThoriumMod/FallingTwilightPro", "ThoriumMod/TrueFallingTwilightPro", "ThoriumMod/BloodHarvestPro", "ThoriumMod/TrueBloodHarvestPro",
 		};
 
 		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => entity.ModProjectile != null && Names.Contains(entity.ModProjectile.Mod.Name + "/" + entity.ModProjectile.Name);
@@ -48,7 +52,36 @@ namespace Levy.Common.Team
 			Player owner = Main.player[proj.owner];
 			if (owner == null) return;
 			if (TeamItems.ProjAuras.TryGetValue(proj.type, out TeamItems.ProjAura aura)) { Aura(proj, owner, aura); return; }
-			if (proj.ModProjectile?.Name == "BlazingStarHeal") Star(proj, owner);
+			string name = proj.ModProjectile?.Name;
+			if (name == "BlazingStarHeal") Star(proj, owner);
+			else if (name == "WhitewaterAura") Whitewater(proj, owner);
+			else if (name == "RelicOfConvergenceCrystal") RelicOfConvergence(proj, owner);
+		}
+
+		private static System.Reflection.FieldInfo _wwScale, _rocMouse, _rocHeal;
+		private static Func<Player, bool> _profanedRelic;
+		/// <summary>Whitewater's vortex (stealth strike): every player inside 200 x areaScale px starts a heal of 1 HP every 20 ticks, 300 ticks for the thrower and 600 for any ally, unless one is already running. The owner's levies are those allies.</summary>
+		private static void Whitewater(Projectile proj, Player owner)
+		{
+			_wwScale ??= proj.ModProjectile.GetType().GetField("areaScale", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+			float scale = _wwScale != null ? (float)_wwScale.GetValue(proj.ModProjectile) : 1f;
+			foreach (SoldierNPC s in TeamItems.Levies(owner))
+				if (Vector2.Distance(proj.Center, s.NPC.Center) < 200f * scale && TeamItems.StartHot(s, 1, 600, 20, 1)) TeamItems.WhitewaterStarts++;
+		}
+
+		/// <summary>Relic of Convergence: when the crystal shatters (timeLeft 5) every teammate within 138 px of the cursor point is healed for 1.5 x the relic's heal (x1.25 with the Profaned Soul relic buff). The owner's levies are those teammates.</summary>
+		private static void RelicOfConvergence(Projectile proj, Player owner)
+		{
+			if (proj.timeLeft != 5) return;
+			_rocMouse ??= proj.ModProjectile.GetType().GetField("mousePos");
+			if (_rocHeal == null && ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.Code != null) _rocHeal = cal.Code.GetType("CalamityMod.Items.Tools.RelicOfConvergence")?.GetField("HealValue");
+			_profanedRelic ??= TeamItems.ModFlag("CalamityMod", "CalamityMod.CalPlayer.CalamityPlayer", "profanedSoulRelicBuff");
+			if (_rocMouse == null || _rocHeal == null) return;
+			Vector2 at = (Vector2)_rocMouse.GetValue(proj.ModProjectile);
+			int basis = (int)_rocHeal.GetValue(null);
+			int heal = (int)(basis * 1.5f * (_profanedRelic != null && _profanedRelic(owner) ? 1.25f : 1f));
+			foreach (SoldierNPC s in TeamItems.Levies(owner))
+				if (Vector2.DistanceSquared(s.NPC.Center, at) < 138f * 138f && SoldierHeal.Restore(s.NPC, heal) > 0) TeamItems.RelicHeals++;
 		}
 
 		private void Aura(Projectile proj, Player owner, TeamItems.ProjAura aura)
@@ -64,6 +97,22 @@ namespace Levy.Common.Team
 				if (aura.Buff > 0) TeamItems.GrantLevy(s, aura.Buff, aura.Ticks);
 				if (aura.Cleanse) { _cleansed ??= new HashSet<int>(); if (_cleansed.Add(id)) Cleanse(s); }
 			}
+		}
+
+		/// <summary>An on-hit ally buff (Thorium's scythes): every ally within the radius of the projectile gets the buff, except the shooter. A scythe the commander swings leaves him out (Thorium skips the owner); one a levy swings is owned by the commander, who is then an ally too.</summary>
+		private static void HitAura(Projectile proj, NPC target, TeamItems.HitAura ha)
+		{
+			if (LevyUtil.IsClient || target == null || target.friendly || proj.owner < 0 || proj.owner >= Main.maxPlayers) return;
+			Player owner = Main.player[proj.owner];
+			if (owner == null || !owner.active) return;
+			var tag = proj.GetGlobalProjectile<global::Levy.Common.Globals.SoldierProjectileTag>();
+			int shooter = tag != null && tag.IsSoldierShot ? tag.SoldierIndex : -1;
+			foreach (SoldierNPC s in TeamItems.Levies(owner))
+			{
+				if (s.NPC.whoAmI == shooter || Vector2.DistanceSquared(proj.Center, s.NPC.Center) >= ha.Radius * ha.Radius) continue;
+				if (TeamItems.GrantLevy(s, ha.Buff, ha.Ticks)) TeamItems.HitAuraGrants++;
+			}
+			if (shooter >= 0 && Vector2.DistanceSquared(proj.Center, owner.Center) < ha.Radius * ha.Radius && TeamItems.GrantPlayer(owner, ha.Buff, ha.Ticks)) TeamItems.HitAuraGrants++;
 		}
 
 		/// <summary>Calamity's Absorber / Blue Jelly cleanse: every debuff on the ally has its time set to nothing.</summary>
@@ -94,6 +143,7 @@ namespace Levy.Common.Team
 
 		public override void OnHitNPC(Projectile proj, NPC target, NPC.HitInfo hit, int damageDone)
 		{
+			if (TeamItems.HitAuras.TryGetValue(proj.type, out TeamItems.HitAura ha)) { HitAura(proj, target, ha); return; }
 			// Corpus Avertor's stealth strike: the first hit of the spinning dagger gives every teammate the Avertor bonus for 20 s (no reach).
 			if (LevyUtil.IsClient || proj.ModProjectile?.Name != "CorpusAvertorStealth" || proj.numHits != 0 || proj.ai[1] != 0f || target.friendly || proj.owner < 0 || proj.owner >= Main.maxPlayers) return;
 			Player owner = Main.player[proj.owner];

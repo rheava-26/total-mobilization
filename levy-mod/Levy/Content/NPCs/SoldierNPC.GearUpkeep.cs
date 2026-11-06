@@ -147,6 +147,7 @@ namespace Levy.Content.NPCs
 				int regen0 = d.lifeRegen;
 				RunHook(() => PlayerLoader.PostUpdateEquips(d));
 				if (d.lifeRegen > regen0) _buffLifeRegen += d.lifeRegen - regen0;
+				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
 				Item held = d.inventory[d.selectedItem];

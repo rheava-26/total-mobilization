@@ -380,7 +380,154 @@ namespace Levy.Common.Testing
 					_tmInfo = "commander accCompass=" + TmCmd.accCompass;
 					return TmCmd.accCompass == 1 ? null : "compass not shared";
 				} });
+			TmBuild2();
 		}
+
+		private static Func<Player, bool> TmThFlag(string field) => TeamItems.ModFlag("ThoriumMod", "ThoriumMod.ThoriumPlayer", field);
+
+		/// <summary>Second batch: the effects added after the first survey pass (Calamity's Whitewater and Relic of Convergence; Thorium's aura projectiles, scythes, bard accessories, Ring of Unity, life recovery).</summary>
+		private void TmBuild2()
+		{
+			// Calamity: Whitewater's vortex heals the owner's levies (1 HP / 20 ticks, 600 ticks for an ally)
+			_tmCases.Add(new TmCase { Id = "calamity whitewater vortex: levies inside it heal over time", Cal = true, Ticks = 150,
+				Setup = () =>
+				{
+					TmScene(null, null, 2f, 40f, false);
+					_tmA.NPC.life = 100; _tmB.NPC.life = 100;
+					TeamItems.WhitewaterStarts = 0;
+					int i = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), _tmA.NPC.Center, Vector2.Zero, TmProj("CalamityMod/WhitewaterAura"), 0, 0f, 0);
+					Main.projectile[i].timeLeft = 400;
+				},
+				Eval = () =>
+				{
+					_tmInfo = $"A 100 -> {_tmA.NPC.life} (a 600 tick vortex heal at 1 HP / 20 ticks: +7 over 150 ticks); B outside 100 -> {_tmB.NPC.life}; starts={TeamItems.WhitewaterStarts}";
+					return _tmA.NPC.life >= 105 && _tmA.NPC.life <= 112 && _tmB.NPC.life == 100 ? null : "heal over time wrong";
+				} });
+			// Calamity: Relic of Convergence heals the owner's levies within 138 px of the cursor point
+			_tmCases.Add(new TmCase { Id = "calamity relic of convergence: levies at the cursor are healed 1.5 x", Cal = true, Ticks = 30, MidTick = 0,
+				Setup = () =>
+				{
+					TmScene(null, null, 3f, 40f, false);
+					_tmA.NPC.life = 100; _tmB.NPC.life = 100;
+					TeamItems.RelicHeals = 0;
+					TmCmd.channel = true;
+					var f = TeamItems.ModFlag("CalamityMod", "CalamityMod.CalPlayer.CalamityPlayer", "x"); // warms the registry; the delta field is set by reflection below
+					var cal = ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
+					var baseInst = ModContent.GetContent<ModPlayer>().First(x => x.GetType() == cal);
+					cal.GetField("mouseWorldDeltaFromPlayer").SetValue(TmCmd.GetModPlayer(baseInst), _tmA.NPC.Center - TmCmd.MountedCenter);
+					int i = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), TmCmd.Center, Vector2.Zero, TmProj("CalamityMod/RelicOfConvergenceCrystal"), 0, 0f, 0);
+					Main.projectile[i].timeLeft = 8;
+				},
+				Eval = () =>
+				{
+					TmCmd.channel = false;
+					_tmInfo = $"A 100 -> {_tmA.NPC.life} (Relic heal 50 x 1.5 = 75); B far 100 -> {_tmB.NPC.life}; heals={TeamItems.RelicHeals}";
+					return _tmA.NPC.life == 175 && _tmB.NPC.life == 100 ? null : "relic heal wrong";
+				} });
+
+			// Thorium: aura projectiles (continuous) - each one spawned on levy A only; B is 40 tiles away
+			var auras = new (string proj, string buff)[]
+			{
+				("DragonZone", "DragonHeartWandBuff"), ("Nullzone", "NullZoneBuff"), ("RaPro2", "QuickRecovery"), ("SerpentsBubbleWandPro", "SerpentsBubbleWandBuff"), ("CurePro", "Cured"),
+				("ZunpetPro3", "Liberated"), ("DreamCatcherPro", "DreamCatcherBuff"), ("ShroomBooster", "BloomBoost"), ("AirStrikeShieldPro", "AirStrikeShieldBuff"),
+			};
+			foreach (var (proj, buff) in auras)
+			{
+				string pj = proj, bf = buff;
+				_tmCases.Add(new TmCase { Id = $"thorium {pj}: the levy inside its circle gets {bf}", Tho = true, Ticks = 40,
+					Setup = () =>
+					{
+						TmScene(null, null, 1f, 40f, false);
+						int i = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), _tmA.NPC.Center, Vector2.Zero, TmProj("ThoriumMod/" + pj), 0, 0f, 0);
+						if (i >= 0 && i < Main.maxProjectiles) { Main.projectile[i].timeLeft = 300; Main.projectile[i].netUpdate = true; }
+					},
+					Eval = () =>
+					{
+						bool a = TmHas(_tmA, TmBuff("ThoriumMod/" + bf)), b = TmHas(_tmB, TmBuff("ThoriumMod/" + bf));
+						_tmInfo = $"A buff={a} B outside={b}";
+						return a && !b ? null : "aura did not land";
+					} });
+			}
+			// Thorium: scythes buff the allies within 400 px of a hit (the owner skipped); a levy's swing includes the commander
+			foreach (var (proj, buff) in new[] { ("FallingTwilightPro", "TwilightBoost"), ("BloodHarvestPro", "BloodBoost") })
+			{
+				string pj = proj, bf = buff;
+				_tmCases.Add(new TmCase { Id = $"thorium {pj}: a hit buffs the levies within 400 px (and the commander when a levy swings)", Tho = true, Ticks = 20, MidTick = 5,
+					Setup = () =>
+					{
+						TmScene(null, null, 4f, 60f, false);
+						_tmTarget = SpSpawnTarget((_cx + 8) * 16f, 40, 40, 0, NPCID.GreenSlime);
+					},
+					Mid = () =>
+					{
+						int i = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), TmCmd.Center, Vector2.Zero, TmProj("ThoriumMod/" + pj), 0, 0f, 0);
+						Projectile p = Main.projectile[i];
+						p.GetGlobalProjectile<TeamAuraProjectile>().OnHitNPC(p, Main.npc[_tmTarget], default, 10);
+						_tmInfo = "commander swing: A=" + TmHas(_tmA, TmBuff("ThoriumMod/" + bf)) + " B far=" + TmHas(_tmB, TmBuff("ThoriumMod/" + bf)) + " commander=" + TmCmd.HasBuff(TmBuff("ThoriumMod/" + bf)) + "; ";
+						p.Kill();
+						var j = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), TmCmd.Center, Vector2.Zero, TmProj("ThoriumMod/" + pj), 0, 0f, 0);
+						Projectile q = Main.projectile[j];
+						q.GetGlobalProjectile<global::Levy.Common.Globals.SoldierProjectileTag>().SoldierIndex = _tmB.NPC.whoAmI; // fired by the far levy B
+						q.Center = _tmB.NPC.Center - new Vector2(50f, 0f);
+						TmCmd.Center = _tmB.NPC.Center - new Vector2(100f, 0f); // the commander walks up to B
+						q.GetGlobalProjectile<TeamAuraProjectile>().OnHitNPC(q, Main.npc[_tmTarget], default, 10);
+					},
+					Eval = () =>
+					{
+						bool cmd = TmCmd.HasBuff(TmBuff("ThoriumMod/" + bf));
+						_tmInfo += "levy B's swing: commander=" + cmd;
+						return TmHas(_tmA, TmBuff("ThoriumMod/" + bf)) && !TmHas(_tmB, TmBuff("ThoriumMod/" + bf)) && cmd ? null : "scythe buff wrong";
+					} });
+			}
+			// Thorium: bard accessories shared by nearby bards: a levy's Subwoofer / Conductor's Baton reaches the commander
+			_tmCases.Add(new TmCase { Id = "thorium bard accessories: a levy's Subwoofer and Conductor's Baton show up on the commander", Tho = true, Ticks = 10,
+				Setup = () =>
+				{
+					int sub = TmItem("ThoriumMod/Subwoofer"), bat = TmItem("ThoriumMod/ConductorsBaton");
+					TmScene(g => { TmAcc(g, 0, sub); TmAcc(g, 1, bat); }, null, 4f, 40f, true);
+					_tmA.RefreshStats();
+				},
+				Eval = () =>
+				{
+					bool wearerSub = TmThFlag("accSubwoofer")(_tmA.Dummy), wearerBat = TmThFlag("accConductorStickBard")(_tmA.Dummy);
+					TmEquipPass();
+					bool cmdSub = TmThFlag("accSubwoofer")(TmCmd), cmdBat = TmThFlag("accConductorStickAlly")(TmCmd);
+					_tmInfo = $"wearer subwoofer={wearerSub} baton={wearerBat}; commander subwoofer={cmdSub} baton-ally={cmdBat}; shared={TeamThoriumShared()}";
+					return wearerSub && wearerBat && cmdSub && cmdBat ? null : "not shared";
+				} });
+			// Thorium: Ring of Unity counts the levies
+			_tmCases.Add(new TmCase { Id = "thorium ring of unity: the commander counts his levy wearing one", Tho = true, Ticks = 10,
+				Setup = () =>
+				{
+					int ring = TmItem("ThoriumMod/RingofUnity");
+					TmScene(g => TmAcc(g, 0, ring), null, 4f, 40f, true);
+					TmCmd.armor[3] = TmItemOf(ring);
+					_tmA.RefreshStats();
+				},
+				Eval = () =>
+				{
+					TmEquipPass();
+					float flat = TmCmd.GetDamage(DamageClass.Generic).Flat;
+					TmCmd.armor[3] = new Item();
+					_tmInfo = $"commander flat damage={flat} (ring 1 + 1 per levy wearer within 400 px = 2)";
+					return flat >= 1.99f ? null : "levy not counted";
+				} });
+			// Thorium: life recovery of a buff becomes the levy's regeneration
+			_tmCases.Add(new TmCase { Id = "thorium life recovery: Cured gives the levy regeneration", Tho = true, Ticks = 30,
+				Setup = () =>
+				{
+					TmScene(null, null, 4f, 40f, false);
+					TeamItems.GrantLevy(_tmA, TmBuff("ThoriumMod/Cured"), 600);
+				},
+				Eval = () =>
+				{
+					_tmInfo = $"A regen units from buffs={_tmA.BuffLifeRegenUnits} (Cured lifeRecovery 2 = 4 units)";
+					return _tmA.BuffLifeRegenUnits >= 4 && _tmB.BuffLifeRegenUnits < 4 ? null : "no regeneration";
+				} });
+		}
+
+		private static string TeamThoriumShared() => ModLoader.HasMod("ThoriumMod") ? TeamThoriumSharedImpl() : "-";
+		private static string TeamThoriumSharedImpl() => TeamThorium.SharedFlags.ToString();
 
 		/// <summary>The hood wearer lands a 400-damage magic hit on the pinned target: the production SpectreHealOnHit runs.</summary>
 		private void TmHoodHit()

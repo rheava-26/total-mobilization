@@ -13,6 +13,24 @@ namespace Levy.Common.Team
 	/// </summary>
 	public static class TeamCheck
 	{
+		/// <summary>Thorium's entries: the aura and scythe tables resolved, the bard-share detour in place, and the buffs that run through ModBuff.Update on a throw-away dummy.</summary>
+		private static void ThoriumChecks(Action<bool, string> Check)
+		{
+			Check(TeamItems.ProjAuras.Count >= 10, "at least ten Thorium projectile auras registered (" + TeamItems.ProjAuras.Count + ")");
+			Check(TeamItems.HitAuras.Count == 4, "the four Thorium scythe hit auras are registered (" + TeamItems.HitAuras.Count + ")");
+			Check(TeamThoriumInstalled(), "the bard accessory share detour is installed");
+			foreach (string b in new[] { "DragonHeartWandBuff", "Cured", "BloomBoost", "TwilightBoost" })
+			{
+				int t = TeamItems.ModBuffType("ThoriumMod/" + b);
+				Check(t > 0 && TeamItems.StatBuffs.Contains(t) && TeamItems.FrameBuffs.Contains(t), "Thorium buff " + b + " is a frame stat buff");
+			}
+			var d = new Player();
+			Check(TeamItems.ApplyStatBuff(d, TeamItems.ModBuffType("ThoriumMod/DragonHeartWandBuff")) && d.GetDamage(DamageClass.Generic).Additive > 1.0001f, "DragonHeartWandBuff.Update raised damage on a throw-away dummy");
+			var d2 = new Player();
+			Check(TeamItems.ApplyStatBuff(d2, TeamItems.ModBuffType("ThoriumMod/BloomBoost")) && d2.statDefense > 0, "BloomBoost.Update raised defense on a throw-away dummy");
+		}
+		private static bool TeamThoriumInstalled() => TeamThorium.Installed;
+
 		public static void Run(Mod mod)
 		{
 			var failures = new List<string>(); int ok = 0;
@@ -40,6 +58,10 @@ namespace Levy.Common.Team
 					Check(TeamItems.ProjAuras.Count >= 7, "at least seven projectile auras registered (" + TeamItems.ProjAuras.Count + ")");
 					Check(TeamItems.StatBuffs.Count >= 9, "at least nine stat buffs registered (" + TeamItems.StatBuffs.Count + ")");
 					foreach (int b in TeamItems.StatBuffs) Check(BuffLoader.GetBuff(b) != null, "stat buff " + b + " resolves");
+					// the reflected members the Whitewater / Relic of Convergence mirrors read
+					Check(ModContent.TryFind("CalamityMod/WhitewaterAura", out ModProjectile ww) && ww.GetType().GetField("areaScale", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic) != null, "WhitewaterAura.areaScale exists");
+					Check(ModContent.TryFind("CalamityMod/RelicOfConvergenceCrystal", out ModProjectile rc) && rc.GetType().GetField("mousePos") != null, "RelicOfConvergenceCrystal.mousePos exists");
+					Check(ModLoader.TryGetMod("CalamityMod", out Mod cm) && cm.Code.GetType("CalamityMod.Items.Tools.RelicOfConvergence")?.GetField("HealValue") != null, "RelicOfConvergence.HealValue exists");
 					if (chi != null)
 					{
 						// the dummy path: the mod's own ModBuff.Update raises Calamity's chiRegen flag (its regen hook reads it in the gear frame; the world run proves the units)
@@ -49,6 +71,7 @@ namespace Levy.Common.Team
 						Check(applied && chiFlag != null && chiFlag(dummy), "ChiRegenBuff.Update raised chiRegen on a throw-away dummy");
 					}
 				}
+				if (ModLoader.HasMod("ThoriumMod")) ThoriumChecks(Check);
 			}
 			catch (Exception e) { failures.Add("self-check threw " + e.GetType().Name + ": " + e.Message); }
 			if (failures.Count == 0) mod.Logger.Info($"Levy team items self-check: {ok} checks OK");

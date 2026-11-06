@@ -43,6 +43,16 @@ namespace Levy.Common.Team
 			return best;
 		}
 
+		public override void PostUpdateEquips()
+		{
+			if (!TeamSystem.Enabled || !TeamItems.Built || !ThoriumLoaded) return;
+			try { ThoriumEquips(); }
+			catch (Exception e) { TeamItems.WarnOnce("thorium commander equips", e); }
+		}
+
+		private static readonly bool ThoriumLoaded = ModLoader.HasMod("ThoriumMod");
+		private void ThoriumEquips() { if (TeamThorium.Installed) TeamThorium.CommanderEquips(Player); } // a separate method: the only place the JIT-gated type is touched
+
 		public override void ModifyHurt(ref Player.HurtModifiers modifiers)
 		{
 			_palNpc = -1;

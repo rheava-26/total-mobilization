@@ -43,6 +43,9 @@ namespace Levy.Common.Team
 		public static readonly HashSet<int> FrameBuffs = new();
 		/// <summary>Projectile auras mirrored onto levies: projectile type -> definition.</summary>
 		public static readonly Dictionary<int, ProjAura> ProjAuras = new();
+		/// <summary>Projectiles that give nearby allies a buff when they HIT an enemy (Thorium's scythes).</summary>
+		public sealed class HitAura { public string Name; public float Radius; public int Buff, Ticks; }
+		public static readonly Dictionary<int, HitAura> HitAuras = new();
 		public static bool Built { get; private set; }
 		/// <summary>Harness only: the headless server's stand-in player counts as the local player (a dedicated server has none).</summary>
 		public static bool HarnessLocal;
@@ -71,7 +74,7 @@ namespace Levy.Common.Team
 		// ------------------------------------------------------------------------------------------------------------
 		public static void Build()
 		{
-			Auras.Clear(); StatBuffs.Clear(); FrameBuffs.Clear(); ProjAuras.Clear();
+			Auras.Clear(); StatBuffs.Clear(); FrameBuffs.Clear(); ProjAuras.Clear(); HitAuras.Clear();
 			int added = 0, missing = 0;
 			void Aura(string id, string source, Func<Player, bool> flag, int buff, float range, bool life)
 			{
@@ -108,10 +111,33 @@ namespace Levy.Common.Team
 			Proj("CalamityMod", "PrimordialAncientProjectile", p => p.width * 0.5f * p.scale, "AeolianEarthBuff", 1080, false, true, p => p.ai[2] == 1f);
 			// Thorium: the healer's Aura Defense staff gives every player within 88 px (7744 squared) 12% damage reduction for 5 s; Dream Weaver's Mask set boosts everyone's speed (see TeamAuraProjectile.OnSpawn).
 			Proj("ThoriumMod", "AuraDefense", _ => 88f, "AuraDamageReduction", 300, false, false);
-			foreach (string b in new[] { "AuraDamageReduction", "DistortedTimeBoost" })
+			// Thorium: more healer / bard projectiles that give every player inside a circle a buff from their AI (each loops Main.player; radius = the square root of the DistanceSQ they test).
+			Proj("ThoriumMod", "DragonZone", p => p.width * 0.5f, "DragonHeartWandBuff", 60, false, false);
+			Proj("ThoriumMod", "Nullzone", p => p.width * 0.5f, "NullZoneBuff", 60, false, false);
+			Proj("ThoriumMod", "RaPro2", _ => 80f, "QuickRecovery", 600, false, false);
+			Proj("ThoriumMod", "SerpentsBubbleWandPro", _ => 40f, "SerpentsBubbleWandBuff", 1200, false, true);
+			Proj("ThoriumMod", "CurePro", _ => 50f, "Cured", 300, false, false);
+			Proj("ThoriumMod", "ZunpetPro3", _ => 40f, "Liberated", 30, false, false);
+			Proj("ThoriumMod", "DreamCatcherPro", _ => 100f, "DreamCatcherBuff", 60, false, false);
+			Proj("ThoriumMod", "ShroomBooster", _ => 40f, "BloomBoost", 600, false, true);
+			Proj("ThoriumMod", "AirStrikeShieldPro", _ => 88f, "AirStrikeShieldBuff", 20, false, false);
+			// Thorium: scythes that, when they hit an enemy, give every other player within 400 px a buff for 5 s (the owner is skipped).
+			void Hit(string mod, string proj, float radius, string buff, int ticks)
+			{
+				if (!ModContent.TryFind(mod + "/" + proj, out ModProjectile mp)) { missing++; return; }
+				int bt = ModBuffType(mod + "/" + buff);
+				if (bt <= 0) { missing++; return; }
+				HitAuras[mp.Type] = new HitAura { Name = proj, Radius = radius, Buff = bt, Ticks = ticks };
+				added++;
+			}
+			Hit("ThoriumMod", "FallingTwilightPro", 400f, "TwilightBoost", 300);
+			Hit("ThoriumMod", "TrueFallingTwilightPro", 400f, "TwilightBoost", 300);
+			Hit("ThoriumMod", "BloodHarvestPro", 400f, "BloodBoost", 300);
+			Hit("ThoriumMod", "TrueBloodHarvestPro", 400f, "BloodBoost", 300);
+			foreach (string b in new[] { "AuraDamageReduction", "DistortedTimeBoost", "DragonHeartWandBuff", "NullZoneBuff", "QuickRecovery", "SerpentsBubbleWandBuff", "Cured", "Liberated", "DreamCatcherBuff", "BloomBoost", "AirStrikeShieldBuff", "TwilightBoost", "BloodBoost" })
 			{
 				int t = ModBuffType("ThoriumMod/" + b);
-				if (t > 0) StatBuffs.Add(t);
+				if (t > 0) { StatBuffs.Add(t); FrameBuffs.Add(t); } // Thorium's buffs raise ThoriumPlayer flags and lifeRecovery that its later hooks read in the gear frame
 			}
 
 			Built = true;
@@ -143,14 +169,74 @@ namespace Levy.Common.Team
 		/// <summary>True when <paramref name="s"/> serves <paramref name="commander"/> (by name, else the lone local player in single player).</summary>
 		public static bool Serves(SoldierNPC s, Player commander) => s?.Record != null && commander != null && (CompanionRequest.Serves(s, commander) || CompatAllies.CommanderOf(s) == commander);
 
-		/// <summary>The living rank-and-file levies of <paramref name="commander"/> (officer avatars keep their own constant stats and are left out, as in the roster scans).</summary>
+		private static readonly Dictionary<int, (uint tick, int bodies, List<SoldierNPC> list)> _leviesCache = new();
+		private static readonly List<SoldierNPC> _noLevies = new();
+
+		/// <summary>The living rank-and-file levies of <paramref name="commander"/> (officer avatars keep their own constant stats and are left out, as in the roster scans). Built once per commander per tick and shared: callers must not change the list.
+		/// The shared list is dropped when the number of live bodies changed since it was built or any member has died, so a levy spawned or killed mid-tick is never missed.</summary>
 		public static List<SoldierNPC> Levies(Player commander)
 		{
+			if (commander == null || RosterSystem.Instance == null) return _noLevies;
+			int bodies = RosterSystem.Instance.ActiveBodyCount;
+			if (_leviesCache.TryGetValue(commander.whoAmI, out var c) && c.tick == Main.GameUpdateCount && c.bodies == bodies && c.list != null)
+			{
+				bool fresh = true;
+				for (int i = 0; i < c.list.Count; i++) if (!c.list[i].NPC.active || !c.list[i].IsAlive) { fresh = false; break; }
+				if (fresh) return c.list;
+			}
 			var list = new List<SoldierNPC>();
-			if (commander == null || RosterSystem.Instance == null) return list;
 			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
 				if (s != null && s.IsAlive && !s.OfficerMode && Serves(s, commander)) list.Add(s);
+			_leviesCache[commander.whoAmI] = (Main.GameUpdateCount, bodies, list);
 			return list;
+		}
+
+		private static readonly bool ThoriumPresent = ModLoader.HasMod("ThoriumMod");
+		/// <summary>The gear frame's Thorium step (kept here so SoldierNPC never names a Thorium type): Ring of Unity and life recovery. No-op without Thorium.</summary>
+		public static void LevyThoriumEquips(SoldierNPC s, Player d, ref int regenUnits)
+		{
+			if (!ThoriumPresent || !Built) return;
+			try { ThoriumEquipsImpl(s, d, ref regenUnits); }
+			catch (Exception e) { WarnOnce("thorium levy equips", e); }
+		}
+		private static void ThoriumEquipsImpl(SoldierNPC s, Player d, ref int regenUnits) { if (TeamThorium.Installed) TeamThorium.LevyEquips(s, d, ref regenUnits); } // the only place the JIT-gated type is touched
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Healing over time on a levy (Calamity's Whitewater vortex heals a player 1 HP every 20 ticks for 5-10 s)
+		// ------------------------------------------------------------------------------------------------------------
+		private sealed class Hot { public int Ticks, Every, Amount, Acc; }
+		private static readonly Dictionary<long, Hot> _hots = new();
+		public static int HotHealed;
+
+		/// <summary>Start a heal-over-time of kind <paramref name="kind"/> on a levy unless one of that kind is already running. Returns true when started.</summary>
+		public static bool StartHot(SoldierNPC s, int kind, int ticks, int every, int amount)
+		{
+			if (s == null || !s.NPC.active || ticks <= 0 || every <= 0 || amount <= 0) return false;
+			long key = (long)s.NPC.whoAmI * 64 + kind;
+			if (_hots.TryGetValue(key, out Hot h) && h.Ticks > 0) return false;
+			_hots[key] = new Hot { Ticks = ticks, Every = every, Amount = amount };
+			return true;
+		}
+
+		/// <summary>True while a heal-over-time of this kind is running on the levy.</summary>
+		public static bool HasHot(SoldierNPC s, int kind) => _hots.TryGetValue((long)s.NPC.whoAmI * 64 + kind, out Hot h) && h.Ticks > 0;
+
+		private static List<long> _hotDone;
+		private static void TickHots(int dt)
+		{
+			if (_hots.Count == 0) return;
+			_hotDone ??= new List<long>();
+			_hotDone.Clear();
+			foreach (var kv in _hots)
+			{
+				Hot h = kv.Value; int who = (int)(kv.Key / 64);
+				NPC n = who >= 0 && who < Main.maxNPCs ? Main.npc[who] : null;
+				if (n == null || !n.active || n.ModNPC is not SoldierNPC || n.life <= 0) { _hotDone.Add(kv.Key); continue; }
+				h.Ticks -= dt; h.Acc += dt;
+				while (h.Acc >= h.Every) { h.Acc -= h.Every; if (SoldierHeal.Restore(n, h.Amount) > 0) HotHealed += h.Amount; }
+				if (h.Ticks <= 0) _hotDone.Add(kv.Key);
+			}
+			foreach (long k in _hotDone) _hots.Remove(k);
 		}
 
 		/// <summary>The commander of this levy as a live Player, or null.</summary>
@@ -162,7 +248,9 @@ namespace Levy.Common.Team
 		/// <summary>One team-item pulse over every commander. Returns how many buffs were laid (for the self-check).</summary>
 		public static int Pulse()
 		{
-			if (!Built || LevyUtil.IsClient || Auras.Count == 0) return 0;
+			if (!Built || LevyUtil.IsClient) return 0;
+			TickHots(LevyConstants.TeamPulseTicks);
+			if (Auras.Count == 0) return 0;
 			Pulses++;
 			HarnessPrePulse?.Invoke();
 			if (HarnessPrePulse != null) PulseGcLog = (PulseGcLog + " " + Main.GameUpdateCount); if (PulseGcLog.Length > 60) PulseGcLog = PulseGcLog.Substring(PulseGcLog.Length - 40);
@@ -201,7 +289,7 @@ namespace Levy.Common.Team
 		public static int Pulses, TotalGrants;
 		/// <summary>Harness: what the last pulse read (provider flags per aura).</summary>
 		public static string LastPulse = "", PulseGcLog = "";
-		public static int GrantCalls, DreamWeaverGrants;
+		public static int GrantCalls, DreamWeaverGrants, WhitewaterStarts, RelicHeals, HitAuraGrants;
 
 		private static bool SafeFlag(AuraDef def, Player p)
 		{

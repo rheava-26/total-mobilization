@@ -592,6 +592,17 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📈 Early-game levy count + mobility (Eve, 2026-11-06)
+- **Count:**
+  - Eve: 4 levies at start is too few; early items sit unused. Militia at ~12 feels right. "Maybe even fewer with more mods."
+  - Code: the start = CommandPointsBase (4), regardless of mods. More modded pre-HM bosses → smaller increment per boss (to be MEASURED).
+  - Branch `levy-count`: measures milestones for vanilla/Calamity/Thorium, adds config LeviesAtStart (default 10, my proposal), and switches to position-based pre-HM progress only if the data shows dilution.
+  - The 20/40/60 end points stay.
+- **Mobility:** Eve's failure mode = the boss targets the PLAYER and dashes through the levies, who never react.
+  - Wants hook-up, double jump, platform drop, dashes, boots, and no walking into lava.
+  - Test matrix sent to field-ai-3: arenas (platforms/flat/natural/mixed) × vanilla + Calamity pre-HM bosses × on-tier weapons × gear (none/hook/bottle/Hermes/dash/all), measuring survival, deaths/min, damage, and hit source.
+- Fall damage: OFF by default everywhere, presets included ("they don't know what that is").
+
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.

@@ -257,6 +257,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
 **BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**ART v1 sent to Eve (art2 81b8b38):** all items in 3 variants; potion comparisons.
+- My own critique: the potions don't match vanilla's TALL two-tier neck and stopper (ours is squat), and the bodies are too wide.
+- The other items read fine but are concept-level; tripod legs and antennas have a doubled outline.
+- Waiting on Eve's picks.
+
 **Waits on art approval:** Command & Observe items (radio, GoPro, cameras, Spectator/Seeker potions, Guide to Autonomy).
 
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**

@@ -543,6 +543,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - enemy spawns pushed away by barracks
 - emplacement firing walls; a manned heavy gun levies MUST operate (not auto-fire)
 
+## 🧪 Eve: new playthrough, Calamity only, no Thorium (2026-11-06)
+- Shipped 2.0.0 on tML 2026.10 with Calamity boots to world select, and every self-check passes except ProgCheck: 42 pass, 6 fail. These are recipe checks plus an IndexOutOfRange at ProgressionSelfCheck.cs:263.
+- The same build with Levy alone: 47/47. So the failures are Calamity-specific.
+- Branch `calrecipes` is diffing recipe snapshots with Levy's recipe code on and off. The question: is it a real gameplay bug, or is the check wrongly comparing against vanilla while Calamity edits recipes itself?
+
 ## 📦 Levy 2.0.0 + Mechanization 0.8.0 (integration 36f151f + version bump), staged at scratchpad/ship-2.0.0
 - Merged: every 2.0 branch (settings2, progression-assist, talk2, logistics, altfire-impl, armory2-reforge, art4, art4-mech, command-observe, officers2, ooa-tavern, art5, art6, staves7, potions, ms-live, field-ai).
 - Boots: ["Levy","Mechanization"] and ["ThoriumMod","Levy","Mechanization"] reach world select with 0 exceptions; all 21 self-check lines OK, 0 fails. ["ThoriumMod","SerousCommonLib","MagicStorage","Levy","Mechanization"] also clean: 0 exceptions, MS self-check 21 OK. SHIPPED to Eve.

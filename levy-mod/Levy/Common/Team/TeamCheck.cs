@@ -26,8 +26,9 @@ namespace Levy.Common.Team
 			}
 			var d = new Player();
 			Check(TeamItems.ApplyStatBuff(d, TeamItems.ModBuffType("ThoriumMod/DragonHeartWandBuff")) && d.GetDamage(DamageClass.Generic).Additive > 1.0001f, "DragonHeartWandBuff.Update raised damage on a throw-away dummy");
-			var d2 = new Player();
-			Check(TeamItems.ApplyStatBuff(d2, TeamItems.ModBuffType("ThoriumMod/BloomBoost")) && d2.statDefense > 0, "BloomBoost.Update raised defense on a throw-away dummy");
+			var d2 = new Player(); d2.statDefense = new Player.DefenseStat(); // a fresh Player's defense stat is unset until reset
+			int def0 = d2.statDefense;
+			Check(TeamItems.ApplyStatBuff(d2, TeamItems.ModBuffType("ThoriumMod/BloomBoost")) && d2.statDefense > def0, "BloomBoost.Update raised defense on a throw-away dummy");
 		}
 		private static bool TeamThoriumInstalled() => TeamThorium.Installed;
 

@@ -546,6 +546,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 ## 🖼 Eve's first in-game look at Logistics → Buy (2026-11-06)
 - Wants: a search bar + category filter for the offer list (weapons etc.), and reach to shopkeepers through pylons, stated in the UI.
 - I spotted two more issues: the top-right hint is clipped, and the bottom tab bar reads backwards (Logistics, Vanity, Items, Rules).
+- Eve likes the Items tab ("very clean"). Also fixing: the potion slot sublabels overlap ("healingbuffana"); the Logistics search will reuse the Items tab search/Type look.
 - Branch `logi-search` is building: shared filter component (Buy/Sell/Find), pylon-network reach (config, default ON; header + "(Snow Pylon)" on remote rows), clip fix, tab order Items/Rules/Vanity/Logistics.
 
 ## 🧪 Eve: new playthrough, Calamity only, no Thorium (2026-11-06)

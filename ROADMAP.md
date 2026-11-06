@@ -599,7 +599,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - Standing still + walking off platform edges → sent to field-ai-3 as metrics.
 - **Gearing:** Eve wants new gear to go to the WORST-equipped levies ("raise the floor"), while the best weapon still goes to the best-suited class. Branch `gear-audit`: a structured progression audit (junk → ore → Ninja → Shadow → … → Chlorophyte), a fishy-list, worst-first fix if needed.
 - **Count curve:** Eve leans 10→25→40→60 (pre-HM has 7 bosses; HM ~10). Holding until boss-trials' count-curve experiment (4/6/8/10/12/15/20/30, identical loadouts) shows whether the CP boss-HP scaling cancels extra levies.
-- **Bottlenecks:** a research agent is compiling wiki numbers + candidate fixes per stage (Chlorophyte, Hallowed, Souls, Ectoplasm…) → scratchpad/bottlenecks.md. Also: pre-HM ore armor feels pointless.
+- **Bottlenecks: DONE, sourced → levy-mod/Levy/docs/BOTTLENECKS.md** (the first pass from memory was discarded; the wiki was fetched via curl).
+  - Hallowed: 54 bars/set, 15–30/mech kill → ~48 kills for 20 sets.
+  - Spectre: 27 Ecto/set ≈ 234 dungeon kills.
+  - Lunar: ~36 ML kills for 20 sets.
+  - Shroomite: 810 mushrooms/set.
+  - Chlorophyte growth is capped by local density.
+  - Turtle Shell 1/12.
+  - Ore armor: Copper 6 → Platinum 20 def; only Platinum/Molten are worth it.
+  - **Already covered** by progression config: Ecto/Soul/Mob drop multipliers, Chlorophyte growth/chunk/ore-per-bar/recipe, Hallowed/Chlorophyte/Spider armor cost %.
+  - **GAPS** (proposed toggles, awaiting Eve): mech-boss Hallowed Bar drop multiplier, Dungeon Spirit spawn rate, Turtle Shell/Beetle Husk, Luminite/fragment multipliers, Shroomite mushroom cost, Chlorophyte density cap, Ninja armor drop rate, a Militia Kit bulk recipe for low ores.
 - **Calamity Revengeance:** branch `calrev`:
   - Do levies get Rage/Adrenaline? Make them work if not (auto-activate when full in boss fights).
   - Expert vs Rev on KS/EoC/BoC with the same loadouts.

@@ -545,7 +545,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 
 ## 📦 Levy 2.0.0 + Mechanization 0.8.0 (integration 36f151f + version bump), staged at scratchpad/ship-2.0.0
 - Merged: every 2.0 branch (settings2, progression-assist, talk2, logistics, altfire-impl, armory2-reforge, art4, art4-mech, command-observe, officers2, ooa-tavern, art5, art6, staves7, potions, ms-live, field-ai).
-- Boots: ["Levy","Mechanization"] and ["ThoriumMod","Levy","Mechanization"] reach world select with 0 exceptions; all 21 self-check lines OK, 0 fails. Thorium+MS+Levy+Mech boot running at commit time; ms-live's own run of that config was clean (MS self-check 21 OK).
+- Boots: ["Levy","Mechanization"] and ["ThoriumMod","Levy","Mechanization"] reach world select with 0 exceptions; all 21 self-check lines OK, 0 fails. ["ThoriumMod","SerousCommonLib","MagicStorage","Levy","Mechanization"] also clean: 0 exceptions, MS self-check 21 OK. SHIPPED to Eve.
 - Building Levy now needs MagicStorage.tmod + SerousCommonLib.tmod in Mods (weak reference, compiled in; built from MS tag v0.7.0.11 + SCL 1.0.7).
 - RISK: Eve's workshop MS version may differ from 0.7.0.11. Watch for MissingMethod errors when MS is loaded.
 - Changelog: scratchpad/ship-2.0.0/CHANGELOG-2.0.0.md.

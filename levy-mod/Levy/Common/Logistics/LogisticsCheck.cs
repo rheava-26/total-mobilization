@@ -5,6 +5,7 @@ using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Systems;
 using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
 
@@ -36,6 +37,8 @@ namespace Levy.Common.Logistics
 				Orders_(Check);
 				Sell_(Check);
 				Buy_(Check);
+				Search_(Check);
+				CraftBrowser_(Check);
 				Wire_(Check);
 			}
 			catch (Exception e) { failures.Add($"threw {e.GetType().Name}: {e.Message} {string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim()))}"); }
@@ -47,6 +50,89 @@ namespace Levy.Common.Logistics
 				Mod.Logger.Warn($"Levy logistics self-check: {failures.Count} FAILURE(S) ({ok} checks OK) !!!");
 				foreach (var f in failures) Mod.Logger.Warn("  logistics: " + f);
 			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------------ search filter and pylon reach
+		private static void Search_(Action<bool, string> Check)
+		{
+			Check(ItemFilter.Matches(Make(ItemID.Handgun), FilterCat.Weapons) && ItemFilter.Matches(Make(ItemID.Handgun), FilterCat.Ranged) && !ItemFilter.Matches(Make(ItemID.Handgun), FilterCat.Melee), "filter: a Handgun is a ranged weapon");
+			Check(ItemFilter.Matches(Make(ItemID.IronBroadsword), FilterCat.Melee) && !ItemFilter.Matches(Make(ItemID.IronBroadsword), FilterCat.Ammo), "filter: a sword is melee, not ammo");
+			Check(ItemFilter.Matches(Make(ItemID.MusketBall, 10), FilterCat.Ammo) && !ItemFilter.Matches(Make(ItemID.MusketBall, 10), FilterCat.Weapons), "filter: a Musket Ball is ammo, not a weapon");
+			Check(ItemFilter.Matches(Make(ItemID.IronHelmet), FilterCat.Gear) && ItemFilter.Matches(Make(ItemID.HermesBoots), FilterCat.Gear), "filter: armor and accessories are gear");
+			Check(ItemFilter.Matches(Make(ItemID.LesserHealingPotion, 5), FilterCat.Potions) && !ItemFilter.Matches(Make(ItemID.LesserHealingPotion, 5), FilterCat.Tools), "filter: a healing potion is a potion");
+			Check(ItemFilter.Matches(Make(ItemID.IronPickaxe), FilterCat.Tools) && !ItemFilter.Matches(Make(ItemID.IronPickaxe), FilterCat.Weapons), "filter: a pickaxe is a tool, not a weapon");
+			Check(ItemFilter.Matches(Make(ItemID.Torch, 5), FilterCat.Blocks) && ItemFilter.Matches(Make(ItemID.DirtBlock, 5), FilterCat.Blocks) && !ItemFilter.Matches(Make(ItemID.Torch, 5), FilterCat.Weapons), "filter: torches and blocks are blocks & other");
+			Check(ItemFilter.Matches(Make(ItemID.Handgun), FilterCat.All) && ItemFilter.Cats()[0] == FilterCat.All, "filter: All matches everything");
+			Check(ItemFilter.NameMatches("Iron Broadsword", "BROAD") && ItemFilter.NameMatches("Iron Broadsword", "iron sword".Replace("sword", "broad")) && !ItemFilter.NameMatches("Iron Broadsword", "gold") && ItemFilter.NameMatches("Torch", ""), "search: case-insensitive name match, every word, empty matches all");
+
+			float px = LevyConstants.TilePx, far = LevyConstants.PylonShareRadius * px * 5f;
+			var armory = new Microsoft.Xna.Framework.Vector2(1000f * px, 500f * px); var farNpc = new Microsoft.Xna.Framework.Vector2(1000f * px + far, 500f * px);
+			SettlementSystem.PylonPoint P(Microsoft.Xna.Framework.Vector2 c, bool ok, string n) => new SettlementSystem.PylonPoint { Center = c, Valid = ok, Name = n };
+			var both = new[] { P(armory, true, "Forest Pylon"), P(farNpc, true, "Snow Pylon") };
+			var (r1, n1) = Shopping.ReachOf(armory, farNpc, false, both, true);
+			Check(r1 && n1 == "Snow Pylon", "pylon reach: a shopkeeper by a second working pylon is in reach and names it");
+			var remoteBad = new[] { P(armory, true, "Forest Pylon"), P(farNpc, false, "Snow Pylon") };
+			Check(!Shopping.ReachOf(armory, farNpc, false, remoteBad, true).inReach, "pylon reach: his pylon has too few town NPCs, so he is out of reach");
+			var homeBad = new[] { P(armory, false, "Forest Pylon"), P(farNpc, true, "Snow Pylon") };
+			Check(!Shopping.ReachOf(armory, farNpc, false, homeBad, true).inReach, "pylon reach: the armory's own pylon is not working, so nothing is reached through pylons");
+			Check(Shopping.ReachOf(armory, farNpc, true, homeBad, true) == (true, null), "pylon reach: a shopkeeper in the settlement is always in reach, with no pylon named");
+			Check(!Shopping.ReachOf(armory, farNpc, false, both, false).inReach, "pylon reach: toggle off, the new rule reaches nobody outside the settlement");
+			Check(Shopping.LegacyReach(armory, farNpc, false, remoteBad) && !Shopping.LegacyReach(armory, farNpc, false, new[] { P(armory, true, "Forest Pylon") }), "pylon reach: toggle off keeps the earlier rule (any pylon at both ends, working or not)");
+			Check(!Shopping.LegacyReach(armory, armory, false, Array.Empty<SettlementSystem.PylonPoint>()) && Shopping.LegacyReach(armory, farNpc, true, null), "pylon reach: no pylons means the settlement only");
+		}
+
+		// ------------------------------------------------------------------------------------------------------------------ recipe browser and instant craft
+		private static RecipeEntry Entry(List<RecipeEntry> l, Recipe r) => l.FirstOrDefault(e => ReferenceEquals(e.R, r));
+
+		private static void CraftBrowser_(Action<bool, string> Check)
+		{
+			var sword = Crafting.RecipesFor(ItemID.IronBroadsword)[0]; // 8 Iron Bars at an Anvil
+			var a = new ArmoryTE(); var p = new Player(); var inv = new PlayerStock(p);
+			StockPool Pool() => new StockPool(a, false, false, p);
+
+			inv.Put(Make(ItemID.IronBar, 8));
+			var e = Entry(CraftBrowser.Scan(a, Pool()), sword);
+			Check(e != null && e.CanCraft && e.Crafts == 1 && CraftBrowser.InView(e, RecipeView.CanCraft), "browser: Can craft lists a recipe whose ingredients are only in the inventory");
+			inv.Take(ItemID.IronBar, 100);
+
+			inv.Put(Make(ItemID.IronBar, 3));
+			e = Entry(CraftBrowser.Scan(a, Pool()), sword);
+			Check(e != null && !e.CanCraft && e.AnyMaterial && CraftBrowser.InView(e, RecipeView.HasMaterials) && !CraftBrowser.InView(e, RecipeView.CanCraft) && CraftBrowser.InView(e, RecipeView.All), "browser: Has materials shows a partly stocked recipe, Can craft does not");
+			inv.Take(ItemID.IronBar, 100);
+			e = Entry(CraftBrowser.Scan(a, Pool()), sword);
+			Check(e != null && !e.AnyMaterial && !CraftBrowser.InView(e, RecipeView.HasMaterials) && CraftBrowser.InView(e, RecipeView.All), "browser: with nothing in stock only All lists it");
+
+			var wood = Crafting.RecipesFor(ItemID.WoodenSword);
+			var wr = wood.Count > 0 ? wood[0] : null; var wi = wr == null ? Array.Empty<Ingredient>() : Crafting.Ingredients(wr);
+			if (wr != null && wi.Length == 1 && wi[0].Types.Length > 1)
+			{
+				int other = wi[0].Types.First(t => t != wi[0].Primary);
+				inv.Put(Make(other, wi[0].Count));
+				e = Entry(CraftBrowser.Scan(a, Pool()), wr);
+				Check(e != null && e.CanCraft, "browser: a recipe group (any wood) counts a different wood from the inventory");
+				inv.Take(other, 1000);
+			}
+			else Check(true, "browser: wooden sword has no wood group in this build (skipped)");
+
+			// a craft pulls from the inventory, then the armory, then the chest, and the sword lands in the inventory
+			int ci = Main.maxChests - 1; var savedChest = Main.chest[ci]; Main.chest[ci] = new Chest(); Main.chest[ci].item[0] = Make(ItemID.IronBar, 3);
+			try
+			{
+				inv.Put(Make(ItemID.IronBar, 3)); Stock(a, ItemID.IronBar, 2);
+				var pool = Pool(); pool.Sources.Add(new ChestStock(ci));
+				int made = CraftBrowser.Craft(sword, 1, a, pool);
+				Check(made == 1, "craft: made the sword (" + made + ")");
+				Check(inv.Count(ItemID.IronBar) == 0 && Held(a, ItemID.IronBar) == 0 && new ChestStock(ci).Count(ItemID.IronBar) == 0, "craft: ingredients came from inventory, armory and chest together");
+				Check(inv.Count(ItemID.IronBroadsword) == 1 && Held(a, ItemID.IronBroadsword) == 0, "craft: the result went to the inventory");
+
+				// a full inventory overflows to the armory
+				var full = new Player(); for (int i = 0; i < PlayerStock.Slots; i++) full.inventory[i] = Make(ItemID.DirtBlock, 999);
+				var a2 = new ArmoryTE(); Stock(a2, ItemID.IronBar, 8);
+				int made2 = CraftBrowser.Craft(sword, 1, a2, new StockPool(a2, false, false, full));
+				Check(made2 == 1 && Held(a2, ItemID.IronBroadsword) == 1 && new PlayerStock(full).Count(ItemID.IronBroadsword) == 0, "craft: a full inventory overflows the result to the armory");
+				Check(CraftBrowser.Craft(sword, 1, a2, new StockPool(a2, false, false, full)) == 0, "craft: nothing in stock crafts nothing");
+			}
+			finally { Main.chest[ci] = savedChest; }
 		}
 
 		// ------------------------------------------------------------------------------------------------------------------ ratios, picking, partial

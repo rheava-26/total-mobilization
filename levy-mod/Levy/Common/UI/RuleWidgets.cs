@@ -34,6 +34,7 @@ namespace Levy.Common.UI
 		public float OffAt = float.NegativeInfinity;
 		public string OffText = "";
 		public bool Typing => _input.IsWritingText;
+		public void StopTypingIfAny() { if (_input.IsWritingText) _input.ToggleTakingText(); }
 		private float _lastShown = float.NaN;
 		private bool _lastTyping;
 

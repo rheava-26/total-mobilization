@@ -12,14 +12,13 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.Logistics
 {
 	/// <summary>
-	/// Shopkeepers in reach of an armory and what they sell, at the price the shopkeeper's happiness gives. A shopkeeper is in reach when he stands inside the settlement box around the armory, or when the armory is on the pylon
-	/// network and he stands near any pylon. Money comes from the settlement treasury (<see cref="EconomySystem.TryPayNetwork"/>) of the armory's barracks; goods go into the armory. Server and single player only.
+	/// Shopkeepers in reach of an armory and what they sell, at the price the shopkeeper's happiness gives. A shopkeeper is in reach when he stands inside the settlement box around the armory, or (config, default on) when the armory is near a working pylon and he stands near any working pylon. Money comes from the settlement treasury (<see cref="EconomySystem.TryPayNetwork"/>) of the armory's barracks; goods go into the armory. Server and single player only.
 	/// </summary>
 	public static class Shopping
 	{
 		public struct Offer
 		{
-			public NPC Keeper; public Item Item; public long UnitPrice; public int StackPerBuy; public bool Once;
+			public NPC Keeper; public string Pylon; public Item Item; public long UnitPrice; public int StackPerBuy; public bool Once;
 			public override string ToString() => $"{Item?.Name} x{StackPerBuy} @{UnitPrice} from {Keeper?.GivenName}";
 		}
 
@@ -32,19 +31,50 @@ namespace Levy.Common.Logistics
 			return best;
 		}
 
-		/// <summary>Town NPCs with a shop that the armory's orders can trade with.</summary>
-		public static List<NPC> Keepers(ArmoryTE a)
+		/// <summary>A shopkeeper in reach; <see cref="Pylon"/> is the name of the pylon he is reached through, null when he stands in the settlement.</summary>
+		public struct Reach { public NPC Keeper; public string Pylon; }
+
+		/// <summary>True when the config lets logistics reach shopkeepers through pylons (default on).</summary>
+		public static bool PylonReachOn => ModContent.GetInstance<global::Levy.Common.Config.LevyConfig>()?.LogisticsReachesPylons ?? true;
+
+		/// <summary>
+		/// The reach rule, pure. A shopkeeper standing in the settlement box is always in reach. With <paramref name="viaPylons"/> and the armory within range of a working pylon, a shopkeeper near ANY working pylon is in reach too
+		/// (the pylon's name comes back). A pylon without enough town NPCs does not count at either end.
+		/// </summary>
+		public static (bool inReach, string pylon) ReachOf(Vector2 armory, Vector2 npc, bool inBox, IList<SettlementSystem.PylonPoint> pylons, bool viaPylons)
 		{
-			var res = new List<NPC>();
-			bool net = SettlementSystem.OnPylonNet(a.Center);
+			if (inBox) return (true, null);
+			if (!viaPylons || pylons == null || SettlementSystem.NearestValidPylon(armory, pylons) < 0) return (false, null);
+			int i = SettlementSystem.NearestValidPylon(npc, pylons);
+			return i < 0 ? (false, null) : (true, pylons[i].Name);
+		}
+
+		/// <summary>The reach rule with the config off: the settlement box, plus any shopkeeper near any pylon when the armory itself is near one (pylon validity is not checked).</summary>
+		public static bool LegacyReach(Vector2 armory, Vector2 npc, bool inBox, IList<SettlementSystem.PylonPoint> pylons)
+		{
+			if (inBox) return true;
+			if (pylons == null) return false;
+			bool Near(Vector2 c) { float lim = LevyConstants.PylonShareRadius * LevyConstants.TilePx; lim *= lim; foreach (var p in pylons) if (Vector2.DistanceSquared(c, p.Center) <= lim) return true; return false; }
+			return Near(armory) && Near(npc);
+		}
+
+		/// <summary>Town NPCs with a shop that the armory's orders can trade with, and how each is reached.</summary>
+		public static List<Reach> KeepersReach(ArmoryTE a, bool? viaPylons = null, IList<SettlementSystem.PylonPoint> pylons = null)
+		{
+			var res = new List<Reach>();
+			bool via = viaPylons ?? PylonReachOn;
+			pylons ??= SettlementSystem.PylonPoints();
 			foreach (var n in Main.npc)
 			{
 				if (n == null || !n.active || !n.townNPC || n.ModNPC is SoldierNPC) continue;
 				bool inBox = Math.Abs(n.Center.X / 16f - a.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(n.Center.Y / 16f - a.Position.Y) <= LevyConstants.SettlementRadiusY;
-				if (inBox || (net && SettlementSystem.OnPylonNet(n.Center))) res.Add(n);
+				var (ok, py) = via ? ReachOf(a.Center, n.Center, inBox, pylons, true) : (LegacyReach(a.Center, n.Center, inBox, pylons), (string)null);
+				if (ok) res.Add(new Reach { Keeper = n, Pylon = py });
 			}
 			return res;
 		}
+
+		public static List<NPC> Keepers(ArmoryTE a) => KeepersReach(a).Select(r => r.Keeper).ToList();
 
 		/// <summary>Copper per unit for <paramref name="item"/> from <paramref name="keeper"/> for this payer, happiness included. Items on a special currency return -1 (not buyable with coin).</summary>
 		public static long UnitPrice(Player payer, NPC keeper, Item item)
@@ -59,7 +89,7 @@ namespace Levy.Common.Logistics
 			catch (Exception) { return -1; }
 		}
 
-		public static List<Offer> OffersFrom(NPC keeper, Player payer)
+		public static List<Offer> OffersFrom(NPC keeper, Player payer, string pylon = null)
 		{
 			var res = new List<Offer>();
 			if (!NPCShopDatabase.TryGetNPCShop(NPCShopDatabase.GetShopName(keeper.type), out var shop)) return res;
@@ -69,7 +99,7 @@ namespace Levy.Common.Logistics
 			{
 				if (it == null || it.IsAir) continue;
 				long unit = UnitPrice(payer, keeper, it); if (unit < 0) continue;
-				res.Add(new Offer { Keeper = keeper, Item = it, UnitPrice = unit, StackPerBuy = Math.Max(1, it.stack), Once = it.buyOnce });
+				res.Add(new Offer { Keeper = keeper, Pylon = pylon, Item = it, UnitPrice = unit, StackPerBuy = Math.Max(1, it.stack), Once = it.buyOnce });
 			}
 			return res;
 		}
@@ -77,8 +107,25 @@ namespace Levy.Common.Logistics
 		public static List<Offer> AllOffers(ArmoryTE a)
 		{
 			var res = new List<Offer>(); var payer = Payer(a); if (payer == null) return res;
-			foreach (var k in Keepers(a)) res.AddRange(OffersFrom(k, payer));
+			foreach (var k in KeepersReach(a)) res.AddRange(OffersFrom(k.Keeper, payer, k.Pylon));
 			return res;
+		}
+
+		/// <summary>All offers plus how many shopkeepers are in reach here (settlement) and via pylons.</summary>
+		public static List<Offer> AllOffers(ArmoryTE a, out int here, out int viaPylons)
+		{
+			here = 0; viaPylons = 0;
+			var res = new List<Offer>(); var payer = Payer(a); if (payer == null) return res;
+			foreach (var k in KeepersReach(a)) { if (k.Pylon == null) here++; else viaPylons++; res.AddRange(OffersFrom(k.Keeper, payer, k.Pylon)); }
+			return res;
+		}
+
+		/// <summary>The shopkeeper's name, with his pylon when he is reached through one.</summary>
+		public static string KeeperLabel(ArmoryTE a, NPC keeper)
+		{
+			if (keeper == null) return "";
+			foreach (var r in KeepersReach(a)) if (ReferenceEquals(r.Keeper, keeper)) return r.Pylon == null ? keeper.GivenName : $"{keeper.GivenName} ({r.Pylon})";
+			return keeper.GivenName;
 		}
 
 		public static bool IsGun(Item it) => it.damage > 0 && it.useAmmo == AmmoID.Bullet && it.maxStack == 1;

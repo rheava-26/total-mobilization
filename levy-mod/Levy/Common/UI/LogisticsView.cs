@@ -36,7 +36,7 @@ namespace Levy.Common.UI
 		private int _cur;
 		private readonly ChoicePopup _popup = new();
 		public readonly ChecklistPanel Checklist = new();
-		public bool ChecklistVisible => _cur == 0;
+		public bool ChecklistVisible => _cur == 0 && !_craftMode;
 
 		// ---- orders page
 		private readonly UIList _orderList = new(); private readonly UIScrollbar _orderBar = new();
@@ -47,20 +47,28 @@ namespace Levy.Common.UI
 		private NumberField _totalField, _budgetField;
 		private Label _statusLbl, _rulesLbl, _note;
 
+		// ---- craft browser (the second pane of the orders page)
+		private bool _craftMode; private UIElement _ordersPane, _craftPane, _detailHost; private LevyButton _modeOrdersBtn, _modeCraftBtn, _viewCan, _viewHas, _viewAll, _craftBtn, _makeOrderBtn;
+		private ItemFilterBar _craftFilter; private RecipeView _view = RecipeView.CanCraft;
+		private readonly UIList _recipeList = new(); private readonly UIScrollbar _recipeBar = new();
+		private List<RecipeEntry> _recipes = new(); private int _recipeTick = -1000, _recipeVersion = -1; private bool _recipeRescan = true, _recipeRebuild = true; private string _recipeSig = "";
+		private Recipe _selRecipe; private int _craftCount = 1, _selMax; private NumberField _craftField; private Label _craftCan, _recipeNote;
+		private readonly List<UIElement> _detailEls = new(); private string[] _selLines = Array.Empty<string>(); private string _selBlocker = "";
+
 		// ---- buy page
 		private readonly BuyRule _rule = new() { Kind = BuyRule.KindAnyGun, Count = 1, Budget = 50000 };
 		private LevyButton _kindBtn, _buyNowBtn, _addRuleBtn;
-		private Label _buyInfo; private UIElement _itemCellHost;
+		private Label _buyInfo, _offersHdr; private UIElement _itemCellHost; private ItemFilterBar _buyFilter;
 		private readonly UIList _offerList = new(); private readonly UIScrollbar _offerBar = new();
 		private int _offerTick = -1000;
 
 		// ---- sell page
-		private SellGrid _grid; private LevyButton _catBtn, _tierBtn, _pickBtn, _clearBtn, _shimmerBtn, _sellBtn; private Label _sellInfo;
+		private ItemFilterBar _sellFilter; private SellGrid _grid; private LevyButton _catBtn, _tierBtn, _pickBtn, _clearBtn, _shimmerBtn, _sellBtn; private Label _sellInfo;
 		private int _catIdx, _tierIdx = -1; private bool _shimmer; private int _sellTick; private bool _sellDirty = true;
 
 		// ---- find page
-		private readonly UIGrid _findGrid = new(); private readonly UIScrollbar _findBar = new(); private Label _findLbl; private UIPanel _findBox; private UISearchBar _findSearch;
-		private string _findTerm = ""; private List<int> _findAll = new(); private bool _findDirty = true;
+		private readonly UIGrid _findGrid = new(); private readonly UIScrollbar _findBar = new(); private Label _findLbl; private ItemFilterBar _findFilter;
+		private List<int> _findAll = new(); private bool _findDirty = true;
 
 		public LogisticsView(ArmoryPanel owner)
 		{
@@ -85,6 +93,7 @@ namespace Levy.Common.UI
 		private void ShowPage(int p)
 		{
 			if (_popup.Open) _popup.Remove();
+			StopTyping();
 			for (int i = 0; i < 4; i++) { if (HasChild(_page[i])) RemoveChild(_page[i]); _pageBtn[i].Lit = i == p; }
 			_cur = p; Append(_page[p]);
 			if (p == 1) _offerTick = -1000;
@@ -93,9 +102,14 @@ namespace Levy.Common.UI
 			Recalculate();
 		}
 
+		/// <summary>Ends typing in whichever search box has focus.</summary>
+		public void StopTyping() { _craftFilter?.StopTyping(); _craftField?.StopTypingIfAny(); _buyFilter?.StopTyping(); _sellFilter?.StopTyping(); _findFilter?.StopTyping(); }
+
 		/// <summary>Called when the panel points at an armory.</summary>
 		public void Bind()
 		{
+			StopTyping();
+			_recipeRescan = true; _recipeSig = "";
 			_selectedId = 0; _seenVersion = -1; _draft = NewDraft(); _grid?.Clear(); _sellDirty = true; _findDirty = true; _offerTick = -1000;
 			RebuildOrderList(); RebuildLines();
 		}
@@ -113,7 +127,13 @@ namespace Levy.Common.UI
 		// ====================================================================================== ORDERS
 		private void BuildOrders()
 		{
-			var pg = _page[0];
+			_ordersPane = new UIElement(); _craftPane = new UIElement();
+			foreach (var pane in new[] { _ordersPane, _craftPane }) { pane.Top.Set(30, 0f); pane.Width.Set(Width.Pixels, 0f); pane.Height.Set(Height.Pixels - PageTop - 30, 0f); }
+			_modeOrdersBtn = new LevyButton(L("ModeOrders"), LevyConstants.UI.ButtonTextScale, 150, 24, () => SetCraftMode(false), L("ModeOrdersHint"));
+			_modeCraftBtn = new LevyButton(L("ModeCraft"), LevyConstants.UI.ButtonTextScale, 150, 24, () => SetCraftMode(true), L("ModeCraftHint")); _modeCraftBtn.Left.Set(156, 0f);
+			_page[0].Append(_modeOrdersBtn); _page[0].Append(_modeCraftBtn); _page[0].Append(_ordersPane);
+			BuildCraft();
+			var pg = _ordersPane;
 			var hdr = new Label(L("OrdersHeader"), 0.8f); hdr.Top.Set(0, 0f); pg.Append(hdr);
 			_orderList.Top.Set(18, 0f); _orderList.Width.Set(ColL - 16, 0f); _orderList.Height.Set(236, 0f); _orderList.ListPadding = 3f;
 			_orderBar.Left.Set(ColL - 12, 0f); _orderBar.Top.Set(18, 0f); _orderBar.Height.Set(236, 0f); _orderList.SetScrollbar(_orderBar);
@@ -144,6 +164,120 @@ namespace Levy.Common.UI
 			var addSet = new LevyButton(L("AddSet"), LevyConstants.UI.ButtonTextScale, 100, 24, AddSetFromCursor, L("AddSetHint")); addSet.Left.Set(x + 150, 0f); addSet.Top.Set(262, 0f); pg.Append(addSet);
 			_saveBtn = new LevyButton(L("Save"), LevyConstants.UI.ButtonTextScale, 130, 28, SaveDraft, L("SaveHint")); _saveBtn.Left.Set(x + 270, 0f); _saveBtn.Top.Set(260, 0f); pg.Append(_saveBtn);
 			_rulesLbl = new Label("", 0.72f); _rulesLbl.Left.Set(x, 0f); _rulesLbl.Top.Set(296, 0f); pg.Append(_rulesLbl);
+		}
+
+		// ====================================================================================== CRAFT BROWSER
+		private void SetCraftMode(bool on)
+		{
+			StopTyping(); _craftMode = on;
+			if (on) { if (HasChild(_page[0]) && _page[0].HasChild(_ordersPane)) _page[0].RemoveChild(_ordersPane); if (!_page[0].HasChild(_craftPane)) _page[0].Append(_craftPane); _recipeRescan = true; }
+			else { if (_page[0].HasChild(_craftPane)) _page[0].RemoveChild(_craftPane); if (!_page[0].HasChild(_ordersPane)) _page[0].Append(_ordersPane); }
+			Recalculate();
+		}
+
+		private void BuildCraft()
+		{
+			var pg = _craftPane;
+			_craftFilter = new ItemFilterBar(430, "Mods.Levy.Logistics.RecipeSearch"); _craftFilter.Changed += () => _recipeRebuild = true; pg.Append(_craftFilter);
+			_viewCan = new LevyButton(L("ViewCan"), LevyConstants.UI.ButtonTextScale, 72, 24, () => SetView(RecipeView.CanCraft), L("ViewCanHint")); _viewCan.Left.Set(436, 0f); _viewCan.Top.Set(1, 0f); pg.Append(_viewCan);
+			_viewHas = new LevyButton(L("ViewHas"), LevyConstants.UI.ButtonTextScale, 104, 24, () => SetView(RecipeView.HasMaterials), L("ViewHasHint")); _viewHas.Left.Set(512, 0f); _viewHas.Top.Set(1, 0f); pg.Append(_viewHas);
+			_viewAll = new LevyButton(L("ViewAll"), LevyConstants.UI.ButtonTextScale, 44, 24, () => SetView(RecipeView.All), L("ViewAllHint")); _viewAll.Left.Set(620, 0f); _viewAll.Top.Set(1, 0f); pg.Append(_viewAll);
+			_recipeList.Top.Set(34, 0f); _recipeList.Width.Set(430, 0f); _recipeList.Height.Set(300, 0f); _recipeList.ListPadding = 2f;
+			_recipeBar.Left.Set(436, 0f); _recipeBar.Top.Set(34, 0f); _recipeBar.Height.Set(300, 0f); _recipeList.SetScrollbar(_recipeBar);
+			pg.Append(_recipeList); pg.Append(_recipeBar);
+			_detailHost = new UIElement(); _detailHost.Left.Set(470, 0f); _detailHost.Top.Set(34, 0f); _detailHost.Width.Set(200, 0f); _detailHost.Height.Set(300, 0f); pg.Append(_detailHost);
+			_craftCan = new Label("", 0.75f); _craftCan.Top.Set(176, 0f); _detailHost.Append(_craftCan);
+			var cl = new Label(L("Count"), 0.8f); cl.Top.Set(206, 0f); _detailHost.Append(cl);
+			_craftField = new NumberField(130, 1, 9999, 1, true, () => _craftCount, v => _craftCount = (int)v); _craftField.Left.Set(60, 0f); _craftField.Top.Set(202, 0f); _detailHost.Append(_craftField);
+			_craftBtn = new LevyButton(L("CraftNow"), LevyConstants.UI.ButtonTextScale, 92, 26, CraftSelected, L("CraftNowHint")); _craftBtn.Top.Set(236, 0f); _detailHost.Append(_craftBtn);
+			_makeOrderBtn = new LevyButton(L("MakeOrder"), LevyConstants.UI.ButtonTextScale, 102, 26, MakeOrderFromSelected, L("MakeOrderHint")); _makeOrderBtn.Left.Set(98, 0f); _makeOrderBtn.Top.Set(236, 0f); _detailHost.Append(_makeOrderBtn);
+			_recipeNote = new Label("", 0.66f); _recipeNote.Top.Set(270, 0f); _detailHost.Append(_recipeNote);
+			SetView(RecipeView.CanCraft);
+		}
+
+		private void SetView(RecipeView v) { _view = v; _viewCan.Lit = v == RecipeView.CanCraft; _viewHas.Lit = v == RecipeView.HasMaterials; _viewAll.Lit = v == RecipeView.All; _recipeRebuild = true; }
+
+		private void CraftSelected()
+		{
+			if (Te == null || _selRecipe == null) return;
+			LogisticsActions.CraftNow(Te, _selRecipe, _craftCount);
+			CraftBrowser.Version++; SoundEngine.PlaySound(SoundID.Item37);
+		}
+
+		private void MakeOrderFromSelected()
+		{
+			if (Te == null || _selRecipe == null) return;
+			int t = _selRecipe.createItem.type;
+			var o = NewDraft(); o.Lines.Add(new OrderLine { Types = new[] { t }, Weight = 1 });
+			o.Total = Math.Clamp(_craftCount * Math.Max(1, _selRecipe.createItem.stack), 1, LogisticsConstants.MaxTotal); o.Replan();
+			o.Name = LevyUtil.T("Logistics.OrderName", ItemName(t));
+			_selectedId = 0; _selectLatest = true;
+			LogisticsActions.SaveOrder(o);
+			SoundEngine.PlaySound(SoundID.MenuTick);
+			SetCraftMode(false);
+		}
+
+		private static string BlockerText(string b)
+		{
+			if (b.StartsWith("station:") && int.TryParse(b.Substring(8), out int tile)) return L("StatusStation", StationName(tile));
+			if (b.StartsWith("condition:")) return L("StatusCondition", b.Substring(10));
+			return "";
+		}
+
+		/// <summary>Recounts every recipe against the stock (page open, after a craft, then at most every 30 ticks) and the selected recipe's ingredient lines.</summary>
+		private void RescanRecipes()
+		{
+			_recipeRescan = false; _recipeTick = (int)Main.GameUpdateCount; _recipeVersion = CraftBrowser.Version;
+			try
+			{
+				var pool = CraftBrowser.PoolFor(Te, Main.LocalPlayer);
+				_recipes = CraftBrowser.Scan(Te, pool);
+				_selLines = Array.Empty<string>(); _selMax = 0; _selBlocker = "";
+				if (_selRecipe != null)
+				{
+					var lines = new List<string>();
+					foreach (var ing in Crafting.Ingredients(_selRecipe))
+					{
+						long have = pool.Count(ing.Types);
+						lines.Add(ing.Types.Length > 1 ? L("IngGroup", ItemName(ing.Primary), have, ing.Count) : L("Ing", ItemName(ing.Primary), have, ing.Count));
+					}
+					_selLines = lines.ToArray(); _selBlocker = Crafting.Blocker(_selRecipe, Te);
+					_selMax = CraftBrowser.MaxCrafts(_selRecipe, Te, pool, LogisticsConstants.MaxTotal);
+				}
+			}
+			catch (Exception) { _recipes = new(); }
+			_recipeRebuild = true;
+		}
+
+		private void RebuildRecipeList()
+		{
+			_recipeRebuild = false;
+			var shown = _recipes.Where(e => CraftBrowser.InView(e, _view) && _craftFilter.Matches(e.Name, e.R.createItem)).OrderByDescending(e => e.CanCraft).ThenBy(e => e.Name).ThenBy(e => e.R.RecipeIndex).ToList();
+			int total = shown.Count; shown = shown.Take(150).ToList();
+			string sig = _view + "|" + total + "|" + string.Join(",", shown.Select(e => e.R.RecipeIndex + ":" + e.Crafts + (e.CanCraft ? "y" : "n"))) + "|" + (_selRecipe?.RecipeIndex ?? -1) + "|" + _selMax + "|" + string.Join(";", _selLines) + _selBlocker;
+			if (sig == _recipeSig) return;
+			_recipeSig = sig;
+			_recipeList.Clear();
+			foreach (var e in shown) { var ee = e; _recipeList.Add(new RecipeRowEl(ee, () => _selRecipe != null && ReferenceEquals(_selRecipe, ee.R), () => { _selRecipe = ee.R; _craftCount = 1; _recipeRescan = true; })); }
+			if (shown.Count == 0) _recipeList.Add(new Label(L("NoRecipes"), 0.8f));
+			else if (total > shown.Count) _recipeList.Add(new Label(L("MoreRecipes", total - shown.Count), 0.7f));
+			RebuildDetail();
+		}
+
+		private void RebuildDetail()
+		{
+			foreach (var c in _detailEls) _detailHost.RemoveChild(c);
+			_detailEls.Clear();
+			bool has = _selRecipe != null;
+			_craftBtn.Enabled = has && _selMax > 0; _makeOrderBtn.Enabled = has; 
+			if (!has) { _craftCan.SetText(""); _recipeNote.SetText(L("PickRecipe")); return; }
+			int t = _selRecipe.createItem.type;
+			var cell = new TypeCell(t, () => { }); _detailHost.Append(cell); _detailEls.Add(cell);
+			var nm = new Label(ItemName(t) + (_selRecipe.createItem.stack > 1 ? " x" + _selRecipe.createItem.stack : ""), 0.8f); nm.Left.Set(42, 0f); nm.Top.Set(10, 0f); _detailHost.Append(nm); _detailEls.Add(nm);
+			float y = 44; foreach (var ln in _selLines.Take(8)) { var l = new Label(ln, 0.68f); l.Top.Set(y, 0f); _detailHost.Append(l); _detailEls.Add(l); y += 15; }
+			_craftCan.SetText(_selBlocker != "" ? BlockerText(_selBlocker) : L("CanMake", _selMax));
+			_recipeNote.SetText("");
+			_detailHost.Recalculate();
 		}
 
 		private void AddLine(int[] types)
@@ -249,9 +383,10 @@ namespace Levy.Common.UI
 			_buyNowBtn = new LevyButton(L("BuyNow"), LevyConstants.UI.ButtonTextScale, 120, 26, () => { if (Te != null) { LogisticsActions.BuyNow(Te, new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); _offerTick = -1000; } }, L("BuyNowHint")); _buyNowBtn.Top.Set(92, 0f); pg.Append(_buyNowBtn);
 			_addRuleBtn = new LevyButton(L("AddToOrder"), LevyConstants.UI.ButtonTextScale, 170, 26, () => { if (_draft.Rules.Count < 8) { _draft.Rules.Add(new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); Main.NewText(L("RuleAdded", _draft.Rules.Count), 160, 220, 160); } }, L("AddToOrderHint")); _addRuleBtn.Left.Set(128, 0f); _addRuleBtn.Top.Set(92, 0f); pg.Append(_addRuleBtn);
 			_buyInfo = new Label("", 0.75f); _buyInfo.Left.Set(304, 0f); _buyInfo.Top.Set(98, 0f); pg.Append(_buyInfo);
-			var ol = new Label(L("Offers"), 0.8f); ol.Top.Set(128, 0f); pg.Append(ol);
-			_offerList.Top.Set(146, 0f); _offerList.Width.Set(620, 0f); _offerList.Height.Set(190, 0f); _offerList.ListPadding = 2f;
-			_offerBar.Left.Set(626, 0f); _offerBar.Top.Set(146, 0f); _offerBar.Height.Set(190, 0f); _offerList.SetScrollbar(_offerBar);
+			_offersHdr = new Label(L("Offers"), 0.8f); _offersHdr.Top.Set(124, 0f); pg.Append(_offersHdr);
+			_buyFilter = new ItemFilterBar(620, "Mods.Levy.Logistics.OfferSearch"); _buyFilter.Top.Set(142, 0f); _buyFilter.Changed += () => _offerTick = -1000; pg.Append(_buyFilter);
+			_offerList.Top.Set(174, 0f); _offerList.Width.Set(620, 0f); _offerList.Height.Set(190, 0f); _offerList.ListPadding = 2f;
+			_offerBar.Left.Set(626, 0f); _offerBar.Top.Set(174, 0f); _offerBar.Height.Set(190, 0f); _offerList.SetScrollbar(_offerBar);
 			pg.Append(_offerList); pg.Append(_offerBar);
 			RebuildItemCell();
 		}
@@ -275,16 +410,24 @@ namespace Levy.Common.UI
 		{
 			_offerList.Clear();
 			if (Te == null) return;
-			List<Shopping.Offer> offers;
-			try { offers = Shopping.AllOffers(Te).OrderBy(o => o.Keeper.GivenName).ThenBy(o => o.UnitPrice).ToList(); } catch (Exception) { offers = new(); }
+			List<Shopping.Offer> offers; int here = 0, via = 0;
+			try { offers = Shopping.AllOffers(Te, out here, out via).OrderBy(o => o.Keeper.GivenName).ThenBy(o => o.UnitPrice).ToList(); } catch (Exception) { offers = new(); }
+			_offersHdr.SetText(via > 0 ? L("ReachHeaderPylons", Shopkeepers(here), via) : L("ReachHeader", Shopkeepers(here)));
 			if (offers.Count == 0) { var none = new Label(L("NoShops"), 0.8f); _offerList.Add(none); return; }
-			foreach (var o in offers.Take(120))
+			int shown = 0;
+			foreach (var o in offers)
 			{
+				if (!_buyFilter.Matches(ItemName(o.Item.type), o.Item)) continue;
+				if (++shown > 120) break;
 				var oo = o;
-				var row = new LevyButton($"{ItemName(o.Item.type)}  -  {LevyUtil.Coins(o.UnitPrice)}  -  {o.Keeper.GivenName}", 0.75f, 600, 24, () => { _rule.Kind = BuyRule.KindItem; _rule.Type = oo.Item.type; RebuildItemCell(); }, L("OfferHint"));
+				string who = o.Pylon == null ? o.Keeper.GivenName : L("OfferVia", o.Keeper.GivenName, o.Pylon);
+				var row = new LevyButton($"{ItemName(o.Item.type)}  -  {LevyUtil.Coins(o.UnitPrice)}  -  {who}", 0.75f, 600, 24, () => { _rule.Kind = BuyRule.KindItem; _rule.Type = oo.Item.type; RebuildItemCell(); }, L("OfferHint"));
 				_offerList.Add(row);
 			}
+			if (shown == 0) _offerList.Add(new Label(L("NoMatch"), 0.8f));
 		}
+
+		private static string Shopkeepers(int n) => n == 1 ? L("Shopkeeper1") : L("ShopkeeperN", n);
 
 		// ====================================================================================== SELL
 		private void BuildSell()
@@ -301,6 +444,8 @@ namespace Levy.Common.UI
 			_sellBtn = new LevyButton(L("SellNow"), LevyConstants.UI.ButtonTextScale, 150, 28, SellNow, L("SellNowHint")); _sellBtn.Left.Set(x, 0f); _sellBtn.Top.Set(164, 0f); pg.Append(_sellBtn);
 			_sellInfo = new Label("", 0.72f); _sellInfo.Left.Set(x, 0f); _sellInfo.Top.Set(200, 0f); pg.Append(_sellInfo);
 			var tip = new Label(L("DragTip"), 0.66f); tip.Left.Set(x, 0f); tip.Top.Set(236, 0f); pg.Append(tip);
+			_sellFilter = new ItemFilterBar(SellGrid.Cols * SellGrid.Cell + 14 + 230, "Mods.Levy.Logistics.OfferSearch"); _sellFilter.Top.Set(SellGrid.VisRows * SellGrid.Cell + 8, 0f); pg.Append(_sellFilter);
+			_grid.Visible = it => _sellFilter.Matches(Lang.GetItemNameValue(it.type), it);
 		}
 
 		private Selling.Filter CurrentFilter() => LogisticsActions.FilterOf((byte)_catIdx, _tierIdx);
@@ -324,13 +469,8 @@ namespace Levy.Common.UI
 		{
 			var pg = _page[3];
 			_findLbl = new Label("", 0.8f); pg.Append(_findLbl);
-			_findBox = new UIPanel(); _findBox.SetPadding(0); _findBox.Top.Set(22, 0f); _findBox.Width.Set(300, 0f); _findBox.Height.Set(26, 0f); _findBox.BackgroundColor = new Color(20, 26, 52) * 0.9f;
-			_findSearch = new UISearchBar(Language.GetText("Mods.Levy.Logistics.FindSearch"), 0.8f); _findSearch.Left.Set(6, 0f); _findSearch.Width.Set(-12, 1f); _findSearch.Height.Set(0, 1f);
-			_findSearch.OnContentsChanged += s => { _findTerm = (s ?? "").Trim().ToLowerInvariant(); _findDirty = true; };
-			_findSearch.OnCanceledTakingInput += () => { if (_findSearch.IsWritingText) _findSearch.ToggleTakingText(); };
-			_findBox.OnLeftClick += (e, el) => { if (!_findSearch.IsWritingText) _findSearch.ToggleTakingText(); };
-			_findBox.Append(_findSearch); pg.Append(_findBox);
-			var clear = new LevyButton(L("FindClear"), LevyConstants.UI.ButtonTextScale, 100, 26, () => { FindTarget.Set(0); }, L("FindClearHint")); clear.Left.Set(310, 0f); clear.Top.Set(22, 0f); pg.Append(clear);
+			_findFilter = new ItemFilterBar(500, "Mods.Levy.Logistics.FindSearch"); _findFilter.Top.Set(22, 0f); _findFilter.Changed += () => _findDirty = true; pg.Append(_findFilter);
+			var clear = new LevyButton(L("FindClear"), LevyConstants.UI.ButtonTextScale, 110, 26, () => { FindTarget.Set(0); }, L("FindClearHint")); clear.Left.Set(510, 0f); clear.Top.Set(22, 0f); pg.Append(clear);
 			_findGrid.Top.Set(56, 0f); _findGrid.Width.Set(620, 0f); _findGrid.Height.Set(280, 0f); _findGrid.ListPadding = 2f;
 			_findBar.Left.Set(626, 0f); _findBar.Top.Set(56, 0f); _findBar.Height.Set(280, 0f); _findGrid.SetScrollbar(_findBar);
 			pg.Append(_findGrid); pg.Append(_findBar);
@@ -343,7 +483,7 @@ namespace Levy.Common.UI
 			if (_findAll.Count == 0 || _findDirty) _findAll = FindTarget.Candidates(Te);
 			foreach (int t in _findAll)
 			{
-				if (_findTerm.Length > 0 && !ItemName(t).ToLowerInvariant().Contains(_findTerm)) continue;
+				if (!_findFilter.Matches(ItemName(t), ContentSamples.ItemsByType[t])) continue;
 				int tt = t;
 				_findGrid.Add(new TypeCell(t, () => { if (_findPick != null) { var cb = _findPick; _findPick = null; FindTarget.Set(tt); cb(tt); } else FindTarget.Set(tt); }));
 			}
@@ -378,7 +518,13 @@ namespace Levy.Common.UI
 			_shimmerBtn.SetText(_shimmer ? L("ShimmerOn") : L("ShimmerOff")); _shimmerBtn.Lit = _shimmer;
 			_sellBtn.Enabled = _grid.Selected.Count > 0;
 
-			if (_cur == 0) Checklist.Show(s != null ? Clone(s) : LocalPreview(), s != null);
+			_modeOrdersBtn.Lit = !_craftMode; _modeCraftBtn.Lit = _craftMode;
+			if (_cur == 0 && !_craftMode) Checklist.Show(s != null ? Clone(s) : LocalPreview(), s != null);
+			if (_cur == 0 && _craftMode)
+			{
+				if (_recipeRescan || _recipeVersion != CraftBrowser.Version || (Main.GameUpdateCount - (uint)_recipeTick) > 30) RescanRecipes();
+				if (_recipeRebuild) RebuildRecipeList();
+			}
 			if (_cur == 1 && (Main.GameUpdateCount - (uint)_offerTick) > 120) { _offerTick = (int)Main.GameUpdateCount; RefreshOffers(); }
 			if (_cur == 2 && (_sellDirty || ++_sellTick > 60)) { _sellTick = 0; _sellDirty = false; UpdateSellInfo(); }
 			if (_cur == 3) { _findLbl.SetText(FindTarget.Target > 0 ? L("FindCurrent", ItemName(FindTarget.Target)) : L("FindNone")); if (_findDirty) RefreshFind(); }
@@ -405,7 +551,7 @@ namespace Levy.Common.UI
 			if (n == 0) { _sellInfo.SetText(L("SellNothing")); return; }
 			_grid.Prune();
 			var (buyer, total) = Selling.BestBuyer(Te, _grid.Selected.ToList());
-			_sellInfo.SetText(buyer == null ? L("SellNoBuyer", n) : L("SellInfo", n, LevyUtil.Coins(total), buyer.GivenName));
+			_sellInfo.SetText(buyer == null ? L("SellNoBuyer", n) : L("SellInfo", n, LevyUtil.Coins(total), Shopping.KeeperLabel(Te, buyer)));
 		}
 
 		public void PlaceChecklist(float panelLeft, float panelTop, float screenW)
@@ -415,7 +561,39 @@ namespace Levy.Common.UI
 			Checklist.Left.Set(x, 0f); Checklist.Top.Set(panelTop, 0f);
 		}
 
-		public bool Typing => false;
+		public bool Typing => (_craftFilter?.Typing ?? false) || (_buyFilter?.Typing ?? false) || (_sellFilter?.Typing ?? false) || (_findFilter?.Typing ?? false);
+	}
+
+	/// <summary>One recipe of the browser: result icon, name, and how many can be made now. Green when it can be crafted now, dim when a station or condition blocks it.</summary>
+	internal class RecipeRowEl : UIElement
+	{
+		private readonly RecipeEntry _e; private readonly Func<bool> _selected; private readonly Action _pick; private Item _item;
+		public RecipeRowEl(RecipeEntry e, Func<bool> selected, Action pick)
+		{
+			_e = e; _selected = selected; _pick = pick; Width.Set(430, 0f); Height.Set(26, 0f);
+			OnLeftClick += (ev, el) => { SoundEngine.PlaySound(SoundID.MenuTick); _pick(); };
+		}
+		protected override void DrawSelf(SpriteBatch sb)
+		{
+			var d = GetDimensions().ToRectangle();
+			bool sel = _selected();
+			var bg = sel ? new Color(210, 150, 40) * 0.7f : _e.CanCraft ? new Color(30, 70, 45) * 0.7f : new Color(40, 54, 100) * 0.7f;
+			if (IsMouseHovering) { bg = Color.Lerp(bg, Color.White, 0.15f); Main.LocalPlayer.mouseInterface = true; }
+			sb.Draw(TextureAssets.MagicPixel.Value, d, bg);
+			int type = _e.R.createItem.type;
+			if (type > 0 && type < TextureAssets.Item.Length)
+			{
+				Main.instance.LoadItem(type); var tex = TextureAssets.Item[type].Value;
+				float sc = Math.Min(1f, 20f / Math.Max(tex.Width, tex.Height));
+				sb.Draw(tex, new Vector2(d.X + 14, d.Y + 13), null, Color.White, 0f, tex.Size() * 0.5f, sc, SpriteEffects.None, 0f);
+			}
+			string name = _e.Name + (_e.R.createItem.stack > 1 ? " x" + _e.R.createItem.stack : "");
+			if (name.Length > 34) name = name.Substring(0, 33) + ".";
+			Utils.DrawBorderString(sb, name, new Vector2(d.X + 30, d.Y + 4), _e.CanCraft || _e.Blocker == "" ? Color.White : new Color(200, 200, 210), 0.78f);
+			string n = _e.Crafts.ToString(); var sz = FontAssets.MouseText.Value.MeasureString(n) * 0.78f;
+			Utils.DrawBorderString(sb, n, new Vector2(d.Right - 8 - sz.X, d.Y + 4), _e.Crafts > 0 ? new Color(150, 240, 160) : new Color(170, 170, 180), 0.78f);
+			if (IsMouseHovering) { if (_item == null) { _item = new Item(); _item.SetDefaults(type); } Main.HoverItem = _item.Clone(); Main.hoverItemName = _item.Name; }
+		}
 	}
 
 	/// <summary>The materials checklist that hangs beside the armory: one row per material the order still needs, with what the stock holds. Green when covered, red when short.</summary>
@@ -486,6 +664,8 @@ namespace Levy.Common.UI
 		public const int Cols = 16, Cell = 26, VisRows = 11;
 		private readonly Func<ArmoryTE> _te; private readonly Action _changed;
 		public readonly HashSet<int> Selected = new();
+		/// <summary>Cells whose item this returns false for are dimmed and ignored by drag-select (the search and type filter). Null shows everything.</summary>
+		public Func<Item, bool> Visible;
 		private int _scroll; private bool _drag; private int _ac, _ar;
 
 		public SellGrid(Func<ArmoryTE> te, Action changed)
@@ -515,7 +695,7 @@ namespace Levy.Common.UI
 		{
 			_drag = false; var a = _te(); if (a == null) return;
 			var (c, r) = CellAt(Main.MouseScreen);
-			var cells = Selling.SelectRect(a, Cols, _ac, _ar, c, r);
+			var cells = Selling.SelectRect(a, Cols, _ac, _ar, c, r); if (Visible != null) cells.RemoveAll(i => !Visible(a.Storage[i]));
 			if (cells.Count > 0) { if (cells.All(Selected.Contains)) foreach (int i in cells) Selected.Remove(i); else foreach (int i in cells) Selected.Add(i); }
 			_changed?.Invoke();
 		}
@@ -547,7 +727,7 @@ namespace Levy.Common.UI
 					if (it == null || it.IsAir) continue;
 					Main.instance.LoadItem(it.type); var tex = TextureAssets.Item[it.type].Value;
 					float sc = Math.Min(1f, (Cell - 6f) / Math.Max(tex.Width, tex.Height));
-					sb.Draw(tex, rect.Center.ToVector2(), null, Selling.Sellable(it) ? Color.White : Color.White * 0.4f, 0f, tex.Size() * 0.5f, sc, SpriteEffects.None, 0f);
+					sb.Draw(tex, rect.Center.ToVector2(), null, Selling.Sellable(it) && (Visible == null || Visible(it)) ? Color.White : Color.White * 0.25f, 0f, tex.Size() * 0.5f, sc, SpriteEffects.None, 0f);
 					if (rect.Contains(Main.MouseScreen.ToPoint())) hover = it;
 				}
 			if (hover != null) { Main.HoverItem = hover.Clone(); Main.hoverItemName = hover.Name; }

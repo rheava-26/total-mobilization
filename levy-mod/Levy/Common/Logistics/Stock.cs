@@ -93,10 +93,13 @@ namespace Levy.Common.Logistics
 		public readonly ArmoryTE Armory;
 		public readonly List<IStock> Sources = new();
 		public IStock Network;
+		/// <summary>The commander whose inventory is the first source and the first place a crafted item goes. Null for standing orders.</summary>
+		public readonly PlayerStock Commander;
 
-		public StockPool(ArmoryTE armory, bool includeChests = true, bool includeNetwork = true)
+		public StockPool(ArmoryTE armory, bool includeChests = true, bool includeNetwork = true, Player commander = null)
 		{
 			Armory = armory;
+			if (commander != null) { Commander = new PlayerStock(commander); Sources.Add(Commander); }
 			Sources.Add(new ArmoryStock(armory));
 			var sys = SettlementSystem.Instance;
 			if (sys != null) foreach (var a in sys.NetworkedArmories(armory)) if (!ReferenceEquals(a, armory) && a.Storage != null) Sources.Add(new ArmoryStock(a));
@@ -139,9 +142,10 @@ namespace Levy.Common.Logistics
 			return taken;
 		}
 
-		/// <summary>Puts an item into the armory's storage (the output side). What does not fit goes into the linked Magic Storage network, if there is one. Returns what fit nowhere.</summary>
+		/// <summary>Puts an item into the commander's inventory when there is one, else the armory's storage (the output side). What does not fit goes into the linked Magic Storage network, if there is one. Returns what fit nowhere.</summary>
 		public Item PutOutput(Item item)
 		{
+			if (Commander != null) { item = Commander.Put(item); if (item == null || item.IsAir) return null; }
 			var rest = Armory.Deposit(item);
 			if (rest != null && !rest.IsAir && Network != null) rest = Network.Put(rest);
 			return rest;

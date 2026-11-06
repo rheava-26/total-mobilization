@@ -9,13 +9,13 @@ namespace Levy.Content.Items.Observe
 {
 	/// <summary>
 	/// A body camera. Put it in the Armory or hand it to a levy's accessory slot: a levy that carries one is watchable. Use it to watch the next GoPro levy through their eyes; right-click or Esc to stop.
-	/// It is an accessory so the Armory issues it like any other; it adds no stats. Art: placeholder at Content/Items/Observe/GoProItem.png (and GoProIndicator.png over a carrier).
+	/// It is an accessory so the Armory issues it like any other; it adds no stats. Art: Content/Items/Observe/GoProItem.png (and GoProIndicator.png over a carrier).
 	/// </summary>
 	public class GoProItem : ModItem
 	{
 		public override void SetDefaults()
 		{
-			Item.width = 26; Item.height = 26; Item.useTime = 20; Item.useAnimation = 20; Item.useStyle = ItemUseStyleID.HoldUp;
+			Item.width = 32; Item.height = 24; Item.useTime = 20; Item.useAnimation = 20; Item.useStyle = ItemUseStyleID.HoldUp;
 			Item.UseSound = SoundID.MenuTick; Item.value = Item.buyPrice(gold: 2); Item.rare = ItemRarityID.Green; Item.maxStack = 1; Item.noMelee = true;
 			Item.accessory = true;
 		}
@@ -50,7 +50,7 @@ namespace Levy.Content.Items.Observe
 		public override void SetDefaults()
 		{
 			Item.DefaultToPlaceableTile(ModContent.TileType<StaticCameraTile>());
-			Item.width = 32; Item.height = 32; Item.maxStack = Item.CommonMaxStack; Item.value = Item.buyPrice(gold: 5); Item.rare = ItemRarityID.Green;
+			Item.width = 36; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.value = Item.buyPrice(gold: 5); Item.rare = ItemRarityID.Green;
 		}
 
 		public override void AddRecipes()

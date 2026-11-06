@@ -264,6 +264,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED (2026-11-06 04:20): art4, art4-mech, command-observe (70cbdfe).** Integration build compiles 0 errors and boots clean with Thorium + Levy + Mechanization.
+- command-observe: GoPro, static cameras, arena zoom, radio map orders, mind control. Packets ObserveRequest/MindControlSet/MindInput/MapOrder and ObserveList/ObservePos appended.
+- CommandRadio.png kept at art4's version until `art5` lands the walkie-talkie redraw.
+- Drone check (I looked; this corrects my earlier note): there is NO mast. The side view matches Eve's concept (slender fuselage, thin boom, ring fan). What's missing is the two side rotors, which should read edge-on as a flat disc at body height (`-=--`). `art5` adds them.
+**RUNNING (2026-11-06 04:30):**
+- `art5`: Command Radio = art2 walkie-talkie B redrawn on the 2×2 grid with curves and real shading, at command-radio size; art4 GoPro/MovieCamera sprites wired over the observe placeholders (tile frame format checked); drone side rotors.
+- `potions`: Spectator Potion, Seeker Potion (targeted spelunker via FindTarget, with a fallback chooser), Guide to Autonomy (Slime Rain 1/50; with Spectator: Autonomous buff + map orders without the radio).
+- Still running: officers2, field-ai, ooa-tavern.
+- After these land, ship ONE build: Levy 2.0.0 + Mechanization bump.
+
 **MERGED: armory2-reforge 01580f2 (targeted reforge + vanity)**
 - **Reforge modes:** In hand / Recent (N days) / Picked (click in grid) / By group (class + type).
 - **Goal:** a floor or a specific valid prefix.

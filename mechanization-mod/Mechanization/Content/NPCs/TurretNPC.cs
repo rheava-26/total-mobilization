@@ -515,27 +515,32 @@ namespace Mechanization.Content.NPCs
 				// The fixed base (TurretNPC.png: plinth and pedestal, 34x16, standing on the ground). It never turns; only the gun does.
 				float bottom = c.Y + NPC.height * 0.5f;
 				Texture2D baseTex = ModContent.Request<Texture2D>(Texture).Value;
-				Texture2D barrelTex = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/TurretBarrel").Value;
+				Texture2D cradleTex = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/TurretCradle").Value;
 				Texture2D hubTex = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/TurretHub").Value;
 				float pedTop = bottom - T.PlinthHeightPx - T.PedestalHeightPx;
 				spriteBatch.Draw(baseTex, new Vector2((float)Math.Round(c.X - baseTex.Width * 0.5f), (float)Math.Round(bottom - baseTex.Height)), null, light);
 
-				// The gun: a barrel that turns on a pivot atop the pedestal (upright when aiming left), kicks back on a shot, with the mounted weapon's own sprite on it, and a dome hub over the pivot.
+				// The mount: a hub cap on the pedestal and a swivel cradle (17 pre-rotated frames, aim -90..+90 degrees, pivot at the frame centre; aiming left draws the mirrored frame, so the 2x2 art is never rotated).
+				// The mounted weapon sits in the cradle with its centre at the pivot and kicks back on a shot.
 				Vector2 pivot = new Vector2((float)Math.Round(c.X), (float)Math.Round(pedTop - T.PivotUpPx));
 				Vector2 dir = new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim));
 				Vector2 basePos = pivot - dir * _recoil;
-				// The barrel sheet is 17 pre-rotated frames (aim -90..+90 degrees, pivot at the frame centre); aiming left draws the mirrored frame, so the art's 2x2 blocks are never rotated.
-				int frames = 17, fh = barrelTex.Height / frames;
+				int frames = 17, fh = cradleTex.Height / frames;
 				bool leftward = dir.X < 0f;
 				float ang = leftward ? (float)Math.Atan2(dir.Y, -dir.X) : _aim;           // -90..+90 either way
 				int frame = Math.Clamp((int)Math.Round((MathHelper.WrapAngle(ang) + MathHelper.PiOver2) / (MathHelper.Pi / (frames - 1))), 0, frames - 1);
-				Vector2 bp = new Vector2((float)Math.Round(basePos.X), (float)Math.Round(basePos.Y));
-				spriteBatch.Draw(barrelTex, bp, new Rectangle(0, frame * fh, barrelTex.Width, fh), light, 0f, new Vector2(barrelTex.Width * 0.5f, fh * 0.5f), 1f, leftward ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
-				DrawMountedWeapon(spriteBatch, basePos, dir, light);
-				spriteBatch.Draw(hubTex, pivot, null, light, 0f, new Vector2(hubTex.Width * 0.5f, hubTex.Height * 0.5f), 1f, SpriteEffects.None, 0f);
-				if (_recoil > T.RecoilPx * 0.6f) // muzzle flash, only for the first frames after a shot
+				spriteBatch.Draw(hubTex, new Vector2(pivot.X, (float)Math.Round(pedTop - 2f)), null, light, 0f, new Vector2(hubTex.Width * 0.5f, hubTex.Height * 0.5f), 1f, SpriteEffects.None, 0f);
+				spriteBatch.Draw(cradleTex, pivot, new Rectangle(0, frame * fh, cradleTex.Width, fh), light, 0f, new Vector2(cradleTex.Width * 0.5f, fh * 0.5f), 1f, leftward ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
+				float reach = DrawMountedWeapon(spriteBatch, basePos, dir, light);
+				if (reach <= 0f) // no weapon mounted: the empty mount plus a small plain muzzle for the fallback round
 				{
-					Vector2 tip = basePos + dir * (T.WeaponDrawOffsetPx + T.WeaponDrawMaxPx * 0.5f);
+					Rect2(spriteBatch, px, basePos + dir * 6f, 12f, 4f, _aim, Lit(new Color(58, 58, 62), light));
+					Rect2(spriteBatch, px, basePos + dir * 5f - new Vector2(-dir.Y, dir.X) * 1f, 10f, 1f, _aim, Lit(new Color(148, 148, 156), light));
+					reach = 12f;
+				}
+				if (_recoil > T.RecoilPx * 0.6f) // muzzle flash at the weapon's muzzle end, only for the first frames after a shot
+				{
+					Vector2 tip = basePos + dir * reach;
 					spriteBatch.Draw(px, tip, null, new Color(255, 220, 140, 0), _aim, new Vector2(0.5f, 0.5f), new Vector2(9f, 5f), SpriteEffects.None, 0f);
 				}
 				return false;
@@ -553,18 +558,21 @@ namespace Mechanization.Content.NPCs
 		/// <summary>A flat colour dimmed by the light at the turret's spot.</summary>
 		private static Color Lit(Color baseColor, Color light) => new Color(baseColor.R * light.R / 255, baseColor.G * light.G / 255, baseColor.B * light.B / 255, (int)baseColor.A);
 
+		private static void Rect2(SpriteBatch sb, Texture2D px, Vector2 center, float len, float thick, float rot, Color col) =>
+			sb.Draw(px, center, null, col, rot, new Vector2(0.5f, 0.5f), new Vector2(len, thick), SpriteEffects.None, 0f);
+
 		/// <summary>
-		/// The mounted weapon's item sprite, pushed out along the aim and turned to it (kept upright when aiming left). A staff's sprite points up and to the right, so it is turned a further
-		/// 45 degrees (and mirrored, not flipped, when aiming left) to point down the barrel. Nothing when no weapon is mounted — the bare barrel shows alone.
+		/// The mounted weapon's item sprite, sitting in the cradle with its centre on the pivot and turned to the aim (kept upright when aiming left). A staff's sprite points up and to the right, so it is turned a further
+		/// 45 degrees (and mirrored, not flipped, when aiming left) to point along the aim. Returns the distance from the pivot to the muzzle end (0 when no weapon is mounted).
 		/// </summary>
-		private void DrawMountedWeapon(SpriteBatch spriteBatch, Vector2 basePos, Vector2 dir, Color light)
+		private float DrawMountedWeapon(SpriteBatch spriteBatch, Vector2 basePos, Vector2 dir, Color light)
 		{
-			if (_weaponType <= 0 || _weaponType >= ItemLoader.ItemCount) return;
+			if (_weaponType <= 0 || _weaponType >= ItemLoader.ItemCount) return 0f;
 			Main.instance.LoadItem(_weaponType);
 			Texture2D wt = TextureAssets.Item[_weaponType]?.Value;
-			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return;
-			float scale = Math.Min(1f, T.WeaponDrawMaxPx / Math.Max(wt.Width, wt.Height));
-			Vector2 at = basePos + dir * T.WeaponDrawOffsetPx;
+			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return 0f;
+			float longest = Math.Max(wt.Width, wt.Height);
+			float scale = Math.Min(1f, T.WeaponDrawMaxPx / longest);
 			bool left = dir.X < 0f;
 			float rot = _aim;
 			SpriteEffects fx = left ? SpriteEffects.FlipVertically : SpriteEffects.None;
@@ -573,7 +581,8 @@ namespace Mechanization.Content.NPCs
 				rot = _aim + (left ? 3f : 1f) * MathHelper.PiOver4;
 				fx = left ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 			}
-			spriteBatch.Draw(wt, at, null, light, rot, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
+			spriteBatch.Draw(wt, new Vector2((float)Math.Round(basePos.X), (float)Math.Round(basePos.Y)), null, light, rot, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
+			return longest * scale * 0.5f;
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

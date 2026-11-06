@@ -43,7 +43,9 @@ namespace Levy.Common.Net
 	///  SoldierDyeSet: int soldierId, byte dyeSlot(0..SoldierGear.DyeSlots-1), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the dye out of its own hands (air = took the dye out); server validates, applies, re-syncs. Dyes are never locked: the Armory never touches them
 	///  TalkCall: int soldierId                                    (Roster) — commander = sender; the soldier walks to the sender so a chat can open (a levy in a fight is out of vanilla's chat reach)
 	///  CompanionRequest: byte kind, then a payload the companion defines                  (Compat) — sender = the commander; the server re-validates every target
+	///  LogisticsOrderEdit / LogisticsSell / LogisticsBuy: layouts in the doc comment of LogisticsActions   (Logistics)
 	/// Server -> client:
+	///  LogisticsSnapshot: OrderBook.WriteBook   (Logistics) — the whole order book, with each order's status and materials checklist
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
 	///  SettlementSnapshot: (unused: tile entities sync themselves via MessageID.TileEntitySharing)
 	///  ArmorySnapshot: (unused: same)
@@ -64,6 +66,10 @@ namespace Levy.Common.Net
 		TalkCall, // client -> server: call a levy over to talk (see above); appended so no existing value moves
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
+		LogisticsOrderEdit, // client -> server: save / delete / pause / resume a craft order (see LogisticsActions)
+		LogisticsSell, // client -> server: mass-sell armory storage slots or a filter
+		LogisticsBuy, // client -> server: run one standing buy rule now
+		LogisticsSnapshot, // server -> client: the whole order book (OrderBook.WriteBook)
 	}
 
 	public static class LevyPackets

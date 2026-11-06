@@ -1,0 +1,119 @@
+# The armory's Logistics tab: craft orders, buying, selling, finding. Keys are relative to Mods.Levy.Logistics.
+
+Tab: Logistics
+TabHint: Craft orders, buy from shopkeepers, sell to the happiest one.
+PageOrders: Orders
+PageOrdersHint: Craft sets and weapons into the armory.
+PageBuy: Buy
+PageBuyHint: Buy guns, ammo and materials from shopkeepers in reach.
+PageSell: Sell
+PageSellHint: Sell armory items to the best-paying shopkeeper.
+PageFind: Find
+PageFindHint: Choose an item to find. The Seeker and Spectator potions use it.
+Rule: Orders craft at stations within 30 tiles, from the armory, nearby chests and the linked storage network.
+OrdersHeader: Orders
+New: New
+NewHint: Start a new order.
+Pause: Pause
+Resume: Resume
+PauseHint: Pause or resume the selected order.
+Delete: Delete
+DeleteHint: Delete the selected order. What it made stays in the armory.
+Total: Total
+Lines: Sets and weapons
+AddItem: Add the item on your cursor
+AddSet: + Set
+AddSetHint: Add the whole armor set of the piece on your cursor.
+Bucket: Bucket
+Random: Random
+ModeHint: Bucket fills every line to its share. Random rolls every item, so the split is approximate.
+BuyShortOn: Buy what is short
+BuyShortOff: Do not buy
+BuyShortHint: Buy missing materials from shopkeepers in reach, up to the budget.
+Budget: Budget
+Gold: gold
+Save: Save order
+SaveHint: Start the order, or update the selected one. What is already made stays.
+NeedLines: Add at least one weapon or set first.
+SetNeedsItem: Hold an armor piece on your cursor first.
+SetNeedsArmor: That item is not part of an armor set.
+OrderName: "{0} order"
+OrderRefused: The order could not be saved.
+RulesCount: "{0} standing buys attached."
+SetOf: "{0} set"
+StatusNew: Not started.
+StatusWorking: Crafting.
+StatusWaiting: Waiting for materials.
+StatusDone: Done.
+StatusPaused: Paused.
+StatusNoRecipe: An item in it has no recipe.
+StatusNoArmory: The armory is gone.
+StatusError: Something went wrong.
+StatusStation: Needs a {0} within 30 tiles.
+StatusCondition: Needs: {0}
+ChecklistTitle: Materials
+ChecklistDraft: Estimate from this armory's storage.
+ChecklistEmpty: Nothing needed.
+AllCovered: Every material is covered.
+SomeShort: "{0} materials are short."
+BuyHeader: Standing buy
+KindHint: Choose what to buy.
+KindItem: One item
+KindGun: Any gun
+KindAmmo: Any ammo
+AnyGunHint: Buys the best gun in stock.
+AnyAmmoHint: Buys the best ammo in stock.
+Count: Count
+BuyNow: Buy now
+BuyNowHint: Buy once, now, within the budget.
+AddToOrder: Add to selected order
+AddToOrderHint: The order buys this each time it runs, until the count or budget is met.
+RuleAdded: Standing buys on this order: {0}. Save the order to keep them.
+Offers: In reach
+OfferHint: Click to buy this item.
+NoShops: No shopkeepers are in reach.
+Funds: Funds {0}
+Bought: Bought {0} for {1}.
+BoughtNothing: Nothing was bought.
+SellHeader: Mass sell
+CatAny: Any kind
+CatHint: Pick a kind of item.
+CatMelee: Melee
+CatRanged: Ranged
+CatMagic: Magic
+CatSummon: Summon
+CatArmor: Armor
+CatAccessory: Accessories
+CatAmmo: Ammo
+CatPotion: Potions
+CatOther: Other
+TierAny: Any tier
+TierHint: Pick a progression tier.
+TierPreHardmode: Pre-Hardmode
+TierEarlyHardmode: Early Hardmode
+TierLateHardmode: Late Hardmode
+TierEndgame: Endgame
+SelectMatching: Select matching
+SelectMatchingHint: Select every item of that kind and tier.
+PickAFilter: Pick a kind or a tier first.
+ClearSel: Clear selection
+ShimmerOn: Shimmer back: on
+ShimmerOff: Shimmer back: off
+ShimmerHint: Items that shimmer apart return their materials instead of selling.
+SellNow: Sell
+SellNowHint: Sell the selection to the best-paying shopkeeper.
+DragTip: Drag to select a block. Drag over a selected block to unselect it. Wheel scrolls.
+SellNothing: Nothing selected.
+SellInfo: "{0} selected. {2} pays {1}."
+SellNoBuyer: "{0} selected. No shopkeeper is in reach."
+Sold: Sold {0} items for {1} to {2}.
+ShimmeredN: Shimmered {0} items back to materials.
+SoldNothing: Nothing was sold.
+FindSearch: Search items
+FindClear: Clear
+FindClearHint: Stop looking for an item.
+FindCurrent: Finding: {0}
+FindNone: Click an item to find it.
+HeartNoNetwork: The Armory Heart reaches no storage network. Connect it to a Storage Heart with connectors.
+HeartNetworked: Joined to the storage network. {0}
+HeartNoArmory: No Armory is within reach of this heart.

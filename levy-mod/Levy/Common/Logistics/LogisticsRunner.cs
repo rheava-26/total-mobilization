@@ -28,7 +28,7 @@ namespace Levy.Common.Logistics
 		}
 
 		public override void PostSetupContent() => Crafting.ResetCache();
-		public override void Unload() => Crafting.ResetCache();
+		public override void Unload() { Crafting.ResetCache(); FindTarget.Chooser = null; FindTarget.Target = 0; }
 
 		public override void PostUpdateWorld()
 		{
@@ -46,8 +46,14 @@ namespace Levy.Common.Logistics
 		/// <summary>One pass over one order. Returns true when anything the client shows changed.</summary>
 		public static bool Run(LogisticsOrder o)
 		{
+			if (!TileEntity.ByID.TryGetValue(o.ArmoryId, out var te) || te is not ArmoryTE a) { string was = o.Status; o.Status = "NoArmory"; return was != o.Status; }
+			return RunOn(o, a);
+		}
+
+		/// <summary>The same pass against an armory handed in (the self-check runs orders on an armory that is not placed in a world).</summary>
+		public static bool RunOn(LogisticsOrder o, ArmoryTE a)
+		{
 			string before = o.Status; int madeBefore = o.Made; int rulesBefore = o.Rules.Sum(r => r.Bought);
-			if (!TileEntity.ByID.TryGetValue(o.ArmoryId, out var te) || te is not ArmoryTE a) { o.Status = "NoArmory"; return before != o.Status; }
 			var pool = new StockPool(a);
 			var counts = new CountCache(pool.Count);
 

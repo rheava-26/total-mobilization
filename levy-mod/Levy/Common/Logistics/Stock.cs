@@ -139,8 +139,13 @@ namespace Levy.Common.Logistics
 			return taken;
 		}
 
-		/// <summary>Puts an item into the armory's storage (the output side). Returns what did not fit.</summary>
-		public Item PutOutput(Item item) => Armory.Deposit(item);
+		/// <summary>Puts an item into the armory's storage (the output side). What does not fit goes into the linked Magic Storage network, if there is one. Returns what fit nowhere.</summary>
+		public Item PutOutput(Item item)
+		{
+			var rest = Armory.Deposit(item);
+			if (rest != null && !rest.IsAir && Network != null) rest = Network.Put(rest);
+			return rest;
+		}
 	}
 
 	/// <summary>The few numbers of the logistics screen. Kept local so this area adds no merge surface to <c>LevyConstants</c>.</summary>

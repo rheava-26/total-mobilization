@@ -12,7 +12,9 @@ namespace Levy.Common.Logistics
 	public readonly struct Ingredient
 	{
 		public readonly int[] Types; public readonly int Count;
-		public Ingredient(int[] types, int count) { Types = types; Count = count; }
+		/// <summary>The item the recipe itself names (for a group, the one it lists; the checklist and a shop purchase use it).</summary>
+		public readonly int Primary;
+		public Ingredient(int[] types, int count, int primary) { Types = types; Count = count; Primary = primary; }
 	}
 
 	/// <summary>A crafting step the planner found: make <see cref="Times"/> crafts of <see cref="R"/>.</summary>
@@ -71,7 +73,7 @@ namespace Levy.Common.Logistics
 				int[] types = { it.type };
 				foreach (int g in r.acceptedGroups)
 					if (RecipeGroup.recipeGroups.TryGetValue(g, out var grp) && grp.ContainsItem(it.type)) { types = grp.ValidItems.ToArray(); break; }
-				res.Add(new Ingredient(types, it.stack));
+				res.Add(new Ingredient(types, it.stack, it.type));
 			}
 			return res.ToArray();
 		}
@@ -82,8 +84,12 @@ namespace Levy.Common.Logistics
 		private static int _stationArmory = -1; private static uint _stationStamp;
 
 		/// <summary>Tile types of the crafting stations standing within reach of the armory (cached for a second).</summary>
+		/// <summary>Self-check hook: when set, these are the stations "near" every armory (an armory that is not placed in a world has nothing to scan).</summary>
+		internal static HashSet<int> StationOverride;
+
 		public static HashSet<int> StationsNear(ArmoryTE a)
 		{
+			if (StationOverride != null) return StationOverride;
 			uint now = Main.GameUpdateCount;
 			if (_stationArmory == a.ID && now - _stationStamp < 60) return _nearby;
 			_stationArmory = a.ID; _stationStamp = now; _nearby.Clear();
@@ -201,24 +207,23 @@ namespace Levy.Common.Logistics
 					if (need <= 0) break;
 				}
 				if (need <= 0) continue;
-				int primary = ing.Types.OrderByDescending(x => RecipesFor(x).Count > 0 ? 1 : 0).First();
-				// a shortfall: craft it from stock if a recipe exists and the depth allows, else it is missing
-				if (depth + 1 < LogisticsConstants.MaxDepth && RecipesFor(primary).Count > 0 && !IsCyclic(primary, r))
+				int primary = ing.Primary;
+				// a shortfall: craft it from what is in stock when a recipe exists, the depth allows and the whole shortfall can be made; otherwise the item itself is what is missing
+				bool crafted = false;
+				if (depth + 1 < LogisticsConstants.MaxDepth && !IsCyclic(primary, r))
 				{
-					var sub = new Plan(); var cc = c.Fork();
-					bool ok = false;
 					foreach (var cand in RecipesFor(primary))
 					{
-						sub = new Plan(); cc = c.Fork();
+						var sub = new Plan(); var cc = c.Fork();
 						MakeVia(cand, (int)Math.Min(int.MaxValue, need), a, cc, sub, depth + 1);
-						if (sub.Feasible) { ok = true; break; }
+						if (!sub.Feasible) continue;
+						Merge(p, sub);
+						foreach (var s in sub.Steps) { SpendIngredients(s.R, s.Times, c); c.Add(s.R.createItem.type, (long)s.R.createItem.stack * s.Times); }
+						c.Add(primary, -need);
+						crafted = true; break;
 					}
-					if (!ok) { sub = new Plan(); cc = c.Fork(); MakeVia(RecipesFor(primary)[0], (int)Math.Min(int.MaxValue, need), a, cc, sub, depth + 1); }
-					Merge(p, sub);
-					foreach (var s in sub.Steps) { SpendIngredients(s.R, s.Times, c); c.Add(s.R.createItem.type, (long)s.R.createItem.stack * s.Times); }
-					c.Add(primary, -need);
 				}
-				else { p.AddNeed(primary, need); p.AddMissing(primary, need); }
+				if (!crafted) { p.AddNeed(primary, need); p.AddMissing(primary, need); }
 			}
 			p.Steps.Add(new CraftStep(r, times));
 		}

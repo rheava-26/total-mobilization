@@ -256,7 +256,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
-**BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**`logistics` (branch `logistics`):** Eve approved cloning Magic Storage (MIT). Cloned (branch 1.4.4, v0.7.1); BUILDING it (and its SerousCommonLib dependency) was denied again by the safety classifier, so the Magic-Storage-touching code (`Common/Compat/MagicStorage/MsDriver.cs`, `ArmoryHeart.cs`) is written, stub-type-checked, and guarded by `#if MAGICSTORAGE` until someone runs `levy-mod/tools/enable_magicstorage.sh` with MagicStorage.tmod + SerousCommonLib.tmod in Mods. The rest (orders, buying, selling, UI, packets, self-checks) is built and boots clean without it.
 **ART v1 sent to Eve (art2 81b8b38):** all items in 3 variants; potion comparisons.
 - My own critique: the potions don't match vanilla's TALL two-tier neck and stopper (ours is squat), and the bodies are too wide.
 - The other items read fine but are concept-level; tripod legs and antennas have a doubled outline.
@@ -267,13 +267,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
 - [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
 - [ ] Vanity: its own screen, a row per set, "always wear X".
-- [ ] Armory Heart (Magic Storage components + armory + gems) joins the MS network.
-- [ ] Craft-into-armory ORDERS: sets plus weapons split by % ratio, bucket vs random, auto-resume when materials arrive (100 of 120 bars → partial, rest later), total-materials checklist on the side of the screen.
-- [ ] Auto-buy from shopkeepers (X guns, X ammo), chained into auto-craft (buy ammo + chlorophyte → craft chlorophyte bullets into the armory).
-- [ ] Mass sell to the happiest NPC near the pylon network: drag-select, select by type, select by progression tier (e.g. all pre-HM swords).
-- [ ] Shimmer-back to ore via a Shimmer heart.
+- [~] Armory Heart (Magic Storage components + armory + gems) joins the MS network. Tile, tile entity (a real MS `TEStorageComponent`), item, recoloured MS-heart art, recipe and driver are written; compiled only with MAGICSTORAGE; NOT yet run against a built Magic Storage.
+- [x] (built, UI unseen) Craft-into-armory ORDERS (Armory > Logistics tab > Orders): sets plus weapons split by % ratio, bucket vs random, auto-resume when materials arrive (100 of 120 bars → partial, rest later), total-materials checklist on the side of the screen.
+- [x] (built, UI unseen) Auto-buy from shopkeepers (Logistics > Buy; standing rules attach to orders; order 'buy what is short'), chained into auto-craft (buy ammo + chlorophyte → craft chlorophyte bullets into the armory).
+- [x] (built, UI unseen) Mass sell (Logistics > Sell) to the best-paying shopkeeper in reach: drag-select, select by type, select by progression tier (e.g. all pre-HM swords).
+- [~] Shimmer-back: the Sell page has a 'Shimmer back' toggle that takes decraftable items apart into ingredients instead of selling. A separate Shimmer Heart component is NOT built.
 - [ ] Bulk factory: put in a bulk amount (e.g. 10 Unicorn Horns), get +20–30%. Also bulk potion brewing (cauldron/alchemy table) for big groups.
-- [ ] Seeker Potion + Spectator Potion tie into Magic Storage: "go find something you specifically want". Seeker highlights only the item you pick (e.g. the nearest chlorophyte), so the target can be chosen from storage.
+- [~] Seeker Potion + Spectator Potion tie into Magic Storage (API `FindTarget` + Logistics > Find page built; potions themselves come later): "go find something you specifically want". Seeker highlights only the item you pick (e.g. the nearest chlorophyte), so the target can be chosen from storage.
 
 **SETTINGS:**
 - [ ] New-world setup popup with presets.

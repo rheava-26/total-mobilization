@@ -50,7 +50,8 @@ namespace Levy.Common.UI
 		private BarracksTE _payer;
 
 		// ---- rules tab and item panel
-		private LevyButton _tabItems, _tabRules;
+		private LevyButton _tabItems, _tabRules, _tabLog;
+		private LogisticsView _logView;
 		private RulesView _rulesView;
 		private ItemInfoPanel _info;
 		/// <summary>The elements that make up the Items tab; they leave the panel while the Rules tab shows.</summary>
@@ -153,6 +154,11 @@ namespace Levy.Common.UI
 			_tabRules = new LevyButton(LevyUtil.T("Rules.TabRules"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(1), LevyUtil.T("Rules.TabRulesHint"));
 			_tabRules.Left.Set(w - 10 - 70, 0f); _tabRules.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabRules);
+			_tabLog = new LevyButton(LevyUtil.T("Logistics.Tab"), LevyConstants.UI.ButtonTextScale, 80, LevyConstants.UI.ArmoryBarHeight, () => SetTab(2), LevyUtil.T("Logistics.TabHint"));
+			_tabLog.Left.Set(w - 10 - 70 - 76 - 86, 0f); _tabLog.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_tabLog);
+			_logView = new LogisticsView(this);
+			_logView.Left.Set(GridLeft, 0f); _logView.Top.Set(36f, 0f);
 			_rulesView = new RulesView(this);
 			_rulesView.Left.Set(GridLeft, 0f); _rulesView.Top.Set(36f, 0f);
 			_info = new ItemInfoPanel(this);
@@ -168,19 +174,13 @@ namespace Levy.Common.UI
 		private void SetTab(int tab)
 		{
 			if (_tab == tab || _panel == null) return;
-			_tab = tab;
-			if (tab == 1)
-			{
-				foreach (var el in _itemsTabEls) if (_panel.HasChild(el)) _panel.RemoveChild(el);
-				_panel.Append(_rulesView);
-				_rulesView.Build();
-				_rulesHash = HashOf(Te?.Rules);
-			}
-			else
-			{
-				_panel.RemoveChild(_rulesView);
-				foreach (var el in _itemsTabEls) if (!_panel.HasChild(el)) _panel.Append(el);
-			}
+			int was = _tab; _tab = tab;
+			if (was == 0) foreach (var el in _itemsTabEls) if (_panel.HasChild(el)) _panel.RemoveChild(el);
+			if (was == 1) _panel.RemoveChild(_rulesView);
+			if (was == 2) { _panel.RemoveChild(_logView); if (HasChild(_logView.Checklist)) RemoveChild(_logView.Checklist); }
+			if (tab == 0) foreach (var el in _itemsTabEls) if (!_panel.HasChild(el)) _panel.Append(el);
+			if (tab == 1) { _panel.Append(_rulesView); _rulesView.Build(); _rulesHash = HashOf(Te?.Rules); }
+			if (tab == 2) { _panel.Append(_logView); _logView.Bind(); }
 			_panel.Recalculate();
 			RefreshTabs();
 		}
@@ -190,6 +190,7 @@ namespace Levy.Common.UI
 			if (_tabItems == null) return;
 			_tabItems.Lit = _tab == 0;
 			_tabRules.Lit = _tab == 1;
+			_tabLog.Lit = _tab == 2;
 		}
 
 		/// <summary>The rule list or an item override was edited in place: the compiled rules are dropped at once (single player and the server's own copy read them next pick), and the packet is queued.</summary>
@@ -808,6 +809,12 @@ namespace Levy.Common.UI
 				}
 			}
 			PlaceInfo();
+			if (_tab == 2 && _logView != null)
+			{
+				_logView.Tick();
+				if (_logView.ChecklistVisible) { if (!HasChild(_logView.Checklist)) Append(_logView.Checklist); _logView.PlaceChecklist(_panel.Left.Pixels, _panel.Top.Pixels, Main.screenWidth / Main.UIScale); _logView.Checklist.Recalculate(); }
+				else if (HasChild(_logView.Checklist)) RemoveChild(_logView.Checklist);
+			}
 			UpdateFilterView();
 			UpdateStatusLine();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }

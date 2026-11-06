@@ -549,7 +549,20 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - The Barracks tent is "a tad off": a flat salmon fill with almost no canvas shading, lighter and more saturated than the vanilla wood next to it, and a solid-black door.
 - Offered Eve a small tent-only tweak (darker canvas, fold shading, a door flap). NOT started; waiting for her yes.
 
-## 🐛 FIXED (unshipped): combat chat bars dropped their last row (Eve's screenshot: "Militia, assemble! Slowly! Some of")
+## 📦 SHIPPED Levy 2.0.1 (Mechanization stays 0.8.0), at scratchpad/ship-2.0.1
+- **logi-search ae94705:**
+  - Shared ItemFilterBar on Buy/Sell/Find.
+  - Pylon reach. Default ON; working pylons at both ends via DoesPositionHaveEnoughNPCs(2). Toggle off = the old rule.
+  - Orders → "Craft items" browser: Can craft / Has materials / All; Craft now or Make order. Sources: inventory → armory → pylon armories → chests → MS.
+  - Tab order Items/Rules/Vanity/Logistics; hint unclipped; potion sublabels removed (hover hint stays).
+  - New packet LogisticsCraft.
+- **Chat bar last-row fix.**
+- **Boots:**
+  - Thorium+MS+Levy+Mech (old tML): 0 exceptions; logistics 100 OK, MS 21 OK.
+  - Calamity+Levy+Mech (tML 2026.10): logistics 100 OK; ProgCheck still 42/6 (calrecipes investigating).
+- **UI never seen:** ask Eve for screenshots of Buy (filter + pylon header), Orders → Craft items, Sell.
+
+## 🐛 FIXED (shipped in 2.0.1): combat chat bars dropped their last row (Eve's screenshot: "Militia, assemble! Slowly! Some of")
 - Cause, from the code: Utils.WordwrapString's `out` value is the LAST row index (OfficerPanel already used `i <= count`). ChatBars used `k < count`.
 - Fix: `k <= count` in ChatBars.cs. Compiles; boots clean with Thorium+MS+Levy+Mech. Rides the next build.
 

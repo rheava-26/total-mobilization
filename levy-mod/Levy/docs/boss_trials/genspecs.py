@@ -19,7 +19,7 @@ A = [roll("classic", o, 1, b, f"{c}-{c}") for c in range(1, 13) for b in ("eye",
 B = [roll("expert", o, 1, b, f"{c}-{c}") for c in range(1, 9) for b in ("eye", "kslime", "brain") for o in ("free", "sd")]
 # C: paired toggles on the first 12 configs (classic, free rein)
 C = []
-for c in range(1, 7):
+for c in range(1, 5):
     for b in ("eye", "brain"):
         C.append(roll("classic", "free", 0, b, f"{c}-{c}"))                      # no autonomy
         for tog in ("camp=0", "potions=0", "arena=flat", "arena=nat", "arena=small", "honey=1", "camp=0;potions=0"):
@@ -86,6 +86,14 @@ for seed in range(1, 4):
         a = l.split("\t"); a[8] = f"{seed}-{seed}" if a[8] == "1-5" else a[8]
         if a[8] == f"{seed}-{seed}": E2.append("\t".join(a))
 E = E2
-for n, L in (("A", A), ("B", B), ("C", C), ("D", D), ("E", E), ("F", F)):
+# G: minimum force (small counts, every boss) and the King Slime count curve
+G = []
+for diff in ("classic", "expert"):
+    for b in ("kslime", "eye", "brain"):
+        for comp in ("R1", "M1", "R2", "M2", "R3", "M3", "R1M1", "R2M2"):
+            G.append(line("fight", diff, "free", 1, comp, "real", "opt", "levy", "1-3", 18000, f"boss={b}"))
+    for n, code in MIX.items():
+        G.append(line("fight", diff, "free", 1, code, "real", "opt", "levy", "1-3", 18000, "boss=kslime"))
+for n, L in (("G", G), ("A", A), ("B", B), ("C", C), ("D", D), ("E", E), ("F", F)):
     w(n, L)
     print(n, len(L))

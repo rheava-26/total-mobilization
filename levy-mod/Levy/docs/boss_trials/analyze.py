@@ -78,7 +78,7 @@ ctl = [x for x in roll if variant(x) == "1" and x["arena"] == "big" and x["auto"
 out.append("### Rolled configurations (control: big arena with platforms, campfire + heart lantern, potions, Autonomous, Spectator)\n")
 out.append(table("roll_main", group(ctl, lambda r: (r["boss"], r["diff"], r["order"])), ["boss", "difficulty", "order"]))
 # 2 variables: paired toggles on the first 12 configs (eye + brain, classic, free rein)
-tog = [x for x in roll if x["diff"] == "classic" and x["order"] == "free" and x["boss"] in ("eye", "brain")]
+tog = [x for x in roll if x["diff"] == "classic" and x["order"] == "free" and x["boss"] in ("eye", "brain", "kslime")]
 def cfgnum(x): return int(x["cfg"].split("-")[-1])
 tog = [x for x in tog if cfgnum(x) <= 12]
 def togname(x):
@@ -155,7 +155,7 @@ out.append(table("fixed_tiers", group(fx_tier, fx_key), ["boss", "difficulty", "
 
 # 6 count curve
 def ncount(code): return sum(int(n) for n in re.findall(r"\d+", code))
-curve = [x for x in fixed if (re.match(r"^[RM]\d+$", x["comp"]) or (re.match(r"^([RMES]\d+){4}$", x["comp"]) and ncount(x["comp"]) in (4, 6, 8, 10, 12, 15, 20, 30))) and x["tier"] == "opt" and "real" in x["key"] and x["boss"] in ("eye", "brain")]
+curve = [x for x in fixed if (re.match(r"^[RM]\d+$", x["comp"]) or (re.match(r"^([RMES]\d+){4}$", x["comp"]) and ncount(x["comp"]) in (4, 6, 8, 10, 12, 15, 20, 30))) and x["tier"] == "opt" and "real" in x["key"] and x["boss"] in ("eye", "brain", "kslime")]
 def ckey(x): return (x["boss"], x["diff"], x["comp"][0] if re.match(r"^[RM]\d+$", x["comp"]) else "mix", ncount(x["comp"]))
 cg = group(curve, ckey)
 cg = collections.OrderedDict(sorted(cg.items(), key=lambda kv: kv[0]))

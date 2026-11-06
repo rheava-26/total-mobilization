@@ -297,6 +297,9 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - **Dialogue:** it was already one file (`Dialogue/en-US.txt`, 830 lines); the mutiny lines were moved in. `/levydialogue export|reload|path` gives Eve an editable copy in the save folder that overrides the packed one.
 - **Unverified:** all UI, combat behaviour, MP.
 
+**DRONE DIRECTION (Eve):** NOT Martian Drone / Martian Saucer / Probe-looking. "Take a drone out of a sci-fi concept and put it into Terraria." Vanilla sprites are used for technique only (grid, ramps, rim light); the shape comes from Eve's concept. Sent to art4-mech.
+**MECHANIZATION NEXT (Eve, "soon, not yet"):** the AIRSHIP, a giant flying fortress. Start after the 2.0 batch lands.
+
 **RADIO, FINAL (Eve):** the Command Radio = the art2 walkie-talkie B, exactly that design, scaled UP to fill the current CommandRadio canvas (it was too small) and redrawn on the 2×2 grid. No other radio options.
 **STYLE DIAGNOSIS (Eve):** our art lacks CURVES (vanilla rounds silhouettes and corners), has FLAT shading (vanilla uses curved 3–5 step ramps and rim light), and isn't strictly 2×2. Both art4 builders must study 70+ wiki sprites (weapons, enemies, accessories, furniture) first and copy the palettes exactly.
 

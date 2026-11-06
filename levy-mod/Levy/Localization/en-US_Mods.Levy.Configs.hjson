@@ -9,6 +9,10 @@ LevyProgressionConfig: {
 		Items: Boss weapons, shimmer and crates
 		ArmorCosts: Armor costs
 		ArmsDealer: Arms Dealer
+		ArmyLoot: Army loot
+		DungeonSpirits: Dungeon Spirits
+		ChlorophyteSources: Chlorophyte sources
+		Lunar: Luminite and Lunar Fragments
 	}
 
 	LifeCrystalRecipe: {
@@ -68,7 +72,7 @@ LevyProgressionConfig: {
 
 	ChlorophyteChunkScale: {
 		Label: Chlorophyte chunk size
-		Tooltip: Scales how much Chlorophyte may grow in one area before growth stops. 1 is the normal size.
+		Tooltip: Scales how much Chlorophyte may grow in one area before growth stops. 1 is the normal limit of about 40 ore nearby and 130 in the wider area.
 	}
 
 	OnceOnlyBossWeaponRepeatPercent: {
@@ -119,5 +123,65 @@ LevyProgressionConfig: {
 	BulkAmmoPricePercent: {
 		Label: Bulk ammo price
 		Tooltip: Percent of the item's normal shop price.
+	}
+
+	ArmyLootPercentPerCp: {
+		Label: Army loot bonus per command point
+		Tooltip: Boss drops and Treasure Bags give this percent more ore, bars and materials for each command point your levies hold. Counts the player who opens the bag or is nearest the kill. 0 is off.
+	}
+
+	ArmyLootRareChance: {
+		Label: Army bonus on rare drops
+		Tooltip: The same percent raises the chance of rare boss drops.
+	}
+
+	DungeonSpiritMultiplier: {
+		Label: Dungeon Spirit spawn rate
+		Tooltip: Multiplies how often a dying dungeon monster summons a Dungeon Spirit after Plantera. Kills by levies count.
+	}
+
+	DungeonSpiritPercentPerCp: {
+		Label: Dungeon Spirit bonus per command point
+		Tooltip: Raises the spawn rate by this percent for each command point your levies hold.
+	}
+
+	ExtractinatorChlorophyte: {
+		Label: Extractinator Chlorophyte
+		Tooltip: Mud Blocks can go into an Extractinator and sometimes yield Chlorophyte Ore after any mechanical boss. Needs a reload.
+	}
+
+	ExtractinatorChlorophytePercent: {
+		Label: Extractinator Chlorophyte chance
+		Tooltip: Percent of Mud Blocks that yield 1 to 3 Chlorophyte Ore.
+	}
+
+	JungleChlorophyteDrop: {
+		Label: Jungle monsters drop Chlorophyte
+		Tooltip: After Plantera, monsters killed in the Jungle can drop Chlorophyte Ore.
+	}
+
+	JungleChlorophyteChance: {
+		Label: Jungle Chlorophyte chance
+		Tooltip: Percent chance per kill to drop 1 to 3 Chlorophyte Ore.
+	}
+
+	EventChlorophyteDrop: {
+		Label: Event monsters drop Chlorophyte
+		Tooltip: Pumpkin Moon, Frost Moon and Lunar Event monsters can drop Chlorophyte Ore.
+	}
+
+	EventChlorophyteChance: {
+		Label: Event Chlorophyte chance
+		Tooltip: Percent chance per kill to drop 1 to 3 Chlorophyte Ore.
+	}
+
+	LuminiteDropMultiplier: {
+		Label: Luminite drop
+		Tooltip: Multiplies the Luminite the Moon Lord and his Treasure Bag drop.
+	}
+
+	LunarFragmentDropMultiplier: {
+		Label: Lunar Fragment drop
+		Tooltip: Multiplies the fragments the Lunar Pillars drop.
 	}
 }

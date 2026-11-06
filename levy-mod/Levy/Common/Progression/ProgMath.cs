@@ -30,6 +30,10 @@ namespace Levy.Common.Progression
 		// Crate ore (Cobalt/Palladium and Mythril/Orichalcum): the ores early Hardmode crates hand out.
 		public static readonly int[] EarlyHardmodeCrateOres = { ItemID.CobaltOre, ItemID.PalladiumOre, ItemID.MythrilOre, ItemID.OrichalcumOre };
 
+		// Chlorophyte Ore dropped by the jungle / event sources and the Extractinator: 1 to 3 per success.
+		public const int ChlorophyteDropMin = 1;
+		public const int ChlorophyteDropMax = 3;
+
 		// Armor sets whose recipes never change (the sets that stay worth reaching).
 		public static readonly int[] ProtectedArmor =
 		{
@@ -82,6 +86,38 @@ namespace Levy.Common.Progression
 			else if (Array.IndexOf(ProgConst.SpiderArmor, itemType) >= 0) pct *= spider / 100.0;
 			return (int)Math.Round(pct * 100.0, MidpointRounding.AwayFromZero);
 		}
+
+		/// <summary>Extra-yield fraction from the army: command points x percent per point (10 CP at 1% = 0.10).</summary>
+		public static double ArmyBonus(int cp, float percentPerCp) => Math.Max(0, cp) * Math.Max(0f, percentPerCp) / 100.0;
+
+		/// <summary>Chance of the second roll after a failed first roll so that the total chance is p x (1 + bonus), capped at certain.</summary>
+		public static double RareRerollChance(int num, int den, double bonus)
+		{
+			if (den <= 0 || num <= 0 || bonus <= 0) return 0;
+			double p = (double)num / den;
+			if (p >= 1) return 0;
+			return Math.Min(1.0, p * bonus / (1 - p));
+		}
+
+		/// <summary>A fractional item count rounded down or up at random: <paramref name="u"/> is a uniform [0,1) sample.</summary>
+		public static int RoundStochastic(double x, double u) { if (x <= 0) return 0; int f = (int)Math.Floor(x); return f + (u < x - f ? 1 : 0); }
+
+		/// <summary>Dungeon Spirit spawn rolls per dying monster. Vanilla rolls once; the multiplier (x the army bonus) scales the expected spirits, so extra rolls are whole + a fractional one. If vanilla did not roll (the monster fought levies, not a player) the first roll is added here.</summary>
+		public static (int whole, double frac) SpiritTrials(float mult, float percentPerCp, int cp, bool vanillaRolled)
+		{
+			double eff = Math.Max(1f, mult) * (1.0 + ArmyBonus(cp, percentPerCp));
+			double extra = Math.Max(0.0, eff - 1.0) + (vanillaRolled ? 0.0 : 1.0);
+			extra = Math.Min(extra, 60.0);
+			int whole = (int)Math.Floor(extra);
+			return (whole, extra - whole);
+		}
+
+		/// <summary>The Chlorophyte density limits scaled by <paramref name="scale"/> (1 = vanilla): ore allowed in the near and far area.</summary>
+		public static (int nearCap, int farCap) ChlorophyteCaps(int near, int far, float scale) => ((int)(near * scale), (int)(far * scale));
+
+		/// <summary>One Mud Block in the Extractinator: Chlorophyte Ore on a successful roll after any Mechanical Boss, nothing on a failed roll, the Mud Block back before then.</summary>
+		public static (int item, int stack) ExtractMud(bool mechDown, float percent, double roll, int stack)
+			=> !mechDown ? (ItemID.MudBlock, 1) : roll * 100.0 < percent ? (ItemID.ChlorophyteOre, stack) : (-1, 1);
 
 		/// <summary>Output of a batch: crafts x recipe yield, plus the bonus when the batch is big enough.</summary>
 		public static int BatchYield(int recipeStack, int crafts, int bonusPercent, int minCrafts)

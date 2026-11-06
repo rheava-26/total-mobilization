@@ -1,2 +1,4 @@
 # Keys here are relative to Mods.Levy.Progression (progression assistance strings).
 PlanteraRepeat: Plantera already defeated
+JungleChlorophyte: Killed in the Jungle after Plantera
+EventChlorophyte: Killed during the Pumpkin Moon, Frost Moon or Lunar Event

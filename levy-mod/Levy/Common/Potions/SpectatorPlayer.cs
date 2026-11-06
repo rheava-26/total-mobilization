@@ -159,7 +159,7 @@ namespace Levy.Common.Potions
 	{
 		public override bool PreAI(NPC npc)
 		{
-			if (npc.friendly || npc.townNPC || npc.ModNPC is Levy.Content.NPCs.SoldierNPC) return true;
+			if (npc.friendly || npc.townNPC || npc.ModNPC is global::Levy.Content.NPCs.SoldierNPC) return true;
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{
 				Player p = Main.player[i];

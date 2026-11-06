@@ -5,6 +5,7 @@ using Terraria;
 using Terraria.GameContent.UI.Elements;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Terraria.ModLoader.UI.Elements;
 using Terraria.UI;
 using Levy.Common.UI;
 using Levy.Common.Util;

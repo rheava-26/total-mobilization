@@ -568,6 +568,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
+- A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
 
 ## 📦 SHIPPED Levy 2.0.2 (Mechanization 0.8.0), at scratchpad/ship-2.0.2
 - Real modded minions (modsummons) + the flood guard; Calamity recipe-check fix (calrecipes).

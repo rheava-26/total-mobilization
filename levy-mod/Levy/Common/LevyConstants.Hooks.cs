@@ -46,6 +46,8 @@ namespace Levy.Common
 			public const int AltitudeMinTiles = 6;
 			/// <summary>A commander on a hook this far off (tiles, across or half that above) is followed by hook.</summary>
 			public const float FollowMinTiles = 14f;
+			/// <summary>Simulated reel ticks a plan may spend touching sloped tiles before it is judged a drag (a brush against an edge is fine).</summary>
+			public const int MaxSlopeDragTicks = 4;
 		}
 	}
 }

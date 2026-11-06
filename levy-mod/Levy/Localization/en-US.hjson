@@ -137,6 +137,7 @@ Mods: {
 		NPCs: {
 			SoldierNPC.DisplayName: Soldier
 			SummonedUnitNPC.DisplayName: Summoned Unit
+			HarnessCharger.DisplayName: Harness Charger
 		}
 
 		Projectiles: {
@@ -154,6 +155,7 @@ Mods: {
 			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
 			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
 			SoldierHeal.DisplayName: Soldier Heal
+			HarnessBeam.DisplayName: Harness Beam
 		}
 
 		Keybinds: {

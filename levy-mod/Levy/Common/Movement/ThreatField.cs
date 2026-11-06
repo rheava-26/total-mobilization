@@ -45,6 +45,8 @@ namespace Levy.Common.Movement
 		private static readonly List<Threat> Snap = new(256);
 		private static readonly float[] PrevAng = new float[Main.maxProjectiles];
 		private static readonly uint[] PrevAngTick = new uint[Main.maxProjectiles];
+		private static readonly Vector2[] PrevVel = new Vector2[Main.maxNPCs + 1];
+		private static readonly uint[] PrevVelTick = new uint[Main.maxNPCs + 1];
 		public static long BuildTs, EvalTs; public static int Builds, Evals, EvalSamples;
 
 		public const float ChargeMinSpeed = 4.5f, ChargeAccel = 0.25f;
@@ -64,7 +66,7 @@ namespace Levy.Common.Movement
 				{
 					Vector2 d = p.velocity; if (d == Vector2.Zero || d.HasNaNs()) continue;
 					float ang = d.ToRotation(), omega = 0f;
-					if (PrevAngTick[i] == now - 1u) omega = MathHelper.WrapAngle(ang - PrevAng[i]);
+					if (PrevAngTick[i] != 0 && now - PrevAngTick[i] <= 8u && now > PrevAngTick[i]) omega = MathHelper.WrapAngle(ang - PrevAng[i]) / (now - PrevAngTick[i]);
 					PrevAng[i] = ang; PrevAngTick[i] = now;
 					Snap.Add(new Threat { P = p.Center, Line = true, Ang = ang, Omega = omega, Len = len, Width = width, Weight = p.damage });
 					continue;
@@ -77,13 +79,15 @@ namespace Levy.Common.Movement
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.friendly || n.damage < LevyConstants.Movement.DodgeNpcMinDamage || n.ModNPC is Content.NPCs.SoldierNPC) continue;
+				if (!n.active || n.friendly || n.townNPC || n.damage < LevyConstants.Movement.DodgeNpcMinDamage || n.ModNPC is Content.NPCs.SoldierNPC) continue;
 				Vector2 v = n.velocity; float v2 = v.LengthSquared();
-				Vector2 a = n.velocity - n.oldVelocity;
+				// the acceleration it is showing: how its velocity changed since the last time the field looked (NPC.oldVelocity is not kept for every NPC)
+				Vector2 a = Vector2.Zero;
+				if (PrevVelTick[i] != 0 && now > PrevVelTick[i] && now - PrevVelTick[i] <= 8u) a = (n.velocity - PrevVel[i]) / (now - PrevVelTick[i]);
+				PrevVel[i] = n.velocity; PrevVelTick[i] = now;
 				// a charge shows itself as speed, or as speed that is still building along the direction of travel
 				bool building = v2 > 2.5f * 2.5f && Vector2.Dot(a, v) > ChargeAccel * Math.Sqrt(v2);
 				if (v2 < minSq && !building) continue;
-				if (!LevyUtil.IsHostileTarget(n) || SoldierTargeting.IsNeverTarget(n)) continue;
 				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true });
 			}
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
@@ -143,15 +147,15 @@ namespace Levy.Common.Movement
 			for (int k = 0; k < near.Count; k++)
 			{
 				Threat th = near[k];
-				int hit = -1;
+				int hit = -1, lineTicks = 0, lineLast = -1;
 				if (th.Line)
 				{
-					for (int t = 0; t <= horizon && hit < 0; t++)
+					for (int t = 0; t <= horizon; t++)
 					{
 						Vector2 b = BodyAt(c0, m, g, t); float ang = th.Ang + th.Omega * t;
 						Vector2 end = th.P + ang.ToRotationVector2() * th.Len; float f = 0f;
 						EvalSamples++;
-						if (Collision.CheckAABBvLineCollision(b - bHalf, new Vector2(bw, bh), th.P, end, th.Width, ref f)) hit = t;
+						if (Collision.CheckAABBvLineCollision(b - bHalf, new Vector2(bw, bh), th.P, end, th.Width, ref f)) { if (hit < 0) hit = t; lineTicks++; lineLast = t; }
 					}
 				}
 				else
@@ -167,7 +171,7 @@ namespace Levy.Common.Movement
 						prev = cur;
 					}
 				}
-				if (hit >= 0) { hits++; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; }
+				if (hit >= 0) { hits += 1 + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast; }
 			}
 			EvalTs += Stopwatch.GetTimestamp() - t0; Evals++;
 			return hits;

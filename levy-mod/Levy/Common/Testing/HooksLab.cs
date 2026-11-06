@@ -330,7 +330,7 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>The commander's own state; a hook frame must leave all of it alone (and the machine's player / dedServ / cursor).</summary>
-		private static string Fp(Player p)
+		internal static string Fp(Player p)
 		{
 			var sb = new StringBuilder();
 			sb.Append($"life{p.statLife}/{p.statLifeMax2} mana{p.statMana} pos{p.position.X:0.##},{p.position.Y:0.##} vel{p.velocity.X:0.##},{p.velocity.Y:0.##} g{p.grappling[0]}/{p.grapCount} hook{p.controlHook}/{p.releaseHook} jump{p.controlJump}/{p.releaseJump} sel{p.selectedItem} anim{p.itemAnimation} frz{p.frozen} who{p.whoAmI} my{Main.myPlayer} ded{Main.dedServ} vol{Main.soundVolume:0.##} mouse{Main.mouseX},{Main.mouseY} scr{Main.screenPosition.X:0.#},{Main.screenPosition.Y:0.#} p255{(ReferenceEquals(Main.player[255], null) ? 0 : Main.player[255].active ? 1 : 0)} num{p.numMinions} owned[");

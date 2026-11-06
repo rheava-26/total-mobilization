@@ -81,7 +81,8 @@ namespace Levy.Common.Movement
 		public List<Vector2> Path;
 		public int ReelTicks, FlightTicks;
 		public HookGoalKind Kind;
-		public bool Beats(float arrivePx, float minGainPx) => (Landed || Hang) && (GoalDist <= arrivePx || Gain >= minGainPx);
+		/// <summary>A plan is worth casting when it lands (or hangs) nearer the goal AND its simulated reel does not spend more than a brush of ticks dragging along a slope (the body would not make the progress the simulation shows).</summary>
+		public bool Beats(float arrivePx, float minGainPx) => (Landed || Hang) && SlopeTicks <= LevyConstants.Hooks.MaxSlopeDragTicks && (GoalDist <= arrivePx || Gain >= minGainPx);
 	}
 
 	/// <summary>
@@ -224,8 +225,16 @@ namespace Levy.Common.Movement
 			return false;
 		}
 
-		/// <summary>Moves the body (top-left x, y) by its velocity with tile collision; a blocked axis loses its speed. Returns true when it came to rest on something below it.</summary>
-		private static bool Move(IHookWorld w, ref float x, ref float y, ref float vx, ref float vy, float bw, float bh)
+		private static bool BlockedBySlope(IHookWorld w, float x, float y, float bw, float bh)
+		{
+			int x0 = (int)MathF.Floor(x / 16f), x1 = (int)MathF.Floor((x + bw - 0.01f) / 16f), y0 = (int)MathF.Floor(y / 16f), y1 = (int)MathF.Floor((y + bh - 0.01f) / 16f);
+			for (int tx = x0; tx <= x1; tx++) for (int ty = y0; ty <= y1; ty++) if (w.Solid(tx, ty) && w.Sloped(tx, ty)) return true;
+			return false;
+		}
+
+		/// <summary>Moves the body (top-left x, y) by its velocity with tile collision; a blocked axis loses its speed. Returns true when it came to rest on something below it.
+		/// With <paramref name="slopeSticks"/> a body pulled into a sloped tile stops dead instead of sliding along it (a hook pulls straight; the body does not glide up a slope).</summary>
+		private static bool Move(IHookWorld w, ref float x, ref float y, ref float vx, ref float vy, float bw, float bh, bool slopeSticks = false)
 		{
 			LastSteps++;
 			int nx = Math.Max(1, (int)MathF.Ceiling(MathF.Abs(vx) / 4f));
@@ -234,6 +243,7 @@ namespace Levy.Common.Movement
 			{
 				if (Blocked(w, x + sx, y, bw, bh))
 				{
+					if (slopeSticks && BlockedBySlope(w, x + sx, y, bw, bh)) { vx = 0f; vy = 0f; return false; }
 					if (!Blocked(w, x + sx, y - 16f, bw, bh) && !Blocked(w, x, y - 16f, bw, bh) && vy >= 0f && Blocked(w, x, y + 1f, bw, bh)) { y -= 16f; x += sx; continue; } // a one-tile step up, as Collision.StepUp does for a walker
 					float cs = MathF.Sign(sx); while (!Blocked(w, x + cs, y, bw, bh)) x += cs; // creep up to the wall
 					vx = 0f; break;
@@ -247,6 +257,7 @@ namespace Levy.Common.Movement
 			{
 				if (Blocked(w, x, y + sy, bw, bh))
 				{
+					if (slopeSticks && sy < 0f && BlockedBySlope(w, x, y + sy, bw, bh)) { vx = 0f; vy = 0f; return false; }
 					float cs = MathF.Sign(sy); while (!Blocked(w, x, y + cs, bw, bh)) y += cs; // creep up to the surface
 					if (vy > 0f) landed = true; vy = 0f; break;
 				}
@@ -317,7 +328,7 @@ namespace Levy.Common.Movement
 				else { desVx = d.X; desVy = d.Y; }
 				float vx = desVx, vy = desVy;
 				if (TouchesLava(w, x, y, bw, bh)) return null;
-				Move(w, ref x, ref y, ref vx, ref vy, bw, bh);
+				Move(w, ref x, ref y, ref vx, ref vy, bw, bh, SlopeDragCost > 0f);
 				c = new Vector2(x + bw / 2f, y + bh / 2f);
 				float dist = Vector2.Distance(centroid, c);
 				reelPath?.Add(new Vector2(x + bw / 2f, y + bh));

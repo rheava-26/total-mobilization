@@ -98,8 +98,10 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Shared bookkeeping after any attributed hit (contact or hostile projectile).</summary>
+		internal int HitsTaken;
 		private void AfterHit(int damageDone, int attackerIndex)
 		{
+			HitsTaken++;
 			ImmuneTime = LevyConstants.ImmuneTicksOnHit;
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;

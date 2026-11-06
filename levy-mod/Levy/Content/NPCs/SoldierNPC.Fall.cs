@@ -111,7 +111,7 @@ namespace Levy.Content.NPCs
 						int tiles = (int)(y / 16f) - startRow;
 						int free = 25 + (Abilities?.ExtraFall ?? 0);
 						bool hurts = FallDamageOn && !Abilities.NoFallDamage && !ThinAir(y);
-						bad = hurts && NPC.life > 0 && (tiles - free) * 10 * 2 >= NPC.life; // a landing that would take half the life or more
+						bad = hurts && NPC.life > 0 && (tiles - free) * 10 * 4 >= NPC.life; // a landing that would take a quarter of the life or more
 						return true;
 					}
 			}

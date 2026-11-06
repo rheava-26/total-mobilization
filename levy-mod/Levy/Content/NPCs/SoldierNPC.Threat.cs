@@ -26,10 +26,9 @@ namespace Levy.Content.NPCs
 
 		private bool TickDodge(bool grounded, bool air)
 		{
-			if (DodgeMode == 1) return TickDodgeLegacy(grounded, air);
 			if (DodgeMode == 0) return false;
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-			try { return TickThreatDodge(grounded, air); }
+			try { return DodgeMode == 1 ? TickDodgeLegacy(grounded, air) : TickThreatDodge(grounded, air); }
 			finally { DodgeTs += System.Diagnostics.Stopwatch.GetTimestamp() - t0; }
 		}
 
@@ -78,6 +77,7 @@ namespace Levy.Content.NPCs
 					Consider(new Maneuver { Kind = 4, Vx = dir * DashSpeedPx, Dur = DashBurstTicks, Penalty = 8f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			}
 			if (grounded) Consider(new Maneuver { Kind = 2, JumpVy = jv, Penalty = 5f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+			if (grounded && Abilities.JumpTiles > hopTiles) Consider(new Maneuver { Kind = 6, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Penalty = 7f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			if (grounded && PlatformDropIsSafe()) Consider(new Maneuver { Kind = 5, Drop = true, Penalty = 7f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 
 			_dodgeCooldown = ThreatCooldown;
@@ -87,6 +87,7 @@ namespace Levy.Content.NPCs
 			{
 				case 1: DodgeSteps++; Begin(best.Vx, best.Dur); break;
 				case 2: DodgeJumps++; TryJump(hopTiles); break;
+				case 6: DodgeJumps++; TryJump(Abilities.JumpTiles); break;
 				case 3: DodgeJumps++; TryJump(hopTiles); Begin(best.Vx, best.Dur); break;
 				case 4: DodgeDashes++; _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); Begin(best.Vx, best.Dur); break;
 				case 5: DodgeDrops++; _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; break;

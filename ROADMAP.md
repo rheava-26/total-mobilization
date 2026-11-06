@@ -608,6 +608,12 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
 - A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
+- **MERGED teamitems (7a7c8ef):** survey at levy-mod/Levy/docs/TEAM_ITEMS.md.
+  - Patched both ways: vanilla Paladin/Frozen/Hero shields, Spectre heal, Nebula boosters, info accessories.
+  - Calamity: 11, incl. **Trinket of Chi**, Affliction, Rampart, Absorber/jellies, Mycoroot (one-way).
+  - Thorium: 23 aura/bard/scythe effects.
+  - 17 not patched, with reasons.
+  - Harness team 25/0 on both toolchains. MP packet paths untested live.
 
 ## 🚑 SHIPPED HOTFIX Levy 2.0.3 + Mechanization 0.8.1, at scratchpad/ship-2.0.3
 - **CRASH ON LOAD in 2.0.1/2.0.2 (Eve's client log):**

@@ -316,6 +316,7 @@ namespace Levy.Common.Testing
 						case "ROUTE": { ProgressionTierProbe.EnsureBuilt(sb); var ri = Make(t[1]); if (ri == null) sb.AppendLine("  ROUTE cannot resolve " + t[1]); else { sb.AppendLine("  ROUTE " + t[1]); ProgressionTierProbe.Dump(ri.type, sb); } break; }
 						case "NPCDROPS": { sb.AppendLine("  NPCDROPS " + t[1]); ProgressionTierProbe.DumpNpc(int.Parse(t[1]), sb); break; }
 						case "WHODROPS": { var wi2 = Make(t[1]); sb.AppendLine("  WHODROPS " + t[1]); if (wi2 != null) ProgressionTierProbe.WhoDrops(wi2.type, sb); break; }
+						case "ARMORCLS": { var ah = Make(t[1]); var ab = Make(t[2]); var al = Make(t[3]); sb.AppendLine("  ARMORCLS " + t[1] + " " + t[2] + " " + t[3] + " : " + ArmorDoctrine.DebugMeasure(ah, ab, al)); break; }
 						case "SHOW": { var si = Make(t[1]); sb.AppendLine("  SHOW " + t[1] + ": " + (si == null ? "cannot resolve" : $"{Describe(si)} issuable={WeaponClassifier.IsIssuableWeapon(si)} dmg={si.damage} pick={si.pick} hammer={si.hammer} axe={si.axe} useTime={si.useTime} rare={si.rare} value={si.value} noMelee={si.noMelee} shoot={si.shoot}")); break; }
 						case "CFG": { var kv = t[1].Split('='); if (kv[0] == "ClassMatchIssue") LevyConfig.Get.ClassMatchIssue = bool.Parse(kv[1]); break; }
 						case "W": case "A": case "M": Stock(t); break;

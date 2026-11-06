@@ -222,6 +222,11 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## 📦 SHIPPED Levy 1.8.0 (armory2-rules 82e7950 + banners b404ace): boots clean both ways; Mechanization stays 0.7.2
+- Rule list, Rules tab and item info panel. UI NEVER SEEN (headless). The MP edit packet path is untested.
+- Ask Eve for screenshots of the Rules tab and item panel.
+- Next in Armory 2.0: targeted reforging, vanity always-wear, new-world setup popup.
+
 ## ✅ MERGED (not yet shipped): banners b404ace
 - **Banners work for levies.** The commander's banner buff (vanilla BannerStrength) applies to every levy hit and every hit a levy takes. This covers modded banners: Thorium banner tiles write SceneMetrics in their own NearbyEffects, and those are captured.
 - **Measured, Classic:** gun ×1.51 dealt, ×0.72 taken. Expert ×2.0 / ×0.5. Thorium Ancient Archer banner verified.

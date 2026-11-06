@@ -564,6 +564,19 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - **SHIPPED in Levy 2.0.2.**
 - The staff was the Stormjaw Staff (Eve's "Stormlion").
 
+## 🧰 Eve's medium list (2026-11-06, Calamity run on 2.0.2): 3 builders
+- **`armory-alloc` builder:**
+  1. The armory rejects hooks on shift-click; consumable throwables (Molotov etc.) are unusable.
+  2. Mana-star option → "Fallen Stars per Mana Crystal" (vanilla 5); the nonexistent "levy mana star" item is removed.
+  5. Sidearms rarely used; class-less levies should spread across melee/ranged/magic (not summon/rogue).
+  8. High-mana levies prefer magic.
+- **`field-ai-3` builder:**
+  3. Levies don't use hooks in real play. Candidate: no hook equipped because of (1); proving it.
+  9. Dodging "laughably bad" in real play. The old harness used stand-ins; re-testing vs real vanilla + Calamity bosses.
+  6. Fall damage default OFF; the Gravitation Potion catch-up teleport lands mid-air and kills them → safe-ground teleport + brief fall immunity.
+- **`guide-ui` builder:**
+  4/7. A paged in-game guide book (Thorium-guide style) opened by the starter guide: getting levies, orders, every Armory tab, WHAT LEVIES CAN USE, officers, potions/cameras, OOA, guides, settings. Plus a hint on the Items storage.
+
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.

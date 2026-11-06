@@ -37,6 +37,11 @@ namespace Levy.Common.Globals
 		public bool DroneShot;
 		/// <summary>Set by the boss rule when this projectile has been redirected at a spite target.</summary>
 		public bool Redirected;
+		/// <summary>Server / single player: this minion is a direct cast of a soldier's staff (not a minion-flagged child its own AI made). Not synced.</summary>
+		public bool Cast;
+		/// <summary>Ticks a modded minion has been driven, hits it landed, and whether the upkeep ended it on purpose (see SoldierMinions.NoteModdedDeath). Server / single player.</summary>
+		public int Age, Hits;
+		public bool Dismissed;
 
 		public bool IsSoldierShot => SoldierIndex >= 0;
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
@@ -50,6 +55,7 @@ namespace Levy.Common.Globals
 			if (SoldierMinions.PendingBody != null)
 			{
 				SoldierIndex = SoldierMinions.PendingBody.NPC.whoAmI;
+				Cast = true;
 				projectile.npcProj = true;
 				projectile.noDropItem = true;
 			}
@@ -79,6 +85,7 @@ namespace Levy.Common.Globals
 					SoldierIndex = parentTag.SoldierIndex;
 					projectile.npcProj = true;
 					projectile.noDropItem = true;
+					if (parent.minion && LevyUtil.IsServerOrSingle) { SoldierNPC pb = EnemyTargeting.LiveBody(parentTag.SoldierIndex); if (pb != null) pb.ChildSpawns++; } // flood guard tally
 					SoldierMinions.ReownChild(parent, projectile); // a real minion's stinger / spear: single player processes damage only for the real owner
 				}
 				if (parentTag.CommanderIndex >= 0)
@@ -115,8 +122,16 @@ namespace Levy.Common.Globals
 		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's armor set bonuses (Spectre Mask / Hood bolts, Titanium, Orichalcum, Hallowed, Palladium, Nebula, Frost, Beetle Might) run here against his own timers.</summary>
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{
+			if (SoldierIndex >= 0) Hits++;
 			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
-			EnemyTargeting.LiveBody(SoldierIndex)?.OnProjectileHit(projectile, target, damageDone);
+			SoldierNPC hitter = EnemyTargeting.LiveBody(SoldierIndex);
+			if (hitter != null) hitter.MinionHits++;
+			hitter?.OnProjectileHit(projectile, target, damageDone);
+		}
+
+		public override void OnKill(Projectile projectile, int timeLeft)
+		{
+			if (Cast && !Dismissed && SoldierIndex >= 0 && projectile.minion && projectile.type >= ProjectileID.Count && LevyUtil.IsServerOrSingle) SoldierMinions.NoteModdedDeath(projectile, Age, Hits);
 		}
 
 		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>

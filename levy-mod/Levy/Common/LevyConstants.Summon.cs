@@ -39,6 +39,14 @@ namespace Levy.Common
 		// ---------- Real (vanilla-driven) minions: see SoldierMinions ----------
 		/// <summary>Slack (slots) when comparing a flock's slot total with the soldier's capacity.</summary>
 		public const float MinionSlotEpsilon = 0.01f;
+		/// <summary>A modded cast that dies by itself younger than this many driven ticks, without a hit, counts as a short life.</summary>
+		public const int ModdedMinionShortLifeTicks = 90;
+		/// <summary>Flood guard: projectiles a modded flock's minions may create per upkeep pass (20 ticks) / may have alive at once before its staff uses the stand-in. Measured peaks of the heaviest Calamity minions: 31 per pass (Dragonblood Disgorger), 76 alive (Ares' Exoskeleton); the runaway (Void Concentration Staff) makes 420 per pass.</summary>
+		public const int ModdedMinionMaxChildSpawnsPerPass = 100, ModdedMinionMaxChildrenAlive = 300;
+		/// <summary>Ticks a soldier may fight with a modded flock out and no hit landed before its staff uses the stand-in.</summary>
+		public const int ModdedMinionIdleTicks = 900;
+		/// <summary>Consecutive short-lived modded casts after which the staff uses the stand-in minion.</summary>
+		public const int ModdedMinionMaxShortLives = 3;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>
 		public const float MinionSpawnScatterPx = 36f;
 		/// <summary>Size (px) of the box tested for wall overlap at a fresh real minion's scattered spawn point; a blocked point falls back to the soldier's centre.</summary>

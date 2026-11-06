@@ -284,7 +284,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Done: Autonomy gates map orders (MapOrder.Issue also refuses server-side). Autonomous = no fear, falls back to heal under 35% HP and re-engages at 75%, goes for the biggest threat (boss > hard hitters > rest).
 - Held back: Spectator hid you by flagging you dead/ghost during hostile AI, so bosses would flee or despawn and you couldn't watch your levies fight one.
 - Sent back: exclude spectators from the target search, hand enemies to the army through EnemyTargeting, and let Spectator override the BossesTargetSoldiers/first-kill gate (drinking it = opting the army in). The dead-hide stays only for swap-unsafe AIs.
-**MERGED staves7 (b6fc70f):** the staves are now built from the vanilla Ballista Rod/Cane/Staff pixels, with the head swapped for a house. Rod + Cane approved by me. The Staff's tower is a flat "chess rook", so it's back for a taller, tapered, shaded tower. Drone: the "10" read is being fixed (far-pod intake removed).
+**MERGED staves7 (b6fc70f + e7d66b1):** OOA staves built from vanilla Ballista Rod/Cane/Staff pixels with house heads; the Staff is now a tapered, shaded watchtower. Done.
 **MERGED potions (de1bfb4) + art5 drone (3e228e9):**
 - Spectator: spectators are hidden from every TargetClosest search, so hostiles re-target the army at once. While anyone spectates, BossAggroUnlocked and EnemiesTargetSoldiers are both forced on. The dead-hide is only a fallback for swap-unsafe AIs.
 - MP caveat: one spectator flips the override for the whole world. Narrow it to "near the spectator" if MP play shows a problem.

@@ -285,6 +285,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Held back: Spectator hid you by flagging you dead/ghost during hostile AI, so bosses would flee or despawn and you couldn't watch your levies fight one.
 - Sent back: exclude spectators from the target search, hand enemies to the army through EnemyTargeting, and let Spectator override the BossesTargetSoldiers/first-kill gate (drinking it = opting the army in). The dead-hide stays only for swap-unsafe AIs.
 **MERGED staves7 (b6fc70f):** the staves are now built from the vanilla Ballista Rod/Cane/Staff pixels, with the head swapped for a house. Rod + Cane approved by me. The Staff's tower is a flat "chess rook", so it's back for a taller, tapered, shaded tower. Drone: the "10" read is being fixed (far-pod intake removed).
+**MERGED potions (de1bfb4) + art5 drone (3e228e9):**
+- Spectator: spectators are hidden from every TargetClosest search, so hostiles re-target the army at once. While anyone spectates, BossAggroUnlocked and EnemiesTargetSoldiers are both forced on. The dead-hide is only a fallback for swap-unsafe AIs.
+- MP caveat: one spectator flips the override for the whole world. Narrow it to "near the spectator" if MP play shows a problem.
+- Drone: one oval intake per near pod; the pod is shaded in horizontal bands (the vertical bands were the "1").
+- Integration boot: Thorium + Levy + Mech, 0 exceptions, all self-checks OK.
 **RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
 
 **RUNNING (2026-11-06 04:30):**

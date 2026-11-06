@@ -622,6 +622,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - New curve: 10/11/12/13/14/15/16/20 at start/KS/EoC/EoW/QB/Skel/Deer/WoF.
 - **Boots:** Thorium+MS+Mech and Calamity, 0 exceptions, all checks OK. Merge conflict in LevySettings.FrozenFields resolved (no FallenStars field, + LeviesAtStart).
 - **Running:** boss-trials (EoC experiment, controls, beam-melee appeal), field-ai-3 (mobility matrix).
+- **Eve's revised trial design (sent to boss-trials + field-ai-3):**
+  - The commander drinks SPECTATOR, so the boss targets the levies; no fake moving player.
+  - Varied rolled stats (pre-Eye ~100–200 HP, mages high mana; post-Eye ~200 HP and plenty of mana).
+  - Batches of 3, then roll new accessories/loadouts/class mix and repeat.
+  - Bosses: King Slime, Eye (pre-boss gear) → Brain of Cthulhu (post-Eye gear).
+  - Campfire + heart lantern (honey optional); Lesser → regular healing potions.
+  - BIG arena with platform rows and clear ground, plus flat and natural variants.
+  - Intent: levies shouldn't be crippled; find what it takes to win.
 
 ## 📦 SHIPPED Levy 2.0.4 (Mechanization stays 0.8.1), at scratchpad/ship-2.0.4
 - Contents: guide-ui (30-page Field Manual book), teamitems (35 team effects patched both ways), armory-alloc (shift-click intake, thrown stacks/Molotov, sidearm fill, class-less spread, mana→magic, ONE "Fallen Stars per Mana Crystal" setting).

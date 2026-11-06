@@ -1,0 +1,192 @@
+mod	item	policy	params	note
+CalamityMod	Auger	NEVER		
+CalamityMod	CountermeasureMitt	HOLD_VARIANT	cond=close;maxDist=9;minEnemies=1	
+CalamityMod	HolofibreImmolator	HOLD_VARIANT	cond=rate;maxDist=25	
+CalamityMod	HydraulicVoltCrasher	NEVER		
+CalamityMod	Nidhogg	HOLD_VARIANT	cond=heavy;minDist=10	
+CalamityMod	PhalanxSurge	HOLD_VARIANT	cond=heavy;maxDist=14	
+CalamityMod	PlasmaCaster	NEVER		alt -23% boss / -31% pack
+CalamityMod	ShortCircuit	PLACE	proj=ShortCircuitHook;maxOut=1;maxDist=25;tough=1	alt -9% boss / -8% pack
+CalamityMod	TheAnomalysNanogun	ALT_HEAVY	tough=1;minDist=8;maxDist=40	
+CalamityMod	Vulcan	HOLD_VARIANT	cond=heavy;minDist=6	
+CalamityMod	AlphaDraconis	METER_READY	meter=StratusStarburst;min=5;tough=1;dismissAfter=0	
+CalamityMod	ApoctosisArray	MANA_REFILL	manaBelow=0.25;noEnemyWithin=0	
+CalamityMod	ChronomancersScythe	ALT_AOE	minEnemies=2;radius=8;maxDist=9	
+CalamityMod	FaceMelter	NEVER		alt -24% boss / -17% pack (amplifier is placed at Main.MouseWorld, which a levy never sets)
+CalamityMod	FrigidflashBolt	ALT_MIX	p=0.4	no signal: 0 damage both ways (bolt steers to Calamity mouseWorld, never set for a levy)
+CalamityMod	IonBlaster	MANA_REFILL	manaBelow=0.25;noEnemyWithin=0	
+CalamityMod	MadAlchemistsCocktailGlove	ALT_AOE	minEnemies=2;radius=7;minDist=5	
+CalamityMod	PlasmaRifle	NEVER		alt -31% boss / -31% pack
+CalamityMod	SHPC	NEVER		
+CalamityMod	SubsumingVortex	ALT_HEAVY	tough=1;minDist=6	
+CalamityMod	UnstableCastersGauntlet	NEVER		
+CalamityMod	VeeringWind	ALT_MIX	p=0.6	alt +14% boss / +23% pack (tiny absolute damage)
+CalamityMod	Vesuvius	ALT_ALWAYS		left-click 0 damage vs the pinned target, alt 2.4k (both scenarios)
+CalamityMod	WulfrumProsthesis	MANA_REFILL	manaBelow=0.3;maxDist=10	
+CalamityMod	AegisBlade	ALT_FAR	minDist=6	
+CalamityMod	ArkoftheCosmos	GUARD	near=7;hpBelow=0.6	
+CalamityMod	ArkoftheElements	GUARD	near=7;hpBelow=0.6	
+CalamityMod	BrimstoneSword	ALT_FAR	minDist=5	
+CalamityMod	BrinyBaron	ALT_FAR	minDist=5	
+CalamityMod	BrokenBiomeBlade	NEVER		
+CalamityMod	DeathsAscension	ALT_AOE	minEnemies=2;radius=8;minDist=4	
+CalamityMod	Exoblade	DASH_CLOSE	minDist=14	
+CalamityMod	FourSeasonsGalaxia	NEVER		
+CalamityMod	FracturedArk	GUARD	near=7;hpBelow=0.6	
+CalamityMod	GalileoGladius	METER_READY	meter=AvailableStarburst;min=10;tough=1	
+CalamityMod	GildedProboscis	DASH_CLOSE	minDist=10	
+CalamityMod	Hellkite	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
+CalamityMod	Lightspeed	METER_READY	meter=elementalMastery;min=full;tough=1	
+CalamityMod	LionHeart	GUARD	near=8;hpBelow=0.6;enemies=3	
+CalamityMod	Lucrecia	METER_READY	meter=darklightEnergy;min=full;tough=1	
+CalamityMod	MantisClaws	ALT_AOE	minEnemies=2;radius=6;maxDist=6	
+CalamityMod	MirrorBlade	GUARD	near=10;hpBelow=0.7	
+CalamityMod	OmegaBiomeBlade	NEVER		
+CalamityMod	PhotonRipper	NEVER		
+CalamityMod	SaharaSlicers	METER_READY	meter=saharaSlicersBolts;min=1;tough=0	
+CalamityMod	StygianShield	ALT_FAR	minDist=4	
+CalamityMod	TheDarkMaster	PLACE	proj=DarkMasterClone;maxOut=1;maxDist=12;tough=1	
+CalamityMod	TrueArkoftheAncients	GUARD	near=7;hpBelow=0.6	
+CalamityMod	TrueBiomeBlade	NEVER		
+CalamityMod	Violence	ALT_HEAVY	tough=1;minDist=4;maxDist=30	
+CalamityMod	WulfrumScrewdriver	METER_READY	meter=ScrewAvailable;min=1;tough=0	
+CalamityMod	YateveoBloom	ALT_HEAVY	tough=1;minDist=0;maxDist=9	
+CalamityMod	Animosity	ALT_MIX	p=0.8	alt +29% boss / +71% pack
+CalamityMod	BlossomFlux	ALT_MIX	p=0.6	alt +1% boss / +8% pack
+CalamityMod	CorinthPrime	NEVER		alt -79% boss / -75% pack: the 90-tick grenade loses to six bullets per 30 ticks
+CalamityMod	CrackshotColt	NEVER		coin alt needs money the dummy never has
+CalamityMod	Drataliornus	ALT_HEAVY	tough=1;minDist=6	
+CalamityMod	Hellborn	HOLD_VARIANT	cond=heavy;minDist=8	
+CalamityMod	Hydra	DETONATE	proj=HydraHead;minOut=3;minDist=5	not measurable: AltFunctionUse launches the heads on the probe whatever the veto
+CalamityMod	Leviatitan	ALT_MIX	p=0.8	alt +23% boss / +34% pack
+CalamityMod	MidasPrime	NEVER		coin alt needs money the dummy never has
+CalamityMod	NullificationPistol	NEVER		alt -8% boss / -37% pack at 80%; toggling every 12 shots still measured -9% boss / -30% pack (a toggle wastes a shot; polarity effects are not modelled)
+CalamityMod	OntologicalDespoiler	NEVER		
+CalamityMod	Photoviscerator	HOLD_VARIANT	cond=aoe;minEnemies=2	
+CalamityMod	PlagueTaintedSMG	ALT_MIX	p=0.5	
+CalamityMod	PolarisParrotfish	NEVER		
+CalamityMod	PristineFury	METER_READY	meter=furyFuel;min=1;tough=0	
+CalamityMod	SeasSearing	ALT_MIX	p=0.6	alt +5% boss / +15% pack
+CalamityMod	SepticSkewer	DETONATE	proj=SepticSkewerHarpoon;minOut=2	alt +38% boss / +37% pack at 80%, gated policy should do better
+CalamityMod	SpeedBlaster	ALT_ALWAYS		alt +19% boss / +7% pack; self-gated by its own cooldown
+CalamityMod	SuperradiantSlaughterer	NEVER		
+CalamityMod	SurgeDriver	HOLD_VARIANT	cond=aoe;minEnemies=2	
+CalamityMod	DeepSeaDumbbell	STACK_UP	maxStacks=3;tough=1;minDist=0;maxDist=30	
+CalamityMod	ElephantKiller	NEVER		
+CalamityMod	LeonidProgenitor	ALT_AOE	minEnemies=2;radius=8;minDist=6	
+CalamityMod	Malachite	ALT_AOE	minEnemies=2;radius=6;minDist=5	
+CalamityMod	Sacrifice	DETONATE	proj=SacrificeProjectile;minOut=2;ownHpBelow=0.9	
+CalamityMod	Supernova	NEVER		
+CalamityMod	Vega	METER_READY	meter=AvailableStarburst;min=20;tough=1	
+CalamityMod	WulfrumKnife	DETONATE	proj=WulfrumKnifeProj;minOut=3	
+CalamityMod	GlacialEmbrace	PLACE	proj=GlacialEmbracePointyThing;maxOut=3;tough=1	
+CalamityMod	VoidConcentrationStaff	PLACE	proj=VoidConcentrationMark;maxOut=1;tough=1	
+CalamityMod	StratusSphere	GUARD	hpBelow=0.5;near=10;enemies=3	
+CalamityMod	Omicron	HOLD_VARIANT	cond=aoe;minEnemies=2	
+CalamityMod	Wingman	NEVER		
+CalamityMod	Scorpio	HOLD_VARIANT	cond=heavy;minDist=10	
+CalamityMod	HalleysInferno	HOLD_VARIANT	cond=rate;maxDist=25	
+CalamityMod	Auralis	NEVER		
+CalamityMod	DevilsSunrise	METER_READY	meter=energy;min=full	
+CalamityMod	SkytideDragoon	NEVER		
+CalamityMod	Perdition	PLACE	proj=PerditionBeacon;maxOut=1;tough=1	
+CalamityMod	BrittleStarStaff	NEVER		
+CalamityMod	WulfrumController	NEVER		
+CalamityMod	AtlasMunitionsBeacon	NEVER		
+CalamityMod	AqueousHunterDrone	NEVER		
+CalamityMod	ForbiddenOathblade	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
+CalamityMod	ExaltedOathblade	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
+CalamityMod	DevilsDevastation	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
+CalamityMod	MoltenAmputator	DETONATE	proj=MoltenAmputatorProj;minOut=3	
+CalamityMod	NanoblackReaper	METER_READY	meter=rogueStealth;min=full;tough=1	
+CalamityMod	FirestormCannon	NEVER		
+CalamityMod	SpectralstormCannon	NEVER		
+ThoriumMod	Bagpipe	ALT_MIX	p=0.3	
+ThoriumMod	EbonWoodTambourine	ALT_MIX	p=0.3	
+ThoriumMod	MarineWineGlass	ALT_MIX	p=0.3	
+ThoriumMod	ShadeWoodTambourine	ALT_MIX	p=0.3	
+ThoriumMod	SongofIceAndFire	ALT_MIX	p=0.3	
+ThoriumMod	SonicAmplifier	ALT_MIX	p=0.3	
+ThoriumMod	OnemanQuartet	ALT_MIX	p=0.3	
+ThoriumMod	Thunderstruck	ALT_MIX	p=0.3	
+ThoriumMod	Zunpet	ALT_MIX	p=0.3	
+ThoriumMod	Bassoon	ALT_MIX	p=0.3	
+ThoriumMod	Fishbone	ALT_MIX	p=0.3	
+ThoriumMod	SteamFlute	ALT_MIX	p=0.3	
+ThoriumMod	DrumMallet	ALT_MIX	p=0.3	
+ThoriumMod	ChronoOcarina	ALT_AOE	minEnemies=2;radius=6;maxDist=30	
+ThoriumMod	ForestOcarina	ALT_AOE	minEnemies=2;radius=6;maxDist=30	
+ThoriumMod	Holophonor	ALT_AOE	minEnemies=2;radius=7;maxDist=30	
+ThoriumMod	HoneyRecorder	ALT_MIX	p=0.5	
+ThoriumMod	ResonatorsArm	NEVER		
+ThoriumMod	AuraStaff	NEVER	primary=1;proj=AuraLife	alt dismisses the owner's objects; primary placement guarded
+ThoriumMod	MidnightStaff	NEVER	primary=1;proj=AuraShadow	alt dismisses the owner's objects; primary placement guarded
+ThoriumMod	FeatherBarrierRod	NEVER	primary=1;proj=FeatherBarrier	alt dismisses the owner's objects; primary placement guarded
+ThoriumMod	WarForger	NEVER	primary=1;proj=WarForgeAnvil	alt dismisses the owner's objects; primary placement guarded
+ThoriumMod	LightBringerWarhammer	NEVER	primary=1;proj=LightBringerWarhammerPro	alt dismisses the owner's objects; primary placement guarded
+ThoriumMod	CellReconstructor	ALLY_HEAL	minWounded=2;hpBelow=0.7;radius=24	
+ThoriumMod	HolyHammer	ALLY_HEAL	minWounded=1;hpBelow=0.6;radius=30	
+ThoriumMod	Bonesaw	METER_READY	meter=itemBonesawCharge;min=1;tough=1	
+ThoriumMod	Pill	ALLY_HEAL	minWounded=1;hpBelow=0.6;radius=20	
+ThoriumMod	PocketGuardian	NEVER		
+ThoriumMod	PoisonPrickler	ALT_MIX	p=0.4	
+ThoriumMod	SacredCharge	ALT_HEAVY	tough=1;minDist=6;maxDist=30	
+ThoriumMod	TwilightStaff	ALT_MIX	p=0.4	
+ThoriumMod	SnowWhite	NEVER		
+ThoriumMod	MastersLibram	NEVER		
+ThoriumMod	RudeWand	NEVER		
+ThoriumMod	GeomancersBrush	NEVER		
+ThoriumMod	TotemCaller	NEVER		
+ThoriumMod	UselessStaff	NEVER		
+ThoriumMod	WondrousWand	NEVER		
+ThoriumMod	HarpyStaff	NEVER		
+ThoriumMod	LivingWoodAcorn	NEVER		
+ThoriumMod	SoulLink	NEVER		
+ThoriumMod	GatewayGlass	NEVER		
+ThoriumMod	WishingGlass	NEVER		
+ThoriumMod	SoulAnchor	NEVER		
+ThoriumMod	BloomingBow	DETONATE	proj=BloomingBowPro;minOut=3	
+ThoriumMod	OmniCannon	ALT_MIX	p=0.4	
+ThoriumMod	BuffaloLauncher	ALT_AOE	minEnemies=2;radius=8;minDist=8	
+ThoriumMod	LittleRed	NEVER		
+ThoriumMod	PhantomArmCannon	ALT_MIX	p=0.4	
+ThoriumMod	PillPopper	ALT_HEAVY	tough=1;minDist=6;maxDist=35	
+ThoriumMod	Shockbuster	ALT_MIX	p=0.4	
+ThoriumMod	SnarkyGun	ALT_MIX	p=0.4	
+ThoriumMod	TranquilizerGun	NEVER		
+ThoriumMod	OmegaBlaster	METER_READY	meter=itemOmegaBlasterCharge;min=600;tough=1	
+ThoriumMod	BoreanFangStaff	DETONATE	proj=BoreanFangStaffPro2;minOut=2;needEnemyAtCursor=1	
+ThoriumMod	Mjolnir	ALT_FAR	minDist=6	
+ThoriumMod	BatScythe	ALT_FAR	minDist=6	
+ThoriumMod	eDarksteelBroadSword	DETONATE	proj=DarksteelBroadSwordPro;minOut=1	
+ThoriumMod	Bellerose	METER_READY	meter=bellaCharge;min=3;tough=1	
+ThoriumMod	Blitzzard	DASH_CLOSE	minDist=10	
+ThoriumMod	Witchblade	DASH_CLOSE	minDist=10	
+ThoriumMod	BloodDrinker	METER_READY	meter=bloodEssenceDonate;min=1;ownHpBelow=0.7	
+ThoriumMod	BloodGlory	ALT_AOE	minEnemies=2;radius=6;maxDist=6	
+ThoriumMod	GoldenLocks	ALT_AOE	minEnemies=2;radius=6;maxDist=8	
+ThoriumMod	Heartstriker	ALT_HEAVY	tough=1;minDist=2;maxDist=10	
+ThoriumMod	Kinetoscythe	DETONATE	proj=KinetoscythePro2;minOut=1	
+ThoriumMod	LodeStoneClaymore	ALT_AOE	minEnemies=2;radius=6;maxDist=10	
+ThoriumMod	PoseidonCharge	ALT_FAR	minDist=6	
+ThoriumMod	PollenPike	ALT_FAR	minDist=4	
+ThoriumMod	QuakeGauntlet	METER_READY	meter=itemQuakeGauntletCharge;min=100;tough=1	
+ThoriumMod	RifleSpear	ALT_FAR	minDist=4	
+ThoriumMod	ScytheofUndoing	METER_READY	meter=itemScytheofUndoingCharge;min=100;tough=1	
+ThoriumMod	SmitingHammer	METER_READY	meter=holyCharge;min=1;tough=1	
+ThoriumMod	SoulReaver	ALT_FAR	minDist=5	
+ThoriumMod	TerrariansLastKnife	ALT_ALWAYS	ownHpAbove=0.05	
+ThoriumMod	WyvernSlayer	ALT_FAR	minDist=5	
+ThoriumMod	DragonTooth	METER_READY	meter=dragonToothCharge;min=1;tough=1	
+ThoriumMod	DreadRazor	ALT_FAR	minDist=5	
+ThoriumMod	ToothOfTheConsumer	ALT_FAR	minDist=5	
+ThoriumMod	TerrariumSpear	ALT_FAR	minDist=4	
+ThoriumMod	ValadiumSlicer	ALT_HEAVY	tough=1;minDist=2;maxDist=25	
+ThoriumMod	AxeBlade	ALT_AOE	minEnemies=2;radius=6;minDist=4	
+ThoriumMod	BalloonItemBase	ALT_AOE	minEnemies=2;radius=6;minDist=4	
+ThoriumMod	BaseballBat	ALT_MIX	p=0.3	
+ThoriumMod	TerraKnife	ALT_MIX	p=0.4	
+ThoriumMod	TheBlackDagger	ALT_AOE	minEnemies=2;radius=6;minDist=4	
+ThoriumMod	ShroomiteRocketDrill	NEVER		
+ThoriumMod	DarkGate	PORTAL_USE	ignoreIfPlayerHasChaos=1;ignoreIfPlayerHoldsGate=1;useWhenFarFromCommander=40;useWhenOwnHpBelow=0.5;placeNearWoundedAlly=1;cooldownTicks=720	
+ThoriumMod	EnergyProjector	NEVER	primary=1;proj=GraniteBarrier	primary placement guarded

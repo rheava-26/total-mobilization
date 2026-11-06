@@ -1,0 +1,90 @@
+item	mod	class	levy_family	eligible_today	pattern	policy	params	left_click	right_click	requirements	hook
+Bagpipe	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	bagpipe notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+EbonWoodTambourine	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	tambourine burst	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+MarineWineGlass	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	glass notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+ShadeWoodTambourine	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	tambourine burst	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+SongofIceAndFire	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	ice and fire notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+SonicAmplifier	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	sonic beam notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+OnemanQuartet	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	quartet notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+Thunderstruck	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	lightning notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+Zunpet	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	trumpet notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+Bassoon	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	bassoon notes (spawned a little ahead)	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+Fishbone	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	bone notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+SteamFlute	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	steam notes	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+DrumMallet	ThoriumMod	Bard	Magic	Y	OTHER_SAME_AS_LEFT	ALT_MIX	p=0.3	drum shockwave	same note as left click; only the spawn offset differs	empowerment/inspiration rules are the same on both buttons	A
+ChronoOcarina	ThoriumMod	Bard	Magic	Y	PLACE_TARGET	ALT_AOE	minEnemies=2;radius=6;maxDist=30	homing notes	stationary note zone placed at the cursor	none	A
+ForestOcarina	ThoriumMod	Bard	Magic	Y	PLACE_TARGET	ALT_AOE	minEnemies=2;radius=6;maxDist=30	homing notes	stationary note zone placed at the cursor	none	A
+Holophonor	ThoriumMod	Bard	Magic	Y	PLACE_TARGET	ALT_AOE	minEnemies=2;radius=7;maxDist=30	notes	stationary holophonor field placed at the cursor	none	A
+HoneyRecorder	ThoriumMod	Bard	Magic	Y	ALT_SHOT_AOE	ALT_MIX	p=0.5	honey notes	a bee (half damage; strong-bees: 3/4) per right-click	none	A
+ResonatorsArm	ThoriumMod	Bard	Magic	Y	UTILITY	NEVER		notes (charged variant)	zero-damage resonance pulse	charge state	A
+AuraStaff	ThoriumMod	Healer	Unsupported	N	PLACE_TARGET	NEVER		place a healing aura at the cursor (replaces the old one)	free: dismiss all of your auras (kills the projectiles)	none	C
+MidnightStaff	ThoriumMod	Healer	Magic	Y	PLACE_TARGET	NEVER		place a healing aura at the cursor (replaces the old one)	free: dismiss all of your auras (kills the projectiles)	none	A
+FeatherBarrierRod	ThoriumMod	Healer	Magic	Y	PLACE_TARGET	NEVER		place a feather barrier on an ally	dismiss the barrier	none	A
+WarForger	ThoriumMod	Healer	Unsupported	N	PLACE_TARGET	NEVER		place a war anvil buff zone	dismiss the anvil	none	C
+LightBringerWarhammer	ThoriumMod	Healer	Magic	Y	PLACE_TARGET	NEVER		hammer swing	replace/dismiss the placed hammer projectile	none	A
+CellReconstructor	ThoriumMod	Healer	Magic	Y	ALLY_HEAL	ALLY_HEAL	minWounded=2;hpBelow=0.7;radius=24	heal bolt	area heal-over-time on every ally within 350 px	mana	A
+HolyHammer	ThoriumMod	Healer	Boomerang	N	ALLY_HEAL	ALLY_HEAL	minWounded=1;hpBelow=0.6;radius=30	hammer swing	heal wounded allies from range	a wounded ally exists	C
+Bonesaw	ThoriumMod	Healer	Magic	Y	RESOURCE_SPECIAL	METER_READY	meter=itemBonesawCharge;min=1;tough=1	saw swing builds charge	spend charge on a heavier blast	itemBonesawCharge>0	A
+Pill	ThoriumMod	Healer	?	N	ALT_SHOT_HEAVY	ALLY_HEAL	minWounded=1;hpBelow=0.6;radius=20	pill (random heal/damage effect)	zero-damage healing pill	none	C
+PocketGuardian	ThoriumMod	Healer	Magic	Y	PLACE_TARGET	NEVER		shield an ally target	pick the ally target	needs a pocket target	A
+PoisonPrickler	ThoriumMod	Healer	Magic	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	poison dart	poison dart from the chest	mana	A
+SacredCharge	ThoriumMod	Healer	Magic	Y	ALT_SHOT_HEAVY	ALT_HEAVY	tough=1;minDist=6;maxDist=30	charge shot	alt charge shot (see code)	none	A
+TwilightStaff	ThoriumMod	Healer	Magic	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	life-cost radiant bolt	free bolt (the left click costs life)	left needs life > 20/radiantLifeCost	A
+SnowWhite	ThoriumMod	Donator	Magic	Y	MODE_TOGGLE	NEVER		apple/mirror attack by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	A
+MastersLibram	ThoriumMod	Donator	Unsupported	N	MODE_TOGGLE	NEVER		spell by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	C
+RudeWand	ThoriumMod	Donator	Sentry	N	MODE_TOGGLE	NEVER		spell by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	C
+GeomancersBrush	ThoriumMod	Donator	Magic	Y	MODE_TOGGLE	NEVER		paint by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	A
+TotemCaller	ThoriumMod	Donator	Sentry	N	MODE_TOGGLE	NEVER		totem by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	C
+UselessStaff	ThoriumMod	Donator	Magic	Y	MODE_TOGGLE	NEVER		spell by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	A
+WondrousWand	ThoriumMod	Donator	Magic	Y	MODE_TOGGLE	NEVER		elemental spell by stage	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	A
+HarpyStaff	ThoriumMod	Donator	Summon	N	MODE_TOGGLE	NEVER		summon	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	C
+LivingWoodAcorn	ThoriumMod	Donator	Summon	N	MODE_TOGGLE	NEVER		summon	cycle to the next stage (no shot; the stage changes mana cost and projectile)	none	C
+SoulLink	ThoriumMod	Transform	Unsupported	N	MODE_TOGGLE	NEVER		soul-link attack	transform / un-transform	needs a transformation item	C
+GatewayGlass	ThoriumMod	Utility	Unsupported	N	UTILITY	NEVER		teleport home/spawn	teleport (consumable-style)	none	C
+WishingGlass	ThoriumMod	Utility	?	N	UTILITY	NEVER		teleport to chosen target	choose target	none	C
+SoulAnchor	ThoriumMod	Utility	Unsupported	N	UTILITY	NEVER		set anchor	teleport back to the anchor	anchorLocation set; no RevivalExhaustion	C
+BloomingBow	ThoriumMod	Ranged	Bow	Y	DETONATE_RECALL	DETONATE	proj=BloomingBowPro;minOut=3	flower arrows	pop the planted flowers (no ammo)	flowers out	A
+OmniCannon	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_MIX	p=0.4	rapid bursts (2 tick)	slow 20-tick heavy shot	ammo	A
+BuffaloLauncher	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=8;minDist=8	rockets	slower alternate rocket projectile	rocket ammo	A
+LittleRed	ThoriumMod	Ranged	Gun	Y	HELD_VARIANT	NEVER		pistol shots	channelled charge shot with no ammo	channel	A
+PhantomArmCannon	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	channelled burst cannon	single shot (30 tick reuse)	channel on left	A
+PillPopper	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_HEAVY	tough=1;minDist=6;maxDist=35	pill shots	slower variant, 32 tick reuse	pill ammo	A
+Shockbuster	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.4	rifle shot	alternate shock shot	battery ammo	A
+SnarkyGun	ThoriumMod	Ranged	Gun	Y	ALT_RATE	ALT_MIX	p=0.4	bullets	2x fire rate, no ammo used	none	A
+TranquilizerGun	ThoriumMod	Ranged	Gun	Y	ALT_SHOT_HEAVY	NEVER		dart	25% damage tranquilizer dart (crowd control)	dart ammo	A
+OmegaBlaster	ThoriumMod	Magic	Magic	Y	RESOURCE_SPECIAL	METER_READY	meter=itemOmegaBlasterCharge;min=600;tough=1	channelled beam	release the stored charge	charge>=600; not already active	A
+BoreanFangStaff	ThoriumMod	Magic	Magic	Y	DETONATE_RECALL	DETONATE	proj=BoreanFangStaffPro2;minOut=2;needEnemyAtCursor=1	fang volley	detonate planted fangs on an enemy near the cursor	fangs out and an enemy near the cursor	A
+Mjolnir	ThoriumMod	Melee	Unsupported	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=6	hammer swing	throw the hammer (MjolnirPro3)	none	C
+BatScythe	ThoriumMod	Melee	Unsupported	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=6	scythe swing	fast scythe projectile	no BatScythePro2 out	C
+eDarksteelBroadSword	ThoriumMod	Melee	Broadsword	N	DETONATE_RECALL	DETONATE	proj=DarksteelBroadSwordPro;minOut=1	sword swings	end the swung blades early, then fire a 75% damage burst	none	C
+Bellerose	ThoriumMod	Melee	Broadsword	N	RESOURCE_SPECIAL	METER_READY	meter=bellaCharge;min=3;tough=1	builds charge	spend 3 charge on a blast	bellaCharge>=3	C
+Blitzzard	ThoriumMod	Melee	Broadsword	N	MOBILITY_DASH	DASH_CLOSE	minDist=10	sword combo	dash forward	none	C
+Witchblade	ThoriumMod	Thrown	Magic	Y	MOBILITY_DASH	DASH_CLOSE	minDist=10	throw blade	dash forward	none	C
+BloodDrinker	ThoriumMod	Melee	Broadsword	N	RESOURCE_SPECIAL	METER_READY	meter=bloodEssenceDonate;min=1;ownHpBelow=0.7	sword swing builds blood essence	spend essence: heal + empowered swing	bloodEssenceDonate>0	C
+BloodGlory	ThoriumMod	Melee	Boomerang	N	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;maxDist=6	sword swing	burst centred on you	none	C
+GoldenLocks	ThoriumMod	Melee	Shortsword	N	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;maxDist=8	lock whips	alternate flurry	none	C
+Heartstriker	ThoriumMod	Melee	Magic	Y	ALT_SHOT_HEAVY	ALT_HEAVY	tough=1;minDist=2;maxDist=10	stab	slow heart projectile	no projectile out	C
+Kinetoscythe	ThoriumMod	Melee	Unsupported	N	DETONATE_RECALL	DETONATE	proj=KinetoscythePro2;minOut=1	scythe swing	alternate scythe projectile	none	C
+LodeStoneClaymore	ThoriumMod	Melee	Broadsword	N	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;maxDist=10	sword swing	60% damage ground burst	none	C
+PoseidonCharge	ThoriumMod	Melee	Spear	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=6	spear thrust	zero-damage tidal bolts	none	C
+PollenPike	ThoriumMod	Melee	Spear	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=4	spear thrust	thrown pollen spear	none	C
+QuakeGauntlet	ThoriumMod	Melee	Shortsword	N	RESOURCE_SPECIAL	METER_READY	meter=itemQuakeGauntletCharge;min=100;tough=1	punches build charge	quake burst	charge>=100	C
+RifleSpear	ThoriumMod	Melee	Boomerang	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=4	spear thrust	rifle shot	left needs no spear out	C
+ScytheofUndoing	ThoriumMod	Melee	Unsupported	N	RESOURCE_SPECIAL	METER_READY	meter=itemScytheofUndoingCharge;min=100;tough=1	scythe swing builds charge	transformation	charge>=100 or transformed	C
+SmitingHammer	ThoriumMod	Melee	Boomerang	N	RESOURCE_SPECIAL	METER_READY	meter=holyCharge;min=1;tough=1	hammer swing	smite marked enemies with held holy charge	holyCharge>0	C
+SoulReaver	ThoriumMod	Melee	Magic	Y	ALT_SHOT_HEAVY	ALT_FAR	minDist=5	scythe swing	soul bolt	none	C
+TerrariansLastKnife	ThoriumMod	Melee	Broadsword	N	ALT_SHOT_HEAVY	ALT_ALWAYS	ownHpAbove=0.05	knife cannot shoot	the only ranged attack: throws the knife	life > 5%	C
+WyvernSlayer	ThoriumMod	Melee	Broadsword	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=5	sword swing	wyvern wave	none	C
+DragonTooth	ThoriumMod	Melee	Broadsword	N	RESOURCE_SPECIAL	METER_READY	meter=dragonToothCharge;min=1;tough=1	sword swing builds charge	spend charge for scaled damage	dragonToothCharge>0	C
+DreadRazor	ThoriumMod	Melee	Broadsword	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=5	sword swing	razor wave	none	C
+ToothOfTheConsumer	ThoriumMod	Melee	Broadsword	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=5	sword swing	tooth projectile	none	C
+TerrariumSpear	ThoriumMod	Melee	Spear	N	ALT_SHOT_HEAVY	ALT_FAR	minDist=4	spear thrust	thrown spear (1.35x speed)	left needs no spear out	C
+ValadiumSlicer	ThoriumMod	Melee	Broadsword	N	PLACE_TARGET	ALT_HEAVY	tough=1;minDist=2;maxDist=25	swing does nothing by itself	slicing strike placed at the cursor	none	C
+AxeBlade	ThoriumMod	Thrown	Unsupported	N	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;minDist=4	thrown axe	alternate axe blade	none	C
+BalloonItemBase	ThoriumMod	Thrown	?	N	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;minDist=4	thrown balloon	faster balloon (1.15x)	none	C
+BaseballBat	ThoriumMod	Thrown	Gun	Y	ALT_SHOT_HEAVY	ALT_MIX	p=0.3	swing hits thrown balls	alternate pitch	none	C
+TerraKnife	ThoriumMod	Thrown	Magic	Y	ALT_SHOT_AOE	ALT_MIX	p=0.4	throw knife	alternate terra knife	none	C
+TheBlackDagger	ThoriumMod	Thrown	Magic	Y	ALT_SHOT_AOE	ALT_AOE	minEnemies=2;radius=6;minDist=4	throw dagger	fan of daggers	none	C
+NeedleItemBase	ThoriumMod	Thrown	?	N	RESOURCE_SPECIAL	METER_READY	meter=statThrowingNeedlesCurrent;max=statThrowingNeedlesMax;invert=1	throw needles	restock needles	needles below max	C
+ShroomiteRocketDrill	ThoriumMod	Tool	?	N	UTILITY	NEVER		drill	alternate drill rocket	none	C
+DarkGate	ThoriumMod	Healer	Magic(healer,staff)	Y	PORTAL_USE	PORTAL_USE	ignoreIfPlayerHasChaos=1;ignoreIfPlayerHoldsGate=1;useWhenFarFromCommander=40;useWhenOwnHpBelow=0.5;placeNearWoundedAlly=1;cooldownTicks=720	place a linked pair of gateways (one at you, one at the cursor); kills the owner's previous pair	NOT AltFunctionUse: ThoriumPlayer calls DarkGate.DoTeleport every frame; with Main.mouseRight pressed and the cursor within 80 px of a gate (and no ChaosState) the player teleports to the partner, heals 10+healBonus and gains ChaosState for 720-30*healBonus ticks	a gate within 80 px of the cursor; no ChaosState; (mana 50 to place)	B

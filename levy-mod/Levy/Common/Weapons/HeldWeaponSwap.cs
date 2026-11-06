@@ -68,6 +68,7 @@ namespace Levy.Common.Weapons
 
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 			Vector2 dir = Vector2.Normalize(toTarget);
+			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
 			int i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
 			if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);

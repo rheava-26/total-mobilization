@@ -28,6 +28,7 @@ namespace Levy.Common.Compat.Thorium
 			// Attack-speed empowerments: the weapon's cooldown runs down faster by the bonus (extra ticks, spread by chance so +9% is +9% on average).
 			if (state.EmpAttackSpeed > 0.001f && s.AttackCooldown > 1 && Main.rand.NextFloat() < state.EmpAttackSpeed / (1f + state.EmpAttackSpeed)) s.AttackCooldown--;
 
+			DarkGateCompat.Drive(s, state);
 			Item held = WeaponUse.HeldItem(s);
 			if (HealerCompat.IsHealWeapon(held)) HealerCompat.Tick(s, held, state);
 		}

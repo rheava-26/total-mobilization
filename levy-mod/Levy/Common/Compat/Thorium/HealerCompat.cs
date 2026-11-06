@@ -123,6 +123,7 @@ namespace Levy.Common.Compat.Thorium
 		/// <summary>Per tick (server / single player), for a soldier holding a heal weapon.</summary>
 		public static void Tick(SoldierNPC s, Item item, SoldierThoriumGlobalNPC state)
 		{
+			if (DarkGateCompat.IsGate(item)) return; // the Dark Gate is not a heal shot: DarkGateCompat places and uses the gateways
 			if (state.HealCooldown > 0) { state.HealCooldown--; return; }
 			if (s.IsRouted || item.ModItem is not ThoriumItem ti) return;
 			HealerRole role = RoleOf(item);

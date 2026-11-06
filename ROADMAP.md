@@ -278,6 +278,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Patrol Banner must sway in the wind like vanilla banners.
 - Drone: ducted-fan nacelles on the sides at body height, airliner-engine style. Turret: a mount that holds the weapon.
 **OOA sentry cost = flat 5 Etherian Mana for all three tiers (Eve, 04:45). Eve thinks 5 may be too cheap, since a levy outclasses a vanilla sentry. My suggestion, if it plays cheap: flat 10, the same as vanilla sentries, rather than a per-tier ramp. Awaiting play feedback. Done; OoaCheck 31/31 on the Thorium+Levy+Mech integration boot (0 exceptions).**
+**MERGED art6 (688c474):** guide books reverted to pre-art4; Patrol Banner sways (MultiTileSway + MultiTileVine special point; unseen in game: check the platform offset). Staves from art6 REJECTED by me (cartoon house heads, stubby shafts). `staves7` is redoing them by editing the vanilla Ballista Rod/Cane/Staff pixels, swapping only the head for a house.
 **RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
 
 **RUNNING (2026-11-06 04:30):**

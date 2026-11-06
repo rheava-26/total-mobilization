@@ -58,7 +58,7 @@ namespace Levy.Common.UI
 			_rankLabel = Lbl(LevyUtil.T("Rules.InfoRankSet"), 10, y + 4);
 			_rankMode = new LevyButton("", LevyConstants.UI.ButtonTextScale, 96, 24, CycleRankMode, LevyUtil.T("Rules.RankModeHint"));
 			_rankMode.Left.Set(64, 0f); _rankMode.Top.Set(y, 0f); Append(_rankMode);
-			_rankValue = new NumberField(100, 1, 100000, 10, false, () => Ov(false)?.Value ?? 0f, v => { var o = Ov(true); if (o != null) { o.Value = v; Changed(); } });
+			_rankValue = new NumberField(100, 1, 100000000, 10, false, () => Ov(false)?.Value ?? 0f, v => { var o = Ov(true); if (o != null) { o.Value = v; Changed(); } });
 			_rankValue.Left.Set(PanelWidth - 108, 0f); _rankValue.Top.Set(y, 0f);
 
 			y += 32;
@@ -89,7 +89,7 @@ namespace Levy.Common.UI
 		public void Show(Item it)
 		{
 			if (it == null || it.IsAir) return;
-			if (_item != null && _item.type == it.type && _item.prefix == it.prefix) { _item = it.Clone(); return; }
+			if (_item != null && _item.type == it.type && _item.prefix == it.prefix) return;
 			_item = it.Clone();
 			_tick = 0; _catSig = "";
 			if (_popup.Open) _popup.Remove();

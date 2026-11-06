@@ -1,0 +1,437 @@
+# Armory 2.0 rule-list scenarios (vanilla items only). GLOBAL plans the whole army together, as the game does.
+# RULES clear / RCLASS / RWEIGHT / ROVER / RINCLUDE / RMIN / RDENY / RONLY / OVERRIDE / TAG / RPREVIEW are described in Common/Testing/RulesProbe.cs.
+# MS <ammo> <n> stocks n full stacks, so every soldier's pouch can be filled.
+# Every scenario ends with STAGE: the soldiers are issued, then run UpgradeWeapons rounds, so the printed result is the settled assignment.
+# Levies carry no armor, so the class balance and the category rules are what decide the mix.
+
+[A0_baseline_no_rules_10_bows_10_swords_6_guns_12_levies]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 12
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/PlatinumBow
+W Vanilla/DemonBow
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+STAGE
+
+[A1_at_least_7_bows_with_10_bows_in_stock]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 12
+RMIN bow 7
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/PlatinumBow
+W Vanilla/DemonBow
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[A2_at_least_7_bows_with_only_3_bows_in_stock]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 12
+RMIN bow 7
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[B1_bows_over_guns_4_bows_6_guns_6_levies]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 6
+ROVER bow gun
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[B2_bows_over_guns_10_bows_6_guns_5_levies_no_gun_is_used]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 5
+ROVER bow gun
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/PlatinumBow
+W Vanilla/DemonBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[B3_include_bows_all_4_bows_used_guns_also_used]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 8
+RINCLUDE bow
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[C1_class_weights_melee3_ranged2_magic1_12_levies]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 12
+RCLASS melee=w3 ranged=w2 magic=w1
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/AmethystStaff
+W Vanilla/TopazStaff
+W Vanilla/SapphireStaff
+W Vanilla/EmeraldStaff
+W Vanilla/RubyStaff
+W Vanilla/DiamondStaff
+W Vanilla/WandofSparking
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[C2_class_fixed_magic3_max_melee2_rest_ranged_10_levies]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 10
+RCLASS magic=fix3 melee=max2 ranged=w1
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/AmethystStaff
+W Vanilla/TopazStaff
+W Vanilla/SapphireStaff
+W Vanilla/EmeraldStaff
+W Vanilla/RubyStaff
+W Vanilla/DiamondStaff
+W Vanilla/WandofSparking
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[C3_class_min_melee2_max_melee2_10_levies_swords_top_of_the_ranking]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 10
+RCLASS melee=min2,max2 ranged=w1
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/GoldBroadsword
+W Vanilla/PlatinumBroadsword
+W Vanilla/BladeofGrass
+W Vanilla/Muramasa
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/SilverBow
+W Vanilla/TungstenBow
+W Vanilla/GoldBow
+W Vanilla/AmethystStaff
+W Vanilla/TopazStaff
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[D1_deny_list_minishark_and_musket_barred]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 6
+RDENY Vanilla/Minishark Vanilla/Musket
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+RPREVIEW
+STAGE
+
+[E1_rank_override_wooden_sword_preferred_and_muramasa_never]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 3
+OVERRIDE Vanilla/WoodenSword prefer
+OVERRIDE Vanilla/Muramasa never
+W Vanilla/WoodenSword
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/Muramasa
+W Vanilla/BladeofGrass
+RPREVIEW
+STAGE
+
+[E2_rank_override_set_a_number_copper_broadsword_set_to_1e6]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 3
+OVERRIDE Vanilla/CopperBroadsword set 1000000
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/Muramasa
+W Vanilla/BladeofGrass
+RPREVIEW
+STAGE
+
+[F1_tag_edit_musket_retagged_as_a_bow_for_a_bows_minimum]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 4
+RMIN bow 2
+TAG Vanilla/Musket +bow -gun
+W Vanilla/WoodenBow
+W Vanilla/Musket
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/Muramasa
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[F2_tag_edit_class_musket_counted_as_melee_class_fixed_melee2]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 4
+RCLASS melee=fix2 ranged=w1
+TAG Vanilla/Musket class melee
+W Vanilla/Musket
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[G1_conflict_earlier_order_beats_later_minimum_bows_over_guns_then_at_least_3_guns]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 6
+ROVER bow gun
+RMIN gun 3
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[G2_conflict_reversed_minimum_first_then_order_the_minimum_wins]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 6
+RMIN gun 3
+ROVER bow gun
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/LeadBow
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+MS Vanilla/MusketBall 14
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE
+
+[H1_rules_added_to_a_running_army_gunners_swap_to_new_bows]
+GLOBAL
+RANKPROGRESS 3
+SOLDIERS 8
+W Vanilla/Musket
+W Vanilla/Handgun
+W Vanilla/FlintlockPistol
+W Vanilla/Minishark
+W Vanilla/TheUndertaker
+W Vanilla/Boomstick
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+MS Vanilla/MusketBall 14
+STAGE
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+MS Vanilla/WoodenArrow 14
+ROVER bow gun
+RPREVIEW
+STAGE
+
+[C4_class_fixed_magic3_with_armored_levies_armor_class_stays_and_free_levies_fill_the_rest]
+# 3 melee-armored + 3 ranged-armored + 6 unarmored levies; magic fixed at 3 comes out of the unarmored six.
+GLOBAL
+RANKPROGRESS 3
+MIX interleave melee=3 ranged=3 none=6
+RCLASS magic=fix3 melee=max3
+W Vanilla/CopperBroadsword
+W Vanilla/IronBroadsword
+W Vanilla/TinBroadsword
+W Vanilla/LeadBroadsword
+W Vanilla/SilverBroadsword
+W Vanilla/TungstenBroadsword
+W Vanilla/WoodenBow
+W Vanilla/CopperBow
+W Vanilla/TinBow
+W Vanilla/IronBow
+W Vanilla/AmethystStaff
+W Vanilla/TopazStaff
+W Vanilla/SapphireStaff
+W Vanilla/EmeraldStaff
+MS Vanilla/WoodenArrow 14
+RPREVIEW
+STAGE

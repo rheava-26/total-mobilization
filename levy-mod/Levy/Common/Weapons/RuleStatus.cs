@@ -169,7 +169,7 @@ namespace Levy.Common.Weapons
 				if (want > stock.Class(e.Class) && shortWhat == null) { shortWhat = T("StatusClassShort", want, WeaponTags.DisplayName(e.Class, true), stock.Class(e.Class)); }
 			}
 			bool shadowed = false;
-			for (int i = 0; i < index; i++) if (rules.Blocks[i].On && rules.Blocks[i].Kind == RuleKind.ClassBalance) { shadowed = true; break; }
+			for (int i = 0; i < index && !shadowed; i++) if (rules.Blocks[i].On && rules.Blocks[i].Kind == RuleKind.ClassBalance && rules.Blocks[i].Classes.Exists(e => !e.IsDefault)) shadowed = true; // the first block with numbers is the one in use
 			if (shadowed) return new BlockStatus(T("StatusClassShadowed"), true);
 			if (!any) return new BlockStatus(T("StatusClassFree"), false);
 			if (shortWhat != null) return new BlockStatus(shortWhat, true);

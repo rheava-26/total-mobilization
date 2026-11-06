@@ -4,9 +4,8 @@ TabItems: Items
 TabItemsHint: The armory's storage and issue rows.
 TabRules: Rules
 TabRulesHint: The armory's rule list. It decides which weapons the levies draw.
-
 AddClass: + Class balance
-AddClassHint: Sets how many levies carry each class.
+AddClassHint: Sets how many levies carry each class. A limit gives way before a levy is left unarmed.
 AddCategory: + Category rule
 AddCategoryHint: Prefers, orders, includes or requires a kind of weapon, such as bows.
 AddList: + Item list
@@ -14,8 +13,8 @@ AddListHint: Names items that are never used, or the only items used.
 Reset: Reset
 ResetHint: Replaces the list with the default. Item overrides stay.
 OrderNote: Rules apply from the top. When two disagree, the upper one wins.
-On: "On"
-Off: "Off"
+On: On
+Off: Off
 OnHint: Turns this block on or off.
 RemoveHint: Removes this block.
 UpHint: Moves this block up.
@@ -23,7 +22,6 @@ DownHint: Moves this block down.
 Kind_ClassBalance: Class balance
 Kind_Category: Category rule
 Kind_ItemList: Item list
-
 Mode_Weight: Weight
 Mode_Over: Order
 Mode_Include: Include
@@ -35,13 +33,11 @@ ModeHint_Min: At least this many levies carry a weapon in the category.
 CategoryHint: The kind of weapon this rule is about.
 OtherHint: The kind of weapon that comes second.
 OverWord: before
-
 List_Never: Never use
 List_Only: Only use
 ListModeHint: Never use bars the items. Only use bars everything else.
 AddItemHint: Hold an item and click to add it.
 TypeNumber: Type a number
-
 ColWeight: Share
 ColMin: At least
 ColMax: At most
@@ -49,27 +45,25 @@ ColFixed: Exactly
 ColStock: Stock
 Auto: auto
 NoLimit: none
-
 StatusOff: This block is off.
 StatusWeight: "{0} {1} in stock, ranked x{2}."
 StatusOverSame: Pick two different categories.
-StatusOverNone: "No {0} in stock. The rule has no effect."
+StatusOverNone: No {0} in stock. The rule has no effect.
 StatusOver: "{0} come before {1}. {2} {0} and {3} {1} in stock."
-StatusIncludeNone: "No {0} in stock."
-StatusInclude: "All {0} {1} are used."
+StatusIncludeNone: No {0} in stock.
+StatusInclude: All {0} {1} are used.
 StatusMin: "{0} {1} wanted, {2} in stock."
-StatusFewLevies: "Only {0} levies."
-BlockedOrder: "Block {0} puts {1} before {2}."
-BlockedClass: "Block {0} limits {1} to {2}."
+StatusFewLevies: Only {0} levies.
+BlockedOrder: Block {0} puts {1} before {2}.
+BlockedClass: Block {0} limits {1} to {2}.
 StatusListEmpty: This list is empty.
-StatusOnly: "Only these {0} items are used."
+StatusOnly: Only these {0} items are used.
 StatusNever: "{0} items are never used."
 StatusClassShort: "{0} {1} wanted, {2} in stock."
 StatusClassShadowed: An earlier class balance block is in use. This one is ignored.
 StatusClassFree: No numbers set. Armor and stock decide.
-StatusClassPlan: "For {0} levies: {1}."
+StatusClassPlan: Among {0} levies without armor: {1}.
 StatusClassSet: Numbers are set.
-
 InfoRankSet: Rank
 RankModeHint: Auto uses the computed rank. Set uses your number. Never keeps the item out. Prefer uses it before all others.
 InfoClass: Class
@@ -88,32 +82,30 @@ RankMode_Set: Set
 RankMode_Never: Never use
 RankMode_Prefer: Prefer
 NoCategory: no category
-
 InfoKind: "{0}. Class: {1}."
 InfoUnsupported: Levies cannot use this item.
-InfoStats: "Damage {0}. Use time {1}. Crit {2}%."
-InfoMana: "Costs {0} mana."
+InfoStats: Damage {0}. Use time {1}. Crit {2}%.
+InfoMana: Costs {0} mana.
 InfoAmmo: Needs ammo.
 InfoTierNone: No tier known.
-InfoTierPast: "Tier: {0}. The world is {1} stages past it."
-InfoTierAhead: "Tier: {0}. Not reached yet."
+InfoTierPast: Tier: {0}. The world is {1} stages past it.
+InfoTierAhead: Tier: {0}. Not reached yet.
 InfoBarred: A list rule bars this item.
-InfoRank: "Rank {0}"
+InfoRank: Rank {0}
 RankNever: never used
 RankPrefer: preferred
 BaseDamage: damage score
-BasePrice: "price {0}"
-BreakBase: "Base {0} ({1})"
-BreakStage: "Stage discount x{0}"
-BreakRecency: "Recent deposit x{0}"
-BreakFound: "Found weapon x{0}"
-BreakRules: "Rules x{0} ({1})"
+BasePrice: price {0}
+BreakBase: Base {0} ({1})
+BreakStage: Stage discount x{0}
+BreakRecency: Recent deposit x{0}
+BreakFound: Found weapon x{0}
+BreakRules: Rules x{0} ({1})
 BreakRulesNone: Rules x1
 BreakArmored: Armored foes shrug it off.
-BreakSet: "Override: rank set to {0}"
-BreakNever: "Override: never used"
-BreakPrefer: "Override: always preferred"
-
+BreakSet: Override: rank set to {0}
+BreakNever: Override: never used
+BreakPrefer: Override: always preferred
 Boss_0: the start
 Boss_1: King Slime
 Boss_2: Eye of Cthulhu
@@ -133,8 +125,7 @@ Boss_15: Empress of Light
 Boss_16: Lunatic Cultist
 Boss_17: Lunatic Cultist
 Boss_18: Moon Lord
-BossOther: "stage {0}"
-
+BossOther: stage {0}
 Name_bow: Bow
 Name_repeater: Repeater
 Name_gun: Gun
@@ -160,7 +151,6 @@ Name_summon: Summon
 Name_rogue: Rogue
 Name_bard: Bard
 Name_healer: Healer
-
 Plural_bow: bows
 Plural_repeater: repeaters
 Plural_gun: guns

@@ -12,8 +12,8 @@ from PIL import Image
 
 # pod boxes (logical px, inclusive x0,x1,y0,y1): near pod in front of the hull at its forward-middle, far pod 2 up and 3 back
 NEAR = (20, 28, 2, 9)
-FAR = (NEAR[0] - 3, NEAR[1] - 3, NEAR[2] - 2, NEAR[3] - 2)
-BANDS = ['s', 'h', 'm', 'm', 'd', 'm']
+FAR = (NEAR[0] - 4, NEAR[1] - 4, NEAR[2] - 3, NEAR[3] - 3)
+BANDS = ['s', 's', 'h', 'h', 'm', 'm']      # near pod cowling: distinctly lighter than the hull
 DARKER = {'s': 'h', 'h': 'm', 'm': 'd', 'd': 'd', 'o': 'o'}
 
 
@@ -59,7 +59,24 @@ def draw_pod(cv, x0, x1, y0, y1, k, far):
     if (gx, ty + 1) in inner: put(gx, ty + 1, 's' if k % 2 == 0 else 'h')
     ex = (xb, (ty + by) // 2)
     if ex in inner: put(ex[0], ex[1], ['m', 'd', 'h', 'd'][k])
+    draw_intake(cv, x1 - 0.9, cy, 2.3, ry + 0.1, far, mask)
     return mask
+
+
+def draw_intake(cv, cx, cy, rx, ry, far, podmask):
+    """The intake seen slightly from the front: a bright oval rim round a dark opening, outlined where it overlaps the cowling."""
+    oval = {(x, y) for y in range(cv.h) for x in range(cv.w) if ((x + .5 - cx) / rx) ** 2 + ((y + .5 - cy) / ry) ** 2 <= 1.0}
+    pal = g.GRAPHITE if far else g.GUNMETAL
+    for (x, y) in oval:
+        d = math.hypot((x + .5 - cx) / rx, (y + .5 - cy) / ry)
+        t = -((x + .5 - cx) / rx) * .6 - ((y + .5 - cy) / ry) * .8      # 1 = top-left of the rim
+        if d > 0.55:
+            c = 's' if t > 0.2 else 'h'
+            if far: c = 'h' if c == 's' else 'm'
+            cv.put(x, y, pal[c])
+        else:
+            cv.put(x, y, pal['d'] if (x + .5 > cx and y + .5 > cy) else pal['o'])
+    cv.outline(oval)
 
 
 def draw_ring_cowl(cv, cx, cy, r, far, k):

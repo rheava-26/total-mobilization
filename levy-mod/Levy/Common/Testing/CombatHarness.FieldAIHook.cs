@@ -29,6 +29,52 @@ namespace Levy.Common.Testing
 			}
 		}
 
+		private void FaAddLava()
+		{
+			foreach (int w in new[] { 3, 8, 16 }) foreach (int hook in new[] { 0, ItemID.GrapplingHook }) _fa.Add(FaLava(w, hook));
+		}
+
+		/// <summary>A lava trench between a Follow levy and the commander: width 3 (a jump), 8 and 16 (only a hook, or nothing). The levy must never end up in the lava.</summary>
+		private FaTrial FaLava(int width, int hookItem)
+		{
+			int lavaTicks = 0, arrive = -1; bool dead = false; float bestD = float.MaxValue; int minLife = int.MaxValue;
+			return new FaTrial
+			{
+				Name = "LAVA", Ticks = 1500,
+				Setup = () =>
+				{
+					SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = 0;
+					int cx = _cx, fy = _faFy;
+					FaBuildArena("flat");
+					FaFill(cx, fy, cx + width - 1, fy + 4, false);
+					for (int x = cx; x < cx + width; x++) for (int y = fy; y <= fy + 4; y++) { Tile t = Main.tile[x, y]; t.LiquidAmount = 255; t.LiquidType = Terraria.ID.LiquidID.Lava; }
+					_faCmdPos = new Vector2((cx + width + 14) * 16f, fy * 16f - Main.player[0].height);
+					var b = FaSpawnSlot(0, (cx - 14) * 16f, fy * 16f, r =>
+					{
+						r.Order = SoldierOrder.Follow; r.HoldFire = true; r.LifeCrystals = 15;
+						if (hookItem != 0) { r.Gear.Hook = RItem(hookItem); r.Gear.SetLocked(SoldierGear.SlotHook, true); }
+					});
+					b.RefreshStats();
+				},
+				Step = t =>
+				{
+					var b = _faSol[0]; NPC n = b.NPC;
+					if (!n.active || n.life <= 0) { dead = true; return; }
+					if (n.lavaWet) { if (lavaTicks == 0) Mod.Logger.Info($"LAVADBG t={t} width={width} pos={n.Bottom.X / 16f:0.0},{n.Bottom.Y / 16f:0.0} vel={n.velocity.X:0.0},{n.velocity.Y:0.0} state={b.State} hasGoal={b.HasMoveGoal} blocked={b.MoveBlocked} {b.HookDbgState}"); lavaTicks++; }
+					else if (t % 40 == 0 && width == 8 && hookItem == 0) Mod.Logger.Info($"LAVADBG-TRK t={t} pos={n.Bottom.X / 16f:0.0},{n.Bottom.Y / 16f:0.0} vel={n.velocity.X:0.0},{n.velocity.Y:0.0} state={b.State} blocked={b.MoveBlocked}");
+					minLife = Math.Min(minLife, n.life);
+					float d = Vector2.Distance(n.Bottom, Main.player[0].Bottom) / 16f; bestD = Math.Min(bestD, d);
+					if (arrive < 0 && d < 6f && n.velocity.Y == 0f) arrive = t;
+				},
+				Report = () =>
+				{
+					var b = _faSol[0];
+					string line = $"LAVAT|lavaWidth={width}|hook={(hookItem == 0 ? "none" : "grappling")}|dead={dead}|ticksInLava={lavaTicks}|lowestHp={minLife}|reachedAtTick={(arrive >= 0 ? arrive.ToString() : "never")}|closest={bestD:0.0}T|hookCasts={b.HkCasts}|landings={b.HkLandings}";
+					Mod.Logger.Info(line); return line;
+				},
+			};
+		}
+
 		private FaTrial FaHookT(string kind, int hookItem, bool before)
 		{
 			const int Ticks = 2400;

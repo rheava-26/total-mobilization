@@ -100,7 +100,7 @@ namespace Levy.Common.Testing
 			for (int x = cx - 108; x <= cx + 108; x++)
 			{
 				int h = 0;
-				if (hills) { double v = 5.5 * Math.Sin(x * 0.11) + 3.5 * Math.Sin(x * 0.27 + 1.3) + 2 * Math.Sin(x * 0.5); h = Math.Max(0, (int)Math.Round(v + 6)); }
+				if (hills) { double v = 4.5 * Math.Sin(x * 0.07) + 2.5 * Math.Sin(x * 0.16 + 1.3) + 1.0 * Math.Sin(x * 0.35); h = Math.Max(0, (int)Math.Round(v + 7)); }
 				if (h > 0) FaFill(x, fy - h, x, fy - 1, true, TileID.Dirt);
 				_faGround[x - (cx - 108)] = fy - h;
 			}
@@ -149,7 +149,8 @@ namespace Levy.Common.Testing
 			int deaths = 0; long lifeSum = 0; int lives = 0, contactHits = 0, projHits = 0, lavaTicks = 0, hitsTotal = 0, exposure = 0, teleports = 0, hookCasts = 0, maneuvers = 0;
 			long bossDmg = 0; int fieldSeesBoss = 0, bossFastTicks = 0; float bossPeakV = 0f; int prevBossLife = -1; int bossIdx = -1; bool bossGone = false;
 			var mobs = new List<int>(); var byKind = new Dictionary<string, int>();
-			bool cmdMove = Environment.GetEnvironmentVariable("LEVY_REAL_CMDMOVE") != "0"; bool auto = Environment.GetEnvironmentVariable("LEVY_REAL_AUTO") == "1"; int autoBuff = ModContent.BuffType<Content.Buffs.AutonomousBuff>(); float cmdBaseX = (_cx - 17) * 16f + 8f;
+			bool cmdMove = Environment.GetEnvironmentVariable("LEVY_REAL_CMDMOVE") != "0"; bool auto = Environment.GetEnvironmentVariable("LEVY_REAL_AUTO") == "1" || target == "spec"; bool lesser = rb.Key.StartsWith("eoc") || rb.Key == "kingslime" || rb.Mob; int specBuff = ModContent.BuffType<Content.Buffs.SpectatorBuff>(); int autoBuff = ModContent.BuffType<Content.Buffs.AutonomousBuff>(); float cmdBaseX = (_cx - 17) * 16f + 8f;
+			var lastGrY = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0;
 			int dNear = 0, dBase = 0, dNoBetter = 0, dBusy = 0, dDJ = 0, dDash = 0, dHook = 0, dJump = 0, dStep = 0;
 			void Acc(SoldierNPC b) { hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
 			return new FaTrial
@@ -160,12 +161,14 @@ namespace Levy.Common.Testing
 					_faReal = true; RealOn = true;
 					Main.rand = new UnifiedRandom(1000 + seed * 7919);
 					SoldierNPC.DodgeMode = mode; SoldierNPC.FallDamageOverride = 0; SoldierNPC.MobilityMode = before ? 0 : 1;
-					var cfg = LevyConfig.Get; cfg.EnemiesTargetSoldiers = true; cfg.BossesTargetSoldiers = target == "army";
+					var cfg = LevyConfig.Get; cfg.EnemiesTargetSoldiers = true; cfg.BossesTargetSoldiers = target == "army" || target == "spec";
 					try { global::Levy.Common.Targeting.EnemyTargeting.RefreshConfig(); } catch { }
 					RealUnlockBosses();
 					FaBuildArena(arena);
 					int cx = _cx;
-					float cmdX = (cx - 17) * 16f + 8f; if (target == "army") cmdX = (cx - 104) * 16f;
+					// a campfire and a heart lantern in the middle of the squad (the real station tiles the station system scans for)
+					{ int gx = cx; int gy = FaGroundRow(gx * 16f); Tile c = Main.tile[gx, gy - 1]; c.HasTile = true; c.TileType = TileID.Campfire; c.TileFrameX = 0; c.TileFrameY = 0; Tile l = Main.tile[gx + 3, gy - 7]; l.HasTile = true; l.TileType = TileID.HangingLanterns; l.TileFrameX = 0; l.TileFrameY = 324; }
+					float cmdX = (cx - 17) * 16f + 8f; if (target == "army") cmdX = (cx - 104) * 16f; if (target == "spec") cmdX = (cx - 70) * 16f;
 					_faCmdPos = new Vector2(cmdX, FaGroundRow(cmdX) * 16f - Main.player[0].height);
 					for (int k = 0; k < N; k++) { FaSpawnSlot(k, RealSpawnX(k), FaGroundRow(RealSpawnX(k)) * 16f, r => RealGear(r, gear)).RefreshStats(); lastPos[k] = _faSol[k].NPC.Center; }
 					if (!rb.Mob)
@@ -181,7 +184,9 @@ namespace Levy.Common.Testing
 				},
 				Step = t =>
 				{
-					if (cmdMove) { float mx = cmdBaseX + (float)Math.Sin(t / 110.0) * 9f * 16f; _faCmdPos = new Vector2(mx, FaGroundRow(mx) * 16f - Main.player[0].height); }
+					if (target == "spec") { Player sp0 = Main.player[0]; if (!sp0.HasBuff(specBuff)) sp0.AddBuff(specBuff, 600); }
+					foreach (var hb in _faSol) if (hb.NPC.active && hb.PotionSickness == 0 && hb.NPC.life * 100 < hb.NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent) { hb.NPC.life = Math.Min(hb.NPC.lifeMax, hb.NPC.life + (lesser ? 50 : 100)); hb.PotionSickness = LevyConstants.PotionSicknessTicks; }
+					if (cmdMove && target != "spec") { float mx = cmdBaseX + (float)Math.Sin(t / 110.0) * 9f * 16f; _faCmdPos = new Vector2(mx, FaGroundRow(mx) * 16f - Main.player[0].height); }
 					if (auto) foreach (var sb0 in _faSol) if (sb0.NPC.active && !sb0.NPC.HasBuff(autoBuff)) sb0.NPC.AddBuff(autoBuff, 600);
 					if (bossIdx >= 0)
 					{
@@ -211,6 +216,10 @@ namespace Levy.Common.Testing
 							else if (t + 1 - deadAt[k] >= 45) { FaSpawnSlot(k, RealSpawnX(k), FaGroundRow(RealSpawnX(k)) * 16f, r => RealGear(r, gear)).RefreshStats(); lastHits[k] = 0; born[k] = t; deadAt[k] = 0; lastPos[k] = _faSol[k].NPC.Center; }
 							continue;
 						}
+						aliveTicks++; if (Math.Abs(nn.velocity.X) < 0.3f && Math.Abs(nn.velocity.Y) < 0.3f) stillTicks++;
+						if (nn.velocity.Y == 0f) { if (inAir[k] && nn.Bottom.Y - lastGrY[k] > 6 * 16f && t - lastHitTick[k] > 40 && !nn.lavaWet) edgeFalls++; inAir[k] = false; lastGrY[k] = nn.Bottom.Y; }
+						else inAir[k] = true;
+						if (b.HitsTaken != lastHits[k]) lastHitTick[k] = t;
 						if (Vector2.Distance(nn.Center, lastPos[k]) > 20 * 16f) teleports++;
 						lastPos[k] = nn.Center;
 						if (nn.lavaWet) lavaTicks++;
@@ -232,7 +241,7 @@ namespace Levy.Common.Testing
 					bool bossAlive = bossIdx < 0 || Main.npc[bossIdx].active;
 					double surv = lives > 0 ? lifeSum / (double)lives / 60.0 : 0, dpm = deaths * 3600.0 / ticks;
 					var sb = new StringBuilder();
-					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
+					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
 					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Key}={kv.Value}")));
 					Mod.Logger.Info(sb.ToString());
 					return $"{rb.Key}/{arena}/{gear}: surv={surv:0.0}s deaths={deaths} bossDmg={bossDmg}";

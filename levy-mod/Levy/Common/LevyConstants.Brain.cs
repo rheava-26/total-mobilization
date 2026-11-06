@@ -320,6 +320,8 @@ namespace Levy.Common
 		// ---------- Follow / catch-up teleport ----------
 		public const float FollowSlotSpacingTiles = 1.2f;
 		public const int TeleportCooldownTicks = 60 * 3;
+		/// <summary>A target with at least this much contact damage (or any boss) keeps a ranged levy strafing while it fires.</summary>
+		public const int StrafeDangerDamage = 20;
 		public const int TeleportOffscreenMarginPx = 200;
 		public const int TeleportBehindExtraPx = 100;
 		public const int TeleportSpotSearchTiles = 25;

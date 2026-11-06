@@ -51,6 +51,7 @@ namespace Levy.Common.Testing
 			if (want.Contains("fall")) { _fa.Add(FaFall(1)); _fa.Add(FaFall(0)); }
 			if (want.Contains("real")) FaAddReal();
 			if (want.Contains("hookterrain")) FaAddHookTerrain();
+			if (want.Contains("lava")) FaAddLava();
 			if (want.Contains("gravflip")) foreach (int fd in new[] { 1, 0 }) foreach (bool lavaFloor in new[] { false, true }) _fa.Add(FaGravFlip(fd, lavaFloor));
 			if (want.Contains("cost")) foreach (int mode in new[] { 0, 1, 2 }) _fa.Add(FaCost(mode));
 			_faI = -1; _faTick = 0;

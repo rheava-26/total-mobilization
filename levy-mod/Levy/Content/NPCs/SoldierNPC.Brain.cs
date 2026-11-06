@@ -1073,12 +1073,16 @@ namespace Levy.Content.NPCs
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;
 				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
-				if ((_thinkCount & 1) != 0 || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
-				float side = ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
+				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
+				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
+				if ((!danger && (_thinkCount & 1) != 0) || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
+				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
+				int strafeTiles = danger ? LevyConstants.StrafeTiles * 2 : LevyConstants.StrafeTiles;
+				if (danger && !aloft && NPC.velocity.Y == 0f && (_thinkCount % 5) == 0 && !LavaAhead((int)side)) TryJump(2);
 				Vector2 shuffle;
-				if (aloft) shuffle = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
-				else if (!FindSafeStep((int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)
-					&& !FindSafeStep(-(int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
+				if (aloft) shuffle = new Vector2(NPC.Center.X + side * strafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				else if (!FindSafeStep((int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)
+					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
 				return true;

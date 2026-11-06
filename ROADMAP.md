@@ -256,6 +256,17 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED: settings2 ab36312**
+- **Config:** 11 categories; field names unchanged.
+- **Levy-count explanation:** in tooltips and the popup.
+- **Recommended ranges (my picks, Eve may adjust):** WoF 12–30, ML 28–60, final boss 40–90, with gentle notes outside them.
+- **Milestone rewards list:** WoF +1 slot, Plantera +4 levies, ML +1 slot. **Shipped OFF** so behaviour matches today. Eve should decide whether to turn them on.
+- **Slots per grade:** configurable; defaults unchanged; cap 6.
+- **New-world popup:** presets Default / Relaxed / Hardcore plus Customize; reopen with `/levysetup` or the Barracks "Setup" button; single player only.
+  - It ALSO appears on existing worlds the first time (no saved answer yet).
+- **Unverified:** UI layout, config file write via reflection, MP.
+- **Mistake:** my "pause the factory" message first went to the settings builder. Re-sent to progression-assist.
+
 **UPDATE (Eve, later 2026-11-06):**
 - **Potions APPROVED from v2:** Seeker = B (slot hole); Spectator = A (plain white box) with the dots/glints shuffled so it isn't a Builder clone.
 - **Command Radio** gets the walkie-talkie sprite (art2 radio B → vanilla-style final).

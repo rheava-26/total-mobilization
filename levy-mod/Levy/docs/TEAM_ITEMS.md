@@ -1,0 +1,86 @@
+# Team items and levies
+
+Which items and effects reach OTHER players (teammates), and what a levy (a soldier NPC that carries a Dummy `Player` for its stats and gear) does about each.
+
+Sources read: vanilla 1.4.4 (tModLoader source, `Player.cs`, `Projectile.cs`, `MessageBuffer.cs`), CalamityMod (source, `ModSources/CalamityMod`), ThoriumMod (decompiled; every non-enemy, non-boss file that loops `Main.player` or tests `hostile` / `team` was triaged by grep, the ones that touch an ally are listed or classed below).
+
+Allies, everywhere in this mod: the commander (the player) and every levy that serves him. Vanilla gates its team effects on `team != 0`; a commander and his levies are allies at any team.
+
+Design: a team item reaches a levy in one of four general ways, so no item is listed by name in code unless its numbers need it.
+
+| Mechanism | Covers | Code |
+|---|---|---|
+| Worn-item aura engine: read the FLAG an item raises on its wearer's `Player` (the commander, or a levy's dummy) and give every ally in reach the buff, every 10 ticks | Paladin family, Rampart of Deities, Trinket of Chi, Affliction | `Common/Team/TeamItems.cs` (`Build`, `Pulse`) |
+| Projectile auras: after the projectile's own AI, the same circle / buff / duration is applied to the owner's levies (and a Hit table for on-hit buffs) | Calamity healing auras, wind buffs, Thorium aura staffs and scythes, Whitewater, Relic of Convergence, Blazing Star | `Common/Team/TeamProjectiles.cs` |
+| Hooks on the vanilla / mod routine that picks "the team" | Spectre heal (`Projectile.ghostHeal`), Nebula boosters (`Player.NebulaLevelup`), info accessories (`RefreshInfoAccsFromTeamPlayers`), Thorium `HandleNearbyPlayers` | `TeamSpectre.cs`, `TeamShare.cs`, `TeamThorium.cs` |
+| The mod's own `ModBuff.Update` runs on the levy's dummy, so a buff does to a levy exactly what it does to a player; Calamity regeneration and Thorium life recovery become the levy's regeneration | every mod buff in the first two rows | `TeamItems.ApplyStatBuff`, `SoldierNPC.GearUpkeep.cs`, `TeamThorium.LevyEquips` |
+
+Reaching the commander (a Player) goes through `TeamNet`: applied directly in single player, sent to his own client (`LevyPacket.TeamEffect`) on a dedicated server; a reaction only his client can start (he was hit under a levy's shield, he took a Nebula booster) comes back as `LevyPacket.TeamRequest` and the server re-validates it.
+
+Levy status words: **works** = worked before this branch; **patched** = fixed by this branch, with the harness case named; **partial** = some direction or case missing, said which; **not patched** = reason given.
+
+Harness: `LEVY_HARNESS_SCENARIO=team` (`Common/Testing/CombatHarness.Team.cs`). Calamity build 25 PASS / 0 FAIL, Thorium build 25 PASS / 0 FAIL.
+
+## Vanilla 1.4.4
+
+| Mod | Item / effect | Ally effect | Code site | Levy status | Fix |
+|---|---|---|---|---|---|
+| Vanilla | Paladin's Shield, Frozen Shield, Hero's Shield (items 938, 3997, 3998) | Wearer gives every teammate within 800 px the Paladin's Shield buff (20 ticks, every 10); a defended player takes 0.75 of each hit and the nearest wearer above a quarter life takes a third of it | `Player.cs` UpdateEquips (hasPaladinShield), `ApplyVanillaHurtEffectModifiers`, `OnHurt_Part2` | **works** levy to levy (`SoldierNPC.FindPaladin`). **patched** commander to levy and levy to commander | aura engine gives the buff both ways; `SoldierNPC.FindPaladinPlayer` makes a levy count the commander as a wearer; `TeamPlayer.ModifyHurt/OnHurt` cut the commander's hit and make the nearest levy wearer take the third (`TeamNet.RequestPaladinShare`). Cases: `paladin: commander's shield -> levy`, `paladin: levy's shield -> commander and levy` |
+| Vanilla | Spectre Hood and Spectre Mask healing set (`ghostHeal`) | A magic hit's heal goes to the teammate within 3000 px with the most life missing (the wearer by default) | `Projectile.ghostHeal` (`Projectile.cs` ~11235) | **works** levy heals himself. **patched** commander's heal to a levy, a levy's heal to the commander and squadmates | `On_Projectile.ghostHeal` hook (`TeamSpectre`) redirects the bolt to a more wounded levy; `SoldierNPC.SpectreHealOnHit` picks the most wounded ally. Cases: `spectre: ...` x4 |
+| Vanilla | Nebula Armor boosters (life, mana, damage) | Relayed to every teammate within 700 px of the pickup (`MessageBuffer` packet 102) | `Player.NebulaLevelup`, `MessageBuffer.cs` 3669 | **works** own pickup. **patched** commander to levies and levy to commander and levies | `On_Player.NebulaLevelup` hook, `SoldierNPC.NebulaBoosterArrived` relays (`TeamNebula`). Cases: `nebula: ...` x2 |
+| Vanilla | Info accessories: Watch family, Depth Meter, Compass, Fish Finder, Weather Radio, Sextant, Radar, Tally Counter, Metal Detector, Lifeform Analyzer, Stopwatch, DPS Meter, Goblin Tech, Ruler | A teammate within 800 px shares the readout (vanilla runs this on multiplayer clients only) | `Player.RefreshInfoAccsFromTeamPlayers` | **patched** levy to commander (a levy has no readouts to receive) | `On_Player.RefreshInfoAccsFromTeamPlayers` hook (`TeamInfo`). Case: `info accessories` |
+| Vanilla | Vampire Knives and the other `vampireHeal` weapons | Heal bolt to the owner only | `Projectile.vampireHeal` | n/a | Not a team effect |
+| Vanilla | Wormhole Potion | Teleport to a teammate chosen on the map | UI | n/a | Client UI, levies are not map targets |
+| Vanilla | Team colour, PvP immunity (`team` checks in `Player.cs` ItemCheck, `Projectile.cs` PvP) | Teammates cannot hurt each other | PvP code | n/a | Levies are NPCs, never PvP targets |
+| Vanilla | Placed-tile stations: Campfire, Heart Lantern, Star in a Bottle, Sunflower, Bewitching Table, War Table, Ammo Box, Sharpening Station, Crystal Ball | Buff every player in range | tile `NearbyEffects` | **works** (`StationBuffSystem`) | Not team items (world tiles) |
+| Vanilla | Banners, Nurse and the town NPC buffs (Princess morale, Tavernkeep drinks, Dryad's Blessing) | Buff nearby players | tile / town NPC | **works** | Not team items |
+
+## CalamityMod
+
+| Mod | Item / effect | Ally effect | Code site | Levy status | Fix |
+|---|---|---|---|---|---|
+| Calamity | **Trinket of Chi** | Raises `trinketOfChi`; every teammate (any distance, `team != 0`) gets ChiRegenBuff (+HP/s life regen) for 20 ticks every 10 | `Items/Accessories/TrinketofChi.cs` 44 | **patched** both ways | aura engine reads `trinketOfChi`; `ChiRegenBuff.Update` runs on the dummy; its regeneration is added to `lifeRegen` in `PostUpdateEquips`, which the gear frame turns into the levy's regeneration. Cases: `calamity trinket of chi` x2 |
+| Calamity | **Affliction** | Raises `affliction`; every teammate gets Afflicted (life regen, max life, damage reduction, defense, damage) | `Items/Accessories/Affliction.cs` 44 | **patched** both ways | same engine. Cases: `calamity affliction` x2 |
+| Calamity | **Rampart of Deities** | Raises `hasPaladinShield` and gives teammates within 800 px the Paladin's Shield buff | `CalPlayer/CalamityPlayer.cs` 5269 | **patched** both ways | the vanilla Paladin path (the flag is the same). Cases: `calamity rampart of deities` x2 |
+| Calamity | Spectre set rebalance (`AdjustSpectreHealing`, 66 percent of the heal charged) and `SpawnLifeStealProjectile(shared)` | Same most-wounded pick | `ILEditing/BalancingILChanges.cs` 742, `Utilities/PlayerUtils.cs` 671 | **patched** (the hook mirrors the 66 percent charge). No Calamity weapon passes `shared: true` | `TeamSpectre` |
+| Calamity | Mycoroot | Throw gives the user and teammates within 800 px the Mushy buff, 15 s | `Items/Weapons/Rogue/Mycoroot.cs` 50 | **partial** commander to levies patched. A levy throwing it is a `WeaponUse` shot, not `Item.Shoot`, so no buff reaches the commander | `TeamAuraItem` (GlobalItem). Case: `calamity mycoroot` |
+| Calamity | Absorber, Pink Jellyfish, Green Jellyfish, Blue Jellyfish healing auras | Each projectile loops `Main.player` and buffs (regen) or cleanses the players in its circle | `Projectiles/Healing/*Aura.cs` | **patched** commander to levy. A levy's aura is owned by the commander, so Calamity's own loop heals him | `TeamItems.ProjAuras` (radius, buff, duration, cleanse). Cases: x4 |
+| Calamity | Death Valley Duster, Primordial Earth, Primordial Ancient | A burst whose cloud buffs players inside (SandsWindBuff, AeolianEarthBuff) | `Projectiles/Magic/*.cs` | **patched** | `ProjAuras`. Case: `calamity DeathValleyDuster / Primordial ...` |
+| Calamity | Divine Providence blazing star hearts | A heart that touches a teammate heals him (200 - timeLeft) / 10 | `Projectiles/Typeless/BlazingStarHeal.cs` 60 | **patched** | `TeamAuraProjectile.Star`. Case: `calamity blazing star heart` |
+| Calamity | Corpus Avertor stealth strike | First hit gives every teammate the Avertor bonus for 20 s | `Projectiles/Rogue/CorpusAvertorStealth.cs` 99 | **patched** both ways | `TeamAuraProjectile.OnHitNPC`. Case: `calamity corpus avertor` |
+| Calamity | **Whitewater** (stealth strike vortex) | Players inside 200 px start a heal of 1 HP / 20 ticks, 600 ticks for allies | `Projectiles/Rogue/WhitewaterAura.cs` 40, `CalamityPlayerMiscEffects.cs` 2263 | **patched** commander's to levies. A levy's vortex heals the commander through Calamity's own loop | `TeamItems.StartHot` (heal-over-time service). Case: `calamity whitewater vortex` |
+| Calamity | **Relic of Convergence** | When the crystal shatters, every teammate within 138 px of the cursor point is healed 1.5 x (1.25 x more with the Profaned Soul relic buff) | `Projectiles/Typeless/RelicOfConvergenceCrystal.cs` 97 | **patched** commander to levies | `TeamAuraProjectile.RelicOfConvergence`. Case drives the production PostAI hook directly (the crystal's own AI needs a held channel) |
+| Calamity | Relic of Resilience (held) | Players within 1000 px of the holder build up orbiting rocks (defense and damage reduction floors) | `CalPlayer/CalamityPlayerMiscEffects.cs` 1750 | **not patched** | a per-player time-integrated meter driven by a HELD item; the levy dummy would need its own meter and the commander's hold state. Left out |
+| Calamity | Grand Dad | Half of the heal pool goes to teammates inside `DistanceSQ < 500` | `Projectiles/Melee/GrandDadHoldout.cs` 287 | **not patched** | the test compares a squared distance to 500, so the real reach is 22 px. Nothing to reach |
+| Calamity | Bloom Stone flower | Teammates inside the flower get a faster Bloom Stone heal rate | `Projectiles/Typeless/BloomStoneFlower.cs` 106 | **not patched** | only speeds Bloom Stone's potion heal-over-time, which a levy's potion healing does not use |
+| Calamity | Wulfrum Controller droids (buff mode) | Heal / rover shield the player nearest the cursor | `Projectiles/Summon/WulfrumDroid.cs` 350 | **not patched** | mouse-driven target |
+| Calamity | Gladiator / Bloodstone heal orbs | Fly to the nearest player within 150 to 225 px of any team | `Projectiles/Healing/GladiatorHealOrb.cs`, `BloodstoneHealOrb.cs` | **not patched** | pickup orbs for whoever is nearest, not a team effect |
+| Calamity | Rover Drive, The Sponge, Profaned Soul shields, Lunic Corps helmet | Draw every player's shield | `Items/Accessories/*` | n/a | visual only |
+| Calamity | Effigy of Decay, Coral Bubbles | Nearby players breathe / gain Gills | tile / projectile | n/a | tile or nearest-player pickup |
+
+## ThoriumMod
+
+| Mod | Item / effect | Ally effect | Code site | Levy status | Fix |
+|---|---|---|---|---|---|
+| Thorium | About 30 ally-heal healer projectile classes (staffs, wands, orbs, auras, on-hit sweeps) (bolts, bursts, orbs, auras; `ProjectileHelper.ThoriumHeal`, `CanBeHealed`) | Heal the Players near the projectile | `Utilities/ProjectileHelper.cs` | **works** (`AllyHealHook`: commander's heal to levies; `HealerCompat`: a levy healer lobs `SoldierHeal` at the most wounded ally, the commander included) | pre-existing |
+| Thorium | Medical Bag, Head Mirror | Arrow, speed boost and life recovery toward the most wounded ally | `ThoriumPlayer.HandleLowestLifeAlly` | **works** (`MedicalBagHook`), its life-recovery effect on a healed levy now arrives as regeneration | pre-existing, plus the life-recovery row below |
+| Thorium | Bard instruments, empowerments | Timed stat buffs to the bard and nearby allies | `Empowerments/EmpowermentLoader.cs` | **works** (`EmpowerCompat`, both ways) | pre-existing |
+| Thorium | Aura Defense staff | 12 percent damage reduction, 5 s, players within 88 px | `Projectiles/Healer/AuraDefense.cs` | **patched** | `ProjAuras`. Case: `thorium aura defense` |
+| Thorium | Dream Weaver's Mask set | Distorted Time (speed, attack speed) to every other player, 15 s | `DreamWeaversMaskEffectPro` | **patched** | `TeamAuraProjectile.OnSpawn`. Case: `thorium dream weaver's mask set` |
+| Thorium | Dragon Heart wand (`DragonZone`), Null Zone, Ra (`RaPro2`), Serpent's Bubble Wand, Cure, Zunpet (`ZunpetPro3`), Dream Catcher, Shroom Booster, Air Strike Shield | Each loops `Main.player` from its AI and buffs the players inside a small circle (30 to 100 px) | `Projectiles/Healer/*.cs`, `Projectiles/Bard/ZunpetPro3.cs`, `Projectiles/AirStrikeShieldPro.cs` | **patched** commander to levies | `ProjAuras` with each projectile's radius, buff and duration, and the buff's own `Update` on the dummy. Cases: nine `thorium <projectile>: the levy inside its circle gets <buff>` |
+| Thorium | Falling Twilight, True Falling Twilight, Blood Harvest, True Blood Harvest scythes | A hit gives every other player within 400 px TwilightBoost / BloodBoost, 5 s | `Projectiles/Scythe/*Pro.cs` (`SafeOnHitNPC`) | **patched** both ways (a levy's swing includes the commander, the owner of the shot) | `TeamItems.HitAuras`. Cases: two `thorium ...: a hit buffs the levies` |
+| Thorium | Conductor's Baton, Subwoofer (fire, Terrarium Surround Sound), music-player levels | Nearby bards (800 px) share the accessory effect | `ThoriumPlayer.HandleNearbyPlayers` | **patched** levy to commander always; commander to levy when the levy's gear frame runs (it runs every tick only for levies whose gear needs upkeep) | detour on `HandleNearbyPlayers` (`TeamThorium`). Case: `thorium bard accessories` |
+| Thorium | Ring of Unity | +1 flat damage, +1 per other wearer within 400 px | `Items/Misc/RingofUnity.cs` | **patched** commander counts levy wearers; a levy counts squadmates (the commander as a Player already counted) | `TeamThorium.CommanderEquips/LevyEquips`. Case: `thorium ring of unity` |
+| Thorium | Life recovery from buffs (Cured, Serpent's Bubble, Bloom Boost, Quick Recovery...) | `ThoriumPlayer.lifeRecovery` heals HP every `LifeRecoveryInterval` ticks | `ThoriumPlayer.cs` 12236 | **patched** | the dummy never runs that routine, so the gear frame converts it to regeneration units. Case: `thorium life recovery` |
+| Thorium | Celestial set projectile | Buffs players in a mouse-positioned area (custom `InRange`) | `Projectiles/Healer/CelestialSetPro.cs` | **not patched** | mouse-positioned area with its own range test |
+| Thorium | Holy Fire, Purified Water, Light Bringer Warhammer | A hit gives wounded allies within 250 px a life-recovery effect timer | `Projectiles/Healer/*Pro2.cs` | **not patched** | the effect is a `ThoriumPlayer` timer handled in a routine the dummy never runs. Needs a timer to regeneration mapping |
+| Thorium | Ankh (cleanse), Chi Lantern, Holy Hammer, Martyr Chalice, Templar's Circlet, Pocket Guardian, Sacred Charge, Morale Banner heart, Grave Goods / Redeem / Revivify spirits on a death | Cleanse, spawn heal projectiles on wounded allies, react to a wounded ally or to a death | various | **not patched** | spawn projectiles aimed at `Player` targets, or read the mouse, or fire on a Player's death; each needs its own bridge |
+| Thorium | Concert Tickets | Inspiration regeneration per nearby ally (about 142 px) | `Items/BardItems/ConcertTickets.cs` | **not patched** | a levy's inspiration is its own pool |
+| Thorium | Friendly Fire Staff, Kick Petal, Lovegun | Spend ally life or debuff nearby players | `Projectiles/Healer/FriendlyFireStaffPro.cs`... | **not patched** on purpose | harmful to the ally; a levy is not made a target |
+| Thorium | Worm Hole Mirror | Teleport to a teammate | `Items/Tracker/WormHoleMirror.cs` | n/a | client UI |
+| Thorium | Steam Flute, Fishbone, Fish Bubble | Smoke screen, breath for other players | `Projectiles/Bard/SteamFlutePro2.cs`... | **not patched** | cosmetic or breath, no levy stat |
+
+## Not covered anywhere
+
+- Another PLAYER's team item reaching MY levies (two commanders on one team): levies serve their own commander; a teammate's shield or aura is not applied to them.
+- Multiplayer: the commander's own client owns his buffs, hurt and damage. Single player and the headless server run every case above; a real two-machine session is unverified.

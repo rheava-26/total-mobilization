@@ -543,6 +543,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - enemy spawns pushed away by barracks
 - emplacement firing walls; a manned heavy gun levies MUST operate (not auto-fire)
 
+## 🖼 Eve's first in-game look at the 2.0 placeables (Calamity run, 2026-11-06)
+- My read: the Armory cabinet fits vanilla furniture well. The Logistical Center reads busy, but in keeping.
+- The Barracks tent is "a tad off": a flat salmon fill with almost no canvas shading, lighter and more saturated than the vanilla wood next to it, and a solid-black door.
+- Offered Eve a small tent-only tweak (darker canvas, fold shading, a door flap). NOT started; waiting for her yes.
+
 ## 🖼 Eve's first in-game look at Logistics → Buy (2026-11-06)
 - Wants: a search bar + category filter for the offer list (weapons etc.), and reach to shopkeepers through pylons, stated in the UI.
 - I spotted two more issues: the top-right hint is clipped, and the bottom tab bar reads backwards (Logistics, Vanity, Items, Rules).

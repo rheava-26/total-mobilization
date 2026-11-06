@@ -64,7 +64,8 @@ Kit: {
 		Name: Guide
 		Desc:
 			'''
-			Marches with the line. Soldiers within {0} tiles aim {1}% truer and fight with Morale: {2}% more damage, {3} more defense and {4}% more critical chance.
+			Marches with the line. Soldiers within {0} tiles aim {1}% truer.
+			Every {2} seconds he calls a volley and the soldiers near him fire together.
 			Shoots any enemy that strays into reach with his wooden bow.
 			'''
 	}
@@ -133,6 +134,7 @@ Kit: {
 			'''
 			Marches with the line and lobs grenades at any enemy in reach.
 			Every {0} seconds he hurls a stick of dynamite for a heavy blast.
+			Nearby soldiers lob his grenades at what they fight.
 			The blast grows stronger as bosses fall.
 			'''
 	}
@@ -153,13 +155,17 @@ Kit: {
 			Marches with the line and throws knives at any enemy in reach.
 			Each enemy that dies within {0} tiles of him adds {1}% of its coin value to the treasury, on top of what it drops.
 			Hands soldiers within {2} tiles basic ammo and potions, paid from the treasury.
-			Soldiers within {3} tiles fight with Morale.
+			While he marches, his shop pays {3}% more for what you sell and charges {4}% less.
 			'''
 	}
 
 	Painter: {
 		Name: Painter
-		Desc: Marches with the line, firing his paintball gun at any enemy in reach.
+		Desc:
+			'''
+			Marches with the line, firing his paintball gun at any enemy in reach.
+			Paint-soaked enemies lose {0} defense and deal {1}% less damage.
+			'''
 	}
 
 	Clothier: {

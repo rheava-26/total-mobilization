@@ -95,6 +95,9 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
 		[DefaultValue(true)] public bool Spoils;
 
+		[Header("Events")]
+		[DefaultValue(true)] public bool OldOnesArmyUsesLevySentries;
+
 		// ---- Interface --------------------------------------------------------------------------------------
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;

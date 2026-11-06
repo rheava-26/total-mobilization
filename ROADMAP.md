@@ -556,7 +556,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - the projectile spawned then killed (dummy lacks CalamityPlayer state);
   - shoot helpers reading Main.player[owner] state;
   - Levy's contact-only stand-in flyer running instead of the real AI.
+- Eve: "they ram into the enemy, it's the same as the rest of the unrecognized minions." Lead = Levy's contact-only stand-in running instead of the real modded AI (to be confirmed). Fix target: drive real modded minions through the dummy path (minion buff on the dummy, ModPlayer state, myPlayer fake); stand-in only per failing type.
 - Branch `modsummons` is instrumenting the Stormlion Staff first.
+
+## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
+- "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
+- Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
+- Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
 
 ## 📦 SHIPPED Levy 2.0.1 (Mechanization stays 0.8.0), at scratchpad/ship-2.0.1
 - **logi-search ae94705:**

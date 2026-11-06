@@ -17,7 +17,7 @@ namespace Levy.Common.Testing
 	/// TEST-ONLY structured gear-progression audit (changes no game behaviour; does nothing unless LEVY_GEARAUDIT=&lt;output path&gt; is set). Simulates a playthrough on ONE army: ten levies in junk gear, then gear added in the order a
 	/// player gets it (ore armor, Ninja, Shadow/Crimson, Meteor, Jungle, Necro, Molten, early Hardmode, ... Shroomite) with weapons by tier per class and accessories at the same points. After each step the levies run the REAL
 	/// <see cref="ArmoryTE.UpgradeWeapons"/> / <see cref="ArmoryTE.IssueGear"/> until nothing changes, and the per-levy tables, the army floor / median / max and the FISHY list are logged.
-	/// LEVY_GEARAUDIT_MODE=before|after|both (default both): "before" turns <see cref="ArmoryTE.FloorFirst"/> off (the first-come allocation), "after" leaves it on.
+	/// LEVY_GEARAUDIT_MODE=before|after|both (default both): "before" turns <see cref="ArmoryTE.FloorFirst"/> off (the first-come allocation) and restores the old class-less spread (see <see cref="WeaponAllocator.LegacySpreadRedeal"/>); "after" leaves the fixes on.
 	/// Runs once, at PostSetupRecipes, on throwaway armories and soldiers; touches no world state.
 	/// </summary>
 	public class GearProgressionAudit : ModSystem
@@ -107,11 +107,11 @@ namespace Levy.Common.Testing
 				if (Environment.GetEnvironmentVariable("LEVY_GEARAUDIT_DEBUG") == "1") { try { DebugSetBonus(sb); } catch (Exception e) { sb.AppendLine("DEBUG EXC " + e); } }
 				WeaponRank.Force(WeaponRankMode.SellPrice, false);
 				sb.AppendLine("# Levy gear progression audit. Levy " + Mod.Version + ". Weapon ranking forced to SellPrice (no world: no stage discount, no recency boost).");
-				if (mode == "before" || mode == "both") { ArmoryTE.FloorFirst = false; Playthrough(sb, "BEFORE (first-come: each levy upgrades from storage when his timer comes round)", null); }
-				if (mode == "after" || mode == "both") { ArmoryTE.FloorFirst = true; Playthrough(sb, "AFTER (raise the floor: worst-equipped levies take new gear first)", null); }
+				if (mode == "before" || mode == "both") { ArmoryTE.FloorFirst = false; WeaponAllocator.LegacySpreadRedeal = true; Playthrough(sb, "BEFORE (first-come: each levy upgrades from storage when his timer comes round)", null); }
+				if (mode == "after" || mode == "both") { ArmoryTE.FloorFirst = true; WeaponAllocator.LegacySpreadRedeal = false; Playthrough(sb, "AFTER (raise the floor: worst-equipped levies take new gear first)", null); }
 				// order sensitivity
 				foreach (var m in new[] { false, true }) {
-					ArmoryTE.FloorFirst = m;
+					ArmoryTE.FloorFirst = m; WeaponAllocator.LegacySpreadRedeal = !m;
 					var order = new List<string>();
 					foreach (var ord in new[] { "ascending ids", "descending ids", "shuffled A", "shuffled B" }) {
 						var res = new StringBuilder();
@@ -123,7 +123,7 @@ namespace Levy.Common.Testing
 				}
 			}
 			catch (Exception e) { sb.AppendLine("AUDIT EXCEPTION: " + e); }
-			finally { ArmoryTE.FloorFirst = prevFloor; WeaponRank.Release(); ArmoryTE.TestServed = null; }
+			finally { ArmoryTE.FloorFirst = prevFloor; WeaponAllocator.LegacySpreadRedeal = false; WeaponRank.Release(); ArmoryTE.TestServed = null; }
 			try { File.WriteAllText(outp, sb.ToString()); Mod.Logger.Info("GEARAUDIT: done -> " + outp); } catch (Exception e) { Mod.Logger.Warn("GEARAUDIT: could not write: " + e.Message); }
 		}
 
@@ -164,6 +164,7 @@ namespace Levy.Common.Testing
 			bool verbose = order == null;
 			var tierOf = new Dictionary<int, int>(); // item type -> step it entered the game (0 = start)
 			var te = new ArmoryTE();
+			foreach (var ammo in new[] { "WoodenArrow", "MusketBall" }) { var am = Make(ammo); if (am != null) { am.stack = 999; te.Deposit(am); } } // ranged weapons need something to fire
 			var levies = new List<SoldierRecord>();
 			void Tier(Item it, int step) { if (!tierOf.ContainsKey(it.type)) tierOf[it.type] = step; }
 			var unresolved = new List<string>();

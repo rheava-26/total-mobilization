@@ -246,6 +246,19 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - OOA levy sentry staves come in 3 TIERS like the vanilla DD2 sentry staves (rod / cane / staff); higher tiers give more levies per sentry. Make sure the Tavernkeep shop has room for them.
 - Eve: "go finish everything else" — build the whole batch.
 
+**2.0 BUILD RUNNING (2026-11-06):** branches
+- `armory2-reforge`: targeted reforge + vanity.
+- `settings2`: setup popup, config categories, Boss Checklist anchors + recommended ranges + milestone rewards, slots.
+- `progression-assist`: recipes, drop rates, shimmer, armor costs, Arms Dealer bulk ammo toggle, bulk factory + potion station.
+- `altfire-impl`: AltPolicies registry, all families, AimPoint/HoldVariant, Dark Gate, broken weapons.
+- `officers2`: hold weapons like vanilla, follow orders, Eve's original kits, Painter paint + Ichor-like debuff.
+- `talk2`: chat bars, talk in combat, close-up clump, levy inventory window, dialogue export.
+- `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
+- `art2`: concept art for all new items, for Eve's approval.
+- `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**Waits on art approval:** Command & Observe items (radio, GoPro, cameras, Spectator/Seeker potions, Guide to Autonomy).
+
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
 - [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
 - [ ] Vanity: its own screen, a row per set, "always wear X".

@@ -160,11 +160,12 @@ namespace Levy.Common.Logistics
 			Check(oe.Checklist.All(r => r.Have == 0 && r.Missing == r.Need), "an empty armory has none of it");
 
 			// --- intermediates: only ore in stock; the order smelts the bars (Furnace in range) and then forges the sword
-			int oreEach = Crafting.Ingredients(Crafting.RecipesFor(ItemID.IronBar)[0])[0].Count;
+			int oreEach = Crafting.RecipesFor(ItemID.IronBar).SelectMany(r => Crafting.Ingredients(r)).First(i => i.Primary == ItemID.IronOre).Count;
 			var f = new ArmoryTE(); Stock(f, ItemID.IronOre, oreEach * per + 5L);
 			var of = new LogisticsOrder { Total = 1, Lines = { new OrderLine { Types = T(ItemID.IronBroadsword) } } };
 			of.Replan(); LogisticsRunner.RunOn(of, f);
-			Check(of.Complete && Held(f, ItemID.IronBroadsword) == 1 && Held(f, ItemID.IronOre) == 5, $"ore is smelted to bars on the way (sword {Held(f, ItemID.IronBroadsword)}, ore left {Held(f, ItemID.IronOre)})");
+			string barRecipes = string.Join(" ; ", Crafting.RecipesFor(ItemID.IronBar).Select(r => string.Join("+", Crafting.Ingredients(r).Select(i => i.Count + "x" + i.Primary)) + "=>" + r.createItem.stack));
+			Check(of.Complete && Held(f, ItemID.IronBroadsword) == 1 && Held(f, ItemID.IronOre) == 5, $"ore is smelted to bars on the way (sword {Held(f, ItemID.IronBroadsword)}, ore left {Held(f, ItemID.IronOre)}; iron bar recipes: {barRecipes}; oreEach {oreEach}, bars per sword {per})");
 			var g = new ArmoryTE();
 			var og = new LogisticsOrder { Total = 1, Lines = { new OrderLine { Types = T(ItemID.IronBroadsword) } } };
 			og.Replan(); LogisticsRunner.RunOn(og, g);
@@ -189,7 +190,8 @@ namespace Levy.Common.Logistics
 			var op = new LogisticsOrder { Total = 2, Paused = true, Lines = { new OrderLine { Types = T(ItemID.IronBroadsword) } } };
 			op.Replan(); LogisticsRunner.RunOn(op, p);
 			Check(op.Lines[0].Done == 0 && op.Status == "Paused", "a paused order makes nothing");
-			var oq = new LogisticsOrder { Total = 1, Lines = { new OrderLine { Types = T(ItemID.CopperCoin) } } };
+			int noRecipe = 0; for (int t = 1; t < ItemLoader.ItemCount && noRecipe == 0; t++) if (Crafting.RecipesFor(t).Count == 0 && ContentSamples.ItemsByType[t].value > 0 && !ContentSamples.ItemsByType[t].IsAir) noRecipe = t;
+			var oq = new LogisticsOrder { Total = 1, Lines = { new OrderLine { Types = T(noRecipe) } } };
 			oq.Replan(); LogisticsRunner.RunOn(oq, new ArmoryTE());
 			Check(oq.Status == "NoRecipe", "an item nothing crafts reports NoRecipe (" + oq.Status + ")");
 

@@ -604,7 +604,9 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - family/class mismatch;
   - stack filter;
   - ranking.
-- **ALSO:** the green drone lines are STILL in Eve's 22:50 video. The shipped Mechanization 0.8.1 header confirms 0.8.1, built after the fix commit, and every MagicPixel draw in Mech now uses a 1×1 source. Asked Eve which Mechanization version her mod list shows. If 0.8.1, my diagnosis was wrong.
+- Eve: the Wulfrum drones "appear, linger for a sec and then vanish", a spawn-die cycle → lead = the minion's existence check (the CalamityPlayer flag set by its buff) failing on the dummy. Sent to calbugs.
+- **RESOLVED:** Eve hadn't installed Mechanization 0.8.1; the green line is the old build.
+- (old) **ALSO:** the green drone lines are STILL in Eve's 22:50 video. The shipped Mechanization 0.8.1 header confirms 0.8.1, built after the fix commit, and every MagicPixel draw in Mech now uses a 1×1 source. Asked Eve which Mechanization version her mod list shows. If 0.8.1, my diagnosis was wrong.
 
 ## 📋 CLASS AUDIT done → levy-mod/Levy/docs/CLASS_AUDIT.md (cumulative vanilla → +Calamity → +Thorium; E/M/H bulk grades)
 - **Levy support, from code:**

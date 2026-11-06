@@ -592,6 +592,21 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 🔎 Independent (unprimed) gap research → levy-mod/Levy/docs/GAPS_INDEPENDENT.md
+- **Top 10, N=20, Classic:**
+  1. Calamity **Auric Ore is non-renewable** (spawns once on the first Yharon kill; 450 ore/set).
+  2. The lunar tier (~36 ML kills + ~2,600 fragments).
+  3. **Hallowed** (no alternative route; 1,080 bars; Thorium adds 43 recipes using it). Independently agrees with Eve.
+  4. Summoner Spooky Wood (750/set).
+  5. Ranger Shroomite (5,400 Chlorophyte ore for 20).
+  6. Beetle (Turtle Shells 8.33%).
+  7. **Emblems** (vanilla 1/WoF; Thorium's 12.5% each).
+  8. Calamity drop-only weapons/accessories (summon 49% drop-only).
+  9. Ascendant Spirit Essence (all three moon/eclipse events).
+  10. Finite Calamity ores (Aerialite/Cryonic/Perennial/Scoria).
+- Spider is NOT in its top 10.
+- **Inconsistency to resolve:** the Spectre bar ectoplasm ratio (first pass 0.5/bar from armor totals vs 1/bar here).
+
 ## 🐞 Calamity bugs (Eve video, 2026-11-06 22:50): branch `calbugs`
 - **Wulfrum Controller drones vanish when levies rearm.** Candidates:
   - rearm kills the flock with no re-summon;

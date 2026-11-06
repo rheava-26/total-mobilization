@@ -256,6 +256,27 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED: altfire-impl 9440bb8**
+- **AltPolicies registry:** from an embedded TSV; 190/191 rows resolve with Thorium+Calamity.
+- **`Want`** gates before the probe.
+- **Alt-fire open to ALL fired families:** swords, spears, boomerangs, yoyos, flails, thrown and held weapons all go through `AltShoot`.
+- **Hooks:** HoldVariant (Calamity mouseRight), AimPoint (cursor + mouseWorld), meter/mana/HP/ally readers.
+- **Interaction mechanism, general:**
+  - PlayerConflict: don't place or detonate when the commander uses or owns that object.
+  - PrimaryAllowed: don't re-place one-at-a-time objects over someone else's.
+- **Dark Gate:** 12/12 decision cases pass.
+  - Levies only use a gate they're already standing at.
+  - Interpretation to confirm: "commander within 6 tiles" means within 6 tiles of the gate the levy would ENTER.
+- **Harness:** policy/left = 1.08 boss, 1.10 pack; random ≈ 0.97.
+  - Big alt wins: Septic Skewer 2.3×, Animosity, Speed Blaster.
+  - Damage that exists only now: Brimstone Sword, Briny Baron, Exoblade, SurgeDriver.
+- **Still broken:**
+  - Frigidflash Bolt (needs an owner swap).
+  - Photoviscerator, Violence, Lightspeed: 0 damage even on left click (not investigated).
+  - Wulfrum Knife recall.
+  - Teleport utilities and sentry-command alts are NEVER.
+  - Holdout weapons classified Unsupported (Nidhogg etc.) are never fired at all.
+
 **MERGED: progression-assist 183c75c**
 - **Placement:** a separate "Levy: Progression assistance" config, all vanilla by default; `ReloadRequired` where needed.
 - **Recipes:** Life Crystal, Life Fruit (post-mech), Fallen Star (post-EoW/BoC, Meteorite Bars), Mana Crystal (8 gems), Chlorophyte Ore (HM); Chlorophyte ore-per-bar slider; ammo yield ×.

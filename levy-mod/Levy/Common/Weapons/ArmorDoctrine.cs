@@ -96,6 +96,7 @@ namespace Levy.Common.Weapons
 				var p = _scratch;
 				for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
 				p.armor[0].SetDefaults(h); p.armor[1].SetDefaults(b); p.armor[2].SetDefaults(l);
+				p.head = p.armor[0].headSlot; p.body = p.armor[1].bodySlot; p.legs = p.armor[2].legSlot; // UpdateArmorSets reads the worn slots, not the armor array
 				p.setBonus = "";
 				p.UpdateArmorSets(SoldierNPC.DummySlot);
 				ok = !string.IsNullOrEmpty(p.setBonus);

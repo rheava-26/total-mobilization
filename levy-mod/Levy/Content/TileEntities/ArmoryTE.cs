@@ -962,6 +962,8 @@ namespace Levy.Content.TileEntities
 
 			// The armor follows the weapon: the set bonus should land on the class he actually fires, whichever way he was armed.
 			DamageClass wc = g.HasWeapon ? WeaponClassifier.ItemDamageClass(g.Weapon) : null;
+			// Raise-the-floor upgrade: a set of another class is not his to take while a levy of that class would gain from it (the best set stays with its best-suited user).
+			Func<DamageClass, float, bool> classGuard = upgrade && FloorFirst && wc != null ? ClassWantsSet(soldier) : null;
 
 			float bestScore = float.NegativeInfinity;
 			ArmorCand[] best = null;
@@ -971,6 +973,10 @@ namespace Levy.Content.TileEntities
 				bool bonus = full && ArmorDoctrine.FormsSetBonus(h.It, b.It, l.It);
 				if (requireBonus && !bonus) return float.NegativeInfinity;
 				float sc = h.Score + b.Score + l.Score;
+				if (classGuard != null && full && !((h.Worn || h.Fixed) && (b.Worn || b.Fixed) && (l.Worn || l.Fixed))) {
+					var pc = ArmorDoctrine.PreferredClass(h.It, b.It, l.It);
+					if (pc != null && pc != wc && classGuard(pc, sc)) return float.NegativeInfinity;
+				}
 				if (bonus) sc += LevyConstants.ArmorSetBonusScore;
 				if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
 				return sc;
@@ -1715,6 +1721,7 @@ namespace Levy.Content.TileEntities
 		public virtual Item Deposit(Item item)
 		{
 			if (IsAir(item)) return null;
+			if (item.headSlot >= 0 || item.bodySlot >= 0 || item.legSlot >= 0 || item.accessory) _gearStockRev++; // new armor / accessory stock: the floor sweep looks again
 			// 1. top up matching stacks (same type and prefix, below max stack)
 			for (int i = 0; i < Storage.Length; i++) {
 				var s = Storage[i];
@@ -2036,9 +2043,11 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || soldier.LoadoutLocked || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
+			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
+			if (UpgradeAccessories(soldier)) changed = true;
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (FillEmptySidearm(soldier)) changed = true;
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).

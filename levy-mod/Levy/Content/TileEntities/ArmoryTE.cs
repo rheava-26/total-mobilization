@@ -14,6 +14,7 @@ using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Levy.Common.Vanity;
 using Levy.Common.Weapons;
 using Levy.Content.Tiles;
 
@@ -1432,10 +1433,20 @@ namespace Levy.Content.TileEntities
 			public long Spent;
 			public bool RanDry;
 			public bool NoPayer;
+			/// <summary>Targeted run only: the spending cap stopped it (weapons still short are counted in <see cref="Short"/>).</summary>
+			public bool CapHit;
+			/// <summary>Targeted run only: weapons the plan selected, of those that already met the goal, and that could not take the named prefix.</summary>
+			public int Selected, AlreadyMet, NotApplicable;
+			/// <summary>Targeted run only: one entry per weapon rolled (name, rolls, whether it reached the goal), for the headless probe.</summary>
+			public List<string> Log;
 		}
 
 		/// <summary>Per weapon type: the quality scores of every prefix that weapon can roll (one per prefix, best first). Learned once from throw-away rolls.</summary>
 		private static readonly Dictionary<int, double[]> _prefixScores = new Dictionary<int, double[]>();
+		/// <summary>Per weapon type: the average reforge price of a roll (the mean over the prefixes it can roll), for the run's cost estimate.</summary>
+		private static readonly Dictionary<int, long> _meanRollPrice = new Dictionary<int, long>();
+		/// <summary>Per weapon type: of the sample rolls, how many gave each prefix, and each prefix's quality. The cost estimate reads the odds of a goal off this.</summary>
+		private static readonly Dictionary<int, (int rolls, Dictionary<int, int> seen, Dictionary<int, double> quality)> _prefixOdds = new();
 
 		/// <summary>
 		/// Prefix quality for one weapon: the item's market value relative to the same weapon with no prefix. Terraria builds an item's value from
@@ -1455,13 +1466,19 @@ namespace Levy.Content.TileEntities
 		{
 			if (_prefixScores.TryGetValue(sample.type, out var cached)) return cached;
 			var byPrefix = new Dictionary<int, double>();
+			var seen = new Dictionary<int, int>();
+			long priceSum = 0;
 			for (int i = 0; i < LevyConstants.UI.ReforgeSampleRolls; i++)
 			{
 				var t = new Item();
 				t.SetDefaults(sample.type);
 				t.Prefix(-2);
-				if (t.prefix > 0 && !byPrefix.ContainsKey(t.prefix)) byPrefix[t.prefix] = PrefixQuality(t, sample);
+				if (t.prefix <= 0) continue;
+				seen[t.prefix] = seen.TryGetValue(t.prefix, out int cnt) ? cnt + 1 : 1;
+				if (!byPrefix.ContainsKey(t.prefix)) { byPrefix[t.prefix] = PrefixQuality(t, sample); priceSum += ReforgePrice(t); }
 			}
+			_prefixOdds[sample.type] = (LevyConstants.UI.ReforgeSampleRolls, seen, byPrefix);
+			_meanRollPrice[sample.type] = byPrefix.Count == 0 ? ReforgePrice(sample) : Math.Max(1, priceSum / byPrefix.Count);
 			var arr = new double[byPrefix.Count];
 			int n = 0; foreach (var v in byPrefix.Values) arr[n++] = v;
 			Array.Sort(arr); Array.Reverse(arr);
@@ -1557,6 +1574,8 @@ namespace Levy.Content.TileEntities
 			public bool Reached;
 			/// <summary>The treasury could not afford the next roll (or it would have dipped under the reserve).</summary>
 			public bool RanDry;
+			/// <summary>The run's spending cap, not the treasury, stopped the next roll (<see cref="RanDry"/> is set too).</summary>
+			public bool CapStopped;
 		}
 
 		/// <summary>
@@ -1580,7 +1599,14 @@ namespace Levy.Content.TileEntities
 		/// <paramref name="maxRolls"/> rolls. A roll is refused when the treasury could not pay for it, or would be left under <paramref name="keepAtLeast"/> copper afterwards (0 = no reserve).
 		/// Keeps the best prefix rolled (never worse than <paramref name="startScore"/>). Does not touch the item passed in: the caller swaps in <see cref="ReforgeOneResult.Best"/>.
 		/// </summary>
-		private static ReforgeOneResult RollToFloor(Item item, Item sample, double threshold, double startScore, BarracksTE payer, int maxRolls, long keepAtLeast)
+		private static ReforgeOneResult RollToFloor(Item item, Item sample, double threshold, double startScore, BarracksTE payer, int maxRolls, long keepAtLeast) =>
+			RollLoop(item, sample, startScore, payer, maxRolls, keepAtLeast, long.MaxValue, (trial, score) => score >= threshold);
+
+		/// <summary>
+		/// The one reroll loop: each roll pays <see cref="ReforgePrice"/> from <paramref name="payer"/> (refused when it could not be paid, would leave the treasury under <paramref name="keepAtLeast"/>, or would take the run past
+		/// <paramref name="capLeft"/> copper), rerolls the prefix like the vanilla reforge, keeps the best-scoring item rolled, and stops when <paramref name="reached"/> says the goal is met or after <paramref name="maxRolls"/>.
+		/// </summary>
+		private static ReforgeOneResult RollLoop(Item item, Item sample, double startScore, BarracksTE payer, int maxRolls, long keepAtLeast, long capLeft, Func<Item, double, bool> reached)
 		{
 			var r = new ReforgeOneResult { Best = item };
 			Item current = item;
@@ -1588,6 +1614,7 @@ namespace Levy.Content.TileEntities
 			while (r.Rolls < maxRolls)
 			{
 				long price = ReforgePrice(current);
+				if (price > capLeft - r.Spent) { r.CapStopped = true; r.RanDry = true; break; }
 				if (payer.Treasury - price < keepAtLeast || !EconomySystem.TryPay(payer, price)) { r.RanDry = true; break; }
 				r.Spent += price;
 				r.Rolls++;
@@ -1598,8 +1625,9 @@ namespace Levy.Content.TileEntities
 				ItemLoader.PostReforge(trial);
 				current = trial;
 				double score = PrefixQuality(trial, sample);
-				if (score > bestScore) { r.Best = trial; bestScore = score; }
-				if (score >= threshold) { r.Reached = true; break; }
+				bool hit = reached(trial, score);
+				if (hit || score > bestScore) { r.Best = trial; bestScore = Math.Max(bestScore, score); }
+				if (hit) { r.Reached = true; break; }
 			}
 			return r;
 		}
@@ -2194,6 +2222,15 @@ namespace Levy.Content.TileEntities
 				stacks++;
 			}
 			Lent.Clear();
+			// Vanity pieces and dyes set on the vanity screen spill too, and the rows go.
+			foreach (var set in Vanity.Sets) {
+				for (int i = 0; i < set.Items.Length; i++) {
+					if (IsAir(set.Items[i])) continue;
+					Spill(set.Items[i]);
+					set.Items[i] = new Item();
+					stacks++;
+				}
+			}
 			return stacks;
 		}
 
@@ -2207,6 +2244,7 @@ namespace Levy.Content.TileEntities
 				foreach (var it in IssueArmor) if (!IsAir(it)) return true;
 				foreach (var it in IssueAmmo) if (!IsAir(it)) return true;
 				foreach (var it in IssuePotions) if (!IsAir(it)) return true;
+				foreach (var set in Vanity.Sets) foreach (var it in set.Items) if (!IsAir(it)) return true;
 				return false;
 			}
 		}
@@ -2221,6 +2259,7 @@ namespace Levy.Content.TileEntities
 			tag["depV1"] = true;
 			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
 			if (!Rules.IsNeutral || Rules.Blocks.Count != 1) tag["rulesV1"] = Rules.ToBytes(); // an untouched default list is not written: an old build reading this save loses nothing
+			if (!Vanity.IsNeutral) tag["vanityV1"] = Vanity.ToTag(); // no vanity rows: nothing written
 		}
 
 		/// <summary>
@@ -2250,6 +2289,7 @@ namespace Levy.Content.TileEntities
 			IssuePotions = new Item[Math.Max(PotionSlots, tag.GetList<TagCompound>("potions").Count)]; // old saves hold exactly PotionSlots; FitPotions grows it if Firepower is on
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
 			Rules = tag.ContainsKey("rulesV1") ? ArmoryRules.FromBytes(tag.GetByteArray("rulesV1")) : ArmoryRules.Default();
+			Vanity = tag.ContainsKey("vanityV1") ? ArmoryVanity.FromTag(tag.GetCompound("vanityV1")) : new ArmoryVanity();
 			FitPotions(); // the world's guide flag may already be loaded; if not, the periodic reconcile in LogisticsSystem catches it
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
@@ -2267,6 +2307,8 @@ namespace Levy.Content.TileEntities
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) foreach (var it in arr) ItemIO.Send(it, writer, true);
 			var rules = Rules.ToBytes();
 			writer.Write(Rules.Rev); writer.Write(rules.Length); writer.Write(rules);
+			var vanity = Vanity.ToBytes();
+			writer.Write(Vanity.Rev); writer.Write(vanity.Length); writer.Write(vanity);
 		}
 		public override void NetReceive(BinaryReader reader)
 		{
@@ -2281,6 +2323,10 @@ namespace Levy.Content.TileEntities
 			var bytes = len > 0 && len <= ArmoryRules.MaxWireBytes ? reader.ReadBytes(len) : null;
 			if (len > ArmoryRules.MaxWireBytes) reader.BaseStream.Seek(len, SeekOrigin.Current);
 			if (bytes != null && !RulesHeldBack) { var fresh = ArmoryRules.FromBytes(bytes); fresh.Rev = rev; Rules.CopyFrom(fresh); } // same object, so an open panel keeps its reference
+			int vrev = reader.ReadInt32(), vlen = reader.ReadInt32();
+			var vbytes = vlen > 0 && vlen <= ArmoryVanity.MaxWireBytes ? reader.ReadBytes(vlen) : null;
+			if (vlen > ArmoryVanity.MaxWireBytes) reader.BaseStream.Seek(vlen, SeekOrigin.Current);
+			if (vbytes != null && !VanityHeldBack) { var fresh = ArmoryVanity.FromBytes(vbytes); fresh.Rev = vrev; Vanity.CopyFrom(fresh); } // same object, so an open screen keeps its reference
 		}
 	}
 }

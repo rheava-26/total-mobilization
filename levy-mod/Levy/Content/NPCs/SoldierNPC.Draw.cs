@@ -52,7 +52,9 @@ namespace Levy.Content.NPCs
 			if (newTick) UISystem.SoldiersOnScreen++; // once per tick per body, whatever the draw rate
 			try
 			{
+				ResolveVanity();     // SoldierNPC.Vanity.cs: what the armory's vanity rows dress him in
 				RefreshDummyGear();
+				ApplyVanitySlots();  // social armor slots, read by PlayerFrame / the renderer; emptied again in the finally below
 				SyncDummyTransform();
 				Dummy.gfxOffY = NPC.gfxOffY;
 				Dummy.lastVisualizedSelectedItem = Dummy.inventory[0]; // the renderer draws this, not inventory[selectedItem]
@@ -70,6 +72,7 @@ namespace Levy.Content.NPCs
 				_rendererBroken = true;
 				Levy.Instance.Logger.Error("Levy: drawing a soldier through the player renderer failed; soldiers fall back to the placeholder sprite: " + e);
 			}
+			finally { ClearVanitySlots(); }
 		}
 
 		partial void Draw_PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -89,9 +92,11 @@ namespace Levy.Content.NPCs
 			h = GearHash(h, g.Head); h = GearHash(h, g.Body); h = GearHash(h, g.Legs);
 			for (int i = 0; i < g.Accessories.Length; i++) h = GearHash(h, g.Accessories[i]);
 			for (int i = 0; i < g.Dyes.Length; i++) h = GearHash(h, g.Dyes[i]);
+			h = h * 31 + VanityHashForDraw;
 			if (h == _drawGearHash) return;
 			_drawGearHash = h;
 			EquipDummy();
+			ApplyVanityDyes();
 			if (_dyeRefreshBroken) return;
 			try { Dummy.UpdateDyes(); }
 			catch (Exception e)

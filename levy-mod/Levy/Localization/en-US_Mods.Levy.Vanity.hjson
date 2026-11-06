@@ -1,0 +1,38 @@
+# The armory's Vanity screen. Keys are relative to Mods.Levy.Vanity.
+
+Tab: Vanity
+TabHint: Vanity sets for the levies. A set changes how they look, never what they can do.
+AddSet: + New set
+AddSetHint: Adds a row with head, body and legs vanity and who wears it.
+Note: For each slot the most specific row wins: named levies, then a class, then everyone.
+Empty: No vanity sets yet. Add one to dress your levies.
+SetTitle: Set {0}
+OnHint: Turns this set on or off.
+TargetHint: Who wears this set.
+TargetAll: All levies
+TargetClass: A class
+TargetLevies: Levies: {0}
+TargetLeviesPlain: Chosen levies
+ClassHint: The class that wears this set.
+ChooseLevies: Choose levies...
+LeviesHint: Picks the levies who wear this set.
+RemoveHint: Removes this set. The items go with it.
+UpHint: Moves this set up.
+DownHint: Moves this set down.
+Slot_Head: Head
+Slot_Body: Body
+Slot_Legs: Legs
+Slot_DyeHead: Dye
+Slot_DyeBody: Dye
+Slot_DyeLegs: Dye
+SlotHint_Head: Head vanity
+SlotHint_Body: Body vanity
+SlotHint_Legs: Legs vanity
+SlotHint_DyeHead: Head dye
+SlotHint_DyeBody: Body dye
+SlotHint_DyeLegs: Legs dye
+NothingYet: Nothing set.
+WornByAll: Worn by all levies.
+WornByClass: Worn by {0}.
+WornByLevies: Worn by {0} chosen levies.
+NoLevies: No levies served here.

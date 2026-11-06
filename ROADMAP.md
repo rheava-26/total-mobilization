@@ -615,6 +615,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 17 not patched, with reasons.
   - Harness team 25/0 on both toolchains. MP packet paths untested live.
 
+## 📦 SHIPPED Levy 2.0.4 (Mechanization stays 0.8.1), at scratchpad/ship-2.0.4
+- Contents: guide-ui (30-page Field Manual book), teamitems (35 team effects patched both ways), armory-alloc (shift-click intake, thrown stacks/Molotov, sidearm fill, class-less spread, mana→magic, ONE "Fallen Stars per Mana Crystal" setting).
+- **Boots:**
+  - Thorium+MS+Levy+Mech: 0 exceptions; ProgCheck 54/0, intake 100, team 19, minions 31/31.
+  - Calamity+Levy+Mech (2026.10): 0 exceptions; team 26, minions 82/82, Guide 363/0.
+- Client UI (guide book, shift-click) code-reviewed by me; unseen live.
+- Still running: field-ai-3 (mobility matrix), levy-count.
+
 ## 🚑 SHIPPED HOTFIX Levy 2.0.3 + Mechanization 0.8.1, at scratchpad/ship-2.0.3
 - **CRASH ON LOAD in 2.0.1/2.0.2 (Eve's client log):**
   - What happened: NullReferenceException in ItemFilterBar.Refresh. UISearchBar.SetContents in the ctor fires OnContentsChanged → Refresh before _typeBtn/_clearBtn exist.

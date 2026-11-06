@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent.Drawing;
 using Terraria.Enums;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -20,6 +22,7 @@ namespace Levy.Content.Tiles
 			Main.tileNoAttach[Type] = true;
 			Main.tileLavaDeath[Type] = true;
 			TileID.Sets.DisableSmartCursor[Type] = true;
+			TileID.Sets.MultiTileSway[Type] = true; // swings in the wind like vanilla banners
 
 			// Same anchoring as TileID.Banners: hang from a solid tile, a solid side, a solid bottom or a planter box…
 			TileObjectData.newTile.CopyFrom(TileObjectData.Style1x2Top);
@@ -41,6 +44,14 @@ namespace Levy.Content.Tiles
 
 			DustType = DustID.Silk;
 			AddMapEntry(new Color(170, 40, 40), CreateMapEntryName());
+		}
+
+		public override bool PreDraw(int i, int j, SpriteBatch spriteBatch)
+		{
+			// Hand the whole banner to the vanilla wind renderer once, from its top-left tile; the default draw is skipped.
+			if (TileObjectData.IsTopLeft(i, j))
+				Main.instance.TilesRenderer.AddSpecialPoint(i, j, TileDrawing.TileCounterType.MultiTileVine);
+			return false;
 		}
 
 		public override void KillMultiTile(int i, int j, int frameX, int frameY)

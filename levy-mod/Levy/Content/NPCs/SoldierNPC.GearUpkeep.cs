@@ -99,6 +99,7 @@ namespace Levy.Content.NPCs
 			const int ownerSlot = DummySlot; // the frame runs in slot 255, NEVER the commander's (see EnterFrameSlot)
 			object thorium = null;
 			FrameSlot fs = default;
+			Vector2 savedScreen = Main.screenPosition; int savedMx = Main.mouseX, savedMy = Main.mouseY; bool frameAimed = false;
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			try
@@ -106,6 +107,7 @@ namespace Levy.Content.NPCs
 				d.Center = NPC.Center;
 				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
+				{ NPC aimAt = KeyTarget(); if (aimAt != null) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aimAt.Center.X; Main.mouseY = (int)aimAt.Center.Y; frameAimed = true; } } // the cursor is on the enemy (Prismatic lasers and the Forbidden Circlet read it)
 
 				// The timers Player.Update counts down once a tick.
 				if (d.petalTimer > 0) d.petalTimer--;
@@ -163,6 +165,7 @@ namespace Levy.Content.NPCs
 			}
 			finally
 			{
+				if (frameAimed) { Main.screenPosition = savedScreen; Main.mouseX = savedMx; Main.mouseY = savedMy; }
 				ExitFrameSlot(fs); // the real Main.myPlayer / Main.player[255] first: RestoreThorium finds the commander through them
 				d.whoAmI = savedWho; d.Center = savedCenter;
 				OwnerPuppet.RestoreThorium(thorium);

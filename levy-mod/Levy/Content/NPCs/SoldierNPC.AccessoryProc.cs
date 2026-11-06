@@ -39,6 +39,7 @@ namespace Levy.Content.NPCs
 				MaintainCrystalLeaf(); // a standing helper, kept whether or not he is fighting
 				MaintainStardustGuardian(); // likewise (SoldierNPC.StardustGuardian.cs)
 			}
+			TickSetBonusKey(); // the Armor Set Bonus key: Vortex stealth, Forbidden storm, Calamity set abilities (SoldierNPC.SetBonusKey.cs)
 			if (State != SoldierState.Engage) return;
 			Item[] procs = null;
 			try

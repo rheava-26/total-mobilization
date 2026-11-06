@@ -105,13 +105,11 @@ namespace Mechanization.Common
 			public const int BodyDrawItemType = ItemID.Cannon;
 			/// <summary>The fixed plinth (px): its slab width/height, the narrower pedestal width/height above it, and how far above the body centre the barrel pivots.</summary>
 			public const int PlinthWidthPx = 32, PlinthHeightPx = 7, PedestalWidthPx = 14, PedestalHeightPx = 7;
-			public const float PivotUpPx = 2f;
+			public const float PivotUpPx = 7f;
 			/// <summary>The bare barrel (px) shown under the mounted weapon, or alone when the turret fires the plain bullet.</summary>
 			public const int BarrelLengthPx = 22, BarrelThicknessPx = 6;
 			/// <summary>Longest edge the MOUNTED weapon's item sprite is scaled to, in px (drawn over the barrel so you can see which gun it fires).</summary>
-			public const float WeaponDrawMaxPx = 34f;
-			/// <summary>How far along the aim the mounted weapon's sprite is pushed out from the pivot, in px.</summary>
-			public const float WeaponDrawOffsetPx = 12f;
+			public const float WeaponDrawMaxPx = 56f;
 
 			// ---- reach ring (drawn round a hovered or chatted turret) ----
 			public const int RingDots = 96;
@@ -255,11 +253,10 @@ namespace Mechanization.Common
 			public const float WeaponDrawMaxPx = 28f, WeaponDrawOffsetY = 9f;
 			// Layered art (tools/drone_art/gen_drone4.py): DroneNPC.png = body + boom + tail ring, art faces RIGHT. 4 fan frames (rows) x 5 PRE-TILTED columns (levels -2..+2, nose down positive), 80x50 each,
 			// so every 2x2 art block stays on the grid in game (the body is never rotated at draw time).
-			// DroneRotor.png = one edge-on rotor on its mast, 5 frames stacked (0..3 spin, 4 still), 48x16 each, drawn LEVEL with its mast base at the body-local points below (px from the body centre, art facing right).
-			public const int BodyFrames = 4, RotorFrames = 5, TiltLevels = 5;
+			// The side ducted-fan nacelles (near pod in front, far pod behind) are painted into the body sheet itself.
+			public const int BodyFrames = 4, TiltLevels = 5;
 			/// <summary>Radians of nose-down lean per tilt column of the body sheet (the middle column is level).</summary>
 			public const float TiltStep = 0.16f;
-			public static readonly float[] RotorMastX = { 15.0f, 11.0f }, RotorMastY = { -5.0f, -9.0f }, RotorTint = { 1.0f, 0.62f };   // near rotor, then the far one behind the hull
 			public const float WeaponDrawOffsetX = 15.0f, LedX = 11.0f, LedY = -3.0f;
 		}
 	}

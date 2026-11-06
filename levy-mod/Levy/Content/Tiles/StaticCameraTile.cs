@@ -10,7 +10,7 @@ using Levy.Content.Items.Observe;
 
 namespace Levy.Content.Tiles
 {
-	/// <summary>A static camera on a tripod (2x3). Right-click to connect; the view follows nothing and moves nowhere. Art: placeholder at Content/Tiles/StaticCameraTile.png.</summary>
+	/// <summary>A static camera on a tripod (2x3). Right-click to connect; the view follows nothing and moves nowhere.</summary>
 	public class StaticCameraTile : ModTile
 	{
 		public override void SetStaticDefaults()
@@ -24,7 +24,7 @@ namespace Levy.Content.Tiles
 			TileObjectData.newTile.Width = StaticCameraTE.TilesWide;
 			TileObjectData.newTile.Height = StaticCameraTE.TilesHigh;
 			TileObjectData.newTile.CoordinateHeights = new[] { 16, 16, 16 };
-			TileObjectData.newTile.CoordinatePadding = 0; // the placeholder art is a plain 32x48 sheet
+			TileObjectData.newTile.CoordinatePadding = 2; // 34x52 sheet: two 16px columns and three 16px rows, 2px between
 			TileObjectData.newTile.Origin = new Point16(0, 2);
 			TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile | AnchorType.SolidWithTop | AnchorType.SolidSide | AnchorType.Platform, StaticCameraTE.TilesWide, 0);
 			TileObjectData.newTile.UsesCustomCanPlace = true;

@@ -419,11 +419,13 @@ namespace Levy.Content.NPCs
 			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			Damage_Update();
 			if (!IsAlive) return;
-			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset) Brain_Think();
+			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset && !MindControlled) Brain_Think(); // a mind-controlled body takes orders from its player (Common/Observe)
 			Fear_Update();
+			MindControl_Drive();
 			Movement_Update();
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
 			Combat_Update();
+			MindControl_Act();
 			Record.CurrentHp = NPC.life;
 			SyncDummyTransform();
 		}

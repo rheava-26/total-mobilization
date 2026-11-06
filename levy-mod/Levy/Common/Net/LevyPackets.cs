@@ -46,6 +46,10 @@ namespace Levy.Common.Net
 	///  TalkCall: int soldierId                                    (Roster) — commander = sender; the soldier walks to the sender so a chat can open (a levy in a fight is out of vanilla's chat reach)
 	///  CompanionRequest: byte kind, then a payload the companion defines                  (Compat) — sender = the commander; the server re-validates every target
 	///  LogisticsOrderEdit / LogisticsSell / LogisticsBuy: layouts in the doc comment of LogisticsActions   (Logistics)
+	///  MapOrder: int tileX, int tileY                              (Observe) — commander = sender; every Regular marches to that tile, then holds it
+	///  ObserveRequest: byte kind(0 stop,1 camera,2 GoPro levy,3 list cameras), int id   (Observe) — the server then streams sections (RemoteClient.CheckSection) and the target position
+	///  MindControlSet: bool on, int soldierId, bool viaDeath       (Observe) — server validates the levy is the sender's; without death it needs a Mind Link in the inventory
+	///  MindInput: byte keys(1 left,2 right,4 jump,8 down,16 use,32 alt), float aimX, float aimY   (Observe) — sent when it changes or every 10 ticks
 	/// Server -> client:
 	///  LogisticsSnapshot: OrderBook.WriteBook   (Logistics) — the whole order book, with each order's status and materials checklist
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
@@ -56,6 +60,8 @@ namespace Levy.Common.Net
 	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
 	///  MutinyRob: long copper, int damage, int hitDirection, string soldierName   (Mutiny) — to the robbed player only; the client takes up to that much coin from its own pockets and banks, then takes the hit
 	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
+	///  ObserveList: int count, then per camera: int id, short tileX, short tileY, string label   (Observe)
+	///  ObservePos: byte kind(1 camera,2 levy,3 mind), int id, float x, float y   (Observe) — the watched target's world position, every 6 ticks
 	/// </summary>
 	public enum LevyPacket : byte
 	{
@@ -68,12 +74,14 @@ namespace Levy.Common.Net
 		TalkCall, // client -> server: call a levy over to talk (see above); appended so no existing value moves
 		ArmoryReforgePlan, // client -> server: run a targeted reforge (see ReforgePlan.ToBytes)
 		ArmoryVanitySet, // client -> server: the armory's whole vanity list (see ArmoryVanity.ToBytes)
+		MapOrder, ObserveRequest, MindControlSet, MindInput, // client -> server: Command & Observe (Common/Observe)
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 		LogisticsOrderEdit, // client -> server: save / delete / pause / resume a craft order (see LogisticsActions)
 		LogisticsSell, // client -> server: mass-sell armory storage slots or a filter
 		LogisticsBuy, // client -> server: run one standing buy rule now
 		LogisticsSnapshot, // server -> client: the whole order book (OrderBook.WriteBook)
+		ObserveList, ObservePos, // server -> one client: Command & Observe (camera list, followed-levy position)
 	}
 
 	public static class LevyPackets

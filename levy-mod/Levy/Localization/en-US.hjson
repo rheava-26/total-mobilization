@@ -50,6 +50,34 @@ Mods: {
 					'''
 					A field set tuned to every soldier you command.
 					Carry it to give orders from the radial to your whole army, anywhere. Click it to open the radial.
+					Shift-click the full map to send every levy to that point.
+					'''
+			}
+
+			GoProItem: {
+				DisplayName: GoPro
+				Tooltip:
+					'''
+					A body camera. A levy who carries it can be watched.
+					Use it to see through the next GoPro levy. Right-click or Esc to stop.
+					'''
+			}
+
+			StaticCameraItem: {
+				DisplayName: Static Camera
+				Tooltip:
+					'''
+					Place it, then right-click it from anywhere in reach to see its view.
+					Mouse wheel zooms out to a wide arena view.
+					'''
+			}
+
+			MindLinkItem: {
+				DisplayName: Mind Link
+				Tooltip:
+					'''
+					Use it to take direct control of the levy nearest your cursor. Your movement and attack drive that levy.
+					Right-click to let go. Dying gives you a levy to control until you respawn.
 					'''
 			}
 
@@ -132,6 +160,7 @@ Mods: {
 			ArmoryTile.MapEntry: Armory
 			LogisticalCenterTile.MapEntry: Logistical Center
 			PatrolBannerTile.MapEntry: Patrol Banner
+			StaticCameraTile.MapEntry: Static Camera
 		}
 
 		NPCs: {
@@ -492,6 +521,26 @@ Mods: {
 
 				None: {
 					Label: None
+					Tooltip: ""
+				}
+			}
+
+			ObserveConfig: {
+				DisplayName: Observe Config
+				Headers.ArenaView: Arena View Header
+
+				ArenaZoomPerSide: {
+					Label: Arena Zoom Per Side
+					Tooltip: ""
+				}
+
+				SkipDustAndGoreInArena: {
+					Label: Skip Dust And Gore In Arena
+					Tooltip: ""
+				}
+
+				MindControlOnDeath: {
+					Label: Mind Control On Death
 					Tooltip: ""
 				}
 			}

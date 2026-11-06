@@ -1,0 +1,80 @@
+
+### boss (15-tile trial)
+| weapon | family | left | random | policy | rnd/left | pol/left |
+|---|---|---:|---:|---:|---:|---:|
+| Animosity | Gun | 1840 | 3249 | 3037 | 1.77 | 1.65 |
+| BlossomFlux | Bow | 1735 | 1841 | 1747 | 1.06 | 1.01 |
+| CorinthPrime | Gun | 10144 | 2020 | 10386 | 0.20 | 1.02 |
+| EndoHydraStaff | Summon | 2450 | 2434 | 2449 | 0.99 | 1.00 |
+| FaceMelter | Magic | 9943 | 9823 | 13018 | 0.99 | 1.31 |
+| FrigidflashBolt | Magic | 0 | 0 | 0 | n/a | n/a |
+| Hydra | Gun | 825 | 667 | 616 | 0.81 | 0.75 |
+| Leviatitan | Gun | 2302 | 2855 | 2457 | 1.24 | 1.07 |
+| NullificationPistol | Magic | 3087 | 2596 | 3009 | 0.84 | 0.97 |
+| PlasmaCaster | Magic | 10135 | 7644 | 9975 | 0.75 | 0.98 |
+| PlasmaRifle | Magic | 3822 | 2833 | 3658 | 0.74 | 0.96 |
+| SeasSearing | Magic | 2070 | 2251 | 2092 | 1.09 | 1.01 |
+| SepticSkewer | Magic | 8202 | 14613 | 18980 | 1.78 | 2.31 |
+| ShortCircuit | Magic | 421 | 430 | 376 | 1.02 | 0.89 |
+| SpeedBlaster | Magic | 1125 | 1387 | 1388 | 1.23 | 1.23 |
+| VeeringWind | Magic | 102 | 30 | 175 | 0.29 | 1.72 |
+| Vesuvius | Magic | 5896 | 5494 | 5578 | 0.93 | 0.95 |
+| AegisBlade * | Broadsword | 5073 | 5850 | 5253 | 1.15 | 1.04 |
+| BrimstoneSword * | Broadsword | 0 | 830 | 805 | n/a | n/a |
+| BrinyBaron * | Broadsword | 0 | 514 | 519 | n/a | n/a |
+| DeathsAscension * | Boomerang | 5520 | 5208 | 5572 | 0.94 | 1.01 |
+| Exoblade * | Broadsword | 0 | 1464 | 1472 | n/a | n/a |
+| GalileoGladius * | Boomerang | 5765 | 5702 | 5752 | 0.99 | 1.00 |
+| GildedProboscis * | Boomerang | 19964 | 10200 | 10033 | 0.51 | 0.50 |
+| Lightspeed * | Magic | 0 | 0 | 0 | n/a | n/a |
+| LionHeart * | Broadsword | 34479 | 34494 | 35574 | 1.00 | 1.03 |
+| MantisClaws * | Boomerang | 533 | 722 | 538 | 1.35 | 1.01 |
+| MirrorBlade * | Boomerang | 5254 | 5307 | 4843 | 1.01 | 0.92 |
+| Photoviscerator * | Gun | 0 | 0 | 0 | n/a | n/a |
+| StygianShield * | Boomerang | 1734 | 1725 | 1722 | 0.99 | 0.99 |
+| SurgeDriver * | Gun | 0 | 29853 | 0 | n/a | n/a |
+| TheDarkMaster * | Broadsword | 643 | 438 | 590 | 0.68 | 0.92 |
+| Violence * | Magic | 0 | 0 | 0 | n/a | n/a |
+| WulfrumScrewdriver * | Boomerang | 110 | 110 | 80 | 1.00 | 0.73 |
+
+mean rnd/left 0.98  pol/left 1.08 n=26
+
+### pack (15-tile trial)
+| weapon | family | left | random | policy | rnd/left | pol/left |
+|---|---|---:|---:|---:|---:|---:|
+| Animosity | Gun | 1803 | 2598 | 3542 | 1.44 | 1.96 |
+| BlossomFlux | Bow | 1749 | 1870 | 2353 | 1.07 | 1.35 |
+| CorinthPrime | Gun | 11580 | 3355 | 11814 | 0.29 | 1.02 |
+| EndoHydraStaff | Summon | 2387 | 2461 | 2461 | 1.03 | 1.03 |
+| FaceMelter | Magic | 16694 | 14049 | 16616 | 0.84 | 1.00 |
+| FrigidflashBolt | Magic | 0 | 0 | 0 | n/a | n/a |
+| Hydra | Gun | 834 | 831 | 666 | 1.00 | 0.80 |
+| Leviatitan | Gun | 2321 | 3016 | 3085 | 1.30 | 1.33 |
+| NullificationPistol | Magic | 17365 | 7378 | 15685 | 0.42 | 0.90 |
+| PlasmaCaster | Magic | 22544 | 18426 | 22272 | 0.82 | 0.99 |
+| PlasmaRifle | Magic | 16043 | 11294 | 15811 | 0.70 | 0.99 |
+| SeasSearing | Magic | 2301 | 2912 | 2847 | 1.27 | 1.24 |
+| SepticSkewer | Magic | 9032 | 15718 | 20395 | 1.74 | 2.26 |
+| ShortCircuit | Magic | 749 | 680 | 752 | 0.91 | 1.00 |
+| SpeedBlaster | Magic | 1090 | 1823 | 1831 | 1.67 | 1.68 |
+| VeeringWind | Magic | 153 | 158 | 173 | 1.03 | 1.13 |
+| Vesuvius | Magic | 8463 | 7723 | 7912 | 0.91 | 0.93 |
+| AegisBlade * | Broadsword | 20393 | 20204 | 19304 | 0.99 | 0.95 |
+| BrimstoneSword * | Broadsword | 0 | 2455 | 2604 | n/a | n/a |
+| BrinyBaron * | Broadsword | 0 | 525 | 515 | n/a | n/a |
+| DeathsAscension * | Boomerang | 15184 | 9956 | 12016 | 0.66 | 0.79 |
+| Exoblade * | Broadsword | 0 | 2956 | 1478 | n/a | n/a |
+| GalileoGladius * | Boomerang | 15322 | 15268 | 15318 | 1.00 | 1.00 |
+| GildedProboscis * | Boomerang | 55760 | 30198 | 29628 | 0.54 | 0.53 |
+| Lightspeed * | Magic | 0 | 0 | 0 | n/a | n/a |
+| LionHeart * | Broadsword | 108851 | 108532 | 108122 | 1.00 | 0.99 |
+| MantisClaws * | Boomerang | 1544 | 1190 | 1387 | 0.77 | 0.90 |
+| MirrorBlade * | Boomerang | 13486 | 12903 | 13004 | 0.96 | 0.96 |
+| Photoviscerator * | Gun | 0 | 0 | 0 | n/a | n/a |
+| StygianShield * | Boomerang | 4561 | 4340 | 4321 | 0.95 | 0.95 |
+| SurgeDriver * | Gun | 0 | 97653 | 115628 | n/a | n/a |
+| TheDarkMaster * | Broadsword | 1283 | 934 | 1187 | 0.73 | 0.93 |
+| Violence * | Magic | 0 | 0 | 0 | n/a | n/a |
+| WulfrumScrewdriver * | Boomerang | 200 | 200 | 200 | 1.00 | 1.00 |
+
+mean rnd/left 0.96  pol/left 1.10 n=26

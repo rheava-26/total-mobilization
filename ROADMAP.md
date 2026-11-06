@@ -279,9 +279,9 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - buying Chlorophyte bullets from the Arms Dealer after you've obtained enough
 
 **WEAPON USE & OFFICERS:**
-- [ ] Alt-fire policy registry from the survey: open alt-fire to all families; aim point; held-variant hook; gate before the probe.
-- [ ] Dark Gate PORTAL_USE: line of sight; levies use it to retreat/regroup; never while the player is using it; only place gates when the player has none.
-- [ ] Hand-fix the remaining known-broken utility weapons from the harness lists.
+- [x] Alt-fire policy registry from the survey (branch altfire-impl): AltPolicies registry + embedded table, all fired families, aim point, held-variant hook, gate before the probe.
+- [x] Dark Gate PORTAL_USE (altfire-impl): 12/12 harness cases pass (use, yield to the commander, place only when the player owns no pair).
+- [~] Interaction/utility weapons (altfire-impl): generic place/detonate/recall/portal mechanism with player-conflict guards done; still broken: Frigidflash Bolt (owner-anchored projectile), Photoviscerator/Violence/Lightspeed (0 damage), Wulfrum Knife recall (controlUseTile), teleport glasses, sentry/summon right-click commands. See the altfire-impl hand-back.
 - [ ] Officers: hold and use their weapon like vanilla town NPCs; follow orders (investigate); restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
 
 **TALKING TO LEVIES:**

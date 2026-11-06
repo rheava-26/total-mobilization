@@ -6,14 +6,14 @@ CalamityMod	HydraulicVoltCrasher	NEVER
 CalamityMod	Nidhogg	HOLD_VARIANT	cond=heavy;minDist=10	
 CalamityMod	PhalanxSurge	HOLD_VARIANT	cond=heavy;maxDist=14	
 CalamityMod	PlasmaCaster	NEVER		alt -23% boss / -31% pack
-CalamityMod	ShortCircuit	PLACE	proj=ShortCircuitHook;maxOut=1;maxDist=25;tough=1	alt -9% boss / -8% pack
+CalamityMod	ShortCircuit	NEVER		hook alt measured -11% (boss), flat in a pack
 CalamityMod	TheAnomalysNanogun	ALT_HEAVY	tough=1;minDist=8;maxDist=40	
 CalamityMod	Vulcan	HOLD_VARIANT	cond=heavy;minDist=6	
 CalamityMod	AlphaDraconis	METER_READY	meter=StratusStarburst;min=5;tough=1;dismissAfter=0	
 CalamityMod	ApoctosisArray	MANA_REFILL	manaBelow=0.25;noEnemyWithin=0	
 CalamityMod	ChronomancersScythe	ALT_AOE	minEnemies=2;radius=8;maxDist=9	
-CalamityMod	FaceMelter	NEVER		alt -24% boss / -17% pack (amplifier is placed at Main.MouseWorld, which a levy never sets)
-CalamityMod	FrigidflashBolt	ALT_MIX	p=0.4	no signal: 0 damage both ways (bolt steers to Calamity mouseWorld, never set for a levy)
+CalamityMod	FaceMelter	NEVER		amplifier alt lost 17-24% in the survey
+CalamityMod	FrigidflashBolt	NEVER		0 damage with either button: its projectile anchors to the OWNER's position and cursor, which for a soldier shot is the commander
 CalamityMod	IonBlaster	MANA_REFILL	manaBelow=0.25;noEnemyWithin=0	
 CalamityMod	MadAlchemistsCocktailGlove	ALT_AOE	minEnemies=2;radius=7;minDist=5	
 CalamityMod	PlasmaRifle	NEVER		alt -31% boss / -31% pack
@@ -29,12 +29,12 @@ CalamityMod	ArkoftheElements	GUARD	near=7;hpBelow=0.6
 CalamityMod	BrimstoneSword	ALT_FAR	minDist=5	
 CalamityMod	BrinyBaron	ALT_FAR	minDist=5	
 CalamityMod	BrokenBiomeBlade	NEVER		
-CalamityMod	DeathsAscension	ALT_AOE	minEnemies=2;radius=8;minDist=4	
+CalamityMod	DeathsAscension	NEVER		area alt measured -21% in a pack
 CalamityMod	Exoblade	DASH_CLOSE	minDist=14	
 CalamityMod	FourSeasonsGalaxia	NEVER		
 CalamityMod	FracturedArk	GUARD	near=7;hpBelow=0.6	
 CalamityMod	GalileoGladius	METER_READY	meter=AvailableStarburst;min=10;tough=1	
-CalamityMod	GildedProboscis	DASH_CLOSE	minDist=10	
+CalamityMod	GildedProboscis	NEVER		dash alt measured -47%/-50% (boss/pack)
 CalamityMod	Hellkite	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
 CalamityMod	Lightspeed	METER_READY	meter=elementalMastery;min=full;tough=1	
 CalamityMod	LionHeart	GUARD	near=8;hpBelow=0.6;enemies=3	
@@ -49,7 +49,7 @@ CalamityMod	TheDarkMaster	PLACE	proj=DarkMasterClone;maxOut=1;maxDist=12;tough=1
 CalamityMod	TrueArkoftheAncients	GUARD	near=7;hpBelow=0.6	
 CalamityMod	TrueBiomeBlade	NEVER		
 CalamityMod	Violence	ALT_HEAVY	tough=1;minDist=4;maxDist=30	
-CalamityMod	WulfrumScrewdriver	METER_READY	meter=ScrewAvailable;min=1;tough=0	
+CalamityMod	WulfrumScrewdriver	NEVER		banked-screw alt measured -27% (boss)
 CalamityMod	YateveoBloom	ALT_HEAVY	tough=1;minDist=0;maxDist=9	
 CalamityMod	Animosity	ALT_MIX	p=0.8	alt +29% boss / +71% pack
 CalamityMod	BlossomFlux	ALT_MIX	p=0.6	alt +1% boss / +8% pack

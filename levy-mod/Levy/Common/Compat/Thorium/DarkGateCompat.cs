@@ -221,6 +221,31 @@ namespace Levy.Common.Compat.Thorium
 			s.NPC.netUpdate = true;
 		}
 
+		// ---- harness helpers (the scenario in Common/Testing/CombatHarness.Gate.cs touches no Thorium type itself) ----
+		internal static Item TestGateItem() { var it = new Item(); it.SetDefaults(ModContent.ItemType<DarkGate>()); return it; }
+		internal static void TestSetChaos(Player p, bool on) { int b = ModContent.BuffType<ChaosState>(); if (on) p.AddBuff(b, 600); else p.ClearBuff(b); }
+		internal static void TestClearGates() { int t = ModContent.ProjectileType<DarkGatePro>(); for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].type == t) Main.projectile[i].Kill(); }
+		internal static int TestGateCount(int taggedBy = int.MinValue)
+		{
+			int t = ModContent.ProjectileType<DarkGatePro>(), n = 0;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || p.type != t) continue;
+				int tag = p.TryGetGlobalProjectile(out SoldierProjectileTag g) ? g.SoldierIndex : -1;
+				if (taggedBy == int.MinValue || (taggedBy == -2 ? tag >= 0 : tag == taggedBy)) n++;
+			}
+			return n;
+		}
+		/// <summary>A player-owned pair (untagged), as the Dark Gate item leaves it.</summary>
+		internal static void TestSpawnPair(Player owner, Vector2 a, Vector2 b)
+		{
+			int t = ModContent.ProjectileType<DarkGatePro>();
+			Vector2[] pos = { a, b };
+			for (int i = 0; i < 2; i++)
+				Projectile.NewProjectile(new ThoriumMod.Core.EntitySources.DarkGateEntitySource(owner, pos[(i + 1) % 2], 10, 720), pos[i], Vector2.Zero, t, 0, 0f, Main.myPlayer);
+		}
+
 		/// <summary>Counters for the harness scenario.</summary>
 		public static int UsedCount, PlacedCount;
 	}

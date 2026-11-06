@@ -27,7 +27,7 @@ namespace Levy.Common.Weapons
 	{
 		public float P, MinDist, MaxDist, Radius, HpBelow, OwnHpBelow, OwnHpAbove, ManaBelow, Near, NoEnemyWithin, Min, Max, ToughLife;
 		public int MinEnemies, Enemies, MinOut, MaxOut, AfterShots, MinWounded, MaxStacks;
-		public bool Tough, Invert, MinFull, Primary;
+		public bool Tough, Invert, MinFull, Primary, Steer;
 		/// <summary>Projectile name (resolved against the item's mod) for <see cref="AltPolicyKind.Detonate"/> / <see cref="AltPolicyKind.Place"/>.</summary>
 		public string Proj, Cond, Meter, MeterMax;
 
@@ -72,6 +72,7 @@ namespace Levy.Common.Weapons
 					case "tough": a.Tough = v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase); break;
 					case "invert": a.Invert = v == "1"; break;
 					case "primary": a.Primary = v == "1"; break;
+					case "steer": a.Steer = v == "1"; break;
 					case "proj": a.Proj = v; break;
 					case "cond": a.Cond = v; break;
 					case "meter": a.Meter = v; break;
@@ -115,12 +116,16 @@ namespace Levy.Common.Weapons
 		private float _dist = -1f; private int _crowd = -1; private float _crowdR = -1f; private int _tough = -1;
 		public AltCtx(SoldierNPC s, NPC target) { S = s; Target = target; }
 
+		// Fixed values for the self check: when set they stand in for what the world would say.
+		internal float? TDist, TSelfHp, TMana; internal int? TCrowd, TOut, TWounded, TNear; internal bool? TTough; internal Dictionary<string, float> TMeter; internal AltState TState;
+
 		/// <summary>Tiles from the soldier to the target's centre.</summary>
-		public float Dist => _dist >= 0f ? _dist : (_dist = Target == null ? 999f : Vector2.Distance(S.NPC.Center, Target.Center) / 16f);
+		public float Dist => TDist ?? (_dist >= 0f ? _dist : (_dist = Target == null ? 999f : Vector2.Distance(S.NPC.Center, Target.Center) / 16f));
 
 		/// <summary>True for a boss or a target with <paramref name="life"/> or more max life. The harness can force it (LEVY_ALT_TOUGH).</summary>
 		public bool IsTough(float life)
 		{
+			if (TTough.HasValue) return TTough.Value;
 			if (CombatHarness.Enabled && AltPolicyLab.ToughEnv >= 0) return AltPolicyLab.ToughEnv == 1;
 			if (_tough < 0) _tough = Target != null && (Target.boss || Target.lifeMax >= life) ? 1 : 0;
 			return _tough == 1;
@@ -129,6 +134,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Hostile, chaseable NPCs within <paramref name="radiusTiles"/> of the target (the target counts).</summary>
 		public int Crowd(float radiusTiles)
 		{
+			if (TCrowd.HasValue) return TCrowd.Value;
 			if (_crowd >= 0 && Math.Abs(_crowdR - radiusTiles) < 0.01f) return _crowd;
 			int n = 0;
 			if (Target != null)
@@ -147,6 +153,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Hostile NPCs within <paramref name="tiles"/> of the soldier.</summary>
 		public int Near(float tiles)
 		{
+			if (TNear.HasValue) return TNear.Value;
 			int n = 0; float r2 = tiles * 16f; r2 *= r2;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
@@ -156,12 +163,13 @@ namespace Levy.Common.Weapons
 			return n;
 		}
 
-		public float SelfHp => S.NPC.lifeMax > 0 ? (float)S.NPC.life / S.NPC.lifeMax : 1f;
-		public float ManaFrac => S.Record != null && S.Record.MaxMana > 0 ? (float)S.Record.Mana / S.Record.MaxMana : 1f;
+		public float SelfHp => TSelfHp ?? (S.NPC.lifeMax > 0 ? (float)S.NPC.life / S.NPC.lifeMax : 1f);
+		public float ManaFrac => TMana ?? (S.Record != null && S.Record.MaxMana > 0 ? (float)S.Record.Mana / S.Record.MaxMana : 1f);
 
 		/// <summary>This soldier's live projectiles of <paramref name="projType"/>.</summary>
 		public int Out(int projType)
 		{
+			if (TOut.HasValue) return TOut.Value;
 			if (projType < 0) return 0;
 			int n = 0, me = S.NPC.whoAmI;
 			for (int i = 0; i < Main.maxProjectiles; i++)
@@ -175,6 +183,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Allies (the commander and this commander's soldiers) within <paramref name="radiusTiles"/> of the soldier that are below <paramref name="below"/> of their health.</summary>
 		public int Wounded(float radiusTiles, float below)
 		{
+			if (TWounded.HasValue) return TWounded.Value;
 			int n = 0; float r2 = radiusTiles * 16f; r2 *= r2;
 			Player c = S.Commander;
 			if (c != null && c.active && !c.dead && c.statLifeMax2 > 0 && (float)c.statLife / c.statLifeMax2 < below && Vector2.DistanceSquared(c.Center, S.NPC.Center) <= r2) n++;
@@ -189,7 +198,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>A named field or property of the dummy's Calamity / Thorium player, as a float (bool = 0/1). NaN when unreadable.</summary>
-		public float Meter(string name) => AltPolicies.ReadMeter(S.Dummy, name);
+		public float Meter(string name) => TMeter != null ? (TMeter.TryGetValue(name ?? "", out float v) ? v : float.NaN) : AltPolicies.ReadMeter(S.Dummy, name);
 	}
 
 	/// <summary>
@@ -210,6 +219,9 @@ namespace Levy.Common.Weapons
 		/// <summary>Rows in the table whose mod is not loaded or whose item was not found.</summary>
 		public static int SkippedRows { get; private set; }
 		public static int TableRows { get; private set; }
+		public static int UnresolvedProj { get; private set; }
+		/// <summary>True when some loaded row has <c>steer=1</c> (its projectiles follow the cursor, so they are steered at the soldier's target while they fly).</summary>
+		public static bool AnySteer { get; private set; }
 
 		internal static AltState StateOf(SoldierNPC s) => States.GetOrCreateValue(s);
 
@@ -264,7 +276,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Loads the embedded table and resolves it. Called from PostSetupContent (every mod's items exist by then).</summary>
 		internal static void Load(Mod levy)
 		{
-			ByItem.Clear(); SkippedRows = 0; TableRows = 0;
+			ByItem.Clear(); SkippedRows = 0; TableRows = 0; AnySteer = false;
 			try
 			{
 				byte[] bytes = levy.GetFileBytes("Common/Weapons/AltPolicies.tsv");
@@ -274,6 +286,8 @@ namespace Levy.Common.Weapons
 					if (!ModLoader.HasMod(mod) || !ModContent.TryFind(mod, item, out ModItem mi)) { SkippedRows++; continue; }
 					Resolve(pol, mod, item);
 					ByItem[mi.Type] = pol;
+					if (pol.P.Steer) AnySteer = true;
+					if (!string.IsNullOrEmpty(pol.P.Proj) && pol.ProjType < 0) { UnresolvedProj++; levy.Logger.Info($"Levy alt-fire policies: {mod}/{item} names projectile '{pol.P.Proj}', which does not exist; that row never counts its own objects."); }
 				}
 				levy.Logger.Info($"Levy alt-fire policies: {ByItem.Count} rows resolved of {TableRows} ({SkippedRows} skipped: mod not loaded or item absent).");
 			}
@@ -338,7 +352,7 @@ namespace Levy.Common.Weapons
 				case AltPolicyKind.Aoe: return x.Crowd(a.Radius) >= a.MinEnemies && inBand;
 				case AltPolicyKind.Rate: return x.Dist <= a.MaxDist;
 				case AltPolicyKind.Far: return x.Dist >= a.MinDist;
-				case AltPolicyKind.ToggleN: return StateOf(x.S).PrimarySinceAlt >= a.AfterShots;
+				case AltPolicyKind.ToggleN: return (x.TState ?? StateOf(x.S)).PrimarySinceAlt >= a.AfterShots;
 				case AltPolicyKind.Detonate:
 					if (PlayerConflict(pol, item, x)) return false;
 					if (x.Out(pol.ProjType) < a.MinOut || x.Dist < a.MinDist) return false;
@@ -367,7 +381,7 @@ namespace Levy.Common.Weapons
 					if (a.NoEnemyWithin >= 0f && x.Near(Math.Max(1f, a.NoEnemyWithin)) > 0 && a.NoEnemyWithin > 0f) return false;
 					return a.MaxDist >= 900f || x.Dist <= a.MaxDist;
 				case AltPolicyKind.StackUp:
-					return StateOf(x.S).AltStacks < a.MaxStacks && x.IsTough(a.ToughLife) && inBand;
+					return (x.TState ?? StateOf(x.S)).AltStacks < a.MaxStacks && x.IsTough(a.ToughLife) && inBand;
 				case AltPolicyKind.AllyHeal: return x.Wounded(a.Radius, a.HpBelow) >= a.MinWounded;
 				case AltPolicyKind.DashClose: return x.Dist >= a.MinDist;
 			}
@@ -400,7 +414,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		public static bool PlayerConflict(AltPolicy pol, Item item, AltCtx x)
 		{
-			Player c = x.S.Commander;
+			Player c = x.S?.Commander;
 			if (c == null || !c.active || c.dead) return false;
 			try { if (c.HeldItem != null && c.HeldItem.type == item.type) return true; } catch (Exception) { }
 			return PlayerOwnsObject(pol.ProjType);
@@ -588,6 +602,9 @@ namespace Levy.Common.Weapons
 			try { return (bool)_fMouseRight.GetValue(cp); } catch (Exception) { return null; }
 		}
 
+		internal static (Vector2, float) GetCalAimPublic(object cp) => GetCalAim(cp);
+		internal static void SetCalAimPublic(object cp, Vector2 delta, float? rot = null) { if (rot.HasValue) SetCalAim(cp, delta, rot.Value); else SetCalAim(cp, delta); }
+
 		private static (Vector2, float) GetCalAim(object cp)
 		{
 			CalFields();
@@ -671,14 +688,80 @@ namespace Levy.Common.Weapons
 			Check(For(ItemID.Handgun).Kind == AltPolicyKind.Mix && Math.Abs(For(ItemID.Handgun).P.P - 0.4f) < 1e-4, "unlisted item defaults to ALT_MIX p=0.4");
 			Check(Register("NoSuchMod", "X", new AltPolicy()) == false, "Register on an absent mod returns false");
 
-			// Want per pattern, on a context-free fake soldier is impossible, so check the pure parts
+			// Want per pattern, on fixed contexts (no world needed)
+			bool W(string pol, string prm, Action<AltCtx> set)
+			{
+				var pl = new AltPolicy { Kind = Names[pol], P = AltParams.Parse(prm) };
+				var x = new AltCtx(null, null); set(x);
+				return EvaluateCtx(null, new Item(), pl, x);
+			}
 			var never = new AltPolicy { Kind = AltPolicyKind.Never };
 			Check(!Evaluate(null, new Item(), never, null, out int rc) && rc == NeverRecheckTicks, "NEVER: false and long recheck");
 			Check(Evaluate(null, new Item(), new AltPolicy { Kind = AltPolicyKind.Always }, null, out _), "ALWAYS: true");
 			int hits = 0; var mix = new AltPolicy { Kind = AltPolicyKind.Mix, P = AltParams.Parse("p=0.5") };
 			for (int i = 0; i < 400; i++) if (Evaluate(null, new Item(), mix, null, out _)) hits++;
 			Check(hits > 140 && hits < 260, $"MIX p=0.5 rolls about half ({hits}/400)");
+			Check(W("ALT_HEAVY", "tough=1;minDist=8;maxDist=40", x => { x.TDist = 20; x.TTough = true; }), "HEAVY: tough target in the band");
+			Check(!W("ALT_HEAVY", "tough=1;minDist=8;maxDist=40", x => { x.TDist = 20; x.TTough = false; }), "HEAVY: not against trash");
+			Check(!W("ALT_HEAVY", "tough=1;minDist=8;maxDist=40", x => { x.TDist = 3; x.TTough = true; }), "HEAVY: not too close");
+			Check(W("ALT_AOE", "minEnemies=3;radius=8;minDist=4", x => { x.TDist = 10; x.TCrowd = 4; }), "AOE: a crowd");
+			Check(!W("ALT_AOE", "minEnemies=3;radius=8;minDist=4", x => { x.TDist = 10; x.TCrowd = 1; }), "AOE: not a lone target");
+			Check(W("ALT_RATE", "maxDist=20", x => x.TDist = 10) && !W("ALT_RATE", "maxDist=20", x => x.TDist = 30), "RATE: inside the range only");
+			Check(W("ALT_FAR", "minDist=6", x => x.TDist = 9) && !W("ALT_FAR", "minDist=6", x => x.TDist = 2), "FAR: only when out of reach");
+			var st = new AltState { PrimarySinceAlt = 12 };
+			Check(W("TOGGLE_N", "afterShots=12", x => x.TState = st) && !W("TOGGLE_N", "afterShots=12", x => x.TState = new AltState { PrimarySinceAlt = 3 }), "TOGGLE_N: every N primaries");
+			Check(W("DETONATE", "minOut=3;minDist=5", x => { x.TOut = 4; x.TDist = 9; }) && !W("DETONATE", "minOut=3;minDist=5", x => { x.TOut = 1; x.TDist = 9; }), "DETONATE: only with enough out");
+			Check(!W("DETONATE", "minOut=2;ownHpBelow=0.9", x => { x.TOut = 3; x.TDist = 9; x.TSelfHp = 1f; }) && W("DETONATE", "minOut=2;ownHpBelow=0.9", x => { x.TOut = 3; x.TDist = 9; x.TSelfHp = 0.5f; }), "DETONATE: heal-on-return only when hurt");
+			Check(W("PLACE", "maxOut=1;maxDist=25;tough=1", x => { x.TOut = 0; x.TDist = 10; x.TTough = true; }) && !W("PLACE", "maxOut=1;maxDist=25;tough=1", x => { x.TOut = 1; x.TDist = 10; x.TTough = true; }), "PLACE: one at a time");
+			Check(W("GUARD", "near=8;hpBelow=0.6;enemies=3", x => { x.TSelfHp = 0.4f; x.TNear = 4; }) && !W("GUARD", "near=8;hpBelow=0.6;enemies=3", x => { x.TSelfHp = 1f; x.TNear = 0; }), "GUARD: pressure only");
+			var m = new Dictionary<string, float> { ["fuel"] = 5f };
+			Check(W("METER_READY", "meter=fuel;min=1", x => x.TMeter = m) && !W("METER_READY", "meter=fuel;min=9", x => x.TMeter = m), "METER_READY: meter at or over the minimum");
+			Check(W("METER_READY", "meter=fuel;min=1;tough=1", x => { x.TMeter = m; x.TTough = true; }) && !W("METER_READY", "meter=fuel;min=1;tough=1", x => { x.TMeter = m; x.TTough = false; x.TCrowd = 1; }), "METER_READY: saved for tough targets");
+			Check(W("HOLD_VARIANT", "cond=heavy;minDist=6", x => { x.TTough = true; x.TDist = 10; }) && W("HOLD_VARIANT", "cond=aoe;minEnemies=2", x => x.TCrowd = 3) && !W("HOLD_VARIANT", "cond=aoe;minEnemies=2", x => x.TCrowd = 1), "HOLD_VARIANT: condition picks the variant");
+			Check(W("MANA_REFILL", "manaBelow=0.3", x => { x.TMana = 0.1f; x.TDist = 3; }) && !W("MANA_REFILL", "manaBelow=0.3", x => { x.TMana = 0.9f; x.TDist = 3; }), "MANA_REFILL: only when the pool is low");
+			Check(W("STACK_UP", "maxStacks=3;tough=1", x => { x.TState = new AltState { AltStacks = 1 }; x.TTough = true; x.TDist = 5; }) && !W("STACK_UP", "maxStacks=3;tough=1", x => { x.TState = new AltState { AltStacks = 3 }; x.TTough = true; x.TDist = 5; }), "STACK_UP: up to the stack cap");
+			Check(W("ALLY_HEAL", "minWounded=2;hpBelow=0.7", x => x.TWounded = 2) && !W("ALLY_HEAL", "minWounded=2;hpBelow=0.7", x => x.TWounded = 1), "ALLY_HEAL: enough wounded allies");
+			Check(W("DASH_CLOSE", "minDist=10", x => x.TDist = 14) && !W("DASH_CLOSE", "minDist=10", x => x.TDist = 4), "DASH_CLOSE: closes a gap");
+			Check(!Evaluate(null, new Item(), new AltPolicy { Kind = AltPolicyKind.PortalUse }, null, out _), "PORTAL_USE: not an item alt");
+			Check(Register("NoSuchMod", "X", new AltPolicy()) == false, "Register on an absent mod returns false");
 			return fails;
+		}
+	}
+
+	/// <summary>
+	/// CURSOR-STEERED PROJECTILES. Some shots follow the owner's cursor for their whole flight (Frigidflash Bolt's vortex, Face Melter's amplifier beam): they read the owner's cursor every frame, not only
+	/// when fired. For a soldier holding an item whose row has <c>steer=1</c>, the cursor (Main.mouse and Calamity's per-player mouseWorld of the projectile's owner) is put on the soldier's target for the
+	/// span of that projectile's AI and put back after. Does nothing unless a loaded row asks for it.
+	/// </summary>
+	public class SteerToTargetProjectile : GlobalProjectile
+	{
+		private static bool _on; private static Vector2 _screen; private static int _mx, _my; private static object _cal; private static Vector2 _delta; private static float _rot;
+
+		public override bool PreAI(Projectile p)
+		{
+			_on = false;
+			if (!AltPolicies.AnySteer || !p.friendly || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs) return true;
+			if (Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Record == null) return true;
+			Item held = WeaponUse.HeldItem(s);
+			if (held == null || held.IsAir || !AltPolicies.For(held.type).P.Steer || !AltPolicies.HasRow(held.type)) return true;
+			int ti = s.TargetIndex;
+			if (ti < 0 || ti >= Main.maxNPCs || !Main.npc[ti].active) return true;
+			Vector2 at = Main.npc[ti].Center;
+			_on = true;
+			_screen = Main.screenPosition; _mx = Main.mouseX; _my = Main.mouseY;
+			Main.screenPosition = Vector2.Zero; Main.mouseX = (int)at.X; Main.mouseY = (int)at.Y;
+			_cal = p.owner >= 0 && p.owner < Main.maxPlayers ? AltPolicies.CalamityPlayerOf(Main.player[p.owner]) : null;
+			if (_cal != null) { (_delta, _rot) = AltPolicies.GetCalAimPublic(_cal); AltPolicies.SetCalAimPublic(_cal, at - Main.player[p.owner].MountedCenter); }
+			return true;
+		}
+
+		public override void PostAI(Projectile p)
+		{
+			if (!_on) return;
+			_on = false;
+			Main.screenPosition = _screen; Main.mouseX = _mx; Main.mouseY = _my;
+			if (_cal != null) AltPolicies.SetCalAimPublic(_cal, _delta, _rot);
+			_cal = null;
 		}
 	}
 

@@ -429,6 +429,7 @@ namespace Levy.Content.NPCs
 			}
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
 			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
+			Rippers_Tick(); // Calamity's Rage and Adrenaline (SoldierNPC.Rippers.cs)
 			Damage_Update();
 			if (!IsAlive) return;
 			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset && !MindControlled) Brain_Think(); // a mind-controlled body takes orders from its player (Common/Observe)
@@ -448,6 +449,7 @@ namespace Levy.Content.NPCs
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
+			modifiers.FinalDamage *= Rippers_IncomingMult(); // a full Calamity adrenaline bar halves the hit
 		}
 
 		public override bool CheckDead()

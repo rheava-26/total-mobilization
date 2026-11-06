@@ -158,6 +158,7 @@ namespace Levy.Content.NPCs
 					GearUpkeep.UseSignals++;
 				}
 				else { d.itemAnimation = 0; d.itemAnimationMax = 0; d.itemTime = 0; }
+				Rippers_Restore(); // ResetEffects cleared Calamity's Rage / Adrenaline mode flags; Calamity's fill/burn step (in PostUpdateMiscEffects) reads them
 				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
 			}

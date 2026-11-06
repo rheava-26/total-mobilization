@@ -82,7 +82,7 @@ namespace Levy.Common.Testing
 				string boss = kv.GetValueOrDefault("boss", "eye"), arena = kv.GetValueOrDefault("arena", "big");
 				bool camp = kv.GetValueOrDefault("camp", "1") == "1", honey = kv.GetValueOrDefault("honey", "0") == "1", spec = kv.GetValueOrDefault("spec", "1") == "1", pots = kv.GetValueOrDefault("potions", "1") == "1", beam = kv.GetValueOrDefault("beam", "1") == "1";
 				int cap = int.Parse(f[9]) > 0 ? int.Parse(f[9]) : 18000;
-				string cleanExtra = string.Join(";", kv.Where(k => k.Key.Length > 2 && k.Key[1] == ':').Select(k => k.Key + "=" + k.Value));
+				string cleanExtra = string.Join(";", kv.Where(k => k.Key.Contains(':')).Select(k => k.Key + "=" + k.Value));
 				Action<BtRun> add = r => { if (done.Contains(r.Key)) skipped++; else _btRuns.Add(r); };
 				if (f[0] == "roll")
 				{
@@ -103,7 +103,6 @@ namespace Levy.Common.Testing
 					for (int s = s0; s <= s1; s++)
 					{
 						var r = new BtRun { Mode = f[0], Boss = boss, Diff = f[1], Order = f[2], Auto = f[3] == "1", Arena = arena, Camp = camp, Honey = honey, Spec = spec, Pots = pots, Beam = beam, Comp = comp, Stats = f[5], Tier = f[6], Grade = f[7], Trial = s, Seed = s, Cap = cap, Extra = cleanExtra, CfgId = "fixed-" + f[6] + "-" + f[5] };
-						if (f[0] == "fight") { BtApplyExtra(cleanExtra); r.Specs = BtFixedSpecs(r); r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe())); }
 						add(r);
 					}
 				}
@@ -181,6 +180,7 @@ namespace Levy.Common.Testing
 		{
 			var b = BtLoads[cls + "/" + (tier == "pre" || tier == "post" ? "opt" : tier)];
 			var l = new BtLoad { Weapon = b.Weapon, Ammo = b.Ammo, Armor = b.Armor, Acc = b.Acc };
+			if (BtOverrides.TryGetValue("pick:" + cls, out string pool)) l.Weapon = pool.Split('|').OrderByDescending(n => WeaponRank.Of(BtMake(n))).First(); // the levy takes the top-ranked weapon of the pool (what the allocator does)
 			if (BtOverrides.TryGetValue("w:" + cls, out string w)) l.Weapon = w;
 			if (BtOverrides.TryGetValue("a:" + cls, out string a)) l.Ammo = a;
 			if (BtOverrides.TryGetValue("r:" + cls, out string r)) l.Armor = r.Split('+');
@@ -517,6 +517,7 @@ namespace Levy.Common.Testing
 			if (!_btStarted)
 			{
 				BtApplyExtra(run.Extra); WeaponRank.BeamBoost = run.Beam;
+				if (run.Specs == null) { run.Specs = BtFixedSpecs(run); run.Desc = string.Join(" ; ", run.Specs.Select(sp => sp.Describe())); }
 				ClearAll(); BtPurgeNpcs();
 				Main.GameMode = run.Diff == "expert" ? GameModeID.Expert : GameModeID.Normal;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);

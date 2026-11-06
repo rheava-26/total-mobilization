@@ -577,6 +577,15 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Branch `logi-search` is building: shared filter component (Buy/Sell/Find), pylon-network reach (config, default ON; header + "(Snow Pylon)" on remote rows), clip fix, tab order Items/Rules/Vanity/Logistics.
 
 ## 🧪 Eve: new playthrough, Calamity only, no Thorium (2026-11-06)
+- **RESOLVED (calrecipes 1844855, merged): NOT a gameplay bug.**
+  - The check's baseline was keyed by recipe INDEX, and Calamity reorders recipes after Levy's PostAddRecipes (4446/4988 slots shift). Now keyed by Recipe object.
+  - Calamity's Chlorophyte Bar is 4 ore; the check now expects min(base, option).
+  - Disabled recipes are skipped. The line-263 crash is guarded.
+- **Evidence:**
+  - At defaults Levy changes 0 recipes under Calamity.
+  - With options ON, edits land correctly on vanilla and Calamity recipes (374 differ).
+  - ProgCheck 47/0 on Calamity, Levy-alone and Thorium+MS.
+- Recipe options are safe to use with Calamity. Rides the next build (check-only change).
 - Shipped 2.0.0 on tML 2026.10 with Calamity boots to world select, and every self-check passes except ProgCheck: 42 pass, 6 fail. These are recipe checks plus an IndexOutOfRange at ProgressionSelfCheck.cs:263.
 - The same build with Levy alone: 47/47. So the failures are Calamity-specific.
 - Branch `calrecipes` is diffing recipe snapshots with Levy's recipe code on and off. The question: is it a real gameplay bug, or is the check wrongly comparing against vanilla while Calamity edits recipes itself?

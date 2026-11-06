@@ -18,3 +18,8 @@ VenomBuff: {
 	DisplayName: Venom
 	Description: Loses life steadily, ignoring defense.
 }
+
+PaintedBuff: {
+	DisplayName: Paint-Soaked
+	Description: Covered in paint: less defense and weaker attacks.
+}

@@ -1227,6 +1227,7 @@ namespace Levy.Common.Systems
 			int total = 0, holding = 0;
 			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
+			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: false, ref total, ref holding); // his officers vote with the soldiers
 			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
 			foreach (var rec in Regulars)
@@ -1235,6 +1236,7 @@ namespace Levy.Common.Systems
 				rec.HoldFire = set;
 				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
 			}
+			OfficerSystem.Instance.SetStance(commander, atBarracks, spread: false, set);
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();
@@ -1247,6 +1249,7 @@ namespace Levy.Common.Systems
 			int total = 0, spread = 0;
 			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; }
+			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: true, ref total, ref spread);
 			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = spread * 2 <= total; // majority already spread → close up; otherwise spread
 			foreach (var rec in Regulars)
@@ -1255,6 +1258,7 @@ namespace Levy.Common.Systems
 				rec.SpreadOut = set;
 				if (body != null) body.NPC.netUpdate = true;
 			}
+			OfficerSystem.Instance.SetStance(commander, atBarracks, spread: true, set);
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.SpreadOut" : "UI.CloseUp"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();

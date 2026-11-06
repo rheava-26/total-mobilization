@@ -6,7 +6,7 @@ namespace Levy.Common.Officers
 {
 	/// <summary>
 	/// THE COLORIST. The Painter is a FRONTLINE officer that marches with the line and looses a colorful, hard-hitting paint barrage at any enemy in reach.
-	/// That is the whole officer: his paint gun is his <see cref="OfficerWeapon"/>, and he has no kit.
+	/// His paint gun is his weapon, and what it paints is his kit: a paint-soaked enemy has less defense and deals less damage.
 	/// </summary>
 	public static class PainterOfficer
 	{
@@ -29,7 +29,18 @@ namespace Levy.Common.Officers
 				WindUp = Math.Max(1, NPCID.Sets.AttackTime[NPCID.Painter]),
 				RangeTiles = PainterPaintballRangeTiles,
 			},
-			Kit = null,                                  // a fighter with a gun and nothing else: the officer runtime and the menu both treat a null kit as "fights only"
+			Kit = new PainterKit(),                      // his paint: a hit from the gun soaks the enemy (PaintGlobalNPC)
 		};
+	}
+}
+
+namespace Levy.Common.Officers
+{
+	/// <summary>The Painter's ability: his paintball gun's hits cover enemies in paint (<see cref="Levy.Content.Buffs.PaintedBuff"/>). The painting happens on the hit (<see cref="PaintProjectile"/>); nothing runs per tick.</summary>
+	public sealed class PainterKit : OfficerKit
+	{
+		// {0} defense lost, {1} damage dealt less (percent)
+		public override object[] DescriptionArgs => new object[] { (int)LevyConstants.Officer.PaintDefenseLoss, (int)System.Math.Round(LevyConstants.Officer.PaintDamageCut * 100f) };
+		public override void Tick(OfficerContext ctx) { }
 	}
 }

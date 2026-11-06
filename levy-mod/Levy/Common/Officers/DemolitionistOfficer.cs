@@ -2,7 +2,11 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
+using Levy.Common.Soldiers;
+using Levy.Common.Systems;
 using Levy.Common.Util;
+using Levy.Common.Weapons;
+using Levy.Content.NPCs;
 using static Levy.Common.LevyConstants.Officer;
 
 namespace Levy.Common.Officers
@@ -42,7 +46,7 @@ namespace Levy.Common.Officers
 	/// </summary>
 	public sealed class DemolitionistKit : OfficerKit
 	{
-		private sealed class State { public int Timer; }
+		private sealed class State { public int Timer, SapperTimer; }
 
 		public override object CreateState() => new State();
 
@@ -52,6 +56,8 @@ namespace Levy.Common.Officers
 		public override void Tick(OfficerContext ctx)
 		{
 			if (ctx.State is not State st) return;
+			if (++st.SapperTimer >= DemoSapperCadenceTicks) { st.SapperTimer = 0; ArmSappers(ctx.Npc.Center); }
+			if (ctx.Npc.ModNPC is SoldierNPC me && me.Record != null && me.Record.HoldFire) return; // hold fire: the dynamite waits too
 			if (++st.Timer < DemoDynamiteIntervalTicks) return;
 			st.Timer = 0;
 
@@ -73,6 +79,34 @@ namespace Levy.Common.Officers
 			if (idx >= 0 && idx < Main.maxProjectiles) { Main.projectile[idx].npcProj = true; Main.projectile[idx].noDropItem = true; }
 
 			demo.direction = target.Center.X < demo.Center.X ? -1 : 1; demo.spriteDirection = demo.direction;
+		}
+
+		/// <summary>
+		/// THE SAPPERS. The soldiers near the Demolitionist are handed his grenades: up to <see cref="DemoSapperCount"/> fighting soldiers within <see cref="DemoSapperRadiusTiles"/> each lob one at the
+		/// enemy they are fighting, on top of whatever they shoot. The grenade is the army's own (credited to the commander, amped by a mark, envenomed by a Witch Doctor like any army shot).
+		/// </summary>
+		public static int ArmSappers(Vector2 from)
+		{
+			float reach = DemoSapperRadiusTiles * LevyConstants.TilePx; reach *= reach;
+			int thrown = 0;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (thrown >= DemoSapperCount) break;
+				if (s == null || !s.IsAlive || s.Record == null || s.Record.HoldFire || s.State != SoldierState.Engage) continue;
+				if (s.TargetIndex < 0 || s.TargetIndex >= Main.maxNPCs || Vector2.DistanceSquared(from, s.NPC.Center) > reach) continue;
+				NPC t = Main.npc[s.TargetIndex];
+				if (!t.active || !LevyUtil.IsHostileTarget(t)) continue;
+				float range = DemoGrenadeRangeTiles * LevyConstants.TilePx;
+				float dist = Vector2.Distance(s.NPC.Center, t.Center);
+				if (dist > range) continue;
+				Vector2 aim = s.NPC.DirectionTo(t.Center + new Vector2(0f, -DemoGrenadeGravityCorrection * MathHelper.Clamp(dist / range, 0f, 1f)));
+				if (aim.HasNaNs()) continue;
+				int dmg = (int)(DemoGrenadeDamage * OfficerBrain.TownDamageScale() * AttackDamageMult);
+				if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
+				int idx = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center.X, s.NPC.Center.Y - 4f, aim.X * DemoGrenadeSpeed, aim.Y * DemoGrenadeSpeed, ProjectileID.Grenade, Math.Max(1, dmg), DemoGrenadeKnockback, SoldierMinions.TrueMyPlayer);
+				if (idx >= 0 && idx < Main.maxProjectiles) { Main.projectile[idx].npcProj = true; Main.projectile[idx].noDropItem = true; thrown++; }
+			}
+			return thrown;
 		}
 
 		/// <summary>The nearest hostile within <paramref name="reach"/> of <paramref name="from"/> (line of sight not required: a lobbed charge arcs over cover). Null when none is in range.</summary>

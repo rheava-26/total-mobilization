@@ -150,7 +150,7 @@ namespace Levy.Common.Testing
 			long bossDmg = 0; int fieldSeesBoss = 0, bossFastTicks = 0; float bossPeakV = 0f; int prevBossLife = -1; int bossIdx = -1; bool bossGone = false;
 			var mobs = new List<int>(); var byKind = new Dictionary<string, int>();
 			bool cmdMove = Environment.GetEnvironmentVariable("LEVY_REAL_CMDMOVE") != "0"; bool auto = Environment.GetEnvironmentVariable("LEVY_REAL_AUTO") == "1" || target == "spec"; bool lesser = rb.Key.StartsWith("eoc") || rb.Key == "kingslime" || rb.Mob; int specBuff = ModContent.BuffType<Content.Buffs.SpectatorBuff>(); int autoBuff = ModContent.BuffType<Content.Buffs.AutonomousBuff>(); float cmdBaseX = (_cx - 17) * 16f + 8f;
-			var lastGrY = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0;
+			var lastGrY = new float[N]; var peakVy = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0;
 			int dNear = 0, dBase = 0, dNoBetter = 0, dBusy = 0, dDJ = 0, dDash = 0, dHook = 0, dJump = 0, dStep = 0;
 			void Acc(SoldierNPC b) { hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
 			return new FaTrial
@@ -217,8 +217,8 @@ namespace Levy.Common.Testing
 							continue;
 						}
 						aliveTicks++; if (Math.Abs(nn.velocity.X) < 0.3f && Math.Abs(nn.velocity.Y) < 0.3f) stillTicks++;
-						if (nn.velocity.Y == 0f) { if (inAir[k] && nn.Bottom.Y - lastGrY[k] > 6 * 16f && t - lastHitTick[k] > 40 && !nn.lavaWet) edgeFalls++; inAir[k] = false; lastGrY[k] = nn.Bottom.Y; }
-						else inAir[k] = true;
+						if (nn.velocity.Y == 0f) { if (inAir[k] && nn.Bottom.Y - lastGrY[k] > 7 * 16f && peakVy[k] >= 8f && t - lastHitTick[k] > 40 && !nn.lavaWet) edgeFalls++; inAir[k] = false; lastGrY[k] = nn.Bottom.Y; peakVy[k] = 0f; }
+						else { inAir[k] = true; if (nn.velocity.Y > peakVy[k]) peakVy[k] = nn.velocity.Y; }
 						if (b.HitsTaken != lastHits[k]) lastHitTick[k] = t;
 						if (Vector2.Distance(nn.Center, lastPos[k]) > 20 * 16f) teleports++;
 						lastPos[k] = nn.Center;

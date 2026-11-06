@@ -250,14 +250,31 @@ namespace Levy.Content.NPCs
 		/// <summary>Room to run <paramref name="distPx"/> to one side: no wall, no lava, a floor under every column (and, on a platform, only the same level).</summary>
 		private bool StepLaneSafe(int side, float distPx)
 		{
-			Point feet = TileNav.FeetTile(NPC.Bottom);
-			int ax = (int)((NPC.Center.X + side * (NPC.width / 2f + LookAheadPx)) / 16f);
 			int cols = Math.Max(3, (int)Math.Ceiling(distPx / 16f) + 1);
+			return SurfaceLane(side, cols, false);
+		}
+
+		/// <summary>
+		/// A lane that follows the ground the way a walking body does: each column may rise one tile (a step or a slope) or fall up to three, and must have clear body cells over a floor that is not lava.
+		/// A wall taller than a step, lava, or a drop deeper than three tiles (a platform edge, a pit) refuses the lane. Flat ground is the special case where every column keeps the same row.
+		/// </summary>
+		private bool SurfaceLane(int side, int cols, bool deepWaterRefuses)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			int row = feet.Y;
+			int ax = (int)((NPC.Center.X + side * (NPC.width / 2f + LookAheadPx)) / 16f);
 			for (int i = 0; i < cols; i++)
 			{
-				int x = ax + side * i;
-				if (TileNav.IsSolid(x, feet.Y) || TileNav.IsSolid(x, feet.Y - 1) || TileNav.IsSolid(x, feet.Y - 2)) return false;
-				if (!TileNav.IsFloor(x, feet.Y + 1) || TileNav.HasLava(x, feet.Y) || TileNav.HasLava(x, feet.Y + 1)) return false;
+				int x = ax + side * i; int found = int.MinValue;
+				for (int r = row - 1; r <= row + 3; r++)
+				{
+					if (!TileNav.IsBodyClear(x, r) || !TileNav.IsFloor(x, r + 1) || TileNav.HasLava(x, r + 1)) continue;
+					if (r > row && (TileNav.IsSolid(x, row) || TileNav.IsSolid(x, row - 1) || TileNav.IsSolid(x, row - 2))) continue;
+					if (deepWaterRefuses && TileNav.IsDeepWater(x, r - 1)) continue;
+					found = r; break;
+				}
+				if (found == int.MinValue) return false;
+				row = found;
 			}
 			return true;
 		}

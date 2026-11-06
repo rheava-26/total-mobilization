@@ -467,6 +467,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The next <see cref="DashLaneTiles"/> columns are level with the feet, open to head height, floored and free of lava and deep water.</summary>
 		private bool DashLaneClear(int dir)
 		{
+			if (MobilityMode >= 1) return SurfaceLane(dir, DashLaneTiles, true);
 			Point feet = TileNav.FeetTile(NPC.Bottom);
 			for (int i = 1; i <= DashLaneTiles; i++)
 			{

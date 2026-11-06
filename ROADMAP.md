@@ -256,6 +256,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**ART v3 (art3 54866fe) sent to Eve. My honest read:**
+- Better than v2: the static camera TILE (flat, front-facing on a tripod), and the Command Radio (walkie-talkie, 28×26, same size as the old one).
+- Worse than Eve's v1 picks: the sentry staves (oversized mushroom-roof heads; the DD2 staves have small bright heads on long diagonal shafts) and the Guide book (blobby).
+- GoPro collar: weak.
+- Potions: the approved v2 (Spectator dots shuffled), 24×30.
+- Proposal: keep the v3 camera tile and radio; redo the staves with small heads on long shafts, DD2-style; the Guide stays at v1-C or gets a redo.
+- Waiting on Eve.
+
 **MERGED: settings2 ab36312**
 - **Config:** 11 categories; field names unchanged.
 - **Levy-count explanation:** in tooltips and the popup.

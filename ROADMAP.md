@@ -543,6 +543,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - enemy spawns pushed away by barracks
 - emplacement firing walls; a manned heavy gun levies MUST operate (not auto-fire)
 
+## 🖼 Eve's first in-game look at Logistics → Buy (2026-11-06)
+- Wants: a search bar + category filter for the offer list (weapons etc.), and reach to shopkeepers through pylons, stated in the UI.
+- I spotted two more issues: the top-right hint is clipped, and the bottom tab bar reads backwards (Logistics, Vanity, Items, Rules).
+- Branch `logi-search` is building: shared filter component (Buy/Sell/Find), pylon-network reach (config, default ON; header + "(Snow Pylon)" on remote rows), clip fix, tab order Items/Rules/Vanity/Logistics.
+
 ## 🧪 Eve: new playthrough, Calamity only, no Thorium (2026-11-06)
 - Shipped 2.0.0 on tML 2026.10 with Calamity boots to world select, and every self-check passes except ProgCheck: 42 pass, 6 fail. These are recipe checks plus an IndexOutOfRange at ProgressionSelfCheck.cs:263.
 - The same build with Levy alone: 47/47. So the failures are Calamity-specific.

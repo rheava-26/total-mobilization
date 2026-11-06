@@ -24,7 +24,7 @@ namespace Levy.Content.Tiles
 			TileObjectData.newTile.Width = StaticCameraTE.TilesWide;
 			TileObjectData.newTile.Height = StaticCameraTE.TilesHigh;
 			TileObjectData.newTile.CoordinateHeights = new[] { 16, 16, 16 };
-			TileObjectData.newTile.CoordinatePadding = 0; // the art is a plain 32x48 sheet
+			TileObjectData.newTile.CoordinatePadding = 2; // 34x52 sheet: two 16px columns and three 16px rows, 2px between
 			TileObjectData.newTile.Origin = new Point16(0, 2);
 			TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile | AnchorType.SolidWithTop | AnchorType.SolidSide | AnchorType.Platform, StaticCameraTE.TilesWide, 0);
 			TileObjectData.newTile.UsesCustomCanPlace = true;

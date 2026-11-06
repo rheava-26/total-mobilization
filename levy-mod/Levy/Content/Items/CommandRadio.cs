@@ -16,7 +16,7 @@ namespace Levy.Content.Items
 
 		public override void SetDefaults()
 		{
-			Item.width = 30; Item.height = 40; Item.useTime = 20; Item.useAnimation = 20; Item.useStyle = ItemUseStyleID.HoldUp;
+			Item.width = 48; Item.height = 72; Item.useTime = 20; Item.useAnimation = 20; Item.useStyle = ItemUseStyleID.HoldUp;
 			Item.UseSound = SoundID.MenuTick; Item.value = Item.buyPrice(gold: 1); Item.rare = ItemRarityID.Green; Item.maxStack = 1; Item.noMelee = true;
 			Item.autoReuse = false;
 		}

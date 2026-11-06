@@ -10,6 +10,10 @@ import gen_drone4 as g
 from gen_drone4 import Cv, shade_hull, ring, rotate_logical, PX, BASE_W, BASE_H, FR_W, FR_H, TILT_STEP, TILT_LEVELS, BODY_FRAMES, CLEAR
 from PIL import Image
 
+# pod boxes (logical px, inclusive x0,x1,y0,y1): near pod in front of the hull at its forward-middle, far pod 2 up and 3 back
+NEAR = (20, 28, 2, 9)
+FAR = (NEAR[0] - 3, NEAR[1] - 3, NEAR[2] - 2, NEAR[3] - 2)
+BANDS = ['s', 'h', 'm', 'm', 'd', 'm']
 DARKER = {'s': 'h', 'h': 'm', 'm': 'd', 'd': 'd', 'o': 'o'}
 
 
@@ -29,29 +33,31 @@ def draw_pod(cv, x0, x1, y0, y1, k, far):
     ys = [y for _, y in mask]; ty, by = min(ys), max(ys)
     cy = (ty + by + 1) / 2; ry = (by - ty + 1) / 2
     inner = {p for p in mask if all((p[0] + dx, p[1] + dy) in mask for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
-    put = (lambda x, y, c: cv.put(x, y, DARKER[c] if (far and isinstance(c, str)) else c))
+    pal = g.GRAPHITE if far else g.GUNMETAL          # the near pod is a lighter steel than the hull so it reads against it; the far pod keeps the hull's tones, one step darker
+    put = (lambda x, y, c: cv.put(x, y, pal[DARKER[c] if far else c]))
     for (x, y) in inner:
         ny = (y + .5 - cy) / ry                      # -1 top .. +1 bottom
         nx = (x + .5 - (x0 + x1 + 1) / 2) / ((x1 - x0 + 1) / 2)
-        b = -0.65 * ny - 0.45 * nx + 0.35 * math.sqrt(max(0, 1 - ny * ny))
-        c = 's' if b > 0.85 else 'h' if b > 0.25 else 'm' if b > -0.35 else 'd'
-        if y == by - 1 and c == 'd' and ry > 2.5: c = 'm'     # bounce light under the belly
+        # side-on cylinder: bands run along the pod, brightest at the top-left, a bounce row under the belly
+        rowk = int((ny + 1) / 2 * len(BANDS)); c = BANDS[min(len(BANDS) - 1, max(0, rowk))]
+        nx = (x + .5 - (x0 + x1 + 1) / 2) / ((x1 - x0 + 1) / 2)
+        if nx < -0.55 and c in ('h', 'm'): c = 's' if c == 'h' else 'h'     # the left end catches the light
+        if nx > 0.6 and c == 's': c = 'h'
         put(x, y, c)
-    cv.outline(mask) if not far else [cv.put(px, py, 'o') for (px, py) in mask - inner]
-    # intake lip at the nose (right) end: a dark ring with a darker mouth
+    for (px, py) in mask - inner: cv.put(px, py, 'o')     # the box is the whole pod including its outline
+    # intake lip at the nose (right) end: a darker ring (graphite, not the outline black) so it reads as a lip, not a grille
     xin = max(p[0] for p in inner)
     for (x, y) in inner:
-        if x == xin: put(x, y, 'o' if ty + 2 <= y <= by - 2 else 'd')
-        if x == xin - 1: put(x, y, 'h' if y < cy else 'm')
-    # dark exhaust ring at the back (left) end
+        if x == xin: put(x, y, 'd' if ty + 2 <= y <= by - 2 else 'm')
+    # exhaust ring at the back (left) end: one dark column and a hot-metal column inside it
     xb = min(p[0] for p in inner)
     for (x, y) in inner:
-        if x == xb: put(x, y, 'o')
-        if x == xb + 1: put(x, y, 'd')
+        if x == xb: put(x, y, 'd')
+        elif x == xb + 1 and ty + 2 <= y <= by - 2: put(x, y, 'm')
     # animation: a glint travelling the top rim and a shimmer in the exhaust
-    gx = xb + 3 + (k * 2) % max(1, (xin - xb - 5))
+    gx = xb + 2 + (k * 2) % max(1, (xin - xb - 3))
     if (gx, ty + 1) in inner: put(gx, ty + 1, 's' if k % 2 == 0 else 'h')
-    ex = (xb, (ty + by) // 2 + 0)
+    ex = (xb, (ty + by) // 2)
     if ex in inner: put(ex[0], ex[1], ['m', 'd', 'h', 'd'][k])
     return mask
 
@@ -75,13 +81,13 @@ def draw_ring_cowl(cv, cx, cy, r, far, k):
 def base_frame(v, k):
     cv = Cv(BASE_W, BASE_H, v["pal"])
     if v["pod"] == "capsule":
-        draw_pod(cv, 17, 25, 1, 7, k, far=True)
+        draw_pod(cv, FAR[0], FAR[1], FAR[2], FAR[3], k, far=True)
     else:
         draw_ring_cowl(cv, 21.0, 4.5, 3.8, True, k)
     shade_hull(cv, v)
     cv.paint(v.get("detail", []))
     if v["pod"] == "capsule":
-        draw_pod(cv, 20, 28, 3, 9, k, far=False)
+        draw_pod(cv, NEAR[0], NEAR[1], NEAR[2], NEAR[3], k, far=False)
     else:
         draw_ring_cowl(cv, 24.0, 6.5, 3.9, False, k)
     r = v["ring"]

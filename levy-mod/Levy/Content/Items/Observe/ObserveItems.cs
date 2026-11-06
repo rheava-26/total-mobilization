@@ -50,7 +50,7 @@ namespace Levy.Content.Items.Observe
 		public override void SetDefaults()
 		{
 			Item.DefaultToPlaceableTile(ModContent.TileType<StaticCameraTile>());
-			Item.width = 36; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.value = Item.buyPrice(gold: 5); Item.rare = ItemRarityID.Green;
+			Item.width = 32; Item.height = 32; Item.maxStack = Item.CommonMaxStack; Item.value = Item.buyPrice(gold: 5); Item.rare = ItemRarityID.Green;
 		}
 
 		public override void AddRecipes()

@@ -592,6 +592,19 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 💬 Eve's design talk (2026-11-06): class roles, gearing, count curve, bottlenecks, Calamity Rev
+- **Class AI roles:** NOT reworking yet. Eve wants hooks/double jump/Hermes in and tested first.
+  - My view: Terraria bosses ignore aggro and pass through, so "melee tank" can't work. Melee's real role is close-range burst plus beam weapons.
+  - Summoners: mid-range minions, whip only when an enemy is close.
+  - Standing still + walking off platform edges → sent to field-ai-3 as metrics.
+- **Gearing:** Eve wants new gear to go to the WORST-equipped levies ("raise the floor"), while the best weapon still goes to the best-suited class. Branch `gear-audit`: a structured progression audit (junk → ore → Ninja → Shadow → … → Chlorophyte), a fishy-list, worst-first fix if needed.
+- **Count curve:** Eve leans 10→25→40→60 (pre-HM has 7 bosses; HM ~10). Holding until boss-trials' count-curve experiment (4/6/8/10/12/15/20/30, identical loadouts) shows whether the CP boss-HP scaling cancels extra levies.
+- **Bottlenecks:** a research agent is compiling wiki numbers + candidate fixes per stage (Chlorophyte, Hallowed, Souls, Ectoplasm…) → scratchpad/bottlenecks.md. Also: pre-HM ore armor feels pointless.
+- **Calamity Revengeance:** branch `calrev`:
+  - Do levies get Rage/Adrenaline? Make them work if not (auto-activate when full in boss fights).
+  - Expert vs Rev on KS/EoC/BoC with the same loadouts.
+  - Propose a Calamity balance patch backed by the data.
+
 ## 📈 Early-game levy count + mobility (Eve, 2026-11-06)
 - **Count:**
   - Eve: 4 levies at start is too few; early items sit unused. Militia at ~12 feels right. "Maybe even fewer with more mods."

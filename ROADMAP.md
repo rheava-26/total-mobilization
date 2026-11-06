@@ -246,6 +246,72 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - OOA levy sentry staves come in 3 TIERS like the vanilla DD2 sentry staves (rod / cane / staff); higher tiers give more levies per sentry. Make sure the Tavernkeep shop has room for them.
 - Eve: "go finish everything else" — build the whole batch.
 
+**2.0 BUILD RUNNING (2026-11-06):** branches
+- `armory2-reforge`: targeted reforge + vanity.
+- `settings2`: setup popup, config categories, Boss Checklist anchors + recommended ranges + milestone rewards, slots.
+- `progression-assist`: recipes, drop rates, shimmer, armor costs, Arms Dealer bulk ammo toggle, bulk factory + potion station.
+- `altfire-impl`: AltPolicies registry, all families, AimPoint/HoldVariant, Dark Gate, broken weapons.
+- `officers2`: hold weapons like vanilla, follow orders, Eve's original kits, Painter paint + Ichor-like debuff.
+- `talk2`: chat bars, talk in combat, close-up clump, levy inventory window, dialogue export.
+- `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
+- `art2`: concept art for all new items, for Eve's approval.
+- `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**UPDATE (Eve, later 2026-11-06):**
+- **Potions APPROVED from v2:** Seeker = B (slot hole); Spectator = A (plain white box) with the dots/glints shuffled so it isn't a Builder clone.
+- **Command Radio** gets the walkie-talkie sprite (art2 radio B → vanilla-style final).
+- The v1 concepts are "fine"; art3 is making them vanilla-accurate.
+- **FACTORY PAUSED.** Corrected intent: cheaper BULK crafting of things you make in huge numbers (ammo, ore, potions, AND weapons), e.g. 1,500 Holy Arrows with fewer Unicorn Horns. An optional "ammo bench" is the simplest form. Revisit later.
+- **Tavernkeep:** NOT removed. Eve worries his compact shop will overflow. `ooa-tavern` resumed from WIP, with shop space as the key requirement (count the slots, pick a no-overflow solution).
+- **Eve asked why I can't look up references.** Wiki fetch works (terraria.wiki.gg true-scale sprites); art3 is using it. The test server's tML install has a stripped texture set, so spawning items there doesn't show the art.
+
+**ART + STATION DECISIONS (Eve, 2026-11-06):**
+- **Art style:**
+  - Match vanilla exactly: 2×2 grid, MESSIER and more clumped, not neat.
+  - Placeables must be FLAT, front-facing 2D (v1 had perspective).
+  - Real vanilla sprites from terraria.wiki.gg are used as references only (`art3` branch).
+- **Picks:**
+  - GoPro A, plus a funny GoPro COLLAR variant.
+  - Static camera B.
+  - Guide to Autonomy C (slime).
+  - Staves B (stick with a house/tower).
+  - Bulk Factory B as an ANIMATED conveyor.
+  - The bulk potion station is an UPGRADE of the Alchemy Table, built with late-game items (not a standalone cauldron).
+  - Armory Heart follows Magic Storage's own look.
+- **No new radio:** use the existing Command Radio for map orders. Eve liked the walkie-talkie B look, which could reskin it later.
+- **Guide to Autonomy** drops in Slime Rain at **1/50**, so you get it during your first Slime Rain.
+- **FACTORY redesign:**
+  - Only crafts recipes and items you already have.
+  - For AMMO and consumables, not weapons, armor or accessories.
+  - Respects stations (ore needs a furnace).
+  - Pre-HM tier, plus a Mythril-anvil HM upgrade.
+  - EXPENSIVE.
+  - Better yield (e.g. Chlorophyte Bullets 90 vs 70, or less input); may produce over time.
+  - Magic Storage compatible.
+  - Redesign sent to `progression-assist`.
+- **No access to Eve's computer:** the session has no shared computer folders (list_computer_folders is empty), so vanilla refs come from the wiki.
+
+**WORKING AGREEMENT (Eve, again):** Eve's examples are EXAMPLES. Don't turn them into the whole scope or into hard rules.
+- "Dark Gate" meant ALL interaction weapons.
+- "Painter" meant ALL officers get unique, identity-driven kits.
+- The hook remarks meant "use hooks correctly". They did NOT mean "never hook slopes / hook rarely in HM".
+- Course corrections were sent to altfire-impl, officers2 and field-ai.
+
+**Eve 2026-11-06 later:**
+- Magic Storage clone APPROVED, and copy MS's art format/textures where the license allows. `logistics` relaunched.
+- Tavernkeep stuff WAITS: ooa-tavern paused; WIP saved on `ooa-tavern-wip` 09397c8.
+- Cameras NOW: static cameras you connect to, plus a big zoomed-out arena view (2–3× per side). Performance is a concern; measure and mitigate.
+- GoPro = see what the levy sees.
+- NEW: MIND CONTROL: control a levy remotely (and use its weapons) while you're dead, until you respawn.
+- Running: `command-observe` (cameras, zoom, GoPro, radio + barracks map orders, mind control) and potion art v2 (vanilla-accurate necks).
+
+**(was) BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**ART v1 sent to Eve (art2 81b8b38):** all items in 3 variants; potion comparisons.
+- My own critique: the potions don't match vanilla's TALL two-tier neck and stopper (ours is squat), and the bodies are too wide.
+- The other items read fine but are concept-level; tripod legs and antennas have a doubled outline.
+- Waiting on Eve's picks.
+
+**Waits on art approval:** Command & Observe items (radio, GoPro, cameras, Spectator/Seeker potions, Guide to Autonomy).
+
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
 - [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
 - [ ] Vanity: its own screen, a row per set, "always wear X".

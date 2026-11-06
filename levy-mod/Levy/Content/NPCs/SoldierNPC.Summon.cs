@@ -9,6 +9,7 @@ using Levy.Common.Globals;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.Projectiles;
+using Levy.Common.Testing;
 
 namespace Levy.Content.NPCs
 {
@@ -25,6 +26,9 @@ namespace Levy.Content.NPCs
 		private readonly List<int> _minionScratch = new();
 		/// <summary>The game tick this soldier's dummy minion counters were last reset on (SoldierMinions.PrepareTick).</summary>
 		internal uint MinionPrepStamp = uint.MaxValue;
+		/// <summary>Hits this soldier's projectiles have landed (server / single player), and the value / idle time the modded-flock liveness check last saw.</summary>
+		internal int MinionHits;
+		private int _minionHitsSeen, _minionIdleTicks;
 
 		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
 		public Item SummonWeapon()
@@ -107,8 +111,10 @@ namespace Levy.Content.NPCs
 					bool fake = p.type == standIn && (int)p.ai[0] == me;
 					bool real = !fake && SoldierMinions.OwnedBy(p, me);
 					if (!fake && !real) continue;
+					// a minion-flagged child a modded minion's own AI made (a summoner's babies, a beacon's UFOs): driven, and part of the flock only through the slots it takes
+					if (real && !SoldierMinions.IsCast(p) && !(driven && p.minionSlots > SoldierMinions.ChildSlotMin)) continue;
 					// no summon weapon any more, or a flock of the other kind / of a staff this soldier no longer carries: dismissed
-					if (!has || (fake && driven) || (real && !(driven && SoldierMinions.InFamily(weapon.shoot, p.type)))) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; }
+					if (!has || (fake && driven) || (real && !(driven && (SoldierMinions.InFamily(weapon.shoot, p.type) || !SoldierMinions.IsCast(p))))) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; }
 					_minionScratch.Add(i);
 				}
 				if (!has) return;
@@ -145,6 +151,16 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private void MaintainRealMinions(Item weapon, int damage)
 		{
+			if (weapon.shoot >= ProjectileID.Count && _minionScratch.Count > 0)
+			{
+				if (MinionHits != _minionHitsSeen) { _minionHitsSeen = MinionHits; _minionIdleTicks = 0; }
+				else if (SoldierMinions.AttackTarget(this) >= 0)
+				{
+					_minionIdleTicks += LevyConstants.MinionMaintainIntervalTicks;
+					if (_minionIdleTicks >= LevyConstants.ModdedMinionIdleTicks) { _minionIdleTicks = 0; SoldierMinions.GiveUp(this, weapon); return; }
+				}
+			}
+			else _minionIdleTicks = 0;
 			int desired = SoldierMinions.Capacity(this, weapon);
 			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
 			bool dragon = weapon.shoot == ProjectileID.StardustDragon1;
@@ -158,7 +174,7 @@ namespace Levy.Content.NPCs
 			{
 				Projectile p = Main.projectile[i];
 				SoldierMinions.Retune(this, p, weapon, damage);
-				have += p.minionSlots;
+				have += SoldierMinions.SlotOf(p, perCast);
 			}
 			if (dragon) have = SoldierMinions.TrimDragon(_minionScratch, have, want); // shortened body by body from the tail end, never below one cast
 			while (!dragon && have > want + LevyConstants.MinionSlotEpsilon)
@@ -167,11 +183,12 @@ namespace Levy.Content.NPCs
 				for (int k = 0; k < _minionScratch.Count; k++)
 				{
 					Projectile p = Main.projectile[_minionScratch[k]];
-					if (p.active && p.minionSlots > 0f && (worst < 0 || _minionScratch[k] > _minionScratch[worst])) worst = k;
+					if (p.active && SoldierMinions.SlotOf(p, perCast) > 0f && (worst < 0 || _minionScratch[k] > _minionScratch[worst])) worst = k;
 				}
 				if (worst < 0) break;
 				Projectile q = Main.projectile[_minionScratch[worst]];
-				have -= q.minionSlots;
+				have -= SoldierMinions.SlotOf(q, perCast);
+				if (CombatHarness.Enabled) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG overflow dismiss {q.ModProjectile?.Name ?? q.type.ToString()} slots={q.minionSlots} have={have} want={want} perCast={perCast} desired={desired}");
 				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
 			}

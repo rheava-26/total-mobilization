@@ -375,6 +375,7 @@ namespace Levy.Content.NPCs
 		public void SyncDummyTransform()
 		{
 			Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
+			Dummy.oldPosition = NPC.oldPosition; Dummy.oldVelocity = NPC.oldVelocity; // modded minions that hover over their owner read Player.oldPosition (a zeroed one parks them outside the world)
 			Dummy.direction = NPC.direction == 0 ? 1 : NPC.direction;
 			Dummy.gravDir = 1f; Dummy.active = true; Dummy.dead = false; Dummy.ghost = false;
 			Dummy.statLife = NPC.life; Dummy.statLifeMax2 = Math.Max(1, NPC.lifeMax);

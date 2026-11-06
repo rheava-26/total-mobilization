@@ -35,6 +35,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase)) return BeginBanner();
 			if (string.Equals(Scenario, "fieldai", StringComparison.OrdinalIgnoreCase)) return BeginFieldAi();
 			if (string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase)) return BeginGate();
+			if (string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase)) return BeginMinions();
 			if (string.Equals(Scenario, "officer", StringComparison.OrdinalIgnoreCase)) return BeginOfficer();
 			if (string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase)) return BeginTeam();
 			if (!string.Equals(Scenario, "platform", StringComparison.OrdinalIgnoreCase)) return false;
@@ -78,6 +79,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase)) { StepBanner(); return; }
 			if (string.Equals(Scenario, "fieldai", StringComparison.OrdinalIgnoreCase)) { StepFieldAi(); return; }
 			if (string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase)) { StepGate(); return; }
+			if (string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase)) { StepMinions(); return; }
 			if (string.Equals(Scenario, "officer", StringComparison.OrdinalIgnoreCase)) { StepOfficer(); return; }
 			if (string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase)) { StepTeam(); return; }
 			if (_scTrial >= Trials.Length) { Finish("platform scenario complete"); return; }

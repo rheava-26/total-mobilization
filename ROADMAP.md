@@ -557,12 +557,24 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - shoot helpers reading Main.player[owner] state;
   - Levy's contact-only stand-in flyer running instead of the real AI.
 - Eve: "they ram into the enemy, it's the same as the rest of the unrecognized minions." Lead = Levy's contact-only stand-in running instead of the real modded AI (to be confirmed). Fix target: drive real modded minions through the dummy path (minion buff on the dummy, ModPlayer state, myPlayer fake); stand-in only per failing type.
-- Branch `modsummons` is instrumenting the Stormlion Staff first.
+- **CONFIRMED (modsummons 0c64d45):** SoldierMinions.CanDrive/IsDriven only accepted vanilla projectile ids, so EVERY modded minion ran the ramming stand-in.
+- **Fix:** drive modded minions for real. The staff buff runs on the dummy each tick via ModBuff.Update, with learned-buff fallback. Dummy oldPosition is synced. Minion children are driven too.
+- **Result:** 70/82 Calamity staves run real, mostly firing their own projectiles (Stormjaw = StormjawBaby + ~110 sparks). 12 fall back to the stand-in (companion-part minions, 0-hit ones). Thorium 31/31 route OK (not harness-run).
+- **Flood guard (68c07e4):** >100 created per 20-tick pass or >300 alive → kill, stand-in, remembered per staff. Peaks: Dragonblood 31/pass, Metastasis 20, Ares 76 alive. Void Concentration trips at tick 60. Universe Splitter falls back on the no-progress rule (it stalls after ~600 ticks).
+- **SHIPPED in Levy 2.0.2.**
+- The staff was the Stormjaw Staff (Eve's "Stormlion").
 
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
+- A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
+
+## 📦 SHIPPED Levy 2.0.2 (Mechanization 0.8.0), at scratchpad/ship-2.0.2
+- Real modded minions (modsummons) + the flood guard; Calamity recipe-check fix (calrecipes).
+- **Boots:**
+  - Calamity+Levy+Mech (tML 2026.10): 0 exceptions, minions 82/82, logistics 100, ProgCheck 47/0.
+  - Thorium+MS+Levy+Mech (old tML): 0 exceptions, minions 31/31, ProgCheck 47/0.
 
 ## 📦 SHIPPED Levy 2.0.1 (Mechanization stays 0.8.0), at scratchpad/ship-2.0.1
 - **logi-search ae94705:**

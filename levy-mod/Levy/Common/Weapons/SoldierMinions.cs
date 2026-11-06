@@ -43,8 +43,9 @@ namespace Levy.Common.Weapons
 	/// one) for exactly the length of the NPC.StrikeNPC inside it, then puts it back in a finally. The damage number, the hit rate and everything the hit does before and after the strike still
 	/// run against the dummy, unchanged. Server / single player only.
 	///
-	/// WHAT STAYS FAKE. Only vanilla minions are driven: a modded minion's own AI usually insists on its owner's ModPlayer buff and would die on the dummy. Those, the Stardust Guardian
-	/// (an armor-set stand, not a minion), and any type that throws while driven (see <see cref="MarkBad"/>) keep the old stand-in, <see cref="Content.Projectiles.SoldierMinion"/>.
+	/// MODDED MINIONS run the same way: their staff's buff is applied to the dummy each tick (<see cref="ApplyModdedBuff"/>) so the ModPlayer flag their AI polls stays up, and the dummy already carries every mod's ModPlayer.
+	/// WHAT STAYS FAKE. The Stardust Guardian (an armor-set stand, not a minion), a modded minion that throws while driven or dies right after every cast (see <see cref="MarkBad"/> / <see cref="NoteModdedCast"/>)
+	/// and a staff whose shot is not a minion keep the stand-in, <see cref="Content.Projectiles.SoldierMinion"/> (a flying minion that shoots / rams, never a melee swing).
 	///
 	/// THE STARDUST DRAGON. Head 625, two bodies 626/627 per cast, tail 628: a chain whose segments find the one ahead through <c>Projectile.GetByUUID(owner, ai[0])</c>, and vanilla refuses that
 	/// lookup for owner 255 (<c>owner >= 255</c> returns -1), so a segment owned by 255 would never follow anything. The dragon's segments are therefore owned by their OWN slot,
@@ -125,7 +126,7 @@ namespace Levy.Common.Weapons
 
 		internal static void Reset()
 		{
-			BadTypes.Clear(); Parked.Clear(); ParkedDragons.Clear();
+			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedDragons.Clear();
 			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
 			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
 		}
@@ -141,7 +142,7 @@ namespace Levy.Common.Weapons
 		// =====================================================================================================
 		/// <summary>A vanilla minion projectile run for a soldier: minion flag, owner 255, tagged with a soldier.</summary>
 		internal static bool IsDriven(Projectile p) =>
-			p.active && p.minion && p.type < ProjectileID.Count && (p.owner == Slot || (p.owner == DragonOwner && IsDragonType(p.type)))
+			p.active && p.minion && (p.owner == Slot || (p.owner == DragonOwner && IsDragonType(p.type)))
 			&& p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
 
 		/// <summary>The four segments of the Stardust Dragon: head 625, bodies 626 / 627, tail 628.</summary>
@@ -157,10 +158,21 @@ namespace Levy.Common.Weapons
 		/// <summary>Whether the staff's minion is run as a real vanilla projectile (vanilla type, a minion, not a known-unsupported one, not one that threw).</summary>
 		public static bool CanDrive(int shoot)
 		{
-			if (shoot <= 0 || shoot >= ProjectileID.Count || Undriven.Contains(shoot) || BadTypes.Contains(shoot)) return false;
+			if (shoot <= 0 || Undriven.Contains(shoot) || BadTypes.Contains(shoot)) return false;
 			Projectile sample = WeaponClassifier.ProjectileSample(shoot);
-			return sample != null && sample.minion && sample.aiStyle > 0;
+			if (sample == null || !sample.minion) return false;
+			// A modded minion runs its own AI under the same dummy owner; its buff is applied to the dummy each tick (see ApplyModdedBuff). Many modded minions use aiStyle 0 (custom AI).
+			return shoot >= ProjectileID.Count || sample.aiStyle > 0;
 		}
+
+		/// <summary>A minion-flagged child counts toward its soldier's flock only when it takes more than this many slots.</summary>
+		internal const float ChildSlotMin = 0.01f;
+
+		/// <summary>The slots one live minion counts for: its own, or for a modded minion that reports none (its AI sets it later or never) the cast's slot cost.</summary>
+		internal static float SlotOf(Projectile p, float perCast) => p.minionSlots > 0.01f || p.type < ProjectileID.Count ? p.minionSlots : perCast;
+
+		/// <summary>True for a minion that is a direct cast of the staff (created by <see cref="NewMinion"/>), false for a minion-flagged child a modded minion's own AI made.</summary>
+		internal static bool IsCast(Projectile p) => p.type < ProjectileID.Count || (p.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.Cast);
 
 		/// <summary>Controller minions (Desert Tiger gem, Abigail counter) count levels, not a flock.</summary>
 		private static bool IsController(int shoot) => shoot == ProjectileID.StormTigerGem || shoot == ProjectileID.AbigailCounter;
@@ -206,7 +218,57 @@ namespace Levy.Common.Weapons
 		/// <summary>Remembers that this type misbehaved under the dummy; its staff keeps the stand-in from now on.</summary>
 		private static void MarkBad(Projectile p, Exception e)
 		{
-			if (BadTypes.Add(FamilyRoot(p.type))) ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: real minion type " + p.type + " threw while driven for a soldier; its staff falls back to the stand-in minion: " + e);
+			int root = FamilyRoot(p.type);
+			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
+			if (p.type >= ProjectileID.Count && staff != null && staff.shoot > 0) root = staff.shoot; // a modded child that throws takes its staff back to the stand-in
+			if (BadTypes.Add(root)) ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: real minion type " + p.type + " (" + (p.ModProjectile?.FullName ?? "vanilla") + ") threw while driven for a soldier; its staff falls back to the stand-in minion: " + e);
+		}
+
+		/// <summary>Consecutive short, harmless lives per staff shot (a modded cast that died young without hitting anything).</summary>
+		private static readonly Dictionary<int, int> ShortLives = new();
+
+		/// <summary>
+		/// A modded cast just died by itself (not dismissed by the upkeep). Three in a row that lived under <see cref="LevyConstants.ModdedMinionShortLifeTicks"/> ticks without a single hit mean the minion
+		/// cannot live under a dummy owner (it needs a companion part its staff's Shoot makes, an owner state the dummy lacks...): its staff uses the stand-in from then on. A minion that dies by design
+		/// after doing its job (a bomber that crashes into a target, a summoner that finishes its spawn) hits something or lives longer, and resets the count.
+		/// </summary>
+		internal static void NoteModdedDeath(Projectile p, int age, int hits)
+		{
+			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
+			int root = staff != null && staff.shoot > 0 ? staff.shoot : p.type;
+			if (age >= LevyConstants.ModdedMinionShortLifeTicks || hits > 0) { ShortLives[root] = 0; return; }
+			int n = ShortLives.GetValueOrDefault(root) + 1;
+			ShortLives[root] = n;
+			if (n >= LevyConstants.ModdedMinionMaxShortLives && BadTypes.Add(root))
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion " + (p.ModProjectile?.FullName ?? p.type.ToString()) + " keeps dying right after it is cast for a soldier; its staff falls back to the stand-in minion.");
+		}
+
+		/// <summary>
+		/// A modded flock that has landed no hit for <see cref="LevyConstants.ModdedMinionIdleTicks"/> ticks of the soldier fighting (an enemy inside the leash the whole time) is not working under a dummy owner
+		/// (it wants ammo in its owner's pack, a cursor, a held item...): its staff uses the stand-in from then on, logged once. Called from the upkeep after it has tallied the idle time.
+		/// </summary>
+		internal static void GiveUp(SoldierNPC s, Item weapon)
+		{
+			if (BadTypes.Add(weapon.shoot))
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " landed no hit in " + (LevyConstants.ModdedMinionIdleTicks / 60) + " seconds of fighting for a soldier; its staff falls back to the stand-in minion.");
+			KillAll(s);
+		}
+
+		/// <summary>
+		/// A modded flock whose minions flood the world with projectiles (more than <see cref="LevyConstants.ModdedMinionMaxChildSpawnsPerPass"/> created in one upkeep pass, or more than
+		/// <see cref="LevyConstants.ModdedMinionMaxChildrenAlive"/> alive): the excess projectiles are ended now and the staff uses the stand-in from then on (remembered per staff, logged once).
+		/// </summary>
+		internal static void FloodGuard(SoldierNPC s, Item weapon, int spawned, int alive)
+		{
+			if (BadTypes.Add(weapon.shoot))
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " flooded the world with projectiles (" + spawned + " created in one pass, " + alive + " alive); its staff falls back to the stand-in minion.");
+			KillAll(s);
+			int me = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (q.active && !q.minion && q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == me) q.timeLeft = Math.Min(q.timeLeft, 1);
+			}
 		}
 
 		/// <summary>Removes every real minion (and companion) this soldier has out. Server / single player.</summary>
@@ -224,6 +286,7 @@ namespace Levy.Common.Weapons
 		internal static void Dismiss(Projectile p)
 		{
 			if (!p.active) return;
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag dt)) dt.Dismissed = true; // an upkeep decision, not the minion dying by itself
 			if (Main.netMode != NetmodeID.Server || !IsDragonType(p.type) || p.owner == Main.myPlayer) { p.Kill(); return; }
 			int saved = Main.myPlayer;
 			try { Main.myPlayer = p.owner; p.Kill(); }
@@ -283,7 +346,7 @@ namespace Levy.Common.Weapons
 				if (!p.active || p.type != type) return null;
 				p.npcProj = true; // the commander's on-hit effects and item drops never run for a soldier's minion
 				p.noDropItem = true;
-				if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) tag.SoldierIndex = s.NPC.whoAmI;
+				if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = true; }
 				p.netUpdate = true;
 				return p;
 			}
@@ -509,7 +572,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>The enemy this soldier's minions are told to attack: the soldier's own target (incl. the commander's focus) when it is a live hostile inside the leash, else the nearest whip-tagged enemy in the leash, else -1 (vanilla proximity).</summary>
-		private static int AttackTarget(SoldierNPC s)
+		internal static int AttackTarget(SoldierNPC s)
 		{
 			if (s.Record == null || s.Record.HoldFire) return -1;
 			float leashSq = LevyConstants.MinionLeashPx * LevyConstants.MinionLeashPx;
@@ -550,6 +613,48 @@ namespace Levy.Common.Weapons
 			child.owner = TrueMyPlayer;
 		}
 
+
+		/// <summary>
+		/// A modded minion's AI keeps itself alive through its owner's ModPlayer flag, which the staff's buff sets (<c>ModBuff.Update</c> raises the flag while the owner owns the minion and refreshes the
+		/// buff time). The dummy owner carries the mods' ModPlayer instances, so the staff's buff is run on it here, each tick, through a scratch buff slot: the flag is up for the minion's Update and
+		/// the dummy's real buff slot is put back untouched. A staff with no buff (a minion that needs none) is simply driven.
+		/// </summary>
+		/// <summary>Modded minion type -> the modded buff its AI added to the dummy owner (learned from the first Update; used when the staff sets no buffType).</summary>
+		private static readonly Dictionary<int, int> LearnedBuff = new();
+		private static void LearnBuff(Player d, Projectile p)
+		{
+			if (LearnedBuff.ContainsKey(p.type)) return;
+			for (int i = 0; i < Player.MaxBuffs; i++)
+			{
+				int b = d.buffType[i];
+				if (b < BuffID.Count || d.buffTime[i] <= 0) continue;
+				bool had = false;
+				for (int k = 0; k < Player.MaxBuffs; k++) if (SavedBuffType[k] == b) { had = true; break; }
+				if (!had) { LearnedBuff[p.type] = b; return; }
+			}
+		}
+
+		private static readonly int[] SavedBuffType = new int[Player.MaxBuffs], SavedBuffTime = new int[Player.MaxBuffs];
+		private static void SaveBuffs(Player d) { Array.Copy(d.buffType, SavedBuffType, Player.MaxBuffs); Array.Copy(d.buffTime, SavedBuffTime, Player.MaxBuffs); }
+		private static void RestoreBuffs(Player d) { Array.Copy(SavedBuffType, d.buffType, Player.MaxBuffs); Array.Copy(SavedBuffTime, d.buffTime, Player.MaxBuffs); }
+
+		private static void ApplyModdedBuff(SoldierNPC body, Projectile p)
+		{
+			Item staff = body.SummonWeapon();
+			int bt = staff != null && staff.buffType > 0 ? staff.buffType : LearnedBuff.GetValueOrDefault(p.type); // a staff that sets no Item.buffType: the buff the minion's own AI was seen adding to its owner
+			ModBuff mb = bt > 0 ? ModContent.GetModBuff(bt) : null;
+			if (mb == null) return;
+			Player d = body.Dummy;
+			if (p.type < d.ownedProjectileCounts.Length && d.ownedProjectileCounts[p.type] <= 0) d.ownedProjectileCounts[p.type] = 1; // cast earlier this tick, before the per-tick count
+			int t0 = d.buffType[0], time0 = d.buffTime[0], idx = 0;
+			try
+			{
+				d.buffType[0] = bt; d.buffTime[0] = 2;
+				mb.Update(d, ref idx);
+			}
+			finally { d.buffType[0] = t0; d.buffTime[0] = time0; }
+		}
+
 		internal static void RunUpdate(On_Projectile.orig_Update orig, Projectile p, int i)
 		{
 			SoldierNPC body = MiscProjSwap.BodyOf(p);
@@ -563,15 +668,17 @@ namespace Levy.Common.Weapons
 
 			Player d = body.Dummy;
 			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
-			bool swapped = false, parked = false, parkedDragons = false;
+			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false;
 			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
 			{
-				if (p.timeLeft < LevyConstants.MinionLifeTicks / 2) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
+				if (p.timeLeft < LevyConstants.MinionLifeTicks / 2 && (!authority || IsCast(p))) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255], at the soldier
 				swapped = true;
 				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
 				d.maxMinions = LevyConstants.MinionDriverMaxMinions;
+				if (p.type >= ProjectileID.Count && p.TryGetGlobalProjectile(out SoldierProjectileTag at)) at.Age++;
+				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; ApplyModdedBuff(body, p); } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
@@ -593,6 +700,7 @@ namespace Levy.Common.Weapons
 				Main.myPlayer = savedMyPlayer;
 				_faked = false;
 				d.maxMinions = savedMax;
+				if (buffsSaved) { LearnBuff(d, p); RestoreBuffs(d); }
 				if (swapped) EnemyTargeting.Unswap();
 				EnsureAliasRestored(); // never leave a dummy in the dragon's owner slot
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]

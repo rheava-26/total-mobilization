@@ -167,6 +167,7 @@ namespace Levy.Common.Testing
 				SbAdd("Cal:PlagueReaper-key", "CalamityMod/PlagueReaperMask", "CalamityMod/PlagueReaperVest", "CalamityMod/PlagueReaperStriders", "ranged", "calkey:-:presses", s => { s.Static = false; });
 				SbAdd("Cal:Prismatic-key", "CalamityMod/PrismaticHelmet", "CalamityMod/PrismaticRegalia", "CalamityMod/PrismaticGreaves", "magic", "calkey:DeathhailBeam:proj", s => { s.Static = false; });
 				SbAdd("Cal:Brimflame-key", "CalamityMod/BrimflameCowl", "CalamityMod/BrimflameRobes", "CalamityMod/BrimflameBoots", "magic", "calkey:BrimflameFrenzyBuff:buff", s => { s.Static = false; });
+				SbAdd("Cal:Rage+Adrenaline", "CalamityMod/TarragonHeadMelee", "CalamityMod/TarragonBreastplate", "CalamityMod/TarragonLeggings", "melee", "calmeter", s => { s.Weapon = "TerraBlade"; s.TargetTiles = 4f; s.Static = false; s.Ticks = 240; });
 				SbAdd("Cal:Statigel(rogue)", "CalamityMod/StatigelHeadRogue", "CalamityMod/StatigelArmor", "CalamityMod/StatigelGreaves", "rogue");
 				SbAdd("Cal:Victide(summon)", "CalamityMod/VictideHelmet", "CalamityMod/VictideBreastplate", "CalamityMod/VictideLeggings", "summon");
 				SbAdd("Cal:Daedalus(ranged)", "CalamityMod/DaedalusHeadRanged", "CalamityMod/DaedalusBreastplate", "CalamityMod/DaedalusLeggings", "ranged");
@@ -411,6 +412,7 @@ namespace Levy.Common.Testing
 			if (s.Poker) { _sbPoker = SpSpawnTarget(_cx * 16f + 8f, 40, 60, 60); Main.npc[_sbPoker].GetGlobalNPC<HarnessTarget>().Pin = Main.npc[_sbPoker].position; }
 			_sbMaxOrbs = _sbMaxTitan = _sbMaxPal = _sbMaxNeb = _sbDodgeCd = _sbHolyReady = _sbBeetleSeen = _sbFrostSeen = _sbGuardianSeen = _sbLeafSeen = _sbMateMax = 0;
 			_sbMinStealth = 1f; _sbSmokeTicks = 0; _sbRogueProj.Clear(); _sbLightsOut.Clear(); _sbBuffsSeen.Clear(); _sbRegenMax = 0; _sbMinCmd = int.MaxValue; _sbMaxCmd = 0; _sbLevyLifeMin = int.MaxValue;
+			if (s.Event == "calmeter") SbFillMeters(_sbA.Dummy);
 			_sbCmdLife0 = cmd.statLife; _sbAL0 = _sbA.NPC.life; _sbBL0 = _sbB?.NPC.life ?? 0;
 			_sbPokerL0 = _sbPoker >= 0 ? Main.npc[_sbPoker].life : 0; _sbTargetL0 = _sbTarget >= 0 ? Main.npc[_sbTarget].life : 0;
 			return true;
@@ -432,6 +434,8 @@ namespace Levy.Common.Testing
 		{
 			SbPin();
 			if (_sbA == null || !_sbA.NPC.active) return;
+			if (s.Event == "calmeter" && !_sbBuffsSeen.Contains("AdrenalineMode")) SbFillMeters(_sbA.Dummy);
+			if (s.Event == "calmeter") SbRevenge(true);
 			NPC me = _sbA.NPC;
 			if (me.life < _sbLevyLifeMin) _sbLevyLifeMin = me.life;
 			for (int q = 0; q < _sbA.Dummy.buffType.Length; q++) if (_sbA.Dummy.buffType[q] > 0) _sbBuffsSeen.Add(BuffLoader.GetBuff(_sbA.Dummy.buffType[q])?.Name ?? _sbA.Dummy.buffType[q].ToString());
@@ -459,6 +463,37 @@ namespace Levy.Common.Testing
 			}
 			// the poker keeps hitting: it is a pinned enemy with contact damage 60; keep it from being killed by thorns
 			if (_sbPoker >= 0 && Main.npc[_sbPoker].active) { Main.npc[_sbPoker].GetGlobalNPC<HarnessTarget>().Pin = me.Center - new Vector2(Main.npc[_sbPoker].width / 2f, Main.npc[_sbPoker].height / 2f); SbPokerLostCount += Main.npc[_sbPoker].lifeMax - Main.npc[_sbPoker].life; Main.npc[_sbPoker].life = Main.npc[_sbPoker].lifeMax; }
+		}
+
+		private static void SbRevenge(bool on)
+		{
+			try { ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.World.CalamityWorld").GetField("revenge").SetValue(null, on); } catch (Exception) { }
+		}
+
+		private static void SbEnableMeters(Player d)
+		{
+			try
+			{
+				var cp = ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
+				var inst = ModContent.GetContent<ModPlayer>().First(x => x.GetType() == cp);
+				object mp = d.GetModPlayer(inst);
+				cp.GetField("externalRageEnabled").SetValue(mp, (bool?)true); cp.GetField("externalAdrenalineEnabled").SetValue(mp, (bool?)true);
+			}
+			catch (Exception) { }
+		}
+
+		private static void SbFillMeters(Player d)
+		{
+			try
+			{
+				var cp = ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
+				var inst = ModContent.GetContent<ModPlayer>().First(x => x.GetType() == cp);
+				object mp = d.GetModPlayer(inst);
+				cp.GetField("externalRageEnabled").SetValue(mp, (bool?)true); cp.GetField("externalAdrenalineEnabled").SetValue(mp, (bool?)true); // rage and adrenaline exist only in Revengeance; the test world is not
+				cp.GetField("rage").SetValue(mp, (float)cp.GetField("rageMax").GetValue(mp));
+				cp.GetField("adrenaline").SetValue(mp, (float)cp.GetField("adrenalineMax").GetValue(mp));
+			}
+			catch (Exception) { }
 		}
 
 		private static bool SbLights(Projectile p)
@@ -507,6 +542,11 @@ namespace Levy.Common.Testing
 			}
 			switch (s.Event)
 			{
+				case "calmeter":
+				{
+					info += $"; activations {SoldierNPC.MeterActivations}; buffs seen [{string.Join(",", _sbBuffsSeen)}]";
+					return _sbBuffsSeen.Contains("RageMode") && _sbBuffsSeen.Contains("AdrenalineMode") ? null : "rage/adrenaline mode never started";
+				}
 				case "palladium":
 				{
 					info += $"; palladium ticks max {_sbMaxPal}; regen units max {_sbRegenMax}";
@@ -650,6 +690,7 @@ namespace Levy.Common.Testing
 			try { verdict = SbVerify(s, out info); } catch (Exception e) { verdict = "verify threw " + e.GetType().Name + ": " + e.Message; info = ""; }
 			if (verdict == null) { _sbPass++; SbLog($"HARNESS-SB: FIGHT PASS {s.Name,-16} | {info}"); }
 			else { _sbFail++; SbLog($"HARNESS-SB: FIGHT FAIL {s.Name,-16} {verdict} | {info}"); }
+			if (s.Event == "calmeter") SbRevenge(false);
 			_sbI++; _sbStarted = false;
 		}
 	}

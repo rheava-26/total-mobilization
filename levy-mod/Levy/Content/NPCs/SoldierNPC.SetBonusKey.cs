@@ -43,6 +43,7 @@ namespace Levy.Content.NPCs
 			try
 			{
 				TickStealthSets();
+				TickCalamityMeters();
 				if (_keyCd > 0) { _keyCd--; return; }
 				Player d = Dummy;
 				bool vortex = d.setVortex, forbidden = d.setForbidden;
@@ -262,6 +263,52 @@ namespace Levy.Content.NPCs
 			catch (Exception e)
 			{
 				if (_accessoryProcWarned.Add(-ItemID.DesertTorch)) Levy.Instance?.Logger.Warn("Levy: owner-bound spawn effect failed on a soldier: " + (e.InnerException ?? e).Message);
+			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Calamity Rage and Adrenaline: the keybind's body is "when the meter is full and the mode is off, add the mode buff" (CalamityPlayer.ProcessTriggers). A levy does it when the fight is on.
+		// ------------------------------------------------------------------------------------------------------------
+		private static bool _meterInit; private static Func<Player, object> _rage, _rageMax, _rageOn, _adr, _adrMax, _adrOn, _adrEnabled, _rageEnabled, _adrDur; private static int _rageBuff = -1, _adrBuff = -1;
+		public static int MeterActivations;
+
+		private static Func<Player, object> CalMember(Type t, ModPlayer inst, string name)
+		{
+			FieldInfo f = t.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+			if (f != null) return p => f.GetValue(p.GetModPlayer(inst));
+			PropertyInfo pr = t.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+			return pr == null ? null : p => pr.GetValue(p.GetModPlayer(inst));
+		}
+
+		private void TickCalamityMeters()
+		{
+			if (!_meterInit)
+			{
+				_meterInit = true;
+				if (ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.Code != null)
+				{
+					Type cp = cal.Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
+					ModPlayer inst = ModContent.GetContent<ModPlayer>().FirstOrDefault(x => x.GetType() == cp);
+					if (cp != null && inst != null)
+					{
+						_rage = CalMember(cp, inst, "rage"); _rageMax = CalMember(cp, inst, "rageMax"); _rageOn = CalMember(cp, inst, "rageModeActive"); _rageEnabled = CalMember(cp, inst, "RageEnabled");
+						_adr = CalMember(cp, inst, "adrenaline"); _adrMax = CalMember(cp, inst, "adrenalineMax"); _adrOn = CalMember(cp, inst, "adrenalineModeActive"); _adrEnabled = CalMember(cp, inst, "AdrenalineEnabled"); _adrDur = CalMember(cp, inst, "AdrenalineDuration");
+						_rageBuff = ModContent.TryFind("CalamityMod/RageMode", out ModBuff rb) ? rb.Type : -1;
+						_adrBuff = ModContent.TryFind("CalamityMod/AdrenalineMode", out ModBuff ab) ? ab.Type : -1;
+					}
+				}
+			}
+			if (_rage == null || _rageBuff < 0 || KeyTarget() == null) return;
+			Player d = Dummy;
+			if ((bool)_rageEnabled(d) && !(bool)_rageOn(d) && (float)_rage(d) >= (float)_rageMax(d) && (float)_rageMax(d) > 0f)
+			{
+				d.AddBuff(_rageBuff, 2); MeterActivations++;
+				if (SetBonusLog.First("key:rage")) SetBonusLog.Write("Rage Mode started by soldier '" + SoldierName + "'.");
+			}
+			if (_adrBuff >= 0 && _adrEnabled != null && (bool)_adrEnabled(d) && !(bool)_adrOn(d) && (float)_adr(d) >= (float)_adrMax(d) && (float)_adrMax(d) > 0f)
+			{
+				d.AddBuff(_adrBuff, (int)_adrDur(d)); MeterActivations++;
+				if (SetBonusLog.First("key:adrenaline")) SetBonusLog.Write("Adrenaline Mode started by soldier '" + SoldierName + "'.");
 			}
 		}
 	}

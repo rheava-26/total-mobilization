@@ -222,6 +222,102 @@ Calamity is now testable locally. Built from public source (CalamityTeam/Calamit
 
 ## 📦 SHIPPED Levy 1.7.2 (ammo fair share + platform drop). Mechanization 0.7.0 unchanged.
 
+## ✅ LEVY 2.0 MASTER CHECKLIST (audited 2026-11-06 against Eve's four 2.0 messages, read back from the transcript)
+Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
+
+**DONE (1.7.8–1.8.0):**
+- Drones/turrets hold fire on unbeaten bosses.
+- Exact player speed; no special mobility slot.
+- Minishark not picked post-Plantera.
+- Found/dropped weapons rank a bit above crafted ones.
+- Armory filter put-back bug.
+- Class balance (weights/min/max/fixed, on by default, can be turned off).
+- Category rules (soft weight, hard order, include, at-least-N).
+- Item side panel (stats, score breakdown, manual score, tags edit).
+- Aim accuracy setting.
+- Banners buff levies.
+- Calamity + Thorium alt-click SURVEY.
+- Dark Gate identified.
+
+**ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
+- [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
+- [ ] Vanity: its own screen, a row per set, "always wear X".
+- [ ] Armory Heart (Magic Storage components + armory + gems) joins the MS network.
+- [ ] Craft-into-armory ORDERS: sets plus weapons split by % ratio, bucket vs random, auto-resume when materials arrive (100 of 120 bars → partial, rest later), total-materials checklist on the side of the screen.
+- [ ] Auto-buy from shopkeepers (X guns, X ammo), chained into auto-craft (buy ammo + chlorophyte → craft chlorophyte bullets into the armory).
+- [ ] Mass sell to the happiest NPC near the pylon network: drag-select, select by type, select by progression tier (e.g. all pre-HM swords).
+- [ ] Shimmer-back to ore via a Shimmer heart.
+- [ ] Bulk factory: put in a bulk amount (e.g. 10 Unicorn Horns), get +20–30%. Also bulk potion brewing (cauldron/alchemy table) for big groups.
+- [ ] Seeker Potion + Spectator Potion tie into Magic Storage: "go find something you specifically want". Seeker highlights only the item you pick (e.g. the nearest chlorophyte), so the target can be chosen from storage.
+
+**SETTINGS:**
+- [ ] New-world setup popup with presets.
+- [ ] Config categories: potions (batch crafting), aim, boss behaviour (how bosses treat levies/militia, what a fight needs, invasions), levy & militia counts.
+- [ ] Counts use Boss Checklist anchors (pre-boss→WoF 20, →ML 40, →final boss e.g. SCal +20), auto per-boss points, recommended range with "too few/too many" notes, milestone rewards (e.g. +1 accessory slot).
+- [ ] Slots: how many, when; wing/mobility slot timing.
+- [ ] PROGRESSION ASSISTANCE (in Levy, all toggles at vanilla defaults, note that the mod is designed around vanilla progression):
+  - life crystal / life fruit recipes
+  - mid-pre-HM Fallen Star recipe
+  - gems → Mana Crystals
+  - mob drops; Ectoplasm / Soul drop rates
+  - Chlorophyte growth, chunk size, cost
+  - once-only boss weapons (Grenade Launcher) dropping again
+  - shimmer desert fragments ↔ evil pairs (Dark Shards)
+  - early-HM crate ore
+  - Chlorophyte recipes
+  - Hallowed cost (keep Spectre/Shroomite/Spooky unchanged)
+  - Spider armor cost
+  - reduced armor cost for levy sets
+  - arrow/ammo recipe yields; ammo per craft
+  - buying Chlorophyte bullets from the Arms Dealer after you've obtained enough
+
+**WEAPON USE & OFFICERS:**
+- [ ] Alt-fire policy registry from the survey: open alt-fire to all families; aim point; held-variant hook; gate before the probe.
+- [ ] Dark Gate PORTAL_USE: line of sight; levies use it to retreat/regroup; never while the player is using it; only place gates when the player has none.
+- [ ] Hand-fix the remaining known-broken utility weapons from the harness lists.
+- [ ] Officers: hold and use their weapon like vanilla town NPCs; follow orders (investigate); restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+
+**TALKING TO LEVIES:**
+- [ ] Combat chat as a blue bar above the head that fills with text.
+- [ ] Talk to levies during combat.
+- [ ] The "close up" order makes them clump near you.
+- [ ] Talk window edits their inventory/loadout and lets you take items.
+- [ ] Dialogue exported to one editable file for Eve to rewrite.
+
+**FIELD AI:**
+- [ ] Read boss attack patterns / telegraphs; dodge by moving into safe zones.
+- [ ] Hooks used well: catch falls; platform fights; never hook a slope and glide (players barely hook in HM).
+- [ ] Fall damage for levies.
+
+**COMMAND & OBSERVE (concept art FIRST; Eve will send Magic Storage / potion / effect reference images; potion refs already in scratchpad/art-refs):**
+- [ ] Radio: shift-click the map to send levies; the same orders from the barracks.
+- [ ] GoPro: put it in the armory/chest and a levy carries it; watch through an item (full-screen spectate).
+- [ ] Static cameras for arena views.
+- [ ] Spectator Potion:
+  - invisible to bosses and enemies; your weapons off
+  - can't be drunk if hit recently
+  - no block/object interaction except cameras
+  - tethered to a medium area
+  - 20 min
+  - white builder-shape bottle, thick square box
+  - recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water
+- [ ] Guide to Autonomy (Slime Rain drop): with Spectator, levies get a buff and you can order them on the map. Optional.
+- [ ] Seeker Potion:
+  - inverted equilateral triangle bottle, deep purple, centre hole
+  - Moonglow + Blinkroot + Spelunker + Water; 12 min
+  - cheaper alternative recipe wanted
+
+**EVENTS & FLAVOUR:**
+- [ ] OOA: spend 5 Etherian Mana per sentry, and each sentry lets one levy spawn. Place as many as you can afford. Not class- or militia-specific.
+- [ ] Tavernkeep drinks → buffs; drunk levies.
+
+**ON HOLD (Eve, until later; must be TOGGLES vs today's nearby-NPC militia):**
+- barracks blocks; militia housing; Luiafk-style preset bases
+- class towers (wizard → mage militia, summoner …); militia station spawning ~3 stay-put militia
+- militia cap per class barracks
+- enemy spawns pushed away by barracks
+- emplacement firing walls; a manned heavy gun levies MUST operate (not auto-fire)
+
 ## 📦 SHIPPED Levy 1.8.0 (armory2-rules 82e7950 + banners b404ace): boots clean both ways; Mechanization stays 0.7.2
 - Rule list, Rules tab and item info panel. UI NEVER SEEN (headless). The MP edit packet path is untested.
 - Ask Eve for screenshots of the Rules tab and item panel.

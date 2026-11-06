@@ -49,7 +49,7 @@ namespace Levy.Common.Team
 			TeamSpectre.Uninstall();
 			TeamNebula.Uninstall();
 			TeamInfo.Uninstall();
-			TeamItems.Auras.Clear(); TeamItems.StatBuffs.Clear(); TeamItems.ProjAuras.Clear(); TeamItems.HitAuras.Clear(); TeamItems.FrameBuffs.Clear();
+			TeamItems.Auras.Clear(); TeamItems.StatBuffs.Clear(); TeamItems.ProjAuras.Clear(); TeamItems.HitAuras.Clear(); TeamItems.FrameBuffs.Clear(); TeamItems.ClearState();
 		}
 	}
 }

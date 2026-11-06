@@ -218,6 +218,9 @@ namespace Levy.Common.Team
 			return true;
 		}
 
+		/// <summary>Mod unload: drop the shared levy lists and any running heal-over-time.</summary>
+		public static void ClearState() { _leviesCache.Clear(); _hots.Clear(); }
+
 		/// <summary>True while a heal-over-time of this kind is running on the levy.</summary>
 		public static bool HasHot(SoldierNPC s, int kind) => _hots.TryGetValue((long)s.NPC.whoAmI * 64 + kind, out Hot h) && h.Ticks > 0;
 

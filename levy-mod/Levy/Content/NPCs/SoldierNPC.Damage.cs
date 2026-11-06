@@ -87,7 +87,7 @@ namespace Levy.Content.NPCs
 				LastAttackerIndex = i; LastAttackerType = a.type; LastAttackerName = a.GivenOrTypeName;
 				int done;
 				_contactStriking = true;
-				PendingContactScale = IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
+				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
 				finally { _contactStriking = false; PendingContactScale = 1f; }
 				AfterHit(done, i);
@@ -120,6 +120,7 @@ namespace Levy.Content.NPCs
 			if (!projectile.hostile) return;
 			modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
 			if (LevyUtil.IsClient) return;
+			modifiers.FinalDamage *= global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, global::Levy.Common.Util.BannerBuffs.BannerOf(projectile)); // the commander's banner for the shooter (Player.ApplyBannerDefenseBuff)
 			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)
 			// Attribution must exist before StrikeNPC reaches checkDead; OnHitByProjectile only fires afterwards.
 			RecordProjectileAttacker(projectile);

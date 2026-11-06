@@ -45,11 +45,11 @@ namespace Levy.Common.Testing
 		private static int _dbgPreOff, _dbgPostOff, _dbgPre;
 		public override void PreUpdateNPCs()
 		{
-			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName) { _dbgPre++; if (!sp.active) _dbgPreOff++; sp.active = true; sp.dead = false; } }
+			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "setbonus", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName) { _dbgPre++; if (!sp.active) _dbgPreOff++; sp.active = true; sp.dead = false; } }
 		}
 		public override void PostUpdateNPCs()
 		{
-			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName && !sp.active) _dbgPostOff++; }
+			if (Enabled && _ph == Ph.Scenario && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "setbonus", StringComparison.OrdinalIgnoreCase))) { Player sp = Main.player[0]; if (sp.name == CommanderName && !sp.active) _dbgPostOff++; }
 		}
 
 		private delegate void OrigUpdateConnectedClients();
@@ -58,7 +58,7 @@ namespace Levy.Common.Testing
 		{
 			// the server loop thread (Netplay.UpdateConnectedClients) drops every client-less player slot many times a second, racing the world update the harness drives on the
 			// main thread; a soldier that thinks inside that window sees no commander and goes Idle. Keep the stand-in commander's slot as it was.
-			if (_spHooked && Enabled && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase))) return; // no real clients exist in a harness run: skip the pass that drops the stand-in
+			if (_spHooked && Enabled && (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "banner", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "gate", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "minions", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "team", StringComparison.OrdinalIgnoreCase) || string.Equals(Scenario, "setbonus", StringComparison.OrdinalIgnoreCase))) return; // no real clients exist in a harness run: skip the pass that drops the stand-in
 			orig();
 		}
 		private static bool _spHooked;

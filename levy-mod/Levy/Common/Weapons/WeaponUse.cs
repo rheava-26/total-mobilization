@@ -346,6 +346,7 @@ namespace Levy.Common.Weapons
 			p.hostile = false;
 			if (dmgType != null) p.DamageType = dmgType;
 			if (p.TryGetGlobalProjectile<SoldierProjectileTag>(out var tag)) tag.SoldierIndex = s.NPC.whoAmI;
+			s.ApplyOwnerBoundSpawnEffects(p); // Calamity's Desert Prowler smoke crit reads the shooter in OnSpawn (SoldierNPC.SetBonusKey.cs)
 			// Soldier shots are all owned by Main.myPlayer, so a piercing projectile would share the owner immunity slot with other
 			// soldiers' shots and with the commander. Give each piercing soldier shot its own local immunity instead.
 			if (p.penetrate != 1 && !p.usesLocalNPCImmunity && !p.usesIDStaticNPCImmunity) { p.usesLocalNPCImmunity = true; if (p.localNPCHitCooldown <= 0) p.localNPCHitCooldown = 10; }

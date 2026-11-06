@@ -32,3 +32,6 @@ mechanization-mod/Mechanization/.vs/
 
 # review workflow script (dev-only, not part of the mod)
 levy-mod/tools/review2.js
+
+# tModLoader build scratch
+compile_temp/

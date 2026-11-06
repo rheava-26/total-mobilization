@@ -46,6 +46,8 @@ namespace Levy.Content.NPCs
 		public int TitaniumStormTicks;
 		/// <summary>Nebula booster levels and the ticks left on the current level: [0] life, [1] damage, [2] mana (the same order as <see cref="LevyConstants.NebulaPickupItem"/>).</summary>
 		private readonly int[] _nebulaLevel = new int[3], _nebulaTicks = new int[3];
+		/// <summary>True for a booster kind a teammate passed on (kept without the armor, like the vanilla buff).</summary>
+		private readonly bool[] _nebulaTeam = new bool[3];
 		/// <summary>Mana Booster's counter (Player.nebulaManaCounter): each level adds one a tick, and a mana point is paid out whenever it reaches <see cref="LevyConstants.NebulaManaCounterPerPoint"/>.</summary>
 		private int _nebulaManaCounter;
 
@@ -53,6 +55,7 @@ namespace Levy.Content.NPCs
 		internal float PendingContactScale = 1f;
 		/// <summary>The Paladin's Shield wearer that will take a share of the hit now being resolved, and the guard against a soak chain.</summary>
 		private SoldierNPC _hitPaladin;
+		private Player _hitPaladinPlayer;
 		private bool _soaking;
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -132,8 +135,13 @@ namespace Levy.Content.NPCs
 			}
 			if (!d.setNebula)
 			{
-				if (_nebulaLevel[1] > 0) StatsDirty = true; // the damage booster's share leaves with the armor
-				for (int i = 0; i < _nebulaLevel.Length; i++) { _nebulaLevel[i] = 0; _nebulaTicks[i] = 0; }
+				// A booster picked up in the armor leaves with it; one a teammate passed on (TeamNebulaBooster) is a buff like in vanilla and stays until it runs out.
+				for (int i = 0; i < _nebulaLevel.Length; i++)
+				{
+					if (_nebulaTeam[i] && _nebulaLevel[i] > 0) continue;
+					if (i == 1 && _nebulaLevel[1] > 0) StatsDirty = true; // the damage booster's share leaves with the armor
+					_nebulaLevel[i] = 0; _nebulaTicks[i] = 0; _nebulaTeam[i] = false;
+				}
 			}
 			// Player.UpdateManaRegen: Mana Booster pays out a mana point whenever level-summed ticks reach six (10 / 20 / 30 a second at levels 1 / 2 / 3).
 			if (_nebulaLevel[2] > 0 && Record != null && Record.MaxMana > 0)
@@ -386,7 +394,9 @@ namespace Levy.Content.NPCs
 		internal void NebulaBoosterArrived(int kind)
 		{
 			if (LevyUtil.IsClient || Dummy == null || !Dummy.setNebula) return; // he took the armor off while it flew: the boost leaves with it
+			_nebulaTeam[Math.Clamp(kind, 0, 2)] = false;
 			ApplyNebulaBooster(kind);
+			Common.Team.TeamNebula.ShareFromLevy(this, kind); // vanilla relays a booster to every teammate within 700 px of the pickup
 		}
 
 		/// <summary>
@@ -445,7 +455,22 @@ namespace Levy.Content.NPCs
 		{
 			if (LevyUtil.IsClient || Dummy == null || !Dummy.ghostHeal) return;
 			if (damageDone <= 1 || target.lifeMax <= 5 || target.immortal || !target.canGhostHeal || !source.friendly || source.hostile || !source.DamageType.CountsAsClass(DamageClass.Magic)) return;
-			if (NPC.life >= NPC.lifeMax) return; // nothing to mend: keep the pool
+			// The bolt goes to the MOST WOUNDED ally in reach (Projectile.ghostHeal), the wearer by default: the commander and every squadmate are allies too.
+			SoldierNPC allySoldier = null; Player allyPlayer = null;
+			int missing = NPC.lifeMax - NPC.life;
+			Player commander = Common.Compat.Thorium.CompatAllies.CommanderOf(this);
+			if (commander != null && Vector2.Distance(target.Center, commander.Center) <= LevyConstants.TeamSpectreRangePx)
+			{
+				int m = commander.statLifeMax2 - commander.statLife;
+				if (m > missing) { missing = m; allyPlayer = commander; }
+			}
+			foreach (SoldierNPC mate in Common.Team.TeamItems.Levies(commander ?? Commander))
+			{
+				if (mate == this || Vector2.Distance(target.Center, mate.NPC.Center) > LevyConstants.TeamSpectreRangePx) continue;
+				int m = mate.NPC.lifeMax - mate.NPC.life;
+				if (m > missing) { missing = m; allySoldier = mate; allyPlayer = null; }
+			}
+			if (missing <= 0) return; // nothing to mend: keep the pool
 			float fraction = LevyConstants.HoodHealFraction - source.numHits * LevyConstants.HoodHealPierceDecay;
 			if (fraction <= 0f) return;
 			float amount = damageDone * fraction;
@@ -453,8 +478,11 @@ namespace Levy.Content.NPCs
 			_hoodPool -= amount;
 			try
 			{
-				Projectile bolt = WeaponUse.Spawn(this, target.Center, Vector2.Zero, ModContent.ProjectileType<SoldierSpectreHeal>(), 1, 0f, DamageClass.Magic, NPC.whoAmI, amount);
+				// ai[0]: the soldier who receives it (whoAmI), or -(player + 1) for the commander
+				float who = allyPlayer != null ? -(allyPlayer.whoAmI + 1) : (allySoldier ?? this).NPC.whoAmI;
+				Projectile bolt = WeaponUse.Spawn(this, target.Center, Vector2.Zero, ModContent.ProjectileType<SoldierSpectreHeal>(), 1, 0f, DamageClass.Magic, who, amount);
 				if (bolt != null) { bolt.damage = 0; bolt.friendly = false; } // a courier, not a hitter
+				Common.Team.TeamSpectre.LevyBolts++;
 			}
 			catch (Exception e)
 			{
@@ -470,6 +498,7 @@ namespace Levy.Content.NPCs
 		{
 			get
 			{
+				if (Dummy != null && Dummy.hasPaladinShield) return true; // anything that raises the shield flag (Calamity's Rampart of Deities, the combined shields)
 				var g = Record?.Gear;
 				if (g == null) return false;
 				int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
@@ -488,17 +517,33 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		internal float IncomingSetScale(bool allowPaladin = true)
 		{
-			_hitPaladin = null;
+			_hitPaladin = null; _hitPaladinPlayer = null;
 			float s = 1f;
 			if (_setKind == KindSolar && _setOrbs > 0) s *= LevyConstants.SolarHitScale;
 			if (_setKind == KindDefense && _setOrbs > 0) s *= 1f - LevyConstants.BeetleDefenseReductionPerOrb * _setOrbs;
 			if (allowPaladin && !_soaking)
 			{
 				SoldierNPC p = FindPaladin();
+				Player cp = FindPaladinPlayer();
+				// the NEAREST wearer shares the hit (Player.OnHurt_Part2), whether a squadmate or the commander himself
+				if (p != null && cp != null) { if (Vector2.Distance(cp.Center, NPC.Center) < Vector2.Distance(p.NPC.Center, NPC.Center)) p = null; else cp = null; }
 				if (p != null) { s *= LevyConstants.PaladinAllyScale; _hitPaladin = p; }
+				else if (cp != null) { s *= LevyConstants.PaladinAllyScale; _hitPaladinPlayer = cp; }
 			}
 			return s;
 		}
+
+		/// <summary>The commander, when HE wears a Paladin's Shield (Player.hasPaladinShield, which Rampart of Deities raises too) within 800 px of this soldier, above a quarter of his life and out of immunity.</summary>
+		private Player FindPaladinPlayer()
+		{
+			if (Record == null || Record.Mutinous) return null;
+			Player c = Common.Compat.Thorium.CompatAllies.CommanderOf(this);
+			if (c == null || !c.hasPaladinShield || c.immune || c.statLife <= c.statLifeMax2 * LevyConstants.PaladinHealthFloor) return null;
+			return Vector2.Distance(c.Center, NPC.Center) < LevyConstants.PaladinRangePx ? c : null;
+		}
+
+		/// <summary>True when this soldier could take a Paladin's share now: alive, wearing a shield, above a quarter of his life, out of immunity and not already taking one.</summary>
+		internal bool CanSoak => IsAlive && ImmuneTime <= 0 && !_soaking && !Record.Mutinous && NPC.life > NPC.lifeMax * LevyConstants.PaladinHealthFloor && WearsPaladinShield;
 
 		/// <summary>The nearest other Paladin's Shield wearer of this soldier's commander within 800 px, above a quarter health and out of immune time (Player.OnHurt_Part2's pick).</summary>
 		private SoldierNPC FindPaladin()
@@ -562,10 +607,17 @@ namespace Levy.Content.NPCs
 		private void SetsOnHurt(int damageDone, int attackerIndex)
 		{
 			SoldierNPC paladin = _hitPaladin; _hitPaladin = null;
+			Player paladinPlayer = _hitPaladinPlayer; _hitPaladinPlayer = null;
 			if (paladin != null && damageDone > 0)
 			{
 				try { paladin.TakeSoak(Math.Max(1, (int)(damageDone * LevyConstants.PaladinShareFraction)), attackerIndex, this); }
 				catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share failed: " + e.Message); }
+			}
+			if (paladinPlayer != null && damageDone > 0)
+			{
+				// the commander wears the shield: he takes a third through his own defense (vanilla: Hurt with the empty legacy reason)
+				try { Common.Team.TeamNet.ShareToPlayer(paladinPlayer, Math.Max(1, (int)(damageDone * LevyConstants.PaladinShareFraction)), attackerIndex); }
+				catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share to the commander failed: " + e.Message); }
 			}
 			if (_setKind == KindSolar && _setOrbs > 0)
 			{
@@ -594,6 +646,35 @@ namespace Levy.Content.NPCs
 				if (_accessoryProcWarned.Add(ItemID.SolarFlareBreastplate)) Levy.Instance?.Logger.Warn("Levy: Solar flare burst failed on a soldier: " + e.Message);
 			}
 		}
+
+		/// <summary>The Paladin's share for the COMMANDER: this soldier takes <paramref name="amount"/> (through his own defense) for the player who was just hit (server / single player).</summary>
+		internal void SoakForPlayer(int amount, int attackerIndex, Player ally)
+		{
+			if (amount <= 0 || !CanSoak) return;
+			if (attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active) { LastAttackerIndex = attackerIndex; LastAttackerType = Main.npc[attackerIndex].type; }
+			int done;
+			_soaking = true; _contactStriking = true;
+			PendingContactScale = IncomingSetScale(false);
+			try { done = NPC.SimpleStrikeNPC(amount, 0, false, 0f, null, false, 0f, true); }
+			finally { PendingContactScale = 1f; _contactStriking = false; _soaking = false; }
+			AfterHit(done, attackerIndex);
+			if (Main.dedServ || ally == null) return;
+			Vector2 from = NPC.Center, to = ally.Center;
+			for (int i = 0; i < LevyConstants.PaladinBeamDust; i++)
+			{
+				Dust dust = Main.dust[Dust.NewDust(Vector2.Lerp(from, to, i / (float)LevyConstants.PaladinBeamDust), 0, 0, DustID.GoldFlame, 0f, 0f, 100, default, 1.2f)];
+				dust.noGravity = true; dust.velocity *= 0.2f;
+			}
+		}
+
+		/// <summary>A Nebula booster passed on by a teammate within 700 px of the pickup (vanilla relays it to every teammate): the same level, timer and effect as one this soldier picked up.</summary>
+		/// <summary>Harness / self-check read: the level (0..3) of a Nebula booster kind (0 life, 1 damage, 2 mana).</summary>
+		internal int NebulaLevelOf(int kind) => _nebulaLevel[Math.Clamp(kind, 0, _nebulaLevel.Length - 1)];
+
+		/// <summary>Harness / self-check read: the regeneration units the soldier's buffs gave on the last stat pass.</summary>
+		internal int BuffLifeRegenUnits => _buffLifeRegen;
+
+		internal void TeamNebulaBooster(int kind) { if (!LevyUtil.IsClient && IsAlive) { _nebulaTeam[Math.Clamp(kind, 0, 2)] = true; ApplyNebulaBooster(kind); } }
 
 		/// <summary>The Paladin's share: this soldier takes <paramref name="amount"/> (through his own defense) for an ally, and is credited with nothing but the wound.</summary>
 		private void TakeSoak(int amount, int attackerIndex, SoldierNPC ally)

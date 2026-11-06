@@ -7,10 +7,6 @@
     <LangVersion>12.0</LangVersion>
     <Nullable>disable</Nullable>
   </PropertyGroup>
-  <!-- Magic Storage compat: compiled only when tools/enable_magicstorage.sh has run (it adds the weak reference to build.txt and this marker file). -->
-  <PropertyGroup Condition="Exists('$(MSBuildProjectDirectory)/Common/Compat/MagicStorage/.enabled')">
-    <DefineConstants>$(DefineConstants);MAGICSTORAGE</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="tModLoader.CodeAssist" Version="0.1.*" />
   </ItemGroup>

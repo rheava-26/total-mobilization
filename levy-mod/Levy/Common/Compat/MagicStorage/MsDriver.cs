@@ -1,9 +1,9 @@
-#if MAGICSTORAGE
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using MagicStorage.Components;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Logistics;
@@ -91,4 +91,3 @@ namespace Levy.Common.Compat.MagicStorageLink
 		}
 	}
 }
-#endif

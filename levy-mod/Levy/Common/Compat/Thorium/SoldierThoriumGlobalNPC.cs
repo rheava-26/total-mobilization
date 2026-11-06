@@ -28,6 +28,8 @@ namespace Levy.Common.Compat.Thorium
 		public int HealCooldown;
 		/// <summary>Main.GameUpdateCount until which a healer leaves this soldier alone (a heal is already on its way).</summary>
 		public uint HealReservedUntil;
+		/// <summary>Main.GameUpdateCount before which this soldier does not step through a Dark Gate again / place another pair (its own ChaosState-style cooldown).</summary>
+		public uint GateUseReady, GatePlaceReady;
 
 		// ---- synced for display (written by the server, read by every client's draw) ----
 		/// <summary>A bard's current / maximum Inspiration (0 max = not a bard).</summary>

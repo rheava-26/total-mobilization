@@ -599,7 +599,7 @@ namespace Levy.Common.Testing
 			public bool SetupOk;
 			public List<string> Exceptions = new();
 			public Dictionary<string, int> Proj = new(); public int ProjOther, ProjTotal;
-			public long Damage; public int Hits;
+			public long Damage; public int Hits; public List<int> Extra = new(); // altfire-survey: extra crowd targets (LEVY_HARNESS_CROWD)
 			public int AnimTicks, FirstFire = -1, EngageTicks, AcquiredTicks, AliveTicks, DeadTicks; public float MinDist = 9999f, StartDist;
 			public int CmdBefore, CmdAfter, CmdMax, AllyBefore, AllyAfter, AllyMax, AllyMaxLife;
 			public string Med = ""; public int MedAimed, MedTicks;
@@ -983,6 +983,17 @@ namespace Levy.Common.Testing
 			ht.Pin = n.position;
 			n.netUpdate = true;
 			_cur.TargetIdx = i;
+			_cur.Extra.Clear();
+			for (int k = 1; k < AltPolicyLab.CrowdN; k++) // altfire-survey: a crowd of pinned slimes 2.5 tiles apart around the target
+			{
+				int j = NPC.NewNPC(new EntitySource_WorldEvent("LevyHarness"), (int)(centerX + ((k + 1) / 2) * 40f * (k % 2 == 1 ? 1 : -1)), (int)pos.Y, NPCID.GreenSlime);
+				if (j < 0 || j >= Main.maxNPCs) continue;
+				NPC e = Main.npc[j]; var eh = e.GetGlobalNPC<HarnessTarget>(); eh.IsTarget = true;
+				e.lifeMax = 1_000_000; e.life = 1_000_000; e.defense = 0; e.damage = 0; e.knockBackResist = 0f; e.width = 64; e.height = 96;
+				e.noGravity = true; e.noTileCollide = true; e.aiStyle = -1; e.friendly = false; e.dontTakeDamage = false; e.value = 0f; e.velocity = Vector2.Zero;
+				e.Bottom = new Vector2(centerX + ((k + 1) / 2) * 40f * (k % 2 == 1 ? 1 : -1), pos.Y); eh.Pin = e.position; e.netUpdate = true;
+				_cur.Extra.Add(j);
+			}
 		}
 
 		private static Item FindAmmo(Item weapon, string preferredName)
@@ -1248,6 +1259,7 @@ namespace Levy.Common.Testing
 			if (HarnessOnHit.Enabled) HarnessOnHit.Tick(c.BodyIdx >= 0 && Main.npc[c.BodyIdx].active ? Main.npc[c.BodyIdx].Center : Main.player[0].Center, t.Center);
 			if (t.active && t.life < t.lifeMax) { c.Damage += t.lifeMax - t.life; c.Hits++; t.life = t.lifeMax; }
 			if (!t.active) c.Exceptions.Add("target vanished @tick" + c.ActiveTick);
+			foreach (int xi in c.Extra) { NPC xe = Main.npc[xi]; if (xe.active && xe.life < xe.lifeMax) { c.Damage += xe.lifeMax - xe.life; c.Hits++; xe.life = xe.lifeMax; } }
 
 			Player p = Main.player[0];
 			if (c.CmdPrev >= 0 && p.statLife > c.CmdPrev) { int g = p.statLife - c.CmdPrev; c.CmdGainSum += g; if (g >= 3) c.CmdBig++; }
@@ -1312,6 +1324,7 @@ namespace Levy.Common.Testing
 			SetKeepAlive(false); _p2Alive = false;
 			var cap = _capture?.End();
 			if (cap != null) foreach (var m in cap) c.Exceptions.Add("log:" + m);
+			if (_stage == 0) c.Notes += AltPolicyLab.TakeNotes();
 			if (_stage == 0) _solCur = c; else _plCur = c;
 		}
 

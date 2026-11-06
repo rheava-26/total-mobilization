@@ -270,7 +270,9 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Drone check (I looked; this corrects my earlier note): there is NO mast. The side view matches Eve's concept (slender fuselage, thin boom, ring fan). What's missing is the two side rotors, which should read edge-on as a flat disc at body height (`-=--`). `art5` adds them.
 **RUNNING (2026-11-06 04:30):**
 - `art5`: Command Radio = art2 walkie-talkie B redrawn on the 2×2 grid with curves and real shading, at command-radio size; art4 GoPro/MovieCamera sprites wired over the observe placeholders (tile frame format checked); drone side rotors.
-- `potions`: Spectator Potion, Seeker Potion (targeted spelunker via FindTarget, with a fallback chooser), Guide to Autonomy (Slime Rain 1/50; with Spectator: Autonomous buff + map orders without the radio).
+- `potions`: STOPPED by Eve mid-work; WIP saved (22afa4e). Its Autonomy brief was wrong (radio-less map orders, generic stat buff). See the corrected checklist line.
+- `ms-live`: Magic Storage + SerousCommonLib now BUILT (Eve asked me to retry; it worked). MS tag v0.7.0.11, SCL 1.0.7, both toolchains. Builder is compiling Levy's MS half against the real thing.
+- MERGED officers2 + ooa-tavern (8775ed9); compiles 0 errors; boot pending.
 - Still running: officers2, field-ai, ooa-tavern.
 - After these land, ship ONE build: Levy 2.0.0 + Mechanization bump.
 
@@ -500,7 +502,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 20 min
   - white builder-shape bottle, thick square box
   - recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water
-- [ ] Guide to Autonomy (Slime Rain drop): with Spectator, levies get a buff and you can order them on the map. Optional.
+- [ ] Guide to Autonomy (Slime Rain drop, 1/50): when you drink a Spectator Potion, your levies get a buff. It does NOT replace the radio: map orders still need the Command Radio or the Barracks. Eve (2026-11-06) rejected a generic stat buff (+damage/+speed); WHAT the buff does is still open. Ask Eve. Builder WIP saved on branch `potions` (22afa4e, unverified, builder stopped by Eve mid-work).
 - [ ] Seeker Potion:
   - inverted equilateral triangle bottle, deep purple, centre hole
   - Moonglow + Blinkroot + Spelunker + Water; 12 min

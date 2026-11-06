@@ -199,7 +199,7 @@ namespace Levy.Common.Weapons
 				int b = Bucket(l.Own); if (b < 0 || b == 3) continue;
 				given[b]++; held[b]++; // he keeps his weapon and stays class-less (no claim of his own); the bare ones fill the other buckets
 			}
-			var bare = free.FindAll(l => l.Cls == null);
+			var bare = free.FindAll(l => l.Cls == null && (l.Own == null || LegacySpreadRedeal)); // a holder was counted above and keeps his class; re-dealing him as well flipped him between buckets on every plan
 			bare.Sort((a, c) => { int k = c.Mana.CompareTo(a.Mana); return k != 0 ? k : a.Id.CompareTo(c.Id); });
 			foreach (var l in bare) {
 				int pick = -1; float best = 0f;
@@ -463,6 +463,9 @@ namespace Levy.Common.Weapons
 			Trace?.Invoke($"pick levy {l.Id} cls={(l.Cls == null ? "-" : l.Cls.Name)} fire={requireFire} floor={floor:F0} ordered={ordered} limit={limit} -> {(chosen == null ? "none" : chosen.It.Name + " (" + chosen.Rank.ToString("F0") + ")")} of band [{string.Join(", ", band.ConvertAll(x => x.It.Name))}]");
 			return chosen;
 		}
+
+		/// <summary>Test seam (the gear audit only): re-deal class-less levies who already hold a weapon as well, as the spread did before the fix. Never set in the game.</summary>
+		internal static bool LegacySpreadRedeal;
 
 		/// <summary>Probe seam: when set, every pick reports what it chose (TEST-only).</summary>
 		internal static Action<string> Trace;

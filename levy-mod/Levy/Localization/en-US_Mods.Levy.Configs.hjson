@@ -28,7 +28,7 @@ LevyProgressionConfig: {
 
 	FallenStarsPerManaCrystal: {
 		Label: Fallen Stars per Mana Crystal
-		Tooltip: Fallen Stars one Mana Crystal costs to craft. 5 is the normal amount. Needs a reload.
+		Tooltip: Fallen Stars one Mana Crystal costs to craft, and what the Armory spends turning stars into levy mana. 5 is the normal amount. Needs a reload.
 	}
 
 	ChlorophyteOrePerBar: {

@@ -23,7 +23,6 @@ namespace Levy.Common.Config
 		// ---- Potions ----------------------------------------------------------------------------------------
 		[Header("Potions")]
 		[DefaultValue(true)] public bool AutoFeedCrystals;
-		[Range(1, 5)] [DefaultValue(5)] public int FallenStarsPerManaCrystal;
 		[DefaultValue(true)] public bool ArmoryTurnsStarsIntoMana;
 
 		// ---- Aim --------------------------------------------------------------------------------------------

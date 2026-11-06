@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -156,6 +157,24 @@ namespace Levy.Common.Officers
 		// Draw: deliberately no PreDraw. While a live avatar marches, VANILLA draws the parked town NPC like any other (its real frames, party hat, texture
 		// packs, shimmer variants); the avatar's own body is invisible and carries only the nameplate (SoldierNPC.Draw.cs).
 		// =====================================================================================================
+
+		/// <summary>
+		/// The gun vanilla draws in a shooting town NPC's hand is hard-wired per type (the Arms Dealer's flintlock before Hardmode, say). An officer holds the weapon he really fires:
+		/// swap in that item's own texture, with the stock holdout, so what is in his hand is what is shooting.
+		/// </summary>
+		public override void DrawTownAttackGun(NPC npc, ref Texture2D item, ref Rectangle itemFrame, ref float scale, ref int horizontalHoldoutOffset)
+		{
+			if (!Enrolled) return;
+			int held = OfficerRegistry.DefFor(npc)?.HeldWeapon?.Item ?? 0;
+			if (held <= 0) return;
+			Main.instance.LoadItem(held);
+			Texture2D tex = TextureAssets.Item[held].Value;
+			if (tex == null) return;
+			item = tex;
+			Main.GetItemDrawFrame(held, out _, out itemFrame);
+			scale = 1f;
+			horizontalHoldoutOffset = (int)Main.DrawPlayerItemPos(1f, held).X - 4;
+		}
 
 		/// <summary>A small tag over an enrolled officer that is NOT currently deployed (its avatar carries the name while marching); red and marked off duty while he is unpaid.</summary>
 		public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

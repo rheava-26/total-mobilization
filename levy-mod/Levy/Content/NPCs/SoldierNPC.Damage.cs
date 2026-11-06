@@ -81,7 +81,7 @@ namespace Levy.Content.NPCs
 				if (!mine.Intersects(rect)) continue;
 
 				int dir = a.Center.X < cx ? 1 : -1;
-				int raw = Math.Max(1, Main.DamageVar(a.damage * mult));
+				int raw = Math.Max(1, Main.DamageVar(a.damage * mult * global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(a))); // a paint-soaked attacker hits softer
 				ReflectThorns(a, raw, -dir); // Turtle / Cactus thorns hit back whether or not the blow lands (Player.Update_NPCCollision)
 				if (TryShadowDodge()) return; // Hallowed armor's dodge: no wound, 80 ticks of immunity
 				LastAttackerIndex = i; LastAttackerType = a.type; LastAttackerName = a.GivenOrTypeName;
@@ -119,6 +119,8 @@ namespace Levy.Content.NPCs
 		{
 			if (!projectile.hostile) return;
 			modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
+			if (projectile.TryGetGlobalProjectile<SoldierProjectileTag>(out var shooter) && shooter.SourceNpcIndex >= 0 && shooter.SourceNpcIndex < Main.maxNPCs)
+				modifiers.SourceDamage *= global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(Main.npc[shooter.SourceNpcIndex]); // a paint-soaked shooter hits softer
 			if (LevyUtil.IsClient) return;
 			modifiers.FinalDamage *= global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, global::Levy.Common.Util.BannerBuffs.BannerOf(projectile)); // the commander's banner for the shooter (Player.ApplyBannerDefenseBuff)
 			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)

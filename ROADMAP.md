@@ -471,7 +471,10 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - [x] Alt-fire policy registry from the survey (branch altfire-impl): AltPolicies registry + embedded table, all fired families, aim point, held-variant hook, gate before the probe.
 - [x] Dark Gate PORTAL_USE (altfire-impl): 12/12 harness cases pass (use, yield to the commander, place only when the player owns no pair).
 - [~] Interaction/utility weapons (altfire-impl): generic place/detonate/recall/portal mechanism with player-conflict guards done; still broken: Frigidflash Bolt (owner-anchored projectile), Photoviscerator/Violence/Lightspeed (0 damage), Wulfrum Knife recall (controlUseTile), teleport glasses, sentry/summon right-click commands. See the altfire-impl hand-back.
-- [ ] Officers: hold and use their weapon like vanilla town NPCs; follow orders (investigate); restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+- [x] (branch `officers2`, awaiting Eve's in-game look) Officers: hold and use their weapon like vanilla town NPCs; follow orders; restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+  - Cause found: `Officer_ParkTownNpc` forced the parked town NPC's `ai[0]=0` every tick, so vanilla's attack draw (gun in hand = ai[0] 12, throw 10, magic 14, swing 15) never ran. Now the avatar carries a synced pose clock (`ItemAnimation`/`AimRotation`) and feeds the stock `ai[0..2]`; `OfficerGlobalNPC.DrawTownAttackGun` swaps in the weapon he really fires (Minishark, Paintball Gun, wooden bow).
+  - Orders: Follow/Hold/Patrol/Return/Search/Free Rein already reached officers; added Hold Fire, Spread Out / Close Up, Focus Target / Focus Attack (RosterSystem toggles now vote and apply to officers).
+  - Kits redone around identity (no generic stat buffs): Painter = paint-soaked debuff; Guide = accuracy + called volley (Morale aura dropped); Merchant = march prices (+67% sell, -40% buy) with fence and handouts (Morale lift dropped); Demolitionist = nearby soldiers lob his grenades. Lab: `LEVY_HARNESS_SCENARIO=officer` (`CombatHarness.Officer.cs`).
 
 **TALKING TO LEVIES:**
 - [ ] Combat chat as a blue bar above the head that fills with text.

@@ -1227,6 +1227,7 @@ namespace Levy.Common.Systems
 			int total = 0, holding = 0;
 			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
+			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: false, ref total, ref holding); // his officers vote with the soldiers
 			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
 			foreach (var rec in Regulars)
@@ -1235,6 +1236,7 @@ namespace Levy.Common.Systems
 				rec.HoldFire = set;
 				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
 			}
+			OfficerSystem.Instance.SetStance(commander, atBarracks, spread: false, set);
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();
@@ -1247,6 +1249,7 @@ namespace Levy.Common.Systems
 			int total = 0, spread = 0, close = 0;
 			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; else if (rec.CloseUp) close++; }
+			OfficerSystem.Instance.CountFormation(commander, atBarracks, ref total, ref spread, ref close);
 			if (total == 0) { ReportRefusals(commander); return; }
 			// one button cycles the squad's majority stance: Normal -> Spread out -> Close up -> Normal
 			FormationMode next = Formation.Next(Formation.Majority(total, spread, close));
@@ -1256,6 +1259,7 @@ namespace Levy.Common.Systems
 				Formation.Apply(rec, next);
 				if (body != null) body.NPC.netUpdate = true;
 			}
+			OfficerSystem.Instance.ApplyFormation(commander, atBarracks, next);
 			SendToPlayer(commander, LevyUtil.T(next == FormationMode.Spread ? "UI.SpreadOut" : next == FormationMode.CloseUp ? "UI.CloseUp" : "UI.NormalRanks"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();

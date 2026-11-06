@@ -57,6 +57,28 @@ namespace Levy.Common
 			/// <summary>Aim wobble (degrees of angle jitter, before the long-range easing) of an officer firing his real weapon: a town NPC shoots a little less true than a drilled soldier.</summary>
 			public const float RealShotAimJitterDeg = 1.5f;
 
+			// ---- the raised weapon (vanilla's own town-NPC attack pose, driven on the parked town NPC) ----
+			/// <summary>Shortest and longest time (ticks) a shooter's gun stays up after the last shot, and the remaining time below which the server re-sends the pose so a client's clock never lapses first.</summary>
+			public const int OfficerPoseMinHoldTicks = 20, OfficerPoseMaxHoldTicks = 70, OfficerPoseResyncBelowTicks = 12;
+
+			// ---- the Guide's volley ----
+			/// <summary>Every cadence the Guide calls "fire": each soldier in reach who is fighting and whose weapon is within <see cref="GuideVolleyPullTicks"/> of ready fires NOW, so the line speaks at once. It only ever pulls a shot forward.</summary>
+			public const int GuideVolleyCadenceTicks = 180, GuideVolleyPullTicks = 40;
+
+			// ---- the Painter's paint ----
+			/// <summary>Seconds-worth (ticks) the paint lasts on an enemy hit by a paintball; a fresh hit restarts it.</summary>
+			public const int PaintDurationTicks = 480;
+			/// <summary>Painted enemies lose this much defense (flat, like Ichor's) and deal this fraction less damage.</summary>
+			public const float PaintDefenseLoss = 20f, PaintDamageCut = 0.25f;
+
+			// ---- the Demolitionist's sappers ----
+			/// <summary>Every cadence the Demolitionist hands grenades to up to <see cref="DemoSapperCount"/> fighting soldiers within <see cref="DemoSapperRadiusTiles"/> of him; each lobs one at its target.</summary>
+			public const int DemoSapperCadenceTicks = 210, DemoSapperCount = 2, DemoSapperRadiusTiles = 24;
+
+			// ---- the Merchant's terms ----
+			/// <summary>The price factor at his shop while he marches with you (vanilla's best at full happiness is 0.75): you buy for this fraction and are paid 1/this for what you sell.</summary>
+			public const double MerchantMarchPriceAdjust = 0.6;
+
 			// ---- the Nurse ----
 			/// <summary>The Nurse looks for a wounded soldier this often (ticks) and may heal at most one per look.</summary>
 			public const int NurseCastIntervalTicks = 60;

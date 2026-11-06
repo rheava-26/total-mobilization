@@ -400,29 +400,32 @@ namespace Levy.Common.Testing
 				},
 				Eval = () =>
 				{
-					_tmInfo = $"A 100 -> {_tmA.NPC.life} (a 600 tick vortex heal at 1 HP / 20 ticks: +7 over 150 ticks); B outside 100 -> {_tmB.NPC.life}; starts={TeamItems.WhitewaterStarts}";
-					return _tmA.NPC.life >= 105 && _tmA.NPC.life <= 112 && _tmB.NPC.life == 100 ? null : "heal over time wrong";
+					int gain = _tmA.NPC.life - _tmB.NPC.life; // both levies regenerate naturally; the vortex adds 1 HP / 20 ticks (7 over 150 ticks) to the one inside it
+					_tmInfo = $"A 100 -> {_tmA.NPC.life}; B outside 100 -> {_tmB.NPC.life}; vortex heal = {gain} over 150 ticks (1 HP / 20 ticks = 7); starts={TeamItems.WhitewaterStarts}";
+					return gain >= 5 && gain <= 9 && TeamItems.WhitewaterStarts == 1 ? null : "heal over time wrong";
 				} });
-			// Calamity: Relic of Convergence heals the owner's levies within 138 px of the cursor point
-			_tmCases.Add(new TmCase { Id = "calamity relic of convergence: levies at the cursor are healed 1.5 x", Cal = true, Ticks = 30, MidTick = 0,
+			// Calamity: Relic of Convergence heals the owner's levies within 138 px of the cursor point. The crystal's own AI needs a held channel and a live client (it shatters at once on a headless server), so the case builds the crystal,
+			// puts it at the shatter tick with the cursor point on levy A and runs the production PostAI hook on it.
+			_tmCases.Add(new TmCase { Id = "calamity relic of convergence: levies at the cursor are healed 1.5 x (PostAI hook driven directly)", Cal = true, Ticks = 4, MidTick = 1,
 				Setup = () =>
 				{
 					TmScene(null, null, 3f, 40f, false);
 					_tmA.NPC.life = 100; _tmB.NPC.life = 100;
 					TeamItems.RelicHeals = 0;
-					TmCmd.channel = true;
-					var f = TeamItems.ModFlag("CalamityMod", "CalamityMod.CalPlayer.CalamityPlayer", "x"); // warms the registry; the delta field is set by reflection below
-					var cal = ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
-					var baseInst = ModContent.GetContent<ModPlayer>().First(x => x.GetType() == cal);
-					cal.GetField("mouseWorldDeltaFromPlayer").SetValue(TmCmd.GetModPlayer(baseInst), _tmA.NPC.Center - TmCmd.MountedCenter);
+				},
+				Mid = () =>
+				{
 					int i = Projectile.NewProjectile(new EntitySource_WorldEvent("LevyHarness"), TmCmd.Center, Vector2.Zero, TmProj("CalamityMod/RelicOfConvergenceCrystal"), 0, 0f, 0);
-					Main.projectile[i].timeLeft = 8;
+					Projectile r = Main.projectile[i];
+					r.ModProjectile.GetType().GetField("mousePos").SetValue(r.ModProjectile, _tmA.NPC.Center + new Vector2(40f, 0f));
+					r.timeLeft = 5;
+					r.GetGlobalProjectile<TeamAuraProjectile>().PostAI(r);
+					r.Kill();
 				},
 				Eval = () =>
 				{
-					TmCmd.channel = false;
-					_tmInfo = $"A 100 -> {_tmA.NPC.life} (Relic heal 50 x 1.5 = 75); B far 100 -> {_tmB.NPC.life}; heals={TeamItems.RelicHeals}";
-					return _tmA.NPC.life == 175 && _tmB.NPC.life == 100 ? null : "relic heal wrong";
+					_tmInfo = $"A 100 -> {_tmA.NPC.life} (Relic heal 50 x 1.5 = 75, plus a little natural regeneration); B far 100 -> {_tmB.NPC.life}; heals={TeamItems.RelicHeals}";
+					return _tmA.NPC.life >= 175 && _tmA.NPC.life <= 178 && _tmB.NPC.life <= 102 && TeamItems.RelicHeals == 1 ? null : "relic heal wrong";
 				} });
 
 			// Thorium: aura projectiles (continuous) - each one spawned on levy A only; B is 40 tiles away

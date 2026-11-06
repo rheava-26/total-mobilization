@@ -796,6 +796,7 @@ namespace Mechanization.Content.NPCs
 			{
 				Texture2D px = TextureAssets.MagicPixel.Value;
 				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
+				c = new Vector2((float)Math.Round(c.X), (float)Math.Round(c.Y));   // whole pixels, so the art's 2x2 blocks stay on the screen grid
 				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
 				int sd = NPC.direction == 0 ? 1 : NPC.direction;
 				SpriteEffects fx = sd == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
@@ -807,22 +808,24 @@ namespace Mechanization.Content.NPCs
 					float target = Landed ? 0f : MathHelper.Clamp(NPC.velocity.X * D.TiltPerSpeed, -D.MaxTilt, D.MaxTilt);
 					_tilt += (target - _tilt) * D.TiltSmooth;
 				}
-				float rot = _tilt;
+				// The body sheet holds pre-tilted columns (levels -2..+2, nose down positive for a right-facing drone; the flip mirrors it), so the sprite itself is never rotated.
+				int level = Math.Clamp((int)Math.Round(_tilt * sd / D.TiltStep), -(D.TiltLevels / 2), D.TiltLevels / 2);
+				float rot = level * D.TiltStep * sd;   // only places the masts, light and weapon on the turned hull
 				float cos = (float)Math.Cos(rot), sin = (float)Math.Sin(rot);
-				Vector2 Local(float lx, float ly) { lx *= sd; return c + new Vector2(lx * cos - ly * sin, lx * sin + ly * cos); }   // body-local px -> screen
+				Vector2 Local(float lx, float ly) { lx *= sd; return new Vector2((float)Math.Round(c.X + lx * cos - ly * sin), (float)Math.Round(c.Y + lx * sin + ly * cos)); }   // body-local px -> screen
 
 				// Spin: four blur frames while airborne, still when landed; the fan in the tail ring turns on the same clock.
 				int spin = (int)(((Main.GameUpdateCount >> 1) + (uint)NPC.whoAmI) & 3u);
 				Texture2D body = ModContent.Request<Texture2D>(Texture).Value;
 				Texture2D rotor = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/DroneRotor").Value;
-				int bw = body.Width, bh = body.Height / D.BodyFrames, rw = rotor.Width, rh = rotor.Height / D.RotorFrames;
-				Rectangle bSrc = new Rectangle(0, (Landed ? 0 : spin) * bh, bw, bh);
+				int bw = body.Width / D.TiltLevels, bh = body.Height / D.BodyFrames, rw = rotor.Width, rh = rotor.Height / D.RotorFrames;
+				Rectangle bSrc = new Rectangle((level + D.TiltLevels / 2) * bw, (Landed ? 0 : spin) * bh, bw, bh);
 				Rectangle rSrc = new Rectangle(0, (Landed ? D.RotorFrames - 1 : spin) * rh, rw, rh);
 				Vector2 rOrigin = new Vector2(rw * 0.5f, rh);   // mast base, bottom centre
 
 				for (int i = D.RotorMastX.Length - 1; i >= 1; i--)   // far rotors first (behind the hull)
 					spriteBatch.Draw(rotor, Local(D.RotorMastX[i], D.RotorMastY[i]), rSrc, Dim(light, D.RotorTint[i]), 0f, rOrigin, 1f, fx, 0f);
-				spriteBatch.Draw(body, c, bSrc, light, rot, new Vector2(bw * 0.5f, bh * 0.5f), 1f, fx, 0f);
+				spriteBatch.Draw(body, c, bSrc, light, 0f, new Vector2(bw * 0.5f, bh * 0.5f), 1f, fx, 0f);
 
 				Color led = Phase switch
 				{

@@ -309,14 +309,14 @@ namespace Levy.Common.Officers
 		}
 
 		/// <summary>Puts this commander's in-reach officer avatars into the squad's chosen formation, as the soldiers are. Server / single player.</summary>
-		public void ApplyFormation(Player commander, bool atBarracks, Levy.Common.Soldiers.FormationMode mode)
+		public void ApplyFormation(Player commander, bool atBarracks, global::Levy.Common.Soldiers.FormationMode mode)
 		{
 			if (!LevyUtil.IsServerOrSingle || commander == null) return;
 			Refresh();
 			foreach (SoldierNPC a in _avatars.Values)
 			{
 				if (!OwnedInReach(a, commander, atBarracks)) continue;
-				Levy.Common.Soldiers.Formation.Apply(a.Record, mode);
+				global::Levy.Common.Soldiers.Formation.Apply(a.Record, mode);
 				a.NPC.netUpdate = true;
 			}
 		}

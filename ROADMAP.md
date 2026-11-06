@@ -256,6 +256,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED: armory2-reforge 01580f2 (targeted reforge + vanity)**
+- **Reforge modes:** In hand / Recent (N days) / Picked (click in grid) / By group (class + type).
+- **Goal:** a floor or a specific valid prefix.
+- **Spending cap:** applied with an equal-share pass.
+- **Preview** before running.
+- **Probe:** the old reforge-to-floor took 84g over 9 weapons. "In hand" took 2g 77s over 4.
+- **Vanity:** up to 16 sets per armory. Each targets all levies, a class, or named levies (named > class > all). Items are stored once and never consumed. Drawn via social slots 10–12 at draw time only, with no stat leakage.
+- **Merge resolution (mine):** armory tabs are Items(0) / Rules(1) / Vanity(2) / Logistics(3). The Logistics button moved further left. Bar layout UNSEEN; ask Eve for a screenshot.
+- **Packets:** SoldierDyeSet, TalkCall, ArmoryReforgePlan, ArmoryVanitySet all appended.
+
 **MERGED: logistics c633b4c**
 - **Non-MS half is live and passes 75 self-checks:**
   - Craft ORDERS: ratios, bucket or random, auto-resume one unit at a time, intermediates smelted from stock, a materials checklist docked beside the armory.

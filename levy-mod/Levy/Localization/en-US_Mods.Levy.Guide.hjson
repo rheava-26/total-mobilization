@@ -361,8 +361,7 @@ Pages: {
 			Customize sets how many levies you have at the start, by the Wall of Flesh, by Moon Lord and by the final boss, and how bosses treat them.
 			New worlds start with 10 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it.
 			Skip keeps the current settings. Multiplayer hosts use the mod config.
-			Every other option is under Settings, Mod Configuration, Levy.
-			Progression assistance is its own page there: army loot bonus, Dungeon Spirit rate, Chlorophyte sources and growth, and Luminite and Lunar Fragment drops.
+			Every other option is under Settings, Mod Configuration, Levy, with progression assistance on its own page: loot, Dungeon Spirits, Chlorophyte and Luminite.
 			'''
 	}
 }

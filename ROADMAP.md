@@ -549,13 +549,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - The Barracks tent is "a tad off": a flat salmon fill with almost no canvas shading, lighter and more saturated than the vanilla wood next to it, and a solid-black door.
 - Offered Eve a small tent-only tweak (darker canvas, fold shading, a door flap). NOT started; waiting for her yes.
 
-## 🐞 Modded summon staffs = "battering rams" (Eve, Calamity run, 2026-11-06; "still", so reported before)
-- Screenshot: levies hold Calamity summon staffs out horizontally like lances, and no minions are visible.
-- Candidate causes, unconfirmed:
-  1. The classifier doesn't put them in the Summon family, so they're used as melee.
-  2. The modded-minion path fails (buff-gated AI, the throw→fallback path).
-  3. Minions work and only the held pose is wrong.
-- Branch `modsummons` is testing with the harness against vanilla controls. Fix target: real modded minions; the fallback is the stand-in flyer, never melee.
+## 🐞 Modded summon minions = "battering rams" (Eve, Calamity run, 2026-11-06; "still", so reported before)
+- CORRECTED by Eve: the minions DO spawn (Stormlion Staff), but they float around and don't fire their projectiles correctly, so they just ram. I had misread the screenshot (I took the minions for staffs held like lances).
+- Candidates, unconfirmed:
+  - owner/myPlayer gate on the minion's projectile spawn;
+  - the projectile spawned then killed (dummy lacks CalamityPlayer state);
+  - shoot helpers reading Main.player[owner] state;
+  - Levy's contact-only stand-in flyer running instead of the real AI.
+- Branch `modsummons` is instrumenting the Stormlion Staff first.
 
 ## 📦 SHIPPED Levy 2.0.1 (Mechanization stays 0.8.0), at scratchpad/ship-2.0.1
 - **logi-search ae94705:**

@@ -615,6 +615,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 17 not patched, with reasons.
   - Harness team 25/0 on both toolchains. MP packet paths untested live.
 
+## 📦 SHIPPED Levy 2.0.5, at scratchpad/ship-2.0.5
+- **levy-count 0aa3e42:** LeviesAtStart (default 10; presets 10/14/6), setup popup row, warnings, guide text.
+- **Measured:** no dilution at the start. Dilution of early growth happens ONLY with Boss Checklist loaded and modded bosses unbeaten (Calamity: 9 vs 12 at Skeletron; Cal+Thorium: 7). Fixed with position-based pre-HM share (max of the old and positional).
+- Boss Checklist is NOT installed in Eve-like saves; that path is unchanged (modded kills only add).
+- New curve: 10/11/12/13/14/15/16/20 at start/KS/EoC/EoW/QB/Skel/Deer/WoF.
+- **Boots:** Thorium+MS+Mech and Calamity, 0 exceptions, all checks OK. Merge conflict in LevySettings.FrozenFields resolved (no FallenStars field, + LeviesAtStart).
+- **Running:** boss-trials (EoC experiment, controls, beam-melee appeal), field-ai-3 (mobility matrix).
+
 ## 📦 SHIPPED Levy 2.0.4 (Mechanization stays 0.8.1), at scratchpad/ship-2.0.4
 - Contents: guide-ui (30-page Field Manual book), teamitems (35 team effects patched both ways), armory-alloc (shift-click intake, thrown stacks/Molotov, sidearm fill, class-less spread, mana→magic, ONE "Fallen Stars per Mana Crystal" setting).
 - **Boots:**

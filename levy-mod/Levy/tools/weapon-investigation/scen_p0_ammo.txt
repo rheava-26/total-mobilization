@@ -1,0 +1,127 @@
+[V0_original]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+
+[V1_three_ammo_stacks]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+M Vanilla/MusketBall x999
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+
+[V2_fresh_phoenix_three_levies_same_ammo]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/Boomstick
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/PhoenixBlaster
+STAGE
+
+[V3_fresh_phoenix_one_levy]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=1
+OLD
+W Vanilla/Minishark
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/PhoenixBlaster
+STAGE
+
+[V4_returned_phoenix_ammo_in_every_pouch_by_second_issue_order]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+[W1_original_but_bullets_arrive_with_the_megashark]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+M Vanilla/MusketBall x999
+STAGE
+
+[W2_original_but_phoenix_arrives_fresh_too_no_returned_weapon_stamp_involved]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/Boomstick
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+W Vanilla/PhoenixBlaster
+STAGE
+
+[W3_no_ranged_armor_split_one_levy_holds_all_bullets_and_a_dry_levy_with_minishark]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=2
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/PhoenixBlaster
+STAGE
+[X1_original_then_bullets_arrive_in_a_third_stage]
+GLOBAL
+RANKPROGRESS 12
+MIX interleave ranged=3
+OLD
+W Vanilla/Minishark
+W Vanilla/Musket
+W Vanilla/PhoenixBlaster
+M Vanilla/MusketBall x999
+STAGE
+AGE 0.05
+W Vanilla/Megashark
+STAGE
+M Vanilla/MusketBall x999
+STAGE

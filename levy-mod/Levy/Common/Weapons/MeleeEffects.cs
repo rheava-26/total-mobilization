@@ -31,8 +31,9 @@ namespace Levy.Common.Weapons
 			DamageClass cls = item.DamageType ?? DamageClass.Melee;
 			sourceDamage = Math.Max(1, damage);
 			Player d = s.Dummy;
+			float banner = global::Levy.Common.Util.BannerBuffs.Offense(s.CommanderIndex, n); // the commander's banner for this enemy (Player.ApplyBannerOffenseBuff)
 			if (d == null || !LevyConfig.Get.RealWeaponShoot)
-				return n.SimpleStrikeNPC(damage, dir, crit, knockback, cls, true, 0f, true);
+				return n.SimpleStrikeNPC(banner == 1f ? damage : Math.Max(1, (int)Math.Round(damage * banner)), dir, crit, knockback, cls, true, 0f, true);
 
 			bool[] before = _hookBefore ??= new bool[Main.maxProjectiles];
 			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
@@ -51,6 +52,7 @@ namespace Levy.Common.Weapons
 
 				NPC.HitModifiers mods = n.GetIncomingStrikeModifiers(cls, dir);
 				ItemDamageModifiers(item, n, ref mods);
+				if (banner != 1f) mods.TargetDamageMultiplier *= banner;
 				try { CombinedHooks.ModifyPlayerHitNPCWithItem(d, item, n, ref mods); } catch (Exception) { }
 				try { d.StatusToNPC(item.type, n.whoAmI); } catch (Exception) { } // item debuffs + the dummy's Magma Stone / Frostburn-style flags
 
@@ -63,7 +65,7 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception)
 			{
-				if (!struck) done = n.SimpleStrikeNPC(damage, dir, crit, knockback, cls, true, 0f, true);
+				if (!struck) done = n.SimpleStrikeNPC(banner == 1f ? damage : Math.Max(1, (int)Math.Round(damage * banner)), dir, crit, knockback, cls, true, 0f, true);
 			}
 			finally { d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; Striker = prevStriker; }
 

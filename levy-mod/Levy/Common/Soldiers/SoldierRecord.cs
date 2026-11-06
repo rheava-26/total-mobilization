@@ -4,7 +4,9 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
+using Levy.Common.Config;
 using Levy.Common.Flavor;
+using Levy.Common.Systems;
 
 namespace Levy.Common.Soldiers
 {
@@ -109,7 +111,12 @@ namespace Levy.Common.Soldiers
 		public int MaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);
 
 		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
-		public static int AccessorySlotsFor(Grade grade) => Math.Min(LevyConstants.GradeSlots[(int)grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
+		public static int AccessorySlotsFor(Grade grade)
+		{
+			int gradeSlots = LevyConstants.GradeSlots[(int)grade];
+			try { gradeSlots = LevySlotMath.GradeSlots(LevyConfig.Get, grade); } catch (Exception) { }
+			return LevySlotMath.Compute(gradeSlots, LevySlotMath.ExpertiseSlots, GuideSystem.ExpertiseRead, LevyProgressionSystem.MilestoneSlots, SoldierGear.AccessorySlots);
+		}
 		/// <summary>Accessory slots: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public int AccessorySlots => AccessorySlotsFor(Grade);
 		public int CommandPointCost => Kind == SoldierKind.Militia ? 1 : LevyConstants.GradeCpCost[(int)Grade];

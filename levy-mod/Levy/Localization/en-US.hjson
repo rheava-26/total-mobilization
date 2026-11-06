@@ -195,12 +195,17 @@ Mods: {
 				DisplayName: Levy
 
 				Headers: {
-					Bosses: Bosses
+					Potions: Potions and mana
+					Aim: Aim
+					BossBehaviour: Boss behaviour
+					LevyCounts: Levy and militia counts
+					Slots: Slots
+					ArmoryRanking: Armory and ranking
+					Hooks: Hooks
+					GearUpkeep: Gear upkeep
 					Soldiers: Soldiers
 					Economy: Economy
 					Interface: Interface
-					Targeting: Targeting Header
-					Progression: Levy progression
 				}
 
 				BossHpScalingPercentPerCp: {
@@ -350,22 +355,47 @@ Mods: {
 
 				LeviesByEndOfPreHardmode: {
 					Label: Levies by the Wall of Flesh
-					Tooltip: How many levies you can field once every pre-hardmode boss is beaten. Progress through the tier is the share of its bosses defeated, from any mod.
+					Tooltip: Levies you can field once every pre-hardmode boss is beaten. Recommended 12 to 30. Each boss beaten adds its share, by Boss Checklist order, from any mod.
 				}
 
 				LeviesByEndOfHardmode: {
 					Label: Levies by Moon Lord
-					Tooltip: How many levies you can field once every hardmode boss is beaten.
+					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten. Recommended 28 to 60. The bosses in between are worth points automatically.
 				}
 
 				LeviesByEndOfPostMoonLord: {
 					Label: Levies by the end of post-Moon Lord
-					Tooltip: How many levies you can field once every boss beyond Moon Lord is beaten. Worlds with no such bosses stay at the Moon Lord number.
+					Tooltip: Levies you can field once the final boss is beaten. Recommended 40 to 90. Every boss after Moon Lord adds its share of the last stretch.
 				}
 
 				MaxLevies: {
 					Label: Maximum levies
 					Tooltip: The most levies you can ever field, whatever the other numbers say.
+				}
+
+				MilestoneRewards: {
+					Label: Boss milestones
+					Tooltip: A boss you beat grants every levy extra accessory slots and the world extra levies. Each entry shows what it grants. All start switched off.
+				}
+
+				LevyAccessorySlots: {
+					Label: Levy accessory slots
+					Tooltip: Accessory slots a Levy opens. At most 6.
+				}
+
+				ManAtArmsAccessorySlots: {
+					Label: Man-at-Arms accessory slots
+					Tooltip: Accessory slots a Man-at-Arms opens. At most 6.
+				}
+
+				ChampionAccessorySlots: {
+					Label: Champion accessory slots
+					Tooltip: Accessory slots a Champion opens. At most 6.
+				}
+
+				ExpertiseGuideSlots: {
+					Label: A Guide to Expertise slots
+					Tooltip: Accessory slots every levy gains when the Guide to Expertise is read. Boss milestones add more.
 				}
 
 				NurseHealsSoldiers: {
@@ -402,6 +432,30 @@ Mods: {
 					Label: Do Not Attack Npc Names
 					Tooltip: ""
 				}
+			}
+
+			MilestoneReward: {
+				Boss: {
+					Label: Boss
+					Tooltip: A vanilla boss id such as WallOfFlesh, Plantera or MoonLord, or a modded boss's exact name.
+				}
+
+				AccessorySlots: {
+					Label: Accessory slots
+					Tooltip: Accessory slots every levy gains.
+				}
+
+				Levies: {
+					Label: Levies
+					Tooltip: Levies added to the world's levy count, on top of the maximum.
+				}
+
+				Enabled: {
+					Label: On
+					Tooltip: ""
+				}
+
+				Tooltip: ""
 			}
 
 			TombstoneMode: {

@@ -38,7 +38,7 @@ namespace Levy.Common.UI
 		private string _titleRaw = "", _treasuryRaw = "";
 		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
 		private string _recruitRaw = "", _hazardRaw = "";
-		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
+		private LevyButton _setupBtn, _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
 		private BarElement _manpower, _cp;
@@ -111,6 +111,7 @@ namespace Levy.Common.UI
 			_autoMuster = Put(new LevyButton("", 0.7f, 150, BH, () => UIActions.BarracksToggle(Te, 0, !Te.AutoMuster)), 12, y2);
 			_tax = Put(new LevyButton("", 0.7f, 170, BH, () => UIActions.BarracksToggle(Te, 1, !Te.TaxToTreasury), LevyUtil.T("UI.TaxToTreasury")), 168, y2);
 			_hazard = Put(new LevyButton("", 0.7f, 204, BH, () => UIActions.HazardPay(Te)), 0, y2);
+			_setupBtn = Put(new LevyButton(LevyUtil.T("Setup.Button"), 0.7f, 60, BH, () => UISystem.Instance?.OpenSetup(), LevyUtil.T("Setup.ButtonHint")), 0, y2);
 			_recruit = Put(new LevyButton("", 0.7f, 250, BH, () => UIActions.RecruitingDrive(Te)), 12, RowY(3));
 			_officers = Put(new LevyButton("", 0.7f, 130, BH, () => { if (UISystem.Instance.OfficersOpen) UISystem.Instance.CloseOfficers(); else UISystem.Instance.OpenOfficers(Te); }, LevyUtil.T("Officers.UI.OpenHint")), 268, RowY(3));
 			_resetLoadouts = Put(new LevyButton(LevyUtil.T("UI2.ResetLoadouts"), 0.7f, LevyConstants.UI.ResetLoadoutsButtonW, BH, UIActions.ResetLoadouts, LevyUtil.T("UI2.ResetLoadoutsHint")), 0, RowY(3));
@@ -220,7 +221,9 @@ namespace Levy.Common.UI
 			float y2 = RowY(2);
 			float x = PlaceSnug(_autoMuster, pad, y2, s) + gap;
 			x = PlaceSnug(_tax, x, y2, s) + gap;
-			PlaceFlex(_hazard, _hazardRaw, x, y2, _w - pad - x, s);
+			float setupW = Measure(_setupBtn.Text, s) + 16f;
+			_setupBtn.Left.Set(_w - pad - setupW, 0f); _setupBtn.Top.Set(y2, 0f); _setupBtn.Width.Set(setupW, 0f);
+			PlaceFlex(_hazard, _hazardRaw, x, y2, _w - pad - x - setupW - gap, s);
 
 			// row 3: Reset loadouts and Officers right-aligned (always full), Recruiting drive fills the rest of the row on the left
 			float y3 = RowY(3);

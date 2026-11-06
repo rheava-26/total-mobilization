@@ -35,6 +35,10 @@ namespace Levy.Common.Weapons
 		public bool Virtual;
 		/// <summary>True once the class balance has counted this free levy against the class of the weapon he is to have.</summary>
 		public bool Counted;
+		/// <summary>His maximum mana after gear (crystals plus what his armor and accessories add). Pulls a class-less levy toward magic; 0 = unknown.</summary>
+		public float Mana;
+		/// <summary>True when the class spread gave this class-less levy his class: his fallback weapons are melee / ranged / magic / thrown before anything else (never summon or rogue first).</summary>
+		public bool Spread;
 
 		// ---- plan output
 		/// <summary>The weapon he should end up with (null = nothing to give him; he keeps what he has). Equal to his own <see cref="Cand"/> when unchanged.</summary>
@@ -52,6 +56,8 @@ namespace Levy.Common.Weapons
 		/// <summary>The weapon's category ids under the armory's rules (never null).</summary>
 		public string[] Cats = Array.Empty<string>();
 		public int Type;
+		/// <summary>A thrown consumable stack (Molotov, knives, grenades): carried and used up as a stack.</summary>
+		public bool Thrown;
 		/// <summary>Tie preference among equal ranks: lower first (0 = the player's weapon rack, then storage, then networked armories).</summary>
 		public int Pref;
 		public int Seq;
@@ -83,7 +89,7 @@ namespace Levy.Common.Weapons
 		internal static Func<Item, float> RankOf = WeaponRank.Of;
 
 		/// <summary>How much claim a levy has on a weapon: 2 = it is his armor's class, 1 = he has no armor class, 0 = a classed levy holding another class's weapon.</summary>
-		private static int Entitle(AllocLevy lev, AllocCand c) => lev.Cls != null ? (c.Cls == lev.Cls ? 2 : 0) : 1;
+		private static int Entitle(AllocLevy lev, AllocCand c) => lev.Cls != null && !lev.Spread ? (c.Cls == lev.Cls ? 2 : 0) : 1; // a levy the spread classed has no more claim than a class-less one
 		private static int HolderEntitle(AllocCand c) => c.Slot == AllocSlot.Sidearm ? -1 : Entitle(c.Owner, c);
 
 		private static bool Avail(AllocLevy lev, AllocCand c)
@@ -96,7 +102,7 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Builds a candidate (rank, class) for a weapon; <paramref name="owner"/> is its physical holder (null on a shelf).</summary>
 		internal static AllocCand MakeCand(Item it, int pref, int seq, AllocSlot slot, AllocLevy holder, object src)
-			=> new AllocCand { It = it, Rank = RankOf(it), Cls = WeaponClassifier.ItemDamageClass(it), Cats = ArmoryRules.CatsFor(it), Type = it.type, Pref = pref, Seq = seq, Slot = slot, Phys = holder, Owner = holder, Src = src };
+			=> new AllocCand { It = it, Rank = RankOf(it), Cls = WeaponClassifier.ItemDamageClass(it), Cats = ArmoryRules.CatsFor(it), Type = it.type, Thrown = WeaponClassifier.GetProfile(it).Family == WeaponFamily.Thrown, Pref = pref, Seq = seq, Slot = slot, Phys = holder, Owner = holder, Src = src };
 
 		/// <summary>The hard rules of the plan being made (null = none). Set for the length of <see cref="Plan"/>.</summary>
 		private static AllocRules _rules;
@@ -113,6 +119,10 @@ namespace Levy.Common.Weapons
 			try {
 				if (_rules != null) RuleStage(levies, cands, _rules);
 
+				// r2) class-less levies are spread over melee, ranged, magic and thrown by what is stocked (the rules above have already placed whoever they were to).
+				var thrownLevies = LevyConstants.ClasslessSpread ? SpreadClassless(levies, cands) : null;
+				if (thrownLevies != null && thrownLevies.Count > 0) Serve(thrownLevies, cands, (l, c) => c.Thrown);
+
 				// a) class-matched: each class's levies are dealt that class's stock.
 				var order = new List<DamageClass>();
 				foreach (var l in levies) if (l.Cls != null && !order.Contains(l.Cls)) order.Add(l.Cls);
@@ -121,6 +131,7 @@ namespace Levy.Common.Weapons
 					Serve(group, cands, (l, c) => c.Cls == l.Cls);
 				}
 				// b) everyone still without a weapon: classed levies whose class ran out first, then the unclassed, from what remains.
+				Serve(levies.FindAll(l => l.Spread && l.Target == null), cands, (l, c) => IsSpreadClass(c.Cls) || c.Thrown); // a spread levy falls back to the martial classes before summon / rogue
 				Serve(levies.FindAll(l => l.Cls != null && l.Target == null), cands, (l, c) => true);
 				var unclassed = levies.FindAll(l => l.Cls == null);
 				Serve(unclassed, cands, (l, c) => l.Flex == null || l.Flex.Count == 0 || (c.Cls != null && l.Flex.Contains(c.Cls)));
@@ -133,6 +144,81 @@ namespace Levy.Common.Weapons
 				}
 			}
 			finally { _rules = null; _book = null; }
+		}
+
+		// ------------------------------------------------------------------ class-less spread
+
+		private static bool IsSpreadClass(DamageClass c) => c == DamageClass.Melee || c == DamageClass.Ranged || c == DamageClass.Magic;
+
+		/// <summary>The weight of the magic bucket for a levy with this much maximum mana: 1 below <see cref="LevyConstants.MagicManaBiasFloor"/>, rising linearly to 1 + <see cref="LevyConstants.MagicManaBiasGain"/> at <see cref="LevyConstants.MagicManaBiasFull"/>.</summary>
+		internal static float MagicManaBias(float mana)
+		{
+			float span = Math.Max(1f, LevyConstants.MagicManaBiasFull - LevyConstants.MagicManaBiasFloor);
+			return 1f + LevyConstants.MagicManaBiasGain * Math.Clamp((mana - LevyConstants.MagicManaBiasFloor) / span, 0f, 1f);
+		}
+
+		/// <summary>
+		/// Spreads the levies that have no class (no worn armor class, no class from the rules) over melee, ranged, magic and thrown, weighted by how many good weapons each has in stock
+		/// (a weapon counts when it ranks within <see cref="LevyConstants.ClasslessQualityFraction"/> of the best of all four). Summon and rogue are never chosen. A levy already holding a weapon keeps his class;
+		/// the bare ones are dealt a bucket by highest-averages (D'Hondt) over the stock weights, the highest-mana levies first, with the magic weight multiplied by <see cref="MagicManaBias"/> for each. Returns the levies given the thrown bucket.
+		/// </summary>
+		private static List<AllocLevy> SpreadClassless(List<AllocLevy> levies, List<AllocCand> cands)
+		{
+			var free = levies.FindAll(l => l.Cls == null && l.ClassLock == null && l.Target == null);
+			if (free.Count == 0) return null;
+			var rep = free[0];
+			var freeSet = new HashSet<AllocLevy>(free);
+			var ranks = new List<float>[4]; for (int i = 0; i < 4; i++) ranks[i] = new List<float>();
+			int Bucket(AllocCand c) => c.Thrown ? (c.Cls == DamageClass.Ranged || c.Cls == DamageClass.Melee ? 3 : -1) : c.Cls == DamageClass.Melee ? 0 : c.Cls == DamageClass.Ranged ? 1 : c.Cls == DamageClass.Magic ? 2 : -1;
+			float top = 0f;
+			var bucketTop = new float[4];
+			foreach (var c in cands) {
+				if (c.Used || c.Rank <= 0f || c.Slot == AllocSlot.Sidearm) continue;
+				if (c.Slot == AllocSlot.Primary && (c.Phys == null || !freeSet.Contains(c.Phys))) continue; // a classed levy's weapon is not stock
+				int b = Bucket(c); if (b < 0) continue;
+				if (rep.Ok != null && !rep.Ok(c.It)) continue;
+				if (rep.Fires != null && !rep.Fires(c.It)) continue;
+				ranks[b].Add(c.Rank); if (c.Rank > top) top = c.Rank; if (c.Rank > bucketTop[b]) bucketTop[b] = c.Rank;
+			}
+			if (top <= 0f) return null;
+			var supply = new int[4];
+			for (int b = 0; b < 4; b++) {
+				if (bucketTop[b] < top * LevyConstants.ClasslessBucketMinFraction) continue; // nothing in this class is worth arming a levy with next to what the others have
+				foreach (float r in ranks[b]) if (r >= bucketTop[b] * LevyConstants.ClasslessQualityFraction) supply[b]++;
+			}
+			Trace?.Invoke($"spread free={free.Count} top={top:F0} bucketTop=[{string.Join(",", Array.ConvertAll(bucketTop, x => x.ToString("F0")))}] supply=[{string.Join(",", supply)}]");
+			var cls = new DamageClass[] { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, null };
+			var given = new int[4]; var held = new int[4];
+			var thrown = new List<AllocLevy>();
+			// levies already holding a weapon of a bucket stay in it (counted first, so the bare ones fill the gaps)
+			foreach (var l in free.FindAll(x => x.Own != null)) {
+				int b = Bucket(l.Own); if (b < 0 || b == 3) continue;
+				given[b]++; held[b]++; // he keeps his weapon and stays class-less (no claim of his own); the bare ones fill the other buckets
+			}
+			var bare = free.FindAll(l => l.Cls == null);
+			bare.Sort((a, c) => { int k = c.Mana.CompareTo(a.Mana); return k != 0 ? k : a.Id.CompareTo(c.Id); });
+			foreach (var l in bare) {
+				int pick = -1; float best = 0f;
+				for (int b = 0; b < 4; b++) {
+					if (supply[b] <= 0 || given[b] >= supply[b]) continue;
+					var bc = b == 3 ? DamageClass.Ranged : cls[b];
+					if (_book != null && _book.Hi.TryGetValue(bc, out var hi) && _book.Of(bc) + held[b] >= hi) continue; // the class maximum of a rule
+					if (l.Flex != null && l.Flex.Count > 0 && !l.Flex.Contains(b == 3 ? DamageClass.Ranged : cls[b])) continue; // he can only field armor for some classes
+					float score = supply[b] * (b == 2 ? MagicManaBias(l.Mana) : 1f) / (given[b] + 1);
+					if (score > best) { best = score; pick = b; }
+				}
+				if (pick < 0) continue;
+				given[pick]++;
+				if (pick == 3) { l.Spread = true; thrown.Add(l); }
+				else Assign(l, cls[pick]);
+			}
+			return thrown;
+		}
+
+		private static void Assign(AllocLevy l, DamageClass c)
+		{
+			l.Cls = c; l.Virtual = true; l.Spread = true;
+			_book?.Add(c, 1);
 		}
 
 		// ------------------------------------------------------------------ the rule stage: minimums, includes and the class balance, in block order (the earlier block wins)

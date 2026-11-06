@@ -765,20 +765,12 @@ namespace Levy.Common.UI
 
 		// ------------------------------------------------------------------ classification
 		/// <summary>Weapon-shaped: deals damage, is not a tool, armor, accessory, consumable or coin. Soldiers decide what they can use.</summary>
-		public static bool IsWeaponShaped(Item it) => it != null && !it.IsAir && it.damage > 0 && !it.accessory && !it.consumable && it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0
-			&& it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin;
+		public static bool IsWeaponShaped(Item it) => it != null && !it.IsAir && ((it.damage > 0 && !it.accessory && !it.consumable && it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0
+			&& it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin) || WeaponClassifier.IsThrownConsumable(it)); // a thrown stack (Molotov, knives, grenades) sits in a weapon row too
 		public static bool IsArmorPart(Item it, int part) => it != null && !it.IsAir && !it.vanity && (part == 0 ? it.headSlot >= 0 : part == 1 ? it.bodySlot >= 0 : it.legSlot >= 0);
 		public static bool IsArmor(Item it) => it != null && !it.IsAir && !it.vanity && (it.headSlot >= 0 || it.bodySlot >= 0 || it.legSlot >= 0);
-		public static bool IsJunk(Item it)
-		{
-			if (it == null || it.IsAir || it.stack <= 0 || it.favorited) return false;
-			if (IsWeaponShaped(it)) return true;
-			if (IsArmor(it)) return true;
-			if (it.accessory && !it.vanity) return true;
-			if (it.ammo > 0 && !it.IsACoin) return true;
-			return false;
-		}
-
+		/// <summary>True for anything Deposit junk moves into storage: everything a levy can be issued (see <see cref="ArmoryIntake"/>).</summary>
+		public static bool IsJunk(Item it) => ArmoryIntake.Accepts(it);
 		// ------------------------------------------------------------------ bulk buttons
 		/// <summary>Moves every non-favourited weapon, armor piece, accessory and ammo stack from the main inventory (not the hotbar) into storage.</summary>
 		private void DepositJunk()

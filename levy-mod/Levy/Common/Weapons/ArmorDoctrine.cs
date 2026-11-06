@@ -39,7 +39,7 @@ namespace Levy.Common.Weapons
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
+		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _manaCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -135,6 +135,46 @@ namespace Levy.Common.Weapons
 		/// <summary>Combined lean at or above which a soldier is treated as a sentry/summon kit: one sentry-capacity accessory, or e.g. two minion-slot accessories.</summary>
 		public const float SentryLeanThreshold = 0.9f;
 		private static readonly Dictionary<int, float> _leanCache = new();
+		private static readonly Dictionary<int, float> _manaCache = new();
+
+		/// <summary>Maximum mana the given worn pieces (armor and accessories) add on a scratch Player, per piece (set bonuses not counted). 0 when none, the pipeline is off, or the read fails. Cached per item type.</summary>
+		public static float GearManaBonus(params Item[] pieces)
+		{
+			if (pieces == null || _broken) return 0f;
+			float sum = 0f;
+			foreach (var it in pieces) sum += ItemMana(it);
+			return sum;
+		}
+
+		private static float ItemMana(Item it)
+		{
+			if (it == null || it.IsAir) return 0f;
+			if (_manaCache.TryGetValue(it.type, out float v)) return v;
+			v = 0f;
+			try {
+				if (LevyConfig.Get.UseVanillaStatPipeline) {
+					EnsureScratch();
+					var p = _scratch;
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+					for (int i = 0; i < p.dye.Length; i++) p.dye[i] = new Item();
+					int slot = it.headSlot >= 0 ? 0 : it.bodySlot >= 0 ? 1 : it.legSlot >= 0 ? 2 : it.accessory ? 3 : -1;
+					if (slot >= 0) {
+						p.armor[slot].SetDefaults(it.type);
+						p.inventory[0] = new Item();
+						p.selectedItem = 0;
+						p.ResetEffects();
+						int baseMana = p.statManaMax2;
+						p.UpdateEquips(SoldierNPC.DummySlot);
+						v = Math.Max(0, p.statManaMax2 - baseMana);
+					}
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+				}
+			}
+			catch (Exception) { v = 0f; }
+			_manaCache[it.type] = v;
+			return v;
+		}
+
 		private static float[] _leanBaseline; // maxTurrets, maxMinions, melee/ranged/magic/summon damage on a bare player
 
 		/// <summary>

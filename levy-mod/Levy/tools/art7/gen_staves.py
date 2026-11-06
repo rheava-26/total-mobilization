@@ -36,14 +36,15 @@ STAFF = ["....KBB..",
          "....K....",
          "AD.DDD.EA",
          "AD.DDD.EA",
-         "ADDDDDEEA",
-         "ADEEEEEFA",
-         "ADEEQQEFA",
-         "ADEEQQEFA",
-         "ADEFEEEFA",
-         "ADEKKKEFA",
-         "ADEKKKEFA",
-         "AAAAAAAAA"]
+         "ADDDDEEEA",
+         "AFFFFFFFA",
+         ".ADEEEFK.",
+         ".ADEKEFK.",
+         ".ADEKFFK.",
+         ".ADFEEFK.",
+         ".ADNPNFK.",
+         ".ADNPNFK.",
+         ".KFFFFFK."]
 # explicit shaft extension up the vanilla diagonal into the head: {grid row: (x0, "chars")}
 EXT_ROD = {9:(4,"BPB"), 8:(5,"BPB")}
 EXT_CANE = {11:(5,"KDK"), 10:(6,"KCK")}

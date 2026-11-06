@@ -57,7 +57,7 @@ namespace Mechanization.Content.NPCs
 					float a = MathHelper.TwoPi * k / T.RingDots;
 					Vector2 p = npc.Center + new Vector2((float)System.Math.Cos(a), (float)System.Math.Sin(a)) * r - Main.screenPosition;
 					if (p.X < -8f || p.Y < -8f || p.X > Main.screenWidth + 8f || p.Y > Main.screenHeight + 8f) continue;
-					Main.spriteBatch.Draw(px, p, null, col, 0f, new Vector2(0.5f, 0.5f), new Vector2(3f, 3f), SpriteEffects.None, 0f);
+					Main.spriteBatch.Draw(px, p, new Rectangle(0, 0, 1, 1), col, 0f, new Vector2(0.5f, 0.5f), new Vector2(3f, 3f), SpriteEffects.None, 0f);
 				}
 			}
 		}

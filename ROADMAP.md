@@ -277,6 +277,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Command Radio: the art2 original walkie-talkie, 2× nearest (48×72). BIG items. Never smaller.
 - Patrol Banner must sway in the wind like vanilla banners.
 - Drone: ducted-fan nacelles on the sides at body height, airliner-engine style. Turret: a mount that holds the weapon.
+**OOA sentry cost = flat 5 Etherian Mana for all three tiers (Eve, 04:45). Done; OoaCheck 31/31 on the Thorium+Levy+Mech integration boot (0 exceptions).**
 **RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
 
 **RUNNING (2026-11-06 04:30):**

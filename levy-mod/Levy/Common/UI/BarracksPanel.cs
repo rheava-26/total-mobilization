@@ -39,7 +39,7 @@ namespace Levy.Common.UI
 		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
 		private string _recruitRaw = "", _hazardRaw = "";
 		private LevyButton _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
-		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers;
+		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers, _goMap;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
 		private BarElement _manpower, _cp;
 		private CardGrid _grid;
@@ -114,6 +114,7 @@ namespace Levy.Common.UI
 			_recruit = Put(new LevyButton("", 0.7f, 250, BH, () => UIActions.RecruitingDrive(Te)), 12, RowY(3));
 			_officers = Put(new LevyButton("", 0.7f, 130, BH, () => { if (UISystem.Instance.OfficersOpen) UISystem.Instance.CloseOfficers(); else UISystem.Instance.OpenOfficers(Te); }, LevyUtil.T("Officers.UI.OpenHint")), 268, RowY(3));
 			_resetLoadouts = Put(new LevyButton(LevyUtil.T("UI2.ResetLoadouts"), 0.7f, LevyConstants.UI.ResetLoadoutsButtonW, BH, UIActions.ResetLoadouts, LevyUtil.T("UI2.ResetLoadoutsHint")), 0, RowY(3));
+			_goMap = Put(new LevyButton(LevyUtil.T("Observe.SendToPoint"), 0.7f, 110, BH, global::Levy.Common.Observe.MapOrder.BeginPick, LevyUtil.T("Observe.SendToPointHint")), 0, RowY(3)); // Command and Observe: pick a map point for the whole army
 
 			// enlist
 			float y4 = RowY(4);
@@ -230,7 +231,9 @@ namespace Levy.Common.UI
 			float officersW = Measure(_officers.Text, s) + 16f;
 			float officersX = resetX - gap - officersW;
 			_officers.Left.Set(officersX, 0f); _officers.Top.Set(y3, 0f); _officers.Width.Set(officersW, 0f);
-			PlaceFlex(_recruit, _recruitRaw, pad, y3, officersX - gap - pad, s);
+			float goW = Measure(_goMap.Text, s) + 16f, goX = officersX - gap - goW;
+			_goMap.Left.Set(goX, 0f); _goMap.Top.Set(y3, 0f); _goMap.Width.Set(goW, 0f);
+			PlaceFlex(_recruit, _recruitRaw, pad, y3, goX - gap - pad, s);
 		}
 
 		/// <summary>Sizes a button to its own text and places it at (<paramref name="x"/>, <paramref name="y"/>); returns its right edge.</summary>

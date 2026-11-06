@@ -2063,6 +2063,7 @@ namespace Levy.Content.NPCs
 		private void ThinkOrder(int now, float nearestHostileTiles)
 		{
 			HangWatch.Brain(NPC.whoAmI, 8);
+			if (Record.Order == SoldierOrder.GoTo && ThinkMapOrder(now)) return; // map-point march (Common/Observe/SoldierNPC.Observe.cs)
 			if (State == SoldierState.Haul) { ThinkHaul(now, nearestHostileTiles); return; }
 
 			// Re-derive the state from the standing order every think so a returned commander, a finished walk home,

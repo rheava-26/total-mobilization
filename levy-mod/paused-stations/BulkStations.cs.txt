@@ -1,0 +1,87 @@
+// PAUSED by the designer. Needs the usings of ProgressionPlayer.cs, the config fields EnableBulkStations/FactoryBonusPercent/FactoryMinCrafts/PotionBonusPercent/PotionMinCrafts,
+// ProgConst batch arrays, and the tile/item files in this folder.
+	/// <summary>Bulk Factory and Bulk Potion Station crafting: a batch of crafts in one click, with a yield bonus for big batches.</summary>
+	public static class BulkStations
+	{
+		public static bool IsPotion(Item i) => i.consumable && i.useStyle == ItemUseStyleID.DrinkLiquid && (i.buffType > 0 || i.healLife > 0 || i.healMana > 0);
+
+		public static bool Near(Player p, int tileType) => tileType > 0 && tileType < p.adjTile.Length && p.adjTile[tileType];
+
+		public static int ItemsOf(Player p, Recipe r, Item ingredient)
+		{
+			int n = 0;
+			for (int s = 0; s < 58; s++)
+			{
+				Item it = p.inventory[s];
+				if (it.stack > 0 && (it.type == ingredient.type || r.AcceptedByItemGroups(it.type, ingredient.type))) n += it.stack;
+			}
+			return n;
+		}
+
+		/// <summary>Take <paramref name="amount"/> of an ingredient from the inventory, as vanilla crafting does.</summary>
+		static void Take(Player p, Recipe r, Item ingredient, int amount)
+		{
+			for (int s = 0; s < 58 && amount > 0; s++)
+			{
+				Item it = p.inventory[s];
+				if (it.stack <= 0 || !(it.type == ingredient.type || r.AcceptedByItemGroups(it.type, ingredient.type))) continue;
+				int take = Math.Min(it.stack, amount);
+				it.stack -= take; amount -= take;
+				if (it.stack == 0) it.TurnToAir();
+			}
+		}
+
+		public static void TryBatch(Player p, Item crafted, RecipeItemCreationContext rc)
+		{
+			var c = LevyProgressionConfig.Get;
+			if (c == null || !c.EnableBulkStations) return;
+			var pp = p.GetModPlayer<ProgressionPlayer>();
+
+			bool potion = IsPotion(crafted);
+			int wanted, bonus, minCrafts; string station;
+			if (potion && Near(p, ModContent.TileType<BulkPotionStationTile>()))
+			{ wanted = ProgConst.PotionBatches[pp.PotionBatchIndex]; bonus = c.PotionBonusPercent; minCrafts = c.PotionMinCrafts; station = "Potion"; }
+			else if (Near(p, ModContent.TileType<BulkFactoryTile>()))
+			{ wanted = ProgConst.FactoryBatches[pp.FactoryBatchIndex]; bonus = c.FactoryBonusPercent; minCrafts = c.FactoryMinCrafts; station = "Factory"; }
+			else return;
+			if (wanted <= 1) return;
+
+			Recipe r = rc.Recipe;
+			var need = r.requiredItem.Select(i => i.stack).ToArray();
+			// One craft is already paid for by the game; the extras come out of what is left in the inventory.
+			var have = r.requiredItem.Select(i => ItemsOf(p, r, i)).ToArray();
+			int extra = ProgMath.AffordableCrafts(need, have, wanted - 1);
+			int crafts = 1 + extra;
+			if (extra > 0)
+				for (int k = 0; k < r.requiredItem.Count; k++) Take(p, r, r.requiredItem[k], need[k] * extra);
+
+			int baseStack = Math.Max(1, r.createItem.stack);
+			int total = ProgMath.BatchYield(baseStack, crafts, bonus, minCrafts);
+			if (total <= crafted.stack && extra == 0) return;
+
+			// The crafted stack is merged into the cursor stack by the game, so only what fits goes there; the rest drops to the player.
+			Item dest = rc.DestinationStack;
+			int room = crafted.maxStack - (dest != null && dest.stack > 0 && dest.type == crafted.type ? dest.stack : 0);
+			int toCursor = Math.Max(crafted.stack, Math.Min(total, room));
+			crafted.stack = toCursor;
+			int rest = total - toCursor;
+			var src = p.GetSource_Misc("LevyBulkStation");
+			while (rest > 0)
+			{
+				int chunk = Math.Min(rest, Math.Max(1, crafted.maxStack));
+				Item copy = crafted.Clone();
+				copy.stack = chunk;
+				if (crafted.maxStack == 1) copy.Prefix(-1);
+				p.QuickSpawnItem(src, copy, chunk);
+				rest -= chunk;
+			}
+			if (Main.myPlayer == p.whoAmI)
+				Main.NewText(LevyUtil.T("Progression.BatchDone", station == "Potion" ? LevyUtil.T("Progression.PotionStation") : LevyUtil.T("Progression.Factory"), crafts, total, crafted.Name), ProgressionColors.Note);
+		}
+	}
+
+	public static class ProgressionColors
+	{
+		public static readonly Microsoft.Xna.Framework.Color Note = new(190, 230, 150);
+	}
+}

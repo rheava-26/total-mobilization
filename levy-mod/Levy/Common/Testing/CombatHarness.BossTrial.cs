@@ -157,6 +157,14 @@ namespace Levy.Common.Testing
 			["S/sub"] = new() { Weapon = "Finch Staff", Armor = BtIron },
 			["S/junk"] = new() { Weapon = "Finch Staff", Armor = BtWood },
 		};
+		/// <summary>On-tier gear for the Brain of Cthulhu fights: what a player has after the Eye of Cthulhu and before Skeletron (the Underworld and the second evil are open, the Dungeon is not).</summary>
+		private static readonly Dictionary<string, BtLoad> BtLoadsPost = new()
+		{
+			["R/opt"] = new() { Weapon = "Phoenix Blaster", Ammo = "Silver Bullet", Armor = BtNinja, Acc = new[] { "Hermes Boots" } },
+			["M/opt"] = new() { Weapon = "Space Gun", Armor = BtMeteor, Acc = new[] { "Band of Starpower" } },
+			["E/opt"] = new() { Weapon = "Enchanted Sword", Armor = BtMolten, Acc = new[] { "Feral Claws" } },
+			["S/opt"] = new() { Weapon = "Imp Staff", Armor = BtCrimson, Acc = new[] { "Hermes Boots" } },
+		};
 		private static Dictionary<string, string> BtOverrides = new();
 
 		private static Dictionary<string, int> _btNameIds;
@@ -176,9 +184,10 @@ namespace Levy.Common.Testing
 		}
 		private static Item BtMake(string name, int stack = 1) { var it = new Item(); it.SetDefaults(BtItemId(name)); it.stack = stack; return it; }
 
-		private static BtLoad BtLoadFor(char cls, string tier)
+		private static BtLoad BtLoadFor(char cls, string tier, bool post = false)
 		{
-			var b = BtLoads[cls + "/" + (tier == "pre" || tier == "post" ? "opt" : tier)];
+			string tk = cls + "/" + (tier == "pre" || tier == "post" ? "opt" : tier);
+			var b = post && BtLoadsPost.TryGetValue(tk, out var pb) ? pb : BtLoads[tk];
 			var l = new BtLoad { Weapon = b.Weapon, Ammo = b.Ammo, Armor = b.Armor, Acc = b.Acc };
 			if (BtOverrides.TryGetValue("pick:" + cls, out string pool)) l.Weapon = pool.Split('|').OrderByDescending(n => WeaponRank.Of(BtMake(n))).First(); // the levy takes the top-ranked weapon of the pool (what the allocator does)
 			if (BtOverrides.TryGetValue("w:" + cls, out string w)) l.Weapon = w;
@@ -199,8 +208,8 @@ namespace Levy.Common.Testing
 			foreach (var (cls, n) in BtCompParse(run.Comp))
 				for (int k = 0; k < n; k++)
 				{
-					var ld = BtLoadFor(cls, run.Tier);
-					list.Add(new BtLevySpec { Cls = cls, Weapon = ld.Weapon, Ammo = ld.Ammo, Armor = ld.Armor, Acc = ld.Acc, LifeCrystals = best ? 15 : post ? 5 : 2, ManaCrystals = best ? 9 : post ? 9 : (cls == 'M' ? 4 : 0), Potions = best ? 6 : 0, Potion = post ? "Healing Potion" : "Lesser Healing Potion", ManAtArms = run.Grade == "champ" });
+					var ld = BtLoadFor(cls, run.Tier, post);
+					list.Add(new BtLevySpec { Cls = cls, Weapon = ld.Weapon, Ammo = ld.Ammo, Armor = ld.Armor, Acc = ld.Acc, LifeCrystals = best ? 15 : post ? 5 : 2, ManaCrystals = best ? 9 : post ? 9 : (cls == 'M' ? 4 : 0), Potions = best ? 6 : 4, Potion = post ? "Healing Potion" : "Lesser Healing Potion", ManAtArms = run.Grade == "champ" });
 				}
 			return list;
 		}

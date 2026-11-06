@@ -501,6 +501,8 @@ Mods: {
 			ChatOrders: Orders
 			RadioOrders: Command radio
 			ChatHandAmmo: Hand ammo
+			ChatGear: Gear
+			NormalRanks: Normal ranks
 			Barracks: "{0} Barracks"
 			Treasury: Treasury: {0}
 			Manpower: Manpower {0} / {1}

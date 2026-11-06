@@ -1,0 +1,14 @@
+# Talking to levies. Keys are relative to Mods.Levy.Talk.
+Title: "{0} - Gear"
+Vanity: Vanity dyes
+Hook: Hook
+Dye: Dye
+DyeHint: Place a dye here.
+NotADye: Only a dye fits here.
+DyeSet: Dye applied.
+DyeTaken: Dye taken.
+TakeAll: Take all
+TakeAllHint: Move everything this levy carries into your pack.
+TookAll: Took {0} items.
+NothingToTake: Nothing to take.
+LockHint: Items you place stay put. Taken slots may be refilled.

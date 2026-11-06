@@ -53,7 +53,7 @@ namespace Levy.Common.Systems
 				r.WageLooted = 0;
 				count++; owed += r.WageOwed;
 				var body = BodyOf(r);
-				if (body != null) { body.OnMutinyBegun(); DialogueSystem.FloatingText(body, LevyUtil.T("Mutiny.Shout"), DialogueTrigger.MUTINY); }
+				if (body != null) { body.OnMutinyBegun(); DialogueSystem.FloatingText(body, DialogueSystem.LineOrKey(DialogueTrigger.MUTINY_BEGIN, r, "Mutiny.Shout"), DialogueTrigger.MUTINY); }
 			}
 			if (count == 0) return;
 			string town = te != null ? SettlementSystem.Instance.TownName(te) : "";
@@ -69,7 +69,7 @@ namespace Levy.Common.Systems
 			if (body != null)
 			{
 				body.ReceiveOrder(rec.Order); // back to the standing order (and net sync)
-				DialogueSystem.FloatingText(body, LevyUtil.T("Mutiny.Calm"), DialogueTrigger.RALLIED);
+				DialogueSystem.FloatingText(body, DialogueSystem.LineOrKey(DialogueTrigger.MUTINY_CALM, rec, "Mutiny.Calm"), DialogueTrigger.RALLIED);
 				DialogueSystem.Bark(body, DialogueTrigger.PAYDAY);
 			}
 			if (chatKey != null) LevyUtil.Chat(LevyUtil.T(chatKey, rec.Name), new Color(150, 255, 150));

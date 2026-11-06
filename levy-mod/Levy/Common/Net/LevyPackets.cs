@@ -40,6 +40,8 @@ namespace Levy.Common.Net
 	///  SoldierGearSet: int soldierId, byte slot(SoldierGear.Slot*), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the item out of its own hands (air = took the slot's item out); server validates, applies, locks/unlocks, re-syncs
 	///  BookUsed: string bookKey                                   (Flavor) — client consumed the book; server sets the world flag
 	///  OfficerCommand: byte action(0 commission,1 dismiss), int barracksId (-1 for dismiss), short npcIndex   (Officers) — commander = sender; server re-validates everything and charges the barracks treasury
+	///  SoldierDyeSet: int soldierId, byte dyeSlot(0..SoldierGear.DyeSlots-1), Item via ItemIO.Send(writeStack:true)   (Roster) — client moved the dye out of its own hands (air = took the dye out); server validates, applies, re-syncs. Dyes are never locked: the Armory never touches them
+	///  TalkCall: int soldierId                                    (Roster) — commander = sender; the soldier walks to the sender so a chat can open (a levy in a fight is out of vanilla's chat reach)
 	///  CompanionRequest: byte kind, then a payload the companion defines                  (Compat) — sender = the commander; the server re-validates every target
 	/// Server -> client:
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
@@ -58,6 +60,8 @@ namespace Levy.Common.Net
 		Demote, Reserve,
 		CompanionRequest, // client -> server: a Thorium cast the local player just made, for the companion to lay on that player's soldiers; its own handler decodes the payload
 		ArmoryRulesSet, // client -> server: the armory's whole rule list (see ArmoryRules.ToBytes); appended here so no existing value moves
+		SoldierDyeSet, // client -> server: hand-place or take a soldier's vanity dye (see above); appended so no existing value moves
+		TalkCall, // client -> server: call a levy over to talk (see above); appended so no existing value moves
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 	}
@@ -78,5 +82,7 @@ namespace Levy.Common.Net
 		private static readonly System.Collections.Generic.Dictionary<LevyPacket, Handler> _handlers = new();
 		public static void Register(LevyPacket type, Handler handler) => _handlers[type] = handler;
 		public static void Clear() => _handlers.Clear();
+		/// <summary>True when a handler is registered for this packet type (boot self-checks).</summary>
+		public static bool IsRegistered(LevyPacket type) => _handlers.ContainsKey(type);
 	}
 }

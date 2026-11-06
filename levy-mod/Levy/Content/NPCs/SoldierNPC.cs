@@ -477,13 +477,13 @@ namespace Levy.Content.NPCs
 		// ---- chat ----
 		// Officer avatars stay chattable so a click on an officer always lands, whichever of the two co-located bodies the cursor picks (this one, or the parked
 		// town NPC vanilla draws); a click that lands here is immediately re-pointed at the town NPC by RedirectOfficerShopTalk, so its own shop/chat opens as normal.
-		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Engage && State != SoldierState.Routed));
+		public override bool CanChat() => Record != null && (OfficerMode || (IsRegular && State != SoldierState.Routed)); // a levy can be talked to mid-fight; only a routed one (panicked, running) cannot
 		public override string GetChat() => OfficerMode ? "" : DialogueSystem.ChatLine(this);
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
 			if (OfficerMode) return; // the town NPC the talk is redirected to supplies its own buttons
 			button = LevyUtil.T("UI.ChatOrders");
-			if (AcceptsAmmo(Main.LocalPlayer.HeldItem)) button2 = LevyUtil.T("UI.ChatHandAmmo");
+			button2 = AcceptsAmmo(Main.LocalPlayer.HeldItem) ? LevyUtil.T("UI.ChatHandAmmo") : LevyUtil.T("UI.ChatGear");
 		}
 
 		/// <summary>
@@ -517,7 +517,8 @@ namespace Levy.Content.NPCs
 			if (OfficerMode) return; // never the soldier radial for an officer; the redirect hands talk to the town NPC instead
 			if (firstButton) { Common.UI.UISystem.Instance.ToggleRadial(); return; }
 			var held = Main.LocalPlayer.HeldItem;
-			if (!AcceptsAmmo(held)) return;
+			if (!AcceptsAmmo(held)) { Common.UI.LevyInventorySystem.Open(Record); return; } // second button with nothing to hand over: the levy's gear window
+
 			int type = held.type, count = held.stack;
 			held.TurnToAir(); // the handing client consumes first (server-authoritative add), so the stack is never duplicated
 			if (LevyUtil.IsClient) { var p = Common.Net.LevyPackets.New(Common.Net.LevyPacket.HandAmmo); p.Write(NPC.whoAmI); p.Write(type); p.Write(count); p.Send(); }

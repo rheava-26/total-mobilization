@@ -54,6 +54,8 @@ namespace Levy.Common.Dialogue
 		public static readonly Dictionary<string, List<DialogueLine>> Lines = new(StringComparer.OrdinalIgnoreCase);
 		/// <summary>Culture whose file was loaded last ("" when nothing is loaded).</summary>
 		public static string LoadedCulture = "";
+		/// <summary>Where the table came from: the mod file, or the editable file under the save folder.</summary>
+		public static string LoadedFrom = "";
 		public static int LineCount;
 
 		/// <summary>Trigger names indexed by enum value.</summary>
@@ -84,6 +86,7 @@ namespace Levy.Common.Dialogue
 		{
 			Lines.Clear();
 			LoadedCulture = "";
+			LoadedFrom = "";
 			LineCount = 0;
 		}
 
@@ -106,6 +109,7 @@ namespace Levy.Common.Dialogue
 		{
 			Clear();
 			if (mod == null) return;
+			if (DialogueFile.TryLoadEditable(mod, cultureName)) return; // the player's own edited file, when there is one
 			string path = null;
 			string culture = null;
 			try
@@ -135,13 +139,15 @@ namespace Levy.Common.Dialogue
 				return;
 			}
 			LoadedCulture = culture;
+			LoadedFrom = "mod file " + path;
 			int bad = Parse(mod, path, text);
 			mod.Logger.Info($"Levy: dialogue table {path}: {LineCount} lines in {Lines.Count} pools" + (bad > 0 ? $", {bad} bad lines skipped." : "."));
 		}
 
 		/// <summary>Parses table text into <see cref="Lines"/>. Returns the number of rejected lines.</summary>
-		public static int Parse(Mod mod, string source, string text)
+		public static int Parse(Mod mod, string source, string text, Dictionary<string, List<DialogueLine>> into = null)
 		{
+			var target = into ?? Lines;
 			int rejected = 0;
 			var textIds = new Dictionary<string, int>(StringComparer.Ordinal);
 			var parts = new List<LinePart>(8);
@@ -170,14 +176,14 @@ namespace Levy.Common.Dialogue
 					Id = id, Filter = filter, Text = body, SourceLine = n, Needs = needs,
 					Parts = parts.ToArray(), NpcTypes = npcs.ToArray(), NamedropNpcType = npcs.Count > 0 ? npcs[0] : null,
 				};
-				if (!Lines.TryGetValue(key, out var list))
+				if (!target.TryGetValue(key, out var list))
 				{
-					list = new List<DialogueLine>(); Lines[key] = list;
+					list = new List<DialogueLine>(); target[key] = list;
 					if (key.StartsWith(BossPrefix, StringComparison.OrdinalIgnoreCase) && !IsKnownBossName(key.Substring(BossPrefix.Length)))
 						mod?.Logger.Warn($"Levy: {source} line {n}: {key} is not a vanilla NPC internal name; it only fires for a boss that reports exactly this name.");
 				}
 				list.Add(line);
-				LineCount++;
+				if (into == null) LineCount++;
 			}
 			return rejected;
 		}

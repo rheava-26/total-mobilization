@@ -140,6 +140,43 @@ namespace Levy.Common.Soldiers
 			return true;
 		}
 
+		/// <summary>True when <paramref name="item"/> may sit in vanity dye slot <paramref name="dyeSlot"/> (air always may). Only a dye fits.</summary>
+		public static bool CanHoldDye(int dyeSlot, Item item)
+		{
+			if (dyeSlot < 0 || dyeSlot >= DyeSlots) return false;
+			return Empty(item) || item.dye > 0;
+		}
+
+		/// <summary>
+		/// Hand-places a dye (or air, to take it out). One dye is kept; the rest of a stack comes back in <paramref name="overflow"/>.
+		/// Dyes take no lock: the Armory never issues, replaces or removes them, so nothing can undo the choice.
+		/// A dye over an accessory slot the soldier's grade does not open is refused.
+		/// </summary>
+		public bool TrySetDye(int dyeSlot, Item item, int accessorySlotsAllowed, out Item overflow)
+		{
+			overflow = null;
+			if (!CanHoldDye(dyeSlot, item)) return false;
+			if (dyeSlot >= 3 && dyeSlot - 3 >= accessorySlotsAllowed) return false;
+			item = Empty(item) ? new Item() : item;
+			if (item.stack > 1) { overflow = item.Clone(); overflow.stack = item.stack - 1; item.stack = 1; }
+			Dyes[dyeSlot] = item;
+			return true;
+		}
+
+		/// <summary>Writes the SoldierDyeSet payload after the packet type byte: int soldierId, byte dyeSlot, item with stack.</summary>
+		public static void WriteDyePayload(BinaryWriter w, int soldierId, int dyeSlot, Item item)
+		{
+			w.Write(soldierId); w.Write((byte)dyeSlot);
+			ItemIO.Send(item ?? new Item(), w, writeStack: true);
+		}
+
+		/// <summary>Reads what <see cref="WriteDyePayload"/> wrote.</summary>
+		public static void ReadDyePayload(BinaryReader r, out int soldierId, out int dyeSlot, out Item item)
+		{
+			soldierId = r.ReadInt32(); dyeSlot = r.ReadByte();
+			item = ItemIO.Receive(r, readStack: true);
+		}
+
 		private static Item[] NewArray(int n) { var a = new Item[n]; for (int i = 0; i < n; i++) a[i] = new Item(); return a; }
 
 		public bool HasWeapon => Weapon != null && !Weapon.IsAir;

@@ -352,6 +352,61 @@ namespace Levy.Common.UI
 			return false;
 		}
 
+		/// <summary>
+		/// Takes one gear slot's item off a soldier into the local player's pack (dropped at their feet when the pack is full). The slot empties and its hand lock clears,
+		/// so the Armory may refill it on his next visit unless he is in reserve. Returns false when the slot was already empty.
+		/// </summary>
+		public static bool TakeGearSlot(SoldierRecord rec, int slot)
+		{
+			var held = rec?.Gear?.Get(slot);
+			if (held == null || held.IsAir) return false;
+			Item taken = held.Clone();
+			if (!SetGearSlot(rec, slot, new Item())) return false;
+			GiveToPlayer(taken);
+			return true;
+		}
+
+		/// <summary>Hand-places a dye (or air, taking it out) in a soldier's vanity slot; same contract as <see cref="SetGearSlot"/> with the dye packet.</summary>
+		public static bool SetDyeSlot(SoldierRecord rec, int dyeSlot, Item item)
+		{
+			if (rec == null) return false;
+			item = item == null || item.IsAir ? new Item() : item;
+			if (Single)
+			{
+				if (RosterNet.ApplyDyeSlot(rec, dyeSlot, item, out var extra)) { GiveToPlayer(extra); return true; }
+			}
+			else if (rec.Gear.TrySetDye(dyeSlot, item, rec.AccessorySlots, out var extra))
+			{
+				GiveToPlayer(extra);
+				var p = LevyPackets.New(LevyPacket.SoldierDyeSet);
+				SoldierGear.WriteDyePayload(p, rec.Id, dyeSlot, rec.Gear.Dyes[dyeSlot]);
+				p.Send();
+				return true;
+			}
+			GiveToPlayer(item);
+			return false;
+		}
+
+		/// <summary>Takes a vanity dye off a soldier into the local player's pack.</summary>
+		public static bool TakeDye(SoldierRecord rec, int dyeSlot)
+		{
+			if (rec == null || dyeSlot < 0 || dyeSlot >= SoldierGear.DyeSlots) return false;
+			var held = rec.Gear.Dyes[dyeSlot];
+			if (held == null || held.IsAir) return false;
+			Item taken = held.Clone();
+			if (!SetDyeSlot(rec, dyeSlot, new Item())) return false;
+			GiveToPlayer(taken);
+			return true;
+		}
+
+		/// <summary>Calls a soldier over to the local player (so a chat can open). Single player tells the body directly; a client sends TalkCall.</summary>
+		public static void CallOver(SoldierRecord rec)
+		{
+			if (rec == null) return;
+			if (Single) { if (BodyOf(rec) is SoldierNPC b) b.ReceiveTalkCall(Main.myPlayer); }
+			else { var p = LevyPackets.New(LevyPacket.TalkCall); p.Write(rec.Id); p.Send(); }
+		}
+
 		/// <summary>Hands an item to the local player: inventory first, dropped at their feet if the pack is full.</summary>
 		private static void GiveToPlayer(Item it)
 		{
@@ -383,11 +438,14 @@ namespace Levy.Common.UI
 			return total > 0 && hold * 2 > total;
 		}
 
-		public static bool MajoritySpreadOut()
+		public static bool MajoritySpreadOut() => MajorityFormation() == FormationMode.Spread;
+
+		/// <summary>The stance most of the local player's active soldiers are in.</summary>
+		public static FormationMode MajorityFormation()
 		{
-			int spread = 0, total = 0;
-			foreach (var r in MyRegulars()) { if (r.Reserve) continue; total++; if (r.SpreadOut) spread++; }
-			return total > 0 && spread * 2 > total;
+			int spread = 0, close = 0, total = 0;
+			foreach (var r in MyRegulars()) { if (r.Reserve) continue; total++; if (r.SpreadOut) spread++; else if (r.CloseUp) close++; }
+			return Formation.Majority(total, spread, close);
 		}
 
 		public static int AvailableCp => RosterSystem.Instance.CommandPoints - RosterSystem.Instance.CommandPointsUsed;

@@ -10,6 +10,7 @@ using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
+using Levy.Content.TileEntities;
 using Levy.Content.Projectiles;
 
 namespace Levy.Common.Testing
@@ -104,6 +105,70 @@ namespace Levy.Common.Testing
 			p.position = new Vector2(_cx * 16f - 4 * 16f - p.width / 2f, FloorY * 16f - p.height); p.velocity = Vector2.Zero;
 		}
 
+		/// <summary>
+		/// REARM TEST (LEVY_HARNESS_MNREARM=tick:gap[:swapStaffName]): at <tick> the soldier hands its whole kit back (weapon slot emptied, NotifyGearChanged: what Armory ReturnGear + RebindBody do), <gap> ticks later a fresh
+		/// copy of the same staff (or the named other staff) is drawn again. Logs the flock and the bad-staff state each 60 ticks after the rearm.
+		/// </summary>
+		private int _mnRearmAt = -2, _mnRearmGap, _mnRearmSwap; private string _mnRearmSwapName; private bool _mnRearmGiven;
+		private void MnRearm(int type)
+		{
+			if (_mnRearmAt == -2)
+			{
+				string v = Environment.GetEnvironmentVariable("LEVY_HARNESS_MNREARM");
+				_mnRearmAt = -1;
+				if (!string.IsNullOrEmpty(v))
+				{
+					var f = v.Split(':'); _mnRearmAt = int.Parse(f[0]); _mnRearmGap = f.Length > 1 ? int.Parse(f[1]) : 0; _mnRearmSwapName = f.Length > 2 ? f[2] : null;
+				}
+			}
+			if (_mnRearmAt < 0) return;
+			if (_mnTick == 1) _mnRearmGiven = false;
+			var rec = RosterSystem.Instance.Regulars.LastOrDefault(r => r.HasBody && r.BodyIndex == _mnBody);
+			if (rec == null || !(Main.npc[_mnBody].ModNPC is SoldierNPC sn)) return;
+			Item shoot0 = new Item(); shoot0.SetDefaults(type);
+			if (_mnRearmSwapName == "armory")
+			{
+				// the REAL rearm: a detached Armory stocked with the staff takes the whole kit back (ReturnGear) and issues again (IssueGear), then the live body re-reads its gear (RebindBody)
+				if (_mnTick == _mnRearmAt)
+				{
+					rec.Gear.SetLocked(SoldierGear.SlotWeapon, false); rec.LoadoutLocked = false; rec.Gear.LockMask = 0;
+					var te = new ArmoryTE();
+					ArmoryTE.TestServed = new List<SoldierRecord> { rec };
+					Item extra = new Item(); extra.SetDefaults(type);
+					te.ReturnGear(rec.Gear);
+					Item left = te.Deposit(extra);
+					bool issued = te.IssueGear(rec);
+					ArmoryTE.TestServed = null;
+					sn.NotifyGearChanged();
+					Mod.Logger.Info($"HARNESS-REARM t{_mnTick}: armory rearm issued={issued} weapon={(rec.Gear.HasWeapon ? rec.Gear.Weapon.Name : "none")} sidearm={(rec.Gear.HasSidearm ? rec.Gear.Sidearm.Name : "none")} flock real={CountReal()} bad={SoldierMinions.IsBadStaff(shoot0.shoot)}");
+				}
+			}
+			else if (_mnTick == _mnRearmAt)
+			{
+				rec.Gear.SetLocked(SoldierGear.SlotWeapon, false); rec.LoadoutLocked = false;
+				rec.Gear.Weapon = new Item();
+				sn.NotifyGearChanged();
+				Mod.Logger.Info($"HARNESS-REARM t{_mnTick}: kit returned; flock real={CountReal()} bad={SoldierMinions.IsBadStaff(shoot0.shoot)}");
+			}
+			if (_mnRearmSwapName != "armory" && _mnTick == _mnRearmAt + _mnRearmGap)
+			{
+				Item w = new Item();
+				if (_mnRearmSwapName != null)
+				{
+					for (int t = 1; t < ItemLoader.ItemCount; t++) { var c = new Item(); try { c.SetDefaults(t); } catch { continue; } if (c.Name.Equals(_mnRearmSwapName, StringComparison.OrdinalIgnoreCase) && c.shoot > 0) { w = c; break; } }
+					if (w.IsAir) Mod.Logger.Warn("HARNESS-REARM: swap staff not found " + _mnRearmSwapName);
+				}
+				else w.SetDefaults(type);
+				rec.Gear.Weapon = w;
+				sn.NotifyGearChanged();
+				Mod.Logger.Info($"HARNESS-REARM t{_mnTick}: drew {w.Name}; flock real={CountReal()} bad={SoldierMinions.IsBadStaff(w.shoot)}");
+			}
+			if (_mnTick > _mnRearmAt && (_mnTick - _mnRearmAt) % 60 == 0 && _mnTick <= _mnRearmAt + _mnRearmGap + 1200)
+				Mod.Logger.Info($"HARNESS-REARM t{_mnTick}: real={CountReal()} stand={CountStand()} bad={SoldierMinions.IsBadStaff(shoot0.shoot)} dmg={_mnTargetLife0 - Main.npc[_mnTarget].life}");
+		}
+		private int CountReal() { int n = 0; for (int i = 0; i < Main.maxProjectiles; i++) if (SoldierMinions.OwnedBy(Main.projectile[i], _mnBody)) n++; return n; }
+		private int CountStand() { int st = ModContent.ProjectileType<SoldierMinion>(), n = 0; for (int i = 0; i < Main.maxProjectiles; i++) { var p = Main.projectile[i]; if (p.active && p.type == st && (int)p.ai[0] == _mnBody) n++; } return n; }
+
 		private void StepMinions()
 		{
 			if (_mnI >= _mnItems.Count) { Finish("minions scenario complete"); return; }
@@ -131,6 +196,7 @@ namespace Levy.Common.Testing
 			}
 			MnPin();
 			_mnTick++;
+			MnRearm(type);
 			if (_mnTick % 20 == 0) { _mnPeakPass = Math.Max(_mnPeakPass, _mnWin - _mnPass); _mnPass = _mnWin; }
 			if (_mnTick % 60 == 0) { _mnPeakRate = Math.Max(_mnPeakRate, _mnWinSec); _mnWinSec = 0; }
 			int standType = ModContent.ProjectileType<SoldierMinion>();

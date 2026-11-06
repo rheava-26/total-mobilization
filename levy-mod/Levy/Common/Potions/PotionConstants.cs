@@ -15,14 +15,17 @@ namespace Levy.Common.Potions
 		/// <summary>Past the edge the spectator is pushed back by excess pixels times this, at most <see cref="TetherMaxPull"/> px per tick.</summary>
 		public const float TetherPullPerPx = 0.04f, TetherMaxPull = 5f;
 
-		// Autonomy
-		public const float AutonomousDamage = 0.10f, AutonomousMoveSpeed = 0.10f;
+		// Autonomy: every tunable of the Autonomous levy behaviour lives here and in AutonomySystem.
 		/// <summary>Autonomous is refreshed every <see cref="AutonomousPulseTicks"/> and lasts <see cref="AutonomousDurationTicks"/>.</summary>
 		public const int AutonomousPulseTicks = 30, AutonomousDurationTicks = 90;
+		/// <summary>An Autonomous levy falls back to heal below this fraction of its life and re-engages at or above <see cref="AutonomousReengageFrac"/>.</summary>
+		public const float AutonomousFallbackFrac = 0.35f, AutonomousReengageFrac = 0.75f;
+		/// <summary>While falling back, a levy heals this fraction of its max life per second.</summary>
+		public const float AutonomousFallbackRegenPerSec = 0.03f;
+		/// <summary>Targeting tiers for an Autonomous levy: bosses first, then enemies whose contact damage is at least this, then the rest.</summary>
+		public const int AutonomousDangerDamage = 60;
 		/// <summary>Slime Rain: an enemy drops the Guide to Autonomy at 1 in this many.</summary>
 		public const int AutonomyDropDenominator = 50;
-		/// <summary>True: map orders without the Command Radio only work while the Spectator buff is active. False: any time once the guide is studied.</summary>
-		public const bool MapOrdersNeedSpectator = false;
 
 		// Seeker
 		/// <summary>An armory not on a Magic Storage network must be within this many tiles for the Seeker to read its list.</summary>

@@ -33,7 +33,7 @@ namespace Levy.Content.Buffs
 		}
 	}
 
-	/// <summary>Autonomous: levies of a Spectator who studied the Guide to Autonomy deal more damage and move faster. Applied on the levy's dummy by <see cref="Apply"/>.</summary>
+	/// <summary>Autonomous: marks the levies of a Spectator who studied the Guide to Autonomy. The behaviour is in <see cref="AutonomySystem"/>; there is no stat change.</summary>
 	public class AutonomousBuff : ModBuff
 	{
 		public override string LocalizationCategory => "Potions";
@@ -44,12 +44,6 @@ namespace Levy.Content.Buffs
 			Main.debuff[Type] = false;
 			Main.pvpBuff[Type] = false;
 			Main.buffNoSave[Type] = true;
-		}
-
-		public static void Apply(Player d)
-		{
-			d.GetDamage(DamageClass.Generic) += PotionConstants.AutonomousDamage;
-			d.moveSpeed += PotionConstants.AutonomousMoveSpeed;
 		}
 
 		// Only meant for levies; shed it at once on a real player.

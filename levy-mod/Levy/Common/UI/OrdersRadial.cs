@@ -99,7 +99,7 @@ namespace Levy.Common.UI
 		private void Refresh()
 		{
 			// Command Radio in the pack: every order goes map-wide and the muster button reaches the nearest barracks anywhere.
-			_radio = CommandRadio.Has(Main.LocalPlayer) || Levy.Common.Potions.AutonomySystem.CanCommandWithoutRadio(Main.LocalPlayer);
+			_radio = CommandRadio.Has(Main.LocalPlayer);
 			_title.SetText(LevyUtil.T(_radio ? "UI.RadioOrders" : "UI2.Orders"));
 			_nearest = UIActions.NearestBarracks(Main.LocalPlayer.Center, _radio ? float.MaxValue : LevyConstants.UI.MobilizeKeyRadiusTiles);
 			bool holdFire = UIActions.MajorityHoldFire();

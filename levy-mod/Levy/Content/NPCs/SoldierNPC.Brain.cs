@@ -251,6 +251,7 @@ namespace Levy.Content.NPCs
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
 					if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
 					else if (fleeIdx >= 0) ThinkFlee(fleeIdx);
+					else if (Autonomy_FallBack(now, nearestHostileTiles)) { } // Autonomous levy below the fall-back threshold: retreat and heal
 					else if (ThinkTalk(now)) { } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
 					else if (now < _spawnGraceUntil) ThinkSpawnGrace();
 					else if (!TryEngage(now))

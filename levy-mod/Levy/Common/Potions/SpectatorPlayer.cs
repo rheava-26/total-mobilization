@@ -12,8 +12,7 @@ namespace Levy.Common.Potions
 	/// <summary>
 	/// The Spectator potion's rules.
 	///  * Targeting. Vanilla picks targets in NPC.TargetClosest / TargetClosestUpgraded, which skip a player that is <c>!active || dead || ghost</c>, and boss/enemy AIs re-pick when
-	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So for the NPC update window (<see cref="SpectatorNpcWindow"/>: ModSystem.PreUpdateNPCs to PostUpdateNPCs,
-	///    which also covers NPC.SpawnNPC) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. A boss with nobody else to fight behaves as if the target died (it leaves).
+	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. A boss with nobody else to fight behaves as if the target died (it leaves).
 	///    The flags are restored right after, and again in PreUpdate as a safety net, so the player's own update never sees them.
 	///  * Damage. Contact and projectile hits are refused (CanBeHitByNPC / CanBeHitByProjectile). Any damage that still lands (lava, fall, drowning) ends the buff.
 	///  * Items. <see cref="CanUseItem"/> refuses damage items, summons, sentries and anything that touches the world (see <see cref="Blocked"/>), except the Observe items.
@@ -138,19 +137,15 @@ namespace Levy.Common.Potions
 		}
 	}
 
-	/// <summary>Brackets the NPC update (spawning, targeting, AI) so spectators are invisible to it. See <see cref="SpectatorPlayer"/>.</summary>
+	/// <summary>
+	/// Brackets each hostile NPC's AI so spectators are invisible to it (see <see cref="SpectatorPlayer"/>). Per NPC rather than around the whole NPC update, because the levies
+	/// read their commander's dead flag and must keep seeing a living commander. A safety-net unhide runs after the NPC update.
+	/// </summary>
 	public class SpectatorNpcWindow : ModSystem
 	{
-		public override void PreUpdateNPCs()
-		{
-			for (int i = 0; i < Main.maxPlayers; i++)
-			{
-				Player p = Main.player[i];
-				if (p.active && p.TryGetModPlayer(out SpectatorPlayer s) && s.Active) s.Hide();
-			}
-		}
+		public override void PostUpdateNPCs() => UnhideAll();
 
-		public override void PostUpdateNPCs()
+		internal static void UnhideAll()
 		{
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{
@@ -158,5 +153,21 @@ namespace Levy.Common.Potions
 				if (p.TryGetModPlayer(out SpectatorPlayer s)) s.Unhide();
 			}
 		}
+	}
+
+	public class SpectatorNpcHide : GlobalNPC
+	{
+		public override bool PreAI(NPC npc)
+		{
+			if (npc.friendly || npc.townNPC || npc.ModNPC is Levy.Content.NPCs.SoldierNPC) return true;
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (p.active && p.TryGetModPlayer(out SpectatorPlayer s) && s.Active) s.Hide();
+			}
+			return true;
+		}
+
+		public override void PostAI(NPC npc) => SpectatorNpcWindow.UnhideAll();
 	}
 }

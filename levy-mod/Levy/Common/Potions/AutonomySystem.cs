@@ -15,11 +15,11 @@ namespace Levy.Common.Potions
 	{
 		public static bool Studied => GuideSystem.IsStudied("Autonomy");
 
-		/// <summary>
-		/// True when <paramref name="p"/> may give map orders (the map click and the orders radial's map-wide reach) without a Command Radio: the guide is studied, and, only when
-		/// <see cref="PotionConstants.MapOrdersNeedSpectator"/> is set, the Spectator buff is active.
-		/// </summary>
-		public static bool CanCommandWithoutRadio(Player p) => Studied && p != null && (!PotionConstants.MapOrdersNeedSpectator || SpectatorPlayer.IsSpectator(p));
+		/// <summary>True for a levy body that is Autonomous right now (its commander is a Spectator and has studied the guide).</summary>
+		public static bool IsAutonomous(SoldierNPC s) => s != null && s.NPC != null && s.NPC.active && s.NPC.HasBuff(ModContent.BuffType<AutonomousBuff>());
+
+		/// <summary>Target priority for an Autonomous levy: 2 = boss, 1 = hits hard, 0 = anything else.</summary>
+		public static int ThreatTier(NPC n) => LevyUtil.IsBossNpc(n) ? 2 : n.damage >= PotionConstants.AutonomousDangerDamage ? 1 : 0;
 
 		public override void PostUpdateEverything()
 		{
@@ -33,9 +33,7 @@ namespace Levy.Common.Potions
 				if (s == null || !s.IsAlive) continue;
 				Player boss = s.Commander;
 				if (!SpectatorPlayer.IsSpectator(boss)) continue;
-				bool had = s.NPC.HasBuff(buff);
 				s.NPC.AddBuff(buff, PotionConstants.AutonomousDurationTicks);
-				if (!had) s.StatsDirty = true;
 			}
 		}
 	}
@@ -46,7 +44,7 @@ namespace Levy.Common.Potions
 		public bool CanDrop(DropAttemptInfo info)
 		{
 			NPC n = info.npc;
-			if (n == null || !Main.slimeRain || n.SpawnedFromStatue || AutonomySystem.Studied) return false;
+			if (n == null || info.IsInSimulation || !Main.slimeRain || n.SpawnedFromStatue || AutonomySystem.Studied) return false;
 			return IsEnemy(n);
 		}
 

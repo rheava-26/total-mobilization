@@ -134,7 +134,7 @@ namespace Levy.Common.Flavor
 				case "TheArcaneArts": return LevyUtil.T("Flavor.Effect.TheArcaneArts", LevyConstants.ArcaneMilitiaMana);
 				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", Systems.LevySlotMath.ExpertiseSlots);
 				case "Engineering": return LevyUtil.T("Flavor.Effect.Engineering");
-				case "Autonomy": return LevyUtil.T("Potions.EffectAutonomy", (int)Math.Round(Potions.PotionConstants.AutonomousDamage * 100f), (int)Math.Round(Potions.PotionConstants.AutonomousMoveSpeed * 100f));
+				case "Autonomy": return LevyUtil.T("Potions.EffectAutonomy");
 				default: return "";
 			}
 		}

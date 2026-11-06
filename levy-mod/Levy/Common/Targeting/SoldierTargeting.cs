@@ -51,6 +51,7 @@ namespace Levy.Common.Targeting
 			float rangeSq = rangePx * rangePx;
 			int self = s.NPC.whoAmI;
 			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false;
+			bool auto = Potions.AutonomySystem.IsAutonomous(s); int bestTier = -1; // Autonomous levies rank the most dangerous enemy in reach first
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC npc = Main.npc[i];
@@ -59,11 +60,16 @@ namespace Levy.Common.Targeting
 				if (distSq > rangeSq) continue;
 				if (IsIn(alsoExclude, i) || IsNeverTarget(npc)) continue;
 				if (bossesOnly && !LevyUtil.IsBossNpc(npc)) continue;
+				int tier = auto ? Potions.AutonomySystem.ThreatTier(npc) : 0;
+				if (tier < bestTier) continue;
 				bool attacking = !preferNearest && (IsAttackingUs(npc) || LevyUtil.IsProjectileNpc(npc.type)); // an orb in reach is a threat to the line: priority 1 // nearest-only: every candidate ranks as priority 2, so distance alone decides
-				if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
-				if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+				if (tier == bestTier)
+				{
+					if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
+					if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+				}
 				if (!Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
-				best = i; bestDistSq = distSq; bestAttacking = attacking;
+				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier;
 			}
 			return best;
 		}

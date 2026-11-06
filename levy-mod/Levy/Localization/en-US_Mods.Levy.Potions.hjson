@@ -22,9 +22,8 @@ GuideToAutonomy: {
 	DisplayName: A Guide to Autonomy
 	Tooltip:
 		'''
-		While the Spectator potion is active your levies are Autonomous: +10% damage and +10% move speed.
-		You can give map orders without the Command Radio.
-		Dropped by any enemy in Slime Rain. Consumed on use, once per world.
+		Your levies act on their own while you watch: no fear, they fall back to heal, and they go for the biggest threat.
+		Map orders need it. Dropped in Slime Rain. Consumed on use, once per world.
 		'''
 }
 
@@ -40,11 +39,12 @@ SeekerBuff: {
 
 AutonomousBuff: {
 	DisplayName: Autonomous
-	Description: +10% damage and +10% move speed while your commander spectates.
+	Description: Fearless. Falls back to heal. Goes for the biggest threat.
 }
 
 SpectatorRefused: Too soon after damage.
 SeekerPrompt: Choose an item to find.
 SeekerClose: Close
 DropSlimeRain: Drops during Slime Rain.
-EffectAutonomy: While the Spectator potion is active your levies gain {0}% damage and {1}% move speed. You can give map orders without the Command Radio.
+EffectAutonomy: Your levies act on their own while you watch: no fear, they fall back to heal, and they go for the biggest threat. Map orders are unlocked.
+NeedAutonomy: Learn the Guide to Autonomy first.

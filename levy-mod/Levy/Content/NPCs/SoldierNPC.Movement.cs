@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -90,6 +91,8 @@ namespace Levy.Content.NPCs
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
+			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
+			if (_hkStepUntil != 0 && HookStepBackTick(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; }
 			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
 			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
 			if (_hkAltSeen != 0 && _hkPhase == HookPhase.Idle && Main.GameUpdateCount - _hkAltSeen <= 12u) { _hkGoalNow = new Vector2(_hkAltX, _hkAltY); HookTrigger(HookReason.Altitude); }
@@ -199,7 +202,7 @@ namespace Levy.Content.NPCs
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
-			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dashTicks = 0;
+			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
 			NPC.netUpdate = true;
@@ -318,7 +321,7 @@ namespace Levy.Content.NPCs
 		/// sidestep is blocked), then a cooldown and straight back to the fight. Rate-limited. Returns true while a sidestep is in progress
 		/// (the walk logic is skipped for those few ticks).
 		/// </summary>
-		private bool TickDodge(bool grounded, bool air)
+		private bool TickDodgeLegacy(bool grounded, bool air)
 		{
 			NPC npc = NPC;
 			if (_dodgeTicks > 0)
@@ -525,6 +528,7 @@ namespace Levy.Content.NPCs
 			{
 				NPC.velocity.Y = -JumpSpeedFor(tiles);
 				NPC.netUpdate = true;
+				if (DodgeDebug) Levy.Instance?.Logger.Info($"JUMPDBG t={Main.GameUpdateCount} {SoldierName} tiles={tiles} from {string.Join('<', new System.Diagnostics.StackTrace(false).GetFrames().Skip(1).Take(3).Select(fr => fr.GetMethod()?.Name))} state={State}");
 				return true;
 			}
 			if (_jumpsUsed < Abilities.ExtraJumps && NPC.velocity.Y > -1f)
@@ -559,7 +563,10 @@ namespace Levy.Content.NPCs
 		{
 			Point feet = TileNav.FeetTile(NPC.Bottom);
 			for (int r = 1; r <= HopClearRows; r++) if (TileNav.IsSolid(feet.X, feet.Y - r)) return false;
-			for (int i = 1; i <= HopLandingTiles; i++)
+			// a hop covers speed x airtime; every column it can land on (plus a tile of slide) must be floored, or the hop carries a runner over an edge
+			float airTicks = 2f * JumpSpeedFor(HopTiles) / Math.Max(0.05f, Gravity());
+			int reach = Math.Max(HopLandingTiles, (int)Math.Ceiling(Math.Abs(NPC.velocity.X) * airTicks / 16f) + 2);
+			for (int i = 1; i <= reach; i++)
 			{
 				int x = feet.X + dir * i;
 				for (int r = 0; r <= HopClearRows; r++) if (TileNav.IsSolid(x, feet.Y - r)) return false;

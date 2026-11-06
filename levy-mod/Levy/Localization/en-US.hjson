@@ -196,6 +196,7 @@ Mods: {
 		NPCs: {
 			SoldierNPC.DisplayName: Soldier
 			SummonedUnitNPC.DisplayName: Summoned Unit
+			HarnessCharger.DisplayName: Harness Charger
 		}
 
 		Projectiles: {
@@ -213,6 +214,7 @@ Mods: {
 			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
 			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
 			SoldierHeal.DisplayName: Soldier Heal
+			HarnessBeam.DisplayName: Harness Beam
 			LevySentryBanner.DisplayName: Levy Sentry
 		}
 
@@ -387,6 +389,11 @@ Mods: {
 				SoldiersUseHooks: {
 					Label: Levies use grappling hooks
 					Tooltip: Levies carry the best grappling hook in the armory. They swing across gaps and climb cliffs with it.
+				}
+
+				SoldiersTakeFallDamage: {
+					Label: Levies take fall damage
+					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.
 				}
 
 				ExtraTargetingAiStyles: {

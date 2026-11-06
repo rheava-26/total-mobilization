@@ -6,7 +6,7 @@ namespace Levy.Common
 		public static class Hooks
 		{
 			// ---- triggers: ticks a blockage must hold (and the walking AI must have found no path) before the soldier plans a cast ----
-			public const int TriggerGoalAboveTicks = 40, TriggerWallTicks = 40, TriggerGapTicks = 40, TriggerFleeTicks = 12, TriggerAltitudeTicks = 30;
+			public const int TriggerGoalAboveTicks = 40, TriggerWallTicks = 40, TriggerGapTicks = 40, TriggerFleeTicks = 12, TriggerAltitudeTicks = 30, TriggerFollowTicks = 10;
 			/// <summary>Ticks the trigger flag lives after the last tick a blocked branch set it (the branches run only while the soldier walks at the obstacle).</summary>
 			public const int TriggerGraceTicks = 6;
 
@@ -44,6 +44,13 @@ namespace Levy.Common
 			public const float MinUsefulReachTiles = 8f;
 			/// <summary>A soldier whose target hangs this many tiles above it climbs by hook (no flight kit).</summary>
 			public const int AltitudeMinTiles = 6;
+			/// <summary>A commander on a hook this far off (tiles, across or half that above) is followed by hook.</summary>
+			public const float FollowMinTiles = 14f;
+			/// <summary>Simulated reel ticks a plan may spend touching sloped tiles before it is judged a drag (a brush against an edge is fine).</summary>
+			public const int MaxSlopeDragTicks = 4;
+			/// <summary>Distances (tiles) a soldier backs off from a wall to look for a diagonal line over its lip, and how long it may take.</summary>
+			public static readonly int[] StepBackTiles = { 3, 5, 8, 11 };
+			public const int StepBackMaxTicks = 120;
 		}
 	}
 }

@@ -54,6 +54,8 @@ namespace Levy.Content.NPCs
 			_projectileStriking = false;
 			_hitPaladin = null; // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return;
+			Fall_Update();
+			if (!IsAlive) return;
 			if (ImmuneTime == 0) ContactDamage();
 			if (!IsAlive) return;
 			Regen();
@@ -96,8 +98,11 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Shared bookkeeping after any attributed hit (contact or hostile projectile).</summary>
+		internal int HitsTaken;
 		private void AfterHit(int damageDone, int attackerIndex)
 		{
+			HitsTaken++;
+			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
 			ImmuneTime = LevyConstants.ImmuneTicksOnHit;
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;

@@ -15,6 +15,8 @@ namespace Levy.Common.Movement
 		/// <summary>A tile a hook latches onto (the hook AI's own test: solid tile, platforms included).</summary>
 		bool Latchable(int x, int y);
 		bool Lava(int x, int y);
+		/// <summary>A sloped or half-height tile: the body slides along it instead of stopping, and the planner's block model does not know how far.</summary>
+		bool Sloped(int x, int y);
 	}
 
 	/// <summary>The live world (<see cref="TileNav"/> plus the hook AI's latch test).</summary>
@@ -30,6 +32,12 @@ namespace Levy.Common.Movement
 			return t.HasUnactuatedTile && Main.tileSolid[t.TileType];
 		}
 		public bool Lava(int x, int y) => TileNav.HasLava(x, y);
+		public bool Sloped(int x, int y)
+		{
+			if (!TileNav.InBounds(x, y)) return false;
+			Tile t = Main.tile[x, y];
+			return t.HasUnactuatedTile && (t.Slope != Terraria.ID.SlopeType.Solid || t.IsHalfBlock);
+		}
 	}
 
 	public enum HookGoalKind : byte
@@ -68,10 +76,13 @@ namespace Levy.Common.Movement
 		/// <summary>An altitude plan: hang at the anchor until told to let go (the drop was checked safe).</summary>
 		public bool Hang;
 		public float GoalDist, Gain, Score;
+		/// <summary>Ticks of the simulated reel that the body spent touching a sloped tile (it drags along it instead of travelling clear). Each costs score.</summary>
+		public int SlopeTicks;
 		public List<Vector2> Path;
 		public int ReelTicks, FlightTicks;
 		public HookGoalKind Kind;
-		public bool Beats(float arrivePx, float minGainPx) => (Landed || Hang) && (GoalDist <= arrivePx || Gain >= minGainPx);
+		/// <summary>A plan is worth casting when it lands (or hangs) nearer the goal AND its simulated reel does not spend more than a brush of ticks dragging along a slope (the body would not make the progress the simulation shows).</summary>
+		public bool Beats(float arrivePx, float minGainPx) => (Landed || Hang) && SlopeTicks <= LevyConstants.Hooks.MaxSlopeDragTicks && (GoalDist <= arrivePx || Gain >= minGainPx);
 	}
 
 	/// <summary>
@@ -214,8 +225,16 @@ namespace Levy.Common.Movement
 			return false;
 		}
 
-		/// <summary>Moves the body (top-left x, y) by its velocity with tile collision; a blocked axis loses its speed. Returns true when it came to rest on something below it.</summary>
-		private static bool Move(IHookWorld w, ref float x, ref float y, ref float vx, ref float vy, float bw, float bh)
+		private static bool BlockedBySlope(IHookWorld w, float x, float y, float bw, float bh)
+		{
+			int x0 = (int)MathF.Floor(x / 16f), x1 = (int)MathF.Floor((x + bw - 0.01f) / 16f), y0 = (int)MathF.Floor(y / 16f), y1 = (int)MathF.Floor((y + bh - 0.01f) / 16f);
+			for (int tx = x0; tx <= x1; tx++) for (int ty = y0; ty <= y1; ty++) if (w.Solid(tx, ty) && w.Sloped(tx, ty)) return true;
+			return false;
+		}
+
+		/// <summary>Moves the body (top-left x, y) by its velocity with tile collision; a blocked axis loses its speed. Returns true when it came to rest on something below it.
+		/// With <paramref name="slopeSticks"/> a body pulled into a sloped tile stops dead instead of sliding along it (a hook pulls straight; the body does not glide up a slope).</summary>
+		private static bool Move(IHookWorld w, ref float x, ref float y, ref float vx, ref float vy, float bw, float bh, bool slopeSticks = false)
 		{
 			LastSteps++;
 			int nx = Math.Max(1, (int)MathF.Ceiling(MathF.Abs(vx) / 4f));
@@ -224,6 +243,7 @@ namespace Levy.Common.Movement
 			{
 				if (Blocked(w, x + sx, y, bw, bh))
 				{
+					if (slopeSticks && BlockedBySlope(w, x + sx, y, bw, bh)) { vx = 0f; vy = 0f; return false; }
 					if (!Blocked(w, x + sx, y - 16f, bw, bh) && !Blocked(w, x, y - 16f, bw, bh) && vy >= 0f && Blocked(w, x, y + 1f, bw, bh)) { y -= 16f; x += sx; continue; } // a one-tile step up, as Collision.StepUp does for a walker
 					float cs = MathF.Sign(sx); while (!Blocked(w, x + cs, y, bw, bh)) x += cs; // creep up to the wall
 					vx = 0f; break;
@@ -237,6 +257,7 @@ namespace Levy.Common.Movement
 			{
 				if (Blocked(w, x, y + sy, bw, bh))
 				{
+					if (slopeSticks && sy < 0f && BlockedBySlope(w, x, y + sy, bw, bh)) { vx = 0f; vy = 0f; return false; }
 					float cs = MathF.Sign(sy); while (!Blocked(w, x, y + cs, bw, bh)) y += cs; // creep up to the surface
 					if (vy > 0f) landed = true; vy = 0f; break;
 				}
@@ -270,7 +291,15 @@ namespace Levy.Common.Movement
 		// ---------------------------------------------------------------------------------------------
 		// simulation of one anchor set
 		// ---------------------------------------------------------------------------------------------
-		private struct ReelState { public float X, Y, Vx, Vy, Dist, DesVx, DesVy; }
+		private struct ReelState { public float X, Y, Vx, Vy, Dist, DesVx, DesVy; public int Slope; }
+		/// <summary>Score (px) charged per reel tick spent dragging along a slope; also the harness switch (0 = the planner is blind to slopes).</summary>
+		public static float SlopeDragCost = 14f;
+		private static bool TouchesSlope(IHookWorld w, float x, float y, float bw, float bh)
+		{
+			int x0 = (int)MathF.Floor((x - 2f) / 16f), x1 = (int)MathF.Floor((x + bw + 2f) / 16f), y0 = (int)MathF.Floor((y - 2f) / 16f), y1 = (int)MathF.Floor((y + bh + 2f) / 16f);
+			for (int tx = x0; tx <= x1; tx++) for (int ty = y0; ty <= y1; ty++) if (w.Sloped(tx, ty) && w.Solid(tx, ty)) return true;
+			return false;
+		}
 
 		/// <summary>Re-plans from the anchors a cast REALLY latched onto (they can differ from the planned tiles when a ray grazes an edge): a single simulation. Null when those anchors cannot do the job.</summary>
 		public static HookPlan Replan(IHookWorld w, Vector2 bottom, in HookParams p, List<Vector2> actualAnchors, Vector2 goalBottom, HookGoalKind kind, float goalDistNow)
@@ -288,7 +317,7 @@ namespace Levy.Common.Movement
 			Vector2 centroid = Vector2.Zero; for (int i = 0; i < anchors.Count; i++) centroid += anchors[i]; centroid /= anchors.Count;
 			float x = bottom.X - bw / 2f, y = bottom.Y - bh;
 			var states = new List<ReelState>(64); List<Vector2> reelPath = Trace ? new List<Vector2>() : null;
-			float lastDist = float.MaxValue; int stall = 0;
+			float lastDist = float.MaxValue; int stall = 0, slopeAcc = 0;
 			for (int t = 0; t < LevyConstants.Hooks.PlanReelSimTicks; t++)
 			{
 				Vector2 c = new(x + bw / 2f, y + bh / 2f);
@@ -299,11 +328,12 @@ namespace Levy.Common.Movement
 				else { desVx = d.X; desVy = d.Y; }
 				float vx = desVx, vy = desVy;
 				if (TouchesLava(w, x, y, bw, bh)) return null;
-				Move(w, ref x, ref y, ref vx, ref vy, bw, bh);
+				Move(w, ref x, ref y, ref vx, ref vy, bw, bh, SlopeDragCost > 0f);
 				c = new Vector2(x + bw / 2f, y + bh / 2f);
 				float dist = Vector2.Distance(centroid, c);
 				reelPath?.Add(new Vector2(x + bw / 2f, y + bh));
-				states.Add(new ReelState { X = x, Y = y, Vx = vx, Vy = vy, Dist = dist, DesVx = desVx, DesVy = desVy });
+				if (SlopeDragCost > 0f && TouchesSlope(w, x, y, bw, bh)) slopeAcc++;
+				states.Add(new ReelState { X = x, Y = y, Vx = vx, Vy = vy, Dist = dist, DesVx = desVx, DesVy = desVy, Slope = slopeAcc });
 				if (dist > lastDist - LevyConstants.Hooks.ReelProgressPx) { if (++stall >= 6) break; } else stall = 0;
 				lastDist = Math.Min(lastDist, dist);
 				if (dist < 6f) break;
@@ -368,7 +398,7 @@ namespace Levy.Common.Movement
 			float gd = Vector2.Distance(land, goalBottom) + Math.Abs(land.Y - goalBottom.Y) * 0.5f;
 			var plan = new HookPlan { Kind = HookGoalKind.Ground, ReleaseTick = idx, ReleaseDist = Math.Max(0f, s.Dist), ReleasePos = relPos, Landing = land, Landed = true, GoalDist = gd, Gain = goalDistNow - gd, ReelTicks = idx, FlightTicks = idx + ticks };
 			plan.Anchors.AddRange(anchors); plan.Path = fl; foreach (var c in cands) plan.Aims.Add(c.aim);
-			plan.Score = gd + 0.35f * (idx + ticks);
+			plan.SlopeTicks = s.Slope; plan.Score = gd + 0.35f * (idx + ticks) + SlopeDragCost * s.Slope;
 			return plan;
 		}
 
@@ -389,7 +419,7 @@ namespace Levy.Common.Movement
 			float gd = Vector2.Distance(hangBottom, goalBottom);
 			var plan = new HookPlan { Kind = HookGoalKind.Altitude, ReleaseTick = idx, ReleaseDist = Math.Max(0f, e.Dist), ReleasePos = hangBottom, Landing = land, Landed = true, Hang = true, GoalDist = gd, Gain = goalDistNow - gd, ReelTicks = idx, FlightTicks = idx };
 			plan.Anchors.AddRange(anchors); foreach (var c in cands) plan.Aims.Add(c.aim);
-			plan.Score = gd + 0.2f * idx;
+			plan.SlopeTicks = e.Slope; plan.Score = gd + 0.2f * idx + SlopeDragCost * e.Slope;
 			return plan;
 		}
 	}

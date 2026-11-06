@@ -592,6 +592,20 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📦 SHIPPED Levy 2.0.6 (gear-audit e975ce5), at scratchpad/ship-2.0.6
+- **Observed before:**
+  - Armor was first-come by timer order: 45 not-worst-first flags; the floor stuck at wood/cactus/copper through step 6.
+  - Accessories were fill-only (never upgraded).
+  - Weapons were already worst-first per class.
+  - **Weapon churn bug:** class-less holders were re-dealt every plan (hundreds of swaps per step).
+  - **FormsSetBonus never worked:** the scratch player's slot ids were unset.
+- **Fix:**
+  - FloorSweep: armor goes worst-first with a 15% margin and a class guard; accessories upgrade the weakest slot by ≥15%.
+  - The churn and set-bonus detection bugs are fixed.
+- **Result:** 45 → 1 flags, churn 31 → 0, the floor rises earlier, deterministic across timer orders.
+- **Note:** the late-game median armor is a little lower (class-mix shift toward magic). Watch it.
+- **Boots:** Thorium+MS 0 exceptions (gear floor 12, allocator 591); Calamity 0 exceptions.
+
 ## 🔎 Independent (unprimed) gap research → levy-mod/Levy/docs/GAPS_INDEPENDENT.md
 - **Top 10, N=20, Classic:**
   1. Calamity **Auric Ore is non-renewable** (spawns once on the first Yharon kill; 450 ore/set).

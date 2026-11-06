@@ -32,6 +32,8 @@ namespace Levy.Common.Net
 	///  ArmorySort: int armoryId                                   (UI) — server merges and orders the storage, then re-syncs the tile entity
 	///  ArmoryReforge: int armoryId, byte floorIndex               (UI) — server rerolls weapon modifiers to the floor, charging the linked barracks treasury per roll, then re-syncs both tile entities
 	///  ArmoryRulesSet: int armoryId, int length, byte[] rules (ArmoryRules.ToBytes)  (UI) — server re-reads and clamps the list, replaces the armory's rules, then re-syncs the tile entity
+	///  ArmoryReforgePlan: int armoryId, int length, byte[] plan (ReforgePlan.ToBytes)  (UI) — server re-reads and clamps the plan, runs the targeted reforge, charges the linked barracks treasury, re-syncs both tile entities
+	///  ArmoryVanitySet: int armoryId, int length, byte[] vanity (ArmoryVanity.ToBytes)  (UI) — server re-reads and clamps the list, replaces the armory's vanity sets, then re-syncs the tile entity
 	///  BarracksToggle: int barracksId, byte which(0 AutoMuster,1 TaxToTreasury), bool value   (Militia)
 	///  HandAmmo: int npcIndex, int itemType, int count            (Roster) — client consumed the stack; server adds what fits, returns overflow
 	///  AssignPatrol: int soldierId, short ax, short ay, short bx, short by   (Roster)
@@ -58,6 +60,8 @@ namespace Levy.Common.Net
 		Demote, Reserve,
 		CompanionRequest, // client -> server: a Thorium cast the local player just made, for the companion to lay on that player's soldiers; its own handler decodes the payload
 		ArmoryRulesSet, // client -> server: the armory's whole rule list (see ArmoryRules.ToBytes); appended here so no existing value moves
+		ArmoryReforgePlan, // client -> server: run a targeted reforge (see ReforgePlan.ToBytes)
+		ArmoryVanitySet, // client -> server: the armory's whole vanity list (see ArmoryVanity.ToBytes)
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 	}

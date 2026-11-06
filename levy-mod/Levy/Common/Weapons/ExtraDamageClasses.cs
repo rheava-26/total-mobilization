@@ -51,6 +51,9 @@ namespace Levy.Common.Weapons
 		/// <summary>The loaded rogue / bard / healer classes (one canonical class per kind); empty without Calamity / Thorium.</summary>
 		public static IReadOnlyList<DamageClass> All { get { Ensure(); return _all; } }
 
+		/// <summary>True when <paramref name="c"/> is the loaded rogue class (Calamity's); false for anything else, or when no rogue class is loaded.</summary>
+		public static bool IsRogue(DamageClass c) { if (c == null) return false; Ensure(); return _canonical[0] != null && ReferenceEquals(_canonical[0], c); }
+
 		/// <summary>The rogue / bard / healer class the item's damage type belongs to, or null (a vanilla-class item, or none of these mods loaded).</summary>
 		public static DamageClass Of(Item item)
 		{

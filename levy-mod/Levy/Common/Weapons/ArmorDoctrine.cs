@@ -25,6 +25,7 @@ namespace Levy.Common.Weapons
 		public const float MinLead = 0.02f;
 		private const float CritWeight = 0.005f; // 10 crit points count like 5% damage
 
+		private const int VanillaClassCount = 4; // melee, ranged, magic, summon lead <see cref="Classes"/>
 		private static DamageClass[] _classes;
 		/// <summary>The classes armor can favour: the four vanilla ones, then any loaded rogue / bard / healer class (<see cref="ExtraDamageClasses"/>; Calamity and Thorium stay optional).</summary>
 		private static DamageClass[] Classes => _classes ??= new[] { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon }.Concat(ExtraDamageClasses.All).ToArray();
@@ -268,6 +269,20 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>Test / log use: the per-class bonuses the three pieces measure as, and the class they resolve to.</summary>
+		internal static string DebugMeasure(Item head, Item body, Item legs)
+		{
+			try {
+				EnsureScratch();
+				_baseline ??= Measure(0, 0, 0, null);
+				var s = Measure(TypeOf(head), TypeOf(body), TypeOf(legs), _baseline);
+				var parts = new List<string>();
+				for (int i = 0; i < Classes.Length; i++) parts.Add(Classes[i].Name + "=" + s[i].ToString("F3"));
+				return string.Join(" ", parts) + " extraSlots=" + s[Classes.Length].ToString("F2") + " -> " + (PreferredClass(head, body, legs)?.Name ?? "none");
+			}
+			catch (Exception e) { return "debug failed: " + e.Message; }
+		}
+
 		private static void EnsureScratch()
 		{
 			if (_scratch != null) return;
@@ -304,6 +319,12 @@ namespace Levy.Common.Weapons
 				var dmg = includeGeneric ? p.GetTotalDamage(Classes[i]) : p.GetDamage(Classes[i]);
 				float crit = includeGeneric ? p.GetTotalCritChance(Classes[i]) : p.GetCritChance(Classes[i]);
 				r[i] = (dmg.Additive - 1f) + (dmg.Multiplicative - 1f) + crit * CritWeight;
+				// A rogue-style class (Calamity's Rogue) is a child of tModLoader's Throwing class, and its armor boosts THROWING ("player.GetDamage<ThrowingDamageClass>() += ..."): read that parent's bonus
+				// too. (The generic-inclusive mode already folds it in through GetTotalDamage's class inheritance.)
+				if (!includeGeneric && i >= VanillaClassCount && Classes[i] != DamageClass.Throwing && Classes[i].CountsAsClass(DamageClass.Throwing)) {
+					var td = p.GetDamage(DamageClass.Throwing);
+					r[i] += (td.Additive - 1f) + (td.Multiplicative - 1f) + p.GetCritChance(DamageClass.Throwing) * CritWeight;
+				}
 				// Summoner armor mostly buys minion slots: every slot above the bare one counts like extra summon damage.
 				if (Classes[i] == DamageClass.Summon) r[i] += Math.Max(0, p.maxMinions - 1) * LevyConstants.MinionDoctrineWeight;
 				if (baseline != null) r[i] -= baseline[i];

@@ -149,6 +149,16 @@ namespace Levy.Content.NPCs
 			}
 		}
 
+		/// <summary>True when the soldier's attack target is close enough that a working modded flock would have hit it by now (see <see cref="LevyConstants.ModdedMinionIdleRangePx"/>).</summary>
+		private bool IdleTargetInReach()
+		{
+			int t = SoldierMinions.AttackTarget(this);
+			return t >= 0 && Vector2.DistanceSquared(Main.npc[t].Center, NPC.Center) <= Sq(LevyConstants.ModdedMinionIdleRangePx);
+		}
+
+		/// <summary>A new kit (rearm, promotion, hand-issued weapon) starts the flock's liveness clock afresh.</summary>
+		internal void ResetMinionLiveness() { _minionIdleTicks = 0; _minionHitsSeen = MinionHits; _lastTi = -1; }
+
 		/// <summary>
 		/// The real-minion flock (already collected into <c>_minionScratch</c>): retunes every minion's damage, dismisses any overflow (by slot total, so a half-slot pair counts right),
 		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
@@ -166,7 +176,7 @@ namespace Levy.Content.NPCs
 				int ti = TargetIndex;
 				if (ti >= 0 && ti < Main.maxNPCs) { NPC tn = Main.npc[ti]; if (ti == _lastTi && tn.life < _lastTiLife) MinionHits++; _lastTi = ti; _lastTiLife = tn.life; } else _lastTi = -1;
 				if (MinionHits != _minionHitsSeen) { _minionHitsSeen = MinionHits; _minionIdleTicks = 0; }
-				else if (SoldierMinions.AttackTarget(this) >= 0)
+				else if (IdleTargetInReach())
 				{
 					_minionIdleTicks += LevyConstants.MinionMaintainIntervalTicks;
 					if (_minionIdleTicks >= LevyConstants.ModdedMinionIdleTicks) { _minionIdleTicks = 0; SoldierMinions.GiveUp(this, weapon); return; }

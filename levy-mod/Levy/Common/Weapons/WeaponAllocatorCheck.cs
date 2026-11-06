@@ -217,6 +217,32 @@ namespace Levy.Common.Weapons
 
 		// ------------------------------------------------------------------ rogue / bard / healer
 
+		/// <summary>Calamity's rogue: its armor reads as the rogue class (it boosts the Throwing parent), a rogue-armored levy is dealt the rogue weapon, and a class-less levy is not while anything else is left.</summary>
+		private static void CheckRogue(Action<bool, string> check)
+		{
+			if (!ModLoader.TryGetMod("CalamityMod", out var cal)) return;
+			if (!cal.TryFind<ModItem>("WulfrumKnife", out var knifeMi) || !cal.TryFind<ModItem>("DesertProwlerHat", out var hat) || !cal.TryFind<ModItem>("DesertProwlerShirt", out var shirt) || !cal.TryFind<ModItem>("DesertProwlerPants", out var pants)) return;
+			var rogue = ExtraDamageClasses.All.FirstOrDefault(c => ExtraDamageClasses.IsRogue(c));
+			if (rogue == null) return;
+			check(ArmorDoctrine.PreferredClass(Make(hat.Type), Make(shirt.Type), Make(pants.Type)) == rogue, "Desert Prowler armor reads as rogue armor");
+			var knife = Make(knifeMi.Type); var sword = Make(ItemID.IronBroadsword);
+			{
+				var r = Lv(1, rogue); var levies = new List<AllocLevy> { r };
+				WeaponAllocator.Plan(levies, Cands(levies, sword, knife));
+				check(r.Target?.It == knife, "a rogue-armored levy is dealt the rogue weapon over a sword");
+			}
+			{
+				var c = Lv(1, null); var levies = new List<AllocLevy> { c };
+				WeaponAllocator.Plan(levies, Cands(levies, knife, sword));
+				check(c.Target?.It == sword, "a class-less levy is dealt the sword, not the rogue weapon, while a sword is left");
+			}
+			{
+				var c = Lv(1, null); var levies = new List<AllocLevy> { c };
+				WeaponAllocator.Plan(levies, Cands(levies, knife));
+				check(c.Target?.It == knife, "a class-less levy with only a rogue weapon in stock is not left bare");
+			}
+		}
+
 		private static void CheckExtraClasses(Action<bool, string> check)
 		{
 			ExtraDamageClasses.Reset();
@@ -235,6 +261,7 @@ namespace Levy.Common.Weapons
 					if (sample == null || WeaponRank.Of(it) < WeaponRank.Of(sample)) sample = it; // the weakest, so Mythril Sword is a clear upgrade
 				}
 			}
+			CheckRogue(check);
 			if (sample == null) return;
 			var te = Armory(Make(ItemID.MythrilSword));
 			var s = new SoldierRecord { Id = 100 };

@@ -45,6 +45,8 @@ namespace Levy.Common
 		public const int ModdedMinionMaxChildSpawnsPerPass = 100, ModdedMinionMaxChildrenAlive = 300;
 		/// <summary>Ticks a soldier may fight with a modded flock out and no hit landed before its staff uses the stand-in.</summary>
 		public const int ModdedMinionIdleTicks = 900;
+		/// <summary>The "no hit in 15 s" test only runs while the target is this close (px) to the soldier: a minion with a short aggro range (the Wulfrum droid's 450 px) is not broken when the enemy is out of its reach.</summary>
+		public const float ModdedMinionIdleRangePx = 320f;
 		/// <summary>Consecutive short-lived modded casts after which the staff uses the stand-in minion.</summary>
 		public const int ModdedMinionMaxShortLives = 3;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>

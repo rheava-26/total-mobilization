@@ -134,7 +134,7 @@ namespace Levy.Common.Weapons
 				Serve(levies.FindAll(l => l.Spread && l.Target == null), cands, (l, c) => IsSpreadClass(c.Cls) || c.Thrown); // a spread levy falls back to the martial classes before summon / rogue
 				Serve(levies.FindAll(l => l.Cls != null && l.Target == null), cands, (l, c) => true);
 				var unclassed = levies.FindAll(l => l.Cls == null);
-				Serve(unclassed, cands, (l, c) => l.Flex == null || l.Flex.Count == 0 || (c.Cls != null && l.Flex.Contains(c.Cls)));
+				Serve(unclassed, cands, (l, c) => !ExtraDamageClasses.IsRogue(c.Cls) && (l.Flex == null || l.Flex.Count == 0 || (c.Cls != null && l.Flex.Contains(c.Cls)))); // a rogue weapon is for rogue armor; a class-less levy gets it only when nothing else is left (the passes below)
 				Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => c.Cls == null);
 				Serve(unclassed.FindAll(l => l.Target == null), cands, (l, c) => true);
 				// c) a class maximum gives way before a levy is left bare-handed: whoever still has nothing takes what is left, whatever its class.

@@ -84,6 +84,8 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Types that threw while being driven this session; their staves fall back to the stand-in.</summary>
 		private static readonly HashSet<int> BadTypes = new();
+		/// <summary>True when this staff shot was marked bad this session (its staff uses the stand-in). Test / log use.</summary>
+		internal static bool IsBadStaff(int shoot) => BadTypes.Contains(shoot);
 		private static readonly List<Projectile> Parked = new();
 		private static readonly List<Projectile> ParkedDragons = new();
 
@@ -235,7 +237,8 @@ namespace Levy.Common.Weapons
 		internal static void NoteModdedDeath(Projectile p, int age, int hits)
 		{
 			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
-			int root = staff != null && staff.shoot > 0 ? staff.shoot : p.type;
+			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
+			int root = staff.shoot;
 			if (age >= LevyConstants.ModdedMinionShortLifeTicks || hits > 0) { ShortLives[root] = 0; return; }
 			int n = ShortLives.GetValueOrDefault(root) + 1;
 			ShortLives[root] = n;

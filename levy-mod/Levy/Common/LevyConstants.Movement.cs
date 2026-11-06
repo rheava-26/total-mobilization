@@ -315,6 +315,10 @@ namespace Levy.Common
 			public const int StandingSpotRadiusTiles = 12;
 			public const int ScreenEdgeExtraPx = 100;
 			public const int SpotColumnClearTiles = 3;
+			/// <summary>A catch-up teleport that finds no standing spot in the ordinary radius widens to this many columns either side and this many rows down / up (ground under a commander on a ceiling, over a chasm, in a sky house).</summary>
+			public const int SafeGroundColumns = 30, SafeGroundRowsDown = 110, SafeGroundRowsUp = 40;
+			/// <summary>After any teleport a body takes no fall damage and starts no fall count for this long (ticks) or until it lands.</summary>
+			public const int TeleportFallImmunityTicks = 240;
 		}
 	}
 }

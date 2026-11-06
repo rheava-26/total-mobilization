@@ -2178,8 +2178,10 @@ namespace Levy.Content.NPCs
 				slotTiles = Math.Min(LevyConstants.CloseUpFollowStartTiles + (slotIdx / 2) * LevyConstants.CloseUpFollowStepTiles, LevyConstants.CloseUpFollowMaxTiles);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
-			Vector2 slot = cmd.Bottom + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
-			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmd.Bottom, slot); // underground only: surface slots are untouched
+			Vector2 cmdBase = cmd.Bottom;
+			if (cmd.gravDir < 0f && FollowerTravel.FindGroundBelow(cmd.Center, out Vector2 under)) cmdBase = under; // a commander walking on a ceiling (Gravitation Potion): wait on the ground beneath them, never path up to the ceiling
+			Vector2 slot = cmdBase + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
+			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmdBase, slot); // underground only: surface slots are untouched
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
 			// Close up also tightens how close to the slot a soldier must stand before it stops: the normal 4 / 6 tile slack is what lets a squad sprawl.
 			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : LevyConstants.FollowDistance / 3f;
@@ -2241,8 +2243,8 @@ namespace Levy.Content.NPCs
 			Vector2 behind = cmd.Center + new Vector2(-facing * (hx - LevyConstants.TeleportOffscreenMarginPx + LevyConstants.TeleportBehindExtraPx), 0f);
 			Vector2 spot;
 			if (!FollowerTravel.FindStandingSpot(behind, LevyConstants.TeleportSpotSearchTiles, out spot)
-				&& !FollowerTravel.FindStandingSpot(cmd.Center, LevyConstants.TeleportSpotSearchTiles, out spot))
-				spot = cmd.Bottom;
+				&& !FollowerTravel.FindSafeGround(cmd.Center, LevyConstants.TeleportSpotSearchTiles, out spot))
+				return; // no ground anywhere near the commander (they are over the void): stay put rather than land in the air
 			NPC.Bottom = spot;
 			NPC.velocity = Vector2.Zero;
 			NPC.netUpdate = true;

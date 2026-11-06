@@ -205,6 +205,7 @@ namespace Levy.Content.NPCs
 			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
+			_fallImmuneTicks = TeleportFallImmunityTicks; _fallStartRow = int.MinValue; // a teleport never starts a fall that counts
 			NPC.netUpdate = true;
 		}
 

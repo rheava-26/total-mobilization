@@ -268,6 +268,17 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - command-observe: GoPro, static cameras, arena zoom, radio map orders, mind control. Packets ObserveRequest/MindControlSet/MindInput/MapOrder and ObserveList/ObservePos appended.
 - CommandRadio.png kept at art4's version until `art5` lands the walkie-talkie redraw.
 - Drone check (I looked; this corrects my earlier note): there is NO mast. The side view matches Eve's concept (slender fuselage, thin boom, ring fan). What's missing is the two side rotors, which should read edge-on as a flat disc at body height (`-=--`). `art5` adds them.
+**ART CORRECTIONS (Eve, 2026-11-06 04:40):**
+- Guide books: revert to the pre-art4 versions ("items looked fine earlier"). Any future tomes copy vanilla spell tomes almost 1:1.
+- Guide to Autonomy: the art2 C slime original.
+- Armory + Barracks (art4): Eve likes them. KEEP.
+- OOA staves: still weird. Redo, modelled ~1:1 on vanilla Ballista Rod/Cane/Staff, with the house head.
+- Static camera: Eve prefers the OLD camera, art2 B.
+- Command Radio: the art2 original walkie-talkie, 2× nearest (48×72). BIG items. Never smaller.
+- Patrol Banner must sway in the wind like vanilla banners.
+- Drone: ducted-fan nacelles on the sides at body height, airliner-engine style. Turret: a mount that holds the weapon.
+**RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
+
 **RUNNING (2026-11-06 04:30):**
 - `art5`: Command Radio = art2 walkie-talkie B redrawn on the 2×2 grid with curves and real shading, at command-radio size; art4 GoPro/MovieCamera sprites wired over the observe placeholders (tile frame format checked); drone side rotors.
 - `potions`: STOPPED by Eve mid-work; WIP saved (22afa4e). Its Autonomy brief was wrong (radio-less map orders, generic stat buff). See the corrected checklist line.
@@ -502,7 +513,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 20 min
   - white builder-shape bottle, thick square box
   - recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water
-- [ ] Guide to Autonomy (Slime Rain drop, 1/50): when you drink a Spectator Potion, your levies get a buff. It does NOT replace the radio: map orders still need the Command Radio or the Barracks. Eve (2026-11-06) rejected a generic stat buff (+damage/+speed); WHAT the buff does is still open. Ask Eve. Builder WIP saved on branch `potions` (22afa4e, unverified, builder stopped by Eve mid-work).
+- [ ] Guide to Autonomy (Slime Rain drop, 1/50, art2 C slime sprite): a PREREQUISITE unlock, like Demon Heart needing WoF. (a) Map orders (radio shift-click AND Barracks "send to map point") need Autonomy learned; the radio/Barracks are still the tools. (b) With Autonomy, drinking Spectator gives levies "Autonomous": no fear/routing, fall back to heal when low, go for the biggest threat. No flat stat buff. (Eve approved this pitch 2026-11-06.)
 - [ ] Seeker Potion:
   - inverted equilateral triangle bottle, deep purple, centre hole
   - Moonglow + Blinkroot + Spelunker + Water; 12 min

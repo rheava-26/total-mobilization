@@ -323,12 +323,14 @@ namespace Levy.Common.Testing
 			p.statLifeMax = p.statLifeMax2 = 500; p.statLife = 500; p.statManaMax = p.statManaMax2 = 200; p.statMana = 200;
 			p.position = new Vector2(_crCmdPos.X - p.width / 2f, _crCmdPos.Y - p.height);
 			p.velocity = Vector2.Zero; p.immune = true; p.immuneTime = 30;
+			if (_crS != null && _crS.Run.Boss == "brain" || _crBrainRun) p.ZoneCrimson = true; // Brain of Cthulhu flees a target outside the Crimson; the dummy copies the commander's zones (BiomeMirror)
 			int bt = ModContent.BuffType<SpectatorBuff>();
 			if (!p.HasBuff(bt)) { p.AddBuff(bt, 600000); if (p.TryGetModPlayer(out SpectatorPlayer sp)) sp.Anchor = p.Center; }
 		}
 
 		// -------------------------------------------------------------------------------------------------- step
 		private CrState _crS;
+		private bool _crBrainRun;
 		private int _crTickInRun;
 		private void StepCalRev()
 		{
@@ -433,7 +435,7 @@ namespace Levy.Common.Testing
 			if (!_crStarted)
 			{
 				ClearAll(); CrPurgeNpcs();
-				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr;
+				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr; _crBrainRun = run.Boss == "brain";
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
 				NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
 				_crCmdPos = new Vector2((_crCx - 6) * 16f, CrF * 16f);
@@ -463,6 +465,7 @@ namespace Levy.Common.Testing
 			CrPinStrays(st.BossIdx);
 			NPC e = Main.npc[st.BossIdx];
 			bool bossAlive = e.active && e.type == st.BossType;
+			if (Environment.GetEnvironmentVariable("LEVY_CR_DEBUG") == "1" && st.Tick % 30 == 0) Mod.Logger.Info($"HARNESS-CR-DBG t={st.Tick} boss active={e.active} type={e.type} life={e.life}/{e.lifeMax} pos={e.Center / 16f} dontTakeDamage={e.dontTakeDamage} ai0={e.ai[0]} target={e.target}");
 			if (bossAlive) { st.BossLife = e.life; e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;

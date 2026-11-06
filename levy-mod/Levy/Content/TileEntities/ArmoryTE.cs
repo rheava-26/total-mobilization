@@ -344,7 +344,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>Tier first, defense second: rarity tier and value outweigh a few points of flat defense, so progression gear (Crimtane) beats flat-defense metal (Platinum).</summary>
-		private static float ArmorScore(Item it) =>
+		internal static float ArmorScore(Item it) =>
 			WeaponClassifier.RarityTier(it.rare) * LevyConstants.ArmorRarityWeight
 			+ it.defense * LevyConstants.ArmorDefenseWeight
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight;

@@ -323,6 +323,11 @@ Mods: {
 					Tooltip: Levies carry the best grappling hook in the armory. They swing across gaps and climb cliffs with it.
 				}
 
+				SoldiersTakeFallDamage: {
+					Label: Levies take fall damage
+					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.
+				}
+
 				ExtraTargetingAiStyles: {
 					Label: Extra targeting AI styles
 					Tooltip: Additional NPC aiStyle numbers that may target soldiers.

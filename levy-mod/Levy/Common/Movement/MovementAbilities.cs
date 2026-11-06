@@ -16,7 +16,8 @@ namespace Levy.Common.Movement
 		public int JumpTiles = 3;          // vertical reach in tiles
 		public int ExtraJumps;             // enabled tModLoader extra jumps (bottles, jars, mounts)
 		public bool HasWings; public int WingTimeMax; public bool CanGlide;
-		public bool NoFallDamage = true;
+		/// <summary>Player rules: any equipped wings, or a fall-damage immunity (Lucky Horseshoe family), and the extra tiles of fall a soldier gets free (Frog Leg, balloons).</summary>
+		public bool NoFallDamage; public int ExtraFall;
 		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
 		public bool HasDash;
 		/// <summary>A usable grappling hook is in the dummy's hook slot (miscEquips[4]); its reach and reel speed in px, and how many hooks it holds.</summary>
@@ -77,7 +78,7 @@ namespace Levy.Common.Movement
 			a.HasWings = dummy.wingsLogic > 0 && dummy.wingTimeMax > 0;
 			a.WingTimeMax = a.HasWings ? dummy.wingTimeMax : 0;
 			a.CanGlide = a.HasWings;
-			a.NoFallDamage = true;
+			a.NoFallDamage = dummy.noFallDmg || dummy.equippedWings != null; a.ExtraFall = dummy.extraFall;
 			a.HasDash = dummy.dashType > 0;
 			var hook = HookInfo.Of(dummy.miscEquips != null && dummy.miscEquips.Length > 4 ? dummy.miscEquips[4] : null);
 			if (hook.Usable) { a.HasHook = true; a.HookReachPx = hook.ReachPx; a.HookPullPx = hook.PullPx; a.HookCount = hook.Count; }

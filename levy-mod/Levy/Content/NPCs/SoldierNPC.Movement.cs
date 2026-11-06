@@ -90,6 +90,7 @@ namespace Levy.Content.NPCs
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
+			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
 			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
 			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
 			if (_hkAltSeen != 0 && _hkPhase == HookPhase.Idle && Main.GameUpdateCount - _hkAltSeen <= 12u) { _hkGoalNow = new Vector2(_hkAltX, _hkAltY); HookTrigger(HookReason.Altitude); }
@@ -199,7 +200,7 @@ namespace Levy.Content.NPCs
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
-			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dashTicks = 0;
+			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
 			NPC.netUpdate = true;
@@ -318,7 +319,7 @@ namespace Levy.Content.NPCs
 		/// sidestep is blocked), then a cooldown and straight back to the fight. Rate-limited. Returns true while a sidestep is in progress
 		/// (the walk logic is skipped for those few ticks).
 		/// </summary>
-		private bool TickDodge(bool grounded, bool air)
+		private bool TickDodgeLegacy(bool grounded, bool air)
 		{
 			NPC npc = NPC;
 			if (_dodgeTicks > 0)

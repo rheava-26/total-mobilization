@@ -16,7 +16,7 @@ using H = Levy.Common.LevyConstants.Hooks;
 namespace Levy.Content.NPCs
 {
 	/// <summary>Why a soldier is thinking about a hook. The reason sets how long the blockage must hold first.</summary>
-	public enum HookReason : byte { None, GoalAbove, Wall, Gap, Flee, Altitude }
+	public enum HookReason : byte { None, GoalAbove, Wall, Gap, Flee, Altitude, Rescue, Follow }
 
 	/// <summary>
 	/// GRAPPLING HOOKS. A levy carries a real hook item (SoldierGear.Hook, the dummy's miscEquips[4]) and casts it with the vanilla <c>Player.QuickGrapple</c> inside an owner frame
@@ -156,7 +156,7 @@ namespace Levy.Content.NPCs
 		private static int TriggerTicksFor(HookReason r) => r switch
 		{
 			HookReason.GoalAbove => H.TriggerGoalAboveTicks, HookReason.Wall => H.TriggerWallTicks, HookReason.Gap => H.TriggerGapTicks,
-			HookReason.Flee => H.TriggerFleeTicks, HookReason.Altitude => H.TriggerAltitudeTicks, _ => int.MaxValue,
+			HookReason.Flee => H.TriggerFleeTicks, HookReason.Follow => H.TriggerFollowTicks, HookReason.Altitude => H.TriggerAltitudeTicks, _ => int.MaxValue,
 		};
 
 		/// <summary>The top of Movement_Update: a trigger that has held long enough, with no walking path, becomes a plan and a cast.</summary>
@@ -165,7 +165,7 @@ namespace Levy.Content.NPCs
 			uint now = Main.GameUpdateCount;
 			if (now - _hkTrigLast > (uint)H.TriggerGraceTicks) { _hkTrigTicks = 0; return; }
 			if (_hkTrigTicks < _hkTrigNeed || now < _hkNextAllowed) return;
-			if (_hkTrigReason != HookReason.Flee && _hkTrigReason != HookReason.Altitude && HasPath) return; // the walking AI has a route: it wins
+			if (_hkTrigReason != HookReason.Flee && _hkTrigReason != HookReason.Altitude && _hkTrigReason != HookReason.Follow && HasPath) return; // the walking AI has a route: it wins
 			if (NPC.velocity.Y != 0f || NPC.wet || _flying) return;                                          // cast from the ground
 			if (!SoldierHooks.TakePlanBudget()) return;
 			try { HookStart(_hkTrigReason, _hkTrigGoal); }
@@ -176,6 +176,18 @@ namespace Levy.Content.NPCs
 				HookBackoff();
 			}
 			_hkTrigTicks = 0;
+		}
+
+		/// <summary>The commander is swinging on a hook and has left the soldier behind: a following soldier with a hook of its own goes after them the same way.</summary>
+		private void HookFollowCommander()
+		{
+			if (State != SoldierState.Follow || !HookUsable || Abilities.HasWings || _hkPhase != HookPhase.Idle) return;
+			Player c = Commander;
+			if (c == null || c.dead || c.grapCount <= 0) return;
+			Vector2 cb = c.Bottom;
+			float dx = Math.Abs(cb.X - NPC.Center.X), dyUp = NPC.Bottom.Y - cb.Y;
+			if (dx < H.FollowMinTiles * 16f && dyUp < H.FollowMinTiles * 16f * 0.5f) return;
+			_hkGoalNow = cb; HookTrigger(HookReason.Follow);
 		}
 
 		/// <summary>The brain's altitude intent for a target far overhead: a soldier with no flight kit climbs by hook (the aerial pursuit needs wings or boots).</summary>
@@ -213,7 +225,7 @@ namespace Levy.Content.NPCs
 			SoldierHooks.PlanTs += Stopwatch.GetTimestamp() - t0; SoldierHooks.Plans++;
 			if (SoldierHooks.Debug && plan == null || (SoldierHooks.Debug && Environment.GetEnvironmentVariable("LEVY_HOOKDBG2") == "1")) foreach (var l in HookPlanner.DiagLog.Take(60)) Levy.Instance?.Logger.Info("HOOKDBG2 " + l);
 			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
-			if (plan == null || !plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)) { HookBackoff(); return; }
+			if (plan == null || !(reason == HookReason.Rescue ? plan.Landed : plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { if (reason != HookReason.Rescue) HookBackoff(); return; }
 			SoldierHooks.PlansFound++;
 			_hkPlan = plan; _hkReason = reason; _hkTrigGoalUsed = goalBottom;
 			_hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue; _hkNetTick = 0;
@@ -333,7 +345,7 @@ namespace Levy.Content.NPCs
 			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity());
 			HookPlan np = HookPlanner.Replan(TileHookWorld.Instance, NPC.Bottom, hp, real, goalBottom, _hkPlan.Kind, nowDist);
 			HookDbg($"replan from real anchors ({real.Count}): " + (np == null ? "none" : $"relDist={np.ReleaseDist:0} goalDist={np.GoalDist / 16f:0.0}T gain={np.Gain / 16f:0.0}T"));
-			if (np == null || !np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
+			if (np == null || !(_hkReason == HookReason.Rescue ? np.Landed : np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
 			_hkPlan = np;
 			return true;
 		}

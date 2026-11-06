@@ -46,6 +46,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool SoldierEffectsAtSoldier;
 		[DefaultValue(true)] public bool RealGearUpkeep;
 		[DefaultValue(true)] public bool SoldiersUseHooks;
+		[DefaultValue(true)] public bool SoldiersTakeFallDamage;
 		public List<int> ExtraTargetingAiStyles = new();
 
 		[Header("Targeting")]

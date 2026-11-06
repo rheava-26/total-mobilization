@@ -54,6 +54,8 @@ namespace Levy.Content.NPCs
 			_projectileStriking = false;
 			_hitPaladin = null; // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return;
+			Fall_Update();
+			if (!IsAlive) return;
 			if (ImmuneTime == 0) ContactDamage();
 			if (!IsAlive) return;
 			Regen();

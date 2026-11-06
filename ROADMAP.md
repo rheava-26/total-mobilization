@@ -557,7 +557,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - shoot helpers reading Main.player[owner] state;
   - Levy's contact-only stand-in flyer running instead of the real AI.
 - Eve: "they ram into the enemy, it's the same as the rest of the unrecognized minions." Lead = Levy's contact-only stand-in running instead of the real modded AI (to be confirmed). Fix target: drive real modded minions through the dummy path (minion buff on the dummy, ModPlayer state, myPlayer fake); stand-in only per failing type.
-- Branch `modsummons` is instrumenting the Stormlion Staff first.
+- **CONFIRMED (modsummons 0c64d45):** SoldierMinions.CanDrive/IsDriven only accepted vanilla projectile ids, so EVERY modded minion ran the ramming stand-in.
+- **Fix:** drive modded minions for real. The staff buff runs on the dummy each tick via ModBuff.Update, with learned-buff fallback. Dummy oldPosition is synced. Minion children are driven too.
+- **Result:** 70/82 Calamity staves run real, mostly firing their own projectiles (Stormjaw = StormjawBaby + ~110 sparks). 12 fall back to the stand-in (companion-part minions, 0-hit ones). Thorium 31/31 route OK (not harness-run).
+- **HELD for a flood guard:** Void Concentration spawned ~19k hit-less children in 15 s. The cap must sit above the peaks of Universe Splitter / Metastasis / Ares.
+- The staff was the Stormjaw Staff (Eve's "Stormlion").
 
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).

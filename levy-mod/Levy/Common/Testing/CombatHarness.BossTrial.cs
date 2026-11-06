@@ -510,7 +510,7 @@ namespace Levy.Common.Testing
 		private BtLevySpec BtSpecFromLoad(char cls, BtRun run)
 		{
 			var ld = BtLoadFor(cls, run.Tier); bool best = run.Stats == "best";
-			return new BtLevySpec { Cls = cls, Weapon = ld.Weapon, Ammo = ld.Ammo, Armor = ld.Armor, Acc = ld.Acc, LifeCrystals = best ? 15 : 2, ManaCrystals = best ? 9 : 0, ManAtArms = run.Grade == "champ" };
+			return new BtLevySpec { Cls = cls, Weapon = ld.Weapon, Ammo = ld.Ammo, Armor = ld.Armor, Acc = ld.Acc, LifeCrystals = best ? 15 : 2, ManaCrystals = best ? 9 : (cls == 'M' ? 4 : 0), ManAtArms = run.Grade == "champ" };
 		}
 
 		private static void BtAutonomy(BtState s)
@@ -740,7 +740,7 @@ namespace Levy.Common.Testing
 
 		private void BtRefSetupPlayer(BtRun run, char cls)
 		{
-			var load = BtLoadFor(cls, run.Tier);
+			var load = BtLoadFor(cls, run.Tier); _btRefStandWeapon = load.Weapon;
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = CommanderName; p.team = 0;
 			for (int i = 0; i < p.inventory.Length; i++) p.inventory[i] = new Item();
@@ -756,12 +756,15 @@ namespace Levy.Common.Testing
 			for (int a = 0; a < load.Acc.Length && a < accSlots && 3 + a < 8; a++) p.armor[3 + a] = BtMake(load.Acc[a]);
 			for (int b = 0; b < p.buffType.Length; b++) { p.buffType[b] = 0; p.buffTime[b] = 0; }
 			p.noItems = false; p.itemAnimation = 0; p.itemTime = 0; p.controlUseItem = false; p.channel = false;
-			p.position = new Vector2((_cx - 14) * 16f - p.width / 2f, BtF * 16f - p.height); p.velocity = Vector2.Zero;
+			p.position = new Vector2((_cx - BtRefStand(cls)) * 16f - p.width / 2f, BtF * 16f - p.height); p.velocity = Vector2.Zero;
 			_btRefPlayer = true; SetKeepAlive(true);
 			_btRefPlayerNote = $"player {p.statLifeMax2}hp/{p.statManaMax2}mana";
 		}
 
 		private static System.Reflection.MethodInfo _btItemCheck; private static bool _btItemCheckInt;
+		/// <summary>Tiles west of the dummy the player stands at: a contact blade has to be in reach, everything else shoots from range.</summary>
+		private static int BtRefStand(char cls) => cls == 'E' && !WeaponClassifier.GetProfile(BtMake(_btRefStandWeapon ?? "Copper Shortsword")).FiresProjectileMelee ? 2 : 14;
+		private static string _btRefStandWeapon;
 		private void BtRefPlayerTick(BtRun run, char cls)
 		{
 			Player p = Main.player[0];
@@ -769,7 +772,7 @@ namespace Levy.Common.Testing
 			p.active = true; p.dead = false; p.name = CommanderName;
 			p.statLifeMax = p.statLifeMax2 = best ? 400 : 140; p.statLife = p.statLifeMax2;
 			p.statManaMax = p.statManaMax2 = best ? 200 : 20; p.statMana = p.statManaMax2;  // a player drinks mana potions: mana is never the limit for the player reference
-			p.position = new Vector2((_cx - 14) * 16f - p.width / 2f, BtF * 16f - p.height); p.velocity.X = 0f;
+			p.position = new Vector2((_cx - BtRefStand(cls)) * 16f - p.width / 2f, BtF * 16f - p.height); p.velocity.X = 0f;
 			if (p.velocity.Y < 0) p.velocity.Y = 0f;
 			int savedMy = Main.myPlayer;
 			try

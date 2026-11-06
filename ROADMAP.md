@@ -564,11 +564,34 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - **SHIPPED in Levy 2.0.2.**
 - The staff was the Stormjaw Staff (Eve's "Stormlion").
 
+## 🧰 Eve's medium list (2026-11-06, Calamity run on 2.0.2): 3 builders
+- **`armory-alloc` builder:**
+  1. The armory rejects hooks on shift-click; consumable throwables (Molotov etc.) are unusable.
+  2. Mana-star option → "Fallen Stars per Mana Crystal" (vanilla 5); the nonexistent "levy mana star" item is removed.
+  5. Sidearms rarely used; class-less levies should spread across melee/ranged/magic (not summon/rogue).
+  8. High-mana levies prefer magic.
+- **`field-ai-3` builder:**
+  3. Levies don't use hooks in real play. Candidate: no hook equipped because of (1); proving it.
+  9. Dodging "laughably bad" in real play. The old harness used stand-ins; re-testing vs real vanilla + Calamity bosses.
+  6. Fall damage default OFF; the Gravitation Potion catch-up teleport lands mid-air and kills them → safe-ground teleport + brief fall immunity.
+- **`guide-ui` builder:**
+  4/7. A paged in-game guide book (Thorium-guide style) opened by the starter guide: getting levies, orders, every Armory tab, WHAT LEVIES CAN USE, officers, potions/cameras, OOA, guides, settings. Plus a hint on the Items storage.
+
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
 - A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
+
+## 🚑 SHIPPED HOTFIX Levy 2.0.3 + Mechanization 0.8.1, at scratchpad/ship-2.0.3
+- **CRASH ON LOAD in 2.0.1/2.0.2 (Eve's client log):**
+  - What happened: NullReferenceException in ItemFilterBar.Refresh. UISearchBar.SetContents in the ctor fires OnContentsChanged → Refresh before _typeBtn/_clearBtn exist.
+  - Fix: SetContents moved after the buttons, plus a null guard in Refresh.
+- **LESSON:** headless server boots NEVER construct UI (UISystem skips on dedServ), so UI ctor bugs ship. Every UI change needs a read-through of construction order. A real client can't run here (no vanilla Content assets).
+- **Drone green line:**
+  - What happened: the status LED drawn with TextureAssets.MagicPixel (1×1000) and no source rect → a 2×2000 px line.
+  - Same bug fixed in TurretNPC muzzle flash, TurretNPC line helper and TurretHud dots: source Rectangle(0,0,1,1).
+- **Boots:** Thorium+MS+Levy 2.0.3 0 exceptions; Thorium+MS+Levy+Mech 0.8.1 0 exceptions.
 
 ## 📦 SHIPPED Levy 2.0.2 (Mechanization 0.8.0), at scratchpad/ship-2.0.2
 - Real modded minions (modsummons) + the flood guard; Calamity recipe-check fix (calrecipes).

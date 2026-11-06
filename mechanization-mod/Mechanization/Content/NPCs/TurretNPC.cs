@@ -541,7 +541,7 @@ namespace Mechanization.Content.NPCs
 				if (_recoil > T.RecoilPx * 0.6f) // muzzle flash at the weapon's muzzle end, only for the first frames after a shot
 				{
 					Vector2 tip = basePos + dir * reach;
-					spriteBatch.Draw(px, tip, null, new Color(255, 220, 140, 0), _aim, new Vector2(0.5f, 0.5f), new Vector2(9f, 5f), SpriteEffects.None, 0f);
+					spriteBatch.Draw(px, tip, new Rectangle(0, 0, 1, 1), new Color(255, 220, 140, 0), _aim, new Vector2(0.5f, 0.5f), new Vector2(9f, 5f), SpriteEffects.None, 0f);
 				}
 				return false;
 			}
@@ -559,7 +559,7 @@ namespace Mechanization.Content.NPCs
 		private static Color Lit(Color baseColor, Color light) => new Color(baseColor.R * light.R / 255, baseColor.G * light.G / 255, baseColor.B * light.B / 255, (int)baseColor.A);
 
 		private static void Rect2(SpriteBatch sb, Texture2D px, Vector2 center, float len, float thick, float rot, Color col) =>
-			sb.Draw(px, center, null, col, rot, new Vector2(0.5f, 0.5f), new Vector2(len, thick), SpriteEffects.None, 0f);
+			sb.Draw(px, center, new Rectangle(0, 0, 1, 1), col, rot, new Vector2(0.5f, 0.5f), new Vector2(len, thick), SpriteEffects.None, 0f);
 
 		/// <summary>
 		/// The mounted weapon's item sprite, sitting in the cradle with its centre on the pivot and turned to the aim (kept upright when aiming left). A staff's sprite points up and to the right, so it is turned a further

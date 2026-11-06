@@ -199,7 +199,7 @@ namespace Levy.Common.Weapons
 				int b = Bucket(l.Own); if (b < 0 || b == 3) continue;
 				given[b]++; held[b]++; // he keeps his weapon and stays class-less (no claim of his own); the bare ones fill the other buckets
 			}
-			var bare = free.FindAll(l => l.Cls == null);
+			var bare = free.FindAll(l => l.Cls == null && l.Own == null); // a holder was counted above and keeps his class; re-dealing him as well flipped him between buckets on every plan
 			bare.Sort((a, c) => { int k = c.Mana.CompareTo(a.Mana); return k != 0 ? k : a.Id.CompareTo(c.Id); });
 			foreach (var l in bare) {
 				int pick = -1; float best = 0f;

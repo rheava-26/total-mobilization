@@ -22,7 +22,7 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public class GearProgressionAudit : ModSystem
 	{
-		private sealed class Step { public string Name; public string[][] Sets = Array.Empty<string[]>(); public string[] Weapons = Array.Empty<string>(); public string[] Accs = Array.Empty<string>(); }
+		private sealed class Step { public string Name; public string[] ExtraHeads = Array.Empty<string>(); public string[][] Sets = Array.Empty<string[]>(); public string[] Weapons = Array.Empty<string>(); public string[] Accs = Array.Empty<string>(); }
 
 		private static string[] S(params string[] p) => p;
 
@@ -58,22 +58,26 @@ namespace Levy.Common.Testing
 				Accs = S("LavaWaders","MagicQuiver") },
 			new Step { Name = "Early Hardmode: Cobalt and Palladium",
 				Sets = new[] { S("CobaltHelmet","CobaltBreastplate","CobaltLeggings"), S("PalladiumHelmet","PalladiumBreastplate","PalladiumLeggings") },
+				ExtraHeads = S("CobaltHat","CobaltMask","PalladiumHeadpiece","PalladiumMask"),
 				Weapons = S("CobaltSword","PalladiumSword","CobaltRepeater","PalladiumRepeater","CrystalStorm","SpiderStaff"),
 				Accs = S("PutridScent") },
 			new Step { Name = "Mythril and Orichalcum",
 				Sets = new[] { S("MythrilHelmet","MythrilChainmail","MythrilGreaves"), S("OrichalcumHelmet","OrichalcumBreastplate","OrichalcumLeggings") },
+				ExtraHeads = S("MythrilHood","MythrilHat","OrichalcumHeadgear","OrichalcumMask"),
 				Weapons = S("MythrilSword","OrichalcumSword","MythrilRepeater","OrichalcumRepeater","LaserRifle","PygmyStaff"),
 				Accs = S("PaladinsShield","CharmofMyths") },
 			new Step { Name = "Adamantite and Titanium",
 				Sets = new[] { S("AdamantiteHelmet","AdamantiteBreastplate","AdamantiteLeggings"), S("TitaniumHelmet","TitaniumBreastplate","TitaniumLeggings") },
+				ExtraHeads = S("AdamantiteHeadgear","AdamantiteMask","TitaniumHeadgear","TitaniumMask"),
 				Weapons = S("AdamantiteSword","TitaniumSword","AdamantiteRepeater","TitaniumRepeater","RainbowRod","DeadlySphereStaff"),
 				Accs = S("AnkhShield","FrozenTurtleShell") },
 			new Step { Name = "Hallowed armor",
-				Sets = new[] { S("HallowedHelmet","HallowedPlateMail","HallowedGreaves"), S("HallowedMask","HallowedPlateMail","HallowedGreaves") },
+				Sets = new[] { S("HallowedHelmet","HallowedPlateMail","HallowedGreaves") }, ExtraHeads = S("HallowedMask","HallowedHeadgear"),
 				Weapons = S("Excalibur","HallowedRepeater","ShadowbeamStaff"),
 				Accs = S("AngelWings") },
 			new Step { Name = "Post-Plantera: Chlorophyte, Spectre, Shroomite",
 				Sets = new[] { S("ChlorophyteHeadgear","ChlorophytePlateMail","ChlorophyteGreaves"), S("SpectreHood","SpectreRobe","SpectrePants"), S("ShroomiteHeadgear","ShroomiteBreastplate","ShroomiteLeggings") },
+				ExtraHeads = S("ChlorophyteHelmet","ChlorophyteMask","SpectreMask","ShroomiteHelmet","ShroomiteMask"),
 				Weapons = S("ChlorophyteSaber","ChlorophyteShotbow","Megashark","SpectreStaff","TempestStaff"),
 				Accs = S("CelestialShell","SharkToothNecklace","AnkhCharm") },
 		};
@@ -191,6 +195,7 @@ namespace Levy.Common.Testing
 							foreach (var it in items) te.Deposit(it);
 							added.Add("armor " + set[0].Replace("Helmet", "").Replace("Headgear", "").Replace("Hood", "").Replace("Mask", ""));
 						}
+						foreach (var n in steps[si].ExtraHeads) { var it = MakeT(n, stepNo); if (it == null) continue; te.Deposit(it); added.Add("head " + it.Name); }
 						foreach (var n in steps[si].Weapons) { var it = MakeT(n, stepNo); if (it == null) continue; te.Deposit(it); added.Add("wpn " + it.Name); }
 						foreach (var n in steps[si].Accs) { var it = MakeT(n, stepNo); if (it == null) continue; te.Deposit(it); added.Add("acc " + it.Name); }
 					}
@@ -202,24 +207,25 @@ namespace Levy.Common.Testing
 					int rounds = 0; int armorSwaps = 0, weaponSwaps = 0, accSwaps = 0;
 					if (si >= 0 || true) {
 						for (int round = 1; round <= 14; round++) {
+							if (verbose && Environment.GetEnvironmentVariable("LEVY_GEARAUDIT_TRACE") == "1") { bool on = round >= 8 && round <= 9; WeaponAllocator.Trace = on ? (Action<string>)(t => sb.AppendLine("TRACE s" + stepNo + " r" + round + " " + t)) : null; }
 							var ord = levies.ToList();
 							if (order == "descending ids") ord.Reverse();
 							else if (order != null && order.StartsWith("shuffled")) ord = ord.OrderBy(_ => rng.Next()).ToList();
 							bool any = false;
 							foreach (var l in ord) {
-								var before = Types(l.Gear);
-								bool ch = false;
-								if (!l.Gear.HasWeapon || l.Gear.Accessories.Take(l.AccessorySlots).Any(a => a == null || a.IsAir)) ch |= te.IssueGear(l);
-								ch |= te.UpgradeWeapons(l);
-								if (!ch) continue;
-								any = true;
-								var after = Types(l.Gear);
-								foreach (var kv in after) {
-									if (before[kv.Key] == kv.Value) continue;
-									string grp = kv.Key.StartsWith("acc") ? "acc" : kv.Key == "weapon" ? "weapon" : kv.Key == "sidearm" ? "sidearm" : "armor";
-									if (grp == "armor") armorSwaps++; else if (grp == "weapon") weaponSwaps++; else if (grp == "acc") accSwaps++;
-									swapLog.Add((l.Id, kv.Key, before[kv.Key], kv.Value, round));
-									hist[(l.Id, kv.Key)].Add(kv.Value);
+								var snap = levies.ToDictionary(x => x.Id, x => Types(x.Gear));
+								if (!l.Gear.HasWeapon || l.Gear.Accessories.Take(l.AccessorySlots).Any(a => a == null || a.IsAir)) te.IssueGear(l);
+								te.UpgradeWeapons(l);
+								foreach (var x in levies) {
+									var after = Types(x.Gear);
+									foreach (var kv in after) {
+										if (snap[x.Id][kv.Key] == kv.Value) continue;
+										any = true;
+										string grp = kv.Key.StartsWith("acc") ? "acc" : kv.Key == "weapon" ? "weapon" : kv.Key == "sidearm" ? "sidearm" : "armor";
+										if (grp == "armor") armorSwaps++; else if (grp == "weapon") weaponSwaps++; else if (grp == "acc") accSwaps++;
+										swapLog.Add((x.Id, kv.Key, snap[x.Id][kv.Key], kv.Value, round));
+										hist[(x.Id, kv.Key)].Add(kv.Value);
+									}
 								}
 							}
 							if (!any) break;
@@ -318,7 +324,17 @@ namespace Levy.Common.Testing
 				var parts = new[] { (0, "head", g.Head), (1, "body", g.Body), (2, "legs", g.Legs) };
 				foreach (var (p, nm, worn) in parts) {
 					float w = worn == null || worn.IsAir ? 0f : ArmoryTE.ArmorScoreOf(worn);
-					var best = stor.Where(i => WeaponClassifier.IsArmorPiece(i, p) && !i.vanity).OrderByDescending(ArmoryTE.ArmorScoreOf).FirstOrDefault();
+					var wcls = g.HasWeapon ? WeaponClassifier.ItemDamageClass(g.Weapon) : null;
+					bool Fits(Item i) { // a stored piece is only a miss when a whole set of its stem is on hand and that set does not belong to another class
+						var st = ArmoryTE.StemOf(i);
+						var h = stor.Where(x => ArmoryTE.StemOf(x) == st && WeaponClassifier.IsArmorPiece(x, 0)).OrderByDescending(ArmoryTE.ArmorScoreOf).FirstOrDefault();
+						var b = stor.Where(x => ArmoryTE.StemOf(x) == st && WeaponClassifier.IsArmorPiece(x, 1)).OrderByDescending(ArmoryTE.ArmorScoreOf).FirstOrDefault();
+						var lg = stor.Where(x => ArmoryTE.StemOf(x) == st && WeaponClassifier.IsArmorPiece(x, 2)).OrderByDescending(ArmoryTE.ArmorScoreOf).FirstOrDefault();
+						if (h == null || b == null || lg == null) return false;
+						var sc = ArmorDoctrine.PreferredClass(h, b, lg);
+						return sc == null || wcls == null || sc == wcls || ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs) != wcls;
+					}
+					var best = stor.Where(i => WeaponClassifier.IsArmorPiece(i, p) && !i.vanity && Fits(i)).OrderByDescending(ArmoryTE.ArmorScoreOf).FirstOrDefault();
 					if (best != null && ArmoryTE.ArmorScoreOf(best) >= w * margin + 1f) {
 						bool completeSet = stor.Count(i => ArmoryTE.StemOf(i) == ArmoryTE.StemOf(best) && WeaponClassifier.IsArmorPiece(i, 0)) > 0
 							&& stor.Count(i => ArmoryTE.StemOf(i) == ArmoryTE.StemOf(best) && WeaponClassifier.IsArmorPiece(i, 1)) > 0
@@ -360,6 +376,16 @@ namespace Levy.Common.Testing
 				if (WeaponRank.Of(a.Gear.Weapon) >= WeaponRank.Of(b.Gear.Weapon) * margin)
 					res.Add($"[WEAPON-MISMATCH] levy {a.Id} (armor {ClsName(ac)}) holds {T(a.Gear.Weapon, tierOf)} while levy {b.Id}, whose armor favours {ClsName(bc)}, holds the weaker {T(b.Gear.Weapon, tierOf)}");
 			}
+			// 4b. top ARMOR to a worse-suited class: a set favouring class C is worn by a levy whose weapon is not C while a levy whose weapon is C wears a clearly weaker kit
+			foreach (var a in levies) foreach (var b in levies) {
+				if (a == b || !a.Gear.HasWeapon || !b.Gear.HasWeapon) continue;
+				var ac = ArmorDoctrine.PreferredClass(a.Gear.Head, a.Gear.Body, a.Gear.Legs);
+				var aw = WeaponClassifier.ItemDamageClass(a.Gear.Weapon);
+				var bw = WeaponClassifier.ItemDamageClass(b.Gear.Weapon);
+				if (ac == null || aw == ac || bw != ac) continue;
+				if (KitScore(a.Gear) >= KitScore(b.Gear) * margin)
+					res.Add($"[ARMOR-MISMATCH] levy {a.Id} (weapon {ClsName(aw)}) wears the {ClsName(ac)} set {T(a.Gear.Head, tierOf)} while levy {b.Id}, who fires {ClsName(bw)}, wears the weaker {T(b.Gear.Head, tierOf)}");
+			}
 			// 5. weapon of a class the levy's own armor does not favour (coherence)
 			foreach (var l in levies) {
 				var g = l.Gear; var ac = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs); var wc = g.HasWeapon ? WeaponClassifier.ItemDamageClass(g.Weapon) : null;
@@ -372,10 +398,13 @@ namespace Levy.Common.Testing
 				float pre = preArmor[l.Id], post = KitScore(l.Gear);
 				if (post <= pre + 1f) continue;
 				// did a levy with a clearly lower pre-step kit end the step without an upgrade although this levy's NEW set (or better) would have helped him?
+				var lcls = ArmorDoctrine.PreferredClass(l.Gear.Head, l.Gear.Body, l.Gear.Legs);
 				foreach (var u in levies) {
 					if (u == l) continue;
 					float upre = preArmor[u.Id], upost = KitScore(u.Gear);
 					if (upost > upre + 1f) continue; // he got something
+					var ucls = u.Gear.HasWeapon ? WeaponClassifier.ItemDamageClass(u.Gear.Weapon) : null;
+					if (lcls != null && ucls != null && lcls != ucls) continue; // that set is another class's: not a miss for him
 					if (upre * margin < pre && upost * margin < post && upre < med)
 						res.Add($"[NOT-WORST-FIRST] levy {l.Id} (kit {pre:F0}) was upgraded to {post:F0} but levy {u.Id} (kit {upre:F0}, below the pre-step median {med:F0}) got nothing");
 				}

@@ -265,6 +265,8 @@ namespace Levy.Common
 			// ---- enemy-body dodging (worm segments, wyverns, chargers) ----
 			/// <summary>A hostile NPC body is only dodged if its contact damage is at least this (filters harmless fliers).</summary>
 			public const int DodgeNpcMinDamage = 20;
+			/// <summary>A body that hits for less than this is not worth a dodge. A boss at 15 contact damage is still 6% of a young levy's life, per tick of overlap.</summary>
+			public const int DodgeNpcMinDamageMobile = 6;
 			/// <summary>...and only if it is moving at least this fast (px/tick). The key filter: walkers being meleed are far below it.</summary>
 			public const float DodgeNpcMinSpeed = 4.5f;
 			/// <summary>Hostile bodies farther than this are ignored (bigger and faster than a projectile, so a wider scan).</summary>

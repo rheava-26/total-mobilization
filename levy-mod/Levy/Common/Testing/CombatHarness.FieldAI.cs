@@ -50,6 +50,7 @@ namespace Levy.Common.Testing
 			if (want.Contains("follow")) { foreach (string kind in new[] { "gap", "gapswing", "climb" }) foreach (bool hook in new[] { false, true }) _fa.Add(FaFollow(kind, hook ? ItemID.GrapplingHook : 0)); _fa.Add(FaFollow("gapwide", ItemID.GrapplingHook)); _fa.Add(FaFollow("gapwide", ItemID.IvyWhip)); }
 			if (want.Contains("fall")) { _fa.Add(FaFall(1)); _fa.Add(FaFall(0)); }
 			if (want.Contains("real")) FaAddReal();
+			if (want.Contains("hookterrain")) FaAddHookTerrain();
 			if (want.Contains("gravflip")) foreach (int fd in new[] { 1, 0 }) foreach (bool lavaFloor in new[] { false, true }) _fa.Add(FaGravFlip(fd, lavaFloor));
 			if (want.Contains("cost")) foreach (int mode in new[] { 0, 1, 2 }) _fa.Add(FaCost(mode));
 			_faI = -1; _faTick = 0;
@@ -64,7 +65,7 @@ namespace Levy.Common.Testing
 			{
 				FaKeep(); string fpAfter = HooksLab.Fp(Main.player[0]);
 				Mod.Logger.Info($"FIELDAI: commander fingerprint unchanged={_faFpBefore == fpAfter}" + (_faFpBefore == fpAfter ? "" : " BEFORE " + _faFpBefore + " AFTER " + fpAfter));
-				SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = -1; HookPlanner.SlopeDragCost = 14f; _faReal = false; RealOn = false;
+				SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = -1; SoldierNPC.HookShortcutMode = 1; SoldierNPC.MobilityMode = 1; HookPlanner.SlopeDragCost = 14f; _faReal = false; RealOn = false;
 				Finish("fieldai complete");
 				return;
 			}

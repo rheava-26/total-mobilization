@@ -30,8 +30,12 @@ namespace Levy.Common.Movement
 	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
 	public struct Maneuver
 	{
-		public float Vx; public int Dur, Delay; public float JumpVy; public bool Drop; public byte Kind; // 0 stay, 1 step, 2 jump, 3 step+jump, 4 dash, 5 drop
+		public float Vx; public int Dur, Delay; public float JumpVy; public bool Drop; public byte Kind; // 0 stay, 1 step, 2 jump, 3 step+jump, 4 dash, 5 drop, 6 full jump, 7 double jump, 8 dash+jump, 9 hook to a ledge, 10 dash+drop
 		public float Penalty;
+		/// <summary>A second jump in the air: impulse (negative = up) taken <see cref="J2At"/> ticks after the first leaves the ground.</summary>
+		public float J2Vy; public int J2At;
+		/// <summary>A hook to a ledge: after a cast delay the body moves in a line to <see cref="HookTarget"/> over <see cref="HookDur"/> ticks.</summary>
+		public bool Hook; public Vector2 HookTarget; public int HookDur;
 	}
 
 	/// <summary>
@@ -80,7 +84,7 @@ namespace Levy.Common.Movement
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.friendly || n.townNPC || n.damage < LevyConstants.Movement.DodgeNpcMinDamage || n.ModNPC is Content.NPCs.SoldierNPC) continue;
+				if (!n.active || n.friendly || n.townNPC || n.damage < (Content.NPCs.SoldierNPC.MobilityMode >= 1 ? LevyConstants.Movement.DodgeNpcMinDamageMobile : LevyConstants.Movement.DodgeNpcMinDamage) || n.ModNPC is Content.NPCs.SoldierNPC) continue;
 				Vector2 v = n.velocity; float v2 = v.LengthSquared();
 				// the acceleration it is showing: how its velocity changed since the last time the field looked (NPC.oldVelocity is not kept for every NPC)
 				Vector2 a = Vector2.Zero;
@@ -124,10 +128,23 @@ namespace Levy.Common.Movement
 			return Vector2.DistanceSquared(a + ab * u, p);
 		}
 
+		public static Vector2 PathAt(Vector2 c0, in Maneuver m, float g, int t) => BodyAt(c0, m, g, t);
+
 		private static Vector2 BodyAt(Vector2 c0, in Maneuver m, float g, int t)
 		{
+			if (m.Hook) return Vector2.Lerp(c0, m.HookTarget, MathHelper.Clamp((t - 8) / (float)Math.Max(1, m.HookDur), 0f, 1f));
 			float x = c0.X + m.Vx * Math.Min(t, m.Dur), y = c0.Y;
-			if (m.JumpVy < 0f) { int tj = t - m.Delay; if (tj > 0) { float d = m.JumpVy * tj + 0.5f * g * tj * tj; if (d < 0f) y += d; } }
+			if (m.JumpVy < 0f)
+			{
+				int tj = t - m.Delay;
+				if (tj > 0)
+				{
+					float d;
+					if (m.J2Vy < 0f && tj > m.J2At) { float y1 = m.JumpVy * m.J2At + 0.5f * g * m.J2At * m.J2At; int t2 = tj - m.J2At; d = y1 + m.J2Vy * t2 + 0.5f * g * t2 * t2; }
+					else d = m.JumpVy * tj + 0.5f * g * tj * tj;
+					if (d < 0f) y += d;
+				}
+			}
 			else if (m.Drop && t > 3) y += 0.5f * g * (t - 3) * (t - 3);
 			return new Vector2(x, y);
 		}

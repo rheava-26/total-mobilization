@@ -2245,6 +2245,7 @@ namespace Levy.Content.NPCs
 			if (!FollowerTravel.FindStandingSpot(behind, LevyConstants.TeleportSpotSearchTiles, out spot)
 				&& !FollowerTravel.FindSafeGround(cmd.Center, LevyConstants.TeleportSpotSearchTiles, out spot))
 				return; // no ground anywhere near the commander (they are over the void): stay put rather than land in the air
+			spot = RosterSystem.SafeSpawnPosition(spot); // not into a boss's dash
 			NPC.Bottom = spot;
 			NPC.velocity = Vector2.Zero;
 			NPC.netUpdate = true;

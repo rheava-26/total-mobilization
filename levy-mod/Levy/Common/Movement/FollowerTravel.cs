@@ -163,6 +163,7 @@ namespace Levy.Common.Movement
 		private static void Place(SoldierNPC body, Vector2 bottom)
 		{
 			NPC npc = body.NPC;
+			bottom = RosterSystem.SafeSpawnPosition(bottom); // never arrive inside a boss's reach
 			npc.position = new Vector2(bottom.X - npc.width / 2f, bottom.Y - npc.height);
 			npc.oldPosition = npc.position;
 			npc.velocity = Vector2.Zero;

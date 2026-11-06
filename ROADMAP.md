@@ -256,6 +256,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED: talk2 1991e41 (talking to levies)**
+- **Chat bars:** blue chat bars with typewriter text. Max 5 visible within 70 tiles, priority queue, one per speaker, a clump stacks upward.
+- **Talk during combat:** CanChat allows Engage (Routed is still blocked; ask Eve). Right-clicking your levy beyond reach CALLS it over (packet TalkCall), and the chat opens on arrival. While talking, the levy stays within 2.5 tiles and keeps shooting its current target.
+  - Risk: right-click items may double-fire.
+- **"Close up":** it was only "un-spread" before. Now it's a real stance: tight columns 0.9–4.5 tiles, follow leash 30→14 tiles. The radial cycles Normal → Spread → Close up.
+- **Gear window from chat:** weapon, sidearm, pouch, hook, armor, accessories (up to the grade limit), dyes. Swapping in LOCKS the slot so the armory won't override it; taking out clears it and the armory refills. Packets SoldierDyeSet=33, TalkCall=34.
+  - Vanity here = DYES only. Vanity clothing comes from the armory vanity screen.
+- **Dialogue:** it was already one file (`Dialogue/en-US.txt`, 830 lines); the mutiny lines were moved in. `/levydialogue export|reload|path` gives Eve an editable copy in the save folder that overrides the packed one.
+- **Unverified:** all UI, combat behaviour, MP.
+
 **ART v4 (Eve, 2026-11-06): full art refresh using wiki vanilla refs + EXACT vanilla palettes.**
 - **`art4` (Levy):** Barracks/Armory/Logistical Center/Patrol Banner tiles + items; ALL 10 guide books + Field Manual + Guide to Autonomy (new art); War Horn.
 - **Command Radio:** 2 options. Eve prefers the original radio's bigger look, OR the walkie-talkie drawn bigger. AMBIGUOUS, so both are offered.

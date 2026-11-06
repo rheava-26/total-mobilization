@@ -592,6 +592,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## ✏️ Eve corrections (2026-11-06 22:45)
+- **drops:**
+  - All options default OFF except Dungeon Spirit ×3 (default ON).
+  - Spooky restore DROPPED (don't forcibly undo another mod).
+  - Don't redo existing options.
+  - GENERAL changes that subtly fill gaps (bulk batches), incentives not restrictions.
+  - Add an "is it really that bad?" chlorophyte/ecto-per-minute estimate.
+- **setbonus:** the old complaint predates 1.0, so passives are probably fixed (quick table only). FOCUS on ACTIVATED set bonuses + accessory abilities: Vortex/Stardust/Solar/Forbidden keys, Calamity Desert Prowler (+ Roadrunner) and other keybind sets, dash/hotkey accessories.
+- **class audit:** cumulative mod sets (vanilla → +Calamity → +Thorium) to see what mods already fill. Ore-craftable = easy; rare/specific drops = the real gaps.
+
 ## 🔁 Eve's interrupt stopped ALL FOUR builders (2026-11-06 22:30)
 - WIP was saved and pushed; all four were restarted with full accumulated briefs:
   - boss-trials (61a4615): Spectator conditions, rolled stats, KS/EoC/BoC, count curve.

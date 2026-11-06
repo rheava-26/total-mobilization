@@ -256,7 +256,21 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
-**BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**WORKING AGREEMENT (Eve, again):** Eve's examples are EXAMPLES. Don't turn them into the whole scope or into hard rules.
+- "Dark Gate" meant ALL interaction weapons.
+- "Painter" meant ALL officers get unique, identity-driven kits.
+- The hook remarks meant "use hooks correctly". They did NOT mean "never hook slopes / hook rarely in HM".
+- Course corrections were sent to altfire-impl, officers2 and field-ai.
+
+**Eve 2026-11-06 later:**
+- Magic Storage clone APPROVED, and copy MS's art format/textures where the license allows. `logistics` relaunched.
+- Tavernkeep stuff WAITS: ooa-tavern paused; WIP saved on `ooa-tavern-wip` 09397c8.
+- Cameras NOW: static cameras you connect to, plus a big zoomed-out arena view (2–3× per side). Performance is a concern; measure and mitigate.
+- GoPro = see what the levy sees.
+- NEW: MIND CONTROL: control a levy remotely (and use its weapons) while you're dead, until you respawn.
+- Running: `command-observe` (cameras, zoom, GoPro, radio + barracks map orders, mind control) and potion art v2 (vanilla-accurate necks).
+
+**(was) BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
 **ART v1 sent to Eve (art2 81b8b38):** all items in 3 variants; potion comparisons.
 - My own critique: the potions don't match vanilla's TALL two-tier neck and stopper (ours is squat), and the bodies are too wide.
 - The other items read fine but are concept-level; tripod legs and antennas have a doubled outline.

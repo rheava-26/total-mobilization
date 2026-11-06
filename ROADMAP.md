@@ -239,6 +239,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Calamity + Thorium alt-click SURVEY.
 - Dark Gate identified.
 
+**Eve's corrections (2026-11-06):**
+- GoPro = an item that lets you watch a levy remotely by FOLLOWING that levy's camera.
+- I (Claude) make the potion art from Eve's reference images and physical descriptions.
+- Arms Dealer bulk-ammo buying covers more than Chlorophyte bullets, and is a TOGGLE (it's strong).
+- OOA levy sentry staves come in 3 TIERS like the vanilla DD2 sentry staves (rod / cane / staff); higher tiers give more levies per sentry. Make sure the Tavernkeep shop has room for them.
+- Eve: "go finish everything else" — build the whole batch.
+
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
 - [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
 - [ ] Vanity: its own screen, a row per set, "always wear X".

@@ -544,9 +544,14 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - emplacement firing walls; a manned heavy gun levies MUST operate (not auto-fire)
 
 ## 🖼 Eve's first in-game look at the 2.0 placeables (Calamity run, 2026-11-06)
-- My read: the Armory cabinet fits vanilla furniture well. The Logistical Center reads busy, but in keeping.
+- My read: the Armory cabinet fits vanilla furniture well.
+- CORRECTION: Eve hadn't placed a Logistical Center. The thing I called that was a vanilla station (almost certainly the Tinkerer's Workshop). The Logistical Center item exists but is unjudged in game.
 - The Barracks tent is "a tad off": a flat salmon fill with almost no canvas shading, lighter and more saturated than the vanilla wood next to it, and a solid-black door.
 - Offered Eve a small tent-only tweak (darker canvas, fold shading, a door flap). NOT started; waiting for her yes.
+
+## 🛠 Orders → craft browser (Eve, 2026-11-06), added to `logi-search`
+- Craft from the Orders page using the player's inventory + nearby chests + armory stock.
+- Search box, filters "Can craft" / "Has materials" / "All", and "Craft" (now, with a count) or "Make order".
 
 ## 🖼 Eve's first in-game look at Logistics → Buy (2026-11-06)
 - Wants: a search bar + category filter for the offer list (weapons etc.), and reach to shopkeepers through pylons, stated in the UI.

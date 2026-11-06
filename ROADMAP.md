@@ -256,6 +256,20 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**ART v4 (Eve, 2026-11-06): full art refresh using wiki vanilla refs + EXACT vanilla palettes.**
+- **`art4` (Levy):** Barracks/Armory/Logistical Center/Patrol Banner tiles + items; ALL 10 guide books + Field Manual + Guide to Autonomy (new art); War Horn.
+- **Command Radio:** 2 options. Eve prefers the original radio's bigger look, OR the walkie-talkie drawn bigger. AMBIGUOUS, so both are offered.
+- **Static camera:** an old-timey hand-cranked MOVIE camera. Eve recalls a vanilla movie camera from Deerclops; the builder will check the wiki.
+- **Levy staves:** a SMALL tower head on a LONG diagonal shaft, DD2 proportions.
+- **GoPro:** plain cam polished; the collar is dropped.
+- **Potions:** the approved PNGs kept.
+- An in-context mock in a vanilla world strip.
+- **`art4-mech` (Mechanization):** new turret + drone redo (2–3 variants with GIFs), with Martian Drone/Probe palettes.
+- **Eve confirms:** GoPro and camera roles are fine. "This looks amazing" for most of art3, but Eve dislikes the colour matching overall, and the Barracks/Armory look "extremely strange".
+- **Once-only drops:** Eve got only one Grenade Launcher from Plantera and wanted one for every levy. Progression-assist has a toggle so once-only boss weapons drop again.
+  - Vanilla fact to verify: Plantera's first kill guarantees the Grenade Launcher; later kills roll its weapon pool.
+- **Bulk buying:** Eve is happy with it.
+
 **ART v3 (art3 54866fe) sent to Eve. My honest read:**
 - Better than v2: the static camera TILE (flat, front-facing on a tripod), and the Command Radio (walkie-talkie, 28×26, same size as the old one).
 - Worse than Eve's v1 picks: the sentry staves (oversized mushroom-roof heads; the DD2 staves have small bright heads on long diagonal shafts) and the Guide book (blobby).

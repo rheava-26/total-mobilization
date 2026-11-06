@@ -42,6 +42,7 @@ namespace Levy.Common.Observe
 		public static void BeginPick()
 		{
 			if (Main.dedServ) return;
+			if (!Potions.AutonomySystem.Studied) { Main.NewText(LevyUtil.T("Potions.NeedAutonomy"), 255, 180, 120); return; }
 			PickMode = true; Main.mapFullscreen = true; Main.resetMapFull = true;
 			Main.NewText(LevyUtil.T("Observe.PickPrompt"), 190, 220, 255);
 		}
@@ -65,7 +66,7 @@ namespace Levy.Common.Observe
 		/// <summary>Server / single player: sends every Regular of <paramref name="commander"/> to the tile. Returns how many took the order.</summary>
 		public static int Issue(Player commander, int tx, int ty)
 		{
-			if (LevyUtil.IsClient || commander == null || !ValidTile(tx, ty)) return 0;
+			if (LevyUtil.IsClient || commander == null || !ValidTile(tx, ty) || !Potions.AutonomySystem.Studied) return 0; // map orders need the Guide to Autonomy
 			var roster = RosterSystem.Instance;
 			int n = 0;
 			foreach (var rec in roster.RegularsOf(commander))
@@ -91,6 +92,7 @@ namespace Levy.Common.Observe
 		public static void Send(int tx, int ty)
 		{
 			if (!ValidTile(tx, ty)) return;
+			if (!Potions.AutonomySystem.Studied) { Main.NewText(LevyUtil.T("Potions.NeedAutonomy"), 255, 180, 120); MapOrder.PickMode = false; return; }
 			LastPoint = new Point(tx, ty); LastPointTick = Main.GameUpdateCount;
 			if (Main.netMode == NetmodeID.SinglePlayer)
 			{

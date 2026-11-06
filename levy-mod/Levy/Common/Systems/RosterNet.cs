@@ -41,6 +41,8 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.FeedCrystal, OnFeedCrystal);
 			LevyPackets.Register(LevyPacket.SetRebase, OnSetRebase);
 			LevyPackets.Register(LevyPacket.SoldierGearSet, OnSoldierGearSet);
+			LevyPackets.Register(LevyPacket.SoldierDyeSet, OnSoldierDyeSet);
+			LevyPackets.Register(LevyPacket.TalkCall, OnTalkCall);
 			LevyPackets.Register(LevyPacket.RosterSnapshot, OnRosterSnapshot);
 			LevyPackets.Register(LevyPacket.MutinyRob, MutinySystem.OnRobPacket);
 		}
@@ -265,6 +267,41 @@ namespace Levy.Common.Systems
 			bool ok = rec != null && ApplyGearSlot(rec, slot, item, out extra);
 			if (!ok) Return(sender, item);
 			else Return(sender, extra);
+		}
+
+		/// <summary>Hand-placed vanity dye from a client. Same contract as <see cref="OnSoldierGearSet"/>: anything refused goes back to the sender.</summary>
+		private static void OnSoldierDyeSet(BinaryReader r, int whoAmI)
+		{
+			SoldierGear.ReadDyePayload(r, out int soldierId, out int dyeSlot, out Item item);
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender == null) return;
+			var rec = Owned(soldierId, sender);
+			Item extra = null;
+			bool ok = rec != null && ApplyDyeSlot(rec, dyeSlot, item, out extra);
+			if (!ok) Return(sender, item);
+			else Return(sender, extra);
+		}
+
+		/// <summary>Puts a dye (or air) into a soldier's vanity slot and refreshes his body and the clients. Server and single player.</summary>
+		internal static bool ApplyDyeSlot(SoldierRecord rec, int dyeSlot, Item item, out Item overflow)
+		{
+			overflow = null;
+			if (rec == null || rec.Gear == null) return false;
+			if (!rec.Gear.TrySetDye(dyeSlot, item, rec.AccessorySlots, out overflow)) return false;
+			if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC body) body.NotifyGearChanged();
+			if (LevyUtil.IsServer) Roster.SendRosterSnapshot();
+			return true;
+		}
+
+		/// <summary>The commander wants a levy beside them: the body walks over (see SoldierNPC.ReceiveTalkCall).</summary>
+		private static void OnTalkCall(BinaryReader r, int whoAmI)
+		{
+			int soldierId = r.ReadInt32();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			var rec = Owned(soldierId, sender);
+			if (rec != null && rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC body) body.ReceiveTalkCall(sender.whoAmI);
 		}
 
 		private static void Return(Player sender, Item it)

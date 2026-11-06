@@ -251,6 +251,7 @@ namespace Levy.Content.NPCs
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
 					if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
 					else if (fleeIdx >= 0) ThinkFlee(fleeIdx);
+					else if (ThinkTalk(now)) { } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
 					else if (now < _spawnGraceUntil) ThinkSpawnGrace();
 					else if (!TryEngage(now))
 					{
@@ -303,7 +304,10 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Spread Out multiplier on every dispersion spacing (1 when off).</summary>
-		private float SpreadMult => Record != null && Record.SpreadOut ? LevyConstants.SpreadOutMult : 1f;
+		private float SpreadMult => Record == null ? 1f : Record.SpreadOut ? LevyConstants.SpreadOutMult : Record.CloseUp ? LevyConstants.CloseUpMult : 1f;
+
+		/// <summary>How far from the commander a Follow soldier may be dragged by a target (tiles). Close up shortens it so the squad fights near the commander.</summary>
+		private int FollowChaseLimitTiles => Record != null && Record.CloseUp ? LevyConstants.CloseUpChaseLimit : LevyConstants.FollowChaseLimit;
 
 		/// <summary>A commander who relogged gets a new player index; re-resolve the name once a second while the index is stale.</summary>
 		private void RefreshCommanderIndex(int now)
@@ -773,7 +777,7 @@ namespace Levy.Content.NPCs
 			if (IsRegular && Record.Order == SoldierOrder.Follow && !HoldPosition)
 			{
 				var cmd = Commander;
-				if (cmd != null && !LevyUtil.WithinTiles(cmd.Center, target.Center, LevyConstants.FollowChaseLimit + rangeTiles)) return false;
+				if (cmd != null && !LevyUtil.WithinTiles(cmd.Center, target.Center, FollowChaseLimitTiles + rangeTiles)) return false;
 			}
 			if (Roaming && !LevyUtil.WithinTiles(RoamAnchor(), target.Center, RoamLeashTiles + rangeTiles)) return false;
 			return true;
@@ -1883,7 +1887,7 @@ namespace Levy.Content.NPCs
 			if (IsRegular && Record.Order == SoldierOrder.Follow && !HoldPosition)
 			{
 				var cmd = Commander;
-				if (cmd != null) ClampToCircle(ref goal, cmd.Center, LevyConstants.FollowChaseLimit);
+				if (cmd != null) ClampToCircle(ref goal, cmd.Center, FollowChaseLimitTiles);
 			}
 			if (Roaming) ClampToCircle(ref goal, RoamAnchor(), RoamLeashTiles);
 			if (FreeReining) // never chase a target out past the world margin into the edge void
@@ -2166,15 +2170,24 @@ namespace Levy.Content.NPCs
 				slotTiles = Math.Min((slotIdx / 2 + 1) * LevyConstants.SpreadOutFollowSpacingTiles, LevyConstants.SpreadOutFollowMaxTiles);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
+			else if (Record.CloseUp)
+			{
+				// tight stance: alternate sides in narrow columns right at the commander's heels; several soldiers share a column
+				slotTiles = Math.Min(LevyConstants.CloseUpFollowStartTiles + (slotIdx / 2) * LevyConstants.CloseUpFollowStepTiles, LevyConstants.CloseUpFollowMaxTiles);
+				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
+			}
 			Vector2 slot = cmd.Bottom + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
 			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmd.Bottom, slot); // underground only: surface slots are untouched
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
+			// Close up also tightens how close to the slot a soldier must stand before it stops: the normal 4 / 6 tile slack is what lets a squad sprawl.
+			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : LevyConstants.FollowDistance / 3f;
+			float startTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStartMoveTiles : LevyConstants.FollowDistance / 2f;
 			if (HasMoveGoal)
 			{
-				if (dSlot < LevyConstants.FollowDistance / 3f) ClearGoal();
+				if (dSlot < stopTiles) ClearGoal();
 				else SetGoal(slot);
 			}
-			else if (dSlot > LevyConstants.FollowDistance / 2f) SetGoal(slot);
+			else if (dSlot > startTiles) SetGoal(slot);
 		}
 
 		/// <summary>
@@ -2685,7 +2698,7 @@ namespace Levy.Content.NPCs
 		{
 			Vector2 anchor; float halfLimit;
 			bool spread = Record.SpreadOut;
-			float lineHalf = spread ? LevyConstants.IdleWanderTiles + LevyConstants.SpreadOutIdleExtraTiles : LevyConstants.IdleLineHalfTiles;
+			float lineHalf = spread ? LevyConstants.IdleWanderTiles + LevyConstants.SpreadOutIdleExtraTiles : Record.CloseUp ? LevyConstants.CloseUpIdleLineHalfTiles : LevyConstants.IdleLineHalfTiles;
 			if (HoldPosition) { anchor = Record.HoldPos; halfLimit = Math.Min(lineHalf, LevyConstants.HoldChaseLimit - 1f); }
 			else
 			{

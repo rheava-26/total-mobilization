@@ -37,7 +37,7 @@ namespace Levy.Content.NPCs
 			int now = (int)Main.GameUpdateCount;
 			if (now - _mutinyRefuseTick < MutinyRefuseShoutTicks) return;
 			_mutinyRefuseTick = now;
-			DialogueSystem.FloatingText(this, LevyUtil.T("Mutiny.Refuse"), DialogueTrigger.MUTINY);
+			DialogueSystem.FloatingText(this, DialogueSystem.LineOrKey(DialogueTrigger.MUTINY_REFUSE, Record, "Mutiny.Refuse"), DialogueTrigger.MUTINY);
 		}
 
 		private void ThinkMutiny(int now)
@@ -48,7 +48,7 @@ namespace Levy.Content.NPCs
 			if (now - _mutinyShoutTick >= LevyConstants.Mutiny.ShoutIntervalTicks)
 			{
 				_mutinyShoutTick = now;
-				DialogueSystem.FloatingText(this, LevyUtil.T("Mutiny.Cry" + Main.rand.Next(1, 5)), DialogueTrigger.MUTINY);
+				DialogueSystem.FloatingText(this, DialogueSystem.LineOrKey(DialogueTrigger.MUTINY, Record, "Mutiny.Cry" + Main.rand.Next(1, 5)), DialogueTrigger.MUTINY);
 			}
 
 			var cmd = Commander;

@@ -1244,18 +1244,19 @@ namespace Levy.Common.Systems
 		public virtual void ToggleSpreadOut(Player commander, bool atBarracks = false)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
-			int total = 0, spread = 0;
+			int total = 0, spread = 0, close = 0;
 			_refusedOrders = 0;
-			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; }
+			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; else if (rec.CloseUp) close++; }
 			if (total == 0) { ReportRefusals(commander); return; }
-			bool set = spread * 2 <= total; // majority already spread → close up; otherwise spread
+			// one button cycles the squad's majority stance: Normal -> Spread out -> Close up -> Normal
+			FormationMode next = Formation.Next(Formation.Majority(total, spread, close));
 			foreach (var rec in Regulars)
 			{
 				if (!Selected(rec, commander, atBarracks, out var body)) continue;
-				rec.SpreadOut = set;
+				Formation.Apply(rec, next);
 				if (body != null) body.NPC.netUpdate = true;
 			}
-			SendToPlayer(commander, LevyUtil.T(set ? "UI.SpreadOut" : "UI.CloseUp"));
+			SendToPlayer(commander, LevyUtil.T(next == FormationMode.Spread ? "UI.SpreadOut" : next == FormationMode.CloseUp ? "UI.CloseUp" : "UI.NormalRanks"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();
 		}

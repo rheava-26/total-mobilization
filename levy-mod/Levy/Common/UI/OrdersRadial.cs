@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Terraria;
+using Levy.Common.Soldiers;
 using Terraria.UI;
 using Levy.Common.Util;
 using Levy.Content.Items;
@@ -102,14 +103,16 @@ namespace Levy.Common.UI
 			_title.SetText(LevyUtil.T(_radio ? "UI.RadioOrders" : "UI2.Orders"));
 			_nearest = UIActions.NearestBarracks(Main.LocalPlayer.Center, _radio ? float.MaxValue : LevyConstants.UI.MobilizeKeyRadiusTiles);
 			bool holdFire = UIActions.MajorityHoldFire();
-			bool spread = UIActions.MajoritySpreadOut();
+			FormationMode formation = UIActions.MajorityFormation();
 			_buttons[0].Set(LevyUtil.T("UI.Follow"), true, LevyUtil.T(_radio ? "UI2.FollowHintRadio" : "UI2.FollowHint"));
 			_buttons[1].Set(LevyUtil.T("UI.Hold"), true, LevyUtil.T(_radio ? "UI2.HoldHintRadio" : "UI2.HoldHint"));
 			_buttons[2].Set(LevyUtil.T("UI.Return"), true, LevyUtil.T(_radio ? "UI2.ReturnHintRadio" : "UI2.ReturnHint"));
 			_buttons[3].Set(LevyUtil.T("UI.SearchDestroy"), true, LevyUtil.T(_radio ? "UI2.SearchDestroyHintRadio" : "UI2.SearchDestroyHint"));
 			_buttons[4].Set(LevyUtil.T("UI.FreeRein"), true, LevyUtil.T(_radio ? "UI2.FreeReinHintRadio" : "UI2.FreeReinHint"));
 			_buttons[5].Set(LevyUtil.T(holdFire ? "UI.FireAtWill" : "UI.HoldFire"), true, LevyUtil.T(holdFire ? "UI2.FireAtWillHint" : "UI2.HoldFireHint"));
-			_buttons[6].Set(LevyUtil.T(spread ? "UI.CloseUp" : "UI.SpreadOut"), true, LevyUtil.T(spread ? "UI2.CloseUpHint" : "UI2.SpreadOutHint"));
+			// the button names the NEXT stance: Normal -> Spread out -> Close up -> Normal ranks
+			_buttons[6].Set(LevyUtil.T(formation == FormationMode.Spread ? "UI.CloseUp" : formation == FormationMode.CloseUp ? "UI.NormalRanks" : "UI.SpreadOut"), true,
+				LevyUtil.T(formation == FormationMode.Spread ? "UI2.CloseUpHint" : formation == FormationMode.CloseUp ? "UI2.NormalRanksHint" : "UI2.SpreadOutHint"));
 			bool focusOn = UIActions.FocusStanding();
 			_buttons[7].Set(LevyUtil.T(focusOn ? "UI.FocusClear" : "UI.FocusAttack"), true, LevyUtil.T(focusOn ? "UI2.FocusClearHint" : "UI2.FocusAttackHint"));
 			if (_nearest == null) _buttons[8].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));

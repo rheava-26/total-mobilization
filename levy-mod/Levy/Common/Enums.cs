@@ -30,7 +30,8 @@ namespace Levy.Common
 		NO_ONE_LEFT, MUTINY,
 		OFFICER_MARCH, NURSE_MARCH,
 		OFFICER_CHAT_FIGHT, OFFICER_CHAT_BOSS, OFFICER_CHAT_HURT, OFFICER_CHAT_VICTORY,
-		OFFICER_CHAT_MARCH, OFFICER_CHAT_HOLD, OFFICER_CHAT_IDLE
+		OFFICER_CHAT_MARCH, OFFICER_CHAT_HOLD, OFFICER_CHAT_IDLE,
+		MUTINY_BEGIN, MUTINY_REFUSE, MUTINY_CALM // appended: the mutineers' lines now live in the dialogue file too
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

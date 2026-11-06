@@ -48,6 +48,9 @@ namespace Levy.Content.TileEntities
 
 		private bool _dirty;
 
+		/// <summary>This armory's rule list (class balance, category rules, item lists, per-item overrides). Saved with the entity and synced to clients; the server is the only writer. Never null.</summary>
+		public ArmoryRules Rules = ArmoryRules.Default();
+
 		public static Item[] NewItems(int n) { var a = new Item[n]; for (int i = 0; i < n; i++) a[i] = new Item(); return a; }
 
 		// ------------------------------------------------------------------ expandable storage (Logistical Centers)
@@ -185,7 +188,7 @@ namespace Levy.Content.TileEntities
 		private static bool IsMeleeTypeFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Boomerang || f == WeaponFamily.Whip || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.ThrownMelee;
 
 		/// <summary>A weapon the armory may hand out: the classifier accepts it (cached per item type, so scanning a 1000-slot hoard stays cheap).</summary>
-		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it);
+		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it) && !(ArmoryRules.Current?.Excluded(it) ?? false); // the armory's own rules (never-use, only-these) bar an item from being issued
 
 		private static bool IsIssuableMelee(Item it) => IsIssuable(it) && IsMeleeFamily(WeaponClassifier.GetProfile(it).Family);
 
@@ -461,7 +464,7 @@ namespace Levy.Content.TileEntities
 		/// A strong issuable weapon for this soldier (family must be supported); removes it from the armory. Null if none.
 		/// Draws from the top tier of viable weapon types (see <see cref="TryPickVaried"/>), so a varied armory yields a mixed squad.
 		/// </summary>
-		public virtual Item TakeBestWeapon(SoldierRecord forSoldier) => TakeBestWeaponWhere(forSoldier, null);
+		public virtual Item TakeBestWeapon(SoldierRecord forSoldier) { using var _rs = ArmoryRules.Enter(Rules); return TakeBestWeaponWhere(forSoldier, null); }
 
 		/// <summary><see cref="TakeBestWeapon"/> restricted by <paramref name="extra"/> (null = anything issuable).</summary>
 		private Item TakeBestWeaponWhere(SoldierRecord forSoldier, Func<Item, bool> extra)
@@ -689,7 +692,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>A strong issuable weapon of the given damage class (guns/bows Ranged, staves Magic, blades/spears Melee) that can actually fire; removes it. Null if none (callers fall back to <see cref="TakeBestWeapon"/>).</summary>
-		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls) => TakeBestWeaponOfClass(forSoldier, cls, null);
+		public virtual Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls) { using var _rs = ArmoryRules.Enter(Rules); return TakeBestWeaponOfClass(forSoldier, cls, null); }
 
 		/// <summary><see cref="TakeBestWeaponOfClass(SoldierRecord, DamageClass)"/> that also satisfies <paramref name="extra"/> (null = no extra condition).</summary>
 		private Item TakeBestWeaponOfClass(SoldierRecord forSoldier, DamageClass cls, Func<Item, bool> extra)
@@ -770,6 +773,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public virtual Item TakeSidearm(SoldierRecord forSoldier)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			if (IsIssuableMelee(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, LesserBlade(forSoldier), WeaponRank.Of);
 		}
@@ -825,6 +829,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public virtual Item TakeSummonerComplement(SoldierRecord forSoldier, WeaponFamily primaryFam)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			bool haveStaff = primaryFam == WeaponFamily.Summon, haveSentry = primaryFam == WeaponFamily.Sentry, haveWhip = primaryFam == WeaponFamily.Whip;
 			if (ArmorDoctrine.HasSentryLean(forSoldier?.Gear?.Accessories) && !haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
 			if (!haveWhip) { var w = TakeWhipSidearm(); if (w != null) return w; } // the whip is the summoner's attack tool
@@ -846,6 +851,7 @@ namespace Levy.Content.TileEntities
 		/// <summary>A sentry-kitted soldier's sidearm: a sentry (the sidearm slot first, then the best in the armory). Removes it. Null if the armory has none.</summary>
 		public virtual Item TakeSentrySidearm(SoldierRecord forSoldier)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			if (IsIssuableSentry(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSentry, WeaponRank.Of);
 		}
@@ -1182,6 +1188,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public Item LendDroneWeapon(int reserveForSoldiers)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
 			List<RankEntry> rank = _rank;
 			rank.Clear();
@@ -1676,6 +1683,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public virtual bool IssueGear(SoldierRecord soldier)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			bool changed = false;
@@ -1953,6 +1961,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		public virtual bool UpgradeWeapons(SoldierRecord soldier)
 		{
+			using var _rs = ArmoryRules.Enter(Rules);
 			var g = soldier?.Gear;
 			if (g == null || soldier.LoadoutLocked || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
@@ -2183,6 +2192,7 @@ namespace Levy.Content.TileEntities
 		{
 			tag["depV1"] = true;
 			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
+			if (!Rules.IsNeutral || Rules.Blocks.Count != 1) tag["rulesV1"] = Rules.ToBytes(); // an untouched default list is not written: an old build reading this save loses nothing
 		}
 
 		/// <summary>
@@ -2211,6 +2221,7 @@ namespace Levy.Content.TileEntities
 			Storage = new Item[Math.Max(StorageSize, tag.GetList<TagCompound>("storage").Count)];
 			IssuePotions = new Item[Math.Max(PotionSlots, tag.GetList<TagCompound>("potions").Count)]; // old saves hold exactly PotionSlots; FitPotions grows it if Firepower is on
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
+			Rules = tag.ContainsKey("rulesV1") ? ArmoryRules.FromBytes(tag.GetByteArray("rulesV1")) : ArmoryRules.Default();
 			FitPotions(); // the world's guide flag may already be loaded; if not, the periodic reconcile in LogisticsSystem catches it
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
@@ -2226,6 +2237,8 @@ namespace Levy.Content.TileEntities
 			writer.Write(Storage.Length); // storage grows with Logistical Centers and the potion row with Firepower, so their lengths lead
 			writer.Write(IssuePotions.Length);
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) foreach (var it in arr) ItemIO.Send(it, writer, true);
+			var rules = Rules.ToBytes();
+			writer.Write(Rules.Rev); writer.Write(rules.Length); writer.Write(rules);
 		}
 		public override void NetReceive(BinaryReader reader)
 		{
@@ -2236,6 +2249,10 @@ namespace Levy.Content.TileEntities
 			if (potionLength < PotionSlots || potionLength > LevyConstants.MaxPotionSlotsOnWire) potionLength = PotionSlots;
 			if (IssuePotions.Length != potionLength) IssuePotions = new Item[potionLength]; // replaced, not resized: the panel rebuilds its potion row against the new reference
 			foreach (var arr in new[] { Storage, IssueWeapons, IssueArmor, IssueAmmo, IssuePotions }) for (int i = 0; i < arr.Length; i++) arr[i] = ItemIO.Receive(reader, true);
+			int rev = reader.ReadInt32(), len = reader.ReadInt32();
+			var bytes = len > 0 && len <= ArmoryRules.MaxWireBytes ? reader.ReadBytes(len) : null;
+			if (len > ArmoryRules.MaxWireBytes) reader.BaseStream.Seek(len, SeekOrigin.Current);
+			if (bytes != null && !RulesHeldBack) { var fresh = ArmoryRules.FromBytes(bytes); fresh.Rev = rev; Rules.CopyFrom(fresh); } // same object, so an open panel keeps its reference
 		}
 	}
 }

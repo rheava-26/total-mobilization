@@ -118,9 +118,10 @@ namespace Levy.Content.TileEntities
 		{
 			if (_allocating || requester?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			_allocating = true;
+			using var _rs = ArmoryRules.Enter(Rules);
 			try {
 				var plan = BuildAllocation(requester);
-				WeaponAllocator.Plan(plan.Levies, plan.Cands);
+				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
 				return Carry(plan, requester, upgrade);
 			}
 			catch (Exception e) {
@@ -185,10 +186,11 @@ namespace Levy.Content.TileEntities
 		private HashSet<object> ClaimedWeapons(SoldierRecord who)
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
+			using var _rs = ArmoryRules.Enter(Rules);
 			try {
 				var plan = BuildAllocation(who);
 				if (plan.Levies.Count == 0) return null;
-				WeaponAllocator.Plan(plan.Levies, plan.Cands);
+				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
 				var set = new HashSet<object>(ReferenceEqualityComparer.Instance);
 				foreach (var c in plan.Cands) if (c.Used) set.Add(c.It);
 				return set;

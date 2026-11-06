@@ -557,6 +557,15 @@ namespace Levy.Common.Weapons
 		public static DamageClass ItemDamageClass(Item item)
 		{
 			if (item == null || item.IsAir) return null;
+			var rules = ArmoryRules.Current; // inside an armory's pick: a class the player set by hand for this item type wins
+			if (rules != null && rules.TryClassEdit(item, out var edited)) return edited;
+			return ItemDamageClassDerived(item);
+		}
+
+		/// <summary>The class the item has by itself, ignoring any armory's hand edits.</summary>
+		public static DamageClass ItemDamageClassDerived(Item item)
+		{
+			if (item == null || item.IsAir) return null;
 			var extra = ExtraDamageClasses.Of(item); // a rogue / bard / healer weapon is its own class, whatever shape it is (Calamity / Thorium; found by name, never referenced)
 			if (extra != null) return extra;
 			var f = GetProfile(item).Family;

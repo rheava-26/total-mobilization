@@ -55,25 +55,74 @@ namespace Levy.Common.Weapons
 		internal static void Force(WeaponRankMode mode, bool skipArmored) { _forced = true; _forcedMode = mode; _forcedSkip = skipArmored; }
 		internal static void Release() { _forced = false; }
 
-		/// <summary>The rank of a weapon under the current mode: higher is better, 0 for an item that is not a supported weapon.</summary>
-		public static float Of(Item it)
+		/// <summary>The rank of a weapon under the current mode: higher is better, 0 for an item that is not a supported weapon (or one the current armory's rules exclude).</summary>
+		public static float Of(Item it) => Core(it, false, out _);
+
+		/// <summary>Where a rank comes from, term by term (the item panel and the probes show it). <see cref="Final"/> equals <see cref="Of"/>.</summary>
+		public struct Breakdown
 		{
+			public WeaponRankMode Mode;
+			/// <summary>The sell price (plus the material cost in that mode), or the damage score in Damage mode.</summary>
+			public double Key;
+			/// <summary>Key ^ PriceExponent (Damage mode: the score itself).</summary>
+			public float Base;
+			/// <summary>The item's progression tier (-1 = none), how many stages the world is past it, and the Balanced discount that follows.</summary>
+			public float Tier, Gap, Stage;
+			public float Recency, Found;
+			/// <summary>The armory's weight rules: the product, and which rules matched.</summary>
+			public float Rules; public string RuleNote;
+			public bool Negligible;
+			public RankOverrideMode Override; public float OverrideValue;
+			public bool Excluded;
+			public float Final;
+		}
+
+		/// <summary>The rank of an item with every term, under the current rules.</summary>
+		public static Breakdown Explain(Item it) { Core(it, true, out var b); return b; }
+
+		private static float Core(Item it, bool explain, out Breakdown bd)
+		{
+			bd = default;
 			if (it == null || it.IsAir) return 0f;
 			var p = WeaponClassifier.GetProfile(it);
 			if (!p.Supported) return 0f;
 			WeaponRankMode mode = Mode;
-			if (mode == WeaponRankMode.Damage) return WeaponClassifier.Score(it);
-			double key = Math.Max(0, it.value);
-			if (mode == WeaponRankMode.SellPricePlusMaterials) key += MaterialCost.Of(it.type);
-			float r = (float)Math.Pow(Math.Max(1d, key), PriceExponent); // at least 1: a worthless item is the cheapest of the real weapons
-			if (mode == WeaponRankMode.Balanced)
+			var rules = ArmoryRules.Current;
+			ItemOverride ov = rules?.OverrideOf(it.type);
+			bool excluded = rules != null && rules.Excluded(it);
+			if (explain) { bd.Mode = mode; bd.Rules = 1f; bd.Recency = 1f; bd.Found = 1f; bd.Stage = 1f; bd.Tier = -1f; bd.Excluded = excluded; if (ov != null) { bd.Override = ov.Rank; bd.OverrideValue = ov.Value; } }
+			if (excluded && !explain) return 0f;
+			float r;
+			if (mode == WeaponRankMode.Damage) { r = WeaponClassifier.Score(it); if (explain) { bd.Key = r; bd.Base = r; } }
+			else
 			{
-				float tier = ProgressionTier.Of(it.type);
-				if (tier >= 0f) r *= StageDiscount(Progress() - tier);
-				if (ProgressionTier.IsFound(it.type)) r *= FoundBoost;
-				r = Math.Max(1f, r * DepositStamp.Boost(it));
+				double key = Math.Max(0, it.value);
+				if (mode == WeaponRankMode.SellPricePlusMaterials) key += MaterialCost.Of(it.type);
+				r = (float)Math.Pow(Math.Max(1d, key), PriceExponent); // at least 1: a worthless item is the cheapest of the real weapons
+				if (explain) { bd.Key = key; bd.Base = r; }
+				if (mode == WeaponRankMode.Balanced)
+				{
+					float tier = ProgressionTier.Of(it.type);
+					if (tier >= 0f) { float d = StageDiscount(Progress() - tier); r *= d; if (explain) { bd.Tier = tier; bd.Gap = Progress() - tier; bd.Stage = d; } }
+					if (ProgressionTier.IsFound(it.type)) { r *= FoundBoost; if (explain) bd.Found = FoundBoost; }
+					float rec = DepositStamp.Boost(it);
+					r = Math.Max(1f, r * rec);
+					if (explain) bd.Recency = rec;
+				}
 			}
-			if (SkipArmored && Negligible(it)) return 0.5f * r / (r + 1f); // below every real weapon (those rank 1 and up), still ordered among themselves
+			if (rules != null)
+			{
+				float f = rules.RuleFactor(it, out var note);
+				if (f != 1f) { r *= f; if (explain) { bd.Rules = f; bd.RuleNote = note; } }
+			}
+			if (SkipArmored && mode != WeaponRankMode.Damage && Negligible(it)) { r = 0.5f * r / (r + 1f); if (explain) bd.Negligible = true; } // below every real weapon (those rank 1 and up), still ordered among themselves
+			if (ov != null)
+			{
+				if (ov.Rank == RankOverrideMode.Set) r = Math.Max(0.01f, ov.Value);
+				else if (ov.Rank == RankOverrideMode.Prefer) r += ArmoryRules.PreferBase;
+			}
+			if (excluded) r = 0f;
+			if (explain) bd.Final = r;
 			return r;
 		}
 

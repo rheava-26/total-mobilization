@@ -299,6 +299,18 @@ namespace Levy.Common.UI
 			var p = LevyPackets.New(LevyPacket.ArmoryReforge); p.Write(te.ID); p.Write((byte)floorIndex); p.Send();
 		}
 
+		/// <summary>
+		/// The armory's rule list was edited in place: single player only has to drop the compiled cache and queue a sync; a multiplayer client sends the whole list to the server, which re-reads, clamps and applies it.
+		/// </summary>
+		public static void SendArmoryRules(ArmoryTE te)
+		{
+			if (te == null || !IsLive(te)) return;
+			te.Rules.Changed();
+			if (Single) { te.MarkDirty(); return; }
+			var bytes = te.Rules.ToBytes();
+			var p = LevyPackets.New(LevyPacket.ArmoryRulesSet); p.Write(te.ID); p.Write(bytes.Length); p.Write(bytes); p.Send();
+		}
+
 		/// <summary>Multiplayer client: tells the server what this slot now holds. No-op in single player (the arrays are live).</summary>
 		public static void SendArmorySlot(ArmoryTE te, byte region, int slot)
 		{

@@ -125,6 +125,36 @@ Mods: {
 					A destroyed drone returns its weapon. Consumed on use, once per world.
 					'''
 			}
+
+			LevyRod: {
+				DisplayName: Levy Rod
+				Tooltip: Plants a levy sentry during the Old One's Army. Calls up {0} levy for {1} Etherian Mana.
+			}
+
+			LevyCane: {
+				DisplayName: Levy Cane
+				Tooltip: Plants a levy sentry during the Old One's Army. Calls up {0} levies for {1} Etherian Mana.
+			}
+
+			LevyStaff: {
+				DisplayName: Levy Staff
+				Tooltip: Plants a levy sentry during the Old One's Army. Calls up {0} levies for {1} Etherian Mana.
+			}
+
+			BarracksAle: {
+				DisplayName: Barracks Ale
+				Tooltip: Your levies within {0} tiles gain defense for {1} minutes. They aim worse while drunk.
+			}
+
+			BlackStout: {
+				DisplayName: Black Stout
+				Tooltip: Your levies within {0} tiles deal more damage for {1} minutes. They aim worse while drunk.
+			}
+
+			SpicedRum: {
+				DisplayName: Spiced Rum
+				Tooltip: Your levies within {0} tiles attack faster for {1} minutes. They aim worse while drunk.
+			}
 		}
 
 		Tiles: {
@@ -154,6 +184,7 @@ Mods: {
 			SoldierNebulaBooster.DisplayName: Soldier Nebula Booster
 			SoldierStardustGuardian.DisplayName: Soldier Stardust Guardian
 			SoldierHeal.DisplayName: Soldier Heal
+			LevySentryBanner.DisplayName: Levy Sentry
 		}
 
 		Keybinds: {
@@ -198,6 +229,7 @@ Mods: {
 					Bosses: Bosses
 					Soldiers: Soldiers
 					Economy: Economy
+					Events: Events
 					Interface: Interface
 					Targeting: Targeting Header
 					Progression: Levy progression
@@ -341,6 +373,11 @@ Mods: {
 				AutoMusterDefault: {
 					Label: Auto-muster by default
 					Tooltip: New barracks call the militia when an invasion or Blood Moon starts.
+				}
+
+				OldOnesArmyUsesLevySentries: {
+					Label: Old One's Army uses levy sentries
+					Tooltip: Regular levies stand down during the Old One's Army. Levy sentries call them up for Etherian Mana.
 				}
 
 				MilitiaFieldCap: {

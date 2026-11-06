@@ -58,6 +58,7 @@ namespace Levy.Common.Net
 		Demote, Reserve,
 		CompanionRequest, // client -> server: a Thorium cast the local player just made, for the companion to lay on that player's soldiers; its own handler decodes the payload
 		ArmoryRulesSet, // client -> server: the armory's whole rule list (see ArmoryRules.ToBytes); appended here so no existing value moves
+		DrinkRound, // client -> server: byte drink(0 Ale,1 Stout,2 Rum) - the server serves the round to the sender's levies in range
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 	}

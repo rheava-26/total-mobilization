@@ -68,6 +68,9 @@ namespace Levy.Common.Config
 		[Range(4, 200)] [DefaultValue(60)] public int LeviesByEndOfPostMoonLord;
 		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
 
+		[Header("Events")]
+		[DefaultValue(true)] public bool OldOnesArmyUsesLevySentries;
+
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;

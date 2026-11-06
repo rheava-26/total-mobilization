@@ -18,3 +18,18 @@ VenomBuff: {
 	DisplayName: Venom
 	Description: Loses life steadily, ignoring defense.
 }
+
+AleBuff: {
+	DisplayName: Ale
+	Description: Drunk. More defense, wider aim error.
+}
+
+StoutBuff: {
+	DisplayName: Stout
+	Description: Drunk. More damage, wider aim error.
+}
+
+RumBuff: {
+	DisplayName: Rum
+	Description: Drunk. Attacks faster, wider aim error.
+}

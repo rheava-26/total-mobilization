@@ -24,6 +24,7 @@ namespace Levy.Common.Logistics
 			LevyPackets.Register(LevyPacket.LogisticsOrderEdit, LogisticsActions.OnOrderEdit);
 			LevyPackets.Register(LevyPacket.LogisticsSell, LogisticsActions.OnSell);
 			LevyPackets.Register(LevyPacket.LogisticsBuy, LogisticsActions.OnBuy);
+			LevyPackets.Register(LevyPacket.LogisticsCraft, LogisticsActions.OnCraft);
 			LevyPackets.Register(LevyPacket.LogisticsSnapshot, (r, who) => { if (Main.netMode == NetmodeID.MultiplayerClient) OrderBook.ReadBook(r); });
 		}
 

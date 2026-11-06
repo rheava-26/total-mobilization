@@ -152,16 +152,16 @@ namespace Levy.Common.UI
 
 			// Tabs: the Items tab is the storage grid and issue rows; the Rules tab is the rule list (RulesView). The item panel opens beside the armory when a weapon is pointed at.
 			_tabItems = new LevyButton(LevyUtil.T("Rules.TabItems"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(0), LevyUtil.T("Rules.TabItemsHint"));
-			_tabItems.Left.Set(w - 10 - 70 - 76, 0f); _tabItems.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_tabItems.Left.Set(w - 10 - 80 - 76 - 76 - 76, 0f); _tabItems.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabItems);
 			_tabRules = new LevyButton(LevyUtil.T("Rules.TabRules"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(1), LevyUtil.T("Rules.TabRulesHint"));
-			_tabRules.Left.Set(w - 10 - 70, 0f); _tabRules.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_tabRules.Left.Set(w - 10 - 80 - 76 - 76, 0f); _tabRules.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabRules);
 			_tabVanity = new LevyButton(LevyUtil.T("Vanity.Tab"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(2), LevyUtil.T("Vanity.TabHint"));
-			_tabVanity.Left.Set(w - 10 - 70 - 76 - 76, 0f); _tabVanity.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_tabVanity.Left.Set(w - 10 - 80 - 76, 0f); _tabVanity.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabVanity);
 			_tabLog = new LevyButton(LevyUtil.T("Logistics.Tab"), LevyConstants.UI.ButtonTextScale, 80, LevyConstants.UI.ArmoryBarHeight, () => SetTab(3), LevyUtil.T("Logistics.TabHint"));
-			_tabLog.Left.Set(w - 10 - 70 - 76 - 76 - 86, 0f); _tabLog.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_tabLog.Left.Set(w - 10 - 80, 0f); _tabLog.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabLog);
 			_logView = new LogisticsView(this);
 			_logView.Left.Set(GridLeft, 0f); _logView.Top.Set(36f, 0f);
@@ -408,9 +408,6 @@ namespace Levy.Common.UI
 				var slot = MakeSlot(_builtPotions, i, 4, healing ? (Func<Item, bool>)(it => it.healLife > 0 || it.healMana > 0) : (it => it.buffType > 0 && it.consumable), LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"));
 				slot.Left.Set(x, 0f); slot.Top.Set(y, 0f);
 				_issue.Append(slot); _potionEls.Add(slot);
-				var tag = new Label(LevyUtil.T(healing ? "UI2.PotionHealing" : "UI2.PotionBuff"), 0.6f);
-				tag.Left.Set(x, 0f); tag.Top.Set(y + Pitch - 2f, 0f);
-				_issue.Append(tag); _potionEls.Add(tag);
 			}
 			_issue.Recalculate();
 		}

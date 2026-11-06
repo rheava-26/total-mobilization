@@ -486,6 +486,11 @@ Mods: {
 					Tooltip: An armory within 50 tiles of a Storage Heart, Storage Access or Remote Access arms soldiers from that network once its own shelves and pylon-linked armories run dry. Does nothing without Magic Storage.
 				}
 
+				LogisticsReachesPylons: {
+					Label: Logistics reaches shopkeepers through pylons
+					Tooltip: An armory within 60 tiles of a working pylon also trades with shopkeepers housed near any other working pylon. Buying, standing buys and selling all use them.
+				}
+
 				Nameplates: {
 					Label: Nameplates
 					Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen.

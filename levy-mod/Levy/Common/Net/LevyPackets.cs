@@ -83,6 +83,7 @@ namespace Levy.Common.Net
 		LogisticsBuy, // client -> server: run one standing buy rule now
 		LogisticsSnapshot, // server -> client: the whole order book (OrderBook.WriteBook)
 		ObserveList, ObservePos, // server -> one client: Command & Observe (camera list, followed-levy position)
+		LogisticsCraft, // client -> server: craft one recipe now from the sender's inventory, nearby chests and the armory stock (see LogisticsActions)
 	}
 
 	public static class LevyPackets

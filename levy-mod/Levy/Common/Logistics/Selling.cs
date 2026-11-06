@@ -120,7 +120,7 @@ namespace Levy.Common.Logistics
 				foreach (var ing in rec.requiredItem) { if (ing == null || ing.IsAir) continue; var o = new Item(); o.SetDefaults(ing.type); o.stack = ing.stack * crafts; Spill(a, o); }
 				res.Shimmered += it.stack; res.Stacks++;
 			}
-			if (total > 0) { Pay(a, total); res.Coin = total; res.Buyer = buyer?.GivenName ?? ""; }
+			if (total > 0) { Pay(a, total); res.Coin = total; res.Buyer = Shopping.KeeperLabel(a, buyer); }
 			a.MarkDirty();
 			return res;
 		}

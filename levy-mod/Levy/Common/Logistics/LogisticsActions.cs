@@ -19,6 +19,7 @@ namespace Levy.Common.Logistics
 	/// Wire layouts (after the packet byte), all client -> server:
 	///  LogisticsOrderEdit: byte action(0 save,1 delete,2 pause,3 resume), int orderId (0 = new); action 0 then LogisticsOrder.Write(false)
 	///  LogisticsSell: int armoryId, bool shimmerBack, byte kind(0 slots,1 filter), then kind 0: ushort count, ushort[] storage indices; kind 1: byte category (0 none), sbyte tierIndex (-1 none)
+	///  LogisticsCraft: int armoryId, int recipeIndex (Main.recipe), int crafts
 	///  LogisticsBuy: int armoryId, byte kind, int type, int count, long budget   (one standing rule, run once now)
 	/// </summary>
 	public static class LogisticsActions
@@ -116,6 +117,33 @@ namespace Levy.Common.Logistics
 			Tell(who, res.Items + res.Shimmered == 0 ? LevyUtil.T("Logistics.SoldNothing") :
 				res.Coin > 0 ? LevyUtil.T("Logistics.Sold", res.Items, LevyUtil.Coins(res.Coin), res.Buyer) + (res.Shimmered > 0 ? " " + LevyUtil.T("Logistics.ShimmeredN", res.Shimmered) : "") : LevyUtil.T("Logistics.ShimmeredN", res.Shimmered));
 			a.Sync();
+		}
+
+		// ---------------------------------------------------------------- craft now
+		public static void CraftNow(ArmoryTE a, Recipe r, int crafts)
+		{
+			if (r == null || r.RecipeIndex < 0) return;
+			if (Main.netMode == NetmodeID.MultiplayerClient) { var p = LevyPackets.New(LevyPacket.LogisticsCraft); p.Write(a.ID); p.Write(r.RecipeIndex); p.Write(crafts); p.Send(); }
+			else DoCraft(Main.myPlayer, a, r, crafts);
+		}
+
+		internal static void OnCraft(BinaryReader rd, int who)
+		{
+			int id = rd.ReadInt32(), idx = rd.ReadInt32(), crafts = rd.ReadInt32();
+			if (Main.netMode != NetmodeID.Server) return;
+			var a = Armory(id); if (a == null || !Near(who, a) || idx < 0 || idx >= Main.recipe.Length) return;
+			var r = Main.recipe[idx]; if (r == null || r.Disabled || r.createItem == null || r.createItem.IsAir) return;
+			DoCraft(who, a, r, Math.Clamp(crafts, 1, LogisticsConstants.MaxTotal));
+		}
+
+		private static void DoCraft(int who, ArmoryTE a, Recipe r, int crafts)
+		{
+			if (who < 0 || who >= Main.maxPlayers || !Main.player[who].active) return;
+			var pool = CraftBrowser.PoolFor(a, Main.player[who]);
+			int made = CraftBrowser.Craft(r, crafts, a, pool);
+			Tell(who, made == 0 ? LevyUtil.T("Logistics.CraftNothing") : LevyUtil.T("Logistics.Crafted", made, Lang.GetItemNameValue(r.createItem.type)));
+			a.Sync();
+			CraftBrowser.Version++;
 		}
 
 		// ---------------------------------------------------------------- buy

@@ -172,6 +172,14 @@ namespace Levy.Common.Logistics
 			return p;
 		}
 
+		/// <summary>Plans <paramref name="crafts"/> crafts of one specific recipe (the browser's recipe, not "any recipe for this item"), crafting missing intermediates from stock. Spends from <paramref name="counts"/>.</summary>
+		public static Plan PlanRecipe(Recipe r, int crafts, ArmoryTE a, CountCache counts, Plan into = null)
+		{
+			var p = into ?? new Plan();
+			MakeVia(r, Math.Max(1, crafts) * Math.Max(1, r.createItem.stack), a, counts, p, 0);
+			return p;
+		}
+
 		private static void Merge(Plan into, Plan from)
 		{
 			into.Steps.AddRange(from.Steps);

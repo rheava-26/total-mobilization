@@ -10,7 +10,7 @@ PageSell: Sell
 PageSellHint: Sell armory items to the best-paying shopkeeper.
 PageFind: Find
 PageFindHint: Choose an item to find. The Seeker and Spectator potions use it.
-Rule: Orders craft at stations within 30 tiles, from the armory, nearby chests and the linked storage network.
+Rule: Crafts at stations within 30 tiles.
 OrdersHeader: Orders
 New: New
 NewHint: Start a new order.
@@ -60,7 +60,7 @@ BuyHeader: Standing buy
 KindHint: Choose what to buy.
 KindItem: One item
 KindGun: Any gun
-KindAmmo: Any ammo
+KindAmmo: Ammo
 AnyGunHint: Buys the best gun in stock.
 AnyAmmoHint: Buys the best ammo in stock.
 Count: Count
@@ -70,6 +70,46 @@ AddToOrder: Add to selected order
 AddToOrderHint: The order buys this each time it runs, until the count or budget is met.
 RuleAdded: Standing buys on this order: {0}. Save the order to keep them.
 Offers: In reach
+ModeOrders: Standing orders
+ModeOrdersHint: Orders that craft and buy on their own.
+ModeCraft: Craft items
+ModeCraftHint: Browse recipes and craft now.
+ViewCan: Can craft
+ViewCanHint: Recipes you can make right now.
+ViewHas: Has materials
+ViewHasHint: Recipes with at least one ingredient in stock.
+ViewAll: All
+ViewAllHint: Every recipe.
+RecipeSearch: Search recipes...
+CraftNow: Craft
+CraftNowHint: Crafts now from your inventory, nearby chests and the armory stock. The result goes to your inventory.
+MakeOrder: Make order
+MakeOrderHint: Creates a standing order for this item.
+CanMake: Can make: {0}
+Ing: "{0}  {1}/{2}"
+IngGroup: "{0} or similar  {1}/{2}"
+NoRecipes: No recipes match.
+MoreRecipes: "{0} more. Narrow the search."
+PickRecipe: Pick a recipe.
+Crafted: Crafted {0} {1}.
+CraftNothing: Nothing was crafted.
+ReachHeader: In reach: {0} here
+ReachHeaderPylons: In reach: {0} here, {1} more via pylons
+Shopkeeper1: 1 shopkeeper
+ShopkeeperN: "{0} shopkeepers"
+OfferVia: "{0} ({1})"
+OfferSearch: Search...
+NoMatch: No offers match.
+KindWeapons: Weapons
+KindMelee: Melee
+KindRanged: Ranged
+KindMagic: Magic
+KindSummon: Summon
+KindRogue: Thrown / Rogue
+KindGear: Armor & accessories
+KindPotions: Potions
+KindTools: Tools
+KindBlocks: Blocks & other
 OfferHint: Click to buy this item.
 NoShops: No shopkeepers are in reach.
 Funds: Funds {0}
@@ -109,8 +149,8 @@ SellNoBuyer: "{0} selected. No shopkeeper is in reach."
 Sold: Sold {0} items for {1} to {2}.
 ShimmeredN: Shimmered {0} items back to materials.
 SoldNothing: Nothing was sold.
-FindSearch: Search items
-FindClear: Clear
+FindSearch: Search...
+FindClear: Stop finding
 FindClearHint: Stop looking for an item.
 FindCurrent: Finding: {0}
 FindNone: Click an item to find it.

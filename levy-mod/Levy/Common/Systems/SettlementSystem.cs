@@ -281,6 +281,52 @@ namespace Levy.Common.Systems
 			return false;
 		}
 
+		/// <summary>A pylon reduced to what shopping needs: where it is, whether it works (vanilla's enough-town-NPCs rule), and its display name.</summary>
+		public struct PylonPoint { public Vector2 Center; public bool Valid; public string Name; }
+
+		/// <summary>Test hook: replaces vanilla's "enough NPCs near the pylon" rule. Null in play.</summary>
+		public static Func<Terraria.GameContent.TeleportPylonInfo, bool> PylonValidOverride;
+
+		/// <summary>Every pylon in the world as a <see cref="PylonPoint"/>. A pylon is valid when it has the town NPCs vanilla asks for.</summary>
+		public static List<PylonPoint> PylonPoints()
+		{
+			var res = new List<PylonPoint>();
+			var pylons = Main.PylonSystem?.Pylons; if (pylons == null) return res;
+			for (int i = 0; i < pylons.Count; i++)
+			{
+				var info = pylons[i]; var p = info.PositionInTiles;
+				bool ok; try { ok = PylonValidOverride != null ? PylonValidOverride(info) : Terraria.GameContent.TeleportPylonsSystem.DoesPositionHaveEnoughNPCs(2, p); } catch (Exception) { ok = false; }
+				res.Add(new PylonPoint { Center = new Vector2((p.X + 1.5f) * LevyConstants.TilePx, (p.Y + 2f) * LevyConstants.TilePx), Valid = ok, Name = PylonName(info) });
+			}
+			return res;
+		}
+
+		private static string PylonName(Terraria.GameContent.TeleportPylonInfo info)
+		{
+			int item = info.TypeOfPylon switch
+			{
+				Terraria.GameContent.TeleportPylonType.SurfacePurity => ItemID.TeleportationPylonPurity, Terraria.GameContent.TeleportPylonType.Jungle => ItemID.TeleportationPylonJungle,
+				Terraria.GameContent.TeleportPylonType.Hallow => ItemID.TeleportationPylonHallow, Terraria.GameContent.TeleportPylonType.Underground => ItemID.TeleportationPylonUnderground,
+				Terraria.GameContent.TeleportPylonType.Beach => ItemID.TeleportationPylonOcean, Terraria.GameContent.TeleportPylonType.Desert => ItemID.TeleportationPylonDesert,
+				Terraria.GameContent.TeleportPylonType.Snow => ItemID.TeleportationPylonSnow, Terraria.GameContent.TeleportPylonType.GlowingMushroom => ItemID.TeleportationPylonMushroom,
+				Terraria.GameContent.TeleportPylonType.Victory => ItemID.TeleportationPylonVictory, _ => 0,
+			};
+			return item > 0 ? Lang.GetItemNameValue(item) : "Pylon";
+		}
+
+		/// <summary>Index of the nearest VALID pylon within <see cref="LevyConstants.PylonShareRadius"/> tiles of <paramref name="c"/>, or -1.</summary>
+		public static int NearestValidPylon(Vector2 c, IList<PylonPoint> pylons)
+		{
+			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit; int best = -1; float bd = float.MaxValue;
+			for (int i = 0; i < pylons.Count; i++)
+			{
+				if (!pylons[i].Valid) continue;
+				float d = Vector2.DistanceSquared(c, pylons[i].Center);
+				if (d <= limit && d < bd) { bd = d; best = i; }
+			}
+			return best;
+		}
+
 		/// <summary>
 		/// The barracks that pool their money with <paramref name="from"/>: the same settlement. Two barracks are one settlement when they stand inside each other's settlement box
 		/// (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles) or are both on the pylon network (see <see cref="NetworkedArmories"/>;

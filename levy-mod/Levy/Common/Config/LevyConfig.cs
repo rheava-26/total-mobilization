@@ -70,6 +70,7 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool ClassMatchIssue;
 		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool MagicStorageSupply;
+		[DefaultValue(true)] public bool LogisticsReachesPylons;
 
 		// ---- Hooks ------------------------------------------------------------------------------------------
 		[Header("Hooks")]

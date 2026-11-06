@@ -1,0 +1,123 @@
+# Keys here are relative to Mods.Levy.Configs (progression assistance config).
+LevyProgressionConfig: {
+	DisplayName: Levy: Progression assistance
+
+	Headers: {
+		Note: Levy is designed around vanilla progression. These options only ease hard-to-get items. Recipes:
+		DropRates: Drop rates
+		Chlorophyte: Chlorophyte growth
+		Items: Boss weapons, shimmer and crates
+		ArmorCosts: Armor costs
+		ArmsDealer: Arms Dealer
+	}
+
+	LifeCrystalRecipe: {
+		Label: Life Crystal recipe
+		Tooltip: Craft a Life Crystal from 5 Lesser Healing Potions and 1 Ruby at an Alchemy Table. Needs a reload.
+	}
+
+	LifeFruitRecipe: {
+		Label: Life Fruit recipe
+		Tooltip: Craft a Life Fruit from a Life Crystal, 3 Chlorophyte Bars and 5 Jungle Spores at a Mythril Anvil. Needs any mechanical boss defeated. Needs a reload.
+	}
+
+	FallenStarRecipe: {
+		Label: Fallen Star recipe
+		Tooltip: Craft a Fallen Star from 3 Meteorite Bars at an Anvil. Needs the Eater of Worlds or Brain of Cthulhu defeated. Needs a reload.
+	}
+
+	GemsToManaCrystalRecipe: {
+		Label: Gems to Mana Crystal
+		Tooltip: Craft a Mana Crystal from 8 gems of any kind at an Alchemy Table. Needs a reload.
+	}
+
+	ChlorophyteOrePerBar: {
+		Label: Chlorophyte Ore per bar
+		Tooltip: Chlorophyte Ore needed for one Chlorophyte Bar. 5 is the normal amount. Needs a reload.
+	}
+
+	ChlorophyteOreRecipe: {
+		Label: Chlorophyte Ore recipe
+		Tooltip: Craft a Chlorophyte Ore from 2 Mud Blocks and 2 Jungle Spores at an Adamantite Forge. Needs Hardmode. Needs a reload.
+	}
+
+	AmmoRecipeYieldMultiplier: {
+		Label: Ammo recipe yield
+		Tooltip: Multiplies how many arrows, bullets, darts and rockets each ammo recipe makes, up to a full stack. Needs a reload.
+	}
+
+	EctoplasmDropMultiplier: {
+		Label: Ectoplasm drop rate
+		Tooltip: Multiplies Ectoplasm drops, including from the Dungeon Spirit. Needs a reload.
+	}
+
+	SoulDropMultiplier: {
+		Label: Soul drop rate
+		Tooltip: Multiplies drops of Souls of Light, Night and Flight. Needs a reload.
+	}
+
+	MobDropMultiplier: {
+		Label: Monster drop rate
+		Tooltip: Multiplies every drop of non-boss monsters. Applies on top of the Ectoplasm and Soul rates. Needs a reload.
+	}
+
+	ChlorophyteGrowthMultiplier: {
+		Label: Chlorophyte growth
+		Tooltip: Extra Chlorophyte spawn and spread attempts for every growth update. 1 is the normal rate.
+	}
+
+	ChlorophyteChunkScale: {
+		Label: Chlorophyte chunk size
+		Tooltip: Scales how much Chlorophyte may grow in one area before growth stops. 1 is the normal size.
+	}
+
+	OnceOnlyBossWeaponRepeatPercent: {
+		Label: Repeat boss weapon drop
+		Tooltip: Chance per kill for Plantera to drop another Grenade Launcher with Rocket Is. Applies to her Treasure Bag as well. Needs a reload.
+	}
+
+	ShimmerDesertShards: {
+		Label: Shimmer shard route
+		Tooltip: Shimmer turns Forbidden Fragments into Dark Shards, Dark Shards into Light Shards, and Light Shards into Forbidden Fragments. Needs a reload.
+	}
+
+	EarlyHardmodeCrateOreMultiplier: {
+		Label: Early Hardmode crate ore
+		Tooltip: Multiplies the Cobalt, Palladium, Mythril and Orichalcum ore that crates hold. Needs a reload.
+	}
+
+	ChlorophyteArmorCostPercent: {
+		Label: Chlorophyte armor cost
+		Tooltip: Percent of the normal ingredient cost of Chlorophyte armor. Needs a reload.
+	}
+
+	HallowedArmorCostPercent: {
+		Label: Hallowed armor cost
+		Tooltip: Percent of the normal ingredient cost of Hallowed armor. Needs a reload.
+	}
+
+	SpiderArmorCostPercent: {
+		Label: Spider armor cost
+		Tooltip: Percent of the normal ingredient cost of Spider armor. Needs a reload.
+	}
+
+	LevyArmorCostPercent: {
+		Label: Levy armor sets cost
+		Tooltip: Percent of the normal ingredient cost of every armor set. Spectre, Shroomite and Spooky armor never change. Needs a reload.
+	}
+
+	ArmsDealerBulkAmmo: {
+		Label: Arms Dealer bulk ammo
+		Tooltip: The Arms Dealer sells any arrow, bullet, dart or rocket you have crafted or picked up enough of. He stocks up to 12 types.
+	}
+
+	BulkAmmoUnlockAmount: {
+		Label: Bulk ammo unlock amount
+		Tooltip: Rounds of one ammo type you must have crafted or picked up before the Arms Dealer sells it.
+	}
+
+	BulkAmmoPricePercent: {
+		Label: Bulk ammo price
+		Tooltip: Percent of the item's normal shop price.
+	}
+}

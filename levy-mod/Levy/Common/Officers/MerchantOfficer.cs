@@ -15,9 +15,9 @@ namespace Levy.Common.Officers
 	/// <summary>
 	/// THE QUARTERMASTER. The Merchant is a FRONTLINE officer, a mobile fence you drag along with the army. He throws knives at anything that strays into reach (his
 	/// <see cref="OfficerWeapon"/>), and his kit is the trade: soldiers near him are handed the basic stock they can use (ammo for the weapon in hand, a potion if they would
-	/// drink one) and kept under a small Morale lift, while <see cref="MerchantFenceGlobalNPC"/> fences the loot of every kill that falls near him into the treasury.
+	/// drink one) while <see cref="MerchantFenceGlobalNPC"/> fences the loot of every kill that falls near him into the treasury.
 	/// </summary>
-	/// <remarks>DEFERRED (net-new, not built): selling to him on the march, i.e. opening his shop from the line.</remarks>
+	/// <remarks>Selling on the march: his shop opens from the line and <see cref="OfficerPlayer"/> gives it the march price.</remarks>
 	public static class MerchantOfficer
 	{
 		public static OfficerDef Create() => new OfficerDef
@@ -50,26 +50,20 @@ namespace Levy.Common.Officers
 	/// </summary>
 	public sealed class MerchantKit : OfficerKit
 	{
-		private sealed class State { public int MoraleTimer, SupplyTimer; }
-		private int[] _morale;
+		private sealed class State { public int SupplyTimer; }
 
 		public override object CreateState() => new State();
 
 		// {0} fence reach (tiles), {1} loot value the treasury is credited per kill (percent of the kill's own), {2} handout reach (tiles), {3} morale reach (tiles)
 		public override object[] DescriptionArgs => new object[]
 		{
-			MerchantFenceRadiusTiles, (int)Math.Round(MerchantFenceValueMult * 100f), MerchantSupplyRadiusTiles, MerchantMoraleRadiusTiles,
+			MerchantFenceRadiusTiles, (int)Math.Round(MerchantFenceValueMult * 100f), MerchantSupplyRadiusTiles,
+			(int)Math.Round((1.0 / MerchantMarchPriceAdjust - 1.0) * 100.0), (int)Math.Round((1.0 - MerchantMarchPriceAdjust) * 100.0),
 		};
 
 		public override void Tick(OfficerContext ctx)
 		{
 			if (ctx.State is not State st) return;
-
-			if (++st.MoraleTimer >= MerchantMoraleCadenceTicks)
-			{
-				st.MoraleTimer = 0;
-				AuraKit.Pulse(ctx.Npc.Center, _morale ??= new[] { ModContent.BuffType<MoraleBuff>() }, MerchantMoraleRadiusTiles, MerchantMoraleDurationTicks, includeOfficers: false);
-			}
 
 			if (++st.SupplyTimer >= MerchantSupplyCadenceTicks)
 			{

@@ -1,0 +1,188 @@
+using System;
+using System.IO;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent;
+using Terraria.ID;
+using Terraria.Map;
+using Terraria.ModLoader;
+using Terraria.UI;
+using Levy.Common.Movement;
+using Levy.Common.Net;
+using Levy.Common.Soldiers;
+using Levy.Common.Systems;
+using Levy.Common.Util;
+using Levy.Content.Items;
+using Levy.Content.NPCs;
+
+namespace Levy.Common.Observe
+{
+	/// <summary>
+	/// "Go to map point" order. The goal is a tile kept in <see cref="SoldierRecord.Ext"/> (so it saves with the record and needs no new field);
+	/// <see cref="SoldierOrder.GoTo"/> is the order. The brain marches the soldier there in legs (<c>SoldierNPC.ThinkMapOrder</c>), still fighting what is in reach, and on arrival the order turns into Hold at that spot.
+	/// Issued from the Command Radio (shift-click on the full map) and from the barracks panel (pick a point, then click the map).
+	/// </summary>
+	public static class MapOrder
+	{
+		public const string KeyX = "goX", KeyY = "goY";
+		/// <summary>Soldiers fan out over this many tiles either side of the clicked point so a squad does not stack on one tile.</summary>
+		public const int SpreadTiles = 3;
+		public const int SpreadSlots = 9;
+
+		/// <summary>Barracks "send to map point": the next left-click on the full map is the destination.</summary>
+		public static bool PickMode;
+		/// <summary>Server: a soldier changed order on its own (arrival); the roster snapshot is re-sent shortly.</summary>
+		public static bool SnapshotDue;
+		/// <summary>Last point the local player ordered (map marker), and when.</summary>
+		public static Point LastPoint; public static uint LastPointTick;
+
+		/// <summary>Barracks button: opens the full map; the next left-click is the destination for every Regular.</summary>
+		public static void BeginPick()
+		{
+			if (Main.dedServ) return;
+			PickMode = true; Main.mapFullscreen = true; Main.resetMapFull = true;
+			Main.NewText(LevyUtil.T("Observe.PickPrompt"), 190, 220, 255);
+		}
+
+		public static bool TryGoal(SoldierRecord r, out int tx, out int ty)
+		{
+			tx = ty = 0;
+			if (r?.Ext == null || !r.Ext.TryGetValue(KeyX, out tx) || !r.Ext.TryGetValue(KeyY, out ty)) return false;
+			return true;
+		}
+
+		public static void SetGoal(SoldierRecord r, int tx, int ty) { r.Ext[KeyX] = tx; r.Ext[KeyY] = ty; }
+		public static void ClearGoal(SoldierRecord r) { r.Ext?.Remove(KeyX); r.Ext?.Remove(KeyY); }
+
+		/// <summary>Clamps a map click to the playable world.</summary>
+		public static bool ValidTile(int tx, int ty) => tx > 10 && ty > 10 && tx < Main.maxTilesX - 10 && ty < Main.maxTilesY - 10;
+
+		/// <summary>The x offset (tiles) the n-th ordered soldier takes from the clicked point.</summary>
+		public static int SpreadOffset(int n) => ((n % SpreadSlots) - SpreadSlots / 2) * SpreadTiles / 2;
+
+		/// <summary>Server / single player: sends every Regular of <paramref name="commander"/> to the tile. Returns how many took the order.</summary>
+		public static int Issue(Player commander, int tx, int ty)
+		{
+			if (LevyUtil.IsClient || commander == null || !ValidTile(tx, ty)) return 0;
+			var roster = RosterSystem.Instance;
+			int n = 0;
+			foreach (var rec in roster.RegularsOf(commander))
+			{
+				if (rec.Reserve || MutinySystem.IsMutinous(rec)) continue;
+				int gx = Math.Clamp(tx + SpreadOffset(n), 12, Main.maxTilesX - 12);
+				ApplyTo(rec, gx, ty);
+				n++;
+			}
+			if (n > 0) roster.SendRosterSnapshot();
+			return n;
+		}
+
+		/// <summary>Gives one record the order (and its live body, if any).</summary>
+		public static void ApplyTo(SoldierRecord rec, int tx, int ty)
+		{
+			SetGoal(rec, tx, ty);
+			rec.Order = SoldierOrder.GoTo; rec.StoodDown = false;
+			if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC body) body.ReceiveOrder(SoldierOrder.GoTo);
+		}
+
+		/// <summary>Client / single player entry: the local player orders their levies to a tile.</summary>
+		public static void Send(int tx, int ty)
+		{
+			if (!ValidTile(tx, ty)) return;
+			LastPoint = new Point(tx, ty); LastPointTick = Main.GameUpdateCount;
+			if (Main.netMode == NetmodeID.SinglePlayer)
+			{
+				int n = Issue(Main.LocalPlayer, tx, ty);
+				Main.NewText(LevyUtil.T(n > 0 ? "Observe.MapSent" : "Observe.MapNone", n), 190, 220, 255);
+			}
+			else
+			{
+				var p = LevyPackets.New(LevyPacket.MapOrder); p.Write(tx); p.Write(ty); p.Send();
+			}
+		}
+
+		public static void Register() => LevyPackets.Register(LevyPacket.MapOrder, OnPacket);
+
+		private static void OnPacket(BinaryReader r, int whoAmI)
+		{
+			int tx = r.ReadInt32(), ty = r.ReadInt32();
+			if (whoAmI < 0 || whoAmI >= Main.maxPlayers || !Main.player[whoAmI].active) return;
+			Issue(Main.player[whoAmI], tx, ty);
+		}
+
+		/// <summary>The standable tile the soldiers actually aim for: the nearest floor to the clicked tile (a click in the air or inside rock still works).</summary>
+		public static Point ResolveStand(int tx, int ty)
+		{
+			if (TileNav.NearestStandable(tx, ty, 25, out Point p)) return p;
+			return new Point(tx, ty);
+		}
+
+		public const int LegTiles = 30;
+
+		/// <summary>
+		/// The goal a marching soldier is given this think: the final stand when it is within one leg, else a standable tile about <see cref="LegTiles"/> tiles on toward it (the nearest floor in that column within 30 rows of his feet;
+		/// no floor found = a point at his own height, and the movement code's gap, wall and hook handling does the rest).
+		/// </summary>
+		public static Vector2 LegGoal(Vector2 center, Vector2 bottom, Vector2 finalGoal)
+		{
+			float dx = finalGoal.X - center.X, legPx = LegTiles * 16f;
+			if (Math.Abs(dx) <= legPx) return finalGoal;
+			float lx = center.X + Math.Sign(dx) * legPx;
+			int cx = (int)(lx / 16f), fy = TileNav.FeetTile(bottom).Y;
+			for (int d = 0; d <= 30; d++)
+				for (int sgn = -1; sgn <= 1; sgn += 2)
+				{
+					int y = fy + sgn * d;
+					if (TileNav.InBounds(cx, y) && TileNav.IsStandable(cx, y)) return TileNav.BottomCentre(cx, y);
+				}
+			return new Vector2(lx, bottom.Y);
+		}
+
+		/// <summary>The map tile under the mouse for a map draw context (full-screen / overlay map).</summary>
+		public static Vector2 MouseTile(in MapOverlayDrawContext c) => (Main.MouseScreen - c.MapOffset) / Math.Max(0.0001f, c.MapScale) + c.MapPosition;
+	}
+
+	/// <summary>The map side of the radio and the barracks command: previews the destination and takes the click.</summary>
+	public class RadioMapLayer : ModMapLayer
+	{
+		private bool _wasLeft;
+		public override Position GetDefaultPosition() => new Before(IMapLayer.Pings);
+
+		public override void Draw(ref MapOverlayDrawContext context, ref string text)
+		{
+			if (Main.dedServ || !Main.mapFullscreen) { MapOrder.PickMode = false; _wasLeft = Main.mouseLeft; return; }
+			var me = Main.LocalPlayer;
+			bool radio = CommandRadio.Has(me), pick = MapOrder.PickMode;
+			bool shift = Main.keyState.IsKeyDown(Keys.LeftShift) || Main.keyState.IsKeyDown(Keys.RightShift);
+			bool armed = (radio && shift) || pick;
+			bool click = Main.mouseLeft && !_wasLeft;
+			_wasLeft = Main.mouseLeft;
+
+			// the last ordered point stays on the map for a while so the player can watch the levies go
+			if (Main.GameUpdateCount - MapOrder.LastPointTick < 60u * 30u)
+				Mark(ref context, MapOrder.LastPoint.X, MapOrder.LastPoint.Y, new Color(120, 255, 160));
+
+			if (pick && Main.keyState.IsKeyDown(Keys.Escape)) { MapOrder.PickMode = false; return; }
+			if (!armed) return;
+			Vector2 t = MapOrder.MouseTile(in context);
+			int tx = (int)t.X, ty = (int)t.Y;
+			if (!MapOrder.ValidTile(tx, ty)) return;
+			Mark(ref context, tx, ty, new Color(255, 230, 90));
+			text = LevyUtil.T("Observe.MapSendHint");
+			if (click && !me.mouseInterface)
+			{
+				MapOrder.Send(tx, ty);
+				MapOrder.PickMode = false;
+			}
+		}
+
+		private static void Mark(ref MapOverlayDrawContext c, int tx, int ty, Color col)
+		{
+			var tex = TextureAssets.MagicPixel.Value;
+			float s = Math.Max(5f, 7f * c.DrawScale);
+			c.Draw(tex, new Vector2(tx, ty), col, new SpriteFrame(1, 1), s, s, Alignment.Center);
+		}
+	}
+}

@@ -4,7 +4,9 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
+using Levy.Common.Config;
 using Levy.Common.Flavor;
+using Levy.Common.Systems;
 
 namespace Levy.Common.Soldiers
 {
@@ -58,6 +60,8 @@ namespace Levy.Common.Soldiers
 		public bool HoldFire;
 		/// <summary>Squad stance: hold a much wider loose formation (anti-AoE). Saved; off for old saves.</summary>
 		public bool SpreadOut;
+		/// <summary>Squad stance: pack tightly around the commander and keep fights close. Mutually exclusive with <see cref="SpreadOut"/>. Saved and synced; off for old saves.</summary>
+		public bool CloseUp;
 		/// <summary>Loadout lock: while set, the soldier keeps his weapons and is skipped by automatic weapon and armor upgrade. Saved and synced; off (auto-upgrade on) for old saves.</summary>
 		public bool LoadoutLocked;
 		public Vector2 HoldPos;
@@ -109,7 +113,12 @@ namespace Levy.Common.Soldiers
 		public int MaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);
 
 		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
-		public static int AccessorySlotsFor(Grade grade) => Math.Min(LevyConstants.GradeSlots[(int)grade] + GuideSystem.ExtraAccessorySlots, SoldierGear.AccessorySlots);
+		public static int AccessorySlotsFor(Grade grade)
+		{
+			int gradeSlots = LevyConstants.GradeSlots[(int)grade];
+			try { gradeSlots = LevySlotMath.GradeSlots(LevyConfig.Get, grade); } catch (Exception) { }
+			return LevySlotMath.Compute(gradeSlots, LevySlotMath.ExpertiseSlots, GuideSystem.ExpertiseRead, LevyProgressionSystem.MilestoneSlots, SoldierGear.AccessorySlots);
+		}
 		/// <summary>Accessory slots: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public int AccessorySlots => AccessorySlotsFor(Grade);
 		public int CommandPointCost => Kind == SoldierKind.Militia ? 1 : LevyConstants.GradeCpCost[(int)Grade];
@@ -128,6 +137,7 @@ namespace Levy.Common.Soldiers
 			w.Write(Hair); w.Write(SkinVariant); w.Write(Male);
 			w.WriteRGB(HairColor); w.WriteRGB(SkinColor); w.WriteRGB(EyeColor); w.WriteRGB(ShirtColor); w.WriteRGB(UnderShirtColor); w.WriteRGB(PantsColor); w.WriteRGB(ShoeColor);
 			Gear.WriteVisual(w);
+			w.Write(CloseUp); // appended last so the earlier layout is unchanged
 		}
 
 		public static SoldierRecord ReadSnapshot(System.IO.BinaryReader r)
@@ -141,6 +151,7 @@ namespace Levy.Common.Soldiers
 			s.Hair = r.ReadInt32(); s.SkinVariant = r.ReadInt32(); s.Male = r.ReadBoolean();
 			s.HairColor = r.ReadRGB(); s.SkinColor = r.ReadRGB(); s.EyeColor = r.ReadRGB(); s.ShirtColor = r.ReadRGB(); s.UnderShirtColor = r.ReadRGB(); s.PantsColor = r.ReadRGB(); s.ShoeColor = r.ReadRGB();
 			s.Gear.ReadVisual(r);
+			s.CloseUp = r.ReadBoolean();
 			return s;
 		}
 
@@ -153,7 +164,7 @@ namespace Levy.Common.Soldiers
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
 				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid, ["reserve"] = Reserve,
 				["mutiny"] = Mutinous, ["owed"] = WageOwed, ["looted"] = WageLooted,
-				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
+				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["closeUp"] = CloseUp, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
 				["hair"] = Hair, ["skinVar"] = SkinVariant, ["male"] = Male,
 				["ext"] = SaveExt(),
@@ -179,7 +190,7 @@ namespace Levy.Common.Soldiers
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
 				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"), Reserve = t.GetBool("reserve"),
 				Mutinous = t.GetBool("mutiny"), WageOwed = t.GetLong("owed"), WageLooted = t.GetLong("looted"),
-				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
+				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), CloseUp = t.GetBool("closeUp"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
 				PatrolA = new Point16(t.GetInt("pAX"), t.GetInt("pAY")), PatrolB = new Point16(t.GetInt("pBX"), t.GetInt("pBY")),
 				Hair = t.GetInt("hair"), SkinVariant = t.GetInt("skinVar"), Male = t.GetBool("male"),
 			};

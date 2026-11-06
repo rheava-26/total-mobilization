@@ -1,0 +1,49 @@
+# New-world setup popup and settings notes. Keys are relative to Mods.Levy.Setup.
+Title: Set up your army
+Intro: Pick how many levies you field and how bosses treat them. Everything can be changed later in the Levy config.
+Button: Setup
+ButtonHint: Reopen the world setup. Also /levysetup.
+CommandHelp: Reopen the Levy world setup.
+Skip: Skip for now
+SkipHint: Keep the current settings. Reopen any time with /levysetup.
+Customize: Customize
+CustomizeHint: Set the levy counts and boss behaviour yourself.
+Apply: Apply
+ApplyHint: Save these settings.
+Back: Back
+StepHint: Shift changes it by 5.
+MoreOptions: Every other option is under Settings, Mod Configuration, Levy.
+HostOnly: Only the host of a single player world can change the Levy setup. Use the mod config.
+Done: "{0} settings applied."
+DoneCustom: Your settings are applied.
+Skipped: Setup skipped. Type /levysetup to reopen it.
+Anchors: Levies start at 4. Every pre-hardmode boss beaten counts toward {0} levies at the Wall of Flesh, and the bosses in between share the points. Hardmode bosses carry you to {1} at Moon Lord. Every boss after Moon Lord up to the final boss adds the last {2}.
+CountPre: By the Wall of Flesh: {0}  (recommended {1} to {2})
+CountHardmode: By Moon Lord: {0}  (recommended {1} to {2})
+CountPost: By the final boss: {0}  (recommended {1} to {2})
+TargetOn: Bosses you have beaten target levies on rematches
+TargetOff: Bosses never target levies
+PunishOn: Bosses punish levies that get close
+PunishOff: Bosses ignore levies that get close
+TargetHint: Bosses you have already beaten chase the nearest levy like a player. A first kill is always solo.
+PunishHint: Bosses redirect shots and dashes at levies that get close or hurt them.
+PresetNumbers: Levies: {0} / {1} / {2}
+
+Preset: {
+	Default: Default
+	DefaultBlurb: The standard army. Bosses punish levies that get close and never chase them.
+	Relaxed: Relaxed
+	RelaxedBlurb: More levies. Bosses never target them.
+	Hardcore: Hardcore
+	HardcoreBlurb: Fewer levies. Bosses you have beaten target levies on rematches.
+}
+
+Warn: {
+	PreFew: Too few levies by the Wall of Flesh. Early bosses will feel lonely.
+	PreMany: Too many levies by the Wall of Flesh. Early bosses will fall quickly.
+	HardmodeFew: Too few levies by Moon Lord. Hardmode bosses will feel lonely.
+	HardmodeMany: Too many levies by Moon Lord. Hardmode bosses will fall quickly.
+	PostFew: Too few levies by the final boss. The last bosses will feel lonely.
+	PostMany: Too many levies by the final boss. The last bosses will fall quickly.
+	MaxBelowPost: The maximum levies is below the final-boss count. The maximum wins.
+}

@@ -1,0 +1,51 @@
+# Targeted reforging: the reforge panel beside the armory. Keys are relative to Mods.Levy.Reforge.
+
+Open: Reforge...
+OpenHint: Opens the reforge panel. Choose which weapons to reroll, what to roll for and how much to spend.
+Title: Reforge
+Weapons: Weapons
+Mode_Issued: In hand
+Mode_Recent: Recent
+Mode_Picked: Picked
+Mode_Group: By group
+ModeHint_Issued: The weapons the levies are carrying now.
+ModeHint_Recent: Weapons added to the armory lately.
+ModeHint_Picked: Weapons you click in the storage grid and on the weapon rack.
+ModeHint_Group: Every weapon of the class and type chosen below.
+ModeNote_Issued: The weapons the levies carry now.
+ModeNote_Recent: Weapons added lately.
+ModeNote_Picked: Weapons you pick by hand.
+ModeNote_Group: Every weapon the class and type below allow.
+RecentWithin: Added within
+RecentHint: How far back a weapon counts as recent, in world days.
+Day: "{0} day"
+Days: "{0} days"
+PickOn: Picking on
+PickOff: Picking off
+PickHint: While picking is on, click a weapon in the grid or on the weapon rack to pick it. Click it again to drop it.
+PickClear: Clear ({0})
+PickClearHint: Drops every pick.
+Class: Class
+Category: Type
+Any: Any
+ClassHint: Only weapons of this class.
+CategoryHint: Only weapons of this type, such as bows.
+Goal: Roll for
+GoalHint: A floor rerolls each weapon until its modifier is in the top slice of what it can roll. A named modifier rerolls until that one comes up.
+GoalPrefix: Modifier: {0}
+PrefixOption: "{0} ({1})"
+Cap: Spend at most
+CapHint: The run stops before it spends more than this.
+NoCap: No cap
+PvLine: "{0} weapons, about {1}"
+PvSelected: "{0} selected."
+PvMet: "{0} already there."
+PvNA: "{0} cannot take it."
+PvCap: Spending stops at {0}.
+PvIssuedClient: Counted when the run starts.
+Run: Reforge
+RunHint: Rerolls the weapons chosen here. Each roll costs the standard reforge price from the barracks treasury.
+NoTargets: No weapons match this reforge.
+NothingToDo: All {0} chosen weapons already meet the goal or cannot take it.
+Report: Reforged {0} weapons in {1} rolls for {2}; {3} reached the goal.
+CapReached: Stopped at the spending cap of {0}. {1} weapons were left short.

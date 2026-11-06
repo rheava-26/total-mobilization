@@ -22,12 +22,19 @@
 #                               Spazmatism TheDestroyer SkeletronPrime Plantera Golem HallowBoss DukeFishron CultistBoss
 #                               MoonLordCore)
 #               COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED VICTORY PROMOTED VETERAN DEATH_MESSAGE
+#               MUTINY MUTINY_BEGIN MUTINY_REFUSE MUTINY_CALM   (soldiers in revolt over unpaid wages)
+#               OFFICER_MARCH NURSE_MARCH   (officers talking on the march)
+#               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
+#               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
 #
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_*
 #   Emote bubble + a small floating line:   ENGAGE KILL HURT LOW_HP OUT_OF_AMMO SHAKEN COMRADE_HIT MUSTER STAND_DOWN PROMOTED VETERAN
 #   Floating line over the head:   BOSS_SIGHTED BOSS_* COMRADE_DOWN ROUTED RALLIED VICTORY (and EVENT_* for the militia)
 #   Chat log:   DEATH_MESSAGE DESERTED NO_ONE_LEFT
+#   Floating line over the head, in a mutiny:   MUTINY (the cries) MUTINY_BEGIN (the first shout) MUTINY_REFUSE (an order is refused) MUTINY_CALM (back to work once paid)
+#   Officers:   OFFICER_MARCH and NURSE_MARCH are floating lines while marching. OFFICER_<Officer>_<STATE> and OFFICER_CHAT_<STATE> are what an officer says when you right-click them.
+#   Floating lines appear on a blue chat bar over the speaker's head. The text types itself in, so keep lines short.
 #   Militia only ever speak: ENGAGE KILL HURT LOW_HP OUT_OF_AMMO COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED MUSTER
 #   STAND_DOWN EVENT_* BOSS_SIGHTED BOSS_* DEATH_MESSAGE.
 #
@@ -43,6 +50,29 @@
 #   {Painter} {WitchDoctor} {Golfer} {Zoologist} {Princess} {SantaClaus}
 #
 # A line is not repeated within two minutes. Keep lines to one or two short sentences. Plain ASCII only.
+#
+# THE FILE, TOP TO BOTTOM  (every spoken levy and officer line is in this one file; each part is a block of lines sharing a TRIGGER)
+#   1. IDLE by temperament, IDLE_NIGHT, NAMEDROP          what a levy says when you right-click it
+#   2. Situations and Biomes                              weather, party, blood moon, graveyard, and where you are
+#   3. Pay and service                                    payday, unpaid, deserted, muster, stand down, hold fire
+#   4. Events                                             invasions and moons
+#   5. Combat                                             engage, kill, hurt, low hp, out of ammo
+#   6. Bosses                                             boss sighted, then one block per boss
+#   7. Comrades and fear                                  comrade hit or down, shaken, routed, rallied, victory, promotions
+#   8. Death messages                                     the chat-log line when a levy dies
+#   9. Mutiny                                             the cries of levies revolting over unpaid wages
+#  10. Officers on the march                              OFFICER_MARCH and NURSE_MARCH
+#  11. Officer chat, generic                              OFFICER_CHAT_<STATE>, used when an officer has no voice of his own
+#  12. Officer voices                                     one block per officer, OFFICER_<Officer>_<STATE>
+#
+# EDITING WITHOUT REBUILDING THE MOD
+#   1. In game (single player, or on the server) type  /levydialogue export  . It copies this file to
+#          <Terraria save folder>/tModLoader/Levy/Dialogue/en-US.txt     (/levydialogue path  prints the exact place)
+#   2. Edit that copy in any text editor. Add, remove or change lines. Keep the three columns separated by the | character.
+#   3. Type  /levydialogue reload  . The edited file is read at once, and also every time the mod loads.
+#   While the edited copy exists the mod reads it instead of this file. Delete the copy to go back to this one.
+#   To replace an existing copy with the mod's file again use  /levydialogue export force  (the old copy is kept as en-US.txt.bak).
+#   A bad line is logged with its line number and skipped, so one typo never silences everyone.
 # ============================================================================================================
 
 
@@ -504,6 +534,19 @@ DEATH_MESSAGE | Any | {Name} has taken an unscheduled break
 DEATH_MESSAGE | Any | {Name} was saving up for something nice
 DEATH_MESSAGE | Any | {Name} won't be making it to the staff party
 DEATH_MESSAGE | Any | {Name} wasn't paid enough for this
+
+# ============================================================================================================
+# MUTINY  (levies revolting over unpaid wages; floating lines over the head of the mutineer)
+#   MUTINY_BEGIN   the first shout when the revolt starts      MUTINY      the cries while it lasts
+#   MUTINY_REFUSE  said when you give an order they refuse     MUTINY_CALM said when the back pay arrives
+# ============================================================================================================
+MUTINY_BEGIN | Any | MUTINY! PAY US!
+MUTINY | Any | Pay up or bleed!
+MUTINY | Any | We're taking what we're owed!
+MUTINY | Any | No coin, no orders!
+MUTINY | Any | Your gold or your head!
+MUTINY_REFUSE | Any | No orders! Not until we're paid!
+MUTINY_CALM | Any | Paid. Back to work.
 
 # ============================================================================================================
 # OFFICER ON-THE-MOVE CHATTER  (a floating line over an officer avatar while it marches with the army)

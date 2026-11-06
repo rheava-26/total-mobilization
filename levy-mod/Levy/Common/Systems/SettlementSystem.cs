@@ -266,6 +266,9 @@ namespace Levy.Common.Systems
 
 		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons) => NearPylon(a.Center, pylons);
 
+		/// <summary>True when a world position is within <see cref="LevyConstants.PylonShareRadius"/> tiles of any pylon (the pylon network the logistics screen trades over).</summary>
+		public static bool OnPylonNet(Vector2 c) { var p = Main.PylonSystem?.Pylons; return p != null && p.Count > 0 && NearPylon(c, p); }
+
 		private static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
 		{
 			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit;

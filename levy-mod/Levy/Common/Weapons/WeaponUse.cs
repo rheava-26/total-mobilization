@@ -56,13 +56,19 @@ namespace Levy.Common.Weapons
 			}
 			try
 			{
-				// Right-click alternate attack: mixed in on a cadence, falling back to the primary when it cannot fire.
+				// A one-at-a-time placed object (barrier, aura, anvil...) is not re-placed over the commander's or a squadmate's.
+				if (!AltPolicies.PrimaryAllowed(s, item)) { s.AttackCooldown = 30; return false; }
+				// Held right button (channelled holdouts that pick their variant from it): set or cleared from the row's condition before the weapon spawns anything.
+				if (LevyConfig.Get.RealWeaponShoot) AltPolicies.HoldVariant(s, item, seg);
+				// Right-click alternate attack: chosen by the item's policy row, falling back to the primary when it cannot fire.
 				if (AltEligible(profile))
 				{
 					if (TryAltAttack(s, item, profile, seg, out bool hold)) return true;
 					if (hold) return false; // a caster saving mana for the alt holds fire for a moment
 				}
-				return Dispatch(s, item, profile, seg);
+				bool primary = Dispatch(s, item, profile, seg);
+				if (primary) AltPolicies.NotePrimary(s, item);
+				return primary;
 			}
 			catch (Exception e)
 			{
@@ -121,8 +127,10 @@ namespace Levy.Common.Weapons
 		/// <summary>Item types whose alt repeatedly did nothing: not tried again this session.</summary>
 		private static readonly System.Collections.Generic.HashSet<int> _altDudItems = new();
 
-		private static bool AltEligible(WeaponProfile profile) =>
-			LevyConstants.AltFireEnabled && (profile.Family == WeaponFamily.Gun || profile.Family == WeaponFamily.Bow || profile.Family == WeaponFamily.Magic);
+		/// <summary>Every family the soldier fires can try its right-click: the shoot-pipeline families fire it through their own attack, the rest through the item's own Shoot (<see cref="AltShoot"/>).</summary>
+		private static bool AltEligible(WeaponProfile profile) => LevyConstants.AltFireEnabled && FiredFamilies.Contains(profile.Family);
+
+		private static bool ShootPipelineFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic;
 
 		/// <summary>The item fields an alt's CanUseItem/ModifyShootStats may rewrite; put back after the alt so the primary is unchanged.</summary>
 		private struct ItemStatSnapshot
@@ -156,7 +164,12 @@ namespace Levy.Common.Weapons
 			uint now = Main.GameUpdateCount;
 			Player d = s.Dummy;
 			if (d == null || !LevyConfig.Get.RealWeaponShoot || now < s.AltReadyTick || _altDudItems.Contains(item.type)) return false;
-			if (s.AltHoldSince == 0 && Main.rand.NextFloat() >= LevyConstants.AltUseChance) return false;
+			// The policy decides BEFORE the AltFunctionUse probe: some probes perform the alt themselves (Hydra launches its heads inside it), and a NEVER row never probes at all.
+			if (s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg, out int recheck))
+			{
+				if (recheck > 0) s.AltReadyTick = now + (uint)recheck;
+				return false;
+			}
 
 			bool has = false;
 			try { has = ItemLoader.AltFunctionUse(item, d); } catch (Exception) { }
@@ -172,7 +185,7 @@ namespace Levy.Common.Weapons
 				bool can = true;
 				try { can = ItemLoader.CanUseItem(item, d); } catch (Exception) { can = false; }
 				if (!can) soft = true; // the weapon's own gate (alt on its own cooldown, a projectile already out): primary now, retry shortly
-				else if (profile.Family == WeaponFamily.Magic && s.Record.Mana < Math.Max(0, item.mana))
+				else if ((profile.Family == WeaponFamily.Magic || item.mana > 0) && s.Record.Mana < Math.Max(0, item.mana))
 				{
 					soft = true;
 					int missing = Math.Max(0, item.mana) - s.Record.Mana;
@@ -185,7 +198,7 @@ namespace Levy.Common.Weapons
 				else
 				{
 					_altActive = true;
-					try { fired = Dispatch(s, item, profile, seg); } finally { _altActive = false; }
+					try { fired = ShootPipelineFamily(profile.Family) ? Dispatch(s, item, profile, seg) : AltShoot(s, item, profile, seg); } finally { _altActive = false; }
 				}
 			}
 			catch (Exception e)
@@ -204,6 +217,8 @@ namespace Levy.Common.Weapons
 
 			if (fired)
 			{
+				AltPolicies.NoteAlt(s, item);
+				if (AltPolicies.For(item.type).Kind == AltPolicyKind.DashClose) DashToward(s, seg);
 				s.AltFailStreak = 0; s.AltHoldSince = 0;
 				s.AltReadyTick = now + (uint)(LevyConstants.AltMinGapTicks + Main.rand.Next(0, LevyConstants.AltGapJitterTicks + 1));
 				return true;
@@ -217,6 +232,36 @@ namespace Levy.Common.Weapons
 			if (++s.AltFailStreak >= LevyConstants.AltGiveUpFailures && _altDudItems.Add(item.type))
 				ModContent.GetInstance<Levy>()?.Logger.Info($"Levy: alt-fire of {item.Name} ({item.type}) never fired; soldiers will use only its primary.");
 			return false;
+		}
+
+		/// <summary>
+		/// The right-click of a weapon whose normal attack is not a shoot-pipeline shot (a sword, spear, boomerang, held weapon, thrown stack...): the item's own ModifyShootStats/Shoot with the dummy's
+		/// altFunctionUse at 2, aimed at the target. Returns true only when the hooks spawned something; an alt that spawns nothing counts as a failure and the primary is used.
+		/// </summary>
+		private static bool AltShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			int projType = item.shoot;
+			if (projType <= 0) return false;
+			float speed = item.shootSpeed > 0f ? item.shootSpeed : 10f;
+			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			Vector2 muzzle = Muzzle(s);
+			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
+			if (!TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack)) return false;
+			if (item.mana > 0) s.Record.Mana = Math.Max(0, s.Record.Mana - item.mana);
+			FinishUse(s, item, vel);
+			return true;
+		}
+
+		/// <summary>DASH_CLOSE: the alt is a dash toward the cursor; the dummy cannot move the body, so the soldier is given the dash's burst of speed toward the target.</summary>
+		private static void DashToward(SoldierNPC s, NPC target)
+		{
+			if (target == null) return;
+			Vector2 dir = target.Center - s.NPC.Center;
+			if (dir.LengthSquared() < 1f) return;
+			dir.Normalize();
+			s.NPC.velocity.X = dir.X * LevyConstants.AltDashSpeed;
+			if (dir.Y < -0.35f && s.NPC.velocity.Y == 0f) s.NPC.velocity.Y = -6f;
+			s.NPC.netUpdate = true;
 		}
 
 		/// <summary>Item types already reported as throwing, so the log gets one line per weapon instead of one per shot.</summary>
@@ -475,8 +520,11 @@ namespace Levy.Common.Weapons
 			Vector2 pos = muzzle, v = vel; int type = projType, dmg = damage; float kb = knockback;
 			bool useDefault = false, threw = false;
 			object thoriumPrev = null;
+			AltPolicies.AimScope aim = default;
 			try
 			{
+				// The cursor is on the target while the hooks run (items that place or steer something at the cursor then act on the enemy, as for a player aiming).
+				if (target != null) aim = new AltPolicies.AimScope(d, target.Center);
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
 				d.whoAmI = OwnerFor(s);
 				d.Center = s.NPC.Center;
@@ -491,7 +539,7 @@ namespace Levy.Common.Weapons
 				useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
 			}
 			catch (Exception) { threw = true; }
-			finally { OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
+			finally { aim.Dispose(); OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
 
 			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
 			int adopted = 0;
@@ -573,6 +621,7 @@ namespace Levy.Common.Weapons
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;
 			if (SettlementSystem.Instance != null && SettlementSystem.Instance.BookDiscipline) m *= LevyConstants.DisciplineAimErrorMult;
+			m *= global::Levy.Content.Buffs.DrinkBuffs.AimErrorFactor(s); // Tipsy: a levy carrying a Tavernkeep drink aims worse
 			m *= OfficerSupport.AimErrorFactor(s); // exactly 1 with no officer in reach, so an army without them aims as it always did
 			return m;
 		}

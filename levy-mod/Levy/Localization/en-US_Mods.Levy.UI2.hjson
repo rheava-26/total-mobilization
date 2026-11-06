@@ -112,7 +112,8 @@ HoldHintRadio: Every Regular, anywhere, holds where it stands.
 ReturnHint: Regulars within 40 tiles walk back to their barracks.
 ReturnHintRadio: Every Regular, anywhere, walks back to its barracks.
 SpreadOutHint: Soldiers keep far wider gaps, even while idle. Blunts area attacks.
-CloseUpHint: Soldiers return to the normal tight formation.
+CloseUpHint: Soldiers pack tight around you and keep fights within 14 tiles of you.
+NormalRanksHint: Soldiers return to the normal formation.
 SearchDestroyHint: Regulars within 40 tiles roam outward from the settlement hunting enemies, keeping their standoff.
 SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff.
 FreeReinHint: Regulars within 40 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.

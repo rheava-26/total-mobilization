@@ -43,12 +43,13 @@ namespace Levy.Common.UI
 		/// <summary>Id of the soldier whose loadout panel is open, or -1.</summary>
 		public static int CurrentLoadoutId { get; private set; } = -1;
 
-		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI, _manualUI, _loadoutUI, _officersUI;
+		private UserInterface _barracksUI, _armoryUI, _radialUI, _hudUI, _manualUI, _loadoutUI, _officersUI, _setupUI;
 		private BarracksPanel _barracks;
 		private ArmoryPanel _armory;
 		private SoldierLoadoutPanel _loadout;
 		private OfficerPanel _officers;
 		private ManualPanel _manual;
+		private SetupPanel _setup;
 		private OrdersRadial _radial;
 		private HudStrip _hud;
 		private GameTime _lastGameTime;
@@ -73,20 +74,20 @@ namespace Levy.Common.UI
 			// Panels bake their static labels from localization in OnInitialize (via Activate), so build them after localization
 			// is fully loaded; doing this in Load would stamp raw keys like "Mods.Levy.UI2.Roster" into the buttons.
 			if (Main.dedServ) return;
-			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface(); _officersUI = new UserInterface();
-			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel();
-			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate(); _officers.Activate();
+			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface(); _officersUI = new UserInterface(); _setupUI = new UserInterface();
+			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel(); _setup = new SetupPanel();
+			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate(); _officers.Activate(); _setup.Activate();
 		}
 
 		public override void Unload()
 		{
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
-			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = _officersUI = null;
-			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null; _officers = null;
+			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = _officersUI = _setupUI = null;
+			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null; _officers = null; _setup = null;
 			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusActive = false;
 		}
 
-		public override void OnWorldUnload() { FocusDesignating = false; FocusActive = false; if (!Main.dedServ) CloseAll(); }
+		public override void OnWorldUnload() { FocusDesignating = false; FocusActive = false; if (!Main.dedServ) { CloseAll(); CloseSetup(); } }
 
 		// ------------------------------------------------------------------ open / close (client)
 		public virtual void OpenBarracks(BarracksTE te)
@@ -123,6 +124,25 @@ namespace Levy.Common.UI
 			_manualUI.SetState(_manual);
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
+
+		/// <summary>Opens the new-world setup popup (also from the Barracks button and /levysetup). Single player only: it edits the server config.</summary>
+		public virtual void OpenSetup()
+		{
+			if (Main.dedServ || _setupUI == null) return;
+			if (Main.netMode != NetmodeID.SinglePlayer) { Main.NewText(LevyUtil.T("Setup.HostOnly"), 230, 200, 120); return; }
+			_setup.Open();
+			_setupUI.SetState(_setup);
+			SoundEngine.PlaySound(SoundID.MenuOpen);
+		}
+
+		public void CloseSetup()
+		{
+			if (_setupUI?.CurrentState == null) return;
+			_setupUI.SetState(null);
+			SoundEngine.PlaySound(SoundID.MenuClose);
+		}
+
+		public bool SetupOpen => _setupUI?.CurrentState != null;
 
 		/// <summary>Opens the per-soldier loadout panel next to the Barracks panel (which stays open).</summary>
 		public virtual void OpenSoldierLoadout(SoldierRecord rec)
@@ -267,6 +287,11 @@ namespace Levy.Common.UI
 				if (Main.gameMenu || player.dead) CloseManual();
 				else _manualUI.Update(gameTime);
 			}
+			if (_setupUI.CurrentState != null)
+			{
+				if (Main.gameMenu || player.dead) CloseSetup();
+				else _setupUI.Update(gameTime);
+			}
 			if (_radialUI.CurrentState != null)
 			{
 				if (Main.gameMenu || player.dead) CloseRadial();
@@ -299,6 +324,7 @@ namespace Levy.Common.UI
 					if (_officersUI?.CurrentState != null) _officersUI.Draw(Main.spriteBatch, gt);
 					if (_armoryUI?.CurrentState != null) _armoryUI.Draw(Main.spriteBatch, gt);
 					if (_manualUI?.CurrentState != null) _manualUI.Draw(Main.spriteBatch, gt);
+					if (_setupUI?.CurrentState != null) _setupUI.Draw(Main.spriteBatch, gt);
 					return true;
 				}, InterfaceScaleType.UI));
 				layers.Insert(inv + 2, new LegacyGameInterfaceLayer("Levy: Orders Radial", () =>

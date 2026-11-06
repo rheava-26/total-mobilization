@@ -81,7 +81,8 @@ namespace Levy.Common.Flavor
 		}
 
 		/// <summary>Accessory slots every soldier gains on top of his grade.</summary>
-		public static int ExtraAccessorySlots => Instance != null && Instance.Expertise ? LevyConstants.ExpertiseAccessorySlots : 0;
+		public static int ExtraAccessorySlots => ExpertiseRead ? Systems.LevySlotMath.ExpertiseSlots : 0;
+		public static bool ExpertiseRead => Instance != null && Instance.Expertise;
 		/// <summary>Buff slots added to every Armory's potion row (see <see cref="ArmoryTE.TargetPotionSlots"/>).</summary>
 		public static int ArmoryBuffSlots => Instance != null && Instance.Firepower ? LevyConstants.FirepowerBuffSlots : 0;
 

@@ -194,7 +194,7 @@ namespace Levy.Common.Systems
 		/// Takes a living body off the field WITHOUT touching its record or its kit (the reserve keeps the soldier whole): whatever it was hauling goes on the
 		/// ground, its summons and thrown weapons go with it, and the NPC is deactivated and synced. A no-op for an already inactive body.
 		/// </summary>
-		private static void RetireBody(SoldierNPC body)
+		internal static void RetireBody(SoldierNPC body)
 		{
 			if (body == null) return;
 			var npc = body.NPC;
@@ -590,6 +590,7 @@ namespace Levy.Common.Systems
 			if (LevyUtil.IsClient || rec == null) return -1;
 			if (rec.Reserve) return -1; // a soldier in reserve has no body until he is recalled
 			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
+			if (global::Levy.Common.Events.OldOnesArmySystem.BlocksSpawn(rec)) return -1; // Old One's Army: regular levies stand down; only sentries call them up
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;
@@ -1227,6 +1228,7 @@ namespace Levy.Common.Systems
 			int total = 0, holding = 0;
 			_refusedOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
+			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: false, ref total, ref holding); // his officers vote with the soldiers
 			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
 			foreach (var rec in Regulars)
@@ -1235,6 +1237,7 @@ namespace Levy.Common.Systems
 				rec.HoldFire = set;
 				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
 			}
+			OfficerSystem.Instance.SetStance(commander, atBarracks, spread: false, set);
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();
@@ -1244,18 +1247,21 @@ namespace Levy.Common.Systems
 		public virtual void ToggleSpreadOut(Player commander, bool atBarracks = false)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
-			int total = 0, spread = 0;
+			int total = 0, spread = 0, close = 0;
 			_refusedOrders = 0;
-			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; }
+			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; else if (rec.CloseUp) close++; }
+			OfficerSystem.Instance.CountFormation(commander, atBarracks, ref total, ref spread, ref close);
 			if (total == 0) { ReportRefusals(commander); return; }
-			bool set = spread * 2 <= total; // majority already spread → close up; otherwise spread
+			// one button cycles the squad's majority stance: Normal -> Spread out -> Close up -> Normal
+			FormationMode next = Formation.Next(Formation.Majority(total, spread, close));
 			foreach (var rec in Regulars)
 			{
 				if (!Selected(rec, commander, atBarracks, out var body)) continue;
-				rec.SpreadOut = set;
+				Formation.Apply(rec, next);
 				if (body != null) body.NPC.netUpdate = true;
 			}
-			SendToPlayer(commander, LevyUtil.T(set ? "UI.SpreadOut" : "UI.CloseUp"));
+			OfficerSystem.Instance.ApplyFormation(commander, atBarracks, next);
+			SendToPlayer(commander, LevyUtil.T(next == FormationMode.Spread ? "UI.SpreadOut" : next == FormationMode.CloseUp ? "UI.CloseUp" : "UI.NormalRanks"));
 			ReportRefusals(commander);
 			SendRosterSnapshot();
 		}

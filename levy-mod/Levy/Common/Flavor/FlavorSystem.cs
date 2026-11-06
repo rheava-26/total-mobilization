@@ -132,7 +132,7 @@ namespace Levy.Common.Flavor
 				case "Firepower": return LevyUtil.T("Flavor.Effect.Firepower", LevyConstants.FirepowerMilitiaHp, LevyConstants.FirepowerMilitiaMana, LevyConstants.FirepowerBuffSlots);
 				case "Healthcare": return LevyUtil.T("Flavor.Effect.Healthcare", LevyConstants.HealthcareMilitiaHp);
 				case "TheArcaneArts": return LevyUtil.T("Flavor.Effect.TheArcaneArts", LevyConstants.ArcaneMilitiaMana);
-				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", LevyConstants.ExpertiseAccessorySlots);
+				case "Expertise": return LevyUtil.T("Flavor.Effect.Expertise", Systems.LevySlotMath.ExpertiseSlots);
 				case "Engineering": return LevyUtil.T("Flavor.Effect.Engineering");
 				default: return "";
 			}

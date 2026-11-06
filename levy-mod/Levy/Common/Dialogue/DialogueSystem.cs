@@ -74,6 +74,12 @@ namespace Levy.Common.Dialogue
 			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, ignoreRepeat, -1, out _, true);
 		}
 
+		/// <summary>A line from a trigger's pool in the dialogue file (repeats allowed), or the localization key's text when the file has none. Used by the mutineers' shouts.</summary>
+		public static string LineOrKey(DialogueTrigger trigger, SoldierRecord rec, string fallbackKey)
+		{
+			return PickLine(trigger.ToString(), rec, null, true) ?? LevyUtil.T(fallbackKey);
+		}
+
 		/// <summary>Right-click chat text for a soldier. Never null or empty.</summary>
 		public static string ChatLine(SoldierNPC s)
 		{
@@ -408,44 +414,13 @@ namespace Levy.Common.Dialogue
 		}
 
 		/// <summary>
-		/// Draws a line as combat text above a body. Client and single player only; skipped when the speaker is off screen.
-		/// A second line from the same speaker stacks above the first until the first has risen out of the way.
+		/// Shows a line on the speaker's chat bar (blue bar over the head, text types in). Client and single player only; the bar queue limits how many show at once
+		/// and prefers nearby speakers and important lines. A speaker that is off screen gets no bar.
 		/// </summary>
 		private static void SpawnFloating(int npcIndex, Rectangle hitbox, string text, byte triggerByte)
 		{
 			if (Main.netMode == NetmodeID.Server || Main.dedServ) return;
-			if (string.IsNullOrEmpty(text) || !LevyUtil.IsOnScreen(hitbox)) return;
-			Color color = FloatColor(triggerByte);
-			string[] rows = Wrap(text, LevyConstants.DialogueFloatingRowChars);
-			var font = FontAssets.CombatText[0].Value;
-			float rowHeight = font.MeasureString("Ag").Y * 0.9f;
-
-			bool tracked = (uint)npcIndex < MaxBodies;
-			int now = Now;
-			float lift = 0f;
-			if (tracked && Within(FloatStackTick[npcIndex], now, LevyConstants.DialogueFloatingLifeTicks))
-			{
-				// How far the previous line has already risen: vanilla combat text moves 7 px a tick, decaying by 0.92.
-				float risen = LevyConstants.DialogueFloatingRisePx * (1f - MathF.Pow(LevyConstants.DialogueFloatingRiseDecay, now - FloatStackTick[npcIndex]));
-				lift = Math.Min(Math.Max(0f, FloatStackPx[npcIndex] - risen), LevyConstants.DialogueFloatingMaxStackRows * rowHeight);
-			}
-
-			for (int k = 0; k < rows.Length; k++)
-			{
-				int i = CombatText.NewText(hitbox, color, rows[k]);
-				if (i < 0 || i >= Main.combatText.Length) continue; // all 100 slots busy
-				CombatText ct = Main.combatText[i];
-				if (!ct.active) continue;
-				Vector2 size = font.MeasureString(rows[k]);
-				// Rows stack above the head, centred; keep the text up long enough to read a sentence.
-				ct.position = new Vector2(hitbox.Center.X - size.X * 0.5f, hitbox.Top - 10f - lift - (rows.Length - k) * rowHeight);
-				ct.lifeTime = LevyConstants.DialogueFloatingLifeTicks;
-			}
-			if (tracked)
-			{
-				FloatStackTick[npcIndex] = now;
-				FloatStackPx[npcIndex] = lift + rows.Length * rowHeight;
-			}
+			Common.UI.ChatBars.Show(npcIndex, hitbox, text, triggerByte);
 		}
 
 		private static Color FloatColor(byte triggerByte)

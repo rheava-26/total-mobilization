@@ -75,9 +75,6 @@ namespace Mechanization.Content.NPCs
 		/// <summary>The drawn aim of the barrel (radians), eased toward the wanted one; a client eases it toward the synced ai[0].</summary>
 		private float _aim;
 
-		// A valid vanilla asset so content loads; the real body is drawn in PreDraw and this is never actually blitted.
-		public override string Texture => "Terraria/Images/Item_" + T.BodyDrawItemType;
-
 		public override void SetStaticDefaults()
 		{
 			Main.npcFrameCount[Type] = 1;
@@ -504,7 +501,7 @@ namespace Mechanization.Content.NPCs
 		}
 
 		// =====================================================================================================
-		// Draw: borrow a vanilla item sprite (no new art) turned to the aim, plus a healthbar.
+		// Draw: the hand-drawn base, barrel and hub sprites (barrel turned to the aim), the mounted weapon's sprite, plus a healthbar.
 		// =====================================================================================================
 		public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
@@ -515,20 +512,27 @@ namespace Mechanization.Content.NPCs
 				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
 				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
 
-				// The fixed plinth: a wide slab with a pedestal on it. It never turns; only the gun does, so the thing always reads as an emplacement standing on the ground.
+				// The fixed base (TurretNPC.png: plinth and pedestal, 34x16, standing on the ground). It never turns; only the gun does.
 				float bottom = c.Y + NPC.height * 0.5f;
-				float slabTop = bottom - T.PlinthHeightPx, pedTop = slabTop - T.PedestalHeightPx;
-				Rect(spriteBatch, px, c.X - T.PlinthWidthPx * 0.5f, slabTop, T.PlinthWidthPx, T.PlinthHeightPx, Lit(new Color(62, 67, 76), light));
-				Rect(spriteBatch, px, c.X - T.PlinthWidthPx * 0.5f, slabTop, T.PlinthWidthPx, 1, Lit(new Color(122, 130, 144), light));
-				Rect(spriteBatch, px, c.X - T.PedestalWidthPx * 0.5f, pedTop, T.PedestalWidthPx, T.PedestalHeightPx, Lit(new Color(84, 90, 102), light));
+				Texture2D baseTex = ModContent.Request<Texture2D>(Texture).Value;
+				Texture2D barrelTex = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/TurretBarrel").Value;
+				Texture2D hubTex = ModContent.Request<Texture2D>("Mechanization/Content/NPCs/TurretHub").Value;
+				float pedTop = bottom - T.PlinthHeightPx - T.PedestalHeightPx;
+				spriteBatch.Draw(baseTex, new Vector2((float)Math.Round(c.X - baseTex.Width * 0.5f), (float)Math.Round(bottom - baseTex.Height)), null, light);
 
-				// The gun: a steel barrel that turns on a pivot atop the pedestal, kicks back on a shot, with the mounted weapon's own sprite on it.
-				Vector2 pivot = new Vector2(c.X, pedTop - T.PivotUpPx);
+				// The gun: a barrel that turns on a pivot atop the pedestal (upright when aiming left), kicks back on a shot, with the mounted weapon's own sprite on it, and a dome hub over the pivot.
+				Vector2 pivot = new Vector2((float)Math.Round(c.X), (float)Math.Round(pedTop - T.PivotUpPx));
 				Vector2 dir = new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim));
 				Vector2 basePos = pivot - dir * _recoil;
-				spriteBatch.Draw(px, basePos, null, Lit(new Color(104, 112, 126), light), _aim, new Vector2(0f, 0.5f), new Vector2(T.BarrelLengthPx, T.BarrelThicknessPx), SpriteEffects.None, 0f);
+				// The barrel sheet is 17 pre-rotated frames (aim -90..+90 degrees, pivot at the frame centre); aiming left draws the mirrored frame, so the art's 2x2 blocks are never rotated.
+				int frames = 17, fh = barrelTex.Height / frames;
+				bool leftward = dir.X < 0f;
+				float ang = leftward ? (float)Math.Atan2(dir.Y, -dir.X) : _aim;           // -90..+90 either way
+				int frame = Math.Clamp((int)Math.Round((MathHelper.WrapAngle(ang) + MathHelper.PiOver2) / (MathHelper.Pi / (frames - 1))), 0, frames - 1);
+				Vector2 bp = new Vector2((float)Math.Round(basePos.X), (float)Math.Round(basePos.Y));
+				spriteBatch.Draw(barrelTex, bp, new Rectangle(0, frame * fh, barrelTex.Width, fh), light, 0f, new Vector2(barrelTex.Width * 0.5f, fh * 0.5f), 1f, leftward ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
 				DrawMountedWeapon(spriteBatch, basePos, dir, light);
-				Rect(spriteBatch, px, pivot.X - 4f, pivot.Y - 4f, 8, 8, Lit(new Color(58, 63, 72), light)); // the pivot hub
+				spriteBatch.Draw(hubTex, pivot, null, light, 0f, new Vector2(hubTex.Width * 0.5f, hubTex.Height * 0.5f), 1f, SpriteEffects.None, 0f);
 				if (_recoil > T.RecoilPx * 0.6f) // muzzle flash, only for the first frames after a shot
 				{
 					Vector2 tip = basePos + dir * (T.WeaponDrawOffsetPx + T.WeaponDrawMaxPx * 0.5f);

@@ -63,6 +63,7 @@ namespace Levy.Common.Systems
 		public const string VanillaSource = "Terraria";
 
 		private static int _levies;
+		private static int _milestoneSlots;
 		private static bool _haveValue;
 		private static readonly Dictionary<string, int> _learned = new(); // boss key (BossDownedSystem identity) -> tier
 		private static List<BcBoss> _bc;       // null = not queried / unavailable
@@ -79,6 +80,18 @@ namespace Levy.Common.Systems
 				if (!_haveValue && LevyUtil.IsServerOrSingle) Recompute(false);
 				return _haveValue ? _levies : LevyConstants.CommandPointsBase;
 			}
+		}
+
+		/// <summary>Accessory slots every levy gains from the boss milestones reached so far (synced to clients with the levy count).</summary>
+		public static int MilestoneSlots => _milestoneSlots;
+
+		/// <summary>Has the boss a milestone names been beaten? A vanilla boss id uses the world's own flag; anything else is matched by exact NPC name against the recorded kills.</summary>
+		public static bool BossReached(string idOrName)
+		{
+			foreach (var v in Vanilla) if (string.Equals(v.Id, idOrName, StringComparison.OrdinalIgnoreCase)) return v.Downed();
+			for (int t = 1; t < NPCLoader.NPCCount; t++)
+				if (string.Equals(Lang.GetNPCNameValue(t), idOrName, StringComparison.OrdinalIgnoreCase) && BossDownedSystem.IsTypeDowned(t)) return true;
+			return false;
 		}
 
 		// ---- vanilla table: tier, weight, downed, owning NPC types -------------------------------------------
@@ -226,8 +239,11 @@ namespace Levy.Common.Systems
 			LevyConfig cfg = null; try { cfg = LevyConfig.Get; } catch { }
 			int pre = cfg?.LeviesByEndOfPreHardmode ?? 20, hm = cfg?.LeviesByEndOfHardmode ?? 40, post = cfg?.LeviesByEndOfPostMoonLord ?? 60, max = cfg?.MaxLevies ?? 60;
 			int value = LevyTierMath.Compute(BuildBosses(), LevyConstants.CommandPointsBase, pre, hm, post, max);
-			bool changed = !_haveValue || value != _levies;
-			_levies = value; _haveValue = true;
+			int mSlots = 0, mLevies = 0;
+			if (cfg?.MilestoneRewards != null) MilestoneMath.Apply(cfg.MilestoneRewards, BossReached, out mSlots, out mLevies);
+			value = Math.Clamp(value + mLevies, 1, 65535); // milestone levies come on top of the maximum
+			bool changed = !_haveValue || value != _levies || mSlots != _milestoneSlots;
+			_levies = value; _milestoneSlots = mSlots; _haveValue = true;
 			if (changed && send && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
 		}
 
@@ -240,7 +256,7 @@ namespace Levy.Common.Systems
 		}
 
 		public override void OnWorldLoad() { _haveValue = false; _timer = 0; if (LevyUtil.IsServerOrSingle) { try { Recompute(false); } catch { } } }
-		public override void ClearWorld() { _learned.Clear(); _haveValue = false; _levies = 0; }
+		public override void ClearWorld() { _learned.Clear(); _haveValue = false; _levies = 0; _milestoneSlots = 0; }
 		public override void Unload() { _learned.Clear(); _bc = null; _bcTried = false; }
 
 		public override void SaveWorldData(TagCompound tag)
@@ -260,9 +276,9 @@ namespace Levy.Common.Systems
 			}
 		}
 
-		public override void NetSend(BinaryWriter writer) => writer.Write((ushort)Math.Clamp(_haveValue ? _levies : LevyConstants.CommandPointsBase, 0, 65535));
+		public override void NetSend(BinaryWriter writer) { writer.Write((ushort)Math.Clamp(_haveValue ? _levies : LevyConstants.CommandPointsBase, 0, 65535)); writer.Write((byte)Math.Clamp(_milestoneSlots, 0, 6)); }
 
-		public override void NetReceive(BinaryReader reader) { _levies = reader.ReadUInt16(); _haveValue = true; }
+		public override void NetReceive(BinaryReader reader) { _levies = reader.ReadUInt16(); _milestoneSlots = reader.ReadByte(); _haveValue = true; }
 
 		// ---- boot self-check ---------------------------------------------------------------------------------
 		public override void PostAddRecipes()

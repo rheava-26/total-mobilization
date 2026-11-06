@@ -11,7 +11,9 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Levy.Common.Systems;
 using Levy.Common.Util;
+using Levy.Common.Vanity;
 using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
 
@@ -32,7 +34,7 @@ namespace Levy.Common.UI
 		private UIElement _issue;
 		private UIList _grid;
 		private UIScrollbar _gridScroll;
-		private LevyButton _depositJunk, _lootAll, _sort, _close, _floor, _reforge, _catBtn, _clearBtn;
+		private LevyButton _depositJunk, _lootAll, _sort, _close, _reforge, _catBtn, _clearBtn;
 		private Label _title, _treasury, _count, _noMatch, _capacity, _value;
 		/// <summary>The storage array the grid cells are bound to. The array is replaced when Logistical Centers change its size (or a client receives a new length), and the cells must follow.</summary>
 		private Item[] _builtStorage, _builtPotions;
@@ -44,14 +46,19 @@ namespace Levy.Common.UI
 		private UIPanel _searchBox;
 		private UISearchBar _search;
 		private RaritySwatch[] _swatches;
-		/// <summary>Selected bulk-reforge floor (index into LevyConstants.UI.ReforgeFloorTopFraction); kept while the panel lives.</summary>
-		private int _floorIndex;
+		/// <summary>The targeted-reforge panel beside the armory (open while the player is setting up a run).</summary>
+		private ReforgePanel _reforgePanel;
 		private int _payerRefresh;
 		private BarracksTE _payer;
 
 		// ---- rules tab and item panel
-		private LevyButton _tabItems, _tabRules;
+		private LevyButton _tabItems, _tabRules, _tabVanity, _tabLog;
+		private LogisticsView _logView;
 		private RulesView _rulesView;
+		private VanityView _vanityView;
+		/// <summary>Ticks until the edited vanity list is sent (a multiplayer client); 0 = nothing waiting.</summary>
+		private int _vanitySendIn;
+		private int _vanityHash, _vanityHashTick;
 		private ItemInfoPanel _info;
 		/// <summary>The elements that make up the Items tab; they leave the panel while the Rules tab shows.</summary>
 		private readonly List<UIElement> _itemsTabEls = new();
@@ -114,15 +121,12 @@ namespace Levy.Common.UI
 			_sort.Left.Set(w - 36 - 112 - 158 - 70, 0f); _sort.Top.Set(6f, 0f);
 			_panel.Append(_sort);
 
-			// Bottom bar: bulk reforge. The floor button cycles the preset; the reforge button spends treasury coin rerolling weapon modifiers up to it.
-			_floor = new LevyButton("", LevyConstants.UI.ButtonTextScale, 150, LevyConstants.UI.ArmoryBarHeight, CycleFloor, LevyUtil.T("UI2.ReforgeFloorHint"));
-			_floor.Left.Set(GridLeft, 0f); _floor.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
-			_panel.Append(_floor);
-			_reforge = new LevyButton(LevyUtil.T("UI2.ReforgeAll"), LevyConstants.UI.ButtonTextScale, 150, LevyConstants.UI.ArmoryBarHeight, ReforgeAll, LevyUtil.T("UI2.ReforgeAllHint"));
-			_reforge.Left.Set(GridLeft + 158, 0f); _reforge.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			// Bottom bar: the Reforge button opens the targeted-reforge panel beside the armory (which weapons, what to roll for, a spending cap, a preview); the treasury that pays for it is shown beside it.
+			_reforge = new LevyButton(LevyUtil.T("Reforge.Open"), LevyConstants.UI.ButtonTextScale, 150, LevyConstants.UI.ArmoryBarHeight, ToggleReforge, LevyUtil.T("Reforge.OpenHint"));
+			_reforge.Left.Set(GridLeft, 0f); _reforge.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_reforge);
 			_treasury = new Label("", 0.8f);
-			_treasury.Left.Set(GridLeft + 158 + 160, 0f); _treasury.Top.Set(LevyConstants.UI.ArmoryBarTop + 4, 0f);
+			_treasury.Left.Set(GridLeft + 160, 0f); _treasury.Top.Set(LevyConstants.UI.ArmoryBarTop + 4, 0f);
 			_panel.Append(_treasury);
 			RefreshReforgeBar();
 			BuildFilterBar();
@@ -153,10 +157,21 @@ namespace Levy.Common.UI
 			_tabRules = new LevyButton(LevyUtil.T("Rules.TabRules"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(1), LevyUtil.T("Rules.TabRulesHint"));
 			_tabRules.Left.Set(w - 10 - 70, 0f); _tabRules.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
 			_panel.Append(_tabRules);
+			_tabVanity = new LevyButton(LevyUtil.T("Vanity.Tab"), LevyConstants.UI.ButtonTextScale, 70, LevyConstants.UI.ArmoryBarHeight, () => SetTab(2), LevyUtil.T("Vanity.TabHint"));
+			_tabVanity.Left.Set(w - 10 - 70 - 76 - 76, 0f); _tabVanity.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_tabVanity);
+			_tabLog = new LevyButton(LevyUtil.T("Logistics.Tab"), LevyConstants.UI.ButtonTextScale, 80, LevyConstants.UI.ArmoryBarHeight, () => SetTab(3), LevyUtil.T("Logistics.TabHint"));
+			_tabLog.Left.Set(w - 10 - 70 - 76 - 76 - 86, 0f); _tabLog.Top.Set(LevyConstants.UI.ArmoryBarTop, 0f);
+			_panel.Append(_tabLog);
+			_logView = new LogisticsView(this);
+			_logView.Left.Set(GridLeft, 0f); _logView.Top.Set(36f, 0f);
 			_rulesView = new RulesView(this);
 			_rulesView.Left.Set(GridLeft, 0f); _rulesView.Top.Set(36f, 0f);
+			_vanityView = new VanityView(this);
+			_vanityView.Left.Set(GridLeft, 0f); _vanityView.Top.Set(36f, 0f);
 			_info = new ItemInfoPanel(this);
-			foreach (var el in new UIElement[] { _lootAll, _depositJunk, _sort, _floor, _reforge, _treasury, _searchBox, _catBtn, _clearBtn, _count, _noMatch, _capacity, _value, _grid, _gridScroll, _issue }) _itemsTabEls.Add(el);
+			_reforgePanel = new ReforgePanel(this);
+			foreach (var el in new UIElement[] { _lootAll, _depositJunk, _sort, _reforge, _treasury, _searchBox, _catBtn, _clearBtn, _count, _noMatch, _capacity, _value, _grid, _gridScroll, _issue }) _itemsTabEls.Add(el);
 			if (_swatches != null) _itemsTabEls.AddRange(_swatches);
 			RefreshTabs();
 
@@ -168,19 +183,28 @@ namespace Levy.Common.UI
 		private void SetTab(int tab)
 		{
 			if (_tab == tab || _panel == null) return;
+			FlushVanity();
+			var leaving = _tab;
 			_tab = tab;
-			if (tab == 1)
+			if (leaving == 0) foreach (var el in _itemsTabEls) if (_panel.HasChild(el)) _panel.RemoveChild(el);
+			if (leaving == 1 && _panel.HasChild(_rulesView)) _panel.RemoveChild(_rulesView);
+			if (leaving == 2 && _panel.HasChild(_vanityView)) _panel.RemoveChild(_vanityView);
+			if (leaving == 3) { if (_panel.HasChild(_logView)) _panel.RemoveChild(_logView); if (HasChild(_logView.Checklist)) RemoveChild(_logView.Checklist); }
+			if (tab == 0) { foreach (var el in _itemsTabEls) if (!_panel.HasChild(el)) _panel.Append(el); }
+			else if (tab == 1)
 			{
-				foreach (var el in _itemsTabEls) if (_panel.HasChild(el)) _panel.RemoveChild(el);
 				_panel.Append(_rulesView);
 				_rulesView.Build();
 				_rulesHash = HashOf(Te?.Rules);
 			}
-			else
+			else if (tab == 2)
 			{
-				_panel.RemoveChild(_rulesView);
-				foreach (var el in _itemsTabEls) if (!_panel.HasChild(el)) _panel.Append(el);
+				_panel.Append(_vanityView);
+				_vanityView.Build();
+				_vanityHash = HashOf(Te?.Vanity);
 			}
+			else if (tab == 3) { _panel.Append(_logView); _logView.Bind(); }
+			if (tab != 0) { CloseInfo(); CloseReforge(); } // the item panel and the reforge panel work on the grid
 			_panel.Recalculate();
 			RefreshTabs();
 		}
@@ -190,6 +214,8 @@ namespace Levy.Common.UI
 			if (_tabItems == null) return;
 			_tabItems.Lit = _tab == 0;
 			_tabRules.Lit = _tab == 1;
+			_tabVanity.Lit = _tab == 2;
+			_tabLog.Lit = _tab == 3;
 		}
 
 		/// <summary>The rule list or an item override was edited in place: the compiled rules are dropped at once (single player and the server's own copy read them next pick), and the packet is queued.</summary>
@@ -213,7 +239,33 @@ namespace Levy.Common.UI
 		{
 			base.OnDeactivate();
 			FlushRules();
-			if (Te != null) Te.RulesHeldBack = false;
+			FlushVanity();
+			CloseReforge();
+			if (Te != null) { Te.RulesHeldBack = false; Te.VanityHeldBack = false; }
+		}
+
+		/// <summary>The vanity list was edited in place: queue the packet (edits in quick succession go out as one) and hold back tile entity syncs until it is sent.</summary>
+		public void VanityEdited()
+		{
+			if (Te == null) return;
+			_vanityHash = HashOf(Te.Vanity);
+			_vanitySendIn = 10;
+			Te.VanityHeldBack = true;
+		}
+
+		/// <summary>Sends a queued vanity edit now (the screen is closing, or the debounce ran out).</summary>
+		private void FlushVanity()
+		{
+			if (_vanitySendIn > 0 && Te != null) { _vanitySendIn = 0; ArmoryEditNet.SendVanity(Te); }
+			if (Te != null) Te.VanityHeldBack = false;
+		}
+
+		private static int HashOf(ArmoryVanity v)
+		{
+			if (v == null) return 0;
+			int h = unchecked((int)2166136261);
+			foreach (byte b in v.ToBytes()) h = unchecked((h ^ b) * 16777619);
+			return h;
 		}
 
 		private static int HashOf(ArmoryRules r)
@@ -227,6 +279,7 @@ namespace Levy.Common.UI
 		private void ShowInfo(Item it)
 		{
 			if (_info == null || it == null || it.IsAir) return;
+			if (_reforgePanel != null && HasChild(_reforgePanel)) return; // the reforge panel takes the side
 			if (!HasChild(_info)) Append(_info);
 			_info.Show(it);
 		}
@@ -234,6 +287,19 @@ namespace Levy.Common.UI
 		public void CloseInfo()
 		{
 			if (_info != null && HasChild(_info)) RemoveChild(_info);
+		}
+
+		private void PlaceReforge()
+		{
+			if (_reforgePanel == null || !HasChild(_reforgePanel) || _panel == null) return;
+			float sw = Main.screenWidth / Main.UIScale;
+			float x = _panel.Left.Pixels + LevyConstants.UI.ArmoryPanelWidth + 6f;
+			if (x + ReforgePanel.PanelWidth > sw) x = Math.Max(0f, _panel.Left.Pixels - ReforgePanel.PanelWidth - 6f);
+			if (Math.Abs(_reforgePanel.Left.Pixels - x) > 0.5f || Math.Abs(_reforgePanel.Top.Pixels - _panel.Top.Pixels) > 0.5f)
+			{
+				_reforgePanel.Left.Set(x, 0f); _reforgePanel.Top.Set(_panel.Top.Pixels, 0f);
+				_reforgePanel.Recalculate();
+			}
 		}
 
 		private void PlaceInfo()
@@ -253,7 +319,10 @@ namespace Levy.Common.UI
 		public void Bind(ArmoryTE te)
 		{
 			FlushRules();
+			FlushVanity();
+			bool other = !ReferenceEquals(Te, te);
 			Te = te;
+			if (other) _reforgePanel?.Rebind();
 			if (_grid == null) return;
 			if (_tab != 0) SetTab(0);
 			CloseInfo();
@@ -384,7 +453,8 @@ namespace Levy.Common.UI
 
 		private ItemSlotElement MakeSlot(Item[] arr, int index, byte region, Func<Item, bool> accepts, string emptyHint)
 		{
-			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint, OnHover = ShowInfo };
+			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint, OnHover = ShowInfo, Region = region };
+			if (region <= 1) { slot.PickActive = () => PickingForReforge; slot.IsPicked = (r, i) => _reforgePanel.Plan.IsPicked(r, i); slot.TogglePick = (r, i) => _reforgePanel.TogglePicked(r, i); }
 			slot.OnChanged = (a, i) => { if (Te != null) UIActions.SendArmorySlot(Te, region, i); };
 			return slot;
 		}
@@ -400,11 +470,46 @@ namespace Levy.Common.UI
 			private readonly float _scale;
 			/// <summary>Called every frame the pointer is on a weapon in this cell (the item panel follows it).</summary>
 			public Action<Item> OnHover;
+			/// <summary>Reforge picking: the armory region (0 = storage, 1 = weapon rack), whether picking is on, whether this cell is picked, and the toggle. A click on a reforgeable weapon picks it instead of lifting it.</summary>
+			public byte Region;
+			public Func<bool> PickActive;
+			public Func<byte, int, bool> IsPicked;
+			public Action<byte, int> TogglePick;
 
 			public ArmorySlot(Item[] arr, int index, float scale) : base(arr, index, scale) { _items = arr; _at = index; _scale = scale; }
 
+			/// <summary>The cell while picking: drawn plain (no lifting, no tooltip fight), a left click toggles its pick, and a picked weapon wears a green frame.</summary>
+			private void DrawPicking(SpriteBatch spriteBatch)
+			{
+				if (_items == null || _at < 0 || _at >= _items.Length) return;
+				_items[_at] ??= new Item();
+				Item inv = _items[_at];
+				bool pickable = ArmoryTE.IsReforgeable(inv);
+				if (IsMouseHovering && ContainsPoint(Main.MouseScreen))
+				{
+					Main.LocalPlayer.mouseInterface = true;
+					if (!inv.IsAir) { Main.HoverItem = inv.Clone(); Main.hoverItemName = inv.Name; }
+					if (pickable && Main.mouseLeft && Main.mouseLeftRelease) { Main.mouseLeftRelease = false; TogglePick?.Invoke(Region, _at); }
+				}
+				float oldScale = Main.inventoryScale;
+				Main.inventoryScale = _scale;
+				ItemSlot.Draw(spriteBatch, ref inv, Context, GetDimensions().Position());
+				_items[_at] = inv;
+				Main.inventoryScale = oldScale;
+				var r = GetDimensions().ToRectangle();
+				if (IsPicked != null && IsPicked(Region, _at) && pickable)
+				{
+					var px = Terraria.GameContent.TextureAssets.MagicPixel.Value;
+					spriteBatch.Draw(px, r, new Color(90, 220, 120) * 0.30f);
+					Color c = new Color(120, 255, 150);
+					spriteBatch.Draw(px, new Rectangle(r.X, r.Y, r.Width, 2), c); spriteBatch.Draw(px, new Rectangle(r.X, r.Bottom - 2, r.Width, 2), c);
+					spriteBatch.Draw(px, new Rectangle(r.X, r.Y, 2, r.Height), c); spriteBatch.Draw(px, new Rectangle(r.Right - 2, r.Y, 2, r.Height), c);
+				}
+			}
+
 			protected override void DrawSelf(SpriteBatch spriteBatch)
 			{
+				if (PickActive != null && PickActive()) { DrawPicking(spriteBatch); return; }
 				if (OnHover != null && IsMouseHovering && ContainsPoint(Main.MouseScreen) && _items != null && _at >= 0 && _at < _items.Length)
 				{
 					var held = _items[_at];
@@ -727,26 +832,28 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.Grab);
 		}
 
-		private void CycleFloor()
+		private void ToggleReforge()
 		{
-			_floorIndex = (_floorIndex + 1) % LevyConstants.UI.ReforgeFloorTopFraction.Length;
+			if (_reforgePanel == null) return;
+			if (HasChild(_reforgePanel)) CloseReforge();
+			else { CloseInfo(); Append(_reforgePanel); SoundEngine.PlaySound(SoundID.MenuOpen); }
 			RefreshReforgeBar();
 		}
 
-		/// <summary>Bulk reforge: every weapon below the floor is rerolled (a paid roll each, from the linked barracks treasury) until it meets it. Single player runs it; a multiplayer client asks the server.</summary>
-		private void ReforgeAll()
+		public void CloseReforge()
 		{
-			if (Te == null || !UIActions.IsLive(Te)) return;
-			UIActions.ReforgeArmory(Te, _floorIndex);
-			SoundEngine.PlaySound(SoundID.Item37);
+			if (_reforgePanel != null && HasChild(_reforgePanel)) { RemoveChild(_reforgePanel); SoundEngine.PlaySound(SoundID.MenuClose); }
 		}
+
+		/// <summary>True while a click on a weapon cell picks it for the reforge run instead of lifting it.</summary>
+		private bool PickingForReforge => _tab == 0 && _reforgePanel != null && _reforgePanel.PickActive && HasChild(_reforgePanel);
 
 		private void RefreshReforgeBar()
 		{
-			if (_floor == null) return;
-			_floor.Set(LevyUtil.T("UI2.ReforgeFloor", LevyUtil.T("UI2." + LevyConstants.UI.ReforgeFloorNameKey[_floorIndex])), true);
+			if (_reforge == null) return;
 			_treasury.SetText(_payer == null ? "" : LevyUtil.T("UI.Treasury", LevyUtil.Coins(_payer.Treasury)));
-			_reforge.Enabled = _payer != null && _payer.Treasury > 0;
+			_reforge.Lit = _reforgePanel != null && HasChild(_reforgePanel);
+			_reforge.Enabled = _payer != null;
 		}
 
 		private static SlotSnap[] Snapshot(Item[] arr) { var s = new SlotSnap[arr.Length]; for (int i = 0; i < arr.Length; i++) s[i] = new SlotSnap(arr[i]); return s; }
@@ -807,7 +914,25 @@ namespace Levy.Common.UI
 					if (h != _rulesHash) { _rulesHash = h; _rulesView.Build(); } // another player (or the server) changed the list
 				}
 			}
+			if (Te != null)
+			{
+				if (_vanitySendIn > 0 && --_vanitySendIn == 0) ArmoryEditNet.SendVanity(Te);
+				Te.VanityHeldBack = _vanitySendIn > 0;
+				if (_tab == 2 && !Te.VanityHeldBack && ++_vanityHashTick >= 10)
+				{
+					_vanityHashTick = 0;
+					int vh = HashOf(Te.Vanity);
+					if (vh != _vanityHash) { _vanityHash = vh; _vanityView.Build(); } // another player (or the server) changed the list
+				}
+			}
 			PlaceInfo();
+			PlaceReforge();
+			if (_tab == 3 && _logView != null)
+			{
+				_logView.Tick();
+				if (_logView.ChecklistVisible) { if (!HasChild(_logView.Checklist)) Append(_logView.Checklist); _logView.PlaceChecklist(_panel.Left.Pixels, _panel.Top.Pixels, Main.screenWidth / Main.UIScale); _logView.Checklist.Recalculate(); }
+				else if (HasChild(_logView.Checklist)) RemoveChild(_logView.Checklist);
+			}
 			UpdateFilterView();
 			UpdateStatusLine();
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }

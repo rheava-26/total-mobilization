@@ -7,7 +7,7 @@ namespace Levy.Common
 		public const bool AltFireEnabled = true;
 
 		// ---------- Cadence ----------
-		/// <summary>Chance, each time the alt is off cooldown and the soldier is about to attack, that this attack is the alt. High: the alt is the weapon's big attack.</summary>
+		/// <summary>Chance used only by the harness's "random" comparison mode (the old behaviour). Real decisions come from AltPolicies.Want.</summary>
 		public const float AltUseChance = 0.8f;
 		/// <summary>Ticks after an alt before the next one may be chosen; the primary fills the gap. Plus a random 0..AltGapJitterTicks so a squad does not alt in step.</summary>
 		public const int AltMinGapTicks = 75;
@@ -27,5 +27,9 @@ namespace Levy.Common
 		public const int AltSaveManaTicks = 100;
 		/// <summary>Longest a soldier holds fire waiting on alt mana before giving up and using the primary again.</summary>
 		public const int AltHoldMaxTicks = 150;
+
+		// ---------- Dash alts ----------
+		/// <summary>Horizontal speed (px/tick) a soldier gets toward the target when a dash alt (Exoblade, Blitzzard...) fires.</summary>
+		public const float AltDashSpeed = 11f;
 	}
 }

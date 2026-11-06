@@ -6,6 +6,14 @@
 
 ---
 
+## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart
+- **Built (all but the potions):** Command Radio shift-click map order + barracks "Send to map point"; static cameras (placeable 2x3 tile + tile entity, right-click to connect, Left/Right switch, wheel zooms, Esc exits); GoPro (accessory the Armory issues to a levy; use it to watch the next GoPro levy; indicator drawn over carriers); mind control (while dead until respawn, or any time with the Mind Link item); the zoomed-out arena view (config 1x to 3x per side, default 2x); MP section/position streaming for remote views. Code: `Common/Observe/`, `Content/Items/Observe/`, `Content/Tiles/StaticCamera*`. Art: placeholders from art2 (camera variant B, GoPro variant A, radio variant B scaled 24x36 to 17x26 inside the old 28x26 canvas) at stable paths, to be replaced by the redraws.
+- **Map order:** `SoldierOrder.GoTo` + goal tile in `SoldierRecord.Ext` (saves, no new field). Brain hook = one line at the top of `ThinkOrder`; the soldier marches in 30-tile legs (`MapOrder.LegGoal`), still fights through `TryEngage`, becomes Hold at the spot on arrival, gives up (Hold) after a minute without progress. Spread offsets fan the squad out.
+- **Mind control:** `MindControl` links (server/SP), client samples raw triggers (works while dead) and sends `MindInput`. Three one-line hooks in `SoldierNPC.AI` (skip brain, `MindControl_Drive` before movement, `MindControl_Act` after combat). Movement uses the soldier's own goal/TryJump/platform-drop API; attacks lock the hostile nearest the cursor and the normal combat code fires, a ranged weapon on open ground fires at the cursor through `WeaponUse.TryAttack` with the focus phantom. Limit: a melee levy needs an enemy within 10 tiles to swing.
+- **Zoom (read from the 1.4.4 decompile):** vanilla clamps `GameZoomTarget` to 1..2 and sizes render targets to the backbuffer; the only path with no target is draw-to-screen (Retro lighting, no zoom-in). `ArenaView` enlarges `Main.screenWidth/Height` during the world draw, shrinks the view matrix by 1/f with a 1x1 viewport override, forces Retro, and restores before the interface. Details and numbers: `Common/Observe/PERFORMANCE.md`.
+- **OBSERVED (headless boot, mod `Levy` alone with `LEVY_OBSERVE_BENCH=1`):** 24 self-checks OK (GoTo order + goal survive Save/Load and the snapshot; spread offsets; march over synthetic terrain with a hill and a gap arrives in 12 leg steps, every leg standable; a click in air or rock resolves to a standable tile; 64 key combos pack/unpack; MindInput payload round trip; input to movement mapping; camera label survives SaveData/LoadData through TagIO bytes and NetSend/NetReceive; zoom clamp). Lighting bench in PERFORMANCE.md.
+- **UNVERIFIED (needs a GPU / real clients):** the whole zoomed draw (tiles, NPC cull, background), Esc handling vs the pause menu, GoPro/camera views, section streaming in multiplayer, mind control with a live soldier (the input mapping is checked, the soldier's movement under it is not), the barracks button layout, the radio map click. Known limits: dynamic lights from NPCs/projectiles only land in the top-left real-screen rectangle of the arena; background/sun placement in the arena; GoPro only reaches levies through the Armory accessory issue (a chest does not issue it); doubled outlines on the placeholder art not cleaned (being redrawn).
+
 ## ⚖ BALANCED RANKING + STAR MANA (branch `balanced-rank`, off worktree-levy-stardust 1.7.6; build.txt NOT bumped; unreleased)
 - **Default ranking is now Balanced.** rank = max(1, value^0.7 x StageDiscount(progress - tier) x RecencyBoost(age)). Damage never enters, so fast weak weapons are not punished. Sell price, Sell price + materials and Damage stay selectable. "Skip weapons that barely hurt armored enemies" is now OFF by default.
 - **Stage discount** exp(-(gap/7)^3): 0.997 at 1 stage behind, 0.977 at 2, 0.92 at 3, 0.61 at 5.5 (Minishark, early Hardmode), 0.37 at 7 (Copper Shortsword, Hardmode), 0.05 at 10, 0.01 at 11.5. Tier = ProgressionTier (productionized fixpoint: boss loot + treasure bags with Remix rows ignored, shop conditions, raw-ore table, recipes, rarity floor, unknown never 0; event/seed shop rows ignored). World progress = furthest boss downed on the Boss Checklist scale (Hardmode = 7). Computed once at world load, server/SP only.
@@ -246,16 +254,210 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - OOA levy sentry staves come in 3 TIERS like the vanilla DD2 sentry staves (rod / cane / staff); higher tiers give more levies per sentry. Make sure the Tavernkeep shop has room for them.
 - Eve: "go finish everything else" — build the whole batch.
 
+**2.0 BUILD RUNNING (2026-11-06):** branches
+- `armory2-reforge`: targeted reforge + vanity.
+- `settings2`: setup popup, config categories, Boss Checklist anchors + recommended ranges + milestone rewards, slots.
+- `progression-assist`: recipes, drop rates, shimmer, armor costs, Arms Dealer bulk ammo toggle, bulk factory + potion station.
+- `altfire-impl`: AltPolicies registry, all families, AimPoint/HoldVariant, Dark Gate, broken weapons.
+- `officers2`: hold weapons like vanilla, follow orders, Eve's original kits, Painter paint + Ichor-like debuff.
+- `talk2`: chat bars, talk in combat, close-up clump, levy inventory window, dialogue export.
+- `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
+- `art2`: concept art for all new items, for Eve's approval.
+- `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED (2026-11-06 04:20): art4, art4-mech, command-observe (70cbdfe).** Integration build compiles 0 errors and boots clean with Thorium + Levy + Mechanization.
+- command-observe: GoPro, static cameras, arena zoom, radio map orders, mind control. Packets ObserveRequest/MindControlSet/MindInput/MapOrder and ObserveList/ObservePos appended.
+- CommandRadio.png kept at art4's version until `art5` lands the walkie-talkie redraw.
+- Drone check (I looked; this corrects my earlier note): there is NO mast. The side view matches Eve's concept (slender fuselage, thin boom, ring fan). What's missing is the two side rotors, which should read edge-on as a flat disc at body height (`-=--`). `art5` adds them.
+**ART CORRECTIONS (Eve, 2026-11-06 04:40):**
+- Guide books: revert to the pre-art4 versions ("items looked fine earlier"). Any future tomes copy vanilla spell tomes almost 1:1.
+- Guide to Autonomy: the art2 C slime original.
+- Armory + Barracks (art4): Eve likes them. KEEP.
+- OOA staves: still weird. Redo, modelled ~1:1 on vanilla Ballista Rod/Cane/Staff, with the house head.
+- Static camera: Eve prefers the OLD camera, art2 B.
+- Command Radio: the art2 original walkie-talkie, 2× nearest (48×72). BIG items. Never smaller.
+- Patrol Banner must sway in the wind like vanilla banners.
+- Drone: ducted-fan nacelles on the sides at body height, airliner-engine style. Turret: a mount that holds the weapon.
+**RESTARTED 04:40 (Eve's interrupt stopped every builder; WIP saved and pushed for each):** field-ai (from d019606), art5 (radio 2×, art2-B camera, drone nacelles, turret mount; from 9931613), ms-live (from 442e929), potions (corrected Autonomy; from 22afa4e), NEW art6 (guides revert, staves redo, banner sway).
+
+**RUNNING (2026-11-06 04:30):**
+- `art5`: Command Radio = art2 walkie-talkie B redrawn on the 2×2 grid with curves and real shading, at command-radio size; art4 GoPro/MovieCamera sprites wired over the observe placeholders (tile frame format checked); drone side rotors.
+- `potions`: STOPPED by Eve mid-work; WIP saved (22afa4e). Its Autonomy brief was wrong (radio-less map orders, generic stat buff). See the corrected checklist line.
+- `ms-live`: Magic Storage + SerousCommonLib now BUILT (Eve asked me to retry; it worked). MS tag v0.7.0.11, SCL 1.0.7, both toolchains. Builder is compiling Levy's MS half against the real thing.
+- MERGED officers2 + ooa-tavern (8775ed9); compiles 0 errors; boot pending.
+- Still running: officers2, field-ai, ooa-tavern.
+- After these land, ship ONE build: Levy 2.0.0 + Mechanization bump.
+
+**MERGED: armory2-reforge 01580f2 (targeted reforge + vanity)**
+- **Reforge modes:** In hand / Recent (N days) / Picked (click in grid) / By group (class + type).
+- **Goal:** a floor or a specific valid prefix.
+- **Spending cap:** applied with an equal-share pass.
+- **Preview** before running.
+- **Probe:** the old reforge-to-floor took 84g over 9 weapons. "In hand" took 2g 77s over 4.
+- **Vanity:** up to 16 sets per armory. Each targets all levies, a class, or named levies (named > class > all). Items are stored once and never consumed. Drawn via social slots 10–12 at draw time only, with no stat leakage.
+- **Merge resolution (mine):** armory tabs are Items(0) / Rules(1) / Vanity(2) / Logistics(3). The Logistics button moved further left. Bar layout UNSEEN; ask Eve for a screenshot.
+- **Packets:** SoldierDyeSet, TalkCall, ArmoryReforgePlan, ArmoryVanitySet all appended.
+
+**MERGED: logistics c633b4c**
+- **Non-MS half is live and passes 75 self-checks:**
+  - Craft ORDERS: ratios, bucket or random, auto-resume one unit at a time, intermediates smelted from stock, a materials checklist docked beside the armory.
+  - Stock = the armory, pylon-networked armories, chests within 25 tiles, and the MS network if linked. Stations must be within 30 tiles.
+  - AUTO-BUY from in-reach shopkeepers at vanilla happiness pricing, paid from the treasury, with budget caps. It can chain into orders.
+  - MASS SELL: drag-select, category, tier; sells to the best-paying NPC; optional shimmer-decraft.
+  - FIND page and the API for the potions.
+- **The MS half is written but NOT BUILT:**
+  - The classifier denied building Magic Storage + SerousCommonLib from source, even with Eve's approval. I did not route around it.
+  - The code is behind `#if MAGICSTORAGE` and enabled via `levy-mod/tools/enable_magicstorage.sh`.
+  - It needs MagicStorage.tmod + SerousCommonLib.tmod in Mods to build. Eve could send hers, like the Thorium tmod.
+  - MS is MIT licensed, so the Armory Heart is MS's Storage Heart with a crimson core, credit kept.
+  - Type-checked against a stub only.
+
+**MERGED: altfire-impl 9440bb8**
+- **AltPolicies registry:** from an embedded TSV; 190/191 rows resolve with Thorium+Calamity.
+- **`Want`** gates before the probe.
+- **Alt-fire open to ALL fired families:** swords, spears, boomerangs, yoyos, flails, thrown and held weapons all go through `AltShoot`.
+- **Hooks:** HoldVariant (Calamity mouseRight), AimPoint (cursor + mouseWorld), meter/mana/HP/ally readers.
+- **Interaction mechanism, general:**
+  - PlayerConflict: don't place or detonate when the commander uses or owns that object.
+  - PrimaryAllowed: don't re-place one-at-a-time objects over someone else's.
+- **Dark Gate:** 12/12 decision cases pass.
+  - Levies only use a gate they're already standing at.
+  - Interpretation to confirm: "commander within 6 tiles" means within 6 tiles of the gate the levy would ENTER.
+- **Harness:** policy/left = 1.08 boss, 1.10 pack; random ≈ 0.97.
+  - Big alt wins: Septic Skewer 2.3×, Animosity, Speed Blaster.
+  - Damage that exists only now: Brimstone Sword, Briny Baron, Exoblade, SurgeDriver.
+- **Still broken:**
+  - Frigidflash Bolt (needs an owner swap).
+  - Photoviscerator, Violence, Lightspeed: 0 damage even on left click (not investigated).
+  - Wulfrum Knife recall.
+  - Teleport utilities and sentry-command alts are NEVER.
+  - Holdout weapons classified Unsupported (Nidhogg etc.) are never fired at all.
+
+**MERGED: progression-assist 183c75c**
+- **Placement:** a separate "Levy: Progression assistance" config, all vanilla by default; `ReloadRequired` where needed.
+- **Recipes:** Life Crystal, Life Fruit (post-mech), Fallen Star (post-EoW/BoC, Meteorite Bars), Mana Crystal (8 gems), Chlorophyte Ore (HM); Chlorophyte ore-per-bar slider; ammo yield ×.
+- **Drop and world multipliers:** Ectoplasm, Souls, mob drops; Chlorophyte growth and chunk; HM crate ore.
+- **Shimmer ring:** Forbidden Fragment → Dark Shard → Light Shard (my choice; Eve can veto).
+- **Armor cost sliders:** Chlorophyte, Hallowed, Spider, plus a "levy sets" slider for all other sets. Spectre, Shroomite and Spooky are hard-excluded.
+- **Arms Dealer bulk ammo:** default OFF. Unlocks per ammo type after 500 crafted/picked; normal price; max 12 extra types.
+- **Plantera FACT:** the Grenade Launcher is guaranteed on the first kill (non-Expert) and is 1/7 in her later drops and bag. It's hidden in the bestiary, so Eve getting only one was RNG. The option adds an extra % roll.
+- **Stations:** parked in `levy-mod/paused-stations/` (not built).
+
+**MERGED: talk2 1991e41 (talking to levies)**
+- **Chat bars:** blue chat bars with typewriter text. Max 5 visible within 70 tiles, priority queue, one per speaker, a clump stacks upward.
+- **Talk during combat:** CanChat allows Engage (Routed is still blocked; ask Eve). Right-clicking your levy beyond reach CALLS it over (packet TalkCall), and the chat opens on arrival. While talking, the levy stays within 2.5 tiles and keeps shooting its current target.
+  - Risk: right-click items may double-fire.
+- **"Close up":** it was only "un-spread" before. Now it's a real stance: tight columns 0.9–4.5 tiles, follow leash 30→14 tiles. The radial cycles Normal → Spread → Close up.
+- **Gear window from chat:** weapon, sidearm, pouch, hook, armor, accessories (up to the grade limit), dyes. Swapping in LOCKS the slot so the armory won't override it; taking out clears it and the armory refills. Packets SoldierDyeSet=33, TalkCall=34.
+  - Vanity here = DYES only. Vanity clothing comes from the armory vanity screen.
+- **Dialogue:** it was already one file (`Dialogue/en-US.txt`, 830 lines); the mutiny lines were moved in. `/levydialogue export|reload|path` gives Eve an editable copy in the save folder that overrides the packed one.
+- **Unverified:** all UI, combat behaviour, MP.
+
+**DRONE DIRECTION (Eve):** NOT Martian Drone / Martian Saucer / Probe-looking. "Take a drone out of a sci-fi concept and put it into Terraria." Vanilla sprites are used for technique only (grid, ramps, rim light); the shape comes from Eve's concept. Sent to art4-mech.
+**MECHANIZATION NEXT (Eve, "soon, not yet"):** the AIRSHIP, a giant flying fortress. Start after the 2.0 batch lands.
+
+**RADIO, FINAL (Eve):** the Command Radio = the art2 walkie-talkie B, exactly that design, scaled UP to fill the current CommandRadio canvas (it was too small) and redrawn on the 2×2 grid. No other radio options.
+**STYLE DIAGNOSIS (Eve):** our art lacks CURVES (vanilla rounds silhouettes and corners), has FLAT shading (vanilla uses curved 3–5 step ramps and rim light), and isn't strictly 2×2. Both art4 builders must study 70+ wiki sprites (weapons, enemies, accessories, furniture) first and copy the palettes exactly.
+
+**ART v4 (Eve, 2026-11-06): full art refresh using wiki vanilla refs + EXACT vanilla palettes.**
+- **`art4` (Levy):** Barracks/Armory/Logistical Center/Patrol Banner tiles + items; ALL 10 guide books + Field Manual + Guide to Autonomy (new art); War Horn.
+- **Command Radio:** 2 options. Eve prefers the original radio's bigger look, OR the walkie-talkie drawn bigger. AMBIGUOUS, so both are offered.
+- **Static camera:** an old-timey hand-cranked MOVIE camera. Eve recalls a vanilla movie camera from Deerclops; the builder will check the wiki.
+- **Levy staves:** a SMALL tower head on a LONG diagonal shaft, DD2 proportions.
+- **GoPro:** plain cam polished; the collar is dropped.
+- **Potions:** the approved PNGs kept.
+- An in-context mock in a vanilla world strip.
+- **`art4-mech` (Mechanization):** new turret + drone redo (2–3 variants with GIFs), with Martian Drone/Probe palettes.
+- **Eve confirms:** GoPro and camera roles are fine. "This looks amazing" for most of art3, but Eve dislikes the colour matching overall, and the Barracks/Armory look "extremely strange".
+- **Once-only drops:** Eve got only one Grenade Launcher from Plantera and wanted one for every levy. Progression-assist has a toggle so once-only boss weapons drop again.
+  - Vanilla fact to verify: Plantera's first kill guarantees the Grenade Launcher; later kills roll its weapon pool.
+- **Bulk buying:** Eve is happy with it.
+
+**ART v3 (art3 54866fe) sent to Eve. My honest read:**
+- Better than v2: the static camera TILE (flat, front-facing on a tripod), and the Command Radio (walkie-talkie, 28×26, same size as the old one).
+- Worse than Eve's v1 picks: the sentry staves (oversized mushroom-roof heads; the DD2 staves have small bright heads on long diagonal shafts) and the Guide book (blobby).
+- GoPro collar: weak.
+- Potions: the approved v2 (Spectator dots shuffled), 24×30.
+- Proposal: keep the v3 camera tile and radio; redo the staves with small heads on long shafts, DD2-style; the Guide stays at v1-C or gets a redo.
+- Waiting on Eve.
+
+**MERGED: settings2 ab36312**
+- **Config:** 11 categories; field names unchanged.
+- **Levy-count explanation:** in tooltips and the popup.
+- **Recommended ranges (my picks, Eve may adjust):** WoF 12–30, ML 28–60, final boss 40–90, with gentle notes outside them.
+- **Milestone rewards list:** WoF +1 slot, Plantera +4 levies, ML +1 slot. **Shipped OFF** so behaviour matches today. Eve should decide whether to turn them on.
+- **Slots per grade:** configurable; defaults unchanged; cap 6.
+- **New-world popup:** presets Default / Relaxed / Hardcore plus Customize; reopen with `/levysetup` or the Barracks "Setup" button; single player only.
+  - It ALSO appears on existing worlds the first time (no saved answer yet).
+- **Unverified:** UI layout, config file write via reflection, MP.
+- **Mistake:** my "pause the factory" message first went to the settings builder. Re-sent to progression-assist.
+
+**UPDATE (Eve, later 2026-11-06):**
+- **Potions APPROVED from v2:** Seeker = B (slot hole); Spectator = A (plain white box) with the dots/glints shuffled so it isn't a Builder clone.
+- **Command Radio** gets the walkie-talkie sprite (art2 radio B → vanilla-style final).
+- The v1 concepts are "fine"; art3 is making them vanilla-accurate.
+- **FACTORY PAUSED.** Corrected intent: cheaper BULK crafting of things you make in huge numbers (ammo, ore, potions, AND weapons), e.g. 1,500 Holy Arrows with fewer Unicorn Horns. An optional "ammo bench" is the simplest form. Revisit later.
+- **Tavernkeep:** NOT removed. Eve worries his compact shop will overflow. `ooa-tavern` resumed from WIP, with shop space as the key requirement (count the slots, pick a no-overflow solution).
+- **Eve asked why I can't look up references.** Wiki fetch works (terraria.wiki.gg true-scale sprites); art3 is using it. The test server's tML install has a stripped texture set, so spawning items there doesn't show the art.
+
+**ART + STATION DECISIONS (Eve, 2026-11-06):**
+- **Art style:**
+  - Match vanilla exactly: 2×2 grid, MESSIER and more clumped, not neat.
+  - Placeables must be FLAT, front-facing 2D (v1 had perspective).
+  - Real vanilla sprites from terraria.wiki.gg are used as references only (`art3` branch).
+- **Picks:**
+  - GoPro A, plus a funny GoPro COLLAR variant.
+  - Static camera B.
+  - Guide to Autonomy C (slime).
+  - Staves B (stick with a house/tower).
+  - Bulk Factory B as an ANIMATED conveyor.
+  - The bulk potion station is an UPGRADE of the Alchemy Table, built with late-game items (not a standalone cauldron).
+  - Armory Heart follows Magic Storage's own look.
+- **No new radio:** use the existing Command Radio for map orders. Eve liked the walkie-talkie B look, which could reskin it later.
+- **Guide to Autonomy** drops in Slime Rain at **1/50**, so you get it during your first Slime Rain.
+- **FACTORY redesign:**
+  - Only crafts recipes and items you already have.
+  - For AMMO and consumables, not weapons, armor or accessories.
+  - Respects stations (ore needs a furnace).
+  - Pre-HM tier, plus a Mythril-anvil HM upgrade.
+  - EXPENSIVE.
+  - Better yield (e.g. Chlorophyte Bullets 90 vs 70, or less input); may produce over time.
+  - Magic Storage compatible.
+  - Redesign sent to `progression-assist`.
+- **No access to Eve's computer:** the session has no shared computer folders (list_computer_folders is empty), so vanilla refs come from the wiki.
+
+**WORKING AGREEMENT (Eve, again):** Eve's examples are EXAMPLES. Don't turn them into the whole scope or into hard rules.
+- "Dark Gate" meant ALL interaction weapons.
+- "Painter" meant ALL officers get unique, identity-driven kits.
+- The hook remarks meant "use hooks correctly". They did NOT mean "never hook slopes / hook rarely in HM".
+- Course corrections were sent to altfire-impl, officers2 and field-ai.
+
+**Eve 2026-11-06 later:**
+- Magic Storage clone APPROVED, and copy MS's art format/textures where the license allows. `logistics` relaunched.
+- Tavernkeep stuff WAITS: ooa-tavern paused; WIP saved on `ooa-tavern-wip` 09397c8.
+- Cameras NOW: static cameras you connect to, plus a big zoomed-out arena view (2–3× per side). Performance is a concern; measure and mitigate.
+- GoPro = see what the levy sees.
+- NEW: MIND CONTROL: control a levy remotely (and use its weapons) while you're dead, until you respawn.
+- Running: `command-observe` (cameras, zoom, GoPro, radio + barracks map orders, mind control) and potion art v2 (vanilla-accurate necks).
+
+**(was) BLOCKED: `logistics`.** The builder needed to clone and build Magic Storage from GitHub; the safety classifier denied it as "code from external". Waiting on Eve's permission. The non-Magic-Storage half can be built without it.
+**`logistics` (branch `logistics`):** Eve approved cloning Magic Storage (MIT). Cloned (branch 1.4.4, v0.7.1); BUILDING it (and its SerousCommonLib dependency) was denied again by the safety classifier, so the Magic-Storage-touching code (`Common/Compat/MagicStorage/MsDriver.cs`, `ArmoryHeart.cs`) is written, stub-type-checked, and guarded by `#if MAGICSTORAGE` until someone runs `levy-mod/tools/enable_magicstorage.sh` with MagicStorage.tmod + SerousCommonLib.tmod in Mods. The rest (orders, buying, selling, UI, packets, self-checks) is built and boots clean without it.
+**ART v1 sent to Eve (art2 81b8b38):** all items in 3 variants; potion comparisons.
+- My own critique: the potions don't match vanilla's TALL two-tier neck and stopper (ours is squat), and the bodies are too wide.
+- The other items read fine but are concept-level; tripod legs and antennas have a doubled outline.
+- Waiting on Eve's picks.
+
+**Waits on art approval:** Command & Observe items (radio, GoPro, cameras, Spectator/Seeker potions, Guide to Autonomy).
+
 **ARMORY & LOGISTICS (Magic Storage first, but must also work without it):**
 - [ ] Targeted reforging: recent, chosen, by category, issued; prefix goal; spending cap.
 - [ ] Vanity: its own screen, a row per set, "always wear X".
-- [ ] Armory Heart (Magic Storage components + armory + gems) joins the MS network.
-- [ ] Craft-into-armory ORDERS: sets plus weapons split by % ratio, bucket vs random, auto-resume when materials arrive (100 of 120 bars → partial, rest later), total-materials checklist on the side of the screen.
-- [ ] Auto-buy from shopkeepers (X guns, X ammo), chained into auto-craft (buy ammo + chlorophyte → craft chlorophyte bullets into the armory).
-- [ ] Mass sell to the happiest NPC near the pylon network: drag-select, select by type, select by progression tier (e.g. all pre-HM swords).
-- [ ] Shimmer-back to ore via a Shimmer heart.
+- [~] Armory Heart (Magic Storage components + armory + gems) joins the MS network. Tile, tile entity (a real MS `TEStorageComponent`), item, recoloured MS-heart art, recipe and driver are written; compiled only with MAGICSTORAGE; NOT yet run against a built Magic Storage.
+- [x] (built, UI unseen) Craft-into-armory ORDERS (Armory > Logistics tab > Orders): sets plus weapons split by % ratio, bucket vs random, auto-resume when materials arrive (100 of 120 bars → partial, rest later), total-materials checklist on the side of the screen.
+- [x] (built, UI unseen) Auto-buy from shopkeepers (Logistics > Buy; standing rules attach to orders; order 'buy what is short'), chained into auto-craft (buy ammo + chlorophyte → craft chlorophyte bullets into the armory).
+- [x] (built, UI unseen) Mass sell (Logistics > Sell) to the best-paying shopkeeper in reach: drag-select, select by type, select by progression tier (e.g. all pre-HM swords).
+- [~] Shimmer-back: the Sell page has a 'Shimmer back' toggle that takes decraftable items apart into ingredients instead of selling. A separate Shimmer Heart component is NOT built.
 - [ ] Bulk factory: put in a bulk amount (e.g. 10 Unicorn Horns), get +20–30%. Also bulk potion brewing (cauldron/alchemy table) for big groups.
-- [ ] Seeker Potion + Spectator Potion tie into Magic Storage: "go find something you specifically want". Seeker highlights only the item you pick (e.g. the nearest chlorophyte), so the target can be chosen from storage.
+- [~] Seeker Potion + Spectator Potion tie into Magic Storage (API `FindTarget` + Logistics > Find page built; potions themselves come later): "go find something you specifically want". Seeker highlights only the item you pick (e.g. the nearest chlorophyte), so the target can be chosen from storage.
 
 **SETTINGS:**
 - [ ] New-world setup popup with presets.
@@ -279,10 +481,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - buying Chlorophyte bullets from the Arms Dealer after you've obtained enough
 
 **WEAPON USE & OFFICERS:**
-- [ ] Alt-fire policy registry from the survey: open alt-fire to all families; aim point; held-variant hook; gate before the probe.
-- [ ] Dark Gate PORTAL_USE: line of sight; levies use it to retreat/regroup; never while the player is using it; only place gates when the player has none.
-- [ ] Hand-fix the remaining known-broken utility weapons from the harness lists.
-- [ ] Officers: hold and use their weapon like vanilla town NPCs; follow orders (investigate); restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+- [x] Alt-fire policy registry from the survey (branch altfire-impl): AltPolicies registry + embedded table, all fired families, aim point, held-variant hook, gate before the probe.
+- [x] Dark Gate PORTAL_USE (altfire-impl): 12/12 harness cases pass (use, yield to the commander, place only when the player owns no pair).
+- [~] Interaction/utility weapons (altfire-impl): generic place/detonate/recall/portal mechanism with player-conflict guards done; still broken: Frigidflash Bolt (owner-anchored projectile), Photoviscerator/Violence/Lightspeed (0 damage), Wulfrum Knife recall (controlUseTile), teleport glasses, sentry/summon right-click commands. See the altfire-impl hand-back.
+- [x] (branch `officers2`, awaiting Eve's in-game look) Officers: hold and use their weapon like vanilla town NPCs; follow orders; restore Eve's ORIGINAL unique kits; Painter's paint gun paints enemies with an Ichor-like defense/damage debuff.
+  - Cause found: `Officer_ParkTownNpc` forced the parked town NPC's `ai[0]=0` every tick, so vanilla's attack draw (gun in hand = ai[0] 12, throw 10, magic 14, swing 15) never ran. Now the avatar carries a synced pose clock (`ItemAnimation`/`AimRotation`) and feeds the stock `ai[0..2]`; `OfficerGlobalNPC.DrawTownAttackGun` swaps in the weapon he really fires (Minishark, Paintball Gun, wooden bow).
+  - Orders: Follow/Hold/Patrol/Return/Search/Free Rein already reached officers; added Hold Fire, Spread Out / Close Up, Focus Target / Focus Attack (RosterSystem toggles now vote and apply to officers).
+  - Kits redone around identity (no generic stat buffs): Painter = paint-soaked debuff; Guide = accuracy + called volley (Morale aura dropped); Merchant = march prices (+67% sell, -40% buy) with fence and handouts (Morale lift dropped); Demolitionist = nearby soldiers lob his grenades. Lab: `LEVY_HARNESS_SCENARIO=officer` (`CombatHarness.Officer.cs`).
 
 **TALKING TO LEVIES:**
 - [ ] Combat chat as a blue bar above the head that fills with text.
@@ -308,7 +513,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - 20 min
   - white builder-shape bottle, thick square box
   - recipe: Shiverthorn + Blinkroot + Lens + Invisibility Potion + Water
-- [ ] Guide to Autonomy (Slime Rain drop): with Spectator, levies get a buff and you can order them on the map. Optional.
+- [ ] Guide to Autonomy (Slime Rain drop, 1/50, art2 C slime sprite): a PREREQUISITE unlock, like Demon Heart needing WoF. (a) Map orders (radio shift-click AND Barracks "send to map point") need Autonomy learned; the radio/Barracks are still the tools. (b) With Autonomy, drinking Spectator gives levies "Autonomous": no fear/routing, fall back to heal when low, go for the biggest threat. No flat stat buff. (Eve approved this pitch 2026-11-06.)
 - [ ] Seeker Potion:
   - inverted equilateral triangle bottle, deep purple, centre hole
   - Moonglow + Blinkroot + Spelunker + Water; 12 min
@@ -2585,3 +2790,9 @@ WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons
 - **Item panel:** hover a weapon in the Items tab. Rank breakdown (base price, stage discount, recency, found, rules, override), tier and stage, class and category; per-item rank override (Auto / Set N / Never / Prefer) and class / category tag edits, stored per item type per armory. `WeaponRank.Of`, the allocator and `IsIssuable` all read them.
 - **Prove-it:** `tools/weapon-investigation/scen_rules.txt` (+ `scen_rules_thorium.txt`), outputs `rules_probe_output.txt` / `rules_probe_thorium_output.txt`; boot self-check `Levy armory rules self-check` (72 checks, round trips, evaluation, conflicts, census of derived tags).
 - **Not done / next:** reforge targeting, vanity, setup popup, alt-fire (other agents). A MP client has no progression tier table (it never ranks), so its item panel shows "No tier known" and no stage discount. In-use counts per rule are not shown (the preview is stock-based); a server-side plan summary would need a synced stat.
+
+## OOA LEVY STAVES + TAVERNKEEP (branch ooa-tavern, resumed from WIP 09397c8)
+- **Measured:** the vanilla Tavernkeep shop is 3 plain + 37 slot-reserving entries = exactly 40/40 once Golem is down (Thorium adds nothing; Calamity: see below). There is NO spare slot, so the WIP "lay into free slots" approach could never have worked (0 free at boot). Removed.
+- **Solution:** a SECOND SHOP PAGE `Terraria/DD2Bartender/LevyWares` (6 entries: Rod always, Cane after a mech boss, Staff after Golem, plus Ale/Stout/Rum for coins). Opened by the Bartender's second chat button (vanilla help text still shows; label gets " / Levy Wares" via reflection on `UI.BartenderHelp`). GlobalNPC cannot add a chat button in tML 1.4.4, hence the reuse.
+- Levies per sentry 1/2/3; Etherian Mana per sentry 5/8/12 (`LevyConstants.OoaEtherianManaPerTier`; Eve said "5 per sentry" - flat 5 is a one-constant change if wanted).
+- Unverified headless: the actual chat button/shop panel UI, planting a sentry in a live OOA wave, MP.

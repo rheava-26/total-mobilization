@@ -253,9 +253,12 @@ namespace Mechanization.Common
 			public const int BatteryBarWidthPx = 30, BatteryBarHeightPx = 3, BatteryBarGapPx = 3;
 			/// <summary>The mounted weapon is drawn under the body, scaled so its longer side is this many px, this far below the centre.</summary>
 			public const float WeaponDrawMaxPx = 28f, WeaponDrawOffsetY = 9f;
-			// Layered art (tools/drone_art/gen_drone.py, variant A): DroneNPC.png = body + boom + tail ring, 4 fan frames stacked, art faces RIGHT, 68x26 each.
+			// Layered art (tools/drone_art/gen_drone4.py): DroneNPC.png = body + boom + tail ring, art faces RIGHT. 4 fan frames (rows) x 5 PRE-TILTED columns (levels -2..+2, nose down positive), 80x50 each,
+			// so every 2x2 art block stays on the grid in game (the body is never rotated at draw time).
 			// DroneRotor.png = one edge-on rotor on its mast, 5 frames stacked (0..3 spin, 4 still), 48x16 each, drawn LEVEL with its mast base at the body-local points below (px from the body centre, art facing right).
-			public const int BodyFrames = 4, RotorFrames = 5;
+			public const int BodyFrames = 4, RotorFrames = 5, TiltLevels = 5;
+			/// <summary>Radians of nose-down lean per tilt column of the body sheet (the middle column is level).</summary>
+			public const float TiltStep = 0.16f;
 			public static readonly float[] RotorMastX = { 15.0f, 11.0f }, RotorMastY = { -5.0f, -9.0f }, RotorTint = { 1.0f, 0.62f };   // near rotor, then the far one behind the hull
 			public const float WeaponDrawOffsetX = 15.0f, LedX = 11.0f, LedY = -3.0f;
 		}

@@ -231,7 +231,13 @@ namespace Levy.Common.Testing
 							for (int i = 0; i < Main.maxNPCs && contact == null; i++) { NPC a = Main.npc[i]; if (a.active && !a.friendly && !a.townNPC && a.damage > 0 && !(a.ModNPC is SoldierNPC) && a.Hitbox.Intersects(me)) contact = a; }
 							if (contact != null) { contactHits += nh; string key = "contact:" + contact.GivenOrTypeName; byKind[key] = byKind.GetValueOrDefault(key) + nh; }
 							else if (nn.lavaWet) { byKind["lava"] = byKind.GetValueOrDefault("lava") + nh; }
-							else { projHits += nh; string key = "proj:" + (b.LastAttackerName ?? "?"); byKind[key] = byKind.GetValueOrDefault(key) + nh; }
+							else
+							{
+								projHits += nh; Projectile hp = null; Rectangle me2 = nn.Hitbox; me2.Inflate(48, 48);
+								for (int pi = 0; pi < Main.maxProjectiles && hp == null; pi++) { Projectile pj = Main.projectile[pi]; if (pj.active && pj.hostile && pj.damage > 0 && pj.Hitbox.Intersects(me2)) hp = pj; }
+								if (hp != null && Environment.GetEnvironmentVariable("LEVY_REAL_HITDBG") == "1") Mod.Logger.Info($"HITDBG t={t} {hp.Name} w={hp.width} h={hp.height} dmg={hp.damage} tl={hp.timeLeft} v={hp.velocity} ai0={hp.ai[0]:0.0} ai1={hp.ai[1]:0.0} rot={hp.rotation:0.00} dist={Vector2.Distance(hp.Center, nn.Center):0}  inField={ThreatField.Snapshot().Count} lvl={nn.Center - hp.Center}");
+								string key = "proj:" + (b.LastAttackerName ?? "?") + (hp != null ? "/" + hp.Name + "@" + hp.velocity.Length().ToString("0.0", CultureInfo.InvariantCulture) : "/?"); byKind[key] = byKind.GetValueOrDefault(key) + nh;
+							}
 						}
 					}
 				},

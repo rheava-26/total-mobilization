@@ -635,8 +635,11 @@ namespace Levy.Common.Systems
 					NPC h = Main.npc[i];
 					if (!h.active || h.ModNPC is SoldierNPC || !LevyUtil.IsHostileTarget(h) || (h.damage <= 0 && !h.boss)) continue;
 					if (Math.Abs(h.Center.X - wanted.X) > scanPx + h.width || Math.Abs(h.Center.Y - wanted.Y) > scanPx + h.height) continue;
-					_spawnHostileCentre[n] = h.Center; _spawnHostileBox[n] = h.Hitbox; n++;
-					float dsq = Vector2.DistanceSquared(wantedBody, h.Hitbox.ClosestPointInRect(wantedBody));
+					// a fast boss is judged by the ground it is about to cover as well as the ground it is on (the swept box over the next ~40 ticks, at most 480 px of it)
+					Rectangle hb = h.Hitbox; Vector2 ahead = h.velocity * 40f; float aLen = ahead.Length(); if (aLen > 480f) ahead *= 480f / aLen;
+					if (aLen > 1f) { Rectangle moved = hb; moved.Offset((int)ahead.X, (int)ahead.Y); hb = Rectangle.Union(hb, moved); }
+					_spawnHostileCentre[n] = h.Center; _spawnHostileBox[n] = hb; n++;
+					float dsq = Vector2.DistanceSquared(wantedBody, hb.ClosestPointInRect(wantedBody));
 					if (dsq < dangerSq) wantedUnsafe = true;
 					if (dsq < nearestSq) { nearestSq = dsq; nearestCentre = h.Center; }
 				}

@@ -269,6 +269,9 @@ namespace Levy.Common
 			public const int DodgeNpcMinDamageMobile = 6;
 			/// <summary>...and only if it is moving at least this fast (px/tick). The key filter: walkers being meleed are far below it.</summary>
 			public const float DodgeNpcMinSpeed = 4.5f;
+			/// <summary>A boss, or a body with at least <see cref="DodgeHeavyDamage"/> contact damage, counts as a threat from this speed (px/tick) up.</summary>
+			public const float DodgeHeavyMinSpeed = 1.4f;
+			public const int DodgeHeavyDamage = 40;
 			/// <summary>Hostile bodies farther than this are ignored (bigger and faster than a projectile, so a wider scan).</summary>
 			public const float DodgeNpcRadiusTiles = 17f;
 			/// <summary>Only bodies that would arrive within this many ticks matter.</summary>

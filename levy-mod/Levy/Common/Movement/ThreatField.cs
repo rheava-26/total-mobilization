@@ -80,7 +80,7 @@ namespace Levy.Common.Movement
 				if (v.LengthSquared() < LevyConstants.Movement.DodgeMinProjectileSpeed * LevyConstants.Movement.DodgeMinProjectileSpeed) continue;
 				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage });
 			}
-			float minSq = LevyConstants.Movement.DodgeNpcMinSpeed * LevyConstants.Movement.DodgeNpcMinSpeed;
+			float minSq = LevyConstants.Movement.DodgeNpcMinSpeed * LevyConstants.Movement.DodgeNpcMinSpeed, heavyMinSq = LevyConstants.Movement.DodgeHeavyMinSpeed * LevyConstants.Movement.DodgeHeavyMinSpeed;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
@@ -92,7 +92,9 @@ namespace Levy.Common.Movement
 				PrevVel[i] = n.velocity; PrevVelTick[i] = now;
 				// a charge shows itself as speed, or as speed that is still building along the direction of travel
 				bool building = v2 > 2.5f * 2.5f && Vector2.Dot(a, v) > ChargeAccel * Math.Sqrt(v2);
-				if (v2 < minSq && !building) continue;
+				// a boss or a hard hitter that merely walks at a levy is still a body to step out of (a player does not stand and trade with a Deerclops); ordinary walkers stay below the filter
+				bool heavy = Content.NPCs.SoldierNPC.MobilityMode >= 1 && (n.damage >= LevyConstants.Movement.DodgeHeavyDamage || LevyUtil.IsBossNpc(n));
+				if (v2 < (heavy ? heavyMinSq : minSq) && !building) continue;
 				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true });
 			}
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
@@ -164,7 +166,7 @@ namespace Levy.Common.Movement
 		}
 
 		/// <summary>Counts the threats that overlap the body on this manoeuvre inside the horizon. <paramref name="lastHit"/> is the tick of the latest overlap.</summary>
-		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit)
+		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f)
 		{
 			long t0 = Stopwatch.GetTimestamp();
 			int hits = 0; firstHit = int.MaxValue; lastHit = -1;
@@ -185,7 +187,7 @@ namespace Levy.Common.Movement
 				}
 				else
 				{
-					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(BodyMarginPx, BodyMarginPx) : new Vector2(2f));   // a prediction of a charging body is never exact: keep a margin around it
+					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(BodyMarginPx, BodyMarginPx) : new Vector2(2f)) + new Vector2(extraMargin, extraMargin);   // a prediction of a charging body is never exact: keep a margin around it
 					Vector2 prev = ThreatAt(th, 0) - BodyAt(c0, m, g, 0);
 					if (Math.Abs(prev.X) <= half.X && Math.Abs(prev.Y) <= half.Y) hit = 0;
 					for (int t = 2; t <= horizon && hit < 0; t += 2)

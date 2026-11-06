@@ -28,6 +28,8 @@ namespace Levy.Content.NPCs
 		internal long DodgeTs;
 		internal int DodgeDoubleJumps, DodgeDashJumps, DodgeHooks, DodgeNearScans, DodgeBaseHitScans, DodgeNoBetter, DodgeSkippedBusy;
 		private uint _air2Ready;
+		private bool _wideNow;
+		private const float ClearanceWeight = 10f, ClearanceHysteresis = 4f, ClearanceMarginPx = 28f;
 		/// <summary>Harness: the dodge layer's internal timers (cooldown, hold, queued hop, walking sidestep ticks left).</summary>
 		internal (int cooldown, int hold, int pend, int stepTicks) DodgeTimers => (_dodgeCooldown, _dodgeHold, _dodgePend, _dodgeTicks);
 
@@ -80,7 +82,15 @@ namespace Levy.Content.NPCs
 			if (baseHits == 0) return HoldStep(holding);
 			DodgeBaseHitScans++;
 			// a threat already past the point of no return cannot be dodged by a long walk, but the same search still picks the best partial answer
-			Maneuver best = stay; int bestHits = baseHits; float bestScore = baseHits * 100f;
+			// when no move avoids every overlap, the move that keeps the widest berth from the threats still beats standing in their path (a player backs off a boss it cannot fully dodge)
+			float baseScore = baseHits * 100f;
+			if (MobilityMode >= 1)
+			{
+				_wideNow = true;
+				baseScore += ClearanceWeight * ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out _, out _, ClearanceMarginPx);
+			}
+			else _wideNow = false;
+			Maneuver best = stay; int bestHits = baseHits; float bestScore = baseScore;
 			int bestLast = lastHit;
 			float sp = Math.Max(DodgeSidestepSpeedPx, Math.Min(Abilities.MaxRunSpeed, MobilityMode >= 1 ? 9f : 5.5f));
 			int hopTiles = DodgeHopTiles + (_kitAny ? FlightDodgeHopBonusTiles : 0);
@@ -113,7 +123,7 @@ namespace Levy.Content.NPCs
 
 			_dodgeCooldown = ThreatCooldown;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
-			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; if (!grounded && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
+			if (best.Kind == 0 || bestHits > baseHits || (bestHits == baseHits && !(_wideNow && bestScore + ClearanceHysteresis < baseScore))) { DodgeStays++; DodgeNoBetter++; if (!grounded && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
 			DodgeManeuvers++;
 			switch (best.Kind)
 			{
@@ -244,6 +254,7 @@ namespace Levy.Content.NPCs
 			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !LandingSafe(c0, m, g)) return;
 			float score = h * 100f + m.Penalty;
+			if (_wideNow && score < bestScore) score += ClearanceWeight * ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out _, ClearanceMarginPx);
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }
 		}
 

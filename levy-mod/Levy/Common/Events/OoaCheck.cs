@@ -83,46 +83,62 @@ namespace Levy.Common.Events
 				Check(OldOnesArmySystem.PickCallups(roster, "A", 0, called, r => false).Count == 0, "a full sentry calls nobody");
 			});
 
-			// 4. Shop.
+			// 4. Shop: the vanilla Tavernkeep shop is full at 40, so the Levy wares live on their own page.
 			Guard("shop", () =>
 			{
-				var w0 = TavernkeepShop.Wanted(false, false, out int s0);
-				var w2 = TavernkeepShop.Wanted(true, false, out int s2);
-				var w3 = TavernkeepShop.Wanted(true, true, out int s3);
-				Check(s0 == 1 && s2 == 2 && s3 == 3 && w0.Count == 4 && w2.Count == 5 && w3.Count == 6, "staves gated: tier 1 always, tier 2 after a mech boss, tier 3 after Golem (+3 drinks)");
-				Check(w3[0].type == ModContent.ItemType<LevyRod>() && w3[1].type == ModContent.ItemType<LevyCane>() && w3[2].type == ModContent.ItemType<LevyStaff>(), "staves are Rod, Cane, Staff");
-				Check(w3[2].shopSpecialCurrency == CustomCurrencyID.DefenderMedals && w3[2].shopCustomPrice == LevyConstants.OoaMedalPricePerTier[2], "staves are priced in Defender Medals");
-				Check(w3[3].shopSpecialCurrency != CustomCurrencyID.DefenderMedals && w3[3].value > 0, "drinks are sold for coins");
-				// layout: roomy shop, tight shop, no room
-				var roomy = new Item[40]; roomy[39] = null;
-				Check(TavernkeepShop.Lay(roomy, TavernkeepShop.Wanted(true, true, out _), 3, out bool c1) == 6 && !c1, "six entries fit an empty shop");
-				var tight = new Item[40]; for (int i = 0; i < 36; i++) tight[i] = new Item();
-				int p2 = TavernkeepShop.Lay(tight, TavernkeepShop.Wanted(true, true, out int st), st, out bool c2);
-				Check(p2 == 4 && c2, "with 4 free slots the three staves collapse to the top tier and the drinks still fit");
-				var full = new Item[40]; for (int i = 0; i < 40; i++) full[i] = new Item();
-				Check(TavernkeepShop.Lay(full, TavernkeepShop.Wanted(true, true, out int st2), st2, out _) == 0, "a full shop is never overwritten");
-
-				// the real shop
-				if (NPCShopDatabase.TryGetNPCShop(NPCShopDatabase.GetShopName(NPCID.DD2Bartender, "Shop"), out AbstractNPCShop real))
+				int vanillaTotal = 0, vanillaReserving = 0, vanillaMax = 0;
+				string mainName = NPCShopDatabase.GetShopName(NPCID.DD2Bartender, "Shop");
+				if (NPCShopDatabase.TryGetNPCShop(mainName, out AbstractNPCShop main))
 				{
-					var items = new Item[40];
+					foreach (var e in main.ActiveEntries) { vanillaTotal++; if (e is NPCShop.Entry ne && ne.SlotReserved) vanillaReserving++; }
+					// worst case = every condition met: every entry on the shelf
+					vanillaMax = vanillaTotal; // every entry present = full stock; reserving entries keep a slot even when locked
+					bool thorium = ModLoader.HasMod("ThoriumMod"), calamity = ModLoader.HasMod("CalamityMod");
+					var items = new Item[Chest.maxItems];
 					var npc = new NPC(); npc.SetDefaults(NPCID.DD2Bartender);
-					real.FillShop(items, npc, out bool overflow);
-					int filled = 0, reserved = 0, nulls = 0;
-					foreach (var it in items) { if (it == null) nulls++; else if (it.IsAir) reserved++; else filled++; }
-					int total = 0, reservedEntries = 0;
-					foreach (var e in real.ActiveEntries) { total++; if (e is NPCShop.Entry ne && ne.SlotReserved) reservedEntries++; }
-					shopInfo = $"vanilla Tavernkeep shop: {total} entries ({reservedEntries} reserve a slot), at boot {filled} stocked + {reserved} reserved + {nulls} free of 40; overflow={overflow}; our worst case needs 6 free (collapse needs 4)";
-					Check(!overflow, "the vanilla Tavernkeep shop does not overflow by itself");
-					Check(nulls >= 4, $"the Tavernkeep shop keeps at least 4 free slots at boot (has {nulls})");
+					main.FillShop(items, npc, out bool overflow);
+					int stocked = 0, reserved = 0, free = 0;
+					foreach (var it in items) { if (it == null) free++; else if (it.IsAir) reserved++; else stocked++; }
+					shopInfo = $"main Tavernkeep shop (thorium={thorium}, calamity={calamity}): {vanillaTotal} entries, {vanillaReserving} reserving a slot, full stock {vanillaMax}/40 slots; at boot {stocked} stocked + {reserved} reserved + {free} free; overflow={overflow}";
+					Check(!overflow, "the main Tavernkeep shop does not overflow");
+					Check(vanillaMax <= Chest.maxItems, $"the main Tavernkeep shop's full stock ({vanillaMax}) fits 40 slots (Levy adds nothing to it)");
 				}
-				else shopInfo = "vanilla Tavernkeep shop not found in NPCShopDatabase";
+				else failures.Add("main Tavernkeep shop not found");
+
+				Check(NPCShopDatabase.TryGetNPCShop(TavernkeepShop.PageFullName, out AbstractNPCShop page), "the Levy wares page is registered");
+				if (page != null)
+				{
+					int pageTotal = 0; foreach (var e in page.ActiveEntries) pageTotal++;
+					var items = new Item[Chest.maxItems];
+					var npc = new NPC(); npc.SetDefaults(NPCID.DD2Bartender);
+					page.FillShop(items, npc, out bool overflow);
+					Check(!overflow && pageTotal == 6 && pageTotal <= Chest.maxItems, $"the wares page holds 6 entries, well under 40 (has {pageTotal})");
+					// gating: tier 1 always (plus 3 drinks); tier 2 after a mech boss; tier 3 after Golem
+					bool mech = Condition.DownedMechBossAny.IsMet(), golem = Condition.DownedGolem.IsMet();
+					int rod = ModContent.ItemType<LevyRod>(), cane = ModContent.ItemType<LevyCane>(), staff = ModContent.ItemType<LevyStaff>();
+					bool hasRod = false, hasCane = false, hasStaff = false, medals = true;
+					int drinkCount = 0;
+					foreach (var it in items)
+					{
+						if (it == null || it.IsAir) continue;
+						if (it.type == rod) { hasRod = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[0]; }
+						if (it.type == cane) { hasCane = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[1]; }
+						if (it.type == staff) { hasStaff = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[2]; }
+						if (it.type == ModContent.ItemType<BarracksAle>() || it.type == ModContent.ItemType<BlackStout>() || it.type == ModContent.ItemType<SpicedRum>()) { drinkCount++; medals &= it.shopSpecialCurrency != CustomCurrencyID.DefenderMedals && it.value > 0; }
+					}
+					Check(hasRod && hasCane == mech && hasStaff == golem && drinkCount == 3 && medals, $"wares gating at this progression (mech={mech}, golem={golem}): Rod always, Cane={hasCane}, Staff={hasStaff}, 3 drinks for coins, staves in Defender Medals");
+					// a world with everything beaten: every entry listed unconditionally
+					int unlocked = ((NPCShop)page).Entries.Count;
+					Check(unlocked == 6, "all six wares exist once everything is unlocked");
+					shopInfo += $"; Levy wares page: {pageTotal} entries now ({unlocked} when everything is unlocked) of 40";
+				}
+				Check(ModContent.GetInstance<TavernkeepShopSystem>() != null, "the shop system is loaded");
 			});
 
 			// 5. Drinks.
 			Guard("drinks", () =>
 			{
-				var d = new Player();
+				var d = new Player(); d.statDefense = new Player.DefenseStat();
 				int def0 = d.statDefense; float dmg0 = d.GetDamage(DamageClass.Generic).Additive, spd0 = d.GetAttackSpeed(DamageClass.Generic);
 				Check(DrinkBuffs.Apply(d, ModContent.BuffType<AleBuff>()) && d.statDefense > def0, "Ale adds defense");
 				Check(DrinkBuffs.Apply(d, ModContent.BuffType<StoutBuff>()) && d.GetDamage(DamageClass.Generic).Additive > dmg0, "Stout adds damage");

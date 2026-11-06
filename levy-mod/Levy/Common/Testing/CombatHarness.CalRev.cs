@@ -43,8 +43,8 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public string Kind, Boss = "eye", Mode = "exp", Order = "free"; public int Seed, Cap; public List<CrLevySpec> Specs; public string Desc = "";
-			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}";
+			public string Kind, Boss = "eye", Mode = "exp", Order = "free"; public int Seed, Cap, N = 10; public float HpX = 1f, Dr; public List<CrLevySpec> Specs; public string Desc = "";
+			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "");
 		}
 		private readonly List<CrRun> _crRuns = new();
 		private int _crI = -1; private bool _crStarted;
@@ -63,8 +63,14 @@ namespace Levy.Common.Testing
 				CrRun r;
 				if (f[0] == "fight" && f.Length >= 5)
 				{
-					r = new CrRun { Kind = "fight", Boss = f[1], Mode = f[2], Seed = int.Parse(f[3]), Cap = int.Parse(f[4]), Order = f.Length > 5 && f[5].StartsWith("order=") ? f[5].Substring(6) : (int.Parse(f[3]) % 2 == 1 ? "free" : "sd") };
-					r.Specs = CrRoll(r.Boss, r.Seed); r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
+					r = new CrRun { Kind = "fight", Boss = f[1], Mode = f[2], Seed = int.Parse(f[3]), Cap = int.Parse(f[4]), Order = int.Parse(f[3]) % 2 == 1 ? "free" : "sd" };
+					for (int x = 5; x < f.Length; x++)
+					{
+						int eq = f[x].IndexOf('='); if (eq < 0) continue;
+						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
+						if (k == "order") r.Order = v; else if (k == "n") r.N = int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
+					}
+					r.Specs = CrRoll(r.Boss, r.Seed, r.N, r.HpX); r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
 				}
 				else if (f[0] == "probe" && f.Length >= 3)
 				{
@@ -138,13 +144,14 @@ namespace Levy.Common.Testing
 		private static readonly string[] CrAccCommon = { "", "Hermes Boots", "Cloud in a Bottle", "Band of Regeneration", "Shackle", "Anklet of the Wind" };
 
 		/// <summary>Ten levies, R3 M3 E2 S2, every stat rolled from the seed alone (the boss and the mode do not enter the roll except the pre/post-Eye tier), so a seed is the same army in Expert and in Revengeance.</summary>
-		private static List<CrLevySpec> CrRoll(string boss, int seed)
+		private static List<CrLevySpec> CrRoll(string boss, int seed, int total = 10, float hpx = 1f)
 		{
 			bool post = CrPost(boss);
 			var rng = new Random(seed * 7919 + (post ? 5 : 0) + 17);
 			var list = new List<CrLevySpec>();
 			var pool = post ? CrPoolPost : CrPoolPre; var arm = post ? CrArmorPost : CrArmorPre;
-			foreach (var (cls, n) in new[] { ('R', 3), ('M', 3), ('E', 2), ('S', 2) })
+			int nr = (int)Math.Round(total * 0.3), nm = (int)Math.Round(total * 0.3), ne = (int)Math.Round(total * 0.2), ns = Math.Max(0, total - nr - nm - ne);
+			foreach (var (cls, n) in new[] { ('R', nr), ('M', nm), ('E', ne), ('S', ns) })
 				for (int k = 0; k < n; k++)
 				{
 					var (w, ammoOpts) = pool[cls][rng.Next(pool[cls].Length)];
@@ -162,6 +169,7 @@ namespace Levy.Common.Testing
 					if (post) mc = cls == 'M' ? 9 : rng.Next(5, 10);
 					else if (cls == 'M') { double q = rng.NextDouble(); mc = q < .15 ? 1 : q < .35 ? 2 : q < .55 ? 3 : q < .75 ? 4 : q < .90 ? 6 : 9; }
 					else mc = rng.Next(0, 5);
+					if (hpx != 1f) lc = (int)Math.Round((((100 + 20 * lc) * hpx) - 100) / 20.0);
 					list.Add(new CrLevySpec { Cls = cls, Weapon = w, Ammo = ammo, Armor = armor, Acc = acc.ToArray(), LifeCrystals = lc, ManaCrystals = mc, ManAtArms = maa, Potions = rng.Next(3, 9), Potion = post ? "Healing Potion" : "Lesser Healing Potion" });
 				}
 			return list;
@@ -409,6 +417,7 @@ namespace Levy.Common.Testing
 			bool rev = mode == "rev" || mode == "revoff";
 			CrSetRevenge(rev);
 			LevyRippers.Disabled = mode != "rev";
+			CrDrGlobal.Dr = 0f;
 		}
 
 		private float[] CrBars(CrLevy l)
@@ -424,7 +433,7 @@ namespace Levy.Common.Testing
 			if (!_crStarted)
 			{
 				ClearAll(); CrPurgeNpcs();
-				CrApplyMode(run.Mode);
+				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
 				NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
 				_crCmdPos = new Vector2((_crCx - 6) * 16f, CrF * 16f);
@@ -563,6 +572,13 @@ namespace Levy.Common.Testing
 			else if (projectile.type == ModContent.ProjectileType<SoldierMinion>()) idx = (int)projectile.ai[0];
 			s.Credit(idx, target.type, damageDone, "proj");
 		}
+	}
+
+	/// <summary>Harness-only proposal knob: every incoming hit on a levy is cut by this fraction (a stand-in for a dodge / damage-reduction patch).</summary>
+	public class CrDrGlobal : GlobalNPC
+	{
+		internal static float Dr;
+		public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers) { if (Dr > 0f && CombatHarness.CrOn && npc.ModNPC is SoldierNPC) modifiers.FinalDamage *= 1f - Dr; }
 	}
 
 	/// <summary>Keeps the stand-in commander a live player for the NPC pass of a calrev run, and unhooks on unload.</summary>
